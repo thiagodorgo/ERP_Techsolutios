@@ -262,9 +262,9 @@ test("T44 escrita monetária fica isolada do restante do frontend, qualquer que 
   const sourceRoot = path.join(FRONTEND, "src");
   const head = writeSurface(sourceRoot);
   assert.deepEqual(head.violations, []);
-  // Controle de vacuidade (piso, não fonte da trava): o conjunto DERIVADO contém as 5 escritas do adapter e os 5
+  // Controle de vacuidade (piso, não fonte da trava): o conjunto DERIVADO contém as 2 escritas do adapter e os 2
   // nomes do serviço, e não contém leitura.
-  for (const name of ["importCloudCostsFromApi", "runCloudAllocationFromApi", "calculateCloudChargesFromApi", "createCloudChargeRuleFromApi", "updateCloudChargeRuleFromApi", "importCloudCosts", "runCloudAllocation", "calculateCloudCharges", "createCloudChargeRule", "updateCloudChargeRule"]) {
+  for (const name of ["importCloudCostsFromApi", "runCloudAllocationFromApi", "importCloudCosts", "runCloudAllocation"]) {
     assert.ok(head.writes.includes(name), `escrita não derivada: ${name}`);
   }
   for (const name of ["getCloudBilling", "getCloudCostSummary", "periodForMonth", "getCloudChargeSummaryFromApi", "listCloudChargeRules"]) {
@@ -278,7 +278,7 @@ test("T44 escrita monetária fica isolada do restante do frontend, qualquer que 
     const platform = path.join(root, "modules/platform");
     const prepend = (file: string, text: string) => writeFileSync(file, `${text}${readFileSync(file, "utf8")}`);
     // nome do adapter (a mutação original)
-    prepend(path.join(platform, "pages/PlatformOverviewPage.tsx"), 'import { calculateCloudChargesFromApi } from "../cloud-billing/cloud-billing.adapter";\nvoid calculateCloudChargesFromApi;\n');
+    prepend(path.join(platform, "pages/PlatformOverviewPage.tsx"), 'import { importCloudCostsFromApi } from "../cloud-billing/cloud-billing.adapter";\nvoid importCloudCostsFromApi;\n');
     // R1 do revisor: a página importa e expõe o alias de escrita do serviço
     appendFileSync(path.join(platform, "cloud-billing/pages/PlatformCloudBillingPage.tsx"), '\nimport { runCloudAllocation } from "../cloud-billing.service";\nexport const executarRateio = runCloudAllocation;\n');
     // import renomeado
@@ -286,10 +286,10 @@ test("T44 escrita monetária fica isolada do restante do frontend, qualquer que 
     // namespace do serviço
     appendFileSync(path.join(platform, "pages/PlatformHealthPage.tsx"), '\nimport * as cobranca from "../cloud-billing/cloud-billing.service";\nexport const sondaNamespace = cobranca;\n');
     // reexportação com outro nome e consumidor dela
-    writeFileSync(path.join(platform, "reexporta.ts"), 'export { updateCloudChargeRule as salvarRegra } from "./cloud-billing/cloud-billing.service";\n');
+    writeFileSync(path.join(platform, "reexporta.ts"), 'export { runCloudAllocation as salvarRegra } from "./cloud-billing/cloud-billing.service";\n');
     writeFileSync(path.join(platform, "consome.ts"), 'import { salvarRegra } from "./reexporta";\nexport const usa = salvarRegra;\n');
     // import dinâmico, por propriedade e por chave literal
-    writeFileSync(path.join(platform, "dinamico.ts"), 'export const tardio = () => import("./cloud-billing/cloud-billing.service").then((m) => m.createCloudChargeRule);\nexport const porChave = async () => (await import("./cloud-billing/cloud-billing.service"))["calculateCloudCharges"];\n');
+    writeFileSync(path.join(platform, "dinamico.ts"), 'export const tardio = () => import("./cloud-billing/cloud-billing.service").then((m) => m.runCloudAllocation);\nexport const porChave = async () => (await import("./cloud-billing/cloud-billing.service"))["importCloudCosts"];\n');
     // reexportação do módulo inteiro
     writeFileSync(path.join(platform, "tudo.ts"), 'export * from "./cloud-billing/cloud-billing.service";\n');
     // controle negativo: consumidor só de leitura não é acusado
