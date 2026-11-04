@@ -1,0 +1,59 @@
+{
+  "cadeira": "C2 — isolamento e permissão",
+  "identidade": "jurado-j488-c2-sol",
+  "modelo": "Codex GPT-5.6 Sol — nível menor declarado",
+  "objeto": "ea6d4aef54181a0dc4030ec56e174e378aec5e12",
+  "voto": "REPROVADO",
+  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/c2-evidencia.md",
+  "resumo": "Três achados dentro do bloco: o canário não cobre todos os métodos de leitura expostos; a propriedade de conta da organização não é representável nem imposta no objeto; e o parser HTTP lê o corpo antes do portão fechado. RBAC, 403 do operator, catálogo/banco, DTO, filtros explícitos, 404, RLS FORCE da intenção e CHECK XOR passaram.",
+  "achados": [
+    {
+      "id": "C2-1",
+      "gravidade": "NÃO GRAVE",
+      "escopo": "dentro-do-bloco",
+      "comando": "grep -nE 'async (processExists|lockProcess|findById|listByProcess|findLiveByProcess)|assertRowsBelongToTenant' src/modules/impound-payments/impound-payment-prisma.repository.ts src/modules/impound-payments/impound-payment.service.ts",
+      "saida": "Cinco métodos de leitura no repositório; assertRowsBelongToTenant aparece apenas em service.ts:101 e :163. findById/findLiveByProcess devolvem intenção sem canário; processExists/lockProcess consomem linhas sem canário.",
+      "motivo": "O mandato exige filtro tenant_id e canário em toda consulta. Os filtros existem e a mutação literal do listByProcess deixou T-ISO-db-1 vermelho, mas a segunda camada não alcança todos os métodos expostos. Os caminhos HTTP atuais passam por list(), portanto o achado não é grave isoladamente."
+    },
+    {
+      "id": "C2-2",
+      "gravidade": "GRAVE",
+      "escopo": "dentro-do-bloco",
+      "comando": "env -u DATABASE_URL -u RBAC_DB_PARITY node --import tsx --input-type=module -e 'const {assertIntentAccount}=await import(\"./src/modules/impound-payments/impound-payment.validators.ts\"); assertIntentAccount({scope:\"organization\",connectionId:\"11111111-1111-4111-8111-111111111111\"}); console.log(\"accepted\")' && grep -nE 'one_connection_chk|FOREIGN KEY.*payment_connection' prisma/migrations/20260890000000_impound_payment_intents/migration.sql prisma/migrations/20260891000000_impound_payment_refs/migration.sql",
+      "saida": "accepted; aparecem apenas os CHECKs XOR. Não existe FK nem atributo de proprietário da conexão no objeto. A execução completa registrada na evidência, com ator A e porta devolvendo UUID arbitrário, gravou status pending e accepted:true.",
+      "motivo": "T-DOM-27 recusa apenas scope platform e T-DOM-db-7 prova apenas a forma XOR. O serviço confia em qualquer UUID fornecido pela porta, de modo que o objeto não impõe que a conexão seja da organização do ator. Com o canal injetado como aberto, isso pode cruzar organização e direcionar dinheiro à conta errada; a futura M-REC-14 não faz parte do objeto julgado."
+    },
+    {
+      "id": "C2-3",
+      "gravidade": "NÃO GRAVE",
+      "escopo": "dentro-do-bloco",
+      "comando": "env -u DATABASE_URL -u RBAC_DB_PARITY node --import tsx --input-type=module -e 'process.env.CORE_SAAS_PERSISTENCE=\"memory\"; process.env.LOG_LEVEL=\"silent\"; const {app}=await import(\"./src/app.ts\"); const s=app.listen(0); await new Promise(r=>s.once(\"listening\",r)); const p=s.address().port; const r=await fetch(`http://127.0.0.1:${p}/api/v1/impound-processes/11111111-1111-4111-8111-111111111111/online-payment`,{method:\"POST\",headers:{\"content-type\":\"application/json\",\"x-tenant-id\":\"22222222-2222-4222-8222-222222222222\",\"x-user-id\":\"33333333-3333-4333-8333-333333333333\",\"x-role\":\"manager\"},body:\"{\"}); console.log(r.status); await new Promise((ok,fail)=>s.close(e=>e?fail(e):ok()))'",
+      "saida": "400, seguido de SyntaxError no body-parser; não 422 channel_disabled.",
+      "motivo": "src/app.ts monta express.json() antes do roteador. Assim, na forma HTTP real, corpo malformado é lido e recusado antes do portão do canal. T-DOM-17 usa somente JSON válido e não prova a ordem exigida."
+    }
+  ],
+  "arquivos_medidos": [
+    "CLAUDE.md",
+    "PROJECT_MEMORY.md",
+    "RBAC_MATRIX.md",
+    "src/app.ts",
+    "src/database/rls.ts",
+    "src/modules/core-saas/permissions/catalog.ts",
+    "src/modules/impound-payments/*.ts",
+    "prisma/schema.prisma",
+    "prisma/migrations/20260890000000_impound_payment_intents/migration.sql",
+    "prisma/migrations/20260891000000_impound_payment_refs/migration.sql",
+    "prisma/migrations/20260892000000_grant_charging_online_payment/migration.sql",
+    "tests/rec-01-*.test.ts",
+    "tests/core-saas.test.ts",
+    "tests/core-saas-role-authority.test.ts",
+    "tests/permission-catalog-migration-parity.test.ts",
+    "tests/permission-catalog-db-parity.test.ts",
+    "tests/fixtures/role-catalog-contract.snapshot.json",
+    ".github/workflows/ci.yml",
+    "docs/patio-recebimento.md",
+    "docs/revisoes/PATIO/B-PATIO-REC-01-dev.md",
+    "C:/Users/thiag/erp-pausa-2026-10-03/planos/B-PATIO-RECEBIMENTO-plano-v3.md",
+    "C:/Users/thiag/erp-pausa-2026-10-03/planos/B-PATIO-RECEBIMENTO-plano-v3-emenda-1.md"
+  ]
+}

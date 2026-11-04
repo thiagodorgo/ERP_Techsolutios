@@ -8558,12 +8558,12 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** pre-existente (evidência de data/origem: a origem acima)
 - **risco:** 4-faturamento/dinheiro
 - **dependências:** decisão do dono; P-WEB-CLOUD-BILLING-CARTAZ
-- **dono:** dono → bloco de produto cloud billing (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
+- **dono:** `B-ASS-09a` (rateio automático), `B-ASS-10b` (acionamento pela tela) e `B-ASS-13` (leitura automática da AWS); a decisão sobre assinatura já está em `D-COBRANCA-ASSINATURA-FRANQUIA`.
 - **impacto vendável:** NAO — receita da plataforma, não fluxo do cliente
 - **teste de encerramento:** decisão em `decisoes.md`; enum de fonte = importadores existentes (teste); se faturar, transição `invoiced` testada
 
 ---
-- **nota B-SAN3-03 (2026-11-02):** a parte "cobrança nunca vira fatura" está RESPONDIDA por `D-COBRANCA-ASSINATURA-FRANQUIA` (o preço do cliente é a assinatura). A parte "custo AWS entra só por CSV manual" é RECOMENDACAO ADOTADA 4 e só fecha com o merge de `B-ASS-09a` (rateio automático) e `B-ASS-10b` (botões na tela); a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
+- **nota B-SAN3-03 (2026-11-02):** resposta e divisão de donos consolidadas na linha `dono` acima; status segue ABERTA.
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
@@ -10481,6 +10481,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - status: ABERTA.
 - **prova:** `platform-tenants.repository.ts` usa `initialTenants`; criar, suspender e editar organização ainda não têm persistência durável.
 - **dono:** `B-SAN3-18`, condicionado à decisão do dono sobre provisionamento pelo console.
+- **apenso B-ASS-00:** `B-ASS-02` persiste somente `tenant.plan`; a persistência das demais propriedades e ações da organização continua com `B-SAN3-18`.
 - **bloqueia:** não bloqueia a leitura honesta entregue; bloqueia ações de escrita no console.
 
 ## P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organização não têm fluxo real — MÉDIA
@@ -10515,16 +10516,16 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 - status: ABERTA.
 - **prova:** catálogo e módulos por plano existem apenas no serviço interno; não há rota de preço ou catálogo comercial.
-- **dono:** `B-SAN3-18`.
+- **dono:** `B-ASS-02` entrega o catálogo de planos e a rota correspondente; o gate administrativo remanescente continua com `B-SAN3-18`.
 - **bloqueia:** não.
 
 ## P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produto — ALTA
 
 - status: ABERTA.
 - **prova:** importar CSV, rodar rateio, calcular cobrança e editar regras continuam isolados no adapter/service e sem consumidor de página; o CSV legado ainda contém custo literal zero.
-- **dono:** bloco de produto Cloud Billing, após `P-DONO-CLOUD-BILLING-ESCOPO`.
+- **dono:** `B-ASS-10b` (importar e rodar pela tela), `B-ASS-09a` (rateio automático), `B-ASS-01` (retirada do cálculo e da edição de markup) e `B-ASS-09` (margem e visão da plataforma), após `P-DONO-CLOUD-BILLING-ESCOPO`.
 - **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
-- **nota B-SAN3-03 (2026-11-02), donos nomeados:** importar e rodar pela tela → `B-ASS-10b`; rateio automático → `B-ASS-09a`; calcular cobrança e editar regras de markup somem no `B-ASS-01` (`D-COBRANCA-ASSINATURA-FRANQUIA`). Status segue ABERTA.
+- **nota B-SAN3-03 (2026-11-02), donos nomeados:** divisão consolidada na linha `dono` acima; status segue ABERTA.
 
 ## P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — MÉDIA
 
@@ -12487,6 +12488,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem medida:** `docs/revisoes/SAN3/B-SAN3-21-dev.md:42` na `origin/main`: "`"Operador Logistico"` (11 literais) segue sem acento. É nome de perfil comparado no código; trocar muda quem vê o quê no menu. Exceção nomeada no guard." O porteiro `porteiro-486-sol` pediu a transferência da exceção para esta pendência.
 - **leitura do redator, declarada (§A6):** o dono e o PR-alvo são do redator deste registro; o dev propôs só "um bloco que mexe em navegação".
 - **encerramento:** o nome de perfil vira chave técnica + rótulo de negócio acentuado ("Operador Logístico"); nenhuma comparação de código usa o rótulo; a exceção sai do guard do `B-SAN3-21`, e o guard segue em `ocorrencias=0`.
+- **apenso da revisão do PR #487 (`rev-487-sol`, 2026-11-03):** a divergência é maior que o acento. Em 4 dos 9 papéis canônicos, a web diverge do contrato e do app: `platform_admin` = "Super Admin", `operator` e `field_technician` = "Operador Logistico", `support` = "Supervisor". O app mergeado no #487 segue o contrato.
+- **dono corrigido após O-4 do `rev-489-opus`:** bloco web pequeno a nascer `B-WEB-ROTULOS-PERFIL`; **PR-alvo:** o primeiro PR desse bloco. Se entrar em `B-SAN3-06a`, o plano precisa ampliar nominalmente o escopo para a fonte única de rótulos, `auth.adapter.ts`, `types.ts` e o teste de paridade web × app. O mapa de permissões, sozinho, não autoriza essa mudança.
+- **encerramento ampliado:** fonte única de rótulos na web, alinhada a `roleLabel` do app e ao §3, com teste de paridade web × app; nenhuma comparação de permissão usa o rótulo.
 
 ## P-WEB-LOGIN-MENSAGEM-TENANT (2026-11-03) — a tela de login mostra "Tenant, e-mail ou senha inválidos." — MÉDIA
 
@@ -12521,3 +12525,135 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA (proposta do dev do PR #487; vale a partir do merge dele) · **escopo:** decisão de nome do `B-SAN3-19` · **dono:** dono do produto (nome curto do app no iOS), aplicado no bloco de publicação do app · **PR-alvo:** o PR que aplicar a decisão · **bloqueia:** não.
 - **origem:** a nota do orquestrador sobre o #487 (`REGISTRO-PENDENTE.md`, seção do #487); o PR #487 troca `CFBundleName` em `mobile/flutter_app/ios/Runner/Info.plist` para `ERP Techsolutions` (17 caracteres).
 - **encerramento:** `CFBundleName` com até 15 caracteres, ou decisão do dono registrada de manter os 17.
+
+## P-DEMOFIX-TESTE-REQUISITO-TOGGLE (2026-11-03) — o toggle de requisito da liberação não tem teste que prenda o valor oposto — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente`, achado menor do porteiro dos PRs #490–#492 · **dono:** trilha do pátio, bloco `B-PATIO-LIBERACAO-TESTES` a nascer · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não.
+- **origem medida:** `porteiro-demofix-opus`: inverter `!check.satisfied` em `DossieLiberacao.tsx:142` sobrevive a `tests/patios-liberacao.smoke.test.tsx` (17/17). O código mergeado está correto; a lacuna é de prova.
+- **encerramento:** teste dispara `onChange` e prova que o valor enviado é o oposto do persistido; a mutação fica vermelha.
+
+## P-DESPACHOS-UUID-OPERADOR (2026-11-03) — a linha de Despachos mostra o UUID do operador — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente`, observado pelo porteiro dos PRs #490–#492 · **dono:** trilha `B-APAR-3`, tela Despachos (`B-APAR-DESPACHOS`) · **PR-alvo:** PR dessa tela · **bloqueia:** não.
+- **origem medida:** `OperationsDispatchesPage.tsx:40` usa `item.operatorUserId` cru; o DTO medido não traz nome.
+- **encerramento:** a linha mostra nome de negócio, nunca UUID; loading/ausência são explícitos.
+
+## P-DESPACHOS-NOME-TECNICO-BACKEND (2026-11-03) — o nome do técnico precisa vir do backend isolado por organização — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** bloco backend a nascer `B-DESPACHOS-NOME-TECNICO` · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não; **rito:** junta completa, porque toca isolamento.
+- **origem medida:** parecer `porteiro-demofix-opus`; não havia `operatorName`, `assignedUserName` nem `technicianName` no DTO medido.
+- **encerramento:** backend resolve o nome no contexto autenticado da organização, com teste de isolamento e DTO allowlist; frontend consome o campo sem expor UUID.
+
+## P-PATIO-MINIMAPA-SEM-CARREGANDO (2026-11-03) — minimapa tem skeleton `aria-hidden`, sem estado anunciado — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** trilha do pátio, bloco `B-PATIO-UX-ESTADOS` a nascer · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não.
+- **origem medida:** `YardSpotBoard.tsx` mostra somente skeleton `aria-hidden`, sem "Carregando vagas…".
+- **encerramento:** estado de carregamento visível e anunciado, com teste acessível.
+
+## P-PATIO-DOSSIE-SEM-VAGA-PISCA (2026-11-03) — dossiê mostra "Sem vaga alocada" antes do pátio carregar — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** trilha do pátio, `B-PATIO-UX-ESTADOS` · **PR-alvo:** PR desse bloco · **bloqueia:** não.
+- **origem:** relatório do dev do pátio, confirmado pelo porteiro dos PRs #490–#492.
+- **encerramento:** distinguir carregando de vazio e prender a transição em teste.
+
+## P-PATIO-LISTPROCESSES-ERRO-VIRA-VAZIO (2026-11-03) — `listProcessesByYard` transforma qualquer erro em lista vazia — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** trilha do pátio, bloco `B-PATIO-UX-ERROS` a nascer · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não.
+- **origem:** relatório do dev do pátio, confirmado pelo porteiro dos PRs #490–#492.
+- **encerramento:** erro de rede/servidor fica distinto de vazio; teste cobre ambos.
+
+## P-SAN3-19-PLACEHOLDER-CHAVE-CRUA (2026-11-03) — placeholder do app mostra a chave crua da permissão — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente`, ressalva do porteiro do PR #487 · **dono:** `B-SAN3-19b` · **PR-alvo:** PR desse bloco pequeno · **bloqueia:** não.
+- **origem medida:** `mobile/flutter_app/lib/shared/ui/module_placeholder_screen.dart:42` mostra a chave técnica.
+- **encerramento:** texto de negócio em PT-BR, sem chave crua, com widget test.
+
+## P-CLOUD-BILLING-3-APARENCIAS (2026-11-03) — Cloud Billing da plataforma ainda não segue o padrão aprovado — MÉDIA
+
+- **status:** ABERTA · **escopo:** dívida visual anterior às decisões de 12–13/10 · **dono:** trilha `B-APAR-3`: maquete pelo Claude, aprovação do dono e bloco `B-APAR-CLOUD-BILLING` · **PR-alvo:** PR desse bloco · **bloqueia:** não.
+- **origem:** pergunta literal do dono às ~17:05 SP: *"porque o billing da plataforma nao esta no padrao aprovado"*. Medição da fonte: a tela foi tocada por último no #411, o #484 não tinha UI e não há maquete de três opções.
+- **leitura do orquestrador, declarada (§A6):** a leitura sai antes; importar/rodar do `B-ASS-10b` entra depois. Série diária e projeção dependem de rota de leitura.
+- **encerramento:** maquete A/B/C aprovada e implementação das três aparências, com seletor no menu do usuário e conferência visual.
+
+## P-PATIO-REC01-TDOM28-DB-CONTRAPROVA (2026-11-03) — vermelho DB do T-DOM-28 cai por `release_not_started` — BAIXA
+
+- **status:** ABERTA · **escopo:** ressalva R1 da conferência do PR #488 · **dono:** `B-PATIO-REC-04` · **PR-alvo:** PR do REC-04 · **bloqueia:** não.
+- **origem medida:** `conf-488-opus`: o teste fica vermelho na base, mas por outro motivo; a prova de que a intenção nasceria está na memória. T-DOM-29 e T-DOM-30 não têm variante DB.
+- **encerramento:** contraprova DB falha especificamente porque a intenção indevida nasceu, e fica verde no objeto corrigido.
+
+## P-PATIO-REC01-CANARIO-SUPERUSUARIO (2026-11-03) — canário usa executor falso, não linha injetada por superusuário — BAIXA
+
+- **status:** ABERTA · **escopo:** ressalva R2 da conferência do PR #488 · **dono:** `B-PATIO-REC-04` · **PR-alvo:** PR do REC-04 · **bloqueia:** não.
+- **origem medida:** `conf-488-opus`; a propriedade testada é a mesma, mas a forma diverge da letra do §12.
+- **encerramento:** teste de banco injeta linha alheia por executor privilegiado e prova a segunda camada na forma real, ou emenda explica e aprova a forma equivalente.
+
+## P-PATIO-BODY-PARSER-ANTES-DO-PORTAO (2026-11-03) — parser global lê JSON malformado antes do portão do pátio — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente`, global ao Express; ressalva R3 da conferência do PR #488 · **dono:** trilha da plataforma, bloco `B-PLAT-BODY-PARSER` a nascer · **PR-alvo:** primeiro PR desse bloco · **bloqueia:** não.
+- **origem medida:** `conf-488-opus`: JSON malformado devolve 400 do `body-parser` antes do portão; a resposta é igual em rotas distintas e não revela dado do pátio. `src/app.ts` ficou fora do conserto.
+- **encerramento:** decisão de arquitetura registrada; se mudar, o portão precede leitura sensível sem regressão global e com teste na forma HTTP real.
+
+## P-OS-VISTORIA-NO-DETALHE (2026-11-03) — vistoria no detalhe da OS não chegou à `main` — BAIXA
+
+- **status:** ABERTA · **escopo:** conteúdo preservado do PR #468, fechado sem merge · **dono:** trilha das três aparências, tela de OS (`B-APAR-OS`) · **PR-alvo:** PR corretivo da tela · **bloqueia:** não.
+- **origem:** ordem do dono para limpar os PRs parados; o ramo `feat/demo-vistoria-na-os` fica apenas como referência, sem copiar material comercial para este repositório público.
+- **encerramento:** refazer no padrão atual e nas três aparências, com teste e conferência visual.
+
+## P-OS-DESPACHO-NOME-E-LINHA-DO-TEMPO (2026-11-03) — nome do técnico e horários do despacho na OS não chegaram à `main` — BAIXA
+
+- **status:** ABERTA · **escopo:** conteúdo preservado do PR #470, fechado sem merge · **dono:** trilha das três aparências, tela de OS (`B-APAR-OS`) · **PR-alvo:** PR corretivo da tela · **bloqueia:** não.
+- **origem:** ordem do dono para limpar os PRs parados; o ramo `feat/demo-despachos-nome-e-horarios` fica só como referência.
+- **encerramento:** implementar no padrão atual, consumindo nome seguro do backend, nas três aparências e com teste.
+
+## P-KPI-FRESCOR-BORDAS-ANCORA (2026-11-03) — bordas do guard de frescor ainda têm mutantes sobreviventes — BAIXA
+
+- **status:** ABERTA · **escopo:** ressalvas B1/B2 da conferência do PR #494 · **dono:** `B-SAN3-10`, fila pós-gate · **PR-alvo:** primeiro PR pós-gate que tocar o guard · **bloqueia:** não.
+- **origem medida:** `conf-494b-opus`, head `a8d66097`: retirar só `^` ou só `$` de `DATA`/`MERGE` sobrevive; `recent.pr = ""` e `bloco.id` numérico não têm teste. Nenhum ocorre nos dados reais medidos.
+- **encerramento:** casos unilaterais de lixo, PR vazio e id numérico deixam cada mutante vermelho.
+## P-ASS-MEDICAO-FRANQUIA (2026-11-03) — franquia sem medição diária por organização — ALTA
+
+- **status:** ABERTA · **escopo:** item 58 do portão vendável · **dono:** `B-ASS-03` · **PR-alvo:** PR do `B-ASS-03` · **bloqueia:** item 58.
+- **origem:** `D-ASS-PLANOS-FRANQUIA-E-CANAL`; hoje não há medição persistida de usuários ativos e de armazenamento por organização.
+- **encerramento:** medição diária sob isolamento por organização, com pico mensal de usuários e estimativa de banco + arquivos, provada pelos critérios do item 58. **(valores fora do repositório público)**.
+
+## P-ASS-DEMONSTRATIVO (2026-11-03) — demonstrativo mensal e baixa da assinatura inexistentes — ALTA
+
+- **status:** ABERTA · **escopo:** item 59 do portão vendável · **dono:** `B-ASS-04` · **PR-alvo:** PR do `B-ASS-04` · **bloqueia:** item 59.
+- **origem:** `D-ASS-PLANOS-FRANQUIA-E-CANAL`; não existe demonstrativo mensal persistido, fechamento idempotente nem baixa auditada da assinatura.
+- **encerramento:** fechamento mensal idempotente e baixa manual auditada, com uma linha por organização e período e dinheiro exato, provados pelos critérios do item 59. **(valores fora do repositório público)**.
+
+## P-ASS-CANAL-DESLIGADO (2026-11-03) — canal de pagamento e nota, cofre e webhooks ainda não existem — ALTA
+
+- **status:** ABERTA · **escopo:** item 60 do portão vendável · **dono:** `B-ASS-05`, `B-ASS-06`, `B-ASS-07` e `B-ASS-08` · **PR-alvo:** PRs desses quatro blocos · **bloqueia:** item 60.
+- **origem:** falas literais registradas em `D-ASS-PLANOS-FRANQUIA-E-CANAL`.
+- **encerramento:** cofre, portas Asaas/Focus NFe, outbox, webhook autenticado, baixa e emissão ficam implementados e fail-closed, com zero chamada externa nos testes e com o canal desligado por padrão.
+
+## P-ASS-VISAO-DO-CLIENTE (2026-11-03) — cliente sem rota e tela honestas da assinatura — ALTA
+
+- **status:** ABERTA · **escopo:** item 62 do portão vendável · **dono:** `B-ASS-04` (rota) e `B-ASS-11` (tela) · **PR-alvo:** PRs desses blocos · **bloqueia:** item 62.
+- **origem:** fala literal registrada em `D-COBRANCA-ASSINATURA-FRANQUIA`: o cliente vê somente plano, uso da franquia e situação.
+- **encerramento:** rota derivada das claims e tela com as três aparências expõem somente a allowlist aprovada; custo interno, dados de outras organizações e números comerciais não aparecem. **(valores fora do repositório público)**.
+
+## P-ASS-RASTREAMENTO-NAO-COBRADO (2026-11-04) — rastreamento aprovado como item próprio ainda não entra na cobrança — ALTA
+
+- **status:** ABERTA · **escopo:** item 65 do portão vendável · **dono:** `B-ASS-12` · **PR-alvo:** PR do `B-ASS-12` · **bloqueia:** item 65.
+- **origem:** fala literal do dono de 31/10 ~22:15, P5: *"siga na recomendação de tudo"*; a recomendação aprovada incluía a cobrança de rastreamento como item próprio.
+- **encerramento:** dois add-ons de rastreamento, no máximo um vigente por assinatura, medição de veículos e linha própria no demonstrativo, sem inferir a resolução de `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`.
+
+## P-ASS-ADAPTADORES-FORA-DO-PORTAO (2026-11-03) — adaptadores posteriores ao primeiro par aprovado — MEDIA
+
+- **status:** ABERTA · **escopo:** integração posterior ao portão · **dono:** `B-ASS-15` · **PR-alvo:** PR do `B-ASS-15` · **bloqueia:** nada.
+- **origem:** `D-COBRANCA-RESPOSTAS-3110` fixa 1 + 1 no portão; o restante usa as mesmas portas depois.
+- **encerramento:** adaptadores posteriores validados contra servidores falsos e, depois, homologados por ato do dono; nenhuma chamada real faz parte desta pendência documental.
+
+## P-ASS-SANDBOX-REAL (2026-11-03) — homologação real dos provedores escolhidos depende de ato do dono — MEDIA
+
+- **status:** ABERTA · **escopo:** ato externo pós-implementação · **dono:** dono do produto, com roteiro técnico do `B-ASS-08` · **PR-alvo:** fora do PR documental; evidência anexada ao roteiro do `B-ASS-08` · **bloqueia:** ligar o canal, não bloqueia os blocos fail-closed.
+- **origem:** `D-P14-ASAAS-FOCUS`; as contas e credenciais não pertencem ao repositório.
+- **encerramento:** dono cadastra as credenciais no cofre, executa o roteiro de homologação e registra o resultado sem versionar segredo.
+
+## P-ASS-SECRETS-MANAGER (2026-11-03) — chave do cofre ainda sem integração ao gerenciador de segredos da AWS — MEDIA
+
+- **status:** ABERTA · **escopo:** infraestrutura futura · **dono:** `B-INFRA-AWS-01` · **PR-alvo:** PR do `B-INFRA-AWS-01` · **bloqueia:** produção AWS com o canal ligado; não bloqueia o cofre fail-closed local.
+- **origem:** plano B-ASS §9; a primeira implementação usa provedor de chave por ambiente e deixa a porta para o serviço gerenciado.
+- **encerramento:** integração ao gerenciador de segredos implementada sem segredo no banco, log ou repositório e aprovada pelo gate de serviço externo/dependência aplicável.
