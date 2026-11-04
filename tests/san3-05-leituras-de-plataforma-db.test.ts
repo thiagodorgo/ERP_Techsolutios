@@ -457,13 +457,13 @@ if (!connectionString) {
         for (const chave of forceEnumeradas) assert.deepEqual(efe.rotas[chave], sup.rotas[chave], chave);
       });
 
-      await t.test("T11f · job.registry fecha 3 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
+      await t.test("T11f · job.registry fecha 2 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
         const forceEnumerados = [...JOBS]
           .filter(([, etiqueta]) => etiqueta === "FORCE-PLATAFORMA")
           .map(([chave]) => chave)
           .sort();
         const foraDaSuperficie = [...JOBS].filter(([, etiqueta]) => etiqueta === "FORA-DA-SUPERFICIE");
-        assert.equal(forceEnumerados.length, 3);
+        assert.equal(forceEnumerados.length, 2);
         assert.equal(foraDaSuperficie.length, 9, "os demais jobs pertencem à pendência B-ARNES-2");
         assert.deepEqual(Object.keys(sup.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob super");
         assert.deepEqual(Object.keys(efe.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob efêmero");

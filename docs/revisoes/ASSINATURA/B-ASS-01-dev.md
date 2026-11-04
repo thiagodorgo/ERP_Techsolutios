@@ -63,3 +63,40 @@
 
 **Veredito.** R-RM-6/R-RM-8 verdes; nenhuma chave de permissão foi apagada.
 
+## Provas de mutação literal
+
+- **R-RM-1:** recolocado uma única vez (`âncora = 1`) o mount `router.use("/", createCloudChargesPlatformRouter())`; T-RM-1..9 ficaram vermelhos (9/9). Patch inverso aplicado; árvore limpa.
+- **R-RM-2:** recolocado uma única vez (`âncora = 1`) o registro `cloud-charges.calculate`; T-RM-11 ficou vermelho. Patch inverso aplicado; árvore limpa.
+- **R-RM-3:** a permissão do item voltou uma única vez para `platform:cloud-charges:read`; `navigation-menu` ficou com 3 vermelhos, incluindo os dois critérios direcionais. Patch inverso aplicado; árvore limpa.
+- **R-RM-4:** recolocada uma única chamada a `/platform/cloud-charges/summary`; o guard textual ficou vermelho. Patch inverso aplicado; árvore limpa.
+
+**Comandos.** Em cada mutação: contagem literal da âncora, suíte mínima correspondente, `apply_patch` inverso, `git status --porcelain` e `git diff --exit-code`.
+
+**Veredito.** Todas as mutações ficaram vermelhas; todas foram restauradas sem `checkout`, `reset` ou `stash`; ao fim, `git status` vazio.
+
+## F5 — PostgreSQL descartável
+
+**Pré-condições.** Memória de commit livre: 42,45 GB (≥ 4 GB); porta `127.0.0.1:55432` livre; nenhum outro trabalho Docker deste bloco.
+
+**Comandos.** `docker run --name devass01-pg ... -p 127.0.0.1:55432:5432 postgres:16`; `prisma migrate deploy`; `npm run db:seed`; `RBAC_DB_PARITY=1 npm test -- tests/san3-05-leituras-de-plataforma-db.test.ts tests/permission-catalog-db-parity.test.ts`.
+
+**Saída resumida.** 120 migrações aplicadas no banco descartável. Após ajustar a expectativa nominal remanescente de 3 para 2 jobs FORCE, 14/14 testes passaram, fail 0, skipped 0.
+
+**Veredito.** F5 verde em isolamento. `devass01-pg` removido com `docker rm -f`; nenhum container do bloco permaneceu. A demo, seus containers e suas portas não foram tocados.
+
+## F6 — bateria integral e bloqueio de escopo
+
+**Comandos.** `npm run check`; `npm run lint`; `npm test`; `npm run build`; `npm --prefix frontend run check`; `npm --prefix frontend run test:smoke`; `npm --prefix frontend run build`; regressões R-RM-7; `node scripts/migration-transaction-guard.mjs`; `git diff --check`.
+
+**Saída resumida.** Check, lint e build backend verdes; guard de migrações: 120 migrações, 0 violações; regressões diretamente ligadas ao bloco: 102/102 pass, fail 0, skipped 0; smoke focado Cloud Billing + fluxo: 38/38 pass. O primeiro `npm test`, sem `REDIS_URL` explícita, resolveu indevidamente o default `127.0.0.1:6379` e terminou com 7 falhas; a execução foi substituída por serviço isolado em `127.0.0.1:56379`. Nenhum comando destrutivo foi dirigido à demo. Com PostgreSQL/Redis isolados, os casos Redis ficaram verdes; guards históricos de drill continuaram incompatíveis com Windows/Git Bash (`setsid` ausente, shim `node_modules/.bin/prisma` interpretado por Node e `rmdir` EBUSY). A comprovação Linux integral ficou pendente do CI.
+
+O smoke frontend integral mediu 1636 testes: 1634 pass, 2 fail. Um vermelho é código morto ainda permitido (`calculateCloudChargesFromApi`); o outro é o guard `frontend/tests/san3-06b-navegacao-plataforma.test.ts`, T40, que exige literalmente 32 endpoints e mediu corretamente 23 após a retirada das 9 rotas.
+
+**Veredito.** A correção de T40 exige alterar `frontend/tests/san3-06b-navegacao-plataforma.test.ts` (32 → 23), arquivo ausente do PERMITIDO exato do §4.1 e também da correção do §12. Não há ajuste honesto dentro do escopo que preserve ao mesmo tempo R-RM-1 e a contagem antiga.
+
+## PAUSA 2026-11-04 06:33:04 UTC
+
+Motivo obrigatório: para obter a bateria frontend com `fail 0`, é necessário tocar `frontend/tests/san3-06b-navegacao-plataforma.test.ts`, fora do PERMITIDO. O trabalho para aqui antes de push/PR. É necessária emenda escrita do plano autorizando a atualização nominal do T40 de 32 para 23 endpoints (e sua prova de mutação), seguida da revisão independente prevista em `D-EMENDA-ANTES-DO-CODIGO`.
+
+Limpeza: o único container descartável `devass01-pg` foi removido; as portas altas 55432/56379 foram liberadas; nenhum `prune`, `down -v` ou container da demo foi acionado.
+
