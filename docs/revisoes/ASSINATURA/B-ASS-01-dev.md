@@ -100,3 +100,27 @@ Motivo obrigatório: para obter a bateria frontend com `fail 0`, é necessário 
 
 Limpeza: o único container descartável `devass01-pg` foi removido; as portas altas 55432/56379 foram liberadas; nenhum `prune`, `down -v` ou container da demo foi acionado.
 
+## RETOMADA P7 — emenda do T40/T44
+
+**Insumos.** Relida a seção `## PAUSA`, a emenda do orquestrador de 04/11 e a crítica independente `crit-ass01e-parecer.md` (`APROVADO COM AJUSTES`). A crítica confirmou 9 rotas retiradas + 23 remanescentes = 32 e restringiu o ajuste do T44 às listas/sondas nominais, sem alterar o detector AST das linhas 56–167.
+
+**Implementação autorizada.** O T40 passou a exigir nominalmente 23 endpoints. No T44, o piso foi atualizado de 5 escritas + 5 aliases para as 2 escritas + 2 aliases que continuam existindo; as três sondas que ainda citavam `calculate/create/update` foram remapeadas para `importCloudCostsFromApi`, `runCloudAllocation`, `importCloudCosts` e `runCloudAllocation`. A lista esperada de oito arquivos violadores e o algoritmo do guard ficaram intactos. Os seis símbolos mortos são `calculateCloudChargesFromApi`, `createCloudChargeRuleFromApi`, `updateCloudChargeRuleFromApi`, `calculateCloudCharges`, `createCloudChargeRule` e `updateCloudChargeRule`.
+
+**Prova de 23 rotas.** `node scripts/san3-06b-endpoints-de-plataforma.mjs .` mediu as 23 rotas remanescentes: 5 de `cloud-cost-allocations`, 5 de `cloud-costs`, 3 de `cloud-usage`, 2 de overview/detalhe e 8 de tenants; com as 9 rotas retiradas, `23 + 9 = 32`.
+
+**Mutação T40.** Recolocados uma única vez (`âncora = 1`) o import e `router.use("/", createCloudChargesPlatformRouter())`. O inventário voltou a `# endpoints sob /api/v1/platform = 32` e T40 ficou vermelho por esperar 23. O patch inverso foi aplicado; `git status --porcelain=v1` e `git diff --exit-code` ficaram vazios.
+
+**Mutação T44.** A sonda de `PlatformOverviewPage.tsx` foi trocada uma única vez (`âncora = 1`) de `importCloudCostsFromApi` para a leitura `getCloudBillingFromApi`. T44 ficou vermelho: a lista real caiu de oito para sete arquivos, faltando exatamente `modules/platform/pages/PlatformOverviewPage.tsx`. Restaurada a sonda de escrita, T44 voltou a verde (1 pass, 0 fail, 8 skips pelo filtro de nome); árvore limpa.
+
+**Validação oficial após a emenda.** `npm --prefix frontend run test:smoke`: 1636 tests, 1636 pass, 0 fail, 0 skipped. O carregamento isolado direto dos dois arquivos não é a forma oficial e expôs `React is not defined` nos vizinhos T41/T42; o comando oficial, que executa o produto na forma real, ficou integralmente verde.
+
+## RETOMADA P7 — bateria final
+
+**Ambiente isolado.** `devass01-redis` em `127.0.0.1:56379` e `devass01-pg` em `127.0.0.1:55432`; 120 migrações aplicadas. Todo `npm test` desta retomada recebeu `REDIS_URL=redis://127.0.0.1:56379`. A demo, `erp-postgres`, `erp-redis` e as portas 3000/5173/5432/6379 não foram tocados.
+
+**Raiz.** `npm run check`, `npm run lint` e `npm run build`: verdes. A primeira suíte sem `DATABASE_URL` mediu 3772 testes e falhou fechado porque `core-saas-role-authority.test.ts` exige Prisma; o alvo isolado confirmou `DATABASE_URL is required`. Repetida contra o PostgreSQL descartável, a suíte mediu 4446 testes: 4436 pass, 8 fail, 2 skipped. Os vermelhos são os guards/drills Windows já registrados: `B-SAN3-05`, bootstrap SAN3-09, `traccar-event-migration-drill-db` e `work-order-invoicing-migration-drill-db`; nenhum pertence ao B-ASS-01. O aceite integral fica para o CI Linux, como determina a emenda.
+
+**Frontend.** `npm --prefix frontend run check`, `npm --prefix frontend run test:smoke` e `npm --prefix frontend run build`: verdes; smoke 1636/1636, fail 0, skipped 0. A forma focada correta (`cd frontend && node --test --import tsx ...`) ficou 38/38; a tentativa fora do cwd do frontend foi descartada por carregar JSX sem a configuração real e produzir `React is not defined`.
+
+**Regressões e guards.** R-RM-7 + F5 + censo: 103/103, fail 0, skipped 0, com `DATABASE_URL`, `REDIS_URL` e `RBAC_DB_PARITY=1`; guard de migração: 120 migrações, 0 violações; `git diff --check` verde; 13/13 documentos com a marca de superação; diff proibido (`prisma`, `cloud-charges`, `cloud-cost-allocation`, `cloud-usage`, `cloud-costs`, teste de markup) vazio.
+
