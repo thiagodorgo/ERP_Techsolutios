@@ -12657,3 +12657,75 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** infraestrutura futura · **dono:** `B-INFRA-AWS-01` · **PR-alvo:** PR do `B-INFRA-AWS-01` · **bloqueia:** produção AWS com o canal ligado; não bloqueia o cofre fail-closed local.
 - **origem:** plano B-ASS §9; a primeira implementação usa provedor de chave por ambiente e deixa a porta para o serviço gerenciado.
 - **encerramento:** integração ao gerenciador de segredos implementada sem segredo no banco, log ou repositório e aprovada pelo gate de serviço externo/dependência aplicável.
+
+## Apensos B-SAN3-10b — roteiro técnico de operação (2026-11-04)
+
+- **`P-SAN3-ROTEIRO-DEMO-OPERACAO`:** o dono passa a ser `B-SAN3-10b`. A execução funcional é provada fora
+  do repositório público; no roteiro técnico entram somente data, executor independente, resultado numerado e hashes
+  SHA-256 do roteiro e da evidência. O encerramento exige seis procedimentos obrigatórios ensaiados e o registro
+  neutro da execução.
+- **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** o dono passa a ser `B-SAN3-10b`, pela Op-1a e pelo
+  acréscimo em `docs/deployment.md`. Fecha somente quando o ensaio provar recusa 42501 sob runtime, zero grupos sob
+  superusuário e recuperação do aborto P0001 nomeado (`grupo(s) DUPLICADO(S) de legado`), com o censo inalterado.
+- **`P-SAN3-09-ROTEIRO-DE-OPERACAO`:** o dono passa a ser `B-SAN3-10b`, pela Op-6. O roteiro inclui ativação,
+  diagnóstico, repetição segura e recuperação; as correções de código de `P-SAN3-09-FALHOU-SEM-CAUSA`,
+  `P-SAN3-09-DRYRUN-RESET-DIZ-SENHA-MANTIDA` e `P-SAN3-09-ECO-APOS-FLAG-DE-SENHA` permanecem fora deste bloco.
+- **`P-Ω3F6-MOBILE-DEADLETTER`:** a condição operacional passa a ter dono `B-SAN3-10b`, pela Op-10. O
+  procedimento vale para todo aparelho já instalado, pois o número `1.0.0+1` não foi incrementado quando o fluxo da
+  fila mudou.
+- **`P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO`:** o Runbook A ganhou aviso em
+  `docs/deployment.md`; a referência corrente é a seção `Runbook A`, não uma faixa fixa de linhas. Rollback com dois
+  escritores é proibido; para destino anterior ao 03a, o roteiro determina fix-forward. Pergunta ao dono da
+  pendência: o que “API parada” garantiria se o destino fosse anterior ao 03a? A pendência continua ABERTA.
+- **`P-GOLIVE-GATES`:** dono `B-SAN3-10`. `docs/go-live-readiness.md` ainda chama a chave do Maps de crítica,
+  embora `D-GOLIVE-MAPS-ROTACAO-DISPENSADA` tenha dispensado a rotação; também afirma que nenhum código bloqueia e
+  publica RTO divergente de `docs/deployment.md`. Este bloco não altera esse arquivo.
+
+## P-MOBILE-VERSAO-SEM-INCREMENTO (2026-11-04) — a versão não distingue o app anterior à mudança da fila — MÉDIA
+
+- **status:** ABERTA · **escopo:** pre-existente · **dono:** a atribuir pelo orquestrador · **bloqueia:** não bloqueia
+  o roteiro; obriga a aplicar a Op-10 a todo aparelho já instalado.
+- **fato:** `mobile/flutter_app/pubspec.yaml` declara `version: 1.0.0+1` antes e depois da mudança que proibiu
+  cancelamento por transição de status. Não há número confiável para separar o app antigo.
+- **encerramento:** a versão sobe em toda mudança de fluxo da fila, o app mostra a versão e um teste impede nova
+  alteração desse fluxo sem incremento.
+
+## P-ENSAIO-PADROES-APONTAM-PARA-DEV (2026-11-04) — padrões de ferramentas podem alcançar o ambiente de desenvolvimento — MÉDIA
+
+- **status:** ABERTA · **escopo:** pre-existente · **dono:** a atribuir pelo orquestrador · **bloqueia:** não bloqueia
+  este bloco porque os ensaios usam guard externo fail-closed; bloqueia remover esse guard.
+- **fato:** os padrões medidos são: app → `10.0.2.2:3000`; compose → porta 3000 e imagem local sem prefixo;
+  `scripts/restore-drill.sh` → contêiner `erp-postgres`; `scripts/smoke-compose-persistence.mjs` → projeto
+  `erp-o6r-smoke`; web de desenvolvimento → API relativa.
+- **encerramento:** cada parâmetro passa a ser obrigatório com falha clara ou aponta a alvo inexistente, com teste:
+  release sem `API_BASE_URL` falha; restore sem contêiner recusa; smoke aceita nome de projeto; compose isolado não
+  publica 3000; web de ensaio exige origem explícita.
+
+## B-MOBILE-INTERNET-RELEASE (2026-11-04) — release Android sem permissão de internet — ALTA
+
+- **status:** FECHADA pelo PR #499 (merge `8d7a99ff`, 2026-11-04): o manifest principal do Android passou a declarar
+  `android.permission.INTERNET`. · **escopo:** defeito de produto preexistente, fora do B-SAN3-10b · **dono:**
+  `B-MOBILE-INTERNET-RELEASE` · **bloqueava:** F3, Op-10 e o trecho mobile da Op-8 do B-SAN3-10b, que ficam liberados
+  para a próxima volta do `B-SAN3-10b` e continuam ADIADOS até serem executados com o release (o item 44 segue PARCIAL).
+- **fato medido (antes do #499):** `android.permission.INTERNET` não existia no manifest principal do Android; existia
+  somente nos manifests de debug e profile. O APK release não alcançou a API isolada, embora a sonda de rede do AVD
+  estivesse verde.
+- **encerramento:** o manifest release declara a permissão, com teste no PR #499. A prova de conectividade do APK
+  release atrás do firewall do AVD e a repetição de F3, Op-10 e do trecho mobile da Op-8, sem substituir por build
+  debug, passam à próxima volta do `B-SAN3-10b`, dentro de `P-SAN3-ROTEIRO-DEMO-OPERACAO`.
+
+## P-SAN3-10B-F4-SEED-ISOLADO (2026-11-04) — seed isolado não reproduz os quatro fluxos privados — MÉDIA
+
+- **status:** ABERTA · **escopo:** ensaio técnico fora do repositório público · **dono:**
+  `B-SAN3-10b-F4-SEED-ISOLADO` (bloco a planejar) · **bloqueia:** fechamento completo do item 44; não bloqueia o PR parcial.
+- **fato medido:** a pilha isolada e a origem única passaram, mas os quatro fluxos expiraram porque o seed versionado
+  não fornece o estado funcional do roteiro privado. A base ativa e a execução manual continuaram proibidas.
+- **encerramento:** seed fictício próprio dos ensaios disponível fora do repositório, quatro fluxos executados na pilha
+  isolada e prova registrada com os dois SHA-256, sem conteúdo privado no repositório.
+
+## Errata dos apensos B-SAN3-10b — Emenda 3 (2026-11-04)
+
+- **`P-SAN3-ROTEIRO-DEMO-OPERACAO`:** permanece PARCIAL neste PR. Op-1, Op-1a, Op-5 e Op-6 passaram; Op-8
+  mobile, Op-10, F3 e F4 estão ADIADAS com motivo e dono. Nenhuma ADIADA conta como procedimento passado.
+- **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** a recuperação foi repetida com o comportamento real da
+  migração: aborto P0001, frase nomeada de duplicidade e censo inalterado.
