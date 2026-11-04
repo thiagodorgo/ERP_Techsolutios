@@ -1,5 +1,7 @@
 # Console da Plataforma
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 O Console da Plataforma é a área exclusiva do dono do SaaS e de usuários Admin Plataforma. Ele opera em contexto global, separado da administração de cada organização cliente.
 
 ## Objetivo

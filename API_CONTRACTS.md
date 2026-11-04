@@ -1,5 +1,7 @@
 # API_CONTRACTS.md — Contratos REST `/api/v1` (ERP Techsolutions)
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 > **O que é este arquivo.** Índice navegável dos contratos REST do backend (Node.js + TypeScript,
 > Express, monólito modular multi-tenant). Referenciado pelo `CLAUDE.md` como "os contratos REST
 > `/api/v1`". **Fundado no código real** das rotas em `src/modules/**/*.routes.ts` e na montagem em

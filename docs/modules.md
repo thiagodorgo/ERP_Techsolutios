@@ -1,5 +1,7 @@
 # Modulos
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 Este documento separa os conceitos de modulos globais da plataforma e modulos habilitados por tenant.
 
 ## Modulos globais da plataforma

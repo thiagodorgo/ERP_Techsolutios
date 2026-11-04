@@ -1,5 +1,7 @@
 # Cloud Charge Markup Rules
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 ## Escopo
 
 `cloud_charge_markup_rules` e o motor comercial que calcula o valor cobrável de cloud por tenant a partir do custo alocado em `tenant_cloud_cost_allocations`.

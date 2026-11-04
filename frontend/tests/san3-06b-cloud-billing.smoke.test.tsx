@@ -7,7 +7,6 @@ import { renderToString } from "react-dom/server";
 
 import {
   mapAllocationSummary,
-  mapChargeSummary,
   mapCostSummary,
   mapUsageSummary,
 } from "../src/modules/platform/cloud-billing/cloud-billing.adapter";
@@ -55,7 +54,6 @@ function realData(overrides: Partial<CloudBillingData> = {}): CloudBillingData {
     usage: { periodStart: PERIOD.start, periodEnd: PERIOD.end, metrics: [{ metricKey: "api_requests_count", quantity: 4, unit: "count" }], generatedAt: "2026-09-30T12:00:00Z" },
     costs: { provider: "aws", periodStart: PERIOD.start, periodEnd: PERIOD.end, totalUnblendedCost: 12.75, totalUnblendedCostExact: "12.750000", lineItemCount: 2, currencies: ["BRL"], services: [{ serviceCode: "AmazonEC2", unblendedCost: 12.75, currency: "BRL" }], generatedAt: "2026-09-30T12:00:00Z" },
     allocation: { periodStart: PERIOD.start, periodEnd: PERIOD.end, currency: "BRL", totalImportedCost: 12.75, totalAllocatedCost: 12, totalUnallocatedCost: 0.75, tenants: [{ tenantId: "t1", tenantName: "Org Um", allocatedCost: 12, allocationRatio: 0.94 }], services: [], generatedAt: "2026-09-30T12:00:00Z" },
-    charges: { periodStart: PERIOD.start, periodEnd: PERIOD.end, currency: "BRL", totalAllocatedCost: 12, totalChargeAmount: 18, totalMarginAmount: 6, totalDiscountAmount: 0, totalMarginPercentage: 33.33, tenants: [{ tenantId: "t1", tenantName: "Org Um", allocatedCost: 12, finalChargeAmount: 18, marginAmount: 6, marginPercentage: 33.33, status: "ready" }], generatedAt: "2026-09-30T12:00:00Z" },
     imports: [{ id: "i1", provider: "aws", status: "completed", importedAt: "2026-09-30T12:00:00Z", rowCount: 2, currency: "BRL" }],
     source: "api",
     forbidden: false,
@@ -69,7 +67,6 @@ function responseFor(url: string, status = 200): Response {
   if (url.includes("cloud-usage/summary")) data = realData().usage;
   else if (url.includes("cloud-costs/summary")) data = realData().costs;
   else if (url.includes("cloud-cost-allocations/summary")) data = realData().allocation;
-  else if (url.includes("cloud-charges/summary")) data = realData().charges;
   else if (url.includes("cloud-costs/imports")) data = realData().imports;
   return new Response(JSON.stringify({ data }), { status, headers: { "Content-Type": "application/json" } });
 }
@@ -97,19 +94,12 @@ test("T12 adapter de rateio não converte string em dinheiro", () => {
   assert.equal(result.tenants[1].allocatedCost, 0);
 });
 
-test("T13 adapter de cobrança preserva status cru e valores do DTO", () => {
-  const result = mapChargeSummary({ periodStart: PERIOD.start, periodEnd: PERIOD.end, totalChargeAmount: 18, totalMarginAmount: 6, tenants: [{ tenantId: "t1", allocatedCost: 12, finalChargeAmount: 18, marginAmount: 6, status: "ready" }, { tenantId: "t2", status: "custom" }] });
-  assert.equal(result.totalChargeAmount, 18);
-  assert.equal(result.totalMarginAmount, 6);
-  assert.equal(result.tenants[0].finalChargeAmount, 18);
-  assert.equal(result.tenants[1].status, "custom");
-  const current = realData();
-  const html = renderToString(<PlatformCloudBillingView data={realData({ charges: current.charges ? { ...current.charges, tenants: [{ ...current.charges.tenants[0], status: "custom" }] } : null })} month="2026-09" />);
-  assert.match(html, /Indefinida/);
-  assert.doesNotMatch(visibleText(html), /custom/);
+test("T13 tela não contém cobrança por markup", () => {
+  const html = renderToString(<PlatformCloudBillingView data={realData()} month="2026-09" />);
+  assert.doesNotMatch(visibleText(html), /Valor cobrável|Margem|Organizações com cobrança|Cobrança por organização/);
 });
 
-test("T14 serviço envia o mesmo período aos cinco GETs e respeita ano bissexto", async () => {
+test("T14 serviço envia o mesmo período aos quatro GETs e respeita ano bissexto", async () => {
   process.env.VITE_USE_MOCKS = "false";
   const original = globalThis.fetch;
   const urls: string[] = [];
@@ -121,7 +111,7 @@ test("T14 serviço envia o mesmo período aos cinco GETs e respeita ano bissexto
   try {
     const result = await getCloudBilling(PERIOD);
     assert.equal(result.source, "api");
-    assert.equal(urls.length, 5);
+    assert.equal(urls.length, 4);
     for (const url of urls) assert.match(url, /periodStart=2026-09-01&periodEnd=2026-09-30/);
     assert.deepEqual(periodForMonth("2028-02"), { start: "2028-02-01", end: "2028-02-29" });
   } finally {
@@ -132,18 +122,15 @@ test("T14 serviço envia o mesmo período aos cinco GETs e respeita ano bissexto
 
 test("T15 visão de Cloud Billing mostra apenas valores e rótulos do payload", () => {
   const html = renderToString(<PlatformCloudBillingView data={realData()} month="2026-09" />);
-  for (const label of ["Custo importado", "Linhas de custo", "Custo rateado", "Não rateado", "Valor cobrável", "Margem", "Organizações com cobrança", "Última importação"]) assert.match(html, new RegExp(label));
+  for (const label of ["Custo importado", "Linhas de custo", "Custo rateado", "Não rateado", "Última importação"]) assert.match(html, new RegExp(label));
   assert.match(html, /AmazonEC2/);
   assert.match(html, /Org Um/);
   assert.match(html, /Requisições da API/);
-  assert.match(html, /Pronta/);
   const text = visibleText(html);
   // Valores do fixture formatados em pt-BR (Intl separa "R$" do número com espaço não separável, coberto por \s).
   assert.match(text, /R\$\s12,75/); // custo importado = totalUnblendedCost
   assert.match(text, /R\$\s12,00/); // custo rateado = totalAllocatedCost
   assert.match(text, /R\$\s0,75/); // não rateado = totalUnallocatedCost
-  assert.match(text, /R\$\s18,00/); // valor cobrável = totalChargeAmount
-  assert.match(text, /R\$\s6,00 · 33,33%/); // margem + percentual do DTO
   assert.match(text, /4 unid\./); // uso medido
   assert.doesNotMatch(html, /O que mudou|Junho 2026|há 4 min|48,2k|Produção|IA/);
 });
@@ -183,7 +170,7 @@ test("T17 erro de leitura devolve falha sem zero apresentado como fato", async (
   }
 });
 
-test("T18 cinco respostas vazias preservam o estado vazio", async () => {
+test("T18 quatro respostas vazias preservam o estado vazio", async () => {
   process.env.VITE_USE_MOCKS = "false";
   const original = globalThis.fetch;
   globalThis.fetch = (async (input) => {
@@ -228,15 +215,10 @@ test("T20 lacuna de série diária aparece como selo, sem projeção inventada",
   assert.match(html, /não há uma série temporal nem projeção/);
 });
 
-test("T45 margem sem percentual do DTO não ganha percentual calculado", () => {
-  const current = realData();
-  const withoutPercentage = realData({
-    charges: current.charges ? { ...current.charges, totalMarginPercentage: undefined, tenants: current.charges.tenants.map((tenant) => ({ ...tenant, marginPercentage: undefined })) } : null,
-  });
-  const html = renderToString(<PlatformCloudBillingView data={withoutPercentage} month="2026-09" />);
-  const visibleText = html.replace(/<[^>]+>/g, " ");
-  assert.match(visibleText, /percentual não informado/);
-  assert.doesNotMatch(visibleText, /%/);
+test("T45 a grade mantém só os cinco indicadores sem markup", () => {
+  const html = renderToString(<PlatformCloudBillingView data={realData()} month="2026-09" />);
+  assert.equal((html.match(/Custo importado|Linhas de custo|Custo rateado|Não rateado|Última importação/g) ?? []).length, 5);
+  assert.doesNotMatch(visibleText(html), /cobrável|margem/i);
 });
 
 // A1 da revisão do PR 411 — o dinheiro exibido é sempre do período rotulado. Agosto tem um "Valor cobrável" que
@@ -245,7 +227,7 @@ const AUGUST = periodForMonth("2026-08");
 
 function augustData(): CloudBillingData {
   const base = realData();
-  return { ...base, period: AUGUST, charges: base.charges ? { ...base.charges, periodStart: AUGUST.start, periodEnd: AUGUST.end, totalChargeAmount: 999.99 } : null };
+  return { ...base, period: AUGUST, costs: base.costs ? { ...base.costs, periodStart: AUGUST.start, periodEnd: AUGUST.end, totalUnblendedCost: 999.99 } : null };
 }
 
 test("T46 dado de outro mês nunca aparece sob o rótulo do mês selecionado (A1)", () => {
@@ -270,8 +252,8 @@ test("T47 resposta atrasada do mês anterior é descartada e o mês novo não he
     const url = String(input);
     if (!url.includes(`periodStart=${AUGUST.start}`)) return responseFor(url);
     await augustGate;
-    const charges = url.includes("cloud-charges/summary") ? { ...realData().charges, totalChargeAmount: 999.99 } : null;
-    return charges ? new Response(JSON.stringify({ data: charges }), { status: 200, headers: { "Content-Type": "application/json" } }) : responseFor(url);
+    const costs = url.includes("cloud-costs/summary") ? { ...realData().costs, periodStart: AUGUST.start, periodEnd: AUGUST.end, totalUnblendedCost: 999.99 } : null;
+    return costs ? new Response(JSON.stringify({ data: costs }), { status: 200, headers: { "Content-Type": "application/json" } }) : responseFor(url);
   }) as typeof fetch;
   try {
     // O usuário abre agosto (resposta lenta) e troca para setembro antes de ela chegar — serviço e regra reais.
@@ -281,14 +263,14 @@ test("T47 resposta atrasada do mês anterior é descartada e o mês novo não he
     state = nextCloudBillingState(state, september, false, PERIOD);
     releaseAugust();
     const august = await augustRequest;
-    assert.equal(august.charges?.totalChargeAmount, 999.99); // controle: a resposta atrasada é real e diferente
+    assert.equal(august.costs?.totalUnblendedCost, 999.99); // controle: a resposta atrasada é real e diferente
     state = nextCloudBillingState(state, august, false, PERIOD);
     state = nextCloudBillingState(state, august, true, PERIOD);
     assert.deepEqual(state.period, PERIOD);
-    assert.equal(state.charges?.totalChargeAmount, 18);
+    assert.equal(state.costs?.totalUnblendedCost, 12.75);
     const text = visibleText(renderToString(<PlatformCloudBillingScreen data={state} loading={false} month="2026-09" />));
     assert.match(text, /setembro de 2026/);
-    assert.match(text, /R\$\s18,00/);
+    assert.match(text, /R\$\s12,75/);
     assert.doesNotMatch(text, /999/);
 
     // Agosto na tela e a 1ª resposta de setembro é uma falha em 2º plano: a tela mostra a falha de setembro, não
@@ -296,7 +278,7 @@ test("T47 resposta atrasada do mês anterior é descartada e o mês novo não he
     const failed = emptyCloudBilling(PERIOD, "fallback");
     const afterFailure = nextCloudBillingState(august, failed, true, PERIOD);
     assert.deepEqual(afterFailure.period, PERIOD);
-    assert.equal(afterFailure.charges, null);
+    assert.equal(afterFailure.costs, null);
     assert.equal(afterFailure.stale, false);
     const failureText = visibleText(renderToString(<PlatformCloudBillingScreen data={afterFailure} loading={false} month="2026-09" />));
     assert.match(failureText, /Não foi possível carregar Cloud Billing/);
@@ -305,7 +287,7 @@ test("T47 resposta atrasada do mês anterior é descartada e o mês novo não he
     // Dentro do mesmo período a regra do E1b continua: falha em 2º plano preserva setembro com o aviso.
     const kept = nextCloudBillingState(state, failed, true, PERIOD);
     assert.equal(kept.stale, true);
-    assert.equal(kept.charges?.totalChargeAmount, 18);
+    assert.equal(kept.costs?.totalUnblendedCost, 12.75);
   } finally {
     globalThis.fetch = original;
     process.env.VITE_USE_MOCKS = "";

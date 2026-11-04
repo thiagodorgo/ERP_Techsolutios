@@ -1,4 +1,5 @@
 export const PERMISSION_CATALOG = [
+  // SUPERADA por D-COBRANCA-ASSINATURA-FRANQUIA; órfãs até limpeza, sem apagar a tabela permissions.
   "platform:cloud-charge-rules:read",
   "platform:cloud-charge-rules:write",
   "platform:cloud-charges:read",

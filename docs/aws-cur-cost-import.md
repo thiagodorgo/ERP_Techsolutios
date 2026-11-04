@@ -1,5 +1,7 @@
 # AWS CUR Cost Import
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 ## Escopo
 
 `cloud_cost_import` e a foundation de importacao de custo AWS real bruto para o ERP Techsolutions. Ela prepara o sistema para ler dados do AWS Cost and Usage Report e alimentar o motor `cloud_cost_allocation`, que cruza esse custo com o uso interno medido em `cloud_usage_*`.
