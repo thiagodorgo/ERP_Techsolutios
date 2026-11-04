@@ -12521,3 +12521,46 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA (proposta do dev do PR #487; vale a partir do merge dele) · **escopo:** decisão de nome do `B-SAN3-19` · **dono:** dono do produto (nome curto do app no iOS), aplicado no bloco de publicação do app · **PR-alvo:** o PR que aplicar a decisão · **bloqueia:** não.
 - **origem:** a nota do orquestrador sobre o #487 (`REGISTRO-PENDENTE.md`, seção do #487); o PR #487 troca `CFBundleName` em `mobile/flutter_app/ios/Runner/Info.plist` para `ERP Techsolutions` (17 caracteres).
 - **encerramento:** `CFBundleName` com até 15 caracteres, ou decisão do dono registrada de manter os 17.
+
+## Apensos B-SAN3-10b — roteiro técnico de operação (2026-11-04)
+
+- **`P-SAN3-ROTEIRO-DEMO-OPERACAO`:** o dono passa a ser `B-SAN3-10b`. A execução funcional é provada fora
+  do repositório público; no roteiro técnico entram somente data, executor independente, resultado numerado e hashes
+  SHA-256 do roteiro e da evidência. O encerramento exige seis procedimentos obrigatórios ensaiados e o registro
+  neutro da execução.
+- **`P-DEPLOY-RUNBOOK-SEM-PRE-CONDICAO-DO-CENSO`:** o dono passa a ser `B-SAN3-10b`, pela Op-1a e pelo
+  acréscimo em `docs/deployment.md`. Fecha somente quando o ensaio provar recusa 42501 sob runtime, zero grupos sob
+  superusuário e recuperação do aborto 23505.
+- **`P-SAN3-09-ROTEIRO-DE-OPERACAO`:** o dono passa a ser `B-SAN3-10b`, pela Op-6. O roteiro inclui ativação,
+  diagnóstico, repetição segura e recuperação; as correções de código de `P-SAN3-09-FALHOU-SEM-CAUSA`,
+  `P-SAN3-09-DRYRUN-RESET-DIZ-SENHA-MANTIDA` e `P-SAN3-09-ECO-APOS-FLAG-DE-SENHA` permanecem fora deste bloco.
+- **`P-Ω3F6-MOBILE-DEADLETTER`:** a condição operacional passa a ter dono `B-SAN3-10b`, pela Op-10. O
+  procedimento vale para todo aparelho já instalado, pois o número `1.0.0+1` não foi incrementado quando o fluxo da
+  fila mudou.
+- **`P-O6R-B03-PUBLICACAO-SEM-WRITER-ANTIGO`:** o Runbook A ganhou aviso em
+  `docs/deployment.md`; a referência corrente é a seção `Runbook A`, não uma faixa fixa de linhas. Rollback com dois
+  escritores é proibido; para destino anterior ao 03a, o roteiro determina fix-forward. Pergunta ao dono da
+  pendência: o que “API parada” garantiria se o destino fosse anterior ao 03a? A pendência continua ABERTA.
+- **`P-GOLIVE-GATES`:** dono `B-SAN3-10`. `docs/go-live-readiness.md` ainda chama a chave do Maps de crítica,
+  embora `D-GOLIVE-MAPS-ROTACAO-DISPENSADA` tenha dispensado a rotação; também afirma que nenhum código bloqueia e
+  publica RTO divergente de `docs/deployment.md`. Este bloco não altera esse arquivo.
+
+## P-MOBILE-VERSAO-SEM-INCREMENTO (2026-11-04) — a versão não distingue o app anterior à mudança da fila — MÉDIA
+
+- **status:** ABERTA · **escopo:** pre-existente · **dono:** a atribuir pelo orquestrador · **bloqueia:** não bloqueia
+  o roteiro; obriga a aplicar a Op-10 a todo aparelho já instalado.
+- **fato:** `mobile/flutter_app/pubspec.yaml` declara `version: 1.0.0+1` antes e depois da mudança que proibiu
+  cancelamento por transição de status. Não há número confiável para separar o app antigo.
+- **encerramento:** a versão sobe em toda mudança de fluxo da fila, o app mostra a versão e um teste impede nova
+  alteração desse fluxo sem incremento.
+
+## P-ENSAIO-PADROES-APONTAM-PARA-DEV (2026-11-04) — padrões de ferramentas podem alcançar o ambiente de desenvolvimento — MÉDIA
+
+- **status:** ABERTA · **escopo:** pre-existente · **dono:** a atribuir pelo orquestrador · **bloqueia:** não bloqueia
+  este bloco porque os ensaios usam guard externo fail-closed; bloqueia remover esse guard.
+- **fato:** os padrões medidos são: app → `10.0.2.2:3000`; compose → porta 3000 e imagem local sem prefixo;
+  `scripts/restore-drill.sh` → contêiner `erp-postgres`; `scripts/smoke-compose-persistence.mjs` → projeto
+  `erp-o6r-smoke`; web de desenvolvimento → API relativa.
+- **encerramento:** cada parâmetro passa a ser obrigatório com falha clara ou aponta a alvo inexistente, com teste:
+  release sem `API_BASE_URL` falha; restore sem contêiner recusa; smoke aceita nome de projeto; compose isolado não
+  publica 3000; web de ensaio exige origem explícita.

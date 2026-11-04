@@ -5153,3 +5153,14 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - #487 (aberto): pendências do dev registradas como propostas; `D-ROTULO-MANAGER-GESTOR-OPERACIONAL` como decisão do orquestrador; o item 48 não foi fechado.
 - Índice regenerado pelo gerador: 723 cabeçalhos, 712 IDs, 179 FECHADAS, 540 ABERTAS, 0 CONTRADITÓRIAS.
 - Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, `CLAUDE.md`, `AGENTS.md` ou lockfiles.
+
+## 2026-11-04 — B-SAN3-10b · F0/F1 (`dev-44-sol`)
+
+- Executor: Codex GPT-5.6 Sol, nível menor declarado, esforço medium; plano e correções do Claude; revisão reforçada
+  prevista por Claude independente.
+- Base: `origin/main@4f260796`; ramo `docs/b-san3-10b-roteiro-operacao`; worktree próprio e `npm ci` próprio.
+- F0: comando do bloco, registro do desmembramento, apensos e duas pendências novas; índice será regenerado antes do
+  commit da fatia.
+- F1: roteiro técnico redigido e `docs/deployment.md` ampliado somente por adição. Conteúdo privado e credenciais não
+  entram no repositório.
+- KPI congelado (§C7 item 8(5)); `Kpis/**` permanece intocado.
