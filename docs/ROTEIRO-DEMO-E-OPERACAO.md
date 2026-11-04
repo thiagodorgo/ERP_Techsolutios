@@ -283,7 +283,7 @@ As linhas resumem saídas saneadas. Logs brutos e valores sensíveis não são v
 | Op-1 | 2026-11-04 | a11d91f2 | smoke de compose em projeto isolado | doze passos verdes; persistência e processo novo comprovados | passou | dev-44-sol |
 | Op-1a | 2026-11-04 | a11d91f2 | censo e migração em banco descartável | aborto P0001 nomeado; censo inalterado; recuperação e status atualizados | passou | dev-44-sol |
 | Op-5 | 2026-11-04 | a11d91f2 | restore cronometrado com canário | API leu `/erp_restore_drill`; canário restaurado sem sufixo | passou | dev-44-sol |
-| Op-6 | 2026-11-04 | a11d91f2 | bootstrap por entrada padrão | recusas, dry-run, criação única, repetição e login comprovados | passou | dev-44-sol |
+| Op-6 | 2026-11-04 | 196d7b48 | bootstrap como escrito, depois da Op-7 | antes da Op-7 recusa RBAC_NOT_PROVISIONED; depois, recusas nomeadas, dry-run sem escrita, criação única, repetição e login 200 | passou | dev-44k-opus |
 | Op-8 | 2026-11-04 | a11d91f2 | rotação na API isolada | ADIADA: backend comprovado; trecho mobile sem INTERNET no release do ensaio, consertado depois no PR #499; dono B-SAN3-10b | ADIADA | dev-44-sol |
 | Op-10 | 2026-11-04 | a11d91f2 | atualização por cima no AVD isolado | ADIADA: release do ensaio sem INTERNET não alcança a API isolada, consertado depois no PR #499; dono B-SAN3-10b | ADIADA | dev-44-sol |
 
