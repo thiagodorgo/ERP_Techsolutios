@@ -596,7 +596,7 @@ const KPIS_ANY = { abertas: 3, andamento: 2, atrasadas: 1, concluidas: 4, semTec
 test("[F1] cadeia da lista 403: service → reducer → classificação → painel 'forbidden' e KPIs sem dígito", async () => {
   const { listWorkOrdersFromApi } = await import("../src/modules/work-orders/work-orders.service");
   const { initialListState, nextListState, listStatusKind } = await import("../src/modules/work-orders/work-orders.state");
-  const { WorkOrdersKpiGrid, WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersKpiGrid, WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const result = await withFetch(routes([[/\/work-orders(\?|$)/, FORBIDDEN]]), () => listWorkOrdersFromApi(CTX, {}));
   const state = nextListState(initialListState, result, false);
   assert.equal(state.status, "forbidden");
@@ -718,7 +718,7 @@ test("[F4] o estado não carrega uma 2ª verdade: nenhuma chave `forbidden`/`not
 // exaustivo (membro novo sem classificação quebra o `tsc`) e, em runtime, o não classificado cai no ERRO.
 
 test("[N1] lista com status NÃO previsto → painel de ERRO (role=alert), nunca o vazio", async () => {
-  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const html = renderToString(<WorkOrdersLoadState status={"unavailable" as never} message="Serviço indisponível." onRetry={() => undefined} />);
   assert.match(html, /data-state="error"/);
   assert.match(html, /role="alert"/);
@@ -775,7 +775,7 @@ function kpiValues(html: string): string[] {
 }
 
 test("[P1] lista em ERRO: [data-state=error] com role=alert, sem [data-state=empty], 0 linhas, KPIs sem dígito", async () => {
-  const { WorkOrdersKpiGrid, WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersKpiGrid, WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const html = renderToString(
     <>
       <WorkOrdersKpiGrid kpis={KPIS_ZERO} kpiDetails={null} skeleton={false} degraded />
@@ -793,7 +793,7 @@ test("[P1] lista em ERRO: [data-state=error] com role=alert, sem [data-state=emp
 });
 
 test("[P2] lista SEM PERMISSÃO: [data-state=forbidden], sem alerta de erro de sistema", async () => {
-  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const html = renderToString(<WorkOrdersLoadState status="forbidden" />);
   assert.match(html, /data-state="forbidden"/);
   assert.doesNotMatch(html, /data-state="error"/);
@@ -801,7 +801,7 @@ test("[P2] lista SEM PERMISSÃO: [data-state=forbidden], sem alerta de erro de s
 });
 
 test("[P3] lista VAZIA de verdade: [data-state=empty], sem role=alert", async () => {
-  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const html = renderToString(<WorkOrdersLoadState status="empty" />);
   assert.match(html, /data-state="empty"/);
   assert.doesNotMatch(html, /role="alert"/);
@@ -1486,7 +1486,7 @@ function assertPanelSpec(root: HtmlEl, spec: PanelSpec, label: string): HtmlEl[]
 }
 
 test("[V1] lista em ERRO: ficha do protótipo (borda #FECACA, alerta vermelho 28, título 16/800) e 'Tentar novamente' cheio", async () => {
-  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const root = firstElement(renderToString(<WorkOrdersLoadState status="error" message="A consulta falhou." onRetry={() => undefined} />));
   assert.equal(root.attrs["data-state"], "error");
   assert.equal(root.attrs.role, "alert");
@@ -1498,7 +1498,7 @@ test("[V1] lista em ERRO: ficha do protótipo (borda #FECACA, alerta vermelho 28
 });
 
 test("[V2] lista SEM PERMISSÃO: borda neutra, escudo cinza 26, sem botão e sem role=alert", async () => {
-  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const html = renderToString(<WorkOrdersLoadState status="forbidden" />);
   const root = firstElement(html);
   assert.equal(root.attrs["data-state"], "forbidden");
@@ -1508,7 +1508,7 @@ test("[V2] lista SEM PERMISSÃO: borda neutra, escudo cinza 26, sem botão e sem
 });
 
 test("[V3] lista VAZIA: ficha 54px 32px com prancheta; CTA 'Nova OS' só quando há ação de criar; embutido sem borda própria", async () => {
-  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const withCreate = firstElement(renderToString(<WorkOrdersLoadState status="empty" onCreate={() => undefined} />));
   assert.equal(withCreate.attrs["data-state"], "empty");
   assert.equal(withCreate.attrs.role, undefined);
@@ -1570,7 +1570,7 @@ test("[V4] detalhe: sem permissão / não encontrada / erro com a ficha do tom, 
 });
 
 test("[V5] grade de KPI degradada: 4 tiles neutros (#94A3B8 sobre #F1F5F9), sem selo e sem cor de sucesso/perigo", async () => {
-  const { WorkOrdersKpiGrid } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersKpiGrid } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const html = renderToString(<WorkOrdersKpiGrid kpis={KPIS_ANY} kpiDetails={null} skeleton={false} degraded />);
   const tiles = findAll(parseHtml(html), (e) => classesOf(e).includes("pat-kpi__tile"));
   assert.equal(tiles.length, 4);
@@ -1584,7 +1584,7 @@ test("[V5] grade de KPI degradada: 4 tiles neutros (#94A3B8 sobre #F1F5F9), sem 
 });
 
 test("[V6] os estados se distinguem A OLHO: erro × sem permissão por cor da borda E ícone; sem permissão × vazio por ícone e título", async () => {
-  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/WorkOrdersPage");
+  const { WorkOrdersLoadState } = await import("../src/modules/work-orders/pages/views/work-orders.shared");
   const panel = (status: "error" | "forbidden" | "empty") => {
     const root = firstElement(renderToString(<WorkOrdersLoadState status={status} message="x" onRetry={() => undefined} />));
     const [circle, title] = elementsOf(root);

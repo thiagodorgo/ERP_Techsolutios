@@ -44,4 +44,15 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Conferência do caixa" },
     ],
   },
+  // B-APAR-OS — Ordens de Serviço (referência `screen-refs/ordens-de-servico-3opcoes.reference.html`); padrão A
+  // (D-APARENCIA-RESPOSTAS (b)), sem entrada em SCREEN_DEFAULT_APPEARANCE.
+  {
+    key: "ordens-de-servico",
+    label: "Ordens de Serviço",
+    options: [
+      { value: "A", label: "Padrão fiel" },
+      { value: "B", label: "Analítica" },
+      { value: "C", label: "Fila por agenda" },
+    ],
+  },
 ];
