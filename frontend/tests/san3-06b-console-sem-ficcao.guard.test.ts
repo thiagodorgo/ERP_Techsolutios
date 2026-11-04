@@ -267,7 +267,7 @@ test("T44 escrita monetária fica isolada do restante do frontend, qualquer que 
   for (const name of ["importCloudCostsFromApi", "runCloudAllocationFromApi", "importCloudCosts", "runCloudAllocation"]) {
     assert.ok(head.writes.includes(name), `escrita não derivada: ${name}`);
   }
-  for (const name of ["getCloudBilling", "getCloudCostSummary", "periodForMonth", "getCloudChargeSummaryFromApi", "listCloudChargeRules"]) {
+  for (const name of ["getCloudBilling", "getCloudCostSummary", "periodForMonth", "getCloudUsageSummaryFromApi", "listCloudCostImportsFromApi"]) {
     assert.equal(head.writes.includes(name), false, `leitura tomada por escrita: ${name}`);
   }
 

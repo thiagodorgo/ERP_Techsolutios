@@ -95,7 +95,7 @@ export function PlatformCloudBillingView({ data, month, onMonthChange = () => un
 
       {data.stale ? <div style={{ marginBottom: 14 }}><Alert title="Dados desatualizados" tone="warning">A atualização falhou. Os últimos dados confirmados permanecem visíveis enquanto a plataforma tenta novamente.</Alert></div> : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 16 }}>
         <Kpi label="Custo importado" value={formatMoney(costs?.totalUnblendedCost ?? 0, costs?.currencies[0])} note={`${costs?.lineItemCount ?? 0} linhas de custo`} icon={<Cloud size={16} />} />
         <Kpi label="Linhas de custo" value={NUMBER.format(costs?.lineItemCount ?? 0)} note="quantidade informada pelo resumo" icon={<Database size={16} />} />
         <Kpi label="Custo rateado" value={formatMoney(allocation?.totalAllocatedCost ?? 0, allocation?.currency)} note="valor informado pelo rateio" icon={<Server size={16} />} />

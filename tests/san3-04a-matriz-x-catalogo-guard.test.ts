@@ -627,7 +627,7 @@ function walkTs(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-test("[órfãs] as 25 chaves que nenhuma rota compara são exatamente as nomeadas — órfã nova ou órfã que ganhou rota move o número COM nome", () => {
+test("[órfãs] as 29 chaves que nenhuma rota compara são exatamente as nomeadas — órfã nova ou órfã que ganhou rota move o número COM nome", () => {
   const files = walkTs(SRC_DIR)
     .map((f) => f.split("\\").join("/"))
     .filter((f) => !f.endsWith("permissions/catalog.ts") && !f.includes("navigation.registry"));

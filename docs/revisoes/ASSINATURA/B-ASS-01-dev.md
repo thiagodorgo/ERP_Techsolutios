@@ -124,3 +124,14 @@ Limpeza: o único container descartável `devass01-pg` foi removido; as portas a
 
 **Regressões e guards.** R-RM-7 + F5 + censo: 103/103, fail 0, skipped 0, com `DATABASE_URL`, `REDIS_URL` e `RBAC_DB_PARITY=1`; guard de migração: 120 migrações, 0 violações; `git diff --check` verde; 13/13 documentos com a marca de superação; diff proibido (`prisma`, `cloud-charges`, `cloud-cost-allocation`, `cloud-usage`, `cloud-costs`, teste de markup) vazio.
 
+## RETOMADA P7 — push, PR e CI
+
+**Entrega remota.** Ramo `feat/b-ass-01-cloud-billing-sem-markup` publicado sem força; PR #498 aberto contra `main` com o título prescrito, as provas R-RM-1..8, a bateria, `KPI congelado (§C7 item 8(5))` e `Não fazer merge: junta completa`. Head julgado: `cf968510b084aa2eafe58ae776fcede0a7050027`.
+
+**Check-runs.** Os dois disparos do mesmo head, runs `41817920953` e `41817961949`, concluíram verdes em `antivirus`, `authority-portal`, `backend`, `backend-postgres`, `docker`, `flutter`, `frontend` e `owner-portal`.
+
+**Resumos TAP lidos dos logs.** Em ambos os runs: `backend` = 4454 testes, 4452 pass, 0 fail, 2 skipped; `backend-postgres` = 503 testes, 503 pass, 0 fail, 0 skipped; `frontend` = 1636 testes, 1636 pass, 0 fail, 0 skipped.
+
+**Veredito.** A bateria integral Linux e todos os check-runs do head terminaram verdes. O PR permanece sem merge, entregue à pré-revisão independente.
+
+PRONTO PARA PRÉ-REVISÃO cf968510b084aa2eafe58ae776fcede0a7050027 PR #498
