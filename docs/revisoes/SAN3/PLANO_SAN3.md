@@ -24,7 +24,7 @@
    governança; a fatia confirmou 50, uma caiu na reconfirmação). Este PR corrige as 52 linhas de status, registra
    as 49 e corrige os dados das duas pendências do painel de KPI, que seguem ABERTAS (PARCIAL) até o guard do item
    54. Índice (gerador, depois da opção B): 370 cabeçalhos (359 IDs); FECHADAS 72 → 103; ABERTAS 267.
-3. **O gate da versão vendável tem 62 bloqueantes, fechados por 49 blocos, e 6 atos que só o dono pratica**
+3. **O gate da versão vendável tem 63 bloqueantes, fechados por 50 blocos, e 6 atos que só o dono pratica**
    (§4). **Na redação original, nenhum dos 37 blocos havia começado.** O que o inventário acrescentou à auditoria pesa: pela web um título
    **nunca é baixado** e cheques, fechamento de período e política de comissão **não têm tela**; no app, o
    fluxo Prestador e a entrega do guincho **não têm porta**, o estoque do técnico é **inventado no código** e
@@ -34,7 +34,7 @@
    medido, sem reprovação — é **≈ 120–130 h de relógio**, contadas desde a abertura deste PR. O realista, pela
    mediana medida dos blocos grandes (57 h), é **≈ 14 dias com 4 frentes simultâneas e ≈ 20,5 a 21 dias com 2**
    (§9), sem contar o tempo dos atos do dono. **Não há redução de escopo:** a execução segue pela ordem de risco; o
-   gate só é declarado quando os 62 bloqueantes fecharem **e** os 6 atos estiverem feitos.
+   gate só é declarado quando os 63 bloqueantes fecharem **e** os 6 atos estiverem feitos.
 5. **O Traccar não começa antes do gate** — decisão registrada em `D-TRACCAR-HTTP-PRIVADO-AWS` (§11).
 
 ## 1. Fonte e método
@@ -102,7 +102,7 @@ antes de frente com dependência**.
 
 ## 4. O gate, item a item
 
-### 4.1 Bloqueantes — 62 itens
+### 4.1 Bloqueantes — 63 itens
 
 Coluna **reclass.**: a fatia dava o item como não bloqueante (ou condicional); a regra do §2 o leva ao gate. Todo
 `✓` está no §8.7 e é alvo da junta.
@@ -134,12 +134,13 @@ Coluna **reclass.**: a fatia dava o item como não bloqueante (ou condicional); 
 | 52 | `P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND` — o backend grava posição sem conferir consentimento | 3 | `src/modules/field-location/field-location.service.ts:21-38` (C2-12) | `B-SAN3-17` (ampliado ao backend) | ✓ |
 | 56 | `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` — quatro células de ação da matriz sem permissão no catálogo (inclui o `finance` sem `work_orders:read`) | 3 | `src/modules/core-saas/permissions/catalog.ts:730-894` e `RBAC_MATRIX.md:37,44-46` (junta do ciclo 2, lacuna da C1; conferido pelo orquestrador) | `B-SAN3-04a` | ✓ |
 | | **Prioridade 14 — assinatura, franquia, pagamento e nota (`D-ASS-PLANOS-FRANQUIA-E-CANAL`, 2026-11-03)** | | **(valores fora do repositório público)** | | |
-| 57 | `P-SAN3-06B-PLANOS-SEM-ENDPOINT` + parte `tenant.plan` de `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` — catálogo e assinatura não persistidos; atribuir plano não atualiza os módulos da organização | 13, 4 | critério numérico: 4 planos-base + 2 add-ons persistidos; 1 assinatura vigente no máximo por organização; 0 chaves de módulo desconhecidas aceitas | `B-ASS-02` | |
-| 58 | `P-ASS-MEDICAO-FRANQUIA` — não há medição persistida de usuários ativos nem de armazenamento por organização | 4 | critério numérico: 2 amostras de usuários por dia; 1 linha diária por organização; 4 famílias de anexo contabilizadas; 0 leitura entre organizações | `B-ASS-03` | |
-| 59 | `P-ASS-DEMONSTRATIVO` — não existe demonstrativo mensal, baixa auditada nem situação de pagamento da assinatura | 4 | critério numérico: no máximo 1 demonstrativo por organização e período; 2 fechamentos idênticos produzem 1 linha; 0 centavo perdido em concorrência | `B-ASS-04` | |
-| 60 | `P-ASS-CANAL-DESLIGADO` + parte canal de `P-SAN3-06B-CLOUD-BILLING-ESCRITA` — faltam cofre, portas, outbox, webhook autenticado, baixa automática e emissão fiscal | 3, 4 | critério numérico: 1 adaptador de pagamento + 1 de nota no portão; 0 chamada externa na CI e com canal desligado; 0 segredo em resposta, log ou auditoria | `B-ASS-05`, `B-ASS-06`, `B-ASS-07`, `B-ASS-08` | |
-| 61 | parte de `P-DONO-CLOUD-BILLING-ESCOPO` — o cálculo superado de custo + markup ainda existe; faltam rateio automático, visão de custo por organização/grupo/global e tela operacional no padrão | 4, 13 | critério numérico: 0 rota e 0 chamada de markup; 1 rateio por importação e período; 3 visões (organização, grupo, global); 3 aparências aprovadas na tela | `B-ASS-01`, `B-ASS-09a`, `B-ASS-09`, `B-ASS-10b` | |
-| 62 | `P-ASS-VISAO-DO-CLIENTE` — o cliente não vê plano, uso da franquia nem situação por uma rota isolada e uma tela honesta | 13, 3 | critério numérico: 1 rota derivada das claims; 3 aparências; 0 chave de custo interno, dados de outra organização ou número comercial no payload/tela | `B-ASS-04`, `B-ASS-11` | |
+| 57 | `P-SAN3-06B-PLANOS-SEM-ENDPOINT` + parte `tenant.plan` de `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` — catálogo e assinatura não persistidos; atribuir plano não atualiza os módulos da organização. **Conflito aberto:** `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`; este item não define quem assina pelas filiais | 13, 4 | `src/modules/platform/platform-tenants.repository.ts:3-45`; `platform.types.ts:3`; `schema.prisma` sem modelo de plano. Critério numérico: 4 planos-base + 2 add-ons persistidos; 1 assinatura vigente no máximo por entidade definida após o conflito; 0 chaves de módulo desconhecidas aceitas | `B-ASS-02` | |
+| 58 | `P-ASS-MEDICAO-FRANQUIA` — não há medição persistida de usuários ativos nem de armazenamento por organização | 4 | `schema.prisma` sem tabela de uso por organização; `size_bytes` nullable nas 4 tabelas de anexo. Critério numérico: 2 amostras de usuários por dia; 1 linha diária por organização; 4 famílias de anexo contabilizadas; 0 leitura entre organizações | `B-ASS-03` | |
+| 59 | `P-ASS-DEMONSTRATIVO` — não existe demonstrativo mensal, baixa auditada nem situação de pagamento da assinatura. **Conflito aberto:** `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`; este item não define se o demonstrativo é da filial, matriz, grupo ou outra entidade | 4 | `schema.prisma` sem modelo de demonstrativo/pagamento de assinatura; `API_CONTRACTS.md:96-102` só planejado. Critério numérico: no máximo 1 demonstrativo por entidade definida após o conflito e período; 2 fechamentos idênticos produzem 1 linha; 0 centavo perdido em concorrência | `B-ASS-04` | |
+| 60 | `P-ASS-CANAL-DESLIGADO` + parte canal de `P-SAN3-06B-CLOUD-BILLING-ESCRITA` — faltam cofre, portas, outbox, webhook autenticado, baixa automática e emissão fiscal | 3, 4 | `git grep createCipheriv -- src` = 0; `app.ts` sem rota de webhook; `schema.prisma` sem perfil de cobrança nem sequência de DPS. Critério numérico: 1 adaptador de pagamento + 1 de nota no portão; 0 chamada externa na CI e com canal desligado; 0 segredo em resposta, log ou auditoria | `B-ASS-05`, `B-ASS-06`, `B-ASS-07`, `B-ASS-08` | |
+| 61 | parte de `P-DONO-CLOUD-BILLING-ESCOPO` — o cálculo superado de custo + markup ainda existe; faltam rateio automático, visão de custo por organização/grupo/global e tela operacional no padrão | 4, 13 | `cloud-charge.engine.ts:80-97`; `PlatformCloudBillingPage.tsx:122-124,139`; `schema.prisma` sem grupo nem taxa de câmbio; 0 `enqueue` de `cloud-cost-allocation.run`. Critério numérico: 0 rota e 0 chamada de markup; 1 rateio por importação e período; 3 visões; 3 aparências aprovadas | `B-ASS-01`, `B-ASS-09a`, `B-ASS-09`, `B-ASS-10b` | |
+| 62 | `P-ASS-VISAO-DO-CLIENTE` — o cliente não vê plano, uso da franquia nem situação por uma rota isolada e uma tela honesta | 13, 3 | 0 rota `/billing/*` em `app.ts`; `RBAC_MATRIX.md:49` prevê Billing sem implementação. Critério numérico: 1 rota derivada das claims; 3 aparências; 0 chave de custo interno, dados de outra organização ou número comercial no payload/tela | `B-ASS-04`, `B-ASS-11` | |
+| 65 | `P-ASS-RASTREAMENTO-NAO-COBRADO` — a fala do dono de 31/10, P5, aprovou a cobrança de rastreamento como item próprio, mas não existe add-on nem linha de rastreamento no demonstrativo | 4 | `schema.prisma` sem plano/add-on; `vehicle_tracking_bindings` sem vínculo com cobrança. Critério numérico: 2 add-ons de rastreamento; no máximo 1 vigente por assinatura; 1 linha no demonstrativo; 0 cobrança sem vínculo vigente | `B-ASS-12` | |
 | | **Prioridade 4 — faturamento e dinheiro** | | | | |
 | 19 | `Ω6R-DIN-009` (P0) — replay de despesa paga duas vezes; dois usuários colidem na chave | 4 | `src/modules/expense-management/expense-management.service.ts:155-193` (O6R) | `B-O6R-03a` | |
 | 20 | `P-Ω4-3-INVOICE-ATOMIC` + `P-Ω4-3-INVOICE-TOCTOU-DELETE` — título e carimbo dos itens sem transação única; item apagado entre leitura e carimbo entra no título | 4 | `src/modules/work-order-financials/work-order-financial.service.ts:362-407`; `src/modules/financial-titles/financial-title.service.ts:122` sem variante transacional (C2; crítico r2) | `B-SAN3-02` | ✓ |
@@ -318,6 +319,7 @@ adversarial nos blocos de invariante.
 | `B-ASS-09` · `feat/subscription-cost-overview` | 61 | falta visão interna consolidada | visão por organização, grupo e global | 3 visões; ausência de dado fica explícita, nunca vira zero silencioso | backend | completa | B-ASS-09a | G |
 | `B-ASS-10b` · `feat/platform-billing-views` | 61 | tela operacional fora do padrão | provedores e Cloud Billing, 3 aparências | 3 aparências; blocos clicáveis; API real; estados obrigatórios | frontend | reforçada + visual | B-ASS-08, B-ASS-09 | G |
 | `B-ASS-11` · `feat/my-subscription-view` | 62 | cliente sem tela honesta | rota e tela da organização, 3 aparências | 3 aparências; 0 custo interno ou dado alheio | frontend | simples + visual | B-ASS-04, B-ASS-08 | M |
+| `B-ASS-12` · `feat/subscription-tracking-addons` | 65 | rastreamento não entra na cobrança | 2 add-ons, medição e linha no demonstrativo | 2 add-ons; no máximo 1 vigente; 0 cobrança sem vínculo | backend | completa | B-ASS-02, B-ASS-03, B-ASS-04, B-SAN3-18 | M |
 
 ### 5.5 O bloco que fecha o gate
 
@@ -436,7 +438,7 @@ acabamento e processo, na ordem de prioridade do dono, cada uma com o dono e o t
 ## 8. O que este plano corrige no `PLANO_O6R` (a revisão adversarial, item a item)
 
 1. **O `PLANO_O6R` só cobria os 32 achados da auditoria.** Ignorava as 231 pendências do registro e as 49 que nem
-   registro tinham. **52 dos 62 bloqueantes** vêm de fora da auditoria (contados por script: 10 itens do §4.1 trazem achado Ω6R na
+   registro tinham. **53 dos 63 bloqueantes** vêm de fora da auditoria (contados por script: 10 itens do §4.1 trazem achado Ω6R na
    coluna Item — 1, 2, 3, 7, 11, 19, 24, 27, 30 e 31; os itens 55 e 56 vêm da junta do ciclo 2).
 2. **O bloco 07 virou três e o plano não sabia.** 07a (#369) e 07b (#380) mergearam; o residual do SEC-002 não tinha
    bloco (`B-O6R-07c`) e o do SEC-004 estava **fora do plano** (`B-AV-REAL`). O painel marcava `B-O6R-07 = a_fazer`
@@ -485,7 +487,7 @@ acabamento e processo, na ordem de prioridade do dono, cada uma com o dono e o t
 
 ## 9. Viabilidade — o prazo de 48 horas
 
-**Quantidade exata.** 62 bloqueantes em **49 blocos** — a ampliação documental do `B-ASS-00` acrescenta 6 itens e 12 blocos donos à contagem anterior; 18 G (os 11 anteriores + `B-ASS-02`, `B-ASS-03`, `B-ASS-04`, `B-ASS-05`, `B-ASS-08`, `B-ASS-09`, `B-ASS-10b`), 26 M e 5 P (contados na coluna Esf. do §5) — mais
+**Quantidade exata.** 63 bloqueantes em **50 blocos** — a ampliação documental do `B-ASS-00` acrescenta 7 itens e 13 blocos donos à contagem anterior; 18 G (os 11 anteriores + `B-ASS-02`, `B-ASS-03`, `B-ASS-04`, `B-ASS-05`, `B-ASS-08`, `B-ASS-09`, `B-ASS-10b`), 27 M e 5 P (contados na coluna Esf. do §5) — mais
 os 6 atos do dono e este PR. Os itens 55 e 56 (decisão do dono, opção B — §15) entram em blocos que já existiam
 (`B-SAN3-12` e `B-SAN3-04a`) sem mudar o tamanho de nenhum: o melhor caso e o realista abaixo ficam **inalterados**.
 
@@ -644,7 +646,7 @@ do ciclo 2 como condição de entrada; **P1** — o `finance` lê OS (`work_orde
 Financeiro monta orçamento (`customers:read` e `service_catalog:read`, com a `RBAC_MATRIX.md` atualizada no mesmo bloco).
 As condições estão no §5.6 (CE-G1, CE-G2, CE-1 a CE-7), marcadas por script na célula de teste de cada bloco do §5.
 A primeira aplicação do §C.7 perdeu o critério `as_of` (teste (g) do `B-SAN3-10`), apontada pelo aplicador e restaurada.
-**Números:** 62 bloqueantes (eram 56 antes do `B-ASS-00`) em 49 blocos e 6 atos do dono; a agenda anterior não inclui ainda a duração da Frente 5
+**Números:** 63 bloqueantes (eram 56 antes do `B-ASS-00`) em 50 blocos e 6 atos do dono; a agenda anterior não inclui ainda a duração da Frente 5
 (§9); índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS. **Quem:** planejou o orquestrador
 (`agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`); aplicou um agente distinto, que não achou nem
 planejou (§C7.4-bis); **conferência de aplicação** (`agente-ci-doutor`; não é ciclo de mérito): NÃO CONFERE em `042e689e` (abaixo), **CONFERE em

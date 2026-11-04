@@ -1703,7 +1703,7 @@ além das de protocolo e só com a conta de serviço do ERP. As condições est�
 
 ### 0. Síntese
 
-Fonte técnica: pesquisa `pesquisador-pagamento-nota` de 31/10/2026, mantida fora do repositório público. Fonte de produto: falas literais do dono registradas em `D-PAGAMENTO-NOTA-PRONTOS`, `D-COFRE-CREDENCIAIS`, `D-TESTES-FALSOS-SAO-FINAIS`, `D-CANAL-NO-B-ASSINATURA`, `D-COBRANCA-RESPOSTAS-3110` e `D-P14-ASAAS-FOCUS`. O canal pertence ao pacote B-ASS, nasce desligado e não faz chamada externa durante os testes.
+Pesquisa `pesquisador-pagamento-nota` de 31/10/2026, somente documental: nenhuma conta criada e nenhuma API chamada. Fonte de produto: falas literais do dono registradas em `D-PAGAMENTO-NOTA-PRONTOS`, `D-COFRE-CREDENCIAIS`, `D-TESTES-FALSOS-SAO-FINAIS`, `D-CANAL-NO-B-ASSINATURA`, `D-COBRANCA-RESPOSTAS-3110` e `D-P14-ASAAS-FOCUS`. O canal pertence ao pacote B-ASS, nasce desligado e não faz chamada externa durante os testes.
 
 ### 1. Decisão e dono
 
@@ -1713,7 +1713,13 @@ Fonte técnica: pesquisa `pesquisador-pagamento-nota` de 31/10/2026, mantida for
 - Habilitar o canal e cadastrar credenciais são atos do dono, fora deste PR documental.
 - Dados e condições comerciais: **(valores fora do repositório público)**.
 
-### 2. Critérios técnicos
+### 2. Escolha técnica de Asaas e Focus NFe
+
+- **Asaas:** foi escolhido para o primeiro adaptador porque a mesma API cobre Pix, cartão e boleto, publica webhook com token e fila de reenvio, e permite reconciliar a referência estável do ERP pelo filtro `GET /v3/payments?externalReference=`. A ausência de cabeçalho idempotente exige persistir a intenção e consultar antes de repetir.
+- **Focus NFe:** foi escolhido para o primeiro adaptador fiscal porque documenta a rota Nacional `POST /v2/nfsen?ref=`, ambiente de homologação separado, consulta/cancelamento por referência e campos do leiaute de IBS/CBS. A emissão é assíncrona e sempre precisa de reconsulta.
+- Outros adaptadores pesquisados continuam fora do portão inicial. Esta PD não registra preço, valor de franquia, margem, cliente nem estratégia comercial.
+
+### 3. Critérios técnicos
 
 1. Credenciais cifradas em repouso, chave fora do banco e resposta pública apenas mascarada.
 2. Canal desligado por padrão; sem flag, credencial válida e habilitação, nenhuma chamada de rede e webhook com aparência de rota inexistente.
@@ -1723,22 +1729,46 @@ Fonte técnica: pesquisa `pesquisador-pagamento-nota` de 31/10/2026, mantida for
 6. Testes usam servidores falsos locais, incluindo erro, limite, timeout, replay e webhook autenticado. Hosts reais são proibidos na CI.
 7. Segredo, token, certificado, corpo de webhook e dados internos de armazenamento não entram em resposta, log ou auditoria.
 
-### 3. Autenticidade e idempotência
+### 4. Autenticidade e idempotência
 
-Os adaptadores implementam autenticação e chaves idempotentes conforme o contrato publicado de cada provedor. Mesmo quando existe assinatura autenticada, o processamento reconsulta o recurso antes de alterar dinheiro. Replay do mesmo evento é aceito uma vez; evento repetido não produz segunda baixa.
+Mesmo quando existe assinatura autenticada, o processamento reconsulta o recurso antes de alterar dinheiro. Replay do mesmo evento é aceito uma vez; evento repetido não produz segunda baixa.
 
-### 4. Regra fiscal
+- **Asaas:** não documenta cabeçalho idempotente. O ERP grava `externalReference` antes da chamada e, depois de timeout, consulta `GET /v3/payments?externalReference=<id>` antes de repetir. Para cartão, `PAYMENT_CONFIRMED` confirma o pagamento; `PAYMENT_RECEIVED` pode chegar depois. `PAYMENT_RECEIVED`, `RECEIVED_IN_CASH` e `DUNNING_RECEIVED` também representam recebimento; eventos `CHARGEBACK_*` abrem a transição de chargeback, nunca uma segunda baixa.
+- **Iugu:** `Idempotency-Key`; **Mercado Pago:** `X-Idempotency-Key`. No Mercado Pago, o `ts` de assinatura aparece com 10 dígitos na documentação de webhooks e 13 dígitos na de Orders; o adaptador normaliza pela quantidade de dígitos e registra a contradição para homologação.
+- **Focus NFe:** `?ref=` é a referência idempotente; repetição retorna conflito. **NFE.io:** `externalId`. **PlugNotas:** `idIntegracao`. Em todos, emissão aceita não significa nota autorizada.
+
+### 5. Regra fiscal
 
 Regime, município e enquadramento fiscal são dados fornecidos pelo dono com o contador e configurados fora do repositório. Enquanto faltarem, a emissão falha fechada com motivo visível; pagamento e demonstrativo continuam operando. Regras com data ficam em código testado, não em texto livre.
 
-### 5. Riscos e pendências
+- ME/EPP do Simples usa o Emissor Nacional desde **1º/11/2026**, conforme a Resolução CGSN 191/2026.
+- O cronograma pesquisado exige IBS/CBS na NFS-e em **1º/10/2026** para serviços em geral, em **1º/12/2026** para os subitens 1.03 e 1.05 ligados a software e em **1º/01/2027** para optantes do Simples. O enquadramento do serviço é do contador.
+- Há contradição documentada: páginas de provedores marcam o grupo IBS/CBS como obrigatório, enquanto o portal Nacional informa que a omissão não rejeita a nota e que, se o grupo for informado, todos os códigos passam a ser obrigatórios. O plano omite antes da data aplicável e exige o conjunto completo depois; divergência na homologação vira emenda.
+
+### 6. Contradições entre fontes
+
+- Asaas: respostas `200` versus `2xx` na descrição da fila; o adaptador aceita a família de sucesso documentada e confirma pela consulta.
+- Mercado Pago: `cancelled` versus `canceled`; configuração pelo painel versus `notification_url`; `ts` em segundos versus milissegundos.
+- Focus NFe: `caminho_xml` sem host completo e `numero_dps` sem autoridade de numeração explícita; a plataforma mantém sequência própria.
+- Focus NFe/NFE.io versus portal Nacional: obrigatoriedade do grupo IBS/CBS versus omissão sem rejeição.
+
+### 7. Riscos e pendências
 
 - Formato real diferente do servidor falso: conserto por emenda, sem ligar produção até a homologação.
 - Credencial ausente ou ilegível: provedor indisponível, sem degradar o fluxo manual.
 - Webhook perdido: polling e reconsulta cobrem a lacuna.
 - Integração nova: entra somente após validação da plataforma e gate aplicável.
-- Homologação real: `P-ASS-SANDBOX-REAL`; dados fiscais: `P-ASS-REGIME-CNPJ`; chave gerenciada na AWS: `P-ASS-SECRETS-MANAGER`.
+- Homologação real: `P-ASS-SANDBOX-REAL`; dados fiscais: `P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR`; chave gerenciada na AWS: `P-ASS-SECRETS-MANAGER`.
 
-### 6. Conteúdo comercial deliberadamente omitido
+### 8. Fontes públicas consultadas
+
+1. Asaas — idempotência e reconsulta: https://docs.asaas.com/docs/retries-e-idempotência.md e https://docs.asaas.com/reference/listar-cobrancas.md
+2. Asaas — eventos de cobrança: https://docs.asaas.com/docs/webhook-para-cobrancas.md e https://docs.asaas.com/reference/recuperar-uma-unica-cobranca.md
+3. Focus NFe — emissão Nacional: https://doc.focusnfe.com.br/reference/emitir_dps_nacional e https://campos.focusnfe.com.br/nfse_nacional/EmissaoDPSXml.html
+4. Portal Nacional — preenchimento IBS/CBS e NT 009: https://www.gov.br/nfse/pt-br/noticias/nfs-e-nacional-confira-oas-rientacoes-sobre-leiaute-em-producao-regras-de-preenchimento-de-ibs-cbs-e-status-da-nota-tecnica-009
+5. Cronograma do Ato Conjunto RFB/CGIBS nº 4: https://mrsadvogados.com/publicado-ato-conjunto-rfb-cgibs-no-4-2026-definido-o-cronograma-de-obrigatoriedade-dos-documentos-fiscais-eletronicos-do-ibs-e-da-cbs/
+6. Simples Nacional e Resolução CGSN 191/2026: https://fenacon.org.br/reforma-tributaria/simples-nacional-nfs-e-nacional-sera-obrigatoria-para-me-e-epp-a-partir-de-1o-de-novembro-de-2026/
+
+### 9. Conteúdo comercial deliberadamente omitido
 
 Foram omitidos desta PD pública preços de provedores, valores de planos e franquias, cálculo ou percentual comercial, projeções econômicas e estratégia comercial. A marca aplicável é **(valores fora do repositório público)**.

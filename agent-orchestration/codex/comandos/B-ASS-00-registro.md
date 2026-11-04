@@ -3,11 +3,11 @@
 > **Autor:** `dev-ass00-sol` · Codex GPT-5.6 Sol · nível menor declarado · esforço medium.
 > **Plano:** Claude Fable 5.1, `planejador-assinatura`, com correções de 31/10 e 02/11.
 > **Verificador:** Claude independente que não escreveu esta entrega.
-> **Base F0:** `origin/main@c6195c1256e2e34277a0225accbf106fcd5aeeb2`; avanço integrado sem conflito por `git merge origin/main`: `18e54804882204e70e5b9a1a3905f9a76236027b` (#493).
+> **Base F0:** `origin/main@c6195c1256e2e34277a0225accbf106fcd5aeeb2`; avanços integrados sem conflito por `git merge origin/main`, o mais recente em `4f260796e52640e1c1dca6c177b4da19badc0b46`.
 
 ## 1. Objetivo
 
-Registrar, sem código, somente as lacunas do pacote B-ASS ainda ausentes na `origin/main`: decisão consolidada, pendências com dono, PD técnica pública, itens 57–62 do portão e a rastreabilidade deste bloco.
+Registrar, sem código, somente as lacunas do pacote B-ASS ainda ausentes na `origin/main`: decisão consolidada, pendências com dono, PD técnica pública, itens 57–62 e 65 do portão e a rastreabilidade deste bloco.
 
 ## 2. Fontes
 
@@ -32,7 +32,7 @@ Registrar, sem código, somente as lacunas do pacote B-ASS ainda ausentes na `or
 ## 5. Requisitos
 
 - **R-REG-1:** toda decisão nova cita fala literal e separa `LEITURA`. Critério: `grep -n "LEITURA"` encontra a marca na entrada nova.
-- **R-REG-2:** os seis itens 57–62 têm bloco dono e critério numérico. Critério: exatamente 6 linhas numeradas, sem colisão com a `origin/main` medida na F0.
+- **R-REG-2:** os sete itens 57–62 e 65 têm bloco dono, prova curta e critério numérico. Critério: exatamente 7 linhas numeradas, sem colisão com a `origin/main` medida na F0.
 - **R-REG-3:** nenhuma pendência nova fica sem dono. Critério: `python agent-orchestration/controle/gerar-indice-pendencias.py` termina sem aviso e o índice regenerado é idêntico numa segunda execução.
 - **R-PUBLICO:** nenhum preço, valor de franquia, cálculo ou percentual comercial, nome de cliente ou estratégia comercial é versionado. A marca usada é `(valores fora do repositório público)`.
 
@@ -40,7 +40,7 @@ Registrar, sem código, somente as lacunas do pacote B-ASS ainda ausentes na `or
 
 1. F0: medir `origin/main`, os PRs já incorporados e a numeração do portão.
 2. F1: apensar somente a decisão e a PD ausentes.
-3. F2: criar pendências com dono, itens 57–62 e Frente 5; regenerar o índice.
+3. F2: criar pendências com dono, itens 57–62 e 65 e Frente 5; regenerar o índice.
 4. F3: validar `git diff --check`, LF, índice, marcas `LEITURA` e escopo do diff.
 
 Sem `npm ci`, Docker, testes de produto ou atualização de KPI. Revisão simples; não fazer merge nesta etapa.

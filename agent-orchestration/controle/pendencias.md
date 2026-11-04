@@ -8558,13 +8558,12 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** pre-existente (evidência de data/origem: a origem acima)
 - **risco:** 4-faturamento/dinheiro
 - **dependências:** decisão do dono; P-WEB-CLOUD-BILLING-CARTAZ
-- **dono:** dono → bloco de produto cloud billing (bloco dono proposto pela fatia; plano SAN3: não nomeada no gate (§4.1))
-- **dono B-ASS-00:** `B-ASS-09a` (rateio automático), `B-ASS-10b` (acionamento pela tela) e `B-ASS-13` (leitura automática da AWS); a decisão sobre assinatura já está em `D-COBRANCA-ASSINATURA-FRANQUIA`.
+- **dono:** `B-ASS-09a` (rateio automático), `B-ASS-10b` (acionamento pela tela) e `B-ASS-13` (leitura automática da AWS); a decisão sobre assinatura já está em `D-COBRANCA-ASSINATURA-FRANQUIA`.
 - **impacto vendável:** NAO — receita da plataforma, não fluxo do cliente
 - **teste de encerramento:** decisão em `decisoes.md`; enum de fonte = importadores existentes (teste); se faturar, transição `invoiced` testada
 
 ---
-- **nota B-SAN3-03 (2026-11-02):** a parte "cobrança nunca vira fatura" está RESPONDIDA por `D-COBRANCA-ASSINATURA-FRANQUIA` (o preço do cliente é a assinatura). A parte "custo AWS entra só por CSV manual" é RECOMENDACAO ADOTADA 4 e só fecha com o merge de `B-ASS-09a` (rateio automático) e `B-ASS-10b` (botões na tela); a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
+- **nota B-SAN3-03 (2026-11-02):** resposta e divisão de donos consolidadas na linha `dono` acima; status segue ABERTA.
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
@@ -10517,18 +10516,16 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 - status: ABERTA.
 - **prova:** catálogo e módulos por plano existem apenas no serviço interno; não há rota de preço ou catálogo comercial.
-- **dono:** `B-SAN3-18`.
-- **dono B-ASS-00:** `B-ASS-02` entrega o catálogo de planos com preço e a rota correspondente; o gate administrativo remanescente continua com `B-SAN3-18`.
+- **dono:** `B-ASS-02` entrega o catálogo de planos e a rota correspondente; o gate administrativo remanescente continua com `B-SAN3-18`.
 - **bloqueia:** não.
 
 ## P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produto — ALTA
 
 - status: ABERTA.
 - **prova:** importar CSV, rodar rateio, calcular cobrança e editar regras continuam isolados no adapter/service e sem consumidor de página; o CSV legado ainda contém custo literal zero.
-- **dono:** bloco de produto Cloud Billing, após `P-DONO-CLOUD-BILLING-ESCOPO`.
-- **dono B-ASS-00:** `B-ASS-10b` (importar e rodar pela tela), `B-ASS-09a` (rateio automático), `B-ASS-01` (retirada do cálculo e da edição de markup) e `B-ASS-09` (cobrança mensal).
+- **dono:** `B-ASS-10b` (importar e rodar pela tela), `B-ASS-09a` (rateio automático), `B-ASS-01` (retirada do cálculo e da edição de markup) e `B-ASS-09` (margem e visão da plataforma), após `P-DONO-CLOUD-BILLING-ESCOPO`.
 - **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
-- **nota B-SAN3-03 (2026-11-02), donos nomeados:** importar e rodar pela tela → `B-ASS-10b`; rateio automático → `B-ASS-09a`; calcular cobrança e editar regras de markup somem no `B-ASS-01` (`D-COBRANCA-ASSINATURA-FRANQUIA`). Status segue ABERTA.
+- **nota B-SAN3-03 (2026-11-02), donos nomeados:** divisão consolidada na linha `dono` acima; status segue ABERTA.
 
 ## P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — MÉDIA
 
@@ -12550,6 +12547,12 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** fala literal registrada em `D-COBRANCA-ASSINATURA-FRANQUIA`: o cliente vê somente plano, uso da franquia e situação.
 - **encerramento:** rota derivada das claims e tela com as três aparências expõem somente a allowlist aprovada; custo interno, dados de outras organizações e números comerciais não aparecem. **(valores fora do repositório público)**.
 
+## P-ASS-RASTREAMENTO-NAO-COBRADO (2026-11-04) — rastreamento aprovado como item próprio ainda não entra na cobrança — ALTA
+
+- **status:** ABERTA · **escopo:** item 65 do portão vendável · **dono:** `B-ASS-12` · **PR-alvo:** PR do `B-ASS-12` · **bloqueia:** item 65.
+- **origem:** fala literal do dono de 31/10 ~22:15, P5: *"siga na recomendação de tudo"*; a recomendação aprovada incluía a cobrança de rastreamento como item próprio.
+- **encerramento:** dois add-ons de rastreamento, no máximo um vigente por assinatura, medição de veículos e linha própria no demonstrativo, sem inferir a resolução de `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`.
+
 ## P-ASS-ADAPTADORES-FORA-DO-PORTAO (2026-11-03) — adaptadores posteriores ao primeiro par aprovado — MEDIA
 
 - **status:** ABERTA · **escopo:** integração posterior ao portão · **dono:** `B-ASS-15` · **PR-alvo:** PR do `B-ASS-15` · **bloqueia:** nada.
@@ -12561,12 +12564,6 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** ato externo pós-implementação · **dono:** dono do produto, com roteiro técnico do `B-ASS-08` · **PR-alvo:** fora do PR documental; evidência anexada ao roteiro do `B-ASS-08` · **bloqueia:** ligar o canal, não bloqueia os blocos fail-closed.
 - **origem:** `D-P14-ASAAS-FOCUS`; as contas e credenciais não pertencem ao repositório.
 - **encerramento:** dono cadastra as credenciais no cofre, executa o roteiro de homologação e registra o resultado sem versionar segredo.
-
-## P-ASS-REGIME-CNPJ (2026-11-03) — dados fiscais do emissor ainda não informados — ALTA
-
-- **status:** ABERTA · **escopo:** emissão fiscal · **dono:** dono do produto, com contador; implementação em `B-ASS-07` · **PR-alvo:** PR do `B-ASS-07` para a validação e registro externo para os dados · **bloqueia:** somente a emissão de nota.
-- **origem:** mesma lacuna já registrada em `P-COBRANCA-P3-DADOS-FISCAIS-DO-EMISSOR`; esta entrada nomeia o dono técnico do pacote B-ASS.
-- **encerramento:** contador fornece os dados exigidos e a configuração é preenchida no produto; nenhum dado fiscal sensível é copiado para o repositório público.
 
 ## P-ASS-SECRETS-MANAGER (2026-11-03) — chave do cofre ainda sem integração ao gerenciador de segredos da AWS — MEDIA
 
