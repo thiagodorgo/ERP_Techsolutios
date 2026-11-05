@@ -252,3 +252,37 @@ Nenhum dos dois tem veredito meu: ambos exigem tocar fora do PERMITIDO (o 2º é
 - feito: Emenda 2 aplicada (censo 12 chaves via `gravar`; ratchet semântico sem chave nova, só contagem L0 113→115); bateria F9 completa local (check/lint/build verdes, guard 0 violações, 94/94 memória, 26/26 -db, `npm test` 4487/4478/7/2 com os 7 ambientais Windows pré-existentes); push + PR #504; CI lido (`backend-postgres` verde).
 - falta: autorização para atualizar 2 contagens duras fora do PERMITIDO — `tests/san3-05-runtime-role-guard-db.test.ts:1016` `121`→`125` e `frontend/tests/san3-06b-navegacao-plataforma.test.ts:55` `23`→`34` — para o CI `backend`/`frontend` voltarem verdes.
 - próximo comando: aguardar emenda do orquestrador (mesma classe da Emenda 2; incluir esses dois arquivos no PERMITIDO) ou ordem de parar.
+
+## RETOMADA 2026-11-05 ~09:35 SP — Emenda 3 ao §4.2 (duas contagens fixas)
+
+- Retomada medida no head `af003ee3`, árvore limpa: `npm run check` verde; guards da última fatia (`o6r07c-census-guard` + `san3-05-acessos-de-plataforma-guard`) = **67/67**, fail 0.
+- Só as duas asserções autorizadas pela Emenda 3 foram alteradas:
+  - `tests/san3-05-runtime-role-guard-db.test.ts`: `121` → `125`;
+  - `frontend/tests/san3-06b-navegacao-plataforma.test.ts`: `23` → `34`.
+
+### Contagem runtime: 121 → 125
+
+- Memória de commit livre antes do Docker: **15 GB** (mínimo exigido: 4 GB).
+- Comando real no cluster descartável, após `npx prisma migrate deploy` das 123 migrações:
+  `docker exec devass02-pg psql -U postgres -d erp_techsolutions -tAc "SELECT count(*) FROM pg_tables WHERE schemaname=current_schema();"`
+- Saída: **125**.
+- Diferença item a item, sem remoção: as quatro tabelas públicas novas da M1 são `subscription_plans`, `subscription_plan_versions`, `tenant_subscriptions` e `tenant_subscription_addons`; as duas últimas mantêm as políticas RLS `ENABLE + FORCE` provadas em R-PLAN-7. Logo **121 + 4 = 125**.
+- Vermelho-controle: a comparação literal com `121` retorna não zero (`OLD_121_RED_CONTROL`); `125` fica verde.
+
+### Contagem de rotas: 23 → 34
+
+- Comando do gerador: `node scripts/san3-06b-endpoints-de-plataforma.mjs .`.
+- Saída: **`endpoints sob /api/v1/platform = 34`**.
+- Diferença item a item, sem rota antiga removida: as 11 entradas novas são `GET /billing/plans`, `GET /billing/plans/summary`, `GET /billing/plans/:planId`, `GET /billing/plans/:planId/versions`, `POST /billing/plans`, `PATCH /billing/plans/:planId`, `POST /billing/plans/:planId/versions`, `GET /billing/tenants/:tenantId/subscription`, `GET /billing/tenants/:tenantId/subscription/history`, `PUT /billing/tenants/:tenantId/subscription` e `DELETE /billing/tenants/:tenantId/subscription`. Logo **23 + 11 = 34**.
+- Vermelho-controle literal: com a asserção antiga `23`, `san3-06b-navegacao-plataforma` fica **2/3, fail 1**, apontando a saída real 34; restaurada para 34, fica **3/3, fail 0**.
+
+### Validação antes do commit da Emenda 3
+
+- `npm run check`: verde.
+- `npm run lint`: verde.
+- `npm run build`: verde.
+- `san3-06b-navegacao-plataforma`: **3/3**, fail 0.
+- `o6r07c-census-guard` + `san3-05-acessos-de-plataforma-guard`: **67/67**, fail 0.
+- `node scripts/migration-transaction-guard.mjs`: **123 migrações · 11 novas · 0 violações**.
+- `git diff --check`: verde.
+- Escopo da retomada: somente o relatório e as duas asserções nominalmente autorizadas pela Emenda 3.
