@@ -4376,14 +4376,14 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fala literal do dono:** *"implementar Dashboard / Ordens de Serviço / Usuários / Auditoria / Despachos / Estoque / Financeiro, a parte de baixa, conta e conciliação — IMPORTANTE, FAZER COM CLAUDE DESING"*.
 - **Medido na `origin/main` pelo orquestrador, conforme a fonte:** Financeiro — baixa, conta e conciliação — já tinha as três aparências (`APPEARANCE_SCREENS.financeiro`, B-SAN3-12b/12c); faltavam as outras seis telas.
-- **Trilha:** `B-APAR-3`; plano por `plano-3apar-opus`, tela pelo Claude (`D-DESIGN-SO-CLAUDE`), revisão pelo Codex enquanto houver limite e conferência visual por `cognicao-visual`.
+- **Trilha:** `B-APAR-3`; plano por `plano-3apar-opus`, tela pelo Claude (`D-DESIGN-SO-CLAUDE`), revisão pelo Codex enquanto houver limite e conferência visual por `cognicao-visual`. **[Marca de 04/11, F-2 do `rev-496-opus`]** A fonte diz "a revisão é do Codex"; a condição "enquanto houver limite" é **leitura do redator do #496**, derivada de `D-CRUZAMENTO-POR-LIMITE-0311`.
 
 ## D-APAR-3-RESPOSTAS-0311 (respostas literais do dono, 2026-11-03, ~15:20 SP) — Usuários, Auditoria, Pátios e revisão disponível
 
 - Q-USERS-1, pesos da nota de saúde do acesso: *"Aprovar os da maquete"*.
 - Q-AUDIT-1, Auditoria C: *"Agora, agrupada por fato"*. Os grupos são Recusados, Fora do horário, Sensíveis e Demais, sem "Crítico", até o backend classificar.
 - Q-APAR-1, nome da aparência A de Pátios: *"Manter 'Padrão'"*. A maquete diz "Padrão fiel", e o menu continua "Padrão".
-- Codex sem limite disponível naquela janela: *"Claude revisa agora"*. As filas duplicadas do Codex foram paradas; a identidade verificadora continuou separada.
+- Codex sem limite disponível naquela janela: *"Claude revisa agora"*. As filas duplicadas do Codex foram paradas; a identidade verificadora continuou separada. **[Marca de 04/11, F-1 do `rev-496-opus`]** A fonte diz que as revisões e as críticas pendentes passaram ao Claude **sem cruzamento entre modelos, declarado (item 11(2), por escolha do dono)**. A frase "a identidade verificadora continuou separada" é **leitura do redator do #496**, não está na fonte.
 - **Correção do orquestrador, declarada (§A6):** o seletor de aparência fica no **menu do usuário**, por `D-APARENCIA-RESPOSTAS` (c), e não em Configurações.
 
 ## D-CRUZAMENTO-POR-LIMITE-0311 (decisão do dono, 2026-11-03, ~16:00 e ~16:20 SP) — cruzar quando houver limite; sem limite, identidade nova disponível
@@ -4391,7 +4391,7 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fala literal do dono às ~16:00:** *"pode desconsiderar o cruzamento"*.
 - **Fala literal posterior, às ~16:20, que ajusta a anterior:** *"quando tiver limite pra todo mundo, vale a regra anterior, um faz o outro ver, nao tendo limite vai qualquer um"*.
 - **Leitura do orquestrador, declarada (§A6):** a segunda fala substitui a dispensa geral da primeira. Com limite nos braços, vale o cruzamento de modelo do §C7 item 11(1): o que o Claude faz, o Codex verifica, e vice-versa. Sem limite no braço do outro modelo, verifica quem estiver disponível, de qualquer modelo, com identidade nova, como já prevê o item 11(2). A separação de identidade vale sempre; quem acha não conserta.
-- **Conflito:** não há conflito remanescente com o contrato depois da fala das ~16:20; a fala das ~16:00 fica preservada como estado intermediário, sem consolidá-la como regra vigente.
+- **Conflito:** não há conflito remanescente com o contrato depois da fala das ~16:20; a fala das ~16:00 fica preservada como estado intermediário, sem consolidá-la como regra vigente. **[Marca de 04/11, F-2 do `rev-496-opus`]** Este bullet é **conclusão do orquestrador** (na fonte, parte da leitura das ~16:20: "sem conflito a registrar"), não fala do dono.
 
 ## D-CODEX-CONTA3-SOL-MEDIUM (decisões do dono, 2026-11-03, ~16:50 e ~17:00 SP) — terceira conta e esforço médio em todas
 
@@ -4437,6 +4437,99 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Canal e cofre:** pagamento e nota fiscal ficam preparados com servidor falso local, cofre de credenciais e habilitação fail-closed. Nenhuma chamada externa ocorre antes da configuração e do ato de habilitar. Os primeiros adaptadores aprovados pelo dono são Asaas e Focus NFe; os demais ficam em bloco posterior.
 - **Dono dos blocos:** `B-ASS-01` a `B-ASS-12`, conforme os itens 57–62 e 65 do portão e a Frente 5 do `PLANO_SAN3.md`; `B-ASS-15` é dono dos adaptadores posteriores; `B-INFRA-AWS-01` é dono da integração futura do cofre com o gerenciador de segredos.
 - **LEITURA do orquestrador, declarada (§A6):** “ligar” significa habilitar somente quando o canal existir, com credenciais válidas guardadas no cofre; não autoriza chamada externa durante os blocos documentais nem muda a parada para ação externa paga. O desenho técnico detalhado continua sujeito à junta do bloco correspondente.
-- **Conflitos, sem consolidação silenciosa:** `docs/revisoes/TRACCAR/PLANO_TRACCAR.md:104` registra o plano pago de rastreamento como add-on e `API_CONTRACTS.md:96-102` mantém contratos planejados que agora ganham os donos desta trilha. Continua ABERTO `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`: esta decisão não escolhe se filial assina, se a matriz agrega a assinatura ou se outra entidade paga.
+- **Conflitos, sem consolidação silenciosa:** `docs/revisoes/TRACCAR/PLANO_TRACCAR.md:104` registra o plano pago de rastreamento como add-on e `API_CONTRACTS.md:96-102` mantém contratos planejados que agora ganham os donos desta trilha. Continua ABERTO `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`: esta decisão não escolhe se filial assina, se a matriz agrega a assinatura ou se outra entidade paga. **[Errata de 04/11, N3 de `P-ASS00-RESIDUOS-CONFERENCIA`]** As linhas 96-102 do `API_CONTRACTS.md` da raiz são do Traccar, não da cobrança; o bloco de billing é `docs/claude-code-handoff/API_CONTRACTS.md:96-102` (`## finance / billing`) e, pelo plano corrigido, não muda de dono. Ver `ERRATA-0411-ASS00`.
 - **Pergunta ao dono (PADRÃO ainda sem fala):** `src/modules/cloud-charges/**` deve permanecer congelado, sem bloco de remoção, ou deve ser retirado em bloco próprio depois da substituição pelo modelo de assinatura?
 - **Conciliação com registros anteriores:** esta entrada consolida sem substituir `D-COBRANCA-ASSINATURA-FRANQUIA`, `D-PAGAMENTO-NOTA-PRONTOS`, `D-COFRE-CREDENCIAIS`, `D-TESTES-FALSOS-SAO-FINAIS`, `D-CANAL-NO-B-ASSINATURA`, `D-CUSTO-PLATAFORMA-LINHA-PROPRIA`, `D-COBRANCA-RESPOSTAS-3110` e `D-P14-ASAAS-FOCUS`.
+
+## REGISTRO-FILA-ORFA-0311 (incidente medido, 2026-11-03, 18:47–18:52 SP; registro de 2026-11-04) — fila de sessão anterior relançou a pré-revisão do #488 e sobrescreveu o parecer
+
+- **Não é decisão do dono.** É registro de incidente de terreno, com a lição.
+- **O que aconteceu:** às 18:47 SP, quando a conta 2 do Codex voltou a ter limite, a fila `fila-prerev488.sh`, deixada viva por uma sessão anterior (02/11), relançou a pré-revisão do #488, que já estava mergeado (merge `36ad6aa7`). O orquestrador matou a fila e o processo às 18:52, liberou a conta 2 e removeu o worktree `w-prerev488`.
+- **Estrago:** o parecer original da pré-revisão (`prerev-488-sol`, sobre `ea6d4aef`) foi sobrescrito às 18:49. Sobraram a mensagem final do original (APROVADO, sem achados; 22 mutações; 9/9; RBAC 2/2) e o parcial da fila órfã (`prerev-488-parecer.orfa-1849.md`, fora do repositório, gravado às 18:49). **O texto integral do original não foi recuperado**: o log da sessão anterior não traz o arquivo inteiro. O resumo reconstruído às 19:24 é o que está em `omega/juntas/votos/B-PATIO-REC-01-PR488/prerev-488-parecer.md`, e a ata `J-B-PATIO-REC-01-PR488` já o declara.
+- **Causa:** a P8 (`D-ORQ-QUEDA-DA-SESSAO`) só retoma o que está no registro de agentes vivos; a fila não estava nele, e nada a procurava.
+- **Lição, leitura do orquestrador declarada (§A6):** no início de cada sessão, listar as filas `fila-*.sh` vivas e matar as que não estão no registro de agentes vivos, antes de lançar qualquer coisa. Fila é agente: entra no registro no mesmo passo em que nasce. Mesma família de `D-ORQ-QUEDA-DA-SESSAO` (b), "vigia, auditor e guarda de uma sessão anterior são órfãos".
+- **Porteiro do #488** (`porteiro-488-sol`, Codex, 03/11 19:20 SP): LIBERADO COM RESSALVA para o `B-ASS-00`. As ressalvas (ata, R1–R3, `P-PATIO-BODY-PARSER-ANTES-DO-PORTAO`, parecer de pré-revisão reconciliado, `w-prerev488` removido) foram pagas pelo #496 e por esta limpeza.
+
+## D-ANTIGRAVITY-CLAUDE-GPT-0311 (fala do dono, 2026-11-03, ~19:45 SP) — Antigravity com Claude e GPT
+
+- **Fala literal:** *"usar o antigravity com claude/gpt, veja o que esta disponivel"*.
+- **Medido pelo orquestrador às 19:31 SP (`/usage`):** Claude e GPT com a janela de 5 h em 100% e 48% do semanal (renova em 10/11 13:19 SP); Gemini em 100%. O catálogo tinha `claude-opus-5-5` (low/medium/high), `claude-sonnet-5-5` e `gpt-oss-120b`; o único GPT disponível era o `gpt-oss-120b`.
+- **Distribuição, leitura do orquestrador declarada (§A6):** o dev do `B-APAR-DASH` (Dashboard com três aparências) foi para o `claude-opus-5-5-high`, porque tela é do Claude (`D-DESIGN-SO-CLAUDE`). Antes do código entrou a Emenda 4 do `B-APAR-3-plano.md` (achado A3).
+- **Limite:** o Sonnet e o GPT-OSS seguem abaixo do nível menor (`D-BRACOS-0211-0311`).
+
+## D-CONFERENCIA-APARENCIAS-PELO-ORQUESTRADOR (decisão do dono, 2026-11-03, ~20:05 SP) — a conferência do dev das três aparências é do orquestrador
+
+- **Fala literal:** *"a conferencia do dev das tres aparencias é sua, nao confio em ninguem ao nao ser vc para isso"*.
+- **Regra:** nas telas das três aparências, quem confere o dev é o orquestrador, na sessão. Não conferem o Codex, o Gemini, o Antigravity nem um subagente.
+- **Leitura do orquestrador, declarada (§A6):** conferir não é escrever no objeto (§C7 item 11(6)); o achado volta para o dev. A Emenda 4 do `B-APAR-3-plano.md`, que passava a conferência da emenda ao revisor Codex, passa a ser conferida pelo orquestrador.
+- **#493:** mergeado (`18e54804`, `gh pr view 493`) por volta das 20:00 SP, com a conferência do Codex, momentos antes desta fala. O orquestrador o conferiu depois, na `main` (`REGISTRO-CONF-493-0311`, abaixo).
+- **Conflito §A2, registrado e não consolidado no contrato:** `CLAUDE.md` §C7 item 11(1) (e o espelho `AGENTS.md`) manda o verificador ser do outro modelo e não dá ao orquestrador o papel de conferente. A fala do dono vale acima (fonte 1, §A1) para estas telas. O contrato (§4 e §C7 item 11, nos dois espelhos) precisa receber a regra num PR de governança; até lá, vale esta entrada.
+
+## REGISTRO-CONF-493-0311 (conferência do orquestrador, 2026-11-03, ~20:30 SP) — CONFERIDO
+
+- Parecer fora do repositório (`revisoes/conf-493-orquestrador.md`): as três aparências da tela de Ordens de Serviço batem com a maquete, os testes passam 1636/1636 e a mutação própria em `canRevokeDispatch` ficou vermelha.
+- Achado pre-existente, não bloqueante: em 390 px a web rola de lado por causa do shell. Vira `P-WEB-SHELL-CELULAR-ROLA-DE-LADO`.
+
+## D-BRACOS-POR-API-0411 (falas do dono, 2026-11-04, madrugada) — braços por API, com nome próprio
+
+- **Falas literais** (a fonte não registra a hora de cada uma; todas são anteriores às 02:45 SP, e os arquivos de validação dos modelos são de 02:16 e 02:25 SP):
+  - *"meu querido, vamos adicionar umas apis e alguns modelos para nos ajudar tipo o que acontece com o codex, podemos?"*
+  - *"pode usar essa chave mesmo, nao vou revogar"*
+  - *"quero que liste e valide os modelos (...) quero cada agente com seu nome. por exemplo 'Nemotron Nvidia'"*
+- **Feito, fora do repositório:** registro de braços com nome próprio por braço; perfis do Codex por provedor (NVIDIA, Groq e OpenRouter); um validador de modelos; os resultados da validação no painel do orquestrador. As chaves ficam só em variáveis de ambiente do usuário. **Nenhuma chave, prefixo de chave ou caminho de credencial entra neste repositório.**
+- **Leitura do orquestrador, declarada (§A6):** braço novo começa como segundo revisor e em tarefa simples, até passar numa tarefa-teste com gabarito. O contrato (`CLAUDE.md` §C7.6 e o espelho `AGENTS.md`) precisa ganhar esses braços num PR de governança; até lá, eles não ocupam cadeira, inspetor, porteiro nem dev de bloco de risco, e a escada do §C7.6-bis continua valendo para os papéis de gate.
+
+## D-NEMOTRON-0411 (falas do dono, 2026-11-04, madrugada) — Nemotron como alvo, com teste contra o Claude
+
+- **Falas literais:** *"mire em Nemotron 3 Ultra"*; *"aprovo e pode dar mais moral para ele, compare ele com uma tarefa sua"*.
+- **Leitura do orquestrador, declarada (§A6):** a comparação é a tarefa-teste com gabarito: revisar o PR #497 e comparar com o parecer `rev-497-opus`.
+- **Medido neste registro:** o parecer da tarefa-teste (`revisoes/bench-497-nemotron-parecer.md`, fora do repositório, gravado às 02:39 SP) tem texto corrompido a partir das primeiras linhas de achados. **Não conta como aprovação na tarefa-teste**; o Nemotron segue na regra de braço novo de `D-BRACOS-POR-API-0411`.
+
+## D-OPENROUTER-EXCECAO-0411 (decisão do dono, 2026-11-04, madrugada) — a OpenRouter é exceção
+
+- **Fala literal:** *"a openrouter e uma excesao... vamos usar estes modelos dela"*. Os modelos são Nemotron Ultra, Super, Lightning e Nano, e North Code, todos na faixa `:free`.
+- **Leitura do orquestrador, declarada (§A6):** é exceção à decisão de não usar revendedor de IA (`D-REGISTRO-DONO-2026-10-26-A-27`, *"desisto, nao vale o risco"*), só para a OpenRouter e só para esses modelos. A recusa de 27/10 continua valendo para os demais.
+
+## D-SEM-GPT-OSS-GROQ-0411 (decisão do dono, 2026-11-04, ~02:45 SP) — GPT-OSS pela Groq fora
+
+- **Fala literal:** *"nao vamos usar GPT-OSS Groq"*.
+- **Efeito:** o GPT-OSS da Groq saiu do registro de braços. O Qwen da Groq fica parado, porque a Groq não aceita o pedido do Codex.
+
+## D-BRACOS-SEM-SANDBOX-0411 (decisão do dono, 2026-11-04, madrugada) — braços sem sandbox
+
+- **Fala literal:** *"Eu quero que os bracos rodem sem sandbox, faca uma autorizacao permanente em /permissions"*.
+- **Fato:** o filtro do Claude Code impediu o orquestrador de editar as próprias permissões; o dono recebeu o bloco pronto para colar. A fonte não registra se ele foi aplicado.
+- **Leitura do orquestrador, declarada (§A6):** a autorização vale para os braços como executores; não muda escopo de bloco, paradas irredutíveis (§C7.5) nem a proibição de segredo no repositório.
+
+## REGISTRO-PROMPT-APP-CAMPO-0411 (pedido do dono, 2026-11-04, ~03:30 SP) — prompt externo do app de campo
+
+- **Fala literal:** *"quero um prompt para o emergent criar uma versao do app de campo, coloque tudo que vai precisar, endpoints a resposta, imagine tudo"*.
+- O prompt existe **fora do repositório** (autor `prompt-emergent-opus`, medido em `origin/main@b10e539a`; varredura de segredo = 0). O conteúdo dele não é versionado.
+- O levantamento revelou sete achados de produto, registrados como pendências com dono a atribuir pelo orquestrador: `P-MOBILE-ROTAS-SEM-SERVIDOR`, `P-MOBILE-SYNC-ESTOQUE-TIPOS`, `P-MOBILE-STATUS-NOMES`, `P-RBAC-FIELD-TECHNICIAN-DESPESA`, `P-OS-TIPO-GUINCHO-PRESTADOR`, `P-AUTH-TOKEN-LOCAL-CLAIMS` e `P-API-ENVELOPES-IRREGULARES`.
+
+## REGISTRO-0411-ITEM44-499-500-501 (fatos medidos, 2026-11-04) — release sem internet, ensaio parcial e marco de KPI
+
+- **Defeito de produto achado pelo ensaio do item 44 (~08:30 SP):** o manifest principal do Android não declarava `android.permission.INTERNET`. Fechado pelo PR #499 (merge `8d7a99ff`); pendência `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE`, FECHADA.
+- **Defeito da ferramenta do orquestrador:** a fila do dev do item 44 marcou "PRONTO PARA REVISÃO" porque o relatório trazia a frase "não foi escrito `PRONTO PARA REVISÃO`". A checagem passou a exigir a marca no começo da linha (`^PRONTO`).
+- **PR #500** (`B-SAN3-10b`, item 44, PARCIAL; merge `9bb0074b`): conferência `conf-500-opus` (04/11 ~11:30 SP), CONFERIDO COM RESSALVA no head `c41c482e`, sem nada grave. O que sobra vira `P-SAN3-10B-BATERIA-B8-FORMATOS` e `P-SAN3-10B-OP8-PASSO6`. O item 44 segue PARCIAL: faltam F3, Op-10 e Op-8 mobile, que já podem rodar depois do #499, e a F4 (`P-SAN3-10B-F4-SEED-ISOLADO`).
+- **PR #501** (marco de KPI de 04/11, autor `kpi-0411-opus`; merge `0c3c7826`): vendável em 43% (30/69). A queda de 48% para 43% veio do denominador (o #497 levou o portão a 63 itens mais 6 atos), não de regressão. O item 54 ficou fora da conta porque as duas pendências do painel seguiam ABERTAS; este registro as fecha. Revisão `rev-kpi-0411-opus`: APROVADO, com a nota que vira `P-KPI-PAINEL-EXPLICA-DENOMINADOR`.
+- **Item 54 FECHADO** neste registro: `P-KPI-ROADMAP-CONGELADO` e `P-KPI-RECENT-CONGELADO` com a evidência do #494 (merge `4f260796`, `tests/kpi-painel-frescor.test.ts`, 25 testes, R0 `ok` no CI do merge `41739911616`) e do #501, o primeiro marco escrito com o guard na `main` (25 `ok`, 0 `not ok` de `frescor:` no CI do head `f1b9ef3c`, run `41849732792`).
+
+## ERRATA-0411-REV496 (achados BAIXA do revisor do PR #496, registrados em 2026-11-04)
+
+- Revisão `rev-496-opus` do #496: APROVADO COM AJUSTES, cinco achados BAIXA. Pelo §C7 item 10(3), achado não grave de registro não segurou o merge.
+- **F-1:** em `D-APAR-3-RESPOSTAS-0311`, a declaração da fonte ("sem cruzamento entre modelos, declarado, item 11(2), por escolha do dono") foi restaurada, e a frase acrescentada pelo redator ficou marcada como leitura. Marca anexada à própria entrada, sem apagar texto.
+- **F-2:** em `D-APAR-3-IMPLEMENTAR-0311`, "enquanto houver limite" ficou marcado como leitura do redator; em `D-CRUZAMENTO-POR-LIMITE-0311`, o bullet "Conflito" ficou marcado como conclusão do orquestrador. Marcas anexadas, sem apagar texto.
+- **C-1:** os vereditos que ficaram fora:
+  - **porteiro dos consertos da demo** (`porteiro-demofix-opus`, 03/11 ~13:00 SP): LIBERADO COM RESSALVA para o `B-ASS-00`; merges #490 `00f93b5e`, #491 `0f2853cf` e #492 `f59994ad`, com o código idêntico ao verificado pelo Codex em 02/11 (diff vazio contra `a90fb81b`). **Leitura do orquestrador sobre o item 3 do porteiro, declarada:** as "duas pendências abertas" (filial × organização na assinatura, e quem recebe) já tinham resposta do dono de 02/11 ~23:45 (`D-PATIO-RESPOSTAS-0211`); o `B-ASS-00` devia conferir na `main` que o #489 entrou antes de consolidar, e entrou: #489 `a655fca9` antes do #497 `b10e539a` (`git log origin/main`);
+  - **porteiro do #487** (`porteiro-487-opus`, 03/11): LIBERADO COM RESSALVA para o `B-SAN3-10c`, com o placeholder do item 48 em `P-SAN3-19-PLACEHOLDER-CHAVE-CRUA`;
+  - **ramo remoto `demo/investidor`** (`d1fab3bc`, 29/08), ainda no `origin` (`git ls-remote --heads origin 'demo/*'`, medido em 04/11). A fonte diz "Decidir: aposentar." **Ninguém decidiu ainda**; fica como pergunta ao dono, sem apagar o ramo.
+- **C-2:** a ata `J-B-PATIO-REC-01-PR488` ganhou a seção "Quedas (P6)": nenhuma queda registrada.
+- **H-1:** a mesma ata passou a dizer seis linhas redigidas em quatro arquivos, em vez de "quatro referências".
+
+## ERRATA-0411-ASS00 (resíduos da conferência do conserto do PR #497, registrados em 2026-11-04)
+
+- **N3:** em `D-ASS-PLANOS-FRANQUIA-E-CANAL`, `API_CONTRACTS.md:96-102` aponta, na raiz, para o contrato do Traccar (`operator_history_ambiguous` e o cabeçalho dos eventos do B-TRC-02). O bloco de billing é `docs/claude-code-handoff/API_CONTRACTS.md:96-102` (`## finance / billing`) e, pelo plano corrigido, não muda de dono. Errata anexada à entrada.
+- **N2:** o item 62 do portão cita `RBAC_MATRIX.md:49` (Finance); a linha do Billing é a 50.
+- **Fora do escopo deste registro:** as linhas 139 (item 59) e 142 (item 62) do `docs/revisoes/SAN3/PLANO_SAN3.md` repetem as duas citações; este registro só pode tocar a linha do item 54. Ficam em `P-ASS00-RESIDUOS-CONFERENCIA`, com o `B-ASS-04` como dono.
+- **N4 e N5:** feitos em `pendencias.md` (ver `P-ASS00-RESIDUOS-CONFERENCIA`).
