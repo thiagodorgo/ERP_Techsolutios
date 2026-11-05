@@ -4576,3 +4576,9 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Nemotron (2º teste, regras de prova):** reprovado — achou 2 de 8 (o item 65 e a PD sem URL). Errou a gravidade (item 65 como GRAVE) e chamou a PD sem fontes de "por design" sem prova. Uma medição enganou, porque contou linhas de contexto do diff (FILIAL-X-ORGANIZACAO) e concluiu que não havia achado. Não gravou a evidência incremental. O parecer saiu íntegro. **Leitura do orquestrador, declarada:** melhorou em relação ao 1º teste, mas não serve como revisor.
 - **Grátis da OpenRouter (revisão por chat do #497):** Nemotron 3.5 Super acertou 4 de 8; Dots 3 Note, 1,5 de 8; North Mini Code devolveu a resposta vazia; Gemma 4 e Xing deram erro 429. **Nenhum grátis serve como revisor único.**
 - **Nota:** sem custo em dinheiro nem saldo neste registro (repositório público).
+
+## D-ASS02-M1D-AUTORIZADA (decisão do dono, 2026-11-05, ~02:00 SP) — a migração de dados M1-d do B-ASS-02 está autorizada
+
+- **Contexto:** depois de explicar a M1-d e recomendar *"autorizar"*, o orquestrador fez a pergunta *"Autoriza a M1-d?"*. A M1-d é a migração de dados que cria os 6 planos (Starter, Professional, Business, Enterprise, Rastreamento Básico e Rastreamento Plus) sem preço, idempotente, numa transação única, e cuja reversão nunca apaga plano com versão.
+- **Fala literal:** *"manda o deepsek fazer"*.
+- **Leitura do orquestrador, declarada (§A6):** isto autoriza a M1-d (`<carimbo>_ass02_seed_subscription_plans`), a 4ª migração de dados, que estava fora da lista da P1 de 31/10. A execução fica com o DeepSeek Pro: o oficial fora do pico e, no pico, o mesmo modelo pela OpenRouter. A pendência `P-ASS02-M1D-AUTORIZACAO` não nasce aberta: este registro grava a decisão `D-ASS02-M1D-AUTORIZADA`.
