@@ -248,7 +248,7 @@ Nenhum dos dois tem veredito meu: ambos exigem tocar fora do PERMITIDO (o 2º é
 
 ## PAUSA 2026-11-05 ~13:20 UTC
 
-- head: `f3eb1bf6` (F0–F8 + F9: snapshots regenerados pela Emenda 2 + bateria reexecutada; PR #504 aberto).
+- head: `d69f5c47` (F0–F8 + F9: snapshots regenerados pela Emenda 2 + bateria reexecutada; PR #504 aberto; CI lido no head de código `f3eb1bf6`, commits seguintes só de relatório).
 - feito: Emenda 2 aplicada (censo 12 chaves via `gravar`; ratchet semântico sem chave nova, só contagem L0 113→115); bateria F9 completa local (check/lint/build verdes, guard 0 violações, 94/94 memória, 26/26 -db, `npm test` 4487/4478/7/2 com os 7 ambientais Windows pré-existentes); push + PR #504; CI lido (`backend-postgres` verde).
 - falta: autorização para atualizar 2 contagens duras fora do PERMITIDO — `tests/san3-05-runtime-role-guard-db.test.ts:1016` `121`→`125` e `frontend/tests/san3-06b-navegacao-plataforma.test.ts:55` `23`→`34` — para o CI `backend`/`frontend` voltarem verdes.
 - próximo comando: aguardar emenda do orquestrador (mesma classe da Emenda 2; incluir esses dois arquivos no PERMITIDO) ou ordem de parar.
