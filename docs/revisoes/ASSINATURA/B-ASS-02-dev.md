@@ -317,3 +317,42 @@ PRONTO PARA PRÉ-REVISÃO ac4b0ebeb66813c6bd867d182d7900b2505192f2 PR #504
 - Head de código julgado no CI continua `ac4b0ebeb66813c6bd867d182d7900b2505192f2`; o commit final só acrescenta o relatório.
 
 - Fechamento definitivo: o relatório foi empurrado em commits sequenciais até o head final; check-runs do head final concluídos e TODOS verdes nos dois disparos (`backend` 4496/4494/0/2, `backend-postgres` 503/503/0/0, `frontend`, `authority-portal`, `owner-portal`, `flutter`, `antivirus` e `docker`).
+
+## RETOMADA 2026-11-05 ~11:20 SP — Conserto da pré-revisão (Emenda 4 ao §4.2)
+
+- Triagem da pré-revisão (`prerev-ass02`, APROVADO COM AJUSTES, sem GRAVE). Consertados apenas M-03, B-01 e B-03. M-01 e M-02 ratificados (não mexidos); B-02 virou pendência `P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO` (dono B-ASS-03, não gravei).
+
+### M-03 — trilha `plans.bootstrapped_by_migration` na 1ª leitura
+
+- Arquivo novo `src/modules/subscription-billing/plans/platform-audit.ts`: `PlatformAuditEntry`, `PlatformAuditWriter` e `RecordingPlatformAuditWriter` (memória). A persistência real em `platform_audit_logs` nasce na B-ASS-05 (M4, §3.2 do plano); este bloco entrega o contrato, a gravação e o teste.
+- `PlansService.listPlans()` passa a registrar `plans.bootstrapped_by_migration` (entity `subscription_plan`, metadata `codes` + `count`) uma única vez, quando há planos com `createdBy === null`. As factories (`subscription-billing.service.ts`) injetam o writer em memória (dev/teste) e no caminho Prisma (com nota de troca para M4).
+- Teste: `tests/ass-02-plans-bootstrap-trail.test.ts` T-PL-AUDIT-1..3 → 3/3 verde.
+- Mutação: remover a gravação da trilha em `listPlans` → T-PL-AUDIT-1 e T-PL-AUDIT-3 vermelhos (2 fail); restaurado, 3/3 verde e `git status` limpo.
+
+### B-01 — código morto em `plan-versioning.ts`
+
+- Removido o segundo `if (args.inaugural)` inalcançável (linhas 90-92) dentro do ramo `existingVersions.length === 0`; comportamento preservado.
+- Prova: `tests/ass-02-plan-vigencia.test.ts` 10/10 verde (T-PL-3, T-PL-7, T-PL-17 e T-PL-19 cobrem os dois ramos do bloco removido).
+
+### B-03 — quebra de linha final do censo
+
+- `tests/fixtures/o6r07c-classificacao-vias.json` voltou a terminar em nova linha (o gerador escreve sem; devolvida à mão, sem mudar o JSON — parse válido).
+- Guard `tests/o6r07c-census-guard.test.ts` 32/32 verde; `git diff --check` limpo.
+
+### Bateria
+
+- Memória do bloco (4 suítes + trilha nova): 38/38, fail 0.
+- `-db` do bloco (Postgres descartável `devass02-pg` em 55502 + Redis `devass02-redis` em 56502): rls 5/5, modules 2/2, migration-drill 4/4, seed-drill 3/3, san3-05-leituras 12/12 → 26/26, fail 0.
+- `npm run check` verde; `npm run lint` (= check) verde; `npm run build` verde.
+- `node scripts/migration-transaction-guard.mjs`: 123 migrações · 11 novas · 0 violações.
+- `git diff --check` limpo. Containers descartáveis removidos ao final.
+
+### CI do head novo
+
+- Head `a46b82178e4e8b1e273c8c4dea8aa741ba4cb4f6` (PR #504). Check-runs concluídos e verdes:
+  - `backend`: pass — `# tests 4499 · # pass 4497 · # fail 0 · # skipped 2` (+3 testes da trilha);
+  - `backend-postgres`: pass — `# tests 503 · # pass 503 · # fail 0 · # skipped 0`;
+  - `frontend`: pass — `# tests 1636 · # pass 1636 · # fail 0 · # skipped 0`;
+  - `authority-portal`, `owner-portal`, `flutter`, `antivirus`: pass. `docker` (espelho paralelo) seguia pending na leitura; fora dos jobs exigidos.
+
+PRONTO PARA JUNTA a46b82178e4e8b1e273c8c4dea8aa741ba4cb4f6
