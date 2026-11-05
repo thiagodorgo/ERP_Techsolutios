@@ -12,6 +12,8 @@ export const PERMISSION_CATALOG = [
   "platform:dashboard:read",
   "platform:tenants:read",
   "platform:audit:read",
+  "platform:billing:read",
+  "platform:billing:manage",
   "tenant.manage",
   "users.manage",
   "users.read",

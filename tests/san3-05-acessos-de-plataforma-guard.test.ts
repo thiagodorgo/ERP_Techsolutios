@@ -284,7 +284,7 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     ]);
     assert.equal(f2.status, 0, `o gerador das grafias C3-F2 falhou:\n${f2.stderr}`);
     assert.equal(f2.stderr, "");
-    assert.match(f2.stdout, /tabelas ENABLE=113 FORCE=113 · acessores Prisma em FORCE=113/);
+    assert.match(f2.stdout, /tabelas ENABLE=115 FORCE=115 · acessores Prisma em FORCE=115/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);

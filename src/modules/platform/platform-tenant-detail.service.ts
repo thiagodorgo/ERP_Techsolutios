@@ -5,12 +5,31 @@ import {
   type PlatformTenantDetailRepository,
 } from "./platform-tenant-detail.repository.js";
 import type { PlatformTenantDetail } from "./platform-tenant-detail.types.js";
+import type { PlatformTenantDetailSubscription } from "./platform-tenant-detail.types.js";
+
+export type PlatformTenantSubscriptionResolver = (
+  tenantId: string,
+) => Promise<PlatformTenantDetailSubscription | null>;
 
 export class PlatformTenantDetailService {
-  constructor(private readonly repository: PlatformTenantDetailRepository) {}
+  constructor(
+    private readonly repository: PlatformTenantDetailRepository,
+    private readonly resolveSubscription: PlatformTenantSubscriptionResolver = async () => null,
+  ) {}
 
-  getDetail(tenantId: string): Promise<PlatformTenantDetail | null> {
-    return this.repository.getDetail(tenantId);
+  async getDetail(tenantId: string): Promise<PlatformTenantDetail | null> {
+    const detail = await this.repository.getDetail(tenantId);
+    if (!detail) return null;
+    const subscription = await this.resolveSubscription(tenantId);
+    return {
+      ...detail,
+      subscription: subscription
+        ? {
+            ...subscription,
+            modules: detail.modules.filter((module) => module.enabled).map((module) => module.key),
+          }
+        : null,
+    };
   }
 }
 
@@ -51,7 +70,53 @@ async function createPrismaPlatformTenantDetailService(
     "./platform-tenant-detail-prisma.repository.js"
   );
 
+  const [{ createDefaultSubscriptionsService }, { centsToMoney, storageGbToDecimal }] =
+    await Promise.all([
+      import("../subscription-billing/subscription-billing.service.js"),
+      import("../subscription-billing/plans/plan-money.js"),
+    ]);
+  const subscriptions = await createDefaultSubscriptionsService();
+
   return new PlatformTenantDetailService(
     await createPrismaPlatformTenantDetailRepository(coreSaasService),
+    async (tenantId) => {
+      const view = await subscriptions.getSubscription(tenantId);
+      if (!view) return null;
+      const current = view.subscription;
+      return {
+        planCode: view.plan.code,
+        planName: view.plan.name,
+        validFrom: current.validFrom.toISOString(),
+        overrides: {
+          monthlyPrice:
+            current.monthlyPriceOverrideCents === null
+              ? null
+              : centsToMoney(current.monthlyPriceOverrideCents),
+          includedUsers: current.includedUsersOverride,
+          includedStorageGb:
+            current.includedStorageGbOverride === null
+              ? null
+              : storageGbToDecimal(current.includedStorageGbOverride),
+          extraUserPrice:
+            current.extraUserPriceOverrideCents === null
+              ? null
+              : centsToMoney(current.extraUserPriceOverrideCents),
+          extraGbPrice:
+            current.extraGbPriceOverrideCents === null
+              ? null
+              : centsToMoney(current.extraGbPriceOverrideCents),
+        },
+        addons: view.addons.map((addon) => ({
+          planCode: addon.plan.code,
+          planName: addon.plan.name,
+          validFrom: addon.validFrom.toISOString(),
+          perVehiclePriceOverride:
+            addon.perVehiclePriceOverrideCents === null
+              ? null
+              : centsToMoney(addon.perVehiclePriceOverrideCents),
+        })),
+        modules: [],
+      };
+    },
   );
 }

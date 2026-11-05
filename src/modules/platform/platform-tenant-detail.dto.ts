@@ -2,6 +2,7 @@ import type {
   PlatformTenantDetail,
   PlatformTenantDetailModule,
   PlatformTenantDetailUser,
+  PlatformTenantDetailSubscription,
 } from "./platform-tenant-detail.types.js";
 
 export type PlatformTenantDetailModuleDto = {
@@ -26,6 +27,7 @@ export type PlatformTenantDetailDto = {
   readonly moduleCount: number;
   readonly modules: readonly PlatformTenantDetailModuleDto[];
   readonly users: readonly PlatformTenantDetailUserDto[];
+  readonly subscription: PlatformTenantDetailSubscription | null;
 };
 
 // Rótulo PT-BR canônico dos papéis (CLAUDE.md §3 / docs/actor-flows.md). Fronteira de tradução: o
@@ -59,6 +61,7 @@ export function toPlatformTenantDetailDto(detail: PlatformTenantDetail): Platfor
     moduleCount: detail.moduleCount,
     modules: detail.modules.map(toModuleDto),
     users: detail.users.map(toUserDto),
+    subscription: detail.subscription ?? null,
   };
 }
 

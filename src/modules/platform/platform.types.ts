@@ -1,6 +1,6 @@
 export type PlatformTenantStatus = "active" | "suspended" | "pending";
 
-export type PlatformPlan = "starter" | "professional" | "enterprise";
+export type PlatformPlan = "starter" | "professional" | "business" | "enterprise";
 
 export type PlatformModuleCategory = "MVP" | "Fase 2" | "Enterprise";
 

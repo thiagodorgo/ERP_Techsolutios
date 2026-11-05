@@ -58,7 +58,7 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/cloud-usage/tenants/:tenantId/summary`, S("FORCE-POR-TENANT", ["cloud_usage_events"], "withTenantRls (filtro com tenantId)")],
   [`GET ${P}/cloud-usage/tenants/:tenantId/daily`, S("FORCE-POR-TENANT", ["cloud_usage_daily_aggregates"], "S4 — controle do T11d")],
   [`GET ${P}/overview`, S("FORCE-POR-TENANT", ["users"], "S4 — controle do T11d (listUsersForTenant sob withTenantRls)")],
-  [`GET ${P}/tenants/:tenantId/detail`, S("FORCE-POR-TENANT", ["users"], "listUsersForTenant sob withTenantRls")],
+  [`GET ${P}/tenants/:tenantId/detail`, S("FORCE-POR-TENANT", ["users", "tenant_subscriptions", "tenant_subscription_addons"], "usuários e assinatura sob withTenantRls")],
   [`GET ${P}/cloud-cost-allocations/runs/:runId/tenant-allocations`, S("FORCE-POR-TENANT", ["tenant_cloud_cost_allocations"], "S4 — controle do T11d (B-O6R-06)")],
   [`POST ${P}/cloud-cost-allocations/runs`, S("FORCE-POR-TENANT", ["tenant_cloud_cost_allocations", "cloud_usage_events", "audit_logs", "users", "checklist_attachments", "work_order_attachments", "attachments", "damage_attachments"], "forEachTenantRls (B-O6R-06; bases derivadas B-SAN3-03)")],
   [`GET ${P}/cloud-cost-allocations/summary`, S("FORCE-POR-TENANT", ["tenant_cloud_cost_allocations"], "listTenantAllocations por organização (B-O6R-06)")],
@@ -69,6 +69,17 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`POST ${P}/cloud-costs/imports/manual-csv`, S("SEM-FORCE", ["cloud_cost_imports", "cloud_cost_line_items"], "excluída")],
   [`GET ${P}/cloud-costs/line-items`, S("SEM-FORCE", ["cloud_cost_line_items"], "excluída")],
   [`GET ${P}/cloud-costs/summary`, S("SEM-FORCE", ["cloud_cost_line_items"], "excluída")],
+  [`GET ${P}/billing/plans`, S("SEM-FORCE", ["subscription_plans", "subscription_plan_versions"], "catálogo global")],
+  [`GET ${P}/billing/plans/summary`, S("SEM-FORCE", ["subscription_plans", "subscription_plan_versions"], "catálogo global; a leitura tenant-scoped tem prova própria no B-ASS-02")],
+  [`GET ${P}/billing/plans/:planId`, S("SEM-FORCE", ["subscription_plans", "subscription_plan_versions"], "catálogo global")],
+  [`GET ${P}/billing/plans/:planId/versions`, S("SEM-FORCE", ["subscription_plan_versions"], "catálogo global")],
+  [`POST ${P}/billing/plans`, S("SEM-FORCE", ["subscription_plans"], "catálogo global")],
+  [`PATCH ${P}/billing/plans/:planId`, S("SEM-FORCE", ["subscription_plans", "subscription_plan_versions"], "catálogo global")],
+  [`POST ${P}/billing/plans/:planId/versions`, S("SEM-FORCE", ["subscription_plans", "subscription_plan_versions"], "catálogo global; a ressincronização condicional tem prova própria no B-ASS-02")],
+  [`GET ${P}/billing/tenants/:tenantId/subscription`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "tenant_subscription_addons"], "withTenantRls")],
+  [`GET ${P}/billing/tenants/:tenantId/subscription/history`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "tenant_subscription_addons"], "withTenantRls")],
+  [`PUT ${P}/billing/tenants/:tenantId/subscription`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "tenant_subscription_addons"], "withTenantRls")],
+  [`DELETE ${P}/billing/tenants/:tenantId/subscription`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "tenant_subscription_addons"], "withTenantRls")],
   [`GET ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`POST ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`GET ${P}/tenants/:tenantId`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
@@ -103,6 +114,9 @@ type Cenario = {
   costImportId: string;
   ruleIds: string[];
   calculationRunIds: string[];
+  subscriptionPlanId: string;
+  subscriptionPlanCode: string;
+  subscriptionValidFrom: string;
 };
 
 if (!connectionString) {
@@ -132,6 +146,9 @@ if (!connectionString) {
       costImportId: "",
       ruleIds: [],
       calculationRunIds: [],
+      subscriptionPlanId: "",
+      subscriptionPlanCode: "",
+      subscriptionValidFrom: new Date().toISOString().slice(0, 10),
     };
     let server: Server | undefined;
 
@@ -283,6 +300,9 @@ if (!connectionString) {
 
       for (const papel of ["super", "efemero"] as const) {
         alvo.atual = papel === "super" ? admin : efemera.client;
+        await admin.tenantSubscriptionAddon.deleteMany({ where: { tenant_id: cenario.tenantB } });
+        await admin.tenantSubscription.deleteMany({ where: { tenant_id: cenario.tenantB } });
+        await admin.tenant.update({ where: { id: cenario.tenantB }, data: { modules: [] } });
         const rotas: Record<string, unknown> = {};
         const jobs: Record<string, unknown> = {};
         const registrarRota = (chave: string, body: unknown): void => {
@@ -331,6 +351,42 @@ if (!connectionString) {
         const tenantDetail = await http("GET", `${P}/tenants/${cenario.tenantA}/detail`);
         assert.equal(tenantDetail.status, 200, JSON.stringify(tenantDetail.body));
         registrarRota(`GET ${P}/tenants/:tenantId/detail`, tenantDetail.body.data);
+
+        const activeSubscription = await http(
+          "GET",
+          `${P}/billing/tenants/${cenario.tenantA}/subscription`,
+        );
+        assert.equal(activeSubscription.status, 200, JSON.stringify(activeSubscription.body));
+        registrarRota(
+          `GET ${P}/billing/tenants/:tenantId/subscription`,
+          activeSubscription.body.data,
+        );
+
+        const subscriptionHistory = await http(
+          "GET",
+          `${P}/billing/tenants/${cenario.tenantA}/subscription/history`,
+        );
+        assert.equal(subscriptionHistory.status, 200, JSON.stringify(subscriptionHistory.body));
+        registrarRota(
+          `GET ${P}/billing/tenants/:tenantId/subscription/history`,
+          subscriptionHistory.body.data,
+        );
+
+        const assigned = await http(
+          "PUT",
+          `${P}/billing/tenants/${cenario.tenantB}/subscription`,
+          { planCode: cenario.subscriptionPlanCode, validFrom: cenario.subscriptionValidFrom },
+        );
+        assert.equal(assigned.status, 200, JSON.stringify(assigned.body));
+        registrarRota(`PUT ${P}/billing/tenants/:tenantId/subscription`, assigned.body.data);
+
+        const ended = await http(
+          "DELETE",
+          `${P}/billing/tenants/${cenario.tenantB}/subscription`,
+          {},
+        );
+        assert.equal(ended.status, 200, JSON.stringify(ended.body));
+        registrarRota(`DELETE ${P}/billing/tenants/:tenantId/subscription`, { ended: true });
 
         const allocationSummary = await http(
           "GET",
@@ -702,6 +758,38 @@ async function semear(admin: PrismaClient, suffix: string, cenario: Cenario): Pr
   cenario.tenantA = tenantA.id;
   cenario.tenantB = tenantB.id;
 
+  const plan = await admin.subscriptionPlan.create({
+    data: {
+      code: `san3_05_plan_${suffix.replaceAll("-", "_")}`,
+      kind: "base",
+      name: "Plano de teste SAN3-05",
+      description: "Catálogo efêmero da prova de RLS.",
+    },
+  });
+  cenario.subscriptionPlanId = plan.id;
+  cenario.subscriptionPlanCode = plan.code;
+  await admin.subscriptionPlanVersion.create({
+    data: {
+      plan_id: plan.id,
+      version: 1,
+      valid_from: new Date("2000-01-01T00:00:00.000Z"),
+      monthly_price: 0,
+      included_users: 0,
+      included_storage_gb: 0,
+      extra_user_price: 0,
+      extra_gb_price: 0,
+      pricing_unit: "flat",
+      modules: ["dashboard"],
+    },
+  });
+  await admin.tenantSubscription.create({
+    data: {
+      tenant_id: tenantA.id,
+      plan_id: plan.id,
+      valid_from: new Date(cenario.subscriptionValidFrom),
+    },
+  });
+
   // Intercalado (F12): A 01h, 03h, 05h; B 02h, 04h — a concatenação por organização só sai ordenada se reordenar.
   const eventos = [
     [tenantA.id, 1],
@@ -828,7 +916,13 @@ async function limpar(admin: PrismaClient, cenario: Cenario): Promise<void> {
   if (cenario.costImportId) await admin.cloudCostImport.deleteMany({ where: { id: cenario.costImportId } });
   await admin.cloudUsageDailyAggregate.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.cloudUsageEvent.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.tenantSubscriptionAddon.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.tenantSubscription.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenant.deleteMany({ where: { id: { in: tenantIds } } });
+  if (cenario.subscriptionPlanId) {
+    await admin.subscriptionPlanVersion.deleteMany({ where: { plan_id: cenario.subscriptionPlanId } });
+    await admin.subscriptionPlan.deleteMany({ where: { id: cenario.subscriptionPlanId } });
+  }
 }
 
 /**

@@ -115,6 +115,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA DELETE /api/v1/platform/billing/tenants/:tenantId/subscription": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA DELETE /api/v1/professional-statements/:groupId": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -579,6 +583,30 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/platform/billing/plans": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/plans/:planId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/plans/:planId/versions": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/plans/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/tenants/:tenantId/subscription": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/tenants/:tenantId/subscription/history": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/platform/cloud-cost-allocations/runs": {
   "classe": "LEITURA",
   "n": 1
@@ -972,6 +1000,10 @@
   "n": 1
  },
  "ROTA PATCH /api/v1/operator-profiles/:profileId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/platform/billing/plans/:planId": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -1507,6 +1539,14 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/platform/billing/plans": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/plans/:planId/versions": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/platform/cloud-cost-allocations/runs": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1675,6 +1715,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA PUT /api/v1/platform/billing/tenants/:tenantId/subscription": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA PUT /api/v1/tenant-settings/:key": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1712,6 +1756,10 @@
   "n": 1
  },
  "ROTEADOR /api/v1/platform": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/platform/billing": {
   "classe": "ROTEADOR",
   "n": 1
  },
