@@ -120,3 +120,36 @@
 - Verde final: `core-saas`, `core-saas-role-authority`, `san3-04a-matriz-x-catalogo-guard` e `permission-catalog-migration-parity` = **55/55**, fail 0.
 - Mutação literal R-PLAN-9: retirar `platform:billing:manage` do snapshot de `super_admin` → `core-saas-role-authority` vermelho (11/12); linha restaurada.
 - Veredito: **F8 APROVADA**. Próxima fatia sem veredito: F9.
+
+
+## F9 — bateria + PR (PAUSA por guard fora do PERMITIDO)
+
+- Retomada medida antes de confiar no parcial: `npm run check` verde; F8 reexecutada (core-saas + core-saas-role-authority + san3-04a + permission-catalog-migration-parity) = 55/55, fail 0. Nada truncado.
+- Bateria (cluster descartável `devass02-pg` 127.0.0.1:55502 + `devass02-redis` 127.0.0.1:56502, já migrado 123 migrations):
+  - `npm run check`: verde.
+  - `npm run lint` (= check): verde.
+  - `npm run build`: verde.
+  - `node scripts/migration-transaction-guard.mjs`: 123 migrações, 11 novas, 0 violações.
+  - `git diff --check`: verde.
+  - `git diff --name-only origin/main...HEAD`: 44 arquivos, todos contidos no PERMITIDO.
+- Suítes do bloco + N (memória; `node --test --import tsx`, CORE_SAAS_PERSISTENCE=memory + DATABASE_URL dummy):
+  - ass-02-plan-vigencia 10 + ass-02-plans-subscription 14 + ass-02-plan-catalog 2 + platform-tenant-detail 9 + platform-routes 4 + core-saas 26 + core-saas-role-authority 12 + san3-04a 14 + permission-catalog-migration-parity 3 = **94/94, fail 0**.
+- Suítes -db do bloco + N (cluster descartável): ass-02-plans-rls-db 5/5, ass-02-plans-modules-db 2/2, ass-02-plans-seed-migration-drill-db 3/3, ass-02-plans-migration-drill-db 4/4, san3-05-leituras-de-plataforma-db 12/12 = **26/26, fail 0**.
+- `npm test` na forma canônica do CI `backend` (DATABASE_URL + REDIS_URL do cluster, CORE_SAAS_PERSISTENCE=memory): **4487 testes, pass 4473, fail 12, skipped 2**. Os 12 vermelhos se dividem em dois grupos:
+
+PREMISSA FALSA: o §4.2 não listou no PERMITIDO dois guards de plataforma que a adição de 11 rotas + 1 roteador + 2 tabelas FORCE RLS torna vermelhos — inclusive no Linux da CI (não é ambiente Windows):
+- `tests/o6r07c-census-guard.test.ts` (T1/T14): as 12 chaves novas (11 rotas + `ROTEADOR /api/v1/platform/billing`) saem `NAO-CLASSIFICADA` porque o instantâneo `tests/fixtures/o6r07c-classificacao-vias.json` não foi regenerado. Comando: `npm test` / `node --test --import tsx tests/o6r07c-census-guard.test.ts`; saída: "NAO-CLASSIFICADA: ROTA .../billing/plans ... ROTEADOR /api/v1/platform/billing". Arquivo fora do PERMITIDO (o §4.2 só autoriza `tests/fixtures/role-catalog-contract.snapshot.json`). O plano do B-ASS-01 incluía explicitamente censo+fixture no PERMITIDO dele — aqui ficou de fora.
+- `tests/san3-05-acessos-de-plataforma-guard.test.ts` (T13): o ratchet congelado não inclui `tenant_subscriptions`/`tenant_subscription_addons` nas chaves L0 FORCE nem os acessos L1/L2 dos novos repositórios Prisma. Comando: `node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts`; saída: "INVENTÁRIO SUSPEITO (ratchet: chave nova OU sumida = vermelho)". Arquivo (e o gerador `scripts/san3-05-acessos-de-plataforma.mjs`) fora do PERMITIDO.
+
+Ambientais Windows, NÃO do bloco (pré-existentes; verdes no CI Linux — Emenda 3 C3-01 do §4.1 registra o mesmo fenômeno na origin/main):
+- `tests/san3-05-runtime-role-guard-db.test.ts` (T14a/b/c/d): exige `psql (PostgreSQL) 16.` + `bash` + `setsid`; no Windows "expected 0, actual 3".
+- `tests/san3-09-bootstrap-platform-admin-db.test.ts` (T2.1): executa `node_modules/.bin/prisma` (script bash) pelo Node → SyntaxError.
+- `tests/traccar-event-migration-drill-db.test.ts`: hook `after` com `EBUSY: rmdir` de diretório temporário.
+- `tests/db-catalog-write-guard.test.ts`: passa sozinho 5/5 (no `npm test` falha por contenção paralela no cluster único).
+
+## PAUSA 2026-11-05 11:09 UTC
+
+- head: `f736e5be` (F8 aprovada e commitada; F0–F8 concluídas).
+- feito: F9 bateria quase completa — check/lint/build verdes, guard 0 violações, diff --check verde, suítes do bloco memória 94/94 e -db 26/26 verdes; diagnóstico completo dos 12 vermelhos do `npm test`.
+- falta: regenerar `tests/fixtures/o6r07c-classificacao-vias.json` e atualizar `tests/san3-05-acessos-de-plataforma-guard.test.ts` — ambos FORA do PERMITIDO §4.2; só depois `git push` + `gh pr create`.
+- próximo comando: aguardar decisão do orquestrador (emenda do PERMITIDO para incluir censo + ratchet, ou ordem de parar).
