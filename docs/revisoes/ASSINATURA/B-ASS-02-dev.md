@@ -63,3 +63,18 @@
 - M1-d: `20260895000000_ass02_seed_subscription_plans`; `BEGIN`/`COMMIT`; seis códigos com `ON CONFLICT (code) DO NOTHING`, sem versão, sem preço e `created_by = NULL`. Nenhum `UPDATE`, `DROP`, `RENAME` ou `ALTER TYPE`.
 - Retomada medida: `npm run check` verde. As 24 provas de memória da F1/F2 deram 22 pass / 2 fail porque o parcial F4 já havia mudado a assinatura interna do repositório e os helpers T-PL-21/T-PL-23 ainda chamavam a forma antiga; o reparo fica dentro da F4 e será reexecutado antes do commit.
 - `node scripts/migration-transaction-guard.mjs`: G0–G5 verdes; G6 acusa apenas a ausência esperada dos drills M1/M1b, que pertencem à F5. O drill M1-d e suas duas mutações também pertencem à F5. Veredito da fatia: esquema e migrações gravados; validação de aplicação/drills pendente de F5, conforme o plano.
+
+## F4 — repositórios Prisma, caminho de runtime e provas de concorrência/RLS
+
+- Retomada medida antes de editar: `npm ci` próprio; `npx prisma generate`; `npm run check` verde; F1+F2 = 22/24, com os mesmos T-PL-21/T-PL-23 vermelhos registrados no fim da F3. Causa confirmada: os helpers ainda chamavam a assinatura pré-F4 sem `tenantId`; arquivo não estava truncado.
+- Compatibilidade reparada: helpers de teste passam `tenantId`; F1+F2 reexecutadas = **24/24**, fail 0.
+- Runtime Prisma: `createDefaultPlansService` e `createDefaultSubscriptionsService` agora escolhem Prisma quando `CORE_SAAS_PERSISTENCE=prisma`; memória continua em dev/teste quando configurada. Repositórios novos: planos/versões globais, assinaturas/add-ons sempre sob `withTenantRls`, tenant lookup global e escrita de `tenants.modules`.
+- Cluster descartável: `devass02-pg`, PostgreSQL 16, `127.0.0.1:55502`; `DATABASE_URL` apontou somente para ele. `prisma migrate deploy`/`status`: **123 migrations, schema up to date**. A porta 55502 já estava ocupada pelo próprio container autorizado; nenhuma porta/container da demo foi tocada.
+- `tests/ass-02-plans-rls-db.test.ts`: **5/5**, fail 0:
+  - T-PL-db-1: 2 PUTs concorrentes → exatamente 1 assinatura vigente;
+  - T-PL-db-2: ENABLE + FORCE + política em ambas as tabelas tenant-scoped;
+  - T-PL-db-3: papel `NOSUPERUSER NOBYPASSRLS` sem GUC → 0 linhas;
+  - T-PL-db-4: GUC A não lê assinatura/add-on de B;
+  - T-PL-db-7: corrida de add-ons → exatamente 1 vigente.
+- Mutação literal R-PLAN-7: removida a linha `ALTER TABLE "tenant_subscriptions" FORCE ROW LEVEL SECURITY` da M1; M1 aplicada numa base separada `ass02_mut_force`; T-PL-db-2 ficou vermelho (`relforcerowsecurity: false`, 1 fail/4 skips). Linha restaurada e base temporária removida.
+- `npm run check` verde; `git diff --check` verde. Próximo: commit explícito da F4; depois F5 (drills M1/M1b/M1-d + T-PL-db-5/6).

@@ -67,9 +67,10 @@ function reasonOf(error: unknown): string | undefined {
 
 async function activeAddonsOf(
   stack: Stack,
+  tenantId: string,
   subscriptionId: string,
 ): Promise<readonly string[]> {
-  const addons = await stack.subsRepo.listActiveAddons(subscriptionId);
+  const addons = await stack.subsRepo.listActiveAddons(tenantId, subscriptionId);
   const codes: string[] = [];
   for (const addon of addons) {
     const plans = await stack.plansRepo.listPlans();
@@ -241,20 +242,22 @@ test("T-PL-21: addons omitido migra; addons: [] encerra", async () => {
     validFrom: spDate("2026-11-05"),
     addons: [{ planCode: "tracking_basic" }],
   });
-  assert.deepEqual(await activeAddonsOf(stack, first.subscription.id), ["tracking_basic"]);
+  assert.deepEqual(await activeAddonsOf(stack, "ten_1", first.subscription.id), ["tracking_basic"]);
 
   const migrated = await stack.subscriptions.putSubscription("ten_1", {
     planCode: "starter",
     validFrom: spDate("2026-12-01"),
   });
-  assert.deepEqual(await activeAddonsOf(stack, migrated.subscription.id), ["tracking_basic"]);
+  assert.deepEqual(await activeAddonsOf(stack, "ten_1", migrated.subscription.id), [
+    "tracking_basic",
+  ]);
 
   const cleared = await stack.subscriptions.putSubscription("ten_1", {
     planCode: "starter",
     validFrom: spDate("2027-01-01"),
     addons: [],
   });
-  assert.deepEqual(await activeAddonsOf(stack, cleared.subscription.id), []);
+  assert.deepEqual(await activeAddonsOf(stack, "ten_1", cleared.subscription.id), []);
 });
 
 test("T-PL-22: addons [tracking_basic, tracking_plus] juntos → 422 addon_duplicate_tracking", async () => {
@@ -296,9 +299,11 @@ test("T-PL-23: trocar Básico por Plus fecha a linha antiga com valid_to", async
     addons: [{ planCode: "tracking_plus" }],
   });
 
-  assert.deepEqual(await activeAddonsOf(stack, second.subscription.id), ["tracking_plus"]);
+  assert.deepEqual(await activeAddonsOf(stack, "ten_1", second.subscription.id), [
+    "tracking_plus",
+  ]);
 
-  const oldAddons = await stack.subsRepo.listAddons(first.subscription.id);
+  const oldAddons = await stack.subsRepo.listAddons("ten_1", first.subscription.id);
   assert.equal(oldAddons.length, 1);
   assert.equal(oldAddons[0]!.planId, (await stack.plansRepo.getPlanByCode("tracking_basic"))!.id);
   assert.equal(oldAddons[0]!.validTo?.getTime(), spDate("2026-12-01").getTime());
@@ -324,7 +329,7 @@ test("T-PL-24: DELETE fecha a vigente e os add-ons; GET → null", async () => {
   const subscriptions = await stack.subsRepo.listSubscriptions("ten_1");
   assert.equal(subscriptions[0]!.status, "ended");
   assert.equal(subscriptions[0]!.validTo !== null, true);
-  assert.deepEqual(await activeAddonsOf(stack, assigned.subscription.id), []);
+  assert.deepEqual(await activeAddonsOf(stack, "ten_1", assigned.subscription.id), []);
 });
 
 test("T-PL-25: segundo DELETE → 422 no_active_subscription", async () => {

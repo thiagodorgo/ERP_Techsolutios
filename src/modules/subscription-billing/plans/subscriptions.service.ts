@@ -194,13 +194,21 @@ export class SubscriptionsService {
     const addonPlans = await this.resolveAddons(input.addons);
 
     // Captura os add-ons vigentes ANTES de fechá-los: quando addons e omitido, eles migram.
-    const previousAddons = active ? await this.subscriptions.listActiveAddons(active.id) : [];
+    const previousAddons = active
+      ? await this.subscriptions.listActiveAddons(active.tenantId, active.id)
+      : [];
 
     // Fecha a vigente e os add-ons vigentes (a nova assinatura começa em validFrom).
     if (active) {
-      await this.subscriptions.closeSubscription(active.id, input.validFrom, null, null);
+      await this.subscriptions.closeSubscription(
+        active.tenantId,
+        active.id,
+        input.validFrom,
+        null,
+        null,
+      );
       for (const addon of previousAddons) {
-        await this.subscriptions.closeAddon(addon.id, input.validFrom);
+        await this.subscriptions.closeAddon(active.tenantId, addon.id, input.validFrom);
       }
     }
 
@@ -295,9 +303,15 @@ export class SubscriptionsService {
       );
     }
 
-    await this.subscriptions.closeSubscription(active.id, effectiveValidTo, input.reason ?? null, null);
-    for (const addon of await this.subscriptions.listActiveAddons(active.id)) {
-      await this.subscriptions.closeAddon(addon.id, effectiveValidTo);
+    await this.subscriptions.closeSubscription(
+      active.tenantId,
+      active.id,
+      effectiveValidTo,
+      input.reason ?? null,
+      null,
+    );
+    for (const addon of await this.subscriptions.listActiveAddons(active.tenantId, active.id)) {
+      await this.subscriptions.closeAddon(active.tenantId, addon.id, effectiveValidTo);
     }
 
     // R-PLAN-3: DELETE não apaga `tenants.modules` — a organização continua com o que tinha.
@@ -402,7 +416,7 @@ export class SubscriptionsService {
         "Subscription plan not found.",
       );
     }
-    const addons = await this.subscriptions.listAddons(subscription.id);
+    const addons = await this.subscriptions.listAddons(subscription.tenantId, subscription.id);
     const views: (TenantSubscriptionAddon & { plan: SubscriptionPlan })[] = [];
     for (const addon of addons) {
       const addonPlan = plans.find((item) => item.id === addon.planId);

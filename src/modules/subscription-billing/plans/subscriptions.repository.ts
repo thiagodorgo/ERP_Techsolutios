@@ -1,5 +1,7 @@
 // B-ASS-02 — repositório de assinaturas/add-ons por organização. Interface + dublê em memória.
-// O caminho Prisma chega na F4 (subscriptions-prisma.repository.ts).
+// O caminho Prisma chega na F4 (subscriptions-prisma.repository.ts) e carrega `tenantId` em toda
+// operação de organização para poder abrir o contexto RLS (`withTenantRls`). O dublê ignora o
+// tenantId extra (os ids de assinatura/add-on já são únicos globalmente).
 
 import { randomUUID } from "node:crypto";
 
@@ -39,15 +41,16 @@ export interface SubscriptionsRepository {
   listActiveSubscriptions(): Promise<TenantSubscription[]>;
   createSubscription(input: CreateSubscriptionRecord): Promise<TenantSubscription>;
   closeSubscription(
+    tenantId: string,
     subscriptionId: string,
     validTo: Date,
     reason: string | null,
     endedBy: string | null,
   ): Promise<void>;
-  listAddons(subscriptionId: string): Promise<TenantSubscriptionAddon[]>;
-  listActiveAddons(subscriptionId: string): Promise<TenantSubscriptionAddon[]>;
+  listAddons(tenantId: string, subscriptionId: string): Promise<TenantSubscriptionAddon[]>;
+  listActiveAddons(tenantId: string, subscriptionId: string): Promise<TenantSubscriptionAddon[]>;
   createAddon(input: CreateAddonRecord): Promise<TenantSubscriptionAddon>;
-  closeAddon(addonId: string, validTo: Date): Promise<void>;
+  closeAddon(tenantId: string, addonId: string, validTo: Date): Promise<void>;
 }
 
 export class InMemorySubscriptionsRepository implements SubscriptionsRepository {
@@ -100,6 +103,7 @@ export class InMemorySubscriptionsRepository implements SubscriptionsRepository 
   }
 
   async closeSubscription(
+    _tenantId: string,
     subscriptionId: string,
     validTo: Date,
     reason: string | null,
@@ -117,14 +121,19 @@ export class InMemorySubscriptionsRepository implements SubscriptionsRepository 
     });
   }
 
-  async listAddons(subscriptionId: string): Promise<TenantSubscriptionAddon[]> {
+  async listAddons(_tenantId: string, subscriptionId: string): Promise<TenantSubscriptionAddon[]> {
     return [...this.addons.values()]
       .filter((addon) => addon.subscriptionId === subscriptionId)
       .sort((a, b) => a.validFrom.getTime() - b.validFrom.getTime());
   }
 
-  async listActiveAddons(subscriptionId: string): Promise<TenantSubscriptionAddon[]> {
-    return (await this.listAddons(subscriptionId)).filter((addon) => addon.validTo === null);
+  async listActiveAddons(
+    _tenantId: string,
+    subscriptionId: string,
+  ): Promise<TenantSubscriptionAddon[]> {
+    return (await this.listAddons(_tenantId, subscriptionId)).filter(
+      (addon) => addon.validTo === null,
+    );
   }
 
   async createAddon(input: CreateAddonRecord): Promise<TenantSubscriptionAddon> {
@@ -144,7 +153,7 @@ export class InMemorySubscriptionsRepository implements SubscriptionsRepository 
     return addon;
   }
 
-  async closeAddon(addonId: string, validTo: Date): Promise<void> {
+  async closeAddon(_tenantId: string, addonId: string, validTo: Date): Promise<void> {
     const existing = this.addons.get(addonId);
     if (!existing) return;
     this.addons.set(addonId, { ...existing, validTo, updatedAt: new Date() });

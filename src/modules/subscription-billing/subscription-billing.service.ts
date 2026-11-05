@@ -74,14 +74,46 @@ let defaultPlansServicePromise: Promise<PlansService> | undefined;
 let defaultSubscriptionsServicePromise: Promise<SubscriptionsService> | undefined;
 
 export async function createDefaultPlansService(): Promise<PlansService> {
-  return createMemoryPlansService();
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return createMemoryPlansService();
+  }
+
+  defaultPlansServicePromise ??= createPrismaPlansService();
+  return defaultPlansServicePromise;
 }
 
 export async function createDefaultSubscriptionsService(): Promise<SubscriptionsService> {
-  return createMemorySubscriptionsService();
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    return createMemorySubscriptionsService();
+  }
+
+  defaultSubscriptionsServicePromise ??= createPrismaSubscriptionsService();
+  return defaultSubscriptionsServicePromise;
 }
 
 export function resetSubscriptionBillingRuntimeForTests(): void {
   defaultPlansServicePromise = undefined;
   defaultSubscriptionsServicePromise = undefined;
+}
+
+async function createPrismaPlansService(): Promise<PlansService> {
+  const { createPrismaPlansRepository } = await import("./plans/plans-prisma.repository.js");
+  return new PlansService(await createPrismaPlansRepository());
+}
+
+async function createPrismaSubscriptionsService(): Promise<SubscriptionsService> {
+  const [subscriptionsModule, plansModule, tenantModule, modulesWriterModule] = await Promise.all([
+    import("./plans/subscriptions-prisma.repository.js"),
+    import("./plans/plans-prisma.repository.js"),
+    import("./plans/tenant-lookup.prisma.js"),
+    import("./plans/tenant-modules.prisma.js"),
+  ]);
+  const { prisma } = await import("../../database/prisma.js");
+
+  return new SubscriptionsService(
+    new subscriptionsModule.PrismaSubscriptionsRepository(prisma),
+    new plansModule.PrismaPlansRepository(prisma),
+    new tenantModule.PrismaTenantLookup(prisma),
+    new modulesWriterModule.PrismaTenantModulesWriter(prisma),
+  );
 }
