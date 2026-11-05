@@ -255,8 +255,6 @@ export function App() {
                     "platform:cloud-usage:read",
                     "platform:cloud-costs:read",
                     "platform:cloud-cost-allocation:read",
-                    "platform:cloud-charges:read",
-                    "platform:cloud-charge-rules:read",
                   ]}
                 >
                   <PlatformCloudBillingPage />

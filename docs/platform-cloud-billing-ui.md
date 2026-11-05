@@ -1,5 +1,7 @@
 # Platform Cloud Billing UI
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 ## Escopo
 
 Esta interface consulta Cloud Billing no Console da Plataforma, sem backend novo, sem fatura, sem pagamento, sem checkout e sem emissão fiscal. A tela é estritamente de leitura.

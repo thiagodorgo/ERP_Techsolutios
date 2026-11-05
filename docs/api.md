@@ -1,5 +1,7 @@
 # API
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 O backend atual usa o prefixo `/api/v1`. Os contratos abaixo documentam o boundary inicial do Console da Plataforma.
 
 ## Politica de KPIs duplos

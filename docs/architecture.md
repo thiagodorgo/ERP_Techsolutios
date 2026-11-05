@@ -1,5 +1,7 @@
 # Arquitetura
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 O ERP Techsolutions usa frontend React + TypeScript + Vite, backend Node.js + TypeScript, PostgreSQL planejado como persistencia principal, Redis para cache, filas/jobs/eventos internos e coordenacao futura, e Docker para ambiente local.
 
 ## Boundaries principais

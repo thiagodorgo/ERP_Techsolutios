@@ -52,11 +52,11 @@ test("T39 modo demonstração é vazio e só config/env.ts lê o interruptor", a
   }
 });
 
-test("T40 módulos não vaza código interno e inventário conserva 32 endpoints", () => {
+test("T40 módulos não vaza código interno e inventário conserva 23 endpoints", () => {
   const source = readFileSync(path.join(FRONTEND, "src/modules/platform/pages/PlatformTenantModulesPage.tsx"), "utf8");
   assert.match(source, /Módulos não encontrados/);
   assert.match(source, /plano \{planLabel\(tenant\.plan\)\}/);
   assert.doesNotMatch(source, /P0\d|plano \{tenant\.plan\}/);
   const output = execFileSync(process.execPath, [path.join(REPO, "scripts/san3-06b-endpoints-de-plataforma.mjs"), REPO], { encoding: "utf8", timeout: 120_000 });
-  assert.match(output, /endpoints sob \/api\/v1\/platform = 32/);
+  assert.match(output, /endpoints sob \/api\/v1\/platform = 23/);
 });

@@ -1,5 +1,7 @@
 # RBAC
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 ## Visao geral
 
 O RBAC do Core SaaS esta em transicao entre headers simulados e autorizacao persistida.

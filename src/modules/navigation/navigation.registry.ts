@@ -33,19 +33,18 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
   {
     id: "platform.cloudBilling",
     label: "Billing Cloud",
-    description: "Uso, custo, rateio, cobrança e margem cloud no boundary Platform.",
+    description: "Uso, custo e rateio cloud no boundary Platform.",
     path: "/platform/cloud-billing",
     icon: "Receipt",
     group: "platform",
     order: 30,
     status: "implemented",
-    requiredPermissions: ["platform:cloud-charges:read"],
+    requiredPermissions: ["platform:cloud-cost-allocation:read"],
     platformOnly: true,
     relatedEndpoints: [
       "GET /api/v1/platform/cloud-usage/summary",
       "GET /api/v1/platform/cloud-costs/summary",
       "GET /api/v1/platform/cloud-cost-allocations/summary",
-      "GET /api/v1/platform/cloud-charges/summary",
     ],
   },
   {

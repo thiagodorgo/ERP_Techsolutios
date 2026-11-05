@@ -579,30 +579,6 @@
   "classe": "LEITURA",
   "n": 1
  },
- "ROTA GET /api/v1/platform/cloud-charge-rules": {
-  "classe": "LEITURA",
-  "n": 1
- },
- "ROTA GET /api/v1/platform/cloud-charge-rules/:ruleId": {
-  "classe": "LEITURA",
-  "n": 1
- },
- "ROTA GET /api/v1/platform/cloud-charges/calculation-runs": {
-  "classe": "LEITURA",
-  "n": 1
- },
- "ROTA GET /api/v1/platform/cloud-charges/calculation-runs/:runId": {
-  "classe": "LEITURA",
-  "n": 1
- },
- "ROTA GET /api/v1/platform/cloud-charges/calculation-runs/:runId/tenant-charges": {
-  "classe": "LEITURA",
-  "n": 1
- },
- "ROTA GET /api/v1/platform/cloud-charges/summary": {
-  "classe": "LEITURA",
-  "n": 1
- },
  "ROTA GET /api/v1/platform/cloud-cost-allocations/runs": {
   "classe": "LEITURA",
   "n": 1
@@ -996,10 +972,6 @@
   "n": 1
  },
  "ROTA PATCH /api/v1/operator-profiles/:profileId": {
-  "classe": "SEM-ALCANCE-CAMPO",
-  "n": 1
- },
- "ROTA PATCH /api/v1/platform/cloud-charge-rules/:ruleId": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -1535,14 +1507,6 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
- "ROTA POST /api/v1/platform/cloud-charge-rules": {
-  "classe": "SEM-ALCANCE-CAMPO",
-  "n": 1
- },
- "ROTA POST /api/v1/platform/cloud-charges/calculation-runs": {
-  "classe": "SEM-ALCANCE-CAMPO",
-  "n": 1
- },
  "ROTA POST /api/v1/platform/cloud-cost-allocations/runs": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1749,7 +1713,7 @@
  },
  "ROTEADOR /api/v1/platform": {
   "classe": "ROTEADOR",
-  "n": 2
+  "n": 1
  },
  "ROTEADOR /api/v1/platform/cloud-cost-allocations": {
   "classe": "ROTEADOR",

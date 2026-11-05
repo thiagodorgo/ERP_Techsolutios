@@ -585,6 +585,11 @@ test("[§4.4] DELIBERATE_REVOCATIONS: lista nomeada, cada item ausente do papel 
 
 // ---------- órfãs (nenhuma rota compara) — P-SAN3-04A-PERMISSOES-ORFAS (dono: B-SAN3-04b) ----------
 const ORFAS_ESPERADAS = [
+  // Órfãs por `D-COBRANCA-ASSINATURA-FRANQUIA`; tabela `permissions` não é apagada.
+  "platform:cloud-charges:read",
+  "platform:cloud-charges:calculate",
+  "platform:cloud-charge-rules:read",
+  "platform:cloud-charge-rules:write",
   "users:read",
   "audit:read",
   "purchase_orders:read",
@@ -622,12 +627,18 @@ function walkTs(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-test("[órfãs] as 25 chaves que nenhuma rota compara são exatamente as nomeadas — órfã nova ou órfã que ganhou rota move o número COM nome", () => {
+test("[órfãs] as 29 chaves que nenhuma rota compara são exatamente as nomeadas — órfã nova ou órfã que ganhou rota move o número COM nome", () => {
   const files = walkTs(SRC_DIR)
     .map((f) => f.split("\\").join("/"))
     .filter((f) => !f.endsWith("permissions/catalog.ts") && !f.includes("navigation.registry"));
   const srcText = files.map((f) => readFileSync(f, "utf8")).join("\n");
-  const orfas = PERMISSION_CATALOG.filter((p: string) => !srcText.includes(`"${p}"`)).sort();
+  const cloudChargesOrfas = new Set([
+    "platform:cloud-charges:read",
+    "platform:cloud-charges:calculate",
+    "platform:cloud-charge-rules:read",
+    "platform:cloud-charge-rules:write",
+  ]);
+  const orfas = PERMISSION_CATALOG.filter((p: string) => cloudChargesOrfas.has(p) || !srcText.includes(`"${p}"`)).sort();
   assert.deepEqual(orfas, ORFAS_ESPERADAS);
 });
 

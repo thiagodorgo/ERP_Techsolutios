@@ -376,8 +376,6 @@ test("navegacao RBAC filtra W02A, W03 e Platform Console por perfil", async () =
         "platform:cloud-usage:read",
         "platform:cloud-costs:read",
         "platform:cloud-cost-allocation:read",
-        "platform:cloud-charges:read",
-        "platform:cloud-charge-rules:read",
       ],
       mode: "platform",
       scope: "platform",
@@ -461,7 +459,7 @@ test("navigation service consome endpoint backend com scope e mock fallback loca
         group: "platform",
         order: 30,
         status: "implemented",
-        requiredPermissions: ["platform:cloud-charges:read"],
+        requiredPermissions: ["platform:cloud-cost-allocation:read"],
       },
     ],
   });
@@ -782,52 +780,15 @@ test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async 
       },
     },
     { payload: { data: { periodStart: "2026-06-01", periodEnd: "2026-06-30", currency: "BRL", totalImportedCost: 12, totalAllocatedCost: 12, totalUnallocatedCost: 0, tenants: [{ tenantId: "tenant-a", tenantName: "Org A", allocatedCost: 12, allocationRatio: 1 }], services: [], generatedAt: "2026-06-08T00:00:00.000Z" } } },
-    {
-      payload: {
-        data: [
-          {
-            id: "charge-run-1",
-            status: "completed",
-            periodStart: "2026-06-01T00:00:00.000Z",
-            totalChargeAmount: 18,
-            totalAllocatedCost: 12,
-            startedAt: "2026-06-08T00:00:00.000Z",
-          },
-        ],
-      },
-    },
-    { payload: { data: { periodStart: "2026-06-01", periodEnd: "2026-06-30", currency: "BRL", totalAllocatedCost: 12, totalChargeAmount: 18, totalMarginAmount: 6, totalDiscountAmount: 0, tenants: [{ tenantId: "tenant-a", tenantName: "Org A", allocatedCost: 12, finalChargeAmount: 18, marginAmount: 6, status: "ready" }], generatedAt: "2026-06-08T00:00:00.000Z" } } },
-    {
-      payload: {
-        data: [
-          {
-            id: "rule-1",
-            name: "Default",
-            isActive: true,
-            markupValue: 50,
-            updatedAt: "2026-06-08T00:00:00.000Z",
-          },
-        ],
-      },
-    },
     { payload: { data: { id: "allocation-run-2", status: "completed", periodStart: "2026-06-01T00:00:00.000Z", totalAllocatedCost: 12 } } },
-    { payload: { data: { id: "charge-run-2", status: "completed", periodStart: "2026-06-01T00:00:00.000Z", totalChargeAmount: 18, totalAllocatedCost: 12 } } },
-    { payload: { data: { id: "rule-2", name: "Nova", isActive: true, markupValue: 25, updatedAt: "2026-06-08T00:00:00.000Z" } } },
-    { payload: { data: { id: "rule-2", name: "Nova editada", isActive: false, markupValue: 30, updatedAt: "2026-06-08T00:00:00.000Z" } } },
   ]);
   const {
-    calculateCloudChargesFromApi,
-    createCloudChargeRuleFromApi,
     getCloudAllocationSummaryFromApi,
-    getCloudChargeSummaryFromApi,
     getCloudCostSummaryFromApi,
     getCloudUsageSummaryFromApi,
     listCloudAllocationRunsFromApi,
-    listCloudChargeRulesFromApi,
-    listCloudChargeRunsFromApi,
     listCloudCostImportsFromApi,
     runCloudAllocationFromApi,
-    updateCloudChargeRuleFromApi,
   } = await import("../src/modules/platform/cloud-billing/cloud-billing.adapter");
 
   const period = { start: "2026-06-01", end: "2026-06-30" };
@@ -836,51 +797,20 @@ test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async 
   const costs = await getCloudCostSummaryFromApi(period);
   const allocationRuns = await listCloudAllocationRunsFromApi();
   const allocation = await getCloudAllocationSummaryFromApi(period);
-  const chargeRuns = await listCloudChargeRunsFromApi();
-  const charges = await getCloudChargeSummaryFromApi(period);
-  const rules = await listCloudChargeRulesFromApi();
   const allocationRun = await runCloudAllocationFromApi();
-  const chargeRun = await calculateCloudChargesFromApi("allocation-run-2");
-  const createdRule = await createCloudChargeRuleFromApi({
-    name: "Nova",
-    provider: "aws",
-    metric: "allocated_cost",
-    markupPercent: 25,
-    active: true,
-  });
-  const updatedRule = await updateCloudChargeRuleFromApi("rule-2", {
-    name: "Nova editada",
-    provider: "aws",
-    metric: "allocated_cost",
-    markupPercent: 30,
-    active: false,
-  });
 
   assert.equal(calls[0].url, "/api/v1/platform/cloud-usage/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
   assert.equal(calls[1].url, "/api/v1/platform/cloud-costs/imports?periodStart=2026-06-01&periodEnd=2026-06-30");
   assert.equal(calls[2].url, "/api/v1/platform/cloud-costs/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
   assert.equal(calls[3].url, "/api/v1/platform/cloud-cost-allocations/runs");
   assert.equal(calls[4].url, "/api/v1/platform/cloud-cost-allocations/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
-  assert.equal(calls[5].url, "/api/v1/platform/cloud-charges/calculation-runs");
-  assert.equal(calls[6].url, "/api/v1/platform/cloud-charges/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
-  assert.equal(calls[7].url, "/api/v1/platform/cloud-charge-rules");
-  assert.equal(calls[8].url, "/api/v1/platform/cloud-cost-allocations/runs");
-  assert.equal(calls[9].url, "/api/v1/platform/cloud-charges/calculation-runs");
-  assert.equal(JSON.parse(String(calls[9].init.body)).sourceAllocationRunId, "allocation-run-2");
-  assert.equal(calls[10].url, "/api/v1/platform/cloud-charge-rules");
-  assert.equal(calls[11].url, "/api/v1/platform/cloud-charge-rules/rule-2");
+  assert.equal(calls[5].url, "/api/v1/platform/cloud-cost-allocations/runs");
   assert.equal(usage.metrics[0].quantity, 4);
   assert.equal(imports[0].rowCount, 2);
   assert.equal(costs.totalUnblendedCost, 12.75);
   assert.equal(allocationRuns[0].allocatedCost, 12);
   assert.equal(allocation.tenants[0].allocatedCost, 12);
-  assert.equal(chargeRuns[0].grossAmount, 18);
-  assert.equal(charges.tenants[0].finalChargeAmount, 18);
-  assert.equal(rules[0].markupPercent, 50);
   assert.equal(allocationRun.allocatedCost, 12);
-  assert.equal(chargeRun.grossAmount, 18);
-  assert.equal(createdRule.name, "Nova");
-  assert.equal(updatedRule.active, false);
 });
 
 test("notifications service cobre endpoints, mocks e actionUrl interno", async () => {

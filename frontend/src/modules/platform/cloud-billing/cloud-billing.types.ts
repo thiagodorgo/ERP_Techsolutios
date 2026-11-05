@@ -75,29 +75,6 @@ export type CloudAllocationSummary = {
   readonly generatedAt: string;
 };
 
-export type CloudChargeTenant = {
-  readonly tenantId: string;
-  readonly tenantName?: string;
-  readonly allocatedCost: number;
-  readonly finalChargeAmount: number;
-  readonly marginAmount: number;
-  readonly marginPercentage?: number;
-  readonly status: string;
-};
-
-export type CloudChargeSummary = {
-  readonly periodStart: string;
-  readonly periodEnd: string;
-  readonly currency?: string;
-  readonly totalAllocatedCost: number;
-  readonly totalChargeAmount: number;
-  readonly totalMarginAmount: number;
-  readonly totalDiscountAmount: number;
-  readonly totalMarginPercentage?: number;
-  readonly tenants: readonly CloudChargeTenant[];
-  readonly generatedAt: string;
-};
-
 export type CloudBillingSource = "api" | "mock" | "fallback";
 
 export type CloudBillingData = {
@@ -105,7 +82,6 @@ export type CloudBillingData = {
   readonly usage: CloudUsageSummary | null;
   readonly costs: CloudCostSummary | null;
   readonly allocation: CloudAllocationSummary | null;
-  readonly charges: CloudChargeSummary | null;
   readonly imports: readonly CloudCostImport[];
   readonly source: CloudBillingSource;
   readonly forbidden: boolean;
@@ -113,14 +89,9 @@ export type CloudBillingData = {
 };
 
 export function emptyCloudBilling(period: CloudBillingPeriod, source: CloudBillingSource): CloudBillingData {
-  return { period, usage: null, costs: null, allocation: null, charges: null, imports: [], source, forbidden: false, stale: false };
+  return { period, usage: null, costs: null, allocation: null, imports: [], source, forbidden: false, stale: false };
 }
 
 // Tipos legados das rotinas de escrita. O B-SAN3-06b não as consome nem altera sua regra.
 export type CloudAllocationRunStatus = "completed" | "running" | "failed";
 export type CloudAllocationRun = { readonly id: string; readonly status: CloudAllocationRunStatus; readonly period: string; readonly startedAt: string; readonly completedAt?: string; readonly allocatedCost: number; readonly unallocatedCost: number; readonly ruleCoveragePercent: number; readonly errorMessage?: string };
-export type CloudChargeRunStatus = "completed" | "running" | "failed";
-export type CloudChargeRun = { readonly id: string; readonly status: CloudChargeRunStatus; readonly period: string; readonly startedAt: string; readonly completedAt?: string; readonly grossAmount: number; readonly netCost: number; readonly marginPercent: number; readonly errorMessage?: string };
-export type CloudChargeRuleMetric = "compute_hours" | "storage_gb" | "requests" | "allocated_cost";
-export type CloudChargeRule = { readonly id: string; readonly name: string; readonly provider: CloudProvider; readonly metric: CloudChargeRuleMetric; readonly markupPercent: number; readonly active: boolean; readonly updatedAt: string; readonly appliesToTenantIds?: string[] };
-export type UpsertCloudChargeRuleInput = { readonly name: string; readonly provider: CloudProvider; readonly metric: CloudChargeRuleMetric; readonly markupPercent: number; readonly active: boolean; readonly appliesToTenantIds?: string[] };

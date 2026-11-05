@@ -268,10 +268,6 @@ const rolePermissions: Record<string, string[]> = {
     "platform:cloud-costs:import",
     "platform:cloud-cost-allocation:read",
     "platform:cloud-cost-allocation:run",
-    "platform:cloud-charges:read",
-    "platform:cloud-charges:calculate",
-    "platform:cloud-charge-rules:read",
-    "platform:cloud-charge-rules:write",
   ],
   platform_admin: [
     "platform:tenants:read",
@@ -283,10 +279,6 @@ const rolePermissions: Record<string, string[]> = {
     "platform:cloud-costs:import",
     "platform:cloud-cost-allocation:read",
     "platform:cloud-cost-allocation:run",
-    "platform:cloud-charges:read",
-    "platform:cloud-charges:calculate",
-    "platform:cloud-charge-rules:read",
-    "platform:cloud-charge-rules:write",
   ],
   tenant_admin: [
     "tenant.manage",

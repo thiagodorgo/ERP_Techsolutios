@@ -55,9 +55,6 @@ const P = "/api/v1/platform";
 // A superfície FECHADA (§2.3 do plano), rota a rota — enumerada da fonte e conferida contra o router em runtime.
 const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/cloud-usage/summary`, S("FORCE-SEM-TENANT", ["cloud_usage_events"], "S1 — T11a")],
-  [`POST ${P}/cloud-charges/calculation-runs`, S("FORCE-SEM-TENANT", ["tenant_cloud_cost_allocations", "tenant_cloud_charges"], "S3 — T11c")],
-  [`GET ${P}/cloud-charges/calculation-runs/:runId/tenant-charges`, S("FORCE-SEM-TENANT", ["tenant_cloud_charges"], "S3 — T11c")],
-  [`GET ${P}/cloud-charges/summary`, S("FORCE-SEM-TENANT", ["tenant_cloud_charges"], "S3 — T11c")],
   [`GET ${P}/cloud-usage/tenants/:tenantId/summary`, S("FORCE-POR-TENANT", ["cloud_usage_events"], "withTenantRls (filtro com tenantId)")],
   [`GET ${P}/cloud-usage/tenants/:tenantId/daily`, S("FORCE-POR-TENANT", ["cloud_usage_daily_aggregates"], "S4 — controle do T11d")],
   [`GET ${P}/overview`, S("FORCE-POR-TENANT", ["users"], "S4 — controle do T11d (listUsersForTenant sob withTenantRls)")],
@@ -67,12 +64,6 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/cloud-cost-allocations/summary`, S("FORCE-POR-TENANT", ["tenant_cloud_cost_allocations"], "listTenantAllocations por organização (B-O6R-06)")],
   [`GET ${P}/cloud-cost-allocations/runs`, S("SEM-FORCE", ["cloud_cost_allocation_runs"], "excluída")],
   [`GET ${P}/cloud-cost-allocations/runs/:runId`, S("SEM-FORCE", ["cloud_cost_allocation_runs"], "excluída")],
-  [`GET ${P}/cloud-charge-rules`, S("SEM-FORCE", ["cloud_charge_rules"], "excluída")],
-  [`POST ${P}/cloud-charge-rules`, S("SEM-FORCE", ["cloud_charge_rules"], "excluída")],
-  [`GET ${P}/cloud-charge-rules/:ruleId`, S("SEM-FORCE", ["cloud_charge_rules"], "excluída")],
-  [`PATCH ${P}/cloud-charge-rules/:ruleId`, S("SEM-FORCE", ["cloud_charge_rules"], "excluída")],
-  [`GET ${P}/cloud-charges/calculation-runs`, S("SEM-FORCE", ["cloud_charge_calculation_runs"], "excluída")],
-  [`GET ${P}/cloud-charges/calculation-runs/:runId`, S("SEM-FORCE", ["cloud_charge_calculation_runs"], "excluída")],
   [`GET ${P}/cloud-costs/imports`, S("SEM-FORCE", ["cloud_cost_imports"], "excluída")],
   [`GET ${P}/cloud-costs/imports/:importId`, S("SEM-FORCE", ["cloud_cost_imports"], "excluída")],
   [`POST ${P}/cloud-costs/imports/manual-csv`, S("SEM-FORCE", ["cloud_cost_imports", "cloud_cost_line_items"], "excluída")],
@@ -91,7 +82,6 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
 type EtiquetaJob = "FORCE-PLATAFORMA" | "FORA-DA-SUPERFICIE";
 const JOBS: ReadonlyMap<string, EtiquetaJob> = new Map([
   ["aws-cur.import-cost-file", "FORA-DA-SUPERFICIE"],
-  ["cloud-charges.calculate", "FORCE-PLATAFORMA"],
   ["cloud-cost-allocation.run", "FORCE-PLATAFORMA"],
   ["checklist-attachment-postprocess", "FORA-DA-SUPERFICIE"],
   ["cloud-usage.aggregate-daily", "FORCE-PLATAFORMA"],
@@ -276,17 +266,13 @@ if (!connectionString) {
         "o registro runtime de jobs precisa coincidir com a lista fechada",
       );
       const usageJob = registry.get("cloud-usage.aggregate-daily");
-      const chargesJob = registry.get("cloud-charges.calculate");
       const allocationJob = registry.get("cloud-cost-allocation.run");
-      assert.ok(usageJob && chargesJob && allocationJob, "os três jobs FORCE precisam estar registrados");
+      assert.ok(usageJob && allocationJob, "os dois jobs FORCE precisam estar registrados");
 
       type Medida = {
         s1: unknown;
         s1Quantidade: number;
         s2: unknown[];
-        s3Run: unknown;
-        s3Charges: unknown[];
-        s3Summary: unknown;
         s4Alocacoes: unknown;
         s4Overview: unknown;
         s4Daily: unknown;
@@ -396,52 +382,6 @@ if (!connectionString) {
           })),
         );
 
-        // S3 — POST calculation-runs → GET tenant-charges → GET summary (nesta ordem: o summary lê o run mais recente)
-        const s3Run = await http("POST", `${P}/cloud-charges/calculation-runs`, {
-          periodStart: MES_INICIO,
-          periodEnd: MES_FIM,
-          sourceAllocationRunId: cenario.allocationRunId,
-        });
-        assert.equal(s3Run.status, 201, JSON.stringify(s3Run.body));
-        const runId = (s3Run.body.data as { id: string }).id;
-        cenario.calculationRunIds.push(runId);
-        const s3Charges = await http("GET", `${P}/cloud-charges/calculation-runs/${runId}/tenant-charges`);
-        assert.equal(s3Charges.status, 200, JSON.stringify(s3Charges.body));
-        const s3Summary = await http(
-          "GET",
-          `${P}/cloud-charges/summary?periodStart=${MES_INICIO}&periodEnd=${MES_FIM}&sourceAllocationRunId=${cenario.allocationRunId}`,
-        );
-        assert.equal(s3Summary.status, 200, JSON.stringify(s3Summary.body));
-        registrarRota(`POST ${P}/cloud-charges/calculation-runs`, s3Run.body.data);
-        registrarRota(`GET ${P}/cloud-charges/calculation-runs/:runId/tenant-charges`, s3Charges.body.data);
-        const s3SummarySeed = recortarResumoPorTenant(s3Summary.body.data, cenario);
-        registrarRota(`GET ${P}/cloud-charges/summary`, s3SummarySeed);
-
-        await chargesJob(
-          { sourceAllocationRunId: cenario.allocationRunId, periodStart: MES_INICIO, periodEnd: MES_FIM },
-          {} as never,
-        );
-        const jobChargeRun = await admin.cloudChargeCalculationRun.findFirstOrThrow({
-          where: { source_allocation_run_id: cenario.allocationRunId },
-          orderBy: { created_at: "desc" },
-        });
-        const jobCharges = await admin.tenantCloudCharge.findMany({
-          where: { calculation_run_id: jobChargeRun.id },
-          orderBy: { tenant_id: "asc" },
-        });
-        registrarJob(
-          "cloud-charges.calculate",
-          jobCharges.map((row) => ({
-            tenantId: tag(row.tenant_id),
-            allocatedCost: Number(row.allocated_cost),
-            finalChargeAmount: Number(row.final_charge_amount),
-            currency: row.currency,
-            status: row.status,
-          })),
-        );
-        await admin.tenantCloudCharge.deleteMany({ where: { calculation_run_id: jobChargeRun.id } });
-        await admin.cloudChargeCalculationRun.delete({ where: { id: jobChargeRun.id } });
-
         const jobAllocationCreatedBy = `san3-05-${papel}-${suffix}`;
         await allocationJob({ periodStart: MES_INICIO, periodEnd: MES_FIM, createdBy: jobAllocationCreatedBy }, {} as never);
         const jobAllocationRun = await admin.cloudCostAllocationRun.findFirstOrThrow({
@@ -469,9 +409,6 @@ if (!connectionString) {
           s1: normalizar(s1Data),
           s1Quantidade: s1Data.metrics.reduce((total, metric) => total + Number(metric.quantity), 0),
           s2: gravados.map((row) => `${tag(row.tenant_id)}|${row.metric_key}|${Number(row.quantity)}|${row.unit}|${row.source_type}`),
-          s3Run: normalizar(s3Run.body.data),
-          s3Charges: (s3Charges.body.data as Array<Record<string, unknown>>).map((charge) => normalizar({ ...charge, tenantId: tag(String(charge.tenantId)) })),
-          s3Summary: normalizar(s3SummarySeed),
           s4Alocacoes: normalizar(s4Alocacoes.body.data),
           s4Overview: s4OverviewSeed.orgs.map((org) => normalizar(org)),
           s4Daily: normalizar(s4Daily.body.data),
@@ -501,17 +438,6 @@ if (!connectionString) {
         assert.deepEqual(efe.s2, sup.s2, "sob o papel sem bypass o job agrega 0 (H7-a) se a leitura não for por organização");
       });
 
-      await t.test("T11c · POST calculation-runs + GET tenant-charges + GET summary: efêmero == super (2 cobranças)", () => {
-        assert.equal(sup.s3Charges.length, 2, JSON.stringify(sup.s3Charges));
-        assert.deepEqual(
-          (sup.s3Charges as Array<{ tenantId: string }>).map((charge) => charge.tenantId).sort(),
-          ["A", "B"],
-        );
-        assert.deepEqual(efe.s3Charges, sup.s3Charges, "cobranças sob o papel sem bypass (H7-b: hoje 0)");
-        assert.deepEqual(efe.s3Run, sup.s3Run);
-        assert.deepEqual(efe.s3Summary, sup.s3Summary);
-      });
-
       await t.test("T11d · controles (já por organização): iguais nos dois papéis", () => {
         assert.equal((sup.s4Alocacoes as unknown[]).length, 2);
         assert.deepEqual(efe.s4Alocacoes, sup.s4Alocacoes);
@@ -531,13 +457,13 @@ if (!connectionString) {
         for (const chave of forceEnumeradas) assert.deepEqual(efe.rotas[chave], sup.rotas[chave], chave);
       });
 
-      await t.test("T11f · job.registry fecha 3 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
+      await t.test("T11f · job.registry fecha 2 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
         const forceEnumerados = [...JOBS]
           .filter(([, etiqueta]) => etiqueta === "FORCE-PLATAFORMA")
           .map(([chave]) => chave)
           .sort();
         const foraDaSuperficie = [...JOBS].filter(([, etiqueta]) => etiqueta === "FORA-DA-SUPERFICIE");
-        assert.equal(forceEnumerados.length, 3);
+        assert.equal(forceEnumerados.length, 2);
         assert.equal(foraDaSuperficie.length, 9, "os demais jobs pertencem à pendência B-ARNES-2");
         assert.deepEqual(Object.keys(sup.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob super");
         assert.deepEqual(Object.keys(efe.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob efêmero");

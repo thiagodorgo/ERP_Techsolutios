@@ -1,14 +1,13 @@
-import { AlertTriangle, CalendarDays, Cloud, Database, Info, ReceiptText, Server, Users } from "lucide-react";
+import { AlertTriangle, CalendarDays, Cloud, Database, Info, Server } from "lucide-react";
 import { useState, type CSSProperties, type ReactNode } from "react";
 
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
 import { currentBillingMonth } from "../cloud-billing.service";
 import { isPeriodOfMonth } from "../cloud-billing.state";
-import type { CloudBillingData, CloudChargeTenant, CloudCostImport } from "../cloud-billing.types";
+import type { CloudBillingData, CloudCostImport } from "../cloud-billing.types";
 import { useCloudBilling } from "../useCloudBilling";
 
 const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 13 };
-const th: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: "#94A3B8", letterSpacing: ".06em" };
 const NUMBER = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
 const DATE_TIME = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
 const MONTH = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric", timeZone: "America/Sao_Paulo" });
@@ -16,10 +15,6 @@ const MONTH = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric",
 function formatMoney(value: number, currency?: string): string {
   if (!currency || !/^[A-Z]{3}$/.test(currency)) return `${NUMBER.format(value)} · moeda não informada`;
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
-}
-
-function formatPercent(value?: number): string | null {
-  return value === undefined ? null : `${NUMBER.format(value)}%`;
 }
 
 function formatDate(value?: string): string {
@@ -31,14 +26,6 @@ function formatDate(value?: string): string {
 function formatMonth(month: string): string {
   const date = new Date(`${month}-15T12:00:00-03:00`);
   return Number.isNaN(date.getTime()) ? month : MONTH.format(date);
-}
-
-function statusLabel(status: string): string {
-  if (status === "ready") return "Pronta";
-  if (status === "locked") return "Travada";
-  if (status === "voided") return "Anulada";
-  if (status === "draft") return "Rascunho";
-  return "Indefinida";
 }
 
 function importStatus(importItem?: CloudCostImport): string {
@@ -87,10 +74,6 @@ function monthOptions(baseMonth: string): readonly string[] {
   });
 }
 
-function chargeRows(charges: CloudBillingData["charges"]): readonly CloudChargeTenant[] {
-  return charges?.tenants ?? [];
-}
-
 // Seletor de mês único da tela: o cabeçalho com dados e o estado vazio usam o mesmo (A2 da revisão do PR 411 — o vazio
 // diz "Selecione outro mês", então tem de oferecer o seletor).
 function MonthSelect({ month, onMonthChange }: { readonly month: string; readonly onMonthChange: (month: string) => void }) {
@@ -98,12 +81,10 @@ function MonthSelect({ month, onMonthChange }: { readonly month: string; readonl
 }
 
 export function PlatformCloudBillingView({ data, month, onMonthChange = () => undefined }: { readonly data: CloudBillingData; readonly month: string; readonly onMonthChange?: (month: string) => void }) {
-  const { usage, costs, allocation, charges, imports } = data;
+  const { usage, costs, allocation, imports } = data;
   const latestImport = imports[0];
-  const currency = charges?.currency ?? allocation?.currency ?? costs?.currencies[0];
-  const updatedAt = charges?.generatedAt || allocation?.generatedAt || costs?.generatedAt || usage?.generatedAt;
+  const updatedAt = allocation?.generatedAt || costs?.generatedAt || usage?.generatedAt;
   const maxServiceCost = Math.max(0, ...(costs?.services.map((service) => service.unblendedCost) ?? []));
-  const marginPercent = formatPercent(charges?.totalMarginPercentage);
 
   return (
     <div style={{ color: "#0F172A" }}>
@@ -114,14 +95,11 @@ export function PlatformCloudBillingView({ data, month, onMonthChange = () => un
 
       {data.stale ? <div style={{ marginBottom: 14 }}><Alert title="Dados desatualizados" tone="warning">A atualização falhou. Os últimos dados confirmados permanecem visíveis enquanto a plataforma tenta novamente.</Alert></div> : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 16 }}>
         <Kpi label="Custo importado" value={formatMoney(costs?.totalUnblendedCost ?? 0, costs?.currencies[0])} note={`${costs?.lineItemCount ?? 0} linhas de custo`} icon={<Cloud size={16} />} />
         <Kpi label="Linhas de custo" value={NUMBER.format(costs?.lineItemCount ?? 0)} note="quantidade informada pelo resumo" icon={<Database size={16} />} />
         <Kpi label="Custo rateado" value={formatMoney(allocation?.totalAllocatedCost ?? 0, allocation?.currency)} note="valor informado pelo rateio" icon={<Server size={16} />} />
         <Kpi label="Não rateado" value={formatMoney(allocation?.totalUnallocatedCost ?? 0, allocation?.currency)} note="exige classificação quando houver valor" icon={<AlertTriangle size={16} />} warning={(allocation?.totalUnallocatedCost ?? 0) > 0} />
-        <Kpi label="Valor cobrável" value={formatMoney(charges?.totalChargeAmount ?? 0, charges?.currency)} note="valor informado pelo resumo" icon={<ReceiptText size={16} />} />
-        <Kpi label="Margem" value={`${formatMoney(charges?.totalMarginAmount ?? 0, charges?.currency)}${marginPercent ? ` · ${marginPercent}` : ""}`} note={marginPercent ? "percentual informado pelo backend" : "percentual não informado"} icon={<ReceiptText size={16} />} />
-        <Kpi label="Organizações com cobrança" value={NUMBER.format(charges?.tenants.length ?? 0)} note="linhas do resumo de cobrança" icon={<Users size={16} />} />
         <Kpi label="Última importação" value={importStatus(latestImport)} note={formatDate(latestImport?.importedAt)} icon={<CalendarDays size={16} />} warning={latestImport?.status === "failed"} />
       </div>
 
@@ -136,7 +114,6 @@ export function PlatformCloudBillingView({ data, month, onMonthChange = () => un
         <div style={{ ...card, overflow: "hidden" }}><div style={{ padding: "14px 18px", borderBottom: "1px solid #F1F5F9", fontSize: 14, fontWeight: 800 }}>Importações</div>{imports.length ? imports.map((item) => <div key={item.id} style={{ display: "flex", justifyContent: "space-between", padding: "11px 18px", borderBottom: "1px solid #F8FAFC", gap: 8 }}><span style={{ fontSize: 12.5, color: "#475569" }}>{formatDate(item.importedAt)}</span><span style={{ fontSize: 12.5, fontWeight: 700 }}>{importStatus(item)} · {NUMBER.format(item.rowCount)} linhas</span></div>) : <div style={{ padding: 18, fontSize: 12, color: "#64748B" }}>Nenhuma importação registrada no período.</div>}</div>
       </div>
 
-      <div style={{ ...card, overflow: "hidden" }}><div style={{ padding: "14px 18px", borderBottom: "1px solid #F1F5F9" }}><div style={{ fontSize: 14, fontWeight: 800 }}>Cobrança por organização</div><div style={{ fontSize: 11.5, color: "#94A3B8", marginTop: 3 }}>Valores informados pelo resumo de cobrança</div></div><div style={{ display: "flex", padding: "9px 18px", background: "#F8FAFC", borderBottom: "1px solid #F1F5F9", gap: 10 }}><span style={{ ...th, flex: 1.4 }}>ORGANIZAÇÃO</span><span style={{ ...th, flex: 1, textAlign: "right" }}>CUSTO RATEADO</span><span style={{ ...th, flex: 1, textAlign: "right" }}>VALOR COBRÁVEL</span><span style={{ ...th, flex: 1, textAlign: "right" }}>MARGEM</span><span style={{ ...th, flex: .8, textAlign: "right" }}>SITUAÇÃO</span></div>{chargeRows(charges).map((tenant) => <div key={tenant.tenantId} style={{ display: "flex", alignItems: "center", padding: "11px 18px", borderBottom: "1px solid #F8FAFC", gap: 10 }}><span style={{ flex: 1.4, fontSize: 12.5, fontWeight: 700 }}>{tenant.tenantName ?? "Organização sem nome"}</span><span style={{ flex: 1, textAlign: "right", fontSize: 12.5 }}>{formatMoney(tenant.allocatedCost, currency)}</span><span style={{ flex: 1, textAlign: "right", fontSize: 12.5 }}>{formatMoney(tenant.finalChargeAmount, currency)}</span><span style={{ flex: 1, textAlign: "right", fontSize: 12.5 }}>{formatMoney(tenant.marginAmount, currency)}{tenant.marginPercentage === undefined ? "" : ` · ${formatPercent(tenant.marginPercentage)}`}</span><span style={{ flex: .8, textAlign: "right", fontSize: 12, fontWeight: 700 }}>{statusLabel(tenant.status)}</span></div>)}</div>
     </div>
   );
 }
@@ -145,7 +122,7 @@ export function PlatformCloudBillingView({ data, month, onMonthChange = () => un
 // permitido, falha (nenhum valor), vazio e, por fim, a composição com os dados do backend. Dado de um período que não
 // é o do mês rotulado (troca de mês com resposta em voo) é tratado como carregando: nunca aparece sob outro rótulo (A1).
 export function PlatformCloudBillingScreen({ data, loading, month, onMonthChange = () => undefined }: { readonly data: CloudBillingData; readonly loading: boolean; readonly month: string; readonly onMonthChange?: (month: string) => void }) {
-  const empty = !data.costs?.lineItemCount && !data.allocation?.tenants.length && !data.charges?.tenants.length && !data.usage?.metrics.length && data.imports.length === 0;
+  const empty = !data.costs?.lineItemCount && !data.allocation?.tenants.length && !data.usage?.metrics.length && data.imports.length === 0;
   const base: CSSProperties = { color: "#0F172A" };
   if (loading || !isPeriodOfMonth(data.period, month)) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><div style={{ ...card, padding: 20 }}><Skeleton lines={8} /></div></div>;
   if (data.forbidden) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar os dados de cobrança cloud." /></div>;

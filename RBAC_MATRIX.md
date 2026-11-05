@@ -56,6 +56,8 @@ Baseline authorization matrix for the ERP Techsolutions multi-tenant SaaS ERP. T
 | Audit logs | full | read | scoped | none | scoped | scoped | none | full-read | support-scoped |
 | Cross-tenant support operations | full | none | none | none | none | none | none | read | scoped-support-only |
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): a linha histórica "Cloud charge markup rules" fica preservada; suas quatro chaves permanecem órfãs até limpeza, sem apagar a tabela `permissions`.
+
 ## Role semantics
 - **platform_admin** governs platform-wide configuration, integrity, and cross-tenant controls, but is not the default approver of tenant business flows.
 - **tenant_admin** governs the tenant's local configuration, users, policies, and administrative exceptions.

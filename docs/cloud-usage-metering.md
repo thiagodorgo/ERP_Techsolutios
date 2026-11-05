@@ -1,5 +1,7 @@
 # Cloud Usage Metering
 
+> SUPERADO por `D-COBRANCA-ASSINATURA-FRANQUIA` (2026-10-30): preço passa a ser assinatura e franquia; o texto histórico de markup cloud abaixo fica preservado apenas para rastreabilidade.
+
 ## Escopo
 
 `cloud_usage_metering` e a fundacao interna de medicao de uso cloud por tenant. Ela prepara a ponte comercial para uma cobranca futura de infraestrutura com margem, mas esta branch mede somente uso.

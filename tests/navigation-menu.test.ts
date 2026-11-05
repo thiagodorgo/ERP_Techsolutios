@@ -8,11 +8,11 @@ import {
   type NavigationItem,
 } from "../src/modules/navigation/index.js";
 
-test("Platform Admin recebe itens Platform", () => {
+test("Platform Admin com cost allocation recebe itens Platform", () => {
   const menu = getMenuForCurrentUser({
     userId: "usr-platform",
     roles: ["super_admin"],
-    permissions: ["platform:tenants:read", "platform:cloud-charges:read"],
+    permissions: ["platform:tenants:read", "platform:cloud-cost-allocation:read"],
   });
 
   assert.equal(menu.some((item) => item.id === "platform.tenants"), true);
@@ -132,16 +132,26 @@ test("Item planned/future pode aparecer com permissao e status correto", () => {
   assert.equal(menu.find((item) => item.id === "finance.invoices")?.status, "future");
 });
 
-test("relatedEndpoints sao retornados sem dados sensiveis", () => {
+test("Cloud Billing aparece com cost allocation read", () => {
   const menu = getMenuForCurrentUser({
     userId: "usr-platform",
     roles: ["super_admin"],
-    permissions: ["platform:cloud-charges:read"],
+    permissions: ["platform:cloud-cost-allocation:read"],
   });
   const cloudBilling = menu.find((item) => item.id === "platform.cloudBilling");
 
   assert.ok(cloudBilling);
   assert.equal(cloudBilling.relatedEndpoints?.some((endpoint) => /secret|token|password/i.test(endpoint)), false);
+});
+
+test("Cloud Billing nao aparece somente com cloud charges read", () => {
+  const menu = getMenuForCurrentUser({
+    userId: "usr-platform",
+    roles: ["super_admin"],
+    permissions: ["platform:cloud-charges:read"],
+  });
+
+  assert.equal(menu.some((item) => item.id === "platform.cloudBilling"), false);
 });
 
 test("Filtro de modulo remove item quando tenant nao possui modulo exigido", () => {

@@ -1,21 +1,15 @@
 import { isMockMode } from "../../../config/env";
 import { ApiError } from "../../../services/api/client";
 import {
-  calculateCloudChargesFromApi,
-  createCloudChargeRuleFromApi,
   getCloudAllocationSummaryFromApi,
-  getCloudChargeSummaryFromApi,
   getCloudCostSummaryFromApi,
   getCloudUsageSummaryFromApi,
   importCloudCostsFromApi,
   listCloudAllocationRunsFromApi,
-  listCloudChargeRulesFromApi,
-  listCloudChargeRunsFromApi,
   listCloudCostImportsFromApi,
   runCloudAllocationFromApi,
-  updateCloudChargeRuleFromApi,
 } from "./cloud-billing.adapter";
-import type { CloudBillingData, CloudBillingPeriod, UpsertCloudChargeRuleInput } from "./cloud-billing.types";
+import type { CloudBillingData, CloudBillingPeriod } from "./cloud-billing.types";
 import { emptyCloudBilling } from "./cloud-billing.types";
 
 export function periodForMonth(month: string): CloudBillingPeriod {
@@ -35,14 +29,13 @@ export function currentBillingMonth(now = new Date()): string {
 export async function getCloudBilling(period: CloudBillingPeriod): Promise<CloudBillingData> {
   if (isMockMode()) return emptyCloudBilling(period, "mock");
   try {
-    const [usage, costs, allocation, charges, imports] = await Promise.all([
+    const [usage, costs, allocation, imports] = await Promise.all([
       getCloudUsageSummaryFromApi(period),
       getCloudCostSummaryFromApi(period),
       getCloudAllocationSummaryFromApi(period),
-      getCloudChargeSummaryFromApi(period),
       listCloudCostImportsFromApi(period),
     ]);
-    return { period, usage, costs, allocation, charges, imports, source: "api", forbidden: false, stale: false };
+    return { period, usage, costs, allocation, imports, source: "api", forbidden: false, stale: false };
   } catch (error) {
     if (error instanceof ApiError && error.status === 403) return { ...emptyCloudBilling(period, "fallback"), forbidden: true };
     return emptyCloudBilling(period, "fallback");
@@ -57,9 +50,4 @@ export async function getCloudCostSummary(period = periodForMonth(currentBilling
 // Escritas permanecem isoladas neste módulo e não têm consumidor na página do B-SAN3-06b.
 export const importCloudCosts = importCloudCostsFromApi;
 export const runCloudAllocation = runCloudAllocationFromApi;
-export const calculateCloudCharges = calculateCloudChargesFromApi;
-export const createCloudChargeRule = createCloudChargeRuleFromApi;
-export function updateCloudChargeRule(ruleId: string, input: UpsertCloudChargeRuleInput) { return updateCloudChargeRuleFromApi(ruleId, input); }
 export const listCloudAllocationRuns = listCloudAllocationRunsFromApi;
-export const listCloudChargeRuns = listCloudChargeRunsFromApi;
-export const listCloudChargeRules = listCloudChargeRulesFromApi;
