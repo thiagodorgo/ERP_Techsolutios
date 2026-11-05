@@ -17,6 +17,7 @@ import {
   RecordingTenantModulesWriter,
   type TenantModulesWriter,
 } from "./plans/tenant-modules.sync.js";
+import { RecordingPlatformAuditWriter } from "./plans/platform-audit.js";
 
 export class InMemoryTenantLookup implements TenantLookup {
   private readonly tenants = new Map<string, TenantRef>();
@@ -40,6 +41,7 @@ const memoryPlans = new InMemoryPlansRepository();
 const memorySubscriptions = new InMemorySubscriptionsRepository();
 const memoryTenants = new InMemoryTenantLookup();
 const memoryModulesWriter = new RecordingTenantModulesWriter();
+const memoryPlatformAudit = new RecordingPlatformAuditWriter();
 
 export function getMemoryPlansRepositoryForTests(): InMemoryPlansRepository {
   return memoryPlans;
@@ -57,8 +59,12 @@ export function getMemoryTenantModulesWriterForTests(): RecordingTenantModulesWr
   return memoryModulesWriter;
 }
 
+export function getMemoryPlatformAuditWriterForTests(): RecordingPlatformAuditWriter {
+  return memoryPlatformAudit;
+}
+
 export function createMemoryPlansService(): PlansService {
-  return new PlansService(memoryPlans);
+  return new PlansService(memoryPlans, undefined, undefined, memoryPlatformAudit);
 }
 
 export function createMemorySubscriptionsService(): SubscriptionsService {
@@ -112,6 +118,8 @@ async function createPrismaPlansService(): Promise<PlansService> {
     plans,
     undefined,
     new synchronizerModule.TenantModulesSynchronizer(subscriptions, plans, writer),
+    // B-ASS-05 (M4) troca pela gravação real em platform_audit_logs; até lá, em memória.
+    new RecordingPlatformAuditWriter(),
   );
 }
 

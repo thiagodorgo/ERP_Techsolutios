@@ -87,10 +87,7 @@ export function validateNewVersionDate(args: {
       }
       return { ok: true };
     }
-    if (args.inaugural) {
-    return { ok: false, reason: "inaugural_not_allowed" };
-  }
-  if (validFromBiz < today) {
+    if (validFromBiz < today) {
       return { ok: false, reason: "version_retroactive" };
     }
     return { ok: true };

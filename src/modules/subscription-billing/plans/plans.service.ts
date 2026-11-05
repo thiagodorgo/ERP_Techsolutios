@@ -18,6 +18,7 @@ import type {
   PlansRepository,
 } from "./plans.repository.js";
 import type { PlanVersionModulesSynchronizer } from "./tenant-modules.sync.js";
+import type { PlatformAuditWriter } from "./platform-audit.js";
 import { businessDateOf, todayBusinessDate } from "./plan-versioning.js";
 
 const PLAN_CODE_PATTERN = /^[a-z][a-z0-9_-]{0,63}$/;
@@ -54,10 +55,36 @@ export class PlansService {
     private readonly repository: PlansRepository,
     private readonly clock: () => Date = () => new Date(),
     private readonly modulesSynchronizer?: PlanVersionModulesSynchronizer,
+    private readonly platformAudit?: PlatformAuditWriter,
   ) {}
 
-  listPlans(): Promise<SubscriptionPlan[]> {
-    return this.repository.listPlans();
+  async listPlans(): Promise<SubscriptionPlan[]> {
+    const plans = await this.repository.listPlans();
+    await this.recordBootstrappedByMigrationTrail(plans);
+    return plans;
+  }
+
+  private bootstrappedTrailRecorded = false;
+
+  private async recordBootstrappedByMigrationTrail(
+    plans: readonly SubscriptionPlan[],
+  ): Promise<void> {
+    if (!this.platformAudit || this.bootstrappedTrailRecorded) {
+      return;
+    }
+    const bootstrapped = plans.filter((plan) => plan.createdBy === null);
+    if (bootstrapped.length === 0) {
+      return;
+    }
+    this.bootstrappedTrailRecorded = true;
+    await this.platformAudit.record({
+      action: "plans.bootstrapped_by_migration",
+      entity: "subscription_plan",
+      metadata: {
+        codes: bootstrapped.map((plan) => plan.code).sort(),
+        count: bootstrapped.length,
+      },
+    });
   }
 
   async getPlan(id: string): Promise<SubscriptionPlan> {
