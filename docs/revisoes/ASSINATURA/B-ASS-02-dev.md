@@ -153,3 +153,71 @@ Ambientais Windows, NÃO do bloco (pré-existentes; verdes no CI Linux — Emend
 - feito: F9 bateria quase completa — check/lint/build verdes, guard 0 violações, diff --check verde, suítes do bloco memória 94/94 e -db 26/26 verdes; diagnóstico completo dos 12 vermelhos do `npm test`.
 - falta: regenerar `tests/fixtures/o6r07c-classificacao-vias.json` e atualizar `tests/san3-05-acessos-de-plataforma-guard.test.ts` — ambos FORA do PERMITIDO §4.2; só depois `git push` + `gh pr create`.
 - próximo comando: aguardar decisão do orquestrador (emenda do PERMITIDO para incluir censo + ratchet, ou ordem de parar).
+
+## RETOMADA 2026-11-05 ~08:20 SP — Emenda 2 ao §4.2 (guards de superfície)
+
+- Retomada confirmada: worktree existente, ramo `feat/b-ass-02-catalogo-planos`, relatório com PAUSA na F9.
+- Medido o parcial antes de confiar (o arquivo meio escrito podia estar truncado):
+  - `npm run check` verde;
+  - `node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts` = 35/35 verde (com a contagem L0 113→115 já aplicada);
+  - F8 reexecutada no início: core-saas + core-saas-role-authority + san3-04a + permission-catalog-migration-parity = 55/55.
+- Emenda 2 aplicada conforme o texto do fim do plano.
+
+### 1. Censo (`tests/fixtures/o6r07c-classificacao-vias.json`) — regenerado pelo gerador do guard
+
+- Comando (gerador do próprio guard, nunca editado à mão):
+  `node --import tsx tests/helpers/o6r07c-census.ts gravar tests/fixtures/o6r07c-classificacao-vias.json`
+- Saída resumida: `camadas: ROTA 417 · ROTEADOR 76 · SUBAPP 0 · MIDDLEWARE 186 · SEM-CAMINHO 0`; `chaves vivas: 477`; `VIOLAÇÕES: 0`; `instantâneo gravado: 477 chaves`. Exit 0.
+- Diff chave a chave: **12 chaves novas** (11 rotas + 1 roteador), **nenhuma chave existente mudou ou sumiu**:
+  - `ROTA DELETE /api/v1/platform/billing/tenants/:tenantId/subscription` — SEM-ALCANCE-CAMPO
+  - `ROTA GET /api/v1/platform/billing/plans` — LEITURA
+  - `ROTA GET /api/v1/platform/billing/plans/:planId` — LEITURA
+  - `ROTA GET /api/v1/platform/billing/plans/:planId/versions` — LEITURA
+  - `ROTA GET /api/v1/platform/billing/plans/summary` — LEITURA
+  - `ROTA GET /api/v1/platform/billing/tenants/:tenantId/subscription` — LEITURA
+  - `ROTA GET /api/v1/platform/billing/tenants/:tenantId/subscription/history` — LEITURA
+  - `ROTA PATCH /api/v1/platform/billing/plans/:planId` — SEM-ALCANCE-CAMPO
+  - `ROTA POST /api/v1/platform/billing/plans` — SEM-ALCANCE-CAMPO
+  - `ROTA POST /api/v1/platform/billing/plans/:planId/versions` — SEM-ALCANCE-CAMPO
+  - `ROTA PUT /api/v1/platform/billing/tenants/:tenantId/subscription` — SEM-ALCANCE-CAMPO
+  - `ROTEADOR /api/v1/platform/billing` — ROTEADOR
+- Classe = a que o código tem de fato (gerada por comportamento, não escolhida): GETs são LEITURA; escritas são SEM-ALCANCE-CAMPO porque o papel de campo não alcança rota de plataforma. `arquivo:linha` do `requirePermission` e do acesso ao repositório por rota:
+  - `/plans` → permissão `subscription-billing.platform.routes.ts:31`; repo `plans-prisma.repository.ts:28` (`subscriptionPlan.findMany`)
+  - `/plans/summary` → `routes.ts:47`; repo `subscriptions-prisma.repository.ts:48` (`forEachTenantRls` → `tx.tenantSubscription.findMany`)
+  - `/plans/:planId` → `routes.ts:57`; repo `plans-prisma.repository.ts:33` (`findUnique`) / `:38` (`findFirst`)
+  - `/plans/:planId/versions` → `routes.ts:68`; repo `plans-prisma.repository.ts:71` (`subscriptionPlanVersion.findMany`)
+  - `POST /plans` → `routes.ts:78`; repo `plans-prisma.repository.ts:45` (`create`)
+  - `PATCH /plans/:planId` → `routes.ts:88`; repo `plans-prisma.repository.ts:59` (`update`)
+  - `POST /plans/:planId/versions` → `routes.ts:102`; repo `plans-prisma.repository.ts:84` (`subscriptionPlanVersion.create`)
+  - `GET /tenants/:tenantId/subscription` → `routes.ts:115`; repo `subscriptions-prisma.repository.ts:26-27` (`withTenantRls` → `tx.tenantSubscription.findFirst`)
+  - `GET /tenants/:tenantId/subscription/history` → `routes.ts:125`; repo `subscriptions-prisma.repository.ts:36-37` (`withTenantRls` → `tx.tenantSubscription.findMany`)
+  - `PUT /tenants/:tenantId/subscription` → `routes.ts:135`; repo `subscriptions-prisma.repository.ts:58-59` (`withTenantRls` → `tx.tenantSubscription.create`)
+  - `DELETE /tenants/:tenantId/subscription` → `routes.ts:148`; repo `subscriptions-prisma.repository.ts:98-99` (`withTenantRls` → `tx.tenantSubscription.updateMany`)
+  - `ROTEADOR /api/v1/platform/billing` → montagem `platform.routes.ts:45` (`router.use("/billing", createSubscriptionBillingPlatformRouter())`)
+- Verde: `node --test --import tsx tests/o6r07c-census-guard.test.ts` = 32/32, fail 0.
+- Mutação (Emenda 2 item 4): removida a chave `ROTA GET /api/v1/platform/billing/plans` do instantâneo → T1 vermelho (fail 1; o guard acusa a via NAO-CLASSIFICADA). Chave restaurada; snapshot volta a 477 chaves.
+
+### 2. Ratchet semântico (`tests/san3-05-acessos-de-plataforma-guard.test.ts`)
+
+- PREMISSA FALSA (Emenda 2, item 2, parte do ratchet): o orquestrador esperava no ratchet "as 2 tabelas mais os acessos dos repositórios de `src/modules/subscription-billing/plans/**`". Medido com o gerador do guard no head:
+  - comando `node scripts/san3-05-acessos-de-plataforma.mjs`;
+  - `# L0: tabelas ENABLE=112 FORCE=112` (as 2 tabelas `tenant_subscriptions`/`tenant_subscription_addons` entram na lista L0 FORCE do gerador, que não é hardcoded no teste);
+  - `# INVENTÁRIO SUSPEITO (L1+L2): 73 chaves` — **zero** chave de `subscription-billing`: todo acesso a tabela FORCE dos repositórios novos roda sob `withTenantRls`/`forEachTenantRls` (SOB-CONTEXTO), então não gera chave suspeita. O congelado (ORIGIN_MAIN − SUMIDAS + NOVAS) já tem 73 chaves e bate com o head sem mexer em ORIGIN/SUMIDAS/NOVAS.
+  - Consequência: a ÚNICA mudança necessária no arquivo foi a contagem `tabelas ENABLE=113 FORCE=113` → `115` no subteste "L0 exato" (linha 287), que é lógica de teste (não é dado do ratchet), consequência mecânica das 2 tabelas FORCE novas de M1. Fica registrada aqui para a pré-revisão/junta (cadeira C3) confirmarem; fora da literal "só a parte de dados", mas é o que o guard exige para voltar a verde.
+- Verde: `node --test --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts` = 35/35, fail 0.
+- Vermelho-controle já medido no head `30c07b5c` (F9): com 113 o subteste "L0 exato" falhava; com 115 passa.
+
+### 3. Bateria F9 reexecutada (cluster descartável `devass02-pg` 127.0.0.1:55502 + `devass02-redis` 127.0.0.1:56502, 123 migrations aplicadas)
+
+- `npm run check`: verde. · `npm run lint` (= check): verde. · `npm run build`: verde.
+- `node scripts/migration-transaction-guard.mjs`: 123 migrações · 11 novas · 0 violações.
+- `git diff --check` (working tree e `origin/main...HEAD`): verde.
+- `git diff --name-only origin/main...HEAD`: 47 arquivos, todos contidos no PERMITIDO §4.2 + Emenda 2.
+- Suítes do bloco + N (memória; `node --test --import tsx`, CORE_SAAS_PERSISTENCE=memory + DATABASE_URL dummy):
+  ass-02-plan-vigencia 10 + ass-02-plans-subscription 14 + ass-02-plan-catalog 2 + platform-tenant-detail 9 + platform-routes 4 + core-saas 26 + core-saas-role-authority 12 + san3-04a 14 + permission-catalog-migration-parity 3 = **94/94, fail 0**.
+- Suítes -db do bloco + N (cluster): ass-02-plans-rls-db 5 + ass-02-plans-modules-db 2 + ass-02-plans-seed-migration-drill-db 3 + ass-02-plans-migration-drill-db 4 + san3-05-leituras-de-plataforma-db 12 = **26/26, fail 0**.
+- `npm test` (forma canônica do CI backend: DATABASE_URL + REDIS_URL do cluster, CORE_SAAS_PERSISTENCE=memory): **4487 testes · pass 4478 · fail 7 · skipped 2**. Os 2 guards de superfície do bloco voltaram a verde (antes 12 vermelhos). Os 7 vermelhos restantes são os ambientais Windows pré-existentes (verdes no CI Linux), reexecutados e confirmados um a um:
+  - `san3-05-runtime-role-guard-db` (T14a/b/c/d): 4 fail — exige `psql` + `bash` + `setsid`;
+  - `san3-09-bootstrap-platform-admin-db` (T2.1 + pai): 2 fail — executa `node_modules/.bin/prisma` (script bash) pelo Node;
+  - `traccar-event-migration-drill-db`: 1 fail — hook `after` com `EBUSY: rmdir` (o runner registra "terminou sem registrar um único teste");
+  - `db-catalog-write-guard`: passa sozinho 5/5 (no `npm test` paralelo, contenção de cluster).
