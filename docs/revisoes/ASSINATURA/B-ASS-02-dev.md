@@ -297,3 +297,15 @@ Nenhum dos dois tem veredito meu: ambos exigem tocar fora do PERMITIDO (o 2º é
   - `traccar-event-migration-drill-db`: o drill executa `k=1..17` verde, mas o hook final falha com `EBUSY` ao remover o temporário e o runner acusa piso de denominador;
   - `o6r07c-census-guard` T6/T14: interferência da rodada paralela de mutações; a mesma suíte completa foi reexecutada isolada no mesmo head e ficou **32/32**, e junto do ratchet ficou **67/67**.
 - Comparação com a F9 anterior: são as mesmas classes pré-existentes já registradas no relatório; o aceite final é o CI Linux do head após a Emenda 3, conforme o plano.
+
+## RETOMADA 2026-11-05 ~10:35 SP — CI do head após a Emenda 3 (entrega final)
+
+- Head julgado no CI: `ac4b0ebeb66813c6bd867d182d7900b2505192f2` (PR #504); commit de fechamento do relatório sobre esse head. Árvore limpa, push já feito; `npm run check` verde; `git diff --check` verde.
+- CI do head `ac4b0ebe` lido (check-runs concluídos):
+  - `backend`: **pass** — `# tests 4496 · pass 4494 · fail 0 · skipped 2`;
+  - `backend-postgres`: **pass** — `# tests 503 · pass 503 · fail 0 · skipped 0`;
+  - `frontend`: **pass** (a contagem `23→34` da Emenda 3 no head); `authority-portal`, `owner-portal`, `flutter`, `antivirus`: **pass**.
+- As duas contagens duras da Emenda 3 voltaram verdes no CI Linux: `san3-05-runtime-role-guard-db` (121→125) e `san3-06b-navegacao-plataforma` (23→34).
+- `docker` (job paralelo de espelho) seguia `pending` na leitura; não faz parte dos jobs exigidos pela entrega (`backend` e `backend-postgres`).
+
+PRONTO PARA PRÉ-REVISÃO ac4b0ebeb66813c6bd867d182d7900b2505192f2 PR #504
