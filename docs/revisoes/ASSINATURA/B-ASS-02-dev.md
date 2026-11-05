@@ -286,3 +286,14 @@ Nenhum dos dois tem veredito meu: ambos exigem tocar fora do PERMITIDO (o 2º é
 - `node scripts/migration-transaction-guard.mjs`: **123 migrações · 11 novas · 0 violações**.
 - `git diff --check`: verde.
 - Escopo da retomada: somente o relatório e as duas asserções nominalmente autorizadas pela Emenda 3.
+
+### Suíte canônica local após a Emenda 3
+
+- Forma: `DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55502/erp_techsolutions?schema=public`, `REDIS_URL=redis://127.0.0.1:56502`, `CORE_SAAS_PERSISTENCE=memory`, `npm test`.
+- Resumo: **4487 testes · pass 4475 · fail 10 · skipped 2**; exit 1 por ambiente Windows/execução paralela, não por uma das duas contagens alteradas.
+- Falhas nomeadas:
+  - `san3-05-runtime-role-guard-db`: 4 subtestes Windows (`bash`/`setsid`/processos de boot); a asserção alterada já recebeu a contagem real 125 e o aceite dessa suíte é o CI Linux;
+  - `san3-09-bootstrap-platform-admin-db`: o atalho shell `node_modules/.bin/prisma` é interpretado pelo Node no Windows;
+  - `traccar-event-migration-drill-db`: o drill executa `k=1..17` verde, mas o hook final falha com `EBUSY` ao remover o temporário e o runner acusa piso de denominador;
+  - `o6r07c-census-guard` T6/T14: interferência da rodada paralela de mutações; a mesma suíte completa foi reexecutada isolada no mesmo head e ficou **32/32**, e junto do ratchet ficou **67/67**.
+- Comparação com a F9 anterior: são as mesmas classes pré-existentes já registradas no relatório; o aceite final é o CI Linux do head após a Emenda 3, conforme o plano.
