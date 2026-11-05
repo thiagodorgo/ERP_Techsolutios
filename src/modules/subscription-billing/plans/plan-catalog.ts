@@ -1,7 +1,7 @@
 // B-ASS-02 — FONTE ÚNICA do catálogo de planos (dev seed) e das chaves de módulo válidas.
 // Os 6 planos são SEM versão e SEM preço (preço é do dono, cadastrado na tela T1 — §4.2).
-// `prisma/seed.ts` consome SUBCRIPTION_PLAN_SEEDS; a migração de dados M1-d NÃO é criada neste
-// bloco (aguarda autorização, uma a uma — P1). As chaves de módulo vêm do moduleCatalog da
+// `prisma/seed.ts` consome SUBSCRIPTION_PLAN_SEEDS; a migração de dados M1-d usa a mesma lista
+// literal e foi autorizada pelo dono em 05/11 (~02:00 SP). As chaves de módulo vêm do moduleCatalog da
 // plataforma (fonte única de key→label) via mapTenantModuleFlags([]), sem duplicar a lista.
 
 import { mapTenantModuleFlags } from "../../platform/platform-modules.service.js";

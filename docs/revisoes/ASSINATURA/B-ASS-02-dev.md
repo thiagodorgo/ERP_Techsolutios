@@ -54,3 +54,12 @@
   - R-PLAN-10: tirar checagem addon_duplicate_tracking ⇒ T-PL-22 vermelho (1 fail).
 - npm run check verde. permission-catalog-migration-parity segue VERMELHO até a M1b da F3 (esperado: as 2 chaves novas ainda não têm migração).
 - Pendências do bloco: M1-d aguarda autorização do dono (registrada na F7; seed dev cobre os 6 planos).
+
+## F3 — esquema M1, permissões M1b e catálogo inicial M1-d
+
+- M1 e M1b: commit `8b510e49`; `prisma/schema.prisma` e migrações `20260893000000_ass02_subscription_plans` / `20260894000000_ass02_platform_billing_permissions`.
+- Autorização M1/M1b: fala do dono de 31/10 ~22:15, *"siga na recomendação de tudo, exceto p14"*, em resposta à P1 (§3.10 e §12.1 do plano).
+- ERRATA da pendência registrada na F2: M1-d está AUTORIZADA desde 05/11 ~02:00 SP pela fala literal *"manda o deepsek fazer"* (Emenda 1 ao §4.2).
+- M1-d: `20260895000000_ass02_seed_subscription_plans`; `BEGIN`/`COMMIT`; seis códigos com `ON CONFLICT (code) DO NOTHING`, sem versão, sem preço e `created_by = NULL`. Nenhum `UPDATE`, `DROP`, `RENAME` ou `ALTER TYPE`.
+- Retomada medida: `npm run check` verde. As 24 provas de memória da F1/F2 deram 22 pass / 2 fail porque o parcial F4 já havia mudado a assinatura interna do repositório e os helpers T-PL-21/T-PL-23 ainda chamavam a forma antiga; o reparo fica dentro da F4 e será reexecutado antes do commit.
+- `node scripts/migration-transaction-guard.mjs`: G0–G5 verdes; G6 acusa apenas a ausência esperada dos drills M1/M1b, que pertencem à F5. O drill M1-d e suas duas mutações também pertencem à F5. Veredito da fatia: esquema e migrações gravados; validação de aplicação/drills pendente de F5, conforme o plano.
