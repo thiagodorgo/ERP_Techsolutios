@@ -121,6 +121,7 @@ As rotas de API usam o prefixo atual do backend (`/api/v1`) e reservam o boundar
 - Componentes do handoff Figma a considerar no catalogo global: `vehicle_selector`, `damage_map`, `photo_upload`, `observation`, `comparison`, `acknowledgement` e `before_after`.
 - Auditoria global completa.
 - UI avancada para regras comerciais de minimo/franquia, revisao detalhada de `tenant_cloud_charges`, fatura, pagamento e emissao fiscal.
-- Planos comerciais configuraveis.
+- Catálogo de planos, versões com vigência e assinatura por organização — entregue por `B-ASS-02`;
+  a interface administrativa permanece em bloco próprio.
 - Modo suporte auditado para acesso operacional a tenant.
 - Remocao gradual de headers legados.

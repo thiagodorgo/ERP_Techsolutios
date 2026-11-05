@@ -15,6 +15,7 @@ import {
 } from "../src/modules/auth/index.js";
 import { withTenantRls } from "../src/database/rls.js";
 import { assertSeedAllowed } from "./seed-guard.js";
+import { SUBSCRIPTION_PLAN_SEEDS } from "../src/modules/subscription-billing/plans/plan-catalog.js";
 
 // P-SAN-SEED-GUARD (Ω-INFRA-3): aborta se NODE_ENV=production sem opt-in explícito (seed é demo).
 assertSeedAllowed();
@@ -224,6 +225,28 @@ async function main(): Promise<void> {
       modules: DEMO_TENANT_MODULES,
     },
   });
+
+  // B-ASS-02: catálogo de desenvolvimento. Produção recebe os mesmos seis códigos pela M1-d;
+  // versões e preços nunca nascem no seed e permanecem sob cadastro explícito da plataforma.
+  for (const plan of SUBSCRIPTION_PLAN_SEEDS) {
+    await prisma.subscriptionPlan.upsert({
+      where: { code: plan.code },
+      update: {
+        kind: plan.kind,
+        name: plan.name,
+        description: plan.description,
+        active: plan.active,
+      },
+      create: {
+        code: plan.code,
+        kind: plan.kind,
+        name: plan.name,
+        description: plan.description,
+        active: plan.active,
+        created_by: null,
+      },
+    });
+  }
 
   const permissions = new Map<Permission, { id: string }>();
   const roles = new Map<Role, { id: string }>();

@@ -103,3 +103,12 @@
 - `san3-05-leituras-de-plataforma-db.test.ts`: as 11 rotas novas foram enumeradas; `plans*` está `SEM-FORCE` para as tabelas globais e `tenants/:id/subscription*` está `FORCE-POR-TENANT`. Foram adicionados cenários superusuário × papel `NOSUPERUSER NOBYPASSRLS` para GET, history, PUT e DELETE; suíte **12/12**, fail 0.
 - PREMISSA FALSA: a frase resumida “`SEM-FORCE` para `plans*` — tabelas globais” não descreve todo o caminho de `/plans/summary` nem o sync condicional de `POST /plans/:id/versions`: ambos também podem ler tabelas FORCE. Comando: inspeção de `subscriptions.service.ts:getPlansSummary` e `plans.service.ts:addVersion`; saída: chamadas a `listActiveSubscriptions`/`syncVersionEnteringToday`. A lista fechada mantém a etiqueta pedida para as tabelas globais e declara na nota que a parte tenant-scoped é provada pelas suítes próprias de B-ASS-02; marcar para emenda da taxonomia, que hoje aceita uma única etiqueta por rota.
 - `npm run check` verde; `git diff --check` verde. Veredito: **F6 APROVADA**. Próxima fatia sem veredito: F7.
+
+## F7 — seed, reconciliação documental e registro
+
+- Corrigida a divergência medida: `prisma/seed.ts` agora importa e percorre `SUBSCRIPTION_PLAN_SEEDS`; faz upsert somente do catálogo, sem criar versão ou preço. Produção continua usando M1-d via `prisma migrate deploy`.
+- `tests/ass-02-plan-catalog.test.ts`: 2/2, prova quatro planos-base + dois add-ons, ausência de campo de preço, paridade dos seis códigos da M1-d e consumo da fonte única pelo seed.
+- `docs/subscription-billing.md`: contrato, autoridade, RLS, vigência, módulos e tabela completa de reconciliação do mapa; lacunas permanecem explicitamente “sem chave — gate pendente (`B-SAN3-18`)”. Nenhum valor comercial foi versionado.
+- `docs/platform-console.md`: catálogo/versões/assinatura marcados como backend entregue por B-ASS-02; interface administrativa permanece em bloco próprio.
+- Registro criado em `agent-orchestration/codex/comandos/B-ASS-02-catalogo-planos.md`, com identidade de dev, modelo de verificação independente, autorizações das migrações e proibição de merge.
+- Verde: `npm run check`; catálogo + F1/F2 = **26/26**, fail 0; `git diff --check`. Veredito: **F7 APROVADA**. Próxima fatia sem veredito: F8.
