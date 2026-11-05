@@ -112,3 +112,11 @@
 - `docs/platform-console.md`: catálogo/versões/assinatura marcados como backend entregue por B-ASS-02; interface administrativa permanece em bloco próprio.
 - Registro criado em `agent-orchestration/codex/comandos/B-ASS-02-catalogo-planos.md`, com identidade de dev, modelo de verificação independente, autorizações das migrações e proibição de merge.
 - Verde: `npm run check`; catálogo + F1/F2 = **26/26**, fail 0; `git diff --check`. Veredito: **F7 APROVADA**. Próxima fatia sem veredito: F8.
+
+## F8 — guards de catálogo, autoridade e snapshot
+
+- Vermelho inicial controlado: quatro arquivos somaram 55 casos, **54/55**; falhou somente o snapshot de autoridade, ainda sem as duas chaves novas.
+- Snapshot regenerado de forma cirúrgica: exatamente `platform:billing:read` e `platform:billing:manage` foram inseridas, na ordem do catálogo, em `super_admin` e `platform_admin` (diff de 4 linhas; nenhum papel tenant recebeu as chaves).
+- Verde final: `core-saas`, `core-saas-role-authority`, `san3-04a-matriz-x-catalogo-guard` e `permission-catalog-migration-parity` = **55/55**, fail 0.
+- Mutação literal R-PLAN-9: retirar `platform:billing:manage` do snapshot de `super_admin` → `core-saas-role-authority` vermelho (11/12); linha restaurada.
+- Veredito: **F8 APROVADA**. Próxima fatia sem veredito: F9.
