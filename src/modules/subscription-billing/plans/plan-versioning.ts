@@ -43,7 +43,7 @@ export function previousMonthStart(businessDate: string): string {
 }
 
 // A versão de maior `validFrom` (a "última" cadastrada — vigente OU futura). Nunca compara só com a vigente.
-export function latestVersion(versions: readonly VersionDateRange[]): VersionDateRange | null {
+export function latestVersion<T extends VersionDateRange>(versions: readonly T[]): T | null {
   if (versions.length === 0) return null;
   return versions.reduce((latest, version) =>
     version.validFrom.getTime() > latest.validFrom.getTime() ? version : latest,
@@ -51,11 +51,11 @@ export function latestVersion(versions: readonly VersionDateRange[]): VersionDat
 }
 
 // A versão cujo intervalo [validFrom, validTo) contém `at` (borda `validTo` é EXCLUSIVA).
-export function resolveVersionAt(
-  versions: readonly VersionDateRange[],
+export function resolveVersionAt<T extends VersionDateRange>(
+  versions: readonly T[],
   at: Date,
-): VersionDateRange | null {
-  let resolved: VersionDateRange | null = null;
+): T | null {
+  let resolved: T | null = null;
   for (const version of versions) {
     const contains =
       version.validFrom.getTime() <= at.getTime() &&

@@ -4,6 +4,7 @@ import { handleAsyncRoute, readRouteParam } from "../core-saas/routes/http.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import { requirePlatformPermission } from "./platform-permissions.js";
 import { createCloudCostAllocationPlatformRouter } from "../cloud-cost-allocation/cloud-cost-allocation.routes.js";
+import { createSubscriptionBillingPlatformRouter } from "../subscription-billing/subscription-billing.platform.routes.js";
 import { createCloudCostsPlatformRouter } from "../cloud-costs/aws-cur.routes.js";
 import { createCloudUsagePlatformRouter } from "../cloud-usage/cloud-usage.routes.js";
 import { toPlatformOverviewDto } from "./platform-overview.dto.js";
@@ -41,6 +42,7 @@ export function createPlatformRouter(
   router.use("/cloud-cost-allocations", createCloudCostAllocationPlatformRouter());
   router.use("/cloud-costs", createCloudCostsPlatformRouter());
   router.use("/cloud-usage", createCloudUsagePlatformRouter());
+  router.use("/billing", createSubscriptionBillingPlatformRouter());
 
   // Visão geral REAL da plataforma (cross-tenant). Path próprio /overview — não colide com /tenants*.
   // Gate platform-only: nenhum papel de tenant alcança este agregado.

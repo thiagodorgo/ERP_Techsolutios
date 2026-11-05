@@ -38,6 +38,7 @@ const modulesByPlan: Record<PlatformPlan, Set<string>> = {
     "reports",
     "audit",
   ]),
+  business: new Set(["inventory", "integrations"]),
   enterprise: new Set(moduleCatalog.map((item) => item.key)),
 };
 

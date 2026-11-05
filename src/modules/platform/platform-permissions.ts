@@ -23,6 +23,8 @@ export const PLATFORM_PERMISSIONS = [
   "platform:users:create_admin",
   "platform:audit:read",
   "platform:health:read",
+  "platform:billing:read",
+  "platform:billing:manage",
 ] as const;
 
 export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];
