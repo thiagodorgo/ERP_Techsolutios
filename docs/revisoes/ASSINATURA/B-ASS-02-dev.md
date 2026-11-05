@@ -94,3 +94,12 @@
   - R-PLAN-9/M1b: trocar a chave `manage` pela `read` no INSERT → drill vermelho, catálogo com só 1 chave.
 - Verde final no cluster descartável `devass02-pg`/porta 55502: `npm run check`; `migration-transaction-guard` (**123 migrações, 0 violações**); 3 arquivos, **9/9**, fail 0, skip 0; `git diff --check` verde.
 - Veredito: **F5 APROVADA**. Próxima fatia sem veredito: F6.
+
+## F6 — detalhe da organização e etiquetas da superfície de plataforma
+
+- R-PLAN-6: `GET /platform/tenants/:tenantId/detail` agora sempre expõe `subscription`, com assinatura vigente real (`planCode`, `planName`, `validFrom`, `overrides`, `addons[]`, `modules[]`) ou `null`. Os módulos vêm da coluna efetiva `tenants.modules`; organização inexistente continua 404 e o resolver de assinatura nem é chamado.
+- T-PL-13/14 adicionados a `platform-tenant-detail.test.ts`. Verde final do arquivo: **9/9** (os 7 de regressão + 2 novos), fail 0.
+- Vermelho-controle na ref `origin/main`: `git show origin/main:src/modules/platform/platform-tenant-detail.dto.ts | grep subscription` não encontra o campo (`RED_CONTROL_origin_main_subscription_absent`). Mutação literal: retirar `subscription` do DTO → 7/9, com T-PL-13 e a allowlist vermelhos; linha restaurada.
+- `san3-05-leituras-de-plataforma-db.test.ts`: as 11 rotas novas foram enumeradas; `plans*` está `SEM-FORCE` para as tabelas globais e `tenants/:id/subscription*` está `FORCE-POR-TENANT`. Foram adicionados cenários superusuário × papel `NOSUPERUSER NOBYPASSRLS` para GET, history, PUT e DELETE; suíte **12/12**, fail 0.
+- PREMISSA FALSA: a frase resumida “`SEM-FORCE` para `plans*` — tabelas globais” não descreve todo o caminho de `/plans/summary` nem o sync condicional de `POST /plans/:id/versions`: ambos também podem ler tabelas FORCE. Comando: inspeção de `subscriptions.service.ts:getPlansSummary` e `plans.service.ts:addVersion`; saída: chamadas a `listActiveSubscriptions`/`syncVersionEnteringToday`. A lista fechada mantém a etiqueta pedida para as tabelas globais e declara na nota que a parte tenant-scoped é provada pelas suítes próprias de B-ASS-02; marcar para emenda da taxonomia, que hoje aceita uma única etiqueta por rota.
+- `npm run check` verde; `git diff --check` verde. Veredito: **F6 APROVADA**. Próxima fatia sem veredito: F7.

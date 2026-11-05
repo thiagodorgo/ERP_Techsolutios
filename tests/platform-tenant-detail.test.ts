@@ -11,6 +11,7 @@ import {
   type InMemoryPlatformTenantDetailSeed,
 } from "../src/modules/platform/platform-tenant-detail.repository.js";
 import { PlatformTenantDetailService } from "../src/modules/platform/platform-tenant-detail.service.js";
+import type { PlatformTenantSubscriptionResolver } from "../src/modules/platform/platform-tenant-detail.service.js";
 import { createPlatformRouter } from "../src/modules/platform/platform.routes.js";
 
 // Metadados/indicadores que este endpoint NÃO tem fonte para (não fabricar) — provamos a ausência (§2.8).
@@ -140,7 +141,7 @@ test("GET /platform/tenants/:id/detail never leaks fabricated/secret fields (§2
     // Chaves do detalhe são EXATAMENTE a allowlist — sem mrr/uptime/health nem qualquer segredo.
     assert.deepEqual(
       Object.keys(response.body.data).sort(),
-      ["createdAt", "id", "moduleCount", "modules", "name", "slug", "status", "users"],
+      ["createdAt", "id", "moduleCount", "modules", "name", "slug", "status", "subscription", "users"],
     );
     for (const key of FORBIDDEN_KEYS) {
       assert.equal(response.body.data[key], undefined);
@@ -160,6 +161,51 @@ test("GET /platform/tenants/:id/detail never leaks fabricated/secret fields (§2
       }
       assert.equal(user.roles, undefined);
     }
+  });
+});
+
+test("T-PL-13: detalhe traz assinatura real e null honesto quando não há vigente", async () => {
+  const resolveSubscription: PlatformTenantSubscriptionResolver = async (tenantId) =>
+    tenantId === "org-a"
+      ? {
+          planCode: "starter",
+          planName: "Starter",
+          validFrom: "2026-11-05T15:00:00.000Z",
+          overrides: {
+            monthlyPrice: null,
+            includedUsers: null,
+            includedStorageGb: null,
+            extraUserPrice: null,
+            extraGbPrice: null,
+          },
+          addons: [],
+          modules: [],
+        }
+      : null;
+
+  await withSeededPlatformApi(async (baseUrl) => {
+    const headers = { "x-user-id": "usr_platform", "x-role": "super_admin" };
+    const active = await requestJson(baseUrl, "/api/v1/platform/tenants/org-a/detail", { headers });
+    const absent = await requestJson(baseUrl, "/api/v1/platform/tenants/org-b/detail", { headers });
+
+    assert.equal(active.status, 200);
+    assert.equal(active.body.data.subscription.planCode, "starter");
+    assert.deepEqual(active.body.data.subscription.modules, ["dashboard", "users"]);
+    assert.equal(absent.status, 200);
+    assert.equal(absent.body.data.subscription, null);
+  }, resolveSubscription);
+});
+
+test("T-PL-14: detalhe de organização inexistente continua 404 sem vazar assinatura", async () => {
+  await withSeededPlatformApi(async (baseUrl) => {
+    const response = await requestJson(baseUrl, "/api/v1/platform/tenants/unknown/detail", {
+      headers: { "x-user-id": "usr_platform", "x-role": "super_admin" },
+    });
+    assert.equal(response.status, 404);
+    assert.equal(response.body.error.reason, "platform_tenant_not_found");
+    assert.equal(response.body.data, undefined);
+  }, async () => {
+    throw new Error("resolver não pode ser chamado para organização inexistente");
   });
 });
 
@@ -193,8 +239,14 @@ test("detail isolation: getDetail(A) returns only A's users, never B's (per-org 
   assert.equal(orgB?.modules.find((module) => module.key === "users")?.enabled, false);
 });
 
-async function withSeededPlatformApi(callback: (baseUrl: string) => Promise<void>): Promise<void> {
-  const detailService = new PlatformTenantDetailService(new InMemoryPlatformTenantDetailRepository(SEEDS));
+async function withSeededPlatformApi(
+  callback: (baseUrl: string) => Promise<void>,
+  resolveSubscription?: PlatformTenantSubscriptionResolver,
+): Promise<void> {
+  const detailService = new PlatformTenantDetailService(
+    new InMemoryPlatformTenantDetailRepository(SEEDS),
+    resolveSubscription,
+  );
 
   const app = express();
   app.use(express.json());

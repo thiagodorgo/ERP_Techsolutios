@@ -16,6 +16,26 @@ export type PlatformTenantDetailUser = {
   readonly status: string;
 };
 
+export type PlatformTenantDetailSubscription = {
+  readonly planCode: string;
+  readonly planName: string;
+  readonly validFrom: string;
+  readonly overrides: {
+    readonly monthlyPrice: string | null;
+    readonly includedUsers: number | null;
+    readonly includedStorageGb: string | null;
+    readonly extraUserPrice: string | null;
+    readonly extraGbPrice: string | null;
+  };
+  readonly addons: readonly {
+    readonly planCode: string;
+    readonly planName: string;
+    readonly validFrom: string;
+    readonly perVehiclePriceOverride: string | null;
+  }[];
+  readonly modules: readonly string[];
+};
+
 export type PlatformTenantDetail = {
   readonly id: string;
   readonly name: string;
@@ -27,4 +47,5 @@ export type PlatformTenantDetail = {
   readonly moduleCount: number;
   readonly modules: readonly PlatformTenantDetailModule[];
   readonly users: readonly PlatformTenantDetailUser[];
+  readonly subscription?: PlatformTenantDetailSubscription | null;
 };
