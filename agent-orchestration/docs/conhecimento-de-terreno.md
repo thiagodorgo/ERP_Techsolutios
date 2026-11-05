@@ -95,6 +95,13 @@ Declare no §0 de todo plano ou relatório: `uname -a`, `node -v`, `git --versio
   mutação, CI, cluster descartável) não é alvo. Em 01/10 um `TaskStop` no meio de uma conversão LF→CRLF
   custou um parcial suspeito e ~30 min de redo — a pausa estava certa, o corte não. Um vigia parado também: vigia
   que dispara re-invoca o orquestrador e gasta tokens.
+- **Fila de sessão anterior é órfã e mata trabalho já feito (03/11).** Às 18:47 uma `fila-prerev488.sh` deixada viva
+  em 02/11 relançou a pré-revisão do #488, já mergeado, quando a conta 2 do Codex voltou, e sobrescreveu o parecer
+  original às 18:49; o texto integral não foi recuperado. A P8 só retoma o que está no registro de agentes vivos.
+  No início de cada sessão: listar as filas `fila-*.sh` vivas e matar as que não estão no registro, antes de lançar
+  qualquer coisa (`REGISTRO-FILA-ORFA-0311`).
+- **Marca de pronto se confere no começo da linha (04/11).** A fila do dev do item 44 deu "PRONTO PARA REVISÃO"
+  porque o relatório dizia "não foi escrito `PRONTO PARA REVISÃO`". A checagem passou a exigir `^PRONTO`.
 
 ### 2.3 Medir a pergunta certa
 

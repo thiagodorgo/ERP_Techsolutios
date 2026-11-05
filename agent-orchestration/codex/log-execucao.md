@@ -5193,3 +5193,15 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - `B-MOBILE-INTERNET-RELEASE` FECHADA pelo PR #499 (`8d7a99ff`); as três etapas mobile seguem ADIADAS, dono
   `B-SAN3-10b`.
 - O item 44 continua PARCIAL. KPI congelado; merge fora da alçada do dev.
+
+## 2026-11-04 — registro de 04/11 (`reg-0411-opus`)
+
+- Autor: `reg-0411-opus`, Claude Opus, nível menor declarado, identidade nova; o Codex está sem limite. Sem cruzamento de modelo na autoria; o verificador é um revisor de outra identidade (§C7 item 11(2), `D-CRUZAMENTO-POR-LIMITE-0311`).
+- Worktree `C:/Users/thiag/w-reg0411`, ramo `docs/registro-0411`, base `origin/main@0c3c7826`. Fonte: `erp-pausa-2026-10-03/REGISTRO-PENDENTE.md`, seções de 03/11 à noite e de 04/11; cada item conferido em `git show origin/main:agent-orchestration/controle/{decisoes,pendencias}.md` antes de entrar.
+- Item 54 FECHADO: `P-KPI-ROADMAP-CONGELADO` e `P-KPI-RECENT-CONGELADO` com o #494 (merge `4f260796`, 25 testes, R0 `ok` no CI do merge `41739911616`) e o marco #501 (merge `0c3c7826`; 25 `ok`, 0 `not ok` no CI do head `f1b9ef3c`, run `41849732792`); linha do item 54 no `PLANO_SAN3.md`.
+- Resíduos do #497: N4 (duas notas restauradas de `c6195c12`, condição na linha `dono`), N3 e N2 (errata em `decisoes.md`; as linhas 139 e 142 do `PLANO_SAN3.md` ficam fora do escopo, com dono), N5 (`B-ASS-02` na linha `dono`). N1 segue aberto. Tudo em `P-ASS00-RESIDUOS-CONFERENCIA`.
+- Achados BAIXA do #496 (F-1, F-2, C-1, C-2, H-1): marcas anexadas às entradas e `ERRATA-0411-REV496`; seção "Quedas (P6)" e contagem da redação corrigidas na ata do #488.
+- Decisões com fala literal: Antigravity (03/11 ~19:45), conferência das três aparências pelo orquestrador (03/11 ~20:05), braços por API, Nemotron, exceção da OpenRouter, sem GPT-OSS da Groq, braços sem sandbox (04/11), pedido do prompt externo do app de campo (04/11 ~03:30).
+- Incidente da fila órfã de 03/11 e a pré-revisão perdida do #488: `REGISTRO-FILA-ORFA-0311` e lição em `docs/conhecimento-de-terreno.md` §2.2.
+- Pendências novas: 13 (7 do levantamento do app de campo, 5 das conferências e revisões de 03–04/11, e `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE`, nascida FECHADA pelo #499). Índice regenerado: 761 cabeçalhos, 750 IDs, 182 FECHADAS, 575 ABERTAS, 4 SEM-STATUS.
+- Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, `CLAUDE.md`, `AGENTS.md`, lockfiles, chave, nome de pessoa, conteúdo comercial ou conteúdo do prompt externo. Não fazer merge antes da revisão.

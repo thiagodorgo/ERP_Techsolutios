@@ -8,7 +8,7 @@
 - **Merge:** squash `36ad6aa7b967f3e1df0ae70fc4c4894fb0795744`, em 03/11/2026 às 16:35:49 SP (`2026-11-03T19:35:49Z`).
 - **CI:** head aprovado com 16/16 check-runs concluídos e verdes (runs `41702230082` e `41702238984`); merge com run `41704741894`, `backend` e `backend-postgres` verdes pela saída TAP.
 - **Resultado:** junta **REPROVADA** (C2 REPROVADO; C1 e C3 APROVADO; a régua é unanimidade) por C2-2, defeito GRAVE dentro do bloco; triagem e auditoria do topo no §12; conserto único K1–K3; conferência **CONFERIDO COM RESSALVA**, sem grave restante; nenhuma cadeira refeita; porteiro pós-merge **LIBERADO COM RESSALVA** para o `B-ASS-00`.
-- **Evidências versionadas:** `agent-orchestration/omega/juntas/votos/B-PATIO-REC-01-PR488/`, copiadas em LF de `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/`, mais a pré-revisão e o porteiro que estavam em `revisoes/`. Quatro referências ao nome/caminho do ambiente externo de apresentação foram redigidas por este repositório ser público; votos e substância técnica ficaram intactos. Logs e scripts grandes permanecem na fonte externa, citados pelos pareceres.
+- **Evidências versionadas:** `agent-orchestration/omega/juntas/votos/B-PATIO-REC-01-PR488/`, copiadas em LF de `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/`, mais a pré-revisão e o porteiro que estavam em `revisoes/`. Seis linhas, em quatro arquivos, foram redigidas para tirar o nome e o caminho do ambiente externo de apresentação, por este repositório ser público: `BRIEFING.md` (2), `conf-488-parecer.md` (1, sem marca de omissão no próprio arquivo), `inspetor-evidencia.md` (1) e `inspetor-parecer.md` (2). Correção de 04/11 (H-1 do `rev-496-opus`); antes, esta linha dizia "Quatro referências". votos e substância técnica ficaram intactos. Logs e scripts grandes permanecem na fonte externa, citados pelos pareceres.
 
 As referências de PR e CI foram medidas por comando: `gh pr view 488 --json ...` retornou `MERGED`, head `f472aab1…`, merge `36ad6aa7…` e `mergedAt=2026-11-03T19:35:49Z`; `gh api .../commits/f472aab1.../check-runs` retornou 16 checks, todos `completed/success`; o porteiro reexecutou as suítes e leu o TAP da run `41704741894`.
 
@@ -79,6 +79,10 @@ Ressalvas não graves:
 | Porteiro | `porteiro-488-sol` |
 
 Quem achou não planejou nem consertou; quem consertou não conferiu. A junta ocorreu uma vez, seguida por triagem, um conserto e uma conferência; nenhuma cadeira foi refeita.
+
+## Quedas (P6)
+
+Nenhuma queda de agente registrada: a fonte `revisoes/j488/` não tem `00-quedas.md` (`ls`, medido em 04/11), e o `BRIEFING.md` mandava toda queda para esse arquivo. A sobrescrita do parecer da pré-revisão pela fila órfã, às 18:49 de 03/11, não é queda de agente desta junta: é incidente de terreno, registrado em `REGISTRO-FILA-ORFA-0311` (`controle/decisoes.md`). Seção acrescentada em 04/11 (C-2 do `rev-496-opus`).
 
 ## Porteiro pós-merge
 

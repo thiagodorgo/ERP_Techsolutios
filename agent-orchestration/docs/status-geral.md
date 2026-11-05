@@ -1,5 +1,15 @@
 # Status Geral
 
+## Atualização 2026-11-04 — registro de 04/11: item 54 fechado, resíduos do #497 e do #496, braços por API
+
+- **Autor:** `reg-0411-opus`, Claude Opus, nível menor declarado, identidade nova (o Codex está sem limite). **Base medida:** `origin/main@0c3c7826`, já com os PRs #494, #497, #496, #499, #500 e #501. As seções do `REGISTRO-PENDENTE.md` de 03/11 à noite e de 04/11 foram confrontadas com `decisoes.md` e `pendencias.md` da `origin/main`; o que o #496 e o #497 já levaram não foi duplicado.
+- **No ar desde o último registro:** #494 (`B-SAN3-10c`, guard de frescor do painel, merge `4f260796`), #497 (`B-ASS-00`, `b10e539a`), #496 (registro de 03/11, `af46b20a`), #499 (`B-MOBILE-INTERNET-RELEASE`, `8d7a99ff`), #500 (`B-SAN3-10b`, item 44 PARCIAL, `9bb0074b`) e #501 (marco de KPI de 04/11, `0c3c7826`).
+- **Gate (`PLANO_SAN3.md` §4.1):** **item 54 FECHADO** — `P-KPI-ROADMAP-CONGELADO` e `P-KPI-RECENT-CONGELADO` com o #494 (25 testes, R0 `ok` no CI do merge `41739911616`) e o #501, o primeiro marco escrito com o guard já na `main` (25 `ok`, 0 `not ok` no CI do head `f1b9ef3c`). O item 44 segue PARCIAL.
+- **Decisões do dono, com fala literal:** `D-ANTIGRAVITY-CLAUDE-GPT-0311`, `D-CONFERENCIA-APARENCIAS-PELO-ORQUESTRADOR` (conflito §A2 com o §C7 item 11, registrado; falta PR de governança), `D-BRACOS-POR-API-0411`, `D-NEMOTRON-0411`, `D-OPENROUTER-EXCECAO-0411`, `D-SEM-GPT-OSS-GROQ-0411` e `D-BRACOS-SEM-SANDBOX-0411`. Registros: `REGISTRO-FILA-ORFA-0311`, `REGISTRO-CONF-493-0311`, `REGISTRO-PROMPT-APP-CAMPO-0411` (o prompt fica fora do repositório) e `REGISTRO-0411-ITEM44-499-500-501`.
+- **Erratas:** `ERRATA-0411-REV496` (F-1, F-2, C-1, C-2 e H-1 do `rev-496-opus`; a ata do #488 ganhou "Quedas (P6)" e a contagem certa da redação) e `ERRATA-0411-ASS00` (N2 e N3). O ramo remoto `demo/investidor` segue no `origin`, como pergunta ao dono.
+- **Pendências novas (13):** `P-ASS00-RESIDUOS-CONFERENCIA` (PARCIAL), `P-MOBILE-ROTAS-SEM-SERVIDOR`, `P-MOBILE-SYNC-ESTOQUE-TIPOS`, `P-MOBILE-STATUS-NOMES`, `P-RBAC-FIELD-TECHNICIAN-DESPESA`, `P-OS-TIPO-GUINCHO-PRESTADOR`, `P-AUTH-TOKEN-LOCAL-CLAIMS`, `P-API-ENVELOPES-IRREGULARES`, `P-WEB-SHELL-CELULAR-ROLA-DE-LADO`, `P-SAN3-10B-BATERIA-B8-FORMATOS`, `P-SAN3-10B-OP8-PASSO6`, `P-KPI-PAINEL-EXPLICA-DENOMINADOR` e `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE` (nasce FECHADA pelo #499). Já estavam na `main`: `P-KPI-FRESCOR-BORDAS-ANCORA`, `P-SAN3-10B-F4-SEED-ISOLADO`, `P-CLOUD-BILLING-3-APARENCIAS`, `P-OS-VISTORIA-NO-DETALHE` e `P-OS-DESPACHO-NOME-E-LINHA-DO-TEMPO`. Índice: 761 cabeçalhos, 750 IDs, 182 FECHADAS, 575 ABERTAS.
+- **Escopo:** somente `agent-orchestration/**` e a linha do item 54 em `docs/revisoes/SAN3/PLANO_SAN3.md`; KPI continua congelado.
+
 ## Atualização 2026-11-03 — cauda do registro, ata do #488 e decisões posteriores ao #489
 
 - **Autor:** `reg-0311-sol`, Codex Sol, nível menor declarado, esforço medium. **Base medida:** `origin/main@c6195c12`, já com os PRs #482, #489, #488 e #495. O `REGISTRO-PENDENTE.md` inteiro foi confrontado com `decisoes.md`, `pendencias.md` e `git log origin/main`; o conteúdo já levado por #482/#489 não foi duplicado.
