@@ -221,3 +221,34 @@ Ambientais Windows, NÃO do bloco (pré-existentes; verdes no CI Linux — Emend
   - `san3-09-bootstrap-platform-admin-db` (T2.1 + pai): 2 fail — executa `node_modules/.bin/prisma` (script bash) pelo Node;
   - `traccar-event-migration-drill-db`: 1 fail — hook `after` com `EBUSY: rmdir` (o runner registra "terminou sem registrar um único teste");
   - `db-catalog-write-guard`: passa sozinho 5/5 (no `npm test` paralelo, contenção de cluster).
+
+### 4. CI — leitura dos check-runs (PR #504, head `f3eb1bf6`)
+
+- `backend-postgres`: **pass** (4m47s / 4m37s, nos dois runs) — as suítes -db do bloco verdes no Linux.
+- `backend`: **fail** — `# tests 4496 · pass 4492 · fail 2`; os 2 vermelhos são o guard `san3-05-runtime-role-guard-db.test.ts` T14a/b.
+- `frontend`: **fail** — `not ok - T40 módulos não vaza código interno e inventário conserva 23 endpoints`.
+- Demais jobs verdes: authority-portal, owner-portal, flutter, antivirus.
+
+### 5. PREMISSA FALSA (Emenda 2 incompleta) — mais DOIS guards de superfície que o bloco quebra
+
+A Emenda 2 cobriu o censo e o ratchet semântico, mas o bloco (11 rotas novas + 4 tabelas novas) também muda DUAS contagens duras que ficaram fora do PERMITIDO:
+
+1. **`tests/san3-05-runtime-role-guard-db.test.ts:1016`** — T14a/b assere `121` no campo `dml` (contagem de tabelas públicas com DML do papel de runtime):
+   - comando: `docker exec devass02-pg psql -U postgres -d erp_techsolutions -tAc "SELECT count(*) FROM pg_tables WHERE schemaname='public'"` → **125**;
+   - origem: a M1 adiciona **4** tabelas públicas (`subscription_plans`, `subscription_plan_versions`, `tenant_subscriptions`, `tenant_subscription_addons`) → 121 + 4 = 125;
+   - saída CI: `The input did not match the regular expression /^s305_runtime_…\|0\|0\|121$/m. Input: 'DO
+s305_runtime_…|f|f|f|f|0|0|125'`;
+   - arquivo **fora** do PERMITIDO §4.2 e da Emenda 2. O F9 classificou errado ("ambiental Windows, verde no Linux") — no Linux ele RODA e quebra na contagem.
+2. **`frontend/tests/san3-06b-navegacao-plataforma.test.ts:55`** — T40 assere `endpoints sob /api/v1/platform = 23`:
+   - comando: `node scripts/san3-06b-endpoints-de-plataforma.mjs .` → **34**;
+   - origem: as 11 rotas novas de `/api/v1/platform/billing/*` (23 + 11 = 34);
+   - arquivo em `frontend/**` — **PROIBIDO** no §4.2.
+
+Nenhum dos dois tem veredito meu: ambos exigem tocar fora do PERMITIDO (o 2º é PROIBIDO). Sem eles, o CI `backend` e `frontend` ficam vermelhos por causa do bloco.
+
+## PAUSA 2026-11-05 ~13:20 UTC
+
+- head: `f3eb1bf6` (F0–F8 + F9: snapshots regenerados pela Emenda 2 + bateria reexecutada; PR #504 aberto).
+- feito: Emenda 2 aplicada (censo 12 chaves via `gravar`; ratchet semântico sem chave nova, só contagem L0 113→115); bateria F9 completa local (check/lint/build verdes, guard 0 violações, 94/94 memória, 26/26 -db, `npm test` 4487/4478/7/2 com os 7 ambientais Windows pré-existentes); push + PR #504; CI lido (`backend-postgres` verde).
+- falta: autorização para atualizar 2 contagens duras fora do PERMITIDO — `tests/san3-05-runtime-role-guard-db.test.ts:1016` `121`→`125` e `frontend/tests/san3-06b-navegacao-plataforma.test.ts:55` `23`→`34` — para o CI `backend`/`frontend` voltarem verdes.
+- próximo comando: aguardar emenda do orquestrador (mesma classe da Emenda 2; incluir esses dois arquivos no PERMITIDO) ou ordem de parar.
