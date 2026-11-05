@@ -4533,3 +4533,46 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **N2:** o item 62 do portão cita `RBAC_MATRIX.md:49` (Finance); a linha do Billing é a 50.
 - **Fora do escopo deste registro:** as linhas 139 (item 59) e 142 (item 62) do `docs/revisoes/SAN3/PLANO_SAN3.md` repetem as duas citações; este registro só pode tocar a linha do item 54. Ficam em `P-ASS00-RESIDUOS-CONFERENCIA`, com o `B-ASS-04` como dono.
 - **N4 e N5:** feitos em `pendencias.md` (ver `P-ASS00-RESIDUOS-CONFERENCIA`).
+
+## D-CLAUDE-SO-ORQUESTRACAO-0411 (decisão do dono, 2026-11-04, ~22:50 SP) — o Claude só orquestra por 24 horas
+
+- **Fala literal:** *"claude so orquestração nas proximas 24 horas"*.
+- **Efeito:** até ~05/11 22:50 SP, o Claude não executa nada: nem dev, nem revisão, nem conferência, nem registro. O dev do Dashboard (tela, que é só Claude) recebeu PAUSA e retoma depois da janela.
+
+## D-LISTA-API-DEEPSEEK-0411 (decisão do dono, 2026-11-04, ~23:20 SP) — a API oficial da DeepSeek entra no catálogo
+
+- **Fala literal:** *"atualize a lista de api (...) tome o devido cuidado pois minhas keys estao ae e nao vou revogar, vou dar essa moral pra vc"*.
+- **Novo provedor:** a API oficial da DeepSeek (paga). A chave fica só na variável de usuário `ERP_AGENTE_DEEPSEEK_KEY`; **nenhuma chave, prefixo de chave ou caminho de credencial entra neste repositório.**
+  - O catálogo atual tem `deepseek-v4-pro` e `deepseek-flash`; os nomes antigos `deepseek-chat` e `deepseek-reasoner` ainda respondem. Os dois aceitam o formato do Codex.
+  - Braços `DP` (DeepSeek Pro) e `DF` (DeepSeek Flash), no perfil `codex-deepseek`.
+  - Teste pelo lançador OK: 23 scripts, o 1º é `up`, em 7 a 10 s.
+- As outras entradas da lista (Groq Llama 3.3 e Qwen 2.5 Coder, Nemotron 70B, DeepSeek R1 free) continuam fora do catálogo dos provedores.
+- **Leitura do orquestrador, declarada (§A6):** é serviço pago. Antes de usar como braço de trabalho, vale um teto em dólar por tarefa, como o do Gemini (`D-GEMINI-PRO-API-TETO`); ao dono cabe dizer o teto.
+- **Nota de data, declarada (§A6):** a fonte rotula esta decisão como "05/11 ~23:20 SP"; pela ordem cronológica (depois de 22:50 de 04/11 e antes de 00:00 de 05/11), é 04/11 ~23:20 SP (em UTC já é 05/11).
+
+## D-DEEPSEEK-PRO-PLANO-0511 (decisão do dono, 2026-11-05, ~00:00 SP) — o plano do DeepSeek Pro e o braço via OpenRouter
+
+- **Falas literais:** *"então dê de cacete no deepseek pro, bote pra foder. passe o plano para minha aprovação pro deepseek pro"* e *"seguinte, o openrouter tem creditos, use o deepseek pro por la tambem"*.
+- **Plano do DeepSeek Pro:** apresentado ao dono com papéis, orçamento com teto por tarefa, primeira rodada e regras. O dono respondeu acrescentando os créditos da OpenRouter.
+- **Braço novo `OD` (DeepSeek Pro OpenRouter):** `deepseek/deepseek-v4-pro` pelos créditos da OpenRouter. A conta deixou de ser gratuita. Chat e responses OK. **(Sem valor comercial nem saldo neste registro — repositório público.)**
+- **Leitura do orquestrador, declarada (§A6):** a autorização do dono vale para usar o DeepSeek Pro pelo saldo oficial e pelo crédito da OpenRouter, com teto por tarefa e conferência.
+
+## D-DEEPSEEK-HORARIO-PICO-0511 (decisão do dono, 2026-11-05, ~01:45-02:00 SP) — o DeepSeek oficial só fora do horário de pico
+
+- **Falas literais:**
+  - *"pare os codex, eles so entram em horario de pico do deepseek junto com openroutes/deepseek que nao tem horario de pico. use e abuse do deepseek oficial agora, pode rodar quantos trabalhos o sistema aguentar, ate o limite acabar"*
+  - *"o deepseek oficial so usamos fora do horario de pico"*
+- **Fato técnico (página oficial `https://api-docs.deepseek.com/quick_start/pricing`, lida em 05/11):** fora do pico custa a metade. O pico vai das 01h às 04h e das 06h às 10h UTC, de segunda a sexta (22h–01h e 03h–07h em SP). Fora do pico: o resto, os fins de semana e os feriados chineses.
+- **Aplicado na ferramenta (fora do repositório), `ferramentas/fila-lib.sh`:**
+  - Fora do pico: só o DeepSeek oficial, sem a trava de uma tarefa por braço, enquanto houver saldo e memória (≥ 4 GB, P8).
+  - No pico: os Codex (uma tarefa por conta) e o DeepSeek pela OpenRouter (uma por vez).
+  - Sem saldo fora do pico, a fila espera o pico.
+- **Leitura do orquestrador, declarada (§A6):** o dono disse *"pode rodar quantos trabalhos o sistema aguentar"* — isso substitui, só para o DeepSeek oficial, a regra "UMA tarefa por vez em CADA braço" de 27/10. O feriado chinês é tratado como pico, para pender ao custo menor; nos Codex isso só consome cota.
+
+## REGISTRO-BRACOS-TESTES-0511 (fatos medidos, 2026-11-04/05) — resultado das tarefas-teste dos braços
+
+- **DeepSeek Pro (`DP`, API oficial):** na revisão do #497, achou **8 de 8** achados do gabarito (`rev-497-opus`), com o mesmo veredito (APROVADO COM AJUSTES). O orquestrador conferiu 2 afirmações no commit e não achou nada inventado.
+- **DeepSeek Pro via OpenRouter (`OD`), teste de código do item 54:** resultado BOM — o plano tem escopo exato e cita as fontes; o guard tem 4 regras dentro dos JSON, sem git e sem relógio; 4 testes verdes nos dois fusos, mais os guards existentes com 17 de 17; 3 mutantes mortos, com a saída real. **Faltou:** testes com dados fictícios (só usou dado real) e falha fechada para campo malformado. **Leitura do orquestrador, declarada:** liberado para dev de baixo risco, sempre com conferência.
+- **Nemotron (2º teste, regras de prova):** reprovado — achou 2 de 8 (o item 65 e a PD sem URL). Errou a gravidade (item 65 como GRAVE) e chamou a PD sem fontes de "por design" sem prova. Uma medição enganou, porque contou linhas de contexto do diff (FILIAL-X-ORGANIZACAO) e concluiu que não havia achado. Não gravou a evidência incremental. O parecer saiu íntegro. **Leitura do orquestrador, declarada:** melhorou em relação ao 1º teste, mas não serve como revisor.
+- **Grátis da OpenRouter (revisão por chat do #497):** Nemotron 3.5 Super acertou 4 de 8; Dots 3 Note, 1,5 de 8; North Mini Code devolveu a resposta vazia; Gemma 4 e Xing deram erro 429. **Nenhum grátis serve como revisor único.**
+- **Nota:** sem custo em dinheiro nem saldo neste registro (repositório público).

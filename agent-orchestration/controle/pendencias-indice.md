@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **761** |
-| IDs distintos | 750 |
-| **ABERTAS** | **575** |
+| Cabecalhos `## P-` | **762** |
+| IDs distintos | 751 |
+| **ABERTAS** | **576** |
 | — das quais **diferidas** (balde C) | 63 |
-| — das quais **ativas nesta rodada** | **512** |
+| — das quais **ativas nesta rodada** | **513** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 182 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **761 cabecalhos para 750 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **762 cabecalhos para 751 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -334,7 +334,7 @@
 | `P-AUTH-TOKEN-LOCAL-CLAIMS` | 12776 | MÉDIA | sim | P-AUTH-TOKEN-LOCAL-CLAIMS (2026-11-04) — o token local não traz todos os claims do contr |
 | `P-WEB-SHELL-CELULAR-ROLA-DE-LADO` | 12789 | MÉDIA | sim | P-WEB-SHELL-CELULAR-ROLA-DE-LADO (2026-11-04) — em 390 px a web rola de lado por causa d |
 
-## ABERTAS · balde B — processo/registro — 254
+## ABERTAS · balde B — processo/registro — 255
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -592,6 +592,7 @@
 | `P-SAN3-10B-BATERIA-B8-FORMATOS` | 12795 | BAIXA | sim | P-SAN3-10B-BATERIA-B8-FORMATOS (2026-11-04) — a bateria B8 não pega três formatos de lin |
 | `P-SAN3-10B-OP8-PASSO6` | 12801 | BAIXA | sim | P-SAN3-10B-OP8-PASSO6 (2026-11-04) — o passo 6 da Op-8 não foi medido — BAIXA |
 | `P-KPI-PAINEL-EXPLICA-DENOMINADOR` | 12807 | BAIXA | sim | P-KPI-PAINEL-EXPLICA-DENOMINADOR (2026-11-04) — o painel não explica que a vendável caiu |
+| `P-ASS02-M1D-AUTORIZACAO` | 12820 | BAIXA | sim | P-ASS02-M1D-AUTORIZACAO (2026-11-05) — a migração de dados M1-d do B-ASS-02 aguarda auto |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 63
 

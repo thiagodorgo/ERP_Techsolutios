@@ -12816,3 +12816,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem medida:** `dev-44-sol` (`aapt dump permissions`) e o orquestrador na `origin/main`: o `AndroidManifest.xml` principal não declarava `android.permission.INTERNET`; só os de debug e profile declaravam.
 - **fato no fechamento:** re-medido neste registro em `origin/main@0c3c7826`: `android.permission.INTERNET` aparece 1 vez em cada manifest (`main`, `debug`, `profile`). Revisão do orquestrador fora do repositório (`revisoes/rev-499-orquestrador.md`), CI 16/16.
 - **nota:** a entrada `## B-MOBILE-INTERNET-RELEASE (2026-11-04)`, acima, registra o mesmo defeito pelo nome do bloco; esta entrada dá a ele o ID de pendência que a fonte usa. A repetição de F3, Op-10 e Op-8 mobile com o release continua em `P-SAN3-ROTEIRO-DEMO-OPERACAO`.
+
+## P-ASS02-M1D-AUTORIZACAO (2026-11-05) — a migração de dados M1-d do B-ASS-02 aguarda autorização do dono, uma a uma (P1) — BAIXA
+
+- **status:** ABERTA · **escopo:** autorização de migração de dados do pacote da assinatura (`B-ASS-02`) · **dono:** o dono do produto, com o `B-ASS-02` · **PR-alvo:** o PR do `B-ASS-02` que criar a migração M1-d · **bloqueia:** não.
+- **fato:** a migração `<carimbo>_ass02_seed_subscription_plans` (M1-d) cria os 6 planos sem preço (§4.2, P6) e é a 4ª migração de dados, fora das 7 de esquema + 3 de dados cobertas pela fala do dono de 31/10 ~22:15 (P1). Aguarda autorização, uma a uma (P1). O `B-ASS-02` não fica parado: entrega os planos por `seed.ts` em dev.
+- **encerramento:** o dono autoriza a M1-d, uma a uma (P1), e a migração entra com o drill e o guard (`scripts/migration-transaction-guard.mjs`).
