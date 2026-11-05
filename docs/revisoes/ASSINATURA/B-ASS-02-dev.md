@@ -78,3 +78,19 @@
   - T-PL-db-7: corrida de add-ons → exatamente 1 vigente.
 - Mutação literal R-PLAN-7: removida a linha `ALTER TABLE "tenant_subscriptions" FORCE ROW LEVEL SECURITY` da M1; M1 aplicada numa base separada `ass02_mut_force`; T-PL-db-2 ficou vermelho (`relforcerowsecurity: false`, 1 fail/4 skips). Linha restaurada e base temporária removida.
 - `npm run check` verde; `git diff --check` verde. Próximo: commit explícito da F4; depois F5 (drills M1/M1b/M1-d + T-PL-db-5/6).
+
+## F5 — drills de migração e sincronização de módulos
+
+- Retomada: os três arquivos não commitados da F5 estavam truncados/derivados de outro domínio. Foram descartados e reconstruídos; os geradores temporários em `_gentests/` também foram removidos.
+- `tests/ass-02-plans-migration-drill-db.test.ts`: base própria criada e derrubada pelo teste; `prisma migrate deploy`; M1 com 4 tabelas, 2 índices parciais, ENABLE+FORCE e 2 políticas; down com 4 `DROP` + 1 `DELETE` numa transação; tabela `tenants` preservada; re-up convergente; todos os prefixos `k=1..n` com sentença final quebrada deixam zero resíduo. M1b: 2 permissões e concessão idempotente a `super_admin`.
+- `tests/ass-02-plans-seed-migration-drill-db.test.ts`: M1-d cria exatamente os 6 códigos sem versão/preço e com `created_by = NULL`; reaplicação dupla converge; rollback preserva plano que já ganhou versão e remove apenas os demais.
+- `tests/ass-02-plans-modules-db.test.ts`: T-PL-db-5 prova a união persistida base + add-on após PUT; T-PL-db-6 prova a ressincronização quando uma versão entra hoje.
+- Autorizações: M1/M1b pela fala de 31/10 ~22:15, *"siga na recomendação de tudo, exceto p14"*; M1-d pela fala de 05/11 ~02:00 SP, *"manda o deepsek fazer"*.
+- Mutações literais, todas aplicadas, vermelhas e restauradas:
+  - R-PLAN-3: omitir `modulesWriter.writeModules` → T-PL-db-5 vermelho (1 fail/2);
+  - R-PLAN-8: remover `BEGIN;` da M1 → `migration-transaction-guard` G2 vermelho (1 violação);
+  - M1-d idempotência: remover `ON CONFLICT (code) DO NOTHING` → drill vermelho por `23505`;
+  - M1-d rollback: remover `NOT EXISTS` → drill vermelho por FK `23503`;
+  - R-PLAN-9/M1b: trocar a chave `manage` pela `read` no INSERT → drill vermelho, catálogo com só 1 chave.
+- Verde final no cluster descartável `devass02-pg`/porta 55502: `npm run check`; `migration-transaction-guard` (**123 migrações, 0 violações**); 3 arquivos, **9/9**, fail 0, skip 0; `git diff --check` verde.
+- Veredito: **F5 APROVADA**. Próxima fatia sem veredito: F6.
