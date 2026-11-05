@@ -97,8 +97,22 @@ export function resetSubscriptionBillingRuntimeForTests(): void {
 }
 
 async function createPrismaPlansService(): Promise<PlansService> {
-  const { createPrismaPlansRepository } = await import("./plans/plans-prisma.repository.js");
-  return new PlansService(await createPrismaPlansRepository());
+  const [plansModule, subscriptionsModule, modulesWriterModule, synchronizerModule] =
+    await Promise.all([
+      import("./plans/plans-prisma.repository.js"),
+      import("./plans/subscriptions-prisma.repository.js"),
+      import("./plans/tenant-modules.prisma.js"),
+      import("./plans/tenant-modules.sync.js"),
+    ]);
+  const { prisma } = await import("../../database/prisma.js");
+  const plans = new plansModule.PrismaPlansRepository(prisma);
+  const subscriptions = new subscriptionsModule.PrismaSubscriptionsRepository(prisma);
+  const writer = new modulesWriterModule.PrismaTenantModulesWriter(prisma);
+  return new PlansService(
+    plans,
+    undefined,
+    new synchronizerModule.TenantModulesSynchronizer(subscriptions, plans, writer),
+  );
 }
 
 async function createPrismaSubscriptionsService(): Promise<SubscriptionsService> {

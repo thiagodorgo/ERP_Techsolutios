@@ -17,6 +17,8 @@ import type {
   CreatePlanRecord,
   PlansRepository,
 } from "./plans.repository.js";
+import type { PlanVersionModulesSynchronizer } from "./tenant-modules.sync.js";
+import { businessDateOf, todayBusinessDate } from "./plan-versioning.js";
 
 const PLAN_CODE_PATTERN = /^[a-z][a-z0-9_-]{0,63}$/;
 
@@ -51,6 +53,7 @@ export class PlansService {
   constructor(
     private readonly repository: PlansRepository,
     private readonly clock: () => Date = () => new Date(),
+    private readonly modulesSynchronizer?: PlanVersionModulesSynchronizer,
   ) {}
 
   listPlans(): Promise<SubscriptionPlan[]> {
@@ -199,7 +202,7 @@ export class PlansService {
 
     const nextVersion = existing.reduce((max, version) => Math.max(max, version.version), 0) + 1;
 
-    return this.repository.createVersion({
+    const created = await this.repository.createVersion({
       planId,
       version: nextVersion,
       validFrom: input.validFrom,
@@ -215,6 +218,17 @@ export class PlansService {
       notes: input.notes,
       inaugural: input.inaugural,
     });
+    if (
+      this.modulesSynchronizer &&
+      businessDateOf(created.validFrom) === todayBusinessDate(this.clock())
+    ) {
+      await this.modulesSynchronizer.syncVersionEnteringToday(
+        planId,
+        created.modules,
+        created.validFrom,
+      );
+    }
+    return created;
   }
 
   assertKnownModules(modules: readonly string[]): void {

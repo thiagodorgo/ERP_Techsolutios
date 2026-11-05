@@ -41,6 +41,8 @@ const permissionDescriptions = {
   "platform:dashboard:read": "Consultar visao geral do Console da Plataforma.",
   "platform:tenants:read": "Consultar tenants no Console da Plataforma.",
   "platform:audit:read": "Consultar auditoria global do Console da Plataforma.",
+  "platform:billing:read": "Consultar planos, versoes e assinaturas de cobranca no Console da Plataforma.",
+  "platform:billing:manage": "Criar e editar planos, versoes e assinaturas de cobranca no Console da Plataforma.",
   "tenant.manage": "Gerenciar configuracoes, filiais e dados administrativos do tenant.",
   "users.manage": "Criar e alterar usuarios do tenant.",
   "users.read": "Consultar usuarios do tenant.",
