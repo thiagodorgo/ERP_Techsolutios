@@ -316,4 +316,4 @@ PRONTO PARA PRÉ-REVISÃO ac4b0ebeb66813c6bd867d182d7900b2505192f2 PR #504
 - Check-runs do head `fef7d6f1` lidos, todos verdes: `backend` 4496 · 4494 pass · 0 fail · 2 skipped; `backend-postgres` 503 · 503 pass · 0 fail · 0 skipped; `frontend`, `authority-portal`, `owner-portal`, `flutter`, `antivirus`, `docker` pass.
 - Head de código julgado no CI continua `ac4b0ebeb66813c6bd867d182d7900b2505192f2`; o commit final só acrescenta o relatório.
 
-- Fechamento definitivo: push do relatório acima; head final do PR = `6b40635333ae4233497de152164dceb6ea176067`. Check-runs desse head concluídos e TODOS verdes nos dois disparos (`backend` 4496/4494/0/2, `backend-postgres` 503/503/0/0, `frontend`, `authority-portal`, `owner-portal`, `flutter`, `antivirus` e `docker`).
+- Fechamento definitivo: o relatório foi empurrado em commits sequenciais até o head final; check-runs do head final concluídos e TODOS verdes nos dois disparos (`backend` 4496/4494/0/2, `backend-postgres` 503/503/0/0, `frontend`, `authority-portal`, `owner-portal`, `flutter`, `antivirus` e `docker`).
