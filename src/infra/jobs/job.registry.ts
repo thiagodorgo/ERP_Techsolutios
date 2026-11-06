@@ -2,6 +2,7 @@ import type { JobEnvelope, JobName, JobPayload } from "./job.types.js";
 import { createCloudCostAllocationRunJobHandler } from "../../modules/cloud-cost-allocation/cloud-cost-allocation.jobs.js";
 import { createAwsCurImportCostFileJobHandler } from "../../modules/cloud-costs/aws-cur.jobs.js";
 import { createCloudUsageAggregateDailyJobHandler } from "../../modules/cloud-usage/cloud-usage.jobs.js";
+import { createSubscriptionMeasureDailyJobHandler } from "../../modules/subscription-billing/subscription-billing.jobs.js";
 import { createNotificationDispatchJobHandler } from "../../modules/notifications/notification.jobs.js";
 import { createNotificationsScanDueJobHandler } from "../../modules/notifications/scheduled-notification.jobs.js";
 import { createFieldOpsEventFanoutJobHandler } from "../../modules/field-dispatch/field-ops-event-fanout.jobs.js";
@@ -46,6 +47,7 @@ function createDefaultJobRegistry(): JobRegistry {
     // Placeholder for future checksum enrichment, thumbnail generation, AV scan or cloud sync.
   });
   registry.register("cloud-usage.aggregate-daily", createCloudUsageAggregateDailyJobHandler());
+  registry.register("subscription.measure-daily", createSubscriptionMeasureDailyJobHandler());
   registry.register("notification-dispatch", createNotificationDispatchJobHandler());
   registry.register("notifications.scan-due", createNotificationsScanDueJobHandler());
   registry.register("audit-log-fanout", async () => {

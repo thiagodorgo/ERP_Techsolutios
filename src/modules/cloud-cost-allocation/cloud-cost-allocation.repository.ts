@@ -45,7 +45,8 @@ export const STORAGE_INVENTORY_MODELS = [
   "damage_attachments",
 ] as const;
 
-export const DERIVADAS = ["storage_bytes_current", "audited_actions_count"] as const;
+// B-ASS-03 · R-MED-8 — `db_bytes_estimated` também é DERIVADA: lida de `tenant_usage_daily`, nunca de evento.
+export const DERIVADAS = ["storage_bytes_current", "audited_actions_count", "db_bytes_estimated"] as const;
 
 type StorageInventorySeed = {
   readonly tenantId: string;
@@ -53,6 +54,13 @@ type StorageInventorySeed = {
   readonly sizeBytes?: number;
   readonly createdAt: Date;
   readonly deletedAt?: Date;
+};
+
+// B-ASS-03 · R-MED-8 — o dia medido (`tenant_usage_daily`): `date` é a data local SP (YYYY-MM-DD).
+type UsageDailySeed = {
+  readonly tenantId: string;
+  readonly date: string;
+  readonly dbBytesEstimated: number | null;
 };
 
 type AuditedActionSeed = {
@@ -71,6 +79,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
   private usageEvents: CloudUsageEvent[] = [];
   private attachments: StorageInventorySeed[] = [];
   private auditedActions: AuditedActionSeed[] = [];
+  private usageDaily: UsageDailySeed[] = [];
   private users: Array<{ readonly id: string; readonly tenantId: string }> = [];
   private tenants: CloudCostAllocationTenant[] = [];
 
@@ -239,6 +248,28 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
       });
     }
 
+    // B-ASS-03 · R-MED-8 — o banco pela medição: o ÚLTIMO dia medido (db não nulo) até o fim do período.
+    const periodEndDate = periodEnd.toISOString().slice(0, 10);
+    const lastDbByTenant = new Map<string, UsageDailySeed>();
+    for (const day of this.usageDaily) {
+      if (!allowed.has(day.tenantId) || day.dbBytesEstimated === null || day.date > periodEndDate) continue;
+      const current = lastDbByTenant.get(day.tenantId);
+      if (!current || day.date > current.date) lastDbByTenant.set(day.tenantId, day);
+    }
+    for (const [tenantId, day] of lastDbByTenant) {
+      if (day.dbBytesEstimated === null || day.dbBytesEstimated <= 0) continue;
+      groups.set(`${tenantId}|db_bytes_estimated|bytes|tenant_usage_daily`, {
+        quantity: day.dbBytesEstimated,
+        row: {
+          tenantId,
+          metricKey: "db_bytes_estimated",
+          unit: "bytes",
+          sourceType: "tenant_usage_daily",
+          quantity: day.dbBytesEstimated,
+        },
+      });
+    }
+
     const platformTenant = this.tenants.find((tenant) => tenant.slug?.toLowerCase() === "platform");
     const platformUserIds = new Set(
       this.users.filter((user) => user.tenantId === platformTenant?.id).map((user) => user.id),
@@ -282,6 +313,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     readonly usageEvents?: readonly CloudUsageEvent[];
     readonly attachments?: readonly StorageInventorySeed[];
     readonly auditedActions?: readonly AuditedActionSeed[];
+    readonly usageDaily?: readonly UsageDailySeed[];
     readonly users?: readonly { readonly id: string; readonly tenantId: string }[];
   }): void {
     this.imports = [...(input.imports ?? this.imports)];
@@ -291,6 +323,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     this.usageEvents = [...(input.usageEvents ?? this.usageEvents)];
     this.attachments = [...(input.attachments ?? this.attachments)];
     this.auditedActions = [...(input.auditedActions ?? this.auditedActions)];
+    this.usageDaily = [...(input.usageDaily ?? this.usageDaily)];
     this.users = [...(input.users ?? this.users)];
   }
 
@@ -303,6 +336,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     this.usageEvents = [];
     this.attachments = [];
     this.auditedActions = [];
+    this.usageDaily = [];
     this.users = [];
     this.tenants = [];
   }

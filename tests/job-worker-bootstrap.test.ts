@@ -64,6 +64,9 @@ function recordingModules(calls: string[], worker: JobWorker): JobWorkerModules 
     enqueueInitialImpoundNotifyDueScan: async () => {
       calls.push("impound.notify-due");
     },
+    enqueueInitialSubscriptionMeasureDaily: async () => {
+      calls.push("subscription.measure-daily");
+    },
   };
 }
 
@@ -82,8 +85,8 @@ function recordingLogger() {
   return { logger, infos, warns };
 }
 
-test("produção válida sobe o worker E enfileira as QUATRO varreduras, uma vez cada", async () => {
-  // MUTAÇÃO QUE ESTE TESTE MATA: apagar qualquer um dos quatro `enqueueInitial*`. Cada um é o 1º
+test("produção válida sobe o worker E enfileira as CINCO varreduras, uma vez cada", async () => {
+  // MUTAÇÃO QUE ESTE TESTE MATA: apagar qualquer um dos cinco `enqueueInitial*`. Cada um é o 1º
   // tick de um sweep auto-reenfileirante — sem ele, diária de pátio, reconciliação OS→custódia,
   // notificação legal ou notificação agendada simplesmente nunca são materializadas.
   const calls: string[] = [];
@@ -108,6 +111,7 @@ test("produção válida sobe o worker E enfileira as QUATRO varreduras, uma vez
       "impound.reconcile",
       "charging.accrue",
       "impound.notify-due",
+      "subscription.measure-daily",
     ]);
     assert.equal(warns.length, 0);
     assert.equal(infos.length, 1);

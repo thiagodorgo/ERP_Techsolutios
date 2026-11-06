@@ -80,6 +80,7 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/billing/tenants/:tenantId/subscription/history`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "tenant_subscription_addons"], "withTenantRls")],
   [`PUT ${P}/billing/tenants/:tenantId/subscription`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "tenant_subscription_addons"], "withTenantRls")],
   [`DELETE ${P}/billing/tenants/:tenantId/subscription`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "tenant_subscription_addons"], "withTenantRls")],
+  [`GET ${P}/billing/tenants/:tenantId/usage`, S("FORCE-POR-TENANT", ["tenant_usage_daily"], "withTenantRls (medição diária do B-ASS-03)")],
   [`GET ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`POST ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`GET ${P}/tenants/:tenantId`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
@@ -96,6 +97,7 @@ const JOBS: ReadonlyMap<string, EtiquetaJob> = new Map([
   ["cloud-cost-allocation.run", "FORCE-PLATAFORMA"],
   ["checklist-attachment-postprocess", "FORA-DA-SUPERFICIE"],
   ["cloud-usage.aggregate-daily", "FORCE-PLATAFORMA"],
+  ["subscription.measure-daily", "FORCE-PLATAFORMA"],
   ["notification-dispatch", "FORA-DA-SUPERFICIE"],
   ["notifications.scan-due", "FORA-DA-SUPERFICIE"],
   ["audit-log-fanout", "FORA-DA-SUPERFICIE"],
@@ -234,6 +236,8 @@ if (!connectionString) {
         import("../src/database/prisma.js"),
         import("../src/infra/jobs/job.registry.js"),
       ]);
+
+      const { runSubscriptionMeasureDaily } = await import("../src/modules/subscription-billing/subscription-billing.jobs.js");
 
       const appClient = singleton as unknown as PrismaClient;
       let app: ReturnType<typeof createApp>;
@@ -461,6 +465,55 @@ if (!connectionString) {
         await admin.tenantCloudCostAllocation.deleteMany({ where: { allocation_run_id: jobAllocationRun.id } });
         await admin.cloudCostAllocationRun.delete({ where: { id: jobAllocationRun.id } });
 
+        // S3 — job subscription.measure-daily: job de SISTEMA, roda SEMPRE sob o papel de runtime do app
+        // (NOSUPERUSER NOBYPASSRLS — o JWT da rota não muda o papel do banco de um job). A medição é per-org
+        // por RLS; rodar sob super (BYPASSRLS) é a postura que o canário do medidor recusa por desenho.
+        await admin.tenantUsageDaily.deleteMany({
+          where: { tenant_id: { in: [cenario.tenantA, cenario.tenantB] } },
+        });
+        const measureNow = new Date("2026-11-06T15:00:00.000Z"); // 12:00 SP (data fixa p/ determinismo)
+        const papelHttp = alvo.atual;
+        alvo.atual = efemera.client;
+        try {
+          // Só as organizações DESTE cenário: o cluster é compartilhado com as outras suítes (achado M-5 do #505).
+          await runSubscriptionMeasureDaily(measureNow, { tenantIds: [cenario.tenantA, cenario.tenantB] });
+        } finally {
+          alvo.atual = papelHttp;
+        }
+        const usageRows = await admin.tenantUsageDaily.findMany({
+          where: { tenant_id: { in: [cenario.tenantA, cenario.tenantB] } },
+          orderBy: [{ tenant_id: "asc" }, { date: "asc" }],
+        });
+        registrarJob(
+          "subscription.measure-daily",
+          usageRows.map((row) => ({
+            tenantId: tag(row.tenant_id),
+            date: row.date.toISOString().slice(0, 10),
+            activeUsers: row.active_users,
+            dbBytesEstimated: row.db_bytes_estimated === null ? null : row.db_bytes_estimated.toString(),
+            filesBytes: row.files_bytes === null ? null : row.files_bytes.toString(),
+            filesWithoutSize: row.files_without_size,
+            trackedVehicles: row.tracked_vehicles,
+          })),
+        );
+
+        const usageRoute = await http(
+          "GET",
+          `${P}/billing/tenants/${cenario.tenantA}/usage?from=2026-11-06&to=2026-11-06`,
+        );
+        assert.equal(usageRoute.status, 200, JSON.stringify(usageRoute.body));
+        registrarRota(
+          `GET ${P}/billing/tenants/:tenantId/usage`,
+          (usageRoute.body.data as Array<Record<string, unknown>>).map((row) => ({
+            date: row.date,
+            activeUsers: row.activeUsers,
+            dbBytesEstimated: row.dbBytesEstimated,
+            filesBytes: row.filesBytes,
+            filesWithoutSize: row.filesWithoutSize,
+            trackedVehicles: row.trackedVehicles,
+          })),
+        );
+
         medidas.set(papel, {
           s1: normalizar(s1Data),
           s1Quantidade: s1Data.metrics.reduce((total, metric) => total + Number(metric.quantity), 0),
@@ -513,13 +566,13 @@ if (!connectionString) {
         for (const chave of forceEnumeradas) assert.deepEqual(efe.rotas[chave], sup.rotas[chave], chave);
       });
 
-      await t.test("T11f · job.registry fecha 2 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
+      await t.test("T11f · job.registry fecha 3 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
         const forceEnumerados = [...JOBS]
           .filter(([, etiqueta]) => etiqueta === "FORCE-PLATAFORMA")
           .map(([chave]) => chave)
           .sort();
         const foraDaSuperficie = [...JOBS].filter(([, etiqueta]) => etiqueta === "FORA-DA-SUPERFICIE");
-        assert.equal(forceEnumerados.length, 2);
+        assert.equal(forceEnumerados.length, 3);
         assert.equal(foraDaSuperficie.length, 9, "os demais jobs pertencem à pendência B-ARNES-2");
         assert.deepEqual(Object.keys(sup.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob super");
         assert.deepEqual(Object.keys(efe.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob efêmero");
@@ -918,6 +971,7 @@ async function limpar(admin: PrismaClient, cenario: Cenario): Promise<void> {
   await admin.cloudUsageEvent.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenantSubscriptionAddon.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenantSubscription.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.tenantUsageDaily.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenant.deleteMany({ where: { id: { in: tenantIds } } });
   if (cenario.subscriptionPlanId) {
     await admin.subscriptionPlanVersion.deleteMany({ where: { plan_id: cenario.subscriptionPlanId } });

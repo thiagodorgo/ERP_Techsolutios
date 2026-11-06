@@ -205,6 +205,16 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/telemetry/vehicle-telemetry-prisma.repository.ts", "PrismaVehicleTelemetryRepository.listByVehicle", "tx", "RAW-SQL($queryRaw)", "vehicle_telemetry_events", "PARAMETRO(tx)", "×1"),
     "B-TRC-02: porta de LEITURA interna (plano v2 §6.6, v2.1 R1-3) para o B-TRC-04, sem chamador em src/** no head; SELECT filtrado por tenant_id e LIMIT 1..500 sobre tabela FORCE RLS, executor = parâmetro tx por contrato; presa pelo caso \"listByVehicle sob o GUC de A devolve só A; sob o GUC de B devolve 0 de A\" de tests/traccar-event-ingestion-db.test.ts (emenda v2.4 R-A4), via withTenantRls sob papel NOBYPASSRLS.",
   ],
+  // B-ASS-03 (lição das Emendas 2–4 ao §4.2, valendo para o §4.3): as 2 chaves L2 do medidor diário, coladas da saída do
+  // gerador no head do bloco, com o motivo por chave. Gerador e WRAPPERS intocados.
+  [
+    k("L2", "src/modules/subscription-billing/metering/metering-prisma.repository.ts", "new PrismaMeteringSqlExecutor(tx)", "PARAMETRO(tx)", "×1"),
+    "B-ASS-03: measureTenantUsageInTx (l.155) recebe o tx por contrato; o único chamador em src/** é runSubscriptionMeasureDaily (subscription-billing.jobs.ts, withTenantRlsBudget(prisma, tenant.id, …)), que fixa o GUC da organização da volta; o medidor assere current_setting(app.current_tenant_id) = tenantId e o canário assertRowsBelongToTenant antes de gravar e lança tenant_context_missing (R-MED-4, T-MED-db-6).",
+  ],
+  [
+    k("L2", "src/modules/subscription-billing/metering/metering-prisma.repository.ts", "new PrismaTenantUsageDailyRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-ASS-03: o upsert em tenant_usage_daily (tabela ENABLE+FORCE, T-MED-db-7) usa o MESMO tx de withTenantRlsBudget da volta da organização (subscription-billing.jobs.ts); sob FORCE, a escrita sem o GUC certo violaria a política, e o medidor lança antes de tentar (R-MED-4).",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };
@@ -284,7 +294,7 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     ]);
     assert.equal(f2.status, 0, `o gerador das grafias C3-F2 falhou:\n${f2.stderr}`);
     assert.equal(f2.stderr, "");
-    assert.match(f2.stdout, /tabelas ENABLE=115 FORCE=115 · acessores Prisma em FORCE=115/);
+    assert.match(f2.stdout, /tabelas ENABLE=116 FORCE=116 · acessores Prisma em FORCE=116/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);
