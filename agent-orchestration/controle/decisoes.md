@@ -4582,3 +4582,37 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Contexto:** depois de explicar a M1-d e recomendar *"autorizar"*, o orquestrador fez a pergunta *"Autoriza a M1-d?"*. A M1-d é a migração de dados que cria os 6 planos (Starter, Professional, Business, Enterprise, Rastreamento Básico e Rastreamento Plus) sem preço, idempotente, numa transação única, e cuja reversão nunca apaga plano com versão.
 - **Fala literal:** *"manda o deepsek fazer"*.
 - **Leitura do orquestrador, declarada (§A6):** isto autoriza a M1-d (`<carimbo>_ass02_seed_subscription_plans`), a 4ª migração de dados, que estava fora da lista da P1 de 31/10. A execução fica com o DeepSeek Pro: o oficial fora do pico e, no pico, o mesmo modelo pela OpenRouter. A pendência `P-ASS02-M1D-AUTORIZACAO` não nasce aberta: este registro grava a decisão `D-ASS02-M1D-AUTORIZADA`.
+
+## D-CODEX3-FORA-DO-PICO-0511 (decisão do dono, 2026-11-05, ~08:30 SP) — o Codex 3 também trabalha fora do pico da DeepSeek
+
+- **Fala literal:** *"o codex 3 pode trabalhar fora do pico"*.
+- **Aplicado na ferramenta (fora do repositório), `ferramentas/fila-lib.sh`.**
+- **Leitura do orquestrador, declarada (§A6):** fora do pico da DeepSeek, o Codex 3 vem primeiro, porque é assinatura e não gasta saldo; sem limite nele, entra o DeepSeek oficial; os Codex 1 e 2 seguem só no pico.
+- **Fato do mesmo período (não é decisão; lição registrada):** às 05/11 ~08:23 o orquestrador leu UTC como hora de SP no Git Bash, deduziu uma suspensão inexistente e parou à toa o dev do B-ASS-02, que estava saudável; a fila o retomou às 08:24 e o parcial foi medido.
+
+## D-B-ASS-03-SEM-JUNTA-0511 (decisão do dono, 2026-11-05 noite e 06/11 ~00:30 SP) — a rodada do B-ASS-03 sem junta, com revisor sênior
+
+- **Falas literais (05/11 noite):**
+  - *"vamos testar nesse bloco cortar a junta, sera assim, revisor senior, depois do merge outro revisor(porteiro). o que achas? na pior das hipoteses voltamos a este pr e fazemos com junta"*
+  - *"as 01:00 am vc dispara o deepseek. as 03:00 am vc entra no jogo, cordando e orquestrando, quero uma tarefa por vez para todo mundo nesta rodada, esforço medio (vc opus medio), o esforço alto esta bloqueado nessa rodada, exceto o revisor que vai ficar no lugar da junta"*
+  - *"agende o deepseek e vc para esta noite"*
+- **Leitura do orquestrador, declarada (§A6):** é exceção PONTUAL ao `D-JUNTA-FLUXO-RAPIDO`, só para o B-ASS-03, e não regra nova. Travas: o revisor sênior trabalha em esforço alto, executando mutações e a prova `-db` de isolamento; o conserto vem antes do merge; o porteiro revisor é outra identidade e trabalha em esforço médio; se o porteiro achar algo GRAVE, o PR é consertado e o bloco termina (ver a fala de ~00:45, abaixo); registra-se o que cada etapa achou.
+- **Fala literal (06/11 ~00:45 SP):** *"nao reverta Se o porteiro achar algo grave, corrija e termine o bloco. as 7 da manha quando fizer o estado faça tambem sua analise sobre a troca da junta"*. Isto substitui a trava "reverter o PR" da leitura acima: achado GRAVE do porteiro leva a conserto por um dev que não achou, conferência por quem não consertou, e o bloco termina. Às 07:00, o estado da madrugada vai junto com a análise da troca da junta.
+- **Fala literal (06/11 ~00:50 SP):** *"03h00: eu entro para orquestrar. e codificar tambem"*. A partir das 03:00, o Claude assume o dev do B-ASS-03 como identidade declarada `dev-ass03-opus` (Opus, esforço médio; §C7 item 11(6)), sempre uma tarefa por vez. O revisor sênior é de outro modelo (Codex 3 ou DeepSeek).
+- **Agendado:** `ferramentas/agenda-0611.sh` dispara à 01:00 o dev do B-ASS-03 no DeepSeek oficial, em esforço médio; o orquestrador entra às 03:00 por `CronCreate`; `painel/uma-por-vez.txt` liga a trava de uma tarefa no DP.
+
+## D-SPLIT-NO-PROVEDOR-0611 (decisão do dono, 2026-11-06, ~01:30 SP) — a margem das operações de pagamento é separada por split no provedor
+
+- **Fala literal:** *"split no provedor. A plataforma recebe dinheiro de terceiros?	não, no pagamento a api retira as nossas margens e ja separa la, vamos deixar isso claro no contrato"*.
+- **Decisão técnica:** a margem por operação é feita por **split no provedor**. O provedor de pagamento separa a parte da plataforma no ato do pagamento; o restante vai direto para a conta do cliente; a plataforma não recebe nem repassa o dinheiro do cliente. O contrato deixa isso explícito. Resolve a parte do repasse no conflito com 02/11.
+- **Leitura do orquestrador, declarada (§A6):** a parte que cai na conta da plataforma é a tarifa dela pelo serviço. Fica para o parecer jurídico e contábil: a redação do contrato, a emissão da nota sobre a tarifa e se o split do provedor atende ao modelo. Pendência a nascer: `P-ASS-SPLIT-MARGEM-CONTRATO`, dono do produto mais o bloco de pagamento (`B-ASS-06`/`B-ASS-08`).
+
+## D-REVISOR-SENIOR-505-0611 (decisão do dono, 2026-11-06, ~04:15 SP) — quem revisa e fecha o B-ASS-03 sem junta
+
+- **Fala literal:** *"vc pode fazer, seja o revisor e feche isso, apos o merge retornar o estado"*.
+- **Leitura do orquestrador, declarada (§A6):** o revisor sênior do #505 é um subagente Claude com identidade nova e sem o contexto da sessão (`rev-ass03-senior-opus`, esforço alto), porque a sessão foi o dev das F5–F7 e quem fez não verifica. O porteiro, depois do merge, é outra identidade nova, em esforço médio.
+
+## D-SEGUNDO-REVISOR-CALCULO-0611 (decisão do dono, 2026-11-06, ~08:00 SP) — B-ASS-04 com Claude e DeepSeek, e um segundo revisor só do cálculo
+
+- **Fala literal:** *"pode fazer o segundo revisor só para o cálculo. comece o registro e o B-ASS-04 agora, vc vai dividir com o deepseek essa tarefa, não so orquestrar, ajudar na codificação tambem, vc e o deepseek sao os desenvolvedores de plantão hoje, se colocar so o deepseek nao tem credito se ajudar dá certo. pode começar claude"*.
+- **Leitura do orquestrador, declarada (§A6):** o DeepSeek faz o registro (texto, barato); o Claude programa o B-ASS-04 (`dev-ass04-opus`, esforço médio); a revisão vai para o DeepSeek, que é outro modelo: revisor sênior em esforço alto mais um **segundo revisor só do cálculo**; depois vêm a conferência e o porteiro.
