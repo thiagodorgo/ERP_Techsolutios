@@ -131,6 +131,21 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     tenantOnly: true,
     relatedEndpoints: ["GET /api/v1/audit-events"],
   },
+  // B-ASS-04 · F9 — a organização vê a própria assinatura (plano, uso contra a franquia, situação, como pagar).
+  // Núcleo, sem módulo: toda organização assinante enxerga, desde que o papel tenha `billing:read`.
+  {
+    id: "tenant.billing",
+    label: "Minha assinatura",
+    description: "Plano, uso contra a franquia e situação de pagamento da organização.",
+    path: "/administrator/subscription",
+    icon: "CreditCard",
+    group: "tenant",
+    order: 145,
+    status: "backend-ready",
+    requiredPermissions: ["billing:read"],
+    tenantOnly: true,
+    relatedEndpoints: ["GET /api/v1/billing/subscription", "GET /api/v1/billing/subscription/usage-history"],
+  },
   {
     id: "tenant.notifications",
     label: "Notificações",
