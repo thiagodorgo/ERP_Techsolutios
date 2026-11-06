@@ -11,6 +11,7 @@ import { MemoryCoreSaasAdapter } from "../src/modules/core-saas/services/memory-
 import { InMemoryCoreSaasStore } from "../src/modules/core-saas/store/core-saas.store.js";
 import {
   getMemoryStatementAuditForTests,
+  getMemoryUsageSourceForTests,
   resetStatementRuntimeForTests,
 } from "../src/modules/subscription-billing/statements/statement.factory.js";
 import { todayBusinessDate } from "../src/modules/subscription-billing/plans/plan-versioning.js";
@@ -489,5 +490,138 @@ test("T-ST-61: organização inexistente → 404; organização de sistema → 4
     assert.ok(event, "PUT do perfil entra na trilha");
     const serialized = JSON.stringify(event.metadata);
     for (const leak of ["52998224725", "pessoa@", "Pátio Exemplo"]) assert.equal(serialized.includes(leak), false, `vazou ${leak}`);
+  });
+});
+
+// ------------------------------------------------------------------------------- F9 · a organização (cliente)
+
+const MONEY_KEY = /price|amount|cost|margin|markup|unit|total|cents|balance|paid/i;
+
+function moneyKeys(value: unknown, path = "$"): string[] {
+  if (Array.isArray(value)) return value.flatMap((item, index) => moneyKeys(item, `${path}[${index}]`));
+  if (value === null || typeof value !== "object") return [];
+  return Object.entries(value as Record<string, unknown>).flatMap(([key, child]) => [
+    ...(MONEY_KEY.test(key) ? [`${path}.${key}`] : []),
+    ...moneyKeys(child, `${path}.${key}`),
+  ]);
+}
+
+function asCustomer(tenantId: string, role = "finance") {
+  return { "x-tenant-id": tenantId, "x-user-id": `usr_${tenantId}`, "x-role": role };
+}
+
+const GB = 1_073_741_824n; // o motor mede em GiB (1024³), como o medidor do B-ASS-03
+
+test("T-ST-29/30/62: a organização vê plano, uso contra a franquia, situação e como pagar — nenhuma chave de dinheiro", async () => {
+  await withApi(async (baseUrl) => {
+    const tenantId = await seedTenant();
+    const statementId = (await close(baseUrl, tenantId)).closed[0].id as string;
+    const current = currentPeriod();
+    getMemoryUsageSourceForTests().addDay(tenantId, { date: `${current}-01`, activeUsers: 12, dbBytesEstimated: 11n * GB + GB / 2n, filesBytes: 0n });
+
+    const response = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer(tenantId) });
+    assert.equal(response.status, 200);
+    const data = response.body.data as Json;
+    assert.deepEqual(moneyKeys(response.body), [], "nenhuma chave de dinheiro na resposta");
+    assert.deepEqual(Object.keys(data).sort(), ["payment", "period", "plan", "status", "usage"]);
+    assert.equal(data.plan.code.startsWith("st-base-"), true);
+    assert.deepEqual(data.usage.users, { used: 12, included: 10, overLimit: true });
+    assert.equal(data.usage.storageGb.used, 11.5);
+    assert.equal(data.usage.storageGb.included, 10);
+    assert.equal(data.usage.storageGb.overLimit, true);
+    assert.equal(data.usage.storageGb.estimate, true);
+    assert.equal(data.usage.storageGb.measuredAt, `${current}-01`);
+    assert.equal(data.payment.statementId, statementId);
+    assert.deepEqual(Object.keys(data.payment).sort(), ["boletoLine", "boletoUrl", "dueDate", "invoicePdfAvailable", "payUrl", "pixCopyPaste", "statementId"]);
+    assert.equal(data.status.nextDueDate, data.payment.dueDate);
+
+    await requestJson(baseUrl, `/api/v1/platform/billing/statements/${statementId}/payments`, {
+      method: "POST",
+      headers: PLATFORM,
+      body: { tenantId, amount: "199.90" },
+    });
+    const paid = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer(tenantId) });
+    assert.equal("payment" in (paid.body.data as Json), false, "pago: sem bloco de pagamento");
+    assert.equal(paid.body.data.status.inGoodStanding, true);
+  });
+});
+
+test("T-ST-31: operator, field_technician e inventory → 403; manager, finance, auditor, support e tenant_admin → 200", async () => {
+  await withApi(async (baseUrl) => {
+    const tenantId = await seedTenant();
+    for (const role of ["operator", "field_technician", "inventory"]) {
+      const response = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer(tenantId, role) });
+      assert.equal(response.status, 403, role);
+    }
+    for (const role of ["manager", "finance", "auditor", "support", "tenant_admin"]) {
+      const response = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer(tenantId, role) });
+      assert.equal(response.status, 200, role);
+    }
+  });
+});
+
+test("T-ST-32: ?tenantId é recusado com 400; cada organização vê só a própria assinatura", async () => {
+  await withApi(async (baseUrl) => {
+    const tenantA = await seedTenant();
+    const tenantB = await seedTenant();
+    const override = await requestJson(baseUrl, `/api/v1/billing/subscription?tenantId=${tenantB}`, { headers: asCustomer(tenantA) });
+    assert.equal(override.status, 400);
+    assert.equal(override.body.error.reason, "tenant_id_not_allowed");
+
+    await close(baseUrl, tenantB);
+    const a = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer(tenantA) });
+    assert.equal("payment" in (a.body.data as Json), false, "o demonstrativo de B não aparece para A");
+    const b = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer(tenantB) });
+    assert.equal(typeof b.body.data.payment.statementId, "string");
+  });
+});
+
+test("T-ST-33: ator de plataforma (mesmo com tenant_id) e organização de sistema → 403 platform_actor_not_a_customer", async () => {
+  await withApi(async (baseUrl) => {
+    const tenantId = await seedTenant();
+    const platformActor = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer(tenantId, "super_admin") });
+    assert.equal(platformActor.status, 403);
+    assert.equal(platformActor.body.error.reason, "platform_actor_not_a_customer");
+
+    getMemoryTenantLookupForTests().upsert({ id: "ten_sys_view", slug: "platform" });
+    const systemOrg = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer("ten_sys_view", "tenant_admin") });
+    assert.equal(systemOrg.status, 403);
+    assert.equal(systemOrg.body.error.reason, "platform_actor_not_a_customer");
+  });
+});
+
+test("T-ST-63: sem assinatura → 200 com data null", async () => {
+  await withApi(async (baseUrl) => {
+    getMemoryTenantLookupForTests().upsert({ id: "ten_view_nosub", slug: "org-view-nosub" });
+    const response = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer("ten_view_nosub") });
+    assert.equal(response.status, 200);
+    assert.equal(response.body.data, null);
+  });
+});
+
+test("T-ST-64: usage-history devolve N meses só com quantidades, do mais antigo ao corrente; months fora de 1..12 → 400", async () => {
+  await withApi(async (baseUrl) => {
+    const tenantId = await seedTenant();
+    const current = currentPeriod();
+    const source = getMemoryUsageSourceForTests();
+    source.addDay(tenantId, { date: `${current}-01`, activeUsers: 7, dbBytesEstimated: 2n * GB, filesBytes: GB });
+    source.addDay(tenantId, { date: `${previousPeriod()}-15`, activeUsers: 5, dbBytesEstimated: GB, filesBytes: null });
+    source.addBinding(tenantId, { vehicleId: "v1", validFrom: `${previousPeriod()}-01`, validTo: null });
+
+    const response = await requestJson(baseUrl, "/api/v1/billing/subscription/usage-history?months=6", { headers: asCustomer(tenantId) });
+    assert.equal(response.status, 200);
+    const rows = response.body.data as Json[];
+    assert.equal(rows.length, 6);
+    assert.deepEqual(moneyKeys(response.body), []);
+    assert.deepEqual(Object.keys(rows[0]!).sort(), ["period", "storagePeakGb", "trackedVehicles", "usersPeak"]);
+    assert.deepEqual(rows[5], { period: current, usersPeak: 7, storagePeakGb: 3, trackedVehicles: 1 });
+    assert.deepEqual(rows[4], { period: previousPeriod(), usersPeak: 5, storagePeakGb: 1, trackedVehicles: 1 });
+    assert.equal(rows[0]!.usersPeak, 0);
+    assert.ok(rows.every((row, index) => index === 0 || row.period > rows[index - 1]!.period));
+
+    for (const months of ["0", "13", "abc"]) {
+      const bad = await requestJson(baseUrl, `/api/v1/billing/subscription/usage-history?months=${months}`, { headers: asCustomer(tenantId) });
+      assert.equal(bad.status, 400, months);
+    }
   });
 });

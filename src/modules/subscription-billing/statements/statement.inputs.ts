@@ -19,6 +19,7 @@ import {
   countDistinctVehiclesInMonth,
   daysInPeriod,
   gbToMilli,
+  type StatementMeasurements,
   type StatementSegmentInput,
 } from "./statement.engine.js";
 import type { StatementInputs } from "./statement.service.js";
@@ -139,15 +140,6 @@ export function buildStatementInputs(
     const date = `${period}-${String(day).padStart(2, "0")}`;
     if (!measuredDates.has(date)) gaps.push(date);
   }
-  let usersPeak = 0;
-  let storagePeakMilliGb = 0;
-  for (const row of rows) {
-    if (row.activeUsers !== null && row.activeUsers > usersPeak) usersPeak = row.activeUsers;
-    if (row.dbBytesEstimated !== null || row.filesBytes !== null) {
-      const milli = bytesToMilliGbCeil((row.dbBytesEstimated ?? 0n) + (row.filesBytes ?? 0n));
-      if (milli > storagePeakMilliGb) storagePeakMilliGb = milli;
-    }
-  }
 
   return {
     kind: "ready",
@@ -158,15 +150,33 @@ export function buildStatementInputs(
       daysInMonth,
       segments,
       terms,
-      measurements: {
-        usersPeak,
-        storagePeakMilliGb,
-        trackedVehicles: countDistinctVehiclesInMonth(period, data.bindings),
-      },
+      measurements: monthMeasurements(period, rows, data.bindings),
       perVehiclePriceCents,
     },
     daysMeasured: measuredDates.size,
     gaps,
     dueDays: subscription.dueDays,
   };
+}
+
+/**
+ * Picos do mês — a MESMA conta do fechamento e da visão do cliente (usuários: maior ativo medido; espaço: maior dia,
+ * banco + arquivos, com teto a 0,001 GB; veículos: distintos com vínculo em qualquer dia do mês — G15).
+ */
+export function monthMeasurements(
+  period: string,
+  usage: readonly UsageDayRow[],
+  bindings: readonly VehicleBindingWindow[],
+): StatementMeasurements {
+  let usersPeak = 0;
+  let storagePeakMilliGb = 0;
+  for (const row of usage) {
+    if (!row.date.startsWith(`${period}-`)) continue;
+    if (row.activeUsers !== null && row.activeUsers > usersPeak) usersPeak = row.activeUsers;
+    if (row.dbBytesEstimated !== null || row.filesBytes !== null) {
+      const milli = bytesToMilliGbCeil((row.dbBytesEstimated ?? 0n) + (row.filesBytes ?? 0n));
+      if (milli > storagePeakMilliGb) storagePeakMilliGb = milli;
+    }
+  }
+  return { usersPeak, storagePeakMilliGb, trackedVehicles: countDistinctVehiclesInMonth(period, bindings) };
 }

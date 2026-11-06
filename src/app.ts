@@ -19,6 +19,7 @@ import { MemoryCoreSaasAdapter } from "./modules/core-saas/services/memory-core-
 import type { ICoreSaasService } from "./modules/core-saas/services/core-saas-service.interface.js";
 import { createUserNameResolver } from "./modules/core-saas/users/user-name-resolver.js";
 import { createChecklistRouter } from "./modules/checklists/index.js";
+import { createSubscriptionBillingTenantRouter } from "./modules/subscription-billing/subscription-billing.tenant.routes.js";
 import { createCommissionRouter } from "./modules/commissions/index.js";
 import { createCustomerRouter } from "./modules/customers/index.js";
 import { createDashboardRouter } from "./modules/dashboard/index.js";
@@ -138,6 +139,8 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
   app.use("/api/v1", attachAuthenticatedActor(), createWorkOrderRouter(undefined, resolveUserName));
   app.use("/api/v1", attachAuthenticatedActor(), createDashboardRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createCustomerRouter());
+  // B-ASS-04 · F9 — a organização vê a própria assinatura (núcleo, sem módulo; sem nenhum valor em dinheiro).
+  app.use("/api/v1", attachAuthenticatedActor(), createSubscriptionBillingTenantRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createVehicleRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createFuelLogRouter());
   app.use("/api/v1", attachAuthenticatedActor(), createMaintenanceOrderRouter());
