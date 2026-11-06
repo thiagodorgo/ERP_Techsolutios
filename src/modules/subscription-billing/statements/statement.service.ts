@@ -10,6 +10,7 @@ import {
   snapshotOf,
   type StatementComputationInput,
 } from "./statement.engine.js";
+import type { StatementResolveOptions, StatementVersionPin } from "./statement.inputs.js";
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
 import {
   StatementError,
@@ -36,9 +37,16 @@ export type StatementInputs =
       readonly dueDays: number | null;
     };
 
+/** As versões gravadas no snapshot de um demonstrativo reaberto: a de cada trecho do plano base e a do add-on. */
+export function pinOf(statement: SubscriptionStatement): StatementVersionPin {
+  const planVersionIds = new Set<string>(statement.snapshot.latest?.segments.map((segment) => segment.planVersionId) ?? []);
+  if (statement.planVersionId) planVersionIds.add(statement.planVersionId);
+  return { planVersionIds: [...planVersionIds], addonPlanVersionId: statement.addonPlanVersionId };
+}
+
 export type StatementInputsProvider = {
-  /** `pinnedPlanVersionId`: refechar um reaberto usa a MESMA versão do snapshot (G5). */
-  resolve(tenantId: string, period: string, options: { readonly pinnedPlanVersionId: string | null }): Promise<StatementInputs>;
+  /** `pin`: refechar um reaberto usa as MESMAS versões do snapshot — plano base e add-on (G5, §3.4). */
+  resolve(tenantId: string, period: string, options: StatementResolveOptions): Promise<StatementInputs>;
 };
 
 export type StatementAuditSink = { record(event: StatementAuditEvent): Promise<void> };
@@ -106,7 +114,7 @@ export class StatementService {
       }
 
       const resolved = await this.inputs.resolve(input.tenantId, input.period, {
-        pinnedPlanVersionId: current.status === "reopened" ? current.planVersionId : null,
+        pin: current.status === "reopened" ? pinOf(current) : null,
       });
       if (resolved.kind === "skip") {
         return { kind: "skipped", reason: resolved.reason, alreadyClosed: false } as const;

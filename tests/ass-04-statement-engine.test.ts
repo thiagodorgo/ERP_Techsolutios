@@ -210,3 +210,10 @@ test("T-ST-41 · veículo X nos dias 1-10 e Y nos dias 11-30 → 2 (distintos no
   ]);
   assert.equal(count, 2);
 });
+
+test("T-ST-3b · a unidade de espaço é o GiB (1024³ bytes), travada por literal e não pela constante (§3.3)", () => {
+  assert.equal(BYTES_PER_GB, 1_073_741_824n);
+  assert.equal(bytesToMilliGbCeil(1_073_741_824n), 1_000, "1 GiB = 1,000 GB de franquia");
+  assert.equal(bytesToMilliGbCeil(1_000_000_000n), 932, "10⁹ bytes = 0,932 GB (teto), nunca 1,000");
+  assert.equal(bytesToMilliGbCeil(10_737_418_241n), 10_001, "10 GiB + 1 byte = 10,001 GB");
+});

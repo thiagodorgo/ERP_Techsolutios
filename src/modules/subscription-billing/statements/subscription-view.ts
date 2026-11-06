@@ -52,7 +52,7 @@ export async function buildTenantSubscriptionView(
 ): Promise<TenantSubscriptionView | null> {
   const today = todayBusinessDate(now);
   const period = today.slice(0, 7);
-  const inputs = await runtime.inputs.resolve(tenantId, period, { pinnedPlanVersionId: null });
+  const inputs = await runtime.inputs.resolve(tenantId, period, { pin: null });
   if (inputs.kind !== "ready") return null;
 
   const version = await runtime.plans.getVersionById(inputs.planVersionId);

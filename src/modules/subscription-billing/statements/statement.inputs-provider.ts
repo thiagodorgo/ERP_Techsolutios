@@ -8,7 +8,7 @@ import type { SubscriptionPlanVersion } from "../plans/plan-types.js";
 import type { SubscriptionsRepository } from "../plans/subscriptions.repository.js";
 import type { TenantLookup } from "../plans/subscriptions.service.js";
 import { daysInPeriod } from "./statement.engine.js";
-import { buildStatementInputs, type UsageDayRow, type VehicleBindingWindow } from "./statement.inputs.js";
+import { buildStatementInputs, type StatementResolveOptions, type UsageDayRow, type VehicleBindingWindow } from "./statement.inputs.js";
 import type { StatementInputs, StatementInputsProvider } from "./statement.service.js";
 
 export type UsageSource = { listUsageDays(tenantId: string, fromDate: string, toDate: string): Promise<readonly UsageDayRow[]> };
@@ -29,7 +29,7 @@ export class RepositoryStatementInputsProvider implements StatementInputsProvide
     private readonly bindings: BindingsSource,
   ) {}
 
-  async resolve(tenantId: string, period: string, options: { readonly pinnedPlanVersionId: string | null }): Promise<StatementInputs> {
+  async resolve(tenantId: string, period: string, options: StatementResolveOptions): Promise<StatementInputs> {
     const tenant = await this.tenants.getTenantById(tenantId);
     const slug = tenant?.slug ?? null;
     const fromDate = `${period}-01`;

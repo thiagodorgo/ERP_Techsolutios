@@ -7,7 +7,8 @@
 //    validTo)` das assinaturas e das versões (`resolveVersionAt`);
 //  - segmentos = dias consecutivos com a mesma assinatura, a mesma versão e o mesmo preço efetivo (G6);
 //  - franquia e unitários do excedente = os do ÚLTIMO dia com assinatura (§3.3);
-//  - refechar um reaberto usa a MESMA versão do snapshot (`pinnedPlanVersionId`, G5);
+//  - refechar um reaberto usa as MESMAS versões do snapshot (`pin`, G5): a de cada trecho do plano base E a do
+//    add-on de rastreamento; só as medições e os ajustes mudam (§3.4);
 //  - nenhum dia com assinatura → `no_subscription`; dia com assinatura e sem versão vigente → `plan_without_price`;
 //    organização de sistema `platform` → `platform_organization` (S16).
 
@@ -44,6 +45,43 @@ export type StatementSourceData = {
   readonly bindings: readonly VehicleBindingWindow[];
 };
 
+/** Refechar um reaberto (G5, §3.4): as versões gravadas no snapshot — a de cada trecho do plano base e a do add-on. */
+export type StatementVersionPin = {
+  readonly planVersionIds: readonly string[];
+  readonly addonPlanVersionId: string | null;
+};
+
+export type StatementResolveOptions = {
+  /** `null` = fechamento novo: resolve a versão vigente em cada dia. */
+  readonly pin: StatementVersionPin | null;
+};
+
+/**
+ * Versão do plano para o dia `at`. Com `pin`, só as versões GRAVADAS no snapshot concorrem (uma versão publicada
+ * depois do fechamento nunca entra no refechamento): vence a gravada vigente no dia; se a janela dela foi encerrada
+ * depois do fechamento (a publicação de uma nova versão fecha a anterior), vence a última gravada que começou até o
+ * dia. Um plano sem versão gravada (a assinatura mudou depois do fechamento) resolve a vigente — desvio declarado.
+ */
+function versionForDay(
+  versions: readonly SubscriptionPlanVersion[],
+  at: Date,
+  pinnedIds: readonly string[] | null,
+): SubscriptionPlanVersion | null {
+  if (pinnedIds) {
+    const pinned = versions.filter((candidate) => pinnedIds.includes(candidate.id));
+    if (pinned.length > 0) {
+      const live = resolveVersionAt(pinned, at);
+      if (live) return live;
+      const started = pinned
+        .filter((candidate) => candidate.validFrom.getTime() <= at.getTime())
+        .sort((left, right) => left.validFrom.getTime() - right.validFrom.getTime())
+        .at(-1);
+      return started ?? pinned[0]!;
+    }
+  }
+  return resolveVersionAt(versions, at);
+}
+
 function dayStart(period: string, day: number): Date {
   return parseBusinessDate(`${period}-${String(day).padStart(2, "0")}`);
 }
@@ -56,7 +94,7 @@ function activeAt<T extends { validFrom: Date; validTo: Date | null }>(rows: rea
 export function buildStatementInputs(
   period: string,
   data: StatementSourceData,
-  options: { readonly pinnedPlanVersionId: string | null },
+  options: StatementResolveOptions,
 ): StatementInputs {
   if ((data.tenantSlug ?? "").toLowerCase() === "platform") {
     return { kind: "skip", reason: "platform_organization" };
@@ -75,9 +113,7 @@ export function buildStatementInputs(
     }
     sawSubscription = true;
     const versions = data.versionsByPlan.get(subscription.planId) ?? [];
-    const version = options.pinnedPlanVersionId
-      ? versions.find((candidate) => candidate.id === options.pinnedPlanVersionId) ?? null
-      : resolveVersionAt(versions, at);
+    const version = versionForDay(versions, at, options.pin?.planVersionIds ?? null);
     if (!version) return { kind: "skip", reason: "plan_without_price" };
     days.push({ subscription, version, priceCents: subscription.monthlyPriceOverrideCents ?? version.monthlyPriceCents });
   }
@@ -126,8 +162,10 @@ export function buildStatementInputs(
     lastAt,
   );
   let perVehiclePriceCents: number | null = null;
+  let addonVersion: SubscriptionPlanVersion | null = null;
   if (addon) {
-    const addonVersion = resolveVersionAt(data.versionsByPlan.get(addon.planId) ?? [], lastAt);
+    const pinnedAddon = options.pin?.addonPlanVersionId ?? null;
+    addonVersion = versionForDay(data.versionsByPlan.get(addon.planId) ?? [], lastAt, pinnedAddon ? [pinnedAddon] : null);
     perVehiclePriceCents = addon.perVehiclePriceOverrideCents ?? addonVersion?.perVehiclePriceCents ?? null;
   }
 
@@ -145,7 +183,7 @@ export function buildStatementInputs(
     kind: "ready",
     subscriptionId: subscription.id,
     planVersionId: version.id,
-    addonPlanVersionId: addon ? (resolveVersionAt(data.versionsByPlan.get(addon.planId) ?? [], lastAt)?.id ?? null) : null,
+    addonPlanVersionId: addonVersion?.id ?? null,
     computation: {
       daysInMonth,
       segments,

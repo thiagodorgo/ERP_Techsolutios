@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { daysInPeriod } from "../src/modules/subscription-billing/statements/statement.engine.js";
+import type { StatementResolveOptions } from "../src/modules/subscription-billing/statements/statement.inputs.js";
 import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
 import {
   StatementService,
@@ -43,10 +44,10 @@ function readyInputs(overrides: Partial<{ monthlyPriceCents: number; usersPeak: 
 function setup(provider?: StatementInputsProvider) {
   const repository = new InMemoryStatementRepository(() => new Date("2026-11-02T12:00:00Z"));
   const events: StatementAuditEvent[] = [];
-  const calls: Array<{ tenantId: string; pinned: string | null }> = [];
+  const calls: Array<{ tenantId: string; pinned: StatementResolveOptions["pin"] }> = [];
   const inputs: StatementInputsProvider = provider ?? {
     async resolve(tenantId, _period, options) {
-      calls.push({ tenantId, pinned: options.pinnedPlanVersionId });
+      calls.push({ tenantId, pinned: options.pin });
       return readyInputs();
     },
   };
@@ -183,7 +184,7 @@ test("T-ST-45 · o job NUNCA fecha um reaberto (3 ciclos); só o fechamento manu
   assert.equal((await repository.listStatements(TENANT))[0]!.status, "reopened");
   const manual = await service.close({ tenantId: TENANT, period: "2026-10", now: NOV_1_0030_SP, actorId: "u", source: "manual" });
   assert.equal(manual.kind, "closed");
-  assert.equal(calls.at(-1)!.pinned, "ver-1", "refechar usa a versão gravada no snapshot");
+  assert.deepEqual(calls.at(-1)!.pinned, { planVersionIds: ["ver-1"], addonPlanVersionId: null }, "refechar usa as versões gravadas no snapshot");
 });
 
 test("T-ST-46/47/48 · reabrir: com pagamento → 422; com cobrança pending → 422; com nota authorized → 422", async () => {

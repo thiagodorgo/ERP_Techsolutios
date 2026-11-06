@@ -52,14 +52,14 @@ function ready(result: ReturnType<typeof buildStatementInputs>) {
 }
 
 test("T-IN-1 · assinatura de 15/10 em diante → 1 segmento de 17 dias (pro-rata)", () => {
-  const out = ready(buildStatementInputs("2026-10", data({ subscriptions: [subscription("s1", "starter", "2026-10-15", null)] }), { pinnedPlanVersionId: null }));
+  const out = ready(buildStatementInputs("2026-10", data({ subscriptions: [subscription("s1", "starter", "2026-10-15", null)] }), { pin: null }));
   assert.deepEqual(out.computation.segments, [{ subscriptionId: "s1", planVersionId: "v-starter", fromDay: 15, toDay: 31, monthlyPriceCents: 31_000 }]);
 });
 
 test("T-IN-2 · troca Starter → Professional no dia 11: 2 segmentos e a franquia do Professional (último dia)", () => {
   const out = ready(buildStatementInputs("2026-10", data({
     subscriptions: [subscription("s1", "starter", "2026-09-01", "2026-10-11"), subscription("s2", "professional", "2026-10-11", null)],
-  }), { pinnedPlanVersionId: null }));
+  }), { pin: null }));
   assert.deepEqual(out.computation.segments.map((s) => [s.subscriptionId, s.fromDay, s.toDay, s.monthlyPriceCents]), [["s1", 1, 10, 31_000], ["s2", 11, 31, 62_000]]);
   assert.equal(out.computation.terms.includedUsers, 15);
   assert.equal(out.computation.terms.includedStorageMilliGb, 20_000);
@@ -69,7 +69,7 @@ test("T-IN-2 · troca Starter → Professional no dia 11: 2 segmentos e a franqu
 test("T-IN-3 · a sobrescrita da organização vence o preço e a franquia da versão", () => {
   const out = ready(buildStatementInputs("2026-10", data({
     subscriptions: [subscription("s1", "starter", "2026-01-01", null, { monthlyPriceOverrideCents: 25_000, includedUsersOverride: 8 })],
-  }), { pinnedPlanVersionId: null }));
+  }), { pin: null }));
   assert.equal(out.computation.segments[0]!.monthlyPriceCents, 25_000);
   assert.equal(out.computation.terms.includedUsers, 8);
 });
@@ -77,19 +77,56 @@ test("T-IN-3 · a sobrescrita da organização vence o preço e a franquia da ve
 test("T-IN-4 · refechar um reaberto usa a versão gravada (pinned), mesmo que exista uma versão nova vigente (G5)", () => {
   const newer = version("v-starter-2", "starter", "2026-10-20", null, { monthlyPriceCents: 99_000 });
   const versions = new Map([["starter", [{ ...STARTER, validTo: sp("2026-10-20") }, newer]]]);
-  const live = ready(buildStatementInputs("2026-10", data({ versionsByPlan: versions, subscriptions: [subscription("s1", "starter", "2026-01-01", null)] }), { pinnedPlanVersionId: null }));
+  const live = ready(buildStatementInputs("2026-10", data({ versionsByPlan: versions, subscriptions: [subscription("s1", "starter", "2026-01-01", null)] }), { pin: null }));
   assert.equal(live.computation.segments.length, 2, "sem pin, a versão nova entra no dia 20");
-  const pinned = ready(buildStatementInputs("2026-10", data({ versionsByPlan: versions, subscriptions: [subscription("s1", "starter", "2026-01-01", null)] }), { pinnedPlanVersionId: "v-starter" }));
+  const pinned = ready(buildStatementInputs("2026-10", data({ versionsByPlan: versions, subscriptions: [subscription("s1", "starter", "2026-01-01", null)] }), { pin: { planVersionIds: ["v-starter"], addonPlanVersionId: null } }));
   assert.deepEqual(pinned.computation.segments.map((s) => [s.planVersionId, s.fromDay, s.toDay]), [["v-starter", 1, 31]]);
 });
 
-test("T-IN-5 · sem assinatura → no_subscription; dia sem versão → plan_without_price; organização platform → platform_organization", () => {
-  assert.deepEqual(buildStatementInputs("2026-10", data(), { pinnedPlanVersionId: null }), { kind: "skip", reason: "no_subscription" });
+test("T-IN-4b · refechar fixa TAMBÉM a versão do add-on de rastreamento: o preço por veículo não muda (G5, §3.4)", () => {
+  const trackOld = version("v-track-1", "tracking_basic", "2026-01-01", "2026-10-20", { monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
+  const trackNew = version("v-track-2", "tracking_basic", "2026-10-20", null, { monthlyPriceCents: 0, perVehiclePriceCents: 9_990 });
+  const addon: TenantSubscriptionAddon = { id: "a1", tenantId: "t", subscriptionId: "s1", planId: "tracking_basic", validFrom: sp("2026-01-01"), validTo: null, perVehiclePriceOverrideCents: null, createdAt: sp("2026-01-01"), updatedAt: sp("2026-01-01") };
+  const source = data({
+    subscriptions: [subscription("s1", "starter", "2026-01-01", null)],
+    addons: [addon],
+    versionsByPlan: new Map([["starter", [STARTER]], ["tracking_basic", [trackOld, trackNew]]]),
+    bindings: [{ vehicleId: "V1", validFrom: "2026-10-01", validTo: null }],
+  });
+  const live = ready(buildStatementInputs("2026-10", source, { pin: null }));
+  assert.deepEqual([live.addonPlanVersionId, live.computation.perVehiclePriceCents], ["v-track-2", 9_990], "sem pin, vale a versão nova");
+  const pinned = ready(buildStatementInputs("2026-10", source, { pin: { planVersionIds: ["v-starter"], addonPlanVersionId: "v-track-1" } }));
+  assert.deepEqual([pinned.addonPlanVersionId, pinned.computation.perVehiclePriceCents], ["v-track-1", 1_990], "refechar usa a versão gravada");
+});
+
+test("T-IN-4c · refechar um mês com troca de plano e troca de versão mantém cada trecho na versão gravada", () => {
+  const starter2 = version("v-starter-2", "starter", "2026-10-06", "2026-10-25", { monthlyPriceCents: 40_000 });
+  const starter3 = version("v-starter-3", "starter", "2026-10-25", null, { monthlyPriceCents: 99_000 });
+  const pro2 = version("v-pro-2", "professional", "2026-10-28", null, { monthlyPriceCents: 99_000 });
+  const versions = new Map([
+    ["starter", [{ ...STARTER, validTo: sp("2026-10-06") }, starter2, starter3]],
+    ["professional", [{ ...PRO, validTo: sp("2026-10-28") }, pro2]],
+  ]);
+  const source = data({
+    versionsByPlan: versions,
+    subscriptions: [subscription("s1", "starter", "2026-09-01", "2026-10-11"), subscription("s2", "professional", "2026-10-11", null)],
+  });
+  const pinned = ready(buildStatementInputs("2026-10", source, { pin: { planVersionIds: ["v-starter", "v-starter-2", "v-pro"], addonPlanVersionId: null } }));
   assert.deepEqual(
-    buildStatementInputs("2026-10", data({ versionsByPlan: new Map(), subscriptions: [subscription("s1", "starter", "2026-01-01", null)] }), { pinnedPlanVersionId: null }),
+    pinned.computation.segments.map((s) => [s.planVersionId, s.fromDay, s.toDay, s.monthlyPriceCents]),
+    [["v-starter", 1, 5, 31_000], ["v-starter-2", 6, 10, 40_000], ["v-pro", 11, 31, 62_000]],
+    "nenhuma versão publicada depois do fechamento entra, e nenhum trecho cai em plan_without_price",
+  );
+  assert.equal(pinned.planVersionId, "v-pro");
+});
+
+test("T-IN-5 · sem assinatura → no_subscription; dia sem versão → plan_without_price; organização platform → platform_organization", () => {
+  assert.deepEqual(buildStatementInputs("2026-10", data(), { pin: null }), { kind: "skip", reason: "no_subscription" });
+  assert.deepEqual(
+    buildStatementInputs("2026-10", data({ versionsByPlan: new Map(), subscriptions: [subscription("s1", "starter", "2026-01-01", null)] }), { pin: null }),
     { kind: "skip", reason: "plan_without_price" },
   );
-  assert.deepEqual(buildStatementInputs("2026-10", data({ tenantSlug: "Platform" }), { pinnedPlanVersionId: null }), { kind: "skip", reason: "platform_organization" });
+  assert.deepEqual(buildStatementInputs("2026-10", data({ tenantSlug: "Platform" }), { pin: null }), { kind: "skip", reason: "platform_organization" });
 });
 
 test("T-IN-6 · medições: o maior do mês, espaço com teto a 0,001 GB, gaps declarados e nunca preenchidos", () => {
@@ -101,7 +138,7 @@ test("T-IN-6 · medições: o maior do mês, espaço com teto a 0,001 GB, gaps d
       { date: "2026-10-03", activeUsers: 5, dbBytesEstimated: 2n * BYTES_PER_GB, filesBytes: 1n },
       { date: "2026-09-30", activeUsers: 99, dbBytesEstimated: 99n * BYTES_PER_GB, filesBytes: 0n },
     ],
-  }), { pinnedPlanVersionId: null }));
+  }), { pin: null }));
   assert.equal(out.computation.measurements.usersPeak, 7);
   assert.equal(out.computation.measurements.storagePeakMilliGb, 2_001, "2 GB + 1 byte → teto 2,001");
   assert.equal(out.daysMeasured, 3);
@@ -117,7 +154,7 @@ test("T-IN-7 · add-on de rastreamento vigente no último dia dá o preço por v
     addons: [addon],
     versionsByPlan: new Map([["starter", [STARTER]], ["tracking_basic", [tracking]]]),
     bindings: [{ vehicleId: "X", validFrom: "2026-10-01", validTo: "2026-10-10" }, { vehicleId: "Y", validFrom: "2026-10-11", validTo: null }],
-  }), { pinnedPlanVersionId: null }));
+  }), { pin: null }));
   assert.equal(out.computation.perVehiclePriceCents, 1_990);
   assert.equal(out.addonPlanVersionId, "v-track");
   assert.equal(out.computation.measurements.trackedVehicles, 2);
