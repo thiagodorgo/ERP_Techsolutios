@@ -67,6 +67,9 @@ function recordingModules(calls: string[], worker: JobWorker): JobWorkerModules 
     enqueueInitialSubscriptionMeasureDaily: async () => {
       calls.push("subscription.measure-daily");
     },
+    enqueueInitialSubscriptionCloseStatements: async () => {
+      calls.push("subscription.close-statements");
+    },
   };
 }
 
@@ -112,6 +115,7 @@ test("produção válida sobe o worker E enfileira as CINCO varreduras, uma vez 
       "charging.accrue",
       "impound.notify-due",
       "subscription.measure-daily",
+      "subscription.close-statements",
     ]);
     assert.equal(warns.length, 0);
     assert.equal(infos.length, 1);

@@ -35,6 +35,7 @@ export type JobWorkerModules = {
   readonly enqueueInitialChargingAccrueScan: () => Promise<unknown>;
   readonly enqueueInitialImpoundNotifyDueScan: () => Promise<unknown>;
   readonly enqueueInitialSubscriptionMeasureDaily: () => Promise<unknown>;
+  readonly enqueueInitialSubscriptionCloseStatements: () => Promise<unknown>;
 };
 
 export type JobWorkerBootstrapOptions = {
@@ -68,7 +69,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     { enqueueInitialImpoundReconcileScan },
     { enqueueInitialChargingAccrueScan },
     { enqueueInitialImpoundNotifyDueScan },
-    { enqueueInitialSubscriptionMeasureDaily },
+    { enqueueInitialSubscriptionMeasureDaily, enqueueInitialSubscriptionCloseStatements },
   ] = await Promise.all([
     import("./job.worker.js"),
     import("../../modules/notifications/scheduled-notification.jobs.js"),
@@ -85,6 +86,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     enqueueInitialChargingAccrueScan,
     enqueueInitialImpoundNotifyDueScan,
     enqueueInitialSubscriptionMeasureDaily,
+    enqueueInitialSubscriptionCloseStatements,
   };
 }
 
@@ -151,6 +153,7 @@ export async function startJobWorkerIfEnabled(
   await modules.enqueueInitialImpoundNotifyDueScan();
   // B-ASS-03 — 1º tick da medição diária da franquia (auto-reenfileirante até 12:00/23:30 SP).
   await modules.enqueueInitialSubscriptionMeasureDaily();
+  await modules.enqueueInitialSubscriptionCloseStatements();
   logger.info({ pollIntervalMs: 1000 }, "In-process job worker started (JOBS_WORKER_ENABLED).");
 
   return { started: true, worker, ...(heartbeat ? { heartbeat } : {}) };

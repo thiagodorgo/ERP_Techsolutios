@@ -5,6 +5,8 @@ export const JOB_NAMES = [
   "cloud-usage.aggregate-daily",
   // B-ASS-03 — medição diária da franquia por organização (usuários ativos, espaço, veículos rastreados).
   "subscription.measure-daily",
+  // B-ASS-04 — fechamento mensal do demonstrativo (mês anterior, 02:00 SP e a cada 6 h; idempotente).
+  "subscription.close-statements",
   "notification-dispatch",
   // Ω4C PR-04 — varredura recorrente auto-reenfileirante do motor de notificações agendáveis (reuso do
   // job.worker.ts; SEM node-cron). Só executa com o worker ligado (flag JOBS_WORKER_ENABLED, default OFF).
