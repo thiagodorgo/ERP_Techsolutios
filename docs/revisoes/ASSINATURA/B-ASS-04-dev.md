@@ -181,3 +181,25 @@ A suíte inteira, com o banco e o Redis descartáveis, pegou 3 defeitos do bloco
 - os drills `traccar-event-migration-drill-db` e `work-order-invoicing-migration-drill-db`: `EBUSY` ao apagar a pasta temporária do Windows no fim;
 - `san3-09-bootstrap-platform-admin-db`: `SyntaxError` no script disparado pelo shell, e falha igual na árvore antiga da `main` (`7c89c73b`), contra o mesmo banco;
 - a ingestão com tempo esgotado e os testes de DNS e reset: dependem do tempo e da rede da máquina.
+
+Primeira entrega para revisão: PR #507, head c4210bd1a4800c570a2d16e96ae195adeee81198, ramo feat/b-ass-04-demonstrativo.
+
+## Conserto da triagem das revisões (06/11)
+
+As duas revisões reprovaram: o revisor sênior sem achado grave, e o revisor do cálculo com um grave. A triagem está na Emenda 1 ao §4.4 do plano. Quem achou não consertou: os achados são dos revisores (DeepSeek), e o conserto é meu (`dev-ass04-opus`), menos o F3, que ficou com `dev-ass04-corridas` (DeepSeek, que não achou).
+
+| Achado | Conserto | Prova |
+|---|---|---|
+| **A-01 (grave)**: refechar re-resolvia a versão do add-on, e o preço por veículo podia mudar | o pin vem do snapshot (`pinOf`): as versões de cada trecho do plano base e a do add-on. Só elas concorrem no refechamento | T-IN-4b (add-on fixo, 1990 e não 9990); mutação "add-on sem pin" vermelha |
+| defeito vizinho, achado ao consertar o A-01: o pin era um id só, e num mês com troca de plano os dias do plano antigo caíam em `plan_without_price` | cada dia procura a sua versão entre as gravadas; se a janela de uma delas foi fechada depois, vence a última gravada que começou até o dia | T-IN-4c (3 trechos mantidos, nenhuma versão nova); mutação "primeira gravada" vermelha |
+| A-02: nenhum teste travava a unidade `/1024³` | literal no teste | T-ST-3b; mutação `/10⁹` vermelha |
+| F1: o T40 do frontend esperava 35 endpoints de plataforma | 35 → 48, medido pelo script (os 13 do bloco) | T40 verde |
+| F2: 3 arquivos fora do PERMITIDO sem emenda | registrados na Emenda 1 ao §4.4 | — |
+| F3: faltavam corridas com barreira | `tests/ass-04-statement-races-db.test.ts` (DeepSeek, commit `4f324611`): os 3 cenários do R-ST-5, pagamento × cancelamento, crédito × fechamento e as duas corridas antigas com barreira | 7/7 em 3 execuções; sem `FOR UPDATE` no `lockById`, 5 dos 7 vermelhos; 7/7 de novo no banco do dev |
+| A-03: crédito maior que o total fica preso | pendência `P-ASS04-CREDITO-EXCEDENTE`, dono `B-ASS-08` (precisa de desenho) | — |
+
+**Desvio declarado:** um plano sem versão gravada no snapshot (a assinatura mudou depois do fechamento) resolve a versão vigente. Corrigir a assinatura depois de fechar é uma correção legítima da plataforma; recusar travaria o refechamento para sempre.
+
+Os 5 arquivos de teste do bloco sem banco somam 67/67 depois do conserto; `npm run check` e `npm run lint` verdes.
+
+PRONTO PARA CONFERÊNCIA — PR #507 · head: o `headRefOid` do PR (`gh pr view 507 --json headRefOid`) · ramo feat/b-ass-04-demonstrativo
