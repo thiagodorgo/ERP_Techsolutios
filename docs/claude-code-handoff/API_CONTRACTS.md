@@ -101,6 +101,8 @@ header `Authorization: Bearer` + `X-Tenant-Id` · `Idempotency-Key` em POST.
 | POST | `/billing/charges/:id/payment` · `/reminder` · `/dispute` · `/notes` | ações de cobrança |
 | POST | `/finance/invoices` · `/finance/payments` | emitir NF-e / agendar |
 
+Assinatura da organização (plataforma → cliente): `GET /billing/subscription*`. Ver `docs/subscription-billing.md`.
+
 ## expenses / RDV (mobile)
 | Método | Rota | Uso |
 |---|---|---|
