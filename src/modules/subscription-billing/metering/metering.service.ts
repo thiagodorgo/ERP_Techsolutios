@@ -68,6 +68,12 @@ export class TenantUsageMeter {
       }
     }
 
+    // G2 do plano + achado G-2 do revisor sênior do #505: tabela que estourou o orçamento → a amostra fica SEM
+    // medida de banco (NULL, gap honesto), nunca a soma parcial das que couberam (o rateio usaria esse número).
+    if (tablesTimedOut.length > 0) {
+      dbBytes = null;
+    }
+
     const trackedVehicles = await this.sql.countTrackedVehicles(day.start, day.end);
 
     return this.repository.upsert({

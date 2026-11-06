@@ -5,6 +5,8 @@
 // catch-up (G3). Para cada organização, UMA transação própria em `withTenantRlsBudget` (lock 5 s,
 // statement 30 s) — não `forEachTenantRls` (E14).
 
+import pino from "pino";
+
 import { getDefaultJobQueue } from "../../infra/jobs/job.queue.js";
 import type { JobHandler } from "../../infra/jobs/job.registry.js";
 import { withTenantRlsBudget } from "../../database/rls.js";
@@ -151,31 +153,84 @@ export function computeNextMeasureDailyDelayMs(
   return next.getTime() - now.getTime();
 }
 
-/** A volta diária real: enumera as organizações e mede cada uma sob o GUC dela (fail-closed por org). */
-export async function runSubscriptionMeasureDaily(now: Date): Promise<TenantUsageDaily[]> {
+const logger = pino({ level: env.LOG_LEVEL });
+
+export type MeasureDailyFailure = { readonly tenantId: string; readonly code: string };
+export type MeasureDailyResult = {
+  readonly rows: TenantUsageDaily[];
+  readonly failures: MeasureDailyFailure[];
+};
+
+// Só o CÓDIGO do erro vai para o log e para o resultado (nunca mensagem, SQL ou dado da organização).
+function failureCode(error: unknown): string {
+  if (error && typeof error === "object") {
+    const candidate = error as { code?: unknown; name?: unknown };
+    if (typeof candidate.code === "string" && candidate.code) return candidate.code;
+    if (typeof candidate.name === "string" && candidate.name) return candidate.name;
+  }
+  return "unknown_error";
+}
+
+/**
+ * A volta diária real: enumera as organizações e mede cada uma sob o GUC dela.
+ *
+ * Fail-closed POR ORGANIZAÇÃO (plano §4.3, R-MED-4: "o dia DESSA organização fica sem linha e o job registra o
+ * erro"): a falha de uma organização (trava, `statement_timeout`, `tenant_context_missing`) é registrada e a volta
+ * SEGUE para as demais — uma organização com problema não apaga a medição das outras naquela janela (achado G-1
+ * do revisor sênior do #505). `options.tenantIds` restringe a volta (uso de teste: não medir organizações de outras
+ * suítes que rodam no mesmo cluster — achado M-5).
+ */
+export async function runSubscriptionMeasureDaily(
+  now: Date,
+  options: { readonly tenantIds?: readonly string[] } = {},
+): Promise<MeasureDailyResult> {
   if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
-    return [];
+    return { rows: [], failures: [] };
   }
 
   const { prisma } = await import("../../database/prisma.js");
   const day = measureDailyDay(now);
   const tables = CENSORED_TENANT_TABLES;
   const tenants = await prisma.tenant.findMany({
+    where: options.tenantIds ? { id: { in: [...options.tenantIds] } } : undefined,
     select: { id: true, slug: true },
     orderBy: { created_at: "asc" },
   });
 
+  return measureTenantsSequentially(tenants, day.date, (tenantId) =>
+    withTenantRlsBudget(prisma, tenantId, MEASURE_DAILY_TENANT_BUDGET, (tx) =>
+      measureTenantUsageInTx(tx, tenantId, day, tables),
+    ),
+  );
+}
+
+/**
+ * O laço da volta, puro (testável sem banco): pula a organização de sistema `platform` (S16) e isola a falha de
+ * cada organização — registra `{tenantId, code}` e segue para a próxima (achado G-1 do #505).
+ */
+export async function measureTenantsSequentially(
+  tenants: readonly { readonly id: string; readonly slug: string | null }[],
+  date: string,
+  measureOne: (tenantId: string) => Promise<TenantUsageDaily>,
+): Promise<MeasureDailyResult> {
   const rows: TenantUsageDaily[] = [];
+  const failures: MeasureDailyFailure[] = [];
   for (const tenant of tenants) {
     if ((tenant.slug ?? "").toLowerCase() === "platform") continue;
 
-    const row = await withTenantRlsBudget(prisma, tenant.id, MEASURE_DAILY_TENANT_BUDGET, (tx) =>
-      measureTenantUsageInTx(tx, tenant.id, day, tables),
-    );
-    rows.push(row);
+    try {
+      rows.push(await measureOne(tenant.id));
+    } catch (error) {
+      const code = failureCode(error);
+      failures.push({ tenantId: tenant.id, code });
+      logger.warn(
+        { tenantId: tenant.id, date, code },
+        "subscription.measure-daily: medição da organização falhou; o dia dela fica sem linha e a volta segue",
+      );
+    }
   }
 
-  return rows;
+  return { rows, failures };
 }
 
 export function createSubscriptionMeasureDailyJobHandler(): JobHandler {
@@ -183,12 +238,15 @@ export function createSubscriptionMeasureDailyJobHandler(): JobHandler {
     assertMeasureDailyPayload(payload);
     try {
       await runSubscriptionMeasureDaily(new Date());
-    } finally {
-      // Re-enfileira SEMPRE (mesmo se a medição falhar) para manter a recorrência viva.
-      await getDefaultJobQueue().enqueue("subscription.measure-daily", {}, {
-        delayMs: computeNextMeasureDailyDelayMs(new Date()),
-      });
+    } catch (error) {
+      // Falha GERAL (ex.: não listou as organizações). NÃO relança: a retentativa da fila somada ao re-enfileiramento
+      // abaixo multiplicaria a cadeia recorrente (achado M-1 do revisor sênior do #505). Registra e segue.
+      logger.error({ code: failureCode(error) }, "subscription.measure-daily: a volta falhou antes de medir");
     }
+    // Re-enfileira UMA vez por execução, para manter a recorrência viva.
+    await getDefaultJobQueue().enqueue("subscription.measure-daily", {}, {
+      delayMs: computeNextMeasureDailyDelayMs(new Date()),
+    });
   };
 }
 

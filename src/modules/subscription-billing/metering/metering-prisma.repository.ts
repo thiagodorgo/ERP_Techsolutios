@@ -120,7 +120,8 @@ export class PrismaTenantUsageDailyRepository implements TenantUsageDailyReposit
       )
       ON CONFLICT (tenant_id, date) DO UPDATE SET
         active_users = GREATEST(tenant_usage_daily.active_users, EXCLUDED.active_users),
-        db_bytes_estimated = EXCLUDED.db_bytes_estimated,
+        -- amostra sem medida de banco (NULL por timeout) não apaga uma medida completa do mesmo dia
+        db_bytes_estimated = COALESCE(EXCLUDED.db_bytes_estimated, tenant_usage_daily.db_bytes_estimated),
         files_bytes = EXCLUDED.files_bytes,
         files_without_size = EXCLUDED.files_without_size,
         tracked_vehicles = EXCLUDED.tracked_vehicles,

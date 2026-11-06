@@ -52,6 +52,8 @@ if (!connectionString) {
         await h.admin.$executeRawUnsafe(`DELETE FROM damages WHERE tenant_id = ANY($1::uuid[])`, ids);
         await h.admin.$executeRawUnsafe(`DELETE FROM work_orders WHERE tenant_id = ANY($1::uuid[])`, ids);
         await h.admin.$executeRawUnsafe(`DELETE FROM vehicles WHERE tenant_id = ANY($1::uuid[])`, ids);
+        await h.admin.$executeRawUnsafe(`DELETE FROM user_role_assignments WHERE tenant_id = ANY($1::uuid[])`, ids);
+        await h.admin.$executeRawUnsafe(`DELETE FROM roles WHERE tenant_id = ANY($1::uuid[])`, ids);
         await h.admin.$executeRawUnsafe(`DELETE FROM users WHERE tenant_id = ANY($1::uuid[])`, ids);
         await h.admin.$executeRawUnsafe(`DELETE FROM tenants WHERE id = ANY($1::uuid[])`, ids);
       }
@@ -72,14 +74,30 @@ if (!connectionString) {
     return id;
   }
 
-  async function newUser(h: Harness, tenantId: string, status: string): Promise<void> {
+  async function newUser(h: Harness, tenantId: string, status: string): Promise<string> {
     const email = `u-${randomUUID().slice(0, 8)}@ass03.test`;
-    await h.admin.$executeRawUnsafe(
-      `INSERT INTO users (tenant_id, name, email, status) VALUES ($1::uuid, $2, $3, $4)`,
+    const rows = await h.admin.$queryRawUnsafe<Array<{ id: string }>>(
+      `INSERT INTO users (tenant_id, name, email, status) VALUES ($1::uuid, $2, $3, $4) RETURNING id`,
       tenantId,
       email,
       email,
       status,
+    );
+    return rows[0]!.id;
+  }
+
+  // Achado M-2 do revisor sênior do #505: o técnico de campo precisa EXISTIR no teste (papel atribuído), senão a
+  // mutação "filtrar papel" sobrevive.
+  async function assignFieldTechnician(h: Harness, tenantId: string, userId: string): Promise<void> {
+    const role = await h.admin.$queryRawUnsafe<Array<{ id: string }>>(
+      `INSERT INTO roles (tenant_id, key, name, scope) VALUES ($1::uuid, 'field_technician', 'Técnico de Campo', 'tenant') RETURNING id`,
+      tenantId,
+    );
+    await h.admin.$executeRawUnsafe(
+      `INSERT INTO user_role_assignments (tenant_id, user_id, role_id) VALUES ($1::uuid, $2::uuid, $3::uuid)`,
+      tenantId,
+      userId,
+      role[0]!.id,
     );
   }
 
@@ -148,7 +166,8 @@ if (!connectionString) {
     const b = await newTenant(h, "b");
     await newUser(h, a, "active");
     await newUser(h, a, "active");
-    await newUser(h, a, "active"); // técnico de campo também conta (sem filtro de papel)
+    const technician = await newUser(h, a, "active");
+    await assignFieldTechnician(h, a, technician); // técnico de campo também conta (sem filtro de papel)
     await newUser(h, a, "inactive");
     await newUser(h, b, "active");
     await newUser(h, b, "active");
@@ -270,5 +289,44 @@ if (!connectionString) {
     assert.equal(saved.length, 1, "a linha do dia foi gravada");
     assert.equal(saved[0]!.active_users, 1);
     assert.ok(saved[0]!.metadata.tablesTimedOut.includes("audit_logs"));
+  });
+
+  test("T-MED-db-12 · o maior do dia vence: 3 ativos e depois 2 → a linha fica com 3 (GREATEST no SQL real)", async () => {
+    // Achado M-3 do revisor sênior do #505: sem este teste, trocar GREATEST por EXCLUDED.active_users passava.
+    const h = await harness();
+    const a = await newTenant(h, "greatest");
+    await newUser(h, a, "active");
+    await newUser(h, a, "active");
+    const third = await newUser(h, a, "active");
+    const first = await measure(h, a, NO_TABLES);
+    assert.equal(first.activeUsers, 3);
+    await h.admin.$executeRawUnsafe(`UPDATE users SET status = 'inactive' WHERE id = $1::uuid`, third);
+    const second = await measure(h, a, NO_TABLES);
+    assert.equal(second.activeUsers, 3, "a 2ª amostra (2) não rebaixa o maior do dia (3)");
+  });
+
+  test("T-MED-db-13 · uma tabela estourada deixa o banco do dia NULL, nunca a soma parcial das que couberam", async () => {
+    // Achado G-2 do revisor sênior do #505 (plano §4.3: "nunca um número parcial calado"). Duas tabelas: `users`
+    // (pequena, mede) e `audit_logs` (300 mil linhas, estoura 10 ms). Antes do conserto, gravava a soma de `users`.
+    const h = await harness();
+    const a = await newTenant(h, "partial");
+    await newUser(h, a, "active");
+    await newAuditLogs(h, a, 300_000);
+    const row = await measure(h, a, ["users", "audit_logs"], { statementTimeoutMs: 10 });
+    assert.ok(row.metadata.tablesTimedOut.includes("audit_logs"));
+    assert.equal(row.dbBytesEstimated, null, `banco do dia sem medida; veio ${String(row.dbBytesEstimated)}`);
+    assert.equal(row.activeUsers, 1);
+  });
+
+  test("T-MED-db-14 · amostra estourada não apaga a medida completa já gravada no mesmo dia (COALESCE)", async () => {
+    const h = await harness();
+    const a = await newTenant(h, "coalesce");
+    await newUser(h, a, "active");
+    const complete = await measure(h, a, ["users"]);
+    assert.ok(complete.dbBytesEstimated !== null && complete.dbBytesEstimated > 0n);
+    await newAuditLogs(h, a, 300_000);
+    const partial = await measure(h, a, ["users", "audit_logs"], { statementTimeoutMs: 10 });
+    assert.ok(partial.metadata.tablesTimedOut.includes("audit_logs"));
+    assert.equal(partial.dbBytesEstimated, complete.dbBytesEstimated, "a medida completa das 12:00 fica");
   });
 }

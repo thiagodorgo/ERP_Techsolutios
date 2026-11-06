@@ -126,3 +126,41 @@ Comando: `grep -rn "UsageBasisRow\|CloudUsageMetricKey" src/modules/cloud-cost-a
 - **Conserto do T40** (adendo à Emenda 1 ao §4.3): o script `scripts/san3-06b-endpoints-de-plataforma.mjs` mede **35** = 34 + `GET /api/v1/platform/billing/tenants/:tenantId/usage` (`platform:billing:read`, `subscription-billing.platform.routes.ts:161`). Só a linha 61 mudou, de 34 para 35. O teste local deu 3/3.
 
 PRONTO PARA REVISÃO d5f8c8c2fd20dcd838bc5e8ad0acedfa4ec214c0 PR #505
+
+
+## CONSERTO ÚNICO — achados do revisor sênior (`rev-ass03-senior-opus`, REPROVADO) — `dev-ass03-opus`
+
+Fonte: `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/rev-ass03-senior-parecer.md` (head julgado `0ca8bd5e`). Quem achou não consertou: o revisor foi um subagente com identidade nova; o conserto é do dev. A triagem segue o fluxo rápido: grave e simples se consertam agora, o resto vira pendência com dono.
+
+**Consertados:**
+- **G-1 (grave, perda de dado):** a falha de uma organização derrubava a volta inteira.
+  - O laço agora é a função pura `measureTenantsSequentially` (`subscription-billing.jobs.ts`). Ela isola a falha de cada organização: registra `{tenantId, code}` no log e no resultado, só o código e sem mensagem, e segue para a próxima.
+  - Teste: `tests/ass-03-metering-loop.test.ts`, T-MED-18 e T-MED-18b.
+  - Mutação "laço sem try/catch": 2 fail.
+- **G-2 (grave, erra dinheiro):** tabela estourada gravava a soma parcial.
+  - Agora `tablesTimedOut.length > 0` deixa `dbBytes = null` (`metering.service.ts`).
+  - A gravação usa `COALESCE(EXCLUDED.db_bytes_estimated, tenant_usage_daily.db_bytes_estimated)` no Prisma e `?? existing` na memória, para que uma amostra estourada não apague a medida completa já gravada no mesmo dia.
+  - Testes: T-MED-db-13 (`users` mede e `audit_logs` estoura → NULL) e T-MED-db-14 (o COALESCE).
+  - Mutações "sem anular" e "COALESCE→EXCLUDED": 1 fail cada.
+- **M-1:** o handler não relança mais a falha geral. Ele registra o erro e re-enfileira UMA vez, então a retentativa da fila deixa de multiplicar a cadeia.
+- **M-2:** o T-MED-db-1 agora cria o técnico de campo de verdade, com papel `field_technician` atribuído em `user_role_assignments`.
+- **M-3:** o T-MED-db-12 prova o `GREATEST` no SQL real (3 e depois 2 → 3). Mutação `GREATEST→EXCLUDED`: 1 fail.
+- **M-5:** `runSubscriptionMeasureDaily(now, { tenantIds })`. O teste `san3-05-leituras` mede só as organizações do próprio cenário, e o `san3-04a` voltou a verde.
+- **B-3:** o T-MED-19 testa o filtro `platform` do laço real. Mutação "sem filtro": 1 fail.
+- **B-6:** a quebra de linha final da fixture do censo foi devolvida. O censo T14 passa.
+
+As 5 mutações foram restauradas pela cópia do arquivo, com md5 igual ao de antes, e o `git status` ficou só com o conserto.
+
+**Bateria do conserto:**
+- em memória: laço, job e medidor = 14/14;
+- `ass-03-metering-db` = 9/9;
+- guards (censo e ratchet), `san3-05-leituras-db`, `san3-04a`, rateio e bootstrap, em série = 104/104;
+- `npm run check`, `npm run lint` e `npm run build` verdes.
+
+**Viram pendência, não graves e com dono (registradas no `REGISTRO-PENDENTE.md` para o próximo PR de registro):**
+- **M-4:** o "byte a byte" do R-MED-3 varia ±6 B depois de um VACUUM causado por outra organização. A causa não foi medida. Dono: B-ASS-04, que lê a medida para cobrar.
+- **B-2:** o canário `LIMIT 1` só detecta bypass por acaso, sob superusuário. Em produção, quem protege é o G-DB-ROLE. Dono: B-SAN3-05.
+- **B-4:** o SQL real de veículos não tem `-db`, o que o plano previu. Dono: B-ASS-12 (rastreamento).
+- **B-5:** sem medição, o rateio do banco grava o método `storage_usage_weight` mesmo quando cai para as ações. Dono: B-ASS-09a.
+- **B-7:** a classe já existia. O `(PD) sweep` disputa o catálogo de papéis em paralelo. Dono: B-SAN3-05.
+- **M-1, a mesma classe em `charge.jobs.ts`:** fica fora do bloco. Dono: o módulo de diárias.

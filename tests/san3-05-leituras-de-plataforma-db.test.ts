@@ -475,7 +475,8 @@ if (!connectionString) {
         const papelHttp = alvo.atual;
         alvo.atual = efemera.client;
         try {
-          await runSubscriptionMeasureDaily(measureNow);
+          // Só as organizações DESTE cenário: o cluster é compartilhado com as outras suítes (achado M-5 do #505).
+          await runSubscriptionMeasureDaily(measureNow, { tenantIds: [cenario.tenantA, cenario.tenantB] });
         } finally {
           alvo.atual = papelHttp;
         }

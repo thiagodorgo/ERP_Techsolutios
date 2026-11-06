@@ -17,7 +17,8 @@ export class InMemoryTenantUsageDailyRepository implements TenantUsageDailyRepos
       ? {
           ...existing,
           activeUsers: Math.max(existing.activeUsers ?? 0, input.activeUsers),
-          dbBytesEstimated: input.dbBytesEstimated,
+          // mesma regra do Prisma: amostra sem medida de banco não apaga uma medida completa do dia
+          dbBytesEstimated: input.dbBytesEstimated ?? existing.dbBytesEstimated,
           filesBytes: input.filesBytes,
           filesWithoutSize: input.filesWithoutSize,
           trackedVehicles: input.trackedVehicles,
