@@ -215,6 +215,71 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/subscription-billing/metering/metering-prisma.repository.ts", "new PrismaTenantUsageDailyRepository(tx)", "PARAMETRO(tx)", "×1"),
     "B-ASS-03: o upsert em tenant_usage_daily (tabela ENABLE+FORCE, T-MED-db-7) usa o MESMO tx de withTenantRlsBudget da volta da organização (subscription-billing.jobs.ts); sob FORCE, a escrita sem o GUC certo violaria a política, e o medidor lança antes de tentar (R-MED-4).",
   ],
+  // B-ASS-04: as chaves L1 da porta do demonstrativo, coladas da saída do gerador no head do bloco.
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.insertCredit", "tx.subscriptionCredit", "subscriptionCredit.create", "subscription_credits", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.insertIfAbsentAndLock", "tx", "RAW-SQL($queryRaw)", "subscription_statements", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.insertIfAbsentAndLock", "tx.subscriptionStatement", "subscriptionStatement.createMany", "subscription_statements", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.insertIfAbsentAndLock", "tx.subscriptionStatement", "subscriptionStatement.findUniqueOrThrow", "subscription_statements", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.insertPayment", "tx.subscriptionStatementPayment", "subscriptionStatementPayment.create", "subscription_statement_payments", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.lockById", "tx", "RAW-SQL($queryRaw)", "subscription_statements", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.lockById", "tx.subscriptionStatement", "subscriptionStatement.findUniqueOrThrow", "subscription_statements", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.lockCredit", "tx", "RAW-SQL($queryRaw)", "subscription_credits", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.lockCredit", "tx.subscriptionCredit", "subscriptionCredit.findUniqueOrThrow", "subscription_credits", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.lockPayment", "tx", "RAW-SQL($queryRaw)", "subscription_statement_payments", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.lockPayment", "tx.subscriptionStatementPayment", "subscriptionStatementPayment.findUniqueOrThrow", "subscription_statement_payments", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.saveCredit", "tx.subscriptionCredit", "subscriptionCredit.findUniqueOrThrow", "subscription_credits", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.saveCredit", "tx.subscriptionCredit", "subscriptionCredit.updateMany", "subscription_credits", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.savePayment", "tx.subscriptionStatementPayment", "subscriptionStatementPayment.findUniqueOrThrow", "subscription_statement_payments", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.savePayment", "tx.subscriptionStatementPayment", "subscriptionStatementPayment.updateMany", "subscription_statement_payments", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.saveStatement", "tx.subscriptionStatement", "subscriptionStatement.update", "subscription_statements", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };
