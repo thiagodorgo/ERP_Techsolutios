@@ -3405,7 +3405,7 @@
     "backend_tests": "4452/4454",
     "frontend_smoke_tests": "1636/1636",
     "blocks_completed": 202,
-    "description": "B-ASS-01 — Retira a tela, o menu e as regras de acréscimo sobre o custo de nuvem; a plataforma passa a acompanhar só o consumo, sem margem sobre ele. NÚMEROS DA CI no merge commit `0f2bfb73` (push na `main`), workflow `ci`, run 41965769128, tentativa 1: backend `4454 teste(s) · pass 4452 · fail 0 · skipped 2`; frontend 1636/1636; flutter 998/998. `blocks_completed` 201 -> 202.",
+    "description": "B-ASS-01 — Saem as regras de acréscimo (margem) sobre o custo de nuvem, com as rotas e o job da cobrança; a tela de custo de nuvem e o menu ficam, e a plataforma passa a acompanhar só o consumo. NÚMEROS DA CI no merge commit `0f2bfb73` (push na `main`), workflow `ci`, run 41965769128, tentativa 1: backend `4454 teste(s) · pass 4452 · fail 0 · skipped 2`; frontend 1636/1636; flutter 998/998. `blocks_completed` 201 -> 202.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 498`; números do log da rodada 41965769128. Nada fica `null`."
   },
   {
