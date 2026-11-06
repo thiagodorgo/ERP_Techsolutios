@@ -16,6 +16,8 @@ export const PERMISSION_CATALOG = [
   "platform:billing:manage",
   // B-ASS-04 — baixa manual, estorno, reabrir, cancelar, ajustar e créditos do demonstrativo (plano §3.7).
   "platform:billing:settle",
+  // B-ASS-05 — cofre de credenciais e configuração dos provedores de pagamento e nota (plano §3.7).
+  "platform:billing-providers:manage",
   "tenant.manage",
   "users.manage",
   "users.read",

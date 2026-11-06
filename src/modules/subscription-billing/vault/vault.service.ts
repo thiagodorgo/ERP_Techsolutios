@@ -32,14 +32,20 @@ export type RotationResult = { readonly rotated: readonly string[]; readonly unr
 
 /** Erro de cofre com status HTTP e motivo, no envelope da casa. A mensagem nunca carrega segredo. */
 export class VaultServiceError extends Error {
-  readonly status: number;
-  readonly reason: string;
+  /** Código do envelope de erro da casa (`{ error: { code, reason, message } }`, `sendRouteError`). */
+  readonly code = "SUBSCRIPTION_BILLING_VAULT";
 
-  constructor(status: number, reason: string, message: string) {
+  constructor(
+    readonly statusCode: number,
+    readonly reason: string,
+    message: string,
+  ) {
     super(message);
     this.name = "VaultServiceError";
-    this.status = status;
-    this.reason = reason;
+  }
+
+  get status(): number {
+    return this.statusCode;
   }
 }
 

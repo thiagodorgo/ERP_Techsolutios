@@ -26,6 +26,7 @@ export const PLATFORM_PERMISSIONS = [
   "platform:billing:read",
   "platform:billing:manage",
   "platform:billing:settle",
+  "platform:billing-providers:manage",
 ] as const;
 
 export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];

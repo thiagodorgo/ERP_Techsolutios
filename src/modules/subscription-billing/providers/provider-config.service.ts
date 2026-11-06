@@ -32,12 +32,16 @@ export class ProviderConfigError extends Error {
   readonly code = "SUBSCRIPTION_BILLING_PROVIDER";
 
   constructor(
-    readonly status: number,
+    readonly statusCode: number,
     readonly reason: string,
     message: string,
   ) {
     super(message);
     this.name = "ProviderConfigError";
+  }
+
+  get status(): number {
+    return this.statusCode;
   }
 }
 
