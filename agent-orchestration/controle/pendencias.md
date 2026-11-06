@@ -12819,13 +12819,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato no fechamento:** re-medido neste registro em `origin/main@0c3c7826`: `android.permission.INTERNET` aparece 1 vez em cada manifest (`main`, `debug`, `profile`). Revisão do orquestrador fora do repositório (`revisoes/rev-499-orquestrador.md`), CI 16/16.
 - **nota:** a entrada `## B-MOBILE-INTERNET-RELEASE (2026-11-04)`, acima, registra o mesmo defeito pelo nome do bloco; esta entrada dá a ele o ID de pendência que a fonte usa. A repetição de F3, Op-10 e Op-8 mobile com o release continua em `P-SAN3-ROTEIRO-DEMO-OPERACAO`.
 
-## P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO (2026-11-06) — escrita de `tenants.modules` em writer novo, fora do `TenantRepository` — BAIXA
+## P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO (2026-11-05) — escrita de `tenants.modules` em writer novo, fora do `TenantRepository` — BAIXA
 
-- **status:** ABERTA · **escopo:** resíduo da pré-revisão do B-ASS-02 (achado B-02, Emenda 4 ao §4.2) · **dono:** `B-ASS-03` · **PR-alvo:** PR do `B-ASS-03` · **bloqueia:** não.
+- **status:** ABERTA · **escopo:** resíduo da pré-revisão do B-ASS-02 (achado B-02, Emenda 4 ao §4.2) · **dono:** o próximo bloco da trilha ASSINATURA que escrever `tenants.modules` (até lá, o orquestrador) · **PR-alvo:** o PR desse bloco · **bloqueia:** não. O dono original era o `B-ASS-03`, que mergeou no #505 (`3470db1e`) sem tocar no writer (`git diff --name-only 43716227 3470db1e` não traz o caminho); o dono foi trocado na revisão do #506.
 - **fato:** a atualização de `tenants.modules` (R-PLAN-3) foi implementada num writer novo (`src/modules/subscription-billing/plans/tenant-modules.prisma.ts`, `PrismaTenantModulesWriter.writeModules` → `tenant.update`), em vez de reutilizar o `TenantRepository` existente (`src/modules/core-saas/repositories/tenant.repository.ts`). Comportamento equivalente, sem efeito de segurança ou correção.
 - **encerramento:** caminho de escrita de `tenants.modules` consolidado (ou a premissa ratificada e documentada), sem duplicação.
 
-## P-SAN3-05-ETIQUETA-UNICA-POR-ROTA (2026-11-06) — a taxonomia de etiquetas aceita uma só etiqueta por rota — BAIXA
+## P-SAN3-05-ETIQUETA-UNICA-POR-ROTA (2026-11-05) — a taxonomia de etiquetas aceita uma só etiqueta por rota — BAIXA
 
 - **status:** ABERTA · **escopo:** resíduo da Emenda 2 ao §4.2 do B-ASS-02 · **dono:** `B-SAN3-05` (ou o próximo bloco que mexer na taxonomia) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
 - **fato:** a taxonomia aceita uma única etiqueta por rota, e `/plans/summary` e `addVersion` também tocam tabela FORCE. No B-ASS-02 ficou a etiqueta pedida, com a nota.

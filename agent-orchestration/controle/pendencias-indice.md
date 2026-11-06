@@ -592,8 +592,8 @@
 | `P-SAN3-10B-BATERIA-B8-FORMATOS` | 12797 | BAIXA | sim | P-SAN3-10B-BATERIA-B8-FORMATOS (2026-11-04) — a bateria B8 não pega três formatos de lin |
 | `P-SAN3-10B-OP8-PASSO6` | 12803 | BAIXA | sim | P-SAN3-10B-OP8-PASSO6 (2026-11-04) — o passo 6 da Op-8 não foi medido — BAIXA |
 | `P-KPI-PAINEL-EXPLICA-DENOMINADOR` | 12809 | BAIXA | sim | P-KPI-PAINEL-EXPLICA-DENOMINADOR (2026-11-04) — o painel não explica que a vendável caiu |
-| `P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO` | 12822 | BAIXA | sim | P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO (2026-11-06) — escrita de `tenants.modules` e |
-| `P-SAN3-05-ETIQUETA-UNICA-POR-ROTA` | 12828 | BAIXA | sim | P-SAN3-05-ETIQUETA-UNICA-POR-ROTA (2026-11-06) — a taxonomia de etiquetas aceita uma só  |
+| `P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO` | 12822 | BAIXA | sim | P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO (2026-11-05) — escrita de `tenants.modules` e |
+| `P-SAN3-05-ETIQUETA-UNICA-POR-ROTA` | 12828 | BAIXA | sim | P-SAN3-05-ETIQUETA-UNICA-POR-ROTA (2026-11-05) — a taxonomia de etiquetas aceita uma só  |
 | `P-ASS03-CANARIO-LIMIT1` | 12840 | BAIXA | sim | P-ASS03-CANARIO-LIMIT1 (2026-11-06) — o canário `LIMIT 1` só pega bypass por acaso — BAI |
 | `P-ASS03-VEICULOS-SEM-DB` | 12846 | BAIXA | sim | P-ASS03-VEICULOS-SEM-DB (2026-11-06) — o SQL real de veículos não tem variante `-db` — B |
 | `P-ASS03-METODO-RATEIO-FALLBACK` | 12852 | BAIXA | sim | P-ASS03-METODO-RATEIO-FALLBACK (2026-11-06) — sem medição, o rateio do banco grava `stor |

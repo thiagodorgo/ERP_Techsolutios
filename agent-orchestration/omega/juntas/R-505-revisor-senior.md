@@ -31,11 +31,11 @@
 - **Consertados:** G-1 (`measureTenantsSequentially`, falha isolada por organização com `{tenantId, code}`); G-2 (`dbBytes = null` quando `tablesTimedOut.length > 0` + `COALESCE`); M-1 (handler não relança e re-enfileira UMA vez); M-2 (técnico de campo real no T-MED-db-1); M-3 (T-MED-db-12 prova o `GREATEST`); M-5 (`runSubscriptionMeasureDaily(now, { tenantIds })`); B-3 (T-MED-19 testa o filtro `platform` real); B-6 (quebra de linha devolvida). 5 mutações mortas.
 - **Bateria do conserto:** memória 14/14; `-db` 9/9; guards + `san3-05` + `san3-04a` + rateio + bootstrap 104/104; `check`/`lint`/`build` verdes.
 
-## Conferência (`conf-505`, 06/11 ~07:45 SP): CONFERIDO COM RESSALVA
+## Conferência (`conf-505`, parecer gravado às 06/11 ~07:26 SP, antes do merge): CONFERIDO COM RESSALVA
 
 - **Identidade:** `conf-505` · braço escolhido pela fila · esforço médio · identidade nova. Não fez, não revisou e não consertou nada.
 - **Objeto:** head `f443f6d9d11663139854f8f7fd79f15f9de7662a`; o conserto é o diff `0ca8bd5e..f443f6d9` (9 arquivos, +248/−21, só os do conserto).
-- Cada achado consertado foi medido de novo no head (G-1 com trava real de 7 s; G-2 NULL; M-1 `DELAYED n=1`; M-2/M-3/M-5/B-3/B-6 pelas suítes e mutações); 18/18 em memória; `npm run check` verde.
+- Cada achado consertado foi medido de novo no head (G-1 com trava real de 7 s; G-2 NULL; M-1 `DELAYED n=1`; M-2/M-3/M-5/B-3/B-6 pelas suítes e mutações); 14/14 em memória (o 18/18 é a medida do porteiro); `npm run check` verde.
 
 ## Porteiro (`porteiro-505`, DeepSeek Pro): LIBERADO COM RESSALVA
 
