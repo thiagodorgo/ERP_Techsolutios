@@ -108,3 +108,21 @@ Comando: `grep -rn "UsageBasisRow\|CloudUsageMetricKey" src/modules/cloud-cost-a
   - Em paralelo, um caso da `san3-03-derived-basis-db` (T10–T12, papel sem bypass) falhou uma vez por disputa no cluster único. Sozinho deu 9/9, duas vezes. É a mesma classe ambiental já registrada (`db-catalog-write-guard` em paralelo).
 - **Limite declarado:** o caminho Prisma do R-MED-8 não tem `-db` próprio, porque o plano pede T-MED-12/13 em memória. Fica para o revisor sênior conferir a leitura sob o GUC.
 - `npm run check` sem erro.
+
+
+## F7 — docs + bateria + PR (30) — `dev-ass03-opus`
+
+- `docs/subscription-billing.md`: nova seção "Medição diária da franquia", com o que cada medida mede e o que não mede, a segurança, a rota, o rateio e o rollback.
+- Rodados com sucesso: `npm run check`, `npm run lint`, `npm run build`, `node scripts/migration-transaction-guard.mjs` (124 migrações, 12 novas, 0 violações) e `git diff --check`.
+- `npm test` local, na forma do CI (Windows, `devass03-pg` + `devass03-redis`): 4506 testes, 4496 aprovados, 8 reprovados, 2 pulados. Os 8 reprovados são os vermelhos de ambiente Windows que já existiam:
+  - `runtime-role-guard-db` T14;
+  - `bootstrap-platform-admin-db` T2.1;
+  - `traccar-event-migration-drill-db` (EBUSY);
+  - T10–T12 em paralelo, que passou sozinho e em série.
+- PR #505 aberto. CI do head `d226919f`:
+  - `backend`: 4524 testes, 4522 aprovados, 0 falhas, 2 pulados. Os vermelhos de ambiente passam no Linux, inclusive a contagem 126.
+  - `backend-postgres`: 503/503.
+  - `frontend`: 1635/1636. O único vermelho foi o T40, que conta os endpoints de plataforma.
+- **Conserto do T40** (adendo à Emenda 1 ao §4.3): o script `scripts/san3-06b-endpoints-de-plataforma.mjs` mede **35** = 34 + `GET /api/v1/platform/billing/tenants/:tenantId/usage` (`platform:billing:read`, `subscription-billing.platform.routes.ts:161`). Só a linha 61 mudou, de 34 para 35. O teste local deu 3/3.
+
+PRONTO PARA REVISÃO d5f8c8c2fd20dcd838bc5e8ad0acedfa4ec214c0 PR #505
