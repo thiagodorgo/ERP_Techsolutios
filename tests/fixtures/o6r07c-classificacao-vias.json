@@ -11,6 +11,10 @@
   "classe": "MIDDLEWARE",
   "n": 1
  },
+ "MIDDLEWARE / · rejectMalformedJson": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
  "MIDDLEWARE / · result": {
   "classe": "MIDDLEWARE",
   "n": 1
@@ -624,6 +628,14 @@
   "n": 1
  },
  "ROTA GET /api/v1/platform/billing/plans/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/providers": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/providers/:provider": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -1623,6 +1635,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/platform/billing/vault/rotate": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/platform/cloud-cost-allocations/runs": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1791,6 +1807,14 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA PUT /api/v1/platform/billing/providers/:provider": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PUT /api/v1/platform/billing/providers/:provider/credentials": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA PUT /api/v1/platform/billing/tenants/:tenantId/billing-profile": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1841,7 +1865,7 @@
  },
  "ROTEADOR /api/v1/platform/billing": {
   "classe": "ROTEADOR",
-  "n": 2
+  "n": 3
  },
  "ROTEADOR /api/v1/platform/cloud-cost-allocations": {
   "classe": "ROTEADOR",

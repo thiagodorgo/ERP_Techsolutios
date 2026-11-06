@@ -94,6 +94,12 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`POST ${P}/billing/credits/:creditId/write-off`, S("FORCE-POR-TENANT", ["subscription_credits", "audit_logs"], "FOR UPDATE do crédito sob withTenantRls")],
   [`GET ${P}/billing/tenants/:tenantId/billing-profile`, S("FORCE-POR-TENANT", ["tenant_billing_profiles"], "perfil de cobrança sob withTenantRls")],
   [`PUT ${P}/billing/tenants/:tenantId/billing-profile`, S("FORCE-POR-TENANT", ["tenant_billing_profiles", "audit_logs"], "upsert por tenant_id sob withTenantRls")],
+  // B-ASS-05: o cofre e a configuração dos provedores tocam só as 3 tabelas GLOBAIS da M4 (sem tenant_id, sem RLS).
+  [`GET ${P}/billing/providers`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials"], "configuração e resumo das credenciais: tabelas globais da plataforma (M4)")],
+  [`GET ${P}/billing/providers/:provider`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials"], "configuração e resumo das credenciais: tabelas globais da plataforma (M4)")],
+  [`PUT ${P}/billing/providers/:provider`, S("SEM-FORCE", ["billing_provider_configs", "platform_audit_logs"], "upsert da configuração global e trilha de plataforma (M4)")],
+  [`PUT ${P}/billing/providers/:provider/credentials`, S("SEM-FORCE", ["billing_provider_credentials", "platform_audit_logs"], "cofre global (M4): grava a credencial cifrada e a trilha")],
+  [`POST ${P}/billing/vault/rotate`, S("SEM-FORCE", ["billing_provider_credentials", "platform_audit_logs"], "rotação da chave do cofre global (M4)")],
   [`GET ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`POST ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`GET ${P}/tenants/:tenantId`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],

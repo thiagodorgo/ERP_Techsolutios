@@ -16,8 +16,6 @@ import { ProviderConfigError } from "../providers/provider-config.service.js";
 import { createDefaultVaultRuntime } from "./vault.factory.js";
 import { isCredentialKind, VaultServiceError, type CredentialInput } from "./vault.service.js";
 
-const PERMISSION = "platform:billing-providers:manage";
-
 function actorId(request: Request): string | null {
   return request.actor?.userId ?? null;
 }
@@ -47,7 +45,7 @@ export function createVaultPlatformRouter(): Router {
 
   router.get(
     "/providers",
-    requirePlatformPermission(PERMISSION),
+    requirePlatformPermission("platform:billing-providers:manage"),
     handleAsyncRoute(async (_request, response) => {
       const runtime = await createDefaultVaultRuntime();
       response.status(200).json({ data: await runtime.providers.list(), vault: { status: runtime.vault.status() } });
@@ -56,7 +54,7 @@ export function createVaultPlatformRouter(): Router {
 
   router.get(
     "/providers/:provider",
-    requirePlatformPermission(PERMISSION),
+    requirePlatformPermission("platform:billing-providers:manage"),
     handleAsyncRoute(async (request, response) => {
       const runtime = await createDefaultVaultRuntime();
       response.status(200).json({ data: await runtime.providers.get(providerParam(request)), vault: { status: runtime.vault.status() } });
@@ -65,7 +63,7 @@ export function createVaultPlatformRouter(): Router {
 
   router.put(
     "/providers/:provider",
-    requirePlatformPermission(PERMISSION),
+    requirePlatformPermission("platform:billing-providers:manage"),
     handleAsyncRoute(async (request, response) => {
       const provider = providerParam(request);
       const input = body(request);
@@ -83,7 +81,7 @@ export function createVaultPlatformRouter(): Router {
 
   router.put(
     "/providers/:provider/credentials",
-    requirePlatformPermission(PERMISSION),
+    requirePlatformPermission("platform:billing-providers:manage"),
     handleAsyncRoute(async (request, response) => {
       const provider = providerParam(request);
       const credential = credentialInput(body(request));
@@ -102,7 +100,7 @@ export function createVaultPlatformRouter(): Router {
 
   router.post(
     "/vault/rotate",
-    requirePlatformPermission(PERMISSION),
+    requirePlatformPermission("platform:billing-providers:manage"),
     handleAsyncRoute(async (request, response) => {
       const runtime = await createDefaultVaultRuntime();
       const result = await runtime.vault.rotate(actorId(request));
