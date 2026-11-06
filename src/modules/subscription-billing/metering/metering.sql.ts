@@ -12,8 +12,8 @@ export type AttachmentBytes = {
 export type MeteringSqlExecutor = {
   /** `SELECT NULLIF(current_setting('app.current_tenant_id', true), '')::text` — sem o GUC, devolve null. */
   currentTenantSetting(): Promise<string | null>;
-  /** Leitura-canário: `SELECT tenant_id FROM users LIMIT 1`. Sem GUC sob FORCE RLS, devolve zero linhas. */
-  canaryTenantId(): Promise<string | null>;
+  /** Leitura-canário: `SELECT tenant_id FROM users LIMIT 1`. Sem GUC sob FORCE RLS devolve zero linhas; com BYPASSRLS devolve linha de OUTRA organização (o medidor usa `assertRowsBelongToTenant` para pegar o vazamento). */
+  canaryTenantRows(): Promise<readonly { readonly tenantId: string }[]>;
   countActiveUsers(): Promise<number>;
   sumAttachmentBytes(model: MeteringAttachmentModel): Promise<AttachmentBytes>;
   /** `SELECT coalesce(sum(pg_column_size(t.*)), 0)::bigint FROM "tabela" t` sob RLS. Estoura timeout -> TableMeasurementTimeoutError. */

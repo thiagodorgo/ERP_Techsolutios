@@ -4,3 +4,4 @@ export * from "./metering.memory.js";
 export * from "./metering.payload.js";
 export * from "./tenant-usage.repository.js";
 export * from "./metering.service.js";
+export * from "./metering-prisma.repository.js";

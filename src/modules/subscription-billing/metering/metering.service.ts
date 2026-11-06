@@ -11,6 +11,7 @@ import {
   type TenantUsageDaily,
 } from "./metering.types.js";
 import type { MeteringSqlExecutor } from "./metering.sql.js";
+import { assertRowsBelongToTenant } from "../../../database/rls.js";
 import type { TenantUsageDailyRepository } from "./tenant-usage.repository.js";
 
 export type MeteringDay = {
@@ -39,10 +40,8 @@ export class TenantUsageMeter {
     if (setting !== tenantId) {
       throw new TenantContextMissingError();
     }
-    const canary = await this.sql.canaryTenantId();
-    if (canary !== tenantId) {
-      throw new TenantContextMissingError();
-    }
+    const canary = await this.sql.canaryTenantRows();
+    assertRowsBelongToTenant(canary, tenantId, "users");
 
     const activeUsers = await this.sql.countActiveUsers();
 

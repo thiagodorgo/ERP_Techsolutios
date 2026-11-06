@@ -60,10 +60,12 @@ export class InMemoryMeteringSqlExecutor implements MeteringSqlExecutor {
     return this.currentTenantId;
   }
 
-  async canaryTenantId(): Promise<string | null> {
-    if (this.currentTenantId === null) return null;
-    const hasUser = this.users.some((user) => user.tenantId === this.currentTenantId);
-    return hasUser ? this.currentTenantId : null;
+  async canaryTenantRows(): Promise<readonly { readonly tenantId: string }[]> {
+    if (this.currentTenantId === null) return [];
+    return this.users
+      .filter((user) => user.tenantId === this.currentTenantId)
+      .slice(0, 1)
+      .map((user) => ({ tenantId: user.tenantId }));
   }
 
   async countActiveUsers(): Promise<number> {

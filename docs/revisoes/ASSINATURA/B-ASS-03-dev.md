@@ -35,3 +35,16 @@ Comando: `grep -rn "UsageBasisRow\|CloudUsageMetricKey" src/modules/cloud-cost-a
 - Drill `tests/ass-03-usage-migration-drill-db.test.ts` (R-MED-7) verde no Postgres descartável `devass03-pg` (127.0.0.1:55503): up em base própria, down em transação única, atomicidade por prefixo, RLS ENABLE+FORCE — `3/3`.
 - **Nota de ordem:** o drill M2 foi antecipado da F4 para cá porque o guard G6 exige que o nome da migração apareça num `tests/*-migration-drill-db.test.ts`; sem ele, a F2 deixaria o guard vermelho. Nada muda de escopo (o drill já está no PERMITIDO, R-MED-7).
 - `prisma generate` + `npm run check` verdes.
+
+## F1 — medidor com dublê em memória (45)
+
+- `src/modules/subscription-billing/metering/` criado: `metering.types.ts` (`METERING_METHOD_VERSION=2`, `METERING_ATTACHMENT_MODELS`/`METERING_ATTACHMENT_FILTERS`, tipos e erros), `metering.sql.ts` (executor SQL injetável, sem `tenant_id =` literal), `metering.memory.ts` (dublê em memória), `tenant-usage.repository.ts` (dublê de repositório com UPSERT `GREATEST` para `activeUsers`), `metering.service.ts` (`measureTenant`/`measureDaily`/`toUsageDto`), `metering.payload.ts` (payload com `date` → 400 `unknown_field`).
+- `tests/ass-03-metering.test.ts` verde `9/9`: T-MED-5 (guard de texto), T-MED-6/7 (1 linha, `GREATEST` e `measured_at` avança), T-MED-8, T-MED-9/10/11 (veículos), T-MED-14 (slug `platform` pulado), T-MED-4b (sem GUC lança) e T-MED-15 (BigInt→string).
+- `npm run check` verde.
+
+## F3 — repositório Prisma + provas -db (45, Docker)
+
+- `metering-prisma.repository.ts`: `PrismaMeteringSqlExecutor` (GUC, canário, usuários ativos, bytes de anexo, bytes por tabela com SAVEPOINT, veículos rastreados) e `PrismaTenantUsageDailyRepository` (UPSERT `ON CONFLICT (tenant_id,date) DO UPDATE` com `GREATEST(active_users)` e último medido nas demais); `measureTenantUsageInTx` exposto no barrel.
+- Correção do canário (R-MED-4): a leitura-canário `SELECT tenant_id FROM users LIMIT 1` passou a devolver as linhas lidas e o medidor usa `assertRowsBelongToTenant` (linha de OUTRA organização = vazamento → erro; zero linhas = passa). Antes, organização sem usuário era tratada como contexto ausente — falso negativo que derrubava T-MED-db-3/10.
+- `tests/ass-03-metering-db.test.ts` verde `6/6` no `devass03-pg` (papel NOSUPERUSER NOBYPASSRLS): T-MED-db-1, T-MED-db-2/9, T-MED-db-3/10, T-MED-db-6, T-MED-db-7, T-MED-db-11. Seeds de anexos criam `vehicles`/`work_orders`/`damages` válidos (FK compostas) e o teardown apaga as filhas antes de `tenants`.
+- Regressão: memória `tests/ass-03-metering.test.ts` continua `9/9`; `npm run check` verde.
