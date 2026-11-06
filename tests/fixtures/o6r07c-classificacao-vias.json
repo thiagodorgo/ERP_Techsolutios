@@ -583,6 +583,10 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/platform/billing/credits": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/platform/billing/plans": {
   "classe": "LEITURA",
   "n": 1
@@ -596,6 +600,14 @@
   "n": 1
  },
  "ROTA GET /api/v1/platform/billing/plans/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/statements": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/statements/:statementId": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -1008,6 +1020,10 @@
   "n": 1
  },
  "ROTA PATCH /api/v1/platform/billing/plans/:planId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/platform/billing/statements/:statementId/adjustment": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -1543,11 +1559,39 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/platform/billing/credits/:creditId/apply": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/credits/:creditId/write-off": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/platform/billing/plans": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
  "ROTA POST /api/v1/platform/billing/plans/:planId/versions": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/cancel": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/payments": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/payments/:paymentId/reverse": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/reopen": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/close": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -1765,7 +1809,7 @@
  },
  "ROTEADOR /api/v1/platform/billing": {
   "classe": "ROTEADOR",
-  "n": 1
+  "n": 2
  },
  "ROTEADOR /api/v1/platform/cloud-cost-allocations": {
   "classe": "ROTEADOR",

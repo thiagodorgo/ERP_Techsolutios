@@ -495,12 +495,21 @@ export class StatementService {
   /** Baixa do crédito como perda (G7): exige motivo. */
   async writeOffCredit(input: { readonly tenantId: string; readonly creditId: string; readonly note: string; readonly actorId: string }) {
     const note = requireReason(input.note, "note");
-    return this.repository.transaction(input.tenantId, async (tx) => {
+    const saved = await this.repository.transaction(input.tenantId, async (tx) => {
       const credit = await tx.lockCredit(input.creditId);
       if (!credit) throw new StatementError(404, "credit_not_found", "Credit not found.");
       if (credit.status !== "open") throw new StatementError(422, "credit_not_open", "Only open credits can be written off.");
       return tx.saveCredit({ ...credit, status: "written_off", resolvedBy: input.actorId, resolutionNote: note });
     });
+    // Baixa de crédito é movimento de dinheiro: entra na trilha (só id, origem e centavos — a nota não entra).
+    await this.audit.record({
+      tenantId: input.tenantId,
+      actorId: input.actorId,
+      action: "subscription_statement.credit_written_off",
+      entityId: saved.originStatementId,
+      metadata: { creditId: saved.id, amountCents: saved.amountCents },
+    });
+    return saved;
   }
 
   private async lockOrNotFound(tx: StatementTx, statementId: string): Promise<SubscriptionStatement> {

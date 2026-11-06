@@ -268,13 +268,15 @@ test("T-ST-54/55 · pagamento em cancelled → crédito inteiro paid_after_cance
 });
 
 test("T-ST-56/57/58 · aplicar crédito num reaberto abate no refechamento; write-off exige motivo; crédito de outra organização = 404", async () => {
-  const { service } = setup({ async resolve() { return readyInputs({ monthlyPriceCents: 10_000 }); } });
+  const { service, events } = setup({ async resolve() { return readyInputs({ monthlyPriceCents: 10_000 }); } });
   const statement = await closedStatement(service);
   const { credit } = await service.recordProviderPayment({ tenantId: TENANT, statementId: statement.id, source: "asaas", externalChargeId: "p1", amountCents: 12_000, method: null, now: NOV_1_0030_SP });
   await rejects(service.applyCredit({ tenantId: OTHER, creditId: credit!.id, statementId: statement.id, actorId: "u", now: NOV_1_0030_SP }), "credit_not_found");
   await rejects(service.writeOffCredit({ tenantId: TENANT, creditId: credit!.id, note: "", actorId: "u" }), "note_required");
   const written = await service.writeOffCredit({ tenantId: TENANT, creditId: credit!.id, note: "valor irrisório", actorId: "u" });
   assert.equal(written.status, "written_off");
+  const trail = events.find((event) => event.action === "subscription_statement.credit_written_off");
+  assert.deepEqual(trail?.metadata, { creditId: written.id, amountCents: 2_000 }, "baixa de crédito entra na trilha, sem a nota");
 });
 
 test("T-ST-56b · crédito aplicado entra como credits_applied e abate o total do refechamento", async () => {

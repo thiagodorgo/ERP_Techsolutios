@@ -11,6 +11,11 @@ import { Router, type Request } from "express";
 import { handleAsyncRoute, readRouteParam } from "../../core-saas/routes/http.js";
 import { requirePlatformPermission } from "../../platform/platform-permissions.js";
 import { centsToMoney, moneyToCents } from "../plans/plan-money.js";
+import {
+  BillingProfileError,
+  parseBillingProfileInput,
+  toBillingProfileDto,
+} from "../billing-profile/billing-profile.js";
 import { createDefaultStatementRuntime } from "./statement.factory.js";
 import { StatementError, type StatementPayment, type SubscriptionCredit, type SubscriptionStatement } from "./statement.types.js";
 
@@ -302,6 +307,44 @@ export function createStatementsPlatformRouter(): Router {
         actorId: actorId(request),
       });
       response.status(200).json({ data: toCreditDto(credit) });
+    }),
+  );
+
+  // F8 — perfil de cobrança (G12). PUT incompleto é rascunho aceito; `complete`/`missing[]` dizem o que falta.
+  router.get(
+    "/tenants/:tenantId/billing-profile",
+    requirePlatformPermission("platform:billing:read"),
+    handleAsyncRoute(async (request, response) => {
+      const tenantId = requireTenantId(readRouteParam(request.params.tenantId));
+      const { billingProfiles, tenants } = await createDefaultStatementRuntime();
+      if (!(await tenants.getTenantById(tenantId))) throw new BillingProfileError(404, "tenant_not_found", "Organization not found.");
+      response.status(200).json({ data: toBillingProfileDto(tenantId, await billingProfiles.find(tenantId)) });
+    }),
+  );
+
+  router.put(
+    "/tenants/:tenantId/billing-profile",
+    requirePlatformPermission("platform:billing:manage"),
+    handleAsyncRoute(async (request, response) => {
+      const tenantId = requireTenantId(readRouteParam(request.params.tenantId));
+      const input = parseBillingProfileInput(body(request));
+      const { billingProfiles, tenants, audit } = await createDefaultStatementRuntime();
+      const tenant = await tenants.getTenantById(tenantId);
+      if (!tenant) throw new BillingProfileError(404, "tenant_not_found", "Organization not found.");
+      if (tenant.slug === "platform") {
+        throw new BillingProfileError(422, "platform_organization", "The platform organization has no billing profile.");
+      }
+      const saved = await billingProfiles.upsert(tenantId, input, new Date());
+      const dto = toBillingProfileDto(tenantId, saved);
+      // Documento, e-mail e endereço são dado pessoal: a trilha leva só o estado de completude.
+      await audit.record({
+        tenantId,
+        actorId: actorId(request),
+        action: "subscription_billing_profile.updated",
+        entityId: saved.id,
+        metadata: { complete: dto.complete, missingCount: dto.missing.length, paymentMethod: dto.paymentMethod },
+      });
+      response.status(200).json({ data: dto });
     }),
   );
 

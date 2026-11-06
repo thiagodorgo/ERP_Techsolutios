@@ -15,6 +15,19 @@ import {
 import { InMemoryStatementRepository, type StatementRepository } from "./statement.repository.js";
 import { StatementService, type StatementAuditSink } from "./statement.service.js";
 import type { StatementAuditEvent } from "./statement.types.js";
+import {
+  InMemoryBillingProfileRepository,
+  type BillingProfileRepository,
+} from "../billing-profile/billing-profile.js";
+import type { TenantLookup } from "../plans/subscriptions.service.js";
+
+export type StatementRuntime = {
+  readonly service: StatementService;
+  readonly repository: StatementRepository;
+  readonly billingProfiles: BillingProfileRepository;
+  readonly tenants: TenantLookup;
+  readonly audit: StatementAuditSink;
+};
 
 export class RecordingStatementAuditSink implements StatementAuditSink {
   readonly events: StatementAuditEvent[] = [];
@@ -25,7 +38,8 @@ export class RecordingStatementAuditSink implements StatementAuditSink {
 
 let memoryRepository = new InMemoryStatementRepository();
 let memoryAudit = new RecordingStatementAuditSink();
-let prismaRuntime: Promise<{ service: StatementService; repository: StatementRepository }> | undefined;
+let memoryProfiles = new InMemoryBillingProfileRepository();
+let prismaRuntime: Promise<StatementRuntime> | undefined;
 
 export function getMemoryStatementRepositoryForTests(): InMemoryStatementRepository {
   return memoryRepository;
@@ -38,6 +52,7 @@ export function getMemoryStatementAuditForTests(): RecordingStatementAuditSink {
 export function resetStatementRuntimeForTests(): void {
   memoryRepository = new InMemoryStatementRepository();
   memoryAudit = new RecordingStatementAuditSink();
+  memoryProfiles = new InMemoryBillingProfileRepository();
   prismaRuntime = undefined;
 }
 
@@ -55,9 +70,15 @@ function memoryService(): StatementService {
   );
 }
 
-export async function createDefaultStatementRuntime(): Promise<{ service: StatementService; repository: StatementRepository }> {
+export async function createDefaultStatementRuntime(): Promise<StatementRuntime> {
   if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
-    return { service: memoryService(), repository: memoryRepository };
+    return {
+      service: memoryService(),
+      repository: memoryRepository,
+      billingProfiles: memoryProfiles,
+      tenants: getMemoryTenantLookupForTests(),
+      audit: memoryAudit,
+    };
   }
   prismaRuntime ??= import("./statement.prisma-runtime.js").then((module) => module.createPrismaStatementRuntime());
   return prismaRuntime;

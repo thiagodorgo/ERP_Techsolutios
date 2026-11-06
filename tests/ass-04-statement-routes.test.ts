@@ -396,3 +396,98 @@ async function requestJson(
 function closeServer(server: Server): Promise<void> {
   return new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
 }
+
+// ------------------------------------------------------------------------------------ F8 · perfil de cobrança
+
+const VALID_CNPJ = "11.222.333/0001-81";
+const VALID_CNPJ_ALNUM = "12ABC34501DE35";
+const VALID_CPF = "529.982.247-25";
+
+test("T-ST-59: PUT incompleto → 200 com complete=false e missing[]; GET reflete", async () => {
+  await withApi(async (baseUrl) => {
+    const tenantId = await seedTenant();
+    const path = `/api/v1/platform/billing/tenants/${tenantId}/billing-profile`;
+    const empty = await requestJson(baseUrl, path, { headers: PLATFORM });
+    assert.equal(empty.status, 200);
+    assert.equal(empty.body.data.complete, false);
+    assert.equal(empty.body.data.missing.length, 10);
+
+    const draft = await requestJson(baseUrl, path, {
+      method: "PUT",
+      headers: PLATFORM,
+      body: { legalName: "Pátio Exemplo Ltda", document: VALID_CNPJ, email: "financeiro@exemplo.com.br" },
+    });
+    assert.equal(draft.status, 200);
+    assert.equal(draft.body.data.complete, false);
+    assert.equal(draft.body.data.document, "11222333000181");
+    assert.deepEqual(draft.body.data.missing, ["address.postalCode", "address.street", "address.number", "address.district", "address.city", "address.state", "paymentMethod"]);
+
+    const full = await requestJson(baseUrl, path, {
+      method: "PUT",
+      headers: PLATFORM,
+      body: {
+        legalName: "Pátio Exemplo Ltda",
+        document: VALID_CNPJ,
+        email: "financeiro@exemplo.com.br",
+        address: { postalCode: "01310-100", street: "Av. Paulista", number: "1000", district: "Bela Vista", city: "São Paulo", cityIbge: "3550308", state: "sp" },
+        paymentMethod: "pix",
+      },
+    });
+    assert.equal(full.status, 200);
+    assert.equal(full.body.data.complete, true);
+    assert.deepEqual(full.body.data.missing, []);
+    assert.equal(full.body.data.address.state, "SP");
+
+    const read = await requestJson(baseUrl, path, { headers: PLATFORM });
+    assert.equal(read.body.data.complete, true);
+    assert.equal(read.body.data.address.postalCode, "01310100");
+  });
+});
+
+test("T-ST-60: documento inválido → 422 document_invalid (CNPJ de 13, DV errado, CPF repetido); CNPJ alfanumérico e CPF válidos passam", async () => {
+  await withApi(async (baseUrl) => {
+    const tenantId = await seedTenant();
+    const path = `/api/v1/platform/billing/tenants/${tenantId}/billing-profile`;
+    for (const document of ["1122233300018", "11.222.333/0001-82", "111.111.111-11", "12ABC34501DE36", "abc"]) {
+      const response = await requestJson(baseUrl, path, { method: "PUT", headers: PLATFORM, body: { document } });
+      assert.equal(response.status, 422, document);
+      assert.equal(response.body.error.reason, "document_invalid", document);
+    }
+    for (const [document, expected] of [[VALID_CNPJ_ALNUM, "12ABC34501DE35"], [VALID_CPF, "52998224725"], ["12.abc.345/01de-35", "12ABC34501DE35"]]) {
+      const response = await requestJson(baseUrl, path, { method: "PUT", headers: PLATFORM, body: { document } });
+      assert.equal(response.status, 200, document);
+      assert.equal(response.body.data.document, expected);
+    }
+  });
+});
+
+test("T-ST-61: organização inexistente → 404; organização de sistema → 422; ator de organização → 403; trilha sem dado pessoal", async () => {
+  await withApi(async (baseUrl) => {
+    const missing = await requestJson(baseUrl, "/api/v1/platform/billing/tenants/ten_nope/billing-profile", { headers: PLATFORM });
+    assert.equal(missing.status, 404);
+
+    getMemoryTenantLookupForTests().upsert({ id: "ten_platform_sys", slug: "platform" });
+    const system = await requestJson(baseUrl, "/api/v1/platform/billing/tenants/ten_platform_sys/billing-profile", {
+      method: "PUT",
+      headers: PLATFORM,
+      body: { legalName: "Plataforma" },
+    });
+    assert.equal(system.status, 422);
+    assert.equal(system.body.error.reason, "platform_organization");
+
+    const tenantId = await seedTenant();
+    const path = `/api/v1/platform/billing/tenants/${tenantId}/billing-profile`;
+    const denied = await requestJson(baseUrl, path, { method: "PUT", headers: TENANT_MANAGER, body: {} });
+    assert.equal(denied.status, 403);
+
+    await requestJson(baseUrl, path, {
+      method: "PUT",
+      headers: PLATFORM,
+      body: { legalName: "Pátio Exemplo Ltda", document: VALID_CPF, email: "pessoa@exemplo.com.br" },
+    });
+    const event = getMemoryStatementAuditForTests().events.find((item) => item.tenantId === tenantId && item.action === "subscription_billing_profile.updated");
+    assert.ok(event, "PUT do perfil entra na trilha");
+    const serialized = JSON.stringify(event.metadata);
+    for (const leak of ["52998224725", "pessoa@", "Pátio Exemplo"]) assert.equal(serialized.includes(leak), false, `vazou ${leak}`);
+  });
+});
