@@ -10,6 +10,7 @@ import { randomUUID } from "node:crypto";
 
 import { pickBillingAuditMetadata } from "../platform-audit/audit-metadata.js";
 import type { PlatformAuditWriter } from "../plans/platform-audit.js";
+import type { CredentialSummary, ProviderCredentialSummaries } from "../providers/provider-config.service.js";
 import { fingerprintOf, last4Of, openSecret, sealSecret, vaultAad, VaultError } from "./vault.crypto.js";
 import { keyForVersion, vaultStatus, type VaultKeyProvider, type VaultStatus } from "./vault-keys.js";
 import type { CredentialKind, CredentialRepository, ProviderEnvironment, StoredCredential } from "./vault.repository.js";
@@ -21,13 +22,7 @@ export function isCredentialKind(value: unknown): value is CredentialKind {
   return typeof value === "string" && (CREDENTIAL_KINDS as readonly string[]).includes(value);
 }
 
-export type CredentialSummary = {
-  readonly kind: CredentialKind;
-  readonly fingerprint: string;
-  readonly last4: string;
-  readonly createdAt: Date;
-  readonly keyVersion: number;
-};
+export type { CredentialSummary };
 
 export type CredentialInput =
   | { readonly kind: "api_token" | "webhook_secret"; readonly secret: string }
@@ -76,7 +71,7 @@ export function summaryOf(row: StoredCredential): CredentialSummary {
   return { kind: row.kind, fingerprint: row.fingerprint, last4: row.last4, createdAt: row.createdAt, keyVersion: row.keyVersion };
 }
 
-export class VaultService {
+export class VaultService implements ProviderCredentialSummaries {
   constructor(
     private readonly repository: CredentialRepository,
     private readonly keys: VaultKeyProvider,
