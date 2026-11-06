@@ -58,3 +58,24 @@ Plano: `B-ASSINATURA` §4.4 (fora do repositório, `erp-pausa-2026-10-03/planos/
   | descartar o excedente | T-ST-53/54/55, 3 fail |
 
 - **Declarado:** o `refund` do crédito enfileira na outbox do B-ASS-08 e fica fora deste bloco. Aqui só existem `apply` e `write-off`. Os estados da cobrança e da nota (`charge_status`, `invoice_status`) só mudam pelo canal (B-ASS-06..08). Nos testes, eles são forçados por `setChannelState` do dublê.
+
+## Permissões (parte de F7/F11) + M3b — `dev-ass04-opus`
+
+- **Catálogo** (`catalog.ts`, `platform-permissions.ts`):
+  - `+platform:billing:settle`;
+  - `billing:read` para manager, finance, auditor e support, conforme `RBAC_MATRIX.md:50`. O `tenant_admin` já tinha, porque recebe todo o catálogo que não é de plataforma.
+- **M3b** `20260897000000_ass04_billing_permissions`:
+  - aditiva, idempotente, com BEGIN/COMMIT e rollback no rodapé;
+  - concede `settle` só ao super_admin e `billing:read` só aos 5 papéis.
+- **Drill** `tests/ass-04-billing-permissions-migration-drill-db.test.ts`, do molde B-SAN3-12a. Faz deploy real em base própria e confere:
+  - a concessão exata por papel;
+  - que operator, inventory e field_technician ficam sem;
+  - a idempotência;
+  - o rollback do rodapé e o re-apply;
+  - a paridade depois do `provision-rbac`.
+- **Guards:**
+  - `core-saas` (+1 chave literal);
+  - snapshot `role-catalog-contract`, regenerado do catálogo com o diff cirúrgico de +6 linhas: 4× `billing:read` e 2× `platform:billing:settle`, nenhuma removida;
+  - `permission-catalog-migration-parity`: `billing:read` saiu da linha de base `PERMISSOES_HERDADAS_DO_SEED`, porque a dívida foi paga.
+- **Pendente na F9:** a linha Billing do `san3-04a` deixa de ser `skip`, e `billing:read` sai das órfãs, quando a rota do cliente (`GET /billing/subscription`) existir. Até lá o guard a vê, corretamente, como órfã.
+- **Bateria:** guards, drill, motor e serviço = **102/102**. `migration-transaction-guard`: 0 violações. `check`: 0 erros.

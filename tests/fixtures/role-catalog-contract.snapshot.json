@@ -79,6 +79,7 @@
       "platform:audit:read",
       "platform:billing:read",
       "platform:billing:manage",
+      "platform:billing:settle",
       "tenant.manage",
       "users.manage",
       "users.read",
@@ -460,6 +461,7 @@
       "authority_credentials:manage"
     ],
     "manager": [
+      "billing:read",
       "dashboard:read",
       "users.read",
       "audit.read",
@@ -753,6 +755,7 @@
       "platform:audit:read",
       "platform:billing:read",
       "platform:billing:manage",
+      "platform:billing:settle",
       "tenant.manage",
       "users.manage",
       "users.read",
@@ -1014,6 +1017,7 @@
       "checklist_runs:complete"
     ],
     "finance": [
+      "billing:read",
       "finance.manage",
       "finance.read",
       "os.read",
@@ -1141,6 +1145,7 @@
       "checklist_runs:acknowledge"
     ],
     "auditor": [
+      "billing:read",
       "dashboard:read",
       "users.read",
       "audit.read",
@@ -1199,6 +1204,7 @@
       "checklist_runs:read"
     ],
     "support": [
+      "billing:read",
       "dashboard:read",
       "reports:read",
       "purchase_orders:read",

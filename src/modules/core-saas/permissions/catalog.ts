@@ -14,6 +14,8 @@ export const PERMISSION_CATALOG = [
   "platform:audit:read",
   "platform:billing:read",
   "platform:billing:manage",
+  // B-ASS-04 — baixa manual, estorno, reabrir, cancelar, ajustar e créditos do demonstrativo (plano §3.7).
+  "platform:billing:settle",
   "tenant.manage",
   "users.manage",
   "users.read",
@@ -425,6 +427,8 @@ export const ROLE_PERMISSIONS = {
   super_admin: PERMISSION_CATALOG,
   tenant_admin: TENANT_ADMIN_PERMISSIONS,
   manager: [
+    // B-ASS-04 — RBAC_MATRIX.md:50 (Billing: manager = read).
+    "billing:read",
     "dashboard:read",
     "users.read",
     "audit.read",
@@ -825,6 +829,8 @@ export const ROLE_PERMISSIONS = {
     "checklist_runs:complete",
   ],
   finance: [
+    // B-ASS-04 — RBAC_MATRIX.md:50 (Billing: finance = full; a escrita é da plataforma, então aqui é leitura).
+    "billing:read",
     "finance.manage",
     "finance.read",
     "os.read",
@@ -976,6 +982,8 @@ export const ROLE_PERMISSIONS = {
     "checklist_runs:acknowledge",
   ],
   auditor: [
+    // B-ASS-04 — RBAC_MATRIX.md:50 (Billing: auditor = read).
+    "billing:read",
     "dashboard:read",
     "users.read",
     "audit.read",
@@ -1045,7 +1053,8 @@ export const ROLE_PERMISSIONS = {
   ],
   // PR-SCALE-1 — support: reports:read (support-scoped) + purchase_orders:read (RBAC_MATRIX "Purchasing"=support-view
   // = leitura constrangida, só read). NÃO recebe purchase_orders:create.
-  support: ["dashboard:read", "reports:read", "purchase_orders:read", "users.read", "audit.read", "audit:read", "os.read", "notifications:read", "tenant_checklists:read", "checklist_runs:read"],
+  // B-ASS-04 — RBAC_MATRIX.md:50 (Billing: support = support-view → billing:read).
+  support: ["billing:read", "dashboard:read", "reports:read", "purchase_orders:read", "users.read", "audit.read", "audit:read", "os.read", "notifications:read", "tenant_checklists:read", "checklist_runs:read"],
 } as const satisfies Record<Role, readonly Permission[]>;
 
 // B-SAN3-04a (item 15, P-RBAC-CHECKLIST-DRIFT) — REVOGAÇÕES DELIBERADAS, NOMEADAS. `scripts/provision-rbac.ts` é

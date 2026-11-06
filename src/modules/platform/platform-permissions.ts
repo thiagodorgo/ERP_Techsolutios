@@ -25,6 +25,7 @@ export const PLATFORM_PERMISSIONS = [
   "platform:health:read",
   "platform:billing:read",
   "platform:billing:manage",
+  "platform:billing:settle",
 ] as const;
 
 export type PlatformPermission = (typeof PLATFORM_PERMISSIONS)[number];
