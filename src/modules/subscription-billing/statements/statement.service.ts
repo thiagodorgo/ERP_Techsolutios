@@ -153,19 +153,26 @@ export class StatementService {
           ...(resolved.gaps.length > 0 ? { gaps: [...resolved.gaps] } : {}),
         },
       });
-      return { kind: "closed", statement: saved, alreadyClosed: false } as const;
-    });
-
-    if (result.kind === "closed") {
-      await this.audit.record({
+      await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
         action: "subscription_statement.closed",
-        entityId: result.statement.id,
-        metadata: { period: input.period, status: result.statement.status, totalCents: result.statement.totalCents },
+        entityId: saved.id,
+        metadata: { period: input.period, status: saved.status, totalCents: saved.totalCents },
       });
-    }
+      return { kind: "closed", statement: saved, alreadyClosed: false } as const;
+    });
+
     return result;
+  }
+
+  /**
+   * A trilha entra NA MESMA transação do movimento (§3.6): se a gravação da trilha falhar, o movimento é desfeito.
+   * Dinheiro que anda sem rastro é o defeito que isto fecha. O dublê em memória, sem `recordAudit`, grava no sink.
+   */
+  private async trail(tx: StatementTx, event: StatementAuditEvent): Promise<void> {
+    if (tx.recordAudit) await tx.recordAudit(event);
+    else await this.audit.record(event);
   }
 
   /** Reabrir (regra 5): só sem pagamento, sem cobrança viva e sem nota viva; vira `reopened`. */
@@ -185,7 +192,7 @@ export class StatementService {
       if (current.invoiceStatus === "pending" || current.invoiceStatus === "authorized" || current.invoiceStatus === "cancel_pending") {
         throw new StatementError(422, "invoice_outstanding", "The statement has a live invoice.");
       }
-      return tx.saveStatement({
+      const reopened = await tx.saveStatement({
         ...current,
         status: "reopened",
         reopenedAt: input.now,
@@ -196,13 +203,14 @@ export class StatementService {
           history: [...current.snapshot.history, { at: input.now.toISOString(), event: "reopened", by: input.actorId, totalCents: current.totalCents, note: reason }],
         },
       });
-    });
-    await this.audit.record({
-      tenantId: input.tenantId,
-      actorId: input.actorId,
-      action: "subscription_statement.reopened",
-      entityId: saved.id,
-      metadata: { period: saved.period, status: saved.status },
+      await this.trail(tx, {
+        tenantId: input.tenantId,
+        actorId: input.actorId,
+        action: "subscription_statement.reopened",
+        entityId: reopened.id,
+        metadata: { period: reopened.period, status: reopened.status },
+      });
+      return reopened;
     });
     return saved;
   }
@@ -247,14 +255,14 @@ export class StatementService {
         status: paidCents >= current.totalCents ? "paid" : "closed",
         paidAt: paidCents >= current.totalCents ? input.now : current.paidAt,
       });
+      await this.trail(tx, {
+        tenantId: input.tenantId,
+        actorId: input.actorId,
+        action: "subscription_statement.payment_recorded",
+        entityId: statement.id,
+        metadata: { paymentId: payment.id, source: "manual", amountCents: input.amountCents, status: statement.status },
+      });
       return { statement, payment };
-    });
-    await this.audit.record({
-      tenantId: input.tenantId,
-      actorId: input.actorId,
-      action: "subscription_statement.payment_recorded",
-      entityId: result.statement.id,
-      metadata: { paymentId: result.payment.id, source: "manual", amountCents: input.amountCents, status: result.statement.status },
     });
     return result;
   }
@@ -288,14 +296,14 @@ export class StatementService {
         status: statement.status === "paid" && paidCents < statement.totalCents ? "closed" : statement.status,
         paidAt: paidCents >= statement.totalCents ? statement.paidAt : null,
       });
+      await this.trail(tx, {
+        tenantId: input.tenantId,
+        actorId: input.actorId,
+        action: "subscription_statement.payment_reversed",
+        entityId: savedStatement.id,
+        metadata: { paymentId: savedPayment.id, status: savedStatement.status },
+      });
       return { statement: savedStatement, payment: savedPayment };
-    });
-    await this.audit.record({
-      tenantId: input.tenantId,
-      actorId: input.actorId,
-      action: "subscription_statement.payment_reversed",
-      entityId: result.statement.id,
-      metadata: { paymentId: result.payment.id, status: result.statement.status },
     });
     return result;
   }
@@ -314,7 +322,7 @@ export class StatementService {
       if (current.invoiceStatus === "pending" || current.invoiceStatus === "authorized" || current.invoiceStatus === "cancel_pending") {
         throw new StatementError(422, "invoice_outstanding", "The statement has a live invoice.");
       }
-      return tx.saveStatement({
+      const cancelled = await tx.saveStatement({
         ...current,
         status: "cancelled",
         cancelledAt: input.now,
@@ -325,13 +333,14 @@ export class StatementService {
           history: [...current.snapshot.history, { at: input.now.toISOString(), event: "cancelled", by: input.actorId, totalCents: current.totalCents, note: reason }],
         },
       });
-    });
-    await this.audit.record({
-      tenantId: input.tenantId,
-      actorId: input.actorId,
-      action: "subscription_statement.cancelled",
-      entityId: saved.id,
-      metadata: { period: saved.period, status: saved.status },
+      await this.trail(tx, {
+        tenantId: input.tenantId,
+        actorId: input.actorId,
+        action: "subscription_statement.cancelled",
+        entityId: cancelled.id,
+        metadata: { period: cancelled.period, status: cancelled.status },
+      });
+      return cancelled;
     });
     return saved;
   }
@@ -357,7 +366,7 @@ export class StatementService {
       if (projectedTotal < 0) {
         throw new StatementError(422, "adjustment_exceeds_total", "The adjustment would make the total negative.");
       }
-      return tx.saveStatement({
+      const adjusted = await tx.saveStatement({
         ...current,
         adjustmentsCents,
         adjustmentNote: note,
@@ -366,13 +375,14 @@ export class StatementService {
           history: [...current.snapshot.history, { at: input.now.toISOString(), event: "adjusted", by: input.actorId, totalCents: projectedTotal, note }],
         },
       });
-    });
-    await this.audit.record({
-      tenantId: input.tenantId,
-      actorId: input.actorId,
-      action: "subscription_statement.adjusted",
-      entityId: saved.id,
-      metadata: { deltaCents: input.deltaCents, adjustmentsCents: saved.adjustmentsCents },
+      await this.trail(tx, {
+        tenantId: input.tenantId,
+        actorId: input.actorId,
+        action: "subscription_statement.adjusted",
+        entityId: adjusted.id,
+        metadata: { deltaCents: input.deltaCents, adjustmentsCents: adjusted.adjustmentsCents },
+      });
+      return adjusted;
     });
     return saved;
   }
@@ -440,24 +450,24 @@ export class StatementService {
             createdBy: null,
           })
         : null;
-      return { statement, payment, credit };
-    });
-    await this.audit.record({
-      tenantId: input.tenantId,
-      actorId: null,
-      action: "subscription_statement.payment_recorded",
-      entityId: result.statement.id,
-      metadata: { paymentId: result.payment.id, source: input.source, amountCents: input.amountCents, appliedCents: result.payment.appliedCents },
-    });
-    if (result.credit) {
-      await this.audit.record({
+      await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: null,
-        action: "subscription_statement.credit_created",
-        entityId: result.credit.id,
-        metadata: { statementId: result.statement.id, amountCents: result.credit.amountCents, reason: result.credit.reason },
+        action: "subscription_statement.payment_recorded",
+        entityId: statement.id,
+        metadata: { paymentId: payment.id, source: input.source, amountCents: input.amountCents, appliedCents: payment.appliedCents },
       });
-    }
+      if (credit) {
+        await this.trail(tx, {
+          tenantId: input.tenantId,
+          actorId: null,
+          action: "subscription_statement.credit_created",
+          entityId: credit.id,
+          metadata: { statementId: statement.id, amountCents: credit.amountCents, reason: credit.reason },
+        });
+      }
+      return { statement, payment, credit };
+    });
     return result;
   }
 
@@ -480,14 +490,14 @@ export class StatementService {
         },
       });
       const savedCredit = await tx.saveCredit({ ...credit, status: "applied", appliedToStatementId: statement.id, resolvedBy: input.actorId });
+      await this.trail(tx, {
+        tenantId: input.tenantId,
+        actorId: input.actorId,
+        action: "subscription_statement.credit_applied",
+        entityId: savedStatement.id,
+        metadata: { creditId: savedCredit.id, amountCents: savedCredit.amountCents },
+      });
       return { statement: savedStatement, credit: savedCredit };
-    });
-    await this.audit.record({
-      tenantId: input.tenantId,
-      actorId: input.actorId,
-      action: "subscription_statement.credit_applied",
-      entityId: result.statement.id,
-      metadata: { creditId: result.credit.id, amountCents: result.credit.amountCents },
     });
     return result;
   }
@@ -499,15 +509,16 @@ export class StatementService {
       const credit = await tx.lockCredit(input.creditId);
       if (!credit) throw new StatementError(404, "credit_not_found", "Credit not found.");
       if (credit.status !== "open") throw new StatementError(422, "credit_not_open", "Only open credits can be written off.");
-      return tx.saveCredit({ ...credit, status: "written_off", resolvedBy: input.actorId, resolutionNote: note });
-    });
-    // Baixa de crédito é movimento de dinheiro: entra na trilha (só id, origem e centavos — a nota não entra).
-    await this.audit.record({
-      tenantId: input.tenantId,
-      actorId: input.actorId,
-      action: "subscription_statement.credit_written_off",
-      entityId: saved.originStatementId,
-      metadata: { creditId: saved.id, amountCents: saved.amountCents },
+      const writtenOff = await tx.saveCredit({ ...credit, status: "written_off", resolvedBy: input.actorId, resolutionNote: note });
+      // Baixa de crédito é movimento de dinheiro: entra na trilha (só id, origem e centavos — a nota não entra).
+      await this.trail(tx, {
+        tenantId: input.tenantId,
+        actorId: input.actorId,
+        action: "subscription_statement.credit_written_off",
+        entityId: writtenOff.originStatementId,
+        metadata: { creditId: writtenOff.id, amountCents: writtenOff.amountCents },
+      });
+      return writtenOff;
     });
     return saved;
   }

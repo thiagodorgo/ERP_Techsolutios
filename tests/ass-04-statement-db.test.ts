@@ -321,3 +321,65 @@ if (!connectionString) {
     assert.equal(rows[0]!.status, "reopened");
   });
 }
+
+if (process.env.DATABASE_URL) {
+  test("T-ST-db-10: trilha na MESMA transação — se a gravação da trilha falha, o pagamento é desfeito (fail-closed)", async () => {
+    const [{ PrismaPg }, { PrismaClient: Client }, runtime, inputsModule, serviceModule, plans, subs, lookup] = await Promise.all([
+      import("@prisma/adapter-pg"),
+      import("@prisma/client"),
+      import("../src/modules/subscription-billing/statements/statement.prisma-runtime.js"),
+      import("../src/modules/subscription-billing/statements/statement.inputs-provider.js"),
+      import("../src/modules/subscription-billing/statements/statement.service.js"),
+      import("../src/modules/subscription-billing/plans/plans-prisma.repository.js"),
+      import("../src/modules/subscription-billing/plans/subscriptions-prisma.repository.js"),
+      import("../src/modules/subscription-billing/plans/tenant-lookup.prisma.js"),
+    ]);
+    const admin = new Client({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
+    const slug = `ass04-trail-${randomUUID().slice(0, 8)}`;
+    const tenantId = (await admin.$queryRawUnsafe<Array<{ id: string }>>(`INSERT INTO tenants (name, slug) VALUES ($1, $1) RETURNING id`, slug))[0]!.id;
+    const planId = (
+      await admin.$queryRawUnsafe<Array<{ id: string }>>(`INSERT INTO subscription_plans (code, kind, name) VALUES ($1, 'base', $1) RETURNING id`, slug.replaceAll("-", "_"))
+    )[0]!.id;
+    try {
+      await admin.$executeRawUnsafe(
+        `INSERT INTO subscription_plan_versions (plan_id, version, valid_from, monthly_price, included_users, included_storage_gb, extra_user_price, extra_gb_price, pricing_unit, modules)
+         VALUES ($1::uuid, 1, $2::timestamptz, 100.00, 10, 10.000, 5.00, 2.00, 'flat', ARRAY['dashboard']::text[])`,
+        planId,
+        OCT_1,
+      );
+      await admin.$executeRawUnsafe(`INSERT INTO tenant_subscriptions (tenant_id, plan_id, valid_from) VALUES ($1::uuid, $2::uuid, $3::timestamptz)`, tenantId, planId, OCT_1);
+      const repository = new runtime.PrismaStatementRepository(admin);
+      const inputs = new inputsModule.RepositoryStatementInputsProvider(
+        new subs.PrismaSubscriptionsRepository(admin),
+        new plans.PrismaPlansRepository(admin),
+        new lookup.PrismaTenantLookup(admin),
+        new runtime.PrismaUsageSource(admin),
+        new runtime.PrismaBindingsSource(admin),
+      );
+      const service = new serviceModule.StatementService(repository, inputs, new runtime.PrismaStatementAuditSink(admin));
+      const closed = await service.close({ tenantId, period: PERIOD, now: NOW, actorId: null, source: "job" });
+      const statementId = (closed as { statement: { id: string } }).statement.id;
+
+      // Ator com id UUID que não existe em `users`: a FK de audit_logs.actor_user_id recusa a linha da trilha.
+      await assert.rejects(
+        service.recordManualPayment({ tenantId, statementId, amountCents: 1_000, method: null, note: null, actorId: randomUUID(), now: NOW }),
+      );
+      const rows = await admin.$queryRawUnsafe<Array<{ paid: string; payments: number; trail: number }>>(
+        `SELECT s.paid_amount::text AS paid,
+                (SELECT count(*)::int FROM subscription_statement_payments p WHERE p.statement_id = s.id) AS payments,
+                (SELECT count(*)::int FROM audit_logs a WHERE a.tenant_id = s.tenant_id AND a.action = 'subscription_statement.payment_recorded') AS trail
+           FROM subscription_statements s WHERE s.id = $1::uuid`,
+        statementId,
+      );
+      assert.deepEqual(rows[0], { paid: "0.00", payments: 0, trail: 0 }, "sem trilha, o dinheiro não anda");
+    } finally {
+      for (const table of ["audit_logs", "subscription_statement_payments", "subscription_statements", "tenant_subscriptions"]) {
+        await admin.$executeRawUnsafe(`DELETE FROM ${table} WHERE tenant_id = $1::uuid`, tenantId);
+      }
+      await admin.$executeRawUnsafe(`DELETE FROM tenants WHERE id = $1::uuid`, tenantId);
+      await admin.$executeRawUnsafe(`DELETE FROM subscription_plan_versions WHERE plan_id = $1::uuid`, planId);
+      await admin.$executeRawUnsafe(`DELETE FROM subscription_plans WHERE id = $1::uuid`, planId);
+      await admin.$disconnect();
+    }
+  });
+}

@@ -5,6 +5,7 @@
 import { randomUUID } from "node:crypto";
 
 import type {
+  StatementAuditEvent,
   StatementPayment,
   SubscriptionCredit,
   SubscriptionStatement,
@@ -27,6 +28,8 @@ export type StatementTx = {
   insertCredit(input: NewCredit): Promise<SubscriptionCredit>;
   lockCredit(creditId: string): Promise<SubscriptionCredit | undefined>;
   saveCredit(credit: SubscriptionCredit): Promise<SubscriptionCredit>;
+  /** Grava a trilha NA MESMA transação (Prisma). Ausente no dublê: o serviço grava no sink, dentro da fila serializada. */
+  recordAudit?(event: StatementAuditEvent): Promise<void>;
 };
 
 export type StatementRepository = {

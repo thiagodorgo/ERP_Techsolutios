@@ -81,6 +81,19 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`PUT ${P}/billing/tenants/:tenantId/subscription`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "tenant_subscription_addons"], "withTenantRls")],
   [`DELETE ${P}/billing/tenants/:tenantId/subscription`, S("FORCE-POR-TENANT", ["tenant_subscriptions", "tenant_subscription_addons"], "withTenantRls")],
   [`GET ${P}/billing/tenants/:tenantId/usage`, S("FORCE-POR-TENANT", ["tenant_usage_daily"], "withTenantRls (medição diária do B-ASS-03)")],
+  [`GET ${P}/billing/statements`, S("FORCE-POR-TENANT", ["subscription_statements"], "listStatements sob withTenantRls (B-ASS-04)")],
+  [`GET ${P}/billing/statements/:statementId`, S("FORCE-POR-TENANT", ["subscription_statements", "subscription_statement_payments", "subscription_credits"], "findStatement + pagamentos + créditos sob withTenantRls")],
+  [`POST ${P}/billing/statements/close`, S("FORCE-POR-TENANT", ["subscription_statements", "audit_logs"], "fechamento manual: INSERT … ON CONFLICT + FOR UPDATE sob withTenantRls")],
+  [`POST ${P}/billing/statements/:statementId/reopen`, S("FORCE-POR-TENANT", ["subscription_statements", "audit_logs"], "FOR UPDATE sob withTenantRls")],
+  [`PATCH ${P}/billing/statements/:statementId/adjustment`, S("FORCE-POR-TENANT", ["subscription_statements", "audit_logs"], "FOR UPDATE sob withTenantRls")],
+  [`POST ${P}/billing/statements/:statementId/payments`, S("FORCE-POR-TENANT", ["subscription_statements", "subscription_statement_payments", "audit_logs"], "baixa manual sob withTenantRls")],
+  [`POST ${P}/billing/statements/:statementId/payments/:paymentId/reverse`, S("FORCE-POR-TENANT", ["subscription_statements", "subscription_statement_payments", "audit_logs"], "estorno manual sob withTenantRls")],
+  [`POST ${P}/billing/statements/:statementId/cancel`, S("FORCE-POR-TENANT", ["subscription_statements", "audit_logs"], "FOR UPDATE sob withTenantRls")],
+  [`GET ${P}/billing/credits`, S("FORCE-POR-TENANT", ["subscription_credits"], "listCredits sob withTenantRls")],
+  [`POST ${P}/billing/credits/:creditId/apply`, S("FORCE-POR-TENANT", ["subscription_credits", "subscription_statements", "audit_logs"], "FOR UPDATE do crédito e do demonstrativo sob withTenantRls")],
+  [`POST ${P}/billing/credits/:creditId/write-off`, S("FORCE-POR-TENANT", ["subscription_credits", "audit_logs"], "FOR UPDATE do crédito sob withTenantRls")],
+  [`GET ${P}/billing/tenants/:tenantId/billing-profile`, S("FORCE-POR-TENANT", ["tenant_billing_profiles"], "perfil de cobrança sob withTenantRls")],
+  [`PUT ${P}/billing/tenants/:tenantId/billing-profile`, S("FORCE-POR-TENANT", ["tenant_billing_profiles", "audit_logs"], "upsert por tenant_id sob withTenantRls")],
   [`GET ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`POST ${P}/tenants`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`GET ${P}/tenants/:tenantId`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
@@ -98,6 +111,7 @@ const JOBS: ReadonlyMap<string, EtiquetaJob> = new Map([
   ["checklist-attachment-postprocess", "FORA-DA-SUPERFICIE"],
   ["cloud-usage.aggregate-daily", "FORCE-PLATAFORMA"],
   ["subscription.measure-daily", "FORCE-PLATAFORMA"],
+  ["subscription.close-statements", "FORCE-PLATAFORMA"],
   ["notification-dispatch", "FORA-DA-SUPERFICIE"],
   ["notifications.scan-due", "FORA-DA-SUPERFICIE"],
   ["audit-log-fanout", "FORA-DA-SUPERFICIE"],
@@ -237,7 +251,10 @@ if (!connectionString) {
         import("../src/infra/jobs/job.registry.js"),
       ]);
 
-      const { runSubscriptionMeasureDaily } = await import("../src/modules/subscription-billing/subscription-billing.jobs.js");
+      const { runSubscriptionMeasureDaily, runSubscriptionCloseStatements, closeStatementsPeriod } = await import(
+        "../src/modules/subscription-billing/subscription-billing.jobs.js"
+      );
+      const { createDefaultStatementRuntime } = await import("../src/modules/subscription-billing/statements/statement.factory.js");
 
       const appClient = singleton as unknown as PrismaClient;
       let app: ReturnType<typeof createApp>;
@@ -514,6 +531,199 @@ if (!connectionString) {
           })),
         );
 
+        // B-ASS-04 — o demonstrativo: o job de fechamento e as 13 rotas de plataforma, cada uma com cenário próprio e
+        // efeito não vazio, projetado em campos estáveis (sem id nem relógio) para comparar os dois papéis.
+        {
+          const atorDemo = await admin.user.create({
+            data: { tenant_id: cenario.tenantA, name: "Ator do demonstrativo", email: `demo-${papel}-${suffix}@san3-05.test` },
+          });
+          const tokenDemo = await signAccessToken({
+            user_id: atorDemo.id,
+            tenant_id: cenario.tenantA,
+            email: `demo-${papel}-${suffix}@san3-05.test`,
+            roles: ["platform_admin"],
+          });
+          const httpDemo = async (method: string, path: string, body?: unknown): Promise<{ status: number; body: Record<string, unknown> }> => {
+            const response = await fetch(`${baseUrl}${path}`, {
+              method,
+              headers: { authorization: `Bearer ${tokenDemo}`, "content-type": "application/json" },
+              ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+            });
+            return { status: response.status, body: (await response.json()) as Record<string, unknown> };
+          };
+          const agora = new Date();
+          const periodo = closeStatementsPeriod(agora);
+          const [ano, mes] = periodo.split("-").map(Number) as [number, number];
+          const seguinte = mes === 12 ? `${ano + 1}-01` : `${ano}-${String(mes + 1).padStart(2, "0")}`;
+          const inicioPeriodo = new Date(`${periodo}-01T00:00:00-03:00`);
+          const fimPeriodo = new Date(`${seguinte}-01T00:00:00-03:00`);
+          const planoDemo = await admin.subscriptionPlan.create({
+            data: { code: `san3_05_st_${papel}_${suffix.replaceAll("-", "_")}`, kind: "base", name: "Plano do demonstrativo SAN3-05", description: "" },
+          });
+          await admin.subscriptionPlanVersion.create({
+            data: {
+              plan_id: planoDemo.id,
+              version: 1,
+              valid_from: new Date("2000-01-01T00:00:00.000Z"),
+              monthly_price: 100,
+              included_users: 0,
+              included_storage_gb: 0,
+              extra_user_price: 0,
+              extra_gb_price: 0,
+              pricing_unit: "flat",
+              modules: ["dashboard"],
+            },
+          });
+          const assinaturasDemo = await Promise.all(
+            [cenario.tenantA, cenario.tenantB].map((tenantId) =>
+              admin.tenantSubscription.create({
+                data: { tenant_id: tenantId, plan_id: planoDemo.id, valid_from: inicioPeriodo, valid_to: fimPeriodo },
+              }),
+            ),
+          );
+          const projetarDemonstrativo = (row: Record<string, unknown>) => ({
+            tenantId: tag(String(row.tenantId)),
+            period: row.period,
+            status: row.status,
+            totalAmount: row.totalAmount,
+            paidAmount: row.paidAmount,
+            balance: row.balance,
+            adjustmentsAmount: row.adjustmentsAmount,
+          });
+
+          // O job roda sob o papel de runtime do app (job de sistema), como o da medição.
+          const papelHttpDemo = alvo.atual;
+          alvo.atual = efemera.client;
+          try {
+            await runSubscriptionCloseStatements(agora, { tenantIds: [cenario.tenantA, cenario.tenantB] });
+          } finally {
+            alvo.atual = papelHttpDemo;
+          }
+          const fechados = await admin.subscriptionStatement.findMany({
+            where: { tenant_id: { in: [cenario.tenantA, cenario.tenantB] }, period: periodo },
+            orderBy: { tenant_id: "asc" },
+          });
+          registrarJob(
+            "subscription.close-statements",
+            fechados.map((row) => ({ tenantId: tag(row.tenant_id), period: row.period, status: row.status, total: row.total_amount.toString() })),
+          );
+          const idDe = (tenantId: string): string => fechados.find((row) => row.tenant_id === tenantId)!.id;
+          const stA = idDe(cenario.tenantA);
+          const stB = idDe(cenario.tenantB);
+          const B = cenario.tenantB;
+
+          const lista = await httpDemo("GET", `${P}/billing/statements?tenantId=${B}`);
+          assert.equal(lista.status, 200, JSON.stringify(lista.body));
+          registrarRota(`GET ${P}/billing/statements`, (lista.body.data as Array<Record<string, unknown>>).map(projetarDemonstrativo));
+
+          const pago = await httpDemo("POST", `${P}/billing/statements/${stB}/payments`, { tenantId: B, amount: "10.00", method: "pix" });
+          assert.equal(pago.status, 201, JSON.stringify(pago.body));
+          const pagamento = (pago.body.data as { payment: Record<string, unknown> }).payment;
+          registrarRota(`POST ${P}/billing/statements/:statementId/payments`, {
+            statement: projetarDemonstrativo((pago.body.data as { statement: Record<string, unknown> }).statement),
+            amount: pagamento.amount,
+          });
+
+          const detalhe = await httpDemo("GET", `${P}/billing/statements/${stB}?tenantId=${B}`);
+          assert.equal(detalhe.status, 200, JSON.stringify(detalhe.body));
+          const detalheData = detalhe.body.data as Record<string, unknown> & { payments: Array<Record<string, unknown>> };
+          registrarRota(`GET ${P}/billing/statements/:statementId`, {
+            ...projetarDemonstrativo(detalheData),
+            payments: detalheData.payments.map((row) => ({ amount: row.amount, source: row.source })),
+          });
+
+          const estorno = await httpDemo("POST", `${P}/billing/statements/${stB}/payments/${String(pagamento.id)}/reverse`, {
+            tenantId: B,
+            reason: "lançado em duplicidade",
+          });
+          assert.equal(estorno.status, 200, JSON.stringify(estorno.body));
+          registrarRota(`POST ${P}/billing/statements/:statementId/payments/:paymentId/reverse`, {
+            statement: projetarDemonstrativo((estorno.body.data as { statement: Record<string, unknown> }).statement),
+            reversedAmount: (estorno.body.data as { payment: Record<string, unknown> }).payment.reversedAmount,
+          });
+
+          const reaberto = await httpDemo("POST", `${P}/billing/statements/${stB}/reopen`, { tenantId: B, reason: "desconto combinado com o cliente" });
+          assert.equal(reaberto.status, 200, JSON.stringify(reaberto.body));
+          registrarRota(`POST ${P}/billing/statements/:statementId/reopen`, projetarDemonstrativo(reaberto.body.data as Record<string, unknown>));
+
+          const ajustado = await httpDemo("PATCH", `${P}/billing/statements/${stB}/adjustment`, {
+            tenantId: B,
+            adjustmentsAmount: "-1.00",
+            adjustmentNote: "desconto combinado",
+          });
+          assert.equal(ajustado.status, 200, JSON.stringify(ajustado.body));
+          registrarRota(`PATCH ${P}/billing/statements/:statementId/adjustment`, projetarDemonstrativo(ajustado.body.data as Record<string, unknown>));
+
+          const refechado = await httpDemo("POST", `${P}/billing/statements/close`, { tenantId: B, period: periodo });
+          assert.equal(refechado.status, 200, JSON.stringify(refechado.body));
+          registrarRota(
+            `POST ${P}/billing/statements/close`,
+            ((refechado.body.data as { closed: Array<Record<string, unknown>> }).closed).map(projetarDemonstrativo),
+          );
+
+          const cancelado = await httpDemo("POST", `${P}/billing/statements/${stA}/cancel`, { tenantId: cenario.tenantA, reason: "contrato encerrado" });
+          assert.equal(cancelado.status, 200, JSON.stringify(cancelado.body));
+          registrarRota(`POST ${P}/billing/statements/:statementId/cancel`, projetarDemonstrativo(cancelado.body.data as Record<string, unknown>));
+
+          // Créditos só nascem de pagamento do provedor acima do saldo (sem rota): o excedente e o pagamento em
+          // dobro entram pelo serviço, e o demonstrativo aberto do mês corrente recebe a aplicação.
+          const { service: servicoDemo, repository: repositorioDemo } = await createDefaultStatementRuntime();
+          await servicoDemo.recordProviderPayment({ tenantId: B, statementId: stB, source: "asaas", externalChargeId: `san305-${papel}-1`, amountCents: 10_000, method: null, now: agora });
+          await servicoDemo.recordProviderPayment({ tenantId: B, statementId: stB, source: "asaas", externalChargeId: `san305-${papel}-2`, amountCents: 500, method: null, now: agora });
+          const aberto = await repositorioDemo.transaction(B, (tx) => tx.insertIfAbsentAndLock({ tenantId: B, period: seguinte }));
+
+          const creditos = await httpDemo("GET", `${P}/billing/credits?tenantId=${B}`);
+          assert.equal(creditos.status, 200, JSON.stringify(creditos.body));
+          const listaCreditos = creditos.body.data as Array<Record<string, unknown>>;
+          registrarRota(`GET ${P}/billing/credits`, listaCreditos.map((row) => ({ amount: row.amount, reason: row.reason, status: row.status })));
+          // O excedente do 1º pagamento (1,00) e o 2º pagamento inteiro (5,00), escolhidos pelo valor.
+          const creditoDe = (amount: string): string => String(listaCreditos.find((row) => row.amount === amount)!.id);
+
+          const aplicado = await httpDemo("POST", `${P}/billing/credits/${creditoDe("1.00")}/apply`, { tenantId: B, statementId: aberto.statement.id });
+          assert.equal(aplicado.status, 200, JSON.stringify(aplicado.body));
+          const aplicadoData = aplicado.body.data as { credit: Record<string, unknown>; statement: Record<string, unknown> };
+          registrarRota(`POST ${P}/billing/credits/:creditId/apply`, {
+            credit: { amount: aplicadoData.credit.amount, status: aplicadoData.credit.status },
+            creditsAppliedAmount: aplicadoData.statement.creditsAppliedAmount,
+          });
+
+          const baixado = await httpDemo("POST", `${P}/billing/credits/${creditoDe("5.00")}/write-off`, { tenantId: B, reason: "valor irrisório" });
+          assert.equal(baixado.status, 200, JSON.stringify(baixado.body));
+          const baixadoData = baixado.body.data as Record<string, unknown>;
+          registrarRota(`POST ${P}/billing/credits/:creditId/write-off`, { amount: baixadoData.amount, status: baixadoData.status });
+
+          const perfilGravado = await httpDemo("PUT", `${P}/billing/tenants/${B}/billing-profile`, {
+            legalName: "Organização B de teste",
+            document: "11222333000181",
+            email: "financeiro@b.test",
+            paymentMethod: "pix",
+          });
+          assert.equal(perfilGravado.status, 200, JSON.stringify(perfilGravado.body));
+          const projetarPerfil = (row: Record<string, unknown>) => ({
+            tenantId: tag(String(row.tenantId)),
+            document: row.document,
+            paymentMethod: row.paymentMethod,
+            complete: row.complete,
+            missing: row.missing,
+          });
+          registrarRota(`PUT ${P}/billing/tenants/:tenantId/billing-profile`, projetarPerfil(perfilGravado.body.data as Record<string, unknown>));
+          const perfilLido = await httpDemo("GET", `${P}/billing/tenants/${B}/billing-profile`);
+          assert.equal(perfilLido.status, 200, JSON.stringify(perfilLido.body));
+          registrarRota(`GET ${P}/billing/tenants/:tenantId/billing-profile`, projetarPerfil(perfilLido.body.data as Record<string, unknown>));
+
+          // Limpeza do cenário, nesta volta (a próxima volta apaga as assinaturas de B, e a FK do demonstrativo travaria).
+          const orgs = [cenario.tenantA, cenario.tenantB];
+          await admin.auditLog.deleteMany({ where: { tenant_id: { in: orgs }, action: { startsWith: "subscription_" } } });
+          await admin.subscriptionCredit.deleteMany({ where: { tenant_id: { in: orgs } } });
+          await admin.subscriptionStatementPayment.deleteMany({ where: { tenant_id: { in: orgs } } });
+          await admin.subscriptionStatement.deleteMany({ where: { tenant_id: { in: orgs } } });
+          await admin.tenantBillingProfile.deleteMany({ where: { tenant_id: { in: orgs } } });
+          await admin.tenantSubscription.deleteMany({ where: { id: { in: assinaturasDemo.map((row) => row.id) } } });
+          await admin.subscriptionPlanVersion.deleteMany({ where: { plan_id: planoDemo.id } });
+          await admin.subscriptionPlan.delete({ where: { id: planoDemo.id } });
+          await admin.user.delete({ where: { id: atorDemo.id } });
+        }
+
         medidas.set(papel, {
           s1: normalizar(s1Data),
           s1Quantidade: s1Data.metrics.reduce((total, metric) => total + Number(metric.quantity), 0),
@@ -566,13 +776,13 @@ if (!connectionString) {
         for (const chave of forceEnumeradas) assert.deepEqual(efe.rotas[chave], sup.rotas[chave], chave);
       });
 
-      await t.test("T11f · job.registry fecha 3 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
+      await t.test("T11f · job.registry fecha 4 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
         const forceEnumerados = [...JOBS]
           .filter(([, etiqueta]) => etiqueta === "FORCE-PLATAFORMA")
           .map(([chave]) => chave)
           .sort();
         const foraDaSuperficie = [...JOBS].filter(([, etiqueta]) => etiqueta === "FORA-DA-SUPERFICIE");
-        assert.equal(forceEnumerados.length, 3);
+        assert.equal(forceEnumerados.length, 4);
         assert.equal(foraDaSuperficie.length, 9, "os demais jobs pertencem à pendência B-ARNES-2");
         assert.deepEqual(Object.keys(sup.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob super");
         assert.deepEqual(Object.keys(efe.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob efêmero");

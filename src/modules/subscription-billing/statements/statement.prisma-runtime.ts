@@ -326,7 +326,28 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
       if (updated.count !== 1) throw new Error("credit not found in this organization");
       return mapCredit(await tx.subscriptionCredit.findUniqueOrThrow({ where: { id: credit.id } }));
     },
+    async recordAudit(event) {
+      if (event.tenantId !== tenantId) throw new Error("audit event for another organization");
+      await writeAuditInTx(tx, event);
+    },
   };
+}
+
+/** A linha de `audit_logs` dentro do `tx` corrente: se falhar, a transação do movimento cai junto (fail-closed). */
+async function writeAuditInTx(tx: Tx, event: StatementAuditEvent): Promise<void> {
+  const [{ EnterpriseAuditLogService }, { AuditLogRepository }] = await Promise.all([
+    import("../../core-saas/audit/audit-log.service.js"),
+    import("../../core-saas/repositories/audit-log.repository.js"),
+  ]);
+  await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
+    tenantId: event.tenantId,
+    actorId: actorColumn(event.actorId),
+    actorType: event.actorId === null ? "system" : "user",
+    action: event.action,
+    resourceType: event.action.startsWith("subscription_billing_profile") ? "tenant_billing_profile" : "subscription_statement",
+    resourceId: event.entityId,
+    metadata: event.metadata,
+  });
 }
 
 export class PrismaStatementRepository implements StatementRepository {
@@ -489,21 +510,7 @@ export class PrismaStatementAuditSink implements StatementAuditSink {
   constructor(private readonly client: PrismaClient) {}
 
   async record(event: StatementAuditEvent): Promise<void> {
-    const [{ EnterpriseAuditLogService }, { AuditLogRepository }] = await Promise.all([
-      import("../../core-saas/audit/audit-log.service.js"),
-      import("../../core-saas/repositories/audit-log.repository.js"),
-    ]);
-    await withTenantRls(this.client, event.tenantId, async (tx) => {
-      await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
-        tenantId: event.tenantId,
-        actorId: actorColumn(event.actorId),
-        actorType: event.actorId === null ? "system" : "user",
-        action: event.action,
-        resourceType: event.action.startsWith("subscription_billing_profile") ? "tenant_billing_profile" : "subscription_statement",
-        resourceId: event.entityId,
-        metadata: event.metadata,
-      });
-    });
+    await withTenantRls(this.client, event.tenantId, (tx) => writeAuditInTx(tx, event));
   }
 }
 
