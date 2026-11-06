@@ -48,3 +48,9 @@ Comando: `grep -rn "UsageBasisRow\|CloudUsageMetricKey" src/modules/cloud-cost-a
 - Correção do canário (R-MED-4): a leitura-canário `SELECT tenant_id FROM users LIMIT 1` passou a devolver as linhas lidas e o medidor usa `assertRowsBelongToTenant` (linha de OUTRA organização = vazamento → erro; zero linhas = passa). Antes, organização sem usuário era tratada como contexto ausente — falso negativo que derrubava T-MED-db-3/10.
 - `tests/ass-03-metering-db.test.ts` verde `6/6` no `devass03-pg` (papel NOSUPERUSER NOBYPASSRLS): T-MED-db-1, T-MED-db-2/9, T-MED-db-3/10, T-MED-db-6, T-MED-db-7, T-MED-db-11. Seeds de anexos criam `vehicles`/`work_orders`/`damages` válidos (FK compostas) e o teardown apaga as filhas antes de `tenants`.
 - Regressão: memória `tests/ass-03-metering.test.ts` continua `9/9`; `npm run check` verde.
+## F4 — gerador da lista censurada + T-MED-db-8 (30, Docker)
+
+- `scripts/gen-tenant-tables.mjs` (novo, PERMITIDO): conecta no Postgres (`DATABASE_URL`), lê `pg_class.relforcerowsecurity = true` ∩ coluna `tenant_id` NOT NULL (schema `public`, `relkind='r'`), aplica as exclusões `cloud_charge_rules`/`roles`/`platform_audit_logs` e grava `src/modules/subscription-billing/metering/censored-tables.ts` (`CENSORED_TENANT_TABLES`). Gerado pelo script, nunca editado à mão.
+- Constante gerada: `111` tabelas. `npm run check` verde; o barrel `metering/index.ts` exporta `censored-tables.js`.
+- `tests/ass-03-metering-census-db.test.ts` (T-MED-db-8) verde `1/1` no `devass03-pg`: a constante casa com o catálogo vivo e `cloud_charge_rules`/`roles`/`platform_audit_logs` não aparecem na lista.
+- **Vermelho-controle/mutação:** em `origin/main` o gerador, a constante e o teste não existem (guarda ausente). Derivar do DMMF "toda tabela com `tenant_id`" acrescentaria `cloud_charge_rules`, `impound_payment_refs` e `roles` (medido no catálogo) → T-MED-db-8 fica vermelho nomeando as sobras.
