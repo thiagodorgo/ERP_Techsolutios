@@ -217,6 +217,10 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
   ],
   // B-ASS-04: as chaves L1 da porta do demonstrativo, coladas da saída do gerador no head do bloco.
   [
+    k("L2", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-ASS-04: `writeAuditInTx` grava a linha de audit_logs (tabela FORCE) no MESMO tx do movimento de dinheiro; os dois chamadores são `StatementTx.recordAudit` (tx aberto por `PrismaStatementRepository.transaction` → `withTenantRls`, e o evento de outra organização é recusado antes) e `PrismaStatementAuditSink.record` (`withTenantRls(client, event.tenantId, …)`); provado por T-ST-db-8 e T-ST-db-10 (trilha que falha desfaz o pagamento) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
     k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.insertCredit", "tx.subscriptionCredit", "subscriptionCredit.create", "subscription_credits", "PARAMETRO(tx)", "×1"),
     "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
   ],
