@@ -17,13 +17,29 @@
  },
  "MIDDLEWARE /api/v1 · (anônima)": {
   "classe": "MIDDLEWARE",
-  "n": 116
+  "n": 117
  },
  "MIDDLEWARE /api/v1 · tenantContextMiddleware": {
   "classe": "MIDDLEWARE",
   "n": 57
  },
  "MIDDLEWARE /api/v1/auth/identity-links · (anônima)": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/billing/subscription · (anônima)": {
+  "classe": "MIDDLEWARE",
+  "n": 2
+ },
+ "MIDDLEWARE /api/v1/billing/subscription · rejectPlatformActor": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/billing/subscription · rejectTenantOverride": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
+ "MIDDLEWARE /api/v1/billing/subscription · tenantContextMiddleware": {
   "classe": "MIDDLEWARE",
   "n": 1
  },
@@ -176,6 +192,14 @@
   "n": 1
  },
  "ROTA GET /api/v1/authority-credentials": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/billing/subscription": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/billing/subscription/usage-history": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -583,6 +607,10 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/platform/billing/credits": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/platform/billing/plans": {
   "classe": "LEITURA",
   "n": 1
@@ -596,6 +624,18 @@
   "n": 1
  },
  "ROTA GET /api/v1/platform/billing/plans/summary": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/statements": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/statements/:statementId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/tenants/:tenantId/billing-profile": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -1008,6 +1048,10 @@
   "n": 1
  },
  "ROTA PATCH /api/v1/platform/billing/plans/:planId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/platform/billing/statements/:statementId/adjustment": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -1543,11 +1587,39 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/platform/billing/credits/:creditId/apply": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/credits/:creditId/write-off": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/platform/billing/plans": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
  "ROTA POST /api/v1/platform/billing/plans/:planId/versions": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/cancel": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/payments": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/payments/:paymentId/reverse": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/reopen": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/close": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -1719,6 +1791,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA PUT /api/v1/platform/billing/tenants/:tenantId/billing-profile": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA PUT /api/v1/platform/billing/tenants/:tenantId/subscription": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1729,7 +1805,7 @@
  },
  "ROTEADOR /api/v1": {
   "classe": "ROTEADOR",
-  "n": 60
+  "n": 61
  },
  "ROTEADOR /api/v1/audit-events": {
   "classe": "ROTEADOR",
@@ -1765,7 +1841,7 @@
  },
  "ROTEADOR /api/v1/platform/billing": {
   "classe": "ROTEADOR",
-  "n": 1
+  "n": 2
  },
  "ROTEADOR /api/v1/platform/cloud-cost-allocations": {
   "classe": "ROTEADOR",

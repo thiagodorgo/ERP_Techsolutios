@@ -29,6 +29,7 @@ const expectedPermissionCatalog = [
   "platform:audit:read",
   "platform:billing:read",
   "platform:billing:manage",
+  "platform:billing:settle",
   "tenant.manage",
   "users.manage",
   "users.read",

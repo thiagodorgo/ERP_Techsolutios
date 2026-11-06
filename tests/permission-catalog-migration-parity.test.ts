@@ -186,7 +186,6 @@ const PERMISSOES_HERDADAS_DO_SEED = new Set<string>([
   "field_dispatch:reassign",
   "logistics:read",
   "logistics_routes:read",
-  "billing:read",
   "invoices:read",
   "payments:read",
   "reports:read",

@@ -296,12 +296,13 @@ const ROWS: Record<string, RowSpec> = {
     FULLADMIN: [...FIN.flatMap((f) => fam(f, RCU)), ...fam("financial_period", ["read", "close", "reopen"])],
     FULLREAD: [...FIN.map((f) => `${f}:read`), "financial_period:read"],
   },
+  // B-ASS-04 — `billing:read` ganhou rota (GET /billing/subscription*); `invoices:read` e `payments:read` seguem
+  // órfãs (sem rota) e por isso ficam fora do FULL, mas na família: papel "none" que as tenha vira achado C.
   Billing: {
-    skip: "familia ORFA (billing:read, invoices:read, payments:read - nenhuma rota compara; medido) - item 13 trata no registro de navegacao",
     family: ["billing:read", "invoices:read", "payments:read"],
-    act: {},
-    FULL: [],
-    FULLREAD: [],
+    act: { read: ["billing:read"] },
+    FULL: ["billing:read"],
+    FULLREAD: ["billing:read"],
   },
   "Cloud usage metering": { platform: true, family: ["platform:cloud-usage:read"], act: {}, FULL: [], FULLREAD: [] },
   "Cloud cost import": {
@@ -410,7 +411,7 @@ const describe = (f: Finding | Excedente) => `${key(f.line, f.role)} [${f.cell}]
 type Justificativa = { readonly evidencia: string } | { readonly pendencia: string };
 type AllowEntry = { readonly line: number; readonly role: CanonRole; readonly perms: readonly string[] } & Justificativa;
 
-// B — 13 células qualificadas ("por escopo/atribuição/suporte") concedidas sem o backend aplicar escopo. Cada uma
+// B — 14 células qualificadas ("por escopo/atribuição/suporte") concedidas sem o backend aplicar escopo. Cada uma
 // vive aqui SÓ com uma pendência nomeada com dono ou com evidência de que o escopo É aplicado (plano §3, B1–B13).
 const ALLOWLIST_QUALIFICADAS: readonly AllowEntry[] = [
   { line: 33, role: "support", perms: ["users.read"], pendencia: "P-SAN3-04A-SUPPORT-SEM-POLITICA" },
@@ -431,6 +432,8 @@ const ALLOWLIST_QUALIFICADAS: readonly AllowEntry[] = [
     pendencia: "P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO (item 51, B-O6R-07c)",
   },
   { line: 44, role: "support", perms: ["checklist_runs:read"], pendencia: "P-SAN3-04A-SUPPORT-SEM-POLITICA" },
+  // B-ASS-04 — `billing:read` do support (célula "support-view", RBAC_MATRIX.md:50) entra pela M3b, sem política de suporte.
+  { line: 50, role: "support", perms: ["billing:read"], pendencia: "P-SAN3-04A-SUPPORT-SEM-POLITICA" },
   {
     line: 45,
     role: "field_technician",
@@ -529,7 +532,7 @@ test("[B] toda qualificada concedida sem escopo está na allowlist (com evidênc
   const { foraDaAllowlist, mortas } = diffSets(byKind("B"), ALLOWLIST_QUALIFICADAS);
   assert.deepEqual(foraDaAllowlist, [], "célula B fora da allowlist — 'por escopo' concedido sem escopo e sem pendência");
   assert.deepEqual(mortas, [], "entrada morta na allowlist — a célula já não é B; remova a entrada (e feche a pendência)");
-  assert.equal(byKind("B").length, 13);
+  assert.equal(byKind("B").length, 14);
 });
 
 test("[§A2] os conflitos internos da matriz são exatamente os registrados (l.37 × finance/inventory; l.41 × finance) e nada foi concedido", () => {
@@ -598,7 +601,6 @@ const ORFAS_ESPERADAS = [
   "field_operator:action",
   "logistics:read",
   "logistics_routes:read",
-  "billing:read",
   "invoices:read",
   "payments:read",
   "reports:read",
@@ -627,7 +629,7 @@ function walkTs(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-test("[órfãs] as 29 chaves que nenhuma rota compara são exatamente as nomeadas — órfã nova ou órfã que ganhou rota move o número COM nome", () => {
+test("[órfãs] as 28 chaves que nenhuma rota compara são exatamente as nomeadas — órfã nova ou órfã que ganhou rota move o número COM nome", () => {
   const files = walkTs(SRC_DIR)
     .map((f) => f.split("\\").join("/"))
     .filter((f) => !f.endsWith("permissions/catalog.ts") && !f.includes("navigation.registry"));

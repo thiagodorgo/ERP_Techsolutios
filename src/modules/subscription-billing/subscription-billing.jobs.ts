@@ -121,6 +121,14 @@ export function computeNextMeasureDailyDelayMs(
   now: Date,
   timeZone = MEASURE_DAILY_TIME_ZONE,
 ): number {
+  return computeNextWindowDelayMs(now, MEASURE_DAILY_WINDOWS, timeZone);
+}
+
+function computeNextWindowDelayMs(
+  now: Date,
+  windows: readonly { readonly hour: number; readonly minute: number }[],
+  timeZone: string,
+): number {
   const wall = wallClock(now, timeZone);
   const candidates: Date[] = [];
 
@@ -128,7 +136,7 @@ export function computeNextMeasureDailyDelayMs(
     // Date.UTC resolve virada de mês/ano.
     const nextUtcDay = new Date(Date.UTC(wall.year, wall.month - 1, wall.day + dayOffset));
     const nextWall = wallClock(nextUtcDay, "UTC");
-    for (const window of MEASURE_DAILY_WINDOWS) {
+    for (const window of windows) {
       candidates.push(
         zonedWallToUtc(
           {
@@ -147,7 +155,7 @@ export function computeNextMeasureDailyDelayMs(
 
   const next = candidates.find((candidate) => candidate.getTime() > now.getTime());
   if (!next) {
-    throw new Error("computeNextMeasureDailyDelayMs: nenhuma janela futura encontrada.");
+    throw new Error("computeNextWindowDelayMs: nenhuma janela futura encontrada.");
   }
 
   return next.getTime() - now.getTime();
@@ -254,5 +262,112 @@ export function createSubscriptionMeasureDailyJobHandler(): JobHandler {
 export async function enqueueInitialSubscriptionMeasureDaily(): Promise<void> {
   await getDefaultJobQueue().enqueue("subscription.measure-daily", {}, {
     delayMs: computeNextMeasureDailyDelayMs(new Date()),
+  });
+}
+
+// ------------------------------------------------------------------------------------------------------------------
+// B-ASS-04 · F10 — job recorrente AUTO-REENFILEIRANTE `subscription.close-statements`. Fecha o mês ANTERIOR (data
+// local SP) de cada organização (menos a de sistema). Hora marcada: 02:00 SP — a primeira janela do dia 1 vem depois
+// da medição das 23:30 do último dia (G3) — e de novo a cada 6 h (08:00, 14:00, 20:00), para pegar a organização
+// que falhou na janela anterior. Idempotente pelo serviço: demonstrativo `closed`/`paid`/`cancelled` volta como
+// `already_closed` sem tocar a linha; `reopened` é PULADO (só o fechamento manual refecha — G4, T-ST-45).
+// Leitura do dev, declarada: uma linha `open` do mês anterior (nasce quando um crédito é aplicado no mês) É fechada
+// pelo job — deixá-la de fora deixaria o mês sem cobrança até alguém fechar à mão.
+
+const CLOSE_STATEMENTS_WINDOWS = [
+  { hour: 2, minute: 0 },
+  { hour: 8, minute: 0 },
+  { hour: 14, minute: 0 },
+  { hour: 20, minute: 0 },
+] as const;
+
+/** `delayMs` até a PRÓXIMA janela de fechamento (02:00, 08:00, 14:00 ou 20:00 SP) estritamente depois de `now`. */
+export function computeNextCloseStatementsDelayMs(now: Date, timeZone = MEASURE_DAILY_TIME_ZONE): number {
+  return computeNextWindowDelayMs(now, CLOSE_STATEMENTS_WINDOWS, timeZone);
+}
+
+/** O período (`YYYY-MM`) que o job fecha: o mês anterior ao da data local SP de `now`. */
+export function closeStatementsPeriod(now: Date, timeZone = MEASURE_DAILY_TIME_ZONE): string {
+  const wall = wallClock(now, timeZone);
+  return wall.month === 1 ? `${wall.year - 1}-12` : `${wall.year}-${pad2(wall.month - 1)}`;
+}
+
+export type CloseStatementsOutcome = "closed" | "already_closed" | "skipped";
+export type CloseStatementsResult = {
+  readonly counts: Readonly<Record<CloseStatementsOutcome, number>>;
+  readonly failures: MeasureDailyFailure[];
+};
+
+/**
+ * O laço do fechamento, puro (testável sem banco): pula a organização de sistema e isola a falha de cada uma — uma
+ * organização com problema não impede o fechamento das outras (mesma regra do G-1 do #505).
+ */
+export async function closeTenantsSequentially(
+  tenants: readonly { readonly id: string; readonly slug: string | null }[],
+  period: string,
+  closeOne: (tenantId: string) => Promise<CloseStatementsOutcome>,
+): Promise<CloseStatementsResult> {
+  const counts: Record<CloseStatementsOutcome, number> = { closed: 0, already_closed: 0, skipped: 0 };
+  const failures: MeasureDailyFailure[] = [];
+  for (const tenant of tenants) {
+    if ((tenant.slug ?? "").toLowerCase() === "platform") continue;
+    try {
+      counts[await closeOne(tenant.id)] += 1;
+    } catch (error) {
+      const code = failureCode(error);
+      failures.push({ tenantId: tenant.id, code });
+      logger.warn(
+        { tenantId: tenant.id, period, code },
+        "subscription.close-statements: fechamento da organização falhou; a volta segue e a próxima janela tenta de novo",
+      );
+    }
+  }
+  return { counts, failures };
+}
+
+export async function runSubscriptionCloseStatements(
+  now: Date,
+  options: { readonly tenantIds?: readonly string[] } = {},
+): Promise<CloseStatementsResult> {
+  const empty: CloseStatementsResult = { counts: { closed: 0, already_closed: 0, skipped: 0 }, failures: [] };
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") return empty;
+
+  const [{ prisma }, { createDefaultStatementRuntime }] = await Promise.all([
+    import("../../database/prisma.js"),
+    import("./statements/statement.factory.js"),
+  ]);
+  const { service } = await createDefaultStatementRuntime();
+  const period = closeStatementsPeriod(now);
+  const tenants = await prisma.tenant.findMany({
+    where: options.tenantIds ? { id: { in: [...options.tenantIds] } } : undefined,
+    select: { id: true, slug: true },
+    orderBy: { created_at: "asc" },
+  });
+
+  return closeTenantsSequentially(tenants, period, async (tenantId) => {
+    const outcome = await service.close({ tenantId, period, now, actorId: null, source: "job" });
+    return outcome.kind;
+  });
+}
+
+export function createSubscriptionCloseStatementsJobHandler(): JobHandler {
+  return async (payload) => {
+    assertMeasureDailyPayload(payload);
+    try {
+      const result = await runSubscriptionCloseStatements(new Date());
+      logger.info({ ...result.counts, failures: result.failures.length }, "subscription.close-statements: volta concluída");
+    } catch (error) {
+      // Falha GERAL: registra e NÃO relança (a retentativa somada ao re-enfileiramento multiplicaria a cadeia — M-1).
+      logger.error({ code: failureCode(error) }, "subscription.close-statements: a volta falhou antes de fechar");
+    }
+    await getDefaultJobQueue().enqueue("subscription.close-statements", {}, {
+      delayMs: computeNextCloseStatementsDelayMs(new Date()),
+    });
+  };
+}
+
+export async function enqueueInitialSubscriptionCloseStatements(): Promise<void> {
+  await getDefaultJobQueue().enqueue("subscription.close-statements", {}, {
+    delayMs: computeNextCloseStatementsDelayMs(new Date()),
   });
 }

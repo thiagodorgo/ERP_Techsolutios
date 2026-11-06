@@ -28,15 +28,23 @@ function bodyStatements(name: string): string[] {
     .filter((statement) => statement && !/^(BEGIN|COMMIT)$/i.test(statement));
 }
 
-function m1DownStatements(): string[] {
-  const lines = migrationSql(M1).split("\n");
+function downStatements(name: string): string[] {
+  const lines = migrationSql(name).split("\n");
   const start = lines.findIndex((line) => line.startsWith("-- down"));
-  assert.ok(start >= 0, "M1 contém o runbook down");
+  assert.ok(start >= 0, `${name} contém o runbook down`);
   return lines
     .slice(start + 1)
     .filter((line) => /^--\s{3}(DROP|DELETE)/.test(line))
     .map((line) => line.replace(/^--\s{3}/, "").replace(/;\s*$/, ""));
 }
+
+function m1DownStatements(): string[] {
+  return downStatements(M1);
+}
+
+// B-ASS-04: a M3 tem FK para as tabelas da M1 (o demonstrativo aponta a assinatura e a versão do plano). O rollback
+// real é em ordem inversa: primeiro o down de quem depende da M1, depois o da M1.
+const M1_DEPENDENTS = ["20260898000000_ass04_subscription_statements"];
 
 if (!connectionString) {
   test("B-ASS-02 · drill M1/M1b exige DATABASE_URL e CREATE DATABASE", {
@@ -112,6 +120,9 @@ if (!connectionString) {
     assert.ok(db, "depende do deploy");
     const down = m1DownStatements();
     assert.equal(down.length, 5, "runbook down da M1 tem quatro DROP e um DELETE escopado");
+    for (const dependent of M1_DEPENDENTS) {
+      await db.$transaction(downStatements(dependent).map((sql) => db.$executeRawUnsafe(sql)));
+    }
     await db.$transaction(down.map((sql) => db.$executeRawUnsafe(sql)));
     assert.deepEqual(await catalog(), { tables: 0, forced: 0, policies: 0, activeIndexes: 0 });
     const sentinel = (await db.$queryRawUnsafe(

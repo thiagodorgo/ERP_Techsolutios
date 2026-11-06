@@ -174,3 +174,32 @@ test("Filtro de modulo remove item quando tenant nao possui modulo exigido", () 
 
   assert.equal(filtered.length, 0);
 });
+
+test("T-ST-36 (B-ASS-04): Minha assinatura aparece com billing:read, sem exigir módulo, e some sem a permissão", () => {
+  const withRead = getMenuForCurrentUser({
+    userId: "usr-finance",
+    tenantId: "ten-a",
+    roles: ["finance"],
+    permissions: ["billing:read"],
+    enabledModules: [],
+  });
+  const item = withRead.find((entry) => entry.id === "tenant.billing");
+  assert.ok(item, "o item aparece com billing:read e nenhum módulo");
+  assert.equal(item.path, "/administrator/subscription");
+
+  const withoutRead = getMenuForCurrentUser({
+    userId: "usr-operator",
+    tenantId: "ten-a",
+    roles: ["operator"],
+    permissions: ["dashboard:read"],
+    enabledModules: ["dashboard"],
+  });
+  assert.equal(withoutRead.some((entry) => entry.id === "tenant.billing"), false);
+
+  const platform = getMenuForCurrentUser({
+    userId: "usr-platform",
+    roles: ["super_admin"],
+    permissions: ["billing:read", "platform:billing:read"],
+  });
+  assert.equal(platform.some((entry) => entry.id === "tenant.billing"), false, "ator de plataforma não é cliente");
+});

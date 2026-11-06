@@ -82,3 +82,44 @@ O job `subscription.measure-daily` mede cada organização duas vezes ao dia, à
 **Rateio do custo de nuvem (R-MED-8).** A linha `AmazonRDS` da conta da AWS é rateada pelo `db_bytes_estimated` do último dia medido até o fim do período (método `storage_usage_weight`), com o rótulo de estimativa. Sem medição, o rateio continua pelas ações auditadas. A chave nasce só dessa derivação e fica fora da lista de métricas que os eventos de uso aceitam.
 
 **Rollback.** Retire o job do bootstrap e reverta o PR. A tabela fica.
+
+## Demonstrativo mensal (B-ASS-04)
+
+O demonstrativo é a conta do mês de cada organização. Ele vive em `subscription_statements` (uma linha por organização e por mês), com os pagamentos em `subscription_statement_payments`, os créditos em `subscription_credits` e o perfil de cobrança em `tenant_billing_profiles`. As quatro tabelas têm ENABLE+FORCE RLS. O dinheiro anda em centavos inteiros no código e em `Decimal(12,2)` no banco, convertido por texto, sem float.
+
+**O cálculo.** `total = base + usuários extras × preço + espaço extra × preço por GB + veículos × preço por veículo + ajustes − créditos aplicados`, nunca abaixo de zero.
+
+| Parcela | Regra |
+|---|---|
+| Base (pro-rata) | cada trecho do mês `[validFrom, validTo)` cobra `preço mensal × dias do trecho ÷ dias do mês`, arredondado para o centavo (meio para cima) |
+| Termos | franquia e preços de excedente vêm do ÚLTIMO dia do mês (a sobrescrita da organização vence a versão do plano) |
+| Usuários | `max(0, pico do mês − franquia)` |
+| Espaço | pico diário de `(banco + arquivos) ÷ 1024³`, com teto a 0,001 GB; o excedente é cobrado por GB, arredondado no fim |
+| Veículos | distintos com vínculo de rastreamento em qualquer dia do mês, só com o add-on de rastreamento |
+
+O `snapshot` guarda as entradas do cálculo. Recalcular a partir dele reproduz o total, centavo a centavo. Dia sem medição entra em `gaps[]`; mês sem medição nenhuma fecha com `warning: no_usage_measured`.
+
+**Estados.** `open` → `closed` → `paid`; `closed` → `reopened` → `closed`; `closed` sem pagamento → `cancelled`. Total zero fecha direto em `paid`, com `zeroTotal`. O reaberto refecha com a MESMA versão de plano. O ajuste só vale em `open` ou `reopened`, exige nota e não pode levar o total abaixo de zero.
+
+**Fechamento.** O job `subscription.close-statements` fecha o mês anterior (data de São Paulo) às 02:00 e de novo a cada 6 h, para pegar a organização que falhou na janela anterior. A falha de uma organização não para as outras. O job nunca refecha um `reopened`: só o fechamento manual (`POST /platform/billing/statements/close`) faz isso. A organização de sistema não tem demonstrativo.
+
+**Em dia.** A organização está em atraso quando tem demonstrativo `closed` com saldo e `vencimento + 5 dias < hoje`, ou cobrança estornada por chargeback. O vencimento é a data do fechamento mais `dueDays` da assinatura (padrão 10).
+
+**Créditos.** Pagamento do provedor acima do saldo abate só o saldo; o resto vira crédito (`overpayment`, `duplicate_payment`, `paid_after_cancel`, `paid_after_manual_settlement`). O crédito se aplica a um demonstrativo `open` ou `reopened` e abate o total do fechamento seguinte. Baixar um crédito exige motivo e entra na trilha.
+
+**Quem faz o quê.**
+
+| Rota | Permissão |
+|---|---|
+| `GET /platform/billing/statements?tenantId` · `GET …/statements/:id?tenantId` · `GET …/credits?tenantId` · `GET …/tenants/:tenantId/billing-profile` | `platform:billing:read` |
+| `POST …/statements/close` · `POST …/:id/reopen` · `PATCH …/:id/adjustment` · `PUT …/tenants/:tenantId/billing-profile` | `platform:billing:manage` |
+| `POST …/:id/payments` · `POST …/payments/:paymentId/reverse` · `POST …/:id/cancel` · `POST …/credits/:id/apply` · `POST …/credits/:id/write-off` | `platform:billing:settle` |
+| `GET /billing/subscription` · `GET /billing/subscription/usage-history?months=1..12` (a própria organização) | `billing:read` |
+
+As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demonstrativo só se lê sob o GUC da organização. A rota do cliente tira a organização da sessão e recusa `?tenantId` com 400. Ator de plataforma, ou a organização de sistema, recebe 403 `platform_actor_not_a_customer`. A resposta do cliente NÃO tem nenhum valor em dinheiro: só o plano, o uso contra a franquia, a situação e, com demonstrativo em aberto, o bloco "como pagar" (os meios de pagamento chegam com o canal do provedor, no B-ASS-08).
+
+**Perfil de cobrança.** `PUT` incompleto é aceito como rascunho e devolve `complete` e `missing[]`. O documento é validado pelos dígitos verificadores: CPF, CNPJ numérico e CNPJ alfanumérico. Documento, e-mail e endereço nunca entram na trilha.
+
+**Trilha.** Fechar, reabrir, ajustar, cancelar, registrar e estornar pagamento, criar, aplicar e baixar crédito e gravar o perfil viram linha em `audit_logs` da organização, só com ids, período, estados e centavos.
+
+**Rollback.** Retire o job do bootstrap, reverta o PR e rode o rollback do rodapé da M3 e da M3b.
