@@ -83,3 +83,28 @@ Comando: `grep -rn "UsageBasisRow\|CloudUsageMetricKey" src/modules/cloud-cost-a
 - Fora do PERMITIDO literal do §4.3, pela mesma classe das Emendas 2–4 (a revisar):
   - `tests/job-worker-bootstrap.test.ts`, porque o job novo entra no bootstrap e o teste enumera as varreduras;
   - os 3 arquivos de guard acima.
+
+
+## F6 — R-MED-8: o banco pesa no rateio pelo espaço medido (40) — `dev-ass03-opus`
+
+- **PREMISSA FALSA → Emenda 1 do orquestrador ao §4.3** (no plano, antes do código): o tipo `CloudUsageMetricKey` é a lista fechada `CLOUD_USAGE_METRIC_KEYS`, que também valida eventos externos. Ele atravessa `cloud-cost-allocation.types.ts` e `cloud-cost-allocation.engine.ts`, que estão fora do PERMITIDO.
+  - Medido no banco: não há CHECK na métrica de base. `tenant_cloud_cost_allocations` só tem CHECK no método, e `storage_usage_weight` está na lista. **Não há migração.**
+  - Feito: o novo tipo `AllocationBasisMetricKey = CloudUsageMetricKey | "db_bytes_estimated"` (só tipo) em `types.ts`, `engine.ts` e `rules.ts`.
+  - `src/modules/cloud-usage/**` ficou **intocado**: nenhum evento externo pode declarar a chave.
+- **Regra `database`** (`rules.ts`): `storage_usage_weight`, `basisMetricKeys: ["db_bytes_estimated", "audited_actions_count"]`, `estimate: true`. Sem medição, `resolveBasis` cai para as ações.
+- **Derivação no `sumUsageBasis`:**
+  - **dublê em memória**: `seed({ usageDaily })` e o último dia com db não nulo até `periodEnd`;
+  - **Prisma**: `tx.tenantUsageDaily.findFirst` dentro do `forEachTenantRls` da organização, com `tenant_id` na cláusula (superusuário de dev/CI ignora RLS) e o canário `assertRowsBelongToTenant(..., "tenant_usage_daily")`;
+  - `DERIVADAS` ganhou `db_bytes_estimated`.
+- **Testes novos** (`tests/ass-03-rateio-banco.test.ts`):
+  - T-MED-12: A 3 GB e B 1 GB dão 75/25 pelo espaço, mesmo com as ações em 1:3 ao contrário;
+  - T-MED-12b: vale o último dia medido; o dia depois do período e o dia nulo não contam;
+  - T-MED-13: sem medição, o rateio segue pelas ações;
+  - T-MED-13b: a medição não vaza para EC2.
+- **Mutação do plano**: pôr `db_bytes_estimated` DEPOIS de `audited_actions_count` deixou T-MED-12 e T-MED-12b vermelhos (2 fail). Restaurado; os mesmos 10/10 voltaram verdes.
+  - Nota: a primeira restauração por `git checkout` desfez a edição da F6 em `rules.ts`. Restaurei pela cópia feita antes da mutação e conferi com o grep da ordem e os testes.
+- **Suítes de rateio existentes**, em memória: `cloud-cost-allocation`, `cloud-cost-allocation-routes`, `san3-03-*` (compute-rules, derived-basis, basis-census, conservation, summary, system-org) mais as novas = **62/62**.
+- **Com banco**, no `devass03-pg`, em série (`--test-concurrency=1`): `san3-03-derived-basis-db`, `san3-03-system-org-db`, `san3-03-import-scope-db`, `san3-05-leituras-de-plataforma-db`, os 3 `ass-03-*-db` e o ratchet `san3-05-acessos` = **77/77**.
+  - Em paralelo, um caso da `san3-03-derived-basis-db` (T10–T12, papel sem bypass) falhou uma vez por disputa no cluster único. Sozinho deu 9/9, duas vezes. É a mesma classe ambiental já registrada (`db-catalog-write-guard` em paralelo).
+- **Limite declarado:** o caminho Prisma do R-MED-8 não tem `-db` próprio, porque o plano pede T-MED-12/13 em memória. Fica para o revisor sênior conferir a leitura sob o GUC.
+- `npm run check` sem erro.

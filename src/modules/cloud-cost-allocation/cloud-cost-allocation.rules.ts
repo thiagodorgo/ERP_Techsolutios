@@ -1,10 +1,9 @@
-import type { CloudUsageMetricKey } from "../cloud-usage/cloud-usage.types.js";
-import type { CloudCostAllocationMethod } from "./cloud-cost-allocation.types.js";
+import type { AllocationBasisMetricKey, CloudCostAllocationMethod } from "./cloud-cost-allocation.types.js";
 
 export type CloudCostAllocationRule = {
   readonly costCategory: string;
   readonly allocationMethod: CloudCostAllocationMethod;
-  readonly basisMetricKeys: readonly CloudUsageMetricKey[];
+  readonly basisMetricKeys: readonly AllocationBasisMetricKey[];
   /** B-SAN3-03 · R11 — base aproximada (pelas ações), rotulada como estimativa até a medição própria. */
   readonly estimate?: true;
 };
@@ -50,7 +49,16 @@ export function resolveAllocationRule(input: {
 
   // Antes de `storage`: `AmazonRDS/GP2-Storage` e `AmazonEC2/DataTransfer-Out-Bytes` cairiam lá.
   if (COMPUTE_SERVICES.has(service)) return estimatedByActions("compute");
-  if (DATABASE_SERVICES.has(service)) return estimatedByActions("database");
+  // B-ASS-03 · R-MED-8 — o banco pesa pelo ESPAÇO MEDIDO (`db_bytes_estimated`, último dia medido até o fim
+  // do período); sem medição de nenhuma organização, `resolveBasis` cai para as ações (Q5 da emenda §3.1).
+  if (DATABASE_SERVICES.has(service)) {
+    return {
+      costCategory: "database",
+      allocationMethod: "storage_usage_weight",
+      basisMetricKeys: ["db_bytes_estimated", "audited_actions_count"],
+      estimate: true,
+    };
+  }
   if (CACHE_SERVICES.has(service)) return estimatedByActions("cache");
 
   if (service.includes("s3") || usageType.includes("storage") || usageType.includes("byte")) {

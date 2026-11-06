@@ -1,6 +1,14 @@
 import type { CloudCostLineItem, CloudCostProvider } from "../cloud-costs/aws-cur.types.js";
 import type { CloudUsageMetricKey } from "../cloud-usage/cloud-usage.types.js";
 
+/**
+ * B-ASS-03 · R-MED-8 (Emenda 1 ao §4.3) — a métrica de BASE do rateio. É a lista de uso mais
+ * `db_bytes_estimated`, que só nasce DERIVADA no `sumUsageBasis` (lida de `tenant_usage_daily` sob o GUC
+ * da organização). Fica fora de `CLOUD_USAGE_METRIC_KEYS` de propósito: nenhum evento de uso externo pode
+ * declará-la.
+ */
+export type AllocationBasisMetricKey = CloudUsageMetricKey | "db_bytes_estimated";
+
 export const CLOUD_COST_ALLOCATION_STATUSES = ["pending", "processing", "completed", "failed"] as const;
 export type CloudCostAllocationStatus = (typeof CLOUD_COST_ALLOCATION_STATUSES)[number];
 
@@ -52,7 +60,7 @@ export type TenantCloudCostAllocation = {
   readonly usageType: string;
   readonly costCategory: string;
   readonly allocationMethod: CloudCostAllocationMethod;
-  readonly allocationBasisMetricKey?: CloudUsageMetricKey;
+  readonly allocationBasisMetricKey?: AllocationBasisMetricKey;
   readonly allocationBasisQuantity: number;
   readonly allocationRatio: number;
   readonly allocatedCost: number;
@@ -124,7 +132,7 @@ export type AllocateCostsForPeriodInput = {
 // so deixou de ser base de dinheiro. A agenda dela virou `P-O6R-B06-AGGREGATE-DAILY-SEM-AGENDA`.
 export type UsageBasisRow = {
   readonly tenantId: string;
-  readonly metricKey: CloudUsageMetricKey;
+  readonly metricKey: AllocationBasisMetricKey;
   readonly quantity: number;
   readonly unit: string;
   readonly sourceType: string;

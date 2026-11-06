@@ -393,6 +393,29 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
         });
       }
 
+      // B-ASS-03 · R-MED-8 — o banco pelo espaço MEDIDO: o último dia com `db_bytes_estimated` até o fim do
+      // período, lido de `tenant_usage_daily` (ENABLE+FORCE) sob o GUC desta organização, com `tenant_id` na
+      // cláusula (superusuário de dev/CI ignora RLS) e o canário. Sem linha → sem base de banco; o motor cai
+      // para as ações.
+      const lastMeasuredDay = await tx.tenantUsageDaily.findFirst({
+        where: { tenant_id: tenantId, date: { lte: periodEnd }, db_bytes_estimated: { not: null } },
+        orderBy: { date: "desc" },
+        select: { tenant_id: true, db_bytes_estimated: true },
+      });
+      if (lastMeasuredDay) {
+        assertRowsBelongToTenant([lastMeasuredDay.tenant_id], tenantId, "tenant_usage_daily");
+        const dbBytes = lastMeasuredDay.db_bytes_estimated === null ? 0 : Number(lastMeasuredDay.db_bytes_estimated);
+        if (dbBytes > 0) {
+          rows.push({
+            tenantId,
+            metricKey: "db_bytes_estimated",
+            unit: "bytes",
+            sourceType: "tenant_usage_daily",
+            quantity: dbBytes,
+          });
+        }
+      }
+
       const auditWhere = {
         tenant_id: tenantId,
         created_at: { gte: periodStart, lte: periodEnd },

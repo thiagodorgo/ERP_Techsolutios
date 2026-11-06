@@ -1,7 +1,7 @@
 import type { CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
-import type { CloudUsageMetricKey } from "../cloud-usage/cloud-usage.types.js";
 import { resolveAllocationRule } from "./cloud-cost-allocation.rules.js";
 import type {
+  AllocationBasisMetricKey,
   AllocationEngineInput,
   AllocationEngineResult,
   CloudCostAllocationMethod,
@@ -212,7 +212,7 @@ function sumCosts(values: readonly number[]): number {
   return Number(total) / MICRO;
 }
 
-function resolveBasis(input: AllocationEngineInput, metricKeys: readonly CloudUsageMetricKey[]) {
+function resolveBasis(input: AllocationEngineInput, metricKeys: readonly AllocationBasisMetricKey[]) {
   for (const metricKey of metricKeys) {
     const byTenant = new Map<string, number>();
 
@@ -247,7 +247,7 @@ function createAllocation(
   line: CloudCostLineItem,
   tenantId: string,
   method: CloudCostAllocationMethod,
-  basisMetricKey: CloudUsageMetricKey | undefined,
+  basisMetricKey: AllocationBasisMetricKey | undefined,
   ratio: number,
   allocatedCost: number,
   basisQuantity = method === "direct_tenant_tag" ? 1 : 0,
