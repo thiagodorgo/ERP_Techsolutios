@@ -12623,12 +12623,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** FECHADA pelo PR #507 (merge `e4e181f2`, 2026-11-06; `gh pr view 507`) · **escopo:** item 59 do portão vendável · **dono:** `B-ASS-04` · **PR-alvo:** PR do `B-ASS-04` · **bloqueia:** nada (fechada).
 - **origem:** `D-ASS-PLANOS-FRANQUIA-E-CANAL`; não existe demonstrativo mensal persistido, fechamento idempotente nem baixa auditada da assinatura.
 - **encerramento:** fechamento mensal idempotente e baixa manual auditada, com uma linha por organização e período e dinheiro exato, provados pelos critérios do item 59. **(valores fora do repositório público)**.
-- **fato no fechamento:** o B-ASS-04 entregou o demonstrativo mensal por organização e período (`UNIQUE (tenant_id, period)`), fechamento idempotente em série e em paralelo, reabertura, baixa e estorno manuais com trilha na mesma transação do dinheiro, e a situação "em dia". Revisor sênior REPROVADO sem grave e revisor do cálculo REPROVADO com 1 grave (A-01) → conserto `552f0453` + corridas `4f324611` → conferência `conf-ass04` APROVADO → porteiro `porteiro-507` LIBERADO COM RESSALVA (ata `omega/juntas/R-507-revisores-ass04.md`). CI do merge: backend 4620/4622 (2 skip), backend-postgres 503/503, frontend 1636/1636. O conflito `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO` segue aberto: o demonstrativo é por organização.
+- **fato no fechamento:** o B-ASS-04 entregou o demonstrativo mensal por organização e período (`UNIQUE (tenant_id, period)`), fechamento idempotente em série e em paralelo, reabertura, baixa e estorno manuais com trilha na mesma transação do dinheiro, e a situação "em dia". Revisor sênior REPROVADO sem grave e revisor do cálculo REPROVADO com 1 grave (A-01) → conserto `552f0453` + corridas `70e91e91` (o commit `4f324611` do DeepSeek, trazido ao ramo com a mesma árvore) → conferência `conf-ass04` APROVADO → porteiro `porteiro-507` LIBERADO COM RESSALVA (ata `omega/juntas/R-507-revisores-ass04.md`). CI do merge: backend 4620/4622 (2 skip), backend-postgres 503/503, frontend 1636/1636. O conflito `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO` segue aberto: o demonstrativo é por organização.
 
 ## P-ASS-CANAL-DESLIGADO (2026-11-03) — canal de pagamento e nota, cofre e webhooks ainda não existem — ALTA
 
 - **status:** ABERTA · **escopo:** item 60 do portão vendável · **dono:** `B-ASS-05`, `B-ASS-06`, `B-ASS-07` e `B-ASS-08` · **PR-alvo:** PRs desses quatro blocos · **bloqueia:** item 60.
 - **origem:** falas literais registradas em `D-ASS-PLANOS-FRANQUIA-E-CANAL`.
+- **andamento (PR #507, desvio declarado no relatório do dev):** no demonstrativo, `charge_status` e `invoice_status` nascem em `none` e só mudam pelo canal (`B-ASS-06` a `B-ASS-08`); nenhuma rota do B-ASS-04 os altera.
 - **encerramento:** cofre, portas Asaas/Focus NFe, outbox, webhook autenticado, baixa e emissão ficam implementados e fail-closed, com zero chamada externa nos testes e com o canal desligado por padrão.
 
 ## P-ASS-VISAO-DO-CLIENTE (2026-11-03) — cliente sem rota e tela honestas da assinatura — ALTA
@@ -12636,14 +12637,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA (PARCIAL — a rota foi entregue no PR #507, merge `e4e181f2`, 2026-11-06; falta a tela) · **escopo:** item 62 do portão vendável · **dono:** `B-ASS-11` (tela); a parte do `B-ASS-04` (rota) está entregue · **PR-alvo:** PR do `B-ASS-11` · **bloqueia:** item 62.
 - **origem:** fala literal registrada em `D-COBRANCA-ASSINATURA-FRANQUIA`: o cliente vê somente plano, uso da franquia e situação.
 - **encerramento:** rota derivada das claims e tela com as três aparências expõem somente a allowlist aprovada; custo interno, dados de outras organizações e números comerciais não aparecem. **(valores fora do repositório público)**.
-- **andamento (PR #507):** `GET /api/v1/billing/subscription` e `/billing/usage-history` tiram a organização da sessão (`?tenantId` → 400; ator de plataforma e organização de sistema → 403), com `billing:read`, e a resposta não tem nenhuma chave de dinheiro (varredura de chaves no T-ST-29). O PDF da nota e os campos de pagamento saem `null` até o `B-ASS-08`. O menu "Minha assinatura" já existe; a tela é do `B-ASS-11`.
+- **andamento (PR #507):** `GET /api/v1/billing/subscription` e `/billing/usage-history` tiram a organização da sessão (`?tenantId` → 400; ator de plataforma e organização de sistema → 403), com `billing:read`, e a resposta não tem nenhuma chave de dinheiro (varredura de chaves no T-ST-29). Os campos de pagamento saem `null` e `invoicePdfAvailable: false`, e a rota do PDF da nota não existe, até haver as tabelas de notas e de cobranças (`B-ASS-08` e `B-ASS-09`). O menu "Minha assinatura" já existe; a tela é do `B-ASS-11`.
 
 ## P-ASS-RASTREAMENTO-NAO-COBRADO (2026-11-04) — rastreamento aprovado como item próprio ainda não entra na cobrança — ALTA
 
 - **status:** ABERTA · **escopo:** item 65 do portão vendável · **dono:** `B-ASS-12` · **PR-alvo:** PR do `B-ASS-12` · **bloqueia:** item 65.
 - **origem:** fala literal do dono de 31/10 ~22:15, P5: *"siga na recomendação de tudo"*; a recomendação aprovada incluía a cobrança de rastreamento como item próprio.
 - **encerramento:** dois add-ons de rastreamento, no máximo um vigente por assinatura, medição de veículos e linha própria no demonstrativo, sem inferir a resolução de `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`.
-- **andamento (PR #507):** o demonstrativo do `B-ASS-04` já tem a linha própria de rastreamento (veículos distintos no mês × preço por veículo do add-on vigente, com a versão do add-on fixada no refechamento). Faltam os dois add-ons e a medição de veículos do `B-ASS-12`.
+- **andamento (PR #507):** o demonstrativo do `B-ASS-04` já tem a linha própria de rastreamento (veículos distintos no mês × preço por veículo do add-on vigente, com a versão do add-on fixada no refechamento). O demonstrativo já conta os veículos distintos do mês (`countDistinctVehiclesInMonth`, sobre os vínculos), e o `B-ASS-03` já mede `tracked_vehicles`. Falta o `B-ASS-12`: os dois add-ons, no máximo um vigente por assinatura, e o ramo de `pricing_unit` no motor.
 
 ## P-ASS-ADAPTADORES-FORA-DO-PORTAO (2026-11-03) — adaptadores posteriores ao primeiro par aprovado — MEDIA
 
@@ -12836,8 +12837,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS03-RMED3-VACUUM-6B (2026-11-06) — o "byte a byte" do R-MED-3 varia ±6 B depois de VACUUM de outra organização — MÉDIA
 
-- **status:** ABERTA · **escopo:** achado M-4 do revisor sênior do #505 · **dono:** `B-ASS-12` (o próximo bloco que mexe na medição; o `B-ASS-04` não tratou) · **PR-alvo:** PR do `B-ASS-12` · **bloqueia:** não.
-- **troca de dono (registro de 06/11):** o `B-ASS-04` era o dono e não mediu a causa. Ele lê o espaço com teto a 0,001 GB (cerca de 1 MiB), então ±6 bytes só mudam o valor cobrado se a medida cair exatamente na borda de um milésimo. A causa segue não medida.
+- **status:** ABERTA · **escopo:** achado M-4 do revisor sênior do #505 · **dono:** `B-ASS-03F` (bloco de conserto próprio de `metering/**`, ainda sem plano; o `B-ASS-04` não tratou) · **PR-alvo:** PR do `B-ASS-03F` · **bloqueia:** não.
+- **troca de dono (registro de 06/11; leitura do orquestrador, declarada §A6):** o `B-ASS-04` era o dono e não mediu a causa. Nenhum bloco seguinte do plano da rodada tem `metering/**` no PERMITIDO (o `B-ASS-12` usa a contagem de veículos que o `B-ASS-03` já mede), então a causa fica com um bloco de conserto próprio. O `B-ASS-04` lê o espaço com teto a 0,001 GB (cerca de 1 MiB): ±6 bytes só mudam o valor cobrado se a medida cair exatamente na borda de um milésimo. A causa segue não medida.
 - **fato:** o "byte a byte" do R-MED-3 falha por ±6 bytes depois de um VACUUM causado por outra organização; o T-MED-db-3/10 ficou vermelho 3 vezes em código intacto. Causa NÃO medida.
 - **encerramento:** causa medida e, ou a prova se torna insensível ao efeito do VACUUM alheio, ou o critério é redefinido com justificativa.
 
@@ -12885,6 +12886,12 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA (2026-11-06) — refechamento com a assinatura mudada depois do fechamento usa a versão vigente — BAIXA
 
-- **status:** ABERTA · **escopo:** desvio declarado no conserto do A-01 do #507 · **dono:** `B-ASS-08` · **PR-alvo:** PR do `B-ASS-08` · **bloqueia:** não.
+- **status:** ABERTA · **escopo:** desvio declarado no conserto do A-01 do #507 · **dono:** `B-ASS-08` (leitura do orquestrador, declarada §A6: é o bloco do fluxo ponta a ponta, que cobra e emite nota a partir do demonstrativo refechado; nenhuma fonte deu dono) · **PR-alvo:** PR do `B-ASS-08` · **bloqueia:** não.
 - **fato:** no refechamento, cada dia procura a versão do plano entre as gravadas no snapshot. Se a assinatura mudou de plano depois do fechamento, o plano novo não tem versão gravada e o montador resolve a versão vigente. Recusar travaria o refechamento para sempre; aceitar faz o mês corrigido usar o preço vigente do plano novo.
 - **encerramento:** a regra é confirmada (correção de assinatura num mês fechado usa o preço vigente) ou trocada por outra, com teste.
+
+## P-ASS04-REFUND-CREDITO-OUTBOX (2026-11-06) — o reembolso de crédito ainda não existe: só aplicar e baixar — BAIXA
+
+- **status:** ABERTA · **escopo:** desvio declarado no relatório do dev do #507 (`docs/revisoes/ASSINATURA/B-ASS-04-dev.md`), pedido de registro do porteiro `porteiro-507` · **dono:** `B-ASS-08` (o relatório do dev diz que o `refund` enfileira na outbox do B-ASS-08) · **PR-alvo:** PR do `B-ASS-08` · **bloqueia:** não.
+- **fato:** o B-ASS-04 tem só `apply` e `write-off` de crédito. O `refund` (devolver o dinheiro ao cliente pelo provedor) precisa da outbox e do canal, que são do B-ASS-08.
+- **encerramento:** `POST …/credits/:id/refund` enfileira na outbox, com trilha, e o crédito passa a `refunded` só depois da confirmação do provedor.

@@ -20,6 +20,8 @@
 
 - **Identidade:** braço escolhido pela fila, identidade nova, sem Docker, só o cálculo. Montou uma referência própria em inteiros e comparou o motor em 14 casos de borda e 100.000 casos gerados: **0 diferença**. Conversões centavos ↔ decimal exatas; nenhum float sobre dinheiro; 6 de 7 mutações do plano vermelhas.
 
+Escopo dos três (A-01 a A-03): **leitura do orquestrador, declarada (§A6)** — o parecer do cálculo não traz escopo; os três estão em código que nasceu no #507 (`statement.service.ts`, `statement.inputs.ts`, `statement.engine.ts`), logo `dentro-do-bloco`.
+
 | ID | gravidade | escopo | achado |
 |---|---|---|---|
 | A-01 | **GRAVE** | dentro-do-bloco | o refechamento (reabrir → fechar) fixava só a versão do plano base: a do add-on de rastreamento era re-resolvida, e o preço por veículo mudava se uma versão nova fosse publicada entre fechar e refechar (viola o G5) |
@@ -33,7 +35,7 @@
 ## Conserto
 
 - **`dev-ass04-opus` (Claude), commit `552f0453`:** A-01 — o pin do refechamento vem do snapshot (`pinOf`): as versões de cada trecho do plano base **e** a do add-on, e só elas concorrem (T-IN-4b; mutação "add-on sem pin" vermelha). Na mesma leitura, um defeito vizinho: o pin era um id só, e um mês com troca de plano caía em `plan_without_price` no refechamento (T-IN-4c; mutação "primeira gravada" vermelha). A-02 — unidade travada por literal (T-ST-3b; mutação `/10⁹` vermelha). F1 — 35 → 48. F2 — registrado na emenda.
-- **`dev-ass04-corridas` (DeepSeek), commit `4f324611`:** F3 — `tests/ass-04-statement-races-db.test.ts`, 7 casos com `waitForOwnBlockedStatement` (os 3 cenários do R-ST-5, pagamento × cancelamento, crédito × fechamento e as duas corridas antigas com barreira); 7/7 em 3 execuções; sem `FOR UPDATE` no `lockById`, 5 dos 7 vermelhos.
+- **`dev-ass04-corridas` (DeepSeek), commit `4f324611`, trazido ao ramo como `70e91e91` (mesma árvore):** F3 — `tests/ass-04-statement-races-db.test.ts`, 7 casos com `waitForOwnBlockedStatement` (os 3 cenários do R-ST-5, pagamento × cancelamento, crédito × fechamento e as duas corridas antigas com barreira); 7/7 em 3 execuções; sem `FOR UPDATE` no `lockById`, 5 dos 7 vermelhos.
 - **Desvio declarado:** um plano sem versão gravada no snapshot (a assinatura mudou depois do fechamento) resolve a versão vigente; recusar travaria o refechamento para sempre.
 
 ## Conferência (`conf-ass04`, DeepSeek, esforço alto, 06/11 ~13:04 SP): APROVADO
@@ -44,9 +46,9 @@
 
 ## Merge e porteiro (`porteiro-507`, DeepSeek): LIBERADO COM RESSALVA
 
-- Merge `e4e181f2489d3ec2c825e0d52c4a0ba1df4f20b7` (squash do head `f9c83d6e`, que é `7fd9c7be` + a `main` por update-branch), 06/11 ~13:23 SP. 16 check-runs verdes.
+- Merge `e4e181f2489d3ec2c825e0d52c4a0ba1df4f20b7` (squash do head `f9c83d6e`, que é `7fd9c7be` + a `main` por update-branch), 06/11 ~13:23 SP. 16 check-runs verdes no head `f9c83d6e`; o commit de merge tem 9 (8 `success` e 1 `skipped`).
 - Porteiro: testes do bloco re-executados 67/67; A-01 revalidado na `main`; CI do merge backend 4622 / 0 fail / 2 skip, backend-postgres 503/503, frontend 1636/1636; ramo apagado, worktrees e containers dos revisores removidos.
-- **Ressalva (só registro, não bloqueia o B-ASS-05):** carregar esta ata, fechar `P-ASS-DEMONSTRATIVO` e a parte "rota" de `P-ASS-VISAO-DO-CLIENTE`, registrar `P-ASS04-CREDITO-EXCEDENTE` e o desvio declarado com dono. Feito neste registro.
+- **Ressalva (só registro, não bloqueia o B-ASS-05):** carregar esta ata, fechar `P-ASS-DEMONSTRATIVO` e a parte "rota" de `P-ASS-VISAO-DO-CLIENTE`, registrar `P-ASS04-CREDITO-EXCEDENTE` e os desvios declarados do dev com dono. Feito neste registro: o fallback para a versão vigente (`P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA`), o reembolso de crédito (`P-ASS04-REFUND-CREDITO-OUTBOX`) e os estados de cobrança e nota que só o canal muda (andamento em `P-ASS-CANAL-DESLIGADO`).
 
 ## Papéis (§C7.4-bis)
 
