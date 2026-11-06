@@ -22,6 +22,8 @@ import {
   createDefaultPlansService,
   createDefaultSubscriptionsService,
 } from "./subscription-billing.service.js";
+import { toUsageDto } from "./metering/metering.service.js";
+import { createDefaultTenantUsageDailyQueryService } from "./metering/usage-query.service.js";
 
 export function createSubscriptionBillingPlatformRouter(): Router {
   const router = Router();
@@ -153,6 +155,19 @@ export function createSubscriptionBillingPlatformRouter(): Router {
         parseDeleteSubscriptionDto(request.body),
       );
       response.status(200).json({ data: null });
+    }),
+  );
+
+  router.get(
+    "/tenants/:tenantId/usage",
+    requirePlatformPermission("platform:billing:read"),
+    handleAsyncRoute(async (request, response) => {
+      const service = await createDefaultTenantUsageDailyQueryService();
+      const rows = await service.listForTenant(
+        readRouteParam(request.params.tenantId),
+        parseUsageQuery(request.query),
+      );
+      response.status(200).json({ data: rows.map(toUsageDto) });
     }),
   );
 
@@ -291,4 +306,16 @@ function toSubscriptionDto(view: SubscriptionView) {
     notes: subscription.notes,
     usage: { usersPeak: null, storagePeakGb: null, trackedVehicles: null },
   };
+}
+
+function parseUsageQuery(query: Record<string, unknown>): { from?: string; to?: string } {
+  const from = readDateKey(query.from);
+  const to = readDateKey(query.to);
+
+  return { ...(from ? { from } : {}), ...(to ? { to } : {}) };
+}
+
+function readDateKey(value: unknown): string | undefined {
+  const raw = typeof value === "string" ? value.trim() : "";
+  return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : undefined;
 }

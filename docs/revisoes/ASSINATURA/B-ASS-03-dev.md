@@ -54,3 +54,32 @@ Comando: `grep -rn "UsageBasisRow\|CloudUsageMetricKey" src/modules/cloud-cost-a
 - Constante gerada: `111` tabelas. `npm run check` verde; o barrel `metering/index.ts` exporta `censored-tables.js`.
 - `tests/ass-03-metering-census-db.test.ts` (T-MED-db-8) verde `1/1` no `devass03-pg`: a constante casa com o catálogo vivo e `cloud_charge_rules`/`roles`/`platform_audit_logs` não aparecem na lista.
 - **Vermelho-controle/mutação:** em `origin/main` o gerador, a constante e o teste não existem (guarda ausente). Derivar do DMMF "toda tabela com `tenant_id`" acrescentaria `cloud_charge_rules`, `impound_payment_refs` e `roles` (medido no catálogo) → T-MED-db-8 fica vermelho nomeando as sobras.
+
+## TROCA DE DEV — 06/11 03:00 SP
+
+- O `dev-ass03` (DeepSeek Pro, oficial) parou às 02:29 SP por falta de saldo. As fatias F0–F4 estavam commitadas e a F5 estava em andamento, sem commit.
+- Às 03:00 SP (pico da DeepSeek), por ordem do dono (*"03h00: eu entro para orquestrar. e codificar tambem"*), o dev passa à identidade declarada **`dev-ass03-opus`** (Claude Opus 5.5, esforço médio; §C7 item 11(6)). É uma tarefa por vez: nenhum outro braço mexe no bloco enquanto isto roda.
+- Retomada medida antes de confiar no parcial:
+  - `npm run check` verde;
+  - `ass-03-metering` + `ass-03-metering-jobs` + `job-worker-bootstrap` = 18/18;
+  - as `-db` do bloco + `san3-05-leituras-de-plataforma-db` = 22/22 no `devass03-pg` (127.0.0.1:55503), depois de `prisma migrate deploy`.
+- Nota de terreno: o `devass03-pg` foi publicado pelo dev anterior em `0.0.0.0:55503`, e não só em 127.0.0.1. Fica registrado, e o container é removido no fim do bloco.
+
+## F5 — job com hora marcada + registro + bootstrap + rota + etiquetas (35) — `dev-ass03-opus`
+
+- O que veio do parcial do DeepSeek e foi conferido no código:
+  - `subscription.measure-daily` em `JOB_NAMES` e no registro, enfileirado no bootstrap;
+  - medição às 12:00 e às 23:30 SP;
+  - uma transação por organização em `withTenantRlsBudget` (GUC da organização, `statement_timeout` de 30 s);
+  - `GET /platform/billing/tenants/:tenantId/usage` com `platform:billing:read`, sob `withTenantRls`.
+- Lição das Emendas 2–4 ao §4.2 (o prompt do bloco as estende ao §4.3), com o diff contendo só as chaves novas:
+  - **Censo o6r07c**, regenerado pelo gerador: `node --import tsx tests/helpers/o6r07c-census.ts gravar tests/fixtures/o6r07c-classificacao-vias.json` → 478 chaves, +1 chave `ROTA GET /api/v1/platform/billing/tenants/:tenantId/usage` classe `LEITURA`. Nenhuma chave existente mudou.
+  - **Falso positivo do T8** (`TIPO-NAO-RESOLVIDO: subscription-billing.jobs.ts:66: part.type === type`): era o `formatToParts` do relógio de parede, e não um despacho de mensagem. Reescrito como mapa pelo nome da parte, sem mudar o comportamento. O censo depois disso deu `VIOLAÇÕES: 0`.
+  - **Ratchet san3-05 (T13)**: 2 chaves L2 novas, `new PrismaMeteringSqlExecutor(tx)` e `new PrismaTenantUsageDailyRepository(tx)` em `metering-prisma.repository.ts:155-156`, ambas `PARAMETRO(tx)`. Entraram nas NOVAS com o motivo: o único chamador é `runSubscriptionMeasureDaily`, que cria o tx em `withTenantRlsBudget(prisma, tenant.id, …)`, e o medidor assere o GUC e o canário antes de gravar (R-MED-4).
+  - **Contagens fixas**:
+    - `san3-05-acessos-de-plataforma-guard.test.ts:297`: `ENABLE=115 FORCE=115` → `116`. A única entrada nova é `tenant_usage_daily`, conferida na saída do gerador (lista L0 FORCE).
+    - `san3-05-runtime-role-guard-db.test.ts:1016`: DML `125` → `126`. O número vem de comando: `SELECT count(*) FROM pg_tables WHERE schemaname='public'` = 126 no cluster migrado. Esse teste exige psql/bash/setsid e roda só no CI Linux; o aceite dele é o CI.
+- Bateria da fatia: `o6r07c-census-guard` + `san3-05-acessos-de-plataforma-guard` + `ass-03-metering` + `ass-03-metering-jobs` + `job-worker-bootstrap` + `san3-05-leituras-de-plataforma-db` = **97/97**, fail 0. `npm run check` sem erro. `git diff --check` limpo.
+- Fora do PERMITIDO literal do §4.3, pela mesma classe das Emendas 2–4 (a revisar):
+  - `tests/job-worker-bootstrap.test.ts`, porque o job novo entra no bootstrap e o teste enumera as varreduras;
+  - os 3 arquivos de guard acima.

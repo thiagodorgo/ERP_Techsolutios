@@ -3,6 +3,8 @@ export const JOB_NAMES = [
   "cloud-cost-allocation.run",
   "checklist-attachment-postprocess",
   "cloud-usage.aggregate-daily",
+  // B-ASS-03 — medição diária da franquia por organização (usuários ativos, espaço, veículos rastreados).
+  "subscription.measure-daily",
   "notification-dispatch",
   // Ω4C PR-04 — varredura recorrente auto-reenfileirante do motor de notificações agendáveis (reuso do
   // job.worker.ts; SEM node-cron). Só executa com o worker ligado (flag JOBS_WORKER_ENABLED, default OFF).

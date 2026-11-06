@@ -127,6 +127,8 @@ model Tenant {
   // B-ASS-02 — relacoes reversas exigidas pelo Prisma para as tabelas de assinatura (sem coluna em tenants).
   tenant_subscriptions          TenantSubscription[]
   tenant_subscription_addons    TenantSubscriptionAddon[]
+  // B-ASS-03 — relacao reversa exigida pelo Prisma para a medicao diaria da franquia (sem coluna em tenants).
+  tenant_usage_daily            TenantUsageDaily[]
   @@map("tenants")
 }
 
@@ -4088,4 +4090,3 @@ model TenantUsageDaily {
   @@index([tenant_id, date])
   @@map("tenant_usage_daily")
 }
-
