@@ -32,3 +32,29 @@ Plano: `B-ASSINATURA` §4.4 (fora do repositório, `erp-pausa-2026-10-03/planos/
   | half-even no `halfUpDiv` | 1 fail (T-ST-3) |
   | esquecer o add-on | 1 fail (T-ST-4) |
   | contar só o primeiro vínculo, no lugar dos distintos | 1 fail (T-ST-41) |
+
+## F2/F3 — regras de estado, "em dia" e créditos (serviço + dublê) — `dev-ass04-opus`
+
+- **Arquivos**:
+  - `statement.types.ts`: estados, cobrança, nota, pagamentos, créditos e auditoria;
+  - `statement.repository.ts`: a porta `transaction`/`lockById`/`insertIfAbsentAndLock` e um dublê que serializa por organização, como o `FOR UPDATE`;
+  - `statement.service.ts`.
+- **O serviço** cobre:
+  - `close`, com relógio injetado e datas SP pelo `business-time`;
+  - `reopen`, `recordManualPayment`, `reverseManualPayment`, `cancel` e `adjust`;
+  - `recordProviderPayment` (G7: `applied = min(valor, saldo)`, o excedente vira crédito);
+  - `applyCredit`, `writeOffCredit` e `upToDateStatus`.
+- **Teste** `tests/ass-04-statement-service.test.ts` = **20/20**, cobrindo T-ST-9..19, 21..28, 42..58 em blocos. Junto com o motor, **33/33**.
+- **Mutações do plano**, todas vermelhas e restauradas pela cópia com md5 igual:
+
+  | Mutação | Teste que pegou |
+  |---|---|
+  | UTC em vez de SP | T-ST-10 |
+  | baixar em `open` | T-ST-14 |
+  | `/reverse` em provedor | T-ST-42 |
+  | grace `<`→`<=` | matriz "em dia" |
+  | job fecha `reopened` | T-ST-45 |
+  | ajuste sem piso | T-ST-51 |
+  | descartar o excedente | T-ST-53/54/55, 3 fail |
+
+- **Declarado:** o `refund` do crédito enfileira na outbox do B-ASS-08 e fica fora deste bloco. Aqui só existem `apply` e `write-off`. Os estados da cobrança e da nota (`charge_status`, `invoice_status`) só mudam pelo canal (B-ASS-06..08). Nos testes, eles são forçados por `setChannelState` do dublê.
