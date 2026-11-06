@@ -10514,10 +10514,11 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-SAN3-06B-PLANOS-SEM-ENDPOINT (2026-10-09) — catálogo comercial sem rota — MÉDIA
 
-- status: ABERTA.
+- status: FECHADA pelo PR #504 (merge `43716227`, 2026-11-05; `gh pr view 504`).
 - **prova:** catálogo e módulos por plano existem apenas no serviço interno; não há rota de preço ou catálogo comercial.
 - **dono:** `B-ASS-02` entrega o catálogo de planos e a rota correspondente; o gate administrativo remanescente continua com `B-SAN3-18`.
 - **bloqueia:** não.
+- **fato no fechamento:** o `B-ASS-02` persistiu o catálogo de planos (6 planos) e a rota correspondente; junta `J-504` APROVADO 3/3; CI do merge `43716227`: backend 4497/4499 (2 skip), backend-postgres 503/503.
 
 ## P-SAN3-06B-CLOUD-BILLING-ESCRITA (2026-10-09) — escrita cloud aguarda definição de produto — ALTA
 
@@ -12612,9 +12613,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** casos unilaterais de lixo, PR vazio e id numérico deixam cada mutante vermelho.
 ## P-ASS-MEDICAO-FRANQUIA (2026-11-03) — franquia sem medição diária por organização — ALTA
 
-- **status:** ABERTA · **escopo:** item 58 do portão vendável · **dono:** `B-ASS-03` · **PR-alvo:** PR do `B-ASS-03` · **bloqueia:** item 58.
+- **status:** FECHADA pelo PR #505 (merge `3470db1e`, 2026-11-06; `gh pr view 505`) · **escopo:** item 58 do portão vendável · **dono:** `B-ASS-03` · **PR-alvo:** PR do `B-ASS-03` · **bloqueia:** nada (fechada).
 - **origem:** `D-ASS-PLANOS-FRANQUIA-E-CANAL`; hoje não há medição persistida de usuários ativos e de armazenamento por organização.
 - **encerramento:** medição diária sob isolamento por organização, com pico mensal de usuários e estimativa de banco + arquivos, provada pelos critérios do item 58. **(valores fora do repositório público)**.
+- **fato no fechamento:** o B-ASS-03 entregou a medição diária sob RLS (merge `3470db1e`); revisor sênior REPROVADO (2 graves) → conserto `f443f6d9` → conferência `conf-505` e porteiro `porteiro-505` LIBERADO COM RESSALVA. CI do merge: backend 4528/4530 (2 skip), backend-postgres 503/503.
 
 ## P-ASS-DEMONSTRATIVO (2026-11-03) — demonstrativo mensal e baixa da assinatura inexistentes — ALTA
 
@@ -12816,3 +12818,57 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem medida:** `dev-44-sol` (`aapt dump permissions`) e o orquestrador na `origin/main`: o `AndroidManifest.xml` principal não declarava `android.permission.INTERNET`; só os de debug e profile declaravam.
 - **fato no fechamento:** re-medido neste registro em `origin/main@0c3c7826`: `android.permission.INTERNET` aparece 1 vez em cada manifest (`main`, `debug`, `profile`). Revisão do orquestrador fora do repositório (`revisoes/rev-499-orquestrador.md`), CI 16/16.
 - **nota:** a entrada `## B-MOBILE-INTERNET-RELEASE (2026-11-04)`, acima, registra o mesmo defeito pelo nome do bloco; esta entrada dá a ele o ID de pendência que a fonte usa. A repetição de F3, Op-10 e Op-8 mobile com o release continua em `P-SAN3-ROTEIRO-DEMO-OPERACAO`.
+
+## P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO (2026-11-05) — escrita de `tenants.modules` em writer novo, fora do `TenantRepository` — BAIXA
+
+- **status:** ABERTA · **escopo:** resíduo da pré-revisão do B-ASS-02 (achado B-02, Emenda 4 ao §4.2) · **dono:** o próximo bloco da trilha ASSINATURA que escrever `tenants.modules` (até lá, o orquestrador) · **PR-alvo:** o PR desse bloco · **bloqueia:** não. O dono original era o `B-ASS-03`, que mergeou no #505 (`3470db1e`) sem tocar no writer (`git diff --name-only 43716227 3470db1e` não traz o caminho); o dono foi trocado na revisão do #506.
+- **fato:** a atualização de `tenants.modules` (R-PLAN-3) foi implementada num writer novo (`src/modules/subscription-billing/plans/tenant-modules.prisma.ts`, `PrismaTenantModulesWriter.writeModules` → `tenant.update`), em vez de reutilizar o `TenantRepository` existente (`src/modules/core-saas/repositories/tenant.repository.ts`). Comportamento equivalente, sem efeito de segurança ou correção.
+- **encerramento:** caminho de escrita de `tenants.modules` consolidado (ou a premissa ratificada e documentada), sem duplicação.
+
+## P-SAN3-05-ETIQUETA-UNICA-POR-ROTA (2026-11-05) — a taxonomia de etiquetas aceita uma só etiqueta por rota — BAIXA
+
+- **status:** ABERTA · **escopo:** resíduo da Emenda 2 ao §4.2 do B-ASS-02 · **dono:** `B-SAN3-05` (ou o próximo bloco que mexer na taxonomia) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **fato:** a taxonomia aceita uma única etiqueta por rota, e `/plans/summary` e `addVersion` também tocam tabela FORCE. No B-ASS-02 ficou a etiqueta pedida, com a nota.
+- **encerramento:** taxonomia com etiqueta por rota conforme a classe real (ou etiqueta múltipla), sem a nota de exceção.
+
+## P-ASS03-RMED3-VACUUM-6B (2026-11-06) — o "byte a byte" do R-MED-3 varia ±6 B depois de VACUUM de outra organização — MÉDIA
+
+- **status:** ABERTA · **escopo:** achado M-4 do revisor sênior do #505 · **dono:** `B-ASS-04` (que lê a medida para cobrar) · **PR-alvo:** PR do `B-ASS-04` · **bloqueia:** não.
+- **fato:** o "byte a byte" do R-MED-3 falha por ±6 bytes depois de um VACUUM causado por outra organização; o T-MED-db-3/10 ficou vermelho 3 vezes em código intacto. Causa NÃO medida.
+- **encerramento:** causa medida e, ou a prova se torna insensível ao efeito do VACUUM alheio, ou o critério é redefinido com justificativa.
+
+## P-ASS03-CANARIO-LIMIT1 (2026-11-06) — o canário `LIMIT 1` só pega bypass por acaso — BAIXA
+
+- **status:** ABERTA · **escopo:** achado B-2 do revisor sênior do #505 · **dono:** `B-SAN3-05` · **PR-alvo:** PR do `B-SAN3-05` · **bloqueia:** não.
+- **fato:** o canário `LIMIT 1` só detecta bypass por acaso, sob superusuário; o diferencial T11 do job é vazio, e o comentário do teste afirma o contrário. Em produção, quem protege é o G-DB-ROLE.
+- **encerramento:** canário determinístico que pega bypass sem depender da ordem das organizações, com teste.
+
+## P-ASS03-VEICULOS-SEM-DB (2026-11-06) — o SQL real de veículos não tem variante `-db` — BAIXA
+
+- **status:** ABERTA · **escopo:** achado B-4 do revisor sênior do #505; conforme o plano (T-MED-9..11 no dublê) · **dono:** `B-ASS-12` (rastreamento) · **PR-alvo:** PR do `B-ASS-12` · **bloqueia:** não.
+- **fato:** o SQL real de veículos não tem `-db`; a mutação sem `distinct` sobrevive.
+- **encerramento:** SQL real de veículos coberto por suíte `-db`, com mutação que o deixa vermelho.
+
+## P-ASS03-METODO-RATEIO-FALLBACK (2026-11-06) — sem medição, o rateio do banco grava `storage_usage_weight` mesmo caindo para as ações — BAIXA
+
+- **status:** ABERTA · **escopo:** achado B-5 do revisor sênior do #505 · **dono:** `B-ASS-09a` · **PR-alvo:** PR do `B-ASS-09a` · **bloqueia:** não.
+- **fato:** sem medição, o banco é rateado pelas ações mas gravado como `storage_usage_weight` (era `api_request_weight`).
+- **encerramento:** método de fallback do rateio gravado conforme a base efetivamente usada, com teste.
+
+## P-ASS03-PD-SWEEP-CATALOGO (2026-11-06) — `(PD) sweep` vermelho só no head, por concorrência no catálogo de papéis — BAIXA
+
+- **status:** ABERTA · **escopo:** achado B-7 do revisor sênior do #505; classe pré-existente · **dono:** `B-SAN3-05` · **PR-alvo:** PR do `B-SAN3-05` · **bloqueia:** não.
+- **fato:** `(PD) sweep` fica vermelho só no head, pela concorrência no catálogo de papéis; mais suítes `-db` deixam a falha mais frequente.
+- **encerramento:** a concorrência no catálogo de papéis é resolvida (serialização ou equivalente), com o sweep verde e estável.
+
+## P-JOBS-REENFILEIRA-MULTIPLICA (2026-11-06) — re-enfileirar no `finally` multiplica as cadeias do job de diárias — MÉDIA
+
+- **status:** ABERTA · **escopo:** achado M-1 do revisor sênior do #505, classe pré-existente em `charge.jobs.ts:12-16` · **dono:** o módulo de diárias · **PR-alvo:** o PR do módulo de diárias · **bloqueia:** não.
+- **fato:** re-enfileirar no `finally` com a retentativa da fila multiplica as cadeias do job: 1 falha → `DELAYED n=2`. O B-ASS-03 consertou o handler do job de medição; a mesma classe fica em `charge.jobs.ts`, fora do bloco.
+- **encerramento:** 1 falha deixa UMA cadeia só, em todos os jobs que re-enfileiram no `finally`.
+
+## P-ASS-SPLIT-MARGEM-CONTRATO (2026-11-06) — redação do contrato e nota sobre a tarifa do split para o parecer jurídico e contábil
+
+- **status:** ABERTA · **escopo:** decisão `D-SPLIT-NO-PROVEDOR-0611` · **dono:** dono do produto + `B-ASS-06`/`B-ASS-08` (bloco de pagamento) · **PR-alvo:** os PRs nomeados e o parecer externo · **bloqueia:** não declarado na fonte.
+- **fato:** o dono decidiu o split no provedor — a margem é separada no provedor no ato do pagamento, e a plataforma não recebe nem repassa o dinheiro do cliente. Fica para o parecer jurídico e contábil: a redação do contrato, a emissão da nota sobre a tarifa e se o split do provedor atende ao modelo.
+- **encerramento:** contrato redigido e nota sobre a tarifa emitida conforme o parecer jurídico e contábil.
