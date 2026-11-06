@@ -79,3 +79,24 @@ Plano: `B-ASSINATURA` §4.4 (fora do repositório, `erp-pausa-2026-10-03/planos/
   - `permission-catalog-migration-parity`: `billing:read` saiu da linha de base `PERMISSOES_HERDADAS_DO_SEED`, porque a dívida foi paga.
 - **Pendente na F9:** a linha Billing do `san3-04a` deixa de ser `skip`, e `billing:read` sai das órfãs, quando a rota do cliente (`GET /billing/subscription`) existir. Até lá o guard a vê, corretamente, como órfã.
 - **Bateria:** guards, drill, motor e serviço = **102/102**. `migration-transaction-guard`: 0 violações. `check`: 0 erros.
+
+## Montador das entradas do fechamento (`statements/statement.inputs.ts`) — `dev-ass04-opus`
+
+- **`buildStatementInputs(period, dados, {pinnedPlanVersionId})`** é PURO. O repositório da F5 só carrega os dados. A função:
+  - avalia cada dia no início do dia em SP, com janelas `[validFrom, validTo)` (`resolveVersionAt`);
+  - monta segmentos por assinatura, versão e preço efetivo;
+  - pega franquia e unitários do **último dia**;
+  - pega o add-on de rastreamento vigente no último dia;
+  - calcula o maior de cada medição do mês e os gaps declarados;
+  - conta veículos distintos no mês;
+  - devolve `skip` com o motivo (`no_subscription`, `plan_without_price` ou `platform_organization`).
+- **Teste** `tests/ass-04-statement-inputs.test.ts` (T-IN-1..7) = **7/7**.
+- **Mutações:**
+
+  | Mutação | Teste que pegou |
+  |---|---|
+  | termos do 1º dia | T-IN-2 |
+  | ignorar a sobrescrita de preço | T-IN-3 |
+  | refechar sem a versão gravada | T-IN-4 |
+
+  Cada uma deu 1 fail. Todas foram restauradas, com md5 igual.
