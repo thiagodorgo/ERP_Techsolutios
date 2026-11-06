@@ -144,6 +144,9 @@ export type StatementAuditEvent = {
 };
 
 export class StatementError extends Error {
+  /** Código do envelope de erro da casa (`{ error: { code, reason, message } }`). */
+  readonly code = "SUBSCRIPTION_STATEMENT";
+
   constructor(
     readonly statusCode: number,
     readonly reason: string,

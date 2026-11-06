@@ -24,6 +24,7 @@ import {
 } from "./subscription-billing.service.js";
 import { toUsageDto } from "./metering/metering.service.js";
 import { createDefaultTenantUsageDailyQueryService } from "./metering/usage-query.service.js";
+import { createStatementsPlatformRouter } from "./statements/statements.platform.routes.js";
 
 export function createSubscriptionBillingPlatformRouter(): Router {
   const router = Router();
@@ -170,6 +171,9 @@ export function createSubscriptionBillingPlatformRouter(): Router {
       response.status(200).json({ data: rows.map(toUsageDto) });
     }),
   );
+
+  // B-ASS-04 · F7 — demonstrativo mensal, pagamentos e créditos.
+  router.use(createStatementsPlatformRouter());
 
   return router;
 }
