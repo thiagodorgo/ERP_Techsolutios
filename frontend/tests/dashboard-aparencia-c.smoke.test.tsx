@@ -80,6 +80,9 @@ test("[DC4] Suporte (só dashboard:read): a fila tem só atrasadas e prioritári
   assert.match(detail, /Seu perfil vê esta OS no painel, mas não abre ordens de serviço\./);
   assert.match(section(html, "Agora"), /data-state="forbidden"/);
   assert.match(section(html, "Volume · 14 dias"), /data-state="forbidden"/);
+  // Defesa em profundidade: mesmo que o modelo traga aprovações e posições, sem o acesso a view não as mostra.
+  const leaked = render({ approvals: { status: "ready", items: buildDashModel().model.approvals!.items }, locations: { status: "ready", items: buildDashModel().model.locations.items } }, SUPORTE);
+  assert.ok(rowKeys(fila(leaked)).every((key) => /^fila:os_/.test(key)), JSON.stringify(rowKeys(fila(leaked))));
 });
 
 test("[DC5] coluna 'Resumo do dia': os 5 números abrem o detalhe; 'Atrasadas' filtra a fila pelo bloco e diz isso", () => {
