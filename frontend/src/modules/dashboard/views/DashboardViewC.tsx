@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, FileCheck, LayoutGrid, Map as MapIcon, WifiOff, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ArrowRight, FileCheck, LayoutGrid, Map as MapIcon, Send, UserX, WifiOff, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { StatusPill } from "../../../components/patterns";
@@ -49,7 +49,20 @@ const BLOCKS: readonly { readonly key: BlockKey; readonly label: string; readonl
   { key: "os_prioritaria", label: "Prioridade alta/urgente", icon: AlertTriangle, fg: "#B45309", bg: "#FFFBEB" },
   { key: "campo_sem_sinal", label: "Sem sinal recente", icon: WifiOff, fg: "#B45309", bg: "#FFFBEB" },
   { key: "aprovacao_pendente", label: "Pendentes de aprovação", icon: FileCheck, fg: "#7E22CE", bg: "#FAF5FF" },
+  { key: "os_sem_operador", label: "Sem técnico", icon: UserX, fg: "#475569", bg: "#F1F5F9" },
 ];
+
+const PRIORITY_LABEL: Readonly<Record<string, string>> = { urgent: "Urgente", high: "Alta", medium: "Média", low: "Baixa" };
+
+/** A OS por trás de um item da fila: a crítica do agregado ou a da página de OS da C (o que tiver o id). */
+function queueOrder(model: DashboardViewModel, workOrderId: string) {
+  const critical = model.summary.critical.find((entry) => entry.id === workOrderId);
+  if (critical) return critical;
+  const listed = model.workOrders?.items.find((entry) => entry.id === workOrderId);
+  return listed
+    ? { code: listed.code, customerName: listed.customerName ?? null, title: listed.title, scheduledFor: listed.scheduledFor ?? null, priority: listed.priority, priorityLabel: PRIORITY_LABEL[listed.priority] ?? listed.priority }
+    : null;
+}
 
 /** Rótulo do selo de tipo: "Urgente" quando a OS prioritária é urgente (o `severity` crítico), como a referência. */
 export function queueTypeLabel(item: CriticalQueueItem): string {
@@ -61,6 +74,8 @@ function availableBlocks(model: DashboardViewModel) {
   return BLOCKS.filter((block) => {
     if (block.key === "campo_sem_sinal") return model.access.readLocations && model.locations.status === "ready";
     if (block.key === "aprovacao_pendente") return model.access.readApprovals && model.approvals?.status === "ready";
+    // "Sem técnico" só existe com a página de OS lida; falha ou 403 → o bloco some (o aviso diz por quê), nunca um zero.
+    if (block.key === "os_sem_operador") return model.access.readWorkOrders && model.workOrders?.status === "ready";
     return true;
   });
 }
@@ -68,7 +83,7 @@ function availableBlocks(model: DashboardViewModel) {
 function QueueDetail({ model, item }: { readonly model: DashboardViewModel; readonly item: CriticalQueueItem }) {
   const workOrderId = queueWorkOrderId(item);
   if (workOrderId) {
-    const order = model.summary.critical.find((entry) => entry.id === workOrderId);
+    const order = queueOrder(model, workOrderId);
     const countdown = order ? agendaCountdown(order.scheduledFor, model.now) : null;
     return (
       <>
@@ -95,6 +110,12 @@ function QueueDetail({ model, item }: { readonly model: DashboardViewModel; read
           ) : (
             <span className="pat-ab-detail-note">Seu perfil vê esta OS no painel, mas não abre ordens de serviço.</span>
           )}
+          {item.kind === "os_sem_operador" && model.access.can("field_dispatch:create") ? (
+            <button type="button" className="pat-btn" onClick={() => model.onNavigate(`/operations/dispatches?workOrderId=${workOrderId}`)}>
+              <Send size={14} aria-hidden="true" />
+              Despachar
+            </button>
+          ) : null}
           {model.access.readWorkOrders && model.access.readLocations ? (
             <button type="button" className="pat-btn" onClick={() => model.onNavigate("/operations/map")}>
               <MapIcon size={14} aria-hidden="true" />
@@ -167,7 +188,7 @@ function QueueDetail({ model, item }: { readonly model: DashboardViewModel; read
 /** Chave da linha da fila: o código da OS para os itens de OS (o id interno nunca vai ao HTML); o id do registro para os demais. */
 function queueRowKey(model: DashboardViewModel, item: CriticalQueueItem): string {
   const workOrderId = queueWorkOrderId(item);
-  const code = workOrderId ? model.summary.critical.find((order) => order.id === workOrderId)?.code : null;
+  const code = workOrderId ? queueOrder(model, workOrderId)?.code : null;
   return code ? `fila:${item.kind}:${code}` : `fila:${item.id}`;
 }
 
@@ -429,6 +450,48 @@ function Rail({ model }: { readonly model: DashboardViewModel }) {
   );
 }
 
+/**
+ * D-007: o universo de cada contagem da fila. As atrasadas e prioritárias vêm das OS críticas que o painel recebe (e da
+ * página de OS, quando lida); "Sem técnico" vem só da primeira página que o servidor devolve, com o total que ele informa
+ * — com "Ver todas" para a lista de OS já recortada quando há mais. Falha ou 403 da página: o tipo some com o aviso.
+ */
+function QueueUniverse({ model }: { readonly model: DashboardViewModel }) {
+  const critical = model.summary.critical.length;
+  const page = model.access.readWorkOrders ? model.workOrders : null;
+  const ready = page?.status === "ready";
+  return (
+    <div className="apardash-universo" data-universo="">
+      <span>{`OS atrasadas e prioritárias: entre as ${critical} OS críticas que o painel recebe${ready ? ` e as ${page.loaded} OS carregadas` : ""}.`}</span>
+      {ready ? (
+        <>
+          {" "}
+          <span>{`OS sem técnico: entre as ${page.loaded} OS carregadas, de ${page.serverTotal}.`}</span>
+          {page.partial ? (
+            <>
+              {" "}
+              <button type="button" className="pat-link" onClick={() => model.onNavigate("/work-orders?aba=sem-tecnico")}>
+                Ver todas
+              </button>
+            </>
+          ) : null}
+        </>
+      ) : page?.status === "loading" ? (
+        <span data-state="loading"> Carregando as OS sem técnico…</span>
+      ) : page?.status === "forbidden" ? (
+        <span data-state="forbidden"> Acesso não permitido à lista de OS: o tipo “Sem técnico” não aparece.</span>
+      ) : page?.status === "error" ? (
+        <span data-state="error">
+          {" "}
+          Não foi possível carregar as OS sem técnico.{" "}
+          <button type="button" className="pat-link" onClick={model.onRetry}>
+            Tentar novamente
+          </button>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 export function DashboardViewC(model: DashboardViewModel) {
   const header = <DashHeader model={model} kicker="VISÃO GERAL · CENTRAL DE PRIORIDADES" subtitle="O que pede decisão agora, numa fila só — e o resumo do dia ao lado" />;
   if (model.summary.status === "forbidden") {
@@ -504,8 +567,7 @@ export function DashboardViewC(model: DashboardViewModel) {
         })}
       </div>
     );
-    // D-007: as OS atrasadas e prioritárias desta fila são as OS críticas que o painel recebe, não todas as da organização.
-    universe = <p className="apardash-universo">{`OS atrasadas e prioritárias: entre as ${model.summary.critical.length} OS críticas que o painel recebe.`}</p>;
+    universe = <QueueUniverse model={model} />;
     const blockLabel = bloco === "todas" ? null : (BLOCKS.find((block) => block.key === bloco)?.label ?? null);
     body = (
       <>

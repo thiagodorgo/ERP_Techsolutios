@@ -283,3 +283,20 @@ export const WORK_ORDER_DTOS: readonly Record<string, unknown>[] = OS_RAW.map(([
 
 /** Os despachos no formato do servidor (`GET /operations/dispatches`). */
 export const DISPATCHES_DTO = DISPATCHES.map((d) => ({ ...d }));
+
+// ---- A página de OS da C ("OS sem operador", Emenda 1 ao §2): a primeira página de GET /work-orders (sem `limit`), como
+// o serviço vivo a devolve. Traz as OS da referência sem técnico (0429, 0430) e uma crítica repetida (0409) — a fila
+// não pode duplicar a entidade. O servidor informa mais OS do que as devolvidas (`total`), e a tela diz o universo. ----
+export const PAGE_DTOS: readonly Record<string, unknown>[] = [
+  ...WORK_ORDER_DTOS,
+  { id: woId("OS-2026-0429"), code: "OS-2026-0429", title: "Remoção de veículo leve", status: "open", priority: "medium", customer_name: "Bruno Teixeira (particular)", service_address: "Rua Domingos de Morais, 2.200", service_city: "São Paulo", service_state: "SP", scheduled_for: at(320), assigned_operator_id: null, created_at: ago(33), updated_at: ago(33) },
+  { id: woId("OS-2026-0430"), code: "OS-2026-0430", title: "Socorro mecânico — bateria", status: "open", priority: "low", customer_name: "Condomínio Jardim das Acácias", service_address: "Rua das Acácias, 85", service_city: "Osasco", service_state: "SP", scheduled_for: null, assigned_operator_id: null, created_at: ago(31), updated_at: ago(31) },
+];
+export const PAGE_TOTAL = 412 + 35;
+
+/** O bloco `workOrders` do modelo, montado pelo adaptador REAL da lista de OS. */
+export async function pageBlock(total = PAGE_TOTAL) {
+  const { adaptWorkOrdersResponse } = await import("../../src/modules/work-orders/work-orders.adapter");
+  const data = adaptWorkOrdersResponse({ items: PAGE_DTOS, pagination: { limit: 20, offset: 0, total } });
+  return { status: "ready" as const, items: data.items, loaded: data.items.length, serverTotal: Math.max(data.pagination.total, data.items.length), partial: data.pagination.total > data.items.length };
+}

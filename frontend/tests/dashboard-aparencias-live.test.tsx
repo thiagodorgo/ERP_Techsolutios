@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import test, { after } from "node:test";
 
 import { elements, hasClass, installMiniDom, propsOf, serialize, text, type MiniDomElement, type MiniDomNode } from "./helpers/mini-dom";
-import { APPROVALS_DTO, LOCATIONS_DTO, SERIES_POINTS, SUMMARY_DTO } from "./helpers/dashboard-aparencias.fixture";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { APPROVALS_DTO, LOCATIONS_DTO, PAGE_DTOS, PAGE_TOTAL, SERIES_POINTS, SUMMARY_DTO } from "./helpers/dashboard-aparencias.fixture";
 
 // B-APAR-DASH — Dashboard REAL (`DashboardPage`, o contêiner) montado com o menu de aparência REAL (`AppearanceChoices`),
 // os provedores reais e os hooks reais (`useDashboardData`, `useWorkOrderTimeseries`), no DOM mínimo compartilhado da trilha
@@ -77,7 +81,9 @@ function installFetch() {
     if (/^\/field-locations\/latest/.test(url)) return json(200, { data: LOCATIONS_DTO });
     if (/^\/approvals\/pending/.test(url)) return json(200, { data: APPROVALS_DTO });
     if (/^\/work-orders\/wo-0418(\?|$)/.test(url)) return json(200, { data: DETAIL });
-    if (/^\/work-orders(\?|$)/.test(url)) return json(200, { items: [], pagination: { limit: 100, offset: 0, total: 0 } });
+    // A página de OS da C: GET /work-orders SEM query (o serviço vivo, sem `limit`). Com query é o enriquecimento do mapa.
+    if (url === "/work-orders") return json(200, { items: PAGE_DTOS, pagination: { limit: 20, offset: 0, total: PAGE_TOTAL } });
+    if (/^\/work-orders\?/.test(url)) return json(200, { items: [], pagination: { limit: 100, offset: 0, total: 0 } });
     return json(404, { error: { code: "NOT_FOUND", reason: "not_found", message: "não previsto no teste" } });
   }) as typeof fetch;
 }
@@ -123,8 +129,10 @@ const menuItem = (container: MiniDomNode, label: string) =>
 const countCalls = (pattern: RegExp) => calls.filter((call) => pattern.test(call)).length;
 
 // Papel padrão: o gestor (nunca o Super Admin do mockSession, que passaria por cima das permissões).
-async function mount(entry = "/dashboard", permissions: readonly string[] = PERMISSIONS, roles: readonly string[] = ["Gestor Operacional"]) {
+async function mount(entry = "/dashboard", permissions: readonly string[] = PERMISSIONS, roles: readonly string[] = ["Gestor Operacional"], appearance?: "A" | "B" | "C") {
   seedSessionAndContext(permissions, roles);
+  // Gravada no armazenamento, a aparência inicial vence a cópia em memória que o teste anterior deixou.
+  if (appearance) dom.storage.set(appearanceKey(), JSON.stringify({ dashboard: appearance }));
   installFetch();
   const container = dom.doc.body.appendChild(dom.doc.createElement("div"));
   const root = createRoot(container as unknown as Element);
@@ -261,4 +269,59 @@ test("[DL6] Suporte (só dashboard:read), nas 3 aparências: nenhum GET da séri
   } finally {
     await unmount();
   }
+});
+
+test("[DL7] C em modo real: 'OS sem operador' vem do serviço VIVO (GET /work-orders sem limit, 1×, só ao abrir a C); o legado não é usado", async () => {
+  // A aparência escolhida no teste anterior fica na cópia em memória do armazenamento: monta explícito na A.
+  const { container, unmount } = await mount("/dashboard", PERMISSIONS, ["Gestor Operacional"], "A");
+  try {
+    // Base: o enriquecimento dos despachos (dispatches.service.ts) já pede GET /work-orders hoje; a C soma UMA chamada.
+    const base = countCalls(/^GET \/work-orders$/);
+    assert.equal(countCalls(/^GET \/approvals\/pending/), 0, "montou na A");
+    await press(menuItem(container, "B · Analítica"));
+    assert.equal(countCalls(/^GET \/work-orders$/), base, "a A e a B não pedem a página de OS da C");
+    await press(menuItem(container, "C · Central de prioridades"));
+    assert.equal(countCalls(/^GET \/work-orders$/), base + 1, JSON.stringify(calls));
+    // Relógio REAL aqui (não o da maquete): a 0429 (agenda em 14/10) já é atrasada; a 0430, sem agenda, é "sem técnico".
+    assert.ok(row(container, "fila:os_sem_operador:OS-2026-0430"), "o tipo 'OS sem operador' entra na fila");
+    assert.ok(row(container, "fila:os_atrasada:OS-2026-0429"), "uma entidade, um lugar: a 0429 vai para o grupo mais crítico");
+    assert.ok(buttonLabel(container, "Sem técnico: 1 — filtrar a fila"));
+    assert.ok(text(pageRoot(container)!).includes(`OS sem técnico: entre as 11 OS carregadas, de ${PAGE_TOTAL}.`));
+    await press(buttonText(container, "Ver todas"));
+    assert.equal(currentLocation, "/work-orders?aba=sem-tecnico", "'Ver todas' abre a lista já recortada");
+  } finally {
+    await unmount();
+  }
+  const again = await mount("/dashboard", PERMISSIONS, ["Gestor Operacional"], "A");
+  try {
+    const base = countCalls(/^GET \/work-orders$/);
+    assert.equal(countCalls(/^GET \/approvals\/pending/), 0, "montou na A");
+    await press(menuItem(again.container, "C · Central de prioridades"));
+    await press(menuItem(again.container, "A · Padrão fiel"));
+    await press(menuItem(again.container, "C · Central de prioridades"));
+    assert.equal(countCalls(/^GET \/work-orders$/), base + 1, "voltar à C não pede de novo");
+  } finally {
+    await again.unmount();
+  }
+});
+
+test("[DL8] guard estático (Emenda 4): nenhum arquivo do bloco usa o repositório legado `listWorkOrders`; o contêiner chama `listWorkOrdersFromApi(context, {})`", () => {
+  const SRC = fileURLToPath(new URL("../src/", import.meta.url));
+  const files = [join(SRC, "pages", "DashboardPage.tsx")];
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) walk(path);
+      else if (/\.(ts|tsx)$/.test(name)) files.push(path);
+    }
+  };
+  walk(join(SRC, "modules", "dashboard"));
+  assert.ok(files.length >= 10, `arquivos medidos: ${files.length}`);
+  for (const file of files) {
+    const code = readFileSync(file, "utf8").replace(/\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+    assert.doesNotMatch(code, /\blistWorkOrders\b(?!FromApi)/, `${file} usa o legado listWorkOrders`);
+    assert.doesNotMatch(code, /work-orders\/repository/, `${file} importa o repositório legado de OS`);
+  }
+  const container = readFileSync(files[0], "utf8");
+  assert.match(container, /listWorkOrdersFromApi\(context, \{\}\)/, "a função viva, sem filtro nem limit");
 });

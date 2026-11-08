@@ -5,7 +5,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 
 import { DashboardViewC } from "../src/modules/dashboard/views/DashboardViewC";
-import { buildDashModel, detailRows, GESTOR, pressedButtons, rowKeys, section, SUPORTE, visibleText } from "./helpers/dashboard-aparencias.fixture";
+import { buildDashModel, detailRows, GESTOR, pageBlock, PAGE_TOTAL, pressedButtons, rowKeys, section, SUPORTE, visibleText } from "./helpers/dashboard-aparencias.fixture";
 
 // B-APAR-DASH — APARÊNCIA C "Central de prioridades" (referência aprovada `screen-refs/dashboard-3opcoes.reference.html`,
 // `renderC`/`railC`/`linhaFila`), em SSR com os dados e o relógio da referência. Prende (plano §2.4): a fila ÚNICA pela
@@ -139,4 +139,60 @@ test("[DC8] linguagem (§3, §11): nada técnico no texto visível; o id interno
   const html = render({ state: { linha: "fila:approval-ap1" } });
   assert.doesNotMatch(visibleText(html), /\b(tenant|scope|rbac|permission|role|token|undefined|null|NaN|checklist_run|work_order)\b/i);
   assert.doesNotMatch(html, /wo-04\d\d/, "nenhum id de OS no HTML");
+});
+
+// ---- Última fatia (Emenda 1 ao §2 / Emenda 4): o tipo "OS sem operador", da primeira página de OS que o serviço vivo devolve. ----
+
+test("[DC9] 'Sem técnico': vem da página de OS lida, entra por último, uma vez por entidade, e diz o universo com 'Ver todas'", async () => {
+  const workOrders = await pageBlock();
+  const { model, calls } = buildDashModel({ workOrders });
+  const html = renderToString(<DashboardViewC {...model} />);
+  assert.deepEqual(rowKeys(fila(html)), [
+    "fila:os_atrasada:OS-2026-0418",
+    "fila:os_atrasada:OS-2026-0415",
+    "fila:os_atrasada:OS-2026-0409",
+    "fila:os_atrasada:OS-2026-0421",
+    "fila:os_prioritaria:OS-2026-0427",
+    "fila:os_prioritaria:OS-2026-0423",
+    "fila:os_prioritaria:OS-2026-0425",
+    "fila:os_prioritaria:OS-2026-0426",
+    "fila:stale-l1",
+    "fila:approval-ap1",
+    "fila:approval-ap2",
+    "fila:os_sem_operador:OS-2026-0430",
+    "fila:os_sem_operador:OS-2026-0429",
+  ]);
+  assert.match(visibleText(fila(html)), /13 itens/);
+  assert.match(visibleText(fila(html)), /Sem técnico OS-2026-0430 · Condomínio Jardim das Acácias Sem operador atribuído · Socorro mecânico — bateria/);
+  assert.deepEqual(blocks(html).map((button) => button.label).slice(-1), ["Sem técnico: 2 — filtrar a fila"]);
+  const universe = visibleText(/<div class="apardash-universo"[\s\S]*?<\/div>/.exec(html)?.[0] ?? "");
+  assert.match(universe, new RegExp(`OS sem técnico: entre as 11 OS carregadas, de ${PAGE_TOTAL}\\.`));
+  assert.match(universe, /OS atrasadas e prioritárias: entre as 8 OS críticas que o painel recebe e as 11 OS carregadas\./);
+  assert.match(universe, /Ver todas/);
+  assert.doesNotMatch(html, /wo-04\d\d/, "nenhum id de OS no HTML");
+  // O detalhe da OS sem técnico: dados da página, "Abrir OS" e "Despachar" (com a permissão de despachar).
+  const open = renderToString(<DashboardViewC {...buildDashModel({ workOrders, state: { linha: "fila:os_sem_operador:OS-2026-0430" } }, [...GESTOR, "field_dispatch:create"]).model} />);
+  const detail = visibleText(/class="pat-ab-detail-row"[\s\S]*?<\/tr>/.exec(open)?.[0] ?? "");
+  assert.match(detail, /Cliente ?: Condomínio Jardim das Acácias/);
+  assert.match(detail, /Prioridade ?: Baixa/);
+  assert.match(detail, /Abrir OS/);
+  assert.match(detail, /Despachar/);
+  assert.equal(calls.length, 0);
+  // Sem mais OS no servidor, nada de "Ver todas".
+  const all = renderToString(<DashboardViewC {...buildDashModel({ workOrders: await pageBlock(11) }).model} />);
+  assert.doesNotMatch(visibleText(/<div class="apardash-universo"[\s\S]*?<\/div>/.exec(all)?.[0] ?? ""), /Ver todas/);
+});
+
+test("[DC10] fail-closed: página de OS com falha ou 403 → o tipo 'Sem técnico' some com o aviso, nunca com zero", () => {
+  const base = { items: [], loaded: 0, serverTotal: 0, partial: false };
+  const error = renderToString(<DashboardViewC {...buildDashModel({ workOrders: { status: "error", ...base } }).model} />);
+  assert.doesNotMatch(error, /Sem técnico: 0|os_sem_operador/);
+  assert.ok(!blocks(error).some((button) => button.label.startsWith("Sem técnico")), "o bloco some");
+  assert.match(visibleText(error), /Não foi possível carregar as OS sem técnico\. Tentar novamente/);
+  const forbidden = renderToString(<DashboardViewC {...buildDashModel({ workOrders: { status: "forbidden", ...base } }).model} />);
+  assert.ok(!blocks(forbidden).some((button) => button.label.startsWith("Sem técnico")));
+  assert.match(visibleText(forbidden), /Acesso não permitido à lista de OS: o tipo “Sem técnico” não aparece\./);
+  const loading = renderToString(<DashboardViewC {...buildDashModel({ workOrders: { status: "loading", ...base } }).model} />);
+  assert.ok(!blocks(loading).some((button) => button.label.startsWith("Sem técnico")));
+  assert.match(visibleText(loading), /Carregando as OS sem técnico/);
 });

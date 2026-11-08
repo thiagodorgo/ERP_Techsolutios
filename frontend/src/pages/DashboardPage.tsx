@@ -5,7 +5,7 @@ import { useAutoRefresh } from "../hooks/useAutoRefresh";
 import { useScreenAppearance } from "../modules/appearance";
 import { useDashboardData } from "../modules/dashboard/useDashboardData";
 import { useWorkOrderTimeseries } from "../modules/dashboard/useWorkOrderTimeseries";
-import type { BlockStatus, DashboardBlock, DashboardRowDetail, DashboardState, DashboardViewModel } from "../modules/dashboard/views/dashboard.view-model";
+import type { BlockStatus, DashboardBlock, DashboardRowDetail, DashboardState, DashboardViewModel, DashboardWorkOrdersPage } from "../modules/dashboard/views/dashboard.view-model";
 import { criticalRowKey } from "../modules/dashboard/views/dashboard.shared";
 import { DashboardViewA } from "../modules/dashboard/views/DashboardViewA";
 import { DashboardViewB } from "../modules/dashboard/views/DashboardViewB";
@@ -13,7 +13,7 @@ import { DashboardViewC } from "../modules/dashboard/views/DashboardViewC";
 import { useLastGood } from "../modules/finance/pages/financeiro.state";
 import type { OperationalApproval } from "../modules/work-orders/approval.types";
 import { loadApprovalsQueue } from "../modules/work-orders/useApprovalsQueue";
-import { getWorkOrderFromApi } from "../modules/work-orders/work-orders.service";
+import { getWorkOrderFromApi, listWorkOrdersFromApi } from "../modules/work-orders/work-orders.service";
 import { useAuth } from "../providers/AuthProvider";
 import { usePermissions } from "../providers/PermissionProvider";
 import { useTenantContext } from "../providers/TenantProvider";
@@ -77,6 +77,23 @@ export function DashboardPage() {
   const seriesStatus: BlockStatus = !readWorkOrders || series.value.forbidden ? "forbidden" : timeseries.loading && !series.stale ? "loading" : series.value.source === "fallback" ? "error" : "ready";
 
   // ---- Extras da C: pedidos só na primeira vez que a C abre, por organização; voltar à C não pede de novo. ----
+  // As OS do tipo "OS sem operador" (Emenda 1 ao §2 / Emenda 4): a função VIVA do serviço de OS, `listWorkOrdersFromApi`,
+  // SEM `limit` (o serviço de OS é PROIBIDO neste bloco): a primeira página que o servidor devolve, com o total que ele
+  // informa. Nunca o repositório legado. Falha ou 403 → o tipo some com o aviso, nunca com zero.
+  const [workOrders, setWorkOrders] = useState<DashboardWorkOrdersPage | null>(null);
+  const loadWorkOrders = useCallback(() => {
+    if (!readWorkOrders) {
+      setWorkOrders({ status: "forbidden", items: [], loaded: 0, serverTotal: 0, partial: false });
+      return;
+    }
+    setWorkOrders((current) => current ?? { status: "loading", items: [], loaded: 0, serverTotal: 0, partial: false });
+    void listWorkOrdersFromApi(context, {}).then((result) => {
+      const status: BlockStatus = result.forbidden ? "forbidden" : result.source === "fallback" ? "error" : "ready";
+      const loaded = status === "ready" ? result.items.length : 0;
+      const serverTotal = status === "ready" ? Math.max(result.pagination.total, loaded) : 0;
+      setWorkOrders({ status, items: status === "ready" ? result.items : [], loaded, serverTotal, partial: serverTotal > loaded });
+    });
+  }, [readWorkOrders, context]);
   const tenantKey = activeContext?.tenantId ?? "";
   const [approvals, setApprovals] = useState<DashboardBlock<OperationalApproval> | null>(null);
   const approvalsFor = useRef<string | null>(null);
@@ -94,8 +111,10 @@ export function DashboardPage() {
     if (appearance !== "C" || !tenantKey || approvalsFor.current === tenantKey) return;
     approvalsFor.current = tenantKey;
     setApprovals(null);
+    setWorkOrders(null);
     loadApprovals();
-  }, [appearance, tenantKey, loadApprovals]);
+    loadWorkOrders();
+  }, [appearance, tenantKey, loadApprovals, loadWorkOrders]);
 
   // ---- Estado navegável: `?cartao=` e `?linha=`; os recortes de B e C ficam aqui (não precisam de link). ----
   const [local, setLocal] = useState<LocalState>(LOCAL_DEFAULTS);
@@ -149,8 +168,7 @@ export function DashboardPage() {
     dispatches: { status: access.readDispatches ? data.dispatchesStatus : "forbidden", items: data.dispatches },
     locations: { status: access.readLocations ? data.locationsStatus : "forbidden", items: data.locations },
     approvals,
-    // "OS sem operador" da C: a última fatia do bloco (Emenda 1 ao §2), ainda não ligada.
-    workOrders: null,
+    workOrders,
     rowDetail,
     access,
     state,
@@ -162,6 +180,7 @@ export function DashboardPage() {
       void data.refresh();
       if (readWorkOrders) void timeseries.refresh();
       if (appearance === "C" && approvals && approvals.status !== "ready") loadApprovals();
+      if (appearance === "C" && workOrders && workOrders.status !== "ready") loadWorkOrders();
     },
     onNavigate: (to) => navigate(to),
     // "Abrir OS" leva sempre à PÁGINA da OS, com a volta ao Dashboard (e ao filtro) no estado da navegação.
