@@ -244,7 +244,7 @@ PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
 - **M-A1-EM2 (própria, a exceção frouxa):** `_isDependentServerIdMappingUpdate` devolve `true` para todo tipo que não é criação → `00:02 +3 -1: Some tests failed.`, com `A1(3)` VERMELHO. Revertida → `git diff --quiet` ec `0`.
 
 ### Passo 4 — A3, registro coerente
-- **Contagem por script** (`conta_blocos.py`, no scratch do dev, fora do repositório). Lê os itens do §4.1 (linhas `| N |`) e as linhas de bloco do §5 (`| \`B-…\``). Conta como bloco do portão a linha cuja coluna "Fecha" cita pelo menos um item vivo do §4.1, ignorando item riscado (`~~12~~`) ou entre parênteses que diga "fechado".
+- **Contagem por script** (`conta_blocos.py`, no scratch do dev, fora do repositório). Lê os itens do §4.1 (linhas `| N |`) e as linhas de bloco do §5 (as que começam por `` | `B- ``). Conta como bloco do portão a linha cuja coluna "Fecha" cita pelo menos um item vivo do §4.1, ignorando item riscado (`~~12~~`) ou entre parênteses que diga "fechado".
   - Na `origin/main` → `itens 63 linhas_de_bloco 52 blocos_que_fecham_item_vivo 50 linhas_sem_item ['B-SAN3-04b', 'B-SAN3-00b']`. A regra reproduz o "50 blocos" que o próprio texto dizia.
   - No head → `itens 64 linhas_de_bloco 53 blocos_que_fecham_item_vivo 51`. Os itens vão de 1 a 62, mais o 64 e o 65; não há item 63.
   - Por esforço (`conta_esf.py`): na `main`, 18 G, 26 M e 5 P, mais o `B-SAN3-12` (M → G dividido), que o texto contava como M, dá 18 G, 27 M e 5 P. No head, o `B-FILA-USUARIO` é M, e fica **18 G, 28 M e 5 P = 51**.
@@ -262,3 +262,11 @@ PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
 - Sonda P3 rodada de novo no head do conserto (copiada para `test/`, executada e apagada) → `P3 shown=[c-u2/u2, c-u1/u1] err=SyncOwnershipError c-u2=pending c-u1=conflict`. É a mesma saída do parecer: o conserto do A1 não muda o painel do detalhe da OS.
 - Entrada nova `P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO` no fim de `pendencias.md` (ABERTA; escopo `pre-existente` ao PERMITIDO; dono `B-FILA-USUARIO-2`; não bloqueia; fato com a saída acima; encerramento).
 - `python agent-orchestration/controle/gerar-indice-pendencias.py` → `indice: 774 cabecalhos / 763 IDs | {'FECHADA': 186, 'ABERTA': 584, 'SEM-STATUS': 4}`, com 0 CONTRADITORIAS. Uma segunda execução não muda nada (idempotente). Placar: abertas 583 → 584, fechadas 186 → 186. A entrada nova aparece na l.334 do índice.
+
+### Passo 6 — bateria (Flutter local 3.41.6; o aceite do format é o job `flutter` do CI, 3.47.5)
+- `dart format --output=none --set-exit-if-changed lib test` → `Formatted 227 files (1 changed)`. O único acusado é `test/features/bsan313_minhas_os_escopo_test.dart`, que não é do bloco (efeito conhecido do Flutter local). Os 2 arquivos do conserto: `0 changed`.
+- `flutter analyze` → `No issues found!`.
+- `flutter test --no-pub --reporter compact` (suíte inteira) → **`00:35 +1021: All tests passed!`**, com 0 skip (`~N` ausente no log). **M = 1021** = 1017 do objeto `71861445` + 4 casos novos; nenhum caso existente sumiu.
+- `git diff --check origin/main...HEAD` (sem flag) → ec `0`. A `origin/main` andou para `015234d0`; o merge-base continua `04bb0e17`.
+- Arquivos do conserto (`git diff --name-only 71861445..HEAD`): `lib/core/sync/sync_user_scope.dart`, `test/core/sync/bfilausuario_dependente_de_outro_dono_test.dart`, `PLANO_SAN3.md` (as 4 linhas que a emenda manda), `status-geral.md`, `pendencias.md`, `pendencias-indice.md` e este diário. Nada em `src/`, `prisma/`, `lib/features/**`, `sync_replay_service.dart`, `auto_sync_coordinator.dart`, `Kpis/` nem `pubspec.*`.
+- Limpeza: as sondas copiadas para `test/` foram apagadas logo depois de rodar (`git status --short` vazio). O worktree de controle `w-filausr-ctrl` é removido com `git worktree remove --force` antes do fim.
