@@ -284,6 +284,11 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.saveStatement", "tx.subscriptionStatement", "subscriptionStatement.update", "subscription_statements", "PARAMETRO(tx)", "×1"),
     "B-ASS-04: porta `StatementTx` do repositório Prisma do demonstrativo; o único criador é `PrismaStatementRepository.transaction`, que abre `withTenantRls(client, tenantId, …)` e fixa o GUC da organização antes de entregar o tx; toda instrução filtra também por `tenant_id = tenantId` (os `SELECT … FOR UPDATE` e os `updateMany`), e o isolamento é provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-04-statement-db.test.ts (T-ST-db-5: A não lê, não paga nem aplica crédito no demonstrativo de B; sem GUC, zero linhas nas 4 tabelas).",
   ],
+  // B-ASS-05: a trava do slot do cofre, colada da saída do gerador no head do bloco, com o motivo.
+  [
+    k("L1", "src/modules/subscription-billing/vault/vault.prisma-runtime.ts", "PrismaCredentialRepository.replaceActive", "tx", "RAW-SQL($queryRaw) OPACO", "?", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-ASS-05: `SELECT id FROM billing_provider_credentials … FOR UPDATE` dentro do `$transaction` da gravação da credencial; a tabela é GLOBAL da plataforma, sem tenant_id e sem RLS (M4, exceção declarada no plano §3.2), então não há GUC a fixar e nenhuma tabela FORCE é tocada; o filtro é o slot (provider, environment, kind) e a trava serializa duas gravações do mesmo kind (o UNIQUE parcial segura a corrida da primeira gravação). Provado em tests/ass-05-vault-migration-drill-db.test.ts sob papel NOBYPASSRLS.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };
