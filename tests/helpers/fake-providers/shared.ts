@@ -39,12 +39,17 @@ export function readBody(req: IncomingMessage): Promise<string> {
 
 export async function startFakeServer(handler: FakeHandler): Promise<FakeServer> {
   const recorded: RecordedRequest[] = [];
+  const sockets = new Set<import("node:net").Socket>();
   const server: Server = createServer((req, res) => {
     void (async () => {
       const body = await readBody(req);
       recorded.push({ method: req.method ?? "GET", path: req.url ?? "/", headers: { ...req.headers }, body });
       await handler(req, res, body);
     })();
+  });
+  server.on("connection", (socket) => {
+    sockets.add(socket);
+    socket.on("close", () => sockets.delete(socket));
   });
 
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
@@ -54,7 +59,10 @@ export async function startFakeServer(handler: FakeHandler): Promise<FakeServer>
     port: address.port,
     recorded,
     close: () =>
-      new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve()))),
+      new Promise<void>((resolve, reject) => {
+        for (const socket of sockets) socket.destroy();
+        server.close((error) => (error ? reject(error) : resolve()));
+      }),
   };
 }
 

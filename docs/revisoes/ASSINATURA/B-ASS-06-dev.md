@@ -40,3 +40,24 @@ Plano: `B-ASSINATURA` §4.6 (+ §3, §4.5, §12) — fora do repositório, em `e
   - R-PAY-7: `supportedMethods()` ⊇ {pix, credit_card, debit_card}.
   - R-PAY-2/D3: tabela de mesa dos 14 status + desconhecido (`chargeback_disputed`, `dispute_won_pending`; `REFUND_REQUESTED/IN_PROGRESS → unknown` — N4 removeu `pending_refund`).
 - `npm run check` verde; guard 4/4.
+
+## F5 — erros, limites, webhook e reconsulta
+
+- **Arquivos:**
+  - `tests/helpers/fake-providers/asaas.ts`: cenário DEFAULT por `startAsaasFake(defaultScenario)` (além do header `x-fake-scenario`); `shared.ts` destrói sockets no `close` (cenário `timeout` não pendura o fim do teste).
+  - `tests/ass-06-errors-limits.test.ts` = **4/4** (R-PAY-3): 400 → `ProviderValidationError` sanitizada (sem token); 429 → `retryAfterMs=2000`; timeout → `ProviderTimeoutError` com 1 única requisição; credencial ausente → `provider_not_configured` antes da rede.
+  - `tests/ass-06-webhook.test.ts` = **3/3** (R-PAY-9/10): `verifyWebhook` aceita o token do cofre e extrai `eventId/chargeId/externalReference/kind`; token errado/ausente/segredo ausente/body não-JSON → `ok:false`; reconsulta por referência acha a cobrança criada (sem cobrança → null).
+  - `tests/ass-06-env-gates.test.ts` = **2/2**: `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS` default false e só em `test` (G-BILLING-LOCAL); produção + canal ligado exige `BILLING_WEBHOOK_PUBLIC_BASE_URL` `https://`.
+
+**Mutações do plano (todas vermelhas, restauradas):**
+
+| Mutação | Resultado |
+|---|---|
+| canal checado depois do fetch (R-PAY-4) | 1 fail (`tests/ass-06-http-client.test.ts`) |
+| allowlist removida (R-PAY-5) | 2 fail (`tests/ass-06-http-client.test.ts`) |
+| `fetch` direto no adaptador (R-PAY-6) | 1 fail (`tests/ass-06-no-external-calls-guard.test.ts`) |
+| `DEBIT_CARD` enviado ao Asaas (R-PAY-7b) | 1 fail (`tests/ass-06-asaas-adapter.test.ts`) |
+| só `RECEIVED` como pago (R-PAY-2) | 1 fail (`tests/ass-06-asaas-adapter.test.ts`) |
+| `Math.trunc` no lugar de `Math.round` (R-PAY-8) | 2 fail (`tests/ass-06-money.test.ts`) |
+| segredo do cofre ignorado no webhook (R-PAY-9) | 1 fail (`tests/ass-06-webhook.test.ts`) |
+| headers no log (R-PAY-7) | 1 fail (`tests/ass-06-http-client.test.ts`) |

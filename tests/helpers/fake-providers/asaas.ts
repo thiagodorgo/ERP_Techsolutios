@@ -23,18 +23,19 @@ function nextId(prefix: string): string {
   return id;
 }
 
-function scenarioOfReq(req: IncomingMessage): string {
-  return scenarioOf(req);
+function scenarioOfReq(req: IncomingMessage, fallback: string): string {
+  const fromHeader = scenarioOf(req);
+  return fromHeader === "ok" && fallback !== "ok" ? fallback : fromHeader;
 }
 
 const PAYMENT_SCENARIO_STATUS: Readonly<Record<string, string>> = {
   validation_400: "PENDING",
 };
 
-export async function startAsaasFake(): Promise<FakeServer> {
+export async function startAsaasFake(defaultScenario = "ok"): Promise<FakeServer> {
   resetAsaasFakeState();
   return startFakeServer(async (req, res, body) => {
-    const scenario = scenarioOfReq(req);
+    const scenario = scenarioOfReq(req, defaultScenario);
     const path = req.url ?? "/";
     const pathname = path.split("?")[0] ?? "/";
     const url = new URL(path, "http://127.0.0.1");
