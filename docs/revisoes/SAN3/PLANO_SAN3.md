@@ -24,7 +24,7 @@
    governança; a fatia confirmou 50, uma caiu na reconfirmação). Este PR corrige as 52 linhas de status, registra
    as 49 e corrige os dados das duas pendências do painel de KPI, que seguem ABERTAS (PARCIAL) até o guard do item
    54. Índice (gerador, depois da opção B): 370 cabeçalhos (359 IDs); FECHADAS 72 → 103; ABERTAS 267.
-3. **O gate da versão vendável tem 63 bloqueantes, fechados por 50 blocos, e 6 atos que só o dono pratica**
+3. **O gate da versão vendável tem 64 bloqueantes, fechados por 51 blocos, e 6 atos que só o dono pratica**
    (§4). **Na redação original, nenhum dos 37 blocos havia começado.** O que o inventário acrescentou à auditoria pesa: pela web um título
    **nunca é baixado** e cheques, fechamento de período e política de comissão **não têm tela**; no app, o
    fluxo Prestador e a entrega do guincho **não têm porta**, o estoque do técnico é **inventado no código** e
@@ -34,7 +34,7 @@
    medido, sem reprovação — é **≈ 120–130 h de relógio**, contadas desde a abertura deste PR. O realista, pela
    mediana medida dos blocos grandes (57 h), é **≈ 14 dias com 4 frentes simultâneas e ≈ 20,5 a 21 dias com 2**
    (§9), sem contar o tempo dos atos do dono. **Não há redução de escopo:** a execução segue pela ordem de risco; o
-   gate só é declarado quando os 63 bloqueantes fecharem **e** os 6 atos estiverem feitos.
+   gate só é declarado quando os 64 bloqueantes fecharem **e** os 6 atos estiverem feitos.
 5. **O Traccar não começa antes do gate** — decisão registrada em `D-TRACCAR-HTTP-PRIVADO-AWS` (§11).
 
 ## 1. Fonte e método
@@ -489,7 +489,7 @@ acabamento e processo, na ordem de prioridade do dono, cada uma com o dono e o t
 
 ## 9. Viabilidade — o prazo de 48 horas
 
-**Quantidade exata.** 63 bloqueantes em **50 blocos** — a ampliação documental do `B-ASS-00` acrescenta 7 itens e 13 blocos donos à contagem anterior; 18 G (os 11 anteriores + `B-ASS-02`, `B-ASS-03`, `B-ASS-04`, `B-ASS-05`, `B-ASS-08`, `B-ASS-09`, `B-ASS-10b`), 27 M e 5 P (contados na coluna Esf. do §5) — mais
+**Quantidade exata.** 64 bloqueantes em **51 blocos** — a ampliação documental do `B-ASS-00` acrescenta 7 itens e 13 blocos donos à contagem anterior, e o `B-FILA-USUARIO` (item 64, DONO P5) acrescenta 1 item e 1 bloco M; 18 G (os 11 anteriores + `B-ASS-02`, `B-ASS-03`, `B-ASS-04`, `B-ASS-05`, `B-ASS-08`, `B-ASS-09`, `B-ASS-10b`), 28 M e 5 P (contados na coluna Esf. do §5) — mais
 os 6 atos do dono e este PR. Os itens 55 e 56 (decisão do dono, opção B — §15) entram em blocos que já existiam
 (`B-SAN3-12` e `B-SAN3-04a`) sem mudar o tamanho de nenhum: o melhor caso e o realista abaixo ficam **inalterados**.
 
@@ -648,7 +648,7 @@ do ciclo 2 como condição de entrada; **P1** — o `finance` lê OS (`work_orde
 Financeiro monta orçamento (`customers:read` e `service_catalog:read`, com a `RBAC_MATRIX.md` atualizada no mesmo bloco).
 As condições estão no §5.6 (CE-G1, CE-G2, CE-1 a CE-7), marcadas por script na célula de teste de cada bloco do §5.
 A primeira aplicação do §C.7 perdeu o critério `as_of` (teste (g) do `B-SAN3-10`), apontada pelo aplicador e restaurada.
-**Números:** 63 bloqueantes (eram 56 antes do `B-ASS-00`) em 50 blocos e 6 atos do dono; a agenda anterior não inclui ainda a duração da Frente 5
+**Números:** 64 bloqueantes (eram 56 antes do `B-ASS-00`; o item 64 entrou com o `B-FILA-USUARIO`) em 51 blocos e 6 atos do dono; a agenda anterior não inclui ainda a duração da Frente 5
 (§9); índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS. **Quem:** planejou o orquestrador
 (`agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`); aplicou um agente distinto, que não achou nem
 planejou (§C7.4-bis); **conferência de aplicação** (`agente-ci-doutor`; não é ciclo de mérito): NÃO CONFERE em `042e689e` (abaixo), **CONFERE em

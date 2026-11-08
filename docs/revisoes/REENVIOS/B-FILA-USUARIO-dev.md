@@ -242,3 +242,23 @@ PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
 ### Passo 3 — mutação literal (uma por vez, revertida por edição inversa)
 - **M-A1-EM1 (a da emenda):** o `update` de mapeamento volta a lançar para outro dono (`if (!ownedByCurrentSession && !_isDependentServerIdMappingUpdate(existing, action))` → `if (!ownedByCurrentSession)`) → `00:02 +1 -3: Some tests failed.`, com `A1(1)`, `A1(2)` e `A1(4)` VERMELHOS. Revertida → `git diff --quiet` ec `0`.
 - **M-A1-EM2 (própria, a exceção frouxa):** `_isDependentServerIdMappingUpdate` devolve `true` para todo tipo que não é criação → `00:02 +3 -1: Some tests failed.`, com `A1(3)` VERMELHO. Revertida → `git diff --quiet` ec `0`.
+
+### Passo 4 — A3, registro coerente
+- **Contagem por script** (`conta_blocos.py`, no scratch do dev, fora do repositório). Lê os itens do §4.1 (linhas `| N |`) e as linhas de bloco do §5 (`| \`B-…\``). Conta como bloco do portão a linha cuja coluna "Fecha" cita pelo menos um item vivo do §4.1, ignorando item riscado (`~~12~~`) ou entre parênteses que diga "fechado".
+  - Na `origin/main` → `itens 63 linhas_de_bloco 52 blocos_que_fecham_item_vivo 50 linhas_sem_item ['B-SAN3-04b', 'B-SAN3-00b']`. A regra reproduz o "50 blocos" que o próprio texto dizia.
+  - No head → `itens 64 linhas_de_bloco 53 blocos_que_fecham_item_vivo 51`. Os itens vão de 1 a 62, mais o 64 e o 65; não há item 63.
+  - Por esforço (`conta_esf.py`): na `main`, 18 G, 26 M e 5 P, mais o `B-SAN3-12` (M → G dividido), que o texto contava como M, dá 18 G, 27 M e 5 P. No head, o `B-FILA-USUARIO` é M, e fica **18 G, 28 M e 5 P = 51**.
+- **`PLANO_SAN3.md`:**
+  - l.27 → "64 bloqueantes, fechados por 51 blocos";
+  - l.37 → "os 64 bloqueantes";
+  - l.492 → "64 bloqueantes em **51 blocos** … e o `B-FILA-USUARIO` (item 64, DONO P5) acrescenta 1 item e 1 bloco M; 18 G (…), 28 M e 5 P";
+  - l.651 → "64 bloqueantes (eram 56 antes do `B-ASS-00`; o item 64 entrou com o `B-FILA-USUARIO`) em 51 blocos".
+  - Ficam `grep -nE "63"` → só a l.44 ("balde A, 63 linhas", outra coisa) e a l.443 ("53 dos 63 bloqueantes vêm de fora da auditoria"). A l.443 é uma contagem de procedência com método próprio, e a emenda não a lista; não a toquei e a declaro aqui para a junta.
+- **`agent-orchestration/docs/status-geral.md`:** o título passa de "PR a abrir" para "PR #512 aberto; conserto da pré-revisão feito, à espera da junta completa", e ganha um item com o conserto.
+- **`P-O6R-B03-FILA-POR-USUARIO`:** a linha "FECHADA NA AUTORIA" passa a citar o PR #512, o conserto do A1 e o teste novo, vermelho em `71861445`. Há também um apenso novo do conserto.
+- EOL: os 3 arquivos são LF na `main` e continuam LF (`tr -cd '' | wc -c` = 0 em cada um).
+
+### Passo 5 — A4, pendência nova
+- Sonda P3 rodada de novo no head do conserto (copiada para `test/`, executada e apagada) → `P3 shown=[c-u2/u2, c-u1/u1] err=SyncOwnershipError c-u2=pending c-u1=conflict`. É a mesma saída do parecer: o conserto do A1 não muda o painel do detalhe da OS.
+- Entrada nova `P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO` no fim de `pendencias.md` (ABERTA; escopo `pre-existente` ao PERMITIDO; dono `B-FILA-USUARIO-2`; não bloqueia; fato com a saída acima; encerramento).
+- `python agent-orchestration/controle/gerar-indice-pendencias.py` → `indice: 774 cabecalhos / 763 IDs | {'FECHADA': 186, 'ABERTA': 584, 'SEM-STATUS': 4}`, com 0 CONTRADITORIAS. Uma segunda execução não muda nada (idempotente). Placar: abertas 583 → 584, fechadas 186 → 186. A entrada nova aparece na l.334 do índice.
