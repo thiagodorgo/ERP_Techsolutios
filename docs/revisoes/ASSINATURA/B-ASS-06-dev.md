@@ -14,3 +14,16 @@ Plano: `B-ASSINATURA` §4.6 (+ §3, §4.5, §12) — fora do repositório, em `e
 - **Sem migração** neste bloco. **Docker:** nenhum.
 - **Baseline medido (origin/main, `npm test` local sem `DATABASE_URL`):** 429 arquivos, **3760 testes** (2654 pass, 982 fail, 124 skipped; exit 1). Os 982 vermelhos são pré-existentes e serão re-medidos na `origin/main` na mesma forma ao final (um vermelho fora do bloco é comparado com a origin/main).
 - **Premissa verificada no código:** `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS` e `BILLING_WEBHOOK_PUBLIC_BASE_URL` **não existem** em `src/config/env.ts` na `origin/main` (grep `ALLOW_LOCAL|WEBHOOK_PUBLIC` → vazio). O §3.9 manda as duas viverem no `env.ts` com gates; o PERMITIDO do §4.6 omitiu `src/config/env.ts`. **Leitura registrada:** incluo `src/config/env.ts` (só essas 2 variáveis + gates) no escopo, conforme §3.9.
+
+## F1 — porta, dinheiro e cliente HTTP único (guard primeiro)
+
+- **Arquivos:**
+  - `providers/payment/payment-provider.port.ts`: a porta `PaymentProviderPort` (9 métodos, enum G9 com `chargeback_disputed` — D3; `disputeWonPending` no `getCharge`).
+  - `providers/payment/payment-money.ts`: `toCents(x) = Math.round(x * 100)` com safe integer, nunca `Math.trunc`.
+  - `providers/http/billing-errors.ts`: `channel_disabled`, `host_not_allowed`, `provider_validation`, `provider_timeout`, `provider_rate_limited`, `provider_not_configured`, `provider_unavailable`.
+  - `providers/http/billing-http.client.ts`: `fetch` único, `AbortSignal.timeout` (60 s cartão / 15 s resto), allowlist do catálogo, `channel_disabled` antes da rede, 429 → `retryAfterMs`, log só `{provider, op, status, latencyMs}`.
+  - `src/config/env.ts` (+2 variáveis + 2 gates): `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS` (default false; true fora de `test` recusa — G-BILLING-LOCAL) e `BILLING_WEBHOOK_PUBLIC_BASE_URL` (produção + canal ligado exige `https://`). **Omissão declarada:** o PERMITIDO do §4.6 não lista `env.ts`, mas o §3.9 manda as variáveis viverem lá.
+- **Guard** `tests/ass-06-no-external-calls-guard.test.ts` = **4/4** (R-PAY-6): rede só em `billing-http.client.ts`; host real em `tests/` só nos `fake-providers`; `fetch`/`new URL` dos fakes sem host real.
+- **Testes** `tests/ass-06-http-client.test.ts` = **4/4** (R-PAY-4/5/7): canal desligado → 0 requisição; host fora do catálogo → `host_not_allowed`; 127.0.0.1 só com flag em `test`; log sem token/headers/corpo.
+- **Testes** `tests/ass-06-money.test.ts` = **3/3** (R-PAY-8): 0.29→29, 129.9→12990, 2999.99→299999; propriedade 1..299999; NaN/∞ lançam.
+- `npm run check` verde.
