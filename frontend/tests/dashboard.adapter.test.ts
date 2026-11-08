@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   adaptDashboardSummary,
   buildCriticalQueue,
+  checkDashboardSummary,
   deriveActiveDispatchRows,
   deriveDashboardAlerts,
   deriveDashboardEvents,
@@ -342,4 +343,54 @@ test("adaptDashboardSummary aceita snake_case e mapeia OS críticas/eventos sem 
   assert.equal(bundle.recentEvents[0].message, "OS-77 concluída.");
   assert.ok(bundle.recentEvents[1].eventLabel.length > 0); // tipo desconhecido humanizado
   assert.equal(bundle.recentEvents[1].message, bundle.recentEvents[1].eventLabel); // message vazio → cai no rótulo
+});
+
+// ---------------------------------------------------------------------------
+// B-APAR-DASH (plano §2.1/§2.4) — o resumo é FAIL-CLOSED: campo numérico obrigatório ausente, nulo, texto não numérico ou
+// não finito vira `source=fallback` com motivo (nunca 0 inventado); zero explícito continua sucesso.
+// ---------------------------------------------------------------------------
+
+const FULL_SUMMARY = {
+  workOrders: {
+    total: 472,
+    byStatus: { open: 9, assigned: 6, accepted: 3, on_route: 5, on_site: 3, in_progress: 7, paused: 2, completed: 412, cancelled: 21, rejected: 4 },
+    createdToday: 14,
+    createdThisWeek: 63,
+    overdue: 4,
+  },
+  registry: { customers: 186, vehicles: 23, teams: 7, services: 34 },
+  criticalWorkOrders: [],
+  recentEvents: [],
+};
+
+test("[DASH-FC1] checkDashboardSummary: resumo completo é api; zero explícito em todos os números continua api", () => {
+  assert.deepEqual(checkDashboardSummary(FULL_SUMMARY), { source: "api" });
+  assert.deepEqual(checkDashboardSummary({ data: FULL_SUMMARY }), { source: "api" }, "envelope { data } aceito");
+  const zeros = JSON.parse(JSON.stringify(FULL_SUMMARY).replace(/:\d+/g, ":0"));
+  assert.equal(zeros.workOrders.overdue, 0);
+  assert.deepEqual(checkDashboardSummary(zeros), { source: "api" }, "0 explícito é legítimo");
+  assert.deepEqual(checkDashboardSummary({ ...FULL_SUMMARY, workOrders: { ...FULL_SUMMARY.workOrders, overdue: "4" } }), { source: "api" }, "string numérica aceita");
+});
+
+test("[DASH-FC2] checkDashboardSummary: sem workOrders.overdue, com \"x\", nulo ou NaN → fallback com o campo nomeado", () => {
+  const { overdue: _drop, ...semOverdue } = FULL_SUMMARY.workOrders;
+  for (const [nome, workOrders] of [
+    ["ausente", semOverdue],
+    ["texto", { ...FULL_SUMMARY.workOrders, overdue: "x" }],
+    ["nulo", { ...FULL_SUMMARY.workOrders, overdue: null }],
+    ["vazio", { ...FULL_SUMMARY.workOrders, overdue: "" }],
+    ["NaN", { ...FULL_SUMMARY.workOrders, overdue: Number.NaN }],
+    ["infinito", { ...FULL_SUMMARY.workOrders, overdue: Number.POSITIVE_INFINITY }],
+  ] as const) {
+    const check = checkDashboardSummary({ ...FULL_SUMMARY, workOrders });
+    assert.equal(check.source, "fallback", `overdue ${nome}`);
+    assert.ok(check.source === "fallback" && check.missing.includes("workOrders.overdue"), `overdue ${nome}: ${JSON.stringify(check)}`);
+    assert.ok(check.source === "fallback" && /incompleto/.test(check.reason));
+  }
+  const semPorSituacao = checkDashboardSummary({ ...FULL_SUMMARY, workOrders: { ...FULL_SUMMARY.workOrders, byStatus: undefined } });
+  assert.ok(semPorSituacao.source === "fallback" && semPorSituacao.missing.length === 10, "sem byStatus: as 10 situações faltam");
+  const vazio = checkDashboardSummary({});
+  assert.ok(vazio.source === "fallback" && vazio.missing.length === 18, "payload vazio: os 18 campos obrigatórios faltam");
+  // A leitura tolerante de hoje não muda (dispatch-console e o mock continuam lendo 0 no que falta).
+  assert.equal(adaptDashboardSummary({}).kpis.find((kpi) => kpi.id === "overdue")?.value, "0");
 });
