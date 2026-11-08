@@ -604,15 +604,23 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
 }
 
-/** Contagem tolerante: número ou string numérica; ausência/NaN → 0, sem negativos. */
-function summaryCount(record: Record<string, unknown> | undefined, keys: readonly string[]): number {
-  if (!record) return 0;
+/**
+ * B-APAR-DASH (plano §2.1, defeito do adaptador) — leitura ESTRITA de uma contagem: número finito ou string numérica
+ * não vazia; ausência, `null`, texto não numérico ou valor não finito → `null` (nunca 0). É a base das duas leituras abaixo.
+ */
+function readSummaryCount(record: Record<string, unknown> | undefined, keys: readonly string[]): number | null {
+  if (!record) return null;
   for (const key of keys) {
     const value = record[key];
-    const parsed = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
+    const parsed = typeof value === "number" ? value : typeof value === "string" && value.trim() !== "" ? Number(value) : Number.NaN;
     if (Number.isFinite(parsed)) return Math.max(0, Math.trunc(parsed));
   }
-  return 0;
+  return null;
+}
+
+/** Contagem tolerante: número ou string numérica; ausência/NaN → 0, sem negativos (consumidores de hoje). */
+function summaryCount(record: Record<string, unknown> | undefined, keys: readonly string[]): number {
+  return readSummaryCount(record, keys) ?? 0;
 }
 
 /** String não-vazia por lista de chaves (camel/snake); ausência → null. */
@@ -757,6 +765,50 @@ export function parseDashboardSummary(raw: unknown): DashboardSummaryModel {
     criticalWorkOrders: criticalRaw.map(parseCriticalOrder).filter((order): order is DashboardCriticalOrder => order !== null),
     recentEvents: eventsRaw.map(parseRecentEvent).filter((event): event is DashboardRecentEvent => event !== null),
   };
+}
+
+/** Campos numéricos OBRIGATÓRIOS do agregado (contrato `DashboardSummary` do backend), com as grafias aceitas. */
+const REQUIRED_SUMMARY_COUNTS: readonly { readonly label: string; readonly path: "workOrders" | "byStatus" | "registry"; readonly keys: readonly string[] }[] = [
+  { label: "workOrders.total", path: "workOrders", keys: ["total"] },
+  { label: "workOrders.createdToday", path: "workOrders", keys: ["createdToday", "created_today"] },
+  { label: "workOrders.createdThisWeek", path: "workOrders", keys: ["createdThisWeek", "created_this_week"] },
+  { label: "workOrders.overdue", path: "workOrders", keys: ["overdue"] },
+  { label: "byStatus.open", path: "byStatus", keys: ["open"] },
+  { label: "byStatus.assigned", path: "byStatus", keys: ["assigned"] },
+  { label: "byStatus.accepted", path: "byStatus", keys: ["accepted"] },
+  { label: "byStatus.on_route", path: "byStatus", keys: ["on_route", "onRoute"] },
+  { label: "byStatus.on_site", path: "byStatus", keys: ["on_site", "onSite"] },
+  { label: "byStatus.in_progress", path: "byStatus", keys: ["in_progress", "inProgress"] },
+  { label: "byStatus.paused", path: "byStatus", keys: ["paused"] },
+  { label: "byStatus.completed", path: "byStatus", keys: ["completed"] },
+  { label: "byStatus.cancelled", path: "byStatus", keys: ["cancelled", "canceled"] },
+  { label: "byStatus.rejected", path: "byStatus", keys: ["rejected"] },
+  { label: "registry.customers", path: "registry", keys: ["customers"] },
+  { label: "registry.vehicles", path: "registry", keys: ["vehicles"] },
+  { label: "registry.teams", path: "registry", keys: ["teams"] },
+  { label: "registry.services", path: "registry", keys: ["services"] },
+];
+
+export type DashboardSummaryCheck = { readonly source: "api" } | { readonly source: "fallback"; readonly reason: string; readonly missing: readonly string[] };
+
+/**
+ * B-APAR-DASH (plano §2.1, escolha igual à R-P2 do 12c) — o agregado só vale se TODO campo numérico obrigatório veio
+ * finito. Ausente, `null`, texto não numérico ou não finito → `source=fallback` com o motivo (a tela mostra erro na carga
+ * inicial e o último bom com a faixa de desatualizado numa atualização). Zero explícito é legítimo. Não muda a leitura
+ * tolerante de `parseDashboardSummary` (que outros consumidores usam).
+ */
+export function checkDashboardSummary(raw: unknown): DashboardSummaryCheck {
+  const root = asRecord(raw) ?? {};
+  const container = asRecord(root.data) ?? root;
+  const workOrders = asRecord(container.workOrders) ?? asRecord(container.work_orders);
+  const records = {
+    workOrders,
+    byStatus: workOrders ? asRecord(workOrders.byStatus) ?? asRecord(workOrders.by_status) : undefined,
+    registry: asRecord(container.registry),
+  };
+  const missing = REQUIRED_SUMMARY_COUNTS.filter((field) => readSummaryCount(records[field.path], field.keys) === null).map((field) => field.label);
+  if (missing.length === 0) return { source: "api" };
+  return { source: "fallback", missing, reason: `O resumo do painel veio incompleto (${missing.length === 1 ? "1 campo" : `${missing.length} campos`} sem número válido).` };
 }
 
 /** KPIs reais do agregado. Sem percentuais fabricados — apenas contagens + rótulo. */
