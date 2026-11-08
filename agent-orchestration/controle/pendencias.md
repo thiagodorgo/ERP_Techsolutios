@@ -2932,6 +2932,7 @@ mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SE
 - **dono:** `B-O6R-03a` (plano SAN3, §4.1 item 19 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DIN-009`: o achado `Ω6R-DIN-009` (item 19) tem dono `B-O6R-03a`.
 - **dono:** `B-O6R-03b` (plano SAN3, §4.1 item 30 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-001`: o achado `Ω6R-QUA-001` (item 30) tem dono `B-O6R-03b`.
 - **status (2026-10-11, B-O6R-03a na autoria):** PARCIAL — `Ω6R-DIN-009` fechado NA AUTORIA do `B-O6R-03a` (PR e head a preencher pelo orquestrador; evidência em `docs/revisoes/SAN3/B-O6R-03a-dev.md`); `Ω6R-QUA-001` segue ABERTO, dono `B-O6R-03b`. O 03b consome o `status: conflict` por ação (`payload_mismatch`, `legacy_payload_unverifiable`, `receipt_unverifiable`, `receipt_ambiguous`, `action_owned_by_other_actor`) e o `503 sync_busy`; dado legado sem prova exige resolução manual, sem trocar o id para lançar de novo. O QUA-001 só ativa depois de `P-O6R-B03-FILA-POR-USUARIO`.
+- **Apenso 2026-11-08 (B-FILA-USUARIO):** `P-O6R-B03-FILA-POR-USUARIO` fechada na autoria do `B-FILA-USUARIO`; o pré-requisito da fila por usuário para ativar `Ω6R-QUA-001` no `B-O6R-03b` está destravado.
 
 ## P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA-002 (P1) — **BLOQUEIA estoque**
 
@@ -11038,7 +11039,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-B03-FILA-POR-USUARIO (2026-10-11) — a fila do app é por aparelho e organização: a ação de u1 é reenviada sob a sessão de u2 — ALTA
 
-- **status:** ABERTA · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-FILA-USUARIO` (antes: `B-O6R-03b`; emenda 2 R6).
+- **status:** FECHADA NA AUTORIA do `B-FILA-USUARIO` (2026-11-08, ramo `fix/mobile-fila-por-usuario`, PR #512; merge a preencher pós-junta; evidência RA1–RA5 e o conserto do A1 da pré-revisão em `docs/revisoes/REENVIOS/B-FILA-USUARIO-dev.md`; a retenção da OS vale também para a ação dependente de outro dono, que recebe o `server_id` sem abortar o passe, provada por `test/core/sync/bfilausuario_dependente_de_outro_dono_test.dart`, vermelho em `71861445`) · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-FILA-USUARIO` (antes: `B-O6R-03b`; emenda 2 R6).
 - **O que o 03a já garante (backend):** a ação reenviada sob outra sessão vira `conflict action_owned_by_other_actor`, sem lançamento (A3′, B1′). O que falta é o app: atribuir cada ação ao usuário que a criou, não reenviá-la sob outra sessão e tratar o conflito novo.
 - **bloqueia:** a ativação do `Ω6R-QUA-001` (o provedor autenticado do replay) — o QUA-001 só liga depois desta.
 - **teste de encerramento:** no app, uma ação criada por u1 não sai da fila sob a sessão de u2 (ou sai e o conflito é tratado sem laço), com teste.
@@ -11046,6 +11047,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   (`B-FILA-USUARIO`), pré-requisito do `B-O6R-03b` e do 4º PR. Crítica G4 reproduzida (`SyncAction` sem usuário;
   material de u1 sob a sessão de u2). O cartão legado do 2º PR segue `D-DESPESA-SEM-DESCARTAR` e P25: despesa só Assumir;
   Descartar de outros tipos pela `_confirmDiscard` — ver emenda 4 §7.
+- **Apenso 2026-11-08, conserto da pré-revisão (`prerev-512-opus`, A1 GRAVE):** no objeto `71861445`, o `update` do decorador lançava `SyncOwnershipError` no mapeamento do `server_id` de uma ação dependente de outro dono (legada ou de u1). O replay de OS e o passe do coordenador abortavam, e a dependente ficava `pending` para sempre. O conserto, só em `lib/core/sync/sync_user_scope.dart`, aceita nesse caso só o mapeamento, sem mudar status, dono nem outro campo. A prova é `test/core/sync/bfilausuario_dependente_de_outro_dono_test.dart` (4 casos; `A1(1)`, `A1(2)` e `A1(4)` vermelhos no objeto e verdes depois; `A1(3)` guarda a estreiteza da exceção), com mutação literal.
+- **Apenso 2026-11-08 (B-FILA-USUARIO):** fechada na autoria pela primeira forma do critério (fail-closed no app: carimbo `SyncAction.userId` com `AuthUser.sub` do token em vigor — nunca do bootstrap em cache, N1 —, migração aditiva Drift 13 → 14, decorador `UserScopedSyncQueueRepository` nos 4 replays e em `workOrderConflictResolutionServiceProvider` com `SyncOwnershipError`, retenção da OS preservada por `actionsForTenant`, e partição na `SyncScreen` com `Assumir` / `Descartar` confirmado só onde `canDiscardSyncAction`). Conforme decisão do dono em P19 (`Q-A1 = (a)`, `B-REENVIOS-plano.md` §G.5 L3), ações legadas sem usuário ficam paradas até o técnico tocar `Assumir` (comportamento aprovado, sem pendência residual `P-MOBILE-FILA-LEGADO-SEM-USUARIO`). Foto, telemetria e localização seguem endereçadas ao bloco `B-FILA-USUARIO-2` (`B-REENVIOS-plano.md` §G.4).
 
 ## P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito por ação e o 503 do sync de despesas — MÉDIA
 
@@ -12897,6 +12900,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** o B-ASS-04 tem só `apply` e `write-off` de crédito. O `refund` (devolver o dinheiro ao cliente pelo provedor) precisa da outbox e do canal, que são do B-ASS-08.
 - **encerramento:** `POST …/credits/:id/refund` enfileira na outbox, com trilha, e o crédito passa a `refunded` só depois da confirmação do provedor.
 
+## P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO (2026-11-08) — o painel de conflito no detalhe da OS mostra o conflito de outro usuário, e "Minha versão" se aplica pela metade — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` ao PERMITIDO do `B-FILA-USUARIO` (achado A4 da pré-revisão `prerev-512-opus` do PR #512, NÃO GRAVE; o conserto exige `lib/features/**`, PROIBIDO no A4 do plano; Emenda 1 ao §A de `B-REENVIOS-plano.md`) · **dono:** `B-FILA-USUARIO-2` (o C′ do §G.4 do mesmo plano) · **bloqueia:** não; falha fechado, e nada vaza para o servidor.
+- **fato:** a sonda P3 (`erp-pausa-2026-10-03/revisoes/prerev-512-sondas/zz_prerev512_p3_test.dart`), executada de novo no head do conserto do A1, dá `P3 shown=[c-u2/u2, c-u1/u1] err=SyncOwnershipError c-u2=pending c-u1=conflict`. São três problemas:
+  - `WorkOrderConflictResolutionService.conflictsForWorkOrder` lê `actionsForTenant` sem filtro de dono, e o painel (`work_order_detail_screen.dart:191-215`, `_firstSafeMessage`) mostra a u2 o conflito e a mensagem de u1;
+  - o painel oferece a u2 botões que sempre falham com `SyncOwnershipError`;
+  - numa OS com conflitos de u1 e de u2, a decisão de u2 grava a parte dele e lança antes de `_updateOrder`, e a OS fica em conflito até u1 voltar.
+  A PA4 do plano diz que a ação de outro usuário aparece só como contagem.
+- **encerramento:** o painel do detalhe da OS mostra e decide só os conflitos do usuário da sessão, com os de outro usuário só como contagem, sem conteúdo e sem botão. Numa OS com conflitos de dois usuários, a decisão de um não deixa a OS pela metade. Cada parte tem teste vermelho sem o conserto.
 
 ## P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA (2026-11-08) — a trilha de plataforma do serviço de planos grava em memória — MÉDIA
 

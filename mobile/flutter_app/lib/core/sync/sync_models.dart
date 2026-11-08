@@ -6,6 +6,7 @@ class SyncAction extends Equatable {
   const SyncAction({
     required this.clientActionId,
     required this.tenantId,
+    this.userId,
     required this.type,
     required this.payload,
     required this.status,
@@ -18,6 +19,7 @@ class SyncAction extends Equatable {
 
   final String clientActionId;
   final String tenantId;
+  final String? userId;
   final String type;
   final Map<String, Object?> payload;
   final SyncStatus status;
@@ -30,6 +32,7 @@ class SyncAction extends Equatable {
   SyncAction copyWith({
     String? clientActionId,
     String? tenantId,
+    String? userId,
     String? type,
     Map<String, Object?>? payload,
     SyncStatus? status,
@@ -45,6 +48,7 @@ class SyncAction extends Equatable {
     return SyncAction(
       clientActionId: clientActionId ?? this.clientActionId,
       tenantId: tenantId ?? this.tenantId,
+      userId: userId ?? this.userId,
       type: type ?? this.type,
       payload: payload ?? this.payload,
       status: status ?? this.status,
@@ -64,6 +68,7 @@ class SyncAction extends Equatable {
   List<Object?> get props => [
     clientActionId,
     tenantId,
+    userId,
     type,
     payload,
     status,
