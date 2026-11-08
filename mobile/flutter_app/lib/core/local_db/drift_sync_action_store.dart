@@ -35,12 +35,13 @@ class DriftSyncActionStore implements SyncActionStore {
       for (final action in actions) {
         await _db.customInsert(
           'INSERT INTO sync_actions '
-          '(client_action_id,tenant_id,type,payload_json,status,'
+          '(client_action_id,tenant_id,user_id,type,payload_json,status,'
           'created_at,processed_at,retry_count,last_error_code,last_safe_error) '
-          'VALUES (?,?,?,?,?,?,?,?,?,?)',
+          'VALUES (?,?,?,?,?,?,?,?,?,?,?)',
           variables: <Variable>[
             Variable<String>(action.clientActionId),
             Variable<String>(action.tenantId),
+            Variable<String>(action.userId),
             Variable<String>(action.type),
             Variable<String>(jsonEncode(action.payload)),
             Variable<String>(action.status.name),
@@ -60,6 +61,7 @@ class DriftSyncActionStore implements SyncActionStore {
     return SyncAction(
       clientActionId: row.read<String>('client_action_id'),
       tenantId: row.read<String>('tenant_id'),
+      userId: row.readNullable<String>('user_id'),
       type: row.read<String>('type'),
       payload: Map<String, Object?>.from(
         jsonDecode(row.read<String>('payload_json')) as Map,

@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -179,6 +179,21 @@ class AppDatabase extends GeneratedDatabase {
           );
         }
       }
+      if (from < 14) {
+        // B-FILA-USUARIO: carimbo durável do usuário criador na fila de sync.
+        // Migração ADITIVA: só ALTER TABLE ADD COLUMN user_id TEXT (nenhuma
+        // linha antiga é perdida; registros anteriores ficam com user_id NULL).
+        final rows = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='sync_actions'",
+            )
+            .get();
+        if (rows.isNotEmpty) {
+          await m.database.customStatement(
+            'ALTER TABLE sync_actions ADD COLUMN user_id TEXT',
+          );
+        }
+      }
     },
   );
 
@@ -249,7 +264,8 @@ CREATE TABLE IF NOT EXISTS sync_actions (
   processed_at INTEGER,
   retry_count INTEGER NOT NULL,
   last_error_code TEXT,
-  last_safe_error TEXT
+  last_safe_error TEXT,
+  user_id TEXT
 )''';
 
 const _kWorkOrders = '''

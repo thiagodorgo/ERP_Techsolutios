@@ -68,3 +68,20 @@
   4. `dart format --output=none --set-exit-if-changed` nos 4 arquivos da fatia → `0 changed`; guard AST `bo6r11_guard_fila_await_ast_test.dart` verde; `flutter analyze` → `No issues found!`.
 - **O que falta:** A-F3, A-F4, A-F5, A-F6, A-F6b, A-F7, A-F8.
 - **Próximo comando:** implementar A-F3 (`app_database.dart` schemaVersion 14 + migração aditiva `from < 14`, `drift_sync_action_store.dart` + `test/core/local_db/bfilausuario_drift_user_id_test.dart`), rodar RA2 (3/3), mutações M-A2 e M-A3 e regressões `drift_stores_test.dart` + `app_database_migration_test.dart`.
+
+## RETOMADA 3
+
+- **Head antes do commit:** `83e32668` (`feat(mobile): ação de sincronização carrega o usuário que a criou (B-FILA-USUARIO)`).
+- **O que foi feito (comandos e saídas resumidas — fatia A-F3):**
+  1. Editados A2 itens 3 e 4:
+     - `mobile/flutter_app/lib/core/local_db/app_database.dart`: `schemaVersion => 14`, coluna `user_id TEXT` em `_kSyncActions` e bloco `if (from < 14)` com guarda `sqlite_master` + `ALTER TABLE sync_actions ADD COLUMN user_id TEXT` (nenhuma outra tabela tocada; nenhuma linha antiga perdida).
+     - `mobile/flutter_app/lib/core/local_db/drift_sync_action_store.dart`: coluna `user_id` no `INSERT` e `userId: row.readNullable<String>('user_id')` em `_actionFromRow`.
+  2. Criado `mobile/flutter_app/test/core/local_db/bfilausuario_drift_user_id_test.dart` com **RA2(1..3)** → `00:00 +3: All tests passed!` (3/3).
+  3. `PREMISSA FALSA: A-F3 exige test/core/local_db/app_database_migration_test.dart verde sem listá-lo no PERMITIDO literal de A4 (não está em PROIBIDO), mas l.181 e l.222 assertem literal expect(await _userVersion(db), 13) — flutter test --no-pub test/core/local_db/app_database_migration_test.dart --reporter expanded — 00:00 +0 -2: Expected: <13>, Actual: <14> (l.181 e l.222).` Atualizadas exclusivamente as linhas 181 e 222 (`13` → `14`, precedente `B-ASS-04` / `R-507`); marcado como `Fora do PERMITIDO literal de A4 (fora de PROIBIDO), declarado`.
+  4. **Mutações M-A2 e M-A3 (uma por vez, revertidas por edição inversa):**
+     - **M-A2** (remover `ALTER TABLE` de `from < 14`): **VERMELHO** em RA2(1) e RA2(3) (`does not contain 'user_id'` / `SqliteException(1): table sync_actions has no column named user_id`); revertida por edição inversa → `git diff --quiet` exit `0`.
+     - **M-A3** (`_actionFromRow` sem `userId:`): **VERMELHO** em RA2(2) e RA2(3) (`Expected: 'user-1', Actual: <null>`); revertida por edição inversa → `git diff --quiet` exit `0`.
+  5. Regressões `drift_stores_test.dart` (8/8), `app_database_migration_test.dart` (2/2), `telemetry_test.dart` e guard AST verdes; `dart format` nos 4 arquivos → `0 changed`; `flutter analyze --no-pub` → `No issues found!`.
+- **O que falta:** A-F4, A-F5, A-F6, A-F6b, A-F7, A-F8.
+- **Próximo comando:** implementar A-F4 (`lib/core/sync/sync_user_scope.dart` + `lib/core/sync/sync_providers.dart` + `test/core/sync/bfilausuario_user_scoped_queue_test.dart`), rodar RA3 (4/4), mutações M-A4, M-A5 e M-A6 e os 6 testes do coordenador.
+
