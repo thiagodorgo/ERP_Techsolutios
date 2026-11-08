@@ -3,6 +3,8 @@
 // (verifyWebhook aceitaria); reconsulta sem devolver a cobrança criada → vermelho.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 
 import { BillingHttpClient } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
@@ -74,4 +76,10 @@ test("T-PAY-WH-3 · reconsulta por referência acha a cobrança criada; sem cobr
   } finally {
     await server.close();
   }
+});
+
+test("T-PAY-WH-4 · verifyWebhook compara em tempo constante (SHA-256 + timingSafeEqual) (A6)", () => {
+  const text = readFileSync(join(process.cwd(), "src/modules/subscription-billing/providers/payment/asaas/asaas.adapter.ts"), "utf8");
+  assert.match(text, /timingSafeEqual/);
+  assert.match(text, /createHash\(["']sha256["']\)/);
 });

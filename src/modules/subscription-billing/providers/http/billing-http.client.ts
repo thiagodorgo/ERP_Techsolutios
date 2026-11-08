@@ -73,9 +73,7 @@ function retryAfterFromHeaders(headers: Headers): number | undefined {
   }
   const rateLimitReset = headerValue(headers, "ratelimit-reset") ?? headerValue(headers, "x-ratelimit-reset");
   if (rateLimitReset !== undefined && /^\d+$/.test(rateLimitReset.trim())) {
-    const resetEpochMs = Number(rateLimitReset.trim()) * 1000;
-    const remaining = resetEpochMs - Date.now();
-    return remaining > 0 ? remaining : 0;
+    return Number(rateLimitReset.trim()) * 1000;
   }
   return undefined;
 }

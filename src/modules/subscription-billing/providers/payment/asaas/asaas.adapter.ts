@@ -9,6 +9,8 @@
 //  - débito (R-PAY-7b): `billingType: UNDEFINED` (o pagador escolhe débito na invoiceUrl).
 //  - `POST /webhooks`: `authToken` = segredo nosso, `sendType: SEQUENTIALLY`.
 
+import { createHash, timingSafeEqual } from "node:crypto";
+
 import {
   ProviderNotConfiguredError,
   ProviderRateLimitedError,
@@ -68,10 +70,22 @@ function billingTypeFor(method: PaymentMethod): string {
   }
 }
 
+/** Todo id de recurso no caminho é codificado; id com `/`, `..` ou `?` é recusado ANTES da rede (A8). */
+function pathId(id: string): string {
+  if (!id || id.includes("/") || id.includes("..") || id.includes("?")) {
+    throw new ProviderValidationError("Invalid provider resource id.");
+  }
+  return encodeURIComponent(id);
+}
+
 function headerOf(headers: VerifyWebhookInput["headers"], name: string): string | undefined {
   const value = headers[name.toLowerCase()] ?? headers[name];
   if (Array.isArray(value)) return value[0];
   return value;
+}
+
+function sha256(value: string): Buffer {
+  return createHash("sha256").update(value, "utf8").digest();
 }
 
 export class AsaasPaymentAdapter implements PaymentProviderPort {
@@ -130,7 +144,7 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
       const qr = await this.call<{ readonly payload?: string }>({
         op: "createCharge.pixQrCode",
         method: "GET",
-        path: `/payments/${payment.id}/pixQrCode`,
+        path: `/payments/${pathId(payment.id)}/pixQrCode`,
         headers,
       });
       pixCopyPaste = qr.payload;
@@ -138,7 +152,7 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
       const field = await this.call<{ readonly identificationField?: string }>({
         op: "createCharge.identificationField",
         method: "GET",
-        path: `/payments/${payment.id}/identificationField`,
+        path: `/payments/${pathId(payment.id)}/identificationField`,
         headers,
       });
       boletoLine = field.identificationField;
@@ -154,10 +168,11 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
   }
 
   async getCharge(chargeId: string): Promise<ChargeLookup> {
+    const safeId = pathId(chargeId);
     const payment = await this.call<AsaasPayment>({
       op: "getCharge",
       method: "GET",
-      path: `/payments/${chargeId}`,
+      path: `/payments/${safeId}`,
       headers: await this.authHeaders(),
     });
     const state = asaasStatusToOurs(payment.status ?? "");
@@ -183,20 +198,22 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
   }
 
   async cancelCharge(chargeId: string): Promise<{ readonly chargeId: string; readonly status: ChargeStatus }> {
+    const safeId = pathId(chargeId);
     await this.call({
       op: "cancelCharge",
       method: "DELETE",
-      path: `/payments/${chargeId}`,
+      path: `/payments/${safeId}`,
       headers: await this.authHeaders(),
     });
     return { chargeId, status: "cancelled" };
   }
 
   async refund(chargeId: string, amountCents?: number): Promise<{ readonly chargeId: string; readonly status: ChargeStatus }> {
+    const safeId = pathId(chargeId);
     const payment = await this.call<AsaasPayment>({
       op: "refund",
       method: "POST",
-      path: `/payments/${chargeId}/refund`,
+      path: `/payments/${safeId}/refund`,
       headers: await this.authHeaders(),
       body: amountCents === undefined ? {} : { value: fromCents(amountCents) },
     });
@@ -223,7 +240,7 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
     const secret = await this.readSecret("webhook_secret");
     if (!secret) return { ok: false };
     const token = headerOf(input.headers, "asaas-access-token");
-    if (!token || token !== secret) return { ok: false };
+    if (!token || !timingSafeEqual(sha256(token), sha256(secret))) return { ok: false };
     let body: Record<string, unknown>;
     try {
       body = JSON.parse(input.rawBody) as Record<string, unknown>;
@@ -265,7 +282,8 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
       return response.json<T>();
     }
     if (response.status === 400 || response.status === 422) {
-      throw new ProviderValidationError(await this.sanitizedMessage(response));
+      const token = await this.readSecret("api_token");
+      throw new ProviderValidationError(await this.sanitizedMessage(response, token ? [token] : []));
     }
     if (response.status === 429) {
       throw new ProviderRateLimitedError(response.retryAfterMs ?? 0);
@@ -273,15 +291,19 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
     throw new ProviderUnavailableError(`The provider returned HTTP ${response.status}.`);
   }
 
-  /** 400/422 do Asaas: `{ errors: [{ code, description }] }` → mensagem legível, sem eco de token. */
-  private async sanitizedMessage(response: BillingHttpResponse): Promise<string> {
+  /** 400/422 do Asaas: `{ errors: [{ code, description }] }` → mensagem legível, com o segredo redigido. */
+  private async sanitizedMessage(response: BillingHttpResponse, secrets: readonly string[]): Promise<string> {
+    let message = "The provider rejected the request.";
     try {
       const body = await response.json<AsaasErrorBody>();
       const parts = (body.errors ?? []).map((entry) => entry.description ?? entry.code ?? "").filter((entry) => entry !== "");
-      if (parts.length > 0) return parts.join("; ");
+      if (parts.length > 0) message = parts.join("; ");
     } catch {
-      // corpo não-JSON: cai na mensagem genérica abaixo
+      // corpo não-JSON: fica na mensagem genérica
     }
-    return "The provider rejected the request.";
+    for (const secret of secrets) {
+      if (secret !== "") message = message.split(secret).join("[redacted]");
+    }
+    return message;
   }
 }

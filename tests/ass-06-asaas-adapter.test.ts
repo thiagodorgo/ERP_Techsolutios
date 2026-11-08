@@ -223,3 +223,18 @@ test("T-PAY-ASAAS-11 · tabela de mesa dos estados Asaas (R-PAY-2, inclui D3)", 
     assert.equal(state.disputeWonPending ?? false, disputeWonPending ?? false, providerStatus);
   }
 });
+
+test("T-PAY-ASAAS-13 · chargeId com /, .. ou ? é recusado antes da rede (A8)", async () => {
+  const { server, adapter } = await setup();
+  try {
+    for (const badId of ["../customers?cpfCnpj=1", "a/b", "..", "x?y"]) {
+      await assert.rejects(
+        adapter.getCharge(badId),
+        (error: unknown) => (error as { code?: string }).code === "provider_validation",
+      );
+    }
+    assert.equal(server.recorded.length, 0, "nenhum fetch para id inválido");
+  } finally {
+    await server.close();
+  }
+});

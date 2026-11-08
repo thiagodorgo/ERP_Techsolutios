@@ -96,3 +96,16 @@ test("T-PAY-ERR-4 · credencial ausente → provider_not_configured, antes de to
     await server.close();
   }
 });
+
+test("T-PAY-ERR-5 · 429 com RateLimit-Reset: 30 → retryAfterMs 30000 (A5)", async () => {
+  const server = await startAsaasFake("rate_limited_429_reset");
+  try {
+    const { adapter } = await adapterWith(server);
+    await assert.rejects(
+      adapter.createCharge(CHARGE),
+      (error: unknown) => error instanceof ProviderRateLimitedError && error.retryAfterMs === 30000,
+    );
+  } finally {
+    await server.close();
+  }
+});

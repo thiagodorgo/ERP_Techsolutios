@@ -52,8 +52,12 @@ export async function startAsaasFake(defaultScenario = "ok"): Promise<AsaasFake>
       res.setHeader("Retry-After", "2");
       return sendJson(res, 429, { errors: [{ code: "rate_limited", description: "too many requests" }] });
     }
+    if (scenario === "rate_limited_429_reset") {
+      res.setHeader("RateLimit-Reset", "30");
+      return sendJson(res, 429, { errors: [{ code: "rate_limited", description: "too many requests" }] });
+    }
     if (scenario === "validation_400") {
-      return sendJson(res, 400, { errors: [{ code: "invalid_value", description: "value must be greater than zero" }] });
+      return sendJson(res, 400, { errors: [{ code: "invalid_value", description: `O access_token ${String(req.headers["access_token"] ?? "")} é inválido` }] });
     }
 
     // GET /v3/customers?cpfCnpj=…
