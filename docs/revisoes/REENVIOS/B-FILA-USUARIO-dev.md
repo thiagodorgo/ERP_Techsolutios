@@ -270,3 +270,14 @@ PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
 - `git diff --check origin/main...HEAD` (sem flag) → ec `0`. A `origin/main` andou para `015234d0`; o merge-base continua `04bb0e17`.
 - Arquivos do conserto (`git diff --name-only 71861445..HEAD`): `lib/core/sync/sync_user_scope.dart`, `test/core/sync/bfilausuario_dependente_de_outro_dono_test.dart`, `PLANO_SAN3.md` (as 4 linhas que a emenda manda), `status-geral.md`, `pendencias.md`, `pendencias-indice.md` e este diário. Nada em `src/`, `prisma/`, `lib/features/**`, `sync_replay_service.dart`, `auto_sync_coordinator.dart`, `Kpis/` nem `pubspec.*`.
 - Limpeza: as sondas copiadas para `test/` foram apagadas logo depois de rodar (`git status --short` vazio). O worktree de controle `w-filausr-ctrl` é removido com `git worktree remove --force` antes do fim.
+
+### Passo 7 — push e CI do head do conserto
+- `git push origin fix/mobile-fila-por-usuario` → `git ls-remote` = `de52fbbfb317fc7dc643b31b19aadbcd802f5e27`; `gh pr view 512` → `MERGEABLE`, com o mesmo head.
+- Run `push` `42489881435` e run `pull_request` `42489887160`: `completed success`, 8 de 8 jobs cada (flutter, backend, backend-postgres, frontend, antivirus, owner-portal, authority-portal, docker).
+- Resumo do log do job `flutter` (`gh run view --job <id> --log | grep`):
+  - job `128759747127` (pull_request) → `Formatted 227 files (0 changed)`, `No issues found!`, `02:36 +1021: All tests passed!`;
+  - job `128759730541` (push) → `Formatted 227 files (0 changed)`, `No issues found!`, `02:09 +1021: All tests passed!`.
+- O commit seguinte, que só acrescenta esta seção e a linha final ao diário, não toca código.
+- **Para a junta:** o A2 foi aceito pela emenda (a junta confere, por diff, que nenhuma asserção dos 7 testes antigos mudou). O residual da troca de sessão no meio do passe está no Passo 2. A l.443 do `PLANO_SAN3.md` não foi tocada (Passo 4).
+
+PRONTO PARA JUNTA de52fbbfb317fc7dc643b31b19aadbcd802f5e27 (objeto do código medido no CI; PR #512)
