@@ -210,7 +210,7 @@ for (const appearance of ["A", "B", "C"]) {
   await page.locator('tr.pat-ab-row[data-row-key="fila:stale-l1"]').click();
   await page.waitForTimeout(300);
   await shot(page, "c-item-aberto", 1440, 900);
-  await hoverFocus(page, "button.apardash-bloco-c", "C bloco");
+  await hoverFocus(page, "button.apardash-bloco-c[aria-pressed=\"false\"]", "C bloco (não pressionado)");
   await hoverFocus(page, "button.apardash-c-kpi", "C número do resumo");
   await hoverFocus(page, "button.apardash-rail-item", "C item do Agora");
   await context.close();
