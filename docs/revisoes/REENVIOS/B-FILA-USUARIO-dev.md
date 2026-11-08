@@ -197,3 +197,29 @@
 - **Próximo comando:** pré-revisão independente e convocação da junta completa pelo orquestrador.
 
 PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
+
+## CONSERTO PRÉ-REVISÃO (dev-filausr-claude, cobrindo o Argon)
+
+- **Quem:** `dev-filausr-claude`, Claude Opus 5.5, identidade nova de dev. Cobre o `dev-filausr-argon`, que caiu por cota no meio do conserto. Não achei os defeitos (quem achou foi `prerev-512-opus`) e não julgo se valem. Conserto o que a "Emenda 1 ao §A" do plano manda.
+- **Ordem de serviço:** a Emenda 1 ao §A de `B-REENVIOS-plano.md` (A1 conserta; A2 aceito; A3 conserta; A4 vira pendência), o §A4 PERMITIDO/PROIBIDO, o parecer `prerev-512-parecer.md` e as sondas `prerev-512-sondas/`.
+- **Cruzamento (§C7 item 11):** o achador é Claude, e o dev que cobre também é Claude, porque o Argon caiu. A verificação seguinte é a junta completa no DeepSeek, outro modelo.
+
+### Passo 0 — o parcial do Argon (P3: medir antes de confiar)
+- `git status --short` no worktree, head `71861445` → `M lib/core/sync/sync_user_scope.dart` e `?? test/core/sync/bfilausuario_dependente_de_outro_dono_test.dart` (731 linhas).
+- Preservação, antes de mexer: os dois arquivos e o `git diff` do `.dart` copiados para `erp-pausa-2026-10-03/revisoes/fix-512-parcial-argon/` → `md5` igual dos dois lados (`4c8afefb…` do decorador, `605b8ac1…` do teste); `sync_user_scope.diff` gravado.
+- O parcial tinha duas partes no decorador: (i) `_isDependentServerIdMappingUpdate`, que deixa passar só o mapeamento do `server_id` numa ação de outro dono; (ii) `_inFlightOwnedActionIds`/`_isInFlightSettlement`, que deixa passar o desfecho de uma ação `syncing` mesmo depois de a sessão trocar no meio do passe.
+- `flutter test --no-pub test/core/sync/bfilausuario_dependente_de_outro_dono_test.dart` com o parcial → `00:04 +4: All tests passed!`.
+- A parte (ii) é exercitada? Num worktree de controle, apliquei o decorador do Argon sem a (ii) → o teste novo `+4: All tests passed!` e `flutter test --no-pub test/core/sync test/features` → `00:36 +970: All tests passed!`. **Nenhum teste exercita a (ii).**
+- **Decisão, com motivo:** aproveito o teste inteiro e a parte (i). Retiro a (ii), por três motivos:
+  1. Ela não faz parte do mecanismo do A1, que é o `update` de mapeamento lançando o erro.
+  2. É código sem teste.
+  3. Cobre só metade da corrida de troca de sessão no meio do passe: marcar `syncing` sob a sessão nova continua lançando. Fechar a corrida inteira exigiria o coordenador ou o replay, e os dois são PROIBIDOS.
+  O efeito da corrida, sem a (ii), é este: a ação já enviada fica `syncing`, o resgate R3 a devolve a `pending`, e ela é reenviada quando o dono volta. O servidor é idempotente por `client_action_id`, então não se perde dado. Isso fica como residual declarado, abaixo.
+
+### Passo 1 — vermelho primeiro, sobre `71861445` limpo
+- Worktree temporário meu: `git worktree add --detach C:/Users/thiag/w-filausr-ctrl 71861445`, `flutter pub get --offline`, e cópia só do teste novo.
+- `flutter test --no-pub test/core/sync/bfilausuario_dependente_de_outro_dono_test.dart` → `+1 -3: Some tests failed.`:
+  - `A1(1)` (legada `user_id` nulo + Assumir) VERMELHO: `Expected: null / Actual: 'Falha na sincronização. Tente novamente.'`, "Nenhum SyncOwnershipError pode abortar o passe do coordenador";
+  - `A1(2)` (dependente de u1, sessão u2 + login de u1) VERMELHO: `Expected: null / Actual: 'Falha na sincronização. Tente novamente.'`, "Replay de u2 não pode abortar com SyncOwnershipError";
+  - `A1(4)` (a forma da sonda, direto no `WorkOrderSyncReplayService`, com dono `null` e `u1`) VERMELHO: o replay lança `SyncOwnershipError`;
+  - `A1(3)` VERDE, como esperado: é a guarda de que a exceção é estrita (mudar status, dono ou outro campo, sobrescrever um `server_id` já existente ou carimbar uma criação de outro dono continua lançando), e o head já lança em tudo.
