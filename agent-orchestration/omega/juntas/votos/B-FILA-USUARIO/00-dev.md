@@ -174,3 +174,26 @@
   6. Conferido `git diff origin/main -- Kpis/` → vazio (`KPI congelado`).
 - **O que falta:** A-F8 (bateria final completa, `git push -u`, abertura do PR, leitura do resumo do job `flutter` no CI e linha `PRONTO PARA REVISÃO` no diário).
 - **Próximo comando:** executar A-F8 (`dart format --output=none --set-exit-if-changed`, `flutter analyze`, testes novos + regressões + `flutter test --reporter compact` → `M = 1017`, `git diff --check`, auditoria de escopo A4, `gh pr create` e leitura do CI).
+
+## RETOMADA 9
+
+- **Head antes do commit:** `ec4b9f59cab3c152115fa269824fb7bb3498c559` (`docs(registro): B-FILA-USUARIO — fila por usuário fechada; 03b e material destravados`).
+- **O que foi feito (comandos e saídas resumidas — fatia A-F8, bateria final, PR e CI):**
+  1. Auditoria de higiene e escopo na raiz do worktree:
+     - `git diff --check` → exit `0`.
+     - `git diff --name-only origin/main` × A4 → `30` arquivos alterados, `0` em caminhos proibidos (`src/`, `prisma/`, `tests/`, `frontend/`, `Kpis/`, `pubspec.*`, `lib/features/**`, `sync_replay_service.dart`, `auto_sync_coordinator.dart`, `diagnostics_screen.dart`), `7` arquivos de teste pré-existentes fora do `PERMITIDO` literal de A4 (todos fora de `PROIBIDO`) já declarados com `PREMISSA FALSA` nas retomadas 3, 4 e 5.
+  2. Bateria local em `mobile/flutter_app`:
+     - `dart format --output=none --set-exit-if-changed` nos 20 arquivos `.dart` tocados pelo ramo → `Formatted 20 files (0 changed)` (nota: no SDK local Dart `3.11.4`, `dart format --output=none --set-exit-if-changed lib test` acusa apenas 1 arquivo intocado formatado para o Flutter `3.47.5` do CI; no job `flutter` do CI `3.47.5` passou com `0 changed`).
+     - `flutter analyze` → `No issues found!`.
+     - Testes novos do bloco (`RA1=3`, `RA2=3`, `RA3=4`, `RA4=5`, `RA5=4`, 5 arquivos) → `00:18 +19: All tests passed!`.
+     - Regressões citadas (10 arquivos, incluindo Drift, migrações, guard AST `ESCRITAS=48, VIOLACOES(0)`, `SyncScreen` e despesas) → `02:29 +105: All tests passed!`.
+     - Suíte completa `flutter test --reporter compact` → **`02:03 +1017: All tests passed!`** (de **`N = 998`** para **`M = 1017`**, `+19` casos novos, zero falha, zero skip).
+  3. Push e abertura do Pull Request:
+     - `git push -u origin fix/mobile-fila-por-usuario` → ramo publicado.
+     - `gh pr create --base main --head fix/mobile-fila-por-usuario --title "fix(mobile): a fila de sincronização passa a ser por usuário (B-FILA-USUARIO)"` → **PR #512** aberto (sem merge; corpo contendo propriedade `P-FILA-POR-USUÁRIO`, DoD, provas `RA1–RA5` com controles vermelhos em `04bb0e17` e 15 mutações `M-A1..M-A15`, números `N = 998 → M = 1017`, nota de rollback do Drift `13 → 14`, `"KPI congelado"`, `"sem backend"`, `"pré-requisito de B-O6R-03b e do bloco de material"` e `"Não fazer merge: pré-revisão e junta completa"`).
+  4. Leitura do resumo real do job `flutter` concluído com `success` no GitHub Actions sobre `ec4b9f59cab3c152115fa269824fb7bb3498c559` (Flutter `3.47.5`, run `push` `42480825642` / job `128732221314` e run `pull_request` `42481814885` / job `128735187034`):
+     - Comando (`actions/jobs/128732221314/logs` filtrado por `grep -E 'All tests passed|Some tests failed|\+[0-9]+'`): `02:20 +1017: All tests passed!` (e `02:41 +1017: All tests passed!` em `128735187034`, ambos com `Format check`, `Analyze` e `Tests` concluídos verdes).
+- **O que falta:** nada na autoria do dev; aguarda pré-revisão e junta completa (3 cadeiras por unanimidade, sem merge).
+- **Próximo comando:** pré-revisão independente e convocação da junta completa pelo orquestrador.
+
+PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
