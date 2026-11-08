@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **775** |
 | IDs distintos | 764 |
-| **ABERTAS** | **585** |
+| **ABERTAS** | **584** |
 | — das quais **diferidas** (balde C) | 63 |
-| — das quais **ativas nesta rodada** | **522** |
+| — das quais **ativas nesta rodada** | **521** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 186 |
+| FECHADAS | 187 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **775 cabecalhos para 764 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 258
+## ABERTAS · balde A — material — 257
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -332,7 +332,6 @@
 | `P-ASS03-RMED3-VACUUM-6B` | 12842 | MÉDIA | sim | P-ASS03-RMED3-VACUUM-6B (2026-11-06) — o "byte a byte" do R-MED-3 varia ±6 B depois de V |
 | `P-JOBS-REENFILEIRA-MULTIPLICA` | 12873 | MÉDIA | sim | P-JOBS-REENFILEIRA-MULTIPLICA (2026-11-06) — re-enfileirar no `finally` multiplica as ca |
 | `P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO` | 12903 | MÉDIA | sim | P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO (2026-11-08) — o painel de conflito no detalhe  |
-| `P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA` | 12913 | MÉDIA | sim | P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA (2026-11-08) — a trilha de plataforma do serviço de |
 
 ## ABERTAS · balde B — processo/registro — 264
 
@@ -671,7 +670,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3694 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3738 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 186
+## FECHADAS — 187
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -861,3 +860,4 @@
 | `P-ASS-MEDICAO-FRANQUIA` | 12618 | ALTA | sim | P-ASS-MEDICAO-FRANQUIA (2026-11-03) — franquia sem medição diária por organização — ALTA |
 | `P-ASS-DEMONSTRATIVO` | 12625 | ALTA | sim | P-ASS-DEMONSTRATIVO (2026-11-03) — demonstrativo mensal e baixa da assinatura inexistent |
 | `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE` | 12823 | ALTA | sim | P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE (2026-11-04) — o APK de release não declarava ac |
+| `P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA` | 12913 | MÉDIA | sim | P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA (2026-11-08) — a trilha de plataforma do serviço de |
