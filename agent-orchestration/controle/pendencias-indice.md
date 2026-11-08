@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **773** |
-| IDs distintos | 762 |
+| Cabecalhos `## P-` | **774** |
+| IDs distintos | 763 |
 | **ABERTAS** | **584** |
 | — das quais **diferidas** (balde C) | 63 |
 | — das quais **ativas nesta rodada** | **521** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 185 |
+| FECHADAS | 186 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **773 cabecalhos para 762 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **774 cabecalhos para 763 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -670,7 +670,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3693 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3737 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 185
+## FECHADAS — 186
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -859,3 +859,4 @@
 | `P-ASS-MEDICAO-FRANQUIA` | 12614 | ALTA | sim | P-ASS-MEDICAO-FRANQUIA (2026-11-03) — franquia sem medição diária por organização — ALTA |
 | `P-ASS-DEMONSTRATIVO` | 12621 | ALTA | sim | P-ASS-DEMONSTRATIVO (2026-11-03) — demonstrativo mensal e baixa da assinatura inexistent |
 | `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE` | 12819 | ALTA | sim | P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE (2026-11-04) — o APK de release não declarava ac |
+| `P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA` | 12900 | MÉDIA | sim | P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA (2026-11-08) — a trilha de plataforma do serviço de |
