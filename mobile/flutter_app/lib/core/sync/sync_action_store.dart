@@ -78,6 +78,7 @@ class SyncActionCodec {
     return {
       'client_action_id': action.clientActionId,
       'tenant_id': action.tenantId,
+      'user_id': action.userId,
       'type': action.type,
       'payload': action.payload,
       'status': action.status.name,
@@ -93,6 +94,7 @@ class SyncActionCodec {
     return SyncAction(
       clientActionId: json['client_action_id'] as String,
       tenantId: json['tenant_id'] as String,
+      userId: json['user_id'] as String?,
       type: json['type'] as String,
       payload: Map<String, Object?>.from(
         (json['payload'] as Map<dynamic, dynamic>?) ??

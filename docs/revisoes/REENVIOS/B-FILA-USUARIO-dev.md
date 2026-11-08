@@ -51,3 +51,20 @@
   5. Worktree temporário removido e conferido por `git worktree list` (`w-filausr-ctrl` ausente).
 - **O que falta:** A-F2, A-F3, A-F4, A-F5, A-F6, A-F6b, A-F7, A-F8.
 - **Próximo comando:** implementar A-F2 (`sync_models.dart`, `sync_action_store.dart`, `sync_action_factory.dart` + `test/core/sync/bfilausuario_model_factory_test.dart`), rodar RA1 (3/3), mutação M-A1 e `flutter analyze`.
+
+## RETOMADA 2
+
+- **Head antes do commit:** `76694745` (`docs(b-fila-usuario): vermelho-controle e hipóteses medidas`).
+- **O que foi feito (comandos e saídas resumidas — fatia A-F2):**
+  1. Editados exclusivamente os 3 arquivos de produção de A2 itens 1, 2 e 5:
+     - `mobile/flutter_app/lib/core/sync/sync_models.dart`: campo opcional `final String? userId;` no construtor, `copyWith(userId:)` e `props`.
+     - `mobile/flutter_app/lib/core/sync/sync_action_store.dart`: `'user_id': action.userId` em `SyncActionCodec.toJson` e `userId: json['user_id'] as String?` em `SyncActionCodec.fromJson`.
+     - `mobile/flutter_app/lib/core/sync/sync_action_factory.dart`: `SyncActionFactory({Uuid? uuid, String? Function()? currentUserId})` e `userId` opcional em `create(...)` resolvido por `_normalizeUserId(userId) ?? _normalizeUserId(_currentUserId?.call())` (os 20 sítios chamadores em `lib/features/**` seguem intocados).
+  2. Criado `mobile/flutter_app/test/core/sync/bfilausuario_model_factory_test.dart` com os 3 casos de **RA1**:
+     - `flutter test test/core/sync/bfilausuario_model_factory_test.dart --reporter expanded` → `00:00 +3: All tests passed!` (3/3).
+  3. **Mutação M-A1** (fábrica ignora `_currentUserId` em `sync_action_factory.dart`):
+     - Aplicada → `flutter test test/core/sync/bfilausuario_model_factory_test.dart` → **VERMELHO** (`00:00 +2 -1: RA1(3) ... Expected: 'u1', Actual: <null>`).
+     - Revertida por edição inversa → provado com `git diff --quiet` (exit `0`).
+  4. `dart format --output=none --set-exit-if-changed` nos 4 arquivos da fatia → `0 changed`; guard AST `bo6r11_guard_fila_await_ast_test.dart` verde; `flutter analyze` → `No issues found!`.
+- **O que falta:** A-F3, A-F4, A-F5, A-F6, A-F6b, A-F7, A-F8.
+- **Próximo comando:** implementar A-F3 (`app_database.dart` schemaVersion 14 + migração aditiva `from < 14`, `drift_sync_action_store.dart` + `test/core/local_db/bfilausuario_drift_user_id_test.dart`), rodar RA2 (3/3), mutações M-A2 e M-A3 e regressões `drift_stores_test.dart` + `app_database_migration_test.dart`.
