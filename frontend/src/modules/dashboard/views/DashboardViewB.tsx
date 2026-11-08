@@ -29,23 +29,20 @@ import type { DashboardViewModel } from "./dashboard.view-model";
 
 // B-APAR-DASH — APARÊNCIA B "Analítica" (referência aprovada `screen-refs/dashboard-3opcoes.reference.html`, `renderB`):
 // mini-gráfico SÓ nos cartões que têm série real (OS hoje = abertas por dia; Concluídas = concluídas por dia); o painel do
-// cartão decompõe "OS abertas"/"Em andamento" pelas situações do agregado; a faixa analítica com o volume dos últimos 14 dias
-// (recorte da MESMA série de 30; clicar num dia lê o dia), a "Carteira por etapa" (as 10 situações do `byStatus`, cada uma
-// filtra a lista) e o "Campo agora" (situação dos operadores, que filtra o status de campo); "OS que exigem atenção" com
+// cartão decompõe "OS abertas"/"Em andamento" pelas situações do agregado; a faixa analítica com o volume dos últimos 30 dias
+// (a MESMA série da A; clicar num dia lê o dia), a "Carteira ativa por etapa" (as 7 situações ATIVAS do `byStatus`, como a
+// referência; cada uma filtra a lista) e o "Campo agora" (situação dos operadores, que filtra o status de campo); "OS que exigem atenção" com
 // largura cheia, abas e o detalhe da linha (endereço e técnico por `GET /work-orders/:id`, pedido só ao abrir). VIEW PURA.
 
-/** As 10 situações do agregado, na ordem do ciclo; as 7 primeiras são a carteira ATIVA. */
-export const ETAPAS: readonly { readonly key: keyof DashboardSummaryByStatus; readonly label: string; readonly color: string; readonly ativa: boolean }[] = [
-  { key: "open", label: "Aberta", color: "#94A3B8", ativa: true },
-  { key: "assigned", label: "Atribuída", color: "#60A5FA", ativa: true },
-  { key: "accepted", label: "Aceita", color: "#2563EB", ativa: true },
-  { key: "on_route", label: "Em rota", color: "#0EA5E9", ativa: true },
-  { key: "on_site", label: "No local", color: "#22C55E", ativa: true },
-  { key: "in_progress", label: "Em atendimento", color: "#F59E0B", ativa: true },
-  { key: "paused", label: "Pausada", color: "#B45309", ativa: true },
-  { key: "completed", label: "Concluída", color: "#15803D", ativa: false },
-  { key: "cancelled", label: "Cancelada", color: "#DC2626", ativa: false },
-  { key: "rejected", label: "Recusada", color: "#B91C1C", ativa: false },
+/** A carteira ATIVA: as 7 situações não finalizadas do agregado, na ordem do ciclo (referência `ETAPAS`). */
+export const ETAPAS: readonly { readonly key: keyof DashboardSummaryByStatus; readonly label: string; readonly color: string }[] = [
+  { key: "open", label: "Aberta", color: "#94A3B8" },
+  { key: "assigned", label: "Atribuída", color: "#60A5FA" },
+  { key: "accepted", label: "Aceita", color: "#2563EB" },
+  { key: "on_route", label: "Em rota", color: "#0EA5E9" },
+  { key: "on_site", label: "No local", color: "#22C55E" },
+  { key: "in_progress", label: "Em atendimento", color: "#F59E0B" },
+  { key: "paused", label: "Pausada", color: "#B45309" },
 ];
 
 /** As 5 situações de campo da referência (`CAMPO_SEG`), pelo rótulo de `fieldStatusMeta`. */
@@ -60,8 +57,6 @@ export const CAMPO_SEGMENTOS: readonly { readonly label: string; readonly color:
 function Carteira({ model }: { readonly model: DashboardViewModel }) {
   const by = model.summary.byStatus;
   if (!by) return <BlockEmpty state="error">Situações indisponíveis no momento.</BlockEmpty>;
-  const ativas = ETAPAS.filter((etapa) => etapa.ativa);
-  const finais = ETAPAS.filter((etapa) => !etapa.ativa);
   const bar = (group: typeof ETAPAS) => {
     const max = Math.max(1, ...group.map((etapa) => by[etapa.key]));
     return group.map((etapa) => {
@@ -87,9 +82,7 @@ function Carteira({ model }: { readonly model: DashboardViewModel }) {
   };
   return (
     <div className="apardash-etapas-lista" role="group" aria-label="Carteira ativa por etapa">
-      {bar(ativas)}
-      <div className="apardash-etapas-lista__sep">Finalizadas, no total</div>
-      {bar(finais)}
+      {bar(ETAPAS)}
     </div>
   );
 }
@@ -143,7 +136,8 @@ export function DashboardViewB(model: DashboardViewModel) {
       </span>
     ) : null;
 
-  const days = model.series.items.slice(-14);
+  // B · volume dos últimos 30 dias: a série inteira (a mesma chamada da A); só a C recorta 14 dias.
+  const days = model.series.items;
   const dia = state.dia !== null && state.dia < days.length ? state.dia : days.length - 1;
   const point = days[dia];
 
@@ -192,7 +186,7 @@ export function DashboardViewB(model: DashboardViewModel) {
       </>
     );
 
-  const openCount = model.summary.byStatus ? ETAPAS.filter((entry) => entry.ativa).reduce((sum, entry) => sum + (model.summary.byStatus as DashboardSummaryByStatus)[entry.key], 0) : null;
+  const openCount = model.summary.byStatus ? ETAPAS.reduce((sum, entry) => sum + (model.summary.byStatus as DashboardSummaryByStatus)[entry.key], 0) : null;
 
   return (
     <div data-aparencia="B" className="apardash apardash--b">
@@ -205,7 +199,7 @@ export function DashboardViewB(model: DashboardViewModel) {
 
       {model.summary.status === "ready" ? (
         <div className="apardash-b-ana">
-          <VolumeCard model={model} className="apardash-b-vol" subtitle="Últimos 14 dias · abertas, concluídas e canceladas">
+          <VolumeCard model={model} className="apardash-b-vol" subtitle="Últimos 30 dias · abertas, concluídas e canceladas">
             {volumeBody(model, days, () => (
               <>
                 <VolumeBars points={days} selected={dia} onDay={(index) => model.onState({ ...state, dia: index })} />
@@ -231,7 +225,7 @@ export function DashboardViewB(model: DashboardViewModel) {
             <div className="pat-card__head">
               <h2 className="pat-card__title">Carteira ativa por etapa</h2>
             </div>
-            <div className="pat-card__subtitle pat-card__subtitle--gap">{openCount === null ? "Situações indisponíveis" : `${openCount} OS em aberto na organização · clique filtra a lista`}</div>
+            <div className="pat-card__subtitle pat-card__subtitle--gap">{openCount === null ? "Situações indisponíveis" : `${openCount} OS em aberto · clique filtra a fila`}</div>
             <Carteira model={model} />
           </section>
           <section className="pat-card">

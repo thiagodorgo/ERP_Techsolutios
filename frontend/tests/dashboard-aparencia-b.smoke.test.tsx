@@ -17,7 +17,9 @@ import { buildDashModel, detailRows, GESTOR, pressedButtons, rowKeys, section, S
 const render = (overrides = {}, permissions: readonly string[] = GESTOR) => renderToString(<DashboardViewB {...buildDashModel(overrides, permissions).model} />);
 const etapas = (html: string) => pressedButtons(html).filter((button) => / OS — filtrar a lista$/.test(button.label));
 
-test("[DB1] carteira por etapa: as 10 situações do agregado, com a contagem do agregado e o total em aberto", () => {
+// Conferência visual do orquestrador (ajustes B1 e B2): a referência aprovada vence o plano — a carteira tem só as 7
+// situações ATIVAS (sem "Finalizadas, no total") e o volume da B cobre os 30 dias da série (o recorte de 14 é da C).
+test("[DB1] carteira ativa por etapa: as 7 situações ativas do agregado, com a contagem do agregado e o total em aberto", () => {
   const html = render();
   assert.match(html, /^<div data-aparencia="B"/);
   assert.match(html, /pat-page-header__kicker">VISÃO GERAL · ANALÍTICA</);
@@ -31,12 +33,20 @@ test("[DB1] carteira por etapa: as 10 situações do agregado, com a contagem do
       "No local: 3 OS — filtrar a lista",
       "Em atendimento: 7 OS — filtrar a lista",
       "Pausada: 2 OS — filtrar a lista",
-      "Concluída: 412 OS — filtrar a lista",
-      "Cancelada: 21 OS — filtrar a lista",
-      "Recusada: 4 OS — filtrar a lista",
     ],
   );
-  assert.match(visibleText(section(html, "Carteira ativa por etapa")), /35 OS em aberto na organização · clique filtra a lista/);
+  const carteira = visibleText(section(html, "Carteira ativa por etapa"));
+  assert.match(carteira, /35 OS em aberto · clique filtra a fila/);
+  assert.doesNotMatch(carteira, /Finalizadas|Concluída|Cancelada|Recusada/, "as finalizadas não estão na referência");
+});
+
+test("[DB1b] volume da B: os 30 dias da série (a mesma chamada da A), com o dia de hoje lido embaixo", () => {
+  const html = render();
+  const volume = section(html, "Volume de ordens de serviço");
+  assert.match(visibleText(volume), /Últimos 30 dias · abertas, concluídas e canceladas/);
+  assert.equal((volume.match(/class="pat-dash-bars__day apardash-day/g) ?? []).length, 30, "um botão por dia da série inteira");
+  assert.match(volume, /aria-pressed="true" aria-label="14\/10: 14 abertas, 6 concluídas, 1 canceladas"/);
+  assert.match(visibleText(volume), /Hoje 14 abertas 6 concluídas 1 canceladas/);
 });
 
 test("[DB2] a etapa filtra a lista (chip removível) e a contagem dela continua a do agregado, não a da lista filtrada", () => {

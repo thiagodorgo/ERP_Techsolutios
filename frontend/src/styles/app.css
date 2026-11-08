@@ -8518,7 +8518,6 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .apardash-dia b { color: #0f172a; }
 .apardash-dia__dica { color: #94a3b8; }
 .apardash-etapas-lista { display: flex; flex-direction: column; gap: 2px; }
-.apardash-etapas-lista__sep { margin: 6px 0 2px; font-size: 10.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #94a3b8; }
 .apardash-etapa-bar { display: grid; grid-template-columns: 104px minmax(0, 1fr) 34px; align-items: center; gap: 8px; width: 100%; min-height: 24px; padding: 2px 6px; border: 1px solid transparent; border-radius: 6px; background: none; font-family: inherit; text-align: left; cursor: pointer; transition: background-color .15s ease, border-color .15s ease; }
 .apardash-etapa-bar:hover { background: #f8fafc; border-color: #e2e8f0; }
 .apardash-etapa-bar[aria-pressed="true"] { border-color: #2563eb; background: #dbeafe; }
