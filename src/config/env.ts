@@ -785,7 +785,7 @@ export const envSchema = z.object({
     }
   }
 
-  // ── B-ASS-06 — G-BILLING-LOCAL e gate da URL pública do webhook (plano §3.9, R-PAY-5/9) ─────────────────────
+  // ── B-ASS-06 — G-BILLING-LOCAL (plano §3.9, R-PAY-5) ───────────────────────────────────────────────────────────
   if (value.BILLING_PROVIDER_ALLOW_LOCAL_HOSTS && value.NODE_ENV !== "test") {
     context.addIssue({
       code: z.ZodIssueCode.custom,

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **774** |
-| IDs distintos | 763 |
-| **ABERTAS** | **585** |
+| Cabecalhos `## P-` | **775** |
+| IDs distintos | 764 |
+| **ABERTAS** | **586** |
 | — das quais **diferidas** (balde C) | 63 |
-| — das quais **ativas nesta rodada** | **522** |
+| — das quais **ativas nesta rodada** | **523** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 185 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **774 cabecalhos para 763 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **775 cabecalhos para 764 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -334,7 +334,7 @@
 | `P-JOBS-REENFILEIRA-MULTIPLICA` | 12870 | MÉDIA | sim | P-JOBS-REENFILEIRA-MULTIPLICA (2026-11-06) — re-enfileirar no `finally` multiplica as ca |
 | `P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA` | 12901 | MÉDIA | sim | P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA (2026-11-08) — a trilha de plataforma do serviço de |
 
-## ABERTAS · balde B — processo/registro — 264
+## ABERTAS · balde B — processo/registro — 265
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -602,6 +602,7 @@
 | `P-ASS04-CREDITO-EXCEDENTE` | 12882 | BAIXA | sim | P-ASS04-CREDITO-EXCEDENTE (2026-11-06) — crédito aplicado maior que o total do mês fica  |
 | `P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA` | 12888 | BAIXA | sim | P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA (2026-11-06) — refechamento com a assinatura mudad |
 | `P-ASS04-REFUND-CREDITO-OUTBOX` | 12894 | BAIXA | sim | P-ASS04-REFUND-CREDITO-OUTBOX (2026-11-06) — o reembolso de crédito ainda não existe: só |
+| `P-ASS06-COBRANCA-CRIADA-SEM-ID` | 12907 | BAIXA | sim | P-ASS06-COBRANCA-CRIADA-SEM-ID (2026-11-08) — no PIX e no boleto, a cobrança pode ficar  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 63
 

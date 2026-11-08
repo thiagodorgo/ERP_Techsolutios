@@ -1,5 +1,5 @@
-// B-ASS-06 · F1/F5 — gates das variáveis do bloco em src/config/env.ts (plano §3.9, R-PAY-5/R-PAY-9):
-// G-BILLING-LOCAL (127.0.0.1 só em test) e a URL pública do webhook em produção. Molde: tests/env-billing-vault.test.ts.
+// B-ASS-06 · F1/F5 — gate da variável do bloco em src/config/env.ts (plano §3.9, R-PAY-5):
+// G-BILLING-LOCAL (127.0.0.1 só em test). A URL pública do webhook nasce no B-ASS-08 (o B-ASS-06 não a usa). Molde: tests/env-billing-vault.test.ts.
 
 import assert from "node:assert/strict";
 import test from "node:test";
