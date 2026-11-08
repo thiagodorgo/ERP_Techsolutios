@@ -2,6 +2,7 @@ import { config } from "dotenv";
 import { z } from "zod";
 
 import { SNIFFABLE_MIME_TYPES, type SniffableMimeType } from "../modules/evidence/content-sniff.js";
+import { parseVaultKey } from "../modules/subscription-billing/vault/vault-keys.js";
 
 config();
 
@@ -31,6 +32,11 @@ export function booleanFlag(defaultValue: boolean) {
       if (typeof value === "boolean") return value;
       return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
     });
+}
+
+/** Variável de ambiente declarada vazia (`X=`) conta como ausente: cai no default em vez de virar 0. */
+function emptyToUndefined(value: unknown): unknown {
+  return typeof value === "string" && value.trim() === "" ? undefined : value;
 }
 
 /**
@@ -339,6 +345,16 @@ export const envSchema = z.object({
   TRACCAR_RESOLVE_HINT_TTL_MS: z.coerce.number().int().positive().default(600_000),
   TRACCAR_RESOLVE_NEGATIVE_TTL_MS: z.coerce.number().int().positive().default(60_000),
   TRACCAR_RESOLVE_CACHE_MAX: z.coerce.number().int().positive().default(10_000),
+  // ── B-ASS-05 — cofre de credenciais dos provedores de pagamento e nota (plano §3.9, §4.5) ─────────────────────
+  // Mestre do canal: sem ele, nada de outbox, webhook nem test-connection (B-ASS-06..08). DESLIGADO por padrão.
+  BILLING_PROVIDERS_ENABLED: booleanFlag(false),
+  // Chave do cofre: base64 de 32 bytes, NUNCA no banco nem no código. Vazia → cofre `unavailable` (gravar
+  // credencial responde 503; o resto do app segue). Gates G-BILLING-VAULT e G-BILLING-VAULT-PREV abaixo.
+  BILLING_VAULT_KEY: z.string().trim().default(""),
+  BILLING_VAULT_KEY_VERSION: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).default(1)),
+  // Só para a rotação: decifra linhas da versão anterior, nunca cifra.
+  BILLING_VAULT_KEY_PREVIOUS: z.string().trim().default(""),
+  BILLING_VAULT_KEY_PREVIOUS_VERSION: z.preprocess(emptyToUndefined, z.coerce.number().int().min(1).optional()),
 }).superRefine((value, context) => {
   const developmentOnlySecrets = new Set([
     "dev-only-change-me",
@@ -723,6 +739,47 @@ export const envSchema = z.object({
       path: [effectiveAllowedMimeSource === "<default>" ? "CHECKLIST_STORAGE_ALLOWED_MIME_TYPES" : effectiveAllowedMimeSource],
       message: `Ω6R-SEC-004: ${effectiveAllowedMimeSource} declara tipo(s) que o gate de upload não sabe verificar por assinatura de bytes: ${notSniffable.join(", ")}. Tipos verificáveis: ${SNIFFABLE_MIME_TYPES.join(", ")}.`,
     });
+  }
+  // ── B-ASS-05 — G-BILLING-VAULT e G-BILLING-VAULT-PREV (plano §3.9, R-VLT-6) ─────────────────────────────────
+  // Uma chave DECLARADA e inválida é erro de configuração em qualquer ambiente (não vira "cofre indisponível"
+  // em silêncio). Ligar o canal em produção sem chave válida recusa o boot. Produção sem canal e sem chave
+  // sobe: o cofre fica `unavailable` e só gravar credencial responde 503.
+  if (value.BILLING_VAULT_KEY !== "" && !parseVaultKey(value.BILLING_VAULT_KEY)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["BILLING_VAULT_KEY"],
+      message: "BILLING_VAULT_KEY precisa ser base64 de exatamente 32 bytes.",
+    });
+  }
+  if (value.NODE_ENV === "production" && value.BILLING_PROVIDERS_ENABLED && !parseVaultKey(value.BILLING_VAULT_KEY)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["BILLING_VAULT_KEY"],
+      message: "BILLING_PROVIDERS_ENABLED=true em produção exige BILLING_VAULT_KEY válida (base64 de 32 bytes).",
+    });
+  }
+  if (value.BILLING_VAULT_KEY_PREVIOUS !== "") {
+    const previous = parseVaultKey(value.BILLING_VAULT_KEY_PREVIOUS);
+    const current = parseVaultKey(value.BILLING_VAULT_KEY);
+    const previousVersion = value.BILLING_VAULT_KEY_PREVIOUS_VERSION;
+    const problem = !previous
+      ? "precisa ser base64 de exatamente 32 bytes"
+      : !current
+        ? "só vale junto de uma BILLING_VAULT_KEY válida"
+        : previous.equals(current)
+          ? "não pode ser igual à BILLING_VAULT_KEY"
+          : previousVersion === undefined
+            ? "exige BILLING_VAULT_KEY_PREVIOUS_VERSION"
+            : previousVersion >= value.BILLING_VAULT_KEY_VERSION
+              ? "exige BILLING_VAULT_KEY_PREVIOUS_VERSION menor que BILLING_VAULT_KEY_VERSION"
+              : null;
+    if (problem) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["BILLING_VAULT_KEY_PREVIOUS"],
+        message: `BILLING_VAULT_KEY_PREVIOUS ${problem}.`,
+      });
+    }
   }
 });
 

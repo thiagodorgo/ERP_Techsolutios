@@ -4240,3 +4240,72 @@ model TenantBillingProfile {
   @@unique([tenant_id])
   @@map("tenant_billing_profiles")
 }
+
+// ── B-ASS-05 (M4) — cofre de credenciais, configuração dos provedores e trilha de plataforma (plano §3.2) ──────────
+// As três são GLOBAIS da plataforma (sem tenant_id, sem RLS — exceção declarada no plano, precedente `tenants`):
+// a credencial e a configuração são da plataforma, e a trilha de plataforma não pode depender da organização de
+// sistema existir. O segredo só existe cifrado (`ciphertext`), e só o serviço do cofre lê esta tabela.
+
+model BillingProviderConfig {
+  id                             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider                       String    @unique // lista fechada do catálogo (CHECK na migração)
+  kind                           String    // payment | invoice (CHECK)
+  environment                    String    @default("sandbox") // sandbox | production (CHECK)
+  enabled                        Boolean   @default(false)
+  enabled_environment            String?
+  enabled_at                     DateTime? @db.Timestamptz(6)
+  enabled_by                     String?   @db.Uuid
+  last_test_at                   DateTime? @db.Timestamptz(6)
+  last_test_ok                   Boolean?
+  last_test_environment          String?
+  last_test_error                String?
+  webhook_registered_at          DateTime? @db.Timestamptz(6)
+  webhook_registered_environment String?
+  webhook_external_id            String?
+  webhook_public_url             String?
+  settings                       Json      @default("{}") // dados fiscais do emissor; NUNCA segredo
+  created_at                     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@map("billing_provider_configs")
+}
+
+model BillingProviderCredential {
+  id              String    @id @db.Uuid // gerado pelo serviço ANTES de cifrar: entra na AAD
+  provider        String
+  environment     String    // sandbox | production (CHECK)
+  kind            String    // api_token | webhook_secret | certificate (CHECK)
+  ciphertext      Bytes
+  iv              Bytes     // 12 bytes (CHECK)
+  auth_tag        Bytes     // 16 bytes (CHECK)
+  key_version     Int
+  fingerprint     String    @db.Char(16)
+  last4           String
+  created_by      String?   @db.Uuid
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  rotated_from_id String?   @db.Uuid
+  revoked_at      DateTime? @db.Timestamptz(6)
+
+  rotatedFrom BillingProviderCredential?  @relation("CredentialRotation", fields: [rotated_from_id], references: [id], onDelete: Restrict)
+  rotatedTo   BillingProviderCredential[] @relation("CredentialRotation")
+
+  // UNIQUE parcial (provider, environment, kind) WHERE revoked_at IS NULL: na migração (o Prisma não declara índice parcial).
+  @@index([provider, environment])
+  @@map("billing_provider_credentials")
+}
+
+model PlatformAuditLog {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actor_user_id    String?  @db.Uuid
+  actor_email_hash String?
+  action           String
+  entity           String
+  entity_id        String?
+  tenant_id        String?  @db.Uuid
+  metadata         Json     @default("{}") // allowlist própria do módulo (platform-audit/audit-metadata.ts)
+  created_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([entity, entity_id])
+  @@index([created_at])
+  @@map("platform_audit_logs")
+}

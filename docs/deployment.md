@@ -650,6 +650,23 @@ Cloud charge markup rules nao exige variavel de ambiente propria nesta branch. O
 - Cloud usage metering, AWS CUR cost import, Cloud cost allocation e Cloud charge markup rules nao devem receber secrets AWS reais nas foundations atuais.
 - Este bloco nao configura deploy produtivo.
 
+### Chave do cofre de credenciais dos provedores (B-ASS-05)
+
+- `BILLING_VAULT_KEY` é base64 de 32 bytes e cifra (AES-256-GCM) as credenciais dos provedores de pagamento e nota.
+  Ela vive **só** no gerenciador de segredos do provedor (GitHub Environments/Secrets hoje; Secrets Manager na AWS,
+  quando o bloco de infra AWS nascer), nunca no git, no banco ou no log. Gere com
+  `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`.
+- `BILLING_VAULT_KEY_VERSION` (inteiro >= 1) é gravado em toda linha cifrada.
+- **Boot:** produção com `BILLING_PROVIDERS_ENABLED=true` e chave ausente ou inválida não sobe (G-BILLING-VAULT).
+  Uma chave declarada e inválida não sobe em ambiente nenhum. Produção sem canal e sem chave sobe: o cofre fica
+  indisponível e só gravar credencial responde 503.
+- **Rotação da chave:** ponha a chave nova em `BILLING_VAULT_KEY` com a versão seguinte, mova a antiga para
+  `BILLING_VAULT_KEY_PREVIOUS` com a versão anterior, faça o deploy e chame `POST /api/v1/platform/billing/vault/rotate`.
+  As credenciais vivas são recifradas em linhas novas; as que não decifram voltam em `unreadable[]` e não travam as
+  outras. Depois, retire a `_PREVIOUS` (G-BILLING-VAULT-PREV recusa anterior igual à atual ou com versão >= atual).
+- **Chave perdida:** as credenciais ficam ilegíveis e precisam ser cadastradas de novo na tela, pelo dono. Nada mais
+  se perde: o demonstrativo e a baixa manual não dependem do cofre.
+
 ## Operacao (Ω-INFRA-4) — observabilidade, backup, restore, uptime
 
 ### Observabilidade (onde ver log/metrica)
