@@ -7,6 +7,7 @@ import test from "node:test";
 
 import { BillingHttpClient, type BillingHttpLogEntry } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
 import { BillingChannelDisabledError, BillingHostNotAllowedError, ProviderUnavailableError } from "../src/modules/subscription-billing/providers/http/billing-errors.js";
+import { PROVIDER_CATALOG } from "../src/modules/subscription-billing/providers/provider.catalog.js";
 import { sendJson, startFakeServer } from "./helpers/fake-providers/shared.js";
 
 function client(overrides: Partial<ConstructorParameters<typeof BillingHttpClient>[0]> = {}) {
@@ -112,5 +113,34 @@ test("T-PAY-CLIENT-6 · redirect NÃO é seguido: o token não sai para host for
   } finally {
     await redirector.close();
     await steal.close();
+  }
+});
+
+test("T-PAY-CLIENT-7 · allowlist por provedor/ambiente: https obrigatório e porta padrão (A4)", async () => {
+  const production = new URL(PROVIDER_CATALOG.asaas.hosts.production);
+  const httpSandbox = new URL(PROVIDER_CATALOG.asaas.hosts.sandbox);
+  httpSandbox.protocol = "http:";
+  const otherProvider = new URL(PROVIDER_CATALOG.focusnfe.hosts.sandbox);
+  const arbitraryPort = new URL(PROVIDER_CATALOG.asaas.hosts.sandbox);
+  arbitraryPort.port = "8443";
+
+  const rejectCases: readonly [string, string][] = [
+    ["host de produção do Asaas", production.toString()],
+    ["http (sem TLS) do sandbox", httpSandbox.toString()],
+    ["host de outro provedor", otherProvider.toString()],
+    ["porta arbitrária", arbitraryPort.toString()],
+  ];
+  for (const [label, baseUrl] of rejectCases) {
+    const http = client({ baseUrl });
+    await assert.rejects(
+      http.request({
+        op: "getCharge",
+        method: "GET",
+        path: "/payments/x",
+        headers: { access_token: "SECRET-ABC123-XYZ" },
+      }),
+      (error: unknown) => error instanceof BillingHostNotAllowedError && error.code === "host_not_allowed",
+      label,
+    );
   }
 });

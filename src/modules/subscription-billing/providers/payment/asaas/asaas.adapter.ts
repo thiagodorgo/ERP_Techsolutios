@@ -165,7 +165,7 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
       status: state.status,
       disputeWonPending: state.disputeWonPending,
       paidAt: payment.confirmedDate ?? payment.paymentDate,
-      paidCents: typeof payment.value === "number" ? toCents(payment.value) : undefined,
+      paidCents: state.status === "paid" && typeof payment.value === "number" ? toCents(payment.value) : undefined,
       raw: payment as unknown as Readonly<Record<string, unknown>>,
     };
   }

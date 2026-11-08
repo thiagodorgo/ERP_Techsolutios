@@ -7,11 +7,11 @@
 //  - `AbortSignal.timeout`: 60 s em cartão, 15 s no resto; timeout → `ProviderTimeoutError`, sem repetição (R-PAY-3).
 //  - 429 → lê `Retry-After`/`RateLimit-Reset` e devolve `retryAfterMs` (R-PAY-3).
 //  - log só com `provider`, `op`, `status`, `latencyMs` — nunca header sensível nem corpo (R-PAY-7).
+//  - redirect nunca é seguido (A1): `redirect: "manual"` e 3xx vira erro sanitizado.
 
 import { env } from "../../../../config/env.js";
 import {
   PROVIDER_CATALOG,
-  PROVIDER_IDS,
   type ProviderId,
 } from "../provider.catalog.js";
 import type { ProviderEnvironment } from "../../vault/vault.repository.js";
@@ -19,6 +19,7 @@ import {
   BillingChannelDisabledError,
   BillingHostNotAllowedError,
   ProviderTimeoutError,
+  ProviderUnavailableError,
 } from "./billing-errors.js";
 
 export type BillingHttpLogEntry = {
@@ -61,15 +62,6 @@ export type BillingHttpResponse = {
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
 
-function hostnameOf(url: string): string {
-  return new URL(url).hostname;
-}
-
-/** Os hosts do catálogo (todos os provedores/ambientes) — a allowlist fechada. */
-const CATALOG_HOSTS: ReadonlySet<string> = new Set(
-  PROVIDER_IDS.flatMap((id) => [hostnameOf(PROVIDER_CATALOG[id].hosts.sandbox), hostnameOf(PROVIDER_CATALOG[id].hosts.production)]),
-);
-
 function headerValue(headers: Headers, name: string): string | undefined {
   return headers.get(name) ?? undefined;
 }
@@ -107,11 +99,15 @@ export class BillingHttpClient {
     return this.#config.baseUrl ?? PROVIDER_CATALOG[this.#config.provider].hosts[this.#config.environment];
   }
 
-  /** A recusa de host fora da allowlist, salvo falso local em test (R-PAY-5). */
-  assertHostAllowed(host: string): void {
-    const normalized = host.replace(/^\[|\]$/g, "").toLowerCase();
-    if (CATALOG_HOSTS.has(normalized)) return;
-    if (LOCAL_HOSTS.has(normalized) && this.#config.allowLocalHosts && this.#config.nodeEnv === "test") return;
+  /** A allowlist POR provedor/ambiente (R-PAY-5, A4): host exato do catálogo, https e porta padrão; falso local só em test. */
+  assertUrlAllowed(url: URL): void {
+    const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+    if (LOCAL_HOSTS.has(host)) {
+      if (this.#config.allowLocalHosts && this.#config.nodeEnv === "test") return;
+      throw new BillingHostNotAllowedError(host);
+    }
+    const expected = new URL(PROVIDER_CATALOG[this.#config.provider].hosts[this.#config.environment]);
+    if (host === expected.hostname && url.protocol === "https:" && (url.port === "" || url.port === "443")) return;
     throw new BillingHostNotAllowedError(host);
   }
 
@@ -125,7 +121,7 @@ export class BillingHttpClient {
     const path = input.path.startsWith("/") ? input.path : `/${input.path}`;
     const url = `${base}${path}`;
     const parsed = new URL(url);
-    this.assertHostAllowed(parsed.hostname);
+    this.assertUrlAllowed(parsed);
 
     const timeoutMs = input.cardTimeout ? (this.#config.cardTimeoutMs ?? 60_000) : (this.#config.timeoutMs ?? 15_000);
     const headers = new Headers(input.headers ?? {});
@@ -140,6 +136,7 @@ export class BillingHttpClient {
         method: input.method,
         headers,
         body: input.body === undefined ? undefined : JSON.stringify(input.body),
+        redirect: "manual",
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (error) {
@@ -148,6 +145,11 @@ export class BillingHttpClient {
         throw new ProviderTimeoutError(input.op);
       }
       throw error;
+    }
+
+    // A1: redirect nunca é seguido — 3xx vira erro sanitizado, sem reenviar para o destino.
+    if (response.status >= 300 && response.status < 400) {
+      throw new ProviderUnavailableError("The provider returned an unexpected redirect.");
     }
 
     this.#config.log?.({
