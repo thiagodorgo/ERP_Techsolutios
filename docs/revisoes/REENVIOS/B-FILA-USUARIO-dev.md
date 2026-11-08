@@ -123,3 +123,18 @@
   6. `dart format --output=none --set-exit-if-changed` nos 7 arquivos `.dart` → `0 changed`; re-execução de RA4 pós-revert → `00:05 +5: All tests passed!`; `flutter analyze --no-pub` → `No issues found!`.
 - **O que falta:** A-F6, A-F6b, A-F7, A-F8.
 - **Próximo comando:** implementar A-F6 (`test/features/bfilausuario_replay_integration_test.dart` com RA5(1) e RA5(2)), rodar M-A10 e M-A6 sobre RA5(2) e citar o vermelho-controle de A-F1.
+## RETOMADA 6
+
+- **Head antes do commit:** `f9fd906c` (`feat(mobile): tela de sincronização separa minhas ações, as de outro usuário e as sem usuário (B-FILA-USUARIO)`).
+- **O que foi feito (comandos e saídas resumidas — fatia A-F6):**
+  1. Criado `mobile/flutter_app/test/features/bfilausuario_replay_integration_test.dart` com **RA5(1) e RA5(2)** (2/2):
+     - **RA5(1):** `ProviderContainer` com a cadeia real `authTokenStorageProvider` (`InMemoryAuthTokenStorage` com sessão ativa `sub: 'u2'`) → `authStateProvider` → `currentSyncUserIdProvider` → `replaySyncQueueRepositoryProvider` → `syncReplayServiceProvider` e `workOrderSyncReplayServiceProvider` + `AutoSyncCoordinator.triggerManual()`. Com fila semeada com `exp-u1`, `exp-u2`, `wo-u1` e `exp-legacy` (`userId == null`), apenas `['exp-u2']` chega ao `CaptureBatchApi`, `workOrderApi.captured` permanece `null`, e `exp-u1`, `wo-u1` e `exp-legacy` continuam `SyncStatus.pending` (`retryCount == 0`, zero passagens por `SyncStatus.syncing`).
+     - **RA5(2):** reconciliação via `WorkOrderRepository.refresh()` contra `_WalkingEmptyWorkOrderApi` (`complete: true`) sob sessão `u2` retém tanto a OS `wo-u1` (ação `work_order.status_update` de `u1`) quanto `wo-cl-u1` (run de vistoria com ação `checklist_answer.upsert` de `u1` via `buildWorkOrderExternalPendingWork`), purgando apenas as OS sem pendência (`wo-clean`, `wo-clean-2`), provado tanto no `workOrderRepositoryProvider` de produção quanto através de `replaySyncQueueRepositoryProvider.actionsForTenant` (PA3).
+     - `flutter test --no-pub --reporter expanded test/features/bfilausuario_replay_integration_test.dart` → `00:00 +2: All tests passed!`.
+  2. **Vermelho-controle de A-F1 citado (`RETOMADA 1`):** no head `origin/main` (`04bb0e17`), o cenário de `RA5(1)` falhou com `Expected: ['exp-u2'], Actual: ['exp-u1', 'exp-u2']` (a despesa de `u1` vazava no replay sob a sessão de `u2`).
+  3. **Mutações M-A10 e M-A6 sobre RA5(2) (uma por vez, revertidas por edição inversa):**
+     - **M-A10** (`syncReplayServiceProvider` recebendo a fila crua `syncQueueRepositoryProvider`): **VERMELHO** em RA5(1) (`Expected: ['exp-u2'], Actual: ['exp-u1', 'exp-u2', 'exp-legacy']`; `00:00 +1 -1: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+     - **M-A6 sobre RA5(2)** (`UserScopedSyncQueueRepository.actionsForTenant` também filtrado por dono): **VERMELHO** em RA5(2) (`Expected: ['wo-cl-u1', 'wo-u1'], Actual: []`; `00:00 +1 -1: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+  4. `dart format --output=none --set-exit-if-changed test/features/bfilausuario_replay_integration_test.dart` → `0 changed`; re-execução pós-revert → `00:00 +2: All tests passed!`; `flutter analyze --no-pub` → `No issues found!`.
+- **O que falta:** A-F6b, A-F7, A-F8.
+- **Próximo comando:** implementar A-F6b (`RA5(3)` para N1 — bootstrap em cache `u1-velho` × token em vigor `u2` — e `RA5(4)` para S-n6 — `WorkOrderConflictResolutionService.acceptServer` recusando conflito de `u1` sob `u2` com `SyncOwnershipError`), rodar mutações M-A13 e M-A15 e medir `flutter test --reporter compact` (`+1017`).
