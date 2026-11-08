@@ -6,6 +6,7 @@ import { useScreenAppearance } from "../modules/appearance";
 import { useDashboardData } from "../modules/dashboard/useDashboardData";
 import { useWorkOrderTimeseries } from "../modules/dashboard/useWorkOrderTimeseries";
 import type { BlockStatus, DashboardBlock, DashboardRowDetail, DashboardState, DashboardViewModel } from "../modules/dashboard/views/dashboard.view-model";
+import { criticalRowKey } from "../modules/dashboard/views/dashboard.shared";
 import { DashboardViewA } from "../modules/dashboard/views/DashboardViewA";
 import { DashboardViewB } from "../modules/dashboard/views/DashboardViewB";
 import { DashboardViewC } from "../modules/dashboard/views/DashboardViewC";
@@ -111,7 +112,8 @@ export function DashboardPage() {
   // ---- B: endereço e técnico da linha crítica, `GET /work-orders/:id` só ao abrir a linha, guardado por id. ----
   const [rowDetail, setRowDetail] = useState<Record<string, DashboardRowDetail>>({});
   const requested = useRef(new Set<string>());
-  const openCriticalId = appearance === "B" && state.linha?.startsWith("crit:") ? state.linha.slice("crit:".length) : null;
+  // A linha leva o CÓDIGO da OS (`crit:<código>`); o id vem da própria fila crítica do agregado.
+  const openCriticalId = appearance === "B" ? (data.criticalWorkOrders.find((order) => criticalRowKey(order) === state.linha)?.id ?? null) : null;
   useEffect(() => {
     if (!openCriticalId || !readWorkOrders || requested.current.has(openCriticalId)) return;
     requested.current.add(openCriticalId);

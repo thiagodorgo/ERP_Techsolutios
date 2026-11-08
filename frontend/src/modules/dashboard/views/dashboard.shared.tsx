@@ -1137,12 +1137,16 @@ export const queueWorkOrderId = (item: CriticalQueueItem) => (item.kind === "os_
 
 // =============================== A e B: a fila crítica em linhas ===============================
 
+/** Chave da linha crítica (`?linha=`): o código da OS, nunca o id interno. */
+export const criticalRowKey = (order: Pick<DashboardCriticalOrder, "code">) => `crit:${order.code}`;
+
 /** As linhas da fila crítica. `compacta` (A, meia largura): AGENDA · OS e cliente · SITUAÇÃO. `larga` (B): 6 colunas e o detalhe com endereço e técnico. */
 export function CriticalRows({ model, orders, mode }: { readonly model: DashboardViewModel; readonly orders: readonly DashboardCriticalOrder[]; readonly mode: "compacta" | "larga" }) {
   return (
     <>
       {orders.map((order) => {
-        const key = `crit:${order.id}`;
+        // A chave da linha é o CÓDIGO da OS (o id interno nunca vai ao HTML nem à URL); o contêiner resolve o id pelo código.
+        const key = criticalRowKey(order);
         const cells: DenseCell[] =
           mode === "larga"
             ? [

@@ -164,6 +164,13 @@ function QueueDetail({ model, item }: { readonly model: DashboardViewModel; read
   );
 }
 
+/** Chave da linha da fila: o código da OS para os itens de OS (o id interno nunca vai ao HTML); o id do registro para os demais. */
+function queueRowKey(model: DashboardViewModel, item: CriticalQueueItem): string {
+  const workOrderId = queueWorkOrderId(item);
+  const code = workOrderId ? model.summary.critical.find((order) => order.id === workOrderId)?.code : null;
+  return code ? `fila:${item.kind}:${code}` : `fila:${item.id}`;
+}
+
 function QueueRows({ model, items }: { readonly model: DashboardViewModel; readonly items: readonly CriticalQueueItem[] }) {
   return (
     <>
@@ -176,7 +183,7 @@ function QueueRows({ model, items }: { readonly model: DashboardViewModel; reado
           <BlockRow
             key={item.id}
             model={model}
-            rowKey={`fila:${item.id}`}
+            rowKey={queueRowKey(model, item)}
             colSpan={4}
             cells={[
               { key: "tipo", content: <StatusPill label={queueTypeLabel(item)} bg={tone.bg} fg={tone.fg} dot={tone.dot} sm /> },
