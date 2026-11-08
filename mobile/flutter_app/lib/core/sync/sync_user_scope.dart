@@ -127,6 +127,38 @@ SyncAction discardLegacyAction(SyncAction action, {DateTime? discardedAt}) {
   );
 }
 
+/// B-FILA-USUARIO (Emenda 1 · A1): a única alteração permitida numa ação de
+/// OUTRO dono (inclusive a legada, `userId` nulo) é o mapeamento interno que o
+/// replay de OS faz ao sincronizar a criação: acrescentar `server_id` a uma
+/// dependente que ainda não o tem, sem mudar status, dono nem outro campo.
+/// Não é envio: a dependente continua fora do `pendingForTenant` de quem não é
+/// o dono, e sai já com o `server_id` quando o dono dela estiver na sessão.
+bool _isDependentServerIdMappingUpdate(SyncAction? existing, SyncAction next) {
+  if (existing == null) return false;
+  if (existing.type == WorkOrderSyncActionTypes.create) return false;
+
+  final localId = existing.payload['local_id'];
+  if (localId is! String || localId.trim().isEmpty) return false;
+
+  final existingServerId = existing.payload['server_id'];
+  if (existingServerId is String && existingServerId.trim().isNotEmpty) {
+    return false;
+  }
+
+  final nextServerId = next.payload['server_id'];
+  if (nextServerId is! String || nextServerId.trim().isEmpty) return false;
+
+  final expectedLength = existing.payload.containsKey('server_id')
+      ? existing.payload.length
+      : existing.payload.length + 1;
+  if (next.payload.length != expectedLength) return false;
+
+  final expected = existing.copyWith(
+    payload: <String, Object?>{...existing.payload, 'server_id': nextServerId},
+  );
+  return expected == next;
+}
+
 class UserScopedSyncQueueRepository implements SyncQueueRepository {
   UserScopedSyncQueueRepository({
     required SyncQueueRepository queue,
@@ -166,7 +198,10 @@ class UserScopedSyncQueueRepository implements SyncQueueRepository {
       }
     }
     final target = existing ?? action;
-    if (!isOwnedBy(target, uid) || !isOwnedBy(action, uid)) {
+    final ownedByCurrentSession =
+        isOwnedBy(target, uid) && isOwnedBy(action, uid);
+    if (!ownedByCurrentSession &&
+        !_isDependentServerIdMappingUpdate(existing, action)) {
       throw SyncOwnershipError(
         'Ação pertence a outro usuário e não pode ser alterada nesta sessão.',
       );

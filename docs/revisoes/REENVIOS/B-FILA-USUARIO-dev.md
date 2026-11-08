@@ -223,3 +223,18 @@ PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
   - `A1(2)` (dependente de u1, sessão u2 + login de u1) VERMELHO: `Expected: null / Actual: 'Falha na sincronização. Tente novamente.'`, "Replay de u2 não pode abortar com SyncOwnershipError";
   - `A1(4)` (a forma da sonda, direto no `WorkOrderSyncReplayService`, com dono `null` e `u1`) VERMELHO: o replay lança `SyncOwnershipError`;
   - `A1(3)` VERDE, como esperado: é a guarda de que a exceção é estrita (mudar status, dono ou outro campo, sobrescrever um `server_id` já existente ou carimbar uma criação de outro dono continua lançando), e o head já lança em tudo.
+
+### Passo 2 — conserto do A1, só em `lib/core/sync/sync_user_scope.dart` (PERMITIDO, A4)
+- **O que mudou:** o `update` do decorador `UserScopedSyncQueueRepository` continua lançando `SyncOwnershipError` para toda alteração numa ação de outro dono, com UMA exceção: `_isDependentServerIdMappingUpdate`. A exceção vale quando a ação existente:
+  - não é `work_order.create`;
+  - tem `local_id` e ainda não tem `server_id`;
+  - e a nova é idêntica a ela, a não ser pelo `server_id` acrescentado (igualdade `Equatable`, com o mesmo status, o mesmo dono e o resto do payload igual).
+  É exatamente a forma do `_mapDependentActions` do replay de OS, que exclui só a criação. `sync_replay_service.dart` e `auto_sync_coordinator.dart` ficam intocados.
+- **As 3 propriedades da emenda, com o teste que prova cada uma:**
+  - **(a)** o `server_id` chega à dependente de qualquer dono: `A1(1)` (legadas sem a chave e com `server_id: null`, o dono continua nulo), `A1(2)` (u1, que continua dono) e `A1(4)` (`null` e `u1` direto no replay);
+  - **(b)** nenhum `SyncOwnershipError` aborta o replay nem o passe: `A1(1)` e `A1(2)` pelo `AutoSyncCoordinator` real, com `lastSafeError == null`, `wo-create-2` `synced` no mesmo lote e a despesa de u2 enviada no mesmo passe;
+  - **(c)** a dependente continua retida para envio e sai com o `server_id` quando o dono está na sessão: no passe 1 ela fica `pending`, com `retryCount 0`, nunca `syncing`, e fora do lote; no passe 2, depois de Assumir (`A1(1)`) ou do login de u1 (`A1(2)`), sai com `server_id = srv-wo-L` e `work_order_id = srv-wo-L` no corpo codificado, e vira `synced`.
+  - A exceção é estrita: `A1(3)`.
+- `dart format --output=none --set-exit-if-changed` nos 2 arquivos → `Formatted 2 files (0 changed)`; `flutter analyze` → `No issues found!`.
+- Teste novo → `00:03 +4: All tests passed!`. Os 6 arquivos `bfilausuario_*` → `00:06 +33: All tests passed!` (29 de antes + 4 novos).
+- **Residual declarado (não é do A1; fica para o orquestrador decidir):** se a sessão trocar no MEIO de um passe, entre o `pendingForTenant` e o `update`, o decorador lança e o passe aborta. A ação já enviada fica `syncing` até o resgate R3, e então é reenviada pelo dono, sem perda, porque o servidor é idempotente por `client_action_id`. Fechar isso exige um try/catch no coordenador ou no replay, ambos PROIBIDOS no A4.
