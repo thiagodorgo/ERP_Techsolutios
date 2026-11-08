@@ -73,4 +73,4 @@ Plano: `B-ASSINATURA` §4.6 (+ §3, §4.5, §12) — fora do repositório, em `e
   - Os **7 fails** do final são todos pré-existentes (core-saas-role-authority; 2 domain events de checklist; 3 Redis; writer SET EX). Os 3 fails a mais do baseline (runtime-role-guard `skip`, CLI senha ×2) passaram na execução final — **flakiness de tempo/processo filho, não relacionado ao bloco** (o bloco não toca esses módulos).
 - **Sem migração.** **KPI congelado** (`D-GOV-PROPORCIONAL`). **Não fazer merge:** pré-revisão do Claude + junta completa (superfície externa + dinheiro, unanimidade de 3).
 
-PRONTO PARA REVISÃO — PR #515 · head 98a345b7dab0bb15b151f70b2d77f7f648797925 · ramo feat/b-ass-06-porta-pagamento
+PRONTO PARA REVISÃO — PR #515 · head d0c0f90f8062285fdff1fc4a2c7a8ff2bd30a661 · ramo feat/b-ass-06-porta-pagamento
