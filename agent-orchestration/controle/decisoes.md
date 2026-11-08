@@ -4624,7 +4624,8 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fala literal (06/11 ~15:25 SP):** *"Estamos mexendo com assinatura, para não deixar coisa atravessada vou me reunir com os sócios e decidimos isso"*.
 - **Leitura do orquestrador, declarada (§A6), aplicada de 06/11 a 08/11:** a trilha `B-ASS` ficou parada: o PR #510 (`B-ASS-05`, cofre) ficou aberto sem junta e sem merge, e nenhum `B-ASS-06+` começou. O PR #509 (marco de KPI, só números do que já estava na `main`) foi concluído.
 - **Fala literal (08/11 ~08:00 SP):** *"as assinaturas estao ok, vamos manter"*.
-- **Efeito:** a trilha `B-ASS` segue como está no plano. A junta do #510 começou em 08/11, e o `B-ASS-06` vem depois do merge dele.
+- **Efeito:** a trilha `B-ASS` segue como está no plano, e o `B-ASS-06` vem depois do merge do #510.
+- **Fato medido (não é decisão):** a junta completa do #510 rodou em 08/11 entre ~08:10 e ~10:33 SP e aprovou por 3 a 0, sem achado; a ata é `agent-orchestration/omega/juntas/J-510-cofre.md`.
 
 ## D-TRES-BRACOS-UMA-TAREFA-0811 (decisão do dono, 2026-11-08 ~08:00 SP) — Claude, Argon e DeepSeek, uma tarefa por vez cada um
 
