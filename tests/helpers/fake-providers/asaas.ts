@@ -36,7 +36,7 @@ export type AsaasFake = FakeServer & {
   setPaymentStatus(id: string, status: string): void;
 };
 
-export async function startAsaasFake(defaultScenario = "ok"): Promise<AsaasFake> {
+export async function startAsaasFake(defaultScenario = "ok", options: { ignoreExternalReferenceFilter?: boolean } = {}): Promise<AsaasFake> {
   resetAsaasFakeState();
   const server = await startFakeServer(async (req, res, body) => {
     const scenario = scenarioOfReq(req, defaultScenario);
@@ -100,7 +100,7 @@ export async function startAsaasFake(defaultScenario = "ok"): Promise<AsaasFake>
     // GET /v3/payments?externalReference=…
     if (method === "GET" && pathname === "/v3/payments") {
       const externalReference = url.searchParams.get("externalReference");
-      const data = payments.filter((p) => p.externalReference === externalReference);
+      const data = options.ignoreExternalReferenceFilter ? [...payments] : payments.filter((p) => p.externalReference === externalReference);
       return sendJson(res, 200, { object: "list", hasMore: false, totalCount: data.length, data });
     }
 

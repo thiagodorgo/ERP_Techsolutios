@@ -5,8 +5,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BillingHttpClient, type BillingHttpLogEntry } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
+import { BillingHttpClient, billingHttpClientFromEnv, type BillingHttpLogEntry } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
 import { BillingChannelDisabledError, BillingHostNotAllowedError, ProviderUnavailableError } from "../src/modules/subscription-billing/providers/http/billing-errors.js";
+import { env } from "../src/config/env.js";
 import { PROVIDER_CATALOG } from "../src/modules/subscription-billing/providers/provider.catalog.js";
 import { sendJson, startFakeServer } from "./helpers/fake-providers/shared.js";
 
@@ -142,5 +143,50 @@ test("T-PAY-CLIENT-7 · allowlist por provedor/ambiente: https obrigatório e po
       (error: unknown) => error instanceof BillingHostNotAllowedError && error.code === "host_not_allowed",
       label,
     );
+  }
+});
+
+test("T-PAY-CLIENT-8 · billingHttpClientFromEnv respeita o canal desligado (M-ENV / R-PAY-4)", async () => {
+  const server = await startFakeServer((_req, res) => sendJson(res, 200, { ok: true }));
+  try {
+    const previous = env.BILLING_PROVIDERS_ENABLED;
+    env.BILLING_PROVIDERS_ENABLED = false;
+    try {
+      const http = billingHttpClientFromEnv("asaas", "sandbox", `${server.baseUrl}/v3`);
+      await assert.rejects(
+        http.request({ op: "createCharge", method: "POST", path: "/payments", body: {} }),
+        (error: unknown) => (error as { code?: string }).code === "channel_disabled",
+      );
+      assert.equal(server.recorded.length, 0, "canal desligado não toca a rede");
+    } finally {
+      env.BILLING_PROVIDERS_ENABLED = previous;
+    }
+  } finally {
+    await server.close();
+  }
+});
+
+test("T-PAY-CLIENT-9 · cartão usa cardTimeoutMs e o resto usa timeoutMs (M-TO)", async () => {
+  const server = await startFakeServer(() => {});
+  try {
+    const http = client({ baseUrl: server.baseUrl, cardTimeoutMs: 400, timeoutMs: 100 });
+
+    const cardStart = Date.now();
+    await assert.rejects(
+      http.request({ op: "charge", method: "POST", path: "/x", cardTimeout: true }),
+      (error: unknown) => (error as { code?: string }).code === "provider_timeout",
+    );
+    const cardElapsed = Date.now() - cardStart;
+    assert.ok(cardElapsed >= 350, `cartão deve esperar cardTimeoutMs (~400 ms), mas abortou em ${cardElapsed} ms`);
+
+    const restStart = Date.now();
+    await assert.rejects(
+      http.request({ op: "get", method: "GET", path: "/x" }),
+      (error: unknown) => (error as { code?: string }).code === "provider_timeout",
+    );
+    const restElapsed = Date.now() - restStart;
+    assert.ok(restElapsed < 300, `o resto deve usar timeoutMs (~100 ms), mas levou ${restElapsed} ms`);
+  } finally {
+    await server.close();
   }
 });

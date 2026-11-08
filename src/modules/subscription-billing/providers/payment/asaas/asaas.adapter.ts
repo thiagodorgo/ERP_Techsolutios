@@ -221,6 +221,8 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
   }
 
   async registerWebhook(input: RegisterWebhookInput): Promise<RegisterWebhookResult> {
+    const secret = await this.readSecret("webhook_secret");
+    if (!secret) throw new ProviderNotConfiguredError("asaas");
     const created = await this.call<{ readonly id: string }>({
       op: "registerWebhook",
       method: "POST",
@@ -228,7 +230,7 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
       headers: await this.authHeaders(),
       body: {
         url: input.url,
-        authToken: input.secret,
+        authToken: secret,
         events: input.events,
         sendType: "SEQUENTIALLY",
       },

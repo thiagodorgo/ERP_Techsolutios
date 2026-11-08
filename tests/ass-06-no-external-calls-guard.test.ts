@@ -8,6 +8,8 @@
 //     DADO de fixture; nenhum `fetch(`/`new URL(` nesses arquivos pode usar host real.
 //
 // Mutações do plano: `fetch` direto num adaptador → vermelho; host real em `tests/ass-06-*.test.ts` → vermelho.
+// Conserto A9: reconhece também `http.get`/`https.get`, import nomeado de `node:http`/`node:https` e import
+// dinâmico `import("node:http")`/`import("node:https")` (M-PAY6b/c).
 
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -33,6 +35,10 @@ const NET_PATTERNS: readonly { readonly name: string; readonly re: RegExp }[] = 
   { name: "undici", re: /\bundici\b/ },
   { name: "http.request", re: /http\.request/ },
   { name: "https.request", re: /https\.request/ },
+  { name: "http.get", re: /http\.get\s*\(/ },
+  { name: "https.get", re: /https\.get\s*\(/ },
+  { name: "node:http import", re: /from\s+["']node:https?["']/ },
+  { name: "node:http dynamic import", re: /import\s*\(\s*["']node:https?["']\s*\)/ },
   { name: "axios", re: /\baxios\b/ },
 ];
 

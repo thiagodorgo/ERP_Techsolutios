@@ -238,3 +238,70 @@ test("T-PAY-ASAAS-13 · chargeId com /, .. ou ? é recusado antes da rede (A8)",
     await server.close();
   }
 });
+
+function okResponse(payload: unknown) {
+  return {
+    status: 200,
+    headers: {},
+    retryAfterMs: undefined,
+    async json() {
+      return payload;
+    },
+    async text() {
+      return JSON.stringify(payload);
+    },
+  };
+}
+
+test("T-PAY-ASAAS-14 · refund parcial envia value em REAIS (fromCents), nunca centavos (M-PAY1f)", async () => {
+  const { server, adapter } = await setup();
+  try {
+    const created = await adapter.createCharge(CHARGE);
+    await adapter.refund(created.chargeId, 1500);
+    const refundRequest = server.recorded.find((r) => r.method === "POST" && /\/refund$/.test(r.path));
+    assert.ok(refundRequest, "houve POST no endpoint de refund");
+    const body = JSON.parse(refundRequest.body) as { value?: number };
+    assert.equal(body.value, 15, "value em reais, não 1500 centavos");
+  } finally {
+    await server.close();
+  }
+});
+
+test("T-PAY-ASAAS-15 · findChargeByExternalReference usa filtro local quando o provedor ignora o filtro (M-PAY10b)", async () => {
+  const server = await startAsaasFake("ok", { ignoreExternalReferenceFilter: true });
+  const client = new BillingHttpClient({
+    provider: "asaas",
+    environment: "sandbox",
+    channelEnabled: true,
+    allowLocalHosts: true,
+    nodeEnv: "test",
+    baseUrl: `${server.baseUrl}/v3`,
+  });
+  const adapter = new AsaasPaymentAdapter(client, makeSecrets());
+  try {
+    const first = await adapter.createCharge({ ...CHARGE, externalReference: "stmt-2" });
+    const second = await adapter.createCharge({ ...CHARGE, externalReference: "stmt-1" });
+    const found = await adapter.findChargeByExternalReference("stmt-1");
+    assert.equal(found?.chargeId, second.chargeId, "filtro local acha o alvo, não data[0]");
+    assert.notEqual(found?.chargeId, first.chargeId);
+  } finally {
+    await server.close();
+  }
+});
+
+test("T-PAY-ASAAS-16 · createCharge CREDIT_CARD marca cardTimeout (M-TO adaptador)", async () => {
+  const requests: Array<{ cardTimeout?: boolean }> = [];
+  const mockClient = {
+    request: async (req: { cardTimeout?: boolean }) => {
+      requests.push(req);
+      return okResponse({ id: "pay_0001", status: "PENDING" });
+    },
+  };
+  const adapter = new AsaasPaymentAdapter(mockClient as unknown as BillingHttpClient, makeSecrets());
+  await adapter.createCharge({ ...CHARGE, method: "credit_card" });
+  assert.equal(requests[0]!.cardTimeout, true, "cartão marca cardTimeout");
+
+  requests.length = 0;
+  await adapter.createCharge({ ...CHARGE, method: "pix" });
+  assert.ok(requests.every((r) => r.cardTimeout !== true), "pix não marca cardTimeout");
+});

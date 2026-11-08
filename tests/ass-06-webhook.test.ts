@@ -8,8 +8,9 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { BillingHttpClient } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
-import { AsaasPaymentAdapter } from "../src/modules/subscription-billing/providers/payment/asaas/index.js";
+import { AsaasPaymentAdapter, createAsaasAdapter } from "../src/modules/subscription-billing/providers/payment/asaas/index.js";
 import type { CreateChargeInput } from "../src/modules/subscription-billing/providers/payment/payment-provider.port.js";
+import { VaultSecret } from "../src/modules/subscription-billing/vault/vault-secret.js";
 import { startAsaasFake } from "./helpers/fake-providers/asaas.js";
 
 const API_TOKEN = "TOKEN-ASAAS-123";
@@ -82,4 +83,51 @@ test("T-PAY-WH-4 · verifyWebhook compara em tempo constante (SHA-256 + timingSa
   const text = readFileSync(join(process.cwd(), "src/modules/subscription-billing/providers/payment/asaas/asaas.adapter.ts"), "utf8");
   assert.match(text, /timingSafeEqual/);
   assert.match(text, /createHash\(["']sha256["']\)/);
+});
+
+test("T-PAY-WH-5 · registerWebhook usa o webhook_secret do COFRE, não o passado na chamada (A10)", async () => {
+  const server = await startAsaasFake();
+  try {
+    const adapter = adapterWithSecret(server);
+    await adapter.registerWebhook({
+      url: "https://app.exemplo.com/webhooks/billing/asaas",
+      secret: "DIFFERENT",
+      events: ["PAYMENT_CONFIRMED"],
+    });
+    const body = JSON.parse(server.recorded[0]!.body) as { authToken?: string };
+    assert.equal(body.authToken, WEBHOOK_SECRET, "authToken vem do cofre, não da chamada");
+  } finally {
+    await server.close();
+  }
+});
+
+test("T-PAY-WH-6 · createAsaasAdapter lê o segredo no MESMO ambiente do cliente (A10)", async () => {
+  const server = await startAsaasFake();
+  try {
+    const calls: Array<{ provider: string; environment: string; kind: string }> = [];
+    const vault = {
+      async readSecretForProvider(provider: string, environment: string, kind: string) {
+        calls.push({ provider, environment, kind });
+        if (kind === "api_token") return new VaultSecret(API_TOKEN);
+        if (kind === "webhook_secret") return new VaultSecret(WEBHOOK_SECRET);
+        return null;
+      },
+    };
+    const client = new BillingHttpClient({
+      provider: "asaas",
+      environment: "sandbox",
+      channelEnabled: true,
+      allowLocalHosts: true,
+      nodeEnv: "test",
+      baseUrl: `${server.baseUrl}/v3`,
+    });
+    const adapter = createAsaasAdapter(client, vault as never);
+    await adapter.createCharge(CHARGE);
+    assert.ok(
+      calls.some((c) => c.provider === "asaas" && c.environment === "sandbox" && c.kind === "api_token"),
+      "lê api_token do MESMO ambiente do cliente (sandbox)",
+    );
+  } finally {
+    await server.close();
+  }
 });
