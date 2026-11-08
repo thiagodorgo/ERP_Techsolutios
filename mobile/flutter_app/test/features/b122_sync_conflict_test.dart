@@ -18,6 +18,7 @@ SyncAction _conflict(String id, {String type = 'work_order.status_update'}) =>
     SyncAction(
       clientActionId: id,
       tenantId: 'tenant-demo',
+      userId: 'u-b122',
       type: type,
       payload: const {'local_id': 'wo-x'},
       status: SyncStatus.conflict,
@@ -35,6 +36,7 @@ Widget _wrap(InMemorySyncActionStore store) {
   return ProviderScope(
     overrides: [
       syncActionStoreProvider.overrideWithValue(store),
+      currentSyncUserIdProvider.overrideWithValue('u-b122'),
       expenseLocalStoreProvider.overrideWithValue(InMemoryExpenseLocalStore()),
       workOrderLocalStoreProvider.overrideWithValue(
         InMemoryWorkOrderLocalStore(),

@@ -94,6 +94,7 @@ void main() {
       SyncAction(
         clientActionId: 'lf-action-01',
         tenantId: 'tenant-demo',
+        userId: 'u-lf',
         type: 'expense_report.create',
         payload: const {'local_id': 'PC-local-42'},
         status: SyncStatus.pending,
@@ -102,6 +103,7 @@ void main() {
       SyncAction(
         clientActionId: 'lf-action-02',
         tenantId: 'tenant-demo',
+        userId: 'u-lf',
         type: 'expense_report.submit',
         payload: const {'report_local_id': 'PC-local-42'},
         status: SyncStatus.failed,
@@ -122,6 +124,7 @@ void main() {
       ProviderScope(
         overrides: [
           syncActionStoreProvider.overrideWithValue(syncStore),
+          currentSyncUserIdProvider.overrideWithValue('u-lf'),
           expenseLocalStoreProvider.overrideWithValue(
             InMemoryExpenseLocalStore(),
           ),

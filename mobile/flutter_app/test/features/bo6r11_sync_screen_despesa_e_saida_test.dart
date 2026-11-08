@@ -35,6 +35,7 @@ SyncAction _a(
 }) => SyncAction(
   clientActionId: id,
   tenantId: _tenant,
+  userId: 'u-o6r11',
   type: type,
   payload: const {'local_id': 'x'},
   status: status,
@@ -52,6 +53,7 @@ Widget _wrap(InMemorySyncActionStore store, {bool channelOn = false}) {
   return ProviderScope(
     overrides: [
       syncActionStoreProvider.overrideWithValue(store),
+      currentSyncUserIdProvider.overrideWithValue('u-o6r11'),
       expenseLocalStoreProvider.overrideWithValue(InMemoryExpenseLocalStore()),
       workOrderLocalStoreProvider.overrideWithValue(
         InMemoryWorkOrderLocalStore(),

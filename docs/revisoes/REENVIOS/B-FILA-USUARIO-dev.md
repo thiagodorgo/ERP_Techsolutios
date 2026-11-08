@@ -100,3 +100,26 @@
   7. `dart format --output=none --set-exit-if-changed` nos 4 arquivos → `0 changed`; `flutter analyze --no-pub` → `No issues found!`.
 - **O que falta:** A-F5, A-F6, A-F6b, A-F7, A-F8.
 - **Próximo comando:** implementar A-F5 (`lib/shared/ui/sync_screen.dart` + `test/features/bfilausuario_sync_screen_test.dart`), rodar RA4 (5/5 incluindo RA4(3b)), mutações M-A7, M-A8, M-A9, M-A11, M-A12, M-A14 e os 5 arquivos existentes que montam `SyncScreen`.
+## RETOMADA 5
+
+- **Head antes do commit:** `6cb91b09` (`feat(mobile): replay envia só as ações do usuário da sessão (B-FILA-USUARIO)`).
+- **O que foi feito (comandos e saídas resumidas — fatia A-F5):**
+  1. Editado `mobile/flutter_app/lib/shared/ui/sync_screen.dart` (A2 item 8, PA4, S-n7, Emenda 4 §7; tela-modelo: própria `lib/shared/ui/sync_screen.dart`; skills consultadas: `ts-frontend-full`, `ui-ux-pro-max`, `flutter-expert`):
+     - Partição da fila por `partitionByUser(actions, currentUserId)`: contadores (`SyncQueueSummary.fromActions`) e cartões de conflito/encalhe calculados exclusivamente sobre `part.mine`.
+     - Aviso discreto para ações pendentes de outros usuários (`part.others` não sincronizadas): `N ações de outro usuário neste aparelho aguardam o login dele` (singular `1 ação...`), sem exibir tipo, erro ou payload alheio.
+     - Seção de legado (`part.legacy` não sincronizadas) com cabeçalho literal `"Lançamentos da versão anterior do app. Toque Assumir para que sejam enviados com o seu usuário quando o envio estiver ativo."` e cartões `legacy-card-<id>` reutilizando `_ConflictCard` parametrizado:
+       - `canAssumeLegacyAction(a, currentUserId)`: exibe botão `Assumir` (`legacy-assume-<id>`) que re-lê a ação na fila e persiste `assignActionToUser(fresh, uid)` preservando o status; para `expense_report.create` legado com `employee_id` de outro usuário (S-n7), omite os botões e mostra `"Lançamento de outro usuário: só ele pode assumir"`.
+       - `canDiscardSyncAction(a.type)`: exibe botão `Descartar` (`legacy-discard-<id>`) somente para tipos descartáveis (omitido para despesa — `D-DESPESA-SEM-DESCARTAR`), exigindo sempre `_confirmDiscard(context, a)` antes de gravar `discardLegacyAction(fresh)` (`SyncStatus.synced` + `DISCARDED_BY_TECHNICIAN`).
+  2. Criado `mobile/flutter_app/test/features/bfilausuario_sync_screen_test.dart` com **RA4(1), RA4(2), RA4(3), RA4(3b), RA4(4)** (5 casos) → `00:05 +5: All tests passed!`.
+  3. `PREMISSA FALSA: A-F5 exige b122_sync_conflict_test.dart, bo6r11_sync_screen_despesa_e_saida_test.dart (nome real no repo do citado bo6r11_sync_screen_saida_encalhe_test.dart) e os demais arquivos que montam SyncScreen verdes sem listá-los no PERMITIDO literal de A4 (fora de PROIBIDO), mas suas fixtures semeiam SyncAction sem userId (null → part.legacy) e não sobrescrevem currentSyncUserIdProvider — flutter test --no-pub --reporter compact test/features/b122_sync_conflict_test.dart test/features/bo6r11_sync_screen_despesa_e_saida_test.dart test/features/b107_work_order_remote_create_conflicts_test.dart test/features/b088_checklist_sync_replay_test.dart test/features/expenses/expense_local_first_test.dart — 00:16 +42 -17: Some tests failed.` Aplicado carimbo mínimo de fixture (`userId` + `currentSyncUserIdProvider.overrideWithValue(...)`) nesses 5 arquivos de teste; marcados como `Fora do PERMITIDO literal de A4 (fora de PROIBIDO), declarado`.
+  4. Regressões completas de `SyncScreen`, `DiagnosticsScreen` (`diagnostics_screen.dart` intocada, A2 item 9) e guard AST (`bo6r11_guard_fila_await_ast_test.dart`: `ESCRITAS=48, VIOLACOES(0)`) → `00:15 +78: All tests passed!`.
+  5. **Mutações M-A7, M-A8, M-A9, M-A11, M-A12 e M-A14 (uma por vez, revertidas por edição inversa):**
+     - **M-A7** (cartões de conflito lendo `actions` sem filtrar por dono): **VERMELHO** em RA4(1) (`00:06 +3 -2: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+     - **M-A8** (aviso de `others` renderizando tipo/payload de `u1`): **VERMELHO** em RA4(2) (`00:12 +4 -1: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+     - **M-A9** (`_assumeLegacy` sem `queue.update`): **VERMELHO** em RA4(3) (`00:05 +4 -1: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+     - **M-A11** (`discardLegacyAction` e botão permitindo descartar despesa): **VERMELHO** em RA4(3) (`00:04 +4 -1: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+     - **M-A12** (`_discardLegacy` gravando direto sem `_confirmDiscard`): **VERMELHO** em RA4(4) (`00:04 +4 -1: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+     - **M-A14** (`canAssumeLegacyAction` retornando `true` para despesa legada de outro `employee_id`): **VERMELHO** em RA4(3b) (`00:04 +4 -1: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+  6. `dart format --output=none --set-exit-if-changed` nos 7 arquivos `.dart` → `0 changed`; re-execução de RA4 pós-revert → `00:05 +5: All tests passed!`; `flutter analyze --no-pub` → `No issues found!`.
+- **O que falta:** A-F6, A-F6b, A-F7, A-F8.
+- **Próximo comando:** implementar A-F6 (`test/features/bfilausuario_replay_integration_test.dart` com RA5(1) e RA5(2)), rodar M-A10 e M-A6 sobre RA5(2) e citar o vermelho-controle de A-F1.
