@@ -138,3 +138,17 @@
   4. `dart format --output=none --set-exit-if-changed test/features/bfilausuario_replay_integration_test.dart` → `0 changed`; re-execução pós-revert → `00:00 +2: All tests passed!`; `flutter analyze --no-pub` → `No issues found!`.
 - **O que falta:** A-F6b, A-F7, A-F8.
 - **Próximo comando:** implementar A-F6b (`RA5(3)` para N1 — bootstrap em cache `u1-velho` × token em vigor `u2` — e `RA5(4)` para S-n6 — `WorkOrderConflictResolutionService.acceptServer` recusando conflito de `u1` sob `u2` com `SyncOwnershipError`), rodar mutações M-A13 e M-A15 e medir `flutter test --reporter compact` (`+1017`).
+## RETOMADA 7
+
+- **Head antes do commit:** `a7efe4a6` (`test(mobile): ação de outro usuário não sai sob esta sessão e a OS dele continua retida (B-FILA-USUARIO)`).
+- **O que foi feito (comandos e saídas resumidas — fatia A-F6b, §G N1 e S-n6):**
+  1. Ampliado `mobile/flutter_app/test/features/bfilausuario_replay_integration_test.dart` com **RA5(3) e RA5(4)** (total no arquivo: 4/4; total de testes novos no bloco: `3 + 3 + 4 + 5 + 4 = 19`):
+     - **RA5(3) (N1):** `bootstrapSessionProvider` devolvendo sessão em cache de `u1-velho` enquanto `authTokenStorageProvider` (`authStateProvider`) mantém token válido com `sub == 'u2'`; `triggerManual()` envia somente `['exp-u2-novo']` (`exp-u1-velho` segue `SyncStatus.pending`, sem passar por `syncing`), e `syncActionFactoryProvider.create(...)` carimba `userId == 'u2'`. (Vermelho-controle medido em A-F1 na `origin/main` `04bb0e17`: `Expected: ['exp-u2-novo'], Actual: ['exp-u1-velho', 'exp-u2-novo']`.)
+     - **RA5(4) (S-n6):** sob sessão `u2`, `workOrderConflictResolutionServiceProvider.resolve(..., resolution: WorkOrderConflictResolution.acceptServer)` sobre OS `wo-conflict-u1` com ação em conflito pertencente a `u1` lança `SyncOwnershipError` e mantém tanto a ação na fila (`SyncStatus.conflict`, `userId == 'u1'`) quanto a linha local da OS em `SyncStatus.conflict`. (Vermelho-controle medido em A-F1: símbolo `SyncOwnershipError` inexistente em `04bb0e17`.)
+     - `flutter test --no-pub --reporter expanded test/features/bfilausuario_replay_integration_test.dart` → `00:00 +4: All tests passed!`.
+  2. **Mutações M-A13 e M-A15 (uma por vez, revertidas por edição inversa):**
+     - **M-A13** (`currentSyncUserIdProvider` lendo `bootstrapSessionProvider.user.userId` em vez de `authStateProvider`): **VERMELHO** em RA5(3) (`Expected: 'u2', Actual: 'u1-velho'`; `00:00 +3 -1: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+     - **M-A15** (`UserScopedSyncQueueRepository.update` delegando direto sem a guarda de dono): **VERMELHO** em RA5(4) (não lança `SyncOwnershipError`; `00:00 +3 -1: Some tests failed.`); revertida por edição inversa → `git diff --quiet` exit `0`.
+  3. `dart format --output=none --set-exit-if-changed test/features/bfilausuario_replay_integration_test.dart` → `0 changed`; re-execução pós-revert → `00:02 +4: All tests passed!`; `flutter analyze --no-pub` → `No issues found!`.
+- **O que falta:** A-F7, A-F8.
+- **Próximo comando:** executar A-F7 (fechar `P-O6R-B03-FILA-POR-USUARIO` na autoria + apenso em `P-O6R-B03` + regenerar `pendencias-indice.md`; atualizar `PLANO_SAN3.md` e `docs/mobile-sync-contracts.md`; criar `codex/comandos/B-FILA-USUARIO.md`; atualizar `status-geral.md` e `log-execucao.md`; copiar `B-REENVIOS-plano.md` para `omega/planos/` e espelhar o diário em `omega/juntas/votos/B-FILA-USUARIO/00-dev.md`, mantendo `Kpis/` intocado).

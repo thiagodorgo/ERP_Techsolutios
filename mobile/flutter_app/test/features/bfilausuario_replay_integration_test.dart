@@ -1,5 +1,6 @@
-// B-FILA-USUARIO (A-F6) — integração com AutoSyncCoordinator e retenção da OS
-// (RA5(1), RA5(2)).
+// B-FILA-USUARIO (A-F6 / A-F6b) — integração com AutoSyncCoordinator,
+// retenção da OS, N1 (token em vigor × bootstrap em cache) e S-n6 (resolução
+// de conflito de OS alheia recusada) — RA5(1..4).
 import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/auth/auth_token_storage.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
@@ -25,8 +26,10 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_replay_service.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_user_scope.dart';
 import 'package:erp_techsolutions_mobile/features/auth/auth_models.dart';
 import 'package:erp_techsolutions_mobile/features/checklists/domain/checklist_models.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_conflict_resolution_service.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_remote_api.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
@@ -411,6 +414,183 @@ void main() {
             (await woStore.loadWorkOrders()).map((o) => o.localId).toList()
               ..sort();
         expect(retainedByScoped, const ['wo-cl-u1', 'wo-u1']);
+      },
+    );
+
+    test(
+      'RA5(3): N1 — bootstrap em cache de u1-velho não contamina sessão com token sub=u2 no replay nem na fábrica',
+      () async {
+        final db = AppDatabase.openInMemory();
+        addTearDown(db.close);
+
+        final rawQueue = _StatusRecordingQueue(
+          PersistentSyncQueueRepository(DriftSyncActionStore(db)),
+        );
+        final tokenStorage = InMemoryAuthTokenStorage();
+        await tokenStorage.saveSession(_authSession(sub: 'u2'));
+
+        final expenseApi = CaptureBatchApi(
+          (batch) => [
+            for (final a in batch)
+              SyncActionResult(
+                clientActionId: a.clientActionId,
+                status: 'processed',
+                resultRef: 'srv-${a.clientActionId}',
+              ),
+          ],
+        );
+
+        await rawQueue.enqueue(
+          _seedAction(
+            id: 'exp-u1-velho',
+            type: ExpenseSyncActionTypes.reportCreate,
+            userId: 'u1-velho',
+            payload: const {'local_id': 'rep-velho', 'title': 'Sessão Antiga'},
+          ),
+        );
+        await rawQueue.enqueue(
+          _seedAction(
+            id: 'exp-u2-novo',
+            type: ExpenseSyncActionTypes.reportCreate,
+            userId: 'u2',
+            payload: const {'local_id': 'rep-novo', 'title': 'Sessão Atual'},
+          ),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            syncQueueRepositoryProvider.overrideWithValue(rawQueue),
+            authTokenStorageProvider.overrideWithValue(tokenStorage),
+            // Simula cache de bootstrap obsoleto de u1-velho após expiração/troca
+            bootstrapSessionProvider.overrideWith(
+              (ref) async => _bootstrapSession(userId: 'u1-velho'),
+            ),
+            syncBatchApiProvider.overrideWithValue(expenseApi),
+            workOrderSyncBatchApiProvider.overrideWithValue(
+              const PendingBackendWorkOrderSyncBatchApi(),
+            ),
+            checklistSyncBatchApiProvider.overrideWithValue(
+              const PendingBackendChecklistSyncBatchApi(),
+            ),
+            evidenceSyncBatchApiProvider.overrideWithValue(
+              const PendingEvidenceSyncBatchApi(),
+            ),
+            evidenceBinaryUploadServiceProvider.overrideWithValue(
+              EvidenceBinaryUploadService(
+                store: InMemoryWorkOrderLocalStore(),
+                blobStore: InMemoryEvidenceBlobStore(),
+                api: const PendingEvidenceUploadApi(),
+              ),
+            ),
+            fieldLocationSyncServiceProvider.overrideWithValue(
+              FieldLocationSyncService(
+                store: InMemoryFieldLocationStore(),
+                api: const PendingFieldLocationApi(),
+                deviceLocationProvider: const PendingDeviceLocationProvider(),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(authStateProvider.future);
+        final cachedBootstrap = await container.read(
+          bootstrapSessionProvider.future,
+        );
+        expect(cachedBootstrap.user.userId, 'u1-velho');
+        expect(container.read(currentSyncUserIdProvider), 'u2');
+
+        await container
+            .read(autoSyncCoordinatorProvider.notifier)
+            .triggerManual();
+
+        expect(
+          expenseApi.captured?.map((a) => a.clientActionId).toList(),
+          const ['exp-u2-novo'],
+        );
+
+        final byId = {
+          for (final a in await rawQueue.actionsForTenant(_tenant))
+            a.clientActionId: a,
+        };
+        expect(byId['exp-u1-velho']!.status, SyncStatus.pending);
+        expect(rawQueue.statusesFor('exp-u1-velho'), isEmpty);
+        expect(byId['exp-u2-novo']!.status, SyncStatus.synced);
+
+        final createdNow = container
+            .read(syncActionFactoryProvider)
+            .create(
+              tenantId: _tenant,
+              type: ExpenseSyncActionTypes.reportCreate,
+              payload: const {'local_id': 'rep-created-now'},
+            );
+        expect(createdNow.userId, 'u2');
+      },
+    );
+
+    test(
+      'RA5(4): S-n6 — sob sessão u2, WorkOrderConflictResolutionService.acceptServer recusa conflito de u1 com SyncOwnershipError',
+      () async {
+        final db = AppDatabase.openInMemory();
+        addTearDown(db.close);
+
+        final tokenStorage = InMemoryAuthTokenStorage();
+        await tokenStorage.saveSession(_authSession(sub: 'u2'));
+
+        final woStore = DriftWorkOrderLocalStore(db);
+        await woStore.saveWorkOrder(
+          _syncedOrder(
+            'wo-conflict-u1',
+            'srv-wo-conflict-u1',
+          ).copyWith(syncStatus: SyncStatus.conflict),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(db),
+            authTokenStorageProvider.overrideWithValue(tokenStorage),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(authStateProvider.future);
+        expect(container.read(currentSyncUserIdProvider), 'u2');
+
+        final rawQueue = container.read(syncQueueRepositoryProvider);
+        await rawQueue.enqueue(
+          _seedAction(
+            id: 'conflict-wo-u1',
+            type: WorkOrderSyncActionTypes.statusUpdate,
+            userId: 'u1',
+            status: SyncStatus.conflict,
+            payload: const {
+              'local_id': 'wo-conflict-u1',
+              'server_id': 'srv-wo-conflict-u1',
+              'new_status': 'completed',
+            },
+          ),
+        );
+
+        final resolver = container.read(
+          workOrderConflictResolutionServiceProvider,
+        );
+        await expectLater(
+          () => resolver.resolve(
+            tenantId: _tenant,
+            localId: 'wo-conflict-u1',
+            resolution: WorkOrderConflictResolution.acceptServer,
+          ),
+          throwsA(isA<SyncOwnershipError>()),
+        );
+
+        final actionsAfter = await rawQueue.actionsForTenant(_tenant);
+        expect(actionsAfter.single.clientActionId, 'conflict-wo-u1');
+        expect(actionsAfter.single.status, SyncStatus.conflict);
+        expect(actionsAfter.single.userId, 'u1');
+
+        final ordersAfter = await woStore.loadWorkOrders();
+        expect(ordersAfter.single.syncStatus, SyncStatus.conflict);
       },
     );
   });
