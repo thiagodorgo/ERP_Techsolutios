@@ -72,3 +72,5 @@ Plano: `B-ASSINATURA` §4.6 (+ §3, §4.5, §12) — fora do repositório, em `e
   - **Baseline `origin/main` `b153f219` na mesma forma:** **3938 testes** (3801 pass · 10 fail · 127 skip). **+30 testes = exatamente os 30 do bloco.**
   - Os **7 fails** do final são todos pré-existentes (core-saas-role-authority; 2 domain events de checklist; 3 Redis; writer SET EX). Os 3 fails a mais do baseline (runtime-role-guard `skip`, CLI senha ×2) passaram na execução final — **flakiness de tempo/processo filho, não relacionado ao bloco** (o bloco não toca esses módulos).
 - **Sem migração.** **KPI congelado** (`D-GOV-PROPORCIONAL`). **Não fazer merge:** pré-revisão do Claude + junta completa (superfície externa + dinheiro, unanimidade de 3).
+
+PRONTO PARA REVISÃO — PR #515 · head 7eb97cdc2faf202c81511b32d867be420ac06f45 · ramo feat/b-ass-06-porta-pagamento
