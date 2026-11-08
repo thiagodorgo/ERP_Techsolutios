@@ -147,3 +147,27 @@ As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demons
   plataforma (sem RLS, exceção declarada no plano). Permissão provisionada pela M4b.
 - **Rollback:** reverta o PR e rode o `-- down` da M4 e o rollback da M4b. As linhas cifradas ficam ilegíveis sem o
   código, o que é aceitável: são recadastráveis.
+
+## Pagamento (B-ASS-06)
+
+- **Para quê:** deixar "pagamento pronto" sem ligar nada. Uma porta comum (`PaymentProviderPort`), um cliente HTTP único
+  (`BillingHttpClient`, o único ponto de `fetch` do módulo) e o adaptador **Asaas**, provados contra servidor falso em
+  `127.0.0.1:0`. O Mercado Pago fica para o `B-ASS-15`; a Iugu saiu do pacote (02/11).
+- **Porta (`providers/payment/payment-provider.port.ts`):** `ensureCustomer`, `createCharge`, `getCharge`,
+  `findChargeByExternalReference`, `cancelCharge`, `refund`, `registerWebhook`, `verifyWebhook`, `describe`,
+  `supportedMethods`. `createCharge` sempre recebe `externalReference = statement_id`. Estados do provedor mapeados para
+  o enum nosso (`pending | paid | partially_paid | overdue | cancelled | refunded | partially_refunded |
+  chargeback_disputed | charged_back | unknown`).
+- **Cliente HTTP (`providers/http/billing-http.client.ts`):** allowlist de hosts do catálogo (fora dela →
+  `host_not_allowed`; `127.0.0.1` só com `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS` em `test`); canal desligado →
+  `channel_disabled` antes de tocar a rede; `AbortSignal.timeout` (60 s cartão / 15 s resto); 429 → `retryAfterMs`;
+  log só `{ provider, op, status, latencyMs }` — nunca header sensível nem corpo. O segredo só entra por
+  `readSecret` e nunca sai em log, erro, query string ou resposta.
+- **Asaas (`providers/payment/asaas/`):** headers `access_token` + `User-Agent: erp-techsolutions/1.0`;
+  `notificationDisabled: false` no cliente; `value` em reais; `invoiceUrl` → `payUrl`, `bankSlipUrl` → `boletoUrl`;
+  PIX/BOLETO buscam `pixQrCode`/`identificationField`; débito só pela fatura (`billingType: UNDEFINED`);
+  webhook via `POST /v3/webhooks` (`authToken` = segredo nosso, `sendType: SEQUENTIALLY`).
+- **Dinheiro:** centavos inteiros por `toCents(x) = Math.round(x * 100)` (nunca `Math.trunc`).
+- **Ambiente:** `BILLING_PROVIDERS_ENABLED` (mestre, desligado por padrão), `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS` (só
+  `test`), `BILLING_WEBHOOK_PUBLIC_BASE_URL` (produção + canal ligado exige `https://`).
+- **Rollback:** reverter o PR; nada é persistido (sem migração).

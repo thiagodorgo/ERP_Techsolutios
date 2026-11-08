@@ -22,7 +22,7 @@ Plano: `B-ASSINATURA` §4.6 (+ §3, §4.5, §12) — fora do repositório, em `e
   - `providers/payment/payment-money.ts`: `toCents(x) = Math.round(x * 100)` com safe integer, nunca `Math.trunc`.
   - `providers/http/billing-errors.ts`: `channel_disabled`, `host_not_allowed`, `provider_validation`, `provider_timeout`, `provider_rate_limited`, `provider_not_configured`, `provider_unavailable`.
   - `providers/http/billing-http.client.ts`: `fetch` único, `AbortSignal.timeout` (60 s cartão / 15 s resto), allowlist do catálogo, `channel_disabled` antes da rede, 429 → `retryAfterMs`, log só `{provider, op, status, latencyMs}`.
-  - `src/config/env.ts` (+2 variáveis + 2 gates): `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS` (default false; true fora de `test` recusa — G-BILLING-LOCAL) e `BILLING_WEBHOOK_PUBLIC_BASE_URL` (produção + canal ligado exige `https://`). **Omissão declarada:** o PERMITIDO do §4.6 não lista `env.ts`, mas o §3.9 manda as variáveis viverem lá.
+  - `src/config/env.ts` (+1 variável + 1 gate): `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS` (default false; true fora de `test` recusa — G-BILLING-LOCAL). **Omissão declarada:** o PERMITIDO do §4.6 não lista `env.ts`, mas o §3.9 manda a variável viver lá. **`BILLING_WEBHOOK_PUBLIC_BASE_URL` ficou para o B-ASS-08** (o B-ASS-06 não a usa — o `registerWebhook` recebe a URL por parâmetro; e o gate rígido de produção quebraria o `T-ENV-1` existente do B-ASS-05).
 - **Guard** `tests/ass-06-no-external-calls-guard.test.ts` = **4/4** (R-PAY-6): rede só em `billing-http.client.ts`; host real em `tests/` só nos `fake-providers`; `fetch`/`new URL` dos fakes sem host real.
 - **Testes** `tests/ass-06-http-client.test.ts` = **4/4** (R-PAY-4/5/7): canal desligado → 0 requisição; host fora do catálogo → `host_not_allowed`; 127.0.0.1 só com flag em `test`; log sem token/headers/corpo.
 - **Testes** `tests/ass-06-money.test.ts` = **3/3** (R-PAY-8): 0.29→29, 129.9→12990, 2999.99→299999; propriedade 1..299999; NaN/∞ lançam.
@@ -61,3 +61,14 @@ Plano: `B-ASSINATURA` §4.6 (+ §3, §4.5, §12) — fora do repositório, em `e
 | `Math.trunc` no lugar de `Math.round` (R-PAY-8) | 2 fail (`tests/ass-06-money.test.ts`) |
 | segredo do cofre ignorado no webhook (R-PAY-9) | 1 fail (`tests/ass-06-webhook.test.ts`) |
 | headers no log (R-PAY-7) | 1 fail (`tests/ass-06-http-client.test.ts`) |
+
+## F6 — docs, bateria e PR
+
+- **Docs:** `docs/subscription-billing.md` ganhou a seção "Pagamento (B-ASS-06)" (porta, cliente HTTP, Asaas, centavos, ambiente, rollback).
+- **Bateria (na forma canônica: Prisma gerado, sem `.env` — as suítes `-db` pulam):**
+  - `npm run check` verde · `npm run lint` verde (≡ check) · `npm run build` verde · `git diff --check` limpo.
+  - Suítes do bloco: **30/30** (`ass-06-*`: 11 asaas + 4 http-client + 4 guard + 4 errors + 3 money + 3 webhook + 1 env-gate).
+  - `npm test`: **3968 testes** (3834 pass · **7 fail** · 127 skip; exit 1).
+  - **Baseline `origin/main` `b153f219` na mesma forma:** **3938 testes** (3801 pass · 10 fail · 127 skip). **+30 testes = exatamente os 30 do bloco.**
+  - Os **7 fails** do final são todos pré-existentes (core-saas-role-authority; 2 domain events de checklist; 3 Redis; writer SET EX). Os 3 fails a mais do baseline (runtime-role-guard `skip`, CLI senha ×2) passaram na execução final — **flakiness de tempo/processo filho, não relacionado ao bloco** (o bloco não toca esses módulos).
+- **Sem migração.** **KPI congelado** (`D-GOV-PROPORCIONAL`). **Não fazer merge:** pré-revisão do Claude + junta completa (superfície externa + dinheiro, unanimidade de 3).

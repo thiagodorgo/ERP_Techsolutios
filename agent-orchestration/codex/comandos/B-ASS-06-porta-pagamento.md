@@ -30,7 +30,7 @@ Entregar a porta `PaymentProviderPort`, o cliente HTTP único (`BillingHttpClien
 ## Escopo PERMITIDO
 
 - `src/modules/subscription-billing/providers/{http/**, payment/**, provider.catalog.ts}`
-- `src/config/env.ts` — só `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS` e `BILLING_WEBHOOK_PUBLIC_BASE_URL` + os gates G-BILLING-LOCAL e da URL pública (omissão declarada do PERMITIDO do §4.6; o §3.9 manda essas variáveis viverem no `env.ts`)
+- `src/config/env.ts` — só `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS` + o gate G-BILLING-LOCAL (omissão declarada do PERMITIDO do §4.6; o §3.9 manda a variável viver lá). `BILLING_WEBHOOK_PUBLIC_BASE_URL` fica para o B-ASS-08 (o B-ASS-06 não a usa)
 - `tests/ass-06-*.test.ts`
 - `tests/helpers/fake-providers/{asaas,shared}.ts`
 - `tests/ass-06-no-external-calls-guard.test.ts`
