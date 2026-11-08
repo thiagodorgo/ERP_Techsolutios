@@ -70,3 +70,62 @@ Plano: `B-ASSINATURA`, "Emenda 2 ao §4.5 — bloco `B-ASS-05b`" (fora do reposi
   `listPlans` (o escritor não engole erro; a trilha não se perde em silêncio). Como o `PlansService` marca a trilha antes
   do `await`, o mesmo processo não tenta de novo; o próximo processo tenta (não há linha). Mudar isso pede
   `plans.service.ts`, que é PROIBIDO aqui.
+
+## F3 — registro
+
+- **PREMISSA FALSA:** "a entrada `P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA` existe em `pendencias.md`" —
+  `grep -c TRILHA-PLATAFORMA-EM-MEMORIA agent-orchestration/controle/pendencias.md` (na `origin/main` `015234d0`) → `0`.
+  Ela foi aberta, como ABERTA, no PR #511 (`docs/registro-0811`, aberto e não mergeado:
+  `gh pr view 511 --json state` → `OPEN`). Segui sem a premissa: o PR grava a entrada já **FECHADA** com o mesmo
+  cabeçalho, o fato, a prova, o resíduo e a origem do registro declarada. Os dois PRs acrescentam no fim do mesmo arquivo,
+  então quem mergear por último terá conflito, nunca duplicata silenciosa, e mantém só esta entrada.
+- `python agent-orchestration/controle/gerar-indice-pendencias.py` → `indice: 774 cabecalhos / 763 IDs | {'FECHADA': 186,
+  'ABERTA': 584, 'SEM-STATUS': 4}`. O diff do índice são só as linhas da entrada nova (placar +1 e a linha em FECHADAS).
+- **Guards de contagem:** nenhum cresceu. O censo `o6r07c`, o ratchet T13 do `san3-05` (`ok 3416`) e o ratchet de
+  catálogo (`ok 1270`) ficaram verdes na suíte sem regeneração. `platform_audit_logs` é global e sem FORCE RLS, então o
+  `findFirst` novo não entra no inventário. Nenhum gerador foi rodado e nenhum guard foi tocado.
+
+## F4 — bateria
+
+| Comando | Resultado |
+|---|---|
+| `npm run check` | `check=0` |
+| `npm run lint` | `lint=0` |
+| `npm run build` | `build=0` (`dist/` apagado depois) |
+| `node scripts/migration-transaction-guard.mjs` | `migrações: 128 · anteriores: 112 · novas: 16 · violações: 0` (o bloco não tem migração) |
+| `git diff --check origin/main...HEAD` | saída vazia, `check=0` |
+| testes do bloco | `ass-05b-audit-allowlist` 5/5 · `ass-05b-plans-trail-db` 4/4 (Postgres descartável `ass05b-pg`, porta 55526) |
+| `npm test` local (Windows, `DATABASE_URL` no descartável, sem Redis) | `# tests 4657 · # pass 4635 · # fail 19 · # cancelled 1 · # skipped 2` |
+
+- **As 19 falhas locais estão fora do bloco e são de ambiente.** Por causa: Redis ausente (`ECONNREFUSED`: `domain-events`
+  ×2, `job-queue` ×3, `worker-heartbeat`); carga da máquina (transação Prisma expirada a 5 s, drill `traccar-event` com
+  timeout de 900 s, `traccar-position-ingestion`, `inventory-cycle-count-close-units`); scripts de papel no Windows
+  (`san3-05-runtime-role-guard`: `SyntaxError: missing ) after argument list`); e `san3-09`, `san3-05-leituras`,
+  `o6r07c-subresource-scope`.
+- **Travamento observado (fora do bloco):** `tests/ass-05-vault-routes.test.ts`, do #510, travou na suíte inteira. O
+  processo do teste estava ocioso e sem socket, e o servidor-filho (`tests/helpers/ass-05-vault-server.ts`) seguia vivo e
+  escutando desde 12:30. O teste esperava o `exit` do filho, que não morreu com `child.kill()`. Matei o filho às 12:51
+  (`Stop-Process -Id 2400048`), o arquivo saiu e a suíte terminou (o cancelado e o `not ok 231` são esse arquivo).
+  Sozinho, o arquivo passa: `node --test --import tsx tests/ass-05-vault-routes.test.ts` → `5/5`. O bloco não toca esse
+  arquivo nem o servidor. Fica para o orquestrador decidir se vira pendência.
+- **Comparação com a `origin/main` na mesma forma** (worktree `w-ass05b-ctl` em `015234d0` com `npm ci` próprio, os 11
+  arquivos que falharam, `node --test --import tsx --test-reporter=tap <11 arquivos>`, mesmo banco e mesmas variáveis):
+  - `origin/main`: `# tests 117 · # pass 103 · # fail 13 · # cancelled 1`.
+  - ramo: `# tests 116 · # pass 103 · # fail 12 · # cancelled 1`.
+  - As falhas do ramo são um subconjunto das da `origin/main` (o `not ok 50` a mais da main é o arquivo
+    `traccar-event-migration-drill-db` estourando o tempo). Nenhuma falha é nova.
+- **CI do head `1d6be129`** (run `42498117452`, `pull_request`, todos os 8 jobs `success`), resumo TAP por
+  `gh run view 42498117452 --job <id> --log | grep -E '^# (tests|pass|fail)'`:
+  - `backend`: `# tests 4676 · # pass 4674 · # fail 0 · # skipped 2`. As 9 linhas `ok 242..250` (T-05b-1..5 e R-05b-2 ×4)
+    estão no log do job, sem skip.
+  - `backend-postgres`: `# tests 503 · # pass 503 · # fail 0`.
+  - `frontend`: `# tests 1676 · # pass 1676 · # fail 0`.
+- **Limpeza:** `git worktree remove --force C:/Users/thiag/w-ass05b-ctl` (o `git worktree list | grep -c ctl` → 0);
+  bases de drill que sobraram no cluster → 0; `docker rm -f ass05b-pg` (contêineres `ass05b` → 0); `dist/` do worktree
+  apagado. O worktree `w-ass05b` fica para a junta.
+- **Escopo** (`git diff --name-only origin/main...HEAD`): `audit-metadata.ts`, `bootstrap-trail-once.ts` (novo),
+  `subscription-billing.service.ts`, `tests/ass-05b-audit-allowlist.test.ts`, `tests/ass-05b-plans-trail-db.test.ts`,
+  `pendencias.md`, `pendencias-indice.md` e este relatório. Nada de `prisma/**`, `frontend/**`, `plans.service.ts`,
+  `Kpis/**` nem dependência nova. EOL: 0 CR em todos os arquivos tocados.
+
+PRONTO PARA JUNTA — objeto de código `1d6be129e76b8042529a61b8109be434e47c9ddd` (o commit seguinte só acrescenta este relatório) · PR #514
