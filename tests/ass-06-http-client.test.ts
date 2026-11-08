@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { BillingHttpClient, type BillingHttpLogEntry } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
-import { BillingChannelDisabledError, BillingHostNotAllowedError } from "../src/modules/subscription-billing/providers/http/billing-errors.js";
+import { BillingChannelDisabledError, BillingHostNotAllowedError, ProviderUnavailableError } from "../src/modules/subscription-billing/providers/http/billing-errors.js";
 import { sendJson, startFakeServer } from "./helpers/fake-providers/shared.js";
 
 function client(overrides: Partial<ConstructorParameters<typeof BillingHttpClient>[0]> = {}) {
@@ -87,5 +87,30 @@ test("T-PAY-CLIENT-4 · log tem provider/op/status/latencyMs e NUNCA headers nem
     assert.deepEqual(Object.keys(logs[0]!).sort(), ["latencyMs", "op", "provider", "status"]);
   } finally {
     await server.close();
+  }
+});
+
+test("T-PAY-CLIENT-6 · redirect NÃO é seguido: o token não sai para host fora da lista (A1)", async () => {
+  const steal = await startFakeServer((_req, res) => sendJson(res, 200, { stolen: true }), { host: "127.0.0.2" });
+  const redirector = await startFakeServer((_req, res) => {
+    res.statusCode = 302;
+    res.setHeader("location", `http://127.0.0.2:${steal.port}/steal`);
+    res.end();
+  });
+  try {
+    const http = client({ baseUrl: redirector.baseUrl });
+    await assert.rejects(
+      http.request({
+        op: "getCharge",
+        method: "GET",
+        path: "/payments/x",
+        headers: { access_token: "SECRET-ABC123-XYZ" },
+      }),
+      (error: unknown) => error instanceof ProviderUnavailableError && error.code === "provider_unavailable",
+    );
+    assert.equal(steal.recorded.length, 0, "o destino do redirect não recebe nada");
+  } finally {
+    await redirector.close();
+    await steal.close();
   }
 });

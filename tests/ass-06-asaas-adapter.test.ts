@@ -124,14 +124,25 @@ test("T-PAY-ASAAS-5 · débito vira UNDEFINED (R-PAY-7b), nunca DEBIT_CARD", asy
   }
 });
 
-test("T-PAY-ASAAS-6 · getCharge mapeia status, paidCents e devolve o raw", async () => {
+test("T-PAY-ASAAS-6 · getCharge: paidCents só em estado pago (A2)", async () => {
   const { server, adapter } = await setup();
   try {
     await adapter.createCharge(CHARGE);
-    const lookup = await adapter.getCharge("pay_0001");
-    assert.equal(lookup.status, "pending");
-    assert.equal(lookup.paidCents, 2999);
-    assert.equal((lookup.raw as { id: string }).id, "pay_0001");
+    const pending = await adapter.getCharge("pay_0001");
+    assert.equal(pending.status, "pending");
+    assert.equal(pending.paidCents, undefined, "pendente não tem paidCents");
+    assert.equal((pending.raw as { id: string }).id, "pay_0001");
+
+    server.setPaymentStatus("pay_0001", "RECEIVED");
+    const paid = await adapter.getCharge("pay_0001");
+    assert.equal(paid.status, "paid");
+    assert.equal(paid.paidCents, 2999);
+
+    for (const status of ["OVERDUE", "REFUNDED", "CHARGEBACK_REQUESTED"]) {
+      server.setPaymentStatus("pay_0001", status);
+      const lookup = await adapter.getCharge("pay_0001");
+      assert.equal(lookup.paidCents, undefined, `${status} não tem paidCents`);
+    }
   } finally {
     await server.close();
   }

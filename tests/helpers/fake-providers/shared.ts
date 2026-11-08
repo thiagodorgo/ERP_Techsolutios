@@ -14,6 +14,10 @@ export type RecordedRequest = {
 
 export type FakeHandler = (req: IncomingMessage, res: ServerResponse, body: string) => Promise<void> | void;
 
+export type FakeServerOptions = {
+  readonly host?: string;
+};
+
 export type FakeServer = {
   readonly baseUrl: string;
   readonly port: number;
@@ -37,7 +41,7 @@ export function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-export async function startFakeServer(handler: FakeHandler): Promise<FakeServer> {
+export async function startFakeServer(handler: FakeHandler, options: FakeServerOptions = {}): Promise<FakeServer> {
   const recorded: RecordedRequest[] = [];
   const sockets = new Set<import("node:net").Socket>();
   const server: Server = createServer((req, res) => {
@@ -52,7 +56,7 @@ export async function startFakeServer(handler: FakeHandler): Promise<FakeServer>
     socket.on("close", () => sockets.delete(socket));
   });
 
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  await new Promise<void>((resolve) => server.listen(0, options.host ?? "127.0.0.1", resolve));
   const address = server.address() as AddressInfo;
   return {
     baseUrl: `http://127.0.0.1:${address.port}`,

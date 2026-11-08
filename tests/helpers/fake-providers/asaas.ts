@@ -32,9 +32,13 @@ const PAYMENT_SCENARIO_STATUS: Readonly<Record<string, string>> = {
   validation_400: "PENDING",
 };
 
-export async function startAsaasFake(defaultScenario = "ok"): Promise<FakeServer> {
+export type AsaasFake = FakeServer & {
+  setPaymentStatus(id: string, status: string): void;
+};
+
+export async function startAsaasFake(defaultScenario = "ok"): Promise<AsaasFake> {
   resetAsaasFakeState();
-  return startFakeServer(async (req, res, body) => {
+  const server = await startFakeServer(async (req, res, body) => {
     const scenario = scenarioOfReq(req, defaultScenario);
     const path = req.url ?? "/";
     const pathname = path.split("?")[0] ?? "/";
@@ -135,4 +139,11 @@ export async function startAsaasFake(defaultScenario = "ok"): Promise<FakeServer
 
     return sendJson(res, 404, { errors: [{ code: "not_found", description: `no route ${method} ${pathname}` }] });
   });
+  return {
+    ...server,
+    setPaymentStatus(id, status) {
+      const payment = payments.find((p) => p.id === id);
+      if (payment) payment.status = status;
+    },
+  };
 }
