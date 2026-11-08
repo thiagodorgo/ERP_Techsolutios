@@ -249,3 +249,37 @@ export function section(html: string, title: string): string {
 }
 /** O texto visível (sem tags, sem atributos). */
 export const visibleText = (html: string) => html.replace(/<style[\s\S]*?<\/style>/g, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ");
+
+// ---- OS no formato da lista/detalhe do servidor (para a conferência visual: o enriquecimento do mapa liga a OS ao
+// operador pelo `assigned_operator_id`, e a linha da B pede GET /work-orders/:id). Endereços e atribuições da referência. ----
+type OsRaw = readonly [code: string, title: string, customer: string, status: string, priority: string, agenda: number | null, address: string, city: string, operator: string | null];
+const OS_RAW: readonly OsRaw[] = [
+  ["OS-2026-0418", "Remoção de veículo leve", "Seguradora Aliança Sul", "assigned", "urgent", -130, "Av. Industrial, 1.240", "Santo André", "u-pedro"],
+  ["OS-2026-0415", "Reboque de caminhão baú", "Transportadora Ômega", "on_route", "high", -85, "Rod. Anhanguera, km 31", "Cajamar", "u-carlos"],
+  ["OS-2026-0409", "Socorro mecânico — pane elétrica", "Locadora Via Rápida", "open", "high", -50, "Rua Vergueiro, 3.150 — Vila Mariana", "São Paulo", null],
+  ["OS-2026-0421", "Troca de pneu em rodovia", "Ana Ribeiro (particular)", "accepted", "medium", -20, "Rod. dos Imigrantes, km 18", "São Bernardo do Campo", "u-lucas"],
+  ["OS-2026-0423", "Remoção para pátio — apreensão", "Departamento de Trânsito Municipal", "open", "urgent", 50, "Av. Kennedy, 700", "Santo André", null],
+  ["OS-2026-0425", "Guincho de motocicleta", "Seguradora Aliança Sul", "assigned", "high", 95, "Rua Augusta, 2.010 — Jardins", "São Paulo", "u-marcos-l"],
+  ["OS-2026-0426", "Transporte de veículo sinistrado", "Oficina Mecânica Central", "open", "high", 200, "Av. do Estado, 4.800 — Cambuci", "São Paulo", null],
+  ["OS-2026-0427", "Remoção de veículo pesado", "Construtora Horizonte", "in_progress", "urgent", null, "Av. Jacu-Pêssego, 2.300 — Itaquera", "São Paulo", "u-juliana"],
+  ["OS-2026-0411", "Remoção de veículo leve", "Seguradora Aliança Sul", "on_site", "medium", null, "Av. Paulista, 1.578 — Bela Vista", "São Paulo", "u-rafael"],
+];
+
+export const WORK_ORDER_DTOS: readonly Record<string, unknown>[] = OS_RAW.map(([code, title, customer, status, priority, agenda, address, city, operator]) => ({
+  id: woId(code),
+  code,
+  title,
+  status,
+  priority,
+  customer_name: customer,
+  service_address: address,
+  service_city: city,
+  service_state: "SP",
+  scheduled_for: agenda === null ? null : at(agenda),
+  assigned_operator_id: operator,
+  created_at: ago(120),
+  updated_at: ago(10),
+}));
+
+/** Os despachos no formato do servidor (`GET /operations/dispatches`). */
+export const DISPATCHES_DTO = DISPATCHES.map((d) => ({ ...d }));

@@ -217,7 +217,8 @@ function RailItems({ model }: { readonly model: DashboardViewModel }) {
     if (locations.items.length === 0) return <BlockEmpty>Nenhum operador com localização recente.</BlockEmpty>;
     return (
       <>
-        {locations.items.map((location) => {
+        {/* Mesma ordem do "Status de campo" (deriveFieldStatusRows): sem sinal primeiro, depois a posição mais recente. */}
+        {[...locations.items].sort((a, b) => Number(b.isStale) - Number(a.isStale) || b.capturedAt.localeCompare(a.capturedAt)).map((location) => {
           const meta = fieldStatusMeta(location);
           const name = location.displayName || location.operatorName || "Operador de campo";
           const os = location.currentWorkOrder;
@@ -385,14 +386,13 @@ function Rail({ model }: { readonly model: DashboardViewModel }) {
         <div className="apardash-c-cads">
           {REGISTRY.flatMap((entry) => {
             const kpi = byId.get(entry.id);
-            return kpi
-              ? [
-                  <span key={entry.id}>
-                    <b>{kpi.value}</b> {entry.label}
-                  </span>,
-                ]
-              : [];
-          })}
+            return kpi ? [{ id: entry.id, label: entry.label, value: kpi.value }] : [];
+          }).map((entry, index) => (
+            <span key={entry.id}>
+              {index > 0 ? <span aria-hidden="true">· </span> : null}
+              <b>{entry.value}</b> {entry.label}
+            </span>
+          ))}
         </div>
       </section>
       <section className="pat-card apardash-c-card">
