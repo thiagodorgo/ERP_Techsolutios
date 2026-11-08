@@ -4617,3 +4617,18 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fala literal:** *"pode fazer o segundo revisor só para o cálculo. comece o registro e o B-ASS-04 agora, vc vai dividir com o deepseek essa tarefa, não so orquestrar, ajudar na codificação tambem, vc e o deepseek sao os desenvolvedores de plantão hoje, se colocar so o deepseek nao tem credito se ajudar dá certo. pode começar claude"*.
 - **Leitura do orquestrador, declarada (§A6):** o DeepSeek faz o registro (texto, barato); o Claude programa o B-ASS-04 (`dev-ass04-opus`, esforço médio); a revisão vai para o DeepSeek, que é outro modelo: revisor sênior em esforço alto mais um **segundo revisor só do cálculo**; depois vêm a conferência e o porteiro.
 - **Resultado medido (registro de 06/11 tarde; não é decisão nova):** o B-ASS-04 entrou na `main` pelo PR #507 (merge `e4e181f2`, 06/11 ~13:23 SP). O revisor do cálculo achou o único grave do bloco (A-01, versão do add-on não fixada no refechamento), que o revisor sênior não achou. O DeepSeek também escreveu as corridas do F3 (`dev-ass04-corridas`). Ata: `omega/juntas/R-507-revisores-ass04.md`. A triagem é a Emenda 1 ao §4.4 do plano da rodada, fora do repositório.
+
+
+## D-ASSINATURA-PAUSA-E-MANTER-0811 (decisão do dono, 2026-11-06 ~15:25 SP e 2026-11-08 ~08:00 SP) — a trilha da assinatura parou para a conversa com os sócios e segue
+
+- **Fala literal (06/11 ~15:25 SP):** *"Estamos mexendo com assinatura, para não deixar coisa atravessada vou me reunir com os sócios e decidimos isso"*.
+- **Leitura do orquestrador, declarada (§A6), aplicada de 06/11 a 08/11:** a trilha `B-ASS` ficou parada: o PR #510 (`B-ASS-05`, cofre) ficou aberto sem junta e sem merge, e nenhum `B-ASS-06+` começou. O PR #509 (marco de KPI, só números do que já estava na `main`) foi concluído.
+- **Fala literal (08/11 ~08:00 SP):** *"as assinaturas estao ok, vamos manter"*.
+- **Efeito:** a trilha `B-ASS` segue como está no plano, e o `B-ASS-06` vem depois do merge do #510.
+- **Fato medido (não é decisão):** a junta completa do #510 rodou em 08/11 entre ~08:10 e ~10:33 SP e aprovou por 3 a 0, sem achado; a ata é `agent-orchestration/omega/juntas/J-510-cofre.md`.
+
+## D-TRES-BRACOS-UMA-TAREFA-0811 (decisão do dono, 2026-11-08 ~08:00 SP) — Claude, Argon e DeepSeek, uma tarefa por vez cada um
+
+- **Falas literais:** *"tem o deepseek, o plano e vc o argon e o deepseek"*; *"vc entra no desenvolvimento tambem junto com o deepseek e argon, a oequestracao e sua tambem"*; *"o deepseek faz uma tarefa por vez, o argon e vc tambem"*; *"disparem vc cobre quem cair"*.
+- **Decisão:** nesta rodada os braços são o Claude (orquestração e desenvolvimento), o Argon (Antigravity) e o DeepSeek oficial (fora do pico). Cada um faz uma tarefa por vez. Para o DeepSeek, isto vale acima de "vários ao mesmo tempo fora do pico" (05/11), e liga `painel/uma-por-vez.txt`. Quando um braço cai, o Claude cobre.
+- **Leitura do orquestrador, declarada (§A6):** continua valendo o cruzamento de `D-UM-FAZ-OUTRO-VERIFICA`: o que o Claude desenvolve é conferido pelo DeepSeek ou pelo Argon; o que o Argon ou o DeepSeek desenvolvem é conferido pelo Claude. O Gemini (inclusive o Argon) segue só como segundo revisor e nunca como revisor único (`D-GEMINI-SEGUNDO-REVISOR`); como dev, ele é conferido pelo Claude. Tela segue só no Claude (`D-DESIGN-SO-CLAUDE`).
