@@ -256,7 +256,7 @@ PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
   - Ficam `grep -nE "63"` → só a l.44 ("balde A, 63 linhas", outra coisa) e a l.443 ("53 dos 63 bloqueantes vêm de fora da auditoria"). A l.443 é uma contagem de procedência com método próprio, e a emenda não a lista; não a toquei e a declaro aqui para a junta.
 - **`agent-orchestration/docs/status-geral.md`:** o título passa de "PR a abrir" para "PR #512 aberto; conserto da pré-revisão feito, à espera da junta completa", e ganha um item com o conserto.
 - **`P-O6R-B03-FILA-POR-USUARIO`:** a linha "FECHADA NA AUTORIA" passa a citar o PR #512, o conserto do A1 e o teste novo, vermelho em `71861445`. Há também um apenso novo do conserto.
-- EOL: os 3 arquivos são LF na `main` e continuam LF (`tr -cd '' | wc -c` = 0 em cada um).
+- EOL: os 3 arquivos são LF na `main` e continuam LF (`tr -cd '\r' | wc -c` = 0 em cada um).
 
 ### Passo 5 — A4, pendência nova
 - Sonda P3 rodada de novo no head do conserto (copiada para `test/`, executada e apagada) → `P3 shown=[c-u2/u2, c-u1/u1] err=SyncOwnershipError c-u2=pending c-u1=conflict`. É a mesma saída do parecer: o conserto do A1 não muda o painel do detalhe da OS.
