@@ -2932,6 +2932,7 @@ mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SE
 - **dono:** `B-O6R-03a` (plano SAN3, §4.1 item 19 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DIN-009`: o achado `Ω6R-DIN-009` (item 19) tem dono `B-O6R-03a`.
 - **dono:** `B-O6R-03b` (plano SAN3, §4.1 item 30 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-001`: o achado `Ω6R-QUA-001` (item 30) tem dono `B-O6R-03b`.
 - **status (2026-10-11, B-O6R-03a na autoria):** PARCIAL — `Ω6R-DIN-009` fechado NA AUTORIA do `B-O6R-03a` (PR e head a preencher pelo orquestrador; evidência em `docs/revisoes/SAN3/B-O6R-03a-dev.md`); `Ω6R-QUA-001` segue ABERTO, dono `B-O6R-03b`. O 03b consome o `status: conflict` por ação (`payload_mismatch`, `legacy_payload_unverifiable`, `receipt_unverifiable`, `receipt_ambiguous`, `action_owned_by_other_actor`) e o `503 sync_busy`; dado legado sem prova exige resolução manual, sem trocar o id para lançar de novo. O QUA-001 só ativa depois de `P-O6R-B03-FILA-POR-USUARIO`.
+- **Apenso 2026-11-08 (B-FILA-USUARIO):** `P-O6R-B03-FILA-POR-USUARIO` fechada na autoria do `B-FILA-USUARIO`; o pré-requisito da fila por usuário para ativar `Ω6R-QUA-001` no `B-O6R-03b` está destravado.
 
 ## P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA-002 (P1) — **BLOQUEIA estoque**
 
@@ -11037,7 +11038,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-B03-FILA-POR-USUARIO (2026-10-11) — a fila do app é por aparelho e organização: a ação de u1 é reenviada sob a sessão de u2 — ALTA
 
-- **status:** ABERTA · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-FILA-USUARIO` (antes: `B-O6R-03b`; emenda 2 R6).
+- **status:** FECHADA NA AUTORIA do `B-FILA-USUARIO` (2026-11-08, ramo `fix/mobile-fila-por-usuario`; PR e merge a preencher pós-junta; evidência RA1–RA5 em `docs/revisoes/REENVIOS/B-FILA-USUARIO-dev.md`) · **escopo:** `pre-existente` no app (`sync_models.dart:19-28` sem usuário; `sync_queue_repository.dart:37-46` inclui `failed`/`conflict`; o logout só apaga tokens) — achado A-04 da crítica r2; parte (ii) da emenda v3 · **dono:** `B-FILA-USUARIO` (antes: `B-O6R-03b`; emenda 2 R6).
 - **O que o 03a já garante (backend):** a ação reenviada sob outra sessão vira `conflict action_owned_by_other_actor`, sem lançamento (A3′, B1′). O que falta é o app: atribuir cada ação ao usuário que a criou, não reenviá-la sob outra sessão e tratar o conflito novo.
 - **bloqueia:** a ativação do `Ω6R-QUA-001` (o provedor autenticado do replay) — o QUA-001 só liga depois desta.
 - **teste de encerramento:** no app, uma ação criada por u1 não sai da fila sob a sessão de u2 (ou sai e o conflito é tratado sem laço), com teste.
@@ -11045,6 +11046,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   (`B-FILA-USUARIO`), pré-requisito do `B-O6R-03b` e do 4º PR. Crítica G4 reproduzida (`SyncAction` sem usuário;
   material de u1 sob a sessão de u2). O cartão legado do 2º PR segue `D-DESPESA-SEM-DESCARTAR` e P25: despesa só Assumir;
   Descartar de outros tipos pela `_confirmDiscard` — ver emenda 4 §7.
+- **Apenso 2026-11-08 (B-FILA-USUARIO):** fechada na autoria pela primeira forma do critério (fail-closed no app: carimbo `SyncAction.userId` com `AuthUser.sub` do token em vigor — nunca do bootstrap em cache, N1 —, migração aditiva Drift 13 → 14, decorador `UserScopedSyncQueueRepository` nos 4 replays e em `workOrderConflictResolutionServiceProvider` com `SyncOwnershipError`, retenção da OS preservada por `actionsForTenant`, e partição na `SyncScreen` com `Assumir` / `Descartar` confirmado só onde `canDiscardSyncAction`). Conforme decisão do dono em P19 (`Q-A1 = (a)`, `B-REENVIOS-plano.md` §G.5 L3), ações legadas sem usuário ficam paradas até o técnico tocar `Assumir` (comportamento aprovado, sem pendência residual `P-MOBILE-FILA-LEGADO-SEM-USUARIO`). Foto, telemetria e localização seguem endereçadas ao bloco `B-FILA-USUARIO-2` (`B-REENVIOS-plano.md` §G.4).
 
 ## P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito por ação e o 503 do sync de despesas — MÉDIA
 

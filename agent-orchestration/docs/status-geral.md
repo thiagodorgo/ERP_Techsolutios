@@ -1,5 +1,12 @@
 # Status Geral
 
+## Atualização 2026-11-08 — B-FILA-USUARIO: fila de sincronização do app por usuário (autoria concluída, PR a abrir)
+
+- **Autor:** `dev-filausr-argon` (Gemini 4 Argon via Antigravity, nível menor declarado, identidade exclusiva de dev; plano do Claude; pré-revisão e junta completa por Claude, `D-UM-FAZ-OUTRO-VERIFICA`). **Base medida:** `origin/main@04bb0e17`, worktree dedicado `w-filausr`, ramo `fix/mobile-fila-por-usuario`.
+- **Entrega (fatias A-F0 a A-F7):** `SyncAction.userId` + codec JSON + carimbo em `SyncActionFactory` via `currentSyncUserIdProvider` (`authStateProvider` / `AuthUser.sub`, nunca `bootstrapSessionProvider` — N1); migração aditiva Drift `13 → 14` (`user_id TEXT` em `sync_actions`); `UserScopedSyncQueueRepository` nos 4 replays e em `workOrderConflictResolutionServiceProvider` (`SyncOwnershipError`, S-n6), mantendo `actionsForTenant` integral para retenção de OS/vistoria; `SyncScreen` particionada em minhas ações, contagem discreta de outros usuários e cartões de legado (`Assumir` com trava S-n7; `Descartar` omitido para despesa por `D-DESPESA-SEM-DESCARTAR` e confirmado por `_confirmDiscard`).
+- **Provas:** vermelhos-controle medidos em `origin/main` (`04bb0e17`), 19 testes novos (`RA1` 3, `RA2` 3, `RA3` 4, `RA4` 5, `RA5` 4 → suíte Flutter `N = 998` → `M = 1017`, zero falhas, zero skips) e todas as 15 mutações (`M-A1..M-A15`) provadas vermelhas e revertidas com `git diff --quiet = 0`.
+- **Registro:** `P-O6R-B03-FILA-POR-USUARIO` fechada na autoria (destravando `B-O6R-03b` e `B-MATERIAL-REENVIO`), apenso em `P-O6R-B03`, índice regenerado sem contradições, item 64 e linha `B-FILA-USUARIO` em `PLANO_SAN3.md`, contrato atualizado em `docs/mobile-sync-contracts.md`, plano copiado em `omega/planos/B-REENVIOS-plano.md` e diário espelhado em `omega/juntas/votos/B-FILA-USUARIO/00-dev.md`. `Kpis/**` e `src/**` intocados.
+
 ## Atualização 2026-11-04 — registro de 04/11: item 54 fechado, resíduos do #497 e do #496, braços por API
 
 - **Autor:** `reg-0411-opus`, Claude Opus, nível menor declarado, identidade nova (o Codex está sem limite). **Base medida:** `origin/main@0c3c7826`, já com os PRs #494, #497, #496, #499, #500 e #501. As seções do `REGISTRO-PENDENTE.md` de 03/11 à noite e de 04/11 foram confrontadas com `decisoes.md` e `pendencias.md` da `origin/main`; o que o #496 e o #497 já levaram não foi duplicado.

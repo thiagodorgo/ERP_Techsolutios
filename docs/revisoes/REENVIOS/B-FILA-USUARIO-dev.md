@@ -152,3 +152,25 @@
   3. `dart format --output=none --set-exit-if-changed test/features/bfilausuario_replay_integration_test.dart` → `0 changed`; re-execução pós-revert → `00:02 +4: All tests passed!`; `flutter analyze --no-pub` → `No issues found!`.
 - **O que falta:** A-F7, A-F8.
 - **Próximo comando:** executar A-F7 (fechar `P-O6R-B03-FILA-POR-USUARIO` na autoria + apenso em `P-O6R-B03` + regenerar `pendencias-indice.md`; atualizar `PLANO_SAN3.md` e `docs/mobile-sync-contracts.md`; criar `codex/comandos/B-FILA-USUARIO.md`; atualizar `status-geral.md` e `log-execucao.md`; copiar `B-REENVIOS-plano.md` para `omega/planos/` e espelhar o diário em `omega/juntas/votos/B-FILA-USUARIO/00-dev.md`, mantendo `Kpis/` intocado).
+## RETOMADA 8
+
+- **Head antes do commit:** `5904f7d1` (`test(mobile): token em vigor prevalece sobre bootstrap em cache e conflito de OS alheia é recusado (B-FILA-USUARIO)`).
+- **O que foi feito (comandos e saídas resumidas — fatia A-F7, registro):**
+  1. `agent-orchestration/controle/pendencias.md`:
+     - `P-O6R-B03-FILA-POR-USUARIO` atualizada para `FECHADA NA AUTORIA do B-FILA-USUARIO` com apenso detalhando as provas `RA1–RA5`, a escolha declarada da primeira forma do critério (fail-closed no app) e o fechamento de L3 pela resposta do dono em P19 (`Q-A1 = (a)`, comportamento aprovado sem pendência residual `P-MOBILE-FILA-LEGADO-SEM-USUARIO`, conforme `B-REENVIOS-plano.md` §G.5).
+     - `P-O6R-B03` recebeu apenso datado registrando que o pré-requisito da fila por usuário para ativar `Ω6R-QUA-001` no `B-O6R-03b` está destravado.
+  2. `python agent-orchestration/controle/gerar-indice-pendencias.py` executado duas vezes seguidas → saída idêntica (`773 cabeçalhos`, `762 IDs`, `186 FECHADAS`, `583 ABERTAS`, `0 CONTRADITORIAS`).
+     - `grep -n FILA-POR-USUARIO agent-orchestration/controle/pendencias.md agent-orchestration/controle/pendencias-indice.md` confirmou `FECHADA NA AUTORIA` e ausência na tabela de abertas do índice.
+  3. `docs/revisoes/SAN3/PLANO_SAN3.md`:
+     - `### 4.1 Bloqueantes`: `63 → 64 itens`, acrescentado item `64` (`P-O6R-B03-FILA-POR-USUARIO` → `B-FILA-USUARIO`, DONO P5, §D1).
+     - `### 5.4 Frente 4`: inserida linha `B-FILA-USUARIO · fix/mobile-fila-por-usuario` logo abaixo de `B-O6R-11` e apensada a emenda de dependência (`dep. B-O6R-04b → B-FILA-USUARIO`) na linha de `B-O6R-03b` (§D1).
+  4. `docs/mobile-sync-contracts.md`: adicionado 1 parágrafo/item em `## Principios` documentando o particionamento da fila offline do aparelho por `AuthUser.sub` da sessão autenticada em vigor, retenção de OS/vistoria por `actionsForTenant` e exigência de `Assumir` para legado sem `user_id`.
+  5. Criados/atualizados:
+     - `agent-orchestration/codex/comandos/B-FILA-USUARIO.md`
+     - `agent-orchestration/docs/status-geral.md`
+     - `agent-orchestration/codex/log-execucao.md`
+     - `agent-orchestration/omega/planos/B-REENVIOS-plano.md` (cópia integral do plano)
+     - `agent-orchestration/omega/juntas/votos/B-FILA-USUARIO/00-dev.md` (espelho byte a byte deste diário)
+  6. Conferido `git diff origin/main -- Kpis/` → vazio (`KPI congelado`).
+- **O que falta:** A-F8 (bateria final completa, `git push -u`, abertura do PR, leitura do resumo do job `flutter` no CI e linha `PRONTO PARA REVISÃO` no diário).
+- **Próximo comando:** executar A-F8 (`dart format --output=none --set-exit-if-changed`, `flutter analyze`, testes novos + regressões + `flutter test --reporter compact` → `M = 1017`, `git diff --check`, auditoria de escopo A4, `gh pr create` e leitura do CI).
