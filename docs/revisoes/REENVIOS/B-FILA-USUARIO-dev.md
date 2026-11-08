@@ -238,3 +238,7 @@ PRONTO PARA REVISÃO ec4b9f59cab3c152115fa269824fb7bb3498c559 PR #512
 - `dart format --output=none --set-exit-if-changed` nos 2 arquivos → `Formatted 2 files (0 changed)`; `flutter analyze` → `No issues found!`.
 - Teste novo → `00:03 +4: All tests passed!`. Os 6 arquivos `bfilausuario_*` → `00:06 +33: All tests passed!` (29 de antes + 4 novos).
 - **Residual declarado (não é do A1; fica para o orquestrador decidir):** se a sessão trocar no MEIO de um passe, entre o `pendingForTenant` e o `update`, o decorador lança e o passe aborta. A ação já enviada fica `syncing` até o resgate R3, e então é reenviada pelo dono, sem perda, porque o servidor é idempotente por `client_action_id`. Fechar isso exige um try/catch no coordenador ou no replay, ambos PROIBIDOS no A4.
+
+### Passo 3 — mutação literal (uma por vez, revertida por edição inversa)
+- **M-A1-EM1 (a da emenda):** o `update` de mapeamento volta a lançar para outro dono (`if (!ownedByCurrentSession && !_isDependentServerIdMappingUpdate(existing, action))` → `if (!ownedByCurrentSession)`) → `00:02 +1 -3: Some tests failed.`, com `A1(1)`, `A1(2)` e `A1(4)` VERMELHOS. Revertida → `git diff --quiet` ec `0`.
+- **M-A1-EM2 (própria, a exceção frouxa):** `_isDependentServerIdMappingUpdate` devolve `true` para todo tipo que não é criação → `00:02 +3 -1: Some tests failed.`, com `A1(3)` VERMELHO. Revertida → `git diff --quiet` ec `0`.
