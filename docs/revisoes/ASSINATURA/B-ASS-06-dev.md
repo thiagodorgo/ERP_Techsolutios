@@ -7,6 +7,10 @@ Plano: `B-ASSINATURA` §4.6 (+ §3, §4.5, §12) — fora do repositório, em `e
 - **Revisão:** pré-revisão do Claude + **junta completa** (superfície externa + dinheiro, unanimidade de 3), com cadeiras Claude (cruzamento de modelo).
 
 **Recorte do portão (1 + 1; Iugu fora em 02/11):** este bloco entrega a **porta + cliente HTTP + adaptador Asaas + falso Asaas**. Iugu e Mercado Pago ficam FORA. O MP é do `B-ASS-15`; a Iugu saiu do pacote (sem débito pelas docs oficiais).
+- **T-PAY fora pelo recorte (1 + 1):**
+  - **Iugu (removida do pacote em 02/11; não aceita cartão de débito e o dono exige débito + crédito + Pix):** T-PAY-8..14 (R-PAY-1 Iugu), T-PAY-23 (R-PAY-2 Iugu), T-PAY-29..31 (R-PAY-3 erros Iugu nas 4 formas), T-PAY-42 (R-PAY-9 webhook Iugu).
+  - **Mercado Pago (sai para o B-ASS-15, fora do portão, mesma porta):** T-PAY-15..21 (R-PAY-1 MP), T-PAY-24 (R-PAY-2 MP), T-PAY-43 (R-PAY-9 webhook MP manual), T-PAY-46..47 (R-PAY-11 ts do MP).
+  - **T-PAY-36..38 (R-PAY-2 / chargeback D3):** entregue só a parte Asaas (chargeback_disputed + dispute_won_pending); as partes Iugu/MP seguem com os respectivos adaptadores (Iugu fora, MP no B-ASS-15).
 
 ## F0 — comando e terreno
 
