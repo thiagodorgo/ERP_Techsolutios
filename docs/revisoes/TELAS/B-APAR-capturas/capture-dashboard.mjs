@@ -5,7 +5,8 @@
 // log) — nunca a demo, nunca a base viva. O relógio da página fica preso no `NOW` da maquete (14/10/2026 09:40).
 //
 // Uso (a partir de `frontend/`, para o `tsx` resolver a fixture TypeScript):
-//   node --import tsx ../docs/revisoes/TELAS/B-APAR-capturas/capture-dashboard.mjs <base> <saída>
+//   node --import tsx ../docs/revisoes/TELAS/B-APAR-capturas/capture-dashboard.mjs <base> <saída> [A|B|C]
+// O 3º argumento opcional recaptura só aquela aparência (as 4 larguras e o seu passo de interação).
 import { createRequire } from "node:module";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -17,6 +18,8 @@ const { chromium } = require("playwright");
 const BASE = process.argv[2] ?? "http://127.0.0.1:47195";
 const OUT = process.argv[3];
 if (!OUT) throw new Error("informe a pasta de saída");
+const ONLY = process.argv[4] ?? null;
+const wants = (letter) => !ONLY || ONLY === letter;
 mkdirSync(OUT, { recursive: true });
 
 const fx = await import(pathToFileURL(resolve(process.cwd(), "tests/helpers/dashboard-aparencias.fixture.ts")).href);
@@ -160,7 +163,7 @@ const WIDTHS = [
   [1280, 720],
 ];
 
-for (const appearance of ["A", "B", "C"]) {
+for (const appearance of ["A", "B", "C"].filter(wants)) {
   for (const [width, height] of WIDTHS) {
     const { context, page, unknown } = await open({ appearance, width, height });
     note(`${appearance} ${width}x${height} ${JSON.stringify(await measure(page))}`);
@@ -176,7 +179,7 @@ for (const appearance of ["A", "B", "C"]) {
 }
 
 // A: o painel do cartão aberto; hover e foco do cartão e da linha
-{
+if (wants("A")) {
   const { context, page } = await open({ appearance: "A", width: 1440, height: 900 });
   await page.getByRole("button", { name: "OS abertas: 18 — ver detalhes" }).click();
   await page.waitForTimeout(300);
@@ -189,7 +192,7 @@ for (const appearance of ["A", "B", "C"]) {
 }
 
 // B: a linha aberta (o detalhe pede GET /work-orders/:id)
-{
+if (wants("B")) {
   const { context, page } = await open({ appearance: "B", width: 1440, height: 900 });
   await page.locator('tr.pat-ab-row[data-row-key="crit:OS-2026-0418"]').click();
   await page.waitForTimeout(900);
@@ -202,7 +205,7 @@ for (const appearance of ["A", "B", "C"]) {
 }
 
 // C: a fila com os tipos (inteira) e um item aberto
-{
+if (wants("C")) {
   const { context, page } = await open({ appearance: "C", width: 1440, height: 900 });
   const kinds = await page.locator("tr.pat-ab-row[data-row-key^='fila:'] td:first-child").allInnerTexts();
   note(`  C tipos na fila: ${JSON.stringify([...new Set(kinds)])}`);
@@ -217,7 +220,7 @@ for (const appearance of ["A", "B", "C"]) {
 }
 
 // Perfil Suporte (só dashboard:read) nas 3
-for (const appearance of ["A", "B", "C"]) {
+for (const appearance of ONLY ? [] : ["A", "B", "C"]) {
   const { context, page, unknown } = await open({ appearance, width: 1440, height: 900, profile: "suporte" });
   note(`Suporte ${appearance} ${JSON.stringify(await measure(page))} · Nova OS=${await page.getByRole("button", { name: "Nova OS" }).count()} · Abrir OS=${await page.getByRole("button", { name: "Abrir OS" }).count()}`);
   await shot(page, `suporte-${appearance.toLowerCase()}`, 1440, 900, true);
@@ -226,11 +229,11 @@ for (const appearance of ["A", "B", "C"]) {
 }
 
 // Estados §7 na A
-for (const [state, summary] of [["carregando", "pendente"], ["vazio", "vazio"], ["erro", "500"], ["proibido", "403"]]) {
+for (const [state, summary] of ONLY ? [] : [["carregando", "pendente"], ["vazio", "vazio"], ["erro", "500"], ["proibido", "403"]]) {
   const { context, page } = await open({ appearance: "A", width: 1440, height: 900, summary });
   await shot(page, `a-estado-${state}`, 1440, 900);
   await context.close();
 }
 
 await browser.close();
-writeFileSync(`${OUT}/capturas-app-dashboard.log`, `${log.join("\n")}\n`);
+writeFileSync(`${OUT}/capturas-app-dashboard${ONLY ? `-${ONLY}` : ""}.log`, `${log.join("\n")}\n`);
