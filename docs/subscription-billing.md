@@ -123,3 +123,27 @@ As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demons
 **Trilha.** Fechar, reabrir, ajustar, cancelar, registrar e estornar pagamento, criar, aplicar e baixar crédito e gravar o perfil viram linha em `audit_logs` da organização, só com ids, período, estados e centavos.
 
 **Rollback.** Retire o job do bootstrap, reverta o PR e rode o rollback do rodapé da M3 e da M3b.
+
+## Cofre de credenciais e configuração dos provedores (B-ASS-05)
+
+- **Para quê:** guardar as credenciais dos provedores de pagamento (Asaas, Iugu, Mercado Pago) e de nota (Focus NFe,
+  NFE.io, PlugNotas) cifradas, e dar à plataforma o lugar onde escolhe provedor, ambiente e dados fiscais. **Nenhuma
+  chamada externa ainda:** testar conexão, ligar, registrar webhook e emissor são do B-ASS-08.
+- **Cifra:** AES-256-GCM, IV de 12 bytes por cifragem, authTag de 16 bytes, AAD `provedor:ambiente:id` (uma credencial
+  não decifra em outra linha). A chave vem do ambiente (`docs/deployment.md`, "Chave do cofre").
+- **O segredo nunca sai:** a resposta é o resumo `{ kind, fingerprint (16 hex do SHA-256), last4, createdAt,
+  keyVersion }`. O claro só existe dentro de `VaultSecret`, que lança ao virar JSON e vira `[redacted]` em texto, e só
+  os adaptadores (B-ASS-06..08) o leem. Nenhuma rota loga o corpo; JSON malformado responde 400 `invalid_json` sem
+  ecoar o corpo (`src/app.ts`). A trilha (`platform_audit_logs`) passa pela allowlist própria
+  (`platform-audit/audit-metadata.ts`). Segredo em `settings` é recusado (`secret_in_settings`).
+- **Um segredo vivo por kind:** `api_token`, `webhook_secret` e `certificate` (só provedor de nota). Gravar outro do
+  mesmo kind revoga o anterior; nunca há DELETE.
+- **Dados fiscais por provedor:** a base (`cnpj`, `regimeTributario`, `municipioIbge`, `cTribNac`) mais os campos de
+  cada provedor de nota. Incompleto é aceito como rascunho (`fiscalDataComplete: false`, `missing[]`).
+- **Rotas** (`platform:billing-providers:manage`): `GET /platform/billing/providers`, `GET|PUT
+  /platform/billing/providers/:provider`, `PUT /platform/billing/providers/:provider/credentials` e `POST
+  /platform/billing/vault/rotate`.
+- **Tabelas (M4):** `billing_provider_configs`, `billing_provider_credentials` e `platform_audit_logs`, globais da
+  plataforma (sem RLS, exceção declarada no plano). Permissão provisionada pela M4b.
+- **Rollback:** reverta o PR e rode o `-- down` da M4 e o rollback da M4b. As linhas cifradas ficam ilegíveis sem o
+  código, o que é aceitável: são recadastráveis.

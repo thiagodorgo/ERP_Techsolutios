@@ -1,5 +1,5 @@
 import cors from "cors";
-import express, { type Express } from "express";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 
@@ -85,6 +85,14 @@ export type CreateAppOptions = {
   readonly getIdentityLinkService?: Parameters<typeof createIdentityLinkRouter>[0];
 };
 
+function rejectMalformedJson(error: unknown, _request: Request, response: Response, next: NextFunction): void {
+  if (error && typeof error === "object" && (error as { type?: unknown }).type === "entity.parse.failed") {
+    response.status(400).json({ error: { code: "BAD_REQUEST", reason: "invalid_json", message: "The request body is not valid JSON." } });
+    return;
+  }
+  next(error);
+}
+
 export function createApp(service: ICoreSaasService, options: CreateAppOptions = {}): Express {
   const app = express();
   // B-O6R-01 (§3.8) — sonda BEST-EFFORT do login sem organização: assíncrona, não aguardada,
@@ -106,6 +114,10 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
   // Sem `credentials: true` — a autenticação é 100% Bearer, não usa cookie de sessão.
   app.use(cors({ origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : true }));
   app.use(express.json({ limit: "2mb" }));
+  // B-ASS-05 (S10/F3) — JSON malformado NÃO ecoa o corpo. O tratador padrão do Express imprime o trecho do corpo no
+  // stderr em desenvolvimento, e o corpo de `PUT …/credentials` é o segredo do provedor. Responde 400 no envelope da
+  // casa, sem `err.body`, em qualquer NODE_ENV. git add src/app.ts.
+  app.use(rejectMalformedJson);
 
   const logger = pinoHttp({
     level: env.LOG_LEVEL,

@@ -25,6 +25,7 @@ import {
 import { toUsageDto } from "./metering/metering.service.js";
 import { createDefaultTenantUsageDailyQueryService } from "./metering/usage-query.service.js";
 import { createStatementsPlatformRouter } from "./statements/statements.platform.routes.js";
+import { createVaultPlatformRouter } from "./vault/vault.platform.routes.js";
 
 export function createSubscriptionBillingPlatformRouter(): Router {
   const router = Router();
@@ -174,6 +175,8 @@ export function createSubscriptionBillingPlatformRouter(): Router {
 
   // B-ASS-04 · F7 — demonstrativo mensal, pagamentos e créditos.
   router.use(createStatementsPlatformRouter());
+  // B-ASS-05 — cofre de credenciais e configuração dos provedores (sem rede).
+  router.use(createVaultPlatformRouter());
 
   return router;
 }
