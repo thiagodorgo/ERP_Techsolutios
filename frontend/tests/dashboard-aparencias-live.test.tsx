@@ -82,12 +82,12 @@ function installFetch() {
   }) as typeof fetch;
 }
 
-function seedSessionAndContext() {
+function seedSessionAndContext(permissions: readonly string[] = PERMISSIONS, roles?: readonly string[]) {
   dom.storage.clear();
-  setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, permissions: [...PERMISSIONS] } });
+  setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, permissions: [...permissions], ...(roles ? { roles: [...roles] } : {}) } } as typeof mockSession);
   dom.storage.set(
     "erp-techsolutions.active-context",
-    JSON.stringify({ tenantId: TENANT_ID, tenantName: "Organização de Teste", tenantStatus: "active", branchId: "fil-1", branchName: "Matriz", role: "Gestor Operacional", permissions: PERMISSIONS, enabledModules: ["dashboard", "work-orders", "field_operations"], scope: "tenant" }),
+    JSON.stringify({ tenantId: TENANT_ID, tenantName: "Organização de Teste", tenantStatus: "active", branchId: "fil-1", branchName: "Matriz", role: roles?.[0] ?? "Gestor Operacional", permissions, enabledModules: ["dashboard", "work-orders", "field_operations"], scope: "tenant" }),
   );
 }
 
@@ -122,8 +122,9 @@ const menuItem = (container: MiniDomNode, label: string) =>
     .flatMap((group) => elements(group, (el) => el.getAttribute("role") === "menuitemradio" && text(el).includes(label)))[0];
 const countCalls = (pattern: RegExp) => calls.filter((call) => pattern.test(call)).length;
 
-async function mount(entry = "/dashboard") {
-  seedSessionAndContext();
+// Papel padrão: o gestor (nunca o Super Admin do mockSession, que passaria por cima das permissões).
+async function mount(entry = "/dashboard", permissions: readonly string[] = PERMISSIONS, roles: readonly string[] = ["Gestor Operacional"]) {
+  seedSessionAndContext(permissions, roles);
   installFetch();
   const container = dom.doc.body.appendChild(dom.doc.createElement("div"));
   const root = createRoot(container as unknown as Element);
@@ -240,5 +241,24 @@ test("[DL5] o cartão abre o painel (não navega); o botão do painel abre a lis
     assert.deepEqual(currentState, { from: "/dashboard?linha=crit:OS-2026-0418" });
   } finally {
     await second.unmount();
+  }
+});
+
+test("[DL6] Suporte (só dashboard:read), nas 3 aparências: nenhum GET da série, de aprovações nem de OS; sem 'Nova OS' nem 'Abrir OS'", async () => {
+  // O Suporte do catálogo: papel `support`, só `dashboard:read` (o papel decide; nada de papel de plataforma).
+  const { container: container2, unmount } = await mount("/dashboard", ["dashboard:read"], ["support"]);
+  try {
+    for (const option of ["A · Padrão fiel", "B · Analítica", "C · Central de prioridades"]) {
+      await press(menuItem(container2, option));
+      assert.equal(pageRoot(container2)?.getAttribute("data-aparencia"), option[0]);
+      assert.equal(buttonText(container2, "Nova OS"), undefined, `${option}: sem Nova OS`);
+      assert.equal(buttonText(container2, "Abrir OS"), undefined, `${option}: sem Abrir OS`);
+    }
+    assert.equal(countCalls(/^GET \/operations\/work-orders-timeseries/), 0, JSON.stringify(calls));
+    assert.equal(countCalls(/^GET \/approvals\/pending/), 0, JSON.stringify(calls));
+    assert.equal(countCalls(/^GET \/work-orders/), 0, JSON.stringify(calls));
+    assert.equal(countCalls(/^GET \/dashboard\/summary/), 1);
+  } finally {
+    await unmount();
   }
 });
