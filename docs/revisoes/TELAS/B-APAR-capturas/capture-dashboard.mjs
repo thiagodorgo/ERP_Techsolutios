@@ -23,7 +23,7 @@ const wants = (letter) => !ONLY || ONLY === letter;
 mkdirSync(OUT, { recursive: true });
 
 const fx = await import(pathToFileURL(resolve(process.cwd(), "tests/helpers/dashboard-aparencias.fixture.ts")).href);
-const { AGORA, SUMMARY_DTO, SERIES_POINTS, DISPATCHES_DTO, LOCATIONS_DTO, APPROVALS_DTO, WORK_ORDER_DTOS } = fx;
+const { AGORA, SUMMARY_DTO, SERIES_POINTS, DISPATCHES_DTO, LOCATIONS_DTO, APPROVALS_DTO, WORK_ORDER_DTOS, PAGE_DTOS, PAGE_TOTAL } = fx;
 
 const TENANT = "org-guincho-exemplo";
 const PROFILES = {
@@ -62,6 +62,8 @@ function apiHandler({ summary = "ok" }, unknown) {
     if (path === "/operations/dispatches") return route.fulfill(json(200, { data: DISPATCHES_DTO }));
     if (path === "/field-locations/latest") return route.fulfill(json(200, { data: LOCATIONS_DTO }));
     if (path === "/approvals/pending") return route.fulfill(json(200, { data: APPROVALS_DTO }));
+    // Sem query: a página de OS que a C pede pelo serviço vivo (sem `limit`); com query: o enriquecimento do mapa.
+    if (path === "/work-orders" && !url.search) return route.fulfill(json(200, { items: PAGE_DTOS, pagination: { limit: 20, offset: 0, total: PAGE_TOTAL } }));
     if (path === "/work-orders") return route.fulfill(json(200, { items: WORK_ORDER_DTOS, pagination: { limit: 100, offset: 0, total: WORK_ORDER_DTOS.length } }));
     const detail = /^\/work-orders\/([^/]+)$/.exec(path);
     if (detail) {
