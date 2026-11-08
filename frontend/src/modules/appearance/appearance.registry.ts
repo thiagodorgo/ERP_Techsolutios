@@ -55,4 +55,15 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Fila por agenda" },
     ],
   },
+  // B-APAR-DASH — Dashboard (referência `screen-refs/dashboard-3opcoes.reference.html`); padrão A
+  // (D-APARENCIA-RESPOSTAS (b)), sem entrada em SCREEN_DEFAULT_APPEARANCE.
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    options: [
+      { value: "A", label: "Padrão fiel" },
+      { value: "B", label: "Analítica" },
+      { value: "C", label: "Central de prioridades" },
+    ],
+  },
 ];

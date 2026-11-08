@@ -24,10 +24,12 @@ SyncAction _checklistAction({
   SyncStatus status = SyncStatus.pending,
   int retryCount = 0,
   Map<String, Object?>? payload,
+  String? userId,
 }) {
   return SyncAction(
     clientActionId: id,
     tenantId: 'tenant-demo',
+    userId: userId,
     type: type,
     payload: payload ?? const {'local_run_id': 'run-1'},
     status: status,
@@ -89,6 +91,7 @@ Widget _wrapSync({
     overrides: [
       bootstrapSessionProvider.overrideWith((ref) async => devBootstrapSession),
       syncQueueRepositoryProvider.overrideWithValue(queue),
+      currentSyncUserIdProvider.overrideWithValue('u-b088'),
       checklistSyncReplayServiceProvider.overrideWithValue(clService),
       syncEngineProvider.overrideWithValue(
         SyncEngine(
@@ -473,6 +476,7 @@ void main() {
           _checklistAction(
             id: 'cl-display-1',
             type: ChecklistSyncActionTypes.runCreate,
+            userId: 'u-b088',
           ),
         );
 
