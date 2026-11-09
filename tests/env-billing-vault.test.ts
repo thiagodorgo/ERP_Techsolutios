@@ -22,6 +22,8 @@ const PROD_BASE = {
   DATABASE_URL: "postgresql://erp:erp@db.interno.exemplo.com:5432/erp?schema=public",
   JOBS_WORKER_ENABLED: "true",
   REDIS_URL: "redis://redis.interno.exemplo.com:6379",
+  // B-ASS-08: um ambiente de produção completo tem a URL pública do webhook (exigida quando o canal liga).
+  BILLING_WEBHOOK_PUBLIC_BASE_URL: "https://hooks.exemplo.com",
 };
 
 const KEY = randomBytes(32).toString("base64");
@@ -38,6 +40,19 @@ test("T-ENV-0 · a base de produção sobe sem nada do cofre, com o canal deslig
   assert.equal(parsed.BILLING_VAULT_KEY, "");
   assert.equal(parsed.BILLING_VAULT_KEY_VERSION, 1);
   assert.equal(parsed.BILLING_VAULT_KEY_PREVIOUS_VERSION, undefined);
+});
+
+// B-ASS-08 — gate da URL pública do webhook (plano §3.9): produção + canal ligado exige `https://`.
+test("B-ASS-08 · produção + canal ligado sem webhook URL https → recusa, citando BILLING_WEBHOOK_PUBLIC_BASE_URL", () => {
+  const semUrl = { ...PROD_BASE, BILLING_PROVIDERS_ENABLED: "true", BILLING_VAULT_KEY: KEY, BILLING_WEBHOOK_PUBLIC_BASE_URL: "" };
+  assert.ok(issuesOf(semUrl).some((issue) => issue.startsWith("BILLING_WEBHOOK_PUBLIC_BASE_URL:")), "vazia em produção com canal ligado recusa");
+  assert.ok(
+    issuesOf({ ...semUrl, BILLING_WEBHOOK_PUBLIC_BASE_URL: "http://hooks.exemplo.com" }).some((issue) => issue.startsWith("BILLING_WEBHOOK_PUBLIC_BASE_URL:")),
+    "http:// (não https) recusa",
+  );
+  assert.deepEqual(issuesOf({ ...semUrl, BILLING_WEBHOOK_PUBLIC_BASE_URL: "https://hooks.exemplo.com" }), [], "https:// com o resto completo passa");
+  // Canal desligado: a URL não é exigida mesmo em produção.
+  assert.deepEqual(issuesOf({ ...PROD_BASE, BILLING_PROVIDERS_ENABLED: "false", BILLING_WEBHOOK_PUBLIC_BASE_URL: "" }), []);
 });
 
 test("T-ENV-1 · produção + canal ligado + chave ausente → recusa, citando BILLING_VAULT_KEY", () => {
