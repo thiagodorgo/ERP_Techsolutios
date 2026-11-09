@@ -16,3 +16,7 @@
 ## B-F2 — permissão
 
 - B-F2 | `field_technician` recebeu exatamente as cinco permissões aprovadas, sem `expense_receipt:attach`; snapshot regenerado a partir de `ROLE_PERMISSIONS` e guard byte-a-byte verde. RB1 4/4: sync processado, auditor 403, `read_own` enxerga só o próprio relatório e `core-saas-role-authority` verde. M-B1 literal: retirada apenas de `expense_sync:write` do bloco `field_technician` fez o caso de sync falhar `403 !== 200`; edição inversa restaurou o verde. `o6r07c-census-guard` 32/32; `npm run check` e `npm run lint` verdes.
+
+## B-F3 — contrato Dart × TypeScript
+
+- B-F3 | Nasceu o teste RB4b contra `parseSyncCommand` real, extraindo por regex as chaves literais dos três payloads em `expense_repository.dart`. Vermelho esperado preservado até B-F4: `payload Dart não contém 'report_id'` no item (a mesma barreira também existe no submit); o create já contém as cinco chaves aceitas.
