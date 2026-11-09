@@ -19,3 +19,4 @@ dentro de `withTenantRls`; segredo/corpo nunca em log (só digest); nenhum camin
 | F1 | node --test ass-08-outbox | pass 9 fail 0 | outbox repo + dispatcher claim-chamada-registro; R-OBX-1/2/3/4; mutações OBX-4 e OBX-1 vermelhas e revertidas; guard de texto (sem fetch em tx) |
 | F2 | node --test ass-08-webhook-router | pass 8 fail 0 | router do webhook: 404 padrão antes do parser, 413, 401 sem motivo, limitador por IP e teto global, replay ON CONFLICT; mutação R-WH-1 (parser antes da decisão) vermelha e revertida |
 | F3 | node --test ass-08-webhook-asaas | pass 5 fail 0 | fake Asaas emite webhook assinado; adaptador real verifica (timingSafeEqual); 200/401/replay; guard R-WH-2 (timingSafeEqual presente, sem === na comparação) |
+| F4 | node --test ass-08-webhook-focusnfe | pass 2 fail 0 | fake Focus NFe emite webhook (X-Webhook-Token); adaptador verifica; external_reference=ref, id ausente → sha256(corpo); 401 em segredo errado |
