@@ -4,11 +4,24 @@
 // traz um `paidCents` maior (D6: parcial 60 → quitação 100 em saldo 100 → `paid_amount = 100`, `paid`). Nunca cria
 // duas linhas de pagamento para a mesma `(source, external_charge_id)` (UNIQUE no banco, F11).
 
+import { CreditService } from "../credits/credit.service.js";
 import type { StatementRepository } from "./statement.repository.js";
 import type { StatementService } from "./statement.service.js";
-import type { PaymentSource, StatementPayment, SubscriptionCredit, SubscriptionStatement } from "./statement.types.js";
+import type { ChargeStatus, PaymentSource, StatementPayment, SubscriptionCredit, SubscriptionStatement } from "./statement.types.js";
 
 export type ProviderSource = Exclude<PaymentSource, "manual">;
+
+export type ReversalKind = "refund" | "chargeback";
+
+export type ReversalResult = {
+  readonly statement: SubscriptionStatement;
+  readonly payment: StatementPayment;
+  readonly fromApplied: number;
+  readonly absorbedByCredit: number;
+  readonly creditReversed: boolean;
+  /** O chamador (reconcile) enfileira `invoice_cancel` quando isto é verdadeiro (R-SET-2/R-D). */
+  readonly shouldCancelInvoice: boolean;
+};
 
 export type SettleResult =
   | { readonly kind: "settled"; readonly statement: SubscriptionStatement; readonly payment: StatementPayment; readonly credit: SubscriptionCredit | null }
@@ -19,6 +32,8 @@ function balanceOf(statement: SubscriptionStatement): number {
 }
 
 export class StatementSettlementService {
+  readonly #credits = new CreditService();
+
   constructor(
     private readonly repository: StatementRepository,
     private readonly statements: StatementService,
@@ -89,5 +104,111 @@ export class StatementSettlementService {
     });
 
     return { kind: "settled", statement: result.statement, payment: result.payment, credit: result.credit };
+  }
+
+  /**
+   * Estorno/chargeback de um pagamento do provedor (R-CB-1, R-SET-3/D4). Desconta PRIMEIRO do crédito que o pagamento
+   * gerou e só o resto de `applied_amount`. `cancelled` NUNCA volta a `closed`. Devolve `shouldCancelInvoice` para o
+   * reconcile enfileirar `invoice_cancel` — só em estorno TOTAL ou chargeback, com nota `authorized` e sem `keepInvoice`.
+   */
+  async applyReversal(input: {
+    readonly tenantId: string;
+    readonly statementId: string;
+    readonly externalChargeId: string;
+    readonly reversedCents: number;
+    readonly kind: ReversalKind;
+    readonly keepInvoice?: boolean;
+    readonly now: Date;
+  }): Promise<ReversalResult | { readonly kind: "no_payment" }> {
+    const payments = await this.repository.listPayments(input.tenantId, input.statementId);
+    const payment = payments.find((row) => row.source !== "manual" && row.externalChargeId === input.externalChargeId);
+    if (!payment) return { kind: "no_payment" };
+    const ownCredit = (await this.repository.listCredits(input.tenantId)).find(
+      (credit) => credit.originPaymentId === payment.id && (credit.status === "open" || credit.status === "applied"),
+    );
+
+    return this.repository.transaction(input.tenantId, async (tx) => {
+      const current = (await tx.lockPayment(payment.id))!;
+      const statement = (await tx.lockById(input.statementId))!;
+      const effect = await this.#credits.absorbReversal(tx, { ownCredit, reversedCents: input.reversedCents, now: input.now });
+      const fromApplied = Math.min(effect.remainingForApplied, current.appliedCents - current.reversedCents);
+      const savedPayment = await tx.savePayment({
+        ...current,
+        reversedCents: current.reversedCents + input.reversedCents,
+        reversedAt: input.now,
+        reversalReason: input.kind,
+        reversalKind: input.kind,
+      });
+      const paidCents = Math.max(0, statement.paidCents - fromApplied);
+      const totalReversal = input.kind === "chargeback" || savedPayment.reversedCents >= current.amountCents;
+      const chargeStatus: ChargeStatus = input.kind === "chargeback" ? "charged_back" : totalReversal ? "refunded" : "partially_refunded";
+      const status =
+        statement.status === "cancelled"
+          ? "cancelled"
+          : statement.status === "paid" && paidCents < statement.totalCents
+            ? "closed"
+            : statement.status;
+      const savedStatement = await tx.saveStatement({
+        ...statement,
+        paidCents,
+        chargeStatus,
+        status,
+        paidAt: paidCents >= statement.totalCents ? statement.paidAt : null,
+      });
+      const shouldCancelInvoice = totalReversal && statement.invoiceStatus === "authorized" && input.keepInvoice !== true;
+      return {
+        statement: savedStatement,
+        payment: savedPayment,
+        fromApplied,
+        absorbedByCredit: effect.absorbedByCredit,
+        creditReversed: effect.creditReversed,
+        shouldCancelInvoice,
+      };
+    });
+  }
+
+  /**
+   * Disputa de chargeback (D3/R-CB-2): `chargeback_disputed` NÃO afeta "em dia" nem cancela nota. Um
+   * `PAYMENT_CONFIRMED`/`RECEIVED` seguinte volta a `confirmed` na mesma linha (via `settle`), nada a desfazer.
+   */
+  async markChargebackDisputed(input: { readonly tenantId: string; readonly statementId: string; readonly now: Date }): Promise<SubscriptionStatement | undefined> {
+    return this.repository.transaction(input.tenantId, async (tx) => {
+      const statement = await tx.lockById(input.statementId);
+      if (!statement) return undefined;
+      return tx.saveStatement({ ...statement, chargeStatus: "chargeback_disputed" });
+    });
+  }
+
+  /** Resolução da disputa (R-CB-3): `won` → `confirmed`; `lost` → chargeback total (reverte). */
+  async resolveChargeback(input: {
+    readonly tenantId: string;
+    readonly statementId: string;
+    readonly externalChargeId: string;
+    readonly outcome: "won" | "lost";
+    readonly keepInvoice?: boolean;
+    readonly now: Date;
+  }): Promise<{ readonly chargeStatus: ChargeStatus }> {
+    if (input.outcome === "won") {
+      await this.repository.transaction(input.tenantId, async (tx) => {
+        const statement = await tx.lockById(input.statementId);
+        if (statement) await tx.saveStatement({ ...statement, chargeStatus: "confirmed" });
+      });
+      return { chargeStatus: "confirmed" };
+    }
+    const payment = (await this.repository.listPayments(input.tenantId, input.statementId)).find(
+      (row) => row.source !== "manual" && row.externalChargeId === input.externalChargeId,
+    );
+    if (payment) {
+      await this.applyReversal({
+        tenantId: input.tenantId,
+        statementId: input.statementId,
+        externalChargeId: input.externalChargeId,
+        reversedCents: payment.amountCents,
+        kind: "chargeback",
+        keepInvoice: input.keepInvoice,
+        now: input.now,
+      });
+    }
+    return { chargeStatus: "charged_back" };
   }
 }

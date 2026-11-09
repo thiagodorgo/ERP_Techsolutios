@@ -16,10 +16,14 @@ export type ReconcileDeps = {
   readonly settlement: StatementSettlementService;
   /** `tenant_billing_profiles.<provedor>_customer_id` — o cliente do provedor tem de bater (R-WH-5). */
   resolveExpectedCustomerId?: (tenantId: string, provider: string) => Promise<string | null>;
+  /** Enfileira `invoice_cancel` na outbox quando o estorno total/chargeback derruba uma nota autorizada (R-SET-2). */
+  enqueueInvoiceCancel?: (input: { tenantId: string; statementId: string; provider: string }) => Promise<void>;
+  /** A organização marcou "manter a nota" na reversão (N4, R-D) — default false. */
+  resolveKeepInvoice?: (tenantId: string, statementId: string) => Promise<boolean>;
   readonly now?: () => Date;
 };
 
-export type ReconcileOutcome = "settled" | "ignored" | "rejected" | "no_op";
+export type ReconcileOutcome = "settled" | "ignored" | "rejected" | "reversed" | "disputed" | "no_op";
 
 function rawCustomerId(raw: Readonly<Record<string, unknown>>): string | null {
   const value = raw.customer ?? raw.customerId ?? raw.payer;
@@ -56,20 +60,63 @@ export async function reconcileWebhookEvent(deps: ReconcileDeps, input: { provid
     return "ignored";
   }
 
-  // R-WH-4: RECONSULTA — o corpo não decide. A baixa usa o valor BRUTO da reconsulta.
+  // R-WH-4: RECONSULTA — o corpo não decide. A baixa/reversão usa o estado e o valor BRUTO da reconsulta.
   const lookup = await port.getCharge(event.externalResourceId);
-  const paysNow = (lookup.status === "paid" || lookup.status === "partially_paid") && typeof lookup.paidCents === "number" && lookup.paidCents > 0;
-  if (!paysNow) {
-    await deps.events.markStatus(event.id, { status: "ignored", error: `reconsult_${lookup.status}`, resolvedTenantId: ref.tenantId, resolvedStatementId: statementId, incrementAttempts: true });
-    return "ignored";
-  }
 
-  // R-WH-5: o cliente do provedor tem de ser o da organização dona do demonstrativo.
+  // R-WH-5: o cliente do provedor tem de ser o da organização dona do demonstrativo (vale antes de qualquer efeito).
   const expected = deps.resolveExpectedCustomerId ? await deps.resolveExpectedCustomerId(ref.tenantId, input.provider) : null;
   const rawCustomer = rawCustomerId(lookup.raw);
   if (expected && rawCustomer && rawCustomer !== expected) {
     await deps.events.markStatus(event.id, { status: "rejected", error: "customer_mismatch", resolvedTenantId: ref.tenantId, resolvedStatementId: statementId, incrementAttempts: true });
     return "rejected";
+  }
+
+  const markProcessed = () => deps.events.markStatus(event.id, { status: "processed", resolvedTenantId: ref.tenantId, resolvedStatementId: statementId, incrementAttempts: true });
+
+  // Chargeback FINAL (R-CB-1): reverte e, se houver nota autorizada, enfileira o cancelamento (R-SET-2).
+  if (lookup.status === "charged_back") {
+    const result = await deps.settlement.applyReversal({
+      tenantId: ref.tenantId,
+      statementId,
+      externalChargeId: event.externalResourceId,
+      reversedCents: typeof lookup.paidCents === "number" && lookup.paidCents > 0 ? lookup.paidCents : Number.MAX_SAFE_INTEGER,
+      kind: "chargeback",
+      keepInvoice: deps.resolveKeepInvoice ? await deps.resolveKeepInvoice(ref.tenantId, statementId) : false,
+      now: now(),
+    });
+    if ("shouldCancelInvoice" in result && result.shouldCancelInvoice && deps.enqueueInvoiceCancel) {
+      await deps.enqueueInvoiceCancel({ tenantId: ref.tenantId, statementId, provider: input.provider });
+    }
+    await markProcessed();
+    return "reversed";
+  }
+
+  // Estorno confirmado (R-CB-1 parcial/total): usa o valor estornado da reconsulta.
+  if (lookup.status === "refunded") {
+    await deps.settlement.applyReversal({
+      tenantId: ref.tenantId,
+      statementId,
+      externalChargeId: event.externalResourceId,
+      reversedCents: typeof lookup.paidCents === "number" && lookup.paidCents > 0 ? lookup.paidCents : Number.MAX_SAFE_INTEGER,
+      kind: "refund",
+      keepInvoice: deps.resolveKeepInvoice ? await deps.resolveKeepInvoice(ref.tenantId, statementId) : false,
+      now: now(),
+    });
+    await markProcessed();
+    return "reversed";
+  }
+
+  // D3/R-CB-2: disputa em aberto não derruba "em dia" nem cancela nota; só marca `chargeback_disputed`.
+  if (lookup.status === "chargeback_disputed") {
+    await deps.settlement.markChargebackDisputed({ tenantId: ref.tenantId, statementId, now: now() });
+    await markProcessed();
+    return "disputed";
+  }
+
+  const paysNow = (lookup.status === "paid" || lookup.status === "partially_paid") && typeof lookup.paidCents === "number" && lookup.paidCents > 0;
+  if (!paysNow) {
+    await deps.events.markStatus(event.id, { status: "ignored", error: `reconsult_${lookup.status}`, resolvedTenantId: ref.tenantId, resolvedStatementId: statementId, incrementAttempts: true });
+    return "ignored";
   }
 
   await deps.settlement.settle({
@@ -81,6 +128,6 @@ export async function reconcileWebhookEvent(deps: ReconcileDeps, input: { provid
     method: null,
     now: now(),
   });
-  await deps.events.markStatus(event.id, { status: "processed", resolvedTenantId: ref.tenantId, resolvedStatementId: statementId, incrementAttempts: true });
+  await markProcessed();
   return "settled";
 }
