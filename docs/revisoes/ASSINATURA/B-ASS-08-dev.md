@@ -100,3 +100,40 @@ descartavel removido; nada de erp-*/5432/6379 tocado. KPI intocado.
 | F11b | npm run check; node --test ass-08-channel-db (DATABASE_URL) | tsc OK; -db pass 5 fail 0 em Postgres real sob papel NOSUPERUSER NOBYPASSRLS | repos Prisma: outbox (claim FOR UPDATE SKIP LOCKED por organizacao via billing_statement_refs; mutacoes em withTenantRlsBudget; plataforma via forEachTenantRls), webhook-events + statement-refs (globais), charges (withTenantRls). T-OBX-db-1 (2 workers linhas distintas), T-WH-db-1 (UNIQUE), RLS com vermelho-controle (invisivel sem GUC) |
 | F11c | node --test ass-08-channel-db (DATABASE_URL) | -db pass 7 fail 0 em Postgres real | numeracao duravel da DPS (R-NF-8): nextDpsNumber com UPSERT atomico ON CONFLICT DO UPDATE RETURNING (lock de linha serializa); T-NF-db-1 concorrentes 1 e 2, rollback nao consome numero |
 | F13a | node --test env-billing-vault; npm run check | pass 7 fail 0; tsc OK | env BILLING_WEBHOOK_PUBLIC_BASE_URL (§3.9): default vazio; gate producao+canal ligado exige https://. Fixture PROD_BASE da B-ASS-05 ajustada (ambiente de producao completo tem a URL) + teste do gate; testes verdes, nao enfraquecidos |
+
+## F11 COMPLETO + F13a; F13 (b-f) reportado ao orquestrador (ponto de desenho em F9-persistencia)
+
+F11 (repos Prisma tenant-scoped, decisao do orquestrador) — FEITO e VALIDADO em Postgres 16 real sob o papel de
+runtime NOSUPERUSER NOBYPASSRLS (nunca superusuario):
+- ports da outbox/charges tenant-scoped (tenantId nas mutacoes/leituras por id); o duble valida o tenant como o RLS
+  faria; dispatcher passa row.tenantId; testes F1-F9 ajustados e verdes (nao enfraquecidos).
+- outbox.prisma (claim FOR UPDATE SKIP LOCKED por organizacao via billing_statement_refs; mutacoes em
+  withTenantRlsBudget; plataforma via forEachTenantRls), webhook-events.prisma + statement-refs.prisma (globais),
+  charges.prisma (withTenantRls), invoice-sequence.service (UPSERT atomico ON CONFLICT DO UPDATE RETURNING).
+- tests/ass-08-channel-db.test.ts 7/7: T-WH-db-1 (UNIQUE), T-OBX-db-1 (2 workers SKIP LOCKED linhas distintas),
+  RLS com VERMELHO-CONTROLE (invisivel sem GUC; A nao ve B), T-NF-db-1 (numeracao concorrente 1/2 + rollback nao
+  consome). Drill M5 4/4. npm run check limpo.
+
+F13a — env BILLING_WEBHOOK_PUBLIC_BASE_URL + gate de producao (feito, verde).
+
+F13 (b-f) RESTANTE — camada de ligacao cross-cutting, boot/guard-critica, num bloco de DINHEIRO. Medido:
+- (e) grants do papel de runtime: NAO precisa mudanca — scripts/db-runtime-role.sh usa ALTER DEFAULT PRIVILEGES, as
+  6 tabelas novas (criadas pelo migrator) ja sao cobertas.
+- (b) montar o router em src/app.ts ANTES de express.json/pinoHttp, com resolveTarget lazy (flag env + config.enabled +
+  cofre + fabrica de adaptador: createAsaasAdapter/createFocusNfeAdapter + billingHttpClientFromEnv + VaultService) e os
+  repos Prisma. Boot-critico (app.ts afeta o boot inteiro); exige smoke de boot.
+- (c) 4 jobs: dispatch-outbox e reconcile-webhook (ligacao dos repos Prisma + construcao de ports por provedor LIGADO)
+  + poll-pending e poll-settled, que sao LOGICA NOVA (reconsulta de eventos received sem job > 30 min via refs;
+  reconsulta de confirmed por 120 dias) — nao so ligacao.
+- (d) tests/san3-05-leituras-de-plataforma-db.test.ts: inventario EXATO (router de webhook SEM-FORCE / "infra, sem
+  modulo"; jobs FORCE-PLATAFORMA). Guard-sensivel.
+- (f) PONTO DE DESENHO (reportado, conforme instrucao "PARE e me chame"): a persistencia de F9
+  (enable/disable/test-connection/register-webhook/emitter/metrics) precisa de superficie no repo de config da B-ASS-05
+  (InMemoryProviderConfigRepository/Prisma) que HOJE so tem upsert+setEnabledForTests — NAO tem enable/disable/last-test
+  duraveis. Usar a superficie da main significa ou estende-la (toca arquivo B-ASS-05, fora do PERMITIDO desta execucao)
+  ou decidir onde a persistencia do liga/desliga mora. O gate G14 (fail-closed) ja esta pronto (F9 nucleo). A perna da
+  NOTA do e2e (invoice_issue dispatch na outbox + reconcile de nota -> authorized/invoicePdfAvailable) e logica nova
+  que pareia com (c).
+
+Estado: ramo feat/b-ass-08-outbox-webhooks, arvore limpa, 18 commits sobre origin/main 7d8b2b98. Sem push/PR. Docker
+descartavel removido. KPI intocado. Canal DESLIGADO.
