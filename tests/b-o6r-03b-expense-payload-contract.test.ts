@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { parseSyncCommand } from "../src/modules/expense-management/expense-sync.js";
+import { parseSyncCommand, syncBusyError } from "../src/modules/expense-management/expense-sync.js";
+import { ExpenseManagementError } from "../src/modules/expense-management/expense-management.types.js";
+import { sendRouteError } from "../src/modules/core-saas/routes/http.js";
 
 const repositorySource = readFileSync(
   new URL("../mobile/flutter_app/lib/features/expenses/data/expense_repository.dart", import.meta.url),
@@ -66,3 +68,64 @@ function sample(keys: Set<string>): Record<string, unknown> {
   };
   return Object.fromEntries([...keys].map((key) => [key, values[key]]));
 }
+
+type ExpenseErrorEnvelope = { status: number; body: { error: { code: string; reason?: string; message: string } } };
+
+const expenseErrorEnvelopes = JSON.parse(
+  readFileSync(new URL("../mobile/flutter_app/test/core/sync/bo6r03b_expense_error_envelopes.json", import.meta.url), "utf8"),
+) as Record<string, ExpenseErrorEnvelope>;
+
+const expenseServiceSource = readFileSync(
+  new URL("../src/modules/expense-management/expense-management.service.ts", import.meta.url),
+  "utf8",
+);
+const expenseValidatorsSource = readFileSync(
+  new URL("../src/modules/expense-management/expense-management.validators.ts", import.meta.url),
+  "utf8",
+);
+const authenticatedActorSource = readFileSync(
+  new URL("../src/modules/auth/middleware/authenticated-actor.middleware.ts", import.meta.url),
+  "utf8",
+);
+
+function sendEnvelope(error: unknown): { status: number; body: unknown } {
+  let statusCode = 0;
+  let body: unknown;
+  const response = {
+    status: (status: number) => {
+      statusCode = status;
+      return response;
+    },
+    json: (payload: unknown) => {
+      body = payload;
+      return response;
+    },
+  };
+  sendRouteError(response as unknown as Parameters<typeof sendRouteError>[0], error);
+  return { status: statusCode, body };
+}
+
+test("RB4c · os envelopes de erro que o app testa são os que o backend produz", () => {
+  assert.deepEqual(sendEnvelope(syncBusyError()), expenseErrorEnvelopes["503_sync_busy"]);
+  assert.deepEqual(sendEnvelope({}), expenseErrorEnvelopes["500_unknown_error"]);
+
+  assert.deepEqual(
+    sendEnvelope(new ExpenseManagementError(409, "EXPENSE_REPORT_LOCKED", "status_not_editable", "Only draft or returned reports can receive new items.")),
+    expenseErrorEnvelopes["409_status_not_editable"],
+  );
+  assert.deepEqual(
+    sendEnvelope(new ExpenseManagementError(422, "EXPENSE_REPORT_INVALID", "empty_report", "At least one expense item is required before submit.")),
+    expenseErrorEnvelopes["422_empty_report"],
+  );
+  assert.deepEqual(
+    sendEnvelope(new ExpenseManagementError(400, "EXPENSE_INVALID", "required_field", "reportId is required.")),
+    expenseErrorEnvelopes["400_required_field"],
+  );
+
+  assert.ok(expenseServiceSource.includes('new ExpenseManagementError(409, "EXPENSE_REPORT_LOCKED", "status_not_editable"'));
+  assert.ok(expenseServiceSource.includes('new ExpenseManagementError(422, "EXPENSE_REPORT_INVALID", "empty_report"'));
+  assert.ok(expenseValidatorsSource.includes('new ExpenseManagementError(400, "EXPENSE_INVALID", "required_field"'));
+
+  assert.ok(authenticatedActorSource.includes("INVALID_TOKEN"));
+  assert.ok(authenticatedActorSource.includes("Invalid or expired access token."));
+});

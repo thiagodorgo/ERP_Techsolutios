@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
 import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.types.js";
+
+const envelopes = JSON.parse(
+  readFileSync(new URL("../mobile/flutter_app/test/core/sync/bo6r03b_expense_error_envelopes.json", import.meta.url), "utf8"),
+) as Record<string, { status: number; body: { error: { code: string; reason?: string; message: string } } }>;
 
 test("RB1 · Técnico de Campo sincroniza despesa", async () => {
   await withExpenseApi(async ({ baseUrl, tenant, fieldTechnician }) => {
@@ -34,7 +39,10 @@ test("RB1 · auditor continua bloqueado no sync de despesa", async () => {
       type: "expense_report.create",
       payload: { periodStart: "2026-11-01", periodEnd: "2026-11-09", origin: "mobile" },
     });
-    assert.equal(denied.status, 403);
+    assert.deepEqual(
+      { status: denied.status, body: await denied.json() },
+      envelopes["403_permission_required"],
+    );
   });
 });
 
