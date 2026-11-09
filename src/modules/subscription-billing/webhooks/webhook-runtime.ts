@@ -74,6 +74,11 @@ export function resetWebhookRuntimeForTests(): void {
   memoryEvents = new InMemoryWebhookEventRepository();
 }
 
+/** O armazém de eventos do modo memória — o MESMO para o router e para os jobs (dev e testes). */
+export function memoryWebhookEvents(): InMemoryWebhookEventRepository {
+  return memoryEvents;
+}
+
 export function getMemoryWebhookEventsForTests(): InMemoryWebhookEventRepository {
   return memoryEvents;
 }

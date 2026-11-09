@@ -36,6 +36,8 @@ export type JobWorkerModules = {
   readonly enqueueInitialImpoundNotifyDueScan: () => Promise<unknown>;
   readonly enqueueInitialSubscriptionMeasureDaily: () => Promise<unknown>;
   readonly enqueueInitialSubscriptionCloseStatements: () => Promise<unknown>;
+  /** B-ASS-08b — 1ºs ticks do canal de cobrança; a própria função não enfileira nada com o canal desligado. */
+  readonly enqueueInitialBillingChannelJobs: () => Promise<unknown>;
 };
 
 export type JobWorkerBootstrapOptions = {
@@ -69,7 +71,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     { enqueueInitialImpoundReconcileScan },
     { enqueueInitialChargingAccrueScan },
     { enqueueInitialImpoundNotifyDueScan },
-    { enqueueInitialSubscriptionMeasureDaily, enqueueInitialSubscriptionCloseStatements },
+    { enqueueInitialSubscriptionMeasureDaily, enqueueInitialSubscriptionCloseStatements, enqueueInitialBillingChannelJobs },
   ] = await Promise.all([
     import("./job.worker.js"),
     import("../../modules/notifications/scheduled-notification.jobs.js"),
@@ -87,6 +89,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     enqueueInitialImpoundNotifyDueScan,
     enqueueInitialSubscriptionMeasureDaily,
     enqueueInitialSubscriptionCloseStatements,
+    enqueueInitialBillingChannelJobs,
   };
 }
 
@@ -154,6 +157,8 @@ export async function startJobWorkerIfEnabled(
   // B-ASS-03 — 1º tick da medição diária da franquia (auto-reenfileirante até 12:00/23:30 SP).
   await modules.enqueueInitialSubscriptionMeasureDaily();
   await modules.enqueueInitialSubscriptionCloseStatements();
+  // B-ASS-08b — o canal de cobrança: só enfileira com BILLING_PROVIDERS_ENABLED=true (desligado → nenhum tick).
+  await modules.enqueueInitialBillingChannelJobs();
   logger.info({ pollIntervalMs: 1000 }, "In-process job worker started (JOBS_WORKER_ENABLED).");
 
   return { started: true, worker, ...(heartbeat ? { heartbeat } : {}) };

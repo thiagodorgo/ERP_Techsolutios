@@ -382,6 +382,11 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
     "B-ASS-08 / R-OBX-5 + 2º conserto (E5″): a trava do demonstrativo na pick conjunta (`FOR NO KEY UPDATE OF s SKIP LOCKED`, o demonstrativo antes da linha da fila — regra §2.1) e a releitura do demonstrativo (`SELECT s.status, s.reopened_at … WHERE s.id = $1`), na MESMA transação do claim (`withTenantRlsBudget`, GUC setado na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização da linha reclamada — demonstrativo ocupado é pulado sem espera; pago/cancelado/reaberto/refechado → SKIPPED, nunca sai. Provado em T-OBX-db-1 e T-OBX-db-3 sob papel NOSUPERUSER NOBYPASSRLS (sem GUC o demonstrativo seria invisível e a linha nunca seria reclamada).",
   ],
+  // B-ASS-08b: a ligação INSTANCIA os repositórios do canal com o client raiz (`prisma`). O gerador passa a julgar a classe
+  // pela instanciação (L2) e não mais por método sem instância conhecida (L1 `INJETADO`): as 8 chaves L1 da parte 1
+  // (#tenantsWithRefs, put, resolve, setExternalChargeId, find, listByProvider, listStale, markStatus ×2) saem e as 4
+  // instanciações abaixo entram. Os acessos a tabela FORCE dessas classes seguem sob `withTenantRls`/`withTenantRlsBudget`
+  // (as chaves PARAMETRO(tx de callback de withTenantRlsBudget) acima continuam). Gerador e WRAPPERS intocados.
   [
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "2º conserto do #522 (E5″, §14.2; Emenda 15): `SELECT current_setting('enable_nestloop') AS previous` — lê o valor de antes do parâmetro LOCAL do planejador; não lê nem escreve tabela nenhuma (nem FORCE).",
@@ -427,28 +432,16 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     "2º conserto do #522 (E8): o UPSERT do índice de `put`, extraído sem mudar; toca SÓ `billing_statement_refs`, tabela GLOBAL de ids (sem RLS; M5, exceção declarada S8 — leva do externalReference ao tenant_id sem varrer N organizações); nenhuma tabela FORCE é tocada. Recebe o cliente (`put`) ou o `tx` do pedido (`prismaChargeIntentTx`), onde o índice nasce na mesma transação da linha.",
   ],
   [
-    k("L1", "src/modules/subscription-billing/webhooks/statement-refs.prisma.ts", "PrismaStatementRefRepository.resolve", "this.client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "INJETADO", "×1"),
-    "B-ASS-08: a leitura do índice (l.38) é a resolução da organização pelo NOSSO statement_id (R-WH-5), SÓ na tabela GLOBAL de ids `billing_statement_refs` (sem RLS); nenhuma tabela FORCE é tocada.",
+    k("L2", "src/modules/subscription-billing/outbox/channel.runtime.ts", "new PrismaStatementRefRepository(prisma)", "CRU", "×1"),
+    "B-ASS-08b: o índice do canal com o client raiz (channel.runtime.ts l.66). TODOS os acessos da classe tocam SÓ `billing_statement_refs`, tabela GLOBAL de ids (sem dado de negócio, sem RLS — M5, exceção declarada S8): put (UPSERT, statement-refs.prisma.ts l.18), resolve (a organização pelo NOSSO statement_id, R-WH-5, l.38), setExternalChargeId (só UPDATE, nunca cria, l.45) e listWithCharge (l.54, acessor tipado de tabela não FORCE, que o gerador não inventaria). Nenhuma tabela FORCE é tocada e não há GUC a fixar.",
   ],
   [
-    k("L1", "src/modules/subscription-billing/webhooks/statement-refs.prisma.ts", "PrismaStatementRefRepository.setExternalChargeId", "this.client", "RAW-SQL($executeRawUnsafe) OPACO", "?", "INJETADO", "×1"),
-    "B-ASS-08: atualiza (só UPDATE, nunca cria) o id da cobrança no índice GLOBAL `billing_statement_refs` (l.45; sem RLS, só ids); nenhuma tabela FORCE é tocada.",
+    k("L2", "src/modules/subscription-billing/outbox/channel.runtime.ts", "new PrismaWebhookEventRepository(prisma)", "CRU", "×1"),
+    "B-ASS-08b: os eventos do webhook para os jobs com o client raiz (channel.runtime.ts l.65). `billing_webhook_events` é GLOBAL da plataforma (a organização é desconhecida ao receber; sem RLS — M5, exceção declarada §3.2): find (webhook-events.prisma.ts l.66), markStatus (SELECT + UPDATE, l.75), listByProvider (l.99) e listStale (os órfãos do poll-pending, R-WH-8, l.107) não tocam tabela FORCE, e a linha guarda só o digest do corpo (R-WH-7).",
   ],
   [
-    k("L1", "src/modules/subscription-billing/webhooks/webhook-events.prisma.ts", "PrismaWebhookEventRepository.find", "this.client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "INJETADO", "×1"),
-    "B-ASS-08: `billing_webhook_events` é GLOBAL da plataforma (a organização é desconhecida ao receber; sem tenant_id e sem RLS — M5, exceção declarada §3.2); a leitura por (provider, external_event_id) (l.66) não toca tabela FORCE e a linha guarda só o digest do corpo.",
-  ],
-  [
-    k("L1", "src/modules/subscription-billing/webhooks/webhook-events.prisma.ts", "PrismaWebhookEventRepository.listByProvider", "this.client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "INJETADO", "×1"),
-    "B-ASS-08: listagem por provedor (l.99) na tabela GLOBAL `billing_webhook_events` (sem RLS); não toca tabela FORCE.",
-  ],
-  [
-    k("L1", "src/modules/subscription-billing/webhooks/webhook-events.prisma.ts", "PrismaWebhookEventRepository.listStale", "this.client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "INJETADO", "×1"),
-    "B-ASS-08: a varredura dos eventos `received` órfãos (l.107, R-WH-8) na tabela GLOBAL `billing_webhook_events` (sem RLS); não toca tabela FORCE.",
-  ],
-  [
-    k("L1", "src/modules/subscription-billing/webhooks/webhook-events.prisma.ts", "PrismaWebhookEventRepository.markStatus", "this.client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "INJETADO", "×2"),
-    "B-ASS-08: duas instruções (l.75) na tabela GLOBAL `billing_webhook_events` (sem RLS) — o SELECT da linha atual e o UPDATE do estado e da organização resolvida; não toca tabela FORCE.",
+    k("L2", "src/modules/subscription-billing/webhooks/webhook-runtime.ts", "new PrismaWebhookEventRepository(prisma)", "PARAMETRO(prisma de callback de then)", "×1"),
+    "B-ASS-08b: a MESMA classe da chave anterior, instanciada pelo router do webhook (webhook-runtime.ts l.93) no 1º pedido com o canal ligado e a persistência `prisma`; o `prisma` do callback é o client raiz desestruturado do import dinâmico de src/database/prisma.ts (por isso o gerador o vê como parâmetro). Acessos só à tabela GLOBAL `billing_webhook_events` (sem RLS); nenhuma tabela FORCE é tocada. Com o canal desligado o repositório nem é resolvido (404 antes, R-WH-1).",
   ],
 ]);
 
