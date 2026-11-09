@@ -16,3 +16,4 @@ dentro de `withTenantRls`; segredo/corpo nunca em log (só digest); nenhum camin
 | fatia | comando | saída resumida | veredito parcial |
 |---|---|---|---|
 | F0 | node --test traccar-forward-auth | pass 9 fail 0 | baseline N: traccar-forward-auth=9; harness OK; prisma generate exit 0; comando e diário criados |
+| F1 | node --test ass-08-outbox | pass 9 fail 0 | outbox repo + dispatcher claim-chamada-registro; R-OBX-1/2/3/4; mutações OBX-4 e OBX-1 vermelhas e revertidas; guard de texto (sem fetch em tx) |
