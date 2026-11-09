@@ -1,6 +1,6 @@
 # Status Geral
 
-## Atualização 2026-11-09 — B-O6R-03b: despesas (RDV) de verdade — PR #<a-definir> aberto, item 30 fechado na autoria
+## Atualização 2026-11-09 — B-O6R-03b: despesas (RDV) de verdade — PR #520 aberto, item 30 fechado na autoria
 
 - **Autor:** `dev-o6r03b-dp` (DeepSeek Pro, DP, identidade de dev declarada), retomando o ramo `fix/mobile-rdv-sync` do Codex (`dev-o6r03b-codex`), que caiu por cota após B-F3. Plano do Claude (`B-REENVIOS-plano.md` §B); pré-revisão e junta completa serão do Claude (`D-UM-FAZ-OUTRO-VERIFICA`). Base medida: `origin/main@4cd1889d`.
 - **Entrega:** replay de despesa com a sessão do técnico (`syncBatchApiProvider` autenticado; sem token → `Sessionless`; carregando → `Pending`; `currentSyncUserIdProvider` lê `AuthUser.sub`, N1); payload `item.create`/`submit` com `report_id`/`category_key`/`spent_at`/`amount` e prontidão por `serverId`; `expense_sync:write` ao `field_technician` (espelho do `technician` menos `expense_receipt:attach`); conflito por ação traduzido (5 códigos) e `503`/`401` sem custo; comprovante fora do lote (local guardado; legado vira `conflict`). Fecha o item 30 (`Ω6R-QUA-001`) do portão.

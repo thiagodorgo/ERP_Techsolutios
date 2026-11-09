@@ -45,3 +45,10 @@
 ## B-F8 — registro
 
 - B-F8 | pendências: `Ω6R-QUA-001` FECHADO, `P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO` FECHADA, `P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO` FECHADA e `P-RDV-COMPROVANTE-SEM-UPLOAD` aberta (dono `B-RDV-COMPROVANTE`); `PLANO_SAN3.md` item 30 fechado + linha `B-O6R-03b` (fronteira e teste de encerramento); `status-geral.md`; `log-execucao.md`; comando `agent-orchestration/codex/comandos/B-O6R-03b.md`; cópia do plano em `agent-orchestration/omega/planos/B-REENVIOS-plano.md`. `Kpis/**` intocado.
+
+## B-F9 — bateria + PR
+
+- B-F9 | `dart format` (11 arquivos do escopo, 0 alterados; `bsan313_minhas_os_escopo_test.dart` pré-existente fora do escopo e fora do diff acusa reformatação na suíte inteira); `flutter analyze` 0 issues; `flutter test --reporter compact` = **M_f = 1037/1037** (N_f = 1021), zero falha/skip; `npm run check` e `npm run lint` verdes; `npm test` = **M_b = 3990** (N_b = 3986; +4: RB1 3 + RB4b 1), 3855 pass, 7 fail (as mesmas não-verdes pré-existentes nomeadas em B-F0), 128 skip; `npm run build` verde; `node scripts/migration-transaction-guard.mjs` = 0 violações; `git diff --check origin/main...HEAD` limpo; `git diff --name-only origin/main` × B4 conforme (26 arquivos; `catalog.ts` esperado → junta completa; `src/modules/expense-management/**` e `prisma/**` zero diff; `Kpis/**` intocado).
+- Push e PR: `git push -u origin fix/mobile-rdv-sync`; `gh pr create --base main` → **PR #520** (head `2330023f`). Merge fora da alçada do dev.
+
+PRONTO PARA REVISÃO — PR #520
