@@ -205,3 +205,4 @@ Todos os vermelhos que a M5 CAUSAVA na 1ª rodada (drills M1/M3, censo do medido
 
 N → M: suíte do head com banco = 4795 testes; o bloco acrescenta 59 (47 sem banco + 7 -db do canal + 4 do drill M5 + 1 do
 gate de env) → N (pré-existente nesta configuração) ≈ 4736 → M = 4795.
+| P1-fix | CI backend do PR #522 (Linux, run 42716884706) | 4804 testes · pass 4800 · fail 2 (T14a/b + pai) | unica falha real da CI: tabelas_com_dml do db-runtime-role.sh = 139, o teste afirmava 133. +6 = as 6 tabelas da M5 (DEFAULT PRIVILEGES); posse_force e views_sobre_force seguem 0. Literal 133→139 com motivo. Localmente o T14a/b morria antes no setsid (Windows). san3-05-leituras PASSOU no Linux (a falha local era ambiente) |
