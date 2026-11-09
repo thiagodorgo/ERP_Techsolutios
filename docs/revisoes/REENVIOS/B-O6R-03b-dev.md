@@ -12,3 +12,7 @@
 ## B-F1 — hipóteses e vermelho-controle
 
 - B-F1 | M.27/R-B1 confirmado: `GET /mobile/bootstrap` publica `id: category.key`, e `ExpenseCategorySnapshot.id` preserva essa chave; não cabe alteração nos arquivos condicionais de bootstrap. M.23 confirmado: `BootstrapRepository` grava `userId: sub`, igual ao `actor.userId` do backend. Vermelho-controle em `origin/main@4cd1889d`, worktree temporário e dependências próprias: RB2(2) HTTP 503 ficou `failed` em vez de `pending/SYNC_BUSY`; RB2(3) não autorizado ficou `failed` em vez de conflito; RB3(5) item sem `report_id` foi enviado; RB3(6) o resultado do `expense.report.create` não propagou `report_id`; RB3(8) comprovante legado foi enviado pelo batch; RB4b falhou porque o payload do app não contém `report_id`. PREMISSA FALSA (RB2(1)): a API `Pending` já preserva a ação sem alteração na main, portanto esse controle ficou verde antes do bloco. Controles temporários não integram a entrega.
+
+## B-F2 — permissão
+
+- B-F2 | `field_technician` recebeu exatamente as cinco permissões aprovadas, sem `expense_receipt:attach`; snapshot regenerado a partir de `ROLE_PERMISSIONS` e guard byte-a-byte verde. RB1 4/4: sync processado, auditor 403, `read_own` enxerga só o próprio relatório e `core-saas-role-authority` verde. M-B1 literal: retirada apenas de `expense_sync:write` do bloco `field_technician` fez o caso de sync falhar `403 !== 200`; edição inversa restaurou o verde. `o6r07c-census-guard` 32/32; `npm run check` e `npm run lint` verdes.
