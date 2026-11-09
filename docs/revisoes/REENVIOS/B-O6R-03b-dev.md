@@ -102,7 +102,7 @@ PRONTO PARA REVISÃO — PR #520
 ## RETOMADA k3 — ligação backend + registro
 
 - `tests/b-o6r-03b-expense-payload-contract.test.ts`: + RB4c (envelopes iguais aos do backend via `sendRouteError`, sem banco). `tests/b-o6r-03b-field-technician-expense-sync.test.ts`: asserção do `auditor` passou a `deepEqual` contra `403_permission_required`.
-- `node --test --import tsx tests/b-o6r-03b-expense-payload-contract.test.ts tests/b-o6r-03b-field-technician-expense-sync.test.ts tests/core-saas-role-authority.test.ts` (com `DATABASE_URL` fictícia) = 22/22 (RB4b+RB4c 2, RB1 3, role-authority 17), 0 falha.
+- `node --test --import tsx tests/b-o6r-03b-expense-payload-contract.test.ts tests/b-o6r-03b-field-technician-expense-sync.test.ts tests/core-saas-role-authority.test.ts` (com `DATABASE_URL` fictícia) = 17/17 (RB4b+RB4c 2, RB1 3, role-authority 12), 0 falha, 0 skip.
 - MB1 (`reason` da fixture `sync_busy`→`sync_busy_x`) derruba RB4c; MB2 (`message` do 403→`x`) derruba o caso do `auditor`. Revertidas por edição inversa.
 - `pendencias.md`: 2 apensos (o `503/401 sem custo` passa a ser provado pelo caminho HTTP real) + 3 pendências novas (§14). `docs/mobile-sync-contracts.md`: frase da classe de status. Índice regenerado (rc 0).
 - **Emenda declarada C3-F2 (§7.2):** `b093_evidence_camera_gallery_test.dart` (`repo.load()` → `repo.load(seedIfEmpty: true)`) passa a constar do PERMITIDO do B4, retroativamente; não é mexido neste conserto.
@@ -110,4 +110,13 @@ PRONTO PARA REVISÃO — PR #520
 
 ## RETOMADA k4 — bateria + push
 
-- (preencher após a bateria)
+- `dart format --output=none --set-exit-if-changed lib test` → `Formatted 232 files (1 changed)`, rc 1; único acusado `test/features/bsan313_minhas_os_escopo_test.dart` (pré-existente, fora do escopo; não alterado — `git status --short` vazio). Os arquivos do conserto: 0 changed.
+- `flutter analyze` → `No issues found!`.
+- `flutter test --reporter compact` (suíte inteira) → `00:30 +1047: All tests passed!`, 0 falha, 0 skip. **M_f = 1047** = 1037 do SHA `f63c8bb6` + 10 novos.
+- Raiz: `npm run check`, `npm run lint`, `npm run build` ok; `node scripts/migration-transaction-guard.mjs` → `migrações: 128 · anteriores: 112 · novas: 16 · violações: 0`; `git diff --check` → ec 0.
+- Testes de raiz do §5 (os 3 arquivos do plano, com `DATABASE_URL` fictícia): `node --test --import tsx tests/b-o6r-03b-expense-payload-contract.test.ts tests/b-o6r-03b-field-technician-expense-sync.test.ts tests/core-saas-role-authority.test.ts` = **17/17** (RB4b+RB4c 2, RB1 3, role-authority 12), 0 falha, 0 skip. Correção: a K3 acima anotou 22/22; a contagem real dos 3 arquivos é 17/17.
+- Trava de escopo (§9): `git diff --name-only aae29e51 HEAD` = 9 caminhos, todos do PERMITIDO; `git diff --name-only aae29e51 HEAD -- src/ prisma/ Kpis/` vazio; `git diff --name-only origin/main aae29e51` == `git diff --name-only 4cd1889d f63c8bb6` (merge sem conteúdo próprio).
+- `git push origin fix/mobile-rdv-sync` → `f63c8bb6..a0e99582` (fast-forward). Corpo do PR #520 atualizado (§8).
+- **KPI congelado (`D-GOV-PROPORCIONAL`):** nada em `Kpis/`.
+
+PRONTO PARA CONFERÊNCIA — head a0e99582dee30e92e427914b9c1bd7c059981df8
