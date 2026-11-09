@@ -69,7 +69,7 @@ export function createSubscriptionBillingWebhookRouter(deps: WebhookRouterDeps):
   });
 
   async function handle(req: Request, res: Response): Promise<void> {
-    const provider = req.params.provider ?? "";
+    const provider = typeof req.params.provider === "string" ? req.params.provider : "";
     // (1) ANTES de qualquer parser.
     const target = await deps.resolveTarget(provider);
     if (!target) {
