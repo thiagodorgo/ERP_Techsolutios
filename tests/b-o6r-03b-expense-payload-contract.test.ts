@@ -25,7 +25,7 @@ const actor = {
 test("RB4b · os três payloads literais do Dart são aceitos pelo parser real do backend", () => {
   const createKeys = payloadKeysBetween("Future<ExpenseMutationResult> createReport", "Future<ExpenseMutationResult> addItem");
   const itemKeys = payloadKeysBetween("Future<ExpenseMutationResult> addItem", "Future<ExpenseMutationResult> submitReport");
-  const submitKeys = payloadKeysBetween("Future<ExpenseMutationResult> submitReport", "Future<ExpenseMutationResult> attachReceiptPlaceholder");
+  const submitKeys = payloadKeysBetween("Future<ExpenseMutationResult> submitReport", "Future<SyncAction?> attachReceiptPlaceholder");
 
   assertKeys(createKeys, ["employeeUserId", "periodStart", "periodEnd", "origin", "advanceAmount"]);
   assertKeys(itemKeys, ["report_id", "category_key", "spent_at", "amount"]);
