@@ -24,4 +24,4 @@
 - PERMITIDO tocado: `agent-orchestration/**` (status-geral, pendencias + índice, decisoes, omega/juntas) e `docs/**` de registro.
 - PROIBIDO intocado: `src/**`, `tests/**`, `prisma/**`, `frontend/**`, `Kpis/**`, `.github/**`.
 
-PRONTO PARA REVISÃO — PR #<n> · ramo docs/registro-0911
+PRONTO PARA REVISÃO — PR #517 · ramo docs/registro-0911
