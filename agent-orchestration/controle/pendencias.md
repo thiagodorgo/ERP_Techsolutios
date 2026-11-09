@@ -12923,3 +12923,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** achado A7 da pré-revisão do #515 (`prerev-515-opus`, Emenda 1 ao §4.6 do B-ASS-06) · **dono:** `B-ASS-08` · **PR-alvo:** PR do `B-ASS-08` · **bloqueia:** não.
 - **fato:** no `createCharge` de PIX e boleto, o `POST /v3/payments` pode responder OK e a chamada seguinte (`pixQrCode`/`identificationField`) falhar; a cobrança fica criada no provedor, mas o chamador recebe só um erro genérico, sem o `chargeId`. A recuperação depende inteiramente da reconsulta por `externalReference` (o `findChargeByExternalReference` existe no adaptador, mas não é usado automaticamente nesse caminho).
 - **encerramento:** antes de recriar, o `B-ASS-08` reconsulta por `externalReference` (ou devolve o `chargeId` no erro parcial), com teste cobrindo a falha da segunda chamada.
+
+## P-CI-FLUTTER-LIBSQLITE3-FLAKY (2026-11-09) — o job `flutter` do CI falha intermitente por download corrompido do `libsqlite3.x64.linux.so` — BAIXA
+
+- **status:** ABERTA · **escopo:** infra/CI, intermitente · **dono:** infra/CI · **prioridade:** BAIXA · **bloqueia:** não.
+- **fato:** o job `flutter` do CI falha intermitente por download corrompido do `libsqlite3.x64.linux.so` (o hash não bate); atingiu o #515 (2×) e o #516; re-rodar o job resolve.
+- **encerramento:** infra/CI corrige o download/cache do binário (pin do artefato com verificação de hash), ou documenta o rerun como procedimento padrão até a correção.
+
+## P-CI-FINANCIAL-TITLE-CAS-FLAKY (2026-11-09) — o `financial-title-status-cas-db` (barreira K11) falhou 1× na `main` por corrida e passou no rerun — BAIXA
+
+- **status:** ABERTA · **escopo:** infra/CI, intermitente · **dono:** infra/CI · **prioridade:** BAIXA · **bloqueia:** não.
+- **fato:** o `financial-title-status-cas-db` (barreira K11) falhou 1× na `main` por corrida e passou no rerun; flaky conhecido, não regressão de código.
+- **encerramento:** infra/CI reproduz e nomeia a corrida (como nas demais intermitentes), ou uma série suficiente demonstra estabilidade com o caso concorrendo com a suíte.

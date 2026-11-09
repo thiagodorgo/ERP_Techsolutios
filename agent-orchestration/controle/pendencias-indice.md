@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **776** |
-| IDs distintos | 765 |
-| **ABERTAS** | **585** |
+| Cabecalhos `## P-` | **778** |
+| IDs distintos | 767 |
+| **ABERTAS** | **587** |
 | — das quais **diferidas** (balde C) | 63 |
-| — das quais **ativas nesta rodada** | **522** |
+| — das quais **ativas nesta rodada** | **524** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 187 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **776 cabecalhos para 765 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **778 cabecalhos para 767 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -333,7 +333,7 @@
 | `P-JOBS-REENFILEIRA-MULTIPLICA` | 12873 | MÉDIA | sim | P-JOBS-REENFILEIRA-MULTIPLICA (2026-11-06) — re-enfileirar no `finally` multiplica as ca |
 | `P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO` | 12903 | MÉDIA | sim | P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO (2026-11-08) — o painel de conflito no detalhe  |
 
-## ABERTAS · balde B — processo/registro — 265
+## ABERTAS · balde B — processo/registro — 267
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -602,6 +602,8 @@
 | `P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA` | 12891 | BAIXA | sim | P-ASS04-VERSAO-APOS-ASSINATURA-MUDADA (2026-11-06) — refechamento com a assinatura mudad |
 | `P-ASS04-REFUND-CREDITO-OUTBOX` | 12897 | BAIXA | sim | P-ASS04-REFUND-CREDITO-OUTBOX (2026-11-06) — o reembolso de crédito ainda não existe: só |
 | `P-ASS06-COBRANCA-CRIADA-SEM-ID` | 12921 | BAIXA | sim | P-ASS06-COBRANCA-CRIADA-SEM-ID (2026-11-08) — no PIX e no boleto, a cobrança pode ficar  |
+| `P-CI-FLUTTER-LIBSQLITE3-FLAKY` | 12927 | BAIXA | sim | P-CI-FLUTTER-LIBSQLITE3-FLAKY (2026-11-09) — o job `flutter` do CI falha intermitente po |
+| `P-CI-FINANCIAL-TITLE-CAS-FLAKY` | 12933 | BAIXA | sim | P-CI-FINANCIAL-TITLE-CAS-FLAKY (2026-11-09) — o `financial-title-status-cas-db` (barreir |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 63
 
