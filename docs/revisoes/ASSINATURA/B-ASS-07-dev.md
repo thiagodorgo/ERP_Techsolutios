@@ -28,3 +28,20 @@ Este bloco entrega a porta comum, as regras fiscais, o adaptador Focus NFe e o f
 - **feito:** contrato, terreno, recorte Focus-only, dependência do cliente HTTP/cofre e baseline medidos.
 - **falta:** F1 a F8, bateria, PR e CI.
 - **próximo comando:** `mkdir -p src/modules/subscription-billing/providers/invoice src/modules/subscription-billing/providers/tax` (a criação de arquivos será feita por patch).
+
+## F1 — porta e regras fiscais puras
+
+- Criados `InvoiceProviderPort`, tipos de emissão/consulta/cancelamento/PDF/webhook e erros fiscais próprios.
+- `tax/ibs-cbs.rules.ts`: não-Simples envia a partir de 2026-12-01; Simples, de 2027-01-01; antes, omite. Se enviar, exige os quatro códigos recebidos como campos.
+- `tax/nfse-route.rules.ts`: regime ausente → `fiscal_data_incomplete`; Simples em rota municipal a partir de 2026-11-01 → `municipal_route_not_allowed_for_simples`.
+- Testes T-NF-22..27 e T-NF-37: **7/7**. `npm run check` verde; R-EXT-0 **4/4**.
+- Mutação literal da borda (`>=` → `>`): T-NF-23, T-NF-25 e T-NF-26 vermelhos, exit 1; restaurada.
+- Mutação do bloqueio de regime ausente: T-NF-37 vermelho, exit 1; restaurada.
+- Códigos fiscais nos testes usam marcadores de campo; nenhum valor tributário foi recomendado ou fixado pelo sistema.
+
+## RETOMADA 1
+
+- **head medido:** commit F1 será o próximo head do ramo.
+- **feito:** F1 completa, 7 testes e duas mutações provadas.
+- **falta:** falso/adaptador Focus, registro, sequência em memória, PDF/cancelamento, docs e bateria.
+- **próximo comando:** `node --test --import tsx tests/ass-07-tax-rules.test.ts`.
