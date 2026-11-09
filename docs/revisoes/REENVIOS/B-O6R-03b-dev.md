@@ -52,3 +52,62 @@
 - Push e PR: `git push -u origin fix/mobile-rdv-sync`; `gh pr create --base main` → **PR #520** (head `2330023f`). Merge fora da alçada do dev.
 
 PRONTO PARA REVISÃO — PR #520
+
+## CONSERTO J-520 (ciclo 1)
+
+- **Papéis (§C7.4-bis):** achou = C2 (Claude Opus 4.8); planejou = auditor de topo (Claude Opus 5.5); desenvolve = DeepSeek (`deepseek-v4-pro`, dev original, declarado); confere = Claude em identidade nova. Cruzamento de modelo (`D-UM-FAZ-OUTRO-VERIFICA`). Este dev só implementa o plano; não julga o achado.
+- **Plano (autoridade):** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-O6R-03b-conserto-c1.md` (499 linhas). Sondas re-executáveis em `B-O6R-03b-conserto-c1-sondas/`.
+- **F1/F2/500 (mesma causa):** o `catch` de `_sendChunk` do `DioExpenseSyncBatchApi` virava qualquer status com `error.reason` em `ExpenseSyncDomainError`, antes de `mapDioError`; o backend põe `reason` em todo erro da rota (503 `sync_busy`, 500 e 403 de sessão). Correção: a classe do status decide antes do `reason` (`_isExpenseDomainRefusal`: 4xx que não seja 401/403/408/429). 503 volta a `pending` sem custo; 500→`failed`+1; 401/403→`SESSION_FORBIDDEN`; 408/429→`failed`+1; 400/404/409/422 com `reason`→conflito por código (sem mudança).
+- **C3-F1:** `Entre de novo e use Minha versao.` → `Entre de novo e use Minha versão.`
+
+## RETOMADA k0 — main
+
+- `git merge origin/main` no worktree `C:/Users/thiag/w-o6r03b` (HEAD `f63c8bb6` → merge `aae29e51`). Conflito só em `pendencias-indice.md`; `checkout --theirs` + `python agent-orchestration/controle/gerar-indice-pendencias.py`; união conferida de blob a blob (`comm -23` ×2 vazios, `origin/main` e `f63c8bb6` × HEAD); `git diff --quiet -- pendencias-indice.md` rc 0.
+
+## RETOMADA k1 — vermelho-controle
+
+- Teste e fixture copiados para worktree temporário em `f63c8bb6`; `flutter test test/core/sync/bo6r03b_expense_http_errors_test.dart --reporter expanded`.
+
+| Caso | Resultado no SHA `f63c8bb6` |
+|---|---|
+| E1 (503→pending) | VERMELHO (`conflict`/`sync_busy`) |
+| E2 (o reenvio chega) | VERMELHO |
+| E3 (dinheiro) | VERMELHO |
+| E4 (403→SESSION_FORBIDDEN) | VERMELHO |
+| E5 (500→failed) | VERMELHO |
+| E6 (409) | verde |
+| E7 (422) | verde |
+| E8 (503 proxy) | verde |
+| E9 (401 acento) | VERMELHO só pelo acento |
+| E10 (400) | verde |
+
+- 6 vermelhos (E1–E5, E9) e 4 verdes (E6–E8, E10), conforme o §4. Worktree temporário removido com `git worktree remove --force`.
+
+## RETOMADA k2 — conserto + teste
+
+- `sync_replay_service.dart`: 3 hunks dentro do escopo (catch de `_sendChunk`, `_isExpenseDomainRefusal` nova, acento da linha 332). `flutter test …/bo6r03b_expense_http_errors_test.dart` = 10/10 verde. Commit `21468f73`.
+- Mutações MC1–MC6 (uma por vez, revertidas por edição inversa; `git diff --stat` = 1 arquivo antes de rodar):
+
+| Mutação | Esperado (§6) | Observado |
+|---|---|---|
+| MC1 (volta ao `if (status != null && reason != null)`) | E1–E5 | E1–E5 ✓ |
+| MC2 (apaga `status != 403 &&`) | E4 | E4 ✓ |
+| MC3 (`status < 500` → `< 600`) | E1, E2, E3, E5 | E1, E2, E3, E5 ✓ |
+| MC4 (503 branch `pending`→`failed`) | E1, E2 | E1, E8 (E2 passa: `failed` retryCount 0 é reenviado) |
+| MC5 (acento → `versao`) | E4, E9 | E4, E9 ✓ |
+| MC6 (`&& _isExpenseDomainRefusal(status)` → `&& false`) | E7, E10 | E6, E7, E10 (409 vira `ApiConflictError`) |
+
+- MC4 e MC6 acionaram casos a mais que a tabela do §6 previa; registrado como fato (não muda o conserto).
+
+## RETOMADA k3 — ligação backend + registro
+
+- `tests/b-o6r-03b-expense-payload-contract.test.ts`: + RB4c (envelopes iguais aos do backend via `sendRouteError`, sem banco). `tests/b-o6r-03b-field-technician-expense-sync.test.ts`: asserção do `auditor` passou a `deepEqual` contra `403_permission_required`.
+- `node --test --import tsx tests/b-o6r-03b-expense-payload-contract.test.ts tests/b-o6r-03b-field-technician-expense-sync.test.ts tests/core-saas-role-authority.test.ts` (com `DATABASE_URL` fictícia) = 22/22 (RB4b+RB4c 2, RB1 3, role-authority 17), 0 falha.
+- MB1 (`reason` da fixture `sync_busy`→`sync_busy_x`) derruba RB4c; MB2 (`message` do 403→`x`) derruba o caso do `auditor`. Revertidas por edição inversa.
+- `pendencias.md`: 2 apensos (o `503/401 sem custo` passa a ser provado pelo caminho HTTP real) + 3 pendências novas (§14). `docs/mobile-sync-contracts.md`: frase da classe de status. Índice regenerado (rc 0).
+- **Emenda declarada C3-F2 (§7.2):** `b093_evidence_camera_gallery_test.dart` (`repo.load()` → `repo.load(seedIfEmpty: true)`) passa a constar do PERMITIDO do B4, retroativamente; não é mexido neste conserto.
+- **KPI congelado (`D-GOV-PROPORCIONAL`):** nada em `Kpis/`.
+
+## RETOMADA k4 — bateria + push
+
+- (preencher após a bateria)

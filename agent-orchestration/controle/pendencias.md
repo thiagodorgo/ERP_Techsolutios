@@ -2936,6 +2936,8 @@ mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SE
 - **Apenso 2026-11-08 (B-FILA-USUARIO):** `P-O6R-B03-FILA-POR-USUARIO` fechada na autoria do `B-FILA-USUARIO`; o pré-requisito da fila por usuário para ativar `Ω6R-QUA-001` no `B-O6R-03b` está destravado.
 - **Apenso 2026-11-09 (B-O6R-03b):** FECHADO NA AUTORIA do `B-O6R-03b` (ramo `fix/mobile-rdv-sync`, PR #520; head a preencher pós-junta). Evidência: RB1 (permissão `expense_sync:write` ao `field_technician` com `catalog.ts` + snapshot e `auditor` 403), RB2 (replay com token; `Pending`/503/401 sem custo), RB3+RB4 (payload `report_id`/`category_key`/`spent_at`/`amount`, prontidão por `serverId`, contrato Dart×TS contra o parser real), RB5 (conflito por ação traduzido, sem laço), RB6 (comprovante fora do lote). Diário: `docs/revisoes/REENVIOS/B-O6R-03b-dev.md`.
 
+- **Apenso 2026-11-09 (conserto da junta do PR #520):** o "503/401 sem custo" do RB2 passa a ser provado pelo caminho HTTP real (bo6r03b_expense_http_errors_test.dart, E1–E10); o RB2 com mock não provava (achado F1 da C2).
+
 ## P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA-002 (P1) — **BLOQUEIA estoque**
 
 Bloco 4 do plano (depende do B01). Aceite: lock/CAS de saldo, fechamento único de contagem, contrato mobile
@@ -11059,6 +11061,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Inclui a nota N-03 da r2:** hoje o conflito volta à fila em todo ciclo (`pendingForTenant` inclui `conflict`, o `retryCount` não sobe) e o controller grava uma auditoria "success" por lote.
 - **teste de encerramento:** o Flutter preserva a ação em conflito para resolução manual, diferencia 503 e não perde a intenção; o laço sem fim deixa de existir.
 
+- **Apenso 2026-11-09 (conserto da junta do PR #520):** o "503/401 sem custo" do RB2 passa a ser provado pelo caminho HTTP real (bo6r03b_expense_http_errors_test.dart, E1–E10); o RB2 com mock não provava (achado F1 da C2).
+
 ## P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO (2026-10-11) — o app enfileira `expense_receipt.attach`, que o servidor recusa — MÉDIA
 
 - **status:** FECHADA NA AUTORIA do `B-O6R-03b` (PR #520) · **escopo:** `pre-existente` · **dono:** `B-O6R-03b`. Critério literal: o app não enfileira o tipo recusado (`attachReceipt` devolve `Future<SyncAction?>` nulo, comprovante local guardado) e o lote drena (RB3(8), RB4a). O upload do comprovante nasce como pendência própria `P-RDV-COMPROVANTE-SEM-UPLOAD`, dono `B-RDV-COMPROVANTE`.
@@ -12967,3 +12971,24 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** ajuste C3-A1 da J-519 do `B-ASS-07` (#519) · **dono:** `B-ASS-08`/próximo toque no adaptador · **PR-alvo:** PR do próximo toque no adaptador Focus (`B-ASS-08`) · **bloqueia:** não.
 - **fato:** o `sanitizedErrorMessage` redige o certificado quando ele chega como JSON inteiro, mas os campos internos (`password`, `pfxBase64`) ainda não são redigidos individualmente — vazamento só teórico, com o canal desligado.
 - **encerramento:** o `sanitizedErrorMessage` redige também os campos internos do certificado (`password`, `pfxBase64`), com teste.
+
+## P-REFINO-INVENTARIO-SEM-GUARDA (2026-11-09) — o inventário de fluxos gerado não tem guarda de frescor — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** o próximo PR de registro (§C7 item 8(3)).
+- **o que se sabe:** `node scripts/inventario-fluxos.mjs --check` dá rc 1 em `3ff93b64`, sem o #520, e o `--check` não roda no `npm test` nem na CI. Efeito visível: `docs/refino/inventario-fluxos.md:3254` (`POST /api/v1/mobile/sync/expense-actions`) fica sem o `field_technician` depois do #520 (achado C1-N1 da junta do PR #520).
+- **teste de encerramento:** `--check` com rc 0 na main e rodando na CI.
+
+## P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO (2026-11-09) — "Versão do gestor" em conflito de despesa que o servidor nunca recebeu equivale a descartar — MÉDIA
+
+- **status:** ABERTA · **escopo:** `mobile/flutter_app/lib/core/sync/` + tela de sync · **dono:** `B-MATERIAL-REENVIO` (bloco C).
+- **o que se sabe:** o 5xx deixa de chegar aqui com o conserto do PR #520; sobram a recusa 4xx de domínio, o 401/403 (`SESSION_FORBIDDEN`) e o `LEGACY_ITEM_INCOMPLETE`. Num `report.create`, a escolha cascateia item e envio (`sync_resolution_side_effects.dart:17-49`). Num `item.create`, libera o envio do relatório sem o item (`sync_replay_service.dart:493-504`). É a classe de `D-DESPESA-SEM-DESCARTAR`, por outra porta.
+- **pergunta ao dono:** confirmar antes de "Versão do gestor" em despesa sem `result_ref`, trocar o rótulo, ou esconder?
+- **teste de encerramento:** nenhuma ação de despesa sem recibo do servidor sai da fila sem confirmação explícita, e "Versão do gestor" num item não libera o envio sem aviso.
+
+## P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA (2026-11-09) — falha de infraestrutura no sync de despesa pode sair 400 `invalid_request` — MÉDIA, HIPÓTESE
+
+- **status:** ABERTA (hipótese, não medida) · **escopo:** `src/modules/core-saas/routes/http.ts` e `src/modules/expense-management/expense-sync.ts` · **dono:** `B-ARNES-2` (o mesmo da `P-O6R-B03-TRANSIENT-CODES-DUPLICADOS`).
+- **o que se sabe:** `sendRouteError` (`core-saas/routes/http.ts:51-60`) responde 400 `invalid_request` a qualquer `Error` que não seja erro de rota; `mapTransientSyncFailure` (`expense-sync.ts:352,379-383`) só converte em 503 a lista fechada `P2028, P2034, P2024, 40P01, 40001, 55P03`, sem nenhum código de perda de conexão.
+- **hipótese, não medida:** uma conexão perdida com o banco no meio do sync chega ao app como recusa de domínio, isto é, conflito.
+- **comando que derruba:** um teste com repositório que lança `PrismaClientKnownRequestError` P1001 (ou erro de driver `57P01`/`08006`) dentro de `withSyncTransaction`, lendo status e corpo pela rota.
+- **teste de encerramento:** perda de conexão no sync responde 503 `sync_busy`, provado em Postgres descartável.
