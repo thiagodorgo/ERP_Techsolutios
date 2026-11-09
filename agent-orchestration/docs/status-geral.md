@@ -1,5 +1,12 @@
 # Status Geral
 
+## Atualização 2026-11-09 — B-O6R-03b: despesas (RDV) de verdade — PR #<a-definir> aberto, item 30 fechado na autoria
+
+- **Autor:** `dev-o6r03b-dp` (DeepSeek Pro, DP, identidade de dev declarada), retomando o ramo `fix/mobile-rdv-sync` do Codex (`dev-o6r03b-codex`), que caiu por cota após B-F3. Plano do Claude (`B-REENVIOS-plano.md` §B); pré-revisão e junta completa serão do Claude (`D-UM-FAZ-OUTRO-VERIFICA`). Base medida: `origin/main@4cd1889d`.
+- **Entrega:** replay de despesa com a sessão do técnico (`syncBatchApiProvider` autenticado; sem token → `Sessionless`; carregando → `Pending`; `currentSyncUserIdProvider` lê `AuthUser.sub`, N1); payload `item.create`/`submit` com `report_id`/`category_key`/`spent_at`/`amount` e prontidão por `serverId`; `expense_sync:write` ao `field_technician` (espelho do `technician` menos `expense_receipt:attach`); conflito por ação traduzido (5 códigos) e `503`/`401` sem custo; comprovante fora do lote (local guardado; legado vira `conflict`). Fecha o item 30 (`Ω6R-QUA-001`) do portão.
+- **Provas:** RB1–RB6 verdes; contrato Dart×TS contra o parser real; suíte Flutter e backend na bateria do bloco. `Kpis/**` congelado e intocado; `src/modules/expense-management/**` e `prisma/**` sem diff.
+- **Registro:** `Ω6R-QUA-001`/`P-O6R-B03` FECHADOS, `P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO` e `P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO` FECHADAS, `P-RDV-COMPROVANTE-SEM-UPLOAD` aberta (dono `B-RDV-COMPROVANTE`); comando `agent-orchestration/codex/comandos/B-O6R-03b.md`; diário `docs/revisoes/REENVIOS/B-O6R-03b-dev.md`. Não depende do `B-O6R-04b` (dependência corrigida para `B-FILA-USUARIO`).
+
 ## Atualização 2026-11-09 — noite de 08→09/11: #515 (B-ASS-06) e #516 (marco KPI) na main, dois flaky de CI e as decisões do dia
 
 - **Autor:** `reg-noite-0911-dp` (DeepSeek oficial, nível menor declarado, identidade de redator de registro). **Fonte:** `erp-pausa-2026-10-03/REGISTRO-PENDENTE.md`, seção "Noite de 09/11"; cada fato conferido em `git log origin/main` antes de gravar. Base medida: `origin/main@970cbbba`.

@@ -2929,11 +2929,12 @@ manda `Bearer` se houver token (`mobile/flutter_app/lib/core/network/http_client
 **Bloqueia:** feature em despesas/RDV/comissões e a fatia mobile correspondente. `Ω6R-QUA-001` entra na
 mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SEEDS` e
 `P-MOBILE-BANNER-INTEGRACAO` (ambas ABERTAS) — quem abrir o PR-08 fecha este achado junto ou explica por quê.
-- status: ABERTA — 1 P0 + 1 P1.
+- status: FECHADA — Ω6R-DIN-009 pelo #425 (`d910c97f`) e Ω6R-QUA-001 pelo `B-O6R-03b` (PR #<a-definir>).
 - **dono:** `B-O6R-03a` (plano SAN3, §4.1 item 19 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DIN-009`: o achado `Ω6R-DIN-009` (item 19) tem dono `B-O6R-03a`.
 - **dono:** `B-O6R-03b` (plano SAN3, §4.1 item 30 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-001`: o achado `Ω6R-QUA-001` (item 30) tem dono `B-O6R-03b`.
 - **status (2026-10-11, B-O6R-03a na autoria):** PARCIAL — `Ω6R-DIN-009` fechado NA AUTORIA do `B-O6R-03a` (PR e head a preencher pelo orquestrador; evidência em `docs/revisoes/SAN3/B-O6R-03a-dev.md`); `Ω6R-QUA-001` segue ABERTO, dono `B-O6R-03b`. O 03b consome o `status: conflict` por ação (`payload_mismatch`, `legacy_payload_unverifiable`, `receipt_unverifiable`, `receipt_ambiguous`, `action_owned_by_other_actor`) e o `503 sync_busy`; dado legado sem prova exige resolução manual, sem trocar o id para lançar de novo. O QUA-001 só ativa depois de `P-O6R-B03-FILA-POR-USUARIO`.
 - **Apenso 2026-11-08 (B-FILA-USUARIO):** `P-O6R-B03-FILA-POR-USUARIO` fechada na autoria do `B-FILA-USUARIO`; o pré-requisito da fila por usuário para ativar `Ω6R-QUA-001` no `B-O6R-03b` está destravado.
+- **Apenso 2026-11-09 (B-O6R-03b):** FECHADO NA AUTORIA do `B-O6R-03b` (ramo `fix/mobile-rdv-sync`, PR #<a-definir>; head a preencher pós-junta). Evidência: RB1 (permissão `expense_sync:write` ao `field_technician` com `catalog.ts` + snapshot e `auditor` 403), RB2 (replay com token; `Pending`/503/401 sem custo), RB3+RB4 (payload `report_id`/`category_key`/`spent_at`/`amount`, prontidão por `serverId`, contrato Dart×TS contra o parser real), RB5 (conflito por ação traduzido, sem laço), RB6 (comprovante fora do lote). Diário: `docs/revisoes/REENVIOS/B-O6R-03b-dev.md`.
 
 ## P-O6R-B04 (2026-08-14) — `fix/inventory-consistency` — Ω6R-DAT-002, DAT-003 (2 P0) + QUA-002 (P1) — **BLOQUEIA estoque**
 
@@ -11053,18 +11054,24 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito por ação e o 503 do sync de despesas — MÉDIA
 
-- **status:** ABERTA · **escopo:** consumidor do contrato que o `B-O6R-03a` entrega (`mobile_expense_sync@2026-10-11.b-o6r-03a`) · **dono:** `B-O6R-03b`.
+- **status:** FECHADA NA AUTORIA do `B-O6R-03b` (PR #<a-definir>; head a preencher pós-junta) · **escopo:** consumidor do contrato que o `B-O6R-03a` entrega (`mobile_expense_sync@2026-10-11.b-o6r-03a`) · **dono:** `B-O6R-03b`. O app consome o `conflict` por ação com os 5 códigos traduzidos (RB5), diferencia `503 EXPENSE_SYNC_UNAVAILABLE sync_busy` como reenvio seguro (RB2(2)) e mantém a ação em conflito para resolução manual sem laço (RD1 do 1º PR re-executado no mesmo cenário).
 - **O que consumir:** `status: conflict` por ação com `errorCode` `payload_mismatch` · `legacy_payload_unverifiable` · `receipt_unverifiable` · `receipt_ambiguous` · `action_owned_by_other_actor`; e `503 EXPENSE_SYNC_UNAVAILABLE sync_busy` como reenvio seguro. Legado sem prova exige resolução manual, nunca troca de id para lançar de novo.
 - **Inclui a nota N-03 da r2:** hoje o conflito volta à fila em todo ciclo (`pendingForTenant` inclui `conflict`, o `retryCount` não sobe) e o controller grava uma auditoria "success" por lote.
 - **teste de encerramento:** o Flutter preserva a ação em conflito para resolução manual, diferencia 503 e não perde a intenção; o laço sem fim deixa de existir.
 
 ## P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO (2026-10-11) — o app enfileira `expense_receipt.attach`, que o servidor recusa — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-O6R-03b`.
+- **status:** FECHADA NA AUTORIA do `B-O6R-03b` (PR #<a-definir>) · **escopo:** `pre-existente` · **dono:** `B-O6R-03b`. Critério literal: o app não enfileira o tipo recusado (`attachReceipt` devolve `Future<SyncAction?>` nulo, comprovante local guardado) e o lote drena (RB3(8), RB4a). O upload do comprovante nasce como pendência própria `P-RDV-COMPROVANTE-SEM-UPLOAD`, dono `B-RDV-COMPROVANTE`.
 - **teste de encerramento:** o app não enfileira tipo recusado (ou o servidor passa a suportá-lo por contrato), e o lote drena.
 - **Apenso 2026-11-02 (1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`)):** o tipo fica **fora** do reenvio automático do resgate (`backendSupported` não o
   inclui; crítica S10). Com o canal de despesas desligado, ele aparece como "Aguardando envio"; com o canal ligado, o
   replay o trata como não suportado (emenda 4 §7 item 8).
+
+## P-RDV-COMPROVANTE-SEM-UPLOAD (2026-11-09) — o comprovante da despesa fica no aparelho até existir rota de upload — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` no modelo (`ExpenseReceipt` em `prisma/schema.prisma`) sem via de upload; o app grava o comprovante local (`uploadStatus: local`) e não enfileira `expense_receipt.attach` (o servidor responde 400 `unsupported_action`) · **dono:** `B-RDV-COMPROVANTE` (bloco próprio entre `B-O6R-03b` e `B-MATERIAL-REENVIO`, Q-B1 do `B-REENVIOS-plano.md` §G.3).
+- **O que o `B-O6R-03b` garante:** o comprovante nunca derruba o lote e fica guardado no aparelho; ações legadas de `expense_receipt.attach` já enfileiradas viram `conflict` visível ("comprovante fica no aparelho até a integração").
+- **teste de encerramento:** o comprovante sobe por rota própria (multipart + storage + scanner, com a idempotência de evidência) e o blob local é apagado só em `status=stored`.
 
 ## P-O6R-B03-TRANSIENT-CODES-DUPLICADOS (2026-10-11) — a lista de códigos transitórios do sync de despesas é cópia da do estoque — BAIXA
 
