@@ -96,3 +96,4 @@ que precisa de superficie de repo/adaptador de B-ASS-05/06/07.
 
 Estado: ramo feat/b-ass-08-outbox-webhooks, arvore limpa, 13 commits sobre origin/main 7d8b2b98. Sem push/PR. Docker
 descartavel removido; nada de erp-*/5432/6379 tocado. KPI intocado.
+| F11a | node --test ass-08 (9 arq); npm run check | pass 47 fail 0; tsc OK | ports tenant-scoped (decisao do orquestrador): tenantId nas mutacoes/leituras por id de OutboxRepository e StatementChargeRepository; o duble valida o tenant como o RLS faria; dispatcher passa row.tenantId; testes F1-F9 ajustados e verdes (nao enfraquecidos) |

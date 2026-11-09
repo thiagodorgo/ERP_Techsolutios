@@ -130,12 +130,12 @@ async function dispatchOne(
   const port = deps.ports[row.provider];
   if (!port) {
     // Nunca deveria acontecer (claim filtra por provedor ligado); fail-closed sem rede.
-    await deps.repo.markSkipped(row.id, "provider_disabled", clock());
+    await deps.repo.markSkipped(row.tenantId, row.id, "provider_disabled", clock());
     return "skipped";
   }
   if (row.kind !== "charge_create") {
     // Outros tipos (charge_cancel/refund/invoice_*) nascem nas fatias seguintes; sem handler → NEEDS_REVIEW.
-    await deps.repo.markNeedsReview(row.id, "unsupported_kind", clock());
+    await deps.repo.markNeedsReview(row.tenantId, row.id, "unsupported_kind", clock());
     return "needs_review";
   }
 
@@ -143,10 +143,10 @@ async function dispatchOne(
   if (wasOrphan) {
     const recovered = await port.findChargeByExternalReference(row.statementId);
     if (recovered) {
-      await deps.repo.markSent(row.id, recovered.chargeId, clock());
+      await deps.repo.markSent(row.tenantId, row.id, recovered.chargeId, clock());
       return "recovered";
     }
-    await deps.repo.markNeedsReview(row.id, "orphan_recovery_not_found", clock());
+    await deps.repo.markNeedsReview(row.tenantId, row.id, "orphan_recovery_not_found", clock());
     await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "orphan_recovery_not_found" });
     return "needs_review";
   }
@@ -154,21 +154,21 @@ async function dispatchOne(
   try {
     const result = await port.createCharge(chargeInputFromRow(row));
     await deps.onChargeCreated?.(row, result, clock());
-    await deps.repo.markSent(row.id, result.chargeId, clock());
+    await deps.repo.markSent(row.tenantId, row.id, result.chargeId, clock());
     return "sent";
   } catch (error) {
     const retryMs = rateLimitRetryMs(error);
     if (retryMs !== null) {
-      await deps.repo.reschedule(row.id, new Date(clock().getTime() + retryMs), "rate_limited", clock());
+      await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + retryMs), "rate_limited", clock());
       return "rate_limited";
     }
     const code = errorCode(error);
     if (row.attempts >= OUTBOX_MAX_ATTEMPTS) {
-      await deps.repo.markFailed(row.id, code, clock());
+      await deps.repo.markFailed(row.tenantId, row.id, code, clock());
       await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.failed", code });
       return "failed";
     }
-    await deps.repo.reschedule(row.id, new Date(clock().getTime() + backoffMsForAttempt(row.attempts)), code, clock());
+    await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + backoffMsForAttempt(row.attempts)), code, clock());
     return "retry";
   }
 }

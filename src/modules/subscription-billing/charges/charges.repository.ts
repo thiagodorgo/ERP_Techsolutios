@@ -11,8 +11,9 @@ export interface StatementChargeRepository {
   listByStatement(tenantId: string, statementId: string): Promise<readonly SubscriptionStatementCharge[]>;
   /** A cobrança VIVA (`pending`/`confirmed`) do demonstrativo, se houver. */
   findLive(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined>;
-  setStatus(id: string, status: ChargeStatus, now: Date): Promise<void>;
-  cancel(id: string, now: Date): Promise<void>;
+  // Tenant-scoped (FORCE RLS): no Prisma rodam em `withTenantRls(tenantId)`. O dublê valida o tenant como o RLS faria.
+  setStatus(tenantId: string, id: string, status: ChargeStatus, now: Date): Promise<void>;
+  cancel(tenantId: string, id: string, now: Date): Promise<void>;
 }
 
 export class InMemoryStatementChargeRepository implements StatementChargeRepository {
@@ -50,13 +51,13 @@ export class InMemoryStatementChargeRepository implements StatementChargeReposit
     );
   }
 
-  async setStatus(id: string, status: ChargeStatus, now: Date): Promise<void> {
+  async setStatus(tenantId: string, id: string, status: ChargeStatus, now: Date): Promise<void> {
     const row = this.#rows.get(id);
-    if (row) this.#rows.set(id, { ...row, status, createdAt: row.createdAt, cancelledAt: status === "cancelled" ? now : row.cancelledAt });
+    if (row && row.tenantId === tenantId) this.#rows.set(id, { ...row, status, createdAt: row.createdAt, cancelledAt: status === "cancelled" ? now : row.cancelledAt });
   }
 
-  async cancel(id: string, now: Date): Promise<void> {
+  async cancel(tenantId: string, id: string, now: Date): Promise<void> {
     const row = this.#rows.get(id);
-    if (row) this.#rows.set(id, { ...row, status: "cancelled", cancelledAt: now });
+    if (row && row.tenantId === tenantId) this.#rows.set(id, { ...row, status: "cancelled", cancelledAt: now });
   }
 }

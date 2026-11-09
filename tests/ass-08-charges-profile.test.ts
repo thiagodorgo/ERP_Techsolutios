@@ -83,7 +83,7 @@ test("R-CHG-1 sem cobrança viva ou já pago → payment null", async () => {
 test("R-CHG-1 charge_cancel → cobrança cancelada, payment some (T-CHG-4)", async () => {
   const charges = new InMemoryStatementChargeRepository();
   const charge = await charges.insert({ tenantId: TENANT, statementId: STMT, provider: "asaas", externalChargeId: "pay_1", status: "pending", payUrl: "https://pay/x" }, new Date());
-  await charges.cancel(charge.id, new Date());
+  await charges.cancel(TENANT, charge.id, new Date());
   const live = await charges.findLive(TENANT, STMT);
   assert.equal(live, undefined);
   const cancelled = (await charges.listByStatement(TENANT, STMT))[0];

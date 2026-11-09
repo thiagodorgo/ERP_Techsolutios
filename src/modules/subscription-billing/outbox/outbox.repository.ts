@@ -27,20 +27,24 @@ export interface OutboxRepository {
   /** Transação curta do claim: marca PROCESSING a linha mais antiga elegível (PENDING vencida de provedor ligado,
    * ou PROCESSING órfã). `null` se nada elegível. NUNCA faz rede. */
   claimNext(params: ClaimParams): Promise<ClaimResult | null>;
-  markSent(id: string, externalId: string | null, now: Date): Promise<void>;
+  // Mutações por id: tenant-scoped. Sob FORCE RLS, o registro roda em `withTenantRlsBudget(tenantId)` (transação curta
+  // própria, separada do claim e do fetch — G8). O dublê valida o tenant como o RLS faria (linha de outra organização =
+  // inexistente). O chamador (dispatcher) tem o `tenantId` da linha reclamada.
+  markSent(tenantId: string, id: string, externalId: string | null, now: Date): Promise<void>;
   /** Volta a PENDING com nova janela (retry de erro transitório / 429). */
-  reschedule(id: string, nextAttemptAt: Date, lastError: string | null, now: Date): Promise<void>;
-  markFailed(id: string, lastError: string | null, now: Date): Promise<void>;
-  markNeedsReview(id: string, lastError: string | null, now: Date): Promise<void>;
-  markSkipped(id: string, skipReason: OutboxSkipReason, now: Date): Promise<void>;
-  /** Visibilidade (D5/R-OBX-4): marca `skip_reason = provider_disabled` nas PENDING de provedor desligado, SEM rede
-   * e SEM mudar o status (continuam PENDING; o canal religado as retoma). Devolve quantas marcou. */
+  reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date): Promise<void>;
+  markFailed(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void>;
+  markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void>;
+  markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date): Promise<void>;
+  /** Visibilidade (D5/R-OBX-4): marca `skip_reason = provider_disabled` nas PENDING de provedor desligado, SEM rede e
+   * SEM mudar o status. Escrita de PLATAFORMA sobre tabela FORCE → `forEachTenantRls` no Prisma. Devolve quantas marcou. */
   markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number>;
   /** `retry` reabre uma FAILED → PENDING (attempts zerado, erro limpo); o claim seguinte revalida (D2). */
-  retry(id: string, now: Date): Promise<BillingOutboxRow | undefined>;
-  findById(id: string): Promise<BillingOutboxRow | undefined>;
+  retry(tenantId: string, id: string, now: Date): Promise<BillingOutboxRow | undefined>;
+  findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined>;
+  /** Leitura de PLATAFORMA (tela de outbox) sobre tabela FORCE → `forEachTenantRls` no Prisma. */
   listByStatus(status?: OutboxStatus, provider?: string): Promise<readonly BillingOutboxRow[]>;
-  listByStatement(statementId: string): Promise<readonly BillingOutboxRow[]>;
+  listByStatement(tenantId: string, statementId: string): Promise<readonly BillingOutboxRow[]>;
 }
 
 export class InMemoryOutboxRepository implements OutboxRepository {
@@ -129,24 +133,24 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     return { row: claimed, wasOrphan };
   }
 
-  async markSent(id: string, externalId: string | null, now: Date): Promise<void> {
-    this.#patch(id, { status: "SENT", externalId, nextAttemptAt: null, lastError: null, updatedAt: now });
+  async markSent(tenantId: string, id: string, externalId: string | null, now: Date): Promise<void> {
+    this.#patch(tenantId, id, { status: "SENT", externalId, nextAttemptAt: null, lastError: null, updatedAt: now });
   }
 
-  async reschedule(id: string, nextAttemptAt: Date, lastError: string | null, now: Date): Promise<void> {
-    this.#patch(id, { status: "PENDING", nextAttemptAt, lastError, claimedAt: null, claimedBy: null, attemptStartedAt: null, updatedAt: now });
+  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date): Promise<void> {
+    this.#patch(tenantId, id, { status: "PENDING", nextAttemptAt, lastError, claimedAt: null, claimedBy: null, attemptStartedAt: null, updatedAt: now });
   }
 
-  async markFailed(id: string, lastError: string | null, now: Date): Promise<void> {
-    this.#patch(id, { status: "FAILED", lastError, nextAttemptAt: null, updatedAt: now });
+  async markFailed(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void> {
+    this.#patch(tenantId, id, { status: "FAILED", lastError, nextAttemptAt: null, updatedAt: now });
   }
 
-  async markNeedsReview(id: string, lastError: string | null, now: Date): Promise<void> {
-    this.#patch(id, { status: "NEEDS_REVIEW", lastError, nextAttemptAt: null, updatedAt: now });
+  async markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void> {
+    this.#patch(tenantId, id, { status: "NEEDS_REVIEW", lastError, nextAttemptAt: null, updatedAt: now });
   }
 
-  async markSkipped(id: string, skipReason: OutboxSkipReason, now: Date): Promise<void> {
-    this.#patch(id, { status: "SKIPPED", skipReason, nextAttemptAt: null, updatedAt: now });
+  async markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date): Promise<void> {
+    this.#patch(tenantId, id, { status: "SKIPPED", skipReason, nextAttemptAt: null, updatedAt: now });
   }
 
   async markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number> {
@@ -161,9 +165,9 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     return marked;
   }
 
-  async retry(id: string, now: Date): Promise<BillingOutboxRow | undefined> {
+  async retry(tenantId: string, id: string, now: Date): Promise<BillingOutboxRow | undefined> {
     const row = this.#rows.get(id);
-    if (!row || row.status !== "FAILED") return undefined;
+    if (!row || row.tenantId !== tenantId || row.status !== "FAILED") return undefined;
     const reopened: BillingOutboxRow = {
       ...row,
       status: "PENDING",
@@ -180,8 +184,9 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     return reopened;
   }
 
-  async findById(id: string): Promise<BillingOutboxRow | undefined> {
-    return this.#rows.get(id);
+  async findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined> {
+    const row = this.#rows.get(id);
+    return row && row.tenantId === tenantId ? row : undefined;
   }
 
   async listByStatus(status?: OutboxStatus, provider?: string): Promise<readonly BillingOutboxRow[]> {
@@ -190,13 +195,14 @@ export class InMemoryOutboxRepository implements OutboxRepository {
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 
-  async listByStatement(statementId: string): Promise<readonly BillingOutboxRow[]> {
-    return [...this.#rows.values()].filter((row) => row.statementId === statementId);
+  async listByStatement(tenantId: string, statementId: string): Promise<readonly BillingOutboxRow[]> {
+    return [...this.#rows.values()].filter((row) => row.tenantId === tenantId && row.statementId === statementId);
   }
 
-  #patch(id: string, patch: Partial<BillingOutboxRow>): void {
+  // O dublê valida o tenant como o RLS faria: linha de outra organização = inexistente (fail-closed).
+  #patch(tenantId: string, id: string, patch: Partial<BillingOutboxRow>): void {
     const row = this.#rows.get(id);
-    if (!row) throw new Error(`outbox row ${id} not found`);
+    if (!row || row.tenantId !== tenantId) throw new Error(`outbox row ${id} not found for tenant`);
     this.#rows.set(id, { ...row, ...patch });
   }
 }
