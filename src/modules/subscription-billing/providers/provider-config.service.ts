@@ -150,6 +150,59 @@ function withDefaults(entry: ProviderCatalogEntry, settings: ProviderSettings): 
   return entry.kind === "invoice" && settings.nfseRoute === undefined ? { ...settings, nfseRoute: "nacional" } : settings;
 }
 
+// B-ASS-08 · F9 — PRECONDIÇÕES DE HABILITAÇÃO (G14, R-CFG-1), fail-closed. Ligar um provedor exige TODAS as condições
+// abaixo; qualquer falta recusa com `enable_preconditions_failed` e a lista do que falta. "Ligar em produção é ato do
+// dono na tela"; NENHUM caminho de código/seed/migração grava `enabled = true` fora deste arquivo (R-CFG-2, guard de
+// texto). A persistência do liga/desliga e o `test-connection`/`register-webhook`/`emitter`/`metrics` pareiam com a M5
+// (repositório Prisma) e a montagem das rotas — fora desta execução (dublê).
+
+export const ENABLE_LAST_TEST_MAX_AGE_MS = 30 * 60 * 1000;
+
+export type EnablePreconditionState = {
+  readonly provider: string;
+  readonly kind: ProviderCatalogEntry["kind"];
+  readonly environment: ProviderEnvironment;
+  /** `BILLING_PROVIDERS_ENABLED` do ambiente. */
+  readonly channelEnabledByEnv: boolean;
+  readonly apiTokenReadable: boolean;
+  readonly lastTestOk: boolean | null;
+  readonly lastTestAt: Date | null;
+  readonly lastTestEnvironment: ProviderEnvironment | null;
+  readonly webhookRegistrationMode: "api" | "manual";
+  readonly webhookRegisteredEnvironment: ProviderEnvironment | null;
+  /** Para o modo manual (Mercado Pago): a *secret signature* colada como `webhook_secret`. */
+  readonly webhookSecretPresent: boolean;
+  /** Só `kind = invoice`: dados fiscais completos. */
+  readonly fiscalComplete: boolean;
+  /** Já existe OUTRO provedor do mesmo `kind` ligado (UNIQUE parcial — G14). */
+  readonly otherProviderEnabledForKind: boolean;
+  readonly confirm: string | null;
+  readonly now: Date;
+};
+
+export type EnableDecision =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly reason: "enable_preconditions_failed"; readonly failed: readonly string[] };
+
+/** Avalia as precondições de `enable` (G14), fail-closed. Pura e testável — não grava nada. */
+export function evaluateEnablePreconditions(state: EnablePreconditionState): EnableDecision {
+  const failed: string[] = [];
+  if (!state.channelEnabledByEnv) failed.push("channel_disabled_by_env");
+  if (!state.apiTokenReadable) failed.push("api_token_not_readable");
+  if (!state.lastTestOk) failed.push("last_test_required");
+  else if (state.lastTestEnvironment !== state.environment) failed.push("last_test_environment_mismatch");
+  else if (!state.lastTestAt || state.now.getTime() - state.lastTestAt.getTime() > ENABLE_LAST_TEST_MAX_AGE_MS) failed.push("last_test_expired");
+  if (state.webhookRegistrationMode === "api") {
+    if (state.webhookRegisteredEnvironment !== state.environment) failed.push("webhook_not_registered_for_environment");
+  } else if (!state.webhookSecretPresent) {
+    failed.push("webhook_secret_required");
+  }
+  if (state.kind === "invoice" && !state.fiscalComplete) failed.push("fiscal_data_incomplete");
+  if (state.otherProviderEnabledForKind) failed.push("another_provider_enabled_for_kind");
+  if (state.confirm !== `${state.provider}:${state.environment}`) failed.push("confirm_mismatch");
+  return failed.length === 0 ? { ok: true } : { ok: false, reason: "enable_preconditions_failed", failed };
+}
+
 export class ProviderConfigService {
   constructor(
     private readonly repository: ProviderConfigRepository,
