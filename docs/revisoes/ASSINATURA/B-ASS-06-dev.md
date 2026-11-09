@@ -78,3 +78,10 @@ Plano: `B-ASSINATURA` §4.6 (+ §3, §4.5, §12) — fora do repositório, em `e
 - **Sem migração.** **KPI congelado** (`D-GOV-PROPORCIONAL`). **Não fazer merge:** pré-revisão do Claude + junta completa (superfície externa + dinheiro, unanimidade de 3).
 
 PRONTO PARA REVISÃO — PR #515 · head d0c0f90f8062285fdff1fc4a2c7a8ff2bd30a661 · ramo feat/b-ass-06-porta-pagamento
+
+## CONSERTO PRÉ-REVISÃO — bateria e PRONTO (09/11, orquestrador Claude Opus terminou; dev do conserto = DeepSeek)
+Conserto da pré-revisão `prerev-515-opus` (Emenda 1 ao §4.6): A1 (redirect manual), A2 (paidCents só quando pago), A3/A5/A6/A8, A4 (allowlist por provedor+ambiente, https), A9/A10 (mutantes), A11 (docs/env/contagem), A7 (pendência `P-ASS06-COBRANCA-CRIADA-SEM-ID`, dono B-ASS-08). Objeto de código: 0c1949c0 (DeepSeek fez o conserto; o Claude rodou a bateria e empurrou, por o DeepSeek estar no pico e o Codex fora até 15:32).
+- **Bateria no objeto 0c1949c0:** `tests/ass-06-*.test.ts` 42/42; `npm run check` ec 0; `npm run lint` (=check) ec 0; `node scripts/migration-transaction-guard.mjs` 0 violações; `npm run build` ec 0; `git diff --check bdfbcd01..0c1949c0` limpo; 0 CR nos arquivos tocados.
+- **CI:** o GitHub Actions está parado por cobrança; a junta usa o CI local (`ferramentas/ci-github.sh`) no head, mais a revalidação do próprio CI do GitHub quando o pagamento voltar.
+
+PRONTO PARA JUNTA — objeto de código 0c1949c0 · PR #515
