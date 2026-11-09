@@ -3,6 +3,7 @@ export type InvoiceProviderErrorCode =
   | "ibs_cbs_incomplete"
   | "municipal_route_not_allowed_for_simples"
   | "already_issued"
+  | "invoice_already_live"
   | "invoice_not_ready";
 
 export class InvoiceProviderError extends Error {

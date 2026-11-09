@@ -77,3 +77,19 @@ Este bloco entrega a porta comum, as regras fiscais, o adaptador Focus NFe e o f
 - **feito:** superfície externa Focus fechada por canal/allowlist/cofre e registros no falso.
 - **falta:** sequência/reemissão em memória, PDF/campos/cancelamento, docs, bateria, PR e CI.
 - **próximo comando:** `node --test --import tsx tests/ass-07-focusnfe-security.test.ts`.
+
+## F6 — sequência e reemissão no dublê em memória
+
+- `InMemoryInvoiceSequence` serializa transações, reserva `numero_dps` por provedor/ambiente/série, forma `externalRef = <statement_id>:<seq>`, bloqueia nota viva e só reemite com `seq + 1` após `rejected`/`cancelled`.
+- Rollback restaura número e histórico; duas reservas concorrentes são distintas e consecutivas.
+- T-NF-38..40 + controles de concorrência/rollback: **5/5**. Total do bloco: **23/23**.
+- Falso Focus recusa `numero_dps` repetido na mesma `serie_dps`.
+- Mutações provadas e restauradas: reemissão com mesma `seq` (T-NF-38/39 vermelhos); falso aceitando DPS repetida (T-NF-40 vermelho); rollback consumindo número (T-NF-40c vermelho).
+- **Sem Docker e sem migração.** T-NF-db-1 e a persistência `FOR UPDATE` continuam no B-ASS-08/M5.
+
+## RETOMADA 4
+
+- **head medido:** commit F6 será o próximo head do ramo.
+- **feito:** sequência/reemissão Focus comprovadas no dublê em memória.
+- **falta:** PDF público, campos Focus/cancelamento final, docs, bateria, PR e CI.
+- **próximo comando:** `node --test --import tsx tests/ass-07-sequence-memory.test.ts`.
