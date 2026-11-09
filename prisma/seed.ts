@@ -214,12 +214,12 @@ async function main(): Promise<void> {
       slug: "demo",
     },
     update: {
-      name: "Tenant Demo",
+      name: "Organização Demonstração",
       status: "active",
       modules: DEMO_TENANT_MODULES,
     },
     create: {
-      name: "Tenant Demo",
+      name: "Organização Demonstração",
       slug: "demo",
       status: "active",
       modules: DEMO_TENANT_MODULES,

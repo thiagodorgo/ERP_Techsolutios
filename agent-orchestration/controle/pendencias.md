@@ -2238,7 +2238,8 @@ que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo mod
   protótipo usa "Transportes Ômega") e limpar/renomear os modelos de sujeira no seed.
 - **Cuidado:** limpeza de dados vivos só com teardown escopado por id criado (ver
   [[P-JUNTA-LIMPEZA-BASE-VIVA]]); o caminho seguro é corrigir o SEED e re-semear, não apagar em massa.
-- status: ABERTA.
+- status: FECHADA (2026-11-09, item 47 — PR #518): a organização demo foi renomeada para "Organização Demonstração" nas duas instâncias do seed (update e create, `prisma/seed.ts:217,222`), mesmo nome já usado em `organization.business_name` (`prisma/seed.ts:346`). Prova: `grep -c "Tenant Demo" prisma/seed.ts` = 0. Ressalva declarada (§A6): a instância OFFLINE do app de campo segue aberta (`mobile/flutter_app/lib/core/bootstrap/bootstrap_session.dart:183,186` — displayName `Tenant Demo`), fora do escopo autorizado deste item (só `prisma/seed.ts` + registro); coberta pelo apenso 2026-11-03 com dono próprio.
+- status anterior: ABERTA.
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C2: a organização do seed chama-se "Tenant Demo" (`prisma/seed.ts:209-223`) e aparece na barra superior, na seleção de organização e no dossiê impresso (§3/§11.1); bloqueia a demonstração.
 
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
