@@ -7,6 +7,15 @@ export const JOB_NAMES = [
   "subscription.measure-daily",
   // B-ASS-04 — fechamento mensal do demonstrativo (mês anterior, 02:00 SP e a cada 6 h; idempotente).
   "subscription.close-statements",
+  // B-ASS-08b — canal de cobrança (plano §3.8). SÓ rodam com BILLING_PROVIDERS_ENABLED=true; desligado = nada sai.
+  // dispatch-outbox: claim–chamada–registro, auto-reenfileirante 1 min, só provedores LIGADOS.
+  "billing.dispatch-outbox",
+  // reconcile-webhook: 1 por evento aceito; RECONSULTA o provedor (o corpo nunca decide); organização pelo nosso id.
+  "billing.reconcile-webhook",
+  // poll-pending: 15 min; evento `received` órfão (> 30 min) e cobrança `pending` sem evento (> 30 min).
+  "billing.poll-pending",
+  // poll-settled: diário 03:00 SP; reconsulta `confirmed` dos últimos 120 dias (chargeback/estorno tardio).
+  "billing.poll-settled",
   "notification-dispatch",
   // Ω4C PR-04 — varredura recorrente auto-reenfileirante do motor de notificações agendáveis (reuso do
   // job.worker.ts; SEM node-cron). Só executa com o worker ligado (flag JOBS_WORKER_ENABLED, default OFF).

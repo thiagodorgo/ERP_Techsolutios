@@ -1,0 +1,121 @@
+// B-ASS-08b · (b) — a composição de PRODUÇÃO do router do webhook (montado em `src/app.ts` ANTES de `express.json` e do
+// `pinoHttp`). Tudo é LAZY: nada de banco, cofre ou adaptador é tocado na montagem — só quando um pedido chega e o canal
+// está ligado. O `resolveTarget` é FAIL-CLOSED: canal desligado por env, provedor fora do catálogo, cofre indisponível,
+// provedor `enabled = false`, provedor sem verificador ligado neste portão (B-ASS-15) ou QUALQUER erro → `null` → 404
+// padrão. Nunca gravamos `enabled = true` aqui (só se LÊ a configuração).
+
+import type { Request, Router } from "express";
+
+import { env } from "../../../config/env.js";
+import { getDefaultJobQueue } from "../../../infra/jobs/job.queue.js";
+import { billingHttpClientFromEnv } from "../providers/http/billing-http.client.js";
+import { createFocusNfeAdapter } from "../providers/invoice/focusnfe/index.js";
+import { createAsaasAdapter } from "../providers/payment/asaas/index.js";
+import { getProviderCatalogEntry } from "../providers/provider.catalog.js";
+import { createDefaultVaultRuntime } from "../vault/vault.factory.js";
+import { InMemoryWebhookEventRepository, type WebhookEventRepository } from "./webhook-events.repository.js";
+import { createWebhookRateLimiter, type WebhookRateLimiter } from "./webhook.rate-limit.js";
+import { createSubscriptionBillingWebhookRouter, type WebhookTarget } from "./subscription-billing.webhook.routes.js";
+
+type FlatQuery = Readonly<Record<string, string | string[] | undefined>>;
+
+/** `req.query` do Express pode trazer objetos aninhados; o port só aceita texto. O que não for texto é descartado. */
+function flatQuery(query: Request["query"]): FlatQuery {
+  const out: Record<string, string | string[]> = {};
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (typeof value === "string") out[key] = value;
+    else if (Array.isArray(value) && value.every((item) => typeof item === "string")) out[key] = value as string[];
+  }
+  return out;
+}
+
+/** Resolve o alvo de um provedor com o canal LIGADO, ou `null` (→ 404). Fail-closed em qualquer erro. */
+export async function resolveWebhookTargetFromRuntime(provider: string): Promise<WebhookTarget | null> {
+  try {
+    if (!env.BILLING_PROVIDERS_ENABLED) return null;
+    const entry = getProviderCatalogEntry(provider);
+    if (!entry) return null;
+    const runtime = await createDefaultVaultRuntime();
+    if (runtime.vault.status() !== "available") return null;
+    const config = await runtime.configs.get(entry.id);
+    if (!config || !config.enabled) return null;
+    const client = billingHttpClientFromEnv(entry.id, config.environment);
+    if (entry.id === "asaas") {
+      const adapter = createAsaasAdapter(client, runtime.vault);
+      return {
+        provider: entry.id,
+        verify: async (input) => {
+          const result = await adapter.verifyWebhook({ headers: input.headers, rawBody: input.rawBody, query: flatQuery(input.query) });
+          return { ok: result.ok, eventId: result.eventId, externalResourceId: result.chargeId, externalReference: result.externalReference, kind: result.kind };
+        },
+      };
+    }
+    if (entry.id === "focusnfe") {
+      const adapter = createFocusNfeAdapter(client, runtime.vault);
+      return {
+        provider: entry.id,
+        verify: async (input) => {
+          const result = await adapter.verifyWebhook({ headers: input.headers, rawBody: input.rawBody });
+          return { ok: result.ok, eventId: result.eventId, externalReference: result.externalRef, kind: result.kind };
+        },
+      };
+    }
+    // Provedores fora do portão 1 + 1 (B-ASS-15) ainda não têm verificador ligado: inexistente.
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+let memoryEvents = new InMemoryWebhookEventRepository();
+
+/** Só para testes: zera o dublê de eventos do modo memória. */
+export function resetWebhookRuntimeForTests(): void {
+  memoryEvents = new InMemoryWebhookEventRepository();
+}
+
+export function getMemoryWebhookEventsForTests(): InMemoryWebhookEventRepository {
+  return memoryEvents;
+}
+
+/** O repositório de eventos é resolvido no 1º uso: memória (dev/teste) ou Prisma (o banco só é aberto com o canal ligado). */
+class LazyWebhookEventRepository implements WebhookEventRepository {
+  #resolved: Promise<WebhookEventRepository> | undefined;
+
+  #repo(): Promise<WebhookEventRepository> {
+    if (env.CORE_SAAS_PERSISTENCE !== "prisma") return Promise.resolve(memoryEvents);
+    this.#resolved ??= Promise.all([import("../../../database/prisma.js"), import("./webhook-events.prisma.js")]).then(
+      ([{ prisma }, { PrismaWebhookEventRepository }]) => new PrismaWebhookEventRepository(prisma),
+    );
+    return this.#resolved;
+  }
+
+  async insertIfAbsent(...args: Parameters<WebhookEventRepository["insertIfAbsent"]>) {
+    return (await this.#repo()).insertIfAbsent(...args);
+  }
+  async find(...args: Parameters<WebhookEventRepository["find"]>) {
+    return (await this.#repo()).find(...args);
+  }
+  async markStatus(...args: Parameters<WebhookEventRepository["markStatus"]>) {
+    return (await this.#repo()).markStatus(...args);
+  }
+  async listByProvider(...args: Parameters<WebhookEventRepository["listByProvider"]>) {
+    return (await this.#repo()).listByProvider(...args);
+  }
+  async listStale(...args: Parameters<WebhookEventRepository["listStale"]>) {
+    return (await this.#repo()).listStale(...args);
+  }
+}
+
+/** Composição de produção do router (um limitador por processo). */
+export function createSubscriptionBillingWebhookRouterForApp(options: { readonly limiter?: WebhookRateLimiter } = {}): Router {
+  return createSubscriptionBillingWebhookRouter({
+    resolveTarget: resolveWebhookTargetFromRuntime,
+    events: new LazyWebhookEventRepository(),
+    limiter: options.limiter ?? createWebhookRateLimiter(),
+    enqueueReconcile: async (input) => {
+      await getDefaultJobQueue().enqueue("billing.reconcile-webhook", { provider: input.provider, externalEventId: input.externalEventId });
+    },
+    clientIp: (req: Request) => req.ip ?? "unknown",
+  });
+}

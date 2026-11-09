@@ -20,6 +20,7 @@ import type { ICoreSaasService } from "./modules/core-saas/services/core-saas-se
 import { createUserNameResolver } from "./modules/core-saas/users/user-name-resolver.js";
 import { createChecklistRouter } from "./modules/checklists/index.js";
 import { createSubscriptionBillingTenantRouter } from "./modules/subscription-billing/subscription-billing.tenant.routes.js";
+import { createSubscriptionBillingWebhookRouterForApp } from "./modules/subscription-billing/webhooks/webhook-runtime.js";
 import { createCommissionRouter } from "./modules/commissions/index.js";
 import { createCustomerRouter } from "./modules/customers/index.js";
 import { createDashboardRouter } from "./modules/dashboard/index.js";
@@ -113,6 +114,12 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
   // origem da requisição; em produção o gate do env.ts garante array não-vazio e sem curinga.
   // Sem `credentials: true` — a autenticação é 100% Bearer, não usa cookie de sessão.
   app.use(cors({ origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : true }));
+  // B-ASS-08b — webhook de cobrança. Router PRÓPRIO, montado ANTES de `express.json` e do `pinoHttp`, SEM
+  // `attachAuthenticatedActor`: a decisão (canal desligado / provedor desconhecido / `enabled=false` / cofre indisponível
+  // → 404 padrão) vem ANTES de qualquer parser, e o parser é LOCAL (`express.raw`, 256 KB) porque a assinatura exige o
+  // corpo cru. Assim nem o 400 do JSON malformado nem o limite global escapam com o canal desligado; e o corpo nunca vai
+  // ao log. Composição lazy em webhooks/webhook-runtime.ts. git add src/app.ts, senão CI route_not_found.
+  app.use("/webhooks/billing", createSubscriptionBillingWebhookRouterForApp());
   app.use(express.json({ limit: "2mb" }));
   // B-ASS-05 (S10/F3) — JSON malformado NÃO ecoa o corpo. O tratador padrão do Express imprime o trecho do corpo no
   // stderr em desenvolvimento, e o corpo de `PUT …/credentials` é o segredo do provedor. Responde 400 no envelope da

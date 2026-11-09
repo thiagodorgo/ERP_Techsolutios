@@ -1823,6 +1823,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /webhooks/billing/:provider": {
+  "classe": "N",
+  "n": 1
+ },
  "ROTA PUT /api/v1/impound-processes/:processId/inspection": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1908,6 +1912,10 @@
   "n": 1
  },
  "ROTEADOR /api/v1/users": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /webhooks/billing": {
   "classe": "ROTEADOR",
   "n": 1
  },
