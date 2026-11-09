@@ -1,0 +1,18 @@
+# B-ASS-08 — diário de dev (incremental, P1)
+
+Bloco **B-ASS-08** — fluxo ponta a ponta, webhooks, fila (outbox) e habilitação; **tudo desligado**.
+Identidade de dev: **Claude Opus** (DECLARADA; ordem do dono "não espere o Codex, faça você mesmo").
+Ramo `feat/b-ass-08-outbox-webhooks`, worktree `C:/Users/thiag/w-ass08`, a partir de `origin/main` (B-ASS-05/06/07 mergeados, head `7d8b2b98`).
+
+**Esta execução: F0–F9 SOMENTE** (dublê em memória; sem `prisma/**`, sem Docker, sem migração).
+**F10 (migração M5) aguarda autorização NOMINAL do dono** — `prisma/**` é PROIBIDO por padrão (§C4).
+F10–F14 ficam para a continuação, após o "sim" do dono.
+
+Cruzamento de modelo (D-UM-FAZ-OUTRO-VERIFICA): o dev é Claude; a verificação/junta é de modelo diferente (Codex/DeepSeek).
+Invariantes (§4.8): webhook desligado = 404 byte-a-byte antes do parser; `timingSafeEqual` (`===` proibido); o corpo do webhook nunca
+decide (sempre reconsulta); organização pelo nosso `statement_id` via `billing_statement_refs`, nunca pelo payload; `fetch` nunca
+dentro de `withTenantRls`; segredo/corpo nunca em log (só digest); nenhum caminho grava `enabled=true`.
+
+| fatia | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| F0 | node --test traccar-forward-auth | pass 9 fail 0 | baseline N: traccar-forward-auth=9; harness OK; prisma generate exit 0; comando e diário criados |
