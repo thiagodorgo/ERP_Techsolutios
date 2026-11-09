@@ -37,6 +37,9 @@ export async function startFocusNfeFake(defaultScenario = "ok"): Promise<FakeSer
       res.setHeader("Retry-After", "2");
       return sendJson(res, 429, { mensagem: "muitas requisições" });
     }
+    if (selected === "validation_422") {
+      return sendJson(res, 422, { status: "erro_validacao", mensagem: `credencial rejeitada: ${String(req.headers.authorization ?? "")}` });
+    }
 
     if (method === "POST" && (url.pathname === "/v2/nfsen" || url.pathname === "/v2/nfse")) {
       const ref = url.searchParams.get("ref") ?? "";

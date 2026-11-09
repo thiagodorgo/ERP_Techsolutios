@@ -146,7 +146,7 @@ export class FocusNfeInvoiceAdapter implements InvoiceProviderPort {
       if (/já existe|ja existe|referência|referencia/i.test(body.mensagem ?? "")) {
         throw new InvoiceProviderError("already_issued", "Invoice reference already exists.", { existingId: body.id });
       }
-      throw new ProviderValidationError(this.errorMessage(body));
+      throw new ProviderValidationError(await this.sanitizedErrorMessage(body));
     }
     if (response.status === 429) throw new ProviderRateLimitedError(response.retryAfterMs ?? 0);
     if (response.status < 200 || response.status >= 300) throw new ProviderUnavailableError(`The provider returned HTTP ${response.status}.`);
@@ -242,7 +242,7 @@ export class FocusNfeInvoiceAdapter implements InvoiceProviderPort {
     const response = await this.client.request(request);
     if (response.status === 429) throw new ProviderRateLimitedError(response.retryAfterMs ?? 0);
     const body = await this.readBody(response);
-    if (response.status === 400 || response.status === 422) throw new ProviderValidationError(this.errorMessage(body));
+    if (response.status === 400 || response.status === 422) throw new ProviderValidationError(await this.sanitizedErrorMessage(body));
     if (response.status < 200 || response.status >= 300) throw new ProviderUnavailableError(`The provider returned HTTP ${response.status}.`);
     return body;
   }
@@ -258,5 +258,17 @@ export class FocusNfeInvoiceAdapter implements InvoiceProviderPort {
   private errorMessage(body: FocusBody): string {
     const messages = body.erros?.map((item) => item.mensagem).filter((item): item is string => Boolean(item)) ?? [];
     return messages[0] ?? body.mensagem ?? "The provider rejected the request.";
+  }
+
+  private async sanitizedErrorMessage(body: FocusBody): Promise<string> {
+    let message = this.errorMessage(body);
+    const secrets = await Promise.all([this.readSecret("api_token"), this.readSecret("webhook_secret"), this.readSecret("certificate")]);
+    for (const secret of secrets) {
+      if (secret) {
+        message = message.split(secret).join("[redacted]");
+        message = message.split(basicToken(secret)).join("[redacted]");
+      }
+    }
+    return message;
   }
 }

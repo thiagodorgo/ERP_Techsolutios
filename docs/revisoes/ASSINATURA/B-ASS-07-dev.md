@@ -61,3 +61,19 @@ Este bloco entrega a porta comum, as regras fiscais, o adaptador Focus NFe e o f
 - **feito:** contrato Focus básico, assíncrono, duplicidade e cancelamento por conteúdo.
 - **falta:** registro de emissor/webhook, gates/segredo, sequência/reemissão, PDF/campos, docs e bateria.
 - **próximo comando:** `node --test --import tsx tests/ass-07-focusnfe-adapter.test.ts`.
+
+## F5 — canal, cofre, emissor e webhook Focus
+
+- T-NF-33..36 e T-NF-41/41b: canal desligado → 0 requisições; local só com flag em `test`; token não aparece em log nem em erro (inclusive Basic em base64); credencial ausente falha antes da rede; emissor/hook usam `certificate`, `api_token` e `webhook_secret` lidos por `readSecretForProvider`; webhook compara o segredo em tempo constante e retorna allowlist.
+- O registro do emissor envia certificado A1 somente ao falso Focus. O registro do hook usa o segredo do cofre e `authorization_header: X-Webhook-Token`.
+- Suítes do bloco: **18/18**; regressão R-EXT-0: **4/4**; `npm run check` verde.
+- Mutação de sanitização removendo a redação do Basic: T-NF-35 vermelho; restaurada.
+- Mutação usando segredo diferente no registro do hook: T-NF-41 vermelho; restaurada.
+- A mutação “fetch direto no adaptador” permanece coberta literalmente pela regressão R-EXT-0 do B-ASS-06; este bloco não alterou o cliente compartilhado.
+
+## RETOMADA 3
+
+- **head medido:** commit F5 será o próximo head do ramo.
+- **feito:** superfície externa Focus fechada por canal/allowlist/cofre e registros no falso.
+- **falta:** sequência/reemissão em memória, PDF/campos/cancelamento, docs, bateria, PR e CI.
+- **próximo comando:** `node --test --import tsx tests/ass-07-focusnfe-security.test.ts`.
