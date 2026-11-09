@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **778** |
-| IDs distintos | 767 |
-| **ABERTAS** | **586** |
+| Cabecalhos `## P-` | **782** |
+| IDs distintos | 771 |
+| **ABERTAS** | **590** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **524** |
+| — das quais **ativas nesta rodada** | **528** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 188 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **778 cabecalhos para 767 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **782 cabecalhos para 771 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 257
+## ABERTAS · balde A — material — 258
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -332,8 +332,9 @@
 | `P-ASS03-RMED3-VACUUM-6B` | 12843 | MÉDIA | sim | P-ASS03-RMED3-VACUUM-6B (2026-11-06) — o "byte a byte" do R-MED-3 varia ±6 B depois de V |
 | `P-JOBS-REENFILEIRA-MULTIPLICA` | 12874 | MÉDIA | sim | P-JOBS-REENFILEIRA-MULTIPLICA (2026-11-06) — re-enfileirar no `finally` multiplica as ca |
 | `P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO` | 12904 | MÉDIA | sim | P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO (2026-11-08) — o painel de conflito no detalhe  |
+| `P-ASS07-REGIME-VOCAB-FECHADO` | 12940 | MÉDIA | sim | P-ASS07-REGIME-VOCAB-FECHADO (2026-11-09) — classificação de regime fiscal é fail-open p |
 
-## ABERTAS · balde B — processo/registro — 267
+## ABERTAS · balde B — processo/registro — 270
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -604,6 +605,9 @@
 | `P-ASS06-COBRANCA-CRIADA-SEM-ID` | 12922 | BAIXA | sim | P-ASS06-COBRANCA-CRIADA-SEM-ID (2026-11-08) — no PIX e no boleto, a cobrança pode ficar  |
 | `P-CI-FLUTTER-LIBSQLITE3-FLAKY` | 12928 | BAIXA | sim | P-CI-FLUTTER-LIBSQLITE3-FLAKY (2026-11-09) — o job `flutter` do CI falha intermitente po |
 | `P-CI-FINANCIAL-TITLE-CAS-FLAKY` | 12934 | BAIXA | sim | P-CI-FINANCIAL-TITLE-CAS-FLAKY (2026-11-09) — o `financial-title-status-cas-db` (barreir |
+| `P-ASS07-FOCUS-GET-MUNICIPAL` | 12946 | BAIXA | sim | P-ASS07-FOCUS-GET-MUNICIPAL (2026-11-09) — `getInvoice`/`cancel` exercidos só na rota Na |
+| `P-ASS07-ALREADY-ISSUED-REGEX` | 12952 | BAIXA | sim | P-ASS07-ALREADY-ISSUED-REGEX (2026-11-09) — `already_issued` depende de regex sobre a me |
+| `P-ASS07-CERT-REDACAO` | 12958 | BAIXA | sim | P-ASS07-CERT-REDACAO (2026-11-09) — `sanitizedErrorMessage` redige o certificado como JS |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 
