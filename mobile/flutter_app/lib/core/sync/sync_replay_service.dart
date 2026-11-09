@@ -115,7 +115,7 @@ class DioExpenseSyncBatchApi implements ExpenseSyncBatchApi {
     } on DioException catch (e) {
       final status = e.response?.statusCode;
       final reason = _expenseErrorReason(e.response?.data);
-      if (status != null && reason != null) {
+      if (status != null && reason != null && _isExpenseDomainRefusal(status)) {
         throw ExpenseSyncDomainError(status, reason);
       }
       throw mapDioError(e);
@@ -150,6 +150,18 @@ String? _expenseErrorReason(Object? data) {
   final reason = error['reason'];
   return reason is String && reason.trim().isNotEmpty ? reason.trim() : null;
 }
+
+/// Só a recusa de DOMÍNIO (4xx decidido pelo servidor) vira conflito por código.
+/// Indisponibilidade (5xx, inclusive o 503 `sync_busy`), sessão (401/403) e
+/// limite de transporte (408/429) seguem `mapDioError`: o 503 volta a pendente
+/// sem gastar tentativa, 401/403 vira "sessão sem permissão", o resto tenta de novo.
+bool _isExpenseDomainRefusal(int status) =>
+    status >= 400 &&
+    status < 500 &&
+    status != 401 &&
+    status != 403 &&
+    status != 408 &&
+    status != 429;
 
 class PendingBackendExpenseSyncBatchApi implements ExpenseSyncBatchApi {
   const PendingBackendExpenseSyncBatchApi();
@@ -329,7 +341,7 @@ class SyncReplayService {
           lastErrorCode: 'SESSION_FORBIDDEN',
           lastSafeError:
               'Sua sessão não tem permissão para enviar despesas. '
-              'Entre de novo e use Minha versao.',
+              'Entre de novo e use Minha versão.',
         );
         await _queue.update(next);
         conflicts.add(next);

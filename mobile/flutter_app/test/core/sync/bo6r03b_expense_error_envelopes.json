@@ -1,0 +1,9 @@
+{
+  "503_sync_busy": {"status": 503, "body": {"error": {"code": "EXPENSE_SYNC_UNAVAILABLE", "reason": "sync_busy", "message": "Expense sync is temporarily unavailable; resend the same action later."}}},
+  "403_permission_required": {"status": 403, "body": {"error": {"code": "FORBIDDEN", "reason": "permission_required", "message": "One of these permissions is required: expense_sync:write."}}},
+  "500_unknown_error": {"status": 500, "body": {"error": {"code": "INTERNAL_SERVER_ERROR", "reason": "unknown_error", "message": "Unexpected error."}}},
+  "409_status_not_editable": {"status": 409, "body": {"error": {"code": "EXPENSE_REPORT_LOCKED", "reason": "status_not_editable", "message": "Only draft or returned reports can receive new items."}}},
+  "422_empty_report": {"status": 422, "body": {"error": {"code": "EXPENSE_REPORT_INVALID", "reason": "empty_report", "message": "At least one expense item is required before submit."}}},
+  "400_required_field": {"status": 400, "body": {"error": {"code": "EXPENSE_INVALID", "reason": "required_field", "message": "reportId is required."}}},
+  "401_invalid_token": {"status": 401, "body": {"error": {"code": "INVALID_TOKEN", "message": "Invalid or expired access token."}}}
+}
