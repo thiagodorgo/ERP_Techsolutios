@@ -80,12 +80,23 @@ class CaptureBatchApi implements ExpenseSyncBatchApi {
 }
 
 class DioExpenseSyncBatchApi implements ExpenseSyncBatchApi {
-  DioExpenseSyncBatchApi(this._client);
+  DioExpenseSyncBatchApi(this._client, {this.batchSize = 1});
 
   final Dio _client;
+  final int batchSize;
 
   @override
   Future<List<SyncActionResult>> sendBatch(List<SyncAction> actions) async {
+    final results = <SyncActionResult>[];
+    for (var start = 0; start < actions.length; start += batchSize) {
+      final end = (start + batchSize).clamp(0, actions.length);
+      final chunk = actions.sublist(start, end);
+      results.addAll(await _sendChunk(chunk));
+    }
+    return results;
+  }
+
+  Future<List<SyncActionResult>> _sendChunk(List<SyncAction> actions) async {
     try {
       final response = await _client.post(
         ExpenseApiEndpoints.mobileExpenseSync,
@@ -102,6 +113,11 @@ class DioExpenseSyncBatchApi implements ExpenseSyncBatchApi {
           .map((r) => _resultFromJson(r as Map<String, dynamic>))
           .toList(growable: false);
     } on DioException catch (e) {
+      final status = e.response?.statusCode;
+      final reason = _expenseErrorReason(e.response?.data);
+      if (status != null && reason != null) {
+        throw ExpenseSyncDomainError(status, reason);
+      }
       throw mapDioError(e);
     }
   }
@@ -127,6 +143,14 @@ class DioExpenseSyncBatchApi implements ExpenseSyncBatchApi {
   }
 }
 
+String? _expenseErrorReason(Object? data) {
+  if (data is! Map) return null;
+  final error = data['error'];
+  if (error is! Map) return null;
+  final reason = error['reason'];
+  return reason is String && reason.trim().isNotEmpty ? reason.trim() : null;
+}
+
 class PendingBackendExpenseSyncBatchApi implements ExpenseSyncBatchApi {
   const PendingBackendExpenseSyncBatchApi();
 
@@ -135,7 +159,27 @@ class PendingBackendExpenseSyncBatchApi implements ExpenseSyncBatchApi {
       const [];
 }
 
-// ── Replay service ────────────────────────────────────────────────────────────
+class SessionlessExpenseSyncBatchApi implements ExpenseSyncBatchApi {
+  const SessionlessExpenseSyncBatchApi();
+
+  @override
+  Future<List<SyncActionResult>> sendBatch(List<SyncAction> actions) async =>
+      const [];
+}
+
+class ExpenseSyncDomainError implements Exception {
+  const ExpenseSyncDomainError(this.statusCode, this.reasonCode);
+
+  final int statusCode;
+  final String? reasonCode;
+}
+
+typedef ExpenseSyncEntityUpdater =
+    Future<void> Function(
+      SyncAction action,
+      SyncActionResult result,
+      SyncStatus status,
+    );
 
 class SyncReplayService {
   const SyncReplayService({
@@ -143,99 +187,234 @@ class SyncReplayService {
     required ExpenseSyncBatchApi api,
     this.maxRetry = 5,
     Set<String>? supportedActionTypes,
+    ExpenseSyncEntityUpdater? entityUpdater,
+    String? Function(String reportLocalId)? serverIdForReport,
   }) : _queue = queue,
        _api = api,
-       _supportedActionTypes = supportedActionTypes;
+       _supportedActionTypes = supportedActionTypes,
+       _entityUpdater = entityUpdater,
+       _serverIdForReport = serverIdForReport;
 
   final SyncQueueRepository _queue;
   final ExpenseSyncBatchApi _api;
   final int maxRetry;
   final Set<String>? _supportedActionTypes;
+  final ExpenseSyncEntityUpdater? _entityUpdater;
+  final String? Function(String reportLocalId)? _serverIdForReport;
 
   bool get channelOff => _api is PendingBackendExpenseSyncBatchApi;
 
   Future<SyncReplayResult> replayTenant(String tenantId) async {
-    // Canal desligado: o B-O6R-03b troca a API e liga o envio.
-    // Nenhuma ação muda de estado nem consome tentativa enquanto isso.
-    if (channelOff) {
+    if (channelOff || _api is SessionlessExpenseSyncBatchApi) {
       return const SyncReplayResult(synced: [], failed: [], conflicts: []);
     }
-    final eligible = (await _queue.pendingForTenant(tenantId))
-        .where((a) => _supportedActionTypes?.contains(a.type) ?? true)
-        .where((a) => a.status != SyncStatus.conflict)
-        .where((a) => a.retryCount < maxRetry)
-        .toList(growable: false);
+
+    final first = await _replayPass(tenantId);
+    final createdReport = first.synced.any(
+      (action) => action.type == ExpenseSyncActionTypes.reportCreate,
+    );
+    if (!createdReport) return first;
+
+    final second = await _replayPass(tenantId);
+    return SyncReplayResult(
+      synced: [...first.synced, ...second.synced],
+      failed: [...first.failed, ...second.failed],
+      conflicts: [...first.conflicts, ...second.conflicts],
+    );
+  }
+
+  Future<SyncReplayResult> _replayPass(String tenantId) async {
+    final pending = await _queue.pendingForTenant(tenantId);
+
+    final synced = <SyncAction>[];
+    final failed = <SyncAction>[];
+    final conflicts = <SyncAction>[];
+    final eligible = <SyncAction>[];
+
+    for (final action in pending) {
+      if (action.status == SyncStatus.conflict) continue;
+
+      if (action.type == ExpenseSyncActionTypes.receiptAttach) {
+        final next = action.copyWith(
+          status: SyncStatus.conflict,
+          lastErrorCode: 'UNSUPPORTED_ACTION',
+          lastSafeError:
+              'Comprovante fica no aparelho até a integração de comprovantes; '
+              'Versão do gestor encerra este item.',
+        );
+        await _queue.update(next);
+        conflicts.add(next);
+        continue;
+      }
+
+      if (!(_supportedActionTypes?.contains(action.type) ?? true)) continue;
+      if (action.retryCount >= maxRetry) continue;
+
+      if (action.type == ExpenseSyncActionTypes.itemCreate &&
+          _readString(action.payload['report_local_id']) != null &&
+          _readString(action.payload['category_key']) == null) {
+        final next = _domainConflict(action, 'LEGACY_ITEM_INCOMPLETE');
+        await _queue.update(next);
+        conflicts.add(next);
+        continue;
+      }
+
+      final prepared = await _prepareForBackend(tenantId, action);
+      if (prepared == null) continue;
+      eligible.add(prepared);
+    }
 
     if (eligible.isEmpty) {
-      return const SyncReplayResult(synced: [], failed: [], conflicts: []);
+      return SyncReplayResult(
+        synced: synced,
+        failed: failed,
+        conflicts: conflicts,
+      );
     }
 
-    // Mark all eligible actions as syncing before the network call
+    // Um único lote por passada, na ordem em que as ações vieram da fila.
     final syncing = [
-      for (final a in eligible) a.copyWith(status: SyncStatus.syncing),
+      for (final action in eligible)
+        action.copyWith(status: SyncStatus.syncing),
     ];
-    for (final a in syncing) {
-      await _queue.update(a);
+    for (final action in syncing) {
+      await _queue.update(action);
     }
 
-    // Send batch — on any network/server error, fail all actions
     List<SyncActionResult> results;
     try {
       results = await _api.sendBatch(syncing);
-    } catch (_) {
-      final failed = <SyncAction>[];
-      for (final a in syncing) {
-        final f = a.copyWith(
-          status: SyncStatus.failed,
-          retryCount: a.retryCount + 1,
-          lastErrorCode: 'NETWORK_ERROR',
-          lastSafeError: 'Falha de conexão. Tente novamente.',
+    } on ApiServerError catch (error) {
+      if (error.statusCode == 503) {
+        for (final action in syncing) {
+          final next = action.copyWith(
+            status: SyncStatus.pending,
+            lastErrorCode: 'SYNC_BUSY',
+            lastSafeError: 'Servidor ocupado; o envio será refeito.',
+          );
+          await _queue.update(next);
+        }
+        return SyncReplayResult(
+          synced: synced,
+          failed: failed,
+          conflicts: conflicts,
         );
-        await _queue.update(f);
-        failed.add(f);
+      }
+      if (error.statusCode == 422 || error.statusCode == 404) {
+        for (final action in syncing) {
+          final next = _domainConflict(action, 'EXPENSE_NOT_FOUND');
+          await _queue.update(next);
+          conflicts.add(next);
+        }
+        return SyncReplayResult(
+          synced: synced,
+          failed: failed,
+          conflicts: conflicts,
+        );
+      }
+      for (final action in syncing) {
+        final next = _failWithRetry(action);
+        await _queue.update(next);
+        failed.add(next);
       }
       return SyncReplayResult(
-        synced: const [],
+        synced: synced,
         failed: failed,
-        conflicts: const [],
+        conflicts: conflicts,
+      );
+    } on ApiUnauthorizedError catch (_) {
+      for (final action in syncing) {
+        final next = action.copyWith(
+          status: SyncStatus.conflict,
+          lastErrorCode: 'SESSION_FORBIDDEN',
+          lastSafeError:
+              'Sua sessão não tem permissão para enviar despesas. '
+              'Entre de novo e use Minha versao.',
+        );
+        await _queue.update(next);
+        conflicts.add(next);
+      }
+      return SyncReplayResult(
+        synced: synced,
+        failed: failed,
+        conflicts: conflicts,
+      );
+    } on ApiConflictError catch (_) {
+      for (final action in syncing) {
+        final next = _domainConflict(action, 'STATUS_NOT_EDITABLE');
+        await _queue.update(next);
+        conflicts.add(next);
+      }
+      return SyncReplayResult(
+        synced: synced,
+        failed: failed,
+        conflicts: conflicts,
+      );
+    } on ExpenseSyncDomainError catch (error) {
+      for (final action in syncing) {
+        final next = _domainConflict(action, error.reasonCode);
+        await _queue.update(next);
+        conflicts.add(next);
+      }
+      return SyncReplayResult(
+        synced: synced,
+        failed: failed,
+        conflicts: conflicts,
+      );
+    } on ApiError catch (_) {
+      for (final action in syncing) {
+        final next = _failWithRetry(action);
+        await _queue.update(next);
+        failed.add(next);
+      }
+      return SyncReplayResult(
+        synced: synced,
+        failed: failed,
+        conflicts: conflicts,
       );
     }
 
     final resultMap = {for (final r in results) r.clientActionId: r};
-    final synced = <SyncAction>[];
-    final failed = <SyncAction>[];
-    final conflicts = <SyncAction>[];
 
-    for (final a in syncing) {
-      final result = resultMap[a.clientActionId];
+    for (final action in syncing) {
+      final result = resultMap[action.clientActionId];
       final SyncAction next;
 
       if (result == null) {
-        next = a.copyWith(
+        next = action.copyWith(
           status: SyncStatus.failed,
-          retryCount: a.retryCount + 1,
+          retryCount: action.retryCount + 1,
           lastErrorCode: 'MISSING_RESULT',
           lastSafeError: 'Ação sem resposta do servidor.',
         );
       } else {
         next = switch (result.status) {
-          'processed' => a.copyWith(
+          'processed' => action.copyWith(
             status: SyncStatus.synced,
             processedAt: DateTime.now().toUtc(),
-            lastErrorCode: null,
-            lastSafeError: null,
+            clearLastErrorCode: true,
+            clearLastSafeError: true,
             payload: result.resultRef != null
-                ? {...a.payload, 'result_ref': result.resultRef}
-                : a.payload,
+                ? {...action.payload, 'result_ref': result.resultRef}
+                : action.payload,
           ),
-          'conflict' => a.copyWith(
+          'conflict' => action.copyWith(
             status: SyncStatus.conflict,
             lastErrorCode: result.errorCode ?? 'CONFLICT',
-            lastSafeError: 'Conflito remoto exige decisão manual.',
+            lastSafeError: _expenseConflictText(result.errorCode),
           ),
-          _ => a.copyWith(
+          'ignored' => action.copyWith(
+            status: SyncStatus.synced,
+            processedAt: DateTime.now().toUtc(),
+            clearLastErrorCode: true,
+            clearLastSafeError: true,
+            payload: result.resultRef != null
+                ? {...action.payload, 'result_ref': result.resultRef}
+                : action.payload,
+          ),
+          _ => action.copyWith(
             status: SyncStatus.failed,
-            retryCount: a.retryCount + 1,
+            retryCount: action.retryCount + 1,
             lastErrorCode: result.errorCode ?? 'SERVER_ERROR',
             lastSafeError: 'Erro ao processar ação. Tente novamente.',
           ),
@@ -243,6 +422,21 @@ class SyncReplayService {
       }
 
       await _queue.update(next);
+
+      if (action.type == ExpenseSyncActionTypes.reportCreate &&
+          next.status == SyncStatus.synced &&
+          result?.resultRef != null) {
+        await _entityUpdater?.call(action, result!, next.status);
+        await _mapDependentReportActions(
+          tenantId: tenantId,
+          reportLocalId: _readString(action.payload['local_id']),
+          serverId: result!.resultRef!,
+        );
+      } else if (action.type == ExpenseSyncActionTypes.itemCreate &&
+          next.status == SyncStatus.synced &&
+          result?.resultRef != null) {
+        await _entityUpdater?.call(action, result!, next.status);
+      }
 
       switch (next.status) {
         case SyncStatus.synced:
@@ -260,6 +454,134 @@ class SyncReplayService {
       conflicts: conflicts,
     );
   }
+
+  Future<SyncAction?> _prepareForBackend(
+    String tenantId,
+    SyncAction action,
+  ) async {
+    if (action.type == ExpenseSyncActionTypes.reportCreate) {
+      return action;
+    }
+
+    if (action.type != ExpenseSyncActionTypes.itemCreate &&
+        action.type != ExpenseSyncActionTypes.reportSubmit) {
+      return null;
+    }
+
+    final reportLocalId = _readString(action.payload['report_local_id']);
+    if (reportLocalId == null) {
+      // Ação sintética/legada sem âncora de relatório: preserva o lote antigo.
+      return action;
+    }
+
+    if (action.type == ExpenseSyncActionTypes.reportSubmit &&
+        await _hasUnsyncedItems(tenantId, reportLocalId)) {
+      return null;
+    }
+
+    final existingReportId = _readString(action.payload['report_id']);
+    if (existingReportId != null && !_isLocalExpenseId(existingReportId)) {
+      return action;
+    }
+
+    final resolved = _serverIdForReport?.call(reportLocalId);
+    if (resolved == null || _isLocalExpenseId(resolved)) return null;
+
+    return action.copyWith(payload: {...action.payload, 'report_id': resolved});
+  }
+
+  Future<bool> _hasUnsyncedItems(String tenantId, String reportLocalId) async {
+    final actions = await _queue.actionsForTenant(tenantId);
+    for (final action in actions) {
+      if (action.type != ExpenseSyncActionTypes.itemCreate) continue;
+      if (_readString(action.payload['report_local_id']) != reportLocalId) {
+        continue;
+      }
+      if (action.status == SyncStatus.synced) continue;
+      return true;
+    }
+    return false;
+  }
+
+  bool _isLocalExpenseId(String value) {
+    final normalized = value.trim().toLowerCase();
+    return normalized.startsWith('pc-local-') ||
+        normalized.startsWith('local-') ||
+        normalized.startsWith('tmp-');
+  }
+
+  SyncAction _failWithRetry(SyncAction action) {
+    return action.copyWith(
+      status: SyncStatus.failed,
+      retryCount: action.retryCount + 1,
+      lastErrorCode: 'NETWORK_ERROR',
+      lastSafeError: 'Falha de conexão. Tente novamente.',
+    );
+  }
+
+  SyncAction _domainConflict(SyncAction action, String? reason) {
+    return action.copyWith(
+      status: SyncStatus.conflict,
+      lastErrorCode: reason ?? 'CONFLICT',
+      lastSafeError: _domainConflictText(reason),
+    );
+  }
+
+  Future<void> _mapDependentReportActions({
+    required String tenantId,
+    required String? reportLocalId,
+    required String serverId,
+  }) async {
+    if (reportLocalId == null || reportLocalId.trim().isEmpty) return;
+    if (serverId.trim().isEmpty) return;
+
+    final actions = await _queue.actionsForTenant(tenantId);
+    for (final action in actions) {
+      if (action.type != ExpenseSyncActionTypes.itemCreate &&
+          action.type != ExpenseSyncActionTypes.reportSubmit) {
+        continue;
+      }
+      if (_readString(action.payload['report_local_id']) != reportLocalId) {
+        continue;
+      }
+      if (_readString(action.payload['report_id']) != null) continue;
+
+      await _queue.update(
+        action.copyWith(payload: {...action.payload, 'report_id': serverId}),
+      );
+    }
+  }
+}
+
+String? _readString(Object? value) =>
+    value is String && value.trim().isNotEmpty ? value.trim() : null;
+
+String _expenseConflictText(String? code) {
+  return switch (code) {
+    'action_owned_by_other_actor' =>
+      'Este lançamento já foi enviado por outro usuário.',
+    'payload_mismatch' => 'Este lançamento já foi recebido com outro conteúdo.',
+    'receipt_unverifiable' ||
+    'receipt_ambiguous' ||
+    'legacy_payload_unverifiable' =>
+      'O servidor não consegue confirmar este lançamento antigo; decida manualmente.',
+    _ => 'Conflito remoto exige decisão manual.',
+  };
+}
+
+String _domainConflictText(String? reason) {
+  return switch (reason) {
+    'status_not_editable' ||
+    'locked' => 'Este lançamento não pode mais ser alterado no servidor.',
+    'empty_report' =>
+      'Este relatório está vazio; adicione um item antes de enviar.',
+    'work_order_not_found' =>
+      'A ordem de serviço associada não foi encontrada.',
+    'unsupported_action' => 'Este tipo de envio ainda não é suportado.',
+    'EXPENSE_NOT_FOUND' => 'Este lançamento não foi encontrado no servidor.',
+    'LEGACY_ITEM_INCOMPLETE' => 'Lançamento antigo incompleto; refaça o item.',
+    _ => 'O servidor recusou este lançamento.',
+  };
 }
 
 // ── Work order batch API ─────────────────────────────────────────────────────
