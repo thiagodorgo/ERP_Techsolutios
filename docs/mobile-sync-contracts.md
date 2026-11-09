@@ -51,6 +51,7 @@ Blocos de controle do bootstrap:
 - Offline: origem principal das acoes offline.
 - Evento/auditoria: `expense_report.synced_from_mobile` e eventos especificos por acao aceita.
 - Status B-098: implementado para o MVP de despesas com resposta em `data.results`.
+- Bloco B-O6R-03b: o `field_technician` ganha `expense_sync:write`; o app reenvia só `expense_report.create`, `expense_item.create` e `expense_report.submit`. `item.create` sai com `report_id` (UUID do servidor), `category_key`, `spent_at` e `amount`; `submit` com `report_id`. Lote de despesa vai em 1 ação por requisição (`batchSize: 1`); 503 `sync_busy` mantém `pending` sem consumir tentativa; conflito por ação ganha texto PT-BR no app. `expense_receipt.attach` não é enfileirado (comprovante fica local até `B-RDV-COMPROVANTE`).
 
 ### POST /api/v1/mobile/sync/work-order-actions
 

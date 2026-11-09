@@ -73,6 +73,7 @@ Valores de `status` em blocos versionados:
 - `partial`: familia de contratos com parte implementada e parte planejada.
 
 `POST /api/v1/mobile/sync/work-order-actions` esta implementado no B-098B para sincronizacao controlada de acoes de OS vindas do Flutter. O endpoint usa o tenant do ator autenticado, ignora qualquer `tenant_id` enviado no body/payload, exige `client_action_id` por acao e separa resultados em `accepted`, `rejected`, `conflicts` e `already_applied`.
+`POST /api/v1/mobile/sync/expense-actions` esta implementado no B-O6R-03b para despesas de verdade do app de campo: o `field_technician` tem `expense_sync:write`; `item.create` envia `report_id` (UUID de servidor), `category_key`, `spent_at` e `amount`, e o replay vai em lote de 1 acao por requisicao. 503 `sync_busy` nao consome tentativa; `expense_receipt.attach` fica de fora (comprovante local ate `B-RDV-COMPROVANTE`).
 
 Request:
 
