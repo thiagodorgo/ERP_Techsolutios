@@ -70,7 +70,6 @@ export type InvoiceLookup = {
 
 export type RegisterInvoiceWebhookInput = {
   readonly url: string;
-  readonly secret: string;
 };
 
 export type InvoiceProviderDescription = {
@@ -95,7 +94,7 @@ export interface InvoiceProviderPort {
   issue(input: IssueInvoiceInput): Promise<IssueInvoiceResult>;
   getInvoice(ref: string): Promise<InvoiceLookup>;
   cancel(ref: string, reason: string, code?: string): Promise<{ readonly status: InvoiceCancelStatus }>;
-  registerEmitter(settings: Readonly<Record<string, unknown>>, certificate: Readonly<Record<string, string>>): Promise<{ readonly externalId?: string }>;
+  registerEmitter(settings: Readonly<Record<string, unknown>>): Promise<{ readonly externalId?: string }>;
   registerWebhook(input: RegisterInvoiceWebhookInput): Promise<{ readonly externalId: string }>;
   getInvoicePdf(ref: string): Promise<{ readonly source: "public_url"; readonly url: string } | { readonly source: "provider_fetch"; readonly bytes: Uint8Array }>;
   verifyWebhook(input: VerifyInvoiceWebhookInput): Promise<VerifyInvoiceWebhookResult>;

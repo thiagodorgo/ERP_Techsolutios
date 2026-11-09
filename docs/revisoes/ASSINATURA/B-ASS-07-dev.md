@@ -45,3 +45,19 @@ Este bloco entrega a porta comum, as regras fiscais, o adaptador Focus NFe e o f
 - **feito:** F1 completa, 7 testes e duas mutações provadas.
 - **falta:** falso/adaptador Focus, registro, sequência em memória, PDF/cancelamento, docs e bateria.
 - **próximo comando:** `node --test --import tsx tests/ass-07-tax-rules.test.ts`.
+
+## F2 — falso Focus e adaptador
+
+- Falso Focus em `127.0.0.1:0`, com emissão, consulta assíncrona, duplicidade de referência, número DPS repetido, cancelamento com erro em 200, empresa e hook.
+- Adaptador Focus usa exclusivamente `BillingHttpClient`; token em `Authorization: Basic`, nunca em query; fábrica lê `api_token`, `webhook_secret` e `certificate` apenas por `readSecretForProvider`.
+- Emissão Nacional envia `ref=<statement_id>:<seq>`, `numero_dps` recebido, CNPJ/documentos como string e valores em reais derivados de centavos inteiros. 202 retorna somente `processing`.
+- Consulta mapeia `processando_autorizacao`, `autorizado`, `erro_autorizacao`, `cancelado` e desconhecido; cancelamento inspeciona o conteúdo mesmo em HTTP 200.
+- T-NF-1..6, 19, 28 e 31 na parte Focus: **5 casos/5 verdes**; conjunto do bloco até aqui **12/12**; R-EXT-0 **4/4**; `npm run check` verde.
+- Mutações literais provadas e restauradas: 202→`authorized` (T-NF-1 vermelho); CNPJ convertido para número (T-NF-1 vermelho); duplicidade sem mapa `already_issued` (T-NF-5 vermelho); erro de cancelamento em 200 tratado como cancelado (T-NF-6 vermelho).
+
+## RETOMADA 2
+
+- **head medido:** commit F2 será o próximo head do ramo.
+- **feito:** contrato Focus básico, assíncrono, duplicidade e cancelamento por conteúdo.
+- **falta:** registro de emissor/webhook, gates/segredo, sequência/reemissão, PDF/campos, docs e bateria.
+- **próximo comando:** `node --test --import tsx tests/ass-07-focusnfe-adapter.test.ts`.
