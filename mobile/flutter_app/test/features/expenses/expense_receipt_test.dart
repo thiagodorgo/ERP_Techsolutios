@@ -127,7 +127,7 @@ void main() {
 
   // ── 3 ──────────────────────────────────────────────────────────────────────
   test(
-    'attachReceiptPlaceholder enqueues expense_receipt.attach with non-empty clientActionId',
+    'attachReceiptPlaceholder keeps receipt local and does not enqueue a sync action',
     () async {
       final syncQueue = InMemorySyncQueueRepository();
       final repo = _buildRepo(syncQueue: syncQueue);
@@ -149,21 +149,19 @@ void main() {
         itemLocalId: itemResult.report.items.first.localId,
       );
 
-      expect(result.action.type, ExpenseSyncActionTypes.receiptAttach);
-      expect(result.action.clientActionId, isNotEmpty);
+      expect(result, isNull);
 
       final queued = await syncQueue.actionsForTenant('tenant-demo');
       final receiptActions = queued
           .where((a) => a.type == ExpenseSyncActionTypes.receiptAttach)
           .toList();
-      expect(receiptActions, hasLength(1));
-      expect(receiptActions.first.clientActionId, isNotEmpty);
+      expect(receiptActions, isEmpty);
     },
   );
 
   // ── 4 ──────────────────────────────────────────────────────────────────────
   test(
-    'expense_receipt.attach payload contains only safe metadata — no private path, token or raw content',
+    'comprovante fica no aparelho: recebido salvo local sem payload de sync',
     () async {
       final repo = _buildRepo();
       final created = await repo.createReport(
@@ -178,59 +176,20 @@ void main() {
         vendorName: 'Lanchonete',
       );
 
-      final result = await repo.attachReceiptPlaceholder(
+      await repo.attachReceiptPlaceholder(
         reportLocalId: created.report.localId,
         itemLocalId: itemResult.report.items.first.localId,
         fileName: 'nota.jpg',
       );
 
-      final payload = result.action.payload;
+      final report = repo.findReport(created.report.localId)!;
+      final receipt = report.items.first.receipts.single;
 
-      // Safe metadata must be present
-      expect(
-        payload.keys,
-        containsAll([
-          'tenant_id',
-          'receipt_local_id',
-          'file_name',
-          'capture_source',
-        ]),
-      );
-
-      // No key must hint at sensitive data
-      for (final key in payload.keys) {
-        expect(
-          key.contains('token') ||
-              key.contains('password') ||
-              key.contains('secret'),
-          isFalse,
-          reason: 'Payload key "$key" suggests sensitive data',
-        );
-      }
-
-      // No value must look like an absolute filesystem path or bearer token
-      for (final value in payload.values) {
-        if (value is String) {
-          expect(
-            value.startsWith('/data/') || value.startsWith('/storage/'),
-            isFalse,
-            reason: 'Payload value "$value" looks like a private path',
-          );
-          expect(
-            value.toLowerCase().startsWith('bearer '),
-            isFalse,
-            reason: 'Payload value "$value" looks like a bearer token',
-          );
-          // base64 blobs are long and match [A-Za-z0-9+/=]+
-          if (value.length > 100) {
-            expect(
-              RegExp(r'^[A-Za-z0-9+/]+=*$').hasMatch(value),
-              isFalse,
-              reason: 'Payload value looks like base64 encoded content',
-            );
-          }
-        }
-      }
+      expect(receipt.uploadStatus, ReceiptUploadStatus.local);
+      expect(receipt.serverId, isNull);
+      expect(receipt.fileName, 'nota.jpg');
+      expect(receipt.reportLocalId, created.report.localId);
+      expect(receipt.itemLocalId, itemResult.report.items.first.localId);
     },
   );
 

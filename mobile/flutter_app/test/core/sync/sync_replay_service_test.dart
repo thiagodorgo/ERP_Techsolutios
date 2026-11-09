@@ -227,67 +227,44 @@ void main() {
     });
 
     test(
-      '8. receipt action batch payload has no private paths, tokens, or file content',
+      '8. legacy receipt action becomes a visible conflict and is not sent',
       () async {
         final queue = InMemorySyncQueueRepository();
-        final receiptPayload = {
-          'tenant_id': 'tenant-test',
-          'report_local_id': 'PC-local-1',
-          'report_server_id': null,
-          'item_local_id': 'item-local-1',
-          'receipt_local_id': 'receipt-local-1',
-          'file_name': 'comprovante.jpg',
-          'mime_type': 'image/jpeg',
-          'size_bytes': 98304,
-          'sha256_hash': 'abc123def456',
-          'capture_source': 'camera',
-          'created_at': '2026-06-11T00:00:00.000Z',
-        };
         await queue.enqueue(
           _action(
             id: 'r1',
             type: 'expense_receipt.attach',
-            payload: receiptPayload,
+            payload: {
+              'report_local_id': 'PC-local-1',
+              'item_local_id': 'item-local-1',
+              'receipt_local_id': 'receipt-local-1',
+              'file_name': 'comprovante.jpg',
+            },
           ),
         );
 
-        final List<SyncAction> capturedBatch = [];
+        var apiCalled = false;
         final capApi = CaptureBatchApi((batch) {
-          capturedBatch.addAll(batch);
-          return [
-            SyncActionResult(
-              clientActionId: 'r1',
-              status: 'processed',
-              resultRef: 'srv-r1',
-            ),
-          ];
+          apiCalled = true;
+          return const [];
         });
 
-        await _service(queue, capApi).replayTenant('tenant-test');
+        final result = await _service(
+          queue,
+          capApi,
+        ).replayTenant('tenant-test');
 
-        final sentPayload = capturedBatch.single.payload;
-        final valuesAsStrings = sentPayload.values
-            .whereType<String>()
-            .map((v) => v.toLowerCase())
-            .toList();
+        expect(apiCalled, isFalse);
+        expect(result.conflicts, hasLength(1));
+        expect(result.conflicts.single.status, SyncStatus.conflict);
+        expect(result.conflicts.single.lastErrorCode, 'UNSUPPORTED_ACTION');
+        expect(
+          result.conflicts.single.lastSafeError,
+          contains('Comprovante fica no aparelho'),
+        );
 
-        // Must not include private path markers
-        for (final v in valuesAsStrings) {
-          expect(
-            v.contains('/home/') ||
-                v.contains('c:\\users') ||
-                v.contains('private'),
-            isFalse,
-            reason: 'payload must not contain private paths',
-          );
-          expect(
-            v.length > 500,
-            isFalse,
-            reason: 'payload values must not include base64 file content',
-          );
-        }
-        expect(sentPayload.containsKey('access_token'), isFalse);
-        expect(sentPayload.containsKey('token'), isFalse);
+        final stored = await queue.actionsForTenant('tenant-test');
+        expect(stored.single.status, SyncStatus.conflict);
       },
     );
 
