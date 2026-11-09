@@ -12943,3 +12943,27 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** infra/CI, intermitente · **dono:** infra/CI · **prioridade:** BAIXA · **bloqueia:** não.
 - **fato:** o `financial-title-status-cas-db` (barreira K11) falhou 1× na `main` por corrida e passou no rerun; flaky conhecido, não regressão de código.
 - **encerramento:** infra/CI reproduz e nomeia a corrida (como nas demais intermitentes), ou uma série suficiente demonstra estabilidade com o caso concorrendo com a suíte.
+
+## P-ASS07-REGIME-VOCAB-FECHADO (2026-11-09) — classificação de regime fiscal é fail-open para valor não-canônico — MÉDIA
+
+- **status:** ABERTA · **escopo:** achado C2-N1 da J-519 do `B-ASS-07` (#519) · **dono:** camada de config fiscal (bloco futuro) · **PR-alvo:** PR do bloco futuro da camada de config fiscal · **bloqueia:** não.
+- **fato:** a classificação de regime fiscal é fail-open para valor não-canônico — o contrato desconhecido é tratado como ausente e dado como cumprido. A validação é da camada de config fiscal.
+- **encerramento:** a camada de config fiscal classifica o regime com vocabulário fechado e falha fechada (fail-closed) para valor não-canônico, com teste.
+
+## P-ASS07-FOCUS-GET-MUNICIPAL (2026-11-09) — `getInvoice`/`cancel` exercidos só na rota Nacional `/nfsen`; a rota municipal não é exercida — BAIXA
+
+- **status:** ABERTA · **escopo:** achado C1-N1 da J-519 do `B-ASS-07` (#519) · **dono:** `B-ASS-15` · **PR-alvo:** PR do `B-ASS-15` · **bloqueia:** não.
+- **fato:** `getInvoice`/`cancel` só estão exercidos na rota Nacional (`/nfsen`); a rota municipal não é exercida (recorte 1+1 do bloco, só Focus Nacional).
+- **encerramento:** a rota municipal tem `getInvoice`/`cancel` exercidos com teste no `B-ASS-15`, ou a cobertura é declarada como fora do recorte.
+
+## P-ASS07-ALREADY-ISSUED-REGEX (2026-11-09) — `already_issued` depende de regex sobre a mensagem em português da Focus — BAIXA
+
+- **status:** ABERTA · **escopo:** achado C1-N2 da J-519 do `B-ASS-07` (#519) · **dono:** `B-ASS-15`/homologação Focus · **PR-alvo:** PR do `B-ASS-15`/homologação Focus · **bloqueia:** não.
+- **fato:** a detecção de `already_issued` depende de regex sobre a mensagem em português da Focus, frágil a mudanças de redação do provedor.
+- **encerramento:** a detecção de `already_issued` é endurecida na homologação Focus (código de erro ou contrato estável, não regex sobre texto), com teste.
+
+## P-ASS07-CERT-REDACAO (2026-11-09) — `sanitizedErrorMessage` redige o certificado como JSON inteiro, mas não os campos internos — BAIXA
+
+- **status:** ABERTA · **escopo:** ajuste C3-A1 da J-519 do `B-ASS-07` (#519) · **dono:** `B-ASS-08`/próximo toque no adaptador · **PR-alvo:** PR do próximo toque no adaptador Focus (`B-ASS-08`) · **bloqueia:** não.
+- **fato:** o `sanitizedErrorMessage` redige o certificado quando ele chega como JSON inteiro, mas os campos internos (`password`, `pfxBase64`) ainda não são redigidos individualmente — vazamento só teórico, com o canal desligado.
+- **encerramento:** o `sanitizedErrorMessage` redige também os campos internos do certificado (`password`, `pfxBase64`), com teste.
