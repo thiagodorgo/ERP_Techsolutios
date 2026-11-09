@@ -16,8 +16,12 @@ const uuidList: Rule = (value) =>
   Array.isArray(value) && value.length <= 500 && value.every((item) => typeof item === "string" && UUID.test(item)) ? [...value] : undefined;
 const fingerprint: Rule = (value) => (typeof value === "string" && FINGERPRINT.test(value) ? value : undefined);
 const count: Rule = (value) => (typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined);
+// B-ASS-05b: a lista de códigos de plano da trilha `plans.bootstrapped_by_migration`. Até 50 itens, cada um na regra
+// `SHORT_CODE`; qualquer item fora da forma derruba a chave inteira.
+const codeList: Rule = (value) =>
+  Array.isArray(value) && value.length <= 50 && value.every((item) => typeof item === "string" && SHORT_CODE.test(item)) ? [...value] : undefined;
 
-/** As chaves que a trilha do cofre e dos provedores aceita, e a forma de cada valor. Nada além disto. */
+/** As chaves que a trilha do cofre, dos provedores e dos planos aceita, e a forma de cada valor. Nada além disto. */
 export const BILLING_AUDIT_RULES: Readonly<Record<string, Rule>> = {
   actor_user_id: uuidOrNull,
   provider: code,
@@ -28,6 +32,9 @@ export const BILLING_AUDIT_RULES: Readonly<Record<string, Rule>> = {
   unreadable_ids: uuidList,
   rotated_count: count,
   unreadable_count: count,
+  // B-ASS-05b: a trilha dos planos semeados pela migração (`plans.service.ts`).
+  codes: codeList,
+  count,
 };
 
 export type BillingAuditMetadata = Readonly<Record<string, unknown>>;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
+import '../../core/network/api_contracts.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/sync/auto_sync_coordinator.dart';
 import '../../core/sync/sync_action_labels.dart';
@@ -9,6 +10,7 @@ import '../../core/sync/sync_conflict_resolver.dart';
 import '../../core/sync/sync_models.dart';
 import '../../core/sync/sync_providers.dart';
 import '../../core/sync/sync_stalled_resolver.dart';
+import '../../core/sync/sync_user_scope.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
 import 'mobile_kit.dart';
@@ -54,6 +56,42 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
     if (mounted) setState(() => _reloadKey++);
   }
 
+  Future<void> _assumeLegacy(SyncAction action, String userId) async {
+    final queue = ref.read(syncQueueRepositoryProvider);
+    final all = await queue.actionsForTenant(action.tenantId);
+    SyncAction? fresh;
+    for (final a in all) {
+      if (a.clientActionId == action.clientActionId) fresh = a;
+    }
+    if (fresh != null &&
+        canAssumeLegacyAction(fresh, userId, allTenantActions: all)) {
+      await queue.update(
+        assignActionToUser(fresh, userId, allTenantActions: all),
+      );
+    }
+    if (mounted) setState(() => _reloadKey++);
+  }
+
+  Future<void> _discardLegacy(SyncAction action) async {
+    final queue = ref.read(syncQueueRepositoryProvider);
+    SyncAction? fresh;
+    for (final a in await queue.actionsForTenant(action.tenantId)) {
+      if (a.clientActionId == action.clientActionId) fresh = a;
+    }
+    if (fresh != null &&
+        fresh.userId == null &&
+        fresh.status != SyncStatus.synced) {
+      final updated = discardLegacyAction(
+        fresh,
+        discardedAt: DateTime.now().toUtc(),
+      );
+      if (updated != fresh) {
+        await queue.update(updated);
+      }
+    }
+    if (mounted) setState(() => _reloadKey++);
+  }
+
   /// Confirmação do descarte (P25). Reutilizável pelo cartão do legado.
   Future<bool> _confirmDiscard(BuildContext context, SyncAction action) async {
     final id = action.clientActionId;
@@ -92,6 +130,7 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
         .watch(bootstrapSessionProvider)
         .maybeWhen(data: (v) => v, orElse: () => null);
     final queue = ref.watch(syncQueueRepositoryProvider);
+    final userId = ref.watch(currentSyncUserIdProvider);
     final channelOff = ref.watch(expenseSyncChannelOffProvider);
     SyncPresentation present(SyncAction a) =>
         presentSyncAction(a, expenseChannelOff: channelOff);
@@ -121,15 +160,22 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                   : queue.actionsForTenant(session.activeTenant.tenantId),
               builder: (context, snapshot) {
                 final actions = snapshot.data ?? const <SyncAction>[];
+                final part = partitionByUser(actions, userId);
+                final othersAwaiting = part.others
+                    .where((a) => a.status != SyncStatus.synced)
+                    .toList();
+                final legacyAwaiting = part.legacy
+                    .where((a) => a.status != SyncStatus.synced)
+                    .toList();
                 final counts = SyncPresentationCounts.fromActions(
-                  actions,
+                  part.mine,
                   expenseChannelOff: channelOff,
                 );
-                final grouped = _groupByDomain(actions);
-                final conflicts = actions
+                final grouped = _groupByDomain(part.mine);
+                final conflicts = part.mine
                     .where((a) => present(a) == SyncPresentation.conflict)
                     .toList();
-                final stalled = actions
+                final stalled = part.mine
                     .where((a) => present(a) == SyncPresentation.stalled)
                     .toList();
 
@@ -211,6 +257,125 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                         const SizedBox(height: 12),
                       ],
 
+                      // ── Ações de outro usuário (somente contagem) ───────────────
+                      if (othersAwaiting.isNotEmpty) ...[
+                        Container(
+                          key: const Key('other-users-sync-notice'),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blueGrey.shade50,
+                            border: Border.all(color: Colors.blueGrey.shade200),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.person_outline,
+                                color: Colors.blueGrey.shade700,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  othersAwaiting.length == 1
+                                      ? '1 ação de outro usuário neste aparelho aguarda o login dele.'
+                                      : '${othersAwaiting.length} ações de outro usuário neste aparelho aguardam o login dele.',
+                                  style: TextStyle(
+                                    color: Colors.blueGrey.shade900,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // ── Lançamentos legados sem usuário ─────────────────────────
+                      if (legacyAwaiting.isNotEmpty) ...[
+                        Container(
+                          key: const Key('legacy-sync-notice'),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade50,
+                            border: Border.all(color: Colors.amber.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.history_outlined,
+                                color: Colors.amber.shade800,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Lançamentos da versão anterior do app. '
+                                  'Toque Assumir para que sejam enviados com '
+                                  'o seu usuário quando o envio estiver ativo.',
+                                  style: TextStyle(
+                                    color: Colors.amber.shade900,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        for (final l in legacyAwaiting)
+                          Builder(
+                            builder: (context) {
+                              final canAssume = canAssumeLegacyAction(
+                                l,
+                                userId,
+                                allTenantActions: actions,
+                              );
+                              final blockedOtherEmployeeExpense =
+                                  userId != null &&
+                                  ExpenseSyncActionTypes.supported.contains(
+                                    l.type,
+                                  ) &&
+                                  !canAssume;
+                              final canDiscard =
+                                  !blockedOtherEmployeeExpense &&
+                                  canDiscardSyncAction(l.type);
+                              return _ConflictCard(
+                                action: l,
+                                keyPrefix: 'legacy',
+                                leftKeyName: 'discard',
+                                rightKeyName: 'assume',
+                                title:
+                                    'Ação da versão anterior do app — sem usuário · ${_domainLabel(l.type)}',
+                                body: blockedOtherEmployeeExpense
+                                    ? '${_actionLabel(l.type)} — Lançamento de outro usuário: só ele pode assumir.'
+                                    : '${_actionLabel(l.type)}: lançamento gravado antes da separação por usuário. '
+                                          '${canDiscard ? 'Assumir vincula ao seu usuário; Descartar encerra sem novo envio.' : 'Despesas não podem ser descartadas: toque Assumir para vincular ao seu usuário.'}',
+                                leftLabel: 'Descartar',
+                                rightLabel: 'Assumir',
+                                showLeft: canDiscard,
+                                showRight: canAssume,
+                                onLeft: () async {
+                                  if (await _confirmDiscard(context, l)) {
+                                    await _discardLegacy(l);
+                                  }
+                                },
+                                onRight: () {
+                                  if (userId != null) {
+                                    _assumeLegacy(l, userId);
+                                  }
+                                },
+                              );
+                            },
+                          ),
+                        const SizedBox(height: 12),
+                      ],
+
                       // ── Auto-sync state ───────────────────────────────────────────
                       _AutoSyncCard(autoSync: autoSync),
                       const SizedBox(height: 10),
@@ -241,7 +406,9 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                       const SizedBox(height: 20),
 
                       // ── Domain groups ─────────────────────────────────────────────
-                      if (actions.isEmpty)
+                      if (part.mine.isEmpty &&
+                          othersAwaiting.isEmpty &&
+                          legacyAwaiting.isEmpty)
                         const EmptyState(
                           icon: Icons.cloud_done_outlined,
                           title: 'Fila vazia',
@@ -279,8 +446,9 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
 
 // ── Conflict card (resolucao manual) ─────────────────────────────────────────
 
-// Um só cartão de decisão: serve ao conflito (Minha versão / Versão do gestor)
-// e ao envio encalhado (Descartar / Tentar de novo).
+// Um só cartão de decisão: serve ao conflito (Minha versão / Versão do gestor),
+// ao envio encalhado (Descartar / Tentar de novo) e ao legado sem usuário
+// (Descartar / Assumir).
 class _ConflictCard extends StatelessWidget {
   const _ConflictCard({
     required this.action,
@@ -294,6 +462,7 @@ class _ConflictCard extends StatelessWidget {
     required this.onLeft,
     required this.onRight,
     this.showLeft = true,
+    this.showRight = true,
   });
 
   final SyncAction action;
@@ -305,6 +474,7 @@ class _ConflictCard extends StatelessWidget {
   final String leftLabel;
   final String rightLabel;
   final bool showLeft;
+  final bool showRight;
   final VoidCallback onLeft;
   final VoidCallback onRight;
 
@@ -341,28 +511,30 @@ class _ConflictCard extends StatelessWidget {
                 context,
               ).textTheme.bodySmall?.copyWith(color: scheme.onErrorContainer),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                if (showLeft) ...[
-                  Expanded(
-                    child: OutlinedButton(
-                      key: Key('$keyPrefix-$leftKeyName-$id'),
-                      onPressed: onLeft,
-                      child: Text(leftLabel),
+            if (showLeft || showRight) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  if (showLeft)
+                    Expanded(
+                      child: OutlinedButton(
+                        key: Key('$keyPrefix-$leftKeyName-$id'),
+                        onPressed: onLeft,
+                        child: Text(leftLabel),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
+                  if (showLeft && showRight) const SizedBox(width: 8),
+                  if (showRight)
+                    Expanded(
+                      child: FilledButton(
+                        key: Key('$keyPrefix-$rightKeyName-$id'),
+                        onPressed: onRight,
+                        child: Text(rightLabel),
+                      ),
+                    ),
                 ],
-                Expanded(
-                  child: FilledButton(
-                    key: Key('$keyPrefix-$rightKeyName-$id'),
-                    onPressed: onRight,
-                    child: Text(rightLabel),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ],
         ),
       ),

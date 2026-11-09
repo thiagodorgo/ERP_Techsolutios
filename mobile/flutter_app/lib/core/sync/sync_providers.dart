@@ -25,6 +25,7 @@ import 'sync_models.dart';
 import 'sync_queue_repository.dart';
 import 'sync_queue_reclaim_service.dart';
 import 'sync_replay_service.dart';
+import 'sync_user_scope.dart';
 
 final syncActionStoreProvider = Provider<SyncActionStore>(
   (ref) => DriftSyncActionStore(ref.watch(appDatabaseProvider)),
@@ -41,8 +42,27 @@ final syncQueueReclaimServiceProvider = Provider<SyncQueueReclaimService>(
   ),
 );
 
+final currentSyncUserIdProvider = Provider<String?>((ref) {
+  final auth = ref
+      .watch(authStateProvider)
+      .maybeWhen(data: (state) => state, orElse: () => null);
+  if (auth == null || !auth.isAuthenticated) return null;
+  final sub = auth.session?.user.sub.trim();
+  if (sub == null || sub.isEmpty) return null;
+  return sub;
+});
+
 final syncActionFactoryProvider = Provider<SyncActionFactory>(
-  (ref) => SyncActionFactory(),
+  (ref) => SyncActionFactory(
+    currentUserId: () => ref.read(currentSyncUserIdProvider),
+  ),
+);
+
+final replaySyncQueueRepositoryProvider = Provider<SyncQueueRepository>(
+  (ref) => UserScopedSyncQueueRepository(
+    queue: ref.watch(syncQueueRepositoryProvider),
+    currentUserId: () => ref.read(currentSyncUserIdProvider),
+  ),
 );
 
 final expenseSyncApiProvider = Provider<ExpenseSyncApi>(
@@ -120,7 +140,7 @@ final syncBatchApiProvider = Provider<ExpenseSyncBatchApi>(
 
 final syncReplayServiceProvider = Provider<SyncReplayService>((ref) {
   return SyncReplayService(
-    queue: ref.watch(syncQueueRepositoryProvider),
+    queue: ref.watch(replaySyncQueueRepositoryProvider),
     api: ref.watch(syncBatchApiProvider),
     supportedActionTypes: ExpenseSyncActionTypes.supported,
   );
@@ -157,7 +177,7 @@ final workOrderSyncReplayServiceProvider = Provider<WorkOrderSyncReplayService>(
   (ref) {
     final store = DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider));
     return WorkOrderSyncReplayService(
-      queue: ref.watch(syncQueueRepositoryProvider),
+      queue: ref.watch(replaySyncQueueRepositoryProvider),
       api: ref.watch(workOrderSyncBatchApiProvider),
       entityUpdater: buildWorkOrderSyncEntityUpdater(store),
     );
@@ -167,7 +187,7 @@ final workOrderSyncReplayServiceProvider = Provider<WorkOrderSyncReplayService>(
 final workOrderConflictResolutionServiceProvider =
     Provider<WorkOrderConflictResolutionService>((ref) {
       return WorkOrderConflictResolutionService(
-        queue: ref.watch(syncQueueRepositoryProvider),
+        queue: ref.watch(replaySyncQueueRepositoryProvider),
         store: DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
       );
     });
@@ -233,7 +253,7 @@ final checklistSyncReplayServiceProvider = Provider<ChecklistSyncReplayService>(
     // PR-B: o ciclo completo do guincheiro (menos run.create) é replay-elegível
     // agora que o app baixa o server_run_id da run pré-criada pelo despacho.
     return ChecklistSyncReplayService(
-      queue: ref.watch(syncQueueRepositoryProvider),
+      queue: ref.watch(replaySyncQueueRepositoryProvider),
       api: ref.watch(checklistSyncBatchApiProvider),
       supportedActionTypes: backendChecklistActionTypes,
       extraEligibility: checklistActionReadyForBackend,
@@ -269,7 +289,7 @@ final evidenceSyncReplayServiceProvider = Provider<EvidenceSyncReplayService>((
 ) {
   final store = DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider));
   return EvidenceSyncReplayService(
-    queue: ref.watch(syncQueueRepositoryProvider),
+    queue: ref.watch(replaySyncQueueRepositoryProvider),
     api: ref.watch(evidenceSyncBatchApiProvider),
     entityUpdater: buildEvidenceSyncEntityUpdater(store),
   );

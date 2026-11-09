@@ -83,10 +83,12 @@ SyncAction _statusAction({
   String id = 'status-b107',
   SyncStatus status = SyncStatus.pending,
   String? serverId,
+  String? userId,
 }) {
   return SyncAction(
     clientActionId: id,
     tenantId: _tenantId,
+    userId: userId,
     type: WorkOrderSyncActionTypes.statusUpdate,
     payload: {
       'local_id': _localId,
@@ -530,7 +532,9 @@ void main() {
 
     testWidgets('sync screen agrupa conflito de OS', (tester) async {
       final queue = InMemorySyncQueueRepository();
-      await queue.enqueue(_statusAction(status: SyncStatus.conflict));
+      await queue.enqueue(
+        _statusAction(status: SyncStatus.conflict, userId: 'u-b107'),
+      );
       final router = GoRouter(
         routes: [GoRoute(path: '/', builder: (_, _) => const SyncScreen())],
       );
@@ -540,6 +544,7 @@ void main() {
           overrides: [
             bootstrapSessionProvider.overrideWith((ref) async => _session),
             syncQueueRepositoryProvider.overrideWithValue(queue),
+            currentSyncUserIdProvider.overrideWithValue('u-b107'),
           ],
           child: MaterialApp.router(routerConfig: router),
         ),

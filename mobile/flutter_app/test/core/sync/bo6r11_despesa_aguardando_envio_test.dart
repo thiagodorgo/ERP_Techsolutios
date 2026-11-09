@@ -30,6 +30,7 @@ SyncAction _action(
   return SyncAction(
     clientActionId: id,
     tenantId: 'tenant-awaiting',
+    userId: 'u-awaiting',
     type: type,
     payload: {
       'id': id,
@@ -101,6 +102,7 @@ _runCoordinatorScenario({ExpenseSyncBatchApi? expenseApi}) async {
   final overrides = [
     appDatabaseProvider.overrideWithValue(db),
     syncQueueRepositoryProvider.overrideWithValue(queue),
+    currentSyncUserIdProvider.overrideWithValue('u-awaiting'),
     bootstrapSessionProvider.overrideWith((ref) async => _session()),
     workOrderSyncReplayServiceProvider.overrideWithValue(workOrders),
     checklistSyncReplayServiceProvider.overrideWithValue(

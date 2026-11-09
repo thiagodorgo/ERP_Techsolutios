@@ -103,12 +103,13 @@ export function resetSubscriptionBillingRuntimeForTests(): void {
 }
 
 async function createPrismaPlansService(): Promise<PlansService> {
-  const [plansModule, subscriptionsModule, modulesWriterModule, synchronizerModule] =
+  const [plansModule, subscriptionsModule, modulesWriterModule, synchronizerModule, trailModule] =
     await Promise.all([
       import("./plans/plans-prisma.repository.js"),
       import("./plans/subscriptions-prisma.repository.js"),
       import("./plans/tenant-modules.prisma.js"),
       import("./plans/tenant-modules.sync.js"),
+      import("./platform-audit/bootstrap-trail-once.js"),
     ]);
   const { prisma } = await import("../../database/prisma.js");
   const plans = new plansModule.PrismaPlansRepository(prisma);
@@ -118,8 +119,8 @@ async function createPrismaPlansService(): Promise<PlansService> {
     plans,
     undefined,
     new synchronizerModule.TenantModulesSynchronizer(subscriptions, plans, writer),
-    // B-ASS-05 (M4) troca pela gravação real em platform_audit_logs; até lá, em memória.
-    new RecordingPlatformAuditWriter(),
+    // B-ASS-05b: a trilha vai para platform_audit_logs, com o bootstrap gravado uma vez só no banco.
+    new trailModule.BootstrapTrailOnceWriter(prisma),
   );
 }
 

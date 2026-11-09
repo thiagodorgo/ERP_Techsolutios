@@ -17,6 +17,7 @@ B-106 deve aparecer nos dois conjuntos com Adapter GPS nativo real + permissoes 
 - Toda resposta de erro deve ser segura para log e nao conter token, recibo bruto, path privado ou segredo.
 - Toda decisao de workflow gera auditoria e evento tenant-scoped.
 - O comportamento offline do app deve ser explicito por endpoint.
+- A fila offline do aparelho (`sync_actions`, Drift `schemaVersion 14`, `B-FILA-USUARIO`) e particionada por usuario (`user_id = AuthUser.sub` do token da sessao autenticada em vigor, nunca do cache de bootstrap): os servicos de replay enviam somente acoes cujo `user_id` coincide com a sessao ativa; acoes legadas sem `user_id` ficam retidas ate o usuario assumi-las explicitamente na tela de sincronizacao (`Assumir`, ou `Descartar` confirmado apenas para tipos descartaveis); a retencao local de ordens de servico e vistorias (`actionsForTenant`) continua considerando acoes pendentes de qualquer usuario do aparelho.
 
 ## Contratos HTTP
 
