@@ -9,6 +9,7 @@ import '../../core/sync/sync_action_presentation.dart';
 import '../../core/sync/sync_conflict_resolver.dart';
 import '../../core/sync/sync_models.dart';
 import '../../core/sync/sync_providers.dart';
+import '../../core/sync/sync_resolution_side_effects.dart';
 import '../../core/sync/sync_stalled_resolver.dart';
 import '../../core/sync/sync_user_scope.dart';
 import 'erp_components.dart';
@@ -30,9 +31,13 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
     ConflictChoice choice,
   ) async {
     final queue = ref.read(syncQueueRepositoryProvider);
-    await queue.update(
-      resolveConflictAction(action, choice, resolvedAt: DateTime.now().toUtc()),
+    final resolved = resolveConflictAction(
+      action,
+      choice,
+      resolvedAt: DateTime.now().toUtc(),
     );
+    await queue.update(resolved);
+    await ref.read(syncResolutionSideEffectsProvider).apply(action, resolved);
     if (mounted) setState(() => _reloadKey++);
   }
 
@@ -49,9 +54,13 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
     if (fresh != null &&
         presentSyncAction(fresh, expenseChannelOff: channelOff) ==
             SyncPresentation.stalled) {
-      await queue.update(
-        resolveStalledAction(fresh, choice, resolvedAt: DateTime.now().toUtc()),
+      final resolved = resolveStalledAction(
+        fresh,
+        choice,
+        resolvedAt: DateTime.now().toUtc(),
       );
+      await queue.update(resolved);
+      await ref.read(syncResolutionSideEffectsProvider).apply(fresh, resolved);
     }
     if (mounted) setState(() => _reloadKey++);
   }

@@ -18,6 +18,8 @@ import '../network/api_contracts.dart';
 import '../network/http_client.dart';
 import '../../features/work_orders/data/work_order_local_store.dart';
 import '../../features/work_orders/data/work_order_conflict_resolution_service.dart';
+import '../../features/expenses/data/expense_repository.dart';
+import '../../features/expenses/data/expense_sync_entity_updater.dart';
 import 'sync_action_factory.dart';
 import 'sync_action_store.dart';
 import 'sync_engine.dart';
@@ -132,17 +134,46 @@ final fieldLocationSyncServiceProvider = Provider<FieldLocationSyncService>(
   ),
 );
 
-// Interruptor temporário do canal de despesas. O B-O6R-03b troca somente
-// este corpo pelo molde autenticado de workOrderSyncBatchApiProvider.
-final syncBatchApiProvider = Provider<ExpenseSyncBatchApi>(
-  (ref) => const PendingBackendExpenseSyncBatchApi(),
-);
+final syncBatchApiProvider = Provider<ExpenseSyncBatchApi>((ref) {
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) {
+    // Enquanto a sessão ainda não foi resolvida, o canal de despesas segue
+    // "não ativado" (Pending); resolvido sem token, vira Sessionless no-op.
+    final authState = ref.watch(authStateProvider);
+    if (authState.hasValue) {
+      return const SessionlessExpenseSyncBatchApi();
+    }
+    return const PendingBackendExpenseSyncBatchApi();
+  }
+
+  return DioExpenseSyncBatchApi(
+    createAuthenticatedHttpClient(
+      config,
+      onRefresh: () async {
+        await ref.read(authStateProvider.notifier).tryRefresh();
+        return ref
+            .read(authStateProvider)
+            .maybeWhen(
+              data: (state) => state.session?.tokens.accessToken,
+              orElse: () => null,
+            );
+      },
+      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
+    ),
+  );
+});
 
 final syncReplayServiceProvider = Provider<SyncReplayService>((ref) {
   return SyncReplayService(
     queue: ref.watch(replaySyncQueueRepositoryProvider),
     api: ref.watch(syncBatchApiProvider),
-    supportedActionTypes: ExpenseSyncActionTypes.supported,
+    supportedActionTypes: ExpenseSyncActionTypes.backendSupported,
+    entityUpdater: (action, result, status) async {
+      final repository = ref.read(expenseRepositoryProvider);
+      await buildExpenseSyncEntityUpdater(repository)(action, result, status);
+    },
+    serverIdForReport: (reportLocalId) =>
+        ref.read(expenseRepositoryProvider).serverIdForReport(reportLocalId),
   );
 });
 

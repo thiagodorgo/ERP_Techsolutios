@@ -972,6 +972,11 @@ export const ROLE_PERMISSIONS = {
     "field_dispatch:read",
     "field_dispatch:update",
     "commissions:read_own",
+    "expense_report:read_own",
+    "expense_report:create",
+    "expense_report:update",
+    "expense_report:submit",
+    "expense_sync:write",
     // D-CHK-DISPATCH-CREATE — "answer-assigned" (RBAC_MATRIX:44) para o guincheiro = RESPONDER a uma run
     // pré-criada pelo despacho: read (baixar a run da OS) + update (responder/marcar avaria/anexar) + complete
     // (concluir) + acknowledge (assinatura de ciência). NÃO recebe `checklist_runs:create` — a criação da run é
