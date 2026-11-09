@@ -32,9 +32,39 @@ const PAYMENT_SCENARIO_STATUS: Readonly<Record<string, string>> = {
   validation_400: "PENDING",
 };
 
+export type AsaasWebhookEvent = {
+  readonly id: string;
+  readonly event: string;
+  readonly payment: Readonly<Record<string, unknown>>;
+};
+
 export type AsaasFake = FakeServer & {
   setPaymentStatus(id: string, status: string): void;
 };
+
+/**
+ * B-ASS-08 · F3 — o falso EMITE um webhook para a nossa URL, com a autenticidade do Asaas: header
+ * `asaas-access-token` = o segredo que registramos (`webhook_secret`). `badSecret`/`extraToken` reproduzem o
+ * ataque (segredo errado, header repetido). Devolve `{ status }` da nossa resposta. Nenhuma chamada a host real.
+ */
+export async function emitAsaasWebhook(
+  targetUrl: string,
+  event: AsaasWebhookEvent,
+  options: { secret: string; badSecret?: boolean; extraToken?: string } = { secret: "" },
+): Promise<{ status: number; body: unknown }> {
+  const token = options.badSecret ? `${options.secret}-WRONG` : options.secret;
+  const headers = new Headers({ "content-type": "application/json" });
+  headers.append("asaas-access-token", token);
+  if (options.extraToken !== undefined) headers.append("asaas-access-token", options.extraToken);
+  const response = await fetch(targetUrl, { method: "POST", headers, body: JSON.stringify(event) });
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  return { status: response.status, body };
+}
 
 export async function startAsaasFake(defaultScenario = "ok", options: { ignoreExternalReferenceFilter?: boolean } = {}): Promise<AsaasFake> {
   resetAsaasFakeState();
