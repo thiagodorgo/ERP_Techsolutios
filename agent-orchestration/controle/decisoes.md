@@ -4632,3 +4632,19 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Falas literais:** *"tem o deepseek, o plano e vc o argon e o deepseek"*; *"vc entra no desenvolvimento tambem junto com o deepseek e argon, a oequestracao e sua tambem"*; *"o deepseek faz uma tarefa por vez, o argon e vc tambem"*; *"disparem vc cobre quem cair"*.
 - **Decisão:** nesta rodada os braços são o Claude (orquestração e desenvolvimento), o Argon (Antigravity) e o DeepSeek oficial (fora do pico). Cada um faz uma tarefa por vez. Para o DeepSeek, isto vale acima de "vários ao mesmo tempo fora do pico" (05/11), e liga `painel/uma-por-vez.txt`. Quando um braço cai, o Claude cobre.
 - **Leitura do orquestrador, declarada (§A6):** continua valendo o cruzamento de `D-UM-FAZ-OUTRO-VERIFICA`: o que o Claude desenvolve é conferido pelo DeepSeek ou pelo Argon; o que o Argon ou o DeepSeek desenvolvem é conferido pelo Claude. O Gemini (inclusive o Argon) segue só como segundo revisor e nunca como revisor único (`D-GEMINI-SEGUNDO-REVISOR`); como dev, ele é conferido pelo Claude. Tela segue só no Claude (`D-DESIGN-SO-CLAUDE`).
+
+## D-CI-GITHUB-COBRANCA-0911 (decisão do dono, 2026-11-09) — tirar e religar a exigência de CI do GitHub conforme a cobrança
+
+- **Fato (08/11 ~23:37 → 09/11 ~03:15):** o GitHub Actions parou por cobrança (jobs não iniciavam); o dono tirou e depois religou a exigência dos 7 checks na regra da `main` pela UI; backup em `ci-local/ruleset-21453239-restaurar.json`. A cobrança foi regularizada ~03:15 e tudo voltou ao normal.
+- **Leitura do orquestrador, declarada (§A6):** com o Actions de volta, o CI local (`ferramentas/ci-github.sh`, montado e provado 2×) vira reserva; a exigência dos 7 checks segue ativa na regra da `main`.
+
+## D-CHECKUP-CONCLUSAO (decisão do dono, 2026-11-09) — cada tarefa limpa só o que criou, com Docker e gradle por coordenação
+
+- **Decisão:** cada braço/tarefa roda um checkup de conclusão ao terminar; remove só o que esta tarefa criou (containers e worktrees próprios) e nunca toca container, worktree, processo ou Docker de outro agente vivo; o Docker desliga só se esta tarefa o ligou e ninguém mais o usa; o cache do Gradle/Android só se esta tarefa o regenerou e não há bloco mobile nos próximos 7 dias. Reporta em 1 linha.
+- **Aplicado na ferramenta (fora do repositório), `ferramentas/checkup-conclusao.sh`.**
+
+## D-PLANO-BRACOS-V3-0911 (decisão do dono, 2026-11-09, ~07:56 SP) — plano v3 dos braços: DeepSeek teto US$ 2, Claude coordena e cobre, Codex volta 15:32
+
+- **Fala literal:** *"pode ir (plano v3)"*.
+- **Decisão:** DeepSeek oficial = registro da noite + item 47 (teto US$ 2); Antigravity Opus 4.6 = dev do B-ASS-07; Claude = coordena e cobre; Codex volta 15:32 (junta do B-ASS-07 + B-O6R-03b).
+- **Atualização (~08:01):** o Antigravity caiu (quota ~15/11) no dev do B-ASS-07, sem parcial; B-ASS-07 reatribuído ao Codex 1 às 15:33 e B-O6R-03b ao Codex 3; Claude assume o replano do B-USERS.

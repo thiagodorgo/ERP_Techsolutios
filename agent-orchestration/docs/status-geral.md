@@ -1,5 +1,15 @@
 # Status Geral
 
+## Atualização 2026-11-09 — noite de 08→09/11: #515 (B-ASS-06) e #516 (marco KPI) na main, dois flaky de CI e as decisões do dia
+
+- **Autor:** `reg-noite-0911-dp` (DeepSeek oficial, nível menor declarado, identidade de redator de registro). **Fonte:** `erp-pausa-2026-10-03/REGISTRO-PENDENTE.md`, seção "Noite de 09/11"; cada fato conferido em `git log origin/main` antes de gravar. Base medida: `origin/main@970cbbba`.
+- **#516 (marco de KPI, vendável 48%) mergeado `a54f1e46`:** revisor `rev-kpi-0911` APROVADO (vendável 48% conferido). Log: `a54f1e46 chore(kpi): marco de 09/11 — 209 blocos e vendável em 48% (#516)`.
+- **#515 (B-ASS-06) mergeado `970cbbba`:** junta completa APROVADO 3×0 unânime, 0 grave (cadeiras Claude Opus 4.8, dev DeepSeek, cruzamento); porteiro `LIBERADO COM RESSALVA`, com as ressalvas fechadas (branch local apagada; CI da `main` verde após rerun). Ata versionada em `agent-orchestration/omega/juntas/J-515-b-ass-06.md`.
+- **CI do GitHub:** parou por cobrança (08/11 ~23:37, jobs não iniciavam); o dono tirou e depois religou a exigência dos 7 checks na regra da `main` pela UI (backup em `ci-local/ruleset-21453239-restaurar.json`); cobrança regularizada ~03:15 e tudo voltou ao normal. O CI local (`ferramentas/ci-github.sh`) foi montado e provado como reserva.
+- **Dois flaky de CI registrados:** `P-CI-FLUTTER-LIBSQLITE3-FLAKY` (job `flutter`, download corrompido do `libsqlite3.x64.linux.so`, atingiu o #515 2× e o #516; rerun resolve) e `P-CI-FINANCIAL-TITLE-CAS-FLAKY` (`financial-title-status-cas-db`, barreira K11, falhou 1× na `main` por corrida e passou no rerun).
+- **Decisões do dono de 09/11:** `D-CI-GITHUB-COBRANCA-0911` (tirar/religar a exigência de CI conforme a cobrança), `D-CHECKUP-CONCLUSAO` (cada tarefa limpa só o que criou, Docker/gradle por coordenação) e `D-PLANO-BRACOS-V3-0911` (plano v3 dos braços: DeepSeek teto US$ 2, Claude coordena e cobre, Codex volta 15:32).
+- **Próximo:** o porteiro liberou o `B-ASS-07` (porta de nota fiscal + Focus NFe, desligado) como próximo alvo.
+
 ## Atualização 2026-11-08 — B-FILA-USUARIO: fila de sincronização do app por usuário (PR #512 aberto; conserto da pré-revisão feito, à espera da junta completa)
 
 - **Conserto da pré-revisão (`prerev-512-opus`, REPROVADO: A1 grave, A2–A4 não graves; Emenda 1 ao §A do plano):** feito por `dev-filausr-claude` (Claude Opus 5.5, identidade nova de dev, cobrindo o `dev-filausr-argon`, que caiu por cota). A1: o decorador `UserScopedSyncQueueRepository` passa a aceitar, numa ação de outro dono (inclusive a legada), só o mapeamento do `server_id` da criação de OS. Assim o passe não aborta mais, e a dependente sai já com o `server_id` quando o dono dela está na sessão. A prova é `test/core/sync/bfilausuario_dependente_de_outro_dono_test.dart`: 4 casos, 3 vermelhos em `71861445` e verdes depois, com mutação literal. A3: `PLANO_SAN3.md` em 64 bloqueantes / 51 blocos. A4: pendência `P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO`, dono `B-FILA-USUARIO-2`. A2 aceito pela emenda. Diário: `docs/revisoes/REENVIOS/B-FILA-USUARIO-dev.md`, seção "CONSERTO PRÉ-REVISÃO".
