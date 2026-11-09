@@ -177,3 +177,27 @@ As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demons
   `rate_limited_429` (`Retry-After: 2`), `rate_limited_429_reset` (`RateLimit-Reset: 30`), `timeout`,
   `customer_duplicate`; grava `recorded[]`. O `emitWebhook(targetUrl, event)` nasce no B-ASS-08 (usado lá), não aqui.
 - **Rollback:** reverter o PR; nada é persistido (sem migração).
+
+## Nota fiscal e reforma tributária (B-ASS-07)
+
+- **Para quê:** deixar a emissão de NFS-e pronta, mas desligada. A porta `InvoiceProviderPort`, as regras fiscais e o
+  adaptador **Focus NFe** usam o mesmo `BillingHttpClient` do pagamento e são provados apenas contra o falso local em
+  `127.0.0.1:0`. NFE.io e PlugNotas ficam no B-ASS-15 pelo recorte 1 + 1.
+- **Canal fechado:** `BILLING_PROVIDERS_ENABLED=false` recusa antes da rede. Localhost só é permitido quando
+  `BILLING_PROVIDER_ALLOW_LOCAL_HOSTS=true` em `NODE_ENV=test`. O token, o segredo do webhook e o certificado A1 são
+  lidos apenas por `readSecretForProvider`; não entram em log, erro, query string nem resposta.
+- **Assíncrono:** `issue` sempre devolve `processing`, inclusive após HTTP 202. A consulta posterior mapeia a situação
+  para `processing`, `authorized`, `rejected`, `cancelled` ou `unknown`; situação desconhecida nunca é final.
+- **Referência e DPS:** `externalRef = <statement_id>:<seq>`. Rejeição ou cancelamento permite nova tentativa com
+  `seq + 1` e outro `numero_dps`. O dublê deste bloco serializa reservas e devolve o número em rollback. A sequência
+  PostgreSQL, `SELECT FOR UPDATE` e o teste DB nascem no B-ASS-08/M5; este bloco não tem migração.
+- **Reforma:** IBS/CBS é omitido antes de 2026-12-01 para não-Simples e antes de 2027-01-01 para Simples. A partir da
+  data aplicável, os quatro campos configurados (`cst`, `cClassTrib`, `indicadorDestinatario`, `finalidadeEmissao`) são
+  obrigatórios. O sistema não escolhe códigos tributários: todos são campos informados. Emissor Simples usa somente a
+  rota Nacional a partir de 2026-11-01.
+- **Focus NFe:** Basic Auth somente em header; emissão Nacional em `/nfsen?ref=...`; cancelamento considera o conteúdo
+  mesmo em HTTP 200; duplicidade vira `already_issued`; PDF autorizado é uma URL pública, sem credencial. Emissor e
+  webhook são registrados explicitamente com os segredos do cofre.
+- **Falso Focus:** cobre processamento→autorização, rejeição, referência duplicada, DPS repetida, cancelamento com erro
+  em 200, rate limit, emissor e hook. Nenhum teste chama host real.
+- **Rollback:** reverter o PR. Nada foi persistido e não há migração.
