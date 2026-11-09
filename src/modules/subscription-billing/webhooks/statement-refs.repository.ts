@@ -41,9 +41,9 @@ export class InMemoryStatementRefRepository implements StatementRefRepository {
     return this.#rows.get(statementId);
   }
 
-  async setExternalChargeId(statementId: string, externalChargeId: string, now: Date): Promise<void> {
+  /** Só atualiza (igual ao Prisma): o índice nasce no fechamento com a organização certa; sem linha → nada a fazer. */
+  async setExternalChargeId(statementId: string, externalChargeId: string, _now: Date): Promise<void> {
     const existing = this.#rows.get(statementId);
     if (existing) this.#rows.set(statementId, { ...existing, externalChargeId, createdAt: existing.createdAt });
-    else this.#rows.set(statementId, { statementId, tenantId: "", provider: null, externalChargeId, createdAt: now });
   }
 }

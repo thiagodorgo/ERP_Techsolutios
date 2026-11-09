@@ -137,3 +137,50 @@ F13 (b-f) RESTANTE — camada de ligacao cross-cutting, boot/guard-critica, num 
 
 Estado: ramo feat/b-ass-08-outbox-webhooks, arvore limpa, 18 commits sobre origin/main 7d8b2b98. Sem push/PR. Docker
 descartavel removido. KPI intocado. Canal DESLIGADO.
+
+## PARTE 1 (rumo (ii) do orquestrador) — guards que as tabelas/repos novos exigem, atualizados NESTE PR
+
+Rumo decidido pelo orquestrador (§A6): PR da parte 1 sobre o validado (F0-F11 + F13a); a ligação (router em app.ts, 4 jobs,
+perna da nota, cenários de rota/job do san3-05) vira a B-ASS-08b, em ramo empilhado.
+
+Reprodução do job `backend` da CI (Postgres 16 + Redis 7 descartáveis em porta alta 127.0.0.1, `migrate deploy` na base,
+`npm test` com DATABASE_URL + REDIS_URL): ver a linha da bateria abaixo. Sem banco/Redis, 6 testes de Redis e o
+core-saas-role-authority (import de src/database/prisma.ts exige DATABASE_URL) caem por AMBIENTE — na CI eles têm os dois.
+
+Guards atualizados, cada um com o motivo:
+1. T13 (tests/san3-05-acessos-de-plataforma-guard.test.ts, NOVAS): +12 chaves, coladas da saída do gerador no head, motivo
+   por chave — as 3 de billing_outbox sob o callback de withTenantRlsBudget (claim SKIP LOCKED por organização, registro por
+   id, retry; setter do GUC = 1ª instrução, rls.ts l.128) e as 9 de SQL cru em tabelas GLOBAIS sem RLS (statement_refs,
+   webhook_events, invoice_sequences: OPACO, nenhuma tabela FORCE tocada). Os acessos sob withTenantRls/forEachTenantRls
+   (charges, enqueue/findById/listByStatement e a varredura de plataforma) não geram chave — o gerador os prova sob contexto.
+2. T13 L0 exato: literal 120 → 123 — exatamente as 3 tabelas FORCE novas e os 3 models delas (medido pelo gerador com as
+   fixtures c2-f2). As 3 globais da M5 não têm RLS e não entram no L0.
+3. Censo do medidor (src/modules/subscription-billing/metering/censored-tables.ts, GERADO): regenerado por
+   `node scripts/gen-tenant-tables.mjs` contra a base migrada → +3 (billing_outbox, subscription_statement_charges,
+   subscription_statement_invoices), 118 no total. Correto por regra (R-MED-9: toda tabela FORCE com tenant_id NOT NULL é
+   medida); o SQL do medidor é genérico (sum(pg_column_size(t.*)) sob RLS).
+4. env (tests/env-billing-vault.test.ts): PROD_BASE ganha a URL pública do webhook (um ambiente de produção completo a tem)
+   + teste do gate novo — feito em F13a.
+
+Correção de revisão própria antes do PR: PrismaStatementRefRepository.setExternalChargeId fazia UPSERT com tenant_id zerado
+quando o índice não existia (violaria a FK para tenants, ou criaria índice falso). Agora só faz UPDATE (o índice nasce no
+fechamento, N1); o dublê foi alinhado ao mesmo comportamento.
+5. DRIFT do Prisma (tests/cheque-title-link-migration-drill-db.test.ts, T-D(d′)/K12): as 7 FKs da M5 estavam só no SQL,
+   e `prisma migrate diff` (banco → schema) as listava como drift novo. Correção: modelar as FKs como RELAÇÕES no
+   schema.prisma (BillingOutbox, BillingStatementRef, SubscriptionStatementCharge, SubscriptionStatementInvoice → Tenant
+   e, as compostas, → SubscriptionStatement), com as relações reversas em Tenant e SubscriptionStatement (campos virtuais,
+   sem coluna — o mesmo padrão do B-ASS-03/04). Nomes das FKs = os do SQL; nenhuma migração muda. Drift 6/6 verde.
+6. DRILLS das migrações anteriores (ass-02 M1, ass-04 M3): a M5 é a PRIMEIRA migração com FK para uma tabela da M3
+   (subscription_statements), e o down dos drills M1/M3 derrubava essa tabela → 2BP01 ("other objects depend on it").
+   Correção pelo MECANISMO JÁ EXISTENTE (`M1_DEPENDENTS`, precedente do B-ASS-04: "o rollback real é em ordem inversa"):
+   no drill M1, M5 entra ANTES da M3 (M5 → M3 → M1); no drill M3, o mesmo laço `M3_DEPENDENTS = [M5]`. Nenhuma migração
+   aplicada foi editada (checksum intacto).
+
+Classificação dos vermelhos que NÃO são deste bloco (reprodução local da CI no Windows):
+- san3-05-leituras-de-plataforma-db (T10–T12): passa ISOLADO → poluição de paralelismo da suíte (classe conhecida).
+- san3-05-runtime-role-guard-db (T14a–d): `setsid: ausente` — util-linux não existe no Git Bash do Windows; o
+  db-runtime-role.sh usa setsid para isolar o `psql \password`. Na CI (Linux) existe.
+- san3-09-bootstrap-platform-admin-db (T2.1): o teste roda `node node_modules/.bin/prisma`; no Windows esse arquivo é um
+  shim de shell e o Node falha com SyntaxError antes de tocar o banco. Na CI é link para o JS.
+- traccar-event-migration-drill-db: EBUSY no rmdir do Temp do Windows (trava de arquivo). Na CI não ocorre.
+Nenhum desses depende do código do bloco: as causas são de ferramenta do SO e acontecem antes do código de negócio.

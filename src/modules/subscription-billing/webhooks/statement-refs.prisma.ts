@@ -40,14 +40,13 @@ export class PrismaStatementRefRepository implements StatementRefRepository {
     return rows.length > 0 ? toDomain(rows[0]!) : undefined;
   }
 
-  async setExternalChargeId(statementId: string, externalChargeId: string, now: Date): Promise<void> {
+  /** Só ATUALIZA: o índice nasce SEMPRE no fechamento (N1), com a organização certa. Nunca cria linha aqui — criar sem a
+   * organização certa geraria um índice falso (ou violaria a FK para `tenants`). Sem linha → nada a fazer. */
+  async setExternalChargeId(statementId: string, externalChargeId: string, _now: Date): Promise<void> {
     await this.client.$executeRawUnsafe(
-      `INSERT INTO billing_statement_refs (statement_id, tenant_id, external_charge_id, created_at)
-       VALUES ($1::uuid, '00000000-0000-0000-0000-000000000000'::uuid, $2, $3)
-       ON CONFLICT (statement_id) DO UPDATE SET external_charge_id = EXCLUDED.external_charge_id`,
+      `UPDATE billing_statement_refs SET external_charge_id = $2 WHERE statement_id = $1::uuid`,
       statementId,
       externalChargeId,
-      now,
     );
   }
 }
