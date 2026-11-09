@@ -93,3 +93,21 @@ Este bloco entrega a porta comum, as regras fiscais, o adaptador Focus NFe e o f
 - **feito:** sequência/reemissão Focus comprovadas no dublê em memória.
 - **falta:** PDF público, campos Focus/cancelamento final, docs, bateria, PR e CI.
 - **próximo comando:** `node --test --import tsx tests/ass-07-sequence-memory.test.ts`.
+
+## F7 — PDF, campos Focus e cancelamento
+
+- T-NF-44: PDF Focus sai somente como `{ source: "public_url", url }`; nenhuma credencial é serializada.
+- T-NF-49: `tributacaoIss` integra a allowlist de campos obrigatórios Focus; ausência falha antes da rede e nomeia o campo.
+- T-NF-50/51: justificativa segue no DELETE, sucesso permanece assíncrono e `erro_cancelamento` em HTTP 200 vira `error`.
+- Suítes do bloco: **27/27**; `npm run check` verde.
+- Mutação devolvendo token como URL do PDF: T-NF-44 vermelho; restaurada.
+- Mutação removendo `tributacaoIss` da lista Focus: T-NF-49 vermelho; restaurada.
+- Mutação de `erro_cancelamento → cancelled` já provada na F2: T-NF-6/T-NF-31 vermelho; restaurada.
+- T-NF-45/46 (proxy de NFE.io e PlugNotas) e T-NF-47/48 (campos desses provedores) permanecem no B-ASS-15 pelo recorte 1 + 1.
+
+## RETOMADA 5
+
+- **head medido:** commit F7 será o próximo head do ramo.
+- **feito:** todos os requisitos Focus e comuns do recorte implementados e mutados.
+- **falta:** documentação, bateria integral, PR e leitura do CI.
+- **próximo comando:** `node --test --import tsx tests/ass-07-*.test.ts`.
