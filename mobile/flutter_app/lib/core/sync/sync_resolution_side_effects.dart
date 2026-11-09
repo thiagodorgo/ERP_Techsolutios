@@ -5,22 +5,13 @@ import 'sync_models.dart';
 import 'sync_providers.dart';
 import 'sync_queue_repository.dart';
 
-typedef SyncResolutionSideEffect =
-    Future<void> Function(SyncAction before, SyncAction after);
-
 class SyncResolutionSideEffects {
   SyncResolutionSideEffects(this._queue);
 
   final SyncQueueRepository _queue;
 
-  late final List<SyncResolutionSideEffect> _effects = [
-    _cascadeExpenseReportUseServer,
-  ];
-
   Future<void> apply(SyncAction before, SyncAction after) async {
-    for (final effect in _effects) {
-      await effect(before, after);
-    }
+    await _cascadeExpenseReportUseServer(before, after);
   }
 
   Future<void> _cascadeExpenseReportUseServer(
