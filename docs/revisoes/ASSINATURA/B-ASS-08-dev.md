@@ -54,3 +54,4 @@ Falta (continuacao, apos o "sim" do dono):
 Proximo comando (ao retomar, com autorizacao do dono): gravar a autorizacao nominal da M5 no registro, entao F10 - prisma/schema.prisma (6 modelos) + prisma/migrations/<carimbo>_ass08_billing_outbox/migration.sql com BEGIN;/COMMIT;, e node scripts/migration-transaction-guard.mjs.
 
 Limpeza: nenhum artefato temporario no repo (o helper de diario vive no scratchpad da sessao). Sem build artifacts gerados (so testes via tsx).
+| F10 | migration-transaction-guard.mjs; prisma validate; prisma generate; npm run check | violacoes 0; schema valid; tsc OK | AUTORIZACAO NOMINAL do dono em D-ASS08-MIGRACAO-M5 (2026-11-09, relaiada pelo caller). M5: 6 modelos no schema.prisma + migration.sql (20260900000000_ass08_billing_outbox) com BEGIN/COMMIT, CHECKs, UNIQUEs parciais, FKs compostas; RLS ENABLE+FORCE nas 3 tabelas de organizacao, 3 globais declaradas. Drill F12 criado (cita o nome da migracao; executa em CI/Postgres) |
