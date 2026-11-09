@@ -16,6 +16,7 @@ import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outb
 import { PrismaWebhookEventRepository } from "../src/modules/subscription-billing/webhooks/webhook-events.prisma.js";
 import { PrismaStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.prisma.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
+import { nextDpsNumber, nextDpsNumberInTx } from "../src/modules/subscription-billing/invoice-sequence.service.js";
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -151,5 +152,34 @@ if (!connectionString) {
     } finally {
       await role.drop();
     }
+  });
+
+  test("T-NF-db-1: numeração da DPS com FOR UPDATE — concorrentes recebem números DISTINTOS e CONSECUTIVOS", async () => {
+    const serie = 1 + Math.floor(Math.random() * 100000);
+    const key = { provider: "focusnfe", environment: "sandbox" as const, serie };
+    const w1 = await createEphemeralRole(db, targetUrl);
+    const w2 = await createEphemeralRole(db, targetUrl);
+    try {
+      const [a, b] = await Promise.all([nextDpsNumber(w1.client, key), nextDpsNumber(w2.client, key)]);
+      assert.deepEqual([a, b].sort((x, y) => x - y), [1, 2], "dois concorrentes → 1 e 2, nunca repetido");
+    } finally {
+      await w1.drop();
+      await w2.drop();
+    }
+  });
+
+  test("T-NF-db-1: rollback da transação NÃO consome número", async () => {
+    const serie = 1 + Math.floor(Math.random() * 100000);
+    const key = { provider: "focusnfe", environment: "sandbox" as const, serie };
+    // Reserva dentro de uma transação que FALHA: o número não deve ser consumido.
+    await assert.rejects(
+      db.$transaction(async (tx: any) => {
+        const n = await nextDpsNumberInTx(tx, key);
+        assert.equal(n, 1);
+        throw new Error("rollback proposital");
+      }),
+    );
+    // A próxima reserva (commitada) ainda recebe 1.
+    assert.equal(await nextDpsNumber(db, key), 1, "o rollback devolveu o número");
   });
 }
