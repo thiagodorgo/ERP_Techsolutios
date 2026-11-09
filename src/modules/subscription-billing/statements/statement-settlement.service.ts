@@ -119,22 +119,36 @@ export class StatementSettlementService {
     readonly kind: ReversalKind;
     readonly keepInvoice?: boolean;
     readonly now: Date;
-  }): Promise<ReversalResult | { readonly kind: "no_payment" }> {
+  }): Promise<ReversalResult | { readonly kind: "no_payment" } | { readonly kind: "already_reversed" }> {
     const payments = await this.repository.listPayments(input.tenantId, input.statementId);
     const payment = payments.find((row) => row.source !== "manual" && row.externalChargeId === input.externalChargeId);
     if (!payment) return { kind: "no_payment" };
-    const ownCredit = (await this.repository.listCredits(input.tenantId)).find(
-      (credit) => credit.originPaymentId === payment.id && (credit.status === "open" || credit.status === "applied"),
-    );
+    const paymentCredits = (await this.repository.listCredits(input.tenantId)).filter((credit) => credit.originPaymentId === payment.id);
+    const ownCredit = paymentCredits.find((credit) => credit.status === "open" || credit.status === "applied");
 
     return this.repository.transaction(input.tenantId, async (tx) => {
       const current = (await tx.lockPayment(payment.id))!;
+      // IDEMPOTENTE (poll-settled reconsulta todo dia): só se reverte o que ainda falta. Pagamento já totalmente revertido
+      // → nada muda. E o valor nunca passa do pagamento (a reconsulta sem valor chega como teto, não como estorno real).
+      const remaining = current.amountCents - current.reversedCents;
+      if (remaining <= 0) return { kind: "already_reversed" } as const;
+      const toReverse = Math.min(input.reversedCents, remaining);
       const statement = (await tx.lockById(input.statementId))!;
-      const effect = await this.#credits.absorbReversal(tx, { ownCredit, reversedCents: input.reversedCents, now: input.now });
-      const fromApplied = Math.min(effect.remainingForApplied, current.appliedCents - current.reversedCents);
+      // D4: parte do já-revertido pode ter saído do CRÉDITO deste pagamento (não do aplicado). Sob lock, soma o que os
+      // créditos dele já absorveram por reversão; só o resto do `reversedCents` saiu do aplicado.
+      let absorbedBefore = 0;
+      for (const credit of paymentCredits) {
+        const locked = await tx.lockCredit(credit.id);
+        if (locked && locked.status === "written_off" && (locked.resolutionNote === "reversal" || locked.resolutionNote === "credit_reversed")) {
+          absorbedBefore += locked.amountCents;
+        }
+      }
+      const appliedRemaining = Math.max(0, current.appliedCents - Math.max(0, current.reversedCents - absorbedBefore));
+      const effect = await this.#credits.absorbReversal(tx, { ownCredit, reversedCents: toReverse, now: input.now });
+      const fromApplied = Math.min(effect.remainingForApplied, appliedRemaining);
       const savedPayment = await tx.savePayment({
         ...current,
-        reversedCents: current.reversedCents + input.reversedCents,
+        reversedCents: current.reversedCents + toReverse,
         reversedAt: input.now,
         reversalReason: input.kind,
         reversalKind: input.kind,

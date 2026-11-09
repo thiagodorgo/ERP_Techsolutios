@@ -142,3 +142,47 @@ test("R-SET-2 chargeback com nota authorized → enfileira invoice_cancel; estor
   assert.equal(refreshedPartial?.chargeStatus, "partially_refunded");
   assert.equal(refreshedPartial?.paidCents, 7000);
 });
+
+// Regressões da reversão em mais de um passo (o mesmo pagamento revertido duas vezes — webhook de estorno e depois de
+// chargeback, ou a reconsulta diária). Vermelho no código anterior: `fromApplied = applied − reversed` contava como
+// "saído do aplicado" o que tinha saído do CRÉDITO, e a reconsulta sem valor somava `Number.MAX_SAFE_INTEGER` ao estorno.
+
+test("D4 em dois passos: pago 120 em 100 → estorno de 20 (sai do crédito) → chargeback → paid_amount 0, nunca 20", async () => {
+  const { repo, settlement } = make();
+  const statement = await closedStatement(repo, 10000);
+  await settlement.settle({ tenantId: TENANT, statementId: statement.id, source: "asaas", externalChargeId: "pay_ms", paidCents: 12000, method: null, now: new Date() });
+  await settlement.applyReversal({ tenantId: TENANT, statementId: statement.id, externalChargeId: "pay_ms", reversedCents: 2000, kind: "refund", now: new Date() });
+  assert.equal((await repo.findStatement(TENANT, statement.id))?.paidCents, 10000, "o 1º estorno saiu do crédito");
+  await settlement.applyReversal({ tenantId: TENANT, statementId: statement.id, externalChargeId: "pay_ms", reversedCents: Number.MAX_SAFE_INTEGER, kind: "chargeback", now: new Date() });
+  const refreshed = await repo.findStatement(TENANT, statement.id);
+  assert.equal(refreshed?.paidCents, 0, "o chargeback tira o aplicado INTEIRO (100), não 80");
+  assert.equal(refreshed?.chargeStatus, "charged_back");
+  const [payment] = await repo.listPayments(TENANT, statement.id);
+  assert.equal(payment?.reversedCents, 12000, "o pagamento fica revertido pelo valor dele, nunca acima");
+});
+
+test("idempotência: o mesmo chargeback reconsultado 2× → a 2ª é already_reversed e nada muda", async () => {
+  const { repo, settlement } = make();
+  const statement = await closedStatement(repo, 10000);
+  await settlement.settle({ tenantId: TENANT, statementId: statement.id, source: "asaas", externalChargeId: "pay_id", paidCents: 10000, method: null, now: new Date() });
+  await settlement.applyReversal({ tenantId: TENANT, statementId: statement.id, externalChargeId: "pay_id", reversedCents: 10000, kind: "chargeback", now: new Date() });
+  const second = await settlement.applyReversal({ tenantId: TENANT, statementId: statement.id, externalChargeId: "pay_id", reversedCents: 10000, kind: "chargeback", now: new Date() });
+  assert.deepEqual(second, { kind: "already_reversed" });
+  const refreshed = await repo.findStatement(TENANT, statement.id);
+  assert.equal(refreshed?.paidCents, 0, "paid_amount não fica negativo nem inflado");
+  const [payment] = await repo.listPayments(TENANT, statement.id);
+  assert.equal(payment?.reversedCents, 10000, "o estorno não é somado duas vezes");
+});
+
+test("reconsulta de estorno SEM valor (Asaas REFUNDED) reverte só o pagamento — nunca soma MAX_SAFE_INTEGER", async () => {
+  const { repo, settlement } = make();
+  const statement = await closedStatement(repo, 10000);
+  await settlement.settle({ tenantId: TENANT, statementId: statement.id, source: "asaas", externalChargeId: "pay_rf", paidCents: 10000, method: null, now: new Date() });
+  const { events, refs, deps } = reconcileDeps(repo, settlement, { status: "refunded", raw: {} });
+  await refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas" }, new Date());
+  await events.insertIfAbsent({ provider: "asaas", externalEventId: "rf_1", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_rf", externalReference: statement.id }, new Date());
+  assert.equal(await reconcileWebhookEvent(deps, { provider: "asaas", externalEventId: "rf_1" }), "reversed");
+  const [payment] = await repo.listPayments(TENANT, statement.id);
+  assert.equal(payment?.reversedCents, 10000);
+  assert.equal((await repo.findStatement(TENANT, statement.id))?.paidCents, 0);
+});
