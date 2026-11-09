@@ -184,3 +184,24 @@ Classificação dos vermelhos que NÃO são deste bloco (reprodução local da C
   shim de shell e o Node falha com SyntaxError antes de tocar o banco. Na CI é link para o JS.
 - traccar-event-migration-drill-db: EBUSY no rmdir do Temp do Windows (trava de arquivo). Na CI não ocorre.
 Nenhum desses depende do código do bloco: as causas são de ferramenta do SO e acontecem antes do código de negócio.
+
+### Bateria da parte 1 (rodada autoritativa, tudo commitado, HEAD 751ff2db)
+
+Reprodução do job `backend` da CI: Postgres 16 + Redis 7 descartáveis (127.0.0.1, portas altas, nomes ass08pg/ass08redis —
+nunca erp-*), `migrate deploy` na base, `npm test` com DATABASE_URL + REDIS_URL + CORE_SAAS_PERSISTENCE=memory:
+- espelho de agentes (`sync-agent-agents --check`) = OK; `migrate deploy` = OK (129 migrações).
+- `npm test`: 454 arquivos · 4795 testes · pass 4783 · fail 10 · skipped 2.
+- `npm run check` / `lint` = OK; `npm run build` = OK (dist/ removido depois, §C5).
+- `node scripts/migration-transaction-guard.mjs` = 0 violações; `git diff --check` = limpo.
+- Escopo: `git diff --name-only origin/main...HEAD` só com arquivos do bloco + os guards desta parte (ver acima).
+
+Os 10 vermelhos estão em 4 arquivos, NENHUM do bloco e nenhum causado pelo código do bloco:
+- san3-05-leituras-de-plataforma-db (T10–T12): a diferença é em lançamentos de custo de nuvem (serviceCode AmazonS3) — a
+  superfície do rateio, poluída por outras suítes em paralelo; passa ISOLADO.
+- san3-05-runtime-role-guard-db (T14a–d): `setsid: ausente` (util-linux não existe no Git Bash do Windows).
+- san3-09-bootstrap-platform-admin-db (T2.1): `node node_modules/.bin/prisma` — no Windows o arquivo é shim de shell.
+- traccar-event-migration-drill-db: EBUSY no rmdir do Temp do Windows (o denominador cai em 1 arquivo).
+Todos os vermelhos que a M5 CAUSAVA na 1ª rodada (drills M1/M3, censo do medidor, drift do Prisma) estão VERDES.
+
+N → M: suíte do head com banco = 4795 testes; o bloco acrescenta 59 (47 sem banco + 7 -db do canal + 4 do drill M5 + 1 do
+gate de env) → N (pré-existente nesta configuração) ≈ 4736 → M = 4795.
