@@ -55,3 +55,44 @@ Proximo comando (ao retomar, com autorizacao do dono): gravar a autorizacao nomi
 
 Limpeza: nenhum artefato temporario no repo (o helper de diario vive no scratchpad da sessao). Sem build artifacts gerados (so testes via tsx).
 | F10 | migration-transaction-guard.mjs; prisma validate; prisma generate; npm run check | violacoes 0; schema valid; tsc OK | AUTORIZACAO NOMINAL do dono em D-ASS08-MIGRACAO-M5 (2026-11-09, relaiada pelo caller). M5: 6 modelos no schema.prisma + migration.sql (20260900000000_ass08_billing_outbox) com BEGIN/COMMIT, CHECKs, UNIQUEs parciais, FKs compostas; RLS ENABLE+FORCE nas 3 tabelas de organizacao, 3 globais declaradas. Drill F12 criado (cita o nome da migracao; executa em CI/Postgres) |
+
+## RETOMADA 2026-11-09 — F10 + F12 feitos e VALIDADOS em Postgres real; F11/F13 param num ponto de desenho (reportado ao orquestrador)
+
+Autorizacao: D-ASS08-MIGRACAO-M5 (dono, 2026-11-09), relaiada pelo caller. Registrei a referencia neste diario e prossegui.
+
+Feito e validado nesta retomada:
+- F10 migracao M5: 6 models em prisma/schema.prisma + prisma/migrations/20260900000000_ass08_billing_outbox/migration.sql
+  (BEGIN/COMMIT, CHECKs, UNIQUEs parciais, FKs compostas, RLS ENABLE+FORCE nas 3 tabelas de organizacao; 3 globais).
+  node scripts/migration-transaction-guard.mjs = violacoes 0. prisma validate = schema valid. npm run check = OK.
+- VALIDACAO EM POSTGRES 16 REAL (container descartable 127.0.0.1:55432, ja removido): a CADEIA INTEIRA (129 migracoes,
+  inclusive a M5) aplica com prisma migrate deploy; e o drill F12 (tests/ass-08-channel-migration-drill-db.test.ts) passa
+  4/4 — aplica as 6 tabelas, RLS FORCE so nas 3 de organizacao, down em transacao unica sem tocar preexistentes,
+  atomicidade por prefixo, e isolamento por organizacao sob papel NOSUPERUSER NOBYPASSRLS. A parte irreversivel (DDL) esta
+  provada correta.
+
+PONTO DE DESENHO que interrompe F11 (reportado ao orquestrador, NAO embarcado as pressas num bloco de DINHEIRO):
+  Os ports em memoria de F1-F9 (OutboxRepository, StatementChargeRepository) sao STANDALONE: mutam por id sem tenant_id,
+  e o claim do outbox e global. As 3 tabelas tenant-scoped (billing_outbox, subscription_statement_invoices,
+  subscription_statement_charges) tem FORCE RLS. Sob o papel de runtime (NOSUPERUSER NOBYPASSRLS):
+    - toda mutacao por id e o claim precisam de contexto de organizacao (withTenantRlsBudget);
+    - o claim e POR ORGANIZACAO, iterando billing_statement_refs (o proprio plano §3.8 diz isso);
+    - a tela de outbox (GET /platform/billing/outbox) e leitura de PLATAFORMA sobre tabela FORCE = forEachTenantRls.
+  Logo, os repos Prisma fieis exigem o modelo tenant-scoped (igual StatementRepository: transaction(tenantId, cb) + tx
+  methods, ou tenantId nas mutacoes). Isso e um refactor ADITIVO porem real dos ports/dispatcher/testes de F1-F9 (ja
+  commitados e verdes). Em -db com superusuario o RLS e bypassado e o bug nao apareceria; em producao (runtime role)
+  apareceria — exatamente o que san3-05/runtime-role guardam. Embarcar sem isso seria RLS-inseguro.
+
+Decisao recomendada ao orquestrador (uma linha de confirmacao destrava F11): adotar o modelo tenant-scoped para os 3
+repos RLS (espelhar StatementRepository), mantendo os 3 repos GLOBAIS (webhook-events, statement-refs, invoice-sequences)
+como CRUD direto. Os 3 globais nao tem o impasse e podem nascer ja. Com o ok, sigo F11 -> F13 -> F14 (PR).
+
+F13 (apos F11) — escopo cross-cutting a planejar junto: montar o router em src/app.ts ANTES de express.json/pinoHttp
+(git add src/app.ts); env BILLING_WEBHOOK_PUBLIC_BASE_URL; os 4 jobs (dispatch/reconcile/poll-pending/poll-settled) no
+registro, com construcao de ports por provedor LIGADO e resolveTarget (env flag + config.enabled + cofre + adaptador);
+ATUALIZAR tests/san3-05-leituras-de-plataforma-db.test.ts (classificacao do router de webhook SEM-FORCE; jobs
+FORCE-PLATAFORMA); grants do papel de runtime (G-DB-ROLE) para as tabelas novas; a perna da NOTA do e2e (invoice_issue
+dispatch + reconcile de nota); a persistencia de F9 (enable/disable/test-connection/register-webhook/emitter/metrics),
+que precisa de superficie de repo/adaptador de B-ASS-05/06/07.
+
+Estado: ramo feat/b-ass-08-outbox-webhooks, arvore limpa, 13 commits sobre origin/main 7d8b2b98. Sem push/PR. Docker
+descartavel removido; nada de erp-*/5432/6379 tocado. KPI intocado.
