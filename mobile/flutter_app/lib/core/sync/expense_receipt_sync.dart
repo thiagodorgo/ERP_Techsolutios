@@ -186,245 +186,287 @@ class ExpenseReceiptSyncService {
       if (action.status == SyncStatus.conflict) continue;
       if (action.retryCount >= maxRetry) continue;
 
-      final reportLocalId = _readString(action.payload['report_local_id']);
-      final itemLocalId = _readString(action.payload['item_local_id']);
-      final receiptLocalId = _readString(action.payload['receipt_local_id']);
-      if (reportLocalId == null ||
-          itemLocalId == null ||
-          receiptLocalId == null) {
-        final next = _conflict(
-          action,
-          'RECEIPT_ACTION_INCOMPLETE',
-          'Comprovante antigo incompleto; anexe de novo pelo item.',
-        );
+      // Conserto c1 do #525 (§13.1 item 4) — ISOLAMENTO POR AÇÃO: o que nenhum `on` classificou
+      // (a `FormatException` do 201 sem `receiptId`, `StateError`, `TypeError`) não derruba o
+      // laço. `record` grava o desfecho desta tentativa; se ele já foi gravado, o `catch` não
+      // muda nada (ex.: o blob não apagou depois do `synced`: lixo local, nunca perda).
+      var recorded = false;
+      Future<void> record(SyncAction next) async {
         await _queue.update(next);
-        conflicts.add(next);
-        continue;
+        recorded = true;
       }
 
-      // Prontidão: o relatório E o item precisam do id de servidor (nascem no lote JSON).
-      // Sem o do relatório, nada muda: o relatório ainda não sincronizado já segura tudo.
-      final reportServerId = _repository.serverIdForReport(reportLocalId);
-      if (reportServerId == null) continue;
-      var itemServerId = _repository.serverIdForItem(
-        reportLocalId,
-        itemLocalId,
-      );
-      if (itemServerId == null) {
-        // Conserto c1 do #525 (§12.7) — o id do item volta pelo `result_ref` que o LOTE gravou
-        // na ação `itemCreate`, aqui no aparelho e sem reenvio (reenviar criaria o item no
-        // servidor e mudaria o total do relatório).
-        final itemAction = await _itemCreateFor(
-          tenantId,
-          action,
+      String? reportLocalId;
+      String? receiptLocalId;
+      try {
+        reportLocalId = _readString(action.payload['report_local_id']);
+        final itemLocalId = _readString(action.payload['item_local_id']);
+        receiptLocalId = _readString(action.payload['receipt_local_id']);
+        if (reportLocalId == null ||
+            itemLocalId == null ||
+            receiptLocalId == null) {
+          final next = _conflict(
+            action,
+            'RECEIPT_ACTION_INCOMPLETE',
+            'Comprovante antigo incompleto; anexe de novo pelo item.',
+          );
+          await record(next);
+          conflicts.add(next);
+          continue;
+        }
+
+        // Prontidão: o relatório E o item precisam do id de servidor (nascem no lote JSON).
+        // Sem o do relatório, nada muda: o relatório ainda não sincronizado já segura tudo.
+        final reportServerId = _repository.serverIdForReport(reportLocalId);
+        if (reportServerId == null) continue;
+        var itemServerId = _repository.serverIdForItem(
           reportLocalId,
           itemLocalId,
         );
-        if (itemAction == null || itemAction.status == SyncStatus.conflict) {
-          // §2(d)5 — sem saída: o item nunca chega ao servidor por esta fila.
-          final next = _conflict(
+        if (itemServerId == null) {
+          // Conserto c1 do #525 (§12.7) — o id do item volta pelo `result_ref` que o LOTE gravou
+          // na ação `itemCreate`, aqui no aparelho e sem reenvio (reenviar criaria o item no
+          // servidor e mudaria o total do relatório).
+          final itemAction = await _itemCreateFor(
+            tenantId,
             action,
-            'RECEIPT_ITEM_NOT_SYNCED',
-            'O item deste comprovante não chegou ao servidor; o comprovante ficou no aparelho.',
-          );
-          await _queue.update(next);
-          conflicts.add(next);
-          continue;
-        }
-        // `pending`, `failed` ou `syncing`: o comprovante espera o lote (o item já segura o envio).
-        if (itemAction.status != SyncStatus.synced) continue;
-        final resultRef = _readString(itemAction.payload['result_ref']);
-        if (resultRef != null && !_isLocalExpenseId(resultRef)) {
-          // `synced` COM `result_ref`: o servidor criou o item, e o id persiste no aparelho.
-          await _repository.markItemSynced(
             reportLocalId,
             itemLocalId,
-            resultRef,
           );
+          if (itemAction == null || itemAction.status == SyncStatus.conflict) {
+            // §2(d)5 — sem saída: o item nunca chega ao servidor por esta fila.
+            final next = _conflict(
+              action,
+              'RECEIPT_ITEM_NOT_SYNCED',
+              'O item deste comprovante não chegou ao servidor; o comprovante ficou no aparelho.',
+            );
+            await record(next);
+            conflicts.add(next);
+            continue;
+          }
+          // `pending`, `failed` ou `syncing`: o comprovante espera o lote (o item já segura o envio).
+          if (itemAction.status != SyncStatus.synced) continue;
+          final resultRef = _readString(itemAction.payload['result_ref']);
+          if (resultRef != null && !_isLocalExpenseId(resultRef)) {
+            // `synced` COM `result_ref`: o servidor criou o item, e o id persiste no aparelho.
+            await _repository.markItemSynced(
+              reportLocalId,
+              itemLocalId,
+              resultRef,
+            );
+          }
+          itemServerId = _repository.serverIdForItem(
+            reportLocalId,
+            itemLocalId,
+          );
+          if (itemServerId == null) {
+            // `synced` SEM `result_ref` ("Versão do gestor" ou a cascata `SUPERSEDED_BY_SERVER`):
+            // o servidor nunca criou o item.
+            final next = _conflict(
+              action,
+              'RECEIPT_ITEM_NOT_SYNCED',
+              'O item deste comprovante não chegou ao servidor; o comprovante ficou no aparelho.',
+            );
+            await record(next);
+            conflicts.add(next);
+            continue;
+          }
         }
-        itemServerId = _repository.serverIdForItem(reportLocalId, itemLocalId);
-        if (itemServerId == null) {
-          // `synced` SEM `result_ref` ("Versão do gestor" ou a cascata `SUPERSEDED_BY_SERVER`):
-          // o servidor nunca criou o item.
+
+        final receipt = _repository.receiptByLocalId(
+          reportLocalId,
+          itemLocalId,
+          receiptLocalId,
+        );
+        if (receipt == null) {
           final next = _conflict(
             action,
-            'RECEIPT_ITEM_NOT_SYNCED',
-            'O item deste comprovante não chegou ao servidor; o comprovante ficou no aparelho.',
+            'RECEIPT_NOT_FOUND',
+            'Comprovante não encontrado no aparelho; anexe de novo pelo item.',
           );
-          await _queue.update(next);
+          await record(next);
           conflicts.add(next);
           continue;
         }
-      }
 
-      final receipt = _repository.receiptByLocalId(
-        reportLocalId,
-        itemLocalId,
-        receiptLocalId,
-      );
-      if (receipt == null) {
-        final next = _conflict(
-          action,
-          'RECEIPT_NOT_FOUND',
-          'Comprovante não encontrado no aparelho; anexe de novo pelo item.',
-        );
-        await _queue.update(next);
-        conflicts.add(next);
-        continue;
-      }
-
-      final blobRef = receipt.localReference;
-      final sha256 = receipt.sha256Hash;
-      if (blobRef == null || sha256 == null) {
-        final next = _conflict(
-          action,
-          'LOCAL_BLOB_MISSING',
-          'Comprovante sem arquivo local; anexe de novo pelo item.',
-        );
-        await _queue.update(next);
-        conflicts.add(next);
-        continue;
-      }
-
-      final bytes = await _blobStore.load(blobRef);
-      if (bytes == null || bytes.isEmpty || bytes.length != receipt.sizeBytes) {
-        final next = _conflict(
-          action,
-          'LOCAL_BLOB_MISSING',
-          'Arquivo do comprovante não pôde ser lido; anexe de novo pelo item.',
-        );
-        await _queue.update(next);
-        conflicts.add(next);
-        continue;
-      }
-
-      final syncing = action.copyWith(status: SyncStatus.syncing);
-      await _queue.update(syncing);
-      await _repository.markReceiptUploadStatus(
-        reportLocalId,
-        receiptLocalId,
-        ReceiptUploadStatus.uploading,
-      );
-
-      try {
-        final response = await _api.upload(
-          ExpenseReceiptUploadRequest(
-            reportServerId: reportServerId,
-            itemServerId: itemServerId,
-            clientActionId: action.clientActionId,
-            fileName: receipt.fileName,
-            contentType: receipt.mimeType,
-            sizeBytes: receipt.sizeBytes,
-            sha256: sha256,
-            bytes: bytes,
-          ),
-        );
-
-        if (response.uploadStatus == 'uploaded') {
-          final next = syncing.copyWith(
-            status: SyncStatus.synced,
-            processedAt: DateTime.now().toUtc(),
-          );
-          await _queue.update(next);
-          await _repository.markReceiptUploaded(
-            reportLocalId,
-            receiptLocalId,
-            serverId: response.receiptId,
-          );
-          // ÚNICO ponto em que o blob morre: o servidor confirmou o comprovante guardado.
-          await _blobStore.delete(blobRef);
-          uploaded.add(next);
-        } else {
-          // Estado que não confirma guarda (ex.: revisão pendente) preserva o blob.
+        final blobRef = receipt.localReference;
+        final sha256 = receipt.sha256Hash;
+        if (blobRef == null || sha256 == null) {
           final next = _conflict(
             action,
-            'RECEIPT_STATUS_${response.uploadStatus.toUpperCase()}',
-            'O servidor ainda não confirmou este comprovante; ele fica no aparelho.',
+            'LOCAL_BLOB_MISSING',
+            'Comprovante sem arquivo local; anexe de novo pelo item.',
           );
-          await _queue.update(next);
-          await _repository.markReceiptUploadStatus(
-            reportLocalId,
-            receiptLocalId,
-            ReceiptUploadStatus.conflict,
-          );
+          await record(next);
           conflicts.add(next);
+          continue;
         }
-      } on ApiServerError catch (error) {
-        if (error.statusCode == 503) {
-          // Servidor ocupado/scanner indisponível: volta a pendente SEM consumir tentativa.
-          final next = syncing.copyWith(
-            status: SyncStatus.pending,
-            lastErrorCode: 'SYNC_BUSY',
-            lastSafeError: 'Servidor ocupado; o envio será refeito.',
-          );
-          await _queue.update(next);
-          await _repository.markReceiptUploadStatus(
-            reportLocalId,
-            receiptLocalId,
-            ReceiptUploadStatus.pending,
-          );
-          failed.add(next);
-          // §13.1 — tentado NESTE passe, terminou no 503 do servidor (e o `pending` já foi
-          // gravado): é o único desfecho que solta o envio do relatório no 2º lote.
-          busy.add(next);
-        } else if (error.statusCode == 413 ||
-            error.statusCode == 415 ||
-            error.statusCode == 422 ||
-            error.statusCode == 404) {
+
+        final bytes = await _blobStore.load(blobRef);
+        if (bytes == null ||
+            bytes.isEmpty ||
+            bytes.length != receipt.sizeBytes) {
           final next = _conflict(
             action,
-            _domainCode(error.statusCode),
-            _domainText(error.statusCode),
+            'LOCAL_BLOB_MISSING',
+            'Arquivo do comprovante não pôde ser lido; anexe de novo pelo item.',
           );
-          await _queue.update(next);
+          await record(next);
+          conflicts.add(next);
+          continue;
+        }
+
+        final syncing = action.copyWith(status: SyncStatus.syncing);
+        await _queue.update(syncing);
+        await _repository.markReceiptUploadStatus(
+          reportLocalId,
+          receiptLocalId,
+          ReceiptUploadStatus.uploading,
+        );
+
+        try {
+          final response = await _api.upload(
+            ExpenseReceiptUploadRequest(
+              reportServerId: reportServerId,
+              itemServerId: itemServerId,
+              clientActionId: action.clientActionId,
+              fileName: receipt.fileName,
+              contentType: receipt.mimeType,
+              sizeBytes: receipt.sizeBytes,
+              sha256: sha256,
+              bytes: bytes,
+            ),
+          );
+
+          if (response.uploadStatus == 'uploaded') {
+            final next = syncing.copyWith(
+              status: SyncStatus.synced,
+              processedAt: DateTime.now().toUtc(),
+            );
+            await record(next);
+            await _repository.markReceiptUploaded(
+              reportLocalId,
+              receiptLocalId,
+              serverId: response.receiptId,
+            );
+            // ÚNICO ponto em que o blob morre: o servidor confirmou o comprovante guardado.
+            await _blobStore.delete(blobRef);
+            uploaded.add(next);
+          } else {
+            // Estado que não confirma guarda (ex.: revisão pendente) preserva o blob.
+            final next = _conflict(
+              action,
+              'RECEIPT_STATUS_${response.uploadStatus.toUpperCase()}',
+              'O servidor ainda não confirmou este comprovante; ele fica no aparelho.',
+            );
+            await record(next);
+            await _repository.markReceiptUploadStatus(
+              reportLocalId,
+              receiptLocalId,
+              ReceiptUploadStatus.conflict,
+            );
+            conflicts.add(next);
+          }
+        } on ApiServerError catch (error) {
+          if (error.statusCode == 503) {
+            // Servidor ocupado/scanner indisponível: volta a pendente SEM consumir tentativa.
+            final next = syncing.copyWith(
+              status: SyncStatus.pending,
+              lastErrorCode: 'SYNC_BUSY',
+              lastSafeError: 'Servidor ocupado; o envio será refeito.',
+            );
+            await record(next);
+            await _repository.markReceiptUploadStatus(
+              reportLocalId,
+              receiptLocalId,
+              ReceiptUploadStatus.pending,
+            );
+            failed.add(next);
+            // §13.1 — tentado NESTE passe, terminou no 503 do servidor (e o `pending` já foi
+            // gravado): é o único desfecho que solta o envio do relatório no 2º lote.
+            busy.add(next);
+          } else if (error.statusCode == 413 ||
+              error.statusCode == 415 ||
+              error.statusCode == 422 ||
+              error.statusCode == 404) {
+            final next = _conflict(
+              action,
+              _domainCode(error.statusCode),
+              _domainText(error.statusCode),
+            );
+            await record(next);
+            await _repository.markReceiptUploadStatus(
+              reportLocalId,
+              receiptLocalId,
+              ReceiptUploadStatus.conflict,
+            );
+            conflicts.add(next);
+          } else {
+            final next = _failWithRetry(syncing);
+            await record(next);
+            await _repository.markReceiptUploadFailed(
+              reportLocalId,
+              receiptLocalId,
+            );
+            failed.add(next);
+          }
+        } on ApiConflictError {
+          final next = _conflict(
+            action,
+            'RECEIPT_PAYLOAD_MISMATCH',
+            'Este comprovante já foi recebido com outro conteúdo.',
+          );
+          await record(next);
           await _repository.markReceiptUploadStatus(
             reportLocalId,
             receiptLocalId,
             ReceiptUploadStatus.conflict,
           );
           conflicts.add(next);
-        } else {
+        } on ApiUnauthorizedError {
+          final next = _conflict(
+            action,
+            'SESSION_FORBIDDEN',
+            'Sua sessão não tem permissão para enviar comprovantes. Entre de novo.',
+          );
+          await record(next);
+          await _repository.markReceiptUploadStatus(
+            reportLocalId,
+            receiptLocalId,
+            ReceiptUploadStatus.conflict,
+          );
+          conflicts.add(next);
+        } on ApiError {
           final next = _failWithRetry(syncing);
-          await _queue.update(next);
+          await record(next);
           await _repository.markReceiptUploadFailed(
             reportLocalId,
             receiptLocalId,
           );
           failed.add(next);
         }
-      } on ApiConflictError {
-        final next = _conflict(
-          action,
-          'RECEIPT_PAYLOAD_MISMATCH',
-          'Este comprovante já foi recebido com outro conteúdo.',
+      } catch (_) {
+        // §13.1 itens 4 e 5 — o catch do isolamento é o ÚLTIMO: os erros tipados têm `on`
+        // próprio antes dele. Desfecho já gravado → nada muda. Senão: `failed` COM custo (esgota
+        // em 5 passes e passa a segurar só o próprio relatório até o "Tentar de novo"), o blob
+        // fica, a ação NUNCA vai a `busy` (não solta o envio), e o laço segue. A gravação daqui
+        // não é protegida: se a fila não grava, a exceção sai do `uploadTenant` (falha de
+        // infraestrutura) e o passe não solta nada.
+        if (recorded) continue;
+        final next = action.copyWith(
+          status: SyncStatus.failed,
+          retryCount: action.retryCount + 1,
+          lastErrorCode: 'RECEIPT_UNEXPECTED_ERROR',
+          lastSafeError:
+              'Erro inesperado no envio do comprovante; ele fica no aparelho e será tentado de novo.',
         );
         await _queue.update(next);
-        await _repository.markReceiptUploadStatus(
-          reportLocalId,
-          receiptLocalId,
-          ReceiptUploadStatus.conflict,
-        );
-        conflicts.add(next);
-      } on ApiUnauthorizedError {
-        final next = _conflict(
-          action,
-          'SESSION_FORBIDDEN',
-          'Sua sessão não tem permissão para enviar comprovantes. Entre de novo.',
-        );
-        await _queue.update(next);
-        await _repository.markReceiptUploadStatus(
-          reportLocalId,
-          receiptLocalId,
-          ReceiptUploadStatus.conflict,
-        );
-        conflicts.add(next);
-      } on ApiError {
-        final next = _failWithRetry(syncing);
-        await _queue.update(next);
-        await _repository.markReceiptUploadFailed(
-          reportLocalId,
-          receiptLocalId,
-        );
+        if (reportLocalId != null && receiptLocalId != null) {
+          await _repository.markReceiptUploadFailed(
+            reportLocalId,
+            receiptLocalId,
+          );
+        }
         failed.add(next);
       }
     }

@@ -516,3 +516,47 @@
 
 - head `e5a7f6422e3ab8d03f2a48f3948201dca9409458` · feito: F0–F4b, F5a, F5b · falta: F5c → F6a → F6b → F7 → F8 · próximo comando: escrever RR-C.2b e o
   RR-C.4 (a)–(d) em `test/core/sync/brdvcomp_c1_ordem_envio_test.dart` · arquivos meio escritos: nenhum.
+
+## F5c — isolamento por ação no `uploadTenant` (§13.1); o esgotado segura; o 503 solta; a exceção não (07:44–07:56)
+
+- Testes ANTES, no `brdvcomp_c1_ordem_envio_test.dart` (o servidor fingido ganhou "201 sem `receiptId` uma vez",
+  passando pelo `ExpenseReceiptUploadResponse.fromBody` REAL, e o cenário ganhou fila injetável): **RR-C.2b**
+  (comprovante `failed` r5 por rede → o envio não sai, nem no 1º nem no 2º lote; `resolveStalledAction(retry)` → o passe
+  seguinte faz `['p2 upload:A:201', 'p2 submit:A']`) e **RR-C.4** (1 teste, 4 casos: (a) 503 em `draft` e 422 depois do
+  envio → p1 `['p1 upload:A:503', 'p1 submit:A']`, comprovante `pending` r0 `SYNC_BUSY` com blob, envio `synced`; em 8
+  passes o envio sai 1 vez; no p2 `upload:A:422` e o comprovante em `conflict` com o blob; (b) dois relatórios com 503 →
+  os dois envios no p1; (c) o caso do crítico → p1 `[upload:A:201-corpo-invalido, upload:B:201, submit:B]`, A `failed`
+  r1 `RECEIPT_UNEXPECTED_ERROR` com blob, envio de A `pending` r0, p2 `[upload:A:200, submit:A]`, os dois `synced` e
+  cada blob apagado só depois do `uploaded` dele; (d) a fila (embrulho da `InMemorySyncQueueRepository`) não grava a
+  ação do comprovante de B no p1 → p1 `[upload:A:201, submit:A]`, o envio de B `pending`, blob de B presente; p2
+  `[upload:B:201, submit:B]`).
+- **No head ANTES do código:** RR-C.2b verde (o esgotado já segura pela L5 da F5a; quem prova é a M-C2b) e `not ok -
+  RR-C.4` no caso (c): `Actual: ['p1 upload:A:201-corpo-invalido']` (a exceção derruba o laço; = `TOPO2_A01_M-C4d`).
+  **Vermelho-controle no objeto:** o arquivo não compila no objeto (`expense_sync_pass.dart` ausente) — vermelho por
+  ausência, declarado; o de comportamento do objeto é o `ATK_REDE`/`[submit, upload:503]` dos ataques.
+- Código: o predicado virou MÉTODO de `SyncReplayService` (a M-C2b insere `if (r.retryCount >= maxRetry) return
+  false;`, e o `maxRetry` é campo do serviço); no `uploadTenant`, cada ação num `try` externo, do `_readString` até o fim
+  da classificação, com `record()` marcando o desfecho gravado; o `catch (_)` do isolamento é o ÚLTIMO: desfecho já
+  gravado → nada muda; senão `failed` COM custo (`retryCount + 1`, `RECEIPT_UNEXPECTED_ERROR`, "Erro inesperado no envio
+  do comprovante; ele fica no aparelho e será tentado de novo."), `markReceiptUploadFailed`, blob intocado, nunca
+  `busy`, e o laço segue; a gravação do `catch` não é protegida (a fila que não grava faz o `uploadTenant` lançar → `r ==
+  null` → nada solto).
+- **Medido × plano (registro):** o "no 2º passe, o comprovante vai a `conflict RECEIPT_REPORT_LOCKED`" do RR-C.4 (a)
+  depende do 422 por motivo (§2(c)4), que a tabela põe na F6b. Aqui o RR-C.4 (a) afirma `conflict` com o blob; a F6b
+  aperta para `RECEIPT_REPORT_LOCKED` quando o mapeamento existir.
+- `dart format` · `flutter analyze` → "No issues found!" · `flutter test test/core/sync test/features/expenses` →
+  `+128: All tests passed!`. **OK.**
+- Mutações (uma por vez; `git diff --exit-code -- src tests mobile` = 0 depois de cada reversão por edição inversa):
+  - **M-C2b** (inserir `if (r.retryCount >= maxRetry) return false;` antes da L4) → RR-C.2b `Expected: empty Actual:
+    ['p1 submit:A']` · revertida. **OK.**
+  - **M-C4** (apagar a L4) → RR-C.4 (a) `Actual: ['p1 upload:A:503']` (o envio nunca sai) · revertida. **OK.**
+  - **M-C4b** (no passe, `ReceiptRelease.busy(busy)` → `const ReceiptRelease.none()`) → RR-C.4 (a) `Actual: ['p1
+    upload:A:503']` · revertida. **OK.**
+  - **M-C4c** (as 3 edições: `final bool all;` + `const ReceiptRelease.all() : busyIds = const <String>{}, all = true;`
+    com `all = false` nos outros dois; `if (release.all) return false;` antes da L4; no passe `r == null ? const
+    ReceiptRelease.all() : ReceiptRelease.busy(busy)`) → RR-C.4 (d) `Actual: ['p1 upload:A:201', 'p1 submit:A', 'p1
+    submit:B']` (= `TOPO2_A01_M-C4c`) · revertidas as 3. **OK.**
+  - **M-C4d** (apagar o `try` externo e o `catch` do isolamento) → RR-C.4 (c) `Actual: ['p1
+    upload:A:201-corpo-invalido']` (= `TOPO2_A01_M-C4d`) · revertida (as linhas reinseridas). **OK.**
+  - **M-C4e** (no `catch`, `status: SyncStatus.conflict` no lugar do `failed` com custo) → RR-C.4 (c) `Actual: [...,
+    'p1 submit:A', 'p1 submit:B']` (= `TOPO2_A01_M-C4e`) · revertida. **OK.**

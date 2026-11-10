@@ -204,19 +204,6 @@ class ReceiptRelease {
   final Set<String> busyIds;
 }
 
-/// §13.1 — o comprovante segura o envio do relatório, salvo três saídas. Nenhuma ação da fila
-/// nasce `local`; `pending`, `failed` (esgotado inclusive) e `syncing` seguram.
-bool _receiptHoldsSubmit(SyncAction r, ReceiptRelease release) {
-  // L1 — subiu
-  if (r.status == SyncStatus.synced) return false;
-  // L2 — recusado: não tem saída no app
-  if (r.status == SyncStatus.conflict) return false;
-  // L4 — tentado neste passe, terminou em 503
-  if (release.busyIds.contains(r.clientActionId)) return false;
-  // L5 — não tentado, em curso, falhou, esgotado: segura
-  return true;
-}
-
 class SyncReplayService {
   const SyncReplayService({
     required SyncQueueRepository queue,
@@ -576,6 +563,20 @@ class SyncReplayService {
       }
     }
     return false;
+  }
+
+  /// §13.1 — o comprovante segura o envio do relatório, salvo três saídas. Nenhuma ação da
+  /// fila nasce `local`; `pending`, `failed` (esgotado inclusive: só sai pelo "Tentar de
+  /// novo") e `syncing` seguram.
+  bool _receiptHoldsSubmit(SyncAction r, ReceiptRelease release) {
+    // L1 — subiu
+    if (r.status == SyncStatus.synced) return false;
+    // L2 — recusado: não tem saída no app
+    if (r.status == SyncStatus.conflict) return false;
+    // L4 — tentado neste passe, terminou em 503
+    if (release.busyIds.contains(r.clientActionId)) return false;
+    // L5 — não tentado, em curso, falhou, esgotado: segura
+    return true;
   }
 
   bool _isLocalExpenseId(String value) {
