@@ -1,9 +1,12 @@
-// B-ASS-08 · F2 — o router PRÓPRIO do webhook (plano §3.5, §4.8 S11). Montado em `src/app.ts` ANTES de `express.json`
-// e do `pinoHttp`, SEM `attachAuthenticatedActor` (F13). Ordem de decisão fail-closed:
+// B-ASS-08 · F2 — o router PRÓPRIO do webhook (plano §3.5, §4.8 S11). Montado em `src/app.ts` em
+// `/api/v1/webhooks/billing` ANTES de `express.json`, do `pinoHttp` e de QUALQUER `attachAuthenticatedActor` (o
+// provedor não tem token nosso). Ordem de decisão fail-closed:
 //
 //   (1) ANTES de qualquer parser: canal desligado por env, provedor desconhecido, provedor `enabled=false` ou cofre
-//       indisponível → 404 com o corpo PADRÃO da casa, nada gravado (R-WH-1). Vale para 257 KB e JSON malformado,
-//       porque a decisão vem antes do parser local — nem 413 nem 400 escapam.
+//       indisponível → o router NÃO responde: tira os cabeçalhos de segredo do pedido e chama `next()`, e quem responde
+//       é o 404 padrão do próprio app (0.43) — IDÊNTICO ao de rota inexistente POR CONSTRUÇÃO, para qualquer corpo
+//       (B-ASS-08b; antes o router emitia o corpo 0.43 por conta própria, mas fora de `/api/v1` o 404 do app é o HTML do
+//       Express, e desligado ficava distinguível de inexistente). Nada gravado (R-WH-1).
 //   (2) parser LOCAL `express.raw({ type: "*/*", limit: "256kb" })` → corpo > 256 KB → 413.
 //   (3) teto global do provedor (600/min) e bloqueio por IP com excesso de falhas → 429.
 //   (4) `verifyWebhook` do adaptador — falha → 401 sem motivo (e conta a falha do IP).
@@ -12,15 +15,37 @@
 
 import { createHash } from "node:crypto";
 
-import express, { type Request, type Response, type Router } from "express";
+import express, { type NextFunction, type Request, type Response, type Router } from "express";
 
 import type { WebhookEventRepository } from "./webhook-events.repository.js";
 import type { WebhookRateLimiter } from "./webhook.rate-limit.js";
 
-/** O corpo 404 PADRÃO da casa (o mesmo do handler `/api/v1` em `src/app.ts`): desligado é indistinguível de inexistente. */
+/** O corpo 404 PADRÃO da casa (o handler final de `/api/v1` em `src/app.ts`). O router NÃO o emite: com a decisão negativa ele
+ * chama `next()` e é o app que responde — a constante fica para os testes conferirem a identidade. */
 export const WEBHOOK_NOT_FOUND_BODY = {
   error: { code: "NOT_FOUND", reason: "route_not_found", message: "Route not found." },
 } as const;
+
+/** Onde o router é montado no app (sob `/api/v1`, para o 404 do app ser o mesmo da rota inexistente). */
+export const BILLING_WEBHOOK_MOUNT_PATH = "/api/v1/webhooks/billing";
+
+/** O caminho do webhook de um provedor, relativo à origem do app. */
+export function billingWebhookPath(provider: string): string {
+  return `${BILLING_WEBHOOK_MOUNT_PATH}/${encodeURIComponent(provider)}`;
+}
+
+/** A URL pública registrada no provedor: `BILLING_WEBHOOK_PUBLIC_BASE_URL` + o caminho (sem barra dupla). */
+export function billingWebhookPublicUrl(publicBaseUrl: string, provider: string): string {
+  return `${publicBaseUrl.replace(/\/+$/, "")}${billingWebhookPath(provider)}`;
+}
+
+/** Cabeçalhos em que os provedores mandam o segredo/assinatura do webhook. Na decisão negativa o pedido segue para o app
+ * (`next()`) e passa pelo `pinoHttp`, que loga `req.headers`: estes saem do pedido ANTES, para nunca irem ao log (R-WH-7). */
+export const WEBHOOK_SECRET_HEADERS = ["authorization", "asaas-access-token", "x-webhook-token", "x-signature", "x-hub-signature", "x-hub-signature-256"] as const;
+
+export function stripWebhookSecretHeaders(req: Request): void {
+  for (const name of WEBHOOK_SECRET_HEADERS) delete req.headers[name];
+}
 
 /** O que a verificação do adaptador devolve ao router, unificado entre pagamento e nota. */
 export type WebhookVerification = {
@@ -64,16 +89,18 @@ export function createSubscriptionBillingWebhookRouter(deps: WebhookRouterDeps):
   // Parser LOCAL (o `type: "*/*"` cobre qualquer content-type; o HMAC exige o corpo CRU).
   const rawParser = express.raw({ type: () => true, limit: "256kb" });
 
-  router.post("/:provider", (req, res) => {
-    void handle(req, res);
+  router.post("/:provider", (req, res, next) => {
+    void handle(req, res, next).catch(next);
   });
 
-  async function handle(req: Request, res: Response): Promise<void> {
+  async function handle(req: Request, res: Response, next: NextFunction): Promise<void> {
     const provider = typeof req.params.provider === "string" ? req.params.provider : "";
-    // (1) ANTES de qualquer parser.
+    // (1) ANTES de qualquer parser. Decisão negativa → o pedido segue para o app SEM os cabeçalhos de segredo e o 404 padrão
+    // do app responde (idêntico ao de rota inexistente por construção; nem o corpo foi lido).
     const target = await deps.resolveTarget(provider);
     if (!target) {
-      res.status(404).json(WEBHOOK_NOT_FOUND_BODY);
+      stripWebhookSecretHeaders(req);
+      next();
       return;
     }
 
@@ -114,25 +141,31 @@ export function createSubscriptionBillingWebhookRouter(deps: WebhookRouterDeps):
     const digest = sha256Hex(rawBody);
     const externalEventId = verification.eventId ?? digest;
     const at = now();
-    const inserted = await deps.events.insertIfAbsent(
-      {
-        provider,
-        externalEventId,
-        bodyDigest: digest,
-        signatureOk: true,
-        externalResourceId: verification.externalResourceId ?? null,
-        externalReference: verification.externalReference ?? null,
-      },
-      at,
-    );
-    if (!inserted.created) {
-      res.status(200).json({});
-      return;
-    }
+    try {
+      const inserted = await deps.events.insertIfAbsent(
+        {
+          provider,
+          externalEventId,
+          bodyDigest: digest,
+          signatureOk: true,
+          externalResourceId: verification.externalResourceId ?? null,
+          externalReference: verification.externalReference ?? null,
+        },
+        at,
+      );
+      if (!inserted.created) {
+        res.status(200).json({});
+        return;
+      }
 
-    // (6) enfileira o reconcile (o corpo NÃO decide — a baixa vem da reconsulta no job). 200 rápido.
-    await deps.enqueueReconcile({ provider, externalEventId });
-    res.status(200).json({});
+      // (6) enfileira o reconcile (o corpo NÃO decide — a baixa vem da reconsulta no job). 200 rápido.
+      await deps.enqueueReconcile({ provider, externalEventId });
+      res.status(200).json({});
+    } catch {
+      // Banco ou fila indisponíveis: 503 SEM detalhe (nada do erro vai ao provedor — R-WH-7) para o provedor reenviar; o
+      // evento já gravado sem job é retomado pelo poll-pending (R-WH-8). Nunca o 500 HTML do Express.
+      res.status(503).json({ error: { code: "temporarily_unavailable" } });
+    }
   }
 
   return router;

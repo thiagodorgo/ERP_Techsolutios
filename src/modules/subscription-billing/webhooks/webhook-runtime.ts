@@ -68,10 +68,26 @@ export async function resolveWebhookTargetFromRuntime(provider: string): Promise
 }
 
 let memoryEvents = new InMemoryWebhookEventRepository();
+let targetResolverOverride: ((provider: string) => Promise<WebhookTarget | null>) | null = null;
+type ReconcileEnqueue = (input: { provider: string; externalEventId: string }) => Promise<void>;
+let enqueueOverride: ReconcileEnqueue | null = null;
 
-/** Só para testes: zera o dublê de eventos do modo memória. */
+/** Só para testes: zera o dublê de eventos do modo memória e desfaz o resolvedor e a fila injetados. */
 export function resetWebhookRuntimeForTests(): void {
   memoryEvents = new InMemoryWebhookEventRepository();
+  targetResolverOverride = null;
+  enqueueOverride = null;
+}
+
+/** Só para testes do app REAL sem Redis: recebe o que o router enfileiraria em `billing.reconcile-webhook`. */
+export function setWebhookEnqueueForTests(enqueue: ReconcileEnqueue | null): void {
+  enqueueOverride = enqueue;
+}
+
+/** Só para testes do app REAL: simula o canal ligado para um provedor sem cofre nem rede (o resolvedor de produção fica
+ * intocado). `null` volta ao resolvedor de produção. */
+export function setWebhookTargetResolverForTests(resolver: ((provider: string) => Promise<WebhookTarget | null>) | null): void {
+  targetResolverOverride = resolver;
 }
 
 /** O armazém de eventos do modo memória — o MESMO para o router e para os jobs (dev e testes). */
@@ -115,10 +131,11 @@ class LazyWebhookEventRepository implements WebhookEventRepository {
 /** Composição de produção do router (um limitador por processo). */
 export function createSubscriptionBillingWebhookRouterForApp(options: { readonly limiter?: WebhookRateLimiter } = {}): Router {
   return createSubscriptionBillingWebhookRouter({
-    resolveTarget: resolveWebhookTargetFromRuntime,
+    resolveTarget: (provider) => (targetResolverOverride ?? resolveWebhookTargetFromRuntime)(provider),
     events: new LazyWebhookEventRepository(),
     limiter: options.limiter ?? createWebhookRateLimiter(),
     enqueueReconcile: async (input) => {
+      if (enqueueOverride) return enqueueOverride(input);
       await getDefaultJobQueue().enqueue("billing.reconcile-webhook", { provider: input.provider, externalEventId: input.externalEventId });
     },
     clientIp: (req: Request) => req.ip ?? "unknown",

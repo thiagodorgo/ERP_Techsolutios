@@ -51,8 +51,9 @@ type Superficie = { readonly etiqueta: Etiqueta; readonly tabelas: readonly stri
 
 const S = (etiqueta: Etiqueta, tabelas: readonly string[], nota: string): Superficie => ({ etiqueta, tabelas, nota });
 const P = "/api/v1/platform";
-/** B-ASS-08b — o prefixo da rota de infra do webhook de cobrança (montada em src/app.ts antes do parser). */
-const WEBHOOK = "/webhooks/billing";
+/** B-ASS-08b — o prefixo da rota de infra do webhook de cobrança (montada em src/app.ts sob /api/v1, antes do parser e de
+ * qualquer ator; fora de /api/v1/platform, por isso entra no filtro do T11g pelo próprio prefixo). */
+const WEBHOOK = "/api/v1/webhooks/billing";
 
 // A superfície FECHADA (§2.3 do plano), rota a rota — enumerada da fonte e conferida contra o router em runtime.
 const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([

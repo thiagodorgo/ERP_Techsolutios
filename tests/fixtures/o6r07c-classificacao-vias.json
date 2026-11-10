@@ -1767,6 +1767,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/webhooks/billing/:provider": {
+  "classe": "N",
+  "n": 1
+ },
  "ROTA POST /api/v1/work-orders": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1821,10 +1825,6 @@
  },
  "ROTA POST /api/v1/yards/:yardId/areas": {
   "classe": "SEM-ALCANCE-CAMPO",
-  "n": 1
- },
- "ROTA POST /webhooks/billing/:provider": {
-  "classe": "N",
   "n": 1
  },
  "ROTA PUT /api/v1/impound-processes/:processId/inspection": {
@@ -1915,7 +1915,7 @@
   "classe": "ROTEADOR",
   "n": 1
  },
- "ROTEADOR /webhooks/billing": {
+ "ROTEADOR /api/v1/webhooks/billing": {
   "classe": "ROTEADOR",
   "n": 1
  },
