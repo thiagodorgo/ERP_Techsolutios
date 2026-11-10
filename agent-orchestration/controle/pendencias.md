@@ -13045,3 +13045,67 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` (o arquivo `tests/san3-05-leituras-de-plataforma-db.test.ts` e a alocação de nuvem que ele lê não estão no diff do conserto c1 do #525 nem no do ramo inteiro, medido por `git diff --name-only`) · **dono:** a atribuir (o orquestrador põe; achado pelo dev do conserto c1 do #525 na leitura do CI) · **bloqueia:** não, mas deixa o job `backend` vermelho por acaso.
 - **o que se sabe (medido no CI do ramo `feat/mobile-rdv-comprovante`):** na rodada 42808942930 (head `07f822da`) o job `backend` saiu `# fail 3`: `not ok 5 - T11d · controles (já por organização): iguais nos dois papéis`, `not ok 6 - T11e …` e o pai `not ok 3516 - B-SAN3-05 · T10–T12 …`. O diff do T11d é SÓ de ordem: as duas linhas de alocação (`allocatedCost` 10 e 30, uma por organização) vêm trocadas entre o superusuário e o papel `NOSUPERUSER NOBYPASSRLS` (`assert.deepEqual(efe.s4Alocacoes, sup.s4Alocacoes)`, l.772, sem ordenar). O mesmo arquivo passou nas rodadas 42801796358 (`fb610f78`) e 42810768352 (`41625a5b`, `# fail 0`). Leitura: o papel sem bypass lê organização por organização e o superusuário numa consulta só, e a ordem das duas linhas empatadas depende dos ids aleatórios do seed.
 - **teste de encerramento:** o T11d e o T11e comparam as coleções numa ordem determinística (ordenadas por chave estável, ou a consulta com `ORDER BY` total), e o arquivo passa em N ≥ 10 execuções seguidas no Postgres do CI.
+
+## P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na baixa/cancel/reopen/disable, `charge_cancel` da cobrança viva e linha nova `seq+1` no refechamento — MÉDIA (gravidade corrigida em 10/11; 5 obrigações bloqueiam o merge da 08b e 3 bloqueiam ligar o canal)
+
+- **status:** ABERTA · **escopo:** `src/modules/subscription-billing/statements/statement.repository.ts`, `statements/statement.prisma-runtime.ts`, `statements/statement-settlement.service.ts` (estender `StatementTx`), `outbox/outbox.dispatcher.ts` (handler de `charge_cancel`), `API_CONTRACTS.md` · **dono:** `B-ASS-08b`.
+- **origem:** conserto único da junta J-522 do PR #522 (ciclo 1, achado C2-01 GRAVE — R-OBX-5 não implementado; plano `B-ASS-08-conserto-c1.md` §7). O conserto implementou a parte **(ii)** do D2 — o claim relê o demonstrativo e a cobrança viva na MESMA transação, o `retry` revalida pelo mesmo caminho e `reopen()` recusa `outbox_needs_review` — e fechou o dinheiro: a linha parada nunca sai de demonstrativo pago, cancelado, reaberto ou refechado (T-OBX-13..16, T-OBX-db-3). O que ficou FORA, com dono, está abaixo. **Gravidade corrigida em 10/11 (2º conserto do #522, diagnóstico `ci522`).** A justificativa original era falsa e foi desmentida por medição em `807deb7e`:
+  - duas `charge_create` vivas do mesmo demonstrativo deram 2 `createCharge` (L1 30/30, L2c 9/10, `sint-c2/s4` 30/30);
+  - um worker só, com resposta perdida, deu 2 POST (L1c 3/3; `sint-c2/s2` ATK-0);
+  - o pedido guardado se auto-bloqueava (P2028 36/36, L3c);
+  - a órfã adotava a cobrança-fantasma de um fechamento desfeito, com o valor velho (`sint-c2/s2` ATK-8).
+
+  Era GRAVE e de dentro do bloco, e o 2º conserto a fecha no próprio #522 (`planos/B-ASS-08-conserto-c2.md` §0–§14; o diário é `docs/revisoes/ASSINATURA/B-ASS-08-conserto-c2-dev.md`), com estes testes:
+  - claim E5″: o conjunto vivo do D1, e o demonstrativo e a linha da fila travados numa instrução só, o demonstrativo primeiro, as duas cláusulas com SKIP LOCKED, sem laço de adiamento (T-OBX-18, T-OBX-db-4/5/9, T-LOCK-1b);
+  - pedido numa transação e numa conexão, com `seq` sob a trava (T-CHG-5/6/7/7b, T-CHG-db-1/2/3, T-LOCK-1a);
+  - reconsulta antes de criar e adoção só por fato que não se apaga (a linha é a única intenção do demonstrativo e o fechamento é o vigente, com o valor do total), também na órfã (T-OBX-11, T-OBX-17, T-OBX-db-6/7/8, T-OBX-NODEL);
+  - retry guardado: o demonstrativo travado primeiro, 422 com outra intenção viva, `last_error` mantido (T-OBX-9/9b, T-CHG-db-3);
+  - ordem de travas executada e censo das transações (T-LOCK-2).
+
+  O que fica com a 08b é MÉDIA: prontidão, visibilidade, cancelamento no provedor e as obrigações abaixo.
+- **D2 (i) marcação eager:** baixa manual, `cancel`, `reopen` e `disable` marcam as linhas `charge_create` `PENDING`/`NEEDS_REVIEW` do demonstrativo como `SKIPPED` com `skip_reason` na **mesma transação**, e linha `SENT` com cobrança viva → `charge_cancel` enfileirado. Exige estender `StatementTx` (arquivos do B-ASS-04) e o handler de `charge_cancel` no dispatcher (hoje `unsupported_kind → NEEDS_REVIEW`) — ambos da 08b.
+- **D2 (iii) refechar → linha nova `seq+1`:** depende do caminho `close() → enqueue + billing_statement_refs`, que não existe em `src/` neste PR (o `enqueue` da outbox só é chamado por testes) — é a ligação da 08b. Com (ii) + `reopened_at > occurred_at`, a linha velha nunca sai.
+- **corrida residual (declarada):** claim relê `closed` → `fetch` em voo → baixa manual no meio → `markSent` grava uma cobrança para demonstrativo que acabou de ficar `paid`. Janela de milissegundos a segundos. Fecha-se na 08b com a releitura **no registro** (`markSent` que vê `status ≠ closed` enfileira `charge_cancel`) + (i). Se o cliente pagar nesse intervalo, R-C/R-SET-1 já transformam em crédito — nunca descartado. **Precisão (2º conserto, 10/11):** o 2º conserto fecha a parte dentro do claim (ATK-7: o claim adia enquanto a baixa trava o demonstrativo). Fica a parte do `fetch`, que se fecha na 08b com a releitura no registro.
+- **contrato:** a 422 `outbox_needs_review` em `POST …/statements/:id/reopen` entra em `API_CONTRACTS.md` quando o guard estiver ligado em produção (08b liga o `PrismaOutboxRepository` em `statement.prisma-runtime.ts`).
+- **rota `/charge` (C3-01 / R-CHG-2, mesma leva do conserto):** a rota `POST …/statements/:id/charge` da 08b **DEVE chamar `requestChargeCreate`** (`charges/charge-request.service.ts`), **nunca `outbox.enqueue` direto** — é nele que vivem o `FOR UPDATE` do demonstrativo e a `chargeCreateEligibility` (422 `statement_not_closed` / `charge_already_exists` ANTES de enfileirar, D1). O mesmo vale para o enfileiramento no fechamento. E o dispatcher da 08b liga `resolveCustomer = profileCustomerResolver(<repo de perfil>)` (C3-02 / R-PRF-1) e persiste o `<provedor>_customer_id` devolvido pelo `ensureCustomer` (G12 — a persistência exige o repo de perfil, fora do PERMITIDO do conserto).
+- **Bloqueiam o merge da 08b (2º conserto, 10/11):**
+  - (1) a rota `/charge` chama `requestChargeCreate({ intents })` e o fechamento chama `enqueueChargeCreateInTx` sobre o `tx` do próprio fechamento. Encerramento: `git grep -nE 'kind: "charge_create"' -- src | grep -v charges/charge-request.service.ts` vazio (em `807deb7e` a única ocorrência é o serviço; na 984 nenhuma);
+  - (2) o refechamento marca a linha velha `SKIPPED statement_reopened`, na mesma transação, antes da nova (senão o D1 recusa e o fechamento falha);
+  - (3) o `charge/cancel` tira a linha SENT antiga do conjunto vivo do D1. A forma é desenho da 08b; um `skip_reason` novo é migração com autorização nominal;
+  - (4) o claim E5″ e o despacho do 2º conserto prevalecem no merge: a CTE da 08b (`outbox.prisma.ts` l.111-143) não sobrevive, e `runBillingDispatch` passa `resolveCustomer` e trata o resultado discriminado do claim;
+  - (5) T-LOCK-2 verde no head da 08b, estendido por ela: o censo de aberturas da 08b sai sem sobra nem falta (em 984c5a8a já são 62, 11 a mais que em 807deb7e, e cada abertura nova entra classificada); há cenário gravado, com cobertura pela pilha de abertura, para o fechamento que enfileira, o refechamento, a marcação eager do D2 (i), o `charge/cancel`, o `/resolve` e a rota de `retry`; a M7f é aplicada, vista vermelha e desfeita, com o registro no diário; o T-OBX-NODEL fica verde (a régua de adoção depende de nenhuma linha da fila ser apagada, e um `/resolve` que apague linha a quebra); e, com as transações da 08b, o T-OBX-db-9 também fica verde (plano §14.8). Encerramento: `node --test --import tsx tests/ass-08-lock-order-db.test.ts` com `DATABASE_URL`, `# fail 0`, e o resumo TAP do job `backend` (§C7 11(3)).
+- **Bloqueiam ligar o canal com provedor real (`BILLING_PROVIDERS_ENABLED=true` + provedor `enabled`):**
+  - (a) `P-ASS08-MUTATE-SEM-GUARDA`;
+  - (b) `P-ASS08-RECONSULTA-SEM-VALOR`, antes de ligar o `charge/cancel`;
+  - (c) `P-ASS08-RECONSULTA-CONSISTENCIA`, medida no sandbox.
+- **teste de encerramento:** baixa manual com linha `PENDING` deixa a linha `SKIPPED statement_paid` na mesma transação e, com cobrança `SENT` viva, enfileira `charge_cancel` que o dispatcher processa (0 cobrança nova no falso); refechar depois de `reopen` enfileira `seq + 1` com o total novo e a linha velha segue `SKIPPED`; `POST …/reopen` com linha `NEEDS_REVIEW` responde 422 `outbox_needs_review` pela rota real. **Acréscimo (2º conserto, 10/11):** dois `POST …/charge` concorrentes PELA ROTA deixam 1 viva, devolvem 422 e geram `recorded[]` = 1 `POST /payments` (`-db`, a barreira do T-CHG-db-1); o fechamento com falha ao gravar a linha não commita; o `charge/cancel` tira a SENT do conjunto vivo, e um novo `/charge` passa sem `NEEDS_REVIEW`.
+
+## P-ASS08-MUTATE-SEM-GUARDA (2026-11-10) — o `#mutate` da outbox atualiza por id sem conferir o claim: um worker atrasado revive linha em revisão — ALTA (bloqueia ligar o canal)
+
+- **status:** ABERTA · **escopo:** `src/modules/subscription-billing/outbox/outbox.prisma.ts` (`#mutate`), o dublê e o despacho · **dono:** `B-ASS-08b`.
+- **origem:** diagnóstico `ci522` do 2º conserto do #522 (L2c C5; plano `B-ASS-08-conserto-c2.md` §10.2). O `#mutate` atualiza por `id` sem conferir `status = 'PROCESSING' AND claimed_by = $1 AND attempt_started_at = $2`. Um worker atrasado revive uma linha que já foi a revisão ou foi pulada. Somado a uma ação de operador (`/resolve` → FAILED → novo `/charge`) dentro da janela, há 2ª cobrança.
+- **teste de encerramento:** um `-db` em que o worker atrasado não tira a linha de NEEDS_REVIEW/SKIPPED, e `markSent`/`reschedule` com 0 linhas atualizadas não lança.
+
+## P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ chargeId, status }`, sem valor nem data — MÉDIA (bloqueia ligar o `charge/cancel`)
+
+- **status:** ABERTA · **escopo:** `src/modules/subscription-billing/providers/payment/**` (porta e adaptador Asaas) e `outbox/outbox.dispatcher.ts` · **dono:** `B-ASS-08b`, ou o primeiro bloco que tocar `providers/payment/**`.
+- **origem:** 2º conserto do #522 (§10.2, §13.5; era BAIXA no diagnóstico). A porta devolve uma cobrança só por referência, `{ chargeId, status }`, sem valor e sem data, e o Asaas devolve a 1ª da listagem (`asaas.adapter.ts` l.188-198). Por isso a adoção (E6′/E7′) exige a régua U (a linha é a única intenção do demonstrativo) e V (o fechamento é o vigente, com o valor do total). Resíduo declarado: cobrança criada à mão no painel do Asaas com a nossa referência.
+- **teste de encerramento:** a porta devolve a lista `{ chargeId, status, amountCents, createdAt }`; a adoção só toma cobrança viva, criada depois do `occurred_at` da linha e com o valor do payload; a recobrança depois de `charge/cancel` sai sem revisão (o ATK-3 com 1 POST e 1 viva). Com essa lista, a régua U pode ser relaxada para "adota a cobrança viva criada depois do `occurred_at` da linha e com o valor dela, mesmo com outra intenção no demonstrativo"; isso fecha também a revisão de vivacidade de "reabertura + resposta perdida" (plano §13.1.2).
+
+## P-ASS08-RECUPERADA-SEM-COBRANCA (2026-11-10) — o desfecho `recovered` não grava `subscription_statement_charges` — MÉDIA
+
+- **status:** ABERTA · **escopo:** `src/modules/subscription-billing/outbox/outbox.dispatcher.ts` · **dono:** `B-ASS-08b`.
+- **origem:** 2º conserto do #522 (§10.2). O desfecho `recovered` (órfã e, agora, a retentativa que adota a própria cobrança) só faz `markSent` e não grava `subscription_statement_charges` (G11: `payUrl`, Pix, boleto).
+- **teste de encerramento:** um teste em que `recovered` deixa uma linha de cobrança `pending` com `payUrl`, obtida por `getCharge`, lida em `GET …/charges`.
+
+## P-ASS08-RECONSULTA-CONSISTENCIA (2026-11-10) — a listagem `GET /v3/payments?externalReference` do Asaas mostra a cobrança criada numa chamada que perdeu a resposta? — MÉDIA (hipótese)
+
+- **status:** ABERTA · **escopo:** sandbox do Asaas · **dono:** `P-ASS-SANDBOX-REAL`.
+- **origem:** 2º conserto do #522 (§9 risco 5, §10.2). Hipótese, não medida (sem rede): a reconsulta pode voltar vazia logo depois de uma resposta perdida, e então a linha recria. Mitigação: o backoff é de pelo menos 1 min.
+- **teste de encerramento:** a medição no sandbox.
+
+## P-ASS08-INDICE-UMA-VIVA (2026-11-10) — índice parcial "uma `charge_create` viva por demonstrativo" (M5b), decisão do dono — BAIXA
+
+- **status:** ABERTA · **escopo:** `prisma/migrations/20260900100000_ass08_billing_outbox_one_live_charge_create/migration.sql` (plano §6.2), em PR próprio · **dono:** decisão do dono; a 08b, se autorizada.
+- **origem:** 2º conserto do #522 (§6.2/§6.3). O conserto impede a cobrança em dobro sem o índice (medido); o índice protege contra um escritor futuro errado da 08b. Pergunta opcional ao dono registrada no plano (§6.3).
+- **teste de encerramento:** `D-ASS08-MIGRACAO-M5B` em `decisoes.md` e a migração com drill e runbook (down M5b antes da M5), ou o arquivamento.

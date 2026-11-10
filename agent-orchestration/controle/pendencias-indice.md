@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **793** |
-| IDs distintos | 782 |
-| **ABERTAS** | **596** |
+| Cabecalhos `## P-` | **799** |
+| IDs distintos | 788 |
+| **ABERTAS** | **602** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **534** |
+| — das quais **ativas nesta rodada** | **540** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 193 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **793 cabecalhos para 782 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **799 cabecalhos para 788 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 262
+## ABERTAS · balde A — material — 267
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -337,8 +337,13 @@
 | `P-S3-FORCE-PATH-STYLE-NAO-DESLIGA` | 13024 | MÉDIA | sim | P-S3-FORCE-PATH-STYLE-NAO-DESLIGA (2026-11-10) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
 | `P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP` | 13030 | MÉDIA | sim | P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP (2026-11-10) — aprovação e devolução d |
 | `P-CI-SAN3-05-T11D-ORDEM-FLAKY` | 13043 | MÉDIA | sim | P-CI-SAN3-05-T11D-ORDEM-FLAKY (2026-11-10) — o T11d/T11e de `san3-05-leituras-de-platafo |
+| `P-ASS08-OBX5-EAGER-E-CANCEL` | 13049 | MÉDIA | sim | P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na |
+| `P-ASS08-MUTATE-SEM-GUARDA` | 13083 | ALTA | sim | P-ASS08-MUTATE-SEM-GUARDA (2026-11-10) — o `#mutate` da outbox atualiza por id sem confe |
+| `P-ASS08-RECONSULTA-SEM-VALOR` | 13089 | MÉDIA | sim | P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ ch |
+| `P-ASS08-RECUPERADA-SEM-COBRANCA` | 13095 | MÉDIA | sim | P-ASS08-RECUPERADA-SEM-COBRANCA (2026-11-10) — o desfecho `recovered` não grava `subscri |
+| `P-ASS08-RECONSULTA-CONSISTENCIA` | 13101 | MÉDIA | sim | P-ASS08-RECONSULTA-CONSISTENCIA (2026-11-10) — a listagem `GET /v3/payments?externalRefe |
 
-## ABERTAS · balde B — processo/registro — 272
+## ABERTAS · balde B — processo/registro — 273
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -614,6 +619,7 @@
 | `P-DESPESA-ITEM-CORRIDA-SUBMIT` | 13011 | — | sim | P-DESPESA-ITEM-CORRIDA-SUBMIT (2026-11-10) — um item pode entrar num relatório recém-sub |
 | `P-MOBILE-RECIBO-409-POR-MOTIVO` | 13018 | BAIXA | sim | P-MOBILE-RECIBO-409-POR-MOTIVO (2026-11-10) — o app trata todo 409 do comprovante como ` |
 | `P-PROCESSO-SONDAS-ANTES-DO-WORKTREE` | 13037 | BAIXA | sim | P-PROCESSO-SONDAS-ANTES-DO-WORKTREE (2026-11-10) — o mandato de cadeira não manda guarda |
+| `P-ASS08-INDICE-UMA-VIVA` | 13107 | BAIXA | sim | P-ASS08-INDICE-UMA-VIVA (2026-11-10) — índice parcial "uma `charge_create` viva por demo |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 
