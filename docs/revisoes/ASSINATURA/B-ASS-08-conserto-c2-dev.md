@@ -291,3 +291,23 @@ O código da F5b (`adoptionFacts` no `PrismaOutboxRepository`) entrou no commit 
 | 14:34:24→14:34:44 | `npm run build` + `rm -rf dist` | exit 0; `dist/` removido (§C5) | — |
 | 14:2x | `node scripts/migration-transaction-guard.mjs` | "migrações: 129 · anteriores: 112 · novas: 17 · violações: 0" | — |
 | 14:2x | escopo: `git diff --name-only 793fa01e..HEAD` (20 caminhos, todos no PERMITIDO do §5 e do §13.3.6); `git diff --stat 793fa01e..HEAD -- prisma/ src/…/statements/ src/…/providers/ Kpis/ frontend/ mobile/ src/app.ts src/config/ src/database/ CLAUDE.md AGENTS.md agent-orchestration/controle/decisoes.md package*.json` vazio; extrações: 3 hunks (2 em `charges.prisma.ts`, declarados na F2, e 1 em `statement-refs.prisma.ts`); `git diff --check 793fa01e..HEAD` limpo | escopo cumprido | — |
+
+## Emenda 15 — `SET LOCAL` no lugar de `set_config` no E5″ (aprovada às 14:56 depois de 2 rodadas de `crit-522-e15`; valem os requisitos finais da rodada 2)
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| 14:57 | gerador do T13 ANTES (`rascunhos/e15/t13-antes.out`) | exit 0, stderr vazio; byte-igual à saída da F6 (`t13-f6.out`) | — |
+| 14:57 | T-OBX-E15 ESCRITO ANTES do código, em `tests/ass-08-outbox.test.ts` (+ import de `PrismaOutboxRepository`): cliente de transação FALSO que grava toda instrução em ordem (no molde do `recordingClient`, que não muda), `current_setting('enable_nestloop')` e a pick controlados pelo teste; exige ADJACÊNCIA (desligar = instrução imediatamente anterior à pick; devolver = imediatamente seguinte, com o literal igual ao valor lido), só 2 `SET` do planejador e nenhum `set_config` dele; casos `off`/`on` × pick que ACHA / pick vazia, mais "valor fora de {on, off} falha fechado sem rodar a pick" | — | — |
+| 14:57:30→14:57:32 | **VERMELHO-CONTROLE** (o `set_config` do E5″) | `# tests 38 · pass 32 · fail 6`: os 5 subtestes do T-OBX-E15 e o pai | o código antigo não tem a forma |
+| 14:57:42→14:57:57 | `rascunhos/e15/apply-e15.mjs` (troca por trechos exatos em `outbox.prisma.ts`: `SELECT current_setting(…) AS previous`; fora de {on, off} lança; `SET LOCAL enable_nestloop = off`; a pick; logo em seguida `SET LOCAL enable_nestloop = on` ou `= off` por literal escolhido em código — em sequência, sem `finally`) + `npm run check` | exit 0; nenhum `set_config(` sobrando no arquivo | — |
+| 14:57:57 | `npm test -- tests/ass-08-outbox.test.ts tests/auth-invariant-guards.test.ts` | `# tests 49 · pass 49 · fail 0` (o **guard 3 verde**) | — |
+| 14:58:34→14:58:59 | `-db`: `ass-08-channel-db` + `ass-08-lock-order-db` | `# tests 27 · pass 27 · fail 0` (T-OBX-db-9 e T-LOCK-2 verdes; o classificador lê o `SET` como sem trava) | — |
+| 14:59:09→14:59:46 | **M5h** (tirar o `SET LOCAL enable_nestloop = off`) → dublê e `-db` | dublê `pass 33 · fail 5`: os 4 casos do T-OBX-E15; `-db` `pass 20 · fail 1`: **T-OBX-db-9 com `57014` em 10 169 ms** (o vermelho que conta); revert limpo | vermelho medido |
+| 14:59:46→14:59:47 | **M5h′** (devolve sempre `on`) | `pass 35 · fail 3`: os 2 casos `prev = 'off'`; revert limpo | vermelho medido |
+| 14:59:48→14:59:49 | **M5h″** (sem a devolução) | `pass 33 · fail 5`: os 4 casos; revert limpo | vermelho medido |
+| 14:59:49→14:59:51 | **M5h‴** (a devolução depois da instrução SEGUINTE: a releitura E4 ou o pick dos outros tipos) | `pass 33 · fail 5`: os 4 casos (adjacência); revert limpo | vermelho medido |
+| 14:59:51→14:59:52 | **M5h⁗** (a devolução logo depois só com a pick vazia; quando acha, depois da releitura E4) | `pass 35 · fail 3`: os 2 casos "a pick ACHA a linha"; revert limpo | vermelho medido |
+| 14:59:5x | gerador do T13 DEPOIS (`t13-depois.out`) | exit 0, stderr vazio. Mudam SÓ chaves do `claimNext`: `RAW-SQL($queryRawUnsafe) OPACO` `×2` → `×1` e a NOVA `RAW-SQL($executeRawUnsafe) OPACO` `×2` (os dois `SET LOCAL`); resumo 938 → 939, PARAMETRO 75 → 76, inventário 113 → 114 (`sha1=445cafb613c80f6b0ac664c55434de1f26bb71eb`); nenhuma chave de outro método | aceite E15-T13 cumprido |
+| 15:00:30→15:01:11 | T13 com as 2 chaves coladas da saída, motivo em uma linha | `# tests 35 · pass 35 · fail 0` | — |
+| 15:01:19→15:01:34 | `npm run lint`; `git diff --check` | 0; limpo | — |
+| — | `P-GUARD3-SO-RECONHECE-SET-CONFIG` | NÃO gravada (E15R2-PENDENCIA-FORA-DO-PERMITIDO: é do registro do orquestrador) | — |

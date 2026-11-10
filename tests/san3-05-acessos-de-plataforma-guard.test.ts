@@ -319,8 +319,12 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     "B-ASS-08 / R-OBX-5 + 2º conserto (E5″): a trava do demonstrativo na pick conjunta (`FOR NO KEY UPDATE OF s SKIP LOCKED`, o demonstrativo antes da linha da fila — regra §2.1) e a releitura do demonstrativo (`SELECT s.status, s.reopened_at … WHERE s.id = $1`), na MESMA transação do claim (`withTenantRlsBudget`, GUC setado na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização da linha reclamada — demonstrativo ocupado é pulado sem espera; pago/cancelado/reaberto/refechado → SKIPPED, nunca sai. Provado em T-OBX-db-1 e T-OBX-db-3 sob papel NOSUPERUSER NOBYPASSRLS (sem GUC o demonstrativo seria invisível e a linha nunca seria reclamada).",
   ],
   [
-    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
-    "2º conserto do #522 (E5″, §14.2): os dois `set_config('enable_nestloop', …, true)` da trava de plano — `SELECT current_setting('enable_nestloop'), set_config('enable_nestloop', 'off', true)` antes da pick conjunta e `SELECT set_config('enable_nestloop', $1, true)` devolvendo o valor de antes — são parâmetros LOCAIS do planejador nesta transação; não leem nem escrevem tabela nenhuma (nem FORCE).",
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "2º conserto do #522 (E5″, §14.2; Emenda 15): `SELECT current_setting('enable_nestloop') AS previous` — lê o valor de antes do parâmetro LOCAL do planejador; não lê nem escreve tabela nenhuma (nem FORCE).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($executeRawUnsafe) OPACO", "?", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "2º conserto do #522 (Emenda 15): `SET LOCAL enable_nestloop = off` antes da pick conjunta e `SET LOCAL enable_nestloop = on|off` (literal fixo igual ao valor lido) logo depois — parâmetro LOCAL do planejador nesta transação, sem dado nem parâmetro no SQL; não lê nem escreve tabela nenhuma (nem FORCE).",
   ],
   [
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),

@@ -9,7 +9,7 @@
 //     (2) a PENDING `charge_create` (E5″, 2º conserto do #522): o demonstrativo e a linha numa instrução só, o
 //         demonstrativo PRIMEIRO, as duas cláusulas com SKIP LOCKED — o executor pula, dentro da própria instrução, toda
 //         candidata cujo demonstrativo está travado (baixa, fechamento, pedido em voo), sem laço nem lista de adiadas, e
-//         o claim nunca espera; `enable_nestloop = off` local à instrução impede a junção quadrática com estatística velha;
+//         o claim nunca espera; `SET LOCAL enable_nestloop = off` em volta da instrução impede a junção quadrática com estatística velha;
 //     (3) a RELEITURA no comando seguinte (E4): demonstrativo + cobrança viva sob o MESMO GUC, com a irmã viva = o conjunto
 //         do D1 (PENDING/PROCESSING/SENT/NEEDS_REVIEW), e a política `params.verdict` (R-OBX-5, D2);
 //     (4) as PENDING dos outros tipos (`invoice_*` da 08b): pick próprio, sem trava do demonstrativo;
@@ -188,13 +188,16 @@ export class PrismaOutboxRepository implements OutboxRepository {
         } else {
           // (2) E5″ — PENDING `charge_create`: o demonstrativo e a linha numa instrução só (CHARGE_CREATE_JOINT_PICK_SQL).
           //     `billing_outbox.statement_id` não tem índice: com estatística velha o planejador escolhia laço aninhado
-          //     (quadrático; medido: 10,3 s em N = 6 500). `enable_nestloop = off` LOCAL, só nesta instrução, com o valor de
-          //     antes devolvido logo depois: a junção de igualdade vira hash (linear).
-          const planner = (await tx.$queryRawUnsafe(
-            `SELECT current_setting('enable_nestloop') AS previous, set_config('enable_nestloop', 'off', true) AS applied`,
-          )) as Array<{ previous: string }>;
+          //     (quadrático; medido: 10,3 s em N = 6 500). `SET LOCAL enable_nestloop = off` só em volta desta instrução, e o
+          //     valor de antes devolvido logo depois: a junção de igualdade vira hash (linear). Emenda 15: `SET LOCAL` com
+          //     LITERAIS FIXOS (nada de parâmetro nem de dado no SQL; o `set_config` vive só em rls.ts, guard 3), e valor lido
+          //     fora de {on, off} falha fechado.
+          const planner = (await tx.$queryRawUnsafe(`SELECT current_setting('enable_nestloop') AS previous`)) as Array<{ previous: string }>;
+          const previousNestloop = planner[0]?.previous;
+          if (previousNestloop !== "on" && previousNestloop !== "off") throw new Error("enable_nestloop com valor inesperado; o claim não segue");
+          await tx.$executeRawUnsafe(`SET LOCAL enable_nestloop = off`);
           const picked = (await tx.$queryRawUnsafe(CHARGE_CREATE_JOINT_PICK_SQL, params.enabledProviders, params.now)) as Row[];
-          await tx.$queryRawUnsafe(`SELECT set_config('enable_nestloop', $1, true)`, planner[0]!.previous);
+          await tx.$executeRawUnsafe(previousNestloop === "on" ? `SET LOCAL enable_nestloop = on` : `SET LOCAL enable_nestloop = off`);
           if (picked.length > 0) {
             target = toDomain(picked[0]!);
             // (3) E4 — RELÊ, no comando SEGUINTE (a foto depois da concessão) e sob o MESMO GUC, o demonstrativo e a

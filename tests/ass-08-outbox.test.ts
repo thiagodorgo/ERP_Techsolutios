@@ -12,6 +12,7 @@ import { test } from "node:test";
 
 import { InMemoryOutboxRepository, type StatementClaimReader } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { chargeCreateClaimVerdict, runDispatchOutbox, type DispatchAuditEvent, type DispatcherDeps } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
+import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
 import { InMemoryChargeIntentRepository } from "../src/modules/subscription-billing/charges/charge-intent.repository.js";
 import { profileCustomerResolver, requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
@@ -794,5 +795,70 @@ test("E9 × E6′: o retry não apaga a evidência de que a linha já foi tentad
     const final = await arm.outbox.findById(TENANT, r1.id);
     assert.deepEqual([final?.status, final?.lastError, final?.externalId], ["NEEDS_REVIEW", "charge_found_for_previous_intent", null]);
     assert.equal(arm.port.created.length, 1, "só o POST de R0");
+  });
+});
+
+// Emenda 15 (2º conserto do #522; crítica `crit-522-e15`, 2 rodadas): o E5″ desliga o laço aninhado com
+// `SET LOCAL enable_nestloop = off` (literal fixo), roda a pick conjunta e DEVOLVE o valor lido por um de dois literais
+// fixos, NA INSTRUÇÃO IMEDIATAMENTE SEGUINTE à pick (nunca num `finally`, nunca depois da releitura). Cliente de transação
+// FALSO que grava, em ordem, toda instrução (no molde do `recordingClient` de tests/helpers/lock-order-recorder.ts), com o
+// `current_setting('enable_nestloop')` e o resultado da pick controlados pelo teste.
+// Mutações: M5h (sem desligar), M5h′ (devolve sempre `on`), M5h″ (sem devolver), M5h‴ (devolve depois da instrução
+// seguinte), M5h⁗ (devolve logo depois só quando a pick vem vazia) — cada uma vermelha aqui; a M5h também no T-OBX-db-9.
+const E15_TENANT = "00000000-0000-4000-8000-0000000000e1";
+function e15PickedRow() {
+  const at = new Date("2026-12-01T11:00:00Z");
+  return {
+    id: "00000000-0000-4000-8000-0000000000e2", tenant_id: E15_TENANT, statement_id: "00000000-0000-4000-8000-0000000000e3",
+    kind: "charge_create", provider: "asaas", idempotency_key: "charge_create:e15:1", provider_idempotency_key: "00000000-0000-4000-8000-0000000000e4",
+    payload: { amountCents: 10000 }, status: "PENDING", skip_reason: null, claimed_at: null, claimed_by: null, attempt_started_at: null,
+    attempts: 0, next_attempt_at: null, last_error: null, external_id: null, occurred_at: at, created_at: at, updated_at: at,
+  };
+}
+function nestloopFakeClient(previous: string, pickFinds: boolean) {
+  const statements: string[] = [];
+  const flat = (sql: string) => sql.replace(/\s+/g, " ").trim();
+  const tx = {
+    async $executeRaw(strings: TemplateStringsArray) { statements.push(flat(strings.join("?"))); return 0; },
+    async $executeRawUnsafe(sql: string) { statements.push(flat(sql)); return 0; },
+    async $queryRawUnsafe(sql: string) {
+      const text = flat(sql);
+      statements.push(text);
+      if (/current_setting\('enable_nestloop'\)/.test(text)) return [{ previous }];
+      if (/FOR NO KEY UPDATE OF s SKIP LOCKED FOR UPDATE OF o SKIP LOCKED/.test(text)) return pickFinds ? [e15PickedRow()] : [];
+      if (/AS has_live_charge/.test(text)) return [{ status: "closed", reopened_at: null, has_live_charge: false }];
+      if (/^UPDATE billing_outbox/.test(text)) return [{ ...e15PickedRow(), status: "PROCESSING", attempts: 1 }];
+      return [];
+    },
+  };
+  const client = {
+    async $queryRawUnsafe(sql: string) { return /billing_statement_refs/.test(sql) ? [{ tenant_id: E15_TENANT }] : []; },
+    async $transaction(work: (t: typeof tx) => Promise<unknown>) { return work(tx); },
+  };
+  return { client: client as never, statements };
+}
+
+test("Emenda 15: o claim desliga o laço aninhado só em volta da pick conjunta e devolve o valor lido NA INSTRUÇÃO SEGUINTE (T-OBX-E15)", async (t) => {
+  const params = { enabledProviders: ["asaas"], now: new Date("2026-12-01T12:00:00Z"), claimedBy: "e15", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict } as const;
+  for (const previous of ["off", "on"] as const) {
+    for (const pickFinds of [true, false]) {
+      await t.test(`prev = '${previous}', a pick ${pickFinds ? "ACHA a linha" : "vem vazia"}`, async () => {
+        const fake = nestloopFakeClient(previous, pickFinds);
+        const claimed = await new PrismaOutboxRepository(fake.client).claimNext(params);
+        assert.equal(claimed?.kind ?? null, pickFinds ? "claimed" : null);
+        const s = fake.statements;
+        const pick = s.findIndex((sql) => /FOR NO KEY UPDATE OF s SKIP LOCKED FOR UPDATE OF o SKIP LOCKED/.test(sql));
+        assert.ok(pick > 0, "a pick conjunta rodou");
+        assert.equal(s[pick - 1], "SET LOCAL enable_nestloop = off", `a instrução IMEDIATAMENTE anterior à pick desliga (sequência: ${JSON.stringify(s)})`);
+        assert.equal(s[pick + 1], `SET LOCAL enable_nestloop = ${previous}`, `a instrução IMEDIATAMENTE seguinte à pick devolve o valor lido (sequência: ${JSON.stringify(s)})`);
+        assert.equal(s.filter((sql) => /enable_nestloop = /.test(sql)).length, 2, "só o desligar e o devolver");
+        assert.ok(!s.some((sql) => /set_config\(/.test(sql) && /enable_nestloop/.test(sql)), "nenhum set_config para o planejador (guard 3)");
+      });
+    }
+  }
+  await t.test("valor lido fora de {on, off} falha fechado, sem rodar a pick", async () => {
+    const fake = nestloopFakeClient("weird", true);
+    await assert.rejects(new PrismaOutboxRepository(fake.client).claimNext(params), /enable_nestloop com valor inesperado/);
+    assert.ok(!fake.statements.some((sql) => /FOR NO KEY UPDATE OF s/.test(sql)), "a pick não roda");
   });
 });
