@@ -45,13 +45,14 @@ class LocalExpenseRepository extends ChangeNotifier {
 
   List<ExpenseReport> get reports => List.unmodifiable(_reports);
 
-  Future<void> load({bool seedIfEmpty = true}) async {
+  Future<void> load({bool seedIfEmpty = false}) async {
     if (_loaded) {
       return;
     }
 
     final stored = await _localStore.loadReports();
-    if (stored.isEmpty && seedIfEmpty) {
+    final demoSeed = seedIfEmpty || identical(_session, devBootstrapSession);
+    if (stored.isEmpty && demoSeed) {
       _reports = _initialReports(_session);
       await _persistReports();
     } else {
@@ -83,6 +84,15 @@ class LocalExpenseRepository extends ChangeNotifier {
       }
     }
     return null;
+  }
+
+  String? serverIdForReport(String localId) => findReport(localId)?.serverId;
+
+  Future<void> markReportSynced(String localId, String serverId) async {
+    await load();
+    final report = findReport(localId);
+    if (report == null || report.serverId == serverId) return;
+    await _replace(report.copyWith(serverId: serverId));
   }
 
   Future<ExpenseMutationResult> createReport({
@@ -146,12 +156,13 @@ class LocalExpenseRepository extends ChangeNotifier {
     }
 
     final itemLocalId = 'item-local-${_itemSequence++}';
+    final spentAt = DateTime.now().toUtc();
     final item = ExpenseItem(
       localId: itemLocalId,
       tenantId: report.tenantId,
       categoryId: categoryId,
       amount: amount,
-      date: DateTime.now().toUtc(),
+      date: spentAt,
       city: city.trim().isEmpty ? null : city.trim(),
       vendorName: vendorName.trim().isEmpty ? null : vendorName.trim(),
       receipts: attachReceiptPlaceholder
@@ -181,7 +192,9 @@ class LocalExpenseRepository extends ChangeNotifier {
       type: ExpenseSyncActionTypes.itemCreate,
       payload: {
         'report_local_id': report.localId,
-        'category_id': categoryId,
+        if (report.serverId != null) 'report_id': report.serverId,
+        'category_key': categoryId,
+        'spent_at': spentAt.toIso8601String(),
         'amount': amount,
         'city': item.city,
         'vendor_name': item.vendorName,
@@ -210,6 +223,7 @@ class LocalExpenseRepository extends ChangeNotifier {
       type: ExpenseSyncActionTypes.reportSubmit,
       payload: {
         'report_local_id': report.localId,
+        if (report.serverId != null) 'report_id': report.serverId,
         'policy_version': report.policyVersion,
         'submitted_at': DateTime.now().toUtc().toIso8601String(),
       },
@@ -218,7 +232,7 @@ class LocalExpenseRepository extends ChangeNotifier {
     return ExpenseMutationResult(report: submitted, action: action);
   }
 
-  Future<ExpenseMutationResult> attachReceiptPlaceholder({
+  Future<SyncAction?> attachReceiptPlaceholder({
     required String reportLocalId,
     required String itemLocalId,
     String fileName = 'comprovante',
@@ -270,13 +284,7 @@ class LocalExpenseRepository extends ChangeNotifier {
     );
     await _replace(updated);
 
-    final action = _actionFactory.create(
-      tenantId: report.tenantId,
-      type: ExpenseSyncActionTypes.receiptAttach,
-      payload: _safeReceiptPayload(report, target, receipt),
-    );
-    await _syncQueue.enqueue(action);
-    return ExpenseMutationResult(report: updated, action: action);
+    return null;
   }
 
   List<Receipt> receiptsForItem(String reportLocalId, String itemLocalId) {
@@ -389,27 +397,6 @@ class LocalExpenseRepository extends ChangeNotifier {
     await _replace(
       report.copyWith(items: updatedItems, updatedAt: DateTime.now().toUtc()),
     );
-  }
-
-  Map<String, Object?> _safeReceiptPayload(
-    ExpenseReport report,
-    ExpenseItem item,
-    Receipt receipt,
-  ) {
-    return {
-      'tenant_id': report.tenantId,
-      'report_local_id': report.localId,
-      'report_server_id': report.serverId,
-      'item_local_id': item.localId,
-      'receipt_local_id': receipt.localId,
-      'file_name': receipt.fileName,
-      'mime_type': receipt.mimeType,
-      'size_bytes': receipt.sizeBytes,
-      'sha256_hash': receipt.sha256Hash,
-      'capture_source': receipt.captureSource.name,
-      'created_at': receipt.createdAt.toIso8601String(),
-      // not included: localReference (path-like), raw file content, tokens
-    };
   }
 
   Future<void> _replace(ExpenseReport updated) async {

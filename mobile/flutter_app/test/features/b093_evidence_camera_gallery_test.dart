@@ -356,7 +356,7 @@ void main() {
         actionFactory: SyncActionFactory(),
         localStore: InMemoryExpenseLocalStore(),
       );
-      await repo.load();
+      await repo.load(seedIfEmpty: true);
 
       final reports = repo.reports;
       expect(reports, isNotEmpty);
