@@ -95,3 +95,31 @@
   404-esperado não passar de graça com rota inexistente) · VERMELHO-CONTROLE REGISTRADO.
 - `node --test --import tsx tests/b-rdv-comprovante-receipt-contract.test.ts` · `fail 1` (RR5 — nem
   `expense_receipt_sync.dart` nem `expense-receipt.routes.ts` existem na base) · VERMELHO-CONTROLE REGISTRADO.
+
+## F2+F3 — Rota, serviço, permissão; scanner/storage por composição (backend)
+
+- `catalog.ts` +1 permissão no `field_technician` (`expense_receipt:attach`, após `expense_sync:write`);
+  snapshot `role-catalog-contract.snapshot.json` com a MESMA inserção (diff de 1 linha). **PREMISSA (forma):**
+  o §B dizia "snapshot regenerado pelo guard"; o guard (`core-saas-role-authority.test.ts`) COMPARA literais
+  independentes — o caminho oficial é a mudança deliberada nos DOIS lados, e o guard confere:
+  `DATABASE_URL=<fictícia> node --test ... tests/core-saas-role-authority.test.ts` · `pass 12 fail 0`.
+- Novos: `expense-receipt.service.ts` (valida dono/estado → sniff+scanner pelo gate único `verifyUploadContent`
+  via `V6` → claim na tabela `mobile_action_receipts` (K2t) → storage da evidência (instância própria de
+  `LocalProtectedEvidenceStorageProvider`) → `ExpenseReceipt` persistido `stored` → evento com fingerprint v2)
+  e `expense-receipt.routes.ts` (Busboy espelho do molde; 413 no estouro; POST `attach`, GET metadados,
+  GET `/file` servido pelo API com `nosniff`+`attachment`). Montagem em `expense-management.routes.ts`.
+- Aditivos declarados (fora da lista nominal do §G.3, exigidos pelo fluxo dele — ver F0): 5 métodos de
+  comprovante na interface `ExpenseDomainRepository` + InMemory (map novo no snapshot/restore/reset do
+  rollback) + Prisma + wrapper RLS (delegações sob `withTenantRls`); `ExpenseReceiptRecord` nos types;
+  `EXPENSE_RECEIPT_SYNC_ACTION_TYPE` em `expense-sync.ts` (o LOTE segue recusando o tipo — 400) e
+  `ClaimMobileActionReceiptInput.actionType` ampliado; `evidence-storage.ts` com `storageKey` recuperável +
+  `load()` fail-closed (regex anti-traversal) + extensões `.webp`/`.pdf` (jpeg/png inalterados);
+  `upload-gate.ts` com a via `V6` no union.
+- `node --test --import tsx tests/b-rdv-comprovante-receipt-routes.test.ts` · `pass 8 fail 0` · RR1 (4) +
+  RR2 (2) + RR3 (2) VERDES.
+- Mutações (uma por vez, revertidas por edição inversa, diff conferido):
+  **M1** catálogo sem `expense_receipt:attach` → RR1.2 `not ok` · **M2** `loadOwnEditableReport` sem o check
+  de dono → RR2.2 `not ok` · **M3** prova de payload ignorada no replay → RR3.2 `not ok`. Pós-reversão:
+  `pass 8 fail 0`, `grep MUTACAO` = 0.
+- `npm run check` e `npm run lint` · verdes.
+- Commits: `e230550d` (permissão) · `9270d058` (rota+serviço).
