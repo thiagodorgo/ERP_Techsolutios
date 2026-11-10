@@ -225,3 +225,15 @@ O código da F5b (`adoptionFacts` no `PrismaOutboxRepository`) entrou no commit 
 | 14:12–14:13 | T13: a chave do `retry` sobre `billing_outbox` `×1` → `×3` e a chave nova sobre `subscription_statements` `×1`, coladas de `rascunhos/t13-f6.out` l.50-51, com o motivo | +6/−2 em `tests/san3-05-acessos-de-plataforma-guard.test.ts` | — |
 | 14:13:13→14:13:58 | `npm test -- tests/san3-05-acessos-de-plataforma-guard.test.ts` (43,9 GB) | `# tests 35 · pass 35 · fail 0` | T13 verde |
 | 14:14:06→14:14:23 | `npm run lint` | exit 0 (17 s) | fatia fechada |
+
+## F4b — T-OBX-db-9: o claim sem teto de adiamento, nenhuma linha faminta (§14.4)
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| (sem bastão) | T-OBX-db-9 escrito em `rascunhos/f4b-db9-draft.ts`: N ∈ {26, 20 000}; estatística VELHA (ANALYZE com 50 organizações de 2 demonstrativos ANTES, a organização grande semeada depois, sem ANALYZE); semeadura por `generate_series`; o arnês segura `FOR UPDATE` nos N mais antigos e há 1 linha livre na cauda; papel `rolsuper=false rolbypassrls=false`; amostrador de `pg_stat_activity` (`wait_event_type = 'Lock'`) em paralelo. Afirma: UM `claimNext` → `claimed` com a linha da cauda, ≤ 2 000 ms, sem erro, 0 amostra esperando trava, as N travadas intactas e, depois do COMMIT, a mais antiga. O código é o E5″ da F3 (o teste nasce depois do código, e o vermelho dele é o desenho da §13, M5i, como o plano pede) | — | — |
+| 14:15 | `f4b-battery.sh paste` | +109 linhas no fim de `tests/ass-08-channel-db.test.ts` | — |
+| 14:15:..→14:15:37 | verde `-db` (46 GB) | `# tests 21 · pass 21 · fail 0 · skipped 0`; T-OBX-db-9 em 2 642 ms (as duas escalas, com semeadura) | verde |
+| 14:15:52→14:16:47 | **M5g** (tirar o SKIP LOCKED de `FOR NO KEY UPDATE OF s`) | `21 · 16 · 5`: T-OBX-db-9 (`N = 26`, `55P03 canceling statement due to lock timeout` em 5 177 ms), e T-OBX-db-1, db-4, db-5 e T-LOCK-1b; revert limpo | vermelho medido (o do plano: 55P03 em ~5 s) |
+| 14:16:47→14:17:22 | **M5h** (tirar o `set_config('enable_nestloop', 'off', true)`) | `21 · 20 · 1`: T-OBX-db-9 (`N = 20000`, `57014 canceling statement due to statement timeout` em 10 046 ms); revert limpo | vermelho medido (o do plano: 57014 em ~10 s) |
+| 14:17:23→14:18:16 | **M5i** = o desenho da §13 (o laço: pick com `NOT (id = ANY($3))` + a trava do demonstrativo em comando próprio + adiadas, sem teto; o parâmetro das adiadas é `$3` porque no E5″ a órfã já tem pick próprio — declarado) | `21 · 19 · 2`: T-OBX-db-9 (`N = 20000`, `P2028 … expired transaction` em 30 103 ms) e T-LOCK-1b (sem a pick conjunta); revert limpo. É também o vermelho-controle da §13 que o plano manda registrar | vermelho medido (o do plano: P2028 em ~30 s) |
+| — | `npm run lint` NÃO re-rodado | o commit não toca `src/` (o `src` é o de `e16fd02a`, lint 0 às 14:14) | declarado |

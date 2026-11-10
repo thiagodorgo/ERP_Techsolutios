@@ -913,4 +913,113 @@ if (!connectionString) {
       await role.drop();
     }
   });
+
+  test("T-OBX-db-9 (R-CLAIM-CAUDA, §14.4): com N ∈ {26, 20 000} demonstrativos da organização travados e estatística VELHA, UM claimNext alcança a cauda em ≤ 2 000 ms sem esperar trava; as N travadas ficam intactas; depois do COMMIT, o claim pega a mais antiga", async () => {
+    // Estatística velha de propósito: ANALYZE com 50 organizações de 2 demonstrativos (uma linha da fila cada) ANTES; a
+    // organização grande nasce depois, sem ANALYZE. As 50 não entram em `billing_statement_refs`: o claim não as visita.
+    const statsProvider = uniqueProvider("db9stats");
+    await db.$executeRawUnsafe(
+      `WITH t AS (INSERT INTO tenants (name, slug) SELECT 'ass08-db9-stats-' || g || '-' || $1, 'ass08-db9-stats-' || g || '-' || $1 FROM generate_series(1, 50) g RETURNING id),
+            s AS (INSERT INTO subscription_statements
+                    (tenant_id, period, status, segments, users_included, users_peak, users_extra, storage_included_gb, storage_peak_gb,
+                     storage_extra_gb, tracked_vehicles, days_in_month, days_measured, extra_user_price, extra_gb_price, base_amount,
+                     users_extra_amount, storage_extra_amount, tracking_amount, adjustments_amount, credits_applied_amount, total_amount,
+                     due_date, closed_at, snapshot)
+                  SELECT t.id, p.period, 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 100,0,0,0,0,0,100, '2026-11-10', now(), '{"latest":null,"history":[]}'::jsonb
+                    FROM t CROSS JOIN (VALUES ('2026-08'), ('2026-09')) AS p(period)
+                  RETURNING id, tenant_id)
+       INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status)
+       SELECT s.tenant_id, s.id, 'charge_create', $2, 'charge_create:' || s.id::text || ':1', gen_random_uuid(), '{}'::jsonb, now(), 'SENT' FROM s`,
+      randomUUID().slice(0, 8),
+      statsProvider,
+    );
+    await db.$executeRawUnsafe(`ANALYZE subscription_statements`);
+    await db.$executeRawUnsafe(`ANALYZE billing_outbox`);
+
+    for (const N of [26, 20_000]) {
+      const provider = uniqueProvider(`db9n${N}`);
+      const { tenantId } = await seedStatement(`ass08-db9-${N}-${randomUUID().slice(0, 8)}`, { period: "1700-01" }); // âncora da organização (com refs)
+      // N + 1 demonstrativos por conjunto; uma charge_create PENDING em cada, `occurred_at` crescente pela ordem do período.
+      await db.$executeRawUnsafe(
+        `INSERT INTO subscription_statements
+           (tenant_id, period, status, segments, users_included, users_peak, users_extra, storage_included_gb, storage_peak_gb,
+            storage_extra_gb, tracked_vehicles, days_in_month, days_measured, extra_user_price, extra_gb_price, base_amount,
+            users_extra_amount, storage_extra_amount, tracking_amount, adjustments_amount, credits_applied_amount, total_amount,
+            due_date, closed_at, snapshot)
+         SELECT $1::uuid, to_char(date '1800-01-01' + (g - 1) * interval '1 month', 'YYYY-MM'), 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0,
+                31,31, 0,0, 100,0,0,0,0,0,100, '2026-11-10', now(), '{"latest":null,"history":[]}'::jsonb
+           FROM generate_series(1, $2::int) AS g`,
+        tenantId,
+        N + 1,
+      );
+      await db.$executeRawUnsafe(
+        `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at, status, attempts)
+         SELECT s.tenant_id, s.id, 'charge_create', $2, 'charge_create:' || s.id::text || ':1', gen_random_uuid(),
+                '{"amountCents":10000,"dueDate":"2026-11-10","method":"pix"}'::jsonb,
+                timestamp '2026-01-01' + row_number() OVER (ORDER BY s.period) * interval '1 millisecond', now(), now(), 'PENDING', 0
+           FROM subscription_statements s WHERE s.tenant_id = $1::uuid AND s.period <> '1700-01'`,
+        tenantId,
+        provider,
+      );
+      const ordered = ((await db.$queryRawUnsafe(
+        `SELECT o.id AS row_id, o.statement_id FROM billing_outbox o WHERE o.tenant_id = $1::uuid AND o.provider = $2 ORDER BY o.occurred_at, o.id`,
+        tenantId,
+        provider,
+      )) as Array<{ row_id: string; statement_id: string }>);
+      assert.equal(ordered.length, N + 1);
+      const locked = ordered.slice(0, N);
+      const tail = ordered[N]!;
+
+      const role = await createEphemeralRole(db, targetUrl);
+      const holder = await openHolder();
+      try {
+        const attrs = (await db.$queryRawUnsafe(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1`, role.roleName)) as Array<{ rolsuper: boolean; rolbypassrls: boolean }>;
+        assert.deepEqual(attrs[0], { rolsuper: false, rolbypassrls: false }, "o claim roda em papel sem superusuário e sem bypass de RLS");
+        await holder.query(`SELECT id FROM subscription_statements WHERE id = ANY($1::uuid[]) FOR UPDATE`, [locked.map((row) => row.statement_id)]);
+        const repo = new PrismaOutboxRepository(role.client);
+        // amostrador paralelo: as sessões do papel do claim esperando trava, até o claim voltar
+        let running = true;
+        let samples = 0;
+        let waitingSamples = 0;
+        const sampler = (async () => {
+          while (running) {
+            const rows = (await db.$queryRawUnsafe(
+              `SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = current_database() AND usename = $1 AND wait_event_type = 'Lock'`,
+              role.roleName,
+            )) as Array<{ n: number }>;
+            samples += 1;
+            if (rows[0]!.n > 0) waitingSamples += 1;
+          }
+        })();
+        const started = Date.now();
+        let outcome: { ok: boolean; value?: ClaimResult | null; error?: unknown };
+        try {
+          outcome = { ok: true, value: await repo.claimNext(claimParamsFor(provider, `w-db9-${N}`)) };
+        } catch (error) {
+          outcome = { ok: false, error };
+        }
+        const elapsed = Date.now() - started;
+        running = false;
+        await sampler;
+        assert.ok(outcome.ok, `N = ${N}: o claim terminou sem erro (veio: ${outcome.ok ? "ok" : describeError(outcome.error)} em ${elapsed} ms)`);
+        assert.equal(outcome.value?.kind, "claimed", `N = ${N}: UM claim reclama a linha livre da cauda`);
+        assert.equal(outcome.value?.row.id, tail.row_id, `N = ${N}: a candidata livre mais antiga é a da cauda`);
+        assert.ok(elapsed <= 2_000, `N = ${N}: o claim alcançou a cauda em ${elapsed} ms (teto 2 000)`);
+        assert.ok(samples > 0, "o amostrador mediu");
+        assert.equal(waitingSamples, 0, `N = ${N}: ${waitingSamples} de ${samples} amostras com o claim esperando trava`);
+        const intact = (await db.$queryRawUnsafe(
+          `SELECT count(*)::int AS n FROM billing_outbox WHERE id = ANY($1::uuid[]) AND status = 'PENDING' AND attempts = 0 AND claimed_at IS NULL`,
+          locked.map((row) => row.row_id),
+        )) as Array<{ n: number }>;
+        assert.equal(intact[0]!.n, N, `N = ${N}: as ${N} travadas ficam intactas`);
+        await holder.commit();
+        const afterCommit = await repo.claimNext(claimParamsFor(provider, `w-db9-${N}-after`));
+        assert.equal(afterCommit?.kind, "claimed");
+        assert.equal(afterCommit?.row.id, locked[0]!.row_id, `N = ${N}: depois do COMMIT o claim pega a mais antiga`);
+      } finally {
+        await holder.rollback();
+        await role.drop();
+      }
+    }
+  });
 }
