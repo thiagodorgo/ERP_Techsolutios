@@ -227,3 +227,5 @@
 - Mutações do bloco (6, uma por vez, todas provadas vermelhas e revertidas por edição inversa, resto 0):
   M1 permissão · M2 dono do relatório · M3 prova de payload · M4 blob na recusa · M5 campo multipart ·
   M-db recibo não completado.
+
+PRONTO PARA REVISÃO — PR #525
