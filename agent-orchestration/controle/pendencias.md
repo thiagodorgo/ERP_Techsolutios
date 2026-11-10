@@ -11073,9 +11073,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-RDV-COMPROVANTE-SEM-UPLOAD (2026-11-09) — o comprovante da despesa fica no aparelho até existir rota de upload — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` no modelo (`ExpenseReceipt` em `prisma/schema.prisma`) sem via de upload; o app grava o comprovante local (`uploadStatus: local`) e não enfileira `expense_receipt.attach` (o servidor responde 400 `unsupported_action`) · **dono:** `B-RDV-COMPROVANTE` (bloco próprio entre `B-O6R-03b` e `B-MATERIAL-REENVIO`, Q-B1 do `B-REENVIOS-plano.md` §G.3).
+- **status:** FECHADA NA AUTORIA do `B-RDV-COMPROVANTE` (ramo `feat/mobile-rdv-comprovante`; PR na junta) · **escopo:** era `pre-existente` no modelo sem via de upload · **dono:** `B-RDV-COMPROVANTE`.
+- **Como fechou:** rota `POST /api/v1/expense-reports/:reportId/items/:itemId/receipt` (multipart ≤10 MB, jpeg/png/webp/pdf, scanner e storage da evidência por composição, idempotente por tenant+ator+`client_action_id`, 404 que não revela relatório alheio, 409 `payload_mismatch`); o app enfileira `expense_receipt.attach` com blob local e o replay multipart (`expense_receipt_sync.dart`) sobe 1 arquivo por requisição. O blob morre SÓ quando o servidor confirma — **`uploaded`**, não `stored`: o CHECK real de `expense_receipts.upload_status` (migration 20260619) só admite `local|pending_upload|uploading|uploaded|failed`, e o teste de encerramento abaixo lia o literal do plano, não o domínio da coluna (medido no `-db` do bloco; diário F4).
+- **Prova:** `tests/b-rdv-comprovante-receipt-routes.test.ts` (8), `tests/b-rdv-comprovante-receipt-db.test.ts` (2, Postgres real), `tests/b-rdv-comprovante-receipt-contract.test.ts` (1), `mobile/.../test/core/sync/brdvcomp_expense_receipt_sync_test.dart` (3 — blob preservado em 409/413/415/422/503/rede, apagado só em `uploaded`).
 - **O que o `B-O6R-03b` garante:** o comprovante nunca derruba o lote e fica guardado no aparelho; ações legadas de `expense_receipt.attach` já enfileiradas viram `conflict` visível ("comprovante fica no aparelho até a integração").
-- **teste de encerramento:** o comprovante sobe por rota própria (multipart + storage + scanner, com a idempotência de evidência) e o blob local é apagado só em `status=stored`.
+- **teste de encerramento (como escrito na abertura):** o comprovante sobe por rota própria (multipart + storage + scanner, com a idempotência de evidência) e o blob local é apagado só em `status=stored`. **Cumprido com `uploaded` no lugar de `stored`** — o domínio real da coluna (CHECK da migration 20260619) não contém `stored`; mudar o CHECK seria migração, proibida sem autorização.
 
 ## P-O6R-B03-TRANSIENT-CODES-DUPLICADOS (2026-10-11) — a lista de códigos transitórios do sync de despesas é cópia da do estoque — BAIXA
 
@@ -12298,9 +12300,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-B-RDV-COMPROVANTE (2026-10-31) — envio do comprovante de despesa sem plano
 
-- **status:** ABERTA · **escopo:** planejamento de produto · **dono:** `B-RDV-COMPROVANTE` · **bloqueia:** o envio do comprovante de despesa.
-- **Fato:** o envio do comprovante de despesa não tem plano.
-- **Próximo passo:** planejar o bloco `B-RDV-COMPROVANTE` se a P4 de `P-COBRANCA-PERGUNTAS-P1-P6` for aprovada.
+- **status:** FECHADA NA AUTORIA do `B-RDV-COMPROVANTE` · **escopo:** planejamento de produto · **dono:** `B-RDV-COMPROVANTE`.
+- **Como fechou:** o plano nasceu como §G.3 do `B-REENVIOS-plano.md` (correção de 02/11, DONO P4) e o bloco foi implementado no ramo `feat/mobile-rdv-comprovante` (ver `P-RDV-COMPROVANTE-SEM-UPLOAD`, fechada junto).
 
 ## P-AVREAL-TETO-IDADE (2026-10-31) — sem teto superior para `CLAMAV_MAX_DB_AGE_HOURS` em produção — MÉDIA
 
@@ -12980,10 +12981,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO (2026-11-09) — "Versão do gestor" em conflito de despesa que o servidor nunca recebeu equivale a descartar — MÉDIA
 
-- **status:** ABERTA · **escopo:** `mobile/flutter_app/lib/core/sync/` + tela de sync · **dono:** `B-MATERIAL-REENVIO` (bloco C).
+- **status:** ABERTA (decisão do dono JÁ GRAVADA; falta a tela) · **escopo:** `mobile/flutter_app/lib/shared/ui/sync_screen.dart` (a opção vive lá, `:231`) · **dono:** `B-RDV-COMPROVANTE` (por `D-DESPESA-VERSAO-GESTOR-ESCONDER`, dono, 2026-11-09 ~22:20 SP — substitui o dono anterior `B-MATERIAL-REENVIO`).
+- **resposta do dono (a antiga "pergunta ao dono"):** **ESCONDER** — em conflito de despesa sem recibo do servidor (ação sem `result_ref`/nunca processada), a opção "Versão do gestor" fica ESCONDIDA; sem recibo não existe versão do gestor, e oferecer a escolha é um descarte disfarçado (classe de `D-DESPESA-SEM-DESCARTAR`). Cobre também o caso X4 da conferência do #520.
+- **por que o PR do `B-RDV-COMPROVANTE` NÃO a fechou:** o escopo do §G.3 PROÍBE `sync_screen.dart`; o bloco entregou o upload (que elimina a maior fonte desses conflitos: comprovante com canal ligado não vira mais `UNSUPPORTED_ACTION`) e REGISTROU a posse. A aplicação na tela é fatia própria do dono, com o escopo liberado.
 - **o que se sabe:** o 5xx deixa de chegar aqui com o conserto do PR #520; sobram a recusa 4xx de domínio, o 401/403 (`SESSION_FORBIDDEN`) e o `LEGACY_ITEM_INCOMPLETE`. Num `report.create`, a escolha cascateia item e envio (`sync_resolution_side_effects.dart:17-49`). Num `item.create`, libera o envio do relatório sem o item (`sync_replay_service.dart:493-504`). É a classe de `D-DESPESA-SEM-DESCARTAR`, por outra porta.
-- **pergunta ao dono:** confirmar antes de "Versão do gestor" em despesa sem `result_ref`, trocar o rótulo, ou esconder?
-- **teste de encerramento:** nenhuma ação de despesa sem recibo do servidor sai da fila sem confirmação explícita, e "Versão do gestor" num item não libera o envio sem aviso.
+- **teste de encerramento:** em ação de despesa sem `result_ref`, a opção "Versão do gestor" NÃO aparece na tela de sincronização (widget test que morde), e nenhuma ação dessas sai da fila sem confirmação explícita.
 
 ## P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA (2026-11-09) — falha de infraestrutura no sync de despesa pode sair 400 `invalid_request` — MÉDIA, HIPÓTESE
 
