@@ -611,3 +611,45 @@
 - head `a7a185c5a1640464cba772759c79d744bb45d4c1` · feito: F0–F5c e o conserto do CI · falta: F6a → F6b → F7 → F8 · próximo comando: escrever
   RR-E.1 e RR-E.2 em `test/core/network/brdvcomp_c1_auth_retry_multipart_test.dart` (cliente Dio real + interceptor
   real) · arquivos meio escritos: nenhum.
+
+## F6a — o retry do 401 com multipart (C2-DP-01; RR-E.1, RR-E.2) — 08:26
+
+- Teste ANTES do código: `test/core/network/brdvcomp_c1_auth_retry_multipart_test.dart` (novo, glob
+  `brdvcomp_c1_*`). Cliente REAL (`createAuthenticatedHttpClient` + `AuthRefreshInterceptor`) e upload REAL
+  (`DioExpenseReceiptUploadApi`); só o adaptador HTTP é fingido, e ele LÊ o corpo inteiro, como um servidor. RR-E.2 tem
+  3 partes: (a) no upload, o erro que sobe é o 503 do retry; (a) no serviço, o comprovante volta a `pending` sem custo,
+  com o blob; (b) o retry que volta 401 limpa a sessão. Só APIs que já existiam no objeto (o arquivo roda lá).
+- `dart format` → `0 changed` (local e sonda 3.1.14) · `flutter analyze` do arquivo → 1 `unused_import`
+  (`expense_models.dart`) → import removido → "No issues found!".
+- **No head ANTES do código:** `not ok` RR-E.1 `Expected: <2> Actual: <1>` com `calls=1 bytes=[617] clears=1
+  outcome=ApiUnauthorizedError`; `not ok` RR-E.2 `Expected: <2> Actual: <1>` com a mesma linha.
+- **Vermelho-controle no objeto** (`w-dev525-vc`, `b9e63ec0`; arquivo copiado, rodado e apagado): as mesmas duas
+  falhas, `calls=1 bytes=[617] clears=1 outcome=ApiUnauthorizedError` — a forma que o plano mediu (`calls=1
+  bytes=[581] clears=1 outcome=ApiUnauthorizedError`; o tamanho difere porque o corpo daqui é outro) · `w-dev525-vc`
+  limpo.
+- Código (`lib/core/network/auth_interceptor.dart`): antes do `client.fetch`, `final body = err.requestOptions.data;`
+  e `if (body is FormData) err.requestOptions.data = body.clone();` (Dio 5.9.2, medido no `pubspec.lock`); `on
+  DioException catch (retryError)`: 401 → `onClearSession()` e `handler.next(retryError)`; qualquer outro →
+  `handler.next(retryError)` sem limpar; `catch (_)` (erro que não é do Dio) → `handler.next(err)` sem limpar; o refresh
+  nulo continua limpando e propagando o 401 (t05).
+- `dart format` (local e sonda) `0 changed` · `flutter analyze` → "No issues found!" · `flutter test
+  test/core/network/brdvcomp_c1_auth_retry_multipart_test.dart test/features/b090_auth_production_token_refresh_test.dart`
+  → `+20: All tests passed!` (2 + os 18 do b090, t01–t16 inteiros). **OK.**
+- Mutações (uma por vez, com o código no índice; `git diff --exit-code` = 0 depois de cada reversão por edição inversa):
+  - **M-E1** (apagar a linha do `FormData.clone()`) → `not ok` RR-E.1 `Expected: <2> Actual: <1>` com `calls=1
+    bytes=[617] clears=0 outcome=ApiNetworkError` · revertida. **OK.** **Medido × plano (registro):** o plano previa
+    `clears=1`; com o tratamento novo do erro do retry no lugar, o retry que não chega ao servidor (o `FormData` já
+    finalizado vira `DioException` `unknown`, sem resposta) sobe sem limpar a sessão. O vermelho é o mesmo: `calls=1`.
+  - **M-E2** (voltar ao `catch (_) { await onClearSession(); return handler.next(err); }`) → `not ok` RR-E.2 `Expected:
+    <0> Actual: <1>` com `calls=2 bytes=[617, 617] clears=1 outcome=ApiUnauthorizedError` (o 503 do retry vira o 401
+    original e a sessão é limpa) · revertida. **OK.**
+- `flutter test test/core/network test/features/b090_auth_production_token_refresh_test.dart test/core/sync
+  test/features/expenses` → `+148: All tests passed!` · `flutter test` (a suíte inteira, o interceptor é compartilhado)
+  → `+1063: All tests passed!` em 55 s. **OK.**
+- Commit `c7001c34`.
+
+## RETOMADA 15 (08:26)
+
+- head `c7001c34c2c0be5cae7a869bbc64247896b1736f` · feito: F0–F6a e o conserto do CI · falta: F6b → F7 → F8 · próximo comando: escrever RR-E.3 a
+  RR-E.6 em `test/core/sync/brdvcomp_c1_recusas_test.dart` (cliente Dio real, servidor fingido com o `reason` no
+  corpo) · arquivos meio escritos: nenhum.
