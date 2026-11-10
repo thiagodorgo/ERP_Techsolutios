@@ -41,6 +41,15 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 const anyUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
+ * Conserto c1 do #525 (§12.4) — teto da espera pela trava do relatório: abaixo dos 5 s da transação interativa do
+ * Prisma. O PostgreSQL cancela a espera com 55P03 (`lock_not_available`), que a lista transitória do módulo leva a
+ * 503 `sync_busy`. É `SET LOCAL` (o 3º argumento `true`): vale para tudo o que vem depois da trava na MESMA
+ * transação, o claim inclusive, e morre com ela. Molde: `withTenantRlsBudget` (`src/database/rls.ts`).
+ */
+export const EXPENSE_REPORT_LOCK_TIMEOUT_MS = 2_000;
+const EXPENSE_REPORT_LOCK_TIMEOUT_SETTING = `${EXPENSE_REPORT_LOCK_TIMEOUT_MS}ms`;
+
+/**
  * Repositório sobre um executor Prisma. Na transação de sync ele é construído com o `tx` de `withTenantRls`
  * (B-O6R-03a): claim, efeito, recibo e eventos passam pelo MESMO cliente transacional.
  */
@@ -90,6 +99,21 @@ export class PrismaExpenseManagementRepository implements ExpenseSyncTransaction
     });
 
     return report ? mapReportRecord(report) : undefined;
+  }
+
+  // Conserto c1 do #525 (§2(b)1, §12.4) — trava a linha do relatório NESTA transação (o `client` é o `tx` do
+  // `withTenantRls`; a política RLS de `expense_reports` é `FOR ALL USING tenant`, então a trava respeita a
+  // organização) e relê. Molde da trava: `lockProcess` de `auction-prisma.repository.ts`.
+  async lockReportForUpdate(input: { readonly tenantId: string; readonly reportId: string }): Promise<ExpenseReport | undefined> {
+    // id que não é UUID não vai ao `::uuid` do SQL cru: cai na leitura de sempre (que não acha nada).
+    if (!anyUuidPattern.test(input.tenantId) || !anyUuidPattern.test(input.reportId)) return this.getReport(input);
+    await this.client.$executeRaw`SELECT set_config('lock_timeout', ${EXPENSE_REPORT_LOCK_TIMEOUT_SETTING}, true)`;
+    await this.client.$queryRaw`
+      SELECT id FROM expense_reports
+      WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.reportId}::uuid
+      FOR UPDATE
+    `;
+    return this.getReport(input);
   }
 
   async createReport(input: CreateExpenseReportInput): Promise<ExpenseReport> {

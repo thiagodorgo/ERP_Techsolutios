@@ -224,3 +224,39 @@
 
 - head `e2b2ba8957edc0bef78b373acd02da6ea36c75cc` · feito: F0, F1a, F1d, F1b, F1e, F1c · falta: F2a → F2b → F3 → F4a … F8 · próximo comando:
   escrever RR-B.1 e RR-B.2 em `tests/b-rdv-comprovante-receipt-routes.test.ts` · arquivos meio escritos: nenhum.
+
+## F2a — trava do relatório (§2(b), §12.4), ordem nova (§12.5), submissão na transação (06:19–06:34)
+
+- Testes ANTES, em `tests/b-rdv-comprovante-receipt-routes.test.ts`: **RR-B.1** (scanner pausado por barreira → submit
+  200 → solta → upload 422 `report_not_editable`, 0 linha, 0 objeto sob o diretório) e **RR-B.2**
+  (`createExpenseReceipt` da memória pausado DENTRO da transação do comprovante → o submit não responde depois de 3
+  voltas do laço E de uma janela real de 300 ms → solta → upload 201, submit 200, `expense_receipt.synced` antes de
+  `expense_report.submitted`). A janela de 300 ms é a mais do plano, para o vermelho-controle no objeto não virar falso
+  verde (submit ainda no caminho de rede).
+- **Vermelho-controle no objeto:** a 1ª execução TRAVOU — medido: no RR-B.2 a asserção falhava ANTES de soltar a
+  barreira, o upload ficava pendurado e o servidor não fechava. Parada (`TaskStop`); sobrou 1 `node` MEU (PID 1638424,
+  o arquivo de teste no `w-dev525-vc`), morto por `Stop-Process` só ele; `w-dev525-vc` restaurado. Teste corrigido: a
+  barreira solta também no `finally` (RR-B.1 e RR-B.2). 2ª execução (11 s): `not ok 11 - RR-B.1` "o upload que perdeu a
+  corrida: {…uploaded}" `422 × 201` (= sonda 9 da C1) e `not ok 12 - RR-B.2` "o submit respondeu enquanto a transação do
+  comprovante estava aberta". **OK.**
+- Código:
+  - `lockReportForUpdate({ tenantId, reportId })` em `ExpenseSyncTransactionRepository`: memória = `getReport` (a fila
+    serializa); Prisma = `SELECT set_config('lock_timeout', '2000ms', true)` + `SELECT id FROM expense_reports WHERE
+    tenant_id = …::uuid AND id = …::uuid FOR UPDATE` + `getReport` (`EXPENSE_REPORT_LOCK_TIMEOUT_MS = 2_000`); id que
+    não é UUID cai na leitura de sempre, sem SQL cru.
+  - `attachReceipt`: `loadOwnReport` (só posse, 404) → item → sha/tamanho → `assertEditable(report)` (atalho, 422) →
+    portão → scanner → fingerprint → replay (ainda depois do scanner; sobe na F2b) → **gravação FORA da transação** →
+    transação {`lockReportForUpdate` → posse 404 → replay do concorrente → `assertEditable(locked)` → claim → linha →
+    recibo → evento} → compensação em toda saída que não seja o 201.
+  - `applySubmitReport(repository: ExpenseSyncTransactionRepository, …)` abre com `lockReportForUpdate`; o
+    `submitReport` HTTP roda em `withSyncTransaction` (com o `mapTransientSyncFailure` da F1c).
+- `npm run check` → exit 0 · routes + storage + contract + census o6r07b/o6r07c + expense-management-routes +
+  fingerprint + guards do 03b → `# tests 86 · pass 86 · fail 0` · **T13** (`san3-05-acessos-de-plataforma-guard`, o
+  ratchet dos acessos a tabela FORCE) → `# tests 35 · pass 35`: o SQL cru novo vive na classe do `tx` sob
+  `withTenantRls` e não cria chave. **OK.**
+- Mutações (`git diff --exit-code -- src tests mobile` = 0 depois de cada reversão):
+  - **M-B1** (apagar, dentro da transação, o `lockReportForUpdate(...)` e o `assertEditable(locked)`; a linha da posse
+    que lê `locked` sai junto, senão o `locked` ficaria indefinido) → `not ok 11 - RR-B.1` `422 × 201` · revertida. **OK.**
+  - **M-B2** (`submitReport` volta a `return this.applySubmitReport(this.repository, actor, reportId);`, fora do
+    `withSyncTransaction`) → `not ok 12 - RR-B.2` "o submit respondeu enquanto a transação do comprovante estava
+    aberta" · revertida. **OK.**

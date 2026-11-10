@@ -568,3 +568,109 @@ test("RR-A.4 leitura só na organização da linha: chave sem provedor (legado) 
     assert.notEqual(replay.body.data?.uploadStatus, "uploaded");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Conserto c1 (#525) — RR-B: a editabilidade decidida DENTRO da transação que grava (§2(b), §12.4, §12.5)
+// ---------------------------------------------------------------------------
+
+/** Uma barreira: `entered` resolve quando o código chega nela; `release()` a solta. */
+function barrier(): { entered: Promise<void>; signal: () => void; wait: Promise<void>; release: () => void } {
+  let signal!: () => void;
+  let release!: () => void;
+  const entered = new Promise<void>((resolve) => {
+    signal = resolve;
+  });
+  const wait = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return { entered, signal, wait, release };
+}
+
+function submitReport(baseUrl: string, tenant: Tenant, user: User, role: string, reportId: string) {
+  return fetch(`${baseUrl}/api/v1/expense-reports/${reportId}/submit`, {
+    method: "POST",
+    headers: jsonHeaders(tenant, user, role),
+  }).then(async (response) => ({ status: response.status, body: await readJson(response) }));
+}
+
+test("RR-B.1 corrida com o scanner: upload pausado em scan(), submit 200, solta → 422 report_not_editable, 0 linha e 0 objeto (compensação)", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const { configureExpenseReceiptScannerForTests } = await import("../src/modules/expense-management/expense-receipt.service.js");
+    const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const bytes = jpegBytes(0xb1);
+    const gate = barrier();
+    configureExpenseReceiptScannerForTests({
+      async scan() {
+        gate.signal();
+        await gate.wait;
+        return { status: "clean" as const };
+      },
+    });
+
+    const upload = postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rrb1-corrida", bytes, sha256: await sha256Hex(bytes) }));
+    let submitted: { status: number; body: Record<string, any> };
+    try {
+      await gate.entered; // o upload passou pela editabilidade de fora e está DENTRO do scanner
+      submitted = await submitReport(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId);
+    } finally {
+      gate.release(); // solta também na falha: senão o upload fica pendurado e o servidor não fecha
+    }
+    assert.equal(submitted.status, 200, `submit durante o scanner: ${JSON.stringify(submitted.body)}`);
+
+    const result = await upload;
+    assert.equal(result.status, 422, `o upload que perdeu a corrida: ${JSON.stringify(result.body)}`);
+    assert.equal(result.body.error?.reason, "report_not_editable");
+
+    const repository = await memoryRepositoryForTests();
+    const rows = [...(repository.expenseReceipts as Map<string, { tenantId: string }>).values()].filter((row) => row.tenantId === seed.tenantA.id);
+    assert.equal(rows.length, 0, "o comprovante entrou num relatório já submetido");
+    const runDir = path.join(RECEIPT_STORAGE_DIR, seed.tenantA.id, `expense-receipt-${reportId}`);
+    assert.equal(listFilesRecursive(runDir).length, 0, "o objeto do upload recusado ficou no storage (sem compensação)");
+  });
+});
+
+test("RR-B.2 a submissão espera a gravação do comprovante: com `createExpenseReceipt` pausado dentro da transação, o submit não responde; solto, upload 201 e depois submit 200, `expense_receipt.synced` antes de `expense_report.submitted`", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const repository = await memoryRepositoryForTests();
+    const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const bytes = jpegBytes(0xb2);
+    const gate = barrier();
+    const original = repository.createExpenseReceipt.bind(repository);
+    repository.createExpenseReceipt = async (input: unknown) => {
+      gate.signal();
+      await gate.wait;
+      return original(input);
+    };
+
+    try {
+      const upload = postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rrb2-espera", bytes, sha256: await sha256Hex(bytes) }));
+      await gate.entered; // a transação do comprovante está aberta, parada antes de gravar a linha
+
+      let submitSettled = false;
+      const submit = submitReport(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId).finally(() => {
+        submitSettled = true;
+      });
+      for (let turn = 0; turn < 3; turn += 1) await new Promise((resolve) => setImmediate(resolve));
+      // Além das 3 voltas do laço, uma janela real (300 ms): sem ela, um submit que NÃO espera poderia ainda estar
+      // no caminho de rede e o vermelho-controle no objeto viraria falso verde.
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assert.equal(submitSettled, false, "o submit respondeu enquanto a transação do comprovante estava aberta");
+
+      gate.release();
+      const uploaded = await upload;
+      assert.equal(uploaded.status, 201, `upload: ${JSON.stringify(uploaded.body)}`);
+      const submitted = await submit;
+      assert.equal(submitted.status, 200, `submit: ${JSON.stringify(submitted.body)}`);
+
+      const events = (repository.listEventsForTests(seed.tenantA.id) as Array<{ eventType: string }>).map((event) => event.eventType);
+      const synced = events.indexOf("expense_receipt.synced");
+      const submittedAt = events.indexOf("expense_report.submitted");
+      assert.ok(synced >= 0 && submittedAt >= 0, `eventos: ${events.join(", ")}`);
+      assert.ok(synced < submittedAt, `o submit entrou antes do comprovante: ${events.join(", ")}`);
+    } finally {
+      // Solta a barreira também na falha: senão o upload fica pendurado e o servidor não fecha (medido no objeto).
+      gate.release();
+      delete repository.createExpenseReceipt;
+    }
+  });
+});

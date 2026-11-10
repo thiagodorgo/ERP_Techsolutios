@@ -310,11 +310,24 @@ function notFound(): ExpenseManagementError {
   return new ExpenseManagementError(404, "EXPENSE_NOT_FOUND", "not_found", "Expense resource was not found.");
 }
 
+/** RF-005 (`docs/expense-management.md`) — só relatório `draft`/`returned` recebe comprovante (§G.3: 422). */
+function assertEditable(report: ExpenseReport): void {
+  if (!RECEIPT_EDITABLE_STATUSES.has(report.status)) {
+    throw new ExpenseManagementError(422, "EXPENSE_REPORT_LOCKED", "report_not_editable", "Only draft or returned reports can receive receipts.");
+  }
+}
+
 export class ExpenseReceiptService {
   constructor(private readonly repository: ExpenseManagementRepository) {}
 
+  /**
+   * Conserto c1 do #525 — a ordem (§2(b)2, §12.5, §12.1): posse (404) → item (404) → sha256/tamanho (400) →
+   * editabilidade de fora (422 cedo, sem efeito) → portão de produção (503) → scanner (V6) → fingerprint → replay →
+   * gravação do objeto FORA da transação → transação {trava do relatório (teto de 2 s) → posse (404) → replay do
+   * concorrente → editabilidade da linha travada (422) → claim → linha → recibo → evento} → compensação.
+   */
   async attachReceipt(actor: ExpenseReceiptActorContext, input: AttachExpenseReceiptInput): Promise<AttachExpenseReceiptResult> {
-    const report = await this.loadOwnEditableReport(actor, input.reportId);
+    const report = await this.loadOwnReport(actor, input.reportId);
     const item = await this.repository.findExpenseItem({
       tenantId: actor.tenantId,
       reportId: report.id,
@@ -332,6 +345,9 @@ export class ExpenseReceiptService {
     if (computedSha256 !== input.declaredSha256) {
       throw new ExpenseManagementError(400, "BAD_REQUEST", "sha256_mismatch", "sha256 does not match uploaded file.");
     }
+
+    // Passo 6 — atalho de fora: 422 cedo, sem efeito. Quem DECIDE é a releitura da linha travada (passo 10).
+    assertEditable(report);
 
     // §2(a)5 + §13.2 — portão de produção ANTES do scanner e da gravação.
     assertReceiptStorageDurable(receiptStorageGateInput());
@@ -379,12 +395,25 @@ export class ExpenseReceiptService {
     );
     if (recorded) return recorded;
 
-    // §12.1 — o objeto gravado; toda saída depois da gravação que não seja o 201 passa pela compensação.
-    let saved: SavedReceiptObject | undefined;
+    // Passo 9 (§2(b)2) — o objeto vai ao storage FORA da transação: o `$transaction` do `withTenantRls` tem 5 s, e um
+    // PUT de até 10 MB no S3 não cabe nele com folga. §12.1 — daqui em diante, toda saída que não seja o 201 passa
+    // pela compensação (que relê antes de apagar).
+    const saved: SavedReceiptObject & { readonly mimeType: string } = await this.saveReceiptObject(
+      actor,
+      report.id,
+      input.buffer,
+      computedSha256,
+      verification,
+    );
     try {
+      // Passo 10 (§2(b)2 + §12.5) — a editabilidade é decidida DENTRO da transação que grava, com a linha travada.
       const result = await this.repository.withSyncTransaction(actor.tenantId, async (repository) => {
+        const locked = await repository.lockReportForUpdate({ tenantId: actor.tenantId, reportId: report.id });
+        if (!locked || locked.employeeUserId !== actor.userId) throw notFound();
+        // §12.5 — o replay do concorrente vem ANTES da editabilidade: o comprovante já guardado responde 200.
         const concurrent = await this.resolveRecordedReceipt(repository, actor, input.clientActionId, fingerprint);
         if (concurrent) return concurrent;
+        assertEditable(locked);
 
         const claim = await repository.claimMobileActionReceipt({
           tenantId: actor.tenantId,
@@ -393,11 +422,7 @@ export class ExpenseReceiptService {
           actionType: EXPENSE_RECEIPT_SYNC_ACTION_TYPE,
         });
 
-        // §2(a)1 — provedor da D-014. O nome do arquivo do aparelho não vai ao storage (nem como
-        // metadado do S3): o objeto se chama `comprovante.<ext do tipo VERIFICADO>`.
-        const stored = await this.saveReceiptObject(actor, report.id, input.buffer, computedSha256, verification);
-        saved = stored;
-
+        const stored = saved;
         const receipt = await repository.createExpenseReceipt({
           tenantId: actor.tenantId,
           itemId: item.id,
@@ -550,13 +575,13 @@ export class ExpenseReceiptService {
     return report;
   }
 
-  /** Escrita: só o PRÓPRIO empregado anexa, e só em relatório editável (§G.3: 404 / 422). */
-  private async loadOwnEditableReport(actor: ExpenseReceiptActorContext, reportId: string): Promise<ExpenseReport> {
+  /**
+   * Escrita: só o PRÓPRIO empregado anexa (§G.3: 404, nunca 403, antes da posse do id). A editabilidade NÃO é
+   * decidida aqui (conserto c1, §2(b)): o atalho de fora é o `assertEditable(report)` e a decisão é na transação.
+   */
+  private async loadOwnReport(actor: ExpenseReceiptActorContext, reportId: string): Promise<ExpenseReport> {
     const report = await this.repository.getReport({ tenantId: actor.tenantId, reportId });
     if (!report || report.employeeUserId !== actor.userId) throw notFound();
-    if (!RECEIPT_EDITABLE_STATUSES.has(report.status)) {
-      throw new ExpenseManagementError(422, "EXPENSE_REPORT_LOCKED", "report_not_editable", "Only draft or returned reports can receive receipts.");
-    }
     return report;
   }
 

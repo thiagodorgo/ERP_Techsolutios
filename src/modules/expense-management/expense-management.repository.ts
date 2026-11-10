@@ -64,6 +64,13 @@ export interface ExpenseSyncTransactionRepository extends ExpenseDomainRepositor
   countExpenseEvents(input: CountExpenseEventsInput): Promise<number>;
   /** Relatório ORIGINAL de um recibo, no tenant: create/submit → resultRef; item → item persistido → relatório. */
   findSyncReceiptAggregate(input: { readonly tenantId: string; readonly receipt: MobileActionReceipt }): Promise<string | undefined>;
+  /**
+   * Conserto c1 do #525 (§2(b)1, §12.4) — TRAVA a linha do relatório nesta transação e devolve o relatório relido. Só
+   * existe dentro da transação. No Prisma: `lock_timeout` LOCAL de 2 s e `SELECT … FOR UPDATE` (o 55P03 sai 503
+   * `sync_busy`); na memória, as transações já são serializadas pela fila. Todo escritor de `expense_reports.status`
+   * (comprovante, submissão HTTP e do lote; e, quando nascerem, aprovação, devolução e baixa) abre com ela.
+   */
+  lockReportForUpdate(input: { readonly tenantId: string; readonly reportId: string }): Promise<ExpenseReport | undefined>;
 }
 
 export interface ExpenseManagementRepository extends ExpenseDomainRepository {
@@ -141,6 +148,12 @@ export class InMemoryExpenseManagementRepository implements ExpenseManagementRep
     if (!report || report.tenantId !== input.tenantId) return undefined;
 
     return this.attachItems(report);
+  }
+
+  // Conserto c1 do #525 (§2(b)1) — na memória as transações de sync já são SERIALIZADAS pela `syncQueue`: a trava é a
+  // própria fila, e a leitura devolve o relatório como está agora.
+  async lockReportForUpdate(input: { readonly tenantId: string; readonly reportId: string }): Promise<ExpenseReport | undefined> {
+    return this.getReport(input);
   }
 
   async createReport(input: CreateExpenseReportInput): Promise<ExpenseReport> {
