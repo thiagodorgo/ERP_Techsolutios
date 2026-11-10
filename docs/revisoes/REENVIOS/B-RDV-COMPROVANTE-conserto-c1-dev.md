@@ -341,3 +341,13 @@
   do objeto falha antes, por ausência da costura) · `not ok 5 - RR-db.5` "o comprovante não esperou em Lock" · `not ok
   6` = o `after` do arquivo (o `reset` do objeto com a costura em objeto). Resíduo no banco depois de tudo: 0 papel
   `o6r_b01_%`, 0 organização `rdv-comp-%`, 0 comprovante. **OK.**
+- Commit `cec8f8f7` + push (`1aa1b1d8..cec8f8f7`). Vermelho-controle REFEITO com o teste commitado no `w-dev525-vc`
+  → `# tests 6 · pass 0 · fail 6` · `w-dev525-vc` limpo · resíduo 0 papel / 0 organização · **`docker rm -f dev525-pg`**
+  às 06:57 (o mandato manda remover no fim da F3) → só `ci522-pg` de pé. Na F8, o `-db` se lê no TAP do job
+  `backend` do CI (`ok … RR-db.3/4/5`), que roda a suíte com Postgres; aqui ele rodou 3× verde.
+
+## RETOMADA 8 (06:58)
+
+- head `cec8f8f74f1cc9faadbed4774f63c466ec705715` · feito: backend inteiro (F0–F3) · falta: F4a → F4b → F5a → F5b → F5c → F6a → F6b → F7 → F8 · próximo
+  comando: escrever o RR-D.1 e o RR-D.2 (Drift real e codec) em `mobile/flutter_app/test/core/local_db/` · arquivos
+  meio escritos: nenhum.
