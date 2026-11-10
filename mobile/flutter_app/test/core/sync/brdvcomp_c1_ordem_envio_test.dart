@@ -63,7 +63,8 @@ class _Server {
     }
     if (status[request.reportServerId] == 'submitted') {
       timeline.add('p$pass upload:$rel:422');
-      throw const ApiServerError(statusCode: 422);
+      // O que o `DioExpenseReceiptUploadApi` lança para o 422 `report_not_editable` (F6b).
+      throw const ExpenseReceiptRefusal(422, 'report_not_editable');
     }
     final refused = refuseWith[request.clientActionId];
     if (refused != null) {
@@ -406,6 +407,7 @@ void main() {
       expect(a.server.timeline[2], 'p2 upload:A:422');
       final locked = await a.action(a.receiptAction['A']!);
       expect(locked.status, SyncStatus.conflict);
+      expect(locked.lastErrorCode, 'RECEIPT_REPORT_LOCKED');
       expect(await a.blobs.load(a.blobRef['A']!), isNotNull);
 
       // (b) Dois relatórios com 503: os dois envios saem no 1º passe.

@@ -17,7 +17,7 @@ import 'sync_queue_repository.dart';
 /// O comprovante NUNCA viaja no lote JSON (`/mobile/sync/expense-actions` recusa o tipo — 400):
 /// a ação `expense_receipt.attach` fica `pending` na fila e sobe por aqui, com o blob local.
 /// O blob só é apagado quando o servidor confirma o comprovante guardado (`uploaded`);
-/// recusa (409/413/415/422), sessão (401/403), 503 e erro de rede PRESERVAM o blob (§6 do
+/// recusa (400/409/413/415/422), sessão (401/403), 503 e erro de rede PRESERVAM o blob (§6 do
 /// CLAUDE.md — nada se perde antes da confirmação).
 class ExpenseReceiptUploadRequest {
   const ExpenseReceiptUploadRequest({
@@ -121,9 +121,42 @@ class DioExpenseReceiptUploadApi implements ExpenseReceiptUploadApi {
       );
       return ExpenseReceiptUploadResponse.fromBody(response.data);
     } on DioException catch (error) {
+      final status = error.response?.statusCode;
+      // (e) O `mapDioError` compartilhado junta 401 e 403; o upload os separa pelo status.
+      if (status == 403) throw const ExpenseReceiptForbidden();
+      // (c)4 e §12.9 — 422 e 400 com motivo são recusa de domínio: o motivo sai do corpo.
+      final reason = _receiptErrorReason(error.response?.data);
+      if (reason != null && (status == 422 || status == 400)) {
+        throw ExpenseReceiptRefusal(status!, reason);
+      }
       throw mapDioError(error);
     }
   }
+}
+
+/// B-RDV-COMPROVANTE (conserto c1 do #525, (c)4 e §12.9) — recusa de DOMÍNIO do comprovante (422 ou 400
+/// com `error.reason` no corpo), com o motivo. Não é `ApiError` (a hierarquia é selada em `api_error.dart`):
+/// o serviço tem `on` próprio para ela, antes do `catch` do isolamento (§13.1 item 5).
+class ExpenseReceiptRefusal implements Exception {
+  const ExpenseReceiptRefusal(this.statusCode, this.reason);
+
+  final int statusCode;
+  final String reason;
+}
+
+/// B-RDV-COMPROVANTE (conserto c1 do #525, (e)) — 403: a sessão vale, mas não pode enviar comprovante.
+/// Também tem `on` próprio no serviço, antes do `catch` do isolamento.
+class ExpenseReceiptForbidden implements Exception {
+  const ExpenseReceiptForbidden();
+}
+
+/// O motivo (`error.reason`) do corpo de erro do backend, como no lote (`_expenseErrorReason`).
+String? _receiptErrorReason(Object? data) {
+  if (data is! Map) return null;
+  final error = data['error'];
+  if (error is! Map) return null;
+  final reason = error['reason'];
+  return reason is String && reason.trim().isNotEmpty ? reason.trim() : null;
 }
 
 class ExpenseReceiptSyncResult {
@@ -367,6 +400,30 @@ class ExpenseReceiptSyncService {
             );
             conflicts.add(next);
           }
+        } on ExpenseReceiptRefusal catch (refusal) {
+          // (c)4 e §12.9 — recusa de domínio, pelo motivo: conflito, e o blob fica.
+          final (code, text) = _refusal(refusal);
+          final next = _conflict(action, code, text);
+          await record(next);
+          await _repository.markReceiptUploadStatus(
+            reportLocalId,
+            receiptLocalId,
+            ReceiptUploadStatus.conflict,
+          );
+          conflicts.add(next);
+        } on ExpenseReceiptForbidden {
+          final next = _conflict(
+            action,
+            'SESSION_FORBIDDEN',
+            'Sua sessão não tem permissão para enviar comprovantes. Entre de novo.',
+          );
+          await record(next);
+          await _repository.markReceiptUploadStatus(
+            reportLocalId,
+            receiptLocalId,
+            ReceiptUploadStatus.conflict,
+          );
+          conflicts.add(next);
         } on ApiServerError catch (error) {
           if (error.statusCode == 503) {
             // Servidor ocupado/scanner indisponível: volta a pendente SEM consumir tentativa.
@@ -424,18 +481,21 @@ class ExpenseReceiptSyncService {
           );
           conflicts.add(next);
         } on ApiUnauthorizedError {
-          final next = _conflict(
-            action,
-            'SESSION_FORBIDDEN',
-            'Sua sessão não tem permissão para enviar comprovantes. Entre de novo.',
+          // (e) 401 que chega aqui: o refresh falhou e o interceptor já limpou a sessão. Pendente
+          // SEM gastar tentativa; sobe quando o técnico entrar de novo.
+          final next = syncing.copyWith(
+            status: SyncStatus.pending,
+            lastErrorCode: 'SESSION_EXPIRED',
+            lastSafeError:
+                'Sessão expirada; o comprovante sobe quando você entrar de novo.',
           );
           await record(next);
           await _repository.markReceiptUploadStatus(
             reportLocalId,
             receiptLocalId,
-            ReceiptUploadStatus.conflict,
+            ReceiptUploadStatus.pending,
           );
-          conflicts.add(next);
+          failed.add(next);
         } on ApiError {
           final next = _failWithRetry(syncing);
           await record(next);
@@ -493,6 +553,22 @@ class ExpenseReceiptSyncService {
     lastSafeError:
         'Falha de rede no envio do comprovante; será tentado de novo.',
   );
+
+  /// (c)4 e §12.9 — código e texto da recusa de domínio, pelo status e pelo motivo.
+  (String, String) _refusal(ExpenseReceiptRefusal refusal) => switch (refusal) {
+    ExpenseReceiptRefusal(statusCode: 422, reason: 'report_not_editable') => (
+      'RECEIPT_REPORT_LOCKED',
+      'O relatório já foi enviado; este comprovante ficou no aparelho.',
+    ),
+    ExpenseReceiptRefusal(statusCode: 422) => (
+      'RECEIPT_REJECTED',
+      _domainText(422),
+    ),
+    _ => (
+      'RECEIPT_INVALID',
+      'O comprovante não pôde ser enviado; anexe de novo pelo item.',
+    ),
+  };
 
   String _domainCode(int statusCode) => switch (statusCode) {
     413 => 'RECEIPT_FILE_TOO_LARGE',
