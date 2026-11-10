@@ -568,3 +568,46 @@
 - head `65440f6c5166c14b4d8683d89dfba06658425865` · feito: F0–F5c · falta: F6a → F6b → F7 → F8 · próximo comando: escrever RR-E.1 e RR-E.2 em
   `test/core/network/brdvcomp_c1_auth_retry_multipart_test.dart` (cliente Dio real + interceptor real) · arquivos meio
   escritos: nenhum.
+
+## Conserto do CI (entre a F5c e a F6a, 08:13)
+
+- `gh run list --branch feat/mobile-rdv-comprovante` → o CI do `fb610f78` (rodadas 42801796358 push e 42801808935
+  pr) `failure`; o do `65440f6c` `cancelled` (substituído pelo `895425c9`). Jobs do 42801796358: `flutter` e `backend`
+  vermelhos; os outros 5 verdes.
+- `gh run view 42801796358 --job 129781025602 --log` (backend) → `# tests 4775 · # pass 4772 · # fail 1 · # skipped 2`;
+  o único `not ok`: `not ok 441 - guard 3 — GUC de identidade e set_config vivem SÓ em src/database/rls.ts`, com
+  `src/modules/expense-management/expense-management-prisma.repository.ts` l.110 (o `set_config('lock_timeout', …)` da
+  F3). No mesmo TAP: `ok 647…651 - RR-db.1…RR-db.5` e `ok 660…670` (RR-A/RR-B) — o `-db` do bloco roda no job
+  `backend`.
+- `gh run view 42801796358 --job 129781025359 --log` (flutter, Flutter 3.47.5) → `Changed
+  test/core/sync/brdvcomp_c1_item_recovery_test.dart` · `Formatted 239 files (1 changed)`.
+- **Medido × plano (registro):** a §12.4.1 manda `SELECT set_config('lock_timeout', '2000ms', true)` no
+  `lockReportForUpdate`, com o `rls.ts` intocado. O guard 3 (`tests/auth-invariant-guards.test.ts` l.125–134, no
+  objeto `b9e63ec0` e na `main`) reprova `set_config(` fora do `rls.ts`, e o guard não está no PERMITIDO. A instrução
+  `SET LOCAL lock_timeout = '2000ms'` tem o mesmo efeito (o `set_config` com `is_local = true` É o `SET LOCAL`): mesmo
+  lugar, LOCAL à transação, 2 s, antes do `FOR UPDATE`, `rls.ts` e guard intocados. Ela é a única forma que guarda o que
+  a §12.4 decide sem afrouxar o guard; por isso não a trato como decisão nova, e deixo o registro para o verificador. O
+  `SET` não aceita parâmetro de ligação: o literal `'2000ms'` é a constante `EXPENSE_REPORT_LOCK_TIMEOUT_MS`, e o
+  comentário diz isso. A M-db5 ("apagar o `set_config(…)`") passa a apagar o `SET LOCAL`: o programa mutante é o MESMO
+  da F3 (sem a linha da trava), já provado vermelho (`not ok 5 - RR-db.5`, F3). A prova verde do `-db` no head novo é
+  o TAP do job `backend` do CI (o container saiu no fim da F3; Docker só na F3).
+- Guard 3 no head ANTES do conserto: `node scripts/run-backend-tests.mjs tests/auth-invariant-guards.test.ts` → `not
+  ok 3 - guard 3 …` · `# tests 11 · # pass 10 · # fail 1` (o vermelho do CI, reproduzido). Depois: `ok 3 - guard 3 …`
+  · `# tests 11 · # pass 11 · # fail 0`. `git grep -c "set_config(" -- src` → só `src/database/rls.ts:4`. `npm run
+  check` ec=0 · `npm run lint` ec=0.
+- **Formatador (medido):** local Flutter 3.41.6 (Dart 3.11.4); CI Flutter 3.47.5. Sonda num pacote de rascunho com
+  `dart_style 3.1.14` (a versão que o `pub get` do CI lista como disponível): `dart run dart_style:format
+  --language-version=3.11 --output=none --set-exit-if-changed` sobre cópias dos 13 Dart do conserto → `Changed
+  …f12.dart` (= `brdvcomp_c1_item_recovery_test.dart`) · `Formatted 13 files (1 changed)` — o mesmo resultado do CI. O
+  diff: o `expect(lista, ['srv-item-1'], reason: …)` do RR-D.4 (l.227–231) em forma de bloco. Conserto: a lista vai a
+  `sentIds` e a asserção cabe numa linha (≤ 80 colunas; `reason` encurtado para 'upload sem o id do result_ref', mesmo
+  sentido). Depois: os dois formatadores `0 changed` · `flutter test …item_recovery_test.dart` → `+2: All tests
+  passed!` · `flutter analyze` do arquivo → "No issues found!".
+- Daqui em diante, todo Dart novo passa pela sonda 3.1.14 antes do push.
+- Commit `a7a185c5`.
+
+## RETOMADA 14 (08:13)
+
+- head `a7a185c5a1640464cba772759c79d744bb45d4c1` · feito: F0–F5c e o conserto do CI · falta: F6a → F6b → F7 → F8 · próximo comando: escrever
+  RR-E.1 e RR-E.2 em `test/core/network/brdvcomp_c1_auth_retry_multipart_test.dart` (cliente Dio real + interceptor
+  real) · arquivos meio escritos: nenhum.
