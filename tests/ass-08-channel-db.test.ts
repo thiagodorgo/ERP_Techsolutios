@@ -935,6 +935,11 @@ if (!connectionString) {
     );
     await db.$executeRawUnsafe(`ANALYZE subscription_statements`);
     await db.$executeRawUnsafe(`ANALYZE billing_outbox`);
+    // A estatística velha tem de FICAR velha: sem isto o autovacuum pode reanalisar as tabelas no meio do teste (o
+    // `autoanalyze` dispara depois da semeadura grande) e o vermelho da M5h vira sorteio (medido: verde 1× em 3). Base
+    // própria deste arquivo, descartada no `after`.
+    await db.$executeRawUnsafe(`ALTER TABLE subscription_statements SET (autovacuum_enabled = off)`);
+    await db.$executeRawUnsafe(`ALTER TABLE billing_outbox SET (autovacuum_enabled = off)`);
 
     for (const N of [26, 20_000]) {
       const provider = uniqueProvider(`db9n${N}`);

@@ -323,8 +323,8 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     "2º conserto do #522 (E5″, §14.2; Emenda 15): `SELECT current_setting('enable_nestloop') AS previous` — lê o valor de antes do parâmetro LOCAL do planejador; não lê nem escreve tabela nenhuma (nem FORCE).",
   ],
   [
-    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($executeRawUnsafe) OPACO", "?", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
-    "2º conserto do #522 (Emenda 15): `SET LOCAL enable_nestloop = off` antes da pick conjunta e `SET LOCAL enable_nestloop = on|off` (literal fixo igual ao valor lido) logo depois — parâmetro LOCAL do planejador nesta transação, sem dado nem parâmetro no SQL; não lê nem escreve tabela nenhuma (nem FORCE).",
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($executeRawUnsafe) OPACO", "?", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×3"),
+    "2º conserto do #522 (Emenda 15): `SET LOCAL enable_nestloop = off` antes da pick conjunta e, logo depois, UMA de duas chamadas com literal fixo (`SET LOCAL enable_nestloop = on` ou `= off`, igual ao valor lido) — parâmetro LOCAL do planejador nesta transação, sem dado nem parâmetro no SQL; não lê nem escreve tabela nenhuma (nem FORCE).",
   ],
   [
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),

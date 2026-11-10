@@ -197,7 +197,9 @@ export class PrismaOutboxRepository implements OutboxRepository {
           if (previousNestloop !== "on" && previousNestloop !== "off") throw new Error("enable_nestloop com valor inesperado; o claim não segue");
           await tx.$executeRawUnsafe(`SET LOCAL enable_nestloop = off`);
           const picked = (await tx.$queryRawUnsafe(CHARGE_CREATE_JOINT_PICK_SQL, params.enabledProviders, params.now)) as Row[];
-          await tx.$executeRawUnsafe(previousNestloop === "on" ? `SET LOCAL enable_nestloop = on` : `SET LOCAL enable_nestloop = off`);
+          // a devolução: uma de DUAS chamadas com literal fixo (sem expressão no argumento: o guard de escritores lê só literal)
+          if (previousNestloop === "on") await tx.$executeRawUnsafe(`SET LOCAL enable_nestloop = on`);
+          else await tx.$executeRawUnsafe(`SET LOCAL enable_nestloop = off`);
           if (picked.length > 0) {
             target = toDomain(picked[0]!);
             // (3) E4 — RELÊ, no comando SEGUINTE (a foto depois da concessão) e sob o MESMO GUC, o demonstrativo e a

@@ -311,3 +311,17 @@ O código da F5b (`adoptionFacts` no `PrismaOutboxRepository`) entrou no commit 
 | 15:00:30→15:01:11 | T13 com as 2 chaves coladas da saída, motivo em uma linha | `# tests 35 · pass 35 · fail 0` | — |
 | 15:01:19→15:01:34 | `npm run lint`; `git diff --check` | 0; limpo | — |
 | — | `P-GUARD3-SO-RECONHECE-SET-CONFIG` | NÃO gravada (E15R2-PENDENCIA-FORA-DO-PERMITIDO: é do registro do orquestrador) | — |
+
+### Emenda 15 — o CI do `509859ef` e o ajuste de forma
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| 15:12:20 | CI run `42870995043` (`509859ef`), job `backend`, pelo resumo TAP | `# tests 4869 · pass 4866 · fail 1 · skipped 2`: o **guard 3 passou**; o único `not ok` é o D1 de `tests/inventory-write-paths-guard.test.ts`: `'<sql dinâmico> …/outbox.prisma.ts:200 $executeRawUnsafe(<não literal: ConditionalExpression>)'` — a devolução por ternário de dois literais é, para o guard de escritores, SQL que ele não resolve (fail-closed). Falha MINHA: rodei os 2 guards pesados às 14:33, ANTES da Emenda 15, e não de novo depois dela | defeito real de forma |
+| 15:13 | a devolução vira UMA de DUAS chamadas com literal fixo (`if (prev === "on") … = on; else … = off`), na mesma posição (a instrução logo depois da pick): é a letra da Emenda 15 ("escolhendo, em código, um de dois literais fixos"), sem ternário no argumento — declarado | `npm run check` exit 0; dublê + guard 3 `49/49`; `inventory-write-paths-guard` `12/12` | — |
+| 15:13–15:15 | as entradas M5h′, M5h″, M5h‴ e M5h⁗ do aplicador reescritas para a forma de duas chamadas (`rascunhos/e15/rebuild-mut.mjs`; aplica e desfaz limpo) | — | — |
+| 15:15:50→15:16:21 | `-db` (`channel-db` + `lock-order-db`) | `# tests 27 · pass 27 · fail 0` | — |
+| 15:16:21→15:16:58 | as 5 mutações de novo | M5h′ `fail 3` (os 2 `off`); M5h″ `fail 5` (os 4); M5h‴ `fail 5` (os 4); M5h⁗ `fail 3` (os 2 "ACHA"); M5h `fail 5` no dublê, **mas o T-OBX-db-9 VERDE nessa execução** (21/21); todas desfeitas limpo | o vermelho da M5h no `-db` não era determinístico |
+| 15:17 | causa e conserto: a "estatística velha" do T-OBX-db-9 não ficava velha com certeza — o autovacuum pode reanalisar as tabelas depois da semeadura grande; o teste passa a desligar o autovacuum das duas tabelas (`ALTER TABLE … SET (autovacuum_enabled = off)`) logo depois do `ANALYZE`, na base própria do arquivo (descartada no `after`); é a letra do §14.4 ("estatística velha de propósito") — declarado | +5 linhas em `tests/ass-08-channel-db.test.ts` | — |
+| 15:17:26→15:19:19 | **M5h 3×** com o autovacuum desligado | `fail 1` nas 3: T-OBX-db-9 com `57014` em 10 073, 10 221 e 10 048 ms; revert limpo | vermelho determinístico (3/3) |
+| 15:19:32→15:20:01 | `-db` verde | `# tests 27 · pass 27 · fail 0` | — |
+| 15:20 | gerador do T13 (`t13-depois2.out`): só o `claimNext` muda, agora `RAW-SQL($executeRawUnsafe) OPACO` `×3` (desligar + as duas chamadas da devolução) e `RAW-SQL($queryRawUnsafe) OPACO` `×1`; o T13 com a contagem colada; `npm run lint`; `o6r07c-census-guard` | T13 `35/35`; lint 0; censo `32/32`; `inventory-write-paths-guard` `12/12` (15:14) | — |
