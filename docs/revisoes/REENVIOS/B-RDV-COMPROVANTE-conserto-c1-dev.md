@@ -351,3 +351,30 @@
 - head `cec8f8f74f1cc9faadbed4774f63c466ec705715` · feito: backend inteiro (F0–F3) · falta: F4a → F4b → F5a → F5b → F5c → F6a → F6b → F7 → F8 · próximo
   comando: escrever o RR-D.1 e o RR-D.2 (Drift real e codec) em `mobile/flutter_app/test/core/local_db/` · arquivos
   meio escritos: nenhum.
+- Limpeza da F3: o `postgres:16` cria volume anônimo; o MEU é o único criado às 09:41:34Z (06:41 SP, o `docker run`)
+  → `docker volume rm b7e3a5ea…` às 07:00. Os outros volumes órfãos da máquina são alheios e ficaram.
+
+## F4a — `ExpenseItem.serverId` no store e no codec (§2(d)2–3) (07:00–07:08)
+
+- Testes ANTES, em `mobile/flutter_app/test/core/local_db/brdvcomp_c1_item_server_id_test.dart` (glob
+  `brdvcomp_c1_*` da emenda): **RR-D.1** (Drift real, `AppDatabase.openInMemory()`: `markItemSynced` e depois um
+  repositório NOVO sobre o mesmo banco → `serverIdForItem` devolve o id) e **RR-D.2** (o codec preserva o `server_id`
+  do item; JSON antigo sem a chave → `serverId == null`, sem erro).
+- **Vermelho-controle no objeto** (copiado para o `w-dev525-vc`, depois apagado): RR-D.1 `Expected: 'item-server-1'
+  Actual: <null>` (= `TOPO_SERVERID drift_item=null`) · RR-D.2 `Expected: 'item-server-11' Actual: <null>`
+  (= `codec_item_has_server_id=false`) · `+0 -2: Some tests failed`. **OK.**
+- Código: `DriftExpenseLocalStore.saveReports` grava `server_id` no INSERT de `expense_items`; `_itemFromRow` lê
+  `readNullable<String>('server_id')`; o codec grava `'server_id': item.serverId` e lê `json['server_id'] as String?`.
+- **Medido × plano (registro, não decisão nova):** o store novo grava numa coluna que a v14 não tem; o RR-D.1 usa banco
+  NOVO (`onCreate` → `_kExpenseItems`). A coluna no `CREATE` é parte do (d)1 ("`_kExpenseItems` ganha `server_id TEXT`,
+  para instalação nova"), que a tabela põe na F4b; adiantei SÓ essa linha para cá, porque o store da F4a depende dela. A
+  F4b faz o resto do (d)1: `schemaVersion => 15`, o `if (from < 15)` com a guarda, os testes de migração.
+- `dart format` dos 4 arquivos tocados · `dart format --output=none --set-exit-if-changed lib test` acusa só
+  `test/features/bsan313_minhas_os_escopo_test.dart` — alheio, idêntico ao objeto (Flutter local 3.41.6 × CI 3.47.5,
+  como o §6 avisa) · `flutter analyze` → "No issues found!" · `flutter test` (o arquivo novo + `test/features/expenses`
+  + `test/core/local_db`) → `+44: All tests passed!`. **OK.**
+- Mutações (`git diff --exit-code -- src tests mobile` = 0 depois de cada reversão por edição inversa):
+  - **M-D1** (tirar `server_id` do INSERT de `expense_items`: a coluna, um `?` e a `Variable`) → RR-D.1 `Expected:
+    'item-server-1' Actual: <null>` · revertida. **OK.**
+  - **M-D2** (tirar `'server_id': item.serverId` do `_itemToJson`) → RR-D.2 `Expected: 'item-server-11' Actual:
+    <null>` · revertida. **OK.**

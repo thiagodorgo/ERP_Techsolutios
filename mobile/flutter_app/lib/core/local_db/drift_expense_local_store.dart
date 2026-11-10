@@ -84,10 +84,12 @@ class DriftExpenseLocalStore implements ExpenseLocalStore {
         );
 
         for (final item in report.items) {
+          // B-RDV-COMPROVANTE (conserto c1, §2(d)2): o `server_id` do item persiste — sem ele o comprovante
+          // não monta a URL do upload depois de o app reiniciar.
           await _db.customInsert(
             'INSERT INTO expense_items '
-            '(local_id,tenant_id,report_local_id,category_id,amount,date,city,vendor_name) '
-            'VALUES (?,?,?,?,?,?,?,?)',
+            '(local_id,tenant_id,report_local_id,category_id,amount,date,city,vendor_name,server_id) '
+            'VALUES (?,?,?,?,?,?,?,?,?)',
             variables: <Variable>[
               Variable<String>(item.localId),
               Variable<String>(item.tenantId),
@@ -97,6 +99,7 @@ class DriftExpenseLocalStore implements ExpenseLocalStore {
               Variable<int>(item.date.millisecondsSinceEpoch),
               Variable<String>(item.city),
               Variable<String>(item.vendorName),
+              Variable<String>(item.serverId),
             ],
           );
 
@@ -181,6 +184,7 @@ class DriftExpenseLocalStore implements ExpenseLocalStore {
       ),
       city: row.readNullable<String>('city'),
       vendorName: row.readNullable<String>('vendor_name'),
+      serverId: row.readNullable<String>('server_id'),
       receipts: receipts,
     );
   }

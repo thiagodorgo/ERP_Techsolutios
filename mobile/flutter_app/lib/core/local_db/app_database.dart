@@ -220,6 +220,8 @@ CREATE TABLE IF NOT EXISTS expense_reports (
   updated_at INTEGER
 )''';
 
+// B-RDV-COMPROVANTE (conserto c1 do #525, §2(d)1): `server_id` do item, para instalação nova. Quem vem de
+// uma versão anterior ganha a coluna pela migração do `onUpgrade`.
 const _kExpenseItems = '''
 CREATE TABLE IF NOT EXISTS expense_items (
   local_id TEXT NOT NULL PRIMARY KEY,
@@ -229,7 +231,8 @@ CREATE TABLE IF NOT EXISTS expense_items (
   amount REAL NOT NULL,
   date INTEGER NOT NULL,
   city TEXT,
-  vendor_name TEXT
+  vendor_name TEXT,
+  server_id TEXT
 )''';
 
 const _kExpenseReceipts = '''
