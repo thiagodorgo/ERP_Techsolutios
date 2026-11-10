@@ -142,8 +142,15 @@ export class ExpenseManagementService {
     return this.insertItem(this.repository, actor, input);
   }
 
-  submitReport(actor: ExpenseActorContext, reportId: string): Promise<ExpenseReport> {
-    return this.applySubmitReport(this.repository, actor, reportId);
+  async submitReport(actor: ExpenseActorContext, reportId: string): Promise<ExpenseReport> {
+    try {
+      // Conserto c1 do #525 (§2(b)3) — a submissão HTTP lê e grava na MESMA transação, com a linha do relatório
+      // travada: serializa com o comprovante (que trava a mesma linha) nos dois repositórios.
+      return await this.repository.withSyncTransaction(actor.tenantId, (repository) => this.applySubmitReport(repository, actor, reportId));
+    } catch (error) {
+      // §12.2 item 4 — falha transitória de banco (o 55P03 do teto da trava inclusive) sai 503 `sync_busy`, nunca 400.
+      throw mapTransientSyncFailure(error);
+    }
   }
 
   /**
@@ -346,7 +353,10 @@ export class ExpenseManagementService {
     return item;
   }
 
-  private async applySubmitReport(repository: ExpenseDomainRepository, actor: ExpenseActorContext, reportId: string): Promise<ExpenseReport> {
+  private async applySubmitReport(repository: ExpenseSyncTransactionRepository, actor: ExpenseActorContext, reportId: string): Promise<ExpenseReport> {
+    // Conserto c1 do #525 (§2(b)3) — a trava primeiro; só então a leitura e o UPDATE de sempre. O `reportSubmit` do
+    // lote roda em `withSyncTransaction` e herda a trava.
+    await repository.lockReportForUpdate({ tenantId: actor.tenantId, reportId });
     const current = await this.loadReadableReport(repository, actor, reportId);
     if (!editableStatuses.has(current.status) && current.status !== "ready_to_submit") {
       throw new ExpenseManagementError(409, "EXPENSE_REPORT_LOCKED", "status_not_submittable", "Only draft, returned or ready_to_submit reports can be submitted.");

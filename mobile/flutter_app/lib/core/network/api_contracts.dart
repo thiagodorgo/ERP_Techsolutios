@@ -18,6 +18,10 @@ class ExpenseApiEndpoints {
   static String submitExpenseReport(String reportId) {
     return '/api/v1/expense-reports/$reportId/submit';
   }
+
+  // B-RDV-COMPROVANTE — upload multipart do comprovante (1 arquivo por requisicao).
+  static String receiptUpload(String reportId, String itemId) =>
+      '/api/v1/expense-reports/$reportId/items/$itemId/receipt';
 }
 
 class WorkOrderApiEndpoints {
@@ -75,9 +79,16 @@ class ExpenseSyncActionTypes {
     receiptAttach,
   };
 
-  // Tipos reconhecidos pelo backend em expense-sync.ts. O comprovante ainda
-  // aguarda a integração própria e não possui recibo idempotente remoto.
-  static const backendSupported = {reportCreate, itemCreate, reportSubmit};
+  // Tipos que o backend atende. Os 3 primeiros viajam no LOTE
+  // (/mobile/sync/expense-actions); o comprovante (B-RDV-COMPROVANTE) tem rota
+  // multipart propria e NUNCA entra no lote — o replay de lote o deixa pendente
+  // para o expense_receipt_sync quando este conjunto o contem.
+  static const backendSupported = {
+    reportCreate,
+    itemCreate,
+    reportSubmit,
+    receiptAttach,
+  };
 }
 
 class ChecklistApiEndpoints {

@@ -977,6 +977,9 @@ export const ROLE_PERMISSIONS = {
     "expense_report:update",
     "expense_report:submit",
     "expense_sync:write",
+    // B-RDV-COMPROVANTE (§G.3, DONO P4) — o técnico de campo anexa o comprovante que fotografou ao
+    // PRÓPRIO item de despesa (rota multipart própria; o lote continua recusando o tipo).
+    "expense_receipt:attach",
     // D-CHK-DISPATCH-CREATE — "answer-assigned" (RBAC_MATRIX:44) para o guincheiro = RESPONDER a uma run
     // pré-criada pelo despacho: read (baixar a run da OS) + update (responder/marcar avaria/anexar) + complete
     // (concluir) + acknowledge (assinatura de ciência). NÃO recebe `checklist_runs:create` — a criação da run é

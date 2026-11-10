@@ -6,6 +6,7 @@ import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import { ExpenseManagementController, type ExpenseManagementServiceResolver } from "./expense-management.controller.js";
 import { createDefaultExpenseManagementService } from "./expense-management.service.js";
+import { registerExpenseReceiptRoutes } from "./expense-receipt.routes.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -31,6 +32,10 @@ export function createExpenseManagementRouter(
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
+
+  // B-RDV-COMPROVANTE (§G.3) — upload/leitura do comprovante do item de despesa. Registrado ANTES
+  // das rotas de relatório para o path com /receipt não cair em handlers mais genéricos.
+  registerExpenseReceiptRoutes(router);
 
   router.get(
     "/expense-policies",
