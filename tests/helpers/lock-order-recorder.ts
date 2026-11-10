@@ -36,6 +36,65 @@ export function oneLine(sql: string): string {
   return sql.replace(/\s+/g, " ").trim();
 }
 
+// ---------------------------------------------------------------- leitura das cláusulas de trava (T-LOCK-1b; T-LOCK-2)
+
+export type LockStrength = "update" | "no key update" | "share" | "key share";
+export type LockClause = {
+  readonly strength: LockStrength;
+  /** Os aliases do `OF …`; `null` quando a cláusula não tem `OF` (trava todas as tabelas do FROM). */
+  readonly of: readonly string[] | null;
+  readonly waitPolicy: "skip locked" | "nowait" | "wait";
+  /** Posição no texto normalizado: a ordem das cláusulas é a ordem em que o LockRows trava. */
+  readonly position: number;
+};
+
+const NOT_AN_ALIAS = new Set([
+  "where", "join", "on", "left", "right", "inner", "outer", "full", "cross", "natural", "using", "order", "group", "having",
+  "for", "limit", "offset", "set", "values", "returning", "union", "as", "lateral", "with", "and", "or", "select",
+]);
+
+/** O SQL em minúsculas, uma linha, sem aspas de identificador e sem o prefixo `public.`. */
+export function normalizedSql(sql: string): string {
+  return oneLine(sql).toLowerCase().replace(/"/g, "").replace(/\bpublic\./g, "");
+}
+
+/** Todas as cláusulas `FOR … [OF …] [SKIP LOCKED|NOWAIT]` de UMA instrução, na ordem do texto. */
+export function lockClauses(sql: string): LockClause[] {
+  const text = normalizedSql(sql);
+  const clauses: LockClause[] = [];
+  const pattern = /\bfor (no key update|key share|update|share)\b(?: of ([a-z_][a-z0-9_]*(?: ?, ?[a-z_][a-z0-9_]*)*))?(?: (skip locked|nowait))?/g;
+  for (const match of text.matchAll(pattern)) {
+    clauses.push({
+      strength: match[1] as LockStrength,
+      of: match[2] ? match[2].split(",").map((alias) => alias.trim()) : null,
+      waitPolicy: (match[3] as "skip locked" | "nowait" | undefined) ?? "wait",
+      position: match.index ?? 0,
+    });
+  }
+  return clauses;
+}
+
+/** `alias → tabela` de `FROM t [AS] a` / `JOIN t [AS] a` (a própria tabela também é alias de si). */
+export function tableAliases(sql: string): Map<string, string> {
+  const text = normalizedSql(sql);
+  const aliases = new Map<string, string>();
+  for (const match of text.matchAll(/\b(?:from|join) ([a-z_][a-z0-9_]*)(?: (?:as )?([a-z_][a-z0-9_]*))?/g)) {
+    const table = match[1]!;
+    aliases.set(table, table);
+    const alias = match[2];
+    if (alias && !NOT_AN_ALIAS.has(alias)) aliases.set(alias, table);
+  }
+  return aliases;
+}
+
+/** As tabelas que uma cláusula trava: pelo `OF`, ou todas as citadas em FROM/JOIN quando não há `OF` (por excesso, que é o
+ * lado seguro para um guarda). */
+export function clauseTables(sql: string, clause: LockClause): string[] {
+  const aliases = tableAliases(sql);
+  if (clause.of) return clause.of.map((alias) => aliases.get(alias) ?? alias);
+  return [...new Set(aliases.values())];
+}
+
 function recordingTx(tx: object, events: RecordedEvent[]): object {
   return new Proxy(tx, {
     get(target, prop) {

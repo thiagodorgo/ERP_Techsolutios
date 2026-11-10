@@ -116,3 +116,19 @@
 | 10:05:23→10:05:49 | gerador do T13 (5,20 GB) | exit 0, stderr vazio; `PrismaOutboxRepository.claimNext`: `billing_outbox ×5 → ×7`, `subscription_statements ×1 → ×2`, NOVA `RAW-SQL($queryRawUnsafe) OPACO ? ×2` (os dois `set_config` do planejador) | chaves e motivos atualizados no T13 |
 | 10:06:28→10:07:30 | `npm test -- tests/san3-05-acessos-de-plataforma-guard.test.ts` (5,22 GB) | `# tests 35 · pass 35 · fail 0` | — |
 | 10:07:46→10:08:14 | `npm run lint`; `git diff --cached --check` | 0; 0; 6 arquivos no índice | fatia fechada |
+
+## RETOMADA 5 — F3 empurrada (`e2ce1676`, 10:08:46 SP)
+
+## F4 — o par proibido, o claim que nunca espera e a ordem das cláusulas (T-OBX-db-4/5, T-LOCK-1b)
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| 10:09–10:10 | testes ESCRITOS ANTES (o código é o da F3): `tests/ass-08-channel-db.test.ts` ganha **T-OBX-db-4** ((a) barreira `LOCK TABLE … SHARE ROW EXCLUSIVE`, que aceita "as duas em `relation`" OU "uma esperando e a outra resolvida", + dreno sequencial; (b) dois `runDispatchOutbox` em `Promise.all`, dois papéis, a mesma porta), **T-OBX-db-5** (arnês segura o demonstrativo FOR UPDATE: `null` em < 1 s, linha intocada; depois de pagar e COMMIT, `skipped statement_paid`) e **T-LOCK-1b** (gravador; toda cláusula `FOR …` que trava `subscription_statements` tem SKIP LOCKED; na pick conjunta a cláusula do demonstrativo vem antes da da fila). O helper ganha o leitor de cláusulas (`lockClauses`, `tableAliases`, `clauseTables`, `normalizedSql`). Cada teste usa um provedor ÚNICO | — | — |
+| 10:10:44→10:11:23 | **VERMELHO-CONTROLE no claim do objeto**: `git checkout f2a5969e -- src/…/outbox.prisma.ts` (o claim de `807deb7e` + as extrações da F2) → `npm test -- tests/ass-08-channel-db.test.ts` → `git checkout HEAD -- …` (`git diff --quiet HEAD` limpo) | `# tests 14 · pass 11 · fail 3`: `not ok 12 T-OBX-db-4` ("nenhuma das duas é reclamada"), `not ok 13 T-OBX-db-5` ("… (veio: claimed)"), `not ok 14 T-LOCK-1b` ("o claim trava o demonstrativo (a pick conjunta existe)"); `ok 3 T-OBX-db-1` | o objeto reclama as duas vivas e reclama sob a baixa em voo |
+| 10:11:50→10:12:29 | rodada verde (4,85 GB) | `# tests 14 · pass 14 · fail 0`; T-OBX-db-5 em 473 ms | F4 verde |
+| 10:13:02→10:14:23 | **M4** (literal no E5″: tirar o SKIP LOCKED do pick — as duas cláusulas da pick conjunta) → `-db` → revert | `pass 10 · fail 4`: `not ok 3 T-OBX-db-1` com "barreira não cumprida em 10000 ms" (10 275 ms), e db-4, db-5, T-LOCK-1b; revert limpo | vermelho medido, como o plano diz |
+| 10:14:30→10:15:53 | **M2 no SQL** (a irmã da releitura volta a `('SENT', 'PROCESSING')`) | `pass 13 · fail 1`: `not ok 12 T-OBX-db-4` ("nenhuma das duas é reclamada"); revert limpo | vermelho medido |
+| 10:16:00→10:17:02 | **M5a** (≡ M5g no E5″: tirar o SKIP LOCKED de `FOR NO KEY UPDATE OF s`) | `pass 10 · fail 4`: `not ok 13 T-OBX-db-5` com `Code: 55P03 … canceling statement due to lock timeout` (6 819 ms), `not ok 14 T-LOCK-1b` "trava do demonstrativo sem SKIP LOCKED", e db-1, db-4; revert limpo | vermelho medido |
+| 10:18:04→10:18:58 | **M5b** (tirar a cláusula do demonstrativo inteira) | `pass 12 · fail 2`: `not ok 13 T-OBX-db-5` "(veio: claimed)", `not ok 14 T-LOCK-1b` "o claim trava o demonstrativo"; revert limpo | vermelho medido |
+| 10:19:07→10:19:53 | **M5j** (inverter as cláusulas: `OF o` antes de `OF s`) | `pass 13 · fail 1`: `not ok 14 T-LOCK-1b` "a cláusula do demonstrativo vem antes da cláusula da fila"; revert limpo | vermelho medido |
+| 10:20:26→10:21:26 | `npm run lint` (3,87 GB); `git diff --exit-code`; `git diff --cached --check` | 0; limpo; 0; 2 arquivos no índice (`channel-db`, o helper) | fatia fechada |

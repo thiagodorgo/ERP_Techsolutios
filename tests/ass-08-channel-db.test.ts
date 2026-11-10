@@ -12,9 +12,9 @@ import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
-import { oneLine, recordingClient } from "./helpers/lock-order-recorder.js";
+import { clauseTables, lockClauses, oneLine, recordingClient } from "./helpers/lock-order-recorder.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
-import { chargeCreateClaimVerdict } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
+import { chargeCreateClaimVerdict, runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import type { ClaimResult } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { PrismaWebhookEventRepository } from "../src/modules/subscription-billing/webhooks/webhook-events.prisma.js";
 import { PrismaStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.prisma.js";
@@ -477,6 +477,159 @@ if (!connectionString) {
       assert.match(sql[3]!, /^SELECT id, status FROM subscription_statements WHERE id = \$1::uuid AND tenant_id = \$2::uuid FOR UPDATE$/, "a 4ª instrução é a trava do demonstrativo");
       assert.ok(sql.slice(4).every((text) => !/\bsubscription_statements\b/.test(text)), "depois da trava, ninguém mais lê o demonstrativo");
       assert.equal(sql.length, 8, `8 instruções (veio: ${sql.length})`);
+    } finally {
+      await role.drop();
+    }
+  });
+
+  // ---------------------------------------------------------------- F4: o claim (E4 + E5″) no Postgres real
+
+  /** Porta de pagamento que só grava (o equivalente ao `recorded[]` do servidor falso, sem rede). */
+  function recordingPort(provider: string) {
+    const created: unknown[] = [];
+    return {
+      created,
+      async ensureCustomer() { return { customerId: "cus_db" }; },
+      async createCharge(input: unknown) { created.push(input); return { chargeId: `pay_db_${created.length}`, status: "pending" as const, payUrl: "https://pay.example/db" }; },
+      async getCharge() { return { status: "pending" as const, raw: {} }; },
+      async findChargeByExternalReference() { return null; },
+      async cancelCharge(chargeId: string) { return { chargeId, status: "cancelled" as const }; },
+      async refund(chargeId: string) { return { chargeId, status: "refunded" as const }; },
+      async registerWebhook() { return { externalId: "hook_db" }; },
+      async verifyWebhook() { return { ok: false }; },
+      supportedMethods() { return ["pix"] as const; },
+      describe() { return { provider, supportedMethods: ["pix"] as const, pendingHomologation: [], webhookRegistration: "api" as const }; },
+    };
+  }
+
+  test("T-OBX-db-4 (E4, critério 2): o par PROIBIDO — duas charge_create PENDING do MESMO demonstrativo; dois workers → nenhuma reclamada, as duas NEEDS_REVIEW charge_already_exists com attempts 0; dois despachos naturais → 0 createCharge", async () => {
+    // (a) barreira determinística
+    const provider = uniqueProvider("obx4a");
+    const { tenantId, statementId } = await seedStatement(`ass08-obx4a-${randomUUID().slice(0, 8)}`);
+    const ids = [await seedOutboxRow(tenantId, statementId, 1, provider), await seedOutboxRow(tenantId, statementId, 2, provider)];
+    const w1 = await createEphemeralRole(db, targetUrl);
+    const w2 = await createEphemeralRole(db, targetUrl);
+    const holder = await openHolder();
+    const inflight: Promise<unknown>[] = [];
+    try {
+      await holder.query(`LOCK TABLE billing_outbox IN SHARE ROW EXCLUSIVE MODE`);
+      const results: Array<{ ok: boolean; value?: unknown; error?: unknown } | undefined> = [undefined, undefined];
+      const a = settled(new PrismaOutboxRepository(w1.client).claimNext(claimParamsFor(provider, "w1"))).then((r) => void (results[0] = r));
+      const b = settled(new PrismaOutboxRepository(w2.client).claimNext(claimParamsFor(provider, "w2"))).then((r) => void (results[1] = r));
+      inflight.push(a, b);
+      // As duas no UPDATE esperando a relação, OU uma esperando e a outra já resolvida (a que encontrou o demonstrativo
+      // travado pela 1ª pula as duas linhas dele e volta sem candidata).
+      await waitUntil("as duas no UPDATE esperando a relação, ou uma esperando e a outra resolvida", async () => {
+        const waiting = (await lockWaiters([w1.roleName, w2.roleName])).filter((waiter) => waiter.wait_event === "relation");
+        const done = results.filter(Boolean).length;
+        return waiting.length === 2 || (waiting.length === 1 && done === 1);
+      });
+      await holder.commit();
+      await Promise.all([a, b]);
+      for (const r of results) assert.ok(r?.ok, `claim terminou sem erro (veio: ${r?.ok ? "ok" : describeError(r?.error)})`);
+      const claims = results.map((r) => r!.value as ClaimResult | null).filter((c): c is ClaimResult => Boolean(c));
+      assert.equal(claims.filter((c) => c.kind === "claimed").length, 0, "nenhuma das duas é reclamada: duas vivas do mesmo demonstrativo nunca saem");
+      // dreno sequencial: a outra linha também vai a revisão
+      const repo = new PrismaOutboxRepository(w1.client);
+      for (let i = 0; i < 5; i += 1) {
+        const next = await repo.claimNext(claimParamsFor(provider, "drain"));
+        if (!next) break;
+        assert.notEqual(next.kind, "claimed", "o dreno também não reclama");
+      }
+      const persisted = await outboxRows(ids);
+      for (const id of ids) {
+        const row = persisted.get(id);
+        assert.deepEqual({ status: row?.status, last_error: row?.last_error, attempts: row?.attempts }, { status: "NEEDS_REVIEW", last_error: "charge_already_exists", attempts: 0 }, `linha ${id}: revisão, sem tentativa`);
+      }
+    } finally {
+      await holder.rollback();
+      await Promise.all(inflight);
+      await w1.drop();
+      await w2.drop();
+    }
+
+    // (b) natural: dois despachos em Promise.all, dois papéis, a mesma porta
+    const naturalProvider = uniqueProvider("obx4b");
+    const natural = await seedStatement(`ass08-obx4b-${randomUUID().slice(0, 8)}`);
+    const naturalIds = [
+      await seedOutboxRow(natural.tenantId, natural.statementId, 1, naturalProvider),
+      await seedOutboxRow(natural.tenantId, natural.statementId, 2, naturalProvider),
+    ];
+    const d1 = await createEphemeralRole(db, targetUrl);
+    const d2 = await createEphemeralRole(db, targetUrl);
+    try {
+      const port = recordingPort(naturalProvider);
+      const run = (client: any) =>
+        runDispatchOutbox({ repo: new PrismaOutboxRepository(client), ports: { [naturalProvider]: port as any }, resolveCustomer: async () => ({ ok: true, customerId: "cus_db" }), now: () => new Date() });
+      await Promise.all([run(d1.client), run(d2.client)]);
+      assert.equal(port.created.length, 0, "dois despachantes, duas vivas do mesmo demonstrativo: 0 POST /payments");
+      const persisted = await outboxRows(naturalIds);
+      assert.deepEqual(naturalIds.map((id) => persisted.get(id)?.status), ["NEEDS_REVIEW", "NEEDS_REVIEW"]);
+    } finally {
+      await d1.drop();
+      await d2.drop();
+    }
+  });
+
+  test("T-OBX-db-5 (E5″, critério 5): com o demonstrativo travado pelo arnês (uma baixa em voo), claimNext devolve null em < 1 s e a linha fica intocada; depois de pagar e COMMIT, o claim dá skipped statement_paid", async () => {
+    const provider = uniqueProvider("obx5");
+    const { tenantId, statementId } = await seedStatement(`ass08-obx5x-${randomUUID().slice(0, 8)}`);
+    const rowId = await seedOutboxRow(tenantId, statementId, 1, provider);
+    const role = await createEphemeralRole(db, targetUrl);
+    const holder = await openHolder();
+    try {
+      await holder.query(`SELECT id FROM subscription_statements WHERE id = $1::uuid FOR UPDATE`, [statementId]);
+      const repo = new PrismaOutboxRepository(role.client);
+      const started = Date.now();
+      let first: ClaimResult | null | "erro" = "erro";
+      let firstError: unknown;
+      try {
+        first = await repo.claimNext(claimParamsFor(provider, "w-obx5"));
+      } catch (error) {
+        firstError = error;
+      }
+      const elapsed = Date.now() - started;
+      assert.equal(first, null, `demonstrativo ocupado: a linha é adiada, nunca reclamada sob a baixa em voo (veio: ${first === "erro" ? describeError(firstError) : first?.kind})`);
+      assert.ok(elapsed < 1_000, `o claim não esperou a trava (${elapsed} ms < 1 000)`);
+      const intact = (await outboxRows([rowId])).get(rowId);
+      assert.deepEqual({ status: intact?.status, attempts: intact?.attempts, claimed_at: intact?.claimed_at }, { status: "PENDING", attempts: 0, claimed_at: null }, "a linha adiada fica intocada");
+      await holder.query(`UPDATE subscription_statements SET status = 'paid', paid_amount = total_amount, paid_at = now() WHERE id = $1::uuid`, [statementId]);
+      await holder.commit();
+      const second = await repo.claimNext(claimParamsFor(provider, "w-obx5"));
+      assert.equal(second?.kind, "skipped", "depois da baixa, a linha é pulada");
+      assert.equal(second?.kind === "skipped" ? second.skipReason : null, "statement_paid");
+      assert.equal(second?.row.id, rowId);
+    } finally {
+      await holder.rollback();
+      await role.drop();
+    }
+  });
+
+  test("T-LOCK-1b (E5″): toda cláusula de trava do claim sobre subscription_statements tem SKIP LOCKED, e na pick conjunta a cláusula do demonstrativo vem ANTES da cláusula da linha da fila", async () => {
+    const provider = uniqueProvider("lk1b");
+    const { tenantId, statementId } = await seedStatement(`ass08-lk1b-${randomUUID().slice(0, 8)}`);
+    const rowId = await seedOutboxRow(tenantId, statementId, 1, provider);
+    const role = await createEphemeralRole(db, targetUrl);
+    try {
+      const recording = recordingClient(role.client);
+      const result = await new PrismaOutboxRepository(recording.client).claimNext(claimParamsFor(provider, "w-lk1b"));
+      assert.equal(result?.kind, "claimed", "o cenário exercita a pick conjunta (charge_create PENDING elegível)");
+      assert.equal(result?.row.id, rowId);
+      const sqls = recording.transactions.flatMap((transaction) => transaction.events.flatMap((event) => (event.kind === "raw" ? [event.sql] : [])));
+      const onStatements = sqls.flatMap((sql) => lockClauses(sql).filter((clause) => clauseTables(sql, clause).includes("subscription_statements")).map((clause) => ({ sql, clause })));
+      assert.ok(onStatements.length >= 1, "o claim trava o demonstrativo (a pick conjunta existe)");
+      for (const { sql, clause } of onStatements) assert.equal(clause.waitPolicy, "skip locked", `trava do demonstrativo sem SKIP LOCKED: ${oneLine(sql).slice(-160)}`);
+      const joint = sqls.filter((sql) => {
+        const clauses = lockClauses(sql);
+        return clauses.some((c) => clauseTables(sql, c).includes("subscription_statements")) && clauses.some((c) => clauseTables(sql, c).includes("billing_outbox"));
+      });
+      assert.ok(joint.length >= 1, "a pick conjunta trava o demonstrativo E a linha numa instrução só");
+      for (const sql of joint) {
+        const clauses = lockClauses(sql);
+        const statementClause = clauses.findIndex((c) => clauseTables(sql, c).includes("subscription_statements"));
+        const queueClause = clauses.findIndex((c) => clauseTables(sql, c).includes("billing_outbox"));
+        assert.ok(statementClause < queueClause, `a cláusula do demonstrativo vem antes da cláusula da fila: ${oneLine(sql).slice(-160)}`);
+      }
     } finally {
       await role.drop();
     }
