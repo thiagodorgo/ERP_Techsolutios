@@ -12,8 +12,8 @@ import {
 } from "../repositories/identity-link.repository.js";
 import { IdentityLinkEventRepository } from "../repositories/identity-link-event.repository.js";
 import { normalizePairIdentity } from "./identity-resolver.js";
-import { LocalAuthCredentialService, validateLocalPassword } from "./local-auth-credential.service.js";
-import { verifyPassword } from "./password.service.js";
+import { validateLocalPassword } from "./local-auth-credential.service.js";
+import { hashPassword, verifyPassword } from "./password.service.js";
 import type { AuthenticatedActor, LocalAuthLoginInput, LocalAuthLoginResult } from "../types/auth.types.js";
 
 // -----------------------------------------------------------------------------------------------
@@ -468,21 +468,17 @@ export class IdentityLinkService {
       throw identityLinkError(400, "BAD_REQUEST", "invalid_new_password", "New password must differ from the current one.");
     }
 
-    // O caminho canônico do gancho (changePasswordWithIdentityHook → handlePasswordChange). A leitura do
-    // usuário roda sob o GUC da organização do ator (users tem RLS).
-    const credentialService = new LocalAuthCredentialService(new LocalAuthCredentialRepository(this.prisma), {
-      findByIdForTenant: (userId: string, tenantId: string) =>
-        this.prisma.$transaction(async (tx) => {
-          await setTenantRlsContext(tx, tenantId);
+    // O gancho §5.5, com a MESMA aplicação da troca que `LocalAuthCredentialService.changePasswordWithIdentityHook`
+    // passa a ele (hash novo + updatePassword sob o tx do gancho, que já pôs o GUC da organização do ator).
+    // Chamado direto para não instanciar repositório com o client raiz (ratchet B-SAN3-05, T13).
+    const password = await hashPassword(input.newPassword);
 
-          return tx.user.findFirst({
-            where: { id: userId, tenant_id: tenantId },
-            select: { id: true, tenant_id: true, email: true },
-          });
-        }),
+    return this.handlePasswordChange(actor, async (tx) => {
+      await new LocalAuthCredentialRepository(tx).updatePassword(actor.userId, actor.tenantId, {
+        password_hash: password.password_hash,
+        password_algorithm: password.password_algorithm,
+      });
     });
-
-    return credentialService.changePasswordWithIdentityHook(actor, input.newPassword, this);
   }
 
   // Gancho da troca de senha (§5.5) — armado; desde o B-USERS-ACESSO-SEG (S7) é chamado pela troca

@@ -1203,6 +1203,10 @@
   "classe": "N",
   "n": 1
  },
+ "ROTA POST /api/v1/auth/password": {
+  "classe": "N",
+  "n": 1
+ },
  "ROTA POST /api/v1/auth/refresh": {
   "classe": "N",
   "n": 1

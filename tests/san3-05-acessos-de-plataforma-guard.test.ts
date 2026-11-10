@@ -289,6 +289,25 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/vault/vault.prisma-runtime.ts", "PrismaCredentialRepository.replaceActive", "tx", "RAW-SQL($queryRaw) OPACO", "?", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
     "B-ASS-05: `SELECT id FROM billing_provider_credentials … FOR UPDATE` dentro do `$transaction` da gravação da credencial; a tabela é GLOBAL da plataforma, sem tenant_id e sem RLS (M4, exceção declarada no plano §3.2), então não há GUC a fixar e nenhuma tabela FORCE é tocada; o filtro é o slot (provider, environment, kind) e a trava serializa duas gravações do mesmo kind (o UNIQUE parcial segura a corrida da primeira gravação). Provado em tests/ass-05-vault-migration-drill-db.test.ts sob papel NOBYPASSRLS.",
   ],
+  // B-USERS-ACESSO-SEG (S4 e S7): as 4 chaves que o bloco acrescenta, coladas da saída do gerador no head do bloco, com o
+  // motivo por chave. Gerador e WRAPPERS intocados. A contagem de administradores (S3/S5) roda no callback de
+  // `withTenantRls` do `updateUser` e não gera chave.
+  [
+    k("L1", "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts", "-.createPersistentAuthorizationResolver", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRls)", "×1"),
+    "B-USERS-ACESSO-SEG (S4): a leitura do STATUS do usuário (l.128) roda no callback de `withTenantRls(client, input.tenantId, …)` (l.123), cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.35), e filtra também por `tenant_id`; o `client` é parâmetro só para o teste medir a fiação sob o papel efêmero — em produção é o global (`createDefaultPersistentAuthorizationResolver`, l.94). Provado em tests/users-acesso-seg-desativacao-db.test.ts (S4·b/S4·c) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts", "new RoleRepository(tx)", "PARAMETRO(tx de callback de withTenantRls)", "×1"),
+    "B-USERS-ACESSO-SEG (S4): a mesma construção que já existia no resolvedor padrão, movida para `createPersistentAuthorizationResolver(client)` (l.123): o `tx` é o do callback de `withTenantRls`, setter do GUC como 1ª instrução (src/database/rls.ts l.35); `roles` (global ou da organização) lido sob o GUC da organização do ator.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts", "new UserRoleRepository(tx)", "PARAMETRO(tx de callback de withTenantRls)", "×1"),
+    "B-USERS-ACESSO-SEG (S4): idem — os vínculos de papel do ator lidos no callback de `withTenantRls` do resolvedor (l.123), sob o GUC da organização do ator (src/database/rls.ts l.35), com `tenant_id` também no filtro do repositório.",
+  ],
+  [
+    k("L2", "src/modules/auth/services/identity-link.service.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx de callback de handlePasswordChange)", "×1"),
+    "B-USERS-ACESSO-SEG (S7): a MESMA forma da chave já congelada em local-auth-credential.service.ts — o `updatePassword` da troca do PRÓPRIO usuário (`changeOwnPassword`, l.476-477) roda no callback do gancho `handlePasswordChange`, cuja transação começa por `setIdentityRlsContext(tx, actor)` (l.497), que põe o GUC da organização do ator como 1ª instrução (src/database/rls.ts l.188); o `where` é o par (tenant_id, user_id) do ator. Provado em tests/users-acesso-seg-troca-senha-db.test.ts sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

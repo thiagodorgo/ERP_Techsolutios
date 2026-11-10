@@ -230,11 +230,26 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         next: nextState,
       });
 
-      if (
-        removesActiveTenantAdmin(currentState, nextState) &&
-        (await countOtherActiveTenantAdmins(tx, input.tenantId, input.userId)) === 0
-      ) {
-        throw lastTenantAdminError();
+      if (removesActiveTenantAdmin(currentState, nextState)) {
+        // Os OUTROS administradores ATIVOS, contados num statement próprio DEPOIS da trava (nunca junto
+        // com ela: o EvalPlanQual reavaliaria com o snapshot antigo e não veria a linha recriada por quem
+        // estava na frente). Papel por CHAVE (`tenant_admin`), qualquer que seja a linha (global ou da
+        // organização). Sob o GUC desta transação, `users` e `user_role_assignments` só mostram a
+        // organização do ator.
+        const [admins] = await tx.$queryRaw<Array<{ count: number }>>`
+          SELECT count(DISTINCT u.id)::int AS count
+          FROM users u
+          JOIN user_role_assignments ura ON ura.tenant_id = u.tenant_id AND ura.user_id = u.id
+          JOIN roles r ON r.id = ura.role_id
+          WHERE u.tenant_id = ${input.tenantId}::uuid
+            AND u.status = 'active'
+            AND r.key = ${TENANT_ADMIN_ROLE}
+            AND u.id <> ${input.userId}::uuid
+        `;
+
+        if ((admins?.count ?? 0) === 0) {
+          throw lastTenantAdminError();
+        }
       }
 
       // Step 1: update scalar profile fields (name/status) when provided.
@@ -554,28 +569,4 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
-}
-
-// B-USERS-ACESSO-SEG (S3/S5) — os OUTROS administradores ATIVOS da organização, contados num statement
-// próprio DEPOIS da trava da organização (nunca junto com ela: o EvalPlanQual reavaliaria com o
-// snapshot antigo e não veria a linha recriada por quem estava na frente). Papel por CHAVE
-// (`tenant_admin`), qualquer que seja a linha (global ou da organização). Sob o GUC de tenant já
-// posto pela transação: `users` e `user_role_assignments` só mostram a organização do ator.
-async function countOtherActiveTenantAdmins(
-  tx: Prisma.TransactionClient,
-  tenantId: string,
-  userId: string,
-): Promise<number> {
-  const rows = await tx.$queryRaw<Array<{ admins: number }>>`
-    SELECT count(DISTINCT u.id)::int AS admins
-    FROM users u
-    JOIN user_role_assignments ura ON ura.tenant_id = u.tenant_id AND ura.user_id = u.id
-    JOIN roles r ON r.id = ura.role_id
-    WHERE u.tenant_id = ${tenantId}::uuid
-      AND u.status = 'active'
-      AND r.key = ${TENANT_ADMIN_ROLE}
-      AND u.id <> ${userId}::uuid
-  `;
-
-  return rows[0]?.admins ?? 0;
 }
