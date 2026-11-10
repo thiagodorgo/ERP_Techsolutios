@@ -254,3 +254,26 @@ O código da F5b (`adoptionFacts` no `PrismaOutboxRepository`) entrou no commit 
 | 14:20:28→14:20:39 | **M7e** (o classificador sem a detecção de escrita escondida) | `6 · 5 · 1`: "escrita escondida numa CTE sobre a tabela do mapa é UNK (fail-closed)"; revert limpo | vermelho medido |
 | 14:21:02→14:21:27 | `-db` de novo com o helper estendido | `# tests 21 · pass 21 · fail 0` | T-LOCK-1a/1b intactos |
 | — | `npm run lint` NÃO re-rodado | o commit não toca `src/` | declarado |
+
+## F7 — registro: a pendência corrigida e as 5 novas (§10, §13.5, §14.5)
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| 14:2x | `node rascunhos/f7-apply.mjs` (troca por trechos exatos, cada âncora 1×; o texto que não muda não é redigitado) | `P-ASS08-OBX5-EAGER-E-CANCEL`: título "— MÉDIA (gravidade corrigida em 10/11; 5 obrigações bloqueiam o merge da 08b e 3 bloqueiam ligar o canal)"; a frase de gravidade trocada pelo texto do §10.1, com a lista de testes do desenho FINAL (E5″, E6′/E7′, T-LOCK-2 — declarado: o texto do §10.1 é anterior à §13/§14); a precisão da corrida residual; as obrigações (1)–(5) (a (4) com "o claim E5″", §14.5; a (5) do §13.3.4, mais "o T-OBX-db-9 também fica verde no head da 08b", leitura declarada do §14.8) e (a)–(c); o acréscimo do teste de encerramento. Novas no fim: `P-ASS08-MUTATE-SEM-GUARDA` (ALTA), `-RECONSULTA-SEM-VALOR` (MÉDIA, com o acréscimo da §13.5), `-RECUPERADA-SEM-COBRANCA` (MÉDIA), `-RECONSULTA-CONSISTENCIA` (MÉDIA, hipótese), `-INDICE-UMA-VIVA` (BAIXA). Nada apagado | — |
+| 14:2x | `python agent-orchestration/controle/gerar-indice-pendencias.py` (2×) | 793 cabeçalhos / 782 IDs; ABERTAS 593 → 598; a 2ª execução sai byte-idêntica (`cmp`) | índice regenerado, sem mão |
+| 14:2x | critério 6: `grep -c` em `pendencias.md` | "com (ii) em pé, nenhuma cobrança indevida sai" → **0**; "Bloqueiam o merge da 08b" → **1**; "Bloqueiam ligar o canal" → **1** | critério 6 cumprido |
+
+### Contagens de execução, F0 a F6c (cada uma medida no diário acima)
+
+| fatia | commit | teste-dono (verde) | mutações vistas vermelhas |
+|---|---|---|---|
+| F0 | `c8f5b804` | linha de base | — |
+| F1 | `e3a01c17` | T-CHG-5/6/7/7b | M1a, M1d, M1e |
+| F2 | `f2a5969e` | T-CHG-db-1/2, T-LOCK-1a | M1b (P2028), M1c (409) |
+| F3 | `e2ce1676` | T-OBX-18 + T-OBX-1..16 | M2 no dublê |
+| F4 | `a9577496` | T-OBX-db-1/4/5, T-LOCK-1b (`-db` 14/14) | M4, M2 SQL, M5a, M5b, M5j |
+| F5 | `743bea8b` | T-OBX-11, T-OBX-17 (1–8, 11–14), T-OBX-NODEL (56/56) | M3a, M3d′, M3e, M3f, M3i |
+| F5b | `f7476918` | T-OBX-db-7/8 (`-db` 16/16) | M3f SQL, M3g, M3h |
+| F6 | `e16fd02a` | T-OBX-9/9b, T-OBX-17 (9–10), T-CHG-db-3 (i)/(ii), T-OBX-db-6 (62/62; T13 35/35) | M3b, M5c, M5d, M1c |
+| F4b | `b56ee865` | T-OBX-db-9 (`-db` 21/21) | M5g (55P03), M5h (57014), M5i (P2028, o laço da §13) |
+| F6b+F6c | `49ff6480` | T-LOCK-2 (6/6) | M7a, M7b, M7c, M7d, M7e |

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **788** |
-| IDs distintos | 777 |
-| **ABERTAS** | **593** |
+| Cabecalhos `## P-` | **793** |
+| IDs distintos | 782 |
+| **ABERTAS** | **598** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **531** |
+| — das quais **ativas nesta rodada** | **536** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 191 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **788 cabecalhos para 777 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **793 cabecalhos para 782 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 261
+## ABERTAS · balde A — material — 265
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -336,8 +336,12 @@
 | `P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA` | 12990 | MÉDIA | sim | P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA (2026-11-09) — falha de infraestrutura no sync de  |
 | `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA` | 12998 | MÉDIA | sim | P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA (2026-11-09) — o "com sessão válida" do item 30 não t |
 | `P-ASS08-OBX5-EAGER-E-CANCEL` | 13004 | MÉDIA | sim | P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na |
+| `P-ASS08-MUTATE-SEM-GUARDA` | 13038 | ALTA | sim | P-ASS08-MUTATE-SEM-GUARDA (2026-11-10) — o `#mutate` da outbox atualiza por id sem confe |
+| `P-ASS08-RECONSULTA-SEM-VALOR` | 13044 | MÉDIA | sim | P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ ch |
+| `P-ASS08-RECUPERADA-SEM-COBRANCA` | 13050 | MÉDIA | sim | P-ASS08-RECUPERADA-SEM-COBRANCA (2026-11-10) — o desfecho `recovered` não grava `subscri |
+| `P-ASS08-RECONSULTA-CONSISTENCIA` | 13056 | MÉDIA | sim | P-ASS08-RECONSULTA-CONSISTENCIA (2026-11-10) — a listagem `GET /v3/payments?externalRefe |
 
-## ABERTAS · balde B — processo/registro — 270
+## ABERTAS · balde B — processo/registro — 271
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -611,6 +615,7 @@
 | `P-ASS07-ALREADY-ISSUED-REGEX` | 12964 | BAIXA | sim | P-ASS07-ALREADY-ISSUED-REGEX (2026-11-09) — `already_issued` depende de regex sobre a me |
 | `P-ASS07-CERT-REDACAO` | 12970 | BAIXA | sim | P-ASS07-CERT-REDACAO (2026-11-09) — `sanitizedErrorMessage` redige o certificado como JS |
 | `P-REFINO-INVENTARIO-SEM-GUARDA` | 12976 | BAIXA | sim | P-REFINO-INVENTARIO-SEM-GUARDA (2026-11-09) — o inventário de fluxos gerado não tem guar |
+| `P-ASS08-INDICE-UMA-VIVA` | 13062 | BAIXA | sim | P-ASS08-INDICE-UMA-VIVA (2026-11-10) — índice parcial "uma `charge_create` viva por demo |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 
