@@ -61,3 +61,9 @@ Feito: F0, linha de base N = 122, divergências D1–D7, S4 (com o Achado 3) ver
 ## RETOMADA 2
 
 Feito: S4 e S6. Próximo comando: escrever os testes da S3 (autodesativação, auto-rebaixamento, último admin) nos dois arquivos `users-acesso-seg-usuarios*` e rodá-los para o vermelho-controle.
+
+## Docker — vaga liberada a pedido do orquestrador (10/11, ~01:24 SP medido aqui)
+
+- Pedido do orquestrador (01:27 SP no relógio dele): a C1 da junta do #525 precisa de uma vaga por ~30 min; quem não está usando o banco para.
+- `docker ps --format '{{.Names}}'` → `ci522-pg`, `users-seg-pg` (2 trabalhos) → `docker stop users-seg-pg` (stop, não rm: os dados ficam) → `docker ps` → só `ci522-pg`.
+- A S3 foi dividida para não segurar a vaga: a parte de MEMÓRIA (testes + `core-saas.service.ts`) segue agora, sem banco; a parte PRISMA da S3 (a trava no store) vai junto com a S5, que testa a mesma trava sob corrida, quando houver vaga (`docker ps` antes; religar com `docker start users-seg-pg` só com no máximo 2 trabalhos de pé).
