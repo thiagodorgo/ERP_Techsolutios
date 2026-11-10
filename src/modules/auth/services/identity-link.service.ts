@@ -213,7 +213,11 @@ export class IdentityLinkService {
           throw identityLinkError(403, "FORBIDDEN", "identity_unresolved", "Actor identity could not be resolved.");
         }
 
-        // 3b. B-USERS-ACESSO-SEG (P-SEG-2, Emenda 1) — a sessão da senha provisória não liga conta.
+        // 3b. B-USERS-ACESSO-SEG (P-SEG-2, Emenda 1) — a sessão da senha provisória não liga conta. T2: a
+        // trava FOR SHARE do vínculo do par do ATOR, que o reset por administrador trava com FOR UPDATE (T1);
+        // T3: a marca é lida DEPOIS dela — a religação que chega depois de um reset vê a marca ligada.
+        await this.selectLinkOfPairForShare(tx, actor.tenantId, actor.userId);
+
         if (await this.mustChangePassword(tx, actor.tenantId, actor.userId)) {
           throw passwordChangeRequiredError();
         }
@@ -527,7 +531,8 @@ export class IdentityLinkService {
   // (a rota exige users.manage antes de chegar aqui). Numa transação só, com orçamento de tempo:
   //   1. o alvo existe NA organização ativa (senão 404 user_not_found, também para o de outra
   //      organização) e está ativo (senão 409 user_inactive);
-  //   2. a identidade do par do alvo;
+  //   2. a identidade do par do alvo, lida da linha do vínculo TRAVADA com FOR UPDATE (T1 — a
+  //      serialização com a religação, UEM-02);
   //   3. P-SEG-1 (D-USERS-1): a identidade tem vínculo em OUTRA organização? → 409
   //      `identity_linked_elsewhere`, mensagem fixa, nada muda (`assertNotLinkedElsewhere`);
   //   4. grava a PROVISÓRIA (só o hash, marca da P1 ligada), revoga as sessões ativas do alvo e audita
@@ -579,11 +584,23 @@ export class IdentityLinkService {
             );
           }
 
-          const identityId = await normalizePairIdentity(tx, actor.tenantId, target.id);
+          // T1 (UEM-02, reset × religação) — trava FOR UPDATE do vínculo do PAR do alvo ANTES de ler a
+          // identidade dele: a religação que move esse vínculo (o alvo como conta provada) trava a mesma linha
+          // com FOR UPDATE, e a do próprio alvo (o alvo como ator) com FOR SHARE (T2). Quem chega depois espera
+          // o outro confirmar e lê o estado novo: a identidade vem da linha TRAVADA (a versão confirmada).
+          let pairLink = await this.selectLinkOfPairForUpdate(tx, actor.tenantId, target.id);
 
-          if (!identityId) {
+          if (!pairLink) {
+            // Par sem vínculo ainda (fora do backfill): normaliza e trava.
+            await normalizePairIdentity(tx, actor.tenantId, target.id);
+            pairLink = await this.selectLinkOfPairForUpdate(tx, actor.tenantId, target.id);
+          }
+
+          if (!pairLink) {
             throw resetUnavailableError();
           }
+
+          const identityId = pairLink.identity_id;
 
           await this.assertNotLinkedElsewhere(tx, actor.tenantId, identityId, deadline);
 
@@ -860,6 +877,21 @@ export class IdentityLinkService {
     `;
 
     return rows[0] ?? null;
+  }
+
+  // B-USERS-ACESSO-SEG (T2, UEM-02) — a trava compartilhada do vínculo do par do ATOR na religação: não
+  // conflita com outra religação do mesmo ator (FOR SHARE × FOR SHARE), mas espera o reset por
+  // administrador (FOR UPDATE, T1) e o faz esperar. Pré-condição: o GUC da organização do par está posto.
+  private async selectLinkOfPairForShare(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    userId: string,
+  ): Promise<void> {
+    await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM auth_identity_links
+      WHERE tenant_id = ${tenantId}::uuid AND user_id = ${userId}::uuid
+      FOR SHARE
+    `;
   }
 
   // B-USERS-ACESSO-SEG (S1, P-SEG-1 — Emenda 1, opção a) — a recusa da D-USERS-1 sob o papel real. Sob o
