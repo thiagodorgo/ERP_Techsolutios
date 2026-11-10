@@ -1,14 +1,19 @@
 // B-ASS-08 — conserto J-522 (C3-01 / R-CHG-2, D1; e C3-02 / R-PRF-1): o ENFILEIRAMENTO GUARDADO de `charge_create` e o
 // resolver canônico de cliente do dispatcher.
 //
-//   - `requestChargeCreate` é o ÚNICO caminho de produção para pôr uma `charge_create` na outbox: dentro de
-//     `statements.transaction` ele TRAVA o demonstrativo (`lockById` = o `FOR UPDATE` do D1), lê a cobrança viva e as
-//     linhas da fila, aplica `chargeCreateEligibility` e SÓ ENTÃO grava `billing_statement_refs` + a linha. Reprovou →
-//     `StatementError` 422 e NADA enfileirado. A rota HTTP `POST …/charge` (08b) DEVE chamar este serviço, nunca
-//     `outbox.enqueue` direto (pendência `P-ASS08-OBX5-EAGER-E-CANCEL`).
-//     Nota declarada (plano do conserto §8.1): no Prisma o `enqueue` roda em transação própria logo após a travada; a
-//     janela residual é coberta em profundidade pelo UNIQUE `idempotency_key`, pelo UNIQUE parcial `pending`-por-
-//     demonstrativo da M5 e pelo verdict do claim (R-OBX-5), que devolve `NEEDS_REVIEW charge_already_exists` DEPOIS.
+//   - `requestChargeCreate` é o ÚNICO caminho de produção para pôr uma `charge_create` na outbox. 2º conserto do #522
+//     (E8): é UMA transação numa UMA conexão, pela porta `ChargeIntentRepository` — `enqueueChargeCreateInTx` trava o
+//     demonstrativo (`lockStatement` = o `FOR UPDATE` do D1, a 1ª instrução depois dos `set_config`), lê a cobrança viva e
+//     as linhas da fila DEPOIS da concessão, aplica `chargeCreateEligibility`, calcula o `seq` SOB a trava
+//     (1 + o maior `seq` já usado no demonstrativo) e SÓ ENTÃO grava `billing_statement_refs` + a linha. Reprovou →
+//     `StatementError` 422 e NADA enfileirado. Dois pedidos concorrentes se serializam na trava: o 2º lê a linha do 1º
+//     e sai 422 `charge_already_exists`. `created = false` no enfileiramento é impossível sob a trava e, se acontecer,
+//     falha fechado com 409 `charge_intent_conflict` — nunca devolve "ok" sem linha nova. A rota HTTP `POST …/charge`
+//     (08b) DEVE chamar este serviço, nunca `outbox.enqueue` direto; o fechamento (08b) chama `enqueueChargeCreateInTx`
+//     sobre o `tx` do PRÓPRIO fechamento (pendência `P-ASS08-OBX5-EAGER-E-CANCEL`).
+//     (A nota do 1º conserto dizia que o `enqueue` em transação própria era coberto "em profundidade" pelos UNIQUE e pelo
+//     verdict do claim: a medição do diagnóstico ci522 desmentiu — o pedido se auto-bloqueava em P2028 e duas vivas do
+//     mesmo demonstrativo davam 2 `createCharge`. Por isso a transação é uma só.)
 //   - `profileCustomerResolver` (R-PRF-1): o `customerId` vem do PERFIL via `ensureCustomer` do provedor — nunca do
 //     payload. Incompleto → `{ ok: false, missing }` (o dispatcher marca `NEEDS_REVIEW billing_profile_missing:<campos>`
 //     sem nenhuma chamada ao provedor). O `ensureCustomer` é rede e roda no dispatcher, FORA de transação (R-OBX-1).
@@ -16,56 +21,75 @@
 
 import type { BillingProfileInput } from "../billing-profile/billing-profile.js";
 import type { CustomerResolution } from "../outbox/outbox.dispatcher.js";
-import type { OutboxRepository } from "../outbox/outbox.repository.js";
 import type { BillingOutboxRow } from "../outbox/outbox.types.js";
-import type { StatementRepository } from "../statements/statement.repository.js";
 import { StatementError } from "../statements/statement.types.js";
-import type { StatementRefRepository } from "../webhooks/statement-refs.repository.js";
 import { chargeCreateEligibility, chargeProfileGate } from "./charge-eligibility.js";
-import type { StatementChargeRepository } from "./charges.repository.js";
+import type { ChargeIntentRepository, ChargeIntentTx } from "./charge-intent.repository.js";
 
 export type ChargeRequestDeps = {
-  readonly statements: StatementRepository;
-  readonly charges: StatementChargeRepository;
-  readonly outbox: OutboxRepository;
-  readonly refs: StatementRefRepository;
+  readonly intents: ChargeIntentRepository;
 };
 
 export type ChargeRequestInput = {
   readonly tenantId: string;
   readonly statementId: string;
   readonly provider: string;
-  readonly seq: number;
   /** Nunca carrega `customerId` — o cliente é resolvido pelo PERFIL no dispatcher (R-PRF-1); a chave é descartada. */
   readonly payload?: Readonly<Record<string, unknown>>;
   readonly now: Date;
 };
 
-export async function requestChargeCreate(deps: ChargeRequestDeps, input: ChargeRequestInput): Promise<BillingOutboxRow> {
-  return deps.statements.transaction(input.tenantId, async (tx) => {
-    const statement = await tx.lockById(input.statementId);
-    if (!statement) throw new StatementError(404, "statement_not_found", "Statement not found.");
-    const liveCharge = await deps.charges.findLive(input.tenantId, input.statementId);
-    const lines = await deps.outbox.listByStatement(input.tenantId, input.statementId);
-    const eligibility = chargeCreateEligibility(statement, liveCharge, lines);
-    if (!eligibility.ok) {
-      throw new StatementError(
-        422,
-        eligibility.reason,
-        eligibility.reason === "statement_not_closed"
-          ? "Charges are requested only on closed statements."
-          : "The statement already has a live charge or charge intent.",
-      );
-    }
-    // R-PRF-1: o payload gravado NÃO carrega `customerId` — por construção (a chave, se vier, é descartada).
-    const { customerId: _droppedCustomerId, ...payload } = (input.payload ?? {}) as Record<string, unknown>;
-    await deps.refs.put({ statementId: statement.id, tenantId: input.tenantId, provider: input.provider }, input.now);
-    const { row } = await deps.outbox.enqueue(
-      { tenantId: input.tenantId, statementId: statement.id, kind: "charge_create", provider: input.provider, seq: input.seq, payload },
-      input.now,
+export function requestChargeCreate(deps: ChargeRequestDeps, input: ChargeRequestInput): Promise<BillingOutboxRow> {
+  return deps.intents.transaction(input.tenantId, (tx) => enqueueChargeCreateInTx(tx, input));
+}
+
+/**
+ * O pedido sobre um `tx` JÁ ABERTO: a rota usa `requestChargeCreate`; o fechamento da 08b chama esta função sobre o `tx`
+ * do próprio fechamento (nunca `requestChargeCreate` de dentro dele — seria outra conexão).
+ */
+export async function enqueueChargeCreateInTx(tx: ChargeIntentTx, input: ChargeRequestInput): Promise<BillingOutboxRow> {
+  const statement = await tx.lockStatement(input.statementId);
+  if (!statement) throw new StatementError(404, "statement_not_found", "Statement not found.");
+  const liveCharge = await tx.findLiveCharge(input.statementId);
+  const lines = await tx.listChargeLines(input.statementId);
+  const eligibility = chargeCreateEligibility(statement, liveCharge, lines);
+  if (!eligibility.ok) {
+    throw new StatementError(
+      422,
+      eligibility.reason,
+      eligibility.reason === "statement_not_closed"
+        ? "Charges are requested only on closed statements."
+        : "The statement already has a live charge or charge intent.",
     );
-    return row;
-  });
+  }
+  const seq = 1 + maxChargeCreateSeq(lines);
+  // R-PRF-1: o payload gravado NÃO carrega `customerId` — por construção (a chave, se vier, é descartada).
+  const { customerId: _droppedCustomerId, ...payload } = (input.payload ?? {}) as Record<string, unknown>;
+  await tx.putRef({ statementId: statement.id, tenantId: input.tenantId, provider: input.provider }, input.now);
+  const { row, created } = await tx.enqueue(
+    { tenantId: input.tenantId, statementId: statement.id, kind: "charge_create", provider: input.provider, seq, payload },
+    input.now,
+  );
+  if (!created) throw new StatementError(409, "charge_intent_conflict", "The charge intent key is already in use.");
+  return row;
+}
+
+/**
+ * O maior `seq` já usado pelas `charge_create` do demonstrativo (0 se nenhuma), lido da chave
+ * `charge_create:<statement_id>:<seq>`. Chave fora desse formato é invariante quebrado: falha fechado (nada é gravado).
+ */
+export function maxChargeCreateSeq(lines: readonly BillingOutboxRow[]): number {
+  let max = 0;
+  for (const line of lines) {
+    if (line.kind !== "charge_create") continue;
+    const [kind, statementId, seqText, ...rest] = line.idempotencyKey.split(":");
+    const seq = Number(seqText);
+    if (kind !== "charge_create" || statementId !== line.statementId || rest.length > 0 || !/^[1-9][0-9]*$/.test(seqText ?? "") || !Number.isSafeInteger(seq)) {
+      throw new Error(`billing_outbox: idempotency_key fora do formato charge_create:<statement_id>:<seq> (linha ${line.id}).`);
+    }
+    if (seq > max) max = seq;
+  }
+  return max;
 }
 
 /**

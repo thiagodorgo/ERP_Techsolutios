@@ -26,7 +26,7 @@ export type ChargeCreateEligibility = { readonly ok: true } | { readonly ok: fal
  * o demonstrativo travado, ANTES de enfileirar.
  */
 export function chargeCreateEligibility(
-  statement: SubscriptionStatement,
+  statement: Pick<SubscriptionStatement, "status">,
   liveCharge: SubscriptionStatementCharge | undefined,
   outboxLines: readonly BillingOutboxRow[],
 ): ChargeCreateEligibility {

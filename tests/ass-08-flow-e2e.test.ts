@@ -18,6 +18,7 @@ import { InMemoryOutboxRepository } from "../src/modules/subscription-billing/ou
 import { runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { InMemoryStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.repository.js";
 import { profileCustomerResolver, requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
+import { InMemoryChargeIntentRepository } from "../src/modules/subscription-billing/charges/charge-intent.repository.js";
 import { InMemoryBillingProfileRepository } from "../src/modules/subscription-billing/billing-profile/billing-profile.js";
 import { toClientPaymentView } from "../src/modules/subscription-billing/charges/charge-view.js";
 import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
@@ -61,8 +62,8 @@ test("R-FLX-1 (pagamento) fechado → cobrança → payUrl ao cliente → webhoo
     // Conserto J-522 (C3-01): a intenção entra pelo caminho de PRODUÇÃO — `requestChargeCreate` trava o demonstrativo,
     // aplica a elegibilidade (R-CHG-2/D1) e grava refs + linha; o payload NÃO carrega `customerId` (R-PRF-1).
     await requestChargeCreate(
-      { statements, charges, outbox, refs },
-      { tenantId: TENANT, statementId: statement.id, provider: "asaas", seq: 1, payload: { amountCents: 10000, dueDate: "2026-12-10", method: "pix" }, now: new Date() },
+      { intents: new InMemoryChargeIntentRepository({ statements, charges, outbox, refs }) },
+      { tenantId: TENANT, statementId: statement.id, provider: "asaas", payload: { amountCents: 10000, dueDate: "2026-12-10", method: "pix" }, now: new Date() },
     );
 
     // Perfil COMPLETO da organização: o resolver real (perfil → `ensureCustomer` do adaptador contra o fake) dá o cliente.
