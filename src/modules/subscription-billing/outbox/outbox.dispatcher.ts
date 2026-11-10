@@ -9,6 +9,10 @@
 // desligado ganham `skip_reason = provider_disabled` visível, sem rede. Crash entre (2) e (3) deixa a linha PROCESSING;
 // a rodada seguinte reconsulta por referência ANTES de repetir (nunca cobra 2×) e só vai a NEEDS_REVIEW se a reconsulta
 // falhar (R-OBX-1). Backoff 1/5/15/60 min; 8 falhas → FAILED + trilha (R-OBX-2).
+// Cobrança parada nunca sai de demonstrativo que mudou (R-OBX-5, D2 — conserto J-522): a política `chargeCreateClaimVerdict`
+// vive aqui, pura, e é INJETADA no claim (`ClaimParams.verdict`), que a aplica NA transação do claim sobre o demonstrativo
+// relido: pago/cancelado/reaberto/refechado → SKIPPED com `skip_reason`; cobrança viva ou demonstrativo ausente →
+// NEEDS_REVIEW com `last_error`. O `retry` revalida pelo mesmo caminho (todo PENDING passa pelo claim).
 
 import type { PaymentProviderPort, CreateChargeInput, ChargeResult } from "../providers/payment/payment-provider.port.js";
 import {
@@ -16,7 +20,9 @@ import {
   OUTBOX_MAX_ATTEMPTS,
   OUTBOX_ORPHAN_MS,
   type BillingOutboxRow,
+  type ClaimVerdict,
   type OutboxKind,
+  type StatementClaimSnapshot,
 } from "./outbox.types.js";
 import type { OutboxRepository } from "./outbox.repository.js";
 
@@ -73,6 +79,28 @@ function errorCode(error: unknown): string {
   return "unknown_error";
 }
 
+/**
+ * R-OBX-5 (D2): `charge_create` só sai se o demonstrativo continua o MESMO fechamento `closed`, sem cobrança viva.
+ * Política PURA (sem rede, sem I/O), exportada daqui e INJETADA no claim: o repositório a aplica DENTRO da transação do
+ * claim, sobre o snapshot relido do demonstrativo. Outros tipos passam (sem handler → NEEDS_REVIEW `unsupported_kind` em
+ * `dispatchOne`, como hoje). A órfã (PROCESSING) não passa por aqui: a recuperação só reconsulta por referência e nunca
+ * cria cobrança — marcá-la SKIPPED esconderia uma cobrança que já existe no provedor (E3).
+ */
+export function chargeCreateClaimVerdict(row: BillingOutboxRow, statement: StatementClaimSnapshot | undefined): ClaimVerdict {
+  if (row.kind !== "charge_create") return { kind: "eligible" };
+  if (!statement) return { kind: "needs_review", code: "statement_not_found" };
+  if (statement.status === "paid") return { kind: "skip", skipReason: "statement_paid" };
+  if (statement.status === "cancelled") return { kind: "skip", skipReason: "statement_cancelled" };
+  if (statement.status === "reopened" || statement.status === "open") return { kind: "skip", skipReason: "statement_reopened" };
+  // Refechado DEPOIS de enfileirada: `close()` preserva `reopened_at`, e a linha carrega o total do fechamento desfeito
+  // (payload velho). `reopened_at > occurred_at` ⇔ a linha nasceu de um fechamento que foi desfeito → não sai.
+  if (statement.reopenedAt && statement.reopenedAt.getTime() > row.occurredAt.getTime()) {
+    return { kind: "skip", skipReason: "statement_reopened" };
+  }
+  if (statement.hasLiveCharge) return { kind: "needs_review", code: "charge_already_exists" };
+  return { kind: "eligible" };
+}
+
 function chargeInputFromRow(row: BillingOutboxRow): CreateChargeInput {
   const payload = row.payload as Record<string, unknown>;
   return {
@@ -111,9 +139,20 @@ export async function runDispatchOutbox(deps: DispatcherDeps): Promise<DispatchR
   // Teto defensivo: no máximo uma passada por linha elegível desta rodada (evita laço infinito num re-enqueue).
   const safety = (await deps.repo.listByStatus()).length + 1;
   for (let guard = 0; guard < safety; guard += 1) {
-    const claimed = await deps.repo.claimNext({ enabledProviders, now: clock(), claimedBy, orphanMs });
+    // (1) CLAIM: o repositório relê o demonstrativo NA transação do claim e aplica a política (R-OBX-5). Cada iteração
+    // consome exatamente uma linha (reclamada, pulada ou posta em revisão) — o teto `safety` continua válido.
+    const claimed = await deps.repo.claimNext({ enabledProviders, now: clock(), claimedBy, orphanMs, verdict: chargeCreateClaimVerdict });
     if (!claimed) break;
     processed += 1;
+    if (claimed.kind === "skipped") {
+      outcomes.skipped += 1;
+      continue;
+    }
+    if (claimed.kind === "needs_review") {
+      outcomes.needs_review += 1;
+      await deps.onAudit?.({ tenantId: claimed.row.tenantId, statementId: claimed.row.statementId, kind: claimed.row.kind, action: "billing_outbox.needs_review", code: claimed.code });
+      continue;
+    }
     const outcome = await dispatchOne(deps, claimed.row, claimed.wasOrphan, clock);
     outcomes[outcome] += 1;
   }

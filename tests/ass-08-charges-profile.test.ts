@@ -46,7 +46,8 @@ function closedStatement(patch: Partial<SubscriptionStatement> = {}): Subscripti
 
 test("R-CHG-1 dispatch grava a cobrança com payUrl/pix/boleto (T-CHG-1)", async () => {
   const now = new Date("2026-12-01T12:00:00Z");
-  const outbox = new InMemoryOutboxRepository(() => now);
+  // R-OBX-5: o dublê exige o leitor do demonstrativo; este teste mede G11, não a elegibilidade → stub explícito `closed`.
+  const outbox = new InMemoryOutboxRepository({ readStatement: async () => ({ status: "closed", reopenedAt: null, hasLiveCharge: false }), clock: () => now });
   const charges = new InMemoryStatementChargeRepository();
   await outbox.enqueue({ tenantId: TENANT, statementId: STMT, kind: "charge_create", provider: "asaas", seq: 1, payload: { customerId: "c", amountCents: 10000, dueDate: "2026-12-10", method: "pix" } }, now);
   const port = new PixPort();

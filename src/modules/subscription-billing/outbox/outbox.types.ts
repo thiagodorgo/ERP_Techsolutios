@@ -1,5 +1,8 @@
 // B-ASS-08 · F1 — tipos da fila durável (`billing_outbox`, plano §3.2/§3.8). Espelho de `impound_outbox_events`.
 // Padrão claim–chamada–registro (G8): o `fetch` ao provedor NUNCA roda dentro de transação (R-OBX-1).
+// Conserto J-522 (R-OBX-5, D2): o claim relê o demonstrativo e aplica uma política de elegibilidade (`ClaimVerdict`).
+
+import type { StatementStatus } from "../statements/statement.types.js";
 
 /** Tipo da intenção enfileirada. */
 export const OUTBOX_KINDS = ["charge_create", "charge_cancel", "refund", "invoice_issue", "invoice_cancel"] as const;
@@ -16,6 +19,27 @@ export type OutboxSkipReason =
   | "statement_paid"
   | "statement_cancelled"
   | "statement_reopened";
+
+/**
+ * R-OBX-5 (D2): o que o claim RELÊ do demonstrativo, na transação do claim, antes de liberar uma `charge_create`.
+ * `hasLiveCharge` = já existe cobrança viva (`pending`/`confirmed` em `subscription_statement_charges`) OU outra
+ * `charge_create` do mesmo demonstrativo em `SENT`/`PROCESSING` na própria fila.
+ */
+export type StatementClaimSnapshot = {
+  readonly status: StatementStatus;
+  readonly reopenedAt: Date | null;
+  readonly hasLiveCharge: boolean;
+};
+
+/** Motivos de `NEEDS_REVIEW` decididos no claim (E3 do conserto J-522): vão em `last_error` — a lista de `skip_reason`
+ * da M5 (`billing_outbox_skip_reason_check`) é fechada e `prisma/**` não muda. */
+export type ClaimNeedsReviewCode = "charge_already_exists" | "statement_not_found";
+
+/** Veredito da política de elegibilidade aplicada no claim (R-OBX-5). Puro, sem rede. */
+export type ClaimVerdict =
+  | { readonly kind: "eligible" }
+  | { readonly kind: "skip"; readonly skipReason: OutboxSkipReason }
+  | { readonly kind: "needs_review"; readonly code: ClaimNeedsReviewCode };
 
 export type BillingOutboxRow = {
   readonly id: string;

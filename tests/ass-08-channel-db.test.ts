@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
+import { chargeCreateClaimVerdict } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { PrismaWebhookEventRepository } from "../src/modules/subscription-billing/webhooks/webhook-events.prisma.js";
 import { PrismaStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.prisma.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
@@ -29,16 +30,19 @@ if (!connectionString) {
   let databaseName: string;
   let targetUrl: string;
 
+  /** Demonstrativo `closed` (R$ 100, fechado agora): é o estado em que uma `charge_create` É elegível — o claim relê o
+   * demonstrativo (R-OBX-5) e só libera `closed` sem cobrança viva. Os testes de R-OBX-5 mudam o estado DEPOIS, como
+   * arnês admin. */
   async function seedStatement(tenantSlug: string): Promise<{ tenantId: string; statementId: string }> {
     const tenants = (await db.$queryRawUnsafe(`INSERT INTO tenants (name, slug) VALUES ($1, $1) RETURNING id`, tenantSlug)) as Array<{ id: string }>;
     const tenantId = tenants[0]!.id;
     const statements = (await db.$queryRawUnsafe(
       `INSERT INTO subscription_statements
-         (tenant_id, period, segments, users_included, users_peak, users_extra, storage_included_gb, storage_peak_gb,
+         (tenant_id, period, status, segments, users_included, users_peak, users_extra, storage_included_gb, storage_peak_gb,
           storage_extra_gb, tracked_vehicles, days_in_month, days_measured, extra_user_price, extra_gb_price,
           base_amount, users_extra_amount, storage_extra_amount, tracking_amount, adjustments_amount,
-          credits_applied_amount, total_amount, snapshot)
-       VALUES ($1::uuid, '2026-10', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 0,0,0,0,0,0,0, '{"latest":null,"history":[]}'::jsonb)
+          credits_applied_amount, total_amount, due_date, closed_at, snapshot)
+       VALUES ($1::uuid, '2026-10', 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 100,0,0,0,0,0,100, '2026-11-10', now(), '{"latest":null,"history":[]}'::jsonb)
        RETURNING id`,
       tenantId,
     )) as Array<{ id: string }>;
@@ -102,12 +106,14 @@ if (!connectionString) {
     try {
       const r1 = new PrismaOutboxRepository(w1.client);
       const r2 = new PrismaOutboxRepository(w2.client);
-      const params = { enabledProviders: ["asaas"], now: new Date(), orphanMs: OUTBOX_ORPHAN_MS } as const;
+      const params = { enabledProviders: ["asaas"], now: new Date(), orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict } as const;
       const [a, b] = await Promise.all([
         r1.claimNext({ ...params, claimedBy: "w1" }),
         r2.claimNext({ ...params, claimedBy: "w2" }),
       ]);
       assert.ok(a && b, "ambos reclamam uma linha");
+      assert.equal(a!.kind, "claimed", "demonstrativo closed sem cobrança viva → elegível");
+      assert.equal(b!.kind, "claimed");
       assert.notEqual(a!.row.id, b!.row.id, "SKIP LOCKED: linhas distintas, nunca a mesma");
       assert.equal(a!.row.status, "PROCESSING");
       assert.equal(b!.row.status, "PROCESSING");

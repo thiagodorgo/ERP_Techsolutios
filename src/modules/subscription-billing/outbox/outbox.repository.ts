@@ -1,31 +1,49 @@
 // B-ASS-08 · F1 — porta de persistência da outbox + dublê em memória. O Prisma (F10/F11) implementa a mesma porta:
-// `claimNext` faz `UPDATE … WHERE id = (SELECT id … FOR UPDATE SKIP LOCKED LIMIT 1)` numa transação curta.
-// O dublê serializa os claims (uma fila global) para reproduzir o SKIP LOCKED sem corrida.
+// `claimNext` trava a linha (`SELECT … FOR UPDATE SKIP LOCKED LIMIT 1`), RELÊ o demonstrativo e aplica a política de
+// elegibilidade (`ClaimParams.verdict`, R-OBX-5) na MESMA transação curta, e só então grava PROCESSING / SKIPPED /
+// NEEDS_REVIEW. O dublê serializa os claims (uma fila global) para reproduzir o SKIP LOCKED sem corrida.
 
 import { randomUUID } from "node:crypto";
 
+import type { StatementStatus } from "../statements/statement.types.js";
 import {
   idempotencyKeyOf,
   type BillingOutboxRow,
+  type ClaimNeedsReviewCode,
+  type ClaimVerdict,
   type NewOutboxRow,
   type OutboxSkipReason,
   type OutboxStatus,
+  type StatementClaimSnapshot,
 } from "./outbox.types.js";
+
+/** A política de elegibilidade do claim (R-OBX-5): pura, decidida pelo dispatcher (`chargeCreateClaimVerdict`). */
+export type ClaimVerdictFn = (row: BillingOutboxRow, statement: StatementClaimSnapshot | undefined) => ClaimVerdict;
 
 export type ClaimParams = {
   readonly enabledProviders: readonly string[];
   readonly now: Date;
   readonly claimedBy: string;
   readonly orphanMs: number;
+  /** R-OBX-5 (D2) — OBRIGATÓRIA: quem chama `claimNext` sem política não compila (fail-closed por construção). Aplicada
+   * na transação do claim a toda PENDING `charge_create`, sobre o demonstrativo relido; a órfã (PROCESSING) não passa por
+   * ela — só reconsulta por referência (E3). */
+  readonly verdict: ClaimVerdictFn;
 };
 
-export type ClaimResult = { readonly row: BillingOutboxRow; readonly wasOrphan: boolean };
+/** O que o claim devolve: a linha reclamada (PROCESSING), ou a linha que a política pulou / pôs em revisão — sem rede. */
+export type ClaimResult =
+  | { readonly kind: "claimed"; readonly row: BillingOutboxRow; readonly wasOrphan: boolean }
+  | { readonly kind: "skipped"; readonly row: BillingOutboxRow; readonly skipReason: OutboxSkipReason }
+  | { readonly kind: "needs_review"; readonly row: BillingOutboxRow; readonly code: ClaimNeedsReviewCode };
 
 export interface OutboxRepository {
   /** `INSERT … ON CONFLICT (idempotency_key) DO NOTHING` — devolve a existente se já houver. */
   enqueue(input: NewOutboxRow, now: Date): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }>;
-  /** Transação curta do claim: marca PROCESSING a linha mais antiga elegível (PENDING vencida de provedor ligado,
-   * ou PROCESSING órfã). `null` se nada elegível. NUNCA faz rede. */
+  /** Transação curta do claim: escolhe a linha mais antiga elegível (PROCESSING órfã primeiro, depois PENDING vencida de
+   * provedor ligado). Órfã → PROCESSING (só reconsulta). PENDING → relê o demonstrativo e aplica `params.verdict`:
+   * `eligible` → PROCESSING; `skip` → SKIPPED + `skip_reason` (sem `attempts`, sem `claimed_*`); `needs_review` →
+   * NEEDS_REVIEW + `last_error`. `null` se nada elegível. NUNCA faz rede. */
   claimNext(params: ClaimParams): Promise<ClaimResult | null>;
   // Mutações por id: tenant-scoped. Sob FORCE RLS, o registro roda em `withTenantRlsBudget(tenantId)` (transação curta
   // própria, separada do claim e do fetch — G8). O dublê valida o tenant como o RLS faria (linha de outra organização =
@@ -39,7 +57,8 @@ export interface OutboxRepository {
   /** Visibilidade (D5/R-OBX-4): marca `skip_reason = provider_disabled` nas PENDING de provedor desligado, SEM rede e
    * SEM mudar o status. Escrita de PLATAFORMA sobre tabela FORCE → `forEachTenantRls` no Prisma. Devolve quantas marcou. */
   markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number>;
-  /** `retry` reabre uma FAILED → PENDING (attempts zerado, erro limpo); o claim seguinte revalida (D2). */
+  /** `retry` reabre uma FAILED → PENDING (attempts zerado, erro limpo); o claim seguinte revalida (D2) — por construção:
+   * toda PENDING passa por `ClaimParams.verdict` antes de virar PROCESSING (R-OBX-5). */
   retry(tenantId: string, id: string, now: Date): Promise<BillingOutboxRow | undefined>;
   findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined>;
   /** Leitura de PLATAFORMA (tela de outbox) sobre tabela FORCE → `forEachTenantRls` no Prisma. */
@@ -47,12 +66,32 @@ export interface OutboxRepository {
   listByStatement(tenantId: string, statementId: string): Promise<readonly BillingOutboxRow[]>;
 }
 
+/** O que o dublê lê do demonstrativo no claim (R-OBX-5). `hasLiveCharge` opcional: o dublê OR-a com a própria fila. */
+export type StatementClaimReadResult = {
+  readonly status: StatementStatus;
+  readonly reopenedAt: Date | null;
+  readonly hasLiveCharge?: boolean;
+};
+export type StatementClaimReader = (tenantId: string, statementId: string) => Promise<StatementClaimReadResult | undefined>;
+
+export type InMemoryOutboxOptions = {
+  /** OBRIGATÓRIO (R-OBX-5): sem leitor do demonstrativo o dublê não nasce. Um default "sempre closed" esconderia exatamente
+   * a classe de defeito do J-522 (C2-01); testes que não medem R-OBX-5 ligam um stub EXPLÍCITO. */
+  readonly readStatement: StatementClaimReader;
+  readonly clock?: () => Date;
+};
+
 export class InMemoryOutboxRepository implements OutboxRepository {
   readonly #rows = new Map<string, BillingOutboxRow>();
   readonly #byKey = new Map<string, string>();
   #claimGate: Promise<unknown> = Promise.resolve();
+  private readonly clock: () => Date;
+  private readonly readStatement: StatementClaimReader;
 
-  constructor(private readonly clock: () => Date = () => new Date()) {}
+  constructor(options: InMemoryOutboxOptions) {
+    this.readStatement = options.readStatement;
+    this.clock = options.clock ?? (() => new Date());
+  }
 
   async enqueue(input: NewOutboxRow, now: Date): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }> {
     const key = idempotencyKeyOf(input.kind, input.statementId, input.seq);
@@ -95,13 +134,13 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     this.#claimGate = previous.then(() => gate);
     await previous.catch(() => undefined);
     try {
-      return this.#claimLocked(params);
+      return await this.#claimLocked(params);
     } finally {
       release();
     }
   }
 
-  #claimLocked(params: ClaimParams): ClaimResult | null {
+  async #claimLocked(params: ClaimParams): Promise<ClaimResult | null> {
     const enabled = new Set(params.enabledProviders);
     const nowMs = params.now.getTime();
     const candidates = [...this.#rows.values()]
@@ -119,7 +158,29 @@ export class InMemoryOutboxRepository implements OutboxRepository {
         (row) => row.status === "PENDING" && (row.nextAttemptAt === null || row.nextAttemptAt.getTime() <= nowMs),
       );
     if (!target) return null;
-    const wasOrphan = target.status === "PROCESSING";
+    if (target.status === "PROCESSING") {
+      // Órfã: NÃO aplica a política — a recuperação só reconsulta por referência e nunca cria cobrança (E3).
+      return { kind: "claimed", row: this.#toProcessing(target, params), wasOrphan: true };
+    }
+
+    // PENDING: relê o demonstrativo NA MESMA seção crítica do claim e aplica a política (R-OBX-5).
+    const snapshot = target.kind === "charge_create" ? await this.#readSnapshot(target) : undefined;
+    const verdict = params.verdict(target, snapshot);
+    if (verdict.kind === "skip") {
+      // Sem `attempts`, sem `claimed_*`: a linha não foi tentada — foi descartada pela política.
+      const skipped: BillingOutboxRow = { ...target, status: "SKIPPED", skipReason: verdict.skipReason, nextAttemptAt: null, updatedAt: params.now };
+      this.#rows.set(skipped.id, skipped);
+      return { kind: "skipped", row: skipped, skipReason: verdict.skipReason };
+    }
+    if (verdict.kind === "needs_review") {
+      const review: BillingOutboxRow = { ...target, status: "NEEDS_REVIEW", lastError: verdict.code, nextAttemptAt: null, updatedAt: params.now };
+      this.#rows.set(review.id, review);
+      return { kind: "needs_review", row: review, code: verdict.code };
+    }
+    return { kind: "claimed", row: this.#toProcessing(target, params), wasOrphan: false };
+  }
+
+  #toProcessing(target: BillingOutboxRow, params: ClaimParams): BillingOutboxRow {
     const claimed: BillingOutboxRow = {
       ...target,
       status: "PROCESSING",
@@ -130,7 +191,22 @@ export class InMemoryOutboxRepository implements OutboxRepository {
       updatedAt: params.now,
     };
     this.#rows.set(claimed.id, claimed);
-    return { row: claimed, wasOrphan };
+    return claimed;
+  }
+
+  /** O snapshot do demonstrativo para a política: o leitor injetado + a própria fila (outra `charge_create` viva). */
+  async #readSnapshot(target: BillingOutboxRow): Promise<StatementClaimSnapshot | undefined> {
+    const read = await this.readStatement(target.tenantId, target.statementId);
+    if (!read) return undefined;
+    const liveInQueue = [...this.#rows.values()].some(
+      (row) =>
+        row.id !== target.id &&
+        row.tenantId === target.tenantId &&
+        row.statementId === target.statementId &&
+        row.kind === "charge_create" &&
+        (row.status === "SENT" || row.status === "PROCESSING"),
+    );
+    return { status: read.status, reopenedAt: read.reopenedAt, hasLiveCharge: (read.hasLiveCharge ?? false) || liveInQueue };
   }
 
   async markSent(tenantId: string, id: string, externalId: string | null, now: Date): Promise<void> {

@@ -47,8 +47,14 @@ test("R-FLX-1 (pagamento) fechado → cobrança → payUrl ao cliente → webhoo
     });
 
     // --- outbox + billing_statement_refs na "transação do fechamento" ---
-    const outbox = new InMemoryOutboxRepository();
     const charges = new InMemoryStatementChargeRepository();
+    // R-OBX-5: o claim relê o demonstrativo REAL (status/reopenedAt) e a cobrança viva da tabela de cobranças.
+    const outbox = new InMemoryOutboxRepository({
+      readStatement: async (tenantId, statementId) => {
+        const current = await statements.findStatement(tenantId, statementId);
+        return current && { status: current.status, reopenedAt: current.reopenedAt, hasLiveCharge: (await charges.findLive(tenantId, statementId)) !== undefined };
+      },
+    });
     const refs = new InMemoryStatementRefRepository();
     await refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas" }, new Date());
     await outbox.enqueue({ tenantId: TENANT, statementId: statement.id, kind: "charge_create", provider: "asaas", seq: 1, payload: { customerId: "cus_1", amountCents: 10000, dueDate: "2026-12-10", method: "pix" } }, new Date());

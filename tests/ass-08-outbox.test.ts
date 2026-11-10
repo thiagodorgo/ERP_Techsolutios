@@ -6,8 +6,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
-import { InMemoryOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
-import { runDispatchOutbox, type DispatchAuditEvent } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
+import { InMemoryOutboxRepository, type StatementClaimReader } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
+import { chargeCreateClaimVerdict, runDispatchOutbox, type DispatchAuditEvent } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
 import { ProviderRateLimitedError } from "../src/modules/subscription-billing/providers/http/billing-errors.js";
 import type {
@@ -19,6 +19,10 @@ import type {
 
 const STMT = "11111111-1111-1111-1111-111111111111";
 const TENANT = "22222222-2222-2222-2222-222222222222";
+
+/** Leitor do demonstrativo para os testes que NÃO medem R-OBX-5: um `closed` sem cobrança viva — stub EXPLÍCITO (o dublê
+ * exige o leitor por construção; não há default permissivo). Os T-OBX-13..16 ligam o `StatementService` real. */
+const alwaysClosed: StatementClaimReader = async () => ({ status: "closed", reopenedAt: null, hasLiveCharge: false });
 
 /** Porta de pagamento falsa que grava cada chamada (o equivalente ao `recorded[]` do servidor falso, sem rede). */
 class RecordingPort implements PaymentProviderPort {
@@ -81,7 +85,7 @@ function enqueueCharge(repo: InMemoryOutboxRepository, now: Date, seq = 1, provi
 
 test("R-OBX-1 durável e idempotente: enqueue repetido = 1 linha; dispatch cria a cobrança 1×", async () => {
   const now = new Date("2026-12-01T12:00:00Z");
-  const repo = new InMemoryOutboxRepository(() => now);
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
   const first = await enqueueCharge(repo, now);
   const second = await enqueueCharge(repo, now); // mesma idempotency_key
   assert.equal(first.created, true);
@@ -103,7 +107,7 @@ test("R-OBX-1 durável e idempotente: enqueue repetido = 1 linha; dispatch cria 
 
 test("R-OBX-1 crash entre chamada e registro: linha PROCESSING órfã reconsulta ANTES de repetir (T-OBX-11)", async () => {
   const start = new Date("2026-12-01T12:00:00Z");
-  const repo = new InMemoryOutboxRepository(() => start);
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => start });
   const { row } = await enqueueCharge(repo, start);
 
   // Simula o crash: a 1ª chamada ao provedor foi feita, a cobrança nasceu no provedor, mas o registro não gravou.
@@ -122,8 +126,9 @@ test("R-OBX-1 crash entre chamada e registro: linha PROCESSING órfã reconsulta
   // A cobrança JÁ existe no provedor: findChargeByExternalReference a encontra.
   port.existingByRef = { chargeId: "pay_crashed", status: "pending" };
   // Marca a linha como PROCESSING órfã manualmente via um claim seguido de nada.
-  const claimed = await repo.claimNext({ enabledProviders: ["asaas"], now: new Date(start.getTime() + 60_000), claimedBy: "t", orphanMs: OUTBOX_ORPHAN_MS });
+  const claimed = await repo.claimNext({ enabledProviders: ["asaas"], now: new Date(start.getTime() + 60_000), claimedBy: "t", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
   assert.ok(claimed);
+  assert.equal(claimed.kind, "claimed");
   assert.equal(claimed.row.status, "PROCESSING");
 
   const before = port.created.length;
@@ -138,11 +143,11 @@ test("R-OBX-1 crash entre chamada e registro: linha PROCESSING órfã reconsulta
 
 test("R-OBX-1 crash + reconsulta vazia → NEEDS_REVIEW (nunca repete às cegas)", async () => {
   const start = new Date("2026-12-01T12:00:00Z");
-  const repo = new InMemoryOutboxRepository(() => start);
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => start });
   const { row } = await enqueueCharge(repo, start);
   const port = new RecordingPort();
   port.existingByRef = null; // reconsulta não acha
-  await repo.claimNext({ enabledProviders: ["asaas"], now: start, claimedBy: "t", orphanMs: OUTBOX_ORPHAN_MS });
+  await repo.claimNext({ enabledProviders: ["asaas"], now: start, claimedBy: "t", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
   const later = new Date(start.getTime() + OUTBOX_ORPHAN_MS + 60_000);
   const audits: DispatchAuditEvent[] = [];
   const result = await runDispatchOutbox({ repo, ports: { asaas: port }, now: () => later, onAudit: async (e) => void audits.push(e) });
@@ -155,7 +160,7 @@ test("R-OBX-1 crash + reconsulta vazia → NEEDS_REVIEW (nunca repete às cegas)
 
 test("R-OBX-2 backoff e FAILED na 8ª falha + trilha (T-OBX-7..8)", async () => {
   let clock = new Date("2026-12-01T12:00:00Z");
-  const repo = new InMemoryOutboxRepository(() => clock);
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => clock });
   const { row } = await enqueueCharge(repo, clock);
   const port = new RecordingPort();
   port.nextError = new Error("boom");
@@ -180,7 +185,7 @@ test("R-OBX-2 backoff e FAILED na 8ª falha + trilha (T-OBX-7..8)", async () => 
 
 test("R-OBX-2 retry reabre FAILED → PENDING e dispatch volta a tentar (T-OBX-9)", async () => {
   const now = new Date("2026-12-01T12:00:00Z");
-  const repo = new InMemoryOutboxRepository(() => now);
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
   const { row } = await enqueueCharge(repo, now);
   await repo.markFailed(TENANT, row.id, "boom", now);
   const reopened = await repo.retry(TENANT, row.id, now);
@@ -193,7 +198,7 @@ test("R-OBX-2 retry reabre FAILED → PENDING e dispatch volta a tentar (T-OBX-9
 
 test("R-OBX-3 canal desligado: dispatcher não roda, linha segue PENDING (T-OBX-10)", async () => {
   const now = new Date("2026-12-01T12:00:00Z");
-  const repo = new InMemoryOutboxRepository(() => now);
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
   const { row } = await enqueueCharge(repo, now);
   // Nenhum provedor ligado → ports vazio.
   const result = await runDispatchOutbox({ repo, ports: {}, now: () => now });
@@ -204,7 +209,7 @@ test("R-OBX-3 canal desligado: dispatcher não roda, linha segue PENDING (T-OBX-
 
 test("R-OBX-4 provedor desligado NÃO é alcançado (T-OBX-12): 0 chamada ao Asaas, linha PENDING com skip_reason", async () => {
   const now = new Date("2026-12-01T12:00:00Z");
-  const repo = new InMemoryOutboxRepository(() => now);
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
   const { row: asaasRow } = await enqueueCharge(repo, now, 1, "asaas"); // Asaas DESLIGADO
   const { row: focusRow } = await repo.enqueue(
     { tenantId: TENANT, statementId: STMT, kind: "charge_create", provider: "mercadopago", seq: 2, payload: { customerId: "c", amountCents: 100, dueDate: "2026-12-10", method: "pix" } },
@@ -224,7 +229,7 @@ test("R-OBX-4 provedor desligado NÃO é alcançado (T-OBX-12): 0 chamada ao Asa
 
 test("429 → reschedule com next_attempt_at = now + retryAfter, sem FAILED", async () => {
   const now = new Date("2026-12-01T12:00:00Z");
-  const repo = new InMemoryOutboxRepository(() => now);
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
   const { row } = await enqueueCharge(repo, now);
   const port = new RecordingPort();
   port.nextError = new ProviderRateLimitedError(2000);
