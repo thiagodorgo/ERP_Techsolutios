@@ -217,3 +217,10 @@
   revertida, `git diff --exit-code` = 0. **OK.**
 - **M-A3b re-medida** com o storage embrulhado → `not ok 4 - RR-A.3` "o /file não serviu: {…503
   receipt_storage_unavailable…}" — agora exatamente o texto do plano · revertida, `git diff --exit-code` = 0.
+- Commit `e2b2ba89` + push (`33613d92..e2b2ba89`). Vermelho-controle REFEITO com o teste commitado no
+  `w-dev525-vc` → `not ok 1..5` · `w-dev525-vc` limpo.
+
+## RETOMADA 5 (06:19)
+
+- head `e2b2ba8957edc0bef78b373acd02da6ea36c75cc` · feito: F0, F1a, F1d, F1b, F1e, F1c · falta: F2a → F2b → F3 → F4a … F8 · próximo comando:
+  escrever RR-B.1 e RR-B.2 em `tests/b-rdv-comprovante-receipt-routes.test.ts` · arquivos meio escritos: nenhum.
