@@ -605,6 +605,65 @@ if (!connectionString) {
     await assertNothingChanged(h, home, email, before);
   });
 
+  // O vermelho-controle original da S1 ("admin de A reseta; trocar para B com a sessão do reset falha"), ponta a
+  // ponta com o reset REAL: com vínculo em B o reset é recusado (S1·a); sem vínculo, a sessão da provisória não
+  // troca de organização nem liga a conta de B — só troca a senha, e aí volta a valer tudo (P-SEG-2).
+  test("S1·h — ponta a ponta: a sessão da provisória do reset não troca de organização nem religa; depois da troca de senha, religa", async () => {
+    const h = await harness();
+    const email = `s1h-${Date.now()}@example.com`;
+    const home = await newOrg(h, "h-casa", email, "SenhaCasaS1h!");
+    const other = await newOrg(h, "h-outra", email, "SenhaOutraS1h!");
+    const admin = await adminOf(h, home);
+    const reset = await call(h, `/api/v1/auth/users/${home.userId}/reset-password`, {
+      method: "POST",
+      headers: admin.headers,
+      body: {},
+    });
+
+    assert.equal(reset.status, 200, "a identidade do alvo só está na organização do admin");
+
+    const temporary = reset.body.data.temporary_password as string;
+    const session = await login(h, home.tenantId, email, temporary);
+
+    assert.equal(session.status, 200, "a provisória entra");
+
+    const headers = { authorization: `Bearer ${session.body.data.access_token}` };
+    const switchTenant = await call(h, "/api/v1/auth/active-tenant", {
+      method: "POST",
+      headers,
+      body: { tenantId: home.tenantId },
+    });
+
+    assert.equal(switchTenant.status, 403);
+    assert.equal(switchTenant.body.error?.reason, "password_change_required");
+
+    const relinkBefore = await call(h, "/api/v1/auth/identity-links", {
+      method: "POST",
+      headers,
+      body: { tenantId: other.tenantId, email, password: other.password },
+    });
+
+    assert.equal(relinkBefore.status, 403, "com a provisória a conta da outra organização não é ligada");
+    assert.equal(relinkBefore.body.error?.reason, "password_change_required");
+
+    const changed = await call(h, "/api/v1/auth/password", {
+      method: "POST",
+      headers,
+      body: { currentPassword: temporary, newPassword: "SenhaEscolhidaS1h!" },
+    });
+
+    assert.equal(changed.status, 200);
+
+    const fresh = await login(h, home.tenantId, email, "SenhaEscolhidaS1h!");
+    const relinkAfter = await call(h, "/api/v1/auth/identity-links", {
+      method: "POST",
+      headers: { authorization: `Bearer ${fresh.body.data.access_token}` },
+      body: { tenantId: other.tenantId, email, password: other.password },
+    });
+
+    assert.equal(relinkAfter.status, 201, "com a senha escolhida pelo próprio usuário, a religação volta a valer");
+  });
+
   test("S1·g — UEM-03: nenhuma resposta do reset (corpo e cabeçalhos) nem auditoria do reset carrega id ou nome de organização", async () => {
     const h = await harness();
     const email = `s1g-${Date.now()}@example.com`;
