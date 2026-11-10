@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **786** |
-| IDs distintos | 775 |
-| **ABERTAS** | **591** |
+| Cabecalhos `## P-` | **787** |
+| IDs distintos | 776 |
+| **ABERTAS** | **592** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **529** |
+| — das quais **ativas nesta rodada** | **530** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 191 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **786 cabecalhos para 775 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **787 cabecalhos para 776 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 259
+## ABERTAS · balde A — material — 260
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -334,6 +334,7 @@
 | `P-ASS07-REGIME-VOCAB-FECHADO` | 12951 | MÉDIA | sim | P-ASS07-REGIME-VOCAB-FECHADO (2026-11-09) — classificação de regime fiscal é fail-open p |
 | `P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO` | 12981 | MÉDIA | sim | P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO (2026-11-09) — "Versão do gestor" em conflito de d |
 | `P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA` | 12988 | MÉDIA | sim | P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA (2026-11-09) — falha de infraestrutura no sync de  |
+| `P-ASS08-OBX5-EAGER-E-CANCEL` | 12996 | MÉDIA | sim | P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na |
 
 ## ABERTAS · balde B — processo/registro — 270
 

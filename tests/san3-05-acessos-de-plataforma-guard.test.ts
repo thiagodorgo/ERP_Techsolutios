@@ -304,9 +304,21 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.#tenantsWithRefs", "this.client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "INJETADO", "×1"),
     "B-ASS-08: `SELECT DISTINCT tenant_id FROM billing_statement_refs` (l.72) lê SÓ a tabela GLOBAL de ids (sem RLS, sem dado de negócio — M5, exceção declarada S8); é o índice que lista as organizações candidatas do claim POR ORGANIZAÇÃO (plano §3.8) sem varrer tabela FORCE; nenhuma tabela FORCE é tocada.",
   ],
+  // Conserto J-522 (R-OBX-5, D2): o claim passou de 1 comando (`WITH picked … UPDATE`) a 3 passos na MESMA transação —
+  // (1) `SELECT … FOR UPDATE SKIP LOCKED LIMIT 1`, (2) releitura do demonstrativo + cobrança viva, (3) `UPDATE` para
+  // PROCESSING | SKIPPED | NEEDS_REVIEW. Logo billing_outbox ×1 → ×5 e duas chaves NOVAS para o mesmo método, todas no
+  // callback de `withTenantRlsBudget`. Literal L0 (123) intocado: nenhuma tabela FORCE nova.
   [
-    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
-    "B-ASS-08: o claim `UPDATE … WHERE id = (SELECT id … FOR UPDATE SKIP LOCKED LIMIT 1)` em billing_outbox (FORCE) roda, organização a organização, no callback de `withTenantRlsBudget(this.client, tenantId, …)` (l.105), cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.128); dois workers nunca pegam a mesma linha. Provado em tests/ass-08-channel-db.test.ts (T-OBX-db-1 e o vermelho-controle: sem GUC a tabela devolve zero) sob papel NOSUPERUSER NOBYPASSRLS.",
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×5"),
+    "B-ASS-08 / R-OBX-5 (conserto J-522): os 5 acessos a billing_outbox (FORCE) do claim — `SELECT … FOR UPDATE SKIP LOCKED LIMIT 1`, o `EXISTS` da própria fila (outra charge_create SENT/PROCESSING) na releitura, e os 3 `UPDATE … WHERE id = $1` (PROCESSING | SKIPPED + skip_reason | NEEDS_REVIEW + last_error) — rodam, organização a organização, no MESMO callback de `withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, …)`, cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.128); dois workers nunca pegam a mesma linha. Provado em tests/ass-08-channel-db.test.ts (T-OBX-db-1, T-OBX-db-3 e o vermelho-controle: sem GUC a tabela devolve zero) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08 / R-OBX-5 (conserto J-522): releitura do demonstrativo (`SELECT s.status, s.reopened_at … FROM subscription_statements s WHERE s.id = $1`) na MESMA transação do claim (`withTenantRlsBudget`, GUC setado na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização da linha reclamada — pago/cancelado/reaberto/refechado → SKIPPED, nunca sai. Provado em T-OBX-db-3 sob papel NOSUPERUSER NOBYPASSRLS (sem GUC o demonstrativo seria invisível e a linha iria a NEEDS_REVIEW statement_not_found, nunca a PROCESSING).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08 / R-OBX-5 (conserto J-522): releitura da cobrança viva (`EXISTS (SELECT 1 FROM subscription_statement_charges c WHERE c.statement_id = s.id AND c.status IN ('pending','confirmed'))`) na MESMA transação do claim (`withTenantRlsBudget`, GUC setado na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização — cobrança viva já existente → NEEDS_REVIEW charge_already_exists, nunca 2ª cobrança. Provado em T-OBX-db-3 sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
   [
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.retry", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
