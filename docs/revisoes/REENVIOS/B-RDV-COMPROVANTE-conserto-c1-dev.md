@@ -409,3 +409,11 @@
   - **M-D3b** (a guarda vira a do molde do `from < 14`, que só confere a tabela — a variante `molde` do
     `patch_d1.mjs`) → RR-D.3b `SqliteException(1): while executing, duplicate column name: server_id` · revertida.
     **OK.**
+- Commit `80c84d08` + push (`8903027b..80c84d08`). Vermelho-controle REFEITO com o teste commitado no `w-dev525-vc`
+  → `+0 -2: Some tests failed` · `w-dev525-vc` limpo.
+
+## RETOMADA 10 (07:14)
+
+- head `80c84d080cec2271ac3e3abc353ec2edca0e77c5` · feito: F0–F3, F4a, F4b · falta: F5a → F5b → F5c → F6a → F6b → F7 → F8 · próximo comando: ler o
+  arnês das sondas do app (`atk_app_probe_test.dart`, `topo2_a01_release_probe_test.dart`) e escrever RR-C.1, RR-C.2 e
+  RR-C.3 em `test/core/sync/brdvcomp_c1_ordem_envio_test.dart` · arquivos meio escritos: nenhum.
