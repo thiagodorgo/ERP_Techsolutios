@@ -242,7 +242,7 @@ test("RR1.1 técnico dono anexa comprovante: 201 stored; GET sem bucket/key/path
     assert.equal(upload.status, 201, JSON.stringify(upload.body));
     const receiptId = upload.body.data?.receiptId as string;
     assert.ok(receiptId, "201 sem receiptId");
-    assert.equal(upload.body.data?.uploadStatus, "stored");
+    assert.equal(upload.body.data?.uploadStatus, "uploaded");
 
     const detail = await fetch(`${baseUrl}/api/v1/expense-reports/${reportId}/items/${itemId}/receipt`, {
       headers: authHeaders(seed.tenantA, seed.technicianA, "technician"),
@@ -250,7 +250,7 @@ test("RR1.1 técnico dono anexa comprovante: 201 stored; GET sem bucket/key/path
     const detailBody = await readJson(detail);
     assert.equal(detail.status, 200, JSON.stringify(detailBody));
     assert.equal(detailBody.data?.receiptId, receiptId);
-    assert.equal(detailBody.data?.uploadStatus, "stored");
+    assert.equal(detailBody.data?.uploadStatus, "uploaded");
     const downloadUrl = detailBody.data?.downloadUrl as string;
     assert.ok(downloadUrl, "GET sem downloadUrl");
 
@@ -279,7 +279,7 @@ test("RR1.2 field_technician anexa no próprio relatório: 201 (permissão nova 
 
     const upload = await postReceipt(baseUrl, seed.tenantA, seed.fieldTechnicianA, "field_technician", reportId, itemId, receiptForm({ clientActionId: "rr12-attach-1", bytes, sha256: digest }));
     assert.equal(upload.status, 201, JSON.stringify(upload.body));
-    assert.equal(upload.body.data?.uploadStatus, "stored");
+    assert.equal(upload.body.data?.uploadStatus, "uploaded");
   });
 });
 
@@ -399,7 +399,7 @@ test("RR3.1 replay do mesmo client_action_id com o mesmo conteúdo devolve o mes
     const replay = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, form());
     assert.ok(replay.status === 200 || replay.status === 201, JSON.stringify(replay.body));
     assert.equal(replay.body.data?.receiptId, firstId, "replay devolveu outro comprovante");
-    assert.equal(replay.body.data?.uploadStatus, "stored");
+    assert.equal(replay.body.data?.uploadStatus, "uploaded");
   });
 });
 

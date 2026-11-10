@@ -186,7 +186,7 @@ export class PrismaExpenseManagementRepository implements ExpenseSyncTransaction
 
   async findLatestStoredExpenseReceipt(input: { readonly tenantId: string; readonly itemId: string }): Promise<ExpenseReceiptRecord | undefined> {
     const receipt = await this.client.expenseReceipt.findFirst({
-      where: { tenant_id: input.tenantId, item_id: input.itemId, upload_status: "stored" },
+      where: { tenant_id: input.tenantId, item_id: input.itemId, upload_status: "uploaded" },
       orderBy: [{ created_at: "desc" }],
     });
     return receipt ? mapExpenseReceiptRecord(receipt) : undefined;

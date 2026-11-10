@@ -205,7 +205,9 @@ export class ExpenseReceiptService {
           itemId: item.id,
           localHash: computedSha256,
           mimeType: stored.mimeType,
-          uploadStatus: "stored",
+          // O CHECK real da coluna (migration 20260619, expense_receipts_upload_status_check) só admite
+          // local|pending_upload|uploading|uploaded|failed — "uploaded" é o estado "guardado no servidor".
+          uploadStatus: "uploaded",
           fileKey: stored.storageKey ?? stored.fileId,
         });
 

@@ -344,7 +344,7 @@ export class InMemoryExpenseManagementRepository implements ExpenseManagementRep
 
   async findLatestStoredExpenseReceipt(input: { readonly tenantId: string; readonly itemId: string }): Promise<ExpenseReceiptRecord | undefined> {
     const stored = [...this.expenseReceipts.values()]
-      .filter((receipt) => receipt.tenantId === input.tenantId && receipt.itemId === input.itemId && receipt.uploadStatus === "stored")
+      .filter((receipt) => receipt.tenantId === input.tenantId && receipt.itemId === input.itemId && receipt.uploadStatus === "uploaded")
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
     return stored[0];
   }
