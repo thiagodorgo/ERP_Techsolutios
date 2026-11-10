@@ -46,3 +46,18 @@ As fatias que não dependem de D4/D5 vêm primeiro: S4 (com o Achado 3), S6, S3,
 ## RETOMADA 1
 
 Feito: F0, linha de base N = 122, divergências D1–D7, S4 (com o Achado 3) verde com 3 mutações provadas. Próximo comando: escrever `tests/users-acesso-seg-email-duplicado.test.ts` (S6) e rodá-lo na base para o vermelho-controle.
+
+## S6 — e-mail duplicado (ajuste 9, REQUISITO)
+
+- Testes escritos antes: `tests/users-acesso-seg-usuarios.test.ts` (memória, rota real) e `tests/users-acesso-seg-usuarios-db.test.ts` (Prisma pela rota real, serviço ligado ao papel efêmero; arnês com `application_name` próprio para a barreira da S5).
+- Vermelho-controle (ramo com a S4, sem o código da S6) → `node scripts/run-backend-tests.mjs` nos dois arquivos → `# tests 4 · pass 1 · fail 3`: `S6·a (Prisma)` 400 ≠ 409 (o P2002 caía no 400 genérico com o texto do Prisma no corpo); `S6·b (Prisma)` `[201, 400]` ≠ `[201, 409]`; `S6 (memória)` 201 ≠ 409 (a memória criava o duplicado) → vermelho medido.
+- Primeiro verde parcial, e o achado que ele deu: com o mapeamento só pelos campos do adaptador, o Prisma seguiu 400. Sondas (scripts temporários na raiz do worktree, apagados) → sob o SUPERUSUÁRIO o P2002 traz `meta.driverAdapterError.cause.constraint.fields = ["tenant_id","email"]`; sob o papel efêmero NOSUPERUSER NOBYPASSRLS o mesmo erro vem SEM `constraint` (com RLS ligado o Postgres omite o DETAIL com a chave), só com `originalMessage` nomeando `users_tenant_id_email_key`. Um teste só com o superusuário da CI passaria com o código que falha em produção.
+- Código: `prisma-core-saas.service.ts` (`createUser` captura o P2002 de `User` com `email` nos campos OU com o nome do índice na mensagem → `CoreSaasError(409, "CONFLICT", "user_email_conflict")`; a transação do store volta inteira); `core-saas.service.ts` (memória: o mesmo 409 antes de gravar).
+- Verde → os dois arquivos + `core-saas`, `core-saas-prisma`, `core-saas-role-authority`, `core-saas-role-authority-db` → `# tests 53 · pass 53 · fail 0`. Commit `8ffde055`.
+- Mutação M-S6a (sem o mapeamento) → `pass 2 · fail 2` (S6·a, S6·b) → revertida → limpo.
+- Mutação M-S6b (sem a leitura pelo nome do índice, só os campos) → `pass 1 · fail 2` sob o papel efêmero (S6·a, S6·b) → revertida → limpo. Prova que o teste mede o caminho de produção (RLS), não o do superusuário.
+- Mutação M-S6c (memória sem a checagem) → `pass 0 · fail 1` → revertida → limpo.
+
+## RETOMADA 2
+
+Feito: S4 e S6. Próximo comando: escrever os testes da S3 (autodesativação, auto-rebaixamento, último admin) nos dois arquivos `users-acesso-seg-usuarios*` e rodá-los para o vermelho-controle.
