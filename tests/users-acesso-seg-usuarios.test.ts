@@ -18,6 +18,8 @@ import type { CoreSaasRegistry, Tenant, User } from "../src/core-saas.js";
 //        (409 `cannot_deactivate_self`) nem tira de si o papel de administrador (409
 //        `cannot_demote_self`); e nenhuma mudança deixa a organização sem administrador ATIVO (409
 //        `last_tenant_admin`, por desativação ou por rebaixamento). Administrador inativo não conta.
+//   S8 — auditoria do `user.updated` com antes/depois por LISTA PERMITIDA (plano original, passo 3):
+//        só `name`, `status` e `roles`, nunca e-mail nem campo novo que o registro venha a ganhar.
 // -----------------------------------------------------------------------------------------------
 
 type Seed = {
@@ -203,6 +205,45 @@ test("S3·m4 (memória, serviço) — nenhuma mudança deixa a organização sem
     isLastAdmin,
     "o que sobrou é o último: rebaixá-lo também é recusado",
   );
+});
+
+test("S8·m (memória, rota) — user.updated grava antes e depois só com name, status e roles (lista permitida, sem e-mail)", async () => {
+  await withApi(async ({ baseUrl, seed, core }) => {
+    const created = await requestJson(baseUrl, "/api/v1/users", {
+      method: "POST",
+      headers: asAdmin(seed.tenantA, seed.adminA),
+      body: { name: "Beltrano", email: "beltrano@example.com", roles: ["viewer"] },
+    });
+
+    assert.equal(created.status, 201);
+
+    const userId = created.body.data.id as string;
+    const updated = await requestJson(baseUrl, `/api/v1/users/${userId}`, {
+      method: "PATCH",
+      headers: asAdmin(seed.tenantA, seed.adminA),
+      body: { name: "Beltrano Souza", roles: ["manager", "operator"], status: "inactive" },
+    });
+
+    assert.equal(updated.status, 200);
+
+    const event = core
+      .getAuditEventsForTenant(seed.tenantA.id)
+      .filter((candidate) => candidate.action === "user.updated")
+      .at(-1);
+    const metadata = (event?.metadata ?? {}) as Record<string, unknown>;
+    const before = metadata.before as Record<string, unknown> | undefined;
+    const after = metadata.after as Record<string, unknown> | undefined;
+
+    assert.deepEqual(Object.keys(before ?? {}).sort(), ["name", "roles", "status"], "antes: só a lista permitida");
+    assert.deepEqual(Object.keys(after ?? {}).sort(), ["name", "roles", "status"], "depois: só a lista permitida");
+    assert.deepEqual(before, { name: "Beltrano", status: "active", roles: ["viewer"] });
+    assert.deepEqual(after, { name: "Beltrano Souza", status: "inactive", roles: ["manager", "operator"] });
+    assert.equal(
+      JSON.stringify(metadata).includes("beltrano@example.com"),
+      false,
+      "o e-mail não entra na auditoria da atualização",
+    );
+  });
 });
 
 async function requestJson(

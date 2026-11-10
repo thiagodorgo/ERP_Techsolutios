@@ -33,6 +33,7 @@ import {
   lastTenantAdminError,
   removesActiveTenantAdmin,
 } from "./tenant-admin-guard.js";
+import { toUserAuditSnapshot } from "./user-audit-snapshot.js";
 
 // B-O6R-01 — modelo de identidade em memória (espelho do prisma: auth_identities +
 // auth_identity_links + trilha). `attachedVia` espelha a coluna `attached_via` (opção A da
@@ -350,12 +351,15 @@ export class CoreSaasRegistry {
 
     const savedUser = this.store.saveUser(updatedUser);
 
+    // B-USERS-ACESSO-SEG (S8) — antes/depois por lista permitida (nome, status, papéis).
     this.recordAudit({
       action: "user.updated",
       actor_user_id: actor?.userId ?? "system",
       tenant_id: savedUser.tenantId,
       metadata: {
         userId: savedUser.id,
+        before: toUserAuditSnapshot(user),
+        after: toUserAuditSnapshot(savedUser),
       },
     });
 
