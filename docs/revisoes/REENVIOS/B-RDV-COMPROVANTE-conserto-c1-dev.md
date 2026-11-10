@@ -111,3 +111,11 @@
 - **M-A6** (na compensação, apagar a re-leitura e apagar sempre) → `not ok 1 - RR-A.6` "a compensação apagou o
   objeto de uma linha commitada" `expected: 1 · actual: 0` (o `/file` daria 404 em seguida) · revertida,
   `git diff --exit-code -- src tests mobile` = 0. **OK.**
+- Commit `895295ad` + push (`ecb51fa6..895295ad`). Vermelho-controle REFEITO com o teste commitado
+  (`git -c core.autocrlf=false checkout 895295ad -- tests/b-rdv-comprovante-receipt-storage.test.ts` no
+  `w-dev525-vc`) → `not ok 1 - RR-A.6` `500 × 400` · `w-dev525-vc` limpo (`git status` vazio).
+
+## RETOMADA 2 (05:54)
+
+- head `895295adc4c2d5ad3523a3e13b6b22c58cad4b30` · feito: F0, F1a, F1d · falta: F1b → F1e → F1c → F2a → F2b → F3 → F4a … F8 · próximo comando:
+  escrever RR-A.2 e RR-A.2b em `tests/b-rdv-comprovante-receipt-storage.test.ts` · arquivos meio escritos: nenhum.
