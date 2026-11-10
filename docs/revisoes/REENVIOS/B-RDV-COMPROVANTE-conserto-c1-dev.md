@@ -378,3 +378,11 @@
     'item-server-1' Actual: <null>` · revertida. **OK.**
   - **M-D2** (tirar `'server_id': item.serverId` do `_itemToJson`) → RR-D.2 `Expected: 'item-server-11' Actual:
     <null>` · revertida. **OK.**
+- Commit `8f2803ca` + push (`3f764cf3..8f2803ca`). Vermelho-controle REFEITO com o teste commitado no `w-dev525-vc`
+  → `+0 -2: Some tests failed` · `w-dev525-vc` limpo.
+
+## RETOMADA 9 (07:08)
+
+- head `8f2803cab9bde81a969b3f5e0bccc422049c0145` · feito: F0–F3, F4a · falta: F4b → F5a → F5b → F5c → F6a → F6b → F7 → F8 · próximo comando:
+  escrever RR-D.3 e RR-D.3b (migração 14 → 15) no molde do `bfilausuario_drift_user_id_test.dart` · arquivos meio
+  escritos: nenhum.
