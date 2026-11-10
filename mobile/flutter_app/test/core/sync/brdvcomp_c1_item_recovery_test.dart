@@ -224,11 +224,8 @@ void main() {
 
       await c1.pass();
 
-      expect(
-        c1.server.uploads.map((u) => u.itemServerId).toList(),
-        ['srv-item-1'],
-        reason: 'o upload não saiu com o id do result_ref',
-      );
+      final sentIds = c1.server.uploads.map((u) => u.itemServerId).toList();
+      expect(sentIds, ['srv-item-1'], reason: 'upload sem o id do result_ref');
       expect((await c1.action(c1.receiptAction)).status, SyncStatus.synced);
       expect(
         c1.server.sentItemCreate,

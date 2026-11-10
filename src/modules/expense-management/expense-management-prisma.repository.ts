@@ -43,11 +43,13 @@ const anyUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 /**
  * Conserto c1 do #525 (§12.4) — teto da espera pela trava do relatório: abaixo dos 5 s da transação interativa do
  * Prisma. O PostgreSQL cancela a espera com 55P03 (`lock_not_available`), que a lista transitória do módulo leva a
- * 503 `sync_busy`. É `SET LOCAL` (o 3º argumento `true`): vale para tudo o que vem depois da trava na MESMA
- * transação, o claim inclusive, e morre com ela. Molde: `withTenantRlsBudget` (`src/database/rls.ts`).
+ * 503 `sync_busy`. É `SET LOCAL`: vale para tudo o que vem depois da trava na MESMA transação, o claim inclusive,
+ * e morre com ela. Molde: `withTenantRlsBudget` (`src/database/rls.ts`), que faz o mesmo com a função `set_config`
+ * e `is_local = true`. Aqui a forma é a instrução `SET LOCAL`, de efeito idêntico, porque o guard 3 de
+ * `tests/auth-invariant-guards.test.ts` reserva a função ao `rls.ts` (a fronteira do GUC de identidade). O `SET`
+ * não aceita parâmetro de ligação: o literal `'2000ms'` da instrução É esta constante.
  */
 export const EXPENSE_REPORT_LOCK_TIMEOUT_MS = 2_000;
-const EXPENSE_REPORT_LOCK_TIMEOUT_SETTING = `${EXPENSE_REPORT_LOCK_TIMEOUT_MS}ms`;
 
 /**
  * Repositório sobre um executor Prisma. Na transação de sync ele é construído com o `tx` de `withTenantRls`
@@ -107,7 +109,7 @@ export class PrismaExpenseManagementRepository implements ExpenseSyncTransaction
   async lockReportForUpdate(input: { readonly tenantId: string; readonly reportId: string }): Promise<ExpenseReport | undefined> {
     // id que não é UUID não vai ao `::uuid` do SQL cru: cai na leitura de sempre (que não acha nada).
     if (!anyUuidPattern.test(input.tenantId) || !anyUuidPattern.test(input.reportId)) return this.getReport(input);
-    await this.client.$executeRaw`SELECT set_config('lock_timeout', ${EXPENSE_REPORT_LOCK_TIMEOUT_SETTING}, true)`;
+    await this.client.$executeRaw`SET LOCAL lock_timeout = '2000ms'`; // = EXPENSE_REPORT_LOCK_TIMEOUT_MS
     await this.client.$queryRaw`
       SELECT id FROM expense_reports
       WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.reportId}::uuid
