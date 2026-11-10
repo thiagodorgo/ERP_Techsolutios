@@ -85,7 +85,7 @@ PRONTO PARA REVISÃO — PR #520
 
 ## RETOMADA k2 — conserto + teste
 
-- `sync_replay_service.dart`: 3 hunks dentro do escopo (catch de `_sendChunk`, `_isExpenseDomainRefusal` nova, acento da linha 332). `flutter test …/bo6r03b_expense_http_errors_test.dart` = 10/10 verde. Commit `21468f73`.
+- `sync_replay_service.dart`: 3 hunks dentro do escopo (catch de `_sendChunk`, `_isExpenseDomainRefusal` nova, acento da linha 332). `flutter test …/bo6r03b_expense_http_errors_test.dart` = 10/10 verde. Commit `7a479474`. *(Correção de registro, 2026-11-09: aqui estava `21468f73`, órfão de um rebase local com `fixup!`: `git merge-base --is-ancestor 21468f73 77e5ed30` dá rc 1 e nenhuma ref remota o contém. O commit que está no histórico é o `7a479474`, com o mesmo `sync_replay_service.dart` e o mesmo JSON de envelopes (blob idêntico); o teste `bo6r03b_expense_http_errors_test.dart` difere entre os dois (408 linhas no órfão, 438 no `7a479474`). Fonte: ata `J-520-b-o6r-03b`; o 10/10 foi reexecutado pelo porteiro do #520 em `e7e8d678`.)*
 - Mutações MC1–MC6 (uma por vez, revertidas por edição inversa; `git diff --stat` = 1 arquivo antes de rodar):
 
 | Mutação | Esperado (§6) | Observado |
