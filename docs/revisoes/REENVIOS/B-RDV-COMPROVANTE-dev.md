@@ -176,3 +176,54 @@
   rota nos DOIS sentidos + caminho Dart == `/api/v1`+`EXPENSE_RECEIPT_ROUTE_PATH`).
 - Mutações: **M4** (blob apagado também na recusa 422) → RR4.2 `not ok` · **M5** (campo `sha256` renomeado no
   FormData) → RR5 `not ok`. Revertidas por edição inversa; verdes de novo; `grep MUTACAO` = 0.
+
+## F8 — Registro
+
+- `pendencias.md`: `P-RDV-COMPROVANTE-SEM-UPLOAD` e `P-B-RDV-COMPROVANTE` **FECHADAS NA AUTORIA** (com a
+  conciliação `uploaded`×`stored` escrita na própria pendência); `P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO`
+  ganha a decisão do dono (`D-DESPESA-VERSAO-GESTOR-ESCONDER`: ESCONDER) e o dono `B-RDV-COMPROVANTE` —
+  continua ABERTA porque o §G.3 PROÍBE `sync_screen.dart` neste PR (a tela é fatia própria; registrado como
+  o briefing manda). Índice regenerado pelo gerador oficial (ABERTAS 591→589+1 da main, FECHADAS 191→193).
+- `docs/mobile-sync-contracts.md`: seção nova da rota multipart do comprovante (contrato completo, erros,
+  idempotência, offline, leitura sem bucket/key/path); nota do lote atualizada (o tipo não vira mais
+  "fica local até B-RDV-COMPROVANTE"). `docs/api.md`: frase atualizada.
+- Commit `701e88dd`.
+
+## F9 — Bateria final
+
+- `dart format --set-exit-if-changed lib test` · acusa SÓ `test/features/bsan313_minhas_os_escopo_test.dart`
+  · **PRÉ-EXISTENTE da main** (provado: o blob de `origin/main` do mesmo arquivo também falha no format;
+  o arquivo está byte-idêntico à main no meu ramo — diff vazio). Não consertado: fora do escopo.
+- `flutter analyze` · No issues found.
+- 1º `flutter test` completo · `+1049 -1` · vermelho único: `telemetry_test.dart` caso 16 (foreground stop)
+  — re-rodado isolado 3×: verde, vermelho, verde → **FLAKY pré-existente de timing**, domínio que o bloco
+  não toca (a memória da noite de 09/11 já registrava 2 flaky na main).
+- 1º `npm test` completo (sem Postgres/Redis locais) · `4028 · pass 3887 · fail 12 · skipped 129` · triagem:
+  **7 de ambiente local** (role-authority sem `DATABASE_URL` — isolado com URL fictícia = 12/12 pass;
+  2 checklist-jobs + 3 fila Redis + 1 writer Redis = `ECONNREFUSED`, Redis não sobe nesta máquina de dev;
+  no CI com serviços eles rodam) e **5 meus de verdade — os GUARDS DE CENSO que o diff legitimamente move**:
+  C1 (Busboy V1–V5 → V6 nominal), C4 (wrapper fino `configureExpenseReceiptScannerForTests` na allowlist,
+  como as 3 vias), T1/T14 (instantâneo `o6r07c-classificacao-vias.json` regenerado pelo caminho oficial
+  `node --import tsx tests/helpers/o6r07c-census.ts gravar …`, com o POST classificado **R** na tabela do
+  gerador — mesma família das rotas de escrita de RDV — e os 2 GET como LEITURA; diff de 12 linhas revisado
+  chave a chave), órfãs (28→27 COM nome: `expense_receipt:attach` ganhou rota). Guards re-rodados:
+  upload-gate-census + matriz-x-catalogo `22/22` · o6r07c-census-guard `32/32`.
+- `git merge origin/main` (a main andou para `75572269` com #523/#524 durante o dev): conflito ÚNICO na
+  pendência da Versão do gestor — resolvido mantendo OS DOIS lados (minha decisão do dono + o apenso X4 e a
+  nota do porteiro que a main trouxe); índice regenerado. Diff contra a base `e7e8d678` = exatamente os
+  arquivos do bloco; `CLAUDE.md`/`AGENTS.md`/`prisma/**`/`sync_screen.dart`/`Kpis/**`/`.github/**` INTOCADOS.
+- Pós-merge: `npm run check` 0 · `npm run lint` 0 · `node scripts/migration-transaction-guard.mjs` 0
+  (128 migrações, 0 violações, NENHUMA nova) · `git diff --check` 0.
+- `npm run build` em PARALELO com a suíte → tropeçou na sonda transitória `src/zz-o6r06-c6-probe.ts` que um
+  teste da suíte cria e apaga (corrida do MEU paralelismo, não defeito); re-rodado sozinho abaixo.
+- 2º `npm test` (pós-guards, pós-merge) · `4028 · pass 3892 · fail 7 · skipped 129` · os 7 = EXATAMENTE os de
+  ambiente nomeados acima (role-authority sem `DATABASE_URL` + 6 de Redis `ECONNREFUSED`) — os 5 dos guards
+  ficaram verdes. 2º `flutter test` · `+1049 -1` · o MESMO flaky de telemetry (1/3 intermitente), nenhum do
+  bloco. `npm run build` re-rodado sozinho (sonda transitória já limpa pela suíte) · exit 0.
+- **M do bloco = N + 14 EXATO (57 → 71):** backend 28 → **37** sem banco (`expense-management-routes` 14 +
+  `expense-sync-fingerprint` 6 + os 2 guards do 03b 8 + **RR1-RR3 8** + **RR5 1**) **+ 2 RR-db** (Postgres
+  descartável, F4) = **39**; app 29 → **32** (**RR4 3**). Grupos: RR1 4 · RR2 2 · RR3 2 · RR4 3 · RR5 1 ·
+  RR-db 2 = 14.
+- Mutações do bloco (6, uma por vez, todas provadas vermelhas e revertidas por edição inversa, resto 0):
+  M1 permissão · M2 dono do relatório · M3 prova de payload · M4 blob na recusa · M5 campo multipart ·
+  M-db recibo não completado.
