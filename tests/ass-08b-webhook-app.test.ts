@@ -104,7 +104,11 @@ test("canal LIGADO (resolvedor injetado): o pedido não passa pelo ator — Auth
       // Sem autenticidade: o 401 é o do router (sem motivo), não o do ator — mesmo com um Bearer inválido no pedido.
       const unauthorized = await post(base, billingWebhookPath("asaas"), body, { authorization: "Bearer token-invalido" });
       assert.deepEqual(unauthorized, { status: 401, body: { error: { code: "unauthorized" } } });
-      // Fila indisponível (sem Redis neste teste): 503 SEM detalhe, nunca o 500 HTML do Express (R-WH-7).
+      // Fila que FALHA (injetada — determinístico com ou sem Redis no ambiente; na suíte da CI o Redis EXISTE e o caminho
+      // real enfileiraria): 503 SEM detalhe, nunca o 500 HTML do Express (R-WH-7). O erro injetado carrega um "segredo".
+      setWebhookEnqueueForTests(async () => {
+        throw new Error("redis caiu: segredo-que-nao-pode-vazar");
+      });
       const unavailable = await post(base, billingWebhookPath("asaas"), JSON.stringify({ id: "evt_app_0" }), { "x-test-ok": "1" });
       assert.deepEqual(unavailable, { status: 503, body: { error: { code: "temporarily_unavailable" } } });
       // Com autenticidade e fila: 200 {} — o Bearer inválido NÃO foi olhado por ninguém (o ator responderia 401 INVALID_TOKEN).

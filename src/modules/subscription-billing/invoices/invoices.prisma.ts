@@ -128,82 +128,89 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
     });
   }
 
+  // Cada mutação abaixo é um UPDATE condicional da linha + espelho no demonstrativo, na MESMA transação; sem linha
+  // alcançada, nada muda. O SQL fica LITERAL em cada sítio (nunca numa variável): o guard de escritores
+  // (tests/inventory-write-paths-guard.test.ts, D1) classifica todo `$queryRawUnsafe` pelo literal — SQL dinâmico é
+  // "escritor em potencial sem classificação" e reprova (medido nesta 08b: o helper com `sql: string` ficou vermelho).
+
   async markIssued(tenantId: string, id: string, providerInvoiceId: string | null, now: Date): Promise<void> {
-    await this.#update(
-      tenantId,
-      id,
-      `UPDATE subscription_statement_invoices
-         SET provider_invoice_id = COALESCE($2, provider_invoice_id), issued_at = COALESCE(issued_at, $3), updated_at = $3
-       WHERE id = $1::uuid AND status = 'pending' RETURNING statement_id`,
-      [providerInvoiceId, now],
-      "pending",
-      now,
-    );
+    await withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `UPDATE subscription_statement_invoices
+           SET provider_invoice_id = COALESCE($2, provider_invoice_id), issued_at = COALESCE(issued_at, $3), updated_at = $3
+         WHERE id = $1::uuid AND status = 'pending' RETURNING statement_id`,
+        id,
+        providerInvoiceId,
+        now,
+      )) as Array<{ statement_id: string }>;
+      if (rows.length > 0) await mirrorStatement(tx, rows[0]!.statement_id, "pending", now);
+    });
   }
 
   async markAuthorized(tenantId: string, id: string, patch: AuthorizedPatch, now: Date): Promise<void> {
-    await this.#update(
-      tenantId,
-      id,
-      `UPDATE subscription_statement_invoices
-         SET status = 'authorized', number = $2, verification_code = $3, pdf_url = $4, xml_url = $5, pdf_source = $6, error = NULL, updated_at = $7
-       WHERE id = $1::uuid AND status IN ('pending', 'authorized') RETURNING statement_id`,
-      [patch.number ?? null, patch.verificationCode ?? null, patch.pdfUrl ?? null, patch.xmlUrl ?? null, patch.pdfSource, now],
-      "authorized",
-      now,
-    );
+    await withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `UPDATE subscription_statement_invoices
+           SET status = 'authorized', number = $2, verification_code = $3, pdf_url = $4, xml_url = $5, pdf_source = $6, error = NULL, updated_at = $7
+         WHERE id = $1::uuid AND status IN ('pending', 'authorized') RETURNING statement_id`,
+        id,
+        patch.number ?? null,
+        patch.verificationCode ?? null,
+        patch.pdfUrl ?? null,
+        patch.xmlUrl ?? null,
+        patch.pdfSource,
+        now,
+      )) as Array<{ statement_id: string }>;
+      if (rows.length > 0) await mirrorStatement(tx, rows[0]!.statement_id, "authorized", now);
+    });
   }
 
   async markRejected(tenantId: string, id: string, error: string | null, now: Date): Promise<void> {
-    await this.#update(
-      tenantId,
-      id,
-      `UPDATE subscription_statement_invoices SET status = 'rejected', error = $2, updated_at = $3 WHERE id = $1::uuid AND status = 'pending' RETURNING statement_id`,
-      [error, now],
-      "rejected",
-      now,
-    );
+    await withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `UPDATE subscription_statement_invoices SET status = 'rejected', error = $2, updated_at = $3 WHERE id = $1::uuid AND status = 'pending' RETURNING statement_id`,
+        id,
+        error,
+        now,
+      )) as Array<{ statement_id: string }>;
+      if (rows.length > 0) await mirrorStatement(tx, rows[0]!.statement_id, "rejected", now);
+    });
   }
 
   async markCancelPending(tenantId: string, id: string, cancel: { readonly reason: string; readonly code: string }, now: Date): Promise<void> {
-    await this.#update(
-      tenantId,
-      id,
-      `UPDATE subscription_statement_invoices SET status = 'cancel_pending', cancel_reason = $2, cancel_code = $3, updated_at = $4
-       WHERE id = $1::uuid AND status IN ('authorized', 'cancel_pending') RETURNING statement_id`,
-      [cancel.reason, cancel.code, now],
-      "cancel_pending",
-      now,
-    );
+    await withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `UPDATE subscription_statement_invoices SET status = 'cancel_pending', cancel_reason = $2, cancel_code = $3, updated_at = $4
+         WHERE id = $1::uuid AND status IN ('authorized', 'cancel_pending') RETURNING statement_id`,
+        id,
+        cancel.reason,
+        cancel.code,
+        now,
+      )) as Array<{ statement_id: string }>;
+      if (rows.length > 0) await mirrorStatement(tx, rows[0]!.statement_id, "cancel_pending", now);
+    });
   }
 
   async markCancelFailed(tenantId: string, id: string, error: string | null, now: Date): Promise<void> {
-    await this.#update(
-      tenantId,
-      id,
-      `UPDATE subscription_statement_invoices SET status = 'authorized', error = $2, updated_at = $3 WHERE id = $1::uuid AND status = 'cancel_pending' RETURNING statement_id`,
-      [error, now],
-      "authorized",
-      now,
-    );
+    await withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `UPDATE subscription_statement_invoices SET status = 'authorized', error = $2, updated_at = $3 WHERE id = $1::uuid AND status = 'cancel_pending' RETURNING statement_id`,
+        id,
+        error,
+        now,
+      )) as Array<{ statement_id: string }>;
+      if (rows.length > 0) await mirrorStatement(tx, rows[0]!.statement_id, "authorized", now);
+    });
   }
 
   async markCancelled(tenantId: string, id: string, now: Date): Promise<void> {
-    await this.#update(
-      tenantId,
-      id,
-      `UPDATE subscription_statement_invoices SET status = 'cancelled', cancelled_at = $2, updated_at = $2 WHERE id = $1::uuid AND status <> 'cancelled' RETURNING statement_id`,
-      [now],
-      "cancelled",
-      now,
-    );
-  }
-
-  /** UPDATE condicional da linha + espelho no demonstrativo, na mesma transação; sem linha alcançada, nada muda. */
-  async #update(tenantId: string, id: string, sql: string, params: readonly unknown[], mirror: StatementInvoiceStatus, now: Date): Promise<void> {
     await withTenantRls(this.client, tenantId, async (tx) => {
-      const rows = (await tx.$queryRawUnsafe(sql, id, ...params)) as Array<{ statement_id: string }>;
-      if (rows.length > 0) await mirrorStatement(tx, rows[0]!.statement_id, mirror, now);
+      const rows = (await tx.$queryRawUnsafe(
+        `UPDATE subscription_statement_invoices SET status = 'cancelled', cancelled_at = $2, updated_at = $2 WHERE id = $1::uuid AND status <> 'cancelled' RETURNING statement_id`,
+        id,
+        now,
+      )) as Array<{ statement_id: string }>;
+      if (rows.length > 0) await mirrorStatement(tx, rows[0]!.statement_id, "cancelled", now);
     });
   }
 }
