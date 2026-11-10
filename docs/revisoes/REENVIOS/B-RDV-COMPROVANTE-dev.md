@@ -123,3 +123,56 @@
   `pass 8 fail 0`, `grep MUTACAO` = 0.
 - `npm run check` e `npm run lint` · verdes.
 - Commits: `e230550d` (permissão) · `9270d058` (rota+serviço).
+
+## F4 — RR-db no Postgres real (Docker)
+
+- `docker ps` no início da fatia · só `ass08pg`/`ass08redis` (1 trabalho além do meu) · teto de 2 respeitado;
+  container próprio `rdvcomp-pg` (postgres:16, `127.0.0.1:5461`), `prisma migrate deploy` verde, REMOVIDO ao
+  fim da fatia (`docker rm -f`).
+- **PREMISSA FALSA do §G.3, medida só no banco real:** o CHECK
+  `expense_receipts_upload_status_check` (migration 20260619) admite SÓ `local|pending_upload|uploading|
+  uploaded|failed` — o "stored|rejected|scan_failed|pending_review" do plano NÃO é o domínio da coluna, e
+  mudá-lo seria migração (PROIBIDA). Conciliação: o estado persistido do comprovante guardado é **`uploaded`**
+  (homólogo exato no app), ponta a ponta (banco → serviço → resposta HTTP → app). O InMemory passava com
+  "stored"; o -db pegou — exatamente o valor da fatia.
+- `tests/b-rdv-comprovante-receipt-db.test.ts` (molde `expense-sync-atomic-db`: papéis efêmeros sem
+  superusuário/BYPASSRLS, teardown escopado por tenant em ordem de FK) ·
+  `DATABASE_URL=<descartável> node --test ...` · `pass 2 fail 0` · RR-db.1 isolamento (cross-org 404 sob RLS;
+  não-dono morre no 404 do relatório ANTES da posse do id — mais fail-closed que o 409 do lote, decisão
+  registrada no próprio teste) + RR-db.2 idempotência persistida (replay por OUTRO processo devolve o mesmo
+  comprovante; payload diferente 409; 1 linha só, `file_key` preenchido).
+- Mutação **M-db** (recibo nunca completado → replay deixa de reconhecer) → RR-db.2 `not ok`; revertida por
+  edição inversa; `pass 2 fail 0`, resto 0.
+- Commit: `56fe4045`.
+
+## F5+F6+F7 — App: fila, replay multipart, integração
+
+- NOVO `lib/core/sync/expense_receipt_sync.dart` (molde REAL `core/evidence/evidence_upload.dart` — ver F0):
+  `ExpenseReceiptUploadApi` (`Pending`/`Dio` com `FormData`), `ExpenseReceiptSyncService.uploadTenant` —
+  prontidão por `serverId` do relatório E do item; blob lido do `EvidenceBlobStore` (REUSO); apaga o blob
+  SÓ em `uploaded`; 409→`RECEIPT_PAYLOAD_MISMATCH`, 413/415/422/404→conflict com texto PT-BR, 503→`pending`
+  SEM consumir tentativa (`SYNC_BUSY`), 401→`SESSION_FORBIDDEN`, rede→`failed`+1. Tudo com texto de negócio,
+  sem termo técnico (§3).
+- `expense_repository.dart`: `attachReceiptPlaceholder` ganha `bytes`/`sha256` → grava blob
+  (`uploadStatus: pending`) e ENFILEIRA `expense_receipt.attach` devolvendo a ação; sem bytes = local-only
+  `null` como antes (testes do 03b intactos). `markItemSynced` + `serverIdForItem` + `receiptByLocalId` +
+  `markReceiptUploadStatus` (pela MESMA via `_updateReceiptStatus` dos irmãos já existentes — a F5 descobriu
+  `markReceiptUploaded`/`markReceiptUploadFailed` JÁ PRONTOS e os reusa em vez de duplicar). Payload do
+  `addItem` ganha `local_id` do item (o parser ignora extras — guard RB4b do 03b conferiu).
+- `expense_models.dart`: `ExpenseItem` ganha `serverId` (campo+copyWith+props) — sem ele a URL do upload não
+  se monta; `expense_sync_entity_updater.dart` grava o `serverId` do ITEM quando `item.create` processa.
+- `api_contracts.dart`: `backendSupported` ganha `receiptAttach` (4 tipos) + template `receiptUpload`.
+  `sync_replay_service.dart`: o ramo `receiptAttach` decide pelo conjunto — canal LIGADO → `continue`
+  (pending para o multipart); conjunto antigo/nulo → conflito como antes (compatível).
+  `auto_sync_coordinator.dart`: upload do comprovante DEPOIS do lote RDV, try/catch isolado.
+  Tela `expense_item_receipts_screen.dart`: repassa `bytes`/`sha256` do picker (2 linhas).
+- Regressões medidas e corrigidas COM REGISTRO (a borda movida é deliberada — o §G.3 liga o canal):
+  `bo6r11_despesa_aguardando_envio_test.dart` r5/p4 (comprovante com canal ligado agora fica `pending`, não
+  `conflict`) e `bo6r11_resgate_syncing_interrompido_test.dart` (o tipo saiu da classe fail-closed e entrou
+  no auto-resend — teste "os quatro tipos RDV duráveis"). `flutter analyze` = No issues;
+  expenses+core/sync verdes.
+- RR4 3/3 (`brdvcomp_expense_receipt_sync_test.dart`: uploaded apaga; 422/503 preservam, 503 sem custo;
+  rede preserva e consome) · RR5 1/1 (raiz; campos multipart Dart == `EXPENSE_RECEIPT_MULTIPART_FIELDS` da
+  rota nos DOIS sentidos + caminho Dart == `/api/v1`+`EXPENSE_RECEIPT_ROUTE_PATH`).
+- Mutações: **M4** (blob apagado também na recusa 422) → RR4.2 `not ok` · **M5** (campo `sha256` renomeado no
+  FormData) → RR5 `not ok`. Revertidas por edição inversa; verdes de novo; `grep MUTACAO` = 0.
