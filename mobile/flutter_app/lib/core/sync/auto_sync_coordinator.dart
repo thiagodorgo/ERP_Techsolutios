@@ -122,6 +122,16 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
           .uploadTenant(tenantId);
       // RDV/expense sync
       await ref.read(syncReplayServiceProvider).replayTenant(tenantId);
+      // B-RDV-COMPROVANTE: upload multipart do comprovante DEPOIS do lote (os
+      // ids de servidor do relatorio e do item nascem la). Falha isolada nao
+      // bloqueia o fim do passe; o blob so morre quando o servidor confirma.
+      try {
+        await ref
+            .read(expenseReceiptSyncServiceProvider)
+            .uploadTenant(tenantId);
+      } catch (_) {
+        // Comprovante falho nao derruba os demais dominios.
+      }
 
       state = state.copyWith(
         isRunning: false,

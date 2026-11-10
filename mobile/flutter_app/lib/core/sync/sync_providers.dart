@@ -27,6 +27,7 @@ import 'sync_models.dart';
 import 'sync_queue_repository.dart';
 import 'sync_queue_reclaim_service.dart';
 import 'sync_replay_service.dart';
+import 'expense_receipt_sync.dart';
 import 'sync_user_scope.dart';
 
 final syncActionStoreProvider = Provider<SyncActionStore>(
@@ -382,6 +383,42 @@ final evidenceUploadApiProvider = Provider<EvidenceUploadApi>((ref) {
     ),
   );
 });
+
+// B-RDV-COMPROVANTE — API e replay multipart do comprovante de despesa.
+final expenseReceiptUploadApiProvider = Provider<ExpenseReceiptUploadApi>((
+  ref,
+) {
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) {
+    return const PendingExpenseReceiptUploadApi();
+  }
+
+  return DioExpenseReceiptUploadApi(
+    createAuthenticatedHttpClient(
+      config,
+      onRefresh: () async {
+        await ref.read(authStateProvider.notifier).tryRefresh();
+        return ref
+            .read(authStateProvider)
+            .maybeWhen(
+              data: (state) => state.session?.tokens.accessToken,
+              orElse: () => null,
+            );
+      },
+      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
+    ),
+  );
+});
+
+final expenseReceiptSyncServiceProvider = Provider<ExpenseReceiptSyncService>(
+  (ref) => ExpenseReceiptSyncService(
+    // A fila escopada por usuario (B-FILA-USUARIO): so as acoes da sessao.
+    queue: ref.watch(replaySyncQueueRepositoryProvider),
+    repository: ref.watch(expenseRepositoryProvider),
+    blobStore: ref.watch(evidenceBlobStoreProvider),
+    api: ref.watch(expenseReceiptUploadApiProvider),
+  ),
+);
 
 final evidenceBinaryUploadServiceProvider =
     Provider<EvidenceBinaryUploadService>(

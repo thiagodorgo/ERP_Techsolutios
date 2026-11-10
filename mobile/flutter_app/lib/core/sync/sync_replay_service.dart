@@ -247,6 +247,16 @@ class SyncReplayService {
       if (action.status == SyncStatus.conflict) continue;
 
       if (action.type == ExpenseSyncActionTypes.receiptAttach) {
+        // B-RDV-COMPROVANTE: com o canal multipart LIGADO (o conjunto suportado
+        // contem o tipo), o comprovante NAO e deste replay — fica pendente para
+        // o expense_receipt_sync. Sem o canal (conjunto antigo/nulo), conflito
+        // visivel como antes.
+        final receiptChannelOn =
+            _supportedActionTypes?.contains(
+              ExpenseSyncActionTypes.receiptAttach,
+            ) ??
+            false;
+        if (receiptChannelOn) continue;
         final next = action.copyWith(
           status: SyncStatus.conflict,
           lastErrorCode: 'UNSUPPORTED_ACTION',
