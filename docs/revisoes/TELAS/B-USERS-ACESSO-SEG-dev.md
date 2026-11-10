@@ -75,3 +75,20 @@ Feito: S4 e S6. Próximo comando: escrever os testes da S3 (autodesativação, a
 - Código: `src/modules/core-saas/services/tenant-admin-guard.ts` (novo, em `services/**`: a decisão única — `assertSelfChangeAllowed`, `removesActiveTenantAdmin`, `lastTenantAdminError`), usado pelo `updateUser` de memória (`core-saas.service.ts`), que conta os outros administradores ATIVOS de forma síncrona. Códigos: 409 `CONFLICT` com `cannot_deactivate_self`, `cannot_demote_self`, `last_tenant_admin`. Leitura declarada: o auto-rebaixamento vem do passo 1 do plano original ("tirar tenant_admin de si mesmo → 409"), que o replano não revogou.
 - Verde → `users-acesso-seg-usuarios` + `core-saas` + `core-saas-contract` + `sessions-admin` → `pass 38 · fail 1 · skipped 1`. A falha é `tests/core-saas-role-authority.test.ts` sem registrar teste: sem `DATABASE_URL` o import estático de `src/database/prisma.ts:12` lança ("DATABASE_URL is required…"), e o arquivo importa `PrismaCoreSaasStore` na linha 25 — o vermelho de AMBIENTE que o orquestrador nomeou. Com `DATABASE_URL` fictício só para o import (`postgresql://nobody:nobody@127.0.0.1:1/none`) → `# tests 12 · pass 12`. O skip é o `sessions-admin` sem banco, declarado. Commit `6aa8a7a8`.
 - Mutações (uma por vez, `sed` com âncora exata, revertidas pelo `sed` inverso, `git diff --exit-code` limpo depois de cada): M-S3a sem autodesativação → S3·m1 vermelho (cai no `last_tenant_admin`, motivo errado); M-S3b sem auto-rebaixamento → S3·m2 vermelho; M-S3c sem a checagem do último administrador → S3·m4 vermelho; M-S3d administrador inativo contando → S3·m4 vermelho. Todas `pass 4 · fail 1`.
+
+## S8 — parte 1: MEMÓRIA (sem banco)
+
+- Teste escrito antes: `S8·m` em `tests/users-acesso-seg-usuarios.test.ts` (rota PATCH; `before`/`after` com chaves EXATAS `name`, `roles`, `status`, valores conferidos, e-mail ausente da metadata serializada).
+- Vermelho-controle (ramo com S3 parte 1, sem o código da S8) → `# tests 6 · pass 5 · fail 1` ("antes: só a lista permitida", actual `[]`) → vermelho medido.
+- Código: `src/modules/core-saas/services/user-audit-snapshot.ts` (novo, `services/**`: retrato montado campo a campo, papéis ordenados) e `core-saas.service.ts` (`user.updated` da memória grava `userId`, `before`, `after`).
+- Verde → `users-acesso-seg-usuarios` + `core-saas` + `core-saas-contract` → `# tests 35 · pass 35`; `core-saas-role-authority` com `DATABASE_URL` fictício → `12/12`. Commit da parte 1 da S8.
+- Mutação M-S8a (substitui a da "temporaryPassword na metadata", ajuste 3: o filtro por NOME de chave esconderia aquela; esta prova a lista permitida) — o retrato vira espalhamento do registro inteiro (`{ ...user, roles }`) → `S8·m` vermelho (`pass 5 · fail 1`) → revertida → limpo. A parte da S8 sobre a senha provisória (varredura do VALOR da senha em toda a auditoria, chave inocente incluída) depende da S1/S2, paradas.
+
+## Coluna da P1 (sem banco)
+
+- `prisma/migrations/20260899200000_users_must_change_password/migration.sql`: uma sentença, `ALTER TABLE "local_auth_credentials" ADD COLUMN "must_change_password" BOOLEAN NOT NULL DEFAULT false;`, rollback manual comentado → `node scripts/migration-transaction-guard.mjs` → `migrações: 129 · anteriores: 112 · novas: 17 · violações: 0`.
+- `prisma/schema.prisma` +2 linhas no `LocalAuthCredential` (`npx prisma validate` → válido; `prisma generate` → ok). Nota: um `prisma format` reescreveu o schema inteiro (o arquivo do repo não está no formato do Prisma); foi desfeito com `git checkout -- prisma/schema.prisma` e a linha entrou à mão, diff mínimo.
+
+## Docker — vaga retomada (~01:37 SP)
+
+- `docker ps` às 01:30 → `ci522-pg`, `j525-c1-pg` (2 trabalhos: sem vaga, segui sem banco); às 01:32, 01:33 e 01:37 → só `ci522-pg` (`docker ps -a` não mostra mais o `j525-c1-pg`) → vaga → `docker start users-seg-pg` → 2 trabalhos de pé (`ci522-pg`, `users-seg-pg`). Migração nova aplicada no meu cluster (`prisma migrate deploy`; coluna `must_change_password boolean NOT NULL DEFAULT false` conferida no catálogo).
