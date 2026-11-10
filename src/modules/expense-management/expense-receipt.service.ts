@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 
+import pino from "pino";
+
 import { env } from "../../config/env.js";
 import { ChecklistError } from "../checklists/checklist.types.js";
 import { createChecklistStorageProviderByName } from "../checklists/storage/checklist-storage.factory.js";
@@ -33,6 +35,7 @@ import {
   computeSyncFingerprint,
   decodeSyncReceiptKey,
   isCompleteSyncReceipt,
+  syncDatabaseErrorCodes,
 } from "./expense-sync.js";
 
 /**
@@ -131,6 +134,39 @@ export function decodeReceiptFileKey(
   if (provider !== "local" && provider !== "s3") return undefined;
   if (!storageKey) return undefined;
   return { provider, storageKey };
+}
+
+/** O objeto gravado por esta requisição, antes da transação decidir se ele fica. */
+type SavedReceiptObject = { readonly storage: ChecklistStorageProvider; readonly storageKey: string };
+
+const logger = pino({ level: env.LOG_LEVEL });
+
+/**
+ * §12.2 item 3 — log de falha da via V6: rota, operação, NOME e CÓDIGO do erro (Prisma, Postgres ou AWS). Nunca a
+ * mensagem, a chave, o caminho, o bucket nem o ARN: a mensagem do 403 do S3 traz os quatro.
+ */
+export function logReceiptFailure(operation: string, error: unknown, route?: string): void {
+  logger.warn(
+    {
+      event: "expense_receipt.failure",
+      via: "V6",
+      route: route ?? null,
+      operation,
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorCode: receiptFailureCode(error),
+    },
+    "expense receipt operation failed",
+  );
+}
+
+function receiptFailureCode(error: unknown): string | null {
+  const databaseCode = syncDatabaseErrorCodes(error)[0];
+  if (databaseCode) return databaseCode;
+  if (typeof error !== "object" || error === null) return null;
+  const record = error as { readonly Code?: unknown; readonly $metadata?: { readonly httpStatusCode?: unknown } };
+  if (typeof record.Code === "string" && record.Code !== "") return record.Code;
+  if (typeof record.$metadata?.httpStatusCode === "number") return String(record.$metadata.httpStatusCode);
+  return null;
 }
 
 /** Extensão do objeto pelo tipo VERIFICADO no gate (nunca pelo nome do arquivo do aparelho). */
@@ -258,8 +294,10 @@ export class ExpenseReceiptService {
     );
     if (recorded) return recorded;
 
+    // §12.1 — o objeto gravado; toda saída depois da gravação que não seja o 201 passa pela compensação.
+    let saved: SavedReceiptObject | undefined;
     try {
-      return await this.repository.withSyncTransaction(actor.tenantId, async (repository) => {
+      const result = await this.repository.withSyncTransaction(actor.tenantId, async (repository) => {
         const concurrent = await this.resolveRecordedReceipt(repository, actor, input.clientActionId, fingerprint);
         if (concurrent) return concurrent;
 
@@ -284,6 +322,7 @@ export class ExpenseReceiptService {
           checksumSha256: computedSha256,
           verification,
         });
+        saved = { storage, storageKey: stored.storageKey };
 
         const receipt = await repository.createExpenseReceipt({
           tenantId: actor.tenantId,
@@ -307,7 +346,10 @@ export class ExpenseReceiptService {
 
         return { statusCode: 201 as const, receiptId: receipt.id, uploadStatus: receipt.uploadStatus };
       });
+      if (result.statusCode !== 201) await this.compensateSavedObject(actor, saved);
+      return result;
     } catch (error) {
+      await this.compensateSavedObject(actor, saved);
       if (error instanceof SyncActionAlreadyClaimedError) {
         const afterLostClaim = await this.repository.withSyncTransaction(actor.tenantId, (repository) =>
           this.resolveRecordedReceipt(repository, actor, input.clientActionId, fingerprint),
@@ -316,6 +358,31 @@ export class ExpenseReceiptService {
         throw new ExpenseManagementError(409, "EXPENSE_SYNC_CONFLICT", "receipt_unverifiable", "Receipt claim raced and cannot be verified.");
       }
       throw error;
+    }
+  }
+
+  /**
+   * §12.1 — a compensação NUNCA apaga objeto de linha viva. Uma leitura NOVA, depois do fim da transação, procura
+   * a linha com o `file_key` que a transação gravaria:
+   *   - achou → NÃO apaga (é o commit ambíguo da Q1: o objeto é o arquivo de uma linha `uploaded`);
+   *   - não achou → apaga (`deleteObject`, best-effort; falha só vai a log, sem a chave);
+   *   - a leitura falhou → NÃO apaga. Sobra um órfão possível, que é lixo; perda, nunca.
+   */
+  private async compensateSavedObject(actor: ExpenseReceiptActorContext, saved: SavedReceiptObject | undefined): Promise<void> {
+    if (!saved) return;
+    const fileKey = encodeReceiptFileKey(saved.storage.name, saved.storageKey);
+    let referenced: ExpenseReceiptRecord | undefined;
+    try {
+      referenced = await this.repository.findExpenseReceiptByFileKey({ tenantId: actor.tenantId, fileKey });
+    } catch (error) {
+      logReceiptFailure("compensation_reread", error);
+      return;
+    }
+    if (referenced) return;
+    try {
+      await saved.storage.deleteObject({ storageKey: saved.storageKey });
+    } catch (error) {
+      logReceiptFailure("compensation_delete", error);
     }
   }
 

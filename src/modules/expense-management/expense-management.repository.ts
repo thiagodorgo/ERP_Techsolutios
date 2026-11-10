@@ -69,6 +69,12 @@ export interface ExpenseSyncTransactionRepository extends ExpenseDomainRepositor
 export interface ExpenseManagementRepository extends ExpenseDomainRepository {
   /** Uma transação tenant-scoped por ação de sync; o callback recebe o repositório ligado a ela. Throw = rollback de tudo. */
   withSyncTransaction<T>(tenantId: string, work: (repository: ExpenseSyncTransactionRepository) => Promise<T>): Promise<T>;
+  /**
+   * Conserto c1 do #525 (§12.1) — leitura NOVA, fora de qualquer transação: existe linha de comprovante com este
+   * `file_key`? É a prova que a compensação exige antes de apagar um objeto (o commit ambíguo da Q1). Rara (só na
+   * compensação), não pede índice.
+   */
+  findExpenseReceiptByFileKey(input: { readonly tenantId: string; readonly fileKey: string }): Promise<ExpenseReceiptRecord | undefined>;
   reset?(): void;
 }
 
@@ -359,6 +365,11 @@ export class InMemoryExpenseManagementRepository implements ExpenseManagementRep
     const item = this.items.get(input.itemId);
     if (!item || item.tenantId !== input.tenantId) return undefined;
     return item.reportId;
+  }
+
+  // Conserto c1 do #525 (§12.1) — a re-leitura da compensação.
+  async findExpenseReceiptByFileKey(input: { readonly tenantId: string; readonly fileKey: string }): Promise<ExpenseReceiptRecord | undefined> {
+    return [...this.expenseReceipts.values()].find((receipt) => receipt.tenantId === input.tenantId && receipt.fileKey === input.fileKey);
   }
 
   /** Só para testes: os eventos gravados, para contagem escopada. */

@@ -207,6 +207,14 @@ export class PrismaExpenseManagementRepository implements ExpenseSyncTransaction
     return item?.report_id ?? undefined;
   }
 
+  // Conserto c1 do #525 (§12.1) — a re-leitura da compensação: linha com este `file_key` no tenant.
+  async findExpenseReceiptByFileKey(input: { readonly tenantId: string; readonly fileKey: string }): Promise<ExpenseReceiptRecord | undefined> {
+    const receipt = await this.client.expenseReceipt.findFirst({
+      where: { tenant_id: input.tenantId, file_key: input.fileKey },
+    });
+    return receipt ? mapExpenseReceiptRecord(receipt) : undefined;
+  }
+
   async submitReport(input: { readonly tenantId: string; readonly reportId: string; readonly submittedAt: Date }): Promise<ExpenseReport> {
     const report = await this.client.expenseReport.update({
       where: { tenant_id_id: { tenant_id: input.tenantId, id: input.reportId } },
@@ -428,6 +436,11 @@ export class RlsPrismaExpenseManagementRepository implements ExpenseManagementRe
 
   findReportIdForExpenseItem(input: { readonly tenantId: string; readonly itemId: string }) {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findReportIdForExpenseItem(input));
+  }
+
+  // Conserto c1 do #525 (§12.1) — leitura NOVA sob a mesma regra RLS, numa transação própria.
+  findExpenseReceiptByFileKey(input: { readonly tenantId: string; readonly fileKey: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findExpenseReceiptByFileKey(input));
   }
 }
 

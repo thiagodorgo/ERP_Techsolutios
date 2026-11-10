@@ -83,3 +83,31 @@
 
 - head `78b0ee1376c672405d64065f28cb7a69f039bfab` · feito: F0, F1a · falta: F1d → F1b → F1e → F1c → F2a → F2b → F3 → F4a … F8 · próximo comando:
   escrever o RR-A.6 em `tests/b-rdv-comprovante-receipt-storage.test.ts` (novo) · arquivos meio escritos: nenhum.
+
+## F1d — compensação com re-leitura (§12.1) (05:48–05:54)
+
+- Teste ANTES do código: **RR-A.6** em `tests/b-rdv-comprovante-receipt-storage.test.ts` (novo, ENTRA POR EMENDA
+  no §4). Repositório de memória EMBRULHADO: a transação que devolve o 201 comita e só DEPOIS lança
+  `Error("Connection terminated unexpectedly")` (o `ATK-K13a`). Espera 500 `unexpected_error` sem a mensagem,
+  1 objeto no diretório, replay 200 com o `receiptId` da linha e `/file` com os mesmos bytes. Sem costura: o
+  diretório vem de `CHECKLIST_STORAGE_LOCAL_DIR` no topo do arquivo.
+- **Vermelho-controle no objeto** (arquivo copiado para `w-dev525-vc`, depois apagado): `not ok 1 - RR-A.6` →
+  `{"error":{"code":"BAD_REQUEST","reason":"invalid_request","message":"Connection terminated unexpectedly"}}`,
+  `expected: 500 · actual: 400` — exatamente o declarado no plano ("a resposta sai 400 com a mensagem crua").
+  **OK.**
+- Código: `findExpenseReceiptByFileKey({ tenantId, fileKey })` na interface `ExpenseManagementRepository`, na
+  memória e no Prisma (`findFirst` por `tenant_id` + `file_key`; o `Rls…` delega sob `withTenantRls`, numa
+  transação própria). No serviço, `saved` guarda o objeto gravado e `compensateSavedObject` roda em toda saída
+  depois da gravação que não seja o 201: relê; achou → não apaga; não achou → `deleteObject` best-effort; a
+  leitura falhou → não apaga. Log `logReceiptFailure(operação, erro, rota?)` com `via`, rota, operação, nome e
+  código do erro, nunca a mensagem.
+- **Medido × plano (registro, não decisão nova):** o RR-A.6 exige "500 `unexpected_error`", que é o último ramo
+  do §12.2 item 2 (fatia F1c); a ordem obrigatória põe a F1d antes da F1c. Adiantei para esta fatia SÓ esse ramo
+  (`sendRouteFailure` deixa de relançar: erro que não é de domínio → 500 com a mensagem fixa "Unexpected error.")
+  e o log do item 3. O comportamento é o do §12.2, letra por letra; a F1c completa o resto (storage → 503,
+  transitório → 503 `sync_busy`, `submitReport`) e a M-A5 prova a classificação inteira.
+- `npm run check` → exit 0 · routes + storage + contract + census o6r07b + expense-management-routes →
+  `# tests 34 · pass 34 · fail 0`. **OK.**
+- **M-A6** (na compensação, apagar a re-leitura e apagar sempre) → `not ok 1 - RR-A.6` "a compensação apagou o
+  objeto de uma linha commitada" `expected: 1 · actual: 0` (o `/file` daria 404 em seguida) · revertida,
+  `git diff --exit-code -- src tests mobile` = 0. **OK.**

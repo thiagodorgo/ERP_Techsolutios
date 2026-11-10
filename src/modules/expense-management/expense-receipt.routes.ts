@@ -8,6 +8,7 @@ import {
   createDefaultExpenseReceiptService,
   type ExpenseReceiptActorContext,
   type ExpenseReceiptServiceResolver,
+  logReceiptFailure,
 } from "./expense-receipt.service.js";
 import { ExpenseManagementError } from "./expense-management.types.js";
 
@@ -153,14 +154,21 @@ function actorFromRequest(request: Request): ExpenseReceiptActorContext {
   };
 }
 
-function sendRouteFailure(response: Response, error: unknown): void {
+/**
+ * Conserto c1 do #525 (§12.2) — as 3 rotas do comprovante classificam TODA falha e nunca relançam: nenhum corpo
+ * de resposta leva o `error.message` de um erro que não seja de domínio (§2.8).
+ */
+function sendRouteFailure(response: Response, error: unknown, route: string): void {
   if (error instanceof ReceiptRouteError || error instanceof ExpenseManagementError) {
     response.status(error.statusCode).json({
       error: { code: error.code, reason: error.reason, message: error.message },
     });
     return;
   }
-  throw error;
+  logReceiptFailure("route", error, route);
+  response.status(500).json({
+    error: { code: "INTERNAL_SERVER_ERROR", reason: "unexpected_error", message: "Unexpected error." },
+  });
 }
 
 export function registerExpenseReceiptRoutes(
@@ -191,7 +199,7 @@ export function registerExpenseReceiptRoutes(
           data: { receiptId: result.receiptId, uploadStatus: result.uploadStatus },
         });
       } catch (error) {
-        sendRouteFailure(response, error);
+        sendRouteFailure(response, error, "POST receipt");
       }
     }),
   );
@@ -219,7 +227,7 @@ export function registerExpenseReceiptRoutes(
           },
         });
       } catch (error) {
-        sendRouteFailure(response, error);
+        sendRouteFailure(response, error, "GET receipt");
       }
     }),
   );
@@ -245,7 +253,7 @@ export function registerExpenseReceiptRoutes(
           .setHeader("x-content-type-options", "nosniff")
           .send(served.buffer);
       } catch (error) {
-        sendRouteFailure(response, error);
+        sendRouteFailure(response, error, "GET receipt/file");
       }
     }),
   );
