@@ -5220,3 +5220,15 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Fatias B-F4…B-F7 já commitadas pelo Codex (`ae8c2206`, `4e8c8d39`, `c078df75`, `f6c95ded`). A retomada mediu o parcial antes de confiar (P3/P7): `flutter test` das fatias de despesa 34/34 e contrato da raiz 4/4, ambos verdes.
 - B-F8 (registro): `Ω6R-QUA-001` e `P-O6R-B03` FECHADOS; `P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO` e `P-O6R-B03-APP-RECEIPT-ATTACH-NAO-SUPORTADO` FECHADAS; pendência nova `P-RDV-COMPROVANTE-SEM-UPLOAD` (dono `B-RDV-COMPROVANTE`); índice regenerado (779 cabeçalhos / 768 IDs, 191 FECHADAS, 584 ABERTAS, 4 SEM-STATUS pré-existentes); `PLANO_SAN3.md` item 30 fechado + linha `B-O6R-03b`; comando `agent-orchestration/codex/comandos/B-O6R-03b.md`; cópia do plano sincronizada. `Kpis/**`, `src/modules/expense-management/**` e `prisma/**` intocados.
 - B-F9: bateria completa (`dart format`, `flutter analyze`, `flutter test`, `npm run check/lint/test/build`, guarda de migração, `git diff --check`) + push + `gh pr create`. PR #520 aberto; merge fora da alçada do dev.
+- Apenso 2026-11-09 (registro de 09/11 noite): PR #520 MERGEADO. Head aprovado `77e5ed30`, merge `e7e8d678` (20:45 SP); CI do head 16/16 e do merge `42723037189` verdes. Junta completa no ciclo 1, com um conserto (DeepSeek) e conferência (Claude): `omega/juntas/J-520-b-o6r-03b.md`. Porteiro `LIBERADO COM RESSALVA`: `omega/juntas/porteiro-520-parecer.md`.
+
+## 2026-11-09 — registro de 09/11 noite (`reg-0911n-opus`)
+
+- Autor: `reg-0911n-opus`, Claude Opus 5.5, identidade de registro declarada (nível menor, §C7.6). Governança leve (`D-GOV-PROPORCIONAL`): um revisor independente e CI.
+- Worktree limpo `C:/Users/thiag/w-reg0911n`, ramo `docs/registro-0911-noite`, base `origin/main@e7e8d678`. Da árvore da sessão (`fix/seed-org-demo-pt-br`, com mudanças antigas de outras sessões) só se copiaram, por nome, as 2 entradas de `decisoes.md` e os 5 arquivos abaixo.
+- Na `main` desde o último registro: #519 (`B-ASS-07`, merge `7d8b2b98`), #521 (registro de 09/11 tarde, merge `89f1d38e`; o job `docker` do CI do merge falhou no envio da imagem ao GHCR, falha de ambiente) e #520 (`B-O6R-03b`, merge `e7e8d678`). Em voo: #522 (`B-ASS-08` parte 1) na junta; 08b em dev.
+- Versionados: `omega/juntas/J-519-b-ass-07.md`, `J-520-b-o6r-03b.md` (sem o custo de API), `porteiro-519-parecer.md`, `porteiro-520-parecer.md` e `docs/revisoes/TELAS/B-APARENCIA-SELETOR-achado.md`.
+- Decisões do dono copiadas literalmente: `D-ASS08-MIGRACAO-M5` e `D-USERS-ACESSO-REPLANO-RESPOSTAS`.
+- Correções: `PLANO_SAN3.md` item 30 (merge `e7e8d678`, dentro da tabela); diário do 03b, K2 (`21468f73` → `7a479474`); `CLAUDE.md` e `AGENTS.md` §4 item 7 (o seletor já existe; correção factual, §A7).
+- Pendências: `PR-alvo` e `bloqueia` nas 3 do #520; X4 apensada; nova `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA`; `P-APARENCIA-POR-USUARIO` re-escopada; backfill do #520. Índice regenerado: 787 cabeçalhos, 776 IDs, 191 FECHADAS, 592 ABERTAS, 4 SEM-STATUS.
+- Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, lockfiles, chave, preço ou nome de pessoa. Não fazer merge antes da revisão.
