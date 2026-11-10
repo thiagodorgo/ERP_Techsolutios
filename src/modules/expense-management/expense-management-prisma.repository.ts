@@ -17,10 +17,12 @@ import type {
   CountExpenseEventsInput,
   CreateExpenseEventInput,
   CreateExpenseItemInput,
+  CreateExpenseReceiptInput,
   CreateExpenseReportInput,
   ExpenseEvent,
   ExpenseItem,
   ExpensePolicy,
+  ExpenseReceiptRecord,
   ExpenseReport,
   FindExpenseEventInput,
   ListExpenseReportsInput,
@@ -158,6 +160,51 @@ export class PrismaExpenseManagementRepository implements ExpenseSyncTransaction
     await this.recalculatePersistedReport(input.tenantId, input.reportId);
 
     return mapItemRecord(item);
+  }
+
+  // B-RDV-COMPROVANTE — comprovante: item por relatório, criação e leitura do registro persistido.
+  async findExpenseItem(input: { readonly tenantId: string; readonly reportId: string; readonly itemId: string }): Promise<ExpenseItem | undefined> {
+    const item = await this.client.expenseItem.findFirst({
+      where: { tenant_id: input.tenantId, report_id: input.reportId, id: input.itemId },
+    });
+    return item ? mapItemRecord(item) : undefined;
+  }
+
+  async createExpenseReceipt(input: CreateExpenseReceiptInput): Promise<ExpenseReceiptRecord> {
+    const receipt = await this.client.expenseReceipt.create({
+      data: {
+        tenant_id: input.tenantId,
+        item_id: input.itemId,
+        local_hash: input.localHash,
+        mime_type: input.mimeType,
+        upload_status: input.uploadStatus,
+        file_key: input.fileKey ?? null,
+      },
+    });
+    return mapExpenseReceiptRecord(receipt);
+  }
+
+  async findLatestStoredExpenseReceipt(input: { readonly tenantId: string; readonly itemId: string }): Promise<ExpenseReceiptRecord | undefined> {
+    const receipt = await this.client.expenseReceipt.findFirst({
+      where: { tenant_id: input.tenantId, item_id: input.itemId, upload_status: "stored" },
+      orderBy: [{ created_at: "desc" }],
+    });
+    return receipt ? mapExpenseReceiptRecord(receipt) : undefined;
+  }
+
+  async findExpenseReceiptById(input: { readonly tenantId: string; readonly receiptId: string }): Promise<ExpenseReceiptRecord | undefined> {
+    const receipt = await this.client.expenseReceipt.findFirst({
+      where: { tenant_id: input.tenantId, id: input.receiptId },
+    });
+    return receipt ? mapExpenseReceiptRecord(receipt) : undefined;
+  }
+
+  async findReportIdForExpenseItem(input: { readonly tenantId: string; readonly itemId: string }): Promise<string | undefined> {
+    const item = await this.client.expenseItem.findFirst({
+      where: { tenant_id: input.tenantId, id: input.itemId },
+      select: { report_id: true },
+    });
+    return item?.report_id ?? undefined;
   }
 
   async submitReport(input: { readonly tenantId: string; readonly reportId: string; readonly submittedAt: Date }): Promise<ExpenseReport> {
@@ -361,6 +408,27 @@ export class RlsPrismaExpenseManagementRepository implements ExpenseManagementRe
   createEvent(input: CreateExpenseEventInput) {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).createEvent(input));
   }
+
+  // B-RDV-COMPROVANTE — delegações sob a MESMA regra RLS das demais.
+  findExpenseItem(input: { readonly tenantId: string; readonly reportId: string; readonly itemId: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findExpenseItem(input));
+  }
+
+  createExpenseReceipt(input: CreateExpenseReceiptInput) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).createExpenseReceipt(input));
+  }
+
+  findLatestStoredExpenseReceipt(input: { readonly tenantId: string; readonly itemId: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findLatestStoredExpenseReceipt(input));
+  }
+
+  findExpenseReceiptById(input: { readonly tenantId: string; readonly receiptId: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findExpenseReceiptById(input));
+  }
+
+  findReportIdForExpenseItem(input: { readonly tenantId: string; readonly itemId: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findReportIdForExpenseItem(input));
+  }
 }
 
 export async function createPrismaExpenseManagementRepository(): Promise<RlsPrismaExpenseManagementRepository> {
@@ -416,6 +484,28 @@ function mapReportRecord(record: Prisma.ExpenseReportGetPayload<{ include: typeo
     createdAt: record.created_at,
     updatedAt: record.updated_at,
     items: record.items.map(mapItemRecord),
+  };
+}
+
+function mapExpenseReceiptRecord(record: {
+  id: string;
+  tenant_id: string;
+  item_id: string;
+  local_hash: string;
+  mime_type: string;
+  upload_status: string;
+  file_key: string | null;
+  created_at: Date;
+}): ExpenseReceiptRecord {
+  return {
+    id: record.id,
+    tenantId: record.tenant_id,
+    itemId: record.item_id,
+    localHash: record.local_hash,
+    mimeType: record.mime_type,
+    uploadStatus: record.upload_status,
+    fileKey: record.file_key ?? undefined,
+    createdAt: record.created_at,
   };
 }
 
