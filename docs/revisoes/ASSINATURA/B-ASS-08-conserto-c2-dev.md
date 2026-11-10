@@ -277,3 +277,17 @@ O código da F5b (`adoptionFacts` no `PrismaOutboxRepository`) entrou no commit 
 | F6 | `e16fd02a` | T-OBX-9/9b, T-OBX-17 (9–10), T-CHG-db-3 (i)/(ii), T-OBX-db-6 (62/62; T13 35/35) | M3b, M5c, M5d, M1c |
 | F4b | `b56ee865` | T-OBX-db-9 (`-db` 21/21) | M5g (55P03), M5h (57014), M5i (P2028, o laço da §13) |
 | F6b+F6c | `49ff6480` | T-LOCK-2 (6/6) | M7a, M7b, M7c, M7d, M7e |
+
+## F8 — bateria (em curso)
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| 14:22:58→14:23:06 | `CREATE DATABASE erp_c2` no `dev522-pg` + `npx prisma migrate deploy` (a forma do job `backend`, que migra a base do `DATABASE_URL`) | "All migrations have been successfully applied." | — |
+| 14:23:16 | `npm test -- <456 arquivos>` | "Linha de comando muito longa" (o `cmd.exe` do npm); nada rodou | → o runner chamado direto: `node scripts/run-backend-tests.mjs <456 arquivos>` (sem shell, a mesma expansão) |
+| 14:23:45→14:31:20 | suíte inteira com `DATABASE_URL=…/erp_c2`, SEM os 2 guards pesados (que vão sozinhos e por último), sem Redis (o `ass08redis` não é meu) | `# tests 4811 · pass 4793 · fail 16 · cancelled 0 · skipped 2`. As 16: (a) **guard 3** de `tests/auth-invariant-guards.test.ts` ("set_config vivem SÓ em src/database/rls.ts") acusa `outbox.prisma.ts` l.194 e l.197, o `set_config('enable_nestloop', …)` do E5″ (§14.2) — **defeito REAL, nascido na F3**, que o CI já acusava (run `42855489156`, job `backend`: `# tests 4848 · pass 4845 · fail 1`, e o único `not ok` é este); (b) **T-OBX-db-5** "o claim não esperou a trava (1 239 ms < 1 000)", só sob a carga da suíte inteira no Windows: sozinho deu 473 ms (F4) e no CI passou; (c) de ambiente: 5 de Redis ausente (`domain event publishes …` ×2, `Redis job queue …`, `job worker …` ×2, `o writer grava SET … EX …`), 2 `EBUSY` de `rmdir` no Temp do Windows (`traccar-event-migration-drill-db`, `work-order-invoicing-migration-drill-db`), e `B-SAN3-05 · o papel de runtime …` e `san3-09 T2` (bancos de drill no cluster local; nenhum toca o PERMITIDO); todos verdes no CI | o guard 3 é meu e vai para a emenda |
+| 14:32 | conflito plano × guard 3 levado ao orquestrador (§A2, `D-EMENDA-ANTES-DO-CODIGO`): opção A recomendada (`SET LOCAL`); B mexe em teste de segurança fora do PERMITIDO; C é `src/database/**` (PROIBIDO) | o orquestrador escolheu a A e a escreveu como **Emenda 15** no plano; ela passa pelo `critico-adversarial` (crit-522-e15) ANTES do código; não aplico até "emenda 15 aprovada" | parado nesse ponto |
+| 14:32:45→14:33:52 | `o6r07c-census-guard`, sozinho | `# tests 32 · pass 32 · fail 0` | — |
+| 14:33:52→14:34:16 | `inventory-write-paths-guard`, sozinho | `# tests 12 · pass 12 · fail 0` | — |
+| 14:34:24→14:34:44 | `npm run build` + `rm -rf dist` | exit 0; `dist/` removido (§C5) | — |
+| 14:2x | `node scripts/migration-transaction-guard.mjs` | "migrações: 129 · anteriores: 112 · novas: 17 · violações: 0" | — |
+| 14:2x | escopo: `git diff --name-only 793fa01e..HEAD` (20 caminhos, todos no PERMITIDO do §5 e do §13.3.6); `git diff --stat 793fa01e..HEAD -- prisma/ src/…/statements/ src/…/providers/ Kpis/ frontend/ mobile/ src/app.ts src/config/ src/database/ CLAUDE.md AGENTS.md agent-orchestration/controle/decisoes.md package*.json` vazio; extrações: 3 hunks (2 em `charges.prisma.ts`, declarados na F2, e 1 em `statement-refs.prisma.ts`); `git diff --check 793fa01e..HEAD` limpo | escopo cumprido | — |
