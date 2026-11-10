@@ -75,3 +75,11 @@
   - **M-A4c** (apagar a recusa da linha sem prefixo em `resolveRecordedReceipt`) → `not ok 10 - RR-A.4` "replay
     sobre linha legada: {"data":{…"uploadStatus":"uploaded"}}" `409 ×` 200 · revertida. **OK.**
 - `npm run lint` (= `check`) → exit 0.
+- Commit `78b0ee13` + `git push origin feat/mobile-rdv-comprovante` (`b9e63ec0..78b0ee13`). Vermelho-controle
+  REFEITO com o teste commitado (`git -c core.autocrlf=false checkout 78b0ee13 -- tests/b-rdv-comprovante-receipt-routes.test.ts`
+  no `w-dev525-vc`) → os mesmos `not ok 9` e `not ok 10` · `w-dev525-vc` restaurado ao objeto (`git status` vazio).
+
+## RETOMADA 1 (05:48)
+
+- head `78b0ee1376c672405d64065f28cb7a69f039bfab` · feito: F0, F1a · falta: F1d → F1b → F1e → F1c → F2a → F2b → F3 → F4a … F8 · próximo comando:
+  escrever o RR-A.6 em `tests/b-rdv-comprovante-receipt-storage.test.ts` (novo) · arquivos meio escritos: nenhum.
