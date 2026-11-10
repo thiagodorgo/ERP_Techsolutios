@@ -27,11 +27,13 @@ import test from "node:test";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const srcRoot = path.join(here, "..", "src");
 
-/** Os 5 parsers de multipart, nominais. Um sexto que apareça derruba a C1 (mutação M-B5). */
+/** Os 6 parsers de multipart, nominais. Um sétimo que apareça derruba a C1 (mutação M-B5).
+ * B-RDV-COMPROVANTE: a V6 (comprovante de despesa) entra NOMINAL — espelho da via mobile. */
 const PARSER_ALLOWLIST = [
   "modules/attachments/attachment.storage.ts",
   "modules/checklists/checklist-attachment.storage.ts",
   "modules/damages/damage-attachment.storage.ts",
+  "modules/expense-management/expense-receipt.routes.ts",
   "modules/mobile/mobile-evidence-upload.ts",
   "modules/work-orders/work-order-attachment.storage.ts",
 ] as const;
@@ -103,7 +105,7 @@ function filesMatching(files: readonly SourceFile[], needle: string | RegExp): r
 
 // ── C1: os parsers de multipart são os 5 nominais ─────────────────────────────────────────────────
 
-test("C1 censo: todo arquivo de src/** com `Busboy(` está na lista nominal V1–V5", async () => {
+test("C1 censo: todo arquivo de src/** com `Busboy(` está na lista nominal V1–V6", async () => {
   const found = [...filesMatching(await sourceFiles(), "Busboy(")].sort();
   assert.deepEqual(
     found,
@@ -150,6 +152,8 @@ test("C4 censo: identificadores *ForTests do gate/factory não são referenciado
     "modules/attachments/attachment.storage.ts",
     "modules/work-orders/work-order-attachment.storage.ts",
     "modules/mobile/mobile-evidence-upload.ts",
+    // B-RDV-COMPROVANTE: wrapper fino da via V6 (configureExpenseReceiptScannerForTests).
+    "modules/expense-management/expense-receipt.service.ts",
   ]);
   for (const [identifier, owner] of Object.entries(owners)) {
     const found = filesMatching(files, identifier).filter((file) => file !== owner);
@@ -206,18 +210,21 @@ test("C6 censo: nenhum `as UploadVerification` em src/** fora do próprio upload
   );
 });
 
-// ── C7: o guard de tenant está nos 4 resolvers (o alcance da LEITURA, declarado) ──────────────────
+// ── C7: o guard de tenant está nos 5 leitores (o alcance da LEITURA, declarado) ───────────────────
 
-test("C7 censo: os 4 sítios de `getObject(` que consomem storage chamam o guard de tenant antes", async () => {
+test("C7 censo: os 5 sítios de `getObject(` que consomem storage chamam o guard de tenant antes", async () => {
   // O E1·2 fecha o vazamento cross-tenant por HERANÇA DE CHAMADA: E5 (owner-portal) alcança o objeto
-  // por `resolveAttachmentDownload`. Esta cláusula afirma que os 4 resolvers têm o guard — e DECLARA o
-  // que não cobre: um QUINTO leitor que apareça amanhã passa por fora em silêncio (R2·3 do crítico).
+  // por `resolveAttachmentDownload`. Esta cláusula afirma que os leitores têm o guard — e DECLARA o
+  // que não cobre: um leitor NOVO que apareça amanhã passa por fora em silêncio (R2·3 do crítico).
+  // Conserto c1 do #525 (B-RDV-COMPROVANTE): o comprovante de despesa passa a ler o storage da D-014 e
+  // entra NOMINAL como o 5º leitor (`serveReceiptFile`).
   const files = await sourceFiles();
   const resolvers = [
     "modules/attachments/attachment.storage.ts",
     "modules/work-orders/work-order-attachment.storage.ts",
     "modules/damages/damage-attachment.storage.ts",
     "modules/checklists/checklist-attachment.storage.ts",
+    "modules/expense-management/expense-receipt.service.ts",
   ];
   for (const resolver of resolvers) {
     const file = files.find((candidate) => candidate.relativePath === resolver);
@@ -227,7 +234,7 @@ test("C7 censo: os 4 sítios de `getObject(` que consomem storage chamam o guard
       `${resolver} lê o storage sem conferir o prefixo de tenant da linha — ver B-O6R-07b E1·2.`,
     );
   }
-  // E o guard não é chamado de lugar nenhum além destes 4 + o próprio módulo.
+  // E o guard não é chamado de lugar nenhum além destes 5 + o próprio módulo.
   const callers = filesMatching(files, "assertStorageKeyWithinTenant(")
     .filter((file) => file !== "modules/evidence/storage-key-scope.ts")
     .sort();

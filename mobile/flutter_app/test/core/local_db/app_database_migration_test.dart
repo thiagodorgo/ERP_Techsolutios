@@ -178,7 +178,7 @@ void main() {
       // checklist_runs.kind (ALTER do schema 8) presente.
       expect(await _columns(db, 'checklist_runs'), contains('kind'));
 
-      expect(await _userVersion(db), 14);
+      expect(await _userVersion(db), 15);
     },
   );
 
@@ -219,7 +219,7 @@ void main() {
         containsAll(<String>['service_type', 'vehicle_id', 'team_id']),
       );
       expect(await _columns(db, 'checklist_runs'), contains('kind'));
-      expect(await _userVersion(db), 14);
+      expect(await _userVersion(db), 15);
     },
   );
 }

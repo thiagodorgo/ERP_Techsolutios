@@ -117,6 +117,29 @@ export type MobileActionReceipt = {
   readonly createdAt: Date;
 };
 
+// B-RDV-COMPROVANTE — o comprovante persistido (modelo `ExpenseReceipt`, schema.prisma:2927; nenhuma
+// migração: `file_key` e `upload_status` já existem). `fileKey` é a storage key INTERNA — nunca sai
+// em resposta pública nem em metadado de auditoria (allowlist §2.8).
+export type ExpenseReceiptRecord = {
+  readonly id: string;
+  readonly tenantId: string;
+  readonly itemId: string;
+  readonly localHash: string;
+  readonly mimeType: string;
+  readonly uploadStatus: string;
+  readonly fileKey?: string;
+  readonly createdAt: Date;
+};
+
+export type CreateExpenseReceiptInput = {
+  readonly tenantId: string;
+  readonly itemId: string;
+  readonly localHash: string;
+  readonly mimeType: string;
+  readonly uploadStatus: string;
+  readonly fileKey?: string;
+};
+
 export type ListResult<T> = {
   readonly items: readonly T[];
   readonly total: number;

@@ -557,6 +557,14 @@ Storage de anexos de checklist:
 - credenciais S3 devem vir de secrets do ambiente (`CHECKLIST_STORAGE_S3_ACCESS_KEY_ID` e `CHECKLIST_STORAGE_S3_SECRET_ACCESS_KEY`) ou cadeia padrao do provider, nunca de valores reais commitados;
 - `.env.example` usa apenas placeholders vazios e exemplos locais.
 
+Comprovante de despesa (B-RDV-COMPROVANTE, conserto c1 do PR #525) — usa o MESMO storage da D-014:
+
+- em producao (AWS, `D-INFRA-PROVIDER-AWS`; o portao vale com `NODE_ENV=production`), o comprovante exige `CHECKLIST_STORAGE_PROVIDER=s3`, `CHECKLIST_STORAGE_S3_BUCKET`, `CHECKLIST_STORAGE_S3_REGION` e `CHECKLIST_STORAGE_S3_ENDPOINT=https://s3.<regiao>.amazonaws.com`, explicito (em Sao Paulo, `https://s3.sa-east-1.amazonaws.com`). Endpoint vazio, outro host, porta, caminho ou `http://` fazem o comprovante responder 503. Com o endpoint vazio, o SDK escolheria o destino por `AWS_ENDPOINT_URL_S3`, `AWS_ENDPOINT_URL` ou `~/.aws/config`, que o portao nao ve;
+- a credencial vem por papel IAM ou segredo do ambiente, nunca do codigo;
+- o bucket e privado (Block Public Access), com SSE e versionamento, e sem regra de ciclo de vida que expire ou apague objetos sob o prefixo `CHECKLIST_STORAGE_S3_PREFIX` (padrao `checklist-attachments/`): o comprovante divide bucket e prefixo com os anexos da D-014, na chave `<prefixo>/<org>/expense-receipt-<rep>/<uuid>-comprovante.<ext>`;
+- sem isso, a rota responde 503 `receipt_storage_unavailable`, antes do antivirus e da gravacao, e o comprovante fica no aparelho;
+- nenhuma variavel nova (a `CHECKLIST_STORAGE_S3_ENDPOINT` ja existe e o mesmo valor serve aos outros usuarios da D-014); `docker-compose.prod.yml`, `Dockerfile`, `fly.*.toml` e o job `docker` da CI nao mudam. O compose de validacao local-prod continua sem S3, e o comprovante responde 503 la, como ja responde pelo antivirus `unavailable`.
+
 Gerar Prisma Client:
 
 ```bash

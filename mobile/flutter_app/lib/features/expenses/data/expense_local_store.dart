@@ -134,6 +134,8 @@ class ExpenseReportCodec {
   static Map<String, Object?> _itemToJson(ExpenseItem item) {
     return {
       'local_id': item.localId,
+      // B-RDV-COMPROVANTE (conserto c1, §2(d)3): o id do item no servidor persiste no codec.
+      'server_id': item.serverId,
       'tenant_id': item.tenantId,
       'category_id': item.categoryId,
       'amount': item.amount,
@@ -147,6 +149,8 @@ class ExpenseReportCodec {
   static ExpenseItem _itemFromJson(Map<String, dynamic> json) {
     return ExpenseItem(
       localId: json['local_id'] as String,
+      // JSON de antes do conserto não tem a chave: `null`, sem erro.
+      serverId: json['server_id'] as String?,
       tenantId: json['tenant_id'] as String,
       categoryId: json['category_id'] as String,
       amount: (json['amount'] as num).toDouble(),

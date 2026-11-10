@@ -193,6 +193,17 @@ typedef ExpenseSyncEntityUpdater =
       SyncStatus status,
     );
 
+/// B-RDV-COMPROVANTE (conserto c1 do #525, §12.6 e §13.1) — quais comprovantes deixam de
+/// segurar o envio do relatório NESTE passe. A liberação é POR AÇÃO: não existe construtor
+/// que solte o tenant inteiro.
+class ReceiptRelease {
+  const ReceiptRelease.none() : busyIds = const <String>{};
+  const ReceiptRelease.busy(this.busyIds);
+
+  /// `clientActionId` dos comprovantes tentados NESTE passe que receberam 503 do servidor.
+  final Set<String> busyIds;
+}
+
 class SyncReplayService {
   const SyncReplayService({
     required SyncQueueRepository queue,
@@ -216,18 +227,30 @@ class SyncReplayService {
 
   bool get channelOff => _api is PendingBackendExpenseSyncBatchApi;
 
-  Future<SyncReplayResult> replayTenant(String tenantId) async {
+  /// O lote de despesa SEM liberação: nenhum comprovante deixa de segurar o envio do
+  /// relatório (é o 1º lote do passe, conserto c1 do #525, §12.6 e §13.1).
+  Future<SyncReplayResult> replayTenant(String tenantId) =>
+      replayTenantReleasing(tenantId, const ReceiptRelease.none());
+
+  /// O lote de despesa com [release]: os comprovantes que, NESTE passe, deixam de segurar
+  /// o envio do relatório (o 2º lote de `runExpenseSyncPass`). É um método irmão, e não um
+  /// parâmetro nomeado de [replayTenant], porque subclasses de teste sobrescrevem
+  /// `replayTenant(String)` e um parâmetro novo quebraria a sobrescrita.
+  Future<SyncReplayResult> replayTenantReleasing(
+    String tenantId,
+    ReceiptRelease release,
+  ) async {
     if (channelOff || _api is SessionlessExpenseSyncBatchApi) {
       return const SyncReplayResult(synced: [], failed: [], conflicts: []);
     }
 
-    final first = await _replayPass(tenantId);
+    final first = await _replayPass(tenantId, release);
     final createdReport = first.synced.any(
       (action) => action.type == ExpenseSyncActionTypes.reportCreate,
     );
     if (!createdReport) return first;
 
-    final second = await _replayPass(tenantId);
+    final second = await _replayPass(tenantId, release);
     return SyncReplayResult(
       synced: [...first.synced, ...second.synced],
       failed: [...first.failed, ...second.failed],
@@ -235,7 +258,10 @@ class SyncReplayService {
     );
   }
 
-  Future<SyncReplayResult> _replayPass(String tenantId) async {
+  Future<SyncReplayResult> _replayPass(
+    String tenantId,
+    ReceiptRelease release,
+  ) async {
     final pending = await _queue.pendingForTenant(tenantId);
 
     final synced = <SyncAction>[];
@@ -247,6 +273,16 @@ class SyncReplayService {
       if (action.status == SyncStatus.conflict) continue;
 
       if (action.type == ExpenseSyncActionTypes.receiptAttach) {
+        // B-RDV-COMPROVANTE: com o canal multipart LIGADO (o conjunto suportado
+        // contem o tipo), o comprovante NAO e deste replay — fica pendente para
+        // o expense_receipt_sync. Sem o canal (conjunto antigo/nulo), conflito
+        // visivel como antes.
+        final receiptChannelOn =
+            _supportedActionTypes?.contains(
+              ExpenseSyncActionTypes.receiptAttach,
+            ) ??
+            false;
+        if (receiptChannelOn) continue;
         final next = action.copyWith(
           status: SyncStatus.conflict,
           lastErrorCode: 'UNSUPPORTED_ACTION',
@@ -271,7 +307,7 @@ class SyncReplayService {
         continue;
       }
 
-      final prepared = await _prepareForBackend(tenantId, action);
+      final prepared = await _prepareForBackend(tenantId, action, release);
       if (prepared == null) continue;
       eligible.add(prepared);
     }
@@ -470,6 +506,7 @@ class SyncReplayService {
   Future<SyncAction?> _prepareForBackend(
     String tenantId,
     SyncAction action,
+    ReceiptRelease release,
   ) async {
     if (action.type == ExpenseSyncActionTypes.reportCreate) {
       return action;
@@ -487,7 +524,8 @@ class SyncReplayService {
     }
 
     if (action.type == ExpenseSyncActionTypes.reportSubmit &&
-        await _hasUnsyncedItems(tenantId, reportLocalId)) {
+        await _hasUnsyncedDependents(tenantId, reportLocalId, release)) {
+      // Adiado: sem gastar tentativa e sem mudar estado (sai num lote seguinte).
       return null;
     }
 
@@ -502,17 +540,43 @@ class SyncReplayService {
     return action.copyWith(payload: {...action.payload, 'report_id': resolved});
   }
 
-  Future<bool> _hasUnsyncedItems(String tenantId, String reportLocalId) async {
+  /// O envio do relatório espera os dependentes do MESMO `report_local_id`: todo item que não
+  /// esteja `synced` e todo comprovante que segure o envio pelo predicado `_receiptHoldsSubmit`
+  /// (B-RDV-COMPROVANTE, conserto c1, §12.6 e §13.1).
+  Future<bool> _hasUnsyncedDependents(
+    String tenantId,
+    String reportLocalId,
+    ReceiptRelease release,
+  ) async {
     final actions = await _queue.actionsForTenant(tenantId);
     for (final action in actions) {
-      if (action.type != ExpenseSyncActionTypes.itemCreate) continue;
       if (_readString(action.payload['report_local_id']) != reportLocalId) {
         continue;
       }
-      if (action.status == SyncStatus.synced) continue;
-      return true;
+      if (action.type == ExpenseSyncActionTypes.itemCreate) {
+        if (action.status != SyncStatus.synced) return true;
+        continue;
+      }
+      if (action.type == ExpenseSyncActionTypes.receiptAttach &&
+          _receiptHoldsSubmit(action, release)) {
+        return true;
+      }
     }
     return false;
+  }
+
+  /// §13.1 — o comprovante segura o envio do relatório, salvo três saídas. Nenhuma ação da
+  /// fila nasce `local`; `pending`, `failed` (esgotado inclusive: só sai pelo "Tentar de
+  /// novo") e `syncing` seguram.
+  bool _receiptHoldsSubmit(SyncAction r, ReceiptRelease release) {
+    // L1 — subiu
+    if (r.status == SyncStatus.synced) return false;
+    // L2 — recusado: não tem saída no app
+    if (r.status == SyncStatus.conflict) return false;
+    // L4 — tentado neste passe, terminou em 503
+    if (release.busyIds.contains(r.clientActionId)) return false;
+    // L5 — não tentado, em curso, falhou, esgotado: segura
+    return true;
   }
 
   bool _isLocalExpenseId(String value) {
