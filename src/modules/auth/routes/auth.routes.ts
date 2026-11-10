@@ -19,11 +19,13 @@ import {
   getAuthenticatedActor,
 } from "../middleware/authenticated-actor.middleware.js";
 import type { AuthSessionService } from "../services/auth-session.service.js";
+import { getIdentityLinkService, type IdentityLinkService } from "../services/identity-link.service.js";
 import type { LocalAuthLoginService, AnonymousCandidateResult } from "../services/local-auth-login.service.js";
 import type { LocalAuthLoginResult } from "../types/auth.types.js";
 import type { verifyPassword } from "../services/password.service.js";
 import type { ICoreSaasService } from "../../core-saas/services/core-saas-service.interface.js";
 import { ROLE_PERMISSIONS, resolvePermissionsForRoles, type Role } from "../../core-saas/permissions/catalog.js";
+import { CoreSaasError } from "../../core-saas/types/core-saas.types.js";
 
 // Permissões efetivas dos papéis do usuário — a MESMA resolução que o backend usa
 // no RBAC (tenant-context). Vai no corpo do login para o frontend derivar os guards
@@ -51,6 +53,10 @@ type AuthRouterOptions = {
     readonly clock?: () => number;
     readonly resolveClientIp?: (request: Request) => string;
   };
+  // B-USERS-ACESSO-SEG (S1) — o serviço de identidade do reset por administrador; injetável para o
+  // teste medir sob o papel efêmero. Resolvido só quando a rota do reset é chamada (o modo memória e os
+  // testes sem banco não o tocam).
+  readonly getIdentityLinkService?: () => Promise<IdentityLinkService>;
 };
 
 type LoginRequestBody = {
@@ -75,6 +81,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
   const resolveTokenExpiration =
     options.getAccessTokenExpiresInSeconds ?? getAccessTokenExpiresInSeconds;
   const resolveCoreSaasService = options.getCoreSaasService;
+  const resolveIdentityLinkService = options.getIdentityLinkService ?? getIdentityLinkService;
 
   // B-O6R-01 (§6) — o serviço anônimo é cacheado por router: o balde por e-mail vive entre
   // requisições. Sem core-saas configurado não há fonte de candidatos → o login sem tenantId
@@ -467,7 +474,17 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
           permissions: resolveLoginPermissions(match.user.roles),
         },
       });
-    } catch {
+    } catch (error) {
+      // B-USERS-ACESSO-SEG (P-SEG-2) — a recusa da sessão da senha provisória sai com o código dela
+      // (403 password_change_required, mensagem fixa do serviço). Qualquer outra falha segue no 500
+      // genérico, sem a mensagem crua.
+      if (error instanceof CoreSaasError && error.statusCode === 403) {
+        response.status(403).json({
+          error: { code: error.code, reason: error.reason, message: error.message },
+        });
+        return;
+      }
+
       response.status(500).json({
         error: { code: "INTERNAL_SERVER_ERROR", message: "Unable to switch tenant." },
       });

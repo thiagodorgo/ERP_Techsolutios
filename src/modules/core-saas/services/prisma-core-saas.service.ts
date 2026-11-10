@@ -24,11 +24,23 @@ import {
   type User,
   type UserStatus,
 } from "../types/core-saas.types.js";
+import type { PrismaClient } from "@prisma/client";
+
 import type { AuthenticatedActor as AuthJwtActor } from "../../auth/types/auth.types.js";
 import { IdentityLinkRepository } from "../../auth/repositories/identity-link.repository.js";
 
 export class PrismaCoreSaasService {
-  constructor(private readonly store: AsyncCoreSaasStore = new PrismaCoreSaasStore()) {}
+  // B-USERS-ACESSO-SEG (P-SEG-2) — `identityClient` é o client dos fluxos de identidade (listagem de
+  // organizações, troca de organização, normalização do par). Opcional: em produção é o global
+  // (src/database/prisma.ts); o teste passa o papel efêmero NOSUPERUSER NOBYPASSRLS para medir sob RLS.
+  constructor(
+    private readonly store: AsyncCoreSaasStore = new PrismaCoreSaasStore(),
+    private readonly identityClient?: PrismaClient,
+  ) {}
+
+  private async identityPrisma(): Promise<PrismaClient> {
+    return this.identityClient ?? (await import("../../../database/prisma.js")).prisma;
+  }
 
   async createTenant(
     input: CreateTenantInput,
@@ -412,9 +424,9 @@ export class PrismaCoreSaasService {
     actor: AuthJwtActor,
     requestedTenantId: string,
   ): Promise<TenantMembership | null> {
-    const [{ prisma }, { setTenantRlsContext }, { resolveIdentityIdForPair, normalizePairIdentity }] =
+    const [prisma, { setTenantRlsContext }, { resolveIdentityIdForPair, normalizePairIdentity }] =
       await Promise.all([
-        import("../../../database/prisma.js"),
+        this.identityPrisma(),
         import("../../../database/rls.js"),
         import("../../auth/services/identity-resolver.js"),
       ]);
@@ -425,6 +437,18 @@ export class PrismaCoreSaasService {
     // processo (varredura por valor cobre esta rota — §5.7).
     return prisma.$transaction(async (tx) => {
       await setTenantRlsContext(tx, actor.tenantId);
+
+      // B-USERS-ACESSO-SEG (P-SEG-2, Emenda 1) — com a senha provisória ainda não trocada, a sessão
+      // não troca de organização. Lido sob o GUC da organização ATIVA do ator, antes de olhar a
+      // organização pedida: a recusa não lê nem devolve nada dela.
+      const marks = await tx.$queryRaw<Array<{ must_change_password: boolean }>>`
+        SELECT must_change_password FROM local_auth_credentials
+        WHERE tenant_id = ${actor.tenantId}::uuid AND user_id = ${actor.userId}::uuid
+      `;
+
+      if (marks.some((mark) => mark.must_change_password)) {
+        throw passwordChangeRequired();
+      }
 
       let identityId = await resolveIdentityIdForPair(tx, actor.tenantId, actor.userId);
 
@@ -480,8 +504,8 @@ export class PrismaCoreSaasService {
     readonly tenantId: string;
     readonly userId: string;
   }): Promise<string | null> {
-    const [{ prisma }, { withTenantRls }, { normalizePairIdentity }] = await Promise.all([
-      import("../../../database/prisma.js"),
+    const [prisma, { withTenantRls }, { normalizePairIdentity }] = await Promise.all([
+      this.identityPrisma(),
       import("../../../database/rls.js"),
       import("../../auth/services/identity-resolver.js"),
     ]);
@@ -526,6 +550,17 @@ function accessDeniedAcrossTenants(): CoreSaasError {
 
 function notFound(reason: string, message: string): CoreSaasError {
   return new CoreSaasError(404, "NOT_FOUND", reason, message);
+}
+
+// B-USERS-ACESSO-SEG (P-SEG-2) — a sessão da senha provisória só troca a senha. Código e motivo fixos,
+// os mesmos da religação (identity-link.service.ts).
+export function passwordChangeRequired(): CoreSaasError {
+  return new CoreSaasError(
+    403,
+    "FORBIDDEN",
+    "password_change_required",
+    "Password change is required before this action.",
+  );
 }
 
 // B-USERS-ACESSO-SEG (S6) — o mesmo código e o mesmo motivo do caminho de memória.

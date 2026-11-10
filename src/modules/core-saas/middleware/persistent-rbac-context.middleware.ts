@@ -125,11 +125,21 @@ export function createPersistentAuthorizationResolver(
         new UserRoleRepository(tx),
         new RoleRepository(tx),
         {
-          findStatusForTenant: (userId, tenantId) =>
-            tx.user.findFirst({
+          // Status do usuário e a marca da senha provisória (P-SEG-2), numa leitura só, sob o GUC da
+          // organização do ator.
+          findStatusForTenant: async (userId, tenantId) => {
+            const user = await tx.user.findFirst({
               where: { id: userId, tenant_id: tenantId },
-              select: { status: true },
-            }),
+              select: { status: true, local_auth_credentials: { select: { must_change_password: true } } },
+            });
+
+            return user
+              ? {
+                  status: user.status,
+                  mustChangePassword: user.local_auth_credentials.some((credential) => credential.must_change_password),
+                }
+              : null;
+          },
         },
       );
 

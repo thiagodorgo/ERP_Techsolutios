@@ -183,6 +183,11 @@ export class IdentityLinkService {
           throw identityLinkError(403, "FORBIDDEN", "identity_unresolved", "Actor identity could not be resolved.");
         }
 
+        // 3b. B-USERS-ACESSO-SEG (P-SEG-2, Emenda 1) — a sessão da senha provisória não liga conta.
+        if (await this.mustChangePassword(tx, actor.tenantId, actor.userId)) {
+          throw passwordChangeRequiredError();
+        }
+
         // 4. GUC de tenant = organização PROVADA antes da trava (dba 1): o USING da política
         // precisa passar para a org B enquanto o contexto da requisição é a A.
         await setTenantRlsContext(tx, input.tenantId);
@@ -198,6 +203,12 @@ export class IdentityLinkService {
 
         if (!provedLink) {
           throw identityLinkError(403, "FORBIDDEN", "identity_unresolved", "Proved identity could not be resolved.");
+        }
+
+        // 4b. B-USERS-ACESSO-SEG (P-SEG-2) — a senha provisória não PROVA conta. Lido DEPOIS da trava do
+        // vínculo provado (o reset por administrador trava o mesmo vínculo): quem chega depois vê a marca.
+        if (await this.mustChangePassword(tx, input.tenantId, login.user.id)) {
+          throw passwordChangeRequiredError();
         }
 
         // 5. Idempotência: mesma identidade → 200 already_linked, nada muda.
@@ -715,6 +726,21 @@ export class IdentityLinkService {
     return rows[0] ?? null;
   }
 
+  // B-USERS-ACESSO-SEG (P-SEG-2) — a marca da senha provisória do PAR. Pré-condição do chamador: o GUC
+  // de tenant da organização do par já está posto na transação (local_auth_credentials tem RLS).
+  private async mustChangePassword(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const rows = await tx.$queryRaw<Array<{ must_change_password: boolean }>>`
+      SELECT must_change_password FROM local_auth_credentials
+      WHERE tenant_id = ${tenantId}::uuid AND user_id = ${userId}::uuid
+    `;
+
+    return rows.some((row) => row.must_change_password);
+  }
+
   private async recordAudit(
     tx: Prisma.TransactionClient,
     input: Parameters<EnterpriseAuditLogService["record"]>[0],
@@ -734,6 +760,16 @@ export function identityLinkError(
   message: string,
 ): IdentityLinkError {
   return { statusCode, code, reason, message };
+}
+
+// B-USERS-ACESSO-SEG (P-SEG-2) — o mesmo código e motivo da troca de organização (core-saas).
+export function passwordChangeRequiredError(): IdentityLinkError {
+  return identityLinkError(
+    403,
+    "FORBIDDEN",
+    "password_change_required",
+    "Password change is required before this action.",
+  );
 }
 
 function isUniqueViolation(error: unknown): boolean {

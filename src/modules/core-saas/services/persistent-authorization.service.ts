@@ -32,12 +32,13 @@ type RoleRepositoryLike = {
 
 // B-USERS-ACESSO-SEG (S4, ajuste 2 da crítica, D-USERS-3) — a leitura do STATUS do usuário na
 // organização. Obrigatória no construtor (fail-closed por tipo): nenhum caminho monta este serviço
-// sem dizer de onde vem o status.
+// sem dizer de onde vem o status. P-SEG-2 (Emenda 1): a mesma leitura traz a marca da senha
+// provisória (`local_auth_credentials.must_change_password`).
 export type UserStatusLookupLike = {
   findStatusForTenant(
     userId: string,
     tenantId: string,
-  ): Promise<{ readonly status: string } | null>;
+  ): Promise<{ readonly status: string; readonly mustChangePassword?: boolean } | null>;
 };
 
 export type ResolvePersistentAuthorizationInput = {
@@ -66,9 +67,11 @@ export class PersistentAuthorizationService {
     // então a desativação corta as permissões na PRÓXIMA requisição, mesmo com o token de acesso
     // ainda válido: os até 15 min do D-USERS-2 valem para a identidade do token, não para o que
     // ela pode fazer. Nenhuma consulta nova no caminho do token (authenticated-actor fica intocado).
+    // P-SEG-2 (Emenda 1, opção a) — com a senha provisória ainda não trocada, a sessão não executa
+    // nada que passe por requirePermission: a única ação dela é POST /auth/password (só JWT).
     const user = await this.users.findStatusForTenant(input.userId, input.tenantId);
 
-    if (!user || user.status !== "active") {
+    if (!user || user.status !== "active" || user.mustChangePassword === true) {
       return {
         roles: [],
         permissions: [],
