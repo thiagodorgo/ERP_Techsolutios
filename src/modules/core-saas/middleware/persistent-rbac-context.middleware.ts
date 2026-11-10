@@ -1,3 +1,4 @@
+import type { PrismaClient } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
 
 import { env } from "../../../config/env.js";
@@ -88,21 +89,51 @@ async function getDefaultPersistentAuthorizationResolver(): Promise<PersistentAu
 }
 
 async function createDefaultPersistentAuthorizationResolver(): Promise<PersistentAuthorizationResolver> {
-  const [{ prisma }, { withTenantRls }, { RoleRepository, UserRoleRepository }, { PersistentAuthorizationService }] =
-    await Promise.all([
-      import("../../../database/prisma.js"),
-      import("../../../database/rls.js"),
-      import("../repositories/index.js"),
-      import("../services/persistent-authorization.service.js"),
-    ]);
+  const { prisma } = await import("../../../database/prisma.js");
 
-  return (input) =>
-    withTenantRls(prisma, input.tenantId, async (tx) => {
+  return createPersistentAuthorizationResolver(prisma);
+}
+
+// B-USERS-ACESSO-SEG (S4) — a fiação do resolvedor, exportada para ser medida com o cliente que o
+// teste escolher (o papel efêmero NOSUPERUSER NOBYPASSRLS). O padrão de produção é esta mesma
+// função com o cliente global. O status do usuário é lido na MESMA transação RLS dos papéis. Os
+// imports continuam preguiçosos (carregados uma vez, no primeiro uso): o modo memória não abre
+// Prisma (tests/persistent-rbac-middleware.test.ts).
+export function createPersistentAuthorizationResolver(
+  client: PrismaClient,
+): PersistentAuthorizationResolver {
+  let dependencies:
+    | Promise<
+        [
+          typeof import("../../../database/rls.js"),
+          typeof import("../repositories/index.js"),
+          typeof import("../services/persistent-authorization.service.js"),
+        ]
+      >
+    | undefined;
+
+  return async (input) => {
+    const [{ withTenantRls }, { RoleRepository, UserRoleRepository }, { PersistentAuthorizationService }] =
+      await (dependencies ??= Promise.all([
+        import("../../../database/rls.js"),
+        import("../repositories/index.js"),
+        import("../services/persistent-authorization.service.js"),
+      ]));
+
+    return withTenantRls(client, input.tenantId, async (tx) => {
       const service = new PersistentAuthorizationService(
         new UserRoleRepository(tx),
         new RoleRepository(tx),
+        {
+          findStatusForTenant: (userId, tenantId) =>
+            tx.user.findFirst({
+              where: { id: userId, tenant_id: tenantId },
+              select: { status: true },
+            }),
+        },
       );
 
       return service.resolveForActor(input);
     });
+  };
 }

@@ -2,6 +2,7 @@
 
 import { prisma } from "../../../database/prisma.js";
 import { setTenantRlsContext, withTenantRls } from "../../../database/rls.js";
+import { AuthSessionRepository } from "../../auth/repositories/auth-session.repository.js";
 import { EnterpriseAuditLogService } from "../audit/audit-log.service.js";
 import {
   AuditLogRepository,
@@ -187,6 +188,16 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         });
       }
 
+      // Step 1b (B-USERS-ACESSO-SEG, Achado 3): desativar revoga, NA MESMA transação, todas as
+      // sessões ativas do par (organização, usuário). O GUC de tenant já está na organização do par
+      // (withTenantRls acima), a condição que o repositório exige para não afetar zero linhas sem
+      // erro. A renovação passa a recusar por revogação, e a sessão some da lista de ativas.
+      const revokedSessions =
+        input.status === "inactive"
+          ? (await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(input.userId, input.tenantId))
+              .count
+          : undefined;
+
       // Step 2: replace role assignments when roles were provided. Clearing then
       // reassigning keeps the set exactly equal to the requested roles.
       if (input.roles !== undefined) {
@@ -227,6 +238,7 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         resourceId: input.userId,
         outcome: "success",
         severity: "info",
+        ...(revokedSessions !== undefined ? { metadata: { revoked_sessions: revokedSessions } } : {}),
       });
 
       const savedUser = await txUsers.findByIdForTenant(input.userId, input.tenantId);
