@@ -87,3 +87,11 @@
   RR5 1 · RR-db 2).
 - Docker: medido no início (`docker ps`) na F4; hoje ocupado (ass08pg/ass08redis + cadeira C3) — F4 pulada
   até liberar, conforme briefing.
+
+## F1 — Vermelho-controle (testes escritos ANTES do código, rodados na árvore == origin/main)
+
+- `node --test --import tsx tests/b-rdv-comprovante-receipt-routes.test.ts` · `tests 8 · pass 0 · fail 8`
+  (RR1.1–RR1.4, RR2.1–RR2.2, RR3.1–RR3.2; os RR2 provam primeiro o caminho feliz do dono — 201 — para o
+  404-esperado não passar de graça com rota inexistente) · VERMELHO-CONTROLE REGISTRADO.
+- `node --test --import tsx tests/b-rdv-comprovante-receipt-contract.test.ts` · `fail 1` (RR5 — nem
+  `expense_receipt_sync.dart` nem `expense-receipt.routes.ts` existem na base) · VERMELHO-CONTROLE REGISTRADO.
