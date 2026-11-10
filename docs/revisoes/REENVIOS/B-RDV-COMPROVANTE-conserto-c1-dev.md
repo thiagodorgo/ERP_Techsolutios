@@ -653,3 +653,60 @@
 - head `c7001c34c2c0be5cae7a869bbc64247896b1736f` · feito: F0–F6a e o conserto do CI · falta: F6b → F7 → F8 · próximo comando: escrever RR-E.3 a
   RR-E.6 em `test/core/sync/brdvcomp_c1_recusas_test.dart` (cliente Dio real, servidor fingido com o `reason` no
   corpo) · arquivos meio escritos: nenhum.
+
+## F6b — 401, 403, 422 e 400 pelo motivo; recusas preservam o blob (RR-E.3 a RR-E.6) — 08:36
+
+- Teste ANTES do código: `test/core/sync/brdvcomp_c1_recusas_test.dart` (novo; o RR-E.6 é o arquivo que a §12.12
+  nomeia, e o RR-E.3/E.4/E.5 ficam nele também). Cliente Dio REAL (`createAuthenticatedHttpClient` + interceptor) e
+  upload REAL; o servidor fingido responde com o corpo de erro do backend `{error: {code, reason, message}}`
+  (`expense-receipt.routes.ts` l.170–171). O RR-E.6 roda lote → upload → lote com os serviços reais. Só APIs do objeto.
+- `dart format` (local e sonda 3.1.14) `0 changed` · `flutter analyze` → "No issues found!".
+- **No head ANTES do código:** RR-E.3 `Expected: <SyncStatus.pending> Actual: <SyncStatus.conflict>` com
+  `status=conflict retry=0 code=SESSION_FORBIDDEN receipt=conflict`; RR-E.4 `Expected: 'RECEIPT_REPORT_LOCKED' Actual:
+  'RECEIPT_REJECTED'` com `status=conflict retry=0 code=RECEIPT_REJECTED receipt=conflict`; RR-E.5 verde (é guarda; o
+  plano declara que quem prova é a M-E5); RR-E.6 `Expected: <SyncStatus.conflict> Actual: <SyncStatus.failed>` com
+  `status=failed retry=1 code=NETWORK_ERROR receipt=failed`.
+- **Vermelho-controle no objeto** (`w-dev525-vc`, arquivo copiado, rodado e apagado): as mesmas três falhas, com as
+  mesmas linhas, e o RR-E.5 verde — as colunas do plano ("401 vira `conflict SESSION_FORBIDDEN`", "o
+  `report_not_editable` sai como verificação de segurança", "guarda", "`failed` r1") · `w-dev525-vc` limpo.
+- Código (`lib/core/sync/expense_receipt_sync.dart`):
+  - `ExpenseReceiptRefusal(statusCode, reason)` e `ExpenseReceiptForbidden`, que NÃO são `ApiError` (a hierarquia é
+    selada em `api_error.dart`, fora do PERMITIDO); `_receiptErrorReason` lê `error.reason` como o
+    `_expenseErrorReason` do lote;
+  - `DioExpenseReceiptUploadApi`: 403 → `ExpenseReceiptForbidden`; 422 ou 400 com motivo → `ExpenseReceiptRefusal`; o
+    resto → `mapDioError`, intocado;
+  - no serviço, `on ExpenseReceiptRefusal` (`_refusal`: 422 `report_not_editable` → `RECEIPT_REPORT_LOCKED`, "O
+    relatório já foi enviado; este comprovante ficou no aparelho."; outro 422 → `RECEIPT_REJECTED`, como hoje; 400 →
+    `RECEIPT_INVALID`, "O comprovante não pôde ser enviado; anexe de novo pelo item.") e `on ExpenseReceiptForbidden`
+    (`SESSION_FORBIDDEN`), os dois ANTES dos `on` de `ApiError` e do `catch` do isolamento (§13.1 item 5); `on
+    ApiUnauthorizedError` → `pending` sem custo, `SESSION_EXPIRED`, "Sessão expirada; o comprovante sobe quando você
+    entrar de novo.", comprovante `pending`, blob intocado, fora do `busy`; 408 e 429 seguem `ApiServerError` →
+    `_failWithRetry` (com custo).
+- **RR-C.4 (a) apertado** (o registro da F5c): o servidor fingido passa a lançar o que o `DioExpenseReceiptUploadApi`
+  lança para o 422 `report_not_editable` (`ExpenseReceiptRefusal(422, 'report_not_editable')`, antes `ApiServerError(422)`),
+  e o caso afirma `lastErrorCode == 'RECEIPT_REPORT_LOCKED'`.
+- `dart format` (local e sonda) `0 changed` · `flutter analyze lib` + os dois testes → "No issues found!" · `flutter test`
+  dos 2 arquivos e de `test/core/network` → `+11: All tests passed!`. **OK.**
+- Mutações (uma por vez, com o código no índice; `git diff --exit-code` = 0 depois de cada reversão por edição inversa):
+  - **M-E3** (o 401 de volta a `conflict SESSION_FORBIDDEN`, como no objeto) → `not ok` RR-E.3 `Expected:
+    <SyncStatus.pending> Actual: <SyncStatus.conflict>` com `status=conflict retry=0 code=SESSION_FORBIDDEN
+    receipt=conflict` · revertida. **OK.**
+  - **M-E4** (apagar o caso `report_not_editable` do `_refusal`: todo 422 → `RECEIPT_REJECTED`) → `not ok` RR-E.4
+    `Expected: 'RECEIPT_REPORT_LOCKED' Actual: 'RECEIPT_REJECTED'` e `not ok` RR-C.4 (o mesmo) · revertida. **OK.**
+  - **M-E5** (`await _blobStore.delete(blobRef);` no ramo `on ApiConflictError`) → `not ok` RR-E.5 `Expected: not null
+    Actual: <null>` em `409: status=conflict retry=0 code=RECEIPT_PAYLOAD_MISMATCH receipt=conflict` · revertida. **OK.**
+  - **M-E6** (o 400 de volta ao `_failWithRetry`: a condição da recusa fica `status == 422`) → `not ok` RR-E.6
+    `Expected: <SyncStatus.conflict> Actual: <SyncStatus.failed>` com `status=failed retry=1 code=NETWORK_ERROR
+    receipt=failed` · revertida. **OK.**
+- `flutter test test/core/network test/features/b090_auth_production_token_refresh_test.dart test/core/sync
+  test/features/expenses` → `+152: All tests passed!` · `flutter test` (a suíte inteira) → `+1067: All tests passed!`.
+- Os outros `SESSION_FORBIDDEN` da suíte (`bo6r03b_expense_http_errors_test.dart` E4/E9, `bo6r03b_expense_replay_test.dart`)
+  são do LOTE, que não mudou; verdes.
+- **Contagem (medida):** app 45 → 49 (RR-E.3, RR-E.4, RR-E.5, RR-E.6); o conserto chega a M = 102 (backend 48 sem banco +
+  5 `-db`; app 49) e às 42 mutações (backend 19, app 23).
+- Commit `07e9ce1d`.
+
+## RETOMADA 16 (08:37)
+
+- head `07e9ce1d29e959c9b0f4406e37ab94514e46e5df` · feito: F0–F6b e o conserto do CI · falta: F7 → F8 · próximo comando: a F7 (registro e contrato:
+  §10, §12.10, §12.15, §13), começando pela nota da `RBAC_MATRIX.md` l.163 · arquivos meio escritos: nenhum.
