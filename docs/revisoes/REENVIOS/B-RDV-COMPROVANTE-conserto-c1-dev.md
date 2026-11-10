@@ -386,3 +386,26 @@
 - head `8f2803cab9bde81a969b3f5e0bccc422049c0145` · feito: F0–F3, F4a · falta: F4b → F5a → F5b → F5c → F6a → F6b → F7 → F8 · próximo comando:
   escrever RR-D.3 e RR-D.3b (migração 14 → 15) no molde do `bfilausuario_drift_user_id_test.dart` · arquivos meio
   escritos: nenhum.
+
+## F4b — Drift 15 com a guarda (§2(d)1, §12.8); regressões de versão movidas (07:08–07:13)
+
+- Testes ANTES, em `mobile/flutter_app/test/core/local_db/brdvcomp_c1_drift15_migration_test.dart`: **RR-D.3**
+  (banco legado v14 com 1 relatório, 2 itens e 1 comprovante, aberto com `AppDatabase` → `user_version = 15`, coluna
+  `server_id` em `expense_items`, as 4 linhas com os mesmos valores, `server_id` NULL; o critério "reabrir não duplica"
+  saiu, §12.8) e **RR-D.3b** (o rebaixamento: `user_version = 14` COM a coluna → abre em 15 sem erro, com a linha e o
+  `server_id` gravado). Molde: `bfilausuario_drift_user_id_test.dart` e `atk-app-sondas/atk_app_migration_probe_test.dart`.
+- **Vermelho-controle no objeto:** RR-D.3 `Expected: <15> Actual: <14>` (o objeto não tem a versão 15) · RR-D.3b
+  `Expected: <15> Actual: <14>` (vermelho por ausência da versão 15, declarado: quem prova é a M-D3b). **OK.**
+- Código: `schemaVersion => 15`; `onUpgrade` ganha `if (from < 15)`: a tabela existe (molde do `from < 14`) E a coluna
+  NÃO existe (`PRAGMA table_info('expense_items')`) → `ALTER TABLE expense_items ADD COLUMN server_id TEXT`. Regressões
+  movidas, só o número: `app_database_migration_test.dart` l.181 e l.222 e `bfilausuario_drift_user_id_test.dart` l.80 e
+  l.107, `_userVersion(db)` 14 → 15 (títulos intocados). Os outros testes que tocam `user_version` (`b104`, `b105`,
+  `telemetry`) só GRAVAM a versão do legado e não mudam.
+- `dart format` dos arquivos tocados · `flutter test test/core/local_db` + `b104_evidence_real_upload_test` +
+  `telemetry_test` + `b105_gps_operational_map_test` → `+73: All tests passed!`. **OK.**
+- Mutações (`git diff --exit-code -- src tests mobile` = 0 depois de cada reversão por edição inversa):
+  - **M-D3** (apagar o bloco `if (from < 15)`) → RR-D.3 `Expected: contains 'server_id'` (a coluna não nasce) ·
+    revertida. **OK.**
+  - **M-D3b** (a guarda vira a do molde do `from < 14`, que só confere a tabela — a variante `molde` do
+    `patch_d1.mjs`) → RR-D.3b `SqliteException(1): while executing, duplicate column name: server_id` · revertida.
+    **OK.**
