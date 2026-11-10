@@ -1,0 +1,11 @@
+{
+  "cadeira": "C3",
+  "junta": "J519-B-ASS-07",
+  "modelo": "Claude Opus (cruzamento: dev foi Codex gpt-5.6-sol)",
+  "veredito": "APROVA",
+  "arquivos_medidos": ["src/modules/subscription-billing/providers/invoice/**", "src/modules/subscription-billing/providers/tax/**", "tests/ass-07-*.test.ts", "tests/helpers/fake-providers/focusnfe.ts", "tests/ass-06-no-external-calls-guard.test.ts", "**"],
+  "findings": [
+    {"id": "C3-A1", "gravidade": "ajuste", "escopo": "dentro-do-bloco", "summary": "sanitizedErrorMessage redige o certificate so como JSON inteiro; campo interno (password/pfxBase64) ecoado isolado nao seria redigido", "repro": "ler focusnfe.adapter.ts sanitizedErrorMessage: message.split(secret) usa o JSON completo do certificate; sem teste de campo interno", "nota": "repro teorico; provedor real nao ecoa senha de cert em erro; nao bloqueia"}
+  ],
+  "resumo": "Nenhum defeito de produto grave na superficie do bloco. R-NF-6/9/10/12 + regressao verdes por execucao; 2 vermelhos-controle confirmam testes reais; PR aditivo, 0 regressao no bloco."
+}
