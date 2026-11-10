@@ -297,3 +297,47 @@
 
 - head `a4f8cffc5c33a5730af6480b026c86454add9c32` · feito: F0, F1a, F1d, F1b, F1e, F1c, F2a, F2b · falta: F3 → F4a … F8 · próximo comando: subir o
   `dev525-pg` (Postgres 16, `127.0.0.1:5495`) e migrar · arquivos meio escritos: nenhum.
+
+## F3 — `-db`: trava de verdade, teto e as regressões RR-db.1/RR-db.2 (06:40–06:56) — Docker: 1 trabalho
+
+- Terreno: `docker ps` → só `ci522-pg` (1 trabalho) · commit livre **5,68 GB** · porta 5495 livre · `docker run -d
+  --name dev525-pg -p 127.0.0.1:5495:5432 postgres:16` (PostgreSQL 16.15) · `prisma migrate deploy` → "All migrations
+  have been successfully applied". O administrador do cluster só monta; o código sob teste roda nos papéis efêmeros do
+  arnês (`createEphemeralRole`: NOSUPERUSER, NOBYPASSRLS por padrão), conferidos no RR-db.3 (`rolsuper=false`,
+  `rolbypassrls=false`) e com o controle sem contexto (o papel, sem `app.current_tenant_id`, vê 0 relatório).
+- Base no head: RR-db.1 e RR-db.2 verdes com a costura e o resolvedor da F1a. Ajuste do RR-db.2 ao `file_key` novo
+  (`^local:<org>/expense-receipt-<rep>/<uuid>-comprovante.jpg$`) e o cosmético "201 stored" → "201 uploaded" (§2(e)).
+- Testes ANTES (`tests/b-rdv-comprovante-receipt-db.test.ts`): **RR-db.3** (o administrador trava o relatório; o
+  comprovante sob o papel efêmero aparece em `pg_stat_activity` em `Lock` em até 3 s; o dono submete e solta em
+  ~300 ms, abaixo do teto de 2 s → 422 `report_not_editable`, 0 linha), **RR-db.4** (a classe do teste estende
+  `RlsPrismaExpenseManagementRepository` e embrulha o repositório da transação com uma barreira em
+  `createExpenseReceipt`; o submit de OUTRO papel aparece em `Lock`; solta em ~300 ms → 201 e relatório `submitted`,
+  comprovante gravado) e **RR-db.5** (dono de 4 s sem mudar nada → 503 `sync_busy` em até 2,5 s contados da entrada em
+  `Lock`, 0 linha, 0 objeto; o submit idem, status `draft`). A espera é lida por `usename` = o papel efêmero da suíte
+  (único por suíte, nunca o cluster inteiro). Toda barreira e todo dono soltam no `finally`, com prazo (`within`).
+- **No head antes do código:** RR-db.1–4 verdes, `not ok 5 - RR-db.5` → "comprovante: Invalid `prisma.$queryRaw()` …
+  Raw query failed. Code: `55P03`. Message: `canceling statement due to lock timeout`" (o teto da F2a funciona, mas o
+  serviço subia o erro cru). Código: o `catch` do `attachReceipt` relança `mapTransientSyncFailure(error)`, como o
+  `runSyncAction` do lote e o `submitReport` (a rota continua classificando o que escapar dele).
+- **Medido × plano (registro, não decisão nova):** com o comprovante e o submit na fila da MESMA linha ao mesmo tempo,
+  o comprovante só terminou ~3,99 s depois de entrar em `Lock` (sonda temporária no `catch`, removida: a trava foi
+  CONCEDIDA aos ~4 s, quando o dono soltou). No PostgreSQL o 2º da fila espera primeiro a trava da tupla (até 2 s) e
+  depois a transação do dono (outros até 2 s): o `lock_timeout` vale por AQUISIÇÃO. A espera continua limitada
+  (≈ 2 × 2 s = 4 s < 5 s da transação), que é a propriedade da Q5. O RR-db.5 passou a medir cada operação sob o seu
+  próprio dono de 4 s, em sequência — o critério do plano ("em até 2,5 s, contados de quando aparece em Lock") é por
+  operação. Vai para o relatório como achado medido.
+- Head: 3 execuções seguidas do `-db` → `pass 5 · fail 0` nas 3 · `expense-sync-atomic-db` (03a) + o `-db` do
+  comprovante → `# tests 29 · pass 29 · fail 0` (o `reportSubmit` do lote passou a travar). **OK.**
+- Mutações (`git diff --exit-code -- src tests mobile` = 0 depois de cada reversão):
+  - **M-db3 (= M-db4)** (tirar `FOR UPDATE` do SQL do `lockReportForUpdate`) → `not ok 3 - RR-db.3` "o comprovante
+    entrou num relatório submetido: {"statusCode":201,…}" e `not ok 4 - RR-db.4` "o submit não esperou a transação
+    do comprovante" · revertida. **OK.** (O RR-db.5 fica verde sob a M-db3: sem o `FOR UPDATE`, o INSERT do evento
+    ainda espera a linha pela FK e o `lock_timeout` continua valendo — o RR-db.5 é o alvo da M-db5.)
+  - **M-db5** (apagar o `set_config('lock_timeout', …)`) → `not ok 5 - RR-db.5` "comprovante:
+    {"statusCode":201,…}" (esperou o dono soltar) · revertida. **OK.**
+- **Vermelho-controle no objeto** (arquivo copiado para o `w-dev525-vc`, mesmo banco): `not ok 1`/`2` por
+  `ERR_INVALID_ARG_TYPE` (ausência da costura) · `not ok 3 - RR-db.3` "o comprovante não esperou em Lock: nenhuma
+  trava na linha do relatório" (o declarado) · `not ok 4 - RR-db.4` "o comprovante não chegou à barreira" (a gravação
+  do objeto falha antes, por ausência da costura) · `not ok 5 - RR-db.5` "o comprovante não esperou em Lock" · `not ok
+  6` = o `after` do arquivo (o `reset` do objeto com a costura em objeto). Resíduo no banco depois de tudo: 0 papel
+  `o6r_b01_%`, 0 organização `rdv-comp-%`, 0 comprovante. **OK.**

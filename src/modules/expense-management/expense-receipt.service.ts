@@ -42,6 +42,7 @@ import {
   computeSyncFingerprint,
   decodeSyncReceiptKey,
   isCompleteSyncReceipt,
+  mapTransientSyncFailure,
   syncDatabaseErrorCodes,
 } from "./expense-sync.js";
 
@@ -460,7 +461,9 @@ export class ExpenseReceiptService {
         if (afterLostClaim) return afterLostClaim;
         throw new ExpenseManagementError(409, "EXPENSE_SYNC_CONFLICT", "receipt_unverifiable", "Receipt claim raced and cannot be verified.");
       }
-      throw error;
+      // §12.2 + §12.4 — o 55P03 do teto da trava (e todo transitório da lista do módulo) sai 503 `sync_busy`, como no
+      // lote (`runSyncAction`) e no submit; o resto passa intacto para a classificação da rota.
+      throw mapTransientSyncFailure(error);
     }
   }
 
