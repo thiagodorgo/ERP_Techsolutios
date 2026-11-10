@@ -260,3 +260,10 @@
   - **M-B2** (`submitReport` volta a `return this.applySubmitReport(this.repository, actor, reportId);`, fora do
     `withSyncTransaction`) → `not ok 12 - RR-B.2` "o submit respondeu enquanto a transação do comprovante estava
     aberta" · revertida. **OK.**
+- Commit `69d8a1b1` + push (`438b2737..69d8a1b1`). Vermelho-controle REFEITO com o teste commitado no
+  `w-dev525-vc` → `not ok 9` (RR-A.1), `10` (RR-A.4), `11` (RR-B.1), `12` (RR-B.2) · `w-dev525-vc` limpo.
+
+## RETOMADA 6 (06:34)
+
+- head `69d8a1b19a0dc0ff5129b8f05ef2c5f39c90a55e` · feito: F0, F1a, F1d, F1b, F1e, F1c, F2a · falta: F2b → F3 → F4a … F8 · próximo comando: escrever
+  RR-B.3 e RR-B.4 no arquivo de rotas · arquivos meio escritos: nenhum.
