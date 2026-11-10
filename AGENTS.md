@@ -293,9 +293,10 @@ Organização · Console Dispatcher · Cobranças.
      - **Toda tela sai com as 3 opções** (decisão do dono, 2026-10-14, `D-TELAS-SAEM-COM-TRES`): *"As telas aparti de
        agora saem com três opções documente e difunda"*. A tela implementada entrega as 3 aparências aprovadas, não só
        uma.
-     - **O seletor ainda não existe.** O modo em Configurações e o lugar onde a preferência fica guardada são um bloco
-       próprio, ainda sem plano (`P-APARENCIA-POR-USUARIO`). **Leitura do orquestrador, declarada (§A6):** o seletor é
-       pré-requisito da primeira tela que sair com as 3; ou esse bloco vem antes, ou a primeira tela o entrega junto.
+     - **O seletor já existe** (correção factual, §A7, medida na `origin/main` `e7e8d678` em 2026-11-09). Foi entregue
+       no PR #461 (`b2f8e6cf`) e fica no menu do usuário (`D-APARENCIA-RESPOSTAS` (c)); a preferência fica no navegador,
+       por organização e usuário. Pátios, Dashboard, Ordens de Serviço, Financeiro e Checklist já estão nas 3
+       aparências. A `P-APARENCIA-POR-USUARIO` cobre agora só o resíduo das telas de Pátios.
    - **Quem monta a maquete é o Claude, nunca o Gemini** (decisão do dono, 2026-10-13, `D-DESIGN-SO-CLAUDE`): *"nao use
      o gemini free para essas coisas, eu so confio no claude desing"*. Vale para maquete, opção visual e todo trabalho de
      tela.
