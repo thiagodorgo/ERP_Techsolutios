@@ -146,17 +146,28 @@ export class PrismaCoreSaasService {
     const roles = uniqueRoles(
       input.roles.map((role) => assertAssignableRole(this.validateRole(role))),
     );
-    const user = await this.store.createUser({
-      ...input,
-      name,
-      email,
-      roles,
-      branchIds: uniqueStrings(input.branchIds ?? []),
-      status: input.status ?? "active",
-      actorUserId: actor?.userId,
-    });
 
-    return user;
+    // B-USERS-ACESSO-SEG (S6, ajuste 9 da crítica) — e-mail repetido na MESMA organização é recusado
+    // pelo índice único (tenant_id, email), que também resolve a corrida de duas criações
+    // simultâneas. O 409 sai sem a mensagem do banco (antes, o P2002 caía no 400 genérico de
+    // sendRouteError com o texto do Prisma no corpo). A transação do store volta inteira.
+    try {
+      return await this.store.createUser({
+        ...input,
+        name,
+        email,
+        roles,
+        branchIds: uniqueStrings(input.branchIds ?? []),
+        status: input.status ?? "active",
+        actorUserId: actor?.userId,
+      });
+    } catch (error) {
+      if (isUserEmailUniqueViolation(error)) {
+        throw userEmailConflict();
+      }
+
+      throw error;
+    }
   }
 
   async updateUser(
@@ -515,6 +526,58 @@ function accessDeniedAcrossTenants(): CoreSaasError {
 
 function notFound(reason: string, message: string): CoreSaasError {
   return new CoreSaasError(404, "NOT_FOUND", reason, message);
+}
+
+// B-USERS-ACESSO-SEG (S6) — o mesmo código e o mesmo motivo do caminho de memória.
+export function userEmailConflict(): CoreSaasError {
+  return new CoreSaasError(
+    409,
+    "CONFLICT",
+    "user_email_conflict",
+    "A user with this email already exists in this organization.",
+  );
+}
+
+// P2002 do índice único (tenant_id, email) de `users`. Medido no Postgres 16 do bloco, com o
+// adaptador de driver (PrismaPg): sob o SUPERUSUÁRIO o meta traz
+// driverAdapterError.cause.constraint.fields = ["tenant_id","email"]; sob o papel de runtime
+// (NOSUPERUSER NOBYPASSRLS) NÃO traz — com RLS ligado o Postgres omite o DETAIL com a chave, e o
+// adaptador fica só com a mensagem original, que nomeia o índice. Por isso a leitura aceita os dois:
+// os campos quando existem, o nome do índice quando não. Um teste só com superusuário veria só o
+// primeiro caso e passaria com o código que falha em produção.
+const USERS_EMAIL_UNIQUE_INDEX = "users_tenant_id_email_key";
+
+function isUserEmailUniqueViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const candidate = error as {
+    readonly code?: unknown;
+    readonly meta?: {
+      readonly modelName?: unknown;
+      readonly target?: unknown;
+      readonly driverAdapterError?: {
+        readonly cause?: {
+          readonly originalMessage?: unknown;
+          readonly constraint?: { readonly fields?: unknown };
+        };
+      };
+    };
+  };
+
+  if (candidate.code !== "P2002" || candidate.meta?.modelName !== "User") {
+    return false;
+  }
+
+  const cause = candidate.meta.driverAdapterError?.cause;
+  const fields = cause?.constraint?.fields ?? candidate.meta.target;
+
+  if (Array.isArray(fields)) {
+    return fields.includes("email");
+  }
+
+  return typeof cause?.originalMessage === "string" && cause.originalMessage.includes(USERS_EMAIL_UNIQUE_INDEX);
 }
 
 function uniqueStrings(values: readonly string[]): string[] {

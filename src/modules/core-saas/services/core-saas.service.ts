@@ -196,6 +196,18 @@ export class CoreSaasRegistry {
       input.roles.map((role) => assertAssignableRole(this.validateRole(role))),
     );
 
+    // B-USERS-ACESSO-SEG (S6, ajuste 9 da crítica) — espelho do índice único (tenant_id, email) do
+    // caminho Prisma: e-mail repetido na MESMA organização → 409, nada é gravado. Outra organização
+    // aceita o mesmo e-mail (o e-mail nunca decide entre organizações).
+    if (this.store.listUsersByEmail(email).some((existing) => existing.tenantId === tenant.id)) {
+      throw new CoreSaasError(
+        409,
+        "CONFLICT",
+        "user_email_conflict",
+        "A user with this email already exists in this organization.",
+      );
+    }
+
     const user: User = {
       id: nextId("usr", ++this.userSequence),
       tenantId: tenant.id,
