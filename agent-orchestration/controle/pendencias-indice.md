@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **792** |
-| IDs distintos | 781 |
-| **ABERTAS** | **595** |
+| Cabecalhos `## P-` | **793** |
+| IDs distintos | 782 |
+| **ABERTAS** | **596** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **533** |
+| — das quais **ativas nesta rodada** | **534** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 193 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **792 cabecalhos para 781 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **793 cabecalhos para 782 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 261
+## ABERTAS · balde A — material — 262
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -336,6 +336,7 @@
 | `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA` | 13005 | MÉDIA | sim | P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA (2026-11-09) — o "com sessão válida" do item 30 não t |
 | `P-S3-FORCE-PATH-STYLE-NAO-DESLIGA` | 13024 | MÉDIA | sim | P-S3-FORCE-PATH-STYLE-NAO-DESLIGA (2026-11-10) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
 | `P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP` | 13030 | MÉDIA | sim | P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP (2026-11-10) — aprovação e devolução d |
+| `P-CI-SAN3-05-T11D-ORDEM-FLAKY` | 13043 | MÉDIA | sim | P-CI-SAN3-05-T11D-ORDEM-FLAKY (2026-11-10) — o T11d/T11e de `san3-05-leituras-de-platafo |
 
 ## ABERTAS · balde B — processo/registro — 272
 

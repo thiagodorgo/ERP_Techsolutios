@@ -784,3 +784,86 @@
 - head `34cf4cc4970b124b97f8a57d2ceeec80ca39f544` · feito: F0–F7 e o conserto do CI · falta: F8 · próximo comando: a bateria do §6 (`npm run
   check`, `npm run lint`, `npm run build`, `npm test`; `dart format`/`flutter analyze`/`flutter test`; `git diff
   --check`) e o CI lido pelo resumo · arquivos meio escritos: nenhum.
+
+## F8 — bateria (§6) e CI pelo resumo — início 08:55
+
+- **Terreno antes da bateria:** memória de commit livre medida (`Get-CimInstance Win32_OperatingSystem`) → `3,1 GB`
+  (08:51) e `2,9 GB` (08:54), ABAIXO do piso de 4 GB do mandato/plano. Os processos deste dev: nenhum
+  (`CommandLine -match 'w-dev525'` → 0); a soma do commit dos processos dá 15,1 GB de 61 GB comprometidos — o resto não
+  é meu e não mexo. A bateria pesada (`npm test`, `flutter test`) fica ADIADA; um vigia
+  (`scratchpad/f8-mem-wait.ps1`, 1 leitura por minuto, teto de 45 min) avisa quando o livre passar de 4,5 GB. Docker:
+  `dev522-pg` e `ci522-pg` de pé, nenhum meu. Portas 3000/5173/5432/6379: nada escutando (`netstat`); sem `.env` no
+  worktree (o `-db` e o Redis ficam de fora da rodada local, como o plano prevê).
+- **CI do `07f822da`** (rodada 42808942930, push; a de PR foi cancelada pela seguinte), lido pelo RESUMO:
+  - `flutter` (Flutter 3.47.5): `Formatted 241 files (0 changed)` e `+1067: All tests passed!` — o formato do CI ficou
+    verde com o conserto do CI;
+  - `backend`: `# tests 4775 · # pass 4770 · # fail 3 · # skipped 2`; `ok 647 … ok 651 - RR-db.1 … RR-db.5` (o `SET
+    LOCAL lock_timeout` provado no Postgres do CI, com o teto do RR-db.5); `ok` no guard 3 (o `not ok 441` do
+    `fb610f78` sumiu). As 3 falhas são de `tests/san3-05-leituras-de-plataforma-db.test.ts`: `not ok 5 - T11d ·
+    controles (já por organização): iguais nos dois papéis`, `not ok 6 - T11e …` e o pai `not ok 3516 - B-SAN3-05 ·
+    T10–T12 …`. O diff do T11d é SÓ de ordem: as duas linhas de alocação (`tenantId` `7a220d4e…` 10 e `757ce1a3…` 30)
+    vêm trocadas entre o superusuário e o papel efêmero (`assert.deepEqual` de array, sem ordenar; l.772).
+  - **Escopo (medido):** o arquivo e o que ele exercita (alocação de nuvem, `src/database/**`) não estão no diff do
+    conserto (`git diff --name-only b9e63ec0..HEAD` → 35 arquivos, nenhum deles; nenhum PROIBIDO tocado: 0) nem no do
+    ramo inteiro (`merge-base..HEAD` → 0 nesses caminhos). No `fb610f78` (rodada 42801796358) o mesmo arquivo passou
+    (`# fail 1`, só o guard 3). Leitura: asserção dependente de ordem, pré-existente e intermitente. Não é do bloco e
+    não conserto (fora do PERMITIDO); registro como pendência, com a rodada do `41625a5b` como 2ª amostra.
+- **CI do `41625a5b`** (rodada 42810768352, push; `gh run watch` → `success` nos 8 jobs, `docker` inclusive), lido pelo
+  RESUMO: `backend` `# tests 4775 · # pass 4773 · # fail 0 · # cancelled 0 · # skipped 2 · # todo 0`, `ok 441 - guard
+  3`, `ok 647 … ok 651 - RR-db.1 … RR-db.5` (os 5 do `-db`, com o `SET LOCAL`), e `ok 5 - T11d` / `ok 6 - T11e` (2ª
+  amostra: o T11d passou — intermitente); `flutter` `Formatted 241 files (0 changed)`, `No issues found!` e `+1067: All
+  tests passed!`.
+- Pendência registrada: `P-CI-SAN3-05-T11D-ORDEM-FLAKY` (MÉDIA, pré-existente, dono a atribuir), com as 3 rodadas como
+  evidência; índice pelo gerador (`793 cabecalhos / 782 IDs`), rodado de novo depois do `git add` → diff vazio.
+- `w-dev525-vc` (o worktree do vermelho-controle, limpo em `b9e63ec0`) removido com `git worktree remove --force`,
+  depois de conferir que nenhum processo rodava nele; nunca `git worktree prune`.
+
+## F8 — bateria (§6), com o bastão de memória do orquestrador — 09:48
+
+- **Bastão (orquestrador, 09:12):** a F8 roda com memória de commit livre ≥ 3,0 GB, um passo pesado por vez, nunca em
+  paralelo; abaixo de 2,5 GB no meio, termina o comando em curso e espera. Um amostrador (`scratchpad/f8-mem-sampler.ps1`,
+  1 leitura a cada 5 s) registrou a memória durante toda a bateria; os números abaixo vêm dele.
+- `npm run check` → ec=0 (mínimo durante: 1,69 GB) · `npm run lint` (= `npm run check`, `package.json` l.33) → ec=0
+  (1,61 GB) · `npm run build` → ec=0 (1,81 GB). Os três sozinhos, um depois do outro, começando com ≥ 3,1 GB.
+- **`npm test` — forma medida e declarada:** o MESMO runner (`scripts/run-backend-tests.mjs`) sobre os MESMOS 449
+  arquivos, em 225 lotes de 2, em sequência (concorrência ≤ 2). Por quê: o `node --test` local roda com
+  `availableParallelism() − 1 = 15` processos ao mesmo tempo, o `--test-concurrency` não é aceito em `NODE_OPTIONS`
+  (medido: "is not allowed in NODE_OPTIONS") e a afinidade de CPU não muda o `availableParallelism` no Windows
+  (medido: 16 com máscara 0x3); 15 processos com `tsx` não cabem nos ~3 GB livres. O job `backend` do CI roda com 2
+  vCPUs, isto é, concorrência 1. Resultado (09:17:03 → 09:37:28): `# tests 4039 · # pass 3903 · # fail 7 · # cancelled
+  0 · # skipped 129 · # todo 0`. As 7 são EXATAMENTE os vermelhos de ambiente que o plano nomeia: `not ok 2 -
+  …core-saas-role-authority.test.ts` (sem `DATABASE_URL`) e os 6 de Redis (`job-queue` 3, `worker-heartbeat` 1,
+  `domain-events` 2; nada escuta em 6379, medido por `netstat`). Contra o 2º `npm test` do diário antigo (`4028 · pass
+  3892 · fail 7 · skipped 129`): +11 testes e +11 aprovados (routes +6, storage +5; os +3 do `-db` caem no skip de
+  arquivo sem banco), os mesmos 7 de ambiente.
+- **Memória durante o `npm test` (registro honesto):** 15 de 138 amostras abaixo de 2,5 GB, todas dentro de DOIS lotes
+  que constroem o programa TypeScript inteiro — o b125 (`inventory-unique-backstops-db` + `inventory-write-paths-guard`,
+  mínimo 0,74 GB às 09:26:31) e o b149 (`o6r07c-b-scope` + `o6r07c-census-guard`, mínimo 0,45 GB às 09:30:28). Cada
+  lote terminou, a memória voltou acima de 2,5 GB logo depois, e nenhum processo caiu. O laço não esperava entre lotes;
+  o mergulho foi sempre dentro de um comando só.
+- Lista dirigida do §6 (`receipt-routes`, `receipt-storage`, `receipt-contract`, `o6r07b-upload-gate-census`,
+  `o6r07c-census-guard`, `san3-04a-matriz-x-catalogo-guard`), pelo runner, em 3 lotes de 2: `# tests 19 · pass 19` +
+  `# tests 9 · pass 9` + `# tests 46 · pass 46` = 74/74, `# fail 0`. O lote do `o6r07c-census-guard` desceu a 0,46 GB
+  (09:42:38) e voltou.
+- `-db`: pelo TAP do job `backend` do CI (o container saiu no fim da F3, como manda o mandato): `ok 647 … ok 651 -
+  RR-db.1 … RR-db.5` no `07f822da` e no `41625a5b`.
+- `dart format --output=none --set-exit-if-changed lib test` LOCAL (3.41.6) → `Formatted 241 files (1 changed)`: o único é
+  `test/features/bsan313_minhas_os_escopo_test.dart` (do #460, fora do diff do conserto: `git diff --name-only
+  b9e63ec0..HEAD` → 0). A sonda `dart_style 3.1.14` diz `0 changed` para ele, e o CI (3.47.5) diz `Formatted 241 files
+  (0 changed)` — é a diferença de versão que o §6 manda ler "com isso em mente". Os Dart do conserto: `0 changed` nos
+  dois formatadores.
+- `flutter analyze` → "No issues found! (ran in 63.1s)" · `flutter test --reporter compact` → `+1067: All tests passed!`
+  (44 s; mínimo de memória 4,51 GB).
+- `git diff --check` (índice e árvore) → limpo.
+- **CI lido pelo RESUMO (11(3)):** o head de código `41625a5b` tem a rodada 42810768352 `success` nos 8 jobs:
+  `backend` `# tests 4775 · # pass 4773 · # fail 0 · # skipped 2` com `ok … RR-db.3`, `ok … RR-db.4`, `ok … RR-db.5`;
+  `flutter` `+1067: All tests passed!`. O commit deste diário só muda registro (este diário, `pendencias.md` e o índice);
+  o CI dele é lido antes da mensagem final.
+- **Limpeza (§C5), só o que este dev criou:** `dist/` (do `npm run build`), `mobile/flutter_app/build/`, `test-results/`
+  (vazio, 09:27), 13 diretórios `storage/checklist-attachments/<uuid>` criados pela rodada do `npm test` (09:18–09:36; o
+  `.gitkeep` rastreado ficou), 9 diretórios `rdvc1-*` do `os.tmpdir()` deixados por mutações da F1 (05:56–06:22), e a
+  raiz efêmera do objeto `os.tmpdir()/erp-expense-receipt-uploads` (11 arquivos, 06:39, gravados pelo código do objeto
+  no vermelho-controle). O `w-dev525-vc` já tinha saído. Ficam: o `w-dev525` (o ramo, para a conferência), o
+  `node_modules` e o `.dart_tool`.
+
+PRONTO PARA REVISÃO (conserto c1) — PR #525
