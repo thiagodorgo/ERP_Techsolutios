@@ -132,3 +132,8 @@
 | 10:18:04→10:18:58 | **M5b** (tirar a cláusula do demonstrativo inteira) | `pass 12 · fail 2`: `not ok 13 T-OBX-db-5` "(veio: claimed)", `not ok 14 T-LOCK-1b` "o claim trava o demonstrativo"; revert limpo | vermelho medido |
 | 10:19:07→10:19:53 | **M5j** (inverter as cláusulas: `OF o` antes de `OF s`) | `pass 13 · fail 1`: `not ok 14 T-LOCK-1b` "a cláusula do demonstrativo vem antes da cláusula da fila"; revert limpo | vermelho medido |
 | 10:20:26→10:21:26 | `npm run lint` (3,87 GB); `git diff --exit-code`; `git diff --cached --check` | 0; limpo; 0; 2 arquivos no índice (`channel-db`, o helper) | fatia fechada |
+
+## BASTÃO DEVOLVIDO — 10:22:15 SP (ordem do orquestrador: depois da F4, o bastão vai para a conferência do #525)
+
+- **Ponto exato:** F4 fechada e empurrada em `a9577496` (commit + push + rodada verde 14/14 e as 5 mutações vermelhas). Nada pesado em curso; `dev522-pg` de pé e ocioso.
+- **Daqui até o bastão voltar:** só trabalho leve — escrever o código e os testes da F5 (E6′/E7′, `adoptionFacts` na porta, no dublê e no Prisma; T-OBX-11, T-OBX-17 braços 1–8 e 11–14, T-OBX-NODEL), sem suíte, `tsc`, lint nem banco. A 1ª linha de `painel/bastao-memoria.txt` é conferida a cada 5 min; quando voltar a `dev-522-c2`, a F5 é validada (vermelho-controle no objeto, verde, M3a/M3d′/M3e/M3f/M3i, T13, lint, commit e push).
