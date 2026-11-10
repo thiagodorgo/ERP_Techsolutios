@@ -142,8 +142,13 @@ export class ExpenseManagementService {
     return this.insertItem(this.repository, actor, input);
   }
 
-  submitReport(actor: ExpenseActorContext, reportId: string): Promise<ExpenseReport> {
-    return this.applySubmitReport(this.repository, actor, reportId);
+  async submitReport(actor: ExpenseActorContext, reportId: string): Promise<ExpenseReport> {
+    try {
+      return await this.applySubmitReport(this.repository, actor, reportId);
+    } catch (error) {
+      // Conserto c1 do #525 (§12.2 item 4) — falha transitória de banco sai 503 `sync_busy`, nunca 400 com a mensagem.
+      throw mapTransientSyncFailure(error);
+    }
   }
 
   /**

@@ -20,7 +20,13 @@ import {
   type EvidenceScanner,
 } from "../evidence/evidence-storage.js";
 import { assertStorageKeyWithinTenant } from "../evidence/storage-key-scope.js";
-import { UploadGateError, assertUploadVerification, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
+import {
+  UploadGateError,
+  assertUploadVerification,
+  uploadGateStatus,
+  verifyUploadContent,
+  type UploadVerification,
+} from "../evidence/upload-gate.js";
 import {
   getMemoryExpenseManagementRepositoryForTests,
 } from "./expense-management.service.js";
@@ -200,6 +206,18 @@ export function decodeReceiptFileKey(
   return { provider, storageKey };
 }
 
+/**
+ * §12.2 item 1 — falha do storage do comprovante (montagem do provedor, gravação ou leitura que não é o 404 da
+ * D-014). NÃO leva a mensagem nem a causa: a mensagem do 403 do S3 traz bucket, chave com o `tenant_id` e ARN. A
+ * rota responde 503 `receipt_storage_unavailable` com a mensagem fixa.
+ */
+export class ReceiptStorageError extends Error {
+  constructor() {
+    super("Receipt storage is temporarily unavailable.");
+    this.name = "ReceiptStorageError";
+  }
+}
+
 /** O objeto gravado por esta requisição, antes da transação decidir se ele fica. */
 type SavedReceiptObject = { readonly storage: ChecklistStorageProvider; readonly storageKey: string };
 
@@ -377,19 +395,8 @@ export class ExpenseReceiptService {
 
         // §2(a)1 — provedor da D-014. O nome do arquivo do aparelho não vai ao storage (nem como
         // metadado do S3): o objeto se chama `comprovante.<ext do tipo VERIFICADO>`.
-        const storage = resolveReceiptStorage(receiptWriteProviderName());
-        const verifiedMimeType = assertUploadVerification(verification, input.buffer).mimeType;
-        const stored = await storage.save({
-          tenantId: actor.tenantId,
-          runId: `expense-receipt-${report.id}`,
-          buffer: input.buffer,
-          originalName: "comprovante",
-          safeFileName: `comprovante.${receiptFileExtension(verifiedMimeType)}`,
-          sizeBytes: input.buffer.length,
-          checksumSha256: computedSha256,
-          verification,
-        });
-        saved = { storage, storageKey: stored.storageKey };
+        const stored = await this.saveReceiptObject(actor, report.id, input.buffer, computedSha256, verification);
+        saved = stored;
 
         const receipt = await repository.createExpenseReceipt({
           tenantId: actor.tenantId,
@@ -399,7 +406,7 @@ export class ExpenseReceiptService {
           // O CHECK real da coluna (migration 20260619, expense_receipts_upload_status_check) só admite
           // local|pending_upload|uploading|uploaded|failed — "uploaded" é o estado "guardado no servidor".
           uploadStatus: "uploaded",
-          fileKey: encodeReceiptFileKey(storage.name, stored.storageKey),
+          fileKey: encodeReceiptFileKey(stored.storage.name, stored.storageKey),
         });
 
         await repository.completeMobileActionReceipt(claim, { resultRef: receipt.id, processedAt: new Date() });
@@ -425,6 +432,45 @@ export class ExpenseReceiptService {
         throw new ExpenseManagementError(409, "EXPENSE_SYNC_CONFLICT", "receipt_unverifiable", "Receipt claim raced and cannot be verified.");
       }
       throw error;
+    }
+  }
+
+  /**
+   * §2(a)1 + §12.2 item 1 — grava pelo provedor da D-014. Falha do storage (a montagem do provedor ou a gravação)
+   * vira `ReceiptStorageError`, que não leva a mensagem nem a causa; o log leva só o nome e o código do erro.
+   */
+  private async saveReceiptObject(
+    actor: ExpenseReceiptActorContext,
+    reportId: string,
+    buffer: Buffer,
+    checksumSha256: string,
+    verification: UploadVerification,
+  ): Promise<SavedReceiptObject & { readonly mimeType: string }> {
+    let storage: ChecklistStorageProvider;
+    try {
+      storage = resolveReceiptStorage(receiptWriteProviderName());
+    } catch (error) {
+      logReceiptFailure("storage_provider", error);
+      throw new ReceiptStorageError();
+    }
+    // O nome do arquivo do aparelho não vai ao storage (nem como metadado do S3): o objeto se chama
+    // `comprovante.<ext do tipo VERIFICADO>`.
+    const verifiedMimeType = assertUploadVerification(verification, buffer).mimeType;
+    try {
+      const stored = await storage.save({
+        tenantId: actor.tenantId,
+        runId: `expense-receipt-${reportId}`,
+        buffer,
+        originalName: "comprovante",
+        safeFileName: `comprovante.${receiptFileExtension(verifiedMimeType)}`,
+        sizeBytes: buffer.length,
+        checksumSha256,
+        verification,
+      });
+      return { storage, storageKey: stored.storageKey, mimeType: stored.mimeType };
+    } catch (error) {
+      logReceiptFailure("storage_save", error);
+      throw new ReceiptStorageError();
     }
   }
 
@@ -478,9 +524,17 @@ export class ExpenseReceiptService {
       object = await resolveReceiptStorage(decoded.provider).getObject({ storageKey: decoded.storageKey });
     } catch (error) {
       if (error instanceof ChecklistError && error.statusCode === 404) throw notFound();
-      throw error;
+      // §12.2 item 1 — a montagem do provedor (ex.: S3 sem config) e a leitura que não é o 404 da D-014.
+      logReceiptFailure("storage_get_object", error);
+      throw new ReceiptStorageError();
     }
-    const buffer = await readReceiptBody(object.body);
+    let buffer: Buffer;
+    try {
+      buffer = await readReceiptBody(object.body);
+    } catch (error) {
+      logReceiptFailure("storage_read_body", error);
+      throw new ReceiptStorageError();
+    }
     // O tipo servido é o da linha, verificado no upload.
     return { buffer, mimeType: receipt.mimeType };
   }

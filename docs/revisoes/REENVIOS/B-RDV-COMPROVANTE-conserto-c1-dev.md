@@ -188,3 +188,32 @@
 
 - head `d936d0ad1a51738bab7ab02e47cffb687d7da284` · feito: F0, F1a, F1d, F1b, F1e · falta: F1c → F2a → F2b → F3 → F4a … F8 · próximo comando:
   escrever o RR-A.5 (classificação de falhas, 5 casos) no arquivo de storage · arquivos meio escritos: nenhum.
+
+## F1c — classificação das falhas (§12.2): `ReceiptStorageError`, rota, log, `submitReport` (06:10–06:18)
+
+- Teste ANTES: **RR-A.5** no arquivo de storage, pela rota real, 5 casos — (1) `save` do provedor injetado lança
+  `Error` com caminho absoluto → 503 `receipt_storage_unavailable`, corpo sem o caminho nem `EACCES`, 0 linha;
+  (2) `S3ChecklistStorageProvider(config, clienteFingido)` com `send` lançando a classe REAL `S3ServiceException`
+  (`AccessDenied`, mensagem com bucket, chave com o `tenant_id` e ARN) → 503, corpo sem bucket, `arn:`, `tenant_id`,
+  chave e `AccessDenied`; (3) `GET …/file` de uma linha `s3:` sem S3 no env → 503, corpo sem `CHECKLIST_STORAGE`;
+  (4) a transação lança `55P03`, `P2010` com `meta.code = 40P01` e `P2028` → 503 `sync_busy`, sem a mensagem;
+  (5) erro qualquer → 500 `unexpected_error` com "Unexpected error.". No topo do arquivo, `CHECKLIST_STORAGE_S3_BUCKET`
+  e `_REGION` vazios (o caso 3 não depende do `.env` de quem roda).
+- Arnês: o `withReceiptApi` deste arquivo passa a reportar a 1ª falha (a do teste) e a fechar o servidor mesmo se a
+  limpeza lançar — no objeto, o `reset` com a costura em objeto lançava e mascarava a asserção (medido).
+- **Vermelho-controle no objeto:** `not ok 5 - RR-A.5` → "caso 1: {"error":{"code":"BAD_REQUEST","reason":
+  "invalid_request","message":"The \"path\" argument must be of type string. Received an instance of Object"}}" =
+  400 `invalid_request` com a mensagem crua (sem costura no objeto, a falha do storage sai crua). **OK.**
+- Código: `ReceiptStorageError` (exportada; mensagem fixa, sem causa) no serviço; `saveReceiptObject` embrulha a
+  montagem do provedor e o `save` (log `storage_provider`/`storage_save`); a leitura embrulha `getObject` (fora o 404
+  da D-014) e a leitura do corpo (`storage_get_object`/`storage_read_body`). Rota: `ReceiptStorageError` → 503
+  `receipt_storage_unavailable`; `mapTransientSyncFailure` → 503 `sync_busy`; o resto → 500 `unexpected_error`
+  (o ramo genérico veio na F1d); log sempre sem a mensagem. `ExpenseManagementService.submitReport` relança
+  `mapTransientSyncFailure(error)` (§12.2 item 4; a transação vem na F2a). `core-saas/routes/http.ts` intocado.
+- `npm run check` → exit 0 · storage + routes + contract + census o6r07b/o6r07c + expense-management-routes +
+  fingerprint + os 2 guards do 03b → `# tests 84 · pass 84 · fail 0`. **OK.**
+- **M-A5** (`sendRouteFailure` volta ao `throw error;` depois do ramo de domínio) → `not ok 5 - RR-A.5` "caso 1:
+  …400 invalid_request…" e `not ok 1 - RR-A.6` "…400 invalid_request…Connection terminated unexpectedly" ·
+  revertida, `git diff --exit-code` = 0. **OK.**
+- **M-A3b re-medida** com o storage embrulhado → `not ok 4 - RR-A.3` "o /file não serviu: {…503
+  receipt_storage_unavailable…}" — agora exatamente o texto do plano · revertida, `git diff --exit-code` = 0.

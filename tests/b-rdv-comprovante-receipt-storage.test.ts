@@ -21,6 +21,9 @@ import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.type
 const RECEIPT_STORAGE_DIR = mkdtempSync(path.join(os.tmpdir(), "rdvc1-storage-"));
 process.env.CHECKLIST_STORAGE_PROVIDER = "local";
 process.env.CHECKLIST_STORAGE_LOCAL_DIR = RECEIPT_STORAGE_DIR;
+// S3 NÃO configurado no env deste arquivo (o RR-A.5 caso 3 mede exatamente isso), seja qual for o `.env` local.
+process.env.CHECKLIST_STORAGE_S3_BUCKET = "";
+process.env.CHECKLIST_STORAGE_S3_REGION = "";
 after(() => rmSync(RECEIPT_STORAGE_DIR, { recursive: true, force: true }));
 
 function listFilesRecursive(root: string): string[] {
@@ -83,19 +86,25 @@ async function withReceiptApi(callback: (context: { baseUrl: string; seed: SeedD
     server.once("listening", () => resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`));
   });
 
+  // A 1ª falha é a que se reporta (a do teste, não a da limpeza); e o servidor fecha mesmo se a limpeza falhar —
+  // sem isso o processo fica preso num handle aberto (medido no vermelho-controle do objeto, cuja costura recebe um
+  // caminho e não um provedor).
+  let failure: unknown;
   try {
     await callback({ baseUrl, seed: { tenantA, tenantB, technicianA } });
-  } finally {
-    try {
-      resetExpenseManagementRuntimeForTests();
-      const { resetExpenseReceiptRuntimeForTests } = await import("../src/modules/expense-management/expense-receipt.service.js");
-      await resetExpenseReceiptRuntimeForTests();
-    } finally {
-      // O servidor fecha mesmo se a limpeza falhar: sem isso o processo fica preso num handle aberto (medido no
-      // vermelho-controle do objeto, cuja costura recebe um caminho e não um provedor).
-      await new Promise<void>((resolve, reject) => (server as Server).close((error) => (error ? reject(error) : resolve())));
-    }
+  } catch (error) {
+    failure = error;
   }
+  try {
+    resetExpenseManagementRuntimeForTests();
+    const { resetExpenseReceiptRuntimeForTests } = await import("../src/modules/expense-management/expense-receipt.service.js");
+    await resetExpenseReceiptRuntimeForTests();
+  } catch (error) {
+    failure ??= error;
+  } finally {
+    await new Promise<void>((resolve, reject) => (server as Server).close((error) => (error ? reject(error) : resolve())));
+  }
+  if (failure !== undefined) throw failure;
 }
 
 async function createReportWithItem(baseUrl: string, tenant: Tenant, user: User, role: string): Promise<{ reportId: string; itemId: string }> {
@@ -404,6 +413,132 @@ test("RR-A.3 S3 pela classe da D-014: `production` + s3 completo → 201 com 1 P
       for (const secret of ["s3:", key, bucket, prefix]) {
         assert.ok(!body.includes(secret), `resposta pública expõe ${secret}: ${body}`);
       }
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RR-A.5 — falha que não é de domínio: classe certa e nenhuma mensagem crua (Q3, §12.2)
+// ---------------------------------------------------------------------------
+
+test("RR-A.5 classificação das falhas pela rota real: storage → 503 receipt_storage_unavailable; banco transitório → 503 sync_busy; o resto → 500 unexpected_error; nunca a mensagem crua", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const { receipt, s3, prefix } = await storageModules();
+    const { S3ServiceException } = await import("@aws-sdk/client-s3");
+    const repository = await memoryRepositoryForTests();
+    const tenantId = seed.tenantA.id;
+
+    // (1) `save` do provedor injetado lança Error com caminho ABSOLUTO.
+    {
+      const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+      const bytes = jpegBytes(0x51);
+      const secretPath = path.join(os.tmpdir(), "rdvc1-segredo", tenantId, "objeto.jpg");
+      const failingLocal = {
+        name: "local" as const,
+        async save() {
+          throw new Error(`EACCES: permission denied, open '${secretPath}'`);
+        },
+        async getObject() {
+          throw new Error("não usado");
+        },
+        async deleteObject() {},
+      };
+      receipt.configureExpenseReceiptStorageForTests({ provider: failingLocal } as any);
+      const response = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rra5-1-save-local", bytes, sha256: await sha256Hex(bytes) }));
+      assert.equal(response.status, 503, `caso 1: ${JSON.stringify(response.body)}`);
+      assert.equal(response.body.error?.reason, "receipt_storage_unavailable", "caso 1");
+      assert.ok(!JSON.stringify(response.body).includes("rdvc1-segredo"), `caso 1: o corpo expõe o caminho: ${JSON.stringify(response.body)}`);
+      assert.ok(!JSON.stringify(response.body).includes("EACCES"), "caso 1: o corpo expõe a mensagem crua");
+      assert.equal(await countReceiptRows(tenantId), 0, "caso 1: linha gravada");
+      await receipt.resetExpenseReceiptRuntimeForTests();
+    }
+
+    // (2) `save` pelo S3 da D-014 com o `send` lançando a classe REAL `S3ServiceException` (AccessDenied, com bucket,
+    // chave com o tenant e ARN na mensagem).
+    {
+      const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+      const bytes = jpegBytes(0x52);
+      const bucket = "rdvc1-bucket-negado";
+      const deniedKey = `${prefix}/${tenantId}/expense-receipt-${reportId}/negado-comprovante.jpg`;
+      const accessDenied = new S3ServiceException({
+        name: "AccessDenied",
+        $fault: "client",
+        $metadata: { httpStatusCode: 403 },
+        message: `User: arn:aws:iam::123456789012:user/erp-app is not authorized to perform: s3:PutObject on resource: "arn:aws:s3:::${bucket}/${deniedKey}" because no identity-based policy allows the s3:PutObject action`,
+      });
+      const s3Config = { bucket, region: "us-east-1", endpoint: "https://s3.us-east-1.amazonaws.com", forcePathStyle: true, prefix };
+      receipt.configureExpenseReceiptStorageForTests({
+        provider: new s3.S3ChecklistStorageProvider(s3Config, fakeS3Client({ failWith: accessDenied }) as any),
+        nodeEnv: "production",
+        s3: s3Config,
+      } as any);
+      receipt.configureExpenseReceiptScannerForTests(countingScanner().scanner as any);
+      const response = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rra5-2-save-s3", bytes, sha256: await sha256Hex(bytes) }));
+      const body = JSON.stringify(response.body);
+      assert.equal(response.status, 503, `caso 2: ${body}`);
+      assert.equal(response.body.error?.reason, "receipt_storage_unavailable", "caso 2");
+      for (const secret of [bucket, "arn:", tenantId, deniedKey, "AccessDenied"]) {
+        assert.ok(!body.includes(secret), `caso 2: o corpo expõe ${secret}: ${body}`);
+      }
+      assert.equal(await countReceiptRows(tenantId), 0, "caso 2: linha gravada");
+      await receipt.resetExpenseReceiptRuntimeForTests();
+    }
+
+    // (3) GET …/file de uma linha `s3:` SEM S3 no env: a montagem do provedor falha → 503, sem nome de variável.
+    {
+      const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+      await repository.createExpenseReceipt({
+        tenantId,
+        itemId,
+        localHash: "f".repeat(64),
+        mimeType: "image/jpeg",
+        uploadStatus: "uploaded",
+        fileKey: `s3:${prefix}/${tenantId}/expense-receipt-${reportId}/00000000-0000-4000-8000-000000000000-comprovante.jpg`,
+      });
+      const response = await fetch(`${baseUrl}/api/v1/expense-reports/${reportId}/items/${itemId}/receipt/file`, {
+        headers: authHeaders(seed.tenantA, seed.technicianA, "technician"),
+      });
+      const body = await readJson(response);
+      assert.equal(response.status, 503, `caso 3: ${JSON.stringify(body)}`);
+      assert.equal(body.error?.reason, "receipt_storage_unavailable", "caso 3");
+      assert.ok(!JSON.stringify(body).includes("CHECKLIST_STORAGE"), `caso 3: o corpo expõe nome de variável: ${JSON.stringify(body)}`);
+    }
+
+    // (4) A transação lança erro de banco da lista transitória (55P03; 40P01 na forma P2010 com meta.code; P2028).
+    // (5) Um erro qualquer → 500 com a mensagem fixa.
+    const original = repository.withSyncTransaction.bind(repository);
+    try {
+      const transient = [
+        { label: "55P03", error: Object.assign(new Error("canceling statement due to lock timeout"), { code: "55P03" }) },
+        { label: "P2010/40P01", error: Object.assign(new Error("Raw query failed. Code: `40P01`. Message: `deadlock detected`"), { code: "P2010", meta: { code: "40P01" } }) },
+        { label: "P2028", error: Object.assign(new Error("Transaction already closed: the timeout for this transaction was 5000 ms"), { code: "P2028" }) },
+      ];
+      for (const { label, error } of transient) {
+        const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+        const bytes = jpegBytes(0x54);
+        repository.withSyncTransaction = async () => {
+          throw error;
+        };
+        const response = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: `rra5-4-${label}`, bytes, sha256: await sha256Hex(bytes) }));
+        repository.withSyncTransaction = original;
+        assert.equal(response.status, 503, `caso 4 (${label}): ${JSON.stringify(response.body)}`);
+        assert.equal(response.body.error?.reason, "sync_busy", `caso 4 (${label})`);
+        assert.ok(!JSON.stringify(response.body).includes(error.message), `caso 4 (${label}): o corpo expõe a mensagem crua`);
+      }
+
+      const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+      const bytes = jpegBytes(0x55);
+      repository.withSyncTransaction = async () => {
+        throw new Error("boom: /srv/erp/segredo-interno");
+      };
+      const response = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rra5-5-qualquer", bytes, sha256: await sha256Hex(bytes) }));
+      repository.withSyncTransaction = original;
+      assert.equal(response.status, 500, `caso 5: ${JSON.stringify(response.body)}`);
+      assert.equal(response.body.error?.reason, "unexpected_error", "caso 5");
+      assert.equal(response.body.error?.message, "Unexpected error.", "caso 5: mensagem que não é a fixa");
+      assert.ok(!JSON.stringify(response.body).includes("segredo-interno"), "caso 5: o corpo expõe a mensagem crua");
+    } finally {
+      delete repository.withSyncTransaction;
     }
   });
 });

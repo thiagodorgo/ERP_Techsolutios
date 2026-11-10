@@ -5,12 +5,14 @@ import { requireAnyPermission, requirePermission, requireTenantContext } from ".
 import { handleAsyncRoute } from "../core-saas/routes/http.js";
 import {
   EXPENSE_RECEIPT_MAX_FILE_SIZE_BYTES,
+  ReceiptStorageError,
   createDefaultExpenseReceiptService,
+  logReceiptFailure,
   type ExpenseReceiptActorContext,
   type ExpenseReceiptServiceResolver,
-  logReceiptFailure,
 } from "./expense-receipt.service.js";
 import { ExpenseManagementError } from "./expense-management.types.js";
+import { mapTransientSyncFailure } from "./expense-sync.js";
 
 /**
  * B-RDV-COMPROVANTE (§G.3) — rotas do comprovante de despesa. Molde: `mobile-evidence-upload.ts`
@@ -157,6 +159,11 @@ function actorFromRequest(request: Request): ExpenseReceiptActorContext {
 /**
  * Conserto c1 do #525 (§12.2) — as 3 rotas do comprovante classificam TODA falha e nunca relançam: nenhum corpo
  * de resposta leva o `error.message` de um erro que não seja de domínio (§2.8).
+ *   - `ReceiptRouteError` e `ExpenseManagementError` → como sempre;
+ *   - `ReceiptStorageError` → 503 `receipt_storage_unavailable`, mensagem fixa;
+ *   - erro de banco da lista transitória do módulo (P2028, P2034, P2024, 40P01, 40001, 55P03) → 503 `sync_busy`;
+ *   - qualquer outro → 500 `unexpected_error`, mensagem fixa.
+ * O log leva rota, operação, nome e código do erro — nunca a mensagem.
  */
 function sendRouteFailure(response: Response, error: unknown, route: string): void {
   if (error instanceof ReceiptRouteError || error instanceof ExpenseManagementError) {
@@ -166,6 +173,19 @@ function sendRouteFailure(response: Response, error: unknown, route: string): vo
     return;
   }
   logReceiptFailure("route", error, route);
+  if (error instanceof ReceiptStorageError) {
+    response.status(503).json({
+      error: { code: "SERVICE_UNAVAILABLE", reason: "receipt_storage_unavailable", message: "Receipt storage is temporarily unavailable." },
+    });
+    return;
+  }
+  const transient = mapTransientSyncFailure(error);
+  if (transient instanceof ExpenseManagementError) {
+    response.status(transient.statusCode).json({
+      error: { code: transient.code, reason: transient.reason, message: transient.message },
+    });
+    return;
+  }
   response.status(500).json({
     error: { code: "INTERNAL_SERVER_ERROR", reason: "unexpected_error", message: "Unexpected error." },
   });
