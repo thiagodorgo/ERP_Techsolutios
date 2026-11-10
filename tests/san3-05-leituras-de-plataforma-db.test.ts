@@ -170,7 +170,11 @@ if (!connectionString) {
       calculationRunIds: [],
       subscriptionPlanId: "",
       subscriptionPlanCode: "",
-      subscriptionValidFrom: new Date().toISOString().slice(0, 10),
+      // A data de NEGÓCIO de hoje (America/Sao_Paulo), a mesma régua do serviço de assinatura. Antes era a data UTC
+      // (`toISOString().slice(0, 10)`, desde o #504): das 21:00 às 24:00 em São Paulo ela já é amanhã, e o DELETE logo
+      // abaixo grava `valid_to = agora` < `valid_from` → 400 `tenant_subscriptions_valid_to_check` (medido em 09/11 no
+      // B-ASS-08b). Defeito pré-existente do arnês, consertado aqui porque barrava o cenário do canal nessa janela.
+      subscriptionValidFrom: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date()),
     };
     let server: Server | undefined;
 
