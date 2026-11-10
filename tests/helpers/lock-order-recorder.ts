@@ -5,6 +5,11 @@
 //     valores) e cada `tx.<model>.<op>` do Prisma;
 //   - acesso cru ao cliente FORA de transação vai para `outside` (é o que denuncia "outra conexão").
 // Sem gancho no código de produção: o repositório recebe o cliente gravado no construtor, como receberia o real.
+// T-LOCK-2 (F6b): mais o CLASSIFICADOR fail-closed (efeitos de trava por evento; regras ORD-0/ORD-1/ORD-2 e UNK) e o CENSO
+// das aberturas de transação pelo compilador TypeScript.
+
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 
 export type RecordedEvent =
   | { readonly kind: "raw"; readonly method: string; readonly sql: string }
@@ -135,7 +140,12 @@ export function recordingClient<C extends object>(client: C): Recording<C> {
       if (prop === "$transaction" && typeof value === "function") {
         return (work: unknown, options?: unknown) => {
           if (typeof work !== "function") return (value as (...a: unknown[]) => unknown).call(target, work, options);
-          const recorded: RecordedTransaction = { openerStack: new Error().stack ?? "", events: [] };
+          // pilha LONGA: o limite padrão (10 quadros) pode cortar a linha da chamada que abriu a transação
+          const previousLimit = Error.stackTraceLimit;
+          Error.stackTraceLimit = 60;
+          const openerStack = new Error().stack ?? "";
+          Error.stackTraceLimit = previousLimit;
+          const recorded: RecordedTransaction = { openerStack, events: [] };
           transactions.push(recorded);
           return (value as (...a: unknown[]) => unknown).call(
             target,
@@ -154,4 +164,178 @@ export function recordingClient<C extends object>(client: C): Recording<C> {
     },
   });
   return { client: proxied, transactions, outside };
+}
+// ---------------------------------------------------------------- o classificador (fail-closed)
+
+/** Uma trava que um evento toma: tabela, forte (FOR UPDATE / NO KEY UPDATE / escrita) ou fraca (SHARE / KEY SHARE), e se
+ * PODE ESPERAR (sem SKIP LOCKED/NOWAIT). `implicit` = a KEY SHARE que o INSERT numa filha toma no pai pela FK. */
+export type LockEffect = { readonly table: string; readonly strong: boolean; readonly wait: boolean; readonly implicit?: boolean; readonly explicit?: boolean };
+
+export type ClassifierContext = {
+  /** `delegate do Prisma` → tabela (de `prisma/schema.prisma`, `@@map`). */
+  readonly modelTable: ReadonlyMap<string, string>;
+  /** Filhas de `subscription_statements` pela FK (do catálogo `pg_constraint`, não de literal). */
+  readonly statementChildren: ReadonlySet<string>;
+};
+
+export const STATEMENTS = "subscription_statements";
+/** As linhas cuja 1ª trava abre a janela do ORD-1. */
+export const QUEUE_TABLES: ReadonlySet<string> = new Set(["billing_outbox", "subscription_statement_charges"]);
+/** SQL que cita estas tabelas e o classificador não sabe ler é UNK (vermelho). */
+const WATCHED = /\b(billing_outbox|subscription_statements|subscription_statement_charges)\b/;
+
+export function effectsOf(event: RecordedEvent, context: ClassifierContext): LockEffect[] | "unknown" {
+  if (event.kind === "model") {
+    const table = context.modelTable.get(event.model);
+    if (!table) return "unknown"; // delegate que o mapa do schema não conhece: fail-closed
+    if (/^(find|count|aggregate|groupBy)/.test(event.op)) return [];
+    if (event.op === "create" || event.op === "createMany" || event.op === "createManyAndReturn") {
+      // a linha NOVA é exclusiva de quem a cria; no próprio demonstrativo ela não é "trava fraca antes da forte" (ORD-0)
+      return [...(context.statementChildren.has(table) ? [{ table: STATEMENTS, strong: false, wait: true, implicit: true }] : []), { table, strong: table === STATEMENTS, wait: false }];
+    }
+    if (event.op === "upsert") {
+      return [...(context.statementChildren.has(table) ? [{ table: STATEMENTS, strong: false, wait: true, implicit: true }] : []), { table, strong: true, wait: true }];
+    }
+    if (/^(update|updateMany|updateManyAndReturn|delete|deleteMany)$/.test(event.op)) return [{ table, strong: true, wait: true }];
+    return "unknown";
+  }
+  const sql = normalizedSql(event.sql);
+  if (/^select set_config\(/.test(sql) || /^set /.test(sql)) return [];
+  let match = /^insert into ([a-z_][a-z0-9_]*)/.exec(sql);
+  if (match) {
+    const table = match[1]!;
+    const effects: LockEffect[] = [];
+    if (context.statementChildren.has(table)) effects.push({ table: STATEMENTS, strong: false, wait: true, implicit: true });
+    effects.push({ table, strong: table === STATEMENTS, wait: false });
+    if (/ on conflict .* do update /.test(` ${sql} `)) effects.push({ table, strong: true, wait: true });
+    return effects;
+  }
+  match = /^update ([a-z_][a-z0-9_]*)/.exec(sql);
+  if (match) return [{ table: match[1]!, strong: true, wait: true }];
+  match = /^delete from ([a-z_][a-z0-9_]*)/.exec(sql);
+  if (match) return [{ table: match[1]!, strong: true, wait: true }];
+  if (/^(select|with) /.test(sql)) {
+    // escrita escondida num SELECT/CTE (`WITH x AS (UPDATE …)`) o classificador não lê → UNK (fail-closed)
+    const withoutLockWords = sql.replace(/\bfor (no key update|update)\b/g, " ").replace(/\bdo update\b/g, " ");
+    if (/\b(update|delete|insert)\b/.test(withoutLockWords)) return WATCHED.test(sql) ? "unknown" : [];
+    return lockClauses(sql).flatMap((clause) =>
+      clauseTables(sql, clause).map((table) => ({
+        table,
+        strong: clause.strength === "update" || clause.strength === "no key update",
+        wait: clause.waitPolicy === "wait",
+        explicit: true,
+      })),
+    );
+  }
+  return WATCHED.test(sql) ? "unknown" : [];
+}
+
+export type Violation = { readonly rule: "ORD-0" | "ORD-1" | "ORD-2" | "UNK"; readonly at: number; readonly detail: string };
+
+/** A letra do §2.1, aplicada a UMA transação gravada. `claim` liga a ORD-2 (toda trava explícita SKIP LOCKED/NOWAIT). */
+export function lockOrderViolations(transaction: RecordedTransaction, context: ClassifierContext, options: { readonly claim?: boolean } = {}): Violation[] {
+  const violations: Violation[] = [];
+  let firstQueue = -1;
+  let firstStrongStatement = -1;
+  let weakStatementBefore = false;
+  transaction.events.forEach((event, index) => {
+    const effects = effectsOf(event, context);
+    const detail = event.kind === "raw" ? oneLine(event.sql).slice(0, 140) : `${event.model}.${event.op}`;
+    if (effects === "unknown") {
+      violations.push({ rule: "UNK", at: index, detail });
+      return;
+    }
+    for (const effect of effects) {
+      if (options.claim && effect.explicit && effect.wait) violations.push({ rule: "ORD-2", at: index, detail });
+      if (effect.table === STATEMENTS) {
+        if (effect.strong && effect.wait && firstStrongStatement === -1 && weakStatementBefore) violations.push({ rule: "ORD-0", at: index, detail });
+        if (effect.wait && firstQueue !== -1 && !(firstStrongStatement !== -1 && firstStrongStatement < firstQueue)) violations.push({ rule: "ORD-1", at: index, detail });
+        if (effect.strong && firstStrongStatement === -1) firstStrongStatement = index;
+        if (!effect.strong && firstStrongStatement === -1) weakStatementBefore = true;
+      } else if (QUEUE_TABLES.has(effect.table) && firstQueue === -1) {
+        firstQueue = index;
+      }
+    }
+  });
+  return violations;
+}
+
+// ---------------------------------------------------------------- o censo das aberturas de transação (AST)
+
+export type Opening = { readonly key: string; readonly file: string; readonly line: number };
+
+const OPENERS = new Set(["withTenantRls", "withTenantRlsBudget", "forEachTenantRls", "findFirstTenantRls"]);
+
+/** Toda chamada que ABRE transação no módulo (`withTenantRls*`, `forEachTenantRls`, `findFirstTenantRls`, `.$transaction`,
+ * `.transaction`), pelo compilador TypeScript (AST, não regex). Chave = `arquivo#Classe.metodo#chamada` (sem número de
+ * linha; repetição ganha `#n`); `line` = a linha do nome chamado, a mesma que a pilha gravada mostra. */
+export function transactionOpenings(ts: typeof import("typescript"), repoRoot: string, prefix: string): Opening[] {
+  const files: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith(".ts") && !entry.name.endsWith(".d.ts")) files.push(full);
+    }
+  };
+  walk(path.join(repoRoot, prefix));
+  files.sort();
+  const openings: Opening[] = [];
+  for (const full of files) {
+    const file = path.relative(repoRoot, full).replace(/\\/g, "/");
+    const source = ts.createSourceFile(file, readFileSync(full, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const enclosingName = (node: import("typescript").Node): string => {
+      const parts: string[] = [];
+      for (let current = node.parent; current; current = current.parent) {
+        if ((ts.isMethodDeclaration(current) || ts.isFunctionDeclaration(current) || ts.isGetAccessor(current)) && current.name) parts.unshift(current.name.getText(source));
+        else if (ts.isVariableDeclaration(current) && current.initializer && (ts.isArrowFunction(current.initializer) || ts.isFunctionExpression(current.initializer))) parts.unshift(current.name.getText(source));
+        else if (ts.isPropertyAssignment(current) && (ts.isArrowFunction(current.initializer) || ts.isFunctionExpression(current.initializer))) parts.unshift(current.name.getText(source));
+        else if (ts.isClassDeclaration(current) && current.name) parts.unshift(current.name.getText(source));
+      }
+      return parts.join(".") || "<módulo>";
+    };
+    const seen = new Map<string, number>();
+    const visit = (node: import("typescript").Node): void => {
+      if (ts.isCallExpression(node)) {
+        const callee = node.expression;
+        let name: import("typescript").Node | null = null;
+        let label = "";
+        if (ts.isIdentifier(callee) && OPENERS.has(callee.text)) {
+          name = callee;
+          label = callee.text;
+        } else if (ts.isPropertyAccessExpression(callee) && (callee.name.text === "$transaction" || callee.name.text === "transaction")) {
+          name = callee.name;
+          label = `.${callee.name.text}`;
+        }
+        if (name) {
+          const base = `${file}#${enclosingName(node)}#${label}`;
+          const count = (seen.get(base) ?? 0) + 1;
+          seen.set(base, count);
+          const line = source.getLineAndCharacterOfPosition(name.getStart(source)).line + 1;
+          openings.push({ key: count > 1 ? `${base}#${count}` : base, file, line });
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+  }
+  return openings;
+}
+
+/** As linhas `src/…:<n>` de uma pilha (com barra normal), na ordem. */
+export function stackFrames(stack: string): string[] {
+  const frames: string[] = [];
+  for (const match of stack.matchAll(/(src[\\/][^:()\s]+\.ts):(\d+)/g)) frames.push(`${match[1]!.replace(/\\/g, "/")}:${match[2]}`);
+  return frames;
+}
+
+/** `delegate do Prisma → tabela`, lido de `prisma/schema.prisma` (`model X { … @@map("y") }`; sem `@@map`, a tabela é X). */
+export function modelTablesFromSchema(schemaText: string): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const match of schemaText.matchAll(/^model\s+([A-Za-z0-9_]+)\s*\{([\s\S]*?)^\}/gm)) {
+    const model = match[1]!;
+    const mapped = /@@map\("([^"]+)"\)/.exec(match[2]!)?.[1] ?? model;
+    map.set(model.charAt(0).toLowerCase() + model.slice(1), mapped);
+  }
+  return map;
 }

@@ -237,3 +237,20 @@ O código da F5b (`adoptionFacts` no `PrismaOutboxRepository`) entrou no commit 
 | 14:16:47→14:17:22 | **M5h** (tirar o `set_config('enable_nestloop', 'off', true)`) | `21 · 20 · 1`: T-OBX-db-9 (`N = 20000`, `57014 canceling statement due to statement timeout` em 10 046 ms); revert limpo | vermelho medido (o do plano: 57014 em ~10 s) |
 | 14:17:23→14:18:16 | **M5i** = o desenho da §13 (o laço: pick com `NOT (id = ANY($3))` + a trava do demonstrativo em comando próprio + adiadas, sem teto; o parâmetro das adiadas é `$3` porque no E5″ a órfã já tem pick próprio — declarado) | `21 · 19 · 2`: T-OBX-db-9 (`N = 20000`, `P2028 … expired transaction` em 30 103 ms) e T-LOCK-1b (sem a pick conjunta); revert limpo. É também o vermelho-controle da §13 que o plano manda registrar | vermelho medido (o do plano: P2028 em ~30 s) |
 | — | `npm run lint` NÃO re-rodado | o commit não toca `src/` (o `src` é o de `e16fd02a`, lint 0 às 14:14) | declarado |
+
+## F6b + F6c — T-LOCK-2: a ordem de travas executada e o censo das transações (§13.3, §14.4)
+
+**Commit único, declarado:** a F6b (gravador, classificador, censo, tabela congelada, cenários de `outbox/`, `charges/` e do pedido) e a F6c (os cenários de `statements/`) entram juntas, porque o teste de cobertura exige TODA chave `cenario:` da tabela congelada com transação gravada: com só a F6b ele fica vermelho pelas chaves de `statements/`.
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| (sem bastão) | helper e teste escritos fora da árvore (`rascunhos/f6b-src/`); a tabela congelada sai do censo (55 chaves: 39 `cenario:`, 15 `sem-tabela-do-mapa`, 1 `dublê-em-memória`); o `MAP_MENTION` consertado (RETOMADA 7) | — | — |
+| 14:19 | cópia para `tests/helpers/lock-order-recorder.ts` (a única linha que sai da versão da F4 é a captura da pilha, agora com `Error.stackTraceLimit = 60`) e `tests/ass-08-lock-order-db.test.ts` (novo); 0 caractere de controle | — | — |
+| 14:19:17→14:19:28 | `npm test -- tests/ass-08-lock-order-db.test.ts` | `# tests 6 · pass 6 · fail 0`: setup (papel `rolsuper=false rolbypassrls=false`, filhas do demonstrativo pelo `pg_constraint`), cenários F6b e F6c sem erro, unitário do classificador, censo = tabela congelada com cobertura, 0 violação ORD-0/1/2/UNK | verde |
+| 14:19:42→14:19:54 | **M7a** (no retry, o UPDATE da fila antes da trava do demonstrativo) | `6 · 5 · 1`: `outbox.retry: ORD-1@4 SELECT s.id, o.kind … FOR UPDATE OF s`; revert limpo | vermelho medido |
+| 14:19:54→14:20:06 | **M7b** (≡ M5g: claim sem SKIP LOCKED no demonstrativo) | `6 · 5 · 1`: `outbox.claimNext (…): ORD-2@5` e `ORD-1@5` na pick conjunta; revert limpo | vermelho medido |
+| 14:20:06→14:20:17 | **M7c** (abertura nova `touch` em `charges.prisma.ts`) | `6 · 5 · 1`: "abertura nova sem classe na tabela congelada": `…charges.prisma.ts#PrismaStatementChargeRepository.touch#withTenantRls`; revert limpo | vermelho medido |
+| 14:20:17→14:20:28 | **M7d** (apagar o cenário do retry) | `6 · 5 · 1`: `…#PrismaOutboxRepository.retry#withTenantRlsBudget (cenario:outbox.retry): nenhuma transação gravada abriu por …` (sem cobertura); revert limpo | vermelho medido |
+| 14:20:28→14:20:39 | **M7e** (o classificador sem a detecção de escrita escondida) | `6 · 5 · 1`: "escrita escondida numa CTE sobre a tabela do mapa é UNK (fail-closed)"; revert limpo | vermelho medido |
+| 14:21:02→14:21:27 | `-db` de novo com o helper estendido | `# tests 21 · pass 21 · fail 0` | T-LOCK-1a/1b intactos |
+| — | `npm run lint` NÃO re-rodado | o commit não toca `src/` | declarado |
