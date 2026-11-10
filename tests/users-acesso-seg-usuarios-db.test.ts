@@ -408,9 +408,13 @@ if (!connectionString) {
     };
   }
 
-  // BARREIRA da propriedade: espera o perdedor ficar na fila da trava desta suíte OU terminar. Com a
-  // trava, ele fica na fila; sem ela, ele termina ANTES do commit do vencedor — e a asserção final
-  // (administradores ativos) fica vermelha pelo efeito, não por tempo esgotado.
+  // BARREIRA da propriedade: espera o perdedor ficar na fila de QUALQUER trava (statement desta suíte,
+  // pelo `application_name`, esperando lock) OU terminar. Com a trava da organização, ele fica na fila;
+  // sem ela, ele termina ANTES do commit do vencedor — e a asserção final (administradores ativos) fica
+  // vermelha pelo efeito, não por tempo esgotado. O fragmento vazio é de propósito: um desenho de trava
+  // diferente (por exemplo, nas linhas de `user_role_assignments`) também é observado na fila, e o
+  // teste julga o que ele produz. Só o perdedor pode estar bloqueado: o vencedor segura as travas, o
+  // cliente administrador é o que consulta, e os testes deste arquivo rodam em sequência.
   async function waitBlockedOrSettled(h: Harness, settled: () => boolean, label: string): Promise<void> {
     const deadline = Date.now() + 15_000;
 
@@ -419,7 +423,7 @@ if (!connectionString) {
         return;
       }
 
-      if ((await countBlockedStatements(h.admin, { fragment: "tenants", applicationName })) >= 1) {
+      if ((await countBlockedStatements(h.admin, { fragment: "", applicationName })) >= 1) {
         return;
       }
 
