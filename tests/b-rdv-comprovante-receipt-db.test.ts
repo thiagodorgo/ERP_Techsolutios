@@ -10,6 +10,7 @@
  */
 import assert from "node:assert/strict";
 import { createHash, randomUUID } from "node:crypto";
+import { rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { after, before, test } from "node:test";
@@ -136,16 +137,20 @@ if (!connectionString) {
 }
 
 async function bootstrap(connection: string) {
-  const [{ PrismaPg }, { PrismaClient }, prismaRepositoryModule, receiptModule] = await Promise.all([
+  const [{ PrismaPg }, { PrismaClient }, prismaRepositoryModule, receiptModule, localStorageModule] = await Promise.all([
     import("@prisma/adapter-pg"),
     import("@prisma/client"),
     import("../src/modules/expense-management/expense-management-prisma.repository.js"),
     import("../src/modules/expense-management/expense-receipt.service.js"),
+    import("../src/modules/checklists/storage/local-checklist-storage.provider.js"),
   ]);
   const RlsRepository = prismaRepositoryModule.RlsPrismaExpenseManagementRepository;
   const { ExpenseReceiptService, configureExpenseReceiptStorageForTests, resetExpenseReceiptRuntimeForTests } = receiptModule;
 
-  configureExpenseReceiptStorageForTests(path.join(os.tmpdir(), `rdvcomp-db-${randomUUID()}`));
+  // Conserto c1 (§3, regressões movidas): a costura recebe o provedor da D-014 (local, raiz própria deste
+  // arquivo); a limpeza da raiz passa a ser do próprio teste.
+  const storageRoot = path.join(os.tmpdir(), `rdvcomp-db-${randomUUID()}`);
+  configureExpenseReceiptStorageForTests({ provider: new localStorageModule.LocalChecklistStorageProvider(storageRoot) });
 
   const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) }) as any;
   const roles: EphemeralRole[] = [];
@@ -227,6 +232,7 @@ async function bootstrap(connection: string) {
           await admin.$executeRawUnsafe("DELETE FROM tenants WHERE id = $1::uuid", tenantId);
         }
         await resetExpenseReceiptRuntimeForTests();
+        rmSync(storageRoot, { recursive: true, force: true });
       } finally {
         for (const role of roles) {
           await role.drop();

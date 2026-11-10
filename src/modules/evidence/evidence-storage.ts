@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
@@ -29,18 +29,10 @@ export type EvidenceStorageReceipt = {
   readonly sizeBytes: number;
   readonly checksumSha256: string;
   readonly storedAt: Date;
-  /**
-   * B-RDV-COMPROVANTE — referência RECUPERÁVEL do objeto gravado (`<tenantSegment>/<arquivo>`),
-   * para vias que precisam reler o binário (o `fileId` histórico é um id solto, não um caminho).
-   * INTERNA: nunca sai em resposta pública nem em auditoria (allowlist §2.8).
-   */
-  readonly storageKey?: string;
 };
 
 export interface EvidenceStorageProvider {
   store(input: EvidenceStorageInput): Promise<EvidenceStorageReceipt>;
-  /** B-RDV-COMPROVANTE — leitura opcional pelo `storageKey` devolvido no store. */
-  load?(storageKey: string): Promise<Buffer | undefined>;
   clear?(): Promise<void>;
 }
 
@@ -108,13 +100,8 @@ export class LocalProtectedEvidenceStorageProvider implements EvidenceStoragePro
 
     const tenantSegment = safeStorageSegment(input.tenantId);
     // A extensão passa a derivar do tipo VERIFICADO: antes, um `.png` no disco só provava o que o
-    // cliente tinha escrito no `Content-Type` do part. B-RDV-COMPROVANTE: webp/pdf aditivos
-    // (a via de comprovante aceita os 4 tipos do sniff); jpeg/png seguem como sempre.
-    const extension =
-      facts.mimeType === "image/png" ? ".png"
-      : facts.mimeType === "image/webp" ? ".webp"
-      : facts.mimeType === "application/pdf" ? ".pdf"
-      : ".jpg";
+    // cliente tinha escrito no `Content-Type` do part.
+    const extension = facts.mimeType === "image/png" ? ".png" : ".jpg";
     const dir = path.join(this.root, tenantSegment);
     const finalName = `${randomUUID()}${extension}`;
     const tempName = `${randomUUID()}.tmp`;
@@ -131,22 +118,7 @@ export class LocalProtectedEvidenceStorageProvider implements EvidenceStoragePro
       sizeBytes,
       checksumSha256: input.checksumSha256,
       storedAt: new Date(),
-      storageKey: `${tenantSegment}/${finalName}`,
     };
-  }
-
-  /**
-   * B-RDV-COMPROVANTE — relê o binário gravado pelo `storageKey` do store. Fail-closed: chave fora
-   * do formato `<segmento>/<uuid>.<ext>` não toca o disco (nenhum traversal), ausência devolve
-   * `undefined`.
-   */
-  async load(storageKey: string): Promise<Buffer | undefined> {
-    if (!/^[A-Za-z0-9_-]+\/[0-9a-f-]+\.(?:jpg|png|webp|pdf)$/.test(storageKey)) return undefined;
-    try {
-      return await readFile(path.join(this.root, storageKey));
-    } catch {
-      return undefined;
-    }
   }
 
   async clear(): Promise<void> {

@@ -210,18 +210,21 @@ test("C6 censo: nenhum `as UploadVerification` em src/** fora do próprio upload
   );
 });
 
-// ── C7: o guard de tenant está nos 4 resolvers (o alcance da LEITURA, declarado) ──────────────────
+// ── C7: o guard de tenant está nos 5 leitores (o alcance da LEITURA, declarado) ───────────────────
 
-test("C7 censo: os 4 sítios de `getObject(` que consomem storage chamam o guard de tenant antes", async () => {
+test("C7 censo: os 5 sítios de `getObject(` que consomem storage chamam o guard de tenant antes", async () => {
   // O E1·2 fecha o vazamento cross-tenant por HERANÇA DE CHAMADA: E5 (owner-portal) alcança o objeto
-  // por `resolveAttachmentDownload`. Esta cláusula afirma que os 4 resolvers têm o guard — e DECLARA o
-  // que não cobre: um QUINTO leitor que apareça amanhã passa por fora em silêncio (R2·3 do crítico).
+  // por `resolveAttachmentDownload`. Esta cláusula afirma que os leitores têm o guard — e DECLARA o
+  // que não cobre: um leitor NOVO que apareça amanhã passa por fora em silêncio (R2·3 do crítico).
+  // Conserto c1 do #525 (B-RDV-COMPROVANTE): o comprovante de despesa passa a ler o storage da D-014 e
+  // entra NOMINAL como o 5º leitor (`serveReceiptFile`).
   const files = await sourceFiles();
   const resolvers = [
     "modules/attachments/attachment.storage.ts",
     "modules/work-orders/work-order-attachment.storage.ts",
     "modules/damages/damage-attachment.storage.ts",
     "modules/checklists/checklist-attachment.storage.ts",
+    "modules/expense-management/expense-receipt.service.ts",
   ];
   for (const resolver of resolvers) {
     const file = files.find((candidate) => candidate.relativePath === resolver);
@@ -231,7 +234,7 @@ test("C7 censo: os 4 sítios de `getObject(` que consomem storage chamam o guard
       `${resolver} lê o storage sem conferir o prefixo de tenant da linha — ver B-O6R-07b E1·2.`,
     );
   }
-  // E o guard não é chamado de lugar nenhum além destes 4 + o próprio módulo.
+  // E o guard não é chamado de lugar nenhum além destes 5 + o próprio módulo.
   const callers = filesMatching(files, "assertStorageKeyWithinTenant(")
     .filter((file) => file !== "modules/evidence/storage-key-scope.ts")
     .sort();

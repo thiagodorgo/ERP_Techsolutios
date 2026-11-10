@@ -1,18 +1,23 @@
 import { createHash } from "node:crypto";
-import os from "node:os";
-import path from "node:path";
 
 import { env } from "../../config/env.js";
+import { ChecklistError } from "../checklists/checklist.types.js";
+import { createChecklistStorageProviderByName } from "../checklists/storage/checklist-storage.factory.js";
+import type {
+  ChecklistStorageObjectBody,
+  ChecklistStorageProvider,
+  ChecklistStorageProviderName,
+} from "../checklists/storage/checklist-storage.types.js";
 import {
   resetEvidenceScannerForTests,
   setEvidenceScannerForTests,
 } from "../evidence/evidence-scanner.factory.js";
 import {
   EVIDENCE_MAX_FILE_SIZE_BYTES,
-  LocalProtectedEvidenceStorageProvider,
   type EvidenceScanner,
 } from "../evidence/evidence-storage.js";
-import { UploadGateError, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
+import { assertStorageKeyWithinTenant } from "../evidence/storage-key-scope.js";
+import { UploadGateError, assertUploadVerification, uploadGateStatus, verifyUploadContent } from "../evidence/upload-gate.js";
 import {
   getMemoryExpenseManagementRepositoryForTests,
 } from "./expense-management.service.js";
@@ -33,10 +38,10 @@ import {
 /**
  * B-RDV-COMPROVANTE (§G.3 do plano B-REENVIOS) — upload do comprovante de despesa.
  *
- * Regra do espelho = evidência (`mobile-evidence-upload.ts`): sniff + scanner pelo GATE ÚNICO
- * (`verifyUploadContent`, registro único do scanner — B-O6R-07b) e storage pela MESMA classe da
- * evidência (`LocalProtectedEvidenceStorageProvider`, instância com root próprio). Nenhum scanner
- * ou storage novo nasce aqui.
+ * Sniff + scanner pelo GATE ÚNICO (`verifyUploadContent`, registro único do scanner — B-O6R-07b).
+ * Storage (conserto c1 do #525, §2(a) e §12.3 do plano do conserto): o provedor da D-014 (`local|s3`,
+ * a mesma classe de anexos, checklist, dano e OS). O comprovante saiu da raiz efêmera
+ * `os.tmpdir()` (C1-D1). Nenhum scanner ou storage novo nasce aqui.
  *
  * Idempotência = a do sync de despesa (B-O6R-03a), COMPOSTA: claim na MESMA tabela
  * `mobile_action_receipts` por (tenant, `client_action_id` K2t), prova de payload pelo
@@ -60,12 +65,20 @@ export const EXPENSE_RECEIPT_SYNC_EVENT_TYPE = "expense_receipt.synced";
 
 const RECEIPT_EDITABLE_STATUSES = new Set(["draft", "returned"]);
 
-let receiptStorageRoot = path.join(os.tmpdir(), "erp-expense-receipt-uploads");
-let receiptStorageProvider = new LocalProtectedEvidenceStorageProvider(receiptStorageRoot);
+/**
+ * Conserto c1 (§2(a)6, §12.3) — COSTURA DE TESTE do storage do comprovante. Sem ela, quem resolve o
+ * provedor é a fábrica da D-014 (`createChecklistStorageProviderByName`), a mesma dos 4 leitores de
+ * anexo. O teste injeta um `LocalChecklistStorageProvider(<tmp>)` ou um `S3ChecklistStorageProvider(config,
+ * clienteFingido)`; nenhum `*ForTests` da fábrica de storage entra em `src/` (cláusula C4 do censo).
+ */
+type ExpenseReceiptStorageTestSeam = {
+  readonly provider?: ChecklistStorageProvider;
+};
 
-export function configureExpenseReceiptStorageForTests(root: string): void {
-  receiptStorageRoot = root;
-  receiptStorageProvider = new LocalProtectedEvidenceStorageProvider(root);
+let receiptStorageSeam: ExpenseReceiptStorageTestSeam = {};
+
+export function configureExpenseReceiptStorageForTests(seam: ExpenseReceiptStorageTestSeam): void {
+  receiptStorageSeam = { ...seam };
 }
 
 /** Wrapper fino do registro único do scanner (B-O6R-07b) — igual ao da via de evidência. */
@@ -74,9 +87,75 @@ export function configureExpenseReceiptScannerForTests(scanner: EvidenceScanner)
 }
 
 export async function resetExpenseReceiptRuntimeForTests(): Promise<void> {
-  await receiptStorageProvider.clear?.();
+  receiptStorageSeam = {};
   resetEvidenceScannerForTests();
   defaultReceiptServicePromise = undefined;
+}
+
+/**
+ * §12.3 — UM resolvedor para escrever, ler e compensar: o provedor injetado pela costura com esse nome
+ * ou, sem costura, a fábrica da D-014. A escrita resolve pelo nome configurado; a leitura e a
+ * compensação, pelo nome que veio no `file_key`.
+ */
+function resolveReceiptStorage(name: ChecklistStorageProviderName): ChecklistStorageProvider {
+  const injected = receiptStorageSeam.provider;
+  if (injected && injected.name === name) return injected;
+  return createChecklistStorageProviderByName(name);
+}
+
+/** O nome do provedor da ESCRITA: o da costura, ou `CHECKLIST_STORAGE_PROVIDER`. */
+function receiptWriteProviderName(): ChecklistStorageProviderName {
+  return receiptStorageSeam.provider?.name ?? env.CHECKLIST_STORAGE_PROVIDER;
+}
+
+/**
+ * §2(a)2 — `file_key = "<provedor>:<chave>"`. `expense_receipts` não tem coluna de provedor e
+ * `prisma/**` não muda, então o provedor vai na chave.
+ */
+export function encodeReceiptFileKey(provider: ChecklistStorageProviderName, storageKey: string): string {
+  return `${provider}:${storageKey}`;
+}
+
+/**
+ * O inverso do `encodeReceiptFileKey`. Chave SEM prefixo de provedor (o que o objeto `b9e63ec0` gravava
+ * na raiz efêmera) não é reconhecida: a leitura dá 404 sem tocar o disco e o replay responde 409.
+ */
+export function decodeReceiptFileKey(
+  fileKey: string | undefined,
+): { readonly provider: ChecklistStorageProviderName; readonly storageKey: string } | undefined {
+  if (!fileKey) return undefined;
+  const separator = fileKey.indexOf(":");
+  if (separator <= 0) return undefined;
+  const provider = fileKey.slice(0, separator);
+  const storageKey = fileKey.slice(separator + 1);
+  if (provider !== "local" && provider !== "s3") return undefined;
+  if (!storageKey) return undefined;
+  return { provider, storageKey };
+}
+
+/** Extensão do objeto pelo tipo VERIFICADO no gate (nunca pelo nome do arquivo do aparelho). */
+function receiptFileExtension(mimeType: string): string {
+  if (mimeType === "image/png") return "png";
+  if (mimeType === "image/webp") return "webp";
+  if (mimeType === "application/pdf") return "pdf";
+  return "jpg";
+}
+
+/** O corpo do objeto vira Buffer, com o teto do contrato (10 MB). */
+async function readReceiptBody(body: ChecklistStorageObjectBody): Promise<Buffer> {
+  if (Buffer.isBuffer(body)) return body;
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for await (const chunk of body) {
+    const piece = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array);
+    total += piece.length;
+    if (total > EXPENSE_RECEIPT_MAX_FILE_SIZE_BYTES) {
+      body.destroy();
+      throw new Error("Receipt object exceeds the contract size.");
+    }
+    chunks.push(piece);
+  }
+  return Buffer.concat(chunks);
 }
 
 export type ExpenseReceiptActorContext = {
@@ -191,11 +270,17 @@ export class ExpenseReceiptService {
           actionType: EXPENSE_RECEIPT_SYNC_ACTION_TYPE,
         });
 
-        const stored = await receiptStorageProvider.store({
+        // §2(a)1 — provedor da D-014. O nome do arquivo do aparelho não vai ao storage (nem como
+        // metadado do S3): o objeto se chama `comprovante.<ext do tipo VERIFICADO>`.
+        const storage = resolveReceiptStorage(receiptWriteProviderName());
+        const verifiedMimeType = assertUploadVerification(verification, input.buffer).mimeType;
+        const stored = await storage.save({
           tenantId: actor.tenantId,
-          evidenceId: `expense_receipt:${actor.tenantId}:${input.clientActionId}`,
-          clientEvidenceId: input.clientActionId,
+          runId: `expense-receipt-${report.id}`,
           buffer: input.buffer,
+          originalName: "comprovante",
+          safeFileName: `comprovante.${receiptFileExtension(verifiedMimeType)}`,
+          sizeBytes: input.buffer.length,
           checksumSha256: computedSha256,
           verification,
         });
@@ -208,7 +293,7 @@ export class ExpenseReceiptService {
           // O CHECK real da coluna (migration 20260619, expense_receipts_upload_status_check) só admite
           // local|pending_upload|uploading|uploaded|failed — "uploaded" é o estado "guardado no servidor".
           uploadStatus: "uploaded",
-          fileKey: stored.storageKey ?? stored.fileId,
+          fileKey: encodeReceiptFileKey(storage.name, stored.storageKey),
         });
 
         await repository.completeMobileActionReceipt(claim, { resultRef: receipt.id, processedAt: new Date() });
@@ -246,9 +331,23 @@ export class ExpenseReceiptService {
 
   async serveReceiptFile(actor: ExpenseReceiptActorContext, input: { readonly reportId: string; readonly itemId: string }): Promise<{ readonly buffer: Buffer; readonly mimeType: string }> {
     const { receipt } = await this.loadStoredReceipt(actor, input);
-    if (!receipt.fileKey) throw notFound();
-    const buffer = await receiptStorageProvider.load?.(receipt.fileKey);
-    if (!buffer) throw notFound();
+    // §2(a)3 — o provedor vem do `file_key`; chave sem prefixo (o legado da raiz efêmera) → 404 sem
+    // tocar o disco. A chave tem de começar na organização do ator (o 5º leitor do censo C7).
+    const decoded = decodeReceiptFileKey(receipt.fileKey);
+    if (!decoded) throw notFound();
+    assertStorageKeyWithinTenant(
+      { storageKey: decoded.storageKey, tenantId: actor.tenantId, provider: decoded.provider },
+      notFound,
+    );
+    let object;
+    try {
+      object = await resolveReceiptStorage(decoded.provider).getObject({ storageKey: decoded.storageKey });
+    } catch (error) {
+      if (error instanceof ChecklistError && error.statusCode === 404) throw notFound();
+      throw error;
+    }
+    const buffer = await readReceiptBody(object.body);
+    // O tipo servido é o da linha, verificado no upload.
     return { buffer, mimeType: receipt.mimeType };
   }
 
@@ -334,6 +433,11 @@ export class ExpenseReceiptService {
     });
     if (!proof) {
       throw new ExpenseManagementError(409, "EXPENSE_SYNC_CONFLICT", "payload_mismatch", "This client_action_id was already used with different content.");
+    }
+    // §12.1 item 3 (L6) — linha sem prefixo de provedor (o legado da raiz efêmera) não se lê: responder
+    // 200 `uploaded` mandaria o app apagar o blob de um arquivo que o servidor não serve.
+    if (!decodeReceiptFileKey(stored.fileKey)) {
+      throw new ExpenseManagementError(409, "EXPENSE_SYNC_CONFLICT", "receipt_unverifiable", "Stored receipt file cannot be verified.");
     }
 
     return { statusCode: 200, receiptId: stored.id, uploadStatus: stored.uploadStatus };

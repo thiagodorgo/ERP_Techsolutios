@@ -11,11 +11,33 @@
  * Vermelho-controle: na `origin/main` a rota não existe — o caminho feliz (201) de cada caso falha.
  */
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import test from "node:test";
+import os from "node:os";
+import path from "node:path";
+import test, { after } from "node:test";
 
 import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.types.js";
+
+// Conserto c1 do #525 (§2(a), §12.3, §12.11 RR-A.1) — o comprovante grava no provedor da D-014. Aqui é o
+// `local`, num diretório PRÓPRIO deste arquivo. As variáveis entram antes do primeiro import de `src/`
+// (todos os imports de `src/` deste arquivo são dinâmicos), porque `src/config/env.ts` congela no import.
+const RECEIPT_STORAGE_DIR = mkdtempSync(path.join(os.tmpdir(), "rdvc1-routes-"));
+process.env.CHECKLIST_STORAGE_PROVIDER = "local";
+process.env.CHECKLIST_STORAGE_LOCAL_DIR = RECEIPT_STORAGE_DIR;
+after(() => rmSync(RECEIPT_STORAGE_DIR, { recursive: true, force: true }));
+
+/** A raiz efêmera que o objeto `b9e63ec0` usava (`os.tmpdir()/erp-expense-receipt-uploads`). */
+const LEGACY_TMP_ROOT = path.join(os.tmpdir(), "erp-expense-receipt-uploads");
+
+function listFilesRecursive(root: string): string[] {
+  if (!existsSync(root)) return [];
+  return readdirSync(root, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.join(entry.parentPath ?? (entry as { path: string }).path, entry.name));
+}
 
 // JPEG mínimo válido para o sniff (FF D8 FF + corpo qualquer).
 function jpegBytes(filler = 0x10, length = 64): Buffer {
@@ -416,5 +438,133 @@ test("RR3.2 mesmo client_action_id com conteúdo diferente: 409 payload_mismatch
     const mismatch = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rr32-mismatch", bytes: different, sha256: await sha256Hex(different) }));
     assert.equal(mismatch.status, 409, JSON.stringify(mismatch.body));
     assert.match(JSON.stringify(mismatch.body), /payload_mismatch/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Conserto c1 (#525) — RR-A: armazenamento durável pela D-014 (§2(a), §12.1 item 3, §12.3)
+// ---------------------------------------------------------------------------
+
+async function memoryRepositoryForTests(): Promise<any> {
+  const { getMemoryExpenseManagementRepositoryForTests } = await import(
+    "../src/modules/expense-management/expense-management.service.js"
+  );
+  return getMemoryExpenseManagementRepositoryForTests();
+}
+
+/** Troca o `file_key` de uma linha do repositório de memória (a forja do RR-A.4; teste não tem `tsc`). */
+function forgeReceiptFileKey(repository: any, receiptId: string, fileKey: string): void {
+  const rows = repository.expenseReceipts as Map<string, Record<string, unknown>>;
+  const row = rows.get(receiptId);
+  assert.ok(row, `linha ${receiptId} não existe no repositório de memória`);
+  rows.set(receiptId, { ...row, fileKey });
+}
+
+async function getReceiptFile(baseUrl: string, tenant: Tenant, user: User, role: string, reportId: string, itemId: string) {
+  const response = await fetch(`${baseUrl}/api/v1/expense-reports/${reportId}/items/${itemId}/receipt/file`, {
+    headers: authHeaders(tenant, user, role),
+  });
+  return { status: response.status, bytes: Buffer.from(await response.arrayBuffer()) };
+}
+
+test("RR-A.1 storage configurado: o 201 grava no provedor local da D-014 (diretório configurado, não o tmpdir), `file_key` começa com `local:`, e um serviço NOVO serve os mesmos bytes", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const bytes = jpegBytes(0xa1);
+    const digest = await sha256Hex(bytes);
+    const legacyBefore = new Set(listFilesRecursive(LEGACY_TMP_ROOT));
+
+    const upload = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rra1-attach", bytes, sha256: digest }));
+    assert.equal(upload.status, 201, JSON.stringify(upload.body));
+
+    // 1 arquivo sob <dir>/<org>/expense-receipt-<reportId>/ e 0 na raiz efêmera do objeto.
+    const runDir = path.join(RECEIPT_STORAGE_DIR, seed.tenantA.id, `expense-receipt-${reportId}`);
+    const written = listFilesRecursive(runDir);
+    assert.equal(written.length, 1, `esperado 1 arquivo sob o diretório configurado ${runDir}; achados ${written.length}`);
+    assert.match(path.basename(written[0]), /^[0-9a-f-]{36}-comprovante\.jpg$/, "nome do objeto fora do padrão da D-014");
+    const newInLegacy = listFilesRecursive(LEGACY_TMP_ROOT).filter((file) => !legacyBefore.has(file));
+    assert.deepEqual(newInLegacy, [], "o comprovante não pode ir para a raiz efêmera os.tmpdir()/erp-expense-receipt-uploads");
+
+    // A linha guarda o provedor no `file_key`.
+    const repository = await memoryRepositoryForTests();
+    const row = await repository.findLatestStoredExpenseReceipt({ tenantId: seed.tenantA.id, itemId });
+    assert.equal(row?.fileKey, `local:${seed.tenantA.id}/expense-receipt-${reportId}/${path.basename(written[0])}`);
+
+    // "Reinício": um serviço NOVO, com o provedor recriado pela fábrica da D-014, serve os mesmos bytes.
+    const { ExpenseReceiptService } = await import("../src/modules/expense-management/expense-receipt.service.js");
+    const restarted = new ExpenseReceiptService(repository);
+    const served = await restarted.serveReceiptFile(
+      { tenantId: seed.tenantA.id, userId: seed.technicianA.id, roles: ["technician"], permissions: ["expense_report:read_own"] },
+      { reportId, itemId },
+    );
+    assert.equal(await sha256Hex(served.buffer), digest, "o serviço novo não serviu os mesmos bytes");
+
+    const download = await getReceiptFile(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId);
+    assert.equal(download.status, 200);
+    assert.equal(await sha256Hex(download.bytes), digest);
+  });
+});
+
+test("RR-A.4 leitura só na organização da linha: chave sem provedor (legado) → 404; chave `local:` de outra organização → 404; replay sobre linha legada → 409 receipt_unverifiable", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const repository = await memoryRepositoryForTests();
+
+    // (1) Legado: linha de A com `file_key` SEM prefixo, apontando para um arquivo real sob o diretório
+    // configurado. A leitura dá 404 sem tocar o disco, e os bytes não saem.
+    const legacyCase = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const legacyBytes = jpegBytes(0xa4);
+    const legacyKey = `${seed.tenantA.id}/${randomUUID()}.jpg`;
+    mkdirSync(path.join(RECEIPT_STORAGE_DIR, seed.tenantA.id), { recursive: true });
+    writeFileSync(path.join(RECEIPT_STORAGE_DIR, ...legacyKey.split("/")), legacyBytes);
+    await repository.createExpenseReceipt({
+      tenantId: seed.tenantA.id,
+      itemId: legacyCase.itemId,
+      localHash: await sha256Hex(legacyBytes),
+      mimeType: "image/jpeg",
+      uploadStatus: "uploaded",
+      fileKey: legacyKey,
+    });
+    const legacyRead = await getReceiptFile(baseUrl, seed.tenantA, seed.technicianA, "technician", legacyCase.reportId, legacyCase.itemId);
+    assert.equal(legacyRead.status, 404, "linha legada (sem provedor) não pode ser servida");
+    assert.ok(!legacyRead.bytes.equals(legacyBytes), "os bytes do arquivo legado saíram");
+
+    // (2) Outra organização: B envia um comprovante real pela rota; A ganha uma linha forjada com
+    // `file_key = "local:<orgB>/…"`, a chave do arquivo de B. A leitura de A dá 404 e os bytes de B não saem.
+    const caseB = await createReportWithItem(baseUrl, seed.tenantB, seed.adminB, "tenant_admin");
+    const bytesB = jpegBytes(0xb4);
+    const digestB = await sha256Hex(bytesB);
+    const uploadB = await postReceipt(baseUrl, seed.tenantB, seed.adminB, "tenant_admin", caseB.reportId, caseB.itemId, receiptForm({ clientActionId: "rra4-org-b", bytes: bytesB, sha256: digestB }));
+    assert.equal(uploadB.status, 201, JSON.stringify(uploadB.body));
+    const rowB = await repository.findLatestStoredExpenseReceipt({ tenantId: seed.tenantB.id, itemId: caseB.itemId });
+    assert.ok(rowB?.fileKey, "a linha de B não tem file_key");
+    const forgedKey = String(rowB.fileKey).startsWith("local:") ? String(rowB.fileKey) : `local:${rowB.fileKey}`;
+    const crossCase = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    await repository.createExpenseReceipt({
+      tenantId: seed.tenantA.id,
+      itemId: crossCase.itemId,
+      localHash: digestB,
+      mimeType: "image/jpeg",
+      uploadStatus: "uploaded",
+      fileKey: forgedKey,
+    });
+    const crossRead = await getReceiptFile(baseUrl, seed.tenantA, seed.technicianA, "technician", crossCase.reportId, crossCase.itemId);
+    assert.equal(crossRead.status, 404, "linha de A com a chave de B não pode servir");
+    assert.ok(!crossRead.bytes.equals(bytesB), "os bytes de B saíram pela linha de A");
+    assert.ok(!crossRead.bytes.toString("utf8").includes(seed.tenantB.id), "a resposta expõe a outra organização");
+
+    // (3) L6 (§12.1 item 3): o replay do MESMO client_action_id sobre uma linha legada (sem prefixo) é
+    // 409 receipt_unverifiable, nunca 200 `uploaded` (o app apagaria o blob de um arquivo que o servidor não lê).
+    const replayCase = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const replayBytes = jpegBytes(0xa6);
+    const replayForm = async () => receiptForm({ clientActionId: "rra4-l6", bytes: replayBytes, sha256: await sha256Hex(replayBytes) });
+    const first = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", replayCase.reportId, replayCase.itemId, await replayForm());
+    assert.equal(first.status, 201, JSON.stringify(first.body));
+    const row = await repository.findLatestStoredExpenseReceipt({ tenantId: seed.tenantA.id, itemId: replayCase.itemId });
+    const unprefixed = String(row.fileKey).replace(/^(local|s3):/, "");
+    forgeReceiptFileKey(repository, row.id, unprefixed);
+    const replay = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", replayCase.reportId, replayCase.itemId, await replayForm());
+    assert.equal(replay.status, 409, `replay sobre linha legada: ${JSON.stringify(replay.body)}`);
+    assert.equal(replay.body.error?.reason, "receipt_unverifiable");
+    assert.notEqual(replay.body.data?.uploadStatus, "uploaded");
   });
 });
