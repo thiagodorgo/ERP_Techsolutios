@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
 import { chargeCreateClaimVerdict } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
+import type { ClaimResult } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { PrismaWebhookEventRepository } from "../src/modules/subscription-billing/webhooks/webhook-events.prisma.js";
 import { PrismaStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.prisma.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
@@ -120,6 +121,73 @@ if (!connectionString) {
     } finally {
       await w1.drop();
       await w2.drop();
+    }
+  });
+
+  test("T-OBX-db-3 (R-OBX-5): o claim RELÊ o demonstrativo na MESMA transação, sob papel sem bypass — pago → SKIPPED statement_paid (attempts 0); refechado → statement_reopened; cobrança viva → NEEDS_REVIEW charge_already_exists; nenhuma volta a ser reclamada", async () => {
+    // Três demonstrativos `closed` com uma `charge_create` PENDING cada; o ARNÊS ADMIN muda o demonstrativo DEPOIS de
+    // enfileirada — exatamente o que a baixa manual, o refechamento e a criação de cobrança fazem (conserto J-522, C2-01).
+    const paid = await seedStatement(`ass08-obx5a-${randomUUID().slice(0, 8)}`);
+    const paidRow = await seedOutboxRow(paid.tenantId, paid.statementId, 1);
+    await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'paid', paid_amount = total_amount, paid_at = now() WHERE id = $1::uuid`, paid.statementId);
+
+    const reclosed = await seedStatement(`ass08-obx5b-${randomUUID().slice(0, 8)}`);
+    const reclosedRow = await seedOutboxRow(reclosed.tenantId, reclosed.statementId, 1);
+    // Refechado DEPOIS de enfileirada: `reopened_at` (preservado pelo fechamento) é posterior ao `occurred_at` da linha.
+    await db.$executeRawUnsafe(
+      `UPDATE subscription_statements s SET status = 'closed', reopened_at = o.occurred_at + interval '1 second'
+         FROM billing_outbox o WHERE o.id = $1::uuid AND s.id = o.statement_id`,
+      reclosedRow,
+    );
+
+    const live = await seedStatement(`ass08-obx5c-${randomUUID().slice(0, 8)}`);
+    const liveRow = await seedOutboxRow(live.tenantId, live.statementId, 1);
+    await db.$executeRawUnsafe(
+      `INSERT INTO subscription_statement_charges (tenant_id, statement_id, provider, external_charge_id, status)
+         VALUES ($1::uuid, $2::uuid, 'asaas', $3, 'pending')`,
+      live.tenantId,
+      live.statementId,
+      `pay_live_${randomUUID().slice(0, 8)}`,
+    );
+
+    const role = await createEphemeralRole(db, targetUrl);
+    try {
+      const repo = new PrismaOutboxRepository(role.client);
+      const params = { enabledProviders: ["asaas"], now: new Date(), claimedBy: "w-obx5", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict } as const;
+      // O claim é por organização (ordem de `billing_statement_refs`) e devolve UMA linha por chamada; esgotamos a fila e
+      // indexamos por linha — linhas de outros testes desta base (se elegíveis) são ignoradas.
+      const drain = async (): Promise<Map<string, ClaimResult>> => {
+        const seen = new Map<string, ClaimResult>();
+        for (let i = 0; i < 50; i += 1) {
+          const result = await repo.claimNext(params);
+          if (!result) break;
+          seen.set(result.row.id, result);
+        }
+        return seen;
+      };
+      const first = await drain();
+
+      const paidClaim = first.get(paidRow);
+      assert.equal(paidClaim?.kind, "skipped", "demonstrativo pago depois de enfileirada → a linha é pulada, não reclamada");
+      assert.equal(paidClaim?.kind === "skipped" ? paidClaim.skipReason : null, "statement_paid");
+      const paidDb = (await db.$queryRawUnsafe(`SELECT status, skip_reason, attempts, claimed_at FROM billing_outbox WHERE id = $1::uuid`, paidRow)) as Array<{ status: string; skip_reason: string | null; attempts: number; claimed_at: Date | null }>;
+      assert.deepEqual(paidDb[0], { status: "SKIPPED", skip_reason: "statement_paid", attempts: 0, claimed_at: null }, "SKIPPED sem tentativa e sem claim");
+
+      const reclosedClaim = first.get(reclosedRow);
+      assert.equal(reclosedClaim?.kind, "skipped");
+      assert.equal(reclosedClaim?.kind === "skipped" ? reclosedClaim.skipReason : null, "statement_reopened", "refechado depois de enfileirada → payload velho nunca sai");
+
+      const liveClaim = first.get(liveRow);
+      assert.equal(liveClaim?.kind, "needs_review", "cobrança viva já existente → revisão, nunca 2ª cobrança");
+      assert.equal(liveClaim?.kind === "needs_review" ? liveClaim.code : null, "charge_already_exists");
+      const liveDb = (await db.$queryRawUnsafe(`SELECT status, last_error, skip_reason FROM billing_outbox WHERE id = $1::uuid`, liveRow)) as Array<{ status: string; last_error: string | null; skip_reason: string | null }>;
+      assert.deepEqual(liveDb[0], { status: "NEEDS_REVIEW", last_error: "charge_already_exists", skip_reason: null }, "sem skip_reason novo: a lista da M5 é fechada");
+
+      // 2ª passada: nenhuma das três volta a ser reclamada (SKIPPED/NEEDS_REVIEW são terminais para o claim).
+      const second = await drain();
+      for (const id of [paidRow, reclosedRow, liveRow]) assert.equal(second.has(id), false, `linha ${id} não é reclamada de novo`);
+    } finally {
+      await role.drop();
     }
   });
 
