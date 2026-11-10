@@ -509,3 +509,10 @@
     revertida. **OK.**
   - **M-D5** (o `conflict` do item sem ação ou em conflito vira `continue`) → RR-D.5 "(a): SyncStatus.pending" ·
     revertida. **OK.**
+- Commit `e5a7f642` + push (`fb698f0e..e5a7f642`). Vermelho-controle REFEITO com o teste commitado no `w-dev525-vc`
+  → `+0 -2: Some tests failed` · `w-dev525-vc` limpo.
+
+## RETOMADA 12 (07:45)
+
+- head `e5a7f6422e3ab8d03f2a48f3948201dca9409458` · feito: F0–F4b, F5a, F5b · falta: F5c → F6a → F6b → F7 → F8 · próximo comando: escrever RR-C.2b e o
+  RR-C.4 (a)–(d) em `test/core/sync/brdvcomp_c1_ordem_envio_test.dart` · arquivos meio escritos: nenhum.
