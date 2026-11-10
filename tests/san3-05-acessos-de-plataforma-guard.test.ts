@@ -324,9 +324,29 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.retry", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-ASS-08: o `retry` (FAILED → PENDING) é `UPDATE … WHERE id = $1 AND status = 'FAILED'` em billing_outbox (FORCE) no callback de `withTenantRlsBudget(this.client, tenantId, …)` (l.179), cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.128).",
   ],
+  // 2º conserto do #522 (E8): o pedido de cobrança é UMA transação numa UMA conexão. O SQL de `enqueue`, `listByStatement`,
+  // `findLive` e `put` foi EXTRAÍDO, sem mudar, para funções `*InTx` sobre um `tx` já aberto (os métodos delegam), e a trava
+  // do D1 é o `lockStatement` da porta Prisma do pedido. As 5 chaves abaixo são as que o gerador acusou no head (a de
+  // `PrismaStatementRefRepository.put` saiu: o método não tem mais SQL). Literal L0 (123) intocado: nenhuma tabela FORCE nova.
   [
-    k("L1", "src/modules/subscription-billing/webhooks/statement-refs.prisma.ts", "PrismaStatementRefRepository.put", "this.client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "INJETADO", "×1"),
-    "B-ASS-08: o UPSERT do índice (l.18) toca SÓ `billing_statement_refs`, tabela GLOBAL de ids (sem RLS; M5, exceção declarada S8 — leva do externalReference ao tenant_id sem varrer N organizações); nenhuma tabela FORCE é tocada.",
+    k("L1", "src/modules/subscription-billing/charges/charge-intent.prisma.ts", "-.lockStatement", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx)", "×1"),
+    "2º conserto do #522 (E8): a trava do D1 no pedido — `SELECT id, status FROM subscription_statements WHERE id = $1 AND tenant_id = $2 FOR UPDATE`, que filtra também por tenant_id — sobre o `tx` de `prismaChargeIntentTx(tx, tenantId)`, cujo criador é `PrismaChargeIntentRepository.transaction` (`withTenantRlsBudget`, setter do GUC na 1ª instrução, src/database/rls.ts l.128). Provado sob papel NOSUPERUSER NOBYPASSRLS em tests/ass-08-channel-db.test.ts (T-CHG-db-1/2 e T-LOCK-1a: a 4ª instrução é esta trava, depois dos 3 set_config).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/charges/charges.prisma.ts", "-.findLiveInTx", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx)", "×1"),
+    "2º conserto do #522 (E8): o SELECT da cobrança viva de `findLive`, extraído sem mudar para rodar sobre um `tx` já aberto; os chamadores abrem a transação sob o GUC da organização — `PrismaStatementChargeRepository.findLive` (`withTenantRls`, que o gerador prova sob contexto) e `prismaChargeIntentTx` (o `tx` de `withTenantRlsBudget` do pedido, rls.ts l.128). Provado em T-CHG-db-1/2 sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "-.enqueueInTx", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx)", "×2"),
+    "2º conserto do #522 (E8): o `INSERT … ON CONFLICT (idempotency_key) DO NOTHING` e o SELECT da existente de `enqueue`, extraídos sem mudar para rodar sobre um `tx` já aberto; os chamadores abrem a transação sob o GUC da organização — `PrismaOutboxRepository.enqueue` (`withTenantRls`) e `prismaChargeIntentTx` (o `tx` de `withTenantRlsBudget` do pedido, rls.ts l.128), na MESMA transação da trava do demonstrativo. Provado em T-CHG-db-1/2 e T-LOCK-1a sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "-.listByStatementInTx", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx)", "×1"),
+    "2º conserto do #522 (E8): o SELECT das linhas do demonstrativo de `listByStatement`, extraído sem mudar para rodar sobre um `tx` já aberto; os chamadores abrem a transação sob o GUC da organização — `PrismaOutboxRepository.listByStatement` (`withTenantRls`) e `prismaChargeIntentTx` (o `tx` de `withTenantRlsBudget` do pedido, rls.ts l.128), lido DEPOIS da trava. Provado em T-CHG-db-1/2 sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/webhooks/statement-refs.prisma.ts", "-.putRefInTx", "tx", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(tx)", "×1"),
+    "2º conserto do #522 (E8): o UPSERT do índice de `put`, extraído sem mudar; toca SÓ `billing_statement_refs`, tabela GLOBAL de ids (sem RLS; M5, exceção declarada S8 — leva do externalReference ao tenant_id sem varrer N organizações); nenhuma tabela FORCE é tocada. Recebe o cliente (`put`) ou o `tx` do pedido (`prismaChargeIntentTx`), onde o índice nasce na mesma transação da linha.",
   ],
   [
     k("L1", "src/modules/subscription-billing/webhooks/statement-refs.prisma.ts", "PrismaStatementRefRepository.resolve", "this.client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "INJETADO", "×1"),

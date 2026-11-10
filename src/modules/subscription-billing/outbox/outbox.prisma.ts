@@ -74,6 +74,51 @@ function toDomain(row: Row): BillingOutboxRow {
   };
 }
 
+/** A linha do banco → domínio (exportado para quem lê `billing_outbox` sobre um `tx` já aberto, como o pedido). */
+export const outboxRowFromDb = toDomain;
+
+/** O SQLSTATE do PostgreSQL dentro do erro do Prisma 7 com driver adapter (`P2010` com
+ * `meta.driverAdapterError.cause.originalCode`). Usado para mapear 55P03 (`lock_timeout`) → 409 `statement_busy`. */
+export function postgresErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") return undefined;
+  const meta = (error as { meta?: { code?: unknown; driverAdapterError?: { cause?: { originalCode?: unknown; code?: unknown } } } }).meta;
+  const original = meta?.driverAdapterError?.cause?.originalCode ?? meta?.driverAdapterError?.cause?.code ?? meta?.code;
+  return typeof original === "string" ? original : undefined;
+}
+
+/** `INSERT … ON CONFLICT (idempotency_key) DO NOTHING` sobre um `tx` JÁ ABERTO sob o GUC da organização (extraído de
+ * `enqueue`, comportamento idêntico). O pedido de cobrança o usa no MESMO `tx` da trava do demonstrativo (E8). */
+export async function enqueueInTx(
+  tx: Prisma.TransactionClient,
+  input: NewOutboxRow,
+  now: Date,
+): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }> {
+  const key = idempotencyKeyOf(input.kind, input.statementId, input.seq);
+  const inserted = (await tx.$queryRawUnsafe(
+    `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at)
+     VALUES ($1::uuid, $2::uuid, $3, $4, $5, COALESCE($6, gen_random_uuid()::text)::uuid, $7::jsonb, $8, $8, $8)
+     ON CONFLICT (idempotency_key) DO NOTHING
+     RETURNING *`,
+    input.tenantId,
+    input.statementId,
+    input.kind,
+    input.provider,
+    key,
+    input.providerIdempotencyKey ?? null,
+    JSON.stringify(input.payload ?? {}),
+    now,
+  )) as Row[];
+  if (inserted.length > 0) return { row: toDomain(inserted[0]!), created: true };
+  const existing = (await tx.$queryRawUnsafe(`SELECT * FROM billing_outbox WHERE idempotency_key = $1`, key)) as Row[];
+  return { row: toDomain(existing[0]!), created: false };
+}
+
+/** As linhas do demonstrativo sobre um `tx` JÁ ABERTO (extraído de `listByStatement`, comportamento idêntico). */
+export async function listByStatementInTx(tx: Prisma.TransactionClient, statementId: string): Promise<readonly BillingOutboxRow[]> {
+  const rows = (await tx.$queryRawUnsafe(`SELECT * FROM billing_outbox WHERE statement_id = $1::uuid ORDER BY created_at ASC`, statementId)) as Row[];
+  return rows.map(toDomain);
+}
+
 const CLAIM_BUDGET = { maxWait: 5_000, timeout: 30_000, lockTimeoutMs: 5_000, statementTimeoutMs: 10_000 } as const;
 
 export class PrismaOutboxRepository implements OutboxRepository {
@@ -88,26 +133,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
   }
 
   async enqueue(input: NewOutboxRow, now: Date): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }> {
-    const key = idempotencyKeyOf(input.kind, input.statementId, input.seq);
-    return withTenantRls(this.client, input.tenantId, async (tx) => {
-      const inserted = (await tx.$queryRawUnsafe(
-        `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at)
-         VALUES ($1::uuid, $2::uuid, $3, $4, $5, COALESCE($6, gen_random_uuid()::text)::uuid, $7::jsonb, $8, $8, $8)
-         ON CONFLICT (idempotency_key) DO NOTHING
-         RETURNING *`,
-        input.tenantId,
-        input.statementId,
-        input.kind,
-        input.provider,
-        key,
-        input.providerIdempotencyKey ?? null,
-        JSON.stringify(input.payload ?? {}),
-        now,
-      )) as Row[];
-      if (inserted.length > 0) return { row: toDomain(inserted[0]!), created: true };
-      const existing = (await tx.$queryRawUnsafe(`SELECT * FROM billing_outbox WHERE idempotency_key = $1`, key)) as Row[];
-      return { row: toDomain(existing[0]!), created: false };
-    });
+    return withTenantRls(this.client, input.tenantId, (tx) => enqueueInTx(tx, input, now));
   }
 
   async claimNext(params: ClaimParams): Promise<ClaimResult | null> {
@@ -273,9 +299,6 @@ export class PrismaOutboxRepository implements OutboxRepository {
   }
 
   async listByStatement(tenantId: string, statementId: string): Promise<readonly BillingOutboxRow[]> {
-    return withTenantRls(this.client, tenantId, async (tx) => {
-      const rows = (await tx.$queryRawUnsafe(`SELECT * FROM billing_outbox WHERE statement_id = $1::uuid ORDER BY created_at ASC`, statementId)) as Row[];
-      return rows.map(toDomain);
-    });
+    return withTenantRls(this.client, tenantId, (tx) => listByStatementInTx(tx, statementId));
   }
 }

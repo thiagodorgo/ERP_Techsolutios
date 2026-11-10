@@ -42,6 +42,16 @@ function toDomain(row: Row): SubscriptionStatementCharge {
   };
 }
 
+/** A cobrança VIVA do demonstrativo sobre um `tx` JÁ ABERTO sob o GUC da organização (extraído de `findLive`,
+ * comportamento idêntico). O pedido de cobrança a lê no MESMO `tx` da trava do demonstrativo (E8). */
+export async function findLiveInTx(tx: Pick<PrismaClient, "$queryRawUnsafe">, statementId: string): Promise<SubscriptionStatementCharge | undefined> {
+  const rows = (await tx.$queryRawUnsafe(
+    `SELECT * FROM subscription_statement_charges WHERE statement_id = $1::uuid AND status IN ('pending', 'confirmed') LIMIT 1`,
+    statementId,
+  )) as Row[];
+  return rows.length > 0 ? toDomain(rows[0]!) : undefined;
+}
+
 export class PrismaStatementChargeRepository implements StatementChargeRepository {
   constructor(private readonly client: PrismaClient) {}
 
@@ -78,13 +88,7 @@ export class PrismaStatementChargeRepository implements StatementChargeRepositor
   }
 
   async findLive(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined> {
-    return withTenantRls(this.client, tenantId, async (tx) => {
-      const rows = (await tx.$queryRawUnsafe(
-        `SELECT * FROM subscription_statement_charges WHERE statement_id = $1::uuid AND status IN ('pending', 'confirmed') LIMIT 1`,
-        statementId,
-      )) as Row[];
-      return rows.length > 0 ? toDomain(rows[0]!) : undefined;
-    });
+    return withTenantRls(this.client, tenantId, (tx) => findLiveInTx(tx, statementId));
   }
 
   async setStatus(tenantId: string, id: string, status: ChargeStatus, now: Date): Promise<void> {

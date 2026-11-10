@@ -12,6 +12,7 @@ import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
+import { oneLine, recordingClient } from "./helpers/lock-order-recorder.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
 import { chargeCreateClaimVerdict } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import type { ClaimResult } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
@@ -19,6 +20,9 @@ import { PrismaWebhookEventRepository } from "../src/modules/subscription-billin
 import { PrismaStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.prisma.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
 import { nextDpsNumber, nextDpsNumberInTx } from "../src/modules/subscription-billing/invoice-sequence.service.js";
+import { requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
+import { PrismaChargeIntentRepository } from "../src/modules/subscription-billing/charges/charge-intent.prisma.js";
+import { StatementError } from "../src/modules/subscription-billing/statements/statement.types.js";
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -33,23 +37,85 @@ if (!connectionString) {
 
   /** Demonstrativo `closed` (R$ 100, fechado agora): é o estado em que uma `charge_create` É elegível — o claim relê o
    * demonstrativo (R-OBX-5) e só libera `closed` sem cobrança viva. Os testes de R-OBX-5 mudam o estado DEPOIS, como
-   * arnês admin. */
-  async function seedStatement(tenantSlug: string): Promise<{ tenantId: string; statementId: string }> {
+   * arnês admin. 2º conserto: `period` (há UNIQUE `(tenant_id, period)`) e `refs: false` (o pedido grava o índice). */
+  async function seedStatement(tenantSlug: string, options: { readonly period?: string; readonly refs?: boolean } = {}): Promise<{ tenantId: string; statementId: string }> {
     const tenants = (await db.$queryRawUnsafe(`INSERT INTO tenants (name, slug) VALUES ($1, $1) RETURNING id`, tenantSlug)) as Array<{ id: string }>;
     const tenantId = tenants[0]!.id;
+    const statementId = await seedStatementFor(tenantId, options);
+    return { tenantId, statementId };
+  }
+
+  async function seedStatementFor(tenantId: string, options: { readonly period?: string; readonly refs?: boolean } = {}): Promise<string> {
     const statements = (await db.$queryRawUnsafe(
       `INSERT INTO subscription_statements
          (tenant_id, period, status, segments, users_included, users_peak, users_extra, storage_included_gb, storage_peak_gb,
           storage_extra_gb, tracked_vehicles, days_in_month, days_measured, extra_user_price, extra_gb_price,
           base_amount, users_extra_amount, storage_extra_amount, tracking_amount, adjustments_amount,
           credits_applied_amount, total_amount, due_date, closed_at, snapshot)
-       VALUES ($1::uuid, '2026-10', 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 100,0,0,0,0,0,100, '2026-11-10', now(), '{"latest":null,"history":[]}'::jsonb)
+       VALUES ($1::uuid, $2, 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 100,0,0,0,0,0,100, '2026-11-10', now(), '{"latest":null,"history":[]}'::jsonb)
        RETURNING id`,
       tenantId,
+      options.period ?? "2026-10",
     )) as Array<{ id: string }>;
     const statementId = statements[0]!.id;
-    await db.$executeRawUnsafe(`INSERT INTO billing_statement_refs (statement_id, tenant_id, provider) VALUES ($1::uuid, $2::uuid, 'asaas')`, statementId, tenantId);
-    return { tenantId, statementId };
+    if (options.refs !== false) {
+      await db.$executeRawUnsafe(`INSERT INTO billing_statement_refs (statement_id, tenant_id, provider) VALUES ($1::uuid, $2::uuid, 'asaas')`, statementId, tenantId);
+    }
+    return statementId;
+  }
+
+  // ---------------------------------------------------------------- arnês do 2º conserto (barreiras sem gancho no código)
+  // A trava do arnês vive numa conexão `pg` PRÓPRIA (administrador do cluster descartável), aberta com BEGIN e segurada até
+  // o teste decidir. As barreiras olham só a base DESTA suíte (`datname`) e só os papéis efêmeros do teste (`usename`):
+  // um backend de outra suíte nunca as satisfaz.
+  type Holder = { readonly pid: number; query(sql: string, params?: unknown[]): Promise<{ rows: any[] }>; commit(): Promise<void>; rollback(): Promise<void> };
+  async function openHolder(): Promise<Holder> {
+    const { Client } = (await import("pg")) as any;
+    const client = new Client({ connectionString: targetUrl });
+    await client.connect();
+    await client.query("BEGIN");
+    const pid = Number((await client.query("SELECT pg_backend_pid() AS pid")).rows[0].pid);
+    let open = true;
+    const finish = async (verb: string): Promise<void> => {
+      if (!open) return;
+      open = false;
+      try {
+        await client.query(verb);
+      } finally {
+        await client.end();
+      }
+    };
+    return { pid, query: (sql, params) => client.query(sql, params), commit: () => finish("COMMIT"), rollback: () => finish("ROLLBACK") };
+  }
+
+  type Waiter = { readonly pid: number; readonly usename: string; readonly wait_event: string | null; readonly blockers: number[] };
+  async function lockWaiters(roleNames: readonly string[]): Promise<Waiter[]> {
+    return (await db.$queryRawUnsafe(
+      `SELECT pid, usename, wait_event, pg_blocking_pids(pid) AS blockers FROM pg_stat_activity
+        WHERE datname = current_database() AND usename = ANY($1::text[]) AND wait_event_type = 'Lock'`,
+      [...roleNames],
+    )) as Waiter[];
+  }
+
+  async function waitUntil(label: string, predicate: () => Promise<boolean>, timeoutMs = 10_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (await predicate()) return;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert.fail(`barreira não cumprida em ${timeoutMs} ms: ${label}`);
+  }
+
+  /** Settle com o instante em que cada promessa terminou (para medir "≤ X ms depois do COMMIT"). */
+  function settled<T>(promise: Promise<T>): Promise<{ readonly ok: boolean; readonly value?: T; readonly error?: unknown; readonly at: number }> {
+    return promise.then(
+      (value) => ({ ok: true, value, at: Date.now() }),
+      (error: unknown) => ({ ok: false, error, at: Date.now() }),
+    );
+  }
+
+  function isPrismaTransactionTimeout(error: unknown): boolean {
+    return Boolean(error && typeof error === "object" && (error as { code?: unknown }).code === "P2028");
   }
 
   async function seedOutboxRow(tenantId: string, statementId: string, seq: number): Promise<string> {
@@ -255,5 +321,131 @@ if (!connectionString) {
     );
     // A próxima reserva (commitada) ainda recebe 1.
     assert.equal(await nextDpsNumber(db, key), 1, "o rollback devolveu o número");
+  });
+
+  // =====================================================================================================================
+  // 2º conserto do #522 (plano `B-ASS-08-conserto-c2.md`). Os testes abaixo usam o arnês do topo (trava numa conexão
+  // própria, barreira por `pg_stat_activity` escopada à base e aos papéis do teste) e nunca um gancho no código.
+  // =====================================================================================================================
+
+  function describeError(error: unknown): string {
+    if (error instanceof StatementError) return `StatementError ${error.statusCode} ${error.reason}`;
+    if (error && typeof error === "object") {
+      const candidate = error as { code?: unknown; name?: unknown; message?: unknown };
+      return `${String(candidate.code ?? candidate.name)}: ${String(candidate.message ?? "").slice(0, 160)}`;
+    }
+    return String(error);
+  }
+
+  test("T-CHG-db-1 (E8, critério 1): dois pedidos concorrentes com o demonstrativo travado pelo arnês → um ok e um 422 charge_already_exists, 1 viva, 1 índice, nenhum P2028, os dois ≤ 1 s depois do COMMIT", async () => {
+    const { tenantId, statementId } = await seedStatement(`ass08-chg1-${randomUUID().slice(0, 8)}`, { refs: false });
+    const w1 = await createEphemeralRole(db, targetUrl);
+    const w2 = await createEphemeralRole(db, targetUrl);
+    const holder = await openHolder();
+    try {
+      await holder.query(`SELECT id FROM subscription_statements WHERE id = $1::uuid FOR UPDATE`, [statementId]);
+      const now = new Date();
+      const input = { tenantId, statementId, provider: "asaas", payload: { customerId: "cus_do_payload", amountCents: 10000, dueDate: "2026-11-10", method: "pix" }, now };
+      const deps = (client: any) => ({ intents: new PrismaChargeIntentRepository(client) });
+      const p1 = settled(requestChargeCreate(deps(w1.client), input));
+      const p2 = settled(requestChargeCreate(deps(w2.client), input));
+      // Barreira: as duas sessões dos pedidos esperando trava (a 2ª pode esperar a 1ª na fila da tupla), com ao menos uma
+      // bloqueada pelo arnês (lição medida no S3 da síntese).
+      await waitUntil("os dois pedidos esperando trava, ao menos um pelo arnês", async () => {
+        const waiters = await lockWaiters([w1.roleName, w2.roleName]);
+        return waiters.length === 2 && waiters.some((waiter) => waiter.blockers.includes(holder.pid));
+      });
+      const committedAt = Date.now();
+      await holder.commit();
+      const outcomes = await Promise.all([p1, p2]);
+      const described = outcomes.map((o) => (o.ok ? "ok" : describeError(o.error)));
+      assert.equal(outcomes.filter((o) => !o.ok && isPrismaTransactionTimeout(o.error)).length, 0, `nenhum P2028 (vieram: ${described.join(" + ")})`);
+      assert.equal(outcomes.filter((o) => o.ok).length, 1, `exatamente um pedido ok (vieram: ${described.join(" + ")})`);
+      const rejected = outcomes.find((o) => !o.ok)!;
+      assert.ok(
+        rejected.error instanceof StatementError && rejected.error.statusCode === 422 && rejected.error.reason === "charge_already_exists",
+        `o outro sai 422 charge_already_exists (veio: ${describeError(rejected.error)})`,
+      );
+      for (const o of outcomes) assert.ok(o.at - committedAt <= 1_000, `terminou ${o.at - committedAt} ms depois do COMMIT (teto 1 000)`);
+      const live = (await db.$queryRawUnsafe(
+        `SELECT count(*)::int AS n FROM billing_outbox WHERE statement_id = $1::uuid AND kind = 'charge_create' AND status IN ('PENDING','PROCESSING','SENT','NEEDS_REVIEW')`,
+        statementId,
+      )) as Array<{ n: number }>;
+      assert.equal(live[0]!.n, 1, "1 charge_create viva");
+      const refs = (await db.$queryRawUnsafe(`SELECT count(*)::int AS n FROM billing_statement_refs WHERE statement_id = $1::uuid`, statementId)) as Array<{ n: number }>;
+      assert.equal(refs[0]!.n, 1, "1 linha no índice de ids");
+    } finally {
+      await holder.rollback();
+      await w1.drop();
+      await w2.drop();
+    }
+  });
+
+  test("T-CHG-db-2 (E8): pedido isolado → ok em < 1 s, 1 PENDING sem customerId no payload, índice gravado; demonstrativo travado além do lock_timeout → 409 statement_busy e nada gravado", async () => {
+    const { tenantId, statementId } = await seedStatement(`ass08-chg2-${randomUUID().slice(0, 8)}`, { refs: false });
+    const busy = await seedStatement(`ass08-chg2b-${randomUUID().slice(0, 8)}`, { refs: false });
+    const role = await createEphemeralRole(db, targetUrl);
+    try {
+      const intents = new PrismaChargeIntentRepository(role.client);
+      const payload = { customerId: "cus_do_payload", amountCents: 10000, dueDate: "2026-11-10", method: "pix" };
+      const started = Date.now();
+      const row = await requestChargeCreate({ intents }, { tenantId, statementId, provider: "asaas", payload, now: new Date() });
+      const elapsed = Date.now() - started;
+      assert.ok(elapsed < 1_000, `pedido isolado em ${elapsed} ms (< 1 000)`);
+      assert.equal(row.status, "PENDING");
+      assert.equal(row.idempotencyKey, `charge_create:${statementId}:1`);
+      const persisted = (await db.$queryRawUnsafe(`SELECT status, payload FROM billing_outbox WHERE statement_id = $1::uuid`, statementId)) as Array<{ status: string; payload: Record<string, unknown> }>;
+      assert.equal(persisted.length, 1);
+      assert.equal(persisted[0]!.status, "PENDING");
+      assert.equal("customerId" in persisted[0]!.payload, false, "R-PRF-1: o payload gravado não tem customerId");
+      assert.equal(persisted[0]!.payload.amountCents, 10000);
+      const refs = (await db.$queryRawUnsafe(`SELECT tenant_id, provider FROM billing_statement_refs WHERE statement_id = $1::uuid`, statementId)) as Array<{ tenant_id: string; provider: string }>;
+      assert.deepEqual(refs, [{ tenant_id: tenantId, provider: "asaas" }], "o índice de ids nasce na mesma transação");
+
+      // 55P03 → 409 statement_busy: o arnês segura o demonstrativo além do `lock_timeout` (5 s) do pedido.
+      const holder = await openHolder();
+      try {
+        await holder.query(`SELECT id FROM subscription_statements WHERE id = $1::uuid FOR UPDATE`, [busy.statementId]);
+        const busyStarted = Date.now();
+        await assert.rejects(
+          requestChargeCreate({ intents }, { tenantId: busy.tenantId, statementId: busy.statementId, provider: "asaas", payload, now: new Date() }),
+          (error: unknown) => error instanceof StatementError && error.statusCode === 409 && error.reason === "statement_busy",
+          "lock_timeout vira 409 statement_busy (repetível), nunca P2028",
+        );
+        assert.ok(Date.now() - busyStarted < 15_000, "o lock_timeout dispara antes do timeout da transação");
+      } finally {
+        await holder.rollback();
+      }
+      const nothing = (await db.$queryRawUnsafe(
+        `SELECT (SELECT count(*)::int FROM billing_outbox WHERE statement_id = $1::uuid) AS lines, (SELECT count(*)::int FROM billing_statement_refs WHERE statement_id = $1::uuid) AS refs`,
+        busy.statementId,
+      )) as Array<{ lines: number; refs: number }>;
+      assert.deepEqual(nothing[0], { lines: 0, refs: 0 }, "rollback limpo: nada gravado no pedido recusado");
+    } finally {
+      await role.drop();
+    }
+  });
+
+  test("T-LOCK-1a (E8): o pedido é UMA transação numa conexão — as 3 primeiras instruções são os set_config e a 4ª é o FOR UPDATE do demonstrativo; nada fora da transação", async () => {
+    const { tenantId, statementId } = await seedStatement(`ass08-lk1a-${randomUUID().slice(0, 8)}`, { refs: false });
+    const role = await createEphemeralRole(db, targetUrl);
+    try {
+      const recording = recordingClient(role.client);
+      await requestChargeCreate(
+        { intents: new PrismaChargeIntentRepository(recording.client) },
+        { tenantId, statementId, provider: "asaas", payload: { amountCents: 10000, dueDate: "2026-11-10", method: "pix" }, now: new Date() },
+      );
+      assert.equal(recording.transactions.length, 1, "uma transação só");
+      assert.deepEqual(recording.outside, [], "nenhuma instrução fora da transação (outra conexão)");
+      const events = recording.transactions[0]!.events;
+      assert.ok(events.every((event) => event.kind === "raw"), "o pedido só emite SQL cru");
+      const sql = events.map((event) => (event.kind === "raw" ? oneLine(event.sql) : ""));
+      for (const index of [0, 1, 2]) assert.match(sql[index]!, /^SELECT set_config\(/, `instrução ${index + 1} = set_config`);
+      assert.match(sql[3]!, /^SELECT id, status FROM subscription_statements WHERE id = \$1::uuid AND tenant_id = \$2::uuid FOR UPDATE$/, "a 4ª instrução é a trava do demonstrativo");
+      assert.ok(sql.slice(4).every((text) => !/\bsubscription_statements\b/.test(text)), "depois da trava, ninguém mais lê o demonstrativo");
+      assert.equal(sql.length, 8, `8 instruções (veio: ${sql.length})`);
+    } finally {
+      await role.drop();
+    }
   });
 }
