@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import test, { after } from "node:test";
 
@@ -26,9 +27,13 @@ import {
 //          do alvo caem; auditoria `user.password_reset` sem a provisória, sem hash, sem outra organização;
 //   S1·c — os códigos fixados (400 ×2, 401, 403, 404 ×2, 409 `cannot_reset_self`, 409 `user_inactive`);
 //   S1·d — a outra organização SUSPENSA ainda conta (falha fechada) → 409, nada muda;
-//   S1·e — vínculo da outra organização com mudança EM VOO durante a verificação (trava segurada) →
-//          503 `reset_unavailable`, nada muda;
-//   S1·f — a transação expira durante a verificação → 503 `reset_unavailable`, nada muda;
+//   S1·e — vínculo da outra organização com mudança EM VOO durante a verificação (trava segurada além
+//          do lock_timeout) → 503 `reset_unavailable`, nada muda;
+//   S1·e2 — o vínculo da outra organização é REMOVIDO no meio da verificação (desvínculo confirmado com
+//          o reset bloqueado na trava — barreira determinística) → 503 `reset_unavailable`, nada muda; com
+//          o estado firme, o reset passa;
+//   S1·f — a transação expira durante a verificação (prazo vence antes da trava soltar; lock_timeout
+//          alto) → 503 `reset_unavailable`, nada muda;
 //   S1·g — nenhuma resposta (corpo e cabeçalhos) nem auditoria do reset carrega id ou nome de outra
 //          organização (UEM-03). Os logs do processo entram no arquivo da S8.
 // Vermelho-controle (UEM-02): o reset INGÊNUO (sem a verificação de existência) num commit
@@ -419,8 +424,14 @@ if (!connectionString) {
   });
 
   // Uma transação do administrador do cluster TRAVA o vínculo da outra organização (a forma de um
-  // desvínculo ou de uma religação em voo) e só solta quando o teste manda.
-  async function holdOtherLink(h: Harness, other: Org) {
+  // desvínculo ou de uma religação em voo) e só solta quando o teste manda (ou sozinha, depois de
+  // `autoReleaseMs`). Com `detach`, ela também MOVE o vínculo para uma identidade nova antes de soltar —
+  // a mecânica do desvínculo (§5.4: identidade nova + move), sem confirmar até o teste mandar.
+  async function holdOtherLink(
+    h: Harness,
+    other: Org,
+    options: { readonly autoReleaseMs?: number; readonly detach?: boolean } = {},
+  ) {
     let release!: () => void;
     let markReady!: () => void;
     const gate = new Promise<void>((resolve) => {
@@ -432,11 +443,19 @@ if (!connectionString) {
     const done = h.admin
       .$transaction(
         async (tx) => {
-          await tx.$queryRaw`
+          const [link] = await tx.$queryRaw<Array<{ id: string }>>`
             SELECT id FROM auth_identity_links
             WHERE tenant_id = ${other.tenantId}::uuid AND user_id = ${other.userId}::uuid
             FOR UPDATE
           `;
+
+          if (options.detach && link) {
+            const fresh = randomUUID();
+
+            await tx.$executeRaw`INSERT INTO auth_identities (id) VALUES (${fresh}::uuid)`;
+            await tx.$executeRaw`UPDATE auth_identity_links SET identity_id = ${fresh}::uuid WHERE id = ${link.id}::uuid`;
+          }
+
           markReady();
           await gate;
         },
@@ -446,10 +465,37 @@ if (!connectionString) {
 
     await ready;
 
+    const timer = options.autoReleaseMs === undefined ? undefined : setTimeout(() => release(), options.autoReleaseMs);
+
     return async () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+
       release();
       await done;
     };
+  }
+
+  // Barreira determinística: espera a leitura FOR SHARE do reset (papel efêmero desta suíte) ficar
+  // BLOQUEADA na trava. Escopada pelo nome do papel, que é único por execução.
+  async function waitForResetBlocked(h: Harness): Promise<void> {
+    const deadline = Date.now() + 15_000;
+
+    for (;;) {
+      const [row] = await h.admin.$queryRaw<Array<{ waiting: number }>>`
+        SELECT count(*)::int AS waiting FROM pg_stat_activity
+        WHERE usename = ${h.role.roleName} AND wait_event_type = 'Lock' AND state = 'active'
+          AND query ILIKE '%FOR SHARE%'
+      `;
+
+      if ((row?.waiting ?? 0) >= 1) {
+        return;
+      }
+
+      assert.ok(Date.now() < deadline, "a leitura FOR SHARE do reset não chegou a bloquear na trava");
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
   }
 
   test("S1·e — mudança em voo no vínculo da outra organização durante a verificação: 503 reset_unavailable e nada muda", async () => {
@@ -484,6 +530,47 @@ if (!connectionString) {
     await assertNothingChanged(h, home, email, before);
   });
 
+  test("S1·e2 — o vínculo da outra organização é REMOVIDO no meio da verificação (barreira determinística): 503 reset_unavailable e nada muda; com o estado firme, o reset passa", async () => {
+    const h = await harness();
+    const email = `s1e2-${Date.now()}@example.com`;
+    const home = await newOrg(h, "e2-casa", email, "SenhaCasaS1e2!");
+    const other = await newOrg(h, "e2-outra", email, "SenhaOutraS1e2!");
+
+    await linkElsewhere(h, home, other, email);
+
+    const admin = await adminOf(h, home);
+    const before = await credentialOf(h, home);
+    // O desvínculo em voo: o vínculo da outra organização já foi movido para uma identidade nova, sem
+    // confirmar. O reset vê o vínculo na leitura simples e fica bloqueado na leitura FOR SHARE.
+    const unlock = await holdOtherLink(h, other, { detach: true });
+    const pending = call(h, `/api/v1/auth/users/${home.userId}/reset-password`, {
+      method: "POST",
+      headers: admin.headers,
+      body: {},
+    });
+
+    try {
+      await waitForResetBlocked(h);
+    } finally {
+      // Confirma o desvínculo com o reset bloqueado na trava.
+      await unlock();
+    }
+
+    const response = await pending;
+
+    assert.equal(response.status, 503, "o vínculo sumiu durante a verificação: o reset não decide sobre estado em movimento");
+    assert.equal(response.body.error?.reason, "reset_unavailable");
+    await assertNothingChanged(h, home, email, before);
+
+    const retry = await call(h, `/api/v1/auth/users/${home.userId}/reset-password`, {
+      method: "POST",
+      headers: admin.headers,
+      body: {},
+    });
+
+    assert.equal(retry.status, 200, "com a identidade só nesta organização, o reset passa");
+  });
+
   test("S1·f — a transação expira durante a verificação: 503 reset_unavailable e nada muda", async () => {
     const h = await harness();
     const email = `s1f-${Date.now()}@example.com`;
@@ -494,9 +581,11 @@ if (!connectionString) {
 
     const admin = await adminOf(h, home);
     const before = await credentialOf(h, home);
-    const service = await h.makeService({ maxWait: 5_000, timeout: 600, lockTimeoutMs: 2_000, statementTimeoutMs: 5_000 });
+    // O prazo da transação (600 ms) vence ANTES da trava soltar (1,5 s); o lock_timeout (10 s) e o
+    // statement_timeout (10 s) ficam ALTOS de propósito: quem corta aqui é o prazo, não a trava.
+    const service = await h.makeService({ maxWait: 5_000, timeout: 600, lockTimeoutMs: 10_000, statementTimeoutMs: 10_000 });
     const app = await h.startApp(service);
-    const unlock = await holdOtherLink(h, other);
+    const unlock = await holdOtherLink(h, other, { autoReleaseMs: 1_500 });
 
     try {
       const response = await call(h, `/api/v1/auth/users/${home.userId}/reset-password`, {

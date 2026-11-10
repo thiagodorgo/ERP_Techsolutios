@@ -320,6 +320,10 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     "B-USERS-ACESSO-SEG (P-SEG-2): a MESMA leitura do status do S4, no callback de `withTenantRls(client, input.tenantId, …)` (setter do GUC como 1ª instrução, src/database/rls.ts l.35), passa a trazer pela relação a marca `must_change_password` da credencial do MESMO usuário; o `where` filtra por `id` e `tenant_id` da organização do ator e a relação lê sob o mesmo GUC; só leitura. Provado em tests/users-acesso-seg-provisoria-db.test.ts (P2·r4) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
   [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.assertNotLinkedElsewhere", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×2"),
+    "B-USERS-ACESSO-SEG (S1, P-SEG-1 opção a, decisão do dono 10/11 03:42): a verificação da D-USERS-1 — as duas leituras de EXISTÊNCIA (simples e, se achou, a mesma com FOR SHARE) de `auth_identity_links` da identidade do alvo, organização a organização; cada volta começa por `setTenantRlsContext(tx, <organização da volta>)` e filtra também por `tenant_id = <organização da volta>`, com o canário `assertRowsBelongToTenant` nas duas leituras; o `tx` é só o da transação do reset (`withTenantRlsBudget`), único chamador; nada da outra organização sai do método (o retorno é a recusa fixa ou 503). Provado em tests/users-acesso-seg-reset-db.test.ts (S1·a, S1·d, S1·e, S1·e2, S1·f) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
     k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.resetPasswordByAdmin", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-USERS-ACESSO-SEG (S1): o ALVO do reset por administrador lido no callback de `withTenantRlsBudget(this.prisma, actor.tenantId, …)`, cujo setter do GUC da organização ATIVA do ator é a 1ª instrução (src/database/rls.ts, `withTenantRlsBudget`); o `where` filtra também por `tenant_id = actor.tenantId` (usuário de outra organização = 404). Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b/S1·c) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],

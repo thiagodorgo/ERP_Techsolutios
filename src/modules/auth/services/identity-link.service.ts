@@ -5,6 +5,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { EnterpriseAuditLogService, type AuditLogWriter } from "../../core-saas/audit/audit-log.service.js";
 import { generateInitialPassword } from "../../authority/authority-password.js";
 import {
+  assertRowsBelongToTenant,
   setIdentityRlsContext,
   setTenantRlsContext,
   withTenantRlsBudget,
@@ -527,7 +528,9 @@ export class IdentityLinkService {
   //   1. o alvo existe NA organização ativa (senão 404 user_not_found, também para o de outra
   //      organização) e está ativo (senão 409 user_inactive);
   //   2. a identidade do par do alvo;
-  //   3. grava a PROVISÓRIA (só o hash, marca da P1 ligada), revoga as sessões ativas do alvo e audita
+  //   3. P-SEG-1 (D-USERS-1): a identidade tem vínculo em OUTRA organização? → 409
+  //      `identity_linked_elsewhere`, mensagem fixa, nada muda (`assertNotLinkedElsewhere`);
+  //   4. grava a PROVISÓRIA (só o hash, marca da P1 ligada), revoga as sessões ativas do alvo e audita
   //      `user.password_reset` (ator, alvo e organização ativa; nada de provisória, hash ou outra
   //      organização).
   // Qualquer erro que não seja um dos códigos fixos vira 503 `reset_unavailable` com mensagem fixa: nada
@@ -545,12 +548,18 @@ export class IdentityLinkService {
     // A provisória e o hash nascem FORA da transação (o scrypt é lento; a transação fica curta).
     const temporaryPassword = generateInitialPassword();
     const password = await hashPassword(temporaryPassword);
+    const budget = this.options.resetBudget ?? ADMIN_RESET_BUDGET;
+    // O prazo da transação, contado ANTES de abri-la (um pouco antes do relógio do Prisma: falha fechada).
+    // Medido na sonda do S1·f: o Prisma não cancela a instrução bloqueada quando o `timeout` da transação
+    // vence; a sonda acaba quando a trava solta e o callback seguiria com a resposta dela. Passado o prazo, a
+    // verificação não vale mais: 503 `reset_unavailable`, nada muda.
+    const deadline = Date.now() + budget.timeout;
 
     try {
       return await withTenantRlsBudget(
         this.prisma,
         actor.tenantId,
-        this.options.resetBudget ?? ADMIN_RESET_BUDGET,
+        budget,
         async (tx) => {
           const target = await tx.user.findFirst({
             where: { id: targetUserId, tenant_id: actor.tenantId },
@@ -575,6 +584,8 @@ export class IdentityLinkService {
           if (!identityId) {
             throw resetUnavailableError();
           }
+
+          await this.assertNotLinkedElsewhere(tx, actor.tenantId, identityId, deadline);
 
           await setTenantRlsContext(tx, actor.tenantId);
           await new LocalAuthCredentialRepository(tx).upsertTemporaryPassword({
@@ -851,6 +862,75 @@ export class IdentityLinkService {
     return rows[0] ?? null;
   }
 
+  // B-USERS-ACESSO-SEG (S1, P-SEG-1 — Emenda 1, opção a) — a recusa da D-USERS-1 sob o papel real. Sob o
+  // braço de tenant da organização ativa, o vínculo de OUTRA organização é invisível; o braço de identidade
+  // só se liga pelo ator do JWT. Por isso, com os setters de organização que já existem (sem mudar
+  // src/database/rls.ts, sem migração, sem SECURITY DEFINER), organização a organização: o GUC vai para ela
+  // e a sonda pergunta só se a identidade do alvo tem vínculo LÁ. Só EXISTÊNCIA; para no primeiro achado;
+  // nada da outra organização sai deste método (nem id, nem nome, nem a linha): o retorno é a recusa fixa.
+  //   - A lista é a tabela global `tenants` (sem RLS, o precedente de `traccar-resolution.ts`), TODAS as
+  //     organizações menos a ativa, inclusive a suspensa (a organização suspensa ainda conta: falha
+  //     fechada).
+  //   - Em cada organização, duas perguntas: (1) uma leitura simples — há vínculo da identidade aqui? Não
+  //     há: próxima organização. (2) Há: a MESMA leitura com FOR SHARE, que espera uma mudança em voo nesse
+  //     vínculo (religação ou desvínculo, que travam FOR UPDATE) até o `lock_timeout` do orçamento. Seguiu
+  //     lá: 409 `identity_linked_elsewhere`. Sumiu na espera (o vínculo foi removido no meio): 503
+  //     `reset_unavailable` — a verificação não terminou sobre um estado firme; nada muda, tente de novo.
+  //     Passou do `lock_timeout`: o PostgreSQL cancela a leitura e o reset também sai 503.
+  //   - Canário `assertRowsBelongToTenant` nas duas leituras de cada volta: linha de outra organização sob
+  //     o contexto da volta derruba o reset (vira 503), nunca vira resultado.
+  //   - O prazo da transação (`deadline`) é conferido depois de cada leitura e no fim: vencido, a resposta é
+  //     503 `reset_unavailable`, ache a sonda o vínculo ou não.
+  // Pós-condição: o GUC fica na ÚLTIMA organização sondada; o chamador repõe o da organização ativa antes
+  // de escrever.
+  private async assertNotLinkedElsewhere(
+    tx: Prisma.TransactionClient,
+    activeTenantId: string,
+    identityId: string,
+    deadline: number,
+  ): Promise<void> {
+    const others = await tx.tenant.findMany({
+      where: { id: { not: activeTenantId } },
+      select: { id: true },
+      orderBy: [{ created_at: "asc" }, { id: "asc" }],
+    });
+
+    for (const other of others) {
+      await setTenantRlsContext(tx, other.id);
+
+      const seen = await tx.$queryRaw<Array<{ tenantId: string }>>`
+        SELECT tenant_id::text AS "tenantId" FROM auth_identity_links
+        WHERE tenant_id = ${other.id}::uuid AND identity_id = ${identityId}::uuid
+        LIMIT 1
+      `;
+
+      assertDeadline(deadline);
+      assertRowsBelongToTenant(seen, other.id, "auth_identity_links");
+
+      if (seen.length === 0) {
+        continue;
+      }
+
+      const firm = await tx.$queryRaw<Array<{ tenantId: string }>>`
+        SELECT tenant_id::text AS "tenantId" FROM auth_identity_links
+        WHERE tenant_id = ${other.id}::uuid AND identity_id = ${identityId}::uuid
+        LIMIT 1
+        FOR SHARE
+      `;
+
+      assertDeadline(deadline);
+      assertRowsBelongToTenant(firm, other.id, "auth_identity_links");
+
+      if (firm.length === 0) {
+        throw resetUnavailableError();
+      }
+
+      throw identityLinkedElsewhereError();
+    }
+
+    assertDeadline(deadline);
+  }
+
   // B-USERS-ACESSO-SEG (P-SEG-2) — a marca da senha provisória do PAR. Pré-condição do chamador: o GUC
   // de tenant da organização do par já está posto na transação (local_auth_credentials tem RLS).
   private async mustChangePassword(
@@ -897,6 +977,17 @@ export function passwordChangeRequiredError(): IdentityLinkError {
   );
 }
 
+// B-USERS-ACESSO-SEG (S1, P-SEG-1 / UEM-03) — a recusa da D-USERS-1: código e mensagem FIXOS. Revela só o
+// que a decisão do dono já revela (que o usuário tem acesso a outra organização), nunca qual.
+export function identityLinkedElsewhereError(): IdentityLinkError {
+  return identityLinkError(
+    409,
+    "CONFLICT",
+    "identity_linked_elsewhere",
+    "This user also has access to another organization. Only the user can change this password.",
+  );
+}
+
 // B-USERS-ACESSO-SEG (S1, UEM-03) — o reset que não pôde terminar com segurança (trava ou transação
 // estourou o orçamento, identidade do par ilegível, falha do banco): código e mensagem FIXOS, sem
 // nada da causa. Nada mudou (a transação desfez).
@@ -907,6 +998,13 @@ export function resetUnavailableError(): IdentityLinkError {
     "reset_unavailable",
     "The password reset could not be completed. Nothing was changed; try again.",
   );
+}
+
+// O prazo da transação do reset venceu → 503 fixo (a verificação não vale mais).
+function assertDeadline(deadline: number): void {
+  if (Date.now() >= deadline) {
+    throw resetUnavailableError();
+  }
 }
 
 // O erro de domínio deste serviço é um objeto simples (identityLinkError), não uma instância de Error:
