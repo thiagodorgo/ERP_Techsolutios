@@ -16,6 +16,9 @@
 // vive aqui, pura, e é INJETADA no claim (`ClaimParams.verdict`), que a aplica NA transação do claim sobre o demonstrativo
 // relido: pago/cancelado/reaberto/refechado → SKIPPED com `skip_reason`; cobrança viva ou demonstrativo ausente →
 // NEEDS_REVIEW com `last_error`. O `retry` revalida pelo mesmo caminho (todo PENDING passa pelo claim).
+// B-ASS-08b (c2): `invoice_issue`/`invoice_cancel` entram pelo MESMO claim (o pick dos outros tipos, sem trava do
+// demonstrativo) e pela mesma régua de falha, delegados ao `InvoiceOutboxHandler` (outbox/invoice.dispatch.ts) ANTES da perna
+// de cobrança; sem ele, esses tipos vão a NEEDS_REVIEW `unsupported_kind`.
 
 import type { PaymentProviderPort, CreateChargeInput, ChargeResult, ChargeStatus } from "../providers/payment/payment-provider.port.js";
 import {
@@ -27,6 +30,7 @@ import {
   type OutboxKind,
   type StatementClaimSnapshot,
 } from "./outbox.types.js";
+import type { InvoiceDispatchResult, InvoiceOutboxHandler } from "./invoice.dispatch.js";
 import type { AdoptionFacts, OutboxRepository } from "./outbox.repository.js";
 
 export type DispatchOutcome =
@@ -60,6 +64,8 @@ export type DispatcherDeps = {
    * `{ ok: false, missing }` e a linha vai a `NEEDS_REVIEW billing_profile_missing:<campos>` SEM nenhuma chamada ao
    * provedor. Roda FORA de transação (pode fazer rede: `ensureCustomer`). */
   readonly resolveCustomer: (row: BillingOutboxRow, port: PaymentProviderPort) => Promise<CustomerResolution>;
+  /** B-ASS-08b — a perna da NOTA (`invoice_issue`/`invoice_cancel`), com as portas dos provedores de nota LIGADOS. */
+  readonly invoices?: InvoiceOutboxHandler;
   readonly now?: () => Date;
   readonly claimedBy?: string;
   readonly orphanMs?: number;
@@ -190,7 +196,8 @@ export async function runDispatchOutbox(deps: DispatcherDeps): Promise<DispatchR
   const clock = deps.now ?? (() => new Date());
   const claimedBy = deps.claimedBy ?? "dispatch-outbox";
   const orphanMs = deps.orphanMs ?? OUTBOX_ORPHAN_MS;
-  const enabledProviders = Object.keys(deps.ports);
+  // Os provedores de nota LIGADOS entram na elegibilidade do claim junto com os de pagamento (R-OBX-4 vale para os dois).
+  const enabledProviders = [...new Set([...Object.keys(deps.ports), ...(deps.invoices?.providers ?? [])])];
   const outcomes: Record<DispatchOutcome, number> = {
     sent: 0,
     recovered: 0,
@@ -234,6 +241,20 @@ async function dispatchOne(
   wasOrphan: boolean,
   clock: () => Date,
 ): Promise<DispatchOutcome> {
+  // B-ASS-08b — a perna da NOTA vem ANTES da de cobrança (§11 (a) do conserto-c2): o provedor de nota não está em `ports`.
+  if (row.kind === "invoice_issue" || row.kind === "invoice_cancel") {
+    if (!deps.invoices) {
+      await deps.repo.markNeedsReview(row.tenantId, row.id, "unsupported_kind", clock());
+      return "needs_review";
+    }
+    try {
+      const result = row.kind === "invoice_issue" ? await deps.invoices.issue(row, wasOrphan, clock()) : await deps.invoices.cancel(row, clock());
+      return await registerInvoiceResult(deps, row, result, clock);
+    } catch (error) {
+      return registerFailure(deps, row, error, clock);
+    }
+  }
+
   const port = deps.ports[row.provider];
   if (!port) {
     // Nunca deveria acontecer (claim filtra por provedor ligado); fail-closed sem rede.
@@ -241,7 +262,7 @@ async function dispatchOne(
     return "skipped";
   }
   if (row.kind !== "charge_create") {
-    // Outros tipos (charge_cancel/refund/invoice_*) nascem nas fatias seguintes; sem handler → NEEDS_REVIEW.
+    // `charge_cancel`/`refund` nascem nas fatias seguintes; sem handler → NEEDS_REVIEW.
     await deps.repo.markNeedsReview(row.tenantId, row.id, "unsupported_kind", clock());
     return "needs_review";
   }
@@ -274,18 +295,43 @@ async function dispatchOne(
     await deps.repo.markSent(row.tenantId, row.id, result.chargeId, clock());
     return "sent";
   } catch (error) {
-    const retryMs = rateLimitRetryMs(error);
-    if (retryMs !== null) {
-      await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + retryMs), "rate_limited", clock());
-      return "rate_limited";
-    }
-    const code = errorCode(error);
-    if (row.attempts >= OUTBOX_MAX_ATTEMPTS) {
-      await deps.repo.markFailed(row.tenantId, row.id, code, clock());
-      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.failed", code });
-      return "failed";
-    }
-    await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + backoffMsForAttempt(row.attempts)), code, clock());
-    return "retry";
+    return registerFailure(deps, row, error, clock);
   }
+}
+
+/** (3) REGISTRO do desfecho da perna da nota, na mesma régua das cobranças. */
+async function registerInvoiceResult(deps: DispatcherDeps, row: BillingOutboxRow, result: InvoiceDispatchResult, clock: () => Date): Promise<DispatchOutcome> {
+  switch (result.kind) {
+    case "sent":
+      await deps.repo.markSent(row.tenantId, row.id, result.externalId, clock());
+      return "sent";
+    case "recovered":
+      await deps.repo.markSent(row.tenantId, row.id, result.externalId, clock());
+      return "recovered";
+    case "skipped":
+      await deps.repo.markSkipped(row.tenantId, row.id, result.reason, clock());
+      return "skipped";
+    case "needs_review":
+      await deps.repo.markNeedsReview(row.tenantId, row.id, result.code, clock());
+      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: result.code });
+      return "needs_review";
+  }
+}
+
+/** Falha da chamada: 429 → próxima janela do provedor; transitória → backoff 1/5/15/60 min; 8ª → FAILED + trilha (R-OBX-2).
+ * A MESMA régua para a cobrança e para a nota (B-ASS-08b). */
+async function registerFailure(deps: DispatcherDeps, row: BillingOutboxRow, error: unknown, clock: () => Date): Promise<DispatchOutcome> {
+  const retryMs = rateLimitRetryMs(error);
+  if (retryMs !== null) {
+    await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + retryMs), "rate_limited", clock());
+    return "rate_limited";
+  }
+  const code = errorCode(error);
+  if (row.attempts >= OUTBOX_MAX_ATTEMPTS) {
+    await deps.repo.markFailed(row.tenantId, row.id, code, clock());
+    await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.failed", code });
+    return "failed";
+  }
+  await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + backoffMsForAttempt(row.attempts)), code, clock());
+  return "retry";
 }

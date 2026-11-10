@@ -441,7 +441,11 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
   ],
   [
     k("L2", "src/modules/subscription-billing/webhooks/webhook-runtime.ts", "new PrismaWebhookEventRepository(prisma)", "PARAMETRO(prisma de callback de then)", "×1"),
-    "B-ASS-08b: a MESMA classe da chave anterior, instanciada pelo router do webhook (webhook-runtime.ts l.93) no 1º pedido com o canal ligado e a persistência `prisma`; o `prisma` do callback é o client raiz desestruturado do import dinâmico de src/database/prisma.ts (por isso o gerador o vê como parâmetro). Acessos só à tabela GLOBAL `billing_webhook_events` (sem RLS); nenhuma tabela FORCE é tocada. Com o canal desligado o repositório nem é resolvido (404 antes, R-WH-1).",
+    "B-ASS-08b: a MESMA classe da chave anterior, instanciada pelo router do webhook (webhook-runtime.ts l.109) no 1º pedido com o canal ligado e a persistência `prisma`; o `prisma` do callback é o client raiz desestruturado do import dinâmico de src/database/prisma.ts (por isso o gerador o vê como parâmetro). Acessos só à tabela GLOBAL `billing_webhook_events` (sem RLS); nenhuma tabela FORCE é tocada. Com o canal desligado o repositório nem é resolvido (404 antes, R-WH-1).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/invoices/invoices.prisma.ts", "-.mirrorStatement", "tx", "RAW-SQL($executeRawUnsafe)", "subscription_statements", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08b (c2): o espelho do estado da nota em subscription_statements.invoice_status (invoices.prisma.ts, mirrorStatement) é um UPDATE por id na tabela FORCE que recebe o tx por parâmetro; os ÚNICOS chamadores são os métodos de PrismaStatementInvoiceRepository, todos dentro de withTenantRls(this.client, tenantId, …) (beginIssue e #update), cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.35); a linha da nota e o espelho vão na MESMA transação. Provado em tests/ass-08b-invoice-leg-db.test.ts sob papel NOSUPERUSER NOBYPASSRLS (vermelho-controle: sem GUC o UPDATE não alcança linha).",
   ],
 ]);
 
