@@ -220,8 +220,9 @@
   ambiente nomeados acima (role-authority sem `DATABASE_URL` + 6 de Redis `ECONNREFUSED`) — os 5 dos guards
   ficaram verdes. 2º `flutter test` · `+1049 -1` · o MESMO flaky de telemetry (1/3 intermitente), nenhum do
   bloco. `npm run build` re-rodado sozinho (sonda transitória já limpa pela suíte) · exit 0.
-- **M do bloco = N + 14 EXATO (57 → 71):** backend 28 → **37** sem banco (`expense-management-routes` 14 +
-  `expense-sync-fingerprint` 6 + os 2 guards do 03b 8 + **RR1-RR3 8** + **RR5 1**) **+ 2 RR-db** (Postgres
+- **M do bloco = N + 14 EXATO (57 → 71):** backend 28 → **37** sem banco (28 = `expense-management-routes` 14 +
+  `expense-sync-fingerprint` 9 + `b-o6r-03b-expense-payload-contract` 2 + `b-o6r-03b-field-technician-expense-sync` 3
+  (medido; divisão corrigida no conserto c1 do #525, C3-R4) + **RR1-RR3 8** + **RR5 1**) **+ 2 RR-db** (Postgres
   descartável, F4) = **39**; app 29 → **32** (**RR4 3**). Grupos: RR1 4 · RR2 2 · RR3 2 · RR4 3 · RR5 1 ·
   RR-db 2 = 14.
 - Mutações do bloco (6, uma por vez, todas provadas vermelhas e revertidas por edição inversa, resto 0):

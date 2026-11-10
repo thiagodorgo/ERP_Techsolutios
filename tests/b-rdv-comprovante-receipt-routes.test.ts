@@ -254,7 +254,7 @@ async function postReceipt(
 // RR1 — rota e permissão (4)
 // ---------------------------------------------------------------------------
 
-test("RR1.1 técnico dono anexa comprovante: 201 stored; GET sem bucket/key/path; download devolve os bytes", async () => {
+test("RR1.1 técnico dono anexa comprovante: 201 uploaded; GET sem bucket/key/path; download devolve os bytes", async () => {
   await withReceiptApi(async ({ baseUrl, seed }) => {
     const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
     const bytes = jpegBytes();
