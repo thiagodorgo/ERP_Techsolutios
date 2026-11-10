@@ -131,11 +131,17 @@ class ExpenseReceiptSyncResult {
     required this.uploaded,
     required this.failed,
     required this.conflicts,
+    this.busy = const <SyncAction>[],
   });
 
   final List<SyncAction> uploaded;
   final List<SyncAction> failed;
   final List<SyncAction> conflicts;
+
+  /// B-RDV-COMPROVANTE (conserto c1, §12.6 e §13.1) — as ações que receberam 503 do servidor
+  /// NESTE passe (também estão em [failed], que mantém o significado de sempre). É o que solta o
+  /// envio do relatório no 2º lote do passe; nenhum outro desfecho entra aqui.
+  final List<SyncAction> busy;
 }
 
 class ExpenseReceiptSyncService {
@@ -160,6 +166,7 @@ class ExpenseReceiptSyncService {
     final uploaded = <SyncAction>[];
     final failed = <SyncAction>[];
     final conflicts = <SyncAction>[];
+    final busy = <SyncAction>[];
 
     // Sem sessão o Pending falharia cada ação com custo: não toca a fila.
     if (_api is PendingExpenseReceiptUploadApi) {
@@ -167,6 +174,7 @@ class ExpenseReceiptSyncService {
         uploaded: uploaded,
         failed: failed,
         conflicts: conflicts,
+        busy: busy,
       );
     }
 
@@ -309,6 +317,9 @@ class ExpenseReceiptSyncService {
             ReceiptUploadStatus.pending,
           );
           failed.add(next);
+          // §13.1 — tentado NESTE passe, terminou no 503 do servidor (e o `pending` já foi
+          // gravado): é o único desfecho que solta o envio do relatório no 2º lote.
+          busy.add(next);
         } else if (error.statusCode == 413 ||
             error.statusCode == 415 ||
             error.statusCode == 422 ||
@@ -375,6 +386,7 @@ class ExpenseReceiptSyncService {
       uploaded: uploaded,
       failed: failed,
       conflicts: conflicts,
+      busy: busy,
     );
   }
 

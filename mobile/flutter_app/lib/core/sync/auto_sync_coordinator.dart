@@ -6,6 +6,7 @@ import '../bootstrap/bootstrap_repository.dart';
 import '../network/api_error.dart';
 import '../network/connectivity_repository.dart';
 import '../telemetry/telemetry_providers.dart';
+import 'expense_sync_pass.dart';
 import 'sync_providers.dart';
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -120,18 +121,16 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       await ref
           .read(evidenceBinaryUploadServiceProvider)
           .uploadTenant(tenantId);
-      // RDV/expense sync
-      await ref.read(syncReplayServiceProvider).replayTenant(tenantId);
-      // B-RDV-COMPROVANTE: upload multipart do comprovante DEPOIS do lote (os
-      // ids de servidor do relatorio e do item nascem la). Falha isolada nao
-      // bloqueia o fim do passe; o blob so morre quando o servidor confirma.
-      try {
-        await ref
-            .read(expenseReceiptSyncServiceProvider)
-            .uploadTenant(tenantId);
-      } catch (_) {
-        // Comprovante falho nao derruba os demais dominios.
-      }
+      // RDV/expense sync + comprovante (B-RDV-COMPROVANTE, conserto c1): lote →
+      // upload multipart → lote. Os ids de servidor do relatorio e do item nascem
+      // no lote; o envio do relatorio espera a vez do comprovante e sai no 2o lote
+      // do MESMO passe. A falha do 1o lote propaga como antes; o upload e o 2o
+      // lote sao isolados; o blob so morre quando o servidor confirma.
+      await runExpenseSyncPass(
+        tenantId,
+        replay: ref.read(syncReplayServiceProvider),
+        receipts: () => ref.read(expenseReceiptSyncServiceProvider),
+      );
 
       state = state.copyWith(
         isRunning: false,

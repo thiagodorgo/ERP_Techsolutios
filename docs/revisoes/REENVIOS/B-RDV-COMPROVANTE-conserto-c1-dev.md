@@ -417,3 +417,52 @@
 - head `80c84d080cec2271ac3e3abc353ec2edca0e77c5` · feito: F0–F3, F4a, F4b · falta: F5a → F5b → F5c → F6a → F6b → F7 → F8 · próximo comando: ler o
   arnês das sondas do app (`atk_app_probe_test.dart`, `topo2_a01_release_probe_test.dart`) e escrever RR-C.1, RR-C.2 e
   RR-C.3 em `test/core/sync/brdvcomp_c1_ordem_envio_test.dart` · arquivos meio escritos: nenhum.
+
+## F5a — quem segura o envio (§12.6 + §13.1), o passe e o coordenador (07:14–07:36)
+
+- Testes ANTES, em `mobile/flutter_app/test/core/sync/brdvcomp_c1_ordem_envio_test.dart`, com o PRODUTO real
+  (`SyncReplayService`, `ExpenseReceiptSyncService`, fila, repositório e blob em memória) e só o servidor fingido
+  (lote `processed`; upload com replay antes da editabilidade e relatório enviado → 422): **RR-C.1** (TOPO_422: num
+  passe, `['p1 upload:A:201', 'p1 submit:A']`, comprovante `synced`, blob apagado, envio `synced`), **RR-C.2** (o
+  servidor recusa com 415 → `['p1 upload:A:415', 'p1 submit:A']`, `conflict RECEIPT_UNSUPPORTED_TYPE`, blob
+  presente, envio `synced`) e **RR-C.3** ((a) sem sessão: `SessionlessExpenseSyncBatchApi` +
+  `PendingExpenseReceiptUploadApi` → nada sai, as duas ações `pending` r0, relatório local `submitted`; (b) sem rede →
+  nada sai, envio `pending` r0, comprovante `failed`, blob presente).
+- **Vermelho-controle no objeto:** o arquivo não compila no objeto ("Error when reading
+  'lib/core/sync/expense_sync_pass.dart'", `runExpenseSyncPass` não existe) = vermelho por ausência, declarado. O
+  vermelho de COMPORTAMENTO do objeto foi re-medido com a sonda do topo (`top525_probe_test.dart`, "TOPO-C2-DP-02",
+  copiada para o `w-dev525-vc` e apagada): `TOPO_422 batches=[…[expense_report.submit]] … attach=conflict/
+  RECEIPT_REJECTED receipt=conflict blob=true` = o que o plano registra. **OK.**
+- Código: `ReceiptRelease` (`none()` e `busy(ids)`, SEM `.all`) e `_receiptHoldsSubmit` (L1 `synced`, L2 `conflict`, L4
+  `busyIds`, L5 segura) em `sync_replay_service.dart`; `_hasUnsyncedItems` → `_hasUnsyncedDependents` (item que não
+  está `synced` OU comprovante que segura); `ExpenseReceiptSyncResult.busy` (só o ramo do 503, depois do `pending`
+  gravado); `lib/core/sync/expense_sync_pass.dart` (novo) com `runExpenseSyncPass` no desenho da §13.1 item 3 (o
+  `r == null` não solta nada); `auto_sync_coordinator.dart` chama o passe no lugar do lote + upload.
+- **Medido × plano (registro; adaptação à ref, sem mudar comportamento nem escopo):**
+  1. A assinatura literal `replayTenant(String tenantId, {ReceiptRelease release = …})` (§12.6) QUEBRA A COMPILAÇÃO de
+     6 testes FORA do PERMITIDO, que estendem `SyncReplayService` e sobrescrevem `replayTenant(String)` (9 classes:
+     `bo6r11_resgate_antes_do_primeiro_servico_test` 1, `b090b_offline_auto_sync_test` 3,
+     `b091_connectivity_profile_test` 2, `b103_work_order_sync_test` 1, `b105_gps_operational_map_test` 1,
+     `b106_native_gps_permissions_test` 1). Medido também o caminho literal (o parâmetro acrescentado às 9 sobrescritas,
+     só para medir, depois revertido com `git checkout`): os 6 compilam, mas 5 testes do coordenador caem (ex.: `t09`
+     `Expected: <1> Actual: <0>`), o que pediria MAIS mudança fora do escopo. Adaptação adotada: `replayTenant(String)`
+     fica intacto (= sem liberação, o 1º lote) e o 2º lote chama o irmão `replayTenantReleasing(tenantId, release)`. O
+     comportamento é o da §12.6/§13.1 e as mutações seguem literais na expressão `ReceiptRelease.busy(busy)` (M-C4b,
+     M-C4c); a M-C1b apaga a chamada do 2º lote.
+  2. O coordenador lia `ref.read(expenseReceiptSyncServiceProvider)` dentro do `try` do upload, DEPOIS do lote; como
+     argumento de `runExpenseSyncPass` a leitura passaria a ser ANTES do 1º lote e fora do isolamento (nos testes do
+     coordenador ela lança, e o lote nem rodava). O (c)3 manda "isolado em try/catch como hoje": o `receipts` do passe
+     é lido de forma preguiçosa (`ExpenseReceiptSyncService Function()`), dentro do `try`.
+  Com as duas: `flutter test test/core` + os 6 do coordenador + `b088`, `b104`, `bfilausuario_replay_integration`,
+  `bo6r11_sonda_sync_screen` + `test/features/expenses` → **`+321: All tests passed!`**, os 6 de fora intocados.
+- `flutter analyze` → 1 `info` (`curly_braces_in_flow_control_structures`: o formatador quebrou a L2 por causa do
+  comentário) → comentários das linhas L1–L5 passaram para cima; cada `if` numa linha → "No issues found!". RR-C → `+3`.
+- Mutações (`git diff --exit-code -- src tests mobile` = 0 depois de cada reversão por edição inversa):
+  - **M-C1** (o `_hasUnsyncedDependents` volta a olhar só o `itemCreate`) → RR-C.1 `Actual: ['p1 submit:A',
+    'p1 upload:A:422']` (e o RR-C.2 também cai) · revertida. **OK.**
+  - **M-C1b** (apagar o 2º lote em `runExpenseSyncPass`) → RR-C.1 `Actual: ['p1 upload:A:201']` (o envio fica
+    `pending` no fim do passe) · revertida. **OK.**
+  - **M-C2** (apagar a L2 `if (r.status == SyncStatus.conflict) return false;`) → RR-C.2 `Actual: ['p1 upload:A:415']`
+    (o recusado prende o envio) · revertida. **OK.**
+  - **M-C3** (no adiamento, gravar `action.copyWith(status: SyncStatus.failed, retryCount: action.retryCount + 1)` e
+    só então devolver `null`) → RR-C.3 `Expected: SyncStatus.pending Actual: SyncStatus.failed` · revertida. **OK.**
