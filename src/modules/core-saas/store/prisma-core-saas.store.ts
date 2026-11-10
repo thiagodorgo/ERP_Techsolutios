@@ -12,15 +12,23 @@ import {
   UserRoleRepository,
 } from "../repositories/index.js";
 import { assertAssignableRole, isValidRole, validateRole, type Role } from "../permissions/catalog.js";
-import type {
-  AuditEvent,
-  CreateTenantInput,
-  CreateUserInput,
-  ListTenantOptions,
-  Tenant,
-  TenantStatus,
-  User,
-  UserStatus,
+import {
+  TENANT_ADMIN_ROLE,
+  assertSelfChangeAllowed,
+  lastTenantAdminError,
+  removesActiveTenantAdmin,
+} from "../services/tenant-admin-guard.js";
+import { toUserAuditSnapshot } from "../services/user-audit-snapshot.js";
+import {
+  CoreSaasError,
+  type AuditEvent,
+  type CreateTenantInput,
+  type CreateUserInput,
+  type ListTenantOptions,
+  type Tenant,
+  type TenantStatus,
+  type User,
+  type UserStatus,
 } from "../types/core-saas.types.js";
 import type {
   AsyncCoreSaasStore,
@@ -180,6 +188,55 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       const txUserRoles = new UserRoleRepository(tx);
       const txAudit = new AuditLogRepository(tx);
 
+      // Step 0 (B-USERS-ACESSO-SEG, S3/S5): a TRAVA DA ORGANIZAÇÃO. Toda mudança de status ou de papéis
+      // passa pela linha da organização em `tenants` (FOR NO KEY UPDATE, o mesmo mutex do
+      // cycle-count-prisma.repository.ts: não conflita com o KEY SHARE das FKs para `tenants`, e
+      // `tenants` não tem RLS). Dois rebaixamentos, ou uma desativação e um rebaixamento, da mesma
+      // organização ficam em fila: quem chega depois relê o estado JÁ gravado pelo primeiro. Uma trava
+      // sobre as linhas de `user_role_assignments` não bastaria (Achado 4 da crítica): o rebaixamento
+      // apaga e recria o vínculo, e a linha recriada não estaria travada nem visível ao statement que
+      // contasse junto com a trava.
+      if (input.status !== undefined || input.roles !== undefined) {
+        await tx.$queryRaw`SELECT id FROM "tenants" WHERE id = ${input.tenantId}::uuid FOR NO KEY UPDATE`;
+      }
+
+      // O estado ATUAL, lido DEPOIS da trava e num statement próprio (em READ COMMITTED, snapshot
+      // novo: enxerga o commit de quem estava na frente da fila). Também é o "antes" da auditoria.
+      const current = await tx.user.findFirst({
+        where: { id: input.userId, tenant_id: input.tenantId },
+        select: {
+          name: true,
+          status: true,
+          role_assignments: { select: { role: { select: { key: true } } } },
+        },
+      });
+
+      if (!current) {
+        throw new CoreSaasError(404, "NOT_FOUND", "user_not_found", `User not found: ${input.userId}`);
+      }
+
+      const currentRoles = mapRoleAssignmentsFromPrisma(current.role_assignments);
+      const currentState = { status: current.status, isTenantAdmin: currentRoles.includes(TENANT_ADMIN_ROLE) };
+      const nextState = {
+        status: input.status ?? current.status,
+        isTenantAdmin:
+          input.roles !== undefined ? input.roles.includes(TENANT_ADMIN_ROLE) : currentState.isTenantAdmin,
+      };
+
+      assertSelfChangeAllowed({
+        isSelf: input.actorUserId !== undefined && input.actorUserId === input.userId,
+        requestedStatus: input.status,
+        current: currentState,
+        next: nextState,
+      });
+
+      if (
+        removesActiveTenantAdmin(currentState, nextState) &&
+        (await countOtherActiveTenantAdmins(tx, input.tenantId, input.userId)) === 0
+      ) {
+        throw lastTenantAdminError();
+      }
+
       // Step 1: update scalar profile fields (name/status) when provided.
       if (input.name !== undefined || input.status !== undefined) {
         await txUsers.updateProfile(input.userId, {
@@ -229,6 +286,16 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
           )?.id ?? null
         : null;
 
+      const savedUser = await txUsers.findByIdForTenant(input.userId, input.tenantId);
+
+      if (!savedUser) {
+        throw new Error(`User not found after update: ${input.userId}`);
+      }
+
+      const updatedUser = mapUserFromPrisma(savedUser);
+
+      // B-USERS-ACESSO-SEG (S8) — antes/depois por LISTA PERMITIDA (nome, status, papéis), mais a
+      // contagem de sessões revogadas quando houve desativação. Nada de e-mail nem de credencial.
       await new EnterpriseAuditLogService(txAudit).record({
         tenantId: input.tenantId,
         actorId,
@@ -238,16 +305,14 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         resourceId: input.userId,
         outcome: "success",
         severity: "info",
-        ...(revokedSessions !== undefined ? { metadata: { revoked_sessions: revokedSessions } } : {}),
+        metadata: {
+          before: toUserAuditSnapshot({ name: current.name, status: current.status, roles: currentRoles }),
+          after: toUserAuditSnapshot(updatedUser),
+          ...(revokedSessions !== undefined ? { revoked_sessions: revokedSessions } : {}),
+        },
       });
 
-      const savedUser = await txUsers.findByIdForTenant(input.userId, input.tenantId);
-
-      if (!savedUser) {
-        throw new Error(`User not found after update: ${input.userId}`);
-      }
-
-      return mapUserFromPrisma(savedUser);
+      return updatedUser;
     });
   }
 
@@ -489,4 +554,28 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     value,
   );
+}
+
+// B-USERS-ACESSO-SEG (S3/S5) — os OUTROS administradores ATIVOS da organização, contados num statement
+// próprio DEPOIS da trava da organização (nunca junto com ela: o EvalPlanQual reavaliaria com o
+// snapshot antigo e não veria a linha recriada por quem estava na frente). Papel por CHAVE
+// (`tenant_admin`), qualquer que seja a linha (global ou da organização). Sob o GUC de tenant já
+// posto pela transação: `users` e `user_role_assignments` só mostram a organização do ator.
+async function countOtherActiveTenantAdmins(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  userId: string,
+): Promise<number> {
+  const rows = await tx.$queryRaw<Array<{ admins: number }>>`
+    SELECT count(DISTINCT u.id)::int AS admins
+    FROM users u
+    JOIN user_role_assignments ura ON ura.tenant_id = u.tenant_id AND ura.user_id = u.id
+    JOIN roles r ON r.id = ura.role_id
+    WHERE u.tenant_id = ${tenantId}::uuid
+      AND u.status = 'active'
+      AND r.key = ${TENANT_ADMIN_ROLE}
+      AND u.id <> ${userId}::uuid
+  `;
+
+  return rows[0]?.admins ?? 0;
 }
