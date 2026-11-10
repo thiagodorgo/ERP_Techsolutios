@@ -306,15 +306,21 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
   ],
   // Conserto J-522 (R-OBX-5, D2): o claim passou de 1 comando (`WITH picked … UPDATE`) a 3 passos na MESMA transação —
   // (1) `SELECT … FOR UPDATE SKIP LOCKED LIMIT 1`, (2) releitura do demonstrativo + cobrança viva, (3) `UPDATE` para
-  // PROCESSING | SKIPPED | NEEDS_REVIEW. Logo billing_outbox ×1 → ×5 e duas chaves NOVAS para o mesmo método, todas no
-  // callback de `withTenantRlsBudget`. Literal L0 (123) intocado: nenhuma tabela FORCE nova.
+  // PROCESSING | SKIPPED | NEEDS_REVIEW. 2º conserto do #522 (E5″/E4): a escolha virou três picks (órfã; o demonstrativo e
+  // a linha da `charge_create` numa instrução só, com SKIP LOCKED; outros tipos) e a trava de plano `enable_nestloop` local;
+  // logo billing_outbox ×5 → ×7, subscription_statements ×1 → ×2 e a chave OPACO ×2 (os `set_config` do planejador), todas
+  // no callback de `withTenantRlsBudget`. Literal L0 (123) intocado: nenhuma tabela FORCE nova.
   [
-    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×5"),
-    "B-ASS-08 / R-OBX-5 (conserto J-522): os 5 acessos a billing_outbox (FORCE) do claim — `SELECT … FOR UPDATE SKIP LOCKED LIMIT 1`, o `EXISTS` da própria fila (outra charge_create SENT/PROCESSING) na releitura, e os 3 `UPDATE … WHERE id = $1` (PROCESSING | SKIPPED + skip_reason | NEEDS_REVIEW + last_error) — rodam, organização a organização, no MESMO callback de `withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, …)`, cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.128); dois workers nunca pegam a mesma linha. Provado em tests/ass-08-channel-db.test.ts (T-OBX-db-1, T-OBX-db-3 e o vermelho-controle: sem GUC a tabela devolve zero) sob papel NOSUPERUSER NOBYPASSRLS.",
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×7"),
+    "B-ASS-08 / R-OBX-5 + 2º conserto (E5″/E4): os 7 acessos a billing_outbox (FORCE) do claim — o pick da órfã e o dos outros tipos (`FOR UPDATE SKIP LOCKED LIMIT 1`), a pick conjunta demonstrativo + linha (`FOR NO KEY UPDATE OF s SKIP LOCKED FOR UPDATE OF o SKIP LOCKED`), o `EXISTS` da própria fila (outra charge_create no conjunto vivo do D1) na releitura e os 3 `UPDATE … WHERE id = $1` (PROCESSING | SKIPPED + skip_reason | NEEDS_REVIEW + last_error) — rodam, organização a organização, no MESMO callback de `withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, …)`, cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.128); dois workers nunca pegam a mesma linha nem duas linhas do mesmo demonstrativo. Provado em tests/ass-08-channel-db.test.ts (T-OBX-db-1, T-OBX-db-3 e o vermelho-controle: sem GUC a tabela devolve zero) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
   [
-    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
-    "B-ASS-08 / R-OBX-5 (conserto J-522): releitura do demonstrativo (`SELECT s.status, s.reopened_at … FROM subscription_statements s WHERE s.id = $1`) na MESMA transação do claim (`withTenantRlsBudget`, GUC setado na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização da linha reclamada — pago/cancelado/reaberto/refechado → SKIPPED, nunca sai. Provado em T-OBX-db-3 sob papel NOSUPERUSER NOBYPASSRLS (sem GUC o demonstrativo seria invisível e a linha iria a NEEDS_REVIEW statement_not_found, nunca a PROCESSING).",
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "B-ASS-08 / R-OBX-5 + 2º conserto (E5″): a trava do demonstrativo na pick conjunta (`FOR NO KEY UPDATE OF s SKIP LOCKED`, o demonstrativo antes da linha da fila — regra §2.1) e a releitura do demonstrativo (`SELECT s.status, s.reopened_at … WHERE s.id = $1`), na MESMA transação do claim (`withTenantRlsBudget`, GUC setado na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização da linha reclamada — demonstrativo ocupado é pulado sem espera; pago/cancelado/reaberto/refechado → SKIPPED, nunca sai. Provado em T-OBX-db-1 e T-OBX-db-3 sob papel NOSUPERUSER NOBYPASSRLS (sem GUC o demonstrativo seria invisível e a linha nunca seria reclamada).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "2º conserto do #522 (E5″, §14.2): os dois `set_config('enable_nestloop', …, true)` da trava de plano — `SELECT current_setting('enable_nestloop'), set_config('enable_nestloop', 'off', true)` antes da pick conjunta e `SELECT set_config('enable_nestloop', $1, true)` devolvendo o valor de antes — são parâmetros LOCAIS do planejador nesta transação; não leem nem escrevem tabela nenhuma (nem FORCE).",
   ],
   [
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.claimNext", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),

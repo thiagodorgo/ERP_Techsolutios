@@ -1,17 +1,28 @@
 // B-ASS-08 · F11 — o repositório Prisma da outbox (`billing_outbox`, FORCE RLS). Implementa a MESMA porta do dublê,
 // agora tenant-scoped (decisão do orquestrador):
 //
-//   - `enqueue`/`listByStatement`: `withTenantRls(tenantId)` — a linha nasce/é lida sob o GUC da organização.
+//   - `enqueue`/`listByStatement`: `withTenantRls(tenantId)` — a linha nasce/é lida sob o GUC da organização. As funções
+//     `enqueueInTx`/`listByStatementInTx` fazem o MESMO SQL sobre um `tx` já aberto (o pedido de cobrança, E8).
 //   - `claimNext`: POR ORGANIZAÇÃO (plano §3.8). Itera as organizações de `billing_statement_refs` (tabela GLOBAL,
-//     legível pelo papel de runtime), e em cada uma abre `withTenantRlsBudget` com TRÊS passos na MESMA transação:
-//     (1) `SELECT … FOR UPDATE SKIP LOCKED LIMIT 1` trava a candidata (dois workers nunca pegam a mesma linha);
-//     (2) PENDING `charge_create` → RELÊ `subscription_statements` + cobrança viva (`subscription_statement_charges` e
-//         a própria fila) sob o MESMO GUC e aplica `params.verdict` (R-OBX-5, D2 — conserto J-522); a órfã só reconsulta;
-//     (3) `UPDATE` → PROCESSING (elegível/órfã) | SKIPPED + `skip_reason` | NEEDS_REVIEW + `last_error`.
-//     As três tabelas são FORCE RLS da mesma organização. O `fetch` ao provedor é FORA de transação (o dispatcher),
-//     nunca aqui (R-OBX-1).
+//     legível pelo papel de runtime), e em cada uma abre `withTenantRlsBudget`, numa transação só:
+//     (1) a ÓRFÃ (PROCESSING vencida): `FOR UPDATE SKIP LOCKED LIMIT 1`, sem trava do demonstrativo e sem política (E3);
+//     (2) a PENDING `charge_create` (E5″, 2º conserto do #522): o demonstrativo e a linha numa instrução só, o
+//         demonstrativo PRIMEIRO, as duas cláusulas com SKIP LOCKED — o executor pula, dentro da própria instrução, toda
+//         candidata cujo demonstrativo está travado (baixa, fechamento, pedido em voo), sem laço nem lista de adiadas, e
+//         o claim nunca espera; `enable_nestloop = off` local à instrução impede a junção quadrática com estatística velha;
+//     (3) a RELEITURA no comando seguinte (E4): demonstrativo + cobrança viva sob o MESMO GUC, com a irmã viva = o conjunto
+//         do D1 (PENDING/PROCESSING/SENT/NEEDS_REVIEW), e a política `params.verdict` (R-OBX-5, D2);
+//     (4) as PENDING dos outros tipos (`invoice_*` da 08b): pick próprio, sem trava do demonstrativo;
+//     e o `UPDATE` → PROCESSING (elegível/órfã) | SKIPPED + `skip_reason` | NEEDS_REVIEW + `last_error`.
+//     As tabelas são FORCE RLS da mesma organização. O `fetch` ao provedor é FORA de transação (o dispatcher), nunca
+//     aqui (R-OBX-1).
 //   - mutações por id: `withTenantRlsBudget(tenantId)` (transação curta do registro — G8).
 //   - `markDisabledProvidersVisible`/`listByStatus`: PLATAFORMA sobre tabela FORCE → `forEachTenantRls`.
+//
+// REGRA DE ORDEM DAS TRAVAS (§2.1 do plano do 2º conserto, com a §14.2; provada pelo T-LOCK-2): quem trava o demonstrativo
+// trava-o PRIMEIRO e só depois as linhas da fila ou as cobranças (pedido, retry, fechamento, baixa, cancelamento, D2 (i)
+// e `charge/cancel` da 08b). O claim trava o demonstrativo e a linha da fila numa instrução só, o demonstrativo primeiro,
+// as duas com SKIP LOCKED (nunca espera). Nenhuma transação segura uma linha da fila e espera o demonstrativo.
 
 import type { Prisma, PrismaClient } from "@prisma/client";
 
@@ -20,6 +31,7 @@ import type { ClaimParams, ClaimResult, OutboxRepository } from "./outbox.reposi
 import {
   idempotencyKeyOf,
   type BillingOutboxRow,
+  type ClaimVerdict,
   type NewOutboxRow,
   type OutboxSkipReason,
   type OutboxStatus,
@@ -121,6 +133,19 @@ export async function listByStatementInTx(tx: Prisma.TransactionClient, statemen
 
 const CLAIM_BUDGET = { maxWait: 5_000, timeout: 30_000, lockTimeoutMs: 5_000, statementTimeoutMs: 10_000 } as const;
 
+/** E5″ (2º conserto do #522, §14.2): a pick conjunta das PENDING `charge_create` — o demonstrativo e a linha numa instrução
+ * só, o demonstrativo PRIMEIRO (o LockRows trava na ordem das cláusulas: a candidata pulada não fica com trava nenhuma na
+ * fila), as duas cláusulas com SKIP LOCKED (o claim nunca espera trava). Os filtros de `o` ficam AQUI, onde o
+ * EvalPlanQual os reconfere na versão travada: uma linha que outro worker já reclamou e commitou sai do resultado. */
+const CHARGE_CREATE_JOINT_PICK_SQL = `SELECT o.* FROM subscription_statements s
+       JOIN billing_outbox o ON o.statement_id = s.id AND o.tenant_id = s.tenant_id
+      WHERE o.provider = ANY($1::text[]) AND o.kind = 'charge_create' AND o.status = 'PENDING'
+        AND (o.next_attempt_at IS NULL OR o.next_attempt_at <= $2)
+      ORDER BY o.occurred_at ASC, o.id ASC
+      FOR NO KEY UPDATE OF s SKIP LOCKED
+      FOR UPDATE OF o SKIP LOCKED
+      LIMIT 1`;
+
 export class PrismaOutboxRepository implements OutboxRepository {
   constructor(private readonly client: PrismaClient) {}
 
@@ -140,71 +165,99 @@ export class PrismaOutboxRepository implements OutboxRepository {
     const orphanCutoff = new Date(params.now.getTime() - params.orphanMs);
     for (const tenantId of await this.#tenantsWithRefs()) {
       const claimed = await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
-        // (1) escolhe e TRAVA a candidata (a mesma seleção de sempre, agora como passo próprio): órfã primeiro, depois a
-        // PENDING vencida mais antiga de provedor LIGADO. SKIP LOCKED: dois workers nunca pegam a mesma linha.
-        const picked = (await tx.$queryRawUnsafe(
+        // Sem função interna aqui: o desfecho é um trecho só, no fim, para as três escolhas.
+        let target: BillingOutboxRow;
+        let verdict: ClaimVerdict = { kind: "eligible" };
+        let wasOrphan = false;
+
+        // (1) ÓRFÃ primeiro (PROCESSING parada além do limite): sem trava do demonstrativo e sem política — o despacho só
+        //     reconsulta por referência e nunca cria (E3 do 1º conserto).
+        const orphans = (await tx.$queryRawUnsafe(
           `SELECT * FROM billing_outbox
-             WHERE provider = ANY($1::text[])
-               AND ( (status = 'PENDING' AND (next_attempt_at IS NULL OR next_attempt_at <= $2))
-                     OR (status = 'PROCESSING' AND attempt_started_at <= $3) )
-             ORDER BY (status = 'PROCESSING') DESC, occurred_at ASC
+             WHERE provider = ANY($1::text[]) AND status = 'PROCESSING' AND attempt_started_at <= $2
+             ORDER BY occurred_at ASC, id ASC
              FOR UPDATE SKIP LOCKED
              LIMIT 1`,
           params.enabledProviders,
-          params.now,
           orphanCutoff,
         )) as Row[];
-        if (picked.length === 0) return null;
-        const target = toDomain(picked[0]!);
-        const wasOrphan = target.status === "PROCESSING";
-
-        if (!wasOrphan) {
-          // (2) PENDING: RELÊ o demonstrativo e a cobrança viva sob o MESMO GUC (as três tabelas são FORCE RLS da mesma
-          // organização) e aplica a política injetada (R-OBX-5). A órfã não passa por aqui — só reconsulta (E3).
-          let snapshot: StatementClaimSnapshot | undefined;
-          if (target.kind === "charge_create") {
+        if (orphans.length > 0) {
+          target = toDomain(orphans[0]!);
+          wasOrphan = true;
+        } else {
+          // (2) E5″ — PENDING `charge_create`: o demonstrativo e a linha numa instrução só (CHARGE_CREATE_JOINT_PICK_SQL).
+          //     `billing_outbox.statement_id` não tem índice: com estatística velha o planejador escolhia laço aninhado
+          //     (quadrático; medido: 10,3 s em N = 6 500). `enable_nestloop = off` LOCAL, só nesta instrução, com o valor de
+          //     antes devolvido logo depois: a junção de igualdade vira hash (linear).
+          const planner = (await tx.$queryRawUnsafe(
+            `SELECT current_setting('enable_nestloop') AS previous, set_config('enable_nestloop', 'off', true) AS applied`,
+          )) as Array<{ previous: string }>;
+          const picked = (await tx.$queryRawUnsafe(CHARGE_CREATE_JOINT_PICK_SQL, params.enabledProviders, params.now)) as Row[];
+          await tx.$queryRawUnsafe(`SELECT set_config('enable_nestloop', $1, true)`, planner[0]!.previous);
+          if (picked.length > 0) {
+            target = toDomain(picked[0]!);
+            // (3) E4 — RELÊ, no comando SEGUINTE (a foto depois da concessão) e sob o MESMO GUC, o demonstrativo e a
+            //     cobrança viva, com a irmã viva = o conjunto do D1 (PENDING/PROCESSING/SENT/NEEDS_REVIEW), e aplica a
+            //     política injetada (R-OBX-5).
             const statements = (await tx.$queryRawUnsafe(
               `SELECT s.status, s.reopened_at,
                       ( EXISTS (SELECT 1 FROM subscription_statement_charges c
                                  WHERE c.statement_id = s.id AND c.status IN ('pending', 'confirmed'))
                         OR EXISTS (SELECT 1 FROM billing_outbox o2
                                     WHERE o2.statement_id = s.id AND o2.kind = 'charge_create' AND o2.id <> $2::uuid
-                                      AND o2.status IN ('SENT', 'PROCESSING')) ) AS has_live_charge
+                                      AND o2.status IN ('PENDING', 'PROCESSING', 'SENT', 'NEEDS_REVIEW')) ) AS has_live_charge
                  FROM subscription_statements s
                  WHERE s.id = $1::uuid`,
               target.statementId,
               target.id,
             )) as Array<{ status: string; reopened_at: Date | null; has_live_charge: boolean }>;
             const statement = statements[0];
-            snapshot = statement
+            const snapshot: StatementClaimSnapshot | undefined = statement
               ? { status: statement.status as StatementClaimSnapshot["status"], reopenedAt: statement.reopened_at, hasLiveCharge: statement.has_live_charge }
               : undefined;
-          }
-          const verdict = params.verdict(target, snapshot);
-          if (verdict.kind === "skip") {
-            // Sem `attempts`, sem `claimed_*`: a linha não foi tentada — foi descartada pela política.
-            const rows = (await tx.$queryRawUnsafe(
-              `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = $2, next_attempt_at = NULL, updated_at = $3
-                 WHERE id = $1::uuid RETURNING *`,
-              target.id,
-              verdict.skipReason,
+            verdict = params.verdict(target, snapshot);
+          } else {
+            // (4) PENDING dos outros tipos (`invoice_*` da 08b): pick próprio, sem trava do demonstrativo e sem releitura
+            //     (a política os deixa `eligible`, como antes).
+            const others = (await tx.$queryRawUnsafe(
+              `SELECT * FROM billing_outbox
+                 WHERE provider = ANY($1::text[]) AND kind <> 'charge_create' AND status = 'PENDING'
+                   AND (next_attempt_at IS NULL OR next_attempt_at <= $2)
+                 ORDER BY occurred_at ASC, id ASC
+                 FOR UPDATE SKIP LOCKED
+                 LIMIT 1`,
+              params.enabledProviders,
               params.now,
             )) as Row[];
-            return { kind: "skipped", row: toDomain(rows[0]!), skipReason: verdict.skipReason } satisfies ClaimResult;
-          }
-          if (verdict.kind === "needs_review") {
-            const rows = (await tx.$queryRawUnsafe(
-              `UPDATE billing_outbox SET status = 'NEEDS_REVIEW', last_error = $2, next_attempt_at = NULL, updated_at = $3
-                 WHERE id = $1::uuid RETURNING *`,
-              target.id,
-              verdict.code,
-              params.now,
-            )) as Row[];
-            return { kind: "needs_review", row: toDomain(rows[0]!), code: verdict.code } satisfies ClaimResult;
+            if (others.length === 0) return null;
+            target = toDomain(others[0]!);
+            verdict = params.verdict(target, undefined);
           }
         }
 
-        // (3) elegível ou órfã → PROCESSING (o UPDATE de sempre).
+        if (verdict.kind === "skip") {
+          // Sem `attempts`, sem `claimed_*`: a linha não foi tentada — foi descartada pela política.
+          const rows = (await tx.$queryRawUnsafe(
+            `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = $2, next_attempt_at = NULL, updated_at = $3
+               WHERE id = $1::uuid RETURNING *`,
+            target.id,
+            verdict.skipReason,
+            params.now,
+          )) as Row[];
+          return { kind: "skipped", row: toDomain(rows[0]!), skipReason: verdict.skipReason } satisfies ClaimResult;
+        }
+        if (verdict.kind === "needs_review") {
+          const rows = (await tx.$queryRawUnsafe(
+            `UPDATE billing_outbox SET status = 'NEEDS_REVIEW', last_error = $2, next_attempt_at = NULL, updated_at = $3
+               WHERE id = $1::uuid RETURNING *`,
+            target.id,
+            verdict.code,
+            params.now,
+          )) as Row[];
+          return { kind: "needs_review", row: toDomain(rows[0]!), code: verdict.code } satisfies ClaimResult;
+        }
+
+        // (5) elegível ou órfã → PROCESSING (o UPDATE de sempre).
         const rows = (await tx.$queryRawUnsafe(
           `UPDATE billing_outbox
              SET status = 'PROCESSING', claimed_at = $2, claimed_by = $3, attempt_started_at = $2,

@@ -118,15 +118,32 @@ if (!connectionString) {
     return Boolean(error && typeof error === "object" && (error as { code?: unknown }).code === "P2028");
   }
 
-  async function seedOutboxRow(tenantId: string, statementId: string, seq: number): Promise<string> {
+  async function seedOutboxRow(tenantId: string, statementId: string, seq: number, provider = "asaas"): Promise<string> {
     const rows = (await db.$queryRawUnsafe(
       `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, occurred_at)
-       VALUES ($1::uuid, $2::uuid, 'charge_create', 'asaas', $3, gen_random_uuid(), now()) RETURNING id`,
+       VALUES ($1::uuid, $2::uuid, 'charge_create', $4, $3, gen_random_uuid(), now()) RETURNING id`,
       tenantId,
       statementId,
       `charge_create:${statementId}:${seq}`,
+      provider,
     )) as Array<{ id: string }>;
     return rows[0]!.id;
+  }
+
+  /** Provedor ÚNICO por teste: o claim só enxerga `enabledProviders`, então cada teste vê só as PRÓPRIAS linhas, mesmo com
+   * as linhas dos outros testes desta base ainda PENDING (`billing_outbox.provider` é TEXT sem CHECK). */
+  const uniqueProvider = (slug: string): string => `asaas-${slug}-${randomUUID().slice(0, 8)}`;
+
+  const claimParamsFor = (provider: string, claimedBy: string) =>
+    ({ enabledProviders: [provider], now: new Date(), claimedBy, orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict }) as const;
+
+  type OutboxDbRow = { id: string; status: string; attempts: number; last_error: string | null; claimed_at: Date | null; statement_id: string };
+  async function outboxRows(ids: readonly string[]): Promise<Map<string, OutboxDbRow>> {
+    const rows = (await db.$queryRawUnsafe(
+      `SELECT id, status, attempts, last_error, claimed_at, statement_id FROM billing_outbox WHERE id = ANY($1::uuid[])`,
+      [...ids],
+    )) as OutboxDbRow[];
+    return new Map(rows.map((row) => [row.id, row]));
   }
 
   after(async () => {
@@ -164,27 +181,43 @@ if (!connectionString) {
     }
   });
 
-  test("T-OBX-db-1: dois workers com FOR UPDATE SKIP LOCKED pegam linhas DISTINTAS (papel sem bypass)", async () => {
-    const { tenantId, statementId } = await seedStatement(`ass08-obx-${randomUUID().slice(0, 8)}`);
-    await seedOutboxRow(tenantId, statementId, 1);
-    await seedOutboxRow(tenantId, statementId, 2);
+  // 2º conserto do #522 (E10, critério 4): o T-OBX-db-1 prova SÓ o que o nome diz — duas linhas de demonstrativos
+  // DIFERENTES, duas sessões que chegam juntas ao UPDATE (barreira), linhas distintas. O par do MESMO demonstrativo (que
+  // este teste exigia como "claimed × claimed" — o par que cobra em dobro) virou o T-OBX-db-4, com a expectativa invertida.
+  test("T-OBX-db-1 (E10): dois workers com SKIP LOCKED, em demonstrativos DIFERENTES da mesma organização, chegam juntos ao UPDATE e reclamam linhas DISTINTAS, as duas PROCESSING (papel sem bypass)", async () => {
+    const provider = uniqueProvider("obx1");
+    const { tenantId, statementId: first } = await seedStatement(`ass08-obx-${randomUUID().slice(0, 8)}`, { period: "2026-10" });
+    const second = await seedStatementFor(tenantId, { period: "2026-09" });
+    const ids = [await seedOutboxRow(tenantId, first, 1, provider), await seedOutboxRow(tenantId, second, 1, provider)];
     const w1 = await createEphemeralRole(db, targetUrl);
     const w2 = await createEphemeralRole(db, targetUrl);
+    const holder = await openHolder();
+    const inflight: Promise<unknown>[] = [];
     try {
-      const r1 = new PrismaOutboxRepository(w1.client);
-      const r2 = new PrismaOutboxRepository(w2.client);
-      const params = { enabledProviders: ["asaas"], now: new Date(), orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict } as const;
-      const [a, b] = await Promise.all([
-        r1.claimNext({ ...params, claimedBy: "w1" }),
-        r2.claimNext({ ...params, claimedBy: "w2" }),
-      ]);
-      assert.ok(a && b, "ambos reclamam uma linha");
-      assert.equal(a!.kind, "claimed", "demonstrativo closed sem cobrança viva → elegível");
-      assert.equal(b!.kind, "claimed");
-      assert.notEqual(a!.row.id, b!.row.id, "SKIP LOCKED: linhas distintas, nunca a mesma");
-      assert.equal(a!.row.status, "PROCESSING");
-      assert.equal(b!.row.status, "PROCESSING");
+      // Barreira determinística: com a relação travada em SHARE ROW EXCLUSIVE, o pick (ROW SHARE) passa e o UPDATE
+      // (ROW EXCLUSIVE) espera — as duas sessões chegam ao UPDATE antes de qualquer COMMIT.
+      await holder.query(`LOCK TABLE billing_outbox IN SHARE ROW EXCLUSIVE MODE`);
+      const a = settled(new PrismaOutboxRepository(w1.client).claimNext(claimParamsFor(provider, "w1")));
+      const b = settled(new PrismaOutboxRepository(w2.client).claimNext(claimParamsFor(provider, "w2")));
+      inflight.push(a, b);
+      await waitUntil("as duas sessões no UPDATE, esperando a relação travada pelo arnês", async () => {
+        const waiters = await lockWaiters([w1.roleName, w2.roleName]);
+        return waiters.length === 2 && waiters.every((waiter) => waiter.wait_event === "relation" && waiter.blockers.includes(holder.pid));
+      });
+      await holder.commit();
+      const [ra, rb] = await Promise.all([a, b]);
+      assert.ok(ra.ok && rb.ok, `os dois claims terminam (vieram: ${[ra, rb].map((o) => (o.ok ? "ok" : describeError(o.error))).join(" + ")})`);
+      const ca = ra.value as ClaimResult | null;
+      const cb = rb.value as ClaimResult | null;
+      assert.equal(ca?.kind, "claimed", "demonstrativo closed sem cobrança viva → elegível");
+      assert.equal(cb?.kind, "claimed");
+      assert.notEqual(ca!.row.id, cb!.row.id, "SKIP LOCKED: linhas distintas, nunca a mesma");
+      assert.notEqual(ca!.row.statementId, cb!.row.statementId, "uma linha por demonstrativo");
+      const persisted = await outboxRows(ids);
+      assert.deepEqual(ids.map((id) => persisted.get(id)?.status), ["PROCESSING", "PROCESSING"]);
     } finally {
+      await holder.rollback();
+      await Promise.all(inflight);
       await w1.drop();
       await w2.drop();
     }

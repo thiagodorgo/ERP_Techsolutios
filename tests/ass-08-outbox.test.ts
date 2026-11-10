@@ -22,6 +22,7 @@ import type {
 } from "../src/modules/subscription-billing/providers/payment/payment-provider.port.js";
 
 const STMT = "11111111-1111-1111-1111-111111111111";
+const STMT_2 = "11111111-1111-1111-1111-222222222222";
 const TENANT = "22222222-2222-2222-2222-222222222222";
 
 /** Leitor do demonstrativo para os testes que NÃO medem R-OBX-5: um `closed` sem cobrança viva — stub EXPLÍCITO (o dublê
@@ -219,8 +220,10 @@ test("R-OBX-4 provedor desligado NÃO é alcançado (T-OBX-12): 0 chamada ao Asa
   const now = new Date("2026-12-01T12:00:00Z");
   const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
   const { row: asaasRow } = await enqueueCharge(repo, now, 1, "asaas"); // Asaas DESLIGADO
+  // 2º conserto (E4): a linha do Mercado Pago vai para OUTRO demonstrativo — duas `charge_create` vivas do MESMO
+  // demonstrativo violam o D1 e iriam as duas a revisão; o teste mede R-OBX-4, não o par proibido.
   const { row: focusRow } = await repo.enqueue(
-    { tenantId: TENANT, statementId: STMT, kind: "charge_create", provider: "mercadopago", seq: 2, payload: { customerId: "c", amountCents: 100, dueDate: "2026-12-10", method: "pix" } },
+    { tenantId: TENANT, statementId: STMT_2, kind: "charge_create", provider: "mercadopago", seq: 2, payload: { customerId: "c", amountCents: 100, dueDate: "2026-12-10", method: "pix" } },
     now,
   );
   const mp = new RecordingPort();
@@ -233,6 +236,23 @@ test("R-OBX-4 provedor desligado NÃO é alcançado (T-OBX-12): 0 chamada ao Asa
   assert.equal(asaas?.skipReason, "provider_disabled");
   const focus = await repo.findById(TENANT, focusRow.id);
   assert.equal(focus?.status, "SENT");
+});
+
+test("E4 (critério 2): duas charge_create PENDING do MESMO demonstrativo → as DUAS vão a NEEDS_REVIEW charge_already_exists, com attempts 0, e 0 createCharge (T-OBX-18)", async () => {
+  // O par proibido do D1. Antes do 2º conserto a irmã viva era só SENT/PROCESSING: a 1ª linha saía (a irmã PENDING não
+  // contava) e a 2ª ia a revisão só DEPOIS da 1ª cobrança — no Postgres, dois workers davam 2 `createCharge`.
+  const now = new Date("2026-12-01T12:00:00Z");
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
+  const { row: first } = await enqueueCharge(repo, now, 1);
+  const { row: second } = await enqueueCharge(repo, now, 2);
+  const port = new RecordingPort();
+  const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver, ports: { asaas: port }, now: () => now });
+  assert.equal(port.created.length, 0, "duas vivas do mesmo demonstrativo: NENHUMA cobrança sai");
+  assert.equal(result.outcomes.needs_review, 2);
+  for (const id of [first.id, second.id]) {
+    const row = await repo.findById(TENANT, id);
+    assert.deepEqual([row?.status, row?.lastError, row?.attempts], ["NEEDS_REVIEW", "charge_already_exists", 0], `linha ${id}`);
+  }
 });
 
 test("429 → reschedule com next_attempt_at = now + retryAfter, sem FAILED", async () => {

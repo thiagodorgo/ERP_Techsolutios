@@ -23,7 +23,8 @@ export type OutboxSkipReason =
 /**
  * R-OBX-5 (D2): o que o claim RELÊ do demonstrativo, na transação do claim, antes de liberar uma `charge_create`.
  * `hasLiveCharge` = já existe cobrança viva (`pending`/`confirmed` em `subscription_statement_charges`) OU outra
- * `charge_create` do mesmo demonstrativo em `SENT`/`PROCESSING` na própria fila.
+ * `charge_create` do mesmo demonstrativo VIVA na própria fila — o conjunto do D1: `PENDING`/`PROCESSING`/`SENT`/
+ * `NEEDS_REVIEW` (E4, 2º conserto do #522; antes era só `SENT`/`PROCESSING`, o que deixava duas vivas saírem as duas).
  */
 export type StatementClaimSnapshot = {
   readonly status: StatementStatus;

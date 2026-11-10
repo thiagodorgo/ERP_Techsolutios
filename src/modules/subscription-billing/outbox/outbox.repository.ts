@@ -1,7 +1,8 @@
 // B-ASS-08 · F1 — porta de persistência da outbox + dublê em memória. O Prisma (F10/F11) implementa a mesma porta:
-// `claimNext` trava a linha (`SELECT … FOR UPDATE SKIP LOCKED LIMIT 1`), RELÊ o demonstrativo e aplica a política de
-// elegibilidade (`ClaimParams.verdict`, R-OBX-5) na MESMA transação curta, e só então grava PROCESSING / SKIPPED /
-// NEEDS_REVIEW. O dublê serializa os claims (uma fila global) para reproduzir o SKIP LOCKED sem corrida.
+// `claimNext` trava o demonstrativo e a linha numa instrução só (E5″, 2º conserto do #522), RELÊ o demonstrativo e aplica
+// a política de elegibilidade (`ClaimParams.verdict`, R-OBX-5) na MESMA transação curta, e só então grava PROCESSING /
+// SKIPPED / NEEDS_REVIEW. O dublê serializa os claims (uma fila global) para reproduzir o SKIP LOCKED sem corrida, e
+// escolhe na MESMA ordem do Prisma (órfã, `charge_create`, outros tipos); ele não emula a trava do demonstrativo.
 
 import { randomUUID } from "node:crypto";
 
@@ -40,8 +41,9 @@ export type ClaimResult =
 export interface OutboxRepository {
   /** `INSERT … ON CONFLICT (idempotency_key) DO NOTHING` — devolve a existente se já houver. */
   enqueue(input: NewOutboxRow, now: Date): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }>;
-  /** Transação curta do claim: escolhe a linha mais antiga elegível (PROCESSING órfã primeiro, depois PENDING vencida de
-   * provedor ligado). Órfã → PROCESSING (só reconsulta). PENDING → relê o demonstrativo e aplica `params.verdict`:
+  /** Transação curta do claim: escolhe a linha mais antiga elegível (PROCESSING órfã primeiro, depois PENDING
+   * `charge_create` vencida de provedor ligado cujo demonstrativo NÃO está travado — pula, sem esperar, a de demonstrativo
+   * ocupado (E5″) —, depois os outros tipos). Órfã → PROCESSING (só reconsulta). PENDING → relê o demonstrativo e aplica `params.verdict`:
    * `eligible` → PROCESSING; `skip` → SKIPPED + `skip_reason` (sem `attempts`, sem `claimed_*`); `needs_review` →
    * NEEDS_REVIEW + `last_error`. `null` se nada elegível. NUNCA faz rede. */
   claimNext(params: ClaimParams): Promise<ClaimResult | null>;
@@ -148,20 +150,19 @@ export class InMemoryOutboxRepository implements OutboxRepository {
       .sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime());
 
     const orphanCutoff = nowMs - params.orphanMs;
-    // Órfã primeiro (crash entre chamada e registro): PROCESSING parada além do limite.
+    // (1) Órfã primeiro (crash entre chamada e registro): PROCESSING parada além do limite.
     const orphan = candidates.find(
       (row) => row.status === "PROCESSING" && (row.attemptStartedAt?.getTime() ?? 0) <= orphanCutoff,
     );
-    const target =
-      orphan ??
-      candidates.find(
-        (row) => row.status === "PENDING" && (row.nextAttemptAt === null || row.nextAttemptAt.getTime() <= nowMs),
-      );
-    if (!target) return null;
-    if (target.status === "PROCESSING") {
+    if (orphan) {
       // Órfã: NÃO aplica a política — a recuperação só reconsulta por referência e nunca cria cobrança (E3).
-      return { kind: "claimed", row: this.#toProcessing(target, params), wasOrphan: true };
+      return { kind: "claimed", row: this.#toProcessing(orphan, params), wasOrphan: true };
     }
+    // (2) A MESMA ordem do Prisma (E5″): PENDING `charge_create` primeiro, depois os outros tipos; em cada grupo, a mais
+    //     antiga. O dublê não emula a trava do demonstrativo (já serializa os claims); a prova dela está nos `-db`.
+    const due = (row: BillingOutboxRow) => row.status === "PENDING" && (row.nextAttemptAt === null || row.nextAttemptAt.getTime() <= nowMs);
+    const target = candidates.find((row) => row.kind === "charge_create" && due(row)) ?? candidates.find((row) => row.kind !== "charge_create" && due(row));
+    if (!target) return null;
 
     // PENDING: relê o demonstrativo NA MESMA seção crítica do claim e aplica a política (R-OBX-5).
     const snapshot = target.kind === "charge_create" ? await this.#readSnapshot(target) : undefined;
@@ -194,7 +195,8 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     return claimed;
   }
 
-  /** O snapshot do demonstrativo para a política: o leitor injetado + a própria fila (outra `charge_create` viva). */
+  /** O snapshot do demonstrativo para a política: o leitor injetado + a própria fila (outra `charge_create` VIVA — o conjunto
+   * do D1: PENDING/PROCESSING/SENT/NEEDS_REVIEW, E4 do 2º conserto). */
   async #readSnapshot(target: BillingOutboxRow): Promise<StatementClaimSnapshot | undefined> {
     const read = await this.readStatement(target.tenantId, target.statementId);
     if (!read) return undefined;
@@ -204,7 +206,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
         row.tenantId === target.tenantId &&
         row.statementId === target.statementId &&
         row.kind === "charge_create" &&
-        (row.status === "SENT" || row.status === "PROCESSING"),
+        (row.status === "PENDING" || row.status === "PROCESSING" || row.status === "SENT" || row.status === "NEEDS_REVIEW"),
     );
     return { status: read.status, reopenedAt: read.reopenedAt, hasLiveCharge: (read.hasLiveCharge ?? false) || liveInQueue };
   }
