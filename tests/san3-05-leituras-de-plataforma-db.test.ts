@@ -981,11 +981,11 @@ if (!connectionString) {
 
       await t.test("T11d · controles (já por organização): iguais nos dois papéis", () => {
         assert.equal((sup.s4Alocacoes as unknown[]).length, 2);
-        assert.deepEqual(efe.s4Alocacoes, sup.s4Alocacoes);
+        assert.deepEqual(canonico(efe.s4Alocacoes), canonico(sup.s4Alocacoes));
         assert.equal((sup.s4Overview as unknown[]).length, 2, "as duas organizações do seed aparecem no overview");
-        assert.deepEqual(efe.s4Overview, sup.s4Overview);
+        assert.deepEqual(canonico(efe.s4Overview), canonico(sup.s4Overview));
         assert.equal((sup.s4Daily as { daily: unknown[] }).daily.length, 1);
-        assert.deepEqual(efe.s4Daily, sup.s4Daily);
+        assert.deepEqual(canonico(efe.s4Daily), canonico(sup.s4Daily));
       });
 
       await t.test("T11e · cada rota FORCE tem cenário próprio, não vazio e igual nos dois papéis", () => {
@@ -995,7 +995,7 @@ if (!connectionString) {
           .sort();
         assert.deepEqual(Object.keys(sup.rotas).sort(), forceEnumeradas, "FORCE enumerado != diferenciais executados sob super");
         assert.deepEqual(Object.keys(efe.rotas).sort(), forceEnumeradas, "FORCE enumerado != diferenciais executados sob efêmero");
-        for (const chave of forceEnumeradas) assert.deepEqual(efe.rotas[chave], sup.rotas[chave], chave);
+        for (const chave of forceEnumeradas) assert.deepEqual(canonico(efe.rotas[chave]), canonico(sup.rotas[chave]), chave);
       });
 
       await t.test("T11f · job.registry fecha 8 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
@@ -1009,7 +1009,7 @@ if (!connectionString) {
         assert.equal(foraDaSuperficie.length, 9, "os demais jobs pertencem à pendência B-ARNES-2");
         assert.deepEqual(Object.keys(sup.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob super");
         assert.deepEqual(Object.keys(efe.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob efêmero");
-        for (const chave of forceEnumerados) assert.deepEqual(efe.jobs[chave], sup.jobs[chave], chave);
+        for (const chave of forceEnumerados) assert.deepEqual(canonico(efe.jobs[chave]), canonico(sup.jobs[chave]), chave);
       });
 
       await t.test("T11g · a superfície de /api/v1/platform lida do router em runtime == a lista fechada, com o FORCE de cada tabela conferido", async () => {
@@ -1142,6 +1142,15 @@ function roteado(alvo: { atual: PrismaClient }): PrismaClient {
       return property in (alvo.atual as object);
     },
   });
+}
+
+/** Igualdade de CONJUNTO: a ordem das listas que o app devolve não é estável entre as duas voltas (no CI do #523, run
+ * 42734958946, T11d/T11e falharam só com os dois tenants trocados de posição — `allocatedCost 10/30`). Ordena cada lista,
+ * recursivamente, pela forma serializada dos itens; a propriedade real é "o mesmo conjunto", não "a mesma ordem". */
+function canonico(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonico).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, inner]) => [key, canonico(inner)]));
+  return value;
 }
 
 /** Ids, tempos e carimbos de geração variam entre execuções; o resto do corpo tem de ser idêntico. */

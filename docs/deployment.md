@@ -675,6 +675,18 @@ Cloud charge markup rules nao exige variavel de ambiente propria nesta branch. O
 - **Chave perdida:** as credenciais ficam ilegíveis e precisam ser cadastradas de novo na tela, pelo dono. Nada mais
   se perde: o demonstrativo e a baixa manual não dependem do cofre.
 
+### Webhook de cobrança dos provedores (B-ASS-08b)
+
+- A URL pública registrada em cada provedor é `BILLING_WEBHOOK_PUBLIC_BASE_URL` + `/api/v1/webhooks/billing/<provedor>`
+  (ex.: `https://api.exemplo.com.br/api/v1/webhooks/billing/asaas`). Produção com `BILLING_PROVIDERS_ENABLED=true` exige
+  `BILLING_WEBHOOK_PUBLIC_BASE_URL` em `https://` (o boot recusa sem ela).
+- Nenhuma porta nova: o webhook vive na API, antes do parser JSON e de qualquer autenticação nossa. Com o canal desligado a
+  rota responde exatamente como rota inexistente; ligado, só o segredo/assinatura do provedor (lido do cofre) autentica.
+- Os cabeçalhos de segredo dos provedores (`asaas-access-token`, `x-webhook-token`, `x-signature`, …) não vão ao log HTTP: o
+  router os retira antes de passar o pedido adiante e o `pinoHttp` os redige.
+- Os jobs do canal (`billing.*`) só correm no processo com `JOBS_WORKER_ENABLED=true` e canal ligado; desligado, nenhum tick
+  é enfileirado.
+
 ## Operacao (Ω-INFRA-4) — observabilidade, backup, restore, uptime
 
 ### Observabilidade (onde ver log/metrica)
