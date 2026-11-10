@@ -146,16 +146,24 @@ const CHARGE_CREATE_JOINT_PICK_SQL = `SELECT o.* FROM subscription_statements s
       FOR NO KEY UPDATE OF s SKIP LOCKED
       FOR UPDATE OF o SKIP LOCKED
       LIMIT 1`;
+/** Recorte opcional das organizações da varredura de plataforma. Produção não o passa (varre todas); a suíte de banco
+ * compartilhado o usa para não tocar a outbox de outra suíte (o mesmo motivo do `tenantIds` da medição — M-5 do #505). */
+export type PrismaOutboxScope = { readonly tenantIds?: readonly string[] };
 
 export class PrismaOutboxRepository implements OutboxRepository {
-  constructor(private readonly client: PrismaClient) {}
+  constructor(
+    private readonly client: PrismaClient,
+    private readonly scope: PrismaOutboxScope = {},
+  ) {}
 
   /** As organizações candidatas (índice GLOBAL `billing_statement_refs`, sem RLS). */
   async #tenantsWithRefs(): Promise<string[]> {
     const rows = (await this.client.$queryRawUnsafe(
       `SELECT DISTINCT tenant_id FROM billing_statement_refs ORDER BY tenant_id`,
     )) as Array<{ tenant_id: string }>;
-    return rows.map((row) => row.tenant_id);
+    const tenants = rows.map((row) => row.tenant_id);
+    const only = this.scope.tenantIds;
+    return only ? tenants.filter((tenantId) => only.includes(tenantId)) : tenants;
   }
 
   async enqueue(input: NewOutboxRow, now: Date): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }> {
