@@ -27,7 +27,8 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { forEachTenantRls, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
-import type { ClaimParams, ClaimResult, OutboxRepository } from "./outbox.repository.js";
+import type { StatementStatus } from "../statements/statement.types.js";
+import type { AdoptionFacts, ClaimParams, ClaimResult, OutboxRepository } from "./outbox.repository.js";
 import {
   idempotencyKeyOf,
   type BillingOutboxRow,
@@ -353,5 +354,24 @@ export class PrismaOutboxRepository implements OutboxRepository {
 
   async listByStatement(tenantId: string, statementId: string): Promise<readonly BillingOutboxRow[]> {
     return withTenantRls(this.client, tenantId, (tx) => listByStatementInTx(tx, statementId));
+  }
+
+  /** E6′/E7′ (§13.1.2): os fatos da adoção numa leitura só, sob o GUC da organização, sem trava e fora do `fetch` — U (as
+   * outras `charge_create` do demonstrativo, em QUALQUER status) e V (status, reabertura e o total em centavos). */
+  async adoptionFacts(tenantId: string, statementId: string, rowId: string): Promise<AdoptionFacts | undefined> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT s.status, s.reopened_at, round(s.total_amount * 100)::bigint AS total_cents,
+                (SELECT count(*)::int FROM billing_outbox o
+                  WHERE o.statement_id = s.id AND o.kind = 'charge_create' AND o.id <> $2::uuid) AS other_intents
+           FROM subscription_statements s WHERE s.id = $1::uuid`,
+        statementId,
+        rowId,
+      )) as Array<{ status: string; reopened_at: Date | null; total_cents: bigint | number | string; other_intents: number }>;
+      const row = rows[0];
+      return row
+        ? { otherIntents: Number(row.other_intents), status: row.status as StatementStatus, reopenedAt: row.reopened_at, totalCents: Number(row.total_cents) }
+        : undefined;
+    });
   }
 }

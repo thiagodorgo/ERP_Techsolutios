@@ -1,18 +1,25 @@
 // B-ASS-08 · F1 — outbox + dispatcher (claim–chamada–registro). R-OBX-1..4 (plano §4.8, §3.8).
 // Vermelho-controle: o módulo `outbox/**` não existe em origin/main (B-ASS-07 é o head). Tudo em memória, zero rede.
+// 2º conserto do #522 (E6′/E7′, F5): a reconsulta por referência vem SEMPRE antes de criar (depois do gate do perfil), e a
+// cobrança achada só é ADOTADA com fatos que não se apagam (única intenção do demonstrativo e fechamento vigente com o
+// mesmo valor) — também na órfã. T-OBX-17 (braços 1–8 e 11–14), T-OBX-NODEL e o T-OBX-11 com `[STMT, STMT]`.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
 import { InMemoryOutboxRepository, type StatementClaimReader } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
-import { chargeCreateClaimVerdict, runDispatchOutbox, type DispatchAuditEvent } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
+import { chargeCreateClaimVerdict, runDispatchOutbox, type DispatchAuditEvent, type DispatcherDeps } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
+import { InMemoryChargeIntentRepository } from "../src/modules/subscription-billing/charges/charge-intent.repository.js";
+import { profileCustomerResolver, requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
 import { InMemoryStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.repository.js";
 import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
 import { StatementService, type OutboxStatementGuard } from "../src/modules/subscription-billing/statements/statement.service.js";
-import { StatementError } from "../src/modules/subscription-billing/statements/statement.types.js";
+import { StatementError, type SubscriptionStatement } from "../src/modules/subscription-billing/statements/statement.types.js";
+import { InMemoryStatementRefRepository } from "../src/modules/subscription-billing/webhooks/statement-refs.repository.js";
 import { ProviderRateLimitedError } from "../src/modules/subscription-billing/providers/http/billing-errors.js";
 import type {
   ChargeResult,
@@ -33,14 +40,33 @@ const alwaysClosed: StatementClaimReader = async () => ({ status: "closed", reop
  * de `ass-08-charges-profile.test.ts` ligam o `profileCustomerResolver` real. */
 const okResolver = async () => ({ ok: true as const, customerId: "cus_1" });
 
-/** Porta de pagamento falsa que grava cada chamada (o equivalente ao `recorded[]` do servidor falso, sem rede). */
+/** O leitor de um `closed` COM o total (o V da adoção do 2º conserto): o dublê sem total falha fechado. */
+const closedWithTotal = (totalCents: number): StatementClaimReader => async () => ({ status: "closed", reopenedAt: null, hasLiveCharge: false, totalCents });
+
+/** Erro de provedor com o `code` que o adaptador real produz (o dispatcher só lê `code`/`name`). */
+function providerError(code: string): Error {
+  return Object.assign(new Error(code), { code });
+}
+
+/** Porta de pagamento falsa que grava cada chamada (o equivalente ao `recorded[]` do servidor falso, sem rede). Guarda o que
+ * EXISTE no provedor (`stored`, na ordem da listagem do Asaas) e aceita roteiros por chamada: `createScript` ("lost" cria e
+ * PERDE a resposta com `provider_timeout`; "5xx"/"429" falham sem criar), `lookupScript` e `ensureScript` ("5xx"). */
 class RecordingPort implements PaymentProviderPort {
+  /** Toda chamada a `createCharge`, inclusive as que falharam. */
   readonly created: CreateChargeInput[] = [];
   readonly lookups: string[] = [];
+  readonly ensured: string[] = [];
+  readonly stored: Array<{ readonly chargeId: string; readonly ref: string; readonly amountCents: number; readonly status: ChargeResult["status"] }> = [];
   existingByRef: { chargeId: string; status: ChargeResult["status"] } | null = null;
+  /** `createCharge` lança SEM criar. */
   nextError: Error | null = null;
+  readonly createScript: Array<"ok" | "lost" | "5xx" | "429"> = [];
+  readonly lookupScript: Array<"ok" | "5xx"> = [];
+  readonly ensureScript: Array<"ok" | "5xx"> = [];
 
-  async ensureCustomer() {
+  async ensureCustomer(profile: { readonly document: string }) {
+    this.ensured.push(profile.document);
+    if (this.ensureScript.shift() === "5xx") throw providerError("provider_unavailable");
     return { customerId: "cus_1" };
   }
   async createCharge(input: CreateChargeInput): Promise<ChargeResult> {
@@ -49,14 +75,23 @@ class RecordingPort implements PaymentProviderPort {
       const error = this.nextError;
       throw error;
     }
-    return { chargeId: `pay_${this.created.length}`, status: "pending", payUrl: "https://pay.example/x" };
+    const step = this.createScript.shift() ?? "ok";
+    if (step === "5xx") throw providerError("provider_unavailable");
+    if (step === "429") throw new ProviderRateLimitedError(1000);
+    const chargeId = `pay_${this.stored.length + 1}`;
+    this.stored.push({ chargeId, ref: input.externalReference, amountCents: input.amountCents, status: "pending" });
+    if (step === "lost") throw providerError("provider_timeout");
+    return { chargeId, status: "pending", payUrl: "https://pay.example/x" };
   }
   async getCharge() {
     return { status: "pending" as const, raw: {} };
   }
   async findChargeByExternalReference(ref: string) {
     this.lookups.push(ref);
-    return this.existingByRef;
+    if (this.lookupScript.shift() === "5xx") throw providerError("provider_unavailable");
+    if (this.existingByRef) return this.existingByRef;
+    const found = this.stored.find((charge) => charge.ref === ref);
+    return found ? { chargeId: found.chargeId, status: found.status } : null;
   }
   async cancelCharge(chargeId: string) {
     return { chargeId, status: "cancelled" as const };
@@ -116,7 +151,8 @@ test("R-OBX-1 durável e idempotente: enqueue repetido = 1 linha; dispatch cria 
 
 test("R-OBX-1 crash entre chamada e registro: linha PROCESSING órfã reconsulta ANTES de repetir (T-OBX-11)", async () => {
   const start = new Date("2026-12-01T12:00:00Z");
-  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => start });
+  // 2º conserto (E7′): a órfã só adota com o fechamento vigente — o leitor traz o total igual ao payload (19990).
+  const repo = new InMemoryOutboxRepository({ readStatement: closedWithTotal(19990), clock: () => start });
   const { row } = await enqueueCharge(repo, start);
 
   // Simula o crash: a 1ª chamada ao provedor foi feita, a cobrança nasceu no provedor, mas o registro não gravou.
@@ -144,7 +180,8 @@ test("R-OBX-1 crash entre chamada e registro: linha PROCESSING órfã reconsulta
   const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => later, orphanMs: OUTBOX_ORPHAN_MS });
   assert.equal(result.outcomes.recovered, 1);
   assert.equal(port.created.length, before, "reconsulta não cria 2ª cobrança");
-  assert.deepEqual(port.lookups, [STMT]);
+  // E6: a 1ª reconsulta é a de ANTES de criar (1ª rodada); a 2ª, a da órfã.
+  assert.deepEqual(port.lookups, [STMT, STMT]);
   current = await repo.findById(TENANT, row.id);
   assert.equal(current?.status, "SENT");
   assert.equal(current?.externalId, "pay_crashed");
@@ -435,4 +472,270 @@ test("R-OBX-5 linha NEEDS_REVIEW → reopen recusa 422 outbox_needs_review; cobr
   assert.equal(row?.lastError, "charge_already_exists");
   assert.equal(row?.skipReason, null, "sem skip_reason novo: a lista da M5 é fechada");
   assert.deepEqual(c.audits.map((event) => [event.action, event.code]), [["billing_outbox.needs_review", "charge_already_exists"]]);
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// T-OBX-17 — E6′/E7′ (2º conserto do #522, plano §3 critério 3 + §13.1): nenhuma cobrança criada nem adotada às cegas.
+// A reconsulta vem SEMPRE antes de criar (depois do gate do perfil); a cobrança achada só é ADOTADA com U (a linha é a
+// única `charge_create` que o demonstrativo já teve, em qualquer status) e V (fechamento vigente, com o total igual ao
+// valor da linha), e na retentativa só se a própria linha já foi tentada. A órfã aplica a mesma régua.
+// Vermelho-controle: no objeto `807deb7e` não há reconsulta antes de criar (o braço 1 dá 2 `createCharge`) e a órfã adota
+// a fantasma do fechamento desfeito (ATK-8).
+// Mutações literais: M3a (sem a reconsulta antes de criar) → braço 1; M3d′ (a órfã adota sem `adoptionDecision`) →
+// braços 7, 12 e 13; M3e (reconsulta antes do gate do perfil) → braço 6; M3f (U trocado pela régua anterior, irmã
+// "tentada") → braços 11 e 12.
+// ---------------------------------------------------------------------------------------------------------------------
+
+const COMPLETE_PROFILE = {
+  legalName: "Org X",
+  document: "11222333000181",
+  email: "f@x.com",
+  address: { postalCode: "01001000", street: "R", number: "1", district: "C", city: "SP", cityIbge: "3550308", state: "SP" },
+  paymentMethod: "pix" as const,
+};
+
+type ChargeArm = {
+  readonly statements: InMemoryStatementRepository;
+  readonly outbox: InMemoryOutboxRepository;
+  readonly intents: InMemoryChargeIntentRepository;
+  readonly statementId: string;
+  readonly port: RecordingPort;
+  readonly audits: DispatchAuditEvent[];
+};
+
+/** Demonstrativo `closed` com o leitor REAL (status, reabertura e total — o V da adoção). */
+async function chargeArm(t0: Date, options: { readonly totalCents?: number; readonly readerWithTotal?: boolean } = {}): Promise<ChargeArm> {
+  const statements = new InMemoryStatementRepository(() => t0);
+  const charges = new InMemoryStatementChargeRepository();
+  const refs = new InMemoryStatementRefRepository();
+  const outbox = new InMemoryOutboxRepository({
+    readStatement: async (tenantId, statementId) => {
+      const current = await statements.findStatement(tenantId, statementId);
+      if (!current) return undefined;
+      const base = { status: current.status, reopenedAt: current.reopenedAt, hasLiveCharge: (await charges.findLive(tenantId, statementId)) !== undefined };
+      return options.readerWithTotal === false ? base : { ...base, totalCents: current.totalCents };
+    },
+    clock: () => t0,
+  });
+  const statement = await statements.transaction(TENANT, async (tx) => {
+    const { statement: fresh } = await tx.insertIfAbsentAndLock({ tenantId: TENANT, period: "2026-11" });
+    return tx.saveStatement({ ...fresh, status: "closed", chargeStatus: "none", totalCents: options.totalCents ?? 10000, dueDate: "2026-12-10", closedAt: t0 });
+  });
+  const intents = new InMemoryChargeIntentRepository({ statements, charges, outbox, refs });
+  return { statements, outbox, intents, statementId: statement.id, port: new RecordingPort(), audits: [] };
+}
+
+function requestIntent(arm: ChargeArm, now: Date, amountCents: number) {
+  return requestChargeCreate({ intents: arm.intents }, { tenantId: TENANT, statementId: arm.statementId, provider: "asaas", payload: { amountCents, dueDate: "2026-12-10", method: "pix" }, now });
+}
+
+function dispatchArm(arm: ChargeArm, now: Date, resolveCustomer: DispatcherDeps["resolveCustomer"] = okResolver) {
+  return runDispatchOutbox({ repo: arm.outbox, ports: { asaas: arm.port }, resolveCustomer, now: () => now, onAudit: async (event) => void arm.audits.push(event) });
+}
+
+/** Muda o demonstrativo direto no dublê (reabrir/refechar; o serviço não é o objeto deste teste). */
+async function setStatement(arm: ChargeArm, patch: Partial<Pick<SubscriptionStatement, "status" | "reopenedAt" | "totalCents" | "closedAt">>) {
+  await arm.statements.transaction(TENANT, async (tx) => {
+    const current = (await tx.lockById(arm.statementId))!;
+    return tx.saveStatement({ ...current, ...patch });
+  });
+}
+
+/** O worker que morre DEPOIS do claim: a linha fica PROCESSING com `attemptStartedAt = at`. */
+async function claimAndDie(arm: ChargeArm, at: Date) {
+  const claimed = await arm.outbox.claimNext({ enabledProviders: ["asaas"], now: at, claimedBy: "dead-worker", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+  assert.equal(claimed?.kind, "claimed", "o worker reclamou a linha antes de morrer");
+  return claimed!.row;
+}
+
+const minutes = (base: Date, n: number) => new Date(base.getTime() + n * 60_000);
+const afterOrphan = (base: Date) => new Date(base.getTime() + OUTBOX_ORPHAN_MS + 60_000);
+
+/** Braços 4–7: R0 cria e PERDE a resposta (a cobrança-fantasma de R$ 100 fica no provedor), o demonstrativo é reaberto
+ * (R0 vai a SKIPPED statement_reopened pelo claim) e refechado com R$ 150; nasce R1. */
+async function phantomOfUndoneClosing(t0: Date) {
+  const arm = await chargeArm(t0);
+  const r0 = await requestIntent(arm, t0, 10000);
+  arm.port.createScript.push("lost");
+  await dispatchArm(arm, t0);
+  assert.equal(arm.port.stored.length, 1, "a fantasma existe no provedor");
+  await setStatement(arm, { status: "reopened", reopenedAt: minutes(t0, 2) });
+  await dispatchArm(arm, minutes(t0, 3)); // R0 relida no claim: reaberto → SKIPPED
+  assert.equal((await arm.outbox.findById(TENANT, r0.id))?.status, "SKIPPED");
+  await setStatement(arm, { status: "closed", totalCents: 15000, closedAt: minutes(t0, 4) });
+  const r1 = await requestIntent(arm, minutes(t0, 5), 15000);
+  assert.ok(r1.idempotencyKey.endsWith(":2"), "R1 é a 2ª intenção do demonstrativo");
+  return { arm, r1, t1: minutes(t0, 5) };
+}
+
+test("E6′/E7′: nenhuma cobrança criada nem adotada às cegas (T-OBX-17, braços 1–8 e 11–14)", async (t) => {
+  const t0 = new Date("2026-12-01T12:00:00Z");
+
+  await t.test("braço 1 — a 1ª chamada cria e PERDE a resposta: a 2ª rodada reconsulta, ADOTA a própria e não recria", async () => {
+    const arm = await chargeArm(t0);
+    const row = await requestIntent(arm, t0, 10000);
+    arm.port.createScript.push("lost");
+    await dispatchArm(arm, t0);
+    assert.equal((await arm.outbox.findById(TENANT, row.id))?.status, "PENDING", "resposta perdida → reagendada");
+    const second = await dispatchArm(arm, minutes(t0, 2));
+    assert.equal(arm.port.created.length, 1, "1 createCharge no total, nunca 2");
+    assert.equal(arm.port.stored.length, 1, "1 cobrança no provedor");
+    assert.equal(second.outcomes.recovered, 1);
+    const final = await arm.outbox.findById(TENANT, row.id);
+    assert.deepEqual([final?.status, final?.externalId], ["SENT", "pay_1"]);
+  });
+
+  await t.test("braço 2 — 5xx e 429 que NÃO criaram (e 5xx no ensureCustomer): a rodada seguinte cria uma vez só", async () => {
+    for (const failure of ["5xx", "429", "ensure-5xx"] as const) {
+      const arm = await chargeArm(t0);
+      const row = await requestIntent(arm, t0, 10000);
+      if (failure === "ensure-5xx") arm.port.ensureScript.push("5xx");
+      else arm.port.createScript.push(failure);
+      const resolver = profileCustomerResolver(async () => COMPLETE_PROFILE);
+      await dispatchArm(arm, t0, resolver);
+      assert.equal(arm.port.stored.length, 0, `${failure}: nada criado no provedor`);
+      await dispatchArm(arm, minutes(t0, 2), resolver);
+      assert.equal(arm.port.stored.length, 1, `${failure}: 1 cobrança no provedor`);
+      assert.equal((await arm.outbox.findById(TENANT, row.id))?.status, "SENT");
+    }
+  });
+
+  await t.test("braço 3 — caminho comum: 1 reconsulta e 1 createCharge", async () => {
+    const arm = await chargeArm(t0);
+    await requestIntent(arm, t0, 10000);
+    const run = await dispatchArm(arm, t0);
+    assert.equal(run.outcomes.sent, 1);
+    assert.deepEqual(arm.port.lookups, [arm.statementId], "1 reconsulta antes de criar");
+    assert.equal(arm.port.created.length, 1);
+  });
+
+  await t.test("braço 4 — irmã: a fantasma do fechamento desfeito NÃO é adotada por R1 (charge_found_for_previous_intent), 1 createCharge no total", async () => {
+    const { arm, r1, t1 } = await phantomOfUndoneClosing(t0);
+    await dispatchArm(arm, t1);
+    const final = await arm.outbox.findById(TENANT, r1.id);
+    assert.deepEqual([final?.status, final?.lastError, final?.externalId], ["NEEDS_REVIEW", "charge_found_for_previous_intent", null]);
+    assert.equal(arm.port.created.length, 1, "só o POST de R0, nunca um 2º");
+    assert.ok(arm.audits.some((event) => event.action === "billing_outbox.needs_review" && event.code === "charge_found_for_previous_intent"));
+  });
+
+  await t.test("braço 5 — ATK-2b: o braço 4 com 5xx na 1ª reconsulta de R1 → revisão, nenhuma adoção", async () => {
+    const { arm, r1, t1 } = await phantomOfUndoneClosing(t0);
+    arm.port.lookupScript.push("5xx");
+    await dispatchArm(arm, t1);
+    assert.equal((await arm.outbox.findById(TENANT, r1.id))?.status, "PENDING", "5xx na reconsulta → reagendada, sem criar");
+    await dispatchArm(arm, minutes(t1, 2));
+    const final = await arm.outbox.findById(TENANT, r1.id);
+    assert.deepEqual([final?.status, final?.lastError, final?.externalId], ["NEEDS_REVIEW", "charge_found_for_previous_intent", null]);
+    assert.equal(arm.port.created.length, 1);
+  });
+
+  await t.test("braço 6 — ATK-6: perfil incompleto com irmã tentada → 0 reconsulta, 0 ensureCustomer, 0 createCharge na rodada de R1", async () => {
+    const { arm, r1, t1 } = await phantomOfUndoneClosing(t0);
+    const before = { lookups: arm.port.lookups.length, ensured: arm.port.ensured.length, created: arm.port.created.length };
+    await dispatchArm(arm, t1, profileCustomerResolver(async () => null));
+    assert.deepEqual(
+      { lookups: arm.port.lookups.length - before.lookups, ensured: arm.port.ensured.length - before.ensured, created: arm.port.created.length - before.created },
+      { lookups: 0, ensured: 0, created: 0 },
+      "o gate do perfil vem ANTES de qualquer chamada ao provedor (R-PRF-1)",
+    );
+    assert.match((await arm.outbox.findById(TENANT, r1.id))?.lastError ?? "", /^billing_profile_missing:/);
+  });
+
+  await t.test("braço 7 — ATK-8: a ÓRFÃ R1 acha a fantasma do fechamento desfeito → orphan_found_previous_intent, nunca adota", async () => {
+    const { arm, r1, t1 } = await phantomOfUndoneClosing(t0);
+    await claimAndDie(arm, t1);
+    const run = await dispatchArm(arm, afterOrphan(t1));
+    assert.equal(run.outcomes.recovered, 0);
+    const final = await arm.outbox.findById(TENANT, r1.id);
+    assert.deepEqual([final?.status, final?.lastError, final?.externalId], ["NEEDS_REVIEW", "orphan_found_previous_intent", null]);
+    assert.equal(arm.port.created.length, 1);
+  });
+
+  await t.test("braço 8 — ATK-8b (R-OBX-1): a órfã ÚNICA do fechamento vigente acha a PRÓPRIA cobrança → recovered", async () => {
+    const arm = await chargeArm(t0);
+    const row = await requestIntent(arm, t0, 10000);
+    await claimAndDie(arm, t0);
+    arm.port.stored.push({ chargeId: "pay_own", ref: arm.statementId, amountCents: 10000, status: "pending" }); // o POST do worker que morreu
+    const run = await dispatchArm(arm, afterOrphan(t0));
+    assert.equal(run.outcomes.recovered, 1);
+    const final = await arm.outbox.findById(TENANT, row.id);
+    assert.deepEqual([final?.status, final?.externalId], ["SENT", "pay_own"]);
+    assert.equal(arm.port.created.length, 0);
+  });
+
+  /** As fotos com a evidência APAGADA (L1/L2 do crítico): R0 `SKIPPED` com attempts 0 e last_error nulo, a fantasma de
+   * R$ 100 no provedor; refechado com R$ 150 → R1. A régua U não depende desses campos. */
+  async function erasedEvidence() {
+    const arm = await chargeArm(t0);
+    const r0 = await requestIntent(arm, t0, 10000);
+    await arm.outbox.markSkipped(TENANT, r0.id, "statement_reopened", t0);
+    arm.port.stored.push({ chargeId: "pay_phantom", ref: arm.statementId, amountCents: 10000, status: "pending" });
+    await setStatement(arm, { status: "closed", reopenedAt: minutes(t0, 1), totalCents: 15000, closedAt: minutes(t0, 2) });
+    const r1 = await requestIntent(arm, minutes(t0, 3), 15000);
+    return { arm, r1, t1: minutes(t0, 3) };
+  }
+
+  await t.test("braço 11 — L1: evidência da irmã apagada + 5xx na 1ª reconsulta → charge_found_for_previous_intent, 0 createCharge", async () => {
+    const { arm, r1, t1 } = await erasedEvidence();
+    arm.port.lookupScript.push("5xx");
+    await dispatchArm(arm, t1);
+    await dispatchArm(arm, minutes(t1, 2));
+    const final = await arm.outbox.findById(TENANT, r1.id);
+    assert.deepEqual([final?.status, final?.lastError, final?.externalId], ["NEEDS_REVIEW", "charge_found_for_previous_intent", null]);
+    assert.equal(arm.port.created.length, 0);
+  });
+
+  await t.test("braço 12 — L2: a órfã R1 × a mesma fantasma, com a evidência da irmã apagada → orphan_found_previous_intent", async () => {
+    const { arm, r1, t1 } = await erasedEvidence();
+    await claimAndDie(arm, t1);
+    await dispatchArm(arm, afterOrphan(t1));
+    const final = await arm.outbox.findById(TENANT, r1.id);
+    assert.deepEqual([final?.status, final?.lastError, final?.externalId], ["NEEDS_REVIEW", "orphan_found_previous_intent", null]);
+    assert.equal(arm.port.created.length, 0);
+  });
+
+  await t.test("braço 13 — L5: órfã de linha ÚNICA, demonstrativo reaberto DEPOIS dela e refechado com R$ 150 sem intenção nova → orphan_found_stale_closing", async () => {
+    const arm = await chargeArm(t0);
+    const row = await requestIntent(arm, t0, 10000);
+    await claimAndDie(arm, t0);
+    arm.port.stored.push({ chargeId: "pay_own", ref: arm.statementId, amountCents: 10000, status: "pending" });
+    await setStatement(arm, { status: "closed", reopenedAt: minutes(t0, 1), totalCents: 15000, closedAt: minutes(t0, 2) });
+    await dispatchArm(arm, afterOrphan(t0));
+    const final = await arm.outbox.findById(TENANT, row.id);
+    assert.deepEqual([final?.status, final?.lastError, final?.externalId], ["NEEDS_REVIEW", "orphan_found_stale_closing", null]);
+  });
+
+  await t.test("braço 14 — leitor SEM totalCents: o dublê falha fechado (*_stale_closing), na órfã e na retentativa", async () => {
+    const orphanArm = await chargeArm(t0, { readerWithTotal: false });
+    const orphanRow = await requestIntent(orphanArm, t0, 10000);
+    await claimAndDie(orphanArm, t0);
+    orphanArm.port.stored.push({ chargeId: "pay_own", ref: orphanArm.statementId, amountCents: 10000, status: "pending" });
+    await dispatchArm(orphanArm, afterOrphan(t0));
+    assert.equal((await orphanArm.outbox.findById(TENANT, orphanRow.id))?.lastError, "orphan_found_stale_closing");
+
+    const retryArm = await chargeArm(t0, { readerWithTotal: false });
+    const retryRow = await requestIntent(retryArm, t0, 10000);
+    retryArm.port.createScript.push("lost");
+    await dispatchArm(retryArm, t0);
+    await dispatchArm(retryArm, minutes(t0, 2));
+    assert.equal((await retryArm.outbox.findById(TENANT, retryRow.id))?.lastError, "charge_found_stale_closing");
+    assert.equal(retryArm.port.created.length, 1, "nunca recria");
+  });
+});
+
+test("U da adoção: nenhum código de src/ apaga linha de billing_outbox (T-OBX-NODEL)", () => {
+  // A régua U (a linha é a ÚNICA `charge_create` do demonstrativo) depende de nenhuma linha da fila ser apagada; a FK é
+  // ON DELETE RESTRICT. Mutação literal M3i: um `DELETE FROM billing_outbox` num método de `outbox.prisma.ts` → vermelho.
+  const root = fileURLToPath(new URL("../src/", import.meta.url));
+  const offenders: string[] = [];
+  const pattern = /DELETE\s+FROM\s+"?billing_outbox"?|billingOutbox\s*\.\s*delete(Many)?\s*\(/i;
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith(".ts") && pattern.test(readFileSync(full, "utf8"))) offenders.push(path.relative(root, full));
+    }
+  };
+  walk(root);
+  assert.deepEqual(offenders, [], "nenhuma linha da fila é apagada");
 });

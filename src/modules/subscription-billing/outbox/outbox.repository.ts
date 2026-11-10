@@ -66,13 +66,30 @@ export interface OutboxRepository {
   /** Leitura de PLATAFORMA (tela de outbox) sobre tabela FORCE → `forEachTenantRls` no Prisma. */
   listByStatus(status?: OutboxStatus, provider?: string): Promise<readonly BillingOutboxRow[]>;
   listByStatement(tenantId: string, statementId: string): Promise<readonly BillingOutboxRow[]>;
+  /** E6′/E7′ (2º conserto do #522) — os fatos da ADOÇÃO, lidos só quando a reconsulta ACHA cobrança: numa leitura só, sob
+   * o GUC da organização, sem trava e fora do `fetch`. `undefined` se o demonstrativo não existe (ou é de outra
+   * organização). */
+  adoptionFacts(tenantId: string, statementId: string, rowId: string): Promise<AdoptionFacts | undefined>;
 }
 
-/** O que o dublê lê do demonstrativo no claim (R-OBX-5). `hasLiveCharge` opcional: o dublê OR-a com a própria fila. */
+/** E6′/E7′ (§13.1.2): os fatos que a adoção usa. Nenhum deles se apaga: nenhum código apaga linha da fila (T-OBX-NODEL), e
+ * o total de um demonstrativo fechado só muda com reabertura. */
+export type AdoptionFacts = {
+  /** Outras linhas `charge_create` do demonstrativo, em QUALQUER status (U). */
+  readonly otherIntents: number;
+  readonly status: StatementStatus;
+  readonly reopenedAt: Date | null;
+  /** O total atual, em centavos (V); `null` quando o leitor não o traz — então V é falso e a linha vai a revisão. */
+  readonly totalCents: number | null;
+};
+
+/** O que o dublê lê do demonstrativo no claim (R-OBX-5). `hasLiveCharge` opcional: o dublê OR-a com a própria fila.
+ * `totalCents` é o V da adoção (E6′/E7′): sem ele, o dublê falha fechado (a cobrança achada vai a revisão). */
 export type StatementClaimReadResult = {
   readonly status: StatementStatus;
   readonly reopenedAt: Date | null;
   readonly hasLiveCharge?: boolean;
+  readonly totalCents?: number;
 };
 export type StatementClaimReader = (tenantId: string, statementId: string) => Promise<StatementClaimReadResult | undefined>;
 
@@ -275,6 +292,17 @@ export class InMemoryOutboxRepository implements OutboxRepository {
 
   async listByStatement(tenantId: string, statementId: string): Promise<readonly BillingOutboxRow[]> {
     return [...this.#rows.values()].filter((row) => row.tenantId === tenantId && row.statementId === statementId);
+  }
+
+  /** E6′/E7′: U pela própria fila (outras `charge_create` do demonstrativo, em qualquer status) e o resto pelo leitor
+   * injetado; leitor sem `totalCents` → `null` (V falso, fail-closed). */
+  async adoptionFacts(tenantId: string, statementId: string, rowId: string): Promise<AdoptionFacts | undefined> {
+    const read = await this.readStatement(tenantId, statementId);
+    if (!read) return undefined;
+    const otherIntents = [...this.#rows.values()].filter(
+      (row) => row.tenantId === tenantId && row.statementId === statementId && row.kind === "charge_create" && row.id !== rowId,
+    ).length;
+    return { otherIntents, status: read.status, reopenedAt: read.reopenedAt, totalCents: read.totalCents ?? null };
   }
 
   // O dublê valida o tenant como o RLS faria: linha de outra organização = inexistente (fail-closed).

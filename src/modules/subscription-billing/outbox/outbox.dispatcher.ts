@@ -8,13 +8,16 @@
 // Provedor desligado nunca é alcançado (R-OBX-4): o claim só enxerga `enabledProviders`, e as PENDING de provedor
 // desligado ganham `skip_reason = provider_disabled` visível, sem rede. Crash entre (2) e (3) deixa a linha PROCESSING;
 // a rodada seguinte reconsulta por referência ANTES de repetir (nunca cobra 2×) e só vai a NEEDS_REVIEW se a reconsulta
-// falhar (R-OBX-1). Backoff 1/5/15/60 min; 8 falhas → FAILED + trilha (R-OBX-2).
+// falhar (R-OBX-1). 2º conserto do #522 (E6′/E7′): TODA tentativa reconsulta antes de criar (depois do gate do perfil),
+// e a cobrança achada só é adotada com fatos que não se apagam — a linha é a ÚNICA `charge_create` do demonstrativo e é do
+// fechamento VIGENTE, com o total igual ao valor dela (`adoptionDecision`); senão, revisão — nunca uma 2ª cobrança.
+// Backoff 1/5/15/60 min; 8 falhas → FAILED + trilha (R-OBX-2).
 // Cobrança parada nunca sai de demonstrativo que mudou (R-OBX-5, D2 — conserto J-522): a política `chargeCreateClaimVerdict`
 // vive aqui, pura, e é INJETADA no claim (`ClaimParams.verdict`), que a aplica NA transação do claim sobre o demonstrativo
 // relido: pago/cancelado/reaberto/refechado → SKIPPED com `skip_reason`; cobrança viva ou demonstrativo ausente →
 // NEEDS_REVIEW com `last_error`. O `retry` revalida pelo mesmo caminho (todo PENDING passa pelo claim).
 
-import type { PaymentProviderPort, CreateChargeInput, ChargeResult } from "../providers/payment/payment-provider.port.js";
+import type { PaymentProviderPort, CreateChargeInput, ChargeResult, ChargeStatus } from "../providers/payment/payment-provider.port.js";
 import {
   backoffMsForAttempt,
   OUTBOX_MAX_ATTEMPTS,
@@ -24,7 +27,7 @@ import {
   type OutboxKind,
   type StatementClaimSnapshot,
 } from "./outbox.types.js";
-import type { OutboxRepository } from "./outbox.repository.js";
+import type { AdoptionFacts, OutboxRepository } from "./outbox.repository.js";
 
 export type DispatchOutcome =
   | "sent"
@@ -125,6 +128,60 @@ function chargeInputFromRow(row: BillingOutboxRow, customerId: string): CreateCh
   };
 }
 
+/** Estados da cobrança achada pela referência que podem ser ADOTADOS: viva ou paga — nunca cancelada nem estornada. */
+export const ADOPTABLE_CHARGE_STATES: ReadonlySet<ChargeStatus> = new Set<ChargeStatus>(["pending", "overdue", "paid", "partially_paid"]);
+
+/**
+ * E6′/E7′ (2º conserto do #522, plano §13.1.2) — a cobrança achada pela referência só é ADOTADA com fatos que não se
+ * apagam:
+ *   U — a linha é a ÚNICA `charge_create` que o demonstrativo já teve, em QUALQUER status. Outra intenção existe → a
+ *       cobrança achada pode ser a fantasma de um fechamento desfeito, com o valor velho → revisão.
+ *   V — a linha é do fechamento VIGENTE: demonstrativo `closed`/`paid`, nenhuma reabertura depois da linha, e o
+ *       `amountCents` do payload igual ao total atual. Sem o total (`null`), V é falso: falha fechado.
+ * Mais o estado adotável e, na retentativa, a própria linha já tentada (`attempts > 1` ou `last_error`; apagar esses
+ * campos só torna a régua FALSA, e falso manda à revisão). PURA: devolve `adopt` ou o código de revisão (`last_error`).
+ */
+export function adoptionDecision(
+  row: BillingOutboxRow,
+  found: { readonly status: ChargeStatus },
+  facts: AdoptionFacts | undefined,
+  orphan: boolean,
+): "adopt" | string {
+  const prefix = orphan ? "orphan_found" : "charge_found";
+  if (!facts) return `${prefix}_statement_missing`;
+  if (facts.otherIntents > 0) return orphan ? "orphan_found_previous_intent" : "charge_found_for_previous_intent";
+  const amount = Number(row.payload.amountCents);
+  const current =
+    (facts.status === "closed" || facts.status === "paid") &&
+    !(facts.reopenedAt !== null && facts.reopenedAt.getTime() > row.occurredAt.getTime()) &&
+    facts.totalCents !== null &&
+    Number.isSafeInteger(amount) &&
+    amount === facts.totalCents;
+  if (!current) return `${prefix}_stale_closing`;
+  if (!ADOPTABLE_CHARGE_STATES.has(found.status)) return `${prefix}_${found.status}`;
+  if (!orphan && !(row.attempts > 1 || row.lastError !== null)) return "charge_found_unknown_origin";
+  return "adopt";
+}
+
+/** Achou cobrança pela referência: adota (U ∧ V) ou manda à revisão com auditoria — NUNCA cria. */
+async function settleFoundCharge(
+  deps: DispatcherDeps,
+  row: BillingOutboxRow,
+  found: { readonly chargeId: string; readonly status: ChargeStatus },
+  orphan: boolean,
+  clock: () => Date,
+): Promise<DispatchOutcome> {
+  const facts = await deps.repo.adoptionFacts(row.tenantId, row.statementId, row.id);
+  const decision = adoptionDecision(row, found, facts, orphan);
+  if (decision === "adopt") {
+    await deps.repo.markSent(row.tenantId, row.id, found.chargeId, clock());
+    return "recovered";
+  }
+  await deps.repo.markNeedsReview(row.tenantId, row.id, decision, clock());
+  await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: decision });
+  return "needs_review";
+}
+
 /**
  * Processa a outbox até esgotar as linhas elegíveis dos provedores LIGADOS. Primeiro marca as PENDING de provedor
  * desligado como visíveis (sem rede), depois roda o claim–chamada–registro. Devolve a contagem por desfecho.
@@ -189,27 +246,29 @@ async function dispatchOne(
     return "needs_review";
   }
 
-  // (2) CHAMADA FORA de transação. Crash órfão → reconsulta por referência ANTES de repetir (nunca cobra 2×).
+  // (2) CHAMADA FORA de transação. Crash órfão → reconsulta por referência ANTES de repetir (nunca cobra 2×), e a cobrança
+  // achada só é adotada pela régua U ∧ V (E7′): a fantasma de um fechamento desfeito vai a revisão.
   if (wasOrphan) {
-    const recovered = await port.findChargeByExternalReference(row.statementId);
-    if (recovered) {
-      await deps.repo.markSent(row.tenantId, row.id, recovered.chargeId, clock());
-      return "recovered";
-    }
+    const found = await port.findChargeByExternalReference(row.statementId);
+    if (found) return settleFoundCharge(deps, row, found, true, clock);
     await deps.repo.markNeedsReview(row.tenantId, row.id, "orphan_recovery_not_found", clock());
     await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "orphan_recovery_not_found" });
     return "needs_review";
   }
 
   try {
-    // R-PRF-1 (C3-02): o gate do perfil decide ANTES de qualquer chamada de cobrança. Incompleto → NEEDS_REVIEW com os
-    // campos visíveis em `last_error` (TEXT livre; sem skip_reason novo — CHECK da M5) e 0 rede de cobrança.
+    // R-PRF-1 (C3-02): o gate do perfil decide ANTES de qualquer chamada ao provedor — a reconsulta inclusive. Incompleto →
+    // NEEDS_REVIEW com os campos visíveis em `last_error` (TEXT livre; sem skip_reason novo — CHECK da M5) e 0 rede.
     const customer = await deps.resolveCustomer(row, port);
     if (!customer.ok) {
       await deps.repo.markNeedsReview(row.tenantId, row.id, `billing_profile_missing:${customer.missing.join(",")}`, clock());
       await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "billing_profile_missing" });
       return "needs_review";
     }
+    // E6′: a reconsulta vem SEMPRE antes de criar — nenhuma criação às cegas. Achou → adota (U ∧ V) ou revisão, NUNCA
+    // cria; um erro na reconsulta cai no `catch` abaixo (reagenda ou FAILED) e também nunca cria.
+    const found = await port.findChargeByExternalReference(row.statementId);
+    if (found) return await settleFoundCharge(deps, row, found, false, clock);
     const result = await port.createCharge(chargeInputFromRow(row, customer.customerId));
     await deps.onChargeCreated?.(row, result, clock());
     await deps.repo.markSent(row.tenantId, row.id, result.chargeId, clock());
