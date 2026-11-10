@@ -290,3 +290,10 @@
   - **M-B4** (dentro da transação, o replay do concorrente para depois do `assertEditable(locked)`) → `not ok 14 -
     RR-B.4` "2º envio, depois do submit: {…report_not_editable…}" (422) · revertida. **OK.**
 - `docker ps` às 06:38 → só `ci522-pg` de pé (o `users-seg-pg` saiu) = 1 trabalho: a F3 pode subir o `dev525-pg`.
+- Commit `a4f8cffc` + push (`83f4d909..a4f8cffc`). Vermelho-controle REFEITO com o teste commitado no
+  `w-dev525-vc` → `not ok 9..14` (os 6 RR do conserto neste arquivo) · `w-dev525-vc` limpo.
+
+## RETOMADA 7 (06:39)
+
+- head `a4f8cffc5c33a5730af6480b026c86454add9c32` · feito: F0, F1a, F1d, F1b, F1e, F1c, F2a, F2b · falta: F3 → F4a … F8 · próximo comando: subir o
+  `dev525-pg` (Postgres 16, `127.0.0.1:5495`) e migrar · arquivos meio escritos: nenhum.
