@@ -203,12 +203,59 @@ class ExpenseReceiptSyncService {
       }
 
       // Prontidão: o relatório E o item precisam do id de servidor (nascem no lote JSON).
+      // Sem o do relatório, nada muda: o relatório ainda não sincronizado já segura tudo.
       final reportServerId = _repository.serverIdForReport(reportLocalId);
-      final itemServerId = _repository.serverIdForItem(
+      if (reportServerId == null) continue;
+      var itemServerId = _repository.serverIdForItem(
         reportLocalId,
         itemLocalId,
       );
-      if (reportServerId == null || itemServerId == null) continue;
+      if (itemServerId == null) {
+        // Conserto c1 do #525 (§12.7) — o id do item volta pelo `result_ref` que o LOTE gravou
+        // na ação `itemCreate`, aqui no aparelho e sem reenvio (reenviar criaria o item no
+        // servidor e mudaria o total do relatório).
+        final itemAction = await _itemCreateFor(
+          tenantId,
+          action,
+          reportLocalId,
+          itemLocalId,
+        );
+        if (itemAction == null || itemAction.status == SyncStatus.conflict) {
+          // §2(d)5 — sem saída: o item nunca chega ao servidor por esta fila.
+          final next = _conflict(
+            action,
+            'RECEIPT_ITEM_NOT_SYNCED',
+            'O item deste comprovante não chegou ao servidor; o comprovante ficou no aparelho.',
+          );
+          await _queue.update(next);
+          conflicts.add(next);
+          continue;
+        }
+        // `pending`, `failed` ou `syncing`: o comprovante espera o lote (o item já segura o envio).
+        if (itemAction.status != SyncStatus.synced) continue;
+        final resultRef = _readString(itemAction.payload['result_ref']);
+        if (resultRef != null && !_isLocalExpenseId(resultRef)) {
+          // `synced` COM `result_ref`: o servidor criou o item, e o id persiste no aparelho.
+          await _repository.markItemSynced(
+            reportLocalId,
+            itemLocalId,
+            resultRef,
+          );
+        }
+        itemServerId = _repository.serverIdForItem(reportLocalId, itemLocalId);
+        if (itemServerId == null) {
+          // `synced` SEM `result_ref` ("Versão do gestor" ou a cascata `SUPERSEDED_BY_SERVER`):
+          // o servidor nunca criou o item.
+          final next = _conflict(
+            action,
+            'RECEIPT_ITEM_NOT_SYNCED',
+            'O item deste comprovante não chegou ao servidor; o comprovante ficou no aparelho.',
+          );
+          await _queue.update(next);
+          conflicts.add(next);
+          continue;
+        }
+      }
 
       final receipt = _repository.receiptByLocalId(
         reportLocalId,
@@ -423,5 +470,33 @@ class ExpenseReceiptSyncService {
     if (value is! String) return null;
     final trimmed = value.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  /// A ação `itemCreate` do item deste comprovante: mesmo relatório, mesmo item e mesmo
+  /// usuário da ação do comprovante (§12.7).
+  Future<SyncAction?> _itemCreateFor(
+    String tenantId,
+    SyncAction receiptAction,
+    String reportLocalId,
+    String itemLocalId,
+  ) async {
+    for (final candidate in await _queue.actionsForTenant(tenantId)) {
+      if (candidate.type != ExpenseSyncActionTypes.itemCreate) continue;
+      if (_readString(candidate.payload['report_local_id']) != reportLocalId) {
+        continue;
+      }
+      if (_readString(candidate.payload['local_id']) != itemLocalId) continue;
+      if (candidate.userId != receiptAction.userId) continue;
+      return candidate;
+    }
+    return null;
+  }
+
+  /// Id local do app (`pc-local-`, `local-`, `tmp-`) não é id de servidor.
+  bool _isLocalExpenseId(String value) {
+    final normalized = value.trim().toLowerCase();
+    return normalized.startsWith('pc-local-') ||
+        normalized.startsWith('local-') ||
+        normalized.startsWith('tmp-');
   }
 }

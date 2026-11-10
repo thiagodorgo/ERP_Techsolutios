@@ -474,3 +474,38 @@
 - head `fe54c23ad579aa08975ff8b8f102e8112d09c542` · feito: F0–F4b, F5a · falta: F5b → F5c → F6a → F6b → F7 → F8 · próximo comando: escrever RR-D.4 e
   RR-D.5 (recuperação do id do item pelo `result_ref`) num arquivo novo `test/core/sync/brdvcomp_c1_item_recovery_test.dart`
   · arquivos meio escritos: nenhum.
+
+## F5b — o id do item volta pelo `result_ref` (§12.7) e `RECEIPT_ITEM_NOT_SYNCED` (§2(d)5) (07:37–07:44)
+
+- Testes ANTES, em `mobile/flutter_app/test/core/sync/brdvcomp_c1_item_recovery_test.dart` (só APIs que já existem no
+  objeto: o passe aqui é lote → upload → lote com `replayTenant` e `uploadTenant` reais — é o `runExpenseSyncPass` sem a
+  liberação do 503, que não entra nestes casos —, para o vermelho-controle no objeto ser de COMPORTAMENTO): **RR-D.4**
+  (1 teste, 3 casos; o caso 1 com Drift real `AppDatabase.openInMemory()` + `DriftExpenseLocalStore` e a fila real
+  `PersistentSyncQueueRepository(DriftSyncActionStore(db))`: o `itemCreate` `synced` com `result_ref = 'srv-item-1'` e
+  o item sem `serverId` → o upload sai com `srv-item-1`, o lote não recebe `expense_item.create`, nenhuma ação
+  `itemCreate` nova, e o id sobrevive a reabrir o banco; caso 2 `ATK_GESTOR`: `itemCreate` em conflito resolvido por
+  `resolveConflictAction(useServer)` (sem `result_ref`) → `RECEIPT_ITEM_NOT_SYNCED`, blob presente, 0 upload, 0
+  `expense_item.create`, o envio sai; caso 3: a cascata `SyncResolutionSideEffects.apply` → `SUPERSEDED_BY_SERVER` sem
+  `result_ref` → igual ao 2) e **RR-D.5** ((a) item sem ação `itemCreate`, semeado no armazenamento local → `conflict
+  RECEIPT_ITEM_NOT_SYNCED` com a mensagem "O item deste comprovante não chegou ao servidor; o comprovante ficou no
+  aparelho.", blob presente, o envio sai; (b) a ação `itemCreate` em conflito → idem, 0 upload — ali o envio continua
+  preso pelo ITEM, pela regra de sempre, e o que se mede é o comprovante).
+- **Vermelho-controle no objeto** (comportamento): RR-D.4 caso 1 `Expected: ['srv-item-1'] Actual: []` (o upload nunca
+  é chamado) · RR-D.5 (a) `Expected: SyncStatus.conflict Actual: SyncStatus.pending` (pendente para sempre). O RR-D.4
+  é 1 teste: o caso 1 falha primeiro. **OK.**
+- Código (`expense_receipt_sync.dart`, no lugar do `if (reportServerId == null || itemServerId == null) continue;`):
+  sem o id do relatório → `continue` como antes; sem o do item → `_itemCreateFor` (mesmo `report_local_id`, mesmo
+  `local_id`, mesmo `userId` da ação do comprovante): sem ação ou em `conflict` → `RECEIPT_ITEM_NOT_SYNCED`;
+  `pending`/`failed`/`syncing` → `continue`; `synced` com `result_ref` que não é id local (`pc-local-`, `local-`,
+  `tmp-`) → `markItemSynced` e o upload segue com ele; `synced` sem `result_ref` → `RECEIPT_ITEM_NOT_SYNCED`. Nenhuma
+  rede, nenhum reenvio; o callback `serverIdForItem` no `SyncReplayService` e a ligação em `sync_providers.dart` saíram
+  do plano (§12.7 item 3) e não entraram.
+- `dart format` · `flutter analyze` → "No issues found!" · `flutter test test/core/sync test/features/expenses` →
+  `+126: All tests passed!`. **OK.**
+- Mutações (`git diff --exit-code -- src tests mobile` = 0 depois de cada reversão por edição inversa):
+  - **M-D4** (apagar o ramo `synced` COM `result_ref`) → RR-D.4 caso 1 `Expected: ['srv-item-1'] Actual: []` ·
+    revertida. **OK.**
+  - **M-D4b** (no `synced` SEM `result_ref`, o `conflict` vira `continue`) → RR-D.4 "caso 2: SyncStatus.pending" ·
+    revertida. **OK.**
+  - **M-D5** (o `conflict` do item sem ação ou em conflito vira `continue`) → RR-D.5 "(a): SyncStatus.pending" ·
+    revertida. **OK.**
