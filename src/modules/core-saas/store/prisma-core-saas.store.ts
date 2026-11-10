@@ -3,6 +3,7 @@
 import { prisma } from "../../../database/prisma.js";
 import { setTenantRlsContext, withTenantRls } from "../../../database/rls.js";
 import { AuthSessionRepository } from "../../auth/repositories/auth-session.repository.js";
+import { LocalAuthCredentialRepository } from "../../auth/repositories/local-auth-credential.repository.js";
 import { EnterpriseAuditLogService } from "../audit/audit-log.service.js";
 import {
   AuditLogRepository,
@@ -24,6 +25,7 @@ import {
   type AuditEvent,
   type CreateTenantInput,
   type CreateUserInput,
+  type InitialCredentialInput,
   type ListTenantOptions,
   type Tenant,
   type TenantStatus,
@@ -107,7 +109,7 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       .map(mapTenantFromPrisma);
   }
 
-  async createUser(input: CreateUserInput): Promise<User> {
+  async createUser(input: CreateUserInput, credential?: InitialCredentialInput): Promise<User> {
     return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
       const txUsers = new UserRepository(tx);
       const txRoles = new RoleRepository(tx);
@@ -148,6 +150,20 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       );
       await normalizePairIdentity(tx, input.tenantId, user.id);
 
+      // Step 2c (B-USERS-ACESSO-SEG, S2 — Achado 1): a credencial local do usuário novo, na MESMA transação
+      // (falhou a criação, não sobra credencial; falhou a credencial, não sobra usuário). Só o hash da senha
+      // PROVISÓRIA chega aqui, com a marca "trocar no próximo acesso" (P1) ligada; o GUC da organização já
+      // está posto (withTenantRls).
+      if (credential) {
+        await new LocalAuthCredentialRepository(tx).upsertTemporaryPassword({
+          tenant_id: input.tenantId,
+          user_id: user.id,
+          email: input.email,
+          password_hash: credential.passwordHash,
+          password_algorithm: credential.passwordAlgorithm,
+        });
+      }
+
       // Step 3: resolve actor within the same transaction (sees the user created above)
       const actorId = isUuid(input.actorUserId ?? "")
         ? (
@@ -172,6 +188,8 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
           email: user.email,
           roleCount: input.roles.length,
           branchCount: input.branchIds?.length ?? 0,
+          // S2/S8: só o FATO de que nasceu uma credencial provisória — nunca a senha nem o hash.
+          temporaryCredential: credential !== undefined,
         },
       });
 

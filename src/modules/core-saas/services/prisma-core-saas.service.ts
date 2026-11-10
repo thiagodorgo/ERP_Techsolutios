@@ -16,6 +16,7 @@ import {
   type AuthenticatedActor,
   type CreateTenantInput,
   type CreateUserInput,
+  type CreatedUser,
   type ListTenantOptions,
   type LoginCandidate,
   type Tenant,
@@ -28,6 +29,8 @@ import type { PrismaClient } from "@prisma/client";
 
 import type { AuthenticatedActor as AuthJwtActor } from "../../auth/types/auth.types.js";
 import { IdentityLinkRepository } from "../../auth/repositories/identity-link.repository.js";
+import { hashPassword } from "../../auth/services/password.service.js";
+import { generateInitialPassword } from "../../authority/authority-password.js";
 
 export class PrismaCoreSaasService {
   // B-USERS-ACESSO-SEG (P-SEG-2) — `identityClient` é o client dos fluxos de identidade (listagem de
@@ -102,7 +105,7 @@ export class PrismaCoreSaasService {
   async createUser(
     input: CreateUserInput,
     actor?: AuthenticatedActor,
-  ): Promise<User> {
+  ): Promise<CreatedUser> {
     if (actor && input.tenantId !== actor.tenantId) {
       throw accessDeniedAcrossTenants();
     }
@@ -159,20 +162,32 @@ export class PrismaCoreSaasService {
       input.roles.map((role) => assertAssignableRole(this.validateRole(role))),
     );
 
+    // B-USERS-ACESSO-SEG (S2, Achado 1 + UEM-01) — o usuário novo nasce com uma senha PROVISÓRIA: o store grava
+    // só o hash, com a marca "trocar no próximo acesso" (P1), na MESMA transação da criação; a provisória em
+    // claro volta UMA vez, no 201 (`temporaryPassword`), e não fica em lugar nenhum. O scrypt roda antes da
+    // transação (fica curta). Sem canal de e-mail ligado (ajuste 8): a tela mostra a provisória ao admin.
+    const temporaryPassword = generateInitialPassword();
+    const password = await hashPassword(temporaryPassword);
+
     // B-USERS-ACESSO-SEG (S6, ajuste 9 da crítica) — e-mail repetido na MESMA organização é recusado
     // pelo índice único (tenant_id, email), que também resolve a corrida de duas criações
     // simultâneas. O 409 sai sem a mensagem do banco (antes, o P2002 caía no 400 genérico de
     // sendRouteError com o texto do Prisma no corpo). A transação do store volta inteira.
     try {
-      return await this.store.createUser({
-        ...input,
-        name,
-        email,
-        roles,
-        branchIds: uniqueStrings(input.branchIds ?? []),
-        status: input.status ?? "active",
-        actorUserId: actor?.userId,
-      });
+      const user = await this.store.createUser(
+        {
+          ...input,
+          name,
+          email,
+          roles,
+          branchIds: uniqueStrings(input.branchIds ?? []),
+          status: input.status ?? "active",
+          actorUserId: actor?.userId,
+        },
+        { passwordHash: password.password_hash, passwordAlgorithm: password.password_algorithm },
+      );
+
+      return { ...user, temporaryPassword };
     } catch (error) {
       if (isUserEmailUniqueViolation(error)) {
         throw userEmailConflict();
