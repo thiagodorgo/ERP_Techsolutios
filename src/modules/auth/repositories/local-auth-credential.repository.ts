@@ -85,6 +85,8 @@ export class LocalAuthCredentialRepository {
     });
   }
 
+  // B-USERS-ACESSO-SEG (S7) — a troca pelo PRÓPRIO usuário apaga a marca "trocar a senha no próximo
+  // acesso" (coluna da P1): quem escolheu a senha agora é o dono da conta.
   updatePassword(userId: string, tenantId: string, data: UpdateLocalAuthPasswordData) {
     return this.client.localAuthCredential.update({
       where: {
@@ -97,6 +99,7 @@ export class LocalAuthCredentialRepository {
         password_hash: data.password_hash,
         password_algorithm: data.password_algorithm,
         password_updated_at: new Date(),
+        must_change_password: false,
         failed_attempts: 0,
         locked_until: null,
       },

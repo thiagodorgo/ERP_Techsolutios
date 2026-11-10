@@ -177,6 +177,51 @@ export function createIdentityLinkRouter(
     }),
   );
 
+  // B-USERS-ACESSO-SEG (S7) — POST /auth/password: o PRÓPRIO usuário troca a senha, pelo gancho do
+  // serviço de identidade (que é quem desvincula o par religado e revoga as sessões). Mora neste
+  // router porque o serviço é o mesmo e o router já é montado sob /api/v1/auth com o serviço
+  // injetável (app.ts). Só JWT: requisição sem ator → 401. Resposta sem identity_id (guard 2).
+  // Declarado: TODAS as sessões do par caem, inclusive a atual — o cliente entra de novo com a senha
+  // nova; o token de acesso já emitido vale até expirar.
+  router.post(
+    "/password",
+    attachAuthenticatedActor(),
+    handleAsyncRoute(async (request, response) => {
+      const actor = getAuthenticatedActor(request);
+
+      if (!actor) {
+        sendUnauthorized(response);
+        return;
+      }
+
+      const body = isRecord(request.body) ? request.body : {};
+      const currentPassword = readString(body.currentPassword ?? body.current_password);
+      const newPassword = readString(body.newPassword ?? body.new_password);
+
+      if (!currentPassword || !newPassword) {
+        response.status(400).json({
+          error: {
+            code: "BAD_REQUEST",
+            reason: "invalid_payload",
+            message: "currentPassword and newPassword are required.",
+          },
+        });
+        return;
+      }
+
+      const service = await resolveService();
+      const result = await service.changeOwnPassword(actor, { currentPassword, newPassword });
+
+      response.status(200).json({
+        data: {
+          changed: true,
+          revoked_sessions: result.revokedSessions,
+          unlinked: result.unlinked,
+        },
+      });
+    }),
+  );
+
   return router;
 }
 

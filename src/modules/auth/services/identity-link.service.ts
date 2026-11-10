@@ -12,6 +12,7 @@ import {
 } from "../repositories/identity-link.repository.js";
 import { IdentityLinkEventRepository } from "../repositories/identity-link-event.repository.js";
 import { normalizePairIdentity } from "./identity-resolver.js";
+import { LocalAuthCredentialService, validateLocalPassword } from "./local-auth-credential.service.js";
 import { verifyPassword } from "./password.service.js";
 import type { AuthenticatedActor, LocalAuthLoginInput, LocalAuthLoginResult } from "../types/auth.types.js";
 
@@ -387,8 +388,106 @@ export class IdentityLinkService {
     });
   }
 
-  // Gancho da troca de senha (§5.5) — ARMADO E INERTE: não existe rota de troca/reset neste
-  // bloco (pendência P-O6R-B01-TROCA-SENHA); o teste dirige o serviço diretamente. Na MESMA
+  // POST /auth/password (B-USERS-ACESSO-SEG, S7 — ajuste 5 da crítica) — o PRÓPRIO usuário troca a
+  // senha, e o gancho abaixo deixa de ser inerte para esse caso (a troca pelo dono da conta; o RESET
+  // por administrador continua fora, ver a PAUSA do bloco). O ator é o do JWT (rota com
+  // attachAuthenticatedActor). Declarado e provado em tests/users-acesso-seg-troca-senha-db.test.ts:
+  //   1. prova da senha ATUAL do par do token, por user_id (nunca pelo e-mail), como tentativa
+  //      direcionada: errada incrementa e pode trancar (401); trancada → 423; fora da transação de
+  //      escrita, para o incremento sobreviver; usuário inativo → 403;
+  //   2. senha nova pela regra do cadastro (validateLocalPassword) e diferente da atual → senão 400;
+  //   3. o gancho, numa transação: hash novo (e a marca da P1 apagada — updatePassword), desvínculo do
+  //      par religado quando a identidade tem 2+ vínculos, e TODAS as sessões do par revogadas,
+  //      INCLUSIVE a atual. O token de acesso já emitido vale até expirar (até 15 min, D-USERS-2).
+  async changeOwnPassword(
+    actor: AuthenticatedActor,
+    input: { readonly currentPassword: string; readonly newPassword: string },
+  ): Promise<PasswordChangeHookResult> {
+    const proof = await this.prisma.$transaction(async (tx) => {
+      await setTenantRlsContext(tx, actor.tenantId);
+
+      const user = await tx.user.findFirst({
+        where: { id: actor.userId, tenant_id: actor.tenantId },
+        select: { status: true },
+      });
+
+      if (!user || user.status !== "active") {
+        return { kind: "inactive" as const };
+      }
+
+      const credentials = new LocalAuthCredentialRepository(tx);
+      const credential = await credentials.findByUserForTenant(actor.userId, actor.tenantId);
+
+      if (!credential) {
+        return { kind: "unavailable" as const };
+      }
+
+      if (credential.locked_until && credential.locked_until > new Date()) {
+        return { kind: "locked" as const };
+      }
+
+      const matches = await this.verifyPasswordFn(input.currentPassword, credential.password_hash);
+
+      if (!matches) {
+        await credentials.incrementFailedAttempts(credential.id, actor.tenantId);
+
+        return { kind: "invalid" as const };
+      }
+
+      return { kind: "ok" as const, email: credential.email };
+    });
+
+    if (proof.kind === "inactive") {
+      throw identityLinkError(403, "FORBIDDEN", "user_inactive", "User is not active.");
+    }
+
+    if (proof.kind === "unavailable") {
+      throw identityLinkError(403, "FORBIDDEN", "credential_unavailable", "No local credential for this account.");
+    }
+
+    if (proof.kind === "locked") {
+      throw identityLinkError(423, "LOCKED", "account_locked", "Account is locked.");
+    }
+
+    if (proof.kind === "invalid") {
+      throw identityLinkError(401, "UNAUTHORIZED", "invalid_credentials", "Invalid credentials.");
+    }
+
+    try {
+      validateLocalPassword(input.newPassword, proof.email.trim().toLowerCase());
+    } catch (error) {
+      throw identityLinkError(
+        400,
+        "BAD_REQUEST",
+        "invalid_new_password",
+        error instanceof Error ? error.message : "Invalid password.",
+      );
+    }
+
+    if (input.newPassword === input.currentPassword) {
+      throw identityLinkError(400, "BAD_REQUEST", "invalid_new_password", "New password must differ from the current one.");
+    }
+
+    // O caminho canônico do gancho (changePasswordWithIdentityHook → handlePasswordChange). A leitura do
+    // usuário roda sob o GUC da organização do ator (users tem RLS).
+    const credentialService = new LocalAuthCredentialService(new LocalAuthCredentialRepository(this.prisma), {
+      findByIdForTenant: (userId: string, tenantId: string) =>
+        this.prisma.$transaction(async (tx) => {
+          await setTenantRlsContext(tx, tenantId);
+
+          return tx.user.findFirst({
+            where: { id: userId, tenant_id: tenantId },
+            select: { id: true, tenant_id: true, email: true },
+          });
+        }),
+    });
+
+    return credentialService.changePasswordWithIdentityHook(actor, input.newPassword, this);
+  }
+
+  // Gancho da troca de senha (§5.5) — armado; desde o B-USERS-ACESSO-SEG (S7) é chamado pela troca
+  // do PRÓPRIO usuário (`changeOwnPassword`, rota POST /auth/password). O reset por administrador
+  // segue sem rota (P-O6R-B01-TROCA-SENHA, reset). Na MESMA
   // transação: (opcional) aplica a troca de senha via `applyPasswordUpdate`; (a) se o vínculo do
   // par chegou por 'religacao' (LIDO DE auth_identity_links.attached_via sob o braço de tenant —
   // legível sob a role real; NUNCA da trilha, ilegível — terceira armadilha, opção A) e a
