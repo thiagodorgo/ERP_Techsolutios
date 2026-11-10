@@ -466,3 +466,11 @@
     (o recusado prende o envio) · revertida. **OK.**
   - **M-C3** (no adiamento, gravar `action.copyWith(status: SyncStatus.failed, retryCount: action.retryCount + 1)` e
     só então devolver `null`) → RR-C.3 `Expected: SyncStatus.pending Actual: SyncStatus.failed` · revertida. **OK.**
+- Commit `fe54c23a` + push (`1a194f85..fe54c23a`). Vermelho-controle REFEITO com o teste commitado no `w-dev525-vc`
+  → a mesma falha de compilação (`expense_sync_pass.dart` ausente no objeto) · `w-dev525-vc` limpo.
+
+## RETOMADA 11 (07:37)
+
+- head `fe54c23ad579aa08975ff8b8f102e8112d09c542` · feito: F0–F4b, F5a · falta: F5b → F5c → F6a → F6b → F7 → F8 · próximo comando: escrever RR-D.4 e
+  RR-D.5 (recuperação do id do item pelo `result_ref`) num arquivo novo `test/core/sync/brdvcomp_c1_item_recovery_test.dart`
+  · arquivos meio escritos: nenhum.
