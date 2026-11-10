@@ -181,3 +181,10 @@
     `not ok 4 - RR-A.3` "o /file não serviu" `200 × 500` (`unexpected_error`; vira 503 `receipt_storage_unavailable`
     quando a F1c embrulhar o storage) e 0 chamada ao cliente fingido · revertida. **OK.**
 - `npm run check` → 0 erro.
+- Commit `d936d0ad` + push (`57b4a64e..d936d0ad`). Vermelho-controle REFEITO com o teste commitado no
+  `w-dev525-vc` → `not ok 1..4` (`# tests 4 · fail 4`) · `w-dev525-vc` limpo.
+
+## RETOMADA 4 (06:10)
+
+- head `d936d0ad1a51738bab7ab02e47cffb687d7da284` · feito: F0, F1a, F1d, F1b, F1e · falta: F1c → F2a → F2b → F3 → F4a … F8 · próximo comando:
+  escrever o RR-A.5 (classificação de falhas, 5 casos) no arquivo de storage · arquivos meio escritos: nenhum.
