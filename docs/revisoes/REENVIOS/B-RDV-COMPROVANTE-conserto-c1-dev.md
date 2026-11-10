@@ -148,3 +148,11 @@
     (https://s3.us-east-1.amazonaws.com.localtest.me)" `503 × 201` · revertida. **OK.**
   - **M-A2d** (apagar `url.protocol === "https:" &&`) → `not ok 3 - RR-A.2b` "caso 9
     (http://s3.us-east-1.amazonaws.com)" `503 × 201` · revertida. **OK.**
+- Commit `0361a7f7` + push (`3ca24ca0..0361a7f7`). Vermelho-controle REFEITO com o teste commitado no
+  `w-dev525-vc` (`git -c core.autocrlf=false checkout 0361a7f7 -- tests/b-rdv-comprovante-receipt-storage.test.ts`)
+  → `not ok 1`, `not ok 2`, `not ok 3` (os dois do portão por `ERR_INVALID_ARG_TYPE`) · `w-dev525-vc` limpo.
+
+## RETOMADA 3 (06:05)
+
+- head `0361a7f7aacc90ed18bab1122df96187c5a06039` · feito: F0, F1a, F1d, F1b · falta: F1e → F1c → F2a → F2b → F3 → F4a … F8 · próximo comando:
+  escrever o RR-A.3 (S3 por cliente fingido, escrita e leitura) no arquivo de storage · arquivos meio escritos: nenhum.
