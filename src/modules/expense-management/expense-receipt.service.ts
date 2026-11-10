@@ -321,8 +321,8 @@ export class ExpenseReceiptService {
   constructor(private readonly repository: ExpenseManagementRepository) {}
 
   /**
-   * Conserto c1 do #525 — a ordem (§2(b)2, §12.5, §12.1): posse (404) → item (404) → sha256/tamanho (400) →
-   * editabilidade de fora (422 cedo, sem efeito) → portão de produção (503) → scanner (V6) → fingerprint → replay →
+   * Conserto c1 do #525 — a ordem (§2(b)2, §12.5, §12.1): posse (404) → item (404) → sha256/tamanho (400) → fingerprint →
+   * replay (200, antes da editabilidade e do scanner) → editabilidade de fora (422 cedo, sem efeito) → portão (503) → scanner →
    * gravação do objeto FORA da transação → transação {trava do relatório (teto de 2 s) → posse (404) → replay do
    * concorrente → editabilidade da linha travada (422) → claim → linha → recibo → evento} → compensação.
    */
@@ -345,6 +345,29 @@ export class ExpenseReceiptService {
     if (computedSha256 !== input.declaredSha256) {
       throw new ExpenseManagementError(400, "BAD_REQUEST", "sha256_mismatch", "sha256 does not match uploaded file.");
     }
+
+    // Passo 4 — fingerprint (só dado já validado; nada ainda foi ao scanner nem ao storage).
+    const receiptKey = buildSyncReceiptKey(input.clientActionId);
+    const fingerprint = computeSyncFingerprint({
+      tenantId: actor.tenantId,
+      actorUserId: actor.userId,
+      clientActionId: input.clientActionId,
+      type: EXPENSE_RECEIPT_SYNC_ACTION_TYPE,
+      normalized: {
+        reportId: report.id,
+        itemId: item.id,
+        sha256: computedSha256,
+        sizeBytes: input.buffer.length,
+      },
+    });
+
+    // Passo 5 (C1-A3) — o replay idempotente vem ANTES da editabilidade e do scanner, como no lote
+    // (`expense-management.service.ts`): o comprovante já guardado responde 200 com o mesmo `receiptId` também depois
+    // da submissão, e com o antivírus fora.
+    const recorded = await this.repository.withSyncTransaction(actor.tenantId, (repository) =>
+      this.resolveRecordedReceipt(repository, actor, input.clientActionId, fingerprint),
+    );
+    if (recorded) return recorded;
 
     // Passo 6 — atalho de fora: 422 cedo, sem efeito. Quem DECIDE é a releitura da linha travada (passo 10).
     assertEditable(report);
@@ -375,25 +398,6 @@ export class ExpenseReceiptService {
       }
       throw new ExpenseManagementError(415, "UNSUPPORTED_MEDIA_TYPE", error.kind, error.detail);
     });
-
-    const receiptKey = buildSyncReceiptKey(input.clientActionId);
-    const fingerprint = computeSyncFingerprint({
-      tenantId: actor.tenantId,
-      actorUserId: actor.userId,
-      clientActionId: input.clientActionId,
-      type: EXPENSE_RECEIPT_SYNC_ACTION_TYPE,
-      normalized: {
-        reportId: report.id,
-        itemId: item.id,
-        sha256: computedSha256,
-        sizeBytes: input.buffer.length,
-      },
-    });
-
-    const recorded = await this.repository.withSyncTransaction(actor.tenantId, (repository) =>
-      this.resolveRecordedReceipt(repository, actor, input.clientActionId, fingerprint),
-    );
-    if (recorded) return recorded;
 
     // Passo 9 (§2(b)2) — o objeto vai ao storage FORA da transação: o `$transaction` do `withTenantRls` tem 5 s, e um
     // PUT de até 10 MB no S3 não cabe nele com folga. §12.1 — daqui em diante, toda saída que não seja o 201 passa

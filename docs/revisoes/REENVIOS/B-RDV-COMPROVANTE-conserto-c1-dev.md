@@ -267,3 +267,26 @@
 
 - head `69d8a1b19a0dc0ff5129b8f05ef2c5f39c90a55e` · feito: F0, F1a, F1d, F1b, F1e, F1c, F2a · falta: F2b → F3 → F4a … F8 · próximo comando: escrever
   RR-B.3 e RR-B.4 no arquivo de rotas · arquivos meio escritos: nenhum.
+
+## F2b — replay primeiro, fora e dentro da transação (C1-A3, Q6) (06:34–06:39)
+
+- Testes ANTES: **RR-B.3** (guardado → submit → replay do mesmo `client_action_id` e conteúdo → 200, mesmo
+  `receiptId`, 0 linha e 0 objeto novos; com o scanner respondendo `failed`, o replay também é 200) e **RR-B.4** (dois
+  envios do MESMO `client_action_id`, pausados no scanner por barreiras próprias depois do passo 5; solta o 1º → 201;
+  submit 200; solta o 2º → 200 com o mesmo `receiptId`, 1 linha, 1 objeto). As barreiras soltam também no `finally`.
+- **Vermelho-controle no objeto:** `not ok 13 - RR-B.3` `actual: 422` (= sonda 10 da C1) · `not ok 14 - RR-B.4` só na
+  asserção "esperado 1 objeto: o do 2º envio tinha de ser compensado" `1 × 0` — no objeto a parte do replay PASSA
+  (o recibo concorrente é lido antes de tudo: guarda, como o plano declara), e o vermelho vem de o objeto gravar no
+  tmpdir (C1-D1), não no diretório configurado. **No head ANTES do código:** `not ok 13 - RR-B.3` "replay depois da
+  submissão: {…report_not_editable…}" (o replay ainda vinha depois do `assertEditable(report)`). **OK.**
+- Código: fingerprint + replay de fora sobem para os passos 4–5, antes do `assertEditable(report)` (passo 6), do portão
+  e do scanner. Dentro da transação a ordem da §12.5 já vinha da F2a (replay do concorrente antes do
+  `assertEditable(locked)`).
+- `npm run check` → 0 erro · routes + storage + contract + census o6r07b + expense-management-routes + fingerprint +
+  guards do 03b → `# tests 56 · pass 56 · fail 0`. **OK.**
+- Mutações (`git diff --exit-code -- src tests mobile` = 0 depois de cada reversão):
+  - **M-B3** (o replay de fora para depois do `assertEditable(report)`) → `not ok 13 - RR-B.3` "replay depois da
+    submissão: {…report_not_editable…}" (422) · revertida. **OK.**
+  - **M-B4** (dentro da transação, o replay do concorrente para depois do `assertEditable(locked)`) → `not ok 14 -
+    RR-B.4` "2º envio, depois do submit: {…report_not_editable…}" (422) · revertida. **OK.**
+- `docker ps` às 06:38 → só `ci522-pg` de pé (o `users-seg-pg` saiu) = 1 trabalho: a F3 pode subir o `dev525-pg`.

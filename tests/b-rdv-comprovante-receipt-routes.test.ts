@@ -674,3 +674,80 @@ test("RR-B.2 a submissão espera a gravação do comprovante: com `createExpense
     }
   });
 });
+
+test("RR-B.3 replay primeiro (C1-A3): comprovante guardado → submit → replay do mesmo client_action_id e conteúdo → 200 com o mesmo receiptId, 0 linha e 0 objeto novos; com o scanner respondendo `failed`, o replay também é 200", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const { configureExpenseReceiptScannerForTests } = await import("../src/modules/expense-management/expense-receipt.service.js");
+    const repository = await memoryRepositoryForTests();
+    const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const bytes = jpegBytes(0xb3);
+    const form = async () => receiptForm({ clientActionId: "rrb3-replay", bytes, sha256: await sha256Hex(bytes) });
+    const runDir = path.join(RECEIPT_STORAGE_DIR, seed.tenantA.id, `expense-receipt-${reportId}`);
+    const rows = () => [...(repository.expenseReceipts as Map<string, { tenantId: string }>).values()].filter((row) => row.tenantId === seed.tenantA.id).length;
+
+    const first = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, await form());
+    assert.equal(first.status, 201, JSON.stringify(first.body));
+    const submitted = await submitReport(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId);
+    assert.equal(submitted.status, 200, JSON.stringify(submitted.body));
+    const rowsBefore = rows();
+    const objectsBefore = listFilesRecursive(runDir).length;
+
+    const replay = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, await form());
+    assert.equal(replay.status, 200, `replay depois da submissão: ${JSON.stringify(replay.body)}`);
+    assert.equal(replay.body.data?.receiptId, first.body.data?.receiptId);
+    assert.equal(rows(), rowsBefore, "o replay criou linha");
+    assert.equal(listFilesRecursive(runDir).length, objectsBefore, "o replay criou objeto");
+
+    // A consulta vem ANTES do scanner: um scanner que responde `failed` (503) não muda o replay.
+    configureExpenseReceiptScannerForTests({ async scan() { return { status: "failed" as const, reason: "rrb3" }; } });
+    const replayScannerDown = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, await form());
+    assert.equal(replayScannerDown.status, 200, `replay com o scanner fora: ${JSON.stringify(replayScannerDown.body)}`);
+    assert.equal(replayScannerDown.body.data?.receiptId, first.body.data?.receiptId);
+  });
+});
+
+test("RR-B.4 replay do concorrente dentro da transação (Q6): dois envios do MESMO client_action_id pausados no scanner; solta o 1º → 201; submit 200; solta o 2º → 200 com o mesmo receiptId, 1 linha e 1 objeto (o do 2º foi compensado)", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const { configureExpenseReceiptScannerForTests } = await import("../src/modules/expense-management/expense-receipt.service.js");
+    const repository = await memoryRepositoryForTests();
+    const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const bytes = jpegBytes(0xb4);
+    const form = async () => receiptForm({ clientActionId: "rrb4-concorrente", bytes, sha256: await sha256Hex(bytes) });
+    const gates = [barrier(), barrier()];
+    let calls = 0;
+    configureExpenseReceiptScannerForTests({
+      async scan() {
+        const gate = gates[calls] ?? barrier();
+        calls += 1;
+        gate.signal();
+        await gate.wait;
+        return { status: "clean" as const };
+      },
+    });
+
+    const firstUpload = postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, await form());
+    await gates[0].entered;
+    const secondUpload = postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, await form());
+    let submitted: { status: number; body: Record<string, any> };
+    let first: { status: number; body: Record<string, any> };
+    try {
+      await gates[1].entered; // os dois passaram do replay de fora (ainda sem recibo) e estão no scanner
+      gates[0].release();
+      first = await firstUpload;
+      submitted = await submitReport(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId);
+    } finally {
+      gates[0].release();
+      gates[1].release();
+    }
+    assert.equal(first.status, 201, `1º envio: ${JSON.stringify(first.body)}`);
+    assert.equal(submitted.status, 200, `submit: ${JSON.stringify(submitted.body)}`);
+
+    const second = await secondUpload;
+    assert.equal(second.status, 200, `2º envio, depois do submit: ${JSON.stringify(second.body)}`);
+    assert.equal(second.body.data?.receiptId, first.body.data?.receiptId);
+    const rows = [...(repository.expenseReceipts as Map<string, { tenantId: string }>).values()].filter((row) => row.tenantId === seed.tenantA.id);
+    assert.equal(rows.length, 1, "esperada 1 linha");
+    const runDir = path.join(RECEIPT_STORAGE_DIR, seed.tenantA.id, `expense-receipt-${reportId}`);
+    assert.equal(listFilesRecursive(runDir).length, 1, "esperado 1 objeto: o do 2º envio tinha de ser compensado");
+  });
+});
