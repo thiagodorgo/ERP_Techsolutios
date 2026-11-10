@@ -9,6 +9,10 @@ import { test } from "node:test";
 import { InMemoryOutboxRepository, type StatementClaimReader } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { chargeCreateClaimVerdict, runDispatchOutbox, type DispatchAuditEvent } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
+import { InMemoryStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.repository.js";
+import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
+import { StatementService, type OutboxStatementGuard } from "../src/modules/subscription-billing/statements/statement.service.js";
+import { StatementError } from "../src/modules/subscription-billing/statements/statement.types.js";
 import { ProviderRateLimitedError } from "../src/modules/subscription-billing/providers/http/billing-errors.js";
 import type {
   ChargeResult,
@@ -250,4 +254,161 @@ test("R-OBX-1 guard de texto: o dispatcher NÃO abre transação em volta da cha
     .join("\n");
   assert.ok(!/withTenantRls\s*\(/.test(code), "o fetch nunca roda dentro de withTenantRls(...)");
   assert.ok(!/\$transaction\s*\(/.test(code), "o fetch nunca roda dentro de $transaction(...)");
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// R-OBX-5 (D2) — conserto J-522 (achado C2-01): cobrança parada NUNCA sai de demonstrativo que mudou. Forma comum dos
+// quatro: demonstrativo `closed` R$ 100 com `chargeStatus: "none"` (ao fechar, a cobrança ainda não existe); outbox ligada
+// ao demonstrativo REAL (`findStatement`) e à tabela de cobranças (`findLive`); `enqueue charge_create seq 1`; o
+// demonstrativo MUDA pelo `StatementService` real; o dispatcher roda com a porta que grava chamadas.
+// Vermelho-controle: no objeto `92d644db` (claim sem releitura) os quatro cobram — `createCharge` 1× e linha SENT.
+// Mutação literal do plano: `chargeCreateClaimVerdict` devolvendo `eligible` sempre → 13, 14, 15 e a metade "cobrança
+// viva" do 16 vermelhos; `reopen()` sem o guard → 16 vermelho; sem a linha `reopenedAt > occurredAt` → o braço
+// "refechado" do 15 vermelho.
+// ---------------------------------------------------------------------------------------------------------------------
+
+const ACTOR = "33333333-3333-3333-3333-333333333333";
+const inputsStub = { resolve: async () => ({ kind: "skip" as const, reason: "no_subscription" as const }) };
+
+type Obx5Harness = {
+  readonly statements: InMemoryStatementRepository;
+  readonly charges: InMemoryStatementChargeRepository;
+  readonly service: StatementService;
+  readonly outbox: InMemoryOutboxRepository;
+  readonly statementId: string;
+  readonly rowId: string;
+  readonly port: RecordingPort;
+  readonly audits: DispatchAuditEvent[];
+};
+
+/** Demonstrativo `closed` R$ 100 + linha `charge_create` PENDING enfileirada em `t0`, tudo ligado ao serviço REAL. */
+async function obx5Harness(t0: Date): Promise<Obx5Harness> {
+  const statements = new InMemoryStatementRepository(() => t0);
+  const charges = new InMemoryStatementChargeRepository();
+  const outbox = new InMemoryOutboxRepository({
+    readStatement: async (tenantId, statementId) => {
+      const current = await statements.findStatement(tenantId, statementId);
+      return current && { status: current.status, reopenedAt: current.reopenedAt, hasLiveCharge: (await charges.findLive(tenantId, statementId)) !== undefined };
+    },
+    clock: () => t0,
+  });
+  // D2 (iv): o guard que `reopen()` consulta — adaptador trivial sobre `listByStatement` (em produção, a 08b liga o Prisma).
+  const guard: OutboxStatementGuard = {
+    hasNeedsReview: async (tenantId, statementId) => (await outbox.listByStatement(tenantId, statementId)).some((row) => row.status === "NEEDS_REVIEW"),
+  };
+  const service = new StatementService(statements, inputsStub, { record: async () => {} }, guard);
+  const statement = await statements.transaction(TENANT, async (tx) => {
+    const { statement: fresh } = await tx.insertIfAbsentAndLock({ tenantId: TENANT, period: "2026-11" });
+    return tx.saveStatement({ ...fresh, status: "closed", chargeStatus: "none", totalCents: 10000, dueDate: "2026-12-10", closedAt: t0 });
+  });
+  const { row } = await outbox.enqueue(
+    { tenantId: TENANT, statementId: statement.id, kind: "charge_create", provider: "asaas", seq: 1, payload: { customerId: "cus_1", amountCents: 10000, dueDate: "2026-12-10", method: "pix" } },
+    t0,
+  );
+  return { statements, charges, service, outbox, statementId: statement.id, rowId: row.id, port: new RecordingPort(), audits: [] };
+}
+
+function dispatch(h: Obx5Harness, now: Date) {
+  return runDispatchOutbox({ repo: h.outbox, ports: { asaas: h.port }, now: () => now, onAudit: async (event) => void h.audits.push(event) });
+}
+
+test("R-OBX-5 baixa manual TOTAL depois de enfileirada → SKIPPED statement_paid, 0 chamadas; o retry revalida igual (T-OBX-13)", async () => {
+  const t0 = new Date("2026-12-01T12:00:00Z");
+  const t1 = new Date(t0.getTime() + 60_000);
+  const h = await obx5Harness(t0);
+  const { statement } = await h.service.recordManualPayment({ tenantId: TENANT, statementId: h.statementId, amountCents: 10000, method: "pix", note: null, actorId: ACTOR, now: t1 });
+  assert.equal(statement.status, "paid");
+
+  const result = await dispatch(h, t1);
+  assert.equal(h.port.created.length, 0, "demonstrativo pago: NENHUMA cobrança sai para o provedor");
+  assert.equal(result.outcomes.skipped, 1);
+  assert.equal(result.outcomes.sent, 0);
+  const row = await h.outbox.findById(TENANT, h.rowId);
+  assert.equal(row?.status, "SKIPPED");
+  assert.equal(row?.skipReason, "statement_paid");
+  assert.equal(row?.attempts, 0, "pulada pela política: não conta tentativa");
+  assert.equal(row?.claimedAt, null, "pulada pela política: nunca foi reclamada");
+
+  // Braço do retry — D2 (ii): "o retry revalida como o claim". FAILED → retry → PENDING em demonstrativo pago → não sai.
+  const r = await obx5Harness(t0);
+  await r.outbox.markFailed(TENANT, r.rowId, "boom", t0);
+  await r.service.recordManualPayment({ tenantId: TENANT, statementId: r.statementId, amountCents: 10000, method: "pix", note: null, actorId: ACTOR, now: t1 });
+  assert.equal((await r.outbox.retry(TENANT, r.rowId, t1))?.status, "PENDING");
+  const retried = await dispatch(r, t1);
+  assert.equal(r.port.created.length, 0, "retry em demonstrativo pago: 0 chamadas");
+  assert.equal(retried.outcomes.skipped, 1);
+  assert.equal((await r.outbox.findById(TENANT, r.rowId))?.skipReason, "statement_paid");
+});
+
+test("R-OBX-5 cancelamento depois de enfileirada → SKIPPED statement_cancelled, 0 chamadas (T-OBX-14)", async () => {
+  const t0 = new Date("2026-12-01T12:00:00Z");
+  const t1 = new Date(t0.getTime() + 60_000);
+  const h = await obx5Harness(t0);
+  const cancelled = await h.service.cancel({ tenantId: TENANT, statementId: h.statementId, reason: "cliente encerrou o contrato", actorId: ACTOR, now: t1 });
+  assert.equal(cancelled.status, "cancelled");
+
+  const result = await dispatch(h, t1);
+  assert.equal(h.port.created.length, 0, "demonstrativo cancelado: NENHUMA cobrança sai");
+  assert.equal(result.outcomes.skipped, 1);
+  const row = await h.outbox.findById(TENANT, h.rowId);
+  assert.equal(row?.status, "SKIPPED");
+  assert.equal(row?.skipReason, "statement_cancelled");
+});
+
+test("R-OBX-5 reabertura depois de enfileirada → SKIPPED statement_reopened; REFECHADO com total novo → ainda não sai (T-OBX-15)", async () => {
+  const t0 = new Date("2026-12-01T12:00:00Z");
+  const t1 = new Date(t0.getTime() + 60_000);
+  const t2 = new Date(t0.getTime() + 120_000);
+  const h = await obx5Harness(t0);
+  const reopened = await h.service.reopen({ tenantId: TENANT, statementId: h.statementId, reason: "recalcular o uso do mês", actorId: ACTOR, now: t1 });
+  assert.equal(reopened.status, "reopened");
+
+  const result = await dispatch(h, t1);
+  assert.equal(h.port.created.length, 0, "demonstrativo reaberto: NENHUMA cobrança sai");
+  assert.equal(result.outcomes.skipped, 1);
+  const row = await h.outbox.findById(TENANT, h.rowId);
+  assert.equal(row?.status, "SKIPPED");
+  assert.equal(row?.skipReason, "statement_reopened");
+
+  // Braço do refechamento: reopen (t1) → refechado `closed` com total NOVO (t2); `reopenedAt` é preservado pelo fechamento.
+  // A linha antiga carrega o `amountCents` do fechamento desfeito: `reopened_at > occurred_at` → não sai (payload velho).
+  const r = await obx5Harness(t0);
+  await r.service.reopen({ tenantId: TENANT, statementId: r.statementId, reason: "recalcular o uso do mês", actorId: ACTOR, now: t1 });
+  const reclosed = await r.statements.transaction(TENANT, async (tx) => {
+    const current = (await tx.lockById(r.statementId))!;
+    return tx.saveStatement({ ...current, status: "closed", totalCents: 8000, closedAt: t2 });
+  });
+  assert.equal(reclosed.status, "closed");
+  assert.equal(reclosed.reopenedAt?.getTime(), t1.getTime(), "o fechamento preserva reopened_at");
+  const reclosedRun = await dispatch(r, t2);
+  assert.equal(r.port.created.length, 0, "refechado com total novo: a linha VELHA (R$ 100) nunca sai");
+  assert.equal(reclosedRun.outcomes.skipped, 1);
+  assert.equal((await r.outbox.findById(TENANT, r.rowId))?.skipReason, "statement_reopened");
+});
+
+test("R-OBX-5 linha NEEDS_REVIEW → reopen recusa 422 outbox_needs_review; cobrança VIVA → NEEDS_REVIEW charge_already_exists, 0 chamadas (T-OBX-16)", async () => {
+  const t0 = new Date("2026-12-01T12:00:00Z");
+  const t1 = new Date(t0.getTime() + 60_000);
+
+  // D2 (iv): a linha está em revisão → reabrir é recusado; o demonstrativo continua `closed`.
+  const h = await obx5Harness(t0);
+  await h.outbox.markNeedsReview(TENANT, h.rowId, "orphan_recovery_not_found", t0);
+  await assert.rejects(
+    h.service.reopen({ tenantId: TENANT, statementId: h.statementId, reason: "recalcular o uso do mês", actorId: ACTOR, now: t1 }),
+    (error: unknown) => error instanceof StatementError && error.statusCode === 422 && error.reason === "outbox_needs_review",
+  );
+  assert.equal((await h.statements.findStatement(TENANT, h.statementId))?.status, "closed");
+
+  // Cobrança viva já existente (E3): não é SKIPPED (a M5 não tem motivo para isso) — vai a NEEDS_REVIEW com last_error, sem rede.
+  const c = await obx5Harness(t0);
+  await c.charges.insert({ tenantId: TENANT, statementId: c.statementId, provider: "asaas", externalChargeId: "pay_live", status: "pending", payUrl: "https://pay.example/live", dueDate: "2026-12-10" }, t0);
+  const result = await dispatch(c, t1);
+  assert.equal(c.port.created.length, 0, "cobrança viva: NENHUMA segunda cobrança sai");
+  assert.equal(result.outcomes.needs_review, 1);
+  assert.equal(result.outcomes.sent, 0);
+  const row = await c.outbox.findById(TENANT, c.rowId);
+  assert.equal(row?.status, "NEEDS_REVIEW");
+  assert.equal(row?.lastError, "charge_already_exists");
+  assert.equal(row?.skipReason, null, "sem skip_reason novo: a lista da M5 é fechada");
+  assert.deepEqual(c.audits.map((event) => [event.action, event.code]), [["billing_outbox.needs_review", "charge_already_exists"]]);
 });
