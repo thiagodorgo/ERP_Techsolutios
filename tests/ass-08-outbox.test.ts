@@ -28,6 +28,10 @@ const TENANT = "22222222-2222-2222-2222-222222222222";
  * exige o leitor por construção; não há default permissivo). Os T-OBX-13..16 ligam o `StatementService` real. */
 const alwaysClosed: StatementClaimReader = async () => ({ status: "closed", reopenedAt: null, hasLiveCharge: false });
 
+/** Resolver de cliente para os testes que NÃO medem R-PRF-1 (o dispatcher o exige por construção — C3-02); os T-PRF-2/3
+ * de `ass-08-charges-profile.test.ts` ligam o `profileCustomerResolver` real. */
+const okResolver = async () => ({ ok: true as const, customerId: "cus_1" });
+
 /** Porta de pagamento falsa que grava cada chamada (o equivalente ao `recorded[]` do servidor falso, sem rede). */
 class RecordingPort implements PaymentProviderPort {
   readonly created: CreateChargeInput[] = [];
@@ -97,7 +101,7 @@ test("R-OBX-1 durável e idempotente: enqueue repetido = 1 linha; dispatch cria 
   assert.equal(first.row.id, second.row.id);
 
   const port = new RecordingPort();
-  const result = await runDispatchOutbox({ repo, ports: { asaas: port }, now: () => now });
+  const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => now });
   assert.equal(result.outcomes.sent, 1);
   assert.equal(port.created.length, 1); // uma cobrança, não duas
   const row = await repo.findById(TENANT, first.row.id);
@@ -105,7 +109,7 @@ test("R-OBX-1 durável e idempotente: enqueue repetido = 1 linha; dispatch cria 
   assert.equal(row?.externalId, "pay_1");
 
   // Rodar de novo não cria 2ª cobrança (linha já SENT não é reclamada).
-  await runDispatchOutbox({ repo, ports: { asaas: port }, now: () => now });
+  await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => now });
   assert.equal(port.created.length, 1);
 });
 
@@ -117,7 +121,7 @@ test("R-OBX-1 crash entre chamada e registro: linha PROCESSING órfã reconsulta
   // Simula o crash: a 1ª chamada ao provedor foi feita, a cobrança nasceu no provedor, mas o registro não gravou.
   const port = new RecordingPort();
   port.nextError = new Error("socket hangup"); // a chamada "cai" depois de criar no provedor
-  await runDispatchOutbox({ repo, ports: { asaas: port }, now: () => start });
+  await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => start });
   // 1ª passada: erro transitório → reschedule PENDING (attempts 1).
   let current = await repo.findById(TENANT, row.id);
   assert.equal(current?.status, "PENDING");
@@ -136,7 +140,7 @@ test("R-OBX-1 crash entre chamada e registro: linha PROCESSING órfã reconsulta
   assert.equal(claimed.row.status, "PROCESSING");
 
   const before = port.created.length;
-  const result = await runDispatchOutbox({ repo, ports: { asaas: port }, now: () => later, orphanMs: OUTBOX_ORPHAN_MS });
+  const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => later, orphanMs: OUTBOX_ORPHAN_MS });
   assert.equal(result.outcomes.recovered, 1);
   assert.equal(port.created.length, before, "reconsulta não cria 2ª cobrança");
   assert.deepEqual(port.lookups, [STMT]);
@@ -154,7 +158,7 @@ test("R-OBX-1 crash + reconsulta vazia → NEEDS_REVIEW (nunca repete às cegas)
   await repo.claimNext({ enabledProviders: ["asaas"], now: start, claimedBy: "t", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
   const later = new Date(start.getTime() + OUTBOX_ORPHAN_MS + 60_000);
   const audits: DispatchAuditEvent[] = [];
-  const result = await runDispatchOutbox({ repo, ports: { asaas: port }, now: () => later, onAudit: async (e) => void audits.push(e) });
+  const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => later, onAudit: async (e) => void audits.push(e) });
   assert.equal(result.outcomes.needs_review, 1);
   assert.equal(port.created.length, 0);
   const current = await repo.findById(TENANT, row.id);
@@ -171,7 +175,7 @@ test("R-OBX-2 backoff e FAILED na 8ª falha + trilha (T-OBX-7..8)", async () => 
   const audits: DispatchAuditEvent[] = [];
 
   for (let attempt = 1; attempt <= 8; attempt += 1) {
-    const result = await runDispatchOutbox({ repo, ports: { asaas: port }, now: () => clock, onAudit: async (e) => void audits.push(e) });
+    const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => clock, onAudit: async (e) => void audits.push(e) });
     const current = await repo.findById(TENANT, row.id);
     if (attempt < 8) {
       assert.equal(current?.status, "PENDING", `tentativa ${attempt} volta a PENDING`);
@@ -196,7 +200,7 @@ test("R-OBX-2 retry reabre FAILED → PENDING e dispatch volta a tentar (T-OBX-9
   assert.equal(reopened?.status, "PENDING");
   assert.equal(reopened?.attempts, 0);
   const port = new RecordingPort();
-  const result = await runDispatchOutbox({ repo, ports: { asaas: port }, now: () => now });
+  const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => now });
   assert.equal(result.outcomes.sent, 1);
 });
 
@@ -205,7 +209,7 @@ test("R-OBX-3 canal desligado: dispatcher não roda, linha segue PENDING (T-OBX-
   const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
   const { row } = await enqueueCharge(repo, now);
   // Nenhum provedor ligado → ports vazio.
-  const result = await runDispatchOutbox({ repo, ports: {}, now: () => now });
+  const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: {}, now: () => now });
   assert.equal(result.processed, 0);
   const current = await repo.findById(TENANT, row.id);
   assert.equal(current?.status, "PENDING");
@@ -221,7 +225,7 @@ test("R-OBX-4 provedor desligado NÃO é alcançado (T-OBX-12): 0 chamada ao Asa
   );
   const mp = new RecordingPort();
   // ports só tem mercadopago ligado; Asaas nem existe no mapa → impossível alcançá-lo.
-  const result = await runDispatchOutbox({ repo, ports: { mercadopago: mp }, now: () => now });
+  const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { mercadopago: mp }, now: () => now });
   assert.equal(result.outcomes.sent, 1); // só o ligado
 
   const asaas = await repo.findById(TENANT, asaasRow.id);
@@ -237,7 +241,7 @@ test("429 → reschedule com next_attempt_at = now + retryAfter, sem FAILED", as
   const { row } = await enqueueCharge(repo, now);
   const port = new RecordingPort();
   port.nextError = new ProviderRateLimitedError(2000);
-  const result = await runDispatchOutbox({ repo, ports: { asaas: port }, now: () => now });
+  const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => now });
   assert.equal(result.outcomes.rate_limited, 1);
   const current = await repo.findById(TENANT, row.id);
   assert.equal(current?.status, "PENDING");
@@ -309,7 +313,7 @@ async function obx5Harness(t0: Date): Promise<Obx5Harness> {
 }
 
 function dispatch(h: Obx5Harness, now: Date) {
-  return runDispatchOutbox({ repo: h.outbox, ports: { asaas: h.port }, now: () => now, onAudit: async (event) => void h.audits.push(event) });
+  return runDispatchOutbox({ repo: h.outbox, ports: { asaas: h.port }, resolveCustomer: okResolver, now: () => now, onAudit: async (event) => void h.audits.push(event) });
 }
 
 test("R-OBX-5 baixa manual TOTAL depois de enfileirada → SKIPPED statement_paid, 0 chamadas; o retry revalida igual (T-OBX-13)", async () => {

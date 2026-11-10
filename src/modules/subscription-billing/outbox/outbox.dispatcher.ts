@@ -43,10 +43,20 @@ export type DispatchAuditEvent = {
   readonly code: string;
 };
 
+/** R-PRF-1 (conserto J-522, C3-02): o cliente no provedor, resolvido pelo PERFIL — nunca pelo payload da linha. */
+export type CustomerResolution =
+  | { readonly ok: true; readonly customerId: string }
+  | { readonly ok: false; readonly missing: readonly string[] };
+
 export type DispatcherDeps = {
   readonly repo: OutboxRepository;
   /** Um adaptador por provedor LIGADO. Provedor fora deste mapa nunca é alcançado. */
   readonly ports: Readonly<Record<string, PaymentProviderPort>>;
+  /** R-PRF-1 — OBRIGATÓRIO (fail-closed por construção, o padrão do `verdict`): resolve o `customerId` a partir do
+   * perfil da organização (`profileCustomerResolver` em `charges/charge-request.service.ts`). Perfil incompleto →
+   * `{ ok: false, missing }` e a linha vai a `NEEDS_REVIEW billing_profile_missing:<campos>` SEM nenhuma chamada ao
+   * provedor. Roda FORA de transação (pode fazer rede: `ensureCustomer`). */
+  readonly resolveCustomer: (row: BillingOutboxRow, port: PaymentProviderPort) => Promise<CustomerResolution>;
   readonly now?: () => Date;
   readonly claimedBy?: string;
   readonly orphanMs?: number;
@@ -101,10 +111,11 @@ export function chargeCreateClaimVerdict(row: BillingOutboxRow, statement: State
   return { kind: "eligible" };
 }
 
-function chargeInputFromRow(row: BillingOutboxRow): CreateChargeInput {
+function chargeInputFromRow(row: BillingOutboxRow, customerId: string): CreateChargeInput {
   const payload = row.payload as Record<string, unknown>;
   return {
-    customerId: String(payload.customerId ?? ""),
+    // R-PRF-1 (C3-02): o `customerId` vem do resolver (perfil → `ensureCustomer`) — o payload NUNCA o decide.
+    customerId,
     amountCents: Number(payload.amountCents ?? 0),
     dueDate: String(payload.dueDate ?? ""),
     description: typeof payload.description === "string" ? payload.description : undefined,
@@ -191,7 +202,15 @@ async function dispatchOne(
   }
 
   try {
-    const result = await port.createCharge(chargeInputFromRow(row));
+    // R-PRF-1 (C3-02): o gate do perfil decide ANTES de qualquer chamada de cobrança. Incompleto → NEEDS_REVIEW com os
+    // campos visíveis em `last_error` (TEXT livre; sem skip_reason novo — CHECK da M5) e 0 rede de cobrança.
+    const customer = await deps.resolveCustomer(row, port);
+    if (!customer.ok) {
+      await deps.repo.markNeedsReview(row.tenantId, row.id, `billing_profile_missing:${customer.missing.join(",")}`, clock());
+      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "billing_profile_missing" });
+      return "needs_review";
+    }
+    const result = await port.createCharge(chargeInputFromRow(row, customer.customerId));
     await deps.onChargeCreated?.(row, result, clock());
     await deps.repo.markSent(row.tenantId, row.id, result.chargeId, clock());
     return "sent";

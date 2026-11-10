@@ -17,6 +17,8 @@ import { AsaasPaymentAdapter } from "../src/modules/subscription-billing/provide
 import { InMemoryOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { InMemoryStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.repository.js";
+import { profileCustomerResolver, requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
+import { InMemoryBillingProfileRepository } from "../src/modules/subscription-billing/billing-profile/billing-profile.js";
 import { toClientPaymentView } from "../src/modules/subscription-billing/charges/charge-view.js";
 import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
 import { StatementService } from "../src/modules/subscription-billing/statements/statement.service.js";
@@ -56,14 +58,27 @@ test("R-FLX-1 (pagamento) fechado → cobrança → payUrl ao cliente → webhoo
       },
     });
     const refs = new InMemoryStatementRefRepository();
-    await refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas" }, new Date());
-    await outbox.enqueue({ tenantId: TENANT, statementId: statement.id, kind: "charge_create", provider: "asaas", seq: 1, payload: { customerId: "cus_1", amountCents: 10000, dueDate: "2026-12-10", method: "pix" } }, new Date());
+    // Conserto J-522 (C3-01): a intenção entra pelo caminho de PRODUÇÃO — `requestChargeCreate` trava o demonstrativo,
+    // aplica a elegibilidade (R-CHG-2/D1) e grava refs + linha; o payload NÃO carrega `customerId` (R-PRF-1).
+    await requestChargeCreate(
+      { statements, charges, outbox, refs },
+      { tenantId: TENANT, statementId: statement.id, provider: "asaas", seq: 1, payload: { amountCents: 10000, dueDate: "2026-12-10", method: "pix" }, now: new Date() },
+    );
+
+    // Perfil COMPLETO da organização: o resolver real (perfil → `ensureCustomer` do adaptador contra o fake) dá o cliente.
+    const profiles = new InMemoryBillingProfileRepository();
+    await profiles.upsert(
+      TENANT,
+      { legalName: "Org X", document: "11222333000181", email: "f@x.com", address: { postalCode: "01001000", street: "R", number: "1", district: "C", city: "SP", cityIbge: "3550308", state: "SP" }, paymentMethod: "pix" },
+      new Date(),
+    );
 
     // --- dispatcher cria a cobrança no provedor e grava subscription_statement_charges ---
     let createdChargeId = "";
     await runDispatchOutbox({
       repo: outbox,
       ports: { asaas: adapter },
+      resolveCustomer: profileCustomerResolver(async (tenantId) => profiles.find(tenantId)),
       onChargeCreated: async (row, result, at) => {
         createdChargeId = result.chargeId;
         await charges.insert({ tenantId: row.tenantId, statementId: row.statementId, provider: "asaas", externalChargeId: result.chargeId, status: result.status, payUrl: result.payUrl, pixCopyPaste: result.pixCopyPaste, boletoUrl: result.boletoUrl, dueDate: "2026-12-10" }, at);
