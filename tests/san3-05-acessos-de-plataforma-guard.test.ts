@@ -327,8 +327,12 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     "B-ASS-08 / R-OBX-5 (conserto J-522): releitura da cobrança viva (`EXISTS (SELECT 1 FROM subscription_statement_charges c WHERE c.statement_id = s.id AND c.status IN ('pending','confirmed'))`) na MESMA transação do claim (`withTenantRlsBudget`, GUC setado na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização — cobrança viva já existente → NEEDS_REVIEW charge_already_exists, nunca 2ª cobrança. Provado em T-OBX-db-3 sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
   [
-    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.retry", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
-    "B-ASS-08: o `retry` (FAILED → PENDING) é `UPDATE … WHERE id = $1 AND status = 'FAILED'` em billing_outbox (FORCE) no callback de `withTenantRlsBudget(this.client, tenantId, …)` (l.179), cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.128).",
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.retry", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×3"),
+    "B-ASS-08 (E9, 2º conserto do #522): o `retry` guardado lê a linha junto do demonstrativo (`… JOIN billing_outbox o … FOR UPDATE OF s`), confere outra `charge_create` viva do demonstrativo e faz o `UPDATE … WHERE id = $1 AND status = 'FAILED'` — billing_outbox (FORCE) no callback de `withTenantRlsBudget(this.client, tenantId, …)`, cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.128). Provado em T-CHG-db-3 sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.retry", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08 (E9, 2º conserto do #522): o `retry` trava o demonstrativo PRIMEIRO (`SELECT s.id, o.kind FROM subscription_statements s JOIN billing_outbox o … FOR UPDATE OF s`, regra §2.1) no mesmo callback de `withTenantRlsBudget` (GUC na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização. Provado em T-CHG-db-3 (i)/(ii) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
   // 2º conserto do #522 (E8): o pedido de cobrança é UMA transação numa UMA conexão. O SQL de `enqueue`, `listByStatement`,
   // `findLive` e `put` foi EXTRAÍDO, sem mudar, para funções `*InTx` sobre um `tx` já aberto (os métodos delegam), e a trava

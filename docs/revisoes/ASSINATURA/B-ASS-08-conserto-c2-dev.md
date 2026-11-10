@@ -216,3 +216,12 @@ O código da F5b (`adoptionFacts` no `PrismaOutboxRepository`) entrou no commit 
 - **falta, nesta ordem:** (1) em `tests/san3-05-acessos-de-plataforma-guard.test.ts`, a chave L1 do `PrismaOutboxRepository.retry` sobre `billing_outbox` de `"×1"` para `"×3"` e a chave nova sobre `subscription_statements` `"×1"`, coladas da saída `rascunhos/t13-f6.out` l.50-51, com o motivo em uma linha; (2) o T13 sozinho; (3) `npm run lint`, sozinho; (4) estas linhas no diário, `git add` do T13 e do diário, `git diff --cached --check`, commit `fix(billing): retry só reabre com o demonstrativo travado e sem outra intenção viva`, push; (5) a mensagem `F6 ok · head <sha>` (o bastão vai então para a C2 do #527; eu sigo com a F7 sem rodar). Depois: F4b (`rascunhos/f4b-battery.sh paste|green|mut M5g M5h M5i`), F6b+F6c, F7 (`rascunhos/f7-apply.mjs`), F8.
 - **na retomada, o PRIMEIRO comando:** `docker start dev522-pg` e `docker exec dev522-pg pg_isready -U postgres -h 127.0.0.1` (o container cai com a máquina; o T13 e o `lint` não usam banco, a F4b em diante usa); depois `git -C /c/Users/thiag/w-dev522 status --short` (devem aparecer os 4 arquivos com `M ` no índice) e a edição do item (1); o próximo comando PESADO é `npm test -- tests/san3-05-acessos-de-plataforma-guard.test.ts > rascunhos/t13-f6-test.tap`.
 - **arquivos meio-escritos:** nenhum no ramo. Fora do repositório, prontos e não executados: `rascunhos/f4b-db9-draft.ts`, `f4b-battery.sh`, `f6b-src/` (o `MAP_MENTION` consertado às 12:xx), `f7-apply.mjs`.
+
+## RETOMADA 8 — 14:12 SP: a máquina reiniciou às 13:39 (50,5 GB de commit livre); bastão com até 3 detentores, piso 2048 MB
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| 14:12:33 | `docker start dev522-pg` + `pg_isready`; medida do parcial (P3/P7): `git status`, `git diff --exit-code`, `grep -rln MUTACAO src tests`, `cmp` do `src` com `rascunhos/f6-src/` | pronto em 2 s; head `1f376efe`; os 4 arquivos da F6 com `M ` no índice, árvore = índice, 0 marcador de mutação, `src` = `f6-src` | o parcial da PAUSA confere |
+| 14:12–14:13 | T13: a chave do `retry` sobre `billing_outbox` `×1` → `×3` e a chave nova sobre `subscription_statements` `×1`, coladas de `rascunhos/t13-f6.out` l.50-51, com o motivo | +6/−2 em `tests/san3-05-acessos-de-plataforma-guard.test.ts` | — |
+| 14:13:13→14:13:58 | `npm test -- tests/san3-05-acessos-de-plataforma-guard.test.ts` (43,9 GB) | `# tests 35 · pass 35 · fail 0` | T13 verde |
+| 14:14:06→14:14:23 | `npm run lint` | exit 0 (17 s) | fatia fechada |

@@ -6,7 +6,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import type { StatementStatus } from "../statements/statement.types.js";
+import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import {
   idempotencyKeyOf,
   type BillingOutboxRow,
@@ -59,8 +59,10 @@ export interface OutboxRepository {
   /** Visibilidade (D5/R-OBX-4): marca `skip_reason = provider_disabled` nas PENDING de provedor desligado, SEM rede e
    * SEM mudar o status. Escrita de PLATAFORMA sobre tabela FORCE → `forEachTenantRls` no Prisma. Devolve quantas marcou. */
   markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number>;
-  /** `retry` reabre uma FAILED → PENDING (attempts zerado, erro limpo); o claim seguinte revalida (D2) — por construção:
-   * toda PENDING passa por `ClaimParams.verdict` antes de virar PROCESSING (R-OBX-5). */
+  /** `retry` reabre uma FAILED → PENDING (attempts zerado; `last_error` MANTIDO, a evidência de que a linha já foi
+   * tentada). O retry revalida a intenção viva sob a trava (E9: o demonstrativo `FOR UPDATE` primeiro; outra
+   * `charge_create` viva → 422 `charge_already_exists`; 55P03 → 409 `statement_busy`) e o claim revalida o demonstrativo
+   * (R-OBX-5): toda PENDING passa por `ClaimParams.verdict` antes de virar PROCESSING. */
   retry(tenantId: string, id: string, now: Date): Promise<BillingOutboxRow | undefined>;
   findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined>;
   /** Leitura de PLATAFORMA (tela de outbox) sobre tabela FORCE → `forEachTenantRls` no Prisma. */
@@ -261,13 +263,26 @@ export class InMemoryOutboxRepository implements OutboxRepository {
   }
 
   async retry(tenantId: string, id: string, now: Date): Promise<BillingOutboxRow | undefined> {
+    // A MESMA ordem do Prisma (E9), sem `await` entre ler e gravar (atômico no dublê): a linha é da organização? outra
+    // `charge_create` VIVA no demonstrativo → 422; só então reabre a FAILED. `lastError` fica.
     const row = this.#rows.get(id);
-    if (!row || row.tenantId !== tenantId || row.status !== "FAILED") return undefined;
+    if (!row || row.tenantId !== tenantId) return undefined;
+    if (row.kind === "charge_create") {
+      const otherLive = [...this.#rows.values()].some(
+        (other) =>
+          other.id !== id &&
+          other.tenantId === tenantId &&
+          other.statementId === row.statementId &&
+          other.kind === "charge_create" &&
+          (other.status === "PENDING" || other.status === "PROCESSING" || other.status === "SENT" || other.status === "NEEDS_REVIEW"),
+      );
+      if (otherLive) throw new StatementError(422, "charge_already_exists", "Another charge intent is live for this statement.");
+    }
+    if (row.status !== "FAILED") return undefined;
     const reopened: BillingOutboxRow = {
       ...row,
       status: "PENDING",
       attempts: 0,
-      lastError: null,
       skipReason: null,
       nextAttemptAt: now,
       claimedAt: null,

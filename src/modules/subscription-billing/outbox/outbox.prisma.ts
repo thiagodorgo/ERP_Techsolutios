@@ -27,7 +27,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { forEachTenantRls, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
-import type { StatementStatus } from "../statements/statement.types.js";
+import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import type { AdoptionFacts, ClaimParams, ClaimResult, OutboxRepository } from "./outbox.repository.js";
 import {
   idempotencyKeyOf,
@@ -318,16 +318,45 @@ export class PrismaOutboxRepository implements OutboxRepository {
   }
 
   async retry(tenantId: string, id: string, now: Date): Promise<BillingOutboxRow | undefined> {
-    return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
-      const rows = (await tx.$queryRawUnsafe(
-        `UPDATE billing_outbox SET status = 'PENDING', attempts = 0, last_error = NULL, skip_reason = NULL,
-           next_attempt_at = $2, claimed_at = NULL, claimed_by = NULL, attempt_started_at = NULL, updated_at = $2
-           WHERE id = $1::uuid AND status = 'FAILED' RETURNING *`,
-        id,
-        now,
-      )) as Row[];
-      return rows.length > 0 ? toDomain(rows[0]!) : undefined;
-    });
+    try {
+      return await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+        // E9 (R-OBX-2, 2º conserto do #522): o demonstrativo PRIMEIRO (regra §2.1), sob FOR UPDATE — o retry serializa com o
+        // pedido, o fechamento e outro retry do mesmo demonstrativo.
+        const owners = (await tx.$queryRawUnsafe(
+          `SELECT s.id, o.kind FROM subscription_statements s JOIN billing_outbox o ON o.statement_id = s.id
+             WHERE o.id = $1::uuid FOR UPDATE OF s`,
+          id,
+        )) as Array<{ id: string; kind: string }>;
+        const owner = owners[0];
+        if (!owner) return undefined;
+        if (owner.kind === "charge_create") {
+          // Outra `charge_create` VIVA (o conjunto do D1) no demonstrativo → reabrir esta daria duas vivas: recusa.
+          const other = (await tx.$queryRawUnsafe(
+            `SELECT 1 FROM billing_outbox
+               WHERE statement_id = $1::uuid AND kind = 'charge_create' AND id <> $2::uuid
+                 AND status IN ('PENDING', 'PROCESSING', 'SENT', 'NEEDS_REVIEW')
+               LIMIT 1`,
+            owner.id,
+            id,
+          )) as unknown[];
+          if (other.length > 0) throw new StatementError(422, "charge_already_exists", "Another charge intent is live for this statement.");
+        }
+        // `last_error` FICA (E9): é a evidência de que a linha já foi tentada, que a reconsulta usa para adotar a PRÓPRIA
+        // cobrança. `attempts` zera (o backoff recomeça).
+        const rows = (await tx.$queryRawUnsafe(
+          `UPDATE billing_outbox SET status = 'PENDING', attempts = 0, skip_reason = NULL,
+             next_attempt_at = $2, claimed_at = NULL, claimed_by = NULL, attempt_started_at = NULL, updated_at = $2
+             WHERE id = $1::uuid AND status = 'FAILED' RETURNING *`,
+          id,
+          now,
+        )) as Row[];
+        return rows.length > 0 ? toDomain(rows[0]!) : undefined;
+      });
+    } catch (error) {
+      // 55P03 = `lock_timeout`: o demonstrativo está travado por outra transação além do orçamento → repetível.
+      if (postgresErrorCode(error) === "55P03") throw new StatementError(409, "statement_busy", "The statement is busy; try again.");
+      throw error;
+    }
   }
 
   async findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined> {

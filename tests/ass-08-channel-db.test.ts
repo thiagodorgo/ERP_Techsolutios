@@ -769,4 +769,148 @@ if (!connectionString) {
       await role.drop();
     }
   });
+
+  async function seedFailedRow(tenantId: string, statementId: string, seq: number, provider = "asaas"): Promise<string> {
+    const rows = (await db.$queryRawUnsafe(
+      `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, attempts, last_error)
+       VALUES ($1::uuid, $2::uuid, 'charge_create', $4, $3, gen_random_uuid(), '{"amountCents":10000,"dueDate":"2026-11-10","method":"pix"}'::jsonb, now(), 'FAILED', 8, 'provider_timeout') RETURNING id`,
+      tenantId,
+      statementId,
+      `charge_create:${statementId}:${seq}`,
+      provider,
+    )) as Array<{ id: string }>;
+    return rows[0]!.id;
+  }
+
+  async function liveChargeCreates(statementId: string): Promise<number> {
+    const rows = (await db.$queryRawUnsafe(
+      `SELECT count(*)::int AS n FROM billing_outbox WHERE statement_id = $1::uuid AND kind = 'charge_create' AND status IN ('PENDING','PROCESSING','SENT','NEEDS_REVIEW')`,
+      statementId,
+    )) as Array<{ n: number }>;
+    return rows[0]!.n;
+  }
+
+  const isUnprocessable = (reason: string) => (error: unknown) => error instanceof StatementError && error.statusCode === 422 && error.reason === reason;
+
+  test("T-CHG-db-3 (E8 × E9, critério 1): pedido × retry guardado nas duas ordens fixadas pelo arnês → sempre 1 charge_create viva", async (t) => {
+    const payload = { amountCents: 10000, dueDate: "2026-11-10", method: "pix" };
+    // As duas ordens são SUBTESTES: uma falha na (i) não impede a (ii) de rodar (cada mutação mostra o próprio vermelho).
+
+    // (i) RETRY PRIMEIRO: o arnês segura o demonstrativo; o retry fica esperando; só então o pedido entra. COMMIT → o retry
+    //     reabre a FAILED e o pedido lê a linha reaberta (viva) → 422.
+    await t.test("(i) retry primeiro", async () => {
+      const { tenantId, statementId } = await seedStatement(`ass08-chg3i-${randomUUID().slice(0, 8)}`, { refs: false });
+      const failedId = await seedFailedRow(tenantId, statementId, 1);
+      const wRetry = await createEphemeralRole(db, targetUrl);
+      const wRequest = await createEphemeralRole(db, targetUrl);
+      const holder = await openHolder();
+      const inflight: Promise<unknown>[] = [];
+      try {
+        await holder.query(`SELECT id FROM subscription_statements WHERE id = $1::uuid FOR UPDATE`, [statementId]);
+        const retry = settled(new PrismaOutboxRepository(wRetry.client).retry(tenantId, failedId, new Date()));
+        inflight.push(retry);
+        await waitUntil("(i) o retry esperando o demonstrativo do arnês", async () => (await lockWaiters([wRetry.roleName])).some((w) => w.blockers.includes(holder.pid)));
+        const request = settled(requestChargeCreate({ intents: new PrismaChargeIntentRepository(wRequest.client) }, { tenantId, statementId, provider: "asaas", payload, now: new Date() }));
+        inflight.push(request);
+        await waitUntil("(i) retry e pedido esperando", async () => (await lockWaiters([wRetry.roleName, wRequest.roleName])).length === 2);
+        await holder.commit();
+        const [r, p] = await Promise.all([retry, request]);
+        assert.equal(await liveChargeCreates(statementId), 1, "(i) 1 viva");
+        assert.ok(r.ok && (r.value as { status?: string } | undefined)?.status === "PENDING", `(i) o retry reabre (veio: ${r.ok ? "ok" : describeError(r.error)})`);
+        assert.ok(!p.ok && isUnprocessable("charge_already_exists")(p.error), `(i) o pedido sai 422 charge_already_exists (veio: ${p.ok ? "ok" : describeError(p.error)})`);
+      } finally {
+        await holder.rollback();
+        await Promise.all(inflight);
+        await wRetry.drop();
+        await wRequest.drop();
+      }
+    });
+
+    // (ii) PEDIDO PRIMEIRO: o arnês segura a linha do índice (`billing_statement_refs`), e o pedido fica preso no upsert
+    //      DEPOIS de travar o demonstrativo e ler as linhas; então o retry, que espera o demonstrativo. COMMIT → o pedido
+    //      grava seq 2 e o retry, ao conseguir o demonstrativo, vê a viva nova → 422.
+    await t.test("(ii) pedido primeiro", async () => {
+      const { tenantId, statementId } = await seedStatement(`ass08-chg3ii-${randomUUID().slice(0, 8)}`);
+      const failedId = await seedFailedRow(tenantId, statementId, 1);
+      const wRetry = await createEphemeralRole(db, targetUrl);
+      const wRequest = await createEphemeralRole(db, targetUrl);
+      const holder = await openHolder();
+      const inflight: Promise<unknown>[] = [];
+      try {
+        await holder.query(`SELECT statement_id FROM billing_statement_refs WHERE statement_id = $1::uuid FOR UPDATE`, [statementId]);
+        const request = settled(requestChargeCreate({ intents: new PrismaChargeIntentRepository(wRequest.client) }, { tenantId, statementId, provider: "asaas", payload, now: new Date() }));
+        inflight.push(request);
+        await waitUntil("(ii) o pedido preso no upsert do índice (depois de travar o demonstrativo)", async () => (await lockWaiters([wRequest.roleName])).some((w) => w.blockers.includes(holder.pid)));
+        let retrySettled = false;
+        const retry = settled(new PrismaOutboxRepository(wRetry.client).retry(tenantId, failedId, new Date())).then((r) => ((retrySettled = true), r));
+        inflight.push(retry);
+        let retryWaited = false;
+        // O retry ESPERA o demonstrativo do pedido (o normal) — ou, sob mutação, já terminou sem esperar: a barreira aceita
+        // os dois para que o vermelho seja o fato medido (2 vivas), e não o prazo da barreira.
+        await waitUntil("(ii) o retry esperando o demonstrativo travado pelo pedido (ou já resolvido)", async () => {
+          if ((await lockWaiters([wRetry.roleName])).length === 1) retryWaited = true;
+          return retryWaited || retrySettled;
+        });
+        await holder.commit();
+        const [p, r] = await Promise.all([request, retry]);
+        assert.equal(await liveChargeCreates(statementId), 1, "(ii) 1 viva");
+        assert.ok(p.ok, `(ii) o pedido sai ok (veio: ${p.ok ? "ok" : describeError(p.error)})`);
+        assert.equal((p.value as { idempotencyKey?: string }).idempotencyKey, `charge_create:${statementId}:2`, "(ii) o pedido grava seq 2");
+        assert.ok(!r.ok && isUnprocessable("charge_already_exists")(r.error), `(ii) o retry sai 422 charge_already_exists (veio: ${r.ok ? "ok" : describeError(r.error)})`);
+        assert.ok(retryWaited, "(ii) o retry esperou o demonstrativo");
+        const failed = (await outboxRows([failedId])).get(failedId);
+        assert.equal(failed?.status, "FAILED", "(ii) a FAILED não foi reaberta");
+      } finally {
+        await holder.rollback();
+        await Promise.all(inflight);
+        await wRetry.drop();
+        await wRequest.drop();
+      }
+    });
+  });
+
+  test("T-OBX-db-6 (E6′/E7′/E9, critério 3): ATK-2d e ATK-8 com o repositório Prisma real e papel sem bypass — a cobrança-fantasma do fechamento desfeito nunca é adotada", async () => {
+    const role = await createEphemeralRole(db, targetUrl);
+    try {
+      for (const attack of ["ATK-2d", "ATK-8"] as const) {
+        const provider = uniqueProvider(attack === "ATK-2d" ? "db6a" : "db6b");
+        const { tenantId, statementId } = await seedStatement(`ass08-db6-${randomUUID().slice(0, 8)}`);
+        const intents = new PrismaChargeIntentRepository(role.client);
+        const repo = new PrismaOutboxRepository(role.client);
+        const port = scriptedPort(provider);
+        const t0 = new Date();
+        // R0 cria e PERDE a resposta: a fantasma de R$ 100 fica no provedor.
+        const r0 = await requestChargeCreate({ intents }, { tenantId, statementId, provider, payload: { amountCents: 10000, dueDate: "2026-11-10", method: "pix" }, now: t0 });
+        port.createScript.push("lost");
+        await dispatchDb(role.client, provider, port, t0);
+        assert.equal(port.stored.length, 1);
+        if (attack === "ATK-2d") {
+          // … vai a FAILED e o operador dá retry (E9: last_error mantido)
+          await repo.markFailed(tenantId, r0.id, "provider_timeout", minutesAfter(t0, 1));
+          assert.equal((await repo.retry(tenantId, r0.id, minutesAfter(t0, 1)))?.status, "PENDING");
+        }
+        // reaberto: o claim relê e pula R0
+        await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'reopened', reopened_at = $2 WHERE id = $1::uuid`, statementId, minutesAfter(t0, 2));
+        await dispatchDb(role.client, provider, port, minutesAfter(t0, 3));
+        assert.equal((await finalRow(r0.id))?.status, "SKIPPED");
+        // refechado com R$ 150 → R1
+        await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'closed', total_amount = 150 WHERE id = $1::uuid`, statementId);
+        const t1 = minutesAfter(t0, 5);
+        const r1 = await requestChargeCreate({ intents }, { tenantId, statementId, provider, payload: { amountCents: 15000, dueDate: "2026-11-10", method: "pix" }, now: t1 });
+        if (attack === "ATK-2d") {
+          port.lookupScript.push("5xx"); // a 1ª reconsulta de R1 falha
+          await dispatchDb(role.client, provider, port, t1);
+          await dispatchDb(role.client, provider, port, minutesAfter(t1, 2));
+          assert.deepEqual(await finalRow(r1.id), { status: "NEEDS_REVIEW", last_error: "charge_found_for_previous_intent", external_id: null }, attack);
+        } else {
+          await claimAndDieDb(role.client, provider, t1); // o worker de R1 morre depois do claim
+          await dispatchDb(role.client, provider, port, afterOrphanCutoff(t1));
+          assert.deepEqual(await finalRow(r1.id), { status: "NEEDS_REVIEW", last_error: "orphan_found_previous_intent", external_id: null }, attack);
+        }
+        assert.equal(port.created.length, 1, `${attack}: só o POST de R0, nunca um 2º`);
+      }
+    } finally {
+      await role.drop();
+    }
+  });
 }

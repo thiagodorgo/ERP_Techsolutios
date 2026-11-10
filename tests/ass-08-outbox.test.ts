@@ -237,9 +237,26 @@ test("R-OBX-2 retry reabre FAILED → PENDING e dispatch volta a tentar (T-OBX-9
   const reopened = await repo.retry(TENANT, row.id, now);
   assert.equal(reopened?.status, "PENDING");
   assert.equal(reopened?.attempts, 0);
+  // 2º conserto (E9): o retry MANTÉM `last_error` — é a evidência de que a linha já foi tentada, que a reconsulta usa para
+  // adotar a PRÓPRIA cobrança em vez de mandá-la a revisão.
+  assert.equal(reopened?.lastError, "boom", "E9: o retry mantém last_error");
   const port = new RecordingPort();
   const result = await runDispatchOutbox({ repo, resolveCustomer: okResolver,ports: { asaas: port }, now: () => now });
   assert.equal(result.outcomes.sent, 1);
+});
+
+test("E9: retry com outra charge_create VIVA no demonstrativo → 422 charge_already_exists, e a FAILED continua FAILED (T-OBX-9b)", async () => {
+  const now = new Date("2026-12-01T12:00:00Z");
+  const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
+  const { row: failed } = await enqueueCharge(repo, now, 1);
+  await repo.markFailed(TENANT, failed.id, "boom", now);
+  await enqueueCharge(repo, now, 2); // a 2ª intenção, PENDING: viva no D1
+  await assert.rejects(
+    repo.retry(TENANT, failed.id, now),
+    (error: unknown) => error instanceof StatementError && error.statusCode === 422 && error.reason === "charge_already_exists",
+    "reabrir a FAILED daria duas vivas do mesmo demonstrativo",
+  );
+  assert.equal((await repo.findById(TENANT, failed.id))?.status, "FAILED", "nada reaberto");
 });
 
 test("R-OBX-3 canal desligado: dispatcher não roda, linha segue PENDING (T-OBX-10)", async () => {
@@ -738,4 +755,44 @@ test("U da adoção: nenhum código de src/ apaga linha de billing_outbox (T-OBX
   };
   walk(root);
   assert.deepEqual(offenders, [], "nenhuma linha da fila é apagada");
+});
+
+// T-OBX-17, braços 9 e 10 (F6: dependem do retry guardado do E9, que MANTÉM `last_error`). Mutação literal M3b (o retry
+// volta a apagar `last_error`) → braço 9 vermelho (a própria cobrança vai a `charge_found_unknown_origin`) e T-OBX-9.
+test("E9 × E6′: o retry não apaga a evidência de que a linha já foi tentada (T-OBX-17, braços 9 e 10)", async (t) => {
+  const t0 = new Date("2026-12-01T12:00:00Z");
+
+  await t.test("braço 9 — resposta perdida → FAILED → retry → a rodada ADOTA a própria (last_error mantido pelo retry), 1 createCharge", async () => {
+    const arm = await chargeArm(t0);
+    const row = await requestIntent(arm, t0, 10000);
+    arm.port.createScript.push("lost");
+    await dispatchArm(arm, t0);
+    await arm.outbox.markFailed(TENANT, row.id, "provider_timeout", minutes(t0, 1));
+    assert.equal((await arm.outbox.retry(TENANT, row.id, minutes(t0, 2)))?.status, "PENDING");
+    const run = await dispatchArm(arm, minutes(t0, 2));
+    assert.equal(arm.port.created.length, 1, "nunca recria");
+    assert.equal(run.outcomes.recovered, 1);
+    const final = await arm.outbox.findById(TENANT, row.id);
+    assert.deepEqual([final?.status, final?.externalId], ["SENT", "pay_1"]);
+  });
+
+  await t.test("braço 10 — ATK-2d: R0 perdida → FAILED → retry → reaberto e refechado → 5xx na 1ª reconsulta de R1 → revisão, nenhuma adoção", async () => {
+    const arm = await chargeArm(t0);
+    const r0 = await requestIntent(arm, t0, 10000);
+    arm.port.createScript.push("lost");
+    await dispatchArm(arm, t0);
+    await arm.outbox.markFailed(TENANT, r0.id, "provider_timeout", minutes(t0, 1));
+    await arm.outbox.retry(TENANT, r0.id, minutes(t0, 1));
+    await setStatement(arm, { status: "reopened", reopenedAt: minutes(t0, 2) });
+    await dispatchArm(arm, minutes(t0, 3)); // R0 reaberta pelo retry, relida no claim → SKIPPED
+    assert.equal((await arm.outbox.findById(TENANT, r0.id))?.status, "SKIPPED");
+    await setStatement(arm, { status: "closed", totalCents: 15000, closedAt: minutes(t0, 4) });
+    const r1 = await requestIntent(arm, minutes(t0, 5), 15000);
+    arm.port.lookupScript.push("5xx");
+    await dispatchArm(arm, minutes(t0, 5));
+    await dispatchArm(arm, minutes(t0, 7));
+    const final = await arm.outbox.findById(TENANT, r1.id);
+    assert.deepEqual([final?.status, final?.lastError, final?.externalId], ["NEEDS_REVIEW", "charge_found_for_previous_intent", null]);
+    assert.equal(arm.port.created.length, 1, "só o POST de R0");
+  });
 });
