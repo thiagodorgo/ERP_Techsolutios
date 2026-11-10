@@ -325,3 +325,12 @@ O código da F5b (`adoptionFacts` no `PrismaOutboxRepository`) entrou no commit 
 | 15:17:26→15:19:19 | **M5h 3×** com o autovacuum desligado | `fail 1` nas 3: T-OBX-db-9 com `57014` em 10 073, 10 221 e 10 048 ms; revert limpo | vermelho determinístico (3/3) |
 | 15:19:32→15:20:01 | `-db` verde | `# tests 27 · pass 27 · fail 0` | — |
 | 15:20 | gerador do T13 (`t13-depois2.out`): só o `claimNext` muda, agora `RAW-SQL($executeRawUnsafe) OPACO` `×3` (desligar + as duas chamadas da devolução) e `RAW-SQL($queryRawUnsafe) OPACO` `×1`; o T13 com a contagem colada; `npm run lint`; `o6r07c-census-guard` | T13 `35/35`; lint 0; censo `32/32`; `inventory-write-paths-guard` `12/12` (15:14) | — |
+
+### F8 — fechamento
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| 15:40:35 | CI run `42874588785` (`861d1ef4`), lido pelo RESUMO TAP do job `backend` (`gh run view … --job backend --log \| grep -E 'not ok\|# (tests\|pass\|fail\|skipped)'`) | `# tests 4869 · pass 4867 · fail 0 · skipped 2`; 0 linha `not ok`; `ok` em T-OBX-db-1/3/4/5/6/7/8/9, T-CHG-db-1/2/3, T-LOCK-1a/1b, os 5 do T-LOCK-2, T-OBX-E15, guard 3 e o D1 do guard de escritores; os 8 jobs `success` (`backend-postgres`, `frontend`, `flutter`, `owner-portal`, `authority-portal`, `antivirus`, `docker`) | CI verde |
+| 15:41 | `docker rm -f -v dev522-pg` (fim da última fatia `-db`); `erp_c2` já descartada às 15:0x; 0 papel efêmero sobrando; `dist/` removido às 14:34 | container removido | limpeza (§C5): só o que este dev criou |
+
+PRONTO PARA REVISÃO (conserto c2) — PR #522
