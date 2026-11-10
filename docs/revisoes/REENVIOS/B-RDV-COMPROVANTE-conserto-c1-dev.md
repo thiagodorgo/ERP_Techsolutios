@@ -156,3 +156,28 @@
 
 - head `0361a7f7aacc90ed18bab1122df96187c5a06039` · feito: F0, F1a, F1d, F1b · falta: F1e → F1c → F2a → F2b → F3 → F4a … F8 · próximo comando:
   escrever o RR-A.3 (S3 por cliente fingido, escrita e leitura) no arquivo de storage · arquivos meio escritos: nenhum.
+
+## F1e — S3 por cliente fingido na escrita e na leitura; `docs/deployment.md` (06:05–06:10)
+
+- Teste ANTES: **RR-A.3** no arquivo de storage — `production` + s3 completo (`endpoint:
+  "https://s3.sa-east-1.amazonaws.com"`, §13.2 item 7; prefixo = `env.CHECKLIST_STORAGE_S3_PREFIX`, o que o
+  `assertStorageKeyWithinTenant` lê) com `S3ChecklistStorageProvider(config, clienteFingido)`: 201; 1
+  `PutObjectCommand` com `Key = <prefixo>/<org>/expense-receipt-<rep>/<uuid>-comprovante.jpg`, `Bucket` e o
+  `ChecksumSHA256` do arquivo; `file_key = "s3:" + Key`; `/file` com 1 `GetObjectCommand` na mesma Key e os mesmos
+  bytes; o corpo do POST e do GET de metadados sem `s3:`, Key, bucket e prefixo.
+- **Vermelho-controle no objeto:** `not ok 4 - RR-A.3` por `ERR_INVALID_ARG_TYPE` (sem costura, nenhum
+  `PutObjectCommand` sai) — vermelho por ausência da costura, declarado. **OK.**
+- Código: nenhum além da F1a — a leitura já resolve o provedor pelo `file_key` com `resolveReceiptStorage` (§12.3);
+  medido no head: `# tests 4 · pass 4` no arquivo de storage. `docs/deployment.md`, junto do parágrafo de storage
+  (l.553–558): o parágrafo do comprovante com o texto da §12.10 item 1 e da §13.2 item 7 (endpoint EXPLÍCITO
+  `https://s3.<regiao>.amazonaws.com`, papel IAM/segredo, bucket privado com SSE e versionamento, sem regra de ciclo
+  de vida sob o prefixo da D-014, 503 sem isso, nenhuma variável nova, compose/Dockerfile/fly/CI sem mudança).
+  Sem acentos, no estilo do parágrafo vizinho.
+- Mutações (`git diff --exit-code -- src tests mobile` = 0 depois de cada reversão):
+  - **M-A3** (`fileKey: stored.storageKey`, sem o provedor) → `not ok 4 - RR-A.3` "file_key não é s3:<Key>" e, de
+    quebra, `not ok 1 - RR-A.6` (a re-leitura procura a chave com prefixo, não acha e a compensação apaga) ·
+    revertida. **OK.**
+  - **M-A3b** (na leitura, `resolveReceiptStorage(provider)` → `createChecklistStorageProviderByName(provider)`) →
+    `not ok 4 - RR-A.3` "o /file não serviu" `200 × 500` (`unexpected_error`; vira 503 `receipt_storage_unavailable`
+    quando a F1c embrulhar o storage) e 0 chamada ao cliente fingido · revertida. **OK.**
+- `npm run check` → 0 erro.

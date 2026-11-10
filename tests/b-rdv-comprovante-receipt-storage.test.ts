@@ -352,3 +352,58 @@ test("RR-A.2b portão de produção só aceita o endpoint EXPLÍCITO regional da
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// RR-A.3 — S3 pela classe da D-014, escrita E leitura pelo mesmo resolvedor (§2(a), §12.3, §13.2 item 7)
+// ---------------------------------------------------------------------------
+
+test("RR-A.3 S3 pela classe da D-014: `production` + s3 completo → 201 com 1 PutObject na chave `<prefixo>/<org>/expense-receipt-<rep>/<uuid>-comprovante.jpg`; `file_key = s3:<Key>`; o /file faz GetObject na mesma Key e devolve os bytes; nada de `s3:`, Key, bucket nem prefixo nas respostas", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const { receipt, s3, prefix } = await storageModules();
+    assert.ok(prefix, "o prefixo do S3 do env está vazio: o teste precisa do prefixo que o assertStorageKeyWithinTenant lê");
+    const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const bytes = jpegBytes(0x3a);
+    const digest = await sha256Hex(bytes);
+
+    const bucket = "rdvc1-bucket-comprovante";
+    const s3Config = { bucket, region: "sa-east-1", endpoint: "https://s3.sa-east-1.amazonaws.com", forcePathStyle: true, prefix };
+    const client = fakeS3Client();
+    receipt.configureExpenseReceiptScannerForTests(countingScanner().scanner as any);
+    receipt.configureExpenseReceiptStorageForTests({ provider: new s3.S3ChecklistStorageProvider(s3Config, client as any), nodeEnv: "production", s3: s3Config } as any);
+
+    const upload = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rra3-s3", bytes, sha256: digest }));
+    assert.equal(upload.status, 201, JSON.stringify(upload.body));
+
+    const puts = client.commands.filter((command) => command.name === "PutObjectCommand");
+    assert.equal(puts.length, 1, "esperado 1 PutObjectCommand");
+    const key = String(puts[0].input.Key);
+    const keyPattern = new RegExp(`^${prefix}/${seed.tenantA.id}/expense-receipt-${reportId}/[0-9a-f-]{36}-comprovante\\.jpg$`);
+    assert.match(key, keyPattern, "Key do PutObject fora do padrão da D-014");
+    assert.equal(puts[0].input.Bucket, bucket);
+    assert.equal(puts[0].input.ChecksumSHA256, Buffer.from(digest, "hex").toString("base64"), "ChecksumSHA256 não é o do arquivo");
+
+    const repository = await memoryRepositoryForTests();
+    const row = await repository.findLatestStoredExpenseReceipt({ tenantId: seed.tenantA.id, itemId });
+    assert.equal(row?.fileKey, `s3:${key}`, "file_key não é s3:<Key>");
+
+    // A leitura passa pelo MESMO resolvedor da escrita: o GetObject cai no cliente fingido, na mesma Key.
+    const download = await getReceiptFile(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId);
+    assert.equal(download.status, 200, `o /file não serviu: ${download.bytes.toString("utf8")}`);
+    assert.equal(await sha256Hex(download.bytes), digest);
+    const gets = client.commands.filter((command) => command.name === "GetObjectCommand");
+    assert.equal(gets.length, 1, "esperado 1 GetObjectCommand no cliente fingido");
+    assert.equal(String(gets[0].input.Key), key);
+
+    // Allowlist §2.8: nenhuma resposta pública traz o provedor, a chave, o bucket nem o prefixo.
+    const detail = await fetch(`${baseUrl}/api/v1/expense-reports/${reportId}/items/${itemId}/receipt`, {
+      headers: authHeaders(seed.tenantA, seed.technicianA, "technician"),
+    });
+    const detailBody = await readJson(detail);
+    assert.equal(detail.status, 200, JSON.stringify(detailBody));
+    for (const body of [JSON.stringify(upload.body), JSON.stringify(detailBody)]) {
+      for (const secret of ["s3:", key, bucket, prefix]) {
+        assert.ok(!body.includes(secret), `resposta pública expõe ${secret}: ${body}`);
+      }
+    }
+  });
+});
