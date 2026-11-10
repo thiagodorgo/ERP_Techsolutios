@@ -158,3 +158,8 @@
 | 11:02:52→11:03:13 | gerador do T13 | exit 0, stderr vazio; nenhuma chave muda (só os contadores do resumo: +2 `SOB-CONTEXTO`, o `adoptionFacts` sob `withTenantRls`) | T13 sem edição |
 | 11:03:28→11:04:17 | T13 sozinho | `# tests 35 · pass 35 · fail 0` | — |
 | 11:04:28→11:04:54 | `npm run lint`; `git diff --exit-code -- src`; `git diff --cached --check` | 0; limpo; 0; 4 arquivos no índice | fatia fechada |
+
+## BASTÃO DEVOLVIDO 2 — 11:06:01 SP (ordem do orquestrador: depois da F5, o bastão vai para `conf-525-b`)
+
+- **Ponto exato:** F5 fechada e empurrada em `743bea8b`. Na árvore, não commitados: os testes da F5b (T-OBX-db-7/8 em `tests/ass-08-channel-db.test.ts`, já verdes na rodada da F5 e com o vermelho-controle medido às 10:56); faltam as mutações dela (M3f no SQL, M3g, M3h), o lint e o commit.
+- **Até o bastão voltar:** escrever a F6 (o `retry` guardado do E9 já está em `rascunhos/f6-src/`; testes T-OBX-9 com `lastError` mantido, T-OBX-9b e os braços 9–10 do T-OBX-17 no dublê; T-CHG-db-3 e T-OBX-db-6 em rascunho até a F5b ser commitada, porque moram no mesmo arquivo `-db`), sem suíte, `tsc`, lint nem banco. A 1ª linha do painel é conferida a cada 5 min.
