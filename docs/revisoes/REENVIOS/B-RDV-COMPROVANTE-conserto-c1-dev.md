@@ -560,3 +560,11 @@
     upload:A:201-corpo-invalido']` (= `TOPO2_A01_M-C4d`) · revertida (as linhas reinseridas). **OK.**
   - **M-C4e** (no `catch`, `status: SyncStatus.conflict` no lugar do `failed` com custo) → RR-C.4 (c) `Actual: [...,
     'p1 submit:A', 'p1 submit:B']` (= `TOPO2_A01_M-C4e`) · revertida. **OK.**
+- Commit `65440f6c` + push (`fb610f78..65440f6c`). Vermelho-controle REFEITO com o teste commitado no `w-dev525-vc`
+  → a mesma falha de compilação no objeto · `w-dev525-vc` limpo.
+
+## RETOMADA 13 (07:56)
+
+- head `65440f6c5166c14b4d8683d89dfba06658425865` · feito: F0–F5c · falta: F6a → F6b → F7 → F8 · próximo comando: escrever RR-E.1 e RR-E.2 em
+  `test/core/network/brdvcomp_c1_auth_retry_multipart_test.dart` (cliente Dio real + interceptor real) · arquivos meio
+  escritos: nenhum.
