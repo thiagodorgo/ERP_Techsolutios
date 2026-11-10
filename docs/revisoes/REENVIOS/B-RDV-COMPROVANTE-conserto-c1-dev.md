@@ -710,3 +710,77 @@
 
 - head `07e9ce1d29e959c9b0f4406e37ab94514e46e5df` · feito: F0–F6b e o conserto do CI · falta: F7 → F8 · próximo comando: a F7 (registro e contrato:
   §10, §12.10, §12.15, §13), começando pela nota da `RBAC_MATRIX.md` l.163 · arquivos meio escritos: nenhum.
+
+## F7 — registro e contrato (§10, §2(e), §12.10, §12.15, §13.1 item 6, §13.2 item 7, §13.6) — 08:50
+
+- `RBAC_MATRIX.md`: a "Atualização (B-RDV-COMPROVANTE, PR #525; DONO P4 …)" acrescentada no FIM da nota l.163, sem
+  reescrever a frase antiga; nenhuma célula da tabela mudou. Conferido no catálogo: `field_technician` tem
+  `expense_receipt:attach` (`src/modules/core-saas/permissions/catalog.ts` l.982).
+- `docs/mobile-sync-contracts.md` (seção do comprovante): "Response" — o replay responde 200 também depois da
+  submissão; "Erros" — 400 com os motivos (o app trata o 400 com motivo como recusa), 401 `missing_actor`, 403
+  `permission_required`, 404, 409 `payload_mismatch`/`action_owned_by_other_actor`/`receipt_unverifiable` (também no
+  replay de linha sem prefixo), 413, 415, 422 `report_not_editable`/`receipt_rejected`, 500 `unexpected_error`, 503
+  `receipt_scan_unavailable`/`receipt_storage_unavailable` (também no `GET …/file`)/`sync_busy` — os motivos conferidos
+  por `grep` no código (`expense-receipt.service.ts`, `expense-receipt.routes.ts`, `expense-sync.ts`,
+  `rbac.middleware.ts`); "Offline" — o texto da §13.1 item 6; "Leitura" — o arquivo vive no storage da D-014.
+- `docs/api.md` l.76: a meia frase do storage (D-014; em produção só `s3` com o endpoint explícito da AWS, senão 503).
+- `docs/revisoes/REENVIOS/B-RDV-COMPROVANTE-dev.md` l.223–225: a divisão do 28 corrigida para `expense-management-routes`
+  14 + `expense-sync-fingerprint` 9 + `b-o6r-03b-expense-payload-contract` 2 + `b-o6r-03b-field-technician-expense-sync`
+  3 (medido na F0, l.35–36 deste diário).
+- `tests/b-rdv-comprovante-receipt-routes.test.ts`: título do RR1.1 "201 stored" → "201 uploaded" (o comentário do
+  `-db` já dizia "201 uploaded" desde a F3).
+- `agent-orchestration/omega/planos/B-REENVIOS-plano.md`: as Emendas c1 (§11), c1-b (§12.17) e c1-c (§13.6) ao §G.3, no
+  fim, como a "Emenda 1 ao §A" do mesmo arquivo; a cópia de disco (`erp-pausa-2026-10-03/planos/B-REENVIOS-plano.md`)
+  era byte a byte igual ao HEAD (`cmp`) e recebeu o mesmo arquivo (`cmp` igual depois).
+- `agent-orchestration/controle/pendencias.md`:
+  - `P-RDV-COMPROVANTE-SEM-UPLOAD`: a "Prova" reescrita com as contagens EXECUTADAS no ramo (backend routes 14, storage
+    5, contract 1, `-db` 5 pelo TAP do CI; app 3 + 5 + 2 + 4 + 2 + 2 + 2), mais a linha do conserto c1;
+  - `P-B-RDV-COMPROVANTE`: "Prova" apontando para a de cima e para as emendas do plano;
+  - `P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO`: dono `B-RDV-COMPROVANTE-b`, PR-alvo, PERMITIDO, junta completa e a leitura
+    do topo (C3-R1);
+  - novas: `P-DESPESA-ITEM-CORRIDA-SUBMIT`, `P-MOBILE-RECIBO-409-POR-MOTIVO` (com o `receipt_unverifiable` legado),
+    `P-S3-FORCE-PATH-STYLE-NAO-DESLIGA` (`env.ts` l.257 conferida), `P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP` e
+    `P-PROCESSO-SONDAS-ANTES-DO-WORKTREE` (a recomendação de processo do §9; o ID é meu, declarado, porque o plano não o
+    nomeia).
+  - **Medido × plano (registro):** a `P-UPLOAD-ARMAZENAMENTO-EFEMERO` NÃO está na ref (`git grep -c` = 0 no head do ramo
+    e na `origin/main`; o plano já dizia "ainda não está em ref"). Criar a entrada aqui duplicaria a do registro do
+    orquestrador; por isso a nota (o texto da §12.15 item 1 com o endpoint explícito da §13.2 item 7) ficou como bullet
+    da `P-RDV-COMPROVANTE-SEM-UPLOAD`, dizendo isso, até a entrada assentar. O "nenhum manifesto tem isso" foi re-medido
+    (`git grep -c CHECKLIST_STORAGE` em `docker-compose*.yml`, `Dockerfile`, `fly.*.toml`, `infra/` → 0).
+  - **Observação para o orquestrador (fora do plano, nada feito):** a `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA` tem dono
+    `B-RDV-COMPROVANTE` e PR-alvo "PR do `B-RDV-COMPROVANTE`", e o plano do conserto não a cobre.
+- `pendencias-indice.md` só pelo gerador: `python -I agent-orchestration/controle/gerar-indice-pendencias.py` →
+  `indice: 792 cabecalhos / 781 IDs` (antes 787/776); rodado de novo depois do `git add` → `git diff --exit-code` = 0
+  (diff vazio contra o gerador). O `python3` do F-anterior era o atalho da Microsoft Store; o `python` (3.13.14) existe.
+- Guardas que leem estes arquivos: `node scripts/run-backend-tests.mjs tests/san3-04a-matriz-x-catalogo-guard.test.ts
+  tests/core-saas.test.ts tests/o6r07c-subresource-scope.test.ts tests/b-rdv-comprovante-receipt-contract.test.ts
+  tests/b-rdv-comprovante-receipt-routes.test.ts` → `# tests 79 · # pass 79 · # fail 0`.
+- `git diff --check` limpo · `Kpis/` intocado (`git diff --name-only b9e63ec0 -- Kpis/` → 0 arquivo).
+- **Contagens N → M por arquivo (medidas):**
+
+  | arquivo | N (objeto) | M (head) |
+  |---|--:|--:|
+  | `expense-management-routes` + `expense-sync-fingerprint` + `b-o6r-03b-expense-payload-contract` + `b-o6r-03b-field-technician-expense-sync` | 28 | 28 |
+  | `tests/b-rdv-comprovante-receipt-routes.test.ts` | 8 | 14 |
+  | `tests/b-rdv-comprovante-receipt-storage.test.ts` (novo) | 0 | 5 |
+  | `tests/b-rdv-comprovante-receipt-contract.test.ts` | 1 | 1 |
+  | `tests/b-rdv-comprovante-receipt-db.test.ts` (Postgres) | 2 | 5 |
+  | **backend** | **39** | **53** |
+  | os 6 `test/features/expenses/*_test.dart` | 29 | 29 |
+  | `test/core/sync/brdvcomp_expense_receipt_sync_test.dart` | 3 | 3 |
+  | `test/core/sync/brdvcomp_c1_ordem_envio_test.dart` (novo) | 0 | 5 |
+  | `test/core/sync/brdvcomp_c1_item_recovery_test.dart` (novo) | 0 | 2 |
+  | `test/core/sync/brdvcomp_c1_recusas_test.dart` (novo) | 0 | 4 |
+  | `test/core/network/brdvcomp_c1_auth_retry_multipart_test.dart` (novo) | 0 | 2 |
+  | `test/core/local_db/brdvcomp_c1_item_server_id_test.dart` (novo) | 0 | 2 |
+  | `test/core/local_db/brdvcomp_c1_drift15_migration_test.dart` (novo) | 0 | 2 |
+  | **app** | **32** | **49** |
+  | **total** | **71** | **102** |
+
+- Commit `34cf4cc4`.
+
+## RETOMADA 17 (08:50)
+
+- head `34cf4cc4970b124b97f8a57d2ceeec80ca39f544` · feito: F0–F7 e o conserto do CI · falta: F8 · próximo comando: a bateria do §6 (`npm run
+  check`, `npm run lint`, `npm run build`, `npm test`; `dart format`/`flutter analyze`/`flutter test`; `git diff
+  --check`) e o CI lido pelo resumo · arquivos meio escritos: nenhum.
