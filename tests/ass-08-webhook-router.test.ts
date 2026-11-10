@@ -146,7 +146,7 @@ test("R-WH-2/6 segredo errado → 401 sem motivo; 21ª falha do mesmo IP → 429
   assert.equal(harness.enqueued.length, 1);
 });
 
-test("R-WH-6 teto global do provedor → 429 (T-WH-26, mecanismo do token bucket)", async () => {
+test("R-WH-6 teto global do provedor → 429 (T-WH-26, teto de 2 na janela)", async () => {
   const limiter = createWebhookRateLimiter({ globalPerMinute: 2 });
   const { app } = buildApp({ resolveTarget: async () => okTarget, limiter });
   await withServer(app, async (base) => {
@@ -154,4 +154,47 @@ test("R-WH-6 teto global do provedor → 429 (T-WH-26, mecanismo do token bucket
     assert.equal((await post(base, "asaas", JSON.stringify({ id: "b" }))).status, 200);
     assert.equal((await post(base, "asaas", JSON.stringify({ id: "c" }))).status, 429, "estourou o teto do minuto");
   });
+});
+
+// R-WH-6 — conserto J-522 (C1-01 / E2): "601ª requisição/min do provedor → 429" vale com RELÓGIO REAL. Um token bucket de
+// recarga contínua liberava fichas durante a rajada (600 POSTs em ~0,5 s ≈ 4,8 fichas) e a 601ª passava; T-WH-26 (teto 2,
+// rajada instantânea) não distinguia as duas formas. Os dois testes abaixo distinguem: 26b com relógio injetado que ANDA
+// entre os pedidos; 26c na forma real — o comando literal da cadeira C1. Mutação: restaurar a recarga contínua → ambos vermelhos.
+
+/** Alvo que verifica OK com `eventId` ÚNICO por pedido (cada aceito enfileira 1 reconcile — nenhum é "replay"). */
+function uniqueEventTarget(): WebhookTarget {
+  let seq = 0;
+  return { provider: "asaas", verify: async () => ({ ok: true, eventId: `evt_${(seq += 1)}` }) };
+}
+
+test("R-WH-6 janela deslizante, relógio injetado que anda 5 ms por pedido: 600 × 200, a 601ª → 429, 60 s depois → 200 (T-WH-26b)", async () => {
+  let t = Date.UTC(2026, 11, 1, 12, 0, 0);
+  const limiter = createWebhookRateLimiter({ now: () => t, globalPerMinute: 600 });
+  const target = uniqueEventTarget(); // UM alvo para todos os pedidos: o contador de eventId é compartilhado
+  const { app } = buildApp({ resolveTarget: async () => target, limiter });
+  await withServer(app, async (base) => {
+    for (let i = 0; i < 600; i += 1) {
+      assert.equal((await post(base, "asaas", JSON.stringify({ id: i }))).status, 200, `pedido ${i + 1} dentro do teto`);
+      t += 5; // o relógio ANDA durante a rajada: um token bucket recarregaria ≈ 0,05 ficha por pedido e a 601ª passaria
+    }
+    assert.equal((await post(base, "asaas", JSON.stringify({ id: 600 }))).status, 429, "601ª em menos de 60 s → 429");
+    t += 60_001; // a janela desliza: os 600 carimbos saem
+    assert.equal((await post(base, "asaas", JSON.stringify({ id: 601 }))).status, 200, "passada a janela, aceita de novo");
+  });
+});
+
+test("R-WH-6 forma REAL (o comando da C1): 600 POSTs HTTP com relógio real → 600 × 200; a 601ª → 429 (T-WH-26c)", async () => {
+  const target = uniqueEventTarget(); // UM alvo para todos os pedidos: eventId único por pedido, nenhum é replay
+  const { app, harness } = buildApp({ resolveTarget: async () => target }); // limiter padrão: 600/min, relógio real
+  await withServer(app, async (base) => {
+    const started = Date.now();
+    for (let i = 0; i < 600; i += 1) {
+      assert.equal((await post(base, "asaas", JSON.stringify({ id: i }))).status, 200);
+    }
+    const elapsed = Date.now() - started;
+    // Pré-condição afirmada (não `skip`): se 600 POSTs levassem ≥ 55 s, a 601ª cairia fora da janela e o teste não mediria o teto.
+    assert.ok(elapsed < 55_000, `600 POSTs em ${elapsed} ms — a máquina precisa caber na janela de 60 s`);
+    assert.equal((await post(base, "asaas", JSON.stringify({ id: 600 }))).status, 429, "601ª requisição/min do provedor → 429");
+  });
+  assert.equal(harness.enqueued.length, 600, "exatamente as 600 aceitas enfileiraram reconcile; a 601ª não");
 });
