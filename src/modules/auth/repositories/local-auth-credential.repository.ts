@@ -61,6 +61,38 @@ export class LocalAuthCredentialRepository {
     });
   }
 
+  // B-USERS-ACESSO-SEG (S1/S2) — a senha PROVISÓRIA (criação do usuário e reset por administrador): grava
+  // o hash com a marca "trocar a senha no próximo acesso" ligada (coluna da P1) e zera o contador. Só o
+  // hash chega aqui; a provisória em claro nunca passa pelo repositório. O `select` devolve só o id: nada
+  // de hash na volta.
+  upsertTemporaryPassword(data: CreateLocalAuthCredentialData) {
+    return this.client.localAuthCredential.upsert({
+      where: {
+        tenant_id_user_id: {
+          tenant_id: data.tenant_id,
+          user_id: data.user_id,
+        },
+      },
+      create: {
+        tenant_id: data.tenant_id,
+        user_id: data.user_id,
+        email: normalizeCredentialEmail(data.email),
+        password_hash: data.password_hash,
+        password_algorithm: data.password_algorithm,
+        must_change_password: true,
+      },
+      update: {
+        password_hash: data.password_hash,
+        password_algorithm: data.password_algorithm,
+        password_updated_at: new Date(),
+        must_change_password: true,
+        failed_attempts: 0,
+        locked_until: null,
+      },
+      select: { id: true },
+    });
+  }
+
   findByEmailForTenant(email: string, tenantId: string) {
     // Internal auth lookup: intentionally returns password_hash for verification.
     return this.client.localAuthCredential.findUnique({

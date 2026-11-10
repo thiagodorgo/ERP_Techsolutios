@@ -3,7 +3,13 @@ import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { EnterpriseAuditLogService, type AuditLogWriter } from "../../core-saas/audit/audit-log.service.js";
-import { setIdentityRlsContext, setTenantRlsContext } from "../../../database/rls.js";
+import { generateInitialPassword } from "../../authority/authority-password.js";
+import {
+  setIdentityRlsContext,
+  setTenantRlsContext,
+  withTenantRlsBudget,
+  type TenantRlsBudget,
+} from "../../../database/rls.js";
 import { AuthSessionRepository } from "../repositories/auth-session.repository.js";
 import { LocalAuthCredentialRepository } from "../repositories/local-auth-credential.repository.js";
 import {
@@ -80,12 +86,35 @@ type LinkRow = {
   readonly attached_via: string;
 };
 
+// B-USERS-ACESSO-SEG (S1, UEM-R2-01) — o resultado do reset por administrador. A provisória sai daqui
+// UMA vez, para a resposta 200; nada a guarda depois.
+export type AdminPasswordResetResult = {
+  readonly userId: string;
+  readonly temporaryPassword: string;
+  readonly revokedSessions: number;
+};
+
+// Orçamento da transação do reset (S1): espera por conexão, duração da transação e os timeouts LOCAIS
+// de trava e de statement (src/database/rls.ts, withTenantRlsBudget). Estourar qualquer um vira 503
+// `reset_unavailable` e nada muda. Injetável só para o teste forçar a expiração.
+export const ADMIN_RESET_BUDGET: TenantRlsBudget = {
+  maxWait: 5_000,
+  timeout: 15_000,
+  lockTimeoutMs: 2_000,
+  statementTimeoutMs: 5_000,
+};
+
+export type IdentityLinkServiceOptions = {
+  readonly resetBudget?: TenantRlsBudget;
+};
+
 export class IdentityLinkService {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly authenticate: AuthenticateFn,
     private readonly createAuditLogRepository?: AuditLogRepositoryFactory,
     private readonly verifyPasswordFn: typeof verifyPassword = verifyPassword,
+    private readonly options: IdentityLinkServiceOptions = {},
   ) {}
 
   // GET /auth/identity-links — vínculos da própria identidade (transação nomeada do §3.7).
@@ -492,9 +521,105 @@ export class IdentityLinkService {
     });
   }
 
+  // POST /auth/users/:userId/reset-password (B-USERS-ACESSO-SEG, S1 — Emenda 1, UEM-R2-01) — o
+  // administrador da organização ATIVA do ator redefine a senha de um usuário DELA. O ator é o do JWT
+  // (a rota exige users.manage antes de chegar aqui). Numa transação só, com orçamento de tempo:
+  //   1. o alvo existe NA organização ativa (senão 404 user_not_found, também para o de outra
+  //      organização) e está ativo (senão 409 user_inactive);
+  //   2. a identidade do par do alvo;
+  //   3. grava a PROVISÓRIA (só o hash, marca da P1 ligada), revoga as sessões ativas do alvo e audita
+  //      `user.password_reset` (ator, alvo e organização ativa; nada de provisória, hash ou outra
+  //      organização).
+  // Qualquer erro que não seja um dos códigos fixos vira 503 `reset_unavailable` com mensagem fixa: nada
+  // de mensagem crua no tratador genérico (UEM-03, `P-HTTP-ERRO-ECOA-MENSAGEM-CRUA`).
+  async resetPasswordByAdmin(actor: AuthenticatedActor, targetUserId: string): Promise<AdminPasswordResetResult> {
+    if (targetUserId === actor.userId) {
+      throw identityLinkError(
+        409,
+        "CONFLICT",
+        "cannot_reset_self",
+        "Use the password change to replace your own password.",
+      );
+    }
+
+    // A provisória e o hash nascem FORA da transação (o scrypt é lento; a transação fica curta).
+    const temporaryPassword = generateInitialPassword();
+    const password = await hashPassword(temporaryPassword);
+
+    try {
+      return await withTenantRlsBudget(
+        this.prisma,
+        actor.tenantId,
+        this.options.resetBudget ?? ADMIN_RESET_BUDGET,
+        async (tx) => {
+          const target = await tx.user.findFirst({
+            where: { id: targetUserId, tenant_id: actor.tenantId },
+            select: { id: true, email: true, status: true },
+          });
+
+          if (!target) {
+            throw identityLinkError(404, "NOT_FOUND", "user_not_found", "User not found.");
+          }
+
+          if (target.status !== "active") {
+            throw identityLinkError(
+              409,
+              "CONFLICT",
+              "user_inactive",
+              "The user is inactive. Reactivate the user before resetting the password.",
+            );
+          }
+
+          const identityId = await normalizePairIdentity(tx, actor.tenantId, target.id);
+
+          if (!identityId) {
+            throw resetUnavailableError();
+          }
+
+          await setTenantRlsContext(tx, actor.tenantId);
+          await new LocalAuthCredentialRepository(tx).upsertTemporaryPassword({
+            tenant_id: actor.tenantId,
+            user_id: target.id,
+            email: target.email,
+            password_hash: password.password_hash,
+            password_algorithm: password.password_algorithm,
+          });
+
+          const revoked = await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(
+            target.id,
+            actor.tenantId,
+          );
+
+          await this.recordAudit(tx, {
+            tenantId: actor.tenantId,
+            actorId: actor.userId,
+            actorType: "user",
+            action: "user.password_reset",
+            resourceType: "user",
+            resourceId: target.id,
+            outcome: "success",
+            severity: "warning",
+            metadata: {
+              revoked_sessions: revoked.count,
+              must_change_password: true,
+            },
+          });
+
+          return { userId: target.id, temporaryPassword, revokedSessions: revoked.count };
+        },
+      );
+    } catch (error) {
+      if (isIdentityLinkError(error)) {
+        throw error;
+      }
+
+      throw resetUnavailableError();
+    }
+  }
+
   // Gancho da troca de senha (§5.5) — armado; desde o B-USERS-ACESSO-SEG (S7) é chamado pela troca
-  // do PRÓPRIO usuário (`changeOwnPassword`, rota POST /auth/password). O reset por administrador
-  // segue sem rota (P-O6R-B01-TROCA-SENHA, reset). Na MESMA
+  // do PRÓPRIO usuário (`changeOwnPassword`, rota POST /auth/password); o reset por administrador
+  // (S1) tem caminho próprio, `resetPasswordByAdmin`, que NÃO passa pelo gancho. Na MESMA
   // transação: (opcional) aplica a troca de senha via `applyPasswordUpdate`; (a) se o vínculo do
   // par chegou por 'religacao' (LIDO DE auth_identity_links.attached_via sob o braço de tenant —
   // legível sob a role real; NUNCA da trilha, ilegível — terceira armadilha, opção A) e a
@@ -769,6 +894,35 @@ export function passwordChangeRequiredError(): IdentityLinkError {
     "FORBIDDEN",
     "password_change_required",
     "Password change is required before this action.",
+  );
+}
+
+// B-USERS-ACESSO-SEG (S1, UEM-03) — o reset que não pôde terminar com segurança (trava ou transação
+// estourou o orçamento, identidade do par ilegível, falha do banco): código e mensagem FIXOS, sem
+// nada da causa. Nada mudou (a transação desfez).
+export function resetUnavailableError(): IdentityLinkError {
+  return identityLinkError(
+    503,
+    "SERVICE_UNAVAILABLE",
+    "reset_unavailable",
+    "The password reset could not be completed. Nothing was changed; try again.",
+  );
+}
+
+// O erro de domínio deste serviço é um objeto simples (identityLinkError), não uma instância de Error:
+// reconhecido pela forma, como o sendRouteError o reconhece.
+function isIdentityLinkError(error: unknown): error is IdentityLinkError {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const candidate = error as Partial<Record<keyof IdentityLinkError, unknown>>;
+
+  return (
+    typeof candidate.statusCode === "number" &&
+    typeof candidate.code === "string" &&
+    typeof candidate.reason === "string" &&
+    typeof candidate.message === "string"
   );
 }
 

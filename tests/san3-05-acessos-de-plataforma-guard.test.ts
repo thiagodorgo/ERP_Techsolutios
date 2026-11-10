@@ -308,6 +308,29 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/auth/services/identity-link.service.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx de callback de handlePasswordChange)", "×1"),
     "B-USERS-ACESSO-SEG (S7): a MESMA forma da chave já congelada em local-auth-credential.service.ts — o `updatePassword` da troca do PRÓPRIO usuário (`changeOwnPassword`, l.476-477) roda no callback do gancho `handlePasswordChange`, cuja transação começa por `setIdentityRlsContext(tx, actor)` (l.497), que põe o GUC da organização do ator como 1ª instrução (src/database/rls.ts l.188); o `where` é o par (tenant_id, user_id) do ator. Provado em tests/users-acesso-seg-troca-senha-db.test.ts sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  // B-USERS-ACESSO-SEG (P-SEG-2 e S1, Emenda 1): as chaves que a P-SEG-2 e o reset por administrador acrescentam,
+  // coladas da saída do gerador no head do bloco, com o motivo por chave. Gerador e WRAPPERS intocados. A CI do head
+  // 4ddbc9a9 (P-SEG-2) pegou as duas primeiras sem motivo — registrado no diário do bloco.
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.mustChangePassword", "tx", "RAW-SQL($queryRaw)", "local_auth_credentials", "PARAMETRO(tx)", "×1"),
+    "B-USERS-ACESSO-SEG (P-SEG-2): a marca da senha provisória do PAR, `SELECT must_change_password FROM local_auth_credentials WHERE tenant_id = … AND user_id = …`; o método só é chamado de dentro de transações do próprio serviço, DEPOIS de `setTenantRlsContext(tx, <organização do par>)` (religação: passos 3b e 4b de `relink`), com `tenant_id` também no filtro; só leitura. Provado em tests/users-acesso-seg-provisoria-db.test.ts (P2·r2/P2·r3) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts", "-.createPersistentAuthorizationResolver", "tx.user", "user.findFirst.select.local_auth_credentials", "local_auth_credentials", "PARAMETRO(tx de callback de withTenantRls)", "×1"),
+    "B-USERS-ACESSO-SEG (P-SEG-2): a MESMA leitura do status do S4, no callback de `withTenantRls(client, input.tenantId, …)` (setter do GUC como 1ª instrução, src/database/rls.ts l.35), passa a trazer pela relação a marca `must_change_password` da credencial do MESMO usuário; o `where` filtra por `id` e `tenant_id` da organização do ator e a relação lê sob o mesmo GUC; só leitura. Provado em tests/users-acesso-seg-provisoria-db.test.ts (P2·r4) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.resetPasswordByAdmin", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (S1): o ALVO do reset por administrador lido no callback de `withTenantRlsBudget(this.prisma, actor.tenantId, …)`, cujo setter do GUC da organização ATIVA do ator é a 1ª instrução (src/database/rls.ts, `withTenantRlsBudget`); o `where` filtra também por `tenant_id = actor.tenantId` (usuário de outra organização = 404). Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b/S1·c) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L2", "src/modules/auth/services/identity-link.service.ts", "new AuthSessionRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (S1): a revogação das sessões do ALVO do reset, no mesmo callback de `withTenantRlsBudget` (GUC da organização ativa do ator, reposto por `setTenantRlsContext` logo antes da escrita), `where` pelo par (tenant_id, user_id) do alvo. Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b: a sessão viva do alvo cai) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L2", "src/modules/auth/services/identity-link.service.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (S1): `upsertTemporaryPassword` grava só o HASH da provisória e a marca da P1 na credencial do ALVO, no callback de `withTenantRlsBudget` (GUC da organização ativa do ator, reposto logo antes), `where` pelo par (tenant_id, user_id) do alvo; devolve só o id. Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };
