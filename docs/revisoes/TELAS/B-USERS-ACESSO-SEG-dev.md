@@ -30,3 +30,19 @@ Formato das linhas: comando → saída → veredito.
 ## Ordem desta sessão
 
 As fatias que não dependem de D4/D5 vêm primeiro: S4 (com o Achado 3), S6, S3, S5, S8 (parte do antes/depois), S7 (com a coluna da P1). S1, S2 e a parte da S8 sobre a senha provisória ficam paradas até a resposta da `## PAUSA`.
+
+## S4 — status no RBAC persistente (ajuste 2, D-USERS-3) + Achado 3 (sessões na desativação)
+
+- Teste escrito antes: `tests/users-acesso-seg-desativacao-db.test.ts` (5 testes; o código sob teste conecta como papel efêmero do arnês, atributos medidos no S4·0).
+- Vermelho-controle na base (`75572269` + só o teste) → `node scripts/run-backend-tests.mjs tests/users-acesso-seg-desativacao-db.test.ts` → `# tests 5 · pass 1 · fail 4`: `not ok 2 S4·a` ("desativado: nenhum papel", actual `['viewer']` — o desativado ainda autoriza); `not ok 3 S4·b` e `not ok 4 S4·c` (`createPersistentAuthorizationResolver is not a function` — a fiação não existe); `not ok 5 A3` (`2 !== 0`, as sessões do desativado seguem vivas) → vermelho medido.
+- Código: `persistent-authorization.service.ts` (3º argumento obrigatório `findStatusForTenant`; inativo ou fora da organização → papéis e permissões vazios, antes de ler papéis); `persistent-rbac-context.middleware.ts` (exporta `createPersistentAuthorizationResolver(client)`, o padrão de produção é ele com o cliente global; imports preguiçosos carregados uma vez); `prisma-core-saas.store.ts` `updateUser` (status `inactive` → `revokeAllActiveByUserForTenant` na mesma transação RLS; `revoked_sessions` na auditoria); `tests/persistent-rbac-authorization.test.ts` (passa o 3º argumento; os 3 casos não mudam).
+- Verde → mesmo comando + `persistent-rbac-authorization` + `persistent-rbac-middleware` → `# tests 8 · pass 8 · fail 0`; `npx tsc -p tsconfig.json --noEmit` → sem saída.
+- Mutação M-S4a (a do plano: remover o filtro de status, `if (!user || …) return vazio` → `void user`) → `pass 2 · fail 3` (S4·a, S4·b, S4·c vermelhos) → revertida por edição inversa → `git diff --exit-code` limpo.
+- Mutação M-S4b (fiação: o resolvedor de produção responde sempre `active`) → `pass 3 · fail 2` (S4·b, S4·c vermelhos; S4·a verde, porque monta a própria leitura) → revertida → limpo. Prova que o S4·b/c medem a fiação de produção, não só o serviço.
+- Mutação M-A3 (sem a revogação na desativação) → `pass 4 · fail 1` (A3 vermelho) → revertida → limpo.
+- Commit `bec18cf7`.
+- Nota (ambiente, não do bloco): o log mostra `Domain event was not enqueued` (sem Redis local); a auditoria grava, só a fila do evento falha. Igual na base.
+
+## RETOMADA 1
+
+Feito: F0, linha de base N = 122, divergências D1–D7, S4 (com o Achado 3) verde com 3 mutações provadas. Próximo comando: escrever `tests/users-acesso-seg-email-duplicado.test.ts` (S6) e rodá-lo na base para o vermelho-controle.
