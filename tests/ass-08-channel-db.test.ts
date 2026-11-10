@@ -634,4 +634,139 @@ if (!connectionString) {
       await role.drop();
     }
   });
+
+  // ---------------------------------------------------------------- F5b: a adoção por fato que não se apaga, no Postgres
+
+  /** Porta roteirizada (sem rede): `stored` é o que existe no provedor, na ordem da listagem; `createScript` ("lost" cria e
+   * PERDE a resposta) e `lookupScript` ("5xx" falha a reconsulta). */
+  type ScriptedPort = ReturnType<typeof scriptedPort>;
+  function scriptedPort(provider: string) {
+    const failure = (code: string) => Object.assign(new Error(code), { code });
+    const port = {
+      created: [] as Array<{ readonly externalReference: string; readonly amountCents: number }>,
+      lookups: [] as string[],
+      stored: [] as Array<{ readonly chargeId: string; readonly ref: string; readonly amountCents: number; readonly status: "pending" }>,
+      createScript: [] as Array<"ok" | "lost">,
+      lookupScript: [] as Array<"ok" | "5xx">,
+      async ensureCustomer() { return { customerId: "cus_db" }; },
+      async createCharge(input: { readonly externalReference: string; readonly amountCents: number }) {
+        port.created.push(input);
+        const step = port.createScript.shift() ?? "ok";
+        const chargeId = `pay_db_${port.stored.length + 1}`;
+        port.stored.push({ chargeId, ref: input.externalReference, amountCents: input.amountCents, status: "pending" });
+        if (step === "lost") throw failure("provider_timeout");
+        return { chargeId, status: "pending" as const, payUrl: "https://pay.example/db" };
+      },
+      async getCharge() { return { status: "pending" as const, raw: {} }; },
+      async findChargeByExternalReference(ref: string) {
+        port.lookups.push(ref);
+        if (port.lookupScript.shift() === "5xx") throw failure("provider_unavailable");
+        const found = port.stored.find((charge) => charge.ref === ref);
+        return found ? { chargeId: found.chargeId, status: found.status } : null;
+      },
+      async cancelCharge(chargeId: string) { return { chargeId, status: "cancelled" as const }; },
+      async refund(chargeId: string) { return { chargeId, status: "refunded" as const }; },
+      async registerWebhook() { return { externalId: "hook_db" }; },
+      async verifyWebhook() { return { ok: false }; },
+      supportedMethods() { return ["pix"] as const; },
+      describe() { return { provider, supportedMethods: ["pix"] as const, pendingHomologation: [], webhookRegistration: "api" as const }; },
+    };
+    return port;
+  }
+
+  const minutesAfter = (base: Date, n: number) => new Date(base.getTime() + n * 60_000);
+  const afterOrphanCutoff = (base: Date) => new Date(base.getTime() + OUTBOX_ORPHAN_MS + 60_000);
+
+  function dispatchDb(client: any, provider: string, port: ScriptedPort, at: Date) {
+    return runDispatchOutbox({ repo: new PrismaOutboxRepository(client), ports: { [provider]: port as any }, resolveCustomer: async () => ({ ok: true, customerId: "cus_db" }), now: () => at });
+  }
+
+  async function claimAndDieDb(client: any, provider: string, at: Date) {
+    const claimed = await new PrismaOutboxRepository(client).claimNext({ ...claimParamsFor(provider, "dead-worker"), now: at });
+    assert.equal(claimed?.kind, "claimed", "o worker reclamou a linha antes de morrer");
+    return claimed!.row;
+  }
+
+  async function finalRow(id: string) {
+    const rows = (await db.$queryRawUnsafe(`SELECT status, last_error, external_id FROM billing_outbox WHERE id = $1::uuid`, id)) as Array<{ status: string; last_error: string | null; external_id: string | null }>;
+    return rows[0];
+  }
+
+  /** As fotos de evidência APAGADA do crítico (L1/L2/L3): R0 `SKIPPED` com attempts 0 e last_error nulo, a fantasma no
+   * provedor; o demonstrativo reaberto DEPOIS de R0 e refechado com R$ 150; R1 nasce pelo pedido real (seq 2). */
+  async function erasedEvidenceDb(client: any, slug: string, phantomCents: number) {
+    const provider = uniqueProvider(slug);
+    const { tenantId, statementId } = await seedStatement(`ass08-${slug}-${randomUUID().slice(0, 8)}`);
+    const t0 = new Date();
+    await db.$executeRawUnsafe(
+      `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, skip_reason, attempts, last_error)
+       VALUES ($1::uuid, $2::uuid, 'charge_create', $3, $4, gen_random_uuid(), '{"amountCents":10000,"dueDate":"2026-11-10","method":"pix"}'::jsonb, $5, 'SKIPPED', 'statement_reopened', 0, NULL)`,
+      tenantId,
+      statementId,
+      provider,
+      `charge_create:${statementId}:1`,
+      t0,
+    );
+    await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'closed', reopened_at = $2, total_amount = 150 WHERE id = $1::uuid`, statementId, minutesAfter(t0, 1));
+    const t1 = minutesAfter(t0, 3);
+    const r1 = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(client) }, { tenantId, statementId, provider, payload: { amountCents: 15000, dueDate: "2026-11-10", method: "pix" }, now: t1 });
+    assert.equal(r1.idempotencyKey, `charge_create:${statementId}:2`);
+    const port = scriptedPort(provider);
+    port.stored.push({ chargeId: `pay_phantom_${slug}`, ref: statementId, amountCents: phantomCents, status: "pending" });
+    return { provider, r1, t1, port };
+  }
+
+  test("T-OBX-db-7 (E6′/E7′, §13.1.4): as fotos de evidência apagada L1, L2 e L3 com o repositório Prisma real e papel sem bypass — a fantasma nunca é adotada, 0 createCharge", async () => {
+    const role = await createEphemeralRole(db, targetUrl);
+    try {
+      // L1: retentativa com 5xx na 1ª reconsulta, fantasma de R$ 100
+      const l1 = await erasedEvidenceDb(role.client, "db7l1", 10000);
+      l1.port.lookupScript.push("5xx");
+      await dispatchDb(role.client, l1.provider, l1.port, l1.t1);
+      await dispatchDb(role.client, l1.provider, l1.port, minutesAfter(l1.t1, 2));
+      assert.equal(l1.port.created.length, 0, "L1: 0 createCharge");
+      assert.deepEqual(await finalRow(l1.r1.id), { status: "NEEDS_REVIEW", last_error: "charge_found_for_previous_intent", external_id: null }, "L1");
+      // L2: a órfã R1 × a mesma fantasma
+      const l2 = await erasedEvidenceDb(role.client, "db7l2", 10000);
+      await claimAndDieDb(role.client, l2.provider, l2.t1);
+      await dispatchDb(role.client, l2.provider, l2.port, afterOrphanCutoff(l2.t1));
+      assert.equal(l2.port.created.length, 0, "L2: 0 createCharge");
+      assert.deepEqual(await finalRow(l2.r1.id), { status: "NEEDS_REVIEW", last_error: "orphan_found_previous_intent", external_id: null }, "L2");
+      // L3: fantasma de MESMO valor (R$ 150) — U pega mesmo quando o valor bate
+      const l3 = await erasedEvidenceDb(role.client, "db7l3", 15000);
+      l3.port.lookupScript.push("5xx");
+      await dispatchDb(role.client, l3.provider, l3.port, l3.t1);
+      await dispatchDb(role.client, l3.provider, l3.port, minutesAfter(l3.t1, 2));
+      assert.equal(l3.port.created.length, 0, "L3: 0 createCharge");
+      assert.deepEqual(await finalRow(l3.r1.id), { status: "NEEDS_REVIEW", last_error: "charge_found_for_previous_intent", external_id: null }, "L3");
+    } finally {
+      await role.drop();
+    }
+  });
+
+  test("T-OBX-db-8 (E7′, §13.1.4): L5 — a órfã de linha ÚNICA com o demonstrativo reaberto DEPOIS dela e refechado com outro total → orphan_found_stale_closing; Sa — a órfã coerente adota a PRÓPRIA (R-OBX-1)", async () => {
+    const role = await createEphemeralRole(db, targetUrl);
+    try {
+      for (const variant of ["L5", "Sa"] as const) {
+        const provider = uniqueProvider(`db8${variant.toLowerCase()}`);
+        const { tenantId, statementId } = await seedStatement(`ass08-db8${variant.toLowerCase()}-${randomUUID().slice(0, 8)}`);
+        const t0 = new Date();
+        const row = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 10000, dueDate: "2026-11-10", method: "pix" }, now: t0 });
+        await claimAndDieDb(role.client, provider, t0);
+        const port = scriptedPort(provider);
+        port.stored.push({ chargeId: `pay_own_${variant}`, ref: statementId, amountCents: 10000, status: "pending" }); // o POST do worker que morreu
+        if (variant === "L5") {
+          await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'closed', reopened_at = $2, total_amount = 150 WHERE id = $1::uuid`, statementId, minutesAfter(t0, 1));
+        }
+        await dispatchDb(role.client, provider, port, afterOrphanCutoff(t0));
+        const expected = variant === "L5"
+          ? { status: "NEEDS_REVIEW", last_error: "orphan_found_stale_closing", external_id: null }
+          : { status: "SENT", last_error: null, external_id: `pay_own_${variant}` };
+        assert.deepEqual(await finalRow(row.id), expected, variant);
+        assert.equal(port.created.length, 0, `${variant}: a órfã nunca cria`);
+      }
+    } finally {
+      await role.drop();
+    }
+  });
 }

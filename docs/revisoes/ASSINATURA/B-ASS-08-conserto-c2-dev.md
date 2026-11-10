@@ -163,3 +163,26 @@
 
 - **Ponto exato:** F5 fechada e empurrada em `743bea8b`. Na árvore, não commitados: os testes da F5b (T-OBX-db-7/8 em `tests/ass-08-channel-db.test.ts`, já verdes na rodada da F5 e com o vermelho-controle medido às 10:56); faltam as mutações dela (M3f no SQL, M3g, M3h), o lint e o commit.
 - **Até o bastão voltar:** escrever a F6 (o `retry` guardado do E9 já está em `rascunhos/f6-src/`; testes T-OBX-9 com `lastError` mantido, T-OBX-9b e os braços 9–10 do T-OBX-17 no dublê; T-CHG-db-3 e T-OBX-db-6 em rascunho até a F5b ser commitada, porque moram no mesmo arquivo `-db`), sem suíte, `tsc`, lint nem banco. A 1ª linha do painel é conferida a cada 5 min.
+
+## RETOMADA 7 — 12:51 SP: o bastão voltou (`bastao-memoria.txt` = `dev-522-c2`, 3,58 GB)
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| 11:06–12:51 | (sem bastão, trabalho leve) rascunhos da F6/F4b/F7 conferidos fora da árvore; achado e consertado no RASCUNHO do T-LOCK-2 (`rascunhos/f6b-src/ass-08-lock-order-db.test.ts` l.119): o `MAP_MENTION` tinha sido gravado com backspace (0x08) no lugar de `\b` e sem os escapes de `\.transaction\(` (a regex nem compilaria); varredura de caracteres de controle em todos os rascunhos e nos arquivos do ramo: só aquela linha | `scan-ctrl.mjs`: 4 ocorrências → 0; a regex consertada compila | defeito de rascunho, nada no ramo |
+| 12:51:19 | `docker ps -a` | a VM do Docker reiniciou às ~12:40 (pressão de memória): `dev522-pg` `Exited (255)`; de pé só `j527-c2-pg` (1 outro trabalho) | — |
+| 12:51:30→12:51:43 | `docker start dev522-pg` + `pg_isready` (3,62 GB) | pronto em 1 s; log: `database system was not properly shut down; automatic recovery in progress` → `redo done` → `ready to accept connections` | recuperação limpa |
+| 12:51:52→12:52:07 | `psql`: bancos e papéis; e a conexão da bateria (`postgresql://postgres:dev522@127.0.0.1:5496/postgres`) pelo `pg` do host | só `postgres`, `template0`, `template1`; papel `postgres` (super); 0 banco `postgres_ass08%` e 0 papel efêmero sobrando; PostgreSQL 16.15 | a bateria não depende de schema no `postgres`: cada arquivo `-db` cria a própria base e roda `migrate deploy` — nada a re-migrar |
+
+## F5b — `adoptionFacts` no Prisma: a adoção só por fato que não se apaga (T-OBX-db-7/8)
+
+O código da F5b (`adoptionFacts` no `PrismaOutboxRepository`) entrou no commit da F5 (`743bea8b`, declarado lá). Os testes `-db` foram escritos antes e o vermelho-controle deles está na F5 (10:56:50, `not ok 15 T-OBX-db-7` "L1: 0 createCharge" e `not ok 16 T-OBX-db-8` `external_id: 'pay_own_L5'`); o verde, na rodada da F5 (10:58:46, 56/56).
+
+| hora (SP) | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| 12:52:45 | `f56-battery.sh f5b-mut M3fsql` | `ABAIXO DO PISO` (2,92 GB): parou antes de aplicar | a trava funcionou |
+| 12:53:01 | espera medindo | 3,51 GB | — |
+| 12:53:16→12:54:13 | **M3f no SQL** (U trocado pela régua anterior: `other_intents` só conta a irmã `attempts > 0 OR last_error IS NOT NULL`) → `-db` → revert | `# tests 16 · pass 15 · fail 1`: `not ok 15 T-OBX-db-7`, L1 adota a fantasma: `{ status: 'SENT', external_id: 'pay_phantom_db7l1' }` em vez de `NEEDS_REVIEW charge_found_for_previous_intent`; revert limpo | vermelho medido |
+| 12:54:45→12:55:34 | **M3g** (sem o V: tira `if (!current) return …_stale_closing`) | `pass 15 · fail 1`: `not ok 16 T-OBX-db-8`, L5 adota a própria com fechamento desfeito: `SENT pay_own_L5` em vez de `NEEDS_REVIEW orphan_found_stale_closing`; revert limpo | vermelho medido |
+| 12:55:52→12:56:31 | **M3h** (`other_intents` conta só as irmãs VIVAS) | `pass 15 · fail 1`: `not ok 15 T-OBX-db-7`, L1 adota a fantasma (`SENT pay_phantom_db7l1`); revert limpo | vermelho medido |
+| 12:56:55→12:57:35 | verde depois das reversões e do reinício do container (3,36 GB) | `# tests 16 · pass 16 · fail 0 · skipped 0` (`ok 15 T-OBX-db-7`, `ok 16 T-OBX-db-8`) | F5b verde |
+| — | `npm run lint` NÃO re-rodado | o commit não toca `src/` (o `tsc` do `lint` só inclui `src/**`, `tsconfig.json` `include`) e o `src` é o de `743bea8b`, cujo `lint` deu 0 às 11:04 | declarado |
