@@ -2934,7 +2934,7 @@ mesma fila do **PR-08 (reconciliação mobile)** já prevista em `P-MOBILE-OS-SE
 - **dono:** `B-O6R-03b` (plano SAN3, §4.1 item 30 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-QUA-001`: o achado `Ω6R-QUA-001` (item 30) tem dono `B-O6R-03b`.
 - **status (2026-10-11, B-O6R-03a na autoria):** PARCIAL — `Ω6R-DIN-009` fechado NA AUTORIA do `B-O6R-03a` (PR e head a preencher pelo orquestrador; evidência em `docs/revisoes/SAN3/B-O6R-03a-dev.md`); `Ω6R-QUA-001` segue ABERTO, dono `B-O6R-03b`. O 03b consome o `status: conflict` por ação (`payload_mismatch`, `legacy_payload_unverifiable`, `receipt_unverifiable`, `receipt_ambiguous`, `action_owned_by_other_actor`) e o `503 sync_busy`; dado legado sem prova exige resolução manual, sem trocar o id para lançar de novo. O QUA-001 só ativa depois de `P-O6R-B03-FILA-POR-USUARIO`.
 - **Apenso 2026-11-08 (B-FILA-USUARIO):** `P-O6R-B03-FILA-POR-USUARIO` fechada na autoria do `B-FILA-USUARIO`; o pré-requisito da fila por usuário para ativar `Ω6R-QUA-001` no `B-O6R-03b` está destravado.
-- **Apenso 2026-11-09 (B-O6R-03b):** FECHADO NA AUTORIA do `B-O6R-03b` (ramo `fix/mobile-rdv-sync`, PR #520; head a preencher pós-junta). Evidência: RB1 (permissão `expense_sync:write` ao `field_technician` com `catalog.ts` + snapshot e `auditor` 403), RB2 (replay com token; `Pending`/503/401 sem custo), RB3+RB4 (payload `report_id`/`category_key`/`spent_at`/`amount`, prontidão por `serverId`, contrato Dart×TS contra o parser real), RB5 (conflito por ação traduzido, sem laço), RB6 (comprovante fora do lote). Diário: `docs/revisoes/REENVIOS/B-O6R-03b-dev.md`.
+- **Apenso 2026-11-09 (B-O6R-03b):** FECHADO NA AUTORIA do `B-O6R-03b` (ramo `fix/mobile-rdv-sync`, PR #520; head aprovado `77e5ed30`, merge `e7e8d678`, backfill 2026-11-09). Evidência: RB1 (permissão `expense_sync:write` ao `field_technician` com `catalog.ts` + snapshot e `auditor` 403), RB2 (replay com token; `Pending`/503/401 sem custo), RB3+RB4 (payload `report_id`/`category_key`/`spent_at`/`amount`, prontidão por `serverId`, contrato Dart×TS contra o parser real), RB5 (conflito por ação traduzido, sem laço), RB6 (comprovante fora do lote). Diário: `docs/revisoes/REENVIOS/B-O6R-03b-dev.md`.
 
 - **Apenso 2026-11-09 (conserto da junta do PR #520):** o "503/401 sem custo" do RB2 passa a ser provado pelo caminho HTTP real (bo6r03b_expense_http_errors_test.dart, E1–E10); o RB2 com mock não provava (achado F1 da C2).
 
@@ -11056,7 +11056,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-B03-CONTRATO-CONFLITO-POR-ACAO (2026-10-11) — o app precisa consumir o conflito por ação e o 503 do sync de despesas — MÉDIA
 
-- **status:** FECHADA NA AUTORIA do `B-O6R-03b` (PR #520; head a preencher pós-junta) · **escopo:** consumidor do contrato que o `B-O6R-03a` entrega (`mobile_expense_sync@2026-10-11.b-o6r-03a`) · **dono:** `B-O6R-03b`. O app consome o `conflict` por ação com os 5 códigos traduzidos (RB5), diferencia `503 EXPENSE_SYNC_UNAVAILABLE sync_busy` como reenvio seguro (RB2(2)) e mantém a ação em conflito para resolução manual sem laço (RD1 do 1º PR re-executado no mesmo cenário).
+- **status:** FECHADA NA AUTORIA do `B-O6R-03b` (PR #520; head aprovado `77e5ed30`, merge `e7e8d678`, backfill 2026-11-09) · **escopo:** consumidor do contrato que o `B-O6R-03a` entrega (`mobile_expense_sync@2026-10-11.b-o6r-03a`) · **dono:** `B-O6R-03b`. O app consome o `conflict` por ação com os 5 códigos traduzidos (RB5), diferencia `503 EXPENSE_SYNC_UNAVAILABLE sync_busy` como reenvio seguro (RB2(2)) e mantém a ação em conflito para resolução manual sem laço (RD1 do 1º PR re-executado no mesmo cenário).
 - **O que consumir:** `status: conflict` por ação com `errorCode` `payload_mismatch` · `legacy_payload_unverifiable` · `receipt_unverifiable` · `receipt_ambiguous` · `action_owned_by_other_actor`; e `503 EXPENSE_SYNC_UNAVAILABLE sync_busy` como reenvio seguro. Legado sem prova exige resolução manual, nunca troca de id para lançar de novo.
 - **Inclui a nota N-03 da r2:** hoje o conflito volta à fila em todo ciclo (`pendingForTenant` inclui `conflict`, o `retryCount` não sobe) e o controller grava uma auditoria "success" por lote.
 - **teste de encerramento:** o Flutter preserva a ação em conflito para resolução manual, diferencia 503 e não perde a intenção; o laço sem fim deixa de existir.
@@ -11097,16 +11097,17 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** nada (sem autorização indevida, escrita, efeito financeiro nem perda de dado; a cadeira não vetou).
 - **teste de encerramento:** a mutação NEWTYPE (um tipo novo no enum sem tratador) deixa um teste ou o build vermelho, nomeando o tipo.
 
-## P-APARENCIA-POR-USUARIO (2026-10-14) — as 3 aparências aprovadas de cada tela ainda não são escolhíveis pelo usuário — MÉDIA
+## P-APARENCIA-POR-USUARIO (2026-10-14; re-escopo 2026-11-09) — telas de Pátios ainda sem maquete de 3 opções (o seletor foi entregue no #461) — MÉDIA
 
+- **Re-escopo 2026-11-09 (registro; fonte `docs/revisoes/TELAS/B-APARENCIA-SELETOR-achado.md`, conferido em `origin/main` `e7e8d678`):** o seletor está ENTREGUE desde o PR #461 (`B-APARENCIA-USUARIO`, merge `b2f8e6cf`, 2026-10-25): fica no menu do usuário, no rodapé da barra lateral (`frontend/src/layouts/AppShell.tsx:209,217`); a preferência fica no navegador, por organização e usuário (`techsol.aparencia.<tenantId>.<userId>`, `frontend/src/modules/appearance/appearance.storage.ts`); o padrão é B em Pátios e A nas demais. Estão em `APPEARANCE_SCREENS` com as 3 aparências: Pátios (#461), editor de checklist (#464), Financeiro (#474), Ordens de Serviço (#493) e Dashboard (#513). O "O que falta", o "bloqueia" e o "teste de encerramento" de antes estão cumpridos (o isolamento entre usuários e organizações tem teste: `frontend/tests/aparencia-storage.test.ts:64`) e ficam riscados abaixo. O título de antes era "as 3 aparências aprovadas de cada tela ainda não são escolhíveis pelo usuário". **A pendência passa a cobrir só o resíduo:** as telas de Pátios sem maquete de 3 opções (Processos, Liberações, Leilões, Perfis, Tarifas e Painel do pátio; ver o apenso de 2026-11-02). Vagas e dossiê seguem em `P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS`.
 - **respondida pelo dono (16/10):** (a)–(d) em `D-APARENCIA-RESPOSTAS` — navegador na v1, B em Pátios e A nas demais, escolha no menu do usuário, Pátios estreia junto. **A resposta (c) substitui o "em Configurações" do "O que falta" e do "teste de encerramento" abaixo: a escolha fica no menu do usuário.**
-- **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`) · **dono:** o orquestrador (planejar o bloco)
-- **O que falta:** o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.
+- **status:** ABERTA · **escopo:** novo (decisão `D-APARENCIA-POR-USUARIO`); desde 2026-11-09, só o resíduo das telas de Pátios · **dono:** o orquestrador (planejar o bloco)
+- **O que falta:** ~~o modo em Configurações onde cada usuário escolhe a aparência de cada tela (A, B ou C); onde a preferência fica guardada (por usuário, não por organização); a carga das 3 variantes sem duplicar a camada de dados.~~ (entregue no #461) → as maquetes de 3 opções das telas de Pátios do apenso de 2026-11-02, pelo Claude, e, aprovadas, as 3 aparências delas.
 - **Telas com as 3 aprovadas:** Pátios, Dashboard, Ordens de Serviço. As demais passam pelas 3 opções antes.
 - **Apenso 2026-11-02:** a lista de Pátios do #461 já tem A/B/C, mas Processos, Liberações, Leilões, Perfis, Tarifas e Painel do pátio ainda não têm maquete de 3 opções. Elas permanecem nesta pendência: maquete pelo Claude antes do desenvolvimento, depois dos bloqueantes. Vagas e dossiê já têm maquete aprovada e foram separados em `P-PATIOS-VAGAS-DOSSIE-3-APARENCIAS`.
 - **editor de checklist registrado (B-SAN3-22, 2026-10-26):** `checklist-editor` entrou em `APPEARANCE_SCREENS` (A "Padrão fiel" · B "Analítica" · C "Painel de impacto", padrão A); o editor lê a escolha por `useScreenAppearance("checklist-editor")`.
-- **bloqueia:** a primeira tela que sair com as 3 aparências (`D-TELAS-SAEM-COM-TRES`): o seletor vem antes dela ou junto.
-- **teste de encerramento:** um usuário troca a aparência de uma tela em Configurações, sai, entra de novo e a tela abre na aparência dele; outro usuário da mesma organização continua na sua.
+- **bloqueia:** ~~a primeira tela que sair com as 3 aparências (`D-TELAS-SAEM-COM-TRES`): o seletor vem antes dela ou junto.~~ → não (o seletor existe; as telas do resíduo esperam o fim dos bloqueantes).
+- **teste de encerramento:** ~~um usuário troca a aparência de uma tela em Configurações, sai, entra de novo e a tela abre na aparência dele; outro usuário da mesma organização continua na sua.~~ (cumprido pelo #461) → cada tela de Pátios do resíduo tem as 3 opções aprovadas pelo dono em `screen-refs/` e entra em `APPEARANCE_SCREENS` com as 3 aparências.
 
 ## P-TELAS-ACHADOS-MAQUETES-14-10 (2026-10-14) — defeitos do sistema de hoje achados ao montar as maquetes de Dashboard e Ordens de Serviço — MÉDIA
 
@@ -12974,24 +12975,31 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-REFINO-INVENTARIO-SEM-GUARDA (2026-11-09) — o inventário de fluxos gerado não tem guarda de frescor — BAIXA
 
-- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** o próximo PR de registro (§C7 item 8(3)).
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** o próximo PR de registro (§C7 item 8(3)) · **PR-alvo:** o PR de registro seguinte ao de 09/11 noite (este não a leva: o escopo dele foi fechado pelo orquestrador) · **bloqueia:** não.
 - **o que se sabe:** `node scripts/inventario-fluxos.mjs --check` dá rc 1 em `3ff93b64`, sem o #520, e o `--check` não roda no `npm test` nem na CI. Efeito visível: `docs/refino/inventario-fluxos.md:3254` (`POST /api/v1/mobile/sync/expense-actions`) fica sem o `field_technician` depois do #520 (achado C1-N1 da junta do PR #520).
 - **teste de encerramento:** `--check` com rc 0 na main e rodando na CI.
 
 ## P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO (2026-11-09) — "Versão do gestor" em conflito de despesa que o servidor nunca recebeu equivale a descartar — MÉDIA
 
-- **status:** ABERTA · **escopo:** `mobile/flutter_app/lib/core/sync/` + tela de sync · **dono:** `B-MATERIAL-REENVIO` (bloco C).
+- **status:** ABERTA · **escopo:** `mobile/flutter_app/lib/core/sync/` + tela de sync · **dono:** `B-MATERIAL-REENVIO` (bloco C) · **PR-alvo:** PR do `B-MATERIAL-REENVIO` · **bloqueia:** não o início do bloco C; a pergunta ao dono precisa de resposta, ou de um padrão declarado, antes de o dev mexer nessa parte (porteiro do #520, item 8).
 - **o que se sabe:** o 5xx deixa de chegar aqui com o conserto do PR #520; sobram a recusa 4xx de domínio, o 401/403 (`SESSION_FORBIDDEN`) e o `LEGACY_ITEM_INCOMPLETE`. Num `report.create`, a escolha cascateia item e envio (`sync_resolution_side_effects.dart:17-49`). Num `item.create`, libera o envio do relatório sem o item (`sync_replay_service.dart:493-504`). É a classe de `D-DESPESA-SEM-DESCARTAR`, por outra porta.
 - **pergunta ao dono:** confirmar antes de "Versão do gestor" em despesa sem `result_ref`, trocar o rótulo, ou esconder?
 - **teste de encerramento:** nenhuma ação de despesa sem recibo do servidor sai da fila sem confirmação explícita, e "Versão do gestor" num item não libera o envio sem aviso.
+- **Apenso 2026-11-09 (evidência X4 da conferência do #520):** num lote, a recusa real de domínio `status_not_editable` no 1º item arrasta o 2º (nunca enviado) para o mesmo conflito, e "Versão do gestor" nele descarta um item que o servidor nunca recebeu. É igual no `f63c8bb6` (objeto da junta) e no head `77e5ed30`: não nasce do conserto. Fonte: ata `agent-orchestration/omega/juntas/J-520-b-o6r-03b.md` (Conferência, observação fora da lente A).
 
 ## P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA (2026-11-09) — falha de infraestrutura no sync de despesa pode sair 400 `invalid_request` — MÉDIA, HIPÓTESE
 
-- **status:** ABERTA (hipótese, não medida) · **escopo:** `src/modules/core-saas/routes/http.ts` e `src/modules/expense-management/expense-sync.ts` · **dono:** `B-ARNES-2` (o mesmo da `P-O6R-B03-TRANSIENT-CODES-DUPLICADOS`).
+- **status:** ABERTA (hipótese, não medida) · **escopo:** `src/modules/core-saas/routes/http.ts` e `src/modules/expense-management/expense-sync.ts` · **dono:** `B-ARNES-2` (o mesmo da `P-O6R-B03-TRANSIENT-CODES-DUPLICADOS`) · **PR-alvo:** PR do `B-ARNES-2` · **bloqueia:** não.
 - **o que se sabe:** `sendRouteError` (`core-saas/routes/http.ts:51-60`) responde 400 `invalid_request` a qualquer `Error` que não seja erro de rota; `mapTransientSyncFailure` (`expense-sync.ts:352,379-383`) só converte em 503 a lista fechada `P2028, P2034, P2024, 40P01, 40001, 55P03`, sem nenhum código de perda de conexão.
 - **hipótese, não medida:** uma conexão perdida com o banco no meio do sync chega ao app como recusa de domínio, isto é, conflito.
 - **comando que derruba:** um teste com repositório que lança `PrismaClientKnownRequestError` P1001 (ou erro de driver `57P01`/`08006`) dentro de `withSyncTransaction`, lendo status e corpo pela rota.
 - **teste de encerramento:** perda de conexão no sync responde 503 `sync_busy`, provado em Postgres descartável.
+
+## P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA (2026-11-09) — o "com sessão válida" do item 30 não tem teste que o guarde — MÉDIA
+
+- **status:** ABERTA · **escopo:** achado A1 do porteiro do PR #520 (`agent-orchestration/omega/juntas/porteiro-520-parecer.md`) · **dono:** `B-RDV-COMPROVANTE` (o B' da trilha REENVIOS, o próximo a tocar o sync) · **PR-alvo:** PR do `B-RDV-COMPROVANTE` · **bloqueia:** não (o produto está correto em `e7e8d678`).
+- **o que se sabe:** o porteiro do #520 desligou o cliente autenticado em `mobile/flutter_app/lib/core/sync/sync_providers.dart:139` (mutação M-P1: `if (config.accessToken == null) {` → `if (true || config.accessToken == null) {`, o defeito do item 30) e a suíte Flutter inteira seguiu verde, 1047/1047. A metade "com sessão válida" do teste de encerramento do item 30 (`docs/revisoes/SAN3/PLANO_SAN3.md:301`: "RDV criado offline sincroniza com sessão válida; replay → 1") fica sem guarda. Conferido por `grep` em `e7e8d678`: das 8 citações do `syncBatchApiProvider` nos testes, 7 o substituem por `overrideWithValue`, e a única que lê o provedor real (`mobile/flutter_app/test/core/sync/bo6r11_despesa_aguardando_envio_test.dart:510`) cobre só o caso sem sessão.
+- **teste de encerramento:** um teste que lê o `syncBatchApiProvider` real com sessão válida, prova o `DioExpenseSyncBatchApi` com `Authorization: Bearer <token>` e fica vermelho com a M-P1.
 
 ## P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na baixa/cancel/reopen/disable, `charge_cancel` da cobrança viva e linha nova `seq+1` no refechamento — MÉDIA
 
