@@ -4,12 +4,13 @@ import pino from "pino";
 
 import { env } from "../../config/env.js";
 import { ChecklistError } from "../checklists/checklist.types.js";
-import { createChecklistStorageProviderByName } from "../checklists/storage/checklist-storage.factory.js";
+import { createChecklistStorageProviderByName, readChecklistStorageConfig } from "../checklists/storage/checklist-storage.factory.js";
 import type {
   ChecklistStorageObjectBody,
   ChecklistStorageProvider,
   ChecklistStorageProviderName,
 } from "../checklists/storage/checklist-storage.types.js";
+import type { S3ChecklistStorageProviderConfig } from "../checklists/storage/s3-checklist-storage.provider.js";
 import {
   resetEvidenceScannerForTests,
   setEvidenceScannerForTests,
@@ -76,6 +77,10 @@ const RECEIPT_EDITABLE_STATUSES = new Set(["draft", "returned"]);
  */
 type ExpenseReceiptStorageTestSeam = {
   readonly provider?: ChecklistStorageProvider;
+  /** O `NODE_ENV` que o portão de produção lê (§2(a)5). */
+  readonly nodeEnv?: string;
+  /** A configuração `s3` com que o teste construiu o provedor; o portão lê esta (§13.2 item 3). */
+  readonly s3?: S3ChecklistStorageProviderConfig;
 };
 
 let receiptStorageSeam: ExpenseReceiptStorageTestSeam = {};
@@ -109,6 +114,65 @@ function resolveReceiptStorage(name: ChecklistStorageProviderName): ChecklistSto
 /** O nome do provedor da ESCRITA: o da costura, ou `CHECKLIST_STORAGE_PROVIDER`. */
 function receiptWriteProviderName(): ChecklistStorageProviderName {
   return receiptStorageSeam.provider?.name ?? env.CHECKLIST_STORAGE_PROVIDER;
+}
+
+/**
+ * §2(a)5 + §13.2 — PORTÃO DE PRODUÇÃO, fail-closed, por requisição, só nesta via. Com `NODE_ENV=production`, o
+ * comprovante só grava em `s3` com bucket e com o endpoint EXPLÍCITO regional da AWS da região configurada
+ * (`https://s3.<região>.amazonaws.com`, sem porta, credencial no URL, caminho, consulta nem fragmento). Qualquer
+ * outra forma → 503 `receipt_storage_unavailable`, antes do scanner e da gravação (0 objeto, 0 linha). Sem válvula:
+ * `local` em produção é recusado mesmo com diretório declarado (o código não sabe se há volume montado).
+ *
+ * É lista do que PASSA, não do que não passa: não depende de DNS (`localtest.me` resolve para loopback) e recusa o
+ * endpoint vazio, com o qual o SDK escolheria o destino por `AWS_ENDPOINT_URL_S3`, `AWS_ENDPOINT_URL` ou
+ * `~/.aws/config`, que o portão não vê. O `forcePathStyle` não entra na conta.
+ */
+const AWS_REGION_PATTERN = /^[a-z]{2}(?:-[a-z]+)+-\d{1,2}$/;
+
+function approvedReceiptS3Host(region: string): string | undefined {
+  return AWS_REGION_PATTERN.test(region) ? `s3.${region}.amazonaws.com` : undefined;
+}
+
+function isApprovedReceiptS3Endpoint(s3: { endpoint?: string; region: string }): boolean {
+  const host = approvedReceiptS3Host(s3.region.trim());
+  if (!host) return false;
+  const raw = (s3.endpoint ?? "").trim();
+  if (!raw) return false; // vazio: o SDK resolveria o destino por AWS_ENDPOINT_URL_S3, AWS_ENDPOINT_URL ou ~/.aws/config
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  return (
+    url.protocol === "https:" &&
+    url.hostname === host &&
+    url.port === "" &&
+    url.username === "" &&
+    url.password === "" &&
+    (url.pathname === "/" || url.pathname === "") &&
+    url.search === "" &&
+    url.hash === ""
+  );
+}
+
+export function assertReceiptStorageDurable(input: {
+  nodeEnv: string;
+  provider: string;
+  s3: S3ChecklistStorageProviderConfig;
+}): void {
+  if (input.nodeEnv !== "production") return;
+  if (input.provider === "s3" && input.s3.bucket.trim() !== "" && isApprovedReceiptS3Endpoint(input.s3)) return;
+  throw new ExpenseManagementError(503, "SERVICE_UNAVAILABLE", "receipt_storage_unavailable", "Receipt storage is temporarily unavailable.");
+}
+
+/** §13.2 item 3 — o portão lê no MESMO lugar que a escrita: a costura, ou o `env` e a fábrica da D-014. */
+function receiptStorageGateInput(): { nodeEnv: string; provider: string; s3: S3ChecklistStorageProviderConfig } {
+  return {
+    nodeEnv: receiptStorageSeam.nodeEnv ?? env.NODE_ENV,
+    provider: receiptWriteProviderName(),
+    s3: receiptStorageSeam.s3 ?? readChecklistStorageConfig().s3,
+  };
 }
 
 /**
@@ -250,6 +314,9 @@ export class ExpenseReceiptService {
     if (computedSha256 !== input.declaredSha256) {
       throw new ExpenseManagementError(400, "BAD_REQUEST", "sha256_mismatch", "sha256 does not match uploaded file.");
     }
+
+    // §2(a)5 + §13.2 — portão de produção ANTES do scanner e da gravação.
+    assertReceiptStorageDurable(receiptStorageGateInput());
 
     // Sniff → scanner → marca, pelo gate único da evidência. A allowlist é a DESTA via
     // (jpeg/png/webp/pdf); o scanner é o do registro único (fail-closed em produção).

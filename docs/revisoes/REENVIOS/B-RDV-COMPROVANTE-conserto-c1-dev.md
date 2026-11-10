@@ -119,3 +119,32 @@
 
 - head `895295adc4c2d5ad3523a3e13b6b22c58cad4b30` · feito: F0, F1a, F1d · falta: F1b → F1e → F1c → F2a → F2b → F3 → F4a … F8 · próximo comando:
   escrever RR-A.2 e RR-A.2b em `tests/b-rdv-comprovante-receipt-storage.test.ts` · arquivos meio escritos: nenhum.
+
+## F1b — portão de produção (§2(a)5 + §13.2), `s3` e `nodeEnv` na costura (05:55–06:04)
+
+- Testes ANTES do código, em `tests/b-rdv-comprovante-receipt-storage.test.ts`: **RR-A.2** (`production` +
+  `local` pela costura → 503 `receipt_storage_unavailable`, scanner contador 0, 0 objeto, 0 linha; o mesmo com
+  `production` + `s3` sem bucket, 0 comando no cliente fingido) e **RR-A.2b** (as 13 formas recusadas da §13.2
+  item 5, cada uma com `client_action_id` próprio: 503, 0 `PutObjectCommand`, scanner 0, 0 linha, corpo sem o
+  endpoint; e as 2 aceitas, 14 path-style e 15 virtual-host, em itens próprios: 201 e 1 `PutObjectCommand`).
+- **Vermelho-controle no objeto:** a 1ª execução TRAVOU (>180 s; parada com `TaskStop`, nenhum `node` do
+  `w-dev525*` ficou vivo — os `node` vivos eram do `w-users-seg`, não tocados). Medido: no objeto a costura recebe
+  um caminho; com um objeto, o `reset` do objeto (`rm(root)`) lança e o `finally` do arnês não fechava o servidor
+  (handle aberto). Arnês corrigido: o `server.close` vai num `finally` interno. 2ª execução (com `timeout 240`):
+  `not ok 2 - RR-A.2` e `not ok 3 - RR-A.2b` por `ERR_INVALID_ARG_TYPE` ("The "path" argument must be of type
+  string … Received an instance of Object") = **vermelho por ausência da costura, declarado no plano** (RR-A.2 e
+  RR-A.2b: "quem prova são as mutações"); o RR-A.6 segue `500 × 400`. **OK.**
+- Código (o da §13.2 item 2, literal): `AWS_REGION_PATTERN`, `approvedReceiptS3Host`, `isApprovedReceiptS3Endpoint`,
+  `assertReceiptStorageDurable({ nodeEnv, provider, s3 })` chamado antes do `verifyUploadContent`; a entrada do
+  portão vem de `receiptStorageGateInput()` (costura `nodeEnv`/`s3`, senão `env.NODE_ENV`,
+  `receiptWriteProviderName()` e `readChecklistStorageConfig().s3`). `src/config/env.ts` intocado.
+- `npm run check` → exit 0 · storage + routes + census o6r07b → `# tests 21 · pass 21 · fail 0`. **OK.**
+- Mutações (uma por vez; `git diff --exit-code -- src tests mobile` = 0 depois de cada reversão):
+  - **M-A2** (apagar `assertReceiptStorageDurable(...)`) → `not ok 2 - RR-A.2` "production + local: {…uploaded}"
+    `503 × 201` e `not ok 3 - RR-A.2b` "caso 1 (http://127.0.0.1:9000)" `503 × 201` · revertida. **OK.**
+  - **M-A2b** (`isApprovedReceiptS3Endpoint(input.s3)` → `input.s3.region.trim() !== ""`) → `not ok 3 - RR-A.2b`
+    "caso 1 (http://127.0.0.1:9000)" `503 × 201` · revertida. **OK.**
+  - **M-A2c** (`url.hostname === host` → `url.hostname.startsWith(host)`) → `not ok 3 - RR-A.2b` "caso 11
+    (https://s3.us-east-1.amazonaws.com.localtest.me)" `503 × 201` · revertida. **OK.**
+  - **M-A2d** (apagar `url.protocol === "https:" &&`) → `not ok 3 - RR-A.2b` "caso 9
+    (http://s3.us-east-1.amazonaws.com)" `503 × 201` · revertida. **OK.**

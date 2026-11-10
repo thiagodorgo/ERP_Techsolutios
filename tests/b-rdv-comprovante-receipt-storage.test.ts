@@ -86,10 +86,15 @@ async function withReceiptApi(callback: (context: { baseUrl: string; seed: SeedD
   try {
     await callback({ baseUrl, seed: { tenantA, tenantB, technicianA } });
   } finally {
-    resetExpenseManagementRuntimeForTests();
-    const { resetExpenseReceiptRuntimeForTests } = await import("../src/modules/expense-management/expense-receipt.service.js");
-    await resetExpenseReceiptRuntimeForTests();
-    await new Promise<void>((resolve, reject) => (server as Server).close((error) => (error ? reject(error) : resolve())));
+    try {
+      resetExpenseManagementRuntimeForTests();
+      const { resetExpenseReceiptRuntimeForTests } = await import("../src/modules/expense-management/expense-receipt.service.js");
+      await resetExpenseReceiptRuntimeForTests();
+    } finally {
+      // O servidor fecha mesmo se a limpeza falhar: sem isso o processo fica preso num handle aberto (medido no
+      // vermelho-controle do objeto, cuja costura recebe um caminho e não um provedor).
+      await new Promise<void>((resolve, reject) => (server as Server).close((error) => (error ? reject(error) : resolve())));
+    }
   }
 }
 
@@ -195,6 +200,155 @@ test("RR-A.6 commit ambíguo (Q1): a transação do comprovante comita e a conex
       assert.equal(await sha256Hex(download.bytes), digest);
     } finally {
       delete repository.withSyncTransaction;
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RR-A.2 / RR-A.2b — portão de produção (§2(a)5, §13.2)
+// ---------------------------------------------------------------------------
+
+/** Scanner de teste que conta as chamadas: o portão vem ANTES do scanner. */
+function countingScanner(): { scanner: { scan(): Promise<{ status: "clean" }> }; calls: () => number } {
+  let calls = 0;
+  return {
+    scanner: {
+      async scan() {
+        calls += 1;
+        return { status: "clean" as const };
+      },
+    },
+    calls: () => calls,
+  };
+}
+
+/** Cliente S3 fingido: guarda cada comando e responde como o S3 (Put → {}, Get → corpo guardado). */
+function fakeS3Client(options: { failWith?: unknown } = {}) {
+  const commands: Array<{ name: string; input: Record<string, any> }> = [];
+  const objects = new Map<string, Buffer>();
+  return {
+    commands,
+    objects,
+    async send(command: { constructor: { name: string }; input: Record<string, any> }): Promise<any> {
+      commands.push({ name: command.constructor.name, input: command.input });
+      if (options.failWith) throw options.failWith;
+      if (command.constructor.name === "PutObjectCommand") {
+        objects.set(String(command.input.Key), Buffer.from(command.input.Body));
+        return {};
+      }
+      if (command.constructor.name === "GetObjectCommand") {
+        const body = objects.get(String(command.input.Key));
+        if (!body) throw Object.assign(new Error("NoSuchKey"), { name: "NoSuchKey" });
+        return { Body: body, ContentLength: body.length };
+      }
+      return {};
+    },
+  };
+}
+
+async function storageModules() {
+  const [receipt, local, s3, { env }] = await Promise.all([
+    import("../src/modules/expense-management/expense-receipt.service.js"),
+    import("../src/modules/checklists/storage/local-checklist-storage.provider.js"),
+    import("../src/modules/checklists/storage/s3-checklist-storage.provider.js"),
+    import("../src/config/env.js"),
+  ]);
+  return { receipt, local, s3, prefix: env.CHECKLIST_STORAGE_S3_PREFIX };
+}
+
+async function countReceiptRows(tenantId: string): Promise<number> {
+  const repository = await memoryRepositoryForTests();
+  return [...(repository.expenseReceipts as Map<string, { tenantId: string }>).values()].filter((row) => row.tenantId === tenantId).length;
+}
+
+test("RR-A.2 portão de produção: `production` com provedor `local` (ou `s3` sem bucket) → 503 receipt_storage_unavailable antes do scanner e da gravação (0 objeto, 0 linha)", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const { receipt, local, s3, prefix } = await storageModules();
+    const { reportId, itemId } = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const bytes = jpegBytes(0x2a);
+    const digest = await sha256Hex(bytes);
+
+    // (1) production + local: recusado mesmo com diretório declarado (o código não sabe se há volume montado).
+    const localRoot = mkdtempSync(path.join(os.tmpdir(), "rdvc1-gate-local-"));
+    try {
+      const counter = countingScanner();
+      receipt.configureExpenseReceiptScannerForTests(counter.scanner as any);
+      receipt.configureExpenseReceiptStorageForTests({ provider: new local.LocalChecklistStorageProvider(localRoot), nodeEnv: "production" } as any);
+      const refused = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rra2-local", bytes, sha256: digest }));
+      assert.equal(refused.status, 503, `production + local: ${JSON.stringify(refused.body)}`);
+      assert.equal(refused.body.error?.reason, "receipt_storage_unavailable");
+      assert.equal(counter.calls(), 0, "o scanner rodou antes do portão");
+      assert.equal(listFilesRecursive(localRoot).length, 0, "o portão deixou gravar um objeto");
+      assert.equal(await countReceiptRows(seed.tenantA.id), 0, "o portão deixou gravar uma linha");
+    } finally {
+      await receipt.resetExpenseReceiptRuntimeForTests();
+      rmSync(localRoot, { recursive: true, force: true });
+    }
+
+    // (2) production + s3 SEM bucket.
+    const s3Config = { bucket: "", region: "us-east-1", endpoint: "https://s3.us-east-1.amazonaws.com", forcePathStyle: true, prefix };
+    const client = fakeS3Client();
+    const counter = countingScanner();
+    receipt.configureExpenseReceiptScannerForTests(counter.scanner as any);
+    receipt.configureExpenseReceiptStorageForTests({ provider: new s3.S3ChecklistStorageProvider(s3Config, client as any), nodeEnv: "production", s3: s3Config } as any);
+    const noBucket = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", reportId, itemId, receiptForm({ clientActionId: "rra2-s3-sem-bucket", bytes, sha256: digest }));
+    assert.equal(noBucket.status, 503, `production + s3 sem bucket: ${JSON.stringify(noBucket.body)}`);
+    assert.equal(noBucket.body.error?.reason, "receipt_storage_unavailable");
+    assert.equal(counter.calls(), 0, "o scanner rodou antes do portão");
+    assert.equal(client.commands.length, 0, "o portão deixou chegar comando ao S3");
+    assert.equal(await countReceiptRows(seed.tenantA.id), 0, "o portão deixou gravar uma linha");
+  });
+});
+
+test("RR-A.2b portão de produção só aceita o endpoint EXPLÍCITO regional da AWS (§13.2): 13 formas recusadas com 503 e 0 PutObject; o endpoint regional aceito com path-style e virtual-host", async () => {
+  await withReceiptApi(async ({ baseUrl, seed }) => {
+    const { receipt, s3, prefix } = await storageModules();
+    const refusedItem = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+    const bytes = jpegBytes(0x2b);
+    const digest = await sha256Hex(bytes);
+
+    const refused: Array<{ endpoint: string; forcePathStyle: boolean; region?: string }> = [
+      { endpoint: "http://127.0.0.1:9000", forcePathStyle: true }, //                           1 — o caso do crítico
+      { endpoint: "", forcePathStyle: true }, //                                                  2
+      { endpoint: "", forcePathStyle: false }, //                                                 3
+      { endpoint: "https://[::1]:9000", forcePathStyle: true }, //                                4
+      { endpoint: "https://169.254.169.254", forcePathStyle: true }, //                           5
+      { endpoint: "https://10.0.0.5", forcePathStyle: true }, //                                  6
+      { endpoint: "https://172.16.0.5", forcePathStyle: true }, //                                7
+      { endpoint: "https://192.168.0.5", forcePathStyle: true }, //                               8
+      { endpoint: "http://s3.us-east-1.amazonaws.com", forcePathStyle: true }, //                 9
+      { endpoint: "https://localtest.me", forcePathStyle: true }, //                             10
+      { endpoint: "https://s3.us-east-1.amazonaws.com.localtest.me", forcePathStyle: true }, //  11
+      { endpoint: "https://s3.us-east-1.amazonaws.com@127.0.0.1", forcePathStyle: true }, //     12
+      { endpoint: "https://s3.sa-east-1.amazonaws.com", forcePathStyle: true, region: "us-east-1" }, // 13
+    ];
+    for (const [index, form] of refused.entries()) {
+      const caseNumber = index + 1;
+      const s3Config = { bucket: "erp", region: form.region ?? "us-east-1", endpoint: form.endpoint, forcePathStyle: form.forcePathStyle, prefix };
+      const client = fakeS3Client();
+      const counter = countingScanner();
+      receipt.configureExpenseReceiptScannerForTests(counter.scanner as any);
+      receipt.configureExpenseReceiptStorageForTests({ provider: new s3.S3ChecklistStorageProvider(s3Config, client as any), nodeEnv: "production", s3: s3Config } as any);
+      const response = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", refusedItem.reportId, refusedItem.itemId, receiptForm({ clientActionId: `rra2b-recusa-${caseNumber}`, bytes, sha256: digest }));
+      assert.equal(response.status, 503, `caso ${caseNumber} (${form.endpoint || "vazio"}): ${JSON.stringify(response.body)}`);
+      assert.equal(response.body.error?.reason, "receipt_storage_unavailable", `caso ${caseNumber}`);
+      assert.equal(client.commands.filter((command) => command.name === "PutObjectCommand").length, 0, `caso ${caseNumber}: PutObject saiu`);
+      assert.equal(counter.calls(), 0, `caso ${caseNumber}: o scanner rodou antes do portão`);
+      assert.equal(await countReceiptRows(seed.tenantA.id), 0, `caso ${caseNumber}: linha gravada`);
+      if (form.endpoint) assert.ok(!JSON.stringify(response.body).includes(form.endpoint), `caso ${caseNumber}: o corpo expõe o endpoint`);
+    }
+
+    // Aceitos: o endpoint regional explícito da região configurada, com path-style (14) e virtual-host (15).
+    for (const [index, forcePathStyle] of [true, false].entries()) {
+      const caseNumber = 14 + index;
+      const accepted = await createReportWithItem(baseUrl, seed.tenantA, seed.technicianA, "technician");
+      const s3Config = { bucket: "erp", region: "us-east-1", endpoint: "https://s3.us-east-1.amazonaws.com", forcePathStyle, prefix };
+      const client = fakeS3Client();
+      receipt.configureExpenseReceiptScannerForTests(countingScanner().scanner as any);
+      receipt.configureExpenseReceiptStorageForTests({ provider: new s3.S3ChecklistStorageProvider(s3Config, client as any), nodeEnv: "production", s3: s3Config } as any);
+      const response = await postReceipt(baseUrl, seed.tenantA, seed.technicianA, "technician", accepted.reportId, accepted.itemId, receiptForm({ clientActionId: `rra2b-aceito-${caseNumber}`, bytes, sha256: digest }));
+      assert.equal(response.status, 201, `caso ${caseNumber} (forcePathStyle=${forcePathStyle}): ${JSON.stringify(response.body)}`);
+      assert.equal(client.commands.filter((command) => command.name === "PutObjectCommand").length, 1, `caso ${caseNumber}: esperado 1 PutObject`);
     }
   });
 });
