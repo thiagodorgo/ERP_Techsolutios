@@ -27,6 +27,12 @@ import {
   InMemoryCoreSaasStore,
   type CoreSaasStore,
 } from "../store/core-saas.store.js";
+import {
+  TENANT_ADMIN_ROLE,
+  assertSelfChangeAllowed,
+  lastTenantAdminError,
+  removesActiveTenantAdmin,
+} from "./tenant-admin-guard.js";
 
 // B-O6R-01 — modelo de identidade em memória (espelho do prisma: auth_identities +
 // auth_identity_links + trilha). `attachedVia` espelha a coluna `attached_via` (opção A da
@@ -306,6 +312,33 @@ export class CoreSaasRegistry {
       }
 
       status = input.status;
+    }
+
+    // B-USERS-ACESSO-SEG (S3) — a trava do administrador, a mesma decisão do caminho Prisma. Aqui a
+    // leitura e a gravação são síncronas (nada se intercala entre a contagem e o save).
+    const current = { status: user.status, isTenantAdmin: user.roles.includes(TENANT_ADMIN_ROLE) };
+    const next = { status, isTenantAdmin: roles.includes(TENANT_ADMIN_ROLE) };
+
+    assertSelfChangeAllowed({
+      isSelf: actor?.userId === user.id,
+      requestedStatus: hasStatus ? input.status : undefined,
+      current,
+      next,
+    });
+
+    if (removesActiveTenantAdmin(current, next)) {
+      const otherActiveAdmins = this.store
+        .listUsersByTenant(user.tenantId)
+        .filter(
+          (candidate) =>
+            candidate.id !== user.id &&
+            candidate.status === "active" &&
+            candidate.roles.includes(TENANT_ADMIN_ROLE),
+        ).length;
+
+      if (otherActiveAdmins === 0) {
+        throw lastTenantAdminError();
+      }
     }
 
     const updatedUser: User = {

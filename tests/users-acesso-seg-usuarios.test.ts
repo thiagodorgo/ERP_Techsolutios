@@ -14,6 +14,10 @@ import type { CoreSaasRegistry, Tenant, User } from "../src/core-saas.js";
 //        cadastro com o mesmo e-mail (comparado depois de aparar e baixar a caixa) é recusado com
 //        409 `user_email_conflict` e não cria nada; em OUTRA organização o mesmo e-mail é aceito
 //        (o e-mail nunca decide entre organizações).
+//   S3 — a trava do administrador (Achado 2 do plano original, passo 1): o ator não se desativa
+//        (409 `cannot_deactivate_self`) nem tira de si o papel de administrador (409
+//        `cannot_demote_self`); e nenhuma mudança deixa a organização sem administrador ATIVO (409
+//        `last_tenant_admin`, por desativação ou por rebaixamento). Administrador inativo não conta.
 // -----------------------------------------------------------------------------------------------
 
 type Seed = {
@@ -102,6 +106,103 @@ test("S6 (memória) — e-mail já usado na MESMA organização → 409 user_ema
 
     assert.equal(otherOrganization.status, 201, "o e-mail não decide entre organizações");
   });
+});
+
+test("S3·m1 (memória, rota) — o administrador não se desativa: 409 cannot_deactivate_self e o status não muda", async () => {
+  await withApi(async ({ baseUrl, seed, core }) => {
+    const response = await requestJson(baseUrl, `/api/v1/users/${seed.adminA.id}`, {
+      method: "PATCH",
+      headers: asAdmin(seed.tenantA, seed.adminA),
+      body: { status: "inactive" },
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.body.error.code, "CONFLICT");
+    assert.equal(response.body.error.reason, "cannot_deactivate_self");
+    assert.equal(core.getUserForTenant(seed.adminA.id, seed.tenantA.id).status, "active");
+  });
+});
+
+test("S3·m2 (memória, rota) — o administrador não tira de si o papel de administrador: 409 cannot_demote_self", async () => {
+  await withApi(async ({ baseUrl, seed, core }) => {
+    const response = await requestJson(baseUrl, `/api/v1/users/${seed.adminA.id}`, {
+      method: "PATCH",
+      headers: asAdmin(seed.tenantA, seed.adminA),
+      body: { roles: ["manager"] },
+    });
+
+    assert.equal(response.status, 409);
+    assert.equal(response.body.error.reason, "cannot_demote_self");
+    assert.deepEqual([...core.getUserForTenant(seed.adminA.id, seed.tenantA.id).roles], ["tenant_admin"]);
+  });
+});
+
+test("S3·m3 (memória, rota) — sem falso positivo: o ator muda o próprio nome e acrescenta papel mantendo o de administrador", async () => {
+  await withApi(async ({ baseUrl, seed }) => {
+    const rename = await requestJson(baseUrl, `/api/v1/users/${seed.adminA.id}`, {
+      method: "PATCH",
+      headers: asAdmin(seed.tenantA, seed.adminA),
+      body: { name: "Admin A renomeado" },
+    });
+
+    assert.equal(rename.status, 200);
+
+    const widen = await requestJson(baseUrl, `/api/v1/users/${seed.adminA.id}`, {
+      method: "PATCH",
+      headers: asAdmin(seed.tenantA, seed.adminA),
+      body: { roles: ["tenant_admin", "manager"] },
+    });
+
+    assert.equal(widen.status, 200);
+    assert.deepEqual([...widen.body.data.roles].sort(), ["manager", "tenant_admin"]);
+  });
+});
+
+test("S3·m4 (memória, serviço) — nenhuma mudança deixa a organização sem administrador ativo; inativo não conta", async () => {
+  const { CoreSaasRegistry: Registry } = await import("../src/core-saas.js");
+  const core = new Registry();
+  const tenant = core.createTenant({ name: "Organização com um administrador" });
+  const admin = core.createUser({ tenantId: tenant.id, name: "Admin", email: "unico@example.com", roles: ["tenant_admin"] });
+  const manager = core.createUser({ tenantId: tenant.id, name: "Gestor", email: "gestor@example.com", roles: ["manager"] });
+  // O ator é outro usuário com poder de gerir usuários (aqui, o registro não confere permissão: quem
+  // confere é a rota). O que se mede é a trava do serviço, que não depende de quem pede.
+  const actor = {
+    tenantId: tenant.id,
+    userId: manager.id,
+    roles: ["tenant_admin" as const],
+    permissions: [],
+    explicitPermissions: false,
+  };
+  const isLastAdmin = (error: unknown) =>
+    (error as { statusCode?: number; reason?: string }).statusCode === 409 &&
+    (error as { reason?: string }).reason === "last_tenant_admin";
+
+  assert.throws(() => core.updateUser({ userId: admin.id, tenantId: tenant.id, status: "inactive" }, actor), isLastAdmin);
+  assert.throws(() => core.updateUser({ userId: admin.id, tenantId: tenant.id, roles: ["manager"] }, actor), isLastAdmin);
+  assert.equal(core.getUserForTenant(admin.id, tenant.id).status, "active", "nada mudou");
+
+  // Um segundo administrador INATIVO não conta.
+  const sleeping = core.createUser({
+    tenantId: tenant.id,
+    name: "Admin inativo",
+    email: "inativo@example.com",
+    roles: ["tenant_admin"],
+    status: "inactive",
+  });
+
+  assert.throws(() => core.updateUser({ userId: admin.id, tenantId: tenant.id, status: "inactive" }, actor), isLastAdmin);
+
+  // Reativá-lo destrava: agora há outro administrador ativo.
+  core.updateUser({ userId: sleeping.id, tenantId: tenant.id, status: "active" }, actor);
+
+  const deactivated = core.updateUser({ userId: admin.id, tenantId: tenant.id, status: "inactive" }, actor);
+
+  assert.equal(deactivated.status, "inactive");
+  assert.throws(
+    () => core.updateUser({ userId: sleeping.id, tenantId: tenant.id, roles: ["manager"] }, actor),
+    isLastAdmin,
+    "o que sobrou é o último: rebaixá-lo também é recusado",
+  );
 });
 
 async function requestJson(
