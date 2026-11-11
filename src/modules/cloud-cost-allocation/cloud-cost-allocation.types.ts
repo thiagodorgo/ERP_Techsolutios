@@ -105,8 +105,7 @@ export type ImportBillingPeriod = {
 
 export type CreateImportRunInput = {
   readonly importId: string;
-  readonly billingPeriodStart: Date;
-  readonly billingPeriodEnd: Date;
+  readonly billingPeriods: readonly ImportBillingPeriod[];
   readonly createdBy?: string;
 };
 

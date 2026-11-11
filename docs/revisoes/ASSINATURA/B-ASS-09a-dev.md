@@ -89,3 +89,41 @@ Pré-revisão: Claude Opus 5.5 pela API (cruzamento com este dev, subagente da s
 | **PR542-04** | `P-ALLOC-RUN-STARTED-AT-NULO` (BAIXA, `pre-existente`, dono `B-ASS-09`) em `pendencias.md` | `git grep -n STARTED-AT-NULO` acha a entrada | — |
 
 Bateria do conserto: `tsc --noEmit` exit 0 · `npm run lint` exit 0 · guard de migração `violações: 0` · `git diff --check` vazio · memória `ass-09a` **29/29** · regressões em memória `# tests 124 # pass 119 # fail 0 # skipped 5` · `-db` do bloco **9/9, `# skipped 0`, 3 vezes** (papel `NOSUPERUSER NOBYPASSRLS`) · drill + regressões `-db` **52/52, `# skipped 0`** · as mutações de F4 e F5 refeitas depois do conserto: as 12 seguem vermelhas · cluster limpo depois (`0 0 0 0`). Não houve migração nova (guard: 20 novas, as mesmas de antes).
+
+
+## Conserto Emenda 4/4.1 — dev `dp-dev-542` (DeepSeek Pro), 2026-11-11 19:19 SP
+
+> **Papel:** dev do conserto único do §C7 10(3)4 (PR #542, rateio automático a partir da importação; DINHEIRO). Não achou nem planejou: achado da junta anterior do #542 (C1-A1, com V1/V2) e das críticas `crit-09a-em4-api` e `dp-crit-542`; plano de `topo-542-opus` (Emenda 4) e `topo-542b` (Emenda 4.1), lido inteiro de `planos/plano-B-ASS-09a-v2.md` (Emenda 4 nas linhas 310-460; Emenda 4.1 nas linhas 461-628). A 4.1 prevalece sobre a 4. Ajustes da crítica r2 viram requisito: **DP542-01** (T-E41-2 `-db` injeta as datas via API Prisma `Date`, `updated.count === 1`, independente de fuso) e **DP542-02** (erro do R41-01 diz a linha de DADOS, contando as vazias; forma declarada: `at row N`). Terreno: worktree `C:/Users/thiag/w-09a`, ramo `feat/rateio-automatico-importacao`, base `cf48cc80`, head de trabalho `af7f23fb` (merge de `origin/main`), limpo.
+
+### Vermelho-controle (F-E4-0 + F-E41-0, antes de qualquer código de produção)
+
+Produção **não alterada** (só os 3 arquivos de teste no `git status`). Postgres 16 descartável em `127.0.0.1:55551` (`C:/Users/thiag/pg-dpdev542`).
+
+**Memória** — `LOG_LEVEL=silent node --test --import tsx tests/ass-09a-rateio-automatico.test.ts`:
+
+```
+# tests 42
+# pass 28
+# fail 14
+# skipped 0
+```
+
+`not ok` (14, todos pela razão certa): `T2b` (a mesma janela de publicação dá o mesmo id), `T-E4-1` (a varredura não regride o número publicado), `T-E4-2` (o resumo continua na manual), `T-E4-3` (a varredura cria o mês que faltou), `T-E4-3b` (a 2ª passada completa o mês que faltou), `T-E4-5` (os dois formatos de fim viram 1 run), `T-E4-6` (a run manual não carrega as 4 chaves reservadas), `T-E4-9` (`markImportSweep` não toca `processing`), `T-E41-1` (a linha invertida falha no parser), `T-E41-2` (a guarda fecha o par invertido já gravado), `T-E41-3` (o resumo continua em Y — `100 !== 130`), `T-E41-4` (1 run de 130), `T-E41-4b` (`periodEnd 23:59:59.999`), `T-E41-5` (13 janelas, não 26 pares).
+
+**Postgres (`-db`)** — `DATABASE_URL="postgresql://postgres@127.0.0.1:55551/postgres?schema=public" LOG_LEVEL=silent node --test --import tsx tests/ass-09a-rateio-automatico-db.test.ts`:
+
+```
+# tests 23
+# pass 11
+# fail 12
+# skipped 0
+```
+
+`not ok` (12): `T3-db` (`Cannot read properties of undefined (reading 'getTime')` — a entrada de `createImportRun` muda de formato), `T-E4-1-db`, `T-E4-2-db`, `T-E4-3-db`, `T-E4-3b-db`, `T-E4-5-db`, `T-E4-7-db`, `T-E4-8-db`, `T-E4-9-db`, `T-E41-1-db`, `T-E41-2-db`, `T-E41-3-db` (duas ordens), `T-E41-4-db`, `T-E41-4b-db`, `T-E41-5-db`.
+
+**Nota de teste (leitura do dev, declarada):** `T-E41-3` (memória) depende de `created_at` distintos das duas runs para ser determinístico no vermelho; adicionei a pausa de 25 ms já usada pelo `T-E4-2` antes de cada `runImportCatchUp`, nas duas ordens. Sem a pausa, o teste passa ou falha conforme o milissegundo do relógio (verde por acidente na suíte cheia, vermelho isolado).
+
+### Âncoras R7 "hoje" (medidas em `HEAD` = `af7f23fb`, produção igual a `cf48cc80`)
+
+- `= 0`: `byPublicationDesc`, `sourceImportedAt`, `markSweepDone`, `importRunWindowKey`, `listCostLineItemsForBillingPeriods`, `sourceBillingPeriods`, `delete metadata.trigger`, `delete metadata.sourceBillingPeriod`.
+- `= 1` (e `= 0` depois do conserto): `allocation_runs: { none: { metadata: { path: ["trigger"], equals: "import" } } }` (prisma), `!this.hasImportAutoRun(costImport.id)` (memória), `const run = pickSummaryRun(candidates);` (service), `if (result.created === 0) mark = { status: "done"` (import-trigger).

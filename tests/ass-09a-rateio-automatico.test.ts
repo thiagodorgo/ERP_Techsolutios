@@ -55,6 +55,10 @@ const tenants: CloudCostAllocationTenant[] = [
 
 const NOV_START = new Date("2026-11-01T00:00:00.000Z");
 const NOV_END = new Date("2026-11-30T23:59:59.999Z");
+const OCT_START = new Date("2026-10-01T00:00:00.000Z");
+const OCT_END = new Date("2026-10-31T23:59:59.999Z");
+const CUR_HEADER =
+  "bill/BillingPeriodStartDate,bill/BillingPeriodEndDate,lineItem/UsageStartDate,lineItem/UsageEndDate,lineItem/ProductCode,lineItem/UsageType,lineItem/Operation,product/region,lineItem/ResourceId,lineItem/UsageAmount,lineItem/UsageUnit,lineItem/UnblendedCost,lineItem/CurrencyCode,resourceTags/user:Project,resourceTags/user:Environment,resourceTags/user:Tenant,resourceTags/user:Module";
 
 test("T4m · P3m (R4) — o manual de novembro, no fim exclusivo da AWS, não soma a linha de outubro (30, não 130)", async () => {
   // MUTAÇÃO QUE MATA: M4d (`line.billingPeriodEnd > periodStart && // B-ASS-09a R4 listCostLineItems` → `>=`).
@@ -117,10 +121,10 @@ test("T2b · P2 — o UUIDv5 bate o vetor da RFC 4122 e o id da run automática 
     importRunId("09a00000-0000-4000-8000-0000000000aa", new Date("2026-10-01T00:00:00Z"), new Date("2026-11-01T00:00:00Z")),
     "o mesmo par bruto dá o mesmo id",
   );
-  assert.notEqual(
+  assert.equal(
     id,
     importRunId("09a00000-0000-4000-8000-0000000000aa", new Date("2026-10-01T00:00:00Z"), new Date("2026-10-31T23:59:59.999Z")),
-    "fim diferente é par diferente",
+    "a mesma janela de publicação dá o mesmo id",
   );
 });
 
@@ -732,6 +736,504 @@ test("T11 · CE-G1 — toda escrita de importação `completed` em src/** passa 
 });
 
 // -----------------------------------------------------------------------------------------------
+// E4/E4.1 — conserto único do §C7 10(3): P9 (publicação), P10 (janela), P11 (fila), P12 (superfície)
+// -----------------------------------------------------------------------------------------------
+
+test("T-E4-1 · P9 — a varredura não regride o número publicado: X mais velho sem run, Y mais nova publica 130", async () => {
+  const costRepository = new InMemoryCloudCostRepository();
+  const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+  allocationRepository.seed({ tenants });
+  const allocation = new CloudCostAllocationService(allocationRepository);
+  const enqueued: Array<[string, CloudCostAllocationAutoJobPayload, unknown]> = [];
+  const hook = buildCloudCostImportHook({
+    allocation,
+    enqueue: async (name, payload, options) => {
+      enqueued.push([name, payload, options]);
+    },
+  });
+  const plain = new CloudCostService(costRepository);
+  const hooked = new CloudCostService(costRepository, { onImportCompleted: hook });
+
+  const X = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100)]) });
+  assert.equal(X.status, "completed");
+  assert.equal(X.metadata.autoAllocation, "v1");
+  assert.equal((await allocationRepository.listRunsByImport(X.id)).length, 0, "X fica sem run (gancho caído)");
+
+  const Y = await hooked.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 130)]) });
+  for (const [, payload] of enqueued.splice(0)) {
+    if (payload.mode === "import_auto") await allocation.executeImportRuns(payload.importId);
+  }
+  const before = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+  assert.equal(before.totalImportedCost, 130);
+  assert.equal(before.importId, Y.id);
+
+  await runImportCatchUp({ allocation, enqueue: async () => undefined });
+  await allocation.executeImportRuns(X.id);
+
+  const after = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+  assert.equal(after.totalImportedCost, 130, "o resumo continua na Y, a mais nova");
+  assert.equal(after.importId, Y.id);
+  const runsX = await allocationRepository.listRunsByImport(X.id);
+  assert.equal(runsX.length, 1, "a run de X existe");
+  assert.equal(runsX[0]!.status, "completed", runsX[0]!.errorMessage);
+});
+
+test("T-E4-2 · P9 — o manual de outubro sem importId publica Y; a varredura cria X e o resumo continua na manual", async () => {
+  const costRepository = new InMemoryCloudCostRepository();
+  const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+  allocationRepository.seed({ tenants });
+  const allocation = new CloudCostAllocationService(allocationRepository);
+  const plain = new CloudCostService(costRepository);
+
+  const X = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100)]) });
+  const Y = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 130)]) });
+  await costRepository.updateImport(X.id, { status: "completed", importedAt: new Date("2026-01-01T00:00:00.000Z") });
+  await costRepository.updateImport(Y.id, { status: "completed", importedAt: new Date("2026-01-02T00:00:00.000Z") });
+  assert.equal((await allocationRepository.listRunsByImport(X.id)).length, 0, "X fica sem run (gancho caído)");
+  assert.equal((await allocationRepository.listRunsByImport(Y.id)).length, 0, "Y fica sem run (gancho caído)");
+
+  const manual = await allocation.allocateCostsForPeriod({ periodStart: OCT_START, periodEnd: OCT_END });
+  assert.equal(manual.metadata.importId, Y.id, "sem importId, o manual escolhe Y (a mais nova)");
+  assert.equal(manual.totalImportedCost, 130);
+
+  // V1 da sonda: a ação manual acontece DEPOIS da importação; a pausa garante `created_at` distintos no dublê.
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  const result = await runImportCatchUp({ allocation, enqueue: async () => undefined });
+  assert.equal(result.runsCreated, 1, "a varredura cria a run de X");
+  await allocation.executeImportRuns(X.id);
+
+  const after = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+  assert.equal(after.runId, manual.id, "o resumo continua na run manual (130)");
+  assert.equal(after.totalImportedCost, 130);
+});
+
+test("T-E4-3 · P11 — (a) o gancho que cai no 2º mês; (b) o reenvio cujo gancho cai em novembro", async () => {
+  // (a) SONDA F: a importação com 2 meses ganha só a run de outubro no gancho; a varredura completa novembro.
+  {
+    const costRepository = new InMemoryCloudCostRepository();
+    const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+    allocationRepository.seed({ tenants });
+    const allocation = new CloudCostAllocationService(allocationRepository);
+    const imported = await new CloudCostService(costRepository).importAwsCurCsv({
+      csv: curCsv([
+        curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100),
+        curRow("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z", 30),
+      ]),
+    });
+    assert.equal(imported.status, "completed");
+    let calls = 0;
+    const flaky = Object.create(allocation) as CloudCostAllocationService;
+    flaky.createImportRun = async (input: never) => {
+      calls += 1;
+      if (calls === 2) throw Object.assign(new Error("conexão caiu (simulado)"), { code: "P1017" });
+      return allocation.createImportRun(input);
+    };
+    const hookResult = await buildCloudCostImportHook({ allocation: flaky, enqueue: async () => undefined })(imported).then(
+      () => "ok",
+      (error: { code?: string }) => `throw ${error.code}`,
+    );
+    assert.equal(hookResult, "throw P1017");
+    const afterHook = await allocationRepository.listRunsByImport(imported.id);
+    assert.deepEqual(
+      afterHook.map((run) => run.periodStart.toISOString().slice(0, 10)).sort(),
+      ["2026-10-01"],
+      "só outubro nasceu antes da varredura",
+    );
+
+    const sweep1 = await runImportCatchUp({ allocation, enqueue: async () => undefined });
+    assert.equal(sweep1.runsCreated, 1, "a varredura cria o mês que faltou (novembro)");
+    const afterSweep = await allocationRepository.listRunsByImport(imported.id);
+    assert.deepEqual(
+      afterSweep.map((run) => run.periodStart.toISOString().slice(0, 10)).sort(),
+      ["2026-10-01", "2026-11-01"],
+    );
+  }
+
+  // (b) V2: X publica out e nov; o gancho de Y cai em novembro; a varredura faz novembro publicar Y (45).
+  {
+    const costRepository = new InMemoryCloudCostRepository();
+    const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+    allocationRepository.seed({ tenants });
+    const allocation = new CloudCostAllocationService(allocationRepository);
+    const plain = new CloudCostService(costRepository);
+    const enqueued: Array<[string, CloudCostAllocationAutoJobPayload, unknown]> = [];
+    const enqueue: CloudCostAllocationEnqueue = async (name, payload, options) => {
+      enqueued.push([name, payload, options]);
+    };
+    const drain = async () => {
+      for (const [, payload] of enqueued.splice(0)) {
+        if (payload.mode === "import_auto") await allocation.executeImportRuns(payload.importId);
+      }
+    };
+
+    const X = await plain.importAwsCurCsv({
+      csv: curCsv([
+        curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100),
+        curRow("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z", 30),
+      ]),
+    });
+    await costRepository.updateImport(X.id, { status: "completed", importedAt: new Date("2026-01-01T00:00:00.000Z") });
+    await buildCloudCostImportHook({ allocation, enqueue })(X);
+    await drain();
+    const xNov = await allocation.getAllocationSummary({ periodStart: NOV_START, periodEnd: NOV_END });
+    assert.equal(xNov.totalImportedCost, 30);
+    assert.equal(xNov.importId, X.id);
+
+    const Y = await plain.importAwsCurCsv({
+      csv: curCsv([
+        curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 110),
+        curRow("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z", 45),
+      ]),
+    });
+    await costRepository.updateImport(Y.id, { status: "completed", importedAt: new Date("2026-01-02T00:00:00.000Z") });
+    let calls = 0;
+    const flaky = Object.create(allocation) as CloudCostAllocationService;
+    flaky.createImportRun = async (input: never) => {
+      calls += 1;
+      if (calls === 2) throw Object.assign(new Error("conexão caiu (simulado)"), { code: "P1017" });
+      return allocation.createImportRun(input);
+    };
+    const hookResult = await buildCloudCostImportHook({ allocation: flaky, enqueue })(Y).then(
+      () => "ok",
+      (error: { code?: string }) => `throw ${error.code}`,
+    );
+    assert.equal(hookResult, "throw P1017");
+    await drain();
+
+    for (let index = 0; index < 3; index += 1) {
+      await runImportCatchUp({ allocation, enqueue });
+      await drain();
+    }
+
+    const yNov = await allocation.getAllocationSummary({ periodStart: NOV_START, periodEnd: NOV_END });
+    assert.equal(yNov.totalImportedCost, 45, "novembro passa a publicar Y, o arquivo mais novo");
+    assert.equal(yNov.importId, Y.id);
+  }
+});
+
+test("T-E4-3b · P11 — a própria varredura cai no 2º mês: marca failed/1 e a 2ª passada completa e marca done", async () => {
+  const costRepository = new InMemoryCloudCostRepository();
+  const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+  allocationRepository.seed({ tenants });
+  const allocation = new CloudCostAllocationService(allocationRepository);
+  const imported = await new CloudCostService(costRepository).importAwsCurCsv({
+    csv: curCsv([
+      curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100),
+      curRow("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z", 30),
+    ]),
+  });
+  let calls = 0;
+  const flaky = Object.create(allocation) as CloudCostAllocationService;
+  flaky.createImportRun = async (input: never) => {
+    if (input.importId === imported.id) calls += 1;
+    if (input.importId === imported.id && calls === 2) {
+      throw Object.assign(new Error("conexão caiu (simulado)"), { code: "P1017" });
+    }
+    return allocation.createImportRun(input);
+  };
+
+  const sweep1 = await runImportCatchUp({ allocation: flaky, enqueue: async () => undefined });
+  assert.equal(sweep1.importsFailed, 1);
+  const mark1 = (await costRepository.getImport(imported.id))!.metadata.autoAllocationSweep as {
+    status: string;
+    attempts: number;
+  };
+  assert.deepEqual({ status: mark1.status, attempts: mark1.attempts }, { status: "failed", attempts: 1 });
+
+  const sweep2 = await runImportCatchUp({ allocation, enqueue: async () => undefined });
+  const after = await allocationRepository.listRunsByImport(imported.id);
+  assert.deepEqual(
+    after.map((run) => run.periodStart.toISOString().slice(0, 10)).sort(),
+    ["2026-10-01", "2026-11-01"],
+    "a 2ª passada completa o mês que faltou",
+  );
+  const mark2 = (await costRepository.getImport(imported.id))!.metadata.autoAllocationSweep as {
+    status: string;
+    attempts: number;
+  };
+  assert.deepEqual({ status: mark2.status, attempts: mark2.attempts }, { status: "done", attempts: 0 });
+});
+
+test("T-E4-5 · P10 — os dois formatos de fim do mesmo mês viram 1 run (130)", async () => {
+  const importId = "09a00000-0000-4000-8000-0000000000e50";
+  const repository = new InMemoryCloudCostAllocationRepository();
+  repository.seed({
+    tenants,
+    imports: [completedImport(importId, "2026-12-02T00:00:00.000Z", { autoAllocation: "v1" })],
+    costLineItems: [
+      line(importId, "exclusive", "2026-10-01T00:00:00.000Z", "2026-11-01T00:00:00.000Z", 100),
+      line(importId, "inclusive", "2026-10-01T00:00:00.000Z", "2026-10-31T23:59:59.999Z", 30),
+    ],
+  });
+  const service = new CloudCostAllocationService(repository);
+  await ensureImportRuns(service, importId);
+  const runs = await autoRuns(repository, importId);
+  assert.equal(runs.length, 1, "1 run para o mesmo mês nos dois formatos de fim");
+  await service.executeAllocationRun(runs[0]!.id);
+  const executed = await service.getAllocationRun(runs[0]!.id);
+  assert.equal(executed.totalImportedCost, 130);
+  const summary = await service.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+  assert.equal(summary.totalImportedCost, 130);
+});
+
+test("T-E4-6 · P12 — a run manual não carrega as 4 chaves reservadas do rateio automático", async () => {
+  const repository = new InMemoryCloudCostAllocationRepository();
+  const importId = "09a00000-0000-4000-8000-0000000000e60";
+  repository.seed({
+    tenants,
+    imports: [completedImport(importId, "2026-07-02T00:00:00.000Z")],
+    costLineItems: [line(importId, "jun", "2026-06-01T00:00:00.000Z", "2026-06-30T23:59:59.999Z", 12.75)],
+  });
+  const service = new CloudCostAllocationService(repository);
+  const run = await service.allocateCostsForPeriod({
+    periodStart: new Date("2026-06-01T00:00:00.000Z"),
+    periodEnd: new Date("2026-06-30T23:59:59.999Z"),
+    importId,
+    metadata: {
+      trigger: "import",
+      sourceImportedAt: "2999-01-01T00:00:00.000Z",
+      sourceBillingPeriods: [{ start: "2026-06-01T00:00:00.000Z", end: "2026-06-30T23:59:59.999Z" }],
+      sourceBillingPeriod: { start: "2026-06-01T00:00:00.000Z", end: "2026-06-30T23:59:59.999Z" },
+    },
+  });
+  assert.equal(run.status, "completed", run.errorMessage);
+  assert.equal(run.metadata.trigger, undefined, "trigger é só do sistema");
+  assert.equal(run.metadata.sourceImportedAt, undefined, "sourceImportedAt é só do sistema");
+  assert.equal(run.metadata.sourceBillingPeriods, undefined, "sourceBillingPeriods é só do sistema");
+  assert.equal(run.metadata.sourceBillingPeriod, undefined, "sourceBillingPeriod é só do sistema");
+});
+
+test("T-E4-9 · C2-04 — markImportSweep não toca importação processing", async () => {
+  const costRepository = new InMemoryCloudCostRepository();
+  const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+  const allocation = new CloudCostAllocationService(allocationRepository);
+  const started = await costRepository.createImport({
+    provider: "aws",
+    sourceType: "manual_csv",
+    status: "processing",
+    metadata: { autoAllocation: "v1" },
+  });
+  await allocation.markImportSweep(started.id, { status: "done", attempts: 0, at: "2026-01-01T00:00:00.000Z" });
+  const after = await costRepository.getImport(started.id);
+  assert.equal(after!.metadata.autoAllocationSweep, undefined, "a marca não é gravada em processing");
+});
+
+test("T-E41-1 · R41-01(a) — a importação com linha invertida falha no parser, sem linhas nem runs", async () => {
+  const costRepository = new InMemoryCloudCostRepository();
+  const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+  allocationRepository.seed({ tenants });
+  const allocation = new CloudCostAllocationService(allocationRepository);
+  const enqueued: Array<[string, CloudCostAllocationAutoJobPayload, unknown]> = [];
+  const hook = buildCloudCostImportHook({
+    allocation,
+    enqueue: async (name, payload, options) => {
+      enqueued.push([name, payload, options]);
+    },
+  });
+  const hooked = new CloudCostService(costRepository, { onImportCompleted: hook });
+
+  const X = await hooked.importAwsCurCsv({
+    csv: curCsv([
+      curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100),
+      curRow("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z", 30),
+    ]),
+  });
+  for (const [, payload] of enqueued.splice(0)) {
+    if (payload.mode === "import_auto") await allocation.executeImportRuns(payload.importId);
+  }
+
+  const Y = await hooked.importAwsCurCsv({
+    csv: curCsv([
+      curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 110),
+      curRow("2034-09-15T00:00:00Z", "2034-09-01T00:00:00Z", 1),
+      curRow("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z", 45),
+    ]),
+    sourceType: "manual_csv",
+  });
+
+  assert.equal(Y.status, "failed");
+  assert.match(Y.errorMessage ?? "", /at row 3/);
+  assert.equal((await costRepository.listLineItems({ importId: Y.id })).length, 0, "0 linhas de Y");
+  assert.equal((await allocationRepository.listRunsByImport(Y.id)).length, 0, "0 runs de Y");
+  assert.equal(enqueued.length, 0, "o gancho não roda para a importação que falhou");
+
+  const sweep = await runImportCatchUp({ allocation, enqueue: async () => undefined });
+  assert.equal(sweep.importsScanned, 0);
+
+  const oct = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+  const nov = await allocation.getAllocationSummary({ periodStart: NOV_START, periodEnd: NOV_END });
+  assert.equal(oct.totalImportedCost, 100);
+  assert.equal(oct.importId, X.id);
+  assert.equal(nov.totalImportedCost, 30);
+  assert.equal(nov.importId, X.id);
+});
+
+test("T-E41-2 · R41-01(b) — a guarda fecha: par invertido já gravado não gera run e marca done", async () => {
+  const costRepository = new InMemoryCloudCostRepository();
+  const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+  allocationRepository.seed({ tenants });
+  const allocation = new CloudCostAllocationService(allocationRepository);
+
+  const started = await costRepository.createImport({ provider: "aws", sourceType: "manual_csv", status: "processing" });
+  await costRepository.createLineItems(started.id, [
+    parsedLine("2034-10-01T00:00:00Z", "2034-11-01T00:00:00Z", 110),
+    parsedLine("2034-11-01T00:00:00Z", "2034-12-01T00:00:00Z", 45),
+    parsedLine("2035-01-20T00:00:00Z", "2035-01-01T00:00:00Z", 1),
+  ]);
+  const imported = await costRepository.updateImport(started.id, {
+    status: "completed",
+    importedAt: new Date("2034-12-02T00:00:00.000Z"),
+    rowCount: 3,
+    totalUnblendedCost: 156,
+    currency: "USD",
+    metadata: { autoAllocation: "v1" },
+  });
+
+  const { logger, errors } = spyLogger();
+  const result = await ensureImportRuns(allocation, imported.id, { logger });
+  assert.deepEqual(result, { outcome: "invalid_periods", created: 0, pendingCount: 0 });
+  assert.equal((await allocationRepository.listRunsByImport(imported.id)).length, 0, "0 runs");
+  assert.deepEqual(
+    errors.map(([payload, message]) => [message, Object.keys(payload).sort()] as const),
+    [["cloud_cost_auto_allocation_skipped_invalid_period", ["importId", "invalidPeriods"]]],
+  );
+  const after = await costRepository.getImport(imported.id);
+  const sweep = after!.metadata.autoAllocationSweep as { status: string };
+  assert.equal(sweep.status, "done", "a marca fica done");
+});
+
+test("T-E41-3 · R41-02 — no empate de imported_at, a varredura não troca o número publicado (duas ordens)", async () => {
+  const TIE = new Date("2026-10-05T00:00:00.000Z");
+
+  // (i) X com gancho caído, Y publica 130; a varredura cria X e o resumo continua 130 (Y).
+  {
+    const costRepository = new InMemoryCloudCostRepository();
+    const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+    allocationRepository.seed({ tenants });
+    const allocation = new CloudCostAllocationService(allocationRepository);
+    const plain = new CloudCostService(costRepository);
+
+    const X = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100)]) });
+    const Y = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 130)]) });
+    await costRepository.updateImport(X.id, { status: "completed", importedAt: TIE });
+    await costRepository.updateImport(Y.id, { status: "completed", importedAt: TIE });
+
+    await ensureImportRuns(allocation, Y.id);
+    await allocation.executeImportRuns(Y.id);
+    const before = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+    assert.equal(before.totalImportedCost, 130);
+    assert.equal(before.importId, Y.id);
+
+    // A pausa garante created_at distintos no dublê: a varredura cria a run de X depois.
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    await runImportCatchUp({ allocation, enqueue: async () => undefined });
+    await allocation.executeImportRuns(X.id);
+    const after = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+    assert.equal(after.totalImportedCost, 130, "o resumo continua em Y");
+    assert.equal(after.importId, Y.id);
+  }
+
+  // (ii) Y com gancho caído, X publica 100; a varredura cria Y e o resumo continua 100 (X).
+  {
+    const costRepository = new InMemoryCloudCostRepository();
+    const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+    allocationRepository.seed({ tenants });
+    const allocation = new CloudCostAllocationService(allocationRepository);
+    const plain = new CloudCostService(costRepository);
+
+    const X = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100)]) });
+    const Y = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 130)]) });
+    await costRepository.updateImport(X.id, { status: "completed", importedAt: TIE });
+    await costRepository.updateImport(Y.id, { status: "completed", importedAt: TIE });
+
+    await ensureImportRuns(allocation, X.id);
+    await allocation.executeImportRuns(X.id);
+    const before = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+    assert.equal(before.totalImportedCost, 100);
+    assert.equal(before.importId, X.id);
+
+    // A pausa garante created_at distintos no dublê: a varredura cria a run de Y depois.
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    await runImportCatchUp({ allocation, enqueue: async () => undefined });
+    await allocation.executeImportRuns(Y.id);
+    const after = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+    assert.equal(after.totalImportedCost, 100, "o resumo continua em X");
+    assert.equal(after.importId, X.id);
+  }
+});
+
+test("T-E41-4 · R41-03 — fim exclusivo e fim só com data do mesmo mês dão 1 run de 130 com a janela do mês", async () => {
+  const importId = "09a00000-0000-4000-8000-0000000000e40";
+  const repository = new InMemoryCloudCostAllocationRepository();
+  repository.seed({
+    tenants,
+    imports: [completedImport(importId, "2034-12-02T00:00:00.000Z", { autoAllocation: "v1" })],
+    costLineItems: [
+      line(importId, "exclusive", "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", 100),
+      line(importId, "dateonly", "2034-10-01", "2034-10-31", 30),
+    ],
+  });
+  const service = new CloudCostAllocationService(repository);
+  await ensureImportRuns(service, importId);
+  const runs = await autoRuns(repository, importId);
+  assert.equal(runs.length, 1, "1 run para o mesmo mês nos dois formatos de fim");
+  assert.equal(runs[0]!.periodStart.toISOString(), "2034-10-01T00:00:00.000Z");
+  assert.equal(runs[0]!.periodEnd.toISOString(), "2034-10-31T23:59:59.999Z");
+  await service.executeAllocationRun(runs[0]!.id);
+  const executed = await service.getAllocationRun(runs[0]!.id);
+  assert.equal(executed.totalImportedCost, 130);
+  const summary = await service.getAllocationSummary({
+    periodStart: new Date("2034-10-01T00:00:00.000Z"),
+    periodEnd: new Date("2034-10-31T23:59:59.999Z"),
+  });
+  assert.equal(summary.totalImportedCost, 130);
+});
+
+test("T-E41-4b · R41-03 — o fim só com data cobre o dia inteiro: periodEnd 23:59:59.999", async () => {
+  const importId = "09a00000-0000-4000-8000-0000000000e4b";
+  const repository = new InMemoryCloudCostAllocationRepository();
+  repository.seed({
+    tenants,
+    imports: [completedImport(importId, "2034-12-02T00:00:00.000Z", { autoAllocation: "v1" })],
+    costLineItems: [line(importId, "dateonly", "2034-10-01", "2034-10-31", 30)],
+  });
+  const service = new CloudCostAllocationService(repository);
+  await ensureImportRuns(service, importId);
+  const runs = await autoRuns(repository, importId);
+  assert.equal(runs.length, 1);
+  assert.equal(runs[0]!.periodEnd.toISOString(), "2034-10-31T23:59:59.999Z");
+});
+
+test("T-E41-5 · R41-04 — 13 meses × 2 formatos = 26 pares e 13 janelas: 13 runs e a soma bate", async () => {
+  const importId = "09a00000-0000-4000-8000-0000000000e50";
+  const repository = new InMemoryCloudCostAllocationRepository();
+  const costLineItems: CloudCostLineItem[] = [];
+  for (let month = 0; month < 13; month += 1) {
+    const start = new Date(Date.UTC(2034, month, 1));
+    const next = new Date(Date.UTC(2034, month + 1, 1));
+    const last = new Date(Date.UTC(2034, month + 1, 0));
+    costLineItems.push(
+      line(importId, `excl-${month}`, start.toISOString(), next.toISOString(), 1),
+      line(importId, `date-${month}`, start.toISOString().slice(0, 10), last.toISOString().slice(0, 10), 1),
+    );
+  }
+  repository.seed({
+    tenants,
+    imports: [completedImport(importId, "2035-02-02T00:00:00.000Z", { autoAllocation: "v1" })],
+    costLineItems,
+  });
+  const service = new CloudCostAllocationService(repository);
+  const result = await ensureImportRuns(service, importId);
+  assert.equal(result.created, 13, "13 janelas, não 26 pares");
+  const runs = await autoRuns(repository, importId);
+  assert.equal(runs.length, 13);
+  await service.executeImportRuns(importId);
+  const totals = await Promise.all(runs.map((run) => service.getAllocationRun(run.id)));
+  const grandTotal = totals.reduce((sum, run) => sum + run.totalImportedCost, 0);
+  assert.equal(Number(grandTotal.toFixed(6)), 26, "a soma dos totais é o total da importação");
+});
+
+// -----------------------------------------------------------------------------------------------
 // Ajudantes
 // -----------------------------------------------------------------------------------------------
 
@@ -782,6 +1284,29 @@ function fakeQueue() {
     calls.push([name, payload, options]);
   };
   return { calls, enqueue, importIds: () => calls.map(([, payload]) => payload.importId) };
+}
+
+function curRow(start: string, end: string, cost: number, tenant = "tenant-a"): string {
+  return `${start},${end},,,AmazonEC2,BoxUsage,RunInstances,us-east-1,i-x,1,Hrs,${cost},USD,ERP,prod,${tenant},compute`;
+}
+
+function curCsv(rows: readonly string[]): string {
+  return [CUR_HEADER, ...rows].join("\n");
+}
+
+function parsedLine(start: string, end: string, cost: number) {
+  return {
+    provider: "aws",
+    billingPeriodStart: new Date(start),
+    billingPeriodEnd: new Date(end),
+    serviceCode: "AmazonEC2",
+    usageType: "BoxUsage",
+    tenantTag: "tenant-a",
+    unblendedCost: cost,
+    currency: "USD",
+    rawLineHash: `${start}|${end}|${cost}`,
+    metadata: {},
+  };
 }
 
 function line(importId: string, suffix: string, start: string, end: string, cost: number): CloudCostLineItem {

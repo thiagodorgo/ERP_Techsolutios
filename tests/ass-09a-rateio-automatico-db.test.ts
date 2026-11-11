@@ -122,8 +122,8 @@ if (!connectionString) {
         "INSERT",
         () =>
           Promise.all([
-            c.allocation.createImportRun({ importId, billingPeriodStart: start, billingPeriodEnd: end }),
-            c.allocation.createImportRun({ importId, billingPeriodStart: start, billingPeriodEnd: end }),
+            c.allocation.createImportRun({ importId, billingPeriods: [{ billingPeriodStart: start, billingPeriodEnd: end }] }),
+            c.allocation.createImportRun({ importId, billingPeriods: [{ billingPeriodStart: start, billingPeriodEnd: end }] }),
           ]),
       );
 
@@ -318,6 +318,451 @@ if (!connectionString) {
       await cleanup(c, ids);
     }
   });
+
+
+  // -----------------------------------------------------------------------------------------------
+  // E4/E4.1 — conserto único do §C7 10(3): P9 (publicação), P10 (janela), P11 (fila), C2-02/03/04 e R41-*
+  // -----------------------------------------------------------------------------------------------
+
+  function dbSpyLogger() {
+    const warns: Array<[Record<string, unknown>, string]> = [];
+    const errors: Array<[Record<string, unknown>, string]> = [];
+    return {
+      logger: {
+        warn: (payload: Record<string, unknown>, message: string) => void warns.push([payload, message]),
+        error: (payload: Record<string, unknown>, message: string) => void errors.push([payload, message]),
+      },
+      warns,
+      errors,
+    };
+  }
+
+  const OCT_START = new Date("2034-10-01T00:00:00.000Z");
+  const OCT_END = new Date("2034-10-31T23:59:59.999Z");
+  const NOV_START = new Date("2034-11-01T00:00:00.000Z");
+  const NOV_END = new Date("2034-11-30T23:59:59.999Z");
+
+  const CUR_HEADER =
+    "bill/BillingPeriodStartDate,bill/BillingPeriodEndDate,lineItem/UsageStartDate,lineItem/UsageEndDate,lineItem/ProductCode,lineItem/UsageType,lineItem/Operation,product/region,lineItem/ResourceId,lineItem/UsageAmount,lineItem/UsageUnit,lineItem/UnblendedCost,lineItem/CurrencyCode,resourceTags/user:Project,resourceTags/user:Environment,resourceTags/user:Tenant,resourceTags/user:Module";
+
+  test("T-E4-1-db · P9 — no Postgres, a varredura não regride o número publicado", async () => {
+    const c = ctx!;
+    const X = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: "2000-01-01T00:00:00.000Z" });
+    const Y = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: "2000-01-02T00:00:00.000Z" });
+    try {
+      await seedLine(c, X, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+      await seedLine(c, Y, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "130.000000");
+
+      await c.trigger.ensureImportRuns(c.allocation, Y);
+      await c.allocation.executeImportRuns(Y);
+      const before = await c.allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+      assert.equal(before.totalImportedCost, 130);
+      assert.equal(before.importId, Y);
+
+      await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined });
+      await c.allocation.executeImportRuns(X);
+
+      const after = await c.allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+      assert.equal(after.totalImportedCost, 130, "o resumo continua na Y, a mais nova");
+      assert.equal(after.importId, Y);
+      const runsX = await c.allocation.listRunsByImport(X);
+      assert.equal(runsX.length, 1, "a run de X existe");
+      assert.equal(runsX[0]!.status, "completed", runsX[0]!.errorMessage);
+    } finally {
+      await cleanup(c, [X, Y]);
+    }
+  });
+
+  test("T-E4-2-db · P9 — no Postgres, o manual de outubro sem importId publica Y; a varredura cria X e o resumo continua na manual", async () => {
+    const c = ctx!;
+    const X = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: "2000-01-01T00:00:00.000Z" });
+    const Y = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: "2000-01-02T00:00:00.000Z" });
+    try {
+      await seedLine(c, X, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+      await seedLine(c, Y, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "130.000000");
+
+      const manual = await c.allocation.allocateCostsForPeriod({ periodStart: OCT_START, periodEnd: OCT_END });
+      assert.equal(manual.metadata.importId, Y, "sem importId, o manual escolhe Y (a mais nova)");
+      assert.equal(manual.totalImportedCost, 130);
+
+      const result = await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined });
+      assert.equal(result.runsCreated, 1, "a varredura cria a run de X");
+      await c.allocation.executeImportRuns(X);
+
+      const after = await c.allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+      assert.equal(after.runId, manual.id, "o resumo continua na run manual (130)");
+      assert.equal(after.totalImportedCost, 130);
+    } finally {
+      await cleanup(c, [X, Y]);
+    }
+  });
+
+
+  test("T-E4-3-db · P11 — no Postgres, o gancho cai no 2º mês e a varredura completa; no reenvio, novembro publica Y", async () => {
+    const c = ctx!;
+
+    // (a) SONDA F: só outubro nasce no gancho; a varredura completa novembro.
+    {
+      const importId = await seedImport(c, { status: "completed", marker: true, rowCount: 2, importedAt: "2000-01-01T00:00:00.000Z" });
+      try {
+        await seedLine(c, importId, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+        await seedLine(c, importId, "2034-11-01T00:00:00.000Z", "2034-12-01T00:00:00.000Z", "30.000000");
+        const costImport = await c.allocation.findImportForAllocation(importId);
+        assert.ok(costImport);
+
+        let calls = 0;
+        const flaky = Object.create(c.allocation) as typeof c.allocation;
+        flaky.createImportRun = async (input: never) => {
+          calls += 1;
+          if (calls === 2) throw Object.assign(new Error("conexão caiu (simulado)"), { code: "P1017" });
+          return c.allocation.createImportRun(input);
+        };
+        const hookResult = await c.trigger
+          .buildCloudCostImportHook({ allocation: flaky, enqueue: async () => undefined })(costImport)
+          .then(
+            () => "ok",
+            (error: { code?: string }) => `throw ${error.code}`,
+          );
+        assert.equal(hookResult, "throw P1017");
+        const afterHook = await c.allocation.listRunsByImport(importId);
+        assert.deepEqual(
+          afterHook.map((run) => run.periodStart.toISOString().slice(0, 10)).sort(),
+          ["2034-10-01"],
+          "só outubro nasceu antes da varredura",
+        );
+
+        const sweep1 = await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined });
+        assert.equal(sweep1.runsCreated, 1, "a varredura cria o mês que faltou");
+        const afterSweep = await c.allocation.listRunsByImport(importId);
+        assert.deepEqual(
+          afterSweep.map((run) => run.periodStart.toISOString().slice(0, 10)).sort(),
+          ["2034-10-01", "2034-11-01"],
+        );
+      } finally {
+        await cleanup(c, [importId]);
+      }
+    }
+
+    // (b) V2: X publica out e nov; o gancho de Y cai em novembro; a varredura faz novembro publicar Y (45).
+    {
+      const X = await seedImport(c, { status: "completed", marker: true, rowCount: 2, importedAt: "2000-02-01T00:00:00.000Z" });
+      const Y = await seedImport(c, { status: "completed", marker: true, rowCount: 2, importedAt: "2000-02-02T00:00:00.000Z" });
+      try {
+        await seedLine(c, X, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+        await seedLine(c, X, "2034-11-01T00:00:00.000Z", "2034-12-01T00:00:00.000Z", "30.000000");
+        await seedLine(c, Y, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "110.000000");
+        await seedLine(c, Y, "2034-11-01T00:00:00.000Z", "2034-12-01T00:00:00.000Z", "45.000000");
+
+        await c.trigger.ensureImportRuns(c.allocation, X);
+        await c.allocation.executeImportRuns(X);
+        const xNov = await c.allocation.getAllocationSummary({ periodStart: NOV_START, periodEnd: NOV_END });
+        assert.equal(xNov.totalImportedCost, 30);
+        assert.equal(xNov.importId, X);
+
+        let calls = 0;
+        const flaky = Object.create(c.allocation) as typeof c.allocation;
+        flaky.createImportRun = async (input: never) => {
+          calls += 1;
+          if (calls === 2) throw Object.assign(new Error("conexão caiu (simulado)"), { code: "P1017" });
+          return c.allocation.createImportRun(input);
+        };
+        const costImportY = await c.allocation.findImportForAllocation(Y);
+        assert.ok(costImportY);
+        const hookResult = await c.trigger
+          .buildCloudCostImportHook({ allocation: flaky, enqueue: async () => undefined })(costImportY)
+          .then(
+            () => "ok",
+            (error: { code?: string }) => `throw ${error.code}`,
+          );
+        assert.equal(hookResult, "throw P1017");
+        await c.allocation.executeImportRuns(Y);
+
+        for (let index = 0; index < 3; index += 1) {
+          await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined });
+          await c.allocation.executeImportRuns(Y);
+        }
+
+        const yNov = await c.allocation.getAllocationSummary({ periodStart: NOV_START, periodEnd: NOV_END });
+        assert.equal(yNov.totalImportedCost, 45, "novembro passa a publicar Y, o arquivo mais novo");
+        assert.equal(yNov.importId, Y);
+      } finally {
+        await cleanup(c, [X, Y]);
+      }
+    }
+  });
+
+
+  test("T-E4-3b-db · P11 — no Postgres, a própria varredura cai no 2º mês: failed/1 e a 2ª passada completa e marca done", async () => {
+    const c = ctx!;
+    const importId = await seedImport(c, { status: "completed", marker: true, rowCount: 2, importedAt: "2000-01-01T00:00:00.000Z" });
+    try {
+      await seedLine(c, importId, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+      await seedLine(c, importId, "2034-11-01T00:00:00.000Z", "2034-12-01T00:00:00.000Z", "30.000000");
+
+      let calls = 0;
+      const flaky = Object.create(c.allocation) as typeof c.allocation;
+      flaky.createImportRun = async (input: never) => {
+        calls += 1;
+        if (calls === 2) throw Object.assign(new Error("conexão caiu (simulado)"), { code: "P1017" });
+        return c.allocation.createImportRun(input);
+      };
+
+      const sweep1 = await c.trigger.runImportCatchUp({ allocation: flaky, enqueue: async () => undefined });
+      assert.equal(sweep1.importsFailed, 1);
+      const mark1 = (await c.admin.cloudCostImport.findUnique({ where: { id: importId } }))!.metadata.autoAllocationSweep as {
+        status: string;
+        attempts: number;
+      };
+      assert.deepEqual({ status: mark1.status, attempts: mark1.attempts }, { status: "failed", attempts: 1 });
+
+      const sweep2 = await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined });
+      const after = await c.allocation.listRunsByImport(importId);
+      assert.deepEqual(
+        after.map((run) => run.periodStart.toISOString().slice(0, 10)).sort(),
+        ["2034-10-01", "2034-11-01"],
+        "a 2ª passada completa o mês que faltou",
+      );
+      const mark2 = (await c.admin.cloudCostImport.findUnique({ where: { id: importId } }))!.metadata.autoAllocationSweep as {
+        status: string;
+        attempts: number;
+      };
+      assert.deepEqual({ status: mark2.status, attempts: mark2.attempts }, { status: "done", attempts: 0 });
+    } finally {
+      await cleanup(c, [importId]);
+    }
+  });
+
+  test("T-E4-5-db · P10 — no Postgres, os dois formatos de fim do mesmo mês viram 1 run (130)", async () => {
+    const c = ctx!;
+    const importId = await seedImport(c, { status: "completed", marker: true, rowCount: 2, importedAt: "2000-01-01T00:00:00.000Z" });
+    try {
+      await seedLine(c, importId, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+      await seedLine(c, importId, "2034-10-01T00:00:00.000Z", "2034-10-31T23:59:59.999Z", "30.000000");
+      await c.trigger.ensureImportRuns(c.allocation, importId);
+      const runs = await c.allocation.listRunsByImport(importId);
+      assert.equal(runs.length, 1, "1 run para o mesmo mês nos dois formatos de fim");
+      await c.allocation.executeImportRuns(importId);
+      const executed = await c.allocation.getAllocationRun(runs[0]!.id);
+      assert.equal(executed.totalImportedCost, 130);
+      const summary = await c.allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+      assert.equal(summary.totalImportedCost, 130);
+    } finally {
+      await cleanup(c, [importId]);
+    }
+  });
+
+  test("T-E4-7-db · C2-02 — no Postgres, 3 falhas seguidas → failed/3 → fora da fila", async () => {
+    const c = ctx!;
+    const importId = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: "2000-01-01T00:00:00.000Z" });
+    try {
+      await seedLine(c, importId, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+      const flaky = Object.create(c.allocation) as typeof c.allocation;
+      flaky.createImportRun = async () => {
+        throw Object.assign(new Error("conexão caiu (simulado)"), { code: "P1017" });
+      };
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        const result = await c.trigger.runImportCatchUp({ allocation: flaky, enqueue: async () => undefined });
+        assert.equal(result.importsFailed, 1);
+        const mark = (await c.admin.cloudCostImport.findUnique({ where: { id: importId } }))!.metadata.autoAllocationSweep as {
+          status: string;
+          attempts: number;
+        };
+        assert.deepEqual({ status: mark.status, attempts: mark.attempts }, { status: "failed", attempts: attempt });
+      }
+
+      const fourth = await c.trigger.runImportCatchUp({ allocation: flaky, enqueue: async () => undefined });
+      assert.equal(fourth.importsScanned, 0, "failed/3 sai da fila");
+    } finally {
+      await cleanup(c, [importId]);
+    }
+  });
+
+
+  test("T-E4-8-db · C2-03 — no Postgres, markImportSweep preserva o metadata de quem chamou byte a byte", async () => {
+    const c = ctx!;
+    const importId = await seedImport(c, { status: "completed", marker: true, rowCount: 1 });
+    try {
+      await c.admin.cloudCostImport.update({
+        where: { id: importId },
+        data: { metadata: { block: "B-ASS-09a", autoAllocation: "v1", duplicateRowsSkipped: 7, note: "chave-de-quem-chamou" } },
+      });
+      await c.allocation.markImportSweep(importId, { status: "done", attempts: 0, at: "2034-01-01T00:00:00.000Z" });
+      const after = await c.admin.cloudCostImport.findUnique({ where: { id: importId } });
+      assert.equal(after!.metadata.autoAllocation, "v1");
+      assert.equal(after!.metadata.duplicateRowsSkipped, 7);
+      assert.equal(after!.metadata.note, "chave-de-quem-chamou");
+      assert.deepEqual(after!.metadata.autoAllocationSweep, { status: "done", attempts: 0, at: "2034-01-01T00:00:00.000Z" });
+    } finally {
+      await cleanup(c, [importId]);
+    }
+  });
+
+  test("T-E4-9-db · C2-04 — no Postgres, markImportSweep não toca importação processing", async () => {
+    const c = ctx!;
+    const importId = await seedImport(c, { status: "processing", marker: true });
+    try {
+      await c.allocation.markImportSweep(importId, { status: "done", attempts: 0, at: "2034-01-01T00:00:00.000Z" });
+      const after = await c.admin.cloudCostImport.findUnique({ where: { id: importId } });
+      assert.equal(after!.metadata.autoAllocationSweep, undefined, "a marca não é gravada em processing");
+    } finally {
+      await cleanup(c, [importId]);
+    }
+  });
+
+  test("T-E41-1-db · R41-01(a) — no Postgres, a importação com linha invertida falha no parser, sem linhas nem runs", async () => {
+    const c = ctx!;
+    const row = (start: string, end: string, cost: string): string =>
+      `${start},${end},,,AmazonEC2,BoxUsage,RunInstances,us-east-1,i-x,1,Hrs,${cost},USD,ERP,prod,tenant-a,compute`;
+    const csv = [CUR_HEADER, row("2034-10-01T00:00:00Z", "2034-11-01T00:00:00Z", "110"), row("2034-09-15T00:00:00Z", "2034-09-01T00:00:00Z", "1"), row("2034-11-01T00:00:00Z", "2034-12-01T00:00:00Z", "45")].join("\n");
+    const imported = await c.plainCosts.importAwsCurCsv({ csv, sourceType: "manual_csv" });
+    try {
+      assert.equal(imported.status, "failed");
+      assert.match(imported.errorMessage ?? "", /at row 3/);
+      assert.equal(await c.admin.cloudCostLineItem.count({ where: { import_id: imported.id } }), 0, "0 linhas");
+      assert.equal((await c.allocation.listRunsByImport(imported.id)).length, 0, "0 runs");
+    } finally {
+      await cleanup(c, [imported.id]);
+    }
+  });
+
+  test("T-E41-2-db · R41-01(b) — no Postgres, a guarda fecha: par invertido injetado por API Prisma não gera run", async () => {
+    const c = ctx!;
+    const importId = await seedImport(c, { status: "completed", marker: true, rowCount: 3, importedAt: "2000-01-01T00:00:00.000Z" });
+    try {
+      await seedLine(c, importId, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "110.000000");
+      await seedLine(c, importId, "2034-11-01T00:00:00.000Z", "2034-12-01T00:00:00.000Z", "45.000000");
+      await seedLine(c, importId, "2034-12-01T00:00:00.000Z", "2035-01-01T00:00:00.000Z", "1.000000");
+      // DP542-01 — injeta o par invertido pela API Prisma (Date), nunca por literal SQL UTC.
+      const updated = await c.admin.cloudCostLineItem.updateMany({
+        where: { import_id: importId, billing_period_start: new Date("2034-12-01T00:00:00.000Z") },
+        data: { billing_period_start: new Date("2035-01-20T00:00:00.000Z") },
+      });
+      assert.equal(updated.count, 1, "a injeção por API Prisma afetou exatamente 1 linha");
+
+      const { logger, errors } = dbSpyLogger();
+      const result = await c.trigger.ensureImportRuns(c.allocation, importId, { logger });
+      assert.deepEqual(result, { outcome: "invalid_periods", created: 0, pendingCount: 0 });
+      assert.equal((await c.allocation.listRunsByImport(importId)).length, 0, "0 runs");
+      assert.deepEqual(
+        errors.map(([payload, message]) => [message, Object.keys(payload).sort()] as const),
+        [["cloud_cost_auto_allocation_skipped_invalid_period", ["importId", "invalidPeriods"]]],
+      );
+      const after = await c.admin.cloudCostImport.findUnique({ where: { id: importId } });
+      const sweep = after!.metadata.autoAllocationSweep as { status: string };
+      assert.equal(sweep.status, "done", "a marca fica done");
+    } finally {
+      await cleanup(c, [importId]);
+    }
+  });
+
+
+  test("T-E41-3-db · R41-02 — no Postgres, no empate de imported_at, a varredura não troca o número publicado (duas ordens)", async () => {
+    const c = ctx!;
+    const TIE = "2000-01-05T00:00:00.000Z";
+
+    // (i) X com gancho caído, Y publica 130; a varredura cria X e o resumo continua 130 (Y).
+    {
+      const X = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: TIE });
+      const Y = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: TIE });
+      try {
+        await seedLine(c, X, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+        await seedLine(c, Y, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "130.000000");
+        await c.trigger.ensureImportRuns(c.allocation, Y);
+        await c.allocation.executeImportRuns(Y);
+        const before = await c.allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+        assert.equal(before.totalImportedCost, 130);
+        assert.equal(before.importId, Y);
+
+        await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined });
+        await c.allocation.executeImportRuns(X);
+        const after = await c.allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+        assert.equal(after.totalImportedCost, 130, "o resumo continua em Y");
+        assert.equal(after.importId, Y);
+      } finally {
+        await cleanup(c, [X, Y]);
+      }
+    }
+
+    // (ii) Y com gancho caído, X publica 100; a varredura cria Y e o resumo continua 100 (X).
+    {
+      const X = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: TIE });
+      const Y = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: TIE });
+      try {
+        await seedLine(c, X, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+        await seedLine(c, Y, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "130.000000");
+        await c.trigger.ensureImportRuns(c.allocation, X);
+        await c.allocation.executeImportRuns(X);
+        const before = await c.allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+        assert.equal(before.totalImportedCost, 100);
+        assert.equal(before.importId, X);
+
+        await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined });
+        await c.allocation.executeImportRuns(Y);
+        const after = await c.allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+        assert.equal(after.totalImportedCost, 100, "o resumo continua em X");
+        assert.equal(after.importId, X);
+      } finally {
+        await cleanup(c, [X, Y]);
+      }
+    }
+  });
+
+  test("T-E41-4-db · R41-03 — no Postgres, fim exclusivo e fim só com data do mesmo mês dão 1 run de 130", async () => {
+    const c = ctx!;
+    const importId = await seedImport(c, { status: "completed", marker: true, rowCount: 2, importedAt: "2000-01-01T00:00:00.000Z" });
+    try {
+      await seedLine(c, importId, "2034-10-01T00:00:00.000Z", "2034-11-01T00:00:00.000Z", "100.000000");
+      await seedLine(c, importId, "2034-10-01T00:00:00.000Z", "2034-10-31T00:00:00.000Z", "30.000000");
+      await c.trigger.ensureImportRuns(c.allocation, importId);
+      const runs = await c.allocation.listRunsByImport(importId);
+      assert.equal(runs.length, 1, "1 run para o mesmo mês nos dois formatos de fim");
+      assert.equal(runs[0]!.periodStart.toISOString(), "2034-10-01T00:00:00.000Z");
+      assert.equal(runs[0]!.periodEnd.toISOString(), "2034-10-31T23:59:59.999Z");
+      await c.allocation.executeImportRuns(importId);
+      const executed = await c.allocation.getAllocationRun(runs[0]!.id);
+      assert.equal(executed.totalImportedCost, 130);
+      const summary = await c.allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
+      assert.equal(summary.totalImportedCost, 130);
+    } finally {
+      await cleanup(c, [importId]);
+    }
+  });
+
+  test("T-E41-4b-db · R41-03 — no Postgres, o fim só com data cobre o dia inteiro: periodEnd 23:59:59.999", async () => {
+    const c = ctx!;
+    const importId = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: "2000-01-01T00:00:00.000Z" });
+    try {
+      await seedLine(c, importId, "2034-10-01T00:00:00.000Z", "2034-10-31T00:00:00.000Z", "30.000000");
+      await c.trigger.ensureImportRuns(c.allocation, importId);
+      const runs = await c.allocation.listRunsByImport(importId);
+      assert.equal(runs.length, 1);
+      assert.equal(runs[0]!.periodEnd.toISOString(), "2034-10-31T23:59:59.999Z");
+    } finally {
+      await cleanup(c, [importId]);
+    }
+  });
+
+  test("T-E41-5-db · R41-04 — no Postgres, 13 meses × 2 formatos = 26 pares e 13 janelas: 13 runs", async () => {
+    const c = ctx!;
+    const importId = await seedImport(c, { status: "completed", marker: true, rowCount: 26, importedAt: "2000-01-01T00:00:00.000Z" });
+    try {
+      for (let month = 0; month < 13; month += 1) {
+        const start = new Date(Date.UTC(2034, month, 1));
+        const next = new Date(Date.UTC(2034, month + 1, 1));
+        const last = new Date(Date.UTC(2034, month + 1, 0));
+        await seedLine(c, importId, start.toISOString(), next.toISOString(), "1.000000");
+        await seedLine(c, importId, start.toISOString().slice(0, 10), last.toISOString().slice(0, 10), "1.000000");
+      }
+      const result = await c.trigger.ensureImportRuns(c.allocation, importId);
+      assert.equal(result.created, 13, "13 janelas, não 26 pares");
+      const runs = await c.allocation.listRunsByImport(importId);
+      assert.equal(runs.length, 13);
+    } finally {
+      await cleanup(c, [importId]);
+    }
+  });
+
 }
 
 // -----------------------------------------------------------------------------------------------
@@ -427,7 +872,7 @@ async function seedLine(c: Ctx, importId: string, start: string, end: string, co
       tenant_tag: c.tenant.slug,
       unblended_cost: cost,
       currency: "USD",
-      raw_line_hash: `${c.suffix}-${importId}-${start}`,
+      raw_line_hash: `${c.suffix}-${importId}-${start}-${end}`,
       metadata: {},
     },
   });

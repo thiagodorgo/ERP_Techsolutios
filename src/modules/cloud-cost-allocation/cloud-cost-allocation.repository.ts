@@ -24,11 +24,10 @@ export type CloudCostAllocationRepository = {
   createRunWithId(input: CreateCloudCostAllocationRunWithIdInput): Promise<CreatedCloudCostAllocationRun>;
   /** B-ASS-09a · P1 — os pares BRUTOS distintos (`billing_period_start`, `billing_period_end`) das linhas da importação. */
   listImportBillingPeriods(importId: string): Promise<readonly ImportBillingPeriod[]>;
-  /** B-ASS-09a · P3 — as linhas da importação com EXATAMENTE aquele par (partição por construção), com o teto de contagem. */
-  listCostLineItemsForBillingPeriod(
+  /** B-ASS-09a · P3 — as linhas da importação com EXATAMENTE um dos pares (partição por construção), com o teto de contagem. */
+  listCostLineItemsForBillingPeriods(
     importId: string,
-    billingPeriodStart: Date,
-    billingPeriodEnd: Date,
+    billingPeriods: readonly ImportBillingPeriod[],
   ): Promise<readonly CloudCostLineItem[]>;
   /** B-ASS-09a — as runs (manuais e automáticas) de uma importação, da mais nova para a mais velha. */
   listRunsByImport(importId: string): Promise<readonly CloudCostAllocationRun[]>;
@@ -162,14 +161,14 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     );
   }
 
-  async listCostLineItemsForBillingPeriod(
+  async listCostLineItemsForBillingPeriods(
     importId: string,
-    billingPeriodStart: Date,
-    billingPeriodEnd: Date,
+    billingPeriods: readonly ImportBillingPeriod[],
   ): Promise<readonly CloudCostLineItem[]> {
-    return (await this.linesOfImport(importId)).filter(
-      (line) =>
-        line.billingPeriodStart.getTime() === billingPeriodStart.getTime() && line.billingPeriodEnd.getTime() === billingPeriodEnd.getTime(),
+    return (await this.linesOfImport(importId)).filter((line) =>
+      billingPeriods.some( // B-ASS-09a E4 janela
+        (period) => line.billingPeriodStart.getTime() === period.billingPeriodStart.getTime() && line.billingPeriodEnd.getTime() === period.billingPeriodEnd.getTime(), // B-ASS-09a E4 M4b
+      ),
     );
   }
 
@@ -196,7 +195,6 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     return [...(await this.allImports())]
       .filter((costImport) => costImport.status === "completed")
       .filter((costImport) => costImport.metadata.autoAllocation === AUTO_ALLOCATION_MARKER)
-      .filter((costImport) => !this.hasImportAutoRun(costImport.id)) // B-ASS-09a R2-02 pendência
       .filter((costImport) => isSweepEligible(costImport.metadata.autoAllocationSweep)) // B-ASS-09a PR542-01 avaliada
       .sort(oldestImportFirst)
       .slice(0, limit);
@@ -216,7 +214,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
   async markImportSweep(importId: string, mark: ImportSweepMark): Promise<void> {
     if (this.costSource) {
       const existing = await this.costSource.getImport(importId);
-      if (!existing) return;
+      if (!existing || existing.status !== "completed") return; // B-ASS-09a E4 só concluída
       await this.costSource.updateImport(importId, {
         status: existing.status,
         errorMessage: existing.errorMessage,
@@ -231,9 +229,6 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     );
   }
 
-  private hasImportAutoRun(importId: string): boolean {
-    return this.runs.some((run) => run.metadata.importId === importId && run.metadata.trigger === "import");
-  }
 
   private async insertRun(id: string, input: CreateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun> {
     const now = new Date();

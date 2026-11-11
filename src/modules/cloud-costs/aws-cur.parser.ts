@@ -48,6 +48,7 @@ export function parseAwsCurCsv(csv: string): readonly ParsedAwsCurLineItem[] {
 function mapRecord(record: Record<string, string>, rowNumber: number): ParsedAwsCurLineItem {
   const billingPeriodStart = readRequiredDate(record, fields.billingPeriodStart, rowNumber);
   const billingPeriodEnd = readRequiredDate(record, fields.billingPeriodEnd, rowNumber);
+  if (billingPeriodStart > billingPeriodEnd) throw new CloudCostError(400, "AWS_CUR_INVALID", "billing_period_invalid", `Billing period start is after end at row ${rowNumber}.`); // B-ASS-09a E4.1 parser
   const serviceCode = readRequiredString(record, fields.serviceCode, rowNumber);
   const unblendedCost = readRequiredNumber(record, fields.unblendedCost, rowNumber);
   const currency = readRequiredString(record, fields.currency, rowNumber);

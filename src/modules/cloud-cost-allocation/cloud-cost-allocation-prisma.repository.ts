@@ -102,15 +102,14 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     }));
   }
 
-  /** B-ASS-09a · P3 — igualdade EXATA do par: cada linha entra em uma run só. Mesmo teto de contagem do caminho manual. */
-  async listCostLineItemsForBillingPeriod(
+  /** B-ASS-09a · P3 — igualdade EXATA dos pares da janela: cada linha entra em uma run só. Mesmo teto de contagem do manual. */
+  async listCostLineItemsForBillingPeriods(
     importId: string,
-    billingPeriodStart: Date,
-    billingPeriodEnd: Date,
+    billingPeriods: readonly ImportBillingPeriod[],
   ): Promise<readonly CloudCostLineItem[]> {
     return this.findCostLineItemsCapped({
       import_id: importId,
-      billing_period_start: billingPeriodStart, billing_period_end: billingPeriodEnd,
+      OR: billingPeriods.map((period) => ({ billing_period_start: period.billingPeriodStart, billing_period_end: period.billingPeriodEnd })), // B-ASS-09a E4 janela
     });
   }
 
@@ -136,7 +135,6 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
       where: {
         status: "completed",
         metadata: { path: ["autoAllocation"], equals: AUTO_ALLOCATION_MARKER },
-        allocation_runs: { none: { metadata: { path: ["trigger"], equals: "import" } } }, // B-ASS-09a R2-02 pendência
         OR: SWEEP_ELIGIBLE_WHERE, // B-ASS-09a PR542-01 avaliada
       },
       orderBy: [{ imported_at: "asc" }, { created_at: "asc" }],

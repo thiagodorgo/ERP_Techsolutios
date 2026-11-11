@@ -50,10 +50,32 @@ export function uuidV5(namespace: string, name: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-/** P2 — o id determinístico da run automática de um par BRUTO de período de uma importação. */
+/** P2 — o id determinístico da run automática de uma importação × janela de publicação. */
 export function importRunId(importId: string, billingPeriodStart: Date, billingPeriodEnd: Date): string {
-  const name = `cloud-cost-allocation:import:${importId}:${billingPeriodStart.toISOString()}:${billingPeriodEnd.toISOString()}`;
+  const name = `cloud-cost-allocation:import:${importId}:window:${importRunWindowKey(billingPeriodStart, billingPeriodEnd)}`;
   return uuidV5(IMPORT_RUN_NAMESPACE, name);
+}
+
+export function importRunWindowKey(billingPeriodStart: Date, billingPeriodEnd: Date): string {
+  return `${utcDay(billingPeriodStart)}:${utcDay(normalizeImportPeriodEnd(billingPeriodStart, billingPeriodEnd))}`; // B-ASS-09a E4 janela
+}
+
+const DAY_MS = 86_400_000;
+
+function utcDay(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+/** B-ASS-09a · E11 — fim às 00:00:00.000 UTC e depois do início = fim exclusivo da AWS: a janela termina 1 ms antes. */
+export function normalizeImportPeriodEnd(billingPeriodStart: Date, billingPeriodEnd: Date): Date {
+  const atUtcMidnight =
+    billingPeriodEnd.getUTCHours() === 0 &&
+    billingPeriodEnd.getUTCMinutes() === 0 &&
+    billingPeriodEnd.getUTCSeconds() === 0 &&
+    billingPeriodEnd.getUTCMilliseconds() === 0;
+  if (atUtcMidnight && billingPeriodEnd.getUTCDate() === 1 && billingPeriodEnd > billingPeriodStart) return new Date(billingPeriodEnd.getTime() - 1); // B-ASS-09a E4.1 fim-exclusivo
+  if (atUtcMidnight) return new Date(billingPeriodEnd.getTime() + DAY_MS - 1); // B-ASS-09a E4.1 fim-só-data
+  return billingPeriodEnd;
 }
 
 export type ImportTriggerLogger = {
@@ -71,12 +93,12 @@ export const defaultImportTriggerLogger: ImportTriggerLogger = {
 /** As operações do serviço de rateio que o gatilho usa. O serviço real cumpre isto; os testes passam o real. */
 export type ImportRunAllocationPort = Pick<
   CloudCostAllocationService,
-  "findImportForAllocation" | "listImportBillingPeriods" | "listRunsByImport" | "importRunWindow" | "createImportRun"
+  "findImportForAllocation" | "listImportBillingPeriods" | "listRunsByImport" | "importRunWindow" | "createImportRun" | "markImportSweep"
 >;
 
 export type EnsureImportRunsResult = {
-  /** `not_eligible`: importação inexistente, não concluída ou sem linha; `too_many_periods`: passou do teto. */
-  readonly outcome: "not_eligible" | "too_many_periods" | "ensured";
+  /** `not_eligible`: importação inexistente, não concluída ou sem linha; `too_many_periods`: passou do teto; `invalid_periods`: par invertido. */
+  readonly outcome: "not_eligible" | "too_many_periods" | "invalid_periods" | "ensured";
   /** Runs automáticas criadas AGORA (as que já existiam não contam). */
   readonly created: number;
   /** Runs automáticas desta importação que seguem `pending` depois da passada (o que o gatilho enfileira). */
@@ -85,12 +107,33 @@ export type EnsureImportRunsResult = {
 
 const NOT_ELIGIBLE: EnsureImportRunsResult = Object.freeze({ outcome: "not_eligible", created: 0, pendingCount: 0 });
 const TOO_MANY_PERIODS: EnsureImportRunsResult = Object.freeze({ outcome: "too_many_periods", created: 0, pendingCount: 0 });
+const INVALID_PERIODS: EnsureImportRunsResult = Object.freeze({ outcome: "invalid_periods", created: 0, pendingCount: 0 });
 
 /**
- * P1/P2/P7 — garante uma run automática por par BRUTO de período da importação. Idempotente: chamar de novo devolve as
- * mesmas runs (`created: 0`). Não executa nada; quem executa é o job `cloud-cost-allocation.run` com `mode: import_auto`.
+ * P1/P2/P7/P11 — garante uma run automática por JANELA de publicação da importação. Idempotente: chamar de novo devolve
+ * as mesmas runs (`created: 0`). Não executa nada; quem executa é o job `cloud-cost-allocation.run` com `mode: import_auto`.
+ * A passada sem erro marca a importação `done` (o invólucro da E4), para que a varredura complete só o que FALTA (P11).
  */
 export async function ensureImportRuns(
+  allocation: ImportRunAllocationPort,
+  importId: string,
+  options: { readonly logger?: ImportTriggerLogger } = {},
+): Promise<EnsureImportRunsResult> {
+  const logger = options.logger ?? defaultImportTriggerLogger;
+  const result = await ensureImportRunsUnmarked(allocation, importId, options);
+  await markSweepDone(allocation, importId, logger); // B-ASS-09a E4 fila
+  return result;
+}
+
+async function markSweepDone(allocation: ImportRunAllocationPort, importId: string, logger: ImportTriggerLogger): Promise<void> {
+  try {
+    await allocation.markImportSweep(importId, { status: "done", attempts: 0, at: new Date().toISOString() });
+  } catch (error) {
+    logger.warn({ importId, code: errorCode(error) }, "cloud_cost_auto_allocation_sweep_mark_failed");
+  }
+}
+
+async function ensureImportRunsUnmarked(
   allocation: ImportRunAllocationPort,
   importId: string,
   options: { readonly logger?: ImportTriggerLogger } = {},
@@ -101,9 +144,15 @@ export async function ensureImportRuns(
   if (costImport.status !== "completed" || costImport.rowCount === 0) return NOT_ELIGIBLE;
 
   const periods = await allocation.listImportBillingPeriods(importId);
-  if (periods.length > MAX_AUTO_ALLOCATION_PERIODS_PER_IMPORT) {
+  const invalidPeriods = periods.filter((period) => !(period.billingPeriodStart <= period.billingPeriodEnd)).length; // B-ASS-09a E4.1 conta-invertido
+  if (invalidPeriods > 0) { // B-ASS-09a E4.1 fecha
+    logger.error({ importId, invalidPeriods }, "cloud_cost_auto_allocation_skipped_invalid_period");
+    return INVALID_PERIODS;
+  }
+  const windowCount = new Set(periods.map((period) => importRunWindowKey(period.billingPeriodStart, period.billingPeriodEnd))).size; // B-ASS-09a E4.1 teto
+  if (windowCount > MAX_AUTO_ALLOCATION_PERIODS_PER_IMPORT) {
     logger.warn(
-      { importId, periods: periods.length, cap: MAX_AUTO_ALLOCATION_PERIODS_PER_IMPORT },
+      { importId, periods: windowCount, cap: MAX_AUTO_ALLOCATION_PERIODS_PER_IMPORT },
       "cloud_cost_auto_allocation_skipped_too_many_periods",
     );
     return TOO_MANY_PERIODS;
@@ -114,16 +163,22 @@ export async function ensureImportRuns(
   const manualRuns = (await allocation.listRunsByImport(importId)).filter((run) => run.metadata.trigger !== "import");
   let created = 0;
   let pendingCount = 0;
+  const groups = new Map<string, (typeof periods)[number][]>();
   for (const period of periods) {
-    const window = allocation.importRunWindow(period.billingPeriodStart, period.billingPeriodEnd);
+    const key = importRunWindowKey(period.billingPeriodStart, period.billingPeriodEnd);
+    const group = groups.get(key) ?? [];
+    group.push(period);
+    groups.set(key, group);
+  }
+  for (const group of groups.values()) {
+    const window = allocation.importRunWindow(group);
     const manualRunExists = manualRuns.some(
       (run) => sameUtcDay(run.periodStart, window.periodStart) && sameUtcDay(run.periodEnd, window.periodEnd),
     );
     if (manualRunExists) continue;
     const result = await allocation.createImportRun({
       importId,
-      billingPeriodStart: period.billingPeriodStart,
-      billingPeriodEnd: period.billingPeriodEnd,
+      billingPeriods: group,
       // CE-G2 — o rateio automático é ação do sistema, consequência da importação; a run guarda quem importou.
       createdBy: costImport.importedBy,
     });
@@ -275,8 +330,8 @@ export async function runImportCatchUp(deps: ImportCatchUpDeps): Promise<ImportC
     try {
       const result = await ensureImportRuns(deps.allocation, costImport.id, { logger });
       runsCreated += result.created;
-      // Criou run: a importação sai da seleção pelo anti-join. Não criou nada: não há o que criar, sai pelo marcador.
-      if (result.created === 0) mark = { status: "done", attempts: 0, at: new Date().toISOString() };
+      // O invólucro da E4 marca a importação `done` quando a passada termina sem erro (tenha criado ou não).
+      if (result.created === 0) importsSettled += 1;
     } catch (error) {
       importsFailed += 1;
       logger.warn(
@@ -288,7 +343,6 @@ export async function runImportCatchUp(deps: ImportCatchUpDeps): Promise<ImportC
     if (!mark) continue;
     try {
       await deps.allocation.markImportSweep(costImport.id, mark);
-      if (mark.status === "done") importsSettled += 1;
     } catch (error) {
       // O marcador é só a fila da varredura: sem ele a importação volta na próxima passada, nada se perde.
       logger.warn({ importId: costImport.id, code: errorCode(error) }, "cloud_cost_auto_allocation_sweep_mark_failed");
