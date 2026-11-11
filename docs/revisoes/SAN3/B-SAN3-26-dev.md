@@ -302,3 +302,35 @@ saídas"). Fica para a pré-revisão ou para o porteiro, se um aparelho estiver 
 **Limpeza (§C5):** no fechamento, os containers `san326-pg` e `san326-redis` são removidos, `dist/` e
 `frontend/dist/` (gitignored) apagados, e a pasta `C:/Users/thiag/w-san326-logs` apagada; o worktree fica para a
 pré-revisão e a junta.
+
+## Conserto da pré-revisão (fluxo rápido, §C7 item 10(3), passo 1)
+
+- **Autor:** `dev-san3-26-fix-cl`, Claude Opus 5.5 (subagente da sessão), dev, **sucessor** do `dev-san326-cl`. Não fiz
+  a pré-revisão. **Verificador:** a conferência do item 10(3)5, por outra identidade. Sem cruzamento, pelo mesmo motivo
+  declarado na pré-revisão (§C7 item 11(2)).
+- **Insumo:** `prerev-534.json` e `prerev-534-evidencia.md` (`prerev-534-cl`, APROVADO com 5 não graves e 1 grave
+  pré-existente), em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/`.
+- **Objeto de partida:** `e5287e8e`, árvore limpa (`git status --porcelain` vazio), medido às 05:14 SP por `date`.
+- Um commit por item, na ordem abaixo.
+
+### PR534-02 — as duas mutações próprias que sobreviveram
+
+Os casos novos ficam nos testes do bloco; o produto não muda.
+
+- `tests/san3-26-checkin-normalizacao.test.ts`: o A10 ganha "ABC12345", "ABC1D234" e "ABC1D23X" (letra ou dígito colado
+  depois da placa = sem referência), na tabela e no `resolveCheckinReference`.
+- `tests/san3-26-checkin-conferencia.test.ts`: o A7b novo. O `technician` pela rota HTTP não troca a placa (403
+  `checkin_reference_not_editable`, a placa fica), e a mudança cosmética passa. O `viewer`, papel fora das duas listas,
+  chamado direto no serviço, também toma 403. O gestor troca, como controle.
+- Verde no código: os 2 arquivos, 29/29.
+- Vermelho com a mutação, pelo roteiro de sempre: âncora com contagem 1, troca, teste-dono, `git checkout`, e o
+  `git diff --quiet` do arquivo dá 0.
+
+| # | Mutação | Arquivo | Âncora → troca | Resultado |
+|---|---|---|---|---|
+| 1 | PROPRIA-3 (guarda da direita) | `work-order.checkin.ts` | `(?![A-Z0-9])/g;` → `/g;` | ec=1, VERMELHA: normalização pass 5, fail 2 (as 2 do A10) |
+| 2 | PROPRIA-4 (a guarda só para `field_technician`) | `work-order.service.ts` | `if (serviceDetails === undefined \|\| isCheckinOfficeOnly(actor)) return;` → `… \|\| !actor.roles.includes("field_technician")) return;` | ec=1, VERMELHA: conferência pass 21, fail 1 (A7b) |
+| 3 | PROPRIA-4a (só o `technician` escapa) | idem | → `… \|\| isCheckinOfficeOnly(actor) \|\| actor.roles.includes("technician")) return;` | ec=1, VERMELHA (A7b, pela rota HTTP) |
+| 4 | PROPRIA-4b (só o `viewer` escapa) | idem | → `… \|\| isCheckinOfficeOnly(actor) \|\| actor.roles.includes("viewer")) return;` | ec=1, VERMELHA (A7b, pelo serviço) |
+
+As 4/4 restauradas. As linhas 3 e 4 provam que cada metade do A7b mata a sua variante sozinha.

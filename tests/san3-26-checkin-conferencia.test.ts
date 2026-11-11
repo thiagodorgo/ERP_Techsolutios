@@ -403,6 +403,41 @@ test("A7 — o técnico não troca, omite, anula nem esvazia a placa (403); muda
   });
 });
 
+// PR534-02 (mutação própria da pré-revisão): a guarda vale para TODO ator que não é só base, não só para o
+// `field_technician`. O `technician` tem `work_orders:update` e é papel de campo do check-in; um papel fora das duas
+// listas (aqui o `viewer`, chamado direto no serviço) também não troca a placa.
+test("A7b — o technician pela rota HTTP e um papel fora das duas listas no serviço não trocam a placa (403)", async () => {
+  await withApi(async (ctx) => {
+    const hTech = ctx.h(ctx.seed.tecnico, "technician");
+    const id = await ctx.osACaminho();
+    for (const corpo of [{ service_details: { plate: "XYZ9999" } }, { service_details: { vehicle: "Gol" } }]) {
+      const r = await ctx.req(`/api/v1/work-orders/${id}`, { method: "PATCH", headers: hTech, body: corpo });
+      assert.equal(r.status, 403, `technician ${JSON.stringify(corpo)}: ${JSON.stringify(r.body)}`);
+      assert.equal(r.body.error.reason, "checkin_reference_not_editable");
+      assert.equal((await ctx.os(id)).serviceDetails?.plate, PLACA, "a placa mudou apesar da recusa");
+    }
+    const cosmetica = await ctx.req(`/api/v1/work-orders/${id}`, { method: "PATCH", headers: hTech, body: { service_details: { plate: "abc-1d23" } } });
+    assert.equal(cosmetica.status, 200, JSON.stringify(cosmetica.body));
+  });
+
+  process.env.CORE_SAAS_PERSISTENCE = "memory";
+  const { WorkOrderService } = await import("../src/modules/work-orders/work-order.service.js");
+  const { InMemoryWorkOrderRepository } = await import("../src/modules/work-orders/work-order.repository.js");
+  const service = new WorkOrderService(new InMemoryWorkOrderRepository());
+  const tenantId = randomUUID();
+  const gestor = { tenantId, userId: randomUUID(), roles: ["manager"], permissions: [] } as never;
+  const os = await service.create(gestor, { title: "Placa e papel fora das listas", service_details: { plate: PLACA } });
+  const fora = { tenantId, userId: randomUUID(), roles: ["viewer"], permissions: [] } as never;
+  await assert.rejects(
+    () => service.update(fora, os.id, { service_details: { plate: "XYZ9999" } }),
+    (error: any) => error.statusCode === 403 && error.reason === "checkin_reference_not_editable",
+  );
+  assert.equal((await service.get(gestor, os.id)).serviceDetails?.plate, PLACA);
+  // Controle: o gestor (só base) troca a placa pelo mesmo serviço.
+  const trocada = await service.update(gestor, os.id, { service_details: { plate: "XYZ9999" } });
+  assert.equal(trocada.serviceDetails?.plate, "XYZ9999");
+});
+
 // ------------------------------------------------------------------------------------------------
 // A8 — sigilo: os dígitos e a placa não vão para o evento, o domínio publicado nem o conflito.
 // ------------------------------------------------------------------------------------------------

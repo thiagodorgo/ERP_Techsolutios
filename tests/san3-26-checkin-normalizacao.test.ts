@@ -57,6 +57,13 @@ const TABELA: ReadonlyArray<readonly [unknown, string, Esperado]> = [
   ["ABC1D23 (ABC-1D23)", "23", "aceita"],
   // Residual declarado: "GOL 2010" tem a forma exata de uma placa antiga e é indistinguível dela.
   ["GOL 2010", "10", "aceita"],
+  // PR534-02 (mutação própria da pré-revisão, a guarda da DIREITA): letra ou dígito colado DEPOIS da placa faz o
+  // texto deixar de ser placa. Sem a guarda, "ABC12345" daria ABC1234 e "ABC1D234" daria ABC1D23.
+  ["ABC12345", "34", "checkin_reference_missing"],
+  ["ABC12345", "45", "checkin_reference_missing"],
+  ["ABC1D234", "23", "checkin_reference_missing"],
+  ["ABC1D234", "34", "checkin_reference_missing"],
+  ["ABC1D23X", "23", "checkin_reference_missing"],
 ];
 
 async function decidir(plate: unknown, digitado: string, serviceType: string | null = "reboque"): Promise<string> {
@@ -91,6 +98,10 @@ test("A10 — resolveCheckinReference devolve a placa normalizada, ou null", asy
   assert.equal(resolveCheckinReference({ plate: "Onix 2019 ABC1D23" }), "ABC1D23");
   assert.equal(resolveCheckinReference({ plate: "ABC-1234 (Gol prata)" }), "ABC1234");
   assert.equal(resolveCheckinReference({ plate: "SEM PLACA" }), null);
+  // PR534-02: a placa é procurada como PALAVRA também à direita.
+  assert.equal(resolveCheckinReference({ plate: "ABC12345" }), null);
+  assert.equal(resolveCheckinReference({ plate: "ABC1D234" }), null);
+  assert.equal(resolveCheckinReference({ plate: "ABC1D23X" }), null);
   assert.equal(resolveCheckinReference({ plate: 1234 }), null);
   assert.equal(resolveCheckinReference({}), null);
   assert.equal(resolveCheckinReference(undefined), null);
