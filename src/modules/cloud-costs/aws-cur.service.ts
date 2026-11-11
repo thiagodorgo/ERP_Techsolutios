@@ -92,6 +92,9 @@ export class CloudCostService {
           duplicateRowsSkipped: parsed.length - created.length,
           // B-ASS-09a · R2-12(a) — DEPOIS do `...metadata`: quem chama a rota não consegue escrever o marcador.
           autoAllocation: CLOUD_COST_AUTO_ALLOCATION_MARKER,
+          // B-ASS-09a · PR542-01 — o marcador da varredura também é só do sistema: nasce vazio, e quem chama não esconde
+          // a importação da varredura escrevendo `{ status: "done" }`.
+          autoAllocationSweep: null,
         },
       });
     } catch (error) {

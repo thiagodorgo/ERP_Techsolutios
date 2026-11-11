@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { CloudCostRepository } from "../cloud-costs/aws-cur.repository.js";
-import { AUTO_ALLOCATION_MARKER } from "./cloud-cost-allocation.import-trigger.js";
+import { AUTO_ALLOCATION_MARKER, isSweepEligible, type ImportSweepMark } from "./cloud-cost-allocation.import-trigger.js";
 import type { CloudCostImport, CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
 import type { CloudUsageDailyAggregate, CloudUsageEvent } from "../cloud-usage/cloud-usage.types.js";
 import type {
@@ -41,6 +41,11 @@ export type CloudCostAllocationRepository = {
   listImportsForAutoAllocation(limit: number): Promise<readonly CloudCostImport[]>;
   /** B-ASS-09a · R2-02 — as runs automáticas `pending` de QUALQUER importação, buscadas direto pelo status, até `limit`. */
   listPendingImportRuns(limit: number): Promise<readonly CloudCostAllocationRun[]>;
+  /**
+   * B-ASS-09a · PR542-01 — grava `metadata.autoAllocationSweep` da importação (só a chave do sistema; o resto do metadata
+   * fica). `done` e `failed` com 3 tentativas tiram a importação da seleção da varredura.
+   */
+  markImportSweep(importId: string, mark: ImportSweepMark): Promise<void>;
   updateRun(runId: string, input: UpdateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun>;
   getRun(runId: string): Promise<CloudCostAllocationRun | undefined>;
   listRuns(filters?: CloudCostAllocationRunFilters): Promise<readonly CloudCostAllocationRun[]>;
@@ -109,7 +114,7 @@ type AuditedActionSeed = {
  * teste). Sem ele, tudo fica como antes e os testes que usam `seed()` não mudam.
  */
 export type InMemoryCloudCostAllocationRepositoryOptions = {
-  readonly costSource?: Pick<CloudCostRepository, "getImport" | "listImports" | "listLineItems">;
+  readonly costSource?: Pick<CloudCostRepository, "getImport" | "listImports" | "listLineItems" | "updateImport">;
 };
 
 export class InMemoryCloudCostAllocationRepository implements CloudCostAllocationRepository {
@@ -192,6 +197,7 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
       .filter((costImport) => costImport.status === "completed")
       .filter((costImport) => costImport.metadata.autoAllocation === AUTO_ALLOCATION_MARKER)
       .filter((costImport) => !this.hasImportAutoRun(costImport.id)) // B-ASS-09a R2-02 pendência
+      .filter((costImport) => isSweepEligible(costImport.metadata.autoAllocationSweep)) // B-ASS-09a PR542-01 avaliada
       .sort(oldestImportFirst)
       .slice(0, limit);
   }
@@ -205,6 +211,24 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
       )
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
       .slice(0, limit);
+  }
+
+  async markImportSweep(importId: string, mark: ImportSweepMark): Promise<void> {
+    if (this.costSource) {
+      const existing = await this.costSource.getImport(importId);
+      if (!existing) return;
+      await this.costSource.updateImport(importId, {
+        status: existing.status,
+        errorMessage: existing.errorMessage,
+        metadata: { ...existing.metadata, autoAllocationSweep: mark },
+      });
+      return;
+    }
+    this.imports = this.imports.map((costImport) =>
+      costImport.id === importId
+        ? { ...costImport, metadata: { ...costImport.metadata, autoAllocationSweep: mark }, updatedAt: new Date() }
+        : costImport,
+    );
   }
 
   private hasImportAutoRun(importId: string): boolean {

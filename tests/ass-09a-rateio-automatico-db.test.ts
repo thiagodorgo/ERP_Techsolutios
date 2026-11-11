@@ -255,6 +255,69 @@ if (!connectionString) {
       await cleanup(c, [legacy]);
     }
   });
+
+  test("T9d-db · R2-02 (PR542-02) — no Postgres, com limite 2 e 3 importações marcadas, a mais nova (sem run) é alcançada", async () => {
+    // MUTAÇÃO QUE MATA: apagar `allocation_runs: { none: { metadata: { path: ["trigger"], equals: "import" } } }, // B-ASS-09a R2-02 pendência`.
+    const c = ctx!;
+    const ids: string[] = [];
+    try {
+      for (let index = 0; index < 3; index += 1) {
+        const id = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: `2000-01-0${index + 1}T00:00:00.000Z` });
+        ids.push(id);
+        await seedLine(c, id, "2033-06-01T00:00:00.000Z", "2033-06-30T23:59:59.999Z", "10.000000");
+      }
+      await c.trigger.ensureImportRuns(c.allocation, ids[0]!);
+      await c.trigger.ensureImportRuns(c.allocation, ids[1]!);
+
+      const result = await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined, limit: 2 });
+
+      assert.equal(result.runsCreated, 1);
+      const runs = await c.allocation.listRunsByImport(ids[2]!);
+      assert.deepEqual(runs.map((run) => run.metadata.trigger), ["import"], "a importação mais nova ganhou a run");
+    } finally {
+      await cleanup(c, ids);
+    }
+  });
+
+  test("T9f-db · PR542-01 — no Postgres, 3 importações sem nada a criar não tapam a fila: na 2ª passada a nova ganha o rateio", async () => {
+    // MUTAÇÃO QUE MATA: apagar `OR: SWEEP_ELIGIBLE_WHERE, // B-ASS-09a PR542-01 avaliada`.
+    const c = ctx!;
+    const ids: string[] = [];
+    const junStart = new Date("2033-06-01T00:00:00.000Z");
+    const junEnd = new Date("2033-06-30T23:59:59.999Z");
+    try {
+      for (let index = 0; index < 4; index += 1) {
+        const id = await seedImport(c, { status: "completed", marker: true, rowCount: 1, importedAt: `2000-02-0${index + 1}T00:00:00.000Z` });
+        ids.push(id);
+        await seedLine(c, id, "2033-06-01T00:00:00.000Z", "2033-06-30T23:59:59.999Z", "10.000000");
+      }
+      const eternal = ids.slice(0, 3);
+      const fresh = ids[3]!;
+      for (const id of eternal) {
+        const manual = await c.allocation.allocateCostsForPeriod({ periodStart: junStart, periodEnd: junEnd, importId: id });
+        assert.equal(manual.status, "completed", manual.errorMessage);
+      }
+
+      const first = await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined, limit: 2 });
+      assert.equal(first.importsSettled, 2, "as 2 eternas mais antigas são marcadas na 1ª passada");
+      assert.equal((await c.allocation.listRunsByImport(fresh)).length, 0);
+      const marks = (await c.admin.$queryRawUnsafe(
+        `SELECT id::text AS id, metadata->'autoAllocationSweep'->>'status' AS status FROM cloud_cost_imports WHERE id = ANY($1::uuid[]) ORDER BY imported_at`,
+        ids,
+      )) as Array<{ id: string; status: string | null }>;
+      assert.deepEqual(marks.map((mark) => mark.status), ["done", "done", null, null]);
+
+      const second = await c.trigger.runImportCatchUp({ allocation: c.allocation, enqueue: async () => undefined, limit: 2 });
+      assert.equal(second.runsCreated, 1);
+      assert.deepEqual(
+        (await c.allocation.listRunsByImport(fresh)).map((run) => run.metadata.trigger),
+        ["import"],
+        "na 2ª passada a nova ganha o rateio",
+      );
+    } finally {
+      await cleanup(c, ids);
+    }
+  });
 }
 
 // -----------------------------------------------------------------------------------------------
@@ -331,7 +394,10 @@ async function importWithoutHook(c: Ctx, name: string, keepRow?: (row: string) =
   return imported.id;
 }
 
-async function seedImport(c: Ctx, input: { status: string; marker: boolean; rowCount?: number }): Promise<string> {
+async function seedImport(
+  c: Ctx,
+  input: { status: string; marker: boolean; rowCount?: number; importedAt?: string },
+): Promise<string> {
   const id = randomUUID();
   await c.admin.cloudCostImport.create({
     data: {
@@ -339,7 +405,7 @@ async function seedImport(c: Ctx, input: { status: string; marker: boolean; rowC
       provider: "aws",
       source_type: "manual_csv",
       status: input.status,
-      imported_at: new Date(),
+      imported_at: input.importedAt ? new Date(input.importedAt) : new Date(),
       row_count: input.rowCount ?? 0,
       total_unblended_cost: "0",
       currency: "USD",

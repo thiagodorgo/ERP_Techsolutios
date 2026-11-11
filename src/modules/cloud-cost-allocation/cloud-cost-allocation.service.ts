@@ -1,7 +1,7 @@
 import { env } from "../../config/env.js";
 import type { CloudCostImport } from "../cloud-costs/aws-cur.types.js";
 import { allocateCloudCosts, assertConservation } from "./cloud-cost-allocation.engine.js";
-import { importRunId } from "./cloud-cost-allocation.import-trigger.js";
+import { importRunId, type ImportSweepMark } from "./cloud-cost-allocation.import-trigger.js";
 import {
   CloudCostAllocationError,
   CLOUD_COST_ALLOCATION_STRATEGIES,
@@ -126,6 +126,11 @@ export class CloudCostAllocationService {
   /** B-ASS-09a · R2-02 — as runs automáticas `pending`, de qualquer importação (o que falta executar). */
   listPendingImportRuns(limit: number): Promise<readonly CloudCostAllocationRun[]> {
     return this.repository.listPendingImportRuns(limit);
+  }
+
+  /** B-ASS-09a · PR542-01 — o marcador da varredura na importação (`done` ou `failed` com as tentativas). */
+  markImportSweep(importId: string, mark: ImportSweepMark): Promise<void> {
+    return this.repository.markImportSweep(importId, mark);
   }
 
   /**

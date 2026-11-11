@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { forEachTenantRls } from "../../database/rls.js";
 import type { CloudCostImport, CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
@@ -17,7 +17,11 @@ import {
   type ImportBillingPeriod,
   type UsageBasisRow,
 } from "./cloud-cost-allocation.types.js";
-import { AUTO_ALLOCATION_MARKER } from "./cloud-cost-allocation.import-trigger.js";
+import {
+  AUTO_ALLOCATION_MARKER,
+  AUTO_ALLOCATION_SWEEP_MAX_ATTEMPTS,
+  type ImportSweepMark,
+} from "./cloud-cost-allocation.import-trigger.js";
 import {
   STORAGE_INVENTORY_MODELS,
   type CloudCostAllocationRepository,
@@ -35,6 +39,21 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
  * por prova; acima, por recusa explicita; nunca por truncamento mudo.
  */
 export const CLOUD_COST_ALLOCATION_LINE_ITEM_CAP = 100_000;
+
+/**
+ * B-ASS-09a · PR542-01 — a importação marcada ainda está na fila da varredura: sem status de varredura (a chave ausente ou
+ * `null`; `Prisma.AnyNull` casa os dois, medido) ou `failed` com menos de 3 tentativas. É `isSweepEligible` em SQL.
+ * NUNCA `NOT { status = 'done' }`: com a chave ausente o `NOT` dá NULL e a importação nunca avaliada sumiria (medido).
+ */
+const SWEEP_ELIGIBLE_WHERE: Prisma.CloudCostImportWhereInput[] = [
+  { metadata: { path: ["autoAllocationSweep", "status"], equals: Prisma.AnyNull } },
+  {
+    AND: [
+      { metadata: { path: ["autoAllocationSweep", "status"], equals: "failed" } },
+      { metadata: { path: ["autoAllocationSweep", "attempts"], lt: AUTO_ALLOCATION_SWEEP_MAX_ATTEMPTS } },
+    ],
+  },
+];
 
 export class PrismaCloudCostAllocationRepository implements CloudCostAllocationRepository {
   constructor(
@@ -118,11 +137,25 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
         status: "completed",
         metadata: { path: ["autoAllocation"], equals: AUTO_ALLOCATION_MARKER },
         allocation_runs: { none: { metadata: { path: ["trigger"], equals: "import" } } }, // B-ASS-09a R2-02 pendência
+        OR: SWEEP_ELIGIBLE_WHERE, // B-ASS-09a PR542-01 avaliada
       },
       orderBy: [{ imported_at: "asc" }, { created_at: "asc" }],
       take: limit,
     });
     return records.map(mapCostImport);
+  }
+
+  /**
+   * B-ASS-09a · PR542-01 — só a chave do sistema, num `UPDATE` só (`jsonb_set`): o resto do metadata da importação não
+   * é relido nem regravado. Só importação `completed` (a varredura não mexe em outra).
+   */
+  async markImportSweep(importId: string, mark: ImportSweepMark): Promise<void> {
+    await this.client.$executeRaw`
+      UPDATE cloud_cost_imports
+         SET metadata = jsonb_set(metadata, '{autoAllocationSweep}', ${JSON.stringify(mark)}::jsonb, true),
+             updated_at = now()
+       WHERE id = ${importId}::uuid AND status = 'completed'
+    `;
   }
 
   /** B-ASS-09a · R2-02 — as runs automáticas `pending`, de qualquer importação, direto pelo status. */

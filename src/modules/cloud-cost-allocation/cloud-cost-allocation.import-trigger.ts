@@ -194,8 +194,42 @@ async function enqueueImportRunsIfPending(
 /** Quantas importações (e quantas runs `pending`) uma passada da varredura alcança. Injetável (R2-02). */
 export const IMPORT_CATCH_UP_LIMIT = 50;
 
+/** PR542-01 — depois de tantas falhas SEGUIDAS de `ensureImportRuns`, a importação sai da fila da varredura. */
+export const AUTO_ALLOCATION_SWEEP_MAX_ATTEMPTS = 3;
+
+/**
+ * B-ASS-09a · PR542-01 (Emenda 3) — o marcador da varredura em `metadata.autoAllocationSweep`, gravado SÓ pelo sistema:
+ * a conclusão da importação o grava `null` DEPOIS do `...metadata` de quem chama (como o R2-12), e a varredura o
+ * grava depois de avaliar a importação. `done`: não há o que criar (todos os pares já com run, manual ou automática;
+ * mais de 24 pares; ou nada elegível). `failed`: `ensureImportRuns` falhou `attempts` vezes seguidas.
+ */
+export type ImportSweepMark = {
+  readonly status: "done" | "failed";
+  readonly attempts: number;
+  readonly at: string;
+};
+
+/**
+ * PR542-01 — a importação marcada AINDA está na fila da varredura? Sim quando não tem status de varredura (nunca
+ * avaliada) ou falhou menos de `AUTO_ALLOCATION_SWEEP_MAX_ATTEMPTS` vezes; `done` e `failed` esgotado saem. É a mesma
+ * regra que o repositório Prisma escreve no `where` (`SWEEP_ELIGIBLE_WHERE`).
+ */
+export function isSweepEligible(sweep: unknown): boolean {
+  if (typeof sweep !== "object" || sweep === null) return true;
+  const { status, attempts } = sweep as { readonly status?: unknown; readonly attempts?: unknown };
+  if (status === undefined || status === null) return true;
+  return status === "failed" && typeof attempts === "number" && attempts < AUTO_ALLOCATION_SWEEP_MAX_ATTEMPTS;
+}
+
+function previousSweepAttempts(costImport: CloudCostImport): number {
+  const sweep = costImport.metadata.autoAllocationSweep;
+  if (typeof sweep !== "object" || sweep === null) return 0;
+  const { status, attempts } = sweep as { readonly status?: unknown; readonly attempts?: unknown };
+  return status === "failed" && typeof attempts === "number" ? attempts : 0;
+}
+
 export type ImportCatchUpAllocationPort = ImportRunAllocationPort &
-  Pick<CloudCostAllocationService, "listImportsForAutoAllocation" | "listPendingImportRuns">;
+  Pick<CloudCostAllocationService, "listImportsForAutoAllocation" | "listPendingImportRuns" | "markImportSweep">;
 
 export type ImportCatchUpDeps = {
   readonly allocation: ImportCatchUpAllocationPort;
@@ -210,8 +244,10 @@ export type ImportCatchUpResult = {
   readonly runsCreated: number;
   /** Importações com run automática `pending` que esta passada enfileirou (um enfileiramento por importação). */
   readonly importsEnqueued: number;
-  /** Importações cuja criação falhou nesta passada (registrada; a próxima passada tenta de novo). */
+  /** Importações cuja criação falhou nesta passada (registrada; a próxima passada tenta de novo, até 3 vezes seguidas). */
   readonly importsFailed: number;
+  /** PR542-01 — importações avaliadas sem nada a criar, marcadas `done`: saem da fila da varredura. */
+  readonly importsSettled: number;
 };
 
 /**
@@ -221,6 +257,10 @@ export type ImportCatchUpResult = {
  *     enfileirou, ou o job se perdeu).
  * NÃO reexecuta run `failed` (pergunta 3 do §9, recomendação (a)) e NÃO toca importação sem marcador (P7). A falha de
  * uma importação é registrada e não impede as outras (a falha GERAL, como a listagem, sobe para o job, que a registra).
+ *
+ * PR542-01 (Emenda 3) — a importação avaliada sem nada a criar (todos os pares já com run, mais de 24 pares) é marcada
+ * `done`, e a que falha é marcada `failed` com o número de tentativas: as `done` e as `failed` com 3 tentativas saem da
+ * seleção, para nunca taparem a fila das novas (antes elas ficavam para sempre na seleção "sem nenhuma run automática").
  */
 export async function runImportCatchUp(deps: ImportCatchUpDeps): Promise<ImportCatchUpResult> {
   const logger = deps.logger ?? defaultImportTriggerLogger;
@@ -229,15 +269,29 @@ export async function runImportCatchUp(deps: ImportCatchUpDeps): Promise<ImportC
   const missing = await deps.allocation.listImportsForAutoAllocation(limit);
   let runsCreated = 0;
   let importsFailed = 0;
+  let importsSettled = 0;
   for (const costImport of missing) {
+    let mark: ImportSweepMark | undefined;
     try {
-      runsCreated += (await ensureImportRuns(deps.allocation, costImport.id, { logger })).created;
+      const result = await ensureImportRuns(deps.allocation, costImport.id, { logger });
+      runsCreated += result.created;
+      // Criou run: a importação sai da seleção pelo anti-join. Não criou nada: não há o que criar, sai pelo marcador.
+      if (result.created === 0) mark = { status: "done", attempts: 0, at: new Date().toISOString() };
     } catch (error) {
       importsFailed += 1;
       logger.warn(
         { importId: costImport.id, code: errorCode(error) },
         "cloud_cost_auto_allocation_catch_up_import_failed",
       );
+      mark = { status: "failed", attempts: previousSweepAttempts(costImport) + 1, at: new Date().toISOString() };
+    }
+    if (!mark) continue;
+    try {
+      await deps.allocation.markImportSweep(costImport.id, mark);
+      if (mark.status === "done") importsSettled += 1;
+    } catch (error) {
+      // O marcador é só a fila da varredura: sem ele a importação volta na próxima passada, nada se perde.
+      logger.warn({ importId: costImport.id, code: errorCode(error) }, "cloud_cost_auto_allocation_sweep_mark_failed");
     }
   }
 
@@ -251,7 +305,7 @@ export async function runImportCatchUp(deps: ImportCatchUpDeps): Promise<ImportC
     await enqueueImportRunsIfPending(deps, importId, pendingCount);
   }
 
-  return { importsScanned: missing.length, runsCreated, importsEnqueued: pendingByImport.size, importsFailed };
+  return { importsScanned: missing.length, runsCreated, importsEnqueued: pendingByImport.size, importsFailed, importsSettled };
 }
 
 /** Só o código/nome do erro no log: a mensagem pode trazer SQL ou valor (allowlist §2.8). */

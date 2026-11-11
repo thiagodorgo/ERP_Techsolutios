@@ -382,9 +382,14 @@ test("T8 (síncrono) · P5 — um gancho que lança não derruba a importação:
 test("T-MARK · R2-12(a) — o marcador é gravado DEPOIS do metadata de quem chama, e é igual nos dois módulos", async () => {
   assert.equal(CLOUD_COST_AUTO_ALLOCATION_MARKER, AUTO_ALLOCATION_MARKER);
   const costs = new CloudCostService(new InMemoryCloudCostRepository());
-  const imported = await costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv"), metadata: { autoAllocation: "x" } });
+  const imported = await costs.importAwsCurCsv({
+    csv: fixture("aws-cur-sample.csv"),
+    metadata: { autoAllocation: "x", autoAllocationSweep: { status: "done", attempts: 0, at: "2026-01-01T00:00:00.000Z" } },
+  });
   assert.equal(imported.status, "completed");
   assert.equal(imported.metadata.autoAllocation, "v1");
+  // PR542-01 — o marcador da varredura também é do sistema: quem chama não esconde a importação da varredura.
+  assert.equal(imported.metadata.autoAllocationSweep, null);
 });
 
 test("T13 · E11 — depois do rateio automático de outubro (fim exclusivo), o resumo de outubro acha a run v5 (100)", async () => {
@@ -514,7 +519,7 @@ test("T8 (varredura) · P5 — o gancho falhou: a importação ficou completed e
   const queue = fakeQueue();
   const result = await runImportCatchUp({ allocation, enqueue: queue.enqueue });
 
-  assert.deepEqual(result, { importsScanned: 1, runsCreated: 1, importsEnqueued: 1, importsFailed: 0 });
+  assert.deepEqual(result, { importsScanned: 1, runsCreated: 1, importsEnqueued: 1, importsFailed: 0, importsSettled: 0 });
   assert.equal((await allocationRepository.listRunsByImport(imported.id)).length, 1);
   assert.deepEqual(queue.calls, [["cloud-cost-allocation.run", { mode: "import_auto", importId: imported.id }, undefined]]);
 });
@@ -540,7 +545,7 @@ test("T9 · P5 — a varredura cria a run que falta, enfileira a pending, NÃO e
 
   const queue = fakeQueue();
   const first = await runImportCatchUp({ allocation: service, enqueue: queue.enqueue });
-  assert.deepEqual(first, { importsScanned: 1, runsCreated: 1, importsEnqueued: 2, importsFailed: 0 });
+  assert.deepEqual(first, { importsScanned: 1, runsCreated: 1, importsEnqueued: 2, importsFailed: 0, importsSettled: 0 });
   assert.deepEqual(queue.importIds().sort(), [withoutRun, withPending].sort(), "a failed não é reenfileirada (pergunta 3, (a))");
 
   const second = await runImportCatchUp({ allocation: service, enqueue: fakeQueue().enqueue });
@@ -587,6 +592,74 @@ test("T9d · R2-02 — com limite 2 e 3 importações marcadas, a mais nova (sem
 
   assert.equal(result.runsCreated, 1);
   assert.equal((await repository.listRunsByImport(ids[2]!)).length, 1, "a importação mais nova ganhou a run");
+});
+
+test("T9f · PR542-01 — com limite 2, 3 importações sem nada a criar não tapam a fila: na 2ª passada a nova ganha o rateio", async () => {
+  // MUTAÇÃO QUE MATA: a exclusão das avaliadas (`isSweepEligible(costImport.metadata.autoAllocationSweep)` → `true`).
+  const eternal = ["09a00000-0000-4000-8000-0000000000a0", "09a00000-0000-4000-8000-0000000000a1", "09a00000-0000-4000-8000-0000000000a2"];
+  const fresh = "09a00000-0000-4000-8000-0000000000a3";
+  const marked = { autoAllocation: "v1", autoAllocationSweep: null };
+  const { repository, service } = seeded(
+    [...eternal, fresh].map((id, index) => completedImport(id, `2026-07-0${index + 2}T00:00:00.000Z`, marked)),
+    Object.fromEntries([...eternal, fresh].map((id) => [id, "aws-cur-sample.csv"])),
+  );
+  // As "eternas": todos os pares já com run MANUAL (o operador agiu antes), então ensureImportRuns nunca cria nada.
+  for (const id of eternal) {
+    await service.allocateCostsForPeriod({
+      periodStart: new Date("2026-06-01T00:00:00.000Z"),
+      periodEnd: new Date("2026-06-30T23:59:59.000Z"),
+      importId: id,
+    });
+  }
+
+  const first = await runImportCatchUp({ allocation: service, enqueue: fakeQueue().enqueue, limit: 2 });
+  assert.deepEqual(first, { importsScanned: 2, runsCreated: 0, importsEnqueued: 0, importsFailed: 0, importsSettled: 2 });
+  assert.equal((await repository.listRunsByImport(fresh)).length, 0, "na 1ª passada a nova ainda não foi alcançada");
+
+  const second = await runImportCatchUp({ allocation: service, enqueue: fakeQueue().enqueue, limit: 2 });
+  assert.equal(second.runsCreated, 1);
+  assert.equal(second.importsSettled, 1, "a 3ª eterna é marcada na 2ª passada");
+  assert.deepEqual(
+    (await repository.listRunsByImport(fresh)).map((run) => run.metadata.trigger),
+    ["import"],
+    "na 2ª passada a nova ganha o rateio",
+  );
+  const sweeps = (await repository.listImportsForAutoAllocation(10)).map((item) => item.id);
+  assert.deepEqual(sweeps, [], "nenhuma volta para a fila: as eternas estão done e a nova já tem run");
+});
+
+test("T9f-b · PR542-01 — a importação cuja criação falha sai da fila depois de 3 falhas seguidas", async () => {
+  const broken = "09a00000-0000-4000-8000-0000000000b0";
+  const { repository, service } = seeded(
+    [completedImport(broken, "2026-07-02T00:00:00.000Z", { autoAllocation: "v1", autoAllocationSweep: null })],
+    { [broken]: "aws-cur-sample.csv" },
+  );
+  const failing = new Proxy(service, {
+    get(target, property, receiver) {
+      if (property === "createImportRun") return async () => Promise.reject(new Error("banco fora do ar"));
+      const value = Reflect.get(target, property, receiver);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+  const { logger } = spyLogger();
+  const passes = [];
+  for (let pass = 0; pass < 4; pass += 1) {
+    passes.push(await runImportCatchUp({ allocation: failing, enqueue: fakeQueue().enqueue, logger }));
+  }
+  assert.deepEqual(
+    passes.map((result) => [result.importsScanned, result.importsFailed]),
+    [
+      [1, 1],
+      [1, 1],
+      [1, 1],
+      [0, 0],
+    ],
+    "3 falhas seguidas e a importação sai da fila",
+  );
+  const costImport = await repository.findBillableImport(new Date(0), new Date(0), broken);
+  const sweep = costImport!.metadata.autoAllocationSweep as { status: string; attempts: number };
+  assert.deepEqual({ status: sweep.status, attempts: sweep.attempts }, { status: "failed", attempts: 3 });
+  assert.deepEqual(await repository.listImportsForAutoAllocation(10), [], "fora da fila");
 });
 
 test("T9e · R2-05(b) — reenviar junho cria importação nova, com rateio novo, e o resumo de junho passa a ela", async () => {
