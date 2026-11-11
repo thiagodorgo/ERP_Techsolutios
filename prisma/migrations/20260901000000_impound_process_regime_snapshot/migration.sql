@@ -21,7 +21,7 @@ ALTER TABLE public."impound_processes" ALTER COLUMN "regime_scope" SET NOT NULL,
 
 ALTER TABLE public."impound_processes" ADD CONSTRAINT "impound_processes_tenant_id_regime_daily_service_catalog_i_fkey" FOREIGN KEY ("tenant_id", "regime_daily_service_catalog_id") REFERENCES public."service_catalog"("tenant_id", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
-CREATE FUNCTION public."impound_process_regime_stamp"() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path = pg_catalog, public AS $b12stamp$
+CREATE FUNCTION public."impound_process_regime_stamp"() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path = pg_catalog, public, pg_temp AS $b12stamp$
 DECLARE p RECORD;
 BEGIN
   SELECT "scope", "owner_notif_days", "notice_edict_day", "auction_eligible_day", "auction_edict_business_days", "daily_model", "daily_cap", "release_requirements", "daily_service_catalog_id"
@@ -44,7 +44,7 @@ $b12stamp$;
 
 CREATE TRIGGER "impound_processes_regime_stamp" BEFORE INSERT ON public."impound_processes" FOR EACH ROW EXECUTE FUNCTION public."impound_process_regime_stamp"();
 
-CREATE FUNCTION public."impound_process_regime_immutable"() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path = pg_catalog, public AS $b12immut$
+CREATE FUNCTION public."impound_process_regime_immutable"() RETURNS trigger LANGUAGE plpgsql SECURITY INVOKER SET search_path = pg_catalog, public, pg_temp AS $b12immut$
 BEGIN
   IF NEW."profile_id" IS DISTINCT FROM OLD."profile_id" OR NEW."regime_scope" IS DISTINCT FROM OLD."regime_scope" OR NEW."regime_owner_notif_days" IS DISTINCT FROM OLD."regime_owner_notif_days" OR NEW."regime_notice_edict_day" IS DISTINCT FROM OLD."regime_notice_edict_day" OR NEW."regime_auction_eligible_day" IS DISTINCT FROM OLD."regime_auction_eligible_day" OR NEW."regime_auction_edict_business_days" IS DISTINCT FROM OLD."regime_auction_edict_business_days" OR NEW."regime_daily_model" IS DISTINCT FROM OLD."regime_daily_model" OR NEW."regime_daily_cap" IS DISTINCT FROM OLD."regime_daily_cap" OR NEW."regime_release_requirements" IS DISTINCT FROM OLD."regime_release_requirements" OR NEW."regime_daily_service_catalog_id" IS DISTINCT FROM OLD."regime_daily_service_catalog_id" THEN
     RAISE EXCEPTION 'impound_processes: regime normativo do processo e imutavel' USING ERRCODE = 'check_violation';
