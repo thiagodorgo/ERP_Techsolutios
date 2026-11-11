@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import type { JurisdictionProfile } from "../src/modules/jurisdiction/jurisdiction.types.js";
@@ -40,4 +41,9 @@ test("B-O6R-12 C9: auditoria lista todos os campos e só omite valores de notes"
     to: [{ code: "doc2", label: "Documento atual", required: false }],
   });
   assert.equal("notes" in result.changes, false);
+});
+
+test("B-O6R-12 C8: controller envia changed_fields e changes à auditoria", () => {
+  const source = readFileSync("src/modules/jurisdiction/jurisdiction.controller.ts", "utf8");
+  assert.match(source, /metadata: \{ scope: profile\.scope, active: profile\.active, changed_fields: audit\.changedFields, changes: audit\.changes \}/);
 });

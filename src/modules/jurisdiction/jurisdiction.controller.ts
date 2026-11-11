@@ -46,6 +46,9 @@ export class JurisdictionController {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const body = (request.body ?? {}) as Record<string, unknown>;
     const profile = await service.update(actor, readRouteParam(request.params.profileId), body);
+    const audit = (profile as typeof profile & {
+      readonly auditChanges?: { readonly changedFields: readonly string[]; readonly changes: Readonly<Record<string, unknown>> };
+    }).auditChanges ?? { changedFields: [], changes: {} };
     const deactivating = body.active === false;
     await recordRequestAuditBestEffort(request, {
       action: deactivating ? "jurisdiction_profile.deactivated" : "jurisdiction_profile.updated",
@@ -53,7 +56,7 @@ export class JurisdictionController {
       resourceId: profile.id,
       outcome: "success",
       severity: "info",
-      metadata: { scope: profile.scope, active: profile.active },
+      metadata: { scope: profile.scope, active: profile.active, changed_fields: audit.changedFields, changes: audit.changes },
     });
     return { data: toJurisdictionProfileDto(profile) };
   }

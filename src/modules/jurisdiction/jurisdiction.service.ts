@@ -94,7 +94,9 @@ export class JurisdictionService {
     if (!updated) {
       throw new JurisdictionError(404, "JURISDICTION_NOT_FOUND", "not_found", "Jurisdiction profile was not found.");
     }
-    return updated;
+    return Object.assign(updated.profile, {
+      auditChanges: { changedFields: updated.changedFields, changes: updated.changes },
+    });
   }
 
   // Ω5P PR-17 — READ-PORT do owner-portal (dossiê): os prazos legais (offsets em dias a partir do t0) + o checklist

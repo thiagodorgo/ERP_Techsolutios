@@ -84,3 +84,20 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
 - **Executor da fatia:** `dev-o6r12-cdx`.
 - **Próximo comando:** F4 — auditoria campo a campo, leitura bloqueada do perfil e fiação do
   controller; rodar C8/C9 e mutações.
+
+## F4 — 2026-11-11T02:04:33-0300
+
+- `computeProfileChanges` lista 11 campos. Valores `{from,to}` são preservados para enums,
+  números, `active`, `name` e `release_requirements`; `notes` entra só em `changed_fields`.
+- O Prisma adquire `FOR NO KEY UPDATE`, lê o antes e grava na mesma transação RLS. A escolha evita
+  bloquear a FK da abertura; se abertura e PATCH concorrerem, o trigger carimba o perfil confirmado
+  no instante do INSERT. A memória devolve a mesma forma de resultado.
+- O controller grava `changed_fields` e `changes` na auditoria do PATCH; criação permanece com
+  `{scope,active}`.
+- Testes: C8/C9 + jurisdição **20/20**, `npm run check` verde.
+- Mutações C8 (retirar metadata detalhada) e C9 (incluir `notes` nos valores) produziram `not ok`
+  e foram revertidas. Durante a mutação C8, a primeira âncora textual acertou por engano o create;
+  a inspeção revelou o erro, o create foi restaurado e o PATCH recebeu a fiação correta antes da
+  validação final.
+- **Executor da fatia:** `dev-o6r12-cdx`.
+- **Próximo comando:** F5 — catraca de leitores vivos e pendência do fuso.
