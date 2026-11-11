@@ -126,7 +126,7 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
   actual 0`; 16b-4 e 16b-6 `expected 1, actual 0`. A E1.2 previa 16b-1, 16b-2 e 16b-5; os outros três também ficam
   vermelhos, porque contam chamadas.
 
-## F3 — provas `-db`, P2 = (a) e a fixture do san3-05 (08:03–08:13 SP)
+## F3 — provas `-db`, P2 = (a) e a fixture do san3-05 (08:03–08:11 SP)
 
 - **P2 = (a), A6 (`prisma-core-saas.store.ts`, só o Step 1b e `hasSameRoleKeys`):** logo antes do `const revokedSessions =`,
   `const rolesChanged = input.roles !== undefined && !hasSameRoleKeys(currentRoles, input.roles);`, e a condição passa a
@@ -146,3 +146,15 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
 - **Resíduo no banco descartável:** as execuções da F0 mortas pelo `timeout` (S4·c e o `portao` em memória) e o teardown
   falho do san3-05 deixaram 7 organizações e 4 papéis efêmeros no `devdesat`. É o meu banco; antes da F5 eu recrio os
   dois bancos do zero, para a bateria medir num banco limpo.
+
+## F3b — o tique do stream do mapa (08:07–08:12 SP)
+
+- `field-ops-realtime.routes.ts`: a forma literal da E1.2 (constante `SSE_LIVENESS_MAX_FAILURES = 2`, `livenessInFlight`,
+  `livenessFailures`, `runLivenessTick` com o `await` dentro do `try`, a trava de sobreposição no tique) e a função
+  `endSseStream` (evento com corpo `{}` pelo `writeSseEvent` e `response.end()`). Imports: `sessionLiveness` e o tipo
+  `AuthenticatedActor` de `auth.types.ts`.
+- Âncoras, `grep -c -F` = 1: `} catch {` (M12), `if (!actor || livenessInFlight || response.writableEnded) {` (M13),
+  `const SSE_LIVENESS_MAX_FAILURES = 2;` (M14); `grep -cE '^\s+livenessFailures = 0;$'` = 1 (M15).
+- **Verdes (TAP, `scratchpad/devdesat/f3b/`):** `users-seg-desativado-sse` 6/6 (T16b-1 a 6, memória) · regressão
+  `field-ops-realtime` 4/4 · `users-seg-desativado-sse-db` 1/1 (T16, relógio real: o stream fechou com
+  `event: session_inactive` e 0 assinantes; a suíte levou 38 s).
