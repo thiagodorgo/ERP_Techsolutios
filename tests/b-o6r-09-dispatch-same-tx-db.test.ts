@@ -1,12 +1,13 @@
 import "dotenv/config";
 
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { createRequire } from "node:module";
 import path from "node:path";
 import test, { after, before } from "node:test";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
@@ -66,7 +67,15 @@ if (!baseConnection) {
     url.pathname = `/${databaseName}`;
     target = url.toString();
     const prismaCli = createRequire(path.join(ROOT, "package.json")).resolve("prisma/build/index.js");
-    execFileSync(process.execPath, [prismaCli, "migrate", "deploy"], { cwd: ROOT, env: { ...process.env, DATABASE_URL: target }, stdio: "pipe" });
+    // Assíncrono, para o prazo do hook valer (um execFileSync prende o laço de eventos e o prazo só "dispara" depois). O
+    // migrate deploy do banco novo é dominado pelo fsync de cada CREATE INDEX: num disco disputado, medido localmente, levou
+    // de 250 a 730 s; num disco livre, 17,6 s. O prazo cobre o caso lento sem esconder um migrate preso.
+    await promisify(execFile)(process.execPath, [prismaCli, "migrate", "deploy"], {
+      cwd: ROOT,
+      env: { ...process.env, DATABASE_URL: target },
+      timeout: 840_000,
+      maxBuffer: 16 * 1024 * 1024,
+    });
 
     // O cliente global, instalado ANTES de qualquer módulo de `src/`. O `DATABASE_URL` do processo também passa a ser o
     // do banco próprio: um módulo que criasse cliente a partir do `env` cairia aqui, e não no banco comum.
@@ -76,7 +85,7 @@ if (!baseConnection) {
     instalado = new PrismaClient({ adapter: new PrismaPg({ connectionString: withApplicationName(target, APP) }) });
     (globalThis as unknown as { prisma?: PrismaClient }).prisma = instalado;
     PgClientCtor = ((await import("pg")) as unknown as { Client: typeof PgClientCtor }).Client;
-  }, { timeout: 240_000 });
+  }, { timeout: 900_000 });
 
   after(async () => {
     for (const c of abertos) await c.end().catch(() => undefined);
