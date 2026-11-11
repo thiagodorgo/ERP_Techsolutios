@@ -221,3 +221,74 @@ na T2.2.
   seja, o leitor de tela lia também a dica decorativa. **Defeito da tela, corrigido:** a dica passou para
   `InputDecoration.hint` dentro de `ExcludeSemantics` (mesmo texto e cor). Depois: `flutter analyze` → `No issues
   found!`; teste novo → **`00:09 +32: All tests passed!`**.
+
+## T2.4 — mutações sobre o código final (`bcfd3528`), 23:10–23:13 SP
+
+As 12, uma por vez, aplicadas e revertidas por edição inversa com âncora única, `git diff --quiet -- lib` limpo depois de
+cada uma (`run-mut.sh`). Literal de cada uma: tabela da T2.2 e roteiro da PAUSA. **Todas vermelhas.**
+
+| ID | Resumo | Vermelho que prova |
+|---|---|---|
+| M-EMAIL (Emenda 4) | `+31 -1` | `Emenda 4 — a linha mostra o e-mail da própria sessão e nenhum outro texto` |
+| M-RQ6 (RQ-6 no app) | `+31 -1` | `RQ-6 no app — 401 invalid_credentials: UMA requisição à troca e nenhuma ao refresh` |
+| M-TOKEN (token fora do resto do app) | `+31 -1` | `login restrito: sem APP_CONNECT, sem token para o resto do app, ...` |
+| M-F6 (refeita: a tela mudou na T2.3) | `+31 -1` | `F6 — sem conexão: ...` |
+| M-F1 (RQ-2 (a)) | `+19 -13` | `F1 — ...` e mais 12 |
+| M-F2 | `+30 -2` | `F2 — ...`, `F6 — ...` |
+| M-F3 | `+22 -10` | `F3 — ...`, F4 (×2) e mais 7 |
+| M-F4 | `+31 -1` | `F4 — 200: ...` |
+| M-F5 | `+16 -16` | os 13 `F5 — ...` e mais 3 |
+| M-F7b (RQ-2 (b)) | `+31 -1` | `F7 — login sem o campo dá sessão INTEIRA e gravada; o refresh ...` |
+| M-F7c (RQ-2 (c)) | `+30 -2` | `F7 — login sem o campo ...` e o controle de APP_CONNECT |
+
+Nota: a 1ª chamada do roteiro na retomada parou em `ARVORE SUJA DEPOIS DA REVERSAO` porque a correção da dica ainda não
+estava commitada (a conferência compara `lib/` com o HEAD). A reversão da M-EMAIL foi exata (`git diff` só mostrava a
+correção da dica); a correção foi commitada (`bcfd3528`) e as 12 rodaram de novo do zero.
+
+## T2.5 — bateria do §9 (`cd mobile/flutter_app`), 23:13 SP em diante
+
+| Passo | Resultado |
+|---|---|
+| `flutter pub get` | `Got dependencies!` (sem mudança em `pubspec.lock`) |
+| `dart format --output=none --set-exit-if-changed lib test` | **exit 1, ANTERIOR AO BLOCO:** `Changed test\features\bsan313_minhas_os_escopo_test.dart` (243 arquivos, 1 mudaria). O arquivo não está no diff do bloco (`git diff --name-only e09e9667..HEAD`), é igual na `origin/main` `d5ec1696` e o blob dele já falha no formatador do Dart 3.11.4 (veio do #460, `d6399294`). Os 7 arquivos do bloco: `dart format --output=none --set-exit-if-changed <os 7>` → `Formatted 7 files (0 changed)`, exit 0. Pendência proposta: `P-FLUTTER-FORMAT-BSAN313` (escopo do bloco proíbe "qualquer outra feature") |
+| `flutter analyze` | `No issues found! (ran in 3.8s)` |
+| `flutter test test/features/busers_seg_troca_senha_test.dart --reporter compact` | `00:07 +32: All tests passed!` |
+| `bo6r01_login_sem_org_erros_test.dart` | `00:02 +4: All tests passed!` |
+| `b098_real_auth_bootstrap_test.dart` | `00:04 +37: All tests passed!` (37/37, a contagem da crítica no objeto) |
+| `b089_auth_http_checklist_test.dart` | `00:02 +18: All tests passed!` |
+| `b090_auth_production_token_refresh_test.dart` | `00:02 +18: All tests passed!` (18/18, idem) |
+| `test/core/auth/auth_repository_test.dart` | `00:02 +11: All tests passed!` |
+| `flutter test --reporter compact` (suíte inteira, 23:16 SP) | **`00:46 +1098 -1: Some tests failed.`** — o único vermelho é DO BLOCO: `test/core/sync/bo6r11_guard_fila_await_ast_test.dart`, teste 21 (`P-FILA-AWAIT`), `VIOLACOES(1): lib/features/auth/change_password_screen.dart: FRONTEIRA widget declarado fora dos caminhos de UI e não declarado em _uiPorHerancaDeclarada` ("a fronteira de UI mudou: ... precisa de decisão explícita") |
+
+### O vermelho da suíte: precisa de EMENDA de escopo (não commitado)
+
+- **Causa, medida:** o guard `P-FILA-AWAIT` lista os widgets fora dos caminhos `ui/` e exige que cada um esteja
+  declarado em `_uiPorHerancaDeclarada` (`bo6r11_guard_fila_await_ast_test.dart:76-81`; hoje: diagnóstico, login,
+  abertura e seletor de organização). A tela nova mora em `lib/features/auth/`, ao lado do login, porque o PERMITIDO
+  fixa esse caminho.
+- **Medição (aplicada só no worktree, revertida, sem commit):** acrescentar a linha
+  `'lib/features/auth/change_password_screen.dart',` em `_uiPorHerancaDeclarada` → o arquivo do guard fica
+  `00:03 +12: All tests passed!`; e a saída do guard não aponta nenhuma outra violação (a tela não descarta nenhuma
+  gravação na fila). Revertido: `git diff --quiet -- test` limpo.
+- **Por que não commitei:** `test/core/sync/bo6r11_guard_fila_await_ast_test.dart` NÃO está no PERMITIDO de T.3, e o
+  próprio guard pede "decisão explícita" para mudar a fronteira. Pela `D-EMENDA-ANTES-DO-CODIGO` e pelo §C4, é emenda do
+  plano antes do código, não decisão do dev.
+- **Pedido ao orquestrador:** emenda `PERMITIDO += test/core/sync/bo6r11_guard_fila_await_ast_test.dart, só a linha da
+  tela nova em _uiPorHerancaDeclarada`. Com ela, o dev aplica a linha, roda a suíte inteira, commita e faz push.
+- **Sem push** por enquanto: a bateria não fechou (regra da PAUSA, "SEM push se a bateria não fechou"; e "dev com CI
+  vermelho não escreve pronto").
+
+### Limpeza (§C5)
+
+Removidos: `mobile/flutter_app/build/` (73 MB, criado pelos meus testes às 22:04) e os temporários que criei em `/tmp`.
+Mantidos: `.dart_tool/` e os gerados do `flutter pub get` (refazer custa e a conferência vai rodar de novo) e o
+scratchpad das mutações (`<scratchpad>/t2/`: `mut.py`, `run-mut.sh` e as 12 especificações), para a conferência
+reexecutar. Nada rastreado foi apagado.
+
+### Pendências propostas (para o orquestrador registrar; não são deste ramo)
+
+- `P-APP-AUTH-BLOCOS-COMPARTILHADOS`: extrair marca, rótulo e faixa do login para a biblioteca (hoje repetidos na tela
+  de troca, porque são privados no login e o escopo não deixava mexer nele).
+- `P-APP-REFRESH-SEM-USER`: o refresh do backend não manda `user`, e o `_sessionFromJson` do app exige (anterior ao bloco).
+- `P-FLUTTER-FORMAT-BSAN313`: `test/features/bsan313_minhas_os_escopo_test.dart` fora do formato do Dart 3.11.4 na
+  `main` (anterior ao bloco; o §9 do `dart format ... lib test` falha por ele).
