@@ -364,3 +364,20 @@ As 4/4 restauradas. As linhas 3 e 4 provam que cada metade do A7b mata a sua var
   restaurei com `git checkout -- …sync_screen.dart`, e o `git status --porcelain` ficou vazio.
 - O que muda o PERMITIDO continua sendo uma decisão de plano. Esta justificativa fica aqui, e a confirmação fica para a
   conferência do item 10(3)5 (outra identidade).
+
+### PR534-03 — o status da OS no pull: passado ao `B-O6R-11d`, sem conserto aqui
+
+- **Não consertado neste bloco, por ordem do orquestrador.** O defeito é a tradução de status do app na volta:
+  `workOrderStatusFromApiValue` (`work_order_remote_api.dart`) casa pelo nome do enum do app, e o `on_route` e o
+  `on_site` do servidor viram `scheduled`. A causa é anterior ao bloco (`P-MOBILE-STATUS-NOMES`, 04/11), e este PR
+  não mexe nessa função.
+- **Passado ao `B-O6R-11d`.** O plano v2 dele (`plano-B-O6R-11d-v2.md`) já trata disso: o D5 da tabela de partida
+  (`workOrderStatusFromApiValue`) e a P1 (`'on_route'` → `enRoute`, `'on_site'` → `arrived`), com o T5 e as
+  mutações M5/M5b.
+- **O que fica dependendo do 11d.** Três afirmações deste bloco só ficam verdadeiras no app depois do conserto do 11d:
+  - a E-05;
+  - o `API_CONTRACTS.md` ("a OS fica 'A caminho' no app até um pull trazer o `on_site` que a base registrou");
+  - a `P-CHECKIN-SEM-PLACA-OFFLINE` ("o app só vê o `on_site` depois de um pull").
+
+  Com o app de hoje, o pull traz a OS como "Agendada". As três ficam como estão, por ordem do orquestrador ("só
+  registre").
