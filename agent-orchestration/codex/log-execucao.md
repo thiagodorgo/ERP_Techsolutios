@@ -5232,3 +5232,11 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Correções: `PLANO_SAN3.md` item 30 (merge `e7e8d678`, dentro da tabela); diário do 03b, K2 (`21468f73` → `7a479474`); `CLAUDE.md` e `AGENTS.md` §4 item 7 (o seletor já existe; correção factual, §A7).
 - Pendências: `PR-alvo` e `bloqueia` nas 3 do #520; X4 apensada; nova `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA`; `P-APARENCIA-POR-USUARIO` re-escopada; backfill do #520. Índice regenerado: 787 cabeçalhos, 776 IDs, 191 FECHADAS, 592 ABERTAS, 4 SEM-STATUS.
 - Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, lockfiles, chave, preço ou nome de pessoa. Não fazer merge antes da revisão.
+
+## 2026-11-11 — B-SAN3-23 (`dev-san3-23-cl`)
+
+- Executor: `dev-san3-23-cl`, Claude Opus 5.5 (subagente da sessão; nível menor declarado), cobrindo o Codex (Codex 1 sem cota semanal até 16/11, Codex 2 ocupado; exceção declarada). Plano v2 de `replano-B-SAN3-23-api` (Claude Opus 5.5 pela API, topo substituto declarado); crítica r2 `crit-23-r2-cl` (APROVADO COM AJUSTES, 8 ajustes como requisito); decisão do dono `D-PORTAO-5-RECOMENDACOES-1111`, Q1 = A (a F2b entra no bloco).
+- Base `origin/main@07898adf`, worktree `C:/Users/thiag/w-san323`, ramo `fix/os-cancelada-sem-item-financeiro`, `npm ci` próprio, Postgres 16 descartável `san323-pg`.
+- Fatias F0 (19 casos vermelhos pela asserção no código de hoje, BAR-1 0 timeout; MB morta), F1 (trava compartilhada da OS na escrita de item; 503 transitório), F2 (o cancelamento como unidade sob a trava exclusiva), F3 (o faturamento trava a OS antes dos itens), F2b (CAS de situação nos 3 escritores; no despacho, sobre a situação validada, C23R2-01), F4 (20 mutações literais, todas vermelhas e restauradas; emenda E-M5 pelo C23R2-02; M15b nova pelo C23R2-01; registro) e F5 (bateria; o ratchet T13 do B-SAN3-05 pediu a unidade na transação do invólucro, sem `$transaction` interno).
+- Registro: `P-Ω3F6-CANCEL-RACE` e `P-SAN3-02-OS-NAO-TRAVADA` fechadas pelo bloco; `P-COMISSAO-GATE-SEM-TRAVA` aberta (dono: o motor de comissão); `PLANO_SAN3.md` item 23. `pendencias-indice.md` não regenerado (fora do PERMITIDO do plano): fica para o próximo registro.
+- Sem `prisma/**`, `.github/**`, `Kpis/**`, lockfiles ou `.env`. Diário completo: `docs/revisoes/SAN3/B-SAN3-23-dev.md`.
