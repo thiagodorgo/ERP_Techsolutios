@@ -37,6 +37,7 @@ import type {
   FieldDispatchActorContext,
   FieldDispatchEvent,
   FieldDispatchStatus,
+  FieldDispatchTransitionResult,
   ListFieldDispatchesInput,
   ListFieldDispatchesResult,
 } from "./field-dispatch.types.js";
@@ -544,6 +545,21 @@ export class FieldDispatchService {
     return dispatch;
   }
 
+  // B-O6R-09 — o desfecho da transição condicional: o despacho mudou entre a leitura e a escrita → 409, sem nada gravado;
+  // sumiu → 404.
+  private transitionOutcome(result: FieldDispatchTransitionResult): FieldDispatch {
+    if (result.kind === "ok") return result.dispatch;
+    if (result.kind === "conflict") {
+      throw new FieldDispatchError(
+        409,
+        "FIELD_DISPATCH_STATUS_CONFLICT",
+        "dispatch_changed_concurrently",
+        "The dispatch changed while this request was being processed; reload and try again.",
+      );
+    }
+    throw new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
+  }
+
   async changeStatus(actor: FieldDispatchActorContext, dispatchId: string, body: RawRecord): Promise<FieldDispatch> {
     const current = await this.get(actor, dispatchId);
     // B-O6R-07c-b1 (CA8, D-07c-DESPACHO-ALVO) — escopo por objeto ANTES da máquina de estados: o técnico de
@@ -554,6 +570,21 @@ export class FieldDispatchService {
     const message = optionalString(body.message) ?? defaultStatusMessage(nextStatus);
     const reason = optionalString(body.reason);
     const observation = optionalString(body.observation);
+
+    // B-O6R-09 (R-A3 do plano v2; R2-03 da crítica r2) — a transição para o status ATUAL não escreve: nem linha, nem
+    // carimbo, nem evento, nem evento de domínio. Com observação ou motivo, ela é RECUSADA (422), para nunca responder
+    // sucesso descartando o texto (o painel "Alterar status" abre no status atual com a observação preenchida). O escopo
+    // (403) já foi conferido acima. `validators.ts` não muda: a reatribuição a partir de `reassigned` depende de
+    // `from === to` lá.
+    if (nextStatus === current.status && (observation || reason)) {
+      throw new FieldDispatchError(
+        422,
+        "FIELD_DISPATCH_STATUS_UNCHANGED",
+        "status_unchanged",
+        "The dispatch is already in this status; nothing was recorded.",
+      );
+    }
+    if (nextStatus === current.status) return current;
 
     assertStatusTransition(current.status, nextStatus);
     if (nextStatus === "cancelled" && !reason) {
@@ -572,52 +603,47 @@ export class FieldDispatchService {
       });
     }
 
-    const updated = await this.repository.changeStatus({
-      tenantId: actor.tenantId,
-      dispatchId: current.id,
-      status: nextStatus,
-      reason,
-      observation,
-      actorUserId: actor.userId,
-    });
+    // B-O6R-09 (P1/P2/P4 do plano v2) — o status, o carimbo e o evento numa transação só, CONDICIONADA ao status e ao
+    // técnico em que esta transição foi validada (inclusive para o técnico: ele não aceita o despacho que acabou de ir
+    // para outro). Ativar o rascunho atribui a OS dentro dela (`beforeCommit`): se a OS recusa, o rascunho fica como
+    // estava, sem compensação (o antigo `restoreState` saiu).
+    const activatesDraft = current.status === "draft" && nextStatus === "assigned";
+    const expectedState = { status: current.status, operatorUserId: current.operatorUserId };
+    const result = await this.repository.transitionWithEvent(
+      {
+        tenantId: actor.tenantId,
+        dispatchId: current.id,
+        expected: expectedState,
+        patch: { kind: "status", status: nextStatus, reason, observation, actorUserId: actor.userId },
+        event: {
+          eventType: statusEventType(nextStatus),
+          fromStatus: current.status,
+          toStatus: nextStatus,
+          actorUserId: actor.userId,
+          message,
+          metadata: {
+            reason,
+            observation,
+          },
+        },
+      },
+      {
+        beforeCommit: activatesDraft
+          ? (activated) =>
+              this.assignWorkOrderForDispatch(actor, {
+                workOrderId: activated.workOrderId,
+                operatorUserId: activated.operatorUserId,
+                dispatchId: activated.id,
+                source: "field_dispatch",
+              })
+          : undefined,
+      },
+    );
+    const updated = this.transitionOutcome(result);
 
-    if (!updated) {
-      throw new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
-    }
-
-    // B-O6R-07c-b1 — ordem e compensação (crítica, ajuste 2): o despacho muda primeiro; se a atribuição da OS
-    // falhar, o despacho volta ao estado de antes (`restoreState`) e a recusa atravessa. Os dois repositórios não
-    // dividem transação; a compensação é o que torna o par atômico do ponto de vista de quem chama.
-    if (current.status === "draft" && nextStatus === "assigned") {
-      try {
-        await this.assignWorkOrderForDispatch(actor, {
-          workOrderId: updated.workOrderId,
-          operatorUserId: updated.operatorUserId,
-          dispatchId: updated.id,
-          source: "field_dispatch",
-        });
-      } catch (error) {
-        await this.repository.restoreState(actor.tenantId, current);
-        throw error;
-      }
-    } else if (nextStatus === "cancelled" || nextStatus === "failed") {
+    if (nextStatus === "cancelled" || nextStatus === "failed") {
       await this.moveAssignmentToRemainingDispatch(actor, updated, current.status);
     }
-
-    await this.repository.createEvent({
-      tenantId: actor.tenantId,
-      dispatchId: updated.id,
-      workOrderId: updated.workOrderId,
-      eventType: statusEventType(nextStatus),
-      fromStatus: current.status,
-      toStatus: nextStatus,
-      actorUserId: actor.userId,
-      message,
-      metadata: {
-        reason,
-        observation,
-      },
-    });
 
     await publishDomainEvent(
       nextStatus === "cancelled" ? "field_dispatch.cancelled" : "field_dispatch.status_changed",
@@ -657,50 +683,49 @@ export class FieldDispatchService {
       operatorId: operatorUserId,
     });
 
-    const updated = await this.repository.reassign({
-      tenantId: actor.tenantId,
-      dispatchId: current.id,
-      operatorUserId,
-      reason: optionalString(body.reason),
-      observation: optionalString(body.observation),
-      actorUserId: actor.userId,
-    });
-
-    if (!updated) {
-      throw new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
-    }
-
-    // Compensação (crítica, ajuste 2): a OS não aceitou o técnico novo → o despacho volta ao alvo e ao status de
-    // antes, e a recusa atravessa. O técnico antigo continua com a linha em `work_order_assignments` (é ex-técnico
-    // da OS a partir daqui: o trabalho offline dele vira conflito, `D2-07c`).
-    try {
-      await this.assignWorkOrderForDispatch(actor, {
-        workOrderId: updated.workOrderId,
-        operatorUserId: updated.operatorUserId,
-        dispatchId: updated.id,
-        source: "field_dispatch_reassign",
-        reason: optionalString(body.reason),
-      });
-    } catch (error) {
-      await this.repository.restoreState(actor.tenantId, current);
-      throw error;
-    }
-
-    await this.repository.createEvent({
-      tenantId: actor.tenantId,
-      dispatchId: updated.id,
-      workOrderId: updated.workOrderId,
-      eventType: "field_dispatch_reassigned",
-      fromStatus: current.status,
-      toStatus: updated.status,
-      actorUserId: actor.userId,
-      message: optionalString(body.message) ?? "Despacho operacional reatribuido.",
-      metadata: {
-        previousOperatorUserId: current.operatorUserId,
-        operatorUserId: updated.operatorUserId,
-        reason: optionalString(body.reason),
+    // B-O6R-09 (P1/P2/P4 do plano v2) — a reatribuição e o evento numa transação só, condicionada ao status e ao técnico
+    // validados; a OS é atribuída ao técnico novo dentro dela (`beforeCommit`). Se a OS recusa, o despacho fica
+    // EXATAMENTE como estava, inclusive `operator_assigned_at` (o rollback desfaz o efeito do gatilho), e a recusa
+    // atravessa — o antigo `restoreState` saiu. O técnico antigo continua com a linha em `work_order_assignments` (é
+    // ex-técnico da OS a partir daqui: o trabalho offline dele vira conflito, `D2-07c`).
+    const expectedBeforeReassign = { status: current.status, operatorUserId: current.operatorUserId };
+    const result = await this.repository.transitionWithEvent(
+      {
+        tenantId: actor.tenantId,
+        dispatchId: current.id,
+        expected: expectedBeforeReassign,
+        patch: {
+          kind: "reassign",
+          operatorUserId,
+          reason: optionalString(body.reason),
+          observation: optionalString(body.observation),
+          actorUserId: actor.userId,
+        },
+        event: {
+          eventType: "field_dispatch_reassigned",
+          fromStatus: current.status,
+          toStatus: "reassigned",
+          actorUserId: actor.userId,
+          message: optionalString(body.message) ?? "Despacho operacional reatribuido.",
+          metadata: {
+            previousOperatorUserId: current.operatorUserId,
+            operatorUserId,
+            reason: optionalString(body.reason),
+          },
+        },
       },
-    });
+      {
+        beforeCommit: (reassigned) =>
+          this.assignWorkOrderForDispatch(actor, {
+            workOrderId: reassigned.workOrderId,
+            operatorUserId: reassigned.operatorUserId,
+            dispatchId: reassigned.id,
+            source: "field_dispatch_reassign",
+            reason: optionalString(body.reason),
+          }),
+      },
+    );
+    const updated = this.transitionOutcome(result);
 
     // D-CHK-DISPATCH-CREATE (achado MÉDIA do crítico, item 3a) — AUTO-RECUPERAÇÃO: o reassign também provisiona
     // a run (idempotente). Se a provisão do create deu certo, o findRunByClientKey a devolve sem duplicar; se

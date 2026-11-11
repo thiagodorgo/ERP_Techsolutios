@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 
 import type {
-  ChangeFieldDispatchStatusInput,
   CreateFieldDispatchWithEventInput,
   FieldDispatch,
   FieldDispatchEvent,
@@ -11,9 +10,11 @@ import type {
   ListFieldDispatchesResult,
   OperatorAtFixTime,
   OperatorAtFixTimeCandidate,
-  ReassignFieldDispatchInput,
   FieldDispatchEventDraft,
+  FieldDispatchTransitionPatch,
+  FieldDispatchTransitionResult,
   FieldDispatchWriteHooks,
+  TransitionFieldDispatchInput,
 } from "./field-dispatch.types.js";
 import { FieldDispatchError } from "./field-dispatch.types.js";
 
@@ -75,9 +76,12 @@ export interface FieldDispatchRepository {
   ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }>;
   list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult>;
   findById(tenantId: string, dispatchId: string): Promise<FieldDispatch | undefined>;
-  changeStatus(input: ChangeFieldDispatchStatusInput): Promise<FieldDispatch | undefined>;
-  reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined>;
-  restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void>;
+  /**
+   * B-O6R-09 (P1/P2/P4 do plano v2) — a mudança de status ou a reatribuição e o evento que a narra numa transação só,
+   * condicionada ao `status` E ao `operator_user_id` em que foi validada. Zero linhas → `conflict` (o despacho mudou) ou
+   * `not_found`, sem evento. O gancho `beforeCommit` (a atribuição da OS) roda dentro dela, depois das escritas.
+   */
+  transitionWithEvent(input: TransitionFieldDispatchInput, hooks?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult>;
   /** Só a auditoria `field_dispatch_checklist_run_failed`; os 4 tipos obrigatórios são recusados. */
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent>;
   listTimeline(tenantId: string, dispatchId: string): Promise<readonly FieldDispatchEvent[]>;
@@ -99,6 +103,7 @@ export type CreateFieldDispatchEventInput = {
 export class InMemoryFieldDispatchRepository implements FieldDispatchRepository {
   private readonly dispatches = new Map<string, FieldDispatch>();
   private readonly events = new Map<string, FieldDispatchEvent>();
+  private readonly dispatchLocks = new Map<string, Promise<void>>();
 
   // B-O6R-09 — o mesmo contrato do Prisma: o gancho roda ANTES de o despacho e o evento entrarem no mapa, e a entrada
   // é síncrona (sem `await` entre as duas). Se o gancho lança, nada foi posto.
@@ -145,51 +150,26 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
     return dispatch?.tenantId === tenantId ? dispatch : undefined;
   }
 
-  async changeStatus(input: ChangeFieldDispatchStatusInput): Promise<FieldDispatch | undefined> {
-    const current = await this.findById(input.tenantId, input.dispatchId);
-    if (!current) return undefined;
-    const now = new Date();
-    const updated: FieldDispatch = {
-      ...current,
-      status: input.status,
-      reason: input.reason ?? current.reason,
-      observation: input.observation ?? current.observation,
-      updatedBy: input.actorUserId ?? current.updatedBy,
-      updatedAt: now,
-      acceptedAt: input.status === "accepted" ? now : current.acceptedAt,
-      onRouteAt: input.status === "on_route" ? now : current.onRouteAt,
-      arrivedAt: input.status === "arrived" ? now : current.arrivedAt,
-      inServiceAt: input.status === "in_service" ? now : current.inServiceAt,
-      completedAt: input.status === "completed" ? now : current.completedAt,
-      cancelledAt: input.status === "cancelled" ? now : current.cancelledAt,
-      failedAt: input.status === "failed" ? now : current.failedAt,
-    };
-    this.dispatches.set(updated.id, updated);
+  // B-O6R-09 (P2 do plano v2) — o VENCEDOR CONDICIONAL na memória, com o mesmo contrato do Prisma: um mutex por despacho
+  // serializa as transições; o predicado (status E técnico em que a transição foi validada) é conferido com o mutex
+  // seguro; o gancho roda antes de aplicar; e a aplicação é síncrona. Zero linhas → `not_found` ou `conflict`.
+  async transitionWithEvent(input: TransitionFieldDispatchInput, hooks?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult> {
+    return this.withDispatchLock(input.dispatchId, async () => {
+      const current = await this.findById(input.tenantId, input.dispatchId);
+      if (!current) return { kind: "not_found" } as const;
+      if (current.status !== input.expected.status || current.operatorUserId !== input.expected.operatorUserId) {
+        return { kind: "conflict" } as const;
+      }
+      const now = new Date();
+      const dispatch = applyTransitionPatch(current, input.patch, now);
+      const event = buildEvent(dispatch, input.event, now);
+      const result = { kind: "ok", dispatch, event } as const;
+      if (hooks?.beforeCommit) await hooks.beforeCommit(result.dispatch);
+      this.dispatches.set(dispatch.id, dispatch);
+      this.events.set(event.id, event);
 
-    return updated;
-  }
-
-  async reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined> {
-    const current = await this.findById(input.tenantId, input.dispatchId);
-    if (!current) return undefined;
-    const now = new Date();
-    const updated: FieldDispatch = {
-      ...current,
-      operatorUserId: input.operatorUserId,
-      status: "reassigned",
-      reason: input.reason ?? current.reason,
-      observation: input.observation ?? current.observation,
-      updatedBy: input.actorUserId ?? current.updatedBy,
-      updatedAt: now,
-    };
-    this.dispatches.set(updated.id, updated);
-
-    return updated;
-  }
-
-  async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
-    if (snapshot.tenantId !== tenantId) return;
-    this.dispatches.set(snapshot.id, snapshot);
+      return result;
+    });
   }
 
   async createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
@@ -221,11 +201,60 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
   reset(): void {
     this.dispatches.clear();
     this.events.clear();
+    this.dispatchLocks.clear();
   }
 
   private sortedDispatches(): FieldDispatch[] {
     return [...this.dispatches.values()].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
   }
+
+  // Uma fila por despacho (promessa encadeada pelo id): quem chega espera quem está na frente terminar.
+  private async withDispatchLock<T>(dispatchId: string, work: () => Promise<T>): Promise<T> {
+    const previous = this.dispatchLocks.get(dispatchId) ?? Promise.resolve();
+    const gate = { release: () => {} };
+    const mine = new Promise<void>((resolve) => {
+      gate.release = resolve;
+    });
+    const tail = previous.then(() => mine);
+    this.dispatchLocks.set(dispatchId, tail);
+    await previous;
+    try {
+      return await work();
+    } finally {
+      gate.release();
+      if (this.dispatchLocks.get(dispatchId) === tail) this.dispatchLocks.delete(dispatchId);
+    }
+  }
+}
+
+function applyTransitionPatch(current: FieldDispatch, patch: FieldDispatchTransitionPatch, now: Date): FieldDispatch {
+  if (patch.kind === "reassign") {
+    return {
+      ...current,
+      operatorUserId: patch.operatorUserId,
+      status: "reassigned",
+      reason: patch.reason ?? current.reason,
+      observation: patch.observation ?? current.observation,
+      updatedBy: patch.actorUserId ?? current.updatedBy,
+      updatedAt: now,
+    };
+  }
+
+  return {
+    ...current,
+    status: patch.status,
+    reason: patch.reason ?? current.reason,
+    observation: patch.observation ?? current.observation,
+    updatedBy: patch.actorUserId ?? current.updatedBy,
+    updatedAt: now,
+    acceptedAt: patch.status === "accepted" ? now : current.acceptedAt,
+    onRouteAt: patch.status === "on_route" ? now : current.onRouteAt,
+    arrivedAt: patch.status === "arrived" ? now : current.arrivedAt,
+    inServiceAt: patch.status === "in_service" ? now : current.inServiceAt,
+    completedAt: patch.status === "completed" ? now : current.completedAt,
+    cancelledAt: patch.status === "cancelled" ? now : current.cancelledAt,
+    failedAt: patch.status === "failed" ? now : current.failedAt,
+  };
 }
 
 function buildEvent(dispatch: FieldDispatch, draft: FieldDispatchEventDraft, now: Date): FieldDispatchEvent {

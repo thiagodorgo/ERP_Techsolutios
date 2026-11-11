@@ -61,3 +61,24 @@ T14(c) usa a forma (ii) pelo mesmo motivo.
   fatia 3); T15 verde (`max_connections` do servidor = 100; pool do teste = 3; semáforo = 1; 5 criações em 1 776 ms, 0
   recusa); T17 memória e Prisma verdes; `o6r07c-b-scope-db` 13/13, com `[atômica · create/controle 1/controle 2]` pelo
   rollback da mãe, sem edição do teste.
+
+## Fatia 2 — transição condicional por status e técnico, atômica
+
+- `transitionWithEvent` na interface, na memória (mutex por despacho: o predicado é conferido com o mutex seguro, o
+  gancho roda antes de aplicar, a aplicação é síncrona) e no Prisma (cru: `updateManyAndReturn` com `where` de status E
+  técnico, zero linhas → `findFirst` → `conflict`/`not_found`, uma linha → evento → gancho; Rls: a mesma transação-mãe da
+  criação). Saíram `changeStatus`, `reassign` e `restoreState` da interface, da memória e do Rls; o Prisma cru mantém
+  `changeStatus` e `reassign` para as fixtures do Traccar (R-A9). `restoreState` saiu de tudo.
+- Serviço: mesmo status sem texto → no-op (200, nada gravado); com observação ou motivo → 422
+  `FIELD_DISPATCH_STATUS_UNCHANGED` (R2-03); conflito → 409 `FIELD_DISPATCH_STATUS_CONFLICT`. Ativar o rascunho e
+  reatribuir atribuem a OS no `beforeCommit`. `moveAssignmentToRemainingDispatch` não mudou (depois do commit).
+- `npm run check` limpo. Testes que fecham a fatia, no `o6r09-pg`: atomic-db 9/10 (falta só o T14(c), que precisa da
+  chave, fatia 3); concurrency-db 6/6 (T4, T5, T13 com a ordem conferida, T16, T16b); `o6r07c-b-scope-db` 13/13 sem
+  edição; memória + guarda + `field-dispatch*.test.ts` + `checklist-snapshot-dispatch` 61/63 (os 2 vermelhos são T10 e
+  T7m, da chave, fatia 3); Traccar (as 4 suítes, juntas) 47/49.
+- **Os 2 vermelhos do Traccar são anteriores ao bloco e de tempo (medido):** `traccar-position-ingestion-db`, os dois
+  casos "tempo esgotado → 503". O controle do próprio caso diz "o trabalho chegou à porta do commit depois do 503" =
+  `false`, ou seja, o trabalho de ingestão estourou o orçamento de 3 s antes de chegar ao commit, com a máquina
+  carregada. Rodei a suíte sozinha no ramo (21/22) e com o `src/modules/field-dispatch` da `origin/main` posto de volta
+  no worktree (21/22, o outro dos dois casos "tempo esgotado"). O resto das 4 suítes passa sem edição. Fica para a
+  bateria final repetir; se seguir, é pendência de ambiente, não do bloco.

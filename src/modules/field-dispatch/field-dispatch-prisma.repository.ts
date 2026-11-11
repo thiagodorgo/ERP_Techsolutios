@@ -17,7 +17,10 @@ import type {
   OperatorAtFixTime,
   OperatorAtFixTimeCandidate,
   ReassignFieldDispatchInput,
+  FieldDispatchTransitionPatch,
+  FieldDispatchTransitionResult,
   FieldDispatchWriteHooks,
+  TransitionFieldDispatchInput,
 } from "./field-dispatch.types.js";
 import {
   assertNotTransitionEventType,
@@ -233,20 +236,37 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
     return updated[0] ? mapFieldDispatchRecord(updated[0]) : undefined;
   }
 
-  async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
-    await this.client.fieldDispatch.updateMany({
+  // B-O6R-09 (P2 do plano v2; achado A1 da crítica r1) — preso a um `tx`. O UPDATE é CONDICIONAL ao status E ao técnico
+  // em que a transição foi validada: sob READ COMMITTED, quem chega depois espera a linha e reavalia o `where` sobre a
+  // versão que o vencedor gravou — zero linhas, sem evento. Uma linha → o evento → o gancho (a atribuição da OS).
+  async transitionWithEvent(input: TransitionFieldDispatchInput, hooks?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult> {
+    const updated = await this.client.fieldDispatch.updateManyAndReturn({
       where: {
-        tenant_id: tenantId,
-        id: snapshot.id,
+        tenant_id: input.tenantId,
+        id: input.dispatchId,
+        status: input.expected.status,
+        operator_user_id: input.expected.operatorUserId,
       },
-      data: {
-        operator_user_id: snapshot.operatorUserId,
-        status: snapshot.status,
-        reason: snapshot.reason ?? null,
-        observation: snapshot.observation ?? null,
-        updated_by: snapshot.updatedBy ?? null,
-      },
+      data: transitionData(input.patch, new Date()),
     });
+    if (!updated[0]) {
+      const exists = await this.client.fieldDispatch.findFirst({
+        where: { tenant_id: input.tenantId, id: input.dispatchId },
+        select: { id: true },
+      });
+      return exists ? { kind: "conflict" } : { kind: "not_found" };
+    }
+    const dispatch = mapFieldDispatchRecord(updated[0]);
+    const event = await this.insertEvent({
+      ...input.event,
+      tenantId: dispatch.tenantId,
+      dispatchId: dispatch.id,
+      workOrderId: dispatch.workOrderId,
+    });
+    const result = { kind: "ok", dispatch, event } as const;
+    if (hooks?.beforeCommit) await hooks.beforeCommit(result.dispatch);
+
+    return result;
   }
 
   // B-O6R-09 — preso a um `tx`: o despacho, o evento e o gancho, nesta ordem. O gancho (a atribuição da OS) vem por
@@ -343,6 +363,26 @@ export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository
     }
   }
 
+  // A transação-mãe da mudança de status e da reatribuição, na mesma forma da criação.
+  async transitionWithEvent(input: TransitionFieldDispatchInput, requested?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult> {
+    const marker: AssignmentMarker = { assignmentDone: false };
+    const hooks = trackAssignment(requested, marker);
+    try {
+      return await this.holdSlot(() =>
+        this.prismaClient.$transaction(
+          async (tx) => {
+            await setTenantRlsContext(tx, input.tenantId);
+            return new PrismaFieldDispatchRepository(tx).transitionWithEvent(input, hooks);
+          },
+          { timeout: this.heldTxTimeoutMs },
+        ),
+      );
+    } catch (error) {
+      reportCommitLost(marker, "transition", input.tenantId);
+      throw error;
+    }
+  }
+
   // O semáforo é pedido ANTES da conexão da mãe e devolvido quando ela termina (commit, rollback ou erro).
   private async holdSlot<T>(work: () => Promise<T>): Promise<T> {
     await this.heldTxSlots.acquire();
@@ -359,20 +399,6 @@ export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository
 
   findById(tenantId: string, dispatchId: string): Promise<FieldDispatch | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFieldDispatchRepository(tx).findById(tenantId, dispatchId));
-  }
-
-  changeStatus(input: ChangeFieldDispatchStatusInput): Promise<FieldDispatch | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).changeStatus(input));
-  }
-
-  reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).reassign(input));
-  }
-
-  restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaFieldDispatchRepository(tx).restoreState(tenantId, snapshot),
-    );
   }
 
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
@@ -477,6 +503,32 @@ function mapFieldDispatchEventRecord(record: {
     metadata: isRecord(record.metadata) ? record.metadata : {},
     createdAt: record.created_at,
   };
+}
+
+function transitionData(patch: FieldDispatchTransitionPatch, now: Date) {
+  if (patch.kind === "reassign") {
+    return compactRecord({
+      operator_user_id: patch.operatorUserId,
+      status: "reassigned",
+      reason: patch.reason,
+      observation: patch.observation,
+      updated_by: patch.actorUserId,
+    });
+  }
+
+  return compactRecord({
+    status: patch.status,
+    reason: patch.reason,
+    observation: patch.observation,
+    updated_by: patch.actorUserId,
+    accepted_at: patch.status === "accepted" ? now : undefined,
+    on_route_at: patch.status === "on_route" ? now : undefined,
+    arrived_at: patch.status === "arrived" ? now : undefined,
+    in_service_at: patch.status === "in_service" ? now : undefined,
+    completed_at: patch.status === "completed" ? now : undefined,
+    cancelled_at: patch.status === "cancelled" ? now : undefined,
+    failed_at: patch.status === "failed" ? now : undefined,
+  });
 }
 
 function compactRecord<T extends Record<string, unknown>>(input: T): Partial<T> {
