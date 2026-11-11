@@ -1767,6 +1767,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/webhooks/billing/:provider": {
+  "classe": "N",
+  "n": 1
+ },
  "ROTA POST /api/v1/work-orders": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1908,6 +1912,10 @@
   "n": 1
  },
  "ROTEADOR /api/v1/users": {
+  "classe": "ROTEADOR",
+  "n": 1
+ },
+ "ROTEADOR /api/v1/webhooks/billing": {
   "classe": "ROTEADOR",
   "n": 1
  },

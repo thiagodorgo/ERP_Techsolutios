@@ -24,11 +24,12 @@ import {
 import { PrismaPlansRepository } from "../plans/plans-prisma.repository.js";
 import { PrismaSubscriptionsRepository } from "../plans/subscriptions-prisma.repository.js";
 import { PrismaTenantLookup } from "../plans/tenant-lookup.prisma.js";
+import { enqueueInTx } from "../outbox/outbox.prisma.js";
 import { computeStatement, type StatementSnapshot } from "./statement.engine.js";
 import type { StatementRuntime } from "./statement.factory.js";
 import { RepositoryStatementInputsProvider, type BindingsSource, type UsageSource } from "./statement.inputs-provider.js";
 import type { UsageDayRow, VehicleBindingWindow } from "./statement.inputs.js";
-import { emptyStatement, type StatementRepository, type StatementTx } from "./statement.repository.js";
+import { emptyStatement, type LiveInvoiceRef, type StatementRepository, type StatementTx } from "./statement.repository.js";
 import { StatementService, type StatementAuditSink } from "./statement.service.js";
 import type {
   ChargeStatus,
@@ -329,6 +330,23 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
     async recordAudit(event) {
       if (event.tenantId !== tenantId) throw new Error("audit event for another organization");
       await writeAuditInTx(tx, event);
+    },
+    // Conserto da J-530 (D/B): a intenção de nota no MESMO `tx` da baixa/reversão (o precedente E8 do pedido de cobrança).
+    // Só é chamada DEPOIS da trava do demonstrativo (lockOrNotFound/lockById): o INSERT na fila nunca vem antes dela (§2.1).
+    async enqueueOutbox(row, now) {
+      if (row.tenantId !== tenantId) throw new Error("outbox row for another organization");
+      await enqueueInTx(tx, row, now);
+    },
+    // A nota VIVA lida da tabela da nota (não do espelho `invoice_status`), com o demonstrativo já travado. No máximo uma
+    // por demonstrativo (UNIQUE parcial da M5).
+    async findLiveInvoice(statementId) {
+      if (!isUuid(statementId)) return undefined;
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT provider, seq, status FROM subscription_statement_invoices WHERE statement_id = $1::uuid AND status IN ('pending', 'authorized', 'cancel_pending') ORDER BY seq DESC LIMIT 1`,
+        statementId,
+      )) as Array<{ provider: string; seq: number; status: LiveInvoiceRef["status"] }>;
+      const row = rows[0];
+      return row ? { provider: row.provider, seq: Number(row.seq), status: row.status } : undefined;
     },
   };
 }

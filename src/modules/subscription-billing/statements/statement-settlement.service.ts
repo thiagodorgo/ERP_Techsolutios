@@ -3,9 +3,15 @@
 // PRIMEIRA baixa de uma cobrança, e trata a ATUALIZAÇÃO MONOTÔNICA da MESMA linha de pagamento quando a reconsulta
 // traz um `paidCents` maior (D6: parcial 60 → quitação 100 em saldo 100 → `paid_amount = 100`, `paid`). Nunca cria
 // duas linhas de pagamento para a mesma `(source, external_charge_id)` (UNIQUE no banco, F11).
+//
+// Conserto da J-530 (plano `B-ASS-08b-conserto-530-v2.md` §3.1): com `invoiceIntents`, a INTENÇÃO de nota nasce na MESMA
+// transação do dinheiro — `invoice_issue` na transição para `paid` (1º pagamento e monotônico) e `invoice_cancel` no estorno
+// total/chargeback de um demonstrativo com nota VIVA (`pending` ou `authorized`, lida da tabela da nota sob a trava do
+// demonstrativo), para o provedor e o `seq` DESSA nota. Se a transação não commita, não fica nem dinheiro nem intenção; se
+// commita, nenhuma falha posterior a apaga. Provedor de nota desligado → a linha nasce `provider_disabled` (visível).
 
 import { CreditService } from "../credits/credit.service.js";
-import type { StatementRepository } from "./statement.repository.js";
+import type { StatementRepository, StatementTx } from "./statement.repository.js";
 import type { StatementService } from "./statement.service.js";
 import type { ChargeStatus, PaymentSource, StatementPayment, SubscriptionCredit, SubscriptionStatement } from "./statement.types.js";
 
@@ -19,7 +25,7 @@ export type ReversalResult = {
   readonly fromApplied: number;
   readonly absorbedByCredit: number;
   readonly creditReversed: boolean;
-  /** O chamador (reconcile) enfileira `invoice_cancel` quando isto é verdadeiro (R-SET-2/R-D). */
+  /** Havia nota viva a cancelar (R-SET-2/R-D). Com `invoiceIntents`, o `invoice_cancel` JÁ nasceu na transação. */
   readonly shouldCancelInvoice: boolean;
 };
 
@@ -31,13 +37,42 @@ function balanceOf(statement: SubscriptionStatement): number {
   return Math.max(0, statement.totalCents - statement.paidCents);
 }
 
+/** Para onde vai a intenção de nota da rodada: o provedor de nota da EMISSÃO (o ligado; senão o configurado) e os provedores
+ * de nota ligados agora (o cancelamento vai sempre ao provedor da nota viva). */
+export type InvoiceIntents = {
+  readonly issueTarget: { readonly provider: string; readonly enabled: boolean };
+  readonly enabledInvoiceProviders: readonly string[];
+};
+
+type IntentTx = { readonly enqueueOutbox: NonNullable<StatementTx["enqueueOutbox"]>; readonly findLiveInvoice: NonNullable<StatementTx["findLiveInvoice"]> };
+
+/** Fecha em caso de falha: com `invoiceIntents` configurado, um `tx` sem as duas operações derruba a transação. */
+function intentTx(tx: StatementTx): IntentTx | null {
+  const { enqueueOutbox, findLiveInvoice } = tx;
+  // [INTX-08]
+  if (!enqueueOutbox || !findLiveInvoice) throw new Error("invoice_intent_tx_unsupported");
+  return { enqueueOutbox, findLiveInvoice };
+}
+
 export class StatementSettlementService {
   readonly #credits = new CreditService();
 
   constructor(
     private readonly repository: StatementRepository,
     private readonly statements: StatementService,
+    private readonly invoiceIntents?: InvoiceIntents,
   ) {}
+
+  /** (D) `invoice_issue` na transição para `paid`, no `tx` da baixa, depois da trava do demonstrativo. */
+  async #issueIntent(tx: StatementTx, change: { readonly before: SubscriptionStatement; readonly after: SubscriptionStatement }, now: Date): Promise<void> {
+    const intents = this.invoiceIntents;
+    if (!intents || change.before.status === "paid" || change.after.status !== "paid") return;
+    const intent = intentTx(tx);
+    if (!intent) return;
+    // [INTX-06a]
+    const skipReason = intents.issueTarget.enabled ? null : "provider_disabled";
+    await intent.enqueueOutbox({ tenantId: change.after.tenantId, statementId: change.after.id, kind: "invoice_issue", provider: intents.issueTarget.provider, seq: 1, payload: { seq: 1 }, skipReason }, now);
+  }
 
   /**
    * Aplica (ou atualiza) a baixa de UMA cobrança do provedor. `paidCents` é o valor BRUTO da RECONSULTA (nunca o do
@@ -64,6 +99,8 @@ export class StatementSettlementService {
         amountCents: input.paidCents,
         method: input.method,
         now: input.now,
+        // [INTX-01]
+        afterWrite: (tx, change) => this.#issueIntent(tx, change, input.now),
       });
       return { kind: "settled", statement: recorded.statement, payment: recorded.payment, credit: recorded.credit };
     }
@@ -100,6 +137,8 @@ export class StatementSettlementService {
               createdBy: null,
             })
           : null;
+      // [INTX-02]
+      await this.#issueIntent(tx, { before: statement, after: savedStatement }, input.now);
       return { statement: savedStatement, payment: savedPayment, credit };
     });
 
@@ -169,7 +208,21 @@ export class StatementSettlementService {
         status,
         paidAt: paidCents >= statement.totalCents ? statement.paidAt : null,
       });
-      const shouldCancelInvoice = totalReversal && statement.invoiceStatus === "authorized" && input.keepInvoice !== true;
+      // (B) a nota VIVA, lida sob a trava do demonstrativo; o cancelamento vai ao provedor e ao `seq` DELA.
+      const intents = this.invoiceIntents;
+      const intent = intents ? intentTx(tx) : null;
+      const live = intent && totalReversal && input.keepInvoice !== true ? await intent.findLiveInvoice(input.statementId) : undefined;
+      // [INTX-07]
+      const cancelTo = live && intents ? { provider: live.provider, seq: live.seq } : undefined;
+      // [INTX-06c]
+      const cancelSkip = live && intents?.enabledInvoiceProviders.includes(live.provider) ? null : "provider_disabled";
+      // [INTX-03]
+      if (live && (live.status === "pending" || live.status === "authorized")) await intent!.enqueueOutbox({ tenantId: input.tenantId, statementId: input.statementId, kind: "invoice_cancel", provider: cancelTo!.provider, seq: cancelTo!.seq, payload: { reason: "payment_reversed" }, skipReason: cancelSkip }, input.now);
+      // `cancel_pending` não gera intenção nova (o cancelamento já está em curso); sem nota viva, nada — e SEM throw: o
+      // espelho deixou de decidir, e um estorno (dinheiro) nunca fica preso por ele.
+      const shouldCancelInvoice = intents
+        ? live !== undefined && (live.status === "pending" || live.status === "authorized")
+        : totalReversal && statement.invoiceStatus === "authorized" && input.keepInvoice !== true;
       return {
         statement: savedStatement,
         payment: savedPayment,

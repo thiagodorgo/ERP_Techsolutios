@@ -3,6 +3,10 @@ import { createCloudCostAllocationRunJobHandler } from "../../modules/cloud-cost
 import { createAwsCurImportCostFileJobHandler } from "../../modules/cloud-costs/aws-cur.jobs.js";
 import { createCloudUsageAggregateDailyJobHandler } from "../../modules/cloud-usage/cloud-usage.jobs.js";
 import {
+  createBillingDispatchOutboxJobHandler,
+  createBillingPollPendingJobHandler,
+  createBillingPollSettledJobHandler,
+  createBillingReconcileWebhookJobHandler,
   createSubscriptionCloseStatementsJobHandler,
   createSubscriptionMeasureDailyJobHandler,
 } from "../../modules/subscription-billing/subscription-billing.jobs.js";
@@ -52,6 +56,11 @@ function createDefaultJobRegistry(): JobRegistry {
   registry.register("cloud-usage.aggregate-daily", createCloudUsageAggregateDailyJobHandler());
   registry.register("subscription.measure-daily", createSubscriptionMeasureDailyJobHandler());
   registry.register("subscription.close-statements", createSubscriptionCloseStatementsJobHandler());
+  // B-ASS-08b — o canal de cobrança. Cada handler é inerte com BILLING_PROVIDERS_ENABLED=false (não roda, não re-enfileira).
+  registry.register("billing.dispatch-outbox", createBillingDispatchOutboxJobHandler());
+  registry.register("billing.reconcile-webhook", createBillingReconcileWebhookJobHandler());
+  registry.register("billing.poll-pending", createBillingPollPendingJobHandler());
+  registry.register("billing.poll-settled", createBillingPollSettledJobHandler());
   registry.register("notification-dispatch", createNotificationDispatchJobHandler());
   registry.register("notifications.scan-due", createNotificationsScanDueJobHandler());
   registry.register("audit-log-fanout", async () => {
