@@ -53,7 +53,9 @@ if (!connectionString) {
     const solta = new Promise<void>((resolve) => {
       gate.release = resolve;
     });
-    const presa = instalado.$transaction(async () => solta, { timeout: 20_000 });
+    // A transação presa espera conexão até 15 s (`maxWait`): sob carga, abrir a conexão do pool passou dos 2 s padrão, e
+    // a recusa medida tem de ser a da 2ª transação, não a da presa.
+    const presa = instalado.$transaction(async () => solta, { timeout: 20_000, maxWait: 15_000 });
     try {
       await esperarTransacaoAberta();
       const inicio = Date.now();
