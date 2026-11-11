@@ -13004,13 +13004,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA (2026-11-09) — o "com sessão válida" do item 30 não tem teste que o guarde — MÉDIA
 
-- **status:** ABERTA · **escopo:** achado A1 do porteiro do PR #520 (`agent-orchestration/omega/juntas/porteiro-520-parecer.md`) · **dono:** a definir pelo orquestrador · **PR-alvo:** o próximo bloco que tocar `sync_providers.dart` · **bloqueia:** não (o produto está correto em `e7e8d678`; o PR #525 não trouxe o teste exigido).
+- **status:** ABERTA · **escopo:** achado A1 do porteiro do PR #520 (`agent-orchestration/omega/juntas/porteiro-520-parecer.md`) · **dono:** a definir pelo orquestrador (sugestão do porteiro do #525, R3: o `B-RDV-COMPROVANTE-b` ou o próximo bloco que tocar `sync_providers.dart`) · **PR-alvo:** o próximo bloco que tocar `sync_providers.dart` · **bloqueia:** não (o produto está correto em `e7e8d678`; o PR #525 não trouxe o teste exigido).
+- **dono anterior (até 10/11):** `B-RDV-COMPROVANTE` (o B' da trilha REENVIOS, o próximo a tocar o sync), PR-alvo o PR do `B-RDV-COMPROVANTE`. O #525 tocou `sync_providers.dart` e não trouxe o teste (porteiro do #525, R3), por isso a reatribuição.
 - **o que se sabe:** o porteiro do #520 desligou o cliente autenticado em `mobile/flutter_app/lib/core/sync/sync_providers.dart:139` (mutação M-P1: `if (config.accessToken == null) {` → `if (true || config.accessToken == null) {`, o defeito do item 30) e a suíte Flutter inteira seguiu verde, 1047/1047. A metade "com sessão válida" do teste de encerramento do item 30 (`docs/revisoes/SAN3/PLANO_SAN3.md:301`: "RDV criado offline sincroniza com sessão válida; replay → 1") fica sem guarda. Conferido por `grep` em `e7e8d678`: das 8 citações do `syncBatchApiProvider` nos testes, 7 o substituem por `overrideWithValue`, e a única que lê o provedor real (`mobile/flutter_app/test/core/sync/bo6r11_despesa_aguardando_envio_test.dart:510`) cobre só o caso sem sessão.
 - **teste de encerramento:** um teste que lê o `syncBatchApiProvider` real com sessão válida, prova o `DioExpenseSyncBatchApi` com `Authorization: Bearer <token>` e fica vermelho com a M-P1.
 
 ## P-DESPESA-ITEM-CORRIDA-SUBMIT (2026-11-10) — um item pode entrar num relatório recém-submetido (o `addItem` e o `itemCreate` do lote não travam o relatório) — HIPÓTESE, a classificar
 
 - **status:** ABERTA (hipótese, não medida) · **escopo:** `pre-existente` (a classe do C1-A2 da J-525, no item, desde o `B-O6R-03a`) · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem do registro:** §9 do plano do conserto c1 do #525.
 - **o que se sabe:** observação do topo por leitura, NÃO medida: o `addItem` (HTTP) e o `itemCreate` do lote leem a editabilidade sem trava e gravam o item sem reler; um item pode entrar num relatório recém-submetido e mudar o total.
 - **medir antes de classificar:** se reproduzir, toca dinheiro.
 - **teste de encerramento:** em Postgres descartável, com barreira, o `addItem` e o `itemCreate` correndo contra o submit: nenhum item entra num relatório já submetido (o total não muda), com vermelho-controle.
@@ -13018,18 +13020,19 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-RECIBO-409-POR-MOTIVO (2026-11-10) — o app trata todo 409 do comprovante como `payload_mismatch` — BAIXA
 
 - **status:** ABERTA · **escopo:** `mobile/flutter_app/lib/core/sync/expense_receipt_sync.dart` (ramo `on ApiConflictError`) · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem do registro:** §9 e §12.15 item 4 do plano do conserto c1 do #525.
 - **o que se sabe:** os motivos `action_owned_by_other_actor` e `receipt_unverifiable` — este também no replay de linha legada sem prefixo de provedor (§12.1 item 3 do plano do conserto) — saem com o texto de `payload_mismatch` ("Este comprovante já foi recebido com outro conteúdo."). O conflito e o blob preservado estão certos (RR-E.5).
 - **teste de encerramento:** cada motivo do 409 do comprovante chega à fila com o seu código e o seu texto (cliente Dio real e o corpo de erro do backend), com o blob preservado.
 
 ## P-S3-FORCE-PATH-STYLE-NAO-DESLIGA (2026-11-10) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE=false` não desliga o path-style — MÉDIA
 
-- **status:** ABERTA (MÉDIA até ser medida) · **escopo:** `pre-existente` desde a D-014 (`src/config/env.ts` l.257) · **dono:** a definir pelo orquestrador · **PR-alvo:** o bloco que configurar o S3 de produção · **bloqueia:** não.
+- **status:** ABERTA (MÉDIA até ser medida) · **escopo:** `pre-existente` desde a D-014 (`src/config/env.ts` l.257) · **dono:** a definir pelo orquestrador · **PR-alvo:** o bloco que configurar o S3 de produção (o deploy na AWS; hoje é o estudo `P-TRC-AWS-ESTUDO-MIGRACAO`) · **bloqueia:** não.
 - **o que se sabe:** `z.coerce.boolean().default(true)` faz `"false"`, `"0"` e `"no"` virarem `true` (medido em `ATK-K16`, ataque do plano do conserto c1 do #525). Todo provedor da D-014 fala path-style com a AWS, sem como desligar. O efeito na AWS real não foi medido. O portão do comprovante não depende dela (§13.2 item 7 do plano do conserto).
 - **teste de encerramento:** o env aceita `false`, medido contra um bucket real.
 
 ## P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP (2026-11-10) — aprovação e devolução de despesa não existem, e o app não lê o status do servidor — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** a definir pelo orquestrador · **PR-alvo:** bloco futuro de aprovação e devolução de despesa · **bloqueia:** não.
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** a definir pelo orquestrador · **PR-alvo:** bloco futuro de aprovação e devolução de despesa (nome provisório `B-RDV-APROVACAO`) · **bloqueia:** não.
 - **(i)** Aprovação, devolução e baixa de relatório de despesa não existem no backend. Quando nascerem, todo escritor de `expense_reports.status` abre com `lockReportForUpdate` (§12.4 item 5 do plano do conserto c1 do #525; hoje só o módulo escreve: criar, PATCH, item, submit e lote, medido `writers_outside=0`).
 - **(ii)** O app não lê o status do servidor: `ExpenseRemoteApi` só tem a definição. Um relatório devolvido (`returned`) não reabre o anexo, e o comprovante em `RECEIPT_REPORT_LOCKED` fica sem saída no app.
 - **teste de encerramento:** (i) todo escritor novo de `expense_reports.status` passa pela trava (Postgres descartável, com barreira); (ii) o app lê o status do servidor, e o relatório devolvido reabre o anexo do comprovante.
@@ -13037,17 +13040,18 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-PROCESSO-SONDAS-ANTES-DO-WORKTREE (2026-11-10) — o mandato de cadeira não manda guardar as sondas antes de remover o worktree — BAIXA
 
 - **status:** ABERTA · **escopo:** processo (mandatos de cadeira; §C7.7 P3) · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem do registro:** recomendação de processo do §9 do plano do conserto c1 do #525 (ver o §1 dele).
 - **recomendação:** todo mandato de cadeira manda copiar as sondas para `revisoes/<junta>/` antes de remover o worktree (P3).
 - **teste de encerramento:** o modelo de mandato de cadeira traz a instrução, e a junta seguinte tem as sondas em `revisoes/<junta>/`.
 
 ## P-SAN3-05-T11-ORDEM-INSTAVEL (2026-11-10) — o T11d/T11e de `san3-05-leituras-de-plataforma-db` compara arrays sem ordenar e falha às vezes no CI — MÉDIA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (o arquivo `tests/san3-05-leituras-de-plataforma-db.test.ts` e a alocação de nuvem que ele lê não estão no diff do conserto c1 do #525 nem no do ramo inteiro, medido por `git diff --name-only`) · **dono:** `B-ASS-08b` · **PR-alvo:** PR do `B-ASS-08b` · **bloqueia:** não, mas deixa o job `backend` vermelho por acaso.
-- **fusão de registro:** `P-CI-SAN3-05-T11D-ORDEM-FLAKY` era duplicata deste mesmo defeito e foi absorvida neste ID.
+- **fusão de registro:** `P-CI-SAN3-05-T11D-ORDEM-FLAKY` era duplicata deste mesmo defeito e foi absorvida neste ID (porteiro do #525, R2). Ela foi achada pelo dev do conserto c1 do #525 na leitura do CI; o conserto está na 08b, que fecha esta pendência no PR dela.
 - **o que se sabe (medido no CI do ramo `feat/mobile-rdv-comprovante`):** na rodada 42808942930 (head `07f822da`) o job `backend` saiu `# fail 3`: `not ok 5 - T11d · controles (já por organização): iguais nos dois papéis`, `not ok 6 - T11e …` e o pai `not ok 3516 - B-SAN3-05 · T10–T12 …`. O diff do T11d é SÓ de ordem: as duas linhas de alocação (`allocatedCost` 10 e 30, uma por organização) vêm trocadas entre o superusuário e o papel `NOSUPERUSER NOBYPASSRLS` (`assert.deepEqual(efe.s4Alocacoes, sup.s4Alocacoes)`, l.772, sem ordenar). O mesmo arquivo passou nas rodadas 42801796358 (`fb610f78`) e 42810768352 (`41625a5b`, `# fail 0`). Leitura: o papel sem bypass lê organização por organização e o superusuário numa consulta só, e a ordem das duas linhas empatadas depende dos ids aleatórios do seed.
 - **teste de encerramento:** o T11d e o T11e comparam as coleções numa ordem determinística (ordenadas por chave estável, ou a consulta com `ORDER BY` total), e o arquivo passa em N ≥ 10 execuções seguidas no Postgres do CI.
 
-## P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na baixa/cancel/reopen/disable, `charge_cancel` da cobrança viva e linha nova `seq+1` no refechamento — MÉDIA (obrigações divididas entre 08b e B-ASS-08c)
+## P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na baixa/cancel/reopen/disable, `charge_cancel` da cobrança viva e linha nova `seq+1` no refechamento — MÉDIA (gravidade corrigida em 10/11; obrigações divididas entre a 08b e o B-ASS-08c; 3 bloqueiam ligar o canal)
 
 - **status:** ABERTA · **escopo:** `src/modules/subscription-billing/statements/statement.repository.ts`, `statements/statement.prisma-runtime.ts`, `statements/statement-settlement.service.ts` (estender `StatementTx`), `outbox/outbox.dispatcher.ts` (handler de `charge_cancel`), `API_CONTRACTS.md` · **dono:** `B-ASS-08b` no recorte mantido e `B-ASS-08c` nas obrigações transferidas pela leitura declarada de 10/11.
 - **origem:** conserto único da junta J-522 do PR #522 (ciclo 1, achado C2-01 GRAVE — R-OBX-5 não implementado; plano `B-ASS-08-conserto-c1.md` §7). O conserto implementou a parte **(ii)** do D2 — o claim relê o demonstrativo e a cobrança viva na MESMA transação, o `retry` revalida pelo mesmo caminho e `reopen()` recusa `outbox_needs_review` — e fechou o dinheiro: a linha parada nunca sai de demonstrativo pago, cancelado, reaberto ou refechado (T-OBX-13..16, T-OBX-db-3). O que ficou FORA, com dono, está abaixo. **Gravidade corrigida em 10/11 (2º conserto do #522, diagnóstico `ci522`).** A justificativa original era falsa e foi desmentida por medição em `807deb7e`:
@@ -13069,7 +13073,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **corrida residual (declarada):** claim relê `closed` → `fetch` em voo → baixa manual no meio → `markSent` grava uma cobrança para demonstrativo que acabou de ficar `paid`. Janela de milissegundos a segundos. Fecha-se na 08b com a releitura **no registro** (`markSent` que vê `status ≠ closed` enfileira `charge_cancel`) + (i). Se o cliente pagar nesse intervalo, R-C/R-SET-1 já transformam em crédito — nunca descartado. **Precisão (2º conserto, 10/11):** o 2º conserto fecha a parte dentro do claim (ATK-7: o claim adia enquanto a baixa trava o demonstrativo). Fica a parte do `fetch`, que se fecha na 08b com a releitura no registro.
 - **contrato:** a 422 `outbox_needs_review` em `POST …/statements/:id/reopen` entra em `API_CONTRACTS.md` quando o guard estiver ligado em produção (08b liga o `PrismaOutboxRepository` em `statement.prisma-runtime.ts`).
 - **rota `/charge` (C3-01 / R-CHG-2, mesma leva do conserto):** a rota `POST …/statements/:id/charge` da 08b **DEVE chamar `requestChargeCreate`** (`charges/charge-request.service.ts`), **nunca `outbox.enqueue` direto** — é nele que vivem o `FOR UPDATE` do demonstrativo e a `chargeCreateEligibility` (422 `statement_not_closed` / `charge_already_exists` ANTES de enfileirar, D1). O mesmo vale para o enfileiramento no fechamento. E o dispatcher da 08b liga `resolveCustomer = profileCustomerResolver(<repo de perfil>)` (C3-02 / R-PRF-1) e persiste o `<provedor>_customer_id` devolvido pelo `ensureCustomer` (G12 — a persistência exige o repo de perfil, fora do PERMITIDO do conserto).
-- **Divisão declarada em 10/11 (§A6):** as obrigações (1), (2), (3), (5)b2 e (5)b3 abaixo passam ao `B-ASS-08c`, porque exigem formas e caminhos fora do PERMITIDO da 08b. A 08b mantém (4), o recorte aplicável de (5), a prova por vacuidade e o T-LOCK-2 estendido.
+- **Divisão em 10/11 21:00 SP, opção (A), leitura do orquestrador, declarada (§A6) (`LEITURA-ORQ-1011-B-ASS-08C` em `decisoes.md`):** as obrigações (1), (2), (3), (5)b2 e (5)b3 abaixo passam ao `B-ASS-08c` (`P-B-ASS-08c-OBRIGACOES-DA-08b`), porque exigem formas e caminhos fora do PERMITIDO da 08b. A 08b mantém (4), o recorte aplicável de (5), a prova por vacuidade (git grep) e o T-LOCK-2 estendido. O porteiro do #522 escreveu "o merge da 08b só sai com as obrigações (1)-(5)"; a junta da 08b confere a divisão e a vacuidade.
 - **Obrigações originalmente atribuídas à 08b (2º conserto, 10/11), agora divididas conforme a linha acima:**
   - (1) a rota `/charge` chama `requestChargeCreate({ intents })` e o fechamento chama `enqueueChargeCreateInTx` sobre o `tx` do próprio fechamento. Encerramento: `git grep -nE 'kind: "charge_create"' -- src | grep -v charges/charge-request.service.ts` vazio (em `807deb7e` a única ocorrência é o serviço; na 984 nenhuma);
   - (2) o refechamento marca a linha velha `SKIPPED statement_reopened`, na mesma transação, antes da nova (senão o D1 recusa e o fechamento falha);
@@ -13112,61 +13116,71 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** 2º conserto do #522 (§6.2/§6.3). O conserto impede a cobrança em dobro sem o índice (medido); o índice protege contra um escritor futuro errado da 08b. Pergunta opcional ao dono registrada no plano (§6.3).
 - **teste de encerramento:** `D-ASS08-MIGRACAO-M5B` em `decisoes.md` e a migração com drill e runbook (down M5b antes da M5), ou o arquivamento.
 
-## P-UPLOAD-ARMAZENAMENTO-EFEMERO (2026-11-10) — upload móvel confirmado pode depender de armazenamento efêmero — ALTA
+## P-UPLOAD-ARMAZENAMENTO-EFEMERO (2026-11-10) — a evidência móvel guardada pelo servidor fica no diretório temporário do container: um reinício ou um deploy a apaga depois de o app já ter apagado a cópia local — GRAVE
 
-- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` · **dono:** o bloco que ligar uploads em produção (item 27 do portão), ou bloco próprio · **PR-alvo:** antes de fechar o item 27 · **bloqueia:** o fechamento do item 27.
-- **origem:** triagem da junta do PR #525; a classe já existia no upload de evidência móvel e pode deixar a linha confirmada depois de o objeto desaparecer num reinício.
-- **critério de encerramento:** armazenamento durável configurado e teste de reinício prova que um upload confirmado continua disponível; o item 27 só fecha depois desta prova.
+- **status:** ABERTA · **gravidade:** GRAVE (perda de dado sem volta) · **escopo:** `pre-existente` (origem `ba03272f`/`be750e92`, 17–18/06, B-107/B-108) · **dono:** o bloco que liga uploads em produção (item 27 do portão) ou um bloco próprio de armazenamento durável · **PR-alvo:** o PR desse bloco · **bloqueia:** o item 27 do portão (nota ao portão: ele não pode fechar, com upload funcionando em produção, sem esta pendência encerrada).
+- **fato (medido pelo orquestrador na `origin/main` `75572269`, 10/11 01:33 SP, a partir do C1-D1 da junta do #525):** `src/modules/mobile/mobile-evidence-upload.ts` l.58–59 grava em `path.join(os.tmpdir(), "erp-mobile-evidence-uploads")`, com `new LocalProtectedEvidenceStorageProvider(evidenceUploadStorageRoot)`. A raiz só muda por `configureMobileEvidenceUploadStorageForTests` (l.61–64); `git grep` não acha outro chamador nem variável de ambiente que a troque (o `env.ts` só tem `CHECKLIST_STORAGE_PROVIDER` local|s3, do checklist). O app apaga o blob local da foto quando o servidor responde `stored` (§6 do CLAUDE.md).
+- **consequência:** em produção, toda foto de evidência guardada pelo servidor fica no diretório temporário do container; um reinício ou um deploy a apaga, e o app já apagou a cópia local. Hoje está mascarado: produção e staging respondem 503 a todo upload (item 27 do portão, `P-O6R-B07B-SCANNER-AV-REAL`). No dia em que o antivírus real responder, a perda começa.
+- **no #525:** a raiz nova do comprovante (`expense-receipt.service.ts` l.63, mesmo padrão) era do bloco (C1-D1, GRAVE dentro do bloco) e entrou no conserto único; a da evidência é pré-existente e não reprovou o #525 (§C7.1-ter(a)).
+- **critério de encerramento:** evidência e comprovante guardados num provedor durável configurado (o checklist já tem `local`|`s3`; a D-014 manda "MESMO backend de storage"), com gate de boot que recusa produção sem ele.
 
-## P-USERS-201-SEM-NO-STORE (2026-11-10) — criação de usuário devolve senha provisória sem `no-store` — MÉDIA
+## P-USERS-201-SEM-NO-STORE (2026-11-10) — criação de usuário devolve senha provisória sem `no-store` — MÉDIA (gravidade: leitura do redator)
 
-- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** resposta 201 de `POST /api/v1/users` · **dono:** `B-USERS-TELA` · **PR-alvo:** PR da tela de Usuários · **bloqueia:** não.
-- **critério de encerramento:** a resposta 201 que leva a senha provisória inclui `Cache-Control: no-store`, com teste que fica vermelho sem o cabeçalho.
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** resposta 201 de `POST /api/v1/users` (`users.routes.ts`, fora do PERMITIDO do #527) · **dono:** `B-USERS-TELA` · **PR-alvo:** PR da tela de Usuários · **bloqueia:** não.
+- **origem:** PR #527 aberto (10/11 06:32 SP); encerramento escrito pela nota N6 do inspetor da junta do #527 (10:12 SP).
+- **critério de encerramento:** o 201 de `POST /api/v1/users` que leva a senha provisória sai com `Cache-Control: no-store`, com teste que fica vermelho sem o cabeçalho.
 
 ## P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-10) — token anterior à desativação ainda alcança rotas mobile — GRAVE
 
-- **status:** ABERTA · **gravidade:** GRAVE · **escopo:** `pre-existente` · **dono:** o próximo bloco que tocar `src/modules/mobile/**`, ou a varredura de segurança do portão vendável · **PR-alvo:** esse mesmo bloco · **bloqueia:** não segura o conserto atual do #527.
-- **origem:** C2CL-02 da junta do PR #527; o roteador mobile autorizava pelos papéis do JWT durante a janela residual já conhecida do token.
-- **critério de encerramento:** token de usuário desativado é recusado nas rotas mobile, com prova ponta a ponta no papel de produção; pode fechar junto do portão novo do conserto se a prova cobrir o caso.
+- **status:** ABERTA · **gravidade:** GRAVE (C2CL-02 da junta do #527) · **escopo:** `pre-existente` (o roteador não tem diff no PR #527; último commit `40c3651f`, 18/10) · **dono:** o próximo bloco que tocar `src/modules/mobile/**`, ou a varredura de segurança do portão vendável · **PR-alvo:** esse mesmo bloco · **bloqueia:** não segura o conserto do #527.
+- **origem:** C2CL-02 da junta do PR #527; o roteador mobile autoriza pelos papéis do JWT e, por esse caminho, o usuário desativado cria OS com o token de até 15 min, além do que a `D-USERS-2` aceitou. A fonte diz que pode fechar junto com o conserto do #527.
+- **critério de encerramento (leitura do redator, declarada, §A6: a fonte não escreve o critério):** token de usuário desativado é recusado nas rotas mobile, com prova ponta a ponta no papel de produção; pode fechar junto do portão novo do conserto se a prova cobrir o caso.
 
-## P-GUARD3-SO-RECONHECE-SET-CONFIG (2026-11-10) — guard 3 não reconhece `SET LOCAL` — MÉDIA
+## P-GUARD3-SO-RECONHECE-SET-CONFIG (2026-11-10) — guard 3 não reconhece `SET LOCAL` — MÉDIA (gravidade: leitura do redator)
 
-- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `tests/auth-invariant-guards.test.ts` · **dono:** o próximo bloco que tocar esse teste e, até lá, a varredura de segurança do portão vendável · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
-- **origem:** Emenda 15 do segundo conserto do PR #522; o guard procura `set_config(`, mas não a forma `SET LOCAL app.current_tenant_id` fora de `rls.ts`.
-- **critério de encerramento:** o guard enuncia a propriedade e falha para ambas as formas fora do caminho autorizado, com vermelho-controle.
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** `tests/auth-invariant-guards.test.ts` · **dono:** o próximo bloco que tocar esse teste e, até lá, a varredura de segurança do portão vendável · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
+- **origem:** Emenda 15 do segundo conserto do PR #522 (10/11 14:56 SP); o guard 3 só pega a forma `set_config(`, e um `SET LOCAL app.current_tenant_id` fora do `rls.ts` passaria.
+- **critério de encerramento (leitura do redator, declarada, §A6: a fonte não escreve o critério):** o guard enuncia a propriedade e falha para as duas formas fora do caminho autorizado, com vermelho-controle.
 
-## C3B-01 (2026-11-10) — dois hunks onde o plano do segundo conserto do #522 pedia um — BAIXA
+## P-J522-C3B-01-DOIS-HUNKS (2026-11-10) — `C3B-01`: dois hunks onde o §5 do plano do segundo conserto do #522 pedia um — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** forma do PR #522 · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
-- **origem:** cadeira C3 refeita da junta do segundo conserto; desvio formal sem efeito de comportamento.
-- **critério de encerramento:** o dono do bloco documenta a equivalência dos dois hunks ou consolida a forma no próximo toque do arquivo, com regressão verde.
+- **status:** ABERTA · **gravidade:** BAIXA (a fonte e a cadeira C3 refeita a dão assim) · **escopo:** forma do PR #522 · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem:** nota BAIXA `C3B-01` da cadeira C3 refeita (`j522b-c3`) da junta do segundo conserto, já apontada na conferência `conf-522b`; desvio formal sem efeito de comportamento. O porteiro do #522 pediu o registro com dono.
+- **critério de encerramento (leitura do redator, declarada, §A6: a fonte não escreve o critério):** o dono do bloco documenta a equivalência dos dois hunks ou consolida a forma no próximo toque do arquivo, com regressão verde.
 
-## P-APARENCIA-APP-SELETOR (2026-11-10) — app ainda não tem seletor para as aparências B e C da troca de senha — MÉDIA
+## P-APARENCIA-APP-SELETOR (2026-11-10) — app ainda não tem seletor para as aparências B e C da troca de senha — MÉDIA (gravidade: leitura do redator)
 
-- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** app de campo e tela de troca de senha · **dono:** bloco futuro próprio · **PR-alvo:** bloco do seletor de aparência do app · **bloqueia:** não; a aparência A sai agora.
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** app de campo e tela de troca de senha · **dono:** um bloco futuro próprio, que entrega o seletor no app e as B/C desta tela · **PR-alvo:** o PR desse bloco · **bloqueia:** não; a aparência A sai agora.
 - **origem:** `D-TROCA-SENHA-APP-A-AGORA`.
 - **critério de encerramento:** o app oferece o seletor de aparência por usuário e entrega as opções B e C aprovadas para a troca de senha.
 
-## P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste mínimo — MÉDIA
+## P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste mínimo — MÉDIA (gravidade: leitura do redator)
 
-- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** login web · **dono:** o próximo bloco que tocar o login web · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
-- **origem:** conferência da maquete de troca de senha; a cor atual da faixa ficou abaixo do mínimo de contraste, enquanto a maquete usa uma cor já existente com contraste suficiente.
-- **critério de encerramento:** faixa de erro do login web mede contraste de pelo menos 4,5:1, com teste ou medição registrada.
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** login web · **dono:** o próximo bloco que tocar o login web · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
+- **origem:** conferência da maquete de troca de senha do #527 (10/11 21:01 e 21:11 SP): a faixa de erro do login atual usa #DC2626 sobre o fundo dela, com 4,41:1, abaixo de 4,5:1. A maquete usa #B91C1C (5,9:1, já usado em `dashboard.shared.tsx:43`).
+- **critério de encerramento (leitura do redator, declarada, §A6: a fonte não escreve o critério):** a faixa de erro do login web mede contraste de pelo menos 4,5:1, com teste ou medição registrada.
 
-## P-LOGIN-WEB-TERMO-TENANT (2026-11-10) — login web ainda expõe termo técnico de organização — BAIXA
+## P-LOGIN-WEB-TERMO-TENANT (2026-11-10) — login web ainda expõe termo técnico de organização — BAIXA (gravidade: leitura do redator)
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** login web · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
-- **origem:** registro do dia e regra de linguagem do produto: a UI usa “organização”, nunca o termo técnico interno.
-- **critério de encerramento:** nenhuma cópia visível do login web exibe `tenant`; teste de texto confirma “organização” nos estados correspondentes.
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** login web (`auth.adapter.ts:205`), anterior ao #527 · **dono:** o próximo bloco que tocar o login web (plano do conserto c1 do #527, `B-USERS-ACESSO-SEG-conserto-c1.md`) · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
+- **origem:** plano do conserto c1 do #527: o texto do login web "Revise tenant, e-mail e senha." (`auth.adapter.ts:205`) fere o §3 do CLAUDE.md; é anterior ao bloco e não entra nele, e a tela nova de troca de senha não o repete.
+- **critério de encerramento (leitura do redator, declarada, §A6: a fonte não escreve o critério):** nenhuma cópia visível do login web exibe `tenant`; teste de texto confirma "organização" nos estados correspondentes.
 
-## B-ASS-08c (2026-11-10) — bloco futuro para as obrigações deslocadas da 08b — ALTA
+## P-B-ASS-08c-OBRIGACOES-DA-08b (2026-11-10) — bloco futuro `B-ASS-08c`, com as formas e obrigações que saíram da 08b — ALTA (gravidade: leitura do redator)
 
-- **status:** ABERTA · **gravidade:** ALTA · **escopo:** caminhos de demonstrativos e `API_CONTRACTS.md` que não existem no PERMITIDO da 08b · **dono:** `B-ASS-08c` · **PR-alvo:** PR próprio, depois de autorização de início pelo dono · **bloqueia:** a prontidão vendável das formas transferidas, não o recorte autorizado da 08b.
-- **obrigações recebidas:** formas do §11 (b)–(h) do plano do segundo conserto e obrigações (1), (2), (3), (5)b2 e (5)b3 da `P-ASS08-OBX5-EAGER-E-CANCEL`, com plano próprio.
-- **critério de encerramento:** todas as formas e obrigações transferidas implementadas e provadas conforme o plano próprio; a junta confere o vínculo com a pendência de origem.
+- **status:** ABERTA · **gravidade:** ALTA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** `statements/**` e `API_CONTRACTS.md`, fora do PERMITIDO da 08b · **dono:** `B-ASS-08c`, com plano próprio · **PR-alvo:** PR próprio; o começo depende do dono e entra na fila do vendável · **bloqueia:** a prontidão vendável das formas transferidas, não o recorte da 08b.
+- **origem:** opção (A) da 08b, leitura do orquestrador, declarada (§A6), 10/11 21:00 SP (`LEITURA-ORQ-1011-B-ASS-08C` em `decisoes.md`).
+- **obrigações recebidas:** as formas do §11 (b)-(h) do plano do segundo conserto (a rota `POST …/statements/:id/charge`, o fechamento que enfileira, o refechamento, o eager do D2 (i), o `charge/cancel`, o `/resolve`, a rota de retry e a gravação da cobrança com `payUrl`) e as obrigações (1), (2), (3), (5)b2 e (5)b3 da `P-ASS08-OBX5-EAGER-E-CANCEL`.
+- **critério de encerramento (leitura do redator, declarada, §A6: a fonte não escreve o critério):** todas as formas e obrigações transferidas implementadas e provadas conforme o plano próprio; a junta confere o vínculo com a pendência de origem.
 
-## P-P8C-CAPACIDADE-SEM-TETO-CONTRATO (2026-11-10) — espelhar a regra de capacidade medida nos dois contratos — ALTA
+## P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUDE.md e no AGENTS.md, num PR de governança — ALTA (gravidade: leitura do redator)
 
-- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `CLAUDE.md`, `AGENTS.md` e espelho Codex · **dono:** próximo PR próprio de governança/contrato · **PR-alvo:** PR documental separado deste registro · **bloqueia:** não.
-- **origem:** `D-CARGA-POR-CAPACIDADE-1011`; este PR de registro proíbe tocar os contratos.
-- **critério de encerramento:** P8(c) atualizado no `CLAUDE.md` e no `AGENTS.md` no mesmo commit/PR, com os espelhos Codex conferidos e sem teto fixo divergente.
+- **status:** ABERTA · **gravidade:** ALTA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** `CLAUDE.md` e o espelho `AGENTS.md` (§C7.7, P5 e P8(c)) · **dono:** um PR de governança próprio (revisão simples, como diz a fonte) · **PR-alvo:** esse PR, separado deste registro, que não pode tocar os contratos · **bloqueia:** não.
+- **o que entra:** na P5, `D-JUNTA-PARALELA-1011` (as cadeiras rodam em paralelo, e o limite de 2 em paralelo deixa de valer, salvo quando uma depende da outra). No P8(c), `D-CARGA-POR-CAPACIDADE-1011` (caem o teto fixo de 2 trabalhos no Docker e o de 3 subagentes Claude; entra a capacidade medida, com a leitura declarada do semáforo e o piso de 4 GB para lançar) e `D-AGENTES-ATE-O-LIMITE-1011` (o limite é a saúde da máquina, vigiada pelo semáforo, pelo guarda do Docker e pela contagem de zumbis).
+- **critério de encerramento:** a P5 e o P8(c) atualizados no `CLAUDE.md` e no `AGENTS.md` no mesmo PR, com o espelho Codex conferido (`node scripts/sync-agent-agents.mjs --check`) e sem teto fixo divergente entre os dois.
+
+## P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidade `GRAVE` — BAIXA (gravidade: leitura do redator)
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** `agent-orchestration/controle/gerar-indice-pendencias.py` (função `severidade`) · **dono:** a definir pelo orquestrador (as irmãs `P-INDICE-PENDENCIAS-CLASSIFICADOR` e `P-INDICE-PENDENCIAS-CRITICA-COMO-SEVERIDADE`, da mesma família, apontam para o próximo PR de ferramenta de registro) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato (medido pelo redator `red-529-cl` no índice regenerado deste PR):** a função `severidade` só reconhece as quatro palavras da escala antiga e não `GRAVE`; por isso `P-UPLOAD-ARMAZENAMENTO-EFEMERO` e `P-USERS-DESATIVADO-TOKEN-MOBILE` saem sem severidade no índice e caem no balde B (processo/registro), junto de itens de forma.
+- **critério de encerramento:** o índice mostra `GRAVE` como gravidade material (balde A), com vermelho-controle numa entrada GRAVE de teste.
