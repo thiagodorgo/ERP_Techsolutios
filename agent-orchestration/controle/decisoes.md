@@ -4772,3 +4772,15 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fala literal, com o valor tirado:** *"limite de"* [teto de gasto diário da API definido pelo dono] *"na api"*. O trecho entre colchetes substitui o número que o dono falou, porque o repositório é público; o resto é literal.
 - **Decisão:** o dono confirmou o teto de gasto diário da API definido por ele; o teto total continua.
+
+## D-B-O6R-12-ACEITE-E-EMENDA-E1 (2026-11-11) — regime da abertura e ajustes da crítica v2
+
+- O aceite provisório do item 24 fica ratificado pelas decisões do dono
+  `D-PORTAO-9-RECOMENDACOES-1011` e `D-PORTAO-5-RECOMENDACOES-1111`: o retrato nasce na abertura,
+  alcança cobrança, prazos, leilão, liberação, painel e portal; o backfill usa o valor atual.
+- A crítica de rodada 2 (`crit-12-r2-plano.json`) aprovou o plano v2 com 4 ajustes médios e 6
+  baixos. Todos entram como requisito antes do código na Emenda E1 de
+  `agent-orchestration/codex/comandos/B-O6R-12-jurisdiction-profile-versioning.md`.
+- O ponteiro nulo do serviço diário preserva o catch-up vivo; uma cópia não nula vence.
+- Correção excepcional de retrato errado exige migração aditiva própria, censo e revisão; não
+  nasce bypass de runtime neste bloco.
