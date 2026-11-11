@@ -4812,3 +4812,99 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **decisão** (`topo-530-v2-api`, plano `B-ASS-08b-conserto-530-v2.md` §7, aprovada pela crítica r2 — CRIT530-07 fechado): vale o contrato; a migração NÃO muda; o C3-02 da J-530 fecha como "conforme o contrato". Briefing de junta não cria exigência acima do contrato: a divergência se registra (§A2), não se resolve em silêncio.
 - **não reabre a C3** (§C7 10(4)): achado BAIXO, sem dinheiro, permissão nem isolamento.
 - **registro:** gravado pelo dev do conserto da J-530 (`dev-08b`, Claude Opus 5.5), no PR #530, antes do merge.
+
+## D-PORTAO-7-RECOMENDACOES-1011 (decisão do dono, 2026-11-10 23:19 SP) — as 7 recomendações dos planos B-O6R-09, B-SAN3-08 e B-SAN3-24
+
+- **Fonte:** `REGISTRO-PENDENTE.md` do orquestrador, 10/11 23:19 SP (fora do repositório).
+- **Pergunta:** se aceitava as 7 recomendações dos planos `B-O6R-09` (1), `B-SAN3-08` (3) e `B-SAN3-24` (3).
+- **Fala literal:** *"Sim, todas (Recomendado)"*.
+- **Decisão:**
+  - **B-O6R-09:** não permitir dois despachos ativos do mesmo técnico na mesma OS. A regra vai para um bloco próprio, depois do censo (`P-DESPACHO-DUPLICADO-MESMO-TECNICO`).
+  - **B-SAN3-08:** o diálogo de aprovação herda a aparência da tela, sem 3 opções agora. "Modo de acionamento" é texto livre opcional. Aprovar dentro da OS cria uma OS nova, com aviso no diálogo, e o vínculo à OS-mãe vira pendência (`P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA`). A aplicação no código está em `D-SAN3-08-DIALOGO-SEM-TRES-OPCOES`, gravada pelo #533.
+  - **B-SAN3-24:** a política de comissão sai do bloco e do item 29 até o motor existir (pendência "motor de comissão"). A Q2 não se aplica. "Fechar mesmo assim" com título em disputa fica permitido, em 2 passos, com motivo obrigatório e auditoria.
+- **Registro:** fecha a `REV529R2-01` da revisão r2 do #529 (esta decisão e a `D-KPI-FLASH-PELA-API-1011` não tinham entrado). A pendência "motor de comissão" é gravada pela fatia a0 do `B-SAN3-24`, que o plano v2 dele chama de `P-COMISSAO-MOTOR-E-POLITICA` (plano fora do repositório, `plano-B-SAN3-24-v2.md:277`); este registro não a duplica.
+
+## D-KPI-FLASH-PELA-API-1011 (decisão do dono, 2026-11-10 23:19 SP) — no marco do #528, o Gemini Flash propõe pela API
+
+- **Fala literal:** *"Sim, Flash pela API (Recomendado)"*.
+- **Decisão:** para o marco do #528, o Gemini Flash propõe as descrições pela API, porque o Antigravity não está instalado nesta máquina. O resto do loop de KPI (§C7 item 8(5)) não muda: o Gemini só propõe, e o orquestrador confere e grava os fatos por comando.
+- **Relação:** muda, para esse marco, só o meio de `D-KPI-PROPOSTA-NO-FLASH` (02/11, "gemini flash do antigravity"); o papel do Gemini continua o mesmo.
+
+## D-PORTAO-5-RECOMENDACOES-1111 (decisão do dono, 2026-11-11 01:34 SP) — as 5 recomendações dos planos v2
+
+- **Pergunta:** se aceitava as 5 recomendações dos planos v2.
+- **Fala literal:** *"Sim, todas as 5 (Recomendado)"*.
+- **Decisão:**
+  - **B-SAN3-26, P3 reaberta, alternativa B:** sem tela nova agora; o guincheiro vê "peça à base para cadastrar a placa ou registrar a chegada"; a base registra pelo console; a criação ganha o campo de placa para reboque e outro; a edição da placa (3 opções) vai para um bloco próprio.
+  - **B-SAN3-23, Q1, alternativa A:** a sobrescrita do cancelamento entra neste bloco (F2b).
+  - **B-O6R-12, QA, alternativa a:** o portal do proprietário mostra o regime da abertura.
+  - **B-O6R-12, QB, alternativa a:** mantém as 2 linhas no `SUITES=` da CI, já autorizadas.
+  - **B-SAN3-24, Q1, alternativa b:** o motivo entra na auditoria do "fechar mesmo assim", e a gravação garantida vira `P-SAN3-24-AUDITORIA-BEST-EFFORT` (gravada pela fatia a0 do `B-SAN3-24`, pelo plano v2 dele, `plano-B-SAN3-24-v2.md:278`; este registro não a duplica).
+- **Conflito registrado antes da escolha (§A2), `C-B-SAN3-26-P3-PREMISSA`:** a decisão de 10/11 (`D-PORTAO-9-RECOMENDACOES-1011`, B-SAN3-26 (3), "sem exceção para OS já abertas sem placa") tinha sido aceita sobre a premissa falsa de que "a base completa a placa, é um campo". Na `main` `d5ec1696`, o console não edita a placa. O dono, informado da premissa corrigida, escolheu a B. O texto do registro do conflito está no ramo do #534 (`fix/checkin-confere-placa`, `controle/decisoes.md`) e entra na `main` com ele; este registro não o duplica.
+
+## D-PORTAO-3-RECOMENDACOES-1111 (decisão do dono, 2026-11-11 01:50 SP) — as 3 recomendações dos planos B-SAN3-08 e B-O6R-09
+
+- **Fala literal:** *"Sim, todas as 3 (Recomendado)"*.
+- **Decisão:**
+  - **B-SAN3-08, Q1 (c):** a OS em dobro ou órfã por falha no meio da aprovação (`P-SAN3-08-APPROVE-OS-NAO-ATOMICA`) entra no portão, fundida ao `B-O6R-09` (item 7).
+  - **B-SAN3-08, Q2 (c):** o operador aprova orçamento só até um limite por organização quando a alçada existir; até lá vale a `RBAC_MATRIX.md`, e ele aprova.
+  - **B-O6R-09, Pergunta 1 (A):** o bloco se alarga para a web, que passa a mandar a chave de repetição, e para a lista da CI, de modo que o item 7 fecha de verdade.
+- **Aplicação já na `main`:** as duas respostas do `B-SAN3-08` estão em `D-SAN3-08-PORTAO-Q1-Q2` (gravada pelo #533), que deixou este ID para o registro do orquestrador.
+
+## D-ORQ-DESATIVADO-TOKEN-BLOCO-PROPRIO-1111 (decisão do orquestrador, 2026-11-11 05:13 SP) — o token do desativado vai para um bloco próprio, não para o #534
+
+- **Natureza:** leitura do orquestrador, declarada (§A6). Não é fala do dono.
+- **Origem:** a pré-revisão do #534 (`B-SAN3-26`; APROVADO, sem cruzamento) apontou o PR534-04: pelo texto do dono da `P-USERS-DESATIVADO-TOKEN-MOBILE` (GRAVE, anterior ao bloco), "o próximo bloco que tocar `src/modules/mobile/**`", ela passaria ao `B-SAN3-26`. O porteiro do #527 (R8) pediu que isso ficasse escrito antes do merge do `B-SAN3-26`.
+- **Decisão:** ela NÃO entra no #534, porque mudaria o portão de autenticação do app sem plano nem crítica, e o assunto do bloco é a conferência da placa. O novo dono é o bloco próprio `B-USERS-SEG-DESATIVADO`, com plano de topo, crítica e junta completa. O #534 segue. Os 5 não graves da pré-revisão (PR534-01 a 03, 05 e 06) foram ao dev pelo fluxo rápido.
+- **Estado às 06:36 SP:** o plano (planejador-mestre, Opus declarado) traz 2 perguntas ao dono (P1: cortar o acesso na hora, no lugar da `D-USERS-2`; P2: desconectar quem teve o perfil trocado). O censo, re-executado pela crítica byte a byte: 66 rotas aceitam o token de quem foi desativado e 437 aceitam o token depois de a sessão ser encerrada; o stream do mapa ao vivo continua para o desativado e vaza metadados, não posições (correção da crítica). A crítica deu APROVADO COM AJUSTES (13 achados; A1 a A5 obrigatórios antes da F0); a A8 virou `P-USERS-ORG-SUSPENSA-NAO-CORTA-ACESSO`.
+
+## D-COBRANCA-RESPOSTAS-3110 — anexo CE-P8 (transcrição, 2026-11-11): o texto da P8 e a recomendação dela
+
+- **Anexo de:** `D-COBRANCA-RESPOSTAS-3110` (acima). Só acrescenta; a entrada original não muda.
+- **Por que existe:** a condição CE-P8 do plano v2 do `B-ASS-09a` e o requisito R2-06 da crítica r2 do plano (`crit-09a-r2-cl`; `revisoes/crit-09a-r2-plano.json`, transcrito na Emenda 1, item 6, de `planos/plano-B-ASS-09a-v2.md`, os dois fora do repositório) exigem que o texto da P8 e o conflito com `decisoes.md:4257` estejam na `main`, por PR de registro, antes da F6 do `B-ASS-09a`. O orquestrador não escreve no ramo do bloco (§C7 item 11(6)), e a norma tem de existir na ref antes de valer (§A7).
+- **Onde se leu (§A7):** `fidelidade-3110.md` não está na `origin/main` (`git ls-tree -r --name-only origin/main | grep fidelidade-3110` não devolve nada). Foi lido de `erp-pausa-2026-10-03/revisoes/fidelidade-3110.md`, fora do repositório, linha 153, na seção "## 6. Perguntas ao dono (lista única)", sob "**Com padrão, seguem se não responder:**".
+- **Texto literal da linha 153 (a P8 e a recomendação dela):**
+  > - **P8. Monitoramento, chaves, DNS e rede entram no rateio?** (SAN Q3). Recomendação: sim, pelas ações. O padrão escrito é ficarem em "Não rateado".
+- **Como a fala do dono a respondeu:** em 31/10, ~22:15 SP, o dono respondeu à lista do §6 com a fala literal registrada em `decisoes.md:4181`. A linha 4190 da mesma entrada registra "P7 a P11 ... pela recomendação". Logo vale a recomendação da P8: **monitoramento, chaves, DNS e rede entram no rateio, pelas ações.**
+- **Conferência do redator:** o texto acima contém, palavra por palavra, o que a CE-P8 exige ("Monitoramento, chaves, DNS e rede entram no rateio? ... Recomendação: sim, pelas ações").
+- **Conflito (§A2), com a data certa:** `decisoes.md:4257` diz que "Q3 (CloudWatch, KMS, Route 53, VPC) segue o padrão: ficam em não rateado, com o motivo visível", como "recomendações adotadas por padrão ... **não são decisão do dono**". A linha está na seção `D-SAN3-03-BASE-DERIVADA — complemento do B-SAN3-03 (2026-11-02; ...)` (`decisoes.md:4254`), escrita em **02/11**, depois da fala do dono de **31/10**. O plano v2 do `B-ASS-09a` a datava em 30/10; o R2-06(a) da crítica r2 corrigiu a data. A Q3 da emenda 1 do `B-SAN3-03` e a P8 são a mesma pergunta: a P8 cita "(SAN Q3)".
+- **Resolução:** pelo §A1-1, a decisão aprovada explicitamente pelo dono vence a recomendação adotada por padrão. Vale a P8 pela recomendação. Na linha 4257, só a parte da Q3 fica superada por este anexo. A Q4 e a Q5 da mesma linha batem com as recomendações da P7 e da P9 e não mudam.
+- **O que não é deste anexo:** o mapa dos códigos de serviço (CloudWatch, KMS, Route 53, VPC e, por leitura declarada do plano, Secrets Manager) é desenho do plano v2 do `B-ASS-09a`, não fala do dono.
+- **Registro:** `reg-1111-cl` (Claude Opus 5.5, subagente da sessão, redator de registro).
+
+## LEITURA-ORQ-1111-API-NO-LIMITE (2026-11-10 23:59 e 2026-11-11 03:23 SP) — o teto diário da API e quem revisa sem ela
+
+- **Leitura do orquestrador, declarada (§A6), às 23:59 SP:** para caber no teto diário da API definido pelo dono (`D-API-TETO-DIARIO-1011`), a junta do #530 ficou com a C1 (dinheiro) e a C2 (superfície) pela API, e a C3 (regressão e escopo) foi para o Codex 1 depois das 01:15, mantendo o cruzamento. Nenhuma tarefa nova de plano entrou pela API até a junta do #530 estar coberta; críticas e conferências foram para o Claude e o Codex. O gasto medido e o ritmo ficam fora do repositório público.
+- **Fato às 03:23 SP:** o lançador recusou o `rev-533` porque o gasto do dia, somado ao teto da tarefa, passaria do teto diário (valores fora do repositório público). A API só volta às 21:00 SP, na virada do dia UTC.
+- **Fato às 02:18 SP:** o Codex 1 está sem limite semanal até 16/11 15:41 SP (`try again at` medido no log da `crit-530`).
+- **Leitura do orquestrador, declarada (§A6), a partir das 03:23 SP:** revisões e conferências vão para o Codex 2, quando livre, ou para o Claude com identidade nova, sem cruzamento, declarado pelo §C7 item 11(2).
+
+## LEITURA-ORQ-1111-B-SAN3-07-EMENDA-2 (2026-11-11 04:02 SP) — o P3 só em base semeada
+
+- **Fato:** o dev do `B-SAN3-07` parou pela `D-EMENDA-ANTES-DO-CODIGO`: o P3 quebrava 3 drills sem seed.
+- **Leitura do orquestrador, declarada (§A6):** a Emenda 2 condiciona o P3 a uma sentinela do seed (`seed.initialized`), sem perder a proteção e sem mexer no PERMITIDO. O dev foi retomado. A junta J-535 achou depois a C2-01, que virou `P-SAN3-07-SENTINELA-SEM-GUARDA`.
+
+## LEITURA-ORQ-1111-B-SAN3-23-EMENDA-1 (2026-11-11 04:47 e 05:28 SP) — o CAS do cancelamento relê e regrava uma vez
+
+- **Fato:** o dev do `B-SAN3-23` parou pela `D-EMENDA-ANTES-DO-CODIGO`: o CAS recusava o despacho concorrente legítimo.
+- **Leitura do orquestrador, declarada (§A6):** a Emenda 1 segue o precedente `FinancialTitleService.changeStatus` (relê, revalida e regrava uma vez). Como o bloco é de dinheiro, uma crítica curta da emenda veio antes do código: `crit-23-em1-cl` (sem cruzamento) deu APROVADO COM AJUSTES, e a Emenda 1.1 transcreve EM1-01 a 06. No EM1-04, o orquestrador decidiu aplicar a regra também à memória, com teste. O dev foi retomado.
+
+## LEITURA-ORQ-1111-B-O6R-09-EMENDA-2 (2026-11-11 05:13 e 05:33 SP) — a chave nova no T13 e a trava de `prisma/`
+
+- **Fato:** o dev do `B-O6R-09` (#537) parou no ratchet T13 (D-W2).
+- **Leitura do orquestrador, declarada (§A6), às 05:13 SP:** a Emenda 2 acrescenta a chave com motivo, pelo precedente do `B-TRC-01`, registra a decisão e torna o R2-09 obrigatório. O dev foi retomado.
+- **Às 05:33 SP:** o orquestrador confirmou a opção (a) da trava de `prisma/`, que o dev registrou como leitura declarada (`D-B-O6R-09-TRAVA-PRISMA-OPCAO-A`). Ela segue a ordem do §6 do `PLANO_SAN3` (o 12 antes do 09), e o carimbo da migração do 09 é reconferido no merge. O texto dessa decisão está no ramo do #537 (`fix/dispatch-atomic-timeline`, `controle/decisoes.md`) e entra na `main` com ele; este registro não o duplica.
+
+## LEITURA-ORQ-1111-TRIAGEM-J535 (2026-11-11 06:34 SP) — triagem da junta do #535 (B-SAN3-07)
+
+- **Fato:** junta completa do #535, 3/3 APROVADO, 0 grave. O inspetor deu LIBERADO COM RESSALVA (R-1: falta o `coordenador-de-acessos` que o `PLANO_SAN3.md:282` exige; R-2: arquivo de teste fora do PERMITIDO, sem emenda; R-3: o CLAUDE.md da sessão estava atrás da `main`, sem efeito no quórum; R-4: sem plano de perda de cadeira).
+- **Triagem do orquestrador (§C7 10(3)3), leitura declarada (§A6):** nenhum grave.
+  - C2-01 vira `P-SAN3-07-SENTINELA-SEM-GUARDA`, com dono `B-SAN3-19b` (dono do resíduo do item 47), porque escolher o sinal de "base semeada" é desenho.
+  - C3-01 vira a Emenda 3 do plano, que ratifica o arquivo depois do fato, declarada como desvio da `D-EMENDA-ANTES-DO-CODIGO`.
+  - C3-02, anterior ao bloco, vai para este registro: `P-J535-C3-02-ITEM47-STATUS-X-RESIDUO`.
+  - R-1: antes do merge, foi lançada a cadeira C4 (`j535-c4-ca`, corpo do `coordenador-de-acessos`, identidade nova), com login real, menu → rota → backend e matriz efetiva por HTTP. Ela entra na unanimidade do conjunto.
+
+## LEITURA-ORQ-1111-REGISTRO-ANTES-DO-PORTEIRO (2026-11-11 06:49 SP) — este PR de registro começa antes do parecer do porteiro do #530
+
+- **Fato:** os devs do `B-SAN3-19b` e do `B-ASS-09a` estão prontos e esperam o parecer do porteiro do #530 (§C2 item 8).
+- **Leitura do orquestrador, declarada (§A6):** o PR de registro não é demanda de produto e começa já (`reg-1111-cl`).
