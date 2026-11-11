@@ -20,6 +20,8 @@ import type { ICoreSaasService } from "./modules/core-saas/services/core-saas-se
 import { createUserNameResolver } from "./modules/core-saas/users/user-name-resolver.js";
 import { createChecklistRouter } from "./modules/checklists/index.js";
 import { createSubscriptionBillingTenantRouter } from "./modules/subscription-billing/subscription-billing.tenant.routes.js";
+import { createSubscriptionBillingWebhookRouterForApp } from "./modules/subscription-billing/webhooks/webhook-runtime.js";
+import { BILLING_WEBHOOK_MOUNT_PATH, WEBHOOK_SECRET_HEADERS } from "./modules/subscription-billing/webhooks/subscription-billing.webhook.routes.js";
 import { createCommissionRouter } from "./modules/commissions/index.js";
 import { createCustomerRouter } from "./modules/customers/index.js";
 import { createDashboardRouter } from "./modules/dashboard/index.js";
@@ -113,6 +115,14 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
   // origem da requisição; em produção o gate do env.ts garante array não-vazio e sem curinga.
   // Sem `credentials: true` — a autenticação é 100% Bearer, não usa cookie de sessão.
   app.use(cors({ origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : true }));
+  // B-ASS-08b — webhook de cobrança, em `/api/v1/webhooks/billing/:provider`. Router PRÓPRIO, montado ANTES de
+  // `express.json`, do `pinoHttp` e de QUALQUER `attachAuthenticatedActor` (o provedor não tem token nosso). A decisão
+  // (canal desligado / provedor desconhecido / `enabled=false` / cofre indisponível) vem ANTES de qualquer parser e, quando
+  // negativa, o router chama `next()` sem ler o corpo: quem responde é o 404 padrão de `/api/v1` lá embaixo — idêntico ao de
+  // rota inexistente POR CONSTRUÇÃO (0.43), para qualquer corpo. Com o canal ligado o parser é LOCAL (`express.raw`, 256 KB)
+  // porque a assinatura exige o corpo cru, e o pedido termina aqui (nunca chega ao log). Composição lazy em
+  // webhooks/webhook-runtime.ts. git add src/app.ts, senão CI route_not_found.
+  app.use(BILLING_WEBHOOK_MOUNT_PATH, createSubscriptionBillingWebhookRouterForApp());
   app.use(express.json({ limit: "2mb" }));
   // B-ASS-05 (S10/F3) — JSON malformado NÃO ecoa o corpo. O tratador padrão do Express imprime o trecho do corpo no
   // stderr em desenvolvimento, e o corpo de `PUT …/credentials` é o segredo do provedor. Responde 400 no envelope da
@@ -121,7 +131,9 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
 
   const logger = pinoHttp({
     level: env.LOG_LEVEL,
-    redact: ["req.headers.authorization"],
+    // B-ASS-08b — o router do webhook tira os cabeçalhos de segredo antes de passar o pedido adiante (R-WH-7); a redação
+    // aqui é a segunda linha de defesa, para qualquer caminho que chegue ao log com esses nomes.
+    redact: ["req.headers.authorization", ...WEBHOOK_SECRET_HEADERS.map((name) => `req.headers["${name}"]`)],
   });
 
   app.use(logger);

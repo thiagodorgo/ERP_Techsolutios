@@ -4,6 +4,9 @@
 
 import { randomUUID } from "node:crypto";
 
+import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
+import type { OutboxRepository } from "../outbox/outbox.repository.js";
+import type { NewOutboxRow } from "../outbox/outbox.types.js";
 import type {
   StatementAuditEvent,
   StatementPayment,
@@ -14,6 +17,9 @@ import type {
 export type NewStatement = Pick<SubscriptionStatement, "tenantId" | "period">;
 export type NewPayment = Omit<StatementPayment, "id" | "reversedCents" | "reversedAt" | "reversedBy" | "reversalReason" | "reversalKind">;
 export type NewCredit = Omit<SubscriptionCredit, "id" | "status" | "appliedToStatementId" | "resolvedBy" | "resolutionNote" | "createdAt" | "updatedAt">;
+
+/** A nota VIVA do demonstrativo, lida DENTRO da transação, depois da trava do demonstrativo (conserto da J-530, B). */
+export type LiveInvoiceRef = { readonly provider: string; readonly seq: number; readonly status: "pending" | "authorized" | "cancel_pending" };
 
 /** Operações dentro de UMA transação da organização. */
 export type StatementTx = {
@@ -30,6 +36,17 @@ export type StatementTx = {
   saveCredit(credit: SubscriptionCredit): Promise<SubscriptionCredit>;
   /** Grava a trilha NA MESMA transação (Prisma). Ausente no dublê: o serviço grava no sink, dentro da fila serializada. */
   recordAudit?(event: StatementAuditEvent): Promise<void>;
+  /** Conserto da J-530 (D/B): grava uma linha da outbox NO MESMO `tx` (o precedente E8). Ausente = este `tx` não sustenta a
+   * intenção de nota; com `invoiceIntents` configurado, a baixa/reversão falha fechado. */
+  enqueueOutbox?(row: NewOutboxRow, now: Date): Promise<void>;
+  /** A nota VIVA (`pending`/`authorized`/`cancel_pending`) do demonstrativo, lida da tabela da nota (não do espelho). */
+  findLiveInvoice?(statementId: string): Promise<LiveInvoiceRef | undefined>;
+};
+
+/** As lojas do canal no modo memória, para o dublê sustentar a intenção de nota (conserto da J-530). */
+export type InMemoryChannelStores = {
+  readonly outbox: Pick<OutboxRepository, "enqueue">;
+  readonly invoices: Pick<StatementInvoiceRepository, "findLive">;
 };
 
 export type StatementRepository = {
@@ -84,8 +101,16 @@ export class InMemoryStatementRepository implements StatementRepository {
   private payments = new Map<string, StatementPayment>();
   private credits = new Map<string, SubscriptionCredit>();
   private queues = new Map<string, Promise<unknown>>();
+  private channel: InMemoryChannelStores | undefined;
 
   constructor(private readonly clock: () => Date = () => new Date()) {}
+
+  /** Conserto da J-530: liga o dublê às lojas do canal do modo memória. A partir daí o `tx` tem `enqueueOutbox` e
+   * `findLiveInvoice`; as linhas ficam num buffer e só entram na outbox se o trabalho terminar sem erro (o efeito do
+   * rollback do Prisma). */
+  attachChannelStores(stores: InMemoryChannelStores): void {
+    this.channel = stores;
+  }
 
   async transaction<T>(tenantId: string, work: (tx: StatementTx) => Promise<T>): Promise<T> {
     const previous = this.queues.get(tenantId) ?? Promise.resolve();
@@ -94,17 +119,35 @@ export class InMemoryStatementRepository implements StatementRepository {
     this.queues.set(tenantId, previous.then(() => gate));
     await previous.catch(() => undefined);
     try {
-      return await work(this.tx(tenantId));
+      const pending: Array<{ readonly row: NewOutboxRow; readonly now: Date }> = [];
+      const result = await work(this.tx(tenantId, pending));
+      for (const item of pending) await this.channel!.outbox.enqueue(item.row, item.now);
+      return result;
     } finally {
       release();
     }
   }
 
-  private tx(tenantId: string): StatementTx {
+  private tx(tenantId: string, pending: Array<{ readonly row: NewOutboxRow; readonly now: Date }>): StatementTx {
     const self = this;
+    const channel = this.channel;
     const own = <T extends { tenantId: string }>(row: T | undefined): T | undefined =>
       row && row.tenantId === tenantId ? row : undefined;
+    const intent: Pick<StatementTx, "enqueueOutbox" | "findLiveInvoice"> = channel
+      ? {
+          async enqueueOutbox(row, now) {
+            pending.push({ row, now });
+          },
+          async findLiveInvoice(statementId) {
+            const live = await channel.invoices.findLive(tenantId, statementId);
+            return live && (live.status === "pending" || live.status === "authorized" || live.status === "cancel_pending")
+              ? { provider: live.provider, seq: live.seq, status: live.status }
+              : undefined;
+          },
+        }
+      : {};
     return {
+      ...intent,
       async insertIfAbsentAndLock(input) {
         const existing = [...self.statements.values()].find(
           (row) => row.tenantId === input.tenantId && row.period === input.period,

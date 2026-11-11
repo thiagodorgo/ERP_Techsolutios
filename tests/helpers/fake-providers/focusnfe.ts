@@ -90,6 +90,8 @@ export async function startFocusNfeFake(defaultScenario = "ok"): Promise<FakeSer
       const invoice = invoices.get(ref);
       if (!invoice) return sendJson(res, 200, { status: "situacao_desconhecida" });
       invoice.queryCount += 1;
+      // B-ASS-08b: depois do DELETE a consulta devolve `cancelado` (é o que o poll-settled/webhook lê para fechar a nota).
+      if (invoice.status === "cancelado") return sendJson(res, 200, { id: invoice.id, ref, status: "cancelado" });
       if (invoice.status === "erro_autorizacao") return sendJson(res, 200, { id: invoice.id, ref, status: invoice.status, erros: [{ mensagem: "rejeição simulada" }] });
       if (invoice.queryCount === 1 && selected !== "authorized") return sendJson(res, 200, { id: invoice.id, ref, status: "processando_autorizacao" });
       return sendJson(res, 200, {

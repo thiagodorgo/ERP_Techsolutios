@@ -103,7 +103,7 @@ function makeReconcileDeps(repo: InMemoryStatementRepository, settlement: Statem
 test("R-WH-4 o corpo não decide: webhook 'pago' + reconsulta pending → sem baixa, evento ignored (T-WH-21)", async () => {
   const { repo, settlement } = makeStatements();
   const statement = await closedStatement(repo, TENANT_A, 10000);
-  const { events, refs, deps } = makeReconcileDeps(repo, settlement, { status: "pending", raw: {} });
+  const { events, refs, deps } = makeReconcileDeps(repo, settlement, { status: "pending", raw: { externalReference: statement.id } });
   await refs.put({ statementId: statement.id, tenantId: TENANT_A, provider: "asaas" }, new Date());
   const { event } = await events.insertIfAbsent({ provider: "asaas", externalEventId: "evt_1", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_1", externalReference: statement.id }, new Date());
   const outcome = await reconcileWebhookEvent(deps, { provider: "asaas", externalEventId: "evt_1" });
@@ -115,7 +115,7 @@ test("R-WH-4 o corpo não decide: webhook 'pago' + reconsulta pending → sem ba
 test("R-WH-5 organização pelo nosso id: reconsulta paga baixa na dona do statement_id (T-WH-22)", async () => {
   const { repo, settlement } = makeStatements();
   const statement = await closedStatement(repo, TENANT_A, 10000);
-  const { events, refs, deps } = makeReconcileDeps(repo, settlement, { status: "paid", paidCents: 10000, raw: { customer: "cus_A" } });
+  const { events, refs, deps } = makeReconcileDeps(repo, settlement, { status: "paid", paidCents: 10000, raw: { customer: "cus_A", externalReference: statement.id } });
   await refs.put({ statementId: statement.id, tenantId: TENANT_A, provider: "asaas" }, new Date());
   await events.insertIfAbsent({ provider: "asaas", externalEventId: "evt_1", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_1", externalReference: statement.id }, new Date());
   const outcome = await reconcileWebhookEvent(deps, { provider: "asaas", externalEventId: "evt_1" });
@@ -129,7 +129,7 @@ test("R-WH-5 organização pelo nosso id: reconsulta paga baixa na dona do state
 test("R-WH-5 customer id divergente → rejected, sem baixa (T-WH-23)", async () => {
   const { repo, settlement } = makeStatements();
   const statement = await closedStatement(repo, TENANT_A, 10000);
-  const { events, refs, deps } = makeReconcileDeps(repo, settlement, { status: "paid", paidCents: 10000, raw: { customer: "cus_OUTRO" } }, "cus_A");
+  const { events, refs, deps } = makeReconcileDeps(repo, settlement, { status: "paid", paidCents: 10000, raw: { customer: "cus_OUTRO", externalReference: statement.id } }, "cus_A");
   await refs.put({ statementId: statement.id, tenantId: TENANT_A, provider: "asaas" }, new Date());
   await events.insertIfAbsent({ provider: "asaas", externalEventId: "evt_1", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_1", externalReference: statement.id }, new Date());
   const outcome = await reconcileWebhookEvent(deps, { provider: "asaas", externalEventId: "evt_1" });
@@ -141,7 +141,7 @@ test("R-WH-5 customer id divergente → rejected, sem baixa (T-WH-23)", async ()
 test("R-WH-3 replay: mesmo evento reconciliado 2× → a 2ª é no_op (dedupe por status)", async () => {
   const { repo, settlement } = makeStatements();
   const statement = await closedStatement(repo, TENANT_A, 10000);
-  const { events, refs, deps } = makeReconcileDeps(repo, settlement, { status: "paid", paidCents: 10000, raw: { customer: "cus_A" } });
+  const { events, refs, deps } = makeReconcileDeps(repo, settlement, { status: "paid", paidCents: 10000, raw: { customer: "cus_A", externalReference: statement.id } });
   await refs.put({ statementId: statement.id, tenantId: TENANT_A, provider: "asaas" }, new Date());
   await events.insertIfAbsent({ provider: "asaas", externalEventId: "evt_1", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_1", externalReference: statement.id }, new Date());
   assert.equal(await reconcileWebhookEvent(deps, { provider: "asaas", externalEventId: "evt_1" }), "settled");

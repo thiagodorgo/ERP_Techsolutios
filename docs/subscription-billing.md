@@ -201,3 +201,47 @@ As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demons
 - **Falso Focus:** cobre processamento→autorização, rejeição, referência duplicada, DPS repetida, cancelamento com erro
   em 200, rate limit, emissor e hook. Nenhum teste chama host real.
 - **Rollback:** reverter o PR. Nada foi persistido e não há migração.
+
+## Canal de cobrança: webhook, outbox e jobs (B-ASS-08 / B-ASS-08b)
+
+- **Para quê:** fechar o ciclo pagamento → nota sem gente no meio, **desligado** até o dono ligar (`BILLING_PROVIDERS_ENABLED`
+  + provedor `enabled` na tela). Tudo o que vai à rede sai de uma fila durável (`billing_outbox`) e tudo o que chega de fora
+  (webhook) só vira dinheiro depois de uma reconsulta no provedor.
+- **Webhook:** `POST /api/v1/webhooks/billing/<provedor>` (a URL registrada no provedor é `BILLING_WEBHOOK_PUBLIC_BASE_URL` +
+  esse caminho). O router é montado antes do parser JSON, do log HTTP e de qualquer middleware de ator (o provedor não tem
+  token nosso). Canal desligado, provedor desconhecido, `enabled = false` ou cofre indisponível → o router passa o pedido
+  adiante sem ler o corpo e sem os cabeçalhos de segredo, e o app responde o mesmo 404 de rota inexistente — idêntico por
+  construção para qualquer corpo. Ligado: corpo cru até 256 KB (413 acima), autenticidade do adaptador (`timingSafeEqual`;
+  401 sem motivo), 20 falhas por IP em 10 min → 429 só para aquele IP, 600/min por provedor → 429, `INSERT … ON CONFLICT`
+  do evento (replay → 200), job `billing.reconcile-webhook` enfileirado, `200 {}`. Banco ou fila indisponíveis → 503 sem
+  detalhe (o provedor reenvia; o evento gravado sem job é retomado pelo poll-pending). Só o digest SHA-256 do corpo é
+  guardado; nunca o corpo nem o segredo.
+- **Reconcile (o corpo nunca decide):** a organização sai do NOSSO `statement_id` em `billing_statement_refs` (índice global
+  de ids), nunca do payload; o estado e o valor vêm de `getCharge`/`getInvoice`; o cliente do provedor tem de bater com o
+  perfil da organização. Pago → baixa monotônica (excedente vira crédito); estorno/chargeback → reversão (primeiro do
+  crédito que o pagamento gerou); disputa → `chargeback_disputed` sem derrubar "em dia"; estorno total ou chargeback com
+  nota autorizada → `invoice_cancel` automático (salvo "manter nota").
+- **Outbox (claim–chamada–registro):** claim por organização com `FOR UPDATE SKIP LOCKED` em transação curta; a chamada ao
+  provedor fora de transação; o registro em outra transação curta. Linha `PROCESSING` órfã há > 10 min é reconsultada por
+  referência antes de repetir (nunca cobra nem emite 2×). Backoff 1/5/15/60 min; 8 falhas → `FAILED`; linha de provedor
+  desligado fica `PENDING` com `skip_reason = provider_disabled` visível, sem rede.
+- **Jobs (só com o canal ligado; desligado nada roda nem se re-enfileira):** `billing.dispatch-outbox` a cada 60 s;
+  `billing.reconcile-webhook` por evento; `billing.poll-pending` a cada 15 min (evento `received` sem job há > 30 min;
+  cobrança `pending` sem evento há > 30 min; nota `pending` sem retorno há > 30 min); `billing.poll-settled` às 03:00 de
+  São Paulo (cobranças confirmadas dos últimos 120 dias — janela de chargeback — e notas `cancel_pending`).
+- **Nota (R-SET-2):** `invoice_issue` só com demonstrativo `paid`; `numero_dps` sai da sequência nossa
+  (`billing_invoice_sequences`) na mesma transação da linha da nota; competência fiscal = o período do demonstrativo (último
+  dia do mês — é ela que decide o grupo IBS/CBS); valor = total do demonstrativo; descrição = plano + competência, sem dado
+  pessoal; 2xx do provedor é `processing`, nunca autorizada. Uma nota viva por demonstrativo (UNIQUE parcial no banco);
+  rejeitada ou cancelada → reemissão com `seq + 1`. Cancelamento: código **conforme provedor** — o Focus Nacional só leva a
+  justificativa; a nossa linha registra `cancel_code = 9` ("outros") + o motivo em texto. **Nota ao dono/contador:** se a
+  homologação exigir o código no provedor, é emenda do adaptador; e o adaptador iguala `data_emissao` a `data_competencia`
+  (DPS emitida em dezembro com data do mês anterior) — a conferir na homologação.
+- **Um provedor ligado por kind (G14):** além do gate em código (`another_provider_enabled_for_kind`), o índice único parcial
+  `billing_provider_configs_one_enabled_per_kind` (migração `20260901000000`) recusa o segundo com 23505 — para trocar,
+  desliga-se o ligado antes.
+- **Ainda não (pendências com dono):** ligar/desligar/testar/registrar webhook persistidos pela tela (F9 do B-ASS-08; hoje
+  nenhum caminho grava `enabled = true`); `GET /billing/subscription` do cliente ainda não lê `payUrl`/`invoicePdfAvailable`
+  das cobranças e notas (view do B-ASS-04); baixa manual → nota (T-FLX-13); `charge_cancel`/`refund` na outbox.
+- **Rollback:** `BILLING_PROVIDERS_ENABLED=false` para o canal (a outbox fica visível); reverter o PR não apaga linhas. As
+  migrações M5 e `20260901000000` são aditivas, com drill de rollback nos testes `-db`.

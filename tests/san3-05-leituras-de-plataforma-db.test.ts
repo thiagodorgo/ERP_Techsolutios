@@ -51,6 +51,9 @@ type Superficie = { readonly etiqueta: Etiqueta; readonly tabelas: readonly stri
 
 const S = (etiqueta: Etiqueta, tabelas: readonly string[], nota: string): Superficie => ({ etiqueta, tabelas, nota });
 const P = "/api/v1/platform";
+/** B-ASS-08b — o prefixo da rota de infra do webhook de cobrança (montada em src/app.ts sob /api/v1, antes do parser e de
+ * qualquer ator; fora de /api/v1/platform, por isso entra no filtro do T11g pelo próprio prefixo). */
+const WEBHOOK = "/api/v1/webhooks/billing";
 
 // A superfície FECHADA (§2.3 do plano), rota a rota — enumerada da fonte e conferida contra o router em runtime.
 const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
@@ -108,6 +111,10 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/tenants/:tenantId/modules`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`PATCH ${P}/tenants/:tenantId/modules`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
   [`POST ${P}/tenants/:tenantId/admin-user`, S("SEM-FORCE", [], "PlatformTenantsRepository em memória — não toca o banco")],
+  // B-ASS-08b — a rota de INFRA do webhook dos provedores (fora de /api/v1, sem módulo, sem ator): também entra na lista
+  // fechada, lida do router em runtime pelo prefixo `WEBHOOK` (T11g). Grava só a tabela GLOBAL de eventos; a organização sai
+  // do NOSSO statement_id no job, nunca do corpo. Rota nova sob o prefixo sem etiqueta = vermelho.
+  [`POST ${WEBHOOK}/:provider`, S("SEM-FORCE", ["billing_webhook_events"], "infra, sem módulo: o webhook dos provedores (B-ASS-08b)")],
 ]);
 
 type EtiquetaJob = "FORCE-PLATAFORMA" | "FORA-DA-SUPERFICIE";
@@ -118,6 +125,12 @@ const JOBS: ReadonlyMap<string, EtiquetaJob> = new Map([
   ["cloud-usage.aggregate-daily", "FORCE-PLATAFORMA"],
   ["subscription.measure-daily", "FORCE-PLATAFORMA"],
   ["subscription.close-statements", "FORCE-PLATAFORMA"],
+  // B-ASS-08b — o canal de cobrança: os 4 tocam tabela FORCE de organização (billing_outbox, subscription_statement_charges,
+  // subscription_statements e pagamentos) a partir das tabelas GLOBAIS de ids e eventos; cada um tem cenário executado abaixo.
+  ["billing.dispatch-outbox", "FORCE-PLATAFORMA"],
+  ["billing.reconcile-webhook", "FORCE-PLATAFORMA"],
+  ["billing.poll-pending", "FORCE-PLATAFORMA"],
+  ["billing.poll-settled", "FORCE-PLATAFORMA"],
   ["notification-dispatch", "FORA-DA-SUPERFICIE"],
   ["notifications.scan-due", "FORA-DA-SUPERFICIE"],
   ["audit-log-fanout", "FORA-DA-SUPERFICIE"],
@@ -734,6 +747,213 @@ if (!connectionString) {
           await admin.user.delete({ where: { id: atorDemo.id } });
         }
 
+        // B-ASS-08b — o canal de cobrança: os 4 jobs FORCE-PLATAFORMA, cada um com efeito próprio, pelo EXECUTOR real sobre
+        // os repositórios Prisma do canal no client ROTEADO (o papel da volta) e uma porta FALSA sem rede no lugar do provedor
+        // ligado. O handler registrado é inerte com o canal desligado (tests/ass-08b-channel-handlers.test.ts); aqui se prova
+        // que, ligado, a varredura de plataforma — pelas tabelas GLOBAIS de ids e de eventos — chega às linhas FORCE de cada
+        // organização sob o contexto dela, com o MESMO efeito nos dois papéis.
+        {
+          const [
+            { runBillingDispatch, runBillingReconcileEvent, runBillingPollPending, runBillingPollSettled },
+            { PrismaOutboxRepository },
+            { PrismaWebhookEventRepository },
+            { PrismaStatementRefRepository },
+            { PrismaStatementChargeRepository },
+            { StatementSettlementService },
+          ] = await Promise.all([
+            import("../src/modules/subscription-billing/outbox/channel.jobs.js"),
+            import("../src/modules/subscription-billing/outbox/outbox.prisma.js"),
+            import("../src/modules/subscription-billing/webhooks/webhook-events.prisma.js"),
+            import("../src/modules/subscription-billing/webhooks/statement-refs.prisma.js"),
+            import("../src/modules/subscription-billing/charges/charges.prisma.js"),
+            import("../src/modules/subscription-billing/statements/statement-settlement.service.js"),
+          ]);
+          const orgs = [cenario.tenantA, cenario.tenantB];
+          const porOrganizacao = (a: { tenantId: string }, b: { tenantId: string }) => a.tenantId.localeCompare(b.tenantId);
+          const agoraCanal = new Date();
+          // 2 h atrás: além dos 30 min a partir dos quais o poll-pending reconsulta a cobrança sem evento.
+          const antes = new Date(agoraCanal.getTime() - 2 * 60 * 60 * 1_000);
+          const periodoCanal = "2031-07";
+          const runtimeCanal = await createDefaultStatementRuntime();
+          const st = new Map<string, string>();
+          for (const tenantId of orgs) {
+            const salvo = await runtimeCanal.repository.transaction(tenantId, async (tx) => {
+              const { statement } = await tx.insertIfAbsentAndLock({ tenantId, period: periodoCanal });
+              return tx.saveStatement({ ...statement, status: "closed", chargeStatus: "pending", totalCents: 10_000, dueDate: "2031-08-10", closedAt: antes });
+            });
+            st.set(tenantId, salvo.id);
+          }
+          const tenantDoDemonstrativo = new Map([...st].map(([tenantId, statementId]) => [statementId, tenantId]));
+          const meusDemonstrativos = new Set(st.values());
+
+          // A porta FALSA: a cobrança ganha um id por organização; a reconsulta devolve o estado programado. Sem rede.
+          const estado = new Map<string, { status: string; paidCents?: number; raw: Record<string, unknown> }>();
+          const cobrancaDe = (tenantId: string): string => `san305-canal-${papel}-${suffix}-${tag(tenantId)}`;
+          const porta = {
+            ensureCustomer: async () => ({ customerId: "cus_san305" }),
+            createCharge: async (input: { externalReference: string }) => ({
+              chargeId: cobrancaDe(tenantDoDemonstrativo.get(input.externalReference)!),
+              status: "pending",
+              payUrl: "https://pay.example/san305",
+            }),
+            // Conserto da J-530 ([WH-5]): como o provedor, a reconsulta devolve o `externalReference` que NÓS mandamos ao criar a
+            // cobrança (o statement_id da organização dona dela).
+            getCharge: async (chargeId: string) => {
+              const atual = estado.get(chargeId) ?? { status: "pending", raw: {} };
+              const dono = [...st.keys()].find((tenantId) => cobrancaDe(tenantId) === chargeId);
+              return { ...atual, raw: { ...(dono ? { externalReference: st.get(dono) } : {}), ...atual.raw } };
+            },
+            findChargeByExternalReference: async () => null,
+            cancelCharge: async (id: string) => ({ chargeId: id, status: "cancelled" }),
+            refund: async (id: string) => ({ chargeId: id, status: "refunded" }),
+            registerWebhook: async () => ({ externalId: "h" }),
+            verifyWebhook: async () => ({ ok: false }),
+            supportedMethods: () => ["pix"],
+            describe: () => ({ provider: "asaas", supportedMethods: ["pix"], pendingHomologation: [], webhookRegistration: "api" }),
+          };
+
+          // As tabelas de eventos e de ids são GLOBAIS e o cluster é compartilhado com as outras suítes: as varreduras de
+          // plataforma enxergam só as linhas DESTE cenário (o mesmo motivo do `tenantIds` da medição — M-5 do #505).
+          const eventosBase = new PrismaWebhookEventRepository(appClient);
+          const refsBase = new PrismaStatementRefRepository(appClient);
+          const eventos = {
+            insertIfAbsent: eventosBase.insertIfAbsent.bind(eventosBase),
+            find: eventosBase.find.bind(eventosBase),
+            markStatus: eventosBase.markStatus.bind(eventosBase),
+            listByProvider: eventosBase.listByProvider.bind(eventosBase),
+            listStale: async (olderThanMs: number, now: Date) =>
+              (await eventosBase.listStale(olderThanMs, now)).filter((event) => meusDemonstrativos.has(event.externalReference ?? "")),
+          };
+          const refs = {
+            put: refsBase.put.bind(refsBase),
+            resolve: refsBase.resolve.bind(refsBase),
+            setExternalChargeId: refsBase.setExternalChargeId.bind(refsBase),
+            listWithCharge: async (since: Date) => (await refsBase.listWithCharge(since)).filter((ref) => orgs.includes(ref.tenantId)),
+          };
+          const deps = {
+            outbox: new PrismaOutboxRepository(appClient, { tenantIds: orgs }),
+            events: eventos,
+            refs,
+            charges: new PrismaStatementChargeRepository(appClient),
+            ports: { asaas: porta } as never,
+            // R-PRF-1 (2º conserto do #522): obrigatório; o cenário mede a varredura de plataforma, não o perfil.
+            resolveCustomer: async () => ({ ok: true as const, customerId: "cus_san305" }),
+            settlement: new StatementSettlementService(runtimeCanal.repository, runtimeCanal.service),
+            statements: runtimeCanal.repository,
+            now: () => agoraCanal,
+          };
+          const projetarDemonstrativos = async () =>
+            (await admin.subscriptionStatement.findMany({ where: { id: { in: [...st.values()] } } }))
+              .map((row) => ({
+                tenantId: tag(row.tenant_id),
+                status: row.status,
+                chargeStatus: row.charge_status,
+                paid: row.paid_amount.toString(),
+                total: row.total_amount.toString(),
+              }))
+              .sort(porOrganizacao);
+
+          // dispatch-outbox: claim por organização (pelo índice GLOBAL) → cobrança criada → charges + índice.
+          for (const tenantId of orgs) {
+            await refs.put({ statementId: st.get(tenantId)!, tenantId, provider: "asaas" }, antes);
+            await deps.outbox.enqueue(
+              {
+                tenantId,
+                statementId: st.get(tenantId)!,
+                kind: "charge_create",
+                provider: "asaas",
+                seq: 1,
+                payload: { customerId: "cus_san305", amountCents: 10_000, dueDate: "2031-08-10", method: "pix" },
+              },
+              antes,
+            );
+          }
+          const despacho = await runBillingDispatch(deps);
+          const linhasOutbox = await admin.billingOutbox.findMany({ where: { tenant_id: { in: orgs } } });
+          const linhasCobranca = await admin.subscriptionStatementCharge.findMany({ where: { tenant_id: { in: orgs } } });
+          const linhasIndice = await admin.billingStatementRef.findMany({ where: { tenant_id: { in: orgs } } });
+          assert.equal(despacho.outcomes.sent, 2, "as duas organizações têm a cobrança criada");
+          registrarJob("billing.dispatch-outbox", {
+            enviados: despacho.outcomes.sent,
+            outbox: linhasOutbox
+              .map((row) => ({ tenantId: tag(row.tenant_id), kind: row.kind, status: row.status, idDoProvedor: row.external_id === cobrancaDe(row.tenant_id) }))
+              .sort(porOrganizacao),
+            cobrancas: linhasCobranca
+              .map((row) => ({ tenantId: tag(row.tenant_id), status: row.status, payUrl: row.pay_url, dueDate: row.due_date?.toISOString().slice(0, 10) ?? null }))
+              .sort(porOrganizacao),
+            indice: linhasIndice.map((row) => ({ tenantId: tag(row.tenant_id), comCobranca: row.external_charge_id === cobrancaDe(row.tenant_id) })).sort(porOrganizacao),
+          });
+
+          // reconcile-webhook: o evento de A resolve a organização pelo NOSSO id e a reconsulta paga dá a baixa.
+          const eventoA = `evt-san305-${papel}-${suffix}-A`;
+          estado.set(cobrancaDe(cenario.tenantA), { status: "paid", paidCents: 10_000, raw: {} });
+          await eventos.insertIfAbsent(
+            {
+              provider: "asaas",
+              externalEventId: eventoA,
+              bodyDigest: "d".repeat(64),
+              signatureOk: true,
+              externalResourceId: cobrancaDe(cenario.tenantA),
+              externalReference: st.get(cenario.tenantA)!,
+            },
+            agoraCanal,
+          );
+          const reconciliado = await runBillingReconcileEvent(deps, { provider: "asaas", externalEventId: eventoA });
+          const linhaEvento = await admin.billingWebhookEvent.findFirstOrThrow({ where: { provider: "asaas", external_event_id: eventoA } });
+          assert.equal(reconciliado, "settled");
+          registrarJob("billing.reconcile-webhook", {
+            desfecho: reconciliado,
+            evento: { status: linhaEvento.status, organizacao: linhaEvento.resolved_tenant_id ? tag(linhaEvento.resolved_tenant_id) : null },
+            demonstrativos: await projetarDemonstrativos(),
+          });
+
+          // poll-pending: a cobrança de B, sem evento há > 30 min, é reconsultada (webhook perdido) → baixa.
+          estado.set(cobrancaDe(cenario.tenantB), { status: "paid", paidCents: 10_000, raw: {} });
+          const pendente = await runBillingPollPending(deps);
+          assert.deepEqual({ eventos: pendente.events, cobrancas: pendente.charges }, { eventos: 0, cobrancas: 1 });
+          registrarJob("billing.poll-pending", {
+            eventos: pendente.events,
+            cobrancas: pendente.charges,
+            desfechos: pendente.outcomes,
+            demonstrativos: await projetarDemonstrativos(),
+          });
+
+          // poll-settled: o chargeback tardio de B (sem evento) reverte; A, ainda paga, não muda (baixa monotônica).
+          estado.set(cobrancaDe(cenario.tenantB), { status: "charged_back", raw: {} });
+          const liquidado = await runBillingPollSettled(deps);
+          const pagamentos = await admin.subscriptionStatementPayment.findMany({ where: { tenant_id: { in: orgs } } });
+          const creditos = await admin.subscriptionCredit.count({ where: { tenant_id: { in: orgs } } });
+          const demonstrativosFinais = await projetarDemonstrativos();
+          assert.deepEqual(
+            demonstrativosFinais.map((row) => [row.tenantId, row.status, row.chargeStatus, row.paid]),
+            [
+              ["A", "paid", "confirmed", "100"],
+              ["B", "closed", "charged_back", "0"],
+            ],
+            "A segue paga; o chargeback de B devolve o demonstrativo a closed com pago 0",
+          );
+          assert.equal(creditos, 0, "nem a baixa repetida de A nem o chargeback de B criam crédito");
+          registrarJob("billing.poll-settled", {
+            cobrancas: liquidado.charges,
+            desfechos: liquidado.outcomes,
+            demonstrativos: demonstrativosFinais,
+            pagamentos: pagamentos
+              .map((row) => ({ tenantId: tag(row.tenant_id), amount: row.amount.toString(), reversed: row.reversed_amount.toString(), kind: row.reversal_kind }))
+              .sort(porOrganizacao),
+            creditos,
+          });
+
+          // Limpeza do cenário, nesta volta (FK Restrict para o demonstrativo e para a organização).
+          await admin.billingWebhookEvent.deleteMany({ where: { provider: "asaas", external_event_id: eventoA } });
+          await admin.billingOutbox.deleteMany({ where: { tenant_id: { in: orgs } } });
+          await admin.subscriptionStatementCharge.deleteMany({ where: { tenant_id: { in: orgs } } });
+          await admin.billingStatementRef.deleteMany({ where: { tenant_id: { in: orgs } } });
+          await admin.auditLog.deleteMany({ where: { tenant_id: { in: orgs }, action: { startsWith: "subscription_" } } });
+          await admin.subscriptionCredit.deleteMany({ where: { tenant_id: { in: orgs } } });
+          await admin.subscriptionStatementPayment.deleteMany({ where: { tenant_id: { in: orgs } } });
+          await admin.subscriptionStatement.deleteMany({ where: { id: { in: [...st.values()] } } });
+        }
+
         medidas.set(papel, {
           s1: normalizar(s1Data),
           s1Quantidade: s1Data.metrics.reduce((total, metric) => total + Number(metric.quantity), 0),
@@ -769,11 +989,11 @@ if (!connectionString) {
 
       await t.test("T11d · controles (já por organização): iguais nos dois papéis", () => {
         assert.equal((sup.s4Alocacoes as unknown[]).length, 2);
-        assert.deepEqual(efe.s4Alocacoes, sup.s4Alocacoes);
+        assert.deepEqual(canonico(efe.s4Alocacoes), canonico(sup.s4Alocacoes));
         assert.equal((sup.s4Overview as unknown[]).length, 2, "as duas organizações do seed aparecem no overview");
-        assert.deepEqual(efe.s4Overview, sup.s4Overview);
+        assert.deepEqual(canonico(efe.s4Overview), canonico(sup.s4Overview));
         assert.equal((sup.s4Daily as { daily: unknown[] }).daily.length, 1);
-        assert.deepEqual(efe.s4Daily, sup.s4Daily);
+        assert.deepEqual(canonico(efe.s4Daily), canonico(sup.s4Daily));
       });
 
       await t.test("T11e · cada rota FORCE tem cenário próprio, não vazio e igual nos dois papéis", () => {
@@ -783,20 +1003,21 @@ if (!connectionString) {
           .sort();
         assert.deepEqual(Object.keys(sup.rotas).sort(), forceEnumeradas, "FORCE enumerado != diferenciais executados sob super");
         assert.deepEqual(Object.keys(efe.rotas).sort(), forceEnumeradas, "FORCE enumerado != diferenciais executados sob efêmero");
-        for (const chave of forceEnumeradas) assert.deepEqual(efe.rotas[chave], sup.rotas[chave], chave);
+        for (const chave of forceEnumeradas) assert.deepEqual(canonico(efe.rotas[chave]), canonico(sup.rotas[chave]), chave);
       });
 
-      await t.test("T11f · job.registry fecha 4 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
+      await t.test("T11f · job.registry fecha 8 jobs FORCE com efeito próprio e etiqueta os outros 9 como B-ARNES-2", () => {
         const forceEnumerados = [...JOBS]
           .filter(([, etiqueta]) => etiqueta === "FORCE-PLATAFORMA")
           .map(([chave]) => chave)
           .sort();
         const foraDaSuperficie = [...JOBS].filter(([, etiqueta]) => etiqueta === "FORA-DA-SUPERFICIE");
-        assert.equal(forceEnumerados.length, 4);
+        // 4 → 8 no B-ASS-08b: os 4 jobs do canal de cobrança (billing.*), cada um com cenário executado nos dois papéis.
+        assert.equal(forceEnumerados.length, 8);
         assert.equal(foraDaSuperficie.length, 9, "os demais jobs pertencem à pendência B-ARNES-2");
         assert.deepEqual(Object.keys(sup.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob super");
         assert.deepEqual(Object.keys(efe.jobs).sort(), forceEnumerados, "jobs FORCE enumerados != diferenciais executados sob efêmero");
-        for (const chave of forceEnumerados) assert.deepEqual(efe.jobs[chave], sup.jobs[chave], chave);
+        for (const chave of forceEnumerados) assert.deepEqual(canonico(efe.jobs[chave]), canonico(sup.jobs[chave]), chave);
       });
 
       await t.test("T11g · a superfície de /api/v1/platform lida do router em runtime == a lista fechada, com o FORCE de cada tabela conferido", async () => {
@@ -816,7 +1037,9 @@ if (!connectionString) {
         };
         visitar((app as unknown as { router: object }).router, "");
 
-        const plataforma = [...rotas].filter((rota) => rota.split(" ")[1]!.startsWith(`${P}/`) || rota.endsWith(` ${P}`)).sort();
+        const plataforma = [...rotas]
+          .filter((rota) => rota.split(" ")[1]!.startsWith(`${P}/`) || rota.endsWith(` ${P}`) || rota.split(" ")[1]!.startsWith(`${WEBHOOK}/`))
+          .sort();
         assert.ok(plataforma.length >= 10, `a leitura do router veio rasa: ${JSON.stringify(plataforma)}`);
         assert.deepEqual(
           { semEtiqueta: plataforma.filter((rota) => !SUPERFICIE.has(rota)), etiquetaSemRota: [...SUPERFICIE.keys()].filter((rota) => !plataforma.includes(rota)) },
@@ -927,6 +1150,15 @@ function roteado(alvo: { atual: PrismaClient }): PrismaClient {
       return property in (alvo.atual as object);
     },
   });
+}
+
+/** Igualdade de CONJUNTO: a ordem das listas que o app devolve não é estável entre as duas voltas (no CI do #523, run
+ * 42734958946, T11d/T11e falharam só com os dois tenants trocados de posição — `allocatedCost 10/30`). Ordena cada lista,
+ * recursivamente, pela forma serializada dos itens; a propriedade real é "o mesmo conjunto", não "a mesma ordem". */
+function canonico(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonico).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).map(([key, inner]) => [key, canonico(inner)]));
+  return value;
 }
 
 /** Ids, tempos e carimbos de geração variam entre execuções; o resto do corpo tem de ser idêntico. */
@@ -1192,6 +1424,13 @@ async function limpar(admin: PrismaClient, cenario: Cenario): Promise<void> {
   await admin.tenantSubscriptionAddon.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenantSubscription.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenantUsageDaily.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  // B-ASS-08b — se o cenário do canal falhar no meio, as linhas dele (FK Restrict para tenants) não podem travar a limpeza.
+  await admin.billingOutbox.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.subscriptionStatementCharge.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.billingStatementRef.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.subscriptionCredit.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.subscriptionStatementPayment.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.subscriptionStatement.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.tenant.deleteMany({ where: { id: { in: tenantIds } } });
   if (cenario.subscriptionPlanId) {
     await admin.subscriptionPlanVersion.deleteMany({ where: { plan_id: cenario.subscriptionPlanId } });

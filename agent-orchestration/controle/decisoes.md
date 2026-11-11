@@ -4805,6 +4805,14 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Leitura do plano, pelo item 10(1):** o bloco não toca nenhum dos cinco gatilhos de junta completa: não calcula nem escreve dinheiro (a tela não calcula; o approve do servidor não muda), não abre consulta sem escopo, não muda permissão (nenhum grant, gate de rota nem `can()`), não perde dado sem volta (a recusa devolve o orçamento a rascunho; a falha no meio é anterior ao bloco e foi para o `B-O6R-09`) e não abre superfície externa. Nível: **revisão reforçada** (1 revisor que executa testes e mutações + CI) **mais a conferência visual do diálogo**.
 - **Não escolhida em silêncio:** a trava automática do item 10(2) roda sobre o diff do PR (`src/**`, `prisma/**`, `.github/**`, `catalog.ts`, `RBAC_MATRIX.md`, `frontend/src/modules/auth/**`, `frontend/src/providers/**`, e linhas com `permissions.includes(`, `can(` ou `requirePermission(`); se acusar, o bloco sobe para junta completa. Se o dono preferir a junta, o plano não muda; muda só o fim do ciclo.
 
+## D-J530-G14-BRIEFING-X-CONTRATO (2026-11-11) — o BRIEFING da J-530 pedia BEGIN/COMMIT numa migração de UMA sentença; o contrato a isenta
+
+- **fato:** o §C4 (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA`) exige `BEGIN;`/`COMMIT;` só com mais de uma sentença; `scripts/migration-transaction-guard.mjs` isenta a migração nova de uma sentença ("Nova de UMA sentença transacional → isenta de G2 e G6"); a G14 (`prisma/migrations/20260901000000_ass08b_provider_one_enabled_per_kind/migration.sql`) tem 1 sentença e declara isso na própria linha 3.
+- **custo medido de editar** (`crit-530-cl`, F3.2): o `migrate deploy` passa; o `prisma migrate dev` passa a exigir reset do schema em toda base de desenvolvimento que já aplicou o ramo.
+- **decisão** (`topo-530-v2-api`, plano `B-ASS-08b-conserto-530-v2.md` §7, aprovada pela crítica r2 — CRIT530-07 fechado): vale o contrato; a migração NÃO muda; o C3-02 da J-530 fecha como "conforme o contrato". Briefing de junta não cria exigência acima do contrato: a divergência se registra (§A2), não se resolve em silêncio.
+- **não reabre a C3** (§C7 10(4)): achado BAIXO, sem dinheiro, permissão nem isolamento.
+- **registro:** gravado pelo dev do conserto da J-530 (`dev-08b`, Claude Opus 5.5), no PR #530, antes do merge.
+
 ## D-B-O6R-09-REPLAY-ORCAMENTO-409 (2026-11-11) — a repetição da aprovação de orçamento continua 409 e passa a levar o id da OS
 
 - **Natureza:** registro da emenda 1.1 do plano do `B-O6R-09` (planejador `emenda11-B-O6R-09-api`, EM1-02 e EM1-03 da crítica `crit-09-em1-cl`), gravado pelo dev `dev-o6r09-cl` na fatia 6, como a emenda manda. Não é decisão nova do dono: segue a `RBAC_MATRIX.md` (linha "replay → 409 `quote_already_approved`"), que o dono mandou seguir na aprovação de orçamento (`D-PORTAO-3-RECOMENDACOES-1111`, Q2 (c)).
