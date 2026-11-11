@@ -40,6 +40,7 @@ import type {
   FieldDispatchEvent,
   FieldDispatchStatus,
   FieldDispatchTransitionResult,
+  FieldDispatchTxScope,
   ListFieldDispatchesInput,
   ListFieldDispatchesResult,
 } from "./field-dispatch.types.js";
@@ -449,6 +450,8 @@ export class FieldDispatchService {
     // P3, a corrida: outro pedido com a mesma chave está com a transação aberta → este INSERT espera no índice único.
     // Se aquele faz commit, este recebe a chave tomada e devolve o vencedor (a captura fica FORA da transação, que já
     // voltou). Se aquele volta, este segue e cria o seu — nunca vê um despacho que foi desfeito.
+    // Emenda 4 (P6) — o perfil de campo do técnico é lido ANTES da mãe: dentro dela, nada usa outra conexão.
+    const createOperatorId = status === "draft" ? undefined : await this.workOrderService.resolveDispatchOperatorId(actor, operatorUserId);
     let dispatch: FieldDispatch;
     try {
       ({ dispatch } = await this.repository.createWithEvent(
@@ -479,13 +482,18 @@ export class FieldDispatchService {
           beforeCommit:
             status === "draft"
               ? undefined
-              : (created) =>
-                  this.assignWorkOrderForDispatch(actor, {
-                    workOrderId: created.workOrderId,
-                    operatorUserId: created.operatorUserId,
-                    dispatchId: created.id,
-                    source: "field_dispatch",
-                  }),
+              : (created, scope) =>
+                  this.assignWorkOrderForDispatch(
+                    actor,
+                    {
+                      workOrderId: created.workOrderId,
+                      operatorUserId: created.operatorUserId,
+                      dispatchId: created.id,
+                      source: "field_dispatch",
+                      operatorId: createOperatorId,
+                    },
+                    scope,
+                  ),
         },
       ));
     } catch (error) {
@@ -699,6 +707,10 @@ export class FieldDispatchService {
     // para outro). Ativar o rascunho atribui a OS dentro dela (`beforeCommit`): se a OS recusa, o rascunho fica como
     // estava, sem compensação (o antigo `restoreState` saiu).
     const activatesDraft = current.status === "draft" && nextStatus === "assigned";
+    // Emenda 4 (P6) — o perfil de campo do técnico, lido ANTES da mãe.
+    const activationOperatorId = activatesDraft
+      ? await this.workOrderService.resolveDispatchOperatorId(actor, current.operatorUserId)
+      : undefined;
     const expectedState = { status: current.status, operatorUserId: current.operatorUserId };
     const result = await this.repository.transitionWithEvent(
       {
@@ -720,13 +732,19 @@ export class FieldDispatchService {
       },
       {
         beforeCommit: activatesDraft
-          ? (activated) =>
-              this.assignWorkOrderForDispatch(actor, {
-                workOrderId: activated.workOrderId,
-                operatorUserId: activated.operatorUserId,
-                dispatchId: activated.id,
-                source: "field_dispatch",
-              })
+          ? (activated, scope) =>
+              this.assignWorkOrderForDispatch(
+                actor,
+                {
+                  workOrderId: activated.workOrderId,
+                  operatorUserId: activated.operatorUserId,
+                  dispatchId: activated.id,
+                  source: "field_dispatch",
+                  previousStatus: current.status,
+                  operatorId: activationOperatorId,
+                },
+                scope,
+              )
           : undefined,
       },
     );
@@ -781,6 +799,8 @@ export class FieldDispatchService {
     // atravessa — o antigo `restoreState` saiu. O técnico antigo continua com a linha em `work_order_assignments` (é
     // ex-técnico da OS a partir daqui: o trabalho offline dele vira conflito, `D2-07c`).
     const expectedBeforeReassign = { status: current.status, operatorUserId: current.operatorUserId };
+    // Emenda 4 (P6) — o perfil de campo do técnico novo, lido ANTES da mãe.
+    const reassignOperatorId = await this.workOrderService.resolveDispatchOperatorId(actor, operatorUserId);
     const result = await this.repository.transitionWithEvent(
       {
         tenantId: actor.tenantId,
@@ -807,14 +827,20 @@ export class FieldDispatchService {
         },
       },
       {
-        beforeCommit: (reassigned) =>
-          this.assignWorkOrderForDispatch(actor, {
-            workOrderId: reassigned.workOrderId,
-            operatorUserId: reassigned.operatorUserId,
-            dispatchId: reassigned.id,
-            source: "field_dispatch_reassign",
-            reason: optionalString(body.reason),
-          }),
+        beforeCommit: (reassigned, scope) =>
+          this.assignWorkOrderForDispatch(
+            actor,
+            {
+              workOrderId: reassigned.workOrderId,
+              operatorUserId: reassigned.operatorUserId,
+              dispatchId: reassigned.id,
+              source: "field_dispatch_reassign",
+              reason: optionalString(body.reason),
+              previousStatus: current.status,
+              operatorId: reassignOperatorId,
+            },
+            scope,
+          ),
       },
     );
     const updated = this.transitionOutcome(result);
@@ -1092,8 +1118,9 @@ export class FieldDispatchService {
   }
 
   // `D1-07c` = (c) — despachar é atribuir. A recusa da OS (404, 409) atravessa como `FieldDispatchError` com o
-  // mesmo status/código/motivo, e quem chama desfaz o despacho (compensação; ver `create`, `changeStatus`,
-  // `reassign`).
+  // mesmo status/código/motivo. Com o escopo da mãe (Emenda 4), a atribuição é gravada na transação do despacho e a
+  // recusa faz a mãe voltar inteira: não há compensação. Sem escopo, é a chamada de depois do commit
+  // (`moveAssignmentToRemainingDispatch`), que não muda.
   private async assignWorkOrderForDispatch(
     actor: FieldDispatchActorContext,
     input: {
@@ -1102,16 +1129,36 @@ export class FieldDispatchService {
       readonly dispatchId: string;
       readonly source: "field_dispatch" | "field_dispatch_reassign";
       readonly reason?: string;
+      /** Emenda 4 (P7) — o status do despacho ANTES da transição em curso (ausente na criação). */
+      readonly previousStatus?: FieldDispatchStatus;
+      /** Emenda 4 (P6) — o perfil de campo do técnico, resolvido antes da mãe. */
+      readonly operatorId?: string;
     },
+    scope?: FieldDispatchTxScope,
   ): Promise<void> {
     try {
-      await this.workOrderService.assignFromDispatch(actor, {
-        workOrderId: input.workOrderId,
-        operatorUserId: input.operatorUserId,
-        dispatchId: input.dispatchId,
-        source: input.source,
-        message: input.reason,
-      });
+      await this.workOrderService.assignFromDispatch(
+        actor,
+        {
+          workOrderId: input.workOrderId,
+          operatorUserId: input.operatorUserId,
+          dispatchId: input.dispatchId,
+          source: input.source,
+          message: input.reason,
+        },
+        // Emenda 4 — com o escopo da mãe, a OS é lida e gravada pela `tx` dela, e a trava lê `field_dispatches` na mesma
+        // transação. Dentro dela, a escrita do próprio despacho é visível, e o status novo nunca é "No local"; por isso a
+        // trava também responde "sim" quando o status ANTERIOR do despacho em transição era `arrived`/`in_service` (P7).
+        scope
+          ? {
+              repository: scope.workOrders,
+              operatorId: input.operatorId,
+              hasActiveDispatchAtSite: async (tenantId, workOrderId) =>
+                (input.previousStatus !== undefined && DISPATCH_SERVICE_STARTED.has(input.previousStatus)) ||
+                (await hasActiveDispatchAtSiteIn(scope.dispatches, tenantId, workOrderId)),
+            }
+          : undefined,
+      );
     } catch (error) {
       if (error instanceof WorkOrderError) {
         throw new FieldDispatchError(error.statusCode, error.code, error.reason, error.message);
@@ -1223,8 +1270,17 @@ export async function hasActiveDispatchAtSite(tenantId: string, workOrderId: str
     env.CORE_SAAS_PERSISTENCE === "prisma"
       ? await (await import("./field-dispatch-prisma.repository.js")).createPrismaFieldDispatchRepository()
       : memoryRepository;
-  const { items } = await repository.list({ tenantId, workOrderId, limit: 100, offset: 0 });
+  return hasActiveDispatchAtSiteIn(repository, tenantId, workOrderId);
+}
 
+// B-O6R-09 · Emenda 4 — o predicado "No local" num ponto só, sobre um repositório dado: o padrão (acima) ou o da
+// transação da mãe do despacho (`FieldDispatchTxScope.dispatches`), que enxerga a escrita da própria mãe.
+export async function hasActiveDispatchAtSiteIn(
+  repository: Pick<FieldDispatchRepository, "list">,
+  tenantId: string,
+  workOrderId: string,
+): Promise<boolean> {
+  const { items } = await repository.list({ tenantId, workOrderId, limit: 100, offset: 0 });
   return items.some((dispatch) => DISPATCH_SERVICE_STARTED.has(dispatch.status));
 }
 

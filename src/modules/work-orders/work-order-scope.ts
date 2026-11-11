@@ -24,6 +24,17 @@ export type MemoryWorkOrderScope = {
 
 export type WorkOrderWriteScope = { readonly kind: "prisma"; readonly tx: Prisma.TransactionClient } | MemoryWorkOrderScope;
 
+// B-O6R-09 · Emenda 4 (`D-B-O6R-09-ATRIBUICAO-NA-MAE`) — o repositório de OS preso ao `tx` da MÃE do despacho. A
+// atribuição da OS (a leitura, o UPDATE, a linha de `work_order_assignments` e o `work_order_assigned`) é gravada na
+// transação do despacho: ou ficam os três, ou nenhum. `assignFromDispatch` chama `this.client.$transaction`
+// (work-order-prisma.repository.ts); num `tx`, isso vira um SAVEPOINT dentro da mãe (adapter-pg; C4E-05): o erro
+// atravessa até a mãe, que volta inteira. Único chamador: `PrismaFieldDispatchRepository.txScope` (guarda (vii)).
+export type WorkOrderAssignRepository = Pick<WorkOrderRepository, "findById" | "assignFromDispatch">;
+
+export function workOrderAssignRepositoryForTx(tx: Prisma.TransactionClient): WorkOrderAssignRepository {
+  return new PrismaWorkOrderRepository(tx);
+}
+
 export function workOrderRepositoryForScope(scope: WorkOrderWriteScope): WorkOrderWriteRepository {
   if (scope.kind === "prisma") {
     return new PrismaWorkOrderRepository(scope.tx);

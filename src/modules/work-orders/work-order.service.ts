@@ -90,7 +90,7 @@ import {
   type WorkOrderChecklistRole,
 } from "./work-order-checklists.types.js";
 import type { ChecklistApplicabilityMatch } from "../checklists/applicability/checklist-applicability.resolution.js";
-import type { MemoryWorkOrderScope, WorkOrderWriteRepository } from "./work-order-scope.js";
+import type { MemoryWorkOrderScope, WorkOrderAssignRepository, WorkOrderWriteRepository } from "./work-order-scope.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -1957,6 +1957,19 @@ export class WorkOrderService {
   }
 
   /**
+   * B-O6R-09 · Emenda 4 (P6) — o perfil de campo do técnico (`assigned_operator_id`), ou, sem perfil, o próprio user
+   * id. O despacho o resolve ANTES de abrir a transação-mãe, para que nada dentro dela use outra conexão. As linhas
+   * vieram de `assignFromDispatch`, sem mudança.
+   */
+  async resolveDispatchOperatorId(actor: WorkOrderActorContext, userId: string): Promise<string> {
+    const resolver = this.references.resolveActorOperatorProfileId;
+    const operatorProfileId = resolver
+      ? await resolver({ tenantId: actor.tenantId, userId, roles: [], permissions: [] })
+      : undefined;
+    return operatorProfileId ?? userId;
+  }
+
+  /**
    * B-O6R-07c-b1 (Ω6R-SEC-002, `D1-07c` = (c)) — DESPACHAR É ATRIBUIR. Chamado pelo `FieldDispatchService` no
    * `create` (despacho que nasce `assigned`), na passagem `draft → assigned` e no `reassign`; e, ao cancelar ou
    * falhar um despacho, para devolver a OS ao despacho ativo que sobrou.
@@ -1982,7 +1995,29 @@ export class WorkOrderService {
       readonly source: AssignWorkOrderFromDispatchInput["source"];
       readonly message?: string;
     },
+    // B-O6R-09 · Emenda 4 — dentro da transação-mãe do despacho: o repositório preso ao `tx` dela, o perfil de campo
+    // resolvido antes dela e o resolvedor da trava da mesma transação. Sem `inTx`, o comportamento é o de antes.
+    inTx?: {
+      readonly repository?: WorkOrderAssignRepository;
+      readonly operatorId?: string;
+      readonly hasActiveDispatchAtSite: ActiveDispatchAtSiteResolver;
+    },
   ): Promise<WorkOrder> {
+    if (inTx) {
+      // Emenda 4 × B-SAN3-23 (#536) — com `inTx`, o método INTEIRO roda num serviço preso à transação da mãe: a leitura
+      // da OS, a trava, o CAS do #536, a releitura, a revalidação e a regravação vão todos pelo repositório preso ao
+      // `tx` e pelo resolvedor da mesma transação, e o perfil de campo é o resolvido antes da mãe. Nada aqui usa outra
+      // conexão (P6), e uma recusa em qualquer ponto faz a mãe voltar inteira (P5). O corpo abaixo, o do #536, não muda.
+      // O serviço preso só chama `findById` e `assignFromDispatch` do repositório (o tipo `WorkOrderAssignRepository`).
+      const repository = inTx?.repository ?? this.repository;
+      const operatorId = inTx.operatorId;
+      const bound = new WorkOrderService(repository as WorkOrderRepository, {
+        ...this.references,
+        hasActiveDispatchAtSite: inTx.hasActiveDispatchAtSite,
+        ...(operatorId === undefined ? {} : { resolveActorOperatorProfileId: async () => operatorId }),
+      });
+      return bound.assignFromDispatch(actor, input);
+    }
     const current = await this.get(actor, input.workOrderId);
     assertDispatchAssignable(current);
 
@@ -1992,11 +2027,7 @@ export class WorkOrderService {
     const dispatchId = assertNonEmptyString(input.dispatchId, "dispatchId");
     // B-O6R-07c-b1 ciclo 2 (P-TRAVA) — a chamada AUTORITATIVA: toda escrita do técnico pelo despacho passa por aqui.
     await this.assertTechnicianChangeAllowed(actor, current, { userId, operatorId: userId });
-    const resolver = this.references.resolveActorOperatorProfileId;
-    const operatorProfileId = resolver
-      ? await resolver({ tenantId: actor.tenantId, userId, roles: [], permissions: [] })
-      : undefined;
-    const operatorId = operatorProfileId ?? userId;
+    const operatorId = await this.resolveDispatchOperatorId(actor, userId);
     const message =
       optionalString(input.message) ??
       (input.source === "field_dispatch_reassign"

@@ -1,170 +1,173 @@
 import "dotenv/config";
 
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
 import test, { after } from "node:test";
 
-import { buildApplicationName, captureSettled, withApplicationName } from "./helpers/pg-barrier.js";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
 
-// B-O6R-09 · T15 (R-POOL do plano v2; R2-04 e R2-07 da crítica r2) — a transação-mãe segura 1 conexão do pool
-// enquanto a atribuição da OS pede OUTRA. Sem limite, N ≥ `max` mães simultâneas esgotariam o pool: o fato medido pela
-// crítica r2 (Prisma 7.8 + PrismaPg) é que a `$transaction` que não acha conexão falha com P2028 em cerca de 2 s
-// (`maxWait` padrão) — a recusa é limpa, não órfã. O semáforo do repositório (capacidade injetável) mantém k < `max`.
+import { buildApplicationName, withApplicationName } from "./helpers/pg-barrier.js";
+
+// B-O6R-09 · T15, REESCRITA pela Emenda 4 (P6) — enquanto a transação-mãe do despacho está aberta, nenhuma ida ao banco
+// do caminho usa outra conexão: o despacho conclui com o cliente GLOBAL de 1 conexão. A versão anterior media o semáforo
+// das mães (a mãe segurava 1 conexão e a atribuição pedia OUTRA); a Emenda 4 pôs a atribuição na própria `tx` da mãe, e
+// o semáforo saiu junto com o motivo dele.
 //
-// O caso: um `PrismaClient` PRÓPRIO com `max: 3`, os repositórios de despacho e de OS ligados a ele e capacidade 1; 5
-// criações simultâneas em 5 OS distintas, com 5 técnicos distintos (R2-07: nenhum caso afirma dois despachos ativos do
-// mesmo técnico na mesma OS, `D-PORTAO-7`). Uma trava consultiva segura a 1ª atribuição que chegar (o "atraso" da T14),
-// para as mães se sobreporem de verdade. A barreira espera a 1ª atribuição presa OU a 1ª recusa (que só nasce do pool
-// esgotado) — com tempo limite e mensagem. Esperado: as 5 concluem, 5 despachos, 5 atribuições, 0 atribuição cujo
-// `metadata.dispatchId` não exista em `field_dispatches`. Sob a M15 (sem o semáforo), nem todas concluem, com P2028.
+// A técnica é a da T24: este arquivo roda no seu próprio processo e instala, ANTES de carregar qualquer módulo de
+// `src/`, o cliente global `new PrismaPg({ connectionString, max: 1 })`; o autocontrole confere que o `prisma` exportado
+// é o instalado e que uma 2ª transação, com a 1ª presa, recusa com P2028. Sem DDL no arquivo.
+//
+// A preparação de cada caso (a OS, o rascunho ou o despacho de partida) usa um cliente de administração à parte, com o
+// pool padrão, para que uma recusa só possa nascer no passo medido (C4E-01: no caso reatribuir, o not ok tem de vir da
+// REATRIBUIÇÃO, não do preparo). Mutações: M26 (criar e ativar) e M27b ou M26t (reatribuir), P2028 em cerca de 2 s.
 
-const baseConnection = process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL;
 const APP = buildApplicationName("b-o6r-09-pool");
-if (baseConnection) process.env.DATABASE_URL = withApplicationName(baseConnection, APP);
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const POOL_MAX = 3;
-const CRIACOES = 5;
+const POOL_MAX = 1;
 
-if (!baseConnection) {
-  test("o B-O6R-09 no Postgres exige DATABASE_URL", {
+if (!connectionString) {
+  test("o B-O6R-09 (1 conexão) exige DATABASE_URL", {
     skip: "Defina DATABASE_URL, suba o PostgreSQL e rode as migrações para executar este teste.",
   });
 } else {
-  const connection = baseConnection;
   process.env.LOG_LEVEL = "silent";
   process.env.CORE_SAAS_PERSISTENCE = "prisma";
+  process.env.DATABASE_URL = withApplicationName(connectionString, APP);
+  (globalThis as unknown as { prisma?: PrismaClient }).prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: withApplicationName(connectionString, APP), max: POOL_MAX }),
+  });
+  const instalado = (globalThis as unknown as { prisma: PrismaClient }).prisma;
+  const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: withApplicationName(connectionString, `${APP}-adm`) }) });
+  const organizacoes: string[] = [];
 
   after(async () => {
-    const { prisma } = await import("../src/database/prisma.js");
-    await prisma.$disconnect();
+    for (const tenantId of organizacoes) await teardown(admin, tenantId);
+    await instalado.$disconnect();
+    await admin.$disconnect();
   });
 
-  test("[R-POOL] pool max 3, semáforo 1: 5 criações simultâneas em 5 OS e 5 técnicos distintos → as 5 concluem; 5 despachos, 5 atribuições, 0 atribuição órfã", async () => {
-    const [{ PrismaPg }, { PrismaClient }, { resolvePermissionsForRoles }, wo, fd, woRepo, fdRepo, { Client }] = await Promise.all([
-      import("@prisma/adapter-pg"),
-      import("@prisma/client"),
+  test("[arnês] o cliente global é o de 1 conexão, e a 2ª transação presa recusa com P2028", async () => {
+    const { prisma } = await import("../src/database/prisma.js");
+    assert.equal(prisma, instalado, "arnês: src/database/prisma.ts não devolveu o cliente instalado (o caso mediria outro pool)");
+    const gate = { release: () => {} };
+    const solta = new Promise<void>((resolve) => {
+      gate.release = resolve;
+    });
+    const presa = instalado.$transaction(async () => solta, { timeout: 20_000 });
+    try {
+      await esperarTransacaoAberta();
+      const inicio = Date.now();
+      await assert.rejects(
+        () => instalado.$transaction(async () => undefined),
+        (error: any) => error?.code === "P2028",
+        "arnês: a 2ª transação não recusou com P2028 com o pool de 1 conexão esgotado",
+      );
+      console.log(`[T15] arnês: a 2ª transação recusou com P2028 em ${Date.now() - inicio} ms`);
+    } finally {
+      gate.release();
+      await presa;
+    }
+  });
+
+  async function montar(tag: string) {
+    const [{ resolvePermissionsForRoles }, wo, fd, woRepo, fdRepo] = await Promise.all([
       import("../src/modules/core-saas/permissions/catalog.js"),
       import("../src/modules/work-orders/work-order.service.js"),
       import("../src/modules/field-dispatch/field-dispatch.service.js"),
       import("../src/modules/work-orders/work-order-prisma.repository.js"),
       import("../src/modules/field-dispatch/field-dispatch-prisma.repository.js"),
-      import("pg"),
     ]);
-    const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: withApplicationName(connection, `${APP}-adm`) }) });
-    const adapter = new PrismaPg({ connectionString: withApplicationName(connection, APP), max: POOL_MAX });
-    const pequeno = new PrismaClient({ adapter });
-    const sufixo = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    wo.resetWorkOrderRuntimeForTests();
+    fd.resetFieldDispatchRuntimeForTests();
+    const nucleo = { getUserForTenant: async (id: string, tid: string) => ({ id, tenantId: tid, roles: ["field_technician"] }) };
+    // Os serviços MEDIDOS: os padrões, no cliente global de 1 conexão.
+    const ordens = await wo.createDefaultWorkOrderService();
+    const despachos = await fd.createDefaultFieldDispatchService(nucleo as never);
+    // Os serviços da PREPARAÇÃO: os mesmos, ligados ao cliente de administração (pool padrão).
+    const ordensPrep = new wo.WorkOrderService(new woRepo.RlsPrismaWorkOrderRepository(admin as never), (ordens as any).references);
+    const despachosPrep = new fd.FieldDispatchService(
+      new fdRepo.RlsPrismaFieldDispatchRepository(admin as never),
+      ordensPrep,
+      nucleo as never,
+      async () => null,
+      async () => {},
+      async () => {},
+      fd.buildWorkOrderChecklistSetPort(ordensPrep),
+      async () => false,
+    );
+    const sufixo = `${tag}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const tenant = await admin.tenant.create({ data: { name: `B-O6R-09 pool ${sufixo}`, slug: `b-o6r-09-pool-${sufixo}` } });
-    const tenantId = tenant.id;
-    assert.match(tenantId, UUID);
-    const chave = `b-o6r-09-pool-${randomUUID()}`;
-    const nome = `b_o6r_09_pool_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
-    const trava = new Client({ connectionString: withApplicationName(connection, `${APP}-trava`) });
-    await trava.connect();
-    let solta = false;
-    const soltar = async () => {
-      if (solta) return;
-      solta = true;
-      await trava.query("SELECT pg_advisory_unlock(hashtext($1))", [chave]);
-    };
+    organizacoes.push(tenant.id);
+    const usuario = async (n: string) =>
+      (await admin.user.create({ data: { tenant_id: tenant.id, name: `${n} ${sufixo}`, email: `b-o6r-09-pool-${n}-${sufixo}@example.com` } })).id;
+    const gestorId = await usuario("gestor");
+    const tecA = await usuario("tec-a");
+    const tecB = await usuario("tec-b");
+    const gestao = { tenantId: tenant.id, userId: gestorId, roles: ["manager"], permissions: resolvePermissionsForRoles(["manager"]), explicitPermissions: true } as never;
+    const os = (await ordensPrep.create(gestao, { title: `OS pool ${tag}` })).id;
+    return { tenantId: tenant.id, gestao, despachos, despachosPrep, os, tecA, tecB };
+  }
+
+  async function totais(tenantId: string, os: string) {
+    const [linha] = (await admin.$queryRawUnsafe(
+      `SELECT (SELECT count(*)::int FROM field_dispatches WHERE tenant_id = $1::uuid AND work_order_id = $2::uuid) AS despachos,
+              (SELECT assigned_user_id::text FROM work_orders WHERE tenant_id = $1::uuid AND id = $2::uuid) AS tecnico,
+              (SELECT count(*)::int FROM work_order_assignments a
+                WHERE a.tenant_id = $1::uuid AND a.work_order_id = $2::uuid
+                  AND NOT EXISTS (SELECT 1 FROM field_dispatches d WHERE d.tenant_id = a.tenant_id AND d.id::text = a.metadata->>'dispatchId')) AS orfas`,
+      tenantId,
+      os,
+    )) as Array<{ despachos: number; tecnico: string | null; orfas: number }>;
+    return { despachos: linha.despachos, tecnico: linha.tecnico, orfas: linha.orfas };
+  }
+
+  const medir = async <T>(rotulo: string, passo: () => Promise<T>): Promise<T> => {
+    const inicio = Date.now();
     try {
-      const [{ max_connections }] = (await admin.$queryRawUnsafe("SHOW max_connections")) as Array<{ max_connections: string }>;
-      console.log(`[T15] max_connections do servidor = ${max_connections}; pool do teste max = ${POOL_MAX}; semáforo = 1`);
-      const usuario = (n: string) =>
-        admin.user.create({ data: { tenant_id: tenantId, name: `${n} ${sufixo}`, email: `b-o6r-09-pool-${n}-${sufixo}@example.com` } });
-      const gestor = await usuario("gestor");
-      const tecnicos = [];
-      for (let i = 0; i < CRIACOES; i += 1) tecnicos.push(await usuario(`tecnico-${i}`));
-
-      wo.resetWorkOrderRuntimeForTests();
-      fd.resetFieldDispatchRuntimeForTests();
-      const padrao = await wo.createDefaultWorkOrderService();
-      const ordens = new wo.WorkOrderService(new woRepo.RlsPrismaWorkOrderRepository(pequeno as never), (padrao as any).references);
-      const nucleo = { getUserForTenant: async (id: string, tid: string) => ({ id, tenantId: tid, roles: ["field_technician"] }) };
-      const despachos = new fd.FieldDispatchService(
-        new (fdRepo.RlsPrismaFieldDispatchRepository as any)(pequeno, { heldTxMaxConcurrency: 1 }),
-        ordens,
-        nucleo as never,
-        async () => null,
-        async () => {},
-        async () => {},
-        fd.buildWorkOrderChecklistSetPort(ordens),
-        async () => false,
-      );
-      const gestao = { tenantId, userId: gestor.id, roles: ["manager"], permissions: resolvePermissionsForRoles(["manager"]), explicitPermissions: true } as never;
-      const oss: string[] = [];
-      for (let i = 0; i < CRIACOES; i += 1) oss.push((await ordens.create(gestao, { title: `OS pool ${i}` })).id);
-
-      await trava.query("SELECT pg_advisory_lock(hashtext($1))", [chave]);
-      await admin.$executeRawUnsafe(
-        `CREATE FUNCTION ${nome}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN PERFORM pg_advisory_xact_lock(hashtext('${chave}')); RETURN NEW; END $f$`,
-      );
-      try {
-        await admin.$executeRawUnsafe(
-          `CREATE TRIGGER ${nome} BEFORE INSERT ON work_order_assignments FOR EACH ROW WHEN (NEW.tenant_id = '${tenantId}'::uuid) EXECUTE FUNCTION ${nome}()`,
-        );
-        const inicio = Date.now();
-        const pedidos = oss.map((workOrderId, i) => captureSettled(despachos.create(gestao, { workOrderId, operatorUserId: tecnicos[i]!.id })));
-        let recusas = 0;
-        void Promise.all(pedidos.map(async (p) => ((await p).status === "rejected" ? (recusas += 1) : undefined)));
-        await esperar(
-          async () => (await atribuicoesPresas(admin, chave)) >= 1 || recusas > 0,
-          "a 1ª atribuição presa na trava consultiva, ou a 1ª recusa por pool esgotado",
-        );
-        await soltar();
-        const desfechos = await Promise.all(pedidos);
-        const duracaoMs = Date.now() - inicio;
-        console.log(`[T15] ${CRIACOES} criações em ${duracaoMs} ms; recusas = ${desfechos.filter((d) => d.status === "rejected").length}`);
-        const motivos = desfechos
-          .filter((d): d is { status: "rejected"; reason: unknown } => d.status === "rejected")
-          .map((d) => String((d.reason as { code?: unknown })?.code ?? "") + " " + String((d.reason as Error)?.message ?? d.reason).slice(0, 160));
-        assert.deepEqual(motivos, [], "nem todas as criações concluíram (pool esgotado pela transação-mãe?)");
-      } finally {
-        await soltar().catch(() => undefined);
-        await admin.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${nome} ON work_order_assignments`);
-        await admin.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${nome}()`);
-      }
-      const [{ gatilhos }] = (await admin.$queryRawUnsafe("SELECT count(*)::int AS gatilhos FROM pg_trigger WHERE tgname = $1", nome)) as Array<{ gatilhos: number }>;
-      assert.equal(gatilhos, 0, "o gatilho sobrou no catálogo");
-
-      const [totais] = (await admin.$queryRawUnsafe(
-        `SELECT (SELECT count(*)::int FROM field_dispatches WHERE tenant_id = $1::uuid) AS despachos,
-                (SELECT count(DISTINCT work_order_id)::int FROM field_dispatches WHERE tenant_id = $1::uuid) AS oss,
-                (SELECT count(DISTINCT operator_user_id)::int FROM field_dispatches WHERE tenant_id = $1::uuid) AS tecnicos,
-                (SELECT count(*)::int FROM work_order_assignments WHERE tenant_id = $1::uuid) AS atribuicoes,
-                (SELECT count(*)::int FROM work_order_assignments a
-                  WHERE a.tenant_id = $1::uuid
-                    AND NOT EXISTS (SELECT 1 FROM field_dispatches d WHERE d.tenant_id = a.tenant_id AND d.id::text = a.metadata->>'dispatchId')) AS orfas`,
-        tenantId,
-      )) as Array<Record<string, number>>;
-      assert.deepEqual(totais, { despachos: CRIACOES, oss: CRIACOES, tecnicos: CRIACOES, atribuicoes: CRIACOES, orfas: 0 });
-    } finally {
-      await trava.end();
-      await pequeno.$disconnect();
-      await teardown(admin, tenantId);
-      await admin.$disconnect();
+      const valor = await passo();
+      console.log(`[T15] ${rotulo}: concluiu em ${Date.now() - inicio} ms`);
+      return valor;
+    } catch (error) {
+      const e = error as { code?: unknown; message?: unknown };
+      assert.fail(`${rotulo} recusou com 1 conexão em ${Date.now() - inicio} ms (a mãe pediu uma 2ª conexão?): ${String(e?.code ?? "")} ${String(e?.message ?? error).slice(0, 200)}`);
     }
+  };
+
+  test("[P6 · 1 conexão] criar: conclui; 1 despacho, a OS com o técnico, 0 atribuição órfã", { timeout: 30_000 }, async () => {
+    const f = await montar("criar");
+    await medir("criar", () => f.despachos.create(f.gestao, { workOrderId: f.os, operatorUserId: f.tecA }));
+    assert.deepEqual(await totais(f.tenantId, f.os), { despachos: 1, tecnico: f.tecA, orfas: 0 });
   });
-}
 
-async function atribuicoesPresas(client: { $queryRaw: any }, chave: string): Promise<number> {
-  const rows = (await client.$queryRaw`
-    SELECT count(*)::int AS waiting
-      FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid
-     WHERE l.locktype = 'advisory' AND l.granted = false AND l.objsubid = 1
-       AND l.classid::bigint = ((hashtext(${chave})::bigint >> 32) & 4294967295)
-       AND l.objid::bigint = (hashtext(${chave})::bigint & 4294967295)
-       AND a.application_name = ${APP}
-  `) as Array<{ waiting: number }>;
-  return rows[0]?.waiting ?? 0;
-}
+  test("[P6 · 1 conexão] ativar rascunho: conclui; 1 despacho, a OS com o técnico, 0 atribuição órfã", { timeout: 30_000 }, async () => {
+    const f = await montar("ativar");
+    const rascunho = await f.despachosPrep.create(f.gestao, { workOrderId: f.os, operatorUserId: f.tecA, status: "draft" });
+    assert.deepEqual(await totais(f.tenantId, f.os), { despachos: 1, tecnico: null, orfas: 0 }, "preparo: o rascunho não atribui");
+    await medir("ativar rascunho", () => f.despachos.changeStatus(f.gestao, rascunho.id, { status: "assigned" }));
+    assert.deepEqual(await totais(f.tenantId, f.os), { despachos: 1, tecnico: f.tecA, orfas: 0 });
+  });
 
-async function esperar(condicao: () => Promise<boolean>, rotulo: string, limiteMs = 15_000): Promise<void> {
-  const inicio = Date.now();
-  for (;;) {
-    if (await condicao()) return;
-    if (Date.now() - inicio > limiteMs) assert.fail(`barreira: esperando ${rotulo} há ${Date.now() - inicio} ms (suíte ${APP})`);
-    await new Promise((resolve) => setTimeout(resolve, 25));
+  test("[P6 · 1 conexão] reatribuir: conclui; 1 despacho, a OS com o técnico novo, 0 atribuição órfã", { timeout: 30_000 }, async () => {
+    const f = await montar("reatribuir");
+    const d = await f.despachosPrep.create(f.gestao, { workOrderId: f.os, operatorUserId: f.tecA });
+    assert.deepEqual(await totais(f.tenantId, f.os), { despachos: 1, tecnico: f.tecA, orfas: 0 }, "preparo: o despacho de partida com A");
+    await medir("reatribuir", () => f.despachos.reassign(f.gestao, d.id, { operatorUserId: f.tecB }));
+    assert.deepEqual(await totais(f.tenantId, f.os), { despachos: 1, tecnico: f.tecB, orfas: 0 });
+  });
+
+  // A transação presa é do cliente global deste processo: contada pelo `application_name` dele (as suítes irmãs rodam
+  // em paralelo no mesmo banco), no estado `idle in transaction`.
+  async function esperarTransacaoAberta(limiteMs = 10_000): Promise<void> {
+    const inicio = Date.now();
+    for (;;) {
+      const [{ n }] = (await admin.$queryRawUnsafe(
+        "SELECT count(*)::int AS n FROM pg_stat_activity WHERE application_name = $1 AND state = 'idle in transaction'",
+        APP,
+      )) as Array<{ n: number }>;
+      if (n >= 1) return;
+      if (Date.now() - inicio > limiteMs) assert.fail(`arnês: esperando a transação aberta no cliente global há ${Date.now() - inicio} ms`);
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
   }
 }
 
@@ -182,8 +185,4 @@ async function teardown(client: { $queryRawUnsafe: any; $transaction: any }, ten
     }
     await tx.$executeRawUnsafe("DELETE FROM tenants WHERE id = $1::uuid", tenantId);
   });
-  for (const { table_name } of tabelas) {
-    const [{ n }]: Array<{ n: number }> = await client.$queryRawUnsafe(`SELECT count(*)::int AS n FROM "${table_name}" WHERE tenant_id = $1::uuid`, tenantId);
-    assert.equal(n, 0, `teardown deixou ${n} linha(s) em ${table_name} da organização descartável`);
-  }
 }

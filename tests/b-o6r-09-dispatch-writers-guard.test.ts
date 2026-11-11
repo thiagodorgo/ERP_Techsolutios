@@ -163,3 +163,58 @@ test("[PRE537-02 · vi] o único criador de { kind: \"prisma\", tx } em src/** �
   );
   assert.deepEqual([...callers].sort(), ["src/modules/service-quotes/service-quote.service.ts"], "workOrderRepositoryForScope ganhou outro chamador");
 });
+
+// B-O6R-09 · Emenda 4 (§E4.2.2 item 6; guarda (vii)) — `workOrderAssignRepositoryForTx` prende o repositório de OS ao `tx`
+// que recebe, e o cast de `PrismaFieldDispatchRepository.txScope` só é seguro porque ele só roda preso ao `tx` da mãe do
+// despacho. Um 2º chamador, com um `tx` qualquer (ou com o cliente raiz), gravaria a OS fora da transação do despacho.
+// O censo é por PARSE (AST do TypeScript), em todo `.ts` de src/**: a função tem exatamente 1 declaração, em
+// `work-order-scope.ts`, exatamente 1 chamada, dentro do método `txScope` da classe `PrismaFieldDispatchRepository` em
+// `field-dispatch-prisma.repository.ts`, e nenhuma outra referência ao nome fora de import/export (passá-la como valor
+// também conta). ALCANCE DECLARADO: o nome literal; um apelido criado por `import { … as outro }` aparece como referência
+// no import e fica de fora — por isso todo import com apelido do nome também reprova.
+test("[E4 · vii] workOrderAssignRepositoryForTx( em src/** só na definição (work-order-scope.ts) e em field-dispatch-prisma.repository.ts, dentro de PrismaFieldDispatchRepository.txScope", async () => {
+  const ts = (await import("typescript")).default;
+  const NOME = "workOrderAssignRepositoryForTx";
+  const declaracoes: string[] = [];
+  const chamadas: string[] = [];
+  const outras: string[] = [];
+  for (const file of sourceFiles(SRC)) {
+    const text = readFileSync(file, "utf8");
+    if (!text.includes(NOME)) continue;
+    const rel = path.relative(ROOT, file).split(path.sep).join("/");
+    const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+    const onde = (node: import("typescript").Node) => {
+      let method: string | undefined;
+      let klass: string | undefined;
+      for (let cur: import("typescript").Node | undefined = node.parent; cur; cur = cur.parent) {
+        if (!method && ts.isMethodDeclaration(cur) && cur.name && ts.isIdentifier(cur.name)) method = cur.name.text;
+        if (!klass && ts.isClassDeclaration(cur) && cur.name) klass = cur.name.text;
+      }
+      const { line } = source.getLineAndCharacterOfPosition(node.getStart(source));
+      return `${rel}:${line + 1} ${klass ?? "-"}.${method ?? "-"}`;
+    };
+    const visit = (node: import("typescript").Node): void => {
+      if (ts.isIdentifier(node) && node.text === NOME) {
+        const parent = node.parent;
+        if (ts.isFunctionDeclaration(parent) && parent.name === node) declaracoes.push(onde(node));
+        else if (ts.isCallExpression(parent) && parent.expression === node) chamadas.push(onde(node));
+        else if (ts.isImportSpecifier(parent) && !parent.propertyName && parent.name === node) {
+          // import { workOrderAssignRepositoryForTx } — sem apelido: permitido.
+        } else outras.push(`${onde(node)} (${ts.SyntaxKind[parent.kind]})`);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+  }
+  assert.deepEqual(
+    declaracoes.map((d) => d.replace(/:\d+ /, " ")),
+    ["src/modules/work-orders/work-order-scope.ts -.-"],
+    `declarações de ${NOME}: ${JSON.stringify(declaracoes)}`,
+  );
+  assert.deepEqual(
+    chamadas.map((c) => c.replace(/:\d+ /, " ")),
+    ["src/modules/field-dispatch/field-dispatch-prisma.repository.ts PrismaFieldDispatchRepository.txScope"],
+    `chamadas de ${NOME}: ${JSON.stringify(chamadas)}`,
+  );
+  assert.deepEqual(outras, [], `outras referências a ${NOME}: ${JSON.stringify(outras)}`);
+});

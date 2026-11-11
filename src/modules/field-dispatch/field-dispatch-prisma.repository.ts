@@ -1,8 +1,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import pino from "pino";
 
-import { env } from "../../config/env.js";
 import { setTenantRlsContext, withTenantRls } from "../../database/rls.js";
+import { workOrderAssignRepositoryForTx } from "../work-orders/work-order-scope.js";
 import type {
   ChangeFieldDispatchStatusInput,
   CreateFieldDispatchInput,
@@ -21,6 +20,7 @@ import type {
   FieldDispatchIdempotencyMatch,
   FieldDispatchTransitionPatch,
   FieldDispatchTransitionResult,
+  FieldDispatchTxScope,
   FieldDispatchWriteHooks,
   FindFieldDispatchByIdempotencyKeyInput,
   TransitionFieldDispatchInput,
@@ -35,82 +35,15 @@ import {
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
-// B-O6R-09 (R-POOL do plano v2; R2-04 da crítica r2) — a TRANSAÇÃO-MÃE. O despacho e o seu evento são gravados numa
-// transação que fica ABERTA enquanto a OS é atribuída na transação dela (o `beforeCommit`), e só há commit se a OS
-// aceitar. A mãe segura 1 conexão e a atribuição pede OUTRA. Medido pela crítica r2 (Prisma 7.8 + PrismaPg): sem conexão
-// livre, a `$transaction` falha com P2028 em cerca de 2 s (`maxWait` padrão) — recusa limpa, não órfã —, mas N mães
-// simultâneas com N ≥ `max` do pool recusariam todas. O semáforo do processo limita as mães a k < `max` (o `max` do
-// `pg` não é fixado em `src/database/prisma.ts`; o padrão do driver é 10), e sempre sobram conexões para as
-// atribuições pendentes. Ele é adquirido ANTES de pedir a conexão da mãe.
-export const FIELD_DISPATCH_HELD_TX_MAX_CONCURRENCY = 4;
-// Tem de ser maior que a atribuição no pior caso medido (declarado no diário do dev, pela T15).
+// B-O6R-09 (P1/P4 do plano v2; Emenda 4, P5/P6) — a TRANSAÇÃO-MÃE. O despacho, o seu evento e a atribuição da OS são
+// gravados numa transação só: o gancho (`beforeCommit`) recebe o escopo da mãe e atribui a OS pela MESMA `tx`
+// (`txScope`). Dentro dela não há espera por nada de fora: nenhuma ida ao banco do caminho usa outra conexão (a T15 de 1
+// conexão é a guarda). O semáforo das mães (R-POOL) e o marcador do commit perdido saíram com a Emenda 4: o motivo do
+// primeiro (a mãe segurava 1 conexão e a atribuição pedia OUTRA) e o estado que o segundo relatava (a OS atribuída com a
+// mãe perdida) deixaram de existir.
+// Teto da mãe; dentro dela não há espera por nada de fora. Fica em 20 s: baixá-lo não é necessário para o conserto e
+// mudaria o tempo das barreiras das suítes (Emenda 4 §E4.2.2, declarado).
 export const FIELD_DISPATCH_HELD_TX_TIMEOUT_MS = 20_000;
-
-const repositoryLogger = pino({ level: env.LOG_LEVEL });
-
-class HeldTransactionSlots {
-  private available: number;
-  private readonly waiters: Array<() => void> = [];
-
-  constructor(capacity: number) {
-    if (!Number.isInteger(capacity) || capacity < 1) {
-      throw new Error("A capacidade das transações-mãe do despacho precisa ser um inteiro >= 1.");
-    }
-    this.available = capacity;
-  }
-
-  async acquire(): Promise<void> {
-    if (this.available > 0) {
-      this.available -= 1;
-      return;
-    }
-    await new Promise<void>((resolve) => this.waiters.push(resolve));
-  }
-
-  release(): void {
-    const next = this.waiters.shift();
-    if (next) {
-      next();
-      return;
-    }
-    this.available += 1;
-  }
-}
-
-// Um semáforo por PROCESSO: todo repositório Rls construído sem capacidade própria divide o mesmo.
-const processHeldTxSlots = new HeldTransactionSlots(FIELD_DISPATCH_HELD_TX_MAX_CONCURRENCY);
-
-export type RlsPrismaFieldDispatchRepositoryOptions = {
-  /** Capacidade própria do semáforo (o teste de pool, T15). Sem ela, vale o semáforo do processo. */
-  readonly heldTxMaxConcurrency?: number;
-  readonly heldTxTimeoutMs?: number;
-};
-
-// O resíduo R1 do plano v2 (`P-B-O6R-09-ATRIBUICAO-FORA-DA-TX`): a OS aceitou e fez commit na transação dela, e a mãe
-// não fez (tempo esgotado, queda). O motivo vai CODIFICADO ao log, nunca o erro cru (§2.8), e o erro atravessa.
-type AssignmentMarker = { assignmentDone: boolean };
-
-function trackAssignment(
-  requested: FieldDispatchWriteHooks | undefined,
-  marker: AssignmentMarker,
-): FieldDispatchWriteHooks | undefined {
-  const beforeCommit = requested?.beforeCommit;
-  if (!beforeCommit) return requested;
-  return {
-    beforeCommit: async (dispatch) => {
-      await beforeCommit(dispatch);
-      marker.assignmentDone = true;
-    },
-  };
-}
-
-function reportCommitLost(marker: AssignmentMarker, operation: "create" | "transition", tenantId: string): void {
-  if (!marker.assignmentDone) return;
-  repositoryLogger.error(
-    { reason: "dispatch_commit_lost_after_assignment", operation, tenantId },
-    "b-o6r-09: dispatch commit lost after the work order assignment",
-  );
-}
 
 // B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — o operador da viatura no instante do fix. Recebe o `tx` da fase 2
 // da ingestão (já sob o GUC da organização confirmada, com orçamento de tempo) e NÃO abre transação. Lê só os
@@ -300,7 +233,7 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
       workOrderId: dispatch.workOrderId,
     });
     const result = { kind: "ok", dispatch, event } as const;
-    if (hooks?.beforeCommit) await hooks.beforeCommit(result.dispatch);
+    if (hooks?.beforeCommit) await hooks.beforeCommit(result.dispatch, this.txScope());
 
     return result;
   }
@@ -318,7 +251,7 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
       dispatchId: dispatch.id,
       workOrderId: dispatch.workOrderId,
     });
-    if (hooks?.beforeCommit) await hooks.beforeCommit(dispatch);
+    if (hooks?.beforeCommit) await hooks.beforeCommit(dispatch, this.txScope());
 
     return { dispatch, event };
   }
@@ -328,6 +261,13 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
     assertNotTransitionEventType(input.eventType);
 
     return this.insertEvent(input);
+  }
+
+  // Emenda 4 — o escopo da mãe para o gancho: o repositório de OS e este próprio repositório, os dois presos ao `tx`. O
+  // cast é seguro PORQUE só `createWithEvent` e `transitionWithEvent` o chamam, e os dois só rodam presos ao `tx` da
+  // mãe (`RlsPrismaFieldDispatchRepository`); a guarda (vii) congela o único chamador de `workOrderAssignRepositoryForTx`.
+  private txScope(): FieldDispatchTxScope {
+    return { workOrders: workOrderAssignRepositoryForTx(this.client as Prisma.TransactionClient), dispatches: this };
   }
 
   private async insertEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
@@ -364,69 +304,31 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
 }
 
 export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository {
-  private readonly heldTxSlots: HeldTransactionSlots;
-  private readonly heldTxTimeoutMs: number;
-
-  constructor(
-    private readonly prismaClient: PrismaClient,
-    options: RlsPrismaFieldDispatchRepositoryOptions = {},
-  ) {
-    this.heldTxSlots =
-      options.heldTxMaxConcurrency === undefined ? processHeldTxSlots : new HeldTransactionSlots(options.heldTxMaxConcurrency);
-    this.heldTxTimeoutMs = options.heldTxTimeoutMs ?? FIELD_DISPATCH_HELD_TX_TIMEOUT_MS;
-  }
+  constructor(private readonly prismaClient: PrismaClient) {}
 
   // A transação-mãe da criação: `$transaction` com `timeout` explícito e o GUC da organização como 1ª instrução.
   async createWithEvent(
     input: CreateFieldDispatchWithEventInput,
-    requested?: FieldDispatchWriteHooks,
+    hooks?: FieldDispatchWriteHooks,
   ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }> {
-    const marker: AssignmentMarker = { assignmentDone: false };
-    const hooks = trackAssignment(requested, marker);
-    try {
-      return await this.holdSlot(() =>
-        this.prismaClient.$transaction(
-          async (tx) => {
-            await setTenantRlsContext(tx, input.dispatch.tenantId);
-            return new PrismaFieldDispatchRepository(tx).createWithEvent(input, hooks);
-          },
-          { timeout: this.heldTxTimeoutMs },
-        ),
-      );
-    } catch (error) {
-      reportCommitLost(marker, "create", input.dispatch.tenantId);
-      throw error;
-    }
+    return this.prismaClient.$transaction(
+      async (tx) => {
+        await setTenantRlsContext(tx, input.dispatch.tenantId);
+        return new PrismaFieldDispatchRepository(tx).createWithEvent(input, hooks);
+      },
+      { timeout: FIELD_DISPATCH_HELD_TX_TIMEOUT_MS },
+    );
   }
 
   // A transação-mãe da mudança de status e da reatribuição, na mesma forma da criação.
-  async transitionWithEvent(input: TransitionFieldDispatchInput, requested?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult> {
-    const marker: AssignmentMarker = { assignmentDone: false };
-    const hooks = trackAssignment(requested, marker);
-    try {
-      return await this.holdSlot(() =>
-        this.prismaClient.$transaction(
-          async (tx) => {
-            await setTenantRlsContext(tx, input.tenantId);
-            return new PrismaFieldDispatchRepository(tx).transitionWithEvent(input, hooks);
-          },
-          { timeout: this.heldTxTimeoutMs },
-        ),
-      );
-    } catch (error) {
-      reportCommitLost(marker, "transition", input.tenantId);
-      throw error;
-    }
-  }
-
-  // O semáforo é pedido ANTES da conexão da mãe e devolvido quando ela termina (commit, rollback ou erro).
-  private async holdSlot<T>(work: () => Promise<T>): Promise<T> {
-    await this.heldTxSlots.acquire();
-    try {
-      return await work();
-    } finally {
-      this.heldTxSlots.release();
-    }
+  async transitionWithEvent(input: TransitionFieldDispatchInput, hooks?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult> {
+    return this.prismaClient.$transaction(
+      async (tx) => {
+        await setTenantRlsContext(tx, input.tenantId);
+        return new PrismaFieldDispatchRepository(tx).transitionWithEvent(input, hooks);
+      },
+      { timeout: FIELD_DISPATCH_HELD_TX_TIMEOUT_MS },
+    );
   }
 
   list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult> {

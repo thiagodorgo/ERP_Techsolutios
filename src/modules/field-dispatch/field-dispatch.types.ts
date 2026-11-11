@@ -1,5 +1,7 @@
 import type { ChecklistRunRole } from "../checklists/checklist.types.js";
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
+import type { WorkOrderAssignRepository } from "../work-orders/work-order-scope.js";
+import type { FieldDispatchRepository } from "./field-dispatch.repository.js";
 
 export const FIELD_DISPATCH_STATUSES = [
   "draft",
@@ -138,11 +140,25 @@ export type FieldDispatchEventDraft = {
 };
 
 /**
- * O gancho que roda DENTRO da transação do despacho, antes do commit. É por ele que a OS é atribuída (noutra transação,
- * a do repositório de OS): se ele lança, o despacho e o evento voltam juntos, e nada fica visível a outra conexão.
+ * B-O6R-09 · Emenda 4 — o ESCOPO da transação do despacho, que o gancho recebe. No Prisma, os dois repositórios estão
+ * presos ao `tx` da mãe: a OS é atribuída e a trava lê `field_dispatches` na MESMA transação e conexão (P5/P6). Na
+ * memória, `workOrders` fica ausente (o serviço de OS usa o dele) e `dispatches` é o próprio repositório.
+ */
+export type FieldDispatchTxScope = {
+  /** Prisma: o repositório de OS preso ao `tx` da mãe. Memória: ausente (o serviço de OS usa o dele). */
+  readonly workOrders?: WorkOrderAssignRepository;
+  /** O repositório de despacho da MESMA transação (Prisma: preso ao `tx`; memória: o próprio). */
+  readonly dispatches: Pick<FieldDispatchRepository, "list">;
+};
+
+/**
+ * O gancho que roda DENTRO da transação do despacho, antes do commit. É por ele que a OS é atribuída, pela `tx` da mãe
+ * (Emenda 4, P5): se ele lança, o despacho, o evento e a atribuição voltam juntos, e nada fica visível a outra conexão.
+ * O escopo é OBRIGATÓRIO: um invólucro que o descartasse deixa de compilar. Nenhum `catch` no caminho do gancho: um
+ * erro dele sempre atravessa até a mãe (C4E-05).
  */
 export type FieldDispatchWriteHooks = {
-  readonly beforeCommit?: (dispatch: FieldDispatch) => Promise<void>;
+  readonly beforeCommit?: (dispatch: FieldDispatch, scope: FieldDispatchTxScope) => Promise<void>;
 };
 
 export type CreateFieldDispatchWithEventInput = {

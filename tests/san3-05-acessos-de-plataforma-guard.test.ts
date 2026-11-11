@@ -473,6 +473,18 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/work-orders/work-order-scope.ts", "new PrismaWorkOrderRepository(scope.tx)", "OUTRO(scope.tx)", "×1"),
     "B-O6R-09 fatia 6: o escopo de escrita recebe o cliente da transação-mãe da aprovação do orçamento — o `tx` do callback de `withTenantRls(this.prismaClient, input.tenantId, …)` em `RlsPrismaServiceQuoteRepository.approveWithWorkOrder` (src/modules/service-quotes/service-quote-prisma.repository.ts l.153), cujo setter do GUC da organização do ator é a 1ª instrução da transação (src/database/rls.ts l.35); é o único lugar de src/** que cria `{ kind: \"prisma\", tx }` (l.157), e `workOrderRepositoryForScope` (l.29) só embrulha esse `tx`: a OS, as vistorias e o `work_order_created` são escritas de TENANT nas tabelas FORCE da organização, provadas sob papel NOSUPERUSER NOBYPASSRLS em tests/b-o6r-09-quote-approve-atomic-db.test.ts ([Q2 · evento · NOBYPASSRLS] e [Q4]).",
   ],
+  // B-O6R-09 · Emenda 4 (D-B-O6R-09-ATRIBUICAO-NA-MAE; docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md, 2ª entrada): a chave L2 do
+  // repositório de OS preso ao `tx` da mãe do despacho, colada da saída do gerador. Gerador e WRAPPERS intocados.
+  [
+    k("L2", "src/modules/work-orders/work-order-scope.ts", "new PrismaWorkOrderRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-O6R-09 Emenda 4: o repositório de OS preso ao `tx` da mãe do despacho; a atribuição da OS é gravada na transação do despacho, sob o GUC da organização posto na 1ª instrução da mãe. O ÚNICO chamador de `workOrderAssignRepositoryForTx` é `PrismaFieldDispatchRepository.txScope`, que só roda preso ao `tx` de `RlsPrismaFieldDispatchRepository.createWithEvent`/`transitionWithEvent` (o `$transaction` cuja 1ª instrução é `setTenantRlsContext(tx, tenantId)`), congelado pela guarda (vii) de `tests/b-o6r-09-dispatch-writers-guard.test.ts`. Acesso de organização, não de plataforma.",
+  ],
+  // B-O6R-09 · Emenda 4 × #536 (B-SAN3-23), a união do merge de c95ad4fd: a chave TRANSITIVA que o gerador deriva da chave
+  // acima e da instanciação nova do #536 dentro de `PrismaWorkOrderRepository` (o cancelamento), colada da saída do gerador.
+  [
+    k("L2", "src/modules/work-orders/work-order-prisma.repository.ts", "new PrismaWorkOrderFinancialItemRepository(tx)", "INJETADO-TRANSITIVO:SUSPEITO-ACIMA(src/modules/work-orders/work-order-scope.ts:new PrismaWorkOrderRepository(tx) PARAMETRO(tx))", "×1"),
+    "B-O6R-09 Emenda 4 × B-SAN3-23 (#536): a instanciação do #536 em `PrismaWorkOrderRepository` (o zerar dos itens no cancelamento, `const tx = this.client`) herda, pelo gerador, a suspeita da chave L2 de `workOrderAssignRepositoryForTx(tx)`. O repositório de OS preso ao `tx` da mãe do despacho só é usado, pelo serviço preso de `WorkOrderService.assignFromDispatch`, em `findById` e `assignFromDispatch` (o tipo `WorkOrderAssignRepository`); o cancelamento nunca roda nele. Se rodasse, seria dentro da mãe, sob o GUC da organização posto na 1ª instrução dela. Acesso de organização, não de plataforma.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

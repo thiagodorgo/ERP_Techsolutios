@@ -184,7 +184,7 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
     };
     const event = buildEvent(dispatch, input.event, now);
 
-    if (hooks?.beforeCommit) await hooks.beforeCommit(dispatch);
+    if (hooks?.beforeCommit) await hooks.beforeCommit(dispatch, { dispatches: this });
     this.dispatches.set(dispatch.id, dispatch);
     this.events.set(event.id, event);
 
@@ -226,7 +226,7 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
       const dispatch = applyTransitionPatch(current, input.patch, now);
       const event = buildEvent(dispatch, input.event, now);
       const result = { kind: "ok", dispatch, event } as const;
-      if (hooks?.beforeCommit) await hooks.beforeCommit(result.dispatch);
+      if (hooks?.beforeCommit) await hooks.beforeCommit(result.dispatch, { dispatches: this });
       this.dispatches.set(dispatch.id, dispatch);
       this.events.set(event.id, event);
 

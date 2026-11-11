@@ -89,3 +89,44 @@ censo pelo verificador de tipos do TypeScript, sobre o programa do `tsconfig.jso
 
 A mutação MP2, o 2º criador da sonda do revisor em `src/modules/work-orders/zz-pre537-canal.ts`, deixa o caso vermelho com
 os 2 criadores listados. O arquivo da mutação foi apagado depois.
+
+## 2ª entrada (2026-11-11 11:45 SP): as chaves da Emenda 4 (a atribuição da OS dentro da mãe do despacho)
+
+Autorização: Emenda 4 do plano v2 (§E4.3, "Regressões"), no procedimento da Emenda 2: só linhas acrescentadas em `NOVAS`,
+com o texto exato que o gerador imprime e o motivo por extenso. `git diff -U0` do arquivo do ratchet: 0 linha removida.
+
+- **A chave da Emenda 4** (colada da saída do gerador): `L2 · src/modules/work-orders/work-order-scope.ts ·
+  new PrismaWorkOrderRepository(tx) · PARAMETRO(tx) · ×1`. É o `workOrderAssignRepositoryForTx(tx)`, o repositório de OS
+  preso ao `tx` da mãe do despacho.
+- **A chave transitiva da união com o #536** (colada da saída do gerador, depois do merge de `c95ad4fd`):
+  `L2 · src/modules/work-orders/work-order-prisma.repository.ts · new PrismaWorkOrderFinancialItemRepository(tx) ·
+  INJETADO-TRANSITIVO:SUSPEITO-ACIMA(src/modules/work-orders/work-order-scope.ts:new PrismaWorkOrderRepository(tx) PARAMETRO(tx)) · ×1`.
+  O #536 instanciou, dentro do cancelamento de `PrismaWorkOrderRepository`, o repositório de itens financeiros sobre
+  `this.client`. Com a chave acima, o gerador estende a suspeita a essa instanciação. **Leitura do dev, declarada (§A6), a
+  confirmar pelo orquestrador:** é a mesma raiz que a Emenda 4 autorizou. O texto foi impresso pelo próprio teste, e o
+  cancelamento nunca roda no repositório preso: o serviço preso de `assignFromDispatch` só chama `findById` e
+  `assignFromDispatch`.
+
+**Por que é acesso de tenant, e não de plataforma.**
+- **Quem cria o `tx`.** Só `RlsPrismaFieldDispatchRepository.createWithEvent`/`transitionWithEvent`: um `$transaction`
+  cuja 1ª instrução é `setTenantRlsContext(tx, tenantId)`, com o `tenantId` do ator autenticado.
+- **Quem chama a fábrica.** O único chamador de `workOrderAssignRepositoryForTx` é `PrismaFieldDispatchRepository.txScope`,
+  congelado pela guarda (vii) de `tests/b-o6r-09-dispatch-writers-guard.test.ts`, que é um censo por parse com a mutação
+  M-vii vermelha.
+- **O que se grava.** Só a OS da organização, a linha de `work_order_assignments` e o `work_order_assigned`, todas tabelas
+  com FORCE RLS.
+
+**A prova por sonda (papel sem bypass).** Rodada pelo dev às 11:43 SP no `o6r09-pg`, com uma sonda temporária e não
+versionada: `tests/zz-o6r09-sonda-e4.test.ts`, apagada depois, com cópia em `scratchpad/o6r09-tools/`. Ela usa o papel de
+`createEphemeralRole` (`rolsuper=false`, `rolbypassrls=false`, conferido em `pg_roles`), o `withTenantRls` real e o
+`workOrderAssignRepositoryForTx(tx)` real:
+
+1. sob o GUC de A, lê a OS de A e a atribui: **ok** e **ok**;
+2. sob o GUC de A, a OS de B fica **invisível (RLS)**, e a atribuição dela não grava nada (**nada gravado (RLS)**);
+3. no fim, a OS de B continua **sem técnico**.
+
+Saída: `[sonda E4] {"papel":"rolsuper=false rolbypassrls=false","guc_A_le_A":"ok","guc_A_atribui_A":"ok","guc_A_le_B":"invisível (RLS)","guc_A_atribui_B":"nada gravado (RLS)","os_B_no_fim":"sem técnico"}`
+· `# pass 1 · # fail 0`. Depois da sonda: 0 organização da sonda no catálogo, e o papel efêmero foi removido pelo `drop()`.
+
+O caminho de produção sob o mesmo papel também passou: `[P1 · create · NOBYPASSRLS]` de
+`tests/b-o6r-09-dispatch-atomic-db.test.ts`, na bateria de 95/95, com a atribuição já dentro da mãe. T13 = 35/35.
