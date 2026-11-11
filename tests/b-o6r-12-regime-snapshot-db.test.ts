@@ -227,9 +227,8 @@ if (!connectionString) {
       // CHECK da RLS e recusa com 23503. Continua recusada; o código observável muda de 42501 para 23503.
       await assert.rejects(inserir(b.tenantId, a.tenantId), (error: unknown) => codigoDe(error) === "23503" || /23503|perfil normativo inexistente/.test(String(error)));
       await assert.rejects(inserir(a.tenantId, null), (error: unknown) => codigoDe(error) === "23503" || /23503|perfil normativo inexistente/.test(String(error)));
-      // Controle da C17 (sem mutação de código): sem SELECT no perfil, o carimbo não consegue ler e o INSERT cai.
-      await admin.$executeRawUnsafe(`REVOKE SELECT ON jurisdiction_profiles FROM "${role.roleName}"`);
-      await assert.rejects(inserir(a.tenantId, a.tenantId), (error: unknown) => codigoDe(error) === "42501" || /42501|permission denied/.test(String(error)));
+      // O controle da C17 (tirar do papel o SELECT no perfil e ver o INSERT cair) mora no drill, numa base
+      // própria: aqui, na base compartilhada, ele seria escrita de catálogo concorrente (E1.11′).
     } finally {
       await role.drop();
     }

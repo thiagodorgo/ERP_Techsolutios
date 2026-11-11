@@ -10,6 +10,8 @@ import path from "node:path";
 import test, { after } from "node:test";
 import { pathToFileURL } from "node:url";
 
+import { withRoleCatalogLock } from "./helpers/auth-identity-fixture.js";
+
 // B-O6R-12 — DRILL DA MIGRAÇÃO `20260902000000_impound_process_regime_snapshot`.
 //
 // Regra de casa do plano (§3.0 item 1, A6): mutação no SQL da migração só é vista por quem RELÊ o arquivo e o
@@ -120,6 +122,14 @@ if (!connectionString) {
 
   const { Client } = await import("pg");
   type PgClient = InstanceType<typeof Client>;
+  const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
+  // Cliente na base COMPARTILHADA, só para a trava de catálogo de cluster (E1.11′): a trava consultiva vale por
+  // base, então é aqui, e não no clone, que ela serializa com as outras suítes que criam e derrubam papéis.
+  const catalogo = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  async function criarPapel(papel: string): Promise<void> {
+    await withRoleCatalogLock(catalogo, (tx) => tx.$executeRawUnsafe(`CREATE ROLE "${papel}" NOSUPERUSER NOBYPASSRLS NOLOGIN`));
+    papeis.push(papel);
+  }
 
   const conectar = async (nome: string): Promise<PgClient> => {
     const client = new Client({ connectionString: urlDe(nome) });
@@ -187,8 +197,7 @@ if (!connectionString) {
   // Papel de runtime efêmero (NOSUPERUSER NOBYPASSRLS, só DML), por base clonada.
   async function papelDeRuntime(db: PgClient, rotulo: string): Promise<string> {
     const papel = `b12_rt${rotulo}_${sufixo}`;
-    await db.query(`CREATE ROLE "${papel}" NOSUPERUSER NOBYPASSRLS NOLOGIN`);
-    papeis.push(papel);
+    await criarPapel(papel);
     await db.query(`GRANT USAGE ON SCHEMA public TO "${papel}"`);
     await db.query(`GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO "${papel}"`);
     await db.query(`GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO "${papel}"`);
@@ -301,8 +310,7 @@ if (!connectionString) {
     const db = await conectar(nome);
     const papel = `b12_mig_${sufixo}`;
     try {
-      await db.query(`CREATE ROLE "${papel}" NOSUPERUSER NOBYPASSRLS NOLOGIN`);
-      papeis.push(papel);
+      await criarPapel(papel);
       // E1.5: CREATE no schema só para a prova (PUBLIC não tem CREATE em public no Postgres 15+).
       await db.query(`GRANT CREATE ON SCHEMA public TO "${papel}"`);
       await db.query(`GRANT SELECT ON tenants TO "${papel}"`);
@@ -449,6 +457,30 @@ if (!connectionString) {
     }
   });
 
+  test("B-O6R-12 C17 (controle): sem SELECT no perfil, o carimbo do papel de runtime não lê e o INSERT cai", async () => {
+    const { db } = await baseMigrada("c17");
+    const [a] = sementes as [Semente];
+    const papel = await papelDeRuntime(db, "c");
+    const inserir = async () => {
+      await db.query(`SET ROLE "${papel}"`);
+      await db.query("BEGIN");
+      try {
+        await db.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [a.tenantId]);
+        return (await db.query(inserirProcessoCru(a.tenantId, a.profileId))).rows[0];
+      } finally {
+        await db.query("ROLLBACK");
+        await db.query("RESET ROLE");
+      }
+    };
+    try {
+      assert.equal((await inserir()).regime_daily_cap, a.cap, "com SELECT no perfil, o carimbo grava o regime");
+      await db.query(`REVOKE SELECT ON jurisdiction_profiles FROM "${papel}"`);
+      await assert.rejects(inserir(), (error: unknown) => codigoDe(error) === "42501");
+    } finally {
+      await db.end();
+    }
+  });
+
   test("B-O6R-12 C14: rollback padrão e rodapé — a abertura no formato antigo passa antes e depois de desligar", async () => {
     const { db } = await baseMigrada("rb");
     const [a] = sementes as [Semente];
@@ -502,13 +534,17 @@ if (!connectionString) {
   after(async () => {
     await comAdmin(async (admin) => {
       for (const nome of [...bases].reverse()) await admin.query(`DROP DATABASE IF EXISTS "${nome}" WITH (FORCE)`);
-      for (const papel of papeis) await admin.query(`DROP ROLE IF EXISTS "${papel}"`);
+      // As bases já caíram, e com elas toda posse e concessão; o papel sai dentro da trava de catálogo.
+      await withRoleCatalogLock(catalogo, async (tx) => {
+        for (const papel of papeis) await tx.$executeRawUnsafe(`DROP ROLE IF EXISTS "${papel}"`);
+      });
       const sobras = await admin.query(`SELECT datname FROM pg_database WHERE datname LIKE $1`, [`%_${sufixo}`]);
       assert.equal(sobras.rowCount, 0);
       const papeisSobrando = await admin.query(`SELECT rolname FROM pg_roles WHERE rolname LIKE $1`, [`%_${sufixo}`]);
       assert.equal(papeisSobrando.rowCount, 0);
     });
     // Windows: o schema-engine do Prisma pode segurar o diretório por instantes depois de uma falha.
+    await catalogo.$disconnect();
     rmSync(tempRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
   });
 }

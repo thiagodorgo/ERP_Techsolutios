@@ -157,6 +157,14 @@ const FROZEN_ALLOWLIST: ReadonlyMap<string, { readonly count: number; readonly r
           "B-SAN3-05: escritor de catálogo da prova do papel de runtime; 64 -> 82 pelos fixtures T8e/T14d de cadeia de views, donos mistos, matview e DML; 82 -> 72 no ciclo 4 (D-405-PROIBIR-VIEWS: T8e/T14d viram os casos COL/COM/MAT/CTL, um por vez, e o caso view do T8c sai — GRANT 34 -> 30, OWNER TO 14 -> 8); toda sequência executável passa por withRoleCatalogLock e o teardown reutiliza dropEphemeralRoleResilient",
       },
     ],
+    [
+      "b-o6r-12-regime-migration-drill-db.test.ts",
+      {
+        count: 11,
+        reason:
+          "B-O6R-12 (E1.11′): drill da migração do regime em bases PRÓPRIAS E DESCARTÁVEIS (CREATE DATABASE … TEMPLATE por execução). Composição das 11: CREATE ROLE 1 e DROP ROLE 1, os únicos de cluster, dentro de withRoleCatalogLock tomado na base compartilhada (a trava consultiva é por base) · GRANT 6, OWNER TO 2 e REVOKE 1, todos ACL ou dono de objeto do CLONE (a C7b do plano exige o dono sem BYPASSRLS; o REVOKE é o controle da C17) — a varredura é lexical e os conta do mesmo jeito",
+      },
+    ],
   ]);
 
 // Este próprio arquivo carrega os padrões como literais — é o detector, não um escritor. É o
