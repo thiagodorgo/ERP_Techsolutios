@@ -7,7 +7,8 @@
 // nenhum texto exibido de `lib/` tem termo técnico.
 //
 // T6 lê a árvore sintática de todo `lib/**/*.dart` e coleta os literais nas âncoras de exibição:
-//   - argumento nomeado ou `=` de `title`, `subtitle`, `message`… (lista abaixo);
+//   - argumento nomeado ou `=` de `title`, `subtitle`, `message`, `text` (`TextSpan`),
+//     `errorText`… (lista abaixo);
 //   - o 1º argumento posicional de `Text(`;
 //   - os braços `=>` dentro de função ou getter `String` cujo nome tem `label`/`Label`.
 // Em cada âncora entram todos os ramos da expressão (`?:`, `??`, `+`, `switch`). Interpolação
@@ -29,6 +30,7 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/features/auth/auth_models.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_repository.dart';
+import 'package:erp_techsolutions_mobile/features/expenses/domain/expense_models.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/erp_components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -37,13 +39,14 @@ import 'package:flutter_test/flutter_test.dart';
 // ── T6: âncoras, regras, allowlist e piso ────────────────────────────────────
 
 const _ancorasNomeadas =
-    'title|subtitle|message|blockedMessage|label|labelText|hintText|helperText|tooltip|safeMessage|lastSafeError|greeting|semanticLabel|emptyMessage|description|displayName';
+    'title|subtitle|message|blockedMessage|label|labelText|hintText|helperText|errorText|text|tooltip|safeMessage|lastSafeError|greeting|semanticLabel|emptyMessage|description|displayName';
 final _funcaoDeRotulo = RegExp('[Ll]abel');
 
-// Piso N0 (plano v2 §3.1): a contagem medida na F5 com o código já consertado
-// (`[T6] exibidos=771`, base a0979f51 + este bloco). Se cair abaixo dele, o analisador está
-// perdendo âncoras. Texto exibido removido de propósito pede o piso novo, medido, no mesmo PR.
-const _pisoN0 = 771;
+// Piso N0 (plano v2 §3.1): a contagem medida com o código já consertado. Era
+// `[T6] exibidos=771` na F5; com `text` e `errorText` nas âncoras (Emenda 3, PR540-04),
+// `exibidos=779`. Se cair abaixo dele, o analisador está perdendo âncoras. Texto exibido
+// removido de propósito pede o piso novo, medido, no mesmo PR.
+const _pisoN0 = 779;
 
 // Allowlist nomeada, no máximo 1 entrada: a tela só abre com `kIsDevMode` (conferido abaixo).
 const _allowlist = {'lib/core/diagnostics/diagnostics_screen.dart'};
@@ -276,17 +279,19 @@ _varreduraT6() {
 // ── T6b, T8: sessões e app ───────────────────────────────────────────────────
 
 class _Despesas extends StatelessWidget {
-  const _Despesas(this.sessao);
+  const _Despesas(this.sessao, {this.local = '/expenses', this.relatorios});
   final BootstrapSession sessao;
+  final String local;
+  final List<ExpenseReport>? relatorios;
 
   @override
   Widget build(BuildContext context) {
-    appRouter.go('/expenses');
+    appRouter.go(local);
     return ProviderScope(
       overrides: [
         bootstrapSessionProvider.overrideWith((_) async => sessao),
         expenseLocalStoreProvider.overrideWithValue(
-          InMemoryExpenseLocalStore(),
+          InMemoryExpenseLocalStore(relatorios ?? const []),
         ),
         syncActionStoreProvider.overrideWithValue(InMemorySyncActionStore()),
       ],
@@ -455,6 +460,53 @@ void main() {
             t.contains('Receipt is'),
       );
       expect(ruins, isEmpty, reason: ruins.join('\n'));
+    });
+
+    testWidgets('T6c — o cartão "ainda não disponível" só aparece quando a '
+        'prestação espera aprovação (PR540-01)', (tester) async {
+      tester.view.physicalSize = const Size(1080, 6000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final org = devBootstrapSession.activeTenant.tenantId;
+      ExpenseReport pc(String id, ExpenseReportStatus status) => ExpenseReport(
+        localId: id,
+        title: 'Prestação $id',
+        tenantId: org,
+        employeeId: devBootstrapSession.user.userId,
+        policyVersion: devBootstrapSession.expensePolicy.version,
+        status: status,
+        advance: ExpenseAdvance(tenantId: org, amount: 0),
+      );
+      final relatorios = [
+        pc('PC-enviada', ExpenseReportStatus.submitted),
+        pc('PC-aprovada', ExpenseReportStatus.approvedManager),
+      ];
+      const cartao = 'Aprovação da prestação de contas';
+
+      await tester.pumpWidget(
+        _Despesas(
+          devBootstrapSession,
+          local: '/expenses/PC-enviada',
+          relatorios: relatorios,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Enviado'), findsOneWidget);
+      expect(find.text(cartao), findsOneWidget);
+
+      // Sessão nova = ProviderScope novo (a troca de override não vale no mesmo escopo).
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(
+        _Despesas(
+          devBootstrapSession,
+          local: '/expenses/PC-aprovada',
+          relatorios: relatorios,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Aprovado pelo gestor'), findsOneWidget);
+      expect(find.text(cartao), findsNothing);
     });
 
     testWidgets('T6b — a lista vazia não fala em "local-first"', (

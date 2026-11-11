@@ -263,12 +263,13 @@ class PolicyViolationBanner extends StatelessWidget {
     );
   }
 
-  // Rótulo de negócio da regra, o mesmo mapa do detalhe da prestação de contas
-  // (`expense_report_detail_screen.dart`): o código da regra nunca aparece na tela.
+  // Rótulo de negócio da regra, os mesmos rótulos do detalhe da prestação de contas
+  // (`expense_report_detail_screen.dart`), aqui acentuados: o código da regra nunca
+  // aparece na tela. O mapa do detalhe fica com a P-MOBILE-TITULOS-SEM-ACENTO.
   static String _violationLabel(String code) => switch (code) {
     'category_limit_exceeded' => 'Acima do limite',
-    'receipt_required' => 'Recibo obrigatorio',
-    _ => 'Violacao de politica',
+    'receipt_required' => 'Recibo obrigatório',
+    _ => 'Violação de política',
   };
 }
 

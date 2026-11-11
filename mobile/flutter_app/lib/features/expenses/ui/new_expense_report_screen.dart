@@ -50,7 +50,7 @@ class _NewExpenseReportScreenState extends State<NewExpenseReportScreen> {
               leading: Icon(Icons.cloud_queue_outlined),
               title: Text('Salva neste aparelho'),
               subtitle: Text(
-                'Ao salvar, a prestação de contas fica neste aparelho e aparece em Sincronizar até ser enviada.',
+                'Ao salvar, a prestação de contas fica neste aparelho e entra na fila de envio. Acompanhe o envio em Sincronizar.',
               ),
             ),
           ),
