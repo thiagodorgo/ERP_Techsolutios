@@ -164,3 +164,57 @@ Formato P1: comando → saída resumida → veredito parcial.
 - **Cuidado de paralelismo, conferido:** nenhuma outra suíte cria papel `finance` GLOBAL (`grep -rn 'key: "finance"' tests/` só
   acha papéis da organização em `financial-title-invariants-db` e a leitura do `b-san3-12-ce4-db`), então a escolha do braço não
   é contaminada no job `backend`.
+
+## F3 — registro
+
+- Comando novo `agent-orchestration/codex/comandos/B-SAN3-08-orcamento-destino-e-papel-financeiro.md`; apenso em
+  `agent-orchestration/codex/log-execucao.md`.
+- `pendencias.md`: linha de encerramento (não a de status, que muda no registro pós-merge) em `P-Ω3F4C-ACTIVATION-PROMPT` e na
+  parte do item 41 da `P-Ω3a`, com os testes de encerramento; 6 pendências novas: `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE`,
+  `P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA`, `P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN` (§8 do v1), `P-SAN3-08-ORCAMENTO-SEM-ALCADA`,
+  `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` (dono `B-O6R-09`, pela Q1 (c)) e `P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA` (§5 da emenda).
+  **Leitura do dev, declarada (§A6):** a `P-Ω3a` tem também o aditivo `quotes[]` no detalhe da OS (diferido para Ω3-e), que não é
+  deste bloco; o orquestrador decide se ele vira entrada própria antes de a linha de status fechar.
+- **Cuidado com o classificador do índice** (família `P-INDICE-PENDENCIAS-CRITICA-COMO-SEVERIDADE`): na 1ª geração, as entradas
+  novas que citavam "a crítica `crit-08-cl`" saíram como `CRÍTICA`, e a que dizia "proposta de ALTA" saiu `ALTA`. A redação passou
+  a "o parecer `crit-08-cl`" e "proposta de subir um nível", sem mudar conteúdo; regenerado, cada uma sai com a gravidade da linha
+  de status (4 MÉDIA, 2 BAIXA). `python agent-orchestration/controle/gerar-indice-pendencias.py` →
+  `indice: 816 cabecalhos / 805 IDs | {'FECHADA': 193, 'ABERTA': 619, 'SEM-STATUS': 4}`; segunda geração byte a byte igual
+  (`cmp` → sem diff residual). O diff grande do índice é o deslocamento de linha das entradas depois da l.437.
+- `decisoes.md`: `D-SAN3-08-DIALOGO-SEM-TRES-OPCOES` (a dispensa das 3 opções, por decisão do dono), `D-SAN3-08-PORTAO-Q1-Q2`,
+  `D-SAN3-08-P1-CORPO-CAMELCASE` e `D-SAN3-08-NIVEL-DE-REVISAO` (a divergência do §5, registrada e não escolhida em silêncio).
+  Os IDs `D-PORTAO-7-RECOMENDACOES-1011` e `D-PORTAO-3-RECOMENDACOES-1111` ficam para o registro do orquestrador, para não nascer
+  cabeçalho duplicado.
+- **Escopo, conferido por laço:** `git diff --name-only origin/main...HEAD` mais o não commitado = 17 caminhos, todos na lista
+  PERMITIDA do v1 com os acréscimos da emenda (e este diário, por ordem do orquestrador); `git diff --stat origin/main...HEAD --
+  Kpis prisma .github src` → vazio. **Trava 10(2):** nenhum caminho de `src/**`, `prisma/**`, `.github/**`, `catalog.ts`,
+  `RBAC_MATRIX.md`, `frontend/src/modules/auth/**`, `frontend/src/providers/**`; `git diff -U0 origin/main...HEAD | grep -E
+  '^[-+].*(permissions\.includes\(|can\(|requirePermission\()'` → nenhuma linha.
+
+## Bateria final (saída lida, não só o código de saída)
+
+1. `npm ci` e `npm --prefix frontend ci` no worktree próprio → `ec=0` e `ec=0`.
+2. Raiz, sem `DATABASE_URL` (o runner fixa `CORE_SAAS_PERSISTENCE=memory`), 02:25–02:31 SP: `npm run check` `ec=0` · `npm run lint`
+   `ec=0` · `npm run build` `ec=0` · `npm test` → `464 arquivo(s) · 4134 teste(s) · pass 4000 · fail 1 · skipped 133`. O único
+   vermelho é `tests/core-saas-role-authority.test.ts`, que morre no carregamento com `DATABASE_URL is required to initialize Prisma
+   Client.` porque o worktree não tem `.env`: **ambiente, fora do bloco** (arquivo não tocado). Com `DATABASE_URL` do cluster
+   descartável, sozinho → `# tests 12 # pass 12 # fail 0`. Os dois `san3-08` em memória aparecem verdes; o `-db` declara o pulo.
+3. `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/san3-08-aprovar-orcamento-destino.test.ts tests/service-quote-approve.test.ts`
+   → `# tests 19 # pass 19 # fail 0 # skipped 0`.
+4. `-db`, cluster descartável `san308-pg`: braço 2 e braço 1 da F2, cada um `# tests 6 # pass 6 # fail 0`;
+   `tests/san3-04a-menu-com-permissoes-do-banco-db.test.ts` → `# tests 26 # pass 26` (braço 2). Suíte inteira com `DATABASE_URL`
+   no cluster (já provisionado para o braço 1), 02:34–02:46 SP: `464 arquivo(s) · 4893 teste(s) · pass 4878 · fail 13 · skipped 2`,
+   com `ok 3631 - san3-08 — o Financeiro cria e aprova …`, `ok 3596 - san3-04a T2 …` e os 3 `[P1…]` verdes. Os 7 arquivos vermelhos
+   são de fora do bloco e do terreno desta máquina, não do diff: tempo sob carga (`ass-08-channel-db`: `1104 ms < 1 000`;
+   `o6r07c-b-scope-db`: transação de 5212 ms > 5000; `traccar-position-ingestion-db` ×2), ferramenta do Windows
+   (`san3-05-runtime-role-guard-db`: `setsid: ausente — necessário para impedir que psql \password leia a senha`), base já
+   provisionada por mim (`san3-09` T2.1 espera "banco só migrado") e ordem de lista em custo de nuvem
+   (`san3-05-leituras-de-plataforma-db` T11d: os mesmos dois itens em ordem trocada). A CI (Linux, base só migrada) é a autoridade.
+5. `npm --prefix frontend run check` `ec=0` · `npm --prefix frontend run build` `ec=0` (`✓ built in 10.28s`, só o aviso de tamanho
+   de bloco que já existia) · `npm --prefix frontend run test:smoke` (02:32–02:34 SP) → `# tests 1691 # pass 1691 # fail 0 # skipped 0`.
+6. `node --check Kpis/app.js` → ok · `git diff --check origin/main...HEAD` → ok · escopo por laço (F3, acima) → 0 fora do PERMITIDO.
+7. Limpeza §C5: ver o fechamento abaixo.
+
+## Fechamento
+
+- **Limpeza §C5 (02:48 SP):** removidos `dist/` (6,9 MB), `frontend/dist/` (3,7 MB), `frontend/tsconfig.tsbuildinfo`, `test-results/`, os anexos de teste em `storage/checklist-attachments/` (o `.gitkeep` rastreado ficou) e o container próprio `san308-pg`. Ficam o worktree e os `node_modules` (o PR segue aberto) e os logs da bateria e das mutações no scratchpad da sessão. Nenhum outro container, worktree nem a árvore principal foram tocados.

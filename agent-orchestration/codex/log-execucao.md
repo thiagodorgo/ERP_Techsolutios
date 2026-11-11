@@ -5232,3 +5232,12 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Correções: `PLANO_SAN3.md` item 30 (merge `e7e8d678`, dentro da tabela); diário do 03b, K2 (`21468f73` → `7a479474`); `CLAUDE.md` e `AGENTS.md` §4 item 7 (o seletor já existe; correção factual, §A7).
 - Pendências: `PR-alvo` e `bloqueia` nas 3 do #520; X4 apensada; nova `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA`; `P-APARENCIA-POR-USUARIO` re-escopada; backfill do #520. Índice regenerado: 787 cabeçalhos, 776 IDs, 191 FECHADAS, 592 ABERTAS, 4 SEM-STATUS.
 - Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, lockfiles, chave, preço ou nome de pessoa. Não fazer merge antes da revisão.
+
+## 2026-11-11 — B-SAN3-08: aprovar orçamento com destino e o Financeiro cria orçamento (itens 40 e 41)
+
+- Dev: `dev-san3-08-cl`, Claude Opus 5.5 (subagente da sessão), identidade nova; telas no Claude (`D-CODEX-PRIMEIRO-TELAS-E-PLANOS-NO-CLAUDE`). Plano: `plano-B-SAN3-08-api` + emenda 1 (Claude pela API); crítica `crit-08-cl` (Claude da sessão). Verificador: a definir pelo orquestrador (outra casa, §C7.11(1)).
+- Worktree próprio `C:/Users/thiag/w-san308`, ramo `feat/web-orcamento-aprovar-destino`, base `origin/main@6f727afc`; `npm ci` e `npm --prefix frontend ci` próprios, sem junction. Cluster descartável `san308-pg` para a F2.
+- Fatias: F0 `1b9b674c` (corpo do approve em camelCase pelo builder puro), F1 `54e3f0eb` (diálogo único `ServiceQuoteApproveDialog` nas duas telas, regras no modelo puro, guards), F2 `dfa5b688` (teste `-db` do Financeiro com as permissões do banco, dois braços), F3 (este registro).
+- Comando: `agent-orchestration/codex/comandos/B-SAN3-08-orcamento-destino-e-papel-financeiro.md`. Diário com vermelho-controle e as mutações M1 a M14: `docs/revisoes/SAN3/B-SAN3-08-dev.md`.
+- Registro: `P-Ω3F4C-ACTIVATION-PROMPT` e a parte do item 41 da `P-Ω3a` com a linha de encerramento (fecham no merge); 6 pendências novas `P-SAN3-08-*`; decisões `D-SAN3-08-DIALOGO-SEM-TRES-OPCOES`, `D-SAN3-08-PORTAO-Q1-Q2`, `D-SAN3-08-P1-CORPO-CAMELCASE` e `D-SAN3-08-NIVEL-DE-REVISAO`. Índice regenerado: 816 cabeçalhos, 805 IDs, 193 FECHADAS, 619 ABERTAS, 4 SEM-STATUS.
+- Nada em `src/**`, `prisma/**`, `.github/**` nem `Kpis/**`. Nível: revisão reforçada + conferência visual do diálogo; a trava do item 10(2) não acusa caminho nem linha de permissão.
