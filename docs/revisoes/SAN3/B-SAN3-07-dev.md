@@ -346,3 +346,10 @@ a M6 e os 3 drills na bateria. Índice regenerado: `821 cabecalhos / 810 IDs | F
   sem `traccar-binding-uniqueness` nem o drill de faturamento), que é a marca de carga. Os da classe Traccar e estoque
   passaram sozinhos às 03:27–03:34 (tabela acima). A medida que vale para o aceite é o TAP dos jobs da CI, no Linux,
   sobre o head do PR (§C7 item 11(3)).
+
+## PR (04:38)
+
+`git push -u origin fix/seed-papeis-legados` e `gh pr create` → **PR #535**
+(`https://github.com/thiagodorgo/ERP_Techsolutios/pull/535`). O registro passou a citar o PR #535 no lugar de "PR do
+ramo". O aceite é o TAP dos jobs da CI sobre o head do PR; a pré-revisão e a conferência ficam com outra casa
+(Emenda 1, item 8).
