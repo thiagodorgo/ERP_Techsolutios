@@ -2,9 +2,12 @@ import { Prisma } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
+import { PrismaWorkOrderFinancialItemRepository } from "../work-order-financials/work-order-financial-prisma.repository.js";
 import type {
   AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
+  CancelWorkOrderWithFinancialDecisionInput,
+  CancelWorkOrderWithFinancialDecisionResult,
   ChangeWorkOrderStatusInput,
   CreateWorkOrderInput,
   ListWorkOrdersInput,
@@ -22,7 +25,7 @@ import type {
   WorkOrderPriority,
   WorkOrderStatus,
 } from "./work-order.types.js";
-import { assignedToActorOperatorIds } from "./work-order.types.js";
+import { assignedToActorOperatorIds, hasInvoicedItemsError } from "./work-order.types.js";
 import { isWorkOrderUuid, WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
   duplicateWorkOrderError,
@@ -522,10 +525,14 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
 
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     const now = new Date();
+    // B-SAN3-23 (P-23.4) — CAS: grava só se a OS ainda estiver na situação que o serviço validou. Quem espera o
+    // cancelamento re-avalia o predicado contra a linha cancelada (READ COMMITTED) e casa 0 linhas: o cancelamento
+    // não é sobrescrito, e a OS cancelada não volta a aceitar item nem faturamento.
     const updated = await this.client.workOrder.updateManyAndReturn({
       where: {
         tenant_id: input.tenantId,
         id: input.workOrderId,
+        status: input.expectedStatus, // B-SAN3-23:cas-status
       },
       data: compactRecord({
         status: input.status,
@@ -544,15 +551,83 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
     return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
   }
 
+  // B-SAN3-23 (P-23.1) — o cancelamento como UMA unidade, nesta ordem:
+  //   (1) a trava exclusiva da linha da OS. Ela conflita com a chave estrangeira de quem insere item ou título e com a
+  //       trava compartilhada da escrita de item e do faturamento: quem chegou antes commita primeiro, e a leitura
+  //       seguinte já enxerga o commit dele (READ COMMITTED). É uma instrução de uma linha que não devolve nada usado
+  //       depois: sem ela o código continua válido, e a falta da trava aparece no teste (C23R2-03);
+  //   (2) a situação relida sob a trava, e a regra de transição do serviço sobre ela (D-1);
+  //   (3) no `zero`, "há item ativo faturado?" sob a trava (R-01) e o zerar, que trava os itens em (created_at, id);
+  //   (4) a situação, a decisão e o carimbo; (5) o evento (D-3).
+  // Ordem total (P-23.3): a OS antes dos itens, como a escrita de item e o faturamento.
+  // A TRANSAÇÃO é a do invólucro (`RlsPrismaWorkOrderRepository` → `withTenantRls`, que seta o contexto da organização
+  // antes), como no `applyChecklists`: tudo commita junto, ou nada, e a falha de qualquer passo desfaz os anteriores
+  // (A4). Sem `$transaction` interno de propósito: um `$transaction` sem o contexto provado na 1ª instrução entraria no
+  // inventário de acessos suspeitos do B-SAN3-05 (ratchet T13).
+  async cancelWithFinancialDecision(
+    input: CancelWorkOrderWithFinancialDecisionInput,
+  ): Promise<CancelWorkOrderWithFinancialDecisionResult | undefined> {
+    const tx = this.client;
+    await tx.$queryRaw`SELECT id FROM work_orders WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.workOrderId}::uuid FOR UPDATE`; // B-SAN3-23:trava-os-cancel
+    const locked = await tx.workOrder.findFirst({
+      where: { tenant_id: input.tenantId, id: input.workOrderId },
+      select: { status: true },
+    });
+    if (!locked) return undefined;
+    const fromStatus = locked.status as WorkOrderStatus;
+    input.assertCancellable(fromStatus);
+    if (input.decision === "zero") {
+      if (await this.hasActiveInvoicedItem(input.tenantId, input.workOrderId)) throw hasInvoicedItemsError(); // B-SAN3-23:faturado-sob-trava
+      await new PrismaWorkOrderFinancialItemRepository(tx).softDeleteAllByWorkOrder(input.tenantId, input.workOrderId, input.actorUserId);
+    }
+    const updated = await tx.workOrder.updateManyAndReturn({
+      where: { tenant_id: input.tenantId, id: input.workOrderId },
+      data: {
+        status: "cancelled",
+        cancellation_reason: input.cancellationReason,
+        financial_cancellation_decision: input.decision,
+        cancelled_at: new Date(),
+        updated_by: input.actorUserId,
+      },
+    });
+    if (!updated[0]) return undefined;
+    const event: CreateWorkOrderEventInput = {
+      tenantId: input.tenantId,
+      workOrderId: input.workOrderId,
+      eventType: "work_order_cancelled",
+      fromStatus,
+      toStatus: "cancelled",
+      actorUserId: input.actorUserId,
+      message: input.event.message,
+      metadata: input.event.metadata,
+    };
+    await this.createEvent(event); // B-SAN3-23:evento-na-unidade
+
+    return { workOrder: mapWorkOrderRecord(updated[0]), fromStatus };
+  }
+
+  // B-SAN3-23 (R-01) — "há item ATIVO já faturado?", na transação da unidade e sob a trava exclusiva da OS. Um
+  // faturamento no protocolo da P-23 ou já commitou (e o item aparece carimbado) ou ainda espera a OS (nada faturado).
+  private async hasActiveInvoicedItem(tenantId: string, workOrderId: string): Promise<boolean> {
+    const found = await this.client.workOrderFinancialItem.findFirst({
+      where: { tenant_id: tenantId, work_order_id: workOrderId, deleted_at: null, invoiced_at: { not: null } },
+      select: { id: true },
+    });
+    return Boolean(found);
+  }
+
   async assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
     // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — OS, linha de atribuição e evento `work_order_assigned` no MESMO
     // `$transaction`: se o INSERT do evento falhar, a OS e a linha voltam junto (antes, o evento era uma segunda
     // transação, e a OS ficava atribuída sem ele).
+    // B-SAN3-23 (P-23.4) — CAS sobre a situação que o serviço validou (`event.fromStatus`): a atribuição que esperou um
+    // cancelamento casa 0 linhas e não grava nada (nem a linha, nem o evento).
     const result = await this.client.$transaction(async (tx) => {
       const updated = await tx.workOrder.updateManyAndReturn({
         where: {
           tenant_id: input.tenantId,
           id: input.workOrderId,
+          status: input.event.fromStatus, // B-SAN3-23:cas-assign
         },
         data: {
           assigned_operator_id: input.operatorId,
@@ -603,11 +678,15 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         },
       });
       if (!current) return undefined;
-      const nextStatus = current.status === "open" ? "assigned" : current.status;
+      // B-SAN3-23 (P-23.4, C23R2-01) — o CAS e a situação de destino saem da situação que o SERVIÇO validou
+      // (`event.fromStatus`), nunca desta leitura sem trava: se um cancelamento commitou entre a checagem do serviço e
+      // aqui, esta leitura já diz `cancelled`, e um CAS sobre ela casaria e daria técnico a uma OS cancelada.
+      const nextStatus = input.event.fromStatus === "open" ? "assigned" : input.event.fromStatus;
       const updated = await tx.workOrder.updateManyAndReturn({
         where: {
           tenant_id: input.tenantId,
           id: input.workOrderId,
+          status: input.event.fromStatus, // B-SAN3-23:cas-dispatch
         },
         data: {
           assigned_operator_id: input.operatorId,
@@ -768,6 +847,16 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
 
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).changeStatus(input));
+  }
+
+  // B-SAN3-23 — a unidade do cancelamento sob RLS, como todo o resto. O prazo é o padrão do `$transaction` (5 s):
+  // espera acima dele sai como transitório (503) no serviço, nunca 500.
+  cancelWithFinancialDecision(
+    input: CancelWorkOrderWithFinancialDecisionInput,
+  ): Promise<CancelWorkOrderWithFinancialDecisionResult | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
+      new PrismaWorkOrderRepository(tx).cancelWithFinancialDecision(input),
+    );
   }
 
   assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {

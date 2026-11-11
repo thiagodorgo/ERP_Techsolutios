@@ -1473,6 +1473,7 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
 
 - **duplicata de:** `P-GOLIVE-VALIDATE-CONSTRAINT` — só o residual LEGACY-NULL desta entrada, que não tem cabeçalho próprio (crítico SAN3 r1, CR1-16; emenda de 2026-09-11) — tratar junto.
 - **dono:** `B-SAN3-23` (plano SAN3, §4.1 item 23 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-Ω3F6-CANCEL-RACE`: o bullet `P-Ω3F6-CANCEL-RACE` (item 23) tem dono `B-SAN3-23`.
+- **`P-Ω3F6-CANCEL-RACE` — FECHADO pelo `B-SAN3-23` (2026-11-11, ramo `fix/os-cancelada-sem-item-financeiro`; o merge e a CI do merge entram no registro pós-merge).** Só este residual fecha; `P-Ω3F6-LEGACY-NULL`, `P-Ω3F6-CANCEL-IDEM` e `P-Ω3F6-MOBILE-DEADLETTER` seguem abertos, e a entrada continua ABERTA por eles. O cancelamento virou uma unidade sob a trava exclusiva da OS (`cancelWithFinancialDecision`), e lançar, editar, apagar item e faturar relêem a situação sob a trava compartilhada da OS. Prova: `tests/b-san3-23-cancel-race-db.test.ts` (A1, A2, A3 e A9, com barreira; vermelhos no código de hoje, verdes no bloco; mutações no diário `docs/revisoes/SAN3/B-SAN3-23-dev.md`).
 
 ## P-GOLIVE-SECRET-ROTATE — ~~Chave Google Maps: rotação humana obrigatória~~ — **FECHADA (2026-08-29): rotação DISPENSADA pelo dono**
 
@@ -11553,12 +11554,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento:** uma mutação de controle num worktree descartável `C:/Users/AMP/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.
 
-## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA
+## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA — FECHADA pelo `B-SAN3-23`
 
-- **status:** ABERTA · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23` ou pós-gate
+- **status:** FECHADA (2026-11-11, `B-SAN3-23`, ramo `fix/os-cancelada-sem-item-financeiro`; o merge e a CI do merge entram no registro pós-merge) · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23`
 - **Origem:** plano do `B-SAN3-02` v2, §1.2 (a) e §11. O faturamento trava os ITENS, não a OS.
 - **bloqueia:** não.
 - **teste de encerramento:** cancelar a OS com um faturamento em voo nunca deixa título novo numa OS cancelada, com teste `-db` de corrida.
+- **como fechou:** o faturamento pega a trava compartilhada da OS antes dos itens e relê a situação; o cancelamento é uma unidade sob a trava exclusiva da OS e, no `zero`, confere o item faturado sob ela. Prova em `tests/b-san3-23-cancel-race-db.test.ts`: A5 (faturar atrás do cancelamento → 422 `work_order_cancelled`, 0 título), A9 (cancelar `zero` atrás do faturamento → 422 `has_invoiced_items`, I-Z) e A10 (ordem OS → itens, 0 impasse). Os três vermelhos no código de hoje (F0 do diário).
 
 ## P-SAN3-02-PAI-CANCELADO (2026-10-19) — original cancelado por status continua sendo o pai do delta — BAIXA
 
@@ -13645,3 +13647,27 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **teste de encerramento:** cada gate de tela e de botão do app usa uma chave que `isValidPermission` aceita e que
   algum papel recebe, com teste que lê o catálogo; o T9 do `B-SAN3-19b` passa a exigir "Fale com o administrador da
   sua organização." nas 4 telas (a tabela dele vira 11/11 no catálogo).
+
+## P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e fica fora da fila do cancelamento — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o leitor do gate é do `WS-SCALE-COMISSAO`; `src/modules/commissions/**` é PROIBIDO no `B-SAN3-23`) · **dono:** o bloco do motor de comissão (`D-PORTAO-7-RECOMENDACOES-1011`: a política de comissão sai do portão até o motor existir) · **PR-alvo:** o desse bloco · **bloqueia:** não, enquanto não houver motor de comissão (hoje não sai dinheiro por esse caminho).
+- **origem:** crítica r1 do plano do `B-SAN3-23` (`crit-23-cl`, achado C23-07), medido pela crítica, não re-medido pelo dev: `readWorkOrderCancellationPrisma` lê situação e decisão com `findFirst` simples (`src/modules/commissions/work-order-cancellation.gate.ts:86-89`), chamado em `createBasisEvent` (`commission-prisma.repository.ts:103-135`), rota montada (`app.ts:265`). Intercalações `commission|cancelZero` e `cancelZero|commission`: o evento fica `received` numa OS `cancelled/zero` em 9 delas, com 0 impasse. O `B-SAN3-23` fecha a corrida para itens e títulos da OS (P-23), não para a comissão.
+- **correção indicada (crítica r1):** a trava compartilhada da OS no leitor, dentro da transação do `createBasisEvent` — a mesma forma da escrita de item do `B-SAN3-23` (`lockWorkOrderRowForFinancialWrite`).
+- **teste de encerramento:** evento-base de comissão × cancelamento `zero` em voo, em Postgres real com barreira: nunca evento `received` numa OS `cancelled/zero`.
+
+## P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT (2026-11-11) — a A7 (regressão sem barreira) só produz uma ordem de commit — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (junta J-536, C1-01) · **escopo:** `dentro-do-bloco` (a suíte `tests/b-san3-23-cancel-race-db.test.ts` nasce no `B-SAN3-23`), não reprova (força de teste, não dinheiro errado) · **dono:** o `B-SAN3-23` num bloco futuro, ou o próximo bloco que tocar essa suíte · **PR-alvo:** esse bloco · **bloqueia:** não.
+- **origem:** voto C1 da junta do #536 (`revisoes/j536/c1-voto.json`, medido): em 720 rodadas da A7, 718 deram cancelar `fulfilled` × outro `422 work_order_cancelled`; o ramo em que o faturamento commita antes e o cancelar responde `422 has_invoiced_items` saiu 0/240, então o I-Z dela só é avaliado em estado sem item faturado; e, sob a M8 (ordem de travas invertida), a A7 passa (60/60) enquanto a A10 cai. A propriedade é provada de forma determinística pela A9, pela A10 e pelas sondas da cadeira; a A7 continua como regressão, sem prova de ordem.
+- **critério de encerramento:** a A7 exercita as duas ordens de commit (por exemplo, com atraso escalonado de largada ou um ponto de espera de teste), com contagem dos dois ramos > 0 no TAP, e a M8 a deixa vermelha.
+
+### Complemento de `P-O6R-ARNES-ISOLAMENTO` (junta J-536, C1-03, 2026-11-11; o ID já existe acima — nota, sem novo cabeçalho)
+
+- **medido pela cadeira C1 do #536 (`revisoes/j536/c1-voto.json`, `c1-evidencia.md` §5):** um aborto duro de `tests/b-san3-23-cancel-race-db.test.ts` (`timeout -s KILL`, ec=137, depois de 10 testes) deixou a role efêmera `o6r_b01_*` viva (`rolsuper=f`, `rolbypassrls=f`, LOGIN, com UPDATE e DELETE em 139 tabelas) e os 11 tenants semeados; uma rodada completa logo depois (21/21) não a removeu (o sweep só leva órfã com mais de 60 min, `ORPHAN_ROLE_MAX_AGE_MS`, `tests/helpers/auth-identity-fixture.ts:85`), e os dados semeados não têm caminho de remoção. O aborto do `npm test` inteiro deixou 3 roles `o6r_b01_*` e 11 bases de drill. A cadeira removeu tudo pelo nome exato.
+- **escopo:** `pre-existente` (o fixture é de `df496d22`, 2026-08-31, não tocado pelo `B-SAN3-23`); reforça a pendência, sem novo dono.
+
+## P-SAN3-23-503-FORA-DO-CONTRATO (2026-11-11) — os 2 códigos 503 novos do B-SAN3-23 não estão no `API_CONTRACTS.md` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a seção das rotas financeiras da OS no `API_CONTRACTS.md` nunca teve catálogo de erros, nem o 503 `invoice_transient_conflict` do B-SAN3-02; o arquivo está fora do PERMITIDO do plano do B-SAN3-23, cujo §3.5 manda registrar as adições no comando do bloco, o que foi feito) · **dono:** o próximo bloco que tocar o `API_CONTRACTS.md` das rotas financeiras da OS · **PR-alvo:** esse bloco · **bloqueia:** não.
+- **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
+- **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).

@@ -185,3 +185,67 @@ export function expectAllFulfilled(outcomes: ReadonlyArray<SettledOutcome<unknow
     `${label}: promessa(s) que deveriam liquidar limpo rejeitaram`,
   );
 }
+
+/**
+ * B-SAN3-23 (R-03) — barreira SEM filtro de texto. Espera "o perdedor está bloqueado atrás de quem eu digo"
+ * OU "o perdedor resolveu", o que vier primeiro.
+ *
+ * Por que sem texto: o statement que bloqueia muda de forma entre o código de hoje e o conserto (hoje o
+ * `INSERT` do item espera a chave estrangeira; depois, a trava compartilhada da OS). Uma barreira por
+ * fragmento vira timeout de um dos lados e o vermelho deixa de ser da asserção. Aqui o critério é o grafo de
+ * espera do próprio Postgres: conexões da PRÓPRIA suíte (`application_name`), esperando trava, cujo bloqueador
+ * é o `blockedBy` informado (o pid do vencedor). Sem `blockedBy`, basta estar bloqueado por alguém. O texto do
+ * statement só vai para o retorno, como evidência.
+ *
+ * Resolve com `"bloqueado: <statement>"` ou `"resolvido"`; nunca usa relógio para sincronizar (o prazo só
+ * transforma espera sem fim em falha com diagnóstico).
+ */
+export async function waitForOwnBlockedOrSettled(
+  client: PgQueryClient,
+  options: {
+    readonly applicationName: string;
+    readonly blockedBy?: number;
+    readonly minBlocked?: number;
+    readonly loser: Promise<unknown>;
+    readonly label: string;
+    readonly timeoutMs?: number;
+  },
+): Promise<string> {
+  let settled = false;
+  void options.loser.then(
+    () => {
+      settled = true;
+    },
+    () => {
+      settled = true;
+    },
+  );
+  const minBlocked = options.minBlocked ?? 1;
+  const blockedBy = options.blockedBy ?? null;
+  const deadline = Date.now() + (options.timeoutMs ?? DEFAULT_TIMEOUT_MS);
+  for (;;) {
+    const rows = (await client.$queryRaw`
+      SELECT left(a.query, 160) AS query
+      FROM pg_stat_activity a
+      WHERE a.pid <> pg_backend_pid()
+        AND a.application_name = ${options.applicationName}
+        AND a.state = 'active'
+        AND a.wait_event_type = 'Lock'
+        AND (
+          (${blockedBy}::int IS NULL AND cardinality(pg_blocking_pids(a.pid)) > 0)
+          OR (${blockedBy}::int = ANY(pg_blocking_pids(a.pid)))
+        )
+    `) as Array<{ query: string }>;
+    if (rows.length >= minBlocked) {
+      return `bloqueado: ${rows.map((row) => row.query.replace(/\s+/g, " ").trim()).join(" | ")}`;
+    }
+    if (settled) return "resolvido";
+    if (Date.now() > deadline) {
+      assert.fail(
+        `timeout esperando bloqueio da própria suíte para ${options.applicationName} — ${options.label} ` +
+          `(bloqueados vistos: ${rows.length} de ${minBlocked}; bloqueador exigido: ${blockedBy ?? "qualquer"})`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+}
