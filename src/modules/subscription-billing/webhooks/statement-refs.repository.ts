@@ -16,6 +16,9 @@ export interface StatementRefRepository {
   /** Resolve o `tenant_id` pelo NOSSO `statement_id` (nunca pelo payload). */
   resolve(statementId: string): Promise<BillingStatementRef | undefined>;
   setExternalChargeId(statementId: string, externalChargeId: string, now: Date): Promise<void>;
+  /** B-ASS-08b — os demonstrativos com cobrança no provedor criados desde `since` (o que os polls reconsultam). Tabela
+   * GLOBAL de ids: a varredura não abre nenhuma tabela de organização. */
+  listWithCharge(since: Date): Promise<readonly BillingStatementRef[]>;
 }
 
 export class InMemoryStatementRefRepository implements StatementRefRepository {
@@ -45,5 +48,11 @@ export class InMemoryStatementRefRepository implements StatementRefRepository {
   async setExternalChargeId(statementId: string, externalChargeId: string, _now: Date): Promise<void> {
     const existing = this.#rows.get(statementId);
     if (existing) this.#rows.set(statementId, { ...existing, externalChargeId, createdAt: existing.createdAt });
+  }
+
+  async listWithCharge(since: Date): Promise<readonly BillingStatementRef[]> {
+    return [...this.#rows.values()]
+      .filter((row) => row.externalChargeId !== null && row.tenantId !== "" && row.createdAt.getTime() >= since.getTime())
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 }

@@ -52,7 +52,9 @@ export interface OutboxRepository {
   // inexistente). O chamador (dispatcher) tem o `tenantId` da linha reclamada.
   markSent(tenantId: string, id: string, externalId: string | null, now: Date): Promise<void>;
   /** Volta a PENDING com nova janela (retry de erro transitório / 429). */
-  reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date): Promise<void>;
+  /** Volta a PENDING em `nextAttemptAt`. `refundAttempt` (conserto da J-530, C): devolve a tentativa que o claim somou —
+   * a espera de uma nota pendente não é falha. */
+  reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, options?: { readonly refundAttempt?: boolean }): Promise<void>;
   markFailed(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void>;
   markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void>;
   markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date): Promise<void>;
@@ -130,7 +132,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
       providerIdempotencyKey: input.providerIdempotencyKey ?? randomUUID(),
       payload: { ...(input.payload ?? {}) },
       status: "PENDING",
-      skipReason: null,
+      skipReason: input.skipReason ?? null,
       claimedAt: null,
       claimedBy: null,
       attemptStartedAt: null,
@@ -204,6 +206,8 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     const claimed: BillingOutboxRow = {
       ...target,
       status: "PROCESSING",
+      // Conserto da J-530 (I8): a retomada limpa o `skip_reason`, como o Prisma.
+      skipReason: null,
       claimedAt: params.now,
       claimedBy: params.claimedBy,
       attemptStartedAt: params.now,
@@ -234,8 +238,10 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     this.#patch(tenantId, id, { status: "SENT", externalId, nextAttemptAt: null, lastError: null, updatedAt: now });
   }
 
-  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date): Promise<void> {
-    this.#patch(tenantId, id, { status: "PENDING", nextAttemptAt, lastError, claimedAt: null, claimedBy: null, attemptStartedAt: null, updatedAt: now });
+  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, options: { readonly refundAttempt?: boolean } = {}): Promise<void> {
+    const current = this.#rows.get(id);
+    const refunded = options.refundAttempt && current ? { attempts: Math.max(0, current.attempts - 1) } : {};
+    this.#patch(tenantId, id, { status: "PENDING", nextAttemptAt, lastError, claimedAt: null, claimedBy: null, attemptStartedAt: null, updatedAt: now, ...refunded });
   }
 
   async markFailed(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void> {
