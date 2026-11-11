@@ -1,6 +1,7 @@
 import type { Attachment } from "../attachments/attachment.types.js";
 import { resolveAttachmentDownload } from "../attachments/attachment.storage.js";
 import type { ImpoundProcess } from "../impound/impound.types.js";
+import { portalPlanFromRegime } from "../jurisdiction/jurisdiction.service.js";
 import {
   AntiAbuse,
   constantTimeEqual,
@@ -336,7 +337,9 @@ export class OwnerPortalService {
 
     const [charges, plan, photoCandidates] = await Promise.all([
       this.deps.charge.getPublicItemizedSummary(this.deps.tenantId, process.id),
-      this.deps.jurisdiction.getPortalProfile(this.deps.tenantId, process.profileId),
+      process.regime
+        ? portalPlanFromRegime(process.regime)
+        : await this.deps.jurisdiction.getPortalProfile(this.deps.tenantId, process.profileId),
       this.deps.impound.listInspectionPhotosForPortal(this.deps.tenantId, process.id),
     ]);
     const yard = process.yardId ? await this.deps.yard.getPublicYard(this.deps.tenantId, process.yardId) : undefined;

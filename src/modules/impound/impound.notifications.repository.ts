@@ -68,6 +68,7 @@ type StoredProfile = {
 export class InMemoryNotificationRepository implements NotificationRepository {
   private readonly notifications: ProcessNotification[] = [];
   private readonly profiles = new Map<string, StoredProfile>();
+  private readonly regimeByProcess = new Map<string, StoredProfile>();
 
   constructor(private readonly impound: Pick<ImpoundRepository, "appendEvent" | "findProcessById">) {}
 
@@ -175,16 +176,25 @@ export class InMemoryNotificationRepository implements NotificationRepository {
       ownerNotifDays: FEDERAL_DEFAULTS.ownerNotifDays,
       noticeEdictDay: FEDERAL_DEFAULTS.noticeEdictDay,
     };
+    const regime = this.captureRegime(`${tenantId}:${processId}`, profile);
     return {
       tenantId,
       processId,
       enteredAt: process.enteredAt,
       frozenAt: process.frozenAt,
       status: process.status,
-      scope: profile.scope,
-      ownerNotifDays: profile.ownerNotifDays,
-      noticeEdictDay: profile.noticeEdictDay,
+      scope: regime.scope,
+      ownerNotifDays: regime.ownerNotifDays,
+      noticeEdictDay: regime.noticeEdictDay,
     };
+  }
+
+  // B-O6R-12 — a memória guarda o regime na PRIMEIRA leitura, como o gatilho do banco faz na abertura.
+  private captureRegime(key: string, profile: StoredProfile): StoredProfile {
+    const captured = this.regimeByProcess.get(key);
+    if (captured) return captured;
+    this.regimeByProcess.set(key, profile);
+    return profile;
   }
 
   async listNotificationCandidates(): Promise<readonly string[]> {
@@ -200,5 +210,6 @@ export class InMemoryNotificationRepository implements NotificationRepository {
   reset(): void {
     this.notifications.length = 0;
     this.profiles.clear();
+    this.regimeByProcess.clear();
   }
 }

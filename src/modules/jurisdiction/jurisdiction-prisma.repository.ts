@@ -14,6 +14,8 @@ import type {
   UpdateJurisdictionProfileInput,
 } from "./jurisdiction.types.js";
 import { JurisdictionError } from "./jurisdiction.types.js";
+import { computeProfileChanges } from "./jurisdiction.audit.js";
+import type { ProfileUpdateResult } from "./jurisdiction.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -60,8 +62,17 @@ export class PrismaJurisdictionRepository implements JurisdictionRepository {
     return profile ? mapProfile(profile) : undefined;
   }
 
-  async updateProfile(input: UpdateJurisdictionProfileInput): Promise<JurisdictionProfile | undefined> {
+  async updateProfile(input: UpdateJurisdictionProfileInput): Promise<ProfileUpdateResult | undefined> {
     try {
+      const locked = await this.client.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM jurisdiction_profiles
+        WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.profileId}::uuid
+        FOR NO KEY UPDATE
+      `;
+      if (!locked[0]) return undefined;
+      const beforeRecord = await this.client.jurisdictionProfile.findFirst({ where: { tenant_id: input.tenantId, id: input.profileId } });
+      if (!beforeRecord) return undefined;
+      const before = mapProfile(beforeRecord);
       const updated = await this.client.jurisdictionProfile.updateManyAndReturn({
         where: { tenant_id: input.tenantId, id: input.profileId },
         data: compact({
@@ -82,7 +93,9 @@ export class PrismaJurisdictionRepository implements JurisdictionRepository {
           updated_by: input.updatedBy,
         }),
       });
-      return updated[0] ? mapProfile(updated[0]) : undefined;
+      if (!updated[0]) return undefined;
+      const profile = mapProfile(updated[0]);
+      return { profile, ...computeProfileChanges(before, profile) };
     } catch (error) {
       throw translateJurisdictionError(error);
     }
@@ -105,7 +118,7 @@ export class RlsPrismaJurisdictionRepository implements JurisdictionRepository {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaJurisdictionRepository(tx).findProfileById(tenantId, profileId));
   }
 
-  updateProfile(input: UpdateJurisdictionProfileInput): Promise<JurisdictionProfile | undefined> {
+  updateProfile(input: UpdateJurisdictionProfileInput): Promise<ProfileUpdateResult | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaJurisdictionRepository(tx).updateProfile(input));
   }
 }

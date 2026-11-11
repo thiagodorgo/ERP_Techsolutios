@@ -224,7 +224,8 @@ export class PrismaChargeRepository implements ChargeRepository {
       }>
     >`
       SELECT ip.entered_at, ip.frozen_at, COALESCE(y.timezone, 'America/Sao_Paulo') AS timezone,
-             jp.scope, jp.daily_model, jp.daily_cap, jp.daily_service_catalog_id
+             ip.regime_scope AS scope, ip.regime_daily_model AS daily_model, ip.regime_daily_cap AS daily_cap,
+             COALESCE(ip.regime_daily_service_catalog_id, jp.daily_service_catalog_id) AS daily_service_catalog_id
       FROM impound_processes ip
       JOIN jurisdiction_profiles jp ON jp.tenant_id = ip.tenant_id AND jp.id = ip.profile_id
       LEFT JOIN yards y ON y.tenant_id = ip.tenant_id AND y.id = ip.yard_id

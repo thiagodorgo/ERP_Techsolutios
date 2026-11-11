@@ -321,6 +321,8 @@ jobs:
           # das M-REC-1/2/7a numa base própria. Medidas 3× nesta forma antes de entrar: 7 + 2 = 9 casos, 0 falha, 0 pulo, denominador constante.
           SUITES="$SUITES tests/rec-01-domain-db.test.ts"
           SUITES="$SUITES tests/rec-01-migration-drill-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-12-regime-snapshot-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-12-regime-migration-drill-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

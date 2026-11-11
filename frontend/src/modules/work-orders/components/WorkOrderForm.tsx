@@ -94,6 +94,30 @@ function QuickCreateField({ children, ariaLabel, onNew, canCreate }: { readonly 
   );
 }
 
+// B-SAN3-26 (item 53; decisão B do dono, `D-PORTAO-5-RECOMENDACOES-1111`; emenda E-04 do dev) — a placa do veículo
+// atendido é o que o guincheiro confirma ao chegar ao local ("No local"), e o servidor recusa a chegada pelo app quando
+// a OS não tem placa. O campo aparece para todo tipo que atende veículo: socorro (no cartão dele), reboque, outro,
+// "Sem tipo definido" e OS sem serviço. Só o residencial, isento sem placa (P1 do dono), não tem o campo.
+export function showsVehiclePlateField(serviceType: string | null): boolean {
+  return serviceType !== "residencial";
+}
+
+type ServiceDetailsFields = Pick<
+  FormState,
+  "detailPlate" | "detailVehicle" | "detailColor" | "detailAccessCode" | "detailObject" | "detailDescription"
+>;
+
+// Campos dinâmicos por tipo (#23): só as chaves do tipo selecionado (o `buildServiceDetails` tira os vazios).
+export function serviceDetailsInputFor(serviceType: string | null, fields: ServiceDetailsFields): Record<string, string> {
+  if (serviceType === "socorro") {
+    return { plate: fields.detailPlate, vehicle: fields.detailVehicle, color: fields.detailColor };
+  }
+  if (serviceType === "residencial") {
+    return { access_code: fields.detailAccessCode, object: fields.detailObject, description: fields.detailDescription };
+  }
+  return showsVehiclePlateField(serviceType) ? { plate: fields.detailPlate } : {};
+}
+
 export function WorkOrderForm({
   saving,
   onCancel,
@@ -124,13 +148,7 @@ export function WorkOrderForm({
     if (nextErrors.length > 0) return;
 
     // Campos dinâmicos por tipo (#23): só as chaves do tipo selecionado, só valores preenchidos.
-    const serviceDetails = buildServiceDetails(
-      serviceType === "socorro"
-        ? { plate: state.detailPlate, vehicle: state.detailVehicle, color: state.detailColor }
-        : serviceType === "residencial"
-          ? { access_code: state.detailAccessCode, object: state.detailObject, description: state.detailDescription }
-          : {},
-    );
+    const serviceDetails = buildServiceDetails(serviceDetailsInputFor(serviceType, state));
 
     await onSubmit({
       title: state.title.trim(),
@@ -286,6 +304,20 @@ export function WorkOrderForm({
                 <Input label="Placa do veículo" value={state.detailPlate} onChange={(event) => setState({ ...state, detailPlate: event.target.value })} maxLength={10} />
                 <Input label="Veículo" value={state.detailVehicle} onChange={(event) => setState({ ...state, detailVehicle: event.target.value })} />
                 <Input label="Cor" value={state.detailColor} onChange={(event) => setState({ ...state, detailColor: event.target.value })} maxLength={30} />
+              </div>
+            </Card>
+          ) : null}
+          {/* B-SAN3-26 — a placa do veículo atendido nos tipos sem cartão próprio (reboque, outro, sem tipo, sem serviço). */}
+          {showsVehiclePlateField(serviceType) && serviceType !== "socorro" ? (
+            <Card title="Veículo atendido">
+              <div className="form-section">
+                <Input
+                  label="Placa do veículo"
+                  value={state.detailPlate}
+                  onChange={(event) => setState({ ...state, detailPlate: event.target.value })}
+                  maxLength={10}
+                  helper="O operador de campo confirma os 2 últimos dígitos ao chegar ao local."
+                />
               </div>
             </Card>
           ) : null}
