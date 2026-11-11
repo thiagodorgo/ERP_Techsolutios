@@ -26,8 +26,8 @@ class InventoryListScreen extends ConsumerWidget {
       return const ErpScaffold(
         title: 'Estoque',
         body: PermissionBlockedState(
-          title: 'Acesso nao autorizado',
-          message: 'inventory:read necessario para acessar o estoque.',
+          title: 'Acesso não permitido',
+          message: 'Esta área ainda não está disponível no aplicativo.',
         ),
       );
     }

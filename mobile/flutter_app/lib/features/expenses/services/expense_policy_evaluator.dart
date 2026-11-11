@@ -19,7 +19,7 @@ class ExpensePolicyEvaluator {
         violations.add(
           PolicyViolation(
             code: 'category_limit_exceeded',
-            message: 'Expense item exceeds the category limit',
+            message: 'o valor do item passa do limite da categoria.',
             severity: PolicyViolationSeverity.blocking,
             itemLocalId: item.localId,
           ),
@@ -33,7 +33,7 @@ class ExpensePolicyEvaluator {
         violations.add(
           PolicyViolation(
             code: 'receipt_required',
-            message: 'Receipt is required for this category',
+            message: 'esta categoria exige recibo.',
             severity: PolicyViolationSeverity.blocking,
             itemLocalId: item.localId,
           ),

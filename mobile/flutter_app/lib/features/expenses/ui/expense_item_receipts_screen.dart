@@ -142,10 +142,10 @@ class _ReceiptCard extends StatelessWidget {
 
   String _captureLabel(ReceiptCaptureSource source) {
     return switch (source) {
-      ReceiptCaptureSource.camera => 'Camera',
+      ReceiptCaptureSource.camera => 'Câmera',
       ReceiptCaptureSource.gallery => 'Galeria',
       ReceiptCaptureSource.file => 'Arquivo',
-      ReceiptCaptureSource.manualPlaceholder => 'Placeholder',
+      ReceiptCaptureSource.manualPlaceholder => 'Registro manual',
     };
   }
 

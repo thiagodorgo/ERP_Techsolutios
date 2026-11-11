@@ -159,7 +159,10 @@ void main() {
 
       expect(find.text('Envio de despesas ainda não ativado'), findsOneWidget);
       expect(find.textContaining('automaticamente'), findsNothing);
-      expect(find.textContaining('Integracao remota'), findsNothing);
+      expect(
+        find.textContaining(RegExp('Integra[cç][aã]o remota')),
+        findsNothing,
+      );
     });
 
     testWidgets("w3'. aviso ausente com o canal ligado", (t) async {
@@ -169,7 +172,10 @@ void main() {
       await _pump(t, store, channelOn: true);
 
       expect(find.text('Envio de despesas ainda não ativado'), findsNothing);
-      expect(find.textContaining('Integracao remota'), findsNothing);
+      expect(
+        find.textContaining(RegExp('Integra[cç][aã]o remota')),
+        findsNothing,
+      );
     });
   });
 

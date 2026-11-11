@@ -249,7 +249,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Acesso nao autorizado'), findsOneWidget);
+      expect(find.text('Acesso não permitido'), findsOneWidget);
       expect(find.text('Iniciar'), findsNothing);
     });
 

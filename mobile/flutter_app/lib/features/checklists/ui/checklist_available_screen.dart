@@ -69,9 +69,8 @@ class _ChecklistAvailableScreenState
             ),
             const Expanded(
               child: PermissionBlockedState(
-                title: 'Acesso nao autorizado',
-                message:
-                    'checklist_run:execute necessario para executar checklists.',
+                title: 'Acesso não permitido',
+                message: 'Esta área ainda não está disponível no aplicativo.',
               ),
             ),
           ],
