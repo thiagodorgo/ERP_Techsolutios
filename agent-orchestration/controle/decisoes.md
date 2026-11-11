@@ -4656,3 +4656,73 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fala literal:** *"pode ir (plano v3)"*.
 - **Decisão:** DeepSeek oficial = registro da noite + item 47 (teto US$ 2); Antigravity Opus 4.6 = dev do B-ASS-07; Claude = coordena e cobre; Codex volta 15:32 (junta do B-ASS-07 + B-O6R-03b).
 - **Atualização (~08:01):** o Antigravity caiu (quota ~15/11) no dev do B-ASS-07, sem parcial; B-ASS-07 reatribuído ao Codex 1 às 15:33 e B-O6R-03b ao Codex 3; Claude assume o replano do B-USERS.
+
+## D-USERS-SEG-PSEG-RESPOSTAS (decisão do dono, 2026-11-10 03:42 SP) — respostas P-SEG-1/2/3 do B-USERS-ACESSO-SEG
+
+- **Fala literal:** *"aprovo recomendação"*.
+- **Decisão:**
+  - **P-SEG-1:** verifica somente a existência de vínculo nas outras organizações, dentro da transação do reset, sem dado de outra organização na resposta nem na auditoria além do que a recusa da `D-USERS-1` já revela.
+  - **P-SEG-2:** a senha provisória dá sessão somente para trocar a senha; enquanto `must_change_password = true`, não há troca de organização, religação de conta nem permissão, e reset × religação simultânea ficam serializados. O residual do token de acesso antigo na janela já aceita pela `D-USERS-2` vira pendência com dono.
+  - **P-SEG-3:** ficam ratificados os arquivos do store e os tipos no PERMITIDO, a rota do reset em `auth.routes.ts`, a classe `N` no censo, os endurecimentos da S7 e a documentação da rota nova e dos 409 em `API_CONTRACTS.md`.
+
+## D-REINICIO-SOMENTE-1011 (decisão do dono, 2026-11-10 13:30 SP) — autorização pontual para reiniciar a máquina
+
+- **Fala literal:** *"Reiniciar somente"*.
+- **Decisão:** autorização válida apenas para o reinício daquela ocorrência; não autoriza desativar nem alterar o adaptador de vídeo.
+
+## D-J527-CLAUDE-MEDE-ITENS-C1 (decisão do dono, 2026-11-10 19:01 SP) — sucessor mede os itens interrompidos da C1
+
+- **Fala literal:** *"Claude mede os 2 itens (Recomendado)"*.
+- **Decisão:** após o filtro interromper a cadeira C1 do PR #527, um sucessor Claude mede os itens 1 e 3 no terreno herdado, respeitando P3 e sem contornar os filtros.
+
+## D-USERS-TROCA-SENHA-TELA-JUNTO (decisão do dono, 2026-11-10 20:11 SP) — mantém a trava e entrega a tela no conserto
+
+- **Fala literal:** *"Mantém a trava e faz a tela junto"*.
+- **Decisão:** o conserto do PR #527 mantém a sessão provisória restrita e entrega junto a tela mínima de troca de senha na web e no app de campo, após maquete com três opções.
+
+## D-TROCA-SENHA-TRES-APROVADAS (decisão do dono, 2026-11-10 21:11 SP) — três aparências aprovadas
+
+- **Fala literal:** *"Aprovo as 3 (Recomendado)"*.
+- **Decisão:** as opções A, B e C da troca de senha ficam aprovadas na web e no app.
+
+## D-TROCA-SENHA-APP-A-AGORA (decisão do dono, 2026-11-10 21:11 SP) — app entrega A agora
+
+- **Fala literal:** *"Só a A agora; B e C depois (Recomendado)"*.
+- **Decisão:** o app entrega a aparência A agora; B e C aguardam o seletor de aparência do app.
+
+## D-TROCA-SENHA-WEB-SEMPRE-A (decisão do dono, 2026-11-10 21:11 SP) — sessão restrita web abre na A
+
+- **Fala literal:** *"Sim, sempre na A (Recomendado)"*.
+- **Decisão:** na web, a sessão restrita abre sempre na aparência A; as três aparências permanecem registradas.
+
+## D-TROCA-SENHA-MOSTRA-EMAIL (decisão do dono, 2026-11-10 21:11 SP) — mostra o e-mail da própria sessão
+
+- **Fala literal:** *"Sim, mostrar (Recomendado)"*.
+- **Decisão:** a tela mostra “Entrando como <e-mail>”, usando somente o e-mail da própria sessão.
+
+## D-API-CLAUDE-PRIORITARIA-E-TETO (decisões do dono, 2026-11-10 20:59 e 21:18 SP) — API Claude prioritária com teto de gasto
+
+- **Fala literal publicável:** *"use a api da anthropic como modelo prioritario"*. O trecho com números financeiros não é reproduzido porque o repositório é público.
+- **Decisão:** a API Claude é o braço prioritário e tem teto de gasto definido pelo dono. O lançador deve recusar trabalho que ultrapasse esse teto; números, saldo e preço ficam fora do repositório.
+
+## D-API-CLAUDE-MODELO-DIFERENTE (decisão do dono, 2026-11-10 21:00 SP) — API e sessão contam como modelos diferentes
+
+- **Fala literal:** *"trate a api como modelo diferente de vc"*.
+- **Decisão:** para o cruzamento de “um faz, o outro verifica”, o Claude da API conta como modelo diferente do Claude da sessão.
+
+## D-CARGA-POR-CAPACIDADE-1011 (decisão do dono, 2026-11-10 21:24 SP) — carga segue a capacidade medida
+
+- **Fala literal:** *"a regra agora é enquanto o sistema suportar pode incluir mais trabalho"*.
+- **Decisão:** deixam de valer os tetos fixos de trabalhos e subagentes; a entrada de carga passa a obedecer à capacidade medida. A alteração do P8(c) nos contratos espelhados fica para PR próprio, registrada em pendência.
+
+## LEITURA-ORQ-1011-BASTAO-MEMORIA — piso do bastão
+
+- **Leitura do orquestrador, declarada (§A6):** diante da memória presa, um trabalho pesado por vez recebeu o bastão; depois da medição do arquivo de paginação, o piso do detentor caiu de 3.072 para 2.048 MB, sem revogar o piso contratual para lançar agente novo.
+
+## LEITURA-ORQ-1011-EMENDA-15 — conflito do plano do #522 com o guard 3
+
+- **Leitura do orquestrador, declarada (§A6):** a Emenda 15 substituiu `set_config` por `SET LOCAL` com literal fixo, manteve o guard 3 intocado e acrescentou a mutação correspondente antes de o dev retomar.
+
+## LEITURA-ORQ-1011-B-ASS-08C — opção A da 08b
+
+- **Leitura do orquestrador, declarada (§A6):** as formas do §11 que não existem na 08b e exigem caminhos fora do PERMITIDO, junto das obrigações (1), (2), (3), (5)b2 e (5)b3 da `P-ASS08-OBX5-EAGER-E-CANCEL`, passam ao bloco futuro `B-ASS-08c`, com plano próprio. A 08b mantém somente o recorte que consegue provar por execução e vacuidade.
