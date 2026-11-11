@@ -12,8 +12,8 @@ import { buildApplicationName, HARNESS_DDL_LOCK_TIMEOUT_MS, runHarnessDdl, withA
 // B-O6R-09 · Emenda 4 (R-ARN-4, requisito C09-02; Emenda 4.1, C4E-04) — o teste do MECANISMO de `runHarnessDdl`: o DDL do
 // arnês nunca fica na fila na frente de quem precisa da tabela. Cada caso usa um SCHEMA descartável
 // `b_o6r_09_arnes_<uuid sem hífen>` (a tabela `t`, a função `fn` e o gatilho `tg` dentro dele), criado e apagado por
-// ele, e confere o catálogo limpo no fim. O schema é próprio, e não `public`, porque o `GRANT … ON ALL TABLES IN SCHEMA
-// public` do `createEphemeralRole` de outra suíte disputava a tupla de `pg_class` da tabela nova (XX000 `tuple
+// ele, e confere o catálogo limpo no fim. O schema é próprio, e não `public`, porque a concessão em todas as tabelas de
+// `public` que o `createEphemeralRole` de outra suíte faz disputava a tupla de `pg_class` da tabela nova (XX000 `tuple
 // concurrently updated`, medido na rodada 3 do R-ARN-5). Os detentores e o 3º acesso são conexões `pg` próprias (o `pg`
 // já é usado por 12 arquivos de `tests/`, C4E-02).
 //
