@@ -8583,6 +8583,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ---
 - **nota B-SAN3-03 (2026-11-02):** a parte "cobrança nunca vira fatura" está RESPONDIDA por `D-COBRANCA-ASSINATURA-FRANQUIA` (o preço do cliente é a assinatura). A parte "custo AWS entra só por CSV manual" é RECOMENDACAO ADOTADA 4 e só fecha com o merge de `B-ASS-09a` (rateio automático) e `B-ASS-10b` (botões na tela); a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
+- **nota B-ASS-09a (2026-11-11):** o rateio automático a partir da importação está no PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`): cada importação concluída cria um rateio por mês de cobrança. Isso cumpre a parte do `B-ASS-09a`; a parte "custo AWS entra só por CSV manual" segue esperando o `B-ASS-10b` (botões na tela), e a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
@@ -12440,6 +12441,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado do `B-SAN3-03`, `D-SAN3-03-IMPORT-POR-RUN`) · **dono:** `B-ASS-09a` · **bloqueia:** não.
 - **origem:** `prisma/**` é PROIBIDO no `B-SAN3-03`; a run guarda o import escolhido em `metadata.importId` / `metadata.importResolution` (`src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts`, `createAllocationRun`).
 - **encerramento:** migração aditiva com coluna `import_id` e FK em `cloud_cost_allocation_runs`, com backfill de `metadata.importId`, só com autorização explícita do dono para essa migração; o `B-ASS-09a` usa o import para o rateio automático não repetir run.
+- **encerramento (B-ASS-09a, 2026-11-11):** fecha no merge do PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`); a linha de status passa a FECHADA no registro pós-merge, com o merge. A migração `20260902000000_ass09a_allocation_run_import_id` (coluna `import_id uuid` com FK `ON DELETE SET NULL`, índice e backfill de `metadata.importId` com o cast dentro do `CASE`) foi autorizada pelo dono em 31/10 (`decisoes.md:4183`, P1: "a do rateio automático acrescenta uma coluna"). **O texto "só com autorização explícita" acima está superado por essa fala** (registro do conflito CE-M, §A2: a fonte 1 do §A1, a fala do dono, vence o texto defasado da pendência). Testes de encerramento: `tests/ass-09a-import-id-migration-drill-db.test.ts` (deploy, down, backfill dos 4 casos, prefixos atômicos) e o T-M09a-db de `tests/ass-09a-rateio-automatico-db.test.ts`. A trava do rateio automático continua sendo a PK v5, não a coluna.
 
 ## P-TK11H-BARREIRA-FASE (2026-11-03) — a barreira concorrente do T-K11h não identifica a fase exata — BAIXA
 
@@ -12519,6 +12521,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem medida:** `conf-484b-opus`, `agent-orchestration/omega/juntas/votos/B-SAN3-03-PR484/conf-484-parecer.md`, ressalva 1: `git diff 5b628b88 HEAD -- tests/san3-03-tenant-tag.test.ts` mostra `for (const tag of ["nao-existe", "Duplicada​"])` → `for (const tag of ["nao-existe"])`. O caso saiu do T-TAG-10 sem virar asserção de ambígua. O comportamento falha fechado (sonda 1b′ da conferência: `tagSide` 12/12 ambígua).
 - **leitura do redator, declarada (§A6):** a fonte anotou a pendência sem dono nem PR-alvo (o porteiro `porteiro-484-opus` cobrou os dois); o dono e o PR-alvo acima são do redator deste registro. Corrige-se numa linha.
 - **encerramento:** um teste com a tag `"Duplicada"` mais cada um dos 12 invisíveis do T-TAG-14, nas duas estratégias, afirma o motivo e o valor; a mutação que tira a remoção de invisíveis da tag fica vermelha nele.
+- **encerramento (B-ASS-09a, 2026-11-11):** fecha no merge do PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`); a linha de status passa a FECHADA no registro pós-merge. Teste: T-TAG-10b em `tests/san3-03-tenant-tag.test.ts` (a tag `"Duplicada"` com cada um dos 12 invisíveis, nas duas estratégias, dá `ambiguous_tenant_tag` e 10); a mutação M-TAG (a regex de invisíveis de `normalizeTenantTag` apagada) fica vermelha nele (diário `docs/revisoes/ASSINATURA/B-ASS-09a-dev.md`, F6).
 
 ## P-SAN3-21-PERFIL-LOGISTICO (2026-11-03) — o nome de perfil "Operador Logistico" segue sem acento porque é comparado no código — BAIXA
 
@@ -12897,6 +12900,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** achado B-5 do revisor sênior do #505 · **dono:** `B-ASS-09a` · **PR-alvo:** PR do `B-ASS-09a` · **bloqueia:** não.
 - **fato:** sem medição, o banco é rateado pelas ações mas gravado como `storage_usage_weight` (era `api_request_weight`).
 - **encerramento:** método de fallback do rateio gravado conforme a base efetivamente usada, com teste.
+- **encerramento (B-ASS-09a, 2026-11-11):** fecha no merge do PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`), SÓ para a regra do banco (R8 do plano: P6 restrita ao banco). A regra ganha `methodByMetricKey` e o motor grava `rule.methodByMetricKey?.[basis.metricKey] ?? rule.allocationMethod`: sem medição, o banco é rateado pelas ações e grava `api_request_weight`. Teste: T12 em `tests/cloud-cost-allocation.test.ts`, vermelho por asserção na base `a0979f51` e com a mutação M12. As outras regras com mais de uma base ficam em `P-ASS09A-METODO-OUTRAS-REGRAS`.
 
 ## P-ASS03-PD-SWEEP-CATALOGO (2026-11-06) — `(PD) sweep` vermelho só no head, por concorrência no catálogo de papéis — BAIXA
 
@@ -13544,3 +13548,24 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **prova (N = 2 erros; medido por `tsc` com um tsconfig fora do repositório que estende o `tsconfig.json` e inclui `prisma/seed.ts`, antes e depois do bloco):** `prisma/seed.ts(195,3) TS1360`: o `permissionDescriptions … satisfies Record<Permission, string>` não tem 43 das 205 permissões do catálogo (162 com descrição, contado por script); `prisma/seed.ts(257,48) TS2551`: o acesso `permissionDescriptions[permission]`, que cai no fallback genérico `Permissão ${permission}.`. `package.json:19` (`tsc -p tsconfig.json`) e `tsconfig.json` (`include: ["src/**/*.ts"]`) deixam o seed de fora, então nenhum job da CI pega erro de tipo no seed.
 - **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-06).
 - **teste de encerramento:** o seed entra num typecheck que roda na CI, com 0 erro, e as 205 permissões têm descrição.
+
+## P-ASS09A-METODO-OUTRAS-REGRAS (2026-11-11) — fora do banco, regra com mais de uma base grava o método da regra, não o da base usada — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o plano do `B-ASS-09a`, R8) · **escopo:** anterior ao `B-ASS-09a`; `cloud-cost-allocation.rules.ts` (as regras de `s3_requests`, `storage`, `jobs` e `checklists` têm mais de uma métrica de base e um método só) · **dono:** `B-ASS-09` · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** R8 do plano v2 do `B-ASS-09a` (`planos/plano-B-ASS-09a-v2.md`, fora do repositório): a P6 (método honesto) ficou restrita ao banco, como na `P-ASS03-METODO-RATEIO-FALLBACK`; a crítica da rodada 1 (`crit-09a-cl`, A7) mostrou que a mesma classe existe nas outras regras.
+- **fato:** a regra grava `allocationMethod` fixo mesmo quando `resolveBasis` cai para a métrica seguinte da lista. O método e a base são da mesma família em todas elas (não erra valor); erra só o rótulo gravado.
+- **critério de encerramento:** cada regra com mais de uma base grava o método da base efetivamente usada (`methodByMetricKey`), com teste por regra.
+
+## P-ASS09A-RUN-PRESA-EM-PROCESSING (2026-11-11) — a run automática reivindicada fica em `processing` se o worker morrer no meio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o plano do `B-ASS-09a`, §8: não erra valor) · **escopo:** dentro do desenho do `B-ASS-09a` (`executeImportRuns` reivindica `pending → processing` e só então roda o motor) · **dono:** `B-ASS-10b` · **PR-alvo:** o PR do `B-ASS-10b` · **bloqueia:** não.
+- **origem:** §8 do plano v2 do `B-ASS-09a` (fora do repositório).
+- **fato:** a varredura só reenfileira run `pending` e não retoma `processing` nem `failed` (pergunta 3 do §9, recomendação (a)). Uma run presa fica visível; o operador roda o rateio manual.
+- **critério de encerramento:** a run `processing` há mais de um tempo limite volta a `pending` (ou é marcada `failed` com motivo), com teste de tempo controlado, e a tela mostra a run presa.
+
+## P-ASS09A-MES-EM-VARIOS-ARQUIVOS (2026-11-11) — um mês dividido em vários arquivos vira várias importações, e o resumo mostra só a última parte — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (leitura do dev, declarada (§A6): o resumo de um mês pode mostrar só parte do custo; o plano registra o risco H13 sem gravidade) · **escopo:** anterior ao `B-ASS-09a` (o resumo já escolhia UMA run por mês); o `B-ASS-09a` não piora o risco · **dono:** `B-ASS-09` (quem consolida as visões) · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** risco H13 do plano do pacote (`B-ASSINATURA-plano.md:593`, fora do repositório, citado pela crítica `crit-09a-cl`) e §8 do plano v2 do `B-ASS-09a`; declarado em `docs/cloud-cost-allocation.md` ("Rateio automático").
+- **fato:** cada arquivo importado é uma importação, e cada importação ganha o seu rateio do mês; `getAllocationSummary` escolhe a run mais recente do mês, sem somar importações.
+- **critério de encerramento:** o resumo do mês soma as importações do mesmo mês (ou o arquivo parcial é recusado), com teste de dois arquivos do mesmo mês.
