@@ -78,4 +78,4 @@ T-TAG-10b · F7 docs e registro.
 
 ## Rastreabilidade
 
-ID `B-ASS-09a` · PR # (após `gh pr create`) · merge commit e approved head (pós-merge) · status `published_per_pr`.
+ID `B-ASS-09a` · PR #542 · merge commit e approved head (pós-merge) · status `published_per_pr`.
