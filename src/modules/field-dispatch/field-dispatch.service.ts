@@ -35,13 +35,19 @@ import type {
   DispatchChecklistLine,
   FieldDispatch,
   FieldDispatchActorContext,
+  FieldDispatchCreateRequest,
+  FieldDispatchCreateResult,
   FieldDispatchEvent,
   FieldDispatchStatus,
   FieldDispatchTransitionResult,
   ListFieldDispatchesInput,
   ListFieldDispatchesResult,
 } from "./field-dispatch.types.js";
-import { FIELD_DISPATCH_TARGET_ROLES, FieldDispatchError } from "./field-dispatch.types.js";
+import {
+  FIELD_DISPATCH_TARGET_ROLES,
+  FieldDispatchError,
+  FieldDispatchIdempotencyKeyTakenError,
+} from "./field-dispatch.types.js";
 import {
   assertNonTerminalStatus,
   assertStatusTransition,
@@ -50,6 +56,7 @@ import {
   parseInitialFieldDispatchStatus,
   parseLimit,
   parseOffset,
+  parseOptionalIdempotencyKey,
   parseOptionalSearch,
   parseOptionalUuid,
   parseRequiredUuid,
@@ -250,9 +257,24 @@ export class FieldDispatchService {
   }
 
   async create(actor: FieldDispatchActorContext, body: RawRecord): Promise<FieldDispatch> {
+    return (await this.createOrReplay(actor, body)).dispatch;
+  }
+
+  // B-O6R-09 (P3 do plano v2) — a criação com chave de repetição opcional. `replayed: true` quando a chave já criou um
+  // despacho com o MESMO pedido: devolve esse despacho como ele está agora, sem escrita, sem evento, sem atribuição e
+  // sem evento de domínio (o controlador responde 200 sem nova auditoria).
+  async createOrReplay(actor: FieldDispatchActorContext, body: RawRecord): Promise<FieldDispatchCreateResult> {
     const workOrderId = parseRequiredUuid(body.workOrderId, "workOrderId");
     const operatorUserId = parseRequiredUuid(body.operatorUserId ?? body.operatorId ?? body.userId, "operatorUserId");
     const status = parseInitialFieldDispatchStatus(body.status);
+    const idempotencyKey = parseOptionalIdempotencyKey(body.idempotencyKey);
+
+    // P3 — a pré-consulta vem antes de qualquer leitura de negócio e de qualquer escrita (freeze, vistoria): a repetição
+    // de um pedido que já deu certo não depende do estado de hoje da OS.
+    if (idempotencyKey !== undefined) {
+      const replay = await this.findReplay(actor, idempotencyKey, { workOrderId, operatorUserId, status });
+      if (replay) return replay;
+    }
 
     const workOrder = await this.assertWorkOrderBelongsToTenant(actor, workOrderId);
     await this.assertOperatorBelongsToTenant(actor.tenantId, operatorUserId);
@@ -423,42 +445,55 @@ export class FieldDispatchService {
     // há compensação (o antigo `deleteById` saiu). O rascunho não atribui. O que já foi feito antes (snapshot
     // congelado, execução da vistoria provisionada) segue a regra que já valia para falha depois do freeze: inócuo, e
     // idempotente no próximo despacho.
-    const { dispatch } = await this.repository.createWithEvent(
-      {
-        dispatch: {
-          tenantId: actor.tenantId,
-          workOrderId,
-          operatorUserId,
-          status,
-          observation: optionalString(body.observation),
-          reason: optionalString(body.reason),
-          createdBy: actor.userId,
-          updatedBy: actor.userId,
-          metadata: {},
-        },
-        event: {
-          eventType: "field_dispatch_created",
-          toStatus: status,
-          actorUserId: actor.userId,
-          message: "Despacho operacional criado.",
-          metadata: {
+    //
+    // P3, a corrida: outro pedido com a mesma chave está com a transação aberta → este INSERT espera no índice único.
+    // Se aquele faz commit, este recebe a chave tomada e devolve o vencedor (a captura fica FORA da transação, que já
+    // voltou). Se aquele volta, este segue e cria o seu — nunca vê um despacho que foi desfeito.
+    let dispatch: FieldDispatch;
+    try {
+      ({ dispatch } = await this.repository.createWithEvent(
+        {
+          dispatch: {
+            tenantId: actor.tenantId,
+            workOrderId,
             operatorUserId,
+            status,
+            observation: optionalString(body.observation),
+            reason: optionalString(body.reason),
+            createdBy: actor.userId,
+            updatedBy: actor.userId,
+            metadata: {},
           },
+          event: {
+            eventType: "field_dispatch_created",
+            toStatus: status,
+            actorUserId: actor.userId,
+            message: "Despacho operacional criado.",
+            metadata: {
+              operatorUserId,
+            },
+          },
+          idempotencyKey,
         },
-      },
-      {
-        beforeCommit:
-          status === "draft"
-            ? undefined
-            : (created) =>
-                this.assignWorkOrderForDispatch(actor, {
-                  workOrderId: created.workOrderId,
-                  operatorUserId: created.operatorUserId,
-                  dispatchId: created.id,
-                  source: "field_dispatch",
-                }),
-      },
-    );
+        {
+          beforeCommit:
+            status === "draft"
+              ? undefined
+              : (created) =>
+                  this.assignWorkOrderForDispatch(actor, {
+                    workOrderId: created.workOrderId,
+                    operatorUserId: created.operatorUserId,
+                    dispatchId: created.id,
+                    source: "field_dispatch",
+                  }),
+        },
+      ));
+    } catch (error) {
+      if (idempotencyKey !== undefined && error instanceof FieldDispatchIdempotencyKeyTakenError) {
+        return await this.replayCreate(actor, idempotencyKey, { workOrderId, operatorUserId, status });
+      }
+      throw error;
+    }
 
     // D-CHK-DISPATCH-CREATE — auditoria FAIL-OPEN: se a provisão da execução falhou acima, registra a falha na
     // timeline do despacho (durável/visível) + notifica o operador. Reason CODIFICADO (§2.8), nunca o
@@ -532,7 +567,42 @@ export class FieldDispatchService {
       { tenantId: actor.tenantId, actorId: actor.userId },
     );
 
-    return dispatch;
+    return { dispatch, replayed: false };
+  }
+
+  // B-O6R-09 (P3; R2-02 da crítica r2) — a repetição compara o corpo com o pedido ORIGINAL (do evento de criação), nunca
+  // com a linha atual: aceito, reatribuído ou rascunho ativado continuam sendo a mesma criação. Outro conteúdo com a
+  // mesma chave → 422, sem escrita. Despacho com chave e sem evento de criação é impossível por P1 → 503, sem escrita.
+  private async findReplay(
+    actor: FieldDispatchActorContext,
+    idempotencyKey: string,
+    request: FieldDispatchCreateRequest,
+  ): Promise<FieldDispatchCreateResult | undefined> {
+    const found = await this.repository.findByIdempotencyKey({ tenantId: actor.tenantId, createdBy: actor.userId, idempotencyKey });
+    if (!found) return undefined;
+    const { workOrderId, operatorUserId, status } = request;
+    const { dispatch: existing, original } = found;
+    if (!original) throw idempotencyRetryError();
+    if (original.workOrderId !== workOrderId || original.operatorUserId !== operatorUserId || original.status !== status) {
+      throw new FieldDispatchError(
+        422,
+        "FIELD_DISPATCH_IDEMPOTENCY_KEY_REUSED",
+        "idempotency_key_reused",
+        "This idempotencyKey was already used for a different dispatch request.",
+      );
+    }
+    return { dispatch: existing, replayed: true };
+  }
+
+  // A releitura do perdedor da corrida: a chave estava tomada, então o vencedor já fez commit e tem de existir.
+  private async replayCreate(
+    actor: FieldDispatchActorContext,
+    idempotencyKey: string,
+    request: FieldDispatchCreateRequest,
+  ): Promise<FieldDispatchCreateResult> {
+    const replay = await this.findReplay(actor, idempotencyKey, request);
+    if (!replay) throw idempotencyRetryError();
+    return replay;
   }
 
   async get(actor: FieldDispatchActorContext, dispatchId: string): Promise<FieldDispatch> {
@@ -1418,6 +1488,16 @@ function defaultStatusMessage(status: FieldDispatchStatus): string {
   };
 
   return labels[status];
+}
+
+// 503, e não 409: o 409 cairia na mensagem "já tem um despacho" da web (`useAllocateDispatch.ts`). Nada foi gravado.
+function idempotencyRetryError(): FieldDispatchError {
+  return new FieldDispatchError(
+    503,
+    "FIELD_DISPATCH_IDEMPOTENCY_RETRY",
+    "idempotency_retry",
+    "The dispatch request could not be confirmed; nothing was recorded. Try again.",
+  );
 }
 
 function statusEventType(status: FieldDispatchStatus) {

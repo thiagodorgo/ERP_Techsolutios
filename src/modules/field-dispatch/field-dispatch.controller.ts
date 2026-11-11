@@ -27,7 +27,16 @@ export class FieldDispatchController {
 
   async create(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const dispatch = await service.create(actor, request.body ?? {});
+    const { dispatch, replayed } = await service.createOrReplay(actor, request.body ?? {});
+
+    // B-O6R-09 (P3) — a repetição pela mesma chave devolve o despacho já criado com 200 e SEM nova auditoria de criação
+    // (a original foi gravada no primeiro pedido).
+    if (replayed) {
+      return {
+        status: 200,
+        data: toFieldDispatchDto(dispatch),
+      };
+    }
 
     await recordRequestAuditBestEffort(request, {
       action: "field_dispatch.created",

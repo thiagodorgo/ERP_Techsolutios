@@ -17,11 +17,15 @@ import type {
   OperatorAtFixTime,
   OperatorAtFixTimeCandidate,
   ReassignFieldDispatchInput,
+  FieldDispatchCreateRequest,
+  FieldDispatchIdempotencyMatch,
   FieldDispatchTransitionPatch,
   FieldDispatchTransitionResult,
   FieldDispatchWriteHooks,
+  FindFieldDispatchByIdempotencyKeyInput,
   TransitionFieldDispatchInput,
 } from "./field-dispatch.types.js";
+import { FieldDispatchIdempotencyKeyTakenError } from "./field-dispatch.types.js";
 import {
   assertNotTransitionEventType,
   classifyOperatorsAtFixTime,
@@ -141,22 +145,54 @@ export async function findOperatorsForVehicleAt(
 export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
   constructor(private readonly client: PrismaExecutor) {}
 
-  async create(input: CreateFieldDispatchInput): Promise<FieldDispatch> {
-    const dispatch = await this.client.fieldDispatch.create({
-      data: {
+  // O INSERT cru, preso a um `tx` (as fixtures do Traccar o usam direto, R-A9). B-O6R-09 (P3) — com chave, a violação do
+  // índice único `(tenant_id, created_by, idempotency_key)` vira `FieldDispatchIdempotencyKeyTakenError`: o INSERT que
+  // chega com a chave de uma transação ainda aberta ESPERA por ela no índice, e só falha se ela fizer commit.
+  async create(input: CreateFieldDispatchInput, idempotencyKey?: string): Promise<FieldDispatch> {
+    try {
+      const dispatch = await this.client.fieldDispatch.create({
+        data: {
+          tenant_id: input.tenantId,
+          work_order_id: input.workOrderId,
+          operator_user_id: input.operatorUserId,
+          status: input.status ?? "assigned",
+          observation: input.observation ?? null,
+          reason: input.reason ?? null,
+          created_by: input.createdBy ?? null,
+          updated_by: input.updatedBy ?? null,
+          idempotency_key: idempotencyKey ?? null,
+          metadata: toJsonObject(input.metadata ?? {}),
+        },
+      });
+
+      return mapFieldDispatchRecord(dispatch);
+    } catch (error) {
+      // Com chave, a única unicidade alcançável é a dela: o `id` é gerado pelo banco e os outros índices não são únicos.
+      if (idempotencyKey !== undefined && isUniqueViolation(error)) throw new FieldDispatchIdempotencyKeyTakenError();
+      throw error;
+    }
+  }
+
+  // B-O6R-09 (P3; R2-02 da crítica r2) — o despacho de uma chave e o pedido ORIGINAL dele, lido do evento
+  // `field_dispatch_created` do mesmo despacho (que existe sempre que o despacho existe, por P1).
+  async findByIdempotencyKey(input: FindFieldDispatchByIdempotencyKeyInput): Promise<FieldDispatchIdempotencyMatch | undefined> {
+    const record = await this.client.fieldDispatch.findFirst({
+      where: {
         tenant_id: input.tenantId,
-        work_order_id: input.workOrderId,
-        operator_user_id: input.operatorUserId,
-        status: input.status ?? "assigned",
-        observation: input.observation ?? null,
-        reason: input.reason ?? null,
-        created_by: input.createdBy ?? null,
-        updated_by: input.updatedBy ?? null,
-        metadata: toJsonObject(input.metadata ?? {}),
+        created_by: input.createdBy,
+        idempotency_key: input.idempotencyKey,
       },
     });
+    if (!record) return undefined;
+    const created = await this.client.fieldDispatchEvent.findFirst({
+      where: { tenant_id: input.tenantId, dispatch_id: record.id, event_type: "field_dispatch_created" },
+      orderBy: [{ created_at: "asc" }],
+    });
 
-    return mapFieldDispatchRecord(dispatch);
+    return {
+      dispatch: mapFieldDispatchRecord(record),
+      original: created ? originalCreateRequest(mapFieldDispatchEventRecord(created)) : undefined,
+    };
   }
 
   async list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult> {
@@ -275,7 +311,7 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
     input: CreateFieldDispatchWithEventInput,
     hooks?: FieldDispatchWriteHooks,
   ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }> {
-    const dispatch = await this.create(input.dispatch);
+    const dispatch = await this.create(input.dispatch, input.idempotencyKey);
     const event = await this.insertEvent({
       ...input.event,
       tenantId: dispatch.tenantId,
@@ -401,6 +437,10 @@ export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFieldDispatchRepository(tx).findById(tenantId, dispatchId));
   }
 
+  findByIdempotencyKey(input: FindFieldDispatchByIdempotencyKeyInput): Promise<FieldDispatchIdempotencyMatch | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).findByIdempotencyKey(input));
+  }
+
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).createEvent(input));
   }
@@ -503,6 +543,32 @@ function mapFieldDispatchEventRecord(record: {
     metadata: isRecord(record.metadata) ? record.metadata : {},
     createdAt: record.created_at,
   };
+}
+
+// Violação de índice único pelo CÓDIGO (P2002 do Prisma ou 23505 do Postgres), nunca pela mensagem. Com o driver
+// adapter, o SQLSTATE pode estar só em `cause`/`meta.driverAdapterError` (medido em
+// `checklist-applicability-prisma.repository.ts`), por isso a varredura em profundidade.
+function isUniqueViolation(error: unknown): boolean {
+  const codes: string[] = [];
+  const collect = (candidate: unknown, depth: number): void => {
+    if (depth > 4 || typeof candidate !== "object" || candidate === null) return;
+    const record = candidate as Record<string, unknown>;
+    for (const key of ["code", "originalCode"]) {
+      const value = record[key];
+      if (typeof value === "string") codes.push(value);
+    }
+    collect(record.cause, depth + 1);
+    collect(record.meta, depth + 1);
+    collect(record.driverAdapterError, depth + 1);
+  };
+  collect(error, 0);
+  return codes.some((code) => code === "P2002" || code === "23505");
+}
+
+function originalCreateRequest(event: FieldDispatchEvent): FieldDispatchCreateRequest | undefined {
+  const operatorUserId = event.metadata.operatorUserId;
+  if (!event.toStatus || typeof operatorUserId !== "string") return undefined;
+  return { workOrderId: event.workOrderId, operatorUserId, status: event.toStatus };
 }
 
 function transitionData(patch: FieldDispatchTransitionPatch, now: Date) {

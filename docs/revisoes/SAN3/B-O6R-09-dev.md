@@ -82,3 +82,29 @@ T14(c) usa a forma (ii) pelo mesmo motivo.
   carregada. Rodei a suíte sozinha no ramo (21/22) e com o `src/modules/field-dispatch` da `origin/main` posto de volta
   no worktree (21/22, o outro dos dois casos "tempo esgotado"). O resto das 4 suítes passa sem edição. Fica para a
   bateria final repetir; se seguir, é pendência de ambiente, não do bloco.
+
+## Fatia 3 — chave idempotente de criação
+
+- `prisma/schema.prisma`: só o modelo `FieldDispatch` (`idempotency_key String?` e `@@unique([tenant_id, created_by,
+  idempotency_key])`). Migração nova `20260901090000_field_dispatch_idempotency_key` (carimbo depois da última da
+  `main`, `20260900000000_ass08_billing_outbox`): `BEGIN;`, coluna, CHECK `..._requires_author`, índice único,
+  `COMMIT;`, e o runbook down em comentário. `SELECT count(*) FROM field_dispatches` no banco do dev = 0 antes de aplicar
+  (o v2 pedia medir: a tabela é pequena; no banco do dev, vazia). `node scripts/migration-transaction-guard.mjs`:
+  131 migrações, 19 novas, 0 violação. `npx prisma generate` e `npx prisma migrate deploy` limpos.
+- Prisma: `create(input, idempotencyKey?)` grava a chave e transforma a violação do índice (P2002/23505, lida pelo
+  código, em profundidade) em `FieldDispatchIdempotencyKeyTakenError`; `findByIdempotencyKey` devolve o despacho e o
+  pedido ORIGINAL, lido do evento `field_dispatch_created` (R2-02).
+- Memória (R2-11): a unicidade da chave, o mesmo erro, e a reserva da chave ANTES do gancho (âncora M7m), com espera do
+  2º pedido igual.
+- Serviço: `createOrReplay` (o `create` público devolve só o despacho, para os chamadores e os testes de hoje); a chave
+  no corpo, de 8 a 128 em `[A-Za-z0-9._:-]` (400 fora disso); pré-consulta antes de qualquer leitura de negócio; 422
+  `FIELD_DISPATCH_IDEMPOTENCY_KEY_REUSED` só para corpo diferente do ORIGINAL; a corrida captura a chave tomada fora da
+  transação e relê o vencedor; 503 `FIELD_DISPATCH_IDEMPOTENCY_RETRY` no caso impossível. Controlador: 200 sem nova
+  auditoria na repetição.
+- Testes que fecham a fatia, no `o6r09-pg`: idempotency-db 9/9 (T6, T7 (i) e (ii), T8, T8b, T8c ×3); atomic-db 10/10
+  (o T14(c) agora verde); migration-drill-db 4/4 (T11); memória + `field-dispatch-routes` + `field-dispatch` 12/12 (T10
+  e T7m verdes).
+- **R2-09 (condição do orquestrador), medido antes do commit:** `grep -rln "B-O6R-09" agent-orchestration/controle/` não
+  acha registro da escolha (a) ou (b) do v2 §4.3 (só a pendência antiga `P-O6R-B09`). Não decido isso: o commit desta
+  fatia fica local no ramo e o PR declara a verificação como pendente do orquestrador. O carimbo da migração se refaz
+  numa linha se o B-O6R-12 entrar antes (opção (a)).
