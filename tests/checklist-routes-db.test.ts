@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
+import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 
 // CHECKLIST P1 PR-03 — SUÍTE DE ROTA CONTRA O POSTGRES (autorização do dono, junta do PR-03).
 //
@@ -308,7 +309,7 @@ async function withPostgresChecklistApi(
 
   try {
     const tenant = await client.tenant.create({
-      data: { name: `Checklist DB ${marca}`, slug: `checklist-db-${marca}` },
+      data: { name: `Checklist DB ${marca}`, slug: `checklist-db-${marca}`, modules: [...TODOS_OS_MODULOS] }, // B-SAN3-18: o gate de módulo exige as áreas que o teste usa
     });
     tenantId = tenant.id;
 
