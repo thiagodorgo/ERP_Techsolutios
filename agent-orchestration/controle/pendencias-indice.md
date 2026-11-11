@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **857** |
-| IDs distintos | 846 |
-| **ABERTAS** | **656** |
+| Cabecalhos `## P-` | **858** |
+| IDs distintos | 847 |
+| **ABERTAS** | **657** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **595** |
+| — das quais **ativas nesta rodada** | **596** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 197 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **857 cabecalhos para 846 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **858 cabecalhos para 847 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -368,7 +368,7 @@
 | `P-ASS-DB-FORA-DA-LISTA-CURADA` | 13511 | MÉDIA | sim | P-ASS-DB-FORA-DA-LISTA-CURADA (2026-11-11) — nenhuma suíte `ass-0*-db` está na lista cur |
 | `P-COMISSAO-GATE-SEM-TRAVA` | 13518 | CRÍTICA | sim | P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e f |
 
-## ABERTAS · balde B — processo/registro — 302
+## ABERTAS · balde B — processo/registro — 303
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -674,6 +674,7 @@
 | `P-ALLOC-MANUAL-INICIO-INCLUSIVO` | 13482 | BAIXA | sim | P-ALLOC-MANUAL-INICIO-INCLUSIVO (2026-11-11) — no rateio manual, o lado do início contin |
 | `P-AWS-CUR-DUBLE-SOBREPOSICAO` | 13489 | BAIXA | sim | P-AWS-CUR-DUBLE-SOBREPOSICAO (2026-11-11) — o dublê em memória do resumo de custo filtra |
 | `P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA` | 13504 | BAIXA | sim | P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA (2026-11-11) — o documento e um comentário dizem "no |
+| `P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT` | 13525 | BAIXA | sim | P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT (2026-11-11) — a A7 (regressão sem barreira) só produz  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
