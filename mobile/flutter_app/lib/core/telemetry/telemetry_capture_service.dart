@@ -20,6 +20,11 @@ enum TelemetryCaptureOutcome {
   skippedNoConsent,
   skippedUnavailable,
   skippedDistanceFilter,
+
+  /// A captura estava em voo (esperando GPS, consentimento ou sinal) quando o
+  /// app foi para background (`stop`). O ponto é descartado: nada se grava
+  /// depois do stop (RN-TELE-MOBILE-05).
+  skippedStopped,
 }
 
 class TelemetryCaptureResult {
@@ -78,6 +83,10 @@ class TelemetryCaptureService {
 
   Timer? _timer;
   bool _active = false;
+
+  /// Muda a cada `stop`. A captura que começou num ciclo de primeiro plano só
+  /// grava se ainda for o mesmo ciclo quando chegar a hora de gravar.
+  int _foregroundCycle = 0;
   bool _connectEmitted = false;
   double? _lastLat;
   double? _lastLng;
@@ -99,6 +108,7 @@ class TelemetryCaptureService {
   /// capturado após o stop — prova de foreground-only (RN-TELE-MOBILE-05).
   void stop() {
     _active = false;
+    _foregroundCycle++;
     _timer?.cancel();
     _timer = null;
     _lastLat = null;
@@ -107,10 +117,14 @@ class TelemetryCaptureService {
 
   Future<void> _onTick(TenantIdResolver tenantIdResolver) async {
     if (!_active) return;
+    final cycle = _foregroundCycle;
     final tenantId = tenantIdResolver();
     if (tenantId == null || tenantId.trim().isEmpty) return;
     try {
-      await captureHeartbeat(tenantId: tenantId);
+      await captureHeartbeat(
+        tenantId: tenantId,
+        stillInForeground: () => _active && cycle == _foregroundCycle,
+      );
     } catch (_) {
       // Captura nunca derruba o app; falhas ficam no buffer/no-op honesto.
     }
@@ -120,8 +134,13 @@ class TelemetryCaptureService {
   /// (D-Ω4C-TELE-FLUTTER-CONSENT): sem `field_location:send` OU sem consentimento
   /// de dispositivo → NADA de localização é tocada (retorna `skippedNoConsent`,
   /// zero coordenada no buffer).
+  ///
+  /// `stillInForeground` é a prova do ciclo de primeiro plano: quando vem do
+  /// timer, ela é conferida depois da última espera e antes de gravar, porque o
+  /// `stop` pode acontecer enquanto o GPS ainda responde.
   Future<TelemetryCaptureResult> captureHeartbeat({
     required String tenantId,
+    bool Function()? stillInForeground,
   }) async {
     if (!_hasLocationSendPermission()) {
       return TelemetryCaptureResult.skipped(
@@ -176,6 +195,14 @@ class TelemetryCaptureService {
       retryCount: 0,
       createdAt: _clock().toUtc(),
     );
+    // RN-TELE-MOBILE-05: depois da última espera, nada se grava se o app já foi
+    // para background. A conferência e a chamada de gravação são síncronas, então
+    // um `stop` não cabe entre elas.
+    if (stillInForeground != null && !stillInForeground()) {
+      return TelemetryCaptureResult.skipped(
+        TelemetryCaptureOutcome.skippedStopped,
+      );
+    }
     await _store.enqueue(event);
     _lastLat = fix.latitude;
     _lastLng = fix.longitude;

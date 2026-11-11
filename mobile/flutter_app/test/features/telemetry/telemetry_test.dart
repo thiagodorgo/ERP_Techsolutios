@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -346,6 +347,38 @@ void main() {
         final afterBackground = (await store.eventsForTenant(_tenantId)).length;
         // Nenhum ponto novo capturado em background.
         expect(afterBackground, afterStop);
+      },
+    );
+
+    test(
+      '16b. stop com a captura em voo não grava ponto depois do stop (RN-TELE-MOBILE-05)',
+      () async {
+        final store = InMemoryTelemetryLocalStore();
+        final gps = _GatedDeviceLocationProvider(_fix());
+        final capture = TelemetryCaptureService(
+          store: store,
+          deviceLocationProvider: gps,
+          consentStore: InMemoryLocationConsentStore(accepted: true),
+          signalSource: const FixedTelemetrySignalSource(
+            TelemetrySignalType.mobile,
+          ),
+          hasLocationSendPermission: () => true,
+          idFactory: () => 'hb-voo',
+          heartbeatInterval: const Duration(milliseconds: 10),
+          distanceFilterMeters: 0,
+        );
+        addTearDown(capture.stop);
+
+        capture.start(() => _tenantId);
+        // A captura do 1º tick está em voo: esperando o GPS responder.
+        await gps.entered.future;
+        // O app vai para background ANTES de o GPS responder.
+        capture.stop();
+        gps.release();
+        await pumpEventQueue();
+
+        expect(capture.isCapturing, isFalse);
+        expect(await store.eventsForTenant(_tenantId), isEmpty);
       },
     );
   });
@@ -731,6 +764,27 @@ class _FakeDeviceLocationProvider implements DeviceLocationProvider {
       return DeviceLocationResult.unavailable('GPS indisponivel no teste.');
     }
     return DeviceLocationResult.available(fix);
+  }
+}
+
+/// GPS que segura a resposta até o teste liberar: deixa a captura "em voo"
+/// de forma determinística, sem depender de relógio nem de carga da máquina.
+class _GatedDeviceLocationProvider implements DeviceLocationProvider {
+  _GatedDeviceLocationProvider(this._fix);
+
+  final FieldLocationFix _fix;
+  final Completer<void> entered = Completer<void>();
+  final Completer<void> _gate = Completer<void>();
+
+  void release() {
+    if (!_gate.isCompleted) _gate.complete();
+  }
+
+  @override
+  Future<DeviceLocationResult> currentLocation() async {
+    if (!entered.isCompleted) entered.complete();
+    await _gate.future;
+    return DeviceLocationResult.available(_fix);
   }
 }
 
