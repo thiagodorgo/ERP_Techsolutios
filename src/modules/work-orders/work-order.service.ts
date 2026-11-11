@@ -1455,25 +1455,31 @@ export class WorkOrderService {
 
     assertStatusTransition(current.status, nextStatus);
 
-    const updated = await this.repository.changeStatus({
+    // B-SAN3-23 (P-23.4 + Emenda 1) — CAS sobre a situação validada; se casar 0, relê, revalida a MESMA operação
+    // sobre a relida e regrava UMA vez (o precedente `FinancialTitleService.changeStatus`).
+    const statusInput = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
       status: nextStatus,
-      expectedStatus: current.status,
       message,
       cancellationReason,
       actorUserId: actor.userId,
-    });
-
+    };
+    let fromStatus = current.status;
+    let updated = await this.repository.changeStatus({ ...statusInput, expectedStatus: fromStatus });
     if (!updated) {
-      throw await this.statusWriteMissError(actor, current.id, nextStatus);
+      const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-status
+      await this.revalidateStatusChange(actor, reread, nextStatus); // B-SAN3-23:revalida-status
+      fromStatus = reread.status;
+      updated = await this.repository.changeStatus({ ...statusInput, expectedStatus: fromStatus });
+      if (!updated) throw await this.statusWriteMissError(actor, current.id, nextStatus); // B-SAN3-23:segunda-falha-status
     }
 
     await this.repository.createEvent({
       tenantId: actor.tenantId,
       workOrderId: updated.id,
       eventType: statusEventType(nextStatus),
-      fromStatus: current.status,
+      fromStatus,
       toStatus: nextStatus,
       actorUserId: actor.userId,
       message,
@@ -1488,7 +1494,7 @@ export class WorkOrderService {
         entity_type: "work_order",
         entity_id: updated.id,
         code: updated.code,
-        from_status: current.status,
+        from_status: fromStatus,
         to_status: nextStatus,
       },
       { tenantId: actor.tenantId, actorId: actor.userId },
@@ -1771,7 +1777,7 @@ export class WorkOrderService {
     }
   }
 
-  async assign(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord) {
+  async assign(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
     const current = await this.get(actor, workOrderId);
     // D1 — the assign action gains optional viatura/equipe selection, carried by the
     // mobile `work_order.assign` sync action and accepted on the REST body. Each
@@ -1809,19 +1815,60 @@ export class WorkOrderService {
     };
 
     assertStatusTransition(current.status, "assigned");
-    const result = await this.repository.assign(input);
-
+    // B-SAN3-23 (P-23.4 + Emenda 1) — CAS sobre `event.fromStatus`; se casar 0, relê, revalida e regrava UMA vez, com o
+    // evento levando a situação relida como origem.
+    let result = await this.repository.assign(input);
     if (!result) {
-      throw await this.statusWriteMissError(actor, current.id, "assigned");
+      const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-assign
+      await this.revalidateAssign(actor, reread, { userId, operatorId }); // B-SAN3-23:revalida-assign
+      result = await this.repository.assign({ ...input, event: { ...input.event, fromStatus: reread.status } });
+      if (!result) throw await this.statusWriteMissError(actor, current.id, "assigned"); // B-SAN3-23:segunda-falha-assign
     }
 
     return result.workOrder;
   }
 
   /**
-   * B-SAN3-23 (P-23.4, Q1 = A) — o CAS de situação (`changeStatus`, `assign`, `assignFromDispatch`) casou 0 linhas:
-   * relê. A OS existe → `409 invalid_status_transition`, a resposta que a mesma operação recebe fora de corrida
-   * (`assertStatusTransition`; o despacho em OS terminal); sumiu → 404, como antes.
+   * B-SAN3-23 (Emenda 1) — o CAS de situação casou 0 linhas: a OS mudou entre a leitura do serviço e a escrita. Relê
+   * (sumiu → 404, como antes) para REVALIDAR a mesma operação sobre a situação nova. É o precedente da casa,
+   * `FinancialTitleService.changeStatus`: uma releitura, uma regravação, e depois 409.
+   */
+  private async rereadAfterStatusMiss(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrder> {
+    const reread = await this.repository.findById(actor.tenantId, workOrderId);
+    if (!reread) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+    return reread;
+  }
+
+  // B-SAN3-23 (Emenda 1.1, EM1-03) — a revalidação POR ESCRITOR é a da entrada do próprio método, na mesma ordem, sobre
+  // a situação relida, e a falha responde o erro do próprio check (a resposta em corrida é a do caso sequencial).
+  // Ela é a ÚNICA defesa contra a sobrescrita do cancelamento na regravação: o CAS da 2ª escrita é sobre a relida, e a
+  // relida pode ser `cancelled`. Mudar situação = escopo por objeto (403 not_assigned_to_actor) + transição (409).
+  private async revalidateStatusChange(actor: WorkOrderActorContext, reread: WorkOrder, nextStatus: WorkOrderStatus): Promise<void> {
+    await this.assertMutationObjectScope(actor, reread);
+    assertStatusTransition(reread.status, nextStatus);
+  }
+
+  // Atribuir = trava de técnico (409 technician_change_requires_authorization) + transição (409 invalid_status_transition).
+  private async revalidateAssign(
+    actor: WorkOrderActorContext,
+    reread: WorkOrder,
+    target: { readonly userId?: string; readonly operatorId: string },
+  ): Promise<void> {
+    await this.assertTechnicianChangeAllowed(actor, reread, target);
+    assertStatusTransition(reread.status, "assigned");
+  }
+
+  // Despachar = situação terminal (409 invalid_status_transition) + trava de técnico.
+  private async revalidateAssignFromDispatch(actor: WorkOrderActorContext, reread: WorkOrder, userId: string): Promise<void> {
+    assertDispatchAssignable(reread);
+    await this.assertTechnicianChangeAllowed(actor, reread, { userId, operatorId: userId });
+  }
+
+  /**
+   * B-SAN3-23 (P-23.4, Q1 = A) — a 2ª escrita (a regravação da Emenda 1) também casou 0 linhas: relê. A OS existe →
+   * `409 invalid_status_transition`; sumiu → 404, como antes. Sem laço: não há 3ª escrita.
    */
   private async statusWriteMissError(actor: WorkOrderActorContext, workOrderId: string, to: WorkOrderStatus): Promise<WorkOrderError> {
     const reread = await this.repository.findById(actor.tenantId, workOrderId);
@@ -1902,14 +1949,7 @@ export class WorkOrderService {
     },
   ): Promise<WorkOrder> {
     const current = await this.get(actor, input.workOrderId);
-    if (WORK_ORDER_STATUS_TRANSITIONS[current.status].length === 0) {
-      throw new WorkOrderError(
-        409,
-        "WORK_ORDER_STATUS_INVALID",
-        "invalid_status_transition",
-        `Cannot assign a terminal work order in status ${current.status}.`,
-      );
-    }
+    assertDispatchAssignable(current);
 
     // Os ids vêm do despacho, que já os validou com a regra DELE (`field-dispatch.validators.ts`: não vazio — o
     // modo memória usa ids que não são UUID). Exigir UUID aqui quebraria o despacho fora do Postgres.
@@ -1928,7 +1968,7 @@ export class WorkOrderService {
         ? "Ordem de serviço reatribuída pelo despacho."
         : "Ordem de serviço atribuída pelo despacho.");
 
-    const result = await this.repository.assignFromDispatch({
+    const dispatchWrite: AssignWorkOrderFromDispatchInput = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
       operatorId,
@@ -1944,10 +1984,17 @@ export class WorkOrderService {
         message,
         metadata: { operatorId, userId, source: input.source, dispatchId },
       },
-    });
+    };
 
+    // B-SAN3-23 (P-23.4 + Emenda 1) — CAS sobre a situação validada; se casar 0 (por exemplo, outro despacho do mesmo
+    // técnico acabou de levar a OS a `assigned`), relê, revalida e regrava UMA vez: a corrida responde o que a sequência
+    // responde (201), e a OS cancelada no meio recusa (409).
+    let result = await this.repository.assignFromDispatch(dispatchWrite);
     if (!result) {
-      throw await this.statusWriteMissError(actor, current.id, current.status === "open" ? "assigned" : current.status);
+      const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-dispatch
+      await this.revalidateAssignFromDispatch(actor, reread, userId); // B-SAN3-23:revalida-dispatch
+      result = await this.repository.assignFromDispatch({ ...dispatchWrite, event: { ...dispatchWrite.event, fromStatus: reread.status } });
+      if (!result) throw await this.statusWriteMissError(actor, current.id, "assigned"); // B-SAN3-23:segunda-falha-dispatch
     }
 
     return result.workOrder;
@@ -2507,6 +2554,20 @@ function cancelTransitionError(from: WorkOrderStatus): WorkOrderError {
     "invalid_status_transition",
     `Cannot transition work order from ${from} to cancelled.`,
   );
+}
+
+// B-O6R-07c-b1 → B-SAN3-23 (Emenda 1.1, EM1-03) — o despacho não dá técnico a OS terminal (`completed`, `cancelled`,
+// `rejected`, sem transição de saída): 409 `invalid_status_transition`. Um ponto só, usado na entrada do
+// `assignFromDispatch` e na revalidação da regravação, para a corrida responder o mesmo erro da sequência.
+function assertDispatchAssignable(workOrder: WorkOrder): void {
+  if (WORK_ORDER_STATUS_TRANSITIONS[workOrder.status].length === 0) {
+    throw new WorkOrderError(
+      409,
+      "WORK_ORDER_STATUS_INVALID",
+      "invalid_status_transition",
+      `Cannot assign a terminal work order in status ${workOrder.status}.`,
+    );
+  }
 }
 
 // B-SAN3-23 (R-08) — lista FECHADA de códigos que o TEMPO resolve na unidade do cancelamento: P2034 conflito/impasse
