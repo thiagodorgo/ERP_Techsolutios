@@ -11,7 +11,7 @@ import type { DailyCap, DailyModel } from "../jurisdiction/jurisdiction.types.js
 //     nada devido em [t0, t0+24h); 1ª vence em t0+24h — D-Ω5P-CHG-06).
 //   CALENDAR (contratual): nº de DATAS-LOCAIS distintas do pátio em [t0, asOf] (entra 23:30 → 00:10 = 2 datas).
 //     DST-safe extraindo Y-M-D locais via Intl.
-// Teto (I4/RN-DIA-02) pela DATA DE ENTRADA via profile.dailyCap (regime intertemporal, ESTUDO §2.3):
+// Teto (I4/RN-DIA-02) pela DATA DE ENTRADA via process.regime.dailyCap (regime intertemporal, ESTUDO §2.3):
 //   SIX_MONTHS (CTB 271 §10 / 328 §5º): cap = count(model, t0, t0+6meses-de-calendário-no-TZ). Acumulação PARA.
 //   THIRTY_DAYS_LEGACY (Tema 124/STJ): cap = 30 (fixo).
 //   UNLIMITED (privado): sem teto.

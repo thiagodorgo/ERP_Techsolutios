@@ -40,6 +40,11 @@ const LOTE_VISTORIA = "/api/v1/mobile/sync/checklist-actions";
 const LOTE_EVIDENCIA = "/api/v1/mobile/sync/evidence-actions";
 const LOTE_OS = "/api/v1/mobile/sync/work-order-actions";
 const CONFLITO = "assignment_changed_pending_review";
+// B-SAN3-26 (só fixture) — o "No local" do técnico confere os 2 últimos caracteres da placa da OS.
+const PLACA_ARNES = "ABC1D23";
+function corpoDeStatus(etapa: string): Record<string, unknown> {
+  return etapa === "on_site" ? { status: etapa, checkin_confirmation: { last_digits: "23" } } : { status: etapa };
+}
 
 // ------------------------------------------------------------------------------------------------
 // LAÇO G — as 23 vias que eram `·07c-b`, LIDAS DO INSTANTÂNEO pelas classes que as guardam agora. O laço nunca pula
@@ -516,7 +521,7 @@ test("D-07CB1-TRAVA-ATE-B2 — a partir de No local (despacho `arrived`/`in_serv
     // OUTRO técnico são recusados; o despacho novo para o MESMO técnico passa.
     const s2 = await ctx.semente(seed.tecnicoA);
     for (const etapa of ["accepted", "on_route", "on_site"]) {
-      const r = await ctx.req(`/api/v1/work-orders/${s2.workOrderId}/status`, { method: "PATCH", headers: hA, body: { status: etapa } });
+      const r = await ctx.req(`/api/v1/work-orders/${s2.workOrderId}/status`, { method: "PATCH", headers: hA, body: corpoDeStatus(etapa) });
       assert.equal(r.status, 200, `${etapa}: ${JSON.stringify(r.body)}`);
     }
     recusada(await ctx.req(`/api/v1/operations/dispatches/${s2.dispatchId}/reassign`, { method: "PATCH", headers: hG, body: { operatorUserId: seed.tecnicoC.id } }), "reassign com a OS em on_site");
@@ -591,7 +596,7 @@ async function cenarioTrava(ctx: Ctx, estado: EstadoTrava): Promise<CenarioTrava
     assert.equal(r.status, 200, `cenário ${estado} (${etapa}): ${JSON.stringify(r.body)}`);
   }
   for (const etapa of etapasOs[estado] ?? []) {
-    const r = await ctx.req(`/api/v1/work-orders/${osId}/status`, { method: "PATCH", headers: hA, body: { status: etapa } });
+    const r = await ctx.req(`/api/v1/work-orders/${osId}/status`, { method: "PATCH", headers: hA, body: corpoDeStatus(etapa) });
     assert.equal(r.status, 200, `cenário ${estado} (${etapa}): ${JSON.stringify(r.body)}`);
   }
   return { osId, d1: d1.body.data.id as string, d2: d2.body.data.id as string };
@@ -1110,7 +1115,12 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     return modeloId;
   };
   const criarOs = async (extra: Record<string, unknown> = {}) => {
-    const criada = await req("/api/v1/work-orders", { method: "POST", headers: hGestor, body: { title: "OS 07c-b1", ...extra } });
+    // B-SAN3-26 (só fixture) — a OS do arnês nasce com placa, para o "No local" do técnico ter o que conferir.
+    const criada = await req("/api/v1/work-orders", {
+      method: "POST",
+      headers: hGestor,
+      body: { title: "OS 07c-b1", service_details: { plate: PLACA_ARNES }, ...extra },
+    });
     assert.equal(criada.status, 201, JSON.stringify(criada.body));
     return criada.body.data.id as string;
   };

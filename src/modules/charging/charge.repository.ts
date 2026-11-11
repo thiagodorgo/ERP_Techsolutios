@@ -120,6 +120,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
   private readonly charges: ProcessCharge[] = [];
   private readonly runs: DailyAccrualRun[] = [];
   private readonly profiles = new Map<string, StoredProfile>();
+  private readonly regimeByProcess = new Map<string, StoredProfile>();
   private readonly timezones = new Map<string, string>();
 
   constructor(private readonly impound: Pick<ImpoundRepository, "appendEvent" | "findProcessById">) {}
@@ -283,17 +284,28 @@ export class InMemoryChargeRepository implements ChargeRepository {
       model: "ROLLING_24H" as DailyModel,
       cap: "SIX_MONTHS" as DailyCap,
     };
+    const regime = this.captureRegime(`${tenantId}:${processId}`, profile);
     return {
       tenantId,
       processId,
       enteredAt: process.enteredAt,
       frozenAt: process.frozenAt,
       timezone: this.timezones.get(`${tenantId}:${processId}`) ?? "America/Sao_Paulo",
-      scope: profile.scope,
-      model: profile.model,
-      cap: profile.cap,
-      dailyServiceCatalogId: profile.dailyServiceCatalogId,
+      scope: regime.scope,
+      model: regime.model,
+      cap: regime.cap,
+      // B-O6R-12 (A1): ponteiro ausente no retrato cai no ponteiro atual do perfil (catch-up); cópia não nula vence.
+      dailyServiceCatalogId: regime.dailyServiceCatalogId ?? profile.dailyServiceCatalogId,
     };
+  }
+
+  // B-O6R-12 — a memória guarda o regime na PRIMEIRA leitura, como o gatilho do banco faz na abertura.
+  // Divergência declarada: aqui não há gatilho, então o retrato nasce no 1º acúmulo, não no INSERT.
+  private captureRegime(key: string, profile: StoredProfile): StoredProfile {
+    const captured = this.regimeByProcess.get(key);
+    if (captured) return captured;
+    this.regimeByProcess.set(key, profile);
+    return profile;
   }
 
   async listAccrualCandidates(): Promise<readonly string[]> {
@@ -348,6 +360,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
     this.charges.length = 0;
     this.runs.length = 0;
     this.profiles.clear();
+    this.regimeByProcess.clear();
     this.timezones.clear();
   }
 }

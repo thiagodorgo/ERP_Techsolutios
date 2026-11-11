@@ -6,6 +6,7 @@ import type {
   WorkOrderMapStartPoints,
 } from "./work-order.types.js";
 import type { WorkOrderChecklistRole, WorkOrderChecklistSource } from "./work-order-checklists.types.js";
+import type { CheckinListDescription } from "./work-order.checkin.js";
 
 /**
  * CHECKLIST P1 PR-04c-A — a projeção pública de uma linha do conjunto de vistorias.
@@ -118,30 +119,42 @@ export function toWorkOrderChecklistDto(link: WorkOrderChecklistView) {
   };
 }
 
-export function toWorkOrderListDto(result: ListWorkOrdersResult) {
+export function toWorkOrderListDto(
+  result: ListWorkOrdersResult,
+  // B-SAN3-26 (C26-03) — o modo do check-in por OS (`WorkOrderService.describeCheckinForList`). Item sem entrada no
+  // mapa vale `reference_missing`, que é fail-closed (o app não confirma a chegada dessa OS).
+  checkinByWorkOrder?: ReadonlyMap<string, CheckinListDescription>,
+) {
   return {
-    items: result.items.map((workOrder) => ({
-      id: workOrder.id,
-      code: workOrder.code,
-      title: workOrder.title,
-      status: workOrder.status,
-      priority: workOrder.priority,
-      customerName: workOrder.customerName,
-      serviceAddress: workOrder.serviceAddress,
-      // Ω1b (Mapa · pins de chamado): coordenadas da OS para o Mapa Operacional posicionar o pin.
-      // `null` quando ainda não geocodificada — o mapa lista a OS no painel "Sem localização".
-      serviceLatitude: workOrder.serviceLatitude ?? null,
-      serviceLongitude: workOrder.serviceLongitude ?? null,
-      assignedOperatorId: workOrder.assignedOperatorId ?? null,
-      assignedUserId: workOrder.assignedUserId ?? null,
-      // F6 (Mapa real): badges de manutencao/seguro no pin precisam da viatura da OS
-      vehicleId: workOrder.vehicleId ?? null,
-      scheduledFor: workOrder.scheduledFor?.toISOString() ?? null,
-      // M-7 (J-MAPAS-8 · SLA real do mapa) — CHAVE: o Mapa Operacional lê o prazo de SLA da lista para
-      // colorir/ordenar a fila (client-side). null quando a OS não tem prazo. Dado funcional, não sensível.
-      slaDueAt: workOrder.slaDueAt?.toISOString() ?? null,
-      createdAt: workOrder.createdAt.toISOString(),
-    })),
+    items: result.items.map((workOrder) => {
+      const checkin = checkinByWorkOrder?.get(workOrder.id);
+      return {
+        id: workOrder.id,
+        code: workOrder.code,
+        title: workOrder.title,
+        status: workOrder.status,
+        priority: workOrder.priority,
+        customerName: workOrder.customerName,
+        serviceAddress: workOrder.serviceAddress,
+        // Ω1b (Mapa · pins de chamado): coordenadas da OS para o Mapa Operacional posicionar o pin.
+        // `null` quando ainda não geocodificada — o mapa lista a OS no painel "Sem localização".
+        serviceLatitude: workOrder.serviceLatitude ?? null,
+        serviceLongitude: workOrder.serviceLongitude ?? null,
+        assignedOperatorId: workOrder.assignedOperatorId ?? null,
+        assignedUserId: workOrder.assignedUserId ?? null,
+        // F6 (Mapa real): badges de manutencao/seguro no pin precisam da viatura da OS
+        vehicleId: workOrder.vehicleId ?? null,
+        scheduledFor: workOrder.scheduledFor?.toISOString() ?? null,
+        // M-7 (J-MAPAS-8 · SLA real do mapa) — CHAVE: o Mapa Operacional lê o prazo de SLA da lista para
+        // colorir/ordenar a fila (client-side). null quando a OS não tem prazo. Dado funcional, não sensível.
+        slaDueAt: workOrder.slaDueAt?.toISOString() ?? null,
+        createdAt: workOrder.createdAt.toISOString(),
+        // B-SAN3-26 — só o modo e os 2 caracteres finais da placa; a placa inteira e o `serviceDetails` (que tem a
+        // senha de acesso do residencial) ficam no detalhe.
+        checkinMode: checkin?.mode ?? "reference_missing",
+        checkinPlateTail: checkin?.plateTail ?? null,
+      };
+    }),
     pagination: {
       limit: result.limit,
       offset: result.offset,

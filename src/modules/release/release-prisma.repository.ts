@@ -45,9 +45,8 @@ export class PrismaReleaseRepository implements ReleaseRepository {
 
   async loadReleaseRequirements(tenantId: string, processId: string): Promise<readonly RequirementSnapshot[] | undefined> {
     const rows = await this.client.$queryRaw<Array<{ release_requirements: unknown }>>`
-      SELECT jp.release_requirements
+      SELECT ip.regime_release_requirements AS release_requirements
       FROM impound_processes ip
-      JOIN jurisdiction_profiles jp ON jp.tenant_id = ip.tenant_id AND jp.id = ip.profile_id
       WHERE ip.tenant_id = ${tenantId}::uuid AND ip.id = ${processId}::uuid
     `;
     if (rows.length === 0) return undefined;

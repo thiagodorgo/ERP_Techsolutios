@@ -334,6 +334,11 @@ WorkOrder _workOrderFromRemoteJson(
     createdAt:
         _parseDate(strOpt('createdAt', 'created_at')) ?? DateTime.now().toUtc(),
     updatedAt: _parseDate(strOpt('updatedAt', 'updated_at')),
+    // B-SAN3-26 — o modo do check-in vem do servidor; ausente ou desconhecido vira `unknown`.
+    checkinMode: checkinModeFromApi(
+      json['checkinMode'] ?? json['checkin_mode'],
+    ),
+    checkinPlateTail: strOpt('checkinPlateTail', 'checkin_plate_tail'),
   );
 }
 
