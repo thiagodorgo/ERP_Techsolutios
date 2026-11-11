@@ -114,9 +114,9 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: PermissionBlockedState(
-                    title: 'Criacao bloqueada',
+                    title: 'Ação não permitida',
                     message:
-                        'O bootstrap atual nao possui expense_report:create.',
+                        'Seu perfil não tem permissão para criar prestações de contas. Fale com o administrador da sua organização.',
                   ),
                 ),
               SingleChildScrollView(

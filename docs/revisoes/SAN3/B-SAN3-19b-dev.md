@@ -11,8 +11,8 @@
 ## Fatias (esqueleto)
 - F0 — vermelho-controle: FEITA (07:31)
 - F1 — `assert` e chip: FEITA (07:33)
-- F2 — placeholder e roteador: FEITA (07:37)
-- F3 — as 9 telas: EM APURAÇÃO
+- F2 — placeholder e roteador: FEITA (07:36)
+- F3 — as 9 telas: FEITA (07:38)
 - F4 — despesas, P-O6R11, item 47, banner de política: EM APURAÇÃO
 - F5 — README, piso N0 e mutações: EM APURAÇÃO
 - F6 — registro e limpeza: EM APURAÇÃO
@@ -53,7 +53,7 @@ Base citada (§6, F0 "ou na `main` atual, citada"): `origin/main` = `a0979f513b1
 | `flutter test …acesso_nao_permitido_test.dart --plain-name T2` | 0 | `+1: All tests passed!` |
 | `git commit` | 0 | `d27ee12c` |
 
-## F2 — placeholder e roteador (07:34–07:37 SP)
+## F2 — placeholder e roteador (07:34–07:36 SP)
 
 - `git fetch origin && git rebase origin/main` antes da F2 (trava do §4): **head da `main` usado = `a0979f51`** (#530); "is up to date".
 - `module_placeholder_screen.dart`: `required this.blockedMessage`; ramo bloqueado = `PermissionBlockedState(title: 'Acesso não permitido', message: blockedMessage)`; ramo com permissão = `ApprovalDecisionCard(title: title, message: message)`, sem o `SyncStatusBanner` e sem o import de `sync_models.dart`. As linhas do gate (`final session`, `final hasPermission = …`) ficaram byte a byte.
@@ -67,3 +67,27 @@ Base citada (§6, F0 "ou na `main` atual, citada"): `origin/main` = `a0979f513b1
 | `dart format lib/app/router.dart lib/shared/ui/module_placeholder_screen.dart` | 0 | `0 changed` |
 | `flutter test …acesso_nao_permitido_test.dart` | 1 | `+7 -2`: verdes T1-alcance, T1b (`chamadas=4`), T2, T3 ×3, T4; vermelhos T1 e T9 só pelas 9 telas (F3). As 2 rotas do roteador já passam no T9 |
 | `flutter test` dos 3 `bsan319_*` | 0 | `+23: All tests passed!` |
+
+## F3 — as 9 telas (07:36–07:38 SP)
+
+Textos da tabela do §2.4 (o "…" da tabela é "Seu perfil não tem permissão para"), F_ADM = "Fale com o administrador da sua organização." só onde a chave do gate está no catálogo:
+
+| Tela | Título | Mensagem |
+|---|---|---|
+| Nova OS | Ação não permitida | Seu perfil não tem permissão para criar ordens de serviço. + F_ADM |
+| Executar OS | Ação não permitida | …alterar o status desta OS. + F_ADM |
+| Lista de OS | Acesso não permitido | …ver ordens de serviço. + F_ADM |
+| Mapa | Acesso não permitido | …usar o mapa operacional. + F_ADM |
+| Detalhe da OS | Acesso não permitido | …ver esta OS. + F_ADM |
+| Solicitar aprovação | Ação não permitida | …solicitar aprovação nesta OS. + F_ADM |
+| Lista de despesas | Ação não permitida | …criar prestações de contas. + F_ADM |
+| Checklists | Acesso não permitido | Esta área ainda não está disponível no aplicativo. (`TODO-DONO`, Pergunta 1 = A) |
+| Estoque | Acesso não permitido | Esta área ainda não está disponível no aplicativo. (`TODO-DONO`, Pergunta 1 = A) |
+
+Só os literais `title:`/`message:` mudaram; os `if`/`.has(` e as chaves dos gates ficaram intocados (o grep da trava do §5 roda na F5). Testes da §3.2, só no literal do título: `b083_polish_test.dart:332` → `Ação não permitida`; `work_order_test.dart:391`, `b086_inventory_foundation_test.dart:248`, `b085_checklist_foundation_test.dart:252` → `Acesso não permitido`. A asserção `findsNothing` de `work_order_test.dart:392-397` ficou como está.
+
+| Comando | Exit | Saída resumida |
+|---|---|---|
+| `dart format` nos 13 arquivos tocados | 0 | `2 changed` (quebra de linha em `work_order_detail_screen.dart` e `work_order_operational_map_screen.dart`) |
+| `flutter test …acesso_nao_permitido_test.dart` | 0 | `+9: All tests passed!` (`[T1] chamadas=10`, `[T1-alcance] achadas=10 referencia=10`, `[T1b] chamadas=4`) |
+| `flutter test` b083, b085, b086, `work_orders/work_order_test.dart` | 0 | `+80: All tests passed!` |

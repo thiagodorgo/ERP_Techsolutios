@@ -44,8 +44,9 @@ class WorkOrderOperationalMapScreen extends ConsumerWidget {
       return ErpScaffold(
         title: 'Mapa operacional',
         body: const PermissionBlockedState(
-          title: 'Acesso nao autorizado',
-          message: 'field_location:send necessario para mapa operacional.',
+          title: 'Acesso não permitido',
+          message:
+              'Seu perfil não tem permissão para usar o mapa operacional. Fale com o administrador da sua organização.',
         ),
       );
     }

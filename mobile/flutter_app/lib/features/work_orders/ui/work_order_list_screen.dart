@@ -114,9 +114,9 @@ class _WorkOrderListScreenState extends ConsumerState<WorkOrderListScreen> {
             const _ListHeader(),
             const Expanded(
               child: PermissionBlockedState(
-                title: 'Acesso nao autorizado',
+                title: 'Acesso não permitido',
                 message:
-                    'Voce nao possui a permissao work_orders:read para visualizar ordens de servico.',
+                    'Seu perfil não tem permissão para ver ordens de serviço. Fale com o administrador da sua organização.',
               ),
             ),
           ],

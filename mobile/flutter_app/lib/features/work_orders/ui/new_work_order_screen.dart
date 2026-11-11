@@ -50,9 +50,9 @@ class _NewWorkOrderScreenState extends ConsumerState<NewWorkOrderScreen> {
       return ErpScaffold(
         title: 'Nova OS',
         body: const PermissionBlockedState(
-          title: 'Sem permissao',
+          title: 'Ação não permitida',
           message:
-              'work_orders:create necessario para criar ordens de servico.',
+              'Seu perfil não tem permissão para criar ordens de serviço. Fale com o administrador da sua organização.',
         ),
       );
     }
