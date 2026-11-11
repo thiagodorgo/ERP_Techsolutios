@@ -218,3 +218,31 @@ esperava o semáforo, VERMELHO de 22:15 a 22:26); o vigia `t1-gate.sh` e o monit
   (`ChangePasswordPage.tsx`); RQ-1 (a) troca `session.mustChangePassword !== true` por `session.mustChangePassword === false`
   (`AuthProvider.tsx`).
 - **Arquivos meio-escritos:** nenhum. Nenhuma mutação aplicada na árvore (todas revertidas; código sem diff).
+
+## 5. Emenda 6 (itens 1, 2 e 4) e Emenda 6.1 (E6-R01 a E6-R05), a partir das 23:25
+
+Lidas inteiras no plano (linhas 975-1002). Medido em `8c41ffe3` antes do código.
+
+### Item 1 + E6-R05 — os componentes na biblioteca (23:27–23:33)
+
+- **Equivalente procurado** (`grep` em `frontend/src/components/**` e no `COMPONENT_LIBRARY.md`): o campo de senha com
+  "Mostrar" JÁ EXISTE, `PasswordInput` em `components/ui/index.tsx:29` (sem nenhum uso até aqui). Lista de requisitos,
+  medidor de força e indicador de etapas: nenhum equivalente na web.
+- **O campo** das 3 aparências passou a ser o `PasswordInput` da biblioteca (`ChangePasswordField` em
+  `ChangePasswordViewA.tsx` só o liga ao modelo; a pele do login fica no CSS da tela, escopo `.troca-senha`). O meu campo
+  próprio com "Mostrar" saiu. Como o `PasswordInput` não repassa `ref`, o foco pedido pelo contêiner vai ao campo pelo `id`.
+- **Os novos, cada um no seu arquivo:** `components/ui/RequirementChecklist.tsx`, `components/ui/PasswordStrengthMeter.tsx`
+  e `components/ui/StepList.tsx`, com as linhas de exportação no `components/ui/index.tsx` (é por ele que o resto do
+  sistema importa a biblioteca) e as 3 entradas no `COMPONENT_LIBRARY.md`. Os estilos de cada um vão no próprio arquivo
+  (`app.css` não está no PERMITIDO).
+- **Comportamento:** igual ao de antes nas vistas, com duas mudanças que vêm do `PasswordInput` da biblioteca, declaradas:
+  (a) o botão diz "Mostrar senha" / "Ocultar senha" (o texto de T.1), não "Mostrar senha provisória" com `aria-pressed`
+  como na referência; (b) o botão não trava junto com o campo. **Para a biblioteca, não mexi** (o `index.tsx` só ganhou as
+  exportações): o botão do `PasswordInput` mora dentro do `<label>` e o nome dele pode entrar no nome do campo para o leitor
+  de tela; e ele não tem `aria-pressed` nem trava com o campo. Sugiro pendência para quem cuidar da biblioteca.
+- **Aceite:** `git grep` acha cada componente uma vez só, na biblioteca (`PasswordStrengthMeter`, `passwordStrength`,
+  `RequirementChecklist`, `StepList`, `PASSWORD_STRENGTH_LABELS`); as vistas não importam mais ícone nenhum. Os testes das
+  vistas B e C seguem verdes (`troca-senha-live` 20/20; o W6 agora confere que cada campo é o `label.ui-field` do
+  `PasswordInput`, com "Mostrar senha" → "Ocultar senha", e o C usa `data-step` do `StepList`): `node --test --import tsx
+  tests/troca-senha-live.test.tsx tests/auth-troca-senha.adapter.test.ts tests/aparencia-registro.guard.test.ts` =
+  `# tests 51 · # pass 51 · # fail 0` (23:32); `npm --prefix frontend run check` limpo.

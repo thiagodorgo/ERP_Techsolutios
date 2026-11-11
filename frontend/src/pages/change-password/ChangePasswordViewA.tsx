@@ -1,12 +1,13 @@
-import { Eye, EyeOff } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+
+import { PasswordInput } from "../../components/ui";
 
 // B-USERS-ACESSO-SEG (T1) — troca da senha provisória, aparência A · Padrão fiel: o cartão do login com outro título.
 // Alvo exato: `docs/claude-code-handoff/screen-refs/troca-senha-3opcoes.reference.html` (aprovada pelo dono em 10/11,
 // "Aprovo as 3"). Tela-modelo: `pages/LoginPage.tsx` (marca, cartão, `.lg-input`, faixa, botão primário e o secundário,
 // estilos copiados de lá, como a referência registra). A sessão restrita abre SEMPRE nesta (Emenda 4, item 3).
-// Este arquivo também guarda as peças comuns às 3 aparências (moldura, campo de senha com "Mostrar", faixa, botões e
-// estilos), que B e C importam: o PERMITIDO do bloco não tem arquivo próprio para elas (diário, leitura L4).
+// Este arquivo também guarda as peças comuns às 3 aparências (moldura, faixa, botões e estilos), que B e C importam. O
+// campo de senha com "Mostrar" é o `PasswordInput` da biblioteca (Emenda 6.1, E6-R05), com a pele do login nesta tela.
 // As views são PURAS: o estado e o fluxo moram no contêiner (`pages/ChangePasswordPage.tsx`). As senhas só passam por
 // memória (props), nunca por armazenamento nem log.
 
@@ -50,12 +51,6 @@ export const FIELD_LABELS: Readonly<Record<ChangePasswordField, string>> = {
   confirm: "Confirme a nova senha",
 };
 
-const FIELD_SHOW_LABELS: Readonly<Record<ChangePasswordField, string>> = {
-  current: "Mostrar senha provisória",
-  next: "Mostrar nova senha",
-  confirm: "Mostrar confirmação da nova senha",
-};
-
 const FIELD_AUTOCOMPLETE: Readonly<Record<ChangePasswordField, string>> = {
   current: "current-password",
   next: "new-password",
@@ -70,7 +65,6 @@ export const CHANGE_PASSWORD_BASE_CSS = `
 .troca-senha{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px 24px;background:#F1F5F9;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif;color:#0F172A}
 .troca-senha [hidden]{display:none!important}
 .troca-senha .ts-col{width:100%;max-width:420px}
-.troca-senha .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 .troca-senha .nw{white-space:nowrap}
 .troca-senha .lg-marca{display:flex;justify-content:center;margin-bottom:32px}
 .troca-senha .lg-marca__in{display:flex;align-items:center;gap:12px}
@@ -90,7 +84,6 @@ export const CHANGE_PASSWORD_BASE_CSS = `
 .troca-senha form{margin:0}
 .troca-senha .lg-campo{margin-bottom:16px}
 .troca-senha .lg-campo--ultimo{margin-bottom:10px}
-.troca-senha .lg-rotulo{display:block;font-size:12.5px;font-weight:700;color:#374151;margin-bottom:6px}
 .troca-senha .lg-input{display:block;width:100%;padding:12px 14px;border:1.5px solid #E2E8F0;border-radius:10px;background:#fff;font-size:14px;color:#0F172A;font-family:inherit;outline:none}
 .troca-senha .lg-input:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
 .troca-senha .lg-input::placeholder{color:#94A3B8}
@@ -98,13 +91,13 @@ export const CHANGE_PASSWORD_BASE_CSS = `
 .troca-senha .lg-input[readonly]{background:#F8FAFC}
 .troca-senha .lg-input[aria-invalid="true"]{border-color:#DC2626}
 .troca-senha .lg-input[aria-invalid="true"]:focus{box-shadow:0 0 0 3px rgba(220,38,38,.1)}
-.troca-senha .lg-senha{position:relative}
-.troca-senha .lg-senha .lg-input{padding-right:46px}
-.troca-senha .lg-olho{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
-.troca-senha .lg-olho:hover:not(:disabled){background:#F1F5F9;color:#0F172A}
-.troca-senha .lg-olho:focus-visible{outline:2px solid #2563EB;outline-offset:0}
-.troca-senha .lg-olho:disabled{opacity:.55;cursor:not-allowed}
-.troca-senha .lg-olho[aria-pressed="true"]{color:#2563EB}
+.troca-senha .ui-field{display:block}
+.troca-senha .ui-field>span:not(.ui-password){display:block;font-size:12.5px;font-weight:700;color:#374151;margin-bottom:6px}
+.troca-senha .ui-password{display:block;position:relative;font-size:14px;font-weight:400;color:#0F172A}
+.troca-senha .ui-password .lg-input{padding-right:46px}
+.troca-senha .ui-password button{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.troca-senha .ui-password button:hover{background:#F1F5F9;color:#0F172A}
+.troca-senha .ui-password button:focus-visible{outline:2px solid #2563EB;outline-offset:0}
 .troca-senha .lg-dica{margin:0 0 24px;font-size:12.5px;font-weight:500;color:#64748B;line-height:1.45}
 .troca-senha .lg-btn{width:100%;padding:13px;background:#2563EB;border:none;border-radius:10px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px}
 .troca-senha .lg-btn:focus-visible,.troca-senha .lg-btn2:focus-visible{outline:2px solid #2563EB;outline-offset:2px}
@@ -166,6 +159,13 @@ export function ChangePasswordCard({
 }) {
   const titleId = `${idPrefix}-tit`;
   const accountId = `${idPrefix}-conta`;
+  const focusRequest = model.focusRequest;
+
+  // O `PasswordInput` da biblioteca não repassa `ref`: o foco pedido pelo contêiner vai ao campo pelo `id`.
+  useEffect(() => {
+    if (!focusRequest || typeof document === "undefined" || typeof document.getElementById !== "function") return;
+    document.getElementById(`${idPrefix}-${focusRequest.field}`)?.focus();
+  }, [focusRequest, idPrefix]);
 
   return (
     <div className="ts-col">
@@ -202,8 +202,11 @@ export function ChangePasswordCard({
   );
 }
 
-/** Campo de senha com "Mostrar" (botão alternável com rótulo acessível e `aria-pressed`, alvo de 34 px como o da referência). */
-export function ChangePasswordInput({
+/**
+ * O campo de senha da tela: o `PasswordInput` da biblioteca (rótulo, campo e o botão "Mostrar senha" / "Ocultar senha"),
+ * ligado ao modelo. Envio em curso e acesso não permitido travam o campo.
+ */
+export function ChangePasswordField({
   model,
   idPrefix,
   field,
@@ -218,47 +221,23 @@ export function ChangePasswordInput({
   readonly readOnly?: boolean;
   readonly invalid?: boolean;
 }) {
-  const [visible, setVisible] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const id = `${idPrefix}-${field}`;
-  const disabled = model.submitting || model.locked;
-  const focusRequest = model.focusRequest;
-
-  useEffect(() => {
-    if (focusRequest?.field === field) inputRef.current?.focus();
-  }, [focusRequest, field]);
-
   return (
-    <div className="lg-senha">
-      <input
-        ref={inputRef}
-        className="lg-input"
-        id={id}
-        name={field}
-        type={visible ? "text" : "password"}
-        autoComplete={FIELD_AUTOCOMPLETE[field]}
-        autoCapitalize="none"
-        spellCheck={false}
-        placeholder="••••••••"
-        value={model.values[field]}
-        onChange={(event) => model.onChange(field, event.target.value)}
-        aria-describedby={describedBy}
-        aria-invalid={invalid ? true : undefined}
-        readOnly={readOnly}
-        disabled={disabled}
-      />
-      <button
-        type="button"
-        className="lg-olho"
-        aria-label={FIELD_SHOW_LABELS[field]}
-        aria-pressed={visible}
-        aria-controls={id}
-        disabled={disabled}
-        onClick={() => setVisible((current) => !current)}
-      >
-        {visible ? <EyeOff size={18} aria-hidden="true" focusable="false" /> : <Eye size={18} aria-hidden="true" focusable="false" />}
-      </button>
-    </div>
+    <PasswordInput
+      label={FIELD_LABELS[field]}
+      className="lg-input"
+      id={`${idPrefix}-${field}`}
+      name={field}
+      autoComplete={FIELD_AUTOCOMPLETE[field]}
+      autoCapitalize="none"
+      spellCheck={false}
+      placeholder="••••••••"
+      value={model.values[field]}
+      onChange={(event) => model.onChange(field, event.target.value)}
+      aria-describedby={describedBy}
+      aria-invalid={invalid ? true : undefined}
+      readOnly={readOnly}
+      disabled={model.submitting || model.locked}
+    />
   );
 }
 
@@ -281,10 +260,7 @@ export function ChangePasswordFieldBlock({
 }) {
   return (
     <div className={last ? "lg-campo lg-campo--ultimo" : "lg-campo"}>
-      <label className="lg-rotulo" htmlFor={`${idPrefix}-${field}`}>
-        {FIELD_LABELS[field]}
-      </label>
-      <ChangePasswordInput model={model} idPrefix={idPrefix} field={field} describedBy={describedBy} invalid={invalid} />
+      <ChangePasswordField model={model} idPrefix={idPrefix} field={field} describedBy={describedBy} invalid={invalid} />
       {after}
     </div>
   );

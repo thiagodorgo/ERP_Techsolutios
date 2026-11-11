@@ -503,6 +503,14 @@ async function fillAndSubmit(root: MiniNode, appearance: Appearance, values: { c
   await submit(root);
 }
 
+/** O rótulo (`label.ui-field`) e o botão "Mostrar senha" do `PasswordInput` em volta do campo. */
+function fieldOf(input: MiniElement): { readonly label: MiniElement | undefined; readonly toggle: MiniElement | undefined } {
+  const wrapper = input.parentNode as MiniElement | null;
+  const label = wrapper?.parentNode as MiniElement | null;
+  const toggle = wrapper ? elements(wrapper, (el) => el.localName === "button")[0] : undefined;
+  return { label: label ?? undefined, toggle };
+}
+
 const banner = (root: MiniNode) => elements(root, (el) => el.getAttribute("role") === "alert")[0];
 
 // =============================== W3 — nenhuma outra tela abre ===============================
@@ -695,9 +703,9 @@ test("[E4.3] a sessão restrita abre na A mesmo com organização velha e prefer
 // =============================== W6 — as 3 aparências, mesmos campos e estados ===============================
 
 const FIELDS = [
-  { name: "current", label: "Senha provisória", autocomplete: "current-password", show: "Mostrar senha provisória" },
-  { name: "next", label: "Nova senha", autocomplete: "new-password", show: "Mostrar nova senha" },
-  { name: "confirm", label: "Confirme a nova senha", autocomplete: "new-password", show: "Mostrar confirmação da nova senha" },
+  { name: "current", label: "Senha provisória", autocomplete: "current-password" },
+  { name: "next", label: "Nova senha", autocomplete: "new-password" },
+  { name: "confirm", label: "Confirme a nova senha", autocomplete: "new-password" },
 ] as const;
 
 for (const appearance of ["A", "B", "C"] as const) {
@@ -714,19 +722,18 @@ for (const appearance of ["A", "B", "C"] as const) {
         assert.ok(input, `${appearance}: campo ${field.name} ausente`);
         assert.equal(read(input, "type"), "password");
         assert.equal(read(input, "autocomplete"), field.autocomplete);
-        const label = elements(view.container, (el) => el.localName === "label" && el.getAttribute("for") === input.getAttribute("id"))[0];
-        assert.equal(label ? text(label) : null, field.label, `${appearance}: rótulo de ${field.name}`);
-        const show = buttonLabeled(view.container, field.show);
-        assert.ok(show, `${appearance}: "${field.show}" ausente`);
-        assert.equal(show.getAttribute("aria-controls"), input.getAttribute("id"));
-        assert.equal(show.getAttribute("aria-pressed"), "false");
+        // O campo é o `PasswordInput` da biblioteca (Emenda 6.1, E6-R05): o rótulo envolve o campo e o botão "Mostrar senha".
+        const field_ = fieldOf(input);
+        assert.equal(field_.label?.localName, "label", `${appearance}: ${field.name} dentro do rótulo`);
+        assert.equal(read(field_.label!, "class"), "ui-field", `${appearance}: ${field.name} é o PasswordInput da biblioteca`);
+        assert.equal(text(field_.label!), field.label, `${appearance}: rótulo de ${field.name}`);
+        assert.equal(field_.toggle?.getAttribute("aria-label"), "Mostrar senha", `${appearance}: "Mostrar senha" de ${field.name}`);
       }
       assert.ok(buttonLabeled(view.container, "Sair"));
 
-      const show = buttonLabeled(view.container, "Mostrar senha provisória");
-      await click(show);
+      await click(fieldOf(byName(view.container, "current")).toggle);
       assert.equal(read(byName(view.container, "current"), "type"), "text", "mostrar senha");
-      assert.equal(buttonLabeled(view.container, "Mostrar senha provisória").getAttribute("aria-pressed"), "true");
+      assert.equal(fieldOf(byName(view.container, "current")).toggle?.getAttribute("aria-label"), "Ocultar senha");
     });
   });
 
@@ -752,7 +759,7 @@ for (const appearance of ["A", "B", "C"] as const) {
       assert.equal(byName(view.container, "current").getAttribute("aria-invalid"), "true");
       assert.equal(byName(view.container, "next").value, NEXT);
       if (appearance === "C") {
-        assert.equal(byAttr(view.container, "data-etapa", "1").getAttribute("aria-current"), "step", "C: a etapa 1 reabre");
+        assert.equal(byAttr(view.container, "data-step", "1").getAttribute("aria-current"), "step", "C: a etapa 1 reabre");
         assert.ok(buttonLabeled(view.container, "Continuar"));
         assert.match(view.html(), />preenchida</, "C: a etapa 2 recolhida diz que a nova senha está preenchida");
       }
@@ -788,18 +795,18 @@ test("[W6·C] \"Continuar\" sem a provisória mostra a faixa; com ela, abre a et
   stubFetch({});
   setStoredAuthSession(restrictedSession());
   await withView("C", async (view) => {
-    assert.equal(byAttr(view.container, "data-etapa", "1").getAttribute("aria-current"), "step", "abre na etapa 1");
+    assert.equal(byAttr(view.container, "data-step", "1").getAttribute("aria-current"), "step", "abre na etapa 1");
     await submit(view.container);
     assert.equal(text(banner(view.container)), "Preencha todos os campos.");
     assert.equal(byName(view.container, "current").getAttribute("aria-invalid"), "true");
     await typeInto(byName(view.container, "current"), CURRENT);
     await submit(view.container);
-    assert.equal(byAttr(view.container, "data-etapa", "2").getAttribute("aria-current"), "step");
+    assert.equal(byAttr(view.container, "data-step", "2").getAttribute("aria-current"), "step");
     assert.equal(banner(view.container), undefined, "a faixa sai ao avançar");
     assert.notEqual(read(byName(view.container, "current"), "readonly"), null, "a etapa 1 vira resumo");
     assert.match(view.html(), />informada</);
     await click(buttonLabeled(view.container, "Alterar a senha provisória"));
-    assert.equal(byAttr(view.container, "data-etapa", "1").getAttribute("aria-current"), "step");
+    assert.equal(byAttr(view.container, "data-step", "1").getAttribute("aria-current"), "step");
     assert.equal(byName(view.container, "current").value, CURRENT, "alterar não apaga a provisória");
     assert.deepEqual(calls, []);
   });
