@@ -43,6 +43,8 @@ export type ChequesData = {
   readonly pagination: ChequesPagination;
   readonly source: ChequesSource;
   readonly fallbackReason?: string;
+  /** Status HTTP da falha (403 → "acesso não permitido"). */
+  readonly fallbackStatus?: number;
 };
 
 /** Filtros que o SERVIDOR aplica (`GET /cheques`): situação e título por igualdade, direção, conta e página. */

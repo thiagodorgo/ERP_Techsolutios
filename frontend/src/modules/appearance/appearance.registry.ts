@@ -66,6 +66,16 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Central de prioridades" },
     ],
   },
+  // B-SAN3-24 (24a) — Cheques (referência `screen-refs/cheques-3opcoes.reference.html`, aprovada com as 3 opções em 11/11).
+  {
+    key: "cheques",
+    label: "Cheques",
+    options: [
+      { value: "A", label: "Abas do Financeiro" },
+      { value: "B", label: "Visão analítica" },
+      { value: "C", label: "Agenda do bom para" },
+    ],
+  },
   // B-USERS-ACESSO-SEG (T1) — troca da senha provisória (referência `screen-refs/troca-senha-3opcoes.reference.html`,
   // "Aprovo as 3"). A sessão restrita abre SEMPRE na A (Emenda 4, item 3: "Sim, sempre na A"): B e C ficam registradas
   // e só valem numa troca feita em sessão inteira, que não é deste bloco (nota da P-APARENCIA-APP-SELETOR).

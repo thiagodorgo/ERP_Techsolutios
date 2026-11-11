@@ -39,6 +39,7 @@ export const SCREEN_REFERENCES: Readonly<Record<string, string>> = {
   despachos: "despachos-3opcoes.reference.html",
   estoque: "estoque-3opcoes.reference.html",
   "troca-senha": "troca-senha-3opcoes.reference.html",
+  cheques: "cheques-3opcoes.reference.html",
 };
 
 const LABEL_EXCEPTIONS: ReadonlySet<string> = new Set(["patios:A"]);

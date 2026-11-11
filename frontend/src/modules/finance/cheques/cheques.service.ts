@@ -27,8 +27,15 @@ export async function listCheques(context: ChequesApiContext, filters: ChequeFil
   if (isMockMode()) return { items: [], pagination: { limit: 0, offset: 0, total: 0 }, source: "mock" };
   try {
     return adaptChequesList(await apiRequest<unknown>(chequesListPath(filters), context), "api");
-  } catch {
-    return { items: [], pagination: { limit: 0, offset: 0, total: 0 }, source: "fallback", fallbackReason: "Não foi possível consultar os cheques." };
+  } catch (error) {
+    const status = (error as { status?: unknown } | null)?.status;
+    return {
+      items: [],
+      pagination: { limit: 0, offset: 0, total: 0 },
+      source: "fallback",
+      fallbackReason: "Não foi possível consultar os cheques.",
+      ...(typeof status === "number" ? { fallbackStatus: status } : {}),
+    };
   }
 }
 
