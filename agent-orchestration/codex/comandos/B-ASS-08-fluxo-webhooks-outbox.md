@@ -89,3 +89,28 @@ Esta emenda é **registro**: ela escreve o escopo que a 08b de fato usou, com a 
   - gravar `enabled=true` por seed ou código;
   - guardar corpo de webhook (só o digest).
 - **Conferência:** `git diff --name-only d5ec1696...HEAD` tem de ser igual à lista acima. Caminho fora dela é escopo não autorizado.
+
+## Emenda 2 da 08b — o conserto da J-530 (11/11; plano `B-ASS-08b-conserto-530-v2.md` §6, com os requisitos de `crit-530-r2`)
+
+Registro, como a emenda acima. O conserto único da reprovação da J-530 tem o PERMITIDO do §6 do plano v2, que é a autoridade
+dele. Esta emenda acrescenta à lista acima os caminhos que o conserto tocou e que ela não tinha, cada um com a autoridade:
+
+- **No §6 do plano v2:**
+  - `src/modules/subscription-billing/statements/statement-settlement.service.ts`
+  - `src/modules/subscription-billing/statements/statement.service.ts` (só o `afterWrite` de `recordProviderPayment` e o marcador `[INTX-09]`)
+  - `src/modules/subscription-billing/statements/statement.repository.ts`
+  - `src/modules/subscription-billing/statements/statement.prisma-runtime.ts`
+  - `src/modules/subscription-billing/outbox/outbox.repository.ts`
+  - `src/modules/subscription-billing/outbox/outbox.types.ts`
+  - `tests/ass-08b-invoice-intent-db.test.ts`
+  - `tests/ass-08b-invoice-intent.test.ts`
+  - `tests/ass-08b-reconcile-reference.test.ts`
+  - `tests/ass-08-chargeback-reversal.test.ts`
+  - `tests/ass-08-reconcile-settlement.test.ts`
+  - `agent-orchestration/controle/decisoes.md` (a `D-J530-G14-BRIEFING-X-CONTRATO`, §7 do plano)
+- **Leitura do dev, declarada (§A6), no diário da 08b:**
+  - `tests/san3-05-acessos-de-plataforma-guard.test.ts`: o T13 ficou vermelho pela leitura de `subscription_statement_invoices` dentro da transação do demonstrativo, a mesma razão pela qual o §6 permite ajustar os censos o6r07c; entra 1 chave, do gerador, com motivo (linha `530c-guards`);
+  - `tests/san3-05-leituras-de-plataforma-db.test.ts`: a dubla de reconsulta passa a devolver a referência do demonstrativo, a mesma troca que o §5 manda fazer nas dublas de `tests/ass-08*` (linha `530c-F5`);
+  - este comando (esta emenda).
+- **PROIBIDO do plano v2, medido vazio:** `prisma/**` (a G14 intocada), `.github/**`, `Kpis/**`, `frontend/**`, `mobile/**`, `infra/**`, `.env*`, lockfiles; as travas do claim, o corpo de `#mutate`, `retry` e `markDisabledProvidersVisible`; a aritmética de dinheiro; `recordManualPayment`/`reverseManualPayment`; `src/app.ts`, `webhook.rate-limit.ts`.
+- **Conferência:** `git diff --name-only d5ec1696...HEAD` tem de ser igual à lista da emenda acima somada a esta.

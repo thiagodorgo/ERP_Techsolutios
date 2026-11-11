@@ -13248,3 +13248,52 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA (emenda 1 do `B-SAN3-08`, §5; achado A10 do parecer `crit-08-cl`) · **escopo:** anterior ao bloco; a montagem dos papéis em `src/modules/core-saas/permissions/catalog.ts:428-430` · **dono:** a fila pós-gate, com revisão reforçada · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
 - **fato:** o `platform_admin` recebe `service_quotes:create` e `:approve` pelo catálogo integral; a matriz (`RBAC_MATRIX.md:117`) não o inclui, e `RBAC_MATRIX.md:62` diz que ele não é o aprovador padrão dos fluxos da organização.
 - **critério de encerramento:** catálogo e matriz reconciliados para o `platform_admin` em `service_quotes:*`, com teste de guarda matriz × catálogo.
+
+## P-ASS08C-TRUST-PROXY (2026-11-11) — sem `trust proxy`, o bloqueio por IP do webhook vale para todos atrás do proxy do Fly — ALTA (bloqueia ligar o canal)
+
+- **status:** ABERTA · **escopo:** `src/app.ts` e `webhooks/webhook-runtime.ts` (`clientIp`) · **dono:** `B-ASS-08c`.
+- **origem:** J-530, C2-A1 (dentro do bloco, não grave). `webhook-runtime.ts` usa `req.ip`; o dinheiro se recupera pelo poll-pending (atraso, não perda). Que o `req.ip` no Fly seja o do proxy é derivado da topologia, não medido. Registrado pelo conserto da J-530 (plano `B-ASS-08b-conserto-530-v2.md` §8).
+- **teste de encerramento:** com `trust proxy` no salto do Fly, 20 × 401 de um `X-Forwarded-For` não bloqueiam outro pelo mesmo socket; `X-Forwarded-For` forjado com mais saltos não escolhe o IP.
+
+## P-ASS08C-COTA-IP-BLOQUEADO (2026-11-11) — IP já bloqueado ainda consome a cota global do provedor — MÉDIA (bloqueia ligar o canal)
+
+- **status:** ABERTA · **escopo:** `webhooks/subscription-billing.webhook.routes.ts` (`allowGlobal` × `isIpBlocked`) e `webhook.rate-limit.ts` · **dono:** `B-ASS-08c`.
+- **origem:** J-530, C2-A2 (anterior ao bloco: `d5ec1696`/#522). Registrado pelo conserto da J-530 (plano v2 §8).
+- **teste de encerramento:** o atacante bloqueado manda 1 000 pedidos e o legítimo seguinte recebe 200; a mutação "allowGlobal antes de isIpBlocked" fica vermelha.
+
+## P-ASS08C-NOTA-DA-BAIXA-MANUAL (2026-11-11) — baixa/estorno manuais sem intenção de nota, e o PASSADO sem nota — ALTA (bloqueia ligar o provedor de NOTA)
+
+- **status:** ABERTA · **escopo:** `statements/statement.service.ts` (`recordManualPayment`, `reverseManualPayment`) e o ato de ligar o provedor de nota (nasce no 08c) · **dono:** `B-ASS-08c`.
+- **origem:** auditoria do topo do #530 (I9) e `crit-530-cl` CRIT530-03 (medido: F1-c, baixa manual que quita → outbox vazia, nenhuma nota). Anterior ao bloco (B-ASS-04). Nenhuma nota pode ser emitida antes do 08c (`evaluateEnablePreconditions` sem chamador, medido em `6e236f4e`), logo o dano nasce no dia de ligar. Ajustes da rodada 2 do crítico do plano (`crit-530-r2`, CRIT530R2-02 e CRIT530R2-06), incorporados abaixo.
+- **teste de encerramento (cobre o PASSADO e o futuro):**
+  - (1) VARREDURA DE RECUPERAÇÃO, pré-condição de QUALQUER forma de ligar o provedor de nota (a rota de ligar, e também o caminho que hoje é o único — SQL direto em `billing_provider_configs`: a varredura não pode depender só da rota; por exemplo, o despacho recusa emitir até a varredura ter rodado para o provedor ligado). Todo demonstrativo com `status = 'paid'`, sem nota viva nem autorizada, e sem linha `invoice_issue` VIVA (não excluir o pago cuja única `invoice_issue` é TERMINAL — `NEEDS_REVIEW statement_not_paid` ou `SENT` de nota cancelada/rejeitada —, CRIT530R2-02), com `paid_at` no corte escolhido pelo dono (pergunta 2 do plano v2 do #530), ganha 1 intenção `invoice_issue` com o `seq` seguinte. O INSERT da intenção acontece DEPOIS de travar o demonstrativo (`FOR NO KEY UPDATE`/`FOR UPDATE`) na mesma transação (CRIT530R2-06: medido pelo crítico na rodada 2 que um INSERT da mesma chave fora da trava fecha ciclo com a reversão e dá 40P01), com teste de barreira no molde do T-INTX-9b. Com uma baixa manual que quitou ANTES da varredura e uma quitação manual depois de parcial do provedor, ligar o provedor deixa 1 `invoice_issue` para cada; demonstrativo fora do corte aparece numa listagem de conferência, sem intenção. Repetir a varredura não duplica.
+  - (2) daqui em diante: baixa manual que quita → 1 `invoice_issue` na MESMA transação (queda depois do commit não a perde; provedor desligado → `provider_disabled`); estorno manual que tira de `paid` um demonstrativo com nota viva → a regra de produto do estorno manual decidida no 08c, com teste dono; T-LOCK-2 verde.
+
+## P-ASS08C-TROCA-DE-PROVEDOR-DE-NOTA (2026-11-11) — `invoice_issue` nunca tentada presa ao provedor antigo quando se troca o provedor de nota — MÉDIA
+
+- **status:** ABERTA · **escopo:** a rota de enable (inexistente em `6e236f4e`) e `outbox.prisma.ts` · **dono:** `B-ASS-08c`. Depende da pergunta 1 do plano v2 do #530.
+- **teste de encerramento:** ao ligar um provedor de nota, as `invoice_issue` `PENDING` com `attempts = 0` e `external_id IS NULL` passam ao novo, na transação do enable; as tentadas e as `invoice_cancel` NUNCA mudam de provedor.
+
+## P-ASS08C-REEMISSAO-APOS-REPAGAMENTO (2026-11-11) — repagar depois de um estorno total não gera intenção de nota — ALTA (bloqueia ligar o provedor de NOTA)
+
+- **status:** ABERTA · **escopo:** a intenção de emissão na 2ª transição para `paid` (`statement-settlement.service.ts`, `#issueIntent`, que hoje grava `invoice_issue:<id>:1` com `ON CONFLICT DO NOTHING`) e a rota `/invoice` (G10, `seq + 1`) · **dono:** `B-ASS-08c`.
+- **origem:** conserto do #530 e a rodada 2 do crítico (`crit-530-r2`, CRIT530R2-02, medido: R2-REPAY → `paid`, 2 pagamentos, nenhuma nota, a linha `invoice_issue` que sobra diz `NEEDS_REVIEW statement_not_paid`). Depois de um estorno total, o repagamento por outra cobrança leva o demonstrativo a `paid`, e a intenção `invoice_issue:<id>:1` já existe (terminal) → nada nasce. GRAVIDADE SUBIDA de BAIXA para ALTA pelo requisito da rodada 2 do crítico (a alternativa a implementar a reemissão neste conserto); só é alcançável com o provedor de nota ligado, por isso bloqueia ligá-lo.
+- **teste de encerramento:** repagamento depois de estorno total → 1 `invoice_issue` VIVA com o `seq` seguinte (ou a regra escolhida no 08c, com teste dono), gravada DEPOIS de travar o demonstrativo na transação da baixa (CRIT530R2-06), com barreira no molde do T-INTX-9b; a varredura da `P-ASS08C-NOTA-DA-BAIXA-MANUAL` também alcança o caso.
+
+## P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO (2026-11-11) — `invoice_cancel` em `NEEDS_REVIEW invoice_stuck_processing` não tem saída no produto — MÉDIA (bloqueia ligar o provedor de NOTA)
+
+- **status:** ABERTA · **escopo:** `outbox/invoice.dispatch.ts` (o teto de 72 h do cancelamento), `outbox.prisma.ts` (`retry` só reabre `FAILED`) e a tela/rota de revisão da outbox · **dono:** `B-ASS-08c`.
+- **origem:** rodada 2 do crítico (`crit-530-r2`, CRIT530R2-03). O conserto da J-530 já reconsulta a nota antes de ir a revisão (T-INTX-11f): só vai a `NEEDS_REVIEW invoice_stuck_processing` a nota que o provedor AINDA diz processando depois de 72 h (T-INTX-11e). Mas nenhum `UPDATE` em `src` tira uma linha de `NEEDS_REVIEW`, e o `retry` só reabre `FAILED`: se o provedor autorizar depois, a nota fica de pé sobre receita estornada sem caminho de conserto.
+- **teste de encerramento:** a linha `invoice_cancel` em `NEEDS_REVIEW invoice_stuck_processing` volta a `PENDING` por uma ação com dono (rota de revisão ou job que a reconsulta), travando o demonstrativo primeiro; com a nota autorizada pelo provedor depois do teto, a ação cancela a nota (1 `DELETE`, nota `cancel_pending`/`cancelled`); teste dono `-db` e a mutação "sem a saída" vermelha.
+
+## P-ASS08C-NOTA-PENDENTE-POR-ERRO-DE-VALIDACAO (2026-11-11) — nota `pending` que o provedor recusou por validação fica pendente para sempre — BAIXA
+
+- **status:** ABERTA · **escopo:** `outbox/invoice.dispatch.ts` (o `catch` de `InvoiceProviderError` na emissão devolve `needs_review` sem `markRejected`) · **dono:** `B-ASS-08c`.
+- **origem:** rodada 2 do crítico (`crit-530-r2`, CRIT530R2-01, a mesma classe, lida por código; anterior ao conserto). Com o demonstrativo pago, a nota fica `pending` sem nota no provedor e a linha `invoice_issue` em `NEEDS_REVIEW`. Se houver estorno, o conserto da J-530 a resolve (o cancelamento reconsulta no teto e a marca rejeitada, porque nunca chegou ao provedor); sem estorno, ela só fica visível.
+- **teste de encerramento:** erro de validação na emissão deixa a nota `rejected` com o motivo (ou a regra do 08c, com teste dono), e o demonstrativo pago aparece para a reemissão.
+
+## P-ASS08-ZUMBI-ORFA-NOTA (2026-11-11) — trabalhador vivo além do tempo de órfã ainda pode emitir uma nota que o registro deu por abandonada — BAIXA
+
+- **status:** ABERTA · **escopo:** `invoice.dispatch.ts` (o lease da linha `PROCESSING`) · **dono:** `B-ASS-08c`.
+- **origem:** conserto do #530 (plano v2 §3.4). Risco anterior ao conserto, que o desenho da órfã de hoje já aceita; o conserto não o piora.
+- **teste de encerramento:** conferência de lease (`claimed_by` + `attempt_started_at`) antes do `port.issue`, ou reconciliação que adota nota autorizada no provedor sem linha viva nossa e enfileira o cancelamento se o demonstrativo não estiver `paid`.
