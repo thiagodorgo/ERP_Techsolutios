@@ -69,7 +69,10 @@ export class FieldDispatchController {
 
   async changeStatus(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const dispatch = await service.changeStatus(actor, readRouteParam(request.params.dispatchId), request.body ?? {});
+    const { dispatch, changed } = await service.changeStatusOrNoop(actor, readRouteParam(request.params.dispatchId), request.body ?? {});
+
+    // PRE537-01 — o mesmo status sem texto não mudou nada (no-op do serviço): sem auditoria de mudança de status.
+    if (!changed) return { data: toFieldDispatchDto(dispatch) };
 
     await recordRequestAuditBestEffort(request, {
       action: dispatch.status === "cancelled" ? "field_dispatch.cancelled" : "field_dispatch.status_changed",

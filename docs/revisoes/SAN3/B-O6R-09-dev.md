@@ -367,3 +367,26 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
     é o CI em Linux. O bloco não cria tabela, view nem papel: só a coluna `idempotency_key`, o CHECK e o índice. Então o
     contador `tabelas_com_dml` do T14a/b e o L0 do T13 não mudam por construção. O T13 local, que não depende de `psql`,
     deu 35/35.
+
+## Conserto da pré-revisão do #537 (`prerev-537-cl`, APROVADO, 2 não graves) — 06:09 SP
+
+### PRE537-01 — o no-op do mesmo status gravava auditoria de mudança
+
+- **Teste vermelho antes do conserto:** `[PRE537-01]` em `tests/b-o6r-09-dispatch-concurrency-db.test.ts`. Ele passa pelo
+  controlador REAL (o mesmo da rota), em modo prisma: 1 mudança real e 2 repetições do mesmo status sem texto, e conta
+  `audit_logs` do despacho. No head `5dc388d0`: `3 !== 1` ("a auditoria registrou como sucesso mudanças de status que não
+  aconteceram"), o mesmo número da sonda (g) do revisor.
+- **Conserto:**
+  - o serviço ganhou `changeStatusOrNoop`, que devolve `{ dispatch, changed }`; o `changeStatus` público continua
+    devolvendo só o despacho, para os chamadores e os testes de hoje;
+  - o corpo virou `applyStatusChange`, que marca `outcome.changed = true` só depois da transição condicional gravar. As
+    âncoras M13, M16 e M16b seguem com contagem 1;
+  - o controlador não audita quando `changed` é falso (`if (!changed) return { data: toFieldDispatchDto(dispatch) };`).
+- **Depois:** concurrency-db 7/7; memória + `field-dispatch*` + `checklist-snapshot-dispatch` 59/59; `npm run check`
+  ec=0.
+- **Mutações literais:** MP1a (apagar o `if (!changed) return …` do controlador) VERMELHA, `3 !== 1`; MP1b (apagar
+  `outcome.changed = true;`) VERMELHA, `0 !== 1`. As duas foram restauradas, conferido por hash.
+- **Anterior ao bloco, registrado e não consertado (a mesma classe):** a reatribuição à MESMA pessoa é no-op desde o
+  B-O6R-07c-b1 (`field-dispatch.service.ts`, "reatribuir à MESMA pessoa não troca ninguém e NÃO ESCREVE nada"). O
+  controlador também a audita como `field_dispatch.reassigned`. Fica registrado como
+  `P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA`, porque não é do achado nem deste bloco.

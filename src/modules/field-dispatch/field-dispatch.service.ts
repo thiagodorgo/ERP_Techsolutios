@@ -631,6 +631,27 @@ export class FieldDispatchService {
   }
 
   async changeStatus(actor: FieldDispatchActorContext, dispatchId: string, body: RawRecord): Promise<FieldDispatch> {
+    return (await this.changeStatusOrNoop(actor, dispatchId, body)).dispatch;
+  }
+
+  // PRE537-01 (pré-revisão do #537) — o mesmo status sem texto não grava nada (R-A3), e quem audita precisa saber disso:
+  // `changed: false` quando a chamada foi no-op, para a rota não registrar uma mudança de status que não aconteceu.
+  async changeStatusOrNoop(
+    actor: FieldDispatchActorContext,
+    dispatchId: string,
+    body: RawRecord,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly changed: boolean }> {
+    const outcome = { changed: false };
+    const dispatch = await this.applyStatusChange(actor, dispatchId, body, outcome);
+    return { dispatch, changed: outcome.changed };
+  }
+
+  private async applyStatusChange(
+    actor: FieldDispatchActorContext,
+    dispatchId: string,
+    body: RawRecord,
+    outcome: { changed: boolean },
+  ): Promise<FieldDispatch> {
     const current = await this.get(actor, dispatchId);
     // B-O6R-07c-b1 (CA8, D-07c-DESPACHO-ALVO) — escopo por objeto ANTES da máquina de estados: o técnico de
     // campo só transiciona o despacho cujo `operatorUserId` é ele mesmo.
@@ -710,6 +731,7 @@ export class FieldDispatchService {
       },
     );
     const updated = this.transitionOutcome(result);
+    outcome.changed = true;
 
     if (nextStatus === "cancelled" || nextStatus === "failed") {
       await this.moveAssignmentToRemainingDispatch(actor, updated, current.status);

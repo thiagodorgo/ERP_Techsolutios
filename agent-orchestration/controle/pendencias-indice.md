@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **827** |
-| IDs distintos | 816 |
-| **ABERTAS** | **628** |
+| Cabecalhos `## P-` | **828** |
+| IDs distintos | 817 |
+| **ABERTAS** | **629** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **566** |
+| — das quais **ativas nesta rodada** | **567** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 195 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **827 cabecalhos para 816 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **828 cabecalhos para 817 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -356,7 +356,7 @@
 | `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` | 13253 | MÉDIA | sim | P-B-O6R-09-ATRIBUICAO-FORA-DA-TX (2026-11-11) — a OS aceita a atribuição e a transação-m |
 | `P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX` | 13265 | MÉDIA | sim | P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX (2026-11-11) — a criação NORMAL de OS grava a OS |
 
-## ABERTAS · balde B — processo/registro — 286
+## ABERTAS · balde B — processo/registro — 287
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -646,6 +646,7 @@
 | `P-B-O6R-09-STATUS-APROVA-SEM-OS` | 13277 | BAIXA | sim | P-B-O6R-09-STATUS-APROVA-SEM-OS (2026-11-11) — o orçamento pela rota de status — BAIXA ( |
 | `P-B-O6R-09-PAINEL-STATUS-SEM-ERRO` | 13283 | BAIXA | sim | P-B-O6R-09-PAINEL-STATUS-SEM-ERRO (2026-11-11) — o painel "Alterar status" não mostra er |
 | `P-B-O6R-09-WEB-LE-WORKORDERID-DO-409` | 13289 | BAIXA | sim | P-B-O6R-09-WEB-LE-WORKORDERID-DO-409 (2026-11-11) — a web não lê o `details.workOrderId` |
+| `P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA` | 13308 | BAIXA | sim | P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA (2026-11-11) — a reatribuição à mesma pessoa |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 

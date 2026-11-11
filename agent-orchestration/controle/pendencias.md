@@ -13304,3 +13304,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** FECHADA (2026-11-11), pelo registro `D-B-O6R-09-TRAVA-PRISMA-OPCAO-A` em `decisoes.md`; a conferência do carimbo da migração contra a última da `main` fica para o momento do merge (porteiro) · **escopo:** registro (`agent-orchestration/controle/`), plano v2 §4.3 e R2-09 da revisão r2 do plano (`crit-09-r2`) · **dono:** o orquestrador · **bloqueia:** o merge do PR do `B-O6R-09` (a verificação literal da linha A5 do plano).
 - **fato:** `grep -rln "B-O6R-09" agent-orchestration/controle/` no ramo, antes do commit da fatia 3, acha só a pendência antiga `P-O6R-B09`. A migração do bloco (`20260901090000_field_dispatch_idempotency_key`) se recarimba numa linha se o B-O6R-12 entrar antes (opção (a)).
 - **critério de encerramento:** a escolha registrada em `controle/`, e o carimbo conferido contra a última migração da `main` no momento do merge.
+
+## P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA (2026-11-11) — a reatribuição à mesma pessoa não grava nada e é auditada como `field_dispatch.reassigned` — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `src/modules/field-dispatch/field-dispatch.controller.ts` (`reassign` audita sempre) × o no-op de `FieldDispatchService.reassign` (B-O6R-07c-b1) · **dono:** o próximo bloco que tocar o despacho · **bloqueia:** não.
+- **origem:** o conserto do PRE537-01 (pré-revisão do #537) tratou o no-op do MESMO STATUS; a mesma classe já existia na `main` para a reatribuição à mesma pessoa, apontada pelo revisor como anterior.
+- **critério de encerramento:** a reatribuição sem troca não grava auditoria de reatribuição (ou grava o no-op como tal), com teste pelo controlador real que conta `audit_logs`.

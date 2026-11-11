@@ -145,6 +145,26 @@ if (!baseConnection) {
       assert.equal((await c.linha(criado.id)).observation, null, "o 422 gravou a observação");
     });
   });
+
+  // PRE537-01 (pré-revisão do #537): o mesmo status sem texto é no-op no serviço, e a AUDITORIA da rota tem de dizer o
+  // mesmo — nenhuma `field_dispatch.status_changed` de sucesso para uma mudança que não aconteceu. O caso passa pelo
+  // controlador real (o mesmo que a rota usa), em modo prisma, e conta as linhas de `audit_logs` do despacho.
+  test("[PRE537-01] 1 mudança real + 2 repetições do mesmo status sem texto → 3 respostas 200, 1 auditoria field_dispatch.status_changed", async () => {
+    await comCenario(connection, async (c) => {
+      const { FieldDispatchController } = await import("../src/modules/field-dispatch/field-dispatch.controller.js");
+      const controller = new FieldDispatchController(async () => c.despachos);
+      const os = await c.criarOs();
+      const criado = await c.despachos.create(c.gestao, { workOrderId: os, operatorUserId: c.tecnicoA });
+      const pedido = (ator: unknown) =>
+        ({ params: { dispatchId: criado.id }, body: { status: "accepted" }, tenantContext: ator, header: () => undefined }) as never;
+
+      const respostas = [];
+      for (let i = 0; i < 3; i += 1) respostas.push(await controller.changeStatus(pedido(c.campo(c.tecnicoA))));
+      assert.deepEqual(respostas.map((r: any) => r.data.status), ["accepted", "accepted", "accepted"]);
+      assert.equal(await c.eventosDoDespacho(criado.id, { type: "field_dispatch_status_changed" }), 1, "a linha do tempo mudou nas repetições");
+      assert.equal(await c.auditorias(criado.id, "field_dispatch.status_changed"), 1, "a auditoria registrou como sucesso mudanças de status que não aconteceram");
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -240,6 +260,13 @@ async function montarCenario(connection: string) {
         [tenantId, dispatchId],
       );
       return linha;
+    },
+    async auditorias(dispatchId: string, acao: string): Promise<number> {
+      const [{ n }] = await sql(
+        "SELECT count(*)::int AS n FROM audit_logs WHERE tenant_id = $1::uuid AND entity = 'field_dispatch' AND entity_id = $2 AND action = $3",
+        [tenantId, dispatchId, acao],
+      );
+      return n;
     },
     async eventosDoDespacho(dispatchId: string, filtro: { fromStatus?: string; type?: string; actor?: string }): Promise<number> {
       const [{ n }] = await sql(
