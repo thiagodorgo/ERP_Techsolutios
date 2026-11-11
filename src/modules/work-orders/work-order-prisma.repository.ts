@@ -551,7 +551,7 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
     return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
   }
 
-  // B-SAN3-23 (P-23.1) — o cancelamento como UMA unidade, numa transação só, nesta ordem:
+  // B-SAN3-23 (P-23.1) — o cancelamento como UMA unidade, nesta ordem:
   //   (1) a trava exclusiva da linha da OS. Ela conflita com a chave estrangeira de quem insere item ou título e com a
   //       trava compartilhada da escrita de item e do faturamento: quem chegou antes commita primeiro, e a leitura
   //       seguinte já enxerga o commit dele (READ COMMITTED). É uma instrução de uma linha que não devolve nada usado
@@ -560,47 +560,60 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
   //   (3) no `zero`, "há item ativo faturado?" sob a trava (R-01) e o zerar, que trava os itens em (created_at, id);
   //   (4) a situação, a decisão e o carimbo; (5) o evento (D-3).
   // Ordem total (P-23.3): a OS antes dos itens, como a escrita de item e o faturamento.
+  // A TRANSAÇÃO é a do invólucro (`RlsPrismaWorkOrderRepository` → `withTenantRls`, que seta o contexto da organização
+  // antes), como no `applyChecklists`: tudo commita junto, ou nada, e a falha de qualquer passo desfaz os anteriores
+  // (A4). Sem `$transaction` interno de propósito: um `$transaction` sem o contexto provado na 1ª instrução entraria no
+  // inventário de acessos suspeitos do B-SAN3-05 (ratchet T13).
   async cancelWithFinancialDecision(
     input: CancelWorkOrderWithFinancialDecisionInput,
   ): Promise<CancelWorkOrderWithFinancialDecisionResult | undefined> {
-    return this.client.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM work_orders WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.workOrderId}::uuid FOR UPDATE`; // B-SAN3-23:trava-os-cancel
-      const locked = await tx.workOrder.findFirst({
-        where: { tenant_id: input.tenantId, id: input.workOrderId },
-        select: { status: true },
-      });
-      if (!locked) return undefined;
-      const fromStatus = locked.status as WorkOrderStatus;
-      input.assertCancellable(fromStatus);
-      if (input.decision === "zero") {
-        if (await hasActiveInvoicedItem(tx, input.tenantId, input.workOrderId)) throw hasInvoicedItemsError(); // B-SAN3-23:faturado-sob-trava
-        await new PrismaWorkOrderFinancialItemRepository(tx).softDeleteAllByWorkOrder(input.tenantId, input.workOrderId, input.actorUserId);
-      }
-      const updated = await tx.workOrder.updateManyAndReturn({
-        where: { tenant_id: input.tenantId, id: input.workOrderId },
-        data: {
-          status: "cancelled",
-          cancellation_reason: input.cancellationReason,
-          financial_cancellation_decision: input.decision,
-          cancelled_at: new Date(),
-          updated_by: input.actorUserId,
-        },
-      });
-      if (!updated[0]) return undefined;
-      const event: CreateWorkOrderEventInput = {
-        tenantId: input.tenantId,
-        workOrderId: input.workOrderId,
-        eventType: "work_order_cancelled",
-        fromStatus,
-        toStatus: "cancelled",
-        actorUserId: input.actorUserId,
-        message: input.event.message,
-        metadata: input.event.metadata,
-      };
-      await new PrismaWorkOrderRepository(tx).createEvent(event); // B-SAN3-23:evento-na-unidade
-
-      return { workOrder: mapWorkOrderRecord(updated[0]), fromStatus };
+    const tx = this.client;
+    await tx.$queryRaw`SELECT id FROM work_orders WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.workOrderId}::uuid FOR UPDATE`; // B-SAN3-23:trava-os-cancel
+    const locked = await tx.workOrder.findFirst({
+      where: { tenant_id: input.tenantId, id: input.workOrderId },
+      select: { status: true },
     });
+    if (!locked) return undefined;
+    const fromStatus = locked.status as WorkOrderStatus;
+    input.assertCancellable(fromStatus);
+    if (input.decision === "zero") {
+      if (await this.hasActiveInvoicedItem(input.tenantId, input.workOrderId)) throw hasInvoicedItemsError(); // B-SAN3-23:faturado-sob-trava
+      await new PrismaWorkOrderFinancialItemRepository(tx).softDeleteAllByWorkOrder(input.tenantId, input.workOrderId, input.actorUserId);
+    }
+    const updated = await tx.workOrder.updateManyAndReturn({
+      where: { tenant_id: input.tenantId, id: input.workOrderId },
+      data: {
+        status: "cancelled",
+        cancellation_reason: input.cancellationReason,
+        financial_cancellation_decision: input.decision,
+        cancelled_at: new Date(),
+        updated_by: input.actorUserId,
+      },
+    });
+    if (!updated[0]) return undefined;
+    const event: CreateWorkOrderEventInput = {
+      tenantId: input.tenantId,
+      workOrderId: input.workOrderId,
+      eventType: "work_order_cancelled",
+      fromStatus,
+      toStatus: "cancelled",
+      actorUserId: input.actorUserId,
+      message: input.event.message,
+      metadata: input.event.metadata,
+    };
+    await this.createEvent(event); // B-SAN3-23:evento-na-unidade
+
+    return { workOrder: mapWorkOrderRecord(updated[0]), fromStatus };
+  }
+
+  // B-SAN3-23 (R-01) — "há item ATIVO já faturado?", na transação da unidade e sob a trava exclusiva da OS. Um
+  // faturamento no protocolo da P-23 ou já commitou (e o item aparece carimbado) ou ainda espera a OS (nada faturado).
+  private async hasActiveInvoicedItem(tenantId: string, workOrderId: string): Promise<boolean> {
+    const found = await this.client.workOrderFinancialItem.findFirst({
+      where: { tenant_id: tenantId, work_order_id: workOrderId, deleted_at: null, invoiced_at: { not: null } },
+      select: { id: true },
+    });
+    return Boolean(found);
   }
 
   async assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
@@ -1125,16 +1138,6 @@ function isChecklistLinkUniqueViolation(error: unknown): boolean {
     (code === "23505" || code === "P2002" || message.includes("23505")) &&
     (message.includes("work_order_checklists") || message.includes("work_order_checklists_unique"))
   );
-}
-
-// B-SAN3-23 (R-01) — "há item ATIVO já faturado?", na transação da unidade e sob a trava exclusiva da OS. Um faturamento
-// no protocolo da P-23 ou já commitou (e o item aparece carimbado) ou ainda espera a OS (e nada foi faturado).
-async function hasActiveInvoicedItem(tx: Prisma.TransactionClient, tenantId: string, workOrderId: string): Promise<boolean> {
-  const found = await tx.workOrderFinancialItem.findFirst({
-    where: { tenant_id: tenantId, work_order_id: workOrderId, deleted_at: null, invoiced_at: { not: null } },
-    select: { id: true },
-  });
-  return Boolean(found);
 }
 
 // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — a linha de `work_order_events` da atribuição, montada dentro da transação:
