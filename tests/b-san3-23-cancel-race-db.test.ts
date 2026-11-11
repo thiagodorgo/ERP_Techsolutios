@@ -124,9 +124,27 @@ if (!connectionString) {
   test("[A8] A1 sob papel NOSUPERUSER sem BYPASSRLS → a trava compartilhada funciona sob RLS: 422 work_order_cancelled; 0 item ativo", async (t) => {
     const s = await seed("a8");
     const winner = await holdWinner(s, (tx) => lockAndCancel(tx, s, "keep"));
-    const { barrier, won, lost } = await race(winner, () => h.roleFinancials.create(s.actor, s.workOrderId, manualItemBody()), "lançar (papel efêmero) atrás do cancelamento");
+    // C1-04 (junta J-536) — a A8 prova DENTRO dela que a consulta saiu pelo papel efêmero: quem está bloqueado atrás do
+    // vencedor é uma conexão do papel (`usename`), e esse papel é `NOSUPERUSER` e sem `BYPASSRLS` (`pg_roles`, lido
+    // pela própria conexão do papel, sob o contexto da organização).
+    let blockedAs: string[] = [];
+    const { barrier, won, lost } = await race(winner, () => h.roleFinancials.create(s.actor, s.workOrderId, manualItemBody()), "lançar (papel efêmero) atrás do cancelamento", {
+      whileBlocked: async () => {
+        const rows = (await h.admin.$queryRaw`
+          SELECT a.usename AS name FROM pg_stat_activity a
+           WHERE a.application_name = ${applicationName} AND ${winner.pid}::int = ANY(pg_blocking_pids(a.pid))
+        `) as Array<{ name: string }>;
+        blockedAs = rows.map((row) => row.name);
+      },
+    });
+    const identity = (await h.withTenantRls(h.role.client as never, s.tenantId, (tx: any) =>
+      tx.$queryRaw`SELECT current_user::text AS name, r.rolsuper AS super, r.rolbypassrls AS bypass FROM pg_roles r WHERE r.rolname = current_user`,
+    )) as Array<{ name: string; super: boolean; bypass: boolean }>;
     const state = await osState(s);
-    t.diagnostic(`[A8] papel=${h.role.roleName} | barreira=${barrier} | perdedor=${describe(lost)} | estado=${JSON.stringify(state)}`);
+    t.diagnostic(`[A8] papel=${h.role.roleName} | bloqueado como=${JSON.stringify(blockedAs)} | identidade=${JSON.stringify(identity)} | barreira=${barrier} | perdedor=${describe(lost)} | estado=${JSON.stringify(state)}`);
+    assert.ok(barrier.startsWith("bloqueado"), "o perdedor tinha de esperar a trava do vencedor");
+    assert.deepEqual(blockedAs, [h.role.roleName], "a consulta bloqueada saiu pela conexão do papel efêmero");
+    assert.deepEqual(identity, [{ name: h.role.roleName, super: false, bypass: false }], "o papel é NOSUPERUSER e sem BYPASSRLS");
     expectFulfilled(won, "vencedor (cancelamento)");
     expectNoDeadlock(lost);
     expectReason(lost, 422, "work_order_cancelled", "lançar perdedor sob o papel");
@@ -138,7 +156,7 @@ if (!connectionString) {
   test("[A2] cancelar(zero) × INSERT cru de item em voo → o cancelamento espera a OS, enxerga o item e o zera; 0 item ativo", async (t) => {
     const s = await seed("a2");
     const winner = await holdWinner(s, (tx) => rawInsertItem(tx, s, 50));
-    const { barrier, won, lost } = await race(winner, () => h.workOrders.cancel(s.actor, s.workOrderId, cancelBody("zero")), "cancelar atrás do INSERT cru");
+    const { barrier, won, lost } = await race(winner, () => h.cancels.cancel(s.actor, s.workOrderId, cancelBody("zero")), "cancelar atrás do INSERT cru");
     const state = await osState(s);
     t.diagnostic(`[A2] barreira=${barrier} | perdedor=${describe(lost)} | estado=${JSON.stringify(state)}`);
     expectFulfilled(won, "vencedor (INSERT cru)");
@@ -153,7 +171,7 @@ if (!connectionString) {
     const winner = await holdWinner(s, async (tx) => {
       await tx.$queryRaw`SELECT id FROM work_order_financial_items WHERE tenant_id = ${s.tenantId}::uuid AND id = ${s.itemIds[0]}::uuid FOR UPDATE`;
     });
-    const cancelling = captureSettled(h.workOrders.cancel(s.actor, s.workOrderId, cancelBody("zero")));
+    const cancelling = captureSettled(h.cancels.cancel(s.actor, s.workOrderId, cancelBody("zero")));
     let first = "";
     let second = "";
     let creating: Promise<SettledOutcome<unknown>> = Promise.resolve({ status: "fulfilled", value: undefined });
@@ -180,7 +198,7 @@ if (!connectionString) {
 
   test("[A4] atomicidade: o evento do cancelamento falha → nada persiste (OS na situação anterior, decisão NULL, 2 itens ativos, 0 evento)", async (t) => {
     const s = await seed("a4", { items: [100, 20] });
-    const outcome = await withFailingCancelEvent(s, () => captureSettled(h.workOrders.cancel(s.actor, s.workOrderId, cancelBody("zero"))));
+    const outcome = await withFailingCancelEvent(s, () => captureSettled(h.cancels.cancel(s.actor, s.workOrderId, cancelBody("zero"))));
     const state = await osState(s);
     t.diagnostic(`[A4] cancelar=${describe(outcome)} | estado=${JSON.stringify(state)}`);
     assert.equal(outcome.status, "rejected", "o cancelamento tinha de falhar com o evento");
@@ -194,7 +212,7 @@ if (!connectionString) {
   test("[A9] cancelar(zero) × faturamento em voo (protocolo novo) → o cancelamento espera a OS, vê o faturado e sai 422 has_invoiced_items; I-Z", async (t) => {
     const s = await seed("a9", { items: [100, 20] });
     const winner = await holdWinner(s, (tx) => rawInvoiceNewProtocol(tx, s, 120));
-    const { barrier, won, lost } = await race(winner, () => h.workOrders.cancel(s.actor, s.workOrderId, cancelBody("zero")), "cancelar(zero) atrás do faturamento");
+    const { barrier, won, lost } = await race(winner, () => h.cancels.cancel(s.actor, s.workOrderId, cancelBody("zero")), "cancelar(zero) atrás do faturamento");
     const state = await osState(s);
     t.diagnostic(`[A9] barreira=${barrier} | perdedor=${describe(lost)} | estado=${JSON.stringify(state)}`);
     expectFulfilled(won, "vencedor (faturamento)");
@@ -252,7 +270,7 @@ if (!connectionString) {
       for (let round = 0; round < 20; round += 1) {
         const s = await newWorkOrderIn(base, `a7-${pair.name}-${round}`, { items: pair.items });
         // Rodada par: o cancelamento sai primeiro; ímpar: o outro lado sai primeiro (as duas ordens de largada).
-        const startCancel = () => captureSettled(h.workOrders.cancel(s.actor, s.workOrderId, cancelBody("zero")));
+        const startCancel = () => captureSettled(h.cancels.cancel(s.actor, s.workOrderId, cancelBody("zero")));
         const startOther = () => captureSettled(pair.other(s));
         const [cancelled, other] =
           round % 2 === 0
@@ -304,7 +322,7 @@ if (!connectionString) {
     const winner = await holdWinner(s, async (tx) => {
       await tx.$queryRaw`SELECT id FROM work_orders WHERE tenant_id = ${s.tenantId}::uuid AND id = ${s.workOrderId}::uuid FOR SHARE`;
     });
-    const { barrier, won, lost } = await race(winner, () => h.workOrders.cancel(s.actor, s.workOrderId, cancelBody("keep")), "cancelar atrás da trava compartilhada", { holdAfterBlockedMs: HOLD_PAST_TX_TIMEOUT_MS });
+    const { barrier, won, lost } = await race(winner, () => h.cancels.cancel(s.actor, s.workOrderId, cancelBody("keep")), "cancelar atrás da trava compartilhada", { holdAfterBlockedMs: HOLD_PAST_TX_TIMEOUT_MS });
     const state = await osState(s);
     t.diagnostic(`[A12] barreira=${barrier} | perdedor=${describe(lost)} | estado=${JSON.stringify(state)}`);
     expectFulfilled(won, "vencedor (trava compartilhada)");
@@ -355,7 +373,7 @@ if (!connectionString) {
     const hooked = h.workOrdersWith({
       // Roda entre a checagem de situação do serviço e a escrita do repositório (work-order.service.ts, assignFromDispatch).
       resolveActorOperatorProfileId: async () => {
-        midCancel = await captureSettled(h.workOrders.cancel(s.actor, s.workOrderId, cancelBody("keep")));
+        midCancel = await captureSettled(h.cancels.cancel(s.actor, s.workOrderId, cancelBody("keep")));
         return undefined;
       },
       hasActiveDispatchAtSite: async () => false,
@@ -418,6 +436,31 @@ if (!connectionString) {
 type Harness = Awaited<ReturnType<typeof bootstrap>>;
 let harness: Harness | undefined;
 
+// C1-02 (junta J-536) — os erros CRUS do banco nos 3 caminhos que o serviço traduz para 503 (escrita de item,
+// faturamento, cancelamento), guardados ANTES da tradução. Esvaziada a cada `seed` (cada caso começa por um).
+const rawServiceErrors: unknown[] = [];
+
+/** Proxy que guarda o erro de `methods` em `rawServiceErrors` e o repassa intacto; o resto passa direto. */
+function tapRawErrors<T extends object>(target: T, methods: readonly string[]): T {
+  return new Proxy(target, {
+    get(obj, property, receiver) {
+      const member = Reflect.get(obj, property, receiver);
+      if (typeof member !== "function") return member;
+      if (typeof property === "string" && methods.includes(property)) {
+        return async (...args: unknown[]) => {
+          try {
+            return await (member as (...a: unknown[]) => Promise<unknown>).apply(obj, args);
+          } catch (error) {
+            rawServiceErrors.push(error);
+            throw error;
+          }
+        };
+      }
+      return member.bind(obj);
+    },
+  });
+}
+
 function hx(): Harness {
   assert.ok(harness, "arnês não inicializado");
   return harness;
@@ -438,6 +481,7 @@ async function bootstrap(connection: string) {
     workOrderService,
     workOrderPrisma,
     { createPrismaApplicableTariffResolver },
+    { createDefaultFinancialUnitOfWork },
   ] = await Promise.all([
     import("@prisma/adapter-pg"),
     import("@prisma/client"),
@@ -449,6 +493,7 @@ async function bootstrap(connection: string) {
     import("../src/modules/work-orders/work-order.service.js"),
     import("../src/modules/work-orders/work-order-prisma.repository.js"),
     import("../src/modules/service-quotes/service-quote.service.js"),
+    import("../src/modules/financial-uow/index.js"),
   ]);
   assert.equal(env.CORE_SAAS_PERSISTENCE, "prisma", "assert do modo: esta suíte só é prova no caminho prisma");
 
@@ -460,6 +505,20 @@ async function bootstrap(connection: string) {
   const workOrderRepository = await workOrderPrisma.createPrismaWorkOrderRepository();
   const tariffResolver = await createPrismaApplicableTariffResolver();
   const tenantIds: string[] = [];
+  // C1-02 (junta J-536) — os 3 caminhos do serviço traduzem 40P01 em 503 ANTES de o teste ver o erro. A escuta fica
+  // na fronteira de cada um (o repositório de itens, a unidade financeira do faturamento e a unidade do cancelamento),
+  // guarda o erro CRU do banco e o devolve intacto; o `expectNoDeadlock` lê esta lista.
+  const itemRepository = tapRawErrors(await itemPrisma.createPrismaWorkOrderFinancialItemRepository(), ["create", "update", "softDelete"]);
+  const tappedUow = async () => {
+    const uow = await createDefaultFinancialUnitOfWork();
+    return {
+      run: (tenantId: string, work: (ctx: never) => Promise<unknown>) =>
+        uow.run(tenantId, work as never).catch((error: unknown) => {
+          rawServiceErrors.push(error);
+          throw error;
+        }),
+    };
+  };
 
   const built = {
     admin: admin as any,
@@ -467,13 +526,15 @@ async function bootstrap(connection: string) {
     withTenantRls,
     deriveCompetencia: titles.deriveCompetencia as (date: Date) => string,
     workOrders,
+    // O cancelamento pelo serviço REAL, com a unidade escutada (C1-02); o cancelamento não usa resolvedores.
+    cancels: new workOrderService.WorkOrderService(tapRawErrors(workOrderRepository, ["cancelWithFinancialDecision"]), {}),
     // O serviço de OS REAL sobre o repositório Prisma real, com os resolvedores que o teste injeta (A15b).
     workOrdersWith: (references: Record<string, unknown>) => new workOrderService.WorkOrderService(workOrderRepository, references as never),
-    financials: await financialService.createDefaultWorkOrderFinancialService(),
-    invoicing: await financialService.createDefaultWorkOrderInvoicingService(),
+    financials: new financialService.WorkOrderFinancialService(itemRepository, workOrders, tariffResolver),
+    invoicing: new financialService.WorkOrderInvoicingService(await itemPrisma.createPrismaWorkOrderFinancialItemRepository(), tappedUow as never),
     // A8 — o serviço financeiro com o repositório sobre o PAPEL EFÊMERO (NOSUPERUSER, sem BYPASSRLS).
     roleFinancials: new financialService.WorkOrderFinancialService(
-      new itemPrisma.RlsPrismaWorkOrderFinancialItemRepository(role.client as never),
+      tapRawErrors(new itemPrisma.RlsPrismaWorkOrderFinancialItemRepository(role.client as never), ["create", "update", "softDelete"]),
       workOrders,
       tariffResolver,
     ),
@@ -514,6 +575,7 @@ function suffix(): string {
 }
 
 async function seed(tag: string, options: { status?: string; items?: number[] } = {}): Promise<Seed> {
+  rawServiceErrors.length = 0;
   const marca = `${tag}-${suffix()}`;
   const tenant = await h.admin.tenant.create({ data: { name: `SAN3-23 ${marca}`, slug: `san323-${marca}` } });
   h.tenantIds.push(tenant.id);
@@ -605,11 +667,18 @@ async function holdWinner(s: Seed, held: (tx: TxClient) => Promise<unknown>, aft
 }
 
 /** Perdedor contra um vencedor: barreira causal (atrás do pid do vencedor) ou resolvido; depois solta o vencedor. */
-async function race(winner: Winner, act: () => Promise<unknown>, label: string, options: { holdAfterBlockedMs?: number } = {}) {
+async function race(
+  winner: Winner,
+  act: () => Promise<unknown>,
+  label: string,
+  options: { holdAfterBlockedMs?: number; whileBlocked?: () => Promise<void> } = {},
+) {
   const lost = captureSettled(act());
   let barrier: string;
   try {
     barrier = await waitForOwnBlockedOrSettled(h.admin, { applicationName, blockedBy: winner.pid, loser: lost, label });
+    // O que o caso precisa ver ENQUANTO o perdedor está bloqueado atrás do vencedor (a A8 lê quem é o perdedor).
+    if (options.whileBlocked && barrier.startsWith("bloqueado")) await options.whileBlocked();
     if (options.holdAfterBlockedMs && barrier.startsWith("bloqueado")) {
       // O cenário (não sincronização): a trava do vencedor dura mais que os 5 s do `$transaction` do perdedor, que já
       // está DENTRO da transação dele (a barreira o viu bloqueado). Contar daqui dá margem garantida de 1,5 s.
@@ -770,9 +839,33 @@ function expectFulfilledOrReason(outcome: SettledOutcome<unknown>, allowed: Arra
   assert.ok(ok, `${label}: desfecho fora do conjunto permitido (${describe(outcome)})`);
 }
 
-/** P-23.3: nenhuma corrida termina em impasse cru (o 503 traduzido do faturamento cai na asserção do motivo). */
+/**
+ * P-23.3: nenhuma corrida termina em impasse. Olha o desfecho (o vencedor de SQL cru e o perdedor que não traduz) E,
+ * desde a C1-02 da junta J-536, a CAUSA crua que os 3 caminhos do serviço guardaram antes de traduzir 40P01 em 503
+ * (`rawServiceErrors`): impasse no perdedor do serviço é vermelho aqui, não só na asserção do motivo.
+ */
+const DEADLOCK_SIGNATURE = /40P01|deadlock detected|P2034/i;
+
 function expectNoDeadlock(outcome: SettledOutcome<unknown>): void {
-  if (outcome.status === "fulfilled") return;
-  const text = flatten((outcome as { reason: unknown }).reason);
-  assert.doesNotMatch(text, /40P01|deadlock detected/i, `a corrida terminou em impasse (${describe(outcome)})`);
+  if (outcome.status !== "fulfilled") {
+    const text = flatten((outcome as { reason: unknown }).reason);
+    assert.doesNotMatch(text, DEADLOCK_SIGNATURE, `a corrida terminou em impasse (${describe(outcome)})`);
+  }
+  for (const raw of rawServiceErrors) {
+    assert.doesNotMatch(rawErrorText(raw), DEADLOCK_SIGNATURE, `a corrida terminou em impasse no perdedor do serviço (causa crua: ${rawErrorText(raw).slice(0, 220)})`);
+  }
+}
+
+// O texto do erro cru com os códigos aninhados do Prisma 7 + adapter-pg (`code`, `meta`, `cause.code|originalCode`).
+function rawErrorText(error: unknown): string {
+  const record = (typeof error === "object" && error !== null ? error : {}) as { code?: unknown; meta?: unknown; cause?: unknown };
+  let extra = "";
+  try {
+    extra = JSON.stringify({ code: record.code, meta: record.meta, cause: record.cause }, (_key, value) =>
+      value instanceof Error ? { message: value.message, ...(value as unknown as Record<string, unknown>) } : value,
+    );
+  } catch {
+    extra = String(record.code ?? "");
+  }
+  return `${flatten(error)} ${extra}`;
 }
