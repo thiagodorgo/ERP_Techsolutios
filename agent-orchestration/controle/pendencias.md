@@ -1473,6 +1473,7 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
 
 - **duplicata de:** `P-GOLIVE-VALIDATE-CONSTRAINT` — só o residual LEGACY-NULL desta entrada, que não tem cabeçalho próprio (crítico SAN3 r1, CR1-16; emenda de 2026-09-11) — tratar junto.
 - **dono:** `B-SAN3-23` (plano SAN3, §4.1 item 23 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-Ω3F6-CANCEL-RACE`: o bullet `P-Ω3F6-CANCEL-RACE` (item 23) tem dono `B-SAN3-23`.
+- **`P-Ω3F6-CANCEL-RACE` — FECHADO pelo `B-SAN3-23` (2026-11-11, ramo `fix/os-cancelada-sem-item-financeiro`; o merge e a CI do merge entram no registro pós-merge).** Só este residual fecha; `P-Ω3F6-LEGACY-NULL`, `P-Ω3F6-CANCEL-IDEM` e `P-Ω3F6-MOBILE-DEADLETTER` seguem abertos, e a entrada continua ABERTA por eles. O cancelamento virou uma unidade sob a trava exclusiva da OS (`cancelWithFinancialDecision`), e lançar, editar, apagar item e faturar relêem a situação sob a trava compartilhada da OS. Prova: `tests/b-san3-23-cancel-race-db.test.ts` (A1, A2, A3 e A9, com barreira; vermelhos no código de hoje, verdes no bloco; mutações no diário `docs/revisoes/SAN3/B-SAN3-23-dev.md`).
 
 ## P-GOLIVE-SECRET-ROTATE — ~~Chave Google Maps: rotação humana obrigatória~~ — **FECHADA (2026-08-29): rotação DISPENSADA pelo dono**
 
@@ -2265,6 +2266,18 @@ que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo mod
   neste bloco: o plano a devolve ao `B-SAN3-19b` e a pergunta (o item 47 fecha sem ela?) está com o dono → registrada em
   `P-SAN3-07-APP-NOME-TECNICO-OFFLINE`.
 
+- **apenso 2026-11-11 (`B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`): a instância do app fechou.** O plano do 19b assumiu o resíduo
+  (§2.5). `bootstrap_session.dart`: os `displayName` da sessão de demonstração passaram a `Organização Demonstração`
+  (as duas entradas) e `Organização Serviços de Campo`; `bootstrap_repository.dart` (`_tenantDisplayName`, só o nome
+  exibido): o app local usa o nome da sessão de demonstração pelo id e, fora dela, o id formatado sem a palavra
+  `tenant`. Testes: T8 (i)(ii)(iii) de `test/features/bsan319b_texto_exibido_test.dart`; M17 e M18 vermelhas.
+  **Ressalva (crítica r2, CRIT19B-R2-07):** quem já estava logado no app de demonstração segue vendo o nome antigo até
+  sair ou tocar em "Tentar de novo", porque o `bootstrapSessionProvider` usa primeiro o `restoreCached()` e o codec
+  guarda o `displayName` (`bootstrap_codec.dart`, fora do escopo; só o app de demonstração é afetado).
+  **Observação, fora do escopo (plano §2.5):** o e-mail do usuário de demonstração `tecnico@tenant.demo`
+  (`bootstrap_session.dart:116`, `login_screen.dart:132`) é dado do usuário, não texto de interface; trocá-lo mexe em
+  ~10 testes e no acesso rápido.
+
 ## P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do contêiner (BAIXA)
 
 Junta do PR-02d. O `resolveChecklistPreviewMode` decide dock × modal por `window.innerWidth >= 1600`, mas a
@@ -3049,6 +3062,11 @@ corrente; auditoria campo a campo com valor anterior e novo (todos numéricos/en
 **Severidade P1 mantida como registrada** — reclassificar exigiria junta.
 
 - **dono:** `B-O6R-12` (plano SAN3, §4.1 item 24 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DAT-004`: o achado `Ω6R-DAT-004` (item 24) tem dono `B-O6R-12`. O dono deste achado passa a ser `B-O6R-12` (item 24); o "Dono: próximo agente…" e o "sem bloco até hoje" do cabeçalho ficam como histórico.
+
+- **emenda de execução (B-O6R-12, 2026-11-11):** FECHAMENTO PROPOSTO NA AUTORIA. O retrato
+  normativo passa a nascer na abertura e é consumido por cobrança, prazos, leilão, liberação,
+  painel e portal; auditoria campo a campo implementada. O fechamento definitivo depende do PR,
+  da junta completa e do merge.
 
 ## P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P0) — **BLOQUEIA o deploy produtivo, literalmente**
 
@@ -8943,7 +8961,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico, nome "flutter_app" e README de template — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`; a home, o manifest e o rótulo de papel fecharam no PR #487): a guarda de fonte dos literais nas âncoras de exibição do app (T6) em 0; texto montado só por interpolação fica fora dela (fechamento e resíduo abaixo).
+- status anterior: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
 - **fonte (fatia AUSENTES, §2a):** sintese B45, §6(a6)
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `shared/ui/home_screen.dart:153-154,407` `'${session.user.tenantRole} · …'`; `shared/ui/module_placeholder_screen.dart:42` "Permissao $requiredPermission nao retornou no bootstrap" (`/approvals`, `router.dart:253-255`); `android/app/src/main/AndroidManifest.xml:6` `android:label="flutter_app"`; `README.md` "A new Flutter project."
@@ -8960,6 +8979,26 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
   (`sync_action_labels.dart`)**, os 20 `lastSafeError` dos 4 replays e o do coordenador acentuados, 'Auto sync'/'Ultimo
   sync'; segue com `B-SAN3-19`: 'Checklists', 'Despesas (RDV)', lista de OS, home, placeholder, manifest, títulos do
   Diagnóstico (e `P-O6R11-TEXTOS-FORA-DE-D-T`).
+- **fechamento (2026-11-11, `B-SAN3-19b`):** o "guard de strings sem permissão/papel técnico" do teste de
+  encerramento é o T6 de `test/features/bsan319b_texto_exibido_test.dart`: lê a árvore sintática de todo
+  `lib/**/*.dart` e cobre os literais nas âncoras de exibição (argumentos `title`, `message`, `label`, `text` de
+  `TextSpan`, `errorText`… e o `=` deles; o 1º argumento de `Text(`; os braços `=>` de função ou getter de rótulo; os
+  ramos de `?:`, `??`, `+` e `switch`; `text` e `errorText` entraram pela Emenda 3 do plano, PR540-04). Proíbe
+  chave `a:b`, chave de ação `a.b`, `bootstrap|backend|placeholder|workflow|token|tenant|local-first|payload|endpoint` e
+  papel cru (as chaves de `role_labels.dart`, lidas do arquivo). Medido no ramo: `exibidos=779 violacoes=0`, allowlist de
+  1 arquivo (`diagnostics_screen.dart`, só abre com `kIsDevMode`, conferido no teste), piso N0 = 779. Na base
+  (`a0979f51`) eram 24 violações; todas consertadas. O T6b prova na tela que a lista de despesas do app de
+  demonstração não mostra 'Aprovado manager', 'fila local-first', código de regra nem texto em inglês do banner de
+  política. O acesso não permitido das 10 telas, o placeholder e o README entram no mesmo PR.
+- **resíduo de classe, declarado (crítica r2 do plano, CRIT19B-R2-02, classe (2)):** a guarda é de **fonte** e não vê
+  texto montado só por interpolação de exceção: 4 `SnackBar` mostram `$e` cru (`work_order_execute_screen.dart:144`,
+  `checklist_run_screen.dart:126`, `checklist_acknowledgement_screen.dart:65`, `new_work_order_screen.dart:223`; no caso
+  de borda de organização divergente, `work_order_repository.dart:884` lança `StateError('Tenant mismatch')`). A Emenda 1
+  do plano escolheu a saída (a) só para o banner de política; esses 4 pontos ficaram fora do PERMITIDO e não foram
+  tocados. A Emenda 2 do plano os destina à `P-MOBILE-TEXTO-TECNICO-INTERPOLADO` (N = 4 SnackBars com `$e`), que o
+  PR de registro do orquestrador registra. A guarda também não vê dado cru interpolado (id de categoria, id de
+  checklist; PR540-05 da pré-revisão), que a Emenda 3 destina à `P-MOBILE-IDENTIFICADOR-CRU-NA-TELA`, também do
+  orquestrador.
 
 ---
 
@@ -9067,7 +9106,13 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e compara com o código da OS — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA com o merge do PR do `B-SAN3-26` (2026-11-11; antes: ABERTA, inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fechamento (B-SAN3-26, `dev-san326-cl`; o que fecha, exato, pela C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP, `dev-san3-26-fix-cl`):**
+  - **Fecha a metade do servidor, que é a autoridade.** O servidor confere a placa nas duas portas (`PATCH /work-orders/:id/status` e a ação `work_order.status_change` da fila), recusa por padrão e exige o veredito nos dois repositórios. Teste de encerramento: `tests/san3-26-checkin-conferencia.test.ts` (A2 aceita "23" da placa `ABC1D23`; A3 recusa o fim do código da OS).
+  - **A metade do app está no código, mas ainda não é alcançável com o servidor real.** O app compara com o fim da PLACA que o servidor manda na lista (`checkinMode`, `checkinPlateTail`): `mobile/flutter_app/test/features/work_orders/bsan326_checkin_confere_placa_test.dart` (M1: "42" de `OS-1042` dá o erro, "23" enfileira), com a lista falsa nos nomes de status do app. Com o servidor real, o pull traz toda OS como "Agendada" e o "Iniciar rota" é recusado, então o guincheiro não chega ao diálogo da placa. Isso só muda com o conserto do mapeamento de status (PR534-03; `P-MOBILE-STATUS-NOMES` e `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA`, dono `B-O6R-11d`).
+  - **O que sobra, com o dono de cada um:**
+    - `B-O6R-11d`: `P-CHECKIN-SEM-PLACA-OFFLINE`, `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` e `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA`;
+    - dono a definir pelo orquestrador: `P-DESPACHO-ARRIVED-SEM-CONFERENCIA`, `P-CHECKIN-NUMERO-DE-SERIE`, `P-CONSOLE-EDITA-PLACA-DA-OS`, `P-CHECKIN-PLACA-ESTRANGEIRA` e `P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO`.
 - **junta do PR #386, ciclo 1 (C2-01, 2026-09-12):** entra no gate — a tela declara um controle de segurança que não existe: `work_order_detail_screen.dart:918-931` pede "os 2 últimos dígitos da placa" e compara com o fim do código da OS, e o backend não confere nada. "O GPS coexiste" é mitigação, e o plano não admite exceção por mitigação. Plano SAN3 v5: bloco `B-SAN3-26`.
 - **fonte (fatia AUSENTES, §2a):** sintese A9
 - **situação medida pela fatia:** ATIVO
@@ -10246,7 +10291,8 @@ têm `created_at` iguais ⇒ a ordem entre eles é indefinida (B1b do §0.5 do p
 nenhum consumidor além do frontend.
 
 - **status:** ABERTA · **severidade:** baixa
-- **dono:** B-O6R-12 (plano SAN3, l.258 — próximo a tocar src/modules/impound/**; como nota, não como bloqueio)
+- **dono:** trilha CHECKLIST P1, PR-05 (próximo bloco que tocar o vínculo processo–vistoria);
+  o B-O6R-12 não podia tocar `impound.checklist-link-prisma.repository.ts` (§4 PROIBIDO)
 - **bloqueia:** não.
 
 ## P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
@@ -11520,12 +11566,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento:** uma mutação de controle num worktree descartável `C:/Users/AMP/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.
 
-## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA
+## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA — FECHADA pelo `B-SAN3-23`
 
-- **status:** ABERTA · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23` ou pós-gate
+- **status:** FECHADA (2026-11-11, `B-SAN3-23`, ramo `fix/os-cancelada-sem-item-financeiro`; o merge e a CI do merge entram no registro pós-merge) · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23`
 - **Origem:** plano do `B-SAN3-02` v2, §1.2 (a) e §11. O faturamento trava os ITENS, não a OS.
 - **bloqueia:** não.
 - **teste de encerramento:** cancelar a OS com um faturamento em voo nunca deixa título novo numa OS cancelada, com teste `-db` de corrida.
+- **como fechou:** o faturamento pega a trava compartilhada da OS antes dos itens e relê a situação; o cancelamento é uma unidade sob a trava exclusiva da OS e, no `zero`, confere o item faturado sob ela. Prova em `tests/b-san3-23-cancel-race-db.test.ts`: A5 (faturar atrás do cancelamento → 422 `work_order_cancelled`, 0 título), A9 (cancelar `zero` atrás do faturamento → 422 `has_invoiced_items`, I-Z) e A10 (ordem OS → itens, 0 impasse). Os três vermelhos no código de hoje (F0 do diário).
 
 ## P-SAN3-02-PAI-CANCELADO (2026-10-19) — original cancelado por status continua sendo o pai do delta — BAIXA
 
@@ -11940,7 +11987,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **dono:** `B-O6R-11b` (proposto pelo dev do 1º PR; ratificado pelo orquestrador em 2026-11-02 — leitura do orquestrador, declarada; o plano não nomeou).
 
 ## P-O6R11-TEXTOS-FORA-DE-D-T (2026-11-02) — textos de falha sem acento fora dos arquivos do 1º PR do `B-O6R-11` — BAIXA
-- status: ABERTA
+- status: FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`): os 4 literais acentuados e o aviso de integração sem a promessa de sincronizar (fechamento abaixo).
+- status anterior: ABERTA
 - **origem:** 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`) (emenda 4, nota de 02/11 da F7c). A F-T acentuou os 20 `lastSafeError` dos 4 replays e o do
   coordenador; ficaram, fora do PERMITIDO, `mobile/flutter_app/lib/core/sync/sync_engine.dart:54` ('Conflito remoto exige
   decisao manual.'), `lib/core/location/field_location_service.dart:160` e `lib/core/telemetry/telemetry_sync_service.dart:141`
@@ -11953,6 +12001,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   localmente e serao sincronizados quando a integracao estiver ativa.'), lançada por `field_location_api.dart:24` e
   `expense_remote_api.dart:63`; existe igual na `main` (`b56031b0`). Além de sem acento, o texto promete "serao
   sincronizados", o que a P-TELA-VERDADEIRA evita. O encerramento inclui reescrevê-la sem a promessa.
+- **fechamento (2026-11-11, `B-SAN3-19b`):** `sync_engine.dart:54` → 'Conflito remoto exige decisão manual.';
+  `field_location_service.dart:160` e `telemetry_sync_service.dart:141` → 'Falha de conexão. Tente novamente.';
+  `api_error.dart:43-44` → 'Integração remota ainda não disponível. Seus dados ficam guardados neste aparelho.'. Guarda:
+  T7 de `test/features/bsan319b_texto_exibido_test.dart` (0 ocorrências de `decisao manual`, `Falha de conexao` e
+  `Integracao remota` em literal de `lib/`, lido pela árvore sintática, sem comentário; `safeMessage` sem `sincroniz`),
+  com M15 e M16 vermelhas. A guarda viva do aviso falso de integração (`bo6r11_sync_screen_despesa_e_saida_test.dart`,
+  w3 e w3') passou a procurar as duas grafias (`RegExp('Integra[cç][aã]o remota')`), porque a forma acentuada virou
+  texto vivo (crítica r2 do plano, CRIT19B-R2-03); M25 vermelha.
 
 ## P-O6R-B11-PENDENCIAS-DO-RAMO-388 (2026-11-02) — índice das 12 pendências do ramo `fix/mobile-work-order-contracts` que não foram portadas — MÉDIA
 - status: ABERTA (índice; cada pendência vale pelo texto no ramo)
@@ -12085,6 +12141,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **escopo:** pre-existente (`e79616aa4`, 2026-06-13). A trava estática e a releitura do store neutralizam para a purga.
 - **dono:** bloco de sessão do app.
 - **encerramento:** o provider não cria repositório com sessão de demonstração em build remoto.
+- **nota (C2-03 e C2-04 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP, medidas no emulador com o APK profile do #534):**
+  - C2-03: no lançamento do app com rede, o pull roda 2 vezes em ~200 ms. Ele sobrescreve a OS presa a uma chegada recusada (`arrived/conflict` vira `scheduled/synced`), o cartão "Confirmar a placa de novo" some do detalhe, e o início diz "nada na fila", com a ação ainda `conflict`. A saída fica só na tela Sincronização. É o efeito, neste bloco, da promessa do E-01 ("o pull não apaga o cartão"). HIPÓTESE da cadeira, não medida por dentro do app: o 1º pull roda no repositório de reserva (`tenant-demo`).
+  - C2-04: no mesmo lançamento, o pull sobrescreve também a OS `pending` (`enRoute/pending` vira `scheduled/synced`). O "neutralizado para a purga" acima não vale para o upsert do pull. Perda de ação não foi medida: a fila não é tocada.
 
 ## P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO (2026-10-25) — enqueue/update da fila sobrescrevem a fila inteira — BAIXA
 - status: ABERTA
@@ -12551,6 +12610,16 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** corpo do PR #487, "Pendências propostas (não feitas)": "títulos sem acento no app (`Aprovacoes`, `Diagnostico`…), em bloco próprio". Relaciona-se com `P-O6R11-TEXTOS-FORA-DE-D-T` e com o apenso de 02/11 em `P-MOBILE-FAXINA-TERMOS-TECNICOS`.
 - **leitura do redator, declarada (§A6):** o nome do bloco é do redator deste registro.
 - **encerramento:** guard de termos sem acento nos textos exibidos do app, como o do `B-SAN3-21` na web, em `ocorrencias=0`.
+- **apenso 2026-11-11 (`B-SAN3-19b`; plano v2 §2.3, que NÃO abre pendência duplicada):** o 19b acentuou só o que tocou
+  (acesso não permitido, placeholder, P-O6R11, despesas). Exemplos medidos em `a0979f51` que ficam para cá: títulos de
+  módulo da sessão de demonstração (`bootstrap_session.dart`, `Gestao de Despesas`, `Operacoes de Campo`, `Estoque do
+  Tecnico`, `Aprovacoes`) e o mesmo mapa em `bootstrap_repository.dart:147-180`;
+  `geolocator_device_location_provider.dart:133,158,160` (`Permissao de localizacao negada…`);
+  `work_order_approval_request_screen.dart:56,88,94` (`Solicitar Aprovacao`); `evidence_picker.dart:89` (`Camera`); o
+  rótulo de regra `Recibo obrigatorio`/`Violacao de politica` do detalhe (`_violationLabel`; o rótulo novo do banner de
+  política saiu acentuado no conserto do #540, PR540-03) e o título do banner (preso por `expense_screens_test.dart:25`); `Em analise` (`expense_models.dart`); `ErrorState`,
+  `OfflineState` e `NetworkStatusBanner` em `erp_components.dart` (`Nao foi possivel carregar`, `disponiveis`,
+  `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 
@@ -12602,9 +12671,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-19-PLACEHOLDER-CHAVE-CRUA (2026-11-03) — placeholder do app mostra a chave crua da permissão — BAIXA
 
-- **status:** ABERTA · **escopo:** `pre-existente`, ressalva do porteiro do PR #487 · **dono:** `B-SAN3-19b` · **PR-alvo:** PR desse bloco pequeno · **bloqueia:** não.
+- **status:** FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`) · status anterior: ABERTA · **escopo:** `pre-existente`, ressalva do porteiro do PR #487 · **dono:** `B-SAN3-19b` · **PR-alvo:** PR desse bloco pequeno · **bloqueia:** não.
 - **origem medida:** `mobile/flutter_app/lib/shared/ui/module_placeholder_screen.dart:42` mostra a chave técnica.
 - **encerramento:** texto de negócio em PT-BR, sem chave crua, com widget test.
+- **fechamento (2026-11-11, `B-SAN3-19b`):** o placeholder mostra `Acesso não permitido` e o `blockedMessage` que o
+  roteador escreve por rota (`/approvals`, `/diagnostics`, os dois roteadores iguais); o cartão do ramo com permissão
+  diz `Em breve` e o banner de andaime saiu. Testes: `test/features/bsan319b_acesso_nao_permitido_test.dart` (T1b, as 4
+  chamadas e a paridade; T3, widget pelo `appRouter`; T2, a `assert` do componente contra chave técnica; T4, o gate
+  não mudou). Mutações M4, M8, M9, M19 e M26 vermelhas (`docs/revisoes/SAN3/B-SAN3-19b-dev.md`, F5).
 
 ## P-CLOUD-BILLING-3-APARENCIAS (2026-11-03) — Cloud Billing da plataforma ainda não segue o padrão aprovado — MÉDIA
 
@@ -12800,9 +12874,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-STATUS-NOMES (2026-11-04) — nomes de status da OS no app divergem dos do servidor — MÉDIA
 
-- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
+- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** `B-O6R-11d` (C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP; antes: a atribuir pelo orquestrador) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não declarado na fonte.
 - **fato:** os nomes de status do app (`scheduled`, `dispatched`, `enRoute`) não batem com os do servidor, e falta o passo `assigned → accepted`. Medido neste registro: existe tradução em `mobile/flutter_app/lib/core/sync/sync_replay_service.dart:490-492` (`scheduled` → `open`, `dispatched` → `assigned`, `enRoute` → `on_route`); a pendência é a cobertura dessa tradução e o passo que falta.
 - **encerramento:** máquina de estados do app igual à do servidor, inclusive `assigned → accepted`, com teste.
+- **nota do B-SAN3-26 (2026-11-11, `dev-san326-cl`, medido em `d0da291e`):** a tradução existe só na IDA. Na volta, o pull lê o status pelo nome do enum do app (`workOrderStatusFromApiValue`, `work_order_remote_api.dart`): `on_route` e `on_site`, que o servidor manda, viram `scheduled`. O B-SAN3-26 não mexeu nisso (fora do escopo); os testes do app dele usam os nomes do app na lista falsa, como o probe do revisor do plano.
+- **nota (C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP):** o PR534-03 (o pull lê `on_route`/`on_site` como "Agendada") foi passado a este dono. O plano v2 do `B-O6R-11d` já trata disso: o D5 e a P1 da tabela de partida, com o T5. Enquanto isso, a metade do item 53 que fica no app (o diálogo da placa) não é alcançável com o servidor real (`P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS`, fechamento).
 
 ## P-RBAC-FIELD-TECHNICIAN-DESPESA (2026-11-04) — `field_technician` sem permissão de despesa, de checklist e de estoque — MÉDIA
 
@@ -13272,6 +13348,36 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** o `platform_admin` recebe `service_quotes:create` e `:approve` pelo catálogo integral; a matriz (`RBAC_MATRIX.md:117`) não o inclui, e `RBAC_MATRIX.md:62` diz que ele não é o aprovador padrão dos fluxos da organização.
 - **critério de encerramento:** catálogo e matriz reconciliados para o `platform_admin` em `service_quotes:*`, com teste de guarda matriz × catálogo.
 
+## P-DESPACHO-ARRIVED-SEM-CONFERENCIA (2026-11-11) — o "No local" do DESPACHO não confere a placa — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte (plano v2 do B-SAN3-26) não dá gravidade · **escopo:** `src/modules/field-dispatch/**`, fora do PERMITIDO do B-SAN3-26 · **dono:** dono a definir pelo orquestrador (o plano v2 propôs um `B-SAN3-26b`, que não existe; é do despacho no servidor, não do app de OS, da fila nem de texto: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** `PATCH /operations/dispatches/:id/status {arrived}` marca o despacho em "No local" sem conferir a placa; a OS não muda de status por essa porta (o `on_site` da OS segue exigindo o veredito do B-SAN3-26).
+- **critério de encerramento:** o `arrived` do despacho segue a mesma conferência (ou a mesma decisão escrita do dono), com teste que fica vermelho sem ela.
+
+## P-CHECKIN-NUMERO-DE-SERIE (2026-11-11) — OS de prestador sem referência de check-in (o antigo "nº de série") — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** app de campo e `work-order.checkin.ts` · **dono:** dono a definir pelo orquestrador (é decisão de produto do dono, não defeito do app de OS, da fila nem de texto: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** o diálogo antigo pedia "os 2 últimos dígitos do nº de série" para OS de prestador e comparava com o código da OS. Depois do B-SAN3-26 a referência é só a placa; OS de prestador sem placa e que não é `residencial` cai em "sem placa" e só anda pela base (default negar, P1 do dono).
+- **critério de encerramento:** o dono decide se o prestador tem referência própria (número de série) ou segue pela base; a decisão vira teste.
+
+## P-CONSOLE-EDITA-PLACA-DA-OS (2026-11-11) — o console não edita a placa de uma OS que já existe — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6) · **escopo:** detalhe da OS no console (tela, com as 3 opções, `D-TELAS-TRES-OPCOES`) · **dono:** dono a definir pelo orquestrador (um bloco de tela do console, pela decisão B do dono, `D-PORTAO-5-RECOMENDACOES-1111`; não é do app de OS, da fila nem de texto: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** a criação ganhou o campo de placa no B-SAN3-26 (todo tipo menos residencial, emenda E-04), mas não há edição de OS no console (`frontend/src/modules/work-orders/work-orders.service.ts`, `updateWorkOrder` sem chamador). Ficam sem placa, e só andam pela base: as OS abertas antes do deploy, as de orçamento (`service-quote.service.ts`), as da semente da demo e as criadas pelo app (`work_order.create` não leva `service_details`).
+- **critério de encerramento:** a base edita a placa no detalhe da OS, com as 3 opções aprovadas, e a OS passa a ter o check-in pelo app.
+
+## P-CHECKIN-SEM-PLACA-OFFLINE (2026-11-11) — OS sem placa e guincheiro sem dados: a OS fica "A caminho" — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6); o revisor do plano `crit-26-r2-cl` (C26R2-05) a deu média · **escopo:** app de campo · **dono:** `B-O6R-11d` (o pull tem de trazer o `on_site` registrado pela base como "No local"; a exceção ao offline-first segue decisão do dono, que pode rever a B: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não.
+- **fato:** com a decisão B, a OS sem placa não confirma a chegada pelo app (o diálogo mostra "peça à base"), e o grafo local só deixa `enRoute → arrived`. A base registra pelo console, mas o app só vê o `on_site` depois de um pull: sem dados (estrada, só voz), o guincheiro fica em "A caminho" e não inicia o atendimento pelo app. É uma exceção ao offline-first (§6 do contrato), declarada no `API_CONTRACTS.md` §3.5.2.
+- **critério de encerramento:** o dono decide se aceita a exceção ou se o app ganha um caminho offline para a OS sem placa; a decisão vira teste.
+
+## P-CHECKIN-PLACA-ESTRANGEIRA (2026-11-11) — placa estrangeira não serve de referência do check-in — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** `src/modules/work-orders/work-order.checkin.ts` (`resolveCheckinReference`) · **dono:** dono a definir pelo orquestrador (é decisão de produto do dono, não defeito do app de OS, da fila nem de texto: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** pela emenda E-03 do B-SAN3-26 (C26R2-03), só a placa brasileira (antiga ou Mercosul) vale como referência; o ramo "5 a 8 alfanuméricos" do plano v2 saiu porque transformava "SEM PLACA", "ZERO KM" e "A DEFINIR" em placa. Placa estrangeira ("AB 123 CD") passa a contar como sem placa, e a chegada fica com a base. Residual declarado: "GOL 2010" tem a forma exata de placa antiga e é aceito como placa.
+- **critério de encerramento:** o dono decide se placa estrangeira entra (com que forma) ou segue pela base.
+
 ## P-ASS08C-TRUST-PROXY (2026-11-11) — sem `trust proxy`, o bloqueio por IP do webhook vale para todos atrás do proxy do Fly — ALTA (bloqueia ligar o canal)
 
 - **status:** ABERTA · **escopo:** `src/app.ts` e `webhooks/webhook-runtime.ts` (`clientIp`) · **dono:** `B-ASS-08c`.
@@ -13323,7 +13429,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-APP-DETALHE-OS-LARGURA-INFINITA (2026-11-11) — no APK debug o detalhe da OS fica em branco pelo botão "Abrir mapa" — ALTA
 
-- **status:** ABERTA · **gravidade:** ALTA (a fonte) · **escopo:** anterior ao bloco `B-SAN3-26` (#534); `mobile/flutter_app/lib/features/work_orders/ui/work_order_operational_map_screen.dart:274` · **dono:** a definir pelo orquestrador (candidato da fonte: o `B-O6R-11d` ou um bloco de app) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não segura o #534.
+- **status:** ABERTA · **gravidade:** ALTA (a fonte) · **escopo:** anterior ao bloco `B-SAN3-26` (#534); `mobile/flutter_app/lib/features/work_orders/ui/work_order_operational_map_screen.dart:274` · **dono:** `B-O6R-11d` (C3-01 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP; antes: a definir pelo orquestrador, com o `B-O6R-11d` ou um bloco de app como candidatos) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
 - **origem:** o dev do conserto do #534 (`dev-san3-26-fix-cl`), ao executar o PR534-05 no emulador com o APK da `main` (registro pendente do orquestrador, 11/11 06:22 SP; exceção em `revisoes/dev-534-fix-emulador/app-debug-excecao-do-detalhe.log`, fora do repositório; descrito também no diário do dev, no ramo `fix/checkin-confere-placa`).
 - **fato:** no APK debug, o detalhe da OS fica em branco por `BoxConstraints forces an infinite width` no "Abrir mapa": um `OutlinedButton` numa `Row` sem `Expanded`, com `minimumSize: Size.fromHeight(44)`. No profile, o botão estoura a largura.
 - **critério de encerramento:** o detalhe da OS abre no APK debug e no profile, com o "Abrir mapa" dentro da largura, provado por widget test que fica vermelho com o layout de hoje.
@@ -13334,6 +13440,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** o mesmo ensaio no emulador do PR534-05 (registro pendente do orquestrador, 11/11 06:22 SP; capturas `04-iniciar-rota-recusada-no-app.png` e `20-pull-os2-volta-como-agendada.png` em `revisoes/dev-534-fix-emulador/`, fora do repositório).
 - **fato:** o app antigo recusa "Iniciar rota" de "Agendada" (`scheduled → enRoute`). Somado ao PR534-03 (o pull traz `on_route` e `on_site` do servidor como "Agendada"), o app antigo não chega ao "No local" de OS vindas do servidor. O PR534-03 foi passado ao `B-O6R-11d` pelo orquestrador.
 - **critério de encerramento:** com uma OS do servidor em `on_route` e outra em `on_site`, o app mostra o status certo depois do pull e permite seguir até o "No local", provado por teste do app que fica vermelho no código de hoje.
+- **nota (C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP):** a barreira não é só do app antigo. A sonda `c3probe534_status_test.dart` da cadeira C3 dá a mesma saída com o `lib/` do head do #534 e com o da base `b6caf568`: `on_route`, `open`, `assigned`, `accepted`, `on_site` e `in_progress` do servidor viram "Agendada", e "Iniciar rota" e "No local" ficam recusados. O critério de encerramento vale para o app atual.
 
 ## P-DESPACHO-DUPLICADO-MESMO-TECNICO (2026-11-11) — dois despachos ativos do mesmo técnico na mesma OS — MÉDIA (gravidade: leitura do redator)
 
@@ -13528,12 +13635,48 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** a convenção escrita em `ci.yml:289-293` manda "toda suíte `-db` nova entre AQUI". O `B-ASS-08b` soma 2 suítes (`ass-08b-invoice-intent-db` e `ass-08b-invoice-leg-db`). Hoje elas rodam de fato no job `backend` (22 linhas T-INTX `ok` nos logs do head e do merge), mas sem o guarda de zero pulos.
 - **critério de encerramento:** as suítes `ass-0*-db` estão na lista curada do `backend-postgres`, com o guarda de zero pulos verde, numa mudança de `.github/**` autorizada pelo dono.
 
+## P-CHECKIN-CARTAO-CONGELADO-NO-PULL (2026-11-11) — com o cartão de check-in aberto, o pull não atualiza o modo nem a cauda da placa — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (triagem do orquestrador) · **escopo:** dentro do `B-SAN3-26` (E-01 e o `redoCheckin`, F3 `23a6a5c5`) · **dono:** `B-O6R-11d` · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
+- **origem:** C2-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`revisoes/j534/c2-voto.json`, fora do repositório).
+- **fato:** enquanto o cartão "Confirmar a placa de novo" existe, o pull pula a OS inteira (E-01), e o `checkinMode` e o `checkinPlateTail` não se atualizam. O toque reabre o diálogo com esse dado congelado. Quando a recusa veio de dado velho no aparelho (OS em cache sem modo, ou placa trocada pela base), o guincheiro repete a mesma recusa, e os dígitos NOVOS são barrados no próprio diálogo como "não conferem". Ele só sai cancelando o diálogo e puxando a lista, e nada lhe diz isso. Prova da cadeira: `c2_unknown_sem_placa_probe_test.dart` (+2) e o emulador (OS-000016, cauda 89 e placa trocada para `QWX7K55`).
+- **critério de encerramento:** o pull atualiza o modo e a cauda da OS presa ao cartão sem apagar o cartão, e a 2ª tentativa usa a placa nova, com teste do app que fica vermelho no código de hoje.
+
+## P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA (2026-11-11) — o técnico ainda apaga ou reescreve uma placa que o servidor não reconhece — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `pre-existente`: na base `b6caf568` o campo trocava qualquer placa, e o `B-SAN3-26` reduziu a classe à placa não reconhecida · **dono:** `B-O6R-11d` (triagem do orquestrador) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não.
+- **origem:** C1-A2 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`revisoes/j534/c1-voto.json`, sonda `c1-sonda-extra`).
+- **fato:** a guarda do `PATCH /work-orders/:id` compara a referência normalizada antes e depois. Com placa estrangeira, com duas placas ou com texto colado, ela é nula dos dois lados, e o técnico atribuído apaga ou reescreve o que a base digitou (200). O evento `work_order_updated` não guarda o valor anterior. Não abre fuga do check-in: a OS segue com `checkin_reference_missing`.
+- **critério de encerramento:** o campo não muda `service_details.plate` quando o texto da base não é placa reconhecida (ou a decisão do dono diz o contrário), com teste que fica vermelho no código de hoje.
+
+## P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO (2026-11-11) — a marca "registrada pela base" vive no texto do evento — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** o console (`frontend/src/modules/work-orders/components/WorkOrderTimeline.tsx`, que mostra só `event.message`), fora do PERMITIDO do `B-SAN3-26` · **dono:** dono a definir pelo orquestrador (é tela do console, não app de OS, fila nem texto do app) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem:** residual declarado do conserto do C1-A1 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`dev-san3-26-fix-cl`, diário do bloco).
+- **fato:** o servidor passou a descartar a mensagem do cliente que contém "registrada/registrado pela base", em toda transição. A comparação ignora caixa, acento, pontuação, espaços e invisíveis, mas letra de outro alfabeto com a mesma forma (homóglifo) passa. O console só tem o texto para distinguir a marca verdadeira.
+- **critério de encerramento:** o console mostra a marca da base pelo `metadata.checkin = office` (e não pelo texto), com teste que fica vermelho com a timeline de hoje.
+- **nota (CONF534-01 da conferência `conf-534-api`, 2026-11-11, CONFERIDO; `saidas-v3/conf-534/saida/conf-534.json`, fora do repositório):** os preenchedores Hangul U+115F, U+3164 e U+FFA0 passam a dobra. Eles são invisíveis, Default_Ignorable e de categoria Lo, e a dobra só tira `\p{M}` e `\p{Cf}`. "Chegada ao local regis\u115Ftrada pela base." é gravada na linha do tempo da OS pela rota HTTP (200). O resíduo do homóglifo continua declarado. O fechamento é o critério acima, ou incluir `Default_Ignorable_Code_Point` na dobra. Não muda permissão: o `metadata.checkin` continua só do servidor.
+
 ## P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e "Tenant Field Services" no modo offline — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` (o texto está no app desde antes do `B-SAN3-07`, cuja fronteira é só `prisma/seed.ts`; apenso de 2026-11-03 da `P-CHK-SEED-DEMO-SUJO`) · **dono:** `B-SAN3-19b` (a faxina de termos técnicos do app, item 48), pela recomendação do plano do `B-SAN3-07` (§9); **a pergunta está com o dono**: o item 47 fecha sem esta instância? · **bloqueia:** não, se o dono seguir a recomendação.
+- **status:** FECHADA (2026-11-11, `B-SAN3-19b`, PR #540, ramo `fix/mobile-acesso-nao-permitido-textos`; fechamento abaixo) · status anterior: ABERTA · **escopo:** `pre-existente` (o texto está no app desde antes do `B-SAN3-07`, cuja fronteira é só `prisma/seed.ts`; apenso de 2026-11-03 da `P-CHK-SEED-DEMO-SUJO`) · **dono:** `B-SAN3-19b` (a faxina de termos técnicos do app, item 48), pela recomendação do plano do `B-SAN3-07` (§9); **a pergunta está com o dono**: o item 47 fecha sem esta instância? · **bloqueia:** não, se o dono seguir a recomendação.
 - **prova (N = 15 arquivos, 20 ocorrências; forma: 1 fonte + 14 testes Flutter; medido no `07898adf` por `git grep -lE "Tenant Demo|Tenant Field Services" HEAD -- mobile/`):** a fonte é `mobile/flutter_app/lib/core/bootstrap/bootstrap_session.dart:183,186` (`displayName: 'Tenant Demo'`) e `:189` (`'Tenant Field Services'`), o bootstrap local do modo offline. Os outros 14 são testes em `mobile/flutter_app/test/`; 2 deles EXIGEM o texto e quebram com a correção: `test/features/b091_connectivity_profile_test.dart:389` (`find.textContaining('Tenant Demo')`, na tela) e `test/features/b098_real_auth_bootstrap_test.dart:447` (`expect(bs.activeTenant.displayName, 'Tenant Field Services')`).
 - **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-05), que corrigiu o N do plano (ele citava só a fonte).
 - **teste de encerramento:** nenhum `Tenant` em texto exibido pelo app (guard de strings do `B-SAN3-19b`), com os 2 testes acima reescritos para o nome de negócio e a bateria Flutter verde.
+- **fechamento (2026-11-11, `B-SAN3-19b`, PR #540):** a instância do app fechou no commit `642664a9` (F4 do bloco):
+  `bootstrap_session.dart` passou a `Organização Demonstração` (as duas entradas) e `Organização Serviços de Campo`, e
+  `_tenantDisplayName` de `bootstrap_repository.dart` usa o nome da sessão de demonstração pelo id e, fora dela, o id
+  formatado sem a palavra `tenant` (só o nome exibido). Prova: o **T8** de
+  `test/features/bsan319b_texto_exibido_test.dart` (commit `fabf91f8`, vermelho na base `a0979f51`): (i) nenhum
+  `displayName` da sessão de demonstração contém `tenant`; (ii) o app local dá `Organização Demonstração` ao id
+  `tenant-demo`; (iii) um id fora da sessão não mostra `tenant`. As mutações M17 e M18 deixam o T8 vermelho. O guard de
+  strings (T6, `exibidos=779 violacoes=0`) proíbe `tenant` nas âncoras de exibição. Os 2 testes que exigiam o texto foram
+  reescritos: `b091_connectivity_profile_test.dart:389` → `Organização Demonstração` e
+  `b098_real_auth_bootstrap_test.dart:447` → `Organização Serviços de Campo`. Bateria Flutter verde (`+1119: All tests
+  passed!` em `ac4156d4`). Medido no ramo (`git grep -lE 'Tenant Demo|Tenant Field Services' HEAD -- mobile/`): 0
+  arquivos em `lib/` e 13 em `test/`, que usam o nome na **própria** fixture, não dependem do `lib` e ficaram intocados
+  (plano do 19b, §1.5). Ressalva, a mesma do apenso da `P-CHK-SEED-DEMO-SUJO`: quem já estava
+  logado no app de demonstração segue vendo o nome antigo até sair ou tocar em "Tentar de novo" (bootstrap em cache).
 
 ## P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis legados e diz que eles "não vêm do seed base" — BAIXA
 
@@ -13580,3 +13723,94 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA (o plano, E1.10) · **escopo:** `.github/workflows/ci.yml` (a lista `SUITES=` do job `backend-postgres`, convenção em `ci.yml:289-293`), PROIBIDO ao `B-USERS-SEG-DESATIVADO` · **dono:** o próximo PR que tocar o `ci.yml` · **PR-alvo:** esse PR · **bloqueia:** não.
 - **origem:** Emenda 1 do plano do `B-USERS-SEG-DESATIVADO` (E1.10). As 9 `tests/users-acesso-seg-*-db.test.ts` e as 5 novas (`tests/users-seg-desativado-{portao,varredura,emissao,sse,orcamento}-db.test.ts`) rodam no job `backend` (as 5 novas e a `desativacao-db` forçam e conferem o modo `prisma` no arquivo), mas não no `backend-postgres`, com banco provisionado.
 - **critério de encerramento:** as suítes entram na lista curada do `backend-postgres`, com o guarda de zero pulos verde.
+## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
+  não muda permissão) · **dono (provisório, Emenda 3 do plano do `B-SAN3-19b`):** um bloco próprio de permissão do
+  app, com junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o backend local; vale até a
+  resposta do dono à Pergunta 2 (recomendação (a): entrar no portão) · **bloqueia:** a decidir na Pergunta 2.
+- **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
+- **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
+  crítica r2 executou `isValidPermission`/`getRolePermissions` em `07898adf`: inválidas e sem papel; as linhas de
+  `mobile/flutter_app/lib` abaixo foram medidas no ramo do `B-SAN3-19b`):
+  - **4 gates de tela:** `checklist_run:execute` (`checklist_available_screen.dart:58`), `inventory:read`
+    (`inventory_list_screen.dart:24`), `workflow:request` (`/approvals`, `router.dart:276,461`) e `diagnostics:read`
+    (`/diagnostics` fora do modo dev, `router.dart:151,338`);
+  - **1 gate de botão:** `inventory:write` (`inventory_list_screen.dart:37`, esconde Entrada e Saída do Estoque);
+  - **3 chaves sem efeito medido:** `ocr:run_local`, `receipt:attach`, `sync_diagnostics:read` (só nas listas de
+    sessão, `auth_repository.dart:242-245` e `bootstrap_session.dart:227-230`).
+- **forma:** o app compara por igualdade exata contra `actor.permissions` cru do backend (`permission_resolver.dart`;
+  `src/modules/mobile/mobile.routes.ts`), sem tabela de equivalência.
+- **causa:** o app nomeia `checklist_run:*` e `inventory:*`; o catálogo usa `checklist_runs:*` e `inventory_items:*`. O
+  mapa de navegação do bootstrap já usa a chave do catálogo para checklists (`bootstrap_repository.dart:165`,
+  `checklist_runs:read`) e as do app para estoque e aprovações (`:170`, `:175`); se esse `perms` filtra o menu não foi
+  medido.
+- **efeito (hipótese, não executada contra um backend real):** com login real, Checklists, Estoque, Aprovações e
+  Diagnóstico ficam bloqueados para todo perfil. No app de demonstração local, Aprovações e Estoque abrem e Checklists e
+  Diagnóstico ficam bloqueados. O `B-SAN3-19b` pôs nessas 4 telas um texto verdadeiro e neutro ("Esta área ainda não
+  está disponível no aplicativo."), sem "fale com o administrador", e o T9 do 19b prende isso ao catálogo.
+- **teste de encerramento:** cada gate de tela e de botão do app usa uma chave que `isValidPermission` aceita e que
+  algum papel recebe, com teste que lê o catálogo; o T9 do `B-SAN3-19b` passa a exigir "Fale com o administrador da
+  sua organização." nas 4 telas (a tabela dele vira 11/11 no catálogo).
+
+## P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera diárias CALENDAR — MÉDIA
+
+- **status:** ABERTA · **escopo:** preexistente (Ω5P PR-07) · **dono:** próximo bloco da trilha
+  `yard` que tocar transferência/edição de fuso · **bloqueia:** não bloqueia o B-O6R-12.
+- **fato:** `charge-prisma.repository.ts` ainda lê `yards.timezone` pelo pátio corrente. Transferir
+  o processo ou editar o fuso muda o calendário de um processo já aberto. O B-O6R-12 congela o
+  regime normativo do perfil, não o pátio.
+- **critério de encerramento:** processo em custódia mantém o fuso aplicável à abertura, ou a
+  operação impede mudança/transferência que altere o calendário enquanto houver custódia ativa,
+  com teste de concorrência e migração aditiva se houver retrato.
+
+## P-O6R-B12-PORTAL-MEMORIA (2026-11-11) — processo legado em memória conserva fallback vivo — BAIXA
+
+- **status:** ABERTA · **dono:** próximo bloco que remover compatibilidade com processos legados
+  sem `regime` no owner-portal · **bloqueia:** não bloqueia o B-O6R-12.
+- **fato:** processos novos em memória carregam `regime` e o portal projeta essa cópia. Para uma
+  fixture/processo histórico sem `regime`, o portal preserva o fallback deliberado em
+  `getPortalProfile`, tal como o caminho Prisma de compatibilidade.
+- **critério de encerramento:** quando todo processo suportado tiver retrato obrigatório também
+  nas fixtures e importações em memória, retirar o fallback e provar que o portal não consulta o
+  perfil vivo em nenhum caminho.
+
+## P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA (2026-11-11) — o drill do B-O6R-12 deixa bases e papéis quando o processo é morto, e nada os recolhe — BAIXA
+
+- **status:** ABERTA · **escopo:** dentro-do-bloco (o drill nasceu no `B-O6R-12`), registrada pela junta do
+  #539 (C2-04) e criada pela Emenda 2 do plano · **dono:** o próximo bloco que tocar o fixture
+  `tests/helpers/auth-identity-fixture.ts` (`SWEPT_ROLE_FAMILIES`) · **bloqueia:** não.
+- **fato:** `tests/b-o6r-12-regime-migration-drill-db.test.ts` derruba cada clone no `finally` e os papéis
+  depois dele, com o `after` como rede. Mas com o processo morto (SIGKILL, `taskkill /F`) nem `finally` nem
+  `after` rodam, e sobram as bases `<db>_b12{t,c7,c7f,c7b,car,imu,col,som,c17,rb}_<sufixo>`, os papéis
+  `b12_mig_<sufixo>` e `b12_rt*_<sufixo>` e a pasta `%TEMP%/o6r12-drill-*`. Medido pela pré-revisão (P539-03)
+  e pela C2 da junta: depois do kill, sobraram `…_b12t_…` e `…_b12car_…`. O prefixo `b12_` não está em
+  `SWEPT_ROLE_FAMILIES`, e não há varredura de bases órfãs. Na CI o runner é efêmero; o resíduo fica na
+  máquina de quem roda local.
+- **critério de encerramento:** a família `b12_` (papéis) entra na varredura do arnês, com o carimbo de tempo
+  no nome que a varredura exige, e uma varredura das bases `%_b12%_<sufixo>` mais velhas que o limite do
+  arnês; com um teste que mata o drill no meio e prova que a execução seguinte recolhe papéis e bases.
+
+## P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e fica fora da fila do cancelamento — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o leitor do gate é do `WS-SCALE-COMISSAO`; `src/modules/commissions/**` é PROIBIDO no `B-SAN3-23`) · **dono:** o bloco do motor de comissão (`D-PORTAO-7-RECOMENDACOES-1011`: a política de comissão sai do portão até o motor existir) · **PR-alvo:** o desse bloco · **bloqueia:** não, enquanto não houver motor de comissão (hoje não sai dinheiro por esse caminho).
+- **origem:** crítica r1 do plano do `B-SAN3-23` (`crit-23-cl`, achado C23-07), medido pela crítica, não re-medido pelo dev: `readWorkOrderCancellationPrisma` lê situação e decisão com `findFirst` simples (`src/modules/commissions/work-order-cancellation.gate.ts:86-89`), chamado em `createBasisEvent` (`commission-prisma.repository.ts:103-135`), rota montada (`app.ts:265`). Intercalações `commission|cancelZero` e `cancelZero|commission`: o evento fica `received` numa OS `cancelled/zero` em 9 delas, com 0 impasse. O `B-SAN3-23` fecha a corrida para itens e títulos da OS (P-23), não para a comissão.
+- **correção indicada (crítica r1):** a trava compartilhada da OS no leitor, dentro da transação do `createBasisEvent` — a mesma forma da escrita de item do `B-SAN3-23` (`lockWorkOrderRowForFinancialWrite`).
+- **teste de encerramento:** evento-base de comissão × cancelamento `zero` em voo, em Postgres real com barreira: nunca evento `received` numa OS `cancelled/zero`.
+
+## P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT (2026-11-11) — a A7 (regressão sem barreira) só produz uma ordem de commit — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (junta J-536, C1-01) · **escopo:** `dentro-do-bloco` (a suíte `tests/b-san3-23-cancel-race-db.test.ts` nasce no `B-SAN3-23`), não reprova (força de teste, não dinheiro errado) · **dono:** o `B-SAN3-23` num bloco futuro, ou o próximo bloco que tocar essa suíte · **PR-alvo:** esse bloco · **bloqueia:** não.
+- **origem:** voto C1 da junta do #536 (`revisoes/j536/c1-voto.json`, medido): em 720 rodadas da A7, 718 deram cancelar `fulfilled` × outro `422 work_order_cancelled`; o ramo em que o faturamento commita antes e o cancelar responde `422 has_invoiced_items` saiu 0/240, então o I-Z dela só é avaliado em estado sem item faturado; e, sob a M8 (ordem de travas invertida), a A7 passa (60/60) enquanto a A10 cai. A propriedade é provada de forma determinística pela A9, pela A10 e pelas sondas da cadeira; a A7 continua como regressão, sem prova de ordem.
+- **critério de encerramento:** a A7 exercita as duas ordens de commit (por exemplo, com atraso escalonado de largada ou um ponto de espera de teste), com contagem dos dois ramos > 0 no TAP, e a M8 a deixa vermelha.
+
+### Complemento de `P-O6R-ARNES-ISOLAMENTO` (junta J-536, C1-03, 2026-11-11; o ID já existe acima — nota, sem novo cabeçalho)
+
+- **medido pela cadeira C1 do #536 (`revisoes/j536/c1-voto.json`, `c1-evidencia.md` §5):** um aborto duro de `tests/b-san3-23-cancel-race-db.test.ts` (`timeout -s KILL`, ec=137, depois de 10 testes) deixou a role efêmera `o6r_b01_*` viva (`rolsuper=f`, `rolbypassrls=f`, LOGIN, com UPDATE e DELETE em 139 tabelas) e os 11 tenants semeados; uma rodada completa logo depois (21/21) não a removeu (o sweep só leva órfã com mais de 60 min, `ORPHAN_ROLE_MAX_AGE_MS`, `tests/helpers/auth-identity-fixture.ts:85`), e os dados semeados não têm caminho de remoção. O aborto do `npm test` inteiro deixou 3 roles `o6r_b01_*` e 11 bases de drill. A cadeira removeu tudo pelo nome exato.
+- **escopo:** `pre-existente` (o fixture é de `df496d22`, 2026-08-31, não tocado pelo `B-SAN3-23`); reforça a pendência, sem novo dono.
+
+## P-SAN3-23-503-FORA-DO-CONTRATO (2026-11-11) — os 2 códigos 503 novos do B-SAN3-23 não estão no `API_CONTRACTS.md` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a seção das rotas financeiras da OS no `API_CONTRACTS.md` nunca teve catálogo de erros, nem o 503 `invoice_transient_conflict` do B-SAN3-02; o arquivo está fora do PERMITIDO do plano do B-SAN3-23, cujo §3.5 manda registrar as adições no comando do bloco, o que foi feito) · **dono:** o próximo bloco que tocar o `API_CONTRACTS.md` das rotas financeiras da OS · **PR-alvo:** esse bloco · **bloqueia:** não.
+- **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
+- **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).

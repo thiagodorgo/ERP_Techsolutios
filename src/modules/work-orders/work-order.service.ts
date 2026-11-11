@@ -16,10 +16,24 @@ import {
 import { buildGeocodeQueryString, GeocoderUnavailableError, type Geocoder } from "./geocoding/geocoder.js";
 import { NoopGeocoder } from "./geocoding/noop-geocoder.js";
 import { createDefaultGeocoder } from "./geocoding/geocoder.factory.js";
+import {
+  assertCheckinReferenceUnchanged,
+  checkinTimelineMessage,
+  describeCheckinMode,
+  isCheckinOfficeOnly,
+  resolveCheckinReference,
+  requireCheckinVerdict,
+  verifyCheckin,
+  withoutReservedOfficeMark,
+  type CheckinListDescription,
+  type CheckinVerdict,
+} from "./work-order.checkin.js";
 import type {
   ActiveDispatchAtSiteResolver,
   AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
+  CancelWorkOrderWithFinancialDecisionResult,
+  CheckinEntry,
   ListWorkOrdersInput,
   ListWorkOrdersResult,
   UpdateWorkOrderInput,
@@ -38,6 +52,7 @@ import type {
 } from "./work-order.types.js";
 import {
   actorMutatesAssignedOnly,
+  cancelTransientConflictError,
   WORK_ORDER_SERVICE_STARTED,
   WorkOrderError,
   workOrderNotAssignedError,
@@ -936,6 +951,57 @@ export class WorkOrderService {
   }
 
   /**
+   * B-SAN3-26 (item 53) — o veredito do check-in para o destino `on_site`; `undefined` para todo outro destino.
+   * O tipo do catálogo é o do SERVIDOR (tenant-scoped; `null` quando não resolve, e `null` não isenta).
+   */
+  private async verifyCheckinForStatus(
+    actor: WorkOrderActorContext,
+    current: WorkOrder,
+    nextStatus: WorkOrderStatus,
+    body: RawRecord,
+    entry: CheckinEntry,
+  ): Promise<CheckinVerdict | undefined> {
+    if (nextStatus !== "on_site") return undefined;
+    const typeInfo = await this.resolveServiceCatalogTypeInfo(actor, current.serviceCatalogId);
+    return verifyCheckin(actor, current, typeInfo, body, entry);
+  }
+
+  // B-SAN3-26 (C26-06) — só quem é SÓ base edita a placa (mesma regra de união do check-in).
+  private assertCheckinReferenceUnchangedByField(
+    actor: WorkOrderActorContext,
+    current: WorkOrder,
+    serviceDetails: Record<string, unknown> | undefined,
+  ): void {
+    if (serviceDetails === undefined || isCheckinOfficeOnly(actor)) return;
+    assertCheckinReferenceUnchanged(current.serviceDetails, serviceDetails);
+  }
+
+  /**
+   * B-SAN3-26 (C26-03) — o modo do check-in de cada OS da página, para a lista do app. O tipo do catálogo é resolvido
+   * UMA vez por catálogo distinto (memória por chamada), e só para a OS sem placa (com placa, o modo é `plate`).
+   */
+  async describeCheckinForList(
+    actor: WorkOrderActorContext,
+    items: readonly WorkOrder[],
+  ): Promise<Map<string, CheckinListDescription>> {
+    const typeInfoByCatalog = new Map<string, Promise<ServiceCatalogTypeInfo>>();
+    const result = new Map<string, CheckinListDescription>();
+    for (const item of items) {
+      let typeInfo: ServiceCatalogTypeInfo = null;
+      if (item.serviceCatalogId && resolveCheckinReference(item.serviceDetails) === null) {
+        let pending = typeInfoByCatalog.get(item.serviceCatalogId);
+        if (!pending) {
+          pending = this.resolveServiceCatalogTypeInfo(actor, item.serviceCatalogId);
+          typeInfoByCatalog.set(item.serviceCatalogId, pending);
+        }
+        typeInfo = await pending;
+      }
+      result.set(item.id, describeCheckinMode(item.serviceDetails, typeInfo));
+    }
+    return result;
+  }
+
+  /**
    * B-O6R-07c-a (`P-O6R-SUBRECURSO-OBJECT-SCOPE`) — a OS para quem vai ESCREVER num subrecurso dela: anexo,
    * comentário, tag de comentário, geocode e a km pela fila do app. É `get` (404 do cross-tenant, inalterado)
    * seguido do escopo por objeto do 07a (`assertMutationObjectScope`, corpo intocado): o técnico de campo só
@@ -974,6 +1040,9 @@ export class WorkOrderService {
 
     const destination = this.parseDestination(body);
     const serviceDetails = parseServiceDetails(body.service_details ?? body.serviceDetails);
+    // B-SAN3-26 (C26-06) — quem confere a placa no "No local" não a escreve: o campo não troca, omite, anula nem
+    // esvazia a placa (a base edita). Antes de qualquer escrita.
+    this.assertCheckinReferenceUnchangedByField(actor, current, serviceDetails);
 
     // Ω3F-2a (J-Ω3F-2 critico, furos #2/#2b) — a regra de destino no update SÓ se aplica quando o corpo
     // TOCA destino: edição parcial de OS legada/sem-destino (ex.: só o título) NÃO trava. Quando toca,
@@ -1422,7 +1491,14 @@ export class WorkOrderService {
     return updated;
   }
 
-  async changeStatus(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
+  async changeStatus(
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+    body: RawRecord,
+    // B-SAN3-26 — a porta por onde o pedido chegou. Só a rota HTTP de status passa `http_status_route` (a base marca
+    // "No local" sem os dígitos só por ela); a fila passa `mobile_sync`. Sem o parâmetro: `internal`, estrita.
+    options?: { readonly entry?: CheckinEntry },
+  ): Promise<WorkOrder> {
     const current = await this.get(actor, workOrderId);
 
     // B-O6R-07a (§3.3) — mesma guarda do update. Este é também o caminho da FILA OFFLINE do mobile
@@ -1431,7 +1507,6 @@ export class WorkOrderService {
     await this.assertMutationObjectScope(actor, current);
 
     const nextStatus = parseWorkOrderStatus(body.status);
-    const message = optionalString(body.message) ?? defaultStatusMessage(nextStatus);
     const cancellationReason = optionalString(body.cancellationReason) ?? optionalString(body.reason);
 
     // P-Ω3F6-STATUS-BYPASS FECHADO — o cancelamento NÃO acontece mais por esta rota legada. Antes, quem tinha
@@ -1441,7 +1516,7 @@ export class WorkOrderService {
     // TODOS (422) e redireciona ao único caminho que exige a decisão. A fila offline do mobile chama este mesmo
     // método → tecnico de campo deixa de cancelar por sync (defensável: campo não arbitra cobrança). O CHECK
     // `cancelled ⇒ decisão ∈ {keep,keep_unpaid,zero}` (migration) e o assertion InMemory travam a invariante nos
-    // dois lados. Resíduo de concorrência cancel×create-de-item: P-Ω3F6-CANCEL-RACE.
+    // dois lados. A corrida cancel × escrita de item fechou no B-SAN3-23 (a unidade do `cancel`, sob a trava da OS).
     if (nextStatus === "cancelled") {
       throw new WorkOrderError(
         422,
@@ -1453,29 +1528,57 @@ export class WorkOrderService {
 
     assertStatusTransition(current.status, nextStatus);
 
-    const updated = await this.repository.changeStatus({
+    // B-SAN3-26 (item 53) — o "No local" exige o veredito de check-in, emitido num ponto só. A chave é o DESTINO:
+    // `on_site → on_site` (que `assertStatusTransition` deixa passar) também é conferido.
+    const entry = options?.entry ?? "internal";
+    let checkin = await this.verifyCheckinForStatus(actor, current, nextStatus, body, entry);
+
+    // B-SAN3-23 (P-23.4 + Emenda 1) — CAS sobre a situação validada; se casar 0, relê, revalida a MESMA operação
+    // sobre a relida e regrava UMA vez (o precedente `FinancialTitleService.changeStatus`).
+    // Junção com o B-SAN3-26 (Emenda 3): a escrita leva o veredito da OS que foi VALIDADA nesta passada, e a
+    // mensagem sai dele. Em `on_site` ela é do servidor ("registrada pela base" só a base escreve, C26-05); nas
+    // outras transições, a mensagem do cliente que imita essa marca é descartada (C1-A1, junta do PR #534).
+    const statusInputBase = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
-      status: nextStatus,
-      message,
       cancellationReason,
       actorUserId: actor.userId,
-    });
-
+    };
+    const statusWrite = (verdict: CheckinVerdict | undefined, expectedStatus: WorkOrderStatus) => {
+      const message = verdict
+        ? checkinTimelineMessage(verdict)
+        : withoutReservedOfficeMark(optionalString(body.message)) ?? defaultStatusMessage(nextStatus);
+      return nextStatus === "on_site"
+        ? { ...statusInputBase, message, expectedStatus, status: nextStatus, checkin: requireCheckinVerdict(verdict) }
+        : { ...statusInputBase, message, expectedStatus, status: nextStatus };
+    };
+    let fromStatus = current.status;
+    let write = statusWrite(checkin, fromStatus);
+    let updated = await this.repository.changeStatus(write);
     if (!updated) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+      const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-status
+      await this.revalidateStatusChange(actor, reread, nextStatus); // B-SAN3-23:revalida-status
+      // Emenda 3, item 1 — o veredito é RECALCULADO sobre a OS relida, antes da regravação: a placa pode ter mudado.
+      checkin = await this.verifyCheckinForStatus(actor, reread, nextStatus, body, entry); // B-SAN3-26:veredito-na-releitura
+      fromStatus = reread.status;
+      write = statusWrite(checkin, fromStatus);
+      updated = await this.repository.changeStatus(write);
+      if (!updated) throw await this.statusWriteMissError(actor, current.id, nextStatus); // B-SAN3-23:segunda-falha-status
     }
+    const message = write.message;
 
     await this.repository.createEvent({
       tenantId: actor.tenantId,
       workOrderId: updated.id,
       eventType: statusEventType(nextStatus),
-      fromStatus: current.status,
+      fromStatus,
       toStatus: nextStatus,
       actorUserId: actor.userId,
       message,
       metadata: {
         cancellationReason,
+        // §2.8 — só o MODO do veredito; os dígitos e a placa nunca entram no evento.
+        ...(checkin ? { checkin: checkin.mode } : {}),
       },
     });
 
@@ -1485,7 +1588,7 @@ export class WorkOrderService {
         entity_type: "work_order",
         entity_id: updated.id,
         code: updated.code,
-        from_status: current.status,
+        from_status: fromStatus,
         to_status: nextStatus,
       },
       { tenantId: actor.tenantId, actorId: actor.userId },
@@ -1515,62 +1618,57 @@ export class WorkOrderService {
     // Sem default silencioso: quem cancela decide o destino do dinheiro (422 quando ausente/inválida).
     const decision = parseFinancialCancellationDecision(body.financial_decision ?? body.financialDecision);
 
+    // Fast-fail sobre a leitura solta (a ordem pública 400 → 422 decisão → 422 transição se mantém). A AUTORIDADE é a
+    // mesma regra, de novo, sobre a situação lida sob a trava, dentro da unidade (D-1).
     this.assertCancellable(current.status);
 
-    // `zero` ANTES de persistir o cancelamento: a OS nunca fica cancelada com o financeiro por zerar.
-    // Integridade (D-CANCEL-INTEGRITY, este bloco fechou o cluster P-Ω3F6): (a) o par cancelado↔total-0 é
-    // sustentado pelo TERMINAL-GUARD (create/update/delete/invoice recusam OS cancelada — 422 work_order_cancelled),
-    // então não se lança/fatura item depois; (b) zeroFinancialItems é ATÔMICO (softDeleteAll numa operação, exclui
-    // faturados) — sem a parcialidade/N+1 do loop antigo; item faturado bloqueia `zero` (422 has_invoiced_items,
-    // preserva o lastro do Título). Resíduo: a corrida sub-ms cancel×create-de-item (P-Ω3F6-CANCEL-RACE), da mesma
-    // classe dos TOCTOU aceitos — fecha com SELECT ... FOR UPDATE da OS (hardening futuro).
-    if (decision === "zero") {
-      await this.zeroFinancialItems(actor, current.id);
+    // B-SAN3-23 (P-23.1) — o cancelamento é UMA unidade no repositório, sob a trava exclusiva da OS: relê a situação,
+    // no `zero` confere "há item faturado?" (422 has_invoiced_items, preserva o lastro do Título) e zera (atômico, só
+    // não faturados), muda a situação e grava o evento. Tudo commita junto, ou nada. Toda escrita de item e todo
+    // faturamento relêem a situação sob a trava compartilhada da OS: depois do commit daqui, recusam (422
+    // work_order_cancelled). Fecha P-Ω3F6-CANCEL-RACE e P-SAN3-02-OS-NAO-TRAVADA.
+    let result: CancelWorkOrderWithFinancialDecisionResult | undefined;
+    try {
+      result = await this.repository.cancelWithFinancialDecision({
+        tenantId: actor.tenantId,
+        workOrderId: current.id,
+        decision,
+        cancellationReason: reason,
+        actorUserId: actor.userId,
+        assertCancellable: (from) => this.assertCancellable(from),
+        event: {
+          message: defaultStatusMessage("cancelled"),
+          // Metadata CURADA (§2.8): decisão + motivo (texto que o operador digitou, visível na timeline da
+          // própria OS). Nada de tenant_id, id de item financeiro, valor ou qualquer chave de storage.
+          metadata: {
+            financialDecision: decision,
+            cancellationReason: reason,
+          },
+        },
+        memoryFinancials: this.memoryFinancialsPort(actor, current.id),
+      });
+    } catch (error) {
+      if (isTransientCancelFailure(error)) throw cancelTransientConflictError(); // B-SAN3-23:transitorio-cancel
+      throw error;
     }
 
-    const updated = await this.repository.changeStatus({
-      tenantId: actor.tenantId,
-      workOrderId: current.id,
-      status: "cancelled",
-      message: defaultStatusMessage("cancelled"),
-      cancellationReason: reason,
-      financialCancellationDecision: decision,
-      actorUserId: actor.userId,
-    });
-
-    if (!updated) {
+    if (!result) {
       throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
     }
-
-    await this.repository.createEvent({
-      tenantId: actor.tenantId,
-      workOrderId: updated.id,
-      eventType: "work_order_cancelled",
-      fromStatus: current.status,
-      toStatus: "cancelled",
-      actorUserId: actor.userId,
-      message: defaultStatusMessage("cancelled"),
-      // Metadata CURADA (§2.8): decisão + motivo (texto que o operador digitou, visível na timeline da
-      // própria OS). Nada de tenant_id, id de item financeiro, valor ou qualquer chave de storage.
-      metadata: {
-        financialDecision: decision,
-        cancellationReason: reason,
-      },
-    });
 
     await publishDomainEvent(
       "work_order.status_changed",
       {
         entity_type: "work_order",
-        entity_id: updated.id,
-        code: updated.code,
-        from_status: current.status,
+        entity_id: result.workOrder.id,
+        code: result.workOrder.code,
+        from_status: result.fromStatus,
         to_status: "cancelled",
       },
       { tenantId: actor.tenantId, actorId: actor.userId },
     );
 
-    return updated;
+    return result.workOrder;
   }
 
   // Ω3F-6 — a OS já cancelada NÃO é pega por assertStatusTransition: o helper retorna cedo quando
@@ -1597,25 +1695,20 @@ export class WorkOrderService {
   // total agregado, mas as linhas persistem com deleted_at (auditoria). Não "zera valores" (que
   // deixaria linhas 0,00 poluindo a aba). DYNAMIC import: work-order-financials importa work-orders
   // estaticamente — um import estático aqui fecharia o ciclo (mesmo padrão do approve→OS, D-Ω3F-4B).
-  private async zeroFinancialItems(actor: WorkOrderActorContext, workOrderId: string): Promise<void> {
-    const { createDefaultWorkOrderFinancialService } = await import(
-      "../work-order-financials/work-order-financial.service.js"
-    );
-    const financials = await createDefaultWorkOrderFinancialService();
-    // P-Ω3F6-STATUS-BYPASS (ataque de desenho, ALTA) — item JÁ FATURADO é lastro de um Título receivable
-    // (D-Ω4-C1, imutável): `zero` NÃO pode destruí-lo (deixaria o Título sem itens-fonte). Se há item faturado,
-    // `zero` é contraditório → 422 has_invoiced_items (o gestor deve usar `keep`; o Título já foi emitido).
-    if (await financials.hasActiveInvoicedItems(actor, workOrderId)) {
-      throw new WorkOrderError(
-        422,
-        "WORK_ORDER_UNPROCESSABLE",
-        "has_invoiced_items",
-        "Cannot zero the financials of a work order with invoiced items; the receivable title already exists. Use keep.",
+  // B-SAN3-23 (D-2) — é a porta do DUBLÊ DE MEMÓRIA: o repositório Prisma confere o faturado e zera na própria
+  // unidade, sob a trava da OS, e nunca chama esta porta (o pré-check solto saiu do caminho Prisma, R-01). O import só
+  // acontece quando a porta é chamada.
+  private memoryFinancialsPort(actor: WorkOrderActorContext, workOrderId: string) {
+    const financials = async () => {
+      const { createDefaultWorkOrderFinancialService } = await import(
+        "../work-order-financials/work-order-financial.service.js"
       );
-    }
-    // P-Ω3F6-ZERO-ATOMICIDADE — UMA operação atômica (softDeleteAll) em vez de N deletes sequenciais sem
-    // transação (que deixavam OS viva + itens meio-destruídos numa falha parcial + N+1). Não toca faturados.
-    await financials.zeroActiveItems(actor, workOrderId);
+      return createDefaultWorkOrderFinancialService();
+    };
+    return {
+      hasActiveInvoiced: async () => (await financials()).hasActiveInvoicedItems(actor, workOrderId),
+      zeroActive: async () => (await financials()).zeroActiveItems(actor, workOrderId),
+    };
   }
 
   /**
@@ -1778,7 +1871,7 @@ export class WorkOrderService {
     }
   }
 
-  async assign(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord) {
+  async assign(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
     const current = await this.get(actor, workOrderId);
     // D1 — the assign action gains optional viatura/equipe selection, carried by the
     // mobile `work_order.assign` sync action and accepted on the REST body. Each
@@ -1796,7 +1889,8 @@ export class WorkOrderService {
     const userId = parseOptionalUuid(body.userId, "userId");
     await this.assertTechnicianChangeAllowed(actor, current, { userId, operatorId });
 
-    const message = optionalString(body.message) ?? "Ordem de servico atribuida.";
+    // B-SAN3-26 (C1-A1) — a atribuição também é transição: o cliente não escreve a marca da base.
+    const message = withoutReservedOfficeMark(optionalString(body.message)) ?? "Ordem de servico atribuida.";
     const input: AssignWorkOrderInput = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
@@ -1816,13 +1910,72 @@ export class WorkOrderService {
     };
 
     assertStatusTransition(current.status, "assigned");
-    const result = await this.repository.assign(input);
-
+    // B-SAN3-23 (P-23.4 + Emenda 1) — CAS sobre `event.fromStatus`; se casar 0, relê, revalida e regrava UMA vez, com o
+    // evento levando a situação relida como origem.
+    let result = await this.repository.assign(input);
     if (!result) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+      const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-assign
+      await this.revalidateAssign(actor, reread, { userId, operatorId }); // B-SAN3-23:revalida-assign
+      result = await this.repository.assign({ ...input, event: { ...input.event, fromStatus: reread.status } });
+      if (!result) throw await this.statusWriteMissError(actor, current.id, "assigned"); // B-SAN3-23:segunda-falha-assign
     }
 
     return result.workOrder;
+  }
+
+  /**
+   * B-SAN3-23 (Emenda 1) — o CAS de situação casou 0 linhas: a OS mudou entre a leitura do serviço e a escrita. Relê
+   * (sumiu → 404, como antes) para REVALIDAR a mesma operação sobre a situação nova. É o precedente da casa,
+   * `FinancialTitleService.changeStatus`: uma releitura, uma regravação, e depois 409.
+   */
+  private async rereadAfterStatusMiss(actor: WorkOrderActorContext, workOrderId: string): Promise<WorkOrder> {
+    const reread = await this.repository.findById(actor.tenantId, workOrderId);
+    if (!reread) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+    return reread;
+  }
+
+  // B-SAN3-23 (Emenda 1.1, EM1-03) — a revalidação POR ESCRITOR é a da entrada do próprio método, na mesma ordem, sobre
+  // a situação relida, e a falha responde o erro do próprio check (a resposta em corrida é a do caso sequencial).
+  // Ela é a ÚNICA defesa contra a sobrescrita do cancelamento na regravação: o CAS da 2ª escrita é sobre a relida, e a
+  // relida pode ser `cancelled`. Mudar situação = escopo por objeto (403 not_assigned_to_actor) + transição (409).
+  private async revalidateStatusChange(actor: WorkOrderActorContext, reread: WorkOrder, nextStatus: WorkOrderStatus): Promise<void> {
+    await this.assertMutationObjectScope(actor, reread);
+    assertStatusTransition(reread.status, nextStatus);
+  }
+
+  // Atribuir = trava de técnico (409 technician_change_requires_authorization) + transição (409 invalid_status_transition).
+  private async revalidateAssign(
+    actor: WorkOrderActorContext,
+    reread: WorkOrder,
+    target: { readonly userId?: string; readonly operatorId: string },
+  ): Promise<void> {
+    await this.assertTechnicianChangeAllowed(actor, reread, target);
+    assertStatusTransition(reread.status, "assigned");
+  }
+
+  // Despachar = situação terminal (409 invalid_status_transition) + trava de técnico.
+  private async revalidateAssignFromDispatch(actor: WorkOrderActorContext, reread: WorkOrder, userId: string): Promise<void> {
+    assertDispatchAssignable(reread);
+    await this.assertTechnicianChangeAllowed(actor, reread, { userId, operatorId: userId });
+  }
+
+  /**
+   * B-SAN3-23 (P-23.4, Q1 = A) — a 2ª escrita (a regravação da Emenda 1) também casou 0 linhas: relê. A OS existe →
+   * `409 invalid_status_transition`; sumiu → 404, como antes. Sem laço: não há 3ª escrita.
+   */
+  private async statusWriteMissError(actor: WorkOrderActorContext, workOrderId: string, to: WorkOrderStatus): Promise<WorkOrderError> {
+    const reread = await this.repository.findById(actor.tenantId, workOrderId);
+    if (!reread) {
+      return new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+    return new WorkOrderError(
+      409,
+      "WORK_ORDER_STATUS_INVALID",
+      "invalid_status_transition",
+      `The work order changed to ${reread.status} while this operation ran; cannot apply ${to}.`,
+    );
   }
 
   /**
@@ -1891,14 +2044,7 @@ export class WorkOrderService {
     },
   ): Promise<WorkOrder> {
     const current = await this.get(actor, input.workOrderId);
-    if (WORK_ORDER_STATUS_TRANSITIONS[current.status].length === 0) {
-      throw new WorkOrderError(
-        409,
-        "WORK_ORDER_STATUS_INVALID",
-        "invalid_status_transition",
-        `Cannot assign a terminal work order in status ${current.status}.`,
-      );
-    }
+    assertDispatchAssignable(current);
 
     // Os ids vêm do despacho, que já os validou com a regra DELE (`field-dispatch.validators.ts`: não vazio — o
     // modo memória usa ids que não são UUID). Exigir UUID aqui quebraria o despacho fora do Postgres.
@@ -1911,13 +2057,14 @@ export class WorkOrderService {
       ? await resolver({ tenantId: actor.tenantId, userId, roles: [], permissions: [] })
       : undefined;
     const operatorId = operatorProfileId ?? userId;
+    // B-SAN3-26 (C1-A1) — o motivo do despacho vem do cliente: não escreve a marca da base.
     const message =
-      optionalString(input.message) ??
+      withoutReservedOfficeMark(optionalString(input.message)) ??
       (input.source === "field_dispatch_reassign"
         ? "Ordem de serviço reatribuída pelo despacho."
         : "Ordem de serviço atribuída pelo despacho.");
 
-    const result = await this.repository.assignFromDispatch({
+    const dispatchWrite: AssignWorkOrderFromDispatchInput = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
       operatorId,
@@ -1933,10 +2080,17 @@ export class WorkOrderService {
         message,
         metadata: { operatorId, userId, source: input.source, dispatchId },
       },
-    });
+    };
 
+    // B-SAN3-23 (P-23.4 + Emenda 1) — CAS sobre a situação validada; se casar 0 (por exemplo, outro despacho do mesmo
+    // técnico acabou de levar a OS a `assigned`), relê, revalida e regrava UMA vez: a corrida responde o que a sequência
+    // responde (201), e a OS cancelada no meio recusa (409).
+    let result = await this.repository.assignFromDispatch(dispatchWrite);
     if (!result) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+      const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-dispatch
+      await this.revalidateAssignFromDispatch(actor, reread, userId); // B-SAN3-23:revalida-dispatch
+      result = await this.repository.assignFromDispatch({ ...dispatchWrite, event: { ...dispatchWrite.event, fromStatus: reread.status } });
+      if (!result) throw await this.statusWriteMissError(actor, current.id, "assigned"); // B-SAN3-23:segunda-falha-dispatch
     }
 
     return result.workOrder;
@@ -2496,6 +2650,44 @@ function cancelTransitionError(from: WorkOrderStatus): WorkOrderError {
     "invalid_status_transition",
     `Cannot transition work order from ${from} to cancelled.`,
   );
+}
+
+// B-O6R-07c-b1 → B-SAN3-23 (Emenda 1.1, EM1-03) — o despacho não dá técnico a OS terminal (`completed`, `cancelled`,
+// `rejected`, sem transição de saída): 409 `invalid_status_transition`. Um ponto só, usado na entrada do
+// `assignFromDispatch` e na revalidação da regravação, para a corrida responder o mesmo erro da sequência.
+function assertDispatchAssignable(workOrder: WorkOrder): void {
+  if (WORK_ORDER_STATUS_TRANSITIONS[workOrder.status].length === 0) {
+    throw new WorkOrderError(
+      409,
+      "WORK_ORDER_STATUS_INVALID",
+      "invalid_status_transition",
+      `Cannot assign a terminal work order in status ${workOrder.status}.`,
+    );
+  }
+}
+
+// B-SAN3-23 (R-08) — lista FECHADA de códigos que o TEMPO resolve na unidade do cancelamento: P2034 conflito/impasse
+// (Prisma) · P2028 transação interativa expirada (nasce no `$transaction` do invólucro RLS) · 40P01 impasse · 40001
+// serialização · 55P03 trava indisponível. Detecta pelo CÓDIGO, nunca pela mensagem, nas formas do Prisma 7 + adapter-pg
+// (a mesma leitura em vários níveis de `work-order-financial.service.ts`). Lista local, o padrão por módulo da casa:
+// importar o serviço financeiro aqui fecharia o ciclo de imports.
+const CANCEL_TRANSIENT_DB_CODES: ReadonlySet<string> = new Set(["P2034", "P2028", "40P01", "40001", "55P03"]);
+
+function isTransientCancelFailure(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const record = error as {
+    readonly code?: unknown;
+    readonly meta?: { readonly code?: unknown; readonly driverAdapterError?: { readonly cause?: { readonly code?: unknown; readonly originalCode?: unknown } } };
+    readonly cause?: { readonly code?: unknown; readonly originalCode?: unknown };
+  };
+  return [
+    record.code,
+    record.meta?.code,
+    record.meta?.driverAdapterError?.cause?.code,
+    record.meta?.driverAdapterError?.cause?.originalCode,
+    record.cause?.code,
+    record.cause?.originalCode,
+  ].some((code) => typeof code === "string" && CANCEL_TRANSIENT_DB_CODES.has(code));
 }
 
 function defaultStatusMessage(status: WorkOrderStatus): string {

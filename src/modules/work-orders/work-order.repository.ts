@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import type {
   AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
+  CancelWorkOrderWithFinancialDecisionInput,
+  CancelWorkOrderWithFinancialDecisionResult,
   ChangeWorkOrderStatusInput,
   CreateWorkOrderInput,
   ListWorkOrdersInput,
@@ -19,7 +21,8 @@ import type {
   WorkOrderEventType,
   WorkOrderStatus,
 } from "./work-order.types.js";
-import { matchesAssignedToActor, WorkOrderError } from "./work-order.types.js";
+import { assertCheckinVerdictForStatus } from "./work-order.checkin.js";
+import { hasInvoicedItemsError, matchesAssignedToActor, WorkOrderError } from "./work-order.types.js";
 import { WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
   assertChecklistRemovalHasActor,
@@ -69,6 +72,11 @@ export interface WorkOrderRepository {
   updateDestinationGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined>;
   freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined>;
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined>;
+  // B-SAN3-23 (P-23.1) — o ÚNICO caminho do cancelamento: uma unidade sob a trava exclusiva da OS. `undefined` quando a
+  // OS não existe na organização (o serviço traduz para 404).
+  cancelWithFinancialDecision(
+    input: CancelWorkOrderWithFinancialDecisionInput,
+  ): Promise<CancelWorkOrderWithFinancialDecisionResult | undefined>;
   // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — OS (`assigned_*`), linha em `work_order_assignments` e evento
   // `work_order_assigned` numa escrita só: falha em qualquer parte deixa a OS como estava.
   assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined>;
@@ -331,6 +339,11 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   }
 
   async findById(tenantId: string, workOrderId: string): Promise<WorkOrder | undefined> {
+    return this.liveWorkOrder(tenantId, workOrderId);
+  }
+
+  // B-SAN3-23 (EM1-04) — a OS viva do Map, síncrona: os escritores com CAS leem, comparam e gravam no MESMO tique.
+  private liveWorkOrder(tenantId: string, workOrderId: string): WorkOrder | undefined {
     const workOrder = this.workOrders.get(workOrderId);
     return workOrder?.tenantId === tenantId ? workOrder : undefined;
   }
@@ -415,8 +428,14 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   }
 
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
-    const current = await this.findById(input.tenantId, input.workOrderId);
+    // B-SAN3-26 (C26-08) — paridade com o Prisma: `on_site` só com um veredito emitido por `verifyCheckin`, ANTES do
+    // CAS e de qualquer escrita (Emenda 3 da junção com o B-SAN3-23, item 4).
+    assertCheckinVerdictForStatus(input);
+    // B-SAN3-23 (P-23.4; Emenda 1.1, EM1-04) — paridade do CAS do Prisma: compara a OS VIVA do Map, no mesmo tique
+    // da gravação (nenhum `await` entre ler, comparar e gravar), nunca um retrato tirado antes de um `await`.
+    const current = this.liveWorkOrder(input.tenantId, input.workOrderId);
     if (!current) return undefined;
+    if (current.status !== input.expectedStatus) return undefined;
     // Paridade InMemory↔Prisma da invariante do cancelamento (o Prisma tem o CHECK; aqui é a assertion
     // equivalente): OS 'cancelled' EXIGE decisão financeira (o único caminho legítimo é cancel(), que sempre
     // a grava; o /status legado passou a recusar cancelled). Um caminho rogue falha idêntico nos dois lados.
@@ -446,9 +465,60 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     return updated;
   }
 
-  async assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
-    const current = await this.findById(input.tenantId, input.workOrderId);
+  // B-SAN3-23 (D-2, corrigido pela Emenda 1.1, EM1-04) — o dublê de memória da unidade. A memória não tem trava para
+  // fazer "zerar + mudar a situação" de uma vez (a prova de atomicidade é a suíte `-db`), então a ordem aqui é a que a
+  // mantém consistente em toda intercalação: transição sobre a situação viva → no `zero`, "há item faturado?" → a
+  // situação, com o CAS sobre a OS viva e a MESMA regra do serviço (se casar 0: relê, revalida a transição e regrava UMA
+  // vez; a revalidação que falha responde o erro dela, sem ter zerado nada) → só então o zerar → o evento. Antes desta
+  // correção, um `assign` dentro dos `await` do zerar fazia o CAS casar 0 e o cancelamento responder 404 com os itens já
+  // zerados numa OS que não foi cancelada (medido pela crítica da emenda, 20/20).
+  async cancelWithFinancialDecision(
+    input: CancelWorkOrderWithFinancialDecisionInput,
+  ): Promise<CancelWorkOrderWithFinancialDecisionResult | undefined> {
+    const current = this.liveWorkOrder(input.tenantId, input.workOrderId);
     if (!current) return undefined;
+    input.assertCancellable(current.status);
+    if (input.decision === "zero" && (await input.memoryFinancials.hasActiveInvoiced())) throw hasInvoicedItemsError();
+    const cancelWrite = {
+      tenantId: input.tenantId,
+      workOrderId: input.workOrderId,
+      status: "cancelled" as const,
+      message: input.event.message,
+      cancellationReason: input.cancellationReason,
+      financialCancellationDecision: input.decision,
+      actorUserId: input.actorUserId,
+    };
+    let fromStatus = current.status;
+    let workOrder = await this.changeStatus({ ...cancelWrite, expectedStatus: fromStatus });
+    if (!workOrder) {
+      const reread = this.liveWorkOrder(input.tenantId, input.workOrderId);
+      if (!reread) return undefined;
+      input.assertCancellable(reread.status);
+      fromStatus = reread.status;
+      workOrder = await this.changeStatus({ ...cancelWrite, expectedStatus: fromStatus });
+      if (!workOrder) return undefined;
+    }
+    if (input.decision === "zero") await input.memoryFinancials.zeroActive();
+    await this.createEvent({
+      tenantId: input.tenantId,
+      workOrderId: input.workOrderId,
+      eventType: "work_order_cancelled",
+      fromStatus,
+      toStatus: "cancelled",
+      actorUserId: input.actorUserId,
+      message: input.event.message,
+      metadata: input.event.metadata,
+    });
+
+    return { workOrder, fromStatus };
+  }
+
+  async assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
+    const current = this.liveWorkOrder(input.tenantId, input.workOrderId);
+    if (!current) return undefined;
+    // B-SAN3-23 (P-23.4; EM1-04) — paridade do CAS do Prisma (`event.fromStatus` = a situação que o serviço validou),
+    // sobre a OS viva, no mesmo tique da gravação.
+    if (current.status !== input.event.fromStatus) return undefined;
     const now = new Date();
     const workOrder: WorkOrder = {
       ...current,
@@ -481,8 +551,11 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   }
 
   async assignFromDispatch(input: AssignWorkOrderFromDispatchInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
-    const current = await this.findById(input.tenantId, input.workOrderId);
+    const current = this.liveWorkOrder(input.tenantId, input.workOrderId);
     if (!current) return undefined;
+    // B-SAN3-23 (P-23.4, C23R2-01; EM1-04) — paridade do CAS do Prisma: compara com a situação que o serviço validou,
+    // sobre a OS viva, no mesmo tique da gravação.
+    if (current.status !== input.event.fromStatus) return undefined;
     const now = new Date();
     const nextStatus: WorkOrderStatus = current.status === "open" ? "assigned" : current.status;
     const workOrder: WorkOrder = {
@@ -680,6 +753,8 @@ export async function originateSystemRemovalWorkOrder(
     description: systemRemovalWorkOrderDescription(input.plate),
     priority: "medium",
     serviceCatalogId: input.serviceCatalogId,
+    // B-SAN3-26 — a placa da solicitação é a referência do check-in do guincheiro (sem ela, a OS só andaria pela base).
+    serviceDetails: { plate: input.plate },
     // Ator SISTEMA: created_by/updated_by ausentes (NULL). Veículo NÃO identificado: sem vehicleId/customer.
     status: "open",
   });
