@@ -194,8 +194,8 @@ Fontes: `src/modules/auth/routes/auth.routes.ts`, `identity-links.routes.ts`, `m
 | POST | `/auth/logout` | Posse do refresh token | Revoga a sessão (idempotente). |
 | GET | `/auth/identity-links` | Bearer válido (JWT; header legado → 401) | Vínculos da própria identidade: `[{id, tenant{id,name,status}, attached_via, created_at}]` — **nunca** `identity_id`. |
 | POST | `/auth/identity-links` | Bearer válido (JWT) | **Religação** (B-O6R-01 §5): prova a credencial de OUTRA organização (`{tenantId, email, password}`) e move **exatamente** o vínculo da organização provada para a identidade do ator. `201` movido · `200 already_linked` · `401` credencial (conta como tentativa direcionada) · `423` conta alvo bloqueada · `403` organização suspensa · `409 IDENTITY_LINK_CONFLICT` (pré-check E corrida 23505). **B-USERS-ACESSO-SEG (P-SEG-2):** `403 password_change_required` quando o ATOR ou a conta PROVADA está com a senha provisória; a religação trava o vínculo do par do ator (`FOR SHARE`) e só então lê a marca, e o reset por administrador trava o mesmo vínculo (`FOR UPDATE`): os dois não passam juntos. |
-| DELETE | `/auth/identity-links/:id` | Bearer válido (JWT) + reautenticação por senha | **Desvínculo em autosserviço.** Reautentica com a senha de **qualquer organização vinculada que tenha credencial — jamais a da organização do vínculo removido** (`{password, reauthTenantId?}`; inelegível → `403 reauth_credential_unavailable`). `200 {status:"removed", revoked_sessions}` · `200 already_standalone` (único vínculo; sessões intactas) · `401` sem/errada reautenticação · `404` vínculo alheio/inexistente. **Janela do I3, declarada:** a remoção revoga NA MESMA transação todas as sessões do par do vínculo removido — **a renovação (refresh) e as rotas de identidade morrem na hora; o access token em voo sobrevive até `JWT_EXPIRES_IN` (15 min)**. A UI não pode prometer "acesso revogado" imediato. |
-| POST | `/auth/password` | Bearer válido (JWT; header legado → 401) | **Troca da PRÓPRIA senha** (B-USERS-ACESSO-SEG, S7). Corpo `{currentPassword, newPassword}`. Prova a senha atual do par do token (tentativa direcionada: errada incrementa e pode trancar); a nova segue a regra do cadastro e não pode ser igual à atual. `200 {data:{changed:true, revoked_sessions, unlinked}}` — apaga a marca da senha provisória, desvincula o par religado quando a identidade tem 2+ vínculos e revoga TODAS as sessões do par, inclusive a atual (o access token já emitido vale até expirar, ≤ 15 min) · `400 invalid_payload` (campo faltando) · `400 invalid_new_password` (regra do cadastro, ou igual à atual) · `401 invalid_credentials` (senha atual errada) · `401 jwt_required` · `403 user_inactive` · `403 credential_unavailable` (sem credencial local) · `423 account_locked`. É a ÚNICA ação da sessão aberta com a senha provisória. |
+| DELETE | `/auth/identity-links/:id` | Bearer válido (JWT) + reautenticação por senha | **Desvínculo em autosserviço.** Reautentica com a senha de **qualquer organização vinculada que tenha credencial — jamais a da organização do vínculo removido** (`{password, reauthTenantId?}`; inelegível → `403 reauth_credential_unavailable`). `200 {status:"removed", revoked_sessions}` · `200 already_standalone` (único vínculo; sessões intactas) · `401` sem/errada reautenticação · `404` vínculo alheio/inexistente. ~~**Janela do I3, declarada:** a remoção revoga NA MESMA transação todas as sessões do par do vínculo removido — a renovação (refresh) e as rotas de identidade morrem na hora; o access token em voo sobrevive até `JWT_EXPIRES_IN` (15 min). A UI não pode prometer "acesso revogado" imediato.~~ **B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA):** a remoção revoga NA MESMA transação todas as sessões do par do vínculo removido, e o access token dessas sessões é recusado na próxima requisição em toda rota (`401 session_inactive`; nota abaixo). |
+| POST | `/auth/password` | Bearer válido (JWT; header legado → 401) | **Troca da PRÓPRIA senha** (B-USERS-ACESSO-SEG, S7). Corpo `{currentPassword, newPassword}`. Prova a senha atual do par do token (tentativa direcionada: errada incrementa e pode trancar); a nova segue a regra do cadastro e não pode ser igual à atual. `200 {data:{changed:true, revoked_sessions, unlinked}}` — apaga a marca da senha provisória, desvincula o par religado quando a identidade tem 2+ vínculos e revoga TODAS as sessões do par, inclusive a atual (B-USERS-SEG-DESATIVADO: o access token dessas sessões é recusado na próxima requisição, `401 session_inactive`) · `400 invalid_payload` (campo faltando) · `400 invalid_new_password` (regra do cadastro, ou igual à atual) · `401 invalid_credentials` (senha atual errada) · `401 jwt_required` · `403 user_inactive` · `403 credential_unavailable` (sem credencial local) · `423 account_locked`. É a ÚNICA ação da sessão aberta com a senha provisória. |
 | POST | `/auth/users/:userId/reset-password` | `users.manage` (JWT + RBAC persistente) | **Reset de senha por administrador** (B-USERS-ACESSO-SEG, S1; contrato `UEM-R2-01`). Redefine a senha de um usuário da organização ATIVA do admin. Corpo vazio `{}`. `200 {data:{user_id, temporary_password, must_change_password:true, revoked_sessions}}` com `Cache-Control: no-store` — a senha provisória sai SÓ nesta resposta, uma vez; o banco guarda só o hash, com a marca "trocar no próximo acesso"; as sessões do alvo são revogadas; auditoria `user.password_reset` (ator, alvo e organização ativa; sem a provisória, sem hash, sem dado de outra organização) · `400 invalid_request` (`userId` que não é UUID, ou corpo com qualquer campo) · `401 jwt_required` · `403 FORBIDDEN` sem `users.manage` · `404 user_not_found` (inclusive usuário de outra organização: nunca 403 que revele existência) · `409 identity_linked_elsewhere` (**`D-USERS-1`:** a identidade do alvo tem vínculo em outra organização, inclusive suspensa — só o próprio usuário troca a senha; mensagem fixa, sem dizer qual organização) · `409 cannot_reset_self` (a própria senha é por `POST /auth/password`) · `409 user_inactive` (reativar antes) · `403 FORBIDDEN target_not_manageable` (**`D-RESET-AUTORIDADE-PLATAFORMA`**, ratificação do dono pendente: o alvo tem papel de plataforma; o reset por administrador da organização não o alcança; mensagem fixa; nada muda) · `503 reset_unavailable` (a verificação não terminou sobre estado firme: mudança em voo no vínculo além do tempo de espera, vínculo removido no meio ou transação expirada; mensagem fixa; nada muda). |
 
 > **Sessão da senha provisória (B-USERS-ACESSO-SEG, P-SEG-2; conserto do #527, P-SESSAO-RESTRITA).** A senha
@@ -205,18 +205,46 @@ Fontes: `src/modules/auth/routes/auth.routes.ts`, `identity-links.routes.ts`, `m
 > com `403 {code:"FORBIDDEN", reason:"password_change_required"}`, salvo `POST /auth/password` — a única ação da
 > sessão, que apaga a marca. Claim `scope` com qualquer outro valor → `401 INVALID_TOKEN`. As camadas no banco
 > continuam (RBAC persistente vazio; troca de organização e religação recusam pela marca) para o token INTEIRO
-> emitido ANTES da marca. Residuais declarados: esse token anterior vale até expirar (≤ 15 min, `D-USERS-2`;
-> pendência `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA`); token emitido antes do deploy do conserto não tem o claim (até
+> emitido ANTES da marca. Residuais declarados: ~~esse token anterior vale até expirar (≤ 15 min, `D-USERS-2`;
+> pendência `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA`)~~ (B-USERS-SEG-DESATIVADO: o reset revoga a sessão, e o token
+> anterior é recusado na próxima requisição; a pendência fecha); token emitido antes do deploy do conserto não tem o claim (até
 > 15 min de comportamento antigo); o token restrito continua restrito até expirar, mesmo depois da troca (a troca
 > revoga as sessões; o cliente entra de novo). Ordem de implantação: backend → web → app
 > (`P-USERS-SEG-ORDEM-DE-IMPLANTACAO`).
 
-> **Usuário desativado: a janela do access token (B-USERS-ACESSO-SEG, correção da C2CL-02).** Desativar um usuário
+> **Sessão viva em toda rota (B-USERS-SEG-DESATIVADO, P-SESSAO-VIVA; segue a P1 = (a) e a P2 = (a), com as respostas
+> do dono pendentes; substitui a janela da `D-USERS-2`).** Todo access token aceito por qualquer rota pertence a uma
+> sessão que, no instante da requisição, está viva (existe para o mesmo par organização e usuário, não foi revogada, não
+> venceu) e cujo usuário está ativo naquela organização. O token carrega a sessão no claim `sid` (UUID; ausente vale só
+> para o token emitido antes do deploy; outro formato → `401 INVALID_TOKEN`). O portão (`attachAuthenticatedActor`)
+> confere a sessão UMA vez por requisição, antes do escopo restrito:
+> - sessão revogada, vencida ou alheia, ou usuário desativado → `401 {code:"INVALID_TOKEN", reason:"session_inactive",
+>   message:"Invalid or expired access token."}` em TODA rota que lê o token, salvo as 6 que não o leem (`/health`,
+>   `/health/ready`, `/health/worker`, `POST /auth/login`, `/auth/refresh`, `/auth/logout`). Cobre desativar, desfazer o
+>   vínculo, o reset por administrador, a troca da própria senha, a revogação pelo administrador
+>   (`POST /sessions/:id/revoke`, só a sessão revogada), o logout (só a sessão do refresh) e, com a P2 = (a), a troca do
+>   CONJUNTO de papéis (`PATCH /users/:userId`; renomear ou mandar os mesmos papéis não revoga). Os clientes já tratam o
+>   401: tentam o refresh, que falha, e voltam ao login;
+> - a conferência falhou (banco fora, tempo esgotado; orçamento de ~1,5 s) → `503 {code:"SERVICE_UNAVAILABLE",
+>   reason:"session_check_unavailable"}`, NUNCA 401 (401 desloga, e banco instável não derruba a sessão de todo mundo);
+> - o stream `GET /operations/field-events/stream` reconfere a sessão a cada keep-alive (25 s): sessão encerrada →
+>   `event: session_inactive` e fim; duas falhas seguidas da conferência → `event: session_check_unavailable` e fim (o
+>   mapa reconecta sozinho). O vencimento do token não encerra o stream (`P-SSE-SEGUE-APOS-VENCER-TOKEN`).
+>
+> Residuais declarados: (1) token sem `sid` (emitido antes do deploy): até 15 min, a sessão encerrada com o usuário
+> ativo ainda passa; o desativado não (`P-SID-OBRIGATORIO`); (2) modo memória (dev e teste) não confere; produção não
+> sobe nesse modo; (3) a requisição que já passou do portão termina normalmente; (4) o stream transmite até 25 s depois
+> de encerrada a sessão (50 s com o banco falhando); (5) desativado em A e ativo em B não troca mais para B com o token de
+> A (`POST /auth/active-tenant` → 401): entra direto em B; (6) organização suspensa não entra na conferência
+> (`P-ORG-SUSPENSA-NAO-CORTA-ACESSO`).
+
+> **Usuário desativado: a janela do access token (B-USERS-ACESSO-SEG, correção da C2CL-02) — SUPERADA pela nota
+> acima (B-USERS-SEG-DESATIVADO), mantida como histórico.** Desativar um usuário
 > revoga as sessões dele (refresh morto na hora) e o RBAC persistente passa a filtrar pelo status, mas, **na janela de
 > até 15 min do access token já emitido, o desativado ainda age pelas rotas que autorizam pelos papéis do JWT**
 > (`/api/v1/mobile/*` e `/api/v1/platform/*`), porque o portão não consulta o status por requisição (`D-USERS-2`). A
 > declaração anterior, de que o desativado não executa nada que passe por `requirePermission`, não cobria essas
-> rotas. Pendência `P-USERS-DESATIVADO-TOKEN-MOBILE`.
+> rotas. Pendência `P-USERS-DESATIVADO-TOKEN-MOBILE` (fechada pelo B-USERS-SEG-DESATIVADO).
 
 > **Rate-limit por IP nas DUAS rotas de login e lockout no caminho anônimo (B-O6R-07a — resíduos do
 > `Ω6R-SEC-003`).** `POST /auth/login` passa a ter um balde **por IP** — `TokenBucket` reutilizado de
@@ -232,7 +260,7 @@ Fontes: `src/modules/auth/routes/auth.routes.ts`, `identity-links.routes.ts`, `m
 | GET | `/me/tenants` | Autenticado (JWT) | Organizações **vinculadas à identidade** do ator (vínculo explícito; nunca correlação por e-mail). Normaliza preguiçosamente o par do token. |
 | GET | `/sessions` | `sessions:read` | Sessões ativas da organização (filtrável por usuário). |
 | GET | `/sessions/access-history` | `audit.read` | Histórico de acessos (último login por usuário). |
-| POST | `/sessions/:id/revoke` | `sessions:revoke` | Revogação administrativa de sessão (idempotente; cross-tenant → 404). |
+| POST | `/sessions/:id/revoke` | `sessions:revoke` | Revogação administrativa de sessão (idempotente; cross-tenant → 404). **B-USERS-SEG-DESATIVADO:** o access token da sessão revogada é recusado na próxima requisição (`401 session_inactive`); as outras sessões do mesmo usuário seguem. |
 
 `GET /health/ready` (superfície de infra, §2) ganhou o campo **`login_without_org: "active"|"inactive"`**
 no topo do corpo, **fora de `checks`** — reportado, nunca contado no veredito 200/503; a causa de um

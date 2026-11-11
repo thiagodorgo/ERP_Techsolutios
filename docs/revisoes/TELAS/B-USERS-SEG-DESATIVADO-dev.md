@@ -147,7 +147,7 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
   falho do san3-05 deixaram 7 organizações e 4 papéis efêmeros no `devdesat`. É o meu banco; antes da F5 eu recrio os
   dois bancos do zero, para a bateria medir num banco limpo.
 
-## F3b — o tique do stream do mapa (08:07–08:12 SP)
+## F3b — o tique do stream do mapa (08:07–08:11 SP)
 
 - `field-ops-realtime.routes.ts`: a forma literal da E1.2 (constante `SSE_LIVENESS_MAX_FAILURES = 2`, `livenessInFlight`,
   `livenessFailures`, `runLivenessTick` com o `await` dentro do `try`, a trava de sobreposição no tique) e a função
@@ -158,3 +158,30 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
 - **Verdes (TAP, `scratchpad/devdesat/f3b/`):** `users-seg-desativado-sse` 6/6 (T16b-1 a 6, memória) · regressão
   `field-ops-realtime` 4/4 · `users-seg-desativado-sse-db` 1/1 (T16, relógio real: o stream fechou com
   `event: session_inactive` e 0 assinantes; a suíte levou 38 s).
+
+## F4 — contrato, registro e ratchet (08:12–08:21 SP)
+
+- **Merge da `main` (`7f47aca6`):** o #538 entrou às 08:05 SP. Atualizei o ramo ANTES de mexer nos registros, como o
+  orquestrador pediu (sem conflito: o #538 só toca `agent-orchestration/`).
+- **T18 (`san3-05-acessos-de-plataforma-guard`, só o CONGELADO):** o gerador na cabeça da F3b acusou 3 chaves novas,
+  todas de `session-liveness.service.ts` (`auth_sessions` e `users` pelo `$queryRaw`, e `user.findFirst` da via sem
+  `sid`), todas `PARAMETRO(tx de callback de withTenantRlsBudget)`. Coladas em `NOVAS` com uma linha de motivo cada.
+  Saída do gerador: `scratchpad/devdesat/f4/gerador-cabeca.txt` (142 linhas, `stderr` vazio). TAP: 35/35.
+- **`API_CONTRACTS.md`:** nota nova da P-SESSAO-VIVA (401 `session_inactive`, 503 `session_check_unavailable`, o stream,
+  os residuais 1 a 6 da 2.5 e a referência à `P-ORG-SUSPENSA-NAO-CORTA-ACESSO`); a nota antiga do desativado fica como
+  histórico, marcada SUPERADA; o residual do token anterior à marca, riscado com o motivo.
+  **Leitura do dev, declarada (§A6):** o PERMITIDO diz "as notas de `:200-218` … e a frase da revogação de sessão". Li
+  "a frase da revogação de sessão" como as frases que a P-SESSAO-VIVA torna falsas no MESMO arquivo: a linha de
+  `POST /sessions/:id/revoke` (`:235`), a "Janela do I3" do `DELETE /auth/identity-links/:id` (`:197`) e o parêntese do
+  `POST /auth/password` (`:198`), que diziam que o access token sobrevive. Mudei as três (riscado + texto novo). Se o
+  orquestrador ler mais estreito, as duas da tabela (`:197`, `:198`) voltam numa linha cada.
+- **`RBAC_MATRIX.md`:** só a frase do "Caveat honesto" da linha 128 (riscada + texto novo, citando a P1 = (a) seguida e
+  a resposta do dono pendente).
+- **`pendencias.md`:** fechadas, com teste-dono, "vale no merge": `P-USERS-DESATIVADO-TOKEN-MOBILE` (e o complemento) e
+  `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA`. Novas: `P-RBAC-PERSISTENTE-LEITURA-POR-MONTAGEM`, `P-SESSOES-TEXTO-15MIN`,
+  `P-SSE-SEGUE-APOS-VENCER-TOKEN`, `P-SID-OBRIGATORIO`, `P-CI-LISTA-CURADA-USERS-SEG-DB`. A
+  `P-ORG-SUSPENSA-NAO-CORTA-ACESSO` NÃO foi criada (nasceu no #538): ganhou uma nota apensa. A
+  `P-USERS-REBAIXAMENTO-TOKEN-JWT` não nasce (P2 = (a)). Índice regenerado pelo `gerar-indice-pendencias.py`: 861
+  cabeçalhos, 850 IDs, ABERTAS 656 → 659 (+5 −2), 0 contraditórias, as duas fechadas no balde FECHADAS.
+- **`decisoes.md`: NÃO tocado.** O PERMITIDO só admite "a entrada com as respostas do dono à P1 e à P2", e o dono ainda
+  não respondeu. O orquestrador escreve a entrada quando ele responder.
