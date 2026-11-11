@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 291
+## ABERTAS · balde A — material — 292
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -364,9 +364,10 @@
 | `P-V533-P1-OS-TITULO-COM-UUID` | 13364 | MÉDIA | sim | P-V533-P1-OS-TITULO-COM-UUID (2026-11-11) — a OS criada pela aprovação nasce com o UUID  |
 | `P-HTTP-ERRO-ECOA-MENSAGEM-CRUA` | 13432 | MÉDIA | sim | P-HTTP-ERRO-ECOA-MENSAGEM-CRUA (2026-11-11) — o tratador genérico de erro devolve a mens |
 | `P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA` | 13439 | MÉDIA | sim | P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA (2026-11-11) — a leitura do status na mesma ins |
+| `P-ORG-SUSPENSA-NAO-CORTA-ACESSO` | 13494 | MÉDIA | sim | P-ORG-SUSPENSA-NAO-CORTA-ACESSO (2026-11-11) — nem o login, nem o refresh, nem o RBAC pe |
 | `P-ASS-DB-FORA-DA-LISTA-CURADA` | 13509 | MÉDIA | sim | P-ASS-DB-FORA-DA-LISTA-CURADA (2026-11-11) — nenhuma suíte `ass-0*-db` está na lista cur |
 
-## ABERTAS · balde B — processo/registro — 304
+## ABERTAS · balde B — processo/registro — 303
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -672,7 +673,6 @@
 | `P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS` | 13473 | BAIXA | sim | P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS (2026-11-11) — a lista fechada do `san3-05` não decl |
 | `P-ALLOC-MANUAL-INICIO-INCLUSIVO` | 13480 | BAIXA | sim | P-ALLOC-MANUAL-INICIO-INCLUSIVO (2026-11-11) — no rateio manual, o lado do início contin |
 | `P-AWS-CUR-DUBLE-SOBREPOSICAO` | 13487 | BAIXA | sim | P-AWS-CUR-DUBLE-SOBREPOSICAO (2026-11-11) — o dublê em memória do resumo de custo filtra |
-| `P-USERS-ORG-SUSPENSA-NAO-CORTA-ACESSO` | 13494 | BAIXA | sim | P-USERS-ORG-SUSPENSA-NAO-CORTA-ACESSO (2026-11-11) — nem o login, nem o refresh, nem o R |
 | `P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA` | 13502 | BAIXA | sim | P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA (2026-11-11) — o documento e um comentário dizem "no |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
