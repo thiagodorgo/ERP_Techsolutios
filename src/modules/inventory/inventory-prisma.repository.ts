@@ -417,7 +417,7 @@ export class PrismaInventoryRepository implements InventoryRepository {
       by: ["item_id"],
       where: {
         tenant_id: tenantId,
-        custody_type: custody.custodyType,
+        custody_type: { equals: custody.custodyType },
         custody_operator_profile_id: custody.custodyOperatorProfileId,
       },
       _sum: { quantidade_sinalizada: true },
