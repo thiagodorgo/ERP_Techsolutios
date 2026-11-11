@@ -61,7 +61,7 @@ Síntese → triagem (grave ou não) → se houver conserto, plano por quem não
 ## Plano do 2º conserto — fechado às 07:16 SP de 10/11
 - **Planejamento:** workflow `plano-conserto-2-b-ass-08` (3 estratégias provadas por sonda: trava de linha, invariante no banco, trava consultiva; 2 juízes; síntese, Claude Opus, topo DECLARADO pelo §C7.6-bis) → `erp-pausa-2026-10-03/planos/B-ASS-08-conserto-c2.md`. Escolha: A-SKIP sem migração, emendas E4–E9; a M5b (índice) ficou como pergunta opcional para a 08b.
 - **Crítica de outro modelo** (`crit-522-c2`, Codex):
-  - **Rodada 1 (Codex 1), VOLTA.** GRAVE: a régua da irmã dependia de campo apagável, e uma cobrança-fantasma de valor anterior era adotada por uma intenção de valor diferente. ALTA: fome no claim com 25 travadas. MÉDIA: ordem de travas da 08b sem guarda.
+  - **Rodada 1 (Codex 1), VOLTA.** GRAVE: a régua da irmã dependia de campo apagável, e uma cobrança-fantasma de valor anterior era adotada por uma intenção de valor diferente (os dois valores em reais ficam fora da cópia versionada: repositório público). ALTA: fome no claim com 25 travadas. MÉDIA: ordem de travas da 08b sem guarda.
   - **§13 (`topo3-j522-opus`)** respondeu os três.
   - **Rodada 2 (Codex 2), VOLTA parcial.** Dois resolvidos por execução. A fome continuou: P2028 com 3 500+ travadas.
   - **§14 (requisito explícito final, sem 3ª rodada):** E5″, demonstrativo e fila travados numa instrução só, demonstrativo primeiro, SKIP LOCKED nos dois. Cauda em 187–455 ms até N = 50 000, com 0 espera e 0 P2028. Teto de 2 000 ms por claim em N = 20 000.
@@ -85,4 +85,5 @@ Síntese → triagem (grave ou não) → se houver conserto, plano por quem não
 ## Porteiro pós-merge — 10/11 21:22 SP
 - **Veredito:** LIBERADO COM RESSALVA; promessa, árvore do squash, migração autorizada, contagens reexecutadas e CI do merge conferem.
 - **Ressalvas de registro:** versionar esta ata final, registrar `C3B-01` com dono e `P-GUARD3-SO-RECONHECE-SET-CONFIG`, e anotar que o corpo do PR parou no primeiro conserto.
-- **Ressalvas operacionais:** três volumes órfãos da rodada foram removidos; os mandatos futuros devem usar `docker rm -f -v`, e o merge da 08b mantém as obrigações transferidas ao bloco futuro conforme decisão registrada.
+- **Ressalvas operacionais:** três volumes órfãos da rodada foram removidos; os mandatos futuros devem usar `docker rm -f -v`; e o merge da 08b só sai com as obrigações (1)-(5) da `P-ASS08-OBX5-EAGER-E-CANCEL` (`revisoes/j522/porteiro-522-parecer.md`, linha final).
+- **Nota do orquestrador, não do porteiro (10/11 21:22 SP):** a opção (A), leitura do orquestrador, declarada (§A6), passa as obrigações (1)-(3) e (5)b2/b3 ao `B-ASS-08c` e declara (1)-(3) satisfeitas por vacuidade na 08b, com a prova do `git grep`; a junta da 08b confere isso (`LEITURA-ORQ-1011-B-ASS-08C` em `controle/decisoes.md`).
