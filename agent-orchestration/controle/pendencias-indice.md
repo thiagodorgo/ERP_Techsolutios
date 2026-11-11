@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **799** |
-| IDs distintos | 788 |
-| **ABERTAS** | **602** |
+| Cabecalhos `## P-` | **807** |
+| IDs distintos | 796 |
+| **ABERTAS** | **610** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **540** |
+| — das quais **ativas nesta rodada** | **548** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 193 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **799 cabecalhos para 788 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **807 cabecalhos para 796 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 267
+## ABERTAS · balde A — material — 273
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -336,14 +336,20 @@
 | `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA` | 13005 | MÉDIA | sim | P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA (2026-11-09) — o "com sessão válida" do item 30 não t |
 | `P-S3-FORCE-PATH-STYLE-NAO-DESLIGA` | 13024 | MÉDIA | sim | P-S3-FORCE-PATH-STYLE-NAO-DESLIGA (2026-11-10) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE= |
 | `P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP` | 13030 | MÉDIA | sim | P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP (2026-11-10) — aprovação e devolução d |
-| `P-CI-SAN3-05-T11D-ORDEM-FLAKY` | 13043 | MÉDIA | sim | P-CI-SAN3-05-T11D-ORDEM-FLAKY (2026-11-10) — o T11d/T11e de `san3-05-leituras-de-platafo |
-| `P-ASS08-OBX5-EAGER-E-CANCEL` | 13049 | MÉDIA | sim | P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na |
-| `P-ASS08-MUTATE-SEM-GUARDA` | 13083 | ALTA | sim | P-ASS08-MUTATE-SEM-GUARDA (2026-11-10) — o `#mutate` da outbox atualiza por id sem confe |
-| `P-ASS08-RECONSULTA-SEM-VALOR` | 13089 | MÉDIA | sim | P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ ch |
-| `P-ASS08-RECUPERADA-SEM-COBRANCA` | 13095 | MÉDIA | sim | P-ASS08-RECUPERADA-SEM-COBRANCA (2026-11-10) — o desfecho `recovered` não grava `subscri |
-| `P-ASS08-RECONSULTA-CONSISTENCIA` | 13101 | MÉDIA | sim | P-ASS08-RECONSULTA-CONSISTENCIA (2026-11-10) — a listagem `GET /v3/payments?externalRefe |
+| `P-SAN3-05-T11-ORDEM-INSTAVEL` | 13043 | MÉDIA | sim | P-SAN3-05-T11-ORDEM-INSTAVEL (2026-11-10) — o T11d/T11e de `san3-05-leituras-de-platafor |
+| `P-ASS08-OBX5-EAGER-E-CANCEL` | 13050 | MÉDIA | sim | P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na |
+| `P-ASS08-MUTATE-SEM-GUARDA` | 13085 | ALTA | sim | P-ASS08-MUTATE-SEM-GUARDA (2026-11-10) — o `#mutate` da outbox atualiza por id sem confe |
+| `P-ASS08-RECONSULTA-SEM-VALOR` | 13091 | MÉDIA | sim | P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ ch |
+| `P-ASS08-RECUPERADA-SEM-COBRANCA` | 13097 | MÉDIA | sim | P-ASS08-RECUPERADA-SEM-COBRANCA (2026-11-10) — o desfecho `recovered` não grava `subscri |
+| `P-ASS08-RECONSULTA-CONSISTENCIA` | 13103 | MÉDIA | sim | P-ASS08-RECONSULTA-CONSISTENCIA (2026-11-10) — a listagem `GET /v3/payments?externalRefe |
+| `P-UPLOAD-ARMAZENAMENTO-EFEMERO` | 13115 | ALTA | sim | P-UPLOAD-ARMAZENAMENTO-EFEMERO (2026-11-10) — upload móvel confirmado pode depender de a |
+| `P-USERS-201-SEM-NO-STORE` | 13121 | MÉDIA | sim | P-USERS-201-SEM-NO-STORE (2026-11-10) — criação de usuário devolve senha provisória sem  |
+| `P-GUARD3-SO-RECONHECE-SET-CONFIG` | 13132 | MÉDIA | sim | P-GUARD3-SO-RECONHECE-SET-CONFIG (2026-11-10) — guard 3 não reconhece `SET LOCAL` — MÉDI |
+| `P-APARENCIA-APP-SELETOR` | 13144 | MÉDIA | sim | P-APARENCIA-APP-SELETOR (2026-11-10) — app ainda não tem seletor para as aparências B e  |
+| `P-LOGIN-CONTRASTE-ERRO` | 13150 | MÉDIA | sim | P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste |
+| `P-P8C-CAPACIDADE-SEM-TETO-CONTRATO` | 13168 | ALTA | sim | P-P8C-CAPACIDADE-SEM-TETO-CONTRATO (2026-11-10) — espelhar a regra de capacidade medida  |
 
-## ABERTAS · balde B — processo/registro — 273
+## ABERTAS · balde B — processo/registro — 275
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -619,7 +625,9 @@
 | `P-DESPESA-ITEM-CORRIDA-SUBMIT` | 13011 | — | sim | P-DESPESA-ITEM-CORRIDA-SUBMIT (2026-11-10) — um item pode entrar num relatório recém-sub |
 | `P-MOBILE-RECIBO-409-POR-MOTIVO` | 13018 | BAIXA | sim | P-MOBILE-RECIBO-409-POR-MOTIVO (2026-11-10) — o app trata todo 409 do comprovante como ` |
 | `P-PROCESSO-SONDAS-ANTES-DO-WORKTREE` | 13037 | BAIXA | sim | P-PROCESSO-SONDAS-ANTES-DO-WORKTREE (2026-11-10) — o mandato de cadeira não manda guarda |
-| `P-ASS08-INDICE-UMA-VIVA` | 13107 | BAIXA | sim | P-ASS08-INDICE-UMA-VIVA (2026-11-10) — índice parcial "uma `charge_create` viva por demo |
+| `P-ASS08-INDICE-UMA-VIVA` | 13109 | BAIXA | sim | P-ASS08-INDICE-UMA-VIVA (2026-11-10) — índice parcial "uma `charge_create` viva por demo |
+| `P-USERS-DESATIVADO-TOKEN-MOBILE` | 13126 | — | sim | P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-10) — token anterior à desativação ainda alcanç |
+| `P-LOGIN-WEB-TERMO-TENANT` | 13156 | BAIXA | sim | P-LOGIN-WEB-TERMO-TENANT (2026-11-10) — login web ainda expõe termo técnico de organizaç |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 
