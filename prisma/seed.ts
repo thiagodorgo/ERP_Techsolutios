@@ -3,9 +3,9 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
 import {
+  DEFAULT_ROLES,
   PERMISSION_CATALOG,
   ROLE_PERMISSIONS,
-  STANDARD_ROLES,
   type Permission,
   type Role,
 } from "../src/modules/core-saas/permissions/catalog.js";
@@ -274,11 +274,12 @@ async function main(): Promise<void> {
     permissions.set(permission, permissionRecord);
   }
 
-  // B-SAN3-04a (item 14, P-033): uma base preparada como a CI (migrate + seed, sem db:provision-rbac) não tinha linha
-  // global de `auditor`, e o gate lê o BANCO em CORE_SAAS_PERSISTENCE=prisma → 403 em /tags, /pois, /tenant-settings.
-  // Escopo autorizado: SÓ o auditor. Os outros legados (finance, inventory, operator, field_technician, support)
-  // continuam vindo do db:provision-rbac → P-SAN3-04A-SEED-PAPEIS-LEGADOS (dono B-SAN3-07).
-  const SEEDED_SYSTEM_ROLES = [...STANDARD_ROLES, "auditor"] as const satisfies readonly Role[];
+  // B-SAN3-04a (item 14, P-033) e B-SAN3-07 (item 47, P-SAN3-04A-SEED-PAPEIS-LEGADOS): uma base preparada como a CI
+  // (migrate + seed, sem db:provision-rbac) só tem linha global para os papéis que este laço semeia, e o gate lê o
+  // BANCO em CORE_SAAS_PERSISTENCE=prisma. Semeia-se DEFAULT_ROLES menos `platform_admin`, a MESMA regra de
+  // scripts/provision-rbac.ts: os 12 papéis de sistema de produção, com as concessões do catálogo. `platform_admin` é
+  // pseudo-papel do plano de controle (claims do JWT) e nunca tem linha em banco. Mudança aditiva: nada é removido.
+  const SEEDED_SYSTEM_ROLES = DEFAULT_ROLES.filter((role) => role !== "platform_admin");
 
   for (const role of SEEDED_SYSTEM_ROLES) {
     const roleRecord = await upsertSystemRole(role);
