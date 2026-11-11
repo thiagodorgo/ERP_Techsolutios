@@ -136,3 +136,37 @@
 - `git diff --check origin/main...HEAD` → ec 0. Escopo: `git diff --name-only origin/main...HEAD` → 20 arquivos, todos no PERMITIDO do §4.1; os hunks de `sync_replay_service.dart` só no `import`, no `_assignPayload` e no `_backendStatus`; os de `mobile-work-order-sync.ts` só no ramo `work_order.assign` e na função nova. Nada em `prisma/**`, `.github/**`, `frontend/**`, `Kpis/**`, lockfiles ou `.env`.
 - **Web:** não rodei `npm --prefix frontend run check/build/test:smoke`; o bloco não toca `frontend/**`.
 - **Limpeza §C5:** `dist/` do `npm run build` e os `build/`/`.dart_tool` de teste do Flutter ficam para o fim, depois da CI; o worktree e os containers `dev11d-pg`/`dev11d-redis` ficam (mandato).
+
+## Pré-revisão: conserto (dp-545)
+
+- **Executor:** `dp-545` (DeepSeek Pro, identidade de dev declarada). **Início:** 2026-11-11 16:55 SP.
+- **Origem:** os 3 achados da pré-revisão do #545 (`prerev-545-api`) + o merge do #534. Pré-revisão lida inteira em `C:/Users/thiag/erp-pausa-2026-10-03/saidas-v3/prerev-545/saida/prerev-545.json` e `prerev-545-evidencia.md`.
+
+### Merge da main (#534 e #539)
+- `git fetch origin` + `git merge origin/main` → commit `b16c6bed` (merge(main)).
+- Conflito em `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart`: mantidos os dois lados — o parser/codec do 11d (linha do tempo) e os campos `checkinMode`/`checkinPlateTail` do #534.
+- Conflito nos registros (`agent-orchestration/controle/pendencias.md` e `pendencias-indice.md`): as duas entradas mantidas e o índice regenerado com `python agent-orchestration/controle/gerar-indice-pendencias.py`.
+- Auto-merge correto: `sync_replay_service.dart` e `src/modules/mobile/mobile-work-order-sync.ts`. Nenhum outro conflito de código.
+
+### PR545-01 — OS despachada com operador ≠ usuário (N11)
+- Novo teste `[B-O6R-11d N11]` em `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` (após o N6): `assignRest(ctx, osId, { operatorId: tecnicoV, userId: tecnicoU })` → OS despachada com o perfil de campo ≠ usuário; o lote é aceito e confere o técnico certo (`assignedUserId`).
+- **Mutação X1** (`src/modules/mobile/mobile-work-order-sync.ts:307`, `assignedUserId ?? assignedOperatorId` → `assignedOperatorId ?? assignedUserId`): N11 fica VERMELHO; linha restaurada → verde.
+- Commit `a757fcff`.
+
+### PR545-02 — pendências do #534 sem dono
+- `P-APP-DETALHE-OS-LARGURA-INFINITA` e `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` ganham dono `B-O6R-11e (a planejar)` e PR-alvo `B-O6R-11e`, com a nota "fora do PERMITIDO do 11d (tela e repositório do app)".
+- Índice regenerado. Commit `8ca3e0dc`.
+
+### PR545-03 — conferência de checkinMode/checkinPlateTail na lista
+- **Nada muda.** Os campos de check-in existem só em `toWorkOrderListDto` (lista, T5/T11); `toWorkOrderDto` (detalhe, T1) não os tem e fica inalterado.
+- **Prova:** `flutter test test/features/work_orders/bsan326_checkin_confere_placa_test.dart --reporter compact` → `+9: All tests passed!`.
+- Sem commit de código — só esta declaração.
+
+### Bateria final
+- **Flutter** (`mobile/flutter_app`): `dart format --output=none --set-exit-if-changed lib test` → ec 1 só por `test/features/bsan313_minhas_os_escopo_test.dart` (fora do bloco, igual à `origin/main`); arquivos do bloco 0 mudanças. `flutter analyze` → `No issues found!`. `flutter test --reporter compact` → `+1155: All tests passed!`.
+- **Node** — 8 arquivos (os 6 do `ls tests | grep -E "^(san3-26|b-o6r-11d|o6r-11d)"` + as regressões do plano `o6r07c-b-scope` e `mobile-work-order-assign-registry`) → `# tests 244 # pass 244 # fail 0 # skipped 0`.
+- **DB SAN3-23** (`tests/b-san3-23-cancel-race-db.test.ts`, PG 16 local porta 55532, papel `NOSUPERUSER NOBYPASSRLS`) → `# tests 21 # pass 21 # fail 0 # skipped 0`.
+- `npm run check` ec 0 (após `DATABASE_URL=... npm run db:generate`, Prisma Client atualizado pós-merge do #539) · `npm run lint` ec 0 · `git diff --check` ec 0.
+- Nada tocado em `prisma/**`, `.github/**`, `Kpis/**`, `.env`, nem portas 3000/5173/5432/6379/8899.
+
+PRONTO PARA CONFERÊNCIA — head 8ca3e0dc (código) · este registro final em cima
