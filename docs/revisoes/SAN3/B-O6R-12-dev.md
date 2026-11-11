@@ -317,3 +317,15 @@ outras frentes); nenhum toca `impound_processes`, `jurisdiction_profiles` ou o c
 
 **Residual declarado:** os casos 8 a 11 não exercitam o procedimento do papel de runtime nesta
 máquina. A prova fica para os jobs `backend` e `backend-postgres` da CI, no Linux, sobre o head do PR.
+
+### Escopo conferido por laço (`git diff --name-only origin/main...HEAD`, 35 arquivos)
+
+- Todos dentro do PERMITIDO do §4 com a E1/E1′, com 3 notas: `owner-portal.service.ts` muda a l.339 e
+  ganha o `import` de `portalPlanFromRegime`, que a troca exige; `owner-portal-dossier-rls.test.ts`
+  entra pelo R3; `db-catalog-write-guard.test.ts` entra pela E1.11′.
+- `charge.accrual.ts`: o Codex tinha mudado também o comentário da l.5, e o §4 só permite o da l.14.
+  Revertido; fica só a l.14.
+- PROIBIDO intocado: `Kpis/**`, `frontend/**`, `mobile/**`, lockfiles, `package.json`, a fixture
+  `prisma-migrate-diff-baseline.sql`, `src/modules/yard/**`, o resto de `owner-portal/**`,
+  `impound.checklist-link-prisma.repository.ts`, `san3-05-runtime-role-guard-db.test.ts` e
+  `scripts/db-runtime-role.sh`. O `.github` muda só nas 2 linhas do `SUITES=`.

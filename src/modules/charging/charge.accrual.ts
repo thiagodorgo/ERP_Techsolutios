@@ -2,7 +2,7 @@ import type { DailyCap, DailyModel } from "../jurisdiction/jurisdiction.types.js
 
 // Ω5P PR-07 — MOTOR DE DIÁRIAS (I4), formalização do ESTUDO §5. Função PURA (zero I/O, testável por DI):
 //
-//   n_diárias(asOf) = min( count(model, t0, asOf) , cap(regime gravado na abertura, t0) )
+//   n_diárias(asOf) = min( count(model, t0, asOf) , cap(perfil, t0) )
 //
 // DST-SAFE SEM LIB NOVA (dependência ZERO): a aritmética de calendário usa Intl.DateTimeFormat({timeZone}) — o
 // ICU embutido no Node. Uma lib de data exigiria junta-5.
