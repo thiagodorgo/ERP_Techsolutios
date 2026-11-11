@@ -322,3 +322,31 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
 - Limpeza (§C5): os containers `o6r09-pg` e `o6r09-redis` foram removidos (`docker rm -f`), e `dist/` e `frontend/dist/`
   apagados. O worktree `C:/Users/thiag/w-o6r09` fica, com o `node_modules` próprio, para o conserto depois da decisão do
   ratchet. Não usei `git worktree prune` nem `docker system prune`, e não toquei em outro worktree nem em outro container.
+
+## Emenda 2 (decisão do orquestrador sobre a parada D-W2), retomada às 05:13 SP
+
+- Li a Emenda 2 no fim de `planos/plano-B-O6R-09-v2.md` (orquestrador, 11/11 05:13 SP): a saída 1, no precedente do
+  B-TRC-01.
+- **(1)** `tests/san3-05-acessos-de-plataforma-guard.test.ts`: a chave
+  `new PrismaWorkOrderRepository(scope.tx) · OUTRO(scope.tx) · ×1` entrou em `NOVAS`, com o motivo por extenso e um
+  comentário de 2 linhas. O `git diff` do arquivo tem só adições (6 inserções, 0 remoções). O gerador e a `WRAPPERS` não
+  mudaram. T13 às 05:14: `# tests 35 · # pass 35 · # fail 0`.
+- **(2)** `docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md`, no formato do precedente: a chave, o motivo, por que é acesso de
+  tenant (o `tx` só nasce em `withTenantRls(…, input.tenantId = actor.tenantId)`, e `{ kind: "prisma", tx }` só é criado
+  em 1 lugar de `src/**`), e a prova por SONDA sob papel efêmero `rolsuper=false rolbypassrls=false`:
+  - sob o GUC de A, a OS de A grava;
+  - sob o GUC de A, a OS de B é recusada pela RLS;
+  - sem o setter, a OS é recusada pela RLS;
+  - 1 OS no fim; `# pass 1`.
+
+  A sonda foi temporária e não versionada: apagada do worktree, com cópia no scratchpad. Ao fim dela, 0 papel efêmero e 0
+  organização no catálogo. O Postgres e o Redis descartáveis foram recriados para isso (`o6r09-pg`, `o6r09-redis`).
+- **(3)** R2-09: `D-B-O6R-09-TRAVA-PRISMA-OPCAO-A` em `decisoes.md`. **Leitura minha, declarada (§A6):** a ordem não
+  nomeou a opção; a (a) é a única que cabe no que foi ordenado e no estado medido (o #537 tem a migração; o B-O6R-12 não
+  tem ramo remoto nem PR). A emenda do R6 do plano do 12 segue com o orquestrador, porque é fora do repositório.
+  - `P-B-O6R-09-RATCHET-T13-NOVA-CHAVE` e `P-B-O6R-09-TRAVA-PRISMA-REGISTRO` passam a FECHADA;
+  - índice regenerado com `py` (Python 3.13.14, `C:/Users/thiag/AppData/Local/Programs/Python/Python313/python.exe`). A
+    falta de Python registrada na fatia 4 era só o alias `python3` do Windows;
+  - fora a renumeração das linhas, o diff do índice é só as 9 entradas do bloco e os placares;
+  - troquei "crítica r2" por "revisão r2 do plano" em 2 pendências minhas: o classificador lê a palavra "crítica" como
+    severidade, a classe da `P-INDICE-PENDENCIAS-CRITICA-COMO-SEVERIDADE`, e dava CRÍTICA a duas pendências BAIXA/MÉDIA.

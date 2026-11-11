@@ -13259,7 +13259,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-B-O6R-09-ESCRITORES-FORA-DE-SRC (2026-11-11) — escritores de despacho fora de `src/` gravam despacho sem evento — BAIXA (anterior ao bloco)
 
 - **status:** ABERTA · **escopo:** `prisma/seed-fleet.ts:160` e `scripts/traccar-dev-demo.mjs:340,345` · **dono:** o próximo bloco que tocar o seed da frota ou a demo do Traccar · **bloqueia:** não.
-- **origem:** plano v2, R-A12 (iii), e crítica r2, R2-10. A guarda `tests/b-o6r-09-dispatch-writers-guard.test.ts` cobre só `src/**`.
+- **origem:** plano v2, R-A12 (iii), e a revisão r2 do plano (`crit-09-r2`), R2-10. A guarda `tests/b-o6r-09-dispatch-writers-guard.test.ts` cobre só `src/**`.
 - **critério de encerramento:** os dois escritores passam pelo repositório (`createWithEvent`) ou gravam o evento junto; a guarda passa a cobrir `prisma/seed*.ts` e `scripts/**`.
 
 ## P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX (2026-11-11) — a criação NORMAL de OS grava a OS e o `work_order_created` em transações separadas — MÉDIA (anterior ao bloco)
@@ -13294,13 +13294,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-B-O6R-09-RATCHET-T13-NOVA-CHAVE (2026-11-11) — o desenho da fatia 6 cria 1 chave nova no ratchet do B-SAN3-05, e o arquivo dele está fora do PERMITIDO — ALTA (segura o merge)
 
-- **status:** ABERTA · **gravidade:** ALTA — leitura do dev, declarada (§A6): deixa `npm test` vermelho · **escopo:** `tests/san3-05-acessos-de-plataforma-guard.test.ts` (T13) × `src/modules/work-orders/work-order-scope.ts` · **dono:** o orquestrador e o planejador do `B-O6R-09` (emenda) · **bloqueia:** o merge do PR do `B-O6R-09`.
+- **status:** FECHADA (2026-11-11 05:14 SP), pela Emenda 2 do plano v2 (decisão do orquestrador, saída 1): a chave entrou em `NOVAS` com o motivo, e o T13 deu 35/35; decisão e sonda em `docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md`. A junta do #537 confere a chave por execução. · **gravidade:** ALTA — leitura do dev, declarada (§A6): deixava `npm test` vermelho · **escopo:** `tests/san3-05-acessos-de-plataforma-guard.test.ts` (T13) × `src/modules/work-orders/work-order-scope.ts` · **dono:** o orquestrador e o planejador do `B-O6R-09` (emenda) · **bloqueia:** o merge do PR do `B-O6R-09`.
 - **fato medido:** o gerador acusa a chave `L2 · src/modules/work-orders/work-order-scope.ts · new PrismaWorkOrderRepository(scope.tx) · OUTRO(scope.tx) · ×1`. O `scope.tx` é o `tx` do callback de `withTenantRls` em `RlsPrismaServiceQuoteRepository.approveWithWorkOrder` (setter do GUC como 1ª instrução), mas o gerador só absolve o parâmetro direto do callback de um envoltório confiado.
 - **saídas (a escolher, `D-EMENDA-ANTES-DO-CODIGO`):** (1) acrescentar a chave em `NOVAS` com motivo, como o B-TRC-01 fez por decisão do orquestrador (`docs/revisoes/TRACCAR/B-TRC-01-DECISAO-T13.md`), pondo o arquivo do ratchet no PERMITIDO; ou (2) emendar o desenho para o `new PrismaWorkOrderRepository(tx)` nascer dentro do callback de `withTenantRls`, no repositório Prisma do orçamento (muda uma âncora da emenda e a lista da guarda (iv)).
 - **critério de encerramento:** o T13 verde no head do PR, com a escolha registrada.
 
 ## P-B-O6R-09-TRAVA-PRISMA-REGISTRO (2026-11-11) — a escolha (a) ou (b) da trava de `prisma/` entre o B-O6R-09 e o B-O6R-12 não está registrada — MÉDIA (condição do orquestrador)
 
-- **status:** ABERTA · **escopo:** registro (`agent-orchestration/controle/`), plano v2 §4.3 e R2-09 da crítica r2 · **dono:** o orquestrador · **bloqueia:** o merge do PR do `B-O6R-09` (a verificação literal da linha A5 do plano).
+- **status:** FECHADA (2026-11-11), pelo registro `D-B-O6R-09-TRAVA-PRISMA-OPCAO-A` em `decisoes.md`; a conferência do carimbo da migração contra a última da `main` fica para o momento do merge (porteiro) · **escopo:** registro (`agent-orchestration/controle/`), plano v2 §4.3 e R2-09 da revisão r2 do plano (`crit-09-r2`) · **dono:** o orquestrador · **bloqueia:** o merge do PR do `B-O6R-09` (a verificação literal da linha A5 do plano).
 - **fato:** `grep -rln "B-O6R-09" agent-orchestration/controle/` no ramo, antes do commit da fatia 3, acha só a pendência antiga `P-O6R-B09`. A migração do bloco (`20260901090000_field_dispatch_idempotency_key`) se recarimba numa linha se o B-O6R-12 entrar antes (opção (a)).
 - **critério de encerramento:** a escolha registrada em `controle/`, e o carimbo conferido contra a última migração da `main` no momento do merge.

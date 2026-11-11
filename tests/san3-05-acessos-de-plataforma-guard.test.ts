@@ -450,6 +450,12 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/webhooks/webhook-events.prisma.ts", "PrismaWebhookEventRepository.markStatus", "this.client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "INJETADO", "×2"),
     "B-ASS-08: duas instruções (l.75) na tabela GLOBAL `billing_webhook_events` (sem RLS) — o SELECT da linha atual e o UPDATE do estado e da organização resolvida; não toca tabela FORCE.",
   ],
+  // B-O6R-09 · fatia 6 (Emenda 2 do plano v2, decisão do orquestrador; docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md): a chave
+  // L2 do escopo de escrita da OS criada dentro da aprovação do orçamento, colada da saída do gerador. Gerador e WRAPPERS intocados.
+  [
+    k("L2", "src/modules/work-orders/work-order-scope.ts", "new PrismaWorkOrderRepository(scope.tx)", "OUTRO(scope.tx)", "×1"),
+    "B-O6R-09 fatia 6: o escopo de escrita recebe o cliente da transação-mãe da aprovação do orçamento — o `tx` do callback de `withTenantRls(this.prismaClient, input.tenantId, …)` em `RlsPrismaServiceQuoteRepository.approveWithWorkOrder` (src/modules/service-quotes/service-quote-prisma.repository.ts l.153), cujo setter do GUC da organização do ator é a 1ª instrução da transação (src/database/rls.ts l.35); é o único lugar de src/** que cria `{ kind: \"prisma\", tx }` (l.157), e `workOrderRepositoryForScope` (l.29) só embrulha esse `tx`: a OS, as vistorias e o `work_order_created` são escritas de TENANT nas tabelas FORCE da organização, provadas sob papel NOSUPERUSER NOBYPASSRLS em tests/b-o6r-09-quote-approve-atomic-db.test.ts ([Q2 · evento · NOBYPASSRLS] e [Q4]).",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };
