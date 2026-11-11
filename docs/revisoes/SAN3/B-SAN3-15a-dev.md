@@ -125,3 +125,22 @@
 - **CI (A-08):** a linha `SUITES="$SUITES tests/bsan315-technician-stock-db.test.ts"`, com comentário, depois de
   `inventory-migration-drill-db` no job `backend-postgres`. A leitura no log do job fica para a pré-revisão
   (`gh run view <run> --job backend-postgres --log | grep -E 'bsan315-technician-stock-db|# (tests|fail|skipped) '`).
+
+### F7 — web: o fechamento sem a contagem mostra erro (P13), 11:27–11:32
+
+- **Skills:** `ts-frontend-full` (implementação) e `ui-ux-pro-max` (revisão). Tela-modelo: a própria gaveta
+  `CycleCountSessionDrawer.tsx`, que já mostra o erro do adaptador no `Alert` "Ação não concluída"; **o componente não muda**
+  (a mensagem não pediu), nem layout, componente ou paleta novos.
+- **Vermelho-controle** (teste escrito antes do código, `frontend/tests/bsan315-contagem-fechamento.test.tsx`, na `main`):
+  `node --test --import tsx tests/bsan315-contagem-fechamento.test.tsx` → `# tests 2 · pass 0 · fail 2`. T-W1:
+  `Missing expected exception: corpo {"data":{}}`. T-W2: a gaveta mostrava `Concluída … Relatório de variância … Variância
+  total +0 · 0 ajuste(s) gerado(s)` (a classe da sonda da C4 do B-SAN3-01).
+- **Conserto** (`cycle-counts.adapter.ts`): a ÂNCORA NOVA `if (!cycleCount) throw new CycleCountResponseError("close_without_entity");`
+  no lugar do literal "concluida"; a classe `CycleCountResponseError` com a frase "O servidor não confirmou o fechamento da
+  contagem. Recarregue a lista para ver a situação atual."; o ramo explícito da classe no topo de `interpretCycleCountError`.
+- **Depois:** `bsan315-contagem-fechamento` 2/2; com `inventory.smoke`, `estoque-custodia` e `inventory.adapter`:
+  `# tests 41 · pass 41 · fail 0 · skipped 0`. `npm --prefix frontend run check` verde.
+- `frontend/package.json`: só o acréscimo de `tests/bsan315-contagem-fechamento.test.tsx` ao fim do `test:smoke` (186 → 187
+  arquivos).
+- **Lateral, pré-existente:** o texto técnico cru das outras exceções (`if (error instanceof Error && error.message) return
+  { message: error.message };`) segue; vai para `P-WEB-CONTAGEM-ERRO-CRU` (BAIXA, dono `B-INV-CONTAGEM`).
