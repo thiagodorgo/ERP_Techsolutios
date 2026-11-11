@@ -495,6 +495,7 @@ export class PrismaCoreSaasService {
         },
         include: {
           role_assignments: { include: { role: true } },
+          local_auth_credentials: { select: { must_change_password: true } },
         },
       });
 
@@ -508,9 +509,15 @@ export class PrismaCoreSaasService {
         return null;
       }
 
+      // B-USERS-ACESSO-SEG (P-SESSAO-RESTRITA) — a marca do par de DESTINO, lida sob o GUC de
+      // destino junto do usuário: o token da organização pedida nasce restrito se ela estiver
+      // ligada. Par sem linha de credencial conta como NÃO marcado (RQ-3).
+      const { local_auth_credentials: linhas, ...userRow } = user;
+
       return {
         tenant: mapTenantFromPrisma(tenant),
-        user: mapUserFromPrisma(user as Parameters<typeof mapUserFromPrisma>[0]),
+        user: mapUserFromPrisma(userRow as Parameters<typeof mapUserFromPrisma>[0]),
+        mustChangePassword: linhas.some((linha) => linha.must_change_password === true),
       };
     });
   }

@@ -38,6 +38,7 @@ import {
 import { requirePermission } from "../../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../../core-saas/middleware/tenant-context.middleware.js";
 import { readRouteParam } from "../../core-saas/routes/http.js";
+import { resolveAccessTokenScope } from "../services/access-token-scope.js";
 
 // Permissões efetivas dos papéis do usuário — a MESMA resolução que o backend usa
 // no RBAC (tenant-context). Vai no corpo do login para o frontend derivar os guards
@@ -293,11 +294,14 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         }
       }
 
+      const roleKeys = loginResult.roles.map((role) => role.key);
+      const tokenScope = resolveAccessTokenScope(loginResult.mustChangePassword, roleKeys);
       const accessToken = await issueAccessToken({
         user_id: loginResult.user.id,
         tenant_id: loginResult.user.tenant_id,
         email: loginResult.user.email,
-        roles: loginResult.roles.map((role) => role.key),
+        roles: tokenScope.roles,
+        ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
         ...(identityId ? { identity_id: identityId } : {}),
       });
       const session = await (
@@ -329,8 +333,10 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
           sessionId: session.sessionId,
           user: loginResult.user,
           tenant: loginResult.tenant,
-          roles: loginResult.roles,
-          permissions: resolveLoginPermissions(loginResult.roles.map((role) => role.key)),
+          // P-SESSAO-RESTRITA — o corpo segue o token (mesma decisão do helper, falha fechada).
+          must_change_password: tokenScope.restricted,
+          roles: tokenScope.restricted ? [] : loginResult.roles,
+          permissions: tokenScope.restricted ? [] : resolveLoginPermissions(tokenScope.roles),
         },
       });
     } catch {
@@ -451,11 +457,14 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         identityId = null;
       }
 
+      // P-SESSAO-RESTRITA — a marca do par de DESTINO; ausente (adaptador que não a leu) = restrita.
+      const tokenScope = resolveAccessTokenScope(match.mustChangePassword ?? true, match.user.roles);
       const accessToken = await issueAccessToken({
         user_id: match.user.id,
         tenant_id: match.tenant.id,
         email: match.user.email,
-        roles: [...match.user.roles],
+        roles: tokenScope.roles,
+        ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
         ...(identityId ? { identity_id: identityId } : {}),
       });
       const session = await (
@@ -486,8 +495,9 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
           sessionId: session.sessionId,
           tenant: { id: match.tenant.id, name: match.tenant.name },
           user: { id: match.user.id, name: match.user.name, email: match.user.email },
-          roles: [...match.user.roles],
-          permissions: resolveLoginPermissions(match.user.roles),
+          must_change_password: tokenScope.restricted,
+          roles: [...tokenScope.roles],
+          permissions: tokenScope.restricted ? [] : resolveLoginPermissions(tokenScope.roles),
         },
       });
     } catch (error) {

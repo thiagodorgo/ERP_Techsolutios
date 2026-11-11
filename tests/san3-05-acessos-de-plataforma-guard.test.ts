@@ -339,6 +339,12 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/auth/services/identity-link.service.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-USERS-ACESSO-SEG (S1): `upsertTemporaryPassword` grava só o HASH da provisória e a marca da P1 na credencial do ALVO, no callback de `withTenantRlsBudget` (GUC da organização ativa do ator, reposto logo antes), `where` pelo par (tenant_id, user_id) do alvo; devolve só o id. Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  // B-USERS-ACESSO-SEG (conserto do #527, R1-A02): as chaves que o conserto acrescenta, coladas da saída do gerador no head
+  // do conserto, com o motivo por chave. Gerador e WRAPPERS intocados.
+  [
+    k("L1", "src/modules/auth/services/auth-session.service.ts", "AuthSessionService.refreshSession", "tx.localAuthCredential", "localAuthCredential.findFirst", "local_auth_credentials", "PARAMETRO(tx de callback de runWithTenantContext)", "×1"),
+    "B-USERS-ACESSO-SEG (conserto #527, F2, P-SESSAO-RESTRITA): o refresh é assinador e relê a marca `must_change_password` do PAR do refresh token na MESMA transação em que já relê usuário e papéis, no callback de `runWithTenantContext(payload.tenant_id, …)` (o runner de produção põe o GUC da organização do par como 1ª instrução, src/database/rls.ts); o `where` é o par (tenant_id, user_id) e só seleciona a marca; par sem linha conta como não marcado (RQ-3). Provado em tests/users-acesso-seg-provisoria-db.test.ts (A4 e A4·RQ-3) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
   // B-ASS-08 (parte 1): as 12 chaves dos repositórios Prisma do canal, coladas da saída do gerador no head do bloco, com o
   // motivo por chave. Os acessos sob `withTenantRls`/`forEachTenantRls` (charges, enqueue/findById/listByStatement e a
   // varredura de plataforma da outbox) NÃO geram chave: o gerador os prova sob contexto. Gerador e WRAPPERS intocados.

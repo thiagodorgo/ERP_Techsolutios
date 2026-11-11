@@ -482,7 +482,7 @@ export class CoreSaasRegistry {
       return null;
     }
 
-    return { tenant, user };
+    return { tenant, user, mustChangePassword: false };
   }
 
   private ensureIdentityLinkForPair(tenantId: string, userId: string): string {

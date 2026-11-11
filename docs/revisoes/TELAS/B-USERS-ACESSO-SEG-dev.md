@@ -295,3 +295,39 @@ Recomendação do dev: **(a)**, com o residual como pendência (cabe na janela j
 - Mutação A9: validação do escopo desconhecido trocada por `false` → `not ok 2`, 404 em vez de 401; revertida.
 - Mutação A10: removida a opção de `POST /auth/password` → `not ok 3`, 403 em vez de 200; revertida.
 - A `main` integrada trouxe modelos Prisma novos; o primeiro `npm run check` acusou client local defasado (`BillingOutboxUpdateInput`/`billingOutbox`/`billingWebhookEvent`). `npm run db:generate` com a URL do cluster próprio regenerou apenas `node_modules`; depois `npm run check` → exit 0. Nenhum arquivo gerado foi versionado.
+
+## TROCA DE DEV (P3) — `dev-527-api` sucede `dev-527-conserto-cdx` (11/11 00:21 UTC, 10/11 21:21 SP)
+
+- Executor: `dev-527-api`, Claude Opus 5.5 pela API, identidade nova (não achou, não planejou nem criticou neste bloco). O Codex caiu por limite de uso no meio da F2. Ambiente: container Linux, Postgres 16 e Redis 7 próprios; head de partida `e09e9667`.
+- **Decisão sobre o parcial da F2 (`dev-527-f2-parcial.diff`, 9 arquivos, sem commit): APLICAR com `git apply` e conferir linha a linha, não refazer.** Motivo: o parcial cobre exatamente os pontos da §2.2 + R1-A01 (marca obrigatória no tipo das 3 construções de login, os 3 assinadores, marca do destino na troca de organização), aplicou limpo (`git apply --check` sem erro) e é pequeno o bastante para conferir inteiro. Faltavam o arquivo novo `access-token-scope.ts` (não ia no diff) e o parcial não compilava. Correções feitas na conferência, cada uma com o motivo:
+  1. `access-token-scope.ts` escrito: `resolveAccessTokenScope(mustChangePassword, roles)` restringe com `!== false` (R1-A01 trava 2) e devolve `{ scope, roles, restricted }`.
+  2. Login e troca de organização: o corpo (`must_change_password`, `roles`, `permissions`) passa a seguir o `restricted` do helper, não a marca crua — assim corpo e token nunca divergem (o parcial usava a marca crua no corpo e o helper no token).
+  3. Refresh: a forma passou a `linhas.some(...)` (`linhas` = 0 ou 1 linha do `findFirst`), para a mutação literal do RQ-3 caber e a chave do ratchet seguir a da R1-A02 (`localAuthCredential.findFirst`).
+  4. **A listagem de organizações (`listTenantsForIdentity`) NÃO lê a marca.** O parcial fazia o `TenantMembership` exigir a marca e a lia também na listagem; o ratchet SAN3-05 acusou chave nova em `PrismaCoreSaasService.listTenantsForIdentity … user.findFirst.include.local_auth_credentials`, e o plano diz "chave na troca de organização é achado (a crítica mediu 0)". A marca ficou opcional no `TenantMembership`, preenchida só por `findMembershipForIdentity` (Prisma: sob o GUC do destino; memória: `false`, porque o registro em memória não tem credencial, RQ-3), e a rota da troca chama o helper com `match.mustChangePassword ?? true` (ausente = restrita, falha fechada). Não precisei tocar `memory-core-saas.adapter.ts` (fora do PERMITIDO).
+  5. O cast de `mapUserFromPrisma` quebrava o `tsc` com a relação incluída: o destino agora separa `local_auth_credentials` do resto da linha antes do cast.
+
+## F2 — emissão: os 3 assinadores pedem o escopo ao helper (11/11 00:45 UTC)
+
+- Código: `access-token-scope.ts` (novo); `auth.routes.ts` (login e troca de organização: token e corpo pelo helper; `must_change_password` sempre presente); `auth-session.service.ts` (refresh relê a marca do par na transação, sob o GUC do par; sem linha = não marcado); `local-auth-login.service.ts` e `anonymous-login.service.ts` (`mustChangePassword` obrigatório nas 3 construções de sucesso); `auth.types.ts` (`LocalAuthLoginResult`); `prisma-core-saas.service.ts`, `core-saas.service.ts`, `core-saas.types.ts` (marca do par de destino); `auth/index.ts` (só a exportação do helper).
+- Dublês dos 5 testes candidatos (R1-A01): **nenhum quebrou** — `auth-identity-role-real-db` 10/10, `o6r07a-anon-lockout-multiorg` 5/5, `o6r07a-anon-lockout` 7/7, `o6r07a-login-rate-limit` 6/6, `o6r07a-scrypt-pin` 6/6. Nenhum arquivo de dublê tocado.
+- Ratchet SAN3-05 (R1-A02): o gerador acusou exatamente a chave 1 do plano (`L1 · auth-session.service.ts · AuthSessionService.refreshSession · tx.localAuthCredential · localAuthCredential.findFirst · local_auth_credentials · PARAMETRO(tx de callback de runWithTenantContext)`), colada no CONGELADO com motivo. Inventário do gerador: **125 → 126** (a base deste ramo já tem 125 = 104 do objeto + 21 da `main` unida na F-1; o "104 → 107" do plano foi medido em `6acae1c6`). Troca de organização: 0 chave. `tests/san3-05-acessos-de-plataforma-guard.test.ts` → `# tests 35 · pass 35 · fail 0`.
+- Testes novos desta fatia (os que a F0 não trouxe): `A3-U` (unidade, `sessao-restrita`); `A4·RQ-3` e `A5·RQ-3` (par sem linha de credencial → token inteiro); `A11·r1` e `A11·r2` (token INTEIRO assinado direto + marca ligada → a camada do banco recusa a troca de organização e a religação); e a suíte nova `tests/users-acesso-seg-portao-db.test.ts` com `PT·0` (papel `NOSUPERUSER NOBYPASSRLS` conferido), `A6` e `A7` — `createApp` real com o Prisma global ligado ao papel efêmero e `CORE_SAAS_PERSISTENCE=prisma`.
+- **Vermelho-controle no head F1 `e09e9667`** (o `src/` desta fatia guardado com `git stash -u -- src`, os testes novos no lugar):
+  - `portao-db` → `# tests 3 · pass 1 · fail 2`: `not ok 2 - A6` (`expected: 403 · actual: 200` — a provisória da criação sincroniza a OS) e `not ok 3 - A7` (`expected: 403 · actual: 200` — a sessão da provisória lê `/platform/tenants`);
+  - `provisoria-db` → `# tests 15 · pass 10 · fail 5`: `not ok 3 - A3-D`, `not ok 4 - A3-B/A3-C`, `not ok 5 - A4`, `not ok 6 - A5` (`expected: 'password_change'`) e `not ok 8 - A5·RQ-3` (o corpo não tinha `must_change_password`). `A4·RQ-3`, `A11·r1` e `A11·r2` verdes no F1: são regressão e camada existente; o vermelho delas vem das mutações abaixo.
+- Verde no head da F2: `sessao-restrita` 4/4; `provisoria-db` 15/15; `portao-db` 3/3; `reset-db` 10/11 (só `A8/A8b`, que é da F3). Subconjunto `tests/auth-*`, `tests/o6r0*`, `tests/users-acesso-seg-*` e `tests/mobile-backend-contracts` (`--test-concurrency=4`) → `# tests 699 · pass 698 · fail 1 · cancelled 0 · skipped 0`; o único vermelho é o `A8/A8b` (F3).
+- **Mutações literais** (uma por vez; aplicada e revertida por edição inversa, com o sha1 do arquivo conferido igual ao de antes):
+  - A3-D: `local-auth-login.service.ts`, resultado de `authenticateLocalCredential`, `mustChangePassword: false` → `not ok 3 - A3-D`;
+  - A3-C: idem no resultado de `verifyAnonymousCandidate` → `not ok 4 - A3-B/A3-C`;
+  - A3-B: `anonymous-login.service.ts`, `mustChangePassword: false` no lugar de `winner.result.mustChangePassword` → `not ok 4 - A3-B/A3-C`;
+  - A3-T: apagada a linha `mustChangePassword` de `anonymous-login.service.ts` → `tsc` vermelho: `anonymous-login.service.ts(248,5): error TS2322 … is not assignable to type 'AnonymousLoginOutcome'`;
+  - A3-U: `access-token-scope.ts`, `!== false` → `=== true` → `not ok 4 - A3-U`;
+  - A4: refresh com `false` no lugar da marca → `not ok 5 - A4`;
+  - A4 (RQ-3): `linhas.length === 0 ? undefined : linhas.some(...)` → `not ok 7 - A4·RQ-3`;
+  - A5: adaptador Prisma com `mustChangePassword: false` fixo → `not ok 6 - A5`;
+  - A5 (RQ-3): a mesma forma do RQ-3 na leitura do destino → `not ok 8 - A5·RQ-3`;
+  - A6/A7 sob a mutação de A1 (condição da recusa no portão → `false`) → `not ok 2 - A6`, `not ok 3 - A7`;
+  - A6/A7 sob a mutação de A3 (login com `mustChangePassword: false`) → `not ok 2 - A6`, `not ok 3 - A7`;
+  - A11·r1: recusa da troca pela marca no banco (`prisma-core-saas.service.ts`, `if (marks.some(...))` → `if (false)`) → `not ok 9 - A11·r1`;
+  - A11·r2: recusa da religação pela marca do ator (`identity-link.service.ts`, passo 3b → `if (false)`) → `not ok 10 - A11·r2`.
+- `npm run check` → exit 0.

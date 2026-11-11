@@ -253,6 +253,7 @@ export class AnonymousLoginService {
         user: winner.result.user,
         tenant: winner.result.tenant,
         roles: winner.result.roles,
+        mustChangePassword: winner.result.mustChangePassword,
       },
     });
   }

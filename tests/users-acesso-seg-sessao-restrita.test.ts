@@ -122,6 +122,23 @@ test("A10 — POST /auth/password aceita a sessão password_change", async () =>
   }
 });
 
+test("A3-U — resolveAccessTokenScope falha fechado: só `false` estrito dá sessão inteira", async () => {
+  const { resolveAccessTokenScope } = await import("../src/modules/auth/services/access-token-scope.js");
+  const roles = ["tenant_admin", "operator"];
+
+  for (const lost of [undefined, null, "false", 0, true] as const) {
+    const scope = resolveAccessTokenScope(lost as never, roles);
+    assert.equal(scope.scope, "password_change", `valor perdido ${String(lost)} restringe`);
+    assert.deepEqual([...scope.roles], [], `valor perdido ${String(lost)} esvazia os papéis`);
+    assert.equal(scope.restricted, true);
+  }
+
+  const full = resolveAccessTokenScope(false, roles);
+  assert.equal("scope" in full && full.scope !== undefined, false, "false estrito não põe scope");
+  assert.deepEqual([...full.roles], roles);
+  assert.equal(full.restricted, false);
+});
+
 async function getBaseUrl(server: Server): Promise<string> {
   if (!server.listening) {
     await new Promise<void>((resolve) => server.once("listening", resolve));

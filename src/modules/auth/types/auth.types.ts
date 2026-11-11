@@ -83,6 +83,7 @@ export type LocalAuthLoginResult =
       readonly user: LocalAuthLoginUser;
       readonly tenant: LocalAuthLoginTenant;
       readonly roles: readonly LocalAuthLoginRole[];
+      readonly mustChangePassword: boolean;
     }
   | {
       readonly ok: false;

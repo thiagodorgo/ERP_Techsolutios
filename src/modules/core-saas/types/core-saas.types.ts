@@ -84,6 +84,10 @@ export type ListTenantOptions = {
 export type TenantMembership = {
   readonly tenant: Tenant;
   readonly user: User;
+  // B-USERS-ACESSO-SEG (P-SESSAO-RESTRITA) — a marca `must_change_password` do PAR, preenchida só por
+  // `findMembershipForIdentity` (a troca de organização, que assina token). A listagem não a lê.
+  // Ausente conta como restrita no assinador (falha fechada).
+  readonly mustChangePassword?: boolean;
 };
 
 // B-O6R-01 — candidato INTERNO do login sem organização: só o par (tenant, usuário). A lista

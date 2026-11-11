@@ -289,6 +289,94 @@ if (!connectionString) {
     assert.deepEqual(payload.roles, []);
   });
 
+  test("A4·RQ-3 — refresh de par SEM linha de credencial emite token inteiro (falta de linha não é valor perdido)", async () => {
+    const h = await harness();
+    const email = `p2-a4n-${Date.now()}@example.com`;
+    const org = await newOrg(h, "a4n", email, "SenhaSemLinhaA4!");
+    const initial = await sessionOf(h, org.tenantId, email, org.password);
+
+    const removed = await h.admin.localAuthCredential.deleteMany({
+      where: { tenant_id: org.tenantId, user_id: org.userId },
+    });
+    assert.equal(removed.count, 1, "a fixture apaga a linha da credencial do par");
+
+    const response = await requestJson(h.baseUrl, "/api/v1/auth/refresh", {
+      method: "POST",
+      body: { refreshToken: initial.refresh_token },
+    });
+    assert.equal(response.status, 200);
+    const payload = decodeJwt(String(response.body.data?.access_token));
+    assert.equal("scope" in payload, false, "par sem credencial: token inteiro");
+    assert.ok(Array.isArray(payload.roles) && payload.roles.length > 0, "par sem credencial: papéis cheios");
+  });
+
+  test("A5·RQ-3 — troca para organização cujo par NÃO tem linha de credencial emite token inteiro", async () => {
+    const h = await harness();
+    const { email, home, other } = await linkedPair(h, "a5n");
+    const fullAtHome = await sessionOf(h, home.tenantId, email, home.password);
+    const removed = await h.admin.localAuthCredential.deleteMany({
+      where: { tenant_id: other.tenantId, user_id: other.userId },
+    });
+    assert.equal(removed.count, 1, "a fixture apaga a linha da credencial do par de destino");
+    // Papel de catálogo no destino, para "papéis cheios" ser observável no token (a chave da fixture não é de catálogo).
+    await h.admin.role.update({ where: { id: other.roleId }, data: { key: "operator" } });
+
+    const response = await requestJson(h.baseUrl, "/api/v1/auth/active-tenant", {
+      method: "POST",
+      headers: bearer(fullAtHome.access_token),
+      body: { tenantId: other.tenantId },
+    });
+    assert.equal(response.status, 200);
+    const payload = decodeJwt(String(response.body.data?.access_token));
+    assert.equal("scope" in payload, false, "destino sem credencial: token inteiro");
+    assert.ok(Array.isArray(payload.roles) && payload.roles.length > 0, "destino sem credencial: papéis cheios");
+    assert.equal(response.body.data?.must_change_password, false);
+  });
+
+  // A11 — as camadas antigas (no banco) continuam provadas para o token INTEIRO emitido antes da marca (o
+  // "token anterior", residual da D-USERS-2): assinado direto, sem `scope`, com a marca ligada no par.
+  async function fullTokenOf(org: { tenantId: string; userId: string; email: string }, roles: string[] = ["tenant_admin"]) {
+    const { signAccessToken } = await import("../src/modules/auth/index.js");
+    return signAccessToken({ user_id: org.userId, tenant_id: org.tenantId, email: org.email, roles });
+  }
+
+  test("A11·r1 — token INTEIRO anterior + marca ligada: a troca de organização é recusada pela camada do banco", async () => {
+    const h = await harness();
+    const { home, other } = await linkedPair(h, "a11r1");
+
+    await setMustChange(h, home.tenantId, home.userId, true);
+
+    const token = await fullTokenOf(home);
+    assert.equal("scope" in decodeJwt(token), false, "o token é inteiro: o portão não o barra");
+    const refused = await requestJson(h.baseUrl, "/api/v1/auth/active-tenant", {
+      method: "POST",
+      headers: bearer(token),
+      body: { tenantId: other.tenantId },
+    });
+
+    assert.equal(refused.status, 403);
+    assert.equal(refused.body.error?.reason, "password_change_required");
+    assert.equal(JSON.stringify(refused.body).includes(other.tenantId), false);
+  });
+
+  test("A11·r2 — token INTEIRO anterior + marca ligada no ATOR: a religação é recusada pela camada do banco", async () => {
+    const h = await harness();
+    const email = `p2-a11r2-${Date.now()}@example.com`;
+    const home = await newOrg(h, "a11r2-a", email, "SenhaCasaA11!1");
+    const other = await newOrg(h, "a11r2-b", email, "SenhaOutraA11!1");
+
+    await setMustChange(h, home.tenantId, home.userId, true);
+
+    const relink = await requestJson(h.baseUrl, "/api/v1/auth/identity-links", {
+      method: "POST",
+      headers: bearer(await fullTokenOf(home)),
+      body: { tenantId: other.tenantId, email, password: other.password },
+    });
+
+    assert.equal(relink.status, 403);
+    assert.equal(relink.body.error?.reason, "password_change_required");
+  });
+
   test("P2·r1 — com a marca ligada, a troca de organização ativa é recusada (403 password_change_required)", async () => {
     const h = await harness();
     const { email, home, other } = await linkedPair(h, "r1");
