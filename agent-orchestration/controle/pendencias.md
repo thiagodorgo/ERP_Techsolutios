@@ -436,6 +436,7 @@
 - **severidade medida (inventário SAN3, 2026-09-11):** MÉDIA — fatia C1: o papel finance não consegue criar orçamento pela UI (sem `service_catalog:read`/`customers:read`, o select de serviço fica vazio) e o select de OS recebe as OS fabricadas de `P-008`, contra `RBAC_MATRIX.md:115`.
 - **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** P2 — o Financeiro monta orçamento: o `B-SAN3-04a` concede ao `finance` `customers:read` e `service_catalog:read` (mais o `work_orders:read` da P1) e atualiza a `RBAC_MATRIX.md` no mesmo bloco (Clientes l.38 e Serviços l.41: `finance` de `none` para `read`); o teste do `B-SAN3-04a` prova as três leituras com as permissões do banco, e o do `B-SAN3-08` cria orçamento como o Financeiro (plano SAN3 v5, §4.1 item 41; condição de entrada CE-5, §5.6). O "Decidir: conceder ... ou aceitar a degradação" desta entrada fica respondido: conceder.
 - **dono:** `B-SAN3-08` (plano SAN3, §4.1 item 41 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **encerramento do item 41 (B-SAN3-08, 2026-11-11):** a parte do item 41 desta entrada (o Financeiro cria orçamento com as permissões do banco) fecha no merge do PR do `B-SAN3-08` (ramo `feat/web-orcamento-aprovar-destino`); a linha de status passa a FECHADA no registro pós-merge, com o merge. Teste de encerramento: `tests/san3-08-financeiro-cria-orcamento-db.test.ts`, passos (i) a (v), verdes nos dois braços (base provisionada e só migrada), com `finance-A` criando e `finance-B` aprovando. **Leitura do dev, declarada (§A6):** o primeiro item desta entrada (o aditivo `quotes[]` no detalhe da OS, diferido para Ω3-e) não é do `B-SAN3-08`; o orquestrador decide se ele vira entrada própria antes de a linha de status fechar.
 
 ## P-Ω3b (Ω3-b Despacho endurecido + Comentário/Timeline da OS) — validador-mestre
 - **P-034 (MÉDIA — granularidade RBAC, não isolamento):** o feed `recentEvents` do dashboard
@@ -781,6 +782,7 @@
 - **agendamento:** DIFERIDO-LEVE (triagem SAN2-1, 2026-08-29)
   <sub>balde C — **adiada por triagem automática; NÃO verificada item a item** (etiqueta corrigida em 2026-08-29 pelo resgate da opção C: a frase anterior afirmava ausência de consequência que ninguém conferiu — achado A-C3 da junta, 4 materiais em 11 amostradas; a leitura real é a P-SAN2-LEITURA-DAS-79). **Continua ABERTA** — diferir é agendamento, não fechamento. Lista nominal e vetável no `pendencias-indice.md`.</sub>
 - **dono:** `B-SAN3-08` (plano SAN3, §4.1 item 40 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **encerramento (B-SAN3-08, 2026-11-11):** fecha no merge do PR do `B-SAN3-08` (ramo `feat/web-orcamento-aprovar-destino`); a linha de status passa a FECHADA no registro pós-merge, com o merge. O conserto: as duas telas abrem o diálogo único `ServiceQuoteApproveDialog`, que pergunta origem, destino (endereço ou latitude e longitude) e o modo de acionamento opcional, e a web manda o corpo em camelCase, que o servidor lê. Testes de encerramento: `tests/san3-08-aprovar-orcamento-destino.test.ts` ([P1], [P1-b], [P1-pino]); `frontend/tests/service-quotes.smoke.test.tsx` ([G-APPROVE], [P2], [R-A4], [R-A5], [P3], [R-A2], [R-A9], [acabamento]); `frontend/tests/work-order-quote-tab.test.tsx` ([R-A5], [R-A9], [§7]); e o passo (iv) de `tests/san3-08-financeiro-cria-orcamento-db.test.ts` (a OS nasce com o destino, por HTTP real).
 
 ## P-Ω3F5-DOC-TYPE - Categoria de documento no upload manual de anexo (Ω3F-5, 2026-07-15)
 - descricao: o back de anexos (Ω3-d) deriva nome=fileName e tipo=mimeType; NÃO tem campo de categoria
@@ -13204,7 +13206,45 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** plano do conserto do #527, Emenda 3, RQ-4 (de R2-04). A web nova trata a resposta do login sem `must_change_password` como restrita (falha fechada, RQ-1): subir a web antes do backend trataria todo login como restrito. O app novo trata o campo ausente como inteiro (RQ-2(b)), então para ele a ordem é recomendação. Residual declarado: app antigo com backend novo — quem estiver com a senha provisória entra, o app ignora o campo, e o portão devolve `403 password_change_required` em tudo; troca pela web até atualizar o app.
 - **teste de encerramento:** o deploy feito na ordem, registrado com as horas de cada parte.
 
-## P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — a OS em dobro ou órfã por falha no meio da aprovação do orçamento — FECHADA pelo B-O6R-09 (fatia 6), no merge
+## P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE (2026-11-11) — o approve do orçamento só lê camelCase — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o plano v1 do `B-SAN3-08`, §8) · **escopo:** anterior ao bloco; `src/modules/service-quotes/service-quote.service.ts:281-296` · **dono:** a fila pós-gate (dono proposto pelo plano) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** o approve lê só `body.serviceAddress`, `body.destinationAddress` etc., enquanto o resto do backend aceita as duas grafias (ex.: `customer_id ?? customerId`, `work-order.service.ts:521-524`); só `activation_mode` aceita as duas (`:269`). A web mandava snake_case e o reboque nunca virava OS; o `B-SAN3-08` consertou do lado da web (`buildServiceQuoteApproveBody`), sem mexer no servidor.
+- **critério de encerramento:** o approve aceita as duas grafias, ou responde 400 para chave desconhecida, com teste de backend que manda o corpo snake_case e tem vermelho-controle no head-base.
+
+## P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA (2026-11-11) — aprovar um orçamento de dentro de uma OS cria outra OS — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (produto; o plano v1 do `B-SAN3-08`, §8) · **escopo:** anterior ao bloco; `service-quote.service.ts:278-301` não usa `quote.workOrderId` · **dono:** decidido pelo dono em `D-PORTAO-7-RECOMENDACOES-1011` (10/11 23:19 SP): o vínculo à OS-mãe vira esta pendência; o bloco que o implementar é a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** o approve sempre cria uma OS nova; o vínculo mãe → nova fica só no orçamento (`workOrderId` + `createdWorkOrderId`; sonda H do parecer `crit-08-cl`). O `B-SAN3-08` só avisa no diálogo: "Será criada uma nova ordem de serviço.".
+- **critério de encerramento:** o dono decide como a OS nova se liga à OS-mãe (ou se a aprovação dentro da OS deve atualizar a própria OS), e o comportamento decidido tem teste de backend e de tela.
+
+## P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN (2026-11-11) — falha ao ler o tipo do serviço desliga a regra de destino — MÉDIA (hipótese não executada)
+
+- **status:** ABERTA · **gravidade:** MÉDIA (o plano v1 do `B-SAN3-08`, §8; **hipótese não executada**) · **escopo:** anterior ao bloco; `resolveServiceCatalogTypeInfo` em `src/modules/work-orders/work-order.service.ts:2138-2149` · **dono:** um bloco de backend com revisão reforçada (dono proposto pelo plano) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato (leitura de código):** o resolvedor devolve `null` em qualquer erro, e com `null` a regra "reboque exige destino" (`:810`) não se aplica; uma falha transitória de leitura do catálogo deixaria nascer reboque sem destino.
+- **critério de encerramento:** teste de backend com falha injetada na leitura do catálogo mostra o comportamento; se a hipótese se confirmar, a falha de leitura passa a recusar (fail-closed) ou a repetir, com vermelho-controle.
+
+## P-SAN3-08-ORCAMENTO-SEM-ALCADA (2026-11-11) — aprovar orçamento não confere alçada nem separa criador de aprovador — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (emenda 1 do `B-SAN3-08`, §5; achado A1 do parecer `crit-08-cl`) · **escopo:** anterior ao bloco; `ServiceQuoteService.approve` (`service-quote.service.ts:225-323`) e a rota (`service-quote.routes.ts:73-75`), nascidos no Ω3F-4b (`D-Ω3F-4B`) · **dono:** o bloco que introduzir alçada por valor, o mesmo dono natural da `P-O6R-B07-APPROVAL-BY-POLICY`, com junta completa (permissão e dinheiro, §C7.10(1)) · **PR-alvo:** o PR desse bloco · **bloqueia:** não o item 40 nem o 41.
+- **fato:** o servidor não confere alçada por valor nem exige que quem aprova seja diferente de quem criou; sonda I do parecer `crit-08-cl`: o mesmo `operator` cria um orçamento manual de 9.999.999,99 e o aprova até virar OS.
+- **conflito entre arquivos-base (§A2), decidido pelo dono:** `RBAC_MATRIX.md:117` dá `service_quotes:approve` ao `operator`; `APPROVAL_LIMITS.md:45-48` diz que ele só pede aprovação; `APPROVAL_LIMITS.md:11` exige segregação e `:78`, escalar acima do limite financeiro. Decisão do dono `D-PORTAO-3-RECOMENDACOES-1111` Q2 (c), 11/11 01:50 SP: o operador aprova orçamento só até um limite por organização quando a alçada existir; até lá vale a `RBAC_MATRIX.md`, e ele aprova (registro em `decisoes.md`, `D-SAN3-08-PORTAO-Q1-Q2`).
+- **critério de encerramento:** (a) o conflito decidido e registrado (feito pela Q2 (c)); (b) o approve confere um limite por papel ou por organização, ancorado no `frozen_total`, e acima dele recusa ou deixa pendente de quem tem alçada; (c) a segregação entre criador e aprovador aplicada ou dispensada por decisão registrada; (d) teste de backend com vermelho-controle no head-base que reproduz a sonda I e passa a recusar.
+
+## P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — falha no meio da aprovação gera OS em dobro ou órfã — MÉDIA (entra no portão, item 7)
+
+- **status:** ABERTA · **gravidade:** MÉDIA, com proposta de subir um nível se a OS derivada puder ser faturada (emenda 1 do `B-SAN3-08`, §5; achado A3 do parecer `crit-08-cl`) · **escopo:** anterior ao bloco; a compensação de `service-quote.service.ts:302-311` e o `WorkOrderService.create`, que grava a OS e o evento em chamadas separadas · **dono:** `B-O6R-09` (item 7 do portão), por decisão do dono `D-PORTAO-3-RECOMENDACOES-1111` Q1 (c), 11/11 01:50 SP: entra no portão, fundida ao `B-O6R-09` · **PR-alvo:** o PR do `B-O6R-09` · **bloqueia:** o item 7 do portão (pela fusão), não o `B-SAN3-08`.
+- **fato (sondas E e F do parecer `crit-08-cl`, em memória):** (E) o evento falha depois de a OS ser gravada → o orçamento volta a `draft` com a OS já existente, e a nova tentativa cria a 2ª OS (`os_total = 2`); (F) falha a gravação do `createdWorkOrderId` → OS órfã e orçamento em `approved` sem OS, e a nova tentativa volta `409 quote_not_approvable`. Mesma classe do `Ω6R-ARQ-004`. O diálogo do `B-SAN3-08` diz isso honestamente no desfecho 5xx ("confira na lista de ordens de serviço se a OS foi criada").
+- **correção do plano v1 do `B-SAN3-08`:** o §5 ("perda de dado sem volta: não") e o rollback do §8 ("não gera dado órfão") valem para a recusa por validação, não para a falha no meio.
+- **critério de encerramento:** criar a OS, gravar o evento e gravar o `createdWorkOrderId` é atômico, ou idempotente pelo orçamento; testes com falha injetada em cada passo, em memória e em Prisma, com no máximo 1 OS por orçamento e nunca `approved` sem OS; vermelho-controle no head-base que reproduz (E) e (F).
+
+## P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA (2026-11-11) — o `platform_admin` cria e aprova orçamento pelo catálogo integral — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (emenda 1 do `B-SAN3-08`, §5; achado A10 do parecer `crit-08-cl`) · **escopo:** anterior ao bloco; a montagem dos papéis em `src/modules/core-saas/permissions/catalog.ts:428-430` · **dono:** a fila pós-gate, com revisão reforçada · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** o `platform_admin` recebe `service_quotes:create` e `:approve` pelo catálogo integral; a matriz (`RBAC_MATRIX.md:117`) não o inclui, e `RBAC_MATRIX.md:62` diz que ele não é o aprovador padrão dos fluxos da organização.
+- **critério de encerramento:** catálogo e matriz reconciliados para o `platform_admin` em `service_quotes:*`, com teste de guarda matriz × catálogo.
+
+### Fechamento de `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` pelo B-O6R-09 (fatia 6), no merge (o ID já existe acima, registrado pelo #533 — união do merge, sem duplicar o ID)
 
 - **status:** FECHADA no merge do PR do `B-O6R-09` (fundida ao item 7 pelo dono, `D-PORTAO-3-RECOMENDACOES-1111` Q1 (c)) · **escopo:** `src/modules/service-quotes/**` (aprovação) e a divisão do `create` em `src/modules/work-orders/work-order.service.ts`.
 - **o que fecha:** a reserva do orçamento, a OS (com as vistorias e o evento `work_order_created`) e o vínculo `created_work_order_id` passam a ser UMA transação (`RlsPrismaServiceQuoteRepository.approveWithWorkOrder`); na memória, o mesmo contrato (registro em voo, espera do perdedor, desfazer síncrono). A repetição continua 409 `quote_already_approved`, agora com `details.workOrderId` (`D-B-O6R-09-REPLAY-ORCAMENTO-409`).
@@ -13237,7 +13277,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-B-O6R-09-STATUS-APROVA-SEM-OS (2026-11-11) — o orçamento pela rota de status — BAIXA (anterior ao bloco), 2 itens
 
 - **status:** ABERTA · **escopo:** `PATCH /service-quotes/:id/status` · **dono:** a continuação do `B-SAN3-08` · **bloqueia:** não.
-- **itens:** (i) a rota leva `draft→approved` sem OS, e a aprovação recusa esse orçamento; (ii) o `update` grava sem CAS do status lido (`where` só por organização e id): correndo junto de uma aprovação, ele espera o lock e sobrescreve, e o orçamento fica `rejected` com OS criada. A emenda 1.1 também registra aqui a observação de que a web manda origem e destino em snake_case e a aprovação lê em camelCase (HIPÓTESE da emenda: o ramo do B-SAN3-08 corrige).
+- **itens:** (i) a rota leva `draft→approved` sem OS, e a aprovação recusa esse orçamento; (ii) o `update` grava sem CAS do status lido (`where` só por organização e id): correndo junto de uma aprovação, ele espera o lock e sobrescreve, e o orçamento fica `rejected` com OS criada. A observação da emenda 1.1 sobre origem e destino em snake_case ficou com a `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE`, que o #533 registrou (a paridade do corpo mora na web, `D-SAN3-08-P1-CORPO-CAMELCASE`).
 - **critério de encerramento:** a rota de status não leva a `approved` sem OS e grava com CAS do status lido, com teste de corrida.
 
 ## P-B-O6R-09-PAINEL-STATUS-SEM-ERRO (2026-11-11) — o painel "Alterar status" não mostra erro — BAIXA (anterior ao bloco)
