@@ -711,4 +711,47 @@ if (!connectionString) {
       assert.equal(auditText.includes(value), false, "a auditoria do reset não carrega id/nome de organização nem de vínculo");
     }
   });
+
+  test("A8/A8b — administrador da organização não redefine alvo com papel de plataforma", async () => {
+    const h = await harness();
+    const { PLATFORM_ROLES } = await import("../src/modules/core-saas/permissions/catalog.js");
+
+    for (const platformRole of PLATFORM_ROLES) {
+      const email = `a8-${platformRole}-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+      const org = await newOrg(h, `a8-${platformRole}`, email, "SenhaAntigaA8!");
+      const admin = await adminOf(h, org);
+      const platform =
+        (await h.admin.role.findFirst({ where: { tenant_id: null, key: platformRole } })) ??
+        (await h.admin.role.create({
+          data: { tenant_id: null, key: platformRole, name: `Papel ${platformRole}`, scope: "platform" },
+        }));
+
+      await h.admin.userRoleAssignment.create({
+        data: { tenant_id: org.tenantId, user_id: org.userId, role_id: platform.id },
+      });
+      assert.equal((await login(h, org.tenantId, email, org.password)).status, 200);
+      const before = await credentialOf(h, org);
+      const sessionsBefore = await h.admin.authSession.count({
+        where: { tenant_id: org.tenantId, user_id: org.userId, revoked_at: null },
+      });
+      const auditsBefore = await resetAudits(h, org.tenantId);
+
+      const response = await call(h, `/api/v1/auth/users/${org.userId}/reset-password`, {
+        method: "POST",
+        headers: admin.headers,
+        body: {},
+      });
+
+      assert.equal(response.status, 403, platformRole);
+      assert.equal(response.body.error?.reason, "target_not_manageable", platformRole);
+      assert.equal(response.body.error?.message, "This account cannot be managed by an organization administrator.");
+      assert.deepEqual(await credentialOf(h, org), before, "hash e marca não mudam");
+      assert.equal(
+        await h.admin.authSession.count({ where: { tenant_id: org.tenantId, user_id: org.userId, revoked_at: null } }),
+        sessionsBefore,
+        "sessões seguem vivas",
+      );
+      assert.equal(await resetAudits(h, org.tenantId), auditsBefore, "sem auditoria de sucesso");
+    }
+  });
 }

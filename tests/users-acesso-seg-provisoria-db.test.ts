@@ -3,6 +3,7 @@ import type { Server } from "node:http";
 import test, { after } from "node:test";
 
 import type { PrismaClient } from "@prisma/client";
+import { decodeJwt } from "jose";
 
 import {
   cleanupIdentityFixture,
@@ -203,6 +204,89 @@ if (!connectionString) {
     const response = await login(h, org.tenantId, email, org.password);
 
     assert.equal(response.status, 200, "a provisória dá sessão (só para trocar a senha)");
+  });
+
+  test("A3-D — login dirigido emite sessão restrita e explicita a marca", async () => {
+    const h = await harness();
+    const email = `p2-a3d-${Date.now()}@example.com`;
+    const org = await newOrg(h, "a3d", email, "SenhaProvisoriaA3D!");
+
+    await setMustChange(h, org.tenantId, org.userId, true);
+
+    const restricted = await login(h, org.tenantId, email, org.password);
+    assert.equal(restricted.status, 200);
+    const restrictedData = restricted.body.data as Record<string, unknown>;
+    const restrictedJwt = decodeJwt(String(restrictedData.access_token));
+    assert.equal(restrictedJwt.scope, "password_change");
+    assert.deepEqual(restrictedJwt.roles, []);
+    assert.equal(restrictedData.must_change_password, true);
+    assert.deepEqual(restrictedData.roles, []);
+    assert.deepEqual(restrictedData.permissions, []);
+
+    await setMustChange(h, org.tenantId, org.userId, false);
+    const full = await login(h, org.tenantId, email, org.password);
+    assert.equal(full.status, 200);
+    const fullData = full.body.data as Record<string, unknown>;
+    const fullJwt = decodeJwt(String(fullData.access_token));
+    assert.equal("scope" in fullJwt, false);
+    assert.equal(fullData.must_change_password, false);
+    assert.ok(Array.isArray(fullData.roles) && fullData.roles.length > 0);
+  });
+
+  test("A3-B/A3-C — login sem tenantId preserva a marca do candidato vencedor", async () => {
+    const h = await harness();
+    const email = `p2-a3b-${Date.now()}@example.com`;
+    const org = await newOrg(h, "a3b", email, "SenhaProvisoriaA3B!");
+
+    await setMustChange(h, org.tenantId, org.userId, true);
+
+    const response = await requestJson(h.baseUrl, "/api/v1/auth/login", {
+      method: "POST",
+      body: { email, password: org.password },
+    });
+    assert.equal(response.status, 200);
+    const data = response.body.data as Record<string, unknown>;
+    const payload = decodeJwt(String(data.access_token));
+    assert.equal(payload.scope, "password_change");
+    assert.deepEqual(payload.roles, []);
+    assert.equal(data.must_change_password, true);
+    assert.deepEqual(data.roles, []);
+    assert.deepEqual(data.permissions, []);
+  });
+
+  test("A4 — refresh relê a marca do par e emite access token restrito", async () => {
+    const h = await harness();
+    const email = `p2-a4-${Date.now()}@example.com`;
+    const org = await newOrg(h, "a4", email, "SenhaProvisoriaA4!");
+    const initial = await sessionOf(h, org.tenantId, email, org.password);
+
+    await setMustChange(h, org.tenantId, org.userId, true);
+
+    const response = await requestJson(h.baseUrl, "/api/v1/auth/refresh", {
+      method: "POST",
+      body: { refreshToken: initial.refresh_token },
+    });
+    assert.equal(response.status, 200);
+    const payload = decodeJwt(String(response.body.data?.access_token));
+    assert.equal(payload.scope, "password_change");
+    assert.deepEqual(payload.roles, []);
+  });
+
+  test("A5 — active-tenant usa a marca do par de DESTINO", async () => {
+    const h = await harness();
+    const { email, home, other } = await linkedPair(h, "a5");
+    await setMustChange(h, other.tenantId, other.userId, true);
+    const fullAtHome = await sessionOf(h, home.tenantId, email, home.password);
+
+    const response = await requestJson(h.baseUrl, "/api/v1/auth/active-tenant", {
+      method: "POST",
+      headers: bearer(fullAtHome.access_token),
+      body: { tenantId: other.tenantId },
+    });
+    assert.equal(response.status, 200);
+    const payload = decodeJwt(String(response.body.data?.access_token));
+    assert.equal(payload.scope, "password_change");
+    assert.deepEqual(payload.roles, []);
   });
 
   test("P2·r1 — com a marca ligada, a troca de organização ativa é recusada (403 password_change_required)", async () => {

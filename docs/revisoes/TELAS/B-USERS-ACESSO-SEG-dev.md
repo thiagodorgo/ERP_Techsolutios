@@ -276,3 +276,13 @@ Recomendação do dev: **(a)**, com o residual como pendência (cabe na janela j
 - `node --test --test-concurrency=2 --import tsx tests/o6r07c-census-guard.test.ts` → `# tests 32 · pass 32 · fail 0 · cancelled 0 · skipped 0`; censo: base 53867 ms, grupo A 56187 ms, grupo B 54770 ms.
 - Primeira chamada do ratchet, antes de fechar o colchete entre os dois blocos unidos, ficou vermelha de sintaxe (`not ok 1`, `Expected "]" but found ")"`, linha 438). Corrigido somente com o `],` que encerra a última entrada do bloco #527; nenhuma chave ou razão mudou.
 - `node --test --test-concurrency=2 --import tsx tests/san3-05-acessos-de-plataforma-guard.test.ts` após a correção estrutural → `# tests 35 · pass 35 · fail 0 · cancelled 0 · skipped 0`.
+
+## F0 — testes primeiro e vermelho-controle (10/11 21:10 SP)
+
+- Executor: `dev-527-conserto-cdx` (Codex/Sol); head de partida: `3e3b2943bc786ece46e9e40e82fa8a6221dd8e56`. Nenhum arquivo de `src/` foi tocado nesta fatia.
+- `node --test --test-concurrency=2 --import tsx tests/users-acesso-seg-sessao-restrita.test.ts` → vermelho esperado: `# tests 2 · pass 0 · fail 2`; A1: `GET /api/v1/mobile/bootstrap` respondeu 404, não 403 `password_change_required`; A9: scope desconhecido respondeu 404, não 401 `INVALID_TOKEN`.
+- `node --test --test-concurrency=2 --import tsx tests/users-acesso-seg-portao-estatico.test.ts` → vermelho esperado: `# tests 1 · pass 0 · fail 1`; o objeto ainda não tem a exceção única `acceptPasswordChangeSession: true` nem a forma fechada final do G2.
+- PostgreSQL próprio: `users-seg-pg`, porta `127.0.0.1:5491`, `pg_isready` aceitando; as suítes criam e conferem papel efêmero `NOSUPERUSER NOBYPASSRLS`.
+- `node --test --test-concurrency=2 --import tsx tests/users-acesso-seg-provisoria-db.test.ts` → vermelho esperado: `# tests 11 · pass 7 · fail 4`; A3-D, A3-B/C, A4 e A5 deram `scope = undefined` em vez de `password_change`. P2·0 e as regressões P2·r1–r4/p1/p2 permaneceram verdes.
+- `node --test --test-concurrency=2 --import tsx tests/users-acesso-seg-reset-db.test.ts` → vermelho esperado: `# tests 11 · pass 10 · fail 1`; A8/A8b: o reset do alvo `super_admin` respondeu 200, não 403 `target_not_manageable`. Os dez testes anteriores do reset ficaram verdes.
+- Cobertura desta fatia: A1, A3-D/B/C, A4, A5, A8/A8b, A9 e G2/A12 nasceram antes do conserto; A10 e A11 seguem nas regressões P2·p2 e P2·r1–r4. A2/G1 e a prova composta A6/A7 entram na fatia F4, também antes do respectivo guard/código de teste, como reservado na seção 6 do plano.
