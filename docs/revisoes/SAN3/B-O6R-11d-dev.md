@@ -49,3 +49,16 @@
 - `dart format` → 0 mudança; `flutter analyze --no-pub` dos 2 arquivos → `No issues found!`.
 - **Flutter, os 5 arquivos do bloco** → `+17 -1`: só o **T9** vermelho (`is missing map key 'user_id'`), que é da F2. T1–T8, T11–T14, G1 verdes.
 - **Regressões:** `b109_approval_state_regression_test.dart`, `b127_timeline_remota_test.dart`, `bsan313_minhas_os_escopo_test.dart` → `+17: All tests passed!`.
+
+### Merge da main (11:20 SP)
+
+- Aviso do orquestrador às 11:17: o #536 (B-SAN3-23) entrou na `main` em `c95ad4fd`, com CAS de status no `changeStatus` e `assign`/`assignFromDispatch` revalidados (OS cancelada não ganha técnico). `git merge origin/main` limpo (`a37eb362`). O 11d não toca `work-order.service.ts` nem os repositórios: a pré-condição do lote roda ANTES do `service.assign` e só recusa; o `assign` continua com o CAS, a releitura e a revalidação do #536. Nenhuma propriedade do #536 é contrariada. A janela entre o `get` da pré-condição e o `get` do `assign` é a declarada no plano (§2.2, risco 6).
+
+### F2 — o lote manda o usuário e não desfaz troca de técnico (11:22 SP)
+
+- **App** (`sync_replay_service.dart`, só o recorte do §4.1): `import` do codec; `_assignPayload` com `userId = user_id ?? operator_id` e as linhas `if (userId != null) payload['user_id'] = userId;` e `if (userId != null) payload['expected_technician_id'] = userId;`; `_backendStatus` vira `String _backendStatus(String status) => workOrderStatusNameToApi(status);`.
+- **Backend** (`mobile-work-order-sync.ts`, só o ramo `work_order.assign` e a função nova): `assignId`, a linha `await assertExpectedTechnician(service, actor, assignId, action.payload.expected_technician_id);` e `assertExpectedTechnician` com as linhas-âncora `if (expected === undefined) return;` e `const technician = current.assignedUserId ?? current.assignedOperatorId ?? null;`. O `throw` foi quebrado em linhas (forma, não âncora).
+- **Trava de arquivo (§4.1):** antes da F2, `git branch -r` só mostra `origin/fix/checkin-confere-placa` (#534) entre os vizinhos; ele mexe no `mobile-work-order-sync.ts` no ramo de status e no `actionErrorResult`, não no ramo de assign. Não há ramo do `B-O6R-07c-b2` nem do `B-SAN3-16`.
+- `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-work-order-contract.test.ts tests/b-o6r-11d-lote-tecnico-esperado.test.ts tests/o6r07c-b-scope.test.ts tests/mobile-work-order-assign-registry.test.ts` → `# tests 202 # pass 202 # fail 0 # skipped 0` (N5 e N9 verdes; o controle positivo do 07c, lote SEM a chave, continua aceito).
+- **Flutter, os 5 arquivos do bloco** → `+18: All tests passed!` (T9 verde).
+- **Regressões do plano** (`b109`, `b126`, `b127`, `b103`, `b099`, `bsan313_minhas_os_escopo`, `bsan313_os_purga_reconcilia`, `bsan313_retencao_ciclo2`, `test/core/sync/`) → `+236: All tests passed!`.
