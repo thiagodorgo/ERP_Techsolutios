@@ -30,6 +30,7 @@ import {
   resetWorkOrderRuntimeForTests,
   WorkOrderService,
 } from "../src/modules/work-orders/work-order.service.js";
+import { verifyCheckin } from "../src/modules/work-orders/work-order.checkin.js";
 import type { WorkOrderRepository } from "../src/modules/work-orders/work-order.repository.js";
 import type { WorkOrderActorContext, WorkOrderStatus } from "../src/modules/work-orders/work-order.types.js";
 
@@ -140,7 +141,10 @@ async function setStatus(ctx: Ctx, workOrderId: string, status: WorkOrderStatus)
     expectedStatus: current.status,
     message: "Situação do arnês.",
     actorUserId: ctx.boss.userId,
-  });
+    // Junção com o B-SAN3-26 (Emenda 3): o repositório só grava `on_site` com um veredito emitido por `verifyCheckin`.
+    // O arnês leva a OS pela porta da base (veredito `office`); nenhuma asserção muda.
+    ...(status === "on_site" ? { checkin: verifyCheckin(ctx.boss, current, null, {}, "http_status_route") } : {}),
+  } as never);
   assert.ok(done, `o arnês levou a OS a ${status}`);
 }
 

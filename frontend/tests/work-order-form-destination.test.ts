@@ -68,3 +68,34 @@ test("buildServiceDetails: só valores preenchidos entram; tudo vazio → undefi
   assert.equal(buildServiceDetails({ plate: "", vehicle: " " }), undefined);
   assert.equal(buildServiceDetails({}), undefined);
 });
+
+// B-SAN3-26 (item 53; decisão B do dono e emenda E-04) — a placa do veículo atendido na criação, para todo tipo que
+// atende veículo (o guincheiro confirma os 2 últimos dígitos no "No local"); só o residencial não tem o campo.
+test("B-SAN3-26: o campo de placa aparece para reboque, outro, sem tipo e sem serviço; o residencial não tem", async () => {
+  const { showsVehiclePlateField } = await import("../src/modules/work-orders/components/WorkOrderForm");
+  for (const tipo of ["reboque", "outro", "socorro", "", null]) {
+    assert.equal(showsVehiclePlateField(tipo), true, JSON.stringify(tipo));
+  }
+  assert.equal(showsVehiclePlateField("residencial"), false);
+});
+
+test("B-SAN3-26: a placa vai em service_details.plate no POST de reboque, outro, sem tipo e sem serviço", async () => {
+  const { serviceDetailsInputFor } = await import("../src/modules/work-orders/components/WorkOrderForm");
+  const { buildServiceDetails } = await import("../src/modules/work-orders/work-orders.adapter");
+  const campos = {
+    detailPlate: "ABC1D23",
+    detailVehicle: "Gol",
+    detailColor: "Prata",
+    detailAccessCode: "1234",
+    detailObject: "Porta",
+    detailDescription: "Trancada",
+  };
+  for (const tipo of ["reboque", "outro", "", null]) {
+    assert.deepEqual(buildServiceDetails(serviceDetailsInputFor(tipo, campos)), { plate: "ABC1D23" }, JSON.stringify(tipo));
+  }
+  assert.deepEqual(buildServiceDetails(serviceDetailsInputFor("socorro", campos)), { plate: "ABC1D23", vehicle: "Gol", color: "Prata" });
+  // O residencial segue com os campos dele, sem placa.
+  assert.deepEqual(buildServiceDetails(serviceDetailsInputFor("residencial", campos)), { access_code: "1234", object: "Porta", description: "Trancada" });
+  // Sem placa digitada, nada vai (o servidor trata a OS como sem placa: a base registra a chegada).
+  assert.equal(buildServiceDetails(serviceDetailsInputFor("reboque", { ...campos, detailPlate: "" })), undefined);
+});

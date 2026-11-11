@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -219,6 +219,34 @@ class AppDatabase extends GeneratedDatabase {
           }
         }
       }
+      if (from >= 2 && from < 16) {
+        // B-SAN3-26 (item 53): o modo do check-in e os 2 caracteres finais da placa, que o servidor manda na lista.
+        // Migração ADITIVA: as linhas antigas ficam com as duas colunas NULL (modo `unknown`, que pede os dígitos sem
+        // comparar). Guarda `from >= 2`: abaixo disso a tabela nasce já com as colunas via `_kWorkOrders`. GUARDA da
+        // coluna por `PRAGMA table_info`, no padrão da v15: o app antigo que abre um banco 16 o devolve à versão 15
+        // COM as colunas, e o ALTER duplicaria ("duplicate column").
+        final tables = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='work_orders'",
+            )
+            .get();
+        if (tables.isNotEmpty) {
+          final columns = await m.database
+              .customSelect("PRAGMA table_info('work_orders')")
+              .get();
+          final hasCheckinMode = columns.any(
+            (column) => column.read<String>('name') == 'checkin_mode',
+          );
+          if (!hasCheckinMode) {
+            await m.database.customStatement(
+              'ALTER TABLE work_orders ADD COLUMN checkin_mode TEXT',
+            );
+            await m.database.customStatement(
+              'ALTER TABLE work_orders ADD COLUMN checkin_plate_tail TEXT',
+            );
+          }
+        }
+      }
     },
   );
 
@@ -324,7 +352,9 @@ CREATE TABLE IF NOT EXISTS work_orders (
   vehicle_id TEXT,
   vehicle_plate TEXT,
   team_id TEXT,
-  team_name TEXT
+  team_name TEXT,
+  checkin_mode TEXT,
+  checkin_plate_tail TEXT
 )''';
 
 const _kWorkOrderTimeline = '''

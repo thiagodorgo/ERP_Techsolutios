@@ -12,6 +12,8 @@ import '../../core/sync/sync_providers.dart';
 import '../../core/sync/sync_resolution_side_effects.dart';
 import '../../core/sync/sync_stalled_resolver.dart';
 import '../../core/sync/sync_user_scope.dart';
+import '../../features/work_orders/data/work_order_conflict_resolution_service.dart';
+import '../../features/work_orders/data/work_order_repository.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
 import 'mobile_kit.dart';
@@ -38,6 +40,31 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
     );
     await queue.update(resolved);
     await ref.read(syncResolutionSideEffectsProvider).apply(action, resolved);
+    if (mounted) setState(() => _reloadKey++);
+  }
+
+  /// B-SAN3-26 (C26R2-02) — a chegada recusada pela placa (e as ações de status que vieram depois dela, na mesma OS)
+  /// tem UMA saída aqui, a mesma do cartão da OS: desfazer a chegada para o guincheiro confirmar a placa de novo.
+  /// "Minha versão" reenviaria a mesma recusa; "Versão do gestor" aposentaria só uma ação, sem reverter a OS.
+  Future<void> _redoCheckin(SyncAction action, String workOrderLocalId) async {
+    final service = ref.read(workOrderConflictResolutionServiceProvider);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final repositoryAlive = ref.exists(workOrderRepositoryProvider);
+    final repository = repositoryAlive
+        ? ref.read(workOrderRepositoryProvider)
+        : null;
+    await service.undoRefusedCheckin(
+      tenantId: action.tenantId,
+      localId: workOrderLocalId,
+    );
+    await repository?.refreshLocalState();
+    messenger?.showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Chegada desfeita. Abra a OS e confirme a placa de novo.',
+        ),
+      ),
+    );
     if (mounted) setState(() => _reloadKey++);
   }
 
@@ -184,6 +211,8 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                 final conflicts = part.mine
                     .where((a) => present(a) == SyncPresentation.conflict)
                     .toList();
+                // B-SAN3-26 (C26R2-02) — as ações presas a uma chegada recusada pela placa.
+                final checkinRedoIds = checkinRedoAffectedActionIds(conflicts);
                 final stalled = part.mine
                     .where((a) => present(a) == SyncPresentation.stalled)
                     .toList();
@@ -217,23 +246,44 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                       // ── Conflitos (resolucao manual) ──────────────────────────────
                       if (conflicts.isNotEmpty) ...[
                         for (final c in conflicts)
-                          _ConflictCard(
-                            action: c,
-                            keyPrefix: 'conflict',
-                            leftKeyName: 'keep-mine',
-                            rightKeyName: 'use-server',
-                            title: 'Conflito · ${_domainLabel(c.type)}',
-                            body:
-                                '${_actionLabel(c.type)} — '
-                                '${c.lastSafeError ?? 'o gestor alterou este item. '
-                                        'Escolha qual versão deve prevalecer.'}',
-                            leftLabel: 'Minha versão',
-                            rightLabel: 'Versão do gestor',
-                            onLeft: () =>
-                                _resolveConflict(c, ConflictChoice.keepMine),
-                            onRight: () =>
-                                _resolveConflict(c, ConflictChoice.useServer),
-                          ),
+                          if (checkinRedoIds[c.clientActionId]
+                              case final String workOrderLocalId)
+                            _ConflictCard(
+                              action: c,
+                              keyPrefix: 'conflict',
+                              leftKeyName: 'none',
+                              rightKeyName: 'checkin-redo',
+                              title:
+                                  'Chegada não confirmada · ${_domainLabel(c.type)}',
+                              body: isCheckinRefusalAction(c)
+                                  ? '${checkinRefusalMessage(c.lastErrorCode)} '
+                                        'Desfaça a chegada e confirme a placa na OS.'
+                                  : 'Depende da chegada recusada desta OS. '
+                                        'Desfaça a chegada e confirme a placa na OS.',
+                              leftLabel: '',
+                              rightLabel: 'Confirmar a placa de novo',
+                              showLeft: false,
+                              onLeft: () {},
+                              onRight: () => _redoCheckin(c, workOrderLocalId),
+                            )
+                          else
+                            _ConflictCard(
+                              action: c,
+                              keyPrefix: 'conflict',
+                              leftKeyName: 'keep-mine',
+                              rightKeyName: 'use-server',
+                              title: 'Conflito · ${_domainLabel(c.type)}',
+                              body:
+                                  '${_actionLabel(c.type)} — '
+                                  '${c.lastSafeError ?? 'o gestor alterou este item. '
+                                          'Escolha qual versão deve prevalecer.'}',
+                              leftLabel: 'Minha versão',
+                              rightLabel: 'Versão do gestor',
+                              onLeft: () =>
+                                  _resolveConflict(c, ConflictChoice.keepMine),
+                              onRight: () =>
+                                  _resolveConflict(c, ConflictChoice.useServer),
+                            ),
                         const SizedBox(height: 12),
                       ],
 

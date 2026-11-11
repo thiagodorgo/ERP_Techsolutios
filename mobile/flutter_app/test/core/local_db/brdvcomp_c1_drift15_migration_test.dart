@@ -144,7 +144,8 @@ void main() {
 
       final db = AppDatabase(NativeDatabase(File(path)));
       addTearDown(db.close);
-      expect(await _userVersion(db), 15);
+      // B-SAN3-26 (só fixture): o schema atual do app é 16; a migração 14 → 15 segue a mesma.
+      expect(await _userVersion(db), 16);
       expect(
         await _columns(db, 'expense_items'),
         contains('server_id'),
@@ -217,10 +218,11 @@ void main() {
 
       final db = AppDatabase(NativeDatabase(File(path)));
       addTearDown(db.close);
+      // B-SAN3-26 (só fixture): o schema atual do app é 16.
       expect(
         await _userVersion(db),
-        15,
-        reason: 'o banco rebaixado não abriu em 15',
+        16,
+        reason: 'o banco rebaixado não abriu na versão atual (16)',
       );
       final rows = await db
           .customSelect('SELECT local_id, amount, server_id FROM expense_items')
