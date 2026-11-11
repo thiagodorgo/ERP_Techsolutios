@@ -90,8 +90,15 @@ async function montar(options: { readonly phases?: () => Promise<readonly RunPha
       answers: [],
     });
   const concluir = (workOrderId: string) => service.changeStatus(gestao as never, workOrderId, { status: "completed" });
+  // O desfecho da conclusão como texto: "completed" ou "recusada: <motivo>" — a asserção compara o desfecho, e uma
+  // recusa indevida aparece como diferença de asserção, não como exceção solta.
+  const desfecho = (workOrderId: string) =>
+    concluir(workOrderId).then(
+      (wo) => wo.status as string,
+      (error: { reason?: string }) => `recusada: ${error.reason ?? "?"}`,
+    );
 
-  return { service, checklistService, atorChecklist, gestao, sync, criarOsEmAtendimento, criarVistoria, concluir };
+  return { service, checklistService, atorChecklist, gestao, sync, criarOsEmAtendimento, criarVistoria, concluir, desfecho };
 }
 
 async function recusaDaEntrega(promise: Promise<unknown>): Promise<void> {
@@ -120,8 +127,7 @@ test("OS sem execução de entrega conclui (OS legada, Pergunta 2 = (a))", async
   const os = await c.criarOsEmAtendimento();
   await c.criarVistoria(os, "collection");
 
-  const concluida = await c.concluir(os);
-  assert.equal(concluida.status, "completed");
+  assert.equal(await c.desfecho(os), "completed");
 });
 
 test("entrega concluída: conclui", async () => {
@@ -130,7 +136,7 @@ test("entrega concluída: conclui", async () => {
   const entrega = await c.criarVistoria(os, "delivery");
   await c.checklistService.completeRun(c.atorChecklist, entrega.id, { hasDivergence: false });
 
-  assert.equal((await c.concluir(os)).status, "completed");
+  assert.equal(await c.desfecho(os), "completed");
 });
 
 test("entrega pending_acknowledgement: conclui", async () => {
@@ -143,14 +149,14 @@ test("entrega pending_acknowledgement: conclui", async () => {
   });
   assert.equal(concluida.run.status, "pending_acknowledgement", "o arnês não produziu a entrega à espera da ciência");
 
-  assert.equal((await c.concluir(os)).status, "completed");
+  assert.equal(await c.desfecho(os), "completed");
 });
 
 test("entrega cancelled: conclui", async () => {
   const c = await montar({ phases: async () => [{ role: "delivery", status: "cancelled" }] });
   const os = await c.criarOsEmAtendimento();
 
-  assert.equal((await c.concluir(os)).status, "completed");
+  assert.equal(await c.desfecho(os), "completed");
 });
 
 test("cadeia reaberta: versão concluída + versão nova in_progress: 422; concluída a nova: conclui", async () => {
@@ -164,7 +170,7 @@ test("cadeia reaberta: versão concluída + versão nova in_progress: 422; concl
   await recusaDaEntrega(c.concluir(os));
 
   await c.checklistService.completeRun(c.atorChecklist, reaberta.run.run.id, { hasDivergence: false });
-  assert.equal((await c.concluir(os)).status, "completed");
+  assert.equal(await c.desfecho(os), "completed");
 });
 
 test("falha da consulta recusa (fail-closed)", async () => {
