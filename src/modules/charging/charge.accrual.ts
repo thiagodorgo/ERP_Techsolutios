@@ -2,7 +2,7 @@ import type { DailyCap, DailyModel } from "../jurisdiction/jurisdiction.types.js
 
 // Ω5P PR-07 — MOTOR DE DIÁRIAS (I4), formalização do ESTUDO §5. Função PURA (zero I/O, testável por DI):
 //
-//   n_diárias(asOf) = min( count(model, t0, asOf) , cap(perfil, t0) )
+//   n_diárias(asOf) = min( count(model, t0, asOf) , cap(regime gravado na abertura, t0) )
 //
 // DST-SAFE SEM LIB NOVA (dependência ZERO): a aritmética de calendário usa Intl.DateTimeFormat({timeZone}) — o
 // ICU embutido no Node. Uma lib de data exigiria junta-5.
@@ -11,7 +11,7 @@ import type { DailyCap, DailyModel } from "../jurisdiction/jurisdiction.types.js
 //     nada devido em [t0, t0+24h); 1ª vence em t0+24h — D-Ω5P-CHG-06).
 //   CALENDAR (contratual): nº de DATAS-LOCAIS distintas do pátio em [t0, asOf] (entra 23:30 → 00:10 = 2 datas).
 //     DST-safe extraindo Y-M-D locais via Intl.
-// Teto (I4/RN-DIA-02) pela DATA DE ENTRADA via profile.dailyCap (regime intertemporal, ESTUDO §2.3):
+// Teto (I4/RN-DIA-02) pela DATA DE ENTRADA via process.regime.dailyCap (regime intertemporal, ESTUDO §2.3):
 //   SIX_MONTHS (CTB 271 §10 / 328 §5º): cap = count(model, t0, t0+6meses-de-calendário-no-TZ). Acumulação PARA.
 //   THIRTY_DAYS_LEGACY (Tema 124/STJ): cap = 30 (fixo).
 //   UNLIMITED (privado): sem teto.

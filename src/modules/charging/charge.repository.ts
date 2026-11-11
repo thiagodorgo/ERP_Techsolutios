@@ -120,6 +120,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
   private readonly charges: ProcessCharge[] = [];
   private readonly runs: DailyAccrualRun[] = [];
   private readonly profiles = new Map<string, StoredProfile>();
+  private readonly regimeByProcess = new Map<string, StoredProfile>();
   private readonly timezones = new Map<string, string>();
 
   constructor(private readonly impound: Pick<ImpoundRepository, "appendEvent" | "findProcessById">) {}
@@ -283,6 +284,20 @@ export class InMemoryChargeRepository implements ChargeRepository {
       model: "ROLLING_24H" as DailyModel,
       cap: "SIX_MONTHS" as DailyCap,
     };
+    const key = `${tenantId}:${processId}`;
+    const captured = this.regimeByProcess.get(key);
+    if (captured) return {
+      tenantId,
+      processId,
+      enteredAt: process.enteredAt,
+      frozenAt: process.frozenAt,
+      timezone: this.timezones.get(`${tenantId}:${processId}`) ?? "America/Sao_Paulo",
+      scope: captured.scope,
+      model: captured.model,
+      cap: captured.cap,
+      dailyServiceCatalogId: captured.dailyServiceCatalogId ?? profile.dailyServiceCatalogId,
+    };
+    this.regimeByProcess.set(key, profile);
     return {
       tenantId,
       processId,
@@ -292,6 +307,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
       scope: profile.scope,
       model: profile.model,
       cap: profile.cap,
+      // Ponteiro ausente preserva o catch-up do perfil vivo; cópia não nula vence.
       dailyServiceCatalogId: profile.dailyServiceCatalogId,
     };
   }
@@ -348,6 +364,7 @@ export class InMemoryChargeRepository implements ChargeRepository {
     this.charges.length = 0;
     this.runs.length = 0;
     this.profiles.clear();
+    this.regimeByProcess.clear();
     this.timezones.clear();
   }
 }

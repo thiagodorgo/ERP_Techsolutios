@@ -69,3 +69,18 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
 - **Executor da fatia:** `dev-o6r12-cdx`.
 - **Próximo comando:** F3 — trocar a leitura de cobrança Prisma e congelar o contexto em memória;
   executar C1–C3 e C11–C13 com mutações.
+
+## F3 — 2026-11-11T02:01:56-0300
+
+- `loadAccrualContext` lê escopo/modelo/teto de `impound_processes.regime_*`; o JOIN do perfil
+  ficou apenas para o catch-up do ponteiro nulo. Cópia não nula vence.
+- O repositório em memória guarda o primeiro regime por processo e limpa o mapa no reset; o
+  ponteiro nulo continua caindo no perfil atual.
+- Comentário do motor corrigido para nomear o regime gravado na abertura.
+- Testes: snapshot DB **3/3**, memória C11 **1/1** selecionado, `npm run check` verde.
+- Mutações isoladas e revertidas, todas com `not ok`: C1 (teto vivo), C2 (modelo vivo), C3
+  (escopo vivo), C11 (ignorar o retrato em memória), C12 (retirar catch-up) e C13 (perfil vivo
+  vencer a cópia).
+- **Executor da fatia:** `dev-o6r12-cdx`.
+- **Próximo comando:** F4 — auditoria campo a campo, leitura bloqueada do perfil e fiação do
+  controller; rodar C8/C9 e mutações.

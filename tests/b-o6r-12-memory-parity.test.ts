@@ -29,7 +29,7 @@ const impound = {
   appendEvent: async () => ({ process, event: {} }),
 };
 
-test("B-O6R-12 C11/C21: memória congela cobrança, notificação, leilão e liberação na primeira leitura", async () => {
+test("B-O6R-12 C11: memória congela cobrança na primeira leitura e preserva catch-up do ponteiro nulo", async () => {
   const charge = new InMemoryChargeRepository(impound as never);
   charge.setProfileForTests(tenantId, profileId, {
     scope: "PUBLIC_AGREEMENT",
@@ -40,13 +40,17 @@ test("B-O6R-12 C11/C21: memória congela cobrança, notificação, leilão e lib
   const chargeBefore = await charge.loadAccrualContext(tenantId, processId);
   charge.setProfileForTests(tenantId, profileId, { scope: "PRIVATE_CONTRACT", model: "CALENDAR", cap: "UNLIMITED" });
   assert.deepEqual(await charge.loadAccrualContext(tenantId, processId), chargeBefore);
+});
 
+test("B-O6R-12 C21a: memória congela notificações na primeira leitura", async () => {
   const notifications = new InMemoryNotificationRepository(impound as never);
   notifications.setProfileForTests(tenantId, profileId, { scope: "PUBLIC_AGREEMENT", ownerNotifDays: 5, noticeEdictDay: 10 });
   const notificationBefore = await notifications.loadScheduleContext(tenantId, processId);
   notifications.setProfileForTests(tenantId, profileId, { scope: "PRIVATE_CONTRACT", ownerNotifDays: 99, noticeEdictDay: 100 });
   assert.deepEqual(await notifications.loadScheduleContext(tenantId, processId), notificationBefore);
+});
 
+test("B-O6R-12 C21b: memória congela leilão na primeira leitura", async () => {
   const auction = new InMemoryAuctionRepository(impound as never, async () => false);
   auction.setAuctionProfileForTests(tenantId, profileId, {
     scope: "PUBLIC_AGREEMENT",
@@ -62,7 +66,9 @@ test("B-O6R-12 C11/C21: memória congela cobrança, notificação, leilão e lib
     auctionEligibleDay: 90,
   });
   assert.deepEqual(await auction.getAuctionProfile(tenantId, processId), auctionBefore);
+});
 
+test("B-O6R-12 C21c: memória congela liberação na primeira leitura", async () => {
   const release = new InMemoryReleaseRepository(impound as never, {} as never);
   release.setProfileRequirementsForTests(tenantId, profileId, [{ code: "a", label: "A", required: true }]);
   const releaseBefore = await release.loadReleaseRequirements(tenantId, processId);
