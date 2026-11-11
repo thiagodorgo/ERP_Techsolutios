@@ -324,3 +324,115 @@ maior que a diferença medida.
   o do `backend-postgres`, lidos pelo log do run, nunca pela cor.
 - **Lição de terreno, declarada:** editar arquivo por script Python no Windows sem `newline=""` grava CRLF (aconteceu
   em 4 arquivos de teste antes do commit da F0; o `git diff --cached --check` pegou e eu converti antes do commit).
+
+## Emenda 2 (dp-543)
+
+> **Identidade:** `dp-543`, DeepSeek Pro (DP), identidade de dev DECLARADA. Não escrevi o plano nem a crítica:
+> o dev original foi `dev-users-desat-cl` (Claude) e a pré-revisão foi `prerev-543-api` (Claude pela API).
+> **Terreno:** worktree `C:/Users/thiag/w-desat`, ramo `fix/users-seg-desativado`, head de partida `5d6521c7`
+> (limpo). Banco local SEM Docker: cluster próprio `C:/Users/thiag/pg-dp543` (Postgres 16, 127.0.0.1:55531,
+> `-A trust`). Toda hora vem de `date`.
+
+### E2.7 — merge da main
+
+- `git fetch origin` e `git merge origin/main` (main `f5b79026`).
+- Conflito só de registro: `agent-orchestration/controle/pendencias-indice.md` (resolvido com
+  `git checkout --theirs` e regenerado por `python agent-orchestration/controle/gerar-indice-pendencias.py`) e
+  `agent-orchestration/controle/pendencias.md` (mantidas as duas entradas). Nenhum conflito em código.
+- Merge commit: `4e2fb924`.
+
+### E2.1 / E2.2 — token de sessão viva no smoke e no demo traccar
+
+- Escolha declarada: login REAL na API (`POST /api/v1/auth/login`), o caminho mais curto do stack de produção —
+  o assinador real de `src/modules/auth/routes/auth.routes.ts` emite o token com o claim `sid` e cria a sessão
+  antes de assinar, exatamente o que o portão (`P-SESSAO-VIVA`) exige.
+- `scripts/smoke-compose-persistence.mjs`: removida a função `signAccessToken`/`base64url` (sem `createHmac`);
+  entram `ADMIN_EMAIL`/`ADMIN_PASSWORD` geradas por rodada; `dockerCapture`/`composeEnv` ganham `extraEnv` para
+  passar a senha por variável de ambiente (nunca em argv); helper `psql(sql)` lê o `tenants.slug='platform'`;
+  `loginPlatformAdmin()` faz o login real e o token passa a alimentar as duas `readOrganization`. A trava
+  `PLACEHOLDER_SECRET_PATTERN` + alvo loopback cravado continuam.
+- `scripts/traccar-dev-demo.mjs`: removida `signAccessToken` (sem `createHmac`); `dispatcherPassword` gerada por
+  rodada (ou `TRC_DEMO_PASSWORD`); o seed do despachante passa `-e TRC_DEMO_PASSWORD` via `extraEnv` SEMPRE e grava
+  a credencial local; o token do SSE vem de login real.
+- `node --check` nos dois scripts: OK. `grep -rln "createHmac\|signAccessToken" scripts/`: vazio.
+
+### E2.3 — varredura de assinadores à mão
+
+- `grep -rln "signAccessToken\|createHmac" scripts/` → (nenhum).
+- `grep -rln "signAccessToken\|createHmac" tests/ --include="*.ts" | wc -l` → 38.
+- Os 38 são testes unitários/suítes que assinam token para EXERCITAR o portão (com o portão substituído/mockado)
+  e o helper `tests/helpers/users-seg-desativado-sessao.ts`; nenhum fala com o portão real de produção → fora do
+  escopo de E2.1/E2.2, sem pendência nova.
+- Lista: `tests/actor-aware-routes.test.ts`, `tests/auth-active-tenant-permissions.test.ts`,
+  `tests/auth-actor-middleware.test.ts`, `tests/auth-identity-links-db.test.ts`, `tests/auth-jwt.test.ts`,
+  `tests/b-o6r-12-regime-snapshot-db.test.ts`, `tests/b-san3-12-ce4-db.test.ts`, `tests/checklist-routes-db.test.ts`,
+  `tests/core-saas-role-authority-db.test.ts`, `tests/core-saas-role-authority.test.ts`,
+  `tests/financial-period-close-write-race-db.test.ts`, `tests/financial-title-invariants-db.test.ts`,
+  `tests/helpers/users-seg-desativado-sessao.ts`, `tests/navigation-menu-jwt-boundaries.test.ts`,
+  `tests/navigation-menu-routes.test.ts`, `tests/persistent-rbac-middleware.test.ts`, `tests/platform-overview.test.ts`,
+  `tests/platform-routes.test.ts`, `tests/platform-tenant-detail.test.ts`,
+  `tests/san3-04a-menu-com-permissoes-do-banco-db.test.ts`, `tests/san3-05-leituras-de-plataforma-db.test.ts`,
+  `tests/san3-08-financeiro-cria-orcamento-db.test.ts`, `tests/san3-09-bootstrap-platform-admin-db.test.ts`,
+  `tests/users-acesso-seg-criacao-db.test.ts`, `tests/users-acesso-seg-desativacao-db.test.ts`,
+  `tests/users-acesso-seg-logs-db.test.ts`, `tests/users-acesso-seg-portao-db.test.ts`,
+  `tests/users-acesso-seg-portao-estatico.test.ts`, `tests/users-acesso-seg-portao-varredura.test.ts`,
+  `tests/users-acesso-seg-provisoria-db.test.ts`, `tests/users-acesso-seg-reset-db.test.ts`,
+  `tests/users-acesso-seg-reset-serializacao-db.test.ts`, `tests/users-acesso-seg-sessao-restrita.test.ts`,
+  `tests/users-acesso-seg-usuarios-db.test.ts`, `tests/users-seg-desativado-portao-db.test.ts`,
+  `tests/users-seg-desativado-portao.test.ts`, `tests/users-seg-desativado-sse.test.ts`,
+  `tests/users-seg-desativado-varredura.test.ts`.
+
+### E2.4 — T16b (PRE543-01, a mutação X3 sobrevive)
+
+- `tests/users-seg-desativado-sse-db.test.ts` ganha o `T16b`: revoga a sessão de um usuário ATIVO
+  (`POST /api/v1/sessions/:id/revoke`) e espera o stream fechar com `event: session_inactive` em até 32 s.
+- Drill X3: apagar `...(payload.sid ? { sessionId: payload.sid } : {}),` do ator em
+  `src/modules/auth/middleware/authenticated-actor.middleware.ts` → T16b `not ok` (39 s); cabeça restaurada.
+- Verde: `users-seg-desativado-sse-db` 2/2 (T16 + T16b).
+
+### E2.5 — PRE543-02 (API_CONTRACTS.md:215-216)
+
+- `API_CONTRACTS.md:215-216` e `RBAC_MATRIX.md:128` registram que o dono respondeu P1 = (a) e P2 = (a) em 11/11
+  (`D-DONO-TODAS-RECOMENDACOES-1111`). `grep -c "D-DONO-TODAS-RECOMENDACOES-1111"` → 2 ocorrências.
+
+### E2.6 — PRE543-03 (a M12 termina em menos de 60 s)
+
+- `tests/users-seg-desativado-sse.test.ts`: `mock.timers` global trocado pelo do `TestContext` (`t.mock.timers`),
+  `AbortSignal.timeout(STREAM_READ_TTL_MS)` em toda leitura do stream e `timeout` explícito por teste
+  (`TEST_TIMEOUT_MS = 15_000`).
+- Verde: 6/6 em ~5,7 s. Drill M12 (conferência que nunca resolve): 5 `not ok`, processo termina sozinho em ~7,3 s
+  (< 60 s); cabeça restaurada.
+
+### Bateria (resumo TAP por arquivo)
+
+- `-db` (porta 55531, `CORE_SAAS_PERSISTENCE=prisma`, `JWT_SECRET=dev-only-change-me`, `JWT_EXPIRES_IN=15m`,
+  `LOG_LEVEL=silent`, `NODE_ENV=test`):
+  - `users-seg-desativado-portao-db`: 16/16 · fail 0 · skipped 0
+  - `users-seg-desativado-varredura-db`: 1/1 · fail 0 · skipped 0 (rotas=444 mwComCaminho=73 fora=0)
+  - `users-seg-desativado-emissao-db`: 4/4 · fail 0 · skipped 0
+  - `users-seg-desativado-orcamento-db`: 1/1 · fail 0 · skipped 0
+  - `users-seg-desativado-sse-db`: 2/2 · fail 0 · skipped 0 (duration ~57 s)
+- memória (`unset DATABASE_URL REDIS_URL`, `CORE_SAAS_PERSISTENCE=memory`):
+  - `users-seg-desativado-portao`: 4/4 · fail 0 · skipped 0
+  - `users-seg-desativado-sse`: 6/6 · fail 0 · skipped 0 (~5,7 s)
+  - `users-seg-desativado-varredura`: 1/1 · fail 0 · skipped 0
+- `npm run check` verde · `npm run lint` verde (roda check) · `npm run build` verde · `git diff --check` limpo.
+
+### Incidentes de terreno (registrados; nada fora do escopo foi editado)
+
+- **Postgres local:** o primeiro cluster nasceu WIN1252 e a migração `20260717000000_add_inventory_core` falhou
+  (E22P05); recriado com `initdb -E UTF8 --locale=C`. Depois o T8 falhou porque o adapter Prisma lia `timestamptz`
+  deslocado 3 h (`America/Sao_Paulo`); corrigido com `ALTER SYSTEM SET timezone='UTC'` + `pg_reload_conf` → T8 16/16.
+- **`npm run check` pós-merge:** falhou com 2 erros TS em `src/modules/impound/impound-prisma.repository.ts`
+  (`regime_scope` inexistente no tipo Prisma gerado). Causa: cliente Prisma local desatualizado com o
+  `schema.prisma` da main recém-mergeada (schema 16:37 × cliente gerado 07:18). `npx prisma generate` resolveu;
+  `npm run check` voltou a verde. Nenhum arquivo de `src/` foi alterado por esta tarefa.
+
+### Commits (Conventional Commits, cada um com `Co-Authored-By: DeepSeek <noreply@deepseek.com>`)
+
+- `8ebb718b` fix(scripts): token de sessão viva no smoke e no demo traccar (E2.1/E2.2)
+- `deeaa3ba` test(auth): T16b — stream fecha quando a SESSÃO é encerrada com o usuário ativo (E2.4)
+- `764964fa` test(auth): teto de tempo no stream em memória para a M12 terminar em < 60 s (E2.6)
+- `40c8b108` docs: dono respondeu P1=(a) e P2=(a) em 11/11 (E2.5)
+
+PRONTO PARA CONFERÊNCIA — head 40c8b108
