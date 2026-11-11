@@ -222,6 +222,8 @@ if (!connectionString) {
     assert.equal(restrictedData.must_change_password, true);
     assert.deepEqual(restrictedData.roles, []);
     assert.deepEqual(restrictedData.permissions, []);
+    // Emenda 4, item 4 — a sessão restrita mantém o e-mail da PRÓPRIA sessão (a linha "Entrando como").
+    assert.equal((restrictedData.user as { email?: unknown } | undefined)?.email, email);
 
     await setMustChange(h, org.tenantId, org.userId, false);
     const full = await login(h, org.tenantId, email, org.password);
@@ -252,6 +254,8 @@ if (!connectionString) {
     assert.equal(data.must_change_password, true);
     assert.deepEqual(data.roles, []);
     assert.deepEqual(data.permissions, []);
+    // Emenda 4, item 4 — também no login sem organização (o caminho do app).
+    assert.equal((data.user as { email?: unknown } | undefined)?.email, email);
   });
 
   test("A4 — refresh relê a marca do par e emite access token restrito", async () => {
