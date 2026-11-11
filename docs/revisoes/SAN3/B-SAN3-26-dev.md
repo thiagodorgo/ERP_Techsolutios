@@ -381,3 +381,20 @@ As 4/4 restauradas. As linhas 3 e 4 provam que cada metade do A7b mata a sua var
 
   Com o app de hoje, o pull traz a OS como "Agendada". As três ficam como estão, por ordem do orquestrador ("só
   registre").
+
+### PR534-01 — quem revisou a emenda
+
+- **As emendas E-01 a E-08** (F0.3 acima) foram escritas pelo dev anterior, sem revisão antes do código. Agora estão
+  **revisadas pela pré-revisão `prerev-534-cl`**, uma identidade que não planejou, não criticou e não desenvolveu
+  (`prerev-534.json`, achado PR534-01, e a seção "Emendas E-01..E-08 — autoria" da evidência).
+  - E-01, E-02, E-06 e E-08 se sustentam por mutação.
+  - A E-03 é fail-closed.
+  - A E-04 e a troca de desfecho do A10 ("AB 123 CD") seguem como escolha de produto, ainda não ratificada pelo dono:
+    "LEITURA DECLARADA" na F0.3 e `P-CHECKIN-PLACA-ESTRANGEIRA`.
+  - A E-05 depende do PR534-03 (acima).
+- **Daqui em diante, o dev não emenda o plano por conta própria** (§C7.4-bis e `D-EMENDA-ANTES-DO-CODIGO`). Se aparecer
+  uma decisão nova, ela vai ao orquestrador como emenda escrita, e o código só vem depois da revisão. Este conserto não
+  emendou nada:
+  - os casos do PR534-02 são testes de propriedades que o bloco já tinha;
+  - o PR534-06 justifica o arquivo pelo próprio plano v2;
+  - o PR534-03 e o PR534-04 não mexem em código.
