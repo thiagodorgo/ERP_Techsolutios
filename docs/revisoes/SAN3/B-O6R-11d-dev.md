@@ -170,3 +170,39 @@
 - Nada tocado em `prisma/**`, `.github/**`, `Kpis/**`, `.env`, nem portas 3000/5173/5432/6379/8899.
 
 PRONTO PARA CONFERÊNCIA — head 8ca3e0dc (código) · este registro final em cima
+
+---
+
+## Emenda 2 (dp-fix-545)
+
+- **Identidade:** `dp-fix-545`, DeepSeek Pro (DP), identidade de dev declarada. Quem achou: C1/C2/C3 da J-545 e a `conf-545`. Quem planejou: o orquestrador (a Emenda 2). Quem desenvolve: este diário. Quem confere: o Claude, com identidade nova.
+- **Objeto:** `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, head de partida `a0130465`, limpo. `npx prisma generate` rodado (com `DATABASE_URL` local). Toda hora vem de `date` (SP).
+
+### E2.1 (C1-02, a leitura)
+- A fixture de leitura (`bo6r11d_work_order_contract.json`) passa a ter `assignedOperatorId = ...a02` ≠ `assignedUserId = ...a01` nas três seções (`detail_response`, `status_response`, `assign_response`).
+- Teste novo **T1b** em `bo6r11d_contrato_rest_test.dart`: com os dois campos divergindo, o técnico lido é o do campo CERTO (`assignedUserId`).
+- `flutter test --reporter compact test/features/work_orders/bo6r11d_contrato_rest_test.dart` → `+9: All tests passed!` (T1b verde).
+- **Mutação** (parser lê `assignedOperatorId`/`assigned_operator_id` no lugar de `assignedUserId`/`assigned_user_id`, âncora única `grep -cF` = 1): T1b, T1 e T3 VERMELHOS (`+6 -3`); revertida com `git restore`; pós-reversão → `+9: All tests passed!`.
+- Commit `00e7ed80`.
+
+### E2.2 (C2-01 e CONF545-01, a escrita)
+- Teste novo **N12** em `tests/b-o6r-11d-lote-tecnico-esperado.test.ts`: OS legada (`assign {operatorId: U}` e depois `assign {operatorId: U, userId: V}`), envio atrasado que declara U (`payloadDoApp`, `expected_technician_id = U`) → `conflict` `technician_changed_since_action`, sem gravar nada (usuário segue V, perfil segue U, viatura null, sem evento novo).
+- `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-lote-tecnico-esperado.test.ts` → `# tests 7 # pass 7 # fail 0 # skipped 0`.
+- **Mutação M-CONF-2** (`technician === expected` → `(technician === expected || current.assignedOperatorId === expected)`): N12 VERMELHO (`accepted` em vez de `conflict`; `# pass 6 # fail 1`); revertida com `git restore`.
+- Commit `2d2db1aa`.
+
+### E2.3 (CONF545-02, o registro)
+- `P-CHECKIN-SEM-PLACA-OFFLINE` e `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA` passam para dono `B-O6R-11e (a planejar)` e PR-alvo `B-O6R-11e`, com a nota "fora do PERMITIDO do 11d".
+- `pendencias.md:9131` passa a listar `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` (e as duas acima) sob `B-O6R-11e`.
+- Entram as pendências `P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS` (C1-01, dono `B-O6R-11e`), `P-AMBIENTE-VAULT-ROUTES-SOB-CARGA` (C3-ENV-01) e `P-AMBIENTE-DART-LOCAL-DIVERGE` (C3-ENV-02), todas BAIXA.
+- Índice regenerado: `python agent-orchestration/controle/gerar-indice-pendencias.py` → `887 cabecalhos / 876 IDs | {'FECHADA': 205, 'ABERTA': 678, 'SEM-STATUS': 4}`; 2ª execução sem diff (md5 idêntico).
+- Commit `624c3d71`.
+
+### Bateria (janela fora do pico)
+- **Flutter** (`mobile/flutter_app`): `flutter test --reporter compact` → `+1156: All tests passed!`; `flutter analyze` → `No issues found!`.
+- **Node do bloco (memória):** `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-work-order-contract.test.ts tests/b-o6r-11d-lote-tecnico-esperado.test.ts tests/o6r07c-b-scope.test.ts tests/mobile-work-order-assign-registry.test.ts` → `# tests 204 # pass 204 # fail 0 # skipped 0`.
+- **DB sem Docker** (Postgres 16 local, porta 55556, só `127.0.0.1`, cluster `C:/Users/thiag/pg-dpfix545`, banco UTF8 migrado): `tests/o6r07c-b-scope-db.test.ts` → `# tests 13 # pass 13 # fail 0 # skipped 0` (papel efêmero `NOSUPERUSER NOBYPASSRLS`); `tests/b-san3-23-cancel-race-db.test.ts` → `# tests 21 # pass 21 # fail 0 # skipped 0`.
+- `npm run check` ec 0 · `npm run lint` ec 0 · `git diff --check` ec 0.
+- Nada tocado em `src/**`, `lib/**`, `prisma/**`, `.github/**`, `Kpis/**`, `.env`, nem portas 3000/5173/5432/6379/8899.
+
+PRONTO PARA CONFERÊNCIA — head 624c3d71 (código) · este registro final em cima
