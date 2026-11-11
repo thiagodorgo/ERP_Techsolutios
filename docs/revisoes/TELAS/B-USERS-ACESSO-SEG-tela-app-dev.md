@@ -292,3 +292,34 @@ reexecutar. Nada rastreado foi apagado.
 - `P-APP-REFRESH-SEM-USER`: o refresh do backend não manda `user`, e o `_sessionFromJson` do app exige (anterior ao bloco).
 - `P-FLUTTER-FORMAT-BSAN313`: `test/features/bsan313_minhas_os_escopo_test.dart` fora do formato do Dart 3.11.4 na
   `main` (anterior ao bloco; o §9 do `dart format ... lib test` falha por ele).
+
+## T2.6 — Emenda 6 (item 3) e Emenda 6.1 (E6-R06) aplicadas; bateria fechada (23:25–23:37 SP)
+
+- **Emenda medida no plano** (`planos/B-USERS-ACESSO-SEG-conserto-c1.md:975-1002`): o PERMITIDO ganha
+  `mobile/flutter_app/test/core/sync/bo6r11_guard_fila_await_ast_test.dart` SÓ para a linha da tela nova em
+  `_uiPorHerancaDeclarada` e o comentário "quatro" → "cinco" (E6-R06).
+- **Aplicada, commit `e7ba2561`:** `git diff --numstat` do arquivo = `2 1` (1 linha adicionada,
+  `'lib/features/auth/change_password_screen.dart',`; 1 linha mudada, `/// quatro). ...` → `/// cinco). ...`; o comentário
+  quebra em duas linhas, "exatamente estes" / "quatro).", e só a segunda muda). `dart format` do arquivo: `0 changed`.
+- `flutter analyze` → `No issues found! (ran in 22.9s)`; guard → `00:30 +12: All tests passed!`.
+- **Suíte inteira, 1ª rodada (23:26):** `01:41 +1098 -1`. O vermelho foi `test/features/telemetry/telemetry_test.dart`,
+  caso 16 ("foreground-only: stop interrompe a captura"), `Expected: <4> Actual: <5>`. **Anterior ao bloco, medido:** o
+  caso usa relógio real (tique de 25 ms, esperas de 120 ms) e só o serviço de captura; o bloco não toca
+  `lib/core/telemetry` nem `test/features/telemetry` (`git diff --name-only e09e9667..HEAD` → 0). Isolado no head: 2 de 3
+  rodadas vermelhas. Com o `lib/` do objeto `e09e9667` posto temporariamente no worktree (`git checkout e09e9667 --
+  mobile/flutter_app/lib`, depois `git checkout HEAD -- mobile/flutter_app/lib`, `git diff --quiet` limpo): **3 de 3
+  vermelhas**, o mesmo caso 16 (`Expected: <3> Actual: <4>`). É corrida de tempo sob carga (um tique em voo grava depois
+  da leitura do `stop()`). Pendência proposta: `P-FLUTTER-TELEMETRIA-16-INSTAVEL` (bloco dono: o próximo que tocar a
+  telemetria do app).
+- **Suíte inteira, 2ª rodada (23:33):** **`01:32 +1099: All tests passed!`** (exit 0).
+- **Teste novo e regressões no head final:** `busers_seg_troca_senha_test.dart` `00:10 +32: All tests passed!` ·
+  `bo6r01_login_sem_org_erros_test.dart` `+4` · `b098_real_auth_bootstrap_test.dart` `+37` ·
+  `b089_auth_http_checklist_test.dart` `+18` · `b090_auth_production_token_refresh_test.dart` `+18` ·
+  `test/core/auth/auth_repository_test.dart` `+11` (todos `All tests passed!`).
+- `dart format --output=none --set-exit-if-changed lib test`: segue exit 1 só por `bsan313_minhas_os_escopo_test.dart`
+  (anterior ao bloco, ver T2.5); os arquivos do bloco não mudam.
+- **Escopo:** `git diff --name-only e09e9667..HEAD` = os 6 de `lib/` de T.3, o teste novo, o guard (Emenda 6) e este
+  diário (nomeado no mandato). `pubspec.yaml`, `pubspec.lock`, `auth_token_storage.dart` e `lib/core/sync/**`: 0 arquivos.
+- **Limpeza (§C5):** `mobile/flutter_app/build/` removido de novo e os logs temporários em `/tmp`; mantidos `.dart_tool/`,
+  os gerados do `flutter pub get` e o scratchpad das mutações (para a conferência).
+- **Push** no `feat/users-seg-tela-app`, sem PR (Emenda 5: o orquestrador integra depois da F2).
