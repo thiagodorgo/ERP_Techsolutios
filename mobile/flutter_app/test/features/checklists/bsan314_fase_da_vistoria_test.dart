@@ -482,10 +482,13 @@ void main() {
           _remote('srv-e', MobileChecklistRunKind.delivery),
         ],
       );
-      final repo = _repo(store, InMemorySyncQueueRepository(), remote);
+      final queue = InMemorySyncQueueRepository();
+      final repo = _repo(store, queue, remote);
 
       await repo.prefetchRunsForWorkOrder(_wo);
 
+      // A pré-carga não gera tráfego de sync: nenhuma ação na fila.
+      expect(await queue.actionsForTenant(_tenant), isEmpty);
       final runs = await _runs(store);
       final delivery = runs.singleWhere(
         (r) => r.kind == MobileChecklistRunKind.delivery,
