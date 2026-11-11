@@ -745,6 +745,12 @@ if (!connectionString) {
       assert.equal(response.status, 403, platformRole);
       assert.equal(response.body.error?.reason, "target_not_manageable", platformRole);
       assert.equal(response.body.error?.message, "This account cannot be managed by an organization administrator.");
+      // Varredura da UEM-03 sobre esta resposta (corpo e cabeçalhos): nem id nem nome de organização, nem o papel.
+      const swept = h.responses[h.responses.length - 1];
+      assert.ok(swept && swept.status === 403, "a resposta da recusa foi capturada para a varredura");
+      for (const value of [org.tenantId, org.name, platform.id, org.userId]) {
+        assert.equal(`${swept.text}\n${swept.headers}`.includes(value), false, `a recusa não carrega ${platformRole}`);
+      }
       assert.deepEqual(await credentialOf(h, org), before, "hash e marca não mudam");
       assert.equal(
         await h.admin.authSession.count({ where: { tenant_id: org.tenantId, user_id: org.userId, revoked_at: null } }),

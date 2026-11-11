@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { EnterpriseAuditLogService, type AuditLogWriter } from "../../core-saas/audit/audit-log.service.js";
+import { isPlatformRole } from "../../core-saas/permissions/catalog.js";
 import { generateInitialPassword } from "../../authority/authority-password.js";
 import {
   assertRowsBelongToTenant,
@@ -584,6 +585,19 @@ export class IdentityLinkService {
             );
           }
 
+          // P-RESET-AUTORIDADE (conserto do #527, F3) — o administrador da organização não redefine a senha de
+          // alvo com papel de PLATAFORMA (`isPlatformRole`, fonte única `ROLE_AUTHORITY`; o mesmo conjunto que o
+          // portão de plataforma reconhece). Os papéis do alvo são lidos NESTA organização, sob o GUC da
+          // organização ativa, na mesma transação, depois do 404 e do 409 `user_inactive`; recusa fixa, nada muda.
+          const targetAssignments = await tx.userRoleAssignment.findMany({
+            where: { tenant_id: actor.tenantId, user_id: target.id },
+            select: { role: { select: { key: true } } },
+          });
+
+          if (targetAssignments.some((assignment) => isPlatformRole(assignment.role.key))) {
+            throw targetNotManageableError();
+          }
+
           // T1 (UEM-02, reset × religação) — trava FOR UPDATE do vínculo do PAR do alvo ANTES de ler a
           // identidade dele: a religação que move esse vínculo (o alvo como conta provada) trava a mesma linha
           // com FOR UPDATE, e a do próprio alvo (o alvo como ator) com FOR SHARE (T2). Quem chega depois espera
@@ -1023,6 +1037,17 @@ export function identityLinkedElsewhereError(): IdentityLinkError {
 // B-USERS-ACESSO-SEG (S1, UEM-03) — o reset que não pôde terminar com segurança (trava ou transação
 // estourou o orçamento, identidade do par ilegível, falha do banco): código e mensagem FIXOS, sem
 // nada da causa. Nada mudou (a transação desfez).
+// P-RESET-AUTORIDADE — o alvo tem papel que o fluxo de organização não atribui (papel de plataforma): o
+// administrador da organização não o alcança. Código e mensagem FIXOS; nada da causa sai.
+export function targetNotManageableError(): IdentityLinkError {
+  return identityLinkError(
+    403,
+    "FORBIDDEN",
+    "target_not_manageable",
+    "This account cannot be managed by an organization administrator.",
+  );
+}
+
 export function resetUnavailableError(): IdentityLinkError {
   return identityLinkError(
     503,

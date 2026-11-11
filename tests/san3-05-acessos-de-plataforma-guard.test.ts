@@ -345,6 +345,14 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/auth/services/auth-session.service.ts", "AuthSessionService.refreshSession", "tx.localAuthCredential", "localAuthCredential.findFirst", "local_auth_credentials", "PARAMETRO(tx de callback de runWithTenantContext)", "×1"),
     "B-USERS-ACESSO-SEG (conserto #527, F2, P-SESSAO-RESTRITA): o refresh é assinador e relê a marca `must_change_password` do PAR do refresh token na MESMA transação em que já relê usuário e papéis, no callback de `runWithTenantContext(payload.tenant_id, …)` (o runner de produção põe o GUC da organização do par como 1ª instrução, src/database/rls.ts); o `where` é o par (tenant_id, user_id) e só seleciona a marca; par sem linha conta como não marcado (RQ-3). Provado em tests/users-acesso-seg-provisoria-db.test.ts (A4 e A4·RQ-3) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.resetPasswordByAdmin", "tx.userRoleAssignment", "userRoleAssignment.findMany", "user_role_assignments", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (conserto #527, F3, P-RESET-AUTORIDADE): os vínculos de papel do ALVO do reset lidos no callback de `withTenantRlsBudget(this.prisma, actor.tenantId, …)`, cujo setter do GUC da organização ATIVA do ator é a 1ª instrução (src/database/rls.ts); o `where` filtra por `tenant_id = actor.tenantId` e pelo alvo já achado nessa organização (depois do 404 e do 409 `user_inactive`); só leitura, e nada dela sai na resposta (recusa fixa `target_not_manageable`). Provado em tests/users-acesso-seg-reset-db.test.ts (A8/A8b) e tests/users-acesso-seg-portao-db.test.ts (A8b) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.resetPasswordByAdmin", "tx.userRoleAssignment", "userRoleAssignment.findMany.select.role", "roles", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (conserto #527, F3, P-RESET-AUTORIDADE): idem — a chave do papel (global ou da organização) de cada vínculo do alvo, pela relação, sob o mesmo GUC da organização ativa; só a `key`, comparada com `isPlatformRole`. Provado em tests/users-acesso-seg-reset-db.test.ts (A8/A8b) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
   // B-ASS-08 (parte 1): as 12 chaves dos repositórios Prisma do canal, coladas da saída do gerador no head do bloco, com o
   // motivo por chave. Os acessos sob `withTenantRls`/`forEachTenantRls` (charges, enqueue/findById/listByStatement e a
   // varredura de plataforma da outbox) NÃO geram chave: o gerador os prova sob contexto. Gerador e WRAPPERS intocados.

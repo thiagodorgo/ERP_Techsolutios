@@ -27,6 +27,10 @@ import {
 //   A7 (C1-Q1) — para CADA papel de `PLATFORM_ROLES` (lido do catálogo): alvo com o papel de plataforma e a
 //        marca ligada direto (o reset agora recusa), login, `GET /platform/tenants` → 403
 //        `password_change_required`. Vermelho-controle: 200.
+//   A8b (C1-Q1, E8) — a cadeia de tomada de conta de plataforma: reset pelo administrador da organização →
+//        login com a provisória → `POST /auth/password` → login com a senha nova → `GET /platform/tenants`.
+//        Com o conserto, o 1º passo já recusa (403 `target_not_manageable`). Vermelho-controle: a cadeia chega
+//        ao 200 final (a mensagem do assert registra o status de cada passo).
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;
@@ -316,5 +320,74 @@ if (!connectionString) {
       assert.equal(tenants.body.error?.reason, "password_change_required", platformRole);
       assert.equal(decodeJwt(token).scope, "password_change", `${platformRole}: o login emite sessão restrita`);
     }
+  });
+
+  test("A8b (C1-Q1) — a cadeia reset → provisória → troca → login → /platform/tenants fica quebrada no 1º passo", async () => {
+    const h = await harness();
+    const email = `a8b-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
+    const org = await newOrg(h, "a8b", email, "SenhaAntigaA8b!1");
+    const admin = await adminOf(h, org);
+    let platform = await h.admin.role.findFirst({ where: { tenant_id: null, key: "super_admin" } });
+
+    if (!platform) {
+      platform = await h.admin.role.create({
+        data: { tenant_id: null, key: "super_admin", name: "Papel super_admin", scope: "platform" },
+      });
+      h.createdGlobalRoleIds.push(platform.id);
+    }
+
+    await h.admin.userRoleAssignment.create({
+      data: { tenant_id: org.tenantId, user_id: org.userId, role_id: platform.id },
+    });
+
+    const steps: string[] = [];
+    const reset = await requestJson(h.baseUrl, `/api/v1/auth/users/${org.userId}/reset-password`, {
+      method: "POST",
+      headers: admin.headers,
+      body: {},
+    });
+
+    steps.push(`reset=${reset.status}`);
+
+    if (reset.status === 200) {
+      const temporary = String(reset.body.data?.temporary_password ?? "");
+      const first = await requestJson(h.baseUrl, "/api/v1/auth/login", {
+        method: "POST",
+        body: { tenantId: org.tenantId, email, password: temporary },
+      });
+
+      steps.push(`login-provisoria=${first.status}`);
+
+      const changed = await requestJson(h.baseUrl, "/api/v1/auth/password", {
+        method: "POST",
+        headers: { authorization: `Bearer ${String(first.body.data?.access_token)}` },
+        body: { currentPassword: temporary, newPassword: "SenhaTomadaA8b!9" },
+      });
+
+      steps.push(`troca=${changed.status}`);
+
+      const second = await requestJson(h.baseUrl, "/api/v1/auth/login", {
+        method: "POST",
+        body: { tenantId: org.tenantId, email, password: "SenhaTomadaA8b!9" },
+      });
+
+      steps.push(`login-nova=${second.status}`);
+
+      const tenants = await requestJson(h.baseUrl, "/api/v1/platform/tenants", {
+        headers: { authorization: `Bearer ${String(second.body.data?.access_token)}` },
+      });
+
+      steps.push(`platform-tenants=${tenants.status}`);
+    }
+
+    assert.equal(reset.status, 403, `a cadeia de tomada: ${steps.join(" → ")}`);
+    assert.equal(reset.body.error?.reason, "target_not_manageable");
+
+    const stillOld = await requestJson(h.baseUrl, "/api/v1/auth/login", {
+      method: "POST",
+      body: { tenantId: org.tenantId, email, password: org.password },
+    });
+
+    assert.equal(stillOld.status, 200, "a senha do alvo não mudou");
   });
 }

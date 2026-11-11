@@ -719,6 +719,7 @@ const RESET_DOMAIN_REASONS: ReadonlySet<string> = new Set([
   "user_inactive",
   "cannot_reset_self",
   "identity_linked_elsewhere",
+  "target_not_manageable",
   "reset_unavailable",
 ]);
 
