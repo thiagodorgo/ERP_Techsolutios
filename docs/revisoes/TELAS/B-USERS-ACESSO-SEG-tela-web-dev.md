@@ -281,3 +281,16 @@ a lista do `test:smoke` ganhou exatamente `tests/auth-troca-senha.adapter.test.t
 `tests/context-switch-troca-senha.test.tsx`, no fim; nenhum removido; a lista antiga é prefixo igual da nova; **o resto do
 `package.json` é igual** (sem dependência nova, sem script novo). `git diff --stat e09e9667 HEAD -- frontend/package-lock.json
 package-lock.json` vazio: nenhum lockfile mudou.
+
+### Bateria depois da Emenda 6 (23:38–23:41, head `90c700cd`)
+
+Semáforo `VERDE 02:38:28Z` (34.818 MB livres) e `VERDE 02:39:43Z` no `test:smoke`.
+
+| Comando | Saída |
+|---|---|
+| `npm --prefix frontend run check` | saída 0 (23:39:14) |
+| `npm --prefix frontend run build` | `✓ built in 13.13s`, saída 0 (23:39:50) |
+| `npm --prefix frontend run test:smoke` | `# tests 1713 · # pass 1713 · # fail 0 · # cancelled 0 · # skipped 0`, saída 0 (23:41:34); 1713 = 1710 + os 3 de `context-switch-troca-senha` |
+| `git diff --check HEAD~4 HEAD` | limpo |
+| escopo `git diff --name-only e09e9667..HEAD` | os caminhos de T.2, a referência e o `README.md` de `screen-refs/`, este diário e, da Emenda 6, `frontend/src/components/ui/{PasswordStrengthMeter,RequirementChecklist,StepList}.tsx` + as exportações no `index.tsx`, `COMPONENT_LIBRARY.md` (3 entradas), `frontend/src/modules/context/repository.ts` (só o corpo de `switchTenantContext`) e `frontend/tests/context-switch-troca-senha.test.tsx` |
+| limpeza §C5 | `frontend/dist` e `frontend/tsconfig.tsbuildinfo` removidos |
