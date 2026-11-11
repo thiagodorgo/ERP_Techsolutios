@@ -25,6 +25,7 @@ import {
   getMemoryChequeRepositoryForTests,
   resetChequeRuntimeForTests,
   toChequeDto,
+  toChequeListDto,
   type AccountReader,
 } from "../src/modules/cheques/index.js";
 import type { ChequeActorContext } from "../src/modules/cheques/cheque.types.js";
@@ -92,6 +93,8 @@ test("K1: registra vínculo, expõe titleId e filtra pelo título", async () => 
   assert.equal(cheque.titleId, s.title.id);
   assert.equal(toChequeDto(cheque).titleId, s.title.id);
   assert.equal((await s.cheques.list(s.ctx, { title_id: s.title.id })).items[0]?.id, cheque.id);
+  // B-SAN3-24 (A3; P-SAN3-20-CHEQUE-LIST-TITLEID-SEM-TESTE) — o item de `GET /cheques` (o DTO da LISTA) traz o titleId.
+  assert.equal(toChequeListDto(await s.cheques.list(s.ctx, { title_id: s.title.id })).items[0]?.titleId, s.title.id);
   assert.equal((await s.cheques.list(s.ctx, { title_id: randomUUID() })).total, 0);
 });
 
