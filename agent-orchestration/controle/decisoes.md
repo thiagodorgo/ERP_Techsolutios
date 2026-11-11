@@ -4925,6 +4925,42 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fato:** os devs do `B-SAN3-19b` e do `B-ASS-09a` estão prontos e esperam o parecer do porteiro do #530 (§C2 item 8).
 - **Leitura do orquestrador, declarada (§A6):** o PR de registro não é demanda de produto e começa já (`reg-1111-cl`).
 
+## D-B-O6R-09-REPLAY-ORCAMENTO-409 (2026-11-11) — a repetição da aprovação de orçamento continua 409 e passa a levar o id da OS
+
+- **Natureza:** registro da emenda 1.1 do plano do `B-O6R-09` (planejador `emenda11-B-O6R-09-api`, EM1-02 e EM1-03 da crítica `crit-09-em1-cl`), gravado pelo dev `dev-o6r09-cl` na fatia 6, como a emenda manda. Não é decisão nova do dono: segue a `RBAC_MATRIX.md` (linha "replay → 409 `quote_already_approved`"), que o dono mandou seguir na aprovação de orçamento (`D-PORTAO-3-RECOMENDACOES-1111`, Q2 (c)).
+- **Regra:** aprovar de novo um orçamento que já tem `created_work_order_id` responde **409 `SERVICE_QUOTE_CONFLICT` / `quote_already_approved`**, com `error.details.workOrderId` = o id da OS já ligada. Vale para a repetição direta e para o perdedor de uma corrida, que antes espera o vencedor. Corpo diferente na repetição dá o mesmo 409, e a OS existente nunca muda. Não há 2xx de repetição.
+- **Relação com as decisões anteriores:** mantém a linha de repetição da `D-Ω3F-4B-IDEMPOTENCY` e acrescenta só o `details.workOrderId` (§2.8: id da organização do ator). O `D-B-O6R-09-REPLAY-ORCAMENTO-200` da emenda 1 **não** foi gravado: a emenda 1.1 o retirou.
+- **Onde mora:** `ServiceQuoteError` ganhou `details` opcional; a rota `POST /service-quotes/:serviceQuoteId/approve` tem um wrapper local que serializa `details` (molde: `financial-period-close.routes.ts`). `src/modules/core-saas/**` não mudou.
+
+## D-B-O6R-09-TRAVA-PRISMA-OPCAO-A (2026-11-11 05:14 SP) — a trava de `prisma/` entre o B-O6R-09 e o B-O6R-12: opção (a), a primeira migração com PR verde pega a trava
+
+- **Natureza:** o registro R2-09 (crítica r2 do `B-O6R-09`, `crit-09-r2-cl`) da escolha do plano v2 §4.3, feito pelo dev `dev-o6r09-cl` por ordem do orquestrador (mensagem de 11/11 05:13 SP, junto da Emenda 2). **Leitura do dev, declarada (§A6), a confirmar pelo orquestrador:** a ordem não nomeou a opção. A (a) é a única que cabe no que foi ordenado e medido: o orquestrador mandou fazer as fatias 0 a 5, inclusive a 3 (a migração), sem esperar o merge do 12, e a (b) proibia exatamente isso.
+- **Estado medido às 05:14 SP:** a última migração da `origin/main` é `20260900000000_ass08_billing_outbox`. O `B-O6R-09` tem a sua (`20260901090000_field_dispatch_idempotency_key`) no PR #537. O `B-O6R-12` (`fix/jurisdiction-profile-versioning`) não tem ramo remoto nem PR aberto (`git ls-remote --heads origin`, `gh pr list`).
+- **Regra (v2 §4.3 (a)):** as migrações tocam modelos diferentes (`FieldDispatch` × `ImpoundProcess`/`ServiceCatalog`), e o conflito real é só a ordem dos carimbos. A primeira migração a ter o PR verde pega a trava; a outra rebaseia e recarimba a sua para depois da que entrou. Isto revisa, só para este par, a ordem `… B-O6R-12 → B-O6R-09` do §6 do `PLANO_SAN3.md`.
+- **O que fica com o orquestrador:** a emenda simétrica do R6 do plano do `B-O6R-12` (fora do repositório), que o v2 §4.3 (a) pede junto deste registro. No merge, o porteiro confere o carimbo contra a última migração da `main` daquele momento.
+
+## D-B-O6R-09-ATRIBUICAO-NA-MAE (2026-11-11 11:40 SP) — a atribuição da OS passa para dentro da transação-mãe do despacho, e a fronteira de `src/modules/work-orders/**` se alarga só para isso
+
+- **Natureza:** decisão do orquestrador nº 1 da Emenda 4 do plano do `B-O6R-09` (§E4.9; autor da emenda: `topo-537-opus`, Opus por fallback declarado), com a Emenda 4.1 (`crit-09-em4-api`). Transcrita pelo dev `dev-o6r09-cl` antes do commit da fatia 7 (§A2), por ordem do orquestrador de 11/11 ~10:20 SP. Não é decisão do dono: o plano registra "Perguntas ao dono: nenhuma".
+- **Regra:** nos três caminhos que atribuem a OS (criar fora de rascunho, ativar rascunho, reatribuir), o despacho, o seu evento e a atribuição da OS (o UPDATE de `work_orders`, a linha de `work_order_assignments` e o `work_order_assigned`) são gravados na MESMA transação Postgres (P5), sem 2ª conexão enquanto a mãe está aberta (P6). A trava decide igual a antes (P7). Um DDL na fila espera só o resto da mãe (P8).
+- **Fronteira:** em `src/modules/work-orders/**`, o PERMITIDO é só:
+  - em `work-order.service.ts`, o import de tipo (C4E-06), o método novo `resolveDispatchOperatorId` e `assignFromDispatch`. O `assertTechnicianChangeAllowed` está autorizado e não foi tocado: o resolvedor da transação chega pelas referências do serviço preso (ver o diário, merge do #536);
+  - em `work-order-scope.ts`, o acréscimo de `WorkOrderAssignRepository` e `workOrderAssignRepositoryForTx`.
+- **O que supera:** o "não põe a atribuição na mesma transação" do v2 §2.2 e o "não fecha o R1" da Emenda 1 §1.6. Fecha a `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` (o R1) e a `P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S`.
+- **Convivência com o #536 (B-SAN3-23), declarada pelo dev (§A6):** o CAS do despacho do #536 (releitura, revalidação e regravação UMA vez) fica com o corpo intacto e passa a rodar, inteiro, pelo repositório e pelo resolvedor da transação da mãe. As propriedades não se contradizem. As medições estão no diário.
+
+## D-B-O6R-09-ARNES-SEM-PG-DIRETO (2026-11-11 11:40 SP) — o DDL do arnês pela forma por Prisma, com a premissa errada corrigida (C4E-02)
+
+- **Natureza:** decisão do orquestrador nº 2 da Emenda 4 (§E4.9), REVISTA pela Emenda 4.1 (C4E-02, `crit-09-em4-api`). Transcrita pelo dev `dev-o6r09-cl` antes do commit da fatia 7.
+- **A premissa errada, registrada:** a Emenda 4 dizia que nenhum arquivo de `tests/` ou de `src/` importa `pg`, e que usá-lo seria dependência nova. É FALSO. Em `75b49051`, 12 arquivos de `tests/` já fazem `await import("pg")` e usam `pg.Client`, inclusive os 3 do R-ARN-2, cada um com o seu `pgClient(nome)`. O grep do topo só casava `from "pg"`/`require("pg")`. Usar `pg.Client` no arnês NÃO é dependência nova.
+- **Regra:** o dev escolhe a forma que melhor cumpre as 4 condições da C09-04. Escolha do dev: a forma por Prisma (`runHarnessDdl(admin, sql)` em `tests/helpers/pg-barrier.ts`), porque ela mantém literais as mutações M-ARN e M-ARN2 do plano. A equivalência foi medida pelo `tests/b-o6r-09-harness-ddl-db.test.ts`, com M-ARN e M-ARN2 vermelhas:
+  - cada tentativa abre uma transação NOVA (a conexão física pode ser a mesma), sem 25P02;
+  - `SET LOCAL lock_timeout`, que não vaza para o pool;
+  - só se repete o 55P03, lido de `P2010 → meta.driverAdapterError.cause.originalCode`;
+  - o esgotamento lança, e o arnês para quando não cabe mais uma tentativa no teto (C4E-04).
+
+  O `pg.Client` próprio fica como alternativa sem dependência nova.
+
 ## D-B-O6R-12-ACEITE-E-EMENDA-E1 (2026-11-11) — regime da abertura e ajustes da crítica v2
 
 - O aceite provisório do item 24 fica ratificado pelas decisões do dono

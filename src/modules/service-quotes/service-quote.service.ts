@@ -220,8 +220,14 @@ export class ServiceQuoteService {
 
   // Ω3F-4b (D-Ω3F-4B) — aprovar orçamento → cria OS. Operação composta IDEMPOTENTE ancorada em
   // `created_work_order_id` (um orçamento gera no MÁX. uma OS). Passa customer+serviço ao
-  // WorkOrderService.create com skipApplicableTariffCheck=true (a OS derivada já é precificada pelo
+  // WorkOrderService com skipApplicableTariffCheck=true (a OS derivada já é precificada pelo
   // preço CONGELADO — anti-refaturamento). O `activation_mode` (GAP 2) mora em service_details da OS.
+  //
+  // B-O6R-09 · fatia 6 (item fundido pelo dono, `D-PORTAO-3-RECOMENDACOES-1111` Q1 (c); emenda 1 e emenda 1.1) — a
+  // reserva, a OS (com as vistorias e o evento `work_order_created`) e o vínculo são UMA transação
+  // (`approveWithWorkOrder`): qualquer falha no meio desfaz tudo — sem OS, orçamento em draft. A compensação antiga e o
+  // vínculo fora do `try` saíram. As leituras e validações da OS (`prepareCreate`) ficam ANTES da transação. A repetição
+  // segue a `RBAC_MATRIX.md` (409 `quote_already_approved`) e passa a levar o id da OS já ligada (`details.workOrderId`).
   async approve(
     actor: ServiceQuoteActorContext,
     serviceQuoteId: string,
@@ -229,15 +235,8 @@ export class ServiceQuoteService {
   ): Promise<{ readonly quote: ServiceQuote; readonly workOrderId: string }> {
     const quote = await this.get(actor, serviceQuoteId);
 
-    // Replay: um orçamento já aprovado (com OS gerada) não gera outra OS.
-    if (quote.createdWorkOrderId) {
-      throw new ServiceQuoteError(
-        409,
-        "SERVICE_QUOTE_CONFLICT",
-        "quote_already_approved",
-        "This quote has already been approved and generated a work order.",
-      );
-    }
+    // Replay: um orçamento já aprovado (com OS gerada) não gera outra OS, seja qual for o corpo.
+    if (quote.createdWorkOrderId) throw quoteAlreadyApproved(quote.createdWorkOrderId);
     if (quote.status !== "draft") {
       throw new ServiceQuoteError(
         409,
@@ -253,74 +252,59 @@ export class ServiceQuoteService {
       throw new ServiceQuoteError(422, "SERVICE_QUOTE_UNPROCESSABLE", "quote_empty", "This quote has no billable total to approve.");
     }
 
-    // CAS reserve-before-create (condição critico J-Ω3F-4B): reserva o orçamento (draft→approved) de
-    // forma ATÔMICA ANTES de criar a OS. As checagens acima são fast-fail de UX; a guarda REAL contra
-    // duplo-faturamento sob concorrência é esta. O perdedor recebe undefined → 409 e NÃO cria OS.
-    const reserved = await this.repository.claimForApproval(actor.tenantId, quote.id);
-    if (!reserved) {
-      throw new ServiceQuoteError(
-        409,
-        "SERVICE_QUOTE_CONFLICT",
-        "quote_already_approved",
-        "This quote has already been approved and generated a work order.",
-      );
-    }
-
     const activationMode = optionalString(body.activation_mode ?? body.activationMode)?.slice(0, 120);
     const title = optionalString(body.title) ?? `OS do orçamento ${quote.number ?? quote.id}`;
+    const workOrderBody = {
+      title,
+      customer_id: quote.customerId,
+      service_catalog_id: quote.serviceCatalogId,
+      // Origem (ponto de coleta) — encaminhada junto do destino (condição fid-avaliador J-Ω3F-4B).
+      serviceAddress: body.serviceAddress,
+      serviceCity: body.serviceCity,
+      serviceState: body.serviceState,
+      serviceZipCode: body.serviceZipCode,
+      serviceLatitude: body.serviceLatitude,
+      serviceLongitude: body.serviceLongitude,
+      destinationAddress: body.destinationAddress,
+      destinationCity: body.destinationCity,
+      destinationState: body.destinationState,
+      destinationZipCode: body.destinationZipCode,
+      destinationLatitude: body.destinationLatitude,
+      destinationLongitude: body.destinationLongitude,
+      service_details: { ...(activationMode ? { activation_mode: activationMode } : {}) },
+      priority: optionalString(body.priority) ?? "medium",
+    };
 
-    let workOrder: { readonly id: string };
-    try {
-      // DYNAMIC import — evita o ciclo (work-orders JÁ importa este módulo estaticamente para o resolver
-      // de tarifa). NÃO adicionar import estático de work-orders no topo. Ver item 5 / D-Ω3F-4B.
-      const { createDefaultWorkOrderService } = await import("../work-orders/work-order.service.js");
-      const workOrders = await createDefaultWorkOrderService();
-      workOrder = await workOrders.create(
-        actor,
-        {
-          title,
-          customer_id: quote.customerId,
-          service_catalog_id: quote.serviceCatalogId,
-          // Origem (ponto de coleta) — encaminhada junto do destino (condição fid-avaliador J-Ω3F-4B).
-          serviceAddress: body.serviceAddress,
-          serviceCity: body.serviceCity,
-          serviceState: body.serviceState,
-          serviceZipCode: body.serviceZipCode,
-          serviceLatitude: body.serviceLatitude,
-          serviceLongitude: body.serviceLongitude,
-          destinationAddress: body.destinationAddress,
-          destinationCity: body.destinationCity,
-          destinationState: body.destinationState,
-          destinationZipCode: body.destinationZipCode,
-          destinationLatitude: body.destinationLatitude,
-          destinationLongitude: body.destinationLongitude,
-          service_details: { ...(activationMode ? { activation_mode: activationMode } : {}) },
-          priority: optionalString(body.priority) ?? "medium",
-        },
-        { skipApplicableTariffCheck: true },
-      );
-    } catch (error) {
-      // Compensação: a OS falhou após a reserva → devolve o orçamento a draft para permitir nova tentativa
-      // (senão ficaria approved sem OS, irrecuperável pela máquina de estado).
-      await this.repository.update({
-        tenantId: actor.tenantId,
-        serviceQuoteId: quote.id,
-        status: "draft",
-        updatedBy: actor.userId,
-      });
-      throw error;
+    // DYNAMIC import — evita o ciclo (work-orders JÁ importa este módulo estaticamente para o resolver
+    // de tarifa). NÃO adicionar import estático de work-orders no topo. Ver item 5 / D-Ω3F-4B. O escopo de escrita vem
+    // pelo mesmo caminho (o módulo de orçamento só conhece o TIPO dele).
+    const [{ createDefaultWorkOrderService, openMemoryWorkOrderScope }, { workOrderRepositoryForScope }] = await Promise.all([
+      import("../work-orders/work-order.service.js"),
+      import("../work-orders/work-order-scope.js"),
+    ]);
+    const workOrders = await createDefaultWorkOrderService();
+    const prepared = await workOrders.prepareCreate(actor, workOrderBody, { skipApplicableTariffCheck: true });
+
+    // CAS reserve-before-create (condição critico J-Ω3F-4B), agora DENTRO da transação: a guarda real contra
+    // duplo-faturamento sob concorrência é a reserva; o perdedor espera o vencedor e não cria OS.
+    const result = await this.repository.approveWithWorkOrder(
+      { tenantId: actor.tenantId, serviceQuoteId: quote.id, updatedBy: actor.userId },
+      (scope) => workOrders.persistPreparedCreate(workOrderRepositoryForScope(scope), prepared, actor),
+      openMemoryWorkOrderScope,
+    );
+    if (result.kind === "approved") {
+      return { quote: result.quote, workOrderId: result.workOrderId };
     }
 
-    const updated = await this.repository.update({
-      tenantId: actor.tenantId,
-      serviceQuoteId: quote.id,
-      createdWorkOrderId: workOrder.id,
-      updatedBy: actor.userId,
-    });
-    if (!updated) {
-      throw new ServiceQuoteError(404, "SERVICE_QUOTE_NOT_FOUND", "not_found", "Service quote was not found.");
-    }
-    return { quote: updated, workOrderId: workOrder.id };
+    // Sem reserva: outro pedido aprovou (repetição) ou o orçamento saiu de draft sem OS (rota de status).
+    const reread = await this.repository.findById(actor.tenantId, quote.id);
+    if (reread?.createdWorkOrderId) throw quoteAlreadyApproved(reread.createdWorkOrderId);
+    throw new ServiceQuoteError(
+      409,
+      "SERVICE_QUOTE_CONFLICT",
+      "quote_not_approvable",
+      `A ${reread?.status ?? quote.status} quote cannot be approved.`,
+    );
   }
 
   // Ω3F-4b (D-Ω3F-4B-SHARE) — gera (ou reusa, idempotente) o token de compartilhamento e devolve o link
@@ -396,6 +380,16 @@ export async function createApplicableTariffResolver(): Promise<ApplicableTariff
     return createMemoryApplicableTariffResolver();
   }
   return createPrismaApplicableTariffResolver();
+}
+
+// B-O6R-09 · fatia 6 (emenda 1.1 EM1-02) — o ÚNICO construtor do 409 da repetição: o código e o motivo de sempre
+// (`RBAC_MATRIX.md`), mais o id da OS já ligada ao orçamento.
+function quoteAlreadyApproved(workOrderId: string): ServiceQuoteError {
+  return new ServiceQuoteError(
+    409,
+    "SERVICE_QUOTE_CONFLICT",
+    "quote_already_approved",
+    "This quote has already been approved and generated a work order.", { workOrderId });
 }
 
 const memoryRepository = new InMemoryServiceQuoteRepository();
