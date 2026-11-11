@@ -69,7 +69,10 @@ fosse o seu system-prompt naquele passe e ATUE estritamente naquele escopo):
 > **Resiliência de junta (P1–P8 — §C7.7 do `AGENTS.md`, inline):** toda cadeira grava **evidência
 > incremental** em `agent-orchestration/omega/juntas/votos/<JUNTA>/<cadeira>-evidencia.md` a cada
 > item, escreve o **voto em arquivo ANTES da mensagem final** (mensagem final = 1 linha), nasce como
-> esqueleto `EM APURAÇÃO`, mandato ≤3 itens, máximo 2 disparos em paralelo, quedas em `00-quedas.md`.
+> esqueleto `EM APURAÇÃO`, mandato ≤3 itens, quedas em `00-quedas.md`. As cadeiras disparam **todas em
+> paralelo, salvo a que depende de outra** (P5, `D-JUNTA-PARALELA-1011`, 2026-11-10; a pausa de ~15 min depois de
+> 2 quedas em <30 min continua), e o número de agentes vivos vai **até o limite da máquina, com a saúde vigiada**
+> e o piso de 4 GB de memória de commit livre para lançar (P8(c), `D-AGENTES-ATE-O-LIMITE-1011`).
 > **Sob ordem de pausa do dono (P7, `D-PAUSA-GRAVA-E-PARA`)**, todo agente vivo termina o comando em curso,
 > grava `## PAUSA <hora UTC>` (head · feito · falta · próximo comando · meio-escritos) no seu arquivo de
 > evidência — quem não tem um, no arquivo de saída que o mandato nomeia — e para sozinho com 1 linha, sem

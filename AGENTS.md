@@ -673,7 +673,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
 
 
 7. **Protocolo de junta resiliente (decisão do dono, 2026-08-29 — `D-JUNTA-RESILIENTE`; P7 por decisão do dono,
-   2026-10-01 — `D-PAUSA-GRAVA-E-PARA`; P8 por decisão do dono, 2026-10-20 — `D-ORQ-QUEDA-DA-SESSAO`) — P1–P8, inline.**
+   2026-10-01 — `D-PAUSA-GRAVA-E-PARA`; P8 por decisão do dono, 2026-10-20 — `D-ORQ-QUEDA-DA-SESSAO`; P5 e P8(c)
+   emendadas por decisão do dono, 2026-11-10 — `D-JUNTA-PARALELA-1011` e `D-AGENTES-ATE-O-LIMITE-1011`) — P1–P8, inline.**
    Toda junta, inspeção de terreno e porteiro seguem as oito normas abaixo; a **P7** e a **P8** alcançam, além deles, **todo
    agente vivo** — dev, planejador, fábrica — e o orquestrador. Origem medida de P1–P6: **14 quedas de
    agente em ~28 disparos (~50%)** numa única sessão, todas `server_error` de streaming — postmortem em
@@ -707,9 +708,18 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      o padrão 4a/4b; logs e saídas longas só no arquivo de evidência, nunca na mensagem final. *Caso
      (lição corrigida):* mandato longo não mata — 4 agentes morreram na mensagem 1; morte ≈ exposição ×
      taxa da janela. Mandato curto reduz exposição E custo da perda.
-   - **P5 — Disparo escalonado.** Máximo **2 jurados em paralelo**; o terceiro só quando um concluir.
-     **2 quedas em <30 min → pausa de ~15 min** antes de qualquer redisparo, registrada no arquivo de
-     quedas. *Caso:* as quedas agrupam no tempo; redisparar dentro da janela ruim multiplicou as perdas.
+   - **P5 — Disparo em paralelo, salvo dependência; pausa na janela instável (emenda por decisão do dono,
+     2026-11-10 — `D-JUNTA-PARALELA-1011`).** Nas palavras do dono: *"a junta pode fazer ao mesmo tempo, salvo se uma
+     for dependente da outra"*. As cadeiras de uma junta são disparadas **todas ao mesmo tempo**; só espera a que
+     depende do resultado de outra. Deixa de valer o texto anterior ("máximo 2 jurados em paralelo; o terceiro só
+     quando um concluir"). **Leitura do redator (`gov-1011-cl`), declarada (§A6):** "dependente" é o que o contrato já
+     põe em sequência: a junta só começa depois do `LIBERADO` do inspetor (§C7.1-bis); a fatia que julga espera a fatia
+     que mede (P4, padrão 4a/4b); o suplente nasce depois da queda que ele cobre (P3). O disparo em paralelo continua
+     sujeito ao orçamento da máquina (P8(c)). **Continua, porque o dono não a revogou:** **2 quedas em <30 min → pausa
+     de ~15 min** antes de qualquer redisparo, registrada no arquivo de quedas. *Caso:* as quedas agrupam no tempo;
+     redisparar dentro da janela ruim multiplicou as perdas. **Risco assumido, declarado:** mais cadeiras ao mesmo
+     tempo expõem mais streams à mesma janela ruim; o que limita o custo de cada queda é P1/P2 (evidência e voto
+     gravados item a item), e a série do P6 mostra se a taxa de queda subiu.
    - **P6 — Registro padronizado de quedas.** Toda queda = 1 linha em `votos/<JUNTA>/00-quedas.md`,
      colunas fixas: `agente | modelo (pin/herdado) | mandato (nº itens) | fase da morte | erro | custo do
      redo`. *Caso:* a hipótese "pinar modelo reduz queda" (1/5 × ~13/23 no postmortem) tem n pequeno
@@ -749,9 +759,31 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
      vez, memória, disco, Docker, saída e worktree de cada agente não concluído, processos externos e vigias. Cada
      agente vivo é retomado pelo id e **mede o parcial antes de seguir** (P3/P7). Vigia, auditor e guarda de uma
      sessão anterior são **órfãos** (ninguém os escuta): mata-se e relança-se na sessão nova.
-     **(c) Orçamento de memória.** Só se lança agente novo com **memória de commit livre ≥ 4 GB**, e no máximo **3
-     subagentes Claude** ao mesmo tempo (braços externos à parte; Docker segue com teto de 2 trabalhos). O guarda de
-     memória, abaixo de 1,5 GB livres, **solta o cache de página da VM do Docker** (não destrutivo) antes de alertar.
+     **(c) Orçamento da máquina: até o limite, com a saúde vigiada (emenda por decisão do dono, 2026-11-10 —
+     `D-AGENTES-ATE-O-LIMITE-1011`).** Nas palavras do dono: *"agentes ate o limite da maquina, pode arrocrar, se o pc
+     aguentar 50 processos simutaneos, pode rodar. monitore a saude do sistema."* Não há mais teto fixo de agentes:
+     deixa de valer o "no máximo 3 subagentes Claude ao mesmo tempo", e o limite passa a ser a **saúde da máquina**,
+     medida pelos sinais abaixo. Caiu também o teto fixo de 2 trabalhos no Docker, por fala do dono do mesmo dia (21:24
+     SP), em resposta a "porque limite de 2 trabalhos?": *"a regra agora é enquanto o sistema suportar pode incluir mais
+     trabalho"* (fala ainda sem ID em `controle/decisoes.md`). Com isto se resolve o conflito que o registro de
+     `D-ORQ-AGENTES-ATE-O-PC-AGUENTAR-0911` deixou aberto com este item (*"vc pode usar agentes ate o quanto a maquina
+     suportar"*, 2026-11-09). **Continuam, porque o dono não as revogou:** só se lança agente novo com **memória de
+     commit livre ≥ 4 GB**; e o guarda de memória, abaixo de 1,5 GB livres, **solta o cache de página da VM do Docker**
+     (não destrutivo) antes de alertar. **Os sinais de saúde já existem** nas ferramentas do orquestrador, fora do
+     repositório: (i) o **semáforo `recursos.status`** do monitor de recursos (`monitor-recursos.ps1`), em VERDE,
+     AMARELO ou VERMELHO pela RAM livre, pela memória de commit em uso e pelo disco livre; (ii) o **guarda do Docker**
+     (`monitor-docker-3.sh`, o mesmo guarda de memória que solta o cache), que acusa o Docker que não responde, o
+     contêiner morto por memória (saída 137) e a memória de commit crítica; (iii) a **contagem de processos zumbis do kernel**
+     (`conta-zumbis.ps1`), porque a memória que eles prendem não aparece em processo nenhum e só volta com o reinício
+     da máquina, que exige autorização expressa do dono. **Leitura do redator (`gov-1011-cl`), declarada (§A6):** os
+     "50 processos" são **ilustração** do limite, não um número: nem teto, nem meta. "Pode arrochar" autoriza
+     trabalhar perto do limite, com o piso de 4 GB como mínimo absoluto. "Monitore a saúde do sistema" obriga o
+     orquestrador a manter os três sinais vivos enquanto houver agente lançado (vigia de sessão anterior é órfão e se
+     relança, P8(b)). Cores e limiares são das ferramentas e se ajustam sem PR; o contrato fixa só o piso e a reação a
+     sinal ruim (semáforo VERMELHO, alerta do guarda do Docker, zumbis subindo sem parar): nada novo entra até o sinal
+     voltar e, se for preciso aliviar, o orquestrador pausa o mais novo pela P7, nunca o mata no meio. **Risco
+     assumido, declarado:** sem teto por contagem, a queda de 20/10 pode voltar; a mitigação são os sinais e o piso, e,
+     se ela vier, P1/P2 e P8(a)(b) fazem a retomada sem perda, como no caso abaixo.
      *Caso:* em 20/10, às 01:16, o Windows registrou "memória virtual insuficiente" (VM do Docker 7,4 GB + VS Code
      2,2 GB, com 6 agentes em paralelo) e o VS Code travou; o orquestrador reconstruiu à mão quem estava vivo, e o
      guarda de memória da sessão anterior ficou órfão. Os 4 agentes interrompidos foram retomados pelo id sem perda,
@@ -768,7 +800,8 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    (head · feito · falta · próximo comando · arquivos meio-escritos) e pare sozinho com 1 linha apontando
    o arquivo. Não inicie item novo.  [P7]
    ```
-   **Do orquestrador (não do agente):** dispara ≤2 em paralelo e aplica a pausa de janela instável (P5);
+   **Do orquestrador (não do agente):** dispara as cadeiras em paralelo, salvo a que depende de outra, e aplica a pausa
+   de janela instável (P5); só lança agente com o piso de memória e mantém vivos os sinais de saúde da máquina (P8(c));
    commita evidência e voto após cada conclusão (agente não commita); preenche `00-quedas.md` no momento
    da perda (P6); na ata, consigna quedas, custo real de redo e o que o suplente re-executou vs mediu de
    novo; **sob ordem de pausa, repassa `PAUSA` a cada agente vivo, dá o tempo de gravar, para os vigias e
