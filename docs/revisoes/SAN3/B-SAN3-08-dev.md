@@ -127,3 +127,40 @@ Formato P1: comando → saída resumida → veredito parcial.
   do rodapé com 44 px; PT-BR sem termo técnico. Fica como está, igual à tela-modelo: o `Modal` da biblioteca não fecha por ESC nem
   pelo fundo (fora da fronteira do bloco).
 - `npm --prefix frontend run check` → ok.
+
+## F2 — o Financeiro com as permissões do banco (P4, item 41, CE-5 e CE-G2)
+
+- **Teste novo** `tests/san3-08-financeiro-cria-orcamento-db.test.ts`, no arnês do `san3-04a` (papel efêmero
+  `NOSUPERUSER NOBYPASSRLS` por `createEphemeralRole`, postura asserida, app importado depois de `CORE_SAAS_PERSISTENCE=prisma`,
+  JWT real, dois braços declarados no nome de cada passo). **Um `t.test()` por passo** (i) a (v) (emenda §4.1). **Segregação:**
+  `finance-A` cria, `finance-B` aprova, com o mesmo papel (emenda §4.2); o teste não afirma autoaprovação.
+  `SERVICE_QUOTE_PERMISSIONS` é lido da rota (import dinâmico depois de fixar o modo, para o `env.ts` não congelar em `memory`).
+  Cadastro semeado pela conexão administrativa: dois serviços `requires_destination: true` (um para o manual, outro para a tarifa)
+  e uma tabela `published` com tarifa de 380. Limpeza escopada à organização do teste, em passadas por toda tabela com `tenant_id`,
+  que LANÇA se sobrar linha.
+- **Terreno:** cluster descartável próprio `san308-pg` (`postgres:16`, `127.0.0.1:55934`, banco `erp_san308`), criado às 02:18 SP;
+  `npx prisma generate` e `npx prisma migrate deploy` → `All migrations have been successfully applied.` Nenhum outro container
+  foi tocado. Linha de base no braço 2: `tests/san3-04a-menu-com-permissoes-do-banco-db.test.ts` → `# tests 26 # pass 26 # fail 0`.
+- **Braço 2 (base só migrada, a forma do job `backend` da CI)** →
+  `ok 1 (i)` · `ok 2 (ii)` · `ok 3 (iii)` · `ok 4 (iv)` · `ok 5 (v)` · `# tests 6 # pass 6 # fail 0 # skipped 0`. Resíduo depois:
+  `select count(*) from tenants where slug like 'san3-08-%'` → 0; usuários `san3-08-%` → 0.
+- **Braço 1 (base provisionada, obrigatório na revisão).** `npm run db:provision-rbac` no mesmo cluster →
+  `CONVERGIDO — banco reflete o catálogo` (12 papéis, 929 concessões). Teste →
+  `[braço 1 — base PROVISIONADA (papel global)]` `ok 1` a `ok 5` · `# tests 6 # pass 6 # fail 0 # skipped 0`. Resíduo → 0 e 0.
+- **Mutações literais** (`mut.mjs`, âncora = 1, `restaurado=true`; nunca commitadas; logs `mut-f2-braco1.log` e
+  `mut-f2-braco2.log` no scratchpad), nos dois braços:
+  - **M12** `src/modules/service-quotes/service-quote.routes.ts:18` `  create: "service_quotes:create",` →
+    `  create: "service_quotes:approve_x",` · `not ok 1 (i)` (`permissão comparada pela rota ausente nas linhas do banco`,
+    `'service_quotes:approve_x'`) e `not ok 3 (iii)` com
+    `POST /service-quotes manual → 403 {"error":{"code":"FORBIDDEN","reason":"permission_required",…` · (iv) e (v) caem em
+    cascata (`sem o orçamento … do passo (iii)`) · `# pass 1 # fail 5`. Vermelha, e o 403 da rota é observado (fecha a A7(d)).
+  - **M13** (= M1 no modelo) `destinationAddress: payload.destinationAddress,` → `destination_address: …` ·
+    `not ok 4 (iv)` com `POST /approve → 422 {"error":{"code":"WORK_ORDER_UNPROCESSABLE","reason":"destination_required",…` ·
+    `# pass 4 # fail 2`. Vermelha. É também o vermelho-controle do (iv) "no objeto de hoje": o corpo snake_case recusado.
+  - (i) a (iii) passam no objeto de hoje porque o #390 já concedeu as permissões (declarado no v1); o vermelho delas vem da M12.
+- **Fato medido, sem mudança de requisito:** o approve responde **200**, não 201 (`service-quote.controller.ts:86` devolve
+  `{ data }` sem `status`, e `sendResult` usa 200). O v1 dizia "→ 201" no passo (iv); o teste afirma 200, que é o comportamento
+  do servidor, que este bloco não muda.
+- **Cuidado de paralelismo, conferido:** nenhuma outra suíte cria papel `finance` GLOBAL (`grep -rn 'key: "finance"' tests/` só
+  acha papéis da organização em `financial-title-invariants-db` e a leitura do `b-san3-12-ce4-db`), então a escolha do braço não
+  é contaminada no job `backend`.
