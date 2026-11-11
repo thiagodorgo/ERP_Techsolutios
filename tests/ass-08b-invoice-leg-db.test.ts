@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 
 import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 import { PrismaStatementInvoiceRepository } from "../src/modules/subscription-billing/invoices/invoices.prisma.js";
+import { PrismaProviderCustomerStore } from "../src/modules/subscription-billing/charges/provider-customer.prisma.js";
 import { InvoiceProviderError } from "../src/modules/subscription-billing/providers/invoice/invoice-errors.js";
 
 const connectionString = process.env.DATABASE_URL;
@@ -190,5 +191,35 @@ if (!connectionString) {
     await db.$executeRawUnsafe(`UPDATE billing_provider_configs SET enabled = true WHERE provider = 'plugnotas'`);
     const enabled = (await db.$queryRawUnsafe(`SELECT kind, count(*)::int AS n FROM billing_provider_configs WHERE enabled GROUP BY kind ORDER BY kind`)) as Array<{ kind: string; n: number }>;
     assert.deepEqual(enabled, [{ kind: "invoice", n: 1 }, { kind: "payment", n: 1 }], "no máximo um ligado por kind");
+  });
+
+  test("G12: o cliente no provedor fica no perfil sob o papel sem bypass — grava e lê na própria organização, nunca na outra (vermelho-controle sem GUC)", async () => {
+    const a = await seedStatement(`ass08b-g12a-${randomUUID().slice(0, 8)}`);
+    const b = await seedStatement(`ass08b-g12b-${randomUUID().slice(0, 8)}`);
+    for (const tenantId of [a.tenantId, b.tenantId]) {
+      await db.$executeRawUnsafe(
+        `INSERT INTO tenant_billing_profiles (tenant_id, legal_name, document, email, payment_method) VALUES ($1::uuid, 'Org G12', '11222333000181', 'f@x.com', 'pix')`,
+        tenantId,
+      );
+    }
+    const role = await createEphemeralRole(db, targetUrl);
+    try {
+      const store = new PrismaProviderCustomerStore(role.client);
+      assert.equal(await store.get(a.tenantId, "asaas"), null, "antes do 1º ensureCustomer o perfil não tem o id");
+      await store.set(a.tenantId, "asaas", "cus_g12_a", new Date());
+      assert.equal(await store.get(a.tenantId, "asaas"), "cus_g12_a");
+      assert.equal(await store.get(b.tenantId, "asaas"), null, "B não ganhou o id de A");
+      await store.set(a.tenantId, "mercadopago", "mp_g12_a", new Date());
+      assert.equal(await store.get(a.tenantId, "mercadopago"), "mp_g12_a", "cada provedor na sua coluna");
+      await store.set(a.tenantId, "iugu", "x", new Date());
+      const columns = (await db.$queryRawUnsafe(`SELECT asaas_customer_id, mp_customer_id FROM tenant_billing_profiles WHERE tenant_id = $1::uuid`, a.tenantId)) as Array<{ asaas_customer_id: string | null; mp_customer_id: string | null }>;
+      assert.deepEqual(columns[0], { asaas_customer_id: "cus_g12_a", mp_customer_id: "mp_g12_a" }, "provedor fora da lista fechada não grava nada");
+      // VERMELHO-CONTROLE: sem o GUC, o papel sem bypass não vê nem altera o perfil (FORCE RLS).
+      const semGuc = (await role.client.$executeRawUnsafe(`UPDATE tenant_billing_profiles SET asaas_customer_id = 'cus_intruso' WHERE tenant_id = $1::uuid`, a.tenantId)) as number;
+      assert.equal(semGuc, 0, "sem contexto de organização o UPDATE não alcança linha");
+      assert.equal(await store.get(a.tenantId, "asaas"), "cus_g12_a");
+    } finally {
+      await role.drop();
+    }
   });
 }

@@ -24,6 +24,7 @@ import {
 } from "../src/modules/subscription-billing/outbox/channel.jobs.js";
 import { competenceDateOf, INVOICE_CANCEL_CODE_OTHERS, taxProfileFromSettings, type InvoiceIssueContextResolver } from "../src/modules/subscription-billing/outbox/invoice.dispatch.js";
 import { InMemoryOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
+import { chargeCreateClaimVerdict } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { BillingHttpClient } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
 import { FocusNfeInvoiceAdapter } from "../src/modules/subscription-billing/providers/invoice/focusnfe/focusnfe.adapter.js";
 import type { ChargeLookup, ChargeResult, PaymentMethod, PaymentProviderPort } from "../src/modules/subscription-billing/providers/payment/payment-provider.port.js";
@@ -111,7 +112,14 @@ function harness(adapter: FocusNfeInvoiceAdapter | null, options: { contextReaso
   const statements = new InMemoryStatementRepository(() => clock.now);
   const service = new StatementService(statements, { resolve: async () => ({ kind: "skip" as const, reason: "no_subscription" as const }) }, { record: async () => {} });
   const settlement = new StatementSettlementService(statements, service);
-  const outbox = new InMemoryOutboxRepository(() => clock.now);
+  const outbox = new InMemoryOutboxRepository({
+      // R-OBX-5 (2º conserto do #522): o dublê lê o demonstrativo do MESMO repositório; `totalCents` é o V da adoção.
+      readStatement: async (tenantId, statementId) => {
+        const statement = await statements.findStatement(tenantId, statementId);
+        return statement && { status: statement.status, reopenedAt: statement.reopenedAt, totalCents: statement.totalCents };
+      },
+      clock: () => clock.now,
+    });
   const invoices = new InMemoryStatementInvoiceRepository(statements);
   const refs = new InMemoryStatementRefRepository();
   const events = new InMemoryWebhookEventRepository();
@@ -132,6 +140,7 @@ function harness(adapter: FocusNfeInvoiceAdapter | null, options: { contextReaso
     refs,
     charges: new InMemoryStatementChargeRepository(),
     ports: options.payment ? { asaas: options.payment } : {},
+    resolveCustomer: async () => ({ ok: true, customerId: "cus_1" }),
     invoicePorts: adapter ? { focusnfe: adapter } : {},
     invoices,
     resolveIssueContext,
@@ -387,7 +396,7 @@ test("órfã de crash depois da chamada ao provedor: reconsulta pela ref ANTES d
     const statement = await paidStatement(h, "2026-11");
     await enqueueIssue(h, statement.id);
     // o worker reclamou a linha, reservou o número, EMITIU e morreu antes do registro
-    const claimed = await h.outbox.claimNext({ enabledProviders: ["focusnfe"], now: h.clock.now, claimedBy: "worker-que-caiu", orphanMs: 10 * 60_000 });
+    const claimed = await h.outbox.claimNext({ enabledProviders: ["focusnfe"], now: h.clock.now, claimedBy: "worker-que-caiu", orphanMs: 10 * 60_000, verdict: chargeCreateClaimVerdict });
     assert.ok(claimed);
     const { invoice } = await h.invoices.beginIssue({ tenantId: TENANT, statementId: statement.id, seq: 1, provider: "focusnfe", environment: "sandbox", serie: 7 }, h.clock.now);
     await adapter.issue({

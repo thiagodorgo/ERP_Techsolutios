@@ -15,6 +15,13 @@
 // A 08b ESTENDE este arquivo (obrigação 5 da `P-ASS08-OBX5-EAGER-E-CANCEL`): cada abertura nova entra classificada, com
 // cenário gravado para o fechamento que enfileira, o refechamento, a marcação eager, o `charge/cancel`, o `/resolve` e a
 // rota de `retry`.
+// B-ASS-08b (esta extensão): as 13 aberturas novas da 08b entram classificadas — as 10 do repositório da nota
+// (`invoices/invoices.prisma.ts`, todas com o DEMONSTRATIVO PRIMEIRO, com cenário gravado abaixo), o espelho do dublê da nota
+// (dublê-em-memória) e as 2 do armazém do cliente no provedor (`charges/provider-customer.prisma.ts`, só
+// `tenant_billing_profiles`: sem-tabela-do-mapa). O fechamento que enfileira, o refechamento, a marcação eager, o
+// `charge/cancel`, o `/resolve` e a rota de `retry` NÃO existem na 08b (passaram ao B-ASS-08c, decisão do orquestrador de
+// 10/11): os cenários deles nascem com eles. Mutação literal da 08b: M-08b-LK (a emissão grava a nota ANTES de travar o
+// demonstrativo) → ORD-0.
 // Mutações literais: M7a (retry com o UPDATE da fila antes da trava do demonstrativo) → ORD-1; M7b (≡ M5g: claim sem
 // SKIP LOCKED no demonstrativo) → ORD-2; M7c (abertura nova em charges.prisma.ts) → censo; M7d (cenário do retry apagado)
 // → cobertura; M7e (`WITH x AS (UPDATE …)`) → UNK.
@@ -49,6 +56,7 @@ import { PrismaStatementChargeRepository } from "../src/modules/subscription-bil
 import { chargeCreateClaimVerdict } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
+import { PrismaStatementInvoiceRepository } from "../src/modules/subscription-billing/invoices/invoices.prisma.js";
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -66,7 +74,20 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.insert#withTenantRls": "cenario:charges.insert",
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.listByStatement#withTenantRls": "cenario:charges.listByStatement",
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.setStatus#withTenantRls": "cenario:charges.setStatus",
+  "src/modules/subscription-billing/charges/provider-customer.prisma.ts#PrismaProviderCustomerStore.get#withTenantRls": "sem-tabela-do-mapa",
+  "src/modules/subscription-billing/charges/provider-customer.prisma.ts#PrismaProviderCustomerStore.set#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/invoice-sequence.service.ts#nextDpsNumber#.$transaction": "sem-tabela-do-mapa",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.beginIssue#withTenantRls": "cenario:invoices.beginIssue",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.findByRef#withTenantRls": "cenario:invoices.findByRef",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.findLive#withTenantRls": "cenario:invoices.findLive",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.listByStatement#withTenantRls": "cenario:invoices.listByStatement",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.markAuthorized#withTenantRls": "cenario:invoices.markAuthorized",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.markCancelFailed#withTenantRls": "cenario:invoices.markCancelFailed",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.markCancelPending#withTenantRls": "cenario:invoices.markCancelPending",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.markCancelled#withTenantRls": "cenario:invoices.markCancelled",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.markIssued#withTenantRls": "cenario:invoices.markIssued",
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.markRejected#withTenantRls": "cenario:invoices.markRejected",
+  "src/modules/subscription-billing/invoices/invoices.repository.ts#InMemoryStatementInvoiceRepository.#mirror#.transaction": "dublê-em-memória",
   "src/modules/subscription-billing/metering/usage-query-prisma.repository.ts#PrismaTenantUsageDailyQuery.list#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.#mutate#withTenantRlsBudget": "cenario:outbox.#mutate",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.adoptionFacts#withTenantRls": "cenario:outbox.adoptionFacts",
@@ -372,6 +393,53 @@ if (!connectionString) {
     // os desfechos esperados dos cenários (um erro de cenário NÃO é aceito aqui: todos são caminhos de sucesso)
     const failed = runs.filter((run) => run.error !== null).map((run) => `${run.name}: ${run.error}`);
     assert.deepEqual(failed, [], "os cenários de statements/ rodam os caminhos de sucesso");
+  });
+
+  test("T-LOCK-2 (08b): invoices/ — as 10 transações da nota, executadas, com o demonstrativo primeiro", async () => {
+    const now = new Date();
+    const invoices = new PrismaStatementInvoiceRepository(recording.client);
+    const provider = "focusnfe";
+    const serie = 1 + Math.floor(Math.random() * 100000);
+    // A: emite → consulta → emitida → autorizada → pede o cancelamento → o provedor recusa → pede de novo → cancelada
+    const a = await seedStatement("nota-a");
+    await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'paid', paid_amount = total_amount, paid_at = now() WHERE id = $1::uuid`, a.statementId);
+    let invoiceA = "";
+    let refA = "";
+    await scenario("invoices.beginIssue", async () => {
+      const { invoice } = await invoices.beginIssue({ tenantId: a.tenantId, statementId: a.statementId, seq: 1, provider, environment: "sandbox", serie }, now);
+      invoiceA = invoice.id;
+      refA = invoice.externalRef;
+    });
+    await scenario("invoices.findByRef", () => invoices.findByRef(a.tenantId, provider, refA));
+    await scenario("invoices.findLive", () => invoices.findLive(a.tenantId, a.statementId));
+    await scenario("invoices.listByStatement", () => invoices.listByStatement(a.tenantId, a.statementId));
+    await scenario("invoices.markIssued", () => invoices.markIssued(a.tenantId, invoiceA, "nfse_lk2_1", now));
+    await scenario("invoices.markAuthorized", () => invoices.markAuthorized(a.tenantId, invoiceA, { number: "NFSE-LK2", verificationCode: "V", pdfUrl: "https://documentos.invalid/lk2.pdf", pdfSource: "public_url" }, now));
+    await scenario("invoices.markCancelPending", () => invoices.markCancelPending(a.tenantId, invoiceA, { reason: "Pagamento estornado", code: "9" }, now));
+    await scenario("invoices.markCancelFailed", () => invoices.markCancelFailed(a.tenantId, invoiceA, "provider_cancel_error", now));
+    await invoices.markCancelPending(a.tenantId, invoiceA, { reason: "Pagamento estornado", code: "9" }, now);
+    await scenario("invoices.markCancelled", () => invoices.markCancelled(a.tenantId, invoiceA, now));
+    // B: emite → rejeitada
+    const b = await seedStatement("nota-b");
+    await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'paid', paid_amount = total_amount, paid_at = now() WHERE id = $1::uuid`, b.statementId);
+    const { invoice: invoiceB } = await invoices.beginIssue({ tenantId: b.tenantId, statementId: b.statementId, seq: 1, provider, environment: "sandbox", serie }, now);
+    await scenario("invoices.markRejected", () => invoices.markRejected(b.tenantId, invoiceB.id, "rejeição simulada", now));
+
+    const states = (await db.$queryRawUnsafe(
+      `SELECT s.invoice_status AS statement, i.status AS invoice FROM subscription_statements s JOIN subscription_statement_invoices i ON i.statement_id = s.id WHERE s.id = ANY($1::uuid[]) ORDER BY s.id = $2::uuid DESC`,
+      [a.statementId, b.statementId],
+      a.statementId,
+    )) as Array<{ statement: string; invoice: string }>;
+    assert.deepEqual(states, [{ statement: "cancelled", invoice: "cancelled" }, { statement: "rejected", invoice: "rejected" }], "as transações da nota fizeram o que dizem, sob o papel sem bypass");
+    const failed = runs.filter((run) => run.name.startsWith("invoices.") && run.error !== null).map((run) => `${run.name}: ${run.error}`);
+    assert.deepEqual(failed, [], "os cenários da nota rodam os caminhos de sucesso");
+    // a 1ª trava de TODA transação da nota é o demonstrativo (forte), antes de qualquer filha: a regra do §2.1, além do ORD-0/1
+    for (const run of runs.filter((r) => r.name.startsWith("invoices.mark") || r.name === "invoices.beginIssue")) {
+      for (const transaction of run.transactions) {
+        const first = transaction.events.map((event) => effectsOf(event, context)).find((effects) => effects !== "unknown" && effects.length > 0);
+        assert.ok(first !== undefined && first !== "unknown" && first[0]!.table === "subscription_statements" && first[0]!.strong, `${run.name}: a 1ª trava não é a do demonstrativo`);
+      }
+    }
   });
 
   test("T-LOCK-2: o classificador lê escrita escondida num SELECT/CTE como UNK (M7e) e a pick conjunta como duas travas sem espera", () => {

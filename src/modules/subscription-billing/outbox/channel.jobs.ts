@@ -22,7 +22,7 @@ import {
   type ReconcileOutcome,
 } from "../webhooks/reconcile.service.js";
 import { InvoiceOutboxHandler, type InvoiceIssueContextResolver } from "./invoice.dispatch.js";
-import { runDispatchOutbox, type DispatchRunResult } from "./outbox.dispatcher.js";
+import { runDispatchOutbox, type DispatcherDeps, type DispatchRunResult } from "./outbox.dispatcher.js";
 import type { OutboxRepository } from "./outbox.repository.js";
 
 /** Evento `received` sem job há mais que isto é órfão (R-WH-8); cobrança `pending` (ou nota `pending`) há mais que isto é reconsultada. */
@@ -39,6 +39,9 @@ export type ChannelDeps = {
   readonly charges: StatementChargeRepository;
   /** SÓ as portas dos provedores de PAGAMENTO LIGADOS. */
   readonly ports: Readonly<Record<string, PaymentProviderPort>>;
+  /** R-PRF-1 — OBRIGATÓRIO, como no `DispatcherDeps` (2º conserto do #522): o cliente no provedor vem do PERFIL
+   * (`profileCustomerResolver`), nunca do payload; em produção, envolto em `persistingCustomerResolver` (G12). */
+  readonly resolveCustomer: DispatcherDeps["resolveCustomer"];
   readonly settlement: StatementSettlementService;
   readonly statements: Pick<StatementRepository, "findStatement">;
   /** A perna da NOTA (c2): SÓ as portas dos provedores de nota LIGADOS, o repositório da nota e o contexto fiscal. Ausentes =
@@ -81,6 +84,7 @@ export async function runBillingDispatch(deps: ChannelDeps): Promise<DispatchRun
   return runDispatchOutbox({
     repo: deps.outbox,
     ports: deps.ports,
+    resolveCustomer: deps.resolveCustomer,
     ...(invoices ? { invoices } : {}),
     ...(deps.now ? { now: deps.now } : {}),
     onChargeCreated: async (row, result, at) => {

@@ -830,6 +830,8 @@ if (!connectionString) {
             refs,
             charges: new PrismaStatementChargeRepository(appClient),
             ports: { asaas: porta } as never,
+            // R-PRF-1 (2º conserto do #522): obrigatório; o cenário mede a varredura de plataforma, não o perfil.
+            resolveCustomer: async () => ({ ok: true as const, customerId: "cus_san305" }),
             settlement: new StatementSettlementService(runtimeCanal.repository, runtimeCanal.service),
             statements: runtimeCanal.repository,
             now: () => agoraCanal,

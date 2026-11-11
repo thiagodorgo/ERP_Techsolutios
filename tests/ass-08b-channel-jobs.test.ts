@@ -53,11 +53,20 @@ function harness(ports: Record<string, PaymentProviderPort>) {
   const statements = new InMemoryStatementRepository(() => NOW);
   const service = new StatementService(statements, { resolve: async () => ({ kind: "skip" as const, reason: "no_subscription" as const }) }, { record: async () => {} });
   const deps: ChannelDeps = {
-    outbox: new InMemoryOutboxRepository(() => NOW),
+    outbox: new InMemoryOutboxRepository({
+      // R-OBX-5 (2º conserto do #522): o dublê lê o demonstrativo do MESMO repositório; `totalCents` é o V da adoção.
+      readStatement: async (tenantId, statementId) => {
+        const statement = await statements.findStatement(tenantId, statementId);
+        return statement && { status: statement.status, reopenedAt: statement.reopenedAt, totalCents: statement.totalCents };
+      },
+      clock: () => NOW,
+    }),
     events: new InMemoryWebhookEventRepository(),
     refs: new InMemoryStatementRefRepository(),
     charges: new InMemoryStatementChargeRepository(),
     ports,
+    // R-PRF-1: o cliente vem do perfil (aqui, resolvido); o payload nunca o decide.
+    resolveCustomer: async () => ({ ok: true, customerId: "cus_1" }),
     settlement: new StatementSettlementService(statements, service),
     statements,
     now: () => NOW,
@@ -147,4 +156,27 @@ test("R-OBX-4 provedor desligado (fora das portas) nunca é alcançado pelos pol
   assert.equal(pending.events + pending.charges + settled.charges + dispatch.processed, 0);
   assert.equal(asaas.lookups + asaas.created, 0, "zero chamada ao provedor desligado");
   assert.equal((await deps.events.find("asaas", "evt_off"))?.status, "received", "o evento espera o canal religar");
+});
+
+test("G12: o resolver do despacho guarda o cliente do provedor no perfil; perfil incompleto não grava; e o R-WH-5 passa a conferir", async () => {
+  const { InMemoryProviderCustomerStore, persistingCustomerResolver } = await import("../src/modules/subscription-billing/charges/provider-customer.store.js");
+  const store = new InMemoryProviderCustomerStore();
+  const port = new ScriptedPort({ status: "paid", paidCents: 10000, raw: { customer: "cus_OUTRO" } });
+  const row = { tenantId: TENANT, provider: "asaas" } as never;
+  const ok = persistingCustomerResolver(async () => ({ ok: true, customerId: "cus_1" }), store);
+  assert.deepEqual(await ok(row, port), { ok: true, customerId: "cus_1" });
+  assert.equal(await store.get(TENANT, "asaas"), "cus_1", "o id do provedor ficou no perfil");
+  const incomplete = persistingCustomerResolver(async () => ({ ok: false, missing: ["document"] }), store);
+  assert.deepEqual(await incomplete({ tenantId: "outra", provider: "asaas" } as never, port), { ok: false, missing: ["document"] });
+  assert.equal(await store.get("outra", "asaas"), null, "perfil incompleto não grava nada");
+  await store.set(TENANT, "provedor-sem-coluna", "x", NOW);
+  assert.equal(await store.get(TENANT, "provedor-sem-coluna"), null, "lista fechada de provedores");
+
+  // R-WH-5 com o id guardado: a reconsulta traz OUTRO cliente → rejeitada, sem baixa.
+  const { deps, statements } = harness({ asaas: port });
+  const statement = await closedStatement(statements, 10000);
+  await deps.refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas", externalChargeId: "pay_g12" }, OLD);
+  const result = await runBillingPollPending({ ...deps, resolveExpectedCustomerId: (tenantId, provider) => store.get(tenantId, provider) });
+  assert.equal(result.outcomes.rejected, 1, "cliente da cobrança ≠ cliente guardado → rejeitada");
+  assert.equal((await statements.findStatement(TENANT, statement.id))?.status, "closed", "nenhuma baixa");
 });

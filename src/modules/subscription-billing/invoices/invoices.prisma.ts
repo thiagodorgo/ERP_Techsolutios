@@ -65,7 +65,26 @@ function toDomain(row: Row): SubscriptionStatementInvoice {
 
 const LIVE_SQL = `status IN ('pending', 'authorized', 'cancel_pending')`;
 
-/** O espelho do estado da nota viva no demonstrativo — na MESMA transação da linha da nota. */
+/** §2.1 do conserto-c2 / §11 (k): o DEMONSTRATIVO PRIMEIRO. Toda transação da nota trava o demonstrativo antes de mexer na
+ * linha da nota (o INSERT da nota toma KEY SHARE no demonstrativo pela FK, e o espelho, depois, um UPDATE: sem a trava antes,
+ * é o upgrade KEY SHARE → UPDATE que o T-LOCK-2 acusa como ORD-0). `FOR NO KEY UPDATE` é a mesma força do UPDATE do espelho
+ * (não bloqueia o INSERT de filhas de outras transações). `false` = demonstrativo inexistente (ou de outra organização). */
+async function lockStatement(tx: Prisma.TransactionClient, statementId: string): Promise<boolean> {
+  const rows = (await tx.$queryRawUnsafe(`SELECT id FROM subscription_statements WHERE id = $1::uuid FOR NO KEY UPDATE`, statementId)) as Array<{ id: string }>;
+  return rows.length > 0;
+}
+
+/** A mesma trava, achada pela nota: o demonstrativo da nota, `FOR NO KEY UPDATE OF s` (só o demonstrativo; a linha da nota é
+ * travada depois, pelo UPDATE condicional). `false` = nota inexistente (ou de outra organização). */
+async function lockStatementOfInvoice(tx: Prisma.TransactionClient, invoiceId: string): Promise<boolean> {
+  const rows = (await tx.$queryRawUnsafe(
+    `SELECT s.id FROM subscription_statements s JOIN subscription_statement_invoices i ON i.statement_id = s.id AND i.tenant_id = s.tenant_id WHERE i.id = $1::uuid FOR NO KEY UPDATE OF s`,
+    invoiceId,
+  )) as Array<{ id: string }>;
+  return rows.length > 0;
+}
+
+/** O espelho do estado da nota viva no demonstrativo — na MESMA transação da linha da nota, com o demonstrativo já travado. */
 async function mirrorStatement(tx: Prisma.TransactionClient, statementId: string, status: StatementInvoiceStatus, now: Date): Promise<void> {
   await tx.$executeRawUnsafe(`UPDATE subscription_statements SET invoice_status = $2, updated_at = $3 WHERE id = $1::uuid`, statementId, status, now);
 }
@@ -75,6 +94,8 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
 
   async beginIssue(input: BeginIssueInput, now: Date): Promise<{ readonly invoice: SubscriptionStatementInvoice; readonly created: boolean }> {
     return withTenantRls(this.client, input.tenantId, async (tx) => {
+      // O demonstrativo PRIMEIRO (§2.1): duas emissões do mesmo demonstrativo se serializam aqui.
+      if (!(await lockStatement(tx, input.statementId))) throw new Error("statement_not_found");
       const externalRef = invoiceExternalRef(input.statementId, input.seq);
       const existing = (await tx.$queryRawUnsafe(
         `SELECT * FROM subscription_statement_invoices WHERE provider = $1 AND external_ref = $2`,
@@ -135,6 +156,7 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
 
   async markIssued(tenantId: string, id: string, providerInvoiceId: string | null, now: Date): Promise<void> {
     await withTenantRls(this.client, tenantId, async (tx) => {
+      if (!(await lockStatementOfInvoice(tx, id))) return;
       const rows = (await tx.$queryRawUnsafe(
         `UPDATE subscription_statement_invoices
            SET provider_invoice_id = COALESCE($2, provider_invoice_id), issued_at = COALESCE(issued_at, $3), updated_at = $3
@@ -149,6 +171,7 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
 
   async markAuthorized(tenantId: string, id: string, patch: AuthorizedPatch, now: Date): Promise<void> {
     await withTenantRls(this.client, tenantId, async (tx) => {
+      if (!(await lockStatementOfInvoice(tx, id))) return;
       const rows = (await tx.$queryRawUnsafe(
         `UPDATE subscription_statement_invoices
            SET status = 'authorized', number = $2, verification_code = $3, pdf_url = $4, xml_url = $5, pdf_source = $6, error = NULL, updated_at = $7
@@ -167,6 +190,7 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
 
   async markRejected(tenantId: string, id: string, error: string | null, now: Date): Promise<void> {
     await withTenantRls(this.client, tenantId, async (tx) => {
+      if (!(await lockStatementOfInvoice(tx, id))) return;
       const rows = (await tx.$queryRawUnsafe(
         `UPDATE subscription_statement_invoices SET status = 'rejected', error = $2, updated_at = $3 WHERE id = $1::uuid AND status = 'pending' RETURNING statement_id`,
         id,
@@ -179,6 +203,7 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
 
   async markCancelPending(tenantId: string, id: string, cancel: { readonly reason: string; readonly code: string }, now: Date): Promise<void> {
     await withTenantRls(this.client, tenantId, async (tx) => {
+      if (!(await lockStatementOfInvoice(tx, id))) return;
       const rows = (await tx.$queryRawUnsafe(
         `UPDATE subscription_statement_invoices SET status = 'cancel_pending', cancel_reason = $2, cancel_code = $3, updated_at = $4
          WHERE id = $1::uuid AND status IN ('authorized', 'cancel_pending') RETURNING statement_id`,
@@ -193,6 +218,7 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
 
   async markCancelFailed(tenantId: string, id: string, error: string | null, now: Date): Promise<void> {
     await withTenantRls(this.client, tenantId, async (tx) => {
+      if (!(await lockStatementOfInvoice(tx, id))) return;
       const rows = (await tx.$queryRawUnsafe(
         `UPDATE subscription_statement_invoices SET status = 'authorized', error = $2, updated_at = $3 WHERE id = $1::uuid AND status = 'cancel_pending' RETURNING statement_id`,
         id,
@@ -205,6 +231,7 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
 
   async markCancelled(tenantId: string, id: string, now: Date): Promise<void> {
     await withTenantRls(this.client, tenantId, async (tx) => {
+      if (!(await lockStatementOfInvoice(tx, id))) return;
       const rows = (await tx.$queryRawUnsafe(
         `UPDATE subscription_statement_invoices SET status = 'cancelled', cancelled_at = $2, updated_at = $2 WHERE id = $1::uuid AND status <> 'cancelled' RETURNING statement_id`,
         id,

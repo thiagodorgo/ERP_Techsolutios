@@ -172,7 +172,12 @@ test("R-FLX-1 (pagamento) fechado → cobrança → payUrl ao cliente → webhoo
           serviceDescription: `Assinatura Plano Essencial — competência ${current.period}`,
         }),
       });
-      const issued = await runDispatchOutbox({ repo: outbox, ports: { asaas: adapter }, invoices: invoiceHandler });
+      const issued = await runDispatchOutbox({
+        repo: outbox,
+        ports: { asaas: adapter },
+        resolveCustomer: profileCustomerResolver(async (tenantId) => profiles.find(tenantId)),
+        invoices: invoiceHandler,
+      });
       assert.equal(issued.outcomes.sent, 1, "a nota foi ao provedor");
       const issuePost = focus.recorded.find((request) => request.method === "POST");
       assert.equal(issuePost?.path, `/v2/nfsen?ref=${encodeURIComponent(`${statement.id}:1`)}`, "ref = <statement_id>:<seq>");
