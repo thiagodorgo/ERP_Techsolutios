@@ -330,6 +330,8 @@ jobs:
           SUITES="$SUITES tests/b-o6r-09-dispatch-migration-drill-db.test.ts"
           SUITES="$SUITES tests/b-o6r-09-quote-approve-atomic-db.test.ts"
           SUITES="$SUITES tests/b-o6r-09-quote-approve-pool-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-dispatch-same-tx-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-harness-ddl-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

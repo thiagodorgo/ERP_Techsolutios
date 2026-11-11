@@ -10,6 +10,8 @@ import {
   captureSettled,
   waitForOwnAdvisoryWaiters,
   waitForOwnBlockedStatement,
+  dropHarnessObjects,
+  runHarnessDdl,
   withApplicationName,
 } from "./helpers/pg-barrier.js";
 
@@ -205,21 +207,28 @@ async function montarCenario(connection: string) {
       solta = true;
       await trava.query("SELECT pg_advisory_unlock(hashtext($1))", [chave]);
     };
+    // Emenda 4 (R-ARN-2/R-ARN-3) — todo DDL de gatilho pelo `runHarnessDdl`; um esgotamento no DROP falha o caso e
+    // preserva o erro do corpo. A trava é solta ANTES do DROP (um DROP com alguém preso no gatilho esperaria por ele).
+    let erroDoCorpo: unknown;
     try {
       await trava.query("SELECT pg_advisory_lock(hashtext($1))", [chave]);
-      await admin.$executeRawUnsafe(
+      await runHarnessDdl(
+        admin,
         `CREATE FUNCTION ${nome}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN PERFORM pg_advisory_xact_lock(hashtext('${chave}')); RETURN NEW; END $f$`,
       );
-      await admin.$executeRawUnsafe(
+      await runHarnessDdl(
+        admin,
         `CREATE TRIGGER ${nome} BEFORE INSERT ON ${tabela} FOR EACH ROW WHEN (NEW.tenant_id = '${tenantId}'::uuid AND (${quando})) EXECUTE FUNCTION ${nome}()`,
       );
       await corpo(soltar);
+    } catch (error) {
+      erroDoCorpo = error;
     } finally {
       await soltar().catch(() => undefined);
       await trava.end();
-      await admin.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${nome} ON ${tabela}`);
-      await admin.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${nome}()`);
+      await dropHarnessObjects(admin, erroDoCorpo, [`DROP TRIGGER IF EXISTS ${nome} ON ${tabela}`, `DROP FUNCTION IF EXISTS ${nome}()`]);
     }
+    if (erroDoCorpo !== undefined) throw erroDoCorpo;
     const [{ gatilhos }] = await sql("SELECT count(*)::int AS gatilhos FROM pg_trigger WHERE tgname = $1", [nome]);
     const [{ funcoes }] = await sql("SELECT count(*)::int AS funcoes FROM pg_proc WHERE proname = $1", [nome]);
     assert.deepEqual([gatilhos, funcoes], [0, 0], `o gatilho ${nome} sobrou no catálogo`);

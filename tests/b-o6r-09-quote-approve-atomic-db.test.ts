@@ -12,6 +12,8 @@ import {
   expectRejected,
   waitForOwnAdvisoryWaiters,
   waitForOwnBlockedStatement,
+  dropHarnessObjects,
+  runHarnessDdl,
   withApplicationName,
 } from "./helpers/pg-barrier.js";
 
@@ -321,16 +323,22 @@ async function montarCenario(connection: string) {
     plpgsql = `RAISE EXCEPTION '${marca}';`,
   ): Promise<void> {
     const nome = `b_o6r_09_q_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
-    await admin.$executeRawUnsafe(`CREATE FUNCTION ${nome}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN ${plpgsql} RETURN NEW; END $f$`);
+    // Emenda 4 (R-ARN-2/R-ARN-3) — todo DDL de gatilho pelo `runHarnessDdl`; um esgotamento no DROP falha o caso e
+    // preserva o erro do corpo.
+    await runHarnessDdl(admin, `CREATE FUNCTION ${nome}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN ${plpgsql} RETURN NEW; END $f$`);
+    let erroDoCorpo: unknown;
     try {
-      await admin.$executeRawUnsafe(
+      await runHarnessDdl(
+        admin,
         `CREATE TRIGGER ${nome} ${momento} ON ${tabela} FOR EACH ROW WHEN (NEW.tenant_id = '${tenantId}'::uuid AND (${quando})) EXECUTE FUNCTION ${nome}()`,
       );
       await corpo();
+    } catch (error) {
+      erroDoCorpo = error;
     } finally {
-      await admin.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${nome} ON ${tabela}`);
-      await admin.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${nome}()`);
+      await dropHarnessObjects(admin, erroDoCorpo, [`DROP TRIGGER IF EXISTS ${nome} ON ${tabela}`, `DROP FUNCTION IF EXISTS ${nome}()`]);
     }
+    if (erroDoCorpo !== undefined) throw erroDoCorpo;
     const [{ gatilhos }] = await sql("SELECT count(*)::int AS gatilhos FROM pg_trigger WHERE tgname = $1", [nome]);
     const [{ funcoes }] = await sql("SELECT count(*)::int AS funcoes FROM pg_proc WHERE proname = $1", [nome]);
     assert.deepEqual([gatilhos, funcoes], [0, 0], `o gatilho ${rotulo} sobrou no catálogo`);
