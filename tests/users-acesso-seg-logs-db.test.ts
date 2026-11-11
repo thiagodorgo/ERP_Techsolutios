@@ -258,6 +258,20 @@ if (!connectionString) {
         200,
       );
 
+      // Conserto do #527, F4 (mapa da C1, §5.2 item 3): depois do reset aceito, as leituras e um erro do reset
+      // também não carregam a provisória dele.
+      assert.equal((await call("lista-2", "GET", "/api/v1/users", { headers: adminHeaders })).status, 200);
+      assert.equal((await call("detalhe-2", "GET", `/api/v1/users/${newUserId}`, { headers: adminHeaders })).status, 200);
+      assert.equal(
+        (
+          await call("reset-404", "POST", `/api/v1/auth/users/${randomUUID()}/reset-password`, {
+            headers: adminHeaders,
+            body: {},
+          })
+        ).status,
+        404,
+      );
+
       // Dá ao pino o tempo de esvaziar o buffer e para o processo.
       await new Promise((resolve) => setTimeout(resolve, 300));
       await server.stop();
@@ -301,8 +315,18 @@ if (!connectionString) {
           ["reset-recusado", 0, 0],
           ["reset-aceito", 0, 1],
           ["login-2", 0, 0],
+          ["lista-2", 0, 0],
+          ["detalhe-2", 0, 0],
+          ["reset-404", 0, 0],
         ],
       );
+
+      // Toda a auditoria da organização (qualquer ação): nenhuma das duas provisórias.
+      const auditText = JSON.stringify(await admin.auditLog.findMany({ where: { tenant_id: home.tenantId } }));
+
+      assert.ok(auditText.includes("user.password_reset"), "o reset aceito está na auditoria varrida");
+      assert.equal(count(auditText, firstTemporary), 0, "a provisória da criação não vai para a auditoria");
+      assert.equal(count(auditText, secondTemporary), 0, "a provisória do reset não vai para a auditoria");
     } finally {
       await server?.stop();
       await cleanupIdentityFixture(admin, tenantIds);

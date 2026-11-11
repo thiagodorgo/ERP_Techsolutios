@@ -265,6 +265,27 @@ if (!connectionString) {
     assert.equal(after?.password_hash, before?.password_hash, "o hash não mudou");
     assert.equal(after?.must_change_password, false, "a marca não foi ligada");
     assert.equal(await resetAudits(h, org.tenantId), 0, "nenhuma auditoria de reset");
+    // Conserto do #527, F4 (mapa da C1, §5.2): nos estados de erro da UEM-03 nenhuma sessão do alvo cai, e
+    // nenhuma linha de auditoria DESTA organização carrega id ou nome de outra organização do arquivo.
+    assert.equal(
+      await h.admin.authSession.count({ where: { tenant_id: org.tenantId, user_id: org.userId, revoked_at: { not: null } } }),
+      0,
+      "nenhuma sessão do alvo foi revogada",
+    );
+    const others = await h.admin.tenant.findMany({
+      where: { id: { in: h.tenantIds.filter((id) => id !== org.tenantId) } },
+      select: { id: true, name: true },
+    });
+    const ownAudit = JSON.stringify(
+      await h.admin.auditLog.findMany({
+        where: { tenant_id: org.tenantId },
+        select: { action: true, entity: true, entity_id: true, metadata: true },
+      }),
+    );
+    for (const other of others) {
+      assert.equal(ownAudit.includes(other.id), false, "a auditoria desta organização não carrega id de outra");
+      assert.equal(ownAudit.includes(other.name), false, "a auditoria desta organização não carrega nome de outra");
+    }
     assert.equal((await login(h, org.tenantId, email, org.password)).status, 200, "a senha antiga segue entrando");
   }
 
@@ -710,6 +731,29 @@ if (!connectionString) {
     for (const value of forbidden) {
       assert.equal(auditText.includes(value), false, "a auditoria do reset não carrega id/nome de organização nem de vínculo");
     }
+  });
+
+  // Mapa de códigos do reset (conserto do #527, F4; §5.2 item 1): os dois códigos de borda que o S1·c conferia só
+  // pelo status passam a ter código E motivo conferidos (sem o motivo, uma camada esconde a outra).
+  test("C1·mapa — 401 sem sessão (UNAUTHORIZED jwt_required) e 403 sem users.manage (FORBIDDEN permission_required)", async () => {
+    const h = await harness();
+    const email = `c1m-${Date.now()}@example.com`;
+    const home = await newOrg(h, "c1m", email, "SenhaCasaC1m!");
+    const viewer = await adminOf(h, home, "viewer");
+    const before = await credentialOf(h, home);
+    const route = `/api/v1/auth/users/${home.userId}/reset-password`;
+    const anonymous = await call(h, route, { method: "POST", body: {} });
+
+    assert.equal(anonymous.status, 401);
+    assert.equal(anonymous.body.error?.code, "UNAUTHORIZED");
+    assert.equal(anonymous.body.error?.reason, "jwt_required");
+
+    const denied = await call(h, route, { method: "POST", headers: viewer.headers, body: {} });
+
+    assert.equal(denied.status, 403);
+    assert.equal(denied.body.error?.code, "FORBIDDEN");
+    assert.equal(denied.body.error?.reason, "permission_required");
+    assert.deepEqual(await credentialOf(h, home), before, "nada muda");
   });
 
   test("A8/A8b — administrador da organização não redefine alvo com papel de plataforma", async () => {
