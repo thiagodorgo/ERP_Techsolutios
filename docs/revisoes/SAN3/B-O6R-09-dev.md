@@ -204,6 +204,99 @@ T14(c) usa a forma (ii) pelo mesmo motivo.
     segura o diretório temporário; o runner da CI é Linux), e os dois casos "tempo esgotado" de
     `traccar-position-ingestion-db` na execução 1 (os mesmos da fatia 2, que também caem na `main`). A variação 549/550 é
     a linha de arquivo do `hookFailed`, e não teste do bloco;
-  - T15 nas três: 5 criações em 3 038, 1 977 e 2 047 ms, 0 recusa; T24: 4 aprovações em 2 278, 1 594 e … ms, 0 recusa, e a
+  - T15 nas três: 5 criações em 3 038, 1 977 e 2 047 ms, 0 recusa; T24: 4 aprovações em 2 278, 1 594 e 1 743 ms, 0 recusa, e a
     3ª transação do arnês recusou com P2028 em cerca de 2 s.
 - Web: `npm --prefix frontend run check` ec=0; `build` ec=0 (32 s); `test:smoke` 1 716/1 716, 0 pulo.
+
+## Mutações literais (item 11(3)) — uma por vez, revertidas, conferidas por hash
+
+Runner: `scratchpad/o6r09-tools/mutants.cjs` (fora do repositório). Cada mutação exige a âncora com contagem 1 no arquivo
+nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a byte (hash). 04:49–04:51, `o6r09-pg`.
+
+| Mutação | Arquivo | fail | pass | Veredito | Restaurado |
+|---|---|--:|--:|---|---|
+| M1 | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| M2 | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 3 | 0 | VERMELHA | sim |
+| M4 | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| M5 | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 2 | 0 | VERMELHA | sim |
+| M6 | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| M7 | `src/modules/field-dispatch/field-dispatch.service.ts` | 2 | 0 | VERMELHA | sim |
+| M7m | `src/modules/field-dispatch/field-dispatch.repository.ts` | 1 | 0 | VERMELHA | sim |
+| M8 | `src/modules/field-dispatch/field-dispatch.service.ts` | 1 | 0 | VERMELHA | sim |
+| M8b | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| M8c | `src/modules/field-dispatch/field-dispatch.service.ts` | 3 | 0 | VERMELHA | sim |
+| M9c | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 3 | 0 | VERMELHA | sim |
+| M9t | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| M10 | `src/modules/field-dispatch/field-dispatch.service.ts` | 1 | 0 | VERMELHA | sim |
+| M10g | `src/modules/field-dispatch/field-dispatch.service.ts` | 1 | 0 | VERMELHA | sim |
+| M11 | `prisma/migrations/20260901090000_field_dispatch_idempotency_key/migration.sql` | 4 | 0 | VERMELHA | sim |
+| M11b | `prisma/migrations/20260901090000_field_dispatch_idempotency_key/migration.sql` | 4 | 0 | VERMELHA | sim |
+| M12 | `frontend/src/modules/operations/dispatches/useDispatchIntentKey.ts` | 1 | 0 | VERMELHA | sim |
+| M13 | `src/modules/field-dispatch/field-dispatch.service.ts` | 1 | 0 | VERMELHA | sim |
+| M15 | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| M16 | `src/modules/field-dispatch/field-dispatch.service.ts` | 1 | 0 | VERMELHA | sim |
+| M16-db | `src/modules/field-dispatch/field-dispatch.service.ts` | 1 | 0 | VERMELHA | sim |
+| M16b | `src/modules/field-dispatch/field-dispatch.service.ts` | 1 | 0 | VERMELHA | sim |
+| M17m | `src/modules/field-dispatch/field-dispatch.repository.ts` | 1 | 0 | VERMELHA | sim |
+| M17p | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| M18 | `src/modules/field-dispatch/field-dispatch-prisma.repository.ts` | 14 | 0 | VERMELHA | sim |
+| MQ1 | `src/modules/service-quotes/service-quote-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| MQ2 | `src/modules/service-quotes/service-quote-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| MQ4 | `src/modules/service-quotes/service-quote-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| MQ3+MQ4 | `src/modules/service-quotes/service-quote-prisma.repository.ts` | 1 | 0 | VERMELHA | sim |
+| MQ5 | `src/modules/service-quotes/service-quote.service.ts` | 2 | 0 | VERMELHA | sim |
+| MQ5b | `src/modules/service-quotes/service-quote.service.ts` | 1 | 0 | VERMELHA | sim |
+| MQ5b-mem | `src/modules/service-quotes/service-quote.service.ts` | 1 | 0 | VERMELHA | sim |
+| MQ6 | `src/modules/service-quotes/service-quote-prisma.repository.ts` | 2 | 0 | VERMELHA | sim |
+| MQ7 | `src/modules/service-quotes/service-quote.service.ts` | 1 | 0 | VERMELHA | sim |
+| MQ8 | `src/modules/service-quotes/service-quote.routes.ts` | 1 | 0 | VERMELHA | sim |
+| MQ8b | `src/modules/service-quotes/service-quote.service.ts` | 2 | 0 | VERMELHA | sim |
+| MQ9 | `src/modules/service-quotes/service-quote.repository.ts` | 1 | 1 | VERMELHA | sim |
+| MQm | `src/modules/service-quotes/service-quote.repository.ts` | 1 | 0 | VERMELHA | sim |
+
+- Motivos conferidos no TAP de cada uma (amostra): M1 "sobrou despacho sem o evento de criação"; M4 "venceram dois (ou
+  nenhum)"; M13 "o técnico C aceitou um despacho que acabou de ser passado ao técnico A"; M15 "nem todas as criações
+  concluíram"; M6 "a repetição devolveu outro despacho"; M18 "`.create is not a function`" (14 casos do Traccar); MQ2
+  "Missing expected rejection" (a forma do EM1-04: a 1ª chamada resolveu); MQ3+MQ4 "o perdedor da corrida: era para ter
+  falhado e passou"; MQ9 "o perdedor recebeu quote_not_approvable".
+- **MQ7 (HIPÓTESE da emenda 1.1, medida):** com as leituras do `prepareCreate` dentro da transação, as 4 aprovações
+  recusaram com P2028 (`[T24] 4 aprovações em 2 376 ms; recusas = 4`). A forma da T24 instalada pela emenda 1.1 mata a MQ7.
+- MQ3 sozinha foi tirada da tabela pela emenda 1.1 (equivalente); medida junto com a MQ4, como pedido.
+- **MQ9 e a T25c-rb:** na 1ª passada, a MQ9 ficou vermelha na T25c, mas a T25c-rb passou sob ela: a corrida na memória
+  não forçava o 2º pedido a estar esperando quando o vencedor falhava. Reescrevi a T25c-rb com a ordem forçada (o evento do
+  vencedor só falha depois de o 2º ENTRAR em `approveWithWorkOrder`, contado por um invólucro, e de o laço de eventos
+  girar). Verde no código; a MQ9 é medida de novo abaixo.
+- **MQ9 medida de novo (05:07) com a T25c-rb de ordem forçada:** VERMELHA nas duas, T25c e T25c-rb (fail 2), restaurada.
+  O vermelho-controle da T25c-rb nova na `main` (o `src/` de orçamento e OS da `origin/main` posto no worktree e tirado
+  em seguida, `git status --short src/` vazio no fim): vermelho, pela forma (a barreira espera o 2º entrar numa aprovação
+  que a `main` não tem).
+
+## Bateria final (§9; v2 §6; emenda 1 §5.1)
+
+| Comando | Resultado |
+|---|---|
+| `npm run check` | ec=0 |
+| `npm run lint` | ec=0 |
+| `node scripts/migration-transaction-guard.mjs` | 131 migrações, 19 novas, 0 violação |
+| testes do bloco, os 7 `-db` na forma do job `backend-postgres`, 3× (lista extraída do `ci.yml`) | 45/45 nas três, `# skipped 0`, denominador constante |
+| testes do bloco em memória + guarda + regressões de despacho, orçamento e OS | 163/163 (fatia 6) e 61/63 → 63/63 depois da fatia 3 |
+| `o6r07c-b-scope-db` (regressão sem edição) | 13/13 |
+| as 4 suítes do Traccar que usam o repositório cru (T18) | verdes, salvo os 2 casos "tempo esgotado" (anteriores, ambiente) |
+| `npm test` (forma do job `backend`: banco próprio só migrado, Redis próprio, `CORE_SAAS_PERSISTENCE=memory`) | **TAP: 5 018 testes, 5 004 ok, 12 not ok, 2 skipped** (os 2 de `RBAC_DB_PARITY`, só no `backend-postgres`) |
+| `npm run build` | ec=0 |
+| web: `check`, `build`, `test:smoke` | ec=0, ec=0, 1 716/1 716 |
+| mutações literais | 38/38 vermelhas, todas restauradas (tabela acima) |
+| `git diff --check` | limpo |
+
+**Os 12 not ok do `npm test`, um a um (05:06):**
+- **1 é do bloco e é a parada D-W2:** `san3-05-acessos-de-plataforma-guard` T13 (a sub-asserção e a linha-mãe), a chave
+  `new PrismaWorkOrderRepository(scope.tx)` (`P-B-O6R-09-RATCHET-T13-NOVA-CHAVE`).
+- **Ambiente Windows, anteriores ao bloco:** `san3-05-runtime-role-guard-db` T14a/b, T14c, T14d e a linha-mãe ("setsid:
+  ausente", o teste exige o `psql` 16 do sistema e o `setsid` do Linux, e o próprio `ci.yml` fixa o runner por isso);
+  `san3-09-bootstrap-platform-admin-db` T2.1 e a linha-mãe (o `migrate deploy` pelo `node_modules/.bin/prisma`, um script
+  de shell, sai com 1 no Windows); `traccar-event-migration-drill-db` (`EBUSY … rmdir` do temporário, igual nas 3 medições
+  do `backend-postgres`).
+- **Tempo, anteriores ao bloco:** os 2 casos "tempo esgotado" de `traccar-position-ingestion-db` (caem também com o
+  `src/modules/field-dispatch` da `main`, fatia 2).
+- **Intermitente, anterior ao bloco:** `users-acesso-seg-portao-db` A6 ("a criação (S2) entrega a provisória, 400 !==
+  201"). Rodado sozinho no ramo logo depois: 4/4. Não toca despacho nem orçamento.

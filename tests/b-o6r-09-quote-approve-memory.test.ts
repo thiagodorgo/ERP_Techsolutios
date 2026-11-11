@@ -137,14 +137,39 @@ test("[mem · T25c] 2 aprovações simultâneas → 1 OS; o perdedor → 409 quo
 
 test("[mem · T25c-rb] o vencedor falha no evento enquanto o 2º espera → o 2º reserva e cria; 1 OS no total", async () => {
   const { svc, ctx, quote, contarOs } = await setup();
-  const restaurar = falharUmaVez(getMemoryWorkOrderRepositoryForTests() as never, "createEvent", "B_O6R_09_MEM_1A");
+  // A ORDEM é forçada, não sorteada: o evento do vencedor só falha depois de o 2º pedido ter ENTRADO na aprovação do
+  // repositório (contado pelo invólucro abaixo) e de o laço de eventos ter girado (o 2º chega ao `await` da espera).
+  const quotes = getMemoryServiceQuoteRepositoryForTests() as unknown as Record<string, any>;
+  const aprovar = quotes.approveWithWorkOrder;
+  let entradas = 0;
+  quotes.approveWithWorkOrder = function (this: unknown, ...args: unknown[]) {
+    entradas += 1;
+    return aprovar.apply(quotes, args);
+  };
+  const workOrders = getMemoryWorkOrderRepositoryForTests() as unknown as Record<string, any>;
+  const createEvent = workOrders.createEvent;
+  let falhou = false;
+  workOrders.createEvent = async function (this: unknown, ...args: unknown[]) {
+    if (!falhou) {
+      falhou = true;
+      const prazo = Date.now() + 5_000;
+      while (entradas < 2) {
+        if (Date.now() > prazo) throw new Error("barreira: o 2º pedido não entrou na aprovação do repositório em 5 s");
+        await new Promise((resolve) => setImmediate(resolve));
+      }
+      await new Promise((resolve) => setImmediate(resolve));
+      throw new Error("B_O6R_09_MEM_1A");
+    }
+    return createEvent.apply(workOrders, args);
+  };
   try {
     const [primeira, segunda] = await Promise.allSettled([svc.approve(ctx, quote.id, {}), svc.approve(ctx, quote.id, {})]);
     assert.equal(primeira.status, "rejected", "o vencedor, com a falha injetada, não rejeitou");
     assert.match(String((primeira as PromiseRejectedResult).reason?.message), /B_O6R_09_MEM_1A/);
     assert.equal(segunda.status, "fulfilled", `o 2º não criou a sua OS: ${String((segunda as PromiseRejectedResult).reason?.message ?? "")}`);
   } finally {
-    restaurar();
+    quotes.approveWithWorkOrder = aprovar;
+    workOrders.createEvent = createEvent;
   }
   assert.equal(await contarOs(), 1);
 });
