@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 
+import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
@@ -35,8 +37,8 @@ if (!connectionString) {
       const process = (
         await db.query<{ id: string; regime_daily_cap: string }>(
           `INSERT INTO impound_processes
-            (tenant_id,profile_id,vehicle_unidentified,status,origin_authority,regime_daily_cap)
-           VALUES ($1,$2,true,'IN_REMOVAL','Órgão','UNLIMITED') RETURNING id,regime_daily_cap`,
+            (tenant_id,profile_id,vehicle_unidentified,unidentified_reason,status,origin_authority,regime_daily_cap)
+           VALUES ($1,$2,true,'Teste B-O6R-12','IN_REMOVAL','Órgão','UNLIMITED') RETURNING id,regime_daily_cap`,
           [tenantId, profileId],
         )
       ).rows[0]!;
@@ -47,15 +49,57 @@ if (!connectionString) {
       );
       await assert.rejects(
         db.query(
-          `INSERT INTO impound_processes (tenant_id,profile_id,vehicle_unidentified,status,origin_authority)
-           VALUES ($1,$2,true,'IN_REMOVAL','Órgão')`,
+          `INSERT INTO impound_processes (tenant_id,profile_id,vehicle_unidentified,unidentified_reason,status,origin_authority)
+           VALUES ($1,$2,true,'Teste B-O6R-12','IN_REMOVAL','Órgão')`,
           [tenantId, randomUUID()],
         ),
         (error: unknown) => (error as { code?: string }).code === "23503",
       );
     } finally {
-      if (tenantId) await db.query(`DELETE FROM tenants WHERE id=$1`, [tenantId]);
+      if (tenantId) {
+        await db.query(`DELETE FROM impound_processes WHERE tenant_id=$1`, [tenantId]);
+        await db.query(`DELETE FROM jurisdiction_profiles WHERE tenant_id=$1`, [tenantId]);
+        await db.query(`DELETE FROM tenants WHERE id=$1`, [tenantId]);
+      }
       await db.end();
+    }
+  });
+
+  test("B-O6R-12 C17: papel NOSUPERUSER NOBYPASSRLS carimba o regime certo", async () => {
+    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
+    const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+    const slug = `b12-role-${randomUUID().slice(0, 8)}`;
+    const tenant = (await admin.$queryRawUnsafe<Array<{ id: string }>>(`INSERT INTO tenants (name,slug) VALUES ($1,$1) RETURNING id`, slug))[0]!;
+    const profile = (
+      await admin.$queryRawUnsafe<Array<{ id: string }>>(
+        `INSERT INTO jurisdiction_profiles
+          (tenant_id,name,scope,owner_notif_days,notice_edict_day,auction_eligible_day,auction_edict_business_days,daily_model,daily_cap,release_requirements)
+         VALUES ($1::uuid,'Perfil runtime','PUBLIC_AGREEMENT',5,10,60,15,'ROLLING_24H','SIX_MONTHS','[]'::jsonb) RETURNING id`,
+        tenant.id,
+      )
+    )[0]!;
+    const role = await createEphemeralRole(admin, connectionString);
+    try {
+      const row = await role.client.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT set_config('app.current_tenant_id', ${tenant.id}, true)`;
+        return (
+          await tx.$queryRawUnsafe<Array<{ regime_daily_cap: string }>>(
+            `INSERT INTO impound_processes
+              (tenant_id,profile_id,vehicle_unidentified,unidentified_reason,status,origin_authority,regime_daily_cap)
+             VALUES ($1::uuid,$2::uuid,true,'Teste runtime','IN_REMOVAL','Órgão','UNLIMITED')
+             RETURNING regime_daily_cap`,
+            tenant.id,
+            profile.id,
+          )
+        )[0]!;
+      });
+      assert.equal(row.regime_daily_cap, "SIX_MONTHS");
+    } finally {
+      await role.drop();
+      await admin.$executeRawUnsafe(`DELETE FROM impound_processes WHERE tenant_id=$1::uuid`, tenant.id);
+      await admin.$executeRawUnsafe(`DELETE FROM jurisdiction_profiles WHERE tenant_id=$1::uuid`, tenant.id);
+      await admin.$executeRawUnsafe(`DELETE FROM tenants WHERE id=$1::uuid`, tenant.id);
+      await admin.$disconnect();
     }
   });
 }

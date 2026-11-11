@@ -1750,6 +1750,7 @@ model ServiceCatalog {
   tariffs                    Tariff[]    @relation("TariffService")
   custody_profile            JurisdictionProfile? @relation("ServiceCatalogCustodyProfile", fields: [tenant_id, custody_profile_id], references: [tenant_id, id], onDelete: Restrict)
   daily_jurisdiction_profiles JurisdictionProfile[] @relation("JurisdictionProfileDailyService") // Ω5P PR-07 — serviço-tarifa "diária" de perfis
+  impound_process_regime_daily_services ImpoundProcess[] @relation("ImpoundProcessRegimeDailyService")
 
   checklist_applicability_rules ChecklistApplicabilityRule[]
   @@unique([tenant_id, id])
@@ -3261,6 +3262,15 @@ model ImpoundProcess {
   unidentified_reason    String?
   yard_id                String?   @db.Uuid
   profile_id             String    @db.Uuid
+  regime_scope                       String
+  regime_owner_notif_days            Int
+  regime_notice_edict_day            Int
+  regime_auction_eligible_day         Int
+  regime_auction_edict_business_days Int
+  regime_daily_model                 String
+  regime_daily_cap                   String
+  regime_release_requirements        Json
+  regime_daily_service_catalog_id    String?   @db.Uuid
   status                 String    @default("IN_REMOVAL")
   entered_at             DateTime? @db.Timestamptz(6)
   frozen_at              DateTime? @db.Timestamptz(6)
@@ -3280,6 +3290,7 @@ model ImpoundProcess {
   tenant                 Tenant              @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   yard                   Yard?               @relation(fields: [tenant_id, yard_id], references: [tenant_id, id], onDelete: Restrict)
   profile                JurisdictionProfile @relation(fields: [tenant_id, profile_id], references: [tenant_id, id], onDelete: Restrict)
+  regime_daily_service_catalog ServiceCatalog? @relation("ImpoundProcessRegimeDailyService", fields: [tenant_id, regime_daily_service_catalog_id], references: [tenant_id, id], onDelete: Restrict)
   service_order          WorkOrder?          @relation(fields: [tenant_id, service_order_id], references: [tenant_id, id], onDelete: Restrict)
   identity               ThirdPartyVehicleIdentity? @relation(fields: [tenant_id, identity_id], references: [tenant_id, id], onDelete: Restrict)
   events                 CustodyEvent[]

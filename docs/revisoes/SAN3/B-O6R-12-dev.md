@@ -43,3 +43,29 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
 - **Executor da fatia:** `dev-o6r12-cdx`.
 - **Próximo comando:** F2 — schema, migração, geração Prisma, carimbo/imutabilidade e mapeador;
   depois rodar drill, snapshot DB, guard de migração, K12 e check.
+
+## F2 — 2026-11-11T01:58:10-0300
+
+- Schema: 9 campos `regime_*`, relação tenant-first para `ServiceCatalog` e inversa.
+- Migração `20260901000000_impound_process_regime_snapshot`: `BEGIN`/`COMMIT`, backfill por
+  organização com GUC, 8 campos `NOT NULL`, FK curta (≤63 bytes), carimbo `BEFORE INSERT` e
+  trava de imutabilidade. As duas funções usam `public.` e
+  `SET search_path = pg_catalog, public` contra sombra `pg_temp`.
+- Os dois caminhos de abertura fazem `requireProfileRegime` antes de gravar; perfil ausente
+  continua 400. O trigger segue autoridade final. JSON de requisitos é validado como array e
+  clonado antes de entrar no input Prisma.
+- Mapeador expõe `ProcessRegime`; rollback não destrutivo e roteiro de correção excepcional ficam
+  no rodapé da migração.
+- Migração aplicada no `o6r12-pg`: 130/130. Guard: `migrações: 130 · violações: 0`.
+- Testes F2: snapshot/drill **3/3**, 0 fail, 0 skip; K12 **1/1** selecionado, diff 72 = fixture
+  72; `npm run check` e `prisma validate` verdes.
+- Mutações com `not ok`, uma a uma e revertidas: C4, C5, C6, C7, C7b, C14, C16, C17
+  (`42501 permission denied` ao revogar SELECT), C18 (K12 73 ≠ 72), C23, R2-1 (nome longo da
+  FK) e R2-2 (`search_path` removido). A primeira forma do teste R2-2 olhava qualquer função e
+  escapou; o teste foi corrigido para prender separadamente `$b12stamp$` e `$b12immut$`, e então
+  ficou vermelho.
+- `prisma format` gerou ruído em 1.936 linhas; somente o schema foi restaurado no worktree e os
+  11 acréscimos autorizados foram reaplicados por patch. `git diff --check` limpo.
+- **Executor da fatia:** `dev-o6r12-cdx`.
+- **Próximo comando:** F3 — trocar a leitura de cobrança Prisma e congelar o contexto em memória;
+  executar C1–C3 e C11–C13 com mutações.

@@ -40,10 +40,16 @@ test("B-O6R-12 C4-C7/C14/C16/C23: migração é transacional, segura e reversív
   assert.match(statements.at(-1)!, /COMMIT;/);
   assert.match(sql, /impound_processes_tenant_id_regime_daily_service_catalog_i_fkey/);
   assert.doesNotMatch(sql, /impound_processes_tenant_id_regime_daily_service_catalog_id_fkey/);
-  assert.match(sql, /SET search_path = pg_catalog, public/);
+  assert.match(sql, /impound_process_regime_stamp[\s\S]*?SECURITY INVOKER SET search_path = pg_catalog, public AS \$b12stamp\$/);
+  assert.match(sql, /impound_process_regime_immutable[\s\S]*?SECURITY INVOKER SET search_path = pg_catalog, public AS \$b12immut\$/);
   assert.match(sql, /FROM public\."jurisdiction_profiles"/);
   assert.match(sql, /PERFORM set_config\('app\.current_tenant_id', v_tenant::text, true\)/);
+  assert.match(sql, /AND ip\."tenant_id" = v_tenant;/);
+  assert.match(sql, /NEW\."regime_daily_cap" := p\."daily_cap";/);
   assert.match(sql, /CREATE TRIGGER "impound_processes_regime_immutable"/);
-  assert.match(sql, /ERRCODE = 'foreign_key_violation'/);
+  assert.match(
+    sql,
+    /RAISE EXCEPTION 'impound_processes: perfil normativo inexistente nesta organizacao' USING ERRCODE = 'foreign_key_violation', CONSTRAINT = 'impound_processes_tenant_id_profile_id_fkey';/,
+  );
   assert.match(sql, /ALTER TABLE "impound_processes" ALTER COLUMN "regime_scope" DROP NOT NULL/);
 });

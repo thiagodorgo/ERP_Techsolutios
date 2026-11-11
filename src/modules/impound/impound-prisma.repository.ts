@@ -64,6 +64,7 @@ export class PrismaImpoundRepository implements ImpoundRepository {
   constructor(private readonly client: PrismaExecutor) {}
 
   async createProcess(input: CreateImpoundProcessInput): Promise<ImpoundProcess> {
+    const regime = await this.requireProfileRegime(input.tenantId, input.profileId);
     let created;
     try {
       created = await this.client.impoundProcess.create({
@@ -80,6 +81,15 @@ export class PrismaImpoundRepository implements ImpoundRepository {
           unidentified_reason: input.unidentifiedReason ?? null,
           yard_id: input.yardId ?? null,
           profile_id: input.profileId,
+          regime_scope: regime.scope,
+          regime_owner_notif_days: regime.owner_notif_days,
+          regime_notice_edict_day: regime.notice_edict_day,
+          regime_auction_eligible_day: regime.auction_eligible_day,
+          regime_auction_edict_business_days: regime.auction_edict_business_days,
+          regime_daily_model: regime.daily_model,
+          regime_daily_cap: regime.daily_cap,
+          regime_release_requirements: releaseRequirementsInput(regime.release_requirements),
+          regime_daily_service_catalog_id: regime.daily_service_catalog_id,
           status: "IN_REMOVAL",
           origin_authority: input.originAuthority,
           origin_agent_name: input.originAgentName ?? null,
@@ -104,6 +114,7 @@ export class PrismaImpoundRepository implements ImpoundRepository {
   // Se qualquer passo falhar → rollback total ⇒ NENHUM half-open (IN_REMOVAL sem entered_at) nasce. Idempotência
   // OS→custódia pelo índice PARCIAL único (23505 → 409 duplicate_service_order) — a tx inteira reverte.
   async openFromRemovalAtomic(input: OpenFromRemovalInput): Promise<ImpoundProcess> {
+    const regime = await this.requireProfileRegime(input.tenantId, input.profileId);
     // Ω-VID PR-05 — resolve/cria a identidade AGREGADORA (SISTEMA) na MESMA tx, ANTES do processo, p/ gravar
     // identity_id no create. Fail-closed por construção: se o INSERT do processo colidir no índice PARCIAL único
     // (duplicate_service_order), a tx inteira reverte — inclusive esta identidade → nenhum órfão. O PROCESSO segue
@@ -117,6 +128,15 @@ export class PrismaImpoundRepository implements ImpoundRepository {
           vehicle_unidentified: true,
           unidentified_reason: input.unidentifiedReason,
           profile_id: input.profileId,
+          regime_scope: regime.scope,
+          regime_owner_notif_days: regime.owner_notif_days,
+          regime_notice_edict_day: regime.notice_edict_day,
+          regime_auction_eligible_day: regime.auction_eligible_day,
+          regime_auction_edict_business_days: regime.auction_edict_business_days,
+          regime_daily_model: regime.daily_model,
+          regime_daily_cap: regime.daily_cap,
+          regime_release_requirements: releaseRequirementsInput(regime.release_requirements),
+          regime_daily_service_catalog_id: regime.daily_service_catalog_id,
           status: "IN_REMOVAL",
           origin_authority: input.originAuthority,
           service_order_id: input.serviceOrderId,
@@ -182,6 +202,14 @@ export class PrismaImpoundRepository implements ImpoundRepository {
       seed,
     });
     return id;
+  }
+
+  // O trigger é a autoridade final e sobrescreve estes valores. A leitura prévia mantém o erro HTTP 400
+  // para perfil ausente e satisfaz o input Prisma sem default inventado.
+  private async requireProfileRegime(tenantId: string, profileId: string) {
+    const profile = await this.client.jurisdictionProfile.findFirst({ where: { tenant_id: tenantId, id: profileId } });
+    if (!profile) throw invalidProfileReference();
+    return profile;
   }
 
   // Ω-VID PR-05 — vincula (AUTO) todos os ChecklistRun da OS (related_entity_type='work_order',
@@ -865,6 +893,15 @@ type ProcessRecord = {
   readonly unidentified_reason: string | null;
   readonly yard_id: string | null;
   readonly profile_id: string;
+  readonly regime_scope: string;
+  readonly regime_owner_notif_days: number;
+  readonly regime_notice_edict_day: number;
+  readonly regime_auction_eligible_day: number;
+  readonly regime_auction_edict_business_days: number;
+  readonly regime_daily_model: string;
+  readonly regime_daily_cap: string;
+  readonly regime_release_requirements: Prisma.JsonValue;
+  readonly regime_daily_service_catalog_id: string | null;
   readonly status: string;
   readonly entered_at: Date | null;
   readonly frozen_at: Date | null;
@@ -897,6 +934,17 @@ function mapProcess(record: ProcessRecord): ImpoundProcess {
     unidentifiedReason: record.unidentified_reason ?? undefined,
     yardId: record.yard_id ?? undefined,
     profileId: record.profile_id,
+    regime: {
+      scope: record.regime_scope as NonNullable<ImpoundProcess["regime"]>["scope"],
+      ownerNotifDays: record.regime_owner_notif_days,
+      noticeEdictDay: record.regime_notice_edict_day,
+      auctionEligibleDay: record.regime_auction_eligible_day,
+      auctionEdictBusinessDays: record.regime_auction_edict_business_days,
+      dailyModel: record.regime_daily_model as NonNullable<ImpoundProcess["regime"]>["dailyModel"],
+      dailyCap: record.regime_daily_cap as NonNullable<ImpoundProcess["regime"]>["dailyCap"],
+      releaseRequirements: releaseRequirementsFromJson(record.regime_release_requirements),
+      dailyServiceCatalogId: record.regime_daily_service_catalog_id ?? undefined,
+    },
     status: record.status as ImpoundStatus,
     enteredAt: record.entered_at ?? undefined,
     frozenAt: record.frozen_at ?? undefined,
@@ -1014,6 +1062,26 @@ function normalizeRequiredSets(value: unknown): readonly string[] | null {
 }
 
 // P2002 (unique) → 409 conforme a chave; P2003 (FK) → 400 com a referência inválida.
+function invalidProfileReference(): ImpoundError {
+  return new ImpoundError(400, "IMPOUND_INVALID", "invalid_profile_reference", "The referenced jurisdiction profile does not exist for this tenant.");
+}
+
+function releaseRequirementsInput(value: Prisma.JsonValue): Prisma.InputJsonValue {
+  if (!Array.isArray(value)) throw new ImpoundError(500, "IMPOUND_INVARIANT", "invalid_profile_regime", "The jurisdiction profile has invalid release requirements.");
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function releaseRequirementsFromJson(value: Prisma.JsonValue): NonNullable<ImpoundProcess["regime"]>["releaseRequirements"] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const item = entry as Record<string, Prisma.JsonValue>;
+    return typeof item.code === "string" && typeof item.label === "string" && typeof item.required === "boolean"
+      ? [{ code: item.code, label: item.label, required: item.required }]
+      : [];
+  });
+}
+
 function translateImpoundError(error: unknown): unknown {
   if (isPrismaError(error, "P2002")) {
     const target = errorTarget(error);
@@ -1028,7 +1096,7 @@ function translateImpoundError(error: unknown): unknown {
   if (isPrismaError(error, "P2003")) {
     const target = errorTarget(error);
     if (target.includes("profile")) {
-      return new ImpoundError(400, "IMPOUND_INVALID", "invalid_profile_reference", "The referenced jurisdiction profile does not exist for this tenant.");
+      return invalidProfileReference();
     }
     if (target.includes("yard")) {
       return new ImpoundError(400, "IMPOUND_INVALID", "invalid_yard_reference", "The referenced yard does not exist for this tenant.");
