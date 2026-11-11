@@ -10,8 +10,8 @@
 
 ## Fatias (esqueleto)
 - F0 — vermelho-controle: FEITA (07:31)
-- F1 — `assert` e chip: EM APURAÇÃO
-- F2 — placeholder e roteador: EM APURAÇÃO
+- F1 — `assert` e chip: FEITA (07:33)
+- F2 — placeholder e roteador: FEITA (07:37)
 - F3 — as 9 telas: EM APURAÇÃO
 - F4 — despesas, P-O6R11, item 47, banner de política: EM APURAÇÃO
 - F5 — README, piso N0 e mutações: EM APURAÇÃO
@@ -42,3 +42,28 @@ Base citada (§6, F0 "ou na `main` atual, citada"): `origin/main` = `a0979f513b1
 **As 24 violações da T6 na base** = as 21 reais da sonda do plano (as 10 do componente e do placeholder, as 2 do roteador, `expense_report_detail_screen.dart:37,90`, `new_expense_report_screen.dart:51,53`, `expense_item_receipts_screen.dart:148`, `bootstrap_session.dart:183,186,189`) + as 3 da crítica r2 (`expense_models.dart:329,330`, `expense_list_screen.dart:152`). As 2 da allowlist são `diagnostics_screen.dart`. O inglês do avaliador de política não é termo da lista: a T6 não o vê, e por isso existe o T6b.
 
 **Diferença esperada × medida:** o plano previa T4 e T1-alcance verdes; mediu-se isso, mais o teste da allowlist (verde: `DiagnosticsScreen()` só no ramo `kIsDevMode ?`, 2 usos). Primeira execução do T4 deu vermelho por defeito do próprio teste (o mesmo `ProviderScope` não troca de override); corrigido com `pumpWidget(SizedBox.shrink())` entre as duas sessões, e então verde.
+
+## F1 — `assert` e chip (07:32–07:33 SP)
+
+- `erp_components.dart`: `final _kChaveTecnica = RegExp(r'\b[a-z][a-z_]*:[a-z][a-z_]*\b');` e, no `build` de `PermissionBlockedState`, a `assert` de **uma linha, sem mensagem** (forma fixada pela R2-04 para a M3): `    assert(!_kChaveTecnica.hasMatch('$title $message'));`. O chip do `ApprovalDecisionCard`: `label: 'Preparacao',` → `label: 'Em breve',` (efeito declarado no cartão de despesas, R4 do plano).
+- Incidente de ferramenta, corrigido antes do commit: o primeiro `python` gravou `\b` como o caractere de controle 0x08 (escape do heredoc). Medido por `od -c`, trocado por `\b` literal; `tr -cd '\010' | wc -c` = 0 nos 3 testes novos e no componente.
+
+| Comando | Exit | Saída resumida |
+|---|---|---|
+| `flutter test …acesso_nao_permitido_test.dart --plain-name T2` | 0 | `+1: All tests passed!` |
+| `git commit` | 0 | `d27ee12c` |
+
+## F2 — placeholder e roteador (07:34–07:37 SP)
+
+- `git fetch origin && git rebase origin/main` antes da F2 (trava do §4): **head da `main` usado = `a0979f51`** (#530); "is up to date".
+- `module_placeholder_screen.dart`: `required this.blockedMessage`; ramo bloqueado = `PermissionBlockedState(title: 'Acesso não permitido', message: blockedMessage)`; ramo com permissão = `ApprovalDecisionCard(title: title, message: message)`, sem o `SyncStatusBanner` e sem o import de `sync_models.dart`. As linhas do gate (`final session`, `final hasPermission = …`) ficaram byte a byte.
+- `router.dart`, as 4 chamadas, mesmos textos nos dois roteadores:
+  - `/approvals`: `title: 'Aprovações'`; `message: 'As aprovações ainda não estão disponíveis no aplicativo.'`; `blockedMessage: 'Esta área ainda não está disponível no aplicativo.'`.
+  - `/diagnostics`: `title: 'Diagnóstico'`; `message: 'Esta área só está disponível no ambiente de desenvolvimento.'`; `blockedMessage: 'Esta área não está disponível nesta versão do aplicativo.'`.
+  - **`TODO-DONO` (Pergunta 1, só neste diário):** os dois `blockedMessage` acima e as mensagens de Checklists e Estoque (F3) seguem a alternativa A recomendada. Se o dono responder B ou C, o orquestrador escreve a emenda e estas 4 linhas mudam.
+
+| Comando | Exit | Saída resumida |
+|---|---|---|
+| `dart format lib/app/router.dart lib/shared/ui/module_placeholder_screen.dart` | 0 | `0 changed` |
+| `flutter test …acesso_nao_permitido_test.dart` | 1 | `+7 -2`: verdes T1-alcance, T1b (`chamadas=4`), T2, T3 ×3, T4; vermelhos T1 e T9 só pelas 9 telas (F3). As 2 rotas do roteador já passam no T9 |
+| `flutter test` dos 3 `bsan319_*` | 0 | `+23: All tests passed!` |
