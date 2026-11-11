@@ -150,4 +150,78 @@ if (!connectionString) {
       controller.abort();
     }
   });
+
+  test("T16b — sessão encerrada (revogação) com o usuário ATIVO: o stream fecha com session_inactive", async () => {
+    const h = await harness();
+    const { fieldOpsRealtimeBroker } = await import("../src/modules/field-ops-realtime/field-ops-realtime.broker.js");
+    const org = await novaOrganizacao(h, "t16b", { roleKey: "manager" });
+    const permission = await h.admin.permission.upsert({
+      where: { key: "field_location:read" },
+      update: {},
+      create: { key: "field_location:read", description: "Permissão field_location:read" },
+    });
+
+    await h.admin.rolePermission.create({ data: { role_id: org.roleId, permission_id: permission.id } });
+
+    const admin = await administradorDe(h, org.tenantId);
+    const sessao = await entrar(h, { tenantId: org.tenantId, email: org.email, password: org.password });
+    const controller = new AbortController();
+    const prazo = setTimeout(() => controller.abort(), 40_000);
+    let texto = "";
+    let terminou = false;
+
+    try {
+      const response = await fetch(`${h.baseUrl}/api/v1/operations/field-events/stream`, {
+        headers: { ...portador(sessao.accessToken), accept: "text/event-stream" },
+        signal: controller.signal,
+      });
+
+      assert.equal(response.status, 200, "controle: o usuário ativo com sessão viva abre o stream");
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+
+      void (async () => {
+        try {
+          for (;;) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+              terminou = true;
+              break;
+            }
+
+            texto += decoder.decode(value, { stream: true });
+          }
+        } catch {
+          terminou = true;
+        }
+      })();
+
+      assert.ok(await esperar(() => texto.includes("event: ready"), 5_000), "o evento ready chega");
+      assert.equal(fieldOpsRealtimeBroker.subscriberCount(org.tenantId), 1, "fixture: um assinante");
+
+      // A sessão é encerrada sem desativar o usuário: é a mutação X3 (ator sem sid) que deixaria o mapa aberto.
+      const revogacao = await requestJson(h.baseUrl, `/api/v1/sessions/${sessao.sessionId}/revoke`, {
+        method: "POST",
+        headers: admin.headers,
+      });
+
+      assert.equal(revogacao.status, 200, `a revogação da sessão: ${JSON.stringify(revogacao.body).slice(0, 200)}`);
+
+      const inicio = Date.now();
+      const fechou = await esperar(() => terminou, 32_000);
+      const segundos = ((Date.now() - inicio) / 1000).toFixed(1);
+
+      assert.ok(fechou, `o stream fecha em até 32 s depois da revogação da sessão (esperou ${segundos} s; recebido: ${texto.slice(-200)})`);
+      assert.match(texto, /event: session_inactive/, "o último evento diz por quê");
+      assert.ok(
+        await esperar(() => fieldOpsRealtimeBroker.subscriberCount(org.tenantId) === 0, 2_000),
+        "0 assinantes depois do fim",
+      );
+    } finally {
+      clearTimeout(prazo);
+      controller.abort();
+    }
+  });
 }
