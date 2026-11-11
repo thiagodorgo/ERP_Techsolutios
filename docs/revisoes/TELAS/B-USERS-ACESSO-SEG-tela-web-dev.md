@@ -139,4 +139,36 @@ devolvem exatamente o comportamento do objeto em cada ponto (campo ignorado; ses
 
 ## 4. Bateria
 
-(em apuração)
+(em apuração: não rodada; ver a PAUSA abaixo)
+
+## PAUSA 01:30 UTC (22:30 SP, `date`)
+
+Ordem do orquestrador (P7): o dono vai reiniciar o PC. Nenhum comando pesado estava em curso (o lote 2 de mutações
+esperava o semáforo, VERMELHO de 22:15 a 22:26); o vigia `t1-gate.sh` e o monitor dele foram parados (`TaskStop`), sem órfão.
+
+- **Head:** `a351468a1c98ebac5f5054f581b102ffc64ed14f` (fatia 1) é o que está em `origin/feat/users-seg-tela-web`
+  (empurrado às 22:14). Depois dele, só commits LOCAIS de diário (`51c5f1e9`, com a seção 3, e o desta PAUSA), sem push,
+  porque a bateria não fechou.
+- **Feito (com comando e saída):** `npm --prefix frontend ci` (saída 0, 103 pacotes, sem junction); linha de base do
+  `test:smoke` no objeto `e09e9667` = 1676/1676; `npm --prefix frontend run check` limpo no código da fatia 1 (22:13);
+  `node --test --import tsx tests/auth-troca-senha.adapter.test.ts tests/troca-senha-live.test.tsx
+  tests/aparencia-registro.guard.test.ts` (em `frontend/`) = 51/51 (22:13); mutações W1, RQ-1 (b), W2, W3 e W4 vermelhas e
+  revertidas (seção 3).
+- **Falta:**
+  1. mutações W5, W6, RQ-6, E4.5 (e-mail vazio), E4.3 (preferência na sessão restrita) e RQ-1 (a) (esta pela suíte
+     `test:smoke` inteira, para medir os 11 da crítica);
+  2. a bateria: `npm --prefix frontend run check`, `npm --prefix frontend run build`, `npm --prefix frontend run test:smoke`
+     (esperado 1676 + 31 novos = 1707), `git diff --check`, conferência de escopo
+     (`git diff --name-only e09e9667..HEAD` ⊆ PERMITIDO de T.2 + `screen-refs/` + este diário);
+  3. registrar as saídas aqui, commitar o diário e dar push; limpar `frontend/dist` (§C5).
+- **Próximo comando exato** (de `C:/Users/thiag/w-tela527`, com o semáforo VERDE e o commit livre ≥ 2.048 MB):
+  `S=/c/Users/thiag/AppData/Local/Temp/claude/d939c34b716351f1/c5f407dd-e6e4-4333-9bfe-6ed36babdb03/scratchpad; for m in W5 W6 RQ6 E45 E43; do node $S/t1-mutate.mjs $m; done`
+  e depois `node $S/t1-mutate.mjs RQ1a` (roda o `test:smoke` com a mutação). O `t1-mutate.mjs` reverte cada mutação por
+  `git checkout -- <arquivo>`. Se ele sumir com o reinício, as mutações literais são: W5 apaga `clearStoredAuthSession();`
+  de `changeOwnPassword` (`auth.service.ts`); W6 apaga o bloco `lg-campo … c-conf` (o campo de confirmação) de
+  `ChangePasswordViewC.tsx`; RQ-6 troca o `fetch` de `changePasswordWithJwt` por
+  `apiRequest("/auth/password", { method: "POST", body })`; E4.5 troca `<b>{model.email}</b>` por `<b>{""}</b>`
+  (`ChangePasswordViewA.tsx`); E4.3 troca `return restricted ? "A" : preferred;` por `return preferred;`
+  (`ChangePasswordPage.tsx`); RQ-1 (a) troca `session.mustChangePassword !== true` por `session.mustChangePassword === false`
+  (`AuthProvider.tsx`).
+- **Arquivos meio-escritos:** nenhum. Nenhuma mutação aplicada na árvore (todas revertidas; código sem diff).
