@@ -19,7 +19,14 @@ da OS** e **todo faturamento** (o único caminho que cria título com `work_orde
    de escrever. OS `cancelled` → `422 work_order_cancelled` (o contrato de hoje).
 3. Ordem total das travas: trava consultiva do período (se houver) → linha da OS → itens em `(created_at, id)`.
 4. (Q1 = A) Nenhum escritor de situação (`changeStatus`, `assign`, `assignFromDispatch`) grava sobre uma situação
-   diferente da que o serviço validou (CAS); em corrida, `409 invalid_status_transition`.
+   diferente da que o serviço validou (CAS). **Emenda 1 e 1.1 do plano** (precedente `FinancialTitleService.changeStatus`):
+   quando o CAS casa 0, o serviço relê a OS, revalida a MESMA operação sobre a situação relida e regrava UMA vez; se a
+   revalidação falha, responde o erro do próprio check; a 2ª falha responde `409 invalid_status_transition`, sem laço.
+   Revalidação por escritor: mudar situação = escopo por objeto (`403 not_assigned_to_actor`) + transição (`409`);
+   atribuir = trava de técnico (`409 technician_change_requires_authorization`) + transição; despachar = situação
+   terminal (`409`) + trava de técnico. O evento da regravação leva a situação relida como origem. A revalidação sobre
+   `cancelled` falha sempre: o cancelamento não é sobrescrito, e a corrida legítima (dois despachos do mesmo técnico)
+   responde o que a sequência responde (201). A unidade de memória segue a mesma regra, com o CAS sobre a OS viva.
 
 **Fora do alcance, declarado:** baixa, estorno, PATCH, situação e exclusão de título e cheques não passam pela trava da OS
 (não criam título nem item; o invariante não sofre, medido pela crítica r2). O evento-base de comissão vira

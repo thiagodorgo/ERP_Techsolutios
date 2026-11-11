@@ -170,3 +170,21 @@ Os ajustes vieram como requisito do orquestrador. A crítica não propõe conser
 - `tests/b-san3-23-cas-retentativa.test.ts`, **3 execuções** → `# pass 10 · # fail 0` nas três (inclusive os 2 do EM1-04: 20 rodadas de cancelar(zero) × atribuir sem 404 e sempre `cancelled/zero/0`; e 240 rodadas de cancelar(keep|zero) × concluir/atribuir/despachar com atraso variável, sem "cancelou e não ficou cancelada", sem 404 e sem decisão em OS não cancelada).
 - "nao super-conta" 6× → **6/6 `ok`**.
 - Regressão em memória: `npm test -- tests/checklist-snapshot-dispatch.test.ts tests/o6r07c-b-scope.test.ts tests/field-dispatch.test.ts tests/work-orders.test.ts tests/mobile-backend-contracts.test.ts tests/work-order-checklists-sticky.test.ts tests/work-order-map.test.ts tests/san3-13-wo-list-scope.test.ts tests/dashboard-summary.test.ts tests/o6r07b-upload-gate.test.ts tests/work-order-cancel-duplicate.test.ts tests/work-order-cancel-duplicate-routes.test.ts tests/work-order-invoicing.test.ts tests/work-order-financials.test.ts tests/work-order-financials-routes.test.ts tests/commissions-cancellation-suppression.test.ts tests/financial-uow-memory.test.ts tests/financial-uow-journal-classification.test.ts tests/b-san3-23-cas-retentativa.test.ts` → `19 arquivo(s) · 489 teste(s) · pass 489 · fail 0 · skipped 0`.
+
+### F6d — mutações da Emenda 1/1.1 (05:47–05:57 SP)
+
+- **Âncoras antes de mutar** (`grep -cF`, commit `ad262890`): `revalida-status|assign|dispatch` = 1 cada; as 3 linhas `… // B-SAN3-23:segunda-falha-*` = 1 cada; `const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-dispatch` = 1; na memória, `if (input.decision === "zero") await input.memoryFinancials.zeroActive();` = 1 e `let fromStatus = current.status;` = 1.
+- **Como:** `mutacoes-em1.sh` (scratchpad): aplica a troca literal (`mutar.mjs`, recusa âncora ≠ 1) → `npx tsc --noEmit` → os casos que ela mata (Postgres com `DATABASE_URL` do cluster descartável; memória com `CORE_SAAS_PERSISTENCE=memory`) → `git checkout --` contra o commit → `git diff --quiet`. Todas restauradas.
+
+| Mutação | Troca (literal) | tsc | Vermelho | Razão |
+|---|---|---|---|---|
+| **R-status** (EM1-01) | apagar `// B-SAN3-23:revalida-status` | 0 | **A13** (Postgres); memória: escopo por objeto e transição do mudar situação | a regravação sobre a relida `cancelled` sobrescreve (A13); o técnico que perdeu a OS grava |
+| **R-assign** (EM1-01) | apagar `// B-SAN3-23:revalida-assign` | 0 | **A14**; memória: trava de técnico do atribuir e o EM1-04 (cancelar × atribuir) | a atribuição regrava sobre a OS cancelada |
+| **R-dispatch** (EM1-01) | apagar `// B-SAN3-23:revalida-dispatch` | 0 | **A15 e A15b**; memória: terminal e trava de técnico do despachar | a OS cancelada ganha técnico |
+| **L-status / L-assign / L-dispatch** (EM1-02) | a linha da 2ª falha vira `return this.changeStatus(actor, workOrderId, body)` / `return this.assign(actor, workOrderId, body)` / `return this.assignFromDispatch(actor, input)` | 0 | **EM1-02** nos três | `laço: changeStatus|assign|assignFromDispatch chamado 6 vezes` (a guarda do contador) |
+| **V409-dispatch** (EM1-05, "voltar ao 409 direto") | `throw await this.statusWriteMissError(actor, current.id, "assigned");` antes da releitura do despacho | 0 | **A15c, A15d** (Postgres) e **"nao super-conta"** (memória) | o 2º despacho volta a 409 |
+| **MEM-zero-antes** (EM1-04) | mover o zerar da memória para antes da mudança de situação | 0 | **EM1-04** (CAS vivo) | `concluir/zero rodada 0: cancel=422/invalid_status_transition outro=ok => completed/null/ativos=0` — itens zerados numa OS que não foi cancelada |
+| **M13 / M14 / M15** (EM1-06, texto de hoje) | apagar `cas-status` / `cas-assign` / `cas-dispatch` | 0 | A13 / A14 / A15 e A15b | sobrescrita |
+| **M15b** (EM1-06) | `status: current.status, // B-SAN3-23:cas-dispatch` | 0 | **A15b** (A15 `ok`) | a OS cancelada vira `assigned` |
+
+- **Veredito:** 12 mutações, 12 vermelhas pela razão certa, tsc 0 em todas.
