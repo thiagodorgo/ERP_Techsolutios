@@ -8,12 +8,15 @@ import type {
   UpdateJurisdictionProfileInput,
 } from "./jurisdiction.types.js";
 import { JurisdictionError } from "./jurisdiction.types.js";
+import { computeProfileChanges, type ProfileChanges } from "./jurisdiction.audit.js";
+
+export type ProfileUpdateResult = ProfileChanges & { readonly profile: JurisdictionProfile };
 
 export interface JurisdictionRepository {
   createProfile(input: CreateJurisdictionProfileInput): Promise<JurisdictionProfile>;
   listProfiles(input: ListJurisdictionProfileInput): Promise<ListJurisdictionProfileResult>;
   findProfileById(tenantId: string, profileId: string): Promise<JurisdictionProfile | undefined>;
-  updateProfile(input: UpdateJurisdictionProfileInput): Promise<JurisdictionProfile | undefined>;
+  updateProfile(input: UpdateJurisdictionProfileInput): Promise<ProfileUpdateResult | undefined>;
 
   reset?(): void;
 }
@@ -71,7 +74,7 @@ export class InMemoryJurisdictionRepository implements JurisdictionRepository {
     return profile?.tenantId === tenantId ? profile : undefined;
   }
 
-  async updateProfile(input: UpdateJurisdictionProfileInput): Promise<JurisdictionProfile | undefined> {
+  async updateProfile(input: UpdateJurisdictionProfileInput): Promise<ProfileUpdateResult | undefined> {
     const current = await this.findProfileById(input.tenantId, input.profileId);
     if (!current) return undefined;
 
@@ -98,7 +101,7 @@ export class InMemoryJurisdictionRepository implements JurisdictionRepository {
       updatedAt: new Date(),
     };
     this.profiles.set(updated.id, updated);
-    return updated;
+    return { profile: updated, ...computeProfileChanges(current, updated) };
   }
 
   reset(): void {

@@ -170,6 +170,9 @@ test("form de OS renderiza secao de vinculos com as opcoes 'Sem ...' (D-007)", a
   assert.match(html, /aria-label="Cadastrar novo serviço"/);
   // D-007: modo mock nao fabrica cadastros; sem termo tecnico "Tenant" na UI.
   assert.doesNotMatch(html, /cus-1|veh-1|Tenant/);
+  // B-SAN3-26 (emenda E-04): OS sem serviço também recebe a placa do veículo atendido.
+  assert.match(html, /Veículo atendido/);
+  assert.match(html, /Placa do veículo/);
 });
 
 test("B2: botoes '+ Novo' sao gated por *:create (ocultos sem permissao)", async () => {

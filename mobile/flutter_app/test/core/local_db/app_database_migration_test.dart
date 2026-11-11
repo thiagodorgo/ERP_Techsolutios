@@ -1,8 +1,11 @@
 import 'dart:io';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/app_database.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/drift_work_order_local_store.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
+import 'package:erp_techsolutions_mobile/features/work_orders/domain/work_order_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ===========================================================================
@@ -96,6 +99,44 @@ CREATE TABLE sync_actions (
   last_safe_error TEXT
 )''';
 
+// B-SAN3-26 — work_orders da ERA schema 15: todas as colunas de hoje MENOS as duas do check-in.
+const _v15WorkOrders = '''
+CREATE TABLE work_orders (
+  local_id TEXT NOT NULL PRIMARY KEY,
+  server_id TEXT,
+  tenant_id TEXT NOT NULL,
+  code TEXT NOT NULL,
+  title TEXT NOT NULL,
+  customer_name TEXT NOT NULL,
+  customer_document TEXT,
+  customer_phone TEXT,
+  service_address TEXT NOT NULL,
+  latitude REAL,
+  longitude REAL,
+  status TEXT NOT NULL,
+  priority TEXT NOT NULL,
+  assigned_user_id TEXT,
+  scheduled_at INTEGER,
+  started_at INTEGER,
+  arrived_at INTEGER,
+  completed_at INTEGER,
+  checklist_id TEXT,
+  sync_status TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER,
+  service_type TEXT,
+  vehicle_id TEXT,
+  vehicle_plate TEXT,
+  team_id TEXT,
+  team_name TEXT
+)''';
+
+const _v15Row =
+    "INSERT INTO work_orders (local_id, server_id, tenant_id, code, title, customer_name, "
+    "service_address, status, priority, sync_status, created_at) VALUES "
+    "('wo-v15', 'srv-v15', 'tenant-v15', 'OS-1515', 'OS antiga', 'Cliente', 'Rua', "
+    "'enRoute', 'normal', 'synced', 1762819200000)";
+
 Future<Set<String>> _columns(GeneratedDatabase db, String table) async {
   final rows = await db.customSelect("PRAGMA table_info('$table')").get();
   return rows.map((r) => r.read<String>('name')).toSet();
@@ -178,7 +219,7 @@ void main() {
       // checklist_runs.kind (ALTER do schema 8) presente.
       expect(await _columns(db, 'checklist_runs'), contains('kind'));
 
-      expect(await _userVersion(db), 15);
+      expect(await _userVersion(db), 16);
     },
   );
 
@@ -216,10 +257,128 @@ void main() {
       );
       expect(
         await _columns(db, 'work_orders'),
-        containsAll(<String>['service_type', 'vehicle_id', 'team_id']),
+        containsAll(<String>[
+          'service_type',
+          'vehicle_id',
+          'team_id',
+          // B-SAN3-26 — nascem no CREATE fresco e o ALTER da v16 não as duplica.
+          'checkin_mode',
+          'checkin_plate_tail',
+        ]),
       );
       expect(await _columns(db, 'checklist_runs'), contains('kind'));
-      expect(await _userVersion(db), 15);
+      expect(await _userVersion(db), 16);
     },
   );
+
+  group('B-SAN3-26 M4 — banco local v15 → v16 (modo do check-in)', () {
+    test(
+      'v15 com OS → v16: a linha fica, as duas colunas novas nascem nulas e o modo lido é unknown',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('erp_mig_v15');
+        addTearDown(() async {
+          if (await dir.exists()) await dir.delete(recursive: true);
+        });
+        final path = await _seedLegacyDb(
+          dir,
+          version: 15,
+          ddl: const [_v15WorkOrders, _v15Row],
+        );
+
+        final db = AppDatabase(NativeDatabase(File(path)));
+        addTearDown(db.close);
+
+        expect(
+          await _columns(db, 'work_orders'),
+          containsAll(<String>['checkin_mode', 'checkin_plate_tail']),
+        );
+        final rows = await db
+            .customSelect(
+              "SELECT local_id, checkin_mode, checkin_plate_tail FROM work_orders",
+            )
+            .get();
+        expect(rows, hasLength(1));
+        expect(rows.single.read<String>('local_id'), 'wo-v15');
+        expect(rows.single.readNullable<String>('checkin_mode'), isNull);
+        expect(rows.single.readNullable<String>('checkin_plate_tail'), isNull);
+        final orders = await DriftWorkOrderLocalStore(db).loadWorkOrders();
+        expect(orders.single.checkinMode, CheckinMode.unknown);
+        expect(orders.single.checkinPlateTail, isNull);
+        expect(await _userVersion(db), 16);
+      },
+    );
+
+    test(
+      'v15 que já tem as colunas (app novo aberto, devolvido ao antigo e reaberto) → v16 sem "duplicate column"',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('erp_mig_v15b');
+        addTearDown(() async {
+          if (await dir.exists()) await dir.delete(recursive: true);
+        });
+        final path = await _seedLegacyDb(
+          dir,
+          version: 15,
+          ddl: const [
+            _v15WorkOrders,
+            'ALTER TABLE work_orders ADD COLUMN checkin_mode TEXT',
+            'ALTER TABLE work_orders ADD COLUMN checkin_plate_tail TEXT',
+            _v15Row,
+          ],
+        );
+
+        final db = AppDatabase(NativeDatabase(File(path)));
+        addTearDown(db.close);
+
+        expect(
+          await _columns(db, 'work_orders'),
+          containsAll(<String>['checkin_mode', 'checkin_plate_tail']),
+        );
+        expect(await _userVersion(db), 16);
+      },
+    );
+
+    test('o store grava e lê o modo e o fim da placa', () async {
+      final db = AppDatabase.openInMemory();
+      addTearDown(db.close);
+      final store = DriftWorkOrderLocalStore(db);
+      await store.saveWorkOrder(
+        WorkOrder(
+          localId: 'wo-1',
+          tenantId: 't',
+          code: 'OS-1',
+          title: 'OS',
+          customerName: 'C',
+          serviceAddress: 'R',
+          status: WorkOrderStatus.enRoute,
+          priority: WorkOrderPriority.normal,
+          syncStatus: SyncStatus.synced,
+          createdAt: DateTime.utc(2026, 11, 11),
+          checkinMode: CheckinMode.referenceMissing,
+          checkinPlateTail: null,
+        ),
+      );
+      await store.saveWorkOrder(
+        WorkOrder(
+          localId: 'wo-2',
+          tenantId: 't',
+          code: 'OS-2',
+          title: 'OS',
+          customerName: 'C',
+          serviceAddress: 'R',
+          status: WorkOrderStatus.enRoute,
+          priority: WorkOrderPriority.normal,
+          syncStatus: SyncStatus.synced,
+          createdAt: DateTime.utc(2026, 11, 11),
+          checkinMode: CheckinMode.plate,
+          checkinPlateTail: '23',
+        ),
+      );
+      final porId = {
+        for (final o in await store.loadWorkOrders()) o.localId: o,
+      };
+      expect(porId['wo-1']!.checkinMode, CheckinMode.referenceMissing);
+      expect(porId['wo-2']!.checkinMode, CheckinMode.plate);
+      expect(porId['wo-2']!.checkinPlateTail, '23');
+    });
+  });
 }

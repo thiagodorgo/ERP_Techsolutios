@@ -2,6 +2,8 @@ import type { Permission, Role } from "../core-saas/permissions/catalog.js";
 // `import type` (apagado na compilação) — work-order-checklists.types.ts importa o WorkOrderError daqui, e um
 // import de VALOR fecharia o ciclo em runtime.
 import type { WorkOrderChecklistLinkInput } from "./work-order-checklists.types.js";
+// B-SAN3-26 — `import type` pela mesma razão: work-order.checkin.ts importa o WorkOrderError daqui.
+import type { CheckinVerdict } from "./work-order.checkin.js";
 
 export const WORK_ORDER_STATUSES = [
   "open",
@@ -325,7 +327,9 @@ export type CreateWorkOrderInput = Omit<
   WorkOrder,
   "id" | "status" | "createdAt" | "updatedAt"
 > & {
-  readonly status?: WorkOrderStatus;
+  // B-SAN3-26 (C26-08) — ninguém CRIA uma OS já em "No local": `on_site` só nasce de um veredito de check-in, pelo
+  // `changeStatus` (só no tipo; uma suíte semeia `on_site` com `as never`, e o create não tem guarda em execução).
+  readonly status?: Exclude<WorkOrderStatus, "on_site">;
   /**
    * CHECKLIST P1 PR-04c-A — o CONJUNTO de vistorias resolvido/declarado na CRIAÇÃO (sticky). Gravado na mesma
    * transação da ordem; `checklist_id`/`checklist_snapshot` passam a ser DERIVADOS da linha primária.
@@ -385,13 +389,13 @@ export type UpdateWorkOrderInput = Partial<
   readonly workOrderId: string;
 };
 
-export type ChangeWorkOrderStatusInput = {
+type ChangeWorkOrderStatusCommon = {
   readonly tenantId: string;
   readonly workOrderId: string;
-  readonly status: WorkOrderStatus;
   // B-SAN3-23 (P-23.4, Q1 = A) — CAS: a situação que o serviço VALIDOU. O repositório só grava se a OS ainda estiver
   // nela; senão devolve `undefined` e o serviço relê (409/404). OBRIGATÓRIO de propósito (C23R2-06): no Prisma,
   // `undefined` no `where` descarta o predicado, e um chamador que esquecesse o campo gravaria sem CAS em silêncio.
+  // O `status` mora na união abaixo (B-SAN3-26): `on_site` exige o veredito (Emenda 3 da junção, item 3).
   readonly expectedStatus: WorkOrderStatus;
   readonly message: string;
   readonly cancellationReason?: string;
@@ -400,6 +404,24 @@ export type ChangeWorkOrderStatusInput = {
   readonly financialCancellationDecision?: WorkOrderFinancialCancellationDecision;
   readonly actorUserId?: string;
 };
+
+// B-SAN3-26 (C26-08, P-CHECKIN-1) — escrever `on_site` no repositório EXIGE um veredito de check-in, e o veredito tem
+// marca: só `verifyCheckin` (work-order.checkin.ts) o cria. Os dois repositórios ainda recusam em execução o veredito
+// que não saiu de lá (`assertCheckinVerdictForStatus`). O guard de tipo é work-order.checkin.typecheck.ts.
+export type ChangeWorkOrderStatusInput =
+  | (ChangeWorkOrderStatusCommon & {
+      readonly status: Exclude<WorkOrderStatus, "on_site">;
+      readonly checkin?: undefined;
+    })
+  | (ChangeWorkOrderStatusCommon & {
+      readonly status: "on_site";
+      readonly checkin: CheckinVerdict;
+    });
+
+// B-SAN3-26 — por onde o pedido de status chegou. Só a rota HTTP de status (`work-order.controller.ts`) passa
+// `http_status_route`, a única porta em que a base marca "No local" sem os dígitos. Sem o parâmetro vale `internal`,
+// que é estrita.
+export type CheckinEntry = "http_status_route" | "mobile_sync" | "internal";
 
 // B-SAN3-23 (P-23.1) — o cancelamento como UNIDADE no repositório: trava exclusiva da OS → a regra de transição do
 // serviço sobre a situação lida sob a trava → no `zero`, "há item ativo faturado?" e o zerar → a situação → o evento.

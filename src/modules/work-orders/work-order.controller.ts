@@ -20,9 +20,11 @@ export class WorkOrderController {
   async list(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const result = await service.list(actor, request.query as Record<string, unknown>);
+    // B-SAN3-26 (C26-03) — o modo do check-in de cada OS, calculado pelo servidor (o app não decide isenção).
+    const checkin = await service.describeCheckinForList(actor, result.items);
 
     return {
-      body: toWorkOrderListDto(result),
+      body: toWorkOrderListDto(result, checkin),
     };
   }
 
@@ -110,7 +112,10 @@ export class WorkOrderController {
 
   async changeStatus(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const workOrder = await service.changeStatus(actor, readRouteParam(request.params.workOrderId), request.body ?? {});
+    // B-SAN3-26 — a única porta em que a base marca "No local" sem os dígitos (a fila do app exige de todos).
+    const workOrder = await service.changeStatus(actor, readRouteParam(request.params.workOrderId), request.body ?? {}, {
+      entry: "http_status_route",
+    });
 
     if (workOrder.status === "completed") {
       const approvals = await createDefaultApprovalService();
