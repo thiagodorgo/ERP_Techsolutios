@@ -632,3 +632,83 @@ A regra de dono é a do orquestrador: defeito do app de OS ou da fila vai para o
 - o residual do C1-A1 vira `P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO` (BAIXA, dono a definir pelo orquestrador).
 
 O índice foi regenerado pelo gerador: 864 cabeçalhos e 853 IDs.
+
+## A junção com a main `c95ad4fd` (#535, #536, #540, #541): Emenda 3 do plano
+
+- **Autor:** `dev-san3-26-fix-cl`, dev do #534. Não achei o conflito como defeito. Às 11:13 SP, o merge deu conflito de
+  CÓDIGO em 4 arquivos, eu PAREI (`git merge --abort`) e avisei. O orquestrador escreveu a Emenda 3 no fim do
+  `plano-B-SAN3-26-v2.md` às 11:15 SP e autorizou a resolução. Comecei às 11:16 SP, por `date`.
+- **Causa:** o #536 (B-SAN3-23) trocou a escrita de situação por um CAS (`expectedStatus`) com releitura, revalidação e
+  uma regravação. O #534 tinha posto, no mesmo `changeStatus`, o veredito do check-in e a neutralização da frase.
+
+### Como ficou, item por item da emenda
+
+1. **Nenhum "No local" sem veredito, em nenhum caminho.** O `changeStatus` calcula o veredito sobre a OS lida e monta a
+   escrita a partir dele (`statusWrite(veredito, expectedStatus)`). Se o CAS casar 0, o serviço relê e revalida
+   (escopo e transição, do #536). Depois **recalcula o veredito sobre a OS relida**, na linha marcada
+   `// B-SAN3-26:veredito-na-releitura`, e só então regrava, com a escrita refeita a partir do veredito novo. Veredito
+   que não fecha na relida recusa (422) e não grava nada.
+2. **Nada sobrescreve o cancelamento.** A revalidação do #536 vem antes do recálculo: relida `cancelled` dá 409
+   `invalid_status_transition`.
+3. **Um tipo só.** `ChangeWorkOrderStatusCommon` ganhou o `expectedStatus` do #536. O `status` fica só na união do
+   #534, e `on_site` exige o `checkin: CheckinVerdict`. O `CancelWorkOrderWithFinancialDecision*` do #536 entrou como
+   está.
+4. **Ordem.** `assertCheckinVerdictForStatus(input)` é a 1ª linha do `changeStatus` nos dois repositórios, antes do CAS
+   e de qualquer escrita. No Prisma já estava assim depois da fusão automática; na memória, ficou antes do
+   `liveWorkOrder`.
+5. **A frase reservada na regravação.** A mensagem sai do `statusWrite` a cada passada, com `withoutReservedOfficeMark`.
+
+### Fora dos 4 arquivos: o que a junção exigiu, sem asserção editada (declarado)
+
+- **`work-order.checkin.typecheck.ts`** (guarda de tipo do #534): a base das entradas ganhou `expectedStatus`. Sem
+  ele, os 2 `@ts-expect-error` passariam a falhar pela falta do campo do CAS, e não pelo veredito: a guarda ficaria
+  vazia. Prova: com o `Exclude<…, "on_site">` trocado por `WorkOrderStatus`, o `tsc` dá `TS2578 Unused
+  '@ts-expect-error'` na linha 16, e o arquivo foi restaurado.
+- **`tests/san3-26-checkin-ponto-unico.guard.test.ts`** (do #534): as chamadas diretas ao repositório ganharam o
+  `expectedStatus`. É fixture: o G1-controle falhava porque o CAS casava 0 sem o campo.
+- **`tests/b-san3-23-cas-retentativa.test.ts`** (do #536): o arnês `setStatus` leva a OS a `on_site` com um veredito
+  emitido por `verifyCheckin`, pela porta da base (`office`). Sem isso, a guarda do #534 recusa o `on_site` do arnês,
+  e 4 casos caem por `checkin_verdict_required`. Só o arnês muda; nenhuma asserção.
+
+### Testes novos (`tests/san3-26-checkin-juncao-cas.test.ts`)
+
+Em memória, com barreira determinística: um Proxy roda o gancho antes da 1ª escrita de situação, como no
+`b-san3-23-cas-retentativa`.
+- **T-JUNCAO:** o `cancel` (keep) entra entre a leitura e a escrita de um "No local" COM veredito. Resultado: 409
+  `invalid_status_transition`, OS `cancelled`, `arrivedAt` vazio, 0 evento `on_site` e 1 escrita só (sem regravação).
+- **T-JUNCAO-b:** a base troca a placa (`XYZ9A99`) ou a tira, e marca o "No local", entre a leitura e a escrita do
+  técnico, que mandou os dígitos certos da placa que leu ("23"). Resultado: 422 (`checkin_confirmation_mismatch` ou
+  `checkin_reference_missing`), 1 escrita só, 0 evento do técnico, e a OS não fica gravada em nome dele.
+- **T-JUNCAO-c:** a frase da base em `on_route`, com a regravação exercida (2 escritas). A mensagem gravada não tem a
+  marca.
+
+| Mutação | Âncora → troca | Resultado |
+|---|---|---|
+| M-JUNC-a (o recálculo na releitura) | `      checkin = await this.verifyCheckinForStatus(actor, reread, nextStatus, body, entry); // B-SAN3-26:veredito-na-releitura` → (apagar) | ec=1, **VERMELHA**: T-JUNCAO-b, "era para recusar e passou" |
+| M-JUNC-b (a revalidação do #536) | `      await this.revalidateStatusChange(actor, reread, nextStatus); // B-SAN3-23:revalida-status` → (apagar) | ec=1, VERMELHA: T-JUNCAO |
+| M-JUNC-c (a frase na regravação) | `        : withoutReservedOfficeMark(optionalString(body.message)) ?? defaultStatusMessage(nextStatus);` → `        : optionalString(body.message) ?? defaultStatusMessage(nextStatus);` | ec=1, VERMELHA: T-JUNCAO-c |
+| M-JUNC-d (a escrita refeita na releitura) | `      write = statusWrite(checkin, fromStatus);` → (apagar) | ec=1, VERMELHA: T-JUNCAO-c |
+
+As 4 foram restauradas (`cmp` igual).
+
+### Bateria (11:20 a 11:36 SP)
+
+- **#534, testes do bloco** (`san3-26-*`, 4 arquivos, com o novo): 41/41, skipped 0.
+- **#534, regressões:** as 5 do plano deram 219/219, e atribuição e despacho (`mobile-work-order-assign-registry`,
+  `field-dispatch-routes`, `checklist-snapshot-dispatch`) deram 22/22.
+- **#536 em memória:** `b-san3-23-cas-retentativa` 10/10. As suítes vizinhas (`work-order-cancel-duplicate*`,
+  `work-order-financials*`) deram 73/73.
+- **#536 em Postgres:** `b-san3-23-cancel-race-db` deu **21/21, `# skipped 0`**, com `# cancelled 0`.
+  - Rodou num Postgres 16 descartável meu, `san326j-pg` em `127.0.0.1:55426`, migrado e semeado como na CI.
+  - O A8 da própria suíte prova, dentro dela, a conexão pelo papel efêmero `NOSUPERUSER` sem `BYPASSRLS`.
+- **`-db` vizinhas da OS:** 55/56. A falha é só a limpeza do drill de faturamento no Windows (`EBUSY: rmdir` do
+  diretório temporário), a mesma da triagem do F4. Os 6 testes do drill passam.
+- `npm run check` e `lint` ec=0; a guarda de migração deu 131 migrações e 0 violação.
+- `flutter analyze` sem achados; Flutter do bloco mais as regressões, +74.
+- `git diff --check` ec=0.
+
+### Registro
+
+- Os conflitos de `pendencias.md` e do índice mantiveram as duas entradas, e o índice foi regenerado pelo gerador.
+- A `P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO` ganhou a nota da CONF534-01 (os preenchedores Hangul U+115F, U+3164 e U+FFA0
+  passam a dobra; o resíduo do homóglifo continua declarado).
