@@ -310,3 +310,17 @@ maior que a diferença medida.
   `/mobile/bootstrap` 29,29 − 36,53 = −7,25 ms; `/work-orders` 66,67 − 88,09 = −21,42 ms. **Cumprido.** A rodada 1 saiu
   sob carga e puxa a base para cima; lido só o par mais próximo no tempo (rodadas 3 e 4): `/mobile/bootstrap` +5,80 ms,
   `/work-orders` −1,18 ms, os dois abaixo de 19,94 ms. Declaro as duas leituras; nenhuma passa do limite.
+
+### Fechamento (10:20–10:24 SP)
+
+- **Merge da `main` de novo (`838e8af9`):** o #535 entrou antes do PR. Conflito só em `pendencias.md` (as minhas 5
+  entradas novas e as 3 do #535 no fim do arquivo; ficaram as 8, sem perda: `git diff origin/main -- pendencias.md` só
+  mostra as mudanças deste bloco) e no índice (regenerado pelo `gerar-indice-pendencias.py`: 864 cabeçalhos, 853 IDs,
+  199 FECHADAS, 661 ABERTAS, 0 contraditórias). O #535 não toca o portão (`seed.ts` e 3 testes sem `createApp`, sem
+  Bearer). `npx tsc --noEmit` verde depois do merge; `git diff --check` da merge-base até a cabeça: limpo; EOL: todos
+  os 27 arquivos do bloco `i/lf`.
+- **PR #543, em rascunho** (P1 = (a) e P2 = (a) seguidas, respostas do dono pendentes; KPI congelado).
+- **Pendente de medir pela CI** (§C7 item 11(3)): o resumo TAP do job `backend` (o critério "0 `not ok`" do E-mem) e
+  o do `backend-postgres`, lidos pelo log do run, nunca pela cor.
+- **Lição de terreno, declarada:** editar arquivo por script Python no Windows sem `newline=""` grava CRLF (aconteceu
+  em 4 arquivos de teste antes do commit da F0; o `git diff --cached --check` pegou e eu converti antes do commit).
