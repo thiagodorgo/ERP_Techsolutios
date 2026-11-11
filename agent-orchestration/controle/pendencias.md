@@ -13583,10 +13583,24 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e "Tenant Field Services" no modo offline — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` (o texto está no app desde antes do `B-SAN3-07`, cuja fronteira é só `prisma/seed.ts`; apenso de 2026-11-03 da `P-CHK-SEED-DEMO-SUJO`) · **dono:** `B-SAN3-19b` (a faxina de termos técnicos do app, item 48), pela recomendação do plano do `B-SAN3-07` (§9); **a pergunta está com o dono**: o item 47 fecha sem esta instância? · **bloqueia:** não, se o dono seguir a recomendação.
+- **status:** FECHADA (2026-11-11, `B-SAN3-19b`, PR #540, ramo `fix/mobile-acesso-nao-permitido-textos`; fechamento abaixo) · status anterior: ABERTA · **escopo:** `pre-existente` (o texto está no app desde antes do `B-SAN3-07`, cuja fronteira é só `prisma/seed.ts`; apenso de 2026-11-03 da `P-CHK-SEED-DEMO-SUJO`) · **dono:** `B-SAN3-19b` (a faxina de termos técnicos do app, item 48), pela recomendação do plano do `B-SAN3-07` (§9); **a pergunta está com o dono**: o item 47 fecha sem esta instância? · **bloqueia:** não, se o dono seguir a recomendação.
 - **prova (N = 15 arquivos, 20 ocorrências; forma: 1 fonte + 14 testes Flutter; medido no `07898adf` por `git grep -lE "Tenant Demo|Tenant Field Services" HEAD -- mobile/`):** a fonte é `mobile/flutter_app/lib/core/bootstrap/bootstrap_session.dart:183,186` (`displayName: 'Tenant Demo'`) e `:189` (`'Tenant Field Services'`), o bootstrap local do modo offline. Os outros 14 são testes em `mobile/flutter_app/test/`; 2 deles EXIGEM o texto e quebram com a correção: `test/features/b091_connectivity_profile_test.dart:389` (`find.textContaining('Tenant Demo')`, na tela) e `test/features/b098_real_auth_bootstrap_test.dart:447` (`expect(bs.activeTenant.displayName, 'Tenant Field Services')`).
 - **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-05), que corrigiu o N do plano (ele citava só a fonte).
 - **teste de encerramento:** nenhum `Tenant` em texto exibido pelo app (guard de strings do `B-SAN3-19b`), com os 2 testes acima reescritos para o nome de negócio e a bateria Flutter verde.
+- **fechamento (2026-11-11, `B-SAN3-19b`, PR #540):** a instância do app fechou no commit `642664a9` (F4 do bloco):
+  `bootstrap_session.dart` passou a `Organização Demonstração` (as duas entradas) e `Organização Serviços de Campo`, e
+  `_tenantDisplayName` de `bootstrap_repository.dart` usa o nome da sessão de demonstração pelo id e, fora dela, o id
+  formatado sem a palavra `tenant` (só o nome exibido). Prova: o **T8** de
+  `test/features/bsan319b_texto_exibido_test.dart` (commit `fabf91f8`, vermelho na base `a0979f51`): (i) nenhum
+  `displayName` da sessão de demonstração contém `tenant`; (ii) o app local dá `Organização Demonstração` ao id
+  `tenant-demo`; (iii) um id fora da sessão não mostra `tenant`. As mutações M17 e M18 deixam o T8 vermelho. O guard de
+  strings (T6, `exibidos=779 violacoes=0`) proíbe `tenant` nas âncoras de exibição. Os 2 testes que exigiam o texto foram
+  reescritos: `b091_connectivity_profile_test.dart:389` → `Organização Demonstração` e
+  `b098_real_auth_bootstrap_test.dart:447` → `Organização Serviços de Campo`. Bateria Flutter verde (`+1119: All tests
+  passed!` em `ac4156d4`). Medido no ramo (`git grep -lE 'Tenant Demo|Tenant Field Services' HEAD -- mobile/`): 0
+  arquivos em `lib/` e 13 em `test/`, que usam o nome na **própria** fixture, não dependem do `lib` e ficaram intocados
+  (plano do 19b, §1.5). Ressalva, a mesma do apenso da `P-CHK-SEED-DEMO-SUJO`: quem já estava
+  logado no app de demonstração segue vendo o nome antigo até sair ou tocar em "Tentar de novo" (bootstrap em cache).
 
 ## P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis legados e diz que eles "não vêm do seed base" — BAIXA
 

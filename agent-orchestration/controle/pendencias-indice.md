@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **860** |
 | IDs distintos | 849 |
-| **ABERTAS** | **656** |
+| **ABERTAS** | **655** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **595** |
+| — das quais **ativas nesta rodada** | **594** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 200 |
+| FECHADAS | 201 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **860 cabecalhos para 849 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 292
+## ABERTAS · balde A — material — 291
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -364,8 +364,7 @@
 | `P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA` | 13507 | MÉDIA | sim | P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA (2026-11-11) — a leitura do status na mesma ins |
 | `P-ORG-SUSPENSA-NAO-CORTA-ACESSO` | 13562 | MÉDIA | sim | P-ORG-SUSPENSA-NAO-CORTA-ACESSO (2026-11-11) — nem o login, nem o refresh, nem o RBAC pe |
 | `P-ASS-DB-FORA-DA-LISTA-CURADA` | 13577 | MÉDIA | sim | P-ASS-DB-FORA-DA-LISTA-CURADA (2026-11-11) — nenhuma suíte `ass-0*-db` está na lista cur |
-| `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` | 13584 | MÉDIA | sim | P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e  |
-| `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` | 13605 | CRÍTICA | **a atribuir** | P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o |
+| `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` | 13619 | CRÍTICA | **a atribuir** | P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o |
 
 ## ABERTAS · balde B — processo/registro — 303
 
@@ -672,8 +671,8 @@
 | `P-ALLOC-MANUAL-INICIO-INCLUSIVO` | 13548 | BAIXA | sim | P-ALLOC-MANUAL-INICIO-INCLUSIVO (2026-11-11) — no rateio manual, o lado do início contin |
 | `P-AWS-CUR-DUBLE-SOBREPOSICAO` | 13555 | BAIXA | sim | P-AWS-CUR-DUBLE-SOBREPOSICAO (2026-11-11) — o dublê em memória do resumo de custo filtra |
 | `P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA` | 13570 | BAIXA | sim | P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA (2026-11-11) — o documento e um comentário dizem "no |
-| `P-SAN3-07-SEED-USERS-LEGADO` | 13591 | BAIXA | sim | P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis lega |
-| `P-SAN3-07-SEED-FORA-DO-TYPECHECK` | 13598 | BAIXA | sim | P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed |
+| `P-SAN3-07-SEED-USERS-LEGADO` | 13605 | BAIXA | sim | P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis lega |
+| `P-SAN3-07-SEED-FORA-DO-TYPECHECK` | 13612 | BAIXA | sim | P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -741,7 +740,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3724 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3768 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 200
+## FECHADAS — 201
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -945,3 +944,4 @@
 | `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE` | 12914 | ALTA | sim | P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE (2026-11-04) — o APK de release não declarava ac |
 | `P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA` | 13004 | MÉDIA | sim | P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA (2026-11-08) — a trilha de plataforma do serviço de |
 | `P-CONTRATO-EMENDA-P5-P8C` | 13260 | ALTA | sim | P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUD |
+| `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` | 13584 | MÉDIA | sim | P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e  |
