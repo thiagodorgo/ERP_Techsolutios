@@ -839,8 +839,22 @@ class WorkOrderSyncCodec {
     if (workOrderId != null) payload['work_order_id'] = workOrderId;
     if (status != null) payload['status'] = _backendStatus(status);
     if (message != null) payload['message'] = message;
+    // B-SAN3-26 — os 2 caracteres da placa digitados na chegada; o servidor confere (só `last_digits`, string).
+    final checkinConfirmation = _checkinConfirmationPayload(
+      source['checkin_confirmation'],
+    );
+    if (checkinConfirmation != null) {
+      payload['checkin_confirmation'] = checkinConfirmation;
+    }
 
     return Map.unmodifiable(payload);
+  }
+
+  Map<String, Object?>? _checkinConfirmationPayload(Object? value) {
+    if (value is! Map) return null;
+    final lastDigits = value['last_digits'];
+    if (lastDigits is! String) return null;
+    return Map.unmodifiable(<String, Object?>{'last_digits': lastDigits});
   }
 
   // D1 (seleção viatura/equipe): assign carrega operator_id (obrigatório no
