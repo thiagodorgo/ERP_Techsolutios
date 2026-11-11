@@ -1,4 +1,4 @@
-# PROTOCOLO DE JUNTA RESILIENTE (`D-JUNTA-RESILIENTE`, 2026-08-29; P7: `D-PAUSA-GRAVA-E-PARA`, 2026-10-01; P8: `D-ORQ-QUEDA-DA-SESSAO`, 2026-10-20)
+# PROTOCOLO DE JUNTA RESILIENTE (`D-JUNTA-RESILIENTE`, 2026-08-29; P7: `D-PAUSA-GRAVA-E-PARA`, 2026-10-01; P8: `D-ORQ-QUEDA-DA-SESSAO`, 2026-10-20; emenda à P5 e à P8(c): `D-JUNTA-PARALELA-1011` e `D-AGENTES-ATE-O-LIMITE-1011`, 2026-11-10)
 
 > Norma permanente para TODA junta, inspeção de terreno e porteiro (P1–P8); a **P7** e a **P8** alcançam, além deles, todo
 > agente vivo — dev, planejador, fábrica — e o orquestrador. P1–P6 nascem do postmortem das **14 quedas de
@@ -60,9 +60,11 @@ prática certa pelo motivo certo, não por superstição.
 
 ## P5 — Disparo escalonado + detector de janela instável
 
-- Máximo **2 jurados em paralelo**; o terceiro só dispara quando um dos dois conclui.
+- ~~Máximo **2 jurados em paralelo**; o terceiro só dispara quando um dos dois conclui.~~ **Revogado em 2026-11-10
+  (`D-JUNTA-PARALELA-1011`):** as cadeiras disparam todas ao mesmo tempo, salvo a que depende de outra. Ver a
+  emenda ao fim deste arquivo.
 - **2 quedas em menos de 30 minutos → pausa de ~15 minutos** antes de qualquer redisparo, registrada no
-  arquivo de quedas da junta.
+  arquivo de quedas da junta. **Continua valendo** depois da emenda de 2026-11-10.
 
 Por quê: as quedas agrupam no tempo (os dois disparos de 3-em-paralelo perderam 2–3 membros cada).
 Paralelismo não causa o erro, mas multiplica os streams expostos dentro da janela ruim — e redisparar
@@ -118,7 +120,7 @@ Texto normativo: `CLAUDE.md` §C7.7, item P8 (espelhado em `AGENTS.md`). Resumo 
 
 - **Registro de agentes vivos:** a cada lançamento, uma linha em `agentes-vivos.tsv`, nas ferramentas do orquestrador, fora do repositório. A linha leva id para retomada, papel, executor, worktree, saída e hora; ao fim, vira `concluido`.
 - **Retomada mecânica:** depois de qualquer queda da sessão do orquestrador, o primeiro comando é `retomada.sh`. Cada agente vivo é retomado pelo id, medindo o parcial antes de seguir (P3/P7). Vigias da sessão anterior são órfãos: mata-se e relança-se.
-- **Orçamento de memória:** só se lança agente novo com memória de commit livre ≥ 4 GB, e no máximo 3 subagentes Claude ao mesmo tempo. O guarda solta o cache da VM do Docker abaixo de 1,5 GB.
+- **Orçamento de memória:** só se lança agente novo com memória de commit livre ≥ 4 GB~~, e no máximo 3 subagentes Claude ao mesmo tempo~~. O guarda solta o cache da VM do Docker abaixo de 1,5 GB. **Emenda de 2026-11-10 (`D-AGENTES-ATE-O-LIMITE-1011`):** o teto de 3 subagentes e o de 2 trabalhos no Docker caíram; o limite é a saúde da máquina, vigiada. O piso de 4 GB e o guarda continuam. Texto normativo no `CLAUDE.md` §C7.7, P8(c); resumo na emenda ao fim deste arquivo.
 
 **Caso:** em 20/10, às 01:16, houve "memória virtual insuficiente" no Windows. A VM do Docker ocupava 7,4 GB e o VS Code 2,2 GB, com 6 agentes em paralelo. O VS Code travou e o dono o reiniciou. Os 4 agentes interrompidos foram retomados pelo id sem perda.
 
@@ -137,7 +139,10 @@ o arquivo. Não inicie item novo.  [P7]
 
 ## O que o orquestrador faz (não o agente)
 
-- Dispara no máximo 2 em paralelo e aplica a pausa de janela instável (P5).
+- ~~Dispara no máximo 2 em paralelo~~ Dispara as cadeiras em paralelo, salvo a que depende de outra (emenda de
+  2026-11-10, `D-JUNTA-PARALELA-1011`), e aplica a pausa de janela instável (P5).
+- Só lança agente com o piso de memória e mantém vivos os sinais de saúde da máquina (P8(c), emenda de 2026-11-10,
+  `D-AGENTES-ATE-O-LIMITE-1011`).
 - Commita os arquivos de evidência e voto após cada conclusão (agente não commita).
 - Preenche `00-quedas.md` (P6) no momento de cada perda.
 - Sob ordem de pausa do dono: repassa `PAUSA` a cada agente vivo, dá o tempo de gravar, para os vigias,
@@ -158,3 +163,41 @@ funcionou, em duas escalas, passa a ser norma de P1/P2:
 
 Regra: **onde medir tem N passos, gravar tem N passos.** Inline nos contratos desde o SAN2-6 (§C7.7,
 dentro do P2).
+
+## Emenda (2026-11-10, `D-JUNTA-PARALELA-1011` e `D-AGENTES-ATE-O-LIMITE-1011`) — P5: cadeiras em paralelo, salvo dependência; P8(c): até o limite da máquina
+
+O texto original da P5 e o resumo da P8, acima, ficam como histórico; onde esta emenda os contradiz, vale ela.
+O texto normativo está inline no `CLAUDE.md` §C7.7 (P5 e P8(c)) e no espelho `AGENTS.md`.
+
+**P5.** Decisão do dono de 2026-11-10, registrada às 23:03 SP, nas palavras dele: *"a junta pode fazer ao mesmo
+tempo, salvo se uma for dependente da outra"*.
+
+- As cadeiras de uma junta são disparadas **todas ao mesmo tempo**; só espera a que depende do resultado de outra.
+  O limite de 2 em paralelo, com o terceiro esperando um concluir, deixa de valer.
+- **Continua:** 2 quedas em menos de 30 minutos → pausa de ~15 minutos antes de qualquer redisparo, registrada no
+  arquivo de quedas. O dono não a revogou.
+- **Leitura do redator (`gov-1011-cl`), declarada (§A6):** "dependente" é o que o contrato já põe em sequência: a
+  junta só começa depois do `LIBERADO` do inspetor (§C7.1-bis); a fatia que julga espera a fatia que mede (P4,
+  padrão 4a/4b); o suplente nasce depois da queda que ele cobre (P3). O paralelismo continua sujeito ao orçamento
+  da máquina (P8(c)).
+
+**P8(c).** Decisão do dono do mesmo dia, nas palavras dele: *"agentes ate o limite da maquina, pode arrocrar, se o
+pc aguentar 50 processos simutaneos, pode rodar. monitore a saude do sistema."* Antes, às 21:24 SP, em resposta a
+"porque limite de 2 trabalhos?": *"a regra agora é enquanto o sistema suportar pode incluir mais trabalho"*.
+
+- Caem o teto de 3 subagentes Claude e o de 2 trabalhos no Docker. O limite passa a ser a saúde da máquina,
+  vigiada.
+- **Continuam:** só se lança agente novo com memória de commit livre ≥ 4 GB; o guarda de memória solta o cache da
+  VM do Docker abaixo de 1,5 GB livres.
+- **Sinais de saúde** (ferramentas do orquestrador, fora do repositório): o semáforo `recursos.status` do monitor de
+  recursos; o guarda do Docker (`monitor-docker-3.sh`); a contagem de processos zumbis do kernel
+  (`conta-zumbis.ps1`).
+- **Leitura do redator (`gov-1011-cl`), declarada (§A6):** os "50 processos" são ilustração do limite, não um
+  número (nem teto, nem meta). Com sinal ruim, nada novo entra até o sinal voltar, e o alívio é pausar o mais novo
+  pela P7, nunca matá-lo no meio.
+
+**Por quê, e o risco.** A P5 original nasceu de quedas que agrupam no tempo: os dois disparos de 3 em paralelo de
+28–29/08 perderam 2–3 membros cada. O teto de 3 subagentes nasceu da queda da sessão de 20/10 (6 agentes em
+paralelo, memória virtual insuficiente). Os dois riscos voltam a existir sem teto por contagem: **risco assumido, declarado**.
+O que limita o custo de cada queda é a evidência e o voto gravados item a item (P1/P2), a retomada pelo registro de
+agentes vivos (P8(a)(b)) e a série do P6, que mostra se a taxa de queda subiu.
