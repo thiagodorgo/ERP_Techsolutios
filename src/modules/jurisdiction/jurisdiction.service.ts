@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import type { ProcessRegime } from "../impound/impound.types.js";
 import { resolveDefaults, type ResolvedDefaults } from "./jurisdiction.defaults.js";
 import { InMemoryJurisdictionRepository, type JurisdictionRepository } from "./jurisdiction.repository.js";
 import type {
@@ -27,6 +28,25 @@ import {
 } from "./jurisdiction.validators.js";
 
 type RawRecord = Record<string, unknown>;
+
+export type PortalJurisdictionPlan = {
+  readonly ownerNotifDays: number;
+  readonly noticeEdictDay: number;
+  readonly auctionEligibleDay: number;
+  readonly requirements: ReadonlyArray<{ readonly label: string; readonly required: boolean }>;
+};
+
+export function portalPlanFromRegime(regime: ProcessRegime): PortalJurisdictionPlan {
+  return {
+    ownerNotifDays: regime.ownerNotifDays,
+    noticeEdictDay: regime.noticeEdictDay,
+    auctionEligibleDay: regime.auctionEligibleDay,
+    requirements: regime.releaseRequirements.map((requirement) => ({
+      label: requirement.label,
+      required: requirement.required,
+    })),
+  };
+}
 
 export class JurisdictionService {
   constructor(private readonly repository: JurisdictionRepository) {}
@@ -106,15 +126,7 @@ export class JurisdictionService {
   async getPortalProfile(
     tenantId: string,
     profileId: string,
-  ): Promise<
-    | {
-        readonly ownerNotifDays: number;
-        readonly noticeEdictDay: number;
-        readonly auctionEligibleDay: number;
-        readonly requirements: ReadonlyArray<{ readonly label: string; readonly required: boolean }>;
-      }
-    | undefined
-  > {
+  ): Promise<PortalJurisdictionPlan | undefined> {
     const profile = await this.repository.findProfileById(tenantId, profileId);
     if (!profile) return undefined;
     return {

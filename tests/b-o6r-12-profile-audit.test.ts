@@ -4,6 +4,7 @@ import test from "node:test";
 
 import type { JurisdictionProfile } from "../src/modules/jurisdiction/jurisdiction.types.js";
 import { computeProfileChanges } from "../src/modules/jurisdiction/jurisdiction.audit.js";
+import { portalPlanFromRegime } from "../src/modules/jurisdiction/jurisdiction.service.js";
 
 const before: JurisdictionProfile = {
   id: "10000000-0000-4000-8000-000000000001",
@@ -46,4 +47,30 @@ test("B-O6R-12 C9: auditoria lista todos os campos e só omite valores de notes"
 test("B-O6R-12 C8: controller envia changed_fields e changes à auditoria", () => {
   const source = readFileSync("src/modules/jurisdiction/jurisdiction.controller.ts", "utf8");
   assert.match(source, /metadata: \{ scope: profile\.scope, active: profile\.active, changed_fields: audit\.changedFields, changes: audit\.changes \}/);
+});
+
+test("B-O6R-12 C19: portal projeta somente o regime congelado da abertura", () => {
+  const plan = portalPlanFromRegime({
+    scope: "PUBLIC_AGREEMENT",
+    ownerNotifDays: 5,
+    noticeEdictDay: 10,
+    auctionEligibleDay: 60,
+    auctionEdictBusinessDays: 15,
+    dailyModel: "ROLLING_24H",
+    dailyCap: "SIX_MONTHS",
+    releaseRequirements: [{ code: "doc", label: "Documento", required: true }],
+    dailyServiceCatalogId: "30000000-0000-4000-8000-000000000001",
+  });
+
+  assert.deepEqual(plan, {
+    ownerNotifDays: 5,
+    noticeEdictDay: 10,
+    auctionEligibleDay: 60,
+    requirements: [{ label: "Documento", required: true }],
+  });
+  assert.deepEqual(Object.keys(plan).sort(), ["auctionEligibleDay", "noticeEdictDay", "ownerNotifDays", "requirements"]);
+
+  const source = readFileSync("src/modules/owner-portal/owner-portal.service.ts", "utf8");
+  assert.match(source, /process\.regime\s*\?\s*portalPlanFromRegime\(process\.regime\)/);
+  assert.match(source, /:\s*await this\.deps\.jurisdiction\.getPortalProfile\(this\.deps\.tenantId, process\.profileId\)/);
 });

@@ -128,3 +128,17 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
 - **Executor da fatia:** `dev-o6r12-cdx`.
 - **Próximo comando:** F6b — projetar no portal do proprietário apenas o regime da abertura,
   preservar o fallback histórico e executar C19 com mutação.
+
+## F6b — 2026-11-11T02:11:14-0300
+
+- Vermelho-controle: C19 falhou com `SyntaxError` porque `portalPlanFromRegime` ainda não existia.
+- `portalPlanFromRegime` reduz o retrato a quatro chaves públicas: três prazos e requisitos
+  `{label, required}`; não expõe escopo, tarifa, código interno nem campos de cobrança.
+- O dossiê usa essa projeção quando `process.regime` existe. Somente o processo legado sem retrato
+  consulta `getPortalProfile`, preservando o fallback registrado na catraca.
+- Testes da fatia: C8/C9/C19 + portais **3 pass, 2 skip de banco sem URL nessa invocação**;
+  `npm run check` e `git diff --check` verdes. As suítes RLS serão repetidas com banco na bateria.
+- Mutação C19 que voltou incondicionalmente ao perfil vivo produziu `not ok` e foi revertida.
+- **Executor da fatia:** `dev-o6r12-cdx`.
+- **Próximo comando:** F7 — incluir exatamente as duas suítes no CI, fechar registros e executar
+  a bateria final completa.
