@@ -84,7 +84,7 @@ header `Authorization: Bearer` + `X-Tenant-Id` · `Idempotency-Key` em POST.
 | POST | `/inventory/movements` · `/entries` · `/exits` · `/notes` · `/reservations` · `/adjustments` | movimentações |
 | PATCH | `/inventory/items/:id` | editar produto |
 | GET/POST | `/mobile/inventory/items` · `/mobile/work-orders/:id/materials` | materiais em campo |
-| GET | `/mobile/technician/stock` | estoque do técnico (prestador) |
+| GET | `/mobile/technician/stock` | estoque do técnico (prestador): a custódia do **ator** escolhida pelo servidor (profissional; BASE para o gerente sem cadastro; senão `custody: null`), contrato `technician_stock@2026-11.b-san3-15a` (B-SAN3-15a; detalhe em `API_CONTRACTS.md` §3.10) |
 
 ## approvals
 | Método | Rota | Uso |

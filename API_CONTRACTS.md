@@ -533,6 +533,13 @@ Fonte: `inventory/inventory.routes.ts` (+ `cycle-count.routes.ts`).
 | POST | `/stock-movements/:movementId/reverse` | `stock_movements:create` | Estorna movimentação. |
 | GET | `/stock-movements/:movementId` | `stock_movements:read` | Detalhe da movimentação. |
 | GET/POST | `/cycle-counts` (+ `/:id`, `/:id/entries/:entryId`, `/:id/close`, `/:id/cancel`) | `cycle_counts:read` / `:create` | Contagens cíclicas de inventário. |
+| GET | `/mobile/technician/stock` | `inventory.read` | B-SAN3-15a: o estoque sob a responsabilidade do **ator** (contrato abaixo). |
+
+**Estoque do técnico (`technician_stock@2026-11.b-san3-15a`, B-SAN3-15a, plano `plano-B-SAN3-15-v2.md` §2.1):**
+- A custódia é escolhida pelo **servidor**, pelo ator autenticado (organização e usuário do token); query, corpo e cabeçalho de usuário são ignorados. Com token, o `X-Tenant-Id` não troca a organização. Ator com cadastro de profissional **ativo** → a custódia profissional dele (`kind: "professional"`, `label` = nome do profissional); ator **sem** cadastro ativo e com papel `tenant_wide` (o gerente; Pergunta 5 (a), resposta do dono de 11/11) → a BASE (`kind: "base"`, `label: "Base da organização"`); qualquer outro ator → `custody: null`, `items: []` (vazio honesto, 200).
+- Resposta: `{ data: { custody: { kind, label } | null, items: [{ itemId, sku, name, unit, available }], generatedAt } }`. Só itens **ativos** com saldo **> 0** na custódia; `available` é número (decimal). Nunca leva `tenant_id`, id de perfil, ids de custódia nem custo (§2.8).
+- `403` sem `inventory.read` (`finance`, `support`, `field_dispatcher`). Falha ao consultar o cadastro de profissional (que não seja "não há cadastro") → `503 STOCK_UNAVAILABLE custody_lookup_unavailable`, com texto neutro, nunca `custody: null`.
+- Custódia de viatura não se resolve pelo ator (`P-SAN3-15-CUSTODIA-VIATURA`).
 
 ### 3.11 Financeiro
 

@@ -21,6 +21,7 @@ import {
   type CreateStockExitForSourceInput,
   type CreateStockMovementInput,
   type CreateTransferInput,
+  type CustodyItemBalance,
   type CustodySummaryRaw,
   type InventoryAbcClass,
   type InventoryItem,
@@ -404,6 +405,37 @@ export class PrismaInventoryRepository implements InventoryRepository {
     }
 
     return { baseQty: roundToDecimalPrecision(baseQty), professionals, vehicles };
+  }
+
+  /**
+   * B-SAN3-15a (P1) — leitura de EXIBIÇÃO (não decide escrita; a baixa confere o saldo sob o lock do item): o saldo de
+   * cada item na custódia pedida e o item da organização, em DOIS acessos (sem N+1). A custódia é a que o servidor
+   * escolheu pelo ator: a BASE (só `custody_type`) ou a profissional de UM perfil (`custody_type` + o perfil).
+   */
+  async listCustodyBalances(tenantId: string, custody: StockCustody): Promise<readonly CustodyItemBalance[]> {
+    const grouped = await this.client.stockMovement.groupBy({
+      by: ["item_id"],
+      where: {
+        tenant_id: tenantId,
+        custody_type: custody.custodyType,
+        custody_operator_profile_id: custody.custodyOperatorProfileId,
+      },
+      _sum: { quantidade_sinalizada: true },
+    });
+
+    if (grouped.length === 0) {
+      return [];
+    }
+
+    const records = await this.client.inventoryItem.findMany({
+      where: { tenant_id: tenantId, id: { in: grouped.map((row) => row.item_id) } },
+    });
+    const itemById = new Map(records.map((record) => [record.id, mapItemRecord(record)]));
+
+    return grouped.map((row) => ({
+      item: itemById.get(row.item_id),
+      available: roundToDecimalPrecision(decimalToNumber(row._sum.quantidade_sinalizada)),
+    }));
   }
 
   /** Leitura de IDENTIFICAÇÃO (qual EXIT, qual item) — nunca decide escrita sozinha. */
@@ -847,6 +879,11 @@ export class RlsPrismaInventoryRepository implements InventoryRepository {
 
   getCustodySummary(tenantId: string, itemId: string): Promise<CustodySummaryRaw> {
     return this.tx(tenantId, (repo) => repo.getCustodySummary(tenantId, itemId));
+  }
+
+  /** B-SAN3-15a — o estoque do técnico sob RLS da organização do ator (a mesma porta única `tx`). */
+  listCustodyBalances(tenantId: string, custody: StockCustody): Promise<readonly CustodyItemBalance[]> {
+    return this.tx(tenantId, (repo) => repo.listCustodyBalances(tenantId, custody));
   }
 
   findExitBySource(tenantId: string, sourceType: string, sourceId: string): Promise<StockMovement | undefined> {
