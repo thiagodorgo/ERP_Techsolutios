@@ -311,7 +311,7 @@ maior que a diferença medida.
   sob carga e puxa a base para cima; lido só o par mais próximo no tempo (rodadas 3 e 4): `/mobile/bootstrap` +5,80 ms,
   `/work-orders` −1,18 ms, os dois abaixo de 19,94 ms. Declaro as duas leituras; nenhuma passa do limite.
 
-### Fechamento (10:20–10:24 SP)
+### Fechamento (10:20–10:23 SP)
 
 - **Merge da `main` de novo (`838e8af9`):** o #535 entrou antes do PR. Conflito só em `pendencias.md` (as minhas 5
   entradas novas e as 3 do #535 no fim do arquivo; ficaram as 8, sem perda: `git diff origin/main -- pendencias.md` só
