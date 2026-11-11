@@ -24,6 +24,10 @@ import type { BillingOutboxRow, OutboxSkipReason } from "./outbox.types.js";
 /** Código de cancelamento registrado na nossa linha quando o provedor não tem lista própria: 9 = "outros" (R-D). */
 export const INVOICE_CANCEL_CODE_OTHERS = "9";
 
+/** Conserto da J-530 (C): quanto o `invoice_cancel` de uma nota ainda pendente espera antes de RECONSULTAR e, se o provedor
+ * ainda não decidiu, ir a revisão. 72 h = 12 × a janela de 6 h que o PlugNotas cita (leitura do topo, declarada). */
+export const INVOICE_CANCEL_MAX_WAIT_MS = 72 * 60 * 60 * 1000;
+
 /** Texto da justificativa por motivo da outbox — PT-BR de negócio, sem dado pessoal, sem valor. */
 export const INVOICE_CANCEL_REASON_TEXT: Readonly<Record<string, string>> = {
   payment_reversed: "Pagamento estornado ou com chargeback; o serviço deste período não foi liquidado por este documento.",
@@ -104,7 +108,9 @@ export type InvoiceDispatchResult =
   | { readonly kind: "sent"; readonly externalId: string | null }
   | { readonly kind: "recovered"; readonly externalId: string | null }
   | { readonly kind: "needs_review"; readonly code: string }
-  | { readonly kind: "skipped"; readonly reason: OutboxSkipReason };
+  | { readonly kind: "skipped"; readonly reason: OutboxSkipReason }
+  /** (C) A nota ainda está pendente: a linha é ADIADA, sem gastar tentativa, até a reconsulta decidir a nota. */
+  | { readonly kind: "deferred"; readonly code: "invoice_still_processing" };
 
 function payloadSeq(row: BillingOutboxRow): number {
   const value = row.payload.seq;
@@ -187,13 +193,40 @@ export class InvoiceOutboxHandler {
     const live = await this.deps.invoices.findLive(row.tenantId, row.statementId);
     if (!live) {
       const last = (await this.deps.invoices.listByStatement(row.tenantId, row.statementId)).at(-1);
-      // Já cancelada (o webhook chegou antes): idempotente.
-      if (last?.status === "cancelled") return { kind: "sent", externalId: last.providerInvoiceId ?? last.externalRef };
+      // Nada vivo a cancelar: já cancelada (o webhook chegou antes) ou rejeitada (nunca autorizada) — idempotente.
+      // [INTX-11d]
+      if (last?.status === "cancelled" || last?.status === "rejected") return { kind: "sent", externalId: last.providerInvoiceId ?? last.externalRef };
       return { kind: "needs_review", code: "no_live_invoice" };
     }
-    // Uma nota ainda em processamento não se cancela: fica para revisão (o `retry` da outbox reabre depois de autorizada).
-    if (live.status === "pending") return { kind: "needs_review", code: "invoice_still_processing" };
+    // (C) Uma nota ainda em processamento não se cancela: a linha ESPERA (adiada, sem gastar tentativa) a reconsulta decidir.
+    // [INTX-11b]
+    if (live.status === "pending" && now.getTime() - row.createdAt.getTime() <= INVOICE_CANCEL_MAX_WAIT_MS) return { kind: "deferred", code: "invoice_still_processing" };
+    // CRIT530R2-03: passou do teto — a nota é RECONSULTADA antes de qualquer revisão (o provedor ou os jobs podem ter ficado
+    // parados; a idade da linha não diz que o provedor teve tempo de decidir).
+    // [INTX-11e]
+    if (live.status === "pending") return this.#decideOverduePending(row, live, port, now);
+    return this.#cancelLive(row, live, port, now);
+  }
 
+  /** CRIT530R2-03: a nota pendente além do teto, decidida pela reconsulta. Autorizada → cancela agora; rejeitada/cancelada →
+   * nada vivo; desconhecida e sem id do provedor → nunca chegou ao provedor (rejeitada, como a órfã); ainda processando →
+   * revisão visível (a saída dela é pendência com dono). */
+  async #decideOverduePending(row: BillingOutboxRow, live: SubscriptionStatementInvoice, port: InvoiceProviderPort, now: Date): Promise<InvoiceDispatchResult> {
+    const lookup = await port.getInvoice(live.externalRef);
+    if (lookup.status === "processing" || (lookup.status === "unknown" && live.providerInvoiceId)) return { kind: "needs_review", code: "invoice_stuck_processing" };
+    if (lookup.status === "unknown") {
+      await this.deps.invoices.markRejected(row.tenantId, live.id, "not_issued_payment_reversed", now);
+      return { kind: "sent", externalId: live.externalRef };
+    }
+    await this.#applyLookup(live, lookup, port, now);
+    const refreshed = await this.deps.invoices.findLive(row.tenantId, row.statementId);
+    if (!refreshed) return { kind: "sent", externalId: live.providerInvoiceId ?? live.externalRef };
+    if (refreshed.status === "pending") return { kind: "needs_review", code: "invoice_stuck_processing" };
+    return this.#cancelLive(row, refreshed, port, now);
+  }
+
+  /** O cancelamento de uma nota viva já decidida (`authorized`, ou `cancel_pending` sendo repetido). */
+  async #cancelLive(row: BillingOutboxRow, live: SubscriptionStatementInvoice, port: InvoiceProviderPort, now: Date): Promise<InvoiceDispatchResult> {
     const reasonKey = typeof row.payload.reason === "string" ? row.payload.reason : "payment_reversed";
     const reason = INVOICE_CANCEL_REASON_TEXT[reasonKey] ?? reasonKey;
     const code = typeof row.payload.code === "string" && row.payload.code ? row.payload.code : INVOICE_CANCEL_CODE_OTHERS;

@@ -23,6 +23,7 @@
 import type { PaymentProviderPort, CreateChargeInput, ChargeResult, ChargeStatus } from "../providers/payment/payment-provider.port.js";
 import {
   backoffMsForAttempt,
+  INVOICE_DEFER_MS,
   OUTBOX_MAX_ATTEMPTS,
   OUTBOX_ORPHAN_MS,
   type BillingOutboxRow,
@@ -315,6 +316,12 @@ async function registerInvoiceResult(deps: DispatcherDeps, row: BillingOutboxRow
       await deps.repo.markNeedsReview(row.tenantId, row.id, result.code, clock());
       await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: result.code });
       return "needs_review";
+    case "deferred":
+      // Conserto da J-530 (C): a nota ainda pendente — a linha volta a PENDING em +15 min e DEVOLVE a tentativa que o claim
+      // somou (uma espera longa não esgota as 8 tentativas da falha de verdade).
+      // [INTX-11r]
+      await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + INVOICE_DEFER_MS), result.code, clock(), { refundAttempt: true });
+      return "retry";
   }
 }
 

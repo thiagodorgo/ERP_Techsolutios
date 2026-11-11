@@ -299,8 +299,18 @@ export class PrismaOutboxRepository implements OutboxRepository {
     await this.#mutate(tenantId, id, { status: "SENT", external_id: externalId, next_attempt_at: null, last_error: null, updated_at: now });
   }
 
-  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "PENDING", next_attempt_at: nextAttemptAt, last_error: lastError, claimed_at: null, claimed_by: null, attempt_started_at: null, updated_at: now });
+  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, options: { readonly refundAttempt?: boolean } = {}): Promise<void> {
+    await this.#mutate(tenantId, id, {
+      status: "PENDING",
+      next_attempt_at: nextAttemptAt,
+      last_error: lastError,
+      claimed_at: null,
+      claimed_by: null,
+      attempt_started_at: null,
+      updated_at: now,
+      // Conserto da J-530 (C): devolve a tentativa que o claim somou (o `#mutate` é chamado, nunca alterado).
+      ...(options.refundAttempt ? { attempts: { decrement: 1 } } : {}),
+    });
   }
 
   async markFailed(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void> {
