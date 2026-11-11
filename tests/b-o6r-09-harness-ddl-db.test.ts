@@ -7,7 +7,7 @@ import test, { after } from "node:test";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-import { buildApplicationName, HARNESS_DDL_LOCK_TIMEOUT_MS, runHarnessDdl, withApplicationName } from "./helpers/pg-barrier.js";
+import { buildApplicationName, dropHarnessObjects, HARNESS_DDL_LOCK_TIMEOUT_MS, runHarnessDdl, withApplicationName } from "./helpers/pg-barrier.js";
 
 // B-O6R-09 · Emenda 4 (R-ARN-4, requisito C09-02; Emenda 4.1, C4E-04) — o teste do MECANISMO de `runHarnessDdl`: o DDL do
 // arnês nunca fica na fila na frente de quem precisa da tabela. Cada caso usa um SCHEMA descartável
@@ -189,5 +189,71 @@ if (!connectionString) {
       await soltar();
       await desmontar(c);
     }
+  });
+
+  // Emenda 4.2 (E42.3) — o deadlock REAL entre dois DROP TRIGGER do arnês em `work_order_events`. Cada DROP pede
+  // ACCESS SHARE (resolução do nome) e sobe para ACCESS EXCLUSIVE; quando duas transações cruzam esse upgrade, o Postgres
+  // mata o 2º com 40P01. Aqui o arnês é o 2º (o `pg_sleep(1)` segura o ACCESS SHARE e abre a janela da barreira), então
+  // ele É a vítima: sem o 40P01 na repetição, o DROP falha e o teste fica vermelho; com ele, o arnês repete e termina.
+  test("[arnês · deadlock 40P01] duas transações cruzam DROP TRIGGER em work_order_events; o arnês repete e termina; o catálogo fica limpo", { timeout: 20_000 }, async () => {
+    const primeiro = `b_o6r_09_q_${randomUUID().replaceAll("-", "").slice(0, 16)}`;
+    const segundo = `b_o6r_09_q_${randomUUID().replaceAll("-", "").slice(0, 16)}`;
+    const outro = await pgClient("iv-outro");
+    try {
+      for (const nome of [primeiro, segundo]) {
+        await runHarnessDdl(admin, `CREATE FUNCTION ${nome}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN RETURN NEW; END $f$`);
+        await runHarnessDdl(admin, `CREATE TRIGGER ${nome} BEFORE INSERT ON work_order_events FOR EACH ROW EXECUTE FUNCTION ${nome}()`);
+      }
+      await outro.query("BEGIN");
+      await outro.query("LOCK TABLE work_order_events IN ACCESS SHARE MODE");
+
+      const ddl = runHarnessDdl(
+        admin,
+        `LOCK TABLE work_order_events IN ACCESS SHARE MODE; SELECT pg_sleep(1); DROP TRIGGER IF EXISTS ${primeiro} ON work_order_events`,
+      );
+      ddl.catch(() => undefined);
+
+      // Barreira por pg_stat_activity: o arnês já segura ACCESS SHARE em work_order_events.
+      const inicio = Date.now();
+      for (;;) {
+        const [{ n }] = (await admin.$queryRawUnsafe(
+          `SELECT count(*)::int AS n
+             FROM pg_locks l
+             JOIN pg_stat_activity a ON a.pid = l.pid
+             JOIN pg_class c ON c.oid = l.relation
+            WHERE l.granted AND l.mode = 'AccessShareLock' AND c.relname = 'work_order_events' AND a.application_name = $1`,
+          `${APP}-adm`,
+        )) as Array<{ n: number }>;
+        if (n >= 1) break;
+        if (Date.now() - inicio > 5_000) assert.fail("arnês: o DDL não segurou ACCESS SHARE em 5 000 ms");
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+
+      // A outra transação pede ACCESS EXCLUSIVE primeiro e fica presa atrás do ACCESS SHARE do arnês.
+      const outroDrop = outro.query(`DROP TRIGGER IF EXISTS ${segundo} ON work_order_events`).then(() => outro.query("COMMIT"));
+      outroDrop.catch(() => outro.query("ROLLBACK").catch(() => undefined));
+
+      const { attempts } = await ddl;
+      console.log(`[arnês (iv)] DROP TRIGGER concluiu em ${attempts} tentativa(s) depois do 40P01`);
+      assert.ok(attempts >= 2, `o arnês não repetiu o DROP depois do deadlock (attempts=${attempts})`);
+      await outroDrop;
+    } finally {
+      await outro.query("ROLLBACK").catch(() => undefined);
+      await dropHarnessObjects(admin, undefined, [
+        `DROP TRIGGER IF EXISTS ${primeiro} ON work_order_events`,
+        `DROP FUNCTION IF EXISTS ${primeiro}()`,
+        `DROP TRIGGER IF EXISTS ${segundo} ON work_order_events`,
+        `DROP FUNCTION IF EXISTS ${segundo}()`,
+      ]);
+    }
+    const [{ gatilhos }] = (await admin.$queryRawUnsafe(
+      "SELECT count(*)::int AS gatilhos FROM pg_trigger WHERE tgname = ANY($1::text[])",
+      [primeiro, segundo],
+    )) as Array<{ gatilhos: number }>;
+    const [{ funcoes }] = (await admin.$queryRawUnsafe(
+      "SELECT count(*)::int AS funcoes FROM pg_proc WHERE proname = ANY($1::text[])",
+      [primeiro, segundo],
+    )) as Array<{ funcoes: number }>;
+    assert.deepEqual([gatilhos, funcoes], [0, 0], `o deadlock deixou ${primeiro}/${segundo} no catálogo`);
   });
 }
