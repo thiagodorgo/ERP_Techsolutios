@@ -539,8 +539,14 @@ class _PasswordFieldState extends State<_PasswordField> {
         onSubmitted: widget.onSubmitted,
         style: const TextStyle(fontSize: 16, color: ErpMobileTheme.ink),
         decoration: InputDecoration(
-          hintText: '••••••••',
-          hintStyle: const TextStyle(color: ErpMobileTheme.inkFaint),
+          // A dica é decorativa: fora da semântica, para o leitor de tela ler
+          // só o rótulo do campo.
+          hint: const ExcludeSemantics(
+            child: Text(
+              '••••••••',
+              style: TextStyle(color: ErpMobileTheme.inkFaint),
+            ),
+          ),
           prefixIcon: const ExcludeSemantics(
             child: Icon(
               Icons.lock_outline,

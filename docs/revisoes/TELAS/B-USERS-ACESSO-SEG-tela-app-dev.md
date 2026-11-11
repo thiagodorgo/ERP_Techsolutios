@@ -201,3 +201,23 @@ edição inversa e confere `git diff --quiet -- lib`); se o scratchpad sumir no 
 na T2.2.
 
 **Arquivos meio-escritos:** nenhum. Os 3 arquivos desta pausa estão completos e formatados; só não foram medidos.
+
+## RETOMADA depois da PAUSA (23:06 SP, 02:06 UTC)
+
+- **Parcial medido (P3/P7):** `git status` limpo, head `49733a24`, scratchpad das mutações intacto; recursos `VERDE`
+  (`02:06:38Z ram_livre=11,2GB commit=36%`), commit livre 40144 MB.
+- **Contrato do backend medido na ref `a5b56555`** (`fix/users-acesso-seg`, F2 a F5; §A7, `git show`): o login manda
+  `data.must_change_password` (booleano, sempre presente) e, com `true`, `roles: []` e `permissions: []`, com
+  `data.user` (tipo com `email`) — exatamente o que o app consome (`auth.routes.ts:298-339`; `API_CONTRACTS.md:191`).
+  `identity-links.routes.ts` sem diff entre `e09e9667` e `a5b56555`, e a linha do `POST /auth/password` no contrato tem os
+  mesmos códigos do mapa. **Nada a ajustar no app.**
+- **Observação, fora do escopo (proposta de pendência):** a resposta do `POST /auth/refresh` não traz `user` (`origin/main`
+  e `a5b56555`: só tokens e sessão), e o `_sessionFromJson` do app exige `body['user']`. O `refresh()` do app quebraria
+  contra o backend real (o `tryRefresh` captura e manda ao login). É anterior ao bloco e o RQ-2 proíbe mexer no
+  `_sessionFromJson` aqui. Proposta: `P-APP-REFRESH-SEM-USER` (bloco dono: o próximo que tocar o refresh do app). Os
+  testes de refresh do app (os de antes e o F7) usam um dublê com `user`.
+- `flutter analyze` → `No issues found! (ran in 9.1s)`. Teste novo com a T2.3: **`+31 -1`**: o caso de a11y achou 0 nós
+  com o rótulo "Senha provisória". Medido (`tester.getSemantics`): o rótulo do nó era `"Senha provisória\n••••••••"`, ou
+  seja, o leitor de tela lia também a dica decorativa. **Defeito da tela, corrigido:** a dica passou para
+  `InputDecoration.hint` dentro de `ExcludeSemantics` (mesmo texto e cor). Depois: `flutter analyze` → `No issues
+  found!`; teste novo → **`00:09 +32: All tests passed!`**.
