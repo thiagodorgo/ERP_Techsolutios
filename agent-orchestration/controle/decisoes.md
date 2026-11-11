@@ -4924,3 +4924,25 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Estado medido às 05:14 SP:** a última migração da `origin/main` é `20260900000000_ass08_billing_outbox`. O `B-O6R-09` tem a sua (`20260901090000_field_dispatch_idempotency_key`) no PR #537. O `B-O6R-12` (`fix/jurisdiction-profile-versioning`) não tem ramo remoto nem PR aberto (`git ls-remote --heads origin`, `gh pr list`).
 - **Regra (v2 §4.3 (a)):** as migrações tocam modelos diferentes (`FieldDispatch` × `ImpoundProcess`/`ServiceCatalog`), e o conflito real é só a ordem dos carimbos. A primeira migração a ter o PR verde pega a trava; a outra rebaseia e recarimba a sua para depois da que entrou. Isto revisa, só para este par, a ordem `… B-O6R-12 → B-O6R-09` do §6 do `PLANO_SAN3.md`.
 - **O que fica com o orquestrador:** a emenda simétrica do R6 do plano do `B-O6R-12` (fora do repositório), que o v2 §4.3 (a) pede junto deste registro. No merge, o porteiro confere o carimbo contra a última migração da `main` daquele momento.
+
+## D-B-O6R-09-ATRIBUICAO-NA-MAE (2026-11-11 11:40 SP) — a atribuição da OS passa para dentro da transação-mãe do despacho, e a fronteira de `src/modules/work-orders/**` se alarga só para isso
+
+- **Natureza:** decisão do orquestrador nº 1 da Emenda 4 do plano do `B-O6R-09` (§E4.9; autor da emenda: `topo-537-opus`, Opus por fallback declarado), com a Emenda 4.1 (`crit-09-em4-api`). Transcrita pelo dev `dev-o6r09-cl` antes do commit da fatia 7 (§A2), por ordem do orquestrador de 11/11 ~10:20 SP. Não é decisão do dono: o plano registra "Perguntas ao dono: nenhuma".
+- **Regra:** nos três caminhos que atribuem a OS (criar fora de rascunho, ativar rascunho, reatribuir), o despacho, o seu evento e a atribuição da OS (o UPDATE de `work_orders`, a linha de `work_order_assignments` e o `work_order_assigned`) são gravados na MESMA transação Postgres (P5), sem 2ª conexão enquanto a mãe está aberta (P6). A trava decide igual a antes (P7). Um DDL na fila espera só o resto da mãe (P8).
+- **Fronteira:** em `src/modules/work-orders/**`, o PERMITIDO é só:
+  - em `work-order.service.ts`, o import de tipo (C4E-06), o método novo `resolveDispatchOperatorId` e `assignFromDispatch`. O `assertTechnicianChangeAllowed` está autorizado e não foi tocado: o resolvedor da transação chega pelas referências do serviço preso (ver o diário, merge do #536);
+  - em `work-order-scope.ts`, o acréscimo de `WorkOrderAssignRepository` e `workOrderAssignRepositoryForTx`.
+- **O que supera:** o "não põe a atribuição na mesma transação" do v2 §2.2 e o "não fecha o R1" da Emenda 1 §1.6. Fecha a `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` (o R1) e a `P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S`.
+- **Convivência com o #536 (B-SAN3-23), declarada pelo dev (§A6):** o CAS do despacho do #536 (releitura, revalidação e regravação UMA vez) fica com o corpo intacto e passa a rodar, inteiro, pelo repositório e pelo resolvedor da transação da mãe. As propriedades não se contradizem. As medições estão no diário.
+
+## D-B-O6R-09-ARNES-SEM-PG-DIRETO (2026-11-11 11:40 SP) — o DDL do arnês pela forma por Prisma, com a premissa errada corrigida (C4E-02)
+
+- **Natureza:** decisão do orquestrador nº 2 da Emenda 4 (§E4.9), REVISTA pela Emenda 4.1 (C4E-02, `crit-09-em4-api`). Transcrita pelo dev `dev-o6r09-cl` antes do commit da fatia 7.
+- **A premissa errada, registrada:** a Emenda 4 dizia que nenhum arquivo de `tests/` ou de `src/` importa `pg`, e que usá-lo seria dependência nova. É FALSO. Em `75b49051`, 12 arquivos de `tests/` já fazem `await import("pg")` e usam `pg.Client`, inclusive os 3 do R-ARN-2, cada um com o seu `pgClient(nome)`. O grep do topo só casava `from "pg"`/`require("pg")`. Usar `pg.Client` no arnês NÃO é dependência nova.
+- **Regra:** o dev escolhe a forma que melhor cumpre as 4 condições da C09-04. Escolha do dev: a forma por Prisma (`runHarnessDdl(admin, sql)` em `tests/helpers/pg-barrier.ts`), porque ela mantém literais as mutações M-ARN e M-ARN2 do plano. A equivalência foi medida pelo `tests/b-o6r-09-harness-ddl-db.test.ts`, com M-ARN e M-ARN2 vermelhas:
+  - cada tentativa abre uma transação NOVA (a conexão física pode ser a mesma), sem 25P02;
+  - `SET LOCAL lock_timeout`, que não vaza para o pool;
+  - só se repete o 55P03, lido de `P2010 → meta.driverAdapterError.cause.originalCode`;
+  - o esgotamento lança, e o arnês para quando não cabe mais uma tentativa no teto (C4E-04).
+
+  O `pg.Client` próprio fica como alternativa sem dependência nova.
