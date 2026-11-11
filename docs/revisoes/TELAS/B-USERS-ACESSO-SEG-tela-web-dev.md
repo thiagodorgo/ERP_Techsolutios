@@ -273,3 +273,11 @@ Lidas inteiras no plano (linhas 975-1002). Medido em `8c41ffe3` antes do código
 - **Ajuste do arnês, declarado:** nos casos de regressão o destino é `/finance`, carregado sob demanda (`lazy`), e a
   navegação do roteador é transição: a seleção fica em "Acessando…" até o módulo chegar. O teste espera o caminho mudar,
   com teto de 15 s (`waitForPathChange`).
+
+### Item 4 — a mudança no `frontend/package.json` é só a lista do `test:smoke` (23:38)
+
+Medido por comando, `e09e9667` × `HEAD` (`de93714a`), lendo os dois JSON com `node -e` (`git show <ref>:frontend/package.json`):
+a lista do `test:smoke` ganhou exatamente `tests/auth-troca-senha.adapter.test.ts`, `tests/troca-senha-live.test.tsx` e
+`tests/context-switch-troca-senha.test.tsx`, no fim; nenhum removido; a lista antiga é prefixo igual da nova; **o resto do
+`package.json` é igual** (sem dependência nova, sem script novo). `git diff --stat e09e9667 HEAD -- frontend/package-lock.json
+package-lock.json` vazio: nenhum lockfile mudou.
