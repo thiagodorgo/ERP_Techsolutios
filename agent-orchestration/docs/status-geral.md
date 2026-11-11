@@ -1,5 +1,13 @@
 # Status Geral
 
+## Atualização 2026-11-10 — #525 e #522 na main, junta do #527 e API prioritária
+
+- **Autor:** `reg-1011-cdx` (Codex, redator de registro, identidade nova). **Base medida:** `origin/main@d5ec1696`; fontes do dia copiadas somente dos caminhos nomeados no mandato. Registro documental, revisão simples + CI; `Kpis/**` congelado e intocado.
+- **Merges:** o PR #525 (`B-RDV-COMPROVANTE`) entrou na `main` pelo squash `2fab491a`; o PR #522 (`B-ASS-08` parte 1) entrou pelo squash `d5ec1696`. As atas finais e os pareceres resumidos dos porteiros ficam em `omega/juntas/`; ambos os porteiros deram **LIBERADO COM RESSALVA**.
+- **Memória da máquina:** a pressão veio de processos terminados retidos no kernel pelo driver AMD da Radeon 780M. O dono autorizou *"Reiniciar somente"*; após o reinício, a contagem e a memória voltaram ao normal, embora o vazamento possa reaparecer enquanto o driver permanecer ativo.
+- **PR #527 (`B-USERS-ACESSO-SEG`):** a junta foi **REPROVADA** por duas falhas graves da mesma classe: a restrição da senha provisória estava no RBAC persistente e não no portão de autenticação, deixando rotas que autorizam pelos papéis do JWT fora da trava. O plano do conserto foi criticado, emendado e o conserto está em curso; por decisão do dono, mantém a trava e entrega junto a tela mínima de troca de senha.
+- **API:** a API Claude passa a ser o braço prioritário, com teto de gasto definido pelo dono e sem números financeiros neste repositório público. Para o cruzamento de verificação, a API conta como modelo diferente da sessão.
+
 ## Atualização 2026-11-10 — madrugada: #522 retido pelo CI, junta do #525, B-USERS-ACESSO-SEG aberto
 
 - **Autor:** `reg-1011-opus` (Claude Opus 5.5, redator de registro, nível menor declarado). **Fonte:** só a ata `omega/juntas/J-522-b-ass-08-parte1.md` (EM CURSO) e as decisões abaixo, em `controle/decisoes.md`.
