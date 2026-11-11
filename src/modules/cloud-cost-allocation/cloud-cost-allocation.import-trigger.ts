@@ -124,6 +124,8 @@ export async function ensureImportRuns(
       importId,
       billingPeriodStart: period.billingPeriodStart,
       billingPeriodEnd: period.billingPeriodEnd,
+      // CE-G2 — o rateio automático é ação do sistema, consequência da importação; a run guarda quem importou.
+      createdBy: costImport.importedBy,
     });
     if (result.created) created += 1;
     if (result.run.status === "pending") pendingCount += 1;

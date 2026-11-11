@@ -282,12 +282,13 @@ test("T9c · P7 — importação marcada com run manual dela no mesmo dia UTC: o
 test("T1 · P1 — importar 1 mês, em composição explícita, dá 1 run automática e 1 enfileiramento", async () => {
   // MUTAÇÃO QUE MATA: M1 (`if (this.onImportCompleted) await this.onImportCompleted(completed).catch(…);` → apagada).
   const chain = importChain();
-  const imported = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv") });
+  const imported = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv"), importedBy: "operador-plataforma" });
 
   assert.equal(imported.status, "completed");
   const runs = await chain.allocationRepository.listRunsByImport(imported.id);
   assert.equal(runs.length, 1);
   assert.equal(runs[0]!.metadata.trigger, "import");
+  assert.equal(runs[0]!.createdBy, "operador-plataforma", "CE-G2: a run automática guarda quem importou");
   assert.equal(runs[0]!.metadata.importId, imported.id);
   assert.equal(runs[0]!.metadata.importResolution, "explicit");
   assert.equal(runs[0]!.status, "pending");
