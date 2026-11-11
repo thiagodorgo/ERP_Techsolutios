@@ -1,18 +1,19 @@
 import assert from "node:assert/strict";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import test, { mock } from "node:test";
+import test, { type TestContext } from "node:test";
 
 // -----------------------------------------------------------------------------------------------
 // B-USERS-SEG-DESATIVADO — T16b (Emenda 1, A1): o tique do stream do mapa (`/operations/field-events/stream`)
 // confere a sessão sem derrubar o processo. Em MEMÓRIA, dentro do `npm test`.
 //
-// Montagem: `createApp` em memória e token Bearer `manager` assinado direto. `mock.timers` só em `setInterval`
-// (ligado DEPOIS do `listen` e ANTES de abrir o stream); depois do evento `ready`, a conferência vira dublê
-// (`mock.method(sessionLiveness, "check")`), e a chamada do portão na abertura é a real ("skipped" em memória).
-// `mock.timers.tick(25_000)` dispara o tique; dois `setImmediate` (não simulados) esvaziam a fila. Toda leitura do
-// stream tem prazo (relógio real), para que uma mutação dê `not ok` e não trave o teste. Observa
-// `unhandledRejection` e `uncaughtException` do processo.
+// Montagem: `createApp` em memória e token Bearer `manager` assinado direto. O relógio simulado é o DO TestContext
+// (`t.mock.timers`, só em `setInterval`, ligado DEPOIS do `listen` e ANTES de abrir o stream): o `node:test` restaura
+// o relógio no fim do caso, inclusive quando a mutação solta rejeição. Depois do evento `ready`, a conferência vira
+// dublê (`t.mock.method(sessionLiveness, "check")`), e a chamada do portão na abertura é a real ("skipped" em
+// memória). `t.mock.timers.tick(25_000)` dispara o tique; dois `setImmediate` (não simulados) esvaziam a fila. Toda
+// leitura do stream tem prazo de relógio REAL (`AbortSignal.timeout`), para que uma mutação dê `not ok` e não trave o
+// teste; cada caso tem o próprio teto (`timeout` do `node:test`). Observa `unhandledRejection` e `uncaughtException`.
 //
 //   16b-1 conferência que rejeita não vaza nem fecha (1 tique)                       · M12 · M14
 //   16b-2 duas falhas seguidas fecham com `session_check_unavailable` e 0 assinantes  · M12
@@ -29,6 +30,13 @@ delete process.env.DATABASE_URL;
 delete process.env.REDIS_URL;
 
 const TIQUE_MS = 25_000;
+// E2.6 (PRE543-03): teto de leitura do stream em relógio REAL — o AbortSignal.timeout não pode ser
+// desfeito por um clearTimeout do caminho de limpeza, então uma mutação que deixe o stream aberto
+// (M12) não trava o processo.
+const STREAM_READ_TTL_MS = 2_000;
+// Teto por teste (node:test): nenhum caso pode prender a suíte; com o teto do stream em 2 s, o
+// orçamento sobra para a limpeza do arnês e para o relógio real do `esperar`.
+const TEST_TIMEOUT_MS = 15_000;
 
 type Verdict = "alive" | "inactive" | "skipped";
 
@@ -63,6 +71,7 @@ const drenar = async (): Promise<void> => {
 };
 
 async function comStream(
+  t: TestContext,
   impl: (...args: unknown[]) => Promise<Verdict> | Verdict,
   corpo: (cena: Cena) => Promise<void>,
 ): Promise<void> {
@@ -104,19 +113,18 @@ async function comStream(
 
   process.on("unhandledRejection", onRejection);
   process.on("uncaughtException", onException);
-  mock.timers.enable({ apis: ["setInterval"] });
 
-  const controller = new AbortController();
-  const prazo = setTimeout(() => controller.abort(), 2_000);
   let texto = "";
   let terminou = false;
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
 
   try {
+    t.mock.timers.enable({ apis: ["setInterval"] });
+
     const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     const response = await fetch(`${base}/api/v1/operations/field-events/stream`, {
       headers: { authorization: `Bearer ${token}`, accept: "text/event-stream" },
-      signal: controller.signal,
+      signal: AbortSignal.timeout(STREAM_READ_TTL_MS),
     });
 
     assert.equal(response.status, 200, "o stream abre");
@@ -145,7 +153,7 @@ async function comStream(
 
     assert.ok(await esperar(() => texto.includes("event: ready")), "o evento ready chega");
 
-    const check = mock.method(sessionLiveness, "check", impl as never);
+    const check = t.mock.method(sessionLiveness, "check", impl as never);
 
     await corpo({
       tenantId: tenant.id,
@@ -155,18 +163,14 @@ async function comStream(
       rejeicoes,
       excecoes,
       async tique() {
-        mock.timers.tick(TIQUE_MS);
+        t.mock.timers.tick(TIQUE_MS);
         await drenar();
       },
       chamadas: () => check.mock.callCount(),
     });
   } finally {
-    clearTimeout(prazo);
     await reader?.cancel().catch(() => undefined);
-    controller.abort();
     await esperar(() => fieldOpsRealtimeBroker.subscriberCount(tenant.id) === 0, 1_000);
-    mock.timers.reset();
-    mock.restoreAll();
     process.off("unhandledRejection", onRejection);
     process.off("uncaughtException", onException);
     server.closeAllConnections?.();
@@ -178,8 +182,8 @@ const rejeita = async (): Promise<Verdict> => {
   throw new Error("banco fora (dublê)");
 };
 
-test("16b-1 — conferência que rejeita não vaza nem fecha", async () => {
-  await comStream(rejeita, async (cena) => {
+test("16b-1 — conferência que rejeita não vaza nem fecha", { timeout: TEST_TIMEOUT_MS }, async (t) => {
+  await comStream(t, rejeita, async (cena) => {
     await cena.tique();
 
     assert.equal(cena.chamadas(), 1, "o tique chama a conferência uma vez");
@@ -191,8 +195,8 @@ test("16b-1 — conferência que rejeita não vaza nem fecha", async () => {
   });
 });
 
-test("16b-2 — duas falhas seguidas fecham com session_check_unavailable e 0 assinantes", async () => {
-  await comStream(rejeita, async (cena) => {
+test("16b-2 — duas falhas seguidas fecham com session_check_unavailable e 0 assinantes", { timeout: TEST_TIMEOUT_MS }, async (t) => {
+  await comStream(t, rejeita, async (cena) => {
     await cena.tique();
     await cena.tique();
 
@@ -205,11 +209,11 @@ test("16b-2 — duas falhas seguidas fecham com session_check_unavailable e 0 as
   });
 });
 
-test("16b-3 — falha, sucesso, falha não fecha", async () => {
+test("16b-3 — falha, sucesso, falha não fecha", { timeout: TEST_TIMEOUT_MS }, async (t) => {
   const respostas: Array<() => Promise<Verdict>> = [rejeita, async () => "alive", rejeita];
   let i = 0;
 
-  await comStream(() => (respostas[i++] ?? rejeita)(), async (cena) => {
+  await comStream(t, () => (respostas[i++] ?? rejeita)(), async (cena) => {
     await cena.tique();
     await cena.tique();
     await cena.tique();
@@ -222,11 +226,12 @@ test("16b-3 — falha, sucesso, falha não fecha", async () => {
   });
 });
 
-test("16b-4 — tique pendente não sobrepõe outra conferência", async () => {
+test("16b-4 — tique pendente não sobrepõe outra conferência", { timeout: TEST_TIMEOUT_MS }, async (t) => {
   let liberar: (verdict: Verdict) => void = () => undefined;
   let primeira = true;
 
   await comStream(
+    t,
     () => {
       if (primeira) {
         primeira = false;
@@ -254,8 +259,8 @@ test("16b-4 — tique pendente não sobrepõe outra conferência", async () => {
   );
 });
 
-test("16b-5 — inactive fecha com session_inactive e 0 assinantes", async () => {
-  await comStream(async () => "inactive", async (cena) => {
+test("16b-5 — inactive fecha com session_inactive e 0 assinantes", { timeout: TEST_TIMEOUT_MS }, async (t) => {
+  await comStream(t, async () => "inactive", async (cena) => {
     await cena.tique();
 
     assert.ok(await esperar(() => cena.terminou()), "a leitura termina (done)");
@@ -265,8 +270,9 @@ test("16b-5 — inactive fecha com session_inactive e 0 assinantes", async () =>
   });
 });
 
-test("16b-6 — erro síncrono da conferência não vaza", async () => {
+test("16b-6 — erro síncrono da conferência não vaza", { timeout: TEST_TIMEOUT_MS }, async (t) => {
   await comStream(
+    t,
     () => {
       throw new Error("erro síncrono (dublê)");
     },
