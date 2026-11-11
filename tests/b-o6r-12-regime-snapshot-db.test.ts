@@ -6,6 +6,8 @@ import test from "node:test";
 
 import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 import { PrismaChargeRepository } from "../src/modules/charging/charge-prisma.repository.js";
+import { PrismaImpoundRepository } from "../src/modules/impound/impound-prisma.repository.js";
+import { ImpoundError } from "../src/modules/impound/impound.types.js";
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -160,6 +162,60 @@ if (!connectionString) {
       await admin.$executeRawUnsafe(`DELETE FROM jurisdiction_profiles WHERE tenant_id=$1::uuid`, tenant.id);
       await admin.$executeRawUnsafe(`DELETE FROM service_catalog WHERE tenant_id=$1::uuid`, tenant.id);
       await admin.$executeRawUnsafe(`DELETE FROM tenants WHERE id=$1::uuid`, tenant.id);
+      await admin.$disconnect();
+    }
+  });
+
+  test("B-O6R-12 C15: perfil ausente ou de outra organização falha 400 antes da abertura", async () => {
+    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
+    const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+    const slug = `b12-invalid-${randomUUID().slice(0, 8)}`;
+    const a = (await admin.$queryRawUnsafe<Array<{ id: string }>>(`INSERT INTO tenants (name,slug) VALUES ($1,$1) RETURNING id`, `${slug}-a`))[0]!;
+    const b = (await admin.$queryRawUnsafe<Array<{ id: string }>>(`INSERT INTO tenants (name,slug) VALUES ($1,$1) RETURNING id`, `${slug}-b`))[0]!;
+    const foreignProfile = (
+      await admin.$queryRawUnsafe<Array<{ id: string }>>(
+        `INSERT INTO jurisdiction_profiles
+          (tenant_id,name,scope,owner_notif_days,notice_edict_day,auction_eligible_day,auction_edict_business_days,daily_model,daily_cap,release_requirements)
+         VALUES ($1::uuid,'Perfil estrangeiro','PUBLIC_AGREEMENT',5,10,60,15,'ROLLING_24H','SIX_MONTHS','[]'::jsonb) RETURNING id`,
+        b.id,
+      )
+    )[0]!;
+    const repo = new PrismaImpoundRepository(admin);
+    const isInvalidProfile = (error: unknown): boolean =>
+      error instanceof ImpoundError && error.statusCode === 400 && error.reason === "invalid_profile_reference";
+    try {
+      for (const profileId of [randomUUID(), foreignProfile.id]) {
+        await assert.rejects(
+          repo.createProcess({
+            tenantId: a.id,
+            vehicleUnidentified: true,
+            unidentifiedReason: "Teste perfil inválido",
+            profileId,
+            originAuthority: "Órgão",
+            openingEvent: { type: "STATUS_CHANGE", payload: { from: null, to: "IN_REMOVAL", reason: "process_opened" }, occurredAt: new Date() },
+          }),
+          isInvalidProfile,
+        );
+        await assert.rejects(
+          repo.openFromRemovalAtomic({
+            tenantId: a.id,
+            serviceOrderId: randomUUID(),
+            profileId,
+            originAuthority: "Órgão",
+            unidentifiedReason: "Teste perfil inválido",
+            completedAt: new Date(),
+          }),
+          isInvalidProfile,
+        );
+      }
+      const rows = await admin.$queryRawUnsafe<Array<{ n: number }>>(
+        `SELECT count(*)::int AS n FROM impound_processes WHERE tenant_id=$1::uuid`,
+        a.id,
+      );
+      assert.equal(rows[0]!.n, 0, "nenhum processo órfão nasceu nas quatro recusas");
+    } finally {
+      await admin.$executeRawUnsafe(`DELETE FROM jurisdiction_profiles WHERE tenant_id=$1::uuid`, b.id);
+      await admin.$executeRawUnsafe(`DELETE FROM tenants WHERE id IN ($1::uuid,$2::uuid)`, a.id, b.id);
       await admin.$disconnect();
     }
   });

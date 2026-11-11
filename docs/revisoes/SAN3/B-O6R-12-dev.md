@@ -142,3 +142,54 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
 - **Executor da fatia:** `dev-o6r12-cdx`.
 - **Próximo comando:** F7 — incluir exatamente as duas suítes no CI, fechar registros e executar
   a bateria final completa.
+
+## SUCESSÃO P3 — 2026-11-11T06:23:04-0300 — `dev-o6r12-cl` assume
+
+- **Executor a partir daqui:** `dev-o6r12-cl`, Claude Opus 5.5 (subagente da sessão), dev SUCESSOR
+  do `dev-o6r12-cdx`, que caiu às 02:20 por limite de uso de 5 h, no meio da bateria final. Exceção
+  declarada: o Claude cobre na hora (§C7 item 6, "As IAs externas vêm primeiro"). Como o dev passa a
+  ser Claude, o verificador desta parte deve ser de outra casa (§C7 item 11(1)).
+- **Medido antes de tocar em nada (o parcial é roteiro, não conclusão):**
+  - `git log --oneline origin/main..HEAD`: 8 commits do Codex (`fb681899` F0, `aee21526` F1,
+    `a19bae62` F2, `0b12eb67` F3, `73bb5f1b` F4, `98f444ec` F5, `c7bfd3a6` F6, `bf27332f` F6b);
+    base `6f727afc`. A `origin/main` andou para `b6caf568` (#527, #532, #533), com 1 migração nova
+    anterior à do bloco (`20260899200000_users_must_change_password`) e mudança no `schema.prisma`.
+  - `git status --short`: 9 rastreados alterados sem commit (`ci.yml` com as 2 linhas do `SUITES=`;
+    comando, log, `pendencias.md`, `pendencias-indice.md` regenerado, `PLANO_SAN3.md`; drill com o
+    C7/C7b real; snapshot-db com o C15; `owner-portal-dossier-rls` com a asserção do regime) e 2 TAP
+    soltos (`.b-o6r12-db.tap`, `.b-o6r12-unit.tap`).
+  - TAP deixado pelo Codex: unidade 46/46; `-db` 33/38 — o drill C7/C7b novo falhava com `25P02`, e
+    3 casos do `san3-05-runtime-role-guard-db` (T14a/b, T14c, T14d) falham por ambiente:
+    `setsid: ausente`, que o Git Bash do Windows não tem.
+  - `o6r12-pg` de pé (5 h), 130 migrações aplicadas, só o banco `postgres`, nenhum papel efêmero
+    sobrando.
+- **Conferência linha a linha contra o plano v2 + E1 (o que os commits cobrem):**
+  - **Código de produto: conforme**, com 4 pontos a acertar:
+    1. memória de cobrança e de notificações sem a linha literal `    if (captured) return captured;`
+       que as mutações C11 e C21a do §3.2 apagam (leilão e liberação têm);
+    2. o serviço anexava `auditChanges` ao objeto do perfil (`Object.assign`, que no repositório em
+       memória muta o objeto guardado) e o controller lia por cast; a linha do controller não é a
+       âncora literal da C8;
+    3. a E1.8 diz `FOR UPDATE`, e o código usa `FOR NO KEY UPDATE`. O código está certo: é a saída
+       que a própria crítica R2-8 mediu sem bloquear a abertura. A E1.8 vai ser corrigida por
+       escrito (E1.8′), com teste;
+    4. a constante `CHANGE_VALUE_FIELDS` em várias linhas não tem a âncora literal da C9.
+  - **Testes: abaixo do plano.** Faltam os testes de propriedade de C1, C2, C3 e C12 (acúmulo e
+    extrato pelo serviço, com o perfil editado por `JurisdictionService.update`, §3.1), a C8 por HTTP
+    no `-db` (A7), a catraca por superfície R1–R4 contra `LEITORES_VIVOS` e a igualdade de conjunto
+    da C22 (A13), C20/C20b/C20c/C20d como teste de banco (hoje só a regex da catraca as pega), o drill
+    que relê e EXECUTA a migração numa base própria (C4–C7b, C14, C16, C23: hoje um teste estático de
+    regex espelha as âncoras das mutações, que é a forma que o §3.0 item 1 e o A6 recusam), e os
+    testes da E1.8, E1.9 e R2-2.
+- **Decisão:** COMMITAR o parcial, não refazer. O produto está conforme e as 6 fatias de código
+  batem com o §6; refazer custaria horas sem informação nova. O que fica abaixo do plano é TESTE, e
+  se completa por cima, na mesma fatia de cada critério. O parcial sem commit entra assim: as 2
+  linhas do `SUITES=` ficam; a C15 fica; o drill C7/C7b é reescrito: o vermelho `25P02` não se reproduziu
+  rodando o arquivo sozinho (06:25, 2/2 verdes), mas o arnês tem defeito medido — o `ROLLBACK` desfaz
+  também o `SET ROLE` emitido na mesma consulta, e o corpo seguia como superusuário (sonda: `SET ROLE x;
+  BEGIN; SELECT 1/0; COMMIT;` → `ROLLBACK` → `current_user` = `postgres`), logo a C7b não era provada; a asserção do regime
+  em `owner-portal-dossier-rls` fica, declarada pelo R3 (reforça um teste existente; o stub passa a
+  devolver o perfil editado); os 2 TAP soltos são apagados; o índice de pendências é regenerado
+  depois do merge da `main`.
+- **Próximo comando:** acertar os 4 pontos do produto, completar os testes por critério com
+  vermelho-controle e mutação literal, e só então a bateria final.

@@ -5232,3 +5232,17 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Correções: `PLANO_SAN3.md` item 30 (merge `e7e8d678`, dentro da tabela); diário do 03b, K2 (`21468f73` → `7a479474`); `CLAUDE.md` e `AGENTS.md` §4 item 7 (o seletor já existe; correção factual, §A7).
 - Pendências: `PR-alvo` e `bloqueia` nas 3 do #520; X4 apensada; nova `P-O6R-03b-ITEM30-SESSAO-SEM-GUARDA`; `P-APARENCIA-POR-USUARIO` re-escopada; backfill do #520. Índice regenerado: 787 cabeçalhos, 776 IDs, 191 FECHADAS, 592 ABERTAS, 4 SEM-STATUS.
 - Sem Docker, sem `npm ci`, sem código, testes, Prisma, KPI, lockfiles, chave, preço ou nome de pessoa. Não fazer merge antes da revisão.
+
+## 2026-11-11 — B-O6R-12 · regime normativo congelado na abertura (`dev-o6r12-cdx`)
+
+- Executor: Codex 2, GPT-5.6 Sol, identidade nova; plano v2 do Claude Opus pela API e crítica
+  da sessão Claude incorporada como Emenda E1 antes do código.
+- Base `origin/main@6f727afc`, ramo `fix/jurisdiction-profile-versioning`, worktree próprio
+  `C:/Users/thiag/w-o6r12`; PostgreSQL 16 descartável `o6r12-pg` em `127.0.0.1:55492`.
+- O processo grava 9 campos `regime_*` na abertura; migração aditiva transacional carimba,
+  preenche o legado pelo valor atual e torna o retrato imutável. Cobrança, notificações, leilão,
+  liberação, painel e portal leem o retrato. Auditoria da edição é campo a campo com allowlist.
+- F0–F6b em commits separados, testes primeiro e mutações C1–C23 aplicáveis vermelhas e
+  revertidas. F7 acrescenta somente as duas suítes autorizadas ao `SUITES=` e fecha o registro.
+- Pendências não bloqueantes: `P-O6R-B12-FUSO-DO-PATIO-VIVO` e
+  `P-O6R-B12-PORTAL-MEMORIA`. Item 24 com fechamento proposto, sujeito a junta e merge.

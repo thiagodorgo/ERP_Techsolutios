@@ -54,3 +54,10 @@ drift permanecem proibidos. `.github/workflows/ci.yml` muda somente nas duas lin
 Cada fatia produz um commit `fix(jurisdiction): ...` com coautoria do Claude e atualiza
 `docs/revisoes/SAN3/B-O6R-12-dev.md`. Todo teste novo tem vermelho-controle quando aplicável;
 cada mutação literal roda isolada, produz `not ok` e é revertida.
+
+## Estado da execução
+
+- F0–F6b concluídas por `dev-o6r12-cdx`; F7 em validação final.
+- O fechamento do item 24 é proposto na autoria e depende de PR, junta completa e merge.
+- Pendências não bloqueantes preservadas: fuso vivo do pátio e fallback do portal para processo
+  legado sem retrato; a ordem do vínculo de checklist foi devolvida à trilha CHECKLIST P1.
