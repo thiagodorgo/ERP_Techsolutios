@@ -434,3 +434,90 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
 
   As duas suítes, rodadas sozinhas logo depois, deram 34/34. A suíte do Traccar usa só o `create`/`changeStatus` cru do
   repositório de despacho, que não mudou.
+
+### Merge com a `main` `a0979f51` (11/11, 06:56–07:55 SP)
+
+Pedido do orquestrador: `git fetch origin` e `git merge origin/main` (merge, não rebase, para preservar os SHAs já
+pré-revisados). Commit `ba70725f`, com os pais `3e59a3da` (o ramo) e `a0979f51` (a `main`, com o #530).
+
+- **Conflito só nos 3 registros de `controle/`, todos de apenso.** Nada se apagou. Medido com
+  `git diff -U0 b6caf568 <lado> -- <arquivo>` (`b6caf568` é a base comum), procurando cada linha `+` no resultado com
+  `grep -qxF`:
+
+  | Arquivo | linhas da `main` | linhas do ramo | ausentes | linhas removidas por um dos lados |
+  |---|---|---|---|---|
+  | `decisoes.md` | 6 | 10 | 0 | 0 |
+  | `pendencias.md` | 39 | 46 | 0 | 0 |
+
+  O índice saiu do gerador (`gerar-indice-pendencias.py`), e o versionado é igual ao gerado. O merge não tem conteúdo
+  próprio: os 54 arquivos do commit são os 54 que a `main` mudou desde a base.
+- **A união do ratchet T13** (`tests/san3-05-acessos-de-plataforma-guard.test.ts`, `NOVAS`):
+  - **da `main` (#530, B-ASS-08b): entram 9 chaves e saem 7.**
+    - Entram:
+      - `findLiveInvoice`;
+      - as instanciações L2 `new PrismaStatementRefRepository(prisma)` e `new PrismaOutboxRepository(prisma)` em
+        `channel.runtime.ts`;
+      - `new PrismaWebhookEventRepository(prisma)` em `channel.runtime.ts` e em `webhook-runtime.ts`;
+      - `mirrorStatement` e `lockStatement`;
+      - `lockStatementOfInvoice`, ×2.
+    - Saem as L1 `INJETADO` da parte 1: `#tenantsWithRefs`, `resolve`, `setExternalChargeId`, `find`, `listByProvider`,
+      `listStale`, `markStatus`.
+  - **do ramo (B-O6R-09): entra 1 chave, e não sai nenhuma.** É a L2 `new PrismaWorkOrderRepository(scope.tx)` de
+    `work-order-scope.ts`.
+
+  `git diff -U0 a0979f51 HEAD` no arquivo dá +7 linhas e 0 removidas, as do B-O6R-09. T13: 35/35.
+- **A ordem das migrações:** `20260901000000_ass08b_provider_one_enabled_per_kind`, da `main`, vem antes de
+  `20260901090000_field_dispatch_idempotency_key`, do ramo. `node scripts/migration-transaction-guard.mjs`:
+  132 migrações, das quais 112 anteriores e 20 novas, com 0 violações. O banco descartável foi migrado do zero com as 132.
+- `npm run check` / `npm run lint`: ec=0 / ec=0.
+- **Memória do bloco**, com a guarda, as regressões de despacho e de orçamento, o `san3-08-aprovar-orcamento-destino`
+  e o T13: 169/169, `# skipped 0`.
+- **`tests/san3-08-financeiro-cria-orcamento-db.test.ts`:** 3× sozinho, 6/6 nas 3 vezes; e 1× em paralelo com
+  `san3-05-runtime-role-guard-db`, verde.
+  - **Não reproduziu** a falha da rodada de push do CI ("limpeza da organização do teste não terminou", que deixou resto
+    `s305_c4_*`).
+  - **Hipótese, não medida:** a varredura da limpeza percorre toda tabela pública com `tenant_id`, inclusive as
+    temporárias `s305_c4_*` de uma suíte concorrente, e alguma pode cair no meio da varredura. A suíte é anterior ao bloco
+    (#533).
+- **As 8 suítes `-db` juntas** (as 7 do bloco e a `o6r07c-b-scope-db`), no `o6r09-pg`, com um vigia de trava ao lado
+  (`pg_stat_activity` e `pg_blocking_pids` a cada 2 s). Foram 8 rodadas, de 59 testes cada:
+
+  | Rodada | ok | falha |
+  |---|---|---|
+  | 1 | 57 | 2 |
+  | 2 | 55 | 4 |
+  | 3 a 6 | 59 | 0 |
+  | 7 | 56 | 3 |
+  | 8 | 59 | 0 |
+
+  **3 das 8 rodadas falharam**, e toda falha é "transaction … expired … ~20 000 ms passed".
+  - **O vigia da rodada 7 mostra o ciclo:**
+    1. a mãe da suíte de concorrência (pid 1228) fica `idle in transaction` à espera do gancho e segura `work_orders`,
+       porque a FK de `field_dispatch_events` para `work_orders` tira `FOR KEY SHARE`;
+    2. o `DROP TRIGGER … ON work_orders` da suíte do orçamento (1261) entra na fila atrás dela, e o
+       `DROP TRIGGER … ON field_dispatch_events` da suíte atômica (1258) também;
+    3. um `SELECT` de `work_orders` em outra conexão da mesma suíte (1203; pela forma da consulta, o do gancho, e isso é
+       inferência) entra na fila atrás do 1261.
+
+    O ciclo fecha pelo JavaScript, e o Postgres não o detecta. Só cai no tempo da mãe, de 20 s.
+  - **É a classe do R2-08 da revisão r2 do plano.** O ajuste do R2-08 (nenhuma leitura do teste na janela) não a fecha,
+    porque quem espera é o gancho, que é caminho de produção.
+  - **Não veio da `main`:** `git diff --stat b6caf568 a0979f51` nos caminhos do bloco só mostra
+    `tests/helpers/fake-providers/focusnfe.ts` e `tests/helpers/o6r07c-census.ts`. As medições verdes de antes do merge
+    (59/59 às 06:17, e 45/45 3× na forma do job) pegaram o caso frequente.
+- **Forma do job `backend-postgres`** (as 67 suítes de `SUITES=`, extraídas do `ci.yml`), 3×: 547/550, 547/549 e 545/549, `# skipped 0`. **Todos os casos das 7 suítes do bloco ficaram ok nas 3 rodadas.** O que falhou, um a um, e nada é do bloco:
+  - `permission-catalog-db-parity` (2 casos nas 3 rodadas): o banco descartável foi recriado e não tinha passado pelo `npm run db:seed`, que o job roda antes. Depois do seed, a suíte sozinha deu 2/2;
+  - `EBUSY` no `rmdir` do temporário do `traccar-event-migration-drill-db` (rodada 1), que é coisa do Windows;
+  - `traccar-position-ingestion-db`, "tempo esgotado" (2 casos, rodada 3), que também cai na `main`.
+
+  A forma do job roda menos arquivos ao mesmo tempo do que as 8 suítes juntas, e por isso o ciclo é mais raro nela. Mais raro não quer dizer ausente.
+
+**Parado e registrado.** A regra é "se o plano não fecha no código, pare e registre". Ficam duas pendências:
+
+- `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES`, MÉDIA, dentro do bloco. Ela traz a correção proposta, que NÃO foi aplicada:
+  `lock_timeout` curto, com nova tentativa, em todo `CREATE`/`DROP TRIGGER` do arnês, e o mesmo no `comGatilho` da
+  `o6r07c-b-scope-db`, que é de outro bloco.
+- `P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S`, BAIXA: o mesmo ciclo visto pelo lado de uma migração em produção.
+  É inferido do mecanismo, e não foi medido.
+
+O conserto do arnês espera a decisão do orquestrador.

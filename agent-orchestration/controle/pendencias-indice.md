@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **836** |
-| IDs distintos | 825 |
-| **ABERTAS** | **637** |
+| Cabecalhos `## P-` | **838** |
+| IDs distintos | 827 |
+| **ABERTAS** | **639** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **575** |
+| — das quais **ativas nesta rodada** | **577** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 195 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **836 cabecalhos para 825 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **838 cabecalhos para 827 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 286
+## ABERTAS · balde A — material — 287
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -361,8 +361,9 @@
 | `P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO` | 13284 | MÉDIA | sim | P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO (2026-11-11) — `invoice_cancel` em `NEEDS_REVIEW in |
 | `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` | 13308 | MÉDIA | sim | P-B-O6R-09-ATRIBUICAO-FORA-DA-TX (2026-11-11) — a OS aceita a atribuição e a transação-m |
 | `P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX` | 13320 | MÉDIA | sim | P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX (2026-11-11) — a criação NORMAL de OS grava a OS |
+| `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES` | 13369 | MÉDIA | sim | P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES (2026-11-11) — gatilho temporário de suíte irmã  |
 
-## ABERTAS · balde B — processo/registro — 289
+## ABERTAS · balde B — processo/registro — 290
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -655,6 +656,7 @@
 | `P-B-O6R-09-PAINEL-STATUS-SEM-ERRO` | 13338 | BAIXA | sim | P-B-O6R-09-PAINEL-STATUS-SEM-ERRO (2026-11-11) — o painel "Alterar status" não mostra er |
 | `P-B-O6R-09-WEB-LE-WORKORDERID-DO-409` | 13344 | BAIXA | sim | P-B-O6R-09-WEB-LE-WORKORDERID-DO-409 (2026-11-11) — a web não lê o `details.workOrderId` |
 | `P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA` | 13363 | BAIXA | sim | P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA (2026-11-11) — a reatribuição à mesma pessoa |
+| `P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S` | 13376 | BAIXA | sim | P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S (2026-11-11) — migração com DDL em `work_orders |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 
