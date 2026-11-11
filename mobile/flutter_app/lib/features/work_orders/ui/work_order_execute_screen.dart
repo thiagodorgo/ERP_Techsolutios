@@ -602,7 +602,7 @@ String _lockMessage(_ExecData data) {
 // ---------------------------------------------------------------------------
 // B-SAN3-14 — Vistorias do guincho (opção A aprovada: os cartões de hoje, um
 // por fase, a comparação e a trava no lugar de sempre). Maquete:
-// docs/claude-code-handoff/screen-refs/entrega-guincho-3opcoes.reference.html
+// docs/claude-code-handoff/screen-refs/execucao-guincho-3opcoes.reference.html
 // ---------------------------------------------------------------------------
 
 class _TowChecklistSection extends StatelessWidget {

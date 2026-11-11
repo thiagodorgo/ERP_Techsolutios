@@ -4910,3 +4910,18 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fato:** os devs do `B-SAN3-19b` e do `B-ASS-09a` estão prontos e esperam o parecer do porteiro do #530 (§C2 item 8).
 - **Leitura do orquestrador, declarada (§A6):** o PR de registro não é demanda de produto e começa já (`reg-1111-cl`).
+
+## REGISTRO-B-SAN3-14 (2026-11-11) — conflitos do plano, respostas do dono e decisões do dev do B-SAN3-14 (item 34)
+
+- **Fonte:** `plano-B-SAN3-14-v2.md` §1.3 e §9 e `plano-B-SAN3-14-emenda1.md` §9 (fora do repositório, na pasta do orquestrador); respostas do dono em `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP, "Sim, todas (Recomendado)"), que entra na `main` pelo PR de registro.
+- **Conflitos registrados (§A2), todos resolvidos pelas respostas do dono:**
+  - **C1:** a fronteira do §5 do `PLANO_SAN3.md` listava 3 arquivos Flutter, e o teste de encerramento exige servidor. Resolvido pela emenda da linha do `B-SAN3-14` no próprio `PLANO_SAN3.md` (fronteira app + servidor, junta completa).
+  - **C2:** a escolha (b) do §7.3 da junta do PR-04c ("só a primária vira execução") é revista para a ENTREGA: a premissa dela (o app não alcança a entrega) cai neste bloco. As outras secundárias seguem diferidas.
+  - **C3:** a decisão A do dono (`D-PORTAO-9-RECOMENDACOES-1011`, a vistoria de entrega nasce no despacho) foi tomada sobre um custo incompleto: o custo real era a entrega vazia no dossiê de custódia de toda OS concluída sem ela. Reaberta como Pergunta 1, com a premissa corrigida; o dono respondeu **(a)**, a trava da conclusão no servidor.
+  - **C4:** sob a (a), a trava de arquivo de `src/modules/work-orders/work-order.service.ts` passa a `SAN3-13 → 07c → SAN3-23 → SAN3-14` (emenda no `PLANO_SAN3.md`). A fatia da trava começou depois do merge do #536 (`c95ad4fd`), com o ramo atualizado.
+  - **C5:** só valeria sob a Pergunta 1 = (b) (filtrar o dossiê); não se aplica.
+- **Respostas:** P1 = (a); P2 = (a), as OS em campo no dia da entrada seguem só com a coleta; P3 = (a), o app sai só com a opção A da maquete aprovada (as 3 em `docs/claude-code-handoff/screen-refs/execucao-guincho-3opcoes.reference.html`); a B e a C esperam `P-APARENCIA-APP-SELETOR`. **P4 = (a), leitura do dev, declarada (§A6):** o mandato manda valer a recomendação de cada pergunta do §9, e a emenda 1 traz a P4 com recomendação (a): a entrega concluída com divergência (`pending_acknowledgement`) não segura a conclusão da OS.
+- **Decisões do dev dentro do PERMITIDO, declaradas (§A6):**
+  - a recusa da trava é **422** (`WORK_ORDER_UNPROCESSABLE` / `delivery_checklist_pending`), como manda a emenda 1 (R-R2-01); a porta `listChecklistRunPhases` é opcional no tipo (composição parcial de teste = sem trava) e, montada, falha fechada;
+  - o `checklistRepositoryProvider` do app tolera só a falta de sobrescrita do banco local (`UnimplementedError` dentro de `ProviderException`) e aí monta o repositório sem a fonte das OS, para não quebrar testes antigos que montam o provedor sem banco; qualquer outra falha atravessa. O app de produção sempre monta o banco.
+- **HIPÓTESE do caminho infeliz do R-R2-01, medida por leitura do código (fatia 2): NEGADA.** "Descartar" a conclusão recusada na tela de sincronização marca só a ação (`sync_stalled_resolver.dart`, `sync_resolution_side_effects.dart` não toca a OS), a OS local fica `completed` com `syncStatus: pending`, e a carga da lista preserva toda OS `pending` (`work_order_repository.dart`, `_upsertRemoteOrders`). Logo a OS não volta a "Em atendimento" e o técnico não chega à entrega pelo app. Registrado `P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP`; sem conserto improvisado. Não há perda de dado: a OS do servidor fica aberta e a entrega continua respondível.
