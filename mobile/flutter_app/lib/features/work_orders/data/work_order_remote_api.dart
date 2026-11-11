@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../core/network/api_contracts.dart';
 import '../../../core/network/api_error.dart';
 import '../../../core/network/http_client.dart';
+import '../../../core/network/work_order_api_codec.dart';
 import '../../../core/sync/sync_models.dart';
 import '../domain/work_order_models.dart';
 
@@ -162,29 +163,47 @@ class DioWorkOrderRemoteApi
     }
   }
 
+  // B-O6R-11d (P1, P3) — os 3 métodos de OS única leem o envelope `{ data }` do backend pelo MESMO parser da
+  // lista, e devolvem a OS com organização VAZIA por contrato: a interface não recebe a organização, e ela nunca
+  // vem do corpo (§2.8). Nenhuma tela os chama hoje; o `bo6r11d_guard_contrato_test.dart` (G1(e)) falha se alguém
+  // ligar um deles sem decidir a organização no plano (`P-MOBILE-OS-UNICA-SEM-ORGANIZACAO`).
   @override
   Future<WorkOrder> fetchWorkOrder(String workOrderId) async {
     try {
       final resp = await _dio.get<Map<String, dynamic>>(
         WorkOrderApiEndpoints.workOrder(workOrderId),
       );
-      return _workOrderFromJson(resp.data!);
+      final detail = _unwrapData(resp);
+      _requireServerId(detail, resp);
+      return _workOrderFromRemoteJson(detail, fallbackTenantId: '');
     } on DioException catch (e) {
       throw mapDioError(e);
     }
   }
 
+  // B-O6R-11d (P2) — pelo REST só sai status que existe no backend. O que não tem equivalente (pendingApproval,
+  // approved, exception, rejected) é erro de quem chama: `ArgumentError`, sem requisição.
   @override
   Future<WorkOrder> updateWorkOrderStatus(
     String workOrderId,
     WorkOrderStatus status,
   ) async {
     try {
+      final apiStatus = workOrderStatusToApiOrNull(status.name);
+      if (apiStatus == null) {
+        throw ArgumentError.value(
+          status,
+          'status',
+          'sem equivalente no servidor',
+        );
+      }
       final resp = await _dio.patch<Map<String, dynamic>>(
         WorkOrderApiEndpoints.workOrderStatus(workOrderId),
-        data: {'status': status.name},
+        data: {'status': apiStatus},
       );
-      return _workOrderFromJson(resp.data!);
+      final updated = _unwrapData(resp);
+      _requireServerId(updated, resp);
+      return _workOrderFromRemoteJson(updated, fallbackTenantId: '');
     } on DioException catch (e) {
       throw mapDioError(e);
     }
@@ -217,15 +236,18 @@ class DioWorkOrderRemoteApi
   }) async {
     try {
       final normalizedNote = note?.trim();
+      // B-O6R-11d (P2) — o REST lê `operatorId ?? userId`, `userId` e `message` (work-order.service.ts).
       final resp = await _dio.post<Map<String, dynamic>>(
         WorkOrderApiEndpoints.workOrderAssign(workOrderId),
         data: {
-          'user_id': userId,
+          'userId': userId,
           if (normalizedNote != null && normalizedNote.isNotEmpty)
-            'note': normalizedNote,
+            'message': normalizedNote,
         },
       );
-      return _workOrderFromJson(resp.data!);
+      final assigned = _unwrapData(resp);
+      _requireServerId(assigned, resp);
+      return _workOrderFromRemoteJson(assigned, fallbackTenantId: '');
     } on DioException catch (e) {
       throw mapDioError(e);
     }
@@ -252,9 +274,35 @@ class DioWorkOrderRemoteApi
   }
 }
 
+/// B-O6R-11d (P1) — o envelope `{ data: <toWorkOrderDto> }` das rotas de OS única. Sem envelope, o corpo não é a
+/// OS: falha controlada, nunca `TypeError` (o `ApiError` é `sealed`; um tipo novo quebraria `switch` exaustivos).
+Map<String, dynamic> _unwrapData(Response<Map<String, dynamic>> resp) {
+  final data = resp.data?['data'];
+  if (data is Map<String, dynamic>) return data;
+  throw ApiServerError(
+    statusCode: resp.statusCode ?? 0,
+    safeMessage: 'Resposta inesperada do servidor.',
+  );
+}
+
+/// B-O6R-11d (CR2-11D-04) — `{data:{}}` ou `{data:{foo:1}}` viraria uma OS inventada (`wo-remote-<hora>`, sem id,
+/// marcada sincronizada). A OS única sem id do servidor é resposta inesperada (o mesmo achado C3-A1 do #388).
+void _requireServerId(
+  Map<String, dynamic> json,
+  Response<Map<String, dynamic>> resp,
+) {
+  final id = json['id'];
+  if (id is String && id.trim().isNotEmpty) return;
+  throw ApiServerError(
+    statusCode: resp.statusCode ?? 0,
+    safeMessage: 'Resposta inesperada do servidor.',
+  );
+}
+
 // Tolerant parser for the backend list/detail DTO (camelCase) and local cache (snake_case).
 // The list endpoint returns {items:[{id, customerName, scheduledFor, ...}], pagination:...}.
-// Fields not present in the list DTO (tenantId) are filled from [fallbackTenantId].
+// B-O6R-11d (P3) — a organização NUNCA vem do corpo (§2.8): é sempre [fallbackTenantId] (a da sessão na lista;
+// vazia por contrato nos 3 métodos de OS única). Status e prioridade passam pelo codec único (P1).
 WorkOrder _workOrderFromRemoteJson(
   Map<String, dynamic> json, {
   required String fallbackTenantId,
@@ -267,18 +315,15 @@ WorkOrder _workOrderFromRemoteJson(
   return WorkOrder(
     localId: serverId ?? 'wo-remote-${DateTime.now().millisecondsSinceEpoch}',
     serverId: serverId,
-    tenantId: strOpt('tenantId', 'tenant_id') ?? fallbackTenantId,
+    tenantId: fallbackTenantId,
     code: str('code', 'code'),
     title: str('title', 'title'),
     customerName: str('customerName', 'customer_name'),
     customerDocument: strOpt('customerDocument', 'customer_document'),
     customerPhone: strOpt('customerPhone', 'customer_phone'),
     serviceAddress: str('serviceAddress', 'service_address'),
-    status: workOrderStatusFromApiValue(json['status']),
-    priority: WorkOrderPriority.values.firstWhere(
-      (p) => p.name == (json['priority'] as String?),
-      orElse: () => WorkOrderPriority.normal,
-    ),
+    status: workOrderStatusFromApi(json['status']),
+    priority: workOrderPriorityFromApi(json['priority']),
     assignedUserId: strOpt('assignedUserId', 'assigned_user_id'),
     scheduledAt: _parseDate(strOpt('scheduledFor', 'scheduled_at')),
     startedAt: _parseDate(strOpt('startedAt', 'started_at')),
@@ -292,48 +337,9 @@ WorkOrder _workOrderFromRemoteJson(
   );
 }
 
-WorkOrder _workOrderFromJson(Map<String, dynamic> json) {
-  return WorkOrder(
-    localId: json['local_id'] as String? ?? json['id'] as String,
-    serverId: json['id'] as String?,
-    tenantId: json['tenant_id'] as String,
-    code: json['code'] as String,
-    title: json['title'] as String,
-    customerName: json['customer_name'] as String,
-    customerDocument: json['customer_document'] as String?,
-    customerPhone: json['customer_phone'] as String?,
-    serviceAddress: json['service_address'] as String,
-    status: workOrderStatusFromApiValue(json['status']),
-    priority: WorkOrderPriority.values.firstWhere(
-      (p) => p.name == (json['priority'] as String),
-      orElse: () => WorkOrderPriority.normal,
-    ),
-    assignedUserId: json['assigned_user_id'] as String?,
-    scheduledAt: _parseDate(json['scheduled_at'] as String?),
-    startedAt: _parseDate(json['started_at'] as String?),
-    arrivedAt: _parseDate(json['arrived_at'] as String?),
-    completedAt: _parseDate(json['completed_at'] as String?),
-    checklistId: json['checklist_id'] as String?,
-    syncStatus: SyncStatus.values.firstWhere(
-      (s) => s.name == (json['sync_status'] as String?),
-      orElse: () => SyncStatus.synced,
-    ),
-    createdAt:
-        _parseDate(json['created_at'] as String?) ?? DateTime.now().toUtc(),
-    updatedAt: _parseDate(json['updated_at'] as String?),
-  );
-}
-
-WorkOrderStatus workOrderStatusFromApiValue(Object? value) {
-  final normalized = value is String ? value.trim() : '';
-  if (normalized == 'pending_approval') {
-    return WorkOrderStatus.pendingApproval;
-  }
-  return WorkOrderStatus.values.firstWhere(
-    (status) => status.name == normalized,
-    orElse: () => WorkOrderStatus.scheduled,
-  );
-}
+/// Nome mantido (o `b109_approval_state_regression_test.dart` o importa); a tradução é a do codec único.
+WorkOrderStatus workOrderStatusFromApiValue(Object? value) =>
+    workOrderStatusFromApi(value);
 
 /// Traduz o vocabulário do backend (`work_order_created`) para o do app (`created`).
 ///
@@ -361,16 +367,6 @@ WorkOrderTimelineEventType _eventTypeFromApi(String? valor) => switch (valor) {
   _ => WorkOrderTimelineEventType.note,
 };
 
-/// Status da transição registrada no evento. Desconhecido vira `null` — nunca um palpite: um status
-/// errado na linha do tempo é registro falso, e a tela sabe lidar com a ausência.
-WorkOrderStatus? _statusFromApi(String? valor) {
-  if (valor == null || valor.isEmpty) return null;
-  for (final status in WorkOrderStatus.values) {
-    if (status.name == valor) return status;
-  }
-  return null;
-}
-
 WorkOrderTimelineEvent _timelineEventFromJson(Map<String, dynamic> json) {
   // Os nomes vêm do `toWorkOrderEventDto` do backend, em camelCase. O parser antigo lia snake_case
   // (`work_order_id`, `occurred_at`, `note`) e ainda exigia `tenant_id` com cast duro — campo que o
@@ -386,8 +382,10 @@ WorkOrderTimelineEvent _timelineEventFromJson(Map<String, dynamic> json) {
         _parseDate(json['createdAt'] as String?) ?? DateTime.now().toUtc(),
     actorUserId: json['actorUserId'] as String?,
     note: json['message'] as String?,
-    fromStatus: _statusFromApi(json['fromStatus'] as String?),
-    toStatus: _statusFromApi(json['toStatus'] as String?),
+    // B-O6R-11d (CL11D-04) — o status da transição passa pelo MESMO codec. Desconhecido vira `null`, nunca um
+    // palpite: um status errado na linha do tempo é registro falso, e a tela sabe lidar com a ausência.
+    fromStatus: workOrderStatusFromApiOrNull(json['fromStatus']),
+    toStatus: workOrderStatusFromApiOrNull(json['toStatus']),
   );
 }
 

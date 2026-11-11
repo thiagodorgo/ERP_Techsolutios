@@ -41,3 +41,11 @@
   - G1: `(a) Expected: <0> Actual: <4>`.
   - **Verdes declarados na F0:** T9c e T10b.
 - `dart format --output=none --set-exit-if-changed test/features/work_orders/ lib/core/network/` → ec 0; `flutter analyze` dos arquivos novos → `No issues found!`.
+
+### F1 — parser único e codec, linha do tempo inclusive (11:18 SP)
+
+- **Código:** `lib/core/network/work_order_api_codec.dart` completo (tabelas `_statusFromBackend`, `_statusToBackend`, `_priorityFromBackend` com o texto das linhas-âncora da §2.2); em `work_order_remote_api.dart`: `_unwrapData` (texto prescrito), `_requireServerId` (CR2-11D-04: id ausente ou vazio → `ApiServerError`), os 3 métodos com `detail`/`updated`/`assigned`, o PATCH com `apiStatus` e `ArgumentError` sem requisição, o POST com `userId`/`message`, `tenantId: fallbackTenantId,`, status e prioridade pelo codec, `_workOrderFromJson` e `_statusFromApi` apagados, linha do tempo pelo `workOrderStatusFromApiOrNull`. `workOrderStatusFromApiValue` continua exportado e delega ao codec.
+- **Desvio de forma declarado:** a checagem do id da CR2-11D-04 é uma linha à parte em cada método (`_requireServerId(detail, resp);` etc.), e não dentro do `_unwrapData`, para não mudar o texto das âncoras M1–M3 e M15 que o plano prescreve. A âncora da mutação nova é `if (id is String && id.trim().isNotEmpty) return;` (única).
+- `dart format` → 0 mudança; `flutter analyze --no-pub` dos 2 arquivos → `No issues found!`.
+- **Flutter, os 5 arquivos do bloco** → `+17 -1`: só o **T9** vermelho (`is missing map key 'user_id'`), que é da F2. T1–T8, T11–T14, G1 verdes.
+- **Regressões:** `b109_approval_state_regression_test.dart`, `b127_timeline_remota_test.dart`, `bsan313_minhas_os_escopo_test.dart` → `+17: All tests passed!`.
