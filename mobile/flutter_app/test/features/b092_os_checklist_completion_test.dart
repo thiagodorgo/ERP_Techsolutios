@@ -168,6 +168,7 @@ void main() {
         final result = await repo.completeWorkOrder(
           wo.localId,
           checklistComplete: false,
+          deliveryComplete: true,
         );
 
         expect(result.workOrder.status, WorkOrderStatus.completed);
@@ -183,7 +184,11 @@ void main() {
         await repo.load();
 
         expect(
-          () => repo.completeWorkOrder(wo.localId, checklistComplete: false),
+          () => repo.completeWorkOrder(
+            wo.localId,
+            checklistComplete: false,
+            deliveryComplete: true,
+          ),
           throwsA(
             isA<StateError>().having(
               (e) => e.message,
@@ -205,6 +210,7 @@ void main() {
         final result = await repo.completeWorkOrder(
           wo.localId,
           checklistComplete: true,
+          deliveryComplete: true,
         );
 
         expect(result.workOrder.status, WorkOrderStatus.completed);
@@ -219,7 +225,11 @@ void main() {
         final repo = _makeWoRepo(_session, [wo]);
         await repo.load();
 
-        await repo.completeWorkOrder(wo.localId, checklistComplete: false);
+        await repo.completeWorkOrder(
+          wo.localId,
+          checklistComplete: false,
+          deliveryComplete: true,
+        );
 
         final timeline = await repo.loadTimeline(wo.localId);
         expect(timeline, isNotEmpty);
@@ -245,7 +255,11 @@ void main() {
         );
         await repo.load();
 
-        await repo.completeWorkOrder(wo.localId, checklistComplete: false);
+        await repo.completeWorkOrder(
+          wo.localId,
+          checklistComplete: false,
+          deliveryComplete: true,
+        );
 
         final actions = await queue.pendingForTenant(_tenantDemo);
         expect(actions, isNotEmpty);
@@ -290,6 +304,7 @@ void main() {
           () => repo.completeWorkOrder(
             woOtherTenant.localId,
             checklistComplete: false,
+            deliveryComplete: true,
           ),
           throwsA(isA<StateError>()),
         );

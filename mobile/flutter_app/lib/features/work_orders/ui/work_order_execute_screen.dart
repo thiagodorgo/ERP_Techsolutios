@@ -13,8 +13,10 @@ import '../../../shared/ui/erp_scaffold.dart';
 import '../../../shared/ui/mobile_kit.dart';
 import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
+import '../../checklists/ui/checklist_navigation.dart';
 import '../data/work_order_repository.dart';
 import '../domain/work_order_models.dart';
+import '../domain/work_order_steps.dart';
 import 'work_order_operational_map_screen.dart';
 import 'work_order_stepper.dart';
 
@@ -27,11 +29,17 @@ class _ExecData {
     required this.wo,
     required this.runs,
     required this.evidences,
+    this.refreshFailed = false,
   });
 
   final WorkOrder wo;
   final List<MobileChecklistRun> runs;
   final List<WorkOrderEvidence> evidences;
+
+  /// B-SAN3-14 — a pré-carga ao abrir a tela não alcançou o servidor.
+  final bool refreshFailed;
+
+  bool get isTow => wo.serviceType == WorkOrderServiceType.tow;
 
   bool get isChecklistComplete =>
       runs.any((r) => r.status == MobileChecklistRunStatus.completed);
@@ -39,8 +47,71 @@ class _ExecData {
   bool get isChecklistStarted =>
       runs.any((r) => r.status == MobileChecklistRunStatus.inProgress);
 
-  bool get canConclude => wo.checklistId == null || isChecklistComplete;
+  // B-SAN3-14 — as duas fases. Entre runs da mesma fase, vale a primeira
+  // com serverId (R-R2-02(iv)).
+  MobileChecklistRun? _pick(MobileChecklistRunKind kind) {
+    final ofKind = runs.where((r) => r.kind == kind);
+    return ofKind.where(_hasServerRunId).firstOrNull ?? ofKind.firstOrNull;
+  }
+
+  MobileChecklistRun? get collectionRun =>
+      _pick(MobileChecklistRunKind.collection);
+
+  MobileChecklistRun? get deliveryRun => _pick(MobileChecklistRunKind.delivery);
+
+  /// R-R2-02(ii) — só a entrega que o SERVIDOR confirmou (com serverId)
+  /// exige, trava, acende passo e libera a comparação.
+  MobileChecklistRun? get confirmedDelivery =>
+      _hasServerRunId(deliveryRun) ? deliveryRun : null;
+
+  bool get isCollectionComplete => runs.any(
+    (r) =>
+        r.kind == MobileChecklistRunKind.collection &&
+        r.status == MobileChecklistRunStatus.completed,
+  );
+
+  bool get isDeliveryComplete =>
+      confirmedDelivery?.status == MobileChecklistRunStatus.completed;
+
+  // P5 + Pergunta 2 (a): a entrega só é exigida quando existe.
+  bool get deliveryRequired => confirmedDelivery != null;
+
+  bool get deliveryGateOpen => !deliveryRequired || isDeliveryComplete;
+
+  bool get canConclude =>
+      wo.checklistId == null || (isCollectionComplete && deliveryGateOpen);
+
+  // R-D1 — a comparação usa UM schema: só com as duas do mesmo modelo.
+  bool get bothPhasesKnown =>
+      collectionRun != null && confirmedDelivery != null;
+
+  bool get sameModel =>
+      collectionRun?.checklistId == confirmedDelivery?.checklistId;
+
+  bool get canCompare => bothPhasesKnown && sameModel;
+
+  bool get _deliveryStarted {
+    final delivery = confirmedDelivery;
+    if (delivery == null) return false;
+    return _hasAnswers(delivery) ||
+        delivery.status == MobileChecklistRunStatus.completed;
+  }
+
+  // P3 — a perna do guincho, função pura das vistorias confirmadas.
+  TowLeg get towLeg => isTow
+      ? deriveTowLeg(
+          deliveryConfirmed: confirmedDelivery != null,
+          collectionComplete: isCollectionComplete,
+          deliveryStarted: _deliveryStarted,
+        )
+      : TowLeg.none;
 }
+
+bool _hasServerRunId(MobileChecklistRun? run) =>
+    (run?.serverId?.trim() ?? '').isNotEmpty;
+
+// R-A5 — a run pré-carregada sem resposta é "não iniciada", não "em andamento".
+bool _hasAnswers(MobileChecklistRun r) => r.answers.isNotEmpty;
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -82,17 +153,59 @@ class _WorkOrderExecuteScreenState
     await woRepo.load();
     final wo = woRepo.findById(widget.workOrderId);
     if (wo == null) throw StateError('Ordem de servico nao encontrada.');
+    // B-SAN3-14 (R-A5) — com rede, a coleta e a entrega chegam ao aparelho
+    // ao abrir a tela (a pré-carga também roda no passe de sync).
+    var refreshFailed = false;
+    if (wo.checklistId != null && wo.serviceType == WorkOrderServiceType.tow) {
+      try {
+        await clRepo.prefetchRunsForWorkOrder(
+          wo.localId,
+          serverWorkOrderId: wo.serverId,
+        );
+      } catch (_) {
+        refreshFailed = true;
+      }
+    }
     final runs = wo.checklistId != null
         ? await clRepo.getRunsForWorkOrder(widget.workOrderId)
         : <MobileChecklistRun>[];
     final evidences = await woRepo.loadEvidence(widget.workOrderId);
-    return _ExecData(wo: wo, runs: runs, evidences: evidences);
+    return _ExecData(
+      wo: wo,
+      runs: runs,
+      evidences: evidences,
+      refreshFailed: refreshFailed,
+    );
   }
 
-  void _openChecklist(WorkOrder wo) {
+  void _openChecklist(WorkOrder wo) =>
+      _openRun(wo.checklistId!, wo.localId, MobileChecklistRunKind.collection);
+
+  void _openRun(
+    String checklistId,
+    String workOrderId,
+    MobileChecklistRunKind kind,
+  ) {
     setState(() => _dataFuture = null);
-    context.push('/checklists/${wo.checklistId}/run?workOrderId=${wo.localId}');
+    context.push(
+      checklistRunLocation(
+        checklistId: checklistId,
+        workOrderId: workOrderId,
+        kind: kind,
+      ),
+    );
   }
+
+  void _openComparison(_ExecData data) {
+    context.push(
+      checklistComparisonLocation(
+        checklistId: data.collectionRun!.checklistId,
+        workOrderId: data.wo.localId,
+      ),
+    );
+  }
+
+  void _reload() => setState(() => _dataFuture = null);
 
   Future<void> _doTransition(
     WorkOrderRepository repo,
@@ -155,7 +268,8 @@ class _WorkOrderExecuteScreenState
     try {
       await repo.completeWorkOrder(
         data.wo.localId,
-        checklistComplete: data.isChecklistComplete,
+        checklistComplete: data.isCollectionComplete,
+        deliveryComplete: data.deliveryGateOpen,
       );
       if (mounted) context.go('/work-orders/${widget.workOrderId}');
     } on StateError catch (e) {
@@ -289,6 +403,7 @@ class _WorkOrderExecuteScreenState
                         child: WorkOrderStepper(
                           serviceType: wo.serviceType,
                           status: wo.status,
+                          towLeg: data.towLeg,
                         ),
                       ),
                     ),
@@ -322,7 +437,24 @@ class _WorkOrderExecuteScreenState
                         ),
                       )
                     else ...[
-                      if (wo.checklistId != null) ...[
+                      if (wo.checklistId != null && data.isTow) ...[
+                        _TowChecklistSection(
+                          data: data,
+                          onOpenCollection: () => _openRun(
+                            data.collectionRun?.checklistId ?? wo.checklistId!,
+                            wo.localId,
+                            MobileChecklistRunKind.collection,
+                          ),
+                          onOpenDelivery: () => _openRun(
+                            data.confirmedDelivery!.checklistId,
+                            wo.localId,
+                            MobileChecklistRunKind.delivery,
+                          ),
+                          onCompare: () => _openComparison(data),
+                          onRefresh: _reload,
+                        ),
+                        const SizedBox(height: 16),
+                      ] else if (wo.checklistId != null) ...[
                         Text(
                           'Checklist',
                           style: Theme.of(context).textTheme.titleSmall,
@@ -369,7 +501,7 @@ class _WorkOrderExecuteScreenState
                                 color: Theme.of(context).colorScheme.error,
                               ),
                               title: Text(
-                                'Checklist obrigatorio pendente',
+                                _lockTitle(data),
                                 style: TextStyle(
                                   color: Theme.of(
                                     context,
@@ -377,7 +509,7 @@ class _WorkOrderExecuteScreenState
                                 ),
                               ),
                               subtitle: Text(
-                                'Conclua o checklist obrigatorio antes de finalizar a OS.',
+                                _lockMessage(data),
                                 style: TextStyle(
                                   color: Theme.of(
                                     context,
@@ -385,6 +517,18 @@ class _WorkOrderExecuteScreenState
                                 ),
                               ),
                             ),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (data.isTow &&
+                            data.refreshFailed &&
+                            data.confirmedDelivery == null) ...[
+                          const SyncStatusBanner(
+                            status: SyncStatus.pending,
+                            message:
+                                'Sem sinal, o aparelho não confirma se esta OS '
+                                'tem vistoria de entrega. Se tiver, a conclusão '
+                                'só é aceita depois dela.',
                           ),
                           const SizedBox(height: 8),
                         ],
@@ -433,6 +577,233 @@ class _WorkOrderExecuteScreenState
           ),
         );
       },
+    );
+  }
+}
+
+// B-SAN3-14 — o aviso da trava diz qual vistoria falta (guincho); o fluxo do
+// prestador mantém o texto de hoje.
+String _lockTitle(_ExecData data) {
+  if (!data.isTow) return 'Checklist obrigatorio pendente';
+  return data.isCollectionComplete
+      ? 'Vistoria de entrega pendente'
+      : 'Vistoria de coleta pendente';
+}
+
+String _lockMessage(_ExecData data) {
+  if (!data.isTow) {
+    return 'Conclua o checklist obrigatorio antes de finalizar a OS.';
+  }
+  return data.isCollectionComplete
+      ? 'Conclua a vistoria de entrega antes de concluir a OS.'
+      : 'Conclua a vistoria de coleta antes de concluir a OS.';
+}
+
+// ---------------------------------------------------------------------------
+// B-SAN3-14 — Vistorias do guincho (opção A aprovada: os cartões de hoje, um
+// por fase, a comparação e a trava no lugar de sempre). Maquete:
+// docs/claude-code-handoff/screen-refs/entrega-guincho-3opcoes.reference.html
+// ---------------------------------------------------------------------------
+
+class _TowChecklistSection extends StatelessWidget {
+  const _TowChecklistSection({
+    required this.data,
+    required this.onOpenCollection,
+    required this.onOpenDelivery,
+    required this.onCompare,
+    required this.onRefresh,
+  });
+
+  final _ExecData data;
+  final VoidCallback onOpenCollection;
+  final VoidCallback onOpenDelivery;
+  final VoidCallback onCompare;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final collection = data.collectionRun;
+    final delivery = data.confirmedDelivery;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('Vistorias', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        if (data.refreshFailed && delivery != null) ...[
+          _StaleDataBanner(onRefresh: onRefresh),
+          const SizedBox(height: 8),
+        ],
+        _PhaseCard(
+          key: const ValueKey('bsan314-fase-coleta'),
+          title: 'Coleta',
+          status: _phaseStatus(collection),
+          actionLabel: _phaseAction(collection, 'coleta'),
+          onAction: onOpenCollection,
+        ),
+        const SizedBox(height: 8),
+        if (delivery != null)
+          _PhaseCard(
+            key: const ValueKey('bsan314-fase-entrega'),
+            title: 'Entrega',
+            status: _phaseStatus(delivery),
+            actionLabel: _phaseAction(delivery, 'entrega'),
+            onAction: onOpenDelivery,
+            note: data.isDeliveryComplete
+                ? null
+                : 'Obrigatória para concluir a OS',
+          )
+        else
+          _PhaseCard(
+            key: const ValueKey('bsan314-fase-entrega'),
+            title: 'Entrega',
+            status: _unconfirmedDeliveryStatus(data),
+            message: _unconfirmedDeliveryMessage(data),
+            actionLabel: data.deliveryRun != null && !data.refreshFailed
+                ? 'Atualizar'
+                : null,
+            onAction: onRefresh,
+          ),
+        if (data.canCompare) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              key: const ValueKey('bsan314-comparar'),
+              onPressed: onCompare,
+              icon: const Icon(Icons.compare_arrows_outlined),
+              label: const Text('Comparar coleta × entrega'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+typedef _PhaseStatus = (String label, String tone);
+
+_PhaseStatus _phaseStatus(MobileChecklistRun? run) {
+  if (run == null) return ('Não iniciada', 'info');
+  if (run.status == MobileChecklistRunStatus.completed) {
+    return ('Concluída', 'success');
+  }
+  if (run.status == MobileChecklistRunStatus.inProgress && _hasAnswers(run)) {
+    return ('Em andamento', 'warning');
+  }
+  return ('Não iniciada', 'info');
+}
+
+String _phaseAction(MobileChecklistRun? run, String phase) {
+  final (label, _) = _phaseStatus(run);
+  return switch (label) {
+    'Concluída' => 'Ver vistoria de $phase',
+    'Em andamento' => 'Continuar vistoria de $phase',
+    _ => 'Abrir vistoria de $phase',
+  };
+}
+
+_PhaseStatus _unconfirmedDeliveryStatus(_ExecData data) {
+  if (data.refreshFailed) return ('Não verificada', 'pending');
+  if (data.deliveryRun != null) return ('Aguardando despacho', 'pending');
+  return ('Sem entrega', 'info');
+}
+
+String _unconfirmedDeliveryMessage(_ExecData data) {
+  if (data.refreshFailed) {
+    return 'Entrega não verificada — conecte-se para atualizar.';
+  }
+  if (data.deliveryRun != null) {
+    return 'A central ainda não liberou a vistoria de entrega desta OS. '
+        'Ela não impede concluir a OS.';
+  }
+  return 'Esta OS não tem vistoria de entrega e conclui só com a coleta, '
+      'como antes.';
+}
+
+class _PhaseCard extends StatelessWidget {
+  const _PhaseCard({
+    required this.title,
+    required this.status,
+    required this.onAction,
+    this.actionLabel,
+    this.message,
+    this.note,
+    super.key,
+  });
+
+  final String title;
+  final _PhaseStatus status;
+  final String? actionLabel;
+  final VoidCallback onAction;
+  final String? message;
+  final String? note;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, tone) = status;
+    final done = label == 'Concluída';
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.checklist_outlined),
+            title: Text(title),
+            subtitle: message == null ? null : Text(message!),
+            trailing: OperationalStatusChip(label: label, status: tone),
+          ),
+          if (note != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.lock_outline, size: 16),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(note!)),
+                ],
+              ),
+            ),
+          if (actionLabel != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onAction,
+                  icon: Icon(
+                    done
+                        ? Icons.check_circle_outline
+                        : Icons.checklist_outlined,
+                  ),
+                  label: Text(actionLabel!),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StaleDataBanner extends StatelessWidget {
+  const _StaleDataBanner({required this.onRefresh});
+
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.warning_amber_outlined),
+        title: const Text(
+          'Não foi possível atualizar as vistorias agora. '
+          'Os dados podem estar desatualizados.',
+        ),
+        trailing: TextButton(
+          onPressed: onRefresh,
+          child: const Text('Atualizar'),
+        ),
+      ),
     );
   }
 }

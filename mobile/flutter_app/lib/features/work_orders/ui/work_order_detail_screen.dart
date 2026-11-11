@@ -13,6 +13,7 @@ import '../../../shared/ui/erp_scaffold.dart';
 import '../../../shared/ui/mobile_kit.dart';
 import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
+import '../../checklists/ui/checklist_navigation.dart';
 import '../data/work_order_repository.dart';
 import '../data/work_order_conflict_resolution_service.dart';
 import '../domain/work_order_models.dart';
@@ -605,9 +606,13 @@ class _ChecklistCard extends ConsumerWidget {
                 child: SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
+                    // B-SAN3-14 (P4) — a coleta, explícita, pelo helper.
                     onPressed: () => context.push(
-                      '/checklists/${wo.checklistId}/run'
-                      '?workOrderId=${wo.localId}',
+                      checklistRunLocation(
+                        checklistId: wo.checklistId!,
+                        workOrderId: wo.localId,
+                        kind: MobileChecklistRunKind.collection,
+                      ),
                     ),
                     icon: Icon(
                       isComplete
