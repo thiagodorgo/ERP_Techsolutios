@@ -3689,5 +3689,35 @@
     "blocks_completed": 212,
     "description": "PR-526 — Registra a madrugada de 10/11: as decisões do dono que estavam só na sessão, entre elas a abertura do bloco de segurança do acesso dos usuários, a ata da revisão completa da 1ª parte do B-ASS-08, ainda em curso, e dois registros de revisões anteriores que não estavam guardados, sem alterar o sistema. NÚMEROS DA CI no merge commit `699e6e20` (push na `main`), workflow `ci`, run 42759499438, tentativa 1: backend `4750 teste(s) · pass 4748 · fail 0 · skipped 2`; frontend 1676/1676; flutter 1047/1047. `blocks_completed` 212 -> 212.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 526`; números do log da rodada 42759499438. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-10",
+    "version": "B-RDV-COMPROVANTE",
+    "pr": 525,
+    "merge_commit": "2fab491a5c3d49a0a06a40fb4ad7e7b86ddef4bf",
+    "approved_head": "5759387875b167c2823e6e048c4d667b1b408e20",
+    "status": "published_per_pr",
+    "flutter_tests": "1067/1067",
+    "backend_tests": "4773/4775",
+    "frontend_smoke_tests": "1676/1676",
+    "blocks_completed": 213,
+    "consolidation": "KPI-MARCO-2026-11-10 — approved_head 57593878 é o head conferido (conf-525 e conf-525-b2, ata J-525-b-rdv-comprovante). O head do PR, 74c8ae59, é o update-branch (merge da main 699e6e20 no ramo), com interseção zero entre os 53 arquivos do ramo e os 6 que o update trouxe: provada pelo orquestrador antes do merge e re-medida neste marco com git diff --name-only (merge-base 75572269). Tentativa 1 da CI de push do merge 2fab491a VERMELHA só no job docker, no passo de construção da imagem (npm ci --omit=dev && npm cache clean --force saiu com código 146 dentro do build), com backend, backend-postgres, frontend e flutter verdes; verde na tentativa 2 por reexecução.",
+    "description": "B-RDV-COMPROVANTE — No aplicativo de campo, a foto do comprovante da despesa passa a subir ao servidor, passa pela verificação de arquivo e só é apagada do aparelho depois que o servidor confirma o recebimento; só quem lançou a despesa anexa o comprovante, e o pedido para a despesa de outra pessoa ou de outra organização é recusado sem revelar que ela existe; a escolha do técnico quando o gestor alterou a despesa, na tela de sincronização, fica para uma etapa própria. NÚMEROS DA CI no merge commit `2fab491a` (push na `main`), workflow `ci`, run 42846713090, tentativa 2: backend `4775 teste(s) · pass 4773 · fail 0 · skipped 2`; frontend 1676/1676; flutter 1067/1067. `blocks_completed` 212 -> 213.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 525` (approved_head informado e conferido no git); números do log da rodada 42846713090. Nada fica `null`."
+  },
+  {
+    "snapshot_date": "2026-11-10",
+    "version": "PR-522",
+    "pr": 522,
+    "merge_commit": "d5ec169687960e7ced0446af5a2bf02d5e7f0d7d",
+    "approved_head": "992451e0ea398bd96a5d8573defe5054517aed1e",
+    "status": "published_per_pr",
+    "flutter_tests": "1067/1067",
+    "backend_tests": "4892/4894",
+    "frontend_smoke_tests": "1676/1676",
+    "blocks_completed": 214,
+    "consolidation": "KPI-MARCO-2026-11-10 — o título do PR traz \"(B-ASS-08 parte 1)\", com espaço, e o padrão de ID de bloco do kpi-history-append.mjs (só \"(B-…)\" sem espaço) não o reconhece: a versão sai PR-522. A entrega conta bloco (ID de bloco no título e mudança de código), e o ID B-ASS-08 abre a descrição, pelo precedente do #500. O conserto do padrão do script vira pendência do próximo PR de registro.",
+    "description": "PR-522 — B-ASS-08 (parte 1): a cobrança da assinatura ganha a fila de envio ao provedor de pagamento, a recepção dos avisos do provedor e a baixa automática do demonstrativo, com regras contra cobrança e baixa em dobro: o aviso nunca decide sozinho, porque o sistema reconsulta o provedor antes de dar baixa, o aviso repetido não conta duas vezes, o pagamento a mais vira crédito e cada organização só alcança o que é seu; tudo nasce desligado, e a ligação e as rotinas automáticas ficam para a parte seguinte. NÚMEROS DA CI no merge commit `d5ec1696` (push na `main`), workflow `ci`, run 42926843510, tentativa 1: backend `4894 teste(s) · pass 4892 · fail 0 · skipped 2`; frontend 1676/1676; flutter 1067/1067. `blocks_completed` 213 -> 214.",
+    "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 522`; números do log da rodada 42926843510. Nada fica `null`."
   }
 ]
