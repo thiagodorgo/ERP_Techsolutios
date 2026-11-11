@@ -10,7 +10,7 @@ import path from "node:path";
 import test, { after } from "node:test";
 import { pathToFileURL } from "node:url";
 
-// B-O6R-12 — DRILL DA MIGRAÇÃO `20260901000000_impound_process_regime_snapshot`.
+// B-O6R-12 — DRILL DA MIGRAÇÃO `20260902000000_impound_process_regime_snapshot`.
 //
 // Regra de casa do plano (§3.0 item 1, A6): mutação no SQL da migração só é vista por quem RELÊ o arquivo e o
 // EXECUTA numa base própria a cada rodada. A suíte `-db` roda sobre a base que a CI migrou uma vez e não vê nada
@@ -22,7 +22,7 @@ import { pathToFileURL } from "node:url";
 //
 // Critérios donos aqui: C4, C5, C6, C7, C7b, C14, C16, C23 e o R2-2 (sombra por tabela temporária, E1.2′).
 
-const MIGRATION_NAME = "20260901000000_impound_process_regime_snapshot";
+const MIGRATION_NAME = "20260902000000_impound_process_regime_snapshot";
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")), "..");
 const MIGRATION_PATH = path.join(ROOT, "prisma/migrations", MIGRATION_NAME, "migration.sql");
 const connectionString = process.env.DATABASE_URL;
