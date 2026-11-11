@@ -334,8 +334,8 @@ a M6 e os 3 drills na bateria. Índice regenerado: `821 cabecalhos / 810 IDs | F
 
 | Arquivo | Casos (o pai conta como 1) | Assinatura | Classe |
 |---|---|---|---|
-| `san3-05-leituras-de-plataforma-db` | T11d, T11e + o pai (3) | diferença de soma entre papéis e cenário de rota sem resposta, no mesmo arquivo que liga o boot | carga (o mesmo arquivo do boot que estoura 15 s) |
-| `san3-05-runtime-role-guard-db` | T14a/b, T14c, T14d, T15 + o pai (5) | `DO` falhando no procedimento de papel; `condição de boot não apareceu em 15000ms` | carga e Windows (boot real e scripts de papel sob a suíte inteira) |
+| `san3-05-leituras-de-plataforma-db` | T11d, T11e + o pai (3) | `allocatedCost: 10` contra `30` entre o papel sem bypass e o superusuário, no rateio de custo de nuvem | poluição da suíte paralela: **sozinho, 12/12** (04:35, base nova só migrada) |
+| `san3-05-runtime-role-guard-db` | T14a/b, T14c, T14d, T15 + o pai (5) | `setsid: ausente — necessário para impedir que psql \password leia a senha do terminal` (o `scripts/db-runtime-role.sh` exige `setsid`, que o Git Bash não tem); `condição de boot não apareceu em 15000ms` | Windows: **sozinho, os mesmos 5** (04:36) |
 | `san3-09-bootstrap-platform-admin-db` | T2.1 + o pai (2) | `migrate deploy saiu com 1`: o drill chama `node_modules/.bin/prisma`, que no Windows é script de shell, e o `node` o lê como JS (`SyntaxError: missing ) after argument list`) | Windows |
 | `traccar-binding-uniqueness-db` | 1 | `Transaction API error: Unable to start a transaction in the given time.` | carga |
 | `traccar-event-migration-drill-db` | T-M(e), T-M(f) (2) | `deploy da base <drill>_main …: null !== 0`, ~181 s: o `migrate deploy` filho morto pelo tempo | carga |
