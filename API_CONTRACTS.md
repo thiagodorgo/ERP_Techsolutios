@@ -375,7 +375,7 @@ colidir com o router base.
 | POST | `/work-orders` | `work_orders:create` | Cria OS. |
 | GET | `/work-orders/:workOrderId` | `work_orders:read` | Detalhe da OS. |
 | PATCH | `/work-orders/:workOrderId` | `work_orders:update` | Atualiza OS. **B-O6R-07a (Ω6R-SEC-002):** ator que só alcança a OS por papel de CAMPO muta apenas a OS **atribuída a ele** (`assigned_operator_id` = perfil de operador do ator); OS de outro ou sem atribuição → **403 `not_assigned_to_actor`** — nunca 404, que segue reservado a cross-tenant. Papéis de gestão/despacho seguem tenant-wide. Cumpre `RBAC_MATRIX.md:45` (`field_technician = execute/update-assigned`), que o 200 anterior contrariava. |
-| PATCH | `/work-orders/:workOrderId/status` | `work_orders:status` | Transição de status. **Mesmo guard de escopo por objeto do `PATCH /work-orders/:id`** (403 `not_assigned_to_actor`). |
+| PATCH | `/work-orders/:workOrderId/status` | `work_orders:status` | Transição de status. **Mesmo guard de escopo por objeto do `PATCH /work-orders/:id`** (403 `not_assigned_to_actor`). **B-SAN3-14:** `completed` com vistoria de ENTREGA em andamento (fase `delivery`, situação `in_progress`) → **422 `WORK_ORDER_UNPROCESSABLE` / `delivery_checklist_pending`**, "Conclua a vistoria de entrega antes de concluir a OS."; falha da leitura das vistorias também recusa (fail-closed). A entrega concluída, concluída com divergência (`pending_acknowledgement`) ou cancelada não segura; a OS sem vistoria de entrega conclui como antes. |
 | PATCH | `/work-orders/:workOrderId/checklists` | `field_dispatch:create` | Ajusta o **conjunto de vistorias** da OS antes do envio ao técnico (§3.5.1). |
 | PATCH | `/work-orders/:workOrderId/mileage` | `work_orders:mileage_correct` | Correção de quilometragem. |
 | POST | `/work-orders/:workOrderId/cancel` | `work_orders:cancel` | Cancela OS (integridade atômica/terminal-guard). |
@@ -458,6 +458,7 @@ Fontes: `field-dispatch/`, `field-location/`, `field-ops-realtime/`, `technician
 | GET | `/tenant/checklist-components` | `tenant_checklists:read` | Componentes reutilizáveis de checklist. |
 | GET | `/mobile/checklists/available` · `/:checklistId/render` | `checklist_runs:read`\|`create` | Checklists disponíveis / render para o app. |
 | POST/PATCH | `/mobile/checklist-runs` (+ `/:runId`, `/:runId/complete`, `/attachments`, `/markers`, `/divergence`, `/acknowledgement`) | `checklist_runs:create`/`update`/`complete`/`acknowledge` | Execução de checklist no campo (+ evidências/marcadores/divergência). |
+| GET | `/mobile/checklist-runs?workOrderId=…[&checklistId=…][&roleAware=1]` | `checklist_runs:read` | Execuções da OS para o app (pré-criadas pelo despacho). Contrato **`checklist_run_role@2026-11.b-san3-14`**: com `roleAware=1`, a lista inclui a vistoria de entrega e cada item traz `role` (`collection`/`delivery`/`generic`; `null` = vistoria anterior à fase); sem o parâmetro (ou com outro valor), a resposta é a de antes do bloco: sem a entrega e sem a chave `role` (o app antigo casa só por modelo). |
 
 #### 3.6.2 Modelos de checklist — trava otimista, estrutura em uso e portas únicas
 
@@ -812,7 +813,7 @@ sync não declaram `requirePermission` no router (autorização resolvida no ser
 | Método | Caminho | Permissão RBAC | Descrição |
 |---|---|---|---|
 | GET | `/mobile/bootstrap` | Autenticado (ator do JWT) | Estado inicial do app (dados + flags de sync). |
-| POST | `/mobile/sync/work-order-actions` | Autenticado (idempotente) | Replay de ações de OS. `work_order.status_change` (B-O6R-07a) e `work_order.mileage` (**B-O6R-07c-a**) seguem o escopo por objeto: ator só de campo em OS que não é dele recebe a ação `rejected` com `not_assigned_to_actor`, **por ação, dentro do lote 200**. O recibo de idempotência é consultado antes (reenvio no mesmo processo → `already_applied`); ele é em memória por processo, então depois de reinício ou noutra instância o reenvio de uma km já aplicada a uma OS redistribuída sai `rejected` (o valor já está gravado). |
+| POST | `/mobile/sync/work-order-actions` | Autenticado (idempotente) | Replay de ações de OS. **B-SAN3-14:** a conclusão com vistoria de entrega em andamento sai `rejected` com `delivery_checklist_pending` (422, sem recibo de idempotência), e a MESMA ação é aceita depois que a entrega conclui. `work_order.status_change` (B-O6R-07a) e `work_order.mileage` (**B-O6R-07c-a**) seguem o escopo por objeto: ator só de campo em OS que não é dele recebe a ação `rejected` com `not_assigned_to_actor`, **por ação, dentro do lote 200**. O recibo de idempotência é consultado antes (reenvio no mesmo processo → `already_applied`); ele é em memória por processo, então depois de reinício ou noutra instância o reenvio de uma km já aplicada a uma OS redistribuída sai `rejected` (o valor já está gravado). |
 | POST | `/mobile/sync/checklist-actions` | Autenticado (idempotente) | Replay de ações de checklist. |
 | POST | `/mobile/sync/inventory-actions` | Autenticado (idempotente) | Replay de ações de estoque. |
 | POST | `/mobile/sync/evidence-actions` | Autenticado (idempotente) | Replay de ações de evidência. |

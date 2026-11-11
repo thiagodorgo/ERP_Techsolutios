@@ -24,7 +24,7 @@ header `Authorization: Bearer` + `X-Tenant-Id` · `Idempotency-Key` em POST.
 | GET ● | `/work-orders` · `/work-orders?priority=high` · `?status=open` · app: `?scope=assigned&openOnly=true&paginate=cursor&limit=100[&cursor=]` | listas web/mobile — contrato do B-SAN3-13 abaixo |
 | GET ● | `/work-orders/:id` · `/work-orders/:id/timeline` | detalhe + histórico |
 | POST | `/work-orders` | criar (drawer Nova OS) |
-| PATCH ● | `/work-orders/:id/status` | mudança de status |
+| PATCH ● | `/work-orders/:id/status` | mudança de status (B-SAN3-14: concluir com vistoria de entrega em andamento → 422 `delivery_checklist_pending`) |
 | POST ● | `/work-orders/:id/assign` | atribuir técnico |
 | PATCH | `/work-orders/:id` | editar |
 
@@ -48,6 +48,7 @@ header `Authorization: Bearer` + `X-Tenant-Id` · `Idempotency-Key` em POST.
 |---|---|---|
 | GET ● | `/mobile/checklists/:id/render` | schema-driven render |
 | GET | `/mobile/checklists/available` | checklists da OS |
+| GET | `/mobile/checklist-runs?workOrderId=…&roleAware=1` | execuções da OS com a fase (`role`); sem `roleAware=1`, sem a entrega e sem `role` (contrato `checklist_run_role@2026-11.b-san3-14`, B-SAN3-14) |
 | POST | `/mobile/checklist-runs` | inicia run (coleta/entrega) |
 | PATCH | `/mobile/checklist-runs/:runId` | salva progresso |
 | POST | `/mobile/checklist-runs/:runId/markers` | mapa de avarias |
