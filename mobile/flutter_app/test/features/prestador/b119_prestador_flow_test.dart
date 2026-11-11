@@ -187,9 +187,9 @@ void main() {
 
     test('6. loadTechnicianStock retorna catalogo semente', () async {
       final repo = _repo();
-      final stock = await repo.loadTechnicianStock();
-      expect(stock, isNotEmpty);
-      expect(stock.any((s) => s.sku == 'ELE-0031'), isTrue);
+      final load = await repo.loadTechnicianStock();
+      expect(load.items, isNotEmpty);
+      expect(load.items.any((s) => s.sku == 'ELE-0031'), isTrue);
     });
   });
 
