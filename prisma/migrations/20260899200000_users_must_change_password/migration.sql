@@ -1,0 +1,11 @@
+-- B-USERS-ACESSO-SEG (P1 do `D-USERS-ACESSO-RESPOSTAS`, autorização NOMINAL do dono) — a credencial local ganha a marca
+-- "trocar a senha no próximo acesso". É o ÚNICO toque deste bloco em `prisma/**`.
+--
+-- ADITIVA: uma coluna nova, NOT NULL com DEFAULT constante. No PostgreSQL 11+ isso não reescreve a tabela (o valor padrão
+-- fica no catálogo) e toda credencial que já existe nasce com `false`, ou seja, sem mudança de comportamento para quem já
+-- tem senha. Uma sentença só: isenta do envoltório BEGIN/COMMIT (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA` — "mais de uma
+-- sentença"), conferido por `node scripts/migration-transaction-guard.mjs`.
+--
+-- ROLLBACK (manual, ato de junta — NÃO roda sozinho; perde a marca de quem ainda não trocou a senha provisória):
+--   revert do código → deploy → ALTER TABLE "local_auth_credentials" DROP COLUMN IF EXISTS "must_change_password";
+ALTER TABLE "local_auth_credentials" ADD COLUMN "must_change_password" BOOLEAN NOT NULL DEFAULT false;

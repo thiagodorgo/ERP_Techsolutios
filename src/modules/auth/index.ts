@@ -11,6 +11,7 @@ export * from "./routes/identity-links.routes.js";
 export * from "./routes/me.routes.js";
 export * from "./routes/session-admin.routes.js";
 export * from "./services/anonymous-login.service.js";
+export * from "./services/access-token-scope.js";
 export * from "./services/auth-session.service.js";
 export * from "./services/identity-link.service.js";
 export * from "./services/identity-resolver.js";

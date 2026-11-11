@@ -12,7 +12,11 @@ declare module "express-serve-static-core" {
   }
 }
 
-export function attachAuthenticatedActor() {
+export type AttachAuthenticatedActorOptions = {
+  readonly acceptPasswordChangeSession?: boolean;
+};
+
+export function attachAuthenticatedActor(options: AttachAuthenticatedActorOptions = {}) {
   return async (
     request: Request,
     response: Response,
@@ -35,11 +39,17 @@ export function attachAuthenticatedActor() {
     try {
       const payload = await verifyAccessToken(token);
 
+      if (payload.scope === "password_change" && options.acceptPasswordChangeSession !== true) {
+        sendPasswordChangeRequired(response);
+        return;
+      }
+
       request.actor = {
         userId: payload.sub,
         tenantId: payload.tenant_id,
         email: payload.email,
         roles: [...payload.roles],
+        ...(payload.scope ? { sessionScope: payload.scope } : {}),
         authType: "jwt",
       };
 
@@ -112,6 +122,16 @@ function sendInvalidToken(response: Response): void {
     error: {
       code: "INVALID_TOKEN",
       message: "Invalid or expired access token.",
+    },
+  });
+}
+
+function sendPasswordChangeRequired(response: Response): void {
+  response.status(403).json({
+    error: {
+      code: "FORBIDDEN",
+      reason: "password_change_required",
+      message: "Password change is required before this action.",
     },
   });
 }

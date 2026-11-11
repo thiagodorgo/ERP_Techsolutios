@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **816** |
-| IDs distintos | 805 |
-| **ABERTAS** | **619** |
+| Cabecalhos `## P-` | **818** |
+| IDs distintos | 807 |
+| **ABERTAS** | **621** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **557** |
+| — das quais **ativas nesta rodada** | **559** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 193 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **816 cabecalhos para 805 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **818 cabecalhos para 807 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 277
+## ABERTAS · balde A — material — 278
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -348,12 +348,13 @@
 | `P-LOGIN-CONTRASTE-ERRO` | 13159 | MÉDIA | sim | P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste |
 | `P-B-ASS-08c-OBRIGACOES-DA-08b` | 13171 | ALTA | sim | P-B-ASS-08c-OBRIGACOES-DA-08b (2026-11-10) — bloco futuro `B-ASS-08c`, com as formas e o |
 | `P-CONTRATO-EMENDA-P5-P8C` | 13178 | ALTA | sim | P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUD |
-| `P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA` | 13196 | MÉDIA | sim | P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA (2026-11-11) — aprovar um orçamento de dentro de um |
-| `P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN` | 13202 | MÉDIA | sim | P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN (2026-11-11) — falha ao ler o tipo do serviço desliga  |
-| `P-SAN3-08-ORCAMENTO-SEM-ALCADA` | 13208 | MÉDIA | sim | P-SAN3-08-ORCAMENTO-SEM-ALCADA (2026-11-11) — aprovar orçamento não confere alçada nem s |
-| `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` | 13215 | MÉDIA | sim | P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — falha no meio da aprovação gera OS em do |
+| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13184 | ALTA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
+| `P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA` | 13214 | MÉDIA | sim | P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA (2026-11-11) — aprovar um orçamento de dentro de um |
+| `P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN` | 13220 | MÉDIA | sim | P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN (2026-11-11) — falha ao ler o tipo do serviço desliga  |
+| `P-SAN3-08-ORCAMENTO-SEM-ALCADA` | 13226 | MÉDIA | sim | P-SAN3-08-ORCAMENTO-SEM-ALCADA (2026-11-11) — aprovar orçamento não confere alçada nem s |
+| `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` | 13233 | MÉDIA | sim | P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — falha no meio da aprovação gera OS em do |
 
-## ABERTAS · balde B — processo/registro — 280
+## ABERTAS · balde B — processo/registro — 281
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -634,9 +635,10 @@
 | `P-USERS-DESATIVADO-TOKEN-MOBILE` | 13135 | — | sim | P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-10) — token anterior à desativação ainda alcanç |
 | `P-J522-C3B-01-DOIS-HUNKS` | 13147 | BAIXA | sim | P-J522-C3B-01-DOIS-HUNKS (2026-11-10) — `C3B-01`: dois hunks onde o §5 do plano do segun |
 | `P-LOGIN-WEB-TERMO-TENANT` | 13165 | BAIXA | sim | P-LOGIN-WEB-TERMO-TENANT (2026-11-10) — login web ainda expõe termo técnico de organizaç |
-| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13184 | BAIXA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
-| `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE` | 13190 | BAIXA | sim | P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE (2026-11-11) — o approve do orçamento só lê camel |
-| `P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA` | 13222 | BAIXA | sim | P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA (2026-11-11) — o `platform_admin` cria e aprova |
+| `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` | 13196 | BAIXA | sim | P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes d |
+| `P-USERS-SEG-ORDEM-DE-IMPLANTACAO` | 13202 | BAIXA | sim | P-USERS-SEG-ORDEM-DE-IMPLANTACAO (2026-11-11) — o deploy que contém o #527 vai na ordem  |
+| `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE` | 13208 | BAIXA | sim | P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE (2026-11-11) — o approve do orçamento só lê camel |
+| `P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA` | 13240 | BAIXA | sim | P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA (2026-11-11) — o `platform_admin` cria e aprova |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 

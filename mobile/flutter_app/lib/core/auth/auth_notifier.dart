@@ -73,6 +73,18 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         password: password,
         tenantId: tenantId,
       );
+      if (session.mustChangePassword) {
+        // B-USERS-ACESSO-SEG (T2): sessão restrita da senha provisória. Não é
+        // autenticada: sem APP_CONNECT, sem bootstrap, sem sincronização. O
+        // roteador leva direto à troca de senha.
+        state = AsyncValue.data(
+          AuthState(
+            status: AuthStatus.passwordChangeRequired,
+            session: session,
+          ),
+        );
+        return;
+      }
       state = AsyncValue.data(
         AuthState(status: AuthStatus.authenticated, session: session),
       );
@@ -86,10 +98,44 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     }
   }
 
+  /// B-USERS-ACESSO-SEG (T2): troca a senha provisória. Sucesso → sessão local
+  /// apagada e volta ao login com o aviso. Sessão vencida → volta ao login com
+  /// o texto de sessão expirada. Os demais erros sobem para a tela, que fica.
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final repo = ref.read(authRepositoryProvider);
+    try {
+      await repo.changePassword(
+        currentPassword: currentPassword,
+        newPassword: newPassword,
+      );
+    } on PasswordChangeError catch (e) {
+      if (e.failure == PasswordChangeFailure.sessionExpired) {
+        state = AsyncValue.data(
+          AuthState(status: AuthStatus.expired, safeError: e.safeMessage),
+        );
+      }
+      rethrow;
+    }
+    state = const AsyncValue.data(
+      AuthState(
+        status: AuthStatus.unauthenticated,
+        safeNotice: kPasswordChangedNotice,
+      ),
+    );
+  }
+
   Future<void> logout() async {
     // Ω4C PR-13 — hook de ciclo: logout → APP_DISCONNECT (antes de limpar a
     // sessao, para ainda conhecer o tenant). Best-effort.
-    final tenantId = state.asData?.value.session?.user.tenantId;
+    // B-USERS-ACESSO-SEG (T2): só sessão autenticada registrou APP_CONNECT; o
+    // "Sair" da sessão restrita não registra APP_DISCONNECT.
+    final current = state.asData?.value;
+    final tenantId = (current?.isAuthenticated ?? false)
+        ? current?.session?.user.tenantId
+        : null;
     if (tenantId != null && tenantId.isNotEmpty) {
       _recordTelemetry(
         (service) => service.recordAppDisconnect(tenantId: tenantId),
@@ -151,10 +197,14 @@ final routerNotifierProvider = Provider<RouterNotifier>((ref) {
 
 // Injects the current access token into ApiConfig so Dio clients can use it.
 // Returns ApiConfig with null token when unauthenticated — callers must guard.
+// B-USERS-ACESSO-SEG (T2): o token só sai para o resto do app com sessão
+// AUTENTICADA. O token da sessão restrita (senha provisória) só serve à troca
+// de senha, que o repositório de auth envia por conta própria.
 final authenticatedApiConfigProvider = Provider<ApiConfig>((ref) {
   final authState = ref.watch(authStateProvider);
   final token = authState.maybeWhen(
-    data: (state) => state.session?.tokens.accessToken,
+    data: (state) =>
+        state.isAuthenticated ? state.session?.tokens.accessToken : null,
     orElse: () => null,
   );
   return ApiConfig(accessToken: token);

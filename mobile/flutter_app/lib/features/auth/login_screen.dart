@@ -41,6 +41,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _ => null,
     };
 
+    // B-USERS-ACESSO-SEG (T2): aviso de sucesso da troca de senha (texto fixo).
+    final safeNotice = switch (authAsync) {
+      AsyncData(:final value)
+          when value.status == AuthStatus.unauthenticated &&
+              value.safeNotice != null =>
+        value.safeNotice,
+      _ => null,
+    };
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -58,6 +67,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     passwordController: _passwordController,
                     isLoading: isLoading,
                     error: safeError,
+                    notice: safeNotice,
                     onSubmit: _doLogin,
                     onForgot: _showForgotPasswordDialog,
                   ),
@@ -224,12 +234,14 @@ class _EntrarCard extends StatelessWidget {
     required this.error,
     required this.onSubmit,
     required this.onForgot,
+    this.notice,
   });
 
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final bool isLoading;
   final String? error;
+  final String? notice;
   final Future<void> Function() onSubmit;
   final VoidCallback onForgot;
 
@@ -254,6 +266,32 @@ class _EntrarCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
+          if (notice != null) ...[
+            // B-USERS-ACESSO-SEG (T2): faixa verde de sucesso, no desenho da
+            // faixa de erro (tons da referência aprovada da troca de senha).
+            Semantics(
+              liveRegion: true,
+              container: true,
+              child: Container(
+                key: const Key('login-aviso'),
+                width: double.infinity,
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFFBBF7D0)),
+                ),
+                child: Text(
+                  notice!,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: Color(0xFF166534),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
           if (error != null) ...[
             Container(
               width: double.infinity,

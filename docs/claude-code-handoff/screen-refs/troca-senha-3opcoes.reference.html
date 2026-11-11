@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troca de senha · 3 opções (Claude) · web e app de campo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Roboto:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (origin/main 2fab491a) ─── */
+:root{
+  /* frontend/src/styles/tokens/tokens.css */
+  --color-status-danger:#DC2626;
+  --surface-panel-muted:#f8fafc;
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  /* mobile/flutter_app/lib/shared/theme/erp_mobile_theme.dart:7-25 */
+  --m-primary:#2563EB;--m-success:#059669;--m-danger:#DC2626;--m-page:#F1F5F9;--m-border:#E2E8F0;
+  --m-ink:#0F172A;--m-muted:#64748B;--m-faint:#94A3B8;
+  --m-font:Roboto,"Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 240px}
+button,input{font-family:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.nw{white-space:nowrap}
+
+/* ─── MOLDURA DA MAQUETE (copiada de screen-refs/usuarios-3opcoes.reference.html) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+
+/* ─── WEB · página de entrada (frontend/src/pages/LoginPage.tsx:41-139, estilos em linha + <style> das linhas 52-57) ─── */
+.web-page{min-height:812px;display:flex;align-items:center;justify-content:center;padding:40px 24px;background:#F1F5F9;font-family:Inter,system-ui,-apple-system,'Segoe UI',sans-serif}
+.web-page [data-view]{width:100%;max-width:420px}
+.lg-marca{display:flex;justify-content:center;margin-bottom:32px}
+.lg-marca__in{display:flex;align-items:center;gap:12px}
+.lg-marca__ic{width:44px;height:44px;border-radius:12px;background:#0D1B2A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lg-marca__txt{display:flex;flex-direction:column}
+.lg-marca__nome{font-size:22px;font-weight:800;color:#0F172A;letter-spacing:-.3px;white-space:nowrap}
+.lg-marca__sub{font-size:13px;font-weight:500;color:#64748B;margin-top:2px}
+.lg-card{background:#fff;border:1px solid #E2E8F0;border-radius:16px;padding:36px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+.lg-titulo{font-size:24px;font-weight:800;color:#0F172A;margin-bottom:4px}
+.lg-apoio{font-size:14px;color:#64748B;margin-bottom:20px;line-height:1.45}
+/* decisão do dono (10/11): e-mail de quem troca a senha, logo abaixo do apoio; texto, não campo nem link */
+.lg-apoio--conta{margin-bottom:6px}
+.lg-conta{font-size:12.5px;font-weight:500;color:#64748B;line-height:1.45;margin-bottom:20px;overflow-wrap:anywhere}
+.lg-conta b{font-weight:600}
+/* faixa de erro: LoginPage.tsx:89-94; texto em #B91C1C para o AA (ver o quadro de notas) */
+.lg-faixa{display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:10px;background:#FEF2F2;border:1px solid #FECACA;margin-bottom:18px}
+.lg-faixa__ponto{width:7px;height:7px;border-radius:50%;background:#DC2626;flex-shrink:0}
+.lg-faixa__txt{font-size:12.5px;font-weight:600;color:#B91C1C;line-height:1.45}
+/* faixa de sucesso: tons de frontend/src/modules/patios/processes/components/IntegritySeal.tsx:40 */
+.lg-faixa--ok{background:#F0FDF4;border-color:#BBF7D0}
+.lg-faixa--ok .lg-faixa__ponto{background:#16A34A}
+.lg-faixa--ok .lg-faixa__txt{color:#166534}
+.lg-campo{margin-bottom:16px}
+.lg-campo--ultimo{margin-bottom:10px}
+.lg-rotulo{display:block;font-size:12.5px;font-weight:700;color:#374151;margin-bottom:6px}
+.lg-input{display:block;width:100%;padding:12px 14px;border:1.5px solid #E2E8F0;border-radius:10px;background:#fff;font-size:14px;color:#0F172A;font-family:inherit;outline:none}
+.lg-input:focus{border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.lg-input::placeholder{color:#94A3B8}
+.lg-input:disabled{opacity:.55;cursor:not-allowed}
+.lg-input[readonly]{background:#F8FAFC}
+.lg-input[aria-invalid="true"]{border-color:#DC2626}
+.lg-input[aria-invalid="true"]:focus{box-shadow:0 0 0 3px rgba(220,38,38,.1)}
+.lg-senha{position:relative}
+.lg-senha .lg-input{padding-right:46px}
+.lg-olho{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.lg-olho:hover:not(:disabled){background:#F1F5F9;color:#0F172A}
+.lg-olho:focus-visible{outline:2px solid #2563EB;outline-offset:0}
+.lg-olho:disabled{opacity:.55;cursor:not-allowed}
+.lg-olho .i-off,.lg-olho[aria-pressed="true"] .i-on{display:none}
+.lg-olho[aria-pressed="true"] .i-off{display:inline-flex}
+.lg-olho[aria-pressed="true"]{color:#2563EB}
+.lg-dica{font-size:12.5px;font-weight:500;color:#64748B;line-height:1.45;margin-bottom:24px}
+.lg-btn{width:100%;padding:13px;background:#2563EB;border:none;border-radius:10px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+.lg-btn:focus-visible,.lg-btn2:focus-visible{outline:2px solid #2563EB;outline-offset:2px}
+.lg-btn:disabled{cursor:not-allowed;opacity:.55}
+.lg-btn.is-carregando:disabled{opacity:1;cursor:default}
+.lg-spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:lg-spin .7s linear infinite;flex-shrink:0}
+@keyframes lg-spin{to{transform:rotate(360deg)}}
+.lg-btn2{width:100%;padding:12px;background:#fff;border:1.5px solid #E2E8F0;border-radius:10px;font-size:14px;font-weight:600;color:#374151;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:10px}
+.lg-btn2:disabled{cursor:not-allowed;opacity:.55}
+/* só no login (estados sucesso e sessão expirada) */
+.lg-esqueci{text-align:right;margin-bottom:24px}
+.lg-esqueci span{font-size:12.5px;font-weight:600;color:#2563EB;cursor:pointer}
+.lg-ou{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.lg-ou i{flex:1;height:1px;background:#E2E8F0}
+.lg-ou span{font-size:12.5px;color:#94A3B8;white-space:nowrap}
+.lg-g{display:inline-flex;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 0 0 1.5px #E2E8F0;flex-shrink:0}
+.lg-input--login{padding-right:14px}
+
+/* ─── WEB · opção B (guia) ─── */
+.b-forca{display:flex;align-items:center;gap:10px;margin-top:8px}
+.b-forca__barras{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.b-forca__barras i{height:4px;border-radius:99px;background:#E2E8F0}
+.b-forca__txt{font-size:12px;font-weight:600;color:#64748B;min-width:96px;text-align:right}
+.b-forca[data-nivel="1"] i:nth-child(-n+1){background:#DC2626}.b-forca[data-nivel="1"] .b-forca__txt{color:#B91C1C}
+.b-forca[data-nivel="2"] i:nth-child(-n+2){background:#D97706}.b-forca[data-nivel="2"] .b-forca__txt{color:#92400E}
+.b-forca[data-nivel="3"] i:nth-child(-n+3){background:#2563EB}.b-forca[data-nivel="3"] .b-forca__txt{color:#1D4ED8}
+.b-forca[data-nivel="4"] i{background:#16A34A}.b-forca[data-nivel="4"] .b-forca__txt{color:#166534}
+.b-guia{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;margin:6px 0 24px}
+.b-guia__tit{font-size:12px;font-weight:700;color:#374151;margin-bottom:8px}
+.b-guia ul{list-style:none;display:grid;gap:6px}
+.b-req{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500;color:#64748B;line-height:1.3}
+.b-req__ic{display:inline-flex;flex-shrink:0;color:#94A3B8}
+.b-req__ic svg{display:block}
+.b-req .ic-ok,.b-req .ic-falha{display:none}
+.b-req.is-ok{color:#166534}.b-req.is-ok .b-req__ic{color:#16A34A}.b-req.is-ok .ic-pend{display:none}.b-req.is-ok .ic-ok{display:block}
+.b-req.is-falha{color:#B91C1C}.b-req.is-falha .b-req__ic{color:#DC2626}.b-req.is-falha .ic-pend{display:none}.b-req.is-falha .ic-falha{display:block}
+
+/* ─── WEB · opção C (duas etapas) ─── */
+.c-etapas{list-style:none;margin-bottom:24px}
+.c-etapa{position:relative;padding-left:40px}
+.c-etapa+.c-etapa{margin-top:18px}
+.c-etapa:not(:last-child)::before{content:"";position:absolute;left:12px;top:32px;bottom:-14px;width:2px;border-radius:2px;background:#E2E8F0}
+.c-etapa--feita:not(:last-child)::before{background:#A7F3D0}
+.c-marca{position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#E2E8F0;color:#64748B}
+.c-etapa--atual .c-marca{background:#2563EB;color:#fff}
+.c-etapa--feita .c-marca{background:#059669;color:#fff}
+.c-marca__ok{display:none}
+.c-etapa--feita .c-marca__n{display:none}
+.c-etapa--feita .c-marca__ok{display:inline-flex}
+.c-cab{display:flex;align-items:center;gap:8px;min-height:26px;margin-bottom:4px}
+.c-num{font-size:11px;font-weight:700;color:#64748B;letter-spacing:.02em}
+.c-feita{display:none;font-size:11px;font-weight:700;color:#047857;background:#ECFDF5;border:1px solid #A7F3D0;padding:1px 7px;border-radius:99px}
+.c-etapa--feita .c-feita{display:inline-flex}
+.c-pend{display:none;font-size:11px;font-weight:600;color:#64748B}
+.c-etapa--futura .c-pend{display:inline}
+.c-alterar{display:none;align-items:center;justify-content:center;margin-left:auto;border:0;background:transparent;color:#2563EB;font-size:12.5px;font-weight:600;cursor:pointer;padding:5px 8px;border-radius:6px;font-family:inherit}
+.c-etapa--feita .c-alterar{display:inline-flex}
+.c-alterar:focus-visible{outline:2px solid #2563EB;outline-offset:1px}
+.c-alterar:disabled{opacity:.55;cursor:not-allowed}
+.c-tit{display:block;font-size:12.5px;font-weight:700;color:#374151;margin-bottom:6px}
+.c-etapa--futura .c-corpo{display:none}
+.c-etapa--futura .c-tit{color:#64748B;margin-bottom:0}
+/* etapa concluída e recolhida: o campo fica em resumo (mais baixo, fundo neutro, só leitura) */
+.c-etapa--feita .lg-input{padding-top:9px;padding-bottom:9px;font-size:13px}
+.c-etapa--feita .lg-olho{width:30px;height:30px}
+
+/* ─── APP DE CAMPO · aparelho 390×812 (login_screen.dart + erp_mobile_theme.dart) ─── */
+.app-stage{position:relative;background:#0f172a;display:flex;justify-content:center;padding:20px 0}
+.app-stage__tag{position:absolute;left:24px;top:22px;display:flex;flex-direction:column;gap:6px;max-width:300px}
+.app-stage__tag b{align-self:flex-start;font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-stage__tag span{font-size:11.5px;color:#94a3b8;line-height:1.5}
+.app-stage__tag .app-stage__entrega{color:#e2e8f0;font-weight:700}
+.phone{width:410px;height:832px;border-radius:48px;background:#05080f;padding:10px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 30px 60px -20px rgba(0,0,0,.8)}
+.phone__screen{width:390px;height:812px;border-radius:38px;overflow:hidden;background:var(--m-page);display:flex;flex-direction:column;font-family:var(--m-font);color:var(--m-ink)}
+.phone__status{height:36px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 28px;font-size:13px;font-weight:600;color:#0F172A}
+.phone__status-ic{display:flex;align-items:center;gap:6px}
+.phone__body{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.phone__body>[data-view]{margin:auto 0;width:100%}
+.m-tela{padding:20px}
+.m-col{max-width:400px;margin:0 auto;display:flex;flex-direction:column}
+.m-card{background:#fff;border:1px solid var(--m-border);border-radius:16px}
+.m-marca{padding:16px;display:flex;align-items:center;gap:12px}
+.m-marca__ic{width:44px;height:44px;border-radius:50%;background:#ECFDF5;color:#059669;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.m-marca__nome{font-size:16px;font-weight:800;color:var(--m-ink)}
+.m-marca__sub{font-size:12.5px;color:var(--m-muted)}
+.m-entrar{padding:18px;margin-top:16px}
+.m-titulo{font-size:17px;font-weight:800;color:var(--m-ink);line-height:1.25}
+.m-apoio{font-size:13px;color:var(--m-muted);margin-top:4px;line-height:1.35}
+/* decisão do dono (10/11): e-mail de quem troca, no estilo do _FieldLabel (login_screen.dart:346-365) */
+.m-conta{font-size:12px;font-weight:600;color:var(--m-muted);margin-top:6px;line-height:1.3;overflow-wrap:anywhere}
+.m-sep{height:14px}
+/* faixa: _EntrarCard, login_screen.dart:257-275 */
+.m-faixa{display:flex;align-items:flex-start;gap:8px;padding:11px;border-radius:10px;background:#FEF2F2;border:1px solid #FECACA;font-size:12.5px;color:#991B1B;line-height:1.35;margin-bottom:14px}
+.m-faixa svg{flex-shrink:0;color:#DC2626;margin-top:-1px}
+.m-faixa--ok{background:#F0FDF4;border-color:#BBF7D0;color:#166534}
+.m-rotulo{display:block;padding-bottom:6px;font-size:12px;font-weight:600;color:var(--m-muted)}
+.m-campo+.m-campo{margin-top:12px}
+.m-fld{position:relative}
+.m-input{display:block;width:100%;height:52px;padding:0 52px 0 44px;border:1px solid var(--m-border);border-radius:10px;background:#F1F5F9;font-family:var(--m-font);font-size:16px;color:var(--m-ink);outline:none}
+.m-input--sem-icone{padding-left:14px;padding-right:14px}
+.m-input::placeholder{color:var(--m-faint)}
+.m-input:focus{border-color:var(--m-primary);box-shadow:inset 0 0 0 1px var(--m-primary)}
+.m-input:disabled{color:rgba(15,23,42,.38)}
+.m-input:disabled::placeholder{color:rgba(148,163,184,.6)}
+.m-input[readonly]{background:#F8FAFC}
+.m-input[aria-invalid="true"]{border-color:var(--m-danger);box-shadow:inset 0 0 0 1px var(--m-danger)}
+.m-cadeado{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--m-faint);display:flex;pointer-events:none}
+.m-olho{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--m-muted);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.m-olho:focus-visible{outline:2px solid var(--m-primary);outline-offset:-2px}
+.m-olho:disabled{color:rgba(100,116,139,.45);cursor:default}
+.m-olho .i-off,.m-olho[aria-pressed="true"] .i-on{display:none}
+.m-olho[aria-pressed="true"] .i-off{display:flex}
+.m-olho[aria-pressed="true"]{color:var(--m-primary)}
+.m-dica{font-size:12px;color:var(--m-muted);line-height:1.35;margin-top:8px}
+.m-gap18{height:18px}
+.m-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:44px;border:0;border-radius:8px;background:var(--m-primary);color:#fff;font-family:var(--m-font);font-size:14px;font-weight:500;letter-spacing:.1px;cursor:pointer}
+.m-btn:focus-visible,.m-txtbtn:focus-visible,.m-outbtn:focus-visible{outline:2px solid var(--m-primary);outline-offset:2px}
+.m-btn:disabled{background:rgba(29,27,32,.12);color:rgba(29,27,32,.38);cursor:default}
+.m-spin{width:20px;height:20px;border-radius:50%;border:2px solid rgba(37,99,235,.25);border-top-color:var(--m-primary);animation:lg-spin .8s linear infinite}
+.m-txtbtn{display:flex;align-items:center;justify-content:center;margin:4px auto 0;height:44px;min-width:64px;padding:0 12px;border:0;border-radius:22px;background:transparent;color:var(--m-primary);font-family:var(--m-font);font-size:14px;font-weight:500;letter-spacing:.1px;cursor:pointer}
+.m-txtbtn:disabled{color:rgba(29,27,32,.38);cursor:default}
+.m-outbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:46px;margin-top:14px;border:1px solid var(--m-border);border-radius:8px;background:#fff;color:var(--m-ink);font-family:var(--m-font);font-size:14px;font-weight:700}
+.m-outbtn b{font-size:16px;font-weight:800;color:#4285F4}
+.m-rodape{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:16px;font-size:11px;color:var(--m-faint)}
+/* app · opção B */
+.m-forca{display:flex;align-items:center;gap:10px;margin-top:6px}
+.m-forca .b-forca__txt{font-size:12px}
+.m-guia{background:#F8FAFC;border:1px solid var(--m-border);border-radius:10px;padding:8px 12px;margin-top:10px}
+.m-guia .b-guia__tit{font-size:12px;font-weight:600;color:var(--m-muted);margin-bottom:4px}
+.m-guia ul{list-style:none;display:grid;gap:4px}
+.m-guia .b-req{font-size:12.5px;font-weight:400}
+/* app · opção C: marcadores do WorkOrderStepper (work_order_stepper.dart, círculo de 26 px) */
+.m-etapas .c-etapa{padding-left:38px}
+.m-etapas .c-etapa+.c-etapa{margin-top:14px}
+.m-etapas .c-cab{margin-bottom:2px}
+.m-etapas .c-alterar{height:44px;padding:0 12px;border-radius:22px;font-family:var(--m-font);font-size:14px;font-weight:500;margin:-9px -8px -9px auto}
+.m-etapas .c-tit{font-size:12px;font-weight:600;color:var(--m-muted);padding-bottom:6px;margin-bottom:0}
+.m-etapas .c-num{font-size:11.5px}
+.m-etapas .c-etapa--feita .m-input{height:48px;font-size:15px}
+
+/* ─── Alternador de estados, plataforma e seletor A/B/C (fora da tela) ─── */
+.maquete-controles{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:470px}
+.dock-linha{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.dock-rotulo{font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.03em;padding:0 4px 0 6px}
+.dock-linha button,.seletor-opcoes button{border:0;border-radius:8px;padding:8px 11px;font-size:12px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1;font-family:var(--font-sans)}
+.dock-linha button[aria-pressed="true"],.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.dock-linha button:focus-visible,.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.dock-linha button:disabled{opacity:.4;cursor:not-allowed}
+.seletor-opcoes{display:flex;align-items:center;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{padding:9px 13px;font-size:12.5px}
+/* o painel nunca cobre o cartão (420 px) nem o aparelho (410 px): ocupa só a folga à direita, com 10 px de margem */
+.maquete-controles{max-width:min(470px,calc((100vw - 420px) / 2 - 30px))}
+.toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:99;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+
+/* ─── Quadro de notas (fora da tela) ─── */
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0;line-height:1.5}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.3}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;overflow-wrap:anywhere}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-box--pergunta{border-color:#2563eb;background:#172554}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.rv-pergunta{font-size:14px;font-weight:700;color:#fff;line-height:1.5;margin-bottom:8px}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <!-- WEB: moldura de navegador + página de entrada (fora do menu e da barra de cima, como o login) -->
+  <div data-plat="web">
+    <div class="browser-banner">
+      <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+      <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+      <div class="browser-banner__tag" id="banner-tag">Troca de senha · Opção A</div>
+    </div>
+    <div class="web-page">
+      <div data-view="web-a"></div>
+      <div data-view="web-b" hidden></div>
+      <div data-view="web-c" hidden></div>
+    </div>
+  </div>
+  <!-- APP DE CAMPO: aparelho 390×812 centrado -->
+  <div data-plat="app" hidden>
+    <div class="app-stage">
+      <div class="app-stage__tag"><b id="app-tag">App de campo · Troca de senha · Opção A</b><span>Aparelho de 390 × 812, tema claro. A tela abre sozinha depois de entrar com a senha provisória.</span><span class="app-stage__entrega" id="app-entrega">Entra agora no app (decisão do dono).</span></div>
+      <div class="phone">
+        <div class="phone__screen">
+          <div class="phone__status" aria-hidden="true">
+            <span>9:41</span>
+            <span class="phone__status-ic">
+              <svg width="17" height="11" viewBox="0 0 17 11" fill="#0F172A"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>
+              <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3" stroke="#0F172A" opacity=".45"/><rect x="2" y="2" width="18" height="8" rx="2" fill="#0F172A"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="#0F172A" opacity=".45"/></svg>
+            </span>
+          </div>
+          <div class="phone__body">
+            <div data-view="app-a" hidden></div>
+            <div data-view="app-b" hidden></div>
+            <div data-view="app-c" hidden></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir</div>
+      <h2 id="rv-titulo">Opção A — Padrão fiel · Web</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true" aria-controls="rv-corpo">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc"><strong>Atualizada às 21:14 com as decisões do dono, transmitidas pelo orquestrador às 21:0x</strong> (quadro “Decisões do dono”, abaixo): as três opções aprovadas e a linha “Entrando como &lt;e-mail&gt;” nas seis vistas. As três opções partem das telas de entrada que estão no ar, medidas na <code>origin/main</code> <code>2fab491a</code> em 10/11/2026, das 20:21 às 20:57 (São Paulo), e reconferidas em <code>d5ec1696</code>, a <code>main</code> que entrou nesse meio-tempo (só o #522, de cobrança; nenhum arquivo citado aqui mudou). O head do #527 andou de <code>6acae1c6</code> para <code>83741a66</code> (merge da <code>main</code> e os testes da F0); remedido às 21:12, só a coluna da marca desceu para <code>schema.prisma:289</code>, as outras linhas citadas seguem iguais e a marca na resposta do login continua faltando: na web, <code>frontend/src/pages/LoginPage.tsx</code> (card único centrado; alvo <code>docs/claude-code-handoff/Login.dc.html</code>, como diz a linha 9); no app de campo, <code>mobile/flutter_app/lib/features/auth/login_screen.dart</code> (<code>_BrandCard</code> :167, cartão de entrada <code>_EntrarCard</code> :219, <code>_FieldLabel</code> :346, <code>FilledButton</code> :300, faixa de erro :257-275) com o tema <code>lib/shared/theme/erp_mobile_theme.dart</code> e a referência <code>screen-refs/mobile/login.png</code>. A moldura, o seletor e este quadro vêm de <code>screen-refs/usuarios-3opcoes.reference.html</code>. A tela fica fora do menu e da barra de cima, como o login: quem entra com a senha provisória vai direto para ela e não abre mais nada até trocar (decisão do dono de 10/11: <em>“Mantém a trava e faz a tela junto”</em>). Fluxo, textos, mapa de erros, estados e regras de segurança vêm do plano <code>B-USERS-ACESSO-SEG-conserto-c1.md</code>, seção A-04 (T.1 a T.4). O conteúdo é o mesmo nas três; muda a composição. O alternador de estados fica ao lado do seletor e vale para as três opções e as duas plataformas. Na maquete dá para digitar: a opção B marca os requisitos ao vivo, a C avança e volta de etapa, e “Salvar nova senha” faz a validação local e simula o envio.</p>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li><strong>Na <code>origin/main</code> (<code>2fab491a</code> e <code>d5ec1696</code>) ainda não existe nada da troca:</strong> <code>git grep "auth/password\|must_change_password"</code> em <code>src</code>, <code>API_CONTRACTS.md</code>, <code>frontend/src</code> e <code>mobile/flutter_app/lib</code> dá 0. O que segue está no ramo do #527 (<code>fix/users-acesso-seg</code>), lido por <code>git show &lt;head&gt;:&lt;arquivo&gt;</code> em <code>6acae1c6</code> e de novo em <code>83741a66</code>.</li>
+          <li><strong>O e-mail da linha “Entrando como” já está na sessão dos dois clientes</strong> (medido na <code>origin/main</code> <code>d5ec1696</code>): web, <code>auth.adapter.ts:146</code> (<code>email: payload.data.user.email</code>; tipo em <code>types.ts:17</code>); app, <code>auth_repository.dart:280</code> (<code>email: userJson['email']</code>; modelo em <code>auth_models.dart:41</code>).</li>
+          <li><strong><code>POST /api/v1/auth/password</code>:</strong> contrato em <code>API_CONTRACTS.md:198</code>; rota em <code>src/modules/auth/routes/identity-links.routes.ts:186-223</code> (só JWT); serviço <code>identity-link.service.ts:447</code> (<code>changeOwnPassword</code>). Corpo <code>{currentPassword, newPassword}</code>; 200 <code>{data:{changed:true, revoked_sessions, unlinked}}</code>, revogando TODAS as sessões do par, inclusive a atual (o cliente apaga a sessão local e volta ao login).</li>
+          <li><strong>Respostas que a tela mapeia:</strong> 400 <code>invalid_payload</code> (<code>identity-links.routes.ts:205</code>), 403 <code>user_inactive</code> (<code>identity-link.service.ts:486</code>), 403 <code>credential_unavailable</code> (:490), 423 <code>account_locked</code> (:494), 401 <code>invalid_credentials</code> (:498), 400 <code>invalid_new_password</code> (:507 e :513), 401 <code>jwt_required</code> (<code>sendUnauthorized</code>, mesma rota).</li>
+          <li><strong>Regra da senha nova:</strong> pelo menos 8 caracteres e diferente do e-mail, sem diferenciar maiúsculas (<code>validateLocalPassword</code>, <code>local-auth-credential.service.ts:196-204</code>, igual na <code>main</code>); diferente da atual, comparação exata (<code>identity-link.service.ts:512</code>).</li>
+          <li><strong>A marca da provisória:</strong> coluna <code>must_change_password</code> em <code>prisma/schema.prisma:289</code> (era :284 em <code>6acae1c6</code>); com ela ligada o RBAC persistente devolve papéis e permissões vazios (<code>persistent-authorization.service.ts:74</code>) e a única ação é a troca (<code>API_CONTRACTS.md:201-206</code>).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend (só o conserto do #527)</h3><ul class="review-list">
+          <li><strong>A marca na RESPOSTA do login.</strong> Nos heads <code>6acae1c6</code> e <code>83741a66</code> os serviços de login não têm <code>must_change_password</code> (<code>git grep -c</code> em <code>local-auth-login.service.ts</code> e <code>anonymous-login.service.ts</code> = 0; a única ocorrência em <code>auth.routes.ts</code>, linha 574, é a resposta do reset por administrador). Sem ela nenhum cliente sabe que precisa abrir esta tela. Entra na fatia F2 do conserto (seção 2.2 e R1-A01 do plano), junto do token restrito com papéis e permissões vazios.</li>
+          <li><strong>Para a linha “Entrando como”:</strong> a resposta restrita do login precisa manter <code>data.user.email</code>, que é de onde os dois clientes leem o e-mail. Não é dado novo; é um ponto para a F2 não perder e a conferência medir.</li>
+          <li><strong>Mais nada para a tela:</strong> a troca, o mapa de respostas e a revogação das sessões já estão no #527.</li>
+          <li>Do lado dos clientes (não é backend; já está no plano, T.2 e T.3): <code>mustChangePassword</code> na sessão, a rota da troca e o desvio; no app a sessão restrita fica só em memória e nunca entra na fila offline.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção A — Padrão fiel</h3><ul class="review-list">
+          <li><strong>Prós:</strong> é o login com outro título: a pessoa reconhece a tela e não aprende nada novo. Nenhum componente novo: na web, os campos <code>.lg-input</code>, a faixa e os dois botões do login; no app, <code>_BrandCard</code>, o cartão, <code>_FieldLabel</code>, <code>FilledButton</code> e <code>TextButton</code>. É a de menor custo e menor risco, e cabe sem rolar no aparelho.</li>
+          <li><strong>Contras:</strong> a regra fica só na dica, então a pessoa só descobre o que falta quando toca em “Salvar nova senha” (a validação local mostra a faixa). Três campos de senha seguidos, todos iguais, pedem atenção para não trocar um pelo outro.</li>
+          <li><strong>Com a decisão do dono:</strong> é a única que entra agora no app, e a que a web abre sempre na sessão restrita.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li>O mesmo da opção A: na <code>origin/main</code> não existe nada da troca; no #527 (<code>83741a66</code>) estão o contrato <code>API_CONTRACTS.md:198</code>, a rota <code>identity-links.routes.ts:186-223</code>, o serviço <code>identity-link.service.ts:447</code> e a coluna <code>schema.prisma:289</code>.</li>
+          <li><strong>Os 4 requisitos espelham o servidor, linha a linha:</strong> “Pelo menos 8 caracteres” e “Diferente do seu e-mail” = <code>validateLocalPassword</code> (<code>local-auth-credential.service.ts:197</code> e :201, e-mail comparado com <code>trim().toLowerCase()</code>); “Diferente da senha provisória” = <code>identity-link.service.ts:512</code> (comparação exata); “Confirmação igual à nova senha” é só do cliente (o servidor não recebe a confirmação).</li>
+          <li><strong>O medidor de força não tem par no servidor:</strong> é só visual, não bloqueia e não é regra. Conta tamanho, maiúscula e minúscula, número e símbolo.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend (só o conserto do #527)</h3><ul class="review-list">
+          <li><strong>A marca na resposta do login</strong> (fatia F2), como na opção A. Nada a mais: os requisitos usam a regra que já existe.</li>
+          <li>Se um dia a regra do servidor mudar (por exemplo, exigir número), a lista precisa mudar junto. Hoje a regra mora em <code>validateLocalPassword</code> e não sai por nenhuma rota; repetir no cliente é o que o plano manda (T.1, “a validação local espelha a regra do servidor”).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção B — Com guia</h3><ul class="review-list">
+          <li><strong>Prós:</strong> a pessoa vê cada requisito sendo cumprido enquanto digita, com a mesma regra do servidor, então tenta menos vezes e erra menos a confirmação. O medidor incentiva uma senha melhor sem bloquear. A lista ocupa o lugar da dica e diz a mesma coisa de forma conferível.</li>
+          <li><strong>Contras:</strong> o card fica mais alto: no aparelho de 390 × 812 ocupa quase a tela inteira (com a linha “Entrando como”, a lista e o medidor ficaram mais compactos para caber no estado inicial) e, com a faixa aberta, passa dela e rola (medido às 21:17: 47 px no erro, 64 px em acesso desativado e sem conexão; o login de hoje já rola quando não cabe, <code>SingleChildScrollView</code>, <code>login_screen.dart:47</code>). Lista e medidor são componentes novos nos dois lados e nascem na biblioteca. O medidor pode passar a impressão de que “forte” é exigido. É mais lógica no cliente para testar (cada requisito e o medidor).</li>
+          <li><strong>Com a decisão do dono:</strong> aprovada; na web fica registrada como aparência; no app entra quando existir o seletor de aparência do app.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li>O mesmo da opção A (contrato <code>API_CONTRACTS.md:198</code> e rota <code>identity-links.routes.ts:186-223</code> no #527, <code>83741a66</code>).</li>
+          <li><strong>O que vai ao servidor no fim é o mesmo:</strong> uma chamada só, <code>POST /auth/password</code> com <code>{currentPassword, newPassword}</code>. Não existe rota que confira só a senha provisória; por isso a etapa 1 não consulta o servidor, e o resumo diz “informada”, não “confirmada”.</li>
+          <li><strong>Provisória errada aparece só no fim</strong> (401 <code>invalid_credentials</code>): a tela reabre a etapa 1 com a faixa, apaga a provisória e mantém a nova senha já digitada (estado “Erro”). Cada tentativa errada conta para o bloqueio (<code>identity-link.service.ts:477</code>, <code>incrementFailedAttempts</code>).</li>
+          <li><strong>No app</strong> o indicador reaproveita o desenho do <code>WorkOrderStepper</code> (<code>features/work_orders/ui/work_order_stepper.dart</code>: círculo de 26 px, número 11 px, ✓ quando concluída). Na web não existe indicador de etapas em <code>frontend/src</code>.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend (só o conserto do #527)</h3><ul class="review-list">
+          <li><strong>A marca na resposta do login</strong> (fatia F2), como nas outras opções.</li>
+          <li>Nenhuma rota nova. Uma rota para conferir a provisória antes da etapa 2 mudaria o contrato e abriria mais uma porta de tentativa de senha; não está no plano e não é proposta aqui.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção C — Em duas etapas</h3><ul class="review-list">
+          <li><strong>Prós:</strong> uma coisa por vez, primeiro a provisória e depois a nova, o que pesa menos para quem está no campo. O “1 de 2 / 2 de 2” mostra quanto falta. O resumo da etapa 1 deixa conferir a provisória (mostrar senha) e trocar sem apagar a nova. No app reaproveita o desenho de etapas que já existe.</li>
+          <li><strong>Contras:</strong> a etapa 1 não confere nada no servidor; quem erra a provisória só descobre no fim e volta uma etapa. É um toque a mais. Na web o indicador de etapas é componente novo (nasce na biblioteca). É a opção com mais estados para testar (etapa aberta, recolhida, volta por erro). No aparelho, com a linha “Entrando como”, a faixa de duas linhas (acesso desativado, sem conexão) faz a tela rolar 8 px.</li>
+          <li><strong>Com a decisão do dono:</strong> aprovada; na web fica registrada como aparência; no app entra quando existir o seletor de aparência do app.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box review-box--pergunta">
+        <h3>Decisões do dono (10/11, transmitidas pelo orquestrador às 21:0x)</h3>
+        <ul class="review-list">
+          <li><strong>Aprovadas as três opções</strong>, A, B e C, na web e no app.</li>
+          <li><strong>App: entra agora só a opção A; B e C entram quando existir o seletor de aparência do app.</strong> É a resposta (i) à pergunta que foi com a maquete: <em>“No app não existe ainda o seletor de aparência por tela: (i) entregar agora só a opção escolhida e as outras quando o seletor do app existir, ou (ii) fazer o seletor do app neste bloco?”</em>. Medido na <code>origin/main</code>: o app só tem o modo de tema (<code>profile_screen.dart:365</code>, <code>_AppearanceCard</code>, que só troca o <code>AppThemeMode</code>); <code>git grep -E "screenAppearance|appearanceProvider"</code> em <code>mobile/flutter_app/lib</code> dá 0.</li>
+          <li><strong>Web: na sessão restrita a troca abre sempre na A.</strong> Isso muda o plano T.2, que dizia “abre na aparência guardada, se houver uma, ou na padrão”.</li>
+          <li><strong>Web: as três aparências ficam registradas</strong>: entrada <code>troca-senha</code> em <code>frontend/src/modules/appearance/appearance.registry.ts</code>, com “Padrão fiel”, “Com guia” e “Em duas etapas” (o seletor mora no menu do <code>AppShell</code>, <code>AppShell.tsx:209</code> e :217).</li>
+          <li><strong>E-mail visível:</strong> a linha “Entrando como &lt;e-mail&gt;” fica logo abaixo do apoio, nas seis vistas e em todos os estados da troca. Não é campo nem link. Na web usa o tom de texto secundário do cartão (<code>#64748B</code>, 12,5 px, e-mail em peso 600); no app, o estilo do <code>_FieldLabel</code> (12 px, peso 600, <code>inkMuted</code>, <code>login_screen.dart:346-365</code>). E-mail longo quebra em vez de cortar, porque a pessoa precisa ver o e-mail inteiro para conferir a conta. Exemplo: maria.souza@guinchoexemplo.com.br.</li>
+          <li><strong>Leitura minha, declarada (§A6):</strong> “abrir sempre na A” e o e-mail na tela mudam o texto do plano (T.1, T.2 e T.3) e entram como emenda escrita antes do código (<code>D-EMENDA-ANTES-DO-CODIGO</code>). A emenda é do orquestrador ou do planejador, não desta maquete.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Textos da tela (estão nas três opções aprovadas; nenhum ajuste de redação foi transmitido)</h3>
+        <ul class="review-list">
+          <li><strong>Por decisão do dono:</strong> “Entrando como &lt;e-mail&gt;”, logo abaixo do apoio.</li>
+          <li><strong>Do plano:</strong> “Crie sua nova senha” · “Por segurança, troque a senha provisória antes de continuar.” · “Senha provisória” · “Nova senha” · “Confirme a nova senha” · “Use pelo menos 8 caracteres, diferente do seu e-mail e da senha provisória.” · “Salvar nova senha” · “Sair” · e os textos do mapa ao lado.</li>
+          <li><strong>Novos nesta maquete:</strong> “Salvando…” (botão em progresso, como o “Entrando…” do login); “A confirmação não é igual à nova senha.” (validação local: o mapa do plano não tem texto para isso); opção B: “Requisitos da nova senha”, “Pelo menos 8 caracteres”, “Diferente do seu e-mail”, “Diferente da senha provisória”, “Confirmação igual à nova senha”, “Força: fraca / razoável / boa / forte”; opção C: “Etapa 1 de 2”, “Etapa 2 de 2”, “informada”, “Alterar”, “Continuar”, “depois da etapa 1” e “preenchida” (a etapa 2 recolhida quando a pessoa volta à etapa 1 com a nova senha já digitada).</li>
+          <li><strong>Leitor de tela:</strong> “Mostrar senha provisória”, “Mostrar nova senha” e “Mostrar confirmação da nova senha” (o plano diz “Mostrar senha”; o nome do campo distingue os três botões).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Estados e mapa fixo de respostas (plano T.1; a mensagem do servidor nunca aparece, o cliente mapeia por <code>status</code> e <code>reason</code>)</h3>
+      <table class="rv-tabela">
+        <thead><tr><th>Resposta ou situação</th><th>Texto na tela</th><th>Onde aparece</th><th>No alternador</th></tr></thead>
+        <tbody>
+          <tr><td>início</td><td>formulário vazio com a dica (opção B: a lista; opção C: etapa 2 aberta, etapa 1 recolhida); em todos os estados da troca, “Entrando como &lt;e-mail&gt;” abaixo do apoio</td><td>troca</td><td>Inicial</td></tr>
+          <tr><td>envio em curso</td><td>botão com progresso, “Salvando…”; campos, “Mostrar senha” e “Sair” travados; nada de duplo envio</td><td>troca</td><td>Carregando</td></tr>
+          <tr><td>400 <code>invalid_payload</code></td><td>“Preencha todos os campos.”</td><td>faixa (<code>role="alert"</code>)</td><td>tocar em Salvar com campo vazio</td></tr>
+          <tr><td>400 <code>invalid_new_password</code></td><td>“A nova senha precisa ter pelo menos 8 caracteres e ser diferente do seu e-mail e da senha provisória.”</td><td>faixa</td><td>tocar em Salvar com senha fora da regra</td></tr>
+          <tr><td>401 <code>invalid_credentials</code></td><td>“A senha provisória não confere.”</td><td>faixa; a provisória fica marcada e vazia (opção C: reabre a etapa 1)</td><td>Erro</td></tr>
+          <tr><td>401 <code>jwt_required</code> ou <code>INVALID_TOKEN</code> (sessão restrita vencida, até 15 min; “dados desatualizados”)</td><td>“Sua sessão expirou. Entre de novo com a senha provisória.”</td><td>volta ao login, faixa de erro</td><td>Sessão expirada</td></tr>
+          <tr><td>403 <code>user_inactive</code> (acesso não permitido)</td><td>“Seu acesso está desativado. Fale com o administrador da sua organização.”</td><td>faixa; formulário travado, só “Sair”</td><td>Acesso desativado</td></tr>
+          <tr><td>403 <code>credential_unavailable</code></td><td>“Não foi possível trocar a senha por aqui. Fale com o administrador da sua organização.”</td><td>faixa (mesmo desenho)</td><td>—</td></tr>
+          <tr><td>423 <code>account_locked</code></td><td>“Conta bloqueada por tentativas. Fale com o administrador da sua organização.”</td><td>faixa (mesmo desenho)</td><td>—</td></tr>
+          <tr><td>rede, tempo esgotado ou 5xx</td><td>“Não foi possível trocar a senha agora. Tente de novo.”</td><td>faixa (mesmo desenho)</td><td>—</td></tr>
+          <tr><td>sem conexão (só app)</td><td>“Sem conexão. A troca de senha precisa de internet.”</td><td>faixa com o ícone de sem conexão; o botão não envia; nada vai para a fila offline</td><td>Sem conexão</td></tr>
+          <tr><td>200</td><td>“Senha alterada. Entre com a nova senha.”</td><td>volta ao login, faixa verde (<code>role="status"</code>)</td><td>Sucesso</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas três opções)</h3>
+        <ul class="review-list">
+          <li><strong>Texto da faixa de erro da web em <code>#B91C1C</code>, não <code>#DC2626</code>:</strong> <code>#DC2626</code> sobre <code>#FEF2F2</code> dá 4,41:1, abaixo do AA (4,5:1) para 12,5 px; <code>#B91C1C</code> dá 5,9:1 e já é o texto do tom de perigo em <code>dashboard.shared.tsx:43</code> (o ponto continua <code>#DC2626</code>). O login de hoje tem o mesmo defeito (ver pendências).</li>
+          <li><strong>Faixa de sucesso:</strong> o login não tem; usei os tons do selo <code>IntegritySeal.tsx:40</code> (<code>#F0FDF4</code>, <code>#BBF7D0</code>, texto <code>#166534</code>, <code>role="status"</code>), no desenho da faixa do login (ponto verde <code>#16A34A</code>).</li>
+          <li><strong>App, foco do campo:</strong> borda azul de 2 px. No login de hoje o campo focado PERDE a borda (<code>border</code> com <code>BorderSide.none</code> e sem <code>focusedBorder</code>, <code>login_screen.dart:334-341</code>), e o foco fica quase invisível.</li>
+          <li><strong>App, olho em <code>#64748B</code></strong> (<code>inkMuted</code>) para chegar a 3:1 como controle; o cadeado, que é enfeite, segue <code>#94A3B8</code> (<code>inkFaint</code>). Alvo do olho de 44 × 44 px.</li>
+          <li><strong>App em Roboto:</strong> o app não declara fonte (<code>pubspec.yaml</code> sem <code>fonts:</code>), então o Android desenha em Roboto; a <code>login.png</code> é do protótipo e usa Inter. As medidas seguem o código: botão de 44 px e raio 8 (<code>erp_mobile_theme.dart:66-77</code>), cartões de raio 16 com borda <code>#E2E8F0</code> e sem sombra; a <code>login.png</code> mostra raio maior no botão e sombra nos cartões.</li>
+          <li><strong>Web, onde mora o CSS:</strong> as regras <code>.lg-*</code> não estão em <code>frontend/src/styles/app.css</code> (lá só há <code>.pat-lg-*</code>, da legenda de pátio, linhas 8093-8141); estão no <code>&lt;style&gt;</code> de <code>LoginPage.tsx:52-57</code> e nos estilos em linha. Foram copiadas de lá. Campo e botão travados usam a regra do sistema, <code>opacity:.55</code> (<code>app.css:404-407</code>).</li>
+          <li><strong>“Sair”:</strong> na web é o botão secundário do login (o do Google, <code>LoginPage.tsx:124-128</code>); no app é o <code>TextButton</code> do cartão (o de “Esqueci minha senha”, <code>login_screen.dart:312-317</code>).</li>
+          <li><strong>Acesso desativado trava o formulário</strong> e deixa só “Sair”, porque tentar de novo não resolve. Leitura minha: o plano fixa só o texto.</li>
+          <li><strong>Logo do Google</strong> no login dos estados “Sucesso” e “Sessão expirada” (web) trocado por um marcador vazio: logo de terceiro não se reproduz na maquete. A tela real segue com o que já está em <code>LoginPage.tsx:129-136</code>. No app o botão usa só a letra “G” (<code>login_screen.dart:387-393</code>).</li>
+          <li><strong>App sem o rodapé “Conexão segura · TLS 1.3” na troca:</strong> ele é do login (<code>login_screen.dart:69-86</code>), não está no texto do plano e “TLS” é termo técnico (§3). Sem ele a opção B cabe sem rolar (medido: com o rodapé eram 788 px de conteúdo para 776 px de tela). Continua no login dos estados “Sucesso” e “Sessão expirada”.</li>
+          <li><strong>Web, apoio com entrelinha 1,45:</strong> o apoio quebra em duas linhas, e o subtítulo do login cabe numa. 1,45 é o valor que o próprio login usa no texto de várias linhas (<code>LoginPage.tsx:85</code>).</li>
+          <li><strong>Barra de status branca</strong>, como na <code>login.png</code>; os ícones são ilustrativos.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Pendências e defeitos achados nesta leitura</h3>
+        <ul class="review-list">
+          <li><strong><code>P-LOGIN-WEB-TERMO-TENANT</code></strong> (já aberta pelo plano): <code>auth.adapter.ts:205</code> “Revise tenant, e-mail e senha.” e :209 “Tenant, e-mail ou senha inválidos.” ferem o §3. A tela nova não repete.</li>
+          <li><strong>Contraste da faixa de erro do login web:</strong> 4,41:1 (<code>LoginPage.tsx:92</code>). Sugestão: o mesmo <code>#B91C1C</code> desta maquete, no próximo bloco que tocar o login.</li>
+          <li><strong>Offline no app:</strong> NÃO usar o <code>NetworkStatusBanner</code> com o texto padrão (<code>erp_components.dart:186</code>, componente em :175, “Modo offline — alteracoes serao sincronizadas ao reconectar.”): ele promete sincronizar depois, e a troca nunca entra na fila. O mesmo componente e <code>api_error.dart:8</code> (“Sem conexao com o servidor.”) estão sem acento (§11.3).</li>
+          <li><strong>B e C na web, para o orquestrador confirmar com o dono (leitura minha, declarada):</strong> com a sessão restrita sempre na A, as aparências B e C, mesmo registradas, só aparecem na web se a troca de senha existir também numa sessão inteira (por exemplo, numa tela de perfil). Hoje essa tela não existe, e criá-la não está no plano.</li>
+          <li><strong>Para o dev web:</strong> o mesmo e-mail da linha “Entrando como” pode ir num campo oculto <code>autocomplete="username"</code>, que ajuda o gerenciador de senhas a gravar a nova senha na conta certa. Não muda o visual.</li>
+          <li>Nome, e-mail e organização são exemplos. Com a aprovação, esta maquete vira a referência <code>screen-refs/troca-senha-3opcoes.reference.html</code>, com uma linha no <code>screen-refs/README.md</code>, as duas escritas pelo orquestrador (plano T.4); o dev de tela começa depois do registro e da emenda do plano.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="maquete-controles" data-maquete>
+  <div class="dock-linha" role="group" aria-label="Estado da tela na maquete">
+    <span class="dock-rotulo">Estado</span>
+    <button type="button" data-estado="inicial" aria-pressed="true">Inicial</button>
+    <button type="button" data-estado="carregando" aria-pressed="false">Carregando</button>
+    <button type="button" data-estado="erro" aria-pressed="false">Erro</button>
+    <button type="button" data-estado="sessao-expirada" aria-pressed="false">Sessão expirada</button>
+    <button type="button" data-estado="acesso-desativado" aria-pressed="false">Acesso desativado</button>
+    <button type="button" data-estado="sucesso" aria-pressed="false">Sucesso</button>
+    <button type="button" data-estado="offline" aria-pressed="false" disabled>Sem conexão · só app</button>
+  </div>
+  <div class="dock-linha" role="group" aria-label="Plataforma da maquete">
+    <span class="dock-rotulo">Plataforma</span>
+    <button type="button" data-plataforma="web" aria-pressed="true">Web</button>
+    <button type="button" data-plataforma="app" aria-pressed="false">App de campo</button>
+  </div>
+  <div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+    <button type="button" data-opcao="a" aria-pressed="true">A · Padrão fiel</button>
+    <button type="button" data-opcao="b" aria-pressed="false">B · Com guia</button>
+    <button type="button" data-opcao="c" aria-pressed="false">C · Em duas etapas</button>
+  </div>
+</div>
+<div class="toast" data-maquete id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+  // E-mail da conta de exemplo (decisão do dono, 10/11): aparece na linha "Entrando como" e a validação local
+  // compara a nova senha com ele ("Diferente do seu e-mail").
+  const EMAIL = 'maria.souza@guinchoexemplo.com.br';
+  const AMOSTRA = { prov: 'Kp7#tq2Lm', nova: 'Guincho#Seguro9', conf: 'Guincho#Seguro9' };
+  const T = {
+    titulo: 'Crie sua nova senha',
+    apoio: 'Por segurança, troque a senha provisória antes de continuar.',
+    dica: 'Use pelo menos 8 caracteres, diferente do seu <span class="nw">e-mail</span> e da senha provisória.',
+    erro: 'A senha provisória não confere.',
+    expirada: 'Sua sessão expirou. Entre de novo com a senha provisória.',
+    desativado: 'Seu acesso está desativado. Fale com o administrador da sua organização.',
+    offline: 'Sem conexão. A troca de senha precisa de internet.',
+    sucesso: 'Senha alterada. Entre com a nova senha.',
+    vazio: 'Preencha todos os campos.',
+    regra: 'A nova senha precisa ter pelo menos 8 caracteres e ser diferente do seu <span class="nw">e-mail</span> e da senha provisória.',
+    confere: 'A confirmação não é igual à nova senha.',
+  };
+  const NOMES = { a: 'Padrão fiel', b: 'Com guia', c: 'Em duas etapas' };
+  const ROT = {
+    a: 'Opção A — Padrão fiel: o card do login, com outro título',
+    b: 'Opção B — Com guia: requisitos que se marcam enquanto a pessoa digita',
+    c: 'Opção C — Em duas etapas: primeiro a provisória, depois a nova',
+  };
+  const S = { plat: 'web', op: 'a', est: 'inicial', seq: 0 };
+
+  // ---------- ícones (web: lucide; app: Material Icons, Apache 2.0) ----------
+  const svgL = (w, inner) => '<svg width="' + w + '" height="' + w + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + inner + '</svg>';
+  const svgM = (w, d) => '<svg width="' + w + '" height="' + w + '" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="' + d + '"/></svg>';
+  const IL = {
+    olho: svgL(18, '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>'),
+    olhoOff: svgL(18, '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/>'),
+    ok: svgL(16, '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>'),
+    pend: svgL(16, '<circle cx="12" cy="12" r="10"/>'),
+    falha: svgL(16, '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>'),
+    check: svgL(14, '<path d="M20 6 9 17l-5-5"/>'),
+  };
+  const MD = {
+    olho: 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z',
+    olhoOff: 'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z',
+    cadeado: 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6zM18 20H6V10h12v10z',
+    eco: 'M6.05 8.05c-2.73 2.73-2.73 7.15-.02 9.88 1.47-3.4 4.09-6.24 7.36-7.93-2.77 2.34-4.71 5.61-5.39 9.32 2.6 1.23 5.8.78 7.95-1.37C19.43 14.47 20 4 20 4S9.53 4.57 6.05 8.05z',
+    ok: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z',
+    pend: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    falha: 'M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z',
+    check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    wifiOff: 'M23.64 7c-.45-.34-4.93-4-11.64-4-1.5 0-2.89.19-4.15.48L18.18 13.8 23.64 7zm-6.6 8.22L3.27 1.44 2 2.72l2.05 2.06C1.91 5.76.59 6.82.36 7l11.63 14.49.01.01.01-.01 3.9-4.86 3.32 3.32 1.27-1.27-3.46-3.46z',
+  };
+  const BROTO = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg>';
+
+  // ---------- estado da tela ----------
+  function flags(est) {
+    return {
+      carregando: est === 'carregando',
+      travado: est === 'carregando' || est === 'acesso-desativado',
+      salvarDis: est === 'carregando' || est === 'acesso-desativado' || est === 'offline',
+      sairDis: est === 'carregando',
+      faixa: est === 'erro' ? ['erro', T.erro] : est === 'acesso-desativado' ? ['erro', T.desativado] : est === 'offline' ? ['offline', T.offline] : null,
+      login: est === 'sucesso' || est === 'sessao-expirada' || est === 'saiu',
+      invProv: est === 'erro',
+      etapa: est === 'erro' ? 1 : 2,
+      cheio: est !== 'inicial',
+    };
+  }
+  const at = (cond, attr) => (cond ? ' ' + attr : '');
+  const REQS = [
+    ['tam', 'Pelo menos 8 caracteres'],
+    ['email', 'Diferente do seu <span class="nw">e-mail</span>'],
+    ['prov', 'Diferente da senha provisória'],
+    ['conf', 'Confirmação igual à nova senha'],
+  ];
+  const OLHO_NOME = { prov: 'senha provisória', nova: 'nova senha', conf: 'confirmação da nova senha' };
+  const AC = { prov: 'current-password', nova: 'new-password', conf: 'new-password' };
+  const ROTULO = { prov: 'Senha provisória', nova: 'Nova senha', conf: 'Confirme a nova senha' };
+
+  // ---------- WEB ----------
+  const marcaW = () => '<div class="lg-marca"><div class="lg-marca__in"><div class="lg-marca__ic">' + BROTO + '</div><div class="lg-marca__txt"><div class="lg-marca__nome">TechSolutions</div><div class="lg-marca__sub">Plataforma de operações de campo</div></div></div></div>';
+  function faixaW(tipo, txt) {
+    if (tipo === 'ok') return '<div class="lg-faixa lg-faixa--ok" role="status"><span class="lg-faixa__ponto" aria-hidden="true"></span><span class="lg-faixa__txt">' + txt + '</span></div>';
+    return '<div class="lg-faixa" role="alert"><span class="lg-faixa__ponto" aria-hidden="true"></span><span class="lg-faixa__txt">' + txt + '</span></div>';
+  }
+  function inputW(p, k, o) {
+    const id = p + '-' + k;
+    return '<div class="lg-senha"><input class="lg-input" id="' + id + '" name="' + k + '" type="password" autocomplete="' + AC[k] + '" placeholder="••••••••"' +
+      (o.desc ? ' aria-describedby="' + o.desc + '"' : '') + at(o.ro, 'readonly') + at(o.dis, 'disabled') + at(o.inv, 'aria-invalid="true"') + '>' +
+      '<button type="button" class="lg-olho js-olho" aria-label="Mostrar ' + OLHO_NOME[k] + '" aria-pressed="false" aria-controls="' + id + '"' + at(o.dis, 'disabled') + '><span class="i-on">' + IL.olho + '</span><span class="i-off">' + IL.olhoOff + '</span></button></div>';
+  }
+  function campoW(p, k, o) {
+    return '<div class="lg-campo' + (o.ultimo ? ' lg-campo--ultimo' : '') + '"><label class="lg-rotulo" for="' + p + '-' + k + '">' + ROTULO[k] + '</label>' + inputW(p, k, o) + (o.depois || '') + '</div>';
+  }
+  function salvarW(f, escondido) {
+    return '<button type="submit" class="lg-btn js-salvar' + (f.carregando ? ' is-carregando' : '') + '"' + at(f.salvarDis, 'disabled') + at(escondido, 'hidden') + '>' +
+      (f.carregando ? '<span class="lg-spin" aria-hidden="true"></span><span>Salvando…</span>' : '<span>Salvar nova senha</span>') + '</button>';
+  }
+  function guiaW(p) {
+    return '<div class="b-guia" id="' + p + '-guia"><p class="b-guia__tit">Requisitos da nova senha</p><ul>' +
+      REQS.map(r => '<li class="b-req" data-req="' + r[0] + '"><span class="b-req__ic"><span class="ic-pend">' + IL.pend + '</span><span class="ic-ok">' + IL.ok + '</span><span class="ic-falha">' + IL.falha + '</span></span><span>' + r[1] + '</span><span class="sr js-req-sr">: pendente</span></li>').join('') +
+      '</ul></div>';
+  }
+  const forcaW = (p, cls) => '<div class="' + cls + '" id="' + p + '-forca" data-nivel="0" aria-hidden="true"><div class="b-forca__barras"><i></i><i></i><i></i><i></i></div><span class="b-forca__txt">Força: —</span></div>';
+
+  function trocaWeb(op, f) {
+    const p = 'w' + op;
+    let corpo = '';
+    const base = { dis: f.travado };
+    if (op === 'a') {
+      corpo = campoW(p, 'prov', Object.assign({ inv: f.invProv }, base)) +
+        campoW(p, 'nova', Object.assign({ desc: p + '-dica' }, base)) +
+        campoW(p, 'conf', Object.assign({ ultimo: true }, base)) +
+        '<p class="lg-dica" id="' + p + '-dica">' + T.dica + '</p>' + salvarW(f);
+    } else if (op === 'b') {
+      corpo = campoW(p, 'prov', Object.assign({ inv: f.invProv }, base)) +
+        campoW(p, 'nova', Object.assign({ desc: p + '-guia', depois: forcaW(p, 'b-forca') }, base)) +
+        campoW(p, 'conf', Object.assign({ ultimo: true, desc: p + '-guia' }, base)) +
+        guiaW(p) + salvarW(f);
+    } else {
+      const e1 = f.etapa === 1;
+      corpo = '<ol class="c-etapas" aria-label="Etapas da troca de senha">' +
+        '<li class="c-etapa ' + (e1 ? 'c-etapa--atual' : 'c-etapa--feita') + '" data-etapa="1"' + at(e1, 'aria-current="step"') + '>' +
+          '<span class="c-marca" aria-hidden="true"><span class="c-marca__n">1</span><span class="c-marca__ok">' + IL.check + '</span></span>' +
+          '<div class="c-cab"><span class="c-num">Etapa 1 de 2</span><span class="c-feita">informada<span class="sr">, etapa concluída</span></span>' +
+          '<button type="button" class="c-alterar js-alterar"' + at(f.travado, 'disabled') + ' aria-label="Alterar a senha provisória">Alterar</button></div>' +
+          '<div class="c-corpo1"><label class="c-tit" for="' + p + '-prov">Senha provisória</label>' + inputW(p, 'prov', { ro: !e1, dis: f.travado, inv: f.invProv }) + '</div>' +
+        '</li>' +
+        '<li class="c-etapa ' + (e1 ? 'c-etapa--futura' : 'c-etapa--atual') + '" data-etapa="2"' + at(!e1, 'aria-current="step"') + '>' +
+          '<span class="c-marca" aria-hidden="true"><span class="c-marca__n">2</span></span>' +
+          '<div class="c-cab"><span class="c-num">Etapa 2 de 2</span><span class="c-pend">depois da etapa 1</span></div>' +
+          '<label class="c-tit" for="' + p + '-nova">Nova senha</label>' +
+          '<div class="c-corpo">' + inputW(p, 'nova', { desc: p + '-dica', dis: f.travado }) +
+            '<div class="lg-campo lg-campo--ultimo" style="margin-top:16px"><label class="lg-rotulo" for="' + p + '-conf">' + ROTULO.conf + '</label>' + inputW(p, 'conf', { dis: f.travado }) + '</div>' +
+            '<p class="lg-dica" id="' + p + '-dica" style="margin-bottom:0">' + T.dica + '</p></div>' +
+        '</li></ol>' +
+        salvarW(f, e1) +
+        '<button type="button" class="lg-btn js-continuar"' + at(!e1, 'hidden') + '><span>Continuar</span></button>';
+    }
+    const faixa = f.faixa ? faixaW('erro', f.faixa[1]) : '';
+    return '<div class="lg-wrap">' + marcaW() + '<div class="lg-card">' +
+      '<h1 class="lg-titulo" id="' + p + '-tit">' + T.titulo + '</h1><p class="lg-apoio lg-apoio--conta">' + T.apoio + '</p>' +
+      '<p class="lg-conta" id="' + p + '-conta">Entrando como <b>' + EMAIL + '</b></p>' +
+      '<div class="js-faixa">' + faixa + '</div>' +
+      '<form class="js-form" novalidate aria-labelledby="' + p + '-tit" aria-describedby="' + p + '-conta"' + at(f.carregando, 'aria-busy="true"') + '>' + corpo + '</form>' +
+      '<button type="button" class="lg-btn2 js-sair"' + at(f.sairDis, 'disabled') + '>Sair</button>' +
+      '</div></div>';
+  }
+  function loginWeb(op, est) {
+    const p = 'w' + op + 'l';
+    const faixa = est === 'sucesso' ? faixaW('ok', T.sucesso) : est === 'sessao-expirada' ? faixaW('erro', T.expirada) : '';
+    return '<div class="lg-wrap">' + marcaW() + '<div class="lg-card">' +
+      '<h1 class="lg-titulo">Entrar</h1><p class="lg-apoio">Acesse sua organização</p>' + faixa +
+      '<form class="js-login" novalidate>' +
+        '<div class="lg-campo"><label class="lg-rotulo" for="' + p + '-email">E-mail corporativo</label><input class="lg-input lg-input--login" id="' + p + '-email" type="email" autocomplete="email" placeholder="usuario@empresa.com.br"></div>' +
+        '<div class="lg-campo lg-campo--ultimo"><label class="lg-rotulo" for="' + p + '-senha">Senha</label><input class="lg-input lg-input--login" id="' + p + '-senha" type="password" autocomplete="current-password" placeholder="••••••••"></div>' +
+        '<div class="lg-esqueci"><span>Esqueci minha senha</span></div>' +
+        '<button type="submit" class="lg-btn"><span>Entrar</span></button>' +
+      '</form>' +
+      '<div class="lg-ou"><i></i><span>ou continue com</span><i></i></div>' +
+      '<button type="button" class="lg-btn2 js-google"><span class="lg-g" aria-hidden="true"></span><span>Entrar com Google</span></button>' +
+      '</div></div>';
+  }
+
+  // ---------- APP DE CAMPO ----------
+  const marcaM = () => '<div class="m-card m-marca"><div class="m-marca__ic">' + svgM(24, MD.eco) + '</div><div><div class="m-marca__nome">TechSolutions ERP</div><div class="m-marca__sub">Plataforma de operação em campo</div></div></div>';
+  function faixaM(tipo, txt) {
+    if (tipo === 'ok') return '<div class="m-faixa m-faixa--ok" role="status"><span>' + txt + '</span></div>';
+    if (tipo === 'offline') return '<div class="m-faixa" role="alert">' + svgM(18, MD.wifiOff) + '<span>' + txt + '</span></div>';
+    return '<div class="m-faixa" role="alert"><span>' + txt + '</span></div>';
+  }
+  function inputM(p, k, o) {
+    const id = p + '-' + k;
+    return '<div class="m-fld"><span class="m-cadeado">' + svgM(18, MD.cadeado) + '</span><input class="m-input" id="' + id + '" name="' + k + '" type="password" autocomplete="' + AC[k] + '" placeholder="••••••••"' +
+      (o.desc ? ' aria-describedby="' + o.desc + '"' : '') + at(o.ro, 'readonly') + at(o.dis, 'disabled') + at(o.inv, 'aria-invalid="true"') + '>' +
+      '<button type="button" class="m-olho js-olho" aria-label="Mostrar ' + OLHO_NOME[k] + '" aria-pressed="false" aria-controls="' + id + '"' + at(o.dis, 'disabled') + '><span class="i-on">' + svgM(22, MD.olho) + '</span><span class="i-off">' + svgM(22, MD.olhoOff) + '</span></button></div>';
+  }
+  function campoM(p, k, o) {
+    return '<div class="m-campo"><label class="m-rotulo" for="' + p + '-' + k + '">' + ROTULO[k] + '</label>' + inputM(p, k, o) + (o.depois || '') + '</div>';
+  }
+  function salvarM(f, escondido) {
+    return '<button type="submit" class="m-btn js-salvar"' + at(f.salvarDis, 'disabled') + at(escondido, 'hidden') + '>' +
+      (f.carregando ? '<span class="m-spin" aria-hidden="true"></span><span class="sr">Salvando…</span>' : 'Salvar nova senha') + '</button>';
+  }
+  function guiaM(p) {
+    return '<div class="m-guia" id="' + p + '-guia"><p class="b-guia__tit">Requisitos da nova senha</p><ul>' +
+      REQS.map(r => '<li class="b-req" data-req="' + r[0] + '"><span class="b-req__ic"><span class="ic-pend">' + svgM(18, MD.pend) + '</span><span class="ic-ok">' + svgM(18, MD.ok) + '</span><span class="ic-falha">' + svgM(18, MD.falha) + '</span></span><span>' + r[1] + '</span><span class="sr js-req-sr">: pendente</span></li>').join('') +
+      '</ul></div>';
+  }
+  function trocaApp(op, f) {
+    const p = 'm' + op;
+    const base = { dis: f.travado };
+    let corpo = '';
+    if (op === 'a') {
+      corpo = campoM(p, 'prov', Object.assign({ inv: f.invProv }, base)) +
+        campoM(p, 'nova', Object.assign({ desc: p + '-dica' }, base)) +
+        campoM(p, 'conf', base) +
+        '<p class="m-dica" id="' + p + '-dica">' + T.dica + '</p><div class="m-gap18"></div>' + salvarM(f);
+    } else if (op === 'b') {
+      corpo = campoM(p, 'prov', Object.assign({ inv: f.invProv }, base)) +
+        campoM(p, 'nova', Object.assign({ desc: p + '-guia', depois: forcaW(p, 'b-forca m-forca') }, base)) +
+        campoM(p, 'conf', Object.assign({ desc: p + '-guia' }, base)) +
+        guiaM(p) + '<div class="m-gap18"></div>' + salvarM(f);
+    } else {
+      const e1 = f.etapa === 1;
+      corpo = '<ol class="c-etapas m-etapas" aria-label="Etapas da troca de senha" style="margin-bottom:0">' +
+        '<li class="c-etapa ' + (e1 ? 'c-etapa--atual' : 'c-etapa--feita') + '" data-etapa="1"' + at(e1, 'aria-current="step"') + '>' +
+          '<span class="c-marca" aria-hidden="true"><span class="c-marca__n">1</span><span class="c-marca__ok">' + svgM(15, MD.check) + '</span></span>' +
+          '<div class="c-cab"><span class="c-num">Etapa 1 de 2</span><span class="c-feita">informada<span class="sr">, etapa concluída</span></span>' +
+          '<button type="button" class="c-alterar js-alterar"' + at(f.travado, 'disabled') + ' aria-label="Alterar a senha provisória">Alterar</button></div>' +
+          '<div class="c-corpo1"><label class="c-tit" for="' + p + '-prov">Senha provisória</label>' + inputM(p, 'prov', { ro: !e1, dis: f.travado, inv: f.invProv }) + '</div>' +
+        '</li>' +
+        '<li class="c-etapa ' + (e1 ? 'c-etapa--futura' : 'c-etapa--atual') + '" data-etapa="2"' + at(!e1, 'aria-current="step"') + '>' +
+          '<span class="c-marca" aria-hidden="true"><span class="c-marca__n">2</span></span>' +
+          '<div class="c-cab"><span class="c-num">Etapa 2 de 2</span><span class="c-pend">depois da etapa 1</span></div>' +
+          '<label class="c-tit" for="' + p + '-nova">Nova senha</label>' +
+          '<div class="c-corpo">' + inputM(p, 'nova', { desc: p + '-dica', dis: f.travado }) +
+            '<div class="m-campo" style="margin-top:12px"><label class="m-rotulo" for="' + p + '-conf">' + ROTULO.conf + '</label>' + inputM(p, 'conf', { dis: f.travado }) + '</div>' +
+            '<p class="m-dica" id="' + p + '-dica">' + T.dica + '</p></div>' +
+        '</li></ol><div class="m-gap18"></div>' +
+        salvarM(f, e1) +
+        '<button type="button" class="m-btn js-continuar"' + at(!e1, 'hidden') + '>Continuar</button>';
+    }
+    const faixa = f.faixa ? faixaM(f.faixa[0], f.faixa[1]) : '';
+    return '<div class="m-tela"><div class="m-col">' + marcaM() +
+      '<div class="m-card m-entrar"><h1 class="m-titulo" id="' + p + '-tit">' + T.titulo + '</h1><p class="m-apoio">' + T.apoio + '</p>' +
+      '<p class="m-conta" id="' + p + '-conta">Entrando como ' + EMAIL + '</p><div class="m-sep"></div>' +
+      '<div class="js-faixa">' + faixa + '</div>' +
+      '<form class="js-form" novalidate aria-labelledby="' + p + '-tit" aria-describedby="' + p + '-conta"' + at(f.carregando, 'aria-busy="true"') + '>' + corpo + '</form>' +
+      '<button type="button" class="m-txtbtn js-sair"' + at(f.sairDis, 'disabled') + '>Sair</button>' +
+      '</div>' +
+      '</div></div>';
+  }
+  function loginApp(op, est) {
+    const p = 'm' + op + 'l';
+    const faixa = est === 'sucesso' ? faixaM('ok', T.sucesso) : est === 'sessao-expirada' ? faixaM('erro', T.expirada) : '';
+    return '<div class="m-tela"><div class="m-col">' + marcaM() +
+      '<div class="m-card m-entrar"><h1 class="m-titulo">Entrar</h1><div class="m-sep"></div>' + faixa +
+      '<form class="js-login" novalidate>' +
+        '<div class="m-campo"><label class="m-rotulo" for="' + p + '-email">E-mail</label><div class="m-fld"><input class="m-input m-input--sem-icone" id="' + p + '-email" type="email" autocomplete="email" placeholder="voce@empresa.com.br"></div></div>' +
+        '<div class="m-campo"><label class="m-rotulo" for="' + p + '-senha">Senha</label><div class="m-fld"><span class="m-cadeado">' + svgM(18, MD.cadeado) + '</span><input class="m-input" style="padding-right:14px" id="' + p + '-senha" type="password" autocomplete="current-password" placeholder="••••••••"></div></div>' +
+        '<div class="m-gap18"></div><button type="submit" class="m-btn">Entrar</button>' +
+      '</form>' +
+      '<button type="button" class="m-txtbtn">Esqueci minha senha</button>' +
+      '</div>' +
+      '<button type="button" class="m-outbtn js-google"><b aria-hidden="true">G</b><span>Entrar com Google</span></button>' +
+      '<div class="m-rodape">' + svgM(13, MD.cadeado) + '<span>Conexão segura · TLS 1.3</span></div>' +
+      '</div></div>';
+  }
+
+  // ---------- validação local (espelha o servidor; quem decide é o servidor) ----------
+  function forca(s) {
+    if (!s) return 0;
+    let n = 0;
+    if (s.length >= 8) n++;
+    if (s.length >= 12) n++;
+    if (/[a-z]/.test(s) && /[A-Z]/.test(s)) n++;
+    if (/[0-9]/.test(s)) n++;
+    if (/[^A-Za-z0-9]/.test(s)) n++;
+    return Math.max(1, Math.min(4, n));
+  }
+  const FORCA_TXT = ['Força: —', 'Força: fraca', 'Força: razoável', 'Força: boa', 'Força: forte'];
+  function valores(v) {
+    const g = k => { const el = v.querySelector('input[name="' + k + '"]'); return el ? el.value : ''; };
+    return { prov: g('prov'), nova: g('nova'), conf: g('conf') };
+  }
+  function avaliar(x) {
+    const r = {};
+    r.tam = x.nova.length >= 8 ? 'ok' : 'pend';
+    r.email = !x.nova ? 'pend' : (x.nova.trim().toLowerCase() === EMAIL ? 'falha' : 'ok');
+    r.prov = (!x.nova || !x.prov) ? 'pend' : (x.nova === x.prov ? 'falha' : 'ok');
+    r.conf = !x.conf ? 'pend' : (x.conf === x.nova ? 'ok' : (x.conf.length >= x.nova.length ? 'falha' : 'pend'));
+    return r;
+  }
+  function atualizarGuia(v, tentou) {
+    const guia = v.querySelector('.b-guia, .m-guia');
+    if (!guia) return;
+    const x = valores(v), r = avaliar(x);
+    REQS.forEach(([k]) => {
+      const li = guia.querySelector('[data-req="' + k + '"]');
+      let s = r[k];
+      if (tentou && s === 'pend') s = 'falha';
+      li.classList.toggle('is-ok', s === 'ok');
+      li.classList.toggle('is-falha', s === 'falha');
+      li.querySelector('.js-req-sr').textContent = s === 'ok' ? ': atendido' : s === 'falha' ? ': não atendido' : ': pendente';
+    });
+    const fz = v.querySelector('[id$="-forca"]');
+    if (fz) { const n = forca(x.nova); fz.dataset.nivel = String(n); fz.querySelector('.b-forca__txt').textContent = FORCA_TXT[n]; }
+  }
+  function mostrarFaixa(v, txt) {
+    const slot = v.querySelector('.js-faixa');
+    if (!slot) return;
+    slot.innerHTML = S.plat === 'web' ? faixaW('erro', txt) : faixaM('erro', txt);
+  }
+  function limparFaixa(v) { const slot = v.querySelector('.js-faixa'); if (slot) slot.innerHTML = ''; }
+
+  // ---------- etapas da opção C ----------
+  function rotularEtapa2(v) {
+    const pend = v.querySelector('[data-etapa="2"] .c-pend');
+    const nova = v.querySelector('input[name="nova"]');
+    if (pend && nova) pend.textContent = nova.value ? 'preenchida' : 'depois da etapa 1';
+  }
+  function abrirEtapa1(v) {
+    const e1 = v.querySelector('[data-etapa="1"]'), e2 = v.querySelector('[data-etapa="2"]');
+    e1.className = 'c-etapa c-etapa--atual'; e1.setAttribute('aria-current', 'step');
+    e2.className = 'c-etapa c-etapa--futura'; e2.removeAttribute('aria-current');
+    const prov = v.querySelector('input[name="prov"]');
+    prov.readOnly = false;
+    v.querySelector('.js-salvar').hidden = true;
+    v.querySelector('.js-continuar').hidden = false;
+    rotularEtapa2(v);
+    prov.focus();
+  }
+  function continuar(v) {
+    const prov = v.querySelector('input[name="prov"]');
+    if (!prov.value) { mostrarFaixa(v, T.vazio); prov.setAttribute('aria-invalid', 'true'); prov.focus(); return; }
+    prov.removeAttribute('aria-invalid');
+    limparFaixa(v);
+    const e1 = v.querySelector('[data-etapa="1"]'), e2 = v.querySelector('[data-etapa="2"]');
+    e1.className = 'c-etapa c-etapa--feita'; e1.removeAttribute('aria-current');
+    e2.className = 'c-etapa c-etapa--atual'; e2.setAttribute('aria-current', 'step');
+    prov.readOnly = true;
+    v.querySelector('.js-salvar').hidden = false;
+    v.querySelector('.js-continuar').hidden = true;
+    v.querySelector('input[name="nova"]').focus();
+  }
+
+  // ---------- envio simulado ----------
+  function enviar(v) {
+    if (S.op === 'c' && !v.querySelector('.js-continuar').hidden) { continuar(v); return; }
+    const x = valores(v);
+    if (!x.prov || !x.nova || !x.conf) { mostrarFaixa(v, T.vazio); atualizarGuia(v, true); return; }
+    if (x.nova.length < 8 || x.nova.trim().toLowerCase() === EMAIL || x.nova === x.prov) { mostrarFaixa(v, T.regra); atualizarGuia(v, true); return; }
+    if (x.conf !== x.nova) { mostrarFaixa(v, T.confere); atualizarGuia(v, true); return; }
+    trocarEstado('carregando');
+    const tk = S.seq;
+    setTimeout(() => { if (S.seq === tk) trocarEstado('sucesso'); }, 1400);
+  }
+
+  // ---------- desenho ----------
+  const vistaAtual = () => $('[data-view="' + S.plat + '-' + S.op + '"]');
+  function desenhar(plat, op, est) {
+    const v = $('[data-view="' + plat + '-' + op + '"]');
+    const f = flags(est);
+    v.innerHTML = plat === 'web' ? (f.login ? loginWeb(op, est) : trocaWeb(op, f)) : (f.login ? loginApp(op, est) : trocaApp(op, f));
+    if (!f.login) {
+      const set = (k, val) => { const el = v.querySelector('input[name="' + k + '"]'); if (el) el.value = val; };
+      if (f.cheio) { set('prov', AMOSTRA.prov); set('nova', AMOSTRA.nova); set('conf', AMOSTRA.conf); }
+      if (f.invProv) set('prov', '');
+      if (op === 'c' && !f.invProv) set('prov', AMOSTRA.prov);
+      atualizarGuia(v, false);
+      rotularEtapa2(v);
+    }
+  }
+  function sincronizar() {
+    const vis = S.plat + '-' + S.op;
+    $$('[data-view]').forEach(el => { el.hidden = el.dataset.view !== vis; });
+    $$('[data-plat]').forEach(el => { el.hidden = el.dataset.plat !== S.plat; });
+    $$('[data-plataforma]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.plataforma === S.plat)));
+    $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.opcao === S.op)));
+    $$('[data-estado]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.estado === S.est)));
+    $('[data-estado="offline"]').disabled = S.plat !== 'app';
+    const nomeOp = 'Opção ' + S.op.toUpperCase();
+    $('#banner-tag').textContent = 'Troca de senha · ' + nomeOp;
+    $('#app-tag').textContent = 'App de campo · Troca de senha · ' + nomeOp;
+    $('#app-entrega').textContent = S.op === 'a' ? 'Entra agora no app (decisão do dono).' : 'No app, entra quando existir o seletor de aparência do app (decisão do dono).';
+    $('#rv-titulo').textContent = ROT[S.op] + ' · ' + (S.plat === 'web' ? 'Web' : 'App de campo');
+    $$('[data-nota]').forEach(n => { n.hidden = n.dataset.nota !== S.op; });
+  }
+  function trocarEstado(est) {
+    S.est = est; S.seq++;
+    desenhar(S.plat, S.op, est);
+    sincronizar();
+  }
+  function trocarVista(plat, op) {
+    S.plat = plat; S.op = op; S.seq++;
+    if (S.plat === 'web' && S.est === 'offline') S.est = 'inicial';
+    desenhar(S.plat, S.op, S.est);
+    sincronizar();
+  }
+  let toastT = 0;
+  function toast(msg) {
+    const t = $('#toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200);
+  }
+
+  // ---------- eventos ----------
+  document.addEventListener('click', ev => {
+    const el = ev.target.closest('button');
+    if (!el) return;
+    if (el.dataset.plataforma) { trocarVista(el.dataset.plataforma, S.op); return; }
+    if (el.dataset.opcao) { trocarVista(S.plat, el.dataset.opcao); return; }
+    if (el.dataset.estado) { trocarEstado(el.dataset.estado); return; }
+    if (el.id === 'rv-recolher') {
+      const corpo = $('#rv-corpo'); const aberto = !corpo.hidden;
+      corpo.hidden = aberto; el.setAttribute('aria-expanded', String(!aberto)); el.textContent = aberto ? 'Mostrar notas' : 'Recolher notas';
+      return;
+    }
+    const v = el.closest('[data-view]');
+    if (!v) return;
+    if (el.classList.contains('js-olho')) {
+      const inp = document.getElementById(el.getAttribute('aria-controls'));
+      const ligado = el.getAttribute('aria-pressed') !== 'true';
+      el.setAttribute('aria-pressed', String(ligado));
+      inp.type = ligado ? 'text' : 'password';
+      return;
+    }
+    if (el.classList.contains('js-alterar')) { abrirEtapa1(v); return; }
+    if (el.classList.contains('js-continuar')) { continuar(v); return; }
+    if (el.classList.contains('js-sair')) { trocarEstado('saiu'); toast('“Sair” encerra a sessão restrita e volta ao login, sem aviso.'); return; }
+    if (el.classList.contains('js-google')) { toast('Na maquete este botão não faz nada.'); return; }
+  });
+  document.addEventListener('submit', ev => {
+    ev.preventDefault();
+    const form = ev.target;
+    const v = form.closest('[data-view]');
+    if (!v) return;
+    if (form.classList.contains('js-form')) { enviar(v); return; }
+    if (form.classList.contains('js-login')) {
+      if (S.est === 'sucesso') toast('Com a nova senha a sessão é inteira e o sistema abre normalmente (fora desta maquete).');
+      else { toast('Entrando de novo com a senha provisória, a pessoa volta para esta tela.'); trocarEstado('inicial'); }
+    }
+  });
+  document.addEventListener('input', ev => {
+    const v = ev.target.closest('[data-view]');
+    if (!v || !ev.target.matches('input[type="password"], input[type="text"]')) return;
+    if (ev.target.name === 'prov' && ev.target.getAttribute('aria-invalid') === 'true') ev.target.removeAttribute('aria-invalid');
+    atualizarGuia(v, false);
+  });
+
+  // ---------- início: todas as vistas desenhadas; abre na web, opção A ----------
+  ['web', 'app'].forEach(pl => ['a', 'b', 'c'].forEach(o => desenhar(pl, o, 'inicial')));
+  sincronizar();
+})();
+</script>
+</body>
+</html>

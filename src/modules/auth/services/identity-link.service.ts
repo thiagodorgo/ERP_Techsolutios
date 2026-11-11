@@ -3,7 +3,15 @@ import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { EnterpriseAuditLogService, type AuditLogWriter } from "../../core-saas/audit/audit-log.service.js";
-import { setIdentityRlsContext, setTenantRlsContext } from "../../../database/rls.js";
+import { isPlatformRole } from "../../core-saas/permissions/catalog.js";
+import { generateInitialPassword } from "../../authority/authority-password.js";
+import {
+  assertRowsBelongToTenant,
+  setIdentityRlsContext,
+  setTenantRlsContext,
+  withTenantRlsBudget,
+  type TenantRlsBudget,
+} from "../../../database/rls.js";
 import { AuthSessionRepository } from "../repositories/auth-session.repository.js";
 import { LocalAuthCredentialRepository } from "../repositories/local-auth-credential.repository.js";
 import {
@@ -12,7 +20,8 @@ import {
 } from "../repositories/identity-link.repository.js";
 import { IdentityLinkEventRepository } from "../repositories/identity-link-event.repository.js";
 import { normalizePairIdentity } from "./identity-resolver.js";
-import { verifyPassword } from "./password.service.js";
+import { validateLocalPassword } from "./local-auth-credential.service.js";
+import { hashPassword, verifyPassword } from "./password.service.js";
 import type { AuthenticatedActor, LocalAuthLoginInput, LocalAuthLoginResult } from "../types/auth.types.js";
 
 // -----------------------------------------------------------------------------------------------
@@ -79,12 +88,35 @@ type LinkRow = {
   readonly attached_via: string;
 };
 
+// B-USERS-ACESSO-SEG (S1, UEM-R2-01) — o resultado do reset por administrador. A provisória sai daqui
+// UMA vez, para a resposta 200; nada a guarda depois.
+export type AdminPasswordResetResult = {
+  readonly userId: string;
+  readonly temporaryPassword: string;
+  readonly revokedSessions: number;
+};
+
+// Orçamento da transação do reset (S1): espera por conexão, duração da transação e os timeouts LOCAIS
+// de trava e de statement (src/database/rls.ts, withTenantRlsBudget). Estourar qualquer um vira 503
+// `reset_unavailable` e nada muda. Injetável só para o teste forçar a expiração.
+export const ADMIN_RESET_BUDGET: TenantRlsBudget = {
+  maxWait: 5_000,
+  timeout: 15_000,
+  lockTimeoutMs: 2_000,
+  statementTimeoutMs: 5_000,
+};
+
+export type IdentityLinkServiceOptions = {
+  readonly resetBudget?: TenantRlsBudget;
+};
+
 export class IdentityLinkService {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly authenticate: AuthenticateFn,
     private readonly createAuditLogRepository?: AuditLogRepositoryFactory,
     private readonly verifyPasswordFn: typeof verifyPassword = verifyPassword,
+    private readonly options: IdentityLinkServiceOptions = {},
   ) {}
 
   // GET /auth/identity-links — vínculos da própria identidade (transação nomeada do §3.7).
@@ -182,6 +214,15 @@ export class IdentityLinkService {
           throw identityLinkError(403, "FORBIDDEN", "identity_unresolved", "Actor identity could not be resolved.");
         }
 
+        // 3b. B-USERS-ACESSO-SEG (P-SEG-2, Emenda 1) — a sessão da senha provisória não liga conta. T2: a
+        // trava FOR SHARE do vínculo do par do ATOR, que o reset por administrador trava com FOR UPDATE (T1);
+        // T3: a marca é lida DEPOIS dela — a religação que chega depois de um reset vê a marca ligada.
+        await this.selectLinkOfPairForShare(tx, actor.tenantId, actor.userId);
+
+        if (await this.mustChangePassword(tx, actor.tenantId, actor.userId)) {
+          throw passwordChangeRequiredError();
+        }
+
         // 4. GUC de tenant = organização PROVADA antes da trava (dba 1): o USING da política
         // precisa passar para a org B enquanto o contexto da requisição é a A.
         await setTenantRlsContext(tx, input.tenantId);
@@ -197,6 +238,12 @@ export class IdentityLinkService {
 
         if (!provedLink) {
           throw identityLinkError(403, "FORBIDDEN", "identity_unresolved", "Proved identity could not be resolved.");
+        }
+
+        // 4b. B-USERS-ACESSO-SEG (P-SEG-2) — a senha provisória não PROVA conta. Lido DEPOIS da trava do
+        // vínculo provado (o reset por administrador trava o mesmo vínculo): quem chega depois vê a marca.
+        if (await this.mustChangePassword(tx, input.tenantId, login.user.id)) {
+          throw passwordChangeRequiredError();
         }
 
         // 5. Idempotência: mesma identidade → 200 already_linked, nada muda.
@@ -387,8 +434,234 @@ export class IdentityLinkService {
     });
   }
 
-  // Gancho da troca de senha (§5.5) — ARMADO E INERTE: não existe rota de troca/reset neste
-  // bloco (pendência P-O6R-B01-TROCA-SENHA); o teste dirige o serviço diretamente. Na MESMA
+  // POST /auth/password (B-USERS-ACESSO-SEG, S7 — ajuste 5 da crítica) — o PRÓPRIO usuário troca a
+  // senha, e o gancho abaixo deixa de ser inerte para esse caso (a troca pelo dono da conta; o RESET
+  // por administrador continua fora, ver a PAUSA do bloco). O ator é o do JWT (rota com
+  // attachAuthenticatedActor). Declarado e provado em tests/users-acesso-seg-troca-senha-db.test.ts:
+  //   1. prova da senha ATUAL do par do token, por user_id (nunca pelo e-mail), como tentativa
+  //      direcionada: errada incrementa e pode trancar (401); trancada → 423; fora da transação de
+  //      escrita, para o incremento sobreviver; usuário inativo → 403;
+  //   2. senha nova pela regra do cadastro (validateLocalPassword) e diferente da atual → senão 400;
+  //   3. o gancho, numa transação: hash novo (e a marca da P1 apagada — updatePassword), desvínculo do
+  //      par religado quando a identidade tem 2+ vínculos, e TODAS as sessões do par revogadas,
+  //      INCLUSIVE a atual. O token de acesso já emitido vale até expirar (até 15 min, D-USERS-2).
+  async changeOwnPassword(
+    actor: AuthenticatedActor,
+    input: { readonly currentPassword: string; readonly newPassword: string },
+  ): Promise<PasswordChangeHookResult> {
+    const proof = await this.prisma.$transaction(async (tx) => {
+      await setTenantRlsContext(tx, actor.tenantId);
+
+      const user = await tx.user.findFirst({
+        where: { id: actor.userId, tenant_id: actor.tenantId },
+        select: { status: true },
+      });
+
+      if (!user || user.status !== "active") {
+        return { kind: "inactive" as const };
+      }
+
+      const credentials = new LocalAuthCredentialRepository(tx);
+      const credential = await credentials.findByUserForTenant(actor.userId, actor.tenantId);
+
+      if (!credential) {
+        return { kind: "unavailable" as const };
+      }
+
+      if (credential.locked_until && credential.locked_until > new Date()) {
+        return { kind: "locked" as const };
+      }
+
+      const matches = await this.verifyPasswordFn(input.currentPassword, credential.password_hash);
+
+      if (!matches) {
+        await credentials.incrementFailedAttempts(credential.id, actor.tenantId);
+
+        return { kind: "invalid" as const };
+      }
+
+      return { kind: "ok" as const, email: credential.email };
+    });
+
+    if (proof.kind === "inactive") {
+      throw identityLinkError(403, "FORBIDDEN", "user_inactive", "User is not active.");
+    }
+
+    if (proof.kind === "unavailable") {
+      throw identityLinkError(403, "FORBIDDEN", "credential_unavailable", "No local credential for this account.");
+    }
+
+    if (proof.kind === "locked") {
+      throw identityLinkError(423, "LOCKED", "account_locked", "Account is locked.");
+    }
+
+    if (proof.kind === "invalid") {
+      throw identityLinkError(401, "UNAUTHORIZED", "invalid_credentials", "Invalid credentials.");
+    }
+
+    try {
+      validateLocalPassword(input.newPassword, proof.email.trim().toLowerCase());
+    } catch (error) {
+      throw identityLinkError(
+        400,
+        "BAD_REQUEST",
+        "invalid_new_password",
+        error instanceof Error ? error.message : "Invalid password.",
+      );
+    }
+
+    if (input.newPassword === input.currentPassword) {
+      throw identityLinkError(400, "BAD_REQUEST", "invalid_new_password", "New password must differ from the current one.");
+    }
+
+    // O gancho §5.5, com a MESMA aplicação da troca que `LocalAuthCredentialService.changePasswordWithIdentityHook`
+    // passa a ele (hash novo + updatePassword sob o tx do gancho, que já pôs o GUC da organização do ator).
+    // Chamado direto para não instanciar repositório com o client raiz (ratchet B-SAN3-05, T13).
+    const password = await hashPassword(input.newPassword);
+
+    return this.handlePasswordChange(actor, async (tx) => {
+      await new LocalAuthCredentialRepository(tx).updatePassword(actor.userId, actor.tenantId, {
+        password_hash: password.password_hash,
+        password_algorithm: password.password_algorithm,
+      });
+    });
+  }
+
+  // POST /auth/users/:userId/reset-password (B-USERS-ACESSO-SEG, S1 — Emenda 1, UEM-R2-01) — o
+  // administrador da organização ATIVA do ator redefine a senha de um usuário DELA. O ator é o do JWT
+  // (a rota exige users.manage antes de chegar aqui). Numa transação só, com orçamento de tempo:
+  //   1. o alvo existe NA organização ativa (senão 404 user_not_found, também para o de outra
+  //      organização) e está ativo (senão 409 user_inactive);
+  //   2. a identidade do par do alvo, lida da linha do vínculo TRAVADA com FOR UPDATE (T1 — a
+  //      serialização com a religação, UEM-02);
+  //   3. P-SEG-1 (D-USERS-1): a identidade tem vínculo em OUTRA organização? → 409
+  //      `identity_linked_elsewhere`, mensagem fixa, nada muda (`assertNotLinkedElsewhere`);
+  //   4. grava a PROVISÓRIA (só o hash, marca da P1 ligada), revoga as sessões ativas do alvo e audita
+  //      `user.password_reset` (ator, alvo e organização ativa; nada de provisória, hash ou outra
+  //      organização).
+  // Qualquer erro que não seja um dos códigos fixos vira 503 `reset_unavailable` com mensagem fixa: nada
+  // de mensagem crua no tratador genérico (UEM-03, `P-HTTP-ERRO-ECOA-MENSAGEM-CRUA`).
+  async resetPasswordByAdmin(actor: AuthenticatedActor, targetUserId: string): Promise<AdminPasswordResetResult> {
+    if (targetUserId === actor.userId) {
+      throw identityLinkError(
+        409,
+        "CONFLICT",
+        "cannot_reset_self",
+        "Use the password change to replace your own password.",
+      );
+    }
+
+    // A provisória e o hash nascem FORA da transação (o scrypt é lento; a transação fica curta).
+    const temporaryPassword = generateInitialPassword();
+    const password = await hashPassword(temporaryPassword);
+    const budget = this.options.resetBudget ?? ADMIN_RESET_BUDGET;
+    // O prazo da transação, contado ANTES de abri-la (um pouco antes do relógio do Prisma: falha fechada).
+    // Medido na sonda do S1·f: o Prisma não cancela a instrução bloqueada quando o `timeout` da transação
+    // vence; a sonda acaba quando a trava solta e o callback seguiria com a resposta dela. Passado o prazo, a
+    // verificação não vale mais: 503 `reset_unavailable`, nada muda.
+    const deadline = Date.now() + budget.timeout;
+
+    try {
+      return await withTenantRlsBudget(
+        this.prisma,
+        actor.tenantId,
+        budget,
+        async (tx) => {
+          const target = await tx.user.findFirst({
+            where: { id: targetUserId, tenant_id: actor.tenantId },
+            select: { id: true, email: true, status: true },
+          });
+
+          if (!target) {
+            throw identityLinkError(404, "NOT_FOUND", "user_not_found", "User not found.");
+          }
+
+          if (target.status !== "active") {
+            throw identityLinkError(
+              409,
+              "CONFLICT",
+              "user_inactive",
+              "The user is inactive. Reactivate the user before resetting the password.",
+            );
+          }
+
+          // P-RESET-AUTORIDADE (conserto do #527, F3) — o administrador da organização não redefine a senha de
+          // alvo com papel de PLATAFORMA (`isPlatformRole`, fonte única `ROLE_AUTHORITY`; o mesmo conjunto que o
+          // portão de plataforma reconhece). Os papéis do alvo são lidos NESTA organização, sob o GUC da
+          // organização ativa, na mesma transação, depois do 404 e do 409 `user_inactive`; recusa fixa, nada muda.
+          const targetAssignments = await tx.userRoleAssignment.findMany({
+            where: { tenant_id: actor.tenantId, user_id: target.id },
+            select: { role: { select: { key: true } } },
+          });
+
+          if (targetAssignments.some((assignment) => isPlatformRole(assignment.role.key))) {
+            throw targetNotManageableError();
+          }
+
+          // T1 (UEM-02, reset × religação) — trava FOR UPDATE do vínculo do PAR do alvo ANTES de ler a
+          // identidade dele: a religação que move esse vínculo (o alvo como conta provada) trava a mesma linha
+          // com FOR UPDATE, e a do próprio alvo (o alvo como ator) com FOR SHARE (T2). Quem chega depois espera
+          // o outro confirmar e lê o estado novo: a identidade vem da linha TRAVADA (a versão confirmada).
+          let pairLink = await this.selectLinkOfPairForUpdate(tx, actor.tenantId, target.id);
+
+          if (!pairLink) {
+            // Par sem vínculo ainda (fora do backfill): normaliza e trava.
+            await normalizePairIdentity(tx, actor.tenantId, target.id);
+            pairLink = await this.selectLinkOfPairForUpdate(tx, actor.tenantId, target.id);
+          }
+
+          if (!pairLink) {
+            throw resetUnavailableError();
+          }
+
+          const identityId = pairLink.identity_id;
+
+          await this.assertNotLinkedElsewhere(tx, actor.tenantId, identityId, deadline);
+
+          await setTenantRlsContext(tx, actor.tenantId);
+          await new LocalAuthCredentialRepository(tx).upsertTemporaryPassword({
+            tenant_id: actor.tenantId,
+            user_id: target.id,
+            email: target.email,
+            password_hash: password.password_hash,
+            password_algorithm: password.password_algorithm,
+          });
+
+          const revoked = await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(
+            target.id,
+            actor.tenantId,
+          );
+
+          await this.recordAudit(tx, {
+            tenantId: actor.tenantId,
+            actorId: actor.userId,
+            actorType: "user",
+            action: "user.password_reset",
+            resourceType: "user",
+            resourceId: target.id,
+            outcome: "success",
+            severity: "warning",
+            metadata: {
+              revoked_sessions: revoked.count,
+              must_change_password: true,
+            },
+          });
+
+          return { userId: target.id, temporaryPassword, revokedSessions: revoked.count };
+        },
+      );
+    } catch (error) {
+      if (isIdentityLinkError(error)) {
+        throw error;
+      }
+
+      throw resetUnavailableError();
+    }
+  }
+
+  // Gancho da troca de senha (§5.5) — armado; desde o B-USERS-ACESSO-SEG (S7) é chamado pela troca
+  // do PRÓPRIO usuário (`changeOwnPassword`, rota POST /auth/password); o reset por administrador
+  // (S1) tem caminho próprio, `resetPasswordByAdmin`, que NÃO passa pelo gancho. Na MESMA
   // transação: (opcional) aplica a troca de senha via `applyPasswordUpdate`; (a) se o vínculo do
   // par chegou por 'religacao' (LIDO DE auth_identity_links.attached_via sob o braço de tenant —
   // legível sob a role real; NUNCA da trilha, ilegível — terceira armadilha, opção A) e a
@@ -620,6 +893,105 @@ export class IdentityLinkService {
     return rows[0] ?? null;
   }
 
+  // B-USERS-ACESSO-SEG (T2, UEM-02) — a trava compartilhada do vínculo do par do ATOR na religação: não
+  // conflita com outra religação do mesmo ator (FOR SHARE × FOR SHARE), mas espera o reset por
+  // administrador (FOR UPDATE, T1) e o faz esperar. Pré-condição: o GUC da organização do par está posto.
+  private async selectLinkOfPairForShare(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    userId: string,
+  ): Promise<void> {
+    await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM auth_identity_links
+      WHERE tenant_id = ${tenantId}::uuid AND user_id = ${userId}::uuid
+      FOR SHARE
+    `;
+  }
+
+  // B-USERS-ACESSO-SEG (S1, P-SEG-1 — Emenda 1, opção a) — a recusa da D-USERS-1 sob o papel real. Sob o
+  // braço de tenant da organização ativa, o vínculo de OUTRA organização é invisível; o braço de identidade
+  // só se liga pelo ator do JWT. Por isso, com os setters de organização que já existem (sem mudar
+  // src/database/rls.ts, sem migração, sem SECURITY DEFINER), organização a organização: o GUC vai para ela
+  // e a sonda pergunta só se a identidade do alvo tem vínculo LÁ. Só EXISTÊNCIA; para no primeiro achado;
+  // nada da outra organização sai deste método (nem id, nem nome, nem a linha): o retorno é a recusa fixa.
+  //   - A lista é a tabela global `tenants` (sem RLS, o precedente de `traccar-resolution.ts`), TODAS as
+  //     organizações menos a ativa, inclusive a suspensa (a organização suspensa ainda conta: falha
+  //     fechada).
+  //   - Em cada organização, duas perguntas: (1) uma leitura simples — há vínculo da identidade aqui? Não
+  //     há: próxima organização. (2) Há: a MESMA leitura com FOR SHARE, que espera uma mudança em voo nesse
+  //     vínculo (religação ou desvínculo, que travam FOR UPDATE) até o `lock_timeout` do orçamento. Seguiu
+  //     lá: 409 `identity_linked_elsewhere`. Sumiu na espera (o vínculo foi removido no meio): 503
+  //     `reset_unavailable` — a verificação não terminou sobre um estado firme; nada muda, tente de novo.
+  //     Passou do `lock_timeout`: o PostgreSQL cancela a leitura e o reset também sai 503.
+  //   - Canário `assertRowsBelongToTenant` nas duas leituras de cada volta: linha de outra organização sob
+  //     o contexto da volta derruba o reset (vira 503), nunca vira resultado.
+  //   - O prazo da transação (`deadline`) é conferido depois de cada leitura e no fim: vencido, a resposta é
+  //     503 `reset_unavailable`, ache a sonda o vínculo ou não.
+  // Pós-condição: o GUC fica na ÚLTIMA organização sondada; o chamador repõe o da organização ativa antes
+  // de escrever.
+  private async assertNotLinkedElsewhere(
+    tx: Prisma.TransactionClient,
+    activeTenantId: string,
+    identityId: string,
+    deadline: number,
+  ): Promise<void> {
+    const others = await tx.tenant.findMany({
+      where: { id: { not: activeTenantId } },
+      select: { id: true },
+      orderBy: [{ created_at: "asc" }, { id: "asc" }],
+    });
+
+    for (const other of others) {
+      await setTenantRlsContext(tx, other.id);
+
+      const seen = await tx.$queryRaw<Array<{ tenantId: string }>>`
+        SELECT tenant_id::text AS "tenantId" FROM auth_identity_links
+        WHERE tenant_id = ${other.id}::uuid AND identity_id = ${identityId}::uuid
+        LIMIT 1
+      `;
+
+      assertDeadline(deadline);
+      assertRowsBelongToTenant(seen, other.id, "auth_identity_links");
+
+      if (seen.length === 0) {
+        continue;
+      }
+
+      const firm = await tx.$queryRaw<Array<{ tenantId: string }>>`
+        SELECT tenant_id::text AS "tenantId" FROM auth_identity_links
+        WHERE tenant_id = ${other.id}::uuid AND identity_id = ${identityId}::uuid
+        LIMIT 1
+        FOR SHARE
+      `;
+
+      assertDeadline(deadline);
+      assertRowsBelongToTenant(firm, other.id, "auth_identity_links");
+
+      if (firm.length === 0) {
+        throw resetUnavailableError();
+      }
+
+      throw identityLinkedElsewhereError();
+    }
+
+    assertDeadline(deadline);
+  }
+
+  // B-USERS-ACESSO-SEG (P-SEG-2) — a marca da senha provisória do PAR. Pré-condição do chamador: o GUC
+  // de tenant da organização do par já está posto na transação (local_auth_credentials tem RLS).
+  private async mustChangePassword(
+    tx: Prisma.TransactionClient,
+    tenantId: string,
+    userId: string,
+  ): Promise<boolean> {
+    const rows = await tx.$queryRaw<Array<{ must_change_password: boolean }>>`
+      SELECT must_change_password FROM local_auth_credentials
+      WHERE tenant_id = ${tenantId}::uuid AND user_id = ${userId}::uuid
+    `;
+
+    return rows.some((row) => row.must_change_password);
+  }
+
   private async recordAudit(
     tx: Prisma.TransactionClient,
     input: Parameters<EnterpriseAuditLogService["record"]>[0],
@@ -639,6 +1011,74 @@ export function identityLinkError(
   message: string,
 ): IdentityLinkError {
   return { statusCode, code, reason, message };
+}
+
+// B-USERS-ACESSO-SEG (P-SEG-2) — o mesmo código e motivo da troca de organização (core-saas).
+export function passwordChangeRequiredError(): IdentityLinkError {
+  return identityLinkError(
+    403,
+    "FORBIDDEN",
+    "password_change_required",
+    "Password change is required before this action.",
+  );
+}
+
+// B-USERS-ACESSO-SEG (S1, P-SEG-1 / UEM-03) — a recusa da D-USERS-1: código e mensagem FIXOS. Revela só o
+// que a decisão do dono já revela (que o usuário tem acesso a outra organização), nunca qual.
+export function identityLinkedElsewhereError(): IdentityLinkError {
+  return identityLinkError(
+    409,
+    "CONFLICT",
+    "identity_linked_elsewhere",
+    "This user also has access to another organization. Only the user can change this password.",
+  );
+}
+
+// P-RESET-AUTORIDADE — o alvo tem papel de plataforma (`isPlatformRole`): o administrador da organização
+// não o alcança. Código e mensagem FIXOS; nada da causa sai.
+export function targetNotManageableError(): IdentityLinkError {
+  return identityLinkError(
+    403,
+    "FORBIDDEN",
+    "target_not_manageable",
+    "This account cannot be managed by an organization administrator.",
+  );
+}
+
+// B-USERS-ACESSO-SEG (S1, UEM-03) — o reset que não pôde terminar com segurança (trava ou transação
+// estourou o orçamento, identidade do par ilegível, falha do banco): código e mensagem FIXOS, sem
+// nada da causa. Nada mudou (a transação desfez).
+export function resetUnavailableError(): IdentityLinkError {
+  return identityLinkError(
+    503,
+    "SERVICE_UNAVAILABLE",
+    "reset_unavailable",
+    "The password reset could not be completed. Nothing was changed; try again.",
+  );
+}
+
+// O prazo da transação do reset venceu → 503 fixo (a verificação não vale mais).
+function assertDeadline(deadline: number): void {
+  if (Date.now() >= deadline) {
+    throw resetUnavailableError();
+  }
+}
+
+// O erro de domínio deste serviço é um objeto simples (identityLinkError), não uma instância de Error:
+// reconhecido pela forma, como o sendRouteError o reconhece.
+function isIdentityLinkError(error: unknown): error is IdentityLinkError {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const candidate = error as Partial<Record<keyof IdentityLinkError, unknown>>;
+
+  return (
+    typeof candidate.statusCode === "number" &&
+    typeof candidate.code === "string" &&
+    typeof candidate.reason === "string" &&
+    typeof candidate.message === "string"
+  );
 }
 
 function isUniqueViolation(error: unknown): boolean {

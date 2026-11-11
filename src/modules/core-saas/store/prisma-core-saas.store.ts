@@ -2,6 +2,8 @@
 
 import { prisma } from "../../../database/prisma.js";
 import { setTenantRlsContext, withTenantRls } from "../../../database/rls.js";
+import { AuthSessionRepository } from "../../auth/repositories/auth-session.repository.js";
+import { LocalAuthCredentialRepository } from "../../auth/repositories/local-auth-credential.repository.js";
 import { EnterpriseAuditLogService } from "../audit/audit-log.service.js";
 import {
   AuditLogRepository,
@@ -11,15 +13,24 @@ import {
   UserRoleRepository,
 } from "../repositories/index.js";
 import { assertAssignableRole, isValidRole, validateRole, type Role } from "../permissions/catalog.js";
-import type {
-  AuditEvent,
-  CreateTenantInput,
-  CreateUserInput,
-  ListTenantOptions,
-  Tenant,
-  TenantStatus,
-  User,
-  UserStatus,
+import {
+  TENANT_ADMIN_ROLE,
+  assertSelfChangeAllowed,
+  lastTenantAdminError,
+  removesActiveTenantAdmin,
+} from "../services/tenant-admin-guard.js";
+import { toUserAuditSnapshot } from "../services/user-audit-snapshot.js";
+import {
+  CoreSaasError,
+  type AuditEvent,
+  type CreateTenantInput,
+  type CreateUserInput,
+  type InitialCredentialInput,
+  type ListTenantOptions,
+  type Tenant,
+  type TenantStatus,
+  type User,
+  type UserStatus,
 } from "../types/core-saas.types.js";
 import type {
   AsyncCoreSaasStore,
@@ -98,7 +109,7 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       .map(mapTenantFromPrisma);
   }
 
-  async createUser(input: CreateUserInput): Promise<User> {
+  async createUser(input: CreateUserInput, credential?: InitialCredentialInput): Promise<User> {
     return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
       const txUsers = new UserRepository(tx);
       const txRoles = new RoleRepository(tx);
@@ -139,6 +150,20 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       );
       await normalizePairIdentity(tx, input.tenantId, user.id);
 
+      // Step 2c (B-USERS-ACESSO-SEG, S2 — Achado 1): a credencial local do usuário novo, na MESMA transação
+      // (falhou a criação, não sobra credencial; falhou a credencial, não sobra usuário). Só o hash da senha
+      // PROVISÓRIA chega aqui, com a marca "trocar no próximo acesso" (P1) ligada; o GUC da organização já
+      // está posto (withTenantRls).
+      if (credential) {
+        await new LocalAuthCredentialRepository(tx).upsertTemporaryPassword({
+          tenant_id: input.tenantId,
+          user_id: user.id,
+          email: input.email,
+          password_hash: credential.passwordHash,
+          password_algorithm: credential.passwordAlgorithm,
+        });
+      }
+
       // Step 3: resolve actor within the same transaction (sees the user created above)
       const actorId = isUuid(input.actorUserId ?? "")
         ? (
@@ -163,6 +188,8 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
           email: user.email,
           roleCount: input.roles.length,
           branchCount: input.branchIds?.length ?? 0,
+          // S2/S8: só o FATO de que nasceu uma credencial provisória — nunca a senha nem o hash.
+          temporaryCredential: credential !== undefined,
         },
       });
 
@@ -179,6 +206,70 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       const txUserRoles = new UserRoleRepository(tx);
       const txAudit = new AuditLogRepository(tx);
 
+      // Step 0 (B-USERS-ACESSO-SEG, S3/S5): a TRAVA DA ORGANIZAÇÃO. Toda mudança de status ou de papéis
+      // passa pela linha da organização em `tenants` (FOR NO KEY UPDATE, o mesmo mutex do
+      // cycle-count-prisma.repository.ts: não conflita com o KEY SHARE das FKs para `tenants`, e
+      // `tenants` não tem RLS). Dois rebaixamentos, ou uma desativação e um rebaixamento, da mesma
+      // organização ficam em fila: quem chega depois relê o estado JÁ gravado pelo primeiro. Uma trava
+      // sobre as linhas de `user_role_assignments` não bastaria (Achado 4 da crítica): o rebaixamento
+      // apaga e recria o vínculo, e a linha recriada não estaria travada nem visível ao statement que
+      // contasse junto com a trava.
+      if (input.status !== undefined || input.roles !== undefined) {
+        await tx.$queryRaw`SELECT id FROM "tenants" WHERE id = ${input.tenantId}::uuid FOR NO KEY UPDATE`;
+      }
+
+      // O estado ATUAL, lido DEPOIS da trava e num statement próprio (em READ COMMITTED, snapshot
+      // novo: enxerga o commit de quem estava na frente da fila). Também é o "antes" da auditoria.
+      const current = await tx.user.findFirst({
+        where: { id: input.userId, tenant_id: input.tenantId },
+        select: {
+          name: true,
+          status: true,
+          role_assignments: { select: { role: { select: { key: true } } } },
+        },
+      });
+
+      if (!current) {
+        throw new CoreSaasError(404, "NOT_FOUND", "user_not_found", `User not found: ${input.userId}`);
+      }
+
+      const currentRoles = mapRoleAssignmentsFromPrisma(current.role_assignments);
+      const currentState = { status: current.status, isTenantAdmin: currentRoles.includes(TENANT_ADMIN_ROLE) };
+      const nextState = {
+        status: input.status ?? current.status,
+        isTenantAdmin:
+          input.roles !== undefined ? input.roles.includes(TENANT_ADMIN_ROLE) : currentState.isTenantAdmin,
+      };
+
+      assertSelfChangeAllowed({
+        isSelf: input.actorUserId !== undefined && input.actorUserId === input.userId,
+        requestedStatus: input.status,
+        current: currentState,
+        next: nextState,
+      });
+
+      if (removesActiveTenantAdmin(currentState, nextState)) {
+        // Os OUTROS administradores ATIVOS, contados num statement próprio DEPOIS da trava (nunca junto
+        // com ela: o EvalPlanQual reavaliaria com o snapshot antigo e não veria a linha recriada por quem
+        // estava na frente). Papel por CHAVE (`tenant_admin`), qualquer que seja a linha (global ou da
+        // organização). Sob o GUC desta transação, `users` e `user_role_assignments` só mostram a
+        // organização do ator.
+        const [admins] = await tx.$queryRaw<Array<{ count: number }>>`
+          SELECT count(DISTINCT u.id)::int AS count
+          FROM users u
+          JOIN user_role_assignments ura ON ura.tenant_id = u.tenant_id AND ura.user_id = u.id
+          JOIN roles r ON r.id = ura.role_id
+          WHERE u.tenant_id = ${input.tenantId}::uuid
+            AND u.status = 'active'
+            AND r.key = ${TENANT_ADMIN_ROLE}
+            AND u.id <> ${input.userId}::uuid
+        `;
+
+        if ((admins?.count ?? 0) === 0) {
+          throw lastTenantAdminError();
+        }
+      }
+
       // Step 1: update scalar profile fields (name/status) when provided.
       if (input.name !== undefined || input.status !== undefined) {
         await txUsers.updateProfile(input.userId, {
@@ -186,6 +277,16 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
           status: input.status,
         });
       }
+
+      // Step 1b (B-USERS-ACESSO-SEG, Achado 3): desativar revoga, NA MESMA transação, todas as
+      // sessões ativas do par (organização, usuário). O GUC de tenant já está na organização do par
+      // (withTenantRls acima), a condição que o repositório exige para não afetar zero linhas sem
+      // erro. A renovação passa a recusar por revogação, e a sessão some da lista de ativas.
+      const revokedSessions =
+        input.status === "inactive"
+          ? (await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(input.userId, input.tenantId))
+              .count
+          : undefined;
 
       // Step 2: replace role assignments when roles were provided. Clearing then
       // reassigning keeps the set exactly equal to the requested roles.
@@ -218,6 +319,16 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
           )?.id ?? null
         : null;
 
+      const savedUser = await txUsers.findByIdForTenant(input.userId, input.tenantId);
+
+      if (!savedUser) {
+        throw new Error(`User not found after update: ${input.userId}`);
+      }
+
+      const updatedUser = mapUserFromPrisma(savedUser);
+
+      // B-USERS-ACESSO-SEG (S8) — antes/depois por LISTA PERMITIDA (nome, status, papéis), mais a
+      // contagem de sessões revogadas quando houve desativação. Nada de e-mail nem de credencial.
       await new EnterpriseAuditLogService(txAudit).record({
         tenantId: input.tenantId,
         actorId,
@@ -227,15 +338,14 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
         resourceId: input.userId,
         outcome: "success",
         severity: "info",
+        metadata: {
+          before: toUserAuditSnapshot({ name: current.name, status: current.status, roles: currentRoles }),
+          after: toUserAuditSnapshot(updatedUser),
+          ...(revokedSessions !== undefined ? { revoked_sessions: revokedSessions } : {}),
+        },
       });
 
-      const savedUser = await txUsers.findByIdForTenant(input.userId, input.tenantId);
-
-      if (!savedUser) {
-        throw new Error(`User not found after update: ${input.userId}`);
-      }
-
-      return mapUserFromPrisma(savedUser);
+      return updatedUser;
     });
   }
 

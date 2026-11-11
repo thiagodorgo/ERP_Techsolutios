@@ -4773,6 +4773,14 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fala literal, com o valor tirado:** *"limite de"* [teto de gasto diário da API definido pelo dono] *"na api"*. O trecho entre colchetes substitui o número que o dono falou, porque o repositório é público; o resto é literal.
 - **Decisão:** o dono confirmou o teto de gasto diário da API definido por ele; o teto total continua.
 
+## D-RESET-AUTORIDADE-PLATAFORMA (2026-11-11) — o administrador da organização não redefine a senha de quem tem papel de plataforma — RATIFICAÇÃO DO DONO PENDENTE
+
+- **Natureza:** leitura do planejador `topo-527-opus` (§A6), no plano do conserto do #527 (Correção pós-crítica, R1-A06). **RATIFICAÇÃO DO DONO PENDENTE** — o orquestrador leva ao dono.
+- **Origem:** junta J-527, achado C1-Q1, e a evidência E8 do topo: o reset por administrador alcançava alvo com papel de PLATAFORMA. Com a senha provisória em mãos, o administrador da organização troca ele mesmo a senha por `POST /auth/password` (que só pede a senha atual) e entra como `super_admin` com sessão inteira — escalada de organização para plataforma. Medido de novo pelo dev do conserto no head anterior à regra: a cadeia reset → login com a provisória → troca → login com a senha nova → `GET /platform/tenants` chega ao 200 (`tests/users-acesso-seg-portao-db.test.ts`, A8b).
+- **Invariante:** `ROLE_AUTHORITY` (fonte única, `catalog.ts`) — fluxo de organização não exerce autoridade de plataforma; é a mesma regra que já vale para ATRIBUIR papel (`assertAssignableRole`, `403 role_not_assignable`) e a mesma da `D-USERS-1` contra a tomada de conta: quem não pode dar o papel de plataforma não pode tomar a conta de quem o tem.
+- **Regra (como implementada no conserto, F3):** `POST /auth/users/:userId/reset-password` lê os papéis do alvo na organização ativa e, se algum for de plataforma (`isPlatformRole`, o mesmo conjunto que o portão de plataforma reconhece), recusa com `403 FORBIDDEN target_not_manageable`, mensagem fixa; nada muda (hash, marca, sessões, auditoria de sucesso).
+- **Se o dono recusar:** a escalada da E8 volta e precisa de outra regra antes do merge do #527.
+
 ## D-SAN3-08-DIALOGO-SEM-TRES-OPCOES (aplicação de `D-PORTAO-7-RECOMENDACOES-1011`, decisão do dono de 2026-11-10 23:19 SP) — o diálogo de aprovação do orçamento
 
 - **Fonte:** `REGISTRO-PENDENTE.md` do orquestrador, 10/11 23:19 SP. Perguntado se aceitava as 7 recomendações dos planos `B-O6R-09` (1), `B-SAN3-08` (3) e `B-SAN3-24` (3), o dono respondeu *"Sim, todas (Recomendado)"*. Esta entrada registra só a parte do `B-SAN3-08`; o ID `D-PORTAO-7-RECOMENDACOES-1011` fica para o registro do orquestrador.
