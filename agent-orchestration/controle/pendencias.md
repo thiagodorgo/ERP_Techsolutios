@@ -13174,6 +13174,12 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** opção (A) da 08b, leitura do orquestrador, declarada (§A6), 10/11 21:00 SP (`LEITURA-ORQ-1011-B-ASS-08C` em `decisoes.md`).
 - **obrigações recebidas:** as formas do §11 (b)-(h) do plano do segundo conserto (a rota `POST …/statements/:id/charge`, o fechamento que enfileira, o refechamento, o eager do D2 (i), o `charge/cancel`, o `/resolve`, a rota de retry e a gravação da cobrança com `payUrl`) e as obrigações (1), (2), (3), (5)b2 e (5)b3 da `P-ASS08-OBX5-EAGER-E-CANCEL`.
 - **critério de encerramento (leitura do redator, declarada, §A6: a fonte não escreve o critério):** todas as formas e obrigações transferidas implementadas e provadas conforme o plano próprio; a junta confere o vínculo com a pendência de origem.
+- **critério medível (complemento do dev da 08b, 10/11 23:47 SP, achado PR530-03 da pré-revisão do #530; não substitui a linha acima):** são os encerramentos que as obrigações já tinham na `P-ASS08-OBX5-EAGER-E-CANCEL`, reunidos aqui:
+  - (1) `git grep -nE 'kind: "charge_create"' -- src | grep -v charges/charge-request.service.ts` continua vazio com a rota `/charge` e o fechamento escritos. Na 08b ele está vazio, por medição, e `enqueueChargeCreateInTx(` só é chamado pelo próprio serviço (`charges/charge-request.service.ts:43`);
+  - (5)b2: `node --test --import tsx tests/ass-08-lock-order-db.test.ts` com `DATABASE_URL` dá `# fail 0`, com cenário gravado no censo para o fechamento que enfileira, o refechamento, o D2 (i), o `charge/cancel`, o `/resolve` e a rota de retry;
+  - (5)b3: a M7f do plano do 2º conserto (§13.3.3: no fechamento, chamar `enqueueChargeCreateInTx` antes de `insertIfAbsentAndLock` → `ORD-0` e `ORD-1`) é aplicada, vista vermelha e desfeita, com registro no diário do B-ASS-08c. Na 08b ela não se aplica, porque o fechamento que enfileira não existe nela (diário da 08b, linha `08b-PR530-03`);
+  - dois `POST …/charge` concorrentes pela rota deixam 1 linha viva e 1 `POST /payments`;
+  - o resumo TAP do job `backend` é publicado (§C7 11(3)).
 
 ## P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUDE.md e no AGENTS.md, num PR de governança — ALTA (gravidade: leitura do redator)
 
