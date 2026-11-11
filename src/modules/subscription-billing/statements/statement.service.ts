@@ -417,11 +417,15 @@ export class StatementService {
     readonly amountCents: number;
     readonly method: string | null;
     readonly now: Date;
+    /** Conserto da J-530 (D): chamado DENTRO da transação, depois das trilhas, com o demonstrativo antes e depois — é onde a
+     * baixa do provedor grava a intenção de nota no mesmo `tx`. */
+    readonly afterWrite?: (tx: StatementTx, change: { readonly before: SubscriptionStatement; readonly after: SubscriptionStatement }) => Promise<void>;
   }): Promise<{ statement: SubscriptionStatement; payment: StatementPayment; credit: SubscriptionCredit | null }> {
     if (!Number.isSafeInteger(input.amountCents) || input.amountCents <= 0) {
       throw new StatementError(400, "invalid_amount", "amount must be a positive amount of cents.");
     }
     const result = await this.repository.transaction(input.tenantId, async (tx) => {
+      // [INTX-09]
       const current = await this.lockOrNotFound(tx, input.statementId);
       let applied = 0;
       let creditReason: CreditReason | null = null;
@@ -483,6 +487,7 @@ export class StatementService {
           metadata: { statementId: statement.id, amountCents: credit.amountCents, reason: credit.reason },
         });
       }
+      if (input.afterWrite) await input.afterWrite(tx, { before: current, after: statement });
       return { statement, payment, credit };
     });
     return result;

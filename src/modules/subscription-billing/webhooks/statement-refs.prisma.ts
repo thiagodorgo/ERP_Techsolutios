@@ -56,4 +56,13 @@ export class PrismaStatementRefRepository implements StatementRefRepository {
       externalChargeId,
     );
   }
+
+  /** B-ASS-08b — delegate tipado da tabela GLOBAL (sem RLS); nenhuma tabela de organização é aberta. */
+  async listWithCharge(since: Date): Promise<readonly BillingStatementRef[]> {
+    const rows = await this.client.billingStatementRef.findMany({
+      where: { external_charge_id: { not: null }, created_at: { gte: since } },
+      orderBy: { created_at: "asc" },
+    });
+    return rows.map((row) => toDomain(row));
+  }
 }

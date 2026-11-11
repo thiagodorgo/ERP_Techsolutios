@@ -76,6 +76,9 @@ export type NewOutboxRow = {
   readonly seq: number;
   readonly payload?: Readonly<Record<string, unknown>>;
   readonly providerIdempotencyKey?: string;
+  /** Conserto da J-530 (I6): a intenção de nota nasce VISÍVEL como `provider_disabled` quando o provedor de nota está
+   * desligado; o claim limpa ao retomar. Padrão `null`. */
+  readonly skipReason?: OutboxSkipReason | null;
 };
 
 export function idempotencyKeyOf(kind: OutboxKind, statementId: string, seq: number): string {
@@ -87,6 +90,9 @@ export const OUTBOX_BACKOFF_MINUTES = [1, 5, 15, 60] as const;
 export const OUTBOX_MAX_ATTEMPTS = 8;
 /** Uma linha PROCESSING parada por mais que isto é órfã de crash (G8): reconsulta antes de repetir. */
 export const OUTBOX_ORPHAN_MS = 10 * 60 * 1000;
+/** Conserto da J-530 (C): o `invoice_cancel` de uma nota ainda pendente é ADIADO por isto, sem gastar tentativa, até a
+ * reconsulta decidir a nota. */
+export const INVOICE_DEFER_MS = 15 * 60 * 1000;
 
 export function backoffMsForAttempt(attempts: number): number {
   const index = Math.min(Math.max(attempts - 1, 0), OUTBOX_BACKOFF_MINUTES.length - 1);

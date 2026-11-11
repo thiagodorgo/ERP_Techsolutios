@@ -371,3 +371,111 @@ export async function enqueueInitialSubscriptionCloseStatements(): Promise<void>
     delayMs: computeNextCloseStatementsDelayMs(new Date()),
   });
 }
+
+// ------------------------------------------------------------------------------------------------------------------
+// B-ASS-08b · (c) — os 4 jobs do CANAL de cobrança (plano §3.8). SÓ rodam com BILLING_PROVIDERS_ENABLED=true: com o canal
+// desligado o handler não faz nada e NÃO re-enfileira (a cadeia para; o bootstrap nem a começa). As portas são só as dos
+// provedores LIGADOS (channel.runtime.ts), e o `fetch` nunca acontece em transação (R-OBX-1).
+
+export const BILLING_DISPATCH_INTERVAL_MS = 60_000;
+export const BILLING_POLL_PENDING_INTERVAL_MS = 15 * 60_000;
+const BILLING_POLL_SETTLED_WINDOWS = [{ hour: 3, minute: 0 }] as const;
+
+/** `delayMs` até as próximas 03:00 em São Paulo (o poll-settled é diário — G9). */
+export function computeNextBillingPollSettledDelayMs(now: Date, timeZone = MEASURE_DAILY_TIME_ZONE): number {
+  return computeNextWindowDelayMs(now, BILLING_POLL_SETTLED_WINDOWS, timeZone);
+}
+
+type BillingChannelJobs = typeof import("./outbox/channel.jobs.js");
+type LoadedBillingChannel = { readonly deps: import("./outbox/channel.jobs.js").ChannelDeps; readonly jobs: BillingChannelJobs };
+type RecurringBillingJobName = "billing.dispatch-outbox" | "billing.poll-pending" | "billing.poll-settled";
+
+/** Peças injetáveis SÓ para teste: em produção, a flag do env, o canal de verdade e a fila padrão. */
+export type BillingChannelHandlerOptions = {
+  readonly enabled?: () => boolean;
+  readonly load?: () => Promise<LoadedBillingChannel>;
+  readonly enqueue?: (name: RecurringBillingJobName, delayMs: number) => Promise<unknown>;
+};
+
+async function loadChannel(): Promise<LoadedBillingChannel> {
+  const [{ createChannelRuntime }, jobs] = await Promise.all([
+    import("./outbox/channel.runtime.js"),
+    import("./outbox/channel.jobs.js"),
+  ]);
+  return { deps: await createChannelRuntime(), jobs };
+}
+
+function channelEnabled(): boolean {
+  return env.BILLING_PROVIDERS_ENABLED;
+}
+
+async function enqueueBillingTick(name: RecurringBillingJobName, delayMs: number): Promise<unknown> {
+  return getDefaultJobQueue().enqueue(name, {}, { delayMs });
+}
+
+/** Recorrente: isola a falha (só o código vai ao log) e re-enfileira UMA vez, mantendo a cadeia viva com o canal ligado. */
+function recurringBillingHandler(
+  name: RecurringBillingJobName,
+  run: (channel: LoadedBillingChannel) => Promise<unknown>,
+  nextDelayMs: () => number,
+  options: BillingChannelHandlerOptions,
+): JobHandler {
+  const enabled = options.enabled ?? channelEnabled;
+  const load = options.load ?? loadChannel;
+  const enqueue = options.enqueue ?? enqueueBillingTick;
+  return async () => {
+    if (!enabled()) return; // canal desligado: nada roda, e a cadeia não continua
+    try {
+      await run(await load());
+    } catch (error) {
+      // Falha GERAL: registra e NÃO relança (a retentativa somada ao re-enfileiramento multiplicaria a cadeia — M-1).
+      logger.error({ code: failureCode(error) }, `${name}: a rodada falhou; a próxima tenta de novo`);
+    }
+    await enqueue(name, nextDelayMs());
+  };
+}
+
+export function createBillingDispatchOutboxJobHandler(options: BillingChannelHandlerOptions = {}): JobHandler {
+  return recurringBillingHandler("billing.dispatch-outbox", ({ deps, jobs }) => jobs.runBillingDispatch(deps), () => BILLING_DISPATCH_INTERVAL_MS, options);
+}
+
+export function createBillingPollPendingJobHandler(options: BillingChannelHandlerOptions = {}): JobHandler {
+  return recurringBillingHandler("billing.poll-pending", ({ deps, jobs }) => jobs.runBillingPollPending(deps), () => BILLING_POLL_PENDING_INTERVAL_MS, options);
+}
+
+export function createBillingPollSettledJobHandler(options: BillingChannelHandlerOptions = {}): JobHandler {
+  return recurringBillingHandler(
+    "billing.poll-settled",
+    ({ deps, jobs }) => jobs.runBillingPollSettled(deps),
+    () => computeNextBillingPollSettledDelayMs(new Date()),
+    options,
+  );
+}
+
+/** Um por evento aceito pelo webhook. Payload inválido não re-tenta (é descartado com o código no log); falha de rede ou de
+ * banco relança para a fila re-tentar — e o que se perder o poll-pending retoma (R-WH-8). */
+export function createBillingReconcileWebhookJobHandler(options: Omit<BillingChannelHandlerOptions, "enqueue"> = {}): JobHandler {
+  const enabled = options.enabled ?? channelEnabled;
+  const load = options.load ?? loadChannel;
+  return async (payload) => {
+    if (!enabled()) return;
+    const provider = payload.provider;
+    const externalEventId = payload.externalEventId;
+    if (typeof provider !== "string" || !provider || typeof externalEventId !== "string" || !externalEventId) {
+      logger.warn({ code: "invalid_reconcile_payload" }, "billing.reconcile-webhook: payload inválido descartado");
+      return;
+    }
+    const { deps, jobs } = await load();
+    await jobs.runBillingReconcileEvent(deps, { provider, externalEventId });
+  };
+}
+
+/** Enfileira os 1ºs ticks dos jobs recorrentes do canal — SÓ com o canal ligado. Chamado pelo bootstrap do worker. */
+export async function enqueueInitialBillingChannelJobs(options: Omit<BillingChannelHandlerOptions, "load"> = {}): Promise<void> {
+  const enabled = options.enabled ?? channelEnabled;
+  const enqueue = options.enqueue ?? enqueueBillingTick;
+  if (!enabled()) return;
+  await enqueue("billing.dispatch-outbox", BILLING_DISPATCH_INTERVAL_MS);
+  await enqueue("billing.poll-pending", BILLING_POLL_PENDING_INTERVAL_MS);
+  await enqueue("billing.poll-settled", computeNextBillingPollSettledDelayMs(new Date()));
+}
