@@ -13671,3 +13671,22 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   provado pelo banco no `tests/b-san3-24-fechamento-forcado-auditoria-db.test.ts` (B7).
 - **teste de encerramento:** falha injetada na gravação da auditoria desfaz o efeito (ou o efeito e a auditoria
   comitam juntos), com teste `-db`.
+
+## P-SAN3-24-CHEQUE-FILTRO-VINCULADO (2026-11-11) — a lista de cheques não filtra "pendente" nem "tem título" no servidor — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`GET /cheques` filtra situação e título só por igualdade:
+  `src/modules/cheques/cheque-prisma.repository.ts`, `buildWhere`; medido pela crítica r2 do `B-SAN3-24`, N-02) · **dono
+  proposto:** o próximo bloco de backend financeiro (o mesmo de `P-SAN3-12C-*`).
+- **origem:** N-02 da crítica r2 do plano v2 do `B-SAN3-24`; resolução declarada do dev (`docs/revisoes/SAN3/B-SAN3-24-dev.md`).
+- **o que a tela faz hoje:** "pendentes" = 2 consultas ao servidor (registrado e depositado), com os dois totais lado a
+  lado; "vinculados a título" = filtro sobre os pendentes CARREGADOS (até 100 por situação), dito na própria lista.
+- **teste de encerramento:** `GET /cheques?status=registered,deposited&has_title=true` com total do servidor igual ao
+  `linkedPendingCount` do `/financial-summary`, e a tela usando o filtro do servidor.
+
+## P-SAN3-24-TITULO-PELA-URL (2026-11-11) — o Financeiro não abre um título pela URL — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o estado de URL do Financeiro só tem aba, conta e filtro, e o
+  detalhe aberto é estado local da view; N-03 da crítica r2) · **dono proposto:** o `B-SAN3-25` ou um bloco do Financeiro.
+- **o que a tela faz hoje:** o cheque vinculado mostra o documento do título e leva à ABA do Financeiro
+  (`/finance?aba=rec|pag`), onde o desvínculo do 12b existe.
+- **teste de encerramento:** `/finance?titulo=<id>` abre o detalhe do título, e o link do cheque vinculado usa essa URL.

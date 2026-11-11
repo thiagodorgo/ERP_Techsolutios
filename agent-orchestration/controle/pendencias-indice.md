@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **862** |
-| IDs distintos | 851 |
-| **ABERTAS** | **657** |
+| Cabecalhos `## P-` | **864** |
+| IDs distintos | 853 |
+| **ABERTAS** | **659** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **596** |
+| — das quais **ativas nesta rodada** | **598** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 201 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **862 cabecalhos para 851 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **864 cabecalhos para 853 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 293
+## ABERTAS · balde A — material — 295
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -367,6 +367,8 @@
 | `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` | 13620 | CRÍTICA | **a atribuir** | P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o |
 | `P-COMISSAO-MOTOR-E-POLITICA` | 13650 | MÉDIA | sim | P-COMISSAO-MOTOR-E-POLITICA (2026-11-11) — a tela de política de comissão só vem depois  |
 | `P-SAN3-24-AUDITORIA-BEST-EFFORT` | 13662 | MÉDIA | **a atribuir** | P-SAN3-24-AUDITORIA-BEST-EFFORT (2026-11-11) — a auditoria da casa é gravada fora da tra |
+| `P-SAN3-24-CHEQUE-FILTRO-VINCULADO` | 13675 | CRÍTICA | **a atribuir** | P-SAN3-24-CHEQUE-FILTRO-VINCULADO (2026-11-11) — a lista de cheques não filtra "pendente |
+| `P-SAN3-24-TITULO-PELA-URL` | 13686 | CRÍTICA | **a atribuir** | P-SAN3-24-TITULO-PELA-URL (2026-11-11) — o Financeiro não abre um título pela URL — BAIX |
 
 ## ABERTAS · balde B — processo/registro — 303
 

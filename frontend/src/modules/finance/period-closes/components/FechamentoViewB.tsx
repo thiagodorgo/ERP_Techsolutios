@@ -96,7 +96,13 @@ export function FechamentoViewB(model: FechamentoViewModel) {
           ) : (
             <div role="list" style={{ display: "flex", alignItems: "flex-end", gap: 10, minHeight: 150, overflowX: "auto" }}>
               {results.map(({ row, snapshot }) => (
-                <div role="listitem" key={row.period} aria-label={`${periodName(row.period)}: entradas ${formatBRL(snapshot!.entriesIn.sumAmount)}, saídas ${formatBRL(snapshot!.entriesOut.sumAmount)}, resultado ${formatBRL(snapshot!.net)}`} style={{ display: "grid", justifyItems: "center", gap: 4, minWidth: 42 }}>
+                <div
+                  role="listitem"
+                  key={row.period}
+                  aria-label={`${periodName(row.period)}: entradas ${formatBRL(snapshot!.entriesIn.sumAmount)}, saídas ${formatBRL(snapshot!.entriesOut.sumAmount)}, resultado ${formatBRL(snapshot!.net)}`}
+                  title={`${periodName(row.period)} — entradas ${formatBRL(snapshot!.entriesIn.sumAmount)} · saídas ${formatBRL(snapshot!.entriesOut.sumAmount)} · resultado ${formatBRL(snapshot!.net)}`}
+                  style={{ display: "grid", justifyItems: "center", gap: 4, minWidth: 42 }}
+                >
                   <small style={{ fontSize: 10, fontWeight: 800, color: snapshot!.net < 0 ? "#B91C1C" : "#047857" }}>{snapshot!.net < 0 ? "−" : "+"}</small>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 110 }}>
                     <span style={{ width: 12, height: `${Math.max(3, Math.round((snapshot!.entriesIn.sumAmount / maxValue) * 100))}%`, background: "#10B981", borderRadius: 3 }} />
@@ -107,7 +113,7 @@ export function FechamentoViewB(model: FechamentoViewModel) {
               ))}
             </div>
           )}
-          <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "#64748B" }}>Verde: entradas · vermelho: saídas (o valor de cada mês aparece ao passar o mouse e no detalhe).</p>
+          <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "#64748B" }}>Em cada mês, a 1ª barra (verde) são as entradas e a 2ª (vermelha) as saídas; o sinal acima é o resultado. O valor de cada mês aparece ao passar o mouse e no detalhe.</p>
         </Card>
         <Card title="Mês a fechar" hint="pendências ao vivo">
           <MonthToCloseCard model={model} period={model.monthToClose} />
