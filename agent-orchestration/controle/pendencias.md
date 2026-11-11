@@ -2254,6 +2254,16 @@ que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo mod
   (`displayName: 'Tenant Demo'`, medido na `origin/main@e7dcbbb7`). A fronteira do `B-SAN3-07` é só `prisma/seed.ts`;
   **leitura do redator, declarada (§A6):** o item 47 só fecha com as duas instâncias, e o plano do `B-SAN3-07` declara a
   ampliação nominal para esse arquivo do app (ou devolve a instância a um bloco mobile com dono escrito).
+- **apenso 2026-11-11 (`B-SAN3-07`, PR #535, ramo `fix/seed-papeis-legados`, `dev-san3-07-cl`): a prova no banco que o #518 não
+  tinha.** Base Postgres 16 descartável só do seed (`migrate deploy` + `db:seed`): `SELECT name FROM tenants` → 1 linha,
+  `Organização Demonstração` (o critério literal do §5 do `PLANO_SAN3.md`). Teste permanente: a asserção P3 dentro do
+  teste de concessões de `tests/permission-catalog-db-parity.test.ts` (job `backend-postgres`). Em base semeada (sentinela:
+  o registro de auditoria `seed.initialized`, que só o seed grava) ela lê `select name from tenants where slug = 'demo'`,
+  exige 1 linha e nenhum `/tenant/i`; em base só provisionada ela não se aplica. A mutação M3 (as 2 linhas do nome →
+  `"Tenant Demo"`) a deixa vermelha, o inverso do diff do #518 é byte a byte essa mutação, e a M5 (o seed deixa de criar
+  a `demo` e mantém a sentinela) também a deixa vermelha. A instância do app (o apenso anterior) não entra
+  neste bloco: o plano a devolve ao `B-SAN3-19b` e a pergunta (o item 47 fecha sem ela?) está com o dono → registrada em
+  `P-SAN3-07-APP-NOME-TECNICO-OFFLINE`.
 
 ## P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do contêiner (BAIXA)
 
@@ -9822,7 +9832,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-04A-SEED-PAPEIS-LEGADOS (2026-09-18) — base preparada só com o seed não tem cinco papéis do catálogo — MÉDIA
 
-- status: ABERTA (B-SAN3-04a, plano do bloco §3 S1 e §4.7)
+- status: FECHADA (2026-11-11, `B-SAN3-07`, item 47 — PR #535, ramo `fix/seed-papeis-legados`): `prisma/seed.ts` semeia `DEFAULT_ROLES.filter((role) => role !== "platform_admin")`, a mesma regra de `scripts/provision-rbac.ts`. Medido em Postgres 16 descartável: seed da `main` `07898adf` → 7 papéis globais, e o teste-dono `tests/permission-catalog-db-parity.test.ts` (isenção reduzida a `platform_admin`; P2 e P3 dentro do teste de concessões, e o P3 só em base semeada, detectada pela sentinela `seed.initialized` — Emenda 2 do plano) fica vermelho com exatamente os 5 (`operator` 68, `finance` 62, `inventory` 17, `field_technician` 49, `support` 11); seed do bloco → 12 papéis globais, 929 concessões iguais às do catálogo papel a papel, `platform_admin` sem linha, o 2º seed sem duplicata e sem perder concessão, e `db:provision-rbac -- --dry-run` com 0 papel e 0 concessão a criar. As mutações M1–M5 ficam vermelhas pelo motivo certo, e os 3 drills que rodam a paridade em base provisionada sem seed (`ass-04`, `ass-05`, `b-san3-12a`) seguem verdes. Relatório: `docs/revisoes/SAN3/B-SAN3-07-dev.md`. Resíduos com dono próprio: `P-SAN3-07-SEED-USERS-LEGADO` e `P-SAN3-07-SEED-FORA-DO-TYPECHECK`.
+- status anterior: ABERTA (B-SAN3-04a, plano do bloco §3 S1 e §4.7)
 - **prova (N = 5 papéis — `finance`, `inventory`, `operator`, `field_technician`, `support`; forma: numa base preparada como a CI (`prisma migrate deploy` + `npm run db:seed`, sem `db:provision-rbac`) não existe linha global desses papéis; causa: `prisma/seed.ts` semeia `STANDARD_ROLES` + `auditor` — o escopo do bloco autorizou só o `auditor`):** medido pelo dev (drill D4, código do bloco): papéis globais = `auditor` 56, `field_dispatcher` 42, `manager` 139, `super_admin` 198, `technician` 44, `tenant_admin` 185, `viewer` 45 — os cinco ausentes.
 - **escopo:** `pre-existente` — o laço do seed é anterior ao bloco.
 - **dono:** `B-SAN3-07` (mesmo arquivo; consumidor `B-SAN3-10`, cujo `test:e2e` roda `db:seed` só).
@@ -13518,6 +13529,27 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** O1 do porteiro `porteiro-530`.
 - **fato:** a convenção escrita em `ci.yml:289-293` manda "toda suíte `-db` nova entre AQUI". O `B-ASS-08b` soma 2 suítes (`ass-08b-invoice-intent-db` e `ass-08b-invoice-leg-db`). Hoje elas rodam de fato no job `backend` (22 linhas T-INTX `ok` nos logs do head e do merge), mas sem o guarda de zero pulos.
 - **critério de encerramento:** as suítes `ass-0*-db` estão na lista curada do `backend-postgres`, com o guarda de zero pulos verde, numa mudança de `.github/**` autorizada pelo dono.
+
+## P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e "Tenant Field Services" no modo offline — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o texto está no app desde antes do `B-SAN3-07`, cuja fronteira é só `prisma/seed.ts`; apenso de 2026-11-03 da `P-CHK-SEED-DEMO-SUJO`) · **dono:** `B-SAN3-19b` (a faxina de termos técnicos do app, item 48), pela recomendação do plano do `B-SAN3-07` (§9); **a pergunta está com o dono**: o item 47 fecha sem esta instância? · **bloqueia:** não, se o dono seguir a recomendação.
+- **prova (N = 15 arquivos, 20 ocorrências; forma: 1 fonte + 14 testes Flutter; medido no `07898adf` por `git grep -lE "Tenant Demo|Tenant Field Services" HEAD -- mobile/`):** a fonte é `mobile/flutter_app/lib/core/bootstrap/bootstrap_session.dart:183,186` (`displayName: 'Tenant Demo'`) e `:189` (`'Tenant Field Services'`), o bootstrap local do modo offline. Os outros 14 são testes em `mobile/flutter_app/test/`; 2 deles EXIGEM o texto e quebram com a correção: `test/features/b091_connectivity_profile_test.dart:389` (`find.textContaining('Tenant Demo')`, na tela) e `test/features/b098_real_auth_bootstrap_test.dart:447` (`expect(bs.activeTenant.displayName, 'Tenant Field Services')`).
+- **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-05), que corrigiu o N do plano (ele citava só a fonte).
+- **teste de encerramento:** nenhum `Tenant` em texto exibido pelo app (guard de strings do `B-SAN3-19b`), com os 2 testes acima reescritos para o nome de negócio e a bateria Flutter verde.
+
+## P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis legados e diz que eles "não vêm do seed base" — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`prisma/seed-users.ts` estava no PROIBIDO do `B-SAN3-07`) · **dono:** `B-SAN3-10` (roteiro de demonstração, consumidor do `db:seed:demo`), ou o primeiro bloco que tocar `prisma/seed-users.ts`, o que vier antes · **bloqueia:** não. Nada muda de permissão: os papéis e as concessões que o `seed-users.ts` cria são os mesmos que o seed base passou a criar.
+- **prova (N = 7 locais em 3 arquivos; medido no ramo `fix/seed-papeis-legados`):** em `prisma/seed-users.ts`, (1) `:41-43` a 3ª cópia da fórmula do nome do papel (`roleName`, igual a `formatRoleName` do seed e a `nomeDoPapel` do provisionamento); (2) `:53` o comentário "os LEGACY_ROLES não vêm do seed base", que passa a ser falso; (3) `:54-57` o `role.create` do papel global, que vira ramo morto no `db:seed:demo` (o `db:seed` roda antes e o `findFirst` acha o papel), e o laço de concessões `:60-68`, que vira redundante, com o `if (!perm) continue` que esconderia permissão ausente. Nos corpos de jurado, a instrução "Cobrar o seed dos papéis legados… dono `B-SAN3-07`", agora obsoleta: (4) `.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md:338` e (5) `:459`; (6) e (7) o espelho `.agents/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md:344,465`.
+- **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-04).
+- **teste de encerramento:** o `seed-users.ts` só busca os papéis globais (falha alto se faltar, sem `continue` silencioso) e o comentário diz a verdade; os dois corpos de jurado sem a instrução obsoleta, com `node scripts/sync-agent-agents.mjs --check` verde.
+
+## P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed.ts`, e o seed tem 2 erros de tipo — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (os 2 erros existem no `07898adf`, antes do `B-SAN3-07`, e são os mesmos depois dele) · **dono:** o próximo bloco na trava de `prisma/seed.ts` (`B-SAN3-18`, `PLANO_SAN3.md` §6), com ampliação nominal declarada no plano dele, ou um bloco próprio de higiene do seed · **bloqueia:** não (o seed roda com `tsx`, que não confere tipo, e o mapa de descrições tem fallback).
+- **prova (N = 2 erros; medido por `tsc` com um tsconfig fora do repositório que estende o `tsconfig.json` e inclui `prisma/seed.ts`, antes e depois do bloco):** `prisma/seed.ts(195,3) TS1360`: o `permissionDescriptions … satisfies Record<Permission, string>` não tem 43 das 205 permissões do catálogo (162 com descrição, contado por script); `prisma/seed.ts(257,48) TS2551`: o acesso `permissionDescriptions[permission]`, que cai no fallback genérico `Permissão ${permission}.`. `package.json:19` (`tsc -p tsconfig.json`) e `tsconfig.json` (`include: ["src/**/*.ts"]`) deixam o seed de fora, então nenhum job da CI pega erro de tipo no seed.
+- **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-06).
+- **teste de encerramento:** o seed entra num typecheck que roda na CI, com 0 erro, e as 205 permissões têm descrição.
 
 ## P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera diárias CALENDAR — MÉDIA
 

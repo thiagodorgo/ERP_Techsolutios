@@ -55,29 +55,23 @@ const MOTIVO_DESLIGADO =
 /**
  * Papéis do catálogo que NÃO têm linha global (`tenant_id IS NULL`) num banco recém-provisionado.
  *
- * MEDIDO em 2026-08-10: `prisma/seed.ts` itera apenas `STANDARD_ROLES` (super_admin, tenant_admin,
- * manager, field_dispatcher, technician, viewer) e NENHUMA migração faz `INSERT INTO roles`. Logo,
- * depois de `prisma migrate deploy` + `npm run db:seed` existem 6 linhas globais — os 7 papéis
- * abaixo não existem. Em bancos históricos (o de desenvolvimento tem 12) seis deles existem, e aí
- * são comparados normalmente: a isenção vale só para a AUSÊNCIA.
+ * B-SAN3-07 (item 47, `P-SAN3-04A-SEED-PAPEIS-LEGADOS`), medido em 2026-11-11: `prisma/seed.ts` semeia
+ * `DEFAULT_ROLES` menos `platform_admin`, a MESMA regra de `scripts/provision-rbac.ts`. Logo, depois de
+ * `prisma migrate deploy` + `npm run db:seed` existem 12 linhas globais, e só `platform_admin` fica sem
+ * linha. Antes do bloco eram 7 (os 6 `STANDARD_ROLES` + `auditor`), e esta lista isentava mais 5
+ * (`operator`, `finance`, `inventory`, `field_technician`, `support`): uma base preparada só pelo seed,
+ * como a do job `backend-postgres`, deixava sem concessão nenhuma o usuário desses perfis em modo `prisma`.
  *
- * `platform_admin` é caso à parte: pseudo-papel de plataforma, nunca teve linha em banco nenhum.
+ * `platform_admin` é pseudo-papel do plano de controle, resolvido pelos claims do JWT, e nunca tem linha
+ * em banco: com a linha, `findByKeyForTenant` o tornaria atribuível por qualquer organização. A isenção
+ * dele não basta, porque um `platform_admin` presente seria comparado com o catálogo inteiro e passaria;
+ * por isso a ausência dele é ASSERTADA (P2) no teste de concessões, abaixo.
  *
- * CONSEQUÊNCIA QUE ESTA LISTA DECLARA EM VOZ ALTA, em vez de esconder: como `field_technician` não
- * tem linha global num banco novo, a migração `20260862000000_reconcile_role_permission_grants`
- * (`WHERE r.key = 'field_technician'`) casa ZERO linhas lá — ela conserta os bancos já semeados,
- * não um provisionamento do zero. Corrigir isso exige mexer em `prisma/seed.ts` ou numa migração,
- * fora do escopo deste arquivo; fica registrado aqui para não passar por coberto.
+ * A migração `20260862000000_reconcile_role_permission_grants` (`WHERE r.key = 'field_technician'`)
+ * continua casando zero linhas num banco novo, porque roda antes do seed. Agora quem cria a linha global
+ * de `field_technician`, já com as concessões do catálogo, é o próprio seed.
  */
-const PAPEIS_SEM_LINHA_GLOBAL = new Set<string>([
-  "platform_admin",
-  "operator",
-  "finance",
-  "inventory",
-  "field_technician",
-  "auditor",
-  "support",
-]);
+const PAPEIS_SEM_LINHA_GLOBAL = new Set<string>(["platform_admin"]);
 
 test("toda permissão do catálogo existe na tabela `permissions` do banco", async (t) => {
   if (!PARIDADE_LIGADA) {
@@ -159,6 +153,64 @@ test("os grants do papel GLOBAL batem exatamente com ROLE_PERMISSIONS (nas duas 
         "Cada usuário é atribuído a UMA delas, então a que ele usa pode não ser a que tem o grant.",
     );
 
+    // B-SAN3-07 — P2 e P3 vivem DENTRO deste teste, e não num `test()` próprio, de propósito: o job
+    // `backend` roda `npm test` com DATABASE_URL e sem RBAC_DB_PARITY, e cada `test()` deste arquivo é um
+    // pulo. O orçamento de pulos de `scripts/run-backend-tests.mjs` (SKIP_BUDGET_DB = 2) cita NOMINALMENTE
+    // os dois testes deste arquivo; um terceiro estouraria o orçamento. Não renomeie os dois testes.
+
+    // P2 — plataforma fora do banco. A isenção de PAPEIS_SEM_LINHA_GLOBAL só cobre a AUSÊNCIA; um
+    // `platform_admin` presente seria comparado com o catálogo inteiro (que ele recebe) e passaria.
+    const plataforma: Array<{ n: number }> = await client.$queryRawUnsafe(
+      `select count(*)::int as n from roles where key = 'platform_admin' and tenant_id is null`,
+    );
+    assert.equal(
+      plataforma[0]?.n,
+      0,
+      "P2: o papel platform_admin tem linha global no banco. Ele é pseudo-papel do plano de controle (claims " +
+        "do JWT); com a linha, findByKeyForTenant o resolve para qualquer organização e um tenant_admin " +
+        "poderia atribuí-lo por POST /users. O seed exclui platform_admin, como scripts/provision-rbac.ts.",
+    );
+
+    // P3 — nome de negócio na organização que o seed cria (item 47, `P-CHK-SEED-DEMO-SUJO`). Vale SÓ em base
+    // SEMEADA: este arquivo também roda contra base provisionada sem seed (os drills de migração montam a base com
+    // `migrate deploy` + `db:provision-rbac` e rodam esta paridade), e lá não existe organização nenhuma.
+    //
+    // A SENTINELA de "a base foi semeada" é o registro de auditoria `seed.initialized` que o `prisma/seed.ts`
+    // grava (uma vez, idempotente) e que nenhum outro código cria. Não é a própria `demo`, de propósito: um seed
+    // que deixasse de criar a `demo` e continuasse gravando a sentinela tem de ficar VERMELHO, não passar em vazio.
+    //
+    // `audit_logs` tem RLS forçado e a política só mostra linha com o GUC da organização. Por isso a sentinela é
+    // medida de um jeito que vale para QUALQUER papel (PRE535-01, pré-revisão do PR #535): papel superusuário ou
+    // BYPASSRLS conta direto; papel sem bypass (a forma do papel de runtime de produção) conta organização por
+    // organização, com o GUC da política fixado na transação. A lista de organizações vem de `tenants`, que não tem
+    // RLS. Assim a base sem seed passa com qualquer papel, como passava antes do B-SAN3-07, e a base semeada aplica o
+    // P3 também com o papel sem bypass. Antes de contar sem bypass, confere que a política de `audit_logs` é mesmo
+    // a do GUC `app.current_tenant_id`; se não for, falha, porque contar sob outro GUC devolveria 0 em silêncio.
+    //
+    // Filtra a organização por `slug = 'demo'` porque na CI as suítes paralelas criam outras organizações na
+    // mesma base; o critério literal "nenhum nome de `tenants` contém Tenant" vale numa base só do seed.
+    const sentinela = await medirSentinelaDoSeed(client);
+    if (sentinela.n > 0) {
+      t.diagnostic(`P3 aplicado: a base foi semeada (sentinela seed.initialized = ${sentinela.n}; ${sentinela.forma})`);
+      const demo: Array<{ name: string }> = await client.$queryRawUnsafe(
+        `select name from tenants where slug = 'demo'`,
+      );
+      assert.equal(
+        demo.length,
+        1,
+        "P3: a base foi semeada (há o registro seed.initialized), mas a organização demonstração (slug = 'demo') " +
+          "não está nela. O seed base está incompleto.",
+      );
+      assert.doesNotMatch(
+        demo[0]!.name,
+        /tenant/i,
+        `P3: a organização demonstração tem nome técnico: "${demo[0]!.name}". Na tela é "organização", nunca ` +
+          "Tenant (CLAUDE.md, Parte B §3 e §11.1).",
+      );
+    } else {
+      t.diagnostic(`P3 não se aplica: a base não tem a sentinela do seed (provisionada sem db:seed; ${sentinela.forma})`);
+    }
+
     // LEFT JOIN acima: um papel global existente porém SEM nenhum grant precisa aparecer no mapa,
     // senão seria confundido com papel inexistente e cairia na isenção de PAPEIS_SEM_LINHA_GLOBAL.
     const noBanco = new Map<string, Set<string>>();
@@ -230,6 +282,53 @@ test("os grants do papel GLOBAL batem exatamente com ROLE_PERMISSIONS (nas duas 
     await client.$disconnect();
   }
 });
+
+const SENTINELA_DO_SEED_SQL =
+  "select count(*)::int as n from audit_logs where action = 'seed.initialized' and entity = 'database'";
+
+type Cliente = Awaited<ReturnType<typeof conectar>>["client"];
+
+/**
+ * Conta a sentinela do seed (`seed.initialized`) com QUALQUER papel. `audit_logs` tem RLS forçado: o papel com
+ * superusuário ou BYPASSRLS conta direto; o papel sem bypass conta organização por organização, com o GUC da política
+ * fixado na transação (`set_config(..., true)`), e a lista de organizações vem de `tenants`, que não tem RLS.
+ */
+async function medirSentinelaDoSeed(client: Cliente): Promise<{ n: number; forma: string }> {
+  const papel: Array<{ papel: string; atravessa: boolean }> = await client.$queryRawUnsafe(
+    `select current_user::text as papel, (rolsuper or rolbypassrls) as atravessa
+       from pg_roles where rolname = current_user`,
+  );
+  const nome = papel[0]?.papel ?? "?";
+  if (papel[0]?.atravessa === true) {
+    const linhas: Array<{ n: number }> = await client.$queryRawUnsafe(SENTINELA_DO_SEED_SQL);
+    return { n: linhas[0]?.n ?? 0, forma: `contagem direta, papel ${nome} com bypass de RLS` };
+  }
+
+  const politica: Array<{ n: number }> = await client.$queryRawUnsafe(
+    `select count(*)::int as n from pg_policies
+      where schemaname = current_schema() and tablename = 'audit_logs'
+        and qual like '%current_setting(''app.current_tenant_id''%'`,
+  );
+  assert.ok(
+    (politica[0]?.n ?? 0) > 0,
+    `P3: o papel da conexão (${nome}) não tem bypass de RLS, e a política de audit_logs não usa o GUC ` +
+      "app.current_tenant_id; contar a sentinela sob esse GUC devolveria 0 em silêncio e o P3 passaria em vazio.",
+  );
+  const organizacoes: Array<{ id: string }> = await client.$queryRawUnsafe(`select id::text as id from tenants`);
+  const n = await client.$transaction(
+    async (tx) => {
+      let total = 0;
+      for (const { id } of organizacoes) {
+        await tx.$queryRawUnsafe(`select set_config('app.current_tenant_id', $1, true)`, id);
+        const linhas: Array<{ n: number }> = await tx.$queryRawUnsafe(SENTINELA_DO_SEED_SQL);
+        total += linhas[0]?.n ?? 0;
+      }
+      return total;
+    },
+    { maxWait: 10_000, timeout: 120_000 },
+  );
+  return { n, forma: `organização por organização (${organizacoes.length}), papel ${nome} sem bypass de RLS` };
+}
 
 async function conectar() {
   const connectionString = process.env.DATABASE_URL;
