@@ -2252,6 +2252,17 @@ que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo mod
   (`displayName: 'Tenant Demo'`, medido na `origin/main@e7dcbbb7`). A fronteira do `B-SAN3-07` é só `prisma/seed.ts`;
   **leitura do redator, declarada (§A6):** o item 47 só fecha com as duas instâncias, e o plano do `B-SAN3-07` declara a
   ampliação nominal para esse arquivo do app (ou devolve a instância a um bloco mobile com dono escrito).
+- **apenso 2026-11-11 (`B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`): a instância do app fechou.** O plano do 19b assumiu o resíduo
+  (§2.5). `bootstrap_session.dart`: os `displayName` da sessão de demonstração passaram a `Organização Demonstração`
+  (as duas entradas) e `Organização Serviços de Campo`; `bootstrap_repository.dart` (`_tenantDisplayName`, só o nome
+  exibido): o app local usa o nome da sessão de demonstração pelo id e, fora dela, o id formatado sem a palavra
+  `tenant`. Testes: T8 (i)(ii)(iii) de `test/features/bsan319b_texto_exibido_test.dart`; M17 e M18 vermelhas.
+  **Ressalva (crítica r2, CRIT19B-R2-07):** quem já estava logado no app de demonstração segue vendo o nome antigo até
+  sair ou tocar em "Tentar de novo", porque o `bootstrapSessionProvider` usa primeiro o `restoreCached()` e o codec
+  guarda o `displayName` (`bootstrap_codec.dart`, fora do escopo; só o app de demonstração é afetado).
+  **Observação, fora do escopo (plano §2.5):** o e-mail do usuário de demonstração `tecnico@tenant.demo`
+  (`bootstrap_session.dart:116`, `login_screen.dart:132`) é dado do usuário, não texto de interface; trocá-lo mexe em
+  ~10 testes e no acesso rápido.
 
 ## P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do contêiner (BAIXA)
 
@@ -8931,7 +8942,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico, nome "flutter_app" e README de template — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`; a home, o manifest e o rótulo de papel fecharam no PR #487): guarda de todo texto exibido do app em 0 (fechamento abaixo).
+- status anterior: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
 - **fonte (fatia AUSENTES, §2a):** sintese B45, §6(a6)
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `shared/ui/home_screen.dart:153-154,407` `'${session.user.tenantRole} · …'`; `shared/ui/module_placeholder_screen.dart:42` "Permissao $requiredPermission nao retornou no bootstrap" (`/approvals`, `router.dart:253-255`); `android/app/src/main/AndroidManifest.xml:6` `android:label="flutter_app"`; `README.md` "A new Flutter project."
@@ -8948,6 +8960,23 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
   (`sync_action_labels.dart`)**, os 20 `lastSafeError` dos 4 replays e o do coordenador acentuados, 'Auto sync'/'Ultimo
   sync'; segue com `B-SAN3-19`: 'Checklists', 'Despesas (RDV)', lista de OS, home, placeholder, manifest, títulos do
   Diagnóstico (e `P-O6R11-TEXTOS-FORA-DE-D-T`).
+- **fechamento (2026-11-11, `B-SAN3-19b`):** o "guard de strings sem permissão/papel técnico" do teste de
+  encerramento é o T6 de `test/features/bsan319b_texto_exibido_test.dart`: lê a árvore sintática de todo
+  `lib/**/*.dart` e cobre os literais nas âncoras de exibição (argumentos `title`, `message`, `label`… e o `=` deles; o
+  1º argumento de `Text(`; os braços `=>` de função ou getter de rótulo; os ramos de `?:`, `??`, `+` e `switch`). Proíbe
+  chave `a:b`, chave de ação `a.b`, `bootstrap|backend|placeholder|workflow|token|tenant|local-first|payload|endpoint` e
+  papel cru (as chaves de `role_labels.dart`, lidas do arquivo). Medido no ramo: `exibidos=771 violacoes=0`, allowlist de
+  1 arquivo (`diagnostics_screen.dart`, só abre com `kIsDevMode`, conferido no teste), piso N0 = 771. Na base
+  (`a0979f51`) eram 24 violações; todas consertadas. O T6b prova na tela que a lista de despesas do app de
+  demonstração não mostra 'Aprovado manager', 'fila local-first', código de regra nem texto em inglês do banner de
+  política. O acesso não permitido das 10 telas, o placeholder e o README entram no mesmo PR.
+- **resíduo de classe, declarado (crítica r2 do plano, CRIT19B-R2-02, classe (2)):** a guarda é de **fonte** e não vê
+  texto montado só por interpolação de exceção: 4 `SnackBar` mostram `$e` cru (`work_order_execute_screen.dart:144`,
+  `checklist_run_screen.dart:126`, `checklist_acknowledgement_screen.dart:65`, `new_work_order_screen.dart:223`; no caso
+  de borda de organização divergente, `work_order_repository.dart:884` lança `StateError('Tenant mismatch')`). A Emenda 1
+  do plano escolheu a saída (a) só para o banner de política; esses 4 pontos ficaram fora do PERMITIDO e não foram
+  tocados. **Pergunta ao orquestrador, registrada no diário do dev:** abrir `P-MOBILE-TEXTO-TECNICO-INTERPOLADO`
+  (N = 4 SnackBars com `$e`) com dono, ou outro destino.
 
 ---
 
@@ -11927,7 +11956,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **dono:** `B-O6R-11b` (proposto pelo dev do 1º PR; ratificado pelo orquestrador em 2026-11-02 — leitura do orquestrador, declarada; o plano não nomeou).
 
 ## P-O6R11-TEXTOS-FORA-DE-D-T (2026-11-02) — textos de falha sem acento fora dos arquivos do 1º PR do `B-O6R-11` — BAIXA
-- status: ABERTA
+- status: FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`): os 4 literais acentuados e o aviso de integração sem a promessa de sincronizar (fechamento abaixo).
+- status anterior: ABERTA
 - **origem:** 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`) (emenda 4, nota de 02/11 da F7c). A F-T acentuou os 20 `lastSafeError` dos 4 replays e o do
   coordenador; ficaram, fora do PERMITIDO, `mobile/flutter_app/lib/core/sync/sync_engine.dart:54` ('Conflito remoto exige
   decisao manual.'), `lib/core/location/field_location_service.dart:160` e `lib/core/telemetry/telemetry_sync_service.dart:141`
@@ -11940,6 +11970,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   localmente e serao sincronizados quando a integracao estiver ativa.'), lançada por `field_location_api.dart:24` e
   `expense_remote_api.dart:63`; existe igual na `main` (`b56031b0`). Além de sem acento, o texto promete "serao
   sincronizados", o que a P-TELA-VERDADEIRA evita. O encerramento inclui reescrevê-la sem a promessa.
+- **fechamento (2026-11-11, `B-SAN3-19b`):** `sync_engine.dart:54` → 'Conflito remoto exige decisão manual.';
+  `field_location_service.dart:160` e `telemetry_sync_service.dart:141` → 'Falha de conexão. Tente novamente.';
+  `api_error.dart:43-44` → 'Integração remota ainda não disponível. Seus dados ficam guardados neste aparelho.'. Guarda:
+  T7 de `test/features/bsan319b_texto_exibido_test.dart` (0 ocorrências de `decisao manual`, `Falha de conexao` e
+  `Integracao remota` em literal de `lib/`, lido pela árvore sintática, sem comentário; `safeMessage` sem `sincroniz`),
+  com M15 e M16 vermelhas. A guarda viva do aviso falso de integração (`bo6r11_sync_screen_despesa_e_saida_test.dart`,
+  w3 e w3') passou a procurar as duas grafias (`RegExp('Integra[cç][aã]o remota')`), porque a forma acentuada virou
+  texto vivo (crítica r2 do plano, CRIT19B-R2-03); M25 vermelha.
 
 ## P-O6R-B11-PENDENCIAS-DO-RAMO-388 (2026-11-02) — índice das 12 pendências do ramo `fix/mobile-work-order-contracts` que não foram portadas — MÉDIA
 - status: ABERTA (índice; cada pendência vale pelo texto no ramo)
@@ -12537,6 +12575,16 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** corpo do PR #487, "Pendências propostas (não feitas)": "títulos sem acento no app (`Aprovacoes`, `Diagnostico`…), em bloco próprio". Relaciona-se com `P-O6R11-TEXTOS-FORA-DE-D-T` e com o apenso de 02/11 em `P-MOBILE-FAXINA-TERMOS-TECNICOS`.
 - **leitura do redator, declarada (§A6):** o nome do bloco é do redator deste registro.
 - **encerramento:** guard de termos sem acento nos textos exibidos do app, como o do `B-SAN3-21` na web, em `ocorrencias=0`.
+- **apenso 2026-11-11 (`B-SAN3-19b`; plano v2 §2.3, que NÃO abre pendência duplicada):** o 19b acentuou só o que tocou
+  (acesso não permitido, placeholder, P-O6R11, despesas). Exemplos medidos em `a0979f51` que ficam para cá: títulos de
+  módulo da sessão de demonstração (`bootstrap_session.dart`, `Gestao de Despesas`, `Operacoes de Campo`, `Estoque do
+  Tecnico`, `Aprovacoes`) e o mesmo mapa em `bootstrap_repository.dart:147-180`;
+  `geolocator_device_location_provider.dart:133,158,160` (`Permissao de localizacao negada…`);
+  `work_order_approval_request_screen.dart:56,88,94` (`Solicitar Aprovacao`); `evidence_picker.dart:89` (`Camera`); o
+  rótulo de regra `Recibo obrigatorio`/`Violacao de politica` (detalhe e banner de política, mesmo mapa; o título do
+  banner está preso por `expense_screens_test.dart:25`); `Em analise` (`expense_models.dart`); `ErrorState`,
+  `OfflineState` e `NetworkStatusBanner` em `erp_components.dart` (`Nao foi possivel carregar`, `disponiveis`,
+  `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 
@@ -12588,9 +12636,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-19-PLACEHOLDER-CHAVE-CRUA (2026-11-03) — placeholder do app mostra a chave crua da permissão — BAIXA
 
-- **status:** ABERTA · **escopo:** `pre-existente`, ressalva do porteiro do PR #487 · **dono:** `B-SAN3-19b` · **PR-alvo:** PR desse bloco pequeno · **bloqueia:** não.
+- **status:** FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`) · status anterior: ABERTA · **escopo:** `pre-existente`, ressalva do porteiro do PR #487 · **dono:** `B-SAN3-19b` · **PR-alvo:** PR desse bloco pequeno · **bloqueia:** não.
 - **origem medida:** `mobile/flutter_app/lib/shared/ui/module_placeholder_screen.dart:42` mostra a chave técnica.
 - **encerramento:** texto de negócio em PT-BR, sem chave crua, com widget test.
+- **fechamento (2026-11-11, `B-SAN3-19b`):** o placeholder mostra `Acesso não permitido` e o `blockedMessage` que o
+  roteador escreve por rota (`/approvals`, `/diagnostics`, os dois roteadores iguais); o cartão do ramo com permissão
+  diz `Em breve` e o banner de andaime saiu. Testes: `test/features/bsan319b_acesso_nao_permitido_test.dart` (T1b, as 4
+  chamadas e a paridade; T3, widget pelo `appRouter`; T2, a `assert` do componente contra chave técnica; T4, o gate
+  não mudou). Mutações M4, M8, M9, M19 e M26 vermelhas (`docs/revisoes/SAN3/B-SAN3-19b-dev.md`, F5).
 
 ## P-CLOUD-BILLING-3-APARENCIAS (2026-11-03) — Cloud Billing da plataforma ainda não segue o padrão aprovado — MÉDIA
 
@@ -13297,3 +13350,33 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `invoice.dispatch.ts` (o lease da linha `PROCESSING`) · **dono:** `B-ASS-08c`.
 - **origem:** conserto do #530 (plano v2 §3.4). Risco anterior ao conserto, que o desenho da órfã de hoje já aceita; o conserto não o piora.
 - **teste de encerramento:** conferência de lease (`claimed_by` + `attempt_started_at`) antes do `port.issue`, ou reconciliação que adota nota autorizada no provedor sem linha viva nossa e enfileira o cancelamento se o demonstrativo não estiver `paid`.
+
+## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
+  não muda permissão) · **dono:** a decidir pela Pergunta 2 do plano do `B-SAN3-19b` (recomendação (a): item novo no
+  portão, com bloco próprio de junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o
+  backend local) · **bloqueia:** a decidir na Pergunta 2.
+- **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
+- **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
+  crítica r2 executou `isValidPermission`/`getRolePermissions` em `07898adf`: inválidas e sem papel; as linhas de
+  `mobile/flutter_app/lib` abaixo foram medidas no ramo do `B-SAN3-19b`):
+  - **4 gates de tela:** `checklist_run:execute` (`checklist_available_screen.dart:58`), `inventory:read`
+    (`inventory_list_screen.dart:24`), `workflow:request` (`/approvals`, `router.dart:276,461`) e `diagnostics:read`
+    (`/diagnostics` fora do modo dev, `router.dart:151,338`);
+  - **1 gate de botão:** `inventory:write` (`inventory_list_screen.dart:37`, esconde Entrada e Saída do Estoque);
+  - **3 chaves sem efeito medido:** `ocr:run_local`, `receipt:attach`, `sync_diagnostics:read` (só nas listas de
+    sessão, `auth_repository.dart:242-245` e `bootstrap_session.dart:227-230`).
+- **forma:** o app compara por igualdade exata contra `actor.permissions` cru do backend (`permission_resolver.dart`;
+  `src/modules/mobile/mobile.routes.ts`), sem tabela de equivalência.
+- **causa:** o app nomeia `checklist_run:*` e `inventory:*`; o catálogo usa `checklist_runs:*` e `inventory_items:*`. O
+  mapa de navegação do bootstrap já usa a chave do catálogo para checklists (`bootstrap_repository.dart:165`,
+  `checklist_runs:read`) e as do app para estoque e aprovações (`:170`, `:175`); se esse `perms` filtra o menu não foi
+  medido.
+- **efeito (hipótese, não executada contra um backend real):** com login real, Checklists, Estoque, Aprovações e
+  Diagnóstico ficam bloqueados para todo perfil. No app de demonstração local, Aprovações e Estoque abrem e Checklists e
+  Diagnóstico ficam bloqueados. O `B-SAN3-19b` pôs nessas 4 telas um texto verdadeiro e neutro ("Esta área ainda não
+  está disponível no aplicativo."), sem "fale com o administrador", e o T9 do 19b prende isso ao catálogo.
+- **teste de encerramento:** cada gate de tela e de botão do app usa uma chave que `isValidPermission` aceita e que
+  algum papel recebe, com teste que lê o catálogo; o T9 do `B-SAN3-19b` passa a exigir "Fale com o administrador da
+  sua organização." nas 4 telas (a tabela dele vira 11/11 no catálogo).

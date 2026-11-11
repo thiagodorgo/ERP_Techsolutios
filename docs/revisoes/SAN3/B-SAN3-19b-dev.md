@@ -15,7 +15,7 @@
 - F3 — as 9 telas: FEITA (07:38)
 - F4 — despesas, P-O6R11, item 47, banner de política: FEITA (07:48)
 - F5 — README, piso N0 e mutações: FEITA (07:56)
-- F6 — registro e limpeza: EM APURAÇÃO
+- F6 — registro e limpeza: FEITA (registro); limpeza no fim, depois do PR
 
 ## F0 — vermelho-controle (07:19–07:31 SP; base `a0979f51`)
 
@@ -179,3 +179,38 @@ Testes da §3.2 e da Emenda 1, só nos literais: `b091_connectivity_profile_test
 **Grep da trava do §5** sobre `git diff origin/main...HEAD -U0 -- mobile/flutter_app/lib` (07:54): **2 linhas**, as duas exceções nomeadas:
 - `-                  'Permissao $requiredPermission nao retornou no bootstrap. O backend continua sendo autoridade final.',` — texto removido (casa `requiredPermission` por estar dentro da interpolação);
 - `+    if (demo.isNotEmpty) return demo.first.displayName;` — o resolvedor de nome local de `bootstrap_repository.dart` (exceção declarada pela Emenda 1, item 4 / R2-06): só decide o `displayName`; `tenantId` e `permissions` não passam por ele.
+
+## Bateria final (§6 do plano; 07:56:55–07:58:20 SP; head `f2639513`)
+
+| Comando (em `mobile/flutter_app`) | Exit | Saída resumida |
+|---|---|---|
+| `flutter pub get` | 0 | ok |
+| `dart format --output=none --set-exit-if-changed` nos 33 arquivos de `lib`/`test` tocados (`git diff --name-only origin/main...HEAD -- lib test`) | 0 | `Formatted 33 files (0 changed)` |
+| `flutter analyze` | 0 | `No issues found!` |
+| `flutter test` dos 3 `bsan319b_*` | 0 | **`+18: All tests passed!`** (`[T1] chamadas=10`, `[T1-alcance] achadas=10 referencia=10`, `[T1b] chamadas=4`, `[T6] exibidos=771 violacoes=0 allowlist=2`, `[T5] chaves=API_BASE_URL,ERP_APP_VERSION,ERP_AUTH_MODE,ERP_ENV`) |
+| regressões da §3.2 (os 3 `bsan319_*`, b083, b085, b086, `work_orders/work_order_test.dart`, b091, b098, bo6r11, `core/evidence_sync_test.dart`) | 0 | **`+178: All tests passed!`** |
+| `flutter test --reporter compact` (suíte inteira) | 0 | **`00:41 +1118: All tests passed!`** (0 `[E]`, 0 pulados) |
+| `git diff --check origin/main...HEAD` (na raiz) | 0 | vazio |
+
+- **Contagem:** +1118 no head, dos quais 18 são os testes novos deste bloco. A base `a0979f51` não foi medida inteira por mim; a crítica r2 mediu `+1100` em `07898adf` com o conserto simulado, o que é coerente com 1118 − 18 (derivado, não medido).
+- **Format, declarado (CRIT19B-07(a)):** o `format` foi rodado só nos arquivos tocados, como o plano manda; o do repositório inteiro falha no Flutter local 3.41.6 por `bsan313_minhas_os_escopo_test.dart`, anterior ao bloco. O juiz é o job `flutter` do CI (3.47.5).
+
+## F6 — registro (07:58–07:59 SP)
+
+- `agent-orchestration/controle/pendencias.md`:
+  - **fechadas:** `P-SAN3-19-PLACEHOLDER-CHAVE-CRUA`, `P-O6R11-TEXTOS-FORA-DE-D-T`, `P-MOBILE-FAXINA-TERMOS-TECNICOS` (cada uma com a linha `status: FECHADA (2026-11-11, B-SAN3-19b, …)`, o `status anterior` e um parágrafo de fechamento com teste e mutação);
+  - **apensos:** `P-CHK-SEED-DEMO-SUJO` (a instância do app fechou; a ressalva do bootstrap em cache, R2-07; o e-mail de demonstração como observação) e `P-MOBILE-TITULOS-SEM-ACENTO` (os exemplos da §2.3, medidos);
+  - **aberta:** `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` (ALTA, `pre-existente`; N = 4 gates de tela + 1 gate de botão `inventory:write` + 3 chaves sem efeito, R2-08; forma; causa; dono pela Pergunta 2).
+- `docs/revisoes/SAN3/PLANO_SAN3.md`, linhas dos itens 47 e 48: só a nota do resíduo do app.
+- `agent-orchestration/codex/comandos/B-SAN3-19b-placeholder-e-readme.md`: o comando do bloco.
+- **Conferência do classificador do índice, sem gravar o índice:** rodei `gerar-indice-pendencias.py` sobre uma **cópia** do `pendencias.md` no scratchpad: `{'FECHADA': 196, 'ABERTA': 627, 'SEM-STATUS': 4}`; as 3 fechadas caem em FECHADAS, a nova em ABERTAS balde A, nenhuma contraditória. O `pendencias-indice.md` do repositório **não** foi regenerado: está fora do PERMITIDO do §4 (o próprio índice diz que, se divergir, vale o `pendencias.md`). Pergunta abaixo.
+
+## Desvios e perguntas ao orquestrador
+
+1. **Guardas por árvore sintática** (`package:analyzer`, dependência transitiva, precedente `bo6r11_guard_fila_await_ast_test.dart`), e não por balanceador de parênteses à mão. Mesmo arquivo, mesmo critério; declarado na F0.
+2. **T6b**, teste de widget novo dentro de `bsan319b_texto_exibido_test.dart` (arquivo do PERMITIDO), que a Emenda 1 pede (itens 1 e 2). Ele recorta a subárvore da `TenantContextBar` por causa do e-mail de demonstração (fora do escopo, §2.5).
+3. **M27 e M28** são mutações minhas para o banner de política (a Emenda 1 pede "mais uma mutação"); não há M14 no plano.
+4. **Resíduo de classe da R2-02 (2), sem dono:** 4 `SnackBar` mostram `$e` cru (`work_order_execute_screen.dart:144`, `checklist_run_screen.dart:126`, `checklist_acknowledgement_screen.dart:65`, `new_work_order_screen.dart:223`). A Emenda 1 escolheu a saída (a) só para o banner; esses arquivos/linhas estão fora do PERMITIDO e **não foram tocados**. Registrei o resíduo no fechamento da `P-MOBILE-FAXINA-TERMOS-TECNICOS`. **Pergunta:** abrir `P-MOBILE-TEXTO-TECNICO-INTERPOLADO` (N = 4) com dono, ou outro destino? Não abri por conta própria.
+5. **`pendencias-indice.md`** não regenerado (fora do PERMITIDO). **Pergunta:** regenerar no PR semanal de registro ou neste PR, por emenda?
+6. **`'Camera'` → `'Câmera'`** em `_captureLabel`: permitido pelo plano, não exigido; feito. O outro `'Camera'` (`evidence_picker.dart:89`) ficou para a `P-MOBILE-TITULOS-SEM-ACENTO`.
+7. **`TODO-DONO` (Pergunta 1 = A):** as 4 mensagens de Checklists, Estoque, `/approvals` e `/diagnostics`. Se o dono responder B ou C, o orquestrador escreve a emenda.
