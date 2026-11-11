@@ -102,6 +102,11 @@ void main() {
         expect(porId['b']!.status.label, 'No local');
         expect(porId['b']!.priority, WorkOrderPriority.normal);
         expect(porId['c']!.status, WorkOrderStatus.enRoute);
+        // P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA: de "Em rota" o app segue até o "No local".
+        expect(
+          porId['c']!.status.canTransitionTo(WorkOrderStatus.arrived),
+          isTrue,
+        );
         expect(porId['c']!.priority, WorkOrderPriority.high);
         // PR534-03: de "Despachada" o app inicia a rota (antes vinha "Agendada", que só vai a Despachada).
         expect(porId['d']!.status, WorkOrderStatus.dispatched);

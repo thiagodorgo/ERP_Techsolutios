@@ -62,3 +62,49 @@
 - `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-work-order-contract.test.ts tests/b-o6r-11d-lote-tecnico-esperado.test.ts tests/o6r07c-b-scope.test.ts tests/mobile-work-order-assign-registry.test.ts` → `# tests 202 # pass 202 # fail 0 # skipped 0` (N5 e N9 verdes; o controle positivo do 07c, lote SEM a chave, continua aceito).
 - **Flutter, os 5 arquivos do bloco** → `+18: All tests passed!` (T9 verde).
 - **Regressões do plano** (`b109`, `b126`, `b127`, `b103`, `b099`, `bsan313_minhas_os_escopo`, `bsan313_os_purga_reconcilia`, `bsan313_retencao_ciclo2`, `test/core/sync/`) → `+236: All tests passed!`.
+
+### F3 — mutações literais, rodada R-M (11:26–11:31 SP; T5 reforçado às 11:35)
+
+- **Instrumento:** `rm_runner.py` (scratchpad, não versionado): para cada mutação, `text.count(origem) == 1` antes de aplicar (o `grep -cF` da regra R-M; outro número para a rodada e vira emenda), aplicação isolada numa cópia, o teste-dono pelo arquivo inteiro (`flutter test --no-pub <arquivo> --reporter expanded` ou `node --test --test-reporter=tap --import tsx <arquivo>`, sob `CORE_SAAS_PERSISTENCE=memory`), exigência de `ec ≠ 0` E da linha `[E]`/`not ok` do teste-dono, e restauro do arquivo com comparação byte a byte. `git status --porcelain` depois da rodada: só os 2 arquivos novos de registro.
+- **Resultado: 34 de 34 VERMELHAS, todas restauradas** (`ok_all True`). As do plano: M1, M2, M3, M15, M4, M6, M5, M5b, M16, M7, M10, M7c, M14r, M8, M8b, M13, M14, M14e, M9, M9b, M10b, M9c, M12, M11, M11b, M7f, MA1, MA3, MA4, MA2, M-N8. **Novas, declaradas:** `M-ID` (CR2-11D-04, `if (id is String && id.trim().isNotEmpty) return;` → `return;` → T13), `M4b` (CR2-11D-07(a), apagar `  'paused': WorkOrderStatus.paused,` → T4: o casamento pelo nome do app não salva a entrada explícita) e `M6b` (CR2-11D-07(b), no `_backendPriority`, só na cópia de mutação, `'critical' => 'urgent',` → `'critical' => 'critical',` → T6). A M-IDX é da F4.
+- **CR2-11D-01 provado:** M9, M9b e M10b ficam vermelhas (o T9 e o T10b passam o lote capturado pelo `WorkOrderSyncCodec().encodeRequest`; o T9c e o T10b usam o `WorkOrderSyncReplayService`).
+- **Desvio de forma declarado:** a M14 acrescenta a linha depois do fim de `_workOrderFromRemoteJson` ancorada no trecho `    updatedAt: _parseDate(strOpt('updatedAt', 'updated_at')),\n  );\n}\n` (único), porque a linha nova não tem texto de origem; a M14e acrescenta `// remoteApi.fetchWorkOrder(` depois da linha `  Future<WorkOrderMutationResult> assignRegistry(` de `work_order_repository.dart`.
+
+| id | arquivo | grep -cF | teste-dono (saída) | resultado |
+|---|---|--:|---|---|
+| M1 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 3 [E]; dono T1: vermelho=True; Some tests failed. | VERMELHO |
+| M2 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 3 [E]; dono T2: vermelho=True; Some tests failed. | VERMELHO |
+| M3 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 3 [E]; dono T3: vermelho=True; Some tests failed. | VERMELHO |
+| M15 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T13: vermelho=True; Some tests failed. | VERMELHO |
+| M-ID | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T13: vermelho=True; Some tests failed. | VERMELHO |
+| M4 | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T4: vermelho=True; Some tests failed. | VERMELHO |
+| M4b | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T4: vermelho=True; Some tests failed. | VERMELHO |
+| M6 | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T6: vermelho=True; Some tests failed. | VERMELHO |
+| M6b | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T6: vermelho=True; Some tests failed. | VERMELHO |
+| M5 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_lista_e_linha_do_tempo_test.dart` ec=1: 1 [E]; dono T5: vermelho=True; Some tests failed. | VERMELHO |
+| M5b | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_lista_e_linha_do_tempo_test.dart` ec=1: 2 [E]; dono T5: vermelho=True; Some tests failed.<br>`bo6r11d_lista_e_linha_do_tempo_test.dart` ec=1: 2 [E]; dono T12: vermelho=True; Some tests failed. | VERMELHO |
+| M16 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_lista_e_linha_do_tempo_test.dart` ec=1: 1 [E]; dono T12: vermelho=True; Some tests failed. | VERMELHO |
+| M7 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7: vermelho=True; Some tests failed. | VERMELHO |
+| M10 | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7: vermelho=True; Some tests failed.<br>`bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T10: vermelho=True; Some tests failed. | VERMELHO |
+| M7c | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7b: vermelho=True; Some tests failed. | VERMELHO |
+| M14r | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T14: vermelho=True; Some tests failed.<br>`bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7b: vermelho=True; Some tests failed. | VERMELHO |
+| M8 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T8: vermelho=True; Some tests failed. | VERMELHO |
+| M8b | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T8: vermelho=True; Some tests failed. | VERMELHO |
+| M13 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T11: vermelho=True; Some tests failed. | VERMELHO |
+| M14 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_guard_contrato_test.dart` ec=1: 1 [E]; dono G1: vermelho=True; Some tests failed. | VERMELHO |
+| M14e | `lib/features/work_orders/data/work_order_repository.dart` | 1 | `bo6r11d_guard_contrato_test.dart` ec=1: 1 [E]; dono G1: vermelho=True; Some tests failed. | VERMELHO |
+| M9 | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T9: vermelho=True; Some tests failed. | VERMELHO |
+| M9b | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T9: vermelho=True; Some tests failed. | VERMELHO |
+| M10b | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T10b vermelho=True; Some tests failed. | VERMELHO |
+| M9c | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T9c vermelho=True; Some tests failed. | VERMELHO |
+| M12 | `test/features/work_orders/bo6r11d_work_order_contract.json` | 1 | `b-o6r-11d-work-order-contract.test.ts` ec=1: 1 not ok; dono N3] vermelho=True; # tests 5 # pass 4 # fail 1<br>`bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T2: vermelho=True; Some tests failed. | VERMELHO |
+| M11 | `test/features/work_orders/bo6r11d_work_order_contract.json` | 1 | `b-o6r-11d-work-order-contract.test.ts` ec=1: 1 not ok; dono N1] vermelho=True; # tests 5 # pass 4 # fail 1<br>`bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T8: vermelho=True; Some tests failed. | VERMELHO |
+| M11b | `test/features/work_orders/bo6r11d_work_order_contract.json` | 1 | `b-o6r-11d-work-order-contract.test.ts` ec=1: 1 not ok; dono N2] vermelho=True; # tests 5 # pass 4 # fail 1<br>`bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T9: vermelho=True; Some tests failed. | VERMELHO |
+| M7f | `test/features/work_orders/bo6r11d_work_order_contract.json` | 1 | `b-o6r-11d-work-order-contract.test.ts` ec=1: 1 not ok; dono N4] vermelho=True; # tests 5 # pass 4 # fail 1<br>`bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7: vermelho=True; Some tests failed. | VERMELHO |
+| MA1 | `src/modules/mobile/mobile-work-order-sync.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 2 not ok; dono N5] vermelho=True; # tests 5 # pass 3 # fail 2 | VERMELHO |
+| MA3 | `src/modules/mobile/mobile-work-order-sync.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 1 not ok; dono N6] vermelho=True; # tests 5 # pass 4 # fail 1 | VERMELHO |
+| MA4 | `src/modules/mobile/mobile-work-order-sync.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 1 not ok; dono N9] vermelho=True; # tests 5 # pass 4 # fail 1 | VERMELHO |
+| MA2 | `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 1 not ok; dono N7] vermelho=True; # tests 5 # pass 4 # fail 1 | VERMELHO |
+| M-N8 | `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 1 not ok; dono N8] vermelho=True; # tests 5 # pass 4 # fail 1 | VERMELHO |
+
+- **T5 reforçado (11:35):** para a `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` (PR534-03), o T5 afirma também que a OS em "Em rota" vinda do pull pode seguir para "No local" (`canTransitionTo(WorkOrderStatus.arrived)`). T5 verde; M5 e M5b re-executadas, vermelhas e restauradas.
