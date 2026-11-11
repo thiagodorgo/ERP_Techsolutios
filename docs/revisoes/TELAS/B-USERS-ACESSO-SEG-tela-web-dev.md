@@ -115,7 +115,27 @@ tests/auth-troca-senha.adapter.test.ts tests/troca-senha-live.test.tsx tests/apa
 
 ## 3. Mutações
 
-(em apuração)
+Commit da fatia 1: `a351468a` (empurrado às 22:14). Cada mutação é literal, uma por vez, aplicada por script (âncora com
+exatamente 1 ocorrência), seguida do teste-dono, e revertida por `git checkout -- <arquivo>` com `git status` limpo
+conferido no arquivo (`scratchpad/t1-mutate.mjs`; saída de cada uma em `scratchpad/t1-mut-<id>.log`).
+
+**Desvio do semáforo, declarado.** O primeiro lote (W1, RQ-1 (b), W2, W3, W4; 22:15:13–22:15:47) rodou com o semáforo em
+`VERMELHO 01:15:06Z ram_livre=0`: li a linha e não travei. Eram 5 execuções de um arquivo de teste cada (sem `npm ci`,
+build nem suíte). Daqui em diante, cada passo pesado espera o `t1-gate.sh` (VERDE, ou AMARELO até 22:45, e commit livre
+≥ 2.048 MB, medido de 5 em 5 minutos).
+
+| Id | Mutação literal (arquivo) | Teste-dono | Resultado com a mutação |
+|---|---|---|---|
+| W1 | `mustChangePassword: payload.data.must_change_password !== false,` → `mustChangePassword: false,` (`auth.adapter.ts`, `mapLoginResponse`) | `auth-troca-senha.adapter` | `not ok 1 [W1·iii]`, `not ok 2 [W1·i]`, `not ok 3 [W1]` · 8/11 |
+| RQ-1 (b) | a falha fechada → `payload.data.must_change_password === true` (`mapLoginResponse`) | idem | `not ok 2 [W1·i]` (caso (i) do W1), `not ok 3 [W1]` · 9/11 |
+| W2 | `return PASSWORD_CHANGE_MESSAGES[…]` → `return body?.message ?? PASSWORD_CHANGE_MESSAGES[…]` (`readPasswordChangeErrorMessage` devolve a mensagem do corpo) | idem | `not ok 6 [W2] cada linha do mapa…`, `not ok 10 [RQ-6]` (o texto do 401 vira o do servidor) · 9/11 |
+| W3 | `isAuthenticated: !!session && session.mustChangePassword !== true,` → `isAuthenticated: Boolean(session),` (`AuthProvider.tsx`) | `troca-senha-live` | `not ok 1 [W3]` · 19/20 |
+| W4 | o desvio `return session?.mustChangePassword === true;` → `return false;` (`isPasswordChangeSession`, `LoginPage.tsx`) | idem | `not ok 1 [W3]`, `not ok 2 [W4]` · 18/20 |
+
+Vermelho-controle no objeto `e09e9667` (as linhas "sim" de T.2): no objeto o campo nem é lido e não existe tela nem rota
+`/change-password` (`git show e09e9667:frontend/src/modules/auth/auth.adapter.ts | grep -c must_change_password` = 0;
+`git show e09e9667:frontend/src/App.tsx | grep -c change-password` = 0). W1, W3 e W4 são mortos pelas mutações acima, que
+devolvem exatamente o comportamento do objeto em cada ponto (campo ignorado; sessão restrita autenticada; desvio ausente).
 
 ## 4. Bateria
 
