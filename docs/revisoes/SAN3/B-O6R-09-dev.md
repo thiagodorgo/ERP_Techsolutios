@@ -350,3 +350,20 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
   - fora a renumeração das linhas, o diff do índice é só as 9 entradas do bloco e os placares;
   - troquei "crítica r2" por "revisão r2 do plano" em 2 pendências minhas: o classificador lê a palavra "crítica" como
     severidade, a classe da `P-INDICE-PENDENCIAS-CRITICA-COMO-SEVERIDADE`, e dava CRÍTICA a duas pendências BAIXA/MÉDIA.
+- **Depois da Emenda 2, `npm test` na forma do job `backend` (05:18–05:29; banco próprio só migrado, Redis próprio,
+  `CORE_SAAS_PERSISTENCE=memory`):** TAP com **5 027 testes, 5 015 ok, 10 not ok e 2 skipped** (os 2 de `RBAC_DB_PARITY`).
+  - **Os 2 vermelhos do bloco sumiram:** o T13 e a linha-mãe dele não aparecem mais.
+  - **Os 10 not ok, um a um, todos de ambiente ou anteriores ao bloco:**
+    1. a 4. `san3-05-runtime-role-guard-db` T14a/b, T14c e T14d ("setsid: ausente", exige o `psql` 16 e o `setsid` do
+       Linux);
+    5. o T15 da mesma suíte ("condição de boot não apareceu em 15000ms", sob a carga da suíte inteira). Rodado sozinho
+       2× logo depois (05:30–05:31), deu `ok 11 - T15` nas duas vezes;
+    6. a linha-mãe da mesma suíte;
+    7. e 8. `san3-09-bootstrap-platform-admin-db` T2.1 e a linha-mãe (o `migrate deploy` pelo script de shell
+       `node_modules/.bin/prisma` sai com 1 no Windows);
+    9. `traccar-event-migration-drill-db` (`EBUSY … rmdir` do temporário);
+    10. e 11. os 2 casos "tempo esgotado" de `traccar-position-ingestion-db` (caem também na `main`).
+  - **Declarado (lição do Adendo 2 do precedente do B-TRC-01):** quem decide o T14 e o T15 do B-SAN3-05 e o T2 do san3-09
+    é o CI em Linux. O bloco não cria tabela, view nem papel: só a coluna `idempotency_key`, o CHECK e o índice. Então o
+    contador `tabelas_com_dml` do T14a/b e o L0 do T13 não mudam por construção. O T13 local, que não depende de `psql`,
+    deu 35/35.
