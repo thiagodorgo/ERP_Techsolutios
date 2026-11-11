@@ -1,11 +1,12 @@
-import { Router, type Response } from "express";
+import { Router, type Request, type Response } from "express";
 
 import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/persistent-rbac-context.middleware.js";
 import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
-import { handleAsyncRoute } from "../core-saas/routes/http.js";
+import { handleAsyncRoute, sendRouteError } from "../core-saas/routes/http.js";
 import { ServiceQuoteController, type ServiceQuoteServiceResolver } from "./service-quote.controller.js";
 import { createDefaultServiceQuoteService } from "./service-quote.service.js";
+import { ServiceQuoteError } from "./service-quote.types.js";
 
 type ControllerResult = {
   readonly status?: number;
@@ -73,9 +74,7 @@ export function createServiceQuoteRouter(
   router.post(
     "/service-quotes/:serviceQuoteId/approve",
     requirePermission(SERVICE_QUOTE_PERMISSIONS.approve),
-    handleAsyncRoute(async (request, response) => {
-      sendResult(response, await controller.approve(request));
-    }),
+    handleApproveRoute((request) => controller.approve(request)),
   );
 
   // Ω3F-4b — compartilhar (gera/reusa token); reusa service_quotes:update (quem edita compartilha).
@@ -88,6 +87,25 @@ export function createServiceQuoteRouter(
   );
 
   return router;
+}
+
+// B-O6R-09 · fatia 6 (emenda 1.1 EM1-02; molde: `financial-period-close.routes.ts`) — wrapper LOCAL da rota de aprovar:
+// um `ServiceQuoteError` com `details` (a repetição leva o `workOrderId` da OS já criada) é serializado com eles; o resto
+// cai no `sendRouteError` compartilhado, que descarta campos além de código, motivo e mensagem.
+function handleApproveRoute(handler: (request: Request) => Promise<ControllerResult>) {
+  return async (request: Request, response: Response): Promise<void> => {
+    try {
+      sendResult(response, await handler(request));
+    } catch (error) {
+      if (error instanceof ServiceQuoteError && error.details) {
+        response.status(error.statusCode).json({
+          error: { code: error.code, reason: error.reason, message: error.message, details: error.details },
+        });
+        return;
+      }
+      sendRouteError(response, error);
+    }
+  };
 }
 
 function sendResult(response: Response, result: ControllerResult): void {

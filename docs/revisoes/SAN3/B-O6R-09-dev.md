@@ -108,3 +108,61 @@ T14(c) usa a forma (ii) pelo mesmo motivo.
   acha registro da escolha (a) ou (b) do v2 §4.3 (só a pendência antiga `P-O6R-B09`). Não decido isso: o commit desta
   fatia fica local no ramo e o PR declara a verificação como pendente do orquestrador. O carimbo da migração se refaz
   numa linha se o B-O6R-12 entrar antes (opção (a)).
+
+## Fatia 6 — aprovação do orçamento numa transação só (emenda 1 + emenda 1.1)
+
+- 04:01 — a emenda 1.1 chegou (`saidas-v3/emenda11-o6r09/saida/plano-B-O6R-09-emenda1-1.md`, 190 linhas, 0 pergunta ao
+  dono). Li inteira antes do código desta fatia. Ela prevalece sobre a emenda 1, que prevalece sobre o v2.
+- **Testes primeiro, vermelho-controle no `src/` da `main` para orçamento e OS (a branch ainda não tocava esses módulos):**
+  - `tests/b-o6r-09-quote-approve-memory.test.ts`: 5 vermelhos (falha no evento: sobrou OS; vínculo: OS órfã; T25c:
+    o perdedor sem `details`; T25c-rb: o 2º recebeu 409 em vez de criar; T22: sem `details`), 2 verdes declarados
+    (falha na escrita da OS: a compensação de hoje cobre; T25d de paridade: guarda da divisão do `create`);
+  - asserções acrescentadas em `service-quote-approve.test.ts` (corrida e repetição) e `service-quotes-routes.test.ts`
+    (repetição): 3 vermelhos (sem `details.workOrderId`). Só acréscimo; a única linha trocada é `await svc.approve(...)`
+    → `const first = await svc.approve(...)`, para ter o id;
+  - `tests/b-o6r-09-quote-approve-atomic-db.test.ts`: 8 vermelhos (T19 e T19 NOBYPASSRLS: sobrou OS; T20: OS órfã;
+    T20b código: timeout, a 2ª não espera no índice na `main` — vermelho pela forma, e a emenda 1.1 já declara este caso
+    como guarda sem vermelho-controle; T21 e T21 rollback: timeout, na `main` a 2ª não espera a linha do orçamento —
+    pela forma; T22 e T22b: sem `details`), 4 verdes declarados (T20b OS e T20b vistorias: a compensação de hoje
+    cobre; serviço sem destino; T23);
+  - `tests/b-o6r-09-quote-approve-pool-db.test.ts` (T24): verde na `main` (sem transação; guarda do desenho, controle
+    pela MQ7). O autocontrole do arnês passou: o cliente global é o instalado, e a 3ª transação recusou com P2028 em
+    2 010 ms.
+- **Medido no arnês, registrado:** a composição padrão do serviço de OS NÃO monta `resolveApplicableChecklists`
+  (`work-order.service.ts`, comentário "entre o 04c-A e o 04c-B não existe rota nem permissão que crie uma regra"). Para a
+  OS do orçamento gravar a vistoria (o caso `[Q2 · vistorias]` da emenda 1.1), o teste liga o porto no singleton do
+  serviço de OS padrão e o desliga no fim. O controle positivo do caso confere 1 linha em `work_order_checklists`.
+- **Código:**
+  - `src/modules/work-orders/work-order-scope.ts` (novo): `WorkOrderWriteRepository`, `MemoryWorkOrderScope`,
+    `WorkOrderWriteScope` e `workOrderRepositoryForScope`;
+  - `work-order.repository.ts`: só `openStagedScope()` (delega aos `nextCode`/`create`/`createEvent` reais e sabe
+    desfazer, de forma síncrona);
+  - `work-order.service.ts`: o `create` dividido em `prepareCreate` e `persistPreparedCreate` por um script que copia os
+    dois trechos VERBATIM e só troca `this.repository.` por `repository.` nas 3 escritas (`git diff`: +14/−3 no corpo do
+    `create`, mais o `openMemoryWorkOrderScope` e o tipo `PreparedWorkOrderCreate` junto do `memoryRepository`, e um
+    import na linha 91, longe da linha 16 que o B-SAN3-26 mexe);
+  - orçamento: `approveWithWorkOrder` (Rls: `withTenantRls`, CAS, OS pelo `tx`, vínculo condicional que lança;
+    memória: reserva e registro em voo no mesmo passo síncrono, espera do perdedor, desfazer síncrono), `ServiceQuoteError`
+    com `details`, o construtor único `quoteAlreadyApproved`, as duas saídas da repetição com textos distintos, e o
+    wrapper local da rota de aprovar;
+  - registro: `D-B-O6R-09-REPLAY-ORCAMENTO-409` em `decisoes.md`.
+- **Testes que fecham a fatia:** memória + regressões de orçamento e OS (`service-quote*`, `work-orders*`,
+  `work-order-checklists-sticky`, `work-order-cancel-duplicate`, `work-order-origin-destination`) + guarda: 163/163;
+  `quote-approve-atomic-db` 13/13; `quote-approve-pool-db` 2/2 (4 aprovações em 374 ms, 0 recusa).
+- **PARADA REGISTRADA (D-EMENDA-ANTES-DO-CODIGO), D-W2 — o plano não fecha no ratchet do B-SAN3-05:**
+  `tests/san3-05-acessos-de-plataforma-guard.test.ts` (T13, o ratchet semântico dos acessos a tabelas FORCE RLS) fica
+  VERMELHO com uma chave nova, gerada pela forma que a emenda dita para `work-order-scope.ts`:
+  `L2	src/modules/work-orders/work-order-scope.ts	new PrismaWorkOrderRepository(scope.tx)	OUTRO(scope.tx)	×1`.
+  O gerador só absolve `new X(tx)` quando o `tx` é o parâmetro do callback de um envoltório confiado; `scope.tx` é uma
+  propriedade, então ele a classifica como suspeita. O arquivo do ratchet está FORA do PERMITIDO do v2 e das emendas, e
+  acrescentar chave ao congelado é "o ato consciente que o ratchet existe para exigir" (precedente: B-TRC-01, por
+  decisão do orquestrador em `docs/revisoes/TRACCAR/B-TRC-01-DECISAO-T13.md`). **Não editei o ratchet.** As duas saídas,
+  para quem decide (orquestrador/planejador):
+  1. acrescentar a chave em `NOVAS` com o motivo (proposta de texto: "B-O6R-09 fatia 6: o escopo de escrita recebe o
+     `tx` do callback de `withTenantRls` em `RlsPrismaServiceQuoteRepository.approveWithWorkOrder` (setter do GUC como 1ª
+     instrução, `src/database/rls.ts`); é o único chamador, e o tipo `WorkOrderWriteScope` só nasce ali"), o que pede pôr o
+     arquivo do ratchet no PERMITIDO por emenda;
+  2. emendar o desenho para que `new PrismaWorkOrderRepository(tx)` nasça dentro do callback de `withTenantRls` (no
+     repositório Prisma do orçamento), o que muda a âncora `return new PrismaWorkOrderRepository(scope.tx);` e a lista da
+     guarda (iv).
+  Até a decisão, `npm test` tem exatamente esse vermelho, e o PR o declara.

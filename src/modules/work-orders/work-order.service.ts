@@ -88,6 +88,7 @@ import {
   type WorkOrderChecklistRole,
 } from "./work-order-checklists.types.js";
 import type { ChecklistApplicabilityMatch } from "../checklists/applicability/checklist-applicability.resolution.js";
+import type { MemoryWorkOrderScope, WorkOrderWriteRepository } from "./work-order-scope.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -517,6 +518,20 @@ export class WorkOrderService {
     // bloquearia orçamentos MANUAIS ou de tarifa arquivada). Ver D-Ω3F-4B-APPROVE-SKIP-TARIFF.
     options?: { readonly skipApplicableTariffCheck?: boolean },
   ): Promise<WorkOrder> {
+    return this.persistPreparedCreate(this.repository, await this.prepareCreate(actor, body, options), actor);
+  }
+
+  // B-O6R-09 · fatia 6 (emenda 1 §1.4; emenda 1.1 EM1-07) — o `create` dividido em duas fases, SEM mudar conteúdo nem
+  // ordem: `prepareCreate` faz as leituras e validações (cliente, veículo, equipe, catálogo, destino, tarifa e vistorias)
+  // e devolve o que resolveu, mais o corpo e as opções; `persistPreparedCreate` monta a entrada da OS e grava `nextCode`,
+  // `create` e `createEvent` pelo repositório RECEBIDO. O `create` público segue com `this.repository` (uma transação por
+  // chamada, como antes); a aprovação do orçamento passa o repositório preso ao `tx` dela, e as leituras ficam fora da
+  // transação (não pedem uma 2ª conexão). Declarado: a validação do título passa a rodar dentro dela.
+  async prepareCreate(
+    actor: WorkOrderActorContext,
+    body: RawRecord,
+    options?: { readonly skipApplicableTariffCheck?: boolean },
+  ) {
     const customerId = parseOptionalUuid(body.customer_id ?? body.customerId, "customerId");
     const vehicleId = parseOptionalUuid(body.vehicle_id ?? body.vehicleId, "vehicleId");
     const teamId = parseOptionalUuid(body.team_id ?? body.teamId, "teamId");
@@ -564,8 +579,28 @@ export class WorkOrderService {
       customerId,
     });
 
-    const code = await this.repository.nextCode(actor.tenantId);
-    const workOrder = await this.repository.create({
+    return {
+      body,
+      options,
+      customerId,
+      vehicleId,
+      teamId,
+      serviceCatalogId,
+      customerSnapshot,
+      destination,
+      serviceDetails,
+      checklists,
+    };
+  }
+
+  async persistPreparedCreate(
+    repository: WorkOrderWriteRepository,
+    prepared: PreparedWorkOrderCreate,
+    actor: WorkOrderActorContext,
+  ): Promise<WorkOrder> {
+    const { body, customerId, vehicleId, teamId, serviceCatalogId, customerSnapshot, destination, serviceDetails, checklists } = prepared;
+    const code = await repository.nextCode(actor.tenantId);
+    const workOrder = await repository.create({
       tenantId: actor.tenantId,
       code,
       title: assertNonEmptyString(body.title, "title"),
@@ -606,7 +641,7 @@ export class WorkOrderService {
       status: "open",
     });
 
-    await this.repository.createEvent({
+    await repository.createEvent({
       tenantId: actor.tenantId,
       workOrderId: workOrder.id,
       eventType: "work_order_created",
@@ -2103,6 +2138,15 @@ function checklistPhaseSubject(label: string | null, role: WorkOrderChecklistRol
 }
 
 const memoryRepository = new InMemoryWorkOrderRepository();
+
+// B-O6R-09 · fatia 6 (emenda 1.1 EM1-07) — o escopo de escrita da memória sobre o MESMO armazém deste módulo, para a OS
+// criada dentro da aprovação do orçamento (que o recebe pelo import dinâmico que já usa).
+export function openMemoryWorkOrderScope(): MemoryWorkOrderScope {
+  return memoryRepository.openStagedScope();
+}
+
+/** O que `prepareCreate` resolve antes de qualquer escrita (B-O6R-09 · fatia 6). */
+export type PreparedWorkOrderCreate = Awaited<ReturnType<WorkOrderService["prepareCreate"]>>;
 let defaultServicePromise: Promise<WorkOrderService> | undefined;
 
 export function createMemoryWorkOrderService(): WorkOrderService {

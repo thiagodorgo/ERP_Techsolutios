@@ -19,6 +19,7 @@ import type {
   WorkOrderEventType,
   WorkOrderStatus,
 } from "./work-order.types.js";
+import type { MemoryWorkOrderScope, WorkOrderWriteRepository } from "./work-order-scope.js";
 import { matchesAssignedToActor, WorkOrderError } from "./work-order.types.js";
 import { WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
@@ -585,6 +586,46 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     this.events.clear();
     this.assignments.clear();
     this.checklistLinks.clear();
+  }
+
+  // B-O6R-09 · fatia 6 (emenda 1.1 EM1-07) — o escopo de escrita da memória para a OS criada dentro da aprovação do
+  // orçamento. DELEGA aos `nextCode`, `create` e `createEvent` reais (sem duplicar a montagem dos vínculos) e anota o
+  // que foi gravado; `discardStaged()` desfaz de forma síncrona. Declarado (emenda 1.1): na memória, uma leitura feita no
+  // meio pode ver a OS ainda não confirmada; no Prisma, não. A memória não roda em produção (`src/config/env.ts`).
+  openStagedScope(): MemoryWorkOrderScope {
+    const workOrderIds = new Set<string>();
+    const eventIds = new Set<string>();
+    const repository: WorkOrderWriteRepository = {
+      nextCode: (tenantId) => this.nextCode(tenantId),
+      create: async (input) => {
+        const workOrder = await this.create(input);
+        workOrderIds.add(workOrder.id);
+        return workOrder;
+      },
+      createEvent: async (input) => {
+        const event = await this.createEvent(input);
+        eventIds.add(event.id);
+        return event;
+      },
+    };
+
+    return {
+      kind: "memory",
+      repository,
+      commitStaged: () => {
+        workOrderIds.clear();
+        eventIds.clear();
+      },
+      discardStaged: () => {
+        for (const id of eventIds) this.events.delete(id);
+        for (const [id, event] of this.events) if (workOrderIds.has(event.workOrderId)) this.events.delete(id);
+        for (const [id, assignment] of this.assignments) if (workOrderIds.has(assignment.workOrderId)) this.assignments.delete(id);
+        for (const [id, link] of this.checklistLinks) if (workOrderIds.has(link.workOrderId)) this.checklistLinks.delete(id);
+        for (const id of workOrderIds) this.workOrders.delete(id);
+        workOrderIds.clear();
+        eventIds.clear();
+      },
+    };
   }
 
   private sortedWorkOrders(): WorkOrder[] {
