@@ -72,3 +72,177 @@ Typecheck explícito do seed com um tsconfig meu, fora do repositório (`extends
 `prisma/seed.ts(195,3) TS1360` (o `permissionDescriptions … satisfies Record<Permission, string>` não tem 43 das 205
 permissões do catálogo; contado por script: 162 com descrição) e `prisma/seed.ts(257,48) TS2551` (o acesso
 `permissionDescriptions[permission]`, que tem fallback genérico). Pré-existentes, fora do escopo; viram pendência na F4.
+
+## F3 — drills e mutações (03:11 a 03:15)
+
+Todas as bases nascem de `create database <b> template san307_tpl` (só migrada no `07898adf`; o bloco não tem migração).
+
+**D1** (base só do seed, `san307_novo`): `SELECT name FROM tenants` → 1 linha, `Organização Demonstração`. É o critério
+literal do §5 do `PLANO_SAN3.md` ("nenhum contém Tenant", medido no banco).
+
+**Contagem por papel.** `select r.key, count(rp.*) from roles r left join role_permissions rp on rp.role_id = r.id where
+r.tenant_id is null group by r.key order by r.key` × `ROLE_PERMISSIONS[papel].length` (script meu, fora do repositório):
+`diff` vazio nos 12 papéis — auditor 57, field_dispatcher 42, field_technician 49, finance 62, inventory 17, manager 141,
+operator 68, super_admin 205, support 11, technician 44, tenant_admin 188, viewer 45; total 929.
+
+**D2** (o seed de novo sobre `san307_novo`): concessões dos globais 929 → 929; globais 12 → 12; `select key, count(*) from
+roles where tenant_id is null group by key having count(*) > 1` → 0 linha; `platform_admin` global = 0. 2º seed exit 0.
+
+**D3.** `npm run db:provision-rbac -- --dry-run` depois do seed (`san307_novo`) → `12 provisionáveis … · 0 a criar`,
+`concessões: 0 a criar · 929 já existiam`, `revogações deliberadas: 0 a remover`, exit 0. O mesmo comando na base de hoje
+(`san307_hoje`) → `5 a criar: operator, finance, inventory, field_technician, support`, `concessões: 207 a criar · 722 já
+existiam`.
+
+**Mutações, literais, uma por vez** (roteiro meu fora do repositório: confere a âncora, troca o texto, base nova, `npx tsx
+prisma/seed.ts`, paridade com `RBAC_DB_PARITY=1`, `git checkout -- prisma/seed.ts` e `git diff --quiet` depois):
+
+| Mutação | Âncora | Seed | Banco | Paridade | Motivo |
+|---|---|---|---|---|---|
+| M1 (texto da crítica, emenda 1 item 2) | 1 | exit 0 | 7 globais | exit 1, `not ok 2` | exatamente 5 linhas "papel X não tem linha global": field_technician 49, finance 62, inventory 17, operator 68, support 11 |
+| M2 `→ [...DEFAULT_ROLES]` | 1 | exit 0 | 13 globais, `platform_admin` = 1 | exit 1, `not ok 2` | a asserção P2 (`expected: 0`, `actual: 1`) |
+| M3 (as 2 linhas `name: "Organização Demonstração"` → `"Tenant Demo"`) | 2 | exit 0 | `demo` = `Tenant Demo` | exit 1, `not ok 2` | a asserção P3 (`nome técnico: "Tenant Demo"`) |
+| M4 (`role === "support" ? [] : …`) | 1 | exit 0 | 12 globais | exit 1, `not ok 2` | 11 linhas, todas `"support" deveria ter "…"`, nenhuma de outro papel |
+
+Todas revertidas: "revertida: seed igual ao HEAD" depois de cada uma.
+
+**Controle de P3 contra `4cd1889d^`.** `git diff 4cd1889d^ 4cd1889d -- prisma/` = só `prisma/seed.ts`, 2 linhas (`name:
+"Tenant Demo"` → `name: "Organização Demonstração"`). O inverso desse diff aplicado ao seed do bloco (`git apply -R`) é
+byte a byte o arquivo da M3 (`diff -q` vazio), que ficou vermelha acima.
+
+**Suítes de banco do plano** (base nova `san307_bloco` semeada; env do job `backend-postgres`: `CORE_SAAS_PERSISTENCE=prisma`,
+`JWT_SECRET`, `LOG_LEVEL=silent`, `RBAC_DB_PARITY=1`): `node --test --import tsx tests/permission-catalog-db-parity.test.ts
+tests/permission-catalog-migration-parity.test.ts tests/persistent-rbac-middleware.test.ts
+tests/core-saas-role-authority-db.test.ts` → exit 0, `# tests 12 · # pass 12 · # fail 0 · # skipped 0`.
+
+## F4 — registro (03:17 a 03:23)
+
+- `agent-orchestration/controle/pendencias.md`:
+  - `P-SAN3-04A-SEED-PAPEIS-LEGADOS` → `status: FECHADA` (2026-11-11, PR deste ramo), com a prova de banco; a linha
+    antiga fica como `status anterior`.
+  - `P-CHK-SEED-DEMO-SUJO` (já FECHADA pelo #518 só com `grep`) → apenso com a prova no banco (D1, a asserção P3, a M3 e o
+    inverso do #518).
+  - Novas, com N, forma e dono: `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` (MÉDIA; N = 15 arquivos, 20 ocorrências, 1 fonte +
+    14 testes, as 2 asserções que exigem o texto em `b091:389` e `b098:447`; dono proposto `B-SAN3-19b`, a pergunta do §9
+    com o dono — emenda 1, item 5); `P-SAN3-07-SEED-USERS-LEGADO` (BAIXA; N = 7 locais em 3 arquivos: `seed-users.ts`
+    `:41-43`, `:53`, `:54-57` + `:60-68`, e os 2 corpos do `jurado-san3-01b-c2-cadeia-de-acesso` com o espelho; dono
+    `B-SAN3-10` ou o primeiro bloco que tocar `seed-users.ts` — emenda 1, item 4); `P-SAN3-07-SEED-FORA-DO-TYPECHECK`
+    (BAIXA; N = 2 erros, 43 de 205 permissões sem descrição; dono o próximo na trava de `prisma/seed.ts`, `B-SAN3-18`, com
+    ampliação nominal — emenda 1, item 6).
+  - Os N foram medidos por mim: `git grep -lE "Tenant Demo|Tenant Field Services" HEAD -- mobile/` → 15 (1 fora de
+    `/test/`); `git grep -c` → 20; `sed -n 440,450p` do `b098` confirma a asserção da linha 447.
+- `agent-orchestration/controle/pendencias-indice.md`: regenerado por `python agent-orchestration/controle/gerar-indice-pendencias.py`
+  → `815 cabecalhos / 804 IDs | FECHADA 194, ABERTA 617, SEM-STATUS 4`. Antes de regenerar conferi que o índice da `main`
+  estava em dia (o gerador sobre o `pendencias.md` da `origin/main` reproduz o índice dela byte a byte), então o diff do
+  índice é só deste bloco: +3 cabeçalhos, +2 abertas, +1 fechada, e o resto são números de linha que andaram.
+  - **Erro meu, corrigido antes do commit:** a 1ª regeneração deu CRÍTICA às 3 novas, porque a função `severidade` acha
+    a palavra "crítica" ("crítica do plano") no corpo. Troquei por "revisão do plano" e regenerei: MÉDIA, BAIXA, BAIXA.
+- `docs/revisoes/SAN3/PLANO_SAN3.md`: nota no item 47 (`:181`), dizendo que segue ABERTO até o merge e a resposta do
+  dono, e nota na linha do bloco (`:282`) com o ramo real e o teste permanente.
+  - **Leitura do dev, declarada (§A6):** o plano mandava "a marca ✓" no `:181`. A coluna é "reclass." e a legenda
+    (`PLANO_SAN3.md:107-108`) diz que o ✓ marca item reclassificado para o gate, não item feito. Não marquei ✓; segui o
+    precedente do item 48 (`:182`), uma nota "em revisão no PR …; segue ABERTO até o merge".
+
+## Bateria
+
+**Sem banco (03:25):** `npm run check` exit 0 · `npm run lint` exit 0 · `npm run build` exit 0 · `node
+scripts/migration-transaction-guard.mjs` exit 0 (`migrações: 130 · … · violações: 0`) · `git diff --check` e `git diff
+--check origin/main...HEAD` exit 0.
+
+**As 60 suítes do job `backend-postgres`, todas juntas (03:16 a 03:26).** Lista extraída do `ci.yml` (60 arquivos, todos
+presentes), base nova `san307_ci` semeada pelo seed do bloco, env do job (`CORE_SAAS_PERSISTENCE=prisma`, `JWT_SECRET`,
+`LOG_LEVEL=silent`, `RBAC_DB_PARITY=1`; **sem Redis**, que o env declara opcional), `node --test --import tsx <60>` com
+`pipefail`: exit 1, `# tests 504 · # pass 482 · # fail 21 · # cancelled 1 · # skipped 0`, 541 s.
+- As 22 em 12 arquivos, todas em domínio que o bloco não toca: Traccar (6 arquivos, 14 casos), estoque
+  (`inventory-cycle-count-close-units-db`, 3), rateio (`o6r06-allocation-basis-rls-db`, 2), faturamento de OS (1),
+  checklists da OS (1) e `persistent-rbac-middleware` (1).
+- As assinaturas são de carga, não de regra: `Transaction API error: Unable to start a transaction in the given time` (5),
+  `A commit cannot be executed on an expired transaction … 23088 ms passed` (2), `timeout/503 stock_busy`, `test timed
+  out after 180000ms` (o drill de migração do Traccar, que cancelou o arquivo), e durações de 20 a 43 s por caso. É o
+  Postgres numa VM do Docker no Windows com 60 arquivos em paralelo; o runner da CI é Linux.
+- O `persistent-rbac-middleware` (`500 !== 200` depois de 43 s) é o único que toca papel. Sozinho, na base `san307_bloco`,
+  ele passou antes (F3: as 4 suítes de banco do plano, 12/12).
+- **Isso não é aceite.** A regra "falha de ambiente esconde regressão" pede prova: cada um dos 12 arquivos re-roda
+  sozinho, em série, numa base nova semeada pelo seed do bloco (abaixo).
+
+**Os 12 arquivos vermelhos, cada um sozinho e em série (03:27 a 03:34).** Base nova `san307_iso` semeada pelo seed do
+bloco, o mesmo env:
+
+| Arquivo | Resultado |
+|---|---|
+| `inventory-cycle-count-close-units-db` | 22/22 |
+| `o6r06-allocation-basis-rls-db` | 10/10 |
+| `persistent-rbac-middleware` | 2/2 |
+| `traccar-event-ingestion-db` | 21/21 |
+| `traccar-event-migration-drill-db` | 6/6 casos; o 7º "teste" é o encerramento do arquivo: `EBUSY: resource busy or locked, rmdir 'C:\Users\thiag\AppData\Local\Temp\trc02-mdrill-tXDb3N'`, trava de arquivo do Windows ao apagar a pasta temporária do drill |
+| `traccar-event-sample-db` | 13/13 |
+| `traccar-idempotency-db` | 9/9 |
+| `traccar-position-ingestion-db` | 22/22 |
+| `traccar-quarantine-db` | 6/6 |
+| `traccar-resolution-race-db` | 5/5 |
+| `work-order-checklists-freeze-links-db` | 6/6 |
+| `work-order-invoicing-atomic-db` | 17/17 |
+
+Conclusão, declarada como tal: os 22 vermelhos do conjunto paralelo são carga desta máquina (e o `EBUSY` é do Windows),
+não efeito do seed. Todos os casos passam quando o Postgres não está saturado, com o seed do bloco. A medida que vale para
+o aceite é o TAP do job `backend-postgres` na CI, no Linux, sobre o head do PR (§C7 item 11(3)).
+
+## PARADA — o plano com a emenda não fecha no código (03:48)
+
+**O defeito.** A emenda 1, item 1 (CRIT07-01) pôs P3 ("a organização `demo` existe, 1 linha, e não tem `/tenant/i`")
+DENTRO do teste de concessões de `tests/permission-catalog-db-parity.test.ts`. Esse arquivo não roda só depois do seed:
+ele é o guard de paridade catálogo × banco de QUALQUER base provisionada, e o cabeçalho dele diz que o valor real é
+contra a base que não foi semeada (dev, staging, produção). Três drills de migração do `npm test` (job `backend`) montam
+uma base própria com `migrate deploy` + `db:provision-rbac`, sem seed, e rodam a paridade num processo filho exigindo
+`# fail 0`. Nessa base não existe a organização `demo`, então P3 reprova, e o job `backend` do PR ficaria vermelho.
+
+**Os 3 vermelhos, no `npm test` na forma do job `backend`** (base nova só migrada `san307_npmtest`,
+`CORE_SAAS_PERSISTENCE=memory`):
+- `tests/ass-04-billing-permissions-migration-drill-db.test.ts` → `not ok 115 - M3b (d): depois do db:provision-rbac
+  nesta base, a paridade catálogo × banco é verde (permission-catalog-db-parity)`;
+- `tests/ass-05-providers-permission-migration-drill-db.test.ts` → `not ok 214 - M4b (d): …`;
+- `tests/b-san3-12a-permissions-migration-drill-db.test.ts` → `not ok 820 - A22 (d): …`.
+
+**A causa, provada por execução (03:48).** Base nova `san307_prov` (template só migrado) → `npm run db:provision-rbac`
+(exit 0; `12 criado(s)`, `929 criada(s)`); `select count(*) from tenants` = 0. `RBAC_DB_PARITY=1 node --test --import tsx
+tests/permission-catalog-db-parity.test.ts` com o arquivo do bloco → exit 1, `ok 1`, `not ok 2`, mensagem `P3: o seed
+não deixou a organização demonstração (slug = 'demo') na base.`, `expected: 1`, `actual: 0`. O mesmo comando com o
+arquivo da `origin/main` (copiado para um nome temporário e apagado em seguida) → exit 0, `# fail 0`. P1 e P2 passam na
+base provisionada: o defeito é só P3.
+
+**Por que a crítica não viu.** A prova do A2 (CRIT07-01) mediu o orçamento de pulos com o arquivo de paridade sozinho e as
+60 suítes do `backend-postgres`; os três drills estão no `npm test` do job `backend`, e só lá a paridade roda contra base
+sem seed.
+
+**O que NÃO fiz.** Não troquei o critério de P3, não mexi nos drills (fora do PERMITIDO) nem em `.github/**` ou
+`scripts/**` (PROIBIDOS). Trocar o critério é emenda antes do código (`D-EMENDA-ANTES-DO-CODIGO`, §C7 item 11(3)). Não
+abri o PR: ele nasceria vermelho no job `backend`.
+
+**Saídas que eu vejo, para quem emenda decidir (não escolhi nenhuma):**
+1. **P3 só quando a organização `demo` existir.** Fica no PERMITIDO e não muda o orçamento. Perde a reprovação de "o seed
+   deixou de criar a `demo`" (passaria em vazio); a M3 continua mordendo. Muda o critério de P3 do §3 do plano.
+2. **P3 num teste de seed próprio, fora do arquivo de paridade.** Precisa de 1 linha em `.github/workflows/ci.yml` (a
+   SUITES do `backend-postgres`) e, se o teste pular no job `backend`, de `scripts/run-backend-tests.mjs` (orçamento 2 → 3)
+   e do guard-do-guard `tests/npm-test-runner-guard.test.ts`. Hoje os três estão PROIBIDOS.
+3. **Os três drills semeiam a base antes da paridade, ou desligam P3 por variável.** Toca 3 arquivos de teste fora do
+   PERMITIDO, e quem rodasse a paridade em produção, como o cabeçalho dela convida, teria de desligar P3 também.
+
+**Estado em que paro.** Commits F0, F1 e F2 no ramo `fix/seed-papeis-legados` (local, não empurrado). P1, P2 e a
+derivação no seed estão provados (F1 a F3) e não dependem da escolha acima. O registro da F4 (pendências, índice e
+`PLANO_SAN3.md`) foi para um commit de **rascunho**, só para não se perder: ele fecha a `P-SAN3-04A-SEED-PAPEIS-LEGADOS`
+e o bloco parou, então não vale até a emenda; quem retomar confere e reaproveita.
+
+**`npm test` na forma do job `backend` (03:34 a 03:58).** Base nova só migrada `san307_npmtest`,
+`CORE_SAAS_PERSISTENCE=memory`, sem Redis: exit 1, `# tests 4954 · # pass 4933 · # fail 19 · # cancelled 0 · # skipped 2`
+(o orçamento de 2 pulos, cumprido). Os 19:
+- **3 são deste bloco:** os drills da paridade acima (`ass-04` 115, `ass-05` 214, `b-san3-12a` 820).
+- **16 não leem o seed nem a paridade** (`grep -cE 'db:seed|prisma/seed|seed\.ts'` e `grep -c permission-catalog-db-parity`
+  = 0 em cada arquivo): `san3-09-bootstrap-platform-admin-db` (o drill chama `node_modules/.bin/prisma`, que no Windows é
+  script de shell: `SyntaxError: missing ) after argument list`), `san3-05-runtime-role-guard-db` e
+  `san3-05-leituras-de-plataforma-db` (`condição de boot não apareceu em 15000ms`, e o mesmo drill de papel), `ass-08-channel-db`
+  (`o claim alcançou a cauda em 2347 ms (teto 2 000)`), `inventory-balance-lock-race-db` (`stock_busy`),
+  `cheque-title-link-migration-drill-db`, `impound-trigger-durability` e `traccar-position-ingestion-db` (concorrência e
+  tempo). É a mesma classe de carga e de Windows do conjunto paralelo; não re-rodei estes porque o bloco não alcança
+  nenhum deles, e a decisão que importa agora é a da parada.
+- Os testes que leem o texto do seed (`ass-02-plan-catalog`, `b-san3-12-ce4-db`, `inventory-write-paths-guard`,
+  `san3-04a-menu-com-permissoes-do-banco-db`, `san3-04a-menu-front-x-catalogo`, `seed-guard` e o textual do bloco) não
+  aparecem entre os vermelhos.
