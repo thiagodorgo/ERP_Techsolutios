@@ -24,3 +24,22 @@
 - **Executor da fatia:** `dev-o6r12-cdx`.
 - **Próximo comando:** escrever F1 (testes novos), rodar vermelho-controle em `6f727afc` e
   registrar o TAP antes do código de produção.
+
+## F1 — 2026-11-11T01:49:43-0300 — vermelho-controle
+
+Os cinco arquivos novos foram executados isoladamente antes de qualquer código de produção:
+
+| Suíte | Resultado no controle | `not ok` nominal |
+|---|---:|---|
+| `b-o6r-12-profile-audit` | 0/1, ec 1 | `ERR_MODULE_NOT_FOUND` para `jurisdiction.audit.js` |
+| `b-o6r-12-memory-parity` | 0/1, ec 1 | segunda leitura devolveu `UNLIMITED/CALENDAR/PRIVATE_CONTRACT`, não o primeiro retrato |
+| `b-o6r-12-regime-census` | 0/2, ec 1 | `jp.scope` vivo e pendência de fuso ausente |
+| `b-o6r-12-regime-migration-drill-db` | 0/1, ec 1 | `ENOENT` para a migração nova |
+| `b-o6r-12-regime-snapshot-db` | 0/1, ec 1 | catálogo trouxe 0, não 9 colunas `regime_*` |
+
+- Comando: `node --test --import tsx <arquivo>`; suíte DB com `DATABASE_URL` do `o6r12-pg` e
+  `CORE_SAAS_PERSISTENCE=prisma`; demais com persistência `memory`.
+- Nenhum arquivo de produto foi alterado nesta fatia.
+- **Executor da fatia:** `dev-o6r12-cdx`.
+- **Próximo comando:** F2 — schema, migração, geração Prisma, carimbo/imutabilidade e mapeador;
+  depois rodar drill, snapshot DB, guard de migração, K12 e check.

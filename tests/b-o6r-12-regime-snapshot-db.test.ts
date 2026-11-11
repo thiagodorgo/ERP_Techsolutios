@@ -1,0 +1,61 @@
+import "dotenv/config";
+
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import test from "node:test";
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  test("B-O6R-12 snapshot exige DATABASE_URL", { skip: "Defina DATABASE_URL para a suíte -db." });
+} else {
+  test("B-O6R-12 C4/C5/C6/C16: banco carimba payload, congela regime e mantém 23503", async () => {
+    const { Client } = await import("pg");
+    const db = new Client({ connectionString });
+    await db.connect();
+    const slug = `b12-${randomUUID().slice(0, 8)}`;
+    let tenantId = "";
+    try {
+      const columns = await db.query<{ column_name: string; is_nullable: string }>(
+        `SELECT column_name, is_nullable FROM information_schema.columns
+          WHERE table_schema='public' AND table_name='impound_processes' AND column_name LIKE 'regime_%'`,
+      );
+      assert.equal(columns.rowCount, 9);
+      assert.equal(columns.rows.filter((row) => row.column_name !== "regime_daily_service_catalog_id").every((row) => row.is_nullable === "NO"), true);
+
+      tenantId = (await db.query<{ id: string }>(`INSERT INTO tenants (name, slug) VALUES ($1,$1) RETURNING id`, [slug])).rows[0]!.id;
+      const profileId = (
+        await db.query<{ id: string }>(
+          `INSERT INTO jurisdiction_profiles
+            (tenant_id,name,scope,owner_notif_days,notice_edict_day,auction_eligible_day,auction_edict_business_days,daily_model,daily_cap,release_requirements)
+           VALUES ($1,'Perfil','PUBLIC_AGREEMENT',5,10,60,15,'ROLLING_24H','SIX_MONTHS','[]'::jsonb) RETURNING id`,
+          [tenantId],
+        )
+      ).rows[0]!.id;
+      const process = (
+        await db.query<{ id: string; regime_daily_cap: string }>(
+          `INSERT INTO impound_processes
+            (tenant_id,profile_id,vehicle_unidentified,status,origin_authority,regime_daily_cap)
+           VALUES ($1,$2,true,'IN_REMOVAL','Órgão','UNLIMITED') RETURNING id,regime_daily_cap`,
+          [tenantId, profileId],
+        )
+      ).rows[0]!;
+      assert.equal(process.regime_daily_cap, "SIX_MONTHS");
+      await assert.rejects(
+        db.query(`UPDATE impound_processes SET regime_daily_cap='UNLIMITED' WHERE id=$1`, [process.id]),
+        (error: unknown) => (error as { code?: string }).code === "23514",
+      );
+      await assert.rejects(
+        db.query(
+          `INSERT INTO impound_processes (tenant_id,profile_id,vehicle_unidentified,status,origin_authority)
+           VALUES ($1,$2,true,'IN_REMOVAL','Órgão')`,
+          [tenantId, randomUUID()],
+        ),
+        (error: unknown) => (error as { code?: string }).code === "23503",
+      );
+    } finally {
+      if (tenantId) await db.query(`DELETE FROM tenants WHERE id=$1`, [tenantId]);
+      await db.end();
+    }
+  });
+}
