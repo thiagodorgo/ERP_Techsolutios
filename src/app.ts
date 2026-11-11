@@ -40,6 +40,7 @@ import { createCycleCountRouter, createInventoryItemRouter, createStockMovementR
 import { createMobileRouter } from "./modules/mobile/index.js";
 import { createNotificationRouter } from "./modules/notifications/index.js";
 import { createNavigationRouter } from "./modules/navigation/index.js";
+import { createModuleGate } from "./modules/navigation/module-gate.middleware.js";
 import { createPlatformRouter } from "./modules/platform/index.js";
 import { createServiceCatalogRouter } from "./modules/service-catalog/index.js";
 import { createPriceTableRouter } from "./modules/price-tables/index.js";
@@ -145,6 +146,10 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
   // pós-migração) mudou nelas, em auth.routes.ts. git add src/app.ts, senão CI route_not_found.
   app.use("/api/v1/auth", createIdentityLinkRouter(options.getIdentityLinkService));
   app.use("/api/v1/auth", createAuthRouter({ getCoreSaasService: () => Promise.resolve(service) }));
+  // B-SAN3-18 (item 16) — o gate de módulo: recusa (403) toda chamada com JWT a uma área que a organização do ator não
+  // contratou, e toda rota sem classe. Montado UMA vez, depois de /auth e antes da primeira montagem de organização.
+  // A classe de cada rota está em src/modules/navigation/route-modules.ts. git add src/app.ts.
+  app.use("/api/v1", attachAuthenticatedActor(), createModuleGate(service));
   // Ω-GATE: a rota de plataforma vem ANTES do me-router. O me-router monta no prefixo largo
   // "/api/v1" e aplica tenantContextMiddleware no topo; em produção isso interceptaria
   // /api/v1/platform/* com o motivo genérico "legacy_headers_disabled" antes do guard de
