@@ -75,3 +75,17 @@ motivo). O gerador `scripts/san3-05-acessos-de-plataforma.mjs` e a `WRAPPERS` n�
    execução, e pode recusá-la (Emenda 2, item 3).
 
 Quem decidiu: o orquestrador (Emenda 2 do plano v2). Quem gravou: o dev. O dono pode vetar.
+
+## Adendo (2026-11-11 06:16 SP): a guarda do censo dos criadores (PRE537-02 da pré-revisão do #537)
+
+A pré-revisão (`prerev-537-cl`) mediu que o motivo acima ("é o único lugar de src/** que cria `{ kind: "prisma", tx }`")
+não era guardado. Um 2º criador, montado a partir de uma `$transaction` crua e sem o setter do GUC, passava no T13 e na
+guarda (iv) sem chave nova. Agora o caso `[PRE537-02 · vi]` de `tests/b-o6r-09-dispatch-writers-guard.test.ts` faz esse
+censo pelo verificador de tipos do TypeScript, sobre o programa do `tsconfig.json`. Ele exige:
+
+- exatamente 1 criador em `src/**`, em `RlsPrismaServiceQuoteRepository.approveWithWorkOrder`, dentro de
+  `createWorkOrder < withTenantRls`;
+- `workOrderRepositoryForScope` chamado só em `service-quote.service.ts`.
+
+A mutação MP2, o 2º criador da sonda do revisor em `src/modules/work-orders/zz-pre537-canal.ts`, deixa o caso vermelho com
+os 2 criadores listados. O arquivo da mutação foi apagado depois.

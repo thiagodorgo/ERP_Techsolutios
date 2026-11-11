@@ -390,3 +390,21 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
   B-O6R-07c-b1 (`field-dispatch.service.ts`, "reatribuir à MESMA pessoa não troca ninguém e NÃO ESCREVE nada"). O
   controlador também a audita como `field_dispatch.reassigned`. Fica registrado como
   `P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA`, porque não é do achado nem deste bloco.
+
+### PRE537-02 — nenhuma guarda congelava o único criador de `{ kind: "prisma", tx }`
+
+- **Guarda nova:** `[PRE537-02 · vi]` em `tests/b-o6r-09-dispatch-writers-guard.test.ts`. É um CENSO pelo verificador de
+  tipos do TypeScript, não por texto: o programa do `tsconfig.json`, e todo literal de objeto de `src/**` com `kind` e
+  `tx` cujo `kind` tem o tipo literal "prisma" (ou o inicializador literal). Ela exige:
+  - exatamente 1 criador, em `src/modules/service-quotes/service-quote-prisma.repository.ts:157`, no método
+    `RlsPrismaServiceQuoteRepository.approveWithWorkOrder`, dentro de `createWorkOrder < withTenantRls`;
+  - o texto do callback de `withTenantRls` em volta dele;
+  - `workOrderRepositoryForScope` chamado só em `service-quote.service.ts`.
+
+  O alcance está declarado no próprio teste: a guarda não enxerga um escopo montado por `Object.assign`/spread. No head,
+  verde, 6/6 na guarda, e o caso leva cerca de 6 s por montar o programa.
+- **Mutação MP2:** a forma da sonda do revisor, um 2º criador por `$transaction` crua em
+  `src/modules/work-orders/zz-pre537-canal.ts`. Ficou VERMELHA (`# fail 1`, com os 2 criadores listados na mensagem), e o
+  arquivo foi apagado depois (`git status` limpo). Sem esta guarda, a mesma forma passava no T13 e na guarda (iv): 40/40,
+  medido pelo revisor.
+- `docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md` ganhou um adendo apontando para a guarda.

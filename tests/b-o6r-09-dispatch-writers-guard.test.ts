@@ -87,3 +87,79 @@ test("[EM1-04 · v] o corpo de approveWithWorkOrder no repositório Prisma do or
   assert.ok(body.includes("linkCreatedWorkOrder("), "o corpo delimitado não é o da aprovação");
   assert.equal(body.split(".catch(").length - 1, 0, "approveWithWorkOrder engole erro dentro da transação");
 });
+
+// PRE537-02 (pré-revisão do #537) — o motivo da chave L2 de `work-order-scope.ts` no ratchet T13 (e a
+// `docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md`) se apoia em "só há UM criador de `{ kind: "prisma", tx }` em src/**, e ele
+// está no callback de `withTenantRls` da aprovação do orçamento". O gerador do T13 só vê a instanciação dentro de
+// `work-order-scope.ts`: um 2º criador, a partir de uma `$transaction` crua, passaria sem chave nova. Esta guarda é o CENSO
+// pelo verificador de tipos do TypeScript (não por texto): todo literal de objeto de src/** com as propriedades `kind` e
+// `tx` cujo `kind` tem o tipo literal "prisma" (ou o inicializador literal "prisma") é um criador. Tem de haver exatamente 1,
+// dentro do callback de `withTenantRls` em `RlsPrismaServiceQuoteRepository.approveWithWorkOrder`. E `workOrderRepositoryForScope`
+// só é chamado em `service-quote.service.ts`.
+// ALCANCE DECLARADO: o censo enxerga a criação por literal de objeto (com ou sem `as const`, com abreviação `{ kind, tx }`
+// quando o tipo de `kind` é o literal); não enxerga um escopo montado por `Object.assign`/spread de outro objeto.
+test("[PRE537-02 · vi] o único criador de { kind: \"prisma\", tx } em src/** é o callback de withTenantRls da aprovação do orçamento", async () => {
+  const ts = (await import("typescript")).default;
+  const configPath = path.join(ROOT, "tsconfig.json");
+  const config = ts.readConfigFile(configPath, ts.sys.readFile);
+  const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, ROOT);
+  const program = ts.createProgram(parsed.fileNames, { ...parsed.options, noEmit: true });
+  const checker = program.getTypeChecker();
+  const creators: string[] = [];
+  const callers = new Set<string>();
+  const rel = (fileName: string) => path.relative(ROOT, fileName).split(path.sep).join("/");
+
+  const isPrismaKind = (node: import("typescript").ObjectLiteralExpression): boolean => {
+    const kind = node.properties.find((p) => p.name && ts.isIdentifier(p.name) && p.name.text === "kind");
+    const tx = node.properties.find((p) => p.name && ts.isIdentifier(p.name) && p.name.text === "tx");
+    if (!kind || !tx) return false;
+    if (ts.isPropertyAssignment(kind)) {
+      let init: import("typescript").Expression = kind.initializer;
+      while (ts.isAsExpression(init) || ts.isParenthesizedExpression(init) || ts.isSatisfiesExpression(init)) init = init.expression;
+      if (ts.isStringLiteralLike(init) && init.text === "prisma") return true;
+    }
+    const type = checker.getTypeAtLocation(kind);
+    return type.isStringLiteral() && type.value === "prisma";
+  };
+
+  const enclosing = (node: import("typescript").Node) => {
+    let method: string | undefined;
+    let klass: string | undefined;
+    const calls: string[] = [];
+    for (let cur: import("typescript").Node | undefined = node.parent; cur; cur = cur.parent) {
+      if (ts.isCallExpression(cur) && ts.isIdentifier(cur.expression)) calls.push(cur.expression.text);
+      if (!method && ts.isMethodDeclaration(cur) && cur.name && ts.isIdentifier(cur.name)) method = cur.name.text;
+      if (!klass && ts.isClassDeclaration(cur) && cur.name) klass = cur.name.text;
+    }
+    return `${klass ?? "-"}.${method ?? "-"} dentro de ${calls.join(" < ") || "-"}`;
+  };
+
+  for (const sourceFile of program.getSourceFiles()) {
+    if (sourceFile.isDeclarationFile || !rel(sourceFile.fileName).startsWith("src/")) continue;
+    const visit = (node: import("typescript").Node): void => {
+      if (ts.isObjectLiteralExpression(node) && isPrismaKind(node)) {
+        const { line } = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+        creators.push(`${rel(sourceFile.fileName)}:${line + 1} ${enclosing(node)}`);
+      }
+      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "workOrderRepositoryForScope") {
+        callers.add(rel(sourceFile.fileName));
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+  }
+
+  assert.equal(creators.length, 1, `criadores de { kind: "prisma", tx } em src/**: ${JSON.stringify(creators)}`);
+  assert.match(
+    creators[0]!,
+    /^src\/modules\/service-quotes\/service-quote-prisma\.repository\.ts:\d+ RlsPrismaServiceQuoteRepository\.approveWithWorkOrder dentro de createWorkOrder < withTenantRls$/,
+    `o criador não está no lugar conhecido: ${creators[0]}`,
+  );
+  const textoRepositorio = readFileSync(path.join(ROOT, "src/modules/service-quotes/service-quote-prisma.repository.ts"), "utf8");
+  assert.match(
+    textoRepositorio,
+    /return withTenantRls\(this\.prismaClient, input\.tenantId, async \(tx\) => \{[\s\S]{0,400}createWorkOrder\(\{ kind: "prisma", tx \}\)/,
+    "o criador não está dentro do callback de withTenantRls da aprovação",
+  );
+  assert.deepEqual([...callers].sort(), ["src/modules/service-quotes/service-quote.service.ts"], "workOrderRepositoryForScope ganhou outro chamador");
+});
