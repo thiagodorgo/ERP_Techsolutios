@@ -43,3 +43,13 @@ as regressões nomeadas, `npm test` (resumo TAP), `npm run build`; na web, `chec
 
 Diário do dev: `docs/revisoes/SAN3/B-O6R-09-dev.md`. Revisão: junta completa (banco, permissão, perda de dado e, com a
 fatia 6, dinheiro), pelo fluxo do §C7 item 10(3).
+
+## Registro de desenho (plano v2 §2.3; emenda 1 §1.3)
+
+| Alternativa | Por que não |
+|---|---|
+| Commit do despacho e compensação condicional (v1) | A janela fica visível: um aceite feito nela some na compensação, e a compensação que perde a condição deixa despacho e OS divergentes (achados A1 e A2 da crítica r1). |
+| Marcador "em atribuição" no `metadata` com 3 transações | A janela continua visível, e um marcador que não é limpo trava o despacho e pede varredura de recuperação. |
+| Atribuir a OS primeiro e o despacho depois | Se o despacho falha, a OS fica atribuída sem despacho, e desfazer exige escrever em `work-orders/**`. |
+| **Transação-mãe aberta durante a atribuição (escolhida para o despacho)** | Nada fica visível antes da OS aceitar, não há compensação, e o rollback devolve `operator_assigned_at`. O preço é o risco de pool (semáforo do processo, provado pelo T15) e o resíduo R1 (`P-B-O6R-09-ATRIBUICAO-FORA-DA-TX`). |
+| **Uma transação de verdade (escolhida para o orçamento, fatia 6)** | O item fundido obriga a tocar `work-orders/**`, e a classe crua do repositório de OS já recebe `tx`: a reserva, a OS e o vínculo rodam na mesma `tx`, sem o R1. A chave idempotente não é necessária: o orçamento é a identidade natural (CAS `status = 'draft' AND created_work_order_id IS NULL`). |

@@ -3365,6 +3365,7 @@ histórico por etapa sobre um agregado que pode nascer sem evento é construir s
 
 - **emenda (plano SAN3 §4.1 item 7, 2026-09-11):** o plano classifica o `Ω6R-ARQ-004` como bloqueante do gate da versão vendável, com bloco dono `B-O6R-09`; a dependência do `B-O6R-08` é revista: atomicidade despacho+evento na mesma transação não precisa de lease de job — hipótese que o planejador confirma; se cair, o `B-O6R-08` entra no gate.
 - **dono:** `B-O6R-09` (plano SAN3, §4.1 item 7 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **fechamento (B-O6R-09, ramo `fix/dispatch-atomic-timeline`, 2026-11-11; vale no merge):** o despacho, a mudança de status e a reatribuição gravam o estado e o evento obrigatório na MESMA transação (P1), com o vencedor condicional por status e técnico (P2) e a criação idempotente por `idempotencyKey` (P3); o despacho só fica visível depois que a OS aceitou a atribuição (P4, transação-mãe). Testes-dono: `tests/b-o6r-09-dispatch-*-db.test.ts` (falha injetada, barreira escopada, papel `NOSUPERUSER NOBYPASSRLS`), com o vermelho-controle na `main` `07898adf` registrado em `docs/revisoes/SAN3/B-O6R-09-dev.md`. A web envia a chave por intenção (`useDispatchIntentKey`). Resíduos com dono: `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` e `P-B-O6R-09-ESCRITORES-FORA-DE-SRC` (no fim deste arquivo). O item 7 do portão só se declara FECHADO com a fatia 6 (orçamento) na `main`, no mesmo PR.
 
 ## P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — **BLOQUEIA web (transversal) e owner-portal**
 
@@ -13202,3 +13203,64 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** implantação (sem código) · **dono:** quem fizer o primeiro deploy de produção que contenha o #527 (o porteiro confere).
 - **origem:** plano do conserto do #527, Emenda 3, RQ-4 (de R2-04). A web nova trata a resposta do login sem `must_change_password` como restrita (falha fechada, RQ-1): subir a web antes do backend trataria todo login como restrito. O app novo trata o campo ausente como inteiro (RQ-2(b)), então para ele a ordem é recomendação. Residual declarado: app antigo com backend novo — quem estiver com a senha provisória entra, o app ignora o campo, e o portão devolve `403 password_change_required` em tudo; troca pela web até atualizar o app.
 - **teste de encerramento:** o deploy feito na ordem, registrado com as horas de cada parte.
+
+## P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — a OS em dobro ou órfã por falha no meio da aprovação do orçamento — FECHADA pelo B-O6R-09 (fatia 6), no merge
+
+- **status:** FECHADA no merge do PR do `B-O6R-09` (fundida ao item 7 pelo dono, `D-PORTAO-3-RECOMENDACOES-1111` Q1 (c)) · **escopo:** `src/modules/service-quotes/**` (aprovação) e a divisão do `create` em `src/modules/work-orders/work-order.service.ts`.
+- **o que fecha:** a reserva do orçamento, a OS (com as vistorias e o evento `work_order_created`) e o vínculo `created_work_order_id` passam a ser UMA transação (`RlsPrismaServiceQuoteRepository.approveWithWorkOrder`); na memória, o mesmo contrato (registro em voo, espera do perdedor, desfazer síncrono). A repetição continua 409 `quote_already_approved`, agora com `details.workOrderId` (`D-B-O6R-09-REPLAY-ORCAMENTO-409`).
+- **critério de encerramento (o da emenda 1 do B-SAN3-08, medido no ramo):** atômico no Prisma (T19, T20 e T20b, inclusive sob `NOBYPASSRLS`, com a chamada rejeitando e todo id de OS devolvido existindo); recuperável e com 1 OS na memória (T25); vermelho-controle de `os_total = 2` (T19) e de OS órfã (T20) na `main` `07898adf`, registrado em `docs/revisoes/SAN3/B-O6R-09-dev.md`.
+
+## P-B-O6R-09-ATRIBUICAO-FORA-DA-TX (2026-11-11) — a OS aceita a atribuição e a transação-mãe do despacho não faz commit — MÉDIA (resíduo declarado R1)
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do dev, declarada (§A6): o plano v2 não dá gravidade · **escopo:** `src/modules/field-dispatch/**` × `assignFromDispatch` em `src/modules/work-orders/work-order-prisma.repository.ts` · **dono:** o orquestrador escolhe (plano v2 §8, R1) · **bloqueia:** não.
+- **origem:** plano v2 do `B-O6R-09`, R1. A atribuição da OS é gravada na transação do repositório de OS; a mãe (despacho + evento) só faz commit depois. Se a mãe se perde entre os dois commits (tempo esgotado, queda do banco ou do processo), sobra a OS com o técnico e sem o despacho novo, ou, na reatribuição, a OS com o técnico novo e o despacho com o antigo. A janela é a do commit; o log codificado é `dispatch_commit_lost_after_assignment`.
+- **critério de encerramento:** a atribuição da OS dentro da MESMA transação do despacho (o repositório de OS aceitando o `tx`, como a fatia 6 já faz para a OS do orçamento por `work-order-scope.ts`), com teste de falha injetada no commit.
+
+## P-B-O6R-09-ESCRITORES-FORA-DE-SRC (2026-11-11) — escritores de despacho fora de `src/` gravam despacho sem evento — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `prisma/seed-fleet.ts:160` e `scripts/traccar-dev-demo.mjs:340,345` · **dono:** o próximo bloco que tocar o seed da frota ou a demo do Traccar · **bloqueia:** não.
+- **origem:** plano v2, R-A12 (iii), e crítica r2, R2-10. A guarda `tests/b-o6r-09-dispatch-writers-guard.test.ts` cobre só `src/**`.
+- **critério de encerramento:** os dois escritores passam pelo repositório (`createWithEvent`) ou gravam o evento junto; a guarda passa a cobrir `prisma/seed*.ts` e `scripts/**`.
+
+## P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX (2026-11-11) — a criação NORMAL de OS grava a OS e o `work_order_created` em transações separadas — MÉDIA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `src/modules/work-orders/work-order.service.ts` (`create` público com o repositório Rls) · **dono:** um bloco de OS com revisão reforçada · **bloqueia:** não.
+- **origem:** emenda 1 do `B-O6R-09`, §5.3. A fatia 6 só torna atômico o caminho do orçamento; o `create` público segue com uma transação por chamada do repositório.
+- **critério de encerramento:** `persistPreparedCreate` dentro de uma `withTenantRls` no `create` público, com teste de falha injetada no evento (0 OS).
+
+## P-B-O6R-09-NEXTCODE-CORRIDA (2026-11-11) — duas criações simultâneas na mesma organização colidem no código da OS — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `src/modules/work-orders/work-order-prisma.repository.ts` (`nextCode` conta e procura) · **dono:** o mesmo bloco de OS da pendência anterior · **bloqueia:** não.
+- **origem:** emenda 1, §1.5 e §5.3. Na aprovação do orçamento o desfecho é limpo (rollback, orçamento em draft; caso `[Q2 · código]` de `tests/b-o6r-09-quote-approve-atomic-db.test.ts`), mas o perdedor recebe o P2002 cru, e a janela cresce até o commit da transação.
+- **critério de encerramento:** código alocado sem corrida (sequência por organização ou nova tentativa no P2002), com teste de corrida.
+
+## P-B-O6R-09-STATUS-APROVA-SEM-OS (2026-11-11) — o orçamento pela rota de status — BAIXA (anterior ao bloco), 2 itens
+
+- **status:** ABERTA · **escopo:** `PATCH /service-quotes/:id/status` · **dono:** a continuação do `B-SAN3-08` · **bloqueia:** não.
+- **itens:** (i) a rota leva `draft→approved` sem OS, e a aprovação recusa esse orçamento; (ii) o `update` grava sem CAS do status lido (`where` só por organização e id): correndo junto de uma aprovação, ele espera o lock e sobrescreve, e o orçamento fica `rejected` com OS criada. A emenda 1.1 também registra aqui a observação de que a web manda origem e destino em snake_case e a aprovação lê em camelCase (HIPÓTESE da emenda: o ramo do B-SAN3-08 corrige).
+- **critério de encerramento:** a rota de status não leva a `approved` sem OS e grava com CAS do status lido, com teste de corrida.
+
+## P-B-O6R-09-PAINEL-STATUS-SEM-ERRO (2026-11-11) — o painel "Alterar status" não mostra erro — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `frontend/src/modules/operations/dispatches/components/DispatchStatusActions.tsx` (sem `catch`) · **dono:** `B-SAN3-21` (texto e tela; passa pelas 3 opções se mudar algo visual) · **bloqueia:** não.
+- **origem:** emenda 1, R2-03. Com o 422 `FIELD_DISPATCH_STATUS_UNCHANGED` (mesmo status com observação ou motivo), o painel fica aberto e o texto não se perde, mas não há mensagem; o 409 `FIELD_DISPATCH_STATUS_CONFLICT` também chega sem texto próprio.
+- **critério de encerramento:** o painel mostra a recusa com texto PT-BR de negócio, com teste de tela.
+
+## P-B-O6R-09-WEB-LE-WORKORDERID-DO-409 (2026-11-11) — a web não lê o `details.workOrderId` do 409 da repetição — BAIXA
+
+- **status:** ABERTA · **escopo:** `frontend/src/services/api/client.ts` (o `ApiError` só lê `code` e `reason`) e o diálogo de aprovação do `B-SAN3-08` · **dono:** `B-SAN3-08` · **bloqueia:** não.
+- **origem:** emenda 1.1, EM1-09. O servidor manda o id da OS já criada; a tela ainda não o usa para o link do aviso, e a cópia do 5xx do diálogo cita a `P-SAN3-08-APPROVE-OS-NAO-ATOMICA`, que a fatia 6 fecha.
+- **critério de encerramento:** o aviso de "já aprovado" mostra o link da OS pelo `details.workOrderId`; a cópia do 5xx atualizada.
+
+## P-B-O6R-09-RATCHET-T13-NOVA-CHAVE (2026-11-11) — o desenho da fatia 6 cria 1 chave nova no ratchet do B-SAN3-05, e o arquivo dele está fora do PERMITIDO — ALTA (segura o merge)
+
+- **status:** ABERTA · **gravidade:** ALTA — leitura do dev, declarada (§A6): deixa `npm test` vermelho · **escopo:** `tests/san3-05-acessos-de-plataforma-guard.test.ts` (T13) × `src/modules/work-orders/work-order-scope.ts` · **dono:** o orquestrador e o planejador do `B-O6R-09` (emenda) · **bloqueia:** o merge do PR do `B-O6R-09`.
+- **fato medido:** o gerador acusa a chave `L2 · src/modules/work-orders/work-order-scope.ts · new PrismaWorkOrderRepository(scope.tx) · OUTRO(scope.tx) · ×1`. O `scope.tx` é o `tx` do callback de `withTenantRls` em `RlsPrismaServiceQuoteRepository.approveWithWorkOrder` (setter do GUC como 1ª instrução), mas o gerador só absolve o parâmetro direto do callback de um envoltório confiado.
+- **saídas (a escolher, `D-EMENDA-ANTES-DO-CODIGO`):** (1) acrescentar a chave em `NOVAS` com motivo, como o B-TRC-01 fez por decisão do orquestrador (`docs/revisoes/TRACCAR/B-TRC-01-DECISAO-T13.md`), pondo o arquivo do ratchet no PERMITIDO; ou (2) emendar o desenho para o `new PrismaWorkOrderRepository(tx)` nascer dentro do callback de `withTenantRls`, no repositório Prisma do orçamento (muda uma âncora da emenda e a lista da guarda (iv)).
+- **critério de encerramento:** o T13 verde no head do PR, com a escolha registrada.
+
+## P-B-O6R-09-TRAVA-PRISMA-REGISTRO (2026-11-11) — a escolha (a) ou (b) da trava de `prisma/` entre o B-O6R-09 e o B-O6R-12 não está registrada — MÉDIA (condição do orquestrador)
+
+- **status:** ABERTA · **escopo:** registro (`agent-orchestration/controle/`), plano v2 §4.3 e R2-09 da crítica r2 · **dono:** o orquestrador · **bloqueia:** o merge do PR do `B-O6R-09` (a verificação literal da linha A5 do plano).
+- **fato:** `grep -rln "B-O6R-09" agent-orchestration/controle/` no ramo, antes do commit da fatia 3, acha só a pendência antiga `P-O6R-B09`. A migração do bloco (`20260901090000_field_dispatch_idempotency_key`) se recarimba numa linha se o B-O6R-12 entrar antes (opção (a)).
+- **critério de encerramento:** a escolha registrada em `controle/`, e o carimbo conferido contra a última migração da `main` no momento do merge.

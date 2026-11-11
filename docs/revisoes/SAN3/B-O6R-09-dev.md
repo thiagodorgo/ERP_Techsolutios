@@ -166,3 +166,16 @@ T14(c) usa a forma (ii) pelo mesmo motivo.
      repositório Prisma do orçamento), o que muda a âncora `return new PrismaWorkOrderRepository(scope.tx);` e a lista da
      guarda (iv).
   Até a decisão, `npm test` tem exatamente esse vermelho, e o PR o declara.
+
+## Fatia 4 — registro
+
+- `agent-orchestration/controle/pendencias.md`: o fechamento do `Ω6R-ARQ-004` (P-O6R-B09) como apenso, valendo no merge;
+  `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` registrada já como fechada pela fatia 6 (ela não existia neste arquivo na `main`:
+  vinha só do registro do orquestrador); e as pendências novas, cada uma com dono: `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX`,
+  `-ESCRITORES-FORA-DE-SRC`, `-OS-CRIACAO-EVENTO-FORA-DA-TX`, `-NEXTCODE-CORRIDA`, `-STATUS-APROVA-SEM-OS` (2 itens),
+  `-PAINEL-STATUS-SEM-ERRO`, `-WEB-LE-WORKORDERID-DO-409`, `-RATCHET-T13-NOVA-CHAVE` (a parada D-W2, segura o merge) e
+  `-TRAVA-PRISMA-REGISTRO` (R2-09, segura o merge). A `P-DESPACHO-DUPLICADO-MESMO-TECNICO` segue com o bloco próprio
+  (`D-PORTAO-7-RECOMENDACOES-1011`); não está neste arquivo na `main` e não a criei: é do registro do orquestrador.
+- O registro de desenho do v2 §2.3 (com a escolha do orçamento da emenda 1) foi para o comando do bloco.
+- O índice `pendencias-indice.md` NÃO foi regenerado: o gerador é Python (`gerar-indice-pendencias.py`) e esta máquina
+  não tem Python no PATH (medido: `python3` → "Python was not found"). Fica para o próximo PR de registro.
