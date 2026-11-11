@@ -84,3 +84,20 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
 **Contagem:** 12 arquivos de teste tocados (9 novos, contando o helper; 3 estendidos). Testes novos da P-SESSAO-VIVA:
 16 (`portao-db`, PT·0 incluso) + 1 (`varredura-db`) + 1 (`varredura`) + 4 (`emissao-db`) + 4 (`portao`) + 1
 (`orcamento-db`) + 1 (`sse-db`) + 6 (`sse`) + 1 (T17) = **35**, mais o S4·c reescrito. Meta do plano: ≥ 10.
+
+## F1 — claim `sid` e os 3 assinadores (07:58–08:06 SP)
+
+- `auth.types.ts`: `SignAccessTokenInput.session_id?`, `AuthenticatedTokenPayload.sid?`, `AuthenticatedActor.sessionId?`.
+- `jwt.service.ts`: `signAccessToken` emite `sid` quando recebe `session_id`; `parseAccessTokenPayload` aceita `sid`
+  ausente ou UUID e LANÇA (`Invalid access token session.`) para qualquer outro valor; o resultado só leva `sid` se for
+  UUID (a mutação do T15, "tratar sid não-UUID como ausente", é apagar a linha do `throw`).
+- `auth.routes.ts`: login e troca de organização criam a sessão ANTES do token (`loginSession`,
+  `tenantSwitchSession`) e assinam com `session_id: loginSession.sessionId,` / `session_id: tenantSwitchSession.sessionId,`.
+- `auth-session.service.ts` (refresh): `const refreshedSessionId = payload.session_id;` e `session_id: refreshedSessionId,`.
+- **Desvio de forma, declarado:** o corpo da resposta do login e da troca também tinha `session_id: <sessão>.sessionId,`,
+  o que deixaria a âncora da M9 com 2 ocorrências. O corpo passou a ler de uma constante (`const { sessionId:
+  loginSessionId } = loginSession;`, idem `tenantSwitchSessionId`), com o mesmo valor. Medido: `grep -c -F` das três
+  âncoras da M9 = 1, 1 e 1 (`auth.routes.ts` ×2, `auth-session.service.ts`).
+- `npx tsc --noEmit`: verde.
+- **Verdes ao fim (TAP, `scratchpad/devdesat/f1/`):** `users-seg-desativado-emissao-db` 4/4 (T10a–d), `# fail 0`;
+  `users-seg-desativado-portao` T15 `ok` (os outros do arquivo dependem da F2).
