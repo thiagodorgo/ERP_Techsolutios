@@ -444,7 +444,7 @@ void main() {
         final bs = await repo.fetchForTenant(session, 'tenant-field');
 
         expect(bs.activeTenant.tenantId, 'tenant-field');
-        expect(bs.activeTenant.displayName, 'Tenant Field Services');
+        expect(bs.activeTenant.displayName, 'Organização Serviços de Campo');
       },
     );
 

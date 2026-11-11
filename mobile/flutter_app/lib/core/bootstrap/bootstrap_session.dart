@@ -180,13 +180,16 @@ class BootstrapSession extends Equatable {
 const devBootstrapSession = BootstrapSession(
   activeTenant: TenantContext(
     tenantId: 'tenant-demo',
-    displayName: 'Tenant Demo',
+    displayName: 'Organização Demonstração',
   ),
   availableTenants: [
-    TenantContext(tenantId: 'tenant-demo', displayName: 'Tenant Demo'),
+    TenantContext(
+      tenantId: 'tenant-demo',
+      displayName: 'Organização Demonstração',
+    ),
     TenantContext(
       tenantId: 'tenant-field',
-      displayName: 'Tenant Field Services',
+      displayName: 'Organização Serviços de Campo',
     ),
   ],
   enabledModules: [

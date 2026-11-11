@@ -197,9 +197,9 @@ class _WorkOrderExecuteScreenState
             ),
             const Expanded(
               child: PermissionBlockedState(
-                title: 'Acao nao autorizada',
+                title: 'Ação não permitida',
                 message:
-                    'work_orders:status necessario para alterar o status desta OS.',
+                    'Seu perfil não tem permissão para alterar o status desta OS. Fale com o administrador da sua organização.',
               ),
             ),
           ],

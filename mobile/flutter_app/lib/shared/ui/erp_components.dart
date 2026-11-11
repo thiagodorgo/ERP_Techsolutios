@@ -89,6 +89,10 @@ class OperationalStatusChip extends StatelessWidget {
   }
 }
 
+// Chave técnica de permissão (`recurso:acao`): nunca aparece no estado de acesso não permitido
+// (B-SAN3-19b, item 48). A checagem roda só em debug e teste; o texto vem do chamador.
+final _kChaveTecnica = RegExp(r'\b[a-z][a-z_]*:[a-z][a-z_]*\b');
+
 class PermissionBlockedState extends StatelessWidget {
   const PermissionBlockedState({
     required this.title,
@@ -101,6 +105,7 @@ class PermissionBlockedState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(!_kChaveTecnica.hasMatch('$title $message'));
     return EmptyState(icon: Icons.lock_outline, title: title, message: message);
   }
 }
@@ -249,12 +254,23 @@ class PolicyViolationBanner extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             for (final violation in violations)
-              Text('- ${violation.message} (${violation.code})'),
+              Text(
+                '- ${_violationLabel(violation.code)}: ${violation.message}',
+              ),
           ],
         ),
       ),
     );
   }
+
+  // Rótulo de negócio da regra, os mesmos rótulos do detalhe da prestação de contas
+  // (`expense_report_detail_screen.dart`), aqui acentuados: o código da regra nunca
+  // aparece na tela. O mapa do detalhe fica com a P-MOBILE-TITULOS-SEM-ACENTO.
+  static String _violationLabel(String code) => switch (code) {
+    'category_limit_exceeded' => 'Acima do limite',
+    'receipt_required' => 'Recibo obrigatório',
+    _ => 'Violação de política',
+  };
 }
 
 class ExpenseReportCard extends StatelessWidget {
@@ -306,7 +322,7 @@ class ApprovalDecisionCard extends StatelessWidget {
         title: Text(title),
         subtitle: Text(message),
         trailing: const OperationalStatusChip(
-          label: 'Preparacao',
+          label: 'Em breve',
           status: 'info',
         ),
       ),

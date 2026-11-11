@@ -117,12 +117,21 @@ class LocalDevBootstrapRepository implements MobileBootstrapRepository {
   @override
   Future<void> clearCache() => _storage.clearBootstrap();
 
+  // Nome de exibição da organização no app local (B-SAN3-19b, item 47): o da sessão de
+  // demonstração quando o id está lá; senão, o id formatado sem a palavra técnica "tenant".
+  // Só muda o texto exibido: o id e as permissões da sessão não passam por aqui.
   String _tenantDisplayName(String tenantId) {
-    return tenantId
+    bool mesmoId(TenantContext t) => t.tenantId == tenantId;
+    final demo = <TenantContext>[];
+    demo.addAll(devBootstrapSession.availableTenants.where(mesmoId));
+    if (demo.isNotEmpty) return demo.first.displayName;
+    final palavras = tenantId
         .replaceAll('-', ' ')
         .split(' ')
-        .map((w) => w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1)}')
-        .join(' ');
+        .where((w) => w.isNotEmpty && w.toLowerCase() != 'tenant')
+        .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
+        .toList();
+    return palavras.isEmpty ? 'Organização' : palavras.join(' ');
   }
 }
 

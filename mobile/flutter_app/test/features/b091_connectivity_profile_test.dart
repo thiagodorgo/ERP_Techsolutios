@@ -386,7 +386,7 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Tenant Demo'), findsWidgets);
+      expect(find.textContaining('Organização Demonstração'), findsWidgets);
     });
 
     testWidgets('t09 — does NOT show technical auth mode (B-122)', (
