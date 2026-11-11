@@ -49,3 +49,44 @@
 - **Sondas da crítica (P3):** a I4a (`X-Tenant-Id` em memória → 200) foi re-executada pelo T-B3 (ii-a): 200, `custody: null`,
   `items: []` depois do código; na `main`, 404 (a rota não existia). A I2c (7 mutações do servidor) é re-executada na F9a,
   com as mutações do plano no código real. A I2d (M-W1) na F7/F9a.
+
+### F1 — rota, serviço, resolvedor e repositórios (ramos 1 e 3), 11:00–11:25
+
+- **Onde cada âncora mora** (cada uma com `grep -cF` = 1 no arquivo nomeado):
+  - `src/modules/inventory/inventory.repository.ts` (memória): M-A1 `movement.custodyOperatorProfileId === custody.custodyOperatorProfileId`
+    (em `isSameProfessionalCustody`) e M-A23 `if (balance.custodyType !== "base") continue;` (no laço dos baldes de
+    `listCustodyBalances`).
+  - `src/modules/inventory/inventory-prisma.repository.ts` (Prisma): M-A8 `custody_operator_profile_id: custody.custodyOperatorProfileId,`
+    e, para a BASE (N-04), `custody_type: custody.custodyType,` — a mutação do Prisma da filtragem da BASE, que chamo
+    **M-A23b** (dona: T-DB1b). No Prisma a ausência de `custodyOperatorProfileId` (BASE) não filtra o perfil: a BASE é só
+    o `custody_type`, e por isso apagar essa linha mostra X, Y e W ao gerente.
+  - `src/modules/inventory/inventory.service.ts`: M-A3 `const profile = await this.references.resolveActorOperatorProfile?.(actor);`,
+    M-A7 `if (!item || !item.isActive) continue;`, M-A2 `.filter((entry) => entry.available > 0)` (em `technicianStock`) e
+    M-A24 `if (error instanceof OperatorProfileError && error.reason === "invalid_uuid") return undefined;` (em
+    `createActorOperatorProfileResolver`).
+  - `src/modules/inventory/inventory.actor-custody.ts`: M-A4 `if (profile && profile.isActive) {`, M-A22
+    `if (hasTenantWideRole(actor)) {`, e as âncoras do 15b M-C1 `return { custodyType: "professional", custodyOperatorProfileId: profile.id };`
+    e M-C3 `return { custodyType: "base" };`.
+  - `src/modules/inventory/inventory.dto.ts`: M-A6 `label: custody.label,`.
+  - `src/modules/inventory/inventory.routes.ts`: M-A5 `requirePermission(TECHNICIAN_STOCK_PERMISSION),`.
+- **N-01:** o resolvedor converte toda falha que não seja "sem cadastro" ou `invalid_uuid` em
+  `InventoryError(503, "STOCK_UNAVAILABLE", "custody_lookup_unavailable", <texto neutro>)`. O T-B10 confere 503 e que o
+  corpo não traz `db down`. (O tratador genérico de rota mandaria um `Error` cru como **400 com a mensagem**:
+  `src/modules/core-saas/routes/http.ts:51-58`; por isso a conversão é no resolvedor.)
+- **N-12:** `hasTenantWideRole` = `actor.roles.some((role) => WORK_ORDER_MUTATION_SCOPE[role] === "tenant_wide")`.
+- **Censo (T-B8):** `node --import tsx tests/helpers/o6r07c-census.ts gravar tests/fixtures/o6r07c-classificacao-vias.json`
+  → `chaves vivas: 511 | VIOLAÇÕES: 0`; `git diff --stat` do instantâneo = **1 chave** (`ROTA GET /api/v1/mobile/technician/stock`,
+  classe `LEITURA`, +4 linhas).
+- **Contrato:** `technician_stock@2026-11.b-san3-15a` em `API_CONTRACTS.md` §3.10 (linha da tabela + bloco) e a linha do
+  `docs/claude-code-handoff/API_CONTRACTS.md`.
+- **Regressão (memória):** `node --test --import tsx tests/stock-custody.test.ts tests/inventory.test.ts tests/inventory-items-routes.test.ts tests/stock-movements-routes.test.ts tests/inventory-write-paths-guard.test.ts tests/o6r07c-census-guard.test.ts`
+  → `# tests 85 · pass 85 · fail 0 · skipped 0`.
+- **Commit da F1 sem o ramo 2** (o `if (hasTenantWideRole(actor))`): no commit `9567a891`, `bsan315-technician-stock`
+  dá 7/9 (T-B9 e a parte "base" do T-B6 vermelhos, como esperado: são da F1g).
+
+### F1g — o ramo 2 (Pergunta 5 (a): o gerente sem cadastro usa a BASE), 11:26
+
+- Resposta do dono: 5(a) (`D-DONO-TODAS-RECOMENDACOES-1111`). O ramo 2 de `resolveActorStockCustody` volta; o rótulo
+  é "Base da organização".
+- `node --test --import tsx tests/bsan315-technician-stock.test.ts` → `# tests 9 · pass 9 · fail 0` (T-B4 e T-B9 verdes,
+  inclusive o ator `[field_technician, manager]` sem cadastro, da N-12).

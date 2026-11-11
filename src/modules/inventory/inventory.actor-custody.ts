@@ -27,7 +27,9 @@ export function resolveActorStockCustody(
   if (profile && profile.isActive) {
     return { custodyType: "professional", custodyOperatorProfileId: profile.id };
   }
-  // Ramo 2 (a BASE para o ator sem cadastro com papel `tenant_wide`): fatia F1g, depois da Pergunta 5.
+  if (hasTenantWideRole(actor)) {
+    return { custodyType: "base" };
+  }
 
   return undefined;
 }
