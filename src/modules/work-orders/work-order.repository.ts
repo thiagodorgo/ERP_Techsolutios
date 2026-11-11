@@ -21,6 +21,7 @@ import type {
   WorkOrderEventType,
   WorkOrderStatus,
 } from "./work-order.types.js";
+import { assertCheckinVerdictForStatus } from "./work-order.checkin.js";
 import { hasInvoicedItemsError, matchesAssignedToActor, WorkOrderError } from "./work-order.types.js";
 import { WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
@@ -427,6 +428,9 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   }
 
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
+    // B-SAN3-26 (C26-08) — paridade com o Prisma: `on_site` só com um veredito emitido por `verifyCheckin`, ANTES do
+    // CAS e de qualquer escrita (Emenda 3 da junção com o B-SAN3-23, item 4).
+    assertCheckinVerdictForStatus(input);
     // B-SAN3-23 (P-23.4; Emenda 1.1, EM1-04) — paridade do CAS do Prisma: compara a OS VIVA do Map, no mesmo tique
     // da gravação (nenhum `await` entre ler, comparar e gravar), nunca um retrato tirado antes de um `await`.
     const current = this.liveWorkOrder(input.tenantId, input.workOrderId);
@@ -749,6 +753,8 @@ export async function originateSystemRemovalWorkOrder(
     description: systemRemovalWorkOrderDescription(input.plate),
     priority: "medium",
     serviceCatalogId: input.serviceCatalogId,
+    // B-SAN3-26 — a placa da solicitação é a referência do check-in do guincheiro (sem ela, a OS só andaria pela base).
+    serviceDetails: { plate: input.plate },
     // Ator SISTEMA: created_by/updated_by ausentes (NULL). Veículo NÃO identificado: sem vehicleId/customer.
     status: "open",
   });

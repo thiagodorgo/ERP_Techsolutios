@@ -16,11 +16,24 @@ import {
 import { buildGeocodeQueryString, GeocoderUnavailableError, type Geocoder } from "./geocoding/geocoder.js";
 import { NoopGeocoder } from "./geocoding/noop-geocoder.js";
 import { createDefaultGeocoder } from "./geocoding/geocoder.factory.js";
+import {
+  assertCheckinReferenceUnchanged,
+  checkinTimelineMessage,
+  describeCheckinMode,
+  isCheckinOfficeOnly,
+  resolveCheckinReference,
+  requireCheckinVerdict,
+  verifyCheckin,
+  withoutReservedOfficeMark,
+  type CheckinListDescription,
+  type CheckinVerdict,
+} from "./work-order.checkin.js";
 import type {
   ActiveDispatchAtSiteResolver,
   AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
   CancelWorkOrderWithFinancialDecisionResult,
+  CheckinEntry,
   ListWorkOrdersInput,
   ListWorkOrdersResult,
   UpdateWorkOrderInput,
@@ -955,6 +968,57 @@ export class WorkOrderService {
   }
 
   /**
+   * B-SAN3-26 (item 53) — o veredito do check-in para o destino `on_site`; `undefined` para todo outro destino.
+   * O tipo do catálogo é o do SERVIDOR (tenant-scoped; `null` quando não resolve, e `null` não isenta).
+   */
+  private async verifyCheckinForStatus(
+    actor: WorkOrderActorContext,
+    current: WorkOrder,
+    nextStatus: WorkOrderStatus,
+    body: RawRecord,
+    entry: CheckinEntry,
+  ): Promise<CheckinVerdict | undefined> {
+    if (nextStatus !== "on_site") return undefined;
+    const typeInfo = await this.resolveServiceCatalogTypeInfo(actor, current.serviceCatalogId);
+    return verifyCheckin(actor, current, typeInfo, body, entry);
+  }
+
+  // B-SAN3-26 (C26-06) — só quem é SÓ base edita a placa (mesma regra de união do check-in).
+  private assertCheckinReferenceUnchangedByField(
+    actor: WorkOrderActorContext,
+    current: WorkOrder,
+    serviceDetails: Record<string, unknown> | undefined,
+  ): void {
+    if (serviceDetails === undefined || isCheckinOfficeOnly(actor)) return;
+    assertCheckinReferenceUnchanged(current.serviceDetails, serviceDetails);
+  }
+
+  /**
+   * B-SAN3-26 (C26-03) — o modo do check-in de cada OS da página, para a lista do app. O tipo do catálogo é resolvido
+   * UMA vez por catálogo distinto (memória por chamada), e só para a OS sem placa (com placa, o modo é `plate`).
+   */
+  async describeCheckinForList(
+    actor: WorkOrderActorContext,
+    items: readonly WorkOrder[],
+  ): Promise<Map<string, CheckinListDescription>> {
+    const typeInfoByCatalog = new Map<string, Promise<ServiceCatalogTypeInfo>>();
+    const result = new Map<string, CheckinListDescription>();
+    for (const item of items) {
+      let typeInfo: ServiceCatalogTypeInfo = null;
+      if (item.serviceCatalogId && resolveCheckinReference(item.serviceDetails) === null) {
+        let pending = typeInfoByCatalog.get(item.serviceCatalogId);
+        if (!pending) {
+          pending = this.resolveServiceCatalogTypeInfo(actor, item.serviceCatalogId);
+          typeInfoByCatalog.set(item.serviceCatalogId, pending);
+        }
+        typeInfo = await pending;
+      }
+      result.set(item.id, describeCheckinMode(item.serviceDetails, typeInfo));
+    }
+    return result;
+  }
+
+  /**
    * B-O6R-07c-a (`P-O6R-SUBRECURSO-OBJECT-SCOPE`) — a OS para quem vai ESCREVER num subrecurso dela: anexo,
    * comentário, tag de comentário, geocode e a km pela fila do app. É `get` (404 do cross-tenant, inalterado)
    * seguido do escopo por objeto do 07a (`assertMutationObjectScope`, corpo intocado): o técnico de campo só
@@ -993,6 +1057,9 @@ export class WorkOrderService {
 
     const destination = this.parseDestination(body);
     const serviceDetails = parseServiceDetails(body.service_details ?? body.serviceDetails);
+    // B-SAN3-26 (C26-06) — quem confere a placa no "No local" não a escreve: o campo não troca, omite, anula nem
+    // esvazia a placa (a base edita). Antes de qualquer escrita.
+    this.assertCheckinReferenceUnchangedByField(actor, current, serviceDetails);
 
     // Ω3F-2a (J-Ω3F-2 critico, furos #2/#2b) — a regra de destino no update SÓ se aplica quando o corpo
     // TOCA destino: edição parcial de OS legada/sem-destino (ex.: só o título) NÃO trava. Quando toca,
@@ -1455,7 +1522,14 @@ export class WorkOrderService {
     return updated;
   }
 
-  async changeStatus(actor: WorkOrderActorContext, workOrderId: string, body: RawRecord): Promise<WorkOrder> {
+  async changeStatus(
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+    body: RawRecord,
+    // B-SAN3-26 — a porta por onde o pedido chegou. Só a rota HTTP de status passa `http_status_route` (a base marca
+    // "No local" sem os dígitos só por ela); a fila passa `mobile_sync`. Sem o parâmetro: `internal`, estrita.
+    options?: { readonly entry?: CheckinEntry },
+  ): Promise<WorkOrder> {
     const current = await this.get(actor, workOrderId);
 
     // B-O6R-07a (§3.3) — mesma guarda do update. Este é também o caminho da FILA OFFLINE do mobile
@@ -1464,7 +1538,6 @@ export class WorkOrderService {
     await this.assertMutationObjectScope(actor, current);
 
     const nextStatus = parseWorkOrderStatus(body.status);
-    const message = optionalString(body.message) ?? defaultStatusMessage(nextStatus);
     const cancellationReason = optionalString(body.cancellationReason) ?? optionalString(body.reason);
 
     // P-Ω3F6-STATUS-BYPASS FECHADO — o cancelamento NÃO acontece mais por esta rota legada. Antes, quem tinha
@@ -1498,25 +1571,44 @@ export class WorkOrderService {
       );
     }
 
+    // B-SAN3-26 (item 53) — o "No local" exige o veredito de check-in, emitido num ponto só. A chave é o DESTINO:
+    // `on_site → on_site` (que `assertStatusTransition` deixa passar) também é conferido.
+    const entry = options?.entry ?? "internal";
+    let checkin = await this.verifyCheckinForStatus(actor, current, nextStatus, body, entry);
+
     // B-SAN3-23 (P-23.4 + Emenda 1) — CAS sobre a situação validada; se casar 0, relê, revalida a MESMA operação
     // sobre a relida e regrava UMA vez (o precedente `FinancialTitleService.changeStatus`).
-    const statusInput = {
+    // Junção com o B-SAN3-26 (Emenda 3): a escrita leva o veredito da OS que foi VALIDADA nesta passada, e a
+    // mensagem sai dele. Em `on_site` ela é do servidor ("registrada pela base" só a base escreve, C26-05); nas
+    // outras transições, a mensagem do cliente que imita essa marca é descartada (C1-A1, junta do PR #534).
+    const statusInputBase = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
-      status: nextStatus,
-      message,
       cancellationReason,
       actorUserId: actor.userId,
     };
+    const statusWrite = (verdict: CheckinVerdict | undefined, expectedStatus: WorkOrderStatus) => {
+      const message = verdict
+        ? checkinTimelineMessage(verdict)
+        : withoutReservedOfficeMark(optionalString(body.message)) ?? defaultStatusMessage(nextStatus);
+      return nextStatus === "on_site"
+        ? { ...statusInputBase, message, expectedStatus, status: nextStatus, checkin: requireCheckinVerdict(verdict) }
+        : { ...statusInputBase, message, expectedStatus, status: nextStatus };
+    };
     let fromStatus = current.status;
-    let updated = await this.repository.changeStatus({ ...statusInput, expectedStatus: fromStatus });
+    let write = statusWrite(checkin, fromStatus);
+    let updated = await this.repository.changeStatus(write);
     if (!updated) {
       const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-status
       await this.revalidateStatusChange(actor, reread, nextStatus); // B-SAN3-23:revalida-status
+      // Emenda 3, item 1 — o veredito é RECALCULADO sobre a OS relida, antes da regravação: a placa pode ter mudado.
+      checkin = await this.verifyCheckinForStatus(actor, reread, nextStatus, body, entry); // B-SAN3-26:veredito-na-releitura
       fromStatus = reread.status;
-      updated = await this.repository.changeStatus({ ...statusInput, expectedStatus: fromStatus });
+      write = statusWrite(checkin, fromStatus);
+      updated = await this.repository.changeStatus(write);
       if (!updated) throw await this.statusWriteMissError(actor, current.id, nextStatus); // B-SAN3-23:segunda-falha-status
     }
+    const message = write.message;
 
     await this.repository.createEvent({
       tenantId: actor.tenantId,
@@ -1528,6 +1620,8 @@ export class WorkOrderService {
       message,
       metadata: {
         cancellationReason,
+        // §2.8 — só o MODO do veredito; os dígitos e a placa nunca entram no evento.
+        ...(checkin ? { checkin: checkin.mode } : {}),
       },
     });
 
@@ -1838,7 +1932,8 @@ export class WorkOrderService {
     const userId = parseOptionalUuid(body.userId, "userId");
     await this.assertTechnicianChangeAllowed(actor, current, { userId, operatorId });
 
-    const message = optionalString(body.message) ?? "Ordem de servico atribuida.";
+    // B-SAN3-26 (C1-A1) — a atribuição também é transição: o cliente não escreve a marca da base.
+    const message = withoutReservedOfficeMark(optionalString(body.message)) ?? "Ordem de servico atribuida.";
     const input: AssignWorkOrderInput = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
@@ -2005,8 +2100,9 @@ export class WorkOrderService {
       ? await resolver({ tenantId: actor.tenantId, userId, roles: [], permissions: [] })
       : undefined;
     const operatorId = operatorProfileId ?? userId;
+    // B-SAN3-26 (C1-A1) — o motivo do despacho vem do cliente: não escreve a marca da base.
     const message =
-      optionalString(input.message) ??
+      withoutReservedOfficeMark(optionalString(input.message)) ??
       (input.source === "field_dispatch_reassign"
         ? "Ordem de serviço reatribuída pelo despacho."
         : "Ordem de serviço atribuída pelo despacho.");

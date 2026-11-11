@@ -25,6 +25,7 @@ import type {
   WorkOrderPriority,
   WorkOrderStatus,
 } from "./work-order.types.js";
+import { assertCheckinVerdictForStatus } from "./work-order.checkin.js";
 import { assignedToActorOperatorIds, hasInvoicedItemsError } from "./work-order.types.js";
 import { isWorkOrderUuid, WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
@@ -524,6 +525,8 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
   }
 
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
+    // B-SAN3-26 (C26-08) — `on_site` só com um veredito emitido por `verifyCheckin`, ANTES de tocar o banco.
+    assertCheckinVerdictForStatus(input);
     const now = new Date();
     // B-SAN3-23 (P-23.4) — CAS: grava só se a OS ainda estiver na situação que o serviço validou. Quem espera o
     // cancelamento re-avalia o predicado contra a linha cancelada (READ COMMITTED) e casa 0 linhas: o cancelamento

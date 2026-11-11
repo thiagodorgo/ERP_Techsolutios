@@ -365,6 +365,8 @@ test("[ajuste do operador] retirar exige motivo; vistoria já enviada ao técnic
   const workOrder = await service.create(actor, {
     title: "Ajuste",
     checklists: [{ checklistId: templateA, role: "collection" }],
+    // B-SAN3-26 (só fixture) — com placa, para o "No local" interno ter o que conferir.
+    service_details: { plate: "ABC1D23" },
   });
 
   await assertRejectsWithReason(
@@ -408,7 +410,7 @@ test("[ajuste do operador] retirar exige motivo; vistoria já enviada ao técnic
   await service.changeStatus(actor, workOrder.id, { status: "assigned" });
   await service.changeStatus(actor, workOrder.id, { status: "accepted" });
   await service.changeStatus(actor, workOrder.id, { status: "on_route" });
-  await service.changeStatus(actor, workOrder.id, { status: "on_site" });
+  await service.changeStatus(actor, workOrder.id, { status: "on_site", checkin_confirmation: { last_digits: "23" } });
   await service.changeStatus(actor, workOrder.id, { status: "in_progress" });
   await service.changeStatus(actor, workOrder.id, { status: "completed" });
   await assertRejectsWithReason(

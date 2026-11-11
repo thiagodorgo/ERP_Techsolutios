@@ -45,6 +45,9 @@ WorkOrder _makeWo({
   WorkOrderStatus status = WorkOrderStatus.scheduled,
   String code = 'OS-1042',
   WorkOrderServiceType? serviceType,
+  // B-SAN3-26 (só fixture) — o modo do check-in e o fim da placa vêm do servidor; a placa termina em "23".
+  CheckinMode checkinMode = CheckinMode.plate,
+  String? checkinPlateTail = '23',
 }) => WorkOrder(
   localId: localId,
   tenantId: _tenant,
@@ -58,6 +61,8 @@ WorkOrder _makeWo({
   createdAt: DateTime.utc(2026, 7, 1),
   assignedUserId: _userId,
   serviceType: serviceType,
+  checkinMode: checkinMode,
+  checkinPlateTail: checkinPlateTail,
 );
 
 GoRouter _makeRouter(WorkOrder wo) => GoRouter(
@@ -197,7 +202,7 @@ void main() {
     testWidgets(
       '5. Plate dialog confirms when input matches last 2 chars AND gpsOk=true',
       (t) async {
-        // wo.code = 'OS-1042' → last 2 chars = '42'
+        // B-SAN3-26 (só fixture) — confere com o fim da PLACA ('23'), não mais com o do código 'OS-1042'.
         final store = InMemoryWorkOrderLocalStore([
           _makeWo(status: WorkOrderStatus.enRoute, code: 'OS-1042'),
         ]);
@@ -226,7 +231,7 @@ void main() {
         await t.tap(find.byKey(const Key('checkin-arrived')));
         await t.pumpAndSettle();
 
-        await t.enterText(find.byKey(const Key('plate-input')), '42');
+        await t.enterText(find.byKey(const Key('plate-input')), '23');
         await t.pumpAndSettle();
 
         // Confirm button should be enabled
@@ -264,7 +269,7 @@ void main() {
       await t.enterText(find.byKey(const Key('plate-input')), 'XX');
       await t.pumpAndSettle();
 
-      // 'XX' != '42' so confirm is disabled — tapping it should be a no-op
+      // 'XX' != '23' (o fim da placa) so confirm is disabled — tapping it should be a no-op
       // Verify confirm button is disabled
       final confirmBtn = t.widget<FilledButton>(
         find.byKey(const Key('plate-confirm')),
@@ -291,7 +296,7 @@ void main() {
       await t.pumpAndSettle();
 
       // Even with correct input, confirm should be disabled
-      await t.enterText(find.byKey(const Key('plate-input')), '42');
+      await t.enterText(find.byKey(const Key('plate-input')), '23');
       await t.pumpAndSettle();
 
       final confirmBtn = t.widget<FilledButton>(

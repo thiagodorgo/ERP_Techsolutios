@@ -4805,6 +4805,20 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Leitura do plano, pelo item 10(1):** o bloco não toca nenhum dos cinco gatilhos de junta completa: não calcula nem escreve dinheiro (a tela não calcula; o approve do servidor não muda), não abre consulta sem escopo, não muda permissão (nenhum grant, gate de rota nem `can()`), não perde dado sem volta (a recusa devolve o orçamento a rascunho; a falha no meio é anterior ao bloco e foi para o `B-O6R-09`) e não abre superfície externa. Nível: **revisão reforçada** (1 revisor que executa testes e mutações + CI) **mais a conferência visual do diálogo**.
 - **Não escolhida em silêncio:** a trava automática do item 10(2) roda sobre o diff do PR (`src/**`, `prisma/**`, `.github/**`, `catalog.ts`, `RBAC_MATRIX.md`, `frontend/src/modules/auth/**`, `frontend/src/providers/**`, e linhas com `permissions.includes(`, `can(` ou `requirePermission(`); se acusar, o bloco sobe para junta completa. Se o dono preferir a junta, o plano não muda; muda só o fim do ciclo.
 
+## C-B-SAN3-26-P3-PREMISSA (registro de CONFLITO, §A2, 2026-11-11) — a P3 do B-SAN3-26 foi aceita sobre premissa falsa
+
+- **O conflito:** a decisão `D-PORTAO-9-RECOMENDACOES-1011`, item B-SAN3-26 (3) ("sem exceção para OS já abertas sem placa"), foi aceita sobre a recomendação do plano v1, que dizia que "a base completa a placa da OS (é um campo, leva segundos)". Na `main` `d5ec1696`, o console não tem edição de OS (`frontend/src/modules/work-orders/work-orders.service.ts:105`, sem chamador), e a placa só existe na criação de `socorro` (`WorkOrderForm.tsx:283-286`).
+- **Quem achou:** a crítica `crit-26-cl` (C26-01), confirmada pelo `replano-B-SAN3-26-api` (plano v2, apêndice A).
+- **Como se resolveu:** a decisão não foi revogada nem aplicada em silêncio. A P3 voltou ao dono reescrita (plano v2, §9), e ele escolheu a alternativa B em `D-PORTAO-5-RECOMENDACOES-1111` (11/11 01:34 SP): sem tela nova agora; o guincheiro de OS sem placa vê "peça à base para cadastrar a placa ou registrar a chegada"; a base registra pelo console; a criação ganha o campo de placa; a edição da placa vai para um bloco próprio, com as 3 opções. As decisões (1) e (2) de 10/11 não dependiam da premissa e seguem valendo.
+- **Registrado por:** `dev-san326-cl`, na F0 do bloco, antes de qualquer fatia de código (o §6 do plano trava o código neste registro).
+
+## C-B-SAN3-26-DESPACHANTE-NA-BASE (registro de CONFLITO, §A2, 2026-11-11) — `field_dispatcher` na base do check-in × `RBAC_MATRIX.md:118`
+
+- **O conflito:** a única lista "base/escritório" escrita na matriz, a da correção de km (`RBAC_MATRIX.md:118`), exclui o `field_dispatcher` ("NÃO: field_technician, field_dispatcher, technician"). O B-SAN3-26 o põe na lista de base do check-in (`CHECKIN_OFFICE_ROLES`), apoiado na P2 do dono ("a base (gestor, despachante, operador)") e no catálogo (o `field_dispatcher` não tem `field_location:send` e tem `field_dispatch:create/cancel/reassign`). A mesma lista põe `platform_admin`/`super_admin` na base pelo "full" de OS (`RBAC_MATRIX.md:45`), embora a l.57 diga que o `platform_admin` "is not the default approver of tenant business flows".
+- **Quem achou:** a crítica `crit-26-r2-cl` (C26R2-07, baixa).
+- **Como fica:** as duas leituras ficam declaradas no código (comentário de `CHECKIN_OFFICE_ROLES` em `src/modules/work-orders/work-order.checkin.ts`, citando as l.45, 57 e 118) e aqui, sem consolidar a matriz. O dono desfaz cada uma em uma linha (tirar o papel da lista). O teste A9d obriga todo papel com `work_orders:status` a estar em exatamente uma das duas listas.
+- **Registrado por:** `dev-san326-cl`.
+
 ## D-J530-G14-BRIEFING-X-CONTRATO (2026-11-11) — o BRIEFING da J-530 pedia BEGIN/COMMIT numa migração de UMA sentença; o contrato a isenta
 
 - **fato:** o §C4 (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA`) exige `BEGIN;`/`COMMIT;` só com mais de uma sentença; `scripts/migration-transaction-guard.mjs` isenta a migração nova de uma sentença ("Nova de UMA sentença transacional → isenta de G2 e G6"); a G14 (`prisma/migrations/20260901000000_ass08b_provider_one_enabled_per_kind/migration.sql`) tem 1 sentença e declara isso na própria linha 3.
@@ -4925,3 +4939,24 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
   - a recusa da trava é **422** (`WORK_ORDER_UNPROCESSABLE` / `delivery_checklist_pending`), como manda a emenda 1 (R-R2-01); a porta `listChecklistRunPhases` é opcional no tipo (composição parcial de teste = sem trava) e, montada, falha fechada;
   - o `checklistRepositoryProvider` do app tolera só a falta de sobrescrita do banco local (`UnimplementedError` dentro de `ProviderException`) e aí monta o repositório sem a fonte das OS, para não quebrar testes antigos que montam o provedor sem banco; qualquer outra falha atravessa. O app de produção sempre monta o banco.
 - **HIPÓTESE do caminho infeliz do R-R2-01, medida por leitura do código (fatia 2): NEGADA.** "Descartar" a conclusão recusada na tela de sincronização marca só a ação (`sync_stalled_resolver.dart`, `sync_resolution_side_effects.dart` não toca a OS), a OS local fica `completed` com `syncStatus: pending`, e a carga da lista preserva toda OS `pending` (`work_order_repository.dart`, `_upsertRemoteOrders`). Logo a OS não volta a "Em atendimento" e o técnico não chega à entrega pelo app. Registrado `P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP`; sem conserto improvisado. Não há perda de dado: a OS do servidor fica aberta e a entrega continua respondível.
+
+## D-B-O6R-12-ACEITE-E-EMENDA-E1 (2026-11-11) — regime da abertura e ajustes da crítica v2
+
+- O aceite provisório do item 24 fica ratificado pelas decisões do dono
+  `D-PORTAO-9-RECOMENDACOES-1011` e `D-PORTAO-5-RECOMENDACOES-1111`: o retrato nasce na abertura,
+  alcança cobrança, prazos, leilão, liberação, painel e portal; o backfill usa o valor atual.
+- A crítica de rodada 2 (`crit-12-r2-plano.json`) aprovou o plano v2 com 4 ajustes médios e 6
+  baixos. Todos entram como requisito antes do código na Emenda E1 de
+  `agent-orchestration/codex/comandos/B-O6R-12-jurisdiction-profile-versioning.md`.
+- O ponteiro nulo do serviço diário preserva o catch-up vivo; uma cópia não nula vence.
+- Correção excepcional de retrato errado exige migração aditiva própria, censo e revisão; não
+  nasce bypass de runtime neste bloco.
+- **Emenda E1′ do dev sucessor (`dev-o6r12-cl`, 2026-11-11, antes do código; leitura do dev,
+  declarada, §A6):** E1.2′ — `SET search_path = pg_catalog, public, pg_temp` nas 2 funções, porque
+  sem `pg_temp` no fim a sombra temporária vence para tabelas (sonda medida); E1.8′ — a trava do
+  PATCH é `FOR NO KEY UPDATE`, e a abertura não espera o PATCH; E1.9′ e E1.10′ — onde moram os testes;
+  E1.11′ — o drill entra na catraca `db-catalog-write-guard` com contagem e motivo. Texto inteiro no
+  comando do bloco.
+- **Carimbo da migração:** `20260901100000_impound_process_regime_snapshot`, depois da
+  `20260901090000` do #537, pela trava de `prisma/**` (`D-B-O6R-09-TRAVA-PRISMA-OPCAO-A`) e por
+  ordem do orquestrador; a ordem vale nos dois sentidos de merge.

@@ -198,6 +198,9 @@ class _WorkOrderConflictResolutionPanelState
       ),
       builder: (context, snapshot) {
         final conflicts = snapshot.data ?? const <SyncAction>[];
+        // B-SAN3-26 (C26-02, N-02) — chegada recusada pela placa: o cartão mostra o motivo e UMA saída.
+        final checkinRedo = conflicts.any(isCheckinRefusalAction);
+        if (checkinRedo) return _checkinRedoCard(context, service, conflicts);
         final safeMessage = _firstSafeMessage(conflicts);
         final canAcceptServer = conflicts.any(_hasRemoteReference);
 
@@ -270,6 +273,93 @@ class _WorkOrderConflictResolutionPanelState
         );
       },
     );
+  }
+
+  Widget _checkinRedoCard(
+    BuildContext context,
+    WorkOrderConflictResolutionService service,
+    List<SyncAction> conflicts,
+  ) {
+    final refused = conflicts.firstWhere(isCheckinRefusalAction);
+    return Card(
+      key: const Key('work-order-checkin-redo-card'),
+      color: Theme.of(context).colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.warning_amber_outlined),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Chegada não confirmada',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                const OperationalStatusChip(
+                  label: 'Conflito',
+                  status: 'danger',
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              checkinRefusalMessage(refused.lastErrorCode),
+              key: const Key('work-order-checkin-redo-reason'),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              key: const Key('work-order-checkin-redo'),
+              onPressed: _resolving ? null : () => _redoCheckin(service),
+              icon: const Icon(Icons.pin_outlined),
+              label: const Text('Confirmar a placa de novo'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// B-SAN3-26 — desfaz a chegada recusada e reabre o diálogo da placa. O GPS é lido e o diálogo é aberto ANTES de o
+  /// repositório recarregar: ao recarregar, a OS deixa de estar em conflito e este cartão sai da tela.
+  Future<void> _redoCheckin(WorkOrderConflictResolutionService service) async {
+    final repository = widget.repository;
+    final gps = readGpsAvailability(ref);
+    setState(() => _resolving = true);
+    try {
+      final restored = await service.undoRefusedCheckin(
+        tenantId: widget.workOrder.tenantId,
+        localId: widget.workOrder.localId,
+      );
+      final gpsOk = await gps;
+      if (restored == null || !mounted) {
+        await repository.refreshLocalState();
+        return;
+      }
+      final dialog = showArrivalConfirmationDialog(
+        context,
+        restored,
+        gpsOk: gpsOk,
+      );
+      await repository.refreshLocalState();
+      final confirmation = await dialog;
+      if (confirmation == null) return;
+      await repository.updateStatus(
+        restored.localId,
+        WorkOrderStatus.arrived,
+        lastDigits: confirmation.lastDigits,
+      );
+    } on StateError catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message.toString())));
+    } finally {
+      if (mounted) setState(() => _resolving = false);
+    }
   }
 
   bool _hasRemoteReference(SyncAction action) {
@@ -725,11 +815,11 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
 
   WorkOrder get _wo => widget.wo;
 
-  Future<void> _doStatus(WorkOrderStatus next) async {
+  Future<void> _doStatus(WorkOrderStatus next, {String? lastDigits}) async {
     setState(() => _loading = true);
     try {
       final repo = ref.read(workOrderRepositoryProvider);
-      await repo.updateStatus(_wo.localId, next);
+      await repo.updateStatus(_wo.localId, next, lastDigits: lastDigits);
     } on StateError catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -741,19 +831,20 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
   }
 
   Future<void> _openArrivalDialog() async {
-    final gpsOk = await ref
-        .read(gpsAvailableProvider.future)
-        .catchError((_) => false);
+    final gpsOk = await readGpsAvailability(ref);
     if (!mounted) return;
 
-    final confirmed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _PlateDialog(wo: _wo, gpsOk: gpsOk),
+    final confirmation = await showArrivalConfirmationDialog(
+      context,
+      _wo,
+      gpsOk: gpsOk,
     );
 
-    if (confirmed == true && mounted) {
-      await _doStatus(WorkOrderStatus.arrived);
+    if (confirmation != null && mounted) {
+      await _doStatus(
+        WorkOrderStatus.arrived,
+        lastDigits: confirmation.lastDigits,
+      );
     }
   }
 
@@ -901,6 +992,35 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
 // Plate validation dialog
 // ---------------------------------------------------------------------------
 
+/// B-SAN3-26 — o que o diálogo de chegada devolve: `null` = cancelou; [lastDigits] = os 2 caracteres digitados (nulo no
+/// serviço sem placa). Quem confere de verdade é o servidor; o app só molda a tela pelo modo que o servidor mandou.
+class ArrivalConfirmation {
+  const ArrivalConfirmation({this.lastDigits});
+
+  final String? lastDigits;
+}
+
+/// B-SAN3-26 — o GPS do aparelho, lido ANTES de abrir o diálogo (quem chama ainda está montado).
+Future<bool> readGpsAvailability(WidgetRef ref) =>
+    ref.read(gpsAvailableProvider.future).catchError((_) => false);
+
+/// B-SAN3-26 — abre o diálogo de chegada da OS. Usado pelo botão "Cheguei ao local" e pelo "Confirmar a placa de novo"
+/// do cartão de conflito. `showDialog` é chamado na hora: o diálogo vive no navegador, mesmo que o cartão saia da tela.
+Future<ArrivalConfirmation?> showArrivalConfirmationDialog(
+  BuildContext context,
+  WorkOrder wo, {
+  required bool gpsOk,
+}) {
+  return showDialog<ArrivalConfirmation>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _PlateDialog(wo: wo, gpsOk: gpsOk),
+  );
+}
+
+String _normalizePlateChars(String raw) =>
+    raw.toUpperCase().replaceAll(RegExp('[^A-Z0-9]'), '');
+
 class _PlateDialog extends StatefulWidget {
   const _PlateDialog({required this.wo, required this.gpsOk});
 
@@ -913,7 +1033,6 @@ class _PlateDialog extends StatefulWidget {
 
 class _PlateDialogState extends State<_PlateDialog> {
   final _ctrl = TextEditingController();
-  bool _error = false;
 
   @override
   void dispose() {
@@ -921,36 +1040,40 @@ class _PlateDialogState extends State<_PlateDialog> {
     super.dispose();
   }
 
-  String get _expected => widget.wo.code.length >= 2
-      ? widget.wo.code.substring(widget.wo.code.length - 2).toUpperCase()
-      : widget.wo.code.toUpperCase();
+  // B-SAN3-26 — o esperado é o fim da PLACA do veículo atendido, que o servidor mandou na lista; nunca o código da OS.
+  String? get _expected => widget.wo.checkinPlateTail;
 
-  String get _prefix => widget.wo.code.length > 2
-      ? widget.wo.code.substring(0, widget.wo.code.length - 2)
-      : '';
+  // B-SAN3-26 (N-03) — a dica mostra a placa mascarada, sem o prefixo do código da OS.
+  String _maskedHint() => '•••••';
 
-  bool get _isGuincho => widget.wo.serviceType == WorkOrderServiceType.tow;
+  String get _typed => _normalizePlateChars(_ctrl.text);
 
-  String get _title =>
-      _isGuincho ? 'Confirmar veiculo' : 'Confirmar equipamento';
-  String get _subtitle => _isGuincho
-      ? 'Informe os 2 ultimos digitos da placa'
-      : 'Informe os 2 ultimos digitos do nr de serie';
+  /// Só o modo `plate` compara aqui; no `unknown` (OS em cache antiga) quem decide é o servidor.
+  bool get _mismatch {
+    final expected = _expected;
+    if (widget.wo.checkinMode != CheckinMode.plate || expected == null) {
+      return false;
+    }
+    final typed = _typed;
+    return typed.length == 2 && typed != _normalizePlateChars(expected);
+  }
 
   void _confirm() {
-    final input = _ctrl.text.trim().toUpperCase();
-    if (input == _expected && widget.gpsOk) {
-      Navigator.of(context).pop(true);
-    } else {
-      setState(() => _error = true);
-    }
+    Navigator.of(context).pop(ArrivalConfirmation(lastDigits: _typed));
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.wo.checkinMode == CheckinMode.referenceMissing) {
+      return const _MissingReferenceNotice();
+    }
     final cs = Theme.of(context).colorScheme;
-    final inputOk = _ctrl.text.trim().toUpperCase() == _expected;
-    final canConfirm = inputOk && widget.gpsOk;
+    final canConfirmWithoutDigits = widget.wo.checkinMode == CheckinMode.exempt;
+    final hint = _maskedHint();
+    final error = _mismatch;
+    final canConfirm =
+        widget.gpsOk &&
+        (canConfirmWithoutDigits || (_typed.length == 2 && !error));
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
@@ -968,9 +1091,9 @@ class _PlateDialogState extends State<_PlateDialog> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
-                  _isGuincho
-                      ? Icons.local_shipping_outlined
-                      : Icons.build_outlined,
+                  canConfirmWithoutDigits
+                      ? Icons.location_on_outlined
+                      : Icons.local_shipping_outlined,
                   color: cs.primary,
                 ),
               ),
@@ -979,9 +1102,16 @@ class _PlateDialogState extends State<_PlateDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_title, style: Theme.of(context).textTheme.titleSmall),
                     Text(
-                      _subtitle,
+                      canConfirmWithoutDigits
+                          ? 'Confirmar chegada'
+                          : 'Confirmar veículo',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    Text(
+                      canConfirmWithoutDigits
+                          ? 'Serviço sem placa: confirme que você chegou ao local.'
+                          : 'Informe os 2 últimos dígitos da placa do veículo',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -1011,7 +1141,7 @@ class _PlateDialogState extends State<_PlateDialog> {
                 Expanded(
                   child: Text(
                     widget.gpsOk
-                        ? 'Localizacao confirmada · voce esta no local'
+                        ? 'Localização confirmada · você está no local'
                         : 'Ative o GPS para confirmar que chegou ao local',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: widget.gpsOk ? Colors.green.shade700 : cs.error,
@@ -1022,62 +1152,65 @@ class _PlateDialogState extends State<_PlateDialog> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
-          // 2-digit input
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _prefix,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontFamily: 'monospace',
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(width: 4),
-              SizedBox(
-                width: 64,
-                child: TextField(
-                  key: const Key('plate-input'),
-                  controller: _ctrl,
-                  autofocus: true,
-                  textAlign: TextAlign.center,
-                  keyboardType: TextInputType.text,
-                  maxLength: 2,
-                  textCapitalization: TextCapitalization.characters,
-                  onChanged: (_) => setState(() => _error = false),
-                  decoration: InputDecoration(
-                    counterText: '',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: _error ? cs.error : cs.outline,
-                        width: 1.5,
-                      ),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: _error ? cs.error : cs.outline,
-                        width: 1.5,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(
-                        color: _error ? cs.error : cs.primary,
-                        width: 2,
-                      ),
-                    ),
+          if (!canConfirmWithoutDigits) ...[
+            const SizedBox(height: 14),
+            // 2-digit input
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  hint,
+                  key: const Key('plate-masked-hint'),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontFamily: 'monospace',
+                    color: cs.onSurfaceVariant,
                   ),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontFamily: 'monospace'),
                 ),
-              ),
-            ],
-          ),
-          if (_error) ...[
+                const SizedBox(width: 4),
+                SizedBox(
+                  width: 64,
+                  child: TextField(
+                    key: const Key('plate-input'),
+                    controller: _ctrl,
+                    autofocus: true,
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.text,
+                    maxLength: 2,
+                    textCapitalization: TextCapitalization.characters,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: error ? cs.error : cs.outline,
+                          width: 1.5,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: error ? cs.error : cs.outline,
+                          width: 1.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: error ? cs.error : cs.primary,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(fontFamily: 'monospace'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (error) ...[
             const SizedBox(height: 8),
             Row(
               children: [
@@ -1085,9 +1218,7 @@ class _PlateDialogState extends State<_PlateDialog> {
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
-                    _isGuincho
-                        ? 'Digitos nao conferem com a placa do veiculo'
-                        : 'Digitos nao conferem com o nr de serie',
+                    'Os dígitos não conferem com a placa do veículo.',
                     style: Theme.of(
                       context,
                     ).textTheme.labelSmall?.copyWith(color: cs.error),
@@ -1101,13 +1232,46 @@ class _PlateDialogState extends State<_PlateDialog> {
       actions: [
         TextButton(
           key: const Key('plate-cancel'),
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancelar'),
         ),
         FilledButton(
           key: const Key('plate-confirm'),
-          onPressed: canConfirm ? _confirm : null,
+          onPressed: !canConfirm
+              ? null
+              : canConfirmWithoutDigits
+              ? () => Navigator.of(context).pop(const ArrivalConfirmation())
+              : _confirm,
           child: const Text('Confirmar chegada'),
+        ),
+      ],
+    );
+  }
+}
+
+/// B-SAN3-26 (decisão B do dono) — a OS sem placa não confirma a chegada pelo app: o guincheiro pede à base.
+class _MissingReferenceNotice extends StatelessWidget {
+  const _MissingReferenceNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return AlertDialog(
+      key: const Key('checkin-reference-missing-notice'),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      content: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, color: cs.primary),
+          const SizedBox(width: 12),
+          const Expanded(child: Text(kCheckinMissingReferenceMessage)),
+        ],
+      ),
+      actions: [
+        FilledButton(
+          key: const Key('plate-missing-close'),
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Entendi'),
         ),
       ],
     );

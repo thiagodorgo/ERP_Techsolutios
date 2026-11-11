@@ -24,6 +24,7 @@ import '../../checklists/data/checklist_repository.dart';
 import '../../prestador/data/prestador_local_store.dart';
 import '../../prestador/data/prestador_repository.dart';
 import '../domain/work_order_models.dart';
+import 'work_order_conflict_resolution_service.dart';
 import 'work_order_local_store.dart';
 import 'work_order_remote_api.dart';
 
@@ -317,11 +318,21 @@ class WorkOrderRepository extends ChangeNotifier {
         if (o.serverId != null && o.tenantId == tenantId) o.serverId!: o,
     };
 
+    // B-SAN3-26 (C26R2-01) — a OS com a chegada recusada pelo servidor, à espera do "Confirmar a placa de novo", não é
+    // sobrescrita pelo pull: o cartão com o motivo e o botão fica até o guincheiro tocar. O toque aposenta as ações, e
+    // o pull seguinte volta a atualizar a OS (inclusive o modo do check-in).
+    final checkinRedoPending = checkinRedoPendingLocalIds(
+      await _syncQueue.actionsForTenant(tenantId),
+    );
+
     for (final ro in remote) {
       if (ro.serverId == null) continue;
       final existing = localByServerId[ro.serverId!];
       // Preserve local work orders with pending sync actions.
       if (existing != null && existing.syncStatus == SyncStatus.pending) {
+        continue;
+      }
+      if (existing != null && checkinRedoPending.contains(existing.localId)) {
         continue;
       }
       // Keep existing localId so cached detail routes stay valid.
@@ -439,10 +450,15 @@ class WorkOrderRepository extends ChangeNotifier {
   }
 
   // B-SAN3-13 (§2.4) — as 7 mutações públicas entram na trava estática; o corpo de cada uma é o de antes.
+  /// B-SAN3-26 — `lastDigits`: os 2 caracteres da placa que o guincheiro digitou na chegada (`arrived`). Vão na ação
+  /// da fila como `checkin_confirmation`; quem confere é o servidor.
   Future<WorkOrderMutationResult> updateStatus(
     String localId,
-    WorkOrderStatus newStatus,
-  ) => _serial(() => _updateStatusLocked(localId, newStatus));
+    WorkOrderStatus newStatus, {
+    String? lastDigits,
+  }) => _serial(
+    () => _updateStatusLocked(localId, newStatus, lastDigits: lastDigits),
+  );
 
   Future<WorkOrderMutationResult> assignRegistry(
     String localId, {
@@ -541,8 +557,9 @@ class WorkOrderRepository extends ChangeNotifier {
 
   Future<WorkOrderMutationResult> _updateStatusLocked(
     String localId,
-    WorkOrderStatus newStatus,
-  ) async {
+    WorkOrderStatus newStatus, {
+    String? lastDigits,
+  }) async {
     final idx = _orders.indexWhere((o) => o.localId == localId);
     if (idx == -1) throw StateError('WorkOrder $localId not found');
 
@@ -574,6 +591,8 @@ class WorkOrderRepository extends ChangeNotifier {
         'previous_status': wo.status.name,
         'occurred_at': now.toIso8601String(),
         'message': _messageForStatus(newStatus),
+        if (newStatus == WorkOrderStatus.arrived && lastDigits != null)
+          'checkin_confirmation': {'last_digits': lastDigits},
       },
     );
 

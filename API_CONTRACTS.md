@@ -371,11 +371,11 @@ colidir com o router base.
 
 | Método | Caminho | Permissão RBAC | Descrição |
 |---|---|---|---|
-| GET | `/work-orders` | `work_orders:read` | Lista OS. |
+| GET | `/work-orders` | `work_orders:read` | Lista OS. **B-SAN3-26:** cada item traz `checkinMode` (`plate` · `exempt` · `reference_missing`, calculado pelo servidor) e `checkinPlateTail` (os 2 caracteres finais da placa do veículo atendido, ou `null`). Nunca a placa inteira nem `serviceDetails` (a senha do residencial fica só no detalhe). |
 | POST | `/work-orders` | `work_orders:create` | Cria OS. |
 | GET | `/work-orders/:workOrderId` | `work_orders:read` | Detalhe da OS. |
-| PATCH | `/work-orders/:workOrderId` | `work_orders:update` | Atualiza OS. **B-O6R-07a (Ω6R-SEC-002):** ator que só alcança a OS por papel de CAMPO muta apenas a OS **atribuída a ele** (`assigned_operator_id` = perfil de operador do ator); OS de outro ou sem atribuição → **403 `not_assigned_to_actor`** — nunca 404, que segue reservado a cross-tenant. Papéis de gestão/despacho seguem tenant-wide. Cumpre `RBAC_MATRIX.md:45` (`field_technician = execute/update-assigned`), que o 200 anterior contrariava. |
-| PATCH | `/work-orders/:workOrderId/status` | `work_orders:status` | Transição de status. **Mesmo guard de escopo por objeto do `PATCH /work-orders/:id`** (403 `not_assigned_to_actor`). **B-SAN3-14:** `completed` com vistoria de ENTREGA em andamento (fase `delivery`, situação `in_progress`) → **422 `WORK_ORDER_UNPROCESSABLE` / `delivery_checklist_pending`**, "Conclua a vistoria de entrega antes de concluir a OS."; falha da leitura das vistorias também recusa (fail-closed). A entrega concluída, concluída com divergência (`pending_acknowledgement`) ou cancelada não segura; a OS sem vistoria de entrega conclui como antes. |
+| PATCH | `/work-orders/:workOrderId` | `work_orders:update` | Atualiza OS. **B-O6R-07a (Ω6R-SEC-002):** ator que só alcança a OS por papel de CAMPO muta apenas a OS **atribuída a ele** (`assigned_operator_id` = perfil de operador do ator); OS de outro ou sem atribuição → **403 `not_assigned_to_actor`** — nunca 404, que segue reservado a cross-tenant. Papéis de gestão/despacho seguem tenant-wide. Cumpre `RBAC_MATRIX.md:45` (`field_technician = execute/update-assigned`), que o 200 anterior contrariava. **B-SAN3-26:** quem não é SÓ base (tem `field_technician`/`technician`, ou papel fora das duas listas do check-in) não muda a placa do veículo atendido: corpo cujo `service_details` resulta numa placa normalizada diferente da atual (trocar, omitir, `plate: null`, `plate: ""`, ou pôr placa onde não havia) → **403 `checkin_reference_not_editable`**. Mudança só de forma (`"abc-1d23"` no lugar de `"ABC1D23"`) passa. |
+| PATCH | `/work-orders/:workOrderId/status` | `work_orders:status` | Transição de status. **Mesmo guard de escopo por objeto do `PATCH /work-orders/:id`** (403 `not_assigned_to_actor`). **B-SAN3-14:** `completed` com vistoria de ENTREGA em andamento (fase `delivery`, situação `in_progress`) → **422 `WORK_ORDER_UNPROCESSABLE` / `delivery_checklist_pending`**, "Conclua a vistoria de entrega antes de concluir a OS."; falha da leitura das vistorias também recusa (fail-closed). A entrega concluída, concluída com divergência (`pending_acknowledgement`) ou cancelada não segura; a OS sem vistoria de entrega conclui como antes. **B-SAN3-26 (item 53) — o destino `on_site` ("No local") exige o veredito de check-in** (§3.5.2). |
 | PATCH | `/work-orders/:workOrderId/checklists` | `field_dispatch:create` | Ajusta o **conjunto de vistorias** da OS antes do envio ao técnico (§3.5.1). |
 | PATCH | `/work-orders/:workOrderId/mileage` | `work_orders:mileage_correct` | Correção de quilometragem. |
 | POST | `/work-orders/:workOrderId/cancel` | `work_orders:cancel` | Cancela OS (integridade atômica/terminal-guard). |
@@ -392,6 +392,46 @@ colidir com o router base.
 | GET | `/approvals/pending` · `/approvals/:approvalId` | `work_orders:read` | Aprovações pendentes / detalhe (alçadas). |
 | POST | `/approvals/:approvalId/approve` · `/reject` | **`work_orders:approve`** | Decide (aprova/rejeita) a alçada. **B-O6R-07a (Ω6R-SEC-002, P0):** a chave é DEDICADA — até este bloco as duas rotas exigiam `work_orders:update`, a mesma guarda do `PATCH /work-orders/:id`, que `technician` e `field_technician` têm. Quem NÃO decide recebe **403** (papéis de campo, `operator`, `auditor`, `support`; `finance`/`inventory` aguardam política de valor — `P-O6R-B07-APPROVAL-BY-POLICY`). **SoD:** o próprio solicitante decidindo → **403 `self_decision`** (rastro `approval.self_decision_denied`, `outcome: denied`). Preservados: `404` cross-tenant e `409 APPROVAL_ALREADY_DECIDED`. Ler não decide — `GET /approvals/*` seguem em `work_orders:read`. |
 | GET | `/operations/work-orders-timeseries` | `work_orders:read` | Série temporal de OS por dia (zero-fill, fuso America/Sao_Paulo). |
+
+#### 3.5.2 Chegada ao local: o "No local" confere a placa (B-SAN3-26, item 53)
+
+Decisões do dono `D-PORTAO-9-RECOMENDACOES-1011` e `D-PORTAO-5-RECOMENDACOES-1111`. Vale para as duas portas que levam
+a OS a `on_site`: `PATCH /work-orders/:id/status` e a ação `work_order.status_change` da fila do app. A chave é o
+**destino**: `on_site → on_site` também é conferido.
+
+- **Corpo:** `checkin_confirmation: { "last_digits": "<2 caracteres>" }`. Normalizado (NFKC, maiúsculas, só letras e
+  dígitos), tem de ter exatamente 2 caracteres.
+- **A referência é do servidor:** a placa brasileira (antiga ou Mercosul) em `service_details.plate`, achada como
+  palavra e única no texto. Texto sem placa ("SEM PLACA", "ZERO KM"), com duas placas diferentes ou com placa
+  estrangeira conta como **sem placa**.
+  - **Forma aceita (C2-01, junta do PR #534):** um separador entre dois caracteres quaisquer da placa e até três entre
+    as letras e os números. Valem espaço, ponto, sublinhado, hífen, os traços e travessões e o sinal de menos
+    ("ABC - 1234", "ABC–1234", "A B C 1 D 2 3", "ABC_1D23").
+  - **UF:** a UF colada no fim vale só se for uma das 27 ("ABC1D23SP"). O texto passa por NFKC, e a largura total vira
+    ASCII.
+  - **O que não vira placa:** o código da OS ("OS-000041") e outra letra colada no fim ("ABC1D23XY").
+- **Aceita** quando: (a) os 2 caracteres batem com o fim da placa; (b) a OS não tem placa e o tipo do catálogo é
+  `residencial` (a única isenção); (c) **a base**, só pela rota HTTP: ator com papel de `super_admin`, `platform_admin`,
+  `tenant_admin`, `manager`, `operator` ou `field_dispatcher` e **nenhum** papel de campo (`field_technician`,
+  `technician`). Pela fila, todo mundo confirma os dígitos.
+- **Recusa:** HTTP **422 `WORK_ORDER_UNPROCESSABLE`** com `reason` ∈ {`checkin_confirmation_required`,
+  `checkin_confirmation_mismatch`, `checkin_reference_missing`}; a mensagem não ecoa a placa nem os dígitos. Na fila, o
+  mesmo motivo sai em **`conflicts[]`** (nunca `rejected`) com `conflict_type` = o motivo e
+  `next_action: "redo_checkin"`; o app mostra "Confirmar a placa de novo".
+- **Linha do tempo:** a mensagem do evento em `on_site` é do servidor ("Chegada ao local registrada pela base.",
+  "Operador chegou ao local, com a placa conferida." ou "Operador chegou ao local (serviço sem placa)."), e o
+  `metadata.checkin` diz o caso (`office` · `plate_confirmed` · `exempt_service_type`). O `message` do corpo é
+  ignorado nesse destino. Os dígitos nunca vão para o evento, o domínio publicado, o log nem o `conflict.local` de
+  nenhum conflito da fila.
+- **A marca da base é do servidor (C1-A1, junta do PR #534):** nas outras transições (`PATCH …/status`, a fila,
+  `POST /work-orders/:id/assign`, a ação `work_order.assign` e o motivo da reatribuição do despacho), a mensagem do
+  cliente que contém "registrada pela base" ou "registrado pela base" é descartada, e o evento leva a mensagem padrão
+  da transição. A comparação ignora caixa, acento, pontuação, espaços e caracteres invisíveis. A transição não é
+  recusada por isso. A marca que vale é o `metadata.checkin = office`.
+- **OS sem placa:** só anda pela base. Com o guincheiro sem dados, a OS fica "A caminho" no app até um pull trazer o
+  `on_site` que a base registrou (exceção ao offline-first, declarada: `P-CHECKIN-SEM-PLACA-OFFLINE`).
+- **Ordem de publicação:** app primeiro, servidor depois. O app antigo recebe a recusa como conflito (o cartão de
+  conflito de antes), não como fila morta.
 
 #### 3.5.1 Conjunto de vistorias da OS (CHECKLIST P1 PR-04c-A)
 
@@ -813,7 +853,7 @@ sync não declaram `requirePermission` no router (autorização resolvida no ser
 | Método | Caminho | Permissão RBAC | Descrição |
 |---|---|---|---|
 | GET | `/mobile/bootstrap` | Autenticado (ator do JWT) | Estado inicial do app (dados + flags de sync). |
-| POST | `/mobile/sync/work-order-actions` | Autenticado (idempotente) | Replay de ações de OS. **B-SAN3-14:** a conclusão com vistoria de entrega em andamento sai `rejected` com `delivery_checklist_pending` (422, sem recibo de idempotência), e a MESMA ação é aceita depois que a entrega conclui. `work_order.status_change` (B-O6R-07a) e `work_order.mileage` (**B-O6R-07c-a**) seguem o escopo por objeto: ator só de campo em OS que não é dele recebe a ação `rejected` com `not_assigned_to_actor`, **por ação, dentro do lote 200**. O recibo de idempotência é consultado antes (reenvio no mesmo processo → `already_applied`); ele é em memória por processo, então depois de reinício ou noutra instância o reenvio de uma km já aplicada a uma OS redistribuída sai `rejected` (o valor já está gravado). |
+| POST | `/mobile/sync/work-order-actions` | Autenticado (idempotente) | Replay de ações de OS. **B-SAN3-14:** a conclusão com vistoria de entrega em andamento sai `rejected` com `delivery_checklist_pending` (422, sem recibo de idempotência), e a MESMA ação é aceita depois que a entrega conclui. `work_order.status_change` (B-O6R-07a) e `work_order.mileage` (**B-O6R-07c-a**) seguem o escopo por objeto: ator só de campo em OS que não é dele recebe a ação `rejected` com `not_assigned_to_actor`, **por ação, dentro do lote 200**. O recibo de idempotência é consultado antes (reenvio no mesmo processo → `already_applied`); ele é em memória por processo, então depois de reinício ou noutra instância o reenvio de uma km já aplicada a uma OS redistribuída sai `rejected` (o valor já está gravado). **B-SAN3-26:** o `status_change` para `on_site` leva `checkin_confirmation: { last_digits }` e segue o §3.5.2; a recusa do check-in sai em `conflicts[]` com `next_action: "redo_checkin"`, e nenhum conflito do lote devolve `checkin_confirmation` no `conflict.local`. |
 | POST | `/mobile/sync/checklist-actions` | Autenticado (idempotente) | Replay de ações de checklist. |
 | POST | `/mobile/sync/inventory-actions` | Autenticado (idempotente) | Replay de ações de estoque. |
 | POST | `/mobile/sync/evidence-actions` | Autenticado (idempotente) | Replay de ações de evidência. |
