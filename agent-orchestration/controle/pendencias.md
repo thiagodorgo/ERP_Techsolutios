@@ -1469,6 +1469,7 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
 
 - **duplicata de:** `P-GOLIVE-VALIDATE-CONSTRAINT` — só o residual LEGACY-NULL desta entrada, que não tem cabeçalho próprio (crítico SAN3 r1, CR1-16; emenda de 2026-09-11) — tratar junto.
 - **dono:** `B-SAN3-23` (plano SAN3, §4.1 item 23 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-Ω3F6-CANCEL-RACE`: o bullet `P-Ω3F6-CANCEL-RACE` (item 23) tem dono `B-SAN3-23`.
+- **`P-Ω3F6-CANCEL-RACE` — FECHADO pelo `B-SAN3-23` (2026-11-11, ramo `fix/os-cancelada-sem-item-financeiro`; o merge e a CI do merge entram no registro pós-merge).** Só este residual fecha; `P-Ω3F6-LEGACY-NULL`, `P-Ω3F6-CANCEL-IDEM` e `P-Ω3F6-MOBILE-DEADLETTER` seguem abertos, e a entrada continua ABERTA por eles. O cancelamento virou uma unidade sob a trava exclusiva da OS (`cancelWithFinancialDecision`), e lançar, editar, apagar item e faturar relêem a situação sob a trava compartilhada da OS. Prova: `tests/b-san3-23-cancel-race-db.test.ts` (A1, A2, A3 e A9, com barreira; vermelhos no código de hoje, verdes no bloco; mutações no diário `docs/revisoes/SAN3/B-SAN3-23-dev.md`).
 
 ## P-GOLIVE-SECRET-ROTATE — ~~Chave Google Maps: rotação humana obrigatória~~ — **FECHADA (2026-08-29): rotação DISPENSADA pelo dono**
 
@@ -11505,12 +11506,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento:** uma mutação de controle num worktree descartável `C:/Users/AMP/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.
 
-## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA
+## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA — FECHADA pelo `B-SAN3-23`
 
-- **status:** ABERTA · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23` ou pós-gate
+- **status:** FECHADA (2026-11-11, `B-SAN3-23`, ramo `fix/os-cancelada-sem-item-financeiro`; o merge e a CI do merge entram no registro pós-merge) · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23`
 - **Origem:** plano do `B-SAN3-02` v2, §1.2 (a) e §11. O faturamento trava os ITENS, não a OS.
 - **bloqueia:** não.
 - **teste de encerramento:** cancelar a OS com um faturamento em voo nunca deixa título novo numa OS cancelada, com teste `-db` de corrida.
+- **como fechou:** o faturamento pega a trava compartilhada da OS antes dos itens e relê a situação; o cancelamento é uma unidade sob a trava exclusiva da OS e, no `zero`, confere o item faturado sob ela. Prova em `tests/b-san3-23-cancel-race-db.test.ts`: A5 (faturar atrás do cancelamento → 422 `work_order_cancelled`, 0 título), A9 (cancelar `zero` atrás do faturamento → 422 `has_invoiced_items`, I-Z) e A10 (ordem OS → itens, 0 impasse). Os três vermelhos no código de hoje (F0 do diário).
 
 ## P-SAN3-02-PAI-CANCELADO (2026-10-19) — original cancelado por status continua sendo o pai do delta — BAIXA
 
@@ -13202,3 +13204,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** implantação (sem código) · **dono:** quem fizer o primeiro deploy de produção que contenha o #527 (o porteiro confere).
 - **origem:** plano do conserto do #527, Emenda 3, RQ-4 (de R2-04). A web nova trata a resposta do login sem `must_change_password` como restrita (falha fechada, RQ-1): subir a web antes do backend trataria todo login como restrito. O app novo trata o campo ausente como inteiro (RQ-2(b)), então para ele a ordem é recomendação. Residual declarado: app antigo com backend novo — quem estiver com a senha provisória entra, o app ignora o campo, e o portão devolve `403 password_change_required` em tudo; troca pela web até atualizar o app.
 - **teste de encerramento:** o deploy feito na ordem, registrado com as horas de cada parte.
+
+## P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e fica fora da fila do cancelamento — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o leitor do gate é do `WS-SCALE-COMISSAO`; `src/modules/commissions/**` é PROIBIDO no `B-SAN3-23`) · **dono:** o bloco do motor de comissão (`D-PORTAO-7-RECOMENDACOES-1011`: a política de comissão sai do portão até o motor existir) · **PR-alvo:** o desse bloco · **bloqueia:** não, enquanto não houver motor de comissão (hoje não sai dinheiro por esse caminho).
+- **origem:** crítica r1 do plano do `B-SAN3-23` (`crit-23-cl`, achado C23-07), medido pela crítica, não re-medido pelo dev: `readWorkOrderCancellationPrisma` lê situação e decisão com `findFirst` simples (`src/modules/commissions/work-order-cancellation.gate.ts:86-89`), chamado em `createBasisEvent` (`commission-prisma.repository.ts:103-135`), rota montada (`app.ts:265`). Intercalações `commission|cancelZero` e `cancelZero|commission`: o evento fica `received` numa OS `cancelled/zero` em 9 delas, com 0 impasse. O `B-SAN3-23` fecha a corrida para itens e títulos da OS (P-23), não para a comissão.
+- **correção indicada (crítica r1):** a trava compartilhada da OS no leitor, dentro da transação do `createBasisEvent` — a mesma forma da escrita de item do `B-SAN3-23` (`lockWorkOrderRowForFinancialWrite`).
+- **teste de encerramento:** evento-base de comissão × cancelamento `zero` em voo, em Postgres real com barreira: nunca evento `received` numa OS `cancelled/zero`.

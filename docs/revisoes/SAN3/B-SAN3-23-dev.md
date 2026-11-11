@@ -94,3 +94,31 @@ Os ajustes vieram como requisito do orquestrador. A crítica não propõe conser
 - Regressão (Postgres): `CORE_SAAS_PERSISTENCE=prisma npm test -- tests/o6r07c-b-scope-db.test.ts tests/o6r07c-subresource-scope-db.test.ts tests/traccar-event-sample-db.test.ts tests/traccar-idempotency-db.test.ts tests/traccar-position-ingestion-db.test.ts tests/traccar-resolution-race-db.test.ts tests/traccar-quarantine-db.test.ts tests/pg-barrier-scoped-db.test.ts` → `8 arquivo(s) · 76 teste(s) · pass 76 · fail 0 · skipped 0`.
 - Suítes que tocam situação, atribuição ou despacho (`grep -rlE "changeStatus|assignFromDispatch|\.assign\(" tests --include=*.ts` → 37 arquivos): as que não estão acima rodam no `npm test` da F5.
 - **Veredito:** verde.
+
+### F4 — mutações do §3.3, uma por vez (03:25–03:43 SP)
+
+- **Âncoras antes de mutar** (`grep -cF`, no commit `787c914d`): FR `FOR SHARE` = 1, a linha de recusa = 1, `trava-create/update/delete/fatura` = 1 cada, `if (locked.length === 0) return [];` = 1; WR `FOR UPDATE` = 1, `trava-os-cancel`, `faturado-sob-trava`, `evento-na-unidade`, `new PrismaWorkOrderFinancialItemRepository(tx)`, `cas-status`, `cas-assign`, `cas-dispatch` = 1 cada; FS `transitorio-item` = 1; WS `transitorio-cancel` = 1; fixture `GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES` = 1. (WR `createPrismaWorkOrderFinancialItemRepository` = 0: é o C23R2-02.)
+- **Como:** `mutacoes.sh` (scratchpad) — para cada uma: aplica a troca literal (`mutar.mjs`, que recusa âncora com contagem ≠ 1) → `npx tsc --noEmit` quando o arquivo é de `src/` → `node --test --test-name-pattern=<casos que ela mata>` → `git checkout -- <arquivo>` (contra o commit) → `git diff --quiet` do arquivo. Todas restauradas; `git status` sem `src/` modificado no fim.
+
+| M | Troca (literal) | tsc | Resultado | Vermelho pela razão certa? |
+|---|---|---|---|---|
+| M1 | FR `FOR SHARE` → vazio | 0 | A1, A5, A6a, A6b, A10 `not ok` | sim: sem a trava, A1 commita o item, A5 emite título, A10 vira impasse (503) |
+| M2 | FR apagar `if (row?.status === "cancelled") …` | 0 | A1, A5, A6a, A6b `not ok` | sim: espera a OS e escreve mesmo cancelada |
+| M1c | FR apagar `trava-create` | 0 | A1 `not ok` | sim (1 item ativo) |
+| M3 | WR `FOR UPDATE` → `FOR NO KEY UPDATE` | 0 | A2 `not ok` | sim: não espera a `KEY SHARE` do INSERT cru; `cancelled/zero` com 1 ativo |
+| M4 | WR apagar a instrução de uma linha `trava-os-cancel` | **0** | A3 `not ok` | **sim** (C23R2-03 resolvido): o lançar não espera (`barreira2=resolvido`) e o item sobra, sem `ReferenceError` |
+| M5 literal (v2) | WR → `(await createPrismaWorkOrderFinancialItemRepository())` | **1** (TS2552) | A4 `not ok`, mas pela asserção "a recusa veio da falha injetada" (`ReferenceError`); o estado era `{open, null, 2, 0}` — o sobrevivente do C23R2-02 | não: medido só para registrar o C23R2-02 |
+| **M5 (emenda E-M5)** | WR → `(await (await import("../work-order-financials/work-order-financial-prisma.repository.js")).createPrismaWorkOrderFinancialItemRepository())` | **0** | A4 `not ok` | **sim**: recusa da falha injetada e OS `open` com **0 ativo** (o zero commitou fora da unidade) |
+| M5b | WR apagar `evento-na-unidade` | 0 | A4 `not ok` | sim: o cancelamento passa sem evento (`cancelled/zero`) |
+| M6 | FR apagar `trava-fatura` | 0 | A5 `not ok` | sim (1 título em OS cancelada) |
+| M7 / M7b | FR apagar `trava-update` / `trava-delete` | 0 | A6a / A6b `not ok` | sim (quantidade 3 / item apagado) |
+| M8 | FR mover `trava-fatura` para antes de `if (locked.length === 0) return [];` | 0 | A10 `not ok` (A7 `ok`) | sim: impasse, o perdedor sai `503/invoice_transient_conflict` |
+| M9 | fixture `GRANT SELECT, INSERT, DELETE ON ALL TABLES` | — | A8 `not ok` | sim: `42501 permission denied for table work_orders` na trava compartilhada |
+| M10 | WR apagar `faturado-sob-trava` | 0 | A9 `not ok` | sim: `cancelled/zero` com 1 título e 2 faturados |
+| M11 | FS apagar `transitorio-item` | 0 | A11, A11b, A11c `not ok` | sim: `P2028` cru nas três |
+| M12 | WS apagar `transitorio-cancel` | 0 | A12 `not ok` | sim: `P2028` cru |
+| M13 / M14 / M15 | WR apagar `cas-status` / `cas-assign` / `cas-dispatch` | 0 | A13 / A14 / A15 `not ok` | sim: `completed/zero`; `assigned/zero` com 1 atribuição; `assigned/zero` com técnico |
+| **M15b** (nova, C23R2-01) | WR `status: input.event.fromStatus, // B-SAN3-23:cas-dispatch` → `status: current.status, …` (a forma literal do v2) | 0 | **A15 `ok`, A15b `not ok`** | sim: reproduz o achado — a A15 não pega, a A15b pega (OS cancelada vira `assigned` com técnico) |
+| MB | (na F0) | — | BAR-1 vermelha | sim |
+
+- **Veredito:** 20 mutações aplicadas, 19 com vermelho pela razão certa; a 20ª (M5 literal) só documenta o C23R2-02. Nenhuma sobrevivente.
