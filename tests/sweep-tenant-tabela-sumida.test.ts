@@ -84,6 +84,15 @@ test("erro que não é de tabela sumida e persiste continua reprovando a limpeza
   assert.ok(!deleted.includes("tenants"), "a organização não é apagada com resíduo");
 });
 
+// conf-541-api N1: no nível do sweepTenant, um 42P01 que cita OUTRA relação (ex.: gatilho) na tabela que EXISTE não sai
+// da fila calado; a limpeza reprova e a organização fica (a mutação M-A1c, chamar isUndefinedTable sem a tabela, morre aqui).
+test("42P01 de outra relação durante o DELETE de uma tabela que existe reprova a limpeza", async () => {
+  const deGatilho = () => prismaAdapterError("42P01", 'relation "auditoria_apagada" does not exist');
+  const { client, deleted } = fakeClient(["work_orders"], { work_orders: deGatilho });
+  await assert.rejects(sweepTenant(client, TENANT, []), /limpeza da organização do teste não terminou.*work_orders/);
+  assert.ok(!deleted.includes("tenants"), "a organização não é apagada com resíduo");
+});
+
 // rev-541-api A3: no erro real do Prisma a mensagem começa com "\n"; a reprovação tem de carregar o motivo, não "tabela: ".
 test("a reprovação carrega o motivo do erro real do Prisma (a mensagem que começa com quebra de linha)", async () => {
   const real = Object.assign(
