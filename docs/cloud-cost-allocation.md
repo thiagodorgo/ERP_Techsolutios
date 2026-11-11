@@ -125,6 +125,11 @@ Como funciona (`src/modules/cloud-cost-allocation/cloud-cost-allocation.import-t
 - **Varredura** (`mode: "import_catch_up"`, 1º tique no boot do worker, depois a cada 6 h): seleciona pelo que FALTA —
   importação marcada sem nenhuma run automática, e runs automáticas `pending` de qualquer importação —, com limite de
   50. A falha geral é registrada (`cloud_cost_auto_allocation_catch_up_failed`), não relança e reenfileira uma vez.
+- **A fila da varredura não emperra** (PR542-01): a importação avaliada sem nada a criar (todos os meses já com
+  rateio, manual ou automático, ou mais de 24 pares) recebe o marcador do sistema `metadata.autoAllocationSweep =
+  { status: "done" }` e sai da seleção; a que falha recebe `{ status: "failed", attempts }` e sai depois de 3 falhas
+  seguidas. O marcador é só do sistema: a importação nasce com ele vazio (`null`), gravado depois do metadata de quem
+  chama, e quem importa não consegue escondê-la da varredura.
 - **Coluna `import_id`** (migração `20260902000000_ass09a_allocation_run_import_id`, autorizada pelo dono em 31/10):
   FK para `cloud_cost_imports` com `ON DELETE SET NULL` (apagar a importação não apaga a run), índice e backfill a
   partir de `metadata.importId`.

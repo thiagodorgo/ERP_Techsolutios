@@ -13569,3 +13569,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** risco H13 do plano do pacote (`B-ASSINATURA-plano.md:593`, fora do repositório, citado pela crítica `crit-09a-cl`) e §8 do plano v2 do `B-ASS-09a`; declarado em `docs/cloud-cost-allocation.md` ("Rateio automático").
 - **fato:** cada arquivo importado é uma importação, e cada importação ganha o seu rateio do mês; `getAllocationSummary` escolhe a run mais recente do mês, sem somar importações.
 - **critério de encerramento:** o resumo do mês soma as importações do mesmo mês (ou o arquivo parcial é recusado), com teste de dois arquivos do mesmo mês.
+
+## P-ALLOC-RUN-STARTED-AT-NULO (2026-11-11) — no Postgres, a run de rateio concluída fica com `started_at` vazio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a Emenda 2 do plano do `B-ASS-09a`, item 4; não erra valor) · **escopo:** `pre-existente` (anterior ao `B-ASS-09a`); `PrismaCloudCostAllocationRepository.updateRun` (`src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts`) grava `started_at: input.startedAt ?? null` · **dono:** `B-ASS-09` (próximo bloco do motor de rateio; leitura do dev, declarada (§A6), corrige-se numa linha) · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** observação do dev do `B-ASS-09a` na F3 (`docs/revisoes/ASSINATURA/B-ASS-09a-dev.md`), nomeada na Emenda 2 do plano (item 4) e cobrada pela pré-revisão `prerev-542-api` (PR542-04); os dois fora do repositório.
+- **fato:** a conclusão (e a falha) de QUALQUER run, manual ou automática, chama `updateRun` sem `startedAt`, e o Prisma zera a coluna; o dublê em memória preserva (`input.startedAt ?? existing.startedAt`). A suíte em memória não vê a diferença.
+- **critério de encerramento:** `updateRun` só grava `started_at` quando ele vem no pedido (o Prisma igual ao dublê), com teste `-db` de que a run concluída mantém o início.
