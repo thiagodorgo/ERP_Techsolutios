@@ -68,15 +68,20 @@ export type ServiceQuoteLineList = {
 };
 
 // Ω3F-4b — corpo do POST /:id/approve: origem/destino + modo de ativação + prioridade/título da OS.
+// B-SAN3-08 (R-A4) — as coordenadas entram como texto, como no formulário de OS; o builder converte em número.
 export type ServiceQuoteApprovePayload = {
   readonly serviceAddress?: string;
   readonly serviceCity?: string;
   readonly serviceState?: string;
   readonly serviceZipCode?: string;
+  readonly serviceLatitude?: string;
+  readonly serviceLongitude?: string;
   readonly destinationAddress?: string;
   readonly destinationCity?: string;
   readonly destinationState?: string;
   readonly destinationZipCode?: string;
+  readonly destinationLatitude?: string;
+  readonly destinationLongitude?: string;
   readonly activationMode?: string;
   readonly priority?: string;
   readonly title?: string;
