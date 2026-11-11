@@ -194,6 +194,23 @@ if (!connectionString) {
     return nome;
   }
 
+  // P539-03 — cada cenário derruba o PRÓPRIO clone no finally, e o papel que ele criou só depois (o papel dono de
+  // tabela do clone só cai quando a base cai). O after repete os dois, com IF EXISTS, para o que um cenário não
+  // alcançou. Se o processo for MORTO (SIGKILL), nem finally nem after rodam: sobram as bases `<db>_b12*_<sufixo>`
+  // e os papéis `b12_*_<sufixo>` desta execução (o prefixo não está entre as famílias varridas do arnês).
+  async function derrubarBase(nome: string): Promise<void> {
+    await comAdmin((admin) => admin.query(`DROP DATABASE IF EXISTS "${nome}" WITH (FORCE)`));
+    if (bases.includes(nome)) bases.splice(bases.indexOf(nome), 1);
+  }
+  async function derrubarPapeis(lista: readonly string[]): Promise<void> {
+    const alvo = lista.filter((papel) => papeis.includes(papel));
+    if (alvo.length === 0) return;
+    await withRoleCatalogLock(catalogo, async (tx) => {
+      for (const papel of alvo) await tx.$executeRawUnsafe(`DROP ROLE IF EXISTS "${papel}"`);
+    });
+    for (const papel of alvo) papeis.splice(papeis.indexOf(papel), 1);
+  }
+
   // Papel de runtime efêmero (NOSUPERUSER NOBYPASSRLS, só DML), por base clonada.
   async function papelDeRuntime(db: PgClient, rotulo: string): Promise<string> {
     const papel = `b12_rt${rotulo}_${sufixo}`;
@@ -254,9 +271,10 @@ if (!connectionString) {
 
   test("B-O6R-12 C7: migrate deploy real preenche as 2 organizações com o perfil de hoje, e o NOT NULL vale", async () => {
     const nome = await clonar("c7");
-    migrateDeploy(nome, montarMigracoes("c7", readFileSync(MIGRATION_PATH, "utf8")));
-    const db = await conectar(nome);
+    let db: PgClient | undefined;
     try {
+      migrateDeploy(nome, montarMigracoes("c7", readFileSync(MIGRATION_PATH, "utf8")));
+      db = await conectar(nome);
       for (const semente of sementes) {
         const linha = await db.query(
           `SELECT regime_scope, regime_daily_cap, regime_owner_notif_days, regime_release_requirements FROM impound_processes WHERE id = $1`,
@@ -278,17 +296,19 @@ if (!connectionString) {
         assert.equal(coluna.is_nullable, coluna.column_name === "regime_daily_service_catalog_id" ? "YES" : "NO", coluna.column_name);
       }
     } finally {
-      await db.end();
+      await db?.end();
+      await derrubarBase(nome);
     }
   });
 
   test("B-O6R-12 C7 (atomicidade): migrate deploy com a sentença final quebrada não deixa prefixo aplicado", async () => {
     const nome = await clonar("c7f");
-    const quebrada = readFileSync(MIGRATION_PATH, "utf8").replace(/\r\n/g, "\n").replace("\nCOMMIT;\n", "\nSELECT 1 FROM public.b12_falha_final;\nCOMMIT;\n");
-    assert.ok(quebrada.includes("b12_falha_final"), "a injeção da falha entrou");
-    assert.throws(() => migrateDeploy(nome, montarMigracoes("c7f", quebrada)));
-    const db = await conectar(nome);
+    let db: PgClient | undefined;
     try {
+      const quebrada = readFileSync(MIGRATION_PATH, "utf8").replace(/\r\n/g, "\n").replace("\nCOMMIT;\n", "\nSELECT 1 FROM public.b12_falha_final;\nCOMMIT;\n");
+      assert.ok(quebrada.includes("b12_falha_final"), "a injeção da falha entrou");
+      assert.throws(() => migrateDeploy(nome, montarMigracoes("c7f", quebrada)));
+      db = await conectar(nome);
       const colunas = await db.query(
         `SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='impound_processes' AND column_name='regime_scope'`,
       );
@@ -301,7 +321,8 @@ if (!connectionString) {
       );
       assert.deepEqual(registro.rows, [{ finished: false }], "a migração fica registrada como falha (resolve --rolled-back)");
     } finally {
-      await db.end();
+      await db?.end();
+      await derrubarBase(nome);
     }
   });
 
@@ -350,6 +371,9 @@ if (!connectionString) {
     } finally {
       await db.query(`RESET ROLE`).catch(() => undefined);
       await db.end();
+      // A base primeiro: o papel é dono de 2 tabelas dela e só cai depois que ela cai.
+      await derrubarBase(nome);
+      await derrubarPapeis([papel]);
     }
   });
 
@@ -362,7 +386,7 @@ if (!connectionString) {
   }
 
   test("B-O6R-12 C4/C5/C16: o carimbo segue o perfil de agora, ignora o payload e devolve 23503 para perfil alheio", async () => {
-    const { db } = await baseMigrada("car");
+    const { nome, db } = await baseMigrada("car");
     const [a, b] = sementes as [Semente, Semente];
     try {
       // C4 — processo aberto DEPOIS de editar o perfil grava o valor editado (controle positivo do carimbo).
@@ -389,13 +413,24 @@ if (!connectionString) {
         return true;
       });
       await assert.rejects(db.query(inserirProcessoCru(a.tenantId, randomUUID())), (error: unknown) => codigoDe(error) === "23503");
+
+      // Complemento do P539-02 — o carimbo copia o PONTEIRO do serviço-diária do perfil (antes, só a C13 do -db via).
+      const servicoId = (
+        await db.query<{ id: string }>(`INSERT INTO service_catalog (tenant_id, name) VALUES ($1, 'Diária do carimbo') RETURNING id`, [a.tenantId])
+      ).rows[0]!.id;
+      await db.query(`UPDATE jurisdiction_profiles SET daily_service_catalog_id = $2 WHERE id = $1`, [a.profileId, servicoId]);
+      const comPonteiro = await db.query<{ regime_daily_service_catalog_id: string | null }>(
+        `${inserirProcessoCru(a.tenantId, a.profileId)}, regime_daily_service_catalog_id`,
+      );
+      assert.equal(comPonteiro.rows[0]!.regime_daily_service_catalog_id, servicoId, "o ponteiro do perfil entra no retrato");
     } finally {
       await db.end();
+      await derrubarBase(nome);
     }
   });
 
   test("B-O6R-12 C6: o regime e o perfil do processo são imutáveis; status, entrada e pátio mudam", async () => {
-    const { db } = await baseMigrada("imu");
+    const { nome, db } = await baseMigrada("imu");
     const [a] = sementes as [Semente];
     try {
       await assert.rejects(
@@ -417,14 +452,85 @@ if (!connectionString) {
       assert.equal(mudou.rows[0].regime_daily_cap, a.cap, "o regime atravessa a mudança de status e de pátio intacto");
     } finally {
       await db.end();
+      await derrubarBase(nome);
+    }
+  });
+
+  test("B-O6R-12 C6 (por coluna): sob o papel de runtime, a trava recusa mudar cada uma das 10 colunas guardadas", async (t) => {
+    const { nome, db } = await baseMigrada("col");
+    const [a] = sementes as [Semente];
+    let papel: string | undefined;
+    try {
+      papel = await papelDeRuntime(db, "k");
+      const servicoId = (
+        await db.query<{ id: string }>(`INSERT INTO service_catalog (tenant_id, name) VALUES ($1, 'Diária da trava') RETURNING id`, [a.tenantId])
+      ).rows[0]!.id;
+      // Uma linha por coluna guardada. O valor novo é válido para o tipo e para as FKs: sem a trava, o UPDATE
+      // PASSARIA, e é isso que dá ao caso o poder de matar a mutação que tira a coluna da trava.
+      const casos: ReadonlyArray<{ coluna: string; valor: unknown; tipo: string }> = [
+        { coluna: "profile_id", valor: a.outroProfileId, tipo: "uuid" },
+        { coluna: "regime_scope", valor: "PRIVATE_CONTRACT", tipo: "text" },
+        { coluna: "regime_owner_notif_days", valor: 99, tipo: "int" },
+        { coluna: "regime_notice_edict_day", valor: 99, tipo: "int" },
+        { coluna: "regime_auction_eligible_day", valor: 99, tipo: "int" },
+        { coluna: "regime_auction_edict_business_days", valor: 99, tipo: "int" },
+        { coluna: "regime_daily_model", valor: "CALENDAR", tipo: "text" },
+        { coluna: "regime_daily_cap", valor: "UNLIMITED", tipo: "text" },
+        { coluna: "regime_release_requirements", valor: "[]", tipo: "jsonb" },
+        { coluna: "regime_daily_service_catalog_id", valor: servicoId, tipo: "uuid" },
+      ];
+      const papelDoCaso = papel;
+      const comoRuntime = async <T>(fn: () => Promise<T>): Promise<T> => {
+        await db.query(`SET ROLE "${papelDoCaso}"`);
+        await db.query("BEGIN");
+        try {
+          await db.query(`SELECT set_config('app.current_tenant_id', $1, true)`, [a.tenantId]);
+          return await fn();
+        } finally {
+          await db.query("ROLLBACK");
+          await db.query("RESET ROLE");
+        }
+      };
+
+      await t.test("a tabela de casos cobre profile_id e toda coluna regime_* da tabela", async () => {
+        const regime = await db.query<{ column_name: string }>(
+          `SELECT column_name FROM information_schema.columns
+            WHERE table_schema = 'public' AND table_name = 'impound_processes' AND starts_with(column_name, 'regime_')`,
+        );
+        assert.deepEqual(casos.map((caso) => caso.coluna).sort(), ["profile_id", ...regime.rows.map((r) => r.column_name)].sort());
+      });
+      await t.test("controle: o papel de runtime atualiza a linha quando a mudança é permitida (status)", async () => {
+        const linhas = await comoRuntime(() => db.query(`UPDATE impound_processes SET status = 'ACTIVE_CUSTODY' WHERE id = $1`, [a.processId]));
+        assert.equal(linhas.rowCount, 1);
+      });
+      for (const { coluna, valor, tipo } of casos) {
+        await t.test(`recusa mudar ${coluna}`, async () => {
+          await comoRuntime(async () => {
+            const antes = await db.query<{ v: string | null }>(`SELECT "${coluna}"::text AS v FROM impound_processes WHERE id = $1`, [a.processId]);
+            assert.notEqual(antes.rows[0]!.v, String(valor), "o valor novo difere do gravado");
+            await assert.rejects(
+              db.query(`UPDATE impound_processes SET "${coluna}" = $2::${tipo} WHERE id = $1`, [a.processId, valor]),
+              (error: unknown) => {
+                assert.equal(codigoDe(error), "23514", `${coluna}: esperava a recusa da trava (23514)`);
+                return true;
+              },
+            );
+          });
+        });
+      }
+    } finally {
+      await db.end();
+      await derrubarBase(nome);
+      if (papel) await derrubarPapeis([papel]);
     }
   });
 
   test("B-O6R-12 R2-2: tabela temporária 'jurisdiction_profiles' forjada pelo papel de runtime não muda o carimbo", async () => {
-    const { db } = await baseMigrada("som");
+    const { nome, db } = await baseMigrada("som");
     const [a] = sementes as [Semente];
+    let papel: string | undefined;
     try {
-      const papel = await papelDeRuntime(db, "s");
+      papel = await papelDeRuntime(db, "s");
       const temp = await db.query<{ ok: boolean }>(`SELECT has_database_privilege($1, current_database(), 'TEMP') AS ok`, [papel]);
       assert.equal(temp.rows[0]!.ok, true, "controle: o papel de runtime pode criar tabela temporária (o vetor existe)");
       await db.query(`SET ROLE "${papel}"`);
@@ -454,11 +560,13 @@ if (!connectionString) {
       }
     } finally {
       await db.end();
+      await derrubarBase(nome);
+      if (papel) await derrubarPapeis([papel]);
     }
   });
 
   test("B-O6R-12 C17 (controle): sem SELECT no perfil, o carimbo do papel de runtime não lê e o INSERT cai", async () => {
-    const { db } = await baseMigrada("c17");
+    const { nome, db } = await baseMigrada("c17");
     const [a] = sementes as [Semente];
     const papel = await papelDeRuntime(db, "c");
     const inserir = async () => {
@@ -478,11 +586,13 @@ if (!connectionString) {
       await assert.rejects(inserir(), (error: unknown) => codigoDe(error) === "42501");
     } finally {
       await db.end();
+      await derrubarBase(nome);
+      await derrubarPapeis([papel]);
     }
   });
 
   test("B-O6R-12 C14: rollback padrão e rodapé — a abertura no formato antigo passa antes e depois de desligar", async () => {
-    const { db } = await baseMigrada("rb");
+    const { nome, db } = await baseMigrada("rb");
     const [a] = sementes as [Semente];
     const papel = await papelDeRuntime(db, "r");
     // A forma do create do código revertido: nenhum regime_* no INSERT.
@@ -528,16 +638,16 @@ if (!connectionString) {
       assert.equal(legado.rows[0].regime_daily_cap, a.cap, "o retrato já gravado sobrevive ao desligamento");
     } finally {
       await db.end();
+      await derrubarBase(nome);
+      await derrubarPapeis([papel]);
     }
   });
 
   after(async () => {
+    // Rede de segurança do que um cenário não derrubou no finally: bases primeiro (inclusive o template), papéis depois.
+    for (const nome of [...bases].reverse()) await derrubarBase(nome);
+    await derrubarPapeis([...papeis]);
     await comAdmin(async (admin) => {
-      for (const nome of [...bases].reverse()) await admin.query(`DROP DATABASE IF EXISTS "${nome}" WITH (FORCE)`);
-      // As bases já caíram, e com elas toda posse e concessão; o papel sai dentro da trava de catálogo.
-      await withRoleCatalogLock(catalogo, async (tx) => {
-        for (const papel of papeis) await tx.$executeRawUnsafe(`DROP ROLE IF EXISTS "${papel}"`);
-      });
       const sobras = await admin.query(`SELECT datname FROM pg_database WHERE datname LIKE $1`, [`%_${sufixo}`]);
       assert.equal(sobras.rowCount, 0);
       const papeisSobrando = await admin.query(`SELECT rolname FROM pg_roles WHERE rolname LIKE $1`, [`%_${sufixo}`]);

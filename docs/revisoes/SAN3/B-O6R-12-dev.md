@@ -329,3 +329,48 @@ máquina. A prova fica para os jobs `backend` e `backend-postgres` da CI, no Lin
   `prisma-migrate-diff-baseline.sql`, `src/modules/yard/**`, o resto de `owner-portal/**`,
   `impound.checklist-link-prisma.repository.ts`, `san3-05-runtime-role-guard-db.test.ts` e
   `scripts/db-runtime-role.sh`. O `.github` muda só nas 2 linhas do `SUITES=`.
+
+## Conserto pós-pré-revisão (`prerev-539-cl`, APROVADO com 4 não graves) — `dev-o6r12-cl`
+
+O fluxo do §C7 10(3)1 manda o dev consertar. O orquestrador atribuiu a este dev a P539-02 e a
+P539-03. A P539-01 e a P539-04 não são deste dev: o orquestrador escreve a emenda de ratificação, e a
+junta ataca a E1′.
+
+- **P539-02 (dinheiro, lacuna de teste).** A trava `impound_process_regime_immutable` guarda 10
+  colunas, e os testes afirmavam só 2.
+  - Novo no drill: "C6 (por coluna)". Sob o papel de runtime `NOSUPERUSER NOBYPASSRLS`, com o GUC da
+    organização, há uma tabela de 10 casos, um subteste por coluna. O valor novo de cada caso é
+    válido para o tipo e para as FKs, de modo que sem a trava o UPDATE passaria. Cada caso afirma a
+    recusa `23514`.
+  - Dois subtestes de controle: a tabela de casos é igual a `profile_id` mais toda coluna `regime_*`
+    do `information_schema`, e o papel atualiza o `status` (`rowCount` 1).
+  - Complemento: o C4/C5/C16 do drill passa a afirmar o carimbo do ponteiro do serviço-diária
+    (antes, só a C13 do `-db` o via).
+- **Mutações literais da P539-02**, cada uma sozinha, com o arquivo restaurado por sha256.
+  - Para cada uma das 10 colunas, tirar a cláusula `NEW."<coluna>" IS DISTINCT FROM OLD."<coluna>"`
+    da trava deixa vermelho SÓ o caso daquela coluna (`# fail 2` = o subteste mais o pai).
+  - O ponteiro: `not ok 12 - recusa mudar regime_daily_service_catalog_id`. Antes, essa mutação
+    sobrevivia à suíte inteira.
+  - As outras 9, todas executadas: `profile_id`, `regime_scope`, `regime_owner_notif_days`,
+    `regime_notice_edict_day`, `regime_auction_eligible_day`, `regime_auction_edict_business_days`,
+    `regime_daily_model`, `regime_daily_cap` e `regime_release_requirements`.
+  - O MEU2 da pré-revisão (o carimbo grava o ponteiro NULL) agora fica vermelho no drill:
+    `not ok 7 - … C4/C5/C16`.
+- **P539-03 (arnês).** Cada cenário do drill derruba o PRÓPRIO clone num `finally`, e o papel que
+  criou só depois (`derrubarBase`, depois `derrubarPapeis`). O papel dono de tabela só cai depois que
+  a base cai.
+  - O `after` repete os dois, com `IF EXISTS`, como rede de segurança.
+  - O único `DROP ROLE` literal passou para o helper, e a catraca de catálogo segue em 11 (1 CREATE
+    ROLE, 1 DROP ROLE, 6 GRANT, 2 OWNER TO, 1 REVOKE).
+  - Medido: depois do drill, 0 bases `%b12%` e 0 papéis `b12%`.
+  - O corpo do PR foi corrigido: se o processo for morto, sobram as bases E os papéis. O prefixo `b12_`
+    fora das famílias varridas do arnês vira pendência do orquestrador (o `SWEPT_ROLE_FAMILIES` está
+    fora do PERMITIDO e não foi tocado).
+- `main` trazida de novo (#538, `2f8a9a5e`). Conflito só em registro: as duas entradas ficam, e o
+  índice foi regenerado.
+- **Bateria do bloco depois do conserto (08:28 → 08:37):**
+  - com banco: `# tests 68 · pass 63 · fail 5 · skipped 0`. As 5 falhas são os mesmos casos de ambiente
+    do `san3-05` (T14a/b, T14c e T14d pelo `setsid`, e o T15), que a pré-revisão viu verdes na CI Linux.
+  - sem banco: `51/51`, `# skipped 0`.
+  - `migration-transaction-guard`: 132 migrações e 0 violações; `check` e `lint` com ec 0;
+    `git diff --check` limpo.
