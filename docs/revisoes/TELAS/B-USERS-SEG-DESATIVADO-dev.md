@@ -159,7 +159,7 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
   `field-ops-realtime` 4/4 · `users-seg-desativado-sse-db` 1/1 (T16, relógio real: o stream fechou com
   `event: session_inactive` e 0 assinantes; a suíte levou 38 s).
 
-## F4 — contrato, registro e ratchet (08:12–08:21 SP)
+## F4 — contrato, registro e ratchet (08:12–08:17 SP)
 
 - **Merge da `main` (`7f47aca6`):** o #538 entrou às 08:05 SP. Atualizei o ramo ANTES de mexer nos registros, como o
   orquestrador pediu (sem conflito: o #538 só toca `agent-orchestration/`).
@@ -185,3 +185,128 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
   cabeçalhos, 850 IDs, ABERTAS 656 → 659 (+5 −2), 0 contraditórias, as duas fechadas no balde FECHADAS.
 - **`decisoes.md`: NÃO tocado.** O PERMITIDO só admite "a entrada com as respostas do dono à P1 e à P2", e o dono ainda
   não respondeu. O orquestrador escreve a entrada quando ele responder.
+
+## F5 — bateria, mutações e custo (iniciada 08:17 SP)
+
+- **Bancos recriados do zero (08:19 SP):** `DROP DATABASE`/`CREATE DATABASE` de `devdesat` e `devdesat_seed` no MEU
+  container, `prisma migrate deploy` nos dois e `npm run db:seed` só no `devdesat_seed`; os 4 papéis efêmeros
+  deixados pelas execuções mortas da F0 removidos pelo nome (`o6r_b01_*`, 0 restantes).
+- **Worktree da base para o E-pg:** `C:/Users/thiag/w-desat-base`, destacado na merge-base `2f8a9a5e` (o #538;
+  `git diff --quiet a0979f51 2f8a9a5e -- src tests` → iguais), com `npm ci` e `prisma generate` próprios. Apago no fim.
+- `node scripts/migration-transaction-guard.mjs`: `migrações: 131 · violações: 0`, ec 0.
+- Escopo: `git diff --name-only $(git merge-base origin/main HEAD)..HEAD` = 27 arquivos, todos no PERMITIDO (com a
+  leitura declarada do `API_CONTRACTS.md` na F4); `decisoes.md`, `prisma/**`, `.github/**`, `frontend/**`,
+  `src/app.ts`, `src/modules/mobile/**`, `src/modules/platform/**`, `Kpis/*`: intocados.
+
+### E-mem (forma do job `backend`), cabeça `d20ee9cd`, 08:20–08:40 SP
+
+Banco `devdesat` (migrado, sem seed), `REDIS_URL` 56497, `CORE_SAAS_PERSISTENCE=memory` exportado. Logs em
+`scratchpad/devdesat/f5/emem-*.log`.
+- `npm run check` ec 0 · `npm run lint` ec 0 · `npm run build` ec 0.
+- `npm test`: **494 arquivos · 5064 testes · pass 5048 · fail 14 · skipped 2** (ec 1), mais o aviso do piso de
+  denominador para `tests/traccar-event-migration-drill-db.test.ts` (o arquivo caiu por `EBUSY … rmdir` do temporário).
+  Os 14 `not ok`, em 8 arquivos, classificados por reexecução ISOLADA na cabeça e na base (`w-desat-base`, merge-base
+  `2f8a9a5e`), mesma forma de ambiente (`scratchpad/devdesat/f5/emem-reexec-{cabeca,base}/`):
+
+| Arquivo | No `npm test` | Isolado, cabeça | Isolado, base | Classe |
+|---|---|---|---|---|
+| `ass-03-metering-db` | T-MED-db-14 `57014 statement timeout` | 9/9 | 9/9 | carga (paralelismo da suíte) |
+| `ass-04-statement-db` | T-ST-db-1 "Unable to start a transaction" | 9/9 | 9/9 | carga |
+| `ass-08-channel-db` | T-OBX-db-9 "2219 ms (teto 2 000)" | 21/21 | 21/21 | carga |
+| `cheque-title-link-migration-drill-db` | T-D(f) | 6/6 | 6/6 | carga |
+| `traccar-position-ingestion-db` | 2× "tempo esgotado → 503" | 22/22 | 22/22 | carga |
+| `san3-05-runtime-role-guard-db` | T14a/b, T14c, T14d, T15 | 8 pass, 4 fail | 8 pass, 4 fail (iguais) | ambiente: `setsid: ausente` (Windows) |
+| `san3-09-bootstrap-platform-admin-db` | T2 | 0/2 | 0/2 (igual) | ambiente (a crítica mediu o mesmo) |
+| `traccar-event-migration-drill-db` | `EBUSY rmdir` do temporário | 6 pass + o `EBUSY` | 6/6 | ambiente Windows (trava de diretório temporário); reexecutar no fim |
+
+  Nenhum dos 8 arquivos passa pelo portão HTTP do bloco, salvo a ingestão do Traccar, que tem listener próprio. **Nome
+  em `not ok` na cabeça que não esteja na base, isolado: nenhum.** O critério "0 `not ok`" do E-mem não se cumpre NESTA
+  máquina; a prova vai para o job `backend` da CI, lido pelo resumo TAP depois do push (§C7 item 11(3)).
+
+### Mutações e drills (cabeça, 08:47–09:30 SP)
+
+Uma por vez, aplicada pelo texto literal (âncora `count == 1` antes), medida e revertida para os bytes originais (md5
+conferido a cada uma; `git status --porcelain -- src tests` limpo no fim). Ferramenta e TAPs:
+`scratchpad/devdesat/tools/mutar.py`, `scratchpad/devdesat/f5/mut/` e `f5/mut2/`.
+
+| Mutação | Âncora | Vermelho (not ok) |
+|---|---|---|
+| M1 (sem `AND s.revoked_at IS NULL`) | 1 | `portao-db`: T3, T4, T5, T5b, T6, T6b, T7, T19(a) (8) |
+| M2 (sem `AND u.status = 'active'`) | 1 | T1b |
+| M3 (sem `AND s.expires_at > now()`) | 1 | T8 |
+| M4 (sem `AND s.user_id = …`) | 1 | T11 |
+| M5 (`&& false`) | 1 | `portao-db` 14 de 16 (só PT·0 e T19(b) verdes); T9-db (`fora=511`); T9-mem; S4·c |
+| M6 (`const cached = undefined;`) | 1 | T14 |
+| M8 (503 → `sendInvalidToken`) | 1 | T13 (memória) e T13b (`-db`) |
+| M9 login / refresh / troca | 1 / 1 / 1 | T10a+T10b / T10c / T10d, e T17 nas três |
+| M10 (sem `status: "active"`) | 1 | T12 |
+| M11 (sem `AND s.id = …`) | 1 | T5b, T6b e também T11 (X tem sessão viva própria: o A2 (iv) morde) |
+| M12 (`catch` que relança) | 1 | 16b-1 (`failureType: 'unhandledRejection'`), 16b-2, 16b-3, 16b-4, 16b-6 |
+| M13 (sem a trava de sobreposição) | 1 | 16b-4 |
+| M14 (`MAX_FAILURES = 1`) | 1 | 16b-1, 16b-2, 16b-3, 16b-6 |
+| M15 (sem `livenessFailures = 0;`) | 1 | 16b-3 |
+| M16 (memória só com UUID) | 1 | T15b, e T15 (o controle com usuário não-UUID cai no formato) |
+| M17 (orçamento de 60 s) | 1 | T13b: `200 !== 503` depois de 5 355 ms (a forma do plano; ver o ajuste do dublê abaixo) |
+| M18 (`rolesChanged = input.roles !== undefined`) | 1 | T19(b) |
+| M19 (sem `\|\| rolesChanged`) | 1 | T19(a) |
+| T15 (sem o `throw` do `sid` inválido) | 1 | T15 |
+| T16 (sem a chamada da conferência no tique) | 1 | T16 (`-db`) e os 6 do T16b |
+| T17 (d'): `import "@prisma/client"` no portão | 1 | G2 e T17 |
+| T17 (d''): import estático de `database/prisma.js` na conferência | 1 | T17 |
+| T17 (f): `sessionLiveness.check = …` no `src/` (extra, não estava no plano) | 1 | T17 |
+| T18 (apagar uma chave nova do CONGELADO) | 1 | T13 do ratchet ("o inventário do head == congelado") |
+| D-A9 (sem `globalThis.prisma = …` no arnês) | 1 | as 5 `-db` novas, todas pelo assert "A9: o portão usa o papel" |
+| D-A9 na `desativacao-db` | 1 | S4·c (A9) |
+| D-A4 (sem forçar `prisma`, `memory` exportado), nas 5 novas e na `desativacao-db` | 1 cada | todas pelo assert "E1.5: a suíte roda em prisma" |
+
+**Achados do próprio teste nesta fatia (consertados, declarados):**
+1. **Os drills D-A4/D-A9 travavam o processo:** com o assert do arnês falhando, o servidor do app ficava aberto e o
+   `node --test` não terminava (medido: 900 s de teto; eu matei os filhos pendurados pelo PID, um a um, depois de o TAP
+   já ter os `not ok`, `scratchpad/devdesat/f5/mata-pendurados.log`). Conserto nas 5 `-db` novas: se o assert falha, o
+   arnês desmonta antes de propagar, e o `after` não desmonta de novo. Reexecutados (`f5/mut2/`): os mesmos vermelhos,
+   e cada processo termina em 10–20 s.
+2. **O dublê do T13b usava `SELECT pg_sleep(5)`:** o Prisma não desserializa a coluna `void`, então sob a M17 a
+   requisição dava 503 por ERRO depois de 5 s, e não 200. Troquei por `SELECT 1 AS dormiu FROM pg_sleep(5)`; sem a
+   mutação o corte do `statement_timeout` segue em ~1,5 s, e com a M17 a forma passou a ser a do plano (200 em 5 355 ms).
+3. **A M12 também deixou o processo pendurado** (o mutante solta rejeições); o TAP já tinha os vermelhos e eu matei o
+   filho (PID 7644).
+
+### E-pg (forma do job `backend-postgres`), 08:59–09:44 SP
+
+Banco `devdesat_seed` (migrado COM seed), `CORE_SAAS_PERSISTENCE=prisma`, `JWT_SECRET=dev-only-change-me`,
+`JWT_EXPIRES_IN=15m`, `LOG_LEVEL=silent`, `NODE_ENV=test` exportados; uma suíte por processo, TAP
+(`scratchpad/devdesat/tools/roda-epg.sh`; resumos em `f5/epg-base/` e `f5/epg-cabeca/`). As 24 da E1.1-3 (lista gerada
+por `git grep -l -E 'Bearer|signAccessToken' 2f8a9a5e -- 'tests/*-db.test.ts'` + `persistent-rbac-middleware` +
+`auth-identity-exposure-scan`) na merge-base (`w-desat-base`) e na cabeça; as 5 novas só na cabeça.
+- **Base:** 23 de 24 verdes; `san3-09-bootstrap-platform-admin-db` 0/2 (T2, drill).
+- **Cabeça:** as mesmas 23 verdes, com as MESMAS contagens (por exemplo `users-acesso-seg-desativacao-db` 5/5,
+  `san3-05-leituras-de-plataforma-db` 12/12, `auth-identity-revocation-db` 10/10); `san3-09` 0/2 igual à base
+  (ambiente: a crítica mediu o mesmo). As 5 novas: `portao-db` 16/16, `varredura-db` 1/1, `emissao-db` 4/4, `sse-db` 1/1,
+  `orcamento-db` 1/1.
+- **Nome em `not ok` na cabeça que não estava na base: nenhum.** Regressão: nenhuma.
+- Depois do conserto do arnês (desmonta no assert que falha) e do dublê do `pg_sleep`, as 5 novas rodaram de novo na
+  forma do E-mem (`memory` exportado; elas forçam `prisma`): 16/16, 1/1, 4/4, 1/1, 1/1 (`f5/emem-final/`).
+
+### Custo (E1.4), 09:44–10:16 SP
+
+Banco `devdesat`, papel efêmero sem bypass (atributos conferidos: `rolsuper false, rolbypassrls false`), `prisma`,
+`LOG_LEVEL=silent`, `NODE_ENV=test`. Ferramentas `scratchpad/devdesat/tools/custo-micro.mts` e `custo-rota.mts`;
+saídas em `f5/custo/`. A máquina estava carregada (outros contêineres e juntas em paralelo): a variação entre rodadas é
+maior que a diferença medida.
+- **Micro (cabeça, n = 500 depois de 30, alternando):** conferência p50 12,48 · p95 36,36 · p99 59,10 ms; 1 resolução do
+  RBAC persistente p50 19,94 · p95 56,83 · p99 84,48 ms. **Critério "p95 da conferência ≤ p95 de 1 resolução": cumprido**
+  (36,36 ≤ 56,83).
+- **Por rota (4 rodadas alternadas, base = `git checkout 2f8a9a5e -- src` no mesmo worktree, cabeça = `git checkout HEAD --
+  src`; 30 de aquecimento e 500 sequenciais; toda resposta 200; `git status --porcelain -- src` vazio no fim):**
+
+| Rodada | `/mobile/bootstrap` p50 · p95 · p99 | `/work-orders` p50 · p95 · p99 | `/users` (só relato) p50 · p95 · p99 |
+|---|---|---|---|
+| 1 base | 50,65 · 132,91 · 250,44 | 111,36 · 204,87 · 270,69 | 875,43 · 1497,08 · 2102,06 |
+| 2 cabeça | 30,36 · 42,66 · 63,71 | 69,70 · 94,23 · 120,65 | 605,18 · 854,69 · 1070,59 |
+| 3 base | 22,41 · 31,78 · 37,14 | 64,81 · 89,41 · 108,02 | 613,13 · 878,25 · 1116,32 |
+| 4 cabeça | 28,21 · 36,36 · 47,28 | 63,63 · 83,27 · 95,98 | 612,87 · 753,30 · 839,07 |
+
+  **Critério "mediana da cabeça (média das 2) − mediana da base (média das 2) ≤ mediana de 1 resolução (19,94 ms)":**
+  `/mobile/bootstrap` 29,29 − 36,53 = −7,25 ms; `/work-orders` 66,67 − 88,09 = −21,42 ms. **Cumprido.** A rodada 1 saiu
+  sob carga e puxa a base para cima; lido só o par mais próximo no tempo (rodadas 3 e 4): `/mobile/bootstrap` +5,80 ms,
+  `/work-orders` −1,18 ms, os dois abaixo de 19,94 ms. Declaro as duas leituras; nenhuma passa do limite.

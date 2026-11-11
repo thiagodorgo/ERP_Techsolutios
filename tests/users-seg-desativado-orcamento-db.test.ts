@@ -19,7 +19,8 @@ import {
 //
 // O dublê: o Prisma global é o cliente do papel efêmero EMBRULHADO num Proxy que delega tudo ao cliente real; a
 // única exceção é o `$transaction`, que embrulha o `tx`: com `lento.on`, o `$queryRaw` cujo texto contém
-// `FROM auth_sessions s` roda antes, na MESMA transação, um `SELECT pg_sleep(5)`. O `pg_sleep` vem depois do
+// `FROM auth_sessions s` roda antes, na MESMA transação, um `SELECT 1 FROM pg_sleep(5)` (a forma que o Prisma
+// desserializa: `SELECT pg_sleep(5)` devolve uma coluna `void`, que falharia por outro motivo). O `pg_sleep` vem depois do
 // `set_config('statement_timeout', …)` do helper, e por isso o próprio PostgreSQL o cancela. Arquivo próprio: o
 // dublê não alcança outra suíte, e nada trava tabela no banco compartilhado. Modo `prisma` forçado e conferido;
 // o singleton é o Proxy (A9).
@@ -47,7 +48,7 @@ if (!connectionString) {
             const real = target as { $queryRaw: (s: TemplateStringsArray, ...v: unknown[]) => Promise<unknown> };
 
             if (lento.on && Array.isArray(strings) && strings.join("").includes("FROM auth_sessions s")) {
-              await (target as PrismaClient).$queryRaw`SELECT pg_sleep(5)`;
+              await (target as PrismaClient).$queryRaw`SELECT 1 AS dormiu FROM pg_sleep(5)`;
             }
 
             return real.$queryRaw(strings, ...values);
@@ -87,11 +88,19 @@ if (!connectionString) {
   const harness = (): Promise<SessaoRealHarness> =>
     (harnessPromise ??= (async () => {
       const h = await montarSessaoReal(connectionString, { embrulharCliente });
-      const { env } = await import("../src/config/env.js");
 
-      assert.equal(env.CORE_SAAS_PERSISTENCE, "prisma", "E1.5: a suíte roda em prisma, nunca em memória");
-      assert.equal((await import("../src/database/prisma.js")).prisma, h.client, "A9: o portão usa o dublê do papel");
-      assert.notEqual(h.client, h.role.client, "fixture: o singleton é o Proxy, não o cliente cru");
+      try {
+        const { env } = await import("../src/config/env.js");
+
+        assert.equal(env.CORE_SAAS_PERSISTENCE, "prisma", "E1.5: a suíte roda em prisma, nunca em memória");
+        assert.equal((await import("../src/database/prisma.js")).prisma, h.client, "A9: o portão usa o dublê do papel");
+        assert.notEqual(h.client, h.role.client, "fixture: o singleton é o Proxy, não o cliente cru");
+      } catch (error) {
+        // O assert do modo ou do cliente falhou (drills D-A4/D-A9): desmonta antes de propagar, para o processo
+        // não ficar preso no servidor aberto.
+        await desmontarSessaoReal(h);
+        throw error;
+      }
 
       return h;
     })());
@@ -100,7 +109,12 @@ if (!connectionString) {
     lento.on = false;
 
     if (harnessPromise) {
-      await desmontarSessaoReal(await harnessPromise);
+      // Arnês que falhou já se desmontou.
+      const h = await harnessPromise.catch(() => undefined);
+
+      if (h) {
+        await desmontarSessaoReal(h);
+      }
     }
   });
 

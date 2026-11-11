@@ -52,17 +52,30 @@ if (!connectionString) {
   const harness = (): Promise<SessaoRealHarness> =>
     (harnessPromise ??= (async () => {
       const h = await montarSessaoReal(connectionString);
-      const { env } = await import("../src/config/env.js");
 
-      assert.equal(env.CORE_SAAS_PERSISTENCE, "prisma", "E1.5: a suíte roda em prisma, nunca em memória");
-      assert.equal((await import("../src/database/prisma.js")).prisma, h.role.client, "A9: o portão usa o papel");
+      try {
+        const { env } = await import("../src/config/env.js");
+
+        assert.equal(env.CORE_SAAS_PERSISTENCE, "prisma", "E1.5: a suíte roda em prisma, nunca em memória");
+        assert.equal((await import("../src/database/prisma.js")).prisma, h.role.client, "A9: o portão usa o papel");
+      } catch (error) {
+        // O assert do modo ou do cliente falhou (drills D-A4/D-A9): desmonta antes de propagar, para o processo
+        // não ficar preso no servidor aberto.
+        await desmontarSessaoReal(h);
+        throw error;
+      }
 
       return h;
     })());
 
   after(async () => {
     if (harnessPromise) {
-      await desmontarSessaoReal(await harnessPromise);
+      // Arnês que falhou já se desmontou.
+      const h = await harnessPromise.catch(() => undefined);
+
+      if (h) {
+        await desmontarSessaoReal(h);
+      }
     }
   });
 
