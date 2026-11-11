@@ -13456,11 +13456,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-APP-DETALHE-OS-LARGURA-INFINITA (2026-11-11) — no APK debug o detalhe da OS fica em branco pelo botão "Abrir mapa" — ALTA
 
-- **status:** ABERTA · **gravidade:** ALTA (a fonte) · **escopo:** anterior ao bloco `B-SAN3-26` (#534); `mobile/flutter_app/lib/features/work_orders/ui/work_order_operational_map_screen.dart:274` · **dono:** `B-O6R-11d` (C3-01 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP; antes: a definir pelo orquestrador, com o `B-O6R-11d` ou um bloco de app como candidatos) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
+- **status:** ABERTA · **gravidade:** ALTA (a fonte) · **escopo:** anterior ao bloco `B-SAN3-26` (#534); `mobile/flutter_app/lib/features/work_orders/ui/work_order_operational_map_screen.dart:274` · **dono:** `B-O6R-11e (a planejar)` (C3-01 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não segura o #534.
 - **origem:** o dev do conserto do #534 (`dev-san3-26-fix-cl`), ao executar o PR534-05 no emulador com o APK da `main` (registro pendente do orquestrador, 11/11 06:22 SP; exceção em `revisoes/dev-534-fix-emulador/app-debug-excecao-do-detalhe.log`, fora do repositório; descrito também no diário do dev, no ramo `fix/checkin-confere-placa`).
 - **fato:** no APK debug, o detalhe da OS fica em branco por `BoxConstraints forces an infinite width` no "Abrir mapa": um `OutlinedButton` numa `Row` sem `Expanded`, com `minimumSize: Size.fromHeight(44)`. No profile, o botão estoura a largura.
 - **critério de encerramento:** o detalhe da OS abre no APK debug e no profile, com o "Abrir mapa" dentro da largura, provado por widget test que fica vermelho com o layout de hoje.
-- **Apenso 2026-11-11 (`B-O6R-11d`):** não coberta pelo `B-O6R-11d`. O arquivo é tela (`lib/features/work_orders/ui/**`), PROIBIDO no §4.2 do plano do bloco; o dono segue a definir pelo orquestrador.
+- **Apenso 2026-11-11 (`B-O6R-11d`):** fora do PERMITIDO do 11d (tela e repositório do app). Dono: `B-O6R-11e (a planejar)`.
 
 ## P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA (2026-11-11) — o app antigo recusa "Iniciar rota" de "Agendada" e não chega ao "No local" de OS vinda do servidor — MÉDIA (gravidade: leitura do redator)
 
@@ -13666,10 +13666,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CHECKIN-CARTAO-CONGELADO-NO-PULL (2026-11-11) — com o cartão de check-in aberto, o pull não atualiza o modo nem a cauda da placa — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA (triagem do orquestrador) · **escopo:** dentro do `B-SAN3-26` (E-01 e o `redoCheckin`, F3 `23a6a5c5`) · **dono:** `B-O6R-11d` · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
+- **status:** ABERTA · **gravidade:** MÉDIA (triagem do orquestrador) · **escopo:** dentro do `B-SAN3-26` (E-01 e o `redoCheckin`, F3 `23a6a5c5`) · **dono:** `B-O6R-11e (a planejar)` · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não segura o #534.
 - **origem:** C2-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`revisoes/j534/c2-voto.json`, fora do repositório).
 - **fato:** enquanto o cartão "Confirmar a placa de novo" existe, o pull pula a OS inteira (E-01), e o `checkinMode` e o `checkinPlateTail` não se atualizam. O toque reabre o diálogo com esse dado congelado. Quando a recusa veio de dado velho no aparelho (OS em cache sem modo, ou placa trocada pela base), o guincheiro repete a mesma recusa, e os dígitos NOVOS são barrados no próprio diálogo como "não conferem". Ele só sai cancelando o diálogo e puxando a lista, e nada lhe diz isso. Prova da cadeira: `c2_unknown_sem_placa_probe_test.dart` (+2) e o emulador (OS-000016, cauda 89 e placa trocada para `QWX7K55`).
 - **critério de encerramento:** o pull atualiza o modo e a cauda da OS presa ao cartão sem apagar o cartão, e a 2ª tentativa usa a placa nova, com teste do app que fica vermelho no código de hoje.
+- **Apenso 2026-11-11 (`B-O6R-11d`, dp-545):** fora do PERMITIDO do 11d (tela e repositório do app). Dono: `B-O6R-11e (a planejar)`.
 
 ## P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA (2026-11-11) — o técnico ainda apaga ou reescreve uma placa que o servidor não reconhece — BAIXA
 
