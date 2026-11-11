@@ -21,8 +21,9 @@
 - **P3:** em base semeada, a organização que o seed cria (`slug = 'demo'`) existe, com 1 linha, e tem nome sem o termo
   técnico. "Semeada" = existe a sentinela `seed.initialized` (registro de auditoria que só o `prisma/seed.ts` grava);
   em base só provisionada (`migrate deploy` + `db:provision-rbac`, a dos drills `ass-04`, `ass-05` e `b-san3-12a`) o P3
-  não se aplica (Emenda 2). A sentinela vive em `audit_logs`, que tem RLS forçado: medi-la exige papel superusuário ou
-  BYPASSRLS, e a paridade falha sem ele.
+  não se aplica (Emenda 2). A sentinela vive em `audit_logs`, que tem RLS forçado: com papel superusuário ou BYPASSRLS ela é
+  contada direto; sem bypass, organização por organização com o GUC `app.current_tenant_id` (PRE535-01). A base sem
+  seed passa com qualquer papel, como na `main`.
 - **P4:** rodar o seed de novo não duplica papel nem perde concessão.
 
 ## Superfície real da mudança de permissão (emenda 1, item 3)
@@ -40,6 +41,8 @@ concessões do catálogo. Produção nunca roda seed e já recebe os 12 pelo `db
 - `tests/permission-catalog-db-parity.test.ts`: isenção só de `platform_admin`; P2 e P3 como asserções DENTRO dos 2
   `test()` que já existem, sem `test()` novo e sem renomear os 2 (orçamento de 2 pulos de
   `scripts/run-backend-tests.mjs`; emenda 1, item 1); comentários.
+- `tests/san3-07-paridade-papel-sem-bypass-db.test.ts` (novo, conserto da pré-revisão PRE535-01, por instrução do
+  orquestrador): a paridade sob papel efêmero `NOSUPERUSER NOBYPASSRLS`, em base própria.
 - `tests/san3-04a-seed-semeia-auditor.test.ts`: reescrita do textual; ele lê `seed.ts` e `scripts/provision-rbac.ts` e exige
   a mesma exclusão de `platform_admin` (emenda 1, item 7).
 - Registro: `agent-orchestration/controle/pendencias.md`, `agent-orchestration/controle/pendencias-indice.md` (gerado por
@@ -59,7 +62,7 @@ concessões do catálogo. Produção nunca roda seed e já recebe os 12 pelo `db
 | M3 | as 2 linhas `name: "Organização Demonstração"` → `name: "Tenant Demo"` | paridade vermelha na asserção de P3 |
 | M4 | `for (const permission of ROLE_PERMISSIONS[role])` → `for (const permission of role === "support" ? [] : ROLE_PERMISSIONS[role])` | paridade vermelha com `"support" deveria ter "…"` |
 | M5 (Emenda 2) | as 2 linhas `slug: "demo",` → `slug: "demo-mutante",` (o seed não cria a `demo` e mantém a sentinela) | paridade vermelha no P3 ("a base foi semeada … mas a organização demonstração … não está nela") |
-| M6 (trava de RLS) | no teste, `papelDaConexao[0]?.atravessa,` → `true,`, rodando com papel `NOSUPERUSER NOBYPASSRLS` | sem a trava a paridade passa em vazio ("P3 não se aplica"); com ela, falha |
+| M7 (PRE535-01) | na paridade, `set_config('app.current_tenant_id', $1, true)` → `set_config('app.outro_guc', $1, true)` | `tests/san3-07-paridade-papel-sem-bypass-db.test.ts` (b) vermelho: a base semeada sai como "P3 não se aplica" sob o papel sem bypass |
 
 Vermelho-controle: o teste novo de paridade contra uma base semeada pelo seed da `main` (`07898adf`) fica vermelho com
 exatamente os 5 papéis. Os 3 drills de migração que rodam a paridade em base sem seed ficam verdes. Drills: D1 `SELECT name FROM tenants` em base só do seed; D2 seed 2× sem duplicata e com a mesma
@@ -85,6 +88,8 @@ DATABASE_URL=<base migrada> CORE_SAAS_PERSISTENCE=memory node --test --import ts
   tests/ass-04-billing-permissions-migration-drill-db.test.ts \
   tests/ass-05-providers-permission-migration-drill-db.test.ts \
   tests/b-san3-12a-permissions-migration-drill-db.test.ts   # paridade em base sem seed: verde (Emenda 2)
+DATABASE_URL=<base migrada> CORE_SAAS_PERSISTENCE=memory node --test --import tsx \
+  tests/san3-07-paridade-papel-sem-bypass-db.test.ts  # papel NOSUPERUSER NOBYPASSRLS: sem seed e semeada (PRE535-01)
 npm test                                              # TAP, na forma do job backend
 npm run build
 node scripts/migration-transaction-guard.mjs

@@ -353,3 +353,66 @@ a M6 e os 3 drills na bateria. Índice regenerado: `821 cabecalhos / 810 IDs | F
 (`https://github.com/thiagodorgo/ERP_Techsolutios/pull/535`). O registro passou a citar o PR #535 no lugar de "PR do
 ramo". O aceite é o TAP dos jobs da CI sobre o head do PR; a pré-revisão e a conferência ficam com outra casa
 (Emenda 1, item 8).
+
+## Conserto da pré-revisão PRE535-01 (05:13 a 05:30)
+
+**O achado** (`prerev-535-cl`, APROVADO com 1 não grave): a trava de RLS que eu acrescentei ao P3 por leitura própria
+(§A6), fora das Emendas 1 e 2, reprovava a paridade SEMPRE numa base sem seed quando a conexão usa papel sem
+BYPASSRLS, e o arquivo da `main` passava ali. Ordem do orquestrador: na base sem seed a paridade passa com qualquer papel;
+o P3 continua valendo só com a sentinela; um teste sob papel efêmero `NOSUPERUSER NOBYPASSRLS`, vermelho antes.
+
+**O conserto** (`tests/permission-catalog-db-parity.test.ts`): a trava saiu. A sentinela passa a ser medida por
+`medirSentinelaDoSeed`, que vale para qualquer papel:
+- papel superusuário ou BYPASSRLS → contagem direta (o caminho da CI e dos drills);
+- papel sem bypass → organização por organização: a lista vem de `tenants` (sem RLS), e para cada uma o GUC
+  `app.current_tenant_id` é fixado na transação (`set_config(…, true)`) antes de contar. Antes disso confere em
+  `pg_policies` que a política de `audit_logs` usa esse GUC, e falha se não usar (contar sob outro GUC devolveria 0 em
+  silêncio).
+O diagnóstico do TAP diz a forma: `contagem direta, papel postgres com bypass de RLS` ou `organização por organização
+(N), papel X sem bypass de RLS`. Assim o buraco que a trava fechava (papel sem bypass lendo 0 e o P3 passando em vazio
+numa base semeada) continua fechado, agora sem reprovar a base sem seed.
+
+**O teste novo** `tests/san3-07-paridade-papel-sem-bypass-db.test.ts` (por instrução do orquestrador). Base própria
+`<db>_drill_<aleatório>` (molde dos drills de migração), `migrate deploy` e `db:provision-rbac` em processo filho,
+papel efêmero pelo arnês `createEphemeralRole` (sem bypass), e a paridade num processo filho conectado como admin com
+`options=-c role=<papel>`, que faz a sessão agir como o papel (`current_user`; o caso asserta `rolsuper` e `rolbypassrls`
+falsos). (a) sem seed: `# fail 0`, `# P3 não se aplica`; (b) a mesma base semeada: a contagem direta sob o papel dá 0 (o
+RLS esconde a sentinela), como admin dá 1, e a paridade dá `# fail 0` com `# P3 aplicado … = 1`.
+- **A trava de catálogo:** `withRoleCatalogLock` é advisory lock, e advisory lock vale por base. A criação e a remoção
+  do papel rodam dentro da trava tomada no cliente admin da base COMPARTILHADA, onde os outros escritores travam; os
+  privilégios são dados na base própria, pelo cliente dela. O arquivo não tem nenhuma palavra que o ratchet
+  `db-catalog-write-guard` procura (`grep -cE` = 0), e o ratchet passa.
+- Teardown medido depois de cada rodada: 0 papel `o6r_b01_%`, 0 base `san307_job_drill_%`.
+
+**Provas.**
+- **Vermelho antes do conserto** (paridade do head `8b8d1688`): o teste novo → exit 1, `not ok 1` e `not ok 2`, as duas
+  com `P3: o papel da conexão (o6r_b01_…) não atravessa …`.
+- **Verde depois:** exit 0, `# pass 2`.
+- **M7** (no laço, `set_config('app.current_tenant_id', $1, true)` → `set_config('app.outro_guc', $1, true)`): `ok 1`,
+  `not ok 2`; a base semeada sai como `P3 não se aplica … organização por organização (1)`. Revertida por cópia.
+- **Com superusuário**, de novo e como escritas: M1 → 5 linhas "não tem linha global"; M2 → P2; M3 → P3 (nome técnico);
+  M4 → 11 linhas, todas do `support`; M5 → P3 ("a base foi semeada … não está nela"). Todas revertidas, `git status`
+  limpo. Base provisionada → `# P3 não se aplica (… contagem direta …)`; semeada → `# P3 aplicado (… = 1; contagem
+  direta …)`.
+- **Sob papel de login sem bypass** (`san307_rt`, criado só no meu container): base provisionada → exit 0, `# P3 não se
+  aplica`, organização por organização (0); semeada → exit 0, `# P3 aplicado`, (1); a base da M3 → vermelha no P3 (nome
+  técnico); a base da M5 → vermelha no P3 (a `demo` ausente).
+- **Os 3 drills verdes:** `ass-04` 4/4 (`ok 4 - M3b (d)`), `ass-05` 4/4 (`ok 4 - M4b (d)`), `b-san3-12a` 4/4 (`ok 4 -
+  A22 (d)`).
+- Orçamento de pulos na forma do job `backend`: `# tests 2 · # skipped 2`. Textual + `seed-guard` + ratchet de catálogo:
+  7 pass e 1 pulo (o caso do ratchet que exige banco); com banco, o `db-catalog-write-guard` dá 5/5. As 4 suítes de banco
+  do plano na base semeada: 12/12, 0 pulo. `check`, `lint`, `build` exit 0; guard de migração 0 violação; `git diff
+  --check` limpo.
+- **`npm test` na forma do job `backend`** (código do conserto `30dcf06c`, base nova só migrada, `CORE_SAAS_PERSISTENCE=memory`,
+  sem Redis; 05:31 a 05:42): exit 1, **`# tests 4965 · # pass 4953 · # fail 10 · # cancelled 0 · # skipped 2`** (o
+  orçamento). Verdes: os 3 drills (`ok 115 - M3b (d)`, `ok 214 - M4b (d)`, `ok 820 - A22 (d)`) e os 2 casos novos
+  (`ok 3628 - PRE535-01 (a)`, `ok 3629 - PRE535-01 (b)`). Os 10 vermelhos, um a um, em 4 arquivos que não leem o seed nem
+  a paridade:
+  - `san3-05-runtime-role-guard-db` (5: T14a/b, T14c, T14d, T15 e o pai): `setsid: ausente` no Git Bash do Windows;
+    falha também sozinho (04:36). Windows.
+  - `san3-09-bootstrap-platform-admin-db` (2: T2.1 e o pai): `node_modules/.bin/prisma` lido como JS no Windows. Windows.
+  - `traccar-position-ingestion-db` (2): o controle do teste de tempo esgotado (`o trabalho chegou à porta do commit
+    depois do 503`); passou sozinho às 03:30 (22/22). Carga.
+  - `inventory-write-paths-guard` (1, D5): `ENOENT … src\zz-o6r06-c6-probe.ts`, o arquivo de sonda que
+    `o6r06-billing-census` cria e apaga em `src/` enquanto o guard lista os arquivos. Corrida da suíte paralela, nova
+    nesta rodada e sem relação com o bloco.

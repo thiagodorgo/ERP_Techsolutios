@@ -179,30 +179,19 @@ test("os grants do papel GLOBAL batem exatamente com ROLE_PERMISSIONS (nas duas 
     // grava (uma vez, idempotente) e que nenhum outro código cria. Não é a própria `demo`, de propósito: um seed
     // que deixasse de criar a `demo` e continuasse gravando a sentinela tem de ficar VERMELHO, não passar em vazio.
     //
-    // `audit_logs` tem RLS forçado e a política só mostra linha com o GUC da organização. Um papel que não
-    // atravessa o RLS leria a sentinela como 0 e desligaria o P3 em silêncio; por isso a medição exige papel
-    // superusuário ou BYPASSRLS (como a CI e os drills usam) e FALHA sem ele, em vez de tratar "não vi" como
-    // "não existe".
+    // `audit_logs` tem RLS forçado e a política só mostra linha com o GUC da organização. Por isso a sentinela é
+    // medida de um jeito que vale para QUALQUER papel (PRE535-01, pré-revisão do PR #535): papel superusuário ou
+    // BYPASSRLS conta direto; papel sem bypass (a forma do papel de runtime de produção) conta organização por
+    // organização, com o GUC da política fixado na transação. A lista de organizações vem de `tenants`, que não tem
+    // RLS. Assim a base sem seed passa com qualquer papel, como passava antes do B-SAN3-07, e a base semeada aplica o
+    // P3 também com o papel sem bypass. Antes de contar sem bypass, confere que a política de `audit_logs` é mesmo
+    // a do GUC `app.current_tenant_id`; se não for, falha, porque contar sob outro GUC devolveria 0 em silêncio.
     //
     // Filtra a organização por `slug = 'demo'` porque na CI as suítes paralelas criam outras organizações na
     // mesma base; o critério literal "nenhum nome de `tenants` contém Tenant" vale numa base só do seed.
-    const papelDaConexao: Array<{ papel: string; atravessa: boolean }> = await client.$queryRawUnsafe(
-      `select current_user::text as papel, (rolsuper or rolbypassrls) as atravessa
-         from pg_roles where rolname = current_user`,
-    );
-    assert.equal(
-      papelDaConexao[0]?.atravessa,
-      true,
-      `P3: o papel da conexão (${papelDaConexao[0]?.papel ?? "?"}) não atravessa o RLS de audit_logs, então a ` +
-        "sentinela do seed (seed.initialized) ficaria invisível e o P3 passaria em vazio. Rode a paridade com " +
-        "um papel superusuário ou BYPASSRLS, como a CI e os drills de migração.",
-    );
-    const sentinela: Array<{ n: number }> = await client.$queryRawUnsafe(
-      `select count(*)::int as n from audit_logs where action = 'seed.initialized' and entity = 'database'`,
-    );
-    const baseSemeada = (sentinela[0]?.n ?? 0) > 0;
-    if (baseSemeada) {
-      t.diagnostic(`P3 aplicado: a base foi semeada (sentinela seed.initialized = ${sentinela[0]!.n})`);
+    const sentinela = await medirSentinelaDoSeed(client);
+    if (sentinela.n > 0) {
+      t.diagnostic(`P3 aplicado: a base foi semeada (sentinela seed.initialized = ${sentinela.n}; ${sentinela.forma})`);
       const demo: Array<{ name: string }> = await client.$queryRawUnsafe(
         `select name from tenants where slug = 'demo'`,
       );
@@ -219,7 +208,7 @@ test("os grants do papel GLOBAL batem exatamente com ROLE_PERMISSIONS (nas duas 
           "Tenant (CLAUDE.md, Parte B §3 e §11.1).",
       );
     } else {
-      t.diagnostic("P3 não se aplica: a base não tem a sentinela do seed (provisionada sem db:seed)");
+      t.diagnostic(`P3 não se aplica: a base não tem a sentinela do seed (provisionada sem db:seed; ${sentinela.forma})`);
     }
 
     // LEFT JOIN acima: um papel global existente porém SEM nenhum grant precisa aparecer no mapa,
@@ -293,6 +282,53 @@ test("os grants do papel GLOBAL batem exatamente com ROLE_PERMISSIONS (nas duas 
     await client.$disconnect();
   }
 });
+
+const SENTINELA_DO_SEED_SQL =
+  "select count(*)::int as n from audit_logs where action = 'seed.initialized' and entity = 'database'";
+
+type Cliente = Awaited<ReturnType<typeof conectar>>["client"];
+
+/**
+ * Conta a sentinela do seed (`seed.initialized`) com QUALQUER papel. `audit_logs` tem RLS forçado: o papel com
+ * superusuário ou BYPASSRLS conta direto; o papel sem bypass conta organização por organização, com o GUC da política
+ * fixado na transação (`set_config(..., true)`), e a lista de organizações vem de `tenants`, que não tem RLS.
+ */
+async function medirSentinelaDoSeed(client: Cliente): Promise<{ n: number; forma: string }> {
+  const papel: Array<{ papel: string; atravessa: boolean }> = await client.$queryRawUnsafe(
+    `select current_user::text as papel, (rolsuper or rolbypassrls) as atravessa
+       from pg_roles where rolname = current_user`,
+  );
+  const nome = papel[0]?.papel ?? "?";
+  if (papel[0]?.atravessa === true) {
+    const linhas: Array<{ n: number }> = await client.$queryRawUnsafe(SENTINELA_DO_SEED_SQL);
+    return { n: linhas[0]?.n ?? 0, forma: `contagem direta, papel ${nome} com bypass de RLS` };
+  }
+
+  const politica: Array<{ n: number }> = await client.$queryRawUnsafe(
+    `select count(*)::int as n from pg_policies
+      where schemaname = current_schema() and tablename = 'audit_logs'
+        and qual like '%current_setting(''app.current_tenant_id''%'`,
+  );
+  assert.ok(
+    (politica[0]?.n ?? 0) > 0,
+    `P3: o papel da conexão (${nome}) não tem bypass de RLS, e a política de audit_logs não usa o GUC ` +
+      "app.current_tenant_id; contar a sentinela sob esse GUC devolveria 0 em silêncio e o P3 passaria em vazio.",
+  );
+  const organizacoes: Array<{ id: string }> = await client.$queryRawUnsafe(`select id::text as id from tenants`);
+  const n = await client.$transaction(
+    async (tx) => {
+      let total = 0;
+      for (const { id } of organizacoes) {
+        await tx.$queryRawUnsafe(`select set_config('app.current_tenant_id', $1, true)`, id);
+        const linhas: Array<{ n: number }> = await tx.$queryRawUnsafe(SENTINELA_DO_SEED_SQL);
+        total += linhas[0]?.n ?? 0;
+      }
+      return total;
+    },
+    { maxWait: 10_000, timeout: 120_000 },
+  );
+  return { n, forma: `organização por organização (${organizacoes.length}), papel ${nome} sem bypass de RLS` };
+}
 
 async function conectar() {
   const connectionString = process.env.DATABASE_URL;
