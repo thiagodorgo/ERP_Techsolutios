@@ -51,7 +51,7 @@ class SyncEngine {
         SyncApiResult.conflict => syncing.copyWith(
           status: SyncStatus.conflict,
           lastErrorCode: 'sync_conflict',
-          lastSafeError: 'Conflito remoto exige decisao manual.',
+          lastSafeError: 'Conflito remoto exige decisão manual.',
         ),
       };
 

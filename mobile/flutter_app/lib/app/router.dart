@@ -147,9 +147,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => kIsDevMode
             ? const DiagnosticsScreen()
             : const ModulePlaceholderScreen(
-                title: 'Diagnostico',
+                title: 'Diagnóstico',
                 requiredPermission: 'diagnostics:read',
-                message: 'Esta area e restrita a ambientes de desenvolvimento.',
+                message:
+                    'Esta área só está disponível no ambiente de desenvolvimento.',
+                blockedMessage:
+                    'Esta área não está disponível nesta versão do aplicativo.',
               ),
       ),
       GoRoute(path: '/sync', builder: (context, state) => const SyncScreen()),
@@ -269,10 +272,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/approvals',
         builder: (context, state) => const ModulePlaceholderScreen(
-          title: 'Aprovacoes',
+          title: 'Aprovações',
           requiredPermission: 'workflow:request',
-          message:
-              'Fila e decisoes de aprovacao ficam estruturadas, mas sem workflow backend novo.',
+          message: 'As aprovações ainda não estão disponíveis no aplicativo.',
+          blockedMessage: 'Esta área ainda não está disponível no aplicativo.',
         ),
       ),
     ],
@@ -331,9 +334,12 @@ final appRouter = GoRouter(
       builder: (context, state) => kIsDevMode
           ? const DiagnosticsScreen()
           : const ModulePlaceholderScreen(
-              title: 'Diagnostico',
+              title: 'Diagnóstico',
               requiredPermission: 'diagnostics:read',
-              message: 'Esta area e restrita a ambientes de desenvolvimento.',
+              message:
+                  'Esta área só está disponível no ambiente de desenvolvimento.',
+              blockedMessage:
+                  'Esta área não está disponível nesta versão do aplicativo.',
             ),
     ),
     GoRoute(path: '/sync', builder: (context, state) => const SyncScreen()),
@@ -451,10 +457,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/approvals',
       builder: (context, state) => const ModulePlaceholderScreen(
-        title: 'Aprovacoes',
+        title: 'Aprovações',
         requiredPermission: 'workflow:request',
-        message:
-            'Fila e decisoes de aprovacao ficam estruturadas, mas sem workflow backend novo.',
+        message: 'As aprovações ainda não estão disponíveis no aplicativo.',
+        blockedMessage: 'Esta área ainda não está disponível no aplicativo.',
       ),
     ),
   ],
