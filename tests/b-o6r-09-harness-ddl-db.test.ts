@@ -10,9 +10,12 @@ import { PrismaClient } from "@prisma/client";
 import { buildApplicationName, HARNESS_DDL_LOCK_TIMEOUT_MS, runHarnessDdl, withApplicationName } from "./helpers/pg-barrier.js";
 
 // B-O6R-09 · Emenda 4 (R-ARN-4, requisito C09-02; Emenda 4.1, C4E-04) — o teste do MECANISMO de `runHarnessDdl`: o DDL do
-// arnês nunca fica na fila na frente de quem precisa da tabela. Cada caso usa uma tabela descartável
-// `b_o6r_09_arnes_<uuid sem hífen>`, criada e apagada por ele, e confere o catálogo limpo no fim. Os detentores e o 3º
-// acesso são conexões `pg` próprias (o `pg` já é usado por 12 arquivos de `tests/`, C4E-02).
+// arnês nunca fica na fila na frente de quem precisa da tabela. Cada caso usa um SCHEMA descartável
+// `b_o6r_09_arnes_<uuid sem hífen>` (a tabela `t`, a função `fn` e o gatilho `tg` dentro dele), criado e apagado por
+// ele, e confere o catálogo limpo no fim. O schema é próprio, e não `public`, porque o `GRANT … ON ALL TABLES IN SCHEMA
+// public` do `createEphemeralRole` de outra suíte disputava a tupla de `pg_class` da tabela nova (XX000 `tuple
+// concurrently updated`, medido na rodada 3 do R-ARN-5). Os detentores e o 3º acesso são conexões `pg` próprias (o `pg`
+// já é usado por 12 arquivos de `tests/`, C4E-02).
 //
 // Mutações: M-ARN (sem a instrução `SET LOCAL lock_timeout` do helper) deixa (i) e (ii) vermelhos pelo limite da 3ª
 // conexão e (iii) vermelho porque o DDL espera o detentor (que um temporizador próprio solta, para o processo terminar);
@@ -32,7 +35,7 @@ if (!connectionString) {
 } else {
   const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: withApplicationName(connectionString, `${APP}-adm`) }) });
   const abertos: PgClient[] = [];
-  const tabelas: string[] = [];
+  const esquemas: string[] = [];
 
   const pgClient = async (sufixo: string): Promise<PgClient> => {
     const { Client } = (await import("pg")) as unknown as { Client: new (o: { connectionString: string }) => PgClient };
@@ -44,39 +47,39 @@ if (!connectionString) {
 
   after(async () => {
     for (const c of abertos) await c.end().catch(() => undefined);
-    for (const t of tabelas) await admin.$executeRawUnsafe(`DROP TABLE IF EXISTS ${t} CASCADE`);
-    for (const t of tabelas) await admin.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${t}_fn()`);
+    for (const s of esquemas) await admin.$executeRawUnsafe(`DROP SCHEMA IF EXISTS ${s} CASCADE`);
     const [r] = (await admin.$queryRawUnsafe(
-      `SELECT (SELECT count(*)::int FROM pg_class WHERE relname LIKE $1) AS tabelas,
-              (SELECT count(*)::int FROM pg_trigger WHERE tgname LIKE $1) AS gatilhos,
-              (SELECT count(*)::int FROM pg_proc WHERE proname LIKE $1) AS funcoes`,
-      `${PREFIXO}%`,
+      `SELECT (SELECT count(*)::int FROM pg_namespace WHERE nspname = ANY($1::text[])) AS esquemas,
+              (SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = ANY($1::text[])) AS tabelas`,
+      esquemas,
     )) as Array<Record<string, number>>;
     await admin.$disconnect();
-    assert.deepEqual(r, { tabelas: 0, gatilhos: 0, funcoes: 0 }, "o arnês deixou catálogo para trás");
+    assert.deepEqual(r, { esquemas: 0, tabelas: 0 }, "o arnês deixou catálogo para trás");
   });
 
-  async function montarTabela(comGatilho: boolean): Promise<string> {
-    const t = `${PREFIXO}${randomUUID().replaceAll("-", "")}`;
-    tabelas.push(t);
-    await admin.$executeRawUnsafe(`CREATE TABLE ${t} (id serial PRIMARY KEY, v int)`);
-    await admin.$executeRawUnsafe(`CREATE FUNCTION ${t}_fn() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN RETURN NEW; END $f$`);
-    if (comGatilho) await admin.$executeRawUnsafe(`CREATE TRIGGER ${t}_tg BEFORE INSERT ON ${t} FOR EACH ROW EXECUTE FUNCTION ${t}_fn()`);
-    return t;
+  // O objeto do caso: o schema `s`, com a tabela `s.t`, a função `s.fn()` e (se pedido) o gatilho `tg` em `s.t`.
+  type Caso = { readonly s: string; readonly t: string; readonly fn: string };
+
+  async function montarTabela(comGatilho: boolean): Promise<Caso> {
+    const s = `${PREFIXO}${randomUUID().replaceAll("-", "")}`;
+    esquemas.push(s);
+    const c = { s, t: `${s}.t`, fn: `${s}.fn` };
+    await admin.$executeRawUnsafe(`CREATE SCHEMA ${s}`);
+    await admin.$executeRawUnsafe(`CREATE TABLE ${c.t} (id serial PRIMARY KEY, v int)`);
+    await admin.$executeRawUnsafe(`CREATE FUNCTION ${c.fn}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN RETURN NEW; END $f$`);
+    if (comGatilho) await admin.$executeRawUnsafe(`CREATE TRIGGER tg BEFORE INSERT ON ${c.t} FOR EACH ROW EXECUTE FUNCTION ${c.fn}()`);
+    return c;
   }
 
-  async function desmontar(t: string): Promise<void> {
-    await admin.$executeRawUnsafe(`DROP TABLE IF EXISTS ${t} CASCADE`);
-    await admin.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${t}_fn()`);
+  async function desmontar(c: Caso): Promise<void> {
+    await admin.$executeRawUnsafe(`DROP SCHEMA IF EXISTS ${c.s} CASCADE`);
     const [r] = (await admin.$queryRawUnsafe(
-      `SELECT (SELECT count(*)::int FROM pg_class WHERE relname = $1) AS tabela,
-              (SELECT count(*)::int FROM pg_trigger WHERE tgname = $2) AS gatilho,
-              (SELECT count(*)::int FROM pg_proc WHERE proname = $3) AS funcao`,
-      t,
-      `${t}_tg`,
-      `${t}_fn`,
+      `SELECT (SELECT count(*)::int FROM pg_namespace WHERE nspname = $1) AS esquema,
+              (SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = $1) AS tabelas,
+              (SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = $1) AS funcoes`,
+      c.s,
     )) as Array<Record<string, number>>;
-    assert.deepEqual(r, { tabela: 0, gatilho: 0, funcao: 0 }, `o caso deixou ${t} no catálogo`);
+    assert.deepEqual(r, { esquema: 0, tabelas: 0, funcoes: 0 }, `o caso deixou ${c.s} no catálogo`);
   }
 
   // O DDL do arnês já tentou (e saiu da fila) ao menos uma vez: há um pedido do `admin` esperando trava, ou já houve.
@@ -108,16 +111,16 @@ if (!connectionString) {
   };
 
   test("[arnês · DROP × ACCESS SHARE] com um leitor segurando ACCESS SHARE noutra conexão, um 3º LÊ a tabela em < 1 500 ms (Promise.race); depois de soltar, o DROP TRIGGER conclui com attempts >= 2", { timeout: 20_000 }, async () => {
-    const t = await montarTabela(true);
+    const c = await montarTabela(true);
     const leitor = await pgClient("i-leitor");
     const terceiro = await pgClient("i-3o");
     try {
       await leitor.query("BEGIN");
-      await leitor.query(`SELECT count(*) FROM ${t}`);
-      const ddl = runHarnessDdl(admin, `DROP TRIGGER ${t}_tg ON ${t}`);
+      await leitor.query(`SELECT count(*) FROM ${c.t}`);
+      const ddl = runHarnessDdl(admin, `DROP TRIGGER tg ON ${c.t}`);
       ddl.catch(() => undefined);
       await esperarDdlNaFila();
-      const ms = await corrida(terceiro.query(`SELECT count(*) FROM ${t}`), LIMITE_3A_MS);
+      const ms = await corrida(terceiro.query(`SELECT count(*) FROM ${c.t}`), LIMITE_3A_MS);
       console.log(`[arnês (i)] a 3ª conexão leu em ${ms === "PRESO" ? `PRESO > ${LIMITE_3A_MS}` : `${ms}`} ms`);
       await leitor.query("COMMIT");
       const { attempts } = await ddl;
@@ -126,21 +129,21 @@ if (!connectionString) {
       assert.ok(attempts >= 2, `o DROP concluiu em ${attempts} tentativa(s): não esperou o leitor`);
     } finally {
       await leitor.query("ROLLBACK").catch(() => undefined);
-      await desmontar(t);
+      await desmontar(c);
     }
   });
 
   test("[arnês · CREATE × ROW EXCLUSIVE] com um escritor de transação aberta (ROW EXCLUSIVE), um 3º ESCREVE em < 1 500 ms; depois de soltar, o CREATE TRIGGER conclui com attempts >= 2", { timeout: 20_000 }, async () => {
-    const t = await montarTabela(false);
+    const c = await montarTabela(false);
     const escritor = await pgClient("ii-escritor");
     const terceiro = await pgClient("ii-3o");
     try {
       await escritor.query("BEGIN");
-      await escritor.query(`INSERT INTO ${t} (v) VALUES (1)`);
-      const ddl = runHarnessDdl(admin, `CREATE TRIGGER ${t}_tg BEFORE INSERT ON ${t} FOR EACH ROW EXECUTE FUNCTION ${t}_fn()`);
+      await escritor.query(`INSERT INTO ${c.t} (v) VALUES (1)`);
+      const ddl = runHarnessDdl(admin, `CREATE TRIGGER tg BEFORE INSERT ON ${c.t} FOR EACH ROW EXECUTE FUNCTION ${c.fn}()`);
       ddl.catch(() => undefined);
       await esperarDdlNaFila();
-      const ms = await corrida(terceiro.query(`INSERT INTO ${t} (v) VALUES (2)`), LIMITE_3A_MS);
+      const ms = await corrida(terceiro.query(`INSERT INTO ${c.t} (v) VALUES (2)`), LIMITE_3A_MS);
       console.log(`[arnês (ii)] a 3ª conexão escreveu em ${ms === "PRESO" ? `PRESO > ${LIMITE_3A_MS}` : `${ms}`} ms`);
       await escritor.query("COMMIT");
       const { attempts } = await ddl;
@@ -149,13 +152,13 @@ if (!connectionString) {
       assert.ok(attempts >= 2, `o CREATE concluiu em ${attempts} tentativa(s): não esperou o escritor`);
     } finally {
       await escritor.query("ROLLBACK").catch(() => undefined);
-      await desmontar(t);
+      await desmontar(c);
     }
   });
 
   test("[arnês · teto] detentor que nunca solta → falha com a mensagem 'DDL do arnês não obteve a trava' dentro de maxTotalMs = 2_000", { timeout: 20_000 }, async () => {
     const MAX_TOTAL_MS = 2_000;
-    const t = await montarTabela(true);
+    const c = await montarTabela(true);
     const detentor = await pgClient("iii-detentor");
     let solto = false;
     const soltar = async () => {
@@ -169,10 +172,10 @@ if (!connectionString) {
     const relogio = setTimeout(() => void soltar(), MAX_TOTAL_MS + 3_000);
     try {
       await detentor.query("BEGIN");
-      await detentor.query(`LOCK TABLE ${t} IN ACCESS SHARE MODE`);
+      await detentor.query(`LOCK TABLE ${c.t} IN ACCESS SHARE MODE`);
       const inicio = Date.now();
       await assert.rejects(
-        () => runHarnessDdl(admin, `DROP TRIGGER ${t}_tg ON ${t}`, { maxTotalMs: MAX_TOTAL_MS }),
+        () => runHarnessDdl(admin, `DROP TRIGGER tg ON ${c.t}`, { maxTotalMs: MAX_TOTAL_MS }),
         (error: unknown) => {
           assert.match(String((error as Error)?.message ?? error), /^DDL do arnês não obteve a trava/);
           return true;
@@ -184,7 +187,7 @@ if (!connectionString) {
     } finally {
       clearTimeout(relogio);
       await soltar();
-      await desmontar(t);
+      await desmontar(c);
     }
   });
 }
