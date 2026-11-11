@@ -1,4 +1,7 @@
+import pino from "pino";
+
 import { env } from "../../config/env.js";
+import type { CloudCostAllocationEnqueue } from "../cloud-cost-allocation/cloud-cost-allocation.import-trigger.js";
 import {
   CloudCostError,
   CLOUD_COST_IMPORT_STATUSES,
@@ -18,8 +21,43 @@ import { parseAwsCurCsv } from "./aws-cur.parser.js";
 const sourceTypes = new Set<string>(CLOUD_COST_SOURCE_TYPES);
 const statuses = new Set<string>(CLOUD_COST_IMPORT_STATUSES);
 
+/**
+ * B-ASS-09a · P1/P7 — o marcador que a conclusão da importação grava (`metadata.autoAllocation`). Só importação MARCADA
+ * entra na varredura do rateio automático; as feitas antes deste bloco não têm o marcador e ficam no manual (pergunta 1
+ * do §9 do plano, recomendação (a)). O literal repete `AUTO_ALLOCATION_MARKER` de
+ * `cloud-cost-allocation.import-trigger.ts` para não importar o módulo de rateio estaticamente; o T11 confere os dois.
+ */
+export const CLOUD_COST_AUTO_ALLOCATION_MARKER = "v1";
+
+/** B-ASS-09a · P5 — chamado DEPOIS de gravar `completed`. Falha aqui nunca muda a importação. */
+export type CloudCostImportCompletedHook = (costImport: CloudCostImport) => Promise<void>;
+
+export type CloudCostServiceOptions = {
+  readonly onImportCompleted?: CloudCostImportCompletedHook;
+};
+
+const hookLogger = pino({ level: env.LOG_LEVEL });
+
+/** B-ASS-09a — o log da falha do gancho. Objeto exportado para o teste espiar (T1-mem prova que a memória não tem gancho). */
+export const cloudCostImportLogger = {
+  warn(payload: Record<string, unknown>, message: string): void {
+    hookLogger.warn(payload, message);
+  },
+};
+
+function logImportCompletedHookFailure(error: unknown): void {
+  cloudCostImportLogger.warn({ error: sanitizeErrorMessage(error) }, "cloud_cost_import_completed_hook_failed");
+}
+
 export class CloudCostService {
-  constructor(private readonly repository: CloudCostRepository) {}
+  private readonly onImportCompleted?: CloudCostImportCompletedHook;
+
+  constructor(
+    private readonly repository: CloudCostRepository,
+    options: CloudCostServiceOptions = {},
+  ) {
+    this.onImportCompleted = options.onImportCompleted;
+  }
 
   async importAwsCurCsv(input: ImportAwsCurCsvInput): Promise<CloudCostImport> {
     const sourceType = normalizeSourceType(input.sourceType ?? "manual_csv");
@@ -33,6 +71,7 @@ export class CloudCostService {
       metadata,
     });
 
+    let completed: CloudCostImport;
     try {
       const parsed = parseAwsCurCsv(input.csv);
       const created = await this.repository.createLineItems(started.id, parsed);
@@ -40,7 +79,7 @@ export class CloudCostService {
       const period = resolvePeriod(created);
       const currency = resolveCurrency(created);
 
-      return this.repository.updateImport(started.id, {
+      completed = await this.repository.updateImport(started.id, {
         status: "completed",
         periodStart: period.periodStart,
         periodEnd: period.periodEnd,
@@ -51,6 +90,8 @@ export class CloudCostService {
         metadata: {
           ...metadata,
           duplicateRowsSkipped: parsed.length - created.length,
+          // B-ASS-09a · R2-12(a) — DEPOIS do `...metadata`: quem chama a rota não consegue escrever o marcador.
+          autoAllocation: CLOUD_COST_AUTO_ALLOCATION_MARKER,
         },
       });
     } catch (error) {
@@ -60,6 +101,11 @@ export class CloudCostService {
         metadata,
       });
     }
+
+    // B-ASS-09a · P5 — FORA do `try`: falha do gancho (criar a run, enfileirar) nunca vira importação `failed`. O erro é
+    // engolido e registrado; a varredura de 6 em 6 h completa o que faltou.
+    if (this.onImportCompleted) await this.onImportCompleted(completed).catch(logImportCompletedHookFailure);
+    return completed;
   }
 
   listImports(filters: CloudCostImportFilters = {}) {
@@ -202,9 +248,25 @@ export function resetCloudCostRuntimeForTests(): void {
   defaultServicePromise = undefined;
 }
 
-async function createPrismaCloudCostService(): Promise<CloudCostService> {
-  const { createPrismaCloudCostRepository } = await import("./aws-cur-prisma.repository.js");
-  return new CloudCostService(await createPrismaCloudCostRepository());
+/**
+ * B-ASS-09a · R3 — o ramo Prisma (o de produção, `env.ts` exige `prisma`) liga o gancho do rateio automático: o serviço
+ * de rateio sobre o Prisma e a fila padrão (ou a injetada, nos testes). O módulo de rateio entra por `import()` dinâmico,
+ * sem ciclo de import. O ramo de MEMÓRIA (`createMemoryCloudCostService`) segue SEM gancho: produção nunca roda em
+ * memória, e os testes de rota que já existem não enfileiram nada.
+ */
+export async function createPrismaCloudCostService(
+  options: { readonly enqueue?: CloudCostAllocationEnqueue } = {},
+): Promise<CloudCostService> {
+  const [{ createPrismaCloudCostRepository }, trigger, allocationService] = await Promise.all([
+    import("./aws-cur-prisma.repository.js"),
+    import("../cloud-cost-allocation/cloud-cost-allocation.import-trigger.js"),
+    import("../cloud-cost-allocation/cloud-cost-allocation.service.js"),
+  ]);
+  const hook = trigger.buildCloudCostImportHook({
+    allocation: await allocationService.createPrismaCloudCostAllocationService(),
+    enqueue: options.enqueue ?? trigger.enqueueOnDefaultJobQueue,
+  });
+  return new CloudCostService(await createPrismaCloudCostRepository(), { onImportCompleted: hook });
 }
 
 function normalizeSourceType(value: string): CloudCostSourceType {

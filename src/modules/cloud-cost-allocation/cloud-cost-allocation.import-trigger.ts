@@ -135,3 +135,52 @@ export async function ensureImportRuns(
 function sameUtcDay(left: Date, right: Date): boolean {
   return left.toISOString().slice(0, 10) === right.toISOString().slice(0, 10);
 }
+
+// -----------------------------------------------------------------------------------------------
+// F2 — o gancho da importação concluída
+// -----------------------------------------------------------------------------------------------
+
+/** O payload que o rateio automático enfileira no job que já existe (`cloud-cost-allocation.run`, sem nome novo). */
+export type CloudCostAllocationAutoJobPayload = {
+  readonly mode: "import_auto" | "import_catch_up";
+  readonly importId?: string;
+};
+
+export type CloudCostAllocationEnqueue = (
+  name: "cloud-cost-allocation.run",
+  payload: CloudCostAllocationAutoJobPayload,
+  options?: { readonly delayMs?: number },
+) => Promise<unknown>;
+
+/** A fila padrão (Redis), carregada só quando o gancho enfileira — quem importa este módulo não puxa a fila. */
+export const enqueueOnDefaultJobQueue: CloudCostAllocationEnqueue = async (name, payload, options) => {
+  const { getDefaultJobQueue } = await import("../../infra/jobs/job.queue.js");
+  return getDefaultJobQueue().enqueue(name, payload, options ?? {});
+};
+
+export type CloudCostImportHookDeps = {
+  readonly allocation: ImportRunAllocationPort;
+  readonly enqueue: CloudCostAllocationEnqueue;
+  readonly logger?: ImportTriggerLogger;
+};
+
+/**
+ * P1/P5 — o gancho que `CloudCostService` chama DEPOIS de gravar `completed`. Cria as runs automáticas da importação e
+ * faz UM enfileiramento (R11), qualquer que seja o número de meses. Erro aqui sobe para quem chamou, que o engole e o
+ * registra (`aws-cur.service.ts`): a importação continua válida, e a varredura completa o que faltou.
+ */
+export function buildCloudCostImportHook(deps: CloudCostImportHookDeps): (costImport: CloudCostImport) => Promise<void> {
+  return async (costImport) => {
+    const { pendingCount } = await ensureImportRuns(deps.allocation, costImport.id, { logger: deps.logger });
+    await enqueueImportRunsIfPending(deps, costImport.id, pendingCount);
+  };
+}
+
+/** Um enfileiramento por importação, só se sobrou run automática `pending` (o gancho e a varredura usam o mesmo). */
+async function enqueueImportRunsIfPending(
+  deps: Pick<CloudCostImportHookDeps, "enqueue">,
+  importId: string,
+  pendingCount: number,
+): Promise<void> {
+  if (pendingCount > 0) await deps.enqueue("cloud-cost-allocation.run", { mode: "import_auto", importId });
+}

@@ -395,7 +395,11 @@ export function resetCloudCostAllocationRuntimeForTests(): void {
   defaultServicePromise = undefined;
 }
 
-async function createPrismaCloudCostAllocationService(): Promise<CloudCostAllocationService> {
+/**
+ * O serviço de rateio sobre o Prisma, sem depender de `CORE_SAAS_PERSISTENCE`. B-ASS-09a: exportado para a fábrica Prisma
+ * de `aws-cur.service.ts` montar o gancho da importação (por `import()` dinâmico) com o repositório real.
+ */
+export async function createPrismaCloudCostAllocationService(): Promise<CloudCostAllocationService> {
   const { createPrismaCloudCostAllocationRepository } = await import("./cloud-cost-allocation-prisma.repository.js");
   return new CloudCostAllocationService(await createPrismaCloudCostAllocationRepository());
 }

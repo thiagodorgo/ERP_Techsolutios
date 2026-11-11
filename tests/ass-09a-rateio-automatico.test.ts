@@ -2,15 +2,29 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { env } from "../src/config/env.js";
 import type { CloudCostImport, CloudCostLineItem } from "../src/modules/cloud-costs/index.js";
 import { parseAwsCurCsv } from "../src/modules/cloud-costs/aws-cur.parser.js";
+import { InMemoryCloudCostRepository } from "../src/modules/cloud-costs/aws-cur.repository.js";
 import {
+  CLOUD_COST_AUTO_ALLOCATION_MARKER,
+  CloudCostService,
+  cloudCostImportLogger,
+  createDefaultCloudCostService,
+  resetCloudCostRuntimeForTests,
+} from "../src/modules/cloud-costs/aws-cur.service.js";
+import {
+  AUTO_ALLOCATION_MARKER,
+  buildCloudCostImportHook,
   CloudCostAllocationService,
   ensureImportRuns,
+  getMemoryCloudCostAllocationRepositoryForTests,
   importRunId,
   InMemoryCloudCostAllocationRepository,
   MAX_AUTO_ALLOCATION_PERIODS_PER_IMPORT,
+  resetCloudCostAllocationRuntimeForTests,
   uuidV5,
+  type CloudCostAllocationAutoJobPayload,
   type CloudCostAllocationRun,
   type CloudCostAllocationTenant,
   type ImportTriggerLogger,
@@ -255,8 +269,157 @@ test("T9c · P7 — importação marcada com run manual dela no mesmo dia UTC: o
 });
 
 // -----------------------------------------------------------------------------------------------
+// F2 — a importação concluída dispara o rateio (P1, P5, A3)
+// -----------------------------------------------------------------------------------------------
+
+test("T1 · P1 — importar 1 mês, em composição explícita, dá 1 run automática e 1 enfileiramento", async () => {
+  // MUTAÇÃO QUE MATA: M1 (`if (this.onImportCompleted) await this.onImportCompleted(completed).catch(…);` → apagada).
+  const chain = importChain();
+  const imported = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv") });
+
+  assert.equal(imported.status, "completed");
+  const runs = await chain.allocationRepository.listRunsByImport(imported.id);
+  assert.equal(runs.length, 1);
+  assert.equal(runs[0]!.metadata.trigger, "import");
+  assert.equal(runs[0]!.metadata.importId, imported.id);
+  assert.equal(runs[0]!.metadata.importResolution, "explicit");
+  assert.equal(runs[0]!.status, "pending");
+  assert.equal(runs[0]!.periodStart.toISOString(), "2026-06-01T00:00:00.000Z");
+  assert.equal(runs[0]!.periodEnd.toISOString(), "2026-06-30T23:59:59.000Z");
+  assert.equal(
+    runs[0]!.id,
+    importRunId(imported.id, new Date("2026-06-01T00:00:00Z"), new Date("2026-06-30T23:59:59Z")),
+  );
+  assert.deepEqual(chain.enqueued, [["cloud-cost-allocation.run", { mode: "import_auto", importId: imported.id }, undefined]]);
+});
+
+test("T1-ponte · A3 — a run automática lê a importação e as linhas pela ponte, e soma o total importado", async () => {
+  // MUTAÇÃO QUE MATA: M1b (`if (this.costSource) return this.costSource.getImport(importId); // B-ASS-09a ponte` → apagada).
+  const chain = importChain();
+  const imported = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv") });
+  const runs = await chain.allocationRepository.listRunsByImport(imported.id);
+  assert.equal(runs.length, 1, "sem a ponte, a importação não existe para o rateio e nada nasce");
+
+  const executed = await chain.allocation.executeAllocationRun(runs[0]!.id);
+  assert.equal(executed.status, "completed", executed.errorMessage);
+  assert.equal(executed.totalImportedCost, imported.totalUnblendedCost);
+});
+
+test("T1b · P1/R11 — importar 2 meses dá 2 runs e UM enfileiramento", async () => {
+  // MUTAÇÃO QUE MATA: M1e (`if (pendingCount > 0) await deps.enqueue(` → `if (pendingCount < 0) await deps.enqueue(`).
+  const chain = importChain();
+  const imported = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-two-months-exclusive.csv") });
+
+  const runs = await chain.allocationRepository.listRunsByImport(imported.id);
+  assert.deepEqual(
+    runs.map((run) => [run.periodStart.toISOString(), run.periodEnd.toISOString()]).sort(),
+    [
+      ["2026-10-01T00:00:00.000Z", "2026-10-31T23:59:59.999Z"],
+      ["2026-11-01T00:00:00.000Z", "2026-11-30T23:59:59.999Z"],
+    ],
+  );
+  assert.deepEqual(chain.enqueued, [["cloud-cost-allocation.run", { mode: "import_auto", importId: imported.id }, undefined]]);
+});
+
+test("T1-mem · A3 — na fábrica de memória a importação NÃO tem gancho: 0 runs e nenhum log de falha do gancho", async (t) => {
+  // MUTAÇÃO QUE MATA: M1d (`return createMemoryCloudCostService();` → serviço com um gancho que lança).
+  assert.equal(env.CORE_SAAS_PERSISTENCE, "memory", "este caso exige a suíte em memória (forma do job `backend`)");
+  resetCloudCostRuntimeForTests();
+  resetCloudCostAllocationRuntimeForTests();
+  const warn = t.mock.method(cloudCostImportLogger, "warn");
+  try {
+    const service = await createDefaultCloudCostService();
+    const imported = await service.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv") });
+    assert.equal(imported.status, "completed");
+    assert.equal((await getMemoryCloudCostAllocationRepositoryForTests().listRuns()).length, 0);
+    assert.equal(warn.mock.callCount(), 0, "nenhum gancho foi chamado (e portanto nenhum falhou)");
+  } finally {
+    resetCloudCostRuntimeForTests();
+    resetCloudCostAllocationRuntimeForTests();
+  }
+});
+
+test("T5 (gancho) · P1 — importação que falha não chama o gancho: 0 runs e 0 enfileiramentos", async () => {
+  const chain = importChain();
+  const failed = await chain.costs.importAwsCurCsv({
+    csv: "bill/BillingPeriodStartDate,lineItem/ProductCode,lineItem/UnblendedCost,lineItem/CurrencyCode\n2026-06-01,AmazonEC2,1,USD",
+  });
+  assert.equal(failed.status, "failed");
+  assert.equal((await chain.allocationRepository.listRuns()).length, 0);
+  assert.deepEqual(chain.enqueued, []);
+});
+
+test("T8 (síncrono) · P5 — um gancho que lança não derruba a importação: ela resolve completed, com as linhas intactas", async (t) => {
+  // MUTAÇÃO QUE MATA: M8 (`.catch(logImportCompletedHookFailure)` → apagado).
+  const warn = t.mock.method(cloudCostImportLogger, "warn", () => {});
+  const costRepository = new InMemoryCloudCostRepository();
+  const costs = new CloudCostService(costRepository, {
+    onImportCompleted: async () => {
+      throw new Error("falha do gancho com Bearer abc.def");
+    },
+  });
+
+  const imported = await costs.importAwsCurCsv({ csv: fixture("aws-cur-two-months-exclusive.csv") });
+
+  assert.equal(imported.status, "completed");
+  assert.equal(imported.rowCount, 3);
+  assert.equal(imported.totalUnblendedCost, 130);
+  assert.equal((await costRepository.listLineItems({ importId: imported.id })).length, 3);
+  assert.equal((await costRepository.getImport(imported.id))?.status, "completed", "a importação gravada segue completed");
+  assert.equal(warn.mock.callCount(), 1);
+  assert.equal(warn.mock.calls[0]!.arguments[1], "cloud_cost_import_completed_hook_failed");
+  assert.doesNotMatch(JSON.stringify(warn.mock.calls[0]!.arguments[0]), /abc\.def/, "o log sanitiza o erro");
+});
+
+test("T-MARK · R2-12(a) — o marcador é gravado DEPOIS do metadata de quem chama, e é igual nos dois módulos", async () => {
+  assert.equal(CLOUD_COST_AUTO_ALLOCATION_MARKER, AUTO_ALLOCATION_MARKER);
+  const costs = new CloudCostService(new InMemoryCloudCostRepository());
+  const imported = await costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv"), metadata: { autoAllocation: "x" } });
+  assert.equal(imported.status, "completed");
+  assert.equal(imported.metadata.autoAllocation, "v1");
+});
+
+test("T13 · E11 — depois do rateio automático de outubro (fim exclusivo), o resumo de outubro acha a run v5 (100)", async () => {
+  // MUTAÇÃO QUE MATA: M13 (`new Date(billingPeriodEnd.getTime() - 1)` → `new Date(billingPeriodEnd.getTime())`).
+  const chain = importChain();
+  const imported = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-two-months-exclusive.csv") });
+  for (const run of await chain.allocationRepository.listRunsByImport(imported.id)) {
+    await chain.allocation.executeAllocationRun(run.id);
+  }
+
+  const summary = await chain.allocation.getAllocationSummary({
+    periodStart: new Date("2026-10-01T00:00:00.000Z"),
+    periodEnd: new Date("2026-10-31T23:59:59.999Z"),
+  });
+
+  assert.equal(summary.coverage, "imported");
+  assert.equal(summary.runId, importRunId(imported.id, new Date("2026-10-01T00:00:00Z"), new Date("2026-11-01T00:00:00Z")));
+  assert.equal(summary.totalImportedCost, 100);
+});
+
+// -----------------------------------------------------------------------------------------------
 // Ajudantes
 // -----------------------------------------------------------------------------------------------
+
+/**
+ * A composição EXPLÍCITA do T1 (R3): repositório de importação em memória, rateio com a ponte `costSource` e o gancho
+ * com fila falsa. É o que a fábrica Prisma monta em produção, aqui sem banco.
+ */
+function importChain() {
+  const costRepository = new InMemoryCloudCostRepository();
+  const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+  allocationRepository.seed({ tenants });
+  const allocation = new CloudCostAllocationService(allocationRepository);
+  const enqueued: Array<[string, CloudCostAllocationAutoJobPayload, unknown]> = [];
+  const hook = buildCloudCostImportHook({
+    allocation,
+    enqueue: async (name, payload, options) => {
+      enqueued.push([name, payload, options]);
+    },
+  });
+  const costs = new CloudCostService(costRepository, { onImportCompleted: hook });
+  return { costRepository, allocationRepository, allocation, costs, enqueued };
+}
 
 /** Repositório semeado (sem ponte), com as linhas de cada importação tiradas de uma fixture. */
 function seeded(imports: readonly CloudCostImport[], fixtures: Readonly<Record<string, string>>) {
