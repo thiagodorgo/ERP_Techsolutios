@@ -4656,3 +4656,11 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fala literal:** *"pode ir (plano v3)"*.
 - **Decisão:** DeepSeek oficial = registro da noite + item 47 (teto US$ 2); Antigravity Opus 4.6 = dev do B-ASS-07; Claude = coordena e cobre; Codex volta 15:32 (junta do B-ASS-07 + B-O6R-03b).
 - **Atualização (~08:01):** o Antigravity caiu (quota ~15/11) no dev do B-ASS-07, sem parcial; B-ASS-07 reatribuído ao Codex 1 às 15:33 e B-O6R-03b ao Codex 3; Claude assume o replano do B-USERS.
+
+## D-RESET-AUTORIDADE-PLATAFORMA (2026-11-11) — o administrador da organização não redefine a senha de quem tem papel de plataforma — RATIFICAÇÃO DO DONO PENDENTE
+
+- **Natureza:** leitura do planejador `topo-527-opus` (§A6), no plano do conserto do #527 (Correção pós-crítica, R1-A06). **RATIFICAÇÃO DO DONO PENDENTE** — o orquestrador leva ao dono.
+- **Origem:** junta J-527, achado C1-Q1, e a evidência E8 do topo: o reset por administrador alcançava alvo com papel de PLATAFORMA. Com a senha provisória em mãos, o administrador da organização troca ele mesmo a senha por `POST /auth/password` (que só pede a senha atual) e entra como `super_admin` com sessão inteira — escalada de organização para plataforma. Medido de novo pelo dev do conserto no head anterior à regra: a cadeia reset → login com a provisória → troca → login com a senha nova → `GET /platform/tenants` chega ao 200 (`tests/users-acesso-seg-portao-db.test.ts`, A8b).
+- **Invariante:** `ROLE_AUTHORITY` (fonte única, `catalog.ts`) — fluxo de organização não exerce autoridade de plataforma; é a mesma regra que já vale para ATRIBUIR papel (`assertAssignableRole`, `403 role_not_assignable`) e a mesma da `D-USERS-1` contra a tomada de conta: quem não pode dar o papel de plataforma não pode tomar a conta de quem o tem.
+- **Regra (como implementada no conserto, F3):** `POST /auth/users/:userId/reset-password` lê os papéis do alvo na organização ativa e, se algum for de plataforma (`isPlatformRole`, o mesmo conjunto que o portão de plataforma reconhece), recusa com `403 FORBIDDEN target_not_manageable`, mensagem fixa; nada muda (hash, marca, sessões, auditoria de sucesso).
+- **Se o dono recusar:** a escalada da E8 volta e precisa de outra regra antes do merge do #527.

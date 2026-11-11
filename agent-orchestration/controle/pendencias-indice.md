@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **799** |
-| IDs distintos | 788 |
-| **ABERTAS** | **602** |
+| Cabecalhos `## P-` | **802** |
+| IDs distintos | 791 |
+| **ABERTAS** | **605** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **540** |
+| — das quais **ativas nesta rodada** | **543** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 193 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **799 cabecalhos para 788 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **802 cabecalhos para 791 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 267
+## ABERTAS · balde A — material — 268
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -342,8 +342,9 @@
 | `P-ASS08-RECONSULTA-SEM-VALOR` | 13089 | MÉDIA | sim | P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ ch |
 | `P-ASS08-RECUPERADA-SEM-COBRANCA` | 13095 | MÉDIA | sim | P-ASS08-RECUPERADA-SEM-COBRANCA (2026-11-10) — o desfecho `recovered` não grava `subscri |
 | `P-ASS08-RECONSULTA-CONSISTENCIA` | 13101 | MÉDIA | sim | P-ASS08-RECONSULTA-CONSISTENCIA (2026-11-10) — a listagem `GET /v3/payments?externalRefe |
+| `P-USERS-DESATIVADO-TOKEN-MOBILE` | 13113 | ALTA | sim | P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-11) — o usuário desativado ainda age pelo `/mob |
 
-## ABERTAS · balde B — processo/registro — 273
+## ABERTAS · balde B — processo/registro — 275
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -620,6 +621,8 @@
 | `P-MOBILE-RECIBO-409-POR-MOTIVO` | 13018 | BAIXA | sim | P-MOBILE-RECIBO-409-POR-MOTIVO (2026-11-10) — o app trata todo 409 do comprovante como ` |
 | `P-PROCESSO-SONDAS-ANTES-DO-WORKTREE` | 13037 | BAIXA | sim | P-PROCESSO-SONDAS-ANTES-DO-WORKTREE (2026-11-10) — o mandato de cadeira não manda guarda |
 | `P-ASS08-INDICE-UMA-VIVA` | 13107 | BAIXA | sim | P-ASS08-INDICE-UMA-VIVA (2026-11-10) — índice parcial "uma `charge_create` viva por demo |
+| `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` | 13119 | BAIXA | sim | P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes d |
+| `P-USERS-SEG-ORDEM-DE-IMPLANTACAO` | 13125 | BAIXA | sim | P-USERS-SEG-ORDEM-DE-IMPLANTACAO (2026-11-11) — o deploy que contém o #527 vai na ordem  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 

@@ -13109,3 +13109,21 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `prisma/migrations/20260900100000_ass08_billing_outbox_one_live_charge_create/migration.sql` (plano §6.2), em PR próprio · **dono:** decisão do dono; a 08b, se autorizada.
 - **origem:** 2º conserto do #522 (§6.2/§6.3). O conserto impede a cobrança em dobro sem o índice (medido); o índice protege contra um escritor futuro errado da 08b. Pergunta opcional ao dono registrada no plano (§6.3).
 - **teste de encerramento:** `D-ASS08-MIGRACAO-M5B` em `decisoes.md` e a migração com drill e runbook (down M5b antes da M5), ou o arquivamento.
+
+## P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-11) — o usuário desativado ainda age pelo `/mobile` e pelo `/platform*` na janela do access token — ALTA
+
+- **status:** ABERTA · **escopo:** `src/modules/mobile/**`, `src/modules/platform/**` (fonte de autorização das rotas que decidem pelos papéis do JWT) · **dono:** o próximo bloco que tocar `src/modules/mobile/**`, ou a varredura de segurança do portão vendável (§C7 item 10(6)).
+- **origem:** junta J-527, achado C2CL-02 (GRAVE, pré-existente: o roteador não mudou no bloco); plano do conserto do #527 §2.5. Desativar revoga as sessões e o RBAC persistente filtra pelo status, mas o access token já emitido (até 15 min) segue com os papéis, e `/api/v1/mobile/*` e `/api/v1/platform/*` autorizam por eles, sem consulta por requisição (`D-USERS-2`). A premissa sob a qual o dono aceitou a `D-USERS-2` em 09/11 ("o desativado não executa nada que passe por requirePermission") não cobria essas rotas; o orquestrador leva a linha ao dono. `API_CONTRACTS.md` corrigido no conserto.
+- **teste de encerramento:** o desativado não executa nada pelas rotas que autorizam pelo JWT dentro da janela do token, provado por teste `-db` sob o papel de runtime (`NOSUPERUSER NOBYPASSRLS`).
+
+## P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes da marca (reset) vale até expirar — BAIXA (residual declarado)
+
+- **status:** ABERTA · **escopo:** `src/modules/auth/**` (portão do access token) · **dono:** a varredura de segurança do portão vendável (§C7 item 10(6)), ou bloco que adotar revogação de access token.
+- **origem:** `D-USERS-2` e plano do conserto do #527 §2.2/§2.6; a C2 da J-527 a achou ausente do `pendencias.md`. O token emitido ANTES do reset não tem o claim `scope` e vale até expirar (≤ 15 min). As camadas no banco continuam barrando, para ele, a troca de organização, a religação e as rotas com RBAC persistente (provado em `tests/users-acesso-seg-provisoria-db.test.ts`, A11·r1, A11·r2, P2·r4); as rotas que autorizam pelos papéis do JWT, não.
+- **teste de encerramento:** token inteiro anterior à marca recusado em toda rota (ou a decisão do dono de manter o residual, registrada em `decisoes.md`).
+
+## P-USERS-SEG-ORDEM-DE-IMPLANTACAO (2026-11-11) — o deploy que contém o #527 vai na ordem backend → web → app — BAIXA
+
+- **status:** ABERTA · **escopo:** implantação (sem código) · **dono:** quem fizer o primeiro deploy de produção que contenha o #527 (o porteiro confere).
+- **origem:** plano do conserto do #527, Emenda 3, RQ-4 (de R2-04). A web nova trata a resposta do login sem `must_change_password` como restrita (falha fechada, RQ-1): subir a web antes do backend trataria todo login como restrito. O app novo trata o campo ausente como inteiro (RQ-2(b)), então para ele a ordem é recomendação. Residual declarado: app antigo com backend novo — quem estiver com a senha provisória entra, o app ignora o campo, e o portão devolve `403 password_change_required` em tudo; troca pela web até atualizar o app.
+- **teste de encerramento:** o deploy feito na ordem, registrado com as horas de cada parte.
