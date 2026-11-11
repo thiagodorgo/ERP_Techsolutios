@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **889** |
 | IDs distintos | 878 |
-| **ABERTAS** | **678** |
+| **ABERTAS** | **677** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **617** |
+| — das quais **ativas nesta rodada** | **616** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 207 |
+| FECHADAS | 208 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **889 cabecalhos para 878 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 299
+## ABERTAS · balde A — material — 298
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -371,8 +371,7 @@
 | `P-O6R-B12-FUSO-DO-PATIO-VIVO` | 13722 | MÉDIA | sim | P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera di |
 | `P-COMISSAO-GATE-SEM-TRAVA` | 13760 | CRÍTICA | sim | P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e f |
 | `P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX` | 13803 | MÉDIA | sim | P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX (2026-11-11) — a criação NORMAL de OS grava a OS |
-| `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES` | 13852 | MÉDIA | sim | P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES (2026-11-11) — gatilho temporário de suíte irmã  |
-| `P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE` | 13877 | MÉDIA | sim | P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE (2026-11-11) — com a atribuição dentro da mãe do des |
+| `P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE` | 13878 | MÉDIA | sim | P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE (2026-11-11) — com a atribuição dentro da mãe do des |
 
 ## ABERTAS · balde B — processo/registro — 318
 
@@ -694,8 +693,8 @@
 | `P-B-O6R-09-PAINEL-STATUS-SEM-ERRO` | 13821 | BAIXA | sim | P-B-O6R-09-PAINEL-STATUS-SEM-ERRO (2026-11-11) — o painel "Alterar status" não mostra er |
 | `P-B-O6R-09-WEB-LE-WORKORDERID-DO-409` | 13827 | BAIXA | sim | P-B-O6R-09-WEB-LE-WORKORDERID-DO-409 (2026-11-11) — a web não lê o `details.workOrderId` |
 | `P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA` | 13846 | BAIXA | sim | P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA (2026-11-11) — a reatribuição à mesma pessoa |
-| `P-PG-BARRIER-EXIGE-BLOQUEADOR` | 13884 | BAIXA | sim | P-PG-BARRIER-EXIGE-BLOQUEADOR (2026-11-11) — a barreira de `tests/helpers/pg-barrier.ts` |
-| `P-B-O6R-09-TEARDOWN-5S-SOB-CARGA` | 13890 | BAIXA | sim | P-B-O6R-09-TEARDOWN-5S-SOB-CARGA (2026-11-11) — a transação de limpeza das suítes `-db`  |
+| `P-PG-BARRIER-EXIGE-BLOQUEADOR` | 13885 | BAIXA | sim | P-PG-BARRIER-EXIGE-BLOQUEADOR (2026-11-11) — a barreira de `tests/helpers/pg-barrier.ts` |
+| `P-B-O6R-09-TEARDOWN-5S-SOB-CARGA` | 13891 | BAIXA | sim | P-B-O6R-09-TEARDOWN-5S-SOB-CARGA (2026-11-11) — a transação de limpeza das suítes `-db`  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -763,7 +762,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3731 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3775 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 207
+## FECHADAS — 208
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -973,4 +972,5 @@
 | `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` | 13790 | MÉDIA | sim | P-B-O6R-09-ATRIBUICAO-FORA-DA-TX (2026-11-11) — a OS aceita a atribuição e a transação-m |
 | `P-B-O6R-09-RATCHET-T13-NOVA-CHAVE` | 13833 | ALTA | sim | P-B-O6R-09-RATCHET-T13-NOVA-CHAVE (2026-11-11) — o desenho da fatia 6 cria 1 chave nova  |
 | `P-B-O6R-09-TRAVA-PRISMA-REGISTRO` | 13840 | MÉDIA | sim | P-B-O6R-09-TRAVA-PRISMA-REGISTRO (2026-11-11) — a escolha (a) ou (b) da trava de `prisma |
-| `P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S` | 13870 | BAIXA | sim | P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S (2026-11-11) — migração com DDL em `work_orders |
+| `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES` | 13852 | MÉDIA | sim | P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES (2026-11-11) — gatilho temporário de suíte irmã  |
+| `P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S` | 13871 | BAIXA | sim | P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S (2026-11-11) — migração com DDL em `work_orders |
