@@ -749,3 +749,34 @@ Postgres 16 descartável (`o6r09-pg`, `max_connections` padrão, migrado e semea
   - 2 casos de prazo de `traccar-resolution-race-db`, com `reason: 'deadline'` e "respondeu em 3 070 ms", nos jobs 1 e 3. É o mesmo orçamento de tempo do Traccar, sob as 69 suítes em paralelo no Windows.
 
 **Limpeza:** os containers `o6r09-pg`/`o6r09-redis` foram removidos no fim, junto com `dist/` e `frontend/dist`. Bancos, gatilhos, schemas e funções de prefixo `b_o6r_09_`/`o6r07cb1_inj_` ficaram em 0 depois de cada série interrompida (conferido).
+
+## Emenda 4.2 (dp-fix-537)
+
+- **Identidade:** `dp-fix-537`, DeepSeek Pro (DP), dev da Emenda 4.2. Quem achou: C3 (`j537-c3-dp`); quem planejou: o orquestrador. Quem confere: Claude, identidade nova.
+- **Terreno:** worktree `C:/Users/thiag/w-o6r09`, ramo `fix/dispatch-atomic-timeline`, head de partida `afbbb04d`, limpo, sem processo. Banco sem Docker: `C:/Users/thiag/pg-dpfix537`, `127.0.0.1:55555`, migrado (133 migrações) e semeado. Nada em `src/`; PERMITIDO respeitado.
+
+### Vermelho-controle (o comando da C3)
+
+- Reproduzido na rodada 1 do loop de 30 baterias (as 10 suítes-base, sem o fix — o 40P01 escondido via `git stash`): `# tests 74 · # pass 73 · # fail 1`, `not ok 21 - [P3 · corrida (ii)]`, `AggregateError: o DROP do arnês falhou`, em `dropHarnessObjects` (`pg-barrier.ts:327`) chamado do `comTrava` de `b-o6r-09-dispatch-idempotency-db.test.ts:229`. TAP: `dpfix537-sondas/redhead/base-r1.tap:103`.
+- Log do Postgres (`C:/Users/thiag/pg-dpfix537.log`): `Process 25136: DROP TRIGGER IF EXISTS b_o6r_09_trv_3ec0408a0b5f4228 ON field_dispatch_events` × `Process 30468: DROP TRIGGER IF EXISTS b_o6r_09_inj_964234cc37624517 ON field_dispatch_events` → `ERROR: deadlock detected` (40P01); em seguida `cannot drop function b_o6r_09_trv_3ec0408a0b5f4228() because other objects depend on it`. Resíduo: o par trigger/função `b_o6r_09_trv_3ec0408a0b5f4228`.
+
+### E42.3 (teste novo) → E42.1 + E42.2
+
+- Novo caso (iv) `[arnês · deadlock 40P01] …` em `tests/b-o6r-09-harness-ddl-db.test.ts`: duas transações cruzam DROP TRIGGER em `work_order_events` (barreira por `pg_stat_activity`), afirma `attempts >= 2` e o catálogo limpo.
+- E42.1 em `tests/helpers/pg-barrier.ts`: `runHarnessDdl` repete também o 40P01 (mesmo teto e `lock_timeout` do 55P03); `isLockTimeout` → `isRetryableHarnessError`.
+- E42.2: o teardown dos 3 arquivos do R-ARN-2 (`dispatch-atomic-db`, `dispatch-idempotency-db`, `quote-approve-atomic-db`) já limpa via `dropHarnessObjects`, que herda a repetição do 40P01 — nenhuma linha nesses 3 arquivos mudou.
+- Suíte do arnês: 4/4 verde; caso (iv) conclui com `attempts=2`.
+- **Mutação obrigatória:** tirar o 40P01 da repetição deixou o caso (iv) vermelho (`not ok 4`, 3 pass / 1 fail); revertida, com `git diff` conferido.
+
+### E42.4 (aceite)
+
+- As 10 suítes do R-ARN-5 juntas, N=20, no banco `55555` sob papel `NOSUPERUSER NOBYPASSRLS`, `# skipped 0`: 20× `# tests 75 · # pass 75 · # fail 0 · # skipped 0`.
+- Catálogo depois de cada rodada (`pg_trigger`/`pg_proc`, prefixo `b_o6r_09%`): `0|0` nas 20. Série em `dpfix537-sondas/e42.4-clean/serie.log`.
+- `npm run check` = 0 · `npm run lint` (= `npm run check`) = 0 · `git diff --check` = 0.
+
+### Fechamento
+
+- `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES` FECHADA em `agent-orchestration/controle/pendencias.md`, índice regenerado (`python agent-orchestration/controle/gerar-indice-pendencias.py`, sem diff na 2ª execução).
+- Commits: `68a6e148` (E42.1) · `e7513168` (E42.3) · `c3888248` (fechamento da pendência).
+
+PRONTO PARA CONFERÊNCIA — head c3888248ab63076582c969749d12e41bc442c844 (código) · este registro final em cima
