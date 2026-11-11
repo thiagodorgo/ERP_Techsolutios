@@ -1,9 +1,12 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
+import pino from "pino";
 
-import { withTenantRls } from "../../database/rls.js";
+import { env } from "../../config/env.js";
+import { setTenantRlsContext, withTenantRls } from "../../database/rls.js";
 import type {
   ChangeFieldDispatchStatusInput,
   CreateFieldDispatchInput,
+  CreateFieldDispatchWithEventInput,
   FieldDispatch,
   FieldDispatchEvent,
   FieldDispatchEventType,
@@ -14,14 +17,93 @@ import type {
   OperatorAtFixTime,
   OperatorAtFixTimeCandidate,
   ReassignFieldDispatchInput,
+  FieldDispatchWriteHooks,
 } from "./field-dispatch.types.js";
 import {
+  assertNotTransitionEventType,
   classifyOperatorsAtFixTime,
   type CreateFieldDispatchEventInput,
   type FieldDispatchRepository,
 } from "./field-dispatch.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
+
+// B-O6R-09 (R-POOL do plano v2; R2-04 da crítica r2) — a TRANSAÇÃO-MÃE. O despacho e o seu evento são gravados numa
+// transação que fica ABERTA enquanto a OS é atribuída na transação dela (o `beforeCommit`), e só há commit se a OS
+// aceitar. A mãe segura 1 conexão e a atribuição pede OUTRA. Medido pela crítica r2 (Prisma 7.8 + PrismaPg): sem conexão
+// livre, a `$transaction` falha com P2028 em cerca de 2 s (`maxWait` padrão) — recusa limpa, não órfã —, mas N mães
+// simultâneas com N ≥ `max` do pool recusariam todas. O semáforo do processo limita as mães a k < `max` (o `max` do
+// `pg` não é fixado em `src/database/prisma.ts`; o padrão do driver é 10), e sempre sobram conexões para as
+// atribuições pendentes. Ele é adquirido ANTES de pedir a conexão da mãe.
+export const FIELD_DISPATCH_HELD_TX_MAX_CONCURRENCY = 4;
+// Tem de ser maior que a atribuição no pior caso medido (declarado no diário do dev, pela T15).
+export const FIELD_DISPATCH_HELD_TX_TIMEOUT_MS = 20_000;
+
+const repositoryLogger = pino({ level: env.LOG_LEVEL });
+
+class HeldTransactionSlots {
+  private available: number;
+  private readonly waiters: Array<() => void> = [];
+
+  constructor(capacity: number) {
+    if (!Number.isInteger(capacity) || capacity < 1) {
+      throw new Error("A capacidade das transações-mãe do despacho precisa ser um inteiro >= 1.");
+    }
+    this.available = capacity;
+  }
+
+  async acquire(): Promise<void> {
+    if (this.available > 0) {
+      this.available -= 1;
+      return;
+    }
+    await new Promise<void>((resolve) => this.waiters.push(resolve));
+  }
+
+  release(): void {
+    const next = this.waiters.shift();
+    if (next) {
+      next();
+      return;
+    }
+    this.available += 1;
+  }
+}
+
+// Um semáforo por PROCESSO: todo repositório Rls construído sem capacidade própria divide o mesmo.
+const processHeldTxSlots = new HeldTransactionSlots(FIELD_DISPATCH_HELD_TX_MAX_CONCURRENCY);
+
+export type RlsPrismaFieldDispatchRepositoryOptions = {
+  /** Capacidade própria do semáforo (o teste de pool, T15). Sem ela, vale o semáforo do processo. */
+  readonly heldTxMaxConcurrency?: number;
+  readonly heldTxTimeoutMs?: number;
+};
+
+// O resíduo R1 do plano v2 (`P-B-O6R-09-ATRIBUICAO-FORA-DA-TX`): a OS aceitou e fez commit na transação dela, e a mãe
+// não fez (tempo esgotado, queda). O motivo vai CODIFICADO ao log, nunca o erro cru (§2.8), e o erro atravessa.
+type AssignmentMarker = { assignmentDone: boolean };
+
+function trackAssignment(
+  requested: FieldDispatchWriteHooks | undefined,
+  marker: AssignmentMarker,
+): FieldDispatchWriteHooks | undefined {
+  const beforeCommit = requested?.beforeCommit;
+  if (!beforeCommit) return requested;
+  return {
+    beforeCommit: async (dispatch) => {
+      await beforeCommit(dispatch);
+      marker.assignmentDone = true;
+    },
+  };
+}
+
+function reportCommitLost(marker: AssignmentMarker, operation: "create" | "transition", tenantId: string): void {
+  if (!marker.assignmentDone) return;
+  repositoryLogger.error(
+    { reason: "dispatch_commit_lost_after_assignment", operation, tenantId },
+    "b-o6r-09: dispatch commit lost after the work order assignment",
+  );
+}
 
 // B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — o operador da viatura no instante do fix. Recebe o `tx` da fase 2
 // da ingestão (já sob o GUC da organização confirmada, com orçamento de tempo) e NÃO abre transação. Lê só os
@@ -151,15 +233,6 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
     return updated[0] ? mapFieldDispatchRecord(updated[0]) : undefined;
   }
 
-  async deleteById(tenantId: string, dispatchId: string): Promise<void> {
-    await this.client.fieldDispatch.deleteMany({
-      where: {
-        tenant_id: tenantId,
-        id: dispatchId,
-      },
-    });
-  }
-
   async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
     await this.client.fieldDispatch.updateMany({
       where: {
@@ -176,7 +249,32 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
     });
   }
 
+  // B-O6R-09 — preso a um `tx`: o despacho, o evento e o gancho, nesta ordem. O gancho (a atribuição da OS) vem por
+  // ÚLTIMO, para que uma falha no evento nunca chegue a atribuir.
+  async createWithEvent(
+    input: CreateFieldDispatchWithEventInput,
+    hooks?: FieldDispatchWriteHooks,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }> {
+    const dispatch = await this.create(input.dispatch);
+    const event = await this.insertEvent({
+      ...input.event,
+      tenantId: dispatch.tenantId,
+      dispatchId: dispatch.id,
+      workOrderId: dispatch.workOrderId,
+    });
+    if (hooks?.beforeCommit) await hooks.beforeCommit(dispatch);
+
+    return { dispatch, event };
+  }
+
+  // Só a auditoria `field_dispatch_checklist_run_failed` (e as fixtures); os 4 tipos obrigatórios são recusados aqui.
   async createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
+    assertNotTransitionEventType(input.eventType);
+
+    return this.insertEvent(input);
+  }
+
+  private async insertEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
     const event = await this.client.fieldDispatchEvent.create({
       data: {
         tenant_id: input.tenantId,
@@ -210,10 +308,49 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
 }
 
 export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository {
-  constructor(private readonly prismaClient: PrismaClient) {}
+  private readonly heldTxSlots: HeldTransactionSlots;
+  private readonly heldTxTimeoutMs: number;
 
-  create(input: CreateFieldDispatchInput): Promise<FieldDispatch> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).create(input));
+  constructor(
+    private readonly prismaClient: PrismaClient,
+    options: RlsPrismaFieldDispatchRepositoryOptions = {},
+  ) {
+    this.heldTxSlots =
+      options.heldTxMaxConcurrency === undefined ? processHeldTxSlots : new HeldTransactionSlots(options.heldTxMaxConcurrency);
+    this.heldTxTimeoutMs = options.heldTxTimeoutMs ?? FIELD_DISPATCH_HELD_TX_TIMEOUT_MS;
+  }
+
+  // A transação-mãe da criação: `$transaction` com `timeout` explícito e o GUC da organização como 1ª instrução.
+  async createWithEvent(
+    input: CreateFieldDispatchWithEventInput,
+    requested?: FieldDispatchWriteHooks,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }> {
+    const marker: AssignmentMarker = { assignmentDone: false };
+    const hooks = trackAssignment(requested, marker);
+    try {
+      return await this.holdSlot(() =>
+        this.prismaClient.$transaction(
+          async (tx) => {
+            await setTenantRlsContext(tx, input.dispatch.tenantId);
+            return new PrismaFieldDispatchRepository(tx).createWithEvent(input, hooks);
+          },
+          { timeout: this.heldTxTimeoutMs },
+        ),
+      );
+    } catch (error) {
+      reportCommitLost(marker, "create", input.dispatch.tenantId);
+      throw error;
+    }
+  }
+
+  // O semáforo é pedido ANTES da conexão da mãe e devolvido quando ela termina (commit, rollback ou erro).
+  private async holdSlot<T>(work: () => Promise<T>): Promise<T> {
+    await this.heldTxSlots.acquire();
+    try {
+      return await work();
+    } finally {
+      this.heldTxSlots.release();
+    }
   }
 
   list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult> {
@@ -230,12 +367,6 @@ export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository
 
   reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).reassign(input));
-  }
-
-  deleteById(tenantId: string, dispatchId: string): Promise<void> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaFieldDispatchRepository(tx).deleteById(tenantId, dispatchId),
-    );
   }
 
   restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {

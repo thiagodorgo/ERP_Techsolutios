@@ -416,50 +416,48 @@ export class FieldDispatchService {
       }
     }
 
-    const dispatch = await this.repository.create({
-      tenantId: actor.tenantId,
-      workOrderId,
-      operatorUserId,
-      status,
-      observation: optionalString(body.observation),
-      reason: optionalString(body.reason),
-      createdBy: actor.userId,
-      updatedBy: actor.userId,
-      metadata: {},
-    });
-
-    // B-O6R-07c-b1 (`D1-07c` = (c); crítica, ajuste 2) — DESPACHAR É ATRIBUIR. Ordem declarada: depois da checagem
-    // do operador e da OS (acima), depois de o despacho existir (a linha de atribuição leva o `dispatchId`), antes
-    // do evento e do evento de domínio. Compensação: se a atribuição falhar, o despacho recém-criado é apagado e a
-    // recusa atravessa — não sobra despacho apontando um técnico que não é o da OS. O que já foi feito antes
-    // (snapshot congelado, execução da vistoria provisionada) segue a regra que já valia para falha depois do
-    // freeze: inócuo, e idempotente no próximo despacho.
-    if (dispatch.status !== "draft") {
-      try {
-        await this.assignWorkOrderForDispatch(actor, {
-          workOrderId: dispatch.workOrderId,
-          operatorUserId: dispatch.operatorUserId,
-          dispatchId: dispatch.id,
-          source: "field_dispatch",
-        });
-      } catch (error) {
-        await this.repository.deleteById(actor.tenantId, dispatch.id);
-        throw error;
-      }
-    }
-
-    await this.repository.createEvent({
-      tenantId: actor.tenantId,
-      dispatchId: dispatch.id,
-      workOrderId: dispatch.workOrderId,
-      eventType: "field_dispatch_created",
-      toStatus: dispatch.status,
-      actorUserId: actor.userId,
-      message: "Despacho operacional criado.",
-      metadata: {
-        operatorUserId: dispatch.operatorUserId,
+    // B-O6R-07c-b1 (`D1-07c` = (c)) — DESPACHAR É ATRIBUIR. B-O6R-09 (P1/P4 do plano v2) — o despacho e o evento
+    // `field_dispatch_created` são gravados numa transação só, que fica aberta enquanto a OS é atribuída (o
+    // `beforeCommit`). Se a OS recusa, a transação volta inteira e a recusa atravessa: nada ficou visível, então não
+    // há compensação (o antigo `deleteById` saiu). O rascunho não atribui. O que já foi feito antes (snapshot
+    // congelado, execução da vistoria provisionada) segue a regra que já valia para falha depois do freeze: inócuo, e
+    // idempotente no próximo despacho.
+    const { dispatch } = await this.repository.createWithEvent(
+      {
+        dispatch: {
+          tenantId: actor.tenantId,
+          workOrderId,
+          operatorUserId,
+          status,
+          observation: optionalString(body.observation),
+          reason: optionalString(body.reason),
+          createdBy: actor.userId,
+          updatedBy: actor.userId,
+          metadata: {},
+        },
+        event: {
+          eventType: "field_dispatch_created",
+          toStatus: status,
+          actorUserId: actor.userId,
+          message: "Despacho operacional criado.",
+          metadata: {
+            operatorUserId,
+          },
+        },
       },
-    });
+      {
+        beforeCommit:
+          status === "draft"
+            ? undefined
+            : (created) =>
+                this.assignWorkOrderForDispatch(actor, {
+                  workOrderId: created.workOrderId,
+                  operatorUserId: created.operatorUserId,
+                  dispatchId: created.id,
+                  source: "field_dispatch",
+                }),
+      },
+    );
 
     // D-CHK-DISPATCH-CREATE — auditoria FAIL-OPEN: se a provisão da execução falhou acima, registra a falha na
     // timeline do despacho (durável/visível) + notifica o operador. Reason CODIFICADO (§2.8), nunca o

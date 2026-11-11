@@ -46,3 +46,18 @@ congelamento da OS (`freezeChecklistSnapshot`), porque a atribuição da 1ª seg
 duas formas: (i) a 1ª na atribuição, com a 2ª esperando a linha da OS, que é a forma literal do plano; (ii) a 1ª presa
 dentro da transação-mãe, depois de a chave entrar no índice, com a 2ª esperando no índice. A M7 é a mesma nas duas. O
 T14(c) usa a forma (ii) pelo mesmo motivo.
+
+## Fatia 1 — criação atômica com transação-mãe
+
+- `createWithEvent` na interface, na memória (o gancho roda antes de o despacho e o evento entrarem no mapa) e no
+  Prisma (cru: despacho → evento → gancho; Rls: `$transaction` com `timeout` explícito de 20 000 ms, o GUC como 1ª
+  instrução, o semáforo do processo antes de pedir a conexão, o log codificado `dispatch_commit_lost_after_assignment`).
+- `deleteById` saiu da interface, da memória, do Prisma cru e do Rls; o serviço não compensa mais a criação.
+- `createEvent` recusa os 4 tipos obrigatórios nos dois repositórios (`assertNotTransitionEventType`, 1 vez em cada
+  arquivo: âncoras M17m e M17p).
+- Os tipos novos do bloco (rascunho de evento, gancho, transição, chave) entraram de uma vez em `field-dispatch.types.ts`.
+- `npm run check` limpo. Testes que fecham a fatia, no `o6r09-pg`: T1 e T1 NOBYPASSRLS verdes; T9 na parte "create"
+  verde (o mesmo caso ainda cai na parte "reassign", que é da fatia 2); T14 (a) e (b) verdes (a (c) precisa da chave,
+  fatia 3); T15 verde (`max_connections` do servidor = 100; pool do teste = 3; semáforo = 1; 5 criações em 1 776 ms, 0
+  recusa); T17 memória e Prisma verdes; `o6r07c-b-scope-db` 13/13, com `[atômica · create/controle 1/controle 2]` pelo
+  rollback da mãe, sem edição do teste.

@@ -126,6 +126,112 @@ export type ReassignFieldDispatchInput = {
   readonly actorUserId?: string;
 };
 
+// B-O6R-09 (item 7 do portão; plano v2 §2.2) — o evento obrigatório que narra a escrita, sem os campos que o
+// repositório preenche a partir do despacho gravado na MESMA transação (organização, despacho e OS).
+export type FieldDispatchEventDraft = {
+  readonly eventType: FieldDispatchEventType;
+  readonly fromStatus?: FieldDispatchStatus;
+  readonly toStatus?: FieldDispatchStatus;
+  readonly actorUserId?: string;
+  readonly message: string;
+  readonly metadata?: JsonRecord;
+};
+
+/**
+ * O gancho que roda DENTRO da transação do despacho, antes do commit. É por ele que a OS é atribuída (noutra transação,
+ * a do repositório de OS): se ele lança, o despacho e o evento voltam juntos, e nada fica visível a outra conexão.
+ */
+export type FieldDispatchWriteHooks = {
+  readonly beforeCommit?: (dispatch: FieldDispatch) => Promise<void>;
+};
+
+export type CreateFieldDispatchWithEventInput = {
+  readonly dispatch: CreateFieldDispatchInput;
+  readonly event: FieldDispatchEventDraft;
+  readonly idempotencyKey?: string;
+};
+
+/**
+ * O estado em que a transição foi VALIDADA. Os dois campos são obrigatórios: um `undefined` sairia do `where` do Prisma
+ * e anularia o predicado (é a forma da mutação M13). O técnico entra porque, partindo de `reassigned`, a reatribuição
+ * mantém o status — só o técnico distingue "o despacho que eu vi" do "despacho que acabou de ir para outro".
+ */
+export type FieldDispatchTransitionExpected = {
+  readonly status: FieldDispatchStatus;
+  readonly operatorUserId: string;
+};
+
+export type FieldDispatchTransitionPatch =
+  | {
+      readonly kind: "status";
+      readonly status: FieldDispatchStatus;
+      readonly reason?: string;
+      readonly observation?: string;
+      readonly actorUserId?: string;
+    }
+  | {
+      readonly kind: "reassign";
+      readonly operatorUserId: string;
+      readonly reason?: string;
+      readonly observation?: string;
+      readonly actorUserId?: string;
+    };
+
+export type TransitionFieldDispatchInput = {
+  readonly tenantId: string;
+  readonly dispatchId: string;
+  readonly expected: FieldDispatchTransitionExpected;
+  readonly patch: FieldDispatchTransitionPatch;
+  readonly event: FieldDispatchEventDraft;
+};
+
+export type FieldDispatchTransitionResult =
+  | { readonly kind: "ok"; readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }
+  | { readonly kind: "conflict" }
+  | { readonly kind: "not_found" };
+
+/**
+ * O pedido ORIGINAL de uma criação com chave, lido do evento `field_dispatch_created` do mesmo despacho (R2-02 da crítica
+ * r2): a repetição compara o corpo com ele, nunca com a linha atual, que pode já ter andado (aceito, reatribuído,
+ * rascunho ativado). `undefined` quando o evento não existe — impossível por P1, e tratado como falha fechada (503).
+ */
+export type FieldDispatchCreateRequest = {
+  readonly workOrderId: string;
+  readonly operatorUserId: string;
+  readonly status: FieldDispatchStatus;
+};
+
+export type FieldDispatchIdempotencyMatch = {
+  readonly dispatch: FieldDispatch;
+  readonly original?: FieldDispatchCreateRequest;
+};
+
+export type FindFieldDispatchByIdempotencyKeyInput = {
+  readonly tenantId: string;
+  readonly createdBy: string;
+  readonly idempotencyKey: string;
+};
+
+export type FieldDispatchCreateResult = {
+  readonly dispatch: FieldDispatch;
+  readonly replayed: boolean;
+};
+
+// O erro que os DOIS repositórios lançam quando a chave já está gravada (no Postgres, a violação do índice único
+// `(tenant_id, created_by, idempotency_key)`; na memória, a mesma reserva). Mesmo `code` e `meta.target` do P2002 do
+// Prisma, para o serviço capturar uma forma só (R2-11 da crítica r2).
+export const FIELD_DISPATCH_IDEMPOTENCY_TARGET = ["tenant_id", "created_by", "idempotency_key"] as const;
+
+export class FieldDispatchIdempotencyKeyTakenError extends Error {
+  readonly code = "P2002";
+  readonly meta = { target: [...FIELD_DISPATCH_IDEMPOTENCY_TARGET] };
+
+  constructor() {
+    super("field_dispatch_idempotency_key_taken");
+    this.name = "FieldDispatchIdempotencyKeyTakenError";
+  }
+}
+
 // B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — quem dirigia a viatura no instante do fix.
 export type FindOperatorsForVehicleAtInput = {
   readonly tenantId: string;

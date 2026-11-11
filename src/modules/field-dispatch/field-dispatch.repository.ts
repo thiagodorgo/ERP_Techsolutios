@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type {
   ChangeFieldDispatchStatusInput,
-  CreateFieldDispatchInput,
+  CreateFieldDispatchWithEventInput,
   FieldDispatch,
   FieldDispatchEvent,
   FieldDispatchEventType,
@@ -12,7 +12,31 @@ import type {
   OperatorAtFixTime,
   OperatorAtFixTimeCandidate,
   ReassignFieldDispatchInput,
+  FieldDispatchEventDraft,
+  FieldDispatchWriteHooks,
 } from "./field-dispatch.types.js";
+import { FieldDispatchError } from "./field-dispatch.types.js";
+
+// B-O6R-09 (R-A12 ii do plano v2; R2-06 da crítica r2) — os 4 tipos de evento OBRIGATÓRIOS só nascem na transação que
+// muda o estado do despacho (`createWithEvent`/`transitionWithEvent`). `createEvent` sobra para a auditoria
+// `field_dispatch_checklist_run_failed`; com qualquer um dos 4 ele recusa antes de escrever (erro de programação, 500).
+export const FIELD_DISPATCH_TRANSITION_EVENT_TYPES: ReadonlySet<FieldDispatchEventType> = new Set<FieldDispatchEventType>([
+  "field_dispatch_created",
+  "field_dispatch_status_changed",
+  "field_dispatch_cancelled",
+  "field_dispatch_reassigned",
+]);
+
+export function assertNotTransitionEventType(eventType: FieldDispatchEventType): void {
+  if (!FIELD_DISPATCH_TRANSITION_EVENT_TYPES.has(eventType)) return;
+
+  throw new FieldDispatchError(
+    500,
+    "FIELD_DISPATCH_EVENT_TYPE_RESERVED",
+    "event_type_reserved",
+    `${eventType} só é gravado junto da escrita que ele narra (createWithEvent/transitionWithEvent).`,
+  );
+}
 
 // B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — a regra FAIL-CLOSED do operador no instante do fix, sobre os
 // despachos da viatura cuja janela contém o instante (aceito até ele e não encerrado nele). Elegível é o despacho com
@@ -41,13 +65,20 @@ export function classifyOperatorsAtFixTime(candidates: readonly OperatorAtFixTim
 }
 
 export interface FieldDispatchRepository {
-  create(input: CreateFieldDispatchInput): Promise<FieldDispatch>;
+  /**
+   * B-O6R-09 (P1/P4 do plano v2) — o despacho e o evento `field_dispatch_created` numa transação só. O gancho
+   * `beforeCommit` roda DENTRO dela, depois das duas escritas: se lança (a OS recusou a atribuição), nada fica.
+   */
+  createWithEvent(
+    input: CreateFieldDispatchWithEventInput,
+    hooks?: FieldDispatchWriteHooks,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }>;
   list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult>;
   findById(tenantId: string, dispatchId: string): Promise<FieldDispatch | undefined>;
   changeStatus(input: ChangeFieldDispatchStatusInput): Promise<FieldDispatch | undefined>;
   reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined>;
-  deleteById(tenantId: string, dispatchId: string): Promise<void>;
   restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void>;
+  /** Só a auditoria `field_dispatch_checklist_run_failed`; os 4 tipos obrigatórios são recusados. */
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent>;
   listTimeline(tenantId: string, dispatchId: string): Promise<readonly FieldDispatchEvent[]>;
   reset?(): void;
@@ -69,20 +100,28 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
   private readonly dispatches = new Map<string, FieldDispatch>();
   private readonly events = new Map<string, FieldDispatchEvent>();
 
-  async create(input: CreateFieldDispatchInput): Promise<FieldDispatch> {
+  // B-O6R-09 — o mesmo contrato do Prisma: o gancho roda ANTES de o despacho e o evento entrarem no mapa, e a entrada
+  // é síncrona (sem `await` entre as duas). Se o gancho lança, nada foi posto.
+  async createWithEvent(
+    input: CreateFieldDispatchWithEventInput,
+    hooks?: FieldDispatchWriteHooks,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }> {
     const now = new Date();
     const dispatch: FieldDispatch = {
-      ...input,
+      ...input.dispatch,
       id: randomUUID(),
-      status: input.status ?? "assigned",
-      metadata: input.metadata ?? {},
+      status: input.dispatch.status ?? "assigned",
+      metadata: input.dispatch.metadata ?? {},
       createdAt: now,
       updatedAt: now,
     };
+    const event = buildEvent(dispatch, input.event, now);
 
+    if (hooks?.beforeCommit) await hooks.beforeCommit(dispatch);
     this.dispatches.set(dispatch.id, dispatch);
+    this.events.set(event.id, event);
 
-    return dispatch;
+    return { dispatch, event };
   }
 
   async list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult> {
@@ -148,23 +187,13 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
     return updated;
   }
 
-  async deleteById(tenantId: string, dispatchId: string): Promise<void> {
-    const current = await this.findById(tenantId, dispatchId);
-    if (!current) return;
-    this.dispatches.delete(dispatchId);
-    for (const [id, event] of this.events.entries()) {
-      if (event.tenantId === tenantId && event.dispatchId === dispatchId) {
-        this.events.delete(id);
-      }
-    }
-  }
-
   async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
     if (snapshot.tenantId !== tenantId) return;
     this.dispatches.set(snapshot.id, snapshot);
   }
 
   async createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
+    assertNotTransitionEventType(input.eventType);
     const event: FieldDispatchEvent = {
       id: randomUUID(),
       tenantId: input.tenantId,
@@ -197,6 +226,22 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
   private sortedDispatches(): FieldDispatch[] {
     return [...this.dispatches.values()].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
   }
+}
+
+function buildEvent(dispatch: FieldDispatch, draft: FieldDispatchEventDraft, now: Date): FieldDispatchEvent {
+  return {
+    id: randomUUID(),
+    tenantId: dispatch.tenantId,
+    dispatchId: dispatch.id,
+    workOrderId: dispatch.workOrderId,
+    eventType: draft.eventType,
+    fromStatus: draft.fromStatus,
+    toStatus: draft.toStatus,
+    actorUserId: draft.actorUserId,
+    message: draft.message,
+    metadata: draft.metadata ?? {},
+    createdAt: now,
+  };
 }
 
 function matchesSearch(dispatch: FieldDispatch, search: string | undefined): boolean {
