@@ -213,6 +213,7 @@ export class InMemoryAuctionRepository implements AuctionRepository {
   private readonly attempts: AuctionAttempt[] = [];
   private readonly edicts: AuctionEdict[] = [];
   private readonly profiles = new Map<string, AuctionProfile>();
+  private readonly regimeByProcess = new Map<string, AuctionProfile>();
 
   constructor(
     private readonly impound: AuctionImpoundDep,
@@ -223,7 +224,12 @@ export class InMemoryAuctionRepository implements AuctionRepository {
   async getAuctionProfile(tenantId: string, processId: string): Promise<AuctionProfile | undefined> {
     const process = await this.impound.findProcessById(tenantId, processId);
     if (!process) return undefined;
-    return this.profiles.get(`${tenantId}:${process.profileId}`);
+    const key = `${tenantId}:${processId}`;
+    const captured = this.regimeByProcess.get(key);
+    if (captured) return captured;
+    const profile = this.profiles.get(`${tenantId}:${process.profileId}`);
+    if (profile) this.regimeByProcess.set(key, profile);
+    return profile;
   }
 
   setAuctionProfileForTests(tenantId: string, profileId: string, profile: AuctionProfile): void {
@@ -784,5 +790,6 @@ export class InMemoryAuctionRepository implements AuctionRepository {
     this.attempts.length = 0;
     this.edicts.length = 0;
     this.profiles.clear();
+    this.regimeByProcess.clear();
   }
 }

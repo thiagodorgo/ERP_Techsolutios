@@ -3063,6 +3063,11 @@ corrente; auditoria campo a campo com valor anterior e novo (todos numéricos/en
 
 - **dono:** `B-O6R-12` (plano SAN3, §4.1 item 24 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `Ω6R-DAT-004`: o achado `Ω6R-DAT-004` (item 24) tem dono `B-O6R-12`. O dono deste achado passa a ser `B-O6R-12` (item 24); o "Dono: próximo agente…" e o "sem bloco até hoje" do cabeçalho ficam como histórico.
 
+- **emenda de execução (B-O6R-12, 2026-11-11):** FECHAMENTO PROPOSTO NA AUTORIA. O retrato
+  normativo passa a nascer na abertura e é consumido por cobrança, prazos, leilão, liberação,
+  painel e portal; auditoria campo a campo implementada. O fechamento definitivo depende do PR,
+  da junta completa e do merge.
+
 ## P-O6R-B05 (2026-08-14) — `fix/production-runtime-gates` — Ω6R-DAT-001 + Ω6R-DIN-006 (2 P0) — **BLOQUEIA o deploy produtivo, literalmente**
 
 Bloco 5 do plano (**sem dependência** — é o único par que pode começar em paralelo ao B01; é dependência do
@@ -10286,7 +10291,8 @@ têm `created_at` iguais ⇒ a ordem entre eles é indefinida (B1b do §0.5 do p
 nenhum consumidor além do frontend.
 
 - **status:** ABERTA · **severidade:** baixa
-- **dono:** B-O6R-12 (plano SAN3, l.258 — próximo a tocar src/modules/impound/**; como nota, não como bloqueio)
+- **dono:** trilha CHECKLIST P1, PR-05 (próximo bloco que tocar o vínculo processo–vistoria);
+  o B-O6R-12 não podia tocar `impound.checklist-link-prisma.repository.ts` (§4 PROIBIDO)
 - **bloqueia:** não.
 
 ## P-SAN3-11-CENSO-CAST-RECORD (2026-10-05 — B-SAN3-11, revisão do ciclo 3)
@@ -13711,6 +13717,44 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **teste de encerramento:** cada gate de tela e de botão do app usa uma chave que `isValidPermission` aceita e que
   algum papel recebe, com teste que lê o catálogo; o T9 do `B-SAN3-19b` passa a exigir "Fale com o administrador da
   sua organização." nas 4 telas (a tabela dele vira 11/11 no catálogo).
+
+## P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera diárias CALENDAR — MÉDIA
+
+- **status:** ABERTA · **escopo:** preexistente (Ω5P PR-07) · **dono:** próximo bloco da trilha
+  `yard` que tocar transferência/edição de fuso · **bloqueia:** não bloqueia o B-O6R-12.
+- **fato:** `charge-prisma.repository.ts` ainda lê `yards.timezone` pelo pátio corrente. Transferir
+  o processo ou editar o fuso muda o calendário de um processo já aberto. O B-O6R-12 congela o
+  regime normativo do perfil, não o pátio.
+- **critério de encerramento:** processo em custódia mantém o fuso aplicável à abertura, ou a
+  operação impede mudança/transferência que altere o calendário enquanto houver custódia ativa,
+  com teste de concorrência e migração aditiva se houver retrato.
+
+## P-O6R-B12-PORTAL-MEMORIA (2026-11-11) — processo legado em memória conserva fallback vivo — BAIXA
+
+- **status:** ABERTA · **dono:** próximo bloco que remover compatibilidade com processos legados
+  sem `regime` no owner-portal · **bloqueia:** não bloqueia o B-O6R-12.
+- **fato:** processos novos em memória carregam `regime` e o portal projeta essa cópia. Para uma
+  fixture/processo histórico sem `regime`, o portal preserva o fallback deliberado em
+  `getPortalProfile`, tal como o caminho Prisma de compatibilidade.
+- **critério de encerramento:** quando todo processo suportado tiver retrato obrigatório também
+  nas fixtures e importações em memória, retirar o fallback e provar que o portal não consulta o
+  perfil vivo em nenhum caminho.
+
+## P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA (2026-11-11) — o drill do B-O6R-12 deixa bases e papéis quando o processo é morto, e nada os recolhe — BAIXA
+
+- **status:** ABERTA · **escopo:** dentro-do-bloco (o drill nasceu no `B-O6R-12`), registrada pela junta do
+  #539 (C2-04) e criada pela Emenda 2 do plano · **dono:** o próximo bloco que tocar o fixture
+  `tests/helpers/auth-identity-fixture.ts` (`SWEPT_ROLE_FAMILIES`) · **bloqueia:** não.
+- **fato:** `tests/b-o6r-12-regime-migration-drill-db.test.ts` derruba cada clone no `finally` e os papéis
+  depois dele, com o `after` como rede. Mas com o processo morto (SIGKILL, `taskkill /F`) nem `finally` nem
+  `after` rodam, e sobram as bases `<db>_b12{t,c7,c7f,c7b,car,imu,col,som,c17,rb}_<sufixo>`, os papéis
+  `b12_mig_<sufixo>` e `b12_rt*_<sufixo>` e a pasta `%TEMP%/o6r12-drill-*`. Medido pela pré-revisão (P539-03)
+  e pela C2 da junta: depois do kill, sobraram `…_b12t_…` e `…_b12car_…`. O prefixo `b12_` não está em
+  `SWEPT_ROLE_FAMILIES`, e não há varredura de bases órfãs. Na CI o runner é efêmero; o resíduo fica na
+  máquina de quem roda local.
+- **critério de encerramento:** a família `b12_` (papéis) entra na varredura do arnês, com o carimbo de tempo
+  no nome que a varredura exige, e uma varredura das bases `%_b12%_<sufixo>` mais velhas que o limite do
+  arnês; com um teste que mata o drill no meio e prova que a execução seguinte recolhe papéis e bases.
 
 ## P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e fica fora da fila do cancelamento — BAIXA
 

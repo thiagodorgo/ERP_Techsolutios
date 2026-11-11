@@ -4924,3 +4924,24 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fato:** os devs do `B-SAN3-19b` e do `B-ASS-09a` estão prontos e esperam o parecer do porteiro do #530 (§C2 item 8).
 - **Leitura do orquestrador, declarada (§A6):** o PR de registro não é demanda de produto e começa já (`reg-1111-cl`).
+
+## D-B-O6R-12-ACEITE-E-EMENDA-E1 (2026-11-11) — regime da abertura e ajustes da crítica v2
+
+- O aceite provisório do item 24 fica ratificado pelas decisões do dono
+  `D-PORTAO-9-RECOMENDACOES-1011` e `D-PORTAO-5-RECOMENDACOES-1111`: o retrato nasce na abertura,
+  alcança cobrança, prazos, leilão, liberação, painel e portal; o backfill usa o valor atual.
+- A crítica de rodada 2 (`crit-12-r2-plano.json`) aprovou o plano v2 com 4 ajustes médios e 6
+  baixos. Todos entram como requisito antes do código na Emenda E1 de
+  `agent-orchestration/codex/comandos/B-O6R-12-jurisdiction-profile-versioning.md`.
+- O ponteiro nulo do serviço diário preserva o catch-up vivo; uma cópia não nula vence.
+- Correção excepcional de retrato errado exige migração aditiva própria, censo e revisão; não
+  nasce bypass de runtime neste bloco.
+- **Emenda E1′ do dev sucessor (`dev-o6r12-cl`, 2026-11-11, antes do código; leitura do dev,
+  declarada, §A6):** E1.2′ — `SET search_path = pg_catalog, public, pg_temp` nas 2 funções, porque
+  sem `pg_temp` no fim a sombra temporária vence para tabelas (sonda medida); E1.8′ — a trava do
+  PATCH é `FOR NO KEY UPDATE`, e a abertura não espera o PATCH; E1.9′ e E1.10′ — onde moram os testes;
+  E1.11′ — o drill entra na catraca `db-catalog-write-guard` com contagem e motivo. Texto inteiro no
+  comando do bloco.
+- **Carimbo da migração:** `20260901100000_impound_process_regime_snapshot`, depois da
+  `20260901090000` do #537, pela trava de `prisma/**` (`D-B-O6R-09-TRAVA-PRISMA-OPCAO-A`) e por
+  ordem do orquestrador; a ordem vale nos dois sentidos de merge.
