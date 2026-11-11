@@ -28,6 +28,8 @@ const OLD = new Date(NOW.getTime() - POLL_PENDING_STALE_MS - 60_000);
 
 /** Porta falsa: a reconsulta devolve o estado programado e conta as chamadas (o `recorded[]` sem rede). */
 class ScriptedPort implements PaymentProviderPort {
+  /** O `externalReference` que o provedor guardou ao criar a cobrança (o NOSSO statement_id) — o [WH-5] o confere. */
+  reference: string | null = null;
   lookups = 0;
   created = 0;
   constructor(private lookup: ChargeLookup) {}
@@ -39,7 +41,7 @@ class ScriptedPort implements PaymentProviderPort {
     this.created += 1;
     return { chargeId: `pay_${this.created}`, status: "pending", payUrl: "https://pay.example/x", pixCopyPaste: "00020..." };
   }
-  async getCharge() { this.lookups += 1; return this.lookup; }
+  async getCharge() { this.lookups += 1; return this.reference && this.lookup.raw.externalReference === undefined ? { ...this.lookup, raw: { ...this.lookup.raw, externalReference: this.reference } } : this.lookup; }
   async findChargeByExternalReference() { return null; }
   async cancelCharge(id: string) { return { chargeId: id, status: "cancelled" as const }; }
   async refund(id: string) { return { chargeId: id, status: "refunded" as const }; }
@@ -85,6 +87,7 @@ test("dispatch: cria a cobrança, grava subscription_statement_charges (pending,
   const port = new ScriptedPort({ status: "pending", raw: {} });
   const { deps, statements } = harness({ asaas: port });
   const statement = await closedStatement(statements, 10000);
+  port.reference = statement.id;
   await deps.refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas" }, OLD);
   await deps.outbox.enqueue({ tenantId: TENANT, statementId: statement.id, kind: "charge_create", provider: "asaas", seq: 1, payload: { customerId: "cus_1", amountCents: 10000, dueDate: "2026-12-10", method: "pix" } }, NOW);
   const result = await runBillingDispatch(deps);
@@ -100,6 +103,7 @@ test("poll-pending (a): evento received órfão há > 30 min é reconciliado (R-
   const port = new ScriptedPort({ status: "paid", paidCents: 10000, raw: {} });
   const { deps, statements } = harness({ asaas: port });
   const statement = await closedStatement(statements, 10000);
+  port.reference = statement.id;
   await deps.refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas" }, OLD);
   const old = await deps.events.insertIfAbsent({ provider: "asaas", externalEventId: "evt_old", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_1", externalReference: statement.id }, OLD);
   const fresh = await deps.events.insertIfAbsent({ provider: "asaas", externalEventId: "evt_new", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_2", externalReference: statement.id }, NOW);
@@ -114,6 +118,7 @@ test("poll-pending (b): cobrança pending sem evento há > 30 min é reconsultad
   const port = new ScriptedPort({ status: "paid", paidCents: 10000, raw: {} });
   const { deps, statements } = harness({ asaas: port });
   const statement = await closedStatement(statements, 10000);
+  port.reference = statement.id;
   await deps.refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas", externalChargeId: "pay_9" }, OLD);
   const result = await runBillingPollPending(deps);
   assert.equal(result.charges, 1);
@@ -125,6 +130,7 @@ test("poll-settled: chargeback tardio (sem evento) reverte UMA vez — a 2ª rod
   const port = new ScriptedPort({ status: "paid", paidCents: 10000, raw: {} });
   const { deps, statements } = harness({ asaas: port });
   const statement = await closedStatement(statements, 10000);
+  port.reference = statement.id;
   await deps.refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas", externalChargeId: "pay_cb" }, OLD);
   await deps.settlement.settle({ tenantId: TENANT, statementId: statement.id, source: "asaas", externalChargeId: "pay_cb", paidCents: 10000, method: null, now: NOW });
   assert.equal((await statements.findStatement(TENANT, statement.id))?.chargeStatus, "confirmed");
@@ -175,6 +181,7 @@ test("G12: o resolver do despacho guarda o cliente do provedor no perfil; perfil
   // R-WH-5 com o id guardado: a reconsulta traz OUTRO cliente → rejeitada, sem baixa.
   const { deps, statements } = harness({ asaas: port });
   const statement = await closedStatement(statements, 10000);
+  port.reference = statement.id;
   await deps.refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas", externalChargeId: "pay_g12" }, OLD);
   const result = await runBillingPollPending({ ...deps, resolveExpectedCustomerId: (tenantId, provider) => store.get(tenantId, provider) });
   assert.equal(result.outcomes.rejected, 1, "cliente da cobrança ≠ cliente guardado → rejeitada");

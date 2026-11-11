@@ -132,8 +132,11 @@ export function createSubscriptionBillingWebhookRouter(deps: WebhookRouterDeps):
       return;
     }
 
-    // (4) autenticidade.
-    const verification = await target.verify({ headers: req.headers, rawBody, query: req.query });
+    // (4) autenticidade. Conserto da J-530 (C2-A3): o verificador que LANÇA (adaptador ou cofre fora do ar) responde o 503 JSON
+    // da casa, sem pilha nem detalhe, e não conta como falha do IP — o provedor reenvia.
+    let verification: WebhookVerification;
+    // [WH-ERR]
+    try { verification = await target.verify({ headers: req.headers, rawBody, query: req.query }); } catch { res.status(503).json({ error: { code: "temporarily_unavailable" } }); return; }
     if (!verification.ok) {
       deps.limiter.recordFailure(ip);
       res.status(401).json({ error: { code: "unauthorized" } });

@@ -60,6 +60,8 @@ function focusAdapter(baseUrl: string): FocusNfeInvoiceAdapter {
 
 /** Porta de pagamento falsa (sem rede): a reconsulta devolve o estado programado. */
 class ScriptedPaymentPort implements PaymentProviderPort {
+  /** O `externalReference` que o provedor guardou ao criar a cobrança (o NOSSO statement_id) — o [WH-5] o confere. */
+  reference: string | null = null;
   constructor(private lookup: ChargeLookup) {}
   setLookup(lookup: ChargeLookup) {
     this.lookup = lookup;
@@ -71,7 +73,7 @@ class ScriptedPaymentPort implements PaymentProviderPort {
     return { chargeId: "pay_x", status: "pending" };
   }
   async getCharge() {
-    return this.lookup;
+    return this.reference && this.lookup.raw.externalReference === undefined ? { ...this.lookup, raw: { ...this.lookup.raw, externalReference: this.reference } } : this.lookup;
   }
   async findChargeByExternalReference() {
     return null;
@@ -309,6 +311,7 @@ test("R-D: chargeback com nota autorizada → invoice_cancel → DELETE com a ju
     const payment = new ScriptedPaymentPort({ status: "paid", paidCents: 10_000, raw: {} });
     const h = harness(adapter, { payment });
     const statement = await paidStatement(h, "2026-11");
+    payment.reference = statement.id;
     await enqueueIssue(h, statement.id);
     await runBillingDispatch(h.deps);
     h.clock.now = new Date(h.clock.now.getTime() + POLL_PENDING_STALE_MS + 60_000);

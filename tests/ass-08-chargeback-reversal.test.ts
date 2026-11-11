@@ -116,7 +116,7 @@ test("R-CB-1 chargeback pela reconsulta → charged_back, inGoodStanding false (
   const { repo, settlement } = make();
   const statement = await closedStatement(repo, 10000);
   await settlement.settle({ tenantId: TENANT, statementId: statement.id, source: "asaas", externalChargeId: "pay_3", paidCents: 10000, method: null, now: new Date() });
-  const { events, refs, deps } = reconcileDeps(repo, settlement, { status: "charged_back", paidCents: 10000, raw: {} });
+  const { events, refs, deps } = reconcileDeps(repo, settlement, { status: "charged_back", paidCents: 10000, raw: { externalReference: statement.id } });
   await refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas" }, new Date());
   await events.insertIfAbsent({ provider: "asaas", externalEventId: "cb_1", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_3", externalReference: statement.id }, new Date());
   assert.equal(await reconcileWebhookEvent(deps, { provider: "asaas", externalEventId: "cb_1" }), "reversed");
@@ -130,7 +130,7 @@ test("D3/R-CB-2 disputa de chargeback → chargeback_disputed, NÃO derruba em d
   const statement = await closedStatement(repo, 10000);
   await settlement.settle({ tenantId: TENANT, statementId: statement.id, source: "asaas", externalChargeId: "pay_4", paidCents: 10000, method: null, now: new Date() });
   await authorizeInvoice(statement.id);
-  const { events, refs, deps } = reconcileDeps(repo, settlement, { status: "chargeback_disputed", disputeWonPending: true, raw: {} });
+  const { events, refs, deps } = reconcileDeps(repo, settlement, { status: "chargeback_disputed", disputeWonPending: true, raw: { externalReference: statement.id } });
   await refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas" }, new Date());
   await events.insertIfAbsent({ provider: "asaas", externalEventId: "cb_disp", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_4", externalReference: statement.id }, new Date());
   assert.equal(await reconcileWebhookEvent(deps, { provider: "asaas", externalEventId: "cb_disp" }), "disputed");
@@ -146,7 +146,7 @@ test("R-SET-2 chargeback com nota authorized → enfileira invoice_cancel; estor
   const stmtTotal = await closedStatement(total.repo, 10000);
   await total.settlement.settle({ tenantId: TENANT, statementId: stmtTotal.id, source: "asaas", externalChargeId: "pay_5", paidCents: 10000, method: null, now: new Date() });
   await total.authorizeInvoice(stmtTotal.id);
-  const totalCtx = reconcileDeps(total.repo, total.settlement, { status: "charged_back", paidCents: 10000, raw: {} });
+  const totalCtx = reconcileDeps(total.repo, total.settlement, { status: "charged_back", paidCents: 10000, raw: { externalReference: stmtTotal.id } });
   await totalCtx.refs.put({ statementId: stmtTotal.id, tenantId: TENANT, provider: "asaas" }, new Date());
   await totalCtx.events.insertIfAbsent({ provider: "asaas", externalEventId: "cb_full", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_5", externalReference: stmtTotal.id }, new Date());
   await reconcileWebhookEvent(totalCtx.deps, { provider: "asaas", externalEventId: "cb_full" });
@@ -200,7 +200,7 @@ test("reconsulta de estorno SEM valor (Asaas REFUNDED) reverte só o pagamento �
   const { repo, settlement } = make();
   const statement = await closedStatement(repo, 10000);
   await settlement.settle({ tenantId: TENANT, statementId: statement.id, source: "asaas", externalChargeId: "pay_rf", paidCents: 10000, method: null, now: new Date() });
-  const { events, refs, deps } = reconcileDeps(repo, settlement, { status: "refunded", raw: {} });
+  const { events, refs, deps } = reconcileDeps(repo, settlement, { status: "refunded", raw: { externalReference: statement.id } });
   await refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas" }, new Date());
   await events.insertIfAbsent({ provider: "asaas", externalEventId: "rf_1", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_rf", externalReference: statement.id }, new Date());
   assert.equal(await reconcileWebhookEvent(deps, { provider: "asaas", externalEventId: "rf_1" }), "reversed");

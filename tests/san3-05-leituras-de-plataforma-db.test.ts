@@ -796,7 +796,13 @@ if (!connectionString) {
               status: "pending",
               payUrl: "https://pay.example/san305",
             }),
-            getCharge: async (chargeId: string) => estado.get(chargeId) ?? { status: "pending", raw: {} },
+            // Conserto da J-530 ([WH-5]): como o provedor, a reconsulta devolve o `externalReference` que NÓS mandamos ao criar a
+            // cobrança (o statement_id da organização dona dela).
+            getCharge: async (chargeId: string) => {
+              const atual = estado.get(chargeId) ?? { status: "pending", raw: {} };
+              const dono = [...st.keys()].find((tenantId) => cobrancaDe(tenantId) === chargeId);
+              return { ...atual, raw: { ...(dono ? { externalReference: st.get(dono) } : {}), ...atual.raw } };
+            },
             findChargeByExternalReference: async () => null,
             cancelCharge: async (id: string) => ({ chargeId: id, status: "cancelled" }),
             refund: async (id: string) => ({ chargeId: id, status: "refunded" }),

@@ -145,6 +145,10 @@ export async function applyReconsultedChargeState(
   const expected = deps.resolveExpectedCustomerId ? await deps.resolveExpectedCustomerId(input.tenantId, input.provider) : null;
   const rawCustomer = rawCustomerId(lookup.raw);
   if (expected && rawCustomer && rawCustomer !== expected) return { outcome: "rejected", reason: "customer_mismatch" };
+  // C2-A4 (conserto da J-530): a cobrança reconsultada tem de ser DESTE demonstrativo — o único criador manda
+  // `externalReference = statementId`, e o provedor devolve o que guardou. Sem a referência, ou com outra, nada se aplica.
+  // [WH-5]
+  const rawRef = typeof lookup.raw.externalReference === "string" ? lookup.raw.externalReference : null; if (rawRef !== input.statementId) return { outcome: "rejected", reason: rawRef ? "reference_mismatch" : "reference_missing" };
 
   const keepInvoice = async () => (deps.resolveKeepInvoice ? deps.resolveKeepInvoice(input.tenantId, input.statementId) : false);
   // A reconsulta de estorno/chargeback pode não trazer valor: o teto é o pagamento (a reversão limita ao que falta).
