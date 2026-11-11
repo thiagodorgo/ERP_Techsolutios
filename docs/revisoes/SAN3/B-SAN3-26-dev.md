@@ -118,3 +118,83 @@ Desvios de forma (não mudam comportamento):
 ## F0.4 Âncoras da tabela de abertura
 
 Gravadas depois da implementação, em F4 (o plano manda medir no objeto final).
+
+## F1 — o servidor (commit `6d9bb780`)
+
+- `src/modules/work-orders/work-order.checkin.ts` (novo): as duas listas de papéis, a isenção literal, a normalização
+  (E-03), `verifyCheckin` (o único emissor do veredito, com marca de tipo e registro num `WeakSet`), a guarda dos
+  repositórios, a mensagem da linha do tempo, a guarda da placa no `update` e o modo da lista.
+- `work-order.types.ts`: `ChangeWorkOrderStatusInput` vira união (`on_site` exige `checkin: CheckinVerdict`),
+  `CreateWorkOrderInput.status` exclui `on_site` (só no tipo), e `CheckinEntry`.
+- `work-order.checkin.typecheck.ts` (novo, só tipos): 3 `@ts-expect-error` + um controle positivo.
+- Os dois repositórios chamam `assertCheckinVerdictForStatus(input)` na 1ª linha do `changeStatus`.
+- `work-order.service.ts`: o veredito no `changeStatus` (4º parâmetro `options.entry`), a mensagem do servidor, o
+  `metadata.checkin`, a guarda da placa no `update`, e `describeCheckinForList` (memória por catálogo, e só para a OS
+  sem placa).
+- `work-order.controller.ts`: a rota de status passa `entry: "http_status_route"`; a lista passa o mapa do modo.
+- `work-order.dto.ts`: `checkinMode` e `checkinPlateTail` na lista (aditivas).
+- `work-order.repository.ts`: a OS de remoção da autoridade nasce com `serviceDetails.plate` (a placa da solicitação).
+- Desvio de forma: a guarda da placa no `update`, o modo da lista e a OS de remoção, que o §6 do plano põe na F2,
+  entraram aqui; a F2 ficou com a fila. Nada muda de comportamento por isso.
+- Resultado depois da F1: conferência 16/21 (as 5 que faltavam eram da fila, F2), guard 5/5, normalização 6/6.
+
+## F2 — a fila no servidor e as regressões (commit `cbf62a71`)
+
+- `mobile-work-order-sync.ts`: repassa `checkin_confirmation`, entra como `mobile_sync`, a recusa do check-in sai em
+  `conflicts[]` com `next_action: "redo_checkin"` (1ª linha de `actionErrorResult`), e o `conflict.local` de TODO
+  conflito sai sem `checkin_confirmation` (E-08).
+- Regressões, só fixture (a asserção não muda):
+  - `tests/o6r07c-b-scope.test.ts`: a OS do arnês nasce com `service_details.plate`, e a etapa `on_site` do técnico
+    manda `checkin_confirmation` (`corpoDeStatus`), nos dois laços que levam a OS a `on_site`;
+  - `tests/work-order-checklists-sticky.test.ts`: a OS do teste de ajuste nasce com placa, e o `on_site` interno
+    (ator `roles: []`, entrada `internal`) manda os dígitos.
+  - `approval-routes`, `san3-13-wo-list-scope` e `work-order-checklist-snapshot-dto`: não mudaram (o `manager` pela rota
+    HTTP é base; o `create` não tem guarda em execução; as chaves da lista são aditivas).
+- Resultado: conferência 21/21; as 5 regressões do plano 219/219; `authority-removal`, `authority-portal`,
+  `authority-release-approval` e `work-order-origin-destination` 49/49.
+
+## F3 — o app (commit `23a6a5c5`)
+
+- Modelo (`CheckinMode`, `checkinMode`, `checkinPlateTail`, `clearArrivedAt`/`clearStartedAt`), leitura da lista
+  (camel e snake; ausente ou desconhecido = `unknown`), store drift e banco v16 (guarda `from >= 2 && from < 16`, tabela
+  e coluna por `PRAGMA table_info`, no padrão da v15).
+- `updateStatus(…, lastDigits:)` grava `checkin_confirmation` só na chegada; o replay o repassa (só `last_digits`).
+- `_upsertRemoteOrders`: o pull não sobrescreve a OS com chegada recusada à espera do toque (E-01).
+- Serviço de resolução: `kCheckinRefusalCodes`, `isCheckinRefusalAction`, `checkinRedoAffectedActionIds`, o caso
+  `redoCheckin` e o método `undoRefusedCheckin` (restaura o status de antes, tira `arrivedAt`, e `startedAt` quando a
+  ação aposentada era o "Iniciar atendimento"; aposenta a chegada recusada e as ações de status posteriores da mesma OS
+  com `CHECKIN_REDO_REQUIRED`).
+- Desvio de forma, com causa medida: o método se chamaria `redoCheckin`, o mesmo nome do valor do enum; o guard
+  `P-FILA-AWAIT` (`test/core/sync/bo6r11_guard_fila_await_ast_test.dart`) leu o `WorkOrderConflictResolution.redoCheckin`
+  como "tear-off" do método que grava na fila e reprovou. O método virou `undoRefusedCheckin`; o enum fica `redoCheckin`.
+- Diálogo por modo (`plate`, `exempt`, `referenceMissing`, `unknown`); no `plate`, os 2 caracteres errados mostram "Os
+  dígitos não conferem com a placa do veículo." e o confirmar fica desligado (o teste 6 do b115 segue valendo); a dica é
+  a placa mascarada, sem o código (N-03). Textos tocados com acento (§11.3).
+- Cartão da OS: chegada recusada mostra o motivo e só "Confirmar a placa de novo"; o toque desfaz a chegada, abre o
+  diálogo (o `showDialog` é chamado antes de o repositório recarregar, porque o cartão sai da tela quando a OS deixa de
+  estar em conflito) e enfileira uma chegada NOVA.
+- Tela Sincronização (E-02): as ações presas a uma chegada recusada mostram só "Confirmar a placa de novo".
+- Regressões, só fixture: `b115_checkin_flow_test.dart` (modo `plate`, fim "23"; o digitado vira o fim da placa);
+  `app_database_migration_test.dart`, `bfilausuario_drift_user_id_test.dart` e `brdvcomp_c1_drift15_migration_test.dart`
+  afirmavam a versão do banco depois de abrir (`15`) e passam a afirmar `16` (o schema atual; a migração que cada um
+  prova não muda).
+- Fato medido fora do escopo, registrado na `P-MOBILE-STATUS-NOMES`: o pull lê o status pelo nome do enum do app, e
+  `on_route`/`on_site` do servidor viram `scheduled`. Os testes do app deste bloco usam os nomes do app na lista falsa,
+  como o probe do revisor do plano.
+
+## F5 — a criação no console (commit `85057a10`)
+
+- `WorkOrderForm.tsx`: `showsVehiclePlateField` (todo tipo menos residencial) e `serviceDetailsInputFor` (a placa em
+  `service_details.plate` para reboque, outro, sem tipo e sem serviço); cartão "Veículo atendido" com o mesmo `Card` e o
+  mesmo `Input` do socorro (padrão do sistema, §4: nenhuma tela nova nem componente novo).
+- Smoke: `work-order-form-destination.test.ts` (as duas funções) e `work-order-registry-links.test.tsx` (o SSR da
+  criação sem serviço mostra "Veículo atendido" e "Placa do veículo"); os dois estão no `test:smoke`.
+
+## F4 — contrato e registro
+
+- `API_CONTRACTS.md`: a lista, o `PATCH /work-orders/:id`, o `PATCH …/status` e o §3.5.2 novo (o "No local"), e a ação
+  da fila.
+- `controle/pendencias.md`: fecha a `P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS`; abre a `P-DESPACHO-ARRIVED-SEM-CONFERENCIA`,
+  a `P-CHECKIN-NUMERO-DE-SERIE`, a `P-CONSOLE-EDITA-PLACA-DA-OS`, a `P-CHECKIN-SEM-PLACA-OFFLINE` (E-05) e a
+  `P-CHECKIN-PLACA-ESTRANGEIRA` (E-03); nota medida na `P-MOBILE-STATUS-NOMES`. Índice regenerado pelo gerador.
+- `controle/decisoes.md`: os dois conflitos (F0).

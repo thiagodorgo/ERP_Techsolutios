@@ -9053,7 +9053,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e compara com o código da OS — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA com o merge do PR do `B-SAN3-26` (2026-11-11; antes: ABERTA, inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fechamento (B-SAN3-26, `dev-san326-cl`):** o app compara com o fim da PLACA do veículo atendido, que o servidor manda na lista (`checkinMode`, `checkinPlateTail`), e o servidor confere nas duas portas (`PATCH /work-orders/:id/status` e a fila), com veredito obrigatório nos dois repositórios. Teste de encerramento: `tests/san3-26-checkin-conferencia.test.ts` (A2 aceita "23" da placa `ABC1D23`; A3 recusa o fim do código da OS) e `mobile/flutter_app/test/features/work_orders/bsan326_checkin_confere_placa_test.dart` (M1: "42" de `OS-1042` dá o erro, "23" enfileira). O que sobra virou as pendências abaixo, com dono.
 - **junta do PR #386, ciclo 1 (C2-01, 2026-09-12):** entra no gate — a tela declara um controle de segurança que não existe: `work_order_detail_screen.dart:918-931` pede "os 2 últimos dígitos da placa" e compara com o fim do código da OS, e o backend não confere nada. "O GPS coexiste" é mitigação, e o plano não admite exceção por mitigação. Plano SAN3 v5: bloco `B-SAN3-26`.
 - **fonte (fatia AUSENTES, §2a):** sintese A9
 - **situação medida pela fatia:** ATIVO
@@ -12787,6 +12788,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
 - **fato:** os nomes de status do app (`scheduled`, `dispatched`, `enRoute`) não batem com os do servidor, e falta o passo `assigned → accepted`. Medido neste registro: existe tradução em `mobile/flutter_app/lib/core/sync/sync_replay_service.dart:490-492` (`scheduled` → `open`, `dispatched` → `assigned`, `enRoute` → `on_route`); a pendência é a cobertura dessa tradução e o passo que falta.
 - **encerramento:** máquina de estados do app igual à do servidor, inclusive `assigned → accepted`, com teste.
+- **nota do B-SAN3-26 (2026-11-11, `dev-san326-cl`, medido em `d0da291e`):** a tradução existe só na IDA. Na volta, o pull lê o status pelo nome do enum do app (`workOrderStatusFromApiValue`, `work_order_remote_api.dart`): `on_route` e `on_site`, que o servidor manda, viram `scheduled`. O B-SAN3-26 não mexeu nisso (fora do escopo); os testes do app dele usam os nomes do app na lista falsa, como o probe do revisor do plano.
 
 ## P-RBAC-FIELD-TECHNICIAN-DESPESA (2026-11-04) — `field_technician` sem permissão de despesa, de checklist e de estoque — MÉDIA
 
@@ -13184,3 +13186,33 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** `agent-orchestration/controle/gerar-indice-pendencias.py` (função `severidade`) · **dono:** a definir pelo orquestrador (as irmãs `P-INDICE-PENDENCIAS-CLASSIFICADOR` e `P-INDICE-PENDENCIAS-CRITICA-COMO-SEVERIDADE`, da mesma família, apontam para o próximo PR de ferramenta de registro) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
 - **fato (medido pelo redator `red-529-cl` no índice regenerado deste PR):** a função `severidade` só reconhece as quatro palavras da escala antiga e não `GRAVE`; por isso `P-UPLOAD-ARMAZENAMENTO-EFEMERO` e `P-USERS-DESATIVADO-TOKEN-MOBILE` saem sem severidade no índice e caem no balde B (processo/registro), junto de itens de forma.
 - **critério de encerramento:** o índice mostra `GRAVE` como gravidade material (balde A), com vermelho-controle numa entrada GRAVE de teste.
+
+## P-DESPACHO-ARRIVED-SEM-CONFERENCIA (2026-11-11) — o "No local" do DESPACHO não confere a placa — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte (plano v2 do B-SAN3-26) não dá gravidade · **escopo:** `src/modules/field-dispatch/**`, fora do PERMITIDO do B-SAN3-26 · **dono:** `B-SAN3-26b` (proposto pelo plano v2) · **PR-alvo:** o PR do `B-SAN3-26b` · **bloqueia:** não.
+- **fato:** `PATCH /operations/dispatches/:id/status {arrived}` marca o despacho em "No local" sem conferir a placa; a OS não muda de status por essa porta (o `on_site` da OS segue exigindo o veredito do B-SAN3-26).
+- **critério de encerramento:** o `arrived` do despacho segue a mesma conferência (ou a mesma decisão escrita do dono), com teste que fica vermelho sem ela.
+
+## P-CHECKIN-NUMERO-DE-SERIE (2026-11-11) — OS de prestador sem referência de check-in (o antigo "nº de série") — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** app de campo e `work-order.checkin.ts` · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir · **bloqueia:** não.
+- **fato:** o diálogo antigo pedia "os 2 últimos dígitos do nº de série" para OS de prestador e comparava com o código da OS. Depois do B-SAN3-26 a referência é só a placa; OS de prestador sem placa e que não é `residencial` cai em "sem placa" e só anda pela base (default negar, P1 do dono).
+- **critério de encerramento:** o dono decide se o prestador tem referência própria (número de série) ou segue pela base; a decisão vira teste.
+
+## P-CONSOLE-EDITA-PLACA-DA-OS (2026-11-11) — o console não edita a placa de uma OS que já existe — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6) · **escopo:** detalhe da OS no console (tela, com as 3 opções, `D-TELAS-TRES-OPCOES`) · **dono:** bloco de tela próprio (decisão B do dono, `D-PORTAO-5-RECOMENDACOES-1111`) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **fato:** a criação ganhou o campo de placa no B-SAN3-26 (todo tipo menos residencial, emenda E-04), mas não há edição de OS no console (`frontend/src/modules/work-orders/work-orders.service.ts`, `updateWorkOrder` sem chamador). Ficam sem placa, e só andam pela base: as OS abertas antes do deploy, as de orçamento (`service-quote.service.ts`), as da semente da demo e as criadas pelo app (`work_order.create` não leva `service_details`).
+- **critério de encerramento:** a base edita a placa no detalhe da OS, com as 3 opções aprovadas, e a OS passa a ter o check-in pelo app.
+
+## P-CHECKIN-SEM-PLACA-OFFLINE (2026-11-11) — OS sem placa e guincheiro sem dados: a OS fica "A caminho" — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6); o revisor do plano `crit-26-r2-cl` (C26R2-05) a deu média · **escopo:** app de campo · **dono:** a definir pelo orquestrador (decisão do dono, se quiser rever a B) · **PR-alvo:** a definir · **bloqueia:** não.
+- **fato:** com a decisão B, a OS sem placa não confirma a chegada pelo app (o diálogo mostra "peça à base"), e o grafo local só deixa `enRoute → arrived`. A base registra pelo console, mas o app só vê o `on_site` depois de um pull: sem dados (estrada, só voz), o guincheiro fica em "A caminho" e não inicia o atendimento pelo app. É uma exceção ao offline-first (§6 do contrato), declarada no `API_CONTRACTS.md` §3.5.2.
+- **critério de encerramento:** o dono decide se aceita a exceção ou se o app ganha um caminho offline para a OS sem placa; a decisão vira teste.
+
+## P-CHECKIN-PLACA-ESTRANGEIRA (2026-11-11) — placa estrangeira não serve de referência do check-in — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** `src/modules/work-orders/work-order.checkin.ts` (`resolveCheckinReference`) · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir · **bloqueia:** não.
+- **fato:** pela emenda E-03 do B-SAN3-26 (C26R2-03), só a placa brasileira (antiga ou Mercosul) vale como referência; o ramo "5 a 8 alfanuméricos" do plano v2 saiu porque transformava "SEM PLACA", "ZERO KM" e "A DEFINIR" em placa. Placa estrangeira ("AB 123 CD") passa a contar como sem placa, e a chegada fica com a base. Residual declarado: "GOL 2010" tem a forma exata de placa antiga e é aceito como placa.
+- **critério de encerramento:** o dono decide se placa estrangeira entra (com que forma) ou segue pela base.
