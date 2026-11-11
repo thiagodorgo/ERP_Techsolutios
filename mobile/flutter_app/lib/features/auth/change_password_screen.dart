@@ -45,6 +45,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   final _newController = TextEditingController();
   final _confirmController = TextEditingController();
   final _currentFocus = FocusNode();
+  final _newFocus = FocusNode();
+  final _confirmFocus = FocusNode();
 
   bool _submitting = false;
 
@@ -59,6 +61,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     _newController.dispose();
     _confirmController.dispose();
     _currentFocus.dispose();
+    _newFocus.dispose();
+    _confirmFocus.dispose();
     super.dispose();
   }
 
@@ -147,12 +151,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             fieldKey: ChangePasswordScreen.currentFieldKey,
                             controller: _currentController,
                             focusNode: _currentFocus,
+                            semanticLabel: 'Senha provisória',
                             revealLabel: 'Mostrar senha provisória',
                             hideLabel: 'Ocultar senha provisória',
                             autofillHint: AutofillHints.password,
                             enabled: fieldsEnabled,
                             invalid: _currentInvalid,
                             textInputAction: TextInputAction.next,
+                            onSubmitted: (_) => _newFocus.requestFocus(),
                             onChanged: (_) {
                               if (_currentInvalid) {
                                 setState(() => _currentInvalid = false);
@@ -164,17 +170,22 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           _PasswordField(
                             fieldKey: ChangePasswordScreen.newFieldKey,
                             controller: _newController,
+                            focusNode: _newFocus,
+                            semanticLabel: 'Nova senha',
                             revealLabel: 'Mostrar nova senha',
                             hideLabel: 'Ocultar nova senha',
                             autofillHint: AutofillHints.newPassword,
                             enabled: fieldsEnabled,
                             textInputAction: TextInputAction.next,
+                            onSubmitted: (_) => _confirmFocus.requestFocus(),
                           ),
                           const SizedBox(height: 12),
                           const _FieldLabel('Confirme a nova senha'),
                           _PasswordField(
                             fieldKey: ChangePasswordScreen.confirmFieldKey,
                             controller: _confirmController,
+                            focusNode: _confirmFocus,
+                            semanticLabel: 'Confirme a nova senha',
                             revealLabel: 'Mostrar confirmação da nova senha',
                             hideLabel: 'Ocultar confirmação da nova senha',
                             autofillHint: AutofillHints.newPassword,
@@ -259,7 +270,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       email: email,
     );
     if (localError != null) {
-      setState(() => _error = localError);
+      setState(() => _error = localError.message);
+      localError.focus.requestFocus(); // foco no campo a corrigir
       return;
     }
 
@@ -301,21 +313,34 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     }
   }
 
-  String? _validateLocally({
+  ({String message, FocusNode focus})? _validateLocally({
     required String current,
     required String next,
     required String confirm,
     required String email,
   }) {
     if (current.isEmpty || next.isEmpty || confirm.isEmpty) {
-      return passwordChangeMessage(PasswordChangeFailure.incomplete);
+      final firstEmpty = current.isEmpty
+          ? _currentFocus
+          : (next.isEmpty ? _newFocus : _confirmFocus);
+      return (
+        message: passwordChangeMessage(PasswordChangeFailure.incomplete),
+        focus: firstEmpty,
+      );
     }
     final sameAsEmail =
         email.isNotEmpty && next.trim().toLowerCase() == email.toLowerCase();
     if (next.length < 8 || sameAsEmail || next == current) {
-      return passwordChangeMessage(PasswordChangeFailure.invalidNewPassword);
+      return (
+        message: passwordChangeMessage(
+          PasswordChangeFailure.invalidNewPassword,
+        ),
+        focus: _newFocus,
+      );
     }
-    if (confirm != next) return kPasswordChangeConfirmMismatch;
+    if (confirm != next) {
+      return (message: kPasswordChangeConfirmMismatch, focus: _confirmFocus);
+    }
     return null;
   }
 
@@ -386,14 +411,18 @@ class _FieldLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: ErpMobileTheme.inkMuted,
+    // O leitor de tela ouve o rótulo no próprio campo (`semanticLabel`); aqui
+    // ele é só visual, para não ser lido duas vezes.
+    return ExcludeSemantics(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: ErpMobileTheme.inkMuted,
+          ),
         ),
       ),
     );
@@ -454,6 +483,7 @@ class _PasswordField extends StatefulWidget {
   const _PasswordField({
     required this.fieldKey,
     required this.controller,
+    required this.semanticLabel,
     required this.revealLabel,
     required this.hideLabel,
     required this.autofillHint,
@@ -468,6 +498,7 @@ class _PasswordField extends StatefulWidget {
   final Key fieldKey;
   final TextEditingController controller;
   final FocusNode? focusNode;
+  final String semanticLabel;
   final String revealLabel;
   final String hideLabel;
   final String autofillHint;
@@ -490,74 +521,77 @@ class _PasswordFieldState extends State<_PasswordField> {
         ? ErpMobileTheme.danger
         : ErpMobileTheme.cardBorder;
 
-    return TextField(
-      key: widget.fieldKey,
-      controller: widget.controller,
-      focusNode: widget.focusNode,
-      obscureText: !_visible,
-      enableSuggestions: false,
-      autocorrect: false,
-      enabled: widget.enabled,
-      textInputAction: widget.textInputAction,
-      autofillHints: [widget.autofillHint],
-      keyboardType: TextInputType.visiblePassword,
-      inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[\n\r]'))],
-      onChanged: widget.onChanged,
-      onSubmitted: widget.onSubmitted,
-      style: const TextStyle(fontSize: 16, color: ErpMobileTheme.ink),
-      decoration: InputDecoration(
-        hintText: '••••••••',
-        hintStyle: const TextStyle(color: ErpMobileTheme.inkFaint),
-        prefixIcon: const ExcludeSemantics(
-          child: Icon(
-            Icons.lock_outline,
-            size: 18,
-            color: ErpMobileTheme.inkFaint,
+    return Semantics(
+      label: widget.semanticLabel,
+      child: TextField(
+        key: widget.fieldKey,
+        controller: widget.controller,
+        focusNode: widget.focusNode,
+        obscureText: !_visible,
+        enableSuggestions: false,
+        autocorrect: false,
+        enabled: widget.enabled,
+        textInputAction: widget.textInputAction,
+        autofillHints: [widget.autofillHint],
+        keyboardType: TextInputType.visiblePassword,
+        inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'[\n\r]'))],
+        onChanged: widget.onChanged,
+        onSubmitted: widget.onSubmitted,
+        style: const TextStyle(fontSize: 16, color: ErpMobileTheme.ink),
+        decoration: InputDecoration(
+          hintText: '••••••••',
+          hintStyle: const TextStyle(color: ErpMobileTheme.inkFaint),
+          prefixIcon: const ExcludeSemantics(
+            child: Icon(
+              Icons.lock_outline,
+              size: 18,
+              color: ErpMobileTheme.inkFaint,
+            ),
           ),
-        ),
-        suffixIcon: IconButton(
-          tooltip: _visible ? widget.hideLabel : widget.revealLabel,
-          isSelected: _visible,
-          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-          color: ErpMobileTheme.inkMuted,
-          selectedIcon: const Icon(
-            Icons.visibility_off_outlined,
-            color: ErpMobileTheme.primary,
+          suffixIcon: IconButton(
+            tooltip: _visible ? widget.hideLabel : widget.revealLabel,
+            isSelected: _visible,
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+            color: ErpMobileTheme.inkMuted,
+            selectedIcon: const Icon(
+              Icons.visibility_off_outlined,
+              color: ErpMobileTheme.primary,
+            ),
+            icon: const Icon(Icons.visibility_outlined),
+            onPressed: widget.enabled
+                ? () => setState(() => _visible = !_visible)
+                : null,
           ),
-          icon: const Icon(Icons.visibility_outlined),
-          onPressed: widget.enabled
-              ? () => setState(() => _visible = !_visible)
-              : null,
-        ),
-        filled: true,
-        fillColor: const Color(0xFFF1F5F9),
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 16,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: borderColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: borderColor,
-            width: widget.invalid ? 2 : 1,
+          filled: true,
+          fillColor: const Color(0xFFF1F5F9),
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 16,
           ),
-        ),
-        disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: ErpMobileTheme.cardBorder),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(
-            color: widget.invalid
-                ? ErpMobileTheme.danger
-                : ErpMobileTheme.primary,
-            width: 2,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: borderColor),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: borderColor,
+              width: widget.invalid ? 2 : 1,
+            ),
+          ),
+          disabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: ErpMobileTheme.cardBorder),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: widget.invalid
+                  ? ErpMobileTheme.danger
+                  : ErpMobileTheme.primary,
+              width: 2,
+            ),
           ),
         ),
       ),

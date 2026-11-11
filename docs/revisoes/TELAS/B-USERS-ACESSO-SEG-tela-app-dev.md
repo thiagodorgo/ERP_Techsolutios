@@ -86,3 +86,118 @@ Arquivos, todos do PERMITIDO de T.3: `auth_models.dart`, `auth_repository.dart`,
   puder tocar o login). (4) Campo focado com borda azul de 2 px e campo inválido com borda vermelha: divergências
   conscientes já registradas na referência aprovada.
 - `dart format` (1 arquivo reformatado, o novo) e `flutter analyze`: **No issues found** (21:59 SP).
+
+## T2.2 — testes (`test/features/busers_seg_troca_senha_test.dart`) e mutações
+
+**Teste novo, verde no head de código `b46bc5ca`** (22:04 SP): `flutter test test/features/busers_seg_troca_senha_test.dart
+--reporter compact` → **`00:13 +32: All tests passed!`** (32 testes). Dublês: adaptador HTTP falso por caminho (contrato
+da Emenda 5: resposta do login com `must_change_password` e `user.email`; `POST /api/v1/auth/password` com o envelope
+`{error:{code, reason, message}}`), `InMemoryAuthTokenStorage`, fila que registra todo `enqueue` e espião de
+telemetria. Os casos de tela abrem o roteador REAL (`appRouterProvider`, com o redirect) num aparelho de 390 × 812.
+
+| Caso | Teste(s) |
+|---|---|
+| F1 | `F1 — login com must_change_password:true abre a troca de senha, não o início` |
+| F2 | `F2 — login restrito: o armazenamento fica VAZIO e o restoreSession devolve nulo` (com sessão antiga guardada antes) |
+| F3 | `F3 — com sessão restrita, /work-orders e /sync terminam na troca de senha` (também `/` e `/profile`); `sem sessão, /change-password vai para o login` |
+| F4 | `F4 — 200: memória apagada e volta ao login com o aviso "Senha alterada"`; `F4 — 401 invalid_credentials: texto fixo, a tela fica e a provisória volta vazia` |
+| F5 | 13 casos `F5 — <status/motivo> vira o texto fixo` (cada um asserta o texto e a ausência do `message` do servidor) + `F5 — nenhum texto do mapa tem termo técnico` |
+| F6 | `F6 — sem conexão: texto de offline, botão travado, nenhuma chamada e nada na fila` |
+| F7 (RQ-2(b)) | `F7 — login sem o campo dá sessão INTEIRA e gravada; o refresh dela continua inteiro e gravado`; `F7 — login com o campo false dá sessão inteira e gravada` |
+| Emenda 4 | `Emenda 4 — a linha mostra o e-mail da própria sessão e nenhum outro texto` |
+| RQ-6 no app | `RQ-6 no app — 401 invalid_credentials: UMA requisição à troca e nenhuma ao refresh` |
+| Estados §7 | sessão vencida (401 `jwt_required`) → login com o texto; acesso não permitido (403 `user_inactive`) → trava e só "Sair"; validação local; a11y (rótulos e alvos ≥ 44 px) |
+| Sessão restrita fora do resto do app | `login restrito: sem APP_CONNECT, sem token para o resto do app, sem usuário de fila; "Sair" sem APP_DISCONNECT` + controle `login inteiro registra APP_CONNECT e entrega o token` |
+
+**Vermelho-controle no objeto (`e09e9667`), declarado:** o arquivo novo não compila no objeto (não existem
+`ChangePasswordScreen`, `changePassword` nem `mustChangePassword`), então o vermelho por execução no objeto não se
+mede. As mutações M-F1 (o login ignora o campo, como no objeto), M-F2 (grava a sessão, como `auth_repository.dart:193`
+no objeto) e M-F3 (sem a regra do redirect, como no objeto) reproduzem o comportamento do objeto e ficaram vermelhas.
+
+**Mutações literais**, uma por vez, aplicadas e revertidas por edição inversa com âncora única
+(`mut.py apply|revert`, no scratchpad), com `git diff --quiet -- lib` depois de cada reversão. `not ok` = os testes que
+ficaram vermelhos (`[E]` do reporter `expanded`).
+
+| ID | Mutação literal | Resultado | Vermelhos que provam |
+|---|---|---|---|
+| M-F1 (RQ-2 (a)) | `auth_repository.dart`, `login()`: `mustChangePassword: _loginBody(json)['must_change_password'] == true,` → `mustChangePassword: false,` | `+19 -13: Some tests failed.` | **F1**, F2, F3, F4 (×2), F6, Emenda 4, RQ-6 e mais 5 |
+| M-F2 | `login()`, ramo restrito: `await _storage.saveSession(session);` logo depois do `clearSession()` | `+30 -2` | **F2**, F6 (armazenamento não vazio) |
+| M-F3 | `router.dart`: o bloco `if (authState.isPasswordChangeRequired) {...}` trocado pelo marcador `// MUTACAO-M-F3` | `+22 -10` | **F3**, F1, F4 (×2), F6, Emenda 4 e mais 4 |
+| M-F4 | `changePassword()`: apagar `_current = null;` e `await _storage.clearSession();` depois do 200 | `+31 -1` | **F4 (200)** |
+| M-F5 | `PasswordChangeError.safeMessage` devolve o `message` do corpo (`_ecoDoServidor ?? passwordChangeMessage(failure)`, com `_ecoDoServidor` lido em `mapPasswordChangeError`) | `+16 -16` | os 13 casos **F5**, F4 (401), acesso não permitido, sessão vencida |
+| M-F6 | `change_password_screen.dart`: `canSubmit = fieldsEnabled` (botão ativo sem conexão) e, no ramo offline do `_submit`, `enqueue(SyncAction(type: 'password_change', ...))` na `syncQueueRepositoryProvider` | `+31 -1` | **F6** |
+| M-F7b (RQ-2 (b)) | `_sessionFromJson`: `mustChangePassword: body['must_change_password'] != false,` no `AuthSession` | `+31 -1` | **F7** (o refresh vira restrito) |
+| M-F7c (RQ-2 (c)) | `login()`: `== true` → `!= false` | `+30 -2` | **F7** (login sem o campo deixa de gravar), controle de APP_CONNECT |
+
+Nota de procedimento: a 1ª tentativa da M-F3 trocava o bloco por texto vazio, e a reversão por edição inversa recusou a
+âncora vazia (`ANCORA revert encontrada 17235 vezes`). O `router.dart` foi restaurado do commit `b46bc5ca`
+(`git checkout -- lib/app/router.dart`; `git diff --quiet -- lib` limpo) e a M-F3 foi refeita com o marcador, com o
+mesmo resultado (`+22 -10`).
+
+Sobre a M-F7b: o plano previa que ela também deixasse vermelhos `b090` t08 e `b098` 1.1. Aqui o `login()` monta a sessão
+de novo a partir do `_sessionFromJson` e decide o campo por conta própria, então a mutação no parser só alcança o
+`refresh()`. O F7 morre por ela; as duas regressões não precisam morrer (são do caminho do login).
+
+## T2.3 — recursos e revisão de UI (`ui-ux-pro-max`)
+
+- **22:08 SP: VERMELHO** (`01:08:49Z ram_livre=0,7GB commit=77%`; commit livre 15832 MB). Regra do mandato: só o
+  VERMELHO para; espero 5 min e meço de novo. Nenhum passo pesado (Flutter) até lá; só edição e diário.
+- **Revisão pela skill `ui-ux-pro-max`** (sobre a minha própria tela, antes da conferência), três achados, corrigidos:
+  1. os rótulos visíveis não estavam ligados aos campos para o leitor de tela (o campo seria lido pela dica
+     "••••••••"): cada campo agora tem o rótulo semântico ("Senha provisória", "Nova senha", "Confirme a nova senha"),
+     e o rótulo visual fica fora da árvore de semântica para não ser lido duas vezes;
+  2. depois de erro da validação local, o foco não ia para o campo a corrigir: agora vai (primeiro vazio; nova senha
+     fora da regra; confirmação diferente);
+  3. o "próximo" do teclado podia cair no botão do olho: agora leva ao campo seguinte.
+  O alvo de toque fica em 44 px, como o plano manda (T.1 e §10); a skill fala em 48 dp genéricos, e o plano prevalece
+  sobre ela (precedência da própria skill).
+- Asserções novas no teste: os 3 rótulos semânticos (`find.bySemanticsLabel`) e o foco na confirmação depois do erro de
+  confirmação diferente.
+- **22:14 SP: VERMELHO de novo** (`01:14:33Z ram_livre=0,3GB commit=77%`; commit livre 14798 MB). Nova espera de 5 min.
+- **22:19 SP: VERMELHO** (`01:19:53Z ram_livre=1,2GB commit=74%`; commit livre 17016 MB). Nova espera de 5 min.
+- **22:25 SP: VERMELHO** (`01:24:53Z ram_livre=0,4GB commit=74%`; commit livre 16704 MB). Nova espera de 5 min.
+- **22:30 SP: VERMELHO** (`01:30:10Z ram_livre=1,0GB commit=72%`; commit livre 17985 MB).
+
+## PAUSA 01:30 UTC (22:30 SP) — ordem do dono (reiniciar o PC), repassada pelo orquestrador (P7)
+
+**Head do ramo `feat/users-seg-tela-app`:** o commit desta pausa, logo acima de `b46bc5ca` (código da T2). **Sem push**: a
+bateria do §9 não fechou.
+
+**Feito (comando → saída):**
+- T2.1, código: commit `b46bc5ca`; `flutter analyze` → `No issues found! (ran in 11.2s)` (21:59 SP).
+- T2.2, teste novo, versão sem as asserções de a11y da T2.3: `flutter test test/features/busers_seg_troca_senha_test.dart
+  --reporter compact` → `00:13 +32: All tests passed!` (22:04 SP); depois da volta à sintaxe `?` nos mapas,
+  `flutter analyze` → `No issues found! (ran in 7.5s)`.
+- Mutações vermelhas, revertidas, `lib/` limpo depois de cada uma: M-F1 (`+19 -13`), M-F2 (`+30 -2`), M-F3 (`+22 -10`),
+  M-F4 (`+31 -1`), M-F5 (`+16 -16`), M-F6 (`+31 -1`), M-F7b (`+31 -1`), M-F7c (`+30 -2`). Detalhe na T2.2.
+
+**NÃO medido (commitado nesta pausa para não ficar solto, a medir na retomada):**
+- as 3 correções de a11y da T2.3 em `change_password_screen.dart` (rótulo semântico no campo, foco no campo a corrigir,
+  "próximo" leva ao campo seguinte): só `dart format` rodou; `flutter analyze` e os testes NÃO rodaram depois delas;
+- as 2 asserções novas no teste (rótulos semânticos e foco na confirmação): não rodaram.
+Motivo: recursos em VERMELHO desde 22:08 SP (5 medições, a cada 5 min); nenhum passo pesado foi feito.
+
+**Falta:**
+1. `flutter analyze` + o teste novo (verde) com as mudanças da T2.3;
+2. mutações pendentes: **M-EMAIL** (`change_password_screen.dart`: `final email = authState?.session?.user.email ?? '';`
+   → `final email = '';`, esperado vermelho: `Emenda 4 — ...`); **M-RQ6** (`auth_repository.dart`, em `changePassword()`
+   antes do `try`: `_client.interceptors.add(AuthRefreshInterceptor(client: _client, onRefresh: () async =>
+   'outro-token', onClearSession: () async {}));` + `import '../network/auth_interceptor.dart';`, esperado vermelho:
+   `RQ-6 no app — ...`); **M-TOKEN** (`auth_notifier.dart`: `state.isAuthenticated ? state.session?.tokens.accessToken :
+   null,` → `state.session?.tokens.accessToken,`, esperado vermelho: `login restrito: sem APP_CONNECT, sem token ...`);
+   e **refazer M-F6** (a tela mudou na T2.3; mesmas 3 trocas da T2.2);
+3. bateria do §9: `flutter pub get` → `dart format --output=none --set-exit-if-changed lib test` → `flutter analyze` →
+   o teste novo → as 5 regressões (`bo6r01_login_sem_org_erros_test.dart`, `b098_real_auth_bootstrap_test.dart`,
+   `b089_auth_http_checklist_test.dart`, `b090_auth_production_token_refresh_test.dart`,
+   `test/core/auth/auth_repository_test.dart`) → `flutter test --reporter compact`;
+4. registrar os resumos aqui, commitar e dar push no ramo (sem PR).
+
+**Próximo comando exato** (só com recursos liberados: depois das 22:45, só VERDE; commit livre ≥ 2048 MB):
+```
+cd C:/Users/thiag/w-tela527app/mobile/flutter_app && flutter analyze && flutter test test/features/busers_seg_troca_senha_test.dart --reporter compact
+```
+As mutações rodam com `bash <scratchpad>/t2/run-mut.sh <ID>` (aplica, roda o teste novo, lista os `[E]`, reverte por
+edição inversa e confere `git diff --quiet -- lib`); se o scratchpad sumir no reinício, as trocas literais estão acima e
+na T2.2.
+
+**Arquivos meio-escritos:** nenhum. Os 3 arquivos desta pausa estão completos e formatados; só não foram medidos.
