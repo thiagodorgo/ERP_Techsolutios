@@ -274,6 +274,8 @@ test("POST /:id/approve (manager) cria OS: 200 com workOrderId+createdWorkOrderI
     });
     assert.equal(replay.status, 409);
     assert.equal(replay.body.error.reason, "quote_already_approved");
+    // B-O6R-09 (emenda 1.1, EM1-02) — o corpo do erro leva o id da OS já criada.
+    assert.equal(replay.body.error.details?.workOrderId, approved.body.data.workOrderId);
   });
 });
 

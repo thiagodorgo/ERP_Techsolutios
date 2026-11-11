@@ -3397,6 +3397,7 @@ histórico por etapa sobre um agregado que pode nascer sem evento é construir s
 
 - **emenda (plano SAN3 §4.1 item 7, 2026-09-11):** o plano classifica o `Ω6R-ARQ-004` como bloqueante do gate da versão vendável, com bloco dono `B-O6R-09`; a dependência do `B-O6R-08` é revista: atomicidade despacho+evento na mesma transação não precisa de lease de job — hipótese que o planejador confirma; se cair, o `B-O6R-08` entra no gate.
 - **dono:** `B-O6R-09` (plano SAN3, §4.1 item 7 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **fechamento (B-O6R-09, ramo `fix/dispatch-atomic-timeline`, 2026-11-11; vale no merge):** o despacho, a mudança de status e a reatribuição gravam o estado e o evento obrigatório na MESMA transação (P1), com o vencedor condicional por status e técnico (P2) e a criação idempotente por `idempotencyKey` (P3); o despacho só fica visível depois que a OS aceitou a atribuição (P4, transação-mãe). Testes-dono: `tests/b-o6r-09-dispatch-*-db.test.ts` (falha injetada, barreira escopada, papel `NOSUPERUSER NOBYPASSRLS`), com o vermelho-controle na `main` `07898adf` registrado em `docs/revisoes/SAN3/B-O6R-09-dev.md`. A web envia a chave por intenção (`useDispatchIntentKey`). Resíduos com dono: `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` e `P-B-O6R-09-ESCRITORES-FORA-DE-SRC` (no fim deste arquivo). O item 7 do portão só se declara FECHADO com a fatia 6 (orçamento) na `main`, no mesmo PR.
 
 ## P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — **BLOQUEIA web (transversal) e owner-portal**
 
@@ -13998,3 +13999,116 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** C3-ENV-02 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c3-voto.json`).
 - **fato:** `dart format --output=none --set-exit-if-changed lib test` local sai ec=1 somente por `test/features/bsan313_minhas_os_escopo_test.dart` (fora do bloco, idêntico à `origin/main`; Dart local 3.11.4 × Flutter 3.47.5 fixado na CI). Os arquivos do bloco não têm mudança.
 - **critério de encerramento:** o `dart format` local de `lib test` fica verde na versão do Flutter da CI (ou o arquivo é formatado na versão da CI), sem tocar em arquivo do bloco.
+
+### Fechamento de `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` pelo B-O6R-09 (fatia 6), no merge (o ID já existe acima, registrado pelo #533 — união do merge, sem duplicar o ID)
+
+- **status:** FECHADA no merge do PR do `B-O6R-09` (fundida ao item 7 pelo dono, `D-PORTAO-3-RECOMENDACOES-1111` Q1 (c)) · **escopo:** `src/modules/service-quotes/**` (aprovação) e a divisão do `create` em `src/modules/work-orders/work-order.service.ts`.
+- **o que fecha:** a reserva do orçamento, a OS (com as vistorias e o evento `work_order_created`) e o vínculo `created_work_order_id` passam a ser UMA transação (`RlsPrismaServiceQuoteRepository.approveWithWorkOrder`); na memória, o mesmo contrato (registro em voo, espera do perdedor, desfazer síncrono). A repetição continua 409 `quote_already_approved`, agora com `details.workOrderId` (`D-B-O6R-09-REPLAY-ORCAMENTO-409`).
+- **critério de encerramento (o da emenda 1 do B-SAN3-08, medido no ramo):** atômico no Prisma (T19, T20 e T20b, inclusive sob `NOBYPASSRLS`, com a chamada rejeitando e todo id de OS devolvido existindo); recuperável e com 1 OS na memória (T25); vermelho-controle de `os_total = 2` (T19) e de OS órfã (T20) na `main` `07898adf`, registrado em `docs/revisoes/SAN3/B-O6R-09-dev.md`.
+
+## P-B-O6R-09-ATRIBUICAO-FORA-DA-TX (2026-11-11) — a OS aceita a atribuição e a transação-mãe do despacho não faz commit — MÉDIA (resíduo declarado R1)
+
+- **status:** FECHADA no merge do PR do `B-O6R-09` (Emenda 4); era ABERTA · **gravidade:** MÉDIA — leitura do dev, declarada (§A6): o plano v2 não dá gravidade · **escopo:** `src/modules/field-dispatch/**` × `assignFromDispatch` em `src/modules/work-orders/work-order-prisma.repository.ts` · **dono:** o orquestrador escolhe (plano v2 §8, R1) · **bloqueia:** não.
+- **origem:** plano v2 do `B-O6R-09`, R1. A atribuição da OS é gravada na transação do repositório de OS; a mãe (despacho + evento) só faz commit depois. Se a mãe se perde entre os dois commits (tempo esgotado, queda do banco ou do processo), sobra a OS com o técnico e sem o despacho novo, ou, na reatribuição, a OS com o técnico novo e o despacho com o antigo. A janela é a do commit; o log codificado é `dispatch_commit_lost_after_assignment`.
+- **critério de encerramento:** a atribuição da OS dentro da MESMA transação do despacho (o repositório de OS aceitando o `tx`, como a fatia 6 já faz para a OS do orçamento por `work-order-scope.ts`), com teste de falha injetada no commit.
+- **fechamento (Emenda 4 do plano v2, fatia 7, `169f1428`; vale no merge):** a medição do topo (`topo-537-opus`) achou 7 formas de a mãe falhar depois do gancho, uma delas determinística (DDL na fila), e o R1 deixou de ser resíduo: era defeito GRAVE de integridade (a OS atribuída sem o despacho, ou com outro técnico). A atribuição da OS passou para DENTRO da transação-mãe (P5), pela mesma `tx` (`FieldDispatchTxScope`, `workOrderAssignRepositoryForTx`), sem 2ª conexão (P6). Testes-dono em `tests/b-o6r-09-dispatch-same-tx-db.test.ts` (banco próprio): T26a (commit perdido · criar), T26b (· ativar), T26c (· reatribuir) e T26d (queda da conexão), vermelhos contra o código de antes (OS `assigned` com o despacho ausente, ou a OS com B e o despacho com A) e verdes no head. Mutações: M26, M26c e M26t vermelhas, uma por vez e revertidas.
+
+## P-B-O6R-09-ESCRITORES-FORA-DE-SRC (2026-11-11) — escritores de despacho fora de `src/` gravam despacho sem evento — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `prisma/seed-fleet.ts:160` e `scripts/traccar-dev-demo.mjs:340,345` · **dono:** o próximo bloco que tocar o seed da frota ou a demo do Traccar · **bloqueia:** não.
+- **origem:** plano v2, R-A12 (iii), e a revisão r2 do plano (`crit-09-r2`), R2-10. A guarda `tests/b-o6r-09-dispatch-writers-guard.test.ts` cobre só `src/**`.
+- **critério de encerramento:** os dois escritores passam pelo repositório (`createWithEvent`) ou gravam o evento junto; a guarda passa a cobrir `prisma/seed*.ts` e `scripts/**`.
+
+## P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX (2026-11-11) — a criação NORMAL de OS grava a OS e o `work_order_created` em transações separadas — MÉDIA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `src/modules/work-orders/work-order.service.ts` (`create` público com o repositório Rls) · **dono:** um bloco de OS com revisão reforçada · **bloqueia:** não.
+- **origem:** emenda 1 do `B-O6R-09`, §5.3. A fatia 6 só torna atômico o caminho do orçamento; o `create` público segue com uma transação por chamada do repositório.
+- **critério de encerramento:** `persistPreparedCreate` dentro de uma `withTenantRls` no `create` público, com teste de falha injetada no evento (0 OS).
+
+## P-B-O6R-09-NEXTCODE-CORRIDA (2026-11-11) — duas criações simultâneas na mesma organização colidem no código da OS — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `src/modules/work-orders/work-order-prisma.repository.ts` (`nextCode` conta e procura) · **dono:** o mesmo bloco de OS da pendência anterior · **bloqueia:** não.
+- **origem:** emenda 1, §1.5 e §5.3. Na aprovação do orçamento o desfecho é limpo (rollback, orçamento em draft; caso `[Q2 · código]` de `tests/b-o6r-09-quote-approve-atomic-db.test.ts`), mas o perdedor recebe o P2002 cru, e a janela cresce até o commit da transação.
+- **critério de encerramento:** código alocado sem corrida (sequência por organização ou nova tentativa no P2002), com teste de corrida.
+
+## P-B-O6R-09-STATUS-APROVA-SEM-OS (2026-11-11) — o orçamento pela rota de status — BAIXA (anterior ao bloco), 2 itens
+
+- **status:** ABERTA · **escopo:** `PATCH /service-quotes/:id/status` · **dono:** a continuação do `B-SAN3-08` · **bloqueia:** não.
+- **itens:** (i) a rota leva `draft→approved` sem OS, e a aprovação recusa esse orçamento; (ii) o `update` grava sem CAS do status lido (`where` só por organização e id): correndo junto de uma aprovação, ele espera o lock e sobrescreve, e o orçamento fica `rejected` com OS criada. A observação da emenda 1.1 sobre origem e destino em snake_case ficou com a `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE`, que o #533 registrou (a paridade do corpo mora na web, `D-SAN3-08-P1-CORPO-CAMELCASE`).
+- **critério de encerramento:** a rota de status não leva a `approved` sem OS e grava com CAS do status lido, com teste de corrida.
+
+## P-B-O6R-09-PAINEL-STATUS-SEM-ERRO (2026-11-11) — o painel "Alterar status" não mostra erro — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `frontend/src/modules/operations/dispatches/components/DispatchStatusActions.tsx` (sem `catch`) · **dono:** `B-SAN3-21` (texto e tela; passa pelas 3 opções se mudar algo visual) · **bloqueia:** não.
+- **origem:** emenda 1, R2-03. Com o 422 `FIELD_DISPATCH_STATUS_UNCHANGED` (mesmo status com observação ou motivo), o painel fica aberto e o texto não se perde, mas não há mensagem; o 409 `FIELD_DISPATCH_STATUS_CONFLICT` também chega sem texto próprio.
+- **critério de encerramento:** o painel mostra a recusa com texto PT-BR de negócio, com teste de tela.
+
+## P-B-O6R-09-WEB-LE-WORKORDERID-DO-409 (2026-11-11) — a web não lê o `details.workOrderId` do 409 da repetição — BAIXA
+
+- **status:** ABERTA · **escopo:** `frontend/src/services/api/client.ts` (o `ApiError` só lê `code` e `reason`) e o diálogo de aprovação do `B-SAN3-08` · **dono:** `B-SAN3-08` · **bloqueia:** não.
+- **origem:** emenda 1.1, EM1-09. O servidor manda o id da OS já criada; a tela ainda não o usa para o link do aviso, e a cópia do 5xx do diálogo cita a `P-SAN3-08-APPROVE-OS-NAO-ATOMICA`, que a fatia 6 fecha.
+- **critério de encerramento:** o aviso de "já aprovado" mostra o link da OS pelo `details.workOrderId`; a cópia do 5xx atualizada.
+
+## P-B-O6R-09-RATCHET-T13-NOVA-CHAVE (2026-11-11) — o desenho da fatia 6 cria 1 chave nova no ratchet do B-SAN3-05, e o arquivo dele está fora do PERMITIDO — ALTA (segura o merge)
+
+- **status:** FECHADA (2026-11-11 05:14 SP), pela Emenda 2 do plano v2 (decisão do orquestrador, saída 1): a chave entrou em `NOVAS` com o motivo, e o T13 deu 35/35; decisão e sonda em `docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md`. A junta do #537 confere a chave por execução. · **gravidade:** ALTA — leitura do dev, declarada (§A6): deixava `npm test` vermelho · **escopo:** `tests/san3-05-acessos-de-plataforma-guard.test.ts` (T13) × `src/modules/work-orders/work-order-scope.ts` · **dono:** o orquestrador e o planejador do `B-O6R-09` (emenda) · **bloqueia:** o merge do PR do `B-O6R-09`.
+- **fato medido:** o gerador acusa a chave `L2 · src/modules/work-orders/work-order-scope.ts · new PrismaWorkOrderRepository(scope.tx) · OUTRO(scope.tx) · ×1`. O `scope.tx` é o `tx` do callback de `withTenantRls` em `RlsPrismaServiceQuoteRepository.approveWithWorkOrder` (setter do GUC como 1ª instrução), mas o gerador só absolve o parâmetro direto do callback de um envoltório confiado.
+- **saídas (a escolher, `D-EMENDA-ANTES-DO-CODIGO`):** (1) acrescentar a chave em `NOVAS` com motivo, como o B-TRC-01 fez por decisão do orquestrador (`docs/revisoes/TRACCAR/B-TRC-01-DECISAO-T13.md`), pondo o arquivo do ratchet no PERMITIDO; ou (2) emendar o desenho para o `new PrismaWorkOrderRepository(tx)` nascer dentro do callback de `withTenantRls`, no repositório Prisma do orçamento (muda uma âncora da emenda e a lista da guarda (iv)).
+- **critério de encerramento:** o T13 verde no head do PR, com a escolha registrada.
+
+## P-B-O6R-09-TRAVA-PRISMA-REGISTRO (2026-11-11) — a escolha (a) ou (b) da trava de `prisma/` entre o B-O6R-09 e o B-O6R-12 não está registrada — MÉDIA (condição do orquestrador)
+
+- **status:** FECHADA (2026-11-11), pelo registro `D-B-O6R-09-TRAVA-PRISMA-OPCAO-A` em `decisoes.md`; a conferência do carimbo da migração contra a última da `main` fica para o momento do merge (porteiro) · **escopo:** registro (`agent-orchestration/controle/`), plano v2 §4.3 e R2-09 da revisão r2 do plano (`crit-09-r2`) · **dono:** o orquestrador · **bloqueia:** o merge do PR do `B-O6R-09` (a verificação literal da linha A5 do plano).
+- **fato:** `grep -rln "B-O6R-09" agent-orchestration/controle/` no ramo, antes do commit da fatia 3, acha só a pendência antiga `P-O6R-B09`. A migração do bloco (`20260901090000_field_dispatch_idempotency_key`) se recarimba numa linha se o B-O6R-12 entrar antes (opção (a)).
+- **critério de encerramento:** a escolha registrada em `controle/`, e o carimbo conferido contra a última migração da `main` no momento do merge.
+
+## P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA (2026-11-11) — a reatribuição à mesma pessoa não grava nada e é auditada como `field_dispatch.reassigned` — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `src/modules/field-dispatch/field-dispatch.controller.ts` (`reassign` audita sempre) × o no-op de `FieldDispatchService.reassign` (B-O6R-07c-b1) · **dono:** o próximo bloco que tocar o despacho · **bloqueia:** não.
+- **origem:** o conserto do PRE537-01 (pré-revisão do #537) tratou o no-op do MESMO STATUS; a mesma classe já existia na `main` para a reatribuição à mesma pessoa, apontada pelo revisor como anterior.
+- **critério de encerramento:** a reatribuição sem troca não grava auditoria de reatribuição (ou grava o no-op como tal), com teste pelo controlador real que conta `audit_logs`.
+
+## P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES (2026-11-11) — gatilho temporário de suíte irmã fecha um ciclo com a transação-mãe presa à espera do gancho; as suítes `-db` do bloco falham em 3 de 8 rodadas locais — MÉDIA (dentro do bloco)
+
+- **status:** FECHADA (2026-11-11 19:10 SP), pela Emenda 4.2 (conserto único da J-537) · **escopo:** o arnês das suítes `tests/b-o6r-09-dispatch-{atomic,idempotency,pool}-db.test.ts`, `tests/b-o6r-09-quote-approve-atomic-db.test.ts` (o `CREATE`/`DROP TRIGGER` em `work_orders`, `field_dispatch_events`, `work_order_events`, `work_order_assignments` sem `lock_timeout`) e, fora do PERMITIDO do bloco, o `comGatilho` de `tests/o6r07c-b-scope-db.test.ts` · **dono:** B-O6R-09 (#537) · **bloqueia:** a junta do #537 (a cadeira de regressão roda o `-db` 3×), se não for consertado antes.
+- **origem:** medido pelo dev do B-O6R-09 depois do merge da `main` `a0979f51` (11/11): as 8 suítes `-db` (as 7 do bloco e a `o6r07c-b-scope-db`) juntas no Postgres descartável, 8 rodadas: 57, 55, 59, 59, 59, 59, 56 e 59 de 59. Toda falha é "transaction … expired … ~20 000 ms passed". O vigia de trava da rodada 7 (`pg_stat_activity` e `pg_blocking_pids` a cada 2 s) mostrou o ciclo: a mãe da suíte de concorrência, `idle in transaction` à espera do gancho, segura `work_orders` (a FK de `field_dispatches` e de `field_dispatch_events` para `work_orders` tira `FOR KEY SHARE`); o `DROP TRIGGER … ON work_orders` da suíte do orçamento pede `ACCESS EXCLUSIVE` e entra na fila atrás dela; um `SELECT` de `work_orders` em outra conexão da mesma suíte (pela forma, o do gancho; inferência) entra na fila atrás do `DROP`. O ciclo fecha pelo JavaScript, que o Postgres não detecta, e só cai no tempo da mãe (20 s). É a classe do R2-08 da revisão r2 do plano; o ajuste do R2-08 (nenhuma leitura do teste na janela) não a fecha, porque quem espera é o gancho, caminho de produção. O lado da `main` não tocou nada disso (`git diff --stat b6caf568 a0979f51` nos caminhos do bloco: só `tests/helpers/fake-providers/focusnfe.ts` e `tests/helpers/o6r07c-census.ts`).
+- **correção proposta (NÃO aplicada; espera o orquestrador, regra "se o plano não fecha no código, pare e registre"):** todo `CREATE`/`DROP TRIGGER` do arnês sob `SET lock_timeout` curto, com nova tentativa até um prazo nomeado, para a DDL nunca ficar na fila na frente do gancho de outra suíte; o mesmo no `comGatilho` da `o6r07c-b-scope-db`, que é de outro bloco.
+- **critério de encerramento:** as 8 suítes juntas em N ≥ 10 rodadas com `# fail 0`, com o vigia de trava sem espera > 5 s, e a forma do job `backend-postgres` 3× verde.
+- **medição do R-ARN-5 (Emenda 4, fatias 7 e 8; 11/11 12:13–12:55 SP; a pendência SEGUE ABERTA, porque o critério literal não fechou):**
+  - **a aresta do produto saiu com a fatia 7**, e o DDL de gatilho dos 3 arquivos do R-ARN-2 passou pelo `runHarnessDdl` na fatia 8. O `comGatilho` do `o6r07c-b-scope-db` entrou também (R-ARN-6), porque a condição foi medida: um `o6r07cb1_inj_*` esperou 387 ms.
+  - **a série de 12 rodadas (12:35–12:47 SP; as 10 suítes, 3 rodadas também com as 4 `traccar-*-db`)**: os casos das 10 suítes ficaram ok nas 12 (74/74 em cada).
+    - Nas 3 rodadas com o Traccar, 121/123, e as 2 falhas são sempre os casos "tempo esgotado" de `traccar-position-ingestion-db` (`primeira entrega gravada com sucesso · 503 !== 204`), que também caem na `main` (diário do dev, bateria das 06:17).
+    - O vigia de trava não registrou espera do Traccar por DDL do arnês.
+  - **a série final de 10 rodadas (12:48–12:56 SP)**, depois do R-ARN-6 (3 com o Traccar): 9 rodadas verdes (74/74 e 123/123).
+    - A rodada 9 deu 71/74. As 3 falhas são a transação de LIMPEZA (`teardown`, `$transaction` com o prazo padrão de 5 s do Prisma) expirando em 5 086, 5 050 e 5 217 ms, em `b-o6r-09-quote-approve-atomic-db`, `b-o6r-09-quote-approve-pool-db` e `o6r07c-b-scope-db`.
+    - O vigia (`pg_stat_activity` a cada 0,5 s, espera > 300 ms) não viu espera de trava nessa rodada. Ficou a `P-B-O6R-09-TEARDOWN-5S-SOB-CARGA`.
+  - **zero `55P03` em todas as rodadas.**
+  - Os TAPs e os vigias estão em `scratchpad/rarn5-tentativa4/` e `scratchpad/rarn5-final/` da sessão do dev.
+  - **O que falta para fechar:** a classe do teardown (ou a prova de que é só carga) e as 3 rodadas na forma do job (no diário).
+- **fechamento (Emenda 4.2, conserto único da J-537; dev `dp-fix-537`, DeepSeek Pro; 2026-11-11 19:10 SP; vale no merge):** o `runHarnessDdl` (`tests/helpers/pg-barrier.ts`) passou a repetir também o 40P01 (mesmo teto e `lock_timeout` do 55P03); o teardown dos 3 arquivos do R-ARN-2 já limpa via `dropHarnessObjects` e herda a repetição. Teste novo em `tests/b-o6r-09-harness-ddl-db.test.ts` provoca o deadlock de propósito (duas transações cruzam DROP TRIGGER em `work_order_events`, barreira por `pg_stat_activity`), afirma a repetição (`attempts >= 2`) e o catálogo limpo (`pg_trigger`/`pg_proc`, 0 linhas). A mutação de tirar o 40P01 deixa o teste vermelho (revertida). As 10 suítes do R-ARN-5 rodaram juntas N=20 com `# fail 0` e catálogo `0|0` depois de cada rodada. `npm run check`, `npm run lint` e `git diff --check` limpos. Diário em `docs/revisoes/SAN3/B-O6R-09-dev.md`.
+
+## P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S (2026-11-11) — migração com DDL em `work_orders` ou `field_dispatch_events` durante o tráfego pode travar a escrita da OS por até 20 s — BAIXA (do bloco, só na implantação)
+
+- **status:** FECHADA no merge do PR do `B-O6R-09` (Emenda 4); era ABERTA · **escopo:** a transação-mãe do despacho (`FIELD_DISPATCH_HELD_TX_TIMEOUT_MS = 20000`, `field-dispatch-prisma.repository.ts`) × uma DDL que peça `ACCESS EXCLUSIVE` em `work_orders` ou `field_dispatch_events` · **dono:** o bloco de implantação na AWS (runbook de migração) · **bloqueia:** não.
+- **origem:** o mesmo ciclo da `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES`, visto pelo lado da produção. Com uma mãe aberta à espera do gancho, a DDL entra na fila atrás dela, e todo acesso a `work_orders` do sistema entra na fila atrás da DDL, até a mãe cair pelo tempo (20 s) e o pedido de despacho falhar sem gravar nada. Inferido do mecanismo medido nos testes; em produção não foi medido.
+- **critério de encerramento:** o runbook de migração manda `SET lock_timeout` em toda DDL dessas tabelas (com nova tentativa), ou a medição mostra que o caso não acontece.
+- **reescrita e fechamento (Emenda 4, `169f1428`; vale no merge):** era "BAIXA, inferida" e passou a MEDIDA, GRAVE e dentro do bloco. O topo mediu, com o código de `75b49051`, o DDL esperando 20 000 ms em `work_orders` e 19 986 ms em `field_dispatches`, um leitor de OUTRA organização esperando 20 002 ms, e, com a mãe de 16 s, a OS atribuída sem o despacho. Com a atribuição dentro da mãe, a mãe passa à frente do DDL (já segura trava que conflita com ele). Medido no head pela T27a (`work_orders`: DDL 18 ms e leitor de outra organização 23 ms depois de soltar) e pela T27b (`field_dispatches` na reatribuição: DDL 19 ms), as duas com teto `LIMITE_PARADA_DDL_MS = 2 000`. Mutações: M26c mata a T27a (DDL 19 974 ms); M27b (C4E-01) mata a T27b (DDL 19 977 ms). A M26t NÃO mata a T27b (medido: DDL 61 ms), como a revisão previu. O resíduo que fica é a `P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE`.
+
+## P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE (2026-11-11) — com a atribuição dentro da mãe do despacho, uma migração que trave `work_order_events` ou `work_order_assignments` ANTES de `field_dispatches` cai em impasse (40P01) e falha — MÉDIA (resíduo da Emenda 4, só na implantação)
+
+- **status:** ABERTA · **escopo:** toda migração (transacional, `D-MIGRACAO-COM-TRANSACAO-EXPLICITA`) que peça trava forte em `work_order_events`, `work_order_assignments` (ou `work_orders`, no caminho da transição) e depois em `field_dispatches`, com uma mãe do despacho em voo · **dono:** o bloco de implantação na AWS (runbook de migração) · **bloqueia:** não.
+- **origem:** C4E-03 da revisão da Emenda 4 (`crit-09-em4-api`, rodada 1), MEDIDO por ela no protótipo-texto: a mãe presa no INSERT de `work_order_assignments`; outra conexão faz `BEGIN; LOCK work_order_events ACCESS EXCLUSIVE; LOCK field_dispatches ACCESS EXCLUSIVE`; solta → o despacho conclui consistente, e a MIGRAÇÃO cai com `40P01 deadlock detected` em 1 003 ms (criar e reatribuir). No código de antes, a mesma migração esperava ~20 s e quem falhava era o pedido. A Emenda 4 troca o ciclo invisível por um impasse que o Postgres vê: o dado fica consistente, e a vítima é a implantação. **Inferência, não medida:** o `prisma migrate deploy` registra a migração como falha e exige `migrate resolve`.
+- **regra operacional (para o runbook):** migração que toque essas tabelas trava `field_dispatches` PRIMEIRO, ou roda com `lock_timeout` curto e nova tentativa. Não exige código neste bloco.
+- **critério de encerramento:** a regra escrita no runbook de migração (ou na guarda `scripts/migration-transaction-guard.mjs`), com uma migração de ensaio que a cumpra medida contra uma mãe em voo.
+
+## P-PG-BARRIER-EXIGE-BLOQUEADOR (2026-11-11) — a barreira de `tests/helpers/pg-barrier.ts` aceita um pedido preso por QUALQUER bloqueador, inclusive o DDL de outra suíte — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `countBlockedStatements` (`tests/helpers/pg-barrier.ts`, cabeçalho "B-O6R-02 ciclo 2 · C3") · **dono:** o próximo bloco que mexer em `pg-barrier.ts` · **bloqueia:** não.
+- **origem:** C09-07 da revisão da Emenda 3 (`crit-09-em3-cl`), transcrito na Emenda 4 §E4.4 R-ARN-7. A barreira exige o pedido preso por `application_name`, mas não exige que o bloqueador seja a trava do próprio teste: um pedido preso atrás do DDL de outra suíte também a satisfaz. O lado silencioso (uma barreira satisfeita pelo motivo errado) é inferência, e não foi medido.
+- **critério de encerramento:** a barreira passa a exigir `pg_blocking_pids(pid) @> ARRAY[<pid da trava do teste>]`, com um controle negativo em `tests/pg-barrier-scoped-db.test.ts`.
+
+## P-B-O6R-09-TEARDOWN-5S-SOB-CARGA (2026-11-11) — a transação de limpeza das suítes `-db` do despacho e do orçamento usa o prazo padrão de 5 s do Prisma e expira sob carga — BAIXA (arnês, do bloco e anterior)
+
+- **status:** ABERTA · **escopo:** o `teardown` de `tests/b-o6r-09-quote-approve-atomic-db.test.ts` e de `tests/b-o6r-09-quote-approve-pool-db.test.ts` (do bloco) e o de `tests/o6r07c-b-scope-db.test.ts` (anterior ao bloco). Um `DELETE` por tabela com `tenant_id`, numa `$transaction` sem `timeout` explícito · **dono:** o próximo bloco que mexer nesses arnês (ou um bloco de arnês) · **bloqueia:** não.
+- **origem:** a rodada 9 da série final de 10 do R-ARN-5 (B-O6R-09, Emenda 4, 11/11 12:53 SP), com as 10 suítes juntas: a limpeza expirou em 5 086, 5 050 e 5 217 ms, sem espera de trava acima de 300 ms vista pelo vigia. **Hipótese, não medida:** é a carga da máquina (10 suítes em paralelo e outras frentes no mesmo Docker), somada às esperas curtas (≤ 300 ms) atrás do DDL do arnês em nova tentativa.
+- **critério de encerramento:** a limpeza com `timeout` explícito e folgado (ou pelo `tests/helpers/sweep-tenant.ts` do #541), e N ≥ 10 rodadas das 10 suítes com `# fail 0`.
