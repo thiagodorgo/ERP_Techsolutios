@@ -193,3 +193,50 @@ limpo depois de cada uma. Roteiro e saídas TAP fora do repositório (`scratchpa
     `frontend/src/modules/inventory/**` `15a` → `B-INV-CONTAGEM`; `app_database.dart` #534 → `15a` → `15b`).
   - Comando `agent-orchestration/codex/comandos/B-SAN3-15a-estoque-real.md`.
 - **KPI congelado** (§C7 item 8(5)): `Kpis/**` intocado.
+
+### Bateria (head `e6278ac1`, rebase sobre `c95ad4fd`), 12:15–13:15
+
+- **Local:** `npm run check` ✓ · `npm run lint` ✓ · `npm run build` ✓ · `git diff --check origin/main...HEAD` ✓ ·
+  `npm --prefix frontend run check` ✓ · `npm --prefix frontend run build` ✓ (44,8 s) · `npm --prefix frontend run test:smoke`
+  → `# tests 1730 · pass 1730 · fail 0 · skipped 0` (linha de base 1728 + 2) · `tests/san3-05-acessos-de-plataforma-guard.test.ts`
+  (ratchet de acessos a tabelas FORCE) → 35/35.
+- **`npm test` local (Windows, 16 núcleos):** a 1ª tentativa, sobre um banco descartável não semeado e Redis próprio
+  `dev15a-redis` (127.0.0.1:56525), pendurou em `tests/ass-05-vault-routes.test.ts` (o `stop()` espera um `exit` que não
+  vem) e deu `statement timeout` no `ass-03-metering-db` (T-MED-db-14), sob 15 arquivos em paralelo; parei a rodada. A 2ª,
+  no CI local a 2 CPUs (`ferramentas/ci-github.sh`, tag `dev15a`), teve de novo o `statement timeout` no T-MED-db-11 e era
+  lenta demais (594 de ~2.800 pontos em 30 min); parei-a quando o GitHub concluiu e removi os 3 containers dela pelo
+  rótulo. **Nos dois casos o arquivo é anterior ao bloco e alheio a ele** (`subscription-billing/metering`), e no GitHub
+  os dois casos passaram (`ok 87 - T-MED-db-11`, `ok 90 - T-MED-db-14`). Precedente: `B-SAN3-23-dev.md` (mesma classe:
+  teto de tempo sob carga, verde isolado).
+- **Aceite pela forma real (§C7.11(3)) — CI do push, run `43053284995`, head `e6278ac1`, todos os 8 jobs `success`:**
+  - `backend`: `# tests 5093 · pass 5091 · fail 0 · skipped 2` (linha de base na `main` `c95ad4fd`, run `43035742812`:
+    5078 · 5076 · 0 · 2 → **+15** = 9 de memória + 6 do `-db`, que no job `backend` roda com `DATABASE_URL`); `ok … [T-B1]`,
+    `[T-B9]`, `[T-B10]` no log.
+  - `backend-postgres`: `# tests 509 · pass 509 · fail 0 · skipped 0` (linha de base 503 → **+6**); `bsan315-technician-stock-db`
+    no log; a linha `# [T-DB2b] forma medida … status 200 …` impressa.
+  - `frontend`: `# tests 1730 · pass 1730 · fail 0 · skipped 0`; `ok 132 - [T-W1]`, `ok 133 - [T-W2]`; o nome
+    `bsan315-contagem-fechamento` no comando do `test:smoke` (`grep -c` = 1).
+  - `flutter`: `+1119: All tests passed!` (o app não foi tocado neste PR; igual à linha de base).
+- **Push antes do PR (desvio de ordem, declarado):** empurrei o ramo às 12:56, antes de a suíte local terminar, para que o
+  CI do GitHub (o juiz) corresse em paralelo; o PR só foi aberto com os 8 jobs verdes.
+
+### Limpeza (§C5)
+
+- Removidos: `frontend/dist/` e `dist/` do worktree (build), os 3 containers do CI local `ci-dev15a-*` (pelo rótulo), as
+  bases de drill que a rodada local deixou no `dev15a-pg` (nenhuma sobrou), os processos `node` da rodada parada.
+  **Mantidos, por ordem do mandato:** o worktree `C:/Users/thiag/w-15a` e os containers `dev15a-pg` (55525) e
+  `dev15a-redis` (56525), para a F4.
+
+## O QUE FALTA (para o orquestrador)
+
+1. **F4** (app: API, origem de demonstração isolada, lista salva Drift v17 no `onCreate` e no `onUpgrade`, provider; T-A1
+   a T-A5, T-A7 a T-A10, T-M1, T-M1b; M-A10 a M-A18, M-A17b, M-A20, M-A25, M-A26) — **espera o merge do #534**
+   (`gh pr view 534 --json state` às 13:15: `OPEN`). Ao entrar: `git pull --rebase origin main`, medir `schemaVersion`
+   (esperado 16 → o 15a usa 17), e a parte do app da F0a.
+2. **F4ui** (tela com os estados do §2.3 e os textos do §2.4, opção A) — espera a maquete
+   `prestador-atendimento-3opcoes.reference.html` aprovada (não existe na `main`).
+3. **Fecho de `P-MOBILE-ESTOQUE-TECNICO-FABRICADO`** quando a F4 entrar.
+4. **Perguntas (emenda escrita antes de valer):** (a) a forma medida do T-DB2b (200 com a custódia do próprio técnico,
+   o cabeçalho ignorado sob JWT), no lugar do 403 da hipótese; (b) a âncora da M-A23b no Prisma
+   (`custody_type: { equals: custody.custodyType },`).
+5. **O merge deste PR espera a F4** (plano §6, "o merge do 15a espera F1g e F4").
