@@ -77,7 +77,7 @@ void main() {
       final db = AppDatabase(NativeDatabase(File(path)));
       addTearDown(db.close);
 
-      expect(await _userVersion(db), 14);
+      expect(await _userVersion(db), 15);
       expect(await _columns(db, 'sync_actions'), contains('user_id'));
 
       final rows = await db
@@ -104,7 +104,7 @@ void main() {
       addTearDown(db.close);
 
       expect(await _columns(db, 'sync_actions'), contains('user_id'));
-      expect(await _userVersion(db), 14);
+      expect(await _userVersion(db), 15);
 
       final store = DriftSyncActionStore(db);
       final createdAt = DateTime.utc(2026, 11, 8, 10, 0);

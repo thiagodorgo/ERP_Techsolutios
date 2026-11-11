@@ -17,10 +17,12 @@ import type {
   CountExpenseEventsInput,
   CreateExpenseEventInput,
   CreateExpenseItemInput,
+  CreateExpenseReceiptInput,
   CreateExpenseReportInput,
   ExpenseEvent,
   ExpenseItem,
   ExpensePolicy,
+  ExpenseReceiptRecord,
   ExpenseReport,
   FindExpenseEventInput,
   ListExpenseReportsInput,
@@ -37,6 +39,17 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 // Formato de UUID em qualquer versão — só para não mandar ao banco um `result_ref` que não é id (A11d).
 const anyUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Conserto c1 do #525 (§12.4) — teto da espera pela trava do relatório: abaixo dos 5 s da transação interativa do
+ * Prisma. O PostgreSQL cancela a espera com 55P03 (`lock_not_available`), que a lista transitória do módulo leva a
+ * 503 `sync_busy`. É `SET LOCAL`: vale para tudo o que vem depois da trava na MESMA transação, o claim inclusive,
+ * e morre com ela. Molde: `withTenantRlsBudget` (`src/database/rls.ts`), que faz o mesmo com a função `set_config`
+ * e `is_local = true`. Aqui a forma é a instrução `SET LOCAL`, de efeito idêntico, porque o guard 3 de
+ * `tests/auth-invariant-guards.test.ts` reserva a função ao `rls.ts` (a fronteira do GUC de identidade). O `SET`
+ * não aceita parâmetro de ligação: o literal `'2000ms'` da instrução É esta constante.
+ */
+export const EXPENSE_REPORT_LOCK_TIMEOUT_MS = 2_000;
 
 /**
  * Repositório sobre um executor Prisma. Na transação de sync ele é construído com o `tx` de `withTenantRls`
@@ -88,6 +101,21 @@ export class PrismaExpenseManagementRepository implements ExpenseSyncTransaction
     });
 
     return report ? mapReportRecord(report) : undefined;
+  }
+
+  // Conserto c1 do #525 (§2(b)1, §12.4) — trava a linha do relatório NESTA transação (o `client` é o `tx` do
+  // `withTenantRls`; a política RLS de `expense_reports` é `FOR ALL USING tenant`, então a trava respeita a
+  // organização) e relê. Molde da trava: `lockProcess` de `auction-prisma.repository.ts`.
+  async lockReportForUpdate(input: { readonly tenantId: string; readonly reportId: string }): Promise<ExpenseReport | undefined> {
+    // id que não é UUID não vai ao `::uuid` do SQL cru: cai na leitura de sempre (que não acha nada).
+    if (!anyUuidPattern.test(input.tenantId) || !anyUuidPattern.test(input.reportId)) return this.getReport(input);
+    await this.client.$executeRaw`SET LOCAL lock_timeout = '2000ms'`; // = EXPENSE_REPORT_LOCK_TIMEOUT_MS
+    await this.client.$queryRaw`
+      SELECT id FROM expense_reports
+      WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.reportId}::uuid
+      FOR UPDATE
+    `;
+    return this.getReport(input);
   }
 
   async createReport(input: CreateExpenseReportInput): Promise<ExpenseReport> {
@@ -158,6 +186,59 @@ export class PrismaExpenseManagementRepository implements ExpenseSyncTransaction
     await this.recalculatePersistedReport(input.tenantId, input.reportId);
 
     return mapItemRecord(item);
+  }
+
+  // B-RDV-COMPROVANTE — comprovante: item por relatório, criação e leitura do registro persistido.
+  async findExpenseItem(input: { readonly tenantId: string; readonly reportId: string; readonly itemId: string }): Promise<ExpenseItem | undefined> {
+    const item = await this.client.expenseItem.findFirst({
+      where: { tenant_id: input.tenantId, report_id: input.reportId, id: input.itemId },
+    });
+    return item ? mapItemRecord(item) : undefined;
+  }
+
+  async createExpenseReceipt(input: CreateExpenseReceiptInput): Promise<ExpenseReceiptRecord> {
+    const receipt = await this.client.expenseReceipt.create({
+      data: {
+        tenant_id: input.tenantId,
+        item_id: input.itemId,
+        local_hash: input.localHash,
+        mime_type: input.mimeType,
+        upload_status: input.uploadStatus,
+        file_key: input.fileKey ?? null,
+      },
+    });
+    return mapExpenseReceiptRecord(receipt);
+  }
+
+  async findLatestStoredExpenseReceipt(input: { readonly tenantId: string; readonly itemId: string }): Promise<ExpenseReceiptRecord | undefined> {
+    const receipt = await this.client.expenseReceipt.findFirst({
+      where: { tenant_id: input.tenantId, item_id: input.itemId, upload_status: "uploaded" },
+      orderBy: [{ created_at: "desc" }],
+    });
+    return receipt ? mapExpenseReceiptRecord(receipt) : undefined;
+  }
+
+  async findExpenseReceiptById(input: { readonly tenantId: string; readonly receiptId: string }): Promise<ExpenseReceiptRecord | undefined> {
+    const receipt = await this.client.expenseReceipt.findFirst({
+      where: { tenant_id: input.tenantId, id: input.receiptId },
+    });
+    return receipt ? mapExpenseReceiptRecord(receipt) : undefined;
+  }
+
+  async findReportIdForExpenseItem(input: { readonly tenantId: string; readonly itemId: string }): Promise<string | undefined> {
+    const item = await this.client.expenseItem.findFirst({
+      where: { tenant_id: input.tenantId, id: input.itemId },
+      select: { report_id: true },
+    });
+    return item?.report_id ?? undefined;
+  }
+
+  // Conserto c1 do #525 (§12.1) — a re-leitura da compensação: linha com este `file_key` no tenant.
+  async findExpenseReceiptByFileKey(input: { readonly tenantId: string; readonly fileKey: string }): Promise<ExpenseReceiptRecord | undefined> {
+    const receipt = await this.client.expenseReceipt.findFirst({
+      where: { tenant_id: input.tenantId, file_key: input.fileKey },
+    });
+    return receipt ? mapExpenseReceiptRecord(receipt) : undefined;
   }
 
   async submitReport(input: { readonly tenantId: string; readonly reportId: string; readonly submittedAt: Date }): Promise<ExpenseReport> {
@@ -361,6 +442,32 @@ export class RlsPrismaExpenseManagementRepository implements ExpenseManagementRe
   createEvent(input: CreateExpenseEventInput) {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).createEvent(input));
   }
+
+  // B-RDV-COMPROVANTE — delegações sob a MESMA regra RLS das demais.
+  findExpenseItem(input: { readonly tenantId: string; readonly reportId: string; readonly itemId: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findExpenseItem(input));
+  }
+
+  createExpenseReceipt(input: CreateExpenseReceiptInput) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).createExpenseReceipt(input));
+  }
+
+  findLatestStoredExpenseReceipt(input: { readonly tenantId: string; readonly itemId: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findLatestStoredExpenseReceipt(input));
+  }
+
+  findExpenseReceiptById(input: { readonly tenantId: string; readonly receiptId: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findExpenseReceiptById(input));
+  }
+
+  findReportIdForExpenseItem(input: { readonly tenantId: string; readonly itemId: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findReportIdForExpenseItem(input));
+  }
+
+  // Conserto c1 do #525 (§12.1) — leitura NOVA sob a mesma regra RLS, numa transação própria.
+  findExpenseReceiptByFileKey(input: { readonly tenantId: string; readonly fileKey: string }) {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaExpenseManagementRepository(tx).findExpenseReceiptByFileKey(input));
+  }
 }
 
 export async function createPrismaExpenseManagementRepository(): Promise<RlsPrismaExpenseManagementRepository> {
@@ -416,6 +523,28 @@ function mapReportRecord(record: Prisma.ExpenseReportGetPayload<{ include: typeo
     createdAt: record.created_at,
     updatedAt: record.updated_at,
     items: record.items.map(mapItemRecord),
+  };
+}
+
+function mapExpenseReceiptRecord(record: {
+  id: string;
+  tenant_id: string;
+  item_id: string;
+  local_hash: string;
+  mime_type: string;
+  upload_status: string;
+  file_key: string | null;
+  created_at: Date;
+}): ExpenseReceiptRecord {
+  return {
+    id: record.id,
+    tenantId: record.tenant_id,
+    itemId: record.item_id,
+    localHash: record.local_hash,
+    mimeType: record.mime_type,
+    uploadStatus: record.upload_status,
+    fileKey: record.file_key ?? undefined,
+    createdAt: record.created_at,
   };
 }
 

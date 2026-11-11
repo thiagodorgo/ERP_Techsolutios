@@ -138,6 +138,7 @@ class ExpenseItem extends Equatable {
     required this.categoryId,
     required this.amount,
     required this.date,
+    this.serverId,
     this.city,
     this.vendorName,
     this.receipts = const <Receipt>[],
@@ -148,6 +149,10 @@ class ExpenseItem extends Equatable {
   final String categoryId;
   final double amount;
   final DateTime date;
+
+  /// B-RDV-COMPROVANTE — id do item no servidor (gravado quando `item.create`
+  /// processa no lote); o upload multipart do comprovante o exige na URL.
+  final String? serverId;
   final String? city;
   final String? vendorName;
   final List<Receipt> receipts;
@@ -158,6 +163,7 @@ class ExpenseItem extends Equatable {
     String? categoryId,
     double? amount,
     DateTime? date,
+    String? serverId,
     String? city,
     String? vendorName,
     List<Receipt>? receipts,
@@ -168,6 +174,7 @@ class ExpenseItem extends Equatable {
       categoryId: categoryId ?? this.categoryId,
       amount: amount ?? this.amount,
       date: date ?? this.date,
+      serverId: serverId ?? this.serverId,
       city: city ?? this.city,
       vendorName: vendorName ?? this.vendorName,
       receipts: receipts ?? this.receipts,
@@ -184,6 +191,7 @@ class ExpenseItem extends Equatable {
     city,
     vendorName,
     receipts,
+    serverId,
   ];
 }
 

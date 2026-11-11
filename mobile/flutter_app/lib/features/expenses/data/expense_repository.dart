@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/bootstrap/bootstrap_repository.dart';
+import '../../../core/evidence/evidence_blob_store.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/local_db/database_provider.dart';
 import '../../../core/local_db/drift_expense_local_store.dart';
@@ -26,17 +27,20 @@ class LocalExpenseRepository extends ChangeNotifier {
     required SyncQueueRepository syncQueue,
     required SyncActionFactory actionFactory,
     required ExpenseLocalStore localStore,
+    EvidenceBlobStore? blobStore,
     List<ExpenseReport> seedReports = const <ExpenseReport>[],
   }) : _session = session,
        _syncQueue = syncQueue,
        _actionFactory = actionFactory,
        _localStore = localStore,
+       _blobStore = blobStore,
        _reports = seedReports;
 
   final BootstrapSession _session;
   final SyncQueueRepository _syncQueue;
   final SyncActionFactory _actionFactory;
   final ExpenseLocalStore _localStore;
+  final EvidenceBlobStore? _blobStore;
   List<ExpenseReport> _reports;
   bool _loaded = false;
   int _reportSequence = 10;
@@ -191,6 +195,7 @@ class LocalExpenseRepository extends ChangeNotifier {
       tenantId: report.tenantId,
       type: ExpenseSyncActionTypes.itemCreate,
       payload: {
+        'local_id': itemLocalId,
         'report_local_id': report.localId,
         if (report.serverId != null) 'report_id': report.serverId,
         'category_key': categoryId,
@@ -232,12 +237,18 @@ class LocalExpenseRepository extends ChangeNotifier {
     return ExpenseMutationResult(report: submitted, action: action);
   }
 
+  /// B-RDV-COMPROVANTE (G.3 do plano): com `bytes`, o comprovante grava o blob local
+  /// (`uploadStatus: pending`) e ENFILEIRA `expense_receipt.attach` para o replay
+  /// multipart (`expense_receipt_sync.dart`). Sem `bytes` (placeholder antigo),
+  /// continua local-only e devolve `null`.
   Future<SyncAction?> attachReceiptPlaceholder({
     required String reportLocalId,
     required String itemLocalId,
     String fileName = 'comprovante',
     String mimeType = 'image/jpeg',
     ReceiptCaptureSource captureSource = ReceiptCaptureSource.manualPlaceholder,
+    Uint8List? bytes,
+    String? sha256,
   }) async {
     await load();
     final report = findReport(reportLocalId);
@@ -260,6 +271,16 @@ class LocalExpenseRepository extends ChangeNotifier {
       throw ArgumentError.value(itemLocalId, 'itemLocalId', 'Item not found');
     }
 
+    final blobStore = _blobStore;
+    final hasUploadableFile =
+        bytes != null &&
+        bytes.isNotEmpty &&
+        sha256 != null &&
+        blobStore != null;
+    final localReference = hasUploadableFile
+        ? await blobStore.save(bytes, contentType: mimeType)
+        : null;
+
     final receipt = Receipt(
       localId: 'receipt-local-${_receiptSequence++}',
       tenantId: report.tenantId,
@@ -267,8 +288,13 @@ class LocalExpenseRepository extends ChangeNotifier {
       itemLocalId: itemLocalId,
       fileName: fileName,
       mimeType: mimeType,
+      sizeBytes: bytes?.length ?? 0,
+      localReference: localReference,
+      sha256Hash: hasUploadableFile ? sha256 : null,
       captureSource: captureSource,
-      uploadStatus: ReceiptUploadStatus.local,
+      uploadStatus: hasUploadableFile
+          ? ReceiptUploadStatus.pending
+          : ReceiptUploadStatus.local,
       createdAt: DateTime.now().toUtc(),
     );
 
@@ -284,6 +310,68 @@ class LocalExpenseRepository extends ChangeNotifier {
     );
     await _replace(updated);
 
+    if (!hasUploadableFile) return null;
+
+    final action = _actionFactory.create(
+      tenantId: report.tenantId,
+      type: ExpenseSyncActionTypes.receiptAttach,
+      payload: {
+        'report_local_id': reportLocalId,
+        'item_local_id': itemLocalId,
+        'receipt_local_id': receipt.localId,
+        'file_name': fileName,
+        'mime_type': mimeType,
+        'size_bytes': bytes.length,
+        'sha256': sha256,
+      },
+    );
+    await _syncQueue.enqueue(action);
+    return action;
+  }
+
+  /// B-RDV-COMPROVANTE — o `serverId` do ITEM gravado quando `item.create` processa no lote.
+  Future<void> markItemSynced(
+    String reportLocalId,
+    String itemLocalId,
+    String serverId,
+  ) async {
+    await load();
+    final report = findReport(reportLocalId);
+    if (report == null) return;
+    ExpenseItem? target;
+    for (final i in report.items) {
+      if (i.localId == itemLocalId) {
+        target = i;
+        break;
+      }
+    }
+    if (target == null || target.serverId == serverId) return;
+    final updated = report.copyWith(
+      items: [
+        for (final i in report.items)
+          if (i.localId == itemLocalId) i.copyWith(serverId: serverId) else i,
+      ],
+    );
+    await _replace(updated);
+  }
+
+  String? serverIdForItem(String reportLocalId, String itemLocalId) {
+    final report = findReport(reportLocalId);
+    if (report == null) return null;
+    for (final item in report.items) {
+      if (item.localId == itemLocalId) return item.serverId;
+    }
+    return null;
+  }
+
+  Receipt? receiptByLocalId(
+    String reportLocalId,
+    String itemLocalId,
+    String receiptLocalId,
+  ) {
+    for (final receipt in receiptsForItem(reportLocalId, itemLocalId)) {
+      if (receipt.localId == receiptLocalId) return receipt;
+    }
     return null;
   }
 
@@ -327,6 +415,21 @@ class LocalExpenseRepository extends ChangeNotifier {
         uploadStatus: ReceiptUploadStatus.failed,
         updatedAt: DateTime.now().toUtc(),
       ),
+    );
+  }
+
+  /// B-RDV-COMPROVANTE — marcador genérico de status do envio (uploading,
+  /// pending de novo no 503, conflict nas recusas), pela MESMA via dos irmãos.
+  Future<void> markReceiptUploadStatus(
+    String reportLocalId,
+    String receiptLocalId,
+    ReceiptUploadStatus status,
+  ) async {
+    await _updateReceiptStatus(
+      reportLocalId,
+      receiptLocalId,
+      (r) =>
+          r.copyWith(uploadStatus: status, updatedAt: DateTime.now().toUtc()),
     );
   }
 
@@ -457,6 +560,7 @@ final expenseRepositoryProvider = Provider<LocalExpenseRepository>((ref) {
     syncQueue: ref.watch(syncQueueRepositoryProvider),
     actionFactory: ref.watch(syncActionFactoryProvider),
     localStore: ref.watch(expenseLocalStoreProvider),
+    blobStore: ref.watch(evidenceBlobStoreProvider),
   );
 });
 

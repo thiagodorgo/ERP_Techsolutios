@@ -13,10 +13,12 @@ import type {
   CountExpenseEventsInput,
   CreateExpenseEventInput,
   CreateExpenseItemInput,
+  CreateExpenseReceiptInput,
   CreateExpenseReportInput,
   ExpenseEvent,
   ExpenseItem,
   ExpensePolicy,
+  ExpenseReceiptRecord,
   ExpenseReport,
   FindExpenseEventInput,
   ListExpenseReportsInput,
@@ -35,6 +37,12 @@ export interface ExpenseDomainRepository {
   addItem(input: CreateExpenseItemInput): Promise<ExpenseItem>;
   submitReport(input: { readonly tenantId: string; readonly reportId: string; readonly submittedAt: Date }): Promise<ExpenseReport>;
   createEvent(input: CreateExpenseEventInput): Promise<ExpenseEvent>;
+  // B-RDV-COMPROVANTE — comprovante persistido (modelo ExpenseReceipt já existente; sem migração).
+  findExpenseItem(input: { readonly tenantId: string; readonly reportId: string; readonly itemId: string }): Promise<ExpenseItem | undefined>;
+  createExpenseReceipt(input: CreateExpenseReceiptInput): Promise<ExpenseReceiptRecord>;
+  findLatestStoredExpenseReceipt(input: { readonly tenantId: string; readonly itemId: string }): Promise<ExpenseReceiptRecord | undefined>;
+  findExpenseReceiptById(input: { readonly tenantId: string; readonly receiptId: string }): Promise<ExpenseReceiptRecord | undefined>;
+  findReportIdForExpenseItem(input: { readonly tenantId: string; readonly itemId: string }): Promise<string | undefined>;
 }
 
 /**
@@ -56,11 +64,24 @@ export interface ExpenseSyncTransactionRepository extends ExpenseDomainRepositor
   countExpenseEvents(input: CountExpenseEventsInput): Promise<number>;
   /** Relatório ORIGINAL de um recibo, no tenant: create/submit → resultRef; item → item persistido → relatório. */
   findSyncReceiptAggregate(input: { readonly tenantId: string; readonly receipt: MobileActionReceipt }): Promise<string | undefined>;
+  /**
+   * Conserto c1 do #525 (§2(b)1, §12.4) — TRAVA a linha do relatório nesta transação e devolve o relatório relido. Só
+   * existe dentro da transação. No Prisma: `lock_timeout` LOCAL de 2 s e `SELECT … FOR UPDATE` (o 55P03 sai 503
+   * `sync_busy`); na memória, as transações já são serializadas pela fila. Todo escritor de `expense_reports.status`
+   * (comprovante, submissão HTTP e do lote; e, quando nascerem, aprovação, devolução e baixa) abre com ela.
+   */
+  lockReportForUpdate(input: { readonly tenantId: string; readonly reportId: string }): Promise<ExpenseReport | undefined>;
 }
 
 export interface ExpenseManagementRepository extends ExpenseDomainRepository {
   /** Uma transação tenant-scoped por ação de sync; o callback recebe o repositório ligado a ela. Throw = rollback de tudo. */
   withSyncTransaction<T>(tenantId: string, work: (repository: ExpenseSyncTransactionRepository) => Promise<T>): Promise<T>;
+  /**
+   * Conserto c1 do #525 (§12.1) — leitura NOVA, fora de qualquer transação: existe linha de comprovante com este
+   * `file_key`? É a prova que a compensação exige antes de apagar um objeto (o commit ambíguo da Q1). Rara (só na
+   * compensação), não pede índice.
+   */
+  findExpenseReceiptByFileKey(input: { readonly tenantId: string; readonly fileKey: string }): Promise<ExpenseReceiptRecord | undefined>;
   reset?(): void;
 }
 
@@ -70,6 +91,7 @@ type MemorySnapshot = {
   readonly items: Map<string, ExpenseItem>;
   readonly receipts: Map<string, MobileActionReceipt>;
   readonly events: Map<string, ExpenseEvent>;
+  readonly expenseReceipts: Map<string, ExpenseReceiptRecord>;
 };
 
 export class InMemoryExpenseManagementRepository implements ExpenseManagementRepository, ExpenseSyncTransactionRepository {
@@ -78,6 +100,8 @@ export class InMemoryExpenseManagementRepository implements ExpenseManagementRep
   private readonly items = new Map<string, ExpenseItem>();
   private readonly receipts = new Map<string, MobileActionReceipt>();
   private readonly events = new Map<string, ExpenseEvent>();
+  // B-RDV-COMPROVANTE — comprovantes persistidos (o espelho em memória do modelo ExpenseReceipt).
+  private readonly expenseReceipts = new Map<string, ExpenseReceiptRecord>();
   // B-O6R-03a (v2 §4.3, B5/M14) — fila por instância: transações de sync em memória são SERIALIZADAS. Sem ela, o
   // restore do snapshot de uma transação que falha apagaria o commit de outra que rodou no meio.
   private syncQueue: Promise<void> = Promise.resolve();
@@ -124,6 +148,12 @@ export class InMemoryExpenseManagementRepository implements ExpenseManagementRep
     if (!report || report.tenantId !== input.tenantId) return undefined;
 
     return this.attachItems(report);
+  }
+
+  // Conserto c1 do #525 (§2(b)1) — na memória as transações de sync já são SERIALIZADAS pela `syncQueue`: a trava é a
+  // própria fila, e a leitura devolve o relatório como está agora.
+  async lockReportForUpdate(input: { readonly tenantId: string; readonly reportId: string }): Promise<ExpenseReport | undefined> {
+    return this.getReport(input);
   }
 
   async createReport(input: CreateExpenseReportInput): Promise<ExpenseReport> {
@@ -309,6 +339,52 @@ export class InMemoryExpenseManagementRepository implements ExpenseManagementRep
     return event;
   }
 
+  // B-RDV-COMPROVANTE — comprovante: item por relatório, criação e leitura do registro persistido.
+  async findExpenseItem(input: { readonly tenantId: string; readonly reportId: string; readonly itemId: string }): Promise<ExpenseItem | undefined> {
+    const item = this.items.get(input.itemId);
+    if (!item || item.tenantId !== input.tenantId || item.reportId !== input.reportId) return undefined;
+    return item;
+  }
+
+  async createExpenseReceipt(input: CreateExpenseReceiptInput): Promise<ExpenseReceiptRecord> {
+    const record: ExpenseReceiptRecord = {
+      id: randomUUID(),
+      tenantId: input.tenantId,
+      itemId: input.itemId,
+      localHash: input.localHash,
+      mimeType: input.mimeType,
+      uploadStatus: input.uploadStatus,
+      fileKey: input.fileKey,
+      createdAt: new Date(),
+    };
+    this.expenseReceipts.set(record.id, record);
+    return record;
+  }
+
+  async findLatestStoredExpenseReceipt(input: { readonly tenantId: string; readonly itemId: string }): Promise<ExpenseReceiptRecord | undefined> {
+    const stored = [...this.expenseReceipts.values()]
+      .filter((receipt) => receipt.tenantId === input.tenantId && receipt.itemId === input.itemId && receipt.uploadStatus === "uploaded")
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+    return stored[0];
+  }
+
+  async findExpenseReceiptById(input: { readonly tenantId: string; readonly receiptId: string }): Promise<ExpenseReceiptRecord | undefined> {
+    const receipt = this.expenseReceipts.get(input.receiptId);
+    if (!receipt || receipt.tenantId !== input.tenantId) return undefined;
+    return receipt;
+  }
+
+  async findReportIdForExpenseItem(input: { readonly tenantId: string; readonly itemId: string }): Promise<string | undefined> {
+    const item = this.items.get(input.itemId);
+    if (!item || item.tenantId !== input.tenantId) return undefined;
+    return item.reportId;
+  }
+
+  // Conserto c1 do #525 (§12.1) — a re-leitura da compensação.
+  async findExpenseReceiptByFileKey(input: { readonly tenantId: string; readonly fileKey: string }): Promise<ExpenseReceiptRecord | undefined> {
+    return [...this.expenseReceipts.values()].find((receipt) => receipt.tenantId === input.tenantId && receipt.fileKey === input.fileKey);
+  }
+
   /** Só para testes: os eventos gravados, para contagem escopada. */
   listEventsForTests(tenantId: string): ExpenseEvent[] {
     return [...this.events.values()].filter((event) => event.tenantId === tenantId);
@@ -336,6 +412,7 @@ export class InMemoryExpenseManagementRepository implements ExpenseManagementRep
     this.items.clear();
     this.receipts.clear();
     this.events.clear();
+    this.expenseReceipts.clear();
   }
 
   private snapshot(): MemorySnapshot {
@@ -345,6 +422,7 @@ export class InMemoryExpenseManagementRepository implements ExpenseManagementRep
       items: new Map(this.items),
       receipts: new Map(this.receipts),
       events: new Map(this.events),
+      expenseReceipts: new Map(this.expenseReceipts),
     };
   }
 
@@ -354,6 +432,7 @@ export class InMemoryExpenseManagementRepository implements ExpenseManagementRep
     restoreMap(this.items, snapshot.items);
     restoreMap(this.receipts, snapshot.receipts);
     restoreMap(this.events, snapshot.events);
+    restoreMap(this.expenseReceipts, snapshot.expenseReceipts);
   }
 
   private sortedReports(): ExpenseReport[] {

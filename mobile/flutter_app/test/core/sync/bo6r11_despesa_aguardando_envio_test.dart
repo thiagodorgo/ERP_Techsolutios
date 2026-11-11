@@ -456,8 +456,10 @@ void main() {
     );
     expect(channelOn.singleWhere((a) => a.clientActionId == '1').retryCount, 3);
     expect(
+      // B-RDV-COMPROVANTE: com o canal ligado o comprovante interrompido volta
+      // a pending — quem o envia e o replay multipart, nao o lote.
       channelOn.singleWhere((a) => a.clientActionId == '2').status,
-      SyncStatus.conflict,
+      SyncStatus.pending,
     );
     expect(
       channelOn.singleWhere((a) => a.clientActionId == '3').status,
@@ -594,7 +596,9 @@ void main() {
     expect(interrupted.lastErrorCode, syncInterruptedErrorCode);
     expect(result.byId['2']!.status, SyncStatus.synced);
     expect(result.byId['3']!.status, SyncStatus.synced);
-    expect(result.byId['4']!.status, SyncStatus.conflict);
+    // B-RDV-COMPROVANTE: o comprovante resgatado fica pending para o replay
+    // multipart (o lote nao o envia nem o conflita com o canal ligado).
+    expect(result.byId['4']!.status, SyncStatus.pending);
     expect(result.byId['4']!.lastErrorCode, syncInterruptedErrorCode);
   });
 }

@@ -11073,9 +11073,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-RDV-COMPROVANTE-SEM-UPLOAD (2026-11-09) — o comprovante da despesa fica no aparelho até existir rota de upload — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` no modelo (`ExpenseReceipt` em `prisma/schema.prisma`) sem via de upload; o app grava o comprovante local (`uploadStatus: local`) e não enfileira `expense_receipt.attach` (o servidor responde 400 `unsupported_action`) · **dono:** `B-RDV-COMPROVANTE` (bloco próprio entre `B-O6R-03b` e `B-MATERIAL-REENVIO`, Q-B1 do `B-REENVIOS-plano.md` §G.3).
+- **status:** FECHADA NA AUTORIA do `B-RDV-COMPROVANTE` (ramo `feat/mobile-rdv-comprovante`; PR na junta) · **escopo:** era `pre-existente` no modelo sem via de upload · **dono:** `B-RDV-COMPROVANTE`.
+- **Como fechou:** rota `POST /api/v1/expense-reports/:reportId/items/:itemId/receipt` (multipart ≤10 MB, jpeg/png/webp/pdf, scanner e storage da evidência por composição, idempotente por tenant+ator+`client_action_id`, 404 que não revela relatório alheio, 409 `payload_mismatch`); o app enfileira `expense_receipt.attach` com blob local e o replay multipart (`expense_receipt_sync.dart`) sobe 1 arquivo por requisição. O blob morre SÓ quando o servidor confirma — **`uploaded`**, não `stored`: o CHECK real de `expense_receipts.upload_status` (migration 20260619) só admite `local|pending_upload|uploading|uploaded|failed`, e o teste de encerramento abaixo lia o literal do plano, não o domínio da coluna (medido no `-db` do bloco; diário F4).
+- **Prova (reescrita pela execução no conserto c1 do #525, 10/11; contagens executadas no ramo):** backend `tests/b-rdv-comprovante-receipt-routes.test.ts` (14), `tests/b-rdv-comprovante-receipt-storage.test.ts` (5), `tests/b-rdv-comprovante-receipt-contract.test.ts` (1) e `tests/b-rdv-comprovante-receipt-db.test.ts` (5, Postgres real sob papel `NOSUPERUSER NOBYPASSRLS`; `ok` RR-db.1–RR-db.5 no TAP do job `backend` do CI); app `test/core/sync/brdvcomp_expense_receipt_sync_test.dart` (3), `test/core/sync/brdvcomp_c1_ordem_envio_test.dart` (5), `test/core/sync/brdvcomp_c1_item_recovery_test.dart` (2), `test/core/sync/brdvcomp_c1_recusas_test.dart` (4 — blob preservado em 400/401/403/404/408/409/413/415/422/429; a M-E5, que apaga o blob no 409, deixa o RR-E.5 vermelho), `test/core/network/brdvcomp_c1_auth_retry_multipart_test.dart` (2), `test/core/local_db/brdvcomp_c1_item_server_id_test.dart` (2) e `test/core/local_db/brdvcomp_c1_drift15_migration_test.dart` (2). Diário: `docs/revisoes/REENVIOS/B-RDV-COMPROVANTE-conserto-c1-dev.md`.
+- **Conserto c1 do #525 (10/11):** o storage deixou de ser "o da evidência por composição" (que grava em tmpdir): o comprovante grava no provedor da D-014 (`local|s3`), com `file_key = "<provedor>:<chave>"`, leitura escopada à organização e compensação que nunca apaga objeto de linha viva; em produção, só `s3` com o endpoint explícito regional da AWS (senão 503 `receipt_storage_unavailable`). A editabilidade é decidida dentro da transação, com a linha do relatório travada (`lock_timeout` local de 2 s); no app, o envio do relatório espera a vez do comprovante no mesmo passe, o id do item persiste (Drift 15) e volta pelo `result_ref`, e o upload classifica 401/403/422/400 pelo motivo.
+- **Nota para a `P-UPLOAD-ARMAZENAMENTO-EFEMERO`** (§12.15 item 1 do plano do conserto, com o texto do deploy da §13.2 item 7). A entrada é do registro do orquestrador de 10/11 e NÃO está na ref (medido: `git grep -c P-UPLOAD-ARMAZENAMENTO-EFEMERO` = 0 no head do ramo e na `origin/main`); a nota fica aqui até a entrada assentar. Texto: O comprovante já grava no provedor da D-014 e tem portão por requisição (#525, conserto c1); a evidência segue na raiz efêmera. Para subir em produção, falta o deploy: `CHECKLIST_STORAGE_PROVIDER=s3`, bucket, região, papel IAM, bucket privado com SSE e versionamento, nenhuma regra de ciclo de vida sob o prefixo da D-014, `CHECKLIST_STORAGE_S3_ENDPOINT=https://s3.<região>.amazonaws.com`, explícito (em São Paulo, `https://s3.sa-east-1.amazonaws.com`; endpoint vazio, outro host, porta, caminho ou `http://` fazem o comprovante responder 503; com o endpoint vazio, o SDK escolheria o destino por `AWS_ENDPOINT_URL_S3`, `AWS_ENDPOINT_URL` ou `~/.aws/config`, que o portão não vê) e `NODE_ENV=production`. Nenhum manifesto do repositório tem isso hoje (re-medido no ramo: `git grep -c CHECKLIST_STORAGE` = 0 em `docker-compose*.yml`, `Dockerfile`, `fly.*.toml` e `infra/`). Enquanto faltar, o comprovante responde 503 e o relatório segue sem ele (§12.6 do plano do conserto).
 - **O que o `B-O6R-03b` garante:** o comprovante nunca derruba o lote e fica guardado no aparelho; ações legadas de `expense_receipt.attach` já enfileiradas viram `conflict` visível ("comprovante fica no aparelho até a integração").
-- **teste de encerramento:** o comprovante sobe por rota própria (multipart + storage + scanner, com a idempotência de evidência) e o blob local é apagado só em `status=stored`.
+- **teste de encerramento (como escrito na abertura):** o comprovante sobe por rota própria (multipart + storage + scanner, com a idempotência de evidência) e o blob local é apagado só em `status=stored`. **Cumprido com `uploaded` no lugar de `stored`** — o domínio real da coluna (CHECK da migration 20260619) não contém `stored`; mudar o CHECK seria migração, proibida sem autorização.
 
 ## P-O6R-B03-TRANSIENT-CODES-DUPLICADOS (2026-10-11) — a lista de códigos transitórios do sync de despesas é cópia da do estoque — BAIXA
 
@@ -12299,9 +12303,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-B-RDV-COMPROVANTE (2026-10-31) — envio do comprovante de despesa sem plano
 
-- **status:** ABERTA · **escopo:** planejamento de produto · **dono:** `B-RDV-COMPROVANTE` · **bloqueia:** o envio do comprovante de despesa.
-- **Fato:** o envio do comprovante de despesa não tem plano.
-- **Próximo passo:** planejar o bloco `B-RDV-COMPROVANTE` se a P4 de `P-COBRANCA-PERGUNTAS-P1-P6` for aprovada.
+- **status:** FECHADA NA AUTORIA do `B-RDV-COMPROVANTE` · **escopo:** planejamento de produto · **dono:** `B-RDV-COMPROVANTE`.
+- **Como fechou:** o plano nasceu como §G.3 do `B-REENVIOS-plano.md` (correção de 02/11, DONO P4) e o bloco foi implementado no ramo `feat/mobile-rdv-comprovante` (ver `P-RDV-COMPROVANTE-SEM-UPLOAD`, fechada junto).
+- **Prova (conserto c1 do #525, 10/11):** a da `P-RDV-COMPROVANTE-SEM-UPLOAD`, reescrita pela execução; o plano ganhou as Emendas c1, c1-b e c1-c ao §G.3 (`agent-orchestration/omega/planos/B-REENVIOS-plano.md`).
 
 ## P-AVREAL-TETO-IDADE (2026-10-31) — sem teto superior para `CLAMAV_MAX_DB_AGE_HOURS` em produção — MÉDIA
 
@@ -12981,10 +12985,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-03b-VERSAO-DO-GESTOR-SEM-RECIBO (2026-11-09) — "Versão do gestor" em conflito de despesa que o servidor nunca recebeu equivale a descartar — MÉDIA
 
-- **status:** ABERTA · **escopo:** `mobile/flutter_app/lib/core/sync/` + tela de sync · **dono:** `B-MATERIAL-REENVIO` (bloco C) · **PR-alvo:** PR do `B-MATERIAL-REENVIO` · **bloqueia:** não o início do bloco C; a pergunta ao dono precisa de resposta, ou de um padrão declarado, antes de o dev mexer nessa parte (porteiro do #520, item 8).
+- **status:** ABERTA (decisão do dono JÁ GRAVADA; falta a tela) · **escopo:** `mobile/flutter_app/lib/shared/ui/sync_screen.dart` (a opção vive lá, `:231`) · **dono:** `B-RDV-COMPROVANTE-b`, 2º PR do bloco, fatia própria (conserto c1 do #525, C3-R1; antes `B-RDV-COMPROVANTE`, por `D-DESPESA-VERSAO-GESTOR-ESCONDER`, dono, 2026-11-09 ~22:20 SP — que substituiu o dono anterior `B-MATERIAL-REENVIO`) · **PR-alvo:** o PR do `B-RDV-COMPROVANTE-b`, logo depois do merge do #525 e antes do bloco C, que também mexe em `sync_screen.dart`.
+- **conserto c1 do #525 (C3-R1, 10/11):** PERMITIDO do `B-RDV-COMPROVANTE-b`: `mobile/flutter_app/lib/shared/ui/sync_screen.dart` e o widget test que morde, mais o caso X4; junta completa, porque é classe de descarte disfarçado. Leitura do topo, declarada: fica fora do conserto porque é outra superfície do sync e pede junta própria (§C7 item 10(3)3: "não grave e grande vira pendência com dono").
+- **resposta do dono (a antiga "pergunta ao dono"):** **ESCONDER** — em conflito de despesa sem recibo do servidor (ação sem `result_ref`/nunca processada), a opção "Versão do gestor" fica ESCONDIDA; sem recibo não existe versão do gestor, e oferecer a escolha é um descarte disfarçado (classe de `D-DESPESA-SEM-DESCARTAR`). Cobre também o caso X4 da conferência do #520.
+- **por que o PR do `B-RDV-COMPROVANTE` NÃO a fechou:** o escopo do §G.3 PROÍBE `sync_screen.dart`; o bloco entregou o upload (que elimina a maior fonte desses conflitos: comprovante com canal ligado não vira mais `UNSUPPORTED_ACTION`) e REGISTROU a posse. A aplicação na tela é fatia própria do dono, com o escopo liberado.
 - **o que se sabe:** o 5xx deixa de chegar aqui com o conserto do PR #520; sobram a recusa 4xx de domínio, o 401/403 (`SESSION_FORBIDDEN`) e o `LEGACY_ITEM_INCOMPLETE`. Num `report.create`, a escolha cascateia item e envio (`sync_resolution_side_effects.dart:17-49`). Num `item.create`, libera o envio do relatório sem o item (`sync_replay_service.dart:493-504`). É a classe de `D-DESPESA-SEM-DESCARTAR`, por outra porta.
-- **pergunta ao dono:** confirmar antes de "Versão do gestor" em despesa sem `result_ref`, trocar o rótulo, ou esconder?
-- **teste de encerramento:** nenhuma ação de despesa sem recibo do servidor sai da fila sem confirmação explícita, e "Versão do gestor" num item não libera o envio sem aviso.
+- **teste de encerramento:** em ação de despesa sem `result_ref`, a opção "Versão do gestor" NÃO aparece na tela de sincronização (widget test que morde), e nenhuma ação dessas sai da fila sem confirmação explícita.
+- **do lado da main (porteiro do #520, item 8; mantido no merge):** a pendência não bloqueia o início do bloco C; a pergunta ao dono FOI respondida por `D-DESPESA-VERSAO-GESTOR-ESCONDER` (acima) — o dev só mexe nessa parte com a decisão aplicada.
 - **Apenso 2026-11-09 (evidência X4 da conferência do #520):** num lote, a recusa real de domínio `status_not_editable` no 1º item arrasta o 2º (nunca enviado) para o mesmo conflito, e "Versão do gestor" nele descarta um item que o servidor nunca recebeu. É igual no `f63c8bb6` (objeto da junta) e no head `77e5ed30`: não nasce do conserto. Fonte: ata `agent-orchestration/omega/juntas/J-520-b-o6r-03b.md` (Conferência, observação fora da lente A).
 
 ## P-BACKEND-ENVELOPE-400-FALHA-DE-INFRA (2026-11-09) — falha de infraestrutura no sync de despesa pode sair 400 `invalid_request` — MÉDIA, HIPÓTESE
@@ -13000,3 +13007,105 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** achado A1 do porteiro do PR #520 (`agent-orchestration/omega/juntas/porteiro-520-parecer.md`) · **dono:** `B-RDV-COMPROVANTE` (o B' da trilha REENVIOS, o próximo a tocar o sync) · **PR-alvo:** PR do `B-RDV-COMPROVANTE` · **bloqueia:** não (o produto está correto em `e7e8d678`).
 - **o que se sabe:** o porteiro do #520 desligou o cliente autenticado em `mobile/flutter_app/lib/core/sync/sync_providers.dart:139` (mutação M-P1: `if (config.accessToken == null) {` → `if (true || config.accessToken == null) {`, o defeito do item 30) e a suíte Flutter inteira seguiu verde, 1047/1047. A metade "com sessão válida" do teste de encerramento do item 30 (`docs/revisoes/SAN3/PLANO_SAN3.md:301`: "RDV criado offline sincroniza com sessão válida; replay → 1") fica sem guarda. Conferido por `grep` em `e7e8d678`: das 8 citações do `syncBatchApiProvider` nos testes, 7 o substituem por `overrideWithValue`, e a única que lê o provedor real (`mobile/flutter_app/test/core/sync/bo6r11_despesa_aguardando_envio_test.dart:510`) cobre só o caso sem sessão.
 - **teste de encerramento:** um teste que lê o `syncBatchApiProvider` real com sessão válida, prova o `DioExpenseSyncBatchApi` com `Authorization: Bearer <token>` e fica vermelho com a M-P1.
+
+## P-DESPESA-ITEM-CORRIDA-SUBMIT (2026-11-10) — um item pode entrar num relatório recém-submetido (o `addItem` e o `itemCreate` do lote não travam o relatório) — HIPÓTESE, a classificar
+
+- **status:** ABERTA (hipótese, não medida) · **escopo:** `pre-existente` (a classe do C1-A2 da J-525, no item, desde o `B-O6R-03a`) · **dono:** a atribuir (o orquestrador põe; §9 do plano do conserto c1 do #525) · **bloqueia:** não.
+- **o que se sabe:** observação do topo por leitura, NÃO medida: o `addItem` (HTTP) e o `itemCreate` do lote leem a editabilidade sem trava e gravam o item sem reler; um item pode entrar num relatório recém-submetido e mudar o total.
+- **medir antes de classificar:** se reproduzir, toca dinheiro.
+- **teste de encerramento:** em Postgres descartável, com barreira, o `addItem` e o `itemCreate` correndo contra o submit: nenhum item entra num relatório já submetido (o total não muda), com vermelho-controle.
+
+## P-MOBILE-RECIBO-409-POR-MOTIVO (2026-11-10) — o app trata todo 409 do comprovante como `payload_mismatch` — BAIXA
+
+- **status:** ABERTA · **escopo:** `mobile/flutter_app/lib/core/sync/expense_receipt_sync.dart` (ramo `on ApiConflictError`) · **dono:** a atribuir (o orquestrador põe; §9 e §12.15 item 4 do plano do conserto c1 do #525) · **bloqueia:** não.
+- **o que se sabe:** os motivos `action_owned_by_other_actor` e `receipt_unverifiable` — este também no replay de linha legada sem prefixo de provedor (§12.1 item 3 do plano do conserto) — saem com o texto de `payload_mismatch` ("Este comprovante já foi recebido com outro conteúdo."). O conflito e o blob preservado estão certos (RR-E.5).
+- **teste de encerramento:** cada motivo do 409 do comprovante chega à fila com o seu código e o seu texto (cliente Dio real e o corpo de erro do backend), com o blob preservado.
+
+## P-S3-FORCE-PATH-STYLE-NAO-DESLIGA (2026-11-10) — `CHECKLIST_STORAGE_S3_FORCE_PATH_STYLE=false` não desliga o path-style — MÉDIA
+
+- **status:** ABERTA (MÉDIA até ser medida) · **escopo:** `pre-existente` desde a D-014 (`src/config/env.ts` l.257) · **dono:** o bloco que configurar o S3 de produção (o deploy na AWS; hoje é o estudo `P-TRC-AWS-ESTUDO-MIGRACAO`), a encaixar pelo orquestrador · **bloqueia:** não.
+- **o que se sabe:** `z.coerce.boolean().default(true)` faz `"false"`, `"0"` e `"no"` virarem `true` (medido em `ATK-K16`, ataque do plano do conserto c1 do #525). Todo provedor da D-014 fala path-style com a AWS, sem como desligar. O efeito na AWS real não foi medido. O portão do comprovante não depende dela (§13.2 item 7 do plano do conserto).
+- **teste de encerramento:** o env aceita `false`, medido contra um bucket real.
+
+## P-DESPESA-APROVACAO-SEM-TRAVA-E-SEM-STATUS-NO-APP (2026-11-10) — aprovação e devolução de despesa não existem, e o app não lê o status do servidor — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** o bloco que criar a aprovação e a devolução de despesa (nome provisório `B-RDV-APROVACAO`), a encaixar pelo orquestrador · **bloqueia:** não.
+- **(i)** Aprovação, devolução e baixa de relatório de despesa não existem no backend. Quando nascerem, todo escritor de `expense_reports.status` abre com `lockReportForUpdate` (§12.4 item 5 do plano do conserto c1 do #525; hoje só o módulo escreve: criar, PATCH, item, submit e lote, medido `writers_outside=0`).
+- **(ii)** O app não lê o status do servidor: `ExpenseRemoteApi` só tem a definição. Um relatório devolvido (`returned`) não reabre o anexo, e o comprovante em `RECEIPT_REPORT_LOCKED` fica sem saída no app.
+- **teste de encerramento:** (i) todo escritor novo de `expense_reports.status` passa pela trava (Postgres descartável, com barreira); (ii) o app lê o status do servidor, e o relatório devolvido reabre o anexo do comprovante.
+
+## P-PROCESSO-SONDAS-ANTES-DO-WORKTREE (2026-11-10) — o mandato de cadeira não manda guardar as sondas antes de remover o worktree — BAIXA
+
+- **status:** ABERTA · **escopo:** processo (mandatos de cadeira; §C7.7 P3) · **dono:** a atribuir (o orquestrador põe; recomendação de processo do §9 do plano do conserto c1 do #525, ver o §1 dele) · **bloqueia:** não.
+- **recomendação:** todo mandato de cadeira manda copiar as sondas para `revisoes/<junta>/` antes de remover o worktree (P3).
+- **teste de encerramento:** o modelo de mandato de cadeira traz a instrução, e a junta seguinte tem as sondas em `revisoes/<junta>/`.
+
+## P-CI-SAN3-05-T11D-ORDEM-FLAKY (2026-11-10) — o T11d/T11e de `san3-05-leituras-de-plataforma-db` compara arrays sem ordenar e falha às vezes no CI — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o arquivo `tests/san3-05-leituras-de-plataforma-db.test.ts` e a alocação de nuvem que ele lê não estão no diff do conserto c1 do #525 nem no do ramo inteiro, medido por `git diff --name-only`) · **dono:** a atribuir (o orquestrador põe; achado pelo dev do conserto c1 do #525 na leitura do CI) · **bloqueia:** não, mas deixa o job `backend` vermelho por acaso.
+- **o que se sabe (medido no CI do ramo `feat/mobile-rdv-comprovante`):** na rodada 42808942930 (head `07f822da`) o job `backend` saiu `# fail 3`: `not ok 5 - T11d · controles (já por organização): iguais nos dois papéis`, `not ok 6 - T11e …` e o pai `not ok 3516 - B-SAN3-05 · T10–T12 …`. O diff do T11d é SÓ de ordem: as duas linhas de alocação (`allocatedCost` 10 e 30, uma por organização) vêm trocadas entre o superusuário e o papel `NOSUPERUSER NOBYPASSRLS` (`assert.deepEqual(efe.s4Alocacoes, sup.s4Alocacoes)`, l.772, sem ordenar). O mesmo arquivo passou nas rodadas 42801796358 (`fb610f78`) e 42810768352 (`41625a5b`, `# fail 0`). Leitura: o papel sem bypass lê organização por organização e o superusuário numa consulta só, e a ordem das duas linhas empatadas depende dos ids aleatórios do seed.
+- **teste de encerramento:** o T11d e o T11e comparam as coleções numa ordem determinística (ordenadas por chave estável, ou a consulta com `ORDER BY` total), e o arquivo passa em N ≥ 10 execuções seguidas no Postgres do CI.
+
+## P-ASS08-OBX5-EAGER-E-CANCEL (2026-11-09) — R-OBX-5 partes (i) e (iii): marcação eager na baixa/cancel/reopen/disable, `charge_cancel` da cobrança viva e linha nova `seq+1` no refechamento — MÉDIA (gravidade corrigida em 10/11; 5 obrigações bloqueiam o merge da 08b e 3 bloqueiam ligar o canal)
+
+- **status:** ABERTA · **escopo:** `src/modules/subscription-billing/statements/statement.repository.ts`, `statements/statement.prisma-runtime.ts`, `statements/statement-settlement.service.ts` (estender `StatementTx`), `outbox/outbox.dispatcher.ts` (handler de `charge_cancel`), `API_CONTRACTS.md` · **dono:** `B-ASS-08b`.
+- **origem:** conserto único da junta J-522 do PR #522 (ciclo 1, achado C2-01 GRAVE — R-OBX-5 não implementado; plano `B-ASS-08-conserto-c1.md` §7). O conserto implementou a parte **(ii)** do D2 — o claim relê o demonstrativo e a cobrança viva na MESMA transação, o `retry` revalida pelo mesmo caminho e `reopen()` recusa `outbox_needs_review` — e fechou o dinheiro: a linha parada nunca sai de demonstrativo pago, cancelado, reaberto ou refechado (T-OBX-13..16, T-OBX-db-3). O que ficou FORA, com dono, está abaixo. **Gravidade corrigida em 10/11 (2º conserto do #522, diagnóstico `ci522`).** A justificativa original era falsa e foi desmentida por medição em `807deb7e`:
+  - duas `charge_create` vivas do mesmo demonstrativo deram 2 `createCharge` (L1 30/30, L2c 9/10, `sint-c2/s4` 30/30);
+  - um worker só, com resposta perdida, deu 2 POST (L1c 3/3; `sint-c2/s2` ATK-0);
+  - o pedido guardado se auto-bloqueava (P2028 36/36, L3c);
+  - a órfã adotava a cobrança-fantasma de um fechamento desfeito, com o valor velho (`sint-c2/s2` ATK-8).
+
+  Era GRAVE e de dentro do bloco, e o 2º conserto a fecha no próprio #522 (`planos/B-ASS-08-conserto-c2.md` §0–§14; o diário é `docs/revisoes/ASSINATURA/B-ASS-08-conserto-c2-dev.md`), com estes testes:
+  - claim E5″: o conjunto vivo do D1, e o demonstrativo e a linha da fila travados numa instrução só, o demonstrativo primeiro, as duas cláusulas com SKIP LOCKED, sem laço de adiamento (T-OBX-18, T-OBX-db-4/5/9, T-LOCK-1b);
+  - pedido numa transação e numa conexão, com `seq` sob a trava (T-CHG-5/6/7/7b, T-CHG-db-1/2/3, T-LOCK-1a);
+  - reconsulta antes de criar e adoção só por fato que não se apaga (a linha é a única intenção do demonstrativo e o fechamento é o vigente, com o valor do total), também na órfã (T-OBX-11, T-OBX-17, T-OBX-db-6/7/8, T-OBX-NODEL);
+  - retry guardado: o demonstrativo travado primeiro, 422 com outra intenção viva, `last_error` mantido (T-OBX-9/9b, T-CHG-db-3);
+  - ordem de travas executada e censo das transações (T-LOCK-2).
+
+  O que fica com a 08b é MÉDIA: prontidão, visibilidade, cancelamento no provedor e as obrigações abaixo.
+- **D2 (i) marcação eager:** baixa manual, `cancel`, `reopen` e `disable` marcam as linhas `charge_create` `PENDING`/`NEEDS_REVIEW` do demonstrativo como `SKIPPED` com `skip_reason` na **mesma transação**, e linha `SENT` com cobrança viva → `charge_cancel` enfileirado. Exige estender `StatementTx` (arquivos do B-ASS-04) e o handler de `charge_cancel` no dispatcher (hoje `unsupported_kind → NEEDS_REVIEW`) — ambos da 08b.
+- **D2 (iii) refechar → linha nova `seq+1`:** depende do caminho `close() → enqueue + billing_statement_refs`, que não existe em `src/` neste PR (o `enqueue` da outbox só é chamado por testes) — é a ligação da 08b. Com (ii) + `reopened_at > occurred_at`, a linha velha nunca sai.
+- **corrida residual (declarada):** claim relê `closed` → `fetch` em voo → baixa manual no meio → `markSent` grava uma cobrança para demonstrativo que acabou de ficar `paid`. Janela de milissegundos a segundos. Fecha-se na 08b com a releitura **no registro** (`markSent` que vê `status ≠ closed` enfileira `charge_cancel`) + (i). Se o cliente pagar nesse intervalo, R-C/R-SET-1 já transformam em crédito — nunca descartado. **Precisão (2º conserto, 10/11):** o 2º conserto fecha a parte dentro do claim (ATK-7: o claim adia enquanto a baixa trava o demonstrativo). Fica a parte do `fetch`, que se fecha na 08b com a releitura no registro.
+- **contrato:** a 422 `outbox_needs_review` em `POST …/statements/:id/reopen` entra em `API_CONTRACTS.md` quando o guard estiver ligado em produção (08b liga o `PrismaOutboxRepository` em `statement.prisma-runtime.ts`).
+- **rota `/charge` (C3-01 / R-CHG-2, mesma leva do conserto):** a rota `POST …/statements/:id/charge` da 08b **DEVE chamar `requestChargeCreate`** (`charges/charge-request.service.ts`), **nunca `outbox.enqueue` direto** — é nele que vivem o `FOR UPDATE` do demonstrativo e a `chargeCreateEligibility` (422 `statement_not_closed` / `charge_already_exists` ANTES de enfileirar, D1). O mesmo vale para o enfileiramento no fechamento. E o dispatcher da 08b liga `resolveCustomer = profileCustomerResolver(<repo de perfil>)` (C3-02 / R-PRF-1) e persiste o `<provedor>_customer_id` devolvido pelo `ensureCustomer` (G12 — a persistência exige o repo de perfil, fora do PERMITIDO do conserto).
+- **Bloqueiam o merge da 08b (2º conserto, 10/11):**
+  - (1) a rota `/charge` chama `requestChargeCreate({ intents })` e o fechamento chama `enqueueChargeCreateInTx` sobre o `tx` do próprio fechamento. Encerramento: `git grep -nE 'kind: "charge_create"' -- src | grep -v charges/charge-request.service.ts` vazio (em `807deb7e` a única ocorrência é o serviço; na 984 nenhuma);
+  - (2) o refechamento marca a linha velha `SKIPPED statement_reopened`, na mesma transação, antes da nova (senão o D1 recusa e o fechamento falha);
+  - (3) o `charge/cancel` tira a linha SENT antiga do conjunto vivo do D1. A forma é desenho da 08b; um `skip_reason` novo é migração com autorização nominal;
+  - (4) o claim E5″ e o despacho do 2º conserto prevalecem no merge: a CTE da 08b (`outbox.prisma.ts` l.111-143) não sobrevive, e `runBillingDispatch` passa `resolveCustomer` e trata o resultado discriminado do claim;
+  - (5) T-LOCK-2 verde no head da 08b, estendido por ela: o censo de aberturas da 08b sai sem sobra nem falta (em 984c5a8a já são 62, 11 a mais que em 807deb7e, e cada abertura nova entra classificada); há cenário gravado, com cobertura pela pilha de abertura, para o fechamento que enfileira, o refechamento, a marcação eager do D2 (i), o `charge/cancel`, o `/resolve` e a rota de `retry`; a M7f é aplicada, vista vermelha e desfeita, com o registro no diário; o T-OBX-NODEL fica verde (a régua de adoção depende de nenhuma linha da fila ser apagada, e um `/resolve` que apague linha a quebra); e, com as transações da 08b, o T-OBX-db-9 também fica verde (plano §14.8). Encerramento: `node --test --import tsx tests/ass-08-lock-order-db.test.ts` com `DATABASE_URL`, `# fail 0`, e o resumo TAP do job `backend` (§C7 11(3)).
+- **Bloqueiam ligar o canal com provedor real (`BILLING_PROVIDERS_ENABLED=true` + provedor `enabled`):**
+  - (a) `P-ASS08-MUTATE-SEM-GUARDA`;
+  - (b) `P-ASS08-RECONSULTA-SEM-VALOR`, antes de ligar o `charge/cancel`;
+  - (c) `P-ASS08-RECONSULTA-CONSISTENCIA`, medida no sandbox.
+- **teste de encerramento:** baixa manual com linha `PENDING` deixa a linha `SKIPPED statement_paid` na mesma transação e, com cobrança `SENT` viva, enfileira `charge_cancel` que o dispatcher processa (0 cobrança nova no falso); refechar depois de `reopen` enfileira `seq + 1` com o total novo e a linha velha segue `SKIPPED`; `POST …/reopen` com linha `NEEDS_REVIEW` responde 422 `outbox_needs_review` pela rota real. **Acréscimo (2º conserto, 10/11):** dois `POST …/charge` concorrentes PELA ROTA deixam 1 viva, devolvem 422 e geram `recorded[]` = 1 `POST /payments` (`-db`, a barreira do T-CHG-db-1); o fechamento com falha ao gravar a linha não commita; o `charge/cancel` tira a SENT do conjunto vivo, e um novo `/charge` passa sem `NEEDS_REVIEW`.
+
+## P-ASS08-MUTATE-SEM-GUARDA (2026-11-10) — o `#mutate` da outbox atualiza por id sem conferir o claim: um worker atrasado revive linha em revisão — ALTA (bloqueia ligar o canal)
+
+- **status:** ABERTA · **escopo:** `src/modules/subscription-billing/outbox/outbox.prisma.ts` (`#mutate`), o dublê e o despacho · **dono:** `B-ASS-08b`.
+- **origem:** diagnóstico `ci522` do 2º conserto do #522 (L2c C5; plano `B-ASS-08-conserto-c2.md` §10.2). O `#mutate` atualiza por `id` sem conferir `status = 'PROCESSING' AND claimed_by = $1 AND attempt_started_at = $2`. Um worker atrasado revive uma linha que já foi a revisão ou foi pulada. Somado a uma ação de operador (`/resolve` → FAILED → novo `/charge`) dentro da janela, há 2ª cobrança.
+- **teste de encerramento:** um `-db` em que o worker atrasado não tira a linha de NEEDS_REVIEW/SKIPPED, e `markSent`/`reschedule` com 0 linhas atualizadas não lança.
+
+## P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ chargeId, status }`, sem valor nem data — MÉDIA (bloqueia ligar o `charge/cancel`)
+
+- **status:** ABERTA · **escopo:** `src/modules/subscription-billing/providers/payment/**` (porta e adaptador Asaas) e `outbox/outbox.dispatcher.ts` · **dono:** `B-ASS-08b`, ou o primeiro bloco que tocar `providers/payment/**`.
+- **origem:** 2º conserto do #522 (§10.2, §13.5; era BAIXA no diagnóstico). A porta devolve uma cobrança só por referência, `{ chargeId, status }`, sem valor e sem data, e o Asaas devolve a 1ª da listagem (`asaas.adapter.ts` l.188-198). Por isso a adoção (E6′/E7′) exige a régua U (a linha é a única intenção do demonstrativo) e V (o fechamento é o vigente, com o valor do total). Resíduo declarado: cobrança criada à mão no painel do Asaas com a nossa referência.
+- **teste de encerramento:** a porta devolve a lista `{ chargeId, status, amountCents, createdAt }`; a adoção só toma cobrança viva, criada depois do `occurred_at` da linha e com o valor do payload; a recobrança depois de `charge/cancel` sai sem revisão (o ATK-3 com 1 POST e 1 viva). Com essa lista, a régua U pode ser relaxada para "adota a cobrança viva criada depois do `occurred_at` da linha e com o valor dela, mesmo com outra intenção no demonstrativo"; isso fecha também a revisão de vivacidade de "reabertura + resposta perdida" (plano §13.1.2).
+
+## P-ASS08-RECUPERADA-SEM-COBRANCA (2026-11-10) — o desfecho `recovered` não grava `subscription_statement_charges` — MÉDIA
+
+- **status:** ABERTA · **escopo:** `src/modules/subscription-billing/outbox/outbox.dispatcher.ts` · **dono:** `B-ASS-08b`.
+- **origem:** 2º conserto do #522 (§10.2). O desfecho `recovered` (órfã e, agora, a retentativa que adota a própria cobrança) só faz `markSent` e não grava `subscription_statement_charges` (G11: `payUrl`, Pix, boleto).
+- **teste de encerramento:** um teste em que `recovered` deixa uma linha de cobrança `pending` com `payUrl`, obtida por `getCharge`, lida em `GET …/charges`.
+
+## P-ASS08-RECONSULTA-CONSISTENCIA (2026-11-10) — a listagem `GET /v3/payments?externalReference` do Asaas mostra a cobrança criada numa chamada que perdeu a resposta? — MÉDIA (hipótese)
+
+- **status:** ABERTA · **escopo:** sandbox do Asaas · **dono:** `P-ASS-SANDBOX-REAL`.
+- **origem:** 2º conserto do #522 (§9 risco 5, §10.2). Hipótese, não medida (sem rede): a reconsulta pode voltar vazia logo depois de uma resposta perdida, e então a linha recria. Mitigação: o backoff é de pelo menos 1 min.
+- **teste de encerramento:** a medição no sandbox.
+
+## P-ASS08-INDICE-UMA-VIVA (2026-11-10) — índice parcial "uma `charge_create` viva por demonstrativo" (M5b), decisão do dono — BAIXA
+
+- **status:** ABERTA · **escopo:** `prisma/migrations/20260900100000_ass08_billing_outbox_one_live_charge_create/migration.sql` (plano §6.2), em PR próprio · **dono:** decisão do dono; a 08b, se autorizada.
+- **origem:** 2º conserto do #522 (§6.2/§6.3). O conserto impede a cobrança em dobro sem o índice (medido); o índice protege contra um escritor futuro errado da 08b. Pergunta opcional ao dono registrada no plano (§6.3).
+- **teste de encerramento:** `D-ASS08-MIGRACAO-M5B` em `decisoes.md` e a migração com drill e runbook (down M5b antes da M5), ou o arquivamento.

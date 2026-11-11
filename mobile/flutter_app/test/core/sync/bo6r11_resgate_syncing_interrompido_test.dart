@@ -164,14 +164,16 @@ void main() {
       expect(result.map((action) => action.clientActionId), ['5', '6']);
     });
 
-    test('os três tipos RDV duráveis voltam para pending', () {
+    test('os quatro tipos RDV duráveis voltam para pending', () {
       final result = reclaimInterruptedSyncing([
         _action('7', ExpenseSyncActionTypes.reportCreate, SyncStatus.syncing),
         _action('8', ExpenseSyncActionTypes.itemCreate, SyncStatus.syncing),
         _action('9', ExpenseSyncActionTypes.reportSubmit, SyncStatus.syncing),
+        // B-RDV-COMPROVANTE: o comprovante interrompido tambem volta sozinho.
+        _action('10', ExpenseSyncActionTypes.receiptAttach, SyncStatus.syncing),
       ]);
 
-      expect(result, hasLength(3));
+      expect(result, hasLength(4));
       expect(
         result.every((action) => action.status == SyncStatus.pending),
         isTrue,
@@ -185,8 +187,10 @@ void main() {
     });
 
     test('demais domínios e tipo desconhecido falham fechados em conflict', () {
+      // B-RDV-COMPROVANTE: receiptAttach saiu desta classe — entrou em
+      // kAutoResendAfterInterruption (comprovante interrompido volta a pending
+      // e o replay multipart o retoma; o blob local esta preservado).
       final types = [
-        ExpenseSyncActionTypes.receiptAttach,
         InventorySyncActionTypes.materialAdd,
         WorkOrderSyncActionTypes.statusUpdate,
         ChecklistSyncActionTypes.answerUpsert,

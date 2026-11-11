@@ -44,7 +44,9 @@ function m1DownStatements(): string[] {
 
 // B-ASS-04: a M3 tem FK para as tabelas da M1 (o demonstrativo aponta a assinatura e a versão do plano). O rollback
 // real é em ordem inversa: primeiro o down de quem depende da M1, depois o da M1.
-const M1_DEPENDENTS = ["20260898000000_ass04_subscription_statements"];
+// B-ASS-08: a M5 tem FK composta para subscription_statements (M3), logo depende da M1 por transitividade; a ordem
+// inversa passa a ser M5 → M3 → M1.
+const M1_DEPENDENTS = ["20260900000000_ass08_billing_outbox", "20260898000000_ass04_subscription_statements"];
 
 if (!connectionString) {
   test("B-ASS-02 · drill M1/M1b exige DATABASE_URL e CREATE DATABASE", {

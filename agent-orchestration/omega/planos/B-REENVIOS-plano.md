@@ -548,3 +548,61 @@ Fonte: `revisoes/prerev-512-parecer.md` (REPROVADO: A1 GRAVE, A2–A4 NÃO GRAVE
 - **A2 (NÃO GRAVE) — aceito por esta emenda.** Os 7 testes antigos listados no parecer só ganharam `userId` nas fixtures e o override de `currentSyncUserIdProvider`, sem asserção removida nem enfraquecida. Ficam permitidos. A junta confere, por diff, que nenhuma asserção mudou.
 - **A3 (NÃO GRAVE) — conserta na mesma leva.** `PLANO_SAN3.md`: as l.27, 37, 492 e 651 passam a dizer 64 itens / 51 blocos, coerentes com a l.105; `status-geral.md` com o PR #512 aberto; o "FECHADA NA AUTORIA" de `P-O6R-B03-FILA-POR-USUARIO` só depois do conserto do A1, com a prova dele.
 - **A4 (NÃO GRAVE, fora do PERMITIDO) — pendência.** `P-FILA-USUARIO-CONFLITO-DE-OUTRO-USUARIO` (painel de conflito da OS mostra o conflito de outro usuário; "Minha versão" pela metade; falha fechado), dono `B-FILA-USUARIO-2` (o C' do §G.4). O dev grava a entrada em `pendencias.md` e regenera o índice.
+
+## Emenda c1 ao §G.3 (B-RDV-COMPROVANTE) — 10/11, topo `topo-j525-opus`: reprovação da junta J-525, ciclo 1
+
+Texto pronto do §11 do plano do conserto (`erp-pausa-2026-10-03/planos/B-RDV-COMPROVANTE-conserto-c1.md`), copiado na F7 pelo dev `dev-525-c1`. A meta e as fatias deste texto são substituídas pela Emenda c1-b e, depois, pela Emenda c1-c (abaixo).
+
+> **Emenda c1 ao §G.3 (`B-RDV-COMPROVANTE`), 10/11/2026, topo `topo-j525-opus` (Claude Opus 5.5, topo declarado pelo §C7.6-bis), a partir da reprovação da junta J-525, ciclo 1.**
+>
+> - **Storage:** o "provedor S3 da evidência" do §G.3 não existe (a evidência grava em tmpdir). O comprovante usa o provedor do checklist (D-014, `local|s3`), com `file_key = "<provedor>:<chave>"`, leitura com `assertStorageKeyWithinTenant` e compensação. Em produção só `s3` completo: senão 503 `receipt_storage_unavailable`, sem gravar nada. `evidence-storage.ts` volta ao blob da `main`.
+> - **Editabilidade:** é decidida dentro da transação que grava, com a linha do relatório travada (`lockReportForUpdate`, `FOR UPDATE`). As duas submissões (HTTP e lote) passam pela mesma trava. O replay idempotente é consultado antes da editabilidade e do scanner.
+> - **App:** o `reportSubmit` espera os comprovantes não terminais do relatório, e o passe roda lote → upload → lote. O `ExpenseItem.serverId` persiste (Drift 14 → 15, store e codec), e o id já perdido volta por reenvio idempotente do `itemCreate` confirmado. O retry de 401 refaz o `FormData` e não desloga por 503 ou rede. O 401 de sessão deixa o comprovante pendente, e o 422 é tratado pelo motivo.
+> - **Escopo:** entram, além do PERMITIDO do §G.3:
+>   - `src/modules/expense-management/expense-management.service.ts` (`submitReport`/`applySubmitReport`);
+>   - `mobile/flutter_app/lib/core/local_db/{app_database,drift_expense_local_store}.dart`;
+>   - `mobile/flutter_app/lib/features/expenses/data/expense_local_store.dart`;
+>   - `mobile/flutter_app/lib/core/network/auth_interceptor.dart`;
+>   - `mobile/flutter_app/lib/core/sync/expense_sync_pass.dart` (novo);
+>   - `tests/b-rdv-comprovante-receipt-storage.test.ts` (novo) e os testes `brdvcomp_c1_*` do app;
+>   - os 2 testes de migração (só o número da versão);
+>   - a nota l.163 da `RBAC_MATRIX.md` (§D2);
+>   - o parágrafo de `docs/deployment.md`.
+>
+>   Continuam PROIBIDOS `prisma/**`, `src/config/env.ts`, os módulos de checklist, dano, anexo, OS e evidência móvel, os arquivos de deploy, as dependências, `sync_screen.dart` e `Kpis/**`.
+> - **"Versão do gestor" (`D-DESPESA-VERSAO-GESTOR-ESCONDER`, que manda a pendência para este plano):** vira o `B-RDV-COMPROVANTE-b`, 2º PR do bloco, fatia própria. PERMITIDO: `mobile/flutter_app/lib/shared/ui/sync_screen.dart` mais o widget test que morde e o caso X4. Vem logo depois do merge do #525 e antes do bloco C, com junta completa.
+> - **Meta:** M = 71 + 22 = 93 (RR-A 4 · RR-B 3 · RR-db 2 · RR-C 3 · RR-D 5 · RR-E 5), cada RR com mutação literal e vermelho-controle em `b9e63ec0`.
+> - **Fatias:** 11 (≈ 450 min, 1 com Docker).
+> - **Plano completo:** `erp-pausa-2026-10-03/planos/B-RDV-COMPROVANTE-conserto-c1.md`.
+
+## Emenda c1-b ao §G.3 (B-RDV-COMPROVANTE) — 10/11, versão final `final-j525-opus`, depois dos ataques por execução
+
+Texto pronto da §12.17 do mesmo plano. A meta e as fatias deste texto são substituídas pela Emenda c1-c.
+
+> **Emenda c1-b ao §G.3 (`B-RDV-COMPROVANTE`), 10/11/2026. Versão final `final-j525-opus` (Claude Opus 5.5, topo declarado pelo §C7.6-bis), escrita depois dos ataques por execução `atk-backend-j525` e `atk-app`.**
+>
+> - **Storage:** a compensação só apaga objeto que nenhuma linha referencia, conferido por uma leitura nova. O replay de linha sem prefixo → 409. Um resolvedor de storage serve à escrita, à leitura e à compensação (a costura de teste ou a fábrica da D-014).
+> - **Erros das rotas do comprovante:** storage → 503 `receipt_storage_unavailable`; banco transitório → 503 `sync_busy`; o resto → 500 com mensagem fixa. Nunca o `error.message`.
+> - **Trava:** `lock_timeout` local de 2 s na trava do relatório; dentro da transação, o replay do concorrente vem antes da editabilidade.
+> - **App:** o comprovante tem a vez dele no passe, antes do envio do relatório. Recusado não segura; 503 no passe solta o envio no 2º lote; esgotado segura até o "Tentar de novo"; 400 de domínio é recusa.
+> - **Id do item:** volta pelo `result_ref` que o lote gravou, no aparelho, sem reenvio. `synced` sem `result_ref` ("Versão do gestor" ou a cascata) → `RECEIPT_ITEM_NOT_SYNCED`.
+> - **Migração 14 → 15:** a guarda ganha prova de rebaixamento.
+> - **PROIBIDO acrescentado:** `src/modules/core-saas/routes/http.ts`, `src/database/rls.ts`.
+> - **Meta:** M = 71 + 30 = 101 (RR-A 6 · RR-B 4 · RR-db 3 · RR-C 5 · RR-D 6 · RR-E 6), com 37 mutações literais.
+> - **Fatias:** 17 (≈ 645 min, 1 com Docker).
+> - **Plano completo:** `erp-pausa-2026-10-03/planos/B-RDV-COMPROVANTE-conserto-c1.md`, §12.
+
+## Emenda c1-c ao §G.3 (B-RDV-COMPROVANTE) — 10/11, topo `topo2-j525-opus`, depois da crítica `crit-525-plano`
+
+Texto pronto da §13.6 do mesmo plano.
+
+> **Emenda c1-c ao §G.3 (`B-RDV-COMPROVANTE`), 10/11/2026. Topo `topo2-j525-opus` (Claude Opus 5.5, topo declarado pelo §C7.6-bis), depois da crítica `crit-525-plano` (Codex, `gpt-5.6-sol`, `VOLTA`).**
+>
+> - **App:**
+>   - a liberação do envio do relatório é por ação: só o comprovante tentado NESTE passe que recebeu 503 solta o envio, e não existe liberação do tenant inteiro;
+>   - o `uploadTenant` isola cada ação: a exceção de uma vai a `failed` com custo (blob preservado), e o laço segue;
+>   - falha de infraestrutura no upload não solta nada.
+> - **Portão de produção:** só o S3 da AWS, com o endpoint explícito `https://s3.<região>.amazonaws.com`. Vazio, loopback, link-local, privado, outro nome, porta, caminho ou `http://` → 503. O `env.ts` não muda.
+> - **Meta:** M = 71 + 31 = 102, com 42 mutações literais.
+> - **Fatias:** 18 (≈ 685 min, 1 com Docker).
+> - **Plano completo:** `erp-pausa-2026-10-03/planos/B-RDV-COMPROVANTE-conserto-c1.md`, §12 e §13.
