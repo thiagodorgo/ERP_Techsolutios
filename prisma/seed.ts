@@ -197,17 +197,32 @@ const permissionDescriptions = {
 async function main(): Promise<void> {
   // Ω-ACESSO — módulos provisionados ao tenant demo (governam a visibilidade dos itens de menu com
   // requiredModules; field_operations habilita o Mapa Operacional). Sem isto o menu vem vazio (modules []).
+  // B-SAN3-18 (R2-04 da Emenda 1) — com o gate de módulo, o servidor RECUSA a área que a organização não tem. A lista
+  // é a de antes, sem o apelido `checklists` (a chave canônica `tenant_checklist` já está aqui), MAIS toda chave que o
+  // gate ou o menu cobram (`ALL_MODULE_CLASSES`, src/modules/navigation/route-modules.ts): sem isso a demo perderia
+  // Estoque, Clientes, Fornecedores, Aprovações, Frota, Pátios, Telemetria, Cadastros, Orçamentos e Despesas.
+  // Array LITERAL, uma chave por linha (tests/san3-18-module-vocabulary.test.ts lê este texto e confere que cobre
+  // `ALL_MODULE_CLASSES`).
   const DEMO_TENANT_MODULES = [
     "dashboard",
     "work_orders",
     "field_operations",
     "logistics",
     "finance",
-    "checklists",
     "tenant_checklist",
     "notifications",
     "users",
     "audit",
+    "inventory",
+    "customers",
+    "suppliers",
+    "approvals",
+    "vehicles",
+    "patios",
+    "telemetry",
+    "master_data",
+    "quotes",
+    "expense_management",
   ];
   const tenant = await prisma.tenant.upsert({
     where: {
