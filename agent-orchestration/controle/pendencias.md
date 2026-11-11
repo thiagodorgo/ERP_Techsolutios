@@ -9128,7 +9128,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
   - **Fecha a metade do servidor, que é a autoridade.** O servidor confere a placa nas duas portas (`PATCH /work-orders/:id/status` e a ação `work_order.status_change` da fila), recusa por padrão e exige o veredito nos dois repositórios. Teste de encerramento: `tests/san3-26-checkin-conferencia.test.ts` (A2 aceita "23" da placa `ABC1D23`; A3 recusa o fim do código da OS).
   - **A metade do app está no código, mas ainda não é alcançável com o servidor real.** O app compara com o fim da PLACA que o servidor manda na lista (`checkinMode`, `checkinPlateTail`): `mobile/flutter_app/test/features/work_orders/bsan326_checkin_confere_placa_test.dart` (M1: "42" de `OS-1042` dá o erro, "23" enfileira), com a lista falsa nos nomes de status do app. Com o servidor real, o pull traz toda OS como "Agendada" e o "Iniciar rota" é recusado, então o guincheiro não chega ao diálogo da placa. Isso só muda com o conserto do mapeamento de status (PR534-03; `P-MOBILE-STATUS-NOMES` e `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA`, dono `B-O6R-11d`).
   - **O que sobra, com o dono de cada um:**
-    - `B-O6R-11d`: `P-CHECKIN-SEM-PLACA-OFFLINE`, `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` e `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA`;
+    - `B-O6R-11e`: `P-CHECKIN-SEM-PLACA-OFFLINE`, `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` e `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA`;
     - dono a definir pelo orquestrador: `P-DESPACHO-ARRIVED-SEM-CONFERENCIA`, `P-CHECKIN-NUMERO-DE-SERIE`, `P-CONSOLE-EDITA-PLACA-DA-OS`, `P-CHECKIN-PLACA-ESTRANGEIRA` e `P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO`.
 - **junta do PR #386, ciclo 1 (C2-01, 2026-09-12):** entra no gate — a tela declara um controle de segurança que não existe: `work_order_detail_screen.dart:918-931` pede "os 2 últimos dígitos da placa" e compara com o fim do código da OS, e o backend não confere nada. "O GPS coexiste" é mitigação, e o plano não admite exceção por mitigação. Plano SAN3 v5: bloco `B-SAN3-26`.
 - **fonte (fatia AUSENTES, §2a):** sintese A9
@@ -13395,7 +13395,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CHECKIN-SEM-PLACA-OFFLINE (2026-11-11) — OS sem placa e guincheiro sem dados: a OS fica "A caminho" — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6); o revisor do plano `crit-26-r2-cl` (C26R2-05) a deu média · **escopo:** app de campo · **dono:** `B-O6R-11d` (o pull tem de trazer o `on_site` registrado pela base como "No local"; a exceção ao offline-first segue decisão do dono, que pode rever a B: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6); o revisor do plano `crit-26-r2-cl` (C26R2-05) a deu média · **escopo:** app de campo · **dono:** `B-O6R-11e (a planejar)` (fora do PERMITIDO do 11d; o pull tem de trazer o `on_site` registrado pela base como "No local"; a exceção ao offline-first segue decisão do dono, que pode rever a B: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não.
 - **fato:** com a decisão B, a OS sem placa não confirma a chegada pelo app (o diálogo mostra "peça à base"), e o grafo local só deixa `enRoute → arrived`. A base registra pelo console, mas o app só vê o `on_site` depois de um pull: sem dados (estrada, só voz), o guincheiro fica em "A caminho" e não inicia o atendimento pelo app. É uma exceção ao offline-first (§6 do contrato), declarada no `API_CONTRACTS.md` §3.5.2.
 - **critério de encerramento:** o dono decide se aceita a exceção ou se o app ganha um caminho offline para a OS sem placa; a decisão vira teste.
 
@@ -13674,7 +13674,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA (2026-11-11) — o técnico ainda apaga ou reescreve uma placa que o servidor não reconhece — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `pre-existente`: na base `b6caf568` o campo trocava qualquer placa, e o `B-SAN3-26` reduziu a classe à placa não reconhecida · **dono:** `B-O6R-11d` (triagem do orquestrador) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `pre-existente`: na base `b6caf568` o campo trocava qualquer placa, e o `B-SAN3-26` reduziu a classe à placa não reconhecida · **dono:** `B-O6R-11e (a planejar)` (triagem do orquestrador; fora do PERMITIDO do 11d) · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não.
 - **origem:** C1-A2 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`revisoes/j534/c1-voto.json`, sonda `c1-sonda-extra`).
 - **fato:** a guarda do `PATCH /work-orders/:id` compara a referência normalizada antes e depois. Com placa estrangeira, com duas placas ou com texto colado, ela é nula dos dois lados, e o técnico atribuído apaga ou reescreve o que a base digitou (200). O evento `work_order_updated` não guarda o valor anterior. Não abre fuga do check-in: a OS segue com `checkin_reference_missing`.
 - **critério de encerramento:** o campo não muda `service_details.plate` quando o texto da base não é placa reconhecida (ou a decisão do dono diz o contrário), com teste que fica vermelho no código de hoje.
@@ -13977,3 +13977,24 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA (plano do `B-O6R-11d`, §4.3, CL11D-09) · **escopo:** pre-existente — no backend `rejected` é terminal (`src/modules/work-orders/work-order.validators.ts`, `rejected: []`, e `assigned → rejected` permitido); no app não é final e tem saída para `inService` (`mobile/flutter_app/lib/features/work_orders/domain/work_order_models.dart`) · **dono:** `B-SAN3-16` (o fluxo de aprovação na fila) · **PR-alvo:** o PR do `B-SAN3-16` · **bloqueia:** não.
 - **fato:** leitura do planejador do 11d, declarada: na entrada, `rejected → rejected` (o rótulo "Rejeitada" serve para "o técnico recusou"); pelo REST o app **não** manda `rejected` (`ArgumentError`, T7b e T14). Pela lista ele não chega (`openOnly`). Restam: a tela de "Rejeitada" oferece retomar (`rejected → inService`), e a **fila** ainda manda `rejected` cru, que o backend aceita de `assigned` e encerra a OS (medido por leitura em `work-order.validators.ts`; o caminho de fila é o da `P-MOBILE-CODEC-FILA-STATUS-CRU`).
 - **critério de encerramento:** os dois sentidos separados (status próprio de aprovação negada, ou a fila recusando `rejected` antes de enfileirar), com teste que fica vermelho no código de hoje.
+
+## P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS (2026-11-11) — o app não lê viatura/equipe que o backend emite na OS — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` — o parser `_workOrderFromRemoteJson` já ignorava `vehicleId`/`teamId` antes do bloco, e nenhuma tela lê esses campos hoje (a guarda G1(e) = 0) · **dono:** `B-O6R-11e (a planejar)` · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não.
+- **origem:** C1-01 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c1-voto.json`).
+- **fato:** o `toWorkOrderDto` emite `vehicleId` e `teamId` no detalhe (e `vehicleId` na lista), mas o parser `_workOrderFromRemoteJson` não lê nenhum dos dois: viatura/equipe ficam `null` no app. Nenhum dos T1–T6 cobre viatura/equipe. Como nenhuma tela usa esses campos hoje, é lacuna de contrato de leitura, não perda ativa.
+- **critério de encerramento:** o app lê `vehicleId`/`teamId` que o backend emite (ou a decisão do dono diz o contrário), com teste que fica vermelho no código de hoje.
+
+## P-AMBIENTE-VAULT-ROUTES-SOB-CARGA (2026-11-11) — `npm test` local trava em `ass-05-vault-routes` sob carga paralela no Windows — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente Windows) · **dono:** a atribuir (ambiente/CI) · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** C3-ENV-01 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c3-voto.json`).
+- **fato:** `npm test` local (Windows, `CORE_SAAS_PERSISTENCE=memory`, sem `DATABASE_URL`) trava em `tests/ass-05-vault-routes.test.ts`: o `T-VLT-5` chama `startServer` que espera `"PORT "` por 30 s (linhas 49–52) e, sob carga paralela, o subprocesso não imprime a tempo (`sem "PORT " em 30 s`) e vaza, deixando o arquivo sem drenar o event loop. Isolado, o arquivo passa (`# tests 5 # pass 5`). Não é bug do bloco.
+- **critério de encerramento:** o `npm test` local roda inteiro no Windows sob carga paralela, com o arnês do `T-VLT-5` drenando o subprocesso e sem timeout falso.
+
+## P-AMBIENTE-DART-LOCAL-DIVERGE (2026-11-11) — `dart format` local diverge só no `bsan313` (Dart 3.11.4 local × Flutter 3.47.5 da CI) — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente, versão do Dart) · **dono:** a atribuir (ambiente/CI) · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** C3-ENV-02 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c3-voto.json`).
+- **fato:** `dart format --output=none --set-exit-if-changed lib test` local sai ec=1 somente por `test/features/bsan313_minhas_os_escopo_test.dart` (fora do bloco, idêntico à `origin/main`; Dart local 3.11.4 × Flutter 3.47.5 fixado na CI). Os arquivos do bloco não têm mudança.
+- **critério de encerramento:** o `dart format` local de `lib test` fica verde na versão do Flutter da CI (ou o arquivo é formatado na versão da CI), sem tocar em arquivo do bloco.

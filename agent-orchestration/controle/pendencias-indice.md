@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **884** |
-| IDs distintos | 873 |
-| **ABERTAS** | **675** |
+| Cabecalhos `## P-` | **887** |
+| IDs distintos | 876 |
+| **ABERTAS** | **678** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **614** |
+| — das quais **ativas nesta rodada** | **617** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 205 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **884 cabecalhos para 873 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **887 cabecalhos para 876 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -375,7 +375,7 @@
 | `P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS` | 13953 | MÉDIA | sim | P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS (2026-11-11) — a viatura/equipe pelo app não gra |
 | `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO` | 13960 | MÉDIA | sim | P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO (2026-11-11) — `assign` sem `userId` apaga o usuári |
 
-## ABERTAS · balde B — processo/registro — 314
+## ABERTAS · balde B — processo/registro — 317
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -693,6 +693,9 @@
 | `P-MOBILE-CODEC-FILA-STATUS-CRU` | 13932 | BAIXA | sim | P-MOBILE-CODEC-FILA-STATUS-CRU (2026-09-19) — a fila offline manda ao backend três statu |
 | `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` | 13968 | BAIXA | sim | P-MOBILE-OS-UNICA-SEM-ORGANIZACAO (2026-11-11) — os 3 métodos de OS única do app devolve |
 | `P-MOBILE-REJECTED-DOIS-SENTIDOS` | 13975 | BAIXA | sim | P-MOBILE-REJECTED-DOIS-SENTIDOS (2026-11-11) — `rejected` quer dizer "aprovação negada"  |
+| `P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS` | 13981 | BAIXA | sim | P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS (2026-11-11) — o app não lê viatura/equipe que o back |
+| `P-AMBIENTE-VAULT-ROUTES-SOB-CARGA` | 13988 | BAIXA | sim | P-AMBIENTE-VAULT-ROUTES-SOB-CARGA (2026-11-11) — `npm test` local trava em `ass-05-vault |
+| `P-AMBIENTE-DART-LOCAL-DIVERGE` | 13995 | BAIXA | sim | P-AMBIENTE-DART-LOCAL-DIVERGE (2026-11-11) — `dart format` local diverge só no `bsan313` |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
