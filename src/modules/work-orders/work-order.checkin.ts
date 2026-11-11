@@ -75,11 +75,26 @@ function isCheckinExemptServiceType(typeInfo: CheckinServiceTypeInfo): boolean {
   return exempt;
 }
 
-// ─── Normalização da placa (C26-07 e C26R2-03, emenda E-03) ─────────────────────────────────────
+// ─── Normalização da placa (C26-07 e C26R2-03, emenda E-03; C2-01 da junta do PR #534) ──────────
 // Placa brasileira, antiga (LLL NNNN) ou Mercosul (LLL N L NN), procurada como PALAVRA: sem letra ou dígito colado
-// antes ou depois, com hífen, ponto ou espaço opcional entre as letras e os números. Assim "Onix 2019 ABC1D23" dá
-// ABC1D23, e "SEM PLACA", "ZERO KM" e "A DEFINIR" não dão nada.
-const BR_PLATE_PATTERN = /(?<![A-Z0-9])([A-Z]{3})[\s.-]{0,2}([0-9][A-Z0-9][0-9]{2})(?![A-Z0-9])/g;
+// antes ou depois. Entre dois caracteres da placa cabe um separador; entre as letras e os números, até três (" - ").
+// Separador: espaço (inclusive o não separável), ponto, sublinhado, hífen, os traços e travessões U+2010 a U+2015 e o
+// sinal de menos U+2212. A UF colada no fim ("ABC1D23SP") só vale se for uma das 27; outra letra colada ainda tira a
+// placa. Antes de procurar, o texto passa por NFKC (largura total vira ASCII). Assim "Onix 2019 ABC1D23" dá ABC1D23,
+// e "SEM PLACA", "ZERO KM", "A DEFINIR" e o código da OS ("OS-000041", duas letras) não dão nada.
+const PLATE_SEPARATOR = "[\\s._\\-\\u2010-\\u2015\\u2212]";
+const PLATE_UF_SUFFIX = "(?:AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)";
+const BR_PLATE_PATTERN = new RegExp(
+  `(?<![A-Z0-9])([A-Z])${PLATE_SEPARATOR}?([A-Z])${PLATE_SEPARATOR}?([A-Z])${PLATE_SEPARATOR}{0,3}` +
+    `([0-9])${PLATE_SEPARATOR}?([A-Z0-9])${PLATE_SEPARATOR}?([0-9])${PLATE_SEPARATOR}?([0-9])` +
+    `(?:${PLATE_SEPARATOR}{0,3}${PLATE_UF_SUFFIX})?(?![A-Z0-9])`,
+  "g",
+);
+
+/** NFKC e maiúsculas: a mesma dobra para a placa e para o que foi digitado. */
+function foldPlateText(text: string): string {
+  return text.normalize("NFKC").toUpperCase();
+}
 
 /**
  * A referência do check-in: a placa normalizada (`ABC1D23`), ou `null` quando a OS não tem placa que sirva.
@@ -89,9 +104,9 @@ const BR_PLATE_PATTERN = /(?<![A-Z0-9])([A-Z]{3})[\s.-]{0,2}([0-9][A-Z0-9][0-9]{
 export function resolveCheckinReference(details: Readonly<Record<string, unknown>> | null | undefined): string | null {
   const raw = details?.plate;
   if (typeof raw !== "string") return null;
-  const upper = raw.toUpperCase();
+  const upper = foldPlateText(raw);
   const candidates = new Set<string>();
-  for (const match of upper.matchAll(BR_PLATE_PATTERN)) candidates.add(`${match[1]}${match[2]}`);
+  for (const match of upper.matchAll(BR_PLATE_PATTERN)) candidates.add(match.slice(1, 8).join(""));
   if (candidates.size !== 1) return null;
   const [reference] = candidates;
   return reference ?? null;
@@ -100,7 +115,7 @@ export function resolveCheckinReference(details: Readonly<Record<string, unknown
 /** Os 2 caracteres digitados, normalizados como a placa; qualquer outra forma é `null` (= confirmação ausente). */
 export function normalizeTypedTail(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const normalized = foldPlateText(value).replace(/[^A-Z0-9]/g, "");
   return normalized.length === 2 ? normalized : null;
 }
 

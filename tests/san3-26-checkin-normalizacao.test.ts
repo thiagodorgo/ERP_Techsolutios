@@ -8,6 +8,9 @@ import test from "node:test";
 //   * só string conta; número, booleano e null = sem referência (nunca 500);
 //   * a referência é a placa BRASILEIRA (antiga LLL NNNN ou Mercosul LLL N L NN), procurada como PALAVRA (sem letra
 //     ou dígito colado antes ou depois), com hífen, ponto ou espaço opcional entre as letras e os números;
+//   * C2-01 (junta do PR #534): um separador entre dois caracteres quaisquer da placa e até três entre as letras e os
+//     números (espaço, NBSP, ponto, sublinhado, hífen, traços/travessões U+2010–U+2015 e U+2212); a UF colada no fim
+//     ("ABC1D23SP") só se for uma das 27; o texto passa por NFKC (largura total); o código da OS nunca vira placa;
 //   * exatamente UMA placa no texto; nenhuma ou mais de uma (ex.: "Uno 2010 ABC1234") = sem referência, fail-closed;
 //   * não há mais o ramo "5 a 8 alfanuméricos" do plano v2: ele transformava "SEM PLACA", "ZERO KM" e "A DEFINIR"
 //     em placa (C26R2-03). Placa estrangeira passa a contar como sem referência (a base registra a chegada);
@@ -64,6 +67,41 @@ const TABELA: ReadonlyArray<readonly [unknown, string, Esperado]> = [
   ["ABC1D234", "23", "checkin_reference_missing"],
   ["ABC1D234", "34", "checkin_reference_missing"],
   ["ABC1D23X", "23", "checkin_reference_missing"],
+  // C2-01 (junta do PR #534): os casos da sonda da cadeira C2, com o desfecho que a placa pede.
+  ["ABC1D23", "23", "aceita"],
+  ["abc1d23", "23", "aceita"],
+  ["ABC-1D23", "23", "aceita"],
+  ["ABC 1D23", "23", "aceita"],
+  ["ABC.1D23", "23", "aceita"],
+  ["ABC1234", "34", "aceita"],
+  ["abc-1234", "34", "aceita"],
+  ["ABC1D23/SP", "23", "aceita"],
+  ["Placa: ABC1D23", "23", "aceita"],
+  ["ABC - 1234", "34", "aceita"],
+  ["ABC\u20131234", "34", "aceita"],
+  ["ABC\u20141D23", "23", "aceita"],
+  ["ABC\u22121234", "34", "aceita"],
+  ["A B C 1 D 2 3", "23", "aceita"],
+  ["a b c 1 2 3 4", "34", "aceita"],
+  ["ABC_1D23", "23", "aceita"],
+  ["ABC1D23SP", "23", "aceita"],
+  ["ABC1D23-RJ", "23", "aceita"],
+  ["ABC1D23 sp", "23", "aceita"],
+  ["\uFF21\uFF22\uFF23\uFF11\uFF24\uFF12\uFF13", "23", "aceita"],
+  ["ABC\u00A01D23", "23", "aceita"],
+  ["ABC1D23 abc-1d23", "23", "aceita"],
+  ["ABC1D23 XYZ9876", "23", "checkin_reference_missing"],
+  ["", "23", "checkin_reference_missing"],
+  ["A", "A", "checkin_reference_missing"],
+  // C2-01: o que não é placa continua sem referência.
+  ["ABC1D23XY", "23", "checkin_reference_missing"],
+  ["ABC1D23S", "23", "checkin_reference_missing"],
+  ["ABC1D23SPX", "23", "checkin_reference_missing"],
+  ["OS-000041", "41", "checkin_reference_missing"],
+  ["os 000041", "41", "checkin_reference_missing"],
+  ["OS-000041/SP", "41", "checkin_reference_missing"],
+  ["AB - C 1234", "34", "checkin_reference_missing"],
+  ["ABC -  - 1234", "34", "checkin_reference_missing"],
 ];
 
 async function decidir(plate: unknown, digitado: string, serviceType: string | null = "reboque"): Promise<string> {
@@ -102,6 +140,15 @@ test("A10 — resolveCheckinReference devolve a placa normalizada, ou null", asy
   assert.equal(resolveCheckinReference({ plate: "ABC12345" }), null);
   assert.equal(resolveCheckinReference({ plate: "ABC1D234" }), null);
   assert.equal(resolveCheckinReference({ plate: "ABC1D23X" }), null);
+  // C2-01: separadores, UF colada e largura total chegam à mesma placa; o código da OS não vira placa.
+  assert.equal(resolveCheckinReference({ plate: "ABC - 1234" }), "ABC1234");
+  assert.equal(resolveCheckinReference({ plate: "ABC\u20131234" }), "ABC1234");
+  assert.equal(resolveCheckinReference({ plate: "A B C 1 D 2 3" }), "ABC1D23");
+  assert.equal(resolveCheckinReference({ plate: "ABC_1D23" }), "ABC1D23");
+  assert.equal(resolveCheckinReference({ plate: "ABC1D23SP" }), "ABC1D23");
+  assert.equal(resolveCheckinReference({ plate: "\uFF21\uFF22\uFF23\uFF11\uFF24\uFF12\uFF13" }), "ABC1D23");
+  assert.equal(resolveCheckinReference({ plate: "OS-000041" }), null);
+  assert.equal(resolveCheckinReference({ plate: "ABC1D23XY" }), null);
   assert.equal(resolveCheckinReference({ plate: 1234 }), null);
   assert.equal(resolveCheckinReference({}), null);
   assert.equal(resolveCheckinReference(undefined), null);

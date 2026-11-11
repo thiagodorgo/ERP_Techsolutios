@@ -399,11 +399,17 @@ Decisões do dono `D-PORTAO-9-RECOMENDACOES-1011` e `D-PORTAO-5-RECOMENDACOES-11
 a OS a `on_site`: `PATCH /work-orders/:id/status` e a ação `work_order.status_change` da fila do app. A chave é o
 **destino**: `on_site → on_site` também é conferido.
 
-- **Corpo:** `checkin_confirmation: { "last_digits": "<2 caracteres>" }`. Normalizado (maiúsculas, só letras e
+- **Corpo:** `checkin_confirmation: { "last_digits": "<2 caracteres>" }`. Normalizado (NFKC, maiúsculas, só letras e
   dígitos), tem de ter exatamente 2 caracteres.
 - **A referência é do servidor:** a placa brasileira (antiga ou Mercosul) em `service_details.plate`, achada como
   palavra e única no texto. Texto sem placa ("SEM PLACA", "ZERO KM"), com duas placas diferentes ou com placa
   estrangeira conta como **sem placa**.
+  - **Forma aceita (C2-01, junta do PR #534):** um separador entre dois caracteres quaisquer da placa e até três entre
+    as letras e os números. Valem espaço, ponto, sublinhado, hífen, os traços e travessões e o sinal de menos
+    ("ABC - 1234", "ABC–1234", "A B C 1 D 2 3", "ABC_1D23").
+  - **UF:** a UF colada no fim vale só se for uma das 27 ("ABC1D23SP"). O texto passa por NFKC, e a largura total vira
+    ASCII.
+  - **O que não vira placa:** o código da OS ("OS-000041") e outra letra colada no fim ("ABC1D23XY").
 - **Aceita** quando: (a) os 2 caracteres batem com o fim da placa; (b) a OS não tem placa e o tipo do catálogo é
   `residencial` (a única isenção); (c) **a base**, só pela rota HTTP: ator com papel de `super_admin`, `platform_admin`,
   `tenant_admin`, `manager`, `operator` ou `field_dispatcher` e **nenhum** papel de campo (`field_technician`,

@@ -721,6 +721,35 @@ test("A12c — a atribuição (rota e fila) e o motivo do despacho também não 
 });
 
 // ------------------------------------------------------------------------------------------------
+// A10b — C2-01 (junta do PR #534), pela rota HTTP: a placa digitada com outro separador ou com a UF colada chega à
+// lista do guincheiro como placa e confere a chegada; o código da OS no campo da placa continua sem placa.
+// ------------------------------------------------------------------------------------------------
+test("A10b — placa com ' - ', travessão, espaço entre tudo, '_' ou UF colada: a lista traz o fim e a chegada confere", async () => {
+  await withApi(async (ctx) => {
+    const hT = ctx.h(ctx.seed.tecnico, "field_technician");
+    const casos: Array<[string, string]> = [
+      ["ABC - 1234", "34"],
+      ["ABC\u20131234", "34"],
+      ["A B C 1 D 2 3", "23"],
+      ["ABC_1D23", "23"],
+      ["ABC1D23SP", "23"],
+    ];
+    for (const [placa, fim] of casos) {
+      const id = await ctx.osACaminho({ service_details: { plate: placa } });
+      const lista = await ctx.req("/api/v1/work-orders?scope=assigned&openOnly=true", { headers: hT });
+      const item = itensDaLista(lista.body).find((x) => x.id === id);
+      assert.deepEqual([item?.checkinMode, item?.checkinPlateTail], ["plate", fim], JSON.stringify(placa));
+      const r = await ctx.req(`/api/v1/work-orders/${id}/status`, { method: "PATCH", headers: hT, body: noLocal(confirmacao(fim)) });
+      assert.equal(r.status, 200, `${JSON.stringify(placa)}: ${JSON.stringify(r.body)}`);
+    }
+    const codigo = await ctx.osACaminho({ service_details: { plate: "OS-000041" }, serviceCatalogId: await ctx.catalogo("reboque") });
+    const r = await ctx.req(`/api/v1/work-orders/${codigo}/status`, { method: "PATCH", headers: hT, body: noLocal(confirmacao("41")) });
+    assert.equal(r.status, 422, JSON.stringify(r.body));
+    assert.equal(r.body.error.reason, "checkin_reference_missing");
+  });
+});
+
+// ------------------------------------------------------------------------------------------------
 // L1 — a lista leva o MODO do check-in e só os 2 caracteres finais (C26-03, N-01).
 // ------------------------------------------------------------------------------------------------
 test("L1 — a lista do técnico traz checkinMode e checkinPlateTail, nunca a placa nem o serviceDetails", async () => {

@@ -543,3 +543,51 @@ separador. Entraram os 2 casos com o invisível e o acento no MEIO da palavra ("
 M-C1e ficou vermelha.
 
 **Contrato:** `API_CONTRACTS.md` §3.5.2 ganhou o item "A marca da base é do servidor".
+
+### C2-01 — a normalização aceita os separadores da vida real e a UF colada
+
+**O que mudou** (`work-order.checkin.ts`, só `BR_PLATE_PATTERN`, `resolveCheckinReference` e `normalizeTypedTail`):
+- Entre dois caracteres quaisquer da placa cabe um separador, e entre as letras e os números, até três (" - ").
+- O separador é espaço (inclusive NBSP), ponto, sublinhado, hífen, U+2010 a U+2015 (traços e travessões) ou U+2212
+  (sinal de menos).
+- A UF colada no fim só vale se for uma das 27. Outra letra colada continua tirando a placa: "ABC1D23X", "ABC1D23XY" e
+  "ABC1D23SPX" dão sem placa.
+- A placa e o digitado passam pela mesma dobra (NFKC e maiúsculas), e a largura total vira ASCII.
+- **O que não vira placa:** o código da OS ("OS-000041", "os 000041", "OS-000041/SP"), porque tem duas letras.
+  Separador demais também não vira: "AB - C 1234" e "ABC -  - 1234".
+
+**LEITURA DECLARADA (§A6):** a junta pediu " - ", os travessões, "_", espaço entre tudo e a UF colada. NFKC e U+2212
+entraram porque estão na sonda da C2 (o caso "fullwidth") e são a mesma propriedade, "a placa digitada de outro jeito
+é a mesma placa".
+
+**Testes**
+- `tests/san3-26-checkin-normalizacao.test.ts`: todos os casos de texto da sonda da C2 (`probe-c2-http.mts`, de
+  "mercosul" a "nbsp") entram na tabela do A10, com o desfecho que a placa pede, mais os casos do que não é placa.
+  - Os casos "objeto" e "lista" não entram: a criação já recusa valor não primitivo em `service_details` (422
+    `invalid_service_details`).
+  - Os números e o booleano já estavam no A10.
+- `tests/san3-26-checkin-conferencia.test.ts`: o A10b, pela rota HTTP. Cobre " - ", travessão, espaço entre tudo, "_" e
+  UF colada: a lista traz `plate` e o fim certo, e a chegada com esse fim dá 200. O código da OS no campo da placa dá
+  422 `checkin_reference_missing`.
+
+**Vermelho-controle:** com o `work-order.checkin.ts` do commit anterior (`git show HEAD:…`), os testes novos dão pass
+30 e fail 3 (A10b, a tabela do A10 e o `resolveCheckinReference`). O arquivo foi restaurado com `cmp` igual.
+
+**Mutações literais.** Âncora com contagem 1, restauradas pela cópia do arquivo. A M-C2a rodou por um script com
+`String.raw`, porque as barras invertidas da âncora não passam íntegras pelo argv no Git Bash.
+
+| # | Mutação | Âncora → troca | Resultado |
+|---|---|---|---|
+| 1 | M-C2a (a classe de separadores) | `const PLATE_SEPARATOR = "[\\s._\\-\\u2010-\\u2015\\u2212]";` → `const PLATE_SEPARATOR = "[\\s.\\-]";` | ec=1, VERMELHA: pass 30, fail 3 |
+| 2 | M-C2b (a UF colada) | `` `(?:${PLATE_SEPARATOR}{0,3}${PLATE_UF_SUFFIX})?(?![A-Z0-9])`, `` → `` `(?![A-Z0-9])`, `` | ec=1, VERMELHA: pass 30, fail 3 |
+| 3 | M-C2c (o separador entre as letras) | `` `(?<![A-Z0-9])([A-Z])${PLATE_SEPARATOR}?([A-Z])${PLATE_SEPARATOR}?([A-Z])${PLATE_SEPARATOR}{0,3}` + `` → `` `(?<![A-Z0-9])([A-Z])([A-Z])([A-Z])${PLATE_SEPARATOR}{0,3}` + `` | ec=1, VERMELHA: pass 30, fail 3 |
+| 4 | M-C2d (até três entre os blocos) | `` ([A-Z])${PLATE_SEPARATOR}{0,3}` + `` → `` ([A-Z])${PLATE_SEPARATOR}{0,2}` + `` | ec=1, VERMELHA: pass 30, fail 3 |
+| 5 | M-C2e (NFKC) | `  return text.normalize("NFKC").toUpperCase();` → `  return text.toUpperCase();` | ec=1, VERMELHA: normalização pass 6, fail 2 |
+| 6 | M-C2f (só as 27 UF) | `const PLATE_UF_SUFFIX = "(?:AC\|…\|TO)";` → `const PLATE_UF_SUFFIX = "[A-Z]{2}";` | ec=1, VERMELHA: pass 6, fail 2 |
+| 7 | M-C2g (guarda da direita) | ``(?![A-Z0-9])`,`` → `` `, `` | ec=1, VERMELHA: pass 6, fail 2 |
+| 8 | M-C2h (guarda da esquerda) | `` `(?<![A-Z0-9])([A-Z]) `` → `` `([A-Z]) `` | ec=1, VERMELHA: pass 6, fail 2 |
+| 9 | M-C2i (ambígua) | `  if (candidates.size !== 1) return null;` → `  if (candidates.size === 0) return null;` | ec=1, VERMELHA: pass 7, fail 1 |
+| 10 | M-C2j (a junção dos 7 grupos) | `candidates.add(match.slice(1, 8).join(""));` → `candidates.add(match.slice(1, 7).join(""));` | ec=1, VERMELHA: pass 4, fail 4 |
+
+**As âncoras antigas** da tabela de mutações do F4 (A10-ii, A10-iii, A10-iv) e a PROPRIA-3 do PR534-02 apontavam para
+o padrão antigo, que deixou de existir. As propriedades delas são as linhas 7, 8 e 9 acima, com as âncoras novas.
