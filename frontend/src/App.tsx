@@ -11,6 +11,7 @@ import { ChecklistRunsPage } from "./modules/checklists/pages/ChecklistRunsPage"
 import { TenantChecklistsPage } from "./modules/checklists/pages/TenantChecklistsPage";
 import { NotificationsPage } from "./modules/notifications/pages/NotificationsPage";
 import { TenantSettingsPage } from "./modules/settings/pages/TenantSettingsPage";
+import { ChangePasswordPage } from "./pages/ChangePasswordPage";
 import { ContextSelectionPage } from "./pages/ContextSelectionPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LogisticsPage } from "./pages/LogisticsPage";
@@ -173,6 +174,8 @@ export function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          {/* B-USERS-ACESSO-SEG (T1) — troca da senha provisória: a única tela da sessão restrita, fora do shell como o login. */}
+          <Route path="/change-password" element={<ChangePasswordPage />} />
           <Route path="/select-context" element={<ContextSelectionPage />} />
           <Route element={<PlatformLayout />}>
             <Route

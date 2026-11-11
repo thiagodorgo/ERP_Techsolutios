@@ -1,0 +1,122 @@
+# B-USERS-ACESSO-SEG — fatia T1, tela web de troca de senha (diário do dev)
+
+> **Identidade:** `dev-527-tela-cl`, nova (não achou, não planejou e não criticou nada no #527).
+> **Modelo:** Claude Opus 5.5 da sessão, DECLARADO (telas no Claude, `D-DESIGN-SO-CLAUDE`; topo não se aplica a dev).
+> **Ramo:** `feat/users-seg-tela-web`, worktree `C:/Users/thiag/w-tela527`, criado de `e09e9667` (F1 do conserto).
+> **Plano:** `erp-pausa-2026-10-03/planos/B-USERS-ACESSO-SEG-conserto-c1.md`, seção A-04 (T.1, T.2, T.4) e as Emendas 3, 4 e 5,
+> que prevalecem nessa ordem. Toda hora deste diário vem de `date` (São Paulo).
+> **Escopo:** só os caminhos de `frontend/` de T.2 (PERMITIDO), a referência aprovada em `screen-refs/` e uma linha no
+> `screen-refs/README.md` (Emenda 5 e o mandato). Nada em `src/`, `tests/` do backend, `mobile/`, `prisma/` nem `.github/`.
+> Este diário entra porque o mandato o nomeia (a lição do C3-E1: o diário tem de estar no escopo).
+
+## 0. Terreno (21:31–21:40)
+
+| Medida | Comando | Saída |
+|---|---|---|
+| head do ramo | `git rev-parse HEAD` | `e09e96675645c4c4b65274172714a798a6154577` (F1) |
+| árvore | `git status --short` | só `?? docs/claude-code-handoff/screen-refs/troca-senha-3opcoes.reference.html` |
+| referência = aprovada | `md5sum` dos dois arquivos | `2129fbd68d4d888720876842c31b50cc` no worktree e em `erp-pausa-2026-10-03/telas-3opcoes/troca-senha-claude.html` (Emenda 4, item 1) |
+| `node_modules` do frontend | `ls -la frontend/node_modules` | ausente (sem junction; `npm ci` próprio a seguir) |
+| semáforo e memória | `recursos.status`; `FreeVirtualMemory/1024` | `VERDE`; 25.768 MB livres de commit |
+
+**Orquestrador, 21:39:** até 22:05 (teste de carga de memória do dono), o AMARELO também libera os passos pesados; só o
+VERMELHO para (espera de 5 min e nova medida). **21:44:** janela estendida até 22:45.
+
+| Passo | Comando | Saída |
+|---|---|---|
+| `npm ci` próprio (21:40–21:41) | `npm --prefix frontend ci --no-audit --no-fund` | `added 103 packages in 11s`, saída 0; `frontend/node_modules` é diretório real (sem junction); lockfile sem diff |
+| linha de base do `test:smoke` no objeto `e09e9667` (21:42–21:44) | `npm --prefix frontend run test:smoke` (semáforo `VERDE`, 23.908 MB livres) | `# tests 1676 · # pass 1676 · # fail 0 · # skipped 0`, saída 0 (bate com os 1676 da crítica, RQ-1) |
+
+## 0b. RETOMADA (P8), 21:54
+
+A sessão do orquestrador caiu às ~21:45. Medido antes de seguir: `git status --short` só com os 2 não rastreados
+(a referência, md5 `2129fbd6…` igual ao de 21:40, e este diário, 39 linhas, consistente); `git log -3` com o head
+`e09e9667` (nada meu commitado); `git diff --stat` vazio (nenhum arquivo rastreado meio-escrito). A linha de base acima
+terminou antes da queda (21:44:45, saída 0). Nada a refazer; sigo do desenho para o código.
+
+## 1. Leituras declaradas (§A6), antes do código
+
+Tela-modelo: `frontend/src/pages/LoginPage.tsx` (marca, cartão, `.lg-input`, faixa, botão primário e o secundário).
+Skills: `ts-frontend-full` (implementar) e `ui-ux-pro-max` (revisar). Alvo visual: `screen-refs/troca-senha-3opcoes.reference.html`.
+
+- **L1 · Contrato da troca, medido no `src/` de `e09e9667`.** `POST /auth/password` responde `{error:{code, reason,
+  message}}`: 400 `invalid_payload`; 401 `jwt_required` (`code UNAUTHORIZED`) e 401 `INVALID_TOKEN` (`code`, SEM
+  `reason`, `authenticated-actor.middleware.ts:120-126`); 401 `invalid_credentials`; 403 `user_inactive` e
+  `credential_unavailable`; 423 `account_locked`; 400 `invalid_new_password` (`identity-link.service.ts:470-514`).
+  O cliente classifica por `status` + `reason` (+ `code` no `INVALID_TOKEN`). Fora do mapa: 401 com outro motivo conta
+  como sessão vencida (volta ao login: tentar de novo com token morto não resolve); 423 por status; qualquer outro par
+  (400/403 com outro motivo, 404, 429, 5xx, rede, tempo esgotado) vira o texto genérico. A mensagem do servidor nunca é lida.
+- **L2 · Tempo esgotado.** O mapa de T.1 tem "tempo esgotado"; `fetch` não tem prazo. A troca ganha prazo de 30 s
+  (`AbortController`), que vira o texto genérico. Residual: se o servidor concluir depois do prazo, a pessoa vê "tente de
+  novo" e a nova tentativa cai em "a senha provisória não confere" (a provisória já foi trocada).
+- **L3 · Registro × "a sessão restrita não lê a preferência" (Emenda 4, item 3).** O guard do registro
+  (`aparencia-registro.guard.test.ts`, (i)) exige UM contêiner que chame `useScreenAppearance("troca-senha")`, e o
+  PERMITIDO só deixa acrescentar a linha do mapa nesse guard. A página chama o gancho e DESCARTA o valor na sessão
+  restrita (sempre A). Fica provado por teste: organização ativa velha no navegador + preferência "C" guardada → a tela
+  abre na A. Se a conferência ler "não lê" como "não chama o gancho", o caminho é uma exceção no guard, que pede emenda.
+- **L4 · Componentes novos × biblioteca (§A2, conflito registrado, não consolidado em silêncio).** A referência diz que a
+  lista de requisitos e o medidor de força (B) e o indicador de etapas (C) são componentes novos que "nascem na
+  biblioteca" (CLAUDE.md §4, item 3). O PERMITIDO de T.2 não inclui `frontend/src/components/**` nem o
+  `COMPONENT_LIBRARY.md`, e o mandato diz "SÓ os caminhos de T.2". Eles nascem dentro de `ChangePasswordViewB.tsx` e
+  `ChangePasswordViewC.tsx`, e as peças comuns às 3 (moldura, campo de senha com "Mostrar", faixas, botões, estilos) moram
+  em `ChangePasswordViewA.tsx`, a base "Padrão fiel", que B e C importam (sem ciclo). Não bloqueia: B e C não aparecem em
+  tempo de execução (a sessão restrita abre sempre na A). **Para o orquestrador decidir:** emenda que leve os 3 à
+  biblioteca neste PR, ou pendência com dono.
+- **L5 · A C começa na etapa 1.** A maquete abre o estado "Inicial" da C na etapa 2 porque preenche a provisória de
+  exemplo. Na tela real a provisória começa vazia, então a C abre na etapa 1 ("Continuar"), como diz a própria
+  referência ("primeiro a provisória, depois a nova"); é regra de fluxo, e nela vale o plano (T.4).
+- **L6 · Acesso não permitido trava o formulário** nos dois 403 de T.1 (`user_inactive` e `credential_unavailable`),
+  deixando só "Sair" (a referência trava o desativado; o `credential_unavailable` é do mesmo estado em T.1). O 423 e o
+  genérico mantêm o formulário aberto, como o login faz no 423.
+- **L7 · Aviso de sessão vencida no login.** O texto "Sua sessão expirou…" aparece no login, na faixa vermelha da
+  referência (texto `#B91C1C`); a faixa de erro que o login já tem segue `#DC2626` (o contraste dela é pendência da
+  própria referência, fora do escopo desta linha do PERMITIDO). "Sair" e a sessão vencida chamam o `signOut` que já
+  existe (limpa o navegador e encerra a sessão no servidor); o 200 só limpa o navegador, porque o servidor já revogou
+  todas as sessões do par.
+- **L8 · Campo oculto `autocomplete="username"`** com o e-mail da sessão, como a referência sugere ao dev web: ajuda o
+  gerenciador de senhas a gravar a nova senha na conta certa; não muda o visual.
+
+## 2. Fatias
+
+### Fatia 1 — código e testes (21:55–22:13)
+
+| Arquivo (todos do PERMITIDO de T.2) | O que entrou |
+|---|---|
+| `frontend/src/modules/auth/types.ts` | `mustChangePassword?: boolean` em `AuthSession` (opcional, RQ-1) |
+| `frontend/src/modules/auth/auth.adapter.ts` | `must_change_password` no tipo da resposta; `mapLoginResponse` com a falha fechada `!== false` (só aqui); mapa fixo `PASSWORD_CHANGE_MESSAGES`, `classifyPasswordChangeFailure`, `readPasswordChangeErrorMessage`, `PasswordChangeError`, `newPasswordRuleChecks` (a regra do servidor espelhada) e `changePasswordWithJwt` (`fetch` direto com o `Authorization` da sessão guardada, prazo de 30 s, RQ-6) |
+| `frontend/src/modules/auth/auth.service.ts` | `changeOwnPassword` (sem token → sessão vencida sem requisição; no 200, `onChanged` e `clearStoredAuthSession`) |
+| `frontend/src/providers/AuthProvider.tsx` | `isAuthenticated: !!session && session.mustChangePassword !== true` e `passwordChangeRequired` (RQ-1) |
+| `frontend/src/pages/LoginPage.tsx` | o desvio num ponto só (`isPasswordChangeSession`, `=== true`), no envio e na renderização; os avisos "Senha alterada" (`role=status`) e "Sua sessão expirou" (`role=alert`) do estado da navegação |
+| `frontend/src/App.tsx` | a rota `/change-password` ao lado de `/login` (e o import) |
+| `frontend/src/pages/ChangePasswordPage.tsx` | contêiner: guardas (sem sessão → login, com o aviso quando a troca terminou; sessão inteira → `/select-context`), `useScreenAppearance("troca-senha")` com a A forçada na sessão restrita (L3), `useChangePasswordForm` (estado, validação local, etapa da C, foco, envio único) |
+| `frontend/src/pages/change-password/ChangePasswordView{A,B,C}.tsx` | as 3 aparências da referência (A com as peças comuns, L4) |
+| `frontend/src/modules/appearance/appearance.registry.ts` | entrada `troca-senha`: Padrão fiel · Com guia · Em duas etapas (iguais ao seletor da referência, conferido pelo regex do guard: `{A:'Padrão fiel',B:'Com guia',C:'Em duas etapas'}`) |
+| `frontend/tests/aparencia-registro.guard.test.ts` | só a linha do mapa `"troca-senha": "troca-senha-3opcoes.reference.html"` |
+| `frontend/tests/auth-troca-senha.adapter.test.ts`, `frontend/tests/troca-senha-live.test.tsx` | novos (11 e 20 testes) |
+| `frontend/package.json` | só os 2 testes novos no fim do `test:smoke` |
+| `docs/claude-code-handoff/screen-refs/troca-senha-3opcoes.reference.html` + 1 linha no `README.md` | a referência aprovada, byte a byte (md5 acima), e a linha do índice |
+
+**Defeito real achado pelo teste e corrigido antes do commit (W5).** Com o aviso marcado depois do `await` do serviço, o
+login abria SEM o aviso "Senha alterada": a navegação do roteador é transição, a sessão que some é atualização comum, e a
+tela renderizava primeiro "sem sessão" e redirecionava sem o aviso. Conserto: a saída é sempre pela guarda "sem sessão",
+que leva o aviso; o aviso é marcado no MESMO passo em que a sessão some (`onChanged` do serviço; na sessão vencida, antes
+do `signOut`). Medido: W5 `not ok` antes, `ok` depois (22:11 → 22:12).
+
+**Revisão `ui-ux-pro-max` (22:12):** contraste dos textos novos ≥ 4,5:1 (faixa `#B91C1C` sobre `#FEF2F2` 5,9:1, como
+a referência mediu; dica e rótulos `#64748B`/`#374151` sobre branco); foco visível em campo, "Mostrar", botões e
+"Alterar"; todo campo com rótulo; botão de ícone com `aria-label` e `aria-pressed`; erros com `role="alert"`. Dois ajustes:
+depois de um envio recusado pela validação local, o foco vai ao primeiro campo com problema; o giro do botão para com
+`prefers-reduced-motion`. **Divergência declarada:** a regra da skill pede token em vez de cor fixa, mas a tela-modelo
+(`LoginPage.tsx`) e a referência aprovada usam as cores fixas da família do login; segui a tela-modelo (§4 item 1).
+
+Comandos: `npm --prefix frontend run check` limpo (22:02, 22:10, 22:12, 22:13); `node --test --import tsx
+tests/auth-troca-senha.adapter.test.ts tests/troca-senha-live.test.tsx tests/aparencia-registro.guard.test.ts` →
+`# tests 51 · # pass 51 · # fail 0` (22:13).
+
+## 3. Mutações
+
+(em apuração)
+
+## 4. Bateria
+
+(em apuração)

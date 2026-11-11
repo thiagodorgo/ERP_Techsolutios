@@ -66,4 +66,16 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Central de prioridades" },
     ],
   },
+  // B-USERS-ACESSO-SEG (T1) — troca da senha provisória (referência `screen-refs/troca-senha-3opcoes.reference.html`,
+  // "Aprovo as 3"). A sessão restrita abre SEMPRE na A (Emenda 4, item 3: "Sim, sempre na A"): B e C ficam registradas
+  // e só valem numa troca feita em sessão inteira, que não é deste bloco (nota da P-APARENCIA-APP-SELETOR).
+  {
+    key: "troca-senha",
+    label: "Troca de senha",
+    options: [
+      { value: "A", label: "Padrão fiel" },
+      { value: "B", label: "Com guia" },
+      { value: "C", label: "Em duas etapas" },
+    ],
+  },
 ];
