@@ -85,7 +85,7 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
 16 (`portao-db`, PT·0 incluso) + 1 (`varredura-db`) + 1 (`varredura`) + 4 (`emissao-db`) + 4 (`portao`) + 1
 (`orcamento-db`) + 1 (`sse-db`) + 6 (`sse`) + 1 (T17) = **35**, mais o S4·c reescrito. Meta do plano: ≥ 10.
 
-## F1 — claim `sid` e os 3 assinadores (07:58–08:06 SP)
+## F1 — claim `sid` e os 3 assinadores (07:58–08:01 SP)
 
 - `auth.types.ts`: `SignAccessTokenInput.session_id?`, `AuthenticatedTokenPayload.sid?`, `AuthenticatedActor.sessionId?`.
 - `jwt.service.ts`: `signAccessToken` emite `sid` quando recebe `session_id`; `parseAccessTokenPayload` aceita `sid`
@@ -101,3 +101,27 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
 - `npx tsc --noEmit`: verde.
 - **Verdes ao fim (TAP, `scratchpad/devdesat/f1/`):** `users-seg-desativado-emissao-db` 4/4 (T10a–d), `# fail 0`;
   `users-seg-desativado-portao` T15 `ok` (os outros do arquivo dependem da F2).
+
+## F2 — o portão confere a sessão (08:01–08:10 SP)
+
+- **`src/modules/auth/services/session-liveness.service.ts` (novo):** `export const sessionLiveness = { check }`.
+  Primeira instrução: `if (env.CORE_SAAS_PERSISTENCE !== "prisma") {` → `"skipped"` (A10). Depois o formato UUID
+  (`UUID_PATTERN`) de `userId`, `tenantId` e `sessionId` → `"inactive"` sem consultar. `prisma.js` e `rls.js` só por
+  `import()` dentro de `check`. Uma transação `withTenantRlsBudget` sob o GUC da organização do token, com o orçamento
+  literal da E1.4 (`SESSION_LIVENESS_BUDGET`, uma linha). Com `sid`: o `$queryRaw` da E1.3, literal (`WHERE
+  s.tenant_id …`, `AND s.id …`, `AND s.user_id …`, `AND s.revoked_at IS NULL`, `AND s.expires_at > now()`, `AND
+  u.status = 'active'`, `LIMIT 1`). Sem `sid`: `tx.user.findFirst({ where: { id, tenant_id, status: "active" } })`.
+- **Portão (`authenticated-actor.middleware.ts`):** memo `livenessByRequest` (WeakMap por requisição, com a linha
+  literal `const cached = livenessByRequest.get(request);`), conferência logo depois de `verifyAccessToken` e ANTES do
+  escopo restrito; `if (verdict === "inactive") {` → `sendSessionInactive` (401 `INVALID_TOKEN`/`session_inactive`,
+  mensagem fixa de hoje), sem `next()` e sem `request.actor`; falha da conferência → `sendSessionCheckUnavailable(response);`
+  (503 `SERVICE_UNAVAILABLE`/`session_check_unavailable`). O ator ganha `sessionId` quando o token traz `sid`.
+- **Âncoras das mutações, `grep -c -F` = 1 cada (medido 08:08):** M1 a M4, M10, M11, M16, M17 no serviço; M5, M6, M8 no
+  portão.
+- **Verdes ao fim (TAP, `scratchpad/devdesat/f2/`, memória):** `users-seg-desativado-portao` 4/4 (T13, T14, T15, T15b);
+  `users-seg-desativado-varredura` 1/1 (T9-mem); `users-acesso-seg-portao-estatico` 2/2 (G2 e T17); regressão
+  `users-acesso-seg-portao-varredura` (G1 do #527) 1/1.
+- **Vermelho-controle do T16b no estágio "cabeça da F2"** (o serviço existe e o tique ainda não confere): os 6 casos
+  `not ok`. 16b-1 `expected 1, actual 0` chamadas; 16b-2 e 16b-5 "a leitura termina (done)" `false`; 16b-3 `expected 3,
+  actual 0`; 16b-4 e 16b-6 `expected 1, actual 0`. A E1.2 previa 16b-1, 16b-2 e 16b-5; os outros três também ficam
+  vermelhos, porque contam chamadas.
