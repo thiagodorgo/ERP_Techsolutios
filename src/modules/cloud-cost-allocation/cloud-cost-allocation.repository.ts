@@ -31,6 +31,8 @@ export type CloudCostAllocationRepository = {
   ): Promise<readonly CloudCostLineItem[]>;
   /** B-ASS-09a — as runs (manuais e automáticas) de uma importação, da mais nova para a mais velha. */
   listRunsByImport(importId: string): Promise<readonly CloudCostAllocationRun[]>;
+  /** B-ASS-09a · P4 — reivindicação condicional `pending → processing`: `true` só para quem a ganhou. */
+  claimPendingRun(runId: string): Promise<boolean>;
   updateRun(runId: string, input: UpdateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun>;
   getRun(runId: string): Promise<CloudCostAllocationRun | undefined>;
   listRuns(filters?: CloudCostAllocationRunFilters): Promise<readonly CloudCostAllocationRun[]>;
@@ -158,6 +160,17 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
     return this.runs
       .filter((run) => run.metadata.importId === importId)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async claimPendingRun(runId: string): Promise<boolean> {
+    // Síncrono da leitura à troca: duas execuções no mesmo laço de eventos nunca reivindicam a mesma run.
+    const run = this.runs.find((candidate) => candidate.id === runId);
+    if (!run || run.status !== "pending") return false; // B-ASS-09a claim
+    const now = new Date();
+    this.runs = this.runs.map((candidate) =>
+      candidate.id === runId ? { ...candidate, status: "processing", startedAt: now, updatedAt: now } : candidate,
+    );
+    return true;
   }
 
   private async insertRun(id: string, input: CreateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun> {

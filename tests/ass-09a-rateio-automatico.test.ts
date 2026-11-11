@@ -14,9 +14,11 @@ import {
   resetCloudCostRuntimeForTests,
 } from "../src/modules/cloud-costs/aws-cur.service.js";
 import {
+  allocateCloudCosts,
   AUTO_ALLOCATION_MARKER,
   buildCloudCostImportHook,
   CloudCostAllocationService,
+  createCloudCostAllocationRunJobHandler,
   ensureImportRuns,
   getMemoryCloudCostAllocationRepositoryForTests,
   importRunId,
@@ -398,18 +400,111 @@ test("T13 · E11 — depois do rateio automático de outubro (fim exclusivo), o 
 });
 
 // -----------------------------------------------------------------------------------------------
+// F3 — execução reivindicada da run automática (P4, E7)
+// -----------------------------------------------------------------------------------------------
+
+test("T6 · P4 — duas execuções da mesma importação (em paralelo no laço e em sequência) rodam o motor 1 vez por run", async () => {
+  // MUTAÇÃO QUE MATA: M6m (`if (!run || run.status !== "pending") return false; // B-ASS-09a claim` → `if (!run) return false; …`).
+  let engineCalls = 0;
+  const spy: typeof allocateCloudCosts = (input) => {
+    engineCalls += 1;
+    return allocateCloudCosts(input);
+  };
+  const chain = importChain(spy);
+  const imported = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-two-months-exclusive.csv") });
+
+  const [first, second] = await Promise.all([
+    chain.allocation.executeImportRuns(imported.id),
+    chain.allocation.executeImportRuns(imported.id),
+  ]);
+  const third = await chain.allocation.executeImportRuns(imported.id);
+
+  assert.equal(engineCalls, 2, "1 chamada do motor por run (2 runs), nunca 4");
+  assert.equal(first.length + second.length + third.length, 2);
+  const runs = await chain.allocationRepository.listRunsByImport(imported.id);
+  assert.deepEqual(runs.map((run) => run.status), ["completed", "completed"]);
+  for (const run of runs) {
+    const allocations = await chain.allocation.listTenantAllocations(run.id);
+    assert.equal(allocations.length, 1, "as alocações são de uma execução só");
+  }
+});
+
+test("T2 (job) · P2 — o job `import_auto` duas vezes dá 1 run por par e não muda o número de alocações", async () => {
+  const chain = importChain();
+  const handler = createCloudCostAllocationRunJobHandler({ getService: async () => chain.allocation });
+  const imported = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-two-months-exclusive.csv") });
+  const job = { mode: "import_auto", importId: imported.id } as const;
+
+  await handler(job, {} as never);
+  const runs = await chain.allocationRepository.listRunsByImport(imported.id);
+  const allocationsAfterFirst = await countAllocations(chain.allocation, runs);
+  await handler(job, {} as never);
+
+  const after = await chain.allocationRepository.listRunsByImport(imported.id);
+  assert.equal(after.length, 2);
+  assert.deepEqual(after.map((run) => run.status), ["completed", "completed"]);
+  assert.equal(await countAllocations(chain.allocation, after), allocationsAfterFirst);
+  await assert.rejects(handler({ mode: "import_auto" }, {} as never), /requires importId/);
+});
+
+test("T7 · E7 — o caminho manual segue reexecutando de propósito uma run concluída (recalcula)", async () => {
+  // MUTAÇÃO QUE MATA: M7 (`return this.runAllocation(run, "unclaimed");` → reivindica antes e devolve a run sem recalcular).
+  const repository = new InMemoryCloudCostAllocationRepository();
+  const importId = "09a00000-0000-4000-8000-000000000060";
+  const s3 = {
+    ...linesFromFixture("aws-cur-sample.csv", importId, "t7")[0]!,
+    serviceCode: "AmazonS3",
+    usageType: "TimedStorage-ByteHrs",
+    tenantTag: undefined,
+    unblendedCost: 12,
+  };
+  const attachment = (tenantId: string, sizeBytes: number) => ({
+    tenantId,
+    model: "attachments" as const,
+    sizeBytes,
+    createdAt: new Date("2026-06-10T00:00:00.000Z"),
+  });
+  repository.seed({
+    tenants,
+    imports: [completedImport(importId, "2026-07-02T00:00:00.000Z")],
+    costLineItems: [s3],
+    attachments: [attachment("tenant-a", 100), attachment("tenant-b", 100)],
+  });
+  const service = new CloudCostAllocationService(repository);
+  const run = await service.allocateCostsForPeriod({
+    periodStart: new Date("2026-06-01T00:00:00.000Z"),
+    periodEnd: new Date("2026-06-30T23:59:59.000Z"),
+    importId,
+  });
+  assert.deepEqual(await split(service, run.id), [["tenant-a", 6], ["tenant-b", 6]]);
+
+  // A medição de espaço muda (chegou atrasada): a reexecução manual da MESMA run recalcula.
+  repository.seed({ attachments: [attachment("tenant-a", 300), attachment("tenant-b", 100)] });
+  const again = await service.executeAllocationRun(run.id);
+
+  assert.equal(again.status, "completed");
+  assert.deepEqual(await split(service, run.id), [["tenant-a", 9], ["tenant-b", 3]]);
+});
+
+// -----------------------------------------------------------------------------------------------
 // Ajudantes
 // -----------------------------------------------------------------------------------------------
+
+async function split(service: CloudCostAllocationService, runId: string) {
+  return (await service.listTenantAllocations(runId))
+    .map((item) => [item.tenantId, item.allocatedCost] as const)
+    .sort((a, b) => a[0].localeCompare(b[0]));
+}
 
 /**
  * A composição EXPLÍCITA do T1 (R3): repositório de importação em memória, rateio com a ponte `costSource` e o gancho
  * com fila falsa. É o que a fábrica Prisma monta em produção, aqui sem banco.
  */
-function importChain() {
+function importChain(engine?: typeof allocateCloudCosts) {
   const costRepository = new InMemoryCloudCostRepository();
   const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
   allocationRepository.seed({ tenants });
-  const allocation = new CloudCostAllocationService(allocationRepository);
+  const allocation = new CloudCostAllocationService(allocationRepository, engine);
   const enqueued: Array<[string, CloudCostAllocationAutoJobPayload, unknown]> = [];
   const hook = buildCloudCostImportHook({
     allocation,

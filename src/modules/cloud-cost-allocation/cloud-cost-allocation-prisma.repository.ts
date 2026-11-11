@@ -94,6 +94,18 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     });
   }
 
+  /**
+   * B-ASS-09a · P4 — `UPDATE … WHERE id = $1 AND status = 'pending'`: sob READ COMMITTED, a segunda execução bloqueia na
+   * linha, reavalia o `WHERE` depois do commit da primeira e conta 0. Só quem conta 1 executa o motor.
+   */
+  async claimPendingRun(runId: string): Promise<boolean> {
+    const result = await this.client.cloudCostAllocationRun.updateMany({
+      where: { id: runId, status: "pending" },
+      data: { status: "processing", started_at: new Date() },
+    });
+    return result.count === 1;
+  }
+
   /** B-ASS-09a — pela coluna `import_id` da M-09a (o backfill trouxe as runs antigas que tinham `metadata.importId`). */
   async listRunsByImport(importId: string): Promise<readonly CloudCostAllocationRun[]> {
     const records = await this.client.cloudCostAllocationRun.findMany({

@@ -118,8 +118,40 @@ export class CloudCostAllocationService {
     return this.repository.listRunsByImport(importId);
   }
 
+  /**
+   * Executa (ou REEXECUTA) uma run pelo id. O rateio manual reexecuta de propósito uma run concluída (E7, pergunta 2 do
+   * §9 do plano, recomendação (a)): este caminho não reivindica nada. Só o caminho automático (`executeImportRuns`)
+   * reivindica `pending → processing` antes de executar (P4).
+   */
   async executeAllocationRun(runId: string): Promise<CloudCostAllocationRun> {
     const run = await this.getAllocationRun(runId);
+    return this.runAllocation(run, "unclaimed");
+  }
+
+  /**
+   * B-ASS-09a · P4 — executa as runs AUTOMÁTICAS `pending` de uma importação, uma execução por run: cada uma é
+   * reivindicada (`pending → processing`, condicional) e só a reivindicação vencedora roda o motor. Duas execuções em
+   * paralelo (job repetido, varredura e gancho juntos) gravam as alocações uma vez só. Run `failed` não é retomada
+   * (pergunta 3 do §9, recomendação (a)); run presa em `processing` fica visível (`P-ASS09A-RUN-PRESA-EM-PROCESSING`).
+   */
+  async executeImportRuns(importId: string): Promise<readonly CloudCostAllocationRun[]> {
+    const runs = [...(await this.repository.listRunsByImport(importId))].sort(
+      (a, b) => a.periodStart.getTime() - b.periodStart.getTime(),
+    );
+    const executed: CloudCostAllocationRun[] = [];
+    for (const run of runs) {
+      if (run.metadata.trigger !== "import" || run.status !== "pending") continue;
+      if (!(await this.repository.claimPendingRun(run.id))) continue;
+      executed.push(await this.runAllocation(run, "claimed"));
+    }
+    return executed;
+  }
+
+  /**
+   * O corpo da execução, comum ao manual e ao automático. `claimed`: a reivindicação já gravou `processing` e o início;
+   * `unclaimed`: o caminho manual de sempre, que grava `processing` aqui.
+   */
+  private async runAllocation(run: CloudCostAllocationRun, mode: "claimed" | "unclaimed"): Promise<CloudCostAllocationRun> {
     const importId = readRunImportId(run);
 
     if (!importId) {
@@ -133,14 +165,16 @@ export class CloudCostAllocationService {
       });
     }
 
-    await this.repository.updateRun(run.id, {
-      status: "processing",
-      startedAt: new Date(),
-      metadata: {
-        ...run.metadata,
-        executionStartedAt: new Date().toISOString(),
-      },
-    });
+    if (mode === "unclaimed") {
+      await this.repository.updateRun(run.id, {
+        status: "processing",
+        startedAt: new Date(),
+        metadata: {
+          ...run.metadata,
+          executionStartedAt: new Date().toISOString(),
+        },
+      });
+    }
 
     try {
       // B-O6R-06 — a base de rateio deixa de vir da PROJECAO DIARIA (que ninguem agenda) e passa a ser
