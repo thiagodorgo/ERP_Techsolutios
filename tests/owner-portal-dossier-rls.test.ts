@@ -28,6 +28,9 @@ if (!connectionString) {
       // (1) A-bound + sessão de A → lê o dossiê do PRÓPRIO processo.
       const own = await service.dossier({ authorization: `Bearer ${await signSession(procA)}`, ip: "203.0.113.10" });
       assert.equal(own.kind, "ok");
+      if (own.kind !== "ok") assert.fail("dossiê próprio deveria estar disponível");
+      assert.equal(own.dossier.deadlines[0]?.dueDate, "2026-05-11T10:00:00.000Z", "prazo usa os 10 dias congelados na abertura, não os 99 do perfil vivo");
+      assert.deepEqual(own.dossier.requirements, [], "requisito acrescentado ao perfil vivo não retempera o dossiê");
 
       // (2) A-bound + sessão de B (MESMO secret) → NOT_FOUND (RLS esconde B por completo; nunca devolve o dossiê de B).
       const cross = await service.dossier({ authorization: `Bearer ${await signSession(procB)}`, ip: "203.0.113.10" });
@@ -86,7 +89,14 @@ async function bootstrap(connection: string) {
         getPublicItemizedSummary: async () => ({ currency: "BRL", items: [], capReached: false, totalDueCents: 0 }),
       },
       yard: { getPublicYard: async () => undefined },
-      jurisdiction: { getPortalProfile: async () => undefined },
+      jurisdiction: {
+        getPortalProfile: async () => ({
+          ownerNotifDays: 99,
+          noticeEdictDay: 99,
+          auctionEligibleDay: 99,
+          requirements: [{ label: "Documento vivo novo", required: true }],
+        }),
+      },
       releaseRequests: new PrismaPortalReleaseRequestRepository(client),
       accessLog: new PrismaPortalAccessLogRepository(client),
       antiAbuse: new AntiAbuse({

@@ -1,6 +1,7 @@
 import { env } from "../../config/env.js";
+import type { ProcessRegime } from "../impound/impound.types.js";
 import { resolveDefaults, type ResolvedDefaults } from "./jurisdiction.defaults.js";
-import { InMemoryJurisdictionRepository, type JurisdictionRepository } from "./jurisdiction.repository.js";
+import { InMemoryJurisdictionRepository, type JurisdictionRepository, type ProfileUpdateResult } from "./jurisdiction.repository.js";
 import type {
   JurisdictionActorContext,
   JurisdictionProfile,
@@ -27,6 +28,25 @@ import {
 } from "./jurisdiction.validators.js";
 
 type RawRecord = Record<string, unknown>;
+
+export type PortalJurisdictionPlan = {
+  readonly ownerNotifDays: number;
+  readonly noticeEdictDay: number;
+  readonly auctionEligibleDay: number;
+  readonly requirements: ReadonlyArray<{ readonly label: string; readonly required: boolean }>;
+};
+
+export function portalPlanFromRegime(regime: ProcessRegime): PortalJurisdictionPlan {
+  return {
+    ownerNotifDays: regime.ownerNotifDays,
+    noticeEdictDay: regime.noticeEdictDay,
+    auctionEligibleDay: regime.auctionEligibleDay,
+    requirements: regime.releaseRequirements.map((requirement) => ({
+      label: requirement.label,
+      required: requirement.required,
+    })),
+  };
+}
 
 export class JurisdictionService {
   constructor(private readonly repository: JurisdictionRepository) {}
@@ -74,6 +94,12 @@ export class JurisdictionService {
   }
 
   async update(actor: JurisdictionActorContext, profileId: string, body: RawRecord): Promise<JurisdictionProfile> {
+    return (await this.updateWithChanges(actor, profileId, body)).profile;
+  }
+
+  // B-O6R-12 (P-AUDIT) — a mesma edição, devolvendo também o que mudou (lido sob trava na mesma transação), para a
+  // auditoria do PATCH registrar campo a campo.
+  async updateWithChanges(actor: JurisdictionActorContext, profileId: string, body: RawRecord): Promise<ProfileUpdateResult> {
     await this.get(actor, profileId);
     const updated = await this.repository.updateProfile({
       tenantId: actor.tenantId,
@@ -104,15 +130,7 @@ export class JurisdictionService {
   async getPortalProfile(
     tenantId: string,
     profileId: string,
-  ): Promise<
-    | {
-        readonly ownerNotifDays: number;
-        readonly noticeEdictDay: number;
-        readonly auctionEligibleDay: number;
-        readonly requirements: ReadonlyArray<{ readonly label: string; readonly required: boolean }>;
-      }
-    | undefined
-  > {
+  ): Promise<PortalJurisdictionPlan | undefined> {
     const profile = await this.repository.findProfileById(tenantId, profileId);
     if (!profile) return undefined;
     return {

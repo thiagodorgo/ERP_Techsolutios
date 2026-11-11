@@ -1,4 +1,5 @@
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
+import type { DailyCap, DailyModel, ProfileScope, ReleaseRequirement } from "../jurisdiction/jurisdiction.types.js";
 
 export type ImpoundActorContext = {
   readonly tenantId: string;
@@ -64,6 +65,18 @@ export type CanonicalValue =
   | readonly CanonicalValue[]
   | { readonly [key: string]: CanonicalValue };
 
+export type ProcessRegime = {
+  readonly scope: ProfileScope;
+  readonly ownerNotifDays: number;
+  readonly noticeEdictDay: number;
+  readonly auctionEligibleDay: number;
+  readonly auctionEdictBusinessDays: number;
+  readonly dailyModel: DailyModel;
+  readonly dailyCap: DailyCap;
+  readonly releaseRequirements: readonly ReleaseRequirement[];
+  readonly dailyServiceCatalogId?: string;
+};
+
 export type ImpoundProcess = {
   readonly id: string;
   readonly tenantId: string;
@@ -78,6 +91,7 @@ export type ImpoundProcess = {
   readonly unidentifiedReason?: string;
   readonly yardId?: string;
   readonly profileId: string;
+  readonly regime?: ProcessRegime;
   readonly status: ImpoundStatus;
   readonly enteredAt?: Date;
   readonly frozenAt?: Date;
