@@ -4772,3 +4772,17 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fala literal, com o valor tirado:** *"limite de"* [teto de gasto diário da API definido pelo dono] *"na api"*. O trecho entre colchetes substitui o número que o dono falou, porque o repositório é público; o resto é literal.
 - **Decisão:** o dono confirmou o teto de gasto diário da API definido por ele; o teto total continua.
+
+## C-B-SAN3-26-P3-PREMISSA (registro de CONFLITO, §A2, 2026-11-11) — a P3 do B-SAN3-26 foi aceita sobre premissa falsa
+
+- **O conflito:** a decisão `D-PORTAO-9-RECOMENDACOES-1011`, item B-SAN3-26 (3) ("sem exceção para OS já abertas sem placa"), foi aceita sobre a recomendação do plano v1, que dizia que "a base completa a placa da OS (é um campo, leva segundos)". Na `main` `d5ec1696`, o console não tem edição de OS (`frontend/src/modules/work-orders/work-orders.service.ts:105`, sem chamador), e a placa só existe na criação de `socorro` (`WorkOrderForm.tsx:283-286`).
+- **Quem achou:** a crítica `crit-26-cl` (C26-01), confirmada pelo `replano-B-SAN3-26-api` (plano v2, apêndice A).
+- **Como se resolveu:** a decisão não foi revogada nem aplicada em silêncio. A P3 voltou ao dono reescrita (plano v2, §9), e ele escolheu a alternativa B em `D-PORTAO-5-RECOMENDACOES-1111` (11/11 01:34 SP): sem tela nova agora; o guincheiro de OS sem placa vê "peça à base para cadastrar a placa ou registrar a chegada"; a base registra pelo console; a criação ganha o campo de placa; a edição da placa vai para um bloco próprio, com as 3 opções. As decisões (1) e (2) de 10/11 não dependiam da premissa e seguem valendo.
+- **Registrado por:** `dev-san326-cl`, na F0 do bloco, antes de qualquer fatia de código (o §6 do plano trava o código neste registro).
+
+## C-B-SAN3-26-DESPACHANTE-NA-BASE (registro de CONFLITO, §A2, 2026-11-11) — `field_dispatcher` na base do check-in × `RBAC_MATRIX.md:118`
+
+- **O conflito:** a única lista "base/escritório" escrita na matriz, a da correção de km (`RBAC_MATRIX.md:118`), exclui o `field_dispatcher` ("NÃO: field_technician, field_dispatcher, technician"). O B-SAN3-26 o põe na lista de base do check-in (`CHECKIN_OFFICE_ROLES`), apoiado na P2 do dono ("a base (gestor, despachante, operador)") e no catálogo (o `field_dispatcher` não tem `field_location:send` e tem `field_dispatch:create/cancel/reassign`). A mesma lista põe `platform_admin`/`super_admin` na base pelo "full" de OS (`RBAC_MATRIX.md:45`), embora a l.57 diga que o `platform_admin` "is not the default approver of tenant business flows".
+- **Quem achou:** a crítica `crit-26-r2-cl` (C26R2-07, baixa).
+- **Como fica:** as duas leituras ficam declaradas no código (comentário de `CHECKIN_OFFICE_ROLES` em `src/modules/work-orders/work-order.checkin.ts`, citando as l.45, 57 e 118) e aqui, sem consolidar a matriz. O dono desfaz cada uma em uma linha (tirar o papel da lista). O teste A9d obriga todo papel com `work_orders:status` a estar em exatamente uma das duas listas.
+- **Registrado por:** `dev-san326-cl`.
