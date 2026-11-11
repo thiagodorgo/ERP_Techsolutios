@@ -77,7 +77,11 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
   // re-avalia o WHERE contra a versão nova da linha (EvalPlanQual): item apagado ou carimbado por quem venceu a
   // trava sai do conjunto. A Σ do título vem deste conjunto. As colunas são relidas pelo cliente tipado (Decimal
   // mapeado como nos irmãos), já sob a trava desta transação.
+  // B-SAN3-23 (P-23.2, P-23.3) — ANTES dos itens, a trava compartilhada da OS: o faturamento espera um cancelamento em
+  // voo e relê a situação (OS cancelada → 422 work_order_cancelled, nada faturado). A ordem é a do cancelamento (a OS
+  // antes dos itens); travar os itens primeiro formaria ciclo com ele (impasse 40P01).
   async listInvoiceableByWorkOrderForUpdate(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
+    await this.lockWorkOrderRowForFinancialWrite(tenantId, workOrderId); // B-SAN3-23:trava-fatura
     const locked = await this.client.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM work_order_financial_items
        WHERE tenant_id = ${tenantId}::uuid

@@ -246,10 +246,13 @@ if (!connectionString) {
       tally[pair.name] = {};
       for (let round = 0; round < 20; round += 1) {
         const s = await newWorkOrderIn(base, `a7-${pair.name}-${round}`, { items: pair.items });
-        const [cancelled, other] = await Promise.all([
-          captureSettled(h.workOrders.cancel(s.actor, s.workOrderId, cancelBody("zero"))),
-          captureSettled(pair.other(s)),
-        ]);
+        // Rodada par: o cancelamento sai primeiro; ímpar: o outro lado sai primeiro (as duas ordens de largada).
+        const startCancel = () => captureSettled(h.workOrders.cancel(s.actor, s.workOrderId, cancelBody("zero")));
+        const startOther = () => captureSettled(pair.other(s));
+        const [cancelled, other] =
+          round % 2 === 0
+            ? await Promise.all([startCancel(), startOther()])
+            : await Promise.all([startOther(), startCancel()]).then(([o, c]) => [c, o] as const);
         const key = `${describe(cancelled)} × ${describe(other)}`;
         tally[pair.name]![key] = (tally[pair.name]![key] ?? 0) + 1;
         expectNoDeadlock(cancelled);
