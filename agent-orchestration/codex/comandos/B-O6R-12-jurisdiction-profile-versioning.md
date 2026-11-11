@@ -45,6 +45,33 @@ Esta emenda antecede o código e integra os 4 achados médios e os 6 baixos ao p
 Qualquer necessidade fora desta emenda ou do §4 do plano volta para emenda revisada antes do
 código (`D-EMENDA-ANTES-DO-CODIGO`).
 
+## Emenda E1′ — correções do dev sucessor, antes do código (2026-11-11 06:34 SP)
+
+Escrita por `dev-o6r12-cl` (Claude Opus, sucessor P3 do `dev-o6r12-cdx`), antes de mexer no código
+correspondente (`D-EMENDA-ANTES-DO-CODIGO`). Leitura do dev, declarada (§A6); a junta pode desfazer.
+
+- **E1.2′ (corrige a E1.2).** `SET search_path = pg_catalog, public` NÃO impede a sombra por
+  `pg_temp`: para tabelas, o Postgres procura o esquema temporário PRIMEIRO sempre que ele não está
+  escrito na lista. Sonda no `o6r12-pg`: a mesma função lê `sombra` com `pg_catalog, public` e `real`
+  com `pg_catalog, public, pg_temp`. O que protege o carimbo hoje é a qualificação `public."..."`.
+  Correção: as 2 funções passam a declarar `SET search_path = pg_catalog, public, pg_temp` (a forma
+  da documentação do Postgres), e a qualificação fica. São 2 camadas, e cada uma sozinha basta; por
+  isso a mutação que mata o teste tira as duas. O teste-dono é de comportamento, no drill: sob um
+  papel com `TEMP`, uma tabela temporária `jurisdiction_profiles` forjada não muda o regime gravado.
+- **E1.8′ (corrige a E1.8).** O código usa `FOR NO KEY UPDATE`, não `FOR UPDATE`. É a saída que a
+  própria crítica mediu no R2-8: a trava não conflita com o `FOR KEY SHARE` da FK do processo, então a
+  abertura NÃO espera o PATCH, e o gatilho grava o perfil confirmado no instante do INSERT (o PATCH
+  ainda não confirmado não vale). Dois PATCHes do mesmo perfil continuam em fila. O teste-dono, no
+  `-db`: com o PATCH aberto numa transação, uma abertura com `lock_timeout` de 2 s passa e grava o
+  valor anterior; trocar `FOR NO KEY UPDATE` por `FOR UPDATE` deixa o teste vermelho.
+- **E1.9′ (completa a E1.9).** O teste que registra o 23503 no lugar do 42501 (escrita cruzada e
+  escrita sem contexto de organização, sob o papel de runtime) fica no `-db`, junto da C17.
+- **E1.10′ (lugar dos testes, sem mudar critério).** Onde o v2 manda um critério para o drill (C4,
+  C5, C6, C7, C7b, C14, C16, C23), o drill RELÊ e EXECUTA a migração numa base própria; o teste
+  estático que só espelhava as âncoras das mutações sai (§3.0 item 1). A C19 mora em
+  `tests/owner-portal-dossier-rls.test.ts` (com banco), não no snapshot-db: o molde do plano é esse
+  arquivo, e o teste existente passa a afirmar a propriedade (R3).
+
 ## Escopo e execução
 
 Valem integralmente o §4 (PERMITIDO/PROIBIDO), as fatias F1–F7, os critérios C1–C23 e a bateria
