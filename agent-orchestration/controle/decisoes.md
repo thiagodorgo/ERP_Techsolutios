@@ -4910,3 +4910,25 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fato:** os devs do `B-SAN3-19b` e do `B-ASS-09a` estão prontos e esperam o parecer do porteiro do #530 (§C2 item 8).
 - **Leitura do orquestrador, declarada (§A6):** o PR de registro não é demanda de produto e começa já (`reg-1111-cl`).
+
+## REGISTRO-SAN3-CONFLITOS — adendo do B-SAN3-24 (2026-11-11) — quatro conflitos do plano v2 (§A2)
+
+**Não é decisão.** É o registro, antes do código, dos conflitos C-24-1..4 do plano v2 do `B-SAN3-24` (§1.5), feito pelo
+dev `dev-24-cl` (Claude Opus 5.5, identidade de dev declarada) na fatia a0, como o plano manda.
+
+1. **C-24-1 (encerrado pela decisão):** a edição de política de comissão não existe no servidor. Com a política fora do
+   bloco (`D-PORTAO-7-RECOMENDACOES-1011`), o conflito vira nota na pendência nova `P-COMISSAO-MOTOR-E-POLITICA`.
+2. **C-24-2 (resolvido pelo dono):** o item 29 tratava a política como "backend pronto", mas o motor de comissão não
+   existe (`docs/commissions.md:9`, `:33`). A política sai do bloco e do item 29 (`D-PORTAO-7-RECOMENDACOES-1011`); o
+   item 29 e a linha do `B-SAN3-24` no §5 do `PLANO_SAN3.md` foram reescritos neste PR.
+3. **C-24-3:** a estimativa G (13 h) do `PLANO_SAN3.md` é anterior a `D-TELAS-SAEM-COM-TRES`; o plano v2 estima
+   ≈ 26,7 h de dev (§6).
+4. **C-24-4:** a decisão do dono pede "auditoria" no fechamento forçado, e o servidor gravava essa auditoria sem o
+   motivo, em modo best-effort. **Resolvido pela Q1 = (b)** (`D-DONO-TODAS-RECOMENDACOES-1111`, 11/11: "Sim, todas
+   (Recomendado)"): o motivo entra na metadata de `financial_period.closed` (1 linha no controller, provada pelo B7(iii)).
+   A gravação garantida da auditoria da casa inteira fica como `P-SAN3-24-AUDITORIA-BEST-EFFORT`.
+
+**Resíduo declarado (N-07 da crítica r2):** a expressão "política de comissão" também aparece na linha 29 do
+`PLANO_SAN3.md` (resumo) e a linha 536 promete "cheques/fechamento/comissão pela web (29)". As duas estão fora do
+PERMITIDO da a0 (só `:157` e `:278`). O dev não as editou: fica a pergunta ao orquestrador, para emenda ou para o PR de
+registro.

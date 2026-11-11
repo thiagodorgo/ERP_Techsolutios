@@ -8629,6 +8629,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-24` (plano SAN3, §4.1 item 29) (antes: bloco web financeiro (bloco dono proposto pela fatia; plano SAN3: fora do gate (§4.3) — entra se o dono vender (§10.1)))
 - **impacto vendável:** NAO — não é pré-requisito de venda; condição: comissão configurável vendida → BLOQUEIA
 - **teste de encerramento:** smoke por tela (cheque depositar/compensar; fechar/reabrir; CRUD de política) com 403 por permissão
+- **B-SAN3-24 (2026-11-11, `dev-24-cl`):** a parte da **política de comissão** saiu deste item e do item 29 por `D-PORTAO-7-RECOMENDACOES-1011` e passou para `P-COMISSAO-MOTOR-E-POLITICA`. Esta pendência fecha com o merge do PR do `B-SAN3-24` que entrega as telas de Cheques e de Fechamento do mês; o teste de encerramento passa a ser o dessas duas telas (sem o CRUD de política).
 
 ---
 
@@ -13645,3 +13646,28 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **teste de encerramento:** cada gate de tela e de botão do app usa uma chave que `isValidPermission` aceita e que
   algum papel recebe, com teste que lê o catálogo; o T9 do `B-SAN3-19b` passa a exigir "Fale com o administrador da
   sua organização." nas 4 telas (a tabela dele vira 11/11 no catálogo).
+
+## P-COMISSAO-MOTOR-E-POLITICA (2026-11-11) — a tela de política de comissão só vem depois do motor de comissão — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o motor de comissão nunca existiu: `docs/commissions.md:9`, `:33`;
+  `grep -rn "commissionCalculation.create" src` = 0, medido pelo plano v1 do `B-SAN3-24`) · **dono:** bloco do motor de
+  comissão, a abrir pelo orquestrador · **fora do portão** (`D-PORTAO-7-RECOMENDACOES-1011`).
+- **origem:** `D-PORTAO-7-RECOMENDACOES-1011` (o dono tirou a política do `B-SAN3-24` e do item 29 até o motor existir);
+  conflitos C-24-1 e C-24-2 (`decisoes.md`, adendo do `B-SAN3-24` ao `REGISTRO-SAN3-CONFLITOS`).
+- **o que falta:** o motor que calcula a comissão; depois dele, a tela de política e de base de cálculo (as rotas
+  `policies`/`basis-events` existem sem consumidor, `P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA`).
+- **teste de encerramento:** o motor grava o cálculo por evento de base, e a tela de política opera sobre as rotas reais
+  com 403 por permissão.
+
+## P-SAN3-24-AUDITORIA-BEST-EFFORT (2026-11-11) — a auditoria da casa é gravada fora da transação e engole a falha — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`src/modules/core-saas/audit/audit-request-context.ts:39-41` e o
+  `catch` seguinte; vale para todas as auditorias, não só o fechamento) · **dono proposto:** a varredura de segurança do
+  §C7.10(6), antes de fechar o portão da versão vendável.
+- **origem:** plano v2 do `B-SAN3-24`, A-04 e Q1 (respondida (b) por `D-DONO-TODAS-RECOMENDACOES-1111`).
+- **forma:** o fechamento do mês (e qualquer escrita auditada) comita, e só depois a auditoria é gravada em transação
+  própria; se ela falhar, o efeito fica e o registro se perde, com um aviso no log.
+- **o que o B-SAN3-24 já fez:** o motivo do fechamento forçado passou a entrar na metadata de `financial_period.closed`,
+  provado pelo banco no `tests/b-san3-24-fechamento-forcado-auditoria-db.test.ts` (B7).
+- **teste de encerramento:** falha injetada na gravação da auditoria desfaz o efeito (ou o efeito e a auditoria
+  comitam juntos), com teste `-db`.
