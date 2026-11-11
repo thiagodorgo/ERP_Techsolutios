@@ -354,15 +354,15 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
   `CORE_SAAS_PERSISTENCE=memory`):** TAP com **5 027 testes, 5 015 ok, 10 not ok e 2 skipped** (os 2 de `RBAC_DB_PARITY`).
   - **Os 2 vermelhos do bloco sumiram:** o T13 e a linha-mãe dele não aparecem mais.
   - **Os 10 not ok, um a um, todos de ambiente ou anteriores ao bloco:**
-    1. a 4. `san3-05-runtime-role-guard-db` T14a/b, T14c e T14d ("setsid: ausente", exige o `psql` 16 e o `setsid` do
-       Linux);
-    5. o T15 da mesma suíte ("condição de boot não apareceu em 15000ms", sob a carga da suíte inteira). Rodado sozinho
-       2× logo depois (05:30–05:31), deu `ok 11 - T15` nas duas vezes;
-    6. a linha-mãe da mesma suíte;
-    7. e 8. `san3-09-bootstrap-platform-admin-db` T2.1 e a linha-mãe (o `migrate deploy` pelo script de shell
-       `node_modules/.bin/prisma` sai com 1 no Windows);
-    9. `traccar-event-migration-drill-db` (`EBUSY … rmdir` do temporário);
-    10. e 11. os 2 casos "tempo esgotado" de `traccar-position-ingestion-db` (caem também na `main`).
+    - 3 em `san3-05-runtime-role-guard-db`: T14a/b, T14c e T14d ("setsid: ausente"; o teste exige o `psql` 16 e o
+      `setsid` do Linux);
+    - 1 na mesma suíte, o T15 ("condição de boot não apareceu em 15000ms", sob a carga da suíte inteira). Rodado sozinho
+      2× logo depois (05:30–05:31), deu `ok 11 - T15` nas duas;
+    - 1, a linha-mãe da mesma suíte;
+    - 2 em `san3-09-bootstrap-platform-admin-db`: o T2.1 e a linha-mãe (o `migrate deploy` pelo script de shell
+      `node_modules/.bin/prisma` sai com 1 no Windows);
+    - 1 em `traccar-event-migration-drill-db` (`EBUSY … rmdir` do temporário);
+    - 2 em `traccar-position-ingestion-db`: os casos "tempo esgotado", que também caem na `main`.
   - **Declarado (lição do Adendo 2 do precedente do B-TRC-01):** quem decide o T14 e o T15 do B-SAN3-05 e o T2 do san3-09
     é o CI em Linux. O bloco não cria tabela, view nem papel: só a coluna `idempotency_key`, o CHECK e o índice. Então o
     contador `tabelas_com_dml` do T14a/b e o L0 do T13 não mudam por construção. O T13 local, que não depende de `psql`,
