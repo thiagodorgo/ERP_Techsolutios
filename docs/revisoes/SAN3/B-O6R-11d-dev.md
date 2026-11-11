@@ -108,3 +108,18 @@
 | M-N8 | `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 1 not ok; dono N8] vermelho=True; # tests 5 # pass 4 # fail 1 | VERMELHO |
 
 - **T5 reforçado (11:35):** para a `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` (PR534-03), o T5 afirma também que a OS em "Em rota" vinda do pull pode seguir para "No local" (`canTransitionTo(WorkOrderStatus.arrived)`). T5 verde; M5 e M5b re-executadas, vermelhas e restauradas.
+
+### F4 — registro (11:34–11:40 SP)
+
+- **Comando:** `agent-orchestration/codex/comandos/B-O6R-11d-contrato-os.md`. **Plano versionado:** `docs/revisoes/SAN3/B-O6R-11d-plano.md` (v2 + Emenda 1, cópia fiel; o v1 citado pelo caminho, não copiado).
+- **`pendencias.md`:**
+  - `P-O6R-B11` (o `Ω6R-QUA-004`): status FECHADA no merge deste PR, com apenso da prova (o `Ω6R-QUA-005` já tinha fechado no 1º PR do corte);
+  - `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` (dono `B-O6R-11d`, PR534-03): FECHADA no merge, prova T5;
+  - **CR2-11D-05:** as 6 pendências do ramo do #388 que o bloco toca foram portadas com o texto literal de `a24f58b5` ANTES de qualquer apenso (`P-WO-ASSIGN-OPERATOR-ID-TORTO`, `P-MOBILE-APPROVAL-REQUEST-REST-404`, `P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA`, `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL`, `P-MOBILE-CODEC-FILA-STATUS-CRU`), e o índice `P-O6R-B11-PENDENCIAS-DO-RAMO-388` marca cada uma como portada;
+  - a `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL` e a parte de exibição da `P-WO-STATUS-VOCABULARIO-APP-BACKEND` ficam **fechadas na leitura** (o fechamento formal é de quem conferir; seguem ABERTAS no índice);
+  - **correção medida** no apenso da `P-MOBILE-CODEC-FILA-STATUS-CRU`: na fila são 4 status crus, não 3 — o `rejected` também sai cru, e o backend o aceita de `assigned`;
+  - novas: `P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS` (MÉDIA, `B-SAN3-16`), `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO` (MÉDIA, `B-O6R-07c-b2`, com a contagem antes da produção), `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` (BAIXA, com a **divergência §A2** do tenant vazio contra o `required String` da junta do #388) e `P-MOBILE-REJECTED-DOIS-SENTIDOS` (BAIXA, `B-SAN3-16`);
+  - notas: `P-MOBILE-STATUS-NOMES` (a tradução é uma e coberta; segue aberta pelo `assigned → accepted`) e `P-APP-DETALHE-OS-LARGURA-INFINITA` (não coberta: tela, PROIBIDO).
+- **`PLANO_SAN3.md`:** só o status do item 3 (as duas linhas) e a cadeia `07c → 11d → SAN3-16` do `mobile-work-order-sync.ts`.
+- **`status-geral.md`:** a trava com o `B-SAN3-26` ("quem mergear primeiro manda") e as pendências do #534. **`log-execucao.md`:** a entrada do bloco.
+- **Índice (CR2-11D-06, com `python`):** `python agent-orchestration/controle/gerar-indice-pendencias.py` → `873 cabecalhos / 862 IDs | {'FECHADA': 204, 'ABERTA': 665, 'SEM-STATUS': 4}`. O diff grande do índice inclui o atraso do #536, que não o regenerou. Um primeiro gerado deu CRÍTICA à `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO`, porque o classificador casa a palavra "crítica" (a do revisor do plano) no corpo; o texto foi reescrito ("o revisor do plano") e o gerado voltou a MÉDIA.
