@@ -55,9 +55,9 @@ class _WorkOrderApprovalRequestScreenState
       return ErpScaffold(
         title: 'Solicitar Aprovacao',
         body: const PermissionBlockedState(
-          title: 'Acao nao autorizada',
+          title: 'Ação não permitida',
           message:
-              'work_orders:update necessario para solicitar aprovacao nesta OS.',
+              'Seu perfil não tem permissão para solicitar aprovação nesta OS. Fale com o administrador da sua organização.',
         ),
       );
     }
