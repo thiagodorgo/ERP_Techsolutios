@@ -13,7 +13,7 @@
 - F1 — `assert` e chip: FEITA (07:33)
 - F2 — placeholder e roteador: FEITA (07:36)
 - F3 — as 9 telas: FEITA (07:38)
-- F4 — despesas, P-O6R11, item 47, banner de política: EM APURAÇÃO
+- F4 — despesas, P-O6R11, item 47, banner de política: FEITA (07:48)
 - F5 — README, piso N0 e mutações: EM APURAÇÃO
 - F6 — registro e limpeza: EM APURAÇÃO
 
@@ -91,3 +91,37 @@ Só os literais `title:`/`message:` mudaram; os `if`/`.has(` e as chaves dos gat
 | `dart format` nos 13 arquivos tocados | 0 | `2 changed` (quebra de linha em `work_order_detail_screen.dart` e `work_order_operational_map_screen.dart`) |
 | `flutter test …acesso_nao_permitido_test.dart` | 0 | `+9: All tests passed!` (`[T1] chamadas=10`, `[T1-alcance] achadas=10 referencia=10`, `[T1b] chamadas=4`) |
 | `flutter test` b083, b085, b086, `work_orders/work_order_test.dart` | 0 | `+80: All tests passed!` |
+
+## F4 — despesas, P-O6R11, item 47 e banner de política (07:38–07:48 SP)
+
+Literais trocados (só os do PERMITIDO do §4 e da Emenda 1):
+
+| Arquivo | Antes | Depois |
+|---|---|---|
+| `expense_report_detail_screen.dart` (`EmptyState`) | `Prestação de Contas nao encontrada` / `O relatorio nao existe no cache local deste tenant.` | `Prestação de Contas não encontrada` / `Esta prestação de contas não está salva neste aparelho.` |
+| `expense_report_detail_screen.dart` (`ApprovalDecisionCard`) | `Aprovacao futura` / `Manager/finance poderao … backend workflow …` | `Aprovação da prestação de contas` / `A aprovação desta prestação de contas ainda não está disponível no aplicativo.` |
+| `new_expense_report_screen.dart` (`ListTile`) | `Criacao local-first` / `… uma acao expense_report.create entra na fila de sync.` | `Salva neste aparelho` / `Ao salvar, a prestação de contas fica neste aparelho e aparece em Sincronizar até ser enviada.` |
+| `expense_item_receipts_screen.dart` (`_captureLabel`) | `Camera`, `Placeholder` | `Câmera` (permitido, não exigido), `Registro manual` |
+| `expense_models.dart:329-330` (Emenda 1, R2-01) | `Aprovado manager`, `Aprovado finance` | `Aprovado pelo gestor`, `Aprovado pelo financeiro` (enum, `statusTone` e agrupamento intocados) |
+| `expense_list_screen.dart:152` (Emenda 1, R2-01) | `Crie uma Prestação de Contas para iniciar a fila local-first.` | `Crie uma prestação de contas para começar.` |
+| `erp_components.dart`, `PolicyViolationBanner` (Emenda 1, R2-02 saída (a)) | `Text('- ${violation.message} (${violation.code})')` | `Text('- ${_violationLabel(violation.code)}: ${violation.message}')`, com `static String _violationLabel` **dentro da classe do banner**, o mesmo mapa de `expense_report_detail_screen.dart:302-306` (`Acima do limite`, `Recibo obrigatorio`, `Violacao de politica`). O código da regra não aparece mais |
+| `expense_policy_evaluator.dart`, os 2 `message:` (Emenda 1, R2-02 (a)) | `Expense item exceeds the category limit`, `Receipt is required for this category` | `o valor do item passa do limite da categoria.`, `esta categoria exige recibo.` |
+| `sync_engine.dart:54` | `Conflito remoto exige decisao manual.` | `Conflito remoto exige decisão manual.` |
+| `field_location_service.dart:160`, `telemetry_sync_service.dart:141` | `Falha de conexao. Tente novamente.` | `Falha de conexão. Tente novamente.` |
+| `api_error.dart:43-44` | `Integracao remota ainda nao disponivel. Seus dados foram mantidos localmente e serao sincronizados quando a integracao estiver ativa.` | `Integração remota ainda não disponível. Seus dados ficam guardados neste aparelho.` (sai a promessa de sincronizar) |
+| `bootstrap_session.dart` (3 `displayName`) | `Tenant Demo` ×2, `Tenant Field Services` | `Organização Demonstração` ×2, `Organização Serviços de Campo` (o `dart format` quebrou a entrada de `availableTenants` em 4 linhas, como a R2-04 previu) |
+| `bootstrap_repository.dart`, `_tenantDisplayName` | formatava o id (`tenant-demo` → `Tenant Demo`) | primeiro o nome de `devBootstrapSession.availableTenants` pelo id; senão o id formatado **sem a palavra `tenant`** (`tenant-xyz` → `Xyz`; só `tenant` → `Organização`). A busca é **uma linha** (`demo.addAll(devBootstrapSession.availableTenants.where(mesmoId));`), para a M18 "apagar a linha da busca" compilar como está escrita |
+
+Testes da §3.2 e da Emenda 1, só nos literais: `b091_connectivity_profile_test.dart:389` → `Organização Demonstração`; `b098_real_auth_bootstrap_test.dart:447` → `Organização Serviços de Campo`; `bo6r11_sync_screen_despesa_e_saida_test.dart:162,172` → `find.textContaining(RegExp('Integra[cç][aã]o remota'))` (R2-03; o `dart format` quebrou cada `expect` em 4 linhas).
+
+**Ajuste do T6b, declarado:** a primeira execução deu vermelho pelo e-mail `tecnico@tenant.demo` da `TenantContextBar` (dado do usuário de demonstração, fora do escopo pelo §2.5). O T6b passa a ler todo texto da tela **menos a subárvore da `TenantContextBar`**, o mesmo recorte que o T3 faz por subárvore. Nada mais foi excluído.
+
+**Ressalva do cache (R2-07), sem código:** quem já estava logado no app de demonstração continua vendo o nome antigo até sair ou tocar em "Tentar de novo", porque o `bootstrapSessionProvider` usa primeiro o `restoreCached()` e o codec guarda o `displayName` (`bootstrap_codec.dart` está no PROIBIDO). Vai para o apenso da `P-CHK-SEED-DEMO-SUJO` na F6.
+
+| Comando | Exit | Saída resumida |
+|---|---|---|
+| `python f4.py` (substituição literal com contagem 1 por âncora) e `dart format` nos 16 arquivos | 0 | `2 changed` |
+| `flutter analyze` (app inteiro) | 0 | `No issues found!` |
+| `tr -cd '\010'` nos 16 arquivos | 0 | 0 caracteres de controle |
+| `flutter test test/features/bsan319b_texto_exibido_test.dart` | 0 | `+8: All tests passed!`, `[T6] exibidos=771 violacoes=0 allowlist=2` |
+| `flutter test` b091, b098, bo6r11, `core/evidence_sync_test.dart`, `expenses/expense_screens_test.dart` e `bsan319b_acesso_nao_permitido_test.dart` | 0 | `+89: All tests passed!` |

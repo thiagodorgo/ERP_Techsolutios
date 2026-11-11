@@ -29,6 +29,7 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/features/auth/auth_models.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_repository.dart';
+import 'package:erp_techsolutions_mobile/shared/ui/erp_components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -293,10 +294,24 @@ class _Despesas extends StatelessWidget {
   }
 }
 
-List<String> _todosOsTextos(WidgetTester tester) => tester
-    .widgetList<Text>(find.byType(Text))
-    .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '')
-    .toList();
+/// Todo texto da tela, fora a barra da organização: ela mostra o e-mail do usuário de
+/// demonstração (`tecnico@tenant.demo`), que é dado do usuário e fica fora deste bloco (plano v2
+/// §2.5; apenso na `P-CHK-SEED-DEMO-SUJO`).
+List<String> _todosOsTextos(WidgetTester tester) {
+  final daBarra = tester
+      .widgetList<Text>(
+        find.descendant(
+          of: find.byType(TenantContextBar),
+          matching: find.byType(Text),
+        ),
+      )
+      .toSet();
+  return tester
+      .widgetList<Text>(find.byType(Text))
+      .where((t) => !daBarra.contains(t))
+      .map((t) => t.data ?? t.textSpan?.toPlainText() ?? '')
+      .toList();
+}
 
 AuthSession _sessaoLocal(String tenantId) => AuthSession(
   tokens: AuthTokens(

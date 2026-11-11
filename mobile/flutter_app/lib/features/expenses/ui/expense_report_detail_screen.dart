@@ -33,8 +33,9 @@ class ExpenseReportDetailScreen extends ConsumerWidget {
             title: 'Prestação de Contas',
             body: EmptyState(
               icon: Icons.search_off_outlined,
-              title: 'Prestação de Contas nao encontrada',
-              message: 'O relatorio nao existe no cache local deste tenant.',
+              title: 'Prestação de Contas não encontrada',
+              message:
+                  'Esta prestação de contas não está salva neste aparelho.',
             ),
           );
         }
@@ -85,9 +86,9 @@ class ExpenseReportDetailScreen extends ConsumerWidget {
                   ),
                 ),
               const ApprovalDecisionCard(
-                title: 'Aprovacao futura',
+                title: 'Aprovação da prestação de contas',
                 message:
-                    'Manager/finance poderao devolver, rejeitar ou aprovar quando o backend workflow estiver conectado.',
+                    'A aprovação desta prestação de contas ainda não está disponível no aplicativo.',
               ),
               const SizedBox(height: 12),
               FilledButton.icon(

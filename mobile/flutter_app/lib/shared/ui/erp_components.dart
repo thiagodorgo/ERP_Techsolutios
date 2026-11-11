@@ -254,12 +254,22 @@ class PolicyViolationBanner extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             for (final violation in violations)
-              Text('- ${violation.message} (${violation.code})'),
+              Text(
+                '- ${_violationLabel(violation.code)}: ${violation.message}',
+              ),
           ],
         ),
       ),
     );
   }
+
+  // Rótulo de negócio da regra, o mesmo mapa do detalhe da prestação de contas
+  // (`expense_report_detail_screen.dart`): o código da regra nunca aparece na tela.
+  static String _violationLabel(String code) => switch (code) {
+    'category_limit_exceeded' => 'Acima do limite',
+    'receipt_required' => 'Recibo obrigatorio',
+    _ => 'Violacao de politica',
+  };
 }
 
 class ExpenseReportCard extends StatelessWidget {

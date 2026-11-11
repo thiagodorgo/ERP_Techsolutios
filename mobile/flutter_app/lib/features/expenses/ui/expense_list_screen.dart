@@ -149,7 +149,7 @@ class _ExpenseListScreenState extends ConsumerState<ExpenseListScreen> {
                                 ? 'Nenhuma Prestação de Contas local'
                                 : 'Nenhum relatorio nesta categoria',
                             message: _group == _PcGroup.all
-                                ? 'Crie uma Prestação de Contas para iniciar a fila local-first.'
+                                ? 'Crie uma prestação de contas para começar.'
                                 : 'Nenhum relatorio corresponde ao filtro selecionado.',
                             action: _group == _PcGroup.all && canCreate
                                 ? FilledButton(
