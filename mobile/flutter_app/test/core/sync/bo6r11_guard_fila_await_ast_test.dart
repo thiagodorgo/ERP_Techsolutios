@@ -72,9 +72,10 @@ import 'package:flutter_test/flutter_test.dart';
 const _pisoDoCenso = 42;
 
 /// Herdeiros de widget que legitimamente vivem fora dos caminhos de UI (medido: exatamente estes
-/// quatro). Widget novo num arquivo de dados deixa o guard vermelho até ser declarado aqui.
+/// cinco). Widget novo num arquivo de dados deixa o guard vermelho até ser declarado aqui.
 const _uiPorHerancaDeclarada = <String>{
   'lib/core/diagnostics/diagnostics_screen.dart',
+  'lib/features/auth/change_password_screen.dart',
   'lib/features/auth/login_screen.dart',
   'lib/features/auth/splash_screen.dart',
   'lib/features/auth/tenant_selector_screen.dart',
