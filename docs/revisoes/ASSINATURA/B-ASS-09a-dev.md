@@ -93,7 +93,7 @@ Bateria do conserto: `tsc --noEmit` exit 0 · `npm run lint` exit 0 · guard de 
 
 ## Conserto Emenda 4/4.1 — dev `dp-dev-542` (DeepSeek Pro), 2026-11-11 19:19 SP
 
-> **Papel:** dev do conserto único do §C7 10(3)4 (PR #542, rateio automático a partir da importação; DINHEIRO). Não achou nem planejou: achado da junta anterior do #542 (C1-A1, com V1/V2) e das críticas `crit-09a-em4-api` e `dp-crit-542`; plano de `topo-542-opus` (Emenda 4) e `topo-542b` (Emenda 4.1), lido inteiro de `planos/plano-B-ASS-09a-v2.md` (Emenda 4 nas linhas 310-460; Emenda 4.1 nas linhas 461-628). A 4.1 prevalece sobre a 4. Ajustes da crítica r2 viram requisito: **DP542-01** (T-E41-2 `-db` injeta as datas via API Prisma `Date`, `updated.count === 1`, independente de fuso) e **DP542-02** (erro do R41-01 diz a linha de DADOS, contando as vazias; forma declarada: `at row N`). Terreno: worktree `C:/Users/thiag/w-09a`, ramo `feat/rateio-automatico-importacao`, base `cf48cc80`, head de trabalho `af7f23fb` (merge de `origin/main`), limpo.
+> **Papel:** dev do conserto único do §C7 10(3)4 (PR #542, rateio automático a partir da importação; DINHEIRO). Não achou nem planejou: achado da junta anterior do #542 (C1-A1, com V1/V2) e das críticas `crit-09a-em4-api` e `dp-crit-542`; plano de `topo-542-opus` (Emenda 4) e `topo-542b` (Emenda 4.1), lido inteiro de `planos/plano-B-ASS-09a-v2.md` (Emenda 4 nas linhas 310-460; Emenda 4.1 nas linhas 461-628). A 4.1 prevalece sobre a 4. Ajustes da crítica r2 viram requisito: **DP542-01** (T-E41-2 `-db` injeta as datas via API Prisma `Date`, `updated.count === 1`, independente de fuso) e **DP542-02** (erro do R41-01 diz a linha de DADOS; forma declarada: o texto diz `at data row N`, com a linha de dados, e linhas em branco não contam). Terreno: worktree `C:/Users/thiag/w-09a`, ramo `feat/rateio-automatico-importacao`, base `cf48cc80`, head de trabalho `af7f23fb` (merge de `origin/main`), limpo.
 
 ### Vermelho-controle (F-E4-0 + F-E41-0, antes de qualquer código de produção)
 
@@ -127,3 +127,54 @@ Produção **não alterada** (só os 3 arquivos de teste no `git status`). Postg
 
 - `= 0`: `byPublicationDesc`, `sourceImportedAt`, `markSweepDone`, `importRunWindowKey`, `listCostLineItemsForBillingPeriods`, `sourceBillingPeriods`, `delete metadata.trigger`, `delete metadata.sourceBillingPeriod`.
 - `= 1` (e `= 0` depois do conserto): `allocation_runs: { none: { metadata: { path: ["trigger"], equals: "import" } } }` (prisma), `!this.hasImportAutoRun(costImport.id)` (memória), `const run = pickSummaryRun(candidates);` (service), `if (result.created === 0) mark = { status: "done"` (import-trigger).
+
+
+### Conserto aplicado — commits por fatia
+
+| fatia | commit | conteúdo |
+|---|---|---|
+| F-E4-1 a F-E4-3 + F-E41-1/F-E41-2 | `646dcb3f` | P9 (publicação pela importação mais nova, empate pela run mais velha), P10 (uma run por importação × janela), P11 (varredura mês a mês + guarda `invalid_periods` + teto por janela), P12 (as 4 chaves só do sistema), fim só com data cobre o dia inteiro |
+| Doc + DP542-02 + pendências | `09ba1882` | erro diz `at data row N`; doc E4.7/E41.3; `P-ASS09A-BORDA-MICROSSEGUNDO` e `P-ASS09A-REDE-TRANSFERENCIA` + índice regenerado; `pendencias.md` normalizado de volta a LF |
+
+### Ajustes da crítica r2 (viram requisito)
+
+- **DP542-01 (satisfeito):** `T-E41-2-db` injeta o par invertido pela API Prisma (`admin.cloudCostLineItem.updateMany` com `Date`), sem literal SQL UTC, e assere `updated.count === 1` antes de chamar `ensureImportRuns`. Verde em America/Sao_Paulo, independente de fuso.
+- **DP542-02 (satisfeito, forma declarada):** a 4.1 mantém a linha de DADOS do parser; o texto passa a dizer **`at data row N`** (não `at row N`), deixando claro que linhas em branco não contam. Os 3 testes usam `/at data row 3/` e `/at data row 2/`; o doc declara que o número é o da linha de dados.
+
+### Mutações literais — 27/27 vermelhas no teste-dono, restauradas byte a byte
+
+Cada âncora X contou **1** no arquivo indicado antes de aplicar; a mutação foi aplicada, o teste-dono caiu (`# fail ≥ 1` pela razão certa) e o arquivo foi restaurado com `git checkout --` e comparado byte a byte (igual ao original):
+
+| mutação | arquivo | teste-dono vermelho |
+|---|---|---|
+| M-E4-P1 | service.ts | T-E4-1 e T-E4-2 |
+| M-E4-P2 | service.ts | T-E4-1 |
+| M-E4-H1 / H2 / H3 / M-E41-E | service.ts | T-E4-6 (uma por chave) |
+| M-E41-B | service.ts | T-E41-3 |
+| M4a / M4b | service.ts / repository.ts | T4 |
+| M-E4-W1 / W2m | import-trigger.ts / repository.ts | T-E4-5 |
+| M-E4-Q1 | repository.ts | T-E4-3 e T-E4-3b |
+| M-E4-G9m | repository.ts | T-E4-9 |
+| M-E4-Q2 | import-trigger.ts | T9 |
+| M-E41-A1 | aw-cur.parser.ts | T-E41-1 (memória) e T-E41-1r (rota) |
+| M-E41-A2 | import-trigger.ts | T-E41-2 |
+| M-E41-C1 / C2 | import-trigger.ts | T-E41-4 / T-E41-4b |
+| M-E41-D | import-trigger.ts | T-E41-5 |
+| M13 | import-trigger.ts | T13 |
+| M4c / M-E4-W2 | prisma.repository.ts | T4-db / T-E4-5-db |
+| M-E4-Q1-db | prisma.repository.ts | T-E4-3-db |
+| FailedBranch_lte / JsonbSet_overwrite / MarkCompletedOnly | prisma.repository.ts | T-E4-7-db / T-E4-8-db / T-E4-9-db |
+
+### Bateria final
+
+- memória (6 arquivos): `ass-09a-rateio-automatico` + `cloud-cost-allocation` + `cloud-cost-allocation-routes` + `ass-03-rateio-banco` + `aws-cur-cost-import` + `aws-cur-cost-routes` → `# tests 71 # pass 71 # fail 0 # skipped 0`.
+- `-db` (2 arquivos): `ass-09a-rateio-automatico-db` + `ass-09a-import-id-migration-drill-db` → `# tests 26 # pass 26 # fail 0 # skipped 0` (papel efêmero `NOSUPERUSER NOBYPASSRLS`).
+- `npm run check` exit 0 · `npm run lint` exit 0 · `node scripts/migration-transaction-guard.mjs` → `migrações: 133 · anteriores: 112 · novas: 21 · violações: 0` · `git diff --check` vazio.
+
+### Escopo e migração (E41.3)
+
+- `git diff --name-only af7f23fb..HEAD` = 13 arquivos, todos no PERMITIDO das Emendas 4/4.1; nada de `prisma/**`, `.github/**` nem `Kpis/**`.
+- `git diff --name-only af7f23fb..HEAD -- prisma` **vazio** (o conserto não toca `prisma`).
+- `git diff --name-only cf48cc80..HEAD -- src/modules/cloud-costs` = só `aws-cur.parser.ts`, `+1 −0`.
+- Leitura do dev (§A6): `git diff --name-only cf48cc80..HEAD -- prisma` mostra `schema.prisma` e a migração `20260901100000_impound_process_regime_snapshot`, ambos vindos do `git merge origin/main` obrigatório (`f5b79026`, #539), não do conserto; o conserto, medido a partir da base pós-merge `af7f23fb`, não adiciona nenhuma migração.
+- `pendencias.md` foi normalizado de volta a LF: o merge anterior o deixou CRLF, o que poluía o diff do PR com 27 k linhas. Depois da normalização, `git diff origin/main...HEAD -- pendencias.md` = **45 inserções** (só as pendências reais).
