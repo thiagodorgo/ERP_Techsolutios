@@ -1,7 +1,7 @@
 import { env } from "../../config/env.js";
 import type { ProcessRegime } from "../impound/impound.types.js";
 import { resolveDefaults, type ResolvedDefaults } from "./jurisdiction.defaults.js";
-import { InMemoryJurisdictionRepository, type JurisdictionRepository } from "./jurisdiction.repository.js";
+import { InMemoryJurisdictionRepository, type JurisdictionRepository, type ProfileUpdateResult } from "./jurisdiction.repository.js";
 import type {
   JurisdictionActorContext,
   JurisdictionProfile,
@@ -94,6 +94,12 @@ export class JurisdictionService {
   }
 
   async update(actor: JurisdictionActorContext, profileId: string, body: RawRecord): Promise<JurisdictionProfile> {
+    return (await this.updateWithChanges(actor, profileId, body)).profile;
+  }
+
+  // B-O6R-12 (P-AUDIT) — a mesma edição, devolvendo também o que mudou (lido sob trava na mesma transação), para a
+  // auditoria do PATCH registrar campo a campo.
+  async updateWithChanges(actor: JurisdictionActorContext, profileId: string, body: RawRecord): Promise<ProfileUpdateResult> {
     await this.get(actor, profileId);
     const updated = await this.repository.updateProfile({
       tenantId: actor.tenantId,
@@ -114,9 +120,7 @@ export class JurisdictionService {
     if (!updated) {
       throw new JurisdictionError(404, "JURISDICTION_NOT_FOUND", "not_found", "Jurisdiction profile was not found.");
     }
-    return Object.assign(updated.profile, {
-      auditChanges: { changedFields: updated.changedFields, changes: updated.changes },
-    });
+    return updated;
   }
 
   // Ω5P PR-17 — READ-PORT do owner-portal (dossiê): os prazos legais (offsets em dias a partir do t0) + o checklist

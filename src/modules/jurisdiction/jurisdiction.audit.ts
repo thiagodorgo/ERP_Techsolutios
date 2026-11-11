@@ -1,17 +1,8 @@
 import type { JurisdictionProfile } from "./jurisdiction.types.js";
 
-export const CHANGE_VALUE_FIELDS = [
-  "name",
-  "scope",
-  "owner_notif_days",
-  "notice_edict_day",
-  "auction_eligible_day",
-  "auction_edict_business_days",
-  "daily_model",
-  "daily_cap",
-  "release_requirements",
-  "active",
-] as const;
+// B-O6R-12 (P-AUDIT, E1.3) — campos cuja auditoria leva {from, to}. `notes` fica de fora (texto livre do operador):
+// entra só em changed_fields. `name` e `release_requirements` levam valor (E1.3; os rótulos já são públicos no portal).
+export const CHANGE_VALUE_FIELDS = ["name", "scope", "owner_notif_days", "notice_edict_day", "auction_eligible_day", "auction_edict_business_days", "daily_model", "daily_cap", "release_requirements", "active"] as const;
 
 export type ProfileChanges = {
   readonly changedFields: string[];

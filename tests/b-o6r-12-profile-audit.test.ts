@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import type { JurisdictionProfile } from "../src/modules/jurisdiction/jurisdiction.types.js";
@@ -44,12 +43,10 @@ test("B-O6R-12 C9: auditoria lista todos os campos e só omite valores de notes"
   assert.equal("notes" in result.changes, false);
 });
 
-test("B-O6R-12 C8: controller envia changed_fields e changes à auditoria", () => {
-  const source = readFileSync("src/modules/jurisdiction/jurisdiction.controller.ts", "utf8");
-  assert.match(source, /metadata: \{ scope: profile\.scope, active: profile\.active, changed_fields: audit\.changedFields, changes: audit\.changes \}/);
-});
-
-test("B-O6R-12 C19: portal projeta somente o regime congelado da abertura", () => {
+// C8 (fiação do controller) mora no -db, por HTTP, lendo audit_logs (A7: auditoria sem banco não observa nada).
+// C19 (o dossiê mostra a cópia) mora em tests/owner-portal-dossier-rls.test.ts, com banco. Aqui fica só a
+// allowlist §2.8 da projeção do portal.
+test("B-O6R-12 C19 (allowlist §2.8): a projeção do portal leva só os 3 prazos e {label, required}", () => {
   const plan = portalPlanFromRegime({
     scope: "PUBLIC_AGREEMENT",
     ownerNotifDays: 5,
@@ -69,8 +66,4 @@ test("B-O6R-12 C19: portal projeta somente o regime congelado da abertura", () =
     requirements: [{ label: "Documento", required: true }],
   });
   assert.deepEqual(Object.keys(plan).sort(), ["auctionEligibleDay", "noticeEdictDay", "ownerNotifDays", "requirements"]);
-
-  const source = readFileSync("src/modules/owner-portal/owner-portal.service.ts", "utf8");
-  assert.match(source, /process\.regime\s*\?\s*portalPlanFromRegime\(process\.regime\)/);
-  assert.match(source, /:\s*await this\.deps\.jurisdiction\.getPortalProfile\(this\.deps\.tenantId, process\.profileId\)/);
 });

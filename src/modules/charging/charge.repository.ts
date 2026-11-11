@@ -284,32 +284,28 @@ export class InMemoryChargeRepository implements ChargeRepository {
       model: "ROLLING_24H" as DailyModel,
       cap: "SIX_MONTHS" as DailyCap,
     };
-    const key = `${tenantId}:${processId}`;
-    const captured = this.regimeByProcess.get(key);
-    if (captured) return {
-      tenantId,
-      processId,
-      enteredAt: process.enteredAt,
-      frozenAt: process.frozenAt,
-      timezone: this.timezones.get(`${tenantId}:${processId}`) ?? "America/Sao_Paulo",
-      scope: captured.scope,
-      model: captured.model,
-      cap: captured.cap,
-      dailyServiceCatalogId: captured.dailyServiceCatalogId ?? profile.dailyServiceCatalogId,
-    };
-    this.regimeByProcess.set(key, profile);
+    const regime = this.captureRegime(`${tenantId}:${processId}`, profile);
     return {
       tenantId,
       processId,
       enteredAt: process.enteredAt,
       frozenAt: process.frozenAt,
       timezone: this.timezones.get(`${tenantId}:${processId}`) ?? "America/Sao_Paulo",
-      scope: profile.scope,
-      model: profile.model,
-      cap: profile.cap,
-      // Ponteiro ausente preserva o catch-up do perfil vivo; cópia não nula vence.
-      dailyServiceCatalogId: profile.dailyServiceCatalogId,
+      scope: regime.scope,
+      model: regime.model,
+      cap: regime.cap,
+      // B-O6R-12 (A1): ponteiro ausente no retrato cai no ponteiro atual do perfil (catch-up); cópia não nula vence.
+      dailyServiceCatalogId: regime.dailyServiceCatalogId ?? profile.dailyServiceCatalogId,
     };
+  }
+
+  // B-O6R-12 — a memória guarda o regime na PRIMEIRA leitura, como o gatilho do banco faz na abertura.
+  // Divergência declarada: aqui não há gatilho, então o retrato nasce no 1º acúmulo, não no INSERT.
+  private captureRegime(key: string, profile: StoredProfile): StoredProfile {
+    const captured = this.regimeByProcess.get(key);
+    if (captured) return captured;
+    this.regimeByProcess.set(key, profile);
+    return profile;
   }
 
   async listAccrualCandidates(): Promise<readonly string[]> {
