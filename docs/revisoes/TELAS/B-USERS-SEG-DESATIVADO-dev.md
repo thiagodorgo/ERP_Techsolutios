@@ -102,7 +102,7 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
 - **Verdes ao fim (TAP, `scratchpad/devdesat/f1/`):** `users-seg-desativado-emissao-db` 4/4 (T10a–d), `# fail 0`;
   `users-seg-desativado-portao` T15 `ok` (os outros do arquivo dependem da F2).
 
-## F2 — o portão confere a sessão (08:01–08:10 SP)
+## F2 — o portão confere a sessão (08:01–08:03 SP)
 
 - **`src/modules/auth/services/session-liveness.service.ts` (novo):** `export const sessionLiveness = { check }`.
   Primeira instrução: `if (env.CORE_SAAS_PERSISTENCE !== "prisma") {` → `"skipped"` (A10). Depois o formato UUID
@@ -116,7 +116,7 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
   escopo restrito; `if (verdict === "inactive") {` → `sendSessionInactive` (401 `INVALID_TOKEN`/`session_inactive`,
   mensagem fixa de hoje), sem `next()` e sem `request.actor`; falha da conferência → `sendSessionCheckUnavailable(response);`
   (503 `SERVICE_UNAVAILABLE`/`session_check_unavailable`). O ator ganha `sessionId` quando o token traz `sid`.
-- **Âncoras das mutações, `grep -c -F` = 1 cada (medido 08:08):** M1 a M4, M10, M11, M16, M17 no serviço; M5, M6, M8 no
+- **Âncoras das mutações, `grep -c -F` = 1 cada (medido 08:02):** M1 a M4, M10, M11, M16, M17 no serviço; M5, M6, M8 no
   portão.
 - **Verdes ao fim (TAP, `scratchpad/devdesat/f2/`, memória):** `users-seg-desativado-portao` 4/4 (T13, T14, T15, T15b);
   `users-seg-desativado-varredura` 1/1 (T9-mem); `users-acesso-seg-portao-estatico` 2/2 (G2 e T17); regressão
@@ -125,3 +125,24 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
   `not ok`. 16b-1 `expected 1, actual 0` chamadas; 16b-2 e 16b-5 "a leitura termina (done)" `false`; 16b-3 `expected 3,
   actual 0`; 16b-4 e 16b-6 `expected 1, actual 0`. A E1.2 previa 16b-1, 16b-2 e 16b-5; os outros três também ficam
   vermelhos, porque contam chamadas.
+
+## F3 — provas `-db`, P2 = (a) e a fixture do san3-05 (08:03–08:13 SP)
+
+- **P2 = (a), A6 (`prisma-core-saas.store.ts`, só o Step 1b e `hasSameRoleKeys`):** logo antes do `const revokedSessions =`,
+  `const rolesChanged = input.roles !== undefined && !hasSameRoleKeys(currentRoles, input.roles);`, e a condição passa a
+  `input.status === "inactive" || rolesChanged`. `hasSameRoleKeys(current, next)` no nível do módulo compara os
+  conjuntos sem ordem e sem repetição. Âncoras M18 e M19: `grep -c -F` = 1 e 1. Consequência declarada: a auditoria
+  `user.updated` passa a levar `revoked_sessions` também na troca de papéis (o campo já existia; antes só na desativação).
+- **Fixture do `san3-05-leituras-de-plataforma-db` (regra dos 5: 1 arquivo):** antes do `signAccessToken` da plataforma,
+  `admin.user.create(...)` do ator de plataforma (a forma da E1.6) e `user_id: atorPlataforma.id,`. **Desvio declarado:**
+  a E1.6 não previa a remoção, e sem ela o teardown do arquivo falhou (medido: `admin.tenant.deleteMany` →
+  `users_tenant_id_fkey`). Entrou uma linha no `finally`, antes do `limpar`: `admin.user.deleteMany` do ator, pelo
+  e-mail da fixture. A HIPÓTESE da E1.6 (o token nasce uma vez só, fora do laço por papel) se confirmou: sem colisão de
+  e-mail.
+- **Verdes (TAP, `scratchpad/devdesat/f3/`, banco `devdesat` sem seed, cada suíte força e confere `prisma`):**
+  `users-seg-desativado-portao-db` 16/16 · `-varredura-db` 1/1 (`fora=0`) · `-orcamento-db` 1/1 · `-emissao-db` 4/4 ·
+  `users-acesso-seg-desativacao-db` 5/5 (S4·c `401 session_inactive`) · `users-acesso-seg-troca-senha-db` 4/4 ·
+  `san3-05-leituras-de-plataforma-db` 12/12 (antes da fixture: 11/12, `401 session_inactive`, a forma que a crítica mediu).
+- **Resíduo no banco descartável:** as execuções da F0 mortas pelo `timeout` (S4·c e o `portao` em memória) e o teardown
+  falho do san3-05 deixaram 7 organizações e 4 papéis efêmeros no `devdesat`. É o meu banco; antes da F5 eu recrio os
+  dois bancos do zero, para a bateria medir num banco limpo.
