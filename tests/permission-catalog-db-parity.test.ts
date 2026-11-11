@@ -171,19 +171,56 @@ test("os grants do papel GLOBAL batem exatamente com ROLE_PERMISSIONS (nas duas 
         "poderia atribuí-lo por POST /users. O seed exclui platform_admin, como scripts/provision-rbac.ts.",
     );
 
-    // P3 — nome de negócio na organização que o seed cria (item 47, `P-CHK-SEED-DEMO-SUJO`). Filtra por
-    // `slug = 'demo'` porque na CI as suítes paralelas criam outras organizações na mesma base; o critério
-    // literal "nenhum nome de `tenants` contém Tenant" vale numa base só do seed (drill D1 do bloco).
-    const demo: Array<{ name: string }> = await client.$queryRawUnsafe(
-      `select name from tenants where slug = 'demo'`,
+    // P3 — nome de negócio na organização que o seed cria (item 47, `P-CHK-SEED-DEMO-SUJO`). Vale SÓ em base
+    // SEMEADA: este arquivo também roda contra base provisionada sem seed (os drills de migração montam a base com
+    // `migrate deploy` + `db:provision-rbac` e rodam esta paridade), e lá não existe organização nenhuma.
+    //
+    // A SENTINELA de "a base foi semeada" é o registro de auditoria `seed.initialized` que o `prisma/seed.ts`
+    // grava (uma vez, idempotente) e que nenhum outro código cria. Não é a própria `demo`, de propósito: um seed
+    // que deixasse de criar a `demo` e continuasse gravando a sentinela tem de ficar VERMELHO, não passar em vazio.
+    //
+    // `audit_logs` tem RLS forçado e a política só mostra linha com o GUC da organização. Um papel que não
+    // atravessa o RLS leria a sentinela como 0 e desligaria o P3 em silêncio; por isso a medição exige papel
+    // superusuário ou BYPASSRLS (como a CI e os drills usam) e FALHA sem ele, em vez de tratar "não vi" como
+    // "não existe".
+    //
+    // Filtra a organização por `slug = 'demo'` porque na CI as suítes paralelas criam outras organizações na
+    // mesma base; o critério literal "nenhum nome de `tenants` contém Tenant" vale numa base só do seed.
+    const papelDaConexao: Array<{ papel: string; atravessa: boolean }> = await client.$queryRawUnsafe(
+      `select current_user::text as papel, (rolsuper or rolbypassrls) as atravessa
+         from pg_roles where rolname = current_user`,
     );
-    assert.equal(demo.length, 1, "P3: o seed não deixou a organização demonstração (slug = 'demo') na base.");
-    assert.doesNotMatch(
-      demo[0]!.name,
-      /tenant/i,
-      `P3: a organização demonstração tem nome técnico: "${demo[0]!.name}". Na tela é "organização", nunca ` +
-        "Tenant (CLAUDE.md, Parte B §3 e §11.1).",
+    assert.equal(
+      papelDaConexao[0]?.atravessa,
+      true,
+      `P3: o papel da conexão (${papelDaConexao[0]?.papel ?? "?"}) não atravessa o RLS de audit_logs, então a ` +
+        "sentinela do seed (seed.initialized) ficaria invisível e o P3 passaria em vazio. Rode a paridade com " +
+        "um papel superusuário ou BYPASSRLS, como a CI e os drills de migração.",
     );
+    const sentinela: Array<{ n: number }> = await client.$queryRawUnsafe(
+      `select count(*)::int as n from audit_logs where action = 'seed.initialized' and entity = 'database'`,
+    );
+    const baseSemeada = (sentinela[0]?.n ?? 0) > 0;
+    if (baseSemeada) {
+      t.diagnostic(`P3 aplicado: a base foi semeada (sentinela seed.initialized = ${sentinela[0]!.n})`);
+      const demo: Array<{ name: string }> = await client.$queryRawUnsafe(
+        `select name from tenants where slug = 'demo'`,
+      );
+      assert.equal(
+        demo.length,
+        1,
+        "P3: a base foi semeada (há o registro seed.initialized), mas a organização demonstração (slug = 'demo') " +
+          "não está nela. O seed base está incompleto.",
+      );
+      assert.doesNotMatch(
+        demo[0]!.name,
+        /tenant/i,
+        `P3: a organização demonstração tem nome técnico: "${demo[0]!.name}". Na tela é "organização", nunca ` +
+          "Tenant (CLAUDE.md, Parte B §3 e §11.1).",
+      );
+    } else {
+      t.diagnostic("P3 não se aplica: a base não tem a sentinela do seed (provisionada sem db:seed)");
+    }
 
     // LEFT JOIN acima: um papel global existente porém SEM nenhum grant precisa aparecer no mapa,
     // senão seria confundido com papel inexistente e cairia na isenção de PAPEIS_SEM_LINHA_GLOBAL.
