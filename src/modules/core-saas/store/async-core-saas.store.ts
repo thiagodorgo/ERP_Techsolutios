@@ -3,6 +3,7 @@ import type {
   AuditEvent,
   CreateTenantInput,
   CreateUserInput,
+  InitialCredentialInput,
   ListTenantOptions,
   Tenant,
   User,
@@ -27,7 +28,8 @@ export type AsyncCoreSaasStore = {
   findTenantById(tenantId: string): Promise<Tenant | undefined>;
   listTenants(options?: ListTenantOptions): Promise<Tenant[]>;
   listTenantsForTenant(tenantId: string, options?: ListTenantOptions): Promise<Tenant[]>;
-  createUser(input: CreateUserInput): Promise<User>;
+  // B-USERS-ACESSO-SEG (S2) — com `credential`, a credencial local nasce na MESMA transação da criação (só o hash).
+  createUser(input: CreateUserInput, credential?: InitialCredentialInput): Promise<User>;
   updateUser(input: UpdateUserPersistenceInput): Promise<User>;
   findUserByIdForTenant(userId: string, tenantId: string): Promise<User | undefined>;
   listUsersByTenant(tenantId: string): Promise<User[]>;

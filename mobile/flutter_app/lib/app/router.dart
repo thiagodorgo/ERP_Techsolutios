@@ -5,6 +5,7 @@ import '../core/auth/auth_notifier.dart';
 import '../core/bootstrap/bootstrap_repository.dart';
 import '../core/config/app_config.dart';
 import '../core/diagnostics/diagnostics_screen.dart';
+import '../features/auth/change_password_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/splash_screen.dart';
 import '../features/auth/tenant_selector_screen.dart';
@@ -54,6 +55,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (authState == null) return null;
 
       final loc = state.matchedLocation;
+
+      // B-USERS-ACESSO-SEG (T2) — regra da troca de senha, antes das outras:
+      // a sessão restrita (senha provisória) só abre a troca, e toda outra rota
+      // volta para ela; a troca só abre na sessão restrita (sessão inteira vai
+      // para o início; sem sessão, para o login).
+      final isChangePassword = loc == '/change-password';
+      if (authState.isPasswordChangeRequired) {
+        return isChangePassword ? null : '/change-password';
+      }
+      if (isChangePassword) {
+        return authState.isAuthenticated ? '/' : '/login';
+      }
+
       final isSplash = loc == '/splash';
       final isLoginRoute = loc == '/login';
       final isTenantSelect = loc == '/tenant-select';
@@ -84,6 +98,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+      GoRoute(
+        path: '/change-password',
+        builder: (context, state) => const ChangePasswordScreen(),
+      ),
       GoRoute(
         path: '/tenant-select',
         builder: (context, state) => const TenantSelectorScreen(),
@@ -268,6 +286,10 @@ final appRouter = GoRouter(
   routes: [
     GoRoute(path: '/splash', builder: (context, state) => const SplashScreen()),
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    GoRoute(
+      path: '/change-password',
+      builder: (context, state) => const ChangePasswordScreen(),
+    ),
     GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
     GoRoute(
       path: '/profile',

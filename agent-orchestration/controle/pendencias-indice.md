@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **810** |
-| IDs distintos | 799 |
-| **ABERTAS** | **613** |
+| Cabecalhos `## P-` | **812** |
+| IDs distintos | 801 |
+| **ABERTAS** | **615** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **551** |
+| — das quais **ativas nesta rodada** | **553** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 193 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **810 cabecalhos para 799 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **812 cabecalhos para 801 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 273
+## ABERTAS · balde A — material — 274
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -348,8 +348,9 @@
 | `P-LOGIN-CONTRASTE-ERRO` | 13157 | MÉDIA | sim | P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste |
 | `P-B-ASS-08c-OBRIGACOES-DA-08b` | 13169 | ALTA | sim | P-B-ASS-08c-OBRIGACOES-DA-08b (2026-11-10) — bloco futuro `B-ASS-08c`, com as formas e o |
 | `P-CONTRATO-EMENDA-P5-P8C` | 13176 | ALTA | sim | P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUD |
+| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13182 | ALTA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
 
-## ABERTAS · balde B — processo/registro — 278
+## ABERTAS · balde B — processo/registro — 279
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -630,7 +631,8 @@
 | `P-USERS-DESATIVADO-TOKEN-MOBILE` | 13133 | — | sim | P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-10) — token anterior à desativação ainda alcanç |
 | `P-J522-C3B-01-DOIS-HUNKS` | 13145 | BAIXA | sim | P-J522-C3B-01-DOIS-HUNKS (2026-11-10) — `C3B-01`: dois hunks onde o §5 do plano do segun |
 | `P-LOGIN-WEB-TERMO-TENANT` | 13163 | BAIXA | sim | P-LOGIN-WEB-TERMO-TENANT (2026-11-10) — login web ainda expõe termo técnico de organizaç |
-| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13182 | BAIXA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
+| `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` | 13194 | BAIXA | sim | P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes d |
+| `P-USERS-SEG-ORDEM-DE-IMPLANTACAO` | 13200 | BAIXA | sim | P-USERS-SEG-ORDEM-DE-IMPLANTACAO (2026-11-11) — o deploy que contém o #527 vai na ordem  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 

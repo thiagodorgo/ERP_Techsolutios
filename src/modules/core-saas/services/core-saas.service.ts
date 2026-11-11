@@ -27,6 +27,13 @@ import {
   InMemoryCoreSaasStore,
   type CoreSaasStore,
 } from "../store/core-saas.store.js";
+import {
+  TENANT_ADMIN_ROLE,
+  assertSelfChangeAllowed,
+  lastTenantAdminError,
+  removesActiveTenantAdmin,
+} from "./tenant-admin-guard.js";
+import { toUserAuditSnapshot } from "./user-audit-snapshot.js";
 
 // B-O6R-01 — modelo de identidade em memória (espelho do prisma: auth_identities +
 // auth_identity_links + trilha). `attachedVia` espelha a coluna `attached_via` (opção A da
@@ -196,6 +203,18 @@ export class CoreSaasRegistry {
       input.roles.map((role) => assertAssignableRole(this.validateRole(role))),
     );
 
+    // B-USERS-ACESSO-SEG (S6, ajuste 9 da crítica) — espelho do índice único (tenant_id, email) do
+    // caminho Prisma: e-mail repetido na MESMA organização → 409, nada é gravado. Outra organização
+    // aceita o mesmo e-mail (o e-mail nunca decide entre organizações).
+    if (this.store.listUsersByEmail(email).some((existing) => existing.tenantId === tenant.id)) {
+      throw new CoreSaasError(
+        409,
+        "CONFLICT",
+        "user_email_conflict",
+        "A user with this email already exists in this organization.",
+      );
+    }
+
     const user: User = {
       id: nextId("usr", ++this.userSequence),
       tenantId: tenant.id,
@@ -296,6 +315,33 @@ export class CoreSaasRegistry {
       status = input.status;
     }
 
+    // B-USERS-ACESSO-SEG (S3) — a trava do administrador, a mesma decisão do caminho Prisma. Aqui a
+    // leitura e a gravação são síncronas (nada se intercala entre a contagem e o save).
+    const current = { status: user.status, isTenantAdmin: user.roles.includes(TENANT_ADMIN_ROLE) };
+    const next = { status, isTenantAdmin: roles.includes(TENANT_ADMIN_ROLE) };
+
+    assertSelfChangeAllowed({
+      isSelf: actor?.userId === user.id,
+      requestedStatus: hasStatus ? input.status : undefined,
+      current,
+      next,
+    });
+
+    if (removesActiveTenantAdmin(current, next)) {
+      const otherActiveAdmins = this.store
+        .listUsersByTenant(user.tenantId)
+        .filter(
+          (candidate) =>
+            candidate.id !== user.id &&
+            candidate.status === "active" &&
+            candidate.roles.includes(TENANT_ADMIN_ROLE),
+        ).length;
+
+      if (otherActiveAdmins === 0) {
+        throw lastTenantAdminError();
+      }
+    }
+
     const updatedUser: User = {
       ...user,
       name,
@@ -305,12 +351,15 @@ export class CoreSaasRegistry {
 
     const savedUser = this.store.saveUser(updatedUser);
 
+    // B-USERS-ACESSO-SEG (S8) — antes/depois por lista permitida (nome, status, papéis).
     this.recordAudit({
       action: "user.updated",
       actor_user_id: actor?.userId ?? "system",
       tenant_id: savedUser.tenantId,
       metadata: {
         userId: savedUser.id,
+        before: toUserAuditSnapshot(user),
+        after: toUserAuditSnapshot(savedUser),
       },
     });
 
@@ -433,7 +482,7 @@ export class CoreSaasRegistry {
       return null;
     }
 
-    return { tenant, user };
+    return { tenant, user, mustChangePassword: false };
   }
 
   private ensureIdentityLinkForPair(tenantId: string, userId: string): string {

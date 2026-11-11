@@ -1,6 +1,13 @@
 import { isMockMode } from "../../config/env";
 import { mockSession, mockSessionForEmail } from "../../mocks/auth/context";
-import { loginWithJwt, logoutWithJwt, refreshWithJwt } from "./auth.adapter";
+import {
+  changePasswordWithJwt,
+  loginWithJwt,
+  logoutWithJwt,
+  PasswordChangeError,
+  refreshWithJwt,
+  type PasswordChangeInput,
+} from "./auth.adapter";
 import {
   clearStoredAuthSession,
   getStoredAuthSession,
@@ -59,6 +66,28 @@ export async function logout(): Promise<void> {
       // Local logout must succeed even if the backend session is already gone.
     }
   }
+}
+
+/**
+ * B-USERS-ACESSO-SEG (T1) — a pessoa troca a própria senha provisória. UMA requisição por tentativa (RQ-6: o adaptador
+ * chama `fetch` direto, sem o refresh automático do cliente padrão). No 200 o backend revoga TODAS as sessões do par:
+ * a sessão local é apagada aqui e a pessoa entra de novo com a senha nova. `onChanged` roda no MESMO passo, logo antes
+ * de apagar, para a tela marcar o aviso no mesmo lote de renderização em que a sessão some. As senhas só passam por
+ * memória: nada é gravado no navegador nem em log.
+ */
+export async function changeOwnPassword(
+  input: PasswordChangeInput,
+  options: { readonly onChanged?: () => void } = {},
+): Promise<void> {
+  const accessToken = getStoredToken();
+
+  if (!accessToken) {
+    throw new PasswordChangeError("session_expired");
+  }
+
+  await changePasswordWithJwt(accessToken, input);
+  options.onChanged?.();
+  clearStoredAuthSession();
 }
 
 export function getCurrentAuthState(): AuthSession | null {

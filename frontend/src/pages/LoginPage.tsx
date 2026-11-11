@@ -1,16 +1,34 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import { isMockMode, readFrontendEnv } from "../config/env";
+import { PASSWORD_CHANGE_MESSAGES, PASSWORD_CHANGED_NOTICE } from "../modules/auth/auth.adapter";
+import type { AuthSession } from "../modules/auth/types";
 import { isPlatformAdmin } from "../navigation/types";
 import { useAuth } from "../providers/AuthProvider";
+import type { LoginNotice } from "./ChangePasswordPage";
 
 // Login web · alvo: docs/claude-code-handoff/Login.dc.html (card único centrado).
 
+/**
+ * B-USERS-ACESSO-SEG (T1) — o desvio da sessão restrita, num ponto só (RQ-1: o mesmo teste `=== true` da rota
+ * /change-password): quem entra com a senha provisória, ou chega aqui com essa sessão, vai para a troca de senha.
+ */
+function isPasswordChangeSession(session: AuthSession | null): boolean {
+  return session?.mustChangePassword === true;
+}
+
+/** O aviso que a troca de senha deixa no estado da navegação (nunca na URL). */
+function readLoginNotice(state: unknown): LoginNotice | null {
+  const notice = state && typeof state === "object" ? (state as { aviso?: unknown }).aviso : undefined;
+  return notice === "senha-alterada" || notice === "sessao-expirada" ? notice : null;
+}
+
 export function LoginPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const location = useLocation();
+  const { session: currentSession, signIn } = useAuth();
   const useMocks = isMockMode();
   const defaultTenantId = readFrontendEnv("VITE_DEFAULT_TENANT_ID", useMocks ? "ten-industrial-01" : "");
   const [tenantId] = useState(defaultTenantId);
@@ -18,12 +36,18 @@ export function LoginPage() {
   const [password, setPassword] = useState(useMocks ? "operacao-demo" : "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState<LoginNotice | null>(() => readLoginNotice(location.state));
 
   async function authenticate() {
     setLoading(true);
     setError("");
+    setNotice(null);
     try {
       const session = await signIn({ tenantId, email, password });
+      if (isPasswordChangeSession(session)) {
+        navigate("/change-password", { replace: true });
+        return;
+      }
       navigate(isPlatformAdmin(session.user) ? "/platform/tenants" : "/select-context");
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Falha de autenticação. Verifique os dados e tente novamente.");
@@ -36,6 +60,8 @@ export function LoginPage() {
     event.preventDefault();
     void authenticate();
   }
+
+  if (isPasswordChangeSession(currentSession)) return <Navigate to="/change-password" replace />;
 
   return (
     <main
@@ -83,6 +109,20 @@ export function LoginPage() {
             <div style={{ display: "flex", alignItems: "flex-start", gap: 9, padding: "10px 13px", borderRadius: 10, background: "#FFFBEB", border: "1px solid #FDE68A", marginBottom: 22 }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#D97706", flexShrink: 0, marginTop: 5 }} />
               <span style={{ fontSize: 12, fontWeight: 600, color: "#92400E", lineHeight: 1.45 }}>Ambiente de demonstração · dados fictícios. Use qualquer e-mail e senha para entrar.</span>
+            </div>
+          ) : null}
+
+          {/* B-USERS-ACESSO-SEG (T1) — avisos da troca de senha, nas faixas da referência troca-senha-3opcoes. */}
+          {notice === "senha-alterada" ? (
+            <div role="status" data-aviso="senha-alterada" style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 14px", borderRadius: 10, background: "#F0FDF4", border: "1px solid #BBF7D0", marginBottom: 18 }}>
+              <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "#16A34A", flexShrink: 0 }} />
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#166534", lineHeight: 1.45 }}>{PASSWORD_CHANGED_NOTICE}</span>
+            </div>
+          ) : null}
+          {notice === "sessao-expirada" ? (
+            <div role="alert" data-aviso="sessao-expirada" style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 14px", borderRadius: 10, background: "#FEF2F2", border: "1px solid #FECACA", marginBottom: 18 }}>
+              <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: "#DC2626", flexShrink: 0 }} />
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#B91C1C", lineHeight: 1.45 }}>{PASSWORD_CHANGE_MESSAGES.session_expired}</span>
             </div>
           ) : null}
 
