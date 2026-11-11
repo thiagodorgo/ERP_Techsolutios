@@ -338,6 +338,11 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   }
 
   async findById(tenantId: string, workOrderId: string): Promise<WorkOrder | undefined> {
+    return this.liveWorkOrder(tenantId, workOrderId);
+  }
+
+  // B-SAN3-23 (EM1-04) — a OS viva do Map, síncrona: os escritores com CAS leem, comparam e gravam no MESMO tique.
+  private liveWorkOrder(tenantId: string, workOrderId: string): WorkOrder | undefined {
     const workOrder = this.workOrders.get(workOrderId);
     return workOrder?.tenantId === tenantId ? workOrder : undefined;
   }
@@ -422,9 +427,10 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   }
 
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
-    const current = await this.findById(input.tenantId, input.workOrderId);
+    // B-SAN3-23 (P-23.4; Emenda 1.1, EM1-04) — paridade do CAS do Prisma: compara a OS VIVA do Map, no mesmo tique
+    // da gravação (nenhum `await` entre ler, comparar e gravar), nunca um retrato tirado antes de um `await`.
+    const current = this.liveWorkOrder(input.tenantId, input.workOrderId);
     if (!current) return undefined;
-    // B-SAN3-23 (P-23.4) — paridade do CAS do Prisma: situação diferente da validada não grava.
     if (current.status !== input.expectedStatus) return undefined;
     // Paridade InMemory↔Prisma da invariante do cancelamento (o Prisma tem o CHECK; aqui é a assertion
     // equivalente): OS 'cancelled' EXIGE decisão financeira (o único caminho legítimo é cancel(), que sempre
@@ -455,48 +461,59 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     return updated;
   }
 
-  // B-SAN3-23 (D-2) — o dublê roda a sequência da unidade, na mesma ordem: transição sobre a situação lida → no `zero`,
-  // "há item faturado?" e o zerar (pela porta do serviço) → a situação → o evento. A memória não prova atomicidade (a
-  // prova é a suíte `-db`); ela termina consistente, como a crítica mediu.
+  // B-SAN3-23 (D-2, corrigido pela Emenda 1.1, EM1-04) — o dublê de memória da unidade. A memória não tem trava para
+  // fazer "zerar + mudar a situação" de uma vez (a prova de atomicidade é a suíte `-db`), então a ordem aqui é a que a
+  // mantém consistente em toda intercalação: transição sobre a situação viva → no `zero`, "há item faturado?" → a
+  // situação, com o CAS sobre a OS viva e a MESMA regra do serviço (se casar 0: relê, revalida a transição e regrava UMA
+  // vez; a revalidação que falha responde o erro dela, sem ter zerado nada) → só então o zerar → o evento. Antes desta
+  // correção, um `assign` dentro dos `await` do zerar fazia o CAS casar 0 e o cancelamento responder 404 com os itens já
+  // zerados numa OS que não foi cancelada (medido pela crítica da emenda, 20/20).
   async cancelWithFinancialDecision(
     input: CancelWorkOrderWithFinancialDecisionInput,
   ): Promise<CancelWorkOrderWithFinancialDecisionResult | undefined> {
-    const current = await this.findById(input.tenantId, input.workOrderId);
+    const current = this.liveWorkOrder(input.tenantId, input.workOrderId);
     if (!current) return undefined;
     input.assertCancellable(current.status);
-    if (input.decision === "zero") {
-      if (await input.memoryFinancials.hasActiveInvoiced()) throw hasInvoicedItemsError();
-      await input.memoryFinancials.zeroActive();
-    }
-    const workOrder = await this.changeStatus({
+    if (input.decision === "zero" && (await input.memoryFinancials.hasActiveInvoiced())) throw hasInvoicedItemsError();
+    const cancelWrite = {
       tenantId: input.tenantId,
       workOrderId: input.workOrderId,
-      status: "cancelled",
-      expectedStatus: current.status,
+      status: "cancelled" as const,
       message: input.event.message,
       cancellationReason: input.cancellationReason,
       financialCancellationDecision: input.decision,
       actorUserId: input.actorUserId,
-    });
-    if (!workOrder) return undefined;
+    };
+    let fromStatus = current.status;
+    let workOrder = await this.changeStatus({ ...cancelWrite, expectedStatus: fromStatus });
+    if (!workOrder) {
+      const reread = this.liveWorkOrder(input.tenantId, input.workOrderId);
+      if (!reread) return undefined;
+      input.assertCancellable(reread.status);
+      fromStatus = reread.status;
+      workOrder = await this.changeStatus({ ...cancelWrite, expectedStatus: fromStatus });
+      if (!workOrder) return undefined;
+    }
+    if (input.decision === "zero") await input.memoryFinancials.zeroActive();
     await this.createEvent({
       tenantId: input.tenantId,
       workOrderId: input.workOrderId,
       eventType: "work_order_cancelled",
-      fromStatus: current.status,
+      fromStatus,
       toStatus: "cancelled",
       actorUserId: input.actorUserId,
       message: input.event.message,
       metadata: input.event.metadata,
     });
 
-    return { workOrder, fromStatus: current.status };
+    return { workOrder, fromStatus };
   }
 
   async assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
-    const current = await this.findById(input.tenantId, input.workOrderId);
+    const current = this.liveWorkOrder(input.tenantId, input.workOrderId);
     if (!current) return undefined;
-    // B-SAN3-23 (P-23.4) — paridade do CAS do Prisma (`event.fromStatus` = a situação que o serviço validou).
+    // B-SAN3-23 (P-23.4; EM1-04) — paridade do CAS do Prisma (`event.fromStatus` = a situação que o serviço validou),
+    // sobre a OS viva, no mesmo tique da gravação.
     if (current.status !== input.event.fromStatus) return undefined;
     const now = new Date();
     const workOrder: WorkOrder = {
@@ -530,9 +547,10 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   }
 
   async assignFromDispatch(input: AssignWorkOrderFromDispatchInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
-    const current = await this.findById(input.tenantId, input.workOrderId);
+    const current = this.liveWorkOrder(input.tenantId, input.workOrderId);
     if (!current) return undefined;
-    // B-SAN3-23 (P-23.4, C23R2-01) — paridade do CAS do Prisma: compara com a situação que o serviço validou.
+    // B-SAN3-23 (P-23.4, C23R2-01; EM1-04) — paridade do CAS do Prisma: compara com a situação que o serviço validou,
+    // sobre a OS viva, no mesmo tique da gravação.
     if (current.status !== input.event.fromStatus) return undefined;
     const now = new Date();
     const nextStatus: WorkOrderStatus = current.status === "open" ? "assigned" : current.status;
