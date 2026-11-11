@@ -178,3 +178,5 @@ Cada âncora X contou **1** no arquivo indicado antes de aplicar; a mutação fo
 - `git diff --name-only cf48cc80..HEAD -- src/modules/cloud-costs` = só `aws-cur.parser.ts`, `+1 −0`.
 - Leitura do dev (§A6): `git diff --name-only cf48cc80..HEAD -- prisma` mostra `schema.prisma` e a migração `20260901100000_impound_process_regime_snapshot`, ambos vindos do `git merge origin/main` obrigatório (`f5b79026`, #539), não do conserto; o conserto, medido a partir da base pós-merge `af7f23fb`, não adiciona nenhuma migração.
 - `pendencias.md` foi normalizado de volta a LF: o merge anterior o deixou CRLF, o que poluía o diff do PR com 27 k linhas. Depois da normalização, `git diff origin/main...HEAD -- pendencias.md` = **45 inserções** (só as pendências reais).
+
+PRONTO PARA AS CADEIRAS — head 1f319c0d324ba69dc4adbebd7e587d82ee9aeca2
