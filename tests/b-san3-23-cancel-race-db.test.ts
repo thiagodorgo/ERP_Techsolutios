@@ -368,6 +368,49 @@ if (!connectionString) {
     expectReason(lost, 409, "invalid_status_transition", "despachar depois do cancelamento");
     assert.deepEqual({ status: state.status, decisao: state.decisao, tecnico: state.tecnico, atribuicoes: state.atribuicoes }, { status: "cancelled", decisao: "keep", tecnico: null, atribuicoes: 0 });
   });
+
+  // ------------------------------------------------------------- Emenda 1 (EM1-05) — a corrida LEGÍTIMA não vira 409
+
+  test("[A15c] (EM1-05) despacho do mesmo técnico em voo × despachar → o CAS casa 0, o serviço relê `assigned`, revalida e regrava UMA vez: 201; 2 atribuições; evento com a origem relida", async (t) => {
+    const s = await seed("a15c");
+    const winner = await holdWinner(s, async (tx) => {
+      await tx.$queryRaw`SELECT id FROM work_orders WHERE tenant_id = ${s.tenantId}::uuid AND id = ${s.workOrderId}::uuid FOR UPDATE`;
+      await tx.$executeRaw`
+        UPDATE work_orders SET status = 'assigned', assigned_user_id = ${s.userId}::uuid, assigned_operator_id = ${s.userId}::uuid
+         WHERE tenant_id = ${s.tenantId}::uuid AND id = ${s.workOrderId}::uuid
+      `;
+      await tx.$executeRaw`
+        INSERT INTO work_order_assignments (tenant_id, work_order_id, operator_id, user_id, assigned_by, metadata)
+        VALUES (${s.tenantId}::uuid, ${s.workOrderId}::uuid, ${s.userId}::uuid, ${s.userId}::uuid, ${s.userId}::uuid, '{}'::jsonb)
+      `;
+    });
+    const { barrier, won, lost } = await race(winner, () => h.workOrders.assignFromDispatch(s.actor, dispatchInput(s)), "despachar atrás do despacho em voo");
+    const state = await osState(s);
+    const events = await assignedEvents(s);
+    t.diagnostic(`[A15c] barreira=${barrier} | perdedor=${describe(lost)} | estado=${JSON.stringify(state)} | eventos=${JSON.stringify(events)}`);
+    expectFulfilled(won, "vencedor (despacho em voo)");
+    expectFulfilled(lost, "o 2º despacho, válido também sobre a situação nova");
+    assert.deepEqual({ status: state.status, tecnico: state.tecnico, atribuicoes: state.atribuicoes }, { status: "assigned", tecnico: s.userId, atribuicoes: 2 });
+    assert.deepEqual(events, ["assigned>assigned"], "o evento da regravação leva a situação RELIDA como origem");
+  });
+
+  test("[A15d] (EM1-05) N=10 sem barreira: dois despachos concorrentes do mesmo técnico → os dois 201, 2 atribuições, OS assigned", async (t) => {
+    const base = await seed("a15d");
+    const tally: Record<string, number> = {};
+    t.after(() => t.diagnostic(`[A15d] desfechos=${JSON.stringify(tally)}`));
+    for (let round = 0; round < 10; round += 1) {
+      const s = await newWorkOrderIn(base, `a15d-${round}`);
+      const outcomes = await Promise.all([
+        captureSettled(h.workOrders.assignFromDispatch(s.actor, dispatchInput(s))),
+        captureSettled(h.workOrders.assignFromDispatch(s.actor, dispatchInput(s))),
+      ]);
+      const state = await osState(s);
+      const key = `${outcomes.map(describe).join(",")} => ${state.status}/atrib=${state.atribuicoes}`;
+      tally[key] = (tally[key] ?? 0) + 1;
+      for (const outcome of outcomes) expectFulfilled(outcome, `rodada ${round}: despacho`);
+      assert.deepEqual({ status: state.status, atribuicoes: state.atribuicoes }, { status: "assigned", atribuicoes: 2 }, `rodada ${round}`);
+    }
+  });
 }
 
 // ------------------------------------------------------------------------------------------- arnês
@@ -674,6 +717,14 @@ async function osState(s: Seed) {
     eventos,
     atribuicoes,
   };
+}
+
+async function assignedEvents(s: Seed): Promise<string[]> {
+  const rows = await h.admin.workOrderEvent.findMany({
+    where: { tenant_id: s.tenantId, work_order_id: s.workOrderId, event_type: "work_order_assigned" },
+    orderBy: [{ created_at: "asc" }],
+  });
+  return rows.map((row: any) => `${row.from_status}>${row.to_status}`);
 }
 
 /** I-Z (R-01b): OS `cancelled` com decisão `zero` ⇒ 0 item faturado ativo ∧ 0 título receivable ativo da OS. */
