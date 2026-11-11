@@ -91,7 +91,7 @@ test("platform admin importa manual CSV por JSON seguro", async () => {
   });
 });
 
-test("T-E41-1r · R41-01(a) — manual-csv com linha de período invertido responde 201 failed com 'at row 2'", async () => {
+test("T-E41-1r · R41-01(a) — manual-csv com linha de período invertido responde 201 failed com 'at data row 2'", async () => {
   await withCloudCostsApi(async ({ baseUrl }) => {
     const header =
       "bill/BillingPeriodStartDate,bill/BillingPeriodEndDate,lineItem/UsageStartDate,lineItem/UsageEndDate,lineItem/ProductCode,lineItem/UsageType,lineItem/Operation,product/region,lineItem/ResourceId,lineItem/UsageAmount,lineItem/UsageUnit,lineItem/UnblendedCost,lineItem/CurrencyCode,resourceTags/user:Project,resourceTags/user:Environment,resourceTags/user:Tenant,resourceTags/user:Module";
@@ -105,7 +105,7 @@ test("T-E41-1r · R41-01(a) — manual-csv com linha de período invertido respo
 
     assert.equal(response.status, 201);
     assert.equal(response.body.data.status, "failed");
-    assert.match(response.body.data.errorMessage ?? "", /at row 2/);
+    assert.match(response.body.data.errorMessage ?? "", /at data row 2/);
   });
 });
 

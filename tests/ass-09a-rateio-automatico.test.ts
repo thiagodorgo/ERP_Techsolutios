@@ -1052,7 +1052,7 @@ test("T-E41-1 · R41-01(a) — a importação com linha invertida falha no parse
   });
 
   assert.equal(Y.status, "failed");
-  assert.match(Y.errorMessage ?? "", /at row 3/);
+  assert.match(Y.errorMessage ?? "", /at data row 3/);
   assert.equal((await costRepository.listLineItems({ importId: Y.id })).length, 0, "0 linhas de Y");
   assert.equal((await allocationRepository.listRunsByImport(Y.id)).length, 0, "0 runs de Y");
   assert.equal(enqueued.length, 0, "o gancho não roda para a importação que falhou");

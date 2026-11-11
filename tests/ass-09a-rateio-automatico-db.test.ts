@@ -618,7 +618,7 @@ if (!connectionString) {
     const imported = await c.plainCosts.importAwsCurCsv({ csv, sourceType: "manual_csv" });
     try {
       assert.equal(imported.status, "failed");
-      assert.match(imported.errorMessage ?? "", /at row 3/);
+      assert.match(imported.errorMessage ?? "", /at data row 3/);
       assert.equal(await c.admin.cloudCostLineItem.count({ where: { import_id: imported.id } }), 0, "0 linhas");
       assert.equal((await c.allocation.listRunsByImport(imported.id)).length, 0, "0 runs");
     } finally {

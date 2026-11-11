@@ -13713,6 +13713,20 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** cada arquivo importado é uma importação, e cada importação ganha o seu rateio do mês; `getAllocationSummary` escolhe a run mais recente do mês, sem somar importações.
 - **critério de encerramento:** o resumo do mês soma as importações do mesmo mês (ou o arquivo parcial é recusado), com teste de dois arquivos do mesmo mês.
 
+## P-ASS09A-BORDA-MICROSSEGUNDO (2026-11-11) — a base de ações da janela [início, fim − 1 ms] perde o último milissegundo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (C1-A4 da junta do #542; não erra valor — só o peso das ações, e o custo se conserva) · **escopo:** o conserto das Emendas 4/4.1 do `B-ASS-09a` não muda `sumUsageBasis` (mudar para fim exclusivo mexe também no rateio manual) · **dono:** `B-ASS-09` · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** C1-A4 da junta do #542, triado na Emenda 4.6 do plano do `B-ASS-09a` (`planos/plano-B-ASS-09a-v2.md`, fora do repositório).
+- **fato:** a base de ações da janela `[início, fim − 1 ms]` perde o último milissegundo em `timestamptz(6)`; o custo se conserva, só o peso da base muda.
+- **critério de encerramento:** `sumUsageBasis` passa a fim exclusivo (sem o `− 1 ms`) sem quebrar o rateio manual, com teste de peso por ação.
+
+## P-ASS09A-REDE-TRANSFERENCIA (2026-11-11) — "rede" na P8 alcança AWSDataTransfer e AmazonCloudFront? — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (C1-A2 da junta do #542, anterior ao bloco) · **escopo:** anterior ao `B-ASS-09a`; a P8 de monitoramento/chaves/DNS/rede não diz se `AWSDataTransfer` e `AmazonCloudFront` entram em "rede" · **dono:** o plano do `B-ASS-09` (pergunta ao dono) · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** C1-A2 da junta do #542, triado na Emenda 4.6 do plano do `B-ASS-09a` (fora do repositório); a pergunta vai ao dono no plano do `B-ASS-09`.
+- **fato:** a P8 define que "rede" entra no rateio pelas ações; o alcance de `AWSDataTransfer` e `AmazonCloudFront` ainda não está decidido.
+- **critério de encerramento:** o dono decide se `AWSDataTransfer` e `AmazonCloudFront` entram em "rede" (P8), e a regra reflete a decisão com teste.
+
 ## P-ALLOC-RUN-STARTED-AT-NULO (2026-11-11) — no Postgres, a run de rateio concluída fica com `started_at` vazio — BAIXA
 
 - **status:** ABERTA · **gravidade:** BAIXA (a Emenda 2 do plano do `B-ASS-09a`, item 4; não erra valor) · **escopo:** `pre-existente` (anterior ao `B-ASS-09a`); `PrismaCloudCostAllocationRepository.updateRun` (`src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts`) grava `started_at: input.startedAt ?? null` · **dono:** `B-ASS-09` (próximo bloco do motor de rateio; leitura do dev, declarada (§A6), corrige-se numa linha) · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
