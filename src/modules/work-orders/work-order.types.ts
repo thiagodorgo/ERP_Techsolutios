@@ -392,6 +392,11 @@ export type UpdateWorkOrderInput = Partial<
 type ChangeWorkOrderStatusCommon = {
   readonly tenantId: string;
   readonly workOrderId: string;
+  // B-SAN3-23 (P-23.4, Q1 = A) — CAS: a situação que o serviço VALIDOU. O repositório só grava se a OS ainda estiver
+  // nela; senão devolve `undefined` e o serviço relê (409/404). OBRIGATÓRIO de propósito (C23R2-06): no Prisma,
+  // `undefined` no `where` descarta o predicado, e um chamador que esquecesse o campo gravaria sem CAS em silêncio.
+  // O `status` mora na união abaixo (B-SAN3-26): `on_site` exige o veredito (Emenda 3 da junção, item 3).
+  readonly expectedStatus: WorkOrderStatus;
   readonly message: string;
   readonly cancellationReason?: string;
   // Ω3F-6 — só o `cancel` (D-Ω3F-6-CANCEL) preenche. O endpoint de status legado segue sem decisão
@@ -417,6 +422,31 @@ export type ChangeWorkOrderStatusInput =
 // `http_status_route`, a única porta em que a base marca "No local" sem os dígitos. Sem o parâmetro vale `internal`,
 // que é estrita.
 export type CheckinEntry = "http_status_route" | "mobile_sync" | "internal";
+
+// B-SAN3-23 (P-23.1) — o cancelamento como UNIDADE no repositório: trava exclusiva da OS → a regra de transição do
+// serviço sobre a situação lida sob a trava → no `zero`, "há item ativo faturado?" e o zerar → a situação → o evento.
+// Tudo commita junto, ou nada. O serviço continua dono da regra (D-1): passa a transição e os dados do evento.
+export type CancelWorkOrderWithFinancialDecisionInput = {
+  readonly tenantId: string;
+  readonly workOrderId: string;
+  readonly decision: WorkOrderFinancialCancellationDecision;
+  readonly cancellationReason: string;
+  readonly actorUserId: string;
+  readonly assertCancellable: (fromStatus: WorkOrderStatus) => void;
+  readonly event: { readonly message: string; readonly metadata: JsonRecord };
+  // D-2 — SÓ o dublê de memória usa: o financeiro da OS em memória, pelo import dinâmico do serviço. O repositório
+  // Prisma confere e zera os itens na própria transação, sob a trava, e nunca chama esta porta.
+  readonly memoryFinancials: {
+    readonly hasActiveInvoiced: () => Promise<boolean>;
+    readonly zeroActive: () => Promise<number>;
+  };
+};
+
+// `fromStatus` é a situação lida SOB A TRAVA: é ela que vai para o evento e para o `publishDomainEvent`.
+export type CancelWorkOrderWithFinancialDecisionResult = {
+  readonly workOrder: WorkOrder;
+  readonly fromStatus: WorkOrderStatus;
+};
 
 // Ω1b-2 — grava a coordenada geocodificada + metadados do cache na OS (tenant-scoped).
 export type UpdateWorkOrderGeocodeInput = {
@@ -541,6 +571,28 @@ export class WorkOrderError extends Error {
     super(message);
     this.name = "WorkOrderError";
   }
+}
+
+// P-Ω3F6-STATUS-BYPASS → B-SAN3-23 — `zero` com item JÁ FATURADO (lastro de Título, D-Ω4-C1) é contraditório: 422 e o
+// gestor usa `keep`. Agora decidido DENTRO da unidade do cancelamento, sob a trava da OS (R-01).
+export function hasInvoicedItemsError(): WorkOrderError {
+  return new WorkOrderError(
+    422,
+    "WORK_ORDER_UNPROCESSABLE",
+    "has_invoiced_items",
+    "Cannot zero the financials of a work order with invoiced items; the receivable title already exists. Use keep.",
+  );
+}
+
+// B-SAN3-23 (R-08) — o cancelamento espera a trava exclusiva da OS; espera acima do prazo da transação, impasse ou
+// conflito de serialização: a transação já desfez (nada persistiu) e repetir é seguro. 503, a forma da casa.
+export function cancelTransientConflictError(): WorkOrderError {
+  return new WorkOrderError(
+    503,
+    "WORK_ORDER_UNAVAILABLE",
+    "work_order_cancel_transient_conflict",
+    "Cancelling hit a transient database conflict and nothing was saved. Retry the operation.",
+  );
 }
 
 // B-O6R-07c-b1 (D2-07c (d)) — a recusa de escopo por objeto do 07a, com a marca "o ator JÁ FOI técnico desta OS"

@@ -48,9 +48,9 @@ class _NewExpenseReportScreenState extends State<NewExpenseReportScreen> {
           const Card(
             child: ListTile(
               leading: Icon(Icons.cloud_queue_outlined),
-              title: Text('Criacao local-first'),
+              title: Text('Salva neste aparelho'),
               subtitle: Text(
-                'Ao salvar, a Prestação de Contas fica local e uma acao expense_report.create entra na fila de sync.',
+                'Ao salvar, a prestação de contas fica neste aparelho e entra na fila de envio. Acompanhe o envio em Sincronizar.',
               ),
             ),
           ),

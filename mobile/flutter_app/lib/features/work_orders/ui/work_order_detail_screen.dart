@@ -50,8 +50,9 @@ class WorkOrderDetailScreen extends ConsumerWidget {
             ),
             const Expanded(
               child: PermissionBlockedState(
-                title: 'Acesso nao autorizado',
-                message: 'work_orders:read necessario para visualizar esta OS.',
+                title: 'Acesso não permitido',
+                message:
+                    'Seu perfil não tem permissão para ver esta OS. Fale com o administrador da sua organização.',
               ),
             ),
           ],

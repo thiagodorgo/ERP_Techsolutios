@@ -1473,6 +1473,7 @@ Os três (bypass legado sem decisão; item em OS cancelada; N deletes não-atôm
 
 - **duplicata de:** `P-GOLIVE-VALIDATE-CONSTRAINT` — só o residual LEGACY-NULL desta entrada, que não tem cabeçalho próprio (crítico SAN3 r1, CR1-16; emenda de 2026-09-11) — tratar junto.
 - **dono:** `B-SAN3-23` (plano SAN3, §4.1 item 23 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13), emenda sobre `P-Ω3F6-CANCEL-RACE`: o bullet `P-Ω3F6-CANCEL-RACE` (item 23) tem dono `B-SAN3-23`.
+- **`P-Ω3F6-CANCEL-RACE` — FECHADO pelo `B-SAN3-23` (2026-11-11, ramo `fix/os-cancelada-sem-item-financeiro`; o merge e a CI do merge entram no registro pós-merge).** Só este residual fecha; `P-Ω3F6-LEGACY-NULL`, `P-Ω3F6-CANCEL-IDEM` e `P-Ω3F6-MOBILE-DEADLETTER` seguem abertos, e a entrada continua ABERTA por eles. O cancelamento virou uma unidade sob a trava exclusiva da OS (`cancelWithFinancialDecision`), e lançar, editar, apagar item e faturar relêem a situação sob a trava compartilhada da OS. Prova: `tests/b-san3-23-cancel-race-db.test.ts` (A1, A2, A3 e A9, com barreira; vermelhos no código de hoje, verdes no bloco; mutações no diário `docs/revisoes/SAN3/B-SAN3-23-dev.md`).
 
 ## P-GOLIVE-SECRET-ROTATE — ~~Chave Google Maps: rotação humana obrigatória~~ — **FECHADA (2026-08-29): rotação DISPENSADA pelo dono**
 
@@ -2254,6 +2255,28 @@ que está sujo). Somam-se modelos de teste acumulados: `HACKEADO`, 8× `Novo mod
   (`displayName: 'Tenant Demo'`, medido na `origin/main@e7dcbbb7`). A fronteira do `B-SAN3-07` é só `prisma/seed.ts`;
   **leitura do redator, declarada (§A6):** o item 47 só fecha com as duas instâncias, e o plano do `B-SAN3-07` declara a
   ampliação nominal para esse arquivo do app (ou devolve a instância a um bloco mobile com dono escrito).
+- **apenso 2026-11-11 (`B-SAN3-07`, PR #535, ramo `fix/seed-papeis-legados`, `dev-san3-07-cl`): a prova no banco que o #518 não
+  tinha.** Base Postgres 16 descartável só do seed (`migrate deploy` + `db:seed`): `SELECT name FROM tenants` → 1 linha,
+  `Organização Demonstração` (o critério literal do §5 do `PLANO_SAN3.md`). Teste permanente: a asserção P3 dentro do
+  teste de concessões de `tests/permission-catalog-db-parity.test.ts` (job `backend-postgres`). Em base semeada (sentinela:
+  o registro de auditoria `seed.initialized`, que só o seed grava) ela lê `select name from tenants where slug = 'demo'`,
+  exige 1 linha e nenhum `/tenant/i`; em base só provisionada ela não se aplica. A mutação M3 (as 2 linhas do nome →
+  `"Tenant Demo"`) a deixa vermelha, o inverso do diff do #518 é byte a byte essa mutação, e a M5 (o seed deixa de criar
+  a `demo` e mantém a sentinela) também a deixa vermelha. A instância do app (o apenso anterior) não entra
+  neste bloco: o plano a devolve ao `B-SAN3-19b` e a pergunta (o item 47 fecha sem ela?) está com o dono → registrada em
+  `P-SAN3-07-APP-NOME-TECNICO-OFFLINE`.
+
+- **apenso 2026-11-11 (`B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`): a instância do app fechou.** O plano do 19b assumiu o resíduo
+  (§2.5). `bootstrap_session.dart`: os `displayName` da sessão de demonstração passaram a `Organização Demonstração`
+  (as duas entradas) e `Organização Serviços de Campo`; `bootstrap_repository.dart` (`_tenantDisplayName`, só o nome
+  exibido): o app local usa o nome da sessão de demonstração pelo id e, fora dela, o id formatado sem a palavra
+  `tenant`. Testes: T8 (i)(ii)(iii) de `test/features/bsan319b_texto_exibido_test.dart`; M17 e M18 vermelhas.
+  **Ressalva (crítica r2, CRIT19B-R2-07):** quem já estava logado no app de demonstração segue vendo o nome antigo até
+  sair ou tocar em "Tentar de novo", porque o `bootstrapSessionProvider` usa primeiro o `restoreCached()` e o codec
+  guarda o `displayName` (`bootstrap_codec.dart`, fora do escopo; só o app de demonstração é afetado).
+  **Observação, fora do escopo (plano §2.5):** o e-mail do usuário de demonstração `tecnico@tenant.demo`
+  (`bootstrap_session.dart:116`, `login_screen.dart:132`) é dado do usuário, não texto de interface; trocá-lo mexe em
+  ~10 testes e no acesso rápido.
 
 ## P-CHK-PREVIEW-DOCK-LIMIAR (2026-08-08) — limiar de 1600px é constante, não medição do contêiner (BAIXA)
 
@@ -8933,7 +8956,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico, nome "flutter_app" e README de template — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`; a home, o manifest e o rótulo de papel fecharam no PR #487): a guarda de fonte dos literais nas âncoras de exibição do app (T6) em 0; texto montado só por interpolação fica fora dela (fechamento e resíduo abaixo).
+- status anterior: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
 - **fonte (fatia AUSENTES, §2a):** sintese B45, §6(a6)
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `shared/ui/home_screen.dart:153-154,407` `'${session.user.tenantRole} · …'`; `shared/ui/module_placeholder_screen.dart:42` "Permissao $requiredPermission nao retornou no bootstrap" (`/approvals`, `router.dart:253-255`); `android/app/src/main/AndroidManifest.xml:6` `android:label="flutter_app"`; `README.md` "A new Flutter project."
@@ -8950,6 +8974,26 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
   (`sync_action_labels.dart`)**, os 20 `lastSafeError` dos 4 replays e o do coordenador acentuados, 'Auto sync'/'Ultimo
   sync'; segue com `B-SAN3-19`: 'Checklists', 'Despesas (RDV)', lista de OS, home, placeholder, manifest, títulos do
   Diagnóstico (e `P-O6R11-TEXTOS-FORA-DE-D-T`).
+- **fechamento (2026-11-11, `B-SAN3-19b`):** o "guard de strings sem permissão/papel técnico" do teste de
+  encerramento é o T6 de `test/features/bsan319b_texto_exibido_test.dart`: lê a árvore sintática de todo
+  `lib/**/*.dart` e cobre os literais nas âncoras de exibição (argumentos `title`, `message`, `label`, `text` de
+  `TextSpan`, `errorText`… e o `=` deles; o 1º argumento de `Text(`; os braços `=>` de função ou getter de rótulo; os
+  ramos de `?:`, `??`, `+` e `switch`; `text` e `errorText` entraram pela Emenda 3 do plano, PR540-04). Proíbe
+  chave `a:b`, chave de ação `a.b`, `bootstrap|backend|placeholder|workflow|token|tenant|local-first|payload|endpoint` e
+  papel cru (as chaves de `role_labels.dart`, lidas do arquivo). Medido no ramo: `exibidos=779 violacoes=0`, allowlist de
+  1 arquivo (`diagnostics_screen.dart`, só abre com `kIsDevMode`, conferido no teste), piso N0 = 779. Na base
+  (`a0979f51`) eram 24 violações; todas consertadas. O T6b prova na tela que a lista de despesas do app de
+  demonstração não mostra 'Aprovado manager', 'fila local-first', código de regra nem texto em inglês do banner de
+  política. O acesso não permitido das 10 telas, o placeholder e o README entram no mesmo PR.
+- **resíduo de classe, declarado (crítica r2 do plano, CRIT19B-R2-02, classe (2)):** a guarda é de **fonte** e não vê
+  texto montado só por interpolação de exceção: 4 `SnackBar` mostram `$e` cru (`work_order_execute_screen.dart:144`,
+  `checklist_run_screen.dart:126`, `checklist_acknowledgement_screen.dart:65`, `new_work_order_screen.dart:223`; no caso
+  de borda de organização divergente, `work_order_repository.dart:884` lança `StateError('Tenant mismatch')`). A Emenda 1
+  do plano escolheu a saída (a) só para o banner de política; esses 4 pontos ficaram fora do PERMITIDO e não foram
+  tocados. A Emenda 2 do plano os destina à `P-MOBILE-TEXTO-TECNICO-INTERPOLADO` (N = 4 SnackBars com `$e`), que o
+  PR de registro do orquestrador registra. A guarda também não vê dado cru interpolado (id de categoria, id de
+  checklist; PR540-05 da pré-revisão), que a Emenda 3 destina à `P-MOBILE-IDENTIFICADOR-CRU-NA-TELA`, também do
+  orquestrador.
 
 ---
 
@@ -9823,7 +9867,8 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-04A-SEED-PAPEIS-LEGADOS (2026-09-18) — base preparada só com o seed não tem cinco papéis do catálogo — MÉDIA
 
-- status: ABERTA (B-SAN3-04a, plano do bloco §3 S1 e §4.7)
+- status: FECHADA (2026-11-11, `B-SAN3-07`, item 47 — PR #535, ramo `fix/seed-papeis-legados`): `prisma/seed.ts` semeia `DEFAULT_ROLES.filter((role) => role !== "platform_admin")`, a mesma regra de `scripts/provision-rbac.ts`. Medido em Postgres 16 descartável: seed da `main` `07898adf` → 7 papéis globais, e o teste-dono `tests/permission-catalog-db-parity.test.ts` (isenção reduzida a `platform_admin`; P2 e P3 dentro do teste de concessões, e o P3 só em base semeada, detectada pela sentinela `seed.initialized` — Emenda 2 do plano) fica vermelho com exatamente os 5 (`operator` 68, `finance` 62, `inventory` 17, `field_technician` 49, `support` 11); seed do bloco → 12 papéis globais, 929 concessões iguais às do catálogo papel a papel, `platform_admin` sem linha, o 2º seed sem duplicata e sem perder concessão, e `db:provision-rbac -- --dry-run` com 0 papel e 0 concessão a criar. As mutações M1–M5 ficam vermelhas pelo motivo certo, e os 3 drills que rodam a paridade em base provisionada sem seed (`ass-04`, `ass-05`, `b-san3-12a`) seguem verdes. Relatório: `docs/revisoes/SAN3/B-SAN3-07-dev.md`. Resíduos com dono próprio: `P-SAN3-07-SEED-USERS-LEGADO` e `P-SAN3-07-SEED-FORA-DO-TYPECHECK`.
+- status anterior: ABERTA (B-SAN3-04a, plano do bloco §3 S1 e §4.7)
 - **prova (N = 5 papéis — `finance`, `inventory`, `operator`, `field_technician`, `support`; forma: numa base preparada como a CI (`prisma migrate deploy` + `npm run db:seed`, sem `db:provision-rbac`) não existe linha global desses papéis; causa: `prisma/seed.ts` semeia `STANDARD_ROLES` + `auditor` — o escopo do bloco autorizou só o `auditor`):** medido pelo dev (drill D4, código do bloco): papéis globais = `auditor` 56, `field_dispatcher` 42, `manager` 139, `super_admin` 198, `technician` 44, `tenant_admin` 185, `viewer` 45 — os cinco ausentes.
 - **escopo:** `pre-existente` — o laço do seed é anterior ao bloco.
 - **dono:** `B-SAN3-07` (mesmo arquivo; consumidor `B-SAN3-10`, cujo `test:e2e` roda `db:seed` só).
@@ -11515,12 +11560,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento:** uma mutação de controle num worktree descartável `C:/Users/AMP/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.
 
-## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA
+## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA — FECHADA pelo `B-SAN3-23`
 
-- **status:** ABERTA · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23` ou pós-gate
+- **status:** FECHADA (2026-11-11, `B-SAN3-23`, ramo `fix/os-cancelada-sem-item-financeiro`; o merge e a CI do merge entram no registro pós-merge) · **escopo:** `pre-existente` (o `P-Ω3F6-TERMINAL-GUARD` é pré-check fora da unidade desde o Ω3F-6) · **dono:** `SAN3-23`
 - **Origem:** plano do `B-SAN3-02` v2, §1.2 (a) e §11. O faturamento trava os ITENS, não a OS.
 - **bloqueia:** não.
 - **teste de encerramento:** cancelar a OS com um faturamento em voo nunca deixa título novo numa OS cancelada, com teste `-db` de corrida.
+- **como fechou:** o faturamento pega a trava compartilhada da OS antes dos itens e relê a situação; o cancelamento é uma unidade sob a trava exclusiva da OS e, no `zero`, confere o item faturado sob ela. Prova em `tests/b-san3-23-cancel-race-db.test.ts`: A5 (faturar atrás do cancelamento → 422 `work_order_cancelled`, 0 título), A9 (cancelar `zero` atrás do faturamento → 422 `has_invoiced_items`, I-Z) e A10 (ordem OS → itens, 0 impasse). Os três vermelhos no código de hoje (F0 do diário).
 
 ## P-SAN3-02-PAI-CANCELADO (2026-10-19) — original cancelado por status continua sendo o pai do delta — BAIXA
 
@@ -11935,7 +11981,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **dono:** `B-O6R-11b` (proposto pelo dev do 1º PR; ratificado pelo orquestrador em 2026-11-02 — leitura do orquestrador, declarada; o plano não nomeou).
 
 ## P-O6R11-TEXTOS-FORA-DE-D-T (2026-11-02) — textos de falha sem acento fora dos arquivos do 1º PR do `B-O6R-11` — BAIXA
-- status: ABERTA
+- status: FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`): os 4 literais acentuados e o aviso de integração sem a promessa de sincronizar (fechamento abaixo).
+- status anterior: ABERTA
 - **origem:** 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`) (emenda 4, nota de 02/11 da F7c). A F-T acentuou os 20 `lastSafeError` dos 4 replays e o do
   coordenador; ficaram, fora do PERMITIDO, `mobile/flutter_app/lib/core/sync/sync_engine.dart:54` ('Conflito remoto exige
   decisao manual.'), `lib/core/location/field_location_service.dart:160` e `lib/core/telemetry/telemetry_sync_service.dart:141`
@@ -11948,6 +11995,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   localmente e serao sincronizados quando a integracao estiver ativa.'), lançada por `field_location_api.dart:24` e
   `expense_remote_api.dart:63`; existe igual na `main` (`b56031b0`). Além de sem acento, o texto promete "serao
   sincronizados", o que a P-TELA-VERDADEIRA evita. O encerramento inclui reescrevê-la sem a promessa.
+- **fechamento (2026-11-11, `B-SAN3-19b`):** `sync_engine.dart:54` → 'Conflito remoto exige decisão manual.';
+  `field_location_service.dart:160` e `telemetry_sync_service.dart:141` → 'Falha de conexão. Tente novamente.';
+  `api_error.dart:43-44` → 'Integração remota ainda não disponível. Seus dados ficam guardados neste aparelho.'. Guarda:
+  T7 de `test/features/bsan319b_texto_exibido_test.dart` (0 ocorrências de `decisao manual`, `Falha de conexao` e
+  `Integracao remota` em literal de `lib/`, lido pela árvore sintática, sem comentário; `safeMessage` sem `sincroniz`),
+  com M15 e M16 vermelhas. A guarda viva do aviso falso de integração (`bo6r11_sync_screen_despesa_e_saida_test.dart`,
+  w3 e w3') passou a procurar as duas grafias (`RegExp('Integra[cç][aã]o remota')`), porque a forma acentuada virou
+  texto vivo (crítica r2 do plano, CRIT19B-R2-03); M25 vermelha.
 
 ## P-O6R-B11-PENDENCIAS-DO-RAMO-388 (2026-11-02) — índice das 12 pendências do ramo `fix/mobile-work-order-contracts` que não foram portadas — MÉDIA
 - status: ABERTA (índice; cada pendência vale pelo texto no ramo)
@@ -12549,6 +12604,16 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** corpo do PR #487, "Pendências propostas (não feitas)": "títulos sem acento no app (`Aprovacoes`, `Diagnostico`…), em bloco próprio". Relaciona-se com `P-O6R11-TEXTOS-FORA-DE-D-T` e com o apenso de 02/11 em `P-MOBILE-FAXINA-TERMOS-TECNICOS`.
 - **leitura do redator, declarada (§A6):** o nome do bloco é do redator deste registro.
 - **encerramento:** guard de termos sem acento nos textos exibidos do app, como o do `B-SAN3-21` na web, em `ocorrencias=0`.
+- **apenso 2026-11-11 (`B-SAN3-19b`; plano v2 §2.3, que NÃO abre pendência duplicada):** o 19b acentuou só o que tocou
+  (acesso não permitido, placeholder, P-O6R11, despesas). Exemplos medidos em `a0979f51` que ficam para cá: títulos de
+  módulo da sessão de demonstração (`bootstrap_session.dart`, `Gestao de Despesas`, `Operacoes de Campo`, `Estoque do
+  Tecnico`, `Aprovacoes`) e o mesmo mapa em `bootstrap_repository.dart:147-180`;
+  `geolocator_device_location_provider.dart:133,158,160` (`Permissao de localizacao negada…`);
+  `work_order_approval_request_screen.dart:56,88,94` (`Solicitar Aprovacao`); `evidence_picker.dart:89` (`Camera`); o
+  rótulo de regra `Recibo obrigatorio`/`Violacao de politica` do detalhe (`_violationLabel`; o rótulo novo do banner de
+  política saiu acentuado no conserto do #540, PR540-03) e o título do banner (preso por `expense_screens_test.dart:25`); `Em analise` (`expense_models.dart`); `ErrorState`,
+  `OfflineState` e `NetworkStatusBanner` em `erp_components.dart` (`Nao foi possivel carregar`, `disponiveis`,
+  `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 
@@ -12600,9 +12665,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-19-PLACEHOLDER-CHAVE-CRUA (2026-11-03) — placeholder do app mostra a chave crua da permissão — BAIXA
 
-- **status:** ABERTA · **escopo:** `pre-existente`, ressalva do porteiro do PR #487 · **dono:** `B-SAN3-19b` · **PR-alvo:** PR desse bloco pequeno · **bloqueia:** não.
+- **status:** FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`) · status anterior: ABERTA · **escopo:** `pre-existente`, ressalva do porteiro do PR #487 · **dono:** `B-SAN3-19b` · **PR-alvo:** PR desse bloco pequeno · **bloqueia:** não.
 - **origem medida:** `mobile/flutter_app/lib/shared/ui/module_placeholder_screen.dart:42` mostra a chave técnica.
 - **encerramento:** texto de negócio em PT-BR, sem chave crua, com widget test.
+- **fechamento (2026-11-11, `B-SAN3-19b`):** o placeholder mostra `Acesso não permitido` e o `blockedMessage` que o
+  roteador escreve por rota (`/approvals`, `/diagnostics`, os dois roteadores iguais); o cartão do ramo com permissão
+  diz `Em breve` e o banner de andaime saiu. Testes: `test/features/bsan319b_acesso_nao_permitido_test.dart` (T1b, as 4
+  chamadas e a paridade; T3, widget pelo `appRouter`; T2, a `assert` do componente contra chave técnica; T4, o gate
+  não mudou). Mutações M4, M8, M9, M19 e M26 vermelhas (`docs/revisoes/SAN3/B-SAN3-19b-dev.md`, F5).
 
 ## P-CLOUD-BILLING-3-APARENCIAS (2026-11-03) — Cloud Billing da plataforma ainda não segue o padrão aprovado — MÉDIA
 
@@ -13575,3 +13645,93 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** residual declarado do conserto do C1-A1 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`dev-san3-26-fix-cl`, diário do bloco).
 - **fato:** o servidor passou a descartar a mensagem do cliente que contém "registrada/registrado pela base", em toda transição. A comparação ignora caixa, acento, pontuação, espaços e invisíveis, mas letra de outro alfabeto com a mesma forma (homóglifo) passa. O console só tem o texto para distinguir a marca verdadeira.
 - **critério de encerramento:** o console mostra a marca da base pelo `metadata.checkin = office` (e não pelo texto), com teste que fica vermelho com a timeline de hoje.
+- **nota (CONF534-01 da conferência `conf-534-api`, 2026-11-11, CONFERIDO; `saidas-v3/conf-534/saida/conf-534.json`, fora do repositório):** os preenchedores Hangul U+115F, U+3164 e U+FFA0 passam a dobra. Eles são invisíveis, Default_Ignorable e de categoria Lo, e a dobra só tira `\p{M}` e `\p{Cf}`. "Chegada ao local regis\u115Ftrada pela base." é gravada na linha do tempo da OS pela rota HTTP (200). O resíduo do homóglifo continua declarado. O fechamento é o critério acima, ou incluir `Default_Ignorable_Code_Point` na dobra. Não muda permissão: o `metadata.checkin` continua só do servidor.
+
+## P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e "Tenant Field Services" no modo offline — MÉDIA
+
+- **status:** FECHADA (2026-11-11, `B-SAN3-19b`, PR #540, ramo `fix/mobile-acesso-nao-permitido-textos`; fechamento abaixo) · status anterior: ABERTA · **escopo:** `pre-existente` (o texto está no app desde antes do `B-SAN3-07`, cuja fronteira é só `prisma/seed.ts`; apenso de 2026-11-03 da `P-CHK-SEED-DEMO-SUJO`) · **dono:** `B-SAN3-19b` (a faxina de termos técnicos do app, item 48), pela recomendação do plano do `B-SAN3-07` (§9); **a pergunta está com o dono**: o item 47 fecha sem esta instância? · **bloqueia:** não, se o dono seguir a recomendação.
+- **prova (N = 15 arquivos, 20 ocorrências; forma: 1 fonte + 14 testes Flutter; medido no `07898adf` por `git grep -lE "Tenant Demo|Tenant Field Services" HEAD -- mobile/`):** a fonte é `mobile/flutter_app/lib/core/bootstrap/bootstrap_session.dart:183,186` (`displayName: 'Tenant Demo'`) e `:189` (`'Tenant Field Services'`), o bootstrap local do modo offline. Os outros 14 são testes em `mobile/flutter_app/test/`; 2 deles EXIGEM o texto e quebram com a correção: `test/features/b091_connectivity_profile_test.dart:389` (`find.textContaining('Tenant Demo')`, na tela) e `test/features/b098_real_auth_bootstrap_test.dart:447` (`expect(bs.activeTenant.displayName, 'Tenant Field Services')`).
+- **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-05), que corrigiu o N do plano (ele citava só a fonte).
+- **teste de encerramento:** nenhum `Tenant` em texto exibido pelo app (guard de strings do `B-SAN3-19b`), com os 2 testes acima reescritos para o nome de negócio e a bateria Flutter verde.
+- **fechamento (2026-11-11, `B-SAN3-19b`, PR #540):** a instância do app fechou no commit `642664a9` (F4 do bloco):
+  `bootstrap_session.dart` passou a `Organização Demonstração` (as duas entradas) e `Organização Serviços de Campo`, e
+  `_tenantDisplayName` de `bootstrap_repository.dart` usa o nome da sessão de demonstração pelo id e, fora dela, o id
+  formatado sem a palavra `tenant` (só o nome exibido). Prova: o **T8** de
+  `test/features/bsan319b_texto_exibido_test.dart` (commit `fabf91f8`, vermelho na base `a0979f51`): (i) nenhum
+  `displayName` da sessão de demonstração contém `tenant`; (ii) o app local dá `Organização Demonstração` ao id
+  `tenant-demo`; (iii) um id fora da sessão não mostra `tenant`. As mutações M17 e M18 deixam o T8 vermelho. O guard de
+  strings (T6, `exibidos=779 violacoes=0`) proíbe `tenant` nas âncoras de exibição. Os 2 testes que exigiam o texto foram
+  reescritos: `b091_connectivity_profile_test.dart:389` → `Organização Demonstração` e
+  `b098_real_auth_bootstrap_test.dart:447` → `Organização Serviços de Campo`. Bateria Flutter verde (`+1119: All tests
+  passed!` em `ac4156d4`). Medido no ramo (`git grep -lE 'Tenant Demo|Tenant Field Services' HEAD -- mobile/`): 0
+  arquivos em `lib/` e 13 em `test/`, que usam o nome na **própria** fixture, não dependem do `lib` e ficaram intocados
+  (plano do 19b, §1.5). Ressalva, a mesma do apenso da `P-CHK-SEED-DEMO-SUJO`: quem já estava
+  logado no app de demonstração segue vendo o nome antigo até sair ou tocar em "Tentar de novo" (bootstrap em cache).
+
+## P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis legados e diz que eles "não vêm do seed base" — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`prisma/seed-users.ts` estava no PROIBIDO do `B-SAN3-07`) · **dono:** `B-SAN3-10` (roteiro de demonstração, consumidor do `db:seed:demo`), ou o primeiro bloco que tocar `prisma/seed-users.ts`, o que vier antes · **bloqueia:** não. Nada muda de permissão: os papéis e as concessões que o `seed-users.ts` cria são os mesmos que o seed base passou a criar.
+- **prova (N = 7 locais em 3 arquivos; medido no ramo `fix/seed-papeis-legados`):** em `prisma/seed-users.ts`, (1) `:41-43` a 3ª cópia da fórmula do nome do papel (`roleName`, igual a `formatRoleName` do seed e a `nomeDoPapel` do provisionamento); (2) `:53` o comentário "os LEGACY_ROLES não vêm do seed base", que passa a ser falso; (3) `:54-57` o `role.create` do papel global, que vira ramo morto no `db:seed:demo` (o `db:seed` roda antes e o `findFirst` acha o papel), e o laço de concessões `:60-68`, que vira redundante, com o `if (!perm) continue` que esconderia permissão ausente. Nos corpos de jurado, a instrução "Cobrar o seed dos papéis legados… dono `B-SAN3-07`", agora obsoleta: (4) `.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md:338` e (5) `:459`; (6) e (7) o espelho `.agents/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md:344,465`.
+- **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-04).
+- **teste de encerramento:** o `seed-users.ts` só busca os papéis globais (falha alto se faltar, sem `continue` silencioso) e o comentário diz a verdade; os dois corpos de jurado sem a instrução obsoleta, com `node scripts/sync-agent-agents.mjs --check` verde.
+
+## P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed.ts`, e o seed tem 2 erros de tipo — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (os 2 erros existem no `07898adf`, antes do `B-SAN3-07`, e são os mesmos depois dele) · **dono:** o próximo bloco na trava de `prisma/seed.ts` (`B-SAN3-18`, `PLANO_SAN3.md` §6), com ampliação nominal declarada no plano dele, ou um bloco próprio de higiene do seed · **bloqueia:** não (o seed roda com `tsx`, que não confere tipo, e o mapa de descrições tem fallback).
+- **prova (N = 2 erros; medido por `tsc` com um tsconfig fora do repositório que estende o `tsconfig.json` e inclui `prisma/seed.ts`, antes e depois do bloco):** `prisma/seed.ts(195,3) TS1360`: o `permissionDescriptions … satisfies Record<Permission, string>` não tem 43 das 205 permissões do catálogo (162 com descrição, contado por script); `prisma/seed.ts(257,48) TS2551`: o acesso `permissionDescriptions[permission]`, que cai no fallback genérico `Permissão ${permission}.`. `package.json:19` (`tsc -p tsconfig.json`) e `tsconfig.json` (`include: ["src/**/*.ts"]`) deixam o seed de fora, então nenhum job da CI pega erro de tipo no seed.
+- **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-06).
+- **teste de encerramento:** o seed entra num typecheck que roda na CI, com 0 erro, e as 205 permissões têm descrição.
+
+## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
+  não muda permissão) · **dono (provisório, Emenda 3 do plano do `B-SAN3-19b`):** um bloco próprio de permissão do
+  app, com junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o backend local; vale até a
+  resposta do dono à Pergunta 2 (recomendação (a): entrar no portão) · **bloqueia:** a decidir na Pergunta 2.
+- **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
+- **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
+  crítica r2 executou `isValidPermission`/`getRolePermissions` em `07898adf`: inválidas e sem papel; as linhas de
+  `mobile/flutter_app/lib` abaixo foram medidas no ramo do `B-SAN3-19b`):
+  - **4 gates de tela:** `checklist_run:execute` (`checklist_available_screen.dart:58`), `inventory:read`
+    (`inventory_list_screen.dart:24`), `workflow:request` (`/approvals`, `router.dart:276,461`) e `diagnostics:read`
+    (`/diagnostics` fora do modo dev, `router.dart:151,338`);
+  - **1 gate de botão:** `inventory:write` (`inventory_list_screen.dart:37`, esconde Entrada e Saída do Estoque);
+  - **3 chaves sem efeito medido:** `ocr:run_local`, `receipt:attach`, `sync_diagnostics:read` (só nas listas de
+    sessão, `auth_repository.dart:242-245` e `bootstrap_session.dart:227-230`).
+- **forma:** o app compara por igualdade exata contra `actor.permissions` cru do backend (`permission_resolver.dart`;
+  `src/modules/mobile/mobile.routes.ts`), sem tabela de equivalência.
+- **causa:** o app nomeia `checklist_run:*` e `inventory:*`; o catálogo usa `checklist_runs:*` e `inventory_items:*`. O
+  mapa de navegação do bootstrap já usa a chave do catálogo para checklists (`bootstrap_repository.dart:165`,
+  `checklist_runs:read`) e as do app para estoque e aprovações (`:170`, `:175`); se esse `perms` filtra o menu não foi
+  medido.
+- **efeito (hipótese, não executada contra um backend real):** com login real, Checklists, Estoque, Aprovações e
+  Diagnóstico ficam bloqueados para todo perfil. No app de demonstração local, Aprovações e Estoque abrem e Checklists e
+  Diagnóstico ficam bloqueados. O `B-SAN3-19b` pôs nessas 4 telas um texto verdadeiro e neutro ("Esta área ainda não
+  está disponível no aplicativo."), sem "fale com o administrador", e o T9 do 19b prende isso ao catálogo.
+- **teste de encerramento:** cada gate de tela e de botão do app usa uma chave que `isValidPermission` aceita e que
+  algum papel recebe, com teste que lê o catálogo; o T9 do `B-SAN3-19b` passa a exigir "Fale com o administrador da
+  sua organização." nas 4 telas (a tabela dele vira 11/11 no catálogo).
+
+## P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e fica fora da fila do cancelamento — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o leitor do gate é do `WS-SCALE-COMISSAO`; `src/modules/commissions/**` é PROIBIDO no `B-SAN3-23`) · **dono:** o bloco do motor de comissão (`D-PORTAO-7-RECOMENDACOES-1011`: a política de comissão sai do portão até o motor existir) · **PR-alvo:** o desse bloco · **bloqueia:** não, enquanto não houver motor de comissão (hoje não sai dinheiro por esse caminho).
+- **origem:** crítica r1 do plano do `B-SAN3-23` (`crit-23-cl`, achado C23-07), medido pela crítica, não re-medido pelo dev: `readWorkOrderCancellationPrisma` lê situação e decisão com `findFirst` simples (`src/modules/commissions/work-order-cancellation.gate.ts:86-89`), chamado em `createBasisEvent` (`commission-prisma.repository.ts:103-135`), rota montada (`app.ts:265`). Intercalações `commission|cancelZero` e `cancelZero|commission`: o evento fica `received` numa OS `cancelled/zero` em 9 delas, com 0 impasse. O `B-SAN3-23` fecha a corrida para itens e títulos da OS (P-23), não para a comissão.
+- **correção indicada (crítica r1):** a trava compartilhada da OS no leitor, dentro da transação do `createBasisEvent` — a mesma forma da escrita de item do `B-SAN3-23` (`lockWorkOrderRowForFinancialWrite`).
+- **teste de encerramento:** evento-base de comissão × cancelamento `zero` em voo, em Postgres real com barreira: nunca evento `received` numa OS `cancelled/zero`.
+
+## P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT (2026-11-11) — a A7 (regressão sem barreira) só produz uma ordem de commit — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (junta J-536, C1-01) · **escopo:** `dentro-do-bloco` (a suíte `tests/b-san3-23-cancel-race-db.test.ts` nasce no `B-SAN3-23`), não reprova (força de teste, não dinheiro errado) · **dono:** o `B-SAN3-23` num bloco futuro, ou o próximo bloco que tocar essa suíte · **PR-alvo:** esse bloco · **bloqueia:** não.
+- **origem:** voto C1 da junta do #536 (`revisoes/j536/c1-voto.json`, medido): em 720 rodadas da A7, 718 deram cancelar `fulfilled` × outro `422 work_order_cancelled`; o ramo em que o faturamento commita antes e o cancelar responde `422 has_invoiced_items` saiu 0/240, então o I-Z dela só é avaliado em estado sem item faturado; e, sob a M8 (ordem de travas invertida), a A7 passa (60/60) enquanto a A10 cai. A propriedade é provada de forma determinística pela A9, pela A10 e pelas sondas da cadeira; a A7 continua como regressão, sem prova de ordem.
+- **critério de encerramento:** a A7 exercita as duas ordens de commit (por exemplo, com atraso escalonado de largada ou um ponto de espera de teste), com contagem dos dois ramos > 0 no TAP, e a M8 a deixa vermelha.
+
+### Complemento de `P-O6R-ARNES-ISOLAMENTO` (junta J-536, C1-03, 2026-11-11; o ID já existe acima — nota, sem novo cabeçalho)
+
+- **medido pela cadeira C1 do #536 (`revisoes/j536/c1-voto.json`, `c1-evidencia.md` §5):** um aborto duro de `tests/b-san3-23-cancel-race-db.test.ts` (`timeout -s KILL`, ec=137, depois de 10 testes) deixou a role efêmera `o6r_b01_*` viva (`rolsuper=f`, `rolbypassrls=f`, LOGIN, com UPDATE e DELETE em 139 tabelas) e os 11 tenants semeados; uma rodada completa logo depois (21/21) não a removeu (o sweep só leva órfã com mais de 60 min, `ORPHAN_ROLE_MAX_AGE_MS`, `tests/helpers/auth-identity-fixture.ts:85`), e os dados semeados não têm caminho de remoção. O aborto do `npm test` inteiro deixou 3 roles `o6r_b01_*` e 11 bases de drill. A cadeira removeu tudo pelo nome exato.
+- **escopo:** `pre-existente` (o fixture é de `df496d22`, 2026-08-31, não tocado pelo `B-SAN3-23`); reforça a pendência, sem novo dono.
+
+## P-SAN3-23-503-FORA-DO-CONTRATO (2026-11-11) — os 2 códigos 503 novos do B-SAN3-23 não estão no `API_CONTRACTS.md` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a seção das rotas financeiras da OS no `API_CONTRACTS.md` nunca teve catálogo de erros, nem o 503 `invoice_transient_conflict` do B-SAN3-02; o arquivo está fora do PERMITIDO do plano do B-SAN3-23, cujo §3.5 manda registrar as adições no comando do bloco, o que foi feito) · **dono:** o próximo bloco que tocar o `API_CONTRACTS.md` das rotas financeiras da OS · **PR-alvo:** esse bloco · **bloqueia:** não.
+- **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
+- **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).

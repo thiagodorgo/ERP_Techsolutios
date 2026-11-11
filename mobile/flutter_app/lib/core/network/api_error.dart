@@ -40,7 +40,7 @@ final class ApiServerError extends ApiError {
 final class ApiIntegrationUnavailableError extends ApiError {
   const ApiIntegrationUnavailableError([
     super.safeMessage =
-        'Integracao remota ainda nao disponivel. '
-        'Seus dados foram mantidos localmente e serao sincronizados quando a integracao estiver ativa.',
+        'Integração remota ainda não disponível. '
+        'Seus dados ficam guardados neste aparelho.',
   ]);
 }

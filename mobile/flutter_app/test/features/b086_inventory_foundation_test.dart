@@ -245,7 +245,7 @@ void main() {
       await tester.pumpWidget(_wrapList(session: _sessionNoInventory));
       await tester.pumpAndSettle();
 
-      expect(find.text('Acesso nao autorizado'), findsOneWidget);
+      expect(find.text('Acesso não permitido'), findsOneWidget);
       expect(find.text('Capacitor 100uF 50V'), findsNothing);
     });
 

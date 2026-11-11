@@ -39,6 +39,7 @@ test("G1b — InMemory: on_site com veredito forjado à mão é recusado (checki
         tenantId,
         workOrderId: os.id,
         status: "on_site",
+        expectedStatus: "on_route",
         message: "forjado",
         checkin: VEREDITO_FORJADO,
       } as never),
@@ -50,7 +51,7 @@ test("G1b — InMemory: on_site com veredito forjado à mão é recusado (checki
 test("G1b′ — InMemory: on_site sem veredito nenhum é recusado", async () => {
   const { repository, tenantId, os } = await osACaminho();
   await assert.rejects(
-    () => repository.changeStatus({ tenantId, workOrderId: os.id, status: "on_site", message: "sem veredito" } as never),
+    () => repository.changeStatus({ tenantId, workOrderId: os.id, status: "on_site", expectedStatus: "on_route", message: "sem veredito" } as never),
     (error: any) => error.reason === "checkin_verdict_required",
   );
   assert.equal((await repository.findById(tenantId, os.id))?.status, "on_route");
@@ -74,6 +75,7 @@ test("G1c — Prisma (cliente de mentira): on_site sem veredito é recusado ANTE
         tenantId: randomUUID(),
         workOrderId: randomUUID(),
         status: "on_site",
+        expectedStatus: "on_route",
         message: "forjado",
         checkin: VEREDITO_FORJADO,
       } as never),
@@ -87,15 +89,15 @@ test("G1-controle — um veredito emitido por verifyCheckin passa nos dois repos
   const { repository, tenantId, os } = await osACaminho();
   const gestor = { tenantId, userId: randomUUID(), roles: ["manager"], permissions: [] } as never;
   const veredito = verifyCheckin(gestor, { code: os.code, serviceDetails: undefined }, null, {}, "http_status_route");
-  const feito = await repository.changeStatus({ tenantId, workOrderId: os.id, status: "on_site", message: "ok", checkin: veredito } as never);
+  const feito = await repository.changeStatus({ tenantId, workOrderId: os.id, status: "on_site", expectedStatus: "on_route", message: "ok", checkin: veredito } as never);
   assert.equal(feito?.status, "on_site");
-  const seguinte = await repository.changeStatus({ tenantId, workOrderId: os.id, status: "in_progress", message: "ok" } as never);
+  const seguinte = await repository.changeStatus({ tenantId, workOrderId: os.id, status: "in_progress", expectedStatus: "on_site", message: "ok" } as never);
   assert.equal(seguinte?.status, "in_progress");
 
   const { PrismaWorkOrderRepository } = await import("../src/modules/work-orders/work-order-prisma.repository.js");
   const chamadas: string[] = [];
   const stub = { workOrder: { updateManyAndReturn: async () => (chamadas.push("updateManyAndReturn"), []) } };
-  await new PrismaWorkOrderRepository(stub as never).changeStatus({ tenantId, workOrderId: os.id, status: "on_site", message: "ok", checkin: veredito } as never);
+  await new PrismaWorkOrderRepository(stub as never).changeStatus({ tenantId, workOrderId: os.id, status: "on_site", expectedStatus: "on_route", message: "ok", checkin: veredito } as never);
   assert.deepEqual(chamadas, ["updateManyAndReturn"]);
 });
 

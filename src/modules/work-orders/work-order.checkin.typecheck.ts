@@ -7,7 +7,9 @@
 import type { WorkOrderRepository } from "./work-order.repository.js";
 import type { CreateWorkOrderInput } from "./work-order.types.js";
 
-const statusBase = { tenantId: "t", workOrderId: "w", message: "m" } as const;
+// Junção com o B-SAN3-23 (Emenda 3): o `expectedStatus` do CAS entra na base, para a diretiva continuar falhando SÓ pelo
+// veredito, e não pela falta do campo do CAS.
+const statusBase = { tenantId: "t", workOrderId: "w", message: "m", expectedStatus: "on_route" } as const;
 const createBase: CreateWorkOrderInput = { tenantId: "t", code: "OS-0001", title: "OS", priority: "medium" };
 
 export function checkinTypeGuardOnSiteWithoutVerdict(repository: WorkOrderRepository): void {
