@@ -1034,11 +1034,8 @@ export function identityLinkedElsewhereError(): IdentityLinkError {
   );
 }
 
-// B-USERS-ACESSO-SEG (S1, UEM-03) — o reset que não pôde terminar com segurança (trava ou transação
-// estourou o orçamento, identidade do par ilegível, falha do banco): código e mensagem FIXOS, sem
-// nada da causa. Nada mudou (a transação desfez).
-// P-RESET-AUTORIDADE — o alvo tem papel que o fluxo de organização não atribui (papel de plataforma): o
-// administrador da organização não o alcança. Código e mensagem FIXOS; nada da causa sai.
+// P-RESET-AUTORIDADE — o alvo tem papel de plataforma (`isPlatformRole`): o administrador da organização
+// não o alcança. Código e mensagem FIXOS; nada da causa sai.
 export function targetNotManageableError(): IdentityLinkError {
   return identityLinkError(
     403,
@@ -1048,6 +1045,9 @@ export function targetNotManageableError(): IdentityLinkError {
   );
 }
 
+// B-USERS-ACESSO-SEG (S1, UEM-03) — o reset que não pôde terminar com segurança (trava ou transação
+// estourou o orçamento, identidade do par ilegível, falha do banco): código e mensagem FIXOS, sem
+// nada da causa. Nada mudou (a transação desfez).
 export function resetUnavailableError(): IdentityLinkError {
   return identityLinkError(
     503,
