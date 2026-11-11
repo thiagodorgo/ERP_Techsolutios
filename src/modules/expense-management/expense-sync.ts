@@ -32,6 +32,12 @@ import {
 export const EXPENSE_SYNC_ACTION_TYPES = ["expense_report.create", "expense_item.create", "expense_report.submit"] as const;
 export type ExpenseSyncActionType = (typeof EXPENSE_SYNC_ACTION_TYPES)[number];
 
+// B-RDV-COMPROVANTE — o 4º tipo NÃO entra em `EXPENSE_SYNC_ACTION_TYPES`: o LOTE continua a recusá-lo
+// (400 `unsupported_action`). Ele existe só para o claim/recibo da rota multipart de comprovante,
+// que compõe a mesma tabela `mobile_action_receipts` (idempotência tenant+ator+client_action_id).
+export const EXPENSE_RECEIPT_SYNC_ACTION_TYPE = "expense_receipt.attach" as const;
+export type ExpenseMobileActionType = ExpenseSyncActionType | typeof EXPENSE_RECEIPT_SYNC_ACTION_TYPE;
+
 /** Evento de prova do sync. O nome não muda (v2 §2.2): a versão do protocolo vive DENTRO do hash. */
 export const EXPENSE_SYNC_EVENT_TYPE = "expense_report.synced_from_mobile";
 
@@ -112,7 +118,8 @@ export type ClaimMobileActionReceiptInput = {
   readonly tenantId: string;
   readonly receiptKey: string;
   readonly actorUserId: string;
-  readonly actionType: ExpenseSyncActionType;
+  // B-RDV-COMPROVANTE — aceita também o tipo do comprovante; o recibo persiste `actionType` como string.
+  readonly actionType: ExpenseMobileActionType;
 };
 
 export function issueSyncClaim(input: ClaimMobileActionReceiptInput): SyncClaim {

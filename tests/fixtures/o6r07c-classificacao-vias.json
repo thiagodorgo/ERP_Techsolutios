@@ -303,6 +303,14 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/expense-reports/:reportId/items/:itemId/receipt": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/expense-reports/:reportId/items/:itemId/receipt/file": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/field-locations/history": {
   "classe": "LEITURA",
   "n": 1
@@ -1300,6 +1308,10 @@
   "n": 1
  },
  "ROTA POST /api/v1/expense-reports/:reportId/items": {
+  "classe": "R",
+  "n": 1
+ },
+ "ROTA POST /api/v1/expense-reports/:reportId/items/:itemId/receipt": {
   "classe": "R",
   "n": 1
  },

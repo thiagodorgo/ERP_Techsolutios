@@ -610,7 +610,8 @@ const ORFAS_ESPERADAS = [
   "expense_report:reject",
   "expense_report:pay",
   "expense_policy:manage",
-  "expense_receipt:attach",
+  // B-RDV-COMPROVANTE: `expense_receipt:attach` SAIU das órfãs — ganhou a rota
+  // POST /expense-reports/:reportId/items/:itemId/receipt (expense-receipt.routes.ts).
   "expense_audit:read",
   "os.manage",
   "os.read",
@@ -629,7 +630,7 @@ function walkTs(dir: string, acc: string[] = []): string[] {
   return acc;
 }
 
-test("[órfãs] as 28 chaves que nenhuma rota compara são exatamente as nomeadas — órfã nova ou órfã que ganhou rota move o número COM nome", () => {
+test("[órfãs] as 27 chaves que nenhuma rota compara são exatamente as nomeadas — órfã nova ou órfã que ganhou rota move o número COM nome", () => {
   const files = walkTs(SRC_DIR)
     .map((f) => f.split("\\").join("/"))
     .filter((f) => !f.endsWith("permissions/catalog.ts") && !f.includes("navigation.registry"));

@@ -91,7 +91,8 @@ export class UploadGateError extends Error {
   }
 }
 
-export type UploadGateVia = "V1" | "V2" | "V3" | "V4" | "V5";
+// B-RDV-COMPROVANTE — V6 = upload de comprovante de despesa (rota multipart própria).
+export type UploadGateVia = "V1" | "V2" | "V3" | "V4" | "V5" | "V6";
 
 /**
  * Status HTTP canônico de cada recusa (plano §4). O `reason` das famílias 415 é o próprio `kind`; as

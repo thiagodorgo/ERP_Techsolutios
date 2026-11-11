@@ -45,6 +45,10 @@ class _ExpenseItemReceiptsScreenState
             fileName: result.fileName,
             mimeType: result.mimeType,
             captureSource: captureSource,
+            // B-RDV-COMPROVANTE: com os bytes o comprovante entra na fila e
+            // sobe ao servidor; sem eles ficaria so no aparelho.
+            bytes: result.bytes,
+            sha256: result.sha256,
           );
       if (mounted) setState(() {});
     } finally {

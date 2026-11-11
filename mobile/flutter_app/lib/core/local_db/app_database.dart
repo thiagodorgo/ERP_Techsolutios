@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -194,6 +194,31 @@ class AppDatabase extends GeneratedDatabase {
           );
         }
       }
+      if (from < 15) {
+        // B-RDV-COMPROVANTE (conserto c1 do #525, §2(d)1 e §12.8): o id do item no
+        // servidor persiste (`expense_items.server_id`). Migração ADITIVA: nenhuma
+        // linha se perde; as antigas ficam com server_id NULL. GUARDA da coluna por
+        // `PRAGMA table_info`: o app antigo (14) que abre um banco 15 o devolve a
+        // user_version 14 COM a coluna, e o ALTER duplicaria ("duplicate column").
+        final tables = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='expense_items'",
+            )
+            .get();
+        if (tables.isNotEmpty) {
+          final columns = await m.database
+              .customSelect("PRAGMA table_info('expense_items')")
+              .get();
+          final hasServerId = columns.any(
+            (column) => column.read<String>('name') == 'server_id',
+          );
+          if (!hasServerId) {
+            await m.database.customStatement(
+              'ALTER TABLE expense_items ADD COLUMN server_id TEXT',
+            );
+          }
+        }
+      }
     },
   );
 
@@ -220,6 +245,8 @@ CREATE TABLE IF NOT EXISTS expense_reports (
   updated_at INTEGER
 )''';
 
+// B-RDV-COMPROVANTE (conserto c1 do #525, §2(d)1): `server_id` do item, para instalação nova. Quem vem de
+// uma versão anterior ganha a coluna pela migração do `onUpgrade`.
 const _kExpenseItems = '''
 CREATE TABLE IF NOT EXISTS expense_items (
   local_id TEXT NOT NULL PRIMARY KEY,
@@ -229,7 +256,8 @@ CREATE TABLE IF NOT EXISTS expense_items (
   amount REAL NOT NULL,
   date INTEGER NOT NULL,
   city TEXT,
-  vendor_name TEXT
+  vendor_name TEXT,
+  server_id TEXT
 )''';
 
 const _kExpenseReceipts = '''

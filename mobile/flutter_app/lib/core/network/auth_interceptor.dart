@@ -66,10 +66,21 @@ class AuthRefreshInterceptor extends Interceptor {
       err.requestOptions.headers['Authorization'] = 'Bearer $newToken';
       err.requestOptions.extra['_authRetry'] = true;
 
+      // B-RDV-COMPROVANTE (conserto c1 do #525, C2-DP-01): o Dio só finaliza
+      // um `FormData` uma vez, e o 1º envio já o finalizou. O retry leva uma
+      // CÓPIA; sem ela, o retry nem chega ao servidor.
+      final body = err.requestOptions.data;
+      if (body is FormData) err.requestOptions.data = body.clone();
+
       final response = await client.fetch<dynamic>(err.requestOptions);
       return handler.resolve(response);
+    } on DioException catch (retryError) {
+      // Só o 401 do retry (o token novo também foi recusado) limpa a sessão.
+      // 503, rede e timeout sobem como são, sem deslogar o técnico.
+      if (retryError.response?.statusCode == 401) await onClearSession();
+      return handler.next(retryError);
     } catch (_) {
-      await onClearSession();
+      // Erro que não é do Dio: sobe o 401 original, sem limpar a sessão.
       return handler.next(err);
     } finally {
       _refreshing = false;

@@ -21,6 +21,32 @@ export function resetFocusNfeFakeState(): void {
   sequence = 1;
 }
 
+export type FocusNfeWebhookEvent = { readonly ref: string; readonly status: string; readonly id?: string };
+
+/**
+ * B-ASS-08 · F4 — o falso Focus NFe EMITE um webhook para a nossa URL, com a autenticidade do Focus: header
+ * nomeado por nós (`X-Webhook-Token`) = o segredo registrado (`webhook_secret`). `badSecret` reproduz o ataque.
+ */
+export async function emitFocusNfeWebhook(
+  targetUrl: string,
+  event: FocusNfeWebhookEvent,
+  options: { secret: string; badSecret?: boolean } = { secret: "" },
+): Promise<{ status: number; body: unknown }> {
+  const token = options.badSecret ? `${options.secret}-WRONG` : options.secret;
+  const response = await fetch(targetUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json", "X-Webhook-Token": token },
+    body: JSON.stringify(event),
+  });
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  return { status: response.status, body };
+}
+
 function scenario(req: IncomingMessage, fallback: string): string {
   const selected = scenarioOf(req);
   return selected === "ok" ? fallback : selected;

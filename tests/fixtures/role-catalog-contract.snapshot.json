@@ -1145,6 +1145,7 @@
       "expense_report:update",
       "expense_report:submit",
       "expense_sync:write",
+      "expense_receipt:attach",
       "tenant_checklists:read",
       "checklist_runs:read",
       "checklist_runs:update",

@@ -358,6 +358,9 @@ export const envSchema = z.object({
   // B-ASS-06 — servidores FALSOS locais em teste (plano §3.9, §4.6 R-PAY-5): fora de `test`, true recusa o boot
   // (G-BILLING-LOCAL), para impedir apontar produção para 127.0.0.1.
   BILLING_PROVIDER_ALLOW_LOCAL_HOSTS: booleanFlag(false),
+  // B-ASS-08 — URL pública do webhook (plano §3.9). Usada ao registrar o webhook no provedor. Em produção, exigida e
+  // `https://` SÓ quando o canal está ligado (gate abaixo). Vazia por padrão (canal desligado).
+  BILLING_WEBHOOK_PUBLIC_BASE_URL: z.string().trim().default(""),
 }).superRefine((value, context) => {
   const developmentOnlySecrets = new Set([
     "dev-only-change-me",
@@ -791,6 +794,15 @@ export const envSchema = z.object({
       code: z.ZodIssueCode.custom,
       path: ["BILLING_PROVIDER_ALLOW_LOCAL_HOSTS"],
       message: "BILLING_PROVIDER_ALLOW_LOCAL_HOSTS=true só é permitido em NODE_ENV=test (servidores falsos locais).",
+    });
+  }
+
+  // ── B-ASS-08 — URL pública do webhook em produção com o canal ligado (plano §3.9) ──────────────────────────────
+  if (value.NODE_ENV === "production" && value.BILLING_PROVIDERS_ENABLED && !/^https:\/\/.+/.test(value.BILLING_WEBHOOK_PUBLIC_BASE_URL)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["BILLING_WEBHOOK_PUBLIC_BASE_URL"],
+      message: "BILLING_PROVIDERS_ENABLED=true em produção exige BILLING_WEBHOOK_PUBLIC_BASE_URL https://.",
     });
   }
 });
