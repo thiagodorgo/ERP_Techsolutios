@@ -14,7 +14,7 @@
 - F2 — placeholder e roteador: FEITA (07:36)
 - F3 — as 9 telas: FEITA (07:38)
 - F4 — despesas, P-O6R11, item 47, banner de política: FEITA (07:48)
-- F5 — README, piso N0 e mutações: EM APURAÇÃO
+- F5 — README, piso N0 e mutações: FEITA (07:56)
 - F6 — registro e limpeza: EM APURAÇÃO
 
 ## F0 — vermelho-controle (07:19–07:31 SP; base `a0979f51`)
@@ -125,3 +125,57 @@ Testes da §3.2 e da Emenda 1, só nos literais: `b091_connectivity_profile_test
 | `tr -cd '\010'` nos 16 arquivos | 0 | 0 caracteres de controle |
 | `flutter test test/features/bsan319b_texto_exibido_test.dart` | 0 | `+8: All tests passed!`, `[T6] exibidos=771 violacoes=0 allowlist=2` |
 | `flutter test` b091, b098, bo6r11, `core/evidence_sync_test.dart`, `expenses/expense_screens_test.dart` e `bsan319b_acesso_nao_permitido_test.dart` | 0 | `+89: All tests passed!` |
+
+## F5 — README, piso N0 e mutações (07:48–07:56 SP)
+
+- `mobile/flutter_app/README.md` reescrito em português: o produto (ERP Techsolutions, app de campo), como rodar, a tabela das 4 chaves `--dart-define` que o app lê (`ERP_AUTH_MODE`, `ERP_ENV`, `API_BASE_URL`, `ERP_APP_VERSION`, com o padrão e o efeito tirados de `app_config.dart` e `http_client.dart`) e os comandos de teste. T5: `+1: All tests passed!`, `[T5] chaves=API_BASE_URL,ERP_APP_VERSION,ERP_AUTH_MODE,ERP_ENV`.
+- **Piso N0 = 771**, gravado como literal no T6 (`const _pisoN0 = 771;`): a contagem medida com o código consertado (`[T6] exibidos=771 violacoes=0 allowlist=2`). 771 ≥ 500: o parser não está perdendo âncoras (a sonda do plano mediu 611 em `d0da291e` com âncoras mais estreitas; a crítica r2, 602).
+
+**Âncoras medidas depois do `dart format` (R2-04)** com `grep -cF` (o método do plano) e, onde a forma de uma linha casa mais de uma vez, ancoradas no início da linha:
+
+| Mutação | Âncora | `grep -cF` | Âncora usada (contagem 1) |
+|---|---|---|---|
+| M3 | `assert(!_kChaveTecnica.hasMatch(` | 1 | a `assert` é de uma linha, sem mensagem: apagar a linha compila |
+| M8 | `          title: 'Aprovações',` | 1 | a mesma, com `\n` dos dois lados |
+| M9, M22 | `          blockedMessage:` (10 espaços) | **3** | `^          blockedMessage: 'Esta área ainda não está disponível no aplicativo.',$` = 1 (só a produção do `/approvals`) |
+| M17 | `displayName: 'Organização Demonstração',` | **2** | o bloco `  activeTenant: TenantContext(` … `  ),` = 1 (`^    displayName: …` com 4 espaços também dá 1) |
+| M18 | `devBootstrapSession.availableTenants.where(` | 1 | a linha inteira `    demo.addAll(…where(mesmoId));` |
+| M4, M5, M12, M15, M19, M20, M25 | as do plano/crítica | 1 cada | as mesmas |
+
+**Mutações (cada uma aplicada por `python mut.py <id>`, que exige contagem 1 de cada âncora, roda o teste dono e restaura o arquivo pelo conteúdo original; sha de antes = sha de depois em todas).** Rodada inteira 07:52:05–07:55:46. Saída completa no scratchpad do dev (`mut-saida.txt`).
+
+| Mutação | Arquivo | O que faz | Teste dono | Resultado |
+|---|---|---|---|---|
+| M1 | `new_work_order_screen.dart` | mensagem volta a `work_orders:create necessario…` | T1 | **vermelho** `+0 -1` |
+| M2 | o próprio teste | `_scanRoot = 'lib'` → `'lib/shared'` | T1-alcance | **vermelho** (`achadas=1 referencia=10`) |
+| M3 | `erp_components.dart` | apaga a linha da `assert` | T2 | **vermelho** |
+| M4 | `module_placeholder_screen.dart` | `message: blockedMessage,` → a mensagem antiga com a chave | T3 | **vermelho** `-3` (a `assert` dispara nas 3) |
+| M5 | `module_placeholder_screen.dart` | `final hasPermission = true;` | T4 | **vermelho** |
+| M6 | `README.md` | volta `A new Flutter project.` | T5 | **vermelho** |
+| M7 | `README.md` | apaga as 2 linhas com `API_BASE_URL` | T5 | **vermelho** |
+| M8 | `router.dart` (produção) | `title: 'Aprovacoes'` | T1b | **vermelho** (acento e paridade) |
+| M9 | `router.dart` (produção) | `blockedMessage: 'Permissao workflow:request nao retornou no bootstrap.'` | T1b | **vermelho** |
+| M10 | `expense_report_detail_screen.dart` | mensagem volta a `Manager/finance … backend workflow …` | T6 | **vermelho** (`violacoes=1`) |
+| M11 | `new_expense_report_screen.dart` | subtítulo volta a `… acao expense_report.create …` (chave com ponto) | T6 | **vermelho** (`violacoes=1`) |
+| M12 | `expense_item_receipts_screen.dart` | `=> 'Placeholder',` (braço de função de rótulo) | T6 | **vermelho** (`violacoes=1`) |
+| M13 | o próprio teste | a alternância de âncoras vira só `'title'` | T6 | **vermelho** (`exibidos=522` < 771) |
+| M15 | `sync_engine.dart` | `decisao manual` | T7 | **vermelho** |
+| M16 | `api_error.dart` | acrescenta `' Serao sincronizados.'` | T7 | **vermelho** |
+| M17 | `bootstrap_session.dart` | `activeTenant` volta a `Tenant Demo` | T8 (i) | **vermelho** |
+| M18 | `bootstrap_repository.dart` | apaga a linha da busca em `devBootstrapSession.availableTenants` | T8 (ii) | **vermelho** |
+| M19 | `erp_components.dart` | chip volta a `Preparacao` | T3 | **vermelho** (só o caso com permissão) |
+| M20 | `expense_list_screen.dart` | título `Acesso não permitido` em vez de `Ação não permitida` | T1 | **vermelho** (tabela de títulos) |
+| M21 | `inventory_list_screen.dart` | acrescenta F_ADM (chave fora do catálogo) | T9 | **vermelho** |
+| M22 | `router.dart` (produção) | `blockedMessage` do `/approvals` + F_ADM | T9 | **vermelho** |
+| M23 | `expense_models.dart` | `Aprovado pelo gestor` → `Aprovado manager` (Emenda 1, R2-01) | T6, T6b | **vermelho** `-2` (T6 `violacoes=1` e o T6b da lista de demonstração) |
+| M24 | `expense_list_screen.dart` | a frase do vazio volta a ter `fila local-first` (R2-01) | T6, T6b | **vermelho** `-2` (T6 e o T6b da lista vazia) |
+| M25 | `sync_screen.dart` | `label: 'Sincronizados · Integração remota ainda não ativa',` (o mutante da R2-03, acentuado) | `bo6r11` w3 | **vermelho** `-2` (w3 e w3') |
+| M26 | `module_placeholder_screen.dart` | o banner volta ao lado do cartão (com o import) (R2-05) | T3 | **vermelho** (o caso com permissão: `find.byType(SyncStatusBanner)` na tela inteira) |
+| M27 | `erp_components.dart` | o banner de política volta a `'- ${violation.message} (${violation.code})'` (Emenda 1, item 2) | T6b | **vermelho** |
+| M28 | `expense_policy_evaluator.dart` | a mensagem volta ao inglês `Expense item exceeds the category limit` (Emenda 1, item 2) | T6b | **vermelho** |
+
+**Numeração, declarada:** o plano define M1–M13 e M15–M22 (não há M14). M23–M26 são as da crítica r2 (Emenda 1). **M27 e M28 são minhas**, para a "mais uma mutação" que a Emenda 1 (item 2, saída (a) da R2-02) pede no banner de política: uma prova o código cru, a outra o inglês.
+
+**Grep da trava do §5** sobre `git diff origin/main...HEAD -U0 -- mobile/flutter_app/lib` (07:54): **2 linhas**, as duas exceções nomeadas:
+- `-                  'Permissao $requiredPermission nao retornou no bootstrap. O backend continua sendo autoridade final.',` — texto removido (casa `requiredPermission` por estar dentro da interpolação);
+- `+    if (demo.isNotEmpty) return demo.first.displayName;` — o resolvedor de nome local de `bootstrap_repository.dart` (exceção declarada pela Emenda 1, item 4 / R2-06): só decide o `displayName`; `tenantId` e `permissions` não passam por ele.

@@ -40,9 +40,10 @@ const _ancorasNomeadas =
     'title|subtitle|message|blockedMessage|label|labelText|hintText|helperText|tooltip|safeMessage|lastSafeError|greeting|semanticLabel|emptyMessage|description|displayName';
 final _funcaoDeRotulo = RegExp('[Ll]abel');
 
-// Piso de literais exibidos achados (plano v2 §3.1): medido na F0/F5 com o código já consertado.
-// Se a contagem cair abaixo dele, o analisador está perdendo âncoras.
-const _pisoN0 = 500;
+// Piso N0 (plano v2 §3.1): a contagem medida na F5 com o código já consertado
+// (`[T6] exibidos=771`, base a0979f51 + este bloco). Se cair abaixo dele, o analisador está
+// perdendo âncoras. Texto exibido removido de propósito pede o piso novo, medido, no mesmo PR.
+const _pisoN0 = 771;
 
 // Allowlist nomeada, no máximo 1 entrada: a tela só abre com `kIsDevMode` (conferido abaixo).
 const _allowlist = {'lib/core/diagnostics/diagnostics_screen.dart'};
