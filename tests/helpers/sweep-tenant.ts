@@ -39,13 +39,39 @@ export function sqlStateOf(error: unknown): string | undefined {
   return undefined;
 }
 
-/** A tabela deixou de existir? Pelo SQLSTATE; na falta dele, pela mensagem padrão do Postgres. */
-export function isUndefinedTable(error: unknown): boolean {
-  if (sqlStateOf(error) === UNDEFINED_TABLE) {
-    return true;
-  }
+/** Nome da relação citada na mensagem padrão do Postgres (`relation "x" does not exist`), se houver. */
+function missingRelationOf(error: unknown): string | undefined {
   const message = error instanceof Error ? error.message : String(error);
-  return /relation "[^"]+" does not exist/.test(message);
+  const match = /relation "([^"]+)" does not exist/.exec(message);
+  return match ? match[1].replace(/^public\./, "") : undefined;
+}
+
+/**
+ * A tabela `table` deixou de existir? Só vale como "tabela sumida" quando:
+ * - o SQLSTATE, se houver, é 42P01 (um SQLSTATE diferente nunca é tabela sumida, nem que a mensagem pareça);
+ * - a relação citada na mensagem, se houver, é a própria tabela do DELETE. Um 42P01 que cita OUTRA relação (ex.: de um
+ *   gatilho que lê uma tabela derrubada) é defeito a mostrar, não tabela sumida.
+ * Sem SQLSTATE, vale a mensagem padrão do Postgres, e ela também tem de citar a tabela do DELETE.
+ */
+export function isUndefinedTable(error: unknown, table?: string): boolean {
+  const state = sqlStateOf(error);
+  if (state !== undefined && state !== UNDEFINED_TABLE) {
+    return false;
+  }
+  const relation = missingRelationOf(error);
+  if (state === UNDEFINED_TABLE) {
+    return table === undefined || relation === undefined || relation === table;
+  }
+  return relation !== undefined && (table === undefined || relation === table);
+}
+
+/** Primeira linha não vazia da mensagem (o erro do Prisma começa com uma quebra de linha). */
+function firstLineOf(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const line = message.split("\n").map((part) => part.trim()).find((part) => part.length > 0) ?? "";
+  // No Prisma, a 1ª linha é "Invalid `prisma.$executeRawUnsafe()` invocation:"; o motivo vem na linha "Raw query failed".
+  const reason = message.split("\n").map((part) => part.trim()).find((part) => part.startsWith("Raw query failed"));
+  return reason ?? line;
 }
 
 export async function sweepTenant(
@@ -70,11 +96,11 @@ export async function sweepTenant(
       try {
         await client.$executeRawUnsafe(`DELETE FROM "${table}" WHERE tenant_id = $1::uuid`, tenantId);
       } catch (error) {
-        if (isUndefinedTable(error)) {
+        if (isUndefinedTable(error, table)) {
           continue; // a tabela de uma suíte irmã sumiu no meio da limpeza: não há linha desta organização nela.
         }
         failed.push(table);
-        lastErrors.push(`${table}: ${(error as Error).message.split("\n")[0].slice(0, 160)}`);
+        lastErrors.push(`${table}: ${firstLineOf(error).slice(0, 160)}`);
       }
     }
     pending = failed;

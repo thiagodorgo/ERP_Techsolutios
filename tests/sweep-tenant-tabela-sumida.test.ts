@@ -48,6 +48,18 @@ test("isUndefinedTable reconhece 42P01 pelo código e, sem código, pela mensage
   assert.equal(isUndefinedTable(new Error("permission denied for table work_orders")), false);
 });
 
+// rev-541-api A1: SQLSTATE presente e diferente de 42P01 nunca é "tabela sumida", nem que a mensagem pareça; e um 42P01
+// que cita OUTRA relação (ex.: um gatilho que lê uma tabela derrubada) é defeito a mostrar.
+test("isUndefinedTable recusa SQLSTATE diferente com mensagem parecida e 42P01 de outra relação", () => {
+  const outroCodigo = prismaAdapterError("23503", 'insert or update violates … relation "a" does not exist');
+  assert.equal(isUndefinedTable(outroCodigo, "a"), false, "o SQLSTATE manda sobre a mensagem");
+  const deGatilho = prismaAdapterError("42P01", 'relation "auditoria_apagada" does not exist');
+  assert.equal(isUndefinedTable(deGatilho, "work_orders"), false, "42P01 de outra relação não é a tabela do DELETE");
+  assert.equal(isUndefinedTable(deGatilho, "auditoria_apagada"), true);
+  assert.equal(isUndefinedTable(new Error('relation "public.zz" does not exist'), "zz"), true, "o esquema public. é ignorado");
+  assert.equal(isUndefinedTable(new Error('relation "outra" does not exist'), "zz"), false);
+});
+
 test("tabela de suíte irmã que sumiu no meio da limpeza NÃO reprova, e o resto é apagado", async () => {
   const { client, deleted } = fakeClient(["work_orders", "s305_c4_t_ab12", "s305_c4_n_cd34", "users"], {
     s305_c4_t_ab12: () => prismaAdapterError("42P01", 'relation "s305_c4_t_ab12" does not exist'),
@@ -66,6 +78,18 @@ test("erro que não é de tabela sumida e persiste continua reprovando a limpeza
     },
   });
   await assert.rejects(sweepTenant(client, TENANT, []), /limpeza da organização do teste não terminou.*travada/);
-  assert.equal(calls, SWEEP_MAX_PASSES, "tenta em todas as passadas antes de reprovar");
+  // rev-541-api A2: o número de passadas é travado pelo LITERAL da função antiga (12), não pela própria constante.
+  assert.equal(SWEEP_MAX_PASSES, 12, "o teto de passadas é o da função antiga");
+  assert.equal(calls, 12, "tenta em todas as 12 passadas antes de reprovar");
   assert.ok(!deleted.includes("tenants"), "a organização não é apagada com resíduo");
+});
+
+// rev-541-api A3: no erro real do Prisma a mensagem começa com "\n"; a reprovação tem de carregar o motivo, não "tabela: ".
+test("a reprovação carrega o motivo do erro real do Prisma (a mensagem que começa com quebra de linha)", async () => {
+  const real = Object.assign(
+    new Error('\nInvalid `prisma.$executeRawUnsafe()` invocation:\n\n\nRaw query failed. Code: `23503`. Message: `update or delete on table "travada" violates foreign key constraint`'),
+    { code: "P2010", meta: { driverAdapterError: { cause: { originalCode: "23503" } } } },
+  );
+  const { client } = fakeClient(["travada"], { travada: () => real });
+  await assert.rejects(sweepTenant(client, TENANT, []), /travada: Raw query failed\. Code: `23503`/);
 });
