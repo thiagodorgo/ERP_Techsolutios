@@ -185,7 +185,7 @@ export function createIdentityLinkRouter(
   // nova; o token de acesso já emitido vale até expirar.
   router.post(
     "/password",
-    attachAuthenticatedActor(),
+    attachAuthenticatedActor({ acceptPasswordChangeSession: true }),
     handleAsyncRoute(async (request, response) => {
       const actor = getAuthenticatedActor(request);
 

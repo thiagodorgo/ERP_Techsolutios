@@ -286,3 +286,12 @@ Recomendação do dev: **(a)**, com o residual como pendência (cabe na janela j
 - `node --test --test-concurrency=2 --import tsx tests/users-acesso-seg-provisoria-db.test.ts` → vermelho esperado: `# tests 11 · pass 7 · fail 4`; A3-D, A3-B/C, A4 e A5 deram `scope = undefined` em vez de `password_change`. P2·0 e as regressões P2·r1–r4/p1/p2 permaneceram verdes.
 - `node --test --test-concurrency=2 --import tsx tests/users-acesso-seg-reset-db.test.ts` → vermelho esperado: `# tests 11 · pass 10 · fail 1`; A8/A8b: o reset do alvo `super_admin` respondeu 200, não 403 `target_not_manageable`. Os dez testes anteriores do reset ficaram verdes.
 - Cobertura desta fatia: A1, A3-D/B/C, A4, A5, A8/A8b, A9 e G2/A12 nasceram antes do conserto; A10 e A11 seguem nas regressões P2·p2 e P2·r1–r4. A2/G1 e a prova composta A6/A7 entram na fatia F4, também antes do respectivo guard/código de teste, como reservado na seção 6 do plano.
+
+## F1 — claim, portão e exceção única da troca de senha (10/11 21:13 SP)
+
+- Código: `scope: "password_change"` opcional no access token; valor desconhecido falha como token inválido; `attachAuthenticatedActor` recusa a sessão restrita por padrão com 403 `password_change_required`; o ator recebe `sessionScope`; somente `POST /api/v1/auth/password` declara `acceptPasswordChangeSession: true`.
+- Verde: `node --test --test-concurrency=2 --import tsx tests/users-acesso-seg-sessao-restrita.test.ts` → `# tests 3 · pass 3 · fail 0`; `tests/users-acesso-seg-portao-estatico.test.ts` → `# tests 1 · pass 1 · fail 0`.
+- Mutação A1: condição da recusa trocada por `false` → `not ok 1`, bootstrap 404 em vez de 403; revertida.
+- Mutação A9: validação do escopo desconhecido trocada por `false` → `not ok 2`, 404 em vez de 401; revertida.
+- Mutação A10: removida a opção de `POST /auth/password` → `not ok 3`, 403 em vez de 200; revertida.
+- A `main` integrada trouxe modelos Prisma novos; o primeiro `npm run check` acusou client local defasado (`BillingOutboxUpdateInput`/`billingOutbox`/`billingWebhookEvent`). `npm run db:generate` com a URL do cluster próprio regenerou apenas `node_modules`; depois `npm run check` → exit 0. Nenhum arquivo gerado foi versionado.

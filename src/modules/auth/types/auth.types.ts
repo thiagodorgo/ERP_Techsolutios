@@ -94,6 +94,7 @@ export type SignAccessTokenInput = {
   readonly tenant_id: string;
   readonly email: string;
   readonly roles: readonly string[];
+  readonly scope?: "password_change";
   // B-O6R-01 (§3.5) — claim de identidade global: DICA de roteamento/telemetria, NUNCA fonte do
   // GUC nem de autorização. Opcional: token em voo sem o claim resolve por (tenant_id, sub).
   readonly identity_id?: string;
@@ -110,6 +111,7 @@ export type AuthenticatedTokenPayload = {
   readonly tenant_id: string;
   readonly email: string;
   readonly roles: readonly string[];
+  readonly scope?: "password_change";
   readonly type: "access";
   readonly iat: number;
   readonly exp: number;
@@ -137,6 +139,7 @@ export type AuthenticatedActor = {
   readonly tenantId: string;
   readonly email: string;
   readonly roles: readonly string[];
+  readonly sessionScope?: "password_change";
   readonly authType: "jwt";
 };
 

@@ -89,6 +89,39 @@ test("A9 — scope desconhecido falha fechado como INVALID_TOKEN", async () => {
   }
 });
 
+test("A10 — POST /auth/password aceita a sessão password_change", async () => {
+  process.env.LOG_LEVEL = "silent";
+  process.env.JWT_SECRET = "dev-only-change-me";
+  const [{ default: express }, { createIdentityLinkRouter, signAccessToken }] = await Promise.all([
+    import("express"),
+    import("../src/modules/auth/index.js"),
+  ]);
+  const token = await signAccessToken({ ...TOKEN_INPUT, scope: "password_change", roles: [] });
+  const app = express();
+  app.use(express.json());
+  app.use(
+    "/api/v1/auth",
+    createIdentityLinkRouter(async () => ({
+      changeOwnPassword: async () => ({ revokedSessions: 1, unlinked: false }),
+    }) as never),
+  );
+  const server = app.listen(0);
+  const baseUrl = await getBaseUrl(server);
+
+  try {
+    const response = await fetch(`${baseUrl}/api/v1/auth/password`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ currentPassword: "SenhaProvisoria!", newPassword: "SenhaDefinitiva!" }),
+    });
+    const body = (await response.json()) as { error?: { reason?: string } };
+    assert.equal(response.status, 200);
+    assert.notEqual(body.error?.reason, "password_change_required");
+  } finally {
+    await closeServer(server);
+  }
+});
+
 async function getBaseUrl(server: Server): Promise<string> {
   if (!server.listening) {
     await new Promise<void>((resolve) => server.once("listening", resolve));
