@@ -134,3 +134,16 @@ test("A10 — describeCheckinMode: o modo que a lista do app recebe", async () =
   assert.deepEqual(describeCheckinMode({ plate: "SEM PLACA" }, { serviceType: "reboque" }), { mode: "reference_missing", plateTail: null });
   assert.deepEqual(describeCheckinMode({ plate: "ABC1D23" }, { serviceType: "residencial" }), { mode: "plate", plateTail: "23" });
 });
+
+test("OS de remoção da autoridade nasce com a placa da solicitação como referência do check-in", async () => {
+  process.env.CORE_SAAS_PERSISTENCE = "memory";
+  const { InMemoryWorkOrderRepository, originateSystemRemovalWorkOrder } = await import("../src/modules/work-orders/work-order.repository.js");
+  const { describeCheckinMode } = await import("../src/modules/work-orders/work-order.checkin.js");
+  const os = await originateSystemRemovalWorkOrder(new InMemoryWorkOrderRepository(), {
+    tenantId: randomUUID(),
+    plate: "ABC1D23",
+    serviceCatalogId: randomUUID(),
+  });
+  assert.equal(os.serviceDetails?.plate, "ABC1D23");
+  assert.deepEqual(describeCheckinMode(os.serviceDetails, { serviceType: "reboque" }), { mode: "plate", plateTail: "23" });
+});
