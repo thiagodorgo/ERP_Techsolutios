@@ -316,3 +316,33 @@ a Emenda 2, com as correções: a `P-SAN3-04A-SEED-PAPEIS-LEGADOS` cita o P3 só
 drills verdes; o apenso da `P-CHK-SEED-DEMO-SUJO` descreve a sentinela e a M5; o comando ganhou o P3 da Emenda 2, a M5,
 a M6 e os 3 drills na bateria. Índice regenerado: `821 cabecalhos / 810 IDs | FECHADA 194, ABERTA 623` (a `main` tem
 818/807, 193 e 621: +3 cabeçalhos, +1 fechada, +2 abertas).
+
+## Bateria final (head `def54be6`, 04:19 a 04:33)
+
+- `npm run check` exit 0 · `npm run lint` exit 0 · `npm run build` exit 0 · `node scripts/migration-transaction-guard.mjs`
+  → `migrações: 130 · … · violações: 0` · `git diff --check origin/main...HEAD` exit 0.
+- `node --test --import tsx tests/san3-04a-seed-semeia-auditor.test.ts tests/seed-guard.test.ts` → `# tests 6 · # pass 6 ·
+  # fail 0`.
+- Base nova semeada `san307_bloco`: D1 `SELECT name FROM tenants` = `Organização Demonstração`; as 4 suítes de banco do
+  plano no env do `backend-postgres` → `# tests 12 · # pass 12 · # fail 0 · # skipped 0`, com `# P3 aplicado (sentinela
+  seed.initialized = 1)`.
+- **`npm test` na forma do job `backend`** (base nova só migrada `san307_npmtest2`, `CORE_SAAS_PERSISTENCE=memory`, sem
+  Redis): exit 1, **`# tests 4963 · # pass 4945 · # fail 16 · # cancelled 0 · # skipped 2`** (o orçamento de 2 pulos,
+  cumprido). **Os 3 drills do bloco verdes:** `ok 115 - M3b (d)`, `ok 214 - M4b (d)`, `ok 820 - A22 (d)`.
+- **Os 16 vermelhos, um a um.** Estão em 7 arquivos, e nenhum lê o seed nem a paridade (`grep -cE
+  'db:seed|prisma/seed|seed\.ts'` = 0 e `grep -c permission-catalog-db-parity` = 0 em cada um):
+
+| Arquivo | Casos (o pai conta como 1) | Assinatura | Classe |
+|---|---|---|---|
+| `san3-05-leituras-de-plataforma-db` | T11d, T11e + o pai (3) | diferença de soma entre papéis e cenário de rota sem resposta, no mesmo arquivo que liga o boot | carga (o mesmo arquivo do boot que estoura 15 s) |
+| `san3-05-runtime-role-guard-db` | T14a/b, T14c, T14d, T15 + o pai (5) | `DO` falhando no procedimento de papel; `condição de boot não apareceu em 15000ms` | carga e Windows (boot real e scripts de papel sob a suíte inteira) |
+| `san3-09-bootstrap-platform-admin-db` | T2.1 + o pai (2) | `migrate deploy saiu com 1`: o drill chama `node_modules/.bin/prisma`, que no Windows é script de shell, e o `node` o lê como JS (`SyntaxError: missing ) after argument list`) | Windows |
+| `traccar-binding-uniqueness-db` | 1 | `Transaction API error: Unable to start a transaction in the given time.` | carga |
+| `traccar-event-migration-drill-db` | T-M(e), T-M(f) (2) | `deploy da base <drill>_main …: null !== 0`, ~181 s: o `migrate deploy` filho morto pelo tempo | carga |
+| `traccar-position-ingestion-db` | 2 | `controle: o trabalho chegou à porta do commit depois do 503` (o controle do teste de tempo esgotado) | carga |
+| `work-order-invoicing-migration-drill-db` | T-D(f) (1) | `deploy da base <drill>_main …: null !== 0`, ~181 s | carga |
+
+  O conjunto muda de uma rodada para outra (na 1ª, às 03:34, foram 19, com `ass-08`, estoque, cheque e `impound`, e
+  sem `traccar-binding-uniqueness` nem o drill de faturamento), que é a marca de carga. Os da classe Traccar e estoque
+  passaram sozinhos às 03:27–03:34 (tabela acima). A medida que vale para o aceite é o TAP dos jobs da CI, no Linux,
+  sobre o head do PR (§C7 item 11(3)).
