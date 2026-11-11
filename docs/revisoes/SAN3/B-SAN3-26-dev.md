@@ -398,3 +398,94 @@ As 4/4 restauradas. As linhas 3 e 4 provam que cada metade do A7b mata a sua var
   - os casos do PR534-02 são testes de propriedades que o bloco já tinha;
   - o PR534-06 justifica o arquivo pelo próprio plano v2;
   - o PR534-03 e o PR534-04 não mexem em código.
+
+### PR534-05 — o teste manual "app da versão anterior contra o servidor novo" (§6 do plano), executado
+
+Executado em 11/11, das 05:18 às 06:00 SP (por `date`). As capturas e os registros ficam fora do repositório (o
+repositório é público, e o PR534-06 pede para não abrir arquivo novo fora do PERMITIDO), em
+`C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-534-fix-emulador/`:
+- 26 capturas (`NN-*.png`);
+- `estados.log`: a fila e a OS lidas do banco local do app, e o status e a linha do tempo no servidor, a cada passo;
+- `emu-server-http.log`: cada chamada HTTP que o app fez;
+- os roteiros `emu-server.mts`, `cenario.sh`, `estado.sh`, `ui.sh` e `cap.sh`;
+- `app-debug-excecao-do-detalhe.log`.
+
+**Terreno**
+- **Emulador:** AVD `erp_pixel` (API 36, x86_64), porta 5626, com `-no-snapshot-load -no-snapshot-save`. O boot levou
+  31,5 s.
+- **JDK:** o JBR 21 do Android Studio, que é o JDK 17+ do roteiro e o mesmo que o Flutter usa. Não há JDK 17 nesta
+  máquina.
+- **App antigo:** o APK da `origin/main` `b6caf568`, montado num worktree próprio (`C:/Users/thiag/w-san326old`, já
+  removido). Foi gerado com `--dart-define=ERP_AUTH_MODE=remote --dart-define=API_BASE_URL=http://10.0.2.2:3626`.
+- **Backend:** `createApp` mais `createCoreSaasService`, a mesma composição do `src/server.ts`, com o `src/` do head
+  (`git diff --quiet e5287e8e HEAD -- src` = igual). Rodou com `CORE_SAAS_PERSISTENCE=memory` em `127.0.0.1:3626`.
+- **O que é da sonda, e não do produto:** só o `POST /api/v1/auth/login` (e o `/refresh`). O login real precisa da
+  tabela de credenciais do Prisma, que o modo memória não tem. Por isso a sonda assina o JWT com o mesmo
+  `signAccessToken` do head, e o middleware real o confere. Tudo o mais é o app real do head.
+- **As OS:** o gestor criou, pelo HTTP, 2 OS de reboque, com placas `ABC1D21` e `ABC1D22`, e despachou ao guincheiro
+  (`field_technician`).
+
+**Duas barreiras anteriores ao bloco, achadas no caminho**
+
+1. **O APK debug não mostra o detalhe da OS.** O corpo fica em branco, e o `flutter attach` mostra a causa:
+   `BoxConstraints forces an infinite width`. O erro vem do `OutlinedButton` "Abrir mapa", em
+   `work_order_operational_map_screen.dart:274`. Ele está numa `Row` sem `Expanded`, e o tema dá aos botões
+   `minimumSize: Size.fromHeight(44)` (`erp_mobile_theme.dart`). O bloco não toca esses arquivos, e a mesma coisa
+   acontece na `main`.
+   - Para seguir, usei o APK **profile** do mesmo código (`flutter build apk --profile --target-platform android-x64`,
+     que roda sem asserts). Ali o detalhe aparece, mas o "Abrir mapa" sai com a largura estourada (bounds
+     `[95,320][1080,399]`).
+   - Este achado é para o orquestrador registrar e dar dono. Não consertei.
+2. **No app antigo, o guincheiro não chega ao "No local" de uma OS vinda do servidor.** Pelo PR534-03, todo status do
+   pull vira "Agendada" (cap. 01 e 02). De "Agendada", o "Iniciar rota" é recusado no próprio app: "Invalid transition:
+   WorkOrderStatus.scheduled → WorkOrderStatus.enRoute" (cap. 04).
+   - Para pôr no aparelho uma OS "Em rota", como num app que já estava a caminho antes da troca do servidor, editei o
+     banco local do app. Usei o `run-as`, porque o APK profile é depurável, e mudei só `work_orders.status` para
+     `enRoute`, com `sync_status = synced`. No servidor, a mesma OS foi para `on_route` pelo técnico, via HTTP.
+   - A partir daí, cada ação é do código real do app antigo.
+
+**O teste (OS-000002)**
+
+| Passo | O que fiz | O que se viu (cap.; `estados.log`) |
+|---|---|---|
+| 1 | Modo avião, "Cheguei ao local" e o diálogo antigo, com o fim do CÓDIGO, "02" | o diálogo pede "os 2 últimos dígitos do nr de série", com o prefixo "OS-0000" (cap. 13). A OS fica "No local · Sync pendente" (cap. 14). A fila tem 1 `arrived` `pending`, **sem `checkin_confirmation`** no payload |
+| 2 | Rede de volta | **1** chamada a `POST /mobile/sync/work-order-actions`. A ação fica **`conflict`**, `last_error_code = checkin_confirmation_required`, `retry_count = 0` (e1). No servidor, a OS segue `on_route`, sem evento `on_site` |
+| 3 | "Sincronizar agora" | **0** chamada nova. O conflito sai do reenvio automático, sem as 5 tentativas (e2) |
+| 4 | Tela Sincronização | o cartão de conflito antigo: "Conflito remoto exige decisão manual", com "Minha versão" e "Versão do gestor" (cap. 17) |
+| 5 | "Minha versão" e sincronizar | **1** chamada, e volta `conflict` `checkin_confirmation_required`, retry 0 (e3, e4; cap. 18) |
+| 6 | "Versão do gestor" | a ação fica `synced`, e a tela mostra 0 pendente, 0 erro e 0 conflito (e5; cap. 19). **A fila não travou** |
+| 7 | Pull (puxar a lista) | a OS volta como **"Agendada"**, não "A caminho" (e6; cap. 20). O servidor segue `on_route` |
+| 8 | A base marca "No local" pelo console (gestor, sem dígitos, com `message` do cliente) | no servidor, `on_site`, com a mensagem "Chegada ao local registrada pela base." e `metadata.checkin = office`. O pull seguinte do app (08:57:47Z, depois do PATCH de 08:57:46Z) mostra a OS como "Agendada" (e7; cap. 21) |
+
+**Repetição (OS-000001, com o servidor em `on_route`)**
+- O desfecho é o mesmo: 1 chamada e `conflict` `checkin_confirmation_required`, retry 0 (f1, f2).
+- Reaberto offline (sem pull), o detalhe da OS mostra o cartão de conflito antigo, com "Manter local e tentar
+  novamente", "Aceitar estado do servidor" e "Marcar para revisão manual" (cap. 22).
+- "Aceitar estado do servidor" marca a ação `synced`, mas a OS segue "No local" no aparelho: é o N-02 do app antigo,
+  que não reverte (cap. 23; f3). O pull a traz como "Agendada" (cap. 24; f4).
+
+**Ensaio descartado.** A 1ª passada (OS-000001, com o servidor ainda em `accepted`) deu `invalid_status_transition`, e
+não a recusa do check-in. O erro foi de montagem minha: o estado do aparelho não batia com o do servidor. Ficou
+registrado como `e0` e nas cap. 05 a 11, e não conta como resultado.
+
+**Contra o §6 do plano**
+- "o resultado tem de ser o cartão de conflito antigo, e não uma fila morta": **CONFIRMADO**. É conflito resolvível,
+  não `failed`, e não há reenvio em laço. As duas superfícies antigas (a OS e a tela Sincronização) resolvem com um
+  toque, e a fila fica vazia.
+- "'Aceitar servidor' seguido de um pull devolve a OS a `on_route`": **NÃO, no app**. O servidor fica em `on_route`,
+  mas o app mostra "Agendada", pelo PR534-03 (passado ao `B-O6R-11d`).
+- O servidor não gravou `on_site` sem a conferência: a linha do tempo das 2 OS não tem `on_site` vindo do campo, e o
+  único `on_site` é o da base, com `office`.
+- **Não medido:** o corpo da resposta do sync. O registro do corpo na sonda falhou, porque o Express reescreve o
+  `req.url` durante a rota. O desfecho foi lido do banco do app (`last_error_code`) e do servidor (status e linha do
+  tempo). A forma e o sigilo do corpo já estão provados pelo A4b e pelo A8b do bloco.
+
+**Limpeza deste item (06:01 SP)**
+- No emulador: `pm clear` do app (a sessão de teste sai), modo avião desligado e emulador desligado (`adb emu kill`;
+  `adb devices` vazio).
+- O app instalado no AVD antes do teste era um build de 02/11 e guardava só uma sessão salva, sem banco local. As
+  `shared_prefs` dele ficam em `dev-534-fix-emulador/app-dados-0211-shared_prefs.tar`. O APK de 02/11 não foi
+  guardado.
+- O servidor da sonda foi parado (0 listener em 3626). O worktree `w-san326old` foi removido: o
+  `git worktree remove --force` falhou por caminho longo depois de tirar o registro, e o diretório saiu com
+  `rd /s /q \\?\…`.
