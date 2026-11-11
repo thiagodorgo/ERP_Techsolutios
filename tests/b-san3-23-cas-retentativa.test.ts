@@ -347,6 +347,7 @@ test("[EM1-04] o CAS da memória compara a OS viva, não um retrato de antes do 
     for (const decision of ["keep", "zero"] as const) {
       for (let round = 0; round < 40; round += 1) {
         const workOrderId = await newWorkOrder(ctx, `OS ${pair} ${decision} ${round}`);
+        await ctx.financials.create(ctx.boss, workOrderId, { source: "manual", description: "Guincho", unit_amount: 100 });
         if (pair === "concluir") {
           await setTechnician(ctx, workOrderId, randomUUID());
           for (const status of ["accepted", "on_route", "on_site", "in_progress"] as const) await setStatus(ctx, workOrderId, status);
@@ -364,10 +365,14 @@ test("[EM1-04] o CAS da memória compara a OS viva, não um retrato de antes do 
           settle(afterMicrotasks(delayOther, other)),
         ]);
         const after = await ctx.repo.findById(ctx.tenantId, workOrderId);
-        const label = `${pair}/${decision} rodada ${round}: cancel=${c} outro=${o} => ${after?.status}/${after?.financialCancellationDecision ?? null}`;
+        const active = (await ctx.financials.list(ctx.boss, workOrderId)).items.length;
+        const label = `${pair}/${decision} rodada ${round}: cancel=${c} outro=${o} => ${after?.status}/${after?.financialCancellationDecision ?? null}/ativos=${active}`;
         assert.notEqual(c, "404/not_found", `404 falso — ${label}`);
         if (c === "ok") assert.equal(after?.status, "cancelled", `cancelou e não ficou cancelada — ${label}`);
-        if (after?.status !== "cancelled") assert.equal(after?.financialCancellationDecision ?? null, null, `decisão em OS não cancelada — ${label}`);
+        if (after?.status !== "cancelled") {
+          assert.equal(after?.financialCancellationDecision ?? null, null, `decisão em OS não cancelada — ${label}`);
+          assert.equal(active, 1, `itens zerados numa OS que não foi cancelada — ${label}`);
+        }
       }
     }
   }
