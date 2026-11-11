@@ -17,6 +17,7 @@ import {
   type ImportBillingPeriod,
   type UsageBasisRow,
 } from "./cloud-cost-allocation.types.js";
+import { AUTO_ALLOCATION_MARKER } from "./cloud-cost-allocation.import-trigger.js";
 import {
   STORAGE_INVENTORY_MODELS,
   type CloudCostAllocationRepository,
@@ -104,6 +105,34 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
       data: { status: "processing", started_at: new Date() },
     });
     return result.count === 1;
+  }
+
+  /**
+   * B-ASS-09a · R2-02 — pelo que FALTA: importação concluída, MARCADA (P7: as anteriores ao bloco não têm o marcador e
+   * nunca entram) e sem NENHUMA run automática — anti-join pela relação da coluna `import_id` (M-09a). As que já têm
+   * run saem da seleção; por isso a 51ª importação nova é alcançada, ao contrário de "as 50 mais antigas".
+   */
+  async listImportsForAutoAllocation(limit: number): Promise<readonly CloudCostImport[]> {
+    const records = await this.client.cloudCostImport.findMany({
+      where: {
+        status: "completed",
+        metadata: { path: ["autoAllocation"], equals: AUTO_ALLOCATION_MARKER },
+        allocation_runs: { none: { metadata: { path: ["trigger"], equals: "import" } } }, // B-ASS-09a R2-02 pendência
+      },
+      orderBy: [{ imported_at: "asc" }, { created_at: "asc" }],
+      take: limit,
+    });
+    return records.map(mapCostImport);
+  }
+
+  /** B-ASS-09a · R2-02 — as runs automáticas `pending`, de qualquer importação, direto pelo status. */
+  async listPendingImportRuns(limit: number): Promise<readonly CloudCostAllocationRun[]> {
+    const records = await this.client.cloudCostAllocationRun.findMany({
+      where: { status: "pending", metadata: { path: ["trigger"], equals: "import" } },
+      orderBy: { created_at: "asc" },
+      take: limit,
+    });
+    return records.map(mapRun);
   }
 
   /** B-ASS-09a — pela coluna `import_id` da M-09a (o backfill trouxe as runs antigas que tinham `metadata.importId`). */

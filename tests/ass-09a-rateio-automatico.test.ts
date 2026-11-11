@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { env } from "../src/config/env.js";
@@ -19,6 +19,11 @@ import {
   buildCloudCostImportHook,
   CloudCostAllocationService,
   createCloudCostAllocationRunJobHandler,
+  enqueueInitialCloudAllocationImportCatchUp,
+  IMPORT_CATCH_UP_FIRST_DELAY_MS,
+  IMPORT_CATCH_UP_INTERVAL_MS,
+  runImportCatchUp,
+  type CloudCostAllocationEnqueue,
   ensureImportRuns,
   getMemoryCloudCostAllocationRepositoryForTests,
   importRunId,
@@ -487,8 +492,241 @@ test("T7 · E7 — o caminho manual segue reexecutando de propósito uma run con
 });
 
 // -----------------------------------------------------------------------------------------------
+// F4 — a varredura de recuperação (P5, P7, R2-02, R2-04, R2-05)
+// -----------------------------------------------------------------------------------------------
+
+test("T8 (varredura) · P5 — o gancho falhou: a importação ficou completed e a varredura cria a run e enfileira", async (t) => {
+  t.mock.method(cloudCostImportLogger, "warn", () => {});
+  const costRepository = new InMemoryCloudCostRepository();
+  const allocationRepository = new InMemoryCloudCostAllocationRepository({ costSource: costRepository });
+  allocationRepository.seed({ tenants });
+  const allocation = new CloudCostAllocationService(allocationRepository);
+  const costs = new CloudCostService(costRepository, {
+    onImportCompleted: async () => {
+      throw new Error("redis fora do ar");
+    },
+  });
+  const imported = await costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv") });
+  assert.equal(imported.status, "completed");
+  assert.equal((await allocationRepository.listRunsByImport(imported.id)).length, 0, "o gancho não criou nada");
+
+  const queue = fakeQueue();
+  const result = await runImportCatchUp({ allocation, enqueue: queue.enqueue });
+
+  assert.deepEqual(result, { importsScanned: 1, runsCreated: 1, importsEnqueued: 1, importsFailed: 0 });
+  assert.equal((await allocationRepository.listRunsByImport(imported.id)).length, 1);
+  assert.deepEqual(queue.calls, [["cloud-cost-allocation.run", { mode: "import_auto", importId: imported.id }, undefined]]);
+});
+
+test("T9 · P5 — a varredura cria a run que falta, enfileira a pending, NÃO enfileira a failed, e a 2ª passada não cria", async () => {
+  // MUTAÇÃO QUE MATA: M9 (`run.status === "pending" && // B-ASS-09a listPendingImportRuns` → `(… || run.status === "failed") && …`).
+  const withoutRun = "09a00000-0000-4000-8000-000000000070";
+  const withPending = "09a00000-0000-4000-8000-000000000071";
+  const withFailed = "09a00000-0000-4000-8000-000000000072";
+  const marked = { autoAllocation: "v1" };
+  const { repository, service } = seeded(
+    [
+      completedImport(withoutRun, "2026-07-02T00:00:00.000Z", marked),
+      completedImport(withPending, "2026-07-03T00:00:00.000Z", marked),
+      completedImport(withFailed, "2026-07-04T00:00:00.000Z", marked),
+    ],
+    { [withoutRun]: "aws-cur-sample.csv", [withPending]: "aws-cur-sample.csv", [withFailed]: "aws-cur-sample.csv" },
+  );
+  await ensureImportRuns(service, withPending);
+  await ensureImportRuns(service, withFailed);
+  const failedRun = (await repository.listRunsByImport(withFailed))[0]!;
+  await repository.updateRun(failedRun.id, { status: "failed", errorMessage: "mixed_currency" });
+
+  const queue = fakeQueue();
+  const first = await runImportCatchUp({ allocation: service, enqueue: queue.enqueue });
+  assert.deepEqual(first, { importsScanned: 1, runsCreated: 1, importsEnqueued: 2, importsFailed: 0 });
+  assert.deepEqual(queue.importIds().sort(), [withoutRun, withPending].sort(), "a failed não é reenfileirada (pergunta 3, (a))");
+
+  const second = await runImportCatchUp({ allocation: service, enqueue: fakeQueue().enqueue });
+  assert.equal(second.runsCreated, 0, "a 2ª passada não cria nada");
+  assert.equal(second.importsScanned, 0, "nenhuma importação marcada ficou sem run");
+});
+
+test("T9b · P7 (A2) — importação SEM marcador (anterior ao bloco), com junho publicado à mão: a varredura não cria nada", async () => {
+  // MUTAÇÃO QUE MATA: M9b (`costImport.metadata.autoAllocation === AUTO_ALLOCATION_MARKER` → `true`).
+  const legacy = "09a00000-0000-4000-8000-000000000080";
+  const repository = new InMemoryCloudCostAllocationRepository();
+  repository.seed({
+    tenants,
+    imports: [completedImport(legacy, "2026-08-02T00:00:00.000Z")],
+    costLineItems: [
+      line(legacy, "jun", "2026-06-01T00:00:00.000Z", "2026-06-30T23:59:59.999Z", 10),
+      line(legacy, "jul", "2026-07-01T00:00:00.000Z", "2026-07-31T23:59:59.999Z", 20),
+    ],
+  });
+  const service = new CloudCostAllocationService(repository);
+  const junStart = new Date("2026-06-01T00:00:00.000Z");
+  const junEnd = new Date("2026-06-30T23:59:59.999Z");
+  const manual = await service.allocateCostsForPeriod({ periodStart: junStart, periodEnd: junEnd, importId: legacy });
+
+  const result = await runImportCatchUp({ allocation: service, enqueue: fakeQueue().enqueue });
+
+  assert.equal(result.runsCreated, 0);
+  assert.deepEqual((await repository.listRunsByImport(legacy)).map((run) => run.id), [manual.id], "0 runs novas");
+  assert.equal((await service.getAllocationSummary({ periodStart: junStart, periodEnd: junEnd })).runId, manual.id);
+});
+
+test("T9d · R2-02 — com limite 2 e 3 importações marcadas, a mais nova (sem run) é alcançada pela varredura", async () => {
+  // MUTAÇÃO QUE MATA: o filtro de pendência (`!this.hasImportAutoRun(costImport.id)`) trocado por `true`.
+  const ids = ["09a00000-0000-4000-8000-000000000090", "09a00000-0000-4000-8000-000000000091", "09a00000-0000-4000-8000-000000000092"];
+  const marked = { autoAllocation: "v1" };
+  const { repository, service } = seeded(
+    ids.map((id, index) => completedImport(id, `2026-07-0${index + 2}T00:00:00.000Z`, marked)),
+    Object.fromEntries(ids.map((id) => [id, "aws-cur-sample.csv"])),
+  );
+  await ensureImportRuns(service, ids[0]!);
+  await ensureImportRuns(service, ids[1]!);
+
+  const result = await runImportCatchUp({ allocation: service, enqueue: fakeQueue().enqueue, limit: 2 });
+
+  assert.equal(result.runsCreated, 1);
+  assert.equal((await repository.listRunsByImport(ids[2]!)).length, 1, "a importação mais nova ganhou a run");
+});
+
+test("T9e · R2-05(b) — reenviar junho cria importação nova, com rateio novo, e o resumo de junho passa a ela", async () => {
+  const chain = importChain();
+  const junStart = new Date("2026-06-01T00:00:00.000Z");
+  const junEnd = new Date("2026-06-30T23:59:59.000Z");
+  const first = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv") });
+  await chain.allocation.executeImportRuns(first.id);
+  const published = await chain.allocation.getAllocationSummary({ periodStart: junStart, periodEnd: junEnd });
+  assert.equal(published.importId, first.id);
+
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  const resent = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv") });
+  await chain.allocation.executeImportRuns(resent.id);
+  const after = await chain.allocation.getAllocationSummary({ periodStart: junStart, periodEnd: junEnd });
+
+  assert.notEqual(resent.id, first.id, "o mesmo arquivo vira importação NOVA");
+  assert.equal(after.importId, resent.id, "o número publicado de junho passa ao rateio da importação nova");
+  assert.equal(after.runId, importRunId(resent.id, new Date("2026-06-01T00:00:00Z"), new Date("2026-06-30T23:59:59Z")));
+  assert.equal(after.totalImportedCost, published.totalImportedCost, "sem somar as duas");
+  assert.equal((await chain.allocationRepository.listRunsByImport(first.id)).length, 1, "a run antiga continua lá");
+});
+
+test("T-R2-04 · a varredura que falha não relança e reenfileira UMA vez com 6 h; a que passa também", async () => {
+  // MUTAÇÃO QUE MATA: relançar no `catch` (`// B-ASS-09a R2-04 não relança` → `throw error; // B-ASS-09a R2-04 não relança`).
+  const { logger, errors } = spyLogger();
+  const failing = fakeQueue();
+  const handler = createCloudCostAllocationRunJobHandler({
+    enqueue: failing.enqueue,
+    logger,
+    runCatchUp: async () => {
+      throw Object.assign(new Error("connection refused 10.0.0.1:5432"), { code: "ECONNREFUSED" });
+    },
+  });
+
+  await handler({ mode: "import_catch_up" }, {} as never);
+
+  assert.deepEqual(failing.calls, [["cloud-cost-allocation.run", { mode: "import_catch_up" }, { delayMs: IMPORT_CATCH_UP_INTERVAL_MS }]]);
+  assert.equal(IMPORT_CATCH_UP_INTERVAL_MS, 6 * 60 * 60 * 1000);
+  assert.deepEqual(errors, [[{ code: "ECONNREFUSED" }, "cloud_cost_auto_allocation_catch_up_failed"]], "o log leva só o código");
+
+  const passing = fakeQueue();
+  let ran = 0;
+  await createCloudCostAllocationRunJobHandler({ enqueue: passing.enqueue, logger, runCatchUp: async () => void (ran += 1) })(
+    { mode: "import_catch_up" },
+    {} as never,
+  );
+  assert.equal(ran, 1);
+  assert.equal(passing.calls.length, 1);
+});
+
+test("T10b · o 1º tique da varredura enfileira import_catch_up no job que já existe", async () => {
+  const queue = fakeQueue();
+  await enqueueInitialCloudAllocationImportCatchUp(queue.enqueue);
+  assert.deepEqual(queue.calls, [["cloud-cost-allocation.run", { mode: "import_catch_up" }, { delayMs: IMPORT_CATCH_UP_FIRST_DELAY_MS }]]);
+});
+
+test("T11 · CE-G1 — toda escrita de importação `completed` em src/** passa pelo gancho, e o marcador é o mesmo nos dois módulos", () => {
+  // SONDA: criar `src/modules/cloud-costs/__sonda_ceg1.ts` com `export const s = (r: any) => r.updateImport("x", { status: "completed" });`.
+  assert.equal(CLOUD_COST_AUTO_ALLOCATION_MARKER, AUTO_ALLOCATION_MARKER);
+  const writers = completedImportWriters();
+  assert.deepEqual(
+    writers,
+    ["src/modules/cloud-costs/aws-cur.service.ts"],
+    "escrita nova de importação `completed` precisa disparar o rateio automático (onImportCompleted) e entrar aqui",
+  );
+  for (const file of writers) {
+    assert.match(readFileSync(new URL(`../${file}`, import.meta.url), "utf8"), /this\.onImportCompleted\(completed\)/, file);
+  }
+});
+
+// -----------------------------------------------------------------------------------------------
 // Ajudantes
 // -----------------------------------------------------------------------------------------------
+
+/**
+ * CE-G1 — os arquivos de `src/**` com uma chamada de escrita de importação de custo (`createImport(`, `updateImport(` ou
+ * `cloudCostImport.<create|update|updateMany|upsert|createMany>(`) cujo argumento, até o parêntese que a fecha, traz o
+ * literal `status: "completed"` (aspas simples ou duplas). Alcance declarado: literal; escrita por SQL cru não entra.
+ */
+function completedImportWriters(): string[] {
+  const root = new URL("../src/", import.meta.url);
+  const found = new Set<string>();
+  const call = /(?:\bcreateImport|\bupdateImport|cloudCostImport\.(?:create|update|updateMany|upsert|createMany))\s*\(/g;
+  for (const relative of listTsFiles(root)) {
+    const text = readFileSync(new URL(relative, root), "utf8");
+    for (const match of text.matchAll(call)) {
+      const open = (match.index ?? 0) + match[0].length - 1;
+      const body = balancedParenthesis(text, open);
+      if (/status\s*:\s*["']completed["']/.test(body)) found.add(`src/${relative}`);
+    }
+  }
+  return [...found].sort();
+}
+
+function listTsFiles(root: URL, prefix = ""): string[] {
+  const entries = readdirSync(new URL(prefix, root), { withFileTypes: true });
+  return entries.flatMap((entry) => {
+    const relative = `${prefix}${entry.name}`;
+    if (entry.isDirectory()) return listTsFiles(root, `${relative}/`);
+    return entry.isFile() && entry.name.endsWith(".ts") ? [relative] : [];
+  });
+}
+
+function balancedParenthesis(text: string, open: number): string {
+  let depth = 0;
+  for (let index = open; index < text.length; index += 1) {
+    if (text[index] === "(") depth += 1;
+    if (text[index] === ")") {
+      depth -= 1;
+      if (depth === 0) return text.slice(open, index + 1);
+    }
+  }
+  return text.slice(open);
+}
+
+function fakeQueue() {
+  const calls: Array<[string, CloudCostAllocationAutoJobPayload, unknown]> = [];
+  const enqueue: CloudCostAllocationEnqueue = async (name, payload, options) => {
+    calls.push([name, payload, options]);
+  };
+  return { calls, enqueue, importIds: () => calls.map(([, payload]) => payload.importId) };
+}
+
+function line(importId: string, suffix: string, start: string, end: string, cost: number): CloudCostLineItem {
+  return {
+    id: `${importId}-${suffix}`,
+    importId,
+    provider: "aws",
+    billingPeriodStart: new Date(start),
+    billingPeriodEnd: new Date(end),
+    serviceCode: "AmazonEC2",
+    usageType: "BoxUsage",
+    tenantTag: "tenant-a",
+    unblendedCost: cost,
+    currency: "USD",
+    rawLineHash: `${importId}-${suffix}`,
+    metadata: {},
+    createdAt: new Date(start),
+  };
+}
 
 async function split(service: CloudCostAllocationService, runId: string) {
   return (await service.listTenantAllocations(runId))

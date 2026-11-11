@@ -38,6 +38,8 @@ export type JobWorkerModules = {
   readonly enqueueInitialSubscriptionCloseStatements: () => Promise<unknown>;
   /** B-ASS-08b — 1ºs ticks do canal de cobrança; a própria função não enfileira nada com o canal desligado. */
   readonly enqueueInitialBillingChannelJobs: () => Promise<unknown>;
+  /** B-ASS-09a — 1º tick da varredura do rateio automático (`cloud-cost-allocation.run`, `mode: import_catch_up`, 6 h). */
+  readonly enqueueInitialCloudAllocationImportCatchUp: () => Promise<unknown>;
 };
 
 export type JobWorkerBootstrapOptions = {
@@ -63,7 +65,10 @@ const noopLogger: JobWorkerBootstrapLogger = {
   warn() {},
 };
 
-/** Corpo VERBATIM do `server.ts:19-31` original — mesmos seis imports dinâmicos, mesma ordem (o sexto é a medição diária do B-ASS-03). */
+/**
+ * Corpo VERBATIM do `server.ts:19-31` original — mesmos seis imports dinâmicos, mesma ordem (o sexto é a medição diária do
+ * B-ASS-03). B-ASS-09a acrescenta o sétimo, no fim: a varredura do rateio automático.
+ */
 async function loadJobWorkerModules(): Promise<JobWorkerModules> {
   const [
     { startWorker },
@@ -72,6 +77,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     { enqueueInitialChargingAccrueScan },
     { enqueueInitialImpoundNotifyDueScan },
     { enqueueInitialSubscriptionMeasureDaily, enqueueInitialSubscriptionCloseStatements, enqueueInitialBillingChannelJobs },
+    { enqueueInitialCloudAllocationImportCatchUp },
   ] = await Promise.all([
     import("./job.worker.js"),
     import("../../modules/notifications/scheduled-notification.jobs.js"),
@@ -79,6 +85,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     import("../../modules/charging/charge.jobs.js"),
     import("../../modules/impound/impound.notifications.jobs.js"),
     import("../../modules/subscription-billing/subscription-billing.jobs.js"),
+    import("../../modules/cloud-cost-allocation/cloud-cost-allocation.jobs.js"),
   ]);
 
   return {
@@ -90,6 +97,7 @@ async function loadJobWorkerModules(): Promise<JobWorkerModules> {
     enqueueInitialSubscriptionMeasureDaily,
     enqueueInitialSubscriptionCloseStatements,
     enqueueInitialBillingChannelJobs,
+    enqueueInitialCloudAllocationImportCatchUp: () => enqueueInitialCloudAllocationImportCatchUp(),
   };
 }
 
@@ -159,6 +167,8 @@ export async function startJobWorkerIfEnabled(
   await modules.enqueueInitialSubscriptionCloseStatements();
   // B-ASS-08b — o canal de cobrança: só enfileira com BILLING_PROVIDERS_ENABLED=true (desligado → nenhum tick).
   await modules.enqueueInitialBillingChannelJobs();
+  // B-ASS-09a — 1º tick da varredura do rateio automático (auto-reenfileirante 6 h). Gated pela mesma flag.
+  await modules.enqueueInitialCloudAllocationImportCatchUp();
   logger.info({ pollIntervalMs: 1000 }, "In-process job worker started (JOBS_WORKER_ENABLED).");
 
   return { started: true, worker, ...(heartbeat ? { heartbeat } : {}) };

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { CloudCostRepository } from "../cloud-costs/aws-cur.repository.js";
+import { AUTO_ALLOCATION_MARKER } from "./cloud-cost-allocation.import-trigger.js";
 import type { CloudCostImport, CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
 import type { CloudUsageDailyAggregate, CloudUsageEvent } from "../cloud-usage/cloud-usage.types.js";
 import type {
@@ -33,6 +34,13 @@ export type CloudCostAllocationRepository = {
   listRunsByImport(importId: string): Promise<readonly CloudCostAllocationRun[]>;
   /** B-ASS-09a · P4 — reivindicação condicional `pending → processing`: `true` só para quem a ganhou. */
   claimPendingRun(runId: string): Promise<boolean>;
+  /**
+   * B-ASS-09a · R2-02 — a varredura seleciona pelo que FALTA: importação `completed`, MARCADA (P7) e sem NENHUMA run
+   * automática (anti-join pela coluna `import_id` da M-09a), da mais antiga para a mais nova, até `limit`.
+   */
+  listImportsForAutoAllocation(limit: number): Promise<readonly CloudCostImport[]>;
+  /** B-ASS-09a · R2-02 — as runs automáticas `pending` de QUALQUER importação, buscadas direto pelo status, até `limit`. */
+  listPendingImportRuns(limit: number): Promise<readonly CloudCostAllocationRun[]>;
   updateRun(runId: string, input: UpdateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun>;
   getRun(runId: string): Promise<CloudCostAllocationRun | undefined>;
   listRuns(filters?: CloudCostAllocationRunFilters): Promise<readonly CloudCostAllocationRun[]>;
@@ -55,6 +63,12 @@ export type CloudCostAllocationRepository = {
   ): Promise<readonly UsageBasisRow[]>;
   listTenants(): Promise<readonly CloudCostAllocationTenant[]>;
 };
+
+/** B-ASS-09a — a varredura anda da importação mais antiga para a mais nova (data da importação, depois da criação). */
+function oldestImportFirst(a: CloudCostImport, b: CloudCostImport): number {
+  const importedAt = (a.importedAt?.getTime() ?? 0) - (b.importedAt?.getTime() ?? 0);
+  return importedAt || a.createdAt.getTime() - b.createdAt.getTime();
+}
 
 export const STORAGE_INVENTORY_MODELS = [
   "checklist_attachments",
@@ -171,6 +185,30 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
       candidate.id === runId ? { ...candidate, status: "processing", startedAt: now, updatedAt: now } : candidate,
     );
     return true;
+  }
+
+  async listImportsForAutoAllocation(limit: number): Promise<readonly CloudCostImport[]> {
+    return [...(await this.allImports())]
+      .filter((costImport) => costImport.status === "completed")
+      .filter((costImport) => costImport.metadata.autoAllocation === AUTO_ALLOCATION_MARKER)
+      .filter((costImport) => !this.hasImportAutoRun(costImport.id)) // B-ASS-09a R2-02 pendência
+      .sort(oldestImportFirst)
+      .slice(0, limit);
+  }
+
+  async listPendingImportRuns(limit: number): Promise<readonly CloudCostAllocationRun[]> {
+    return this.runs
+      .filter(
+        (run) =>
+          run.status === "pending" && // B-ASS-09a listPendingImportRuns
+          run.metadata.trigger === "import",
+      )
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+      .slice(0, limit);
+  }
+
+  private hasImportAutoRun(importId: string): boolean {
+    return this.runs.some((run) => run.metadata.importId === importId && run.metadata.trigger === "import");
   }
 
   private async insertRun(id: string, input: CreateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun> {

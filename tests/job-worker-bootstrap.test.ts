@@ -73,6 +73,9 @@ function recordingModules(calls: string[], worker: JobWorker): JobWorkerModules 
     enqueueInitialBillingChannelJobs: async () => {
       calls.push("billing.channel");
     },
+    enqueueInitialCloudAllocationImportCatchUp: async () => {
+      calls.push("cloud-cost-allocation.import-catch-up");
+    },
   };
 }
 
@@ -121,6 +124,8 @@ test("produção válida sobe o worker E enfileira as CINCO varreduras, uma vez 
       "subscription.close-statements",
       // B-ASS-08b — a peça é chamada sempre; quem decide não enfileirar com o canal desligado é ela mesma.
       "billing.channel",
+      // B-ASS-09a (T10) — o 1º tick da varredura do rateio automático. MUTAÇÃO QUE MATA: M10 (a chamada apagada).
+      "cloud-cost-allocation.import-catch-up",
     ]);
     assert.equal(warns.length, 0);
     assert.equal(infos.length, 1);

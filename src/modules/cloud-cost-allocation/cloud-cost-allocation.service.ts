@@ -118,6 +118,16 @@ export class CloudCostAllocationService {
     return this.repository.listRunsByImport(importId);
   }
 
+  /** B-ASS-09a · R2-02 — as importações marcadas que ainda não têm nenhuma run automática (o que falta criar). */
+  listImportsForAutoAllocation(limit: number): Promise<readonly CloudCostImport[]> {
+    return this.repository.listImportsForAutoAllocation(limit);
+  }
+
+  /** B-ASS-09a · R2-02 — as runs automáticas `pending`, de qualquer importação (o que falta executar). */
+  listPendingImportRuns(limit: number): Promise<readonly CloudCostAllocationRun[]> {
+    return this.repository.listPendingImportRuns(limit);
+  }
+
   /**
    * Executa (ou REEXECUTA) uma run pelo id. O rateio manual reexecuta de propósito uma run concluída (E7, pergunta 2 do
    * §9 do plano, recomendação (a)): este caminho não reivindica nada. Só o caminho automático (`executeImportRuns`)

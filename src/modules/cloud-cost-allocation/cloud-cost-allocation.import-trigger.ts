@@ -63,7 +63,7 @@ export type ImportTriggerLogger = {
 
 const moduleLogger = pino({ level: env.LOG_LEVEL });
 
-const defaultLogger: ImportTriggerLogger = {
+export const defaultImportTriggerLogger: ImportTriggerLogger = {
   warn: (payload, message) => moduleLogger.warn(payload, message),
   error: (payload, message) => moduleLogger.error(payload, message),
 };
@@ -95,7 +95,7 @@ export async function ensureImportRuns(
   importId: string,
   options: { readonly logger?: ImportTriggerLogger } = {},
 ): Promise<EnsureImportRunsResult> {
-  const logger = options.logger ?? defaultLogger;
+  const logger = options.logger ?? defaultImportTriggerLogger;
   const costImport = await allocation.findImportForAllocation(importId);
   if (!costImport) return NOT_ELIGIBLE;
   if (costImport.status !== "completed" || costImport.rowCount === 0) return NOT_ELIGIBLE;
@@ -183,4 +183,82 @@ async function enqueueImportRunsIfPending(
   pendingCount: number,
 ): Promise<void> {
   if (pendingCount > 0) await deps.enqueue("cloud-cost-allocation.run", { mode: "import_auto", importId });
+}
+
+// -----------------------------------------------------------------------------------------------
+// F4 — a varredura de recuperação (P5, R2-02)
+// -----------------------------------------------------------------------------------------------
+
+/** Quantas importações (e quantas runs `pending`) uma passada da varredura alcança. Injetável (R2-02). */
+export const IMPORT_CATCH_UP_LIMIT = 50;
+
+export type ImportCatchUpAllocationPort = ImportRunAllocationPort &
+  Pick<CloudCostAllocationService, "listImportsForAutoAllocation" | "listPendingImportRuns">;
+
+export type ImportCatchUpDeps = {
+  readonly allocation: ImportCatchUpAllocationPort;
+  readonly enqueue: CloudCostAllocationEnqueue;
+  readonly logger?: ImportTriggerLogger;
+  readonly limit?: number;
+};
+
+export type ImportCatchUpResult = {
+  /** Importações marcadas sem nenhuma run automática que esta passada alcançou. */
+  readonly importsScanned: number;
+  readonly runsCreated: number;
+  /** Importações com run automática `pending` que esta passada enfileirou (um enfileiramento por importação). */
+  readonly importsEnqueued: number;
+  /** Importações cuja criação falhou nesta passada (registrada; a próxima passada tenta de novo). */
+  readonly importsFailed: number;
+};
+
+/**
+ * P5 · R2-02 — a varredura de 6 em 6 h. Seleciona pelo que FALTA, nunca "as N mais antigas":
+ *  1. importação marcada sem nenhuma run automática → `ensureImportRuns` (o gancho falhou antes de criar);
+ *  2. run automática `pending`, de qualquer importação → um enfileiramento por importação (o gancho criou e não
+ *     enfileirou, ou o job se perdeu).
+ * NÃO reexecuta run `failed` (pergunta 3 do §9, recomendação (a)) e NÃO toca importação sem marcador (P7). A falha de
+ * uma importação é registrada e não impede as outras (a falha GERAL, como a listagem, sobe para o job, que a registra).
+ */
+export async function runImportCatchUp(deps: ImportCatchUpDeps): Promise<ImportCatchUpResult> {
+  const logger = deps.logger ?? defaultImportTriggerLogger;
+  const limit = deps.limit ?? IMPORT_CATCH_UP_LIMIT;
+
+  const missing = await deps.allocation.listImportsForAutoAllocation(limit);
+  let runsCreated = 0;
+  let importsFailed = 0;
+  for (const costImport of missing) {
+    try {
+      runsCreated += (await ensureImportRuns(deps.allocation, costImport.id, { logger })).created;
+    } catch (error) {
+      importsFailed += 1;
+      logger.warn(
+        { importId: costImport.id, code: errorCode(error) },
+        "cloud_cost_auto_allocation_catch_up_import_failed",
+      );
+    }
+  }
+
+  const pendingByImport = new Map<string, number>();
+  for (const run of await deps.allocation.listPendingImportRuns(limit)) {
+    const importId = typeof run.metadata.importId === "string" ? run.metadata.importId : undefined;
+    if (!importId) continue;
+    pendingByImport.set(importId, (pendingByImport.get(importId) ?? 0) + 1);
+  }
+  for (const [importId, pendingCount] of pendingByImport) {
+    await enqueueImportRunsIfPending(deps, importId, pendingCount);
+  }
+
+  return { importsScanned: missing.length, runsCreated, importsEnqueued: pendingByImport.size, importsFailed };
+}
+
+/** Só o código/nome do erro no log: a mensagem pode trazer SQL ou valor (allowlist §2.8). */
+export function errorCode(error: unknown): string {
+  if (typeof error === "object" && error !== null) {
+    const record = error as { readonly code?: unknown; readonly reason?: unknown; readonly name?: unknown };
+    if (typeof record.reason === "string") return record.reason;
+    if (typeof record.code === "string") return record.code;
+    if (typeof record.name === "string") return record.name;
+  }
+  return "unknown";
 }
