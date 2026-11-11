@@ -114,7 +114,7 @@
   T-B3 (ii-b) em memória. **Pergunta ao orquestrador:** ratificar a forma por emenda (a alternativa "200 vazio" do plano
   não se aplica: o cabeçalho não muda a organização).
 - **`EXPLAIN (ANALYZE, BUFFERS)`** (A-10; dados sintéticos numa transação desfeita: 1 organização, 50 perfis, 400 itens,
-  40.000 movimentos, `ANALYZE`; script em `explain-15a.sql` no scratchpad):
+  40.000 movimentos, `ANALYZE`; script em `erp-pausa-2026-10-03/revisoes/dev-15a-cl-evidencia/explain-15a.sql`):
   - custódia profissional (um perfil): `Index Scan using stock_movements_custody_lookup_idx`, `Index Cond: (tenant_id = …)
     AND (custody_type = 'professional') AND (custody_operator_profile_id = $0)`, 534 linhas, **593 buffers** (a tabela
     inteira tem 655 páginas), 0,84 ms. O índice começa por `[tenant_id, item_id, …]`: as condições de custódia são
@@ -149,7 +149,7 @@
 
 Regra (§3): texto exato; `grep -cF` = 1 no arquivo antes de aplicar (o roteiro aborta se não for 1); roda **só** o
 teste-dono (`--test-name-pattern`); vermelho por **asserção**; o arquivo volta ao conteúdo commitado e `git status` fica
-limpo depois de cada uma. Roteiro e saídas TAP fora do repositório (`scratchpad/mut15a/driver.py` e `M-*.tap`).
+limpo depois de cada uma. Roteiro e saídas TAP fora do repositório (`erp-pausa-2026-10-03/revisoes/dev-15a-cl-evidencia/driver.py` e `M-*.tap`).
 
 | Mutação | Arquivo | Troca | Dono | Resultado |
 |---|---|---|---|---|
