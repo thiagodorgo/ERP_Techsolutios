@@ -146,6 +146,18 @@ test("B-SAN3-24: finance.cheques é implementado e só aparece com cheques:read"
   assert.equal(without.find((item) => item.id === "finance.cheques"), undefined);
 });
 
+// B-SAN3-24 (A9, parte do fechamento; P-MENU) — Fechamento do mês governado por `financial_period:read`.
+test("B-SAN3-24: finance.period_closes é implementado e só aparece com financial_period:read", () => {
+  const actor = { userId: "usr-finance", tenantId: "ten-a", roles: ["finance"], enabledModules: ["finance"], scope: "finance" } as const;
+  const item = getMenuForCurrentUser({ ...actor, permissions: ["financial_period:read"] }).find((entry) => entry.id === "finance.period_closes");
+  assert.equal(item?.status, "implemented");
+  assert.equal(item?.path, "/finance/fechamento");
+  assert.deepEqual(item?.requiredPermissions, ["financial_period:read"]);
+  assert.deepEqual(item?.requiredModules, ["finance"]);
+  const without = getMenuForCurrentUser({ ...actor, permissions: ["financial_entries:read", "cheques:read"] });
+  assert.equal(without.find((entry) => entry.id === "finance.period_closes"), undefined);
+});
+
 test("Cloud Billing aparece com cost allocation read", () => {
   const menu = getMenuForCurrentUser({
     userId: "usr-platform",
