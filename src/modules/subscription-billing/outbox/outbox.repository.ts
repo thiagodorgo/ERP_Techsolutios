@@ -206,6 +206,8 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     const claimed: BillingOutboxRow = {
       ...target,
       status: "PROCESSING",
+      // Conserto da J-530 (I8): a retomada limpa o `skip_reason`, como o Prisma.
+      skipReason: null,
       claimedAt: params.now,
       claimedBy: params.claimedBy,
       attemptStartedAt: params.now,

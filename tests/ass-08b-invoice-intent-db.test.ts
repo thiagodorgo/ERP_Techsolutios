@@ -333,6 +333,8 @@ if (!connectionString) {
   test("T-INTX-6a/6b (R-INTX-6, I6, I8): provedor de nota DESLIGADO → PENDING + provider_disabled logo depois da baixa; religar → 1 nota e skip_reason NULL", async () => {
     const { tenantId, statementId } = await seed(`intx6-${randomUUID().slice(0, 6)}`);
     const off = world([tenantId], { invoiceOn: false });
+    // O índice global do demonstrativo existe desde o fechamento (é por ele que o claim acha a organização).
+    await off.deps.refs.put({ statementId, tenantId, provider: "asaas", externalChargeId: `ch_intx6_${statementId}` }, new Date());
     await off.settlement.settle({ tenantId, statementId, source: "asaas", externalChargeId: `ch_intx6_${statementId}`, paidCents: 10000, method: null, now: new Date() });
     const a = await rowsOf(statementId);
     assert.deepEqual(

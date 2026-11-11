@@ -272,15 +272,19 @@ export class PrismaOutboxRepository implements OutboxRepository {
           return { kind: "needs_review", row: toDomain(rows[0]!), code: verdict.code } satisfies ClaimResult;
         }
 
-        // (5) elegível ou órfã → PROCESSING (o UPDATE de sempre).
+        // (5) elegível ou órfã → PROCESSING (o UPDATE de sempre). Conserto da J-530 (I8): a retomada LIMPA o `skip_reason`
+        //     (a linha que nasceu `provider_disabled` deixa de dizer isso quando o provedor volta); a trava não muda.
+        // [INTX-06b]
+        const skipReasonOnClaim: OutboxSkipReason | null = null;
         const rows = (await tx.$queryRawUnsafe(
           `UPDATE billing_outbox
              SET status = 'PROCESSING', claimed_at = $2, claimed_by = $3, attempt_started_at = $2,
-                 attempts = attempts + 1, updated_at = $2
+                 attempts = attempts + 1, skip_reason = $4, updated_at = $2
              WHERE id = $1::uuid RETURNING *`,
           target.id,
           params.now,
           params.claimedBy,
+          skipReasonOnClaim,
         )) as Row[];
         return { kind: "claimed", row: toDomain(rows[0]!), wasOrphan } satisfies ClaimResult;
       });
