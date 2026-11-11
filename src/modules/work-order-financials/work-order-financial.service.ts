@@ -22,7 +22,7 @@ import type {
   WorkOrderFinancialActorContext,
   WorkOrderFinancialItem,
 } from "./work-order-financial.types.js";
-import { WorkOrderFinancialError } from "./work-order-financial.types.js";
+import { WorkOrderFinancialError, workOrderCancelledError } from "./work-order-financial.types.js";
 import {
   assertMoneyInRange,
   optionalString,
@@ -142,22 +142,26 @@ export class WorkOrderFinancialService {
     assertMoneyInRange(unitAmount, "unitAmount");
     const totalAmount = assertMoneyInRange(roundMoney(unitAmount * quantity), "totalAmount");
 
-    return this.repository.create({
-      tenantId: actor.tenantId,
-      workOrderId: workOrder.id,
-      tariffId,
-      priceTableId,
-      description,
-      quantity,
-      unitAmount,
-      totalAmount,
-      currency,
-      source,
-      notes,
-      clientActionId,
-      createdBy: actor.userId,
-      updatedBy: actor.userId,
-    });
+    try {
+      return await this.repository.create({
+        tenantId: actor.tenantId,
+        workOrderId: workOrder.id,
+        tariffId,
+        priceTableId,
+        description,
+        quantity,
+        unitAmount,
+        totalAmount,
+        currency,
+        source,
+        notes,
+        clientActionId,
+        createdBy: actor.userId,
+        updatedBy: actor.userId,
+      });
+    } catch (error) {
+      throw translateItemWriteFailure(error);
+    }
   }
 
   // PATCH — edição inline de quantity/notes/description (+ unitAmount SÓ para source=manual).
@@ -205,17 +209,22 @@ export class WorkOrderFinancialService {
 
     const notes = body.notes === undefined ? undefined : parseOptionalNotes(body.notes);
 
-    const updated = await this.repository.update({
-      tenantId: actor.tenantId,
-      workOrderId: current.workOrderId,
-      itemId: current.id,
-      description,
-      quantity,
-      unitAmount,
-      totalAmount,
-      notes,
-      updatedBy: actor.userId,
-    });
+    let updated: WorkOrderFinancialItem | undefined;
+    try {
+      updated = await this.repository.update({
+        tenantId: actor.tenantId,
+        workOrderId: current.workOrderId,
+        itemId: current.id,
+        description,
+        quantity,
+        unitAmount,
+        totalAmount,
+        notes,
+        updatedBy: actor.userId,
+      });
+    } catch (error) {
+      throw translateItemWriteFailure(error);
+    }
     if (!updated) {
       // B-SAN3-02 (D2) — o CAS (`invoiced_at IS NULL`) casou 0 linhas: o faturamento pode ter carimbado o item
       // DEPOIS do pré-check. Relê para responder o motivo real (422 item_invoiced), nunca um 404 cego.
@@ -231,7 +240,12 @@ export class WorkOrderFinancialService {
     const current = await this.getItem(actor, workOrderId, itemId);
     // Ω4-3 (D-Ω4-C1) — trava anti-refaturamento: item já faturado não pode ser removido do extrato.
     assertItemNotInvoiced(current);
-    const removed = await this.repository.softDelete(actor.tenantId, current.workOrderId, current.id, actor.userId);
+    let removed: WorkOrderFinancialItem | undefined;
+    try {
+      removed = await this.repository.softDelete(actor.tenantId, current.workOrderId, current.id, actor.userId);
+    } catch (error) {
+      throw translateItemWriteFailure(error);
+    }
     if (!removed) {
       // B-SAN3-02 (D2) — idem update: o CAS perdeu a corrida para o faturamento → 422 item_invoiced; senão 404.
       throw await this.casMissError(actor, current.workOrderId, current.id);
@@ -263,6 +277,8 @@ export class WorkOrderFinancialService {
 
   // P-Ω3F6-ZERO-ATOMICIDADE — zera o financeiro da OS numa ÚNICA operação atômica (softDeleteAll), excluindo os
   // FATURADOS (invoiced_at IS NULL). Substitui o loop de N deletes sequenciais sem transação (parcialidade + N+1).
+  // B-SAN3-23 (D-2, D-5) — o cancelamento Prisma NÃO passa mais por aqui (zera dentro da unidade, sob a trava da OS).
+  // Ficam o dublê de memória do cancelamento e a sonda das suítes T-Z (work-order-invoicing-atomic-db.test.ts).
   async zeroActiveItems(actor: WorkOrderFinancialActorContext, workOrderId: string): Promise<number> {
     const workOrder = await this.assertWorkOrder(actor, workOrderId);
     return this.repository.softDeleteAllByWorkOrder(actor.tenantId, workOrder.id, actor.userId);
@@ -307,14 +323,11 @@ function financialItemNotFoundError(): WorkOrderFinancialError {
 // P-Ω3F6-TERMINAL-GUARD — nenhuma OBRIGAÇÃO financeira nova numa OS em estado TERMINAL (cancelled): create/
 // update/delete de item e faturamento (invoice) recusam (422 work_order_cancelled). Sem isso, a invariante do
 // cancelamento (decision=zero ⇒ total=0; OS morta sem cobrança nova) era furada lançando/faturando item depois.
+// B-SAN3-23 — é a guarda de ENTRADA (leitura solta, fast-fail). A autoridade em corrida é a releitura sob a trava
+// compartilhada da OS, no repositório Prisma (P-23.2), com a mesma fábrica.
 function assertWorkOrderNotCancelled(workOrder: { readonly status: string }): void {
   if (workOrder.status === "cancelled") {
-    throw new WorkOrderFinancialError(
-      422,
-      "WORK_ORDER_FINANCIAL_UNPROCESSABLE",
-      "work_order_cancelled",
-      "This work order is cancelled; financial items and invoicing are no longer allowed.",
-    );
+    throw workOrderCancelledError();
   }
 }
 
@@ -536,6 +549,23 @@ const TRANSIENT_INVOICE_DB_CODES: ReadonlySet<string> = new Set(["P2034", "P2028
 
 function isTransientInvoiceFailure(error: unknown): boolean {
   return invoiceDatabaseErrorCodes(error).some((code) => TRANSIENT_INVOICE_DB_CODES.has(code));
+}
+
+// B-SAN3-23 (R-08) — a escrita de item (lançar, editar, apagar) passou a esperar a trava compartilhada da OS, e a
+// espera pode passar do prazo da transação (P2028 nasce no `$transaction` do invólucro RLS, FORA do `try` do
+// repositório). A mesma lista fechada do faturamento vira 503 com nada persistido; o resto propaga intacto.
+function translateItemWriteFailure(error: unknown): unknown {
+  if (isTransientInvoiceFailure(error)) return itemWriteTransientConflictError(); // B-SAN3-23:transitorio-item
+  return error;
+}
+
+function itemWriteTransientConflictError(): WorkOrderFinancialError {
+  return new WorkOrderFinancialError(
+    503,
+    "WORK_ORDER_FINANCIAL_UNAVAILABLE",
+    "work_order_financial_transient_conflict",
+    "The financial item write hit a transient database conflict and nothing was saved. Retry the operation.",
+  );
 }
 
 // Códigos candidatos nas formas medidas no Prisma 7 + adapter-pg (precedente inventory-prisma.repository.ts):
