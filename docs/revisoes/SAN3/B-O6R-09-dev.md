@@ -408,3 +408,29 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
   arquivo foi apagado depois (`git status` limpo). Sem esta guarda, a mesma forma passava no T13 e na guarda (iv): 40/40,
   medido pelo revisor.
 - `docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md` ganhou um adendo apontando para a guarda.
+
+### Bateria depois do conserto da pré-revisão (06:17–06:32 SP)
+
+| Comando | Resultado |
+|---|---|
+| `npm run check` / `npm run lint` | ec=0 / ec=0 |
+| as 7 suítes `-db` do bloco + `o6r07c-b-scope-db`, juntas, no `o6r09-pg` | 59/59, `# skipped 0` |
+| memória do bloco + guarda + regressões de despacho e orçamento + `san3-08-aprovar-orcamento-destino` + o ratchet T13 | 144/144, `# skipped 0` |
+| `npm test` (forma do job `backend`: banco próprio só migrado, Redis próprio, `memory`) | **TAP: 5 030 testes, 5 015 ok, 13 not ok, 2 skipped** |
+| `npm run build` | ec=0 |
+| `git diff --check origin/main...HEAD` | limpo |
+
+**Os 13 not ok, um a um. Nenhum é do bloco:**
+
+- 3 em `san3-05-runtime-role-guard-db`: T14a/b, T14c e T14d, com "setsid: ausente" (o Windows não tem o `setsid` do Linux).
+- 1 na mesma suíte, o T15: o boot passou do tempo sob a carga da suíte inteira. Rodado sozinho, deu ok 2× às 05:30.
+- 1 na mesma suíte, a linha-mãe.
+- 2 em `san3-09-bootstrap-platform-admin-db`: o T2.1 e a linha-mãe (o `migrate deploy` por script de shell falha no Windows).
+- 2 de `EBUSY` no `rmdir` do temporário: `traccar-event-migration-drill-db` e `work-order-invoicing-migration-drill-db`.
+- 2 em `traccar-position-ingestion-db`: os casos "tempo esgotado", que também caem na `main`.
+- 2 de tempo sob carga, novos nesta rodada:
+  - `ass-08-channel-db` T-OBX-db-5: "o claim não esperou a trava (1051 ms < 1 000)";
+  - `traccar-event-sample-db` "amostra: nenhuma escrita em work_orders": `0 !== 1` no `:314`.
+
+  As duas suítes, rodadas sozinhas logo depois, deram 34/34. A suíte do Traccar usa só o `create`/`changeStatus` cru do
+  repositório de despacho, que não mudou.
