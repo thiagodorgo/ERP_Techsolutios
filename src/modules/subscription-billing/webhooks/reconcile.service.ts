@@ -3,8 +3,8 @@
 // `statement_id` via `billing_statement_refs` (NUNCA pelo payload); o `customer id` do provedor tem de bater com o
 // perfil da organização, senão `rejected` sem baixa.
 // B-ASS-08b (c2): o webhook do provedor de NOTA entra pela mesma porta — a `ref` `<statement_id>:<seq>` leva ao nosso
-// `statement_id`, e a reconsulta (`getInvoice`) decide `authorized`/`rejected`/`cancelled`; demonstrativo que fica `paid`
-// pela reconsulta de pagamento enfileira `invoice_issue` (R-SET-2).
+// `statement_id`, e a reconsulta (`getInvoice`) decide `authorized`/`rejected`/`cancelled`. A intenção de nota (`invoice_issue`
+// na baixa, `invoice_cancel` na reversão) nasce DENTRO da transação do settlement (conserto da J-530), nunca aqui (R-INTX-10).
 
 import type { InvoiceProviderPort } from "../providers/invoice/invoice-provider.port.js";
 import type { PaymentProviderPort } from "../providers/payment/payment-provider.port.js";
@@ -24,12 +24,8 @@ export type ReconcileDeps = {
   /** A perna da NOTA: um adaptador por provedor de nota LIGADO e o repositório da nota (c2). */
   readonly invoicePorts?: Readonly<Record<string, InvoiceProviderPort>>;
   readonly invoices?: StatementInvoiceRepository;
-  /** Demonstrativo que acabou de ficar `paid` pela reconsulta → `invoice_issue` DURÁVEL (R-SET-2). */
-  enqueueInvoiceIssue?: (input: { tenantId: string; statementId: string }) => Promise<void>;
   /** `tenant_billing_profiles.<provedor>_customer_id` — o cliente do provedor tem de bater (R-WH-5). */
   resolveExpectedCustomerId?: (tenantId: string, provider: string) => Promise<string | null>;
-  /** Enfileira `invoice_cancel` na outbox quando o estorno total/chargeback derruba uma nota autorizada (R-SET-2). */
-  enqueueInvoiceCancel?: (input: { tenantId: string; statementId: string; provider: string }) => Promise<void>;
   /** A organização marcou "manter a nota" na reversão (N4, R-D) — default false. */
   resolveKeepInvoice?: (tenantId: string, statementId: string) => Promise<boolean>;
   readonly now?: () => Date;
@@ -134,7 +130,7 @@ async function reconcileInvoiceEvent(deps: ReconcileDeps, event: BillingWebhookE
  * mesma reconsulta não muda nada (baixa monotônica, reversão limitada ao que falta, disputa é atribuição).
  */
 export async function applyReconsultedChargeState(
-  deps: Pick<ReconcileDeps, "ports" | "settlement" | "resolveExpectedCustomerId" | "enqueueInvoiceCancel" | "enqueueInvoiceIssue" | "resolveKeepInvoice" | "now">,
+  deps: Pick<ReconcileDeps, "ports" | "settlement" | "resolveExpectedCustomerId" | "resolveKeepInvoice" | "now">,
   input: { readonly provider: string; readonly tenantId: string; readonly statementId: string; readonly chargeId: string },
 ): Promise<{ readonly outcome: ReconcileOutcome; readonly reason?: string }> {
   const now = deps.now ?? (() => new Date());
@@ -154,9 +150,9 @@ export async function applyReconsultedChargeState(
   // A reconsulta de estorno/chargeback pode não trazer valor: o teto é o pagamento (a reversão limita ao que falta).
   const reversalCeiling = typeof lookup.paidCents === "number" && lookup.paidCents > 0 ? lookup.paidCents : Number.MAX_SAFE_INTEGER;
 
-  // Chargeback FINAL (R-CB-1): reverte e, se houver nota autorizada, enfileira o cancelamento (R-SET-2).
+  // Chargeback FINAL (R-CB-1): reverte; o `invoice_cancel` da nota viva nasce na transação da reversão (R-SET-2).
   if (lookup.status === "charged_back") {
-    const result = await deps.settlement.applyReversal({
+    await deps.settlement.applyReversal({
       tenantId: input.tenantId,
       statementId: input.statementId,
       externalChargeId: input.chargeId,
@@ -165,15 +161,12 @@ export async function applyReconsultedChargeState(
       keepInvoice: await keepInvoice(),
       now: now(),
     });
-    if ("shouldCancelInvoice" in result && result.shouldCancelInvoice && deps.enqueueInvoiceCancel) {
-      await deps.enqueueInvoiceCancel({ tenantId: input.tenantId, statementId: input.statementId, provider: input.provider });
-    }
     return { outcome: "reversed" };
   }
 
   // Estorno confirmado (R-CB-1): reverte pelo valor da reconsulta (ou pelo pagamento, se ela não trouxer valor).
   if (lookup.status === "refunded") {
-    const result = await deps.settlement.applyReversal({
+    await deps.settlement.applyReversal({
       tenantId: input.tenantId,
       statementId: input.statementId,
       externalChargeId: input.chargeId,
@@ -182,9 +175,6 @@ export async function applyReconsultedChargeState(
       keepInvoice: await keepInvoice(),
       now: now(),
     });
-    if ("shouldCancelInvoice" in result && result.shouldCancelInvoice && deps.enqueueInvoiceCancel) {
-      await deps.enqueueInvoiceCancel({ tenantId: input.tenantId, statementId: input.statementId, provider: input.provider });
-    }
     return { outcome: "reversed" };
   }
 
@@ -197,7 +187,7 @@ export async function applyReconsultedChargeState(
   const paysNow = (lookup.status === "paid" || lookup.status === "partially_paid") && typeof lookup.paidCents === "number" && lookup.paidCents > 0;
   if (!paysNow) return { outcome: "ignored", reason: `reconsult_${lookup.status}` };
 
-  const settled = await deps.settlement.settle({
+  await deps.settlement.settle({
     tenantId: input.tenantId,
     statementId: input.statementId,
     source,
@@ -206,10 +196,7 @@ export async function applyReconsultedChargeState(
     method: null,
     now: now(),
   });
-  // R-SET-2: ficou `paid` pela reconsulta → a nota entra na outbox (DURÁVEL; idempotente por `invoice_issue:<id>:1`).
-  if (settled.kind === "settled" && settled.statement.status === "paid" && deps.enqueueInvoiceIssue) {
-    await deps.enqueueInvoiceIssue({ tenantId: input.tenantId, statementId: input.statementId });
-  }
+  // R-SET-2: ficou `paid` → o `invoice_issue` já nasceu na transação da baixa (DURÁVEL; idempotente por `invoice_issue:<id>:1`).
   return { outcome: "settled" };
 }
 

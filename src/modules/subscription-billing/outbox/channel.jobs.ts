@@ -49,9 +49,7 @@ export type ChannelDeps = {
   readonly invoicePorts?: Readonly<Record<string, InvoiceProviderPort>>;
   readonly invoices?: StatementInvoiceRepository;
   readonly resolveIssueContext?: InvoiceIssueContextResolver;
-  readonly enqueueInvoiceIssue?: ReconcileDeps["enqueueInvoiceIssue"];
   readonly resolveExpectedCustomerId?: ReconcileDeps["resolveExpectedCustomerId"];
-  readonly enqueueInvoiceCancel?: ReconcileDeps["enqueueInvoiceCancel"];
   readonly resolveKeepInvoice?: ReconcileDeps["resolveKeepInvoice"];
   readonly now?: () => Date;
 };
@@ -64,9 +62,7 @@ function reconcileDepsOf(deps: ChannelDeps): ReconcileDeps {
     settlement: deps.settlement,
     ...(deps.invoicePorts ? { invoicePorts: deps.invoicePorts } : {}),
     ...(deps.invoices ? { invoices: deps.invoices } : {}),
-    ...(deps.enqueueInvoiceIssue ? { enqueueInvoiceIssue: deps.enqueueInvoiceIssue } : {}),
     ...(deps.resolveExpectedCustomerId ? { resolveExpectedCustomerId: deps.resolveExpectedCustomerId } : {}),
-    ...(deps.enqueueInvoiceCancel ? { enqueueInvoiceCancel: deps.enqueueInvoiceCancel } : {}),
     ...(deps.resolveKeepInvoice ? { resolveKeepInvoice: deps.resolveKeepInvoice } : {}),
     ...(deps.now ? { now: deps.now } : {}),
   };

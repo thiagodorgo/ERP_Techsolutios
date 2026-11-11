@@ -15,8 +15,8 @@ import type { PaymentProviderPort } from "../providers/payment/payment-provider.
 import { missingFiscalFields } from "../providers/provider-config.service.js";
 import { getProviderCatalogEntry } from "../providers/provider.catalog.js";
 import { createDefaultStatementRuntime, type StatementRuntime } from "../statements/statement.factory.js";
-import type { StatementRepository } from "../statements/statement.repository.js";
-import { StatementSettlementService } from "../statements/statement-settlement.service.js";
+import { InMemoryStatementRepository, type StatementRepository } from "../statements/statement.repository.js";
+import { StatementSettlementService, type InvoiceIntents } from "../statements/statement-settlement.service.js";
 import { createDefaultVaultRuntime, type VaultRuntime } from "../vault/vault.factory.js";
 import type { WebhookEventRepository } from "../webhooks/webhook-events.repository.js";
 import { InMemoryStatementRefRepository, type StatementRefRepository } from "../webhooks/statement-refs.repository.js";
@@ -102,6 +102,8 @@ async function repositories(statements: StatementRepository): Promise<Repositori
         customers: new InMemoryProviderCustomerStore(),
       };
     }
+    // Conserto da J-530: o dublê do demonstrativo grava a intenção de nota "na transação" (buffer até o fim do trabalho).
+    if (statements instanceof InMemoryStatementRepository) statements.attachChannelStores({ outbox: memory.outbox, invoices: memory.invoices });
     return { ...memory, events: memoryWebhookEvents() };
   }
   const [
@@ -167,11 +169,26 @@ export function issueContextResolver(vault: VaultRuntime, statements: StatementR
   };
 }
 
+/** O provedor de nota da EMISSÃO da rodada (conserto da J-530, §3.1): o ligado; senão o configurado mais recente; senão o
+ * Focus NFe (leitura do topo, pergunta 1 ao dono). `enabled` = há porta ligada para ele agora. */
+async function invoiceIssueTarget(vault: VaultRuntime, invoiceProvider: string | null, invoicePorts: Readonly<Record<string, InvoiceProviderPort>>): Promise<InvoiceIntents["issueTarget"]> {
+  let provider = invoiceProvider;
+  if (!provider) {
+    const configured = (await vault.configs.list())
+      .filter((config) => getProviderCatalogEntry(config.provider)?.kind === "invoice")
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    provider = configured[0]?.provider ?? "focusnfe";
+  }
+  return { provider, enabled: provider in invoicePorts };
+}
+
 /** Monta as dependências de UMA rodada de job (as portas refletem os provedores ligados AGORA). */
 export async function createChannelRuntime(): Promise<ChannelDeps> {
   const [vault, statements] = await Promise.all([createDefaultVaultRuntime(), createDefaultStatementRuntime()]);
   const repos = await repositories(statements.repository);
   const [ports, invoicePorts, invoiceProvider] = await Promise.all([enabledPaymentPorts(vault), enabledInvoicePorts(vault), enabledInvoiceProvider(vault)]);
+  // (D)/(B): a intenção de nota nasce na transação do settlement — SEMPRE configurada na composição de produção.
+  const invoiceIntents: InvoiceIntents = { issueTarget: await invoiceIssueTarget(vault, invoiceProvider, invoicePorts), enabledInvoiceProviders: Object.keys(invoicePorts) };
   return {
     ...repos,
     ports,
@@ -179,20 +196,11 @@ export async function createChannelRuntime(): Promise<ChannelDeps> {
     // R-PRF-1 + G12 (§11 (a) do conserto-c2): o cliente vem do PERFIL (`ensureCustomer`, fora de transação) e o id fica
     // guardado no perfil — é ele que o R-WH-5 confere na reconsulta.
     resolveCustomer: persistingCustomerResolver(profileCustomerResolver((tenantId) => statements.billingProfiles.find(tenantId)), repos.customers),
-    settlement: new StatementSettlementService(statements.repository, statements.service),
+    // [INTX-08r]
+    settlement: new StatementSettlementService(statements.repository, statements.service, invoiceIntents),
     statements: statements.repository,
     resolveIssueContext: issueContextResolver(vault, statements),
     // R-WH-5: o cliente do provedor tem de ser o do perfil da organização dona do demonstrativo (o id guardado — G12).
     resolveExpectedCustomerId: (tenantId, provider) => repos.customers.get(tenantId, provider),
-    // R-SET-2: demonstrativo PAGO com provedor de nota ligado → `invoice_issue` DURÁVEL (seq 1; a reemissão é da rota /invoice).
-    enqueueInvoiceIssue: async ({ tenantId, statementId }) => {
-      if (!invoiceProvider) return;
-      await repos.outbox.enqueue({ tenantId, statementId, kind: "invoice_issue", provider: invoiceProvider, seq: 1, payload: { seq: 1 } }, new Date());
-    },
-    // R-SET-2: estorno total/chargeback com nota autorizada → `invoice_cancel` DURÁVEL para o provedor de NOTA ligado.
-    enqueueInvoiceCancel: async ({ tenantId, statementId }) => {
-      if (!invoiceProvider) return;
-      await repos.outbox.enqueue({ tenantId, statementId, kind: "invoice_cancel", provider: invoiceProvider, seq: 1, payload: { reason: "payment_reversed" } }, new Date());
-    },
   };
 }

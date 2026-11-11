@@ -108,8 +108,8 @@ export async function enqueueInTx(
 ): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }> {
   const key = idempotencyKeyOf(input.kind, input.statementId, input.seq);
   const inserted = (await tx.$queryRawUnsafe(
-    `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at)
-     VALUES ($1::uuid, $2::uuid, $3, $4, $5, COALESCE($6, gen_random_uuid()::text)::uuid, $7::jsonb, $8, $8, $8)
+    `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at, skip_reason)
+     VALUES ($1::uuid, $2::uuid, $3, $4, $5, COALESCE($6, gen_random_uuid()::text)::uuid, $7::jsonb, $8, $8, $8, $9)
      ON CONFLICT (idempotency_key) DO NOTHING
      RETURNING *`,
     input.tenantId,
@@ -120,6 +120,7 @@ export async function enqueueInTx(
     input.providerIdempotencyKey ?? null,
     JSON.stringify(input.payload ?? {}),
     now,
+    input.skipReason ?? null,
   )) as Row[];
   if (inserted.length > 0) return { row: toDomain(inserted[0]!), created: true };
   const existing = (await tx.$queryRawUnsafe(`SELECT * FROM billing_outbox WHERE idempotency_key = $1`, key)) as Row[];

@@ -111,7 +111,8 @@ function harness(adapter: FocusNfeInvoiceAdapter | null, options: { contextReaso
   const clock = { now: new Date("2026-12-05T12:00:00Z") };
   const statements = new InMemoryStatementRepository(() => clock.now);
   const service = new StatementService(statements, { resolve: async () => ({ kind: "skip" as const, reason: "no_subscription" as const }) }, { record: async () => {} });
-  const settlement = new StatementSettlementService(statements, service);
+  // Conserto da J-530: a intenção de nota nasce na transação do settlement (o dublê ligado à outbox e à nota, abaixo).
+  const settlement = new StatementSettlementService(statements, service, { issueTarget: { provider: "focusnfe", enabled: adapter !== null }, enabledInvoiceProviders: adapter ? ["focusnfe"] : [] });
   const outbox = new InMemoryOutboxRepository({
       // R-OBX-5 (2º conserto do #522): o dublê lê o demonstrativo do MESMO repositório; `totalCents` é o V da adoção.
       readStatement: async (tenantId, statementId) => {
@@ -121,6 +122,7 @@ function harness(adapter: FocusNfeInvoiceAdapter | null, options: { contextReaso
       clock: () => clock.now,
     });
   const invoices = new InMemoryStatementInvoiceRepository(statements);
+  statements.attachChannelStores({ outbox, invoices });
   const refs = new InMemoryStatementRefRepository();
   const events = new InMemoryWebhookEventRepository();
   const resolveIssueContext: InvoiceIssueContextResolver = async ({ statement }) =>
@@ -146,12 +148,6 @@ function harness(adapter: FocusNfeInvoiceAdapter | null, options: { contextReaso
     resolveIssueContext,
     settlement,
     statements,
-    enqueueInvoiceIssue: async ({ tenantId, statementId }) => {
-      await outbox.enqueue({ tenantId, statementId, kind: "invoice_issue", provider: "focusnfe", seq: 1, payload: { seq: 1 } }, clock.now);
-    },
-    enqueueInvoiceCancel: async ({ tenantId, statementId }) => {
-      await outbox.enqueue({ tenantId, statementId, kind: "invoice_cancel", provider: "focusnfe", seq: 1, payload: { reason: "payment_reversed" } }, clock.now);
-    },
     now: () => clock.now,
   };
   return { deps, statements, settlement, outbox, invoices, refs, events, clock };
@@ -212,8 +208,8 @@ test("R-FLX-1 (nota): pago → invoice_issue → numero_dps da sequência → 20
   try {
     const adapter = focusAdapter(fake.baseUrl);
     const h = harness(adapter);
+    // A linha durável `invoice_issue` (seq 1) nasceu na transação da baixa (conserto da J-530).
     const statement = await paidStatement(h, "2026-11");
-    await h.deps.enqueueInvoiceIssue!({ tenantId: TENANT, statementId: statement.id });
 
     const dispatched = await runBillingDispatch(h.deps);
     assert.equal(dispatched.outcomes.sent, 1);

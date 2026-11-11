@@ -130,7 +130,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
       providerIdempotencyKey: input.providerIdempotencyKey ?? randomUUID(),
       payload: { ...(input.payload ?? {}) },
       status: "PENDING",
-      skipReason: null,
+      skipReason: input.skipReason ?? null,
       claimedAt: null,
       claimedBy: null,
       attemptStartedAt: null,

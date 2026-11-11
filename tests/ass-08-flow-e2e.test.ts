@@ -50,7 +50,8 @@ test("R-FLX-1 (pagamento) fechado → cobrança → payUrl ao cliente → webhoo
     // --- demonstrativo closed (R$ 100) ---
     const statements = new InMemoryStatementRepository();
     const service = new StatementService(statements, { resolve: async () => ({ kind: "skip" as const, reason: "no_subscription" as const }) }, { record: async () => {} });
-    const settlement = new StatementSettlementService(statements, service);
+    // Conserto da J-530: a intenção de nota nasce na transação da baixa (o dublê ligado à outbox e à nota, abaixo).
+    const settlement = new StatementSettlementService(statements, service, { issueTarget: { provider: "focusnfe", enabled: true }, enabledInvoiceProviders: ["focusnfe"] });
     const statement = await statements.transaction(TENANT, async (tx) => {
       const { statement: s } = await tx.insertIfAbsentAndLock({ tenantId: TENANT, period: "2026-11" });
       return tx.saveStatement({ ...s, status: "closed", chargeStatus: "pending", totalCents: 10000, dueDate: "2026-12-10", closedAt: new Date() });
@@ -65,6 +66,8 @@ test("R-FLX-1 (pagamento) fechado → cobrança → payUrl ao cliente → webhoo
         return current && { status: current.status, reopenedAt: current.reopenedAt, hasLiveCharge: (await charges.findLive(tenantId, statementId)) !== undefined };
       },
     });
+    const invoiceStore = new InMemoryStatementInvoiceRepository(statements);
+    statements.attachChannelStores({ outbox, invoices: invoiceStore });
     const refs = new InMemoryStatementRefRepository();
     // Conserto J-522 (C3-01): a intenção entra pelo caminho de PRODUÇÃO — `requestChargeCreate` trava o demonstrativo,
     // aplica a elegibilidade (R-CHG-2/D1) e grava refs + linha; o payload NÃO carrega `customerId` (R-PRF-1).
@@ -139,26 +142,22 @@ test("R-FLX-1 (pagamento) fechado → cobrança → payUrl ao cliente → webhoo
     await new Promise<void>((resolve) => server.close(() => resolve()));
 
     // --- reconcile: reconsulta no provedor (paid) e baixa; a organização vem do NOSSO id; pago → a NOTA entra na outbox ---
-    const invoiceIssues: { tenantId: string; statementId: string }[] = [];
-    const outcome = await reconcileWebhookEvent(
-      { events, refs, ports: { asaas: adapter }, settlement, enqueueInvoiceIssue: async (input) => void invoiceIssues.push(input) },
-      reconcileQueue[0]!,
-    );
+    const outcome = await reconcileWebhookEvent({ events, refs, ports: { asaas: adapter }, settlement }, reconcileQueue[0]!);
     assert.equal(outcome, "settled");
     const finalStatement = await statements.findStatement(TENANT, statement.id);
     assert.equal(finalStatement?.status, "paid");
     assert.equal(finalStatement?.paidCents, 10000);
     assert.equal(finalStatement?.chargeStatus, "confirmed");
-    assert.deepEqual(invoiceIssues, [{ tenantId: TENANT, statementId: statement.id }], "R-SET-2: ficou paid pela reconsulta → invoice_issue durável");
+    const invoiceIssues = (await outbox.listByStatement(TENANT, statement.id)).filter((row) => row.kind === "invoice_issue").map((row) => ({ tenantId: row.tenantId, statementId: row.statementId, provider: row.provider }));
+    assert.deepEqual(invoiceIssues, [{ tenantId: TENANT, statementId: statement.id, provider: "focusnfe" }], "R-SET-2: ficou paid pela reconsulta → invoice_issue durável, na transação da baixa");
 
     // --- a perna da NOTA (B-ASS-08b): invoice_issue → numero_dps da sequência → 202 → webhook da nota → reconsulta → authorized ---
     const focus = await startFocusNfeFake("authorized");
     try {
       const focusClient = new BillingHttpClient({ provider: "focusnfe", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${focus.baseUrl}/v2` });
       const focusAdapter = new FocusNfeInvoiceAdapter(focusClient, async (kind) => (kind === "api_token" ? "TOK-focus" : kind === "webhook_secret" ? FOCUS_WEBHOOK_SECRET : null));
-      const invoices = new InMemoryStatementInvoiceRepository(statements);
-      // O que o runtime faz no `enqueueInvoiceIssue`: a linha durável, seq 1, para o provedor de nota ligado.
-      await outbox.enqueue({ tenantId: TENANT, statementId: statement.id, kind: "invoice_issue", provider: "focusnfe", seq: 1, payload: { seq: 1 } }, new Date());
+      // A linha durável `invoice_issue` (seq 1) já nasceu na transação da baixa (acima).
+      const invoices = invoiceStore;
       const invoiceHandler = new InvoiceOutboxHandler({
         ports: { focusnfe: focusAdapter },
         invoices,

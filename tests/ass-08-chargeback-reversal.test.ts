@@ -4,6 +4,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { InMemoryStatementInvoiceRepository } from "../src/modules/subscription-billing/invoices/invoices.repository.js";
+import { InMemoryOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
 import { StatementService, upToDateStatus } from "../src/modules/subscription-billing/statements/statement.service.js";
 import { StatementSettlementService } from "../src/modules/subscription-billing/statements/statement-settlement.service.js";
@@ -21,6 +23,24 @@ function make() {
   const service = new StatementService(repo, inputsStub, { record: async () => {} });
   const settlement = new StatementSettlementService(repo, service);
   return { repo, service, settlement };
+}
+
+/** Conserto da J-530: a intenção de nota nasce na transação da reversão — o teste lê a FILA (o dublê do demonstrativo ligado
+ * à outbox e à nota do modo memória), em vez de uma ponte chamada pelo reconcile depois. */
+function makeWithIntents() {
+  const repo = new InMemoryStatementRepository();
+  const service = new StatementService(repo, inputsStub, { record: async () => {} });
+  const outbox = new InMemoryOutboxRepository({ readStatement: async (tenantId, statementId) => repo.findStatement(tenantId, statementId) });
+  const invoices = new InMemoryStatementInvoiceRepository(repo);
+  repo.attachChannelStores({ outbox, invoices });
+  const settlement = new StatementSettlementService(repo, service, { issueTarget: { provider: "focusnfe", enabled: true }, enabledInvoiceProviders: ["focusnfe"] });
+  /** Nota AUTORIZADA de verdade na loja da nota (o espelho `invoiceStatus` deixou de decidir). */
+  const authorizeInvoice = async (statementId: string) => {
+    const { invoice } = await invoices.beginIssue({ tenantId: TENANT, statementId, seq: 1, provider: "focusnfe", environment: "sandbox", serie: 1 }, new Date());
+    await invoices.markAuthorized(TENANT, invoice.id, { pdfSource: "public_url" }, new Date());
+  };
+  const cancelsOf = async (statementId: string) => (await outbox.listByStatement(TENANT, statementId)).filter((row) => row.kind === "invoice_cancel");
+  return { repo, service, settlement, outbox, invoices, authorizeInvoice, cancelsOf };
 }
 
 async function closedStatement(repo: InMemoryStatementRepository, totalCents: number, patch: Partial<SubscriptionStatement> = {}): Promise<SubscriptionStatement> {
@@ -83,15 +103,13 @@ test("R-SET-3/D4 pago 200 em saldo 100, crédito aplicado a outro mês, chargeba
 function reconcileDeps(repo: InMemoryStatementRepository, settlement: StatementSettlementService, lookup: ChargeLookup) {
   const events = new InMemoryWebhookEventRepository();
   const refs = new InMemoryStatementRefRepository();
-  const invoiceCancels: { statementId: string }[] = [];
   const deps: ReconcileDeps = {
     events,
     refs,
     ports: { asaas: portReturning(lookup) },
     settlement,
-    enqueueInvoiceCancel: async (i) => void invoiceCancels.push({ statementId: i.statementId }),
   };
-  return { events, refs, deps, invoiceCancels };
+  return { events, refs, deps };
 }
 
 test("R-CB-1 chargeback pela reconsulta → charged_back, inGoodStanding false (T-CB-1)", async () => {
@@ -108,36 +126,40 @@ test("R-CB-1 chargeback pela reconsulta → charged_back, inGoodStanding false (
 });
 
 test("D3/R-CB-2 disputa de chargeback → chargeback_disputed, NÃO derruba em dia nem cancela nota (T-CB reescrito)", async () => {
-  const { repo, settlement } = make();
-  const statement = await closedStatement(repo, 10000, { invoiceStatus: "authorized" });
+  const { repo, settlement, authorizeInvoice, cancelsOf } = makeWithIntents();
+  const statement = await closedStatement(repo, 10000);
   await settlement.settle({ tenantId: TENANT, statementId: statement.id, source: "asaas", externalChargeId: "pay_4", paidCents: 10000, method: null, now: new Date() });
-  const { events, refs, deps, invoiceCancels } = reconcileDeps(repo, settlement, { status: "chargeback_disputed", disputeWonPending: true, raw: {} });
+  await authorizeInvoice(statement.id);
+  const { events, refs, deps } = reconcileDeps(repo, settlement, { status: "chargeback_disputed", disputeWonPending: true, raw: {} });
   await refs.put({ statementId: statement.id, tenantId: TENANT, provider: "asaas" }, new Date());
   await events.insertIfAbsent({ provider: "asaas", externalEventId: "cb_disp", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_4", externalReference: statement.id }, new Date());
   assert.equal(await reconcileWebhookEvent(deps, { provider: "asaas", externalEventId: "cb_disp" }), "disputed");
   const refreshed = await repo.findStatement(TENANT, statement.id);
   assert.equal(refreshed?.chargeStatus, "chargeback_disputed");
   assert.equal(upToDateStatus([refreshed!], new Date()).upToDate, true, "disputa não derruba em dia");
-  assert.equal(invoiceCancels.length, 0, "disputa não cancela nota");
+  assert.equal((await cancelsOf(statement.id)).length, 0, "disputa não cancela nota");
 });
 
 test("R-SET-2 chargeback com nota authorized → enfileira invoice_cancel; estorno PARCIAL não cancela", async () => {
   // Chargeback total com nota autorizada → cancela.
-  const total = make();
-  const stmtTotal = await closedStatement(total.repo, 10000, { invoiceStatus: "authorized" });
+  const total = makeWithIntents();
+  const stmtTotal = await closedStatement(total.repo, 10000);
   await total.settlement.settle({ tenantId: TENANT, statementId: stmtTotal.id, source: "asaas", externalChargeId: "pay_5", paidCents: 10000, method: null, now: new Date() });
+  await total.authorizeInvoice(stmtTotal.id);
   const totalCtx = reconcileDeps(total.repo, total.settlement, { status: "charged_back", paidCents: 10000, raw: {} });
   await totalCtx.refs.put({ statementId: stmtTotal.id, tenantId: TENANT, provider: "asaas" }, new Date());
   await totalCtx.events.insertIfAbsent({ provider: "asaas", externalEventId: "cb_full", bodyDigest: "d", signatureOk: true, externalResourceId: "pay_5", externalReference: stmtTotal.id }, new Date());
   await reconcileWebhookEvent(totalCtx.deps, { provider: "asaas", externalEventId: "cb_full" });
-  assert.equal(totalCtx.invoiceCancels.length, 1, "chargeback total com nota autorizada cancela a nota");
+  assert.equal((await total.cancelsOf(stmtTotal.id)).length, 1, "chargeback total com nota autorizada cancela a nota (a linha nasce na transação da reversão)");
 
   // Estorno PARCIAL com nota autorizada → NÃO cancela (R-SET-2/N11).
-  const partial = make();
-  const stmtPartial = await closedStatement(partial.repo, 10000, { invoiceStatus: "authorized" });
+  const partial = makeWithIntents();
+  const stmtPartial = await closedStatement(partial.repo, 10000);
   await partial.settlement.settle({ tenantId: TENANT, statementId: stmtPartial.id, source: "asaas", externalChargeId: "pay_6", paidCents: 10000, method: null, now: new Date() });
+  await partial.authorizeInvoice(stmtPartial.id);
   const partialReversal = await partial.settlement.applyReversal({ tenantId: TENANT, statementId: stmtPartial.id, externalChargeId: "pay_6", reversedCents: 3000, kind: "refund", now: new Date() });
   assert.ok("shouldCancelInvoice" in partialReversal && partialReversal.shouldCancelInvoice === false, "estorno parcial não cancela a nota");
+  assert.equal((await partial.cancelsOf(stmtPartial.id)).length, 0, "estorno parcial não enfileira invoice_cancel");
   const refreshedPartial = await partial.repo.findStatement(TENANT, stmtPartial.id);
   assert.equal(refreshedPartial?.chargeStatus, "partially_refunded");
   assert.equal(refreshedPartial?.paidCents, 7000);
