@@ -86,6 +86,30 @@ export type CreateCloudCostAllocationRunInput = {
   readonly metadata?: CloudCostAllocationMetadata;
 };
 
+/** B-ASS-09a · P2 — a run automática nasce com id determinístico (UUIDv5 da importação e do par de período). */
+export type CreateCloudCostAllocationRunWithIdInput = CreateCloudCostAllocationRunInput & {
+  readonly id: string;
+};
+
+/** B-ASS-09a · P2 — `created: false` quando a run com aquele id já existia (reenvio, gatilho repetido, corrida). */
+export type CreatedCloudCostAllocationRun = {
+  readonly run: CloudCostAllocationRun;
+  readonly created: boolean;
+};
+
+/** B-ASS-09a · P1 — um par BRUTO (`billing_period_start`, `billing_period_end`) das linhas de uma importação. */
+export type ImportBillingPeriod = {
+  readonly billingPeriodStart: Date;
+  readonly billingPeriodEnd: Date;
+};
+
+export type CreateImportRunInput = {
+  readonly importId: string;
+  readonly billingPeriodStart: Date;
+  readonly billingPeriodEnd: Date;
+  readonly createdBy?: string;
+};
+
 export type UpdateCloudCostAllocationRunInput = {
   readonly status: CloudCostAllocationStatus;
   readonly totalImportedCost?: number;

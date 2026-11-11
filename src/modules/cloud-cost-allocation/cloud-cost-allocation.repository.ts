@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import type { CloudCostRepository } from "../cloud-costs/aws-cur.repository.js";
 import type { CloudCostImport, CloudCostLineItem } from "../cloud-costs/aws-cur.types.js";
 import type { CloudUsageDailyAggregate, CloudUsageEvent } from "../cloud-usage/cloud-usage.types.js";
 import type {
@@ -7,6 +8,9 @@ import type {
   CloudCostAllocationRunFilters,
   CloudCostAllocationTenant,
   CreateCloudCostAllocationRunInput,
+  CreateCloudCostAllocationRunWithIdInput,
+  CreatedCloudCostAllocationRun,
+  ImportBillingPeriod,
   TenantCloudCostAllocation,
   TenantCloudCostAllocationFilters,
   UpdateCloudCostAllocationRunInput,
@@ -15,6 +19,18 @@ import type {
 
 export type CloudCostAllocationRepository = {
   createRun(input: CreateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun>;
+  /** B-ASS-09a · P2 — cria com o id dado; se ele já existe, devolve a existente com `created: false` (nunca duplica). */
+  createRunWithId(input: CreateCloudCostAllocationRunWithIdInput): Promise<CreatedCloudCostAllocationRun>;
+  /** B-ASS-09a · P1 — os pares BRUTOS distintos (`billing_period_start`, `billing_period_end`) das linhas da importação. */
+  listImportBillingPeriods(importId: string): Promise<readonly ImportBillingPeriod[]>;
+  /** B-ASS-09a · P3 — as linhas da importação com EXATAMENTE aquele par (partição por construção), com o teto de contagem. */
+  listCostLineItemsForBillingPeriod(
+    importId: string,
+    billingPeriodStart: Date,
+    billingPeriodEnd: Date,
+  ): Promise<readonly CloudCostLineItem[]>;
+  /** B-ASS-09a — as runs (manuais e automáticas) de uma importação, da mais nova para a mais velha. */
+  listRunsByImport(importId: string): Promise<readonly CloudCostAllocationRun[]>;
   updateRun(runId: string, input: UpdateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun>;
   getRun(runId: string): Promise<CloudCostAllocationRun | undefined>;
   listRuns(filters?: CloudCostAllocationRunFilters): Promise<readonly CloudCostAllocationRun[]>;
@@ -70,7 +86,23 @@ type AuditedActionSeed = {
   readonly createdAt: Date;
 };
 
+/**
+ * B-ASS-09a · R3 (A3) — a PONTE em memória. Sem ela, este repositório e o de importação (`InMemoryCloudCostRepository`)
+ * não se enxergam: a importação grava num objeto e o rateio lê `imports`/`costLineItems` alimentados só por `seed()`.
+ * Com `costSource`, as leituras de importação e de linha vêm do repositório de importação (composição explícita, só em
+ * teste). Sem ele, tudo fica como antes e os testes que usam `seed()` não mudam.
+ */
+export type InMemoryCloudCostAllocationRepositoryOptions = {
+  readonly costSource?: Pick<CloudCostRepository, "getImport" | "listImports" | "listLineItems">;
+};
+
 export class InMemoryCloudCostAllocationRepository implements CloudCostAllocationRepository {
+  private readonly costSource?: InMemoryCloudCostAllocationRepositoryOptions["costSource"];
+
+  constructor(options: InMemoryCloudCostAllocationRepositoryOptions = {}) {
+    this.costSource = options.costSource;
+  }
+
   private runs: CloudCostAllocationRun[] = [];
   private allocations: TenantCloudCostAllocation[] = [];
   private imports: CloudCostImport[] = [];
@@ -84,9 +116,54 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
   private tenants: CloudCostAllocationTenant[] = [];
 
   async createRun(input: CreateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun> {
+    return this.insertRun(randomUUID(), input);
+  }
+
+  async createRunWithId(input: CreateCloudCostAllocationRunWithIdInput): Promise<CreatedCloudCostAllocationRun> {
+    // Síncrono do `find` ao `push`: duas chamadas com o mesmo id nunca intercalam aqui (um único laço de eventos).
+    const existing = this.runs.find((run) => run.id === input.id);
+    if (existing) return { run: existing, created: false };
+    return { run: await this.insertRun(input.id, input), created: true };
+  }
+
+  async listImportBillingPeriods(importId: string): Promise<readonly ImportBillingPeriod[]> {
+    const pairs = new Map<string, ImportBillingPeriod>();
+    for (const line of await this.linesOfImport(importId)) {
+      const key = `${line.billingPeriodStart.toISOString()}|${line.billingPeriodEnd.toISOString()}`;
+      if (!pairs.has(key)) {
+        pairs.set(key, { billingPeriodStart: line.billingPeriodStart, billingPeriodEnd: line.billingPeriodEnd });
+      }
+    }
+    return [...pairs.values()].sort(
+      (a, b) =>
+        a.billingPeriodStart.getTime() - b.billingPeriodStart.getTime() ||
+        a.billingPeriodEnd.getTime() - b.billingPeriodEnd.getTime(),
+    );
+  }
+
+  async listCostLineItemsForBillingPeriod(
+    importId: string,
+    billingPeriodStart: Date,
+    billingPeriodEnd: Date,
+  ): Promise<readonly CloudCostLineItem[]> {
+    return (await this.linesOfImport(importId)).filter(
+      (line) =>
+        line.billingPeriodStart.getTime() === billingPeriodStart.getTime() && line.billingPeriodEnd.getTime() === billingPeriodEnd.getTime(),
+    );
+  }
+
+  async listRunsByImport(importId: string): Promise<readonly CloudCostAllocationRun[]> {
+    // O dublê não tem a coluna `import_id`: a importação da run mora em `metadata.importId`, gravado por toda run
+    // criada pelo serviço (manual e automática). O Prisma lê a coluna (M-09a).
+    return this.runs
+      .filter((run) => run.metadata.importId === importId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  private async insertRun(id: string, input: CreateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun> {
     const now = new Date();
     const run: CloudCostAllocationRun = {
-      id: randomUUID(),
+      id,
       provider: "aws",
       status: "pending",
       periodStart: input.periodStart,
@@ -163,31 +240,49 @@ export class InMemoryCloudCostAllocationRepository implements CloudCostAllocatio
   }
 
   async findBillableImport(periodStart: Date, periodEnd: Date, importId?: string): Promise<CloudCostImport | undefined> {
-    if (importId) return this.imports.find((costImport) => costImport.id === importId);
+    if (importId) {
+      if (this.costSource) return this.costSource.getImport(importId); // B-ASS-09a ponte
+      return this.imports.find((costImport) => costImport.id === importId);
+    }
 
-    return this.imports
-      .filter((costImport) => costImport.status === "completed")
-      .filter((costImport) =>
-        this.costLineItems.some(
-          (line) =>
-            line.importId === costImport.id &&
-            line.billingPeriodEnd >= periodStart &&
-            line.billingPeriodStart <= periodEnd,
-        ),
-      )
-      .sort((a, b) => {
-        const importedAt = (b.importedAt?.getTime() ?? 0) - (a.importedAt?.getTime() ?? 0);
-        return importedAt || b.createdAt.getTime() - a.createdAt.getTime();
-      })[0];
+    const candidates: CloudCostImport[] = [];
+    for (const costImport of await this.allImports()) {
+      if (costImport.status !== "completed") continue;
+      const lines = await this.linesOfImport(costImport.id);
+      // B-ASS-09a · R4 — o fim da LINHA precisa ser estritamente depois do início da run: a linha de outubro no fim
+      // exclusivo da AWS (termina em 11-01T00:00) não toca novembro. O lado do início fica `<=` (run de um dia).
+      const touches = lines.some(
+        (line) =>
+          line.billingPeriodEnd > periodStart && // B-ASS-09a R4 findBillableImport
+          line.billingPeriodStart <= periodEnd,
+      );
+      if (touches) candidates.push(costImport);
+    }
+
+    return candidates.sort((a, b) => {
+      const importedAt = (b.importedAt?.getTime() ?? 0) - (a.importedAt?.getTime() ?? 0);
+      return importedAt || b.createdAt.getTime() - a.createdAt.getTime();
+    })[0];
   }
 
   async listCostLineItems(periodStart: Date, periodEnd: Date, importId: string): Promise<readonly CloudCostLineItem[]> {
-    return this.costLineItems.filter(
+    return (await this.linesOfImport(importId)).filter(
       (line) =>
-        line.importId === importId &&
-        line.billingPeriodEnd >= periodStart &&
+        line.billingPeriodEnd > periodStart && // B-ASS-09a R4 listCostLineItems
         line.billingPeriodStart <= periodEnd,
     );
+  }
+
+  /** B-ASS-09a · R3 — as importações: do repositório de importação (ponte) ou das semeadas. */
+  private async allImports(): Promise<readonly CloudCostImport[]> {
+    if (this.costSource) return this.costSource.listImports();
+    return this.imports;
+  }
+
+  /** B-ASS-09a · R3 — as linhas de UMA importação: do repositório de importação (ponte) ou das semeadas. */
+  private async linesOfImport(importId: string): Promise<readonly CloudCostLineItem[]> {
+    if (this.costSource) return this.costSource.listLineItems({ importId, limit: Number.MAX_SAFE_INTEGER });
+    return this.costLineItems.filter((line) => line.importId === importId);
   }
 
   async listUsageDailyAggregates(periodStart: Date, periodEnd: Date): Promise<readonly CloudUsageDailyAggregate[]> {

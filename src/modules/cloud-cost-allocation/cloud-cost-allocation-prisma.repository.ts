@@ -12,6 +12,9 @@ import {
   type TenantCloudCostAllocationFilters,
   type UpdateCloudCostAllocationRunInput,
   type CreateCloudCostAllocationRunInput,
+  type CreateCloudCostAllocationRunWithIdInput,
+  type CreatedCloudCostAllocationRun,
+  type ImportBillingPeriod,
   type UsageBasisRow,
 } from "./cloud-cost-allocation.types.js";
 import {
@@ -44,6 +47,60 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
     });
 
     return mapRun(record);
+  }
+
+  /**
+   * B-ASS-09a · P2 — a PK é a exclusão: duas chamadas com o mesmo id (reenvio, gatilho repetido, duas conexões em
+   * corrida) gravam UMA linha. A perdedora recebe `P2002` do índice da PK e relê a vencedora (`created: false`).
+   */
+  async createRunWithId(input: CreateCloudCostAllocationRunWithIdInput): Promise<CreatedCloudCostAllocationRun> {
+    try {
+      const record = await this.client.cloudCostAllocationRun.create({
+        data: {
+          id: input.id,
+          ...buildRunData(input),
+        },
+      });
+      return { run: mapRun(record), created: true };
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+      const existing = await this.client.cloudCostAllocationRun.findUnique({ where: { id: input.id } });
+      if (!existing) throw error;
+      return { run: mapRun(existing), created: false };
+    }
+  }
+
+  async listImportBillingPeriods(importId: string): Promise<readonly ImportBillingPeriod[]> {
+    const groups = await this.client.cloudCostLineItem.groupBy({
+      by: ["billing_period_start", "billing_period_end"],
+      where: { import_id: importId },
+      orderBy: [{ billing_period_start: "asc" }, { billing_period_end: "asc" }],
+    });
+    return groups.map((group) => ({
+      billingPeriodStart: group.billing_period_start,
+      billingPeriodEnd: group.billing_period_end,
+    }));
+  }
+
+  /** B-ASS-09a · P3 — igualdade EXATA do par: cada linha entra em uma run só. Mesmo teto de contagem do caminho manual. */
+  async listCostLineItemsForBillingPeriod(
+    importId: string,
+    billingPeriodStart: Date,
+    billingPeriodEnd: Date,
+  ): Promise<readonly CloudCostLineItem[]> {
+    return this.findCostLineItemsCapped({
+      import_id: importId,
+      billing_period_start: billingPeriodStart, billing_period_end: billingPeriodEnd,
+    });
+  }
+
+  /** B-ASS-09a — pela coluna `import_id` da M-09a (o backfill trouxe as runs antigas que tinham `metadata.importId`). */
+  async listRunsByImport(importId: string): Promise<readonly CloudCostAllocationRun[]> {
+    const records = await this.client.cloudCostAllocationRun.findMany({
+      where: { import_id: importId },
+      orderBy: { created_at: "desc" },
+    });
+    return records.map(mapRun);
   }
 
   async updateRun(runId: string, input: UpdateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun> {
@@ -200,7 +257,8 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
             status: "completed",
             line_items: {
               some: {
-                billing_period_end: { gte: periodStart },
+                // B-ASS-09a · R4 — o fim da LINHA estritamente depois do início da run (fim exclusivo da AWS).
+                billing_period_end: { gt: periodStart }, // B-ASS-09a R4 findBillableImport
                 billing_period_start: { lte: periodEnd },
               },
             },
@@ -212,12 +270,14 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
   }
 
   async listCostLineItems(periodStart: Date, periodEnd: Date, importId: string): Promise<readonly CloudCostLineItem[]> {
-    const where = {
+    return this.findCostLineItemsCapped({
       import_id: importId,
-      billing_period_end: { gte: periodStart },
+      billing_period_end: { gt: periodStart }, // B-ASS-09a R4 listCostLineItems
       billing_period_start: { lte: periodEnd },
-    };
+    });
+  }
 
+  private async findCostLineItemsCapped(where: Prisma.CloudCostLineItemWhereInput): Promise<readonly CloudCostLineItem[]> {
     // B-O6R-06 (2.4-c) — CONTAR ANTES. O `take` continua existindo como rede, mas nunca mais decide em
     // silencio quanto do periodo entra na conta: acima do teto a run RECUSA, com o numero medido dentro
     // da mensagem, e e reexecutavel quando a paginacao por cursor existir.
@@ -516,6 +576,13 @@ function assertRowsBelongToTenant(tenantIds: readonly string[], expected: string
       `tenant_context_leak: ${table} returned rows for another organization under the current context.`,
     );
   }
+}
+
+/** B-ASS-09a · P2 — a violação de unicidade da PK, pelo código do Prisma (`P2002`) ou pelo SQLSTATE do driver (`23505`). */
+function isUniqueViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const code = (error as { readonly code?: unknown }).code;
+  return code === "P2002" || code === "23505";
 }
 
 /**

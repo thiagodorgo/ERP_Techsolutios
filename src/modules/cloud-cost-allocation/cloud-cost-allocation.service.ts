@@ -1,5 +1,7 @@
 import { env } from "../../config/env.js";
+import type { CloudCostImport } from "../cloud-costs/aws-cur.types.js";
 import { allocateCloudCosts, assertConservation } from "./cloud-cost-allocation.engine.js";
+import { importRunId } from "./cloud-cost-allocation.import-trigger.js";
 import {
   CloudCostAllocationError,
   CLOUD_COST_ALLOCATION_STRATEGIES,
@@ -9,6 +11,9 @@ import {
   type CloudCostAllocationRunFilters,
   type CloudCostAllocationSummary,
   type CloudCostAllocationStrategy,
+  type CreatedCloudCostAllocationRun,
+  type CreateImportRunInput,
+  type ImportBillingPeriod,
   type TenantCloudCostAllocationFilters,
 } from "./cloud-cost-allocation.types.js";
 import {
@@ -54,6 +59,65 @@ export class CloudCostAllocationService {
     });
   }
 
+  /**
+   * B-ASS-09a · P1/P2 — a run AUTOMÁTICA de um par BRUTO de período de uma importação. Id determinístico (UUIDv5):
+   * chamar de novo devolve a mesma run (`created: false`). A importação precisa existir e estar `completed`, como no
+   * caminho manual. A janela é `[início, fim normalizado]` (`importRunWindow`); as linhas ficam escolhidas pela
+   * IGUALDADE do par bruto gravado em `metadata.sourceBillingPeriod` (P3, partição por construção).
+   */
+  async createImportRun(input: CreateImportRunInput): Promise<CreatedCloudCostAllocationRun> {
+    validatePeriod(input.billingPeriodStart, input.billingPeriodEnd);
+    const costImport = await this.repository.findBillableImport(input.billingPeriodStart, input.billingPeriodEnd, input.importId);
+    if (costImport?.status !== "completed") {
+      throw new CloudCostAllocationError(
+        422,
+        "CLOUD_COST_ALLOCATION_IMPORT_NOT_COMPLETED",
+        "import_not_completed",
+        "Cloud cost import must exist and be completed.",
+      );
+    }
+    const window = this.importRunWindow(input.billingPeriodStart, input.billingPeriodEnd);
+    return this.repository.createRunWithId({
+      id: importRunId(costImport.id, input.billingPeriodStart, input.billingPeriodEnd),
+      periodStart: window.periodStart,
+      periodEnd: window.periodEnd,
+      importId: costImport.id,
+      strategy: normalizeStrategy(undefined),
+      createdBy: input.createdBy,
+      metadata: {
+        trigger: "import",
+        importId: costImport.id,
+        importResolution: "explicit",
+        sourceBillingPeriod: {
+          start: input.billingPeriodStart.toISOString(),
+          end: input.billingPeriodEnd.toISOString(),
+        },
+      },
+    });
+  }
+
+  /**
+   * B-ASS-09a · E11 — a janela da run automática. O resumo filtra a run pelo MESMO dia UTC de início e de fim
+   * (`sameUtcDay`); com o fim exclusivo da AWS (00:00 do dia 1 seguinte) a janela usa `fim − 1 ms` (o dia 31), senão o
+   * resumo do mês não acharia a run. Fim inclusivo (fixture `aws-cur-sample.csv`) fica como está.
+   */
+  importRunWindow(billingPeriodStart: Date, billingPeriodEnd: Date): { periodStart: Date; periodEnd: Date } {
+    return { periodStart: billingPeriodStart, periodEnd: normalizeImportPeriodEnd(billingPeriodStart, billingPeriodEnd) };
+  }
+
+  /** B-ASS-09a — a importação de uma run automática (ou `undefined`), pela mesma porta que o caminho manual usa. */
+  findImportForAllocation(importId: string): Promise<CloudCostImport | undefined> {
+    return this.repository.findBillableImport(EPOCH, EPOCH, importId);
+  }
+
+  listImportBillingPeriods(importId: string): Promise<readonly ImportBillingPeriod[]> {
+    return this.repository.listImportBillingPeriods(importId);
+  }
+
+  listRunsByImport(importId: string): Promise<readonly CloudCostAllocationRun[]> {
+    return this.repository.listRunsByImport(importId);
+  }
+
   async executeAllocationRun(runId: string): Promise<CloudCostAllocationRun> {
     const run = await this.getAllocationRun(runId);
     const importId = readRunImportId(run);
@@ -83,8 +147,14 @@ export class CloudCostAllocationService {
       // somada na TABELA DURAVEL, por tenant, sob o contexto RLS de cada um. `listTenants()` vem antes
       // porque e ele que define o universo da varredura.
       const tenants = await this.repository.listTenants();
+      // B-ASS-09a · P3 (R1) — a run automática escolhe as linhas pela IGUALDADE do par bruto da importação: cada linha
+      // entra em exatamente uma run, nas duas formas de fim e com pares sobrepostos. Fica no corpo comum para que
+      // QUALQUER executor (inclusive a reexecução manual da run automática) faça a mesma partição.
+      const source = readSourceBillingPeriod(run);
       const [costLineItems, usageBasis] = await Promise.all([
-        this.repository.listCostLineItems(run.periodStart, run.periodEnd, importId),
+        source
+          ? this.repository.listCostLineItemsForBillingPeriod(importId, source.start, source.end)
+          : this.repository.listCostLineItems(run.periodStart, run.periodEnd, importId),
         this.repository.sumUsageBasis(
           run.periodStart,
           run.periodEnd,
@@ -346,6 +416,37 @@ function validatePeriod(periodStart: Date, periodEnd: Date): void {
 
 function readRunImportId(run: CloudCostAllocationRun): string | undefined {
   return typeof run.metadata.importId === "string" ? run.metadata.importId : undefined;
+}
+
+/** Quando a importação já vem dada pelo id, a janela não escolhe nada: `findBillableImport` ignora as datas. */
+const EPOCH = new Date(0);
+
+/** B-ASS-09a · E11 — fim às 00:00:00.000 UTC e depois do início = fim exclusivo da AWS: a janela termina 1 ms antes. */
+function normalizeImportPeriodEnd(billingPeriodStart: Date, billingPeriodEnd: Date): Date {
+  const atUtcMidnight =
+    billingPeriodEnd.getUTCHours() === 0 &&
+    billingPeriodEnd.getUTCMinutes() === 0 &&
+    billingPeriodEnd.getUTCSeconds() === 0 &&
+    billingPeriodEnd.getUTCMilliseconds() === 0;
+  if (atUtcMidnight && billingPeriodEnd > billingPeriodStart) return new Date(billingPeriodEnd.getTime() - 1);
+  return billingPeriodEnd;
+}
+
+/**
+ * B-ASS-09a · R1 — o par BRUTO de uma run automática. Só vale com `trigger: "import"` e as duas datas válidas; qualquer
+ * outra forma cai no caminho de janela (manual), como antes deste bloco. A rota manual não aceita `metadata` (E12):
+ * ninguém de fora forja `trigger: "import"`.
+ */
+function readSourceBillingPeriod(run: CloudCostAllocationRun): { start: Date; end: Date } | undefined {
+  if (run.metadata.trigger !== "import") return undefined;
+  const source = run.metadata.sourceBillingPeriod;
+  if (typeof source !== "object" || source === null) return undefined;
+  const { start, end } = source as { start?: unknown; end?: unknown };
+  if (typeof start !== "string" || typeof end !== "string") return undefined;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return undefined;
+  return { start: startDate, end: endDate };
 }
 
 const sensitiveKeyPattern =
