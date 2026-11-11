@@ -5255,3 +5255,19 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
   revertidas. F7 acrescenta somente as duas suítes autorizadas ao `SUITES=` e fecha o registro.
 - Pendências não bloqueantes: `P-O6R-B12-FUSO-DO-PATIO-VIVO` e
   `P-O6R-B12-PORTAL-MEMORIA`. Item 24 com fechamento proposto, sujeito a junta e merge.
+
+## 2026-11-11 — B-O6R-12 · sucessão P3 e fechamento da F7 (`dev-o6r12-cl`)
+
+- Executor: Claude Opus 5.5, subagente da sessão, dev SUCESSOR do `dev-o6r12-cdx` (Codex 2), que
+  caiu às 02:20 por limite de uso de 5 h. Exceção declarada: o Claude cobre na hora.
+- Medido antes de tocar: 8 commits do Codex (F0–F6b), 9 arquivos sem commit e 2 TAP soltos.
+  Decisão: commitar o parcial depois de conferi-lo contra o plano; o produto batia, os testes
+  ficavam abaixo do plano em C1–C3, C8, C10, C12, C20–C20d, C22 e no drill.
+- Feito: emenda E1′ antes do código (search_path com `pg_temp`, `FOR NO KEY UPDATE`, lugar dos
+  testes, catraca de catálogo); drill que relê e executa a migração em bases próprias (C4–C7b,
+  C14, C16, C17 controle, C23, R2-2); `-db` com os testes de propriedade (C1–C3, C8 por HTTP, C12,
+  C13, C15, C17, C20–C20d, E1.8′, E1.9′); catraca por superfície R1–R4 e C22 por conjunto;
+  vermelho-controle no código de leitura da `main` e cada mutação literal aplicada uma por vez,
+  vermelha e desfeita.
+- `main` trazida 2 vezes (#527/#532/#533 e #530). Migração recarimbada para `20260901100000`, por
+  causa da trava de `prisma/**` (depois da `20260901090000` do #537).

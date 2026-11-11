@@ -98,7 +98,21 @@ cada mutação literal roda isolada, produz `not ok` e é revertida.
 
 ## Estado da execução
 
-- F0–F6b concluídas por `dev-o6r12-cdx`; F7 em validação final.
+- F0–F6b feitas por `dev-o6r12-cdx` (Codex 2), que caiu às 02:20 por limite de uso no meio da
+  bateria da F7. O sucessor P3 `dev-o6r12-cl` (Claude Opus) conferiu o parcial linha a linha,
+  commitou-o, completou os testes de propriedade que o plano pede (drill que executa a migração,
+  C1–C3/C8/C12/C20–C20d no `-db`, catraca por superfície), as emendas E1′ e a F7, e trouxe a `main`
+  duas vezes (#527/#532/#533 e #530). Migração recarimbada para `20260901100000` (trava de
+  `prisma/**`, depois da `20260901090000` do #537).
 - O fechamento do item 24 é proposto na autoria e depende de PR, junta completa e merge.
 - Pendências não bloqueantes preservadas: fuso vivo do pátio e fallback do portal para processo
   legado sem retrato; a ordem do vínculo de checklist foi devolvida à trilha CHECKLIST P1.
+- **Por que a `P-O6R-B10` não bloqueia a F6b** (ressalva R3 do porteiro do #532, declarada por
+  escrito no start): a B10 bloqueia "feature no portal do proprietário" pela classe do
+  `Ω6R-PERF-003` — o pipeline de imagem pública que decodifica até 40 Mpx, três em paralelo, no
+  processo do ERP, sem cancelar a CPU — e pela do `Ω6R-PERF-002`, o cliente web (`frontend/**`). A
+  F6b não toca nenhuma das duas: troca só a ORIGEM de três prazos e dos rótulos dos requisitos do
+  dossiê (do perfil vivo para o retrato que já vem com o processo), sem rota, campo, imagem nem tela
+  nova, com a mesma allowlist §2.8 de antes (`portalPlanFromRegime` devolve as 4 chaves de
+  `getPortalProfile`). No caminho Prisma ela até tira uma consulta da superfície pública. Leitura do
+  dev, declarada (§A6), alinhada à do porteiro.

@@ -4824,3 +4824,12 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - O ponteiro nulo do serviço diário preserva o catch-up vivo; uma cópia não nula vence.
 - Correção excepcional de retrato errado exige migração aditiva própria, censo e revisão; não
   nasce bypass de runtime neste bloco.
+- **Emenda E1′ do dev sucessor (`dev-o6r12-cl`, 2026-11-11, antes do código; leitura do dev,
+  declarada, §A6):** E1.2′ — `SET search_path = pg_catalog, public, pg_temp` nas 2 funções, porque
+  sem `pg_temp` no fim a sombra temporária vence para tabelas (sonda medida); E1.8′ — a trava do
+  PATCH é `FOR NO KEY UPDATE`, e a abertura não espera o PATCH; E1.9′ e E1.10′ — onde moram os testes;
+  E1.11′ — o drill entra na catraca `db-catalog-write-guard` com contagem e motivo. Texto inteiro no
+  comando do bloco.
+- **Carimbo da migração:** `20260901100000_impound_process_regime_snapshot`, depois da
+  `20260901090000` do #537, pela trava de `prisma/**` (`D-B-O6R-09-TRAVA-PRISMA-OPCAO-A`) e por
+  ordem do orquestrador; a ordem vale nos dois sentidos de merge.

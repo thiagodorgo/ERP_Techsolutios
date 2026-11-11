@@ -194,7 +194,7 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
 - **Próximo comando:** acertar os 4 pontos do produto, completar os testes por critério com
   vermelho-controle e mutação literal, e só então a bateria final.
 
-## RECARIMBO DA MIGRAÇÃO — 2026-11-11T07:01-0300 — `dev-o6r12-cl`
+## RECARIMBO DA MIGRAÇÃO — 2026-11-11T07:00:38-0300 — `dev-o6r12-cl`
 
 - O #530 entrou na `main` (`a0979f51`) com `20260901000000_ass08b_provider_one_enabled_per_kind`,
   o mesmo carimbo da migração do bloco. Primeiro ela foi para `20260902000000` (commit `e43ace59`,
@@ -212,3 +212,108 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
 - Medido depois do recarimbo, em bases novas do zero (132 migrações): `migration-transaction-guard`
   0 violações; drill 11/11, snapshot-db 12/12 e a catraca de catálogo verdes, `# skipped 0`; K12
   verde sem tocar a fixture.
+
+## F7 + testes de propriedade — `dev-o6r12-cl`
+
+### Vermelho-controle (os testes novos rodados com o código de LEITURA da `main` `a0979f51`)
+
+Comando: os 14 arquivos de leitura (`charge-prisma`, `impound.notifications-prisma`,
+`auction-prisma`, `release-prisma`, `patios-dashboard-prisma`, `owner-portal.service`, os 4 de
+`jurisdiction/` e os 4 repositórios em memória) trocados por `git show origin/main:<arquivo>`, com o
+schema, a migração e o `create` do bloco no lugar; depois `git checkout HEAD -- <arquivo>`, status
+limpo conferido. TAP em `vermelho-controle.tap` (scratchpad do dev).
+
+| Critério | Resultado no controle | Motivo medido |
+|---|---|---|
+| C1 (+C3, C13 no mesmo teste) | `not ok` | 30 diárias, não 40 (teto vivo `THIRTY_DAYS_LEGACY`) |
+| C2 | `not ok` | `nDueNow` 2 (CALENDAR vivo), não 0 |
+| C8 | `not ok` | metadata sem `changes` |
+| C10, C10 positivo, C22 | `not ok` | 6 JOINs vivos fora da allowlist; `jp.daily_cap` e outros como insumo |
+| C11, C21a, C21b, C21c | `not ok` | a 2ª leitura em memória devolve o perfil editado |
+| C19 (`owner-portal-dossier-rls`) | `not ok` | prazo em 99 dias do perfil vivo, não nos 10 da abertura |
+| C20 | `not ok` | o requisito `laudo`, acrescentado depois, entra na liberação |
+| C20b | `not ok` | o processo sai do rito ao trocar o escopo |
+| C20c | `not ok` | `auctionEligibleDay` 90, não 60 |
+| C20d | `not ok` | o alerta `OWNER_INITIAL` cai em entrada + 15 dias, não + 5 |
+| C12, C15, C17, C4/C5/C6/C16 (base da CI) | `ok` | controle positivo: são do gatilho e do `create`, que ficaram |
+| E1.8′ | `not ok` | a API da `main` não devolve `{profile, changes}` (critério novo, sem controle aplicável) |
+| C9, C19 (allowlist §2.8) | o arquivo não carrega | `jurisdiction.audit.ts` e `portalPlanFromRegime` não existem na `main` (função nova) |
+
+### Mutações literais — uma por vez, só o teste-dono, arquivo restaurado e conferido por sha256
+
+Ferramenta: `mutar.cjs` (scratchpad do dev): confere `grep -c` = 1 da âncora, aplica, roda o
+teste-dono por `--test-name-pattern`, restaura e compara o hash. TAP de cada uma em `mut-<id>.tap`.
+
+| ID | Arquivo: troca | Teste-dono | Resultado |
+|---|---|---|---|
+| C1 | `charge-prisma`: `ip.regime_daily_cap AS daily_cap` → `jp.daily_cap AS daily_cap` | C1 + C3 + C13 | `not ok` (30 ≠ 40) |
+| C2 | `charge-prisma`: `ip.regime_daily_model AS daily_model` → `jp.daily_model …` | C2 | `not ok` (2 ≠ 0) |
+| C3 | `charge-prisma`: `ip.regime_scope AS scope` → `jp.scope AS scope` | C1 + C3 + C13 | `not ok` (escopos `[PUBLIC, PRIVATE]`) |
+| C12 | `charge-prisma`: o `COALESCE(...)` → `ip.regime_daily_service_catalog_id AS …` | C12 | `not ok` (0 ≠ 5) |
+| C13 | `charge-prisma`: o `COALESCE` invertido | C1 + C3 + C13 | `not ok` (S1 e S2) |
+| C8 | `jurisdiction.controller`: a linha `metadata` → `{ scope, active }` | C8 | `not ok` |
+| C9′ | `jurisdiction.audit`: `CHANGE_VALUE_FIELDS = ["name", "scope",` → `["notes", "name", "scope",` | C9 | `not ok` (a âncora do plano mudou com a E1.3) |
+| C10 | `release-prisma`: JOIN com alias `p` depois de `FROM impound_processes ip` | C10 | `not ok` |
+| C10b (nova) | `yard.service`: uma linha `SELECT 1 FROM jurisdiction_profiles x` noutro módulo | C10 | `not ok` |
+| C11 | `charge.repository`: apaga `    if (captured) return captured;` | C11 | `not ok` |
+| C15 | `impound-prisma`: `throw invalidProfileReference()` → `throw new Error("perfil ausente")` | C15 | `not ok` |
+| C18 | `schema.prisma`: `regime_daily_cap … String` → `String?` | K12 | `not ok` (fixture sem edição) |
+| C19 | `owner-portal.service`: `portalPlanFromRegime(process.regime)` → `await …getPortalProfile(…)` | `owner-portal-dossier-rls` | `not ok` |
+| C20 | `release-prisma`: SELECT de `jp.release_requirements` + JOIN | C20 | `not ok` |
+| C20b | `notifications-prisma`: o filtro de escopo volta a ler o perfil | C20b | `not ok` |
+| C20c | `auction-prisma`: `… AS auction_eligible_day` → `90 AS …` | C20c | `not ok` |
+| C20d | `patios-dashboard-prisma`: `… AS owner_notif_days` → `999 AS …` | C20d | `not ok` |
+| C21a/b/c | as 3 memórias: apaga `    if (captured) return captured;` | C21a/b/c | `not ok` ×3 |
+| C22 | census: tira `"y.timezone"` de `INSUMOS_VIVOS_DIARIA` | C22 | `not ok` |
+| E1.8′ | `jurisdiction-prisma`: `FOR NO KEY UPDATE` → `FOR UPDATE` | E1.8′ | `not ok` (`55P03` lock timeout) |
+| C4 | migração: `NEW."regime_daily_cap" := p."daily_cap";` → `:= 'SIX_MONTHS';` | drill C4/C5/C16 | `not ok` |
+| C5 | migração: a mesma linha → `COALESCE(NEW."regime_daily_cap", p."daily_cap")` | drill C4/C5/C16 | `not ok` |
+| C6 | migração: apaga o `CREATE TRIGGER "impound_processes_regime_immutable" …` (com `public.`, E1.2) | drill C6 | `not ok` |
+| C7 | migração: `AND ip."tenant_id" = v_tenant;` → `AND false;` | drill C7 | `not ok` (deploy aborta) |
+| C7b | migração: `PERFORM set_config(…)` → `PERFORM 1;` | drill C7b | `not ok` (23502 no SET NOT NULL) |
+| C14 | migração: apaga a 1ª linha do rodapé (`DROP NOT NULL`) | drill C14 | `not ok` (23502) |
+| C16 | migração: apaga o `RAISE … foreign_key_violation …` | drill C4/C5/C16 | `not ok` (23502 ≠ 23503) |
+| C23 | drill: `splitRespectingDollarQuotes(corpoC7b)` → `splitNaive(corpoC7b)` | drill C7b | `not ok` (42601) |
+| R2-2 | migração: sem `public.` no SELECT do carimbo E sem `pg_temp` no `search_path` | drill R2-2 | `not ok` |
+| R2-2 só `public.` / só `pg_temp` | uma camada de cada vez | drill R2-2 | `ok` ×2 — esperado: cada camada sozinha basta (E1.2′) |
+
+Depois da mudança do arnês de papéis (E1.11′), C7b, C23, R2-2 e C14 foram repetidas: `not ok` ×4.
+
+### Bateria final (head `9f04b611` mais este registro; base `origin/main` `a0979f51` contida)
+
+| Passo | Resultado |
+|---|---|
+| `npm run check` · `npm run lint` · `npm run build` | ec 0 · ec 0 · ec 0 |
+| `node scripts/migration-transaction-guard.mjs` | `migrações: 132 · anteriores: 112 · novas: 20 · violações: 0` |
+| `git diff --check origin/main...HEAD` | limpo |
+| testes do bloco SEM banco (census, profile-audit, memory-parity, charging-daily-engine, jurisdiction, db-catalog-write-guard) | `# tests 51 · pass 51 · fail 0 · skipped 0` |
+| testes do bloco COM banco (`CORE_SAAS_PERSISTENCE=prisma`: snapshot-db, drill, cheque-title-link (K12), charging-job-idempotency, impound-notifications-chain, impound-concurrency, owner-portal-dossier-rls, rls-tenant-isolation, san3-05-runtime-role-guard-db) | `# tests 55 · pass 50 · fail 5 · skipped 0`; os 5 são do `san3-05`, de ambiente (abaixo) |
+| `npm test` na forma do job `backend` (`CORE_SAAS_PERSISTENCE=memory`, Postgres 16 e Redis 7 próprios, base nova com as 132 migrações), 07:00:57 → 07:16:30 | `491 arquivos · 5061 testes · pass 5047 · fail 11 · cancelled 1 · skipped 2` (orçamento de pulos: 2) |
+
+**Os vermelhos do `npm test`, um a um, todos de ambiente (Windows e máquina a 80–100% de CPU por
+outras frentes); nenhum toca `impound_processes`, `jurisdiction_profiles` ou o código do bloco:**
+
+1. `ass-08-channel-db` T-OBX-db-5 — `o claim não esperou a trava (1035 ms < 1 000)`: tempo sob carga.
+   Sozinho: 21/21.
+2. `traccar-ingest-listener` "o app público não serve a rota…" — `test timed out after 30000ms`.
+   Sozinho: 18/18.
+3. e 4. `traccar-position-ingestion-db`, os 2 casos "tempo esgotado → 503" — orçamento de tempo sob
+   carga. Sozinho: 22/22.
+5. `traccar-event-migration-drill-db` (o 1 `cancelled` e o piso de denominador do runner) —
+   `EBUSY: resource busy or locked, rmdir …\Temp\trc02-mdrill-…`: o schema-engine do Prisma segura a
+   pasta temporária no Windows. Sozinho: 6 ok e o mesmo `EBUSY` no hook (a mesma classe que este
+   bloco contornou no próprio drill com `maxRetries`).
+6. e 7. `san3-09-bootstrap-platform-admin-db` T2/T2.1 — o teste chama `node node_modules/.bin/prisma`,
+   que no Windows é um script de shell (`SyntaxError: missing ) after argument list` na linha
+   `basedir=$(dirname …)`). No Linux é o link para o JS. Sozinho: o mesmo.
+8. a 10. `san3-05-runtime-role-guard-db` T14a/b, T14c, T14d — `setsid: ausente — necessário para
+   impedir que psql \password leia a senha do terminal`. O Git Bash não tem `setsid`. Os casos param
+   antes de exercitar o procedimento, então não provam nada sobre o bloco aqui; quem decide é a CI
+   Linux.
+11. `san3-05` T15 — `condição de boot não apareceu em 15000ms`, com stdout e stderr vazios. Medido:
+    só a carga dos módulos do app (`import('./src/app.ts')` por `tsx`) leva 11 984 ms com a CPU a 80%.
+    No TAP do Codex às 02:18, com o código do bloco, o T15 passou (18 s). O bloco não muda nada no
+    boot.
+
+**Residual declarado:** os casos 8 a 11 não exercitam o procedimento do papel de runtime nesta
+máquina. A prova fica para os jobs `backend` e `backend-postgres` da CI, no Linux, sobre o head do PR.
