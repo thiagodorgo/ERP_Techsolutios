@@ -12,6 +12,7 @@ import {
   signRefreshToken,
   verifyRefreshToken,
 } from "./jwt.service.js";
+import { resolveAccessTokenScope } from "./access-token-scope.js";
 
 type PrismaTenantContextRunner = <T>(
   tenantId: string,
@@ -209,6 +210,22 @@ export class AuthSessionService {
         },
       });
       const roleKeys = mapRoleKeys(roles);
+      // B-USERS-ACESSO-SEG (P-SESSAO-RESTRITA) — o refresh é assinador: relê a marca do PAR na mesma
+      // transação, sob o GUC do par. Par sem linha de credencial conta como NÃO marcado (RQ-3).
+      const credential = await tx.localAuthCredential.findFirst({
+        where: {
+          tenant_id: payload.tenant_id,
+          user_id: payload.user_id,
+        },
+        select: {
+          must_change_password: true,
+        },
+      });
+      const linhas = credential ? [credential] : [];
+      const tokenScope = resolveAccessTokenScope(
+        linhas.some((linha) => linha.must_change_password === true),
+        roleKeys,
+      );
       const accessTokenExpiresIn = getAccessTokenExpiresInSeconds();
       // B-O6R-01 (§3.5) — o refresh é o segundo assinador: relê o vínculo do PAR (tenant GUC já
       // posto pela transação) e inclui o claim identity_id como DICA. Falha na leitura (ex.:
@@ -227,7 +244,8 @@ export class AuthSessionService {
         user_id: user.id,
         tenant_id: user.tenant_id,
         email: user.email,
-        roles: roleKeys,
+        roles: tokenScope.roles,
+        ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
         ...(identityId ? { identity_id: identityId } : {}),
       });
       const refreshTokenExpiresIn = getRefreshTokenExpiresInSeconds();

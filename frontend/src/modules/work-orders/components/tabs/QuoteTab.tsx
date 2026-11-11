@@ -8,14 +8,13 @@ import {
   getServiceQuoteStatusLabel,
   getServiceQuoteStatusTone,
 } from "../../../registry/service-quotes/service-quotes.adapter";
+import { ServiceQuoteApproveDialog } from "../../../registry/service-quotes/components/ServiceQuoteApproveDialog";
 import {
-  approveServiceQuote,
   listServiceQuoteItems,
   listServiceQuotesFromApi,
   shareServiceQuote,
 } from "../../../registry/service-quotes/service-quotes.service";
 import type {
-  ServiceQuoteApproveResult,
   ServiceQuoteLineList,
   ServiceQuoteRow,
   ServiceQuotesApiContext,
@@ -26,6 +25,8 @@ import { ApiError } from "../../../../services/api/client";
 // work_order_id), cada um com número/situação/validade/total (do BACKEND, o front nunca soma) e suas
 // linhas. Ações gated: Aprovar (draft + service_quotes:approve → cria OS) e Compartilhar
 // (service_quotes:update → link). Estados §7: loading/erro/vazio. "Acesso não permitido" fica no shell.
+// B-SAN3-08 — Aprovar abre o diálogo único (`ServiceQuoteApproveDialog`), que pergunta origem e destino; a aba não chama
+// mais o approve direto.
 
 const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14 };
 const th: CSSProperties = { fontSize: 11.5, color: "#94A3B8", fontWeight: 700, textAlign: "left", padding: "8px 12px", textTransform: "uppercase", letterSpacing: ".3px" };
@@ -64,6 +65,8 @@ export function QuoteTab({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [approving, setApproving] = useState<ServiceQuoteRow | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [approvedByQuote, setApprovedByQuote] = useState<Record<string, string>>({});
   const [sharedByQuote, setSharedByQuote] = useState<Record<string, string>>({});
@@ -99,18 +102,23 @@ export function QuoteTab({
     void load();
   }, [load]);
 
-  const approve = async (quote: ServiceQuoteRow) => {
-    setBusyId(quote.id);
+  // B-SAN3-08 — Aprovar abre o diálogo; o desfecho (OS criada, recusa, lista desatualizada) volta pelos callbacks.
+  const approve = (quote: ServiceQuoteRow) => {
     setActionError(null);
-    try {
-      const result: ServiceQuoteApproveResult = await approveServiceQuote(context, quote.id, {});
-      if (result.workOrderId) setApprovedByQuote((prev) => ({ ...prev, [quote.id]: result.workOrderId! }));
-      await load();
-    } catch (err) {
-      setActionError(messageForError(err, "Não foi possível aprovar o orçamento."));
-    } finally {
-      setBusyId(null);
-    }
+    setActionNotice(null);
+    setApproving(quote);
+  };
+
+  const approved = (quote: ServiceQuoteRow, workOrderId: string | null) => {
+    if (workOrderId) setApprovedByQuote((prev) => ({ ...prev, [quote.id]: workOrderId }));
+    setActionNotice("Orçamento aprovado. A ordem de serviço foi criada e o link aparece no cartão do orçamento.");
+    setApproving(null);
+    void load();
+  };
+
+  const notice = (text: string, tone: "info" | "danger") => {
+    if (tone === "info") setActionNotice(text);
+    else setActionError(text);
   };
 
   const share = async (quote: ServiceQuoteRow) => {
@@ -142,6 +150,10 @@ export function QuoteTab({
         <div style={{ ...card, padding: "12px 16px", background: "#FEF2F2", borderColor: "#FECACA", fontSize: 12.5, color: "#B91C1C" }}>{actionError}</div>
       ) : null}
 
+      {actionNotice ? (
+        <div role="status" style={{ ...card, padding: "12px 16px", background: "#EFF6FF", borderColor: "#BFDBFE", fontSize: 12.5, color: "#1D4ED8" }}>{actionNotice}</div>
+      ) : null}
+
       {loading ? (
         <div style={{ ...card, padding: 20, fontSize: 13, color: "#94A3B8" }}>Carregando orçamentos…</div>
       ) : !quotes || quotes.length === 0 ? (
@@ -160,11 +172,22 @@ export function QuoteTab({
             busy={busyId === quote.id}
             approvedWorkOrderId={approvedByQuote[quote.id] ?? quote.createdWorkOrderId ?? null}
             sharePath={sharedByQuote[quote.id] ?? null}
-            onApprove={() => void approve(quote)}
+            onApprove={() => approve(quote)}
             onShare={() => void share(quote)}
           />
         ))
       )}
+
+      {approving ? (
+        <ServiceQuoteApproveDialog
+          context={context}
+          quote={approving}
+          onApproved={(createdWorkOrderId) => approved(approving, createdWorkOrderId)}
+          onReload={() => void load()}
+          onNotice={notice}
+          onClose={() => setApproving(null)}
+        />
+      ) : null}
     </div>
   );
 }

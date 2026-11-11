@@ -285,6 +285,8 @@ model LocalAuthCredential {
   password_hash       String
   password_algorithm  String
   password_updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  // B-USERS-ACESSO-SEG (P1, autorização nominal do dono) — "trocar a senha no próximo acesso".
+  must_change_password Boolean @default(false)
   failed_attempts     Int       @default(0)
   locked_until        DateTime? @db.Timestamptz(6)
   last_login_at       DateTime? @db.Timestamptz(6)
