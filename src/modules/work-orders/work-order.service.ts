@@ -1601,6 +1601,16 @@ export class WorkOrderService {
     if (!updated) {
       const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-status
       await this.revalidateStatusChange(actor, reread, nextStatus); // B-SAN3-23:revalida-status
+      // B-SAN3-14 (Emenda 3, E3.1) — a trava R-A4 da entrada, de novo e na mesma ordem, sobre a OS relida: entre a
+      // 1ª leitura e a escrita pode ter nascido uma vistoria de entrega em aberto.
+      if (nextStatus === "completed" && (await this.hasOpenDeliveryChecklistRun(actor, reread))) { // B-SAN3-14:trava-na-releitura
+        throw new WorkOrderError(
+          DELIVERY_CHECKLIST_PENDING_HTTP_STATUS,
+          "WORK_ORDER_UNPROCESSABLE",
+          "delivery_checklist_pending",
+          "Conclua a vistoria de entrega antes de concluir a OS.",
+        );
+      }
       // Emenda 3, item 1 — o veredito é RECALCULADO sobre a OS relida, antes da regravação: a placa pode ter mudado.
       checkin = await this.verifyCheckinForStatus(actor, reread, nextStatus, body, entry); // B-SAN3-26:veredito-na-releitura
       fromStatus = reread.status;
