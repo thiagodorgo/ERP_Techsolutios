@@ -267,3 +267,11 @@ export function SearchBar({ value, onChange, placeholder = "Buscar" }: { value: 
     </label>
   );
 }
+
+// B-USERS-ACESSO-SEG (T1 · Emenda 6, item 1) — componentes que nasceram na troca de senha, cada um no seu arquivo.
+export { PASSWORD_STRENGTH_LABELS, PasswordStrengthMeter, passwordStrength } from "./PasswordStrengthMeter";
+export type { PasswordStrengthLevel } from "./PasswordStrengthMeter";
+export { RequirementChecklist } from "./RequirementChecklist";
+export type { RequirementItem, RequirementStatus } from "./RequirementChecklist";
+export { StepList } from "./StepList";
+export type { StepItem, StepState } from "./StepList";

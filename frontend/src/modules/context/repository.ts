@@ -101,6 +101,10 @@ export async function switchTenantContext(tenantId: string): Promise<AuthSession
 
   const backendRoles = [...d.roles];
   const permissions = resolveFrontendPermissionsFromBackend(d.permissions);
+  // B-USERS-ACESSO-SEG (Emenda 6, item 2; E6-R01) — a marca do par de DESTINO (F2 do backend): restrita SÓ com `true`;
+  // sem o campo ou com `false`, sessão normal (a falha fechada `!== false` é só do login, RQ-1). A sessão restrita não
+  // conta como autenticada (`AuthProvider`), e a seleção de organização leva à troca de senha pelo login.
+  const mustChangePassword = (d as { readonly must_change_password?: unknown }).must_change_password === true;
 
   const nextSession: AuthSession = {
     ...currentSession,
@@ -120,6 +124,7 @@ export async function switchTenantContext(tenantId: string): Promise<AuthSession
       roles: resolveFrontendRoles(backendRoles),
       permissions,
     },
+    mustChangePassword,
   };
 
   setStoredAuthSession(nextSession);

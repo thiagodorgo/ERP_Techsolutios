@@ -7,6 +7,8 @@ import type { AuthSession, LoginCredentials } from "../modules/auth/types";
 type AuthContextValue = {
   session: AuthSession | null;
   isAuthenticated: boolean;
+  // B-USERS-ACESSO-SEG (T1) — sessão da senha provisória: só a troca de senha abre.
+  passwordChangeRequired: boolean;
   isLoading: boolean;
   isAuthenticating: boolean;
   signIn: (credentials: LoginCredentials) => Promise<AuthSession>;
@@ -34,7 +36,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
-      isAuthenticated: Boolean(session),
+      // B-USERS-ACESSO-SEG (T1, RQ-1) — a propriedade num ponto só: a sessão RESTRITA (`mustChangePassword === true`) não
+      // conta como autenticada, e os 4 portões de tela (AppShell, ContextSelectionPage, PermissionGuard, PlatformGuard),
+      // que leem este booleano, a mandam para /login, que a leva à troca de senha. Sessão guardada sem o campo é inteira.
+      // Quem decide é o backend (P-SESSAO-RESTRITA); aqui a web só molda a navegação.
+      isAuthenticated: !!session && session.mustChangePassword !== true,
+      passwordChangeRequired: !!session && session.mustChangePassword === true,
       isLoading: false,
       isAuthenticating,
       async signIn(credentials) {
