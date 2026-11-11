@@ -313,3 +313,12 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
   `b-o6r-09-quote-approve-atomic-db`) 19/19, 0 pulo; web `check` ec=0 e as suítes do #533 que tocam o orçamento mais as do
   bloco, 118/118. O ramo `case "quote_already_approved"` do diálogo do #533 continua vivo (o 409 ficou), como a emenda
   1.1 previu.
+
+## Fechamento
+
+- 05:11 — `git push -u origin fix/dispatch-atomic-timeline` e PR **#537** aberto contra a `main` (head `cb78048f` na
+  abertura, `MERGEABLE`). O merge fica preso às duas pendências que são do orquestrador:
+  `P-B-O6R-09-RATCHET-T13-NOVA-CHAVE` (a parada D-W2) e `P-B-O6R-09-TRAVA-PRISMA-REGISTRO` (R2-09).
+- Limpeza (§C5): os containers `o6r09-pg` e `o6r09-redis` foram removidos (`docker rm -f`), e `dist/` e `frontend/dist/`
+  apagados. O worktree `C:/Users/thiag/w-o6r09` fica, com o `node_modules` próprio, para o conserto depois da decisão do
+  ratchet. Não usei `git worktree prune` nem `docker system prune`, e não toquei em outro worktree nem em outro container.
