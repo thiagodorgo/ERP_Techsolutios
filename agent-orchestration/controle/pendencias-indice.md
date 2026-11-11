@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **821** |
-| IDs distintos | 810 |
-| **ABERTAS** | **623** |
+| Cabecalhos `## P-` | **829** |
+| IDs distintos | 818 |
+| **ABERTAS** | **631** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **561** |
+| — das quais **ativas nesta rodada** | **569** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 194 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **821 cabecalhos para 810 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **829 cabecalhos para 818 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 278
+## ABERTAS · balde A — material — 284
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -346,15 +346,21 @@
 | `P-APARENCIA-APP-SELETOR` | 13164 | MÉDIA | sim | P-APARENCIA-APP-SELETOR (2026-11-10) — app ainda não tem seletor para as aparências B e  |
 | `P-LOGIN-CONTRASTE-ERRO` | 13170 | MÉDIA | sim | P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste |
 | `P-B-ASS-08c-OBRIGACOES-DA-08b` | 13182 | ALTA | sim | P-B-ASS-08c-OBRIGACOES-DA-08b (2026-11-10) — bloco futuro `B-ASS-08c`, com as formas e o |
-| `P-CONTRATO-EMENDA-P5-P8C` | 13189 | ALTA | sim | P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUD |
-| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13195 | ALTA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
-| `P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA` | 13225 | MÉDIA | sim | P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA (2026-11-11) — aprovar um orçamento de dentro de um |
-| `P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN` | 13231 | MÉDIA | sim | P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN (2026-11-11) — falha ao ler o tipo do serviço desliga  |
-| `P-SAN3-08-ORCAMENTO-SEM-ALCADA` | 13237 | MÉDIA | sim | P-SAN3-08-ORCAMENTO-SEM-ALCADA (2026-11-11) — aprovar orçamento não confere alçada nem s |
-| `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` | 13244 | MÉDIA | sim | P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — falha no meio da aprovação gera OS em do |
-| `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` | 13257 | MÉDIA | sim | P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e  |
+| `P-CONTRATO-EMENDA-P5-P8C` | 13195 | ALTA | sim | P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUD |
+| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13201 | ALTA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
+| `P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA` | 13231 | MÉDIA | sim | P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA (2026-11-11) — aprovar um orçamento de dentro de um |
+| `P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN` | 13237 | MÉDIA | sim | P-SAN3-08-RESOLVER-TIPO-FAIL-OPEN (2026-11-11) — falha ao ler o tipo do serviço desliga  |
+| `P-SAN3-08-ORCAMENTO-SEM-ALCADA` | 13243 | MÉDIA | sim | P-SAN3-08-ORCAMENTO-SEM-ALCADA (2026-11-11) — aprovar orçamento não confere alçada nem s |
+| `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` | 13250 | MÉDIA | sim | P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — falha no meio da aprovação gera OS em do |
+| `P-ASS08C-TRUST-PROXY` | 13263 | ALTA | sim | P-ASS08C-TRUST-PROXY (2026-11-11) — sem `trust proxy`, o bloqueio por IP do webhook vale |
+| `P-ASS08C-COTA-IP-BLOQUEADO` | 13269 | MÉDIA | sim | P-ASS08C-COTA-IP-BLOQUEADO (2026-11-11) — IP já bloqueado ainda consome a cota global do |
+| `P-ASS08C-NOTA-DA-BAIXA-MANUAL` | 13275 | ALTA | sim | P-ASS08C-NOTA-DA-BAIXA-MANUAL (2026-11-11) — baixa/estorno manuais sem intenção de nota, |
+| `P-ASS08C-TROCA-DE-PROVEDOR-DE-NOTA` | 13283 | MÉDIA | sim | P-ASS08C-TROCA-DE-PROVEDOR-DE-NOTA (2026-11-11) — `invoice_issue` nunca tentada presa ao |
+| `P-ASS08C-REEMISSAO-APOS-REPAGAMENTO` | 13288 | ALTA | sim | P-ASS08C-REEMISSAO-APOS-REPAGAMENTO (2026-11-11) — repagar depois de um estorno total nã |
+| `P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO` | 13294 | MÉDIA | sim | P-ASS08C-NOTA-PRESA-EM-PROCESSAMENTO (2026-11-11) — `invoice_cancel` em `NEEDS_REVIEW in |
+| `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` | 13312 | MÉDIA | sim | P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e  |
 
-## ABERTAS · balde B — processo/registro — 283
+## ABERTAS · balde B — processo/registro — 285
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -635,12 +641,14 @@
 | `P-USERS-DESATIVADO-TOKEN-MOBILE` | 13146 | — | sim | P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-10) — token anterior à desativação ainda alcanç |
 | `P-J522-C3B-01-DOIS-HUNKS` | 13158 | BAIXA | sim | P-J522-C3B-01-DOIS-HUNKS (2026-11-10) — `C3B-01`: dois hunks onde o §5 do plano do segun |
 | `P-LOGIN-WEB-TERMO-TENANT` | 13176 | BAIXA | sim | P-LOGIN-WEB-TERMO-TENANT (2026-11-10) — login web ainda expõe termo técnico de organizaç |
-| `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` | 13207 | BAIXA | sim | P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes d |
-| `P-USERS-SEG-ORDEM-DE-IMPLANTACAO` | 13213 | BAIXA | sim | P-USERS-SEG-ORDEM-DE-IMPLANTACAO (2026-11-11) — o deploy que contém o #527 vai na ordem  |
-| `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE` | 13219 | BAIXA | sim | P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE (2026-11-11) — o approve do orçamento só lê camel |
-| `P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA` | 13251 | BAIXA | sim | P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA (2026-11-11) — o `platform_admin` cria e aprova |
-| `P-SAN3-07-SEED-USERS-LEGADO` | 13264 | BAIXA | sim | P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis lega |
-| `P-SAN3-07-SEED-FORA-DO-TYPECHECK` | 13271 | BAIXA | sim | P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed |
+| `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` | 13213 | BAIXA | sim | P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes d |
+| `P-USERS-SEG-ORDEM-DE-IMPLANTACAO` | 13219 | BAIXA | sim | P-USERS-SEG-ORDEM-DE-IMPLANTACAO (2026-11-11) — o deploy que contém o #527 vai na ordem  |
+| `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE` | 13225 | BAIXA | sim | P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE (2026-11-11) — o approve do orçamento só lê camel |
+| `P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA` | 13257 | BAIXA | sim | P-SAN3-08-CATALOGO-PLATFORM-ADMIN-APROVA (2026-11-11) — o `platform_admin` cria e aprova |
+| `P-ASS08C-NOTA-PENDENTE-POR-ERRO-DE-VALIDACAO` | 13300 | BAIXA | sim | P-ASS08C-NOTA-PENDENTE-POR-ERRO-DE-VALIDACAO (2026-11-11) — nota `pending` que o provedo |
+| `P-ASS08-ZUMBI-ORFA-NOTA` | 13306 | BAIXA | sim | P-ASS08-ZUMBI-ORFA-NOTA (2026-11-11) — trabalhador vivo além do tempo de órfã ainda pode |
+| `P-SAN3-07-SEED-USERS-LEGADO` | 13319 | BAIXA | sim | P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis lega |
+| `P-SAN3-07-SEED-FORA-DO-TYPECHECK` | 13326 | BAIXA | sim | P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 

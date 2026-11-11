@@ -70,6 +70,9 @@ function recordingModules(calls: string[], worker: JobWorker): JobWorkerModules 
     enqueueInitialSubscriptionCloseStatements: async () => {
       calls.push("subscription.close-statements");
     },
+    enqueueInitialBillingChannelJobs: async () => {
+      calls.push("billing.channel");
+    },
   };
 }
 
@@ -116,6 +119,8 @@ test("produção válida sobe o worker E enfileira as CINCO varreduras, uma vez 
       "impound.notify-due",
       "subscription.measure-daily",
       "subscription.close-statements",
+      // B-ASS-08b — a peça é chamada sempre; quem decide não enfileirar com o canal desligado é ela mesma.
+      "billing.channel",
     ]);
     assert.equal(warns.length, 0);
     assert.equal(infos.length, 1);

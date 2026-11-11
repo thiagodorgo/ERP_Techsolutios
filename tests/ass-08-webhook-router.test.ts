@@ -1,5 +1,8 @@
 // B-ASS-08 · F2 — router do webhook: decisão ANTES do parser, 404/401/413, limitador (R-WH-1/6, S11).
 // Vermelho-controle: `webhooks/**` não existe em origin/main. Zero rede: o alvo é injetado (dublê).
+// B-ASS-08b: na decisão negativa o router NÃO responde — tira os cabeçalhos de segredo e chama `next()` sem ler o corpo; o
+// 404 padrão é do APP (aqui, o fallback que faz o papel do handler final de src/app.ts). A identidade com a rota inexistente
+// no pipeline real está em tests/ass-08b-webhook-app.test.ts.
 
 import assert from "node:assert/strict";
 import type { Server } from "node:http";
@@ -23,14 +26,19 @@ const okTarget: WebhookTarget = {
 };
 const badTarget: WebhookTarget = { provider: "asaas", verify: async () => ({ ok: false }) };
 
+type PassedThrough = { readonly bodyUnread: boolean; readonly secretHeader: string | undefined; readonly path: string };
+
 type Harness = {
   readonly events: InMemoryWebhookEventRepository;
   readonly enqueued: { provider: string; externalEventId: string }[];
+  /** O que chegou ao app DEPOIS do router (decisão negativa → `next()`): corpo não lido e cabeçalho de segredo fora. */
+  readonly passedThrough: PassedThrough[];
 };
 
 function buildApp(deps: Partial<WebhookRouterDeps> & { resolveTarget: WebhookRouterDeps["resolveTarget"] }): { app: express.Express; harness: Harness } {
   const events = new InMemoryWebhookEventRepository();
   const enqueued: Harness["enqueued"] = [];
+  const passedThrough: PassedThrough[] = [];
   const router = createSubscriptionBillingWebhookRouter({
     resolveTarget: deps.resolveTarget,
     events,
@@ -40,7 +48,12 @@ function buildApp(deps: Partial<WebhookRouterDeps> & { resolveTarget: WebhookRou
   });
   const app = express();
   app.use("/webhooks/billing", router);
-  return { app, harness: { events, enqueued } };
+  // O papel do app real (src/app.ts): quem responde à decisão negativa é o 404 padrão da casa, DEPOIS do router.
+  app.use((req, res) => {
+    passedThrough.push({ bodyUnread: req.body === undefined, secretHeader: req.headers["asaas-access-token"] as string | undefined, path: req.path });
+    res.status(404).json(WEBHOOK_NOT_FOUND_BODY);
+  });
+  return { app, harness: { events, enqueued, passedThrough } };
 }
 
 async function withServer(app: express.Express, cb: (base: string) => Promise<void>): Promise<void> {
@@ -58,34 +71,38 @@ function post(base: string, provider: string, body: string, headers: Record<stri
   return fetch(`${base}/webhooks/billing/${provider}`, { method: "POST", headers: { "content-type": "application/json", ...headers }, body });
 }
 
-test("R-WH-1 canal desligado por env → 404 PADRÃO, 0 eventos (T-WH-1)", async () => {
+test("R-WH-1 canal desligado por env → o router passa adiante SEM ler o corpo e SEM o segredo; o app dá o 404 PADRÃO; 0 eventos (T-WH-1)", async () => {
   const { app, harness } = buildApp({ resolveTarget: async () => null });
   await withServer(app, async (base) => {
-    const res = await post(base, "asaas", JSON.stringify({ event: "PAYMENT_CONFIRMED" }));
+    const res = await post(base, "asaas", JSON.stringify({ event: "PAYMENT_CONFIRMED" }), { "asaas-access-token": "SEGREDO-DO-PROVEDOR" });
     assert.equal(res.status, 404);
     assert.deepEqual(await res.json(), WEBHOOK_NOT_FOUND_BODY);
   });
+  assert.deepEqual(harness.passedThrough, [{ bodyUnread: true, secretHeader: undefined, path: "/webhooks/billing/asaas" }], "passou adiante uma vez, sem corpo lido e sem o segredo (R-WH-7)");
   assert.equal(harness.events.all().length, 0);
 });
 
-test("R-WH-1 provedor desconhecido / enabled=false → mesmo 404 (T-WH-2/3)", async () => {
-  const { app } = buildApp({ resolveTarget: async (p) => (p === "asaas" ? okTarget : null) });
+test("R-WH-1 provedor desconhecido / enabled=false → a mesma passagem adiante, o mesmo 404 do app (T-WH-2/3)", async () => {
+  const { app, harness } = buildApp({ resolveTarget: async (p) => (p === "asaas" ? okTarget : null) });
   await withServer(app, async (base) => {
     const unknown = await post(base, "desconhecido", JSON.stringify({}));
     assert.equal(unknown.status, 404);
     assert.deepEqual(await unknown.json(), WEBHOOK_NOT_FOUND_BODY);
   });
+  assert.equal(harness.passedThrough.length, 1);
+  assert.equal(harness.passedThrough[0]?.bodyUnread, true);
 });
 
-test("R-WH-1 desligado: 257 KB → 404 (NÃO 413) e JSON malformado → 404 (decisão antes do parser) (T-WH-28/29)", async () => {
+test("R-WH-1 desligado: 257 KB e JSON malformado passam adiante SEM o router ler o corpo (nem 413 nem 400 dele) (T-WH-28/29)", async () => {
   const { app, harness } = buildApp({ resolveTarget: async () => null });
   await withServer(app, async (base) => {
     const big = await post(base, "asaas", "x".repeat(257 * 1024));
-    assert.equal(big.status, 404, "257 KB desligado dá 404, não 413");
+    assert.equal(big.status, 404, "257 KB desligado: o router não emite 413 — o app responde como a rota inexistente");
     assert.deepEqual(await big.json(), WEBHOOK_NOT_FOUND_BODY);
     const malformed = await post(base, "asaas", "{not json");
     assert.equal(malformed.status, 404);
   });
+  assert.deepEqual(harness.passedThrough.map((item) => item.bodyUnread), [true, true], "o parser local do router nunca rodou");
   assert.equal(harness.events.all().length, 0);
 });
 

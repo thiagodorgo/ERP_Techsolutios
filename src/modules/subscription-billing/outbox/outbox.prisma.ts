@@ -108,8 +108,8 @@ export async function enqueueInTx(
 ): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }> {
   const key = idempotencyKeyOf(input.kind, input.statementId, input.seq);
   const inserted = (await tx.$queryRawUnsafe(
-    `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at)
-     VALUES ($1::uuid, $2::uuid, $3, $4, $5, COALESCE($6, gen_random_uuid()::text)::uuid, $7::jsonb, $8, $8, $8)
+    `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at, skip_reason)
+     VALUES ($1::uuid, $2::uuid, $3, $4, $5, COALESCE($6, gen_random_uuid()::text)::uuid, $7::jsonb, $8, $8, $8, $9)
      ON CONFLICT (idempotency_key) DO NOTHING
      RETURNING *`,
     input.tenantId,
@@ -120,6 +120,7 @@ export async function enqueueInTx(
     input.providerIdempotencyKey ?? null,
     JSON.stringify(input.payload ?? {}),
     now,
+    input.skipReason ?? null,
   )) as Row[];
   if (inserted.length > 0) return { row: toDomain(inserted[0]!), created: true };
   const existing = (await tx.$queryRawUnsafe(`SELECT * FROM billing_outbox WHERE idempotency_key = $1`, key)) as Row[];
@@ -146,16 +147,24 @@ const CHARGE_CREATE_JOINT_PICK_SQL = `SELECT o.* FROM subscription_statements s
       FOR NO KEY UPDATE OF s SKIP LOCKED
       FOR UPDATE OF o SKIP LOCKED
       LIMIT 1`;
+/** Recorte opcional das organizações da varredura de plataforma. Produção não o passa (varre todas); a suíte de banco
+ * compartilhado o usa para não tocar a outbox de outra suíte (o mesmo motivo do `tenantIds` da medição — M-5 do #505). */
+export type PrismaOutboxScope = { readonly tenantIds?: readonly string[] };
 
 export class PrismaOutboxRepository implements OutboxRepository {
-  constructor(private readonly client: PrismaClient) {}
+  constructor(
+    private readonly client: PrismaClient,
+    private readonly scope: PrismaOutboxScope = {},
+  ) {}
 
   /** As organizações candidatas (índice GLOBAL `billing_statement_refs`, sem RLS). */
   async #tenantsWithRefs(): Promise<string[]> {
     const rows = (await this.client.$queryRawUnsafe(
       `SELECT DISTINCT tenant_id FROM billing_statement_refs ORDER BY tenant_id`,
     )) as Array<{ tenant_id: string }>;
-    return rows.map((row) => row.tenant_id);
+    const tenants = rows.map((row) => row.tenant_id);
+    const only = this.scope.tenantIds;
+    return only ? tenants.filter((tenantId) => only.includes(tenantId)) : tenants;
   }
 
   async enqueue(input: NewOutboxRow, now: Date): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }> {
@@ -263,15 +272,19 @@ export class PrismaOutboxRepository implements OutboxRepository {
           return { kind: "needs_review", row: toDomain(rows[0]!), code: verdict.code } satisfies ClaimResult;
         }
 
-        // (5) elegível ou órfã → PROCESSING (o UPDATE de sempre).
+        // (5) elegível ou órfã → PROCESSING (o UPDATE de sempre). Conserto da J-530 (I8): a retomada LIMPA o `skip_reason`
+        //     (a linha que nasceu `provider_disabled` deixa de dizer isso quando o provedor volta); a trava não muda.
+        // [INTX-06b]
+        const skipReasonOnClaim: OutboxSkipReason | null = null;
         const rows = (await tx.$queryRawUnsafe(
           `UPDATE billing_outbox
              SET status = 'PROCESSING', claimed_at = $2, claimed_by = $3, attempt_started_at = $2,
-                 attempts = attempts + 1, updated_at = $2
+                 attempts = attempts + 1, skip_reason = $4, updated_at = $2
              WHERE id = $1::uuid RETURNING *`,
           target.id,
           params.now,
           params.claimedBy,
+          skipReasonOnClaim,
         )) as Row[];
         return { kind: "claimed", row: toDomain(rows[0]!), wasOrphan } satisfies ClaimResult;
       });
@@ -290,8 +303,18 @@ export class PrismaOutboxRepository implements OutboxRepository {
     await this.#mutate(tenantId, id, { status: "SENT", external_id: externalId, next_attempt_at: null, last_error: null, updated_at: now });
   }
 
-  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "PENDING", next_attempt_at: nextAttemptAt, last_error: lastError, claimed_at: null, claimed_by: null, attempt_started_at: null, updated_at: now });
+  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, options: { readonly refundAttempt?: boolean } = {}): Promise<void> {
+    await this.#mutate(tenantId, id, {
+      status: "PENDING",
+      next_attempt_at: nextAttemptAt,
+      last_error: lastError,
+      claimed_at: null,
+      claimed_by: null,
+      attempt_started_at: null,
+      updated_at: now,
+      // Conserto da J-530 (C): devolve a tentativa que o claim somou (o `#mutate` é chamado, nunca alterado).
+      ...(options.refundAttempt ? { attempts: { decrement: 1 } } : {}),
+    });
   }
 
   async markFailed(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void> {
