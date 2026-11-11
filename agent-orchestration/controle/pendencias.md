@@ -8944,7 +8944,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-FAXINA-TERMOS-TECNICOS (2026-09-11) — App mostra papel cru, placeholder técnico, nome "flutter_app" e README de template — MÉDIA
 
-- status: FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`; a home, o manifest e o rótulo de papel fecharam no PR #487): guarda de todo texto exibido do app em 0 (fechamento abaixo).
+- status: FECHADA (2026-11-11, `B-SAN3-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`; a home, o manifest e o rótulo de papel fecharam no PR #487): a guarda de fonte dos literais nas âncoras de exibição do app (T6) em 0; texto montado só por interpolação fica fora dela (fechamento e resíduo abaixo).
 - status anterior: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
 - **fonte (fatia AUSENTES, §2a):** sintese B45, §6(a6)
 - **situação medida pela fatia:** ATIVO
@@ -8964,11 +8964,12 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
   Diagnóstico (e `P-O6R11-TEXTOS-FORA-DE-D-T`).
 - **fechamento (2026-11-11, `B-SAN3-19b`):** o "guard de strings sem permissão/papel técnico" do teste de
   encerramento é o T6 de `test/features/bsan319b_texto_exibido_test.dart`: lê a árvore sintática de todo
-  `lib/**/*.dart` e cobre os literais nas âncoras de exibição (argumentos `title`, `message`, `label`… e o `=` deles; o
-  1º argumento de `Text(`; os braços `=>` de função ou getter de rótulo; os ramos de `?:`, `??`, `+` e `switch`). Proíbe
+  `lib/**/*.dart` e cobre os literais nas âncoras de exibição (argumentos `title`, `message`, `label`, `text` de
+  `TextSpan`, `errorText`… e o `=` deles; o 1º argumento de `Text(`; os braços `=>` de função ou getter de rótulo; os
+  ramos de `?:`, `??`, `+` e `switch`; `text` e `errorText` entraram pela Emenda 3 do plano, PR540-04). Proíbe
   chave `a:b`, chave de ação `a.b`, `bootstrap|backend|placeholder|workflow|token|tenant|local-first|payload|endpoint` e
-  papel cru (as chaves de `role_labels.dart`, lidas do arquivo). Medido no ramo: `exibidos=771 violacoes=0`, allowlist de
-  1 arquivo (`diagnostics_screen.dart`, só abre com `kIsDevMode`, conferido no teste), piso N0 = 771. Na base
+  papel cru (as chaves de `role_labels.dart`, lidas do arquivo). Medido no ramo: `exibidos=779 violacoes=0`, allowlist de
+  1 arquivo (`diagnostics_screen.dart`, só abre com `kIsDevMode`, conferido no teste), piso N0 = 779. Na base
   (`a0979f51`) eram 24 violações; todas consertadas. O T6b prova na tela que a lista de despesas do app de
   demonstração não mostra 'Aprovado manager', 'fila local-first', código de regra nem texto em inglês do banner de
   política. O acesso não permitido das 10 telas, o placeholder e o README entram no mesmo PR.
@@ -8977,8 +8978,10 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
   `checklist_run_screen.dart:126`, `checklist_acknowledgement_screen.dart:65`, `new_work_order_screen.dart:223`; no caso
   de borda de organização divergente, `work_order_repository.dart:884` lança `StateError('Tenant mismatch')`). A Emenda 1
   do plano escolheu a saída (a) só para o banner de política; esses 4 pontos ficaram fora do PERMITIDO e não foram
-  tocados. **Pergunta ao orquestrador, registrada no diário do dev:** abrir `P-MOBILE-TEXTO-TECNICO-INTERPOLADO`
-  (N = 4 SnackBars com `$e`) com dono, ou outro destino.
+  tocados. A Emenda 2 do plano os destina à `P-MOBILE-TEXTO-TECNICO-INTERPOLADO` (N = 4 SnackBars com `$e`), que o
+  PR de registro do orquestrador registra. A guarda também não vê dado cru interpolado (id de categoria, id de
+  checklist; PR540-05 da pré-revisão), que a Emenda 3 destina à `P-MOBILE-IDENTIFICADOR-CRU-NA-TELA`, também do
+  orquestrador.
 
 ---
 
@@ -12584,8 +12587,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   Tecnico`, `Aprovacoes`) e o mesmo mapa em `bootstrap_repository.dart:147-180`;
   `geolocator_device_location_provider.dart:133,158,160` (`Permissao de localizacao negada…`);
   `work_order_approval_request_screen.dart:56,88,94` (`Solicitar Aprovacao`); `evidence_picker.dart:89` (`Camera`); o
-  rótulo de regra `Recibo obrigatorio`/`Violacao de politica` (detalhe e banner de política, mesmo mapa; o título do
-  banner está preso por `expense_screens_test.dart:25`); `Em analise` (`expense_models.dart`); `ErrorState`,
+  rótulo de regra `Recibo obrigatorio`/`Violacao de politica` do detalhe (`_violationLabel`; o rótulo novo do banner de
+  política saiu acentuado no conserto do #540, PR540-03) e o título do banner (preso por `expense_screens_test.dart:25`); `Em analise` (`expense_models.dart`); `ErrorState`,
   `OfflineState` e `NetworkStatusBanner` em `erp_components.dart` (`Nao foi possivel carregar`, `disponiveis`,
   `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
 
@@ -13569,9 +13572,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
-  não muda permissão) · **dono:** a decidir pela Pergunta 2 do plano do `B-SAN3-19b` (recomendação (a): item novo no
-  portão, com bloco próprio de junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o
-  backend local) · **bloqueia:** a decidir na Pergunta 2.
+  não muda permissão) · **dono (provisório, Emenda 3 do plano do `B-SAN3-19b`):** um bloco próprio de permissão do
+  app, com junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o backend local; vale até a
+  resposta do dono à Pergunta 2 (recomendação (a): entrar no portão) · **bloqueia:** a decidir na Pergunta 2.
 - **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
 - **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
   crítica r2 executou `isValidPermission`/`getRolePermissions` em `07898adf`: inválidas e sem papel; as linhas de

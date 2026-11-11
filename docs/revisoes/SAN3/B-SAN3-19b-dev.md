@@ -237,3 +237,26 @@ A Emenda 2 (`plano-B-SAN3-19b-v2.md`, no fim) respondeu às perguntas 4, 5 e 7 d
 | rodar o gerador de novo e comparar (`cmp`) | 0 | sem diff (o versionado é igual ao gerado); 0 `CR` antes e depois |
 
 Observação, sem ação: a entrada `P-J535-C3-02-ITEM47-STATUS-X-RESIDUO`, vinda da `main`, cita uma `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` como destino da instância offline do item 47. Essa pendência não tem cabeçalho próprio no `pendencias.md` da `main` de agora (`grep -c '^## P-SAN3-07-APP-NOME-TECNICO-OFFLINE'` = 0). É a mesma instância que este bloco fecha (apenso da `P-CHK-SEED-DEMO-SUJO`). Quem reconcilia é o registro do orquestrador.
+
+## Conserto da pré-revisão `prerev-540-cl` (Emenda 3 do plano; 08:51–09:08 SP)
+
+A pré-revisão (`revisoes/prerev-540.json`, APROVADO com 7 não graves) foi feita por Claude Opus 5.5, sem cruzamento (§C7 item 11(2), declarado lá). A Emenda 3 (orquestrador, 08:51) autoriza os consertos PR540-01, 02, 03, 04 e 07. O 05 (`P-MOBILE-IDENTIFICADOR-CRU-NA-TELA`) e o 06 (`P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS`) são do orquestrador; não foram criados aqui. Quem conserta (eu, o dev) não achou: os achados são do revisor (§C7.4-bis).
+
+| Achado | Conserto | Teste / mutação |
+|---|---|---|
+| **PR540-01** | `expense_report_detail_screen.dart`: o `ApprovalDecisionCard` "ainda não disponível" só aparece se `report.status == ExpenseReportStatus.submitted \|\| report.status == ExpenseReportStatus.underReview`, os dois status do grupo "Enviados" do app (`expense_list_screen.dart`, `_PcGroup.submitted`). Fora disso, o cartão some. É condição de **status**, não de permissão | **T6c** (novo, em `bsan319b_texto_exibido_test.dart`): prestação `submitted` mostra o cartão; `approvedManager` mostra "Aprovado pelo gestor" e **não** mostra o cartão. **M29** (apagar as 2 linhas do `if`) → T6c **vermelho** |
+| **PR540-02** | `new_expense_report_screen.dart`: "…fica neste aparelho e entra na fila de envio. Acompanhe o envio em Sincronizar." (a ação entra na fila e fica listada em Sincronizar, também depois de enviada) | M11 com a âncora nova → T6 vermelho |
+| **PR540-03** | `erp_components.dart`, o `_violationLabel` **novo** do banner: `Recibo obrigatório`, `Violação de política`. O mapa do detalhe fica com a `P-MOBILE-TITULOS-SEM-ACENTO` (apenso ajustado) | T6b verde; M27 vermelha |
+| **PR540-04** | T6: `errorText` e `text` (o `text:` de `TextSpan`) entram na alternância de âncoras. Medido: `exibidos=779 violacoes=0 allowlist=2` (antes 771); **piso N0 = 779**. Na `pendencias.md`, o status da `P-MOBILE-FAXINA-TERMOS-TECNICOS` diz o que a guarda cobre ("a guarda de fonte dos literais nas âncoras de exibição do app (T6) em 0; texto montado só por interpolação fica fora dela") e o fechamento cita as âncoras novas e o 779 | **MP2** (`TextSpan(text: 'Você tem acesso a cada tenant: ')`) e **MP3** (`errorText: 'payload rejeitado pelo endpoint'`), as 2 sondas do revisor que sobreviviam → agora **vermelhas** (`violacoes=1`) |
+| **PR540-07** | `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO`: **dono provisório** = um bloco próprio de permissão do app, com junta completa e `coordenador-de-acessos`, até a resposta do dono à Pergunta 2. Fechamento da `P-MOBILE-FAXINA`: a pergunta sobre os 4 `SnackBar` sai; fica a destinação da Emenda 2 (`P-MOBILE-TEXTO-TECNICO-INTERPOLADO`, do orquestrador) e a da Emenda 3 para o dado cru interpolado (`P-MOBILE-IDENTIFICADOR-CRU-NA-TELA`, do orquestrador) | — |
+
+**Grep da trava do §5:** passa a ter 3 linhas, as 2 já declaradas mais a nova condição de status do PR540-01 (`+              if (report.status == ExpenseReportStatus.submitted ||`), exceção declarada pela Emenda 3, item 1.
+
+**Rodada completa de mutações (09:00:39–09:06:10):** `python mut.py` M1–M13, M15–M29, MP2 e MP3 = **30 de 30 vermelhas**, todas restauradas (sha igual), 0 abortadas. M23 agora fica vermelha em 3 testes (T6, T6b e o T6c, que espera "Aprovado pelo gestor"). Kit atualizado em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-19b-mutacoes/` (`mutacoes.json`, `mut3-saida.txt`).
+
+| Comando | Exit | Saída resumida |
+|---|---|---|
+| `python conserto.py` + `t6c.py` (substituição literal com contagem 1) e `dart format` nos 4 arquivos | 0 | `0 changed` depois do `flutter pub get` |
+| `flutter analyze` | 0 | `No issues found!` |
+| `flutter test test/features/bsan319b_texto_exibido_test.dart` | 0 | `+9: All tests passed!`, `[T6] exibidos=779 violacoes=0 allowlist=2` |
+| commit do código | 0 | `616b1ff8` |
