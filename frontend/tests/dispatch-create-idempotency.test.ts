@@ -49,7 +49,7 @@ test("POST /operations/dispatches leva idempotencyKey no corpo", async () => {
 test("nova tentativa depois de erro reusa a MESMA; depois de sucesso muda; mudar OS, técnico ou status muda a chave", async () => {
   const { createDispatchIntentKeySource } = await import("../src/modules/operations/dispatches/useDispatchIntentKey");
   let seq = 0;
-  const source = createDispatchIntentKeySource(() => `chave-${(seq += 1)}`);
+  const source = createDispatchIntentKeySource(() => `chave-intencao-${(seq += 1)}`);
   const intent = { workOrderId: "os-1", operatorUserId: "tec-1", status: "assigned" as const };
 
   const first = source.keyFor(intent);
@@ -76,10 +76,12 @@ test("os dois chamadores reais criam o despacho com a chave por intenção e só
   for (const rel of ["map/hooks/useAllocateDispatch.ts", "dispatches/pages/OperationsDispatchesPage.tsx"]) {
     const src = readSrc(rel);
     assert.match(src, /useDispatchIntentKey\(\)/, `${rel} não usa a fonte de chave por intenção`);
-    const call = src.indexOf("createDispatch(context, {");
-    assert.ok(call >= 0, `${rel} não passa um payload com a chave a createDispatch`);
-    const window = src.slice(call, call + 200);
-    assert.match(window, /idempotencyKey: \w+\.keyFor\(payload\)/, `${rel} não envia a chave da intenção`);
+    const call = src.indexOf("createDispatch(context,");
+    assert.ok(call >= 0, `${rel} não chama createDispatch(context, …)`);
+    // A chave entra no payload que vai a createDispatch: montada logo antes (o hook do mapa rebatiza o payload, porque a
+    // guarda de `operations-map-allocation.test.ts` exige `createDispatch(context, payload)`) ou dentro da chamada.
+    const keyed = /idempotencyKey: \w+\.keyFor\(\w+\)/.exec(src.slice(Math.max(0, call - 400), call + 200));
+    assert.ok(keyed, `${rel} não envia a chave da intenção a createDispatch`);
     const succeeded = src.indexOf(".succeeded();", call);
     assert.ok(succeeded > call, `${rel} não troca a chave depois do sucesso`);
     const catchAt = src.indexOf("catch", call);

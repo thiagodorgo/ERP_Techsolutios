@@ -179,3 +179,31 @@ T14(c) usa a forma (ii) pelo mesmo motivo.
 - O registro de desenho do v2 §2.3 (com a escolha do orçamento da emenda 1) foi para o comando do bloco.
 - O índice `pendencias-indice.md` NÃO foi regenerado: o gerador é Python (`gerar-indice-pendencias.py`) e esta máquina
   não tem Python no PATH (medido: `python3` → "Python was not found"). Fica para o próximo PR de registro.
+
+## Fatia 5 — web envia a chave por intenção; suítes na lista curada da CI
+
+- `frontend/src/modules/operations/dispatches/useDispatchIntentKey.ts` (novo): a fonte de chave por intenção (âncora M12
+  `return keyRef.current;` = 1) e o hook. `dispatches.types.ts`: `idempotencyKey?` no `DispatchCreatePayload`. Os dois
+  chamadores (`useAllocateDispatch.ts` e `OperationsDispatchesPage.tsx`) mandam a chave e só a trocam depois do sucesso.
+  Sem mudança visual (nenhum layout, texto ou componente novo).
+- **Medido e ajustado sem tocar teste existente:** `frontend/tests/operations-map-allocation.test.ts:190` exige o texto
+  `createDispatch(context, payload)` no hook do mapa. O hook passou a receber `requested` e montar
+  `const payload = { ...requested, idempotencyKey: intent.keyFor(requested) }` antes da chamada, que segue literal. O meu
+  T12 (3º caso) foi escrito de novo para aceitar as duas formas (montado antes ou dentro da chamada); o vermelho-controle
+  dele na `main` continua (os chamadores não usam a fonte de chave). O gerador do 2º caso do T12 produzia `chave-1`
+  (7 caracteres, fora do formato que o próprio caso exige) e virou `chave-intencao-N`: defeito do teste, não do código.
+- `frontend/package.json`: uma entrada no `test:smoke` (o lockfile não mudou).
+- `.github/workflows/ci.yml`: só as 7 linhas `SUITES="$SUITES tests/b-o6r-09-…"` no `backend-postgres`, mais o comentário.
+- **As 3 medições na forma do job** (`scratchpad/o6r09-tools/job-pg.sh`: a lista `SUITES` EXTRAÍDA do `ci.yml` do
+  worktree, 67 suítes, `CORE_SAAS_PERSISTENCE=prisma`, banco do dev migrado e semeado, Redis próprio `o6r09-redis`):
+  - execução 1 (04:30–04:40): 549 testes, 546 ok, 3 not ok; execução 2: 550, 548 ok, 2 not ok; execução 3: 550, 548 ok,
+    2 not ok; `# skipped 0` nas três;
+  - as 45 do bloco (10 + 6 + 9 + 1 + 4 + 13 + 2) passaram nas três, com o mesmo denominador;
+  - os vermelhos são de outras suítes e do ambiente Windows: `traccar-event-migration-drill-db` e
+    `work-order-invoicing-migration-drill-db` com `EBUSY: resource busy or locked, rmdir …\Temp\…` no `after` (o Windows
+    segura o diretório temporário; o runner da CI é Linux), e os dois casos "tempo esgotado" de
+    `traccar-position-ingestion-db` na execução 1 (os mesmos da fatia 2, que também caem na `main`). A variação 549/550 é
+    a linha de arquivo do `hookFailed`, e não teste do bloco;
+  - T15 nas três: 5 criações em 3 038, 1 977 e 2 047 ms, 0 recusa; T24: 4 aprovações em 2 278, 1 594 e … ms, 0 recusa, e a
+    3ª transação do arnês recusou com P2028 em cerca de 2 s.
+- Web: `npm --prefix frontend run check` ec=0; `build` ec=0 (32 s); `test:smoke` 1 716/1 716, 0 pulo.
