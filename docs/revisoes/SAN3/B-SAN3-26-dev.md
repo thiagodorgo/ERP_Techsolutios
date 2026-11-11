@@ -198,3 +198,107 @@ Gravadas depois da implementação, em F4 (o plano manda medir no objeto final).
   a `P-CHECKIN-NUMERO-DE-SERIE`, a `P-CONSOLE-EDITA-PLACA-DA-OS`, a `P-CHECKIN-SEM-PLACA-OFFLINE` (E-05) e a
   `P-CHECKIN-PLACA-ESTRANGEIRA` (E-03); nota medida na `P-MOBILE-STATUS-NOMES`. Índice regenerado pelo gerador.
 - `controle/decisoes.md`: os dois conflitos (F0).
+
+## Mutações literais (43, uma por vez)
+
+Roteiro: para cada uma, conta as linhas do arquivo que têm a âncora (tem de dar 1), aplica a troca, roda o teste-dono, exige vermelho e restaura o arquivo byte a byte (conferido). Rodadas em `21373f1b` (o merge da main depois não tocou nenhum dos arquivos mutados; as 43 âncoras foram recontadas no head integrado `b426918b`: 43 com contagem 1). Resultado: **43/43 vermelhas, 43/43 restauradas, 0 âncora não única.** Comandos: backend `node --test --import tsx tests/san3-26-checkin-<arquivo>.test.ts` (com `CORE_SAAS_PERSISTENCE=memory`); tipo `npx tsc -p tsconfig.json --noEmit` (o G1a dá `TS2578 Unused '@ts-expect-error' directive` na linha da guarda certa); app `flutter test --no-pub` do teste do bloco; web `node --test --import tsx` dos 2 smoke do formulário.
+
+Equivalências declaradas (a forma muda, o efeito é o do plano): M1(ii), M2(i), M3(ii), M5(i), M5(iii) e M4 seguem a emenda E-06 (o `dart format` quebra as linhas do plano, e o `_prefix` saiu); a G1a-marca é nova (prova a 2ª diretiva do arquivo de guarda, que a G1a do plano não alcança).
+
+| # | Mutação | Arquivo | Âncora (`grep -cF` = 1) | Troca por | Resultado |
+|---|---|---|---|---|---|
+| 1 | A11 | `work-order.checkin.ts` | `const officeEntry = entry === "http_status_route" && isCheckinOfficeOnly(actor);` (1) | `const officeEntry = false;` | ec=1, VERMELHA |
+| 2 | A9a | `work-order.checkin.ts` | `const officeEntry = entry === "http_status_route" && isCheckinOfficeOnly(actor);` (1) | `const officeEntry = isCheckinOfficeOnly(actor);` | ec=1, VERMELHA |
+| 3 | A9b | `work-order.checkin.ts` | `return hasOfficeRole && !hasFieldRole;` (1) | `return hasOfficeRole;` | ec=1, VERMELHA |
+| 4 | A9c | `work-order.checkin.ts` | `return hasOfficeRole && !hasFieldRole;` (1) | `return !hasFieldRole;` | ec=1, VERMELHA |
+| 5 | A9d | `work-order.checkin.ts` | `  "operator",` (1) | (apagar a linha) | ec=1, VERMELHA |
+| 6 | A4 | `mobile-work-order-sync.ts` | `checkin_confirmation: action.payload.checkin_confirmation,` (1) | (apagar a linha) | ec=1, VERMELHA |
+| 7 | A4b | `mobile-work-order-sync.ts` | `if (isCheckinRefusal(error)) return checkinConflictResult(action, error);` (1) | (apagar a linha) | ec=1, VERMELHA |
+| 8 | A5 | `work-order.checkin.ts` | `if (reference === null && !exempt) throw checkinError("checkin_reference_missing");` (1) | `if (reference === null) return issueVerdict("exempt_service_type");` | ec=1, VERMELHA |
+| 9 | A6-i | `work-order.checkin.ts` | `export const CHECKIN_EXEMPT_SERVICE_TYPES: readonly string[] = Object.freeze(["residencial"]);` (1) | `export const CHECKIN_EXEMPT_SERVICE_TYPES: readonly string[] = Object.freeze([]);` | ec=1, VERMELHA |
+| 10 | A6-ii | `work-order.checkin.ts` | `const exempt = typeInfo !== null && CHECKIN_EXEMPT_SERVICE_TYPES.includes(typeInfo.serviceType ?? "");` (1) | `const exempt = true;` | ec=1, VERMELHA |
+| 11 | A2-A3 | `work-order.checkin.ts` | `if (typed !== reference.slice(-2)) throw checkinError("checkin_confirmation_mismatch");` (1) | `if (typed !== current.code.slice(-2)) throw checkinError("checkin_confirmation_mismatch");` | ec=1, VERMELHA |
+| 12 | A1 | `work-order.service.ts` | `const checkin = await this.verifyCheckinForStatus(actor, current, nextStatus, body, options?.entry ?? "internal");` (1) | (apagar a linha) | ec=1, VERMELHA |
+| 13 | A12 | `work-order.service.ts` | `const message = checkin ? checkinTimelineMessage(checkin) : optionalString(body.message) ?? defaultStatusMessage(nextStatus);` (1) | `const message = optionalString(body.message) ?? defaultStatusMessage(nextStatus);` | ec=1, VERMELHA |
+| 14 | A7-i | `work-order.service.ts` | `this.assertCheckinReferenceUnchangedByField(actor, current, serviceDetails);` (1) | (apagar a linha) | ec=1, VERMELHA |
+| 15 | A7-ii | `work-order.checkin.ts` | `const nextReference = resolveCheckinReference(serviceDetails);` (1) | `const nextReference = serviceDetails && "plate" in serviceDetails ? resolveCheckinReference(serviceDetails) : currentReference;` | ec=1, VERMELHA |
+| 16 | A8 | `work-order.service.ts` | `...(checkin ? { checkin: checkin.mode } : {}),` (1) | `...(checkin ? { checkin: checkin.mode, confirmation: body.checkin_confirmation } : {}),` | ec=1, VERMELHA |
+| 17 | A8b | `mobile-work-order-sync.ts` | `payload: normalizePayload(withoutCheckinConfirmation(action.payload)),` (1) | `payload: normalizePayload(action.payload),` | ec=1, VERMELHA |
+| 18 | A10-i | `work-order.checkin.ts` | `if (typeof raw !== "string") return null;` (1) | `if (raw == null) return null;` | ec=1, VERMELHA |
+| 19 | A10-ii | `work-order.checkin.ts` | `if (candidates.size !== 1) return null;` (1) | `if (candidates.size === 0) return null;` | ec=1, VERMELHA |
+| 20 | A10-iii | `work-order.checkin.ts` | `const BR_PLATE_PATTERN = /(?<![A-Z0-9])([A-Z]{3})[\s.-]{0,2}([0-9][A-Z0-9][0-9]{2})(?![A-Z0-9])/g;` (1) | `const BR_PLATE_PATTERN = /([A-Z]{3})[\s.-]{0,2}([0-9][A-Z0-9][0-9]{2})/g;` | ec=1, VERMELHA |
+| 21 | A10-iv | `work-order.checkin.ts` | `if (candidates.size !== 1) return null;` (1) | `if (candidates.size !== 1) return upper.replace(/[^A-Z0-9]/g, "") \|\| null;` | ec=1, VERMELHA |
+| 22 | A10-v | `work-order.checkin.ts` | `return normalized.length === 2 ? normalized : null;` (1) | `return normalized.length >= 1 ? normalized : null;` | ec=1, VERMELHA |
+| 23 | L1-i | `work-order.dto.ts` | `checkinPlateTail: checkin?.plateTail ?? null,` (1) | `checkinPlateTail: null,` | ec=1, VERMELHA |
+| 24 | L1-ii | `work-order.service.ts` | `let pending = typeInfoByCatalog.get(item.serviceCatalogId);` (1) | `let pending: Promise<ServiceCatalogTypeInfo> \| undefined = undefined;` | ec=1, VERMELHA |
+| 25 | G1a | `work-order.types.ts` | `readonly status: Exclude<WorkOrderStatus, "on_site">;` (1) | `readonly status: WorkOrderStatus;` | ec=2, VERMELHA |
+| 26 | G1a-create | `work-order.types.ts` | `readonly status?: Exclude<WorkOrderStatus, "on_site">;` (1) | `readonly status?: WorkOrderStatus;` | ec=2, VERMELHA |
+| 27 | G1b | `work-order.repository.ts` | `assertCheckinVerdictForStatus(input);` (1) | (apagar a linha) | ec=1, VERMELHA |
+| 28 | G1c | `work-order-prisma.repository.ts` | `assertCheckinVerdictForStatus(input);` (1) | (apagar a linha) | ec=1, VERMELHA |
+| 29 | M1-i | `work_order_detail_screen.dart` | `String? get _expected => widget.wo.checkinPlateTail;` (1) | `String? get _expected => widget.wo.code.substring(widget.wo.code.length - 2);` | ec=1, VERMELHA |
+| 30 | M1-ii | `work_order_detail_screen.dart` | `final hint = _maskedHint();` (1) | `final hint = widget.wo.code;` | ec=1, VERMELHA |
+| 31 | M2-i | `work_order_repository.dart` | `if (newStatus == WorkOrderStatus.arrived && lastDigits != null)` (1) | `if (false)` | ec=1, VERMELHA |
+| 32 | M2-ii | `sync_replay_service.dart` | `payload['checkin_confirmation'] = checkinConfirmation;` (1) | (apagar a linha) | ec=1, VERMELHA |
+| 33 | M3-i | `work_order_detail_screen.dart` | `final canConfirmWithoutDigits = widget.wo.checkinMode == CheckinMode.exempt;` (1) | `final canConfirmWithoutDigits = true;` | ec=1, VERMELHA |
+| 34 | M3-ii | `work_order_detail_screen.dart` | `if (widget.wo.checkinMode == CheckinMode.referenceMissing) {` (1) | `if (false) {` | ec=1, VERMELHA |
+| 35 | M-L1-app | `work_order_remote_api.dart` | `json['checkinMode'] ?? json['checkin_mode'],` (1) | `null,` | ec=1, VERMELHA |
+| 36 | M4 | `app_database.dart` | `if (!hasCheckinMode) {` (1) | `if (true) {` | ec=1, VERMELHA |
+| 37 | M5-i | `work_order_conflict_resolution_service.dart` | `final restored = _restoreBeforeCheckin(` (1) | `final restored = current; final _ = (` | ec=1, VERMELHA |
+| 38 | M5-ii | `work_order_conflict_resolution_service.dart` | `if (action.createdAt.isBefore(checkinAction.createdAt)) continue;` (1) | `if (action.clientActionId != checkinAction.clientActionId) continue;` | ec=1, VERMELHA |
+| 39 | M5-iii | `work_order_repository.dart` | `if (existing != null && checkinRedoPending.contains(existing.localId)) {` (1) | `if (false) {` | ec=1, VERMELHA |
+| 40 | M6 | `work_order_detail_screen.dart` | `final checkinRedo = conflicts.any(isCheckinRefusalAction);` (1) | `final checkinRedo = false;` | ec=1, VERMELHA |
+| 41 | M7 | `sync_screen.dart` | `final checkinRedoIds = checkinRedoAffectedActionIds(conflicts);` (1) | `final checkinRedoIds = <String, String>{};` | ec=1, VERMELHA |
+| 42 | F5 | `WorkOrderForm.tsx` | `return serviceType !== "residencial";` (1) | `return serviceType === "socorro";` | ec=1, VERMELHA |
+| 43 | G1a-marca | `work-order.checkin.ts` | `  readonly [checkinVerdictBrand]: true;` (1) | (apagar a linha) | ec=2, VERMELHA |
+
+## Incidente de terreno (11/11, ~03:50 SP, por `date`)
+
+Os arquivos `*.log` do scratchpad da sessão sumiram enquanto o `npm test` na forma da CI rodava (o scratchpad é
+compartilhado com a sessão do orquestrador; não fui eu que os apaguei). Perdidos: os logs crus do vermelho-controle, da
+1ª rodada de mutações e da 1ª rodada do `npm test`. Preservado: o resumo de cada um, já neste diário, e a tabela das
+mutações (gerada do log antes de ele sumir). O `npm test` cuja saída ia para o arquivo apagado foi parado (só a árvore
+de processos dele, PID 28284) e o cluster Postgres descartável foi recriado (a rodada parada deixou 6 bancos de drill
+nele). Os logs desta fase em diante ficam em `C:/Users/thiag/w-san326-logs/`, apagada no fim.
+
+## Bateria final (§9), no head integrado com a main (`b426918b`, depois do merge da `origin/main` `07898adf`)
+
+| Passo | Comando | Resultado |
+|---|---|---|
+| App · dependências | `flutter pub get` | ec=0 |
+| App · formato | `dart format --output=none --set-exit-if-changed lib test` | ec=1, só por `test/features/bsan313_minhas_os_escopo_test.dart`, que o bloco não toca (`git diff origin/main` vazio): é a versão local do Dart (3.11.4) × a da CI; os 21 arquivos Dart do bloco formatados (ec=0 só neles) |
+| App · análise | `flutter analyze` | No issues found |
+| App · testes do bloco | `bsan326_checkin_confere_placa_test.dart` + `bsan326_checkin_conflito_test.dart` | +15, All tests passed |
+| App · regressões | `b115_checkin_flow_test.dart`, `b103_work_order_sync_test.dart`, `app_database_migration_test.dart` | +59, All tests passed |
+| App · suíte | `flutter test --reporter compact` | +1118, All tests passed |
+| Backend · testes do bloco | os 3 `tests/san3-26-*` | 33/33 |
+| Backend · regressões | `o6r07c-b-scope`, `work-order-checklists-sticky`, `approval-routes`, `san3-13-wo-list-scope`, `work-order-checklist-snapshot-dto` | 219/219 |
+| Backend · tipo e lint | `npm run check` · `npm run lint` | ec=0 · ec=0 |
+| Backend · suíte, na forma do job `backend` da CI | `npm test` com `DATABASE_URL` (Postgres 16 próprio, `san326-pg`, migrações aplicadas) e `REDIS_URL` (Redis 7 próprio, `san326-redis`), `CORE_SAAS_PERSISTENCE=memory` | 478 arquivos · 4989 testes · pass 4972 · **fail 15** · skipped 2 · piso de denominador: 2 arquivos (os dois drills). Triagem abaixo |
+| Backend · build | `npm run build` | ec=0 |
+| Web | `npm --prefix frontend run check` · `build` · `test:smoke` | ec=0 · ec=0 · 1715/1715 |
+| Migração | `node scripts/migration-transaction-guard.mjs` | 130 migrações · violações 0 |
+| Espaços | `git diff --check origin/main...HEAD` | ec=0 |
+| Escopo | `git diff --name-only origin/main...HEAD` | 38 arquivos; nada em `prisma/`, `.github/`, `Kpis/`, `infra/`, `migrations/`, lockfiles, `pubspec.*`, `catalog.ts`, `RBAC_MATRIX.md`, `field-dispatch/`, `work-order.routes.ts` |
+
+**Triagem das 15 falhas do `npm test` local (nenhuma é do bloco).** Cada arquivo que falhou foi reexecutado sozinho, em
+sequência, no mesmo cluster:
+
+| Arquivo | Sozinho | Causa |
+|---|---|---|
+| `core-saas-prisma`, `san3-05-leituras-de-plataforma-db`, `traccar-position-ingestion-db`, `users-acesso-seg-logs-db`, `users-acesso-seg-portao-db` | verdes (6/6, 12/12, 22/22, 1/1, 4/4) | carga: na hora, rodavam mais 3 `run-backend-tests` de outras sessões na mesma máquina ("Unable to start a transaction in the given time", tempo esgotado) |
+| `traccar-event-migration-drill-db`, `work-order-invoicing-migration-drill-db` | 6/6 testes verdes; falha só a limpeza | Windows: `EBUSY: resource busy or locked, rmdir` do diretório temporário do drill |
+| `san3-05-runtime-role-guard-db` | 8 verdes, 4 vermelhos | Windows: `setsid: ausente` (o teste exige `setsid` para o `psql \password`) |
+| `san3-09-bootstrap-platform-admin-db` | 0/2 | o T2 desse arquivo só roda em container Linux (corpo do jurado `jurado-san3-09c2-*`) |
+
+Nenhum desses arquivos é tocado pelo bloco nem cria OS em `on_site`. A medida que vale é a CI do GitHub no head
+empurrado (Linux), lida pelo resumo TAP (§C7.11(3)): ver o PR.
+
+**Teste manual "app da versão anterior contra o servidor novo" (§6 do plano): não executado** — não há aparelho nem
+emulador neste terreno. O que o cobre, sem substituí-lo: o codec do app (`WorkOrderSyncCodec`) não mudou na leitura de
+`conflicts[]`, e a M5 usa o codec real com a resposta no formato do servidor novo (a recusa vira `conflict`, retry 0,
+uma chamada); o cartão antigo de conflito é o mesmo que a regressão da M6 afirma ("conflito de outro tipo mantém as 3
+saídas"). Fica para a pré-revisão ou para o porteiro, se um aparelho estiver disponível.
+
+**Limpeza (§C5):** no fechamento, os containers `san326-pg` e `san326-redis` são removidos, `dist/` e
+`frontend/dist/` (gitignored) apagados, e a pasta `C:/Users/thiag/w-san326-logs` apagada; o worktree fica para a
+pré-revisão e a junta.
