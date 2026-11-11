@@ -9,6 +9,7 @@ import { useAutoRefresh } from "../../../../hooks/useAutoRefresh";
 import { useAuth } from "../../../../providers/AuthProvider";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useTenantContext } from "../../../../providers/TenantProvider";
+import { ServiceQuoteApproveDialog } from "../components/ServiceQuoteApproveDialog";
 import { ServiceQuoteFormModal } from "../components/ServiceQuoteFormModal";
 import {
   filterServiceQuotes,
@@ -19,7 +20,7 @@ import {
   getServiceQuoteStatusTone,
   shortRef,
 } from "../service-quotes.adapter";
-import { approveServiceQuote, changeServiceQuoteStatus, shareServiceQuote } from "../service-quotes.service";
+import { changeServiceQuoteStatus, shareServiceQuote } from "../service-quotes.service";
 import { ApiError } from "../../../../services/api/client";
 import type { ServiceQuoteRow, ServiceQuoteStatus, ServiceQuotesFilters } from "../service-quotes.types";
 import { useServiceQuotes } from "../useServiceQuotes";
@@ -55,6 +56,28 @@ function messageForQuoteError(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
 }
 
+// B-SAN3-08 (acabamento, §11.2) — o aviso de sucesso não imprime o identificador cru da OS: diz o que aconteceu e
+// oferece o link "abrir OS". Exportado para o teste do aviso (`tests/service-quotes.smoke.test.tsx`).
+export type ActionNotice = { readonly text: string; readonly workOrderId: string | null };
+
+export function approvedNoticeFor(result: { readonly workOrderId: string | null }): ActionNotice {
+  return { text: "Orçamento aprovado. A ordem de serviço foi criada.", workOrderId: result.workOrderId };
+}
+
+export function ActionNoticeBody({ notice }: { readonly notice: ActionNotice }) {
+  return (
+    <>
+      {notice.text}
+      {notice.workOrderId ? (
+        <>
+          {" "}
+          <a href={`/work-orders/${encodeURIComponent(notice.workOrderId)}`}>abrir OS</a>
+        </>
+      ) : null}
+    </>
+  );
+}
+
 export function OrcamentosPage() {
   const { session } = useAuth();
   const { activeContext } = useTenantContext();
@@ -67,7 +90,11 @@ export function OrcamentosPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<QuoteStatusFilter>("all");
   const [actionError, setActionError] = useState<string | null>(null);
-  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [actionNotice, setActionNoticeState] = useState<ActionNotice | null>(null);
+  const [approving, setApproving] = useState<ServiceQuoteRow | null>(null);
+  // O aviso pode levar o link da OS criada (B-SAN3-08); os outros avisos são só texto.
+  const setActionNotice = (text: string | null, workOrderId: string | null = null) =>
+    setActionNoticeState(text ? { text, workOrderId } : null);
 
   const canCreate = can("service_quotes:create");
   const canUpdate = can("service_quotes:update");
@@ -100,17 +127,24 @@ export function OrcamentosPage() {
     }
   }
 
-  // Ω3F-4c — aprova o orçamento (draft) → CRIA a OS. Mostra a OS gerada e recarrega a lista.
-  async function approveQuote(quote: ServiceQuoteRow) {
+  // Ω3F-4c — aprova o orçamento (draft) → CRIA a OS. B-SAN3-08: Aprovar abre o diálogo único, que pergunta origem e
+  // destino; o desfecho volta pelos callbacks (OS criada, recusa, lista desatualizada).
+  function approveQuote(quote: ServiceQuoteRow) {
     setActionError(null);
     setActionNotice(null);
-    try {
-      const result = await approveServiceQuote(context, quote.id, {});
-      setActionNotice(result.workOrderId ? `Orçamento aprovado — OS gerada (${result.workOrderId}).` : "Orçamento aprovado.");
-      void refresh();
-    } catch (actionErr) {
-      setActionError(messageForQuoteError(actionErr, "Não foi possível aprovar o orçamento."));
-    }
+    setApproving(quote);
+  }
+
+  function quoteApproved(workOrderId: string | null) {
+    const notice = approvedNoticeFor({ workOrderId });
+    setActionNotice(notice.text, notice.workOrderId);
+    setApproving(null);
+    void refresh();
+  }
+
+  function approveNotice(text: string, tone: "info" | "danger") {
+    if (tone === "info") setActionNotice(text);
+    else setActionError(text);
   }
 
   // Ω3F-4c — compartilha o orçamento: devolve o link (sharePath) para copiar.
@@ -219,7 +253,7 @@ export function OrcamentosPage() {
         // Aprovar (draft) → cria a OS. Exige a permissão dedicada service_quotes:approve.
         if (quote.status === "draft" && canApprove) {
           actions.push(
-            <Button key="approve" type="button" size="sm" variant="secondary" aria-label="Aprovar orçamento" onClick={() => void approveQuote(quote)}>
+            <Button key="approve" type="button" size="sm" variant="secondary" aria-label="Aprovar orçamento" onClick={() => approveQuote(quote)}>
               <BadgeCheck size={14} aria-hidden /> Aprovar
             </Button>,
           );
@@ -295,7 +329,7 @@ export function OrcamentosPage() {
 
       {actionNotice ? (
         <Alert title="Ação concluída" tone="info">
-          {actionNotice}
+          <ActionNoticeBody notice={actionNotice} />
         </Alert>
       ) : null}
 
@@ -366,6 +400,17 @@ export function OrcamentosPage() {
             setModalOpen(false);
             void refresh();
           }}
+        />
+      ) : null}
+
+      {approving ? (
+        <ServiceQuoteApproveDialog
+          context={context}
+          quote={approving}
+          onApproved={quoteApproved}
+          onReload={() => void refresh()}
+          onNotice={approveNotice}
+          onClose={() => setApproving(null)}
         />
       ) : null}
     </section>

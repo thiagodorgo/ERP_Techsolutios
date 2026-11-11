@@ -101,3 +101,57 @@ test("QuoteCard: OS gerada e link de compartilhamento aparecem quando presentes"
   assert.match(html, /\/orcamentos\/compartilhado\/abc/);
   assert.match(html, /Copiar link/);
 });
+
+// B-SAN3-08 (item 40) — o diálogo único de aprovação, aberto pela aba e pela tela Orçamentos. A regra de destino tem três
+// estados (R-A5); o diálogo sempre avisa que nasce uma OS nova e traz o modo de acionamento opcional (decisão do dono,
+// `D-PORTAO-7-RECOMENDACOES-1011`).
+const dialogProps = {
+  context: ctx,
+  quote: draftQuote,
+  onApproved: () => {},
+  onReload: () => {},
+  onNotice: () => {},
+  onClose: () => {},
+};
+
+test("[R-A5] diálogo de aprovação: serviço que exige destino mostra o destino obrigatório e o aviso de OS nova", async () => {
+  const { ServiceQuoteApproveDialog } = await import("../src/modules/registry/service-quotes/components/ServiceQuoteApproveDialog");
+  const html = renderToString(<ServiceQuoteApproveDialog {...dialogProps} destinationRule="required" />);
+  assert.match(html, /Aprovar orçamento/);
+  assert.match(html, /Endereço de destino \*/, "o marcador de obrigatório no endereço de destino");
+  assert.match(html, /aria-required="true"/);
+  assert.match(html, /Será criada uma nova ordem de serviço\./);
+  assert.match(html, /Endereço de origem/);
+  assert.match(html, /ORC-000123/);
+  assert.doesNotMatch(html, /\btenant\b/i);
+});
+
+test("[R-A5] diálogo de aprovação: regra desconhecida mostra o destino sem o marcador; regra opcional recolhe em Adicionar destino", async () => {
+  const { ServiceQuoteApproveDialog } = await import("../src/modules/registry/service-quotes/components/ServiceQuoteApproveDialog");
+  const unknown = renderToString(<ServiceQuoteApproveDialog {...dialogProps} destinationRule="unknown" />);
+  assert.match(unknown, /Endereço de destino/);
+  assert.doesNotMatch(unknown, /Endereço de destino \*/);
+  assert.match(unknown, /Não foi possível confirmar se este serviço exige destino/);
+  assert.match(unknown, /Será criada uma nova ordem de serviço\./);
+
+  const optional = renderToString(<ServiceQuoteApproveDialog {...dialogProps} destinationRule="optional" />);
+  assert.match(optional, /Adicionar destino/);
+  assert.doesNotMatch(optional, /Endereço de destino/, "o destino fica recolhido");
+  assert.match(optional, /Será criada uma nova ordem de serviço\./);
+});
+
+test("[R-A9] diálogo de aprovação: Modo de acionamento (opcional), texto livre até 120 caracteres", async () => {
+  const { ServiceQuoteApproveDialog } = await import("../src/modules/registry/service-quotes/components/ServiceQuoteApproveDialog");
+  const html = renderToString(<ServiceQuoteApproveDialog {...dialogProps} destinationRule="optional" />);
+  assert.match(html, /Modo de acionamento \(opcional\)/);
+  assert.match(html, /maxLength="120"|maxlength="120"/);
+});
+
+test("[§7] diálogo de aprovação: enquanto confere o serviço, Aprovar fica desabilitado e Cancelar não", async () => {
+  const { ServiceQuoteApproveDialog } = await import("../src/modules/registry/service-quotes/components/ServiceQuoteApproveDialog");
+  const html = renderToString(<ServiceQuoteApproveDialog {...dialogProps} />);
+  assert.match(html, /Conferindo se este serviço exige endereço de destino/);
+  assert.match(html, /<button[^>]*type="submit"[^>]*disabled=""[^>]*>Aprovar<\/button>/);
+  assert.match(html, /<button[^>]*type="button"[^>]*>Cancelar<\/button>/);
+  assert.doesNotMatch(html, /<button[^>]*type="button"[^>]*disabled=""[^>]*>Cancelar<\/button>/);
+});

@@ -1,6 +1,7 @@
 import { isMockMode } from "../../../config/env";
 import { apiRequest } from "../../../services/api/client";
 import { adaptServiceQuoteLineList, adaptServiceQuoteResponse, adaptServiceQuotesResponse } from "./service-quotes.adapter";
+import { buildServiceQuoteApproveBody } from "./service-quote-approve.model";
 import type {
   ServiceQuoteApprovePayload,
   ServiceQuoteApproveResult,
@@ -104,22 +105,11 @@ export async function approveServiceQuote(
   body: ServiceQuoteApprovePayload = {},
 ): Promise<ServiceQuoteApproveResult> {
   if (isMockMode()) return { quote: null, workOrderId: null };
+  // B-SAN3-08 (P1) — o corpo é montado pelo builder do modelo puro, com as chaves que o servidor lê (camelCase).
   const response = await apiRequest<unknown>(`/service-quotes/${encodeURIComponent(id)}/approve`, {
     ...context,
     method: "POST",
-    body: {
-      service_address: body.serviceAddress,
-      service_city: body.serviceCity,
-      service_state: body.serviceState,
-      service_zip_code: body.serviceZipCode,
-      destination_address: body.destinationAddress,
-      destination_city: body.destinationCity,
-      destination_state: body.destinationState,
-      destination_zip_code: body.destinationZipCode,
-      activation_mode: body.activationMode,
-      priority: body.priority,
-      title: body.title,
-    },
+    body: buildServiceQuoteApproveBody(body),
   });
   const data = readEnvelope(response);
   const nested = readObject(data.quote);
