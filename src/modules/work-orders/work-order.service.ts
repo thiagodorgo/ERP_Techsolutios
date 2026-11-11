@@ -20,6 +20,7 @@ import type {
   ActiveDispatchAtSiteResolver,
   AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
+  CancelWorkOrderWithFinancialDecisionResult,
   ListWorkOrdersInput,
   ListWorkOrdersResult,
   UpdateWorkOrderInput,
@@ -38,6 +39,7 @@ import type {
 } from "./work-order.types.js";
 import {
   actorMutatesAssignedOnly,
+  cancelTransientConflictError,
   WORK_ORDER_SERVICE_STARTED,
   WorkOrderError,
   workOrderNotAssignedError,
@@ -1441,7 +1443,7 @@ export class WorkOrderService {
     // TODOS (422) e redireciona ao único caminho que exige a decisão. A fila offline do mobile chama este mesmo
     // método → tecnico de campo deixa de cancelar por sync (defensável: campo não arbitra cobrança). O CHECK
     // `cancelled ⇒ decisão ∈ {keep,keep_unpaid,zero}` (migration) e o assertion InMemory travam a invariante nos
-    // dois lados. Resíduo de concorrência cancel×create-de-item: P-Ω3F6-CANCEL-RACE.
+    // dois lados. A corrida cancel × escrita de item fechou no B-SAN3-23 (a unidade do `cancel`, sob a trava da OS).
     if (nextStatus === "cancelled") {
       throw new WorkOrderError(
         422,
@@ -1515,62 +1517,57 @@ export class WorkOrderService {
     // Sem default silencioso: quem cancela decide o destino do dinheiro (422 quando ausente/inválida).
     const decision = parseFinancialCancellationDecision(body.financial_decision ?? body.financialDecision);
 
+    // Fast-fail sobre a leitura solta (a ordem pública 400 → 422 decisão → 422 transição se mantém). A AUTORIDADE é a
+    // mesma regra, de novo, sobre a situação lida sob a trava, dentro da unidade (D-1).
     this.assertCancellable(current.status);
 
-    // `zero` ANTES de persistir o cancelamento: a OS nunca fica cancelada com o financeiro por zerar.
-    // Integridade (D-CANCEL-INTEGRITY, este bloco fechou o cluster P-Ω3F6): (a) o par cancelado↔total-0 é
-    // sustentado pelo TERMINAL-GUARD (create/update/delete/invoice recusam OS cancelada — 422 work_order_cancelled),
-    // então não se lança/fatura item depois; (b) zeroFinancialItems é ATÔMICO (softDeleteAll numa operação, exclui
-    // faturados) — sem a parcialidade/N+1 do loop antigo; item faturado bloqueia `zero` (422 has_invoiced_items,
-    // preserva o lastro do Título). Resíduo: a corrida sub-ms cancel×create-de-item (P-Ω3F6-CANCEL-RACE), da mesma
-    // classe dos TOCTOU aceitos — fecha com SELECT ... FOR UPDATE da OS (hardening futuro).
-    if (decision === "zero") {
-      await this.zeroFinancialItems(actor, current.id);
+    // B-SAN3-23 (P-23.1) — o cancelamento é UMA unidade no repositório, sob a trava exclusiva da OS: relê a situação,
+    // no `zero` confere "há item faturado?" (422 has_invoiced_items, preserva o lastro do Título) e zera (atômico, só
+    // não faturados), muda a situação e grava o evento. Tudo commita junto, ou nada. Toda escrita de item e todo
+    // faturamento relêem a situação sob a trava compartilhada da OS: depois do commit daqui, recusam (422
+    // work_order_cancelled). Fecha P-Ω3F6-CANCEL-RACE e P-SAN3-02-OS-NAO-TRAVADA.
+    let result: CancelWorkOrderWithFinancialDecisionResult | undefined;
+    try {
+      result = await this.repository.cancelWithFinancialDecision({
+        tenantId: actor.tenantId,
+        workOrderId: current.id,
+        decision,
+        cancellationReason: reason,
+        actorUserId: actor.userId,
+        assertCancellable: (from) => this.assertCancellable(from),
+        event: {
+          message: defaultStatusMessage("cancelled"),
+          // Metadata CURADA (§2.8): decisão + motivo (texto que o operador digitou, visível na timeline da
+          // própria OS). Nada de tenant_id, id de item financeiro, valor ou qualquer chave de storage.
+          metadata: {
+            financialDecision: decision,
+            cancellationReason: reason,
+          },
+        },
+        memoryFinancials: this.memoryFinancialsPort(actor, current.id),
+      });
+    } catch (error) {
+      if (isTransientCancelFailure(error)) throw cancelTransientConflictError(); // B-SAN3-23:transitorio-cancel
+      throw error;
     }
 
-    const updated = await this.repository.changeStatus({
-      tenantId: actor.tenantId,
-      workOrderId: current.id,
-      status: "cancelled",
-      message: defaultStatusMessage("cancelled"),
-      cancellationReason: reason,
-      financialCancellationDecision: decision,
-      actorUserId: actor.userId,
-    });
-
-    if (!updated) {
+    if (!result) {
       throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
     }
-
-    await this.repository.createEvent({
-      tenantId: actor.tenantId,
-      workOrderId: updated.id,
-      eventType: "work_order_cancelled",
-      fromStatus: current.status,
-      toStatus: "cancelled",
-      actorUserId: actor.userId,
-      message: defaultStatusMessage("cancelled"),
-      // Metadata CURADA (§2.8): decisão + motivo (texto que o operador digitou, visível na timeline da
-      // própria OS). Nada de tenant_id, id de item financeiro, valor ou qualquer chave de storage.
-      metadata: {
-        financialDecision: decision,
-        cancellationReason: reason,
-      },
-    });
 
     await publishDomainEvent(
       "work_order.status_changed",
       {
         entity_type: "work_order",
-        entity_id: updated.id,
-        code: updated.code,
-        from_status: current.status,
+        entity_id: result.workOrder.id,
+        code: result.workOrder.code,
+        from_status: result.fromStatus,
         to_status: "cancelled",
       },
       { tenantId: actor.tenantId, actorId: actor.userId },
     );
 
-    return updated;
+    return result.workOrder;
   }
 
   // Ω3F-6 — a OS já cancelada NÃO é pega por assertStatusTransition: o helper retorna cedo quando
@@ -1597,25 +1594,20 @@ export class WorkOrderService {
   // total agregado, mas as linhas persistem com deleted_at (auditoria). Não "zera valores" (que
   // deixaria linhas 0,00 poluindo a aba). DYNAMIC import: work-order-financials importa work-orders
   // estaticamente — um import estático aqui fecharia o ciclo (mesmo padrão do approve→OS, D-Ω3F-4B).
-  private async zeroFinancialItems(actor: WorkOrderActorContext, workOrderId: string): Promise<void> {
-    const { createDefaultWorkOrderFinancialService } = await import(
-      "../work-order-financials/work-order-financial.service.js"
-    );
-    const financials = await createDefaultWorkOrderFinancialService();
-    // P-Ω3F6-STATUS-BYPASS (ataque de desenho, ALTA) — item JÁ FATURADO é lastro de um Título receivable
-    // (D-Ω4-C1, imutável): `zero` NÃO pode destruí-lo (deixaria o Título sem itens-fonte). Se há item faturado,
-    // `zero` é contraditório → 422 has_invoiced_items (o gestor deve usar `keep`; o Título já foi emitido).
-    if (await financials.hasActiveInvoicedItems(actor, workOrderId)) {
-      throw new WorkOrderError(
-        422,
-        "WORK_ORDER_UNPROCESSABLE",
-        "has_invoiced_items",
-        "Cannot zero the financials of a work order with invoiced items; the receivable title already exists. Use keep.",
+  // B-SAN3-23 (D-2) — é a porta do DUBLÊ DE MEMÓRIA: o repositório Prisma confere o faturado e zera na própria
+  // unidade, sob a trava da OS, e nunca chama esta porta (o pré-check solto saiu do caminho Prisma, R-01). O import só
+  // acontece quando a porta é chamada.
+  private memoryFinancialsPort(actor: WorkOrderActorContext, workOrderId: string) {
+    const financials = async () => {
+      const { createDefaultWorkOrderFinancialService } = await import(
+        "../work-order-financials/work-order-financial.service.js"
       );
-    }
-    // P-Ω3F6-ZERO-ATOMICIDADE — UMA operação atômica (softDeleteAll) em vez de N deletes sequenciais sem
-    // transação (que deixavam OS viva + itens meio-destruídos numa falha parcial + N+1). Não toca faturados.
-    await financials.zeroActiveItems(actor, workOrderId);
+      return createDefaultWorkOrderFinancialService();
+    };
+    return {
+      hasActiveInvoiced: async () => (await financials()).hasActiveInvoicedItems(actor, workOrderId),
+      zeroActive: async () => (await financials()).zeroActiveItems(actor, workOrderId),
+    };
   }
 
   /**
@@ -2496,6 +2488,30 @@ function cancelTransitionError(from: WorkOrderStatus): WorkOrderError {
     "invalid_status_transition",
     `Cannot transition work order from ${from} to cancelled.`,
   );
+}
+
+// B-SAN3-23 (R-08) — lista FECHADA de códigos que o TEMPO resolve na unidade do cancelamento: P2034 conflito/impasse
+// (Prisma) · P2028 transação interativa expirada (nasce no `$transaction` do invólucro RLS) · 40P01 impasse · 40001
+// serialização · 55P03 trava indisponível. Detecta pelo CÓDIGO, nunca pela mensagem, nas formas do Prisma 7 + adapter-pg
+// (a mesma leitura em vários níveis de `work-order-financial.service.ts`). Lista local, o padrão por módulo da casa:
+// importar o serviço financeiro aqui fecharia o ciclo de imports.
+const CANCEL_TRANSIENT_DB_CODES: ReadonlySet<string> = new Set(["P2034", "P2028", "40P01", "40001", "55P03"]);
+
+function isTransientCancelFailure(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const record = error as {
+    readonly code?: unknown;
+    readonly meta?: { readonly code?: unknown; readonly driverAdapterError?: { readonly cause?: { readonly code?: unknown; readonly originalCode?: unknown } } };
+    readonly cause?: { readonly code?: unknown; readonly originalCode?: unknown };
+  };
+  return [
+    record.code,
+    record.meta?.code,
+    record.meta?.driverAdapterError?.cause?.code,
+    record.meta?.driverAdapterError?.cause?.originalCode,
+    record.cause?.code,
+    record.cause?.originalCode,
+  ].some((code) => typeof code === "string" && CANCEL_TRANSIENT_DB_CODES.has(code));
 }
 
 function defaultStatusMessage(status: WorkOrderStatus): string {

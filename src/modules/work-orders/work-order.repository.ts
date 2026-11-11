@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import type {
   AssignWorkOrderFromDispatchInput,
   AssignWorkOrderInput,
+  CancelWorkOrderWithFinancialDecisionInput,
+  CancelWorkOrderWithFinancialDecisionResult,
   ChangeWorkOrderStatusInput,
   CreateWorkOrderInput,
   ListWorkOrdersInput,
@@ -19,7 +21,7 @@ import type {
   WorkOrderEventType,
   WorkOrderStatus,
 } from "./work-order.types.js";
-import { matchesAssignedToActor, WorkOrderError } from "./work-order.types.js";
+import { hasInvoicedItemsError, matchesAssignedToActor, WorkOrderError } from "./work-order.types.js";
 import { WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
 import {
   assertChecklistRemovalHasActor,
@@ -69,6 +71,11 @@ export interface WorkOrderRepository {
   updateDestinationGeocode(input: UpdateWorkOrderGeocodeInput): Promise<WorkOrder | undefined>;
   freezeChecklistSnapshot(input: FreezeChecklistSnapshotInput): Promise<WorkOrder | undefined>;
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined>;
+  // B-SAN3-23 (P-23.1) — o ÚNICO caminho do cancelamento: uma unidade sob a trava exclusiva da OS. `undefined` quando a
+  // OS não existe na organização (o serviço traduz para 404).
+  cancelWithFinancialDecision(
+    input: CancelWorkOrderWithFinancialDecisionInput,
+  ): Promise<CancelWorkOrderWithFinancialDecisionResult | undefined>;
   // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — OS (`assigned_*`), linha em `work_order_assignments` e evento
   // `work_order_assigned` numa escrita só: falha em qualquer parte deixa a OS como estava.
   assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined>;
@@ -444,6 +451,43 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
     this.workOrders.set(updated.id, updated);
 
     return updated;
+  }
+
+  // B-SAN3-23 (D-2) — o dublê roda a sequência da unidade, na mesma ordem: transição sobre a situação lida → no `zero`,
+  // "há item faturado?" e o zerar (pela porta do serviço) → a situação → o evento. A memória não prova atomicidade (a
+  // prova é a suíte `-db`); ela termina consistente, como a crítica mediu.
+  async cancelWithFinancialDecision(
+    input: CancelWorkOrderWithFinancialDecisionInput,
+  ): Promise<CancelWorkOrderWithFinancialDecisionResult | undefined> {
+    const current = await this.findById(input.tenantId, input.workOrderId);
+    if (!current) return undefined;
+    input.assertCancellable(current.status);
+    if (input.decision === "zero") {
+      if (await input.memoryFinancials.hasActiveInvoiced()) throw hasInvoicedItemsError();
+      await input.memoryFinancials.zeroActive();
+    }
+    const workOrder = await this.changeStatus({
+      tenantId: input.tenantId,
+      workOrderId: input.workOrderId,
+      status: "cancelled",
+      message: input.event.message,
+      cancellationReason: input.cancellationReason,
+      financialCancellationDecision: input.decision,
+      actorUserId: input.actorUserId,
+    });
+    if (!workOrder) return undefined;
+    await this.createEvent({
+      tenantId: input.tenantId,
+      workOrderId: input.workOrderId,
+      eventType: "work_order_cancelled",
+      fromStatus: current.status,
+      toStatus: "cancelled",
+      actorUserId: input.actorUserId,
+      message: input.event.message,
+      metadata: input.event.metadata,
+    });
+
+    return { workOrder, fromStatus: current.status };
   }
 
   async assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
