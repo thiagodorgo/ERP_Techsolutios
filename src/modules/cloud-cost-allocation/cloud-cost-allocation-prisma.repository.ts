@@ -40,15 +40,7 @@ export class PrismaCloudCostAllocationRepository implements CloudCostAllocationR
 
   async createRun(input: CreateCloudCostAllocationRunInput): Promise<CloudCostAllocationRun> {
     const record = await this.client.cloudCostAllocationRun.create({
-      data: {
-        provider: "aws",
-        status: "pending",
-        period_start: input.periodStart,
-        period_end: input.periodEnd,
-        strategy: input.strategy ?? "direct_tag_then_usage_weighted_v1",
-        created_by: input.createdBy ?? null,
-        metadata: toJsonObject(input.metadata ?? {}),
-      },
+      data: buildRunData(input),
     });
 
     return mapRun(record);
@@ -524,6 +516,23 @@ function assertRowsBelongToTenant(tenantIds: readonly string[], expected: string
       `tenant_context_leak: ${table} returned rows for another organization under the current context.`,
     );
   }
+}
+
+/**
+ * B-ASS-09a · R6 (M-09a) — o corpo da criação de run, um só para `createRun` e `createRunWithId`. A importação da run
+ * passa a ir também para a coluna `import_id` (FK `SET NULL`), além do `metadata.importId` que o resumo já lê.
+ */
+function buildRunData(input: CreateCloudCostAllocationRunInput) {
+  return {
+    provider: "aws",
+    status: "pending",
+    period_start: input.periodStart,
+    period_end: input.periodEnd,
+    strategy: input.strategy ?? "direct_tag_then_usage_weighted_v1",
+    created_by: input.createdBy ?? null,
+    import_id: input.importId ?? null,
+    metadata: toJsonObject(input.metadata ?? {}),
+  };
 }
 
 function buildAllocationData(

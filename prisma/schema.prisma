@@ -533,6 +533,8 @@ model CloudCostImport {
   created_at           DateTime            @default(now()) @db.Timestamptz(6)
   updated_at           DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
   line_items           CloudCostLineItem[]
+  // B-ASS-09a · M-09a — o lado inverso da coluna `cloud_cost_allocation_runs.import_id`.
+  allocation_runs      CloudCostAllocationRun[]
 
   @@index([provider])
   @@index([source_type])
@@ -595,8 +597,12 @@ model CloudCostAllocationRun {
   created_by              String?
   error_message           String?
   metadata                Json
+  // B-ASS-09a · M-09a (autorizada pelo dono em 31/10, `decisoes.md:4183`) — a importação da run em coluna, com FK.
+  // `SET NULL`: apagar a importação não apaga a run (o `metadata.importId` continua guardando a referência).
+  import_id               String?                     @db.Uuid
   created_at              DateTime                    @default(now()) @db.Timestamptz(6)
   updated_at              DateTime                    @default(now()) @updatedAt @db.Timestamptz(6)
+  cost_import             CloudCostImport?            @relation(fields: [import_id], references: [id], onDelete: SetNull)
   tenant_allocations      TenantCloudCostAllocation[]
   charge_calculation_runs CloudChargeCalculationRun[]
   tenant_cloud_charges    TenantCloudCharge[]
@@ -604,6 +610,7 @@ model CloudCostAllocationRun {
   @@index([provider])
   @@index([status])
   @@index([period_start, period_end])
+  @@index([import_id])
   @@map("cloud_cost_allocation_runs")
 }
 
