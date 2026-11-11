@@ -240,3 +240,60 @@ limpo depois de cada uma. Roteiro e saídas TAP fora do repositório (`erp-pausa
    o cabeçalho ignorado sob JWT), no lugar do 403 da hipótese; (b) a âncora da M-A23b no Prisma
    (`custody_type: { equals: custody.custodyType },`).
 5. **O merge deste PR espera a F4** (plano §6, "o merge do 15a espera F1g e F4").
+
+---
+
+## F4 — dp-548 (DeepSeek Pro, identidade de dev declarada; sucessor do dev-15a-cl)
+
+**Janela:** 17:15–17:40 SP (fora do pico). Conferência: Claude.
+
+### Merge da main
+- `git fetch origin` + `git merge origin/main`: main `f5b79026` (traz o #534 e o #539). Conflito só de registro em
+  `decisoes.md` (mantidas as duas entradas) e `pendencias-indice.md` (índice regenerado). Merge `114b2102`, push ok.
+- `app_database.dart` medido: `schemaVersion` = 16 na main → a F4 usa **17** (N+1).
+
+### O que a F4 entregou (app)
+- `prestador_models.dart`: `available` passa a `num`, sai o `location` fixo; nascem `TechnicianStockCustody`,
+  `TechnicianStockCacheScope`, `TechnicianStockCacheEntry`, `TechnicianStockLoad` (`fresh`/`failed`/`forbidden`,
+  `hasCached`). `WorkOrderMaterial`/`mergeMaterials` intactos.
+- `technician_stock_demo.dart`: 8 itens de demonstração + `demoTechnicianStockCustody`.
+- `technician_stock_remote_api.dart`: modelo DTO + `DioTechnicianStockRemoteApi`; 403 → `TechnicianStockForbiddenError`.
+- `technician_stock_cache.dart`: interface + `InMemoryTechnicianStockCache`.
+- `drift_technician_stock_cache.dart`: cache Drift por (tenant, user); `fetched_at` em epoch UTC.
+- `app_database.dart`: v17, tabela no `onCreate` **e** no `onUpgrade` (`if (from < 17)`), migração aditiva.
+- `prestador_repository.dart`: `loadTechnicianStock` devolve `TechnicianStockLoad`; providers
+  `technicianStockRemoteApiProvider`/`technicianStockCacheProvider`; fiação `allowDemoStock: !remoteAuthModeProvider`,
+  demo-session check.
+- `technician_stock_screen.dart`: consome `TechnicianStockLoad`, estados (403, custódia nula, vazio, cache+banner, rede,
+  erro+retry) e stepper com `floor()`.
+
+### Testes
+- `bsan315_estoque_real_test.dart`: T-A1..T-A10 (T-A8 com as duas asserções do CE-G1, por AST).
+- `bsan315_migracao_v17_test.dart`: T-M1 (v16→v17 preserva linhas reais, contagem antes/depois) e T-M1b (instalação nova).
+- `b119_prestador_flow_test.dart` caso 6: `load.items`.
+
+### Mutações (vermelho → revertido → verde)
+M-A10..M-A18, M-A17b, M-A20, M-A25' e M-A26, todas medidas no teste-dono com vermelho antes e verde depois da reversão.
+- **M-A25' (emenda escrita, N-10):** o `catch` retorna cedo, então a M-A25 literal (remover a guarda `isFresh`) não alcança
+  o caminho de erro e NÃO fica vermelha. A mutação virou "gravar também a carga falhada" (inserir
+  `await _stockCache.save(scope, const [], DateTime.now());` no `catch`), que derruba o T-A9. As demais 12 ficaram
+  vermelhas no texto literal do plano.
+
+### Emenda de fronteira (fora do PERMITIDO listado, necessária)
+- Renumeração 16→17 em `app_database_migration_test.dart`, `bfilausuario_drift_user_id_test.dart` e
+  `brdvcomp_c1_drift15_migration_test.dart` (R3: "o teste acusa").
+- Registro de `technician_stock_screen.dart` no guard B-SAN3-19b (`_tituloPorArquivo`) — consequência do novo
+  `PermissionBlockedState` da F4.
+- `npm run db:generate` (client Prisma desatualizado após o merge; só `node_modules`, nada versionado).
+
+### Bateria
+- `flutter analyze`: sem issues. `dart format --output=none --set-exit-if-changed` nos arquivos da F4: 0 mudanças.
+- `flutter test --reporter compact`: **`+1149: All tests passed!`** (suíte inteira).
+- `npm run check` (tsc): ok. `git diff --check`: limpo.
+- Nota: `bsan313_minhas_os_escopo_test.dart` está fora do formato no HEAD (pré-existente, fora da F4) — não tocado.
+
+### Entrega
+- Commit `6b05e642` com `Co-Authored-By: DeepSeek <noreply@deepseek.com>`; push
+  `114b2102..6b05e642 fix/mobile-estoque-real-do-tecnico`.
+
+**F4 PRONTA — head 6b05e642**
