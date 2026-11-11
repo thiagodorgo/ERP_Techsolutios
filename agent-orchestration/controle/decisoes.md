@@ -4702,8 +4702,11 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 ## D-API-CLAUDE-PRIORITARIA-E-TETO (decisões do dono, 2026-11-10 20:59 e 21:18 SP) — API Claude prioritária com teto de gasto
 
-- **Fala literal publicável:** *"use a api da anthropic como modelo prioritario"*. O trecho com números financeiros não é reproduzido porque o repositório é público.
-- **Decisão:** a API Claude é o braço prioritário e tem teto de gasto definido pelo dono. O lançador deve recusar trabalho que ultrapasse esse teto; números, saldo e preço ficam fora do repositório.
+- **Fala literal (20:59 SP), com o valor tirado:** *"use a api da anthropic como modelo prioritario ate restar"* [o saldo residual definido pelo dono]. O trecho entre colchetes substitui o valor que o dono falou, porque o repositório é público; o resto é literal.
+- **Falas de 21:18 SP:** o dono informou o saldo de partida e, depois, fixou o teto total de gasto da API. As duas falas são só valores e não são reproduzidas aqui (repositório público).
+- **Decisão:** as tarefas vão primeiro ao braço pago da API Claude, pelo lançador na variante segura (`D-API-CLAUDE-LANCADOR-SEGURO`), até restar o saldo residual definido pelo dono, que é a parada. Continuam valendo o cruzamento (um faz, outro modelo verifica) e o design só no Claude. O teto total de gasto da API, definido pelo dono, conta a partir do dia UTC 2026-11-11, com um teto diário; o lançador recusa a tarefa cujo teto, somado ao gasto, passe disso. Números, saldo e preço ficam fora do repositório.
+- **Junta de 5:** a autorização do dono substitui, para este uso, a junta de 5 que o §C7 item 1 pede para serviço externo pago.
+- **Medida do gasto:** a chave de usuário não lê saldo nem custo (exige chave de administrador); o orquestrador soma o gasto pelo `usage` de cada chamada, com o preço por token da tabela da API, a partir do saldo de partida dado pelo dono.
 
 ## D-API-CLAUDE-MODELO-DIFERENTE (decisão do dono, 2026-11-10 21:00 SP) — API e sessão contam como modelos diferentes
 
@@ -4712,8 +4715,15 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 ## D-CARGA-POR-CAPACIDADE-1011 (decisão do dono, 2026-11-10 21:24 SP) — carga segue a capacidade medida
 
+- **Contexto (fonte):** a fala responde a "porque limite de 2 trabalhos?" e à proposta de 4.
 - **Fala literal:** *"a regra agora é enquanto o sistema suportar pode incluir mais trabalho"*.
-- **Decisão:** deixam de valer os tetos fixos de trabalhos e subagentes; a entrada de carga passa a obedecer à capacidade medida. A alteração do P8(c) nos contratos espelhados fica para PR próprio, registrada em pendência.
+- **Decisão:** no P8(c), caem o teto fixo de 2 trabalhos no Docker e o de 3 subagentes Claude; entra a capacidade medida. A alteração do P8(c) nos contratos espelhados fica para um PR próprio (`P-CONTRATO-EMENDA-P5-P8C`).
+- **Leitura do orquestrador, declarada (§A6):**
+  - entra trabalho novo (agente, container ou braço) enquanto o semáforo `api-status/recursos.status` estiver VERDE e o commit livre for de pelo menos 8 GB;
+  - no AMARELO, nada novo entra;
+  - no VERMELHO, o mais novo pausa (P7);
+  - o piso de 4 GB para lançar (P8(c)) fica, como mínimo absoluto;
+  - o vazamento de processos zumbis segue ativo (a Radeon está ligada) e é medido pelo `conta-zumbis.ps1`.
 
 ## LEITURA-ORQ-1011-BASTAO-MEMORIA — piso do bastão
 
@@ -4725,4 +4735,40 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 ## LEITURA-ORQ-1011-B-ASS-08C — opção A da 08b
 
-- **Leitura do orquestrador, declarada (§A6):** as formas do §11 que não existem na 08b e exigem caminhos fora do PERMITIDO, junto das obrigações (1), (2), (3), (5)b2 e (5)b3 da `P-ASS08-OBX5-EAGER-E-CANCEL`, passam ao bloco futuro `B-ASS-08c`, com plano próprio. A 08b mantém somente o recorte que consegue provar por execução e vacuidade.
+- **Leitura do orquestrador, declarada (§A6):** as formas do §11 que não existem na 08b e exigem caminhos fora do PERMITIDO, junto das obrigações (1), (2), (3), (5)b2 e (5)b3 da `P-ASS08-OBX5-EAGER-E-CANCEL`, passam ao bloco futuro `B-ASS-08c`, com plano próprio (`P-B-ASS-08c-OBRIGACOES-DA-08b`). A 08b mantém somente o recorte que consegue provar por execução e vacuidade: as obrigações (1)-(3) ficam satisfeitas por vacuidade na 08b, com a prova do `git grep` no diário dela. O porteiro do #522 escreveu "o merge da 08b só sai com as obrigações (1)-(5)"; esta leitura não o contradiz, e a junta da 08b confere a divisão e a vacuidade.
+
+## D-PORTAO-9-RECOMENDACOES-1011 (decisão do dono, 2026-11-10 22:29 SP) — as 9 recomendações dos planos B-O6R-12, B-SAN3-14 e B-SAN3-26
+
+- **Pergunta:** se aceitava as 9 recomendações dos planos B-O6R-12 (4), B-SAN3-14 (2) e B-SAN3-26 (3).
+- **Fala literal:** *"Sim, todas as 9 (Recomendado)"*.
+- **Decisão:**
+  - **B-O6R-12:** Q1, a regra estende-se a prazos legais, leilão e liberação no mesmo bloco (F6, alarga a fronteira do §5 por emenda); Q2, fica autorizada a mudança do bloco `SUITES=` de `.github/workflows/ci.yml` só para os 2 testes de banco do bloco; Q3, o regime é gravado na abertura do processo; Q4, "confirmar que não há pátio real com perfil editado depois de abrir processos; se houver, aceitar o valor de hoje".
+  - **B-SAN3-14:** a vistoria de entrega nasce no despacho (A); a seção nova da tela de execução passa pelas 3 opções.
+  - **B-SAN3-26:** só `residencial` fica isento sem placa; a base (papel de escritório) marca "No local" pelo console sem os dígitos, marcado "registrado pela base"; sem exceção para OS já abertas sem placa.
+
+## D-RETORNO-1011-APROVADO (decisão do dono, 2026-11-10 23:03 SP) — plano de retorno depois do driver de vídeo novo
+
+- **Fala literal:** *"Aprovo..."* (assim registrada na fonte).
+- **Decisão:** aprova o plano de retorno das 22:57 SP e as recomendações 2 e 3: o teto de gasto diário da API sobe para o valor definido pelo dono, com o teto total mantido, e o limite de subagentes Claude sobe.
+- **Leitura do orquestrador, declarada (§A6):** o "Aprovo..." cobre as recomendações que vieram junto no mesmo pedido.
+
+## D-JUNTA-PARALELA-1011 (decisão do dono, 2026-11-10 23:03 SP) — cadeiras da junta em paralelo
+
+- **Fala literal:** *"a junta pode fazer ao mesmo tempo, salvo se uma for dependente da outra"*.
+- **Decisão:** as cadeiras rodam todas em paralelo, e o limite de 2 em paralelo da P5 (§C7.7) deixa de valer, salvo quando uma cadeira depende da outra. Entra no contrato pela `P-CONTRATO-EMENDA-P5-P8C`.
+
+## D-AGENTES-ATE-O-LIMITE-1011 (decisão do dono, 2026-11-10 23:03 SP) — agentes até o limite da máquina
+
+- **Fala literal:** *"agentes ate o limite da maquina, pode arrocrar, se o pc aguentar 50 processos simutaneos, pode rodar. monitore a saude do sistema."*
+- **Decisão:** o teto de 3 subagentes Claude da P8(c) deixa de valer. O limite passa a ser a saúde da máquina, vigiada pelo semáforo, pelo guarda do Docker e pela contagem de zumbis. Entra no contrato pela `P-CONTRATO-EMENDA-P5-P8C`.
+
+## D-528-METODO-VENDAVEL (decisão do dono, 2026-11-10 23:03 SP) — método do "vendável" no marco do #528
+
+- **Contexto:** o conflito §A2 de 10/11 07:38 SP (o método do "vendável" contava reclassificação, não fechamento); o PR #528 (marco de 10/11) ficou aberto até o dono decidir.
+- **Fala literal:** *"#528=ok"*.
+- **Decisão:** o marco usa o método de itens fechados ÷ 64, medido em 34/64 = 53% no levantamento `portao-real-1011`.
+
+## D-API-TETO-DIARIO-1011 (decisão do dono, 2026-11-10 23:03 SP) — teto de gasto diário da API
+
+- **Fala literal, com o valor tirado:** *"limite de"* [teto de gasto diário da API definido pelo dono] *"na api"*. O trecho entre colchetes substitui o número que o dono falou, porque o repositório é público; o resto é literal.
+- **Decisão:** o dono confirmou o teto de gasto diário da API definido por ele; o teto total continua.
