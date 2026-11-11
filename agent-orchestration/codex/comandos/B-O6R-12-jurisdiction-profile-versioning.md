@@ -71,6 +71,20 @@ correspondente (`D-EMENDA-ANTES-DO-CODIGO`). Leitura do dev, declarada (§A6); a
   estático que só espelhava as âncoras das mutações sai (§3.0 item 1). A C19 mora em
   `tests/owner-portal-dossier-rls.test.ts` (com banco), não no snapshot-db: o molde do plano é esse
   arquivo, e o teste existente passa a afirmar a propriedade (R3).
+- **E1.11′ (conflito do plano com uma catraca existente, registrado antes do código; 06:58 SP).** A
+  C7b do próprio plano exige um papel dono das 2 tabelas, com `CREATE` no esquema, `SELECT` em
+  `tenants` e `REFERENCES` em `service_catalog`; o controle da C17 exige um `REVOKE`. A catraca
+  `tests/db-catalog-write-guard.test.ts` conta, por arquivo, essas palavras em `tests/**` e fica
+  vermelha para arquivo fora da allowlist (medido: drill 11, snapshot-db 1). O §4 do plano não
+  previu a catraca e não lista o arquivo. Saída, sem driblar a catraca (a grafia concatenada ou em
+  minúsculas é escape medido dela, e usá-lo seria fraude): (1) o snapshot-db não escreve catálogo
+  (a C17 fica com o caso positivo e o arnês `createEphemeralRole`); (2) o controle da C17 vai para o
+  drill, que já escreve catálogo; (3) no drill, `CREATE ROLE` e `DROP ROLE` correm dentro do
+  `withRoleCatalogLock` tomado na base COMPARTILHADA (a trava consultiva é por base; tomá-la no
+  clone não serializaria com as outras suítes), e `GRANT`/`OWNER TO`/`REVOKE` só no clone
+  descartável; (4) o drill entra na allowlist da catraca com a contagem medida e o motivo, a mesma
+  forma do `inventory-migration-drill-db.test.ts`. É a ÚNICA alteração em teste existente fora do
+  R3, e vai declarada no PR para a junta.
 
 ## Escopo e execução
 
