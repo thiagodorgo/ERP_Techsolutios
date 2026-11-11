@@ -261,9 +261,10 @@ export async function waitForOwnBlockedOrSettled(
 //
 // A forma (decisão `D-B-O6R-09-ARNES-SEM-PG-DIRETO`, revista pela C4E-02): cada tentativa é uma transação NOVA do cliente
 // dado (a conexão física pode ser a mesma), e a 1ª instrução dela põe o `lock_timeout` LOCAL. O `SET LOCAL` morre com a
-// transação e não vaza para o pool; a nova tentativa nunca reaproveita a transação abortada (sem 25P02); só 55P03 se
-// repete, lido da forma que o adapter-pg entrega (P2010 → `meta.driverAdapterError.cause.originalCode`); erro de outro
-// código atravessa na hora. O teto é `HARNESS_DDL_MAX_ATTEMPTS` tentativas e `HARNESS_DDL_MAX_TOTAL_MS` de parede, e o
+// transação e não vaza para o pool; a nova tentativa nunca reaproveita a transação abortada (sem 25P02); repetem-se só o
+// 55P03 (fila de trava) e o 40P01 (deadlock entre dois DROP do arnês na mesma tabela, medido pela C3 da J-537), lidos da
+// forma que o adapter-pg entrega (P2010 → `meta.driverAdapterError.cause.originalCode`); erro de outro código atravessa
+// na hora. O teto é `HARNESS_DDL_MAX_ATTEMPTS` tentativas e `HARNESS_DDL_MAX_TOTAL_MS` de parede, e o
 // arnês PARA quando não cabe mais uma tentativa inteira no teto (C4E-04): o esgotamento lança, nunca vira `skip`.
 // -----------------------------------------------------------------------------------------------
 
@@ -276,9 +277,11 @@ export type HarnessDdlClient = {
   $transaction<T>(fn: (tx: { $executeRawUnsafe(sql: string, ...values: unknown[]): Promise<number> }) => Promise<T>): Promise<T>;
 };
 
-function isLockTimeout(error: unknown): boolean {
+function isRetryableHarnessError(error: unknown): boolean {
   const err = error as { code?: unknown; meta?: { driverAdapterError?: { cause?: { originalCode?: unknown } } } } | undefined;
-  return err?.code === "55P03" || (err?.code === "P2010" && err?.meta?.driverAdapterError?.cause?.originalCode === "55P03");
+  const code = err?.code;
+  const originalCode = code === "P2010" ? err?.meta?.driverAdapterError?.cause?.originalCode : undefined;
+  return code === "55P03" || originalCode === "55P03" || code === "40P01" || originalCode === "40P01";
 }
 
 export async function runHarnessDdl(
@@ -298,7 +301,7 @@ export async function runHarnessDdl(
       });
       return { attempts };
     } catch (error) {
-      if (!isLockTimeout(error)) throw error;
+      if (!isRetryableHarnessError(error)) throw error;
     }
     const backoffMs = Math.min(25 * attempts, 250);
     const elapsed = Date.now() - start;
