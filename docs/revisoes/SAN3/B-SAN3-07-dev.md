@@ -43,3 +43,32 @@ P2 e P3 passaram nessa base (o seed de hoje não cria `platform_admin`, e o nome
 
 **Orçamento de pulos.** `DATABASE_URL=…/san307_tpl CORE_SAAS_PERSISTENCE=memory node scripts/run-backend-tests.mjs
 tests/permission-catalog-db-parity.test.ts` → exit 0, `# tests 2 · # skipped 2`.
+
+## F2 — a derivação no seed e o textual reescrito (03:09)
+
+**Textual primeiro.** `tests/san3-04a-seed-semeia-auditor.test.ts` reescrito: lê `prisma/seed.ts` e
+`scripts/provision-rbac.ts`, extrai o corpo do `DEFAULT_ROLES.filter((x) => …)` de `SEEDED_SYSTEM_ROLES` e de
+`PAPEIS_PROVISIONADOS`, troca o nome do parâmetro e exige o mesmo texto, que deve ser `papel !== "platform_admin"`; exige
+também o import de `DEFAULT_ROLES` do catálogo no seed (emenda 1, item 7). O segundo teste (o laço consome
+`SEEDED_SYSTEM_ROLES`) ficou.
+- Vermelho-controle no seed de hoje: `node --test --import tsx tests/san3-04a-seed-semeia-auditor.test.ts` → exit 1,
+  `not ok 1` com "seed.ts sem `const SEEDED_SYSTEM_ROLES = DEFAULT_ROLES.filter((…) => …);`", `ok 2`.
+
+**O seed.** `prisma/seed.ts`: o import troca `STANDARD_ROLES` por `DEFAULT_ROLES` (`grep -c STANDARD_ROLES prisma/seed.ts`
+= 0), e `const SEEDED_SYSTEM_ROLES = DEFAULT_ROLES.filter((role) => role !== "platform_admin");`, com o comentário
+reescrito. O nome da organização não foi tocado. Nada mais no arquivo.
+
+**Verde.**
+- `node --test --import tsx tests/san3-04a-seed-semeia-auditor.test.ts tests/seed-guard.test.ts` → exit 0, `# tests 6 ·
+  # pass 6 · # fail 0`.
+- Base nova `san307_novo` (template `san307_tpl`) → `npm run db:seed` exit 0 → 12 globais:
+  `auditor,field_dispatcher,field_technician,finance,inventory,manager,operator,super_admin,support,technician,tenant_admin,viewer`.
+- `RBAC_DB_PARITY=1 node --test --import tsx tests/permission-catalog-db-parity.test.ts` contra `san307_novo` → exit 0,
+  `# tests 2 · # pass 2 · # fail 0 · # skipped 0`.
+
+**O sinal sobre o seed é executá-lo** (emenda 1, item 6). `npm run check` → exit 0, mas ele compila só `src/**`.
+Typecheck explícito do seed com um tsconfig meu, fora do repositório (`extends` do `tsconfig.json`, `include` de `src/**`
++ `prisma/seed.ts`, `typeRoots` do worktree): os MESMOS 2 erros antes (seed de `07898adf`, por `git stash`) e depois —
+`prisma/seed.ts(195,3) TS1360` (o `permissionDescriptions … satisfies Record<Permission, string>` não tem 43 das 205
+permissões do catálogo; contado por script: 162 com descrição) e `prisma/seed.ts(257,48) TS2551` (o acesso
+`permissionDescriptions[permission]`, que tem fallback genérico). Pré-existentes, fora do escopo; viram pendência na F4.
