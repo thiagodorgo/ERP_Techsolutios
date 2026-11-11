@@ -99,6 +99,29 @@ test("[B-O6R-11d N11] OS despachada com operator (perfil) != user: o envio atras
   });
 });
 
+test("[B-O6R-11d N12] OS legada com operador U e usuário trocado para V: o envio atrasado que declara U é recusado e não grava nada", async () => {
+  await withApi(async (ctx) => {
+    const osId = await novaOs(ctx, "OS do N12");
+    // OS legada: o perfil de campo (operator) é U e não há usuário ainda.
+    assert.equal((await assignRest(ctx, osId, { operatorId: tecnicoU })).status, 200);
+    // O usuário é trocado para V, mas o perfil de campo segue U.
+    const troca = await assignRest(ctx, osId, { operatorId: tecnicoU, userId: tecnicoV });
+    assert.equal(troca.status, 200, JSON.stringify(troca.body));
+    const eventosAntes = await eventos(ctx, osId);
+
+    const lote = await enviarLote(ctx, "n12-atrasado", payloadDoApp(ctx, osId));
+
+    assert.equal(lote.acao, "conflict", JSON.stringify(lote.body));
+    assert.equal(lote.conflictType, "technician_changed_since_action");
+    assert.equal(lote.reason, "technician_changed_since_action");
+    const os = await lerOs(ctx, osId);
+    assert.equal(os.assignedUserId, tecnicoV, "a ação recusada devolveu o usuário para U");
+    assert.equal(os.assignedOperatorId, tecnicoU, "o perfil de campo segue U");
+    assert.equal(os.vehicleId, null, "a viatura da ação recusada foi gravada");
+    assert.equal((await eventos(ctx, osId)).length, eventosAntes.length, "evento novo apesar do conflito");
+  });
+});
+
 test("[B-O6R-11d N9] fail-closed: expected_technician_id null ou vazio → conflito; sem a chave → o comportamento de hoje", async () => {
   await withApi(async (ctx) => {
     for (const [rotulo, valor] of [
