@@ -90,3 +90,38 @@
   é "Base da organização".
 - `node --test --import tsx tests/bsan315-technician-stock.test.ts` → `# tests 9 · pass 9 · fail 0` (T-B4 e T-B9 verdes,
   inclusive o ator `[field_technician, manager]` sem cadastro, da N-12).
+
+### F1db — a suíte de banco, 3× na forma do job, o `EXPLAIN` e a linha do `SUITES=`, 11:15–11:30
+
+- **Terreno:** Postgres 16 descartável próprio `dev15a-pg` em `127.0.0.1:55525` (porta conferida livre com `docker ps` e
+  `netstat -ano | grep LISTEN` antes de subir; memória de commit livre 16,0 GB; disco 177,8 GB). `npx prisma migrate deploy`
+  e `npm run db:seed`, como o job `backend-postgres`.
+- **Forma do job:** `CORE_SAAS_PERSISTENCE=prisma JWT_SECRET=dev-only-change-me JWT_EXPIRES_IN=15m LOG_LEVEL=silent RBAC_DB_PARITY=1`
+  e `node --test --import tsx tests/bsan315-technician-stock-db.test.ts tests/inventory-balance-lock-race-db.test.ts tests/inventory-cycle-count-close-units-db.test.ts tests/inventory-unique-backstops-db.test.ts tests/inventory-migration-drill-db.test.ts`.
+  - rodada 1: `# tests 58 · pass 58 · fail 0 · skipped 0`;
+  - rodada 2: `# tests 58 · pass 58 · fail 0 · skipped 0`;
+  - rodada 3: `# tests 58 · pass 58 · fail 0 · skipped 0`.
+  - A suíte do bloco: 6 casos em cada rodada (T-DB0 postura, T-DB1, T-DB1b, T-DB2, T-DB2b, T-DB3). Denominador constante.
+- **Papel efêmero:** os serviços rodam no cliente de um papel `NOSUPERUSER NOBYPASSRLS` (`createEphemeralRole`); o T-DB0
+  confere `rolsuper=false, rolbypassrls=false` e `relforcerowsecurity=true` em `stock_movements`, `operator_profiles` e
+  `inventory_items`. No T-DB2b o **app real** roda sobre o mesmo papel (o `src/database/prisma.ts` usa `globalThis.prisma`).
+- **T-DB2b — forma MEDIDA diferente da HIPÓTESE do plano (desvio declarado, pede emenda escrita):** o plano previa **403**
+  (HIPÓTESE) e, se medisse 200, a asserção viraria "200, `custody: null`, `items: []`". Medido: **200 com a custódia do
+  próprio tecA** (`{"custody":{"kind":"professional","label":"Técnico A"},"items":[X: 5]}`). Motivo, por leitura: com JWT, o
+  `attachAuthenticatedActor` (`src/modules/auth/middleware/authenticated-actor.middleware.ts:47-54`) fixa o
+  `tenantId` do token e o `X-Tenant-Id` não entra; o RBAC persistente resolve o papel do tecA na org A. **Nenhum dado da org B
+  e nenhuma custódia alheia** aparecem (a propriedade). O caso prende a forma medida (200 e exatamente `[X: 5]`), a mesma do
+  T-B3 (ii-b) em memória. **Pergunta ao orquestrador:** ratificar a forma por emenda (a alternativa "200 vazio" do plano
+  não se aplica: o cabeçalho não muda a organização).
+- **`EXPLAIN (ANALYZE, BUFFERS)`** (A-10; dados sintéticos numa transação desfeita: 1 organização, 50 perfis, 400 itens,
+  40.000 movimentos, `ANALYZE`; script em `explain-15a.sql` no scratchpad):
+  - custódia profissional (um perfil): `Index Scan using stock_movements_custody_lookup_idx`, `Index Cond: (tenant_id = …)
+    AND (custody_type = 'professional') AND (custody_operator_profile_id = $0)`, 534 linhas, **593 buffers** (a tabela
+    inteira tem 655 páginas), 0,84 ms. O índice começa por `[tenant_id, item_id, …]`: as condições de custódia são
+    conferidas DENTRO do índice, mas sem salto; a leitura percorre a fatia da organização no índice.
+  - BASE: `Seq Scan on stock_movements` (1/3 das linhas qualifica), 13.333 linhas, 655 buffers, 8,6 ms.
+  - **Conclusão:** é varredura da organização (pelo índice no perfil; sequencial na BASE). Abre-se
+    `P-SAN3-15-INDICE-CUSTODIA-POR-PERFIL` (desempenho, BAIXA, dono a nomear), **sem migração neste bloco** (A-10).
+- **CI (A-08):** a linha `SUITES="$SUITES tests/bsan315-technician-stock-db.test.ts"`, com comentário, depois de
+  `inventory-migration-drill-db` no job `backend-postgres`. A leitura no log do job fica para a pré-revisão
+  (`gh run view <run> --job backend-postgres --log | grep -E 'bsan315-technician-stock-db|# (tests|fail|skipped) '`).
