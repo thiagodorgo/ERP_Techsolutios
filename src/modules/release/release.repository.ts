@@ -56,6 +56,7 @@ export class InMemoryReleaseRepository implements ReleaseRepository {
   private readonly releases: ImpoundRelease[] = [];
   private readonly checks: ReleaseRequirementCheck[] = [];
   private readonly profileRequirements = new Map<string, readonly RequirementSnapshot[]>();
+  private readonly regimeByProcess = new Map<string, readonly RequirementSnapshot[]>();
 
   constructor(
     private readonly impound: ReleaseImpoundDep,
@@ -65,7 +66,12 @@ export class InMemoryReleaseRepository implements ReleaseRepository {
   async loadReleaseRequirements(tenantId: string, processId: string): Promise<readonly RequirementSnapshot[] | undefined> {
     const process = await this.impound.findProcessById(tenantId, processId);
     if (!process) return undefined;
-    return this.profileRequirements.get(`${tenantId}:${process.profileId}`) ?? [];
+    const key = `${tenantId}:${processId}`;
+    const captured = this.regimeByProcess.get(key);
+    if (captured) return captured;
+    const requirements = this.profileRequirements.get(`${tenantId}:${process.profileId}`) ?? [];
+    this.regimeByProcess.set(key, requirements);
+    return requirements;
   }
 
   async getActiveReleaseView(tenantId: string, processId: string): Promise<ReleaseView | undefined> {
@@ -375,5 +381,6 @@ export class InMemoryReleaseRepository implements ReleaseRepository {
     this.releases.length = 0;
     this.checks.length = 0;
     this.profileRequirements.clear();
+    this.regimeByProcess.clear();
   }
 }

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/permissions/permission_resolver.dart';
-import '../../core/sync/sync_models.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
 
@@ -12,12 +11,17 @@ class ModulePlaceholderScreen extends ConsumerWidget {
     required this.title,
     required this.requiredPermission,
     required this.message,
+    required this.blockedMessage,
     super.key,
   });
 
   final String title;
   final String requiredPermission;
   final String message;
+
+  /// Texto do estado de acesso não permitido, em língua de negócio (B-SAN3-19b). Quem chama
+  /// escreve o texto verdadeiro para a rota; a chave de permissão nunca aparece na tela.
+  final String blockedMessage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,24 +41,11 @@ class ModulePlaceholderScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           if (!hasPermission)
             PermissionBlockedState(
-              title: 'Acesso bloqueado',
-              message:
-                  'Permissao $requiredPermission nao retornou no bootstrap. O backend continua sendo autoridade final.',
+              title: 'Acesso não permitido',
+              message: blockedMessage,
             )
           else
-            Column(
-              children: [
-                ApprovalDecisionCard(
-                  title: '$title em preparacao',
-                  message: message,
-                ),
-                const SyncStatusBanner(
-                  status: SyncStatus.local,
-                  message:
-                      'Placeholder operacional navegavel, sem chamada backend nova.',
-                ),
-              ],
-            ),
+            ApprovalDecisionCard(title: title, message: message),
         ],
       ),
     );

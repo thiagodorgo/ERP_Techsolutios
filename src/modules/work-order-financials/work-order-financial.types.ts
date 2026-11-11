@@ -91,3 +91,14 @@ export class WorkOrderFinancialError extends Error {
     this.name = "WorkOrderFinancialError";
   }
 }
+
+// P-Ω3F6-TERMINAL-GUARD → B-SAN3-23 — o 422 de OS cancelada num lugar só: a guarda de entrada do serviço e a releitura
+// sob a trava compartilhada da OS, no repositório Prisma, respondem o mesmo código, motivo e mensagem.
+export function workOrderCancelledError(): WorkOrderFinancialError {
+  return new WorkOrderFinancialError(
+    422,
+    "WORK_ORDER_FINANCIAL_UNPROCESSABLE",
+    "work_order_cancelled",
+    "This work order is cancelled; financial items and invoicing are no longer allowed.",
+  );
+}
