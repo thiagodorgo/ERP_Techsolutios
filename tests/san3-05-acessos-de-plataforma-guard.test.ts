@@ -215,6 +215,11 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/subscription-billing/metering/metering-prisma.repository.ts", "new PrismaTenantUsageDailyRepository(tx)", "PARAMETRO(tx)", "×1"),
     "B-ASS-03: o upsert em tenant_usage_daily (tabela ENABLE+FORCE, T-MED-db-7) usa o MESMO tx de withTenantRlsBudget da volta da organização (subscription-billing.jobs.ts); sob FORCE, a escrita sem o GUC certo violaria a política, e o medidor lança antes de tentar (R-MED-4).",
   ],
+  // B-ASS-08b · conserto da J-530 (B): a leitura da nota VIVA dentro da transação do demonstrativo, colada da saída do gerador.
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.findLiveInvoice", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statement_invoices", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08b (conserto da J-530, B): `SELECT provider, seq, status FROM subscription_statement_invoices WHERE statement_id = $1 AND status IN ('pending','authorized','cancel_pending') ORDER BY seq DESC LIMIT 1` sobre o tx recebido; o único chamador é `StatementSettlementService.applyReversal`, DEPOIS do `lockById` do demonstrativo, dentro de `PrismaStatementRepository.transaction` → `withTenantRls(this.client, tenantId, …)` (GUC da organização dona do demonstrativo como 1ª instrução); tabela FORCE, e o filtro por demonstrativo vem do id já resolvido pelo nosso índice, nunca do payload.",
+  ],
   // B-ASS-04: as chaves L1 da porta do demonstrativo, coladas da saída do gerador no head do bloco.
   [
     k("L2", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),

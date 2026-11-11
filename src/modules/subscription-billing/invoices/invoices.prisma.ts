@@ -68,10 +68,12 @@ const LIVE_SQL = `status IN ('pending', 'authorized', 'cancel_pending')`;
 /** §2.1 do conserto-c2 / §11 (k): o DEMONSTRATIVO PRIMEIRO. Toda transação da nota trava o demonstrativo antes de mexer na
  * linha da nota (o INSERT da nota toma KEY SHARE no demonstrativo pela FK, e o espelho, depois, um UPDATE: sem a trava antes,
  * é o upgrade KEY SHARE → UPDATE que o T-LOCK-2 acusa como ORD-0). `FOR NO KEY UPDATE` é a mesma força do UPDATE do espelho
- * (não bloqueia o INSERT de filhas de outras transações). `false` = demonstrativo inexistente (ou de outra organização). */
-async function lockStatement(tx: Prisma.TransactionClient, statementId: string): Promise<boolean> {
-  const rows = (await tx.$queryRawUnsafe(`SELECT id FROM subscription_statements WHERE id = $1::uuid FOR NO KEY UPDATE`, statementId)) as Array<{ id: string }>;
-  return rows.length > 0;
+ * (não bloqueia o INSERT de filhas de outras transações). Conserto da J-530 (A): devolve o STATUS lido na MESMA instrução que
+ * espera a trava — no READ COMMITTED, a versão já commitada por quem segurava a trava (a reversão). `null` = demonstrativo
+ * inexistente (ou de outra organização). */
+async function lockStatement(tx: Prisma.TransactionClient, statementId: string): Promise<string | null> {
+  const rows = (await tx.$queryRawUnsafe(`SELECT id, status FROM subscription_statements WHERE id = $1::uuid FOR NO KEY UPDATE`, statementId)) as Array<{ id: string; status: string }>;
+  return rows[0]?.status ?? null;
 }
 
 /** A mesma trava, achada pela nota: o demonstrativo da nota, `FOR NO KEY UPDATE OF s` (só o demonstrativo; a linha da nota é
@@ -95,11 +97,10 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
   async beginIssue(input: BeginIssueInput, now: Date): Promise<{ readonly invoice: SubscriptionStatementInvoice; readonly created: boolean; readonly statementPaid: boolean }> {
     return withTenantRls(this.client, input.tenantId, async (tx) => {
       // O demonstrativo PRIMEIRO (§2.1): duas emissões do mesmo demonstrativo se serializam aqui. Conserto da J-530 (A): o
-      // status vem na MESMA instrução que espera a trava — no READ COMMITTED, a linha devolvida é a versão já commitada pela
-      // reversão que segurava a trava (é a linearização com o `applyReversal`). Literal no sítio (guard de escritores).
-      const locked = (await tx.$queryRawUnsafe(`SELECT id, status FROM subscription_statements WHERE id = $1::uuid FOR NO KEY UPDATE`, input.statementId)) as Array<{ id: string; status: string }>;
-      if (!locked[0]) throw new Error("statement_not_found");
-      const statementPaid = locked[0].status === "paid";
+      // status vem na MESMA instrução que espera a trava (é a linearização com o `applyReversal`, que trava a mesma linha).
+      const status = await lockStatement(tx, input.statementId);
+      if (status === null) throw new Error("statement_not_found");
+      const statementPaid = status === "paid";
       const externalRef = invoiceExternalRef(input.statementId, input.seq);
       const existing = (await tx.$queryRawUnsafe(
         `SELECT * FROM subscription_statement_invoices WHERE provider = $1 AND external_ref = $2`,
