@@ -238,7 +238,7 @@ A Emenda 2 (`plano-B-SAN3-19b-v2.md`, no fim) respondeu às perguntas 4, 5 e 7 d
 
 Observação, sem ação: a entrada `P-J535-C3-02-ITEM47-STATUS-X-RESIDUO`, vinda da `main`, cita uma `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` como destino da instância offline do item 47. Essa pendência não tem cabeçalho próprio no `pendencias.md` da `main` de agora (`grep -c '^## P-SAN3-07-APP-NOME-TECNICO-OFFLINE'` = 0). É a mesma instância que este bloco fecha (apenso da `P-CHK-SEED-DEMO-SUJO`). Quem reconcilia é o registro do orquestrador.
 
-## Conserto da pré-revisão `prerev-540-cl` (Emenda 3 do plano; 08:51–09:08 SP)
+## Conserto da pré-revisão `prerev-540-cl` (Emenda 3 do plano; 08:51–09:07 SP)
 
 A pré-revisão (`revisoes/prerev-540.json`, APROVADO com 7 não graves) foi feita por Claude Opus 5.5, sem cruzamento (§C7 item 11(2), declarado lá). A Emenda 3 (orquestrador, 08:51) autoriza os consertos PR540-01, 02, 03, 04 e 07. O 05 (`P-MOBILE-IDENTIFICADOR-CRU-NA-TELA`) e o 06 (`P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS`) são do orquestrador; não foram criados aqui. Quem conserta (eu, o dev) não achou: os achados são do revisor (§C7.4-bis).
 
@@ -260,3 +260,15 @@ A pré-revisão (`revisoes/prerev-540.json`, APROVADO com 7 não graves) foi fei
 | `flutter analyze` | 0 | `No issues found!` |
 | `flutter test test/features/bsan319b_texto_exibido_test.dart` | 0 | `+9: All tests passed!`, `[T6] exibidos=779 violacoes=0 allowlist=2` |
 | commit do código | 0 | `616b1ff8` |
+
+### Atualização com a `main` e bateria do conserto (09:07–09:11 SP)
+
+| Comando | Exit | Saída resumida |
+|---|---|---|
+| `git fetch origin && git merge --no-ff --no-commit origin/main` (`d98481e6`, #535, `B-SAN3-07`) | 1 | conflito só em registro: `pendencias.md` (2 blocos), `pendencias-indice.md` e `PLANO_SAN3.md` (linhas 47-48) |
+| resolução (`resolve.py`) | 0 | `pendencias.md`: as duas entradas em cada bloco, a da `main` primeiro (o apenso do `B-SAN3-07` na `P-CHK-SEED-DEMO-SUJO` e a `P-SAN3-07-APP-NOME-TECNICO-OFFLINE`), depois a deste ramo; 859 → 860 cabeçalhos. `PLANO_SAN3.md`: linha 47 = a da `main` + a nota deste ramo; linha 48 = a deste ramo (a `main` não a mudou). 0 marcadores |
+| `python agent-orchestration/controle/gerar-indice-pendencias.py` | 0 | `860 cabecalhos / 849 IDs`, `{'FECHADA': 200, 'ABERTA': 656, 'SEM-STATUS': 4}`; rodar de novo + `cmp` = idêntico; 0 `CR` |
+| commit do merge | 0 | `ac4156d4`; `git diff 5e592207 ac4156d4 -- mobile` vazio |
+| bateria do §6 em `ac4156d4` (09:09:02–09:11:00) | 0 | `dart format` nos 33 arquivos tocados: `0 changed`; `flutter analyze`: `No issues found!`; testes do bloco: **`+19: All tests passed!`** (`[T6] exibidos=779 violacoes=0 allowlist=2`); regressões da §3.2 mais `expenses/expense_screens_test.dart`: **`+183`**; suíte inteira: **`01:05 +1119: All tests passed!`** (era +1118; +1 do T6c); `git diff --check origin/main...HEAD`: vazio |
+
+**Para o registro do orquestrador reconciliar (sem ação aqui):** a `main` trouxe a `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` (ABERTA, dono proposto `B-SAN3-19b`). É a instância que este bloco fecha (`bootstrap_session.dart`, `bootstrap_repository.dart`; T8; apenso da `P-CHK-SEED-DEMO-SUJO`). Não a fechei: o mandato do conserto só autoriza manter as duas entradas e regenerar o índice.
