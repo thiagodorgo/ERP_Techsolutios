@@ -246,3 +246,73 @@ e o bloco parou, então não vale até a emenda; quem retomar confere e reaprove
 - Os testes que leem o texto do seed (`ass-02-plan-catalog`, `b-san3-12-ce4-db`, `inventory-write-paths-guard`,
   `san3-04a-menu-com-permissoes-do-banco-db`, `san3-04a-menu-front-x-catalogo`, `seed-guard` e o textual do bloco) não
   aparecem entre os vermelhos.
+
+## RETOMADA pela Emenda 2 (04:02 a 04:20)
+
+A Emenda 2 do plano (orquestrador, 11/11 04:02, leitura declarada) responde à PARADA: o P3 vale só em base semeada,
+detectada por uma sentinela S que só o `db:seed` base cria; P3 = "se S existe, a `demo` existe, com 1 linha e sem
+`/tenant/i`"; dentro dos 2 `test()` que já existem; drills, `.github/**` e `scripts/**` intocados.
+
+**Terreno.** `git fetch` → a `main` andou para `b6caf568` (#533, `B-SAN3-08`), que mexeu no `pendencias.md` e no
+índice. Rebase do ramo sobre ela: o único conflito foi no commit de rascunho do registro, os dois lados acrescentando
+pendências no fim do `pendencias.md`; mantive as da `main` e depois as minhas, e regenerei o índice. O índice da `main`
+`b6caf568` estava em dia (o gerador sobre o `pendencias.md` dela reproduz o índice dela byte a byte). Postgres
+`san307-pg` subido de novo (04:03).
+
+**A escolha de S, medida.**
+- Fora de tabela com RLS, o seed base não cria nada que a migração ou o provisionamento não criem: os 6 planos já vêm da
+  migração (`select count(*) … from subscription_plans` = 6 na base só migrada), e `permissions`, `roles` e
+  `role_permissions` vêm do `db:provision-rbac`. A única linha só do seed numa tabela sem RLS é a própria `demo` em
+  `tenants`, e a Emenda pede uma S que sobreviva a "o seed não cria a `demo`".
+- `select relname, relrowsecurity, relforcerowsecurity from pg_class …` → `audit_logs`, `branches`, `tenant_settings`,
+  `users`, `user_role_assignments` e `roles` têm RLS forçado; `tenants`, `permissions`, `role_permissions` e
+  `subscription_plans`, não. A política de `audit_logs` só mostra linha com o GUC `app.current_tenant_id` da organização.
+- **S = o registro de auditoria `action = 'seed.initialized'`, `entity = 'database'`**, que o `prisma/seed.ts` grava uma
+  vez (idempotente) e que mais nada cria (`git grep -n "seed.initialized"` fora do registro: só `prisma/seed.ts:494,508` e
+  a documentação). As exclusões de `audit_logs` nos testes são escopadas às organizações deles.
+- Medido: base só migrada S = 0 (0 organização, 0 papel global); base só provisionada (`db:provision-rbac`, 12 papéis
+  globais) S = 0 (0 organização); base semeada S = 1 (1 organização, 12 papéis globais).
+- **Leitura do dev, declarada (§A6): a trava de RLS.** Um papel sem `BYPASSRLS` lê S = 0 mesmo na base semeada, e o P3
+  passaria em vazio sem ninguém ver. Por isso a medição de S exige papel superusuário ou BYPASSRLS (`select (rolsuper or
+  rolbypassrls) … where rolname = current_user`) e FALHA sem ele, com a mensagem dizendo o porquê. A CI
+  (`postgres`) e os drills (o mesmo usuário da `DATABASE_URL`) já usam superusuário; nenhuma execução atual da paridade
+  muda. Quem rodar a paridade com o papel de runtime recebe a falha em vez de um verde vazio.
+- O P3 escreve no TAP o que decidiu: `# P3 aplicado: a base foi semeada (sentinela seed.initialized = N)` ou `# P3 não
+  se aplica: a base não tem a sentinela do seed (provisionada sem db:seed)`.
+
+**Erro meu, corrigido.** Depois de medir a M6 eu reverti o arquivo de teste com `git checkout --`, e isso apagou a edição
+da Emenda 2, que ainda não estava commitada. Reapliquei o mesmo texto, fiz o commit e repeti TODAS as provas abaixo sobre
+o arquivo commitado (04:12 a 04:17). As primeiras medições (04:08 a 04:11) deram o mesmo resultado.
+
+**Provas da Emenda 2, item 3** (todas sobre o arquivo commitado):
+1. **Os 3 drills verdes**, na forma do job `backend` (base nova só migrada, `CORE_SAAS_PERSISTENCE=memory`), um por vez:
+   `ass-04-billing-permissions-migration-drill-db` 4/4, `ass-05-providers-permission-migration-drill-db` 4/4,
+   `b-san3-12a-permissions-migration-drill-db` 4/4, com `ok 4 - M3b (d)`, `ok 4 - M4b (d)` e `ok 4 - A22 (d)`.
+   A paridade direta na base só provisionada: exit 0, `# pass 2`, `# P3 não se aplica: …`.
+2. **Na base semeada o P3 roda de verdade:** exit 0, `# pass 2`, `# P3 aplicado: a base foi semeada (sentinela
+   seed.initialized = 1)`; e a M3 e a M5 abaixo só ficam vermelhas porque ele roda.
+3. **A mutação nova M5** ("o seed não cria a `demo`, mas mantém S"): as 2 linhas `slug: "demo",` → `slug: "demo-mutante",`
+   (âncora 2). Seed exit 0; banco: sentinela 1, `demo` ausente, `demo-mutante:Organização Demonstração`; paridade exit 1,
+   `not ok 2`, `# P3 aplicado …`, `P3: a base foi semeada (há o registro seed.initialized), mas a organização
+   demonstração (slug = 'demo') não está nela. O seed base está incompleto.` Revertida.
+4. **A M3 continua vermelha:** sentinela 1, `demo` = `Tenant Demo`; `P3: a organização demonstração tem nome técnico:
+   "Tenant Demo" …`. Revertida.
+
+**As outras mutações, de novo:** M1 → 5 linhas "não tem linha global" (globais 7); M2 → a asserção P2 (globais 13,
+`platform_admin` 1); M4 → 11 linhas, todas `"support" deveria ter …`, 0 de outro papel. Todas revertidas, `git status`
+limpo depois.
+
+**A trava de RLS, por execução (M6).** Na base semeada criei o papel `san307_rt` `NOSUPERUSER NOBYPASSRLS` com `SELECT` em
+todas as tabelas. `select count(*) from audit_logs where action='seed.initialized'`: como `postgres` 1, como `san307_rt`
+0. Paridade com `san307_rt`: exit 1, `P3: o papel da conexão (san307_rt) não atravessa o RLS de audit_logs …`. M6 (no
+teste, `papelDaConexao[0]?.atravessa,` → `true,`), com o mesmo papel: exit 0, `# pass 2`, `# P3 não se aplica` — o verde
+vazio que a trava fecha. Revertida.
+
+**Orçamento de pulos:** `DATABASE_URL=…/san307_tpl CORE_SAAS_PERSISTENCE=memory node scripts/run-backend-tests.mjs
+tests/permission-catalog-db-parity.test.ts` → exit 0, `# tests 2 · # skipped 2`.
+
+**O registro (F4), conferido e reaproveitado.** O rascunho foi tirado da sequência e refeito como commit válido sobre
+a Emenda 2, com as correções: a `P-SAN3-04A-SEED-PAPEIS-LEGADOS` cita o P3 só em base semeada, as mutações M1–M5 e os 3
+drills verdes; o apenso da `P-CHK-SEED-DEMO-SUJO` descreve a sentinela e a M5; o comando ganhou o P3 da Emenda 2, a M5,
+a M6 e os 3 drills na bateria. Índice regenerado: `821 cabecalhos / 810 IDs | FECHADA 194, ABERTA 623` (a `main` tem
+818/807, 193 e 621: +3 cabeçalhos, +1 fechada, +2 abertas).

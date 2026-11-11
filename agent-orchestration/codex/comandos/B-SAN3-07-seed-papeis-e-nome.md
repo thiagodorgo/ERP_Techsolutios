@@ -18,7 +18,11 @@
 - **P1:** depois de `migrate deploy` + `db:seed` numa base nova, os papéis globais (`roles.tenant_id IS NULL`) são
   exatamente `DEFAULT_ROLES` menos `platform_admin` (12), com as concessões de `ROLE_PERMISSIONS`, nas duas direções.
 - **P2:** `platform_admin` não tem linha global.
-- **P3:** a organização que o seed cria (`slug = 'demo'`) tem nome sem o termo técnico.
+- **P3:** em base semeada, a organização que o seed cria (`slug = 'demo'`) existe, com 1 linha, e tem nome sem o termo
+  técnico. "Semeada" = existe a sentinela `seed.initialized` (registro de auditoria que só o `prisma/seed.ts` grava);
+  em base só provisionada (`migrate deploy` + `db:provision-rbac`, a dos drills `ass-04`, `ass-05` e `b-san3-12a`) o P3
+  não se aplica (Emenda 2). A sentinela vive em `audit_logs`, que tem RLS forçado: medi-la exige papel superusuário ou
+  BYPASSRLS, e a paridade falha sem ele.
 - **P4:** rodar o seed de novo não duplica papel nem perde concessão.
 
 ## Superfície real da mudança de permissão (emenda 1, item 3)
@@ -54,9 +58,11 @@ concessões do catálogo. Produção nunca roda seed e já recebe os 12 pelo `db
 | M2 | `DEFAULT_ROLES.filter((role) => role !== "platform_admin")` → `[...DEFAULT_ROLES]` | paridade vermelha na asserção de P2 |
 | M3 | as 2 linhas `name: "Organização Demonstração"` → `name: "Tenant Demo"` | paridade vermelha na asserção de P3 |
 | M4 | `for (const permission of ROLE_PERMISSIONS[role])` → `for (const permission of role === "support" ? [] : ROLE_PERMISSIONS[role])` | paridade vermelha com `"support" deveria ter "…"` |
+| M5 (Emenda 2) | as 2 linhas `slug: "demo",` → `slug: "demo-mutante",` (o seed não cria a `demo` e mantém a sentinela) | paridade vermelha no P3 ("a base foi semeada … mas a organização demonstração … não está nela") |
+| M6 (trava de RLS) | no teste, `papelDaConexao[0]?.atravessa,` → `true,`, rodando com papel `NOSUPERUSER NOBYPASSRLS` | sem a trava a paridade passa em vazio ("P3 não se aplica"); com ela, falha |
 
 Vermelho-controle: o teste novo de paridade contra uma base semeada pelo seed da `main` (`07898adf`) fica vermelho com
-exatamente os 5 papéis. Drills: D1 `SELECT name FROM tenants` em base só do seed; D2 seed 2× sem duplicata e com a mesma
+exatamente os 5 papéis. Os 3 drills de migração que rodam a paridade em base sem seed ficam verdes. Drills: D1 `SELECT name FROM tenants` em base só do seed; D2 seed 2× sem duplicata e com a mesma
 contagem de concessões; D3 `db:provision-rbac -- --dry-run` com 0 a criar depois do seed.
 
 O sinal sobre o `prisma/seed.ts` é executá-lo (F3 e CI): o `npm run check` compila só `src/**` (emenda 1, item 6).
@@ -75,6 +81,10 @@ RBAC_DB_PARITY=1 node --test --import tsx tests/permission-catalog-db-parity.tes
   tests/core-saas-role-authority-db.test.ts
 DATABASE_URL=<base migrada> CORE_SAAS_PERSISTENCE=memory node scripts/run-backend-tests.mjs \
   tests/permission-catalog-db-parity.test.ts          # "# skipped 2", exit 0
+DATABASE_URL=<base migrada> CORE_SAAS_PERSISTENCE=memory node --test --import tsx \
+  tests/ass-04-billing-permissions-migration-drill-db.test.ts \
+  tests/ass-05-providers-permission-migration-drill-db.test.ts \
+  tests/b-san3-12a-permissions-migration-drill-db.test.ts   # paridade em base sem seed: verde (Emenda 2)
 npm test                                              # TAP, na forma do job backend
 npm run build
 node scripts/migration-transaction-guard.mjs
