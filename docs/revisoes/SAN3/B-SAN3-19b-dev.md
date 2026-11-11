@@ -214,3 +214,26 @@ Testes da §3.2 e da Emenda 1, só nos literais: `b091_connectivity_profile_test
 5. **`pendencias-indice.md`** não regenerado (fora do PERMITIDO). **Pergunta:** regenerar no PR semanal de registro ou neste PR, por emenda?
 6. **`'Camera'` → `'Câmera'`** em `_captureLabel`: permitido pelo plano, não exigido; feito. O outro `'Camera'` (`evidence_picker.dart:89`) ficou para a `P-MOBILE-TITULOS-SEM-ACENTO`.
 7. **`TODO-DONO` (Pergunta 1 = A):** as 4 mensagens de Checklists, Estoque, `/approvals` e `/diagnostics`. Se o dono responder B ou C, o orquestrador escreve a emenda.
+
+## Leitura do CI do head `ccdc9978` (PR #540; 08:03–08:19 SP)
+
+- Job `flutter`, nos dois gatilhos (push: run `43008192758`, job `130480877738`; pull_request: run `43008231670`, job `130481011991`), resumo lido no log pela API (`gh api repos/thiagodorgo/ERP_Techsolutios/actions/jobs/<job>/logs`), não pela cor (§C7 item 11(3)): `+1118: All tests passed!`, `Formatted 246 files (0 changed)` (no 3.47.5 o `format` do repositório inteiro passa), `No issues found!`, `stable-3.47.5`. As guardas do bloco rodaram no CI: `[T1] chamadas=10`, `[T1-alcance] achadas=10 referencia=10`, `[T1b] chamadas=4`, `[T5] chaves=API_BASE_URL,ERP_APP_VERSION,ERP_AUTH_MODE,ERP_ENV`, `[T6] exibidos=771 violacoes=0 allowlist=2`.
+- `gh pr checks 540` às 08:19: **16/16 `pass`** (antivirus, authority-portal, backend, backend-postgres, docker, flutter, frontend, owner-portal, nos dois gatilhos).
+- Limpeza (08:04): `mobile/flutter_app/build/` (82 MB) e `.dart_tool/` (24 MB) removidos do worktree. O kit de mutações, para o verificador, ficou em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-19b-mutacoes/` (fora do repositório).
+
+## Emenda 2 do plano (orquestrador, 11/11 08:20 SP) e este commit (08:21–08:25 SP)
+
+A Emenda 2 (`plano-B-SAN3-19b-v2.md`, no fim) respondeu às perguntas 4, 5 e 7 da F6:
+1. **(5)** O PERMITIDO ganha `agent-orchestration/controle/pendencias-indice.md`, **só** para a regeneração pelo gerador.
+2. **(4)** Os 4 `SnackBar` com `$e` cru ficam **fora** deste bloco. Viram a `P-MOBILE-TEXTO-TECNICO-INTERPOLADO`, que o PR de registro do orquestrador registra; este bloco **não** a cria.
+3. **(7)** A leitura do CI e a emenda entram neste diário, sem mudar código nem teste.
+
+| Comando | Exit | Saída resumida |
+|---|---|---|
+| `git fetch origin && git merge --no-ff --no-commit origin/main` (`2f8a9a5e`, #538) | 1 | conflito só em `agent-orchestration/controle/pendencias.md` (as duas pontas acrescentaram entradas no fim) |
+| resolução | 0 | mantidas as duas: as entradas novas da `main` (826 → 856 cabeçalhos `## P-`) e, depois delas, a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` (857 no ramo); 0 marcadores; commit `2a0c621b` |
+| `git diff --stat ccdc9978 HEAD -- mobile` | 0 | vazio: o merge não mexe em código nem teste do app |
+| `python agent-orchestration/controle/gerar-indice-pendencias.py` | 0 | `857 cabecalhos / 846 IDs`, `{'FECHADA': 199, 'ABERTA': 654, 'SEM-STATUS': 4}`; ABERTAS 656 → 654 (+1 aberta, −3 fechadas) |
+| rodar o gerador de novo e comparar (`cmp`) | 0 | sem diff (o versionado é igual ao gerado); 0 `CR` antes e depois |
+
+Observação, sem ação: a entrada `P-J535-C3-02-ITEM47-STATUS-X-RESIDUO`, vinda da `main`, cita uma `P-SAN3-07-APP-NOME-TECNICO-OFFLINE` como destino da instância offline do item 47. Essa pendência não tem cabeçalho próprio no `pendencias.md` da `main` de agora (`grep -c '^## P-SAN3-07-APP-NOME-TECNICO-OFFLINE'` = 0). É a mesma instância que este bloco fecha (apenso da `P-CHK-SEED-DEMO-SUJO`). Quem reconcilia é o registro do orquestrador.
