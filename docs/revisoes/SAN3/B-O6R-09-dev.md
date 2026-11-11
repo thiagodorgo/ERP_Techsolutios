@@ -521,3 +521,231 @@ pré-revisados). Commit `ba70725f`, com os pais `3e59a3da` (o ramo) e `a0979f51`
   É inferido do mecanismo, e não foi medido.
 
 O conserto do arnês espera a decisão do orquestrador.
+
+### Emenda 4 e Emenda 4.1: a atribuição da OS dentro da transação-mãe (fatias 7 e 8), 11/11 10:38–13:25 SP
+
+Ordem do orquestrador, às ~10:20 SP: o topo (`topo-537-opus`) mediu um defeito GRAVE do #537 que este dev não achou. O
+`beforeCommit` atribuía a OS noutra transação e noutra conexão, e qualquer falha da mãe depois do gancho deixava a OS
+atribuída sem o despacho; com DDL na fila, ainda havia 20 s de parada. O conserto segue a Emenda 4 (E4.0 a E4.9), que
+substitui a Emenda 3, e a Emenda 4.1 (os 6 achados da crítica `crit-09-em4-api`). O protótipo do topo serviu de roteiro, e
+nada dele foi copiado sem medir.
+
+#### Atualização com a `main`, duas vezes
+
+- **`945f2002` → `a374a3ce`, às 10:39.** Conflito só nos 3 registros, todos de apenso.
+  - `decisoes.md`: a main acrescentou 74 linhas e o ramo 10.
+  - `pendencias.md`: a main acrescentou 291 linhas e o ramo 55.
+  - Nos dois arquivos, 0 linha ausente e 0 removida.
+  - Os IDs repetidos que sobram já estão repetidos na própria `origin/main` (conferido pelo `uniq -d` nas duas refs).
+  - O índice foi regenerado, e o versionado é igual ao gerado.
+- **`c95ad4fd` → `3027ccbf`, às 11:20, pelo aviso do orquestrador de 11:16.** Entrou o #536 (B-SAN3-23), que mudou o
+  `assignFromDispatch` (o CAS do despacho). Conflitos:
+  - o import de `work-order.repository.ts`, que ficou com os dois lados (o escopo de escrita da fatia 6 e o
+    `hasInvoicedItemsError` do #536);
+  - `pendencias.md`, em apenso: a main acrescentou 20 linhas e removeu 1, que é a edição dela no cabeçalho de
+    `P-SAN3-02-OS-NAO-TRAVADA`. Nada ficou ausente;
+  - o índice, regenerado.
+
+  O trabalho da Emenda 4 estava guardado num `git stash` e foi reaplicado por cima. No `pg-barrier.ts` os dois apensos
+  ficaram (o do #536 primeiro), e o `work-order.service.ts` foi reescrito a partir do código da main.
+
+#### Vermelho-controle ANTES do código (fatia 7)
+
+Ref: `a374a3ce`. O `git diff --stat 75b49051 a374a3ce -- src/modules/field-dispatch src/modules/work-orders
+src/modules/service-quotes src/database` sai vazio, então é o código de `75b49051`. Postgres 16 descartável `o6r09-pg`,
+com `max_connections` padrão (100, como o serviço da CI), migrado e semeado.
+
+- **`tests/b-o6r-09-dispatch-same-tx-db.test.ts`** (banco próprio, `CREATE DATABASE … TEMPLATE template0` +
+  `migrate deploy`): 9 casos, 3 ok e 6 not ok.
+  - **T26a:** a chamada rejeita com o RAISE do COMMIT, mas a OS fica `assigned` com o técnico e 0 despacho.
+  - **T26b:** a OS fica `assigned` com o rascunho em `draft`.
+  - **T26c:** a OS fica com B e o despacho com A.
+  - **T26d:** a OS fica órfã, `assigned` sem despacho.
+  - **T27a:** o DDL espera 19 972 ms e o leitor de outra organização 19 975 ms; o pedido é recusado (`expired transaction`).
+  - **T27b:** o DDL espera 19 967 ms, e o pedido é recusado.
+  - **T29 verde**, como o plano declara: o gancho de fora lê o `arrived` commitado.
+- **T15 reescrita** (`tests/b-o6r-09-dispatch-pool-db.test.ts`, cliente global `max: 1`): o arnês fica ok (a 2ª
+  transação recusa com P2028 em 2 004 ms) e os 3 casos ficam not ok com P2028:
+  - criar, em 2 059 ms;
+  - ativar, em 2 032 ms;
+  - reatribuir, em 2 049 ms. O not ok vem da REATRIBUIÇÃO, porque o despacho de partida é preparado por um cliente de
+    administração (C4E-01).
+
+#### O conserto (fatia 7, `169f1428`), com o que difere do texto da Emenda 4
+
+Os pontos da §E4.2.2 em `field-dispatch.*`:
+
+- `FieldDispatchTxScope`, com o escopo OBRIGATÓRIO no gancho;
+- `txScope()` no repositório preso ao `tx`;
+- saem o semáforo, o marcador e o `pino`, e o `FIELD_DISPATCH_HELD_TX_TIMEOUT_MS = 20 000` fica com o comentário novo;
+- a memória passa `{ dispatches: this }`;
+- `hasActiveDispatchAtSiteIn`, num ponto só;
+- `resolveDispatchOperatorId` é chamado ANTES da mãe nos 3 caminhos;
+- o resolvedor da trava dentro da mãe olha o status ANTERIOR **ou** os despachos lidos na `tx` (P7).
+
+Em `work-orders/**`, o que entrou e o que difere do texto, como **leitura do dev, declarada (§A6), por causa do #536**:
+
+1. **`assignFromDispatch` com `inTx` roda INTEIRO num serviço preso à transação da mãe.**
+   - O serviço preso é `new WorkOrderService(repository, { …references, hasActiveDispatchAtSite: inTx.hasActiveDispatchAtSite,
+     resolveActorOperatorProfileId: () => inTx.operatorId })`, com `const repository = inTx?.repository ?? this.repository;`.
+     A âncora da M26 ficou literal.
+   - **Motivo:** o #536 pôs no corpo um CAS com releitura, revalidação e regravação UMA vez, por métodos privados novos
+     (`rereadAfterStatusMiss`, `revalidateAssignFromDispatch`, `statusWriteMissError`), que usam `this.repository` e o
+     resolvedor das referências. Aplicar ao pé da letra as "quatro mudanças" da Emenda 4 (escrita antes do #536) deixaria a
+     releitura e a regravação noutra conexão. Isso é a 2ª conexão (P6) e a escrita fora da mãe (P5) de novo.
+   - Mexer naqueles métodos sairia das "três funções" do PERMITIDO e mudaria as âncoras das mutações do #536. Com o serviço
+     preso, o corpo do #536 fica **byte a byte igual**: as âncoras `B-SAN3-23:releitura-dispatch`, `revalida-dispatch` e
+     `segunda-falha-dispatch` seguem com contagem 1, e tudo passa pela `tx`.
+2. **`assertTechnicianChangeAllowed` NÃO mudou.** O 4º parâmetro `resolverInTx` da Emenda 4 ficou desnecessário, porque o
+   resolvedor da transação chega pelas referências do serviço preso. Sem ele, há uma função a menos de `work-orders/**` no
+   diff.
+3. **C4E-06.** O import de tipo é a linha 93 depois do #536 (era a 91 em `75b49051`) e acrescenta só
+   `WorkOrderAssignRepository`. O `resolveDispatchOperatorId` entra ANTES do JSDoc de `assignFromDispatch`, com comentário
+   próprio, e recebe as linhas do resolvedor sem mudança.
+4. **`work-order-scope.ts`:** só o acréscimo de `WorkOrderAssignRepository` e de `workOrderAssignRepositoryForTx(tx)`.
+   O parâmetro é o `tx` puro, então a guarda [vi] não muda.
+
+**Como a atribuição dentro da mãe convive com o CAS do despacho do #536.** As duas propriedades não se contradizem.
+- **O CAS roda na `tx` da mãe.** O UPDATE condicional de `work_orders` acontece sob READ COMMITTED. Se ninguém mudou a OS,
+  casa 1 linha. Se outro escritor já commitou, o UPDATE reavalia o `WHERE` e casa 0. Então a releitura (`findById` na
+  mesma `tx`, que vê o commit alheio, porque cada instrução tem foto nova), a revalidação (OS terminal → 409; trava com o
+  resolvedor da `tx`) e a regravação UMA vez também rodam na `tx`. Uma recusa em qualquer ponto atravessa o gancho, e a mãe
+  volta inteira (P5).
+- **Uma diferença de trava, declarada.** Agora a linha da OS fica presa (FOR NO KEY UPDATE) até o commit da mãe, e não até o
+  fim de uma transação curta da OS. Como o gancho é a ÚLTIMA instrução antes do commit, a espera de quem concorre é só o
+  resto da mãe. Os dois sentidos:
+  - **cancelar × despachar com o cancelamento na frente:** o UPDATE do gancho espera, reavalia, casa 0, relê `cancelled` e
+    recusa com 409. O despacho não nasce (A15/A15b);
+  - **despachar na frente:** o cancelamento espera a mãe, e então segue o CAS dele.
+  - **Dois despachos do mesmo técnico** (A15c/A15d, `D-PORTAO-7`): o 2º espera o 1º commitar, relê `assigned`, a trava
+    passa (o mesmo técnico) e ele regrava. São 2 atribuições, como o #536 mede.
+- **Medido no head:**
+  - `tests/b-san3-23-cancel-race-db.test.ts`, dentro da bateria `-db` (95/95, `# skipped 0`);
+  - `tests/b-san3-23-cas-retentativa.test.ts`, na bateria de memória;
+  - o "nao super-conta" (`tests/checklist-snapshot-dispatch.test.ts --test-name-pattern="nao super-conta"`), 6×, com
+    `# pass 1 · # fail 0` em cada uma (os outros 14 casos do arquivo ficam fora do filtro; o arquivo inteiro está na bateria
+    de memória, com `# skipped 0`);
+  - as mutações do #536 re-executadas no meu head, pelo serviço preso: a **R-dispatch** (apagar a linha
+    `B-SAN3-23:revalida-dispatch`) deixa A15 e A15b vermelhos; a **V409-dispatch** (o 409 direto antes da releitura) deixa
+    A15c e A15d vermelhos.
+
+**Ratchet T13: 2 chaves em `NOVAS`, só linhas acrescentadas** (`git diff -U0` do arquivo: 0 removidas):
+- a da Emenda 4: `L2 work-order-scope.ts new PrismaWorkOrderRepository(tx) PARAMETRO(tx) ×1`;
+- a transitiva que o gerador deriva dela, depois do merge do #536:
+  `L2 work-order-prisma.repository.ts new PrismaWorkOrderFinancialItemRepository(tx) INJETADO-TRANSITIVO:SUSPEITO-ACIMA(…) ×1`.
+  O #536 instanciou o repositório de itens dentro do cancelamento de `PrismaWorkOrderRepository`.
+  **Leitura do dev, a confirmar pelo orquestrador:** é a mesma raiz que a Emenda 4 autorizou, com o texto impresso pelo
+  teste.
+
+A 2ª entrada de `docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md` traz a sonda sob papel sem bypass. Sob o GUC de A, o
+repositório preso lê e atribui a OS de A; a OS de B fica invisível e nada se grava nela. T13 = 35/35.
+
+**C4E-05, medido por uma sonda temporária** (apagada depois, com cópia em `scratchpad/o6r09-tools/`). Sob a M9c, o gancho
+recusa (`work_order_assigned` com RAISE) e o erro é engolido. Resultado:
+- a chamada RESOLVE;
+- fica 1 despacho `assigned`, com a OS `open` e 0 atribuição;
+- é o SAVEPOINT do `$transaction` aninhado: a falha volta só até ele, e a mãe commita o despacho sem a OS.
+
+Na T9 (`[P4] atribuição recusa`), a 1ª asserção que fica vermelha é o `assert.rejects` ("Missing expected rejection"), e a
+asserção de 0 despacho logo abaixo (`contarDespachos(os1) === 0`) também pegaria o estado medido. Não há `catch` no caminho
+do gancho: `assignWorkOrderForDispatch` só converte `WorkOrderError` em `FieldDispatchError` e relança.
+
+#### O arnês (fatia 8, `e7f3290e`)
+
+- **`runHarnessDdl` e `dropHarnessObjects`** (só acréscimo em `tests/helpers/pg-barrier.ts`), pela forma por Prisma, na
+  decisão `D-B-O6R-09-ARNES-SEM-PG-DIRETO`, revista pela C4E-02:
+  - uma transação NOVA por tentativa (a conexão física pode ser a mesma);
+  - `SET LOCAL lock_timeout = '300ms'` (a ÚNICA linha do arquivo com o texto, o que mantém a M-ARN literal);
+  - só se repete o 55P03, lido do P2010 pelo adapter;
+  - 100 tentativas ou 30 s, e o arnês PARA quando não cabe mais uma tentativa no teto (C4E-04).
+- **Os 3 arquivos do R-ARN-2** (`atomic`, `idempotency`, `quote-approve-atomic`): todo `CREATE`/`DROP` de função e de
+  gatilho passa por ele. O `finally` usa `dropHarnessObjects`, que preserva o erro do corpo (`AggregateError`) e nunca
+  engole. A conferência `pg_trigger` e `pg_proc` = 0 continua. O `pool-db` saiu da lista (a T15 nova não tem DDL), e o
+  `same-tx-db` tem banco próprio.
+- **R-ARN-4** (`tests/b-o6r-09-harness-ddl-db.test.ts`), 3/3 no head:
+  - (i): a 3ª conexão LÊ em 304 ms, e o `DROP` conclui em 2 tentativas;
+  - (ii): a 3ª conexão ESCREVE em 395 ms, e o `CREATE` conclui em 2 tentativas;
+  - (iii): esgota em 2 083 ms com teto de 2 000 (a asserção é ≤ 2 000 + 300 + 250). O detentor é solto por temporizador
+    próprio em `maxTotalMs + 3 000`.
+- **Mutações do arnês:**
+  - **M-ARN:** (i) e (ii) "PRESO > 1 500 ms", e (iii) "Missing expected rejection", porque o DDL esperou o detentor e
+    concluiu. O processo terminou em 10 s, com o catálogo limpo (`b_o6r_09_arnes_%` = 0 tabela, 0 gatilho, 0 função).
+  - **M-ARN2:** (i) e (ii) vermelhos, porque a 1ª espera vira falha.
+- **`ci.yml`:** só as 2 linhas `SUITES=` (`same-tx-db` e `harness-ddl-db`). O comentário de cima ainda diz "45 casos", e o
+  `.github/**` fora dessas 2 linhas é PROIBIDO: a contagem medida agora está abaixo, na forma do job.
+- **R-ARN-6:** o `comGatilho` do `o6r07c-b-scope-db` NÃO foi tocado. O vigia não mostrou DDL `o6r07cb1_inj_*` esperando
+  mais que 300 ms (abaixo).
+
+#### Mutações literais, uma por vez, cada uma revertida
+
+Conferência por hash do arquivo e `git status` limpo, com `scratchpad/o6r09-tools/mutants-e4.cjs`, no head depois do
+merge do #536.
+
+| Mutação | Teste-dono | Resultado |
+|---|---|---|
+| M26 (`const repository = this.repository;`) | T26a e T26b | VERMELHA, 2 fail: a OS `assigned` sem despacho |
+| M26 | T15 criar e ativar | VERMELHA, 2 fail: P2028 em 2 115 e 2 034 ms |
+| M26c (o escopo sem `workOrders` na criação) | T26d e T27a | VERMELHA, 2 fail: OS órfã; DDL 19 974 ms |
+| M26t (o mesmo na transição) | T26c | VERMELHA, 1 fail |
+| M26t | T15 reatribuir | VERMELHA: P2028 em 2 051 ms, na reatribuição |
+| M26t | T27b | SOBREVIVEU (DDL 61 ms). É o que a C4E-01 mediu, e por isso a M27b é a dona da T27b |
+| M27b (o resolvedor de fora) | T27b | VERMELHA: DDL 19 977 ms |
+| M27b | T15 reatribuir | VERMELHA: P2028 em 2 075 ms |
+| M29 (sem a cláusula do status anterior) | T29 | VERMELHA: "trocou o técnico com o atendimento iniciado" |
+| M-vii (2º chamador de `workOrderAssignRepositoryForTx`) | guarda (vii) | VERMELHA |
+| M9c renovada (`.catch(() => undefined)` na criação) | T9 e T14(b)/(c) | VERMELHA, 3 fail |
+| M9t renovada (o mesmo na transição) | T9 | VERMELHA |
+| M-ARN e M-ARN2 | R-ARN-4 | VERMELHAS (acima) |
+| R-dispatch e V409-dispatch do #536 | A15/A15b e A15c/A15d | VERMELHAS |
+
+Verificação literal: `git grep -c` de `dispatch_commit_lost_after_assignment`, `HeldTransactionSlots` e `trackAssignment`
+em `src` dá **0** nos três.
+
+#### Bateria
+
+Postgres 16 descartável (`o6r09-pg`, `max_connections` padrão, migrado e semeado) e Redis 7 descartável.
+
+| Comando | Resultado |
+|---|---|
+| `npm run check` / `npm run lint` | ec=0 / ec=0 |
+| `node scripts/migration-transaction-guard.mjs` | 132 migrações · 112 anteriores · 20 novas · 0 violações |
+| memória: o bloco, a guarda (vii), as regressões de despacho e orçamento, `o6r07c-b-scope`, `san3-13-wo-list-scope`, `san3-08-aprovar-orcamento-destino`, o T13, `b-san3-23-cas-retentativa`, `work-orders` e `db-catalog-write-guard` | 356 testes, 355 ok e 1 skipped: o skipped é a parte `-db` do `db-catalog-write-guard`, que com banco deu 5/5 e 0 skipped. Antes do conserto do comentário, foram 354 ok, 1 fail (o ratchet de catálogo contou um `GRANT` em comentário, `cb790c7b`) e 1 skipped |
+| `tests/b-san3-23-cancel-race-db.test.ts` (o #536), no head | 21/21, `# skipped 0` |
+| "nao super-conta" (o #536), 6× | 6/6 `ok` |
+| as `-db` do bloco + o `o6r07c-b-scope-db` + o `b-san3-23-cancel-race-db`, juntas (depois do merge do #536) | 95/95, `# skipped 0` |
+| `npm test` em modo memória (os `-db` se pulam; as guardas rodam) | 502 arquivos, 4 239 testes: 4 083 ok, 1 fail e 155 skipped. O fail é o `core-saas-role-authority`, que importa o cliente Prisma no carregamento e exige `DATABASE_URL`; com `DATABASE_URL`, deu 12/12. Os skipped são os `-db` sem banco. Rodou para pegar as guardas, e pegou o ratchet de catálogo |
+| `git diff --check origin/main...HEAD` | limpo |
+
+**R-ARN-5, as 10 suítes juntas** (o vigia de trava ao lado: uma sessão `psql` com `\watch 0.5`, registrando espera de trava acima de 300 ms). O caminho até o verde, em ordem, com cada conserto num commit próprio:
+
+1. **11:39, vigia por `docker exec` a cada 250 ms:** a rodada levou 153 s, e eu parei a série, porque o próprio vigia pesava na máquina.
+2. **11:46, `\watch 0.3` com `pg_blocking_pids` em toda amostra:** r1 deu 65/74 em 681 s, e r2, 64/74 em 259 s.
+   - O `before` da `same-tx-db` estourou o prazo de 240 s: o `migrate deploy` do banco próprio levou de 249 a 650 s, preso em `IO:DataFileImmediateSync`, o fsync de cada `CREATE INDEX`, a cerca de 0,5 migração por segundo.
+   - O mesmo conjunto, sem vigia, às 12:06, deu 74/74 em 36,5 s. O `migrate deploy` sozinho num banco ocioso leva 17,6 s.
+3. **12:06, vigia leve (`pg_blocking_pids` só para espera acima de 2 s):** r1, r2, r4 e r5 deram 74/74. A **r3 (com o Traccar) deu 118/124**: o `GRANT … ON ALL TABLES IN SCHEMA public` do `createEphemeralRole` caiu em `XX000 tuple concurrently updated`. Ele disputava a tupla de `pg_class` da tabela nova do teste do arnês, que eu tinha criado em `public`. **Conserto `457f179d`:** um schema próprio por caso.
+4. **12:13:** r1 deu 65/74 em 746 s, de novo o `migrate deploy` lento. **Consertos:**
+   - `0bb1ab28`: o `migrate` assíncrono, com prazo que vale (o `execFileSync` prendia o laço de eventos);
+   - `fsync=off` no MEU cluster descartável (`ALTER SYSTEM` + `pg_reload_conf()`), declarado. A disputa de disco é com outras frentes no mesmo Docker, e a CI roda com `fsync` ligado.
+5. **12:30:** r1 deu 74/74. A r2 deu 72/74: a transação PRESA do autocontrole da T15 e da T24 não abriu conexão em 2 s. A r3 deu 122/123 (o Traccar "tempo esgotado"). **Conserto `40cb28d9`:** `maxWait` de 15 s só nas presas.
+6. **12:35–12:47, série de 12 rodadas, 3 delas com as 4 `traccar-*-db`:** **os casos das 10 suítes ficaram ok nas 12**, 74/74 em cada.
+   - As 3 rodadas com o Traccar deram 121/123. As 2 falhas são sempre os casos "tempo esgotado" de `traccar-position-ingestion-db` (`primeira entrega gravada com sucesso · 503 !== 204`), que já caíam na `main` (bateria das 06:17, acima).
+   - 0 `55P03` em toda a série.
+   - Na r10, um `CREATE TRIGGER o6r07cb1_inj_*` esperou 387 ms, acima de 300. **Conserto `1c09e87f`:** o R-ARN-6, com o diff só no `comGatilho` (`:352-366`) e nenhuma asserção mudada. A suíte deu 13/13.
+7. **12:48–12:56, série final de 10 rodadas, 3 com o Traccar:**
+   - 9 rodadas verdes: 74/74, e 123/123 nas 3 com o Traccar.
+   - A r9 deu 71/74. As 3 falhas são a transação de LIMPEZA (`teardown`, com o prazo padrão de 5 s do Prisma) expirando em 5 086, 5 050 e 5 217 ms, em `quote-approve-atomic`, `quote-approve-pool` e `o6r07c-b-scope`. O vigia não viu espera de trava acima de 300 ms nessa rodada.
+   - Isso ficou registrado como `P-B-O6R-09-TEARDOWN-5S-SOB-CARGA`.
+   - 0 `55P03`.
+
+**Leitura do dev, declarada (§A6):** a `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES` SEGUE ABERTA.
+- **O ciclo do DDL entre suítes não apareceu mais:** em 22 rodadas houve 0 `55P03`, e nenhuma espera longa atrás do DDL do arnês.
+- **O critério literal ("N ≥ 10 com fail 0") não fechou na série final**, por causa da limpeza de 5 s. A pendência está atualizada com estes números.
+
+**Forma do job `backend-postgres`, 3×:** as 69 suítes de `SUITES=`, extraídas do `ci.yml`, deram 565, 566 e 566 testes, com `# skipped 0` nas 3.
+- **Os casos do bloco ficaram ok nas 3.** As 9 suítes do bloco somam agora 61 casos; o comentário do `ci.yml` ainda diz "45", e mexer nele está fora das 2 linhas autorizadas.
+- **O que falhou, nada do bloco:**
+  - o `EBUSY` no `rmdir` do temporário de `traccar-event-migration-drill-db` (nas 3) e de `work-order-invoicing-migration-drill-db` (job 2 e job 3), que é coisa do Windows;
+  - os 2 casos "tempo esgotado" de `traccar-position-ingestion-db` (job 1);
+  - 2 casos de prazo de `traccar-resolution-race-db`, com `reason: 'deadline'` e "respondeu em 3 070 ms", nos jobs 1 e 3. É o mesmo orçamento de tempo do Traccar, sob as 69 suítes em paralelo no Windows.
+
+**Limpeza:** os containers `o6r09-pg`/`o6r09-redis` foram removidos no fim, junto com `dist/` e `frontend/dist`. Bancos, gatilhos, schemas e funções de prefixo `b_o6r_09_`/`o6r07cb1_inj_` ficaram em 0 depois de cada série interrompida (conferido).
