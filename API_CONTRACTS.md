@@ -212,8 +212,8 @@ Fontes: `src/modules/auth/routes/auth.routes.ts`, `identity-links.routes.ts`, `m
 > revoga as sessões; o cliente entra de novo). Ordem de implantação: backend → web → app
 > (`P-USERS-SEG-ORDEM-DE-IMPLANTACAO`).
 
-> **Sessão viva em toda rota (B-USERS-SEG-DESATIVADO, P-SESSAO-VIVA; segue a P1 = (a) e a P2 = (a), com as respostas
-> do dono pendentes; substitui a janela da `D-USERS-2`).** Todo access token aceito por qualquer rota pertence a uma
+> **Sessão viva em toda rota (B-USERS-SEG-DESATIVADO, P-SESSAO-VIVA; segue a P1 = (a) e a P2 = (a), respondidas pelo dono em 11/11
+> (`D-DONO-TODAS-RECOMENDACOES-1111`); substitui a janela da `D-USERS-2`).** Todo access token aceito por qualquer rota pertence a uma
 > sessão que, no instante da requisição, está viva (existe para o mesmo par organização e usuário, não foi revogada, não
 > venceu) e cujo usuário está ativo naquela organização. O token carrega a sessão no claim `sid` (UUID; ausente vale só
 > para o token emitido antes do deploy; outro formato → `401 INVALID_TOKEN`). O portão (`attachAuthenticatedActor`)
