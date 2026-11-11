@@ -329,7 +329,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Sem permissao'), findsOneWidget);
+      expect(find.text('Ação não permitida'), findsOneWidget);
     });
 
     testWidgets('11. com permissao exibe formulario completo', (tester) async {
