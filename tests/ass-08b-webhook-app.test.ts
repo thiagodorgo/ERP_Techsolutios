@@ -157,3 +157,35 @@ test("PR530-01: com Authorization dos DOIS lados (Bearer inválido, Basic), o we
   });
   assert.equal(getMemoryWebhookEventsForTests().all().length, 0);
 });
+
+test("R-WH-ERR (C2-A3): o verificador do provedor LANÇA → 503 JSON {temporarily_unavailable}, sem pilha, e o limitador não conta a falha", async () => {
+  resetWebhookRuntimeForTests();
+  let throwing = true;
+  const target: WebhookTarget = {
+    provider: "asaas",
+    verify: async () => {
+      if (throwing) throw new Error("adaptador caiu: segredo-do-verify-nao-pode-vazar");
+      return { ok: true, eventId: `evt_err_ok_${Date.now()}`, externalResourceId: "pay_err", externalReference: "stmt_err" };
+    },
+  };
+  setWebhookTargetResolverForTests(async (provider) => (provider === "asaas" ? target : null));
+  setWebhookEnqueueForTests(async () => undefined);
+  try {
+    await withServer(async (base) => {
+      // 25 > WEBHOOK_FAILURE_THRESHOLD (20): se o erro do verify contasse como falha do IP, o pedido seguinte daria 429.
+      for (let i = 0; i < 25; i += 1) {
+        const res = await fetch(`${base}${billingWebhookPath("asaas")}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: `evt_err_${i}` }) });
+        const text = await res.text();
+        assert.equal(res.status, 503);
+        assert.match(res.headers.get("content-type") ?? "", /application\/json/);
+        assert.deepEqual(JSON.parse(text), { error: { code: "temporarily_unavailable" } });
+        assert.ok(!/segredo|stack|at .*\(/.test(text), `sem pilha nem detalhe: ${text.slice(0, 120)}`);
+      }
+      throwing = false;
+      const ok = await post(base, billingWebhookPath("asaas"), JSON.stringify({ id: "evt_err_ok" }));
+      assert.deepEqual(ok, { status: 200, body: {} }, "o limitador não contou os erros do verify");
+    });
+  } finally {
+    resetWebhookRuntimeForTests();
+  }
+});

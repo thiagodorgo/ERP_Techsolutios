@@ -335,7 +335,13 @@ if (!connectionString) {
     const audit = new runtime.PrismaStatementAuditSink(client);
     const service = new serviceModule.StatementService(repository, inputs, audit);
     const settlement = new settlementModule.StatementSettlementService(repository, service);
-    return { repository, audit, service, settlement, profiles: new runtime.PrismaBillingProfileRepository(client) };
+    // Conserto da J-530 (plano v2 §3.5(a)): a mesma baixa COM a intenção de nota, para os cenários que EXECUTAM o INSERT dela.
+    const settlementWithIntents = new (settlementModule.StatementSettlementService as unknown as new (...args: unknown[]) => InstanceType<typeof settlementModule.StatementSettlementService>)(
+      repository,
+      service,
+      { issueTarget: { provider: "focusnfe", enabled: true }, enabledInvoiceProviders: ["focusnfe"] },
+    );
+    return { repository, audit, service, settlement, settlementWithIntents, profiles: new runtime.PrismaBillingProfileRepository(client) };
   }
 
   async function openCredit(tenantId: string, statementId: string, cents: number): Promise<string> {
@@ -382,6 +388,33 @@ if (!connectionString) {
     const c2 = await openCredit(t3, s3, 200);
     await scenario("service.applyCredit", () => rt.service.applyCredit({ tenantId: t3, creditId: c1, statementId: s3, actorId: ACTOR, now: NOW }));
     await scenario("service.writeOffCredit", () => rt.service.writeOffCredit({ tenantId: t3, creditId: c2, note: "perda", actorId: ACTOR }));
+    // T4 (conserto da J-530, plano v2 §3.5(a)): os 3 cenários que EXECUTAM o INSERT da intenção de nota dentro da transação
+    //     do demonstrativo — o 1º pagamento que quita, o monotônico que quita e o estorno total com nota viva.
+    const t4a = await seedSubscribedTenant("t4a");
+    const s4a = ((await rt.service.close({ tenantId: t4a, period: PERIOD, now: NOW, actorId: null, source: "job" })) as { statement: { id: string } }).statement.id;
+    await scenario("settlementWithIntents.settle-first-paid", () => rt.settlementWithIntents.settle({ tenantId: t4a, statementId: s4a, source: "asaas", externalChargeId: "pay_lk2_4a", paidCents: 1_000_000, method: "pix", now: NOW }));
+    const t4b = await seedSubscribedTenant("t4b");
+    const s4b = ((await rt.service.close({ tenantId: t4b, period: PERIOD, now: NOW, actorId: null, source: "job" })) as { statement: { id: string } }).statement.id;
+    await rt.settlementWithIntents.settle({ tenantId: t4b, statementId: s4b, source: "asaas", externalChargeId: "pay_lk2_4b", paidCents: 100, method: "pix", now: NOW });
+    await scenario("settlementWithIntents.settle-monotonic-paid", () => rt.settlementWithIntents.settle({ tenantId: t4b, statementId: s4b, source: "asaas", externalChargeId: "pay_lk2_4b", paidCents: 1_000_000, method: "pix", now: NOW }));
+    const t4c = await seedSubscribedTenant("t4c");
+    const s4c = ((await rt.service.close({ tenantId: t4c, period: PERIOD, now: NOW, actorId: null, source: "job" })) as { statement: { id: string } }).statement.id;
+    await rt.settlementWithIntents.settle({ tenantId: t4c, statementId: s4c, source: "asaas", externalChargeId: "pay_lk2_4c", paidCents: 1_000_000, method: "pix", now: NOW });
+    // a nota VIVA gravada por SQL de semente, fora do gravador
+    await db.$executeRawUnsafe(
+      `INSERT INTO subscription_statement_invoices (tenant_id, statement_id, seq, provider, external_ref, serie_dps, numero_dps, status, created_at, updated_at)
+         VALUES ($1::uuid, $2::uuid, 1, 'focusnfe', $4, $3, 1, 'authorized', now(), now())`,
+      t4c,
+      s4c,
+      1 + Math.floor(Math.random() * 100000),
+      `${s4c}:1`,
+    );
+    await scenario("settlementWithIntents.applyReversal-live-invoice", () => rt.settlementWithIntents.applyReversal({ tenantId: t4c, statementId: s4c, externalChargeId: "pay_lk2_4c", reversedCents: 1_000_000, kind: "refund", now: NOW }));
+    const intents = (await db.$queryRawUnsafe(
+      `SELECT kind, count(*)::int AS n FROM billing_outbox WHERE statement_id = ANY($1::uuid[]) AND kind IN ('invoice_issue', 'invoice_cancel') GROUP BY kind ORDER BY kind`,
+      [s4a, s4b, s4c],
+    )) as Array<{ kind: string; n: number }>;
+    assert.deepEqual(intents, [{ kind: "invoice_cancel", n: 1 }, { kind: "invoice_issue", n: 3 }], "os 3 cenários gravaram as intenções DENTRO das transações gravadas");
     // o runtime: leituras, perfil e a trilha direta
     await scenario("runtime.listStatements", () => rt.repository.listStatements(t1));
     await scenario("runtime.findStatement", () => rt.repository.findStatement(t1, s1));
