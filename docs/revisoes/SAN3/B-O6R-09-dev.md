@@ -300,3 +300,16 @@ nomeado, roda só o teste-dono (`--test-name-pattern`), e o arquivo volta byte a
   `src/modules/field-dispatch` da `main`, fatia 2).
 - **Intermitente, anterior ao bloco:** `users-acesso-seg-portao-db` A6 ("a criação (S2) entrega a provisória, 400 !==
   201"). Rodado sozinho no ramo logo depois: 4/4. Não toca despacho nem orçamento.
+
+## Atualização com a `main` (05:09–05:13)
+
+- A `origin/main` andou para `b6caf568` (#533, B-SAN3-08: a web do orçamento manda o destino em camelCase e o diálogo
+  de aprovação). `git merge --no-ff origin/main`: conflitos SÓ de apenso em `decisoes.md` e `pendencias.md`, resolvidos
+  pela união (o lado da `main` primeiro). O #533 registrou a `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` (ABERTA); o meu registro
+  de fechamento virou um complemento sob esse ID, sem duplicá-lo. A observação de snake_case da emenda 1.1 passou a
+  apontar a `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE`, que o #533 registrou.
+- Conferido depois do merge: `npm run check` ec=0; memória (`san3-08-aprovar-orcamento-destino`, `service-quote-approve`,
+  `service-quotes-routes`, `b-o6r-09-quote-approve-memory`) 44/44; banco (`san3-08-financeiro-cria-orcamento-db`,
+  `b-o6r-09-quote-approve-atomic-db`) 19/19, 0 pulo; web `check` ec=0 e as suítes do #533 que tocam o orçamento mais as do
+  bloco, 118/118. O ramo `case "quote_already_approved"` do diálogo do #533 continua vivo (o 409 ficou), como a emenda
+  1.1 previu.
