@@ -791,16 +791,16 @@ export async function createPrismaAuctionPorts(): Promise<{
   };
 }
 
-// Perfil do gate (scope + prazos t0-relativos + prazo de leilão) via join impound_processes ⋈ jurisdiction_profiles,
-// sob RLS. O PISO (>= 60d) é aplicado no auction.eligibility, NUNCA aqui.
+// Perfil do gate gravado no processo na abertura. O PISO (>= 60d) é aplicado no auction.eligibility.
 async function loadAuctionProfile(prisma: PrismaClient, tenantId: string, processId: string): Promise<AuctionProfile | undefined> {
   return withTenantRls(prisma, tenantId, async (tx) => {
     const rows = await tx.$queryRaw<
       Array<{ scope: string; owner_notif_days: number; notice_edict_day: number; auction_eligible_day: number }>
     >`
-      SELECT jp.scope, jp.owner_notif_days, jp.notice_edict_day, jp.auction_eligible_day
+      SELECT ip.regime_scope AS scope, ip.regime_owner_notif_days AS owner_notif_days,
+             ip.regime_notice_edict_day AS notice_edict_day,
+             ip.regime_auction_eligible_day AS auction_eligible_day
       FROM impound_processes ip
-      JOIN jurisdiction_profiles jp ON jp.tenant_id = ip.tenant_id AND jp.id = ip.profile_id
       WHERE ip.tenant_id = ${tenantId}::uuid AND ip.id = ${processId}::uuid
     `;
     const row = rows[0];

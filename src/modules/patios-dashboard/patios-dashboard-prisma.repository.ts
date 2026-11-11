@@ -122,13 +122,13 @@ export class PrismaPatiosDashboardRepository implements PatiosDashboardRepositor
     const rows = await this.client.$queryRaw<
       Array<{ id: string; entered_at: Date; owner_notif_days: number; notice_edict_day: number }>
     >`
-      SELECT ip.id, ip.entered_at, jp.owner_notif_days, jp.notice_edict_day
+      SELECT ip.id, ip.entered_at, ip.regime_owner_notif_days AS owner_notif_days,
+             ip.regime_notice_edict_day AS notice_edict_day
       FROM impound_processes ip
-      JOIN jurisdiction_profiles jp ON jp.tenant_id = ip.tenant_id AND jp.id = ip.profile_id
       WHERE ip.tenant_id = ${tenantId}::uuid
         AND ip.entered_at IS NOT NULL AND ip.frozen_at IS NULL
         AND ip.status <> 'JUDICIAL_HOLD'
-        AND jp.scope = 'PUBLIC_AGREEMENT'
+        AND ip.regime_scope = 'PUBLIC_AGREEMENT'
       ORDER BY ip.entered_at ASC
       LIMIT ${DEADLINE_CANDIDATE_LIMIT}
     `;

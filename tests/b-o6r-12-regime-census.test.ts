@@ -14,12 +14,16 @@ export const INSUMOS_VIVOS_DIARIA = ["jp.daily_service_catalog_id", "y.timezone"
 
 test("B-O6R-12 C10: leitores de prazos/liberação usam regime do processo", () => {
   const cases = [
-    ["src/modules/impound/impound.notifications-prisma.repository.ts", "jp.scope"],
-    ["src/modules/auction/auction-prisma.repository.ts", "jp.auction_eligible_day"],
-    ["src/modules/release/release-prisma.repository.ts", "jp.release_requirements"],
-    ["src/modules/patios-dashboard/patios-dashboard-prisma.repository.ts", "jp.owner_notif_days"],
+    ["src/modules/impound/impound.notifications-prisma.repository.ts", "regime_scope"],
+    ["src/modules/auction/auction-prisma.repository.ts", "regime_auction_eligible_day"],
+    ["src/modules/release/release-prisma.repository.ts", "regime_release_requirements"],
+    ["src/modules/patios-dashboard/patios-dashboard-prisma.repository.ts", "regime_owner_notif_days"],
   ] as const;
-  for (const [path, forbidden] of cases) assert.equal(read(path).includes(forbidden), false, `${path} ainda contém ${forbidden}`);
+  for (const [path, required] of cases) {
+    const source = read(path);
+    assert.match(source, new RegExp(required), `${path} não lê ${required}`);
+    assert.doesNotMatch(source, /jurisdiction_profiles|\bjp\./, `${path} voltou ao perfil vivo`);
+  }
 });
 
 test("B-O6R-12 C22: cobrança declara somente ponteiro e fuso como insumos vivos", () => {

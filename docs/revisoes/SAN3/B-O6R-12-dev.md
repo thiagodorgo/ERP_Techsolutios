@@ -113,3 +113,18 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
 - **Executor da fatia:** `dev-o6r12-cdx`.
 - **Próximo comando:** F6 — substituir os quatro leitores Prisma e três leitores de memória;
   fazer C10/C20/C20b-d/C21 verdes e executar as mutações.
+
+## F6 — 2026-11-11T02:09:25-0300
+
+- Notificações ao proprietário, elegibilidade de leilão, liberação e painel de pátios passaram a
+  ler exclusivamente `impound_processes.regime_*`; nenhum deles mantém JOIN ou referência ao
+  perfil normativo vivo.
+- Os repositórios em memória de notificação, leilão e liberação guardam o primeiro retrato por
+  processo e o reutilizam mesmo se o perfil for alterado depois.
+- Testes da fatia: **45/45**, 0 fail, 0 skip; `npm run check` e `git diff --check` verdes.
+- Mutações isoladas e revertidas, todas com `not ok`: C10 (JOIN vivo alternativo), C20
+  (liberação viva), C20b (notificação viva), C20c (dia de leilão fixado em 90), C20d (painel
+  fixado em 999) e C21a/C21b/C21c (desligar o retorno do retrato capturado em cada memória).
+- **Executor da fatia:** `dev-o6r12-cdx`.
+- **Próximo comando:** F6b — projetar no portal do proprietário apenas o regime da abertura,
+  preservar o fallback histórico e executar C19 com mutação.

@@ -68,6 +68,7 @@ type StoredProfile = {
 export class InMemoryNotificationRepository implements NotificationRepository {
   private readonly notifications: ProcessNotification[] = [];
   private readonly profiles = new Map<string, StoredProfile>();
+  private readonly regimeByProcess = new Map<string, StoredProfile>();
 
   constructor(private readonly impound: Pick<ImpoundRepository, "appendEvent" | "findProcessById">) {}
 
@@ -175,6 +176,19 @@ export class InMemoryNotificationRepository implements NotificationRepository {
       ownerNotifDays: FEDERAL_DEFAULTS.ownerNotifDays,
       noticeEdictDay: FEDERAL_DEFAULTS.noticeEdictDay,
     };
+    const key = `${tenantId}:${processId}`;
+    const captured = this.regimeByProcess.get(key);
+    if (captured) return {
+      tenantId,
+      processId,
+      enteredAt: process.enteredAt,
+      frozenAt: process.frozenAt,
+      status: process.status,
+      scope: captured.scope,
+      ownerNotifDays: captured.ownerNotifDays,
+      noticeEdictDay: captured.noticeEdictDay,
+    };
+    this.regimeByProcess.set(key, profile);
     return {
       tenantId,
       processId,
@@ -200,5 +214,6 @@ export class InMemoryNotificationRepository implements NotificationRepository {
   reset(): void {
     this.notifications.length = 0;
     this.profiles.clear();
+    this.regimeByProcess.clear();
   }
 }
