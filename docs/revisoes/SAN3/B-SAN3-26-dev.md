@@ -591,3 +591,44 @@ entraram porque estão na sonda da C2 (o caso "fullwidth") e são a mesma propri
 
 **As âncoras antigas** da tabela de mutações do F4 (A10-ii, A10-iii, A10-iv) e a PROPRIA-3 do PR534-02 apontavam para
 o padrão antigo, que deixou de existir. As propriedades delas são as linhas 7, 8 e 9 acima, com as âncoras novas.
+
+### A main entrou no ramo (#530 e #538)
+
+O `merge(main)` `3233bed8` conflitou só em registro (`decisoes.md` e `pendencias.md`). As duas entradas foram
+mantidas, a do ramo primeiro, e o índice foi regenerado pelo gerador. O #538 já tinha dado ID às 2 barreiras do
+emulador (`P-APP-DETALHE-OS-LARGURA-INFINITA` e `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA`) e passado a
+`P-USERS-DESATIVADO-TOKEN-MOBILE` ao `B-USERS-SEG-DESATIVADO`. Nesta última não mexi.
+
+### C3-01, C3-02, C3-03 e as pendências da triagem (registro, `controle/pendencias.md`)
+
+A regra de dono é a do orquestrador: defeito do app de OS ou da fila vai para o `B-O6R-11d`, e texto, para o
+`B-SAN3-19b`. Se nenhum couber, "dono a definir pelo orquestrador".
+
+**C3-01, as 2 barreiras do emulador:**
+- `P-APP-DETALHE-OS-LARGURA-INFINITA` (ALTA) ganha o dono `B-O6R-11d`;
+- `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` já tinha esse dono e ganha a nota da C3-02: o app deste PR também tem a
+  barreira.
+
+**C3-02, o mapeamento de status:**
+- `P-MOBILE-STATUS-NOMES` passa ao `B-O6R-11d` no registro versionado, com a nota do PR534-03.
+- O fechamento da `P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS` (item 53) agora diz exatamente o que fecha: a metade do
+  servidor, nas duas portas, que é a autoridade. A metade do app está no código, mas com o servidor real só é
+  alcançável depois do conserto do mapeamento (dono `B-O6R-11d`).
+
+**C3-03, as 5 pendências que o bloco abre:**
+
+| Pendência | Dono |
+|---|---|
+| `P-CHECKIN-SEM-PLACA-OFFLINE` | `B-O6R-11d` (o pull trazer o `on_site` da base; a exceção segue decisão do dono) |
+| `P-DESPACHO-ARRIVED-SEM-CONFERENCIA` | a definir pelo orquestrador (é do despacho no servidor; o `B-SAN3-26b` do plano não existe) |
+| `P-CHECKIN-NUMERO-DE-SERIE` | a definir pelo orquestrador (decisão de produto) |
+| `P-CONSOLE-EDITA-PLACA-DA-OS` | a definir pelo orquestrador (tela do console) |
+| `P-CHECKIN-PLACA-ESTRANGEIRA` | a definir pelo orquestrador (decisão de produto) |
+
+**Viram pendência, sem código:**
+- C2-02 vira `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` (MÉDIA, `B-O6R-11d`);
+- C2-03 e C2-04 entram como nota na `P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD`;
+- C1-A2 vira `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA` (BAIXA, anterior ao bloco, `B-O6R-11d`);
+- o residual do C1-A1 vira `P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO` (BAIXA, dono a definir pelo orquestrador).
+
+O índice foi regenerado pelo gerador: 864 cabeçalhos e 853 IDs.
