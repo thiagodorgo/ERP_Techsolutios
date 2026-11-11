@@ -83,6 +83,22 @@ test("[B-O6R-11d N6] OS com U só em assignedOperatorId: o lote do app é aceito
   });
 });
 
+test("[B-O6R-11d N11] OS despachada com operator (perfil) != user: o envio atrasado e conferido contra o tecnico certo (assignedUserId) e e aceito", async () => {
+  await withApi(async (ctx) => {
+    const osId = await novaOs(ctx, "OS do N11");
+    // Estado normal de OS despachada: assignedOperatorId e o PERFIL de campo, assignedUserId e o usuario.
+    const despacho = await assignRest(ctx, osId, { operatorId: tecnicoV, userId: tecnicoU });
+    assert.equal(despacho.status, 200, JSON.stringify(despacho.body));
+
+    const lote = await enviarLote(ctx, "n11-tecnico-certo", payloadDoApp(ctx, osId));
+
+    assert.equal(lote.acao, "accepted", JSON.stringify(lote.body));
+    const os = await lerOs(ctx, osId);
+    assert.equal(os.assignedUserId, tecnicoU);
+    assert.equal(os.vehicleId, ctx.viaturaId);
+  });
+});
+
 test("[B-O6R-11d N9] fail-closed: expected_technician_id null ou vazio → conflito; sem a chave → o comportamento de hoje", async () => {
   await withApi(async (ctx) => {
     for (const [rotulo, valor] of [
