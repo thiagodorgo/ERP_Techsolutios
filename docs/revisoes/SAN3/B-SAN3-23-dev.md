@@ -188,3 +188,10 @@ Os ajustes vieram como requisito do orquestrador. A crítica não propõe conser
 | **M15b** (EM1-06) | `status: current.status, // B-SAN3-23:cas-dispatch` | 0 | **A15b** (A15 `ok`) | a OS cancelada vira `assigned` |
 
 - **Veredito:** 12 mutações, 12 vermelhas pela razão certa, tsc 0 em todas.
+
+### F6e — bateria da retomada (05:58–06:11 SP)
+
+- `npm run check`, `npm run lint`, `npm run build` → sem erro; `node scripts/migration-transaction-guard.mjs` → `migrações: 130 · … · violações: 0`; `git diff --check origin/main..HEAD` limpo; `git diff --name-only origin/main...HEAD` → os arquivos do PERMITIDO mais o teste de memória declarado (`tests/b-san3-23-cas-retentativa.test.ts`); nada em `prisma/**`, `.github/**`, `Kpis/**`.
+- **Os `-db`** (`CORE_SAAS_PERSISTENCE=prisma npm test -- tests/b-san3-23-cancel-race-db.test.ts tests/work-order-invoicing-atomic-db.test.ts tests/o6r07c-b-scope-db.test.ts tests/o6r07c-subresource-scope-db.test.ts tests/traccar-event-sample-db.test.ts tests/traccar-idempotency-db.test.ts tests/traccar-position-ingestion-db.test.ts tests/traccar-resolution-race-db.test.ts tests/traccar-quarantine-db.test.ts tests/pg-barrier-scoped-db.test.ts`) → `10 arquivo(s) · 114 teste(s) · pass 114 · fail 0 · skipped 0`.
+- **Suíte inteira** na forma do job `backend` (Windows, head `e8e3ad00`, 06:00–06:10 SP) → `477 arquivo(s) · 4986 teste(s) · pass 4974 · fail 10 · skipped 2`. Nenhum vermelho é do bloco, pela triagem já registrada na F5: `san3-05-runtime-role-guard-db` e `san3-09-bootstrap-platform-admin-db` (falham igual na base `07898adf`: `setsid` ausente e o shim do `prisma` no Windows), o `EBUSY` do `rmSync` no drill do traccar (pasta `trc02-mdrill-g57hkx`, que deixei e removi) e o teto de tempo da ingestão do traccar sob carga (`npm test -- tests/traccar-position-ingestion-db.test.ts` isolado → `22 · pass 22 · fail 0`). O "nao super-conta", o T13 do ratchet e a suíte nova passaram na suíte inteira.
+- **O aceite é a CI no Linux** (o job `backend`, com a suíte inteira, e o `backend-postgres`): resultado no corpo do PR #536.
