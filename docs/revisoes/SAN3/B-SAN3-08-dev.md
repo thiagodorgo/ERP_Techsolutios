@@ -50,3 +50,80 @@ Formato P1: comando → saída resumida → veredito parcial.
 - **F0.6 ligação.** `approveServiceQuote` passa a mandar `buildServiceQuoteApproveBody(body)`. `npm --prefix frontend run check` → ok.
   `node --test --import tsx tests/san3-08-aprovar-orcamento-destino.test.ts tests/service-quote-approve.test.ts` (memória) →
   `# tests 19 # pass 19 # fail 0 # skipped 0`. Veredito: F0 verde.
+
+## F1 — diálogo único de aprovação (R-A2, R-A4, R-A5, R-A6, R-A8, R-A9, acabamento)
+
+- **Tela-modelo:** `frontend/src/modules/registry/service-quotes/components/ServiceQuoteFormModal.tsx` (mesmo `Modal`, `Input`,
+  `Alert`, `Button` de `components/ui`, mesma grade de 2 colunas, mesmo `Field` com erro abaixo do campo e `aria-describedby`).
+  Campos e cópia de origem e destino dos cards de `WorkOrderForm.tsx:257-280`. `Accordion` da biblioteca para o "Adicionar destino".
+  Sem componente novo na biblioteca: todos os blocos já existiam. Skills: `ts-frontend-full` (implementar) e `ui-ux-pro-max` (revisar).
+- **Decisão do dono aplicada:** o diálogo herda a aparência, sem as 3 opções e sem seletor (`D-PORTAO-7-RECOMENDACOES-1011`); só
+  tokens `var(--…)` no diálogo.
+- **Arquivos:** modelo `service-quote-approve.model.ts` (+ `DestinationRule`, `loadDestinationRule`, `hasRealDestination`,
+  `validateApproveForm`, `toApprovePayload`, `approveErrorOutcome`, `createApproveSubmitter`, `submitApprove`); diálogo novo
+  `components/ServiceQuoteApproveDialog.tsx`; `QuoteTab.tsx` e `OrcamentosPage.tsx` só abrem o diálogo; testes em
+  `frontend/tests/service-quotes.smoke.test.tsx` (+11), `frontend/tests/work-order-quote-tab.test.tsx` (+4) e
+  `frontend/tests/work-orders-honest-errors.test.tsx` (só `GUARDED_FILES`, as 2 constantes e as 2 asserções do R-A8).
+- **Vermelho-controle (02:12 SP),** testes novos sobre o objeto da F0 (`1b9b674c`), com as mudanças de `src/` da F1 guardadas por
+  `git stash push -u` e devolvidas por `git stash pop` (stash `b4aed1ea`, descartado no pop):
+  `node --test --import tsx tests/service-quotes.smoke.test.tsx tests/work-order-quote-tab.test.tsx tests/work-orders-honest-errors.test.tsx`
+  → `# tests 100 # pass 84 # fail 16`: `not ok 15 [G-APPROVE]` com o diagnóstico
+  `[G-APPROVE] arquivos=667 · chamadas=3 (no diálogo=0) · fora=2 · rotas=1 · rota fora=0` (os 2 de fora são
+  `OrcamentosPage.tsx:108` e `QuoteTab.tsx:106`, conferidos por `grep -rn "approveServiceQuote(" src`); `not ok 16` a `25`
+  (modelo e aviso por ausência: `approvedNoticeFor is not a function`); `not ok 31` a `34` (diálogo por ausência);
+  `not ok 90 [G1]` (`diálogo de aprovação presente nas raízes`). Veredito: todo caso novo nasce vermelho no objeto anterior.
+- **Verde.** Mesmo comando → `# tests 100 # pass 100 # fail 0 # skipped 0` (85 da base + 15 novos). Diagnósticos:
+  `[G-APPROVE] arquivos=668 · chamadas=2 (no diálogo=1) · fora=0 · rotas=1 · rota fora=0`;
+  `[G1] raízes=92 (por pasta 73/16 + 3 arquivo) · fecho=59 · referências de origem mock nas raízes=20 (guardadas=20) · vazamentos raiz/fecho=0/0`;
+  `[G1b] literais de objeto em ramo de falha vistos nas raízes=20 · com identidade constante=0`.
+  **Risco do R-A8:** o `[G1]` ficou verde com o diálogo nas raízes (o fecho inclui `service-catalog.service.ts`); não houve
+  vermelho anterior ao bloco, então não há emenda 2.
+- **Mutações literais, uma por vez** (`mut.mjs`: `grep -cF` âncora = 1 antes de aplicar; restaurado byte a byte; logs
+  `mut-f1-a/b/c.log` no scratchpad). Todas com âncora = 1 e `restaurado=true`; todas vermelhas:
+
+  | ID | Teste vermelho (TAP) |
+  |---|---|
+  | M3a | `not ok 19 [R-A5] unknown não bloqueia` (e `not ok 21 [P3]`) |
+  | M3b | `not ok 20 [R-A5] required bloqueia` (e `16 [P2]`, `17 [R-A4]`) |
+  | M3c | `not ok 17 [R-A4] destino por pino, 0/0 e faixa` |
+  | M3d | `not ok 17 [R-A4]` (o caso 0/0) |
+  | M4a | `not ok 18 [R-A5] derivação` (o lançar) |
+  | M4b | `not ok 18 [R-A5] derivação` (o null) |
+  | M5 | `work-order-quote-tab` `not ok 6 [R-A5] … destino obrigatório` · `error: 'o marcador de obrigatório no endereço de destino'` |
+  | M6 | `not ok 23 [R-A2] envio duplo` |
+  | M7a | `not ok 22 [R-A2] desfechos` (409) |
+  | M7b | `not ok 22 [R-A2] desfechos` (403) |
+  | M7c | `not ok 22 [R-A2] desfechos` (404) |
+  | M8 | `not ok 21 [P3]` |
+  | M9a | `not ok 24 [R-A9] modo vazio não bloqueia` (e 16, 17, 19, 21, 23: todo envio sem modo vira inválido) |
+  | M9b | `work-order-quote-tab` `not ok 8 [R-A9] … até 120 caracteres` |
+  | M10a | `not ok 15 [G-APPROVE]` · `+ 'modules/work-orders/components/tabs/QuoteTab.tsx:327 (alias)'` |
+  | M10b | `not ok 15 [G-APPROVE]` · `+ 'modules/registry/service-quotes/pages/OrcamentosPage.tsx:422 (texto)'` e `(namespace)` |
+  | M10c | `not ok 15 [G-APPROVE]` (rota) · `+ 'modules/work-orders/components/tabs/QuoteTab.tsx:326'` |
+  | M11a | `work-orders-honest-errors` `not ok 57 [G1b] entidade fabricada inline` |
+  | M11b | `work-orders-honest-errors` `not ok 56 [G1]` · `error: 'diálogo de aprovação presente nas raízes: …'` |
+  | M14 | `not ok 25 [acabamento] o aviso de sucesso … não imprime o identificador` |
+
+  Controle sem mutação depois de todas → `# tests 100 # pass 100 # fail 0`.
+  - **Notas de aplicação, sem troca de mutação:** M3d apaga o trecho `&& !(lat === 0 && lng === 0)` (âncora literal = 1),
+    junto do espaço que o precede, para a linha continuar válida. M8 apaga a linha `case "destination_required":` e o `return`
+    seguinte, que é de uma linha só. M9a acrescenta a linha logo depois de `const errors: string[] = [];`. M9b troca
+    `maxLength={120}` por nada. M10a a M10c e M11a são acrescentadas ao fim do arquivo (âncora "fim do arquivo").
+- **Leituras do dev, declaradas (§A6), sem mudar requisito:**
+  1. `onNotice` recebe também o tom (`"info" | "danger"`): a tabela do R-A2 distingue `close_and_reload_notice` (aviso) de
+     `close_and_reload` (erro), e os 4 callbacks da emenda não tinham onde levar a mensagem de erro de quem fecha e recarrega.
+  2. Enquanto o diálogo confere o serviço, **Aprovar fica desabilitado e Cancelar não**. A leitura do serviço tem teto de 8 s
+     (`withTimeout` no diálogo, passado ao `loadDestinationRule` injetado); passou disso, a regra vira `"unknown"`, que não bloqueia.
+  3. A recusa `destination_required` do servidor nunca é desfeita por uma leitura do catálogo que chegue depois
+     (`setRule((current) => (current === "loading" ? loaded : current))`).
+  4. O aviso de sucesso da tela Orçamentos virou `approvedNoticeFor` + `ActionNoticeBody`, exportados da página para o teste.
+     O estado do aviso passou a guardar `{ text, workOrderId }` atrás de um `setActionNotice(text, workOrderId?)`, para as linhas
+     do Compartilhar e do Anular ficarem iguais.
+  5. A aba Orçamento ganhou um aviso informativo (sucesso e "já aprovado"), com o mesmo estilo inline em hex que o próprio
+     arquivo usa no cartão de erro.
+  6. `messageForError` (`QuoteTab.tsx`) e `messageForQuoteError` (`OrcamentosPage.tsx`) continuam, só para o Compartilhar.
+- **Revisão `ui-ux-pro-max` (pelo dev, não substitui o revisor):** acrescentado `role="alert"` em volta do erro do servidor;
+  carregando com `role="status"`; foco no primeiro campo inválido e no endereço de destino depois da recusa do servidor; botões
+  do rodapé com 44 px; PT-BR sem termo técnico. Fica como está, igual à tela-modelo: o `Modal` da biblioteca não fecha por ESC nem
+  pelo fundo (fora da fronteira do bloco).
+- `npm --prefix frontend run check` → ok.
