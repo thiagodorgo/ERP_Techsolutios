@@ -59,3 +59,11 @@ Os ajustes vieram como requisito do orquestrador. A crítica não propõe conser
 - **Saída:** `# fail 19`; `grep -c "timeout esperando" mb-tap.txt` = **10**; a A1 caiu em `timeout esperando bloqueio da própria suíte … lançar atrás do cancelamento (bloqueados vistos: 0 de 1; bloqueador exigido: 132)`.
 - **Veredito:** MB **morta** (a BAR-1 fica vermelha). Restaurado.
 - **Incidente meu, registrado:** restaurei com `git checkout -- tests/helpers/pg-barrier.ts` antes de commitar o auxiliar novo, e o restauro levou o acréscimo junto. Recoloquei o mesmo texto (`git diff --stat`: 64 inserções, igual a antes; `grep -c "= ANY(pg_blocking_pids(a.pid))"` = 1). Daqui em diante, toda mutação é aplicada **depois** do commit da fatia, e o restauro é sempre contra o commit.
+
+### F1 — escrita de item relê a OS sob a trava compartilhada (03:04–03:07 SP)
+
+- **Código:** `workOrderCancelledError()` em `work-order-financial.types.ts` (usada pela guarda de entrada e pelo repositório); `lockWorkOrderRowForFinancialWrite` privado em `PrismaWorkOrderFinancialItemRepository` (o único `FOR SHARE` do arquivo; a linha exata `if (row?.status === "cancelled") throw workOrderCancelledError();`), chamado em `create` e `update` (dentro do `try`, antes da escrita) e em `softDelete`, cada um com o seu marcador; `translateItemWriteFailure` + `itemWriteTransientConflictError` (503) no serviço, envolvendo `repository.create/update/softDelete`; comentário do `zeroActiveItems` (D-5).
+- `npm run check` → sem erro.
+- `node --test --test-reporter=tap --test-name-pattern="\[A1\]|\[A6a\]|\[A6b\]|\[A8\]|\[A11\]|\[A11b\]|\[A11c\]" … b-san3-23-cancel-race-db.test.ts` → `# pass 7 · # fail 0` (os outros 12, pulados pelo filtro). Barreira de todos: `bloqueado: SELECT status FROM work_orders … FOR SHARE`. A1/A8: `422/work_order_cancelled`, 0 ativo; A6a: quantidade 1, total 100; A6b: não apagado; A11/A11b/A11c: `503/work_order_financial_transient_conflict`, nada persistido.
+- Regressão: `npm test -- tests/work-order-financials.test.ts tests/work-order-financials-routes.test.ts` → `2 arquivo(s) · 39 teste(s) · pass 39 · fail 0 · skipped 0`; `CORE_SAAS_PERSISTENCE=prisma npm test -- tests/work-order-invoicing-atomic-db.test.ts` → `17 · pass 17 · fail 0 · skipped 0`.
+- **Veredito:** verde.
