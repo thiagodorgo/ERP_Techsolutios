@@ -89,6 +89,10 @@ class OperationalStatusChip extends StatelessWidget {
   }
 }
 
+// Chave técnica de permissão (`recurso:acao`): nunca aparece no estado de acesso não permitido
+// (B-SAN3-19b, item 48). A checagem roda só em debug e teste; o texto vem do chamador.
+final _kChaveTecnica = RegExp(r'\b[a-z][a-z_]*:[a-z][a-z_]*\b');
+
 class PermissionBlockedState extends StatelessWidget {
   const PermissionBlockedState({
     required this.title,
@@ -101,6 +105,7 @@ class PermissionBlockedState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    assert(!_kChaveTecnica.hasMatch('$title $message'));
     return EmptyState(icon: Icons.lock_outline, title: title, message: message);
   }
 }
@@ -306,7 +311,7 @@ class ApprovalDecisionCard extends StatelessWidget {
         title: Text(title),
         subtitle: Text(message),
         trailing: const OperationalStatusChip(
-          label: 'Preparacao',
+          label: 'Em breve',
           status: 'info',
         ),
       ),
