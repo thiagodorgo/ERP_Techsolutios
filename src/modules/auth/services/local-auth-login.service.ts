@@ -17,6 +17,7 @@ type LocalAuthCredentialRecord = {
   readonly email: string;
   readonly password_hash: string;
   readonly locked_until: Date | null;
+  readonly must_change_password: boolean;
   // B-O6R-07a ciclo 2 (C2·3) — opcional para não quebrar dublês estruturais existentes; a linha
   // real do Prisma sempre o tem. Alimenta SÓ a escolha do candidato cobrado (menor contador).
   readonly failed_attempts?: number;
@@ -78,6 +79,7 @@ export type AnonymousCandidateResult =
       readonly user: LocalAuthLoginUser;
       readonly tenant: { readonly id: string; readonly name: string };
       readonly roles: readonly LocalAuthLoginRole[];
+      readonly mustChangePassword: boolean;
     }
   | {
       readonly ok: false;
@@ -214,6 +216,7 @@ export class LocalAuthLoginService {
         name: tenant.name,
       },
       roles: mapLoginRoles(roles),
+      mustChangePassword: credential.must_change_password,
     };
   }
 
@@ -293,6 +296,7 @@ export class LocalAuthLoginService {
         name: tenant.name,
       },
       roles: mapLoginRoles(roles),
+      mustChangePassword: credential.must_change_password,
     };
   }
 

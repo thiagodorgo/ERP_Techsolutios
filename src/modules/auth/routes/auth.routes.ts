@@ -19,11 +19,26 @@ import {
   getAuthenticatedActor,
 } from "../middleware/authenticated-actor.middleware.js";
 import type { AuthSessionService } from "../services/auth-session.service.js";
+import {
+  getIdentityLinkService,
+  resetUnavailableError,
+  type IdentityLinkError,
+  type IdentityLinkService,
+} from "../services/identity-link.service.js";
 import type { LocalAuthLoginService, AnonymousCandidateResult } from "../services/local-auth-login.service.js";
 import type { LocalAuthLoginResult } from "../types/auth.types.js";
 import type { verifyPassword } from "../services/password.service.js";
 import type { ICoreSaasService } from "../../core-saas/services/core-saas-service.interface.js";
 import { ROLE_PERMISSIONS, resolvePermissionsForRoles, type Role } from "../../core-saas/permissions/catalog.js";
+import { CoreSaasError } from "../../core-saas/types/core-saas.types.js";
+import {
+  createPersistentRbacContextMiddleware,
+  type PersistentAuthorizationResolver,
+} from "../../core-saas/middleware/persistent-rbac-context.middleware.js";
+import { requirePermission } from "../../core-saas/middleware/rbac.middleware.js";
+import { tenantContextMiddleware } from "../../core-saas/middleware/tenant-context.middleware.js";
+import { readRouteParam } from "../../core-saas/routes/http.js";
+import { resolveAccessTokenScope } from "../services/access-token-scope.js";
 
 // Permissões efetivas dos papéis do usuário — a MESMA resolução que o backend usa
 // no RBAC (tenant-context). Vai no corpo do login para o frontend derivar os guards
@@ -51,6 +66,14 @@ type AuthRouterOptions = {
     readonly clock?: () => number;
     readonly resolveClientIp?: (request: Request) => string;
   };
+  // B-USERS-ACESSO-SEG (S1) — o serviço de identidade do reset por administrador; injetável para o
+  // teste medir sob o papel efêmero. Resolvido só quando a rota do reset é chamada (o modo memória e os
+  // testes sem banco não o tocam).
+  readonly getIdentityLinkService?: () => Promise<IdentityLinkService>;
+  // B-USERS-ACESSO-SEG (S1) — o resolvedor do RBAC persistente da rota do reset; injetável para o teste
+  // ligá-lo ao papel efêmero (createPersistentAuthorizationResolver). Em produção nada é passado e vale o
+  // padrão do middleware (o cliente global, com CORE_SAAS_PERSISTENCE=prisma).
+  readonly resolvePersistentAuthorization?: PersistentAuthorizationResolver;
 };
 
 type LoginRequestBody = {
@@ -75,6 +98,7 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
   const resolveTokenExpiration =
     options.getAccessTokenExpiresInSeconds ?? getAccessTokenExpiresInSeconds;
   const resolveCoreSaasService = options.getCoreSaasService;
+  const resolveIdentityLinkService = options.getIdentityLinkService ?? getIdentityLinkService;
 
   // B-O6R-01 (§6) — o serviço anônimo é cacheado por router: o balde por e-mail vive entre
   // requisições. Sem core-saas configurado não há fonte de candidatos → o login sem tenantId
@@ -270,11 +294,14 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         }
       }
 
+      const roleKeys = loginResult.roles.map((role) => role.key);
+      const tokenScope = resolveAccessTokenScope(loginResult.mustChangePassword, roleKeys);
       const accessToken = await issueAccessToken({
         user_id: loginResult.user.id,
         tenant_id: loginResult.user.tenant_id,
         email: loginResult.user.email,
-        roles: loginResult.roles.map((role) => role.key),
+        roles: tokenScope.roles,
+        ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
         ...(identityId ? { identity_id: identityId } : {}),
       });
       const session = await (
@@ -306,8 +333,10 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
           sessionId: session.sessionId,
           user: loginResult.user,
           tenant: loginResult.tenant,
-          roles: loginResult.roles,
-          permissions: resolveLoginPermissions(loginResult.roles.map((role) => role.key)),
+          // P-SESSAO-RESTRITA — o corpo segue o token (mesma decisão do helper, falha fechada).
+          must_change_password: tokenScope.restricted,
+          roles: tokenScope.restricted ? [] : loginResult.roles,
+          permissions: tokenScope.restricted ? [] : resolveLoginPermissions(tokenScope.roles),
         },
       });
     } catch {
@@ -428,11 +457,14 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         identityId = null;
       }
 
+      // P-SESSAO-RESTRITA — a marca do par de DESTINO; ausente (adaptador que não a leu) = restrita.
+      const tokenScope = resolveAccessTokenScope(match.mustChangePassword ?? true, match.user.roles);
       const accessToken = await issueAccessToken({
         user_id: match.user.id,
         tenant_id: match.tenant.id,
         email: match.user.email,
-        roles: [...match.user.roles],
+        roles: tokenScope.roles,
+        ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
         ...(identityId ? { identity_id: identityId } : {}),
       });
       const session = await (
@@ -463,16 +495,105 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
           sessionId: session.sessionId,
           tenant: { id: match.tenant.id, name: match.tenant.name },
           user: { id: match.user.id, name: match.user.name, email: match.user.email },
-          roles: [...match.user.roles],
-          permissions: resolveLoginPermissions(match.user.roles),
+          must_change_password: tokenScope.restricted,
+          roles: [...tokenScope.roles],
+          permissions: tokenScope.restricted ? [] : resolveLoginPermissions(tokenScope.roles),
         },
       });
-    } catch {
+    } catch (error) {
+      // B-USERS-ACESSO-SEG (P-SEG-2) — a recusa da sessão da senha provisória sai com o código dela
+      // (403 password_change_required, mensagem fixa do serviço). Qualquer outra falha segue no 500
+      // genérico, sem a mensagem crua.
+      if (error instanceof CoreSaasError && error.statusCode === 403) {
+        response.status(403).json({
+          error: { code: error.code, reason: error.reason, message: error.message },
+        });
+        return;
+      }
+
       response.status(500).json({
         error: { code: "INTERNAL_SERVER_ERROR", message: "Unable to switch tenant." },
       });
     }
   });
+
+  // B-USERS-ACESSO-SEG (S1, Emenda 1 — UEM-R2-01) — POST /auth/users/:userId/reset-password: o
+  // administrador redefine a senha de um usuário da organização ATIVA dele. A rota monta ela mesma a
+  // cadeia (P-SEG-3): ator do JWT (sem ele, 401: cabeçalho legado não chega aqui), contexto de
+  // organização, RBAC persistente e users.manage. Corpo vazio; o id do alvo é UUID. A provisória sai SÓ
+  // nesta resposta, uma vez (UEM-01), com Cache-Control: no-store. Os erros do serviço saem com o código
+  // e a mensagem FIXOS dele; qualquer outra falha vira 503 reset_unavailable (nunca a mensagem crua do
+  // tratador genérico — UEM-03).
+  router.post(
+    "/users/:userId/reset-password",
+    attachAuthenticatedActor(),
+    (request, response, next) => {
+      if (!getAuthenticatedActor(request)) {
+        response.status(401).json({
+          error: { code: "UNAUTHORIZED", reason: "jwt_required", message: "Bearer token required." },
+        });
+        return;
+      }
+
+      next();
+    },
+    tenantContextMiddleware,
+    createPersistentRbacContextMiddleware(
+      options.resolvePersistentAuthorization
+        ? { resolveAuthorization: options.resolvePersistentAuthorization }
+        : {},
+    ),
+    requirePermission("users.manage"),
+    async (request, response) => {
+      response.setHeader("Cache-Control", "no-store");
+
+      const actor = getAuthenticatedActor(request);
+
+      if (!actor) {
+        response.status(401).json({
+          error: { code: "UNAUTHORIZED", reason: "jwt_required", message: "Bearer token required." },
+        });
+        return;
+      }
+
+      const targetUserId = readRouteParam(request.params.userId);
+      const body: unknown = request.body ?? {};
+
+      if (!uuidPattern.test(targetUserId)) {
+        response.status(400).json({
+          error: { code: "BAD_REQUEST", reason: "invalid_request", message: "userId must be a valid UUID." },
+        });
+        return;
+      }
+
+      if (!isRecord(body) || Object.keys(body).length > 0) {
+        response.status(400).json({
+          error: { code: "BAD_REQUEST", reason: "invalid_request", message: "The request body must be empty." },
+        });
+        return;
+      }
+
+      try {
+        const service = await resolveIdentityLinkService();
+        const result = await service.resetPasswordByAdmin(actor, targetUserId);
+
+        response.status(200).json({
+          data: {
+            user_id: result.userId,
+            temporary_password: result.temporaryPassword,
+            must_change_password: true,
+            revoked_sessions: result.revokedSessions,
+          },
+        });
+      } catch (error) {
+        const failure = isResetDomainError(error) ? error : resetUnavailableError();
+
+        response.status(failure.statusCode).json({
+          error: { code: failure.code, reason: failure.reason, message: failure.message },
+        });
+      }
+    },
+  );
 
   router.post("/logout", async (request, response) => {
     try {
@@ -588,4 +709,30 @@ function isBasicEmail(email: string): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+// B-USERS-ACESSO-SEG (S1, UEM-03) — só os erros FIXOS do reset passam com o próprio código; qualquer outro
+// objeto (inclusive um com a forma certa e um motivo desconhecido) vira 503 reset_unavailable. Lista
+// fechada: o motivo novo nasce aqui, de propósito.
+const RESET_DOMAIN_REASONS: ReadonlySet<string> = new Set([
+  "user_not_found",
+  "user_inactive",
+  "cannot_reset_self",
+  "identity_linked_elsewhere",
+  "target_not_manageable",
+  "reset_unavailable",
+]);
+
+function isResetDomainError(error: unknown): error is IdentityLinkError {
+  if (!isRecord(error)) {
+    return false;
+  }
+
+  return (
+    typeof error.statusCode === "number" &&
+    typeof error.code === "string" &&
+    typeof error.reason === "string" &&
+    typeof error.message === "string" &&
+    RESET_DOMAIN_REASONS.has(error.reason)
+  );
 }

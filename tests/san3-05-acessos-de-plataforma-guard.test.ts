@@ -289,6 +289,70 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/vault/vault.prisma-runtime.ts", "PrismaCredentialRepository.replaceActive", "tx", "RAW-SQL($queryRaw) OPACO", "?", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
     "B-ASS-05: `SELECT id FROM billing_provider_credentials … FOR UPDATE` dentro do `$transaction` da gravação da credencial; a tabela é GLOBAL da plataforma, sem tenant_id e sem RLS (M4, exceção declarada no plano §3.2), então não há GUC a fixar e nenhuma tabela FORCE é tocada; o filtro é o slot (provider, environment, kind) e a trava serializa duas gravações do mesmo kind (o UNIQUE parcial segura a corrida da primeira gravação). Provado em tests/ass-05-vault-migration-drill-db.test.ts sob papel NOBYPASSRLS.",
   ],
+  // B-USERS-ACESSO-SEG (S4 e S7): as 4 chaves que o bloco acrescenta, coladas da saída do gerador no head do bloco, com o
+  // motivo por chave. Gerador e WRAPPERS intocados. A contagem de administradores (S3/S5) roda no callback de
+  // `withTenantRls` do `updateUser` e não gera chave.
+  [
+    k("L1", "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts", "-.createPersistentAuthorizationResolver", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRls)", "×1"),
+    "B-USERS-ACESSO-SEG (S4): a leitura do STATUS do usuário (l.128) roda no callback de `withTenantRls(client, input.tenantId, …)` (l.123), cujo setter do GUC é a 1ª instrução da transação (src/database/rls.ts l.35), e filtra também por `tenant_id`; o `client` é parâmetro só para o teste medir a fiação sob o papel efêmero — em produção é o global (`createDefaultPersistentAuthorizationResolver`, l.94). Provado em tests/users-acesso-seg-desativacao-db.test.ts (S4·b/S4·c) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts", "new RoleRepository(tx)", "PARAMETRO(tx de callback de withTenantRls)", "×1"),
+    "B-USERS-ACESSO-SEG (S4): a mesma construção que já existia no resolvedor padrão, movida para `createPersistentAuthorizationResolver(client)` (l.123): o `tx` é o do callback de `withTenantRls`, setter do GUC como 1ª instrução (src/database/rls.ts l.35); `roles` (global ou da organização) lido sob o GUC da organização do ator.",
+  ],
+  [
+    k("L2", "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts", "new UserRoleRepository(tx)", "PARAMETRO(tx de callback de withTenantRls)", "×1"),
+    "B-USERS-ACESSO-SEG (S4): idem — os vínculos de papel do ator lidos no callback de `withTenantRls` do resolvedor (l.123), sob o GUC da organização do ator (src/database/rls.ts l.35), com `tenant_id` também no filtro do repositório.",
+  ],
+  [
+    k("L2", "src/modules/auth/services/identity-link.service.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx de callback de handlePasswordChange)", "×1"),
+    "B-USERS-ACESSO-SEG (S7): a MESMA forma da chave já congelada em local-auth-credential.service.ts — o `updatePassword` da troca do PRÓPRIO usuário (`changeOwnPassword`, l.476-477) roda no callback do gancho `handlePasswordChange`, cuja transação começa por `setIdentityRlsContext(tx, actor)` (l.497), que põe o GUC da organização do ator como 1ª instrução (src/database/rls.ts l.188); o `where` é o par (tenant_id, user_id) do ator. Provado em tests/users-acesso-seg-troca-senha-db.test.ts sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  // B-USERS-ACESSO-SEG (P-SEG-2 e S1, Emenda 1): as chaves que a P-SEG-2 e o reset por administrador acrescentam,
+  // coladas da saída do gerador no head do bloco, com o motivo por chave. Gerador e WRAPPERS intocados. A CI do head
+  // 4ddbc9a9 (P-SEG-2) pegou as duas primeiras sem motivo — registrado no diário do bloco.
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.mustChangePassword", "tx", "RAW-SQL($queryRaw)", "local_auth_credentials", "PARAMETRO(tx)", "×1"),
+    "B-USERS-ACESSO-SEG (P-SEG-2): a marca da senha provisória do PAR, `SELECT must_change_password FROM local_auth_credentials WHERE tenant_id = … AND user_id = …`; o método só é chamado de dentro de transações do próprio serviço, DEPOIS de `setTenantRlsContext(tx, <organização do par>)` (religação: passos 3b e 4b de `relink`), com `tenant_id` também no filtro; só leitura. Provado em tests/users-acesso-seg-provisoria-db.test.ts (P2·r2/P2·r3) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/core-saas/middleware/persistent-rbac-context.middleware.ts", "-.createPersistentAuthorizationResolver", "tx.user", "user.findFirst.select.local_auth_credentials", "local_auth_credentials", "PARAMETRO(tx de callback de withTenantRls)", "×1"),
+    "B-USERS-ACESSO-SEG (P-SEG-2): a MESMA leitura do status do S4, no callback de `withTenantRls(client, input.tenantId, …)` (setter do GUC como 1ª instrução, src/database/rls.ts l.35), passa a trazer pela relação a marca `must_change_password` da credencial do MESMO usuário; o `where` filtra por `id` e `tenant_id` da organização do ator e a relação lê sob o mesmo GUC; só leitura. Provado em tests/users-acesso-seg-provisoria-db.test.ts (P2·r4) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.assertNotLinkedElsewhere", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×2"),
+    "B-USERS-ACESSO-SEG (S1, P-SEG-1 opção a, decisão do dono 10/11 03:42): a verificação da D-USERS-1 — as duas leituras de EXISTÊNCIA (simples e, se achou, a mesma com FOR SHARE) de `auth_identity_links` da identidade do alvo, organização a organização; cada volta começa por `setTenantRlsContext(tx, <organização da volta>)` e filtra também por `tenant_id = <organização da volta>`, com o canário `assertRowsBelongToTenant` nas duas leituras; o `tx` é só o da transação do reset (`withTenantRlsBudget`), único chamador; nada da outra organização sai do método (o retorno é a recusa fixa ou 503). Provado em tests/users-acesso-seg-reset-db.test.ts (S1·a, S1·d, S1·e, S1·e2, S1·f) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.selectLinkOfPairForShare", "tx", "RAW-SQL($queryRaw)", "auth_identity_links", "PARAMETRO(tx)", "×1"),
+    "B-USERS-ACESSO-SEG (T2, UEM-02): a trava FOR SHARE do vínculo do par do ATOR na religação (`relink`, passo 3b), que serializa com o FOR UPDATE do reset por administrador (T1) no mesmo vínculo; chamada só dentro da transação da religação, DEPOIS de `setTenantRlsContext(tx, actor.tenantId)` (passo 3), com `tenant_id` e `user_id` do ator no filtro; não devolve dado. Provado em tests/users-acesso-seg-reset-serializacao-db.test.ts (SR·1b; a mutação sem a trava fica vermelha) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.resetPasswordByAdmin", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (S1): o ALVO do reset por administrador lido no callback de `withTenantRlsBudget(this.prisma, actor.tenantId, …)`, cujo setter do GUC da organização ATIVA do ator é a 1ª instrução (src/database/rls.ts, `withTenantRlsBudget`); o `where` filtra também por `tenant_id = actor.tenantId` (usuário de outra organização = 404). Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b/S1·c) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L2", "src/modules/auth/services/identity-link.service.ts", "new AuthSessionRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (S1): a revogação das sessões do ALVO do reset, no mesmo callback de `withTenantRlsBudget` (GUC da organização ativa do ator, reposto por `setTenantRlsContext` logo antes da escrita), `where` pelo par (tenant_id, user_id) do alvo. Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b: a sessão viva do alvo cai) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L2", "src/modules/auth/services/identity-link.service.ts", "new LocalAuthCredentialRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (S1): `upsertTemporaryPassword` grava só o HASH da provisória e a marca da P1 na credencial do ALVO, no callback de `withTenantRlsBudget` (GUC da organização ativa do ator, reposto logo antes), `where` pelo par (tenant_id, user_id) do alvo; devolve só o id. Provado em tests/users-acesso-seg-reset-db.test.ts (S1·b) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  // B-USERS-ACESSO-SEG (conserto do #527, R1-A02): as chaves que o conserto acrescenta, coladas da saída do gerador no head
+  // do conserto, com o motivo por chave. Gerador e WRAPPERS intocados.
+  [
+    k("L1", "src/modules/auth/services/auth-session.service.ts", "AuthSessionService.refreshSession", "tx.localAuthCredential", "localAuthCredential.findFirst", "local_auth_credentials", "PARAMETRO(tx de callback de runWithTenantContext)", "×1"),
+    "B-USERS-ACESSO-SEG (conserto #527, F2, P-SESSAO-RESTRITA): o refresh é assinador e relê a marca `must_change_password` do PAR do refresh token na MESMA transação em que já relê usuário e papéis, no callback de `runWithTenantContext(payload.tenant_id, …)` (o runner de produção põe o GUC da organização do par como 1ª instrução, src/database/rls.ts); o `where` é o par (tenant_id, user_id) e só seleciona a marca; par sem linha conta como não marcado (RQ-3). Provado em tests/users-acesso-seg-provisoria-db.test.ts (A4 e A4·RQ-3) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.resetPasswordByAdmin", "tx.userRoleAssignment", "userRoleAssignment.findMany", "user_role_assignments", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (conserto #527, F3, P-RESET-AUTORIDADE): os vínculos de papel do ALVO do reset lidos no callback de `withTenantRlsBudget(this.prisma, actor.tenantId, …)`, cujo setter do GUC da organização ATIVA do ator é a 1ª instrução (src/database/rls.ts); o `where` filtra por `tenant_id = actor.tenantId` e pelo alvo já achado nessa organização (depois do 404 e do 409 `user_inactive`); só leitura, e nada dela sai na resposta (recusa fixa `target_not_manageable`). Provado em tests/users-acesso-seg-reset-db.test.ts (A8/A8b) e tests/users-acesso-seg-portao-db.test.ts (A8b) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/identity-link.service.ts", "IdentityLinkService.resetPasswordByAdmin", "tx.userRoleAssignment", "userRoleAssignment.findMany.select.role", "roles", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-ACESSO-SEG (conserto #527, F3, P-RESET-AUTORIDADE): idem — a chave do papel (global ou da organização) de cada vínculo do alvo, pela relação, sob o mesmo GUC da organização ativa; só a `key`, comparada com `isPlatformRole`. Provado em tests/users-acesso-seg-reset-db.test.ts (A8/A8b) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
   // B-ASS-08 (parte 1): as 12 chaves dos repositórios Prisma do canal, coladas da saída do gerador no head do bloco, com o
   // motivo por chave. Os acessos sob `withTenantRls`/`forEachTenantRls` (charges, enqueue/findById/listByStatement e a
   // varredura de plataforma da outbox) NÃO geram chave: o gerador os prova sob contexto. Gerador e WRAPPERS intocados.

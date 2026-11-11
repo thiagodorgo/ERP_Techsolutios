@@ -4773,6 +4773,14 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fala literal, com o valor tirado:** *"limite de"* [teto de gasto diário da API definido pelo dono] *"na api"*. O trecho entre colchetes substitui o número que o dono falou, porque o repositório é público; o resto é literal.
 - **Decisão:** o dono confirmou o teto de gasto diário da API definido por ele; o teto total continua.
 
+## D-RESET-AUTORIDADE-PLATAFORMA (2026-11-11) — o administrador da organização não redefine a senha de quem tem papel de plataforma — RATIFICAÇÃO DO DONO PENDENTE
+
+- **Natureza:** leitura do planejador `topo-527-opus` (§A6), no plano do conserto do #527 (Correção pós-crítica, R1-A06). **RATIFICAÇÃO DO DONO PENDENTE** — o orquestrador leva ao dono.
+- **Origem:** junta J-527, achado C1-Q1, e a evidência E8 do topo: o reset por administrador alcançava alvo com papel de PLATAFORMA. Com a senha provisória em mãos, o administrador da organização troca ele mesmo a senha por `POST /auth/password` (que só pede a senha atual) e entra como `super_admin` com sessão inteira — escalada de organização para plataforma. Medido de novo pelo dev do conserto no head anterior à regra: a cadeia reset → login com a provisória → troca → login com a senha nova → `GET /platform/tenants` chega ao 200 (`tests/users-acesso-seg-portao-db.test.ts`, A8b).
+- **Invariante:** `ROLE_AUTHORITY` (fonte única, `catalog.ts`) — fluxo de organização não exerce autoridade de plataforma; é a mesma regra que já vale para ATRIBUIR papel (`assertAssignableRole`, `403 role_not_assignable`) e a mesma da `D-USERS-1` contra a tomada de conta: quem não pode dar o papel de plataforma não pode tomar a conta de quem o tem.
+- **Regra (como implementada no conserto, F3):** `POST /auth/users/:userId/reset-password` lê os papéis do alvo na organização ativa e, se algum for de plataforma (`isPlatformRole`, o mesmo conjunto que o portão de plataforma reconhece), recusa com `403 FORBIDDEN target_not_manageable`, mensagem fixa; nada muda (hash, marca, sessões, auditoria de sucesso).
+- **Se o dono recusar:** a escalada da E8 volta e precisa de outra regra antes do merge do #527.
+
 ## C-B-SAN3-26-P3-PREMISSA (registro de CONFLITO, §A2, 2026-11-11) — a P3 do B-SAN3-26 foi aceita sobre premissa falsa
 
 - **O conflito:** a decisão `D-PORTAO-9-RECOMENDACOES-1011`, item B-SAN3-26 (3) ("sem exceção para OS já abertas sem placa"), foi aceita sobre a recomendação do plano v1, que dizia que "a base completa a placa da OS (é um campo, leva segundos)". Na `main` `d5ec1696`, o console não tem edição de OS (`frontend/src/modules/work-orders/work-orders.service.ts:105`, sem chamador), e a placa só existe na criação de `socorro` (`WorkOrderForm.tsx:283-286`).

@@ -26,10 +26,16 @@ if (!connectionString) {
     });
     const roleRepository = new RoleRepository(client);
     const userRoleRepository = new UserRoleRepository(client);
-    const service = new PersistentAuthorizationService(
-      userRoleRepository,
-      roleRepository,
-    );
+    // B-USERS-ACESSO-SEG (S4) — o serviço passou a exigir a leitura do status do usuário (sem ela,
+    // não compila). Os três casos abaixo não mudam: usuário ativo resolve; fora da organização e
+    // sem papel seguem vazios.
+    const service = new PersistentAuthorizationService(userRoleRepository, roleRepository, {
+      findStatusForTenant: (userId: string, tenantId: string) =>
+        client.user.findFirst({
+          where: { id: userId, tenant_id: tenantId },
+          select: { status: true },
+        }),
+    });
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
     const tenantIds: string[] = [];
     const userIds: string[] = [];

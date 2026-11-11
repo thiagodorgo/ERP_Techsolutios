@@ -23,6 +23,17 @@ export type User = {
   readonly createdAt: Date;
 };
 
+// B-USERS-ACESSO-SEG (S2, UEM-01) — o usuário recém-criado e a senha PROVISÓRIA dele, devolvida UMA vez: só no
+// 201 da criação. Nenhuma leitura (`User`) carrega este campo, e o valor em claro não é guardado em lugar nenhum
+// (o banco tem só o hash). No modo memória não há credencial local, e o campo não vem.
+export type CreatedUser = User & { readonly temporaryPassword?: string };
+
+// A credencial inicial que o store grava na MESMA transação da criação do usuário: só o hash da provisória.
+export type InitialCredentialInput = {
+  readonly passwordHash: string;
+  readonly passwordAlgorithm: string;
+};
+
 export type AuditEvent = {
   readonly id: string;
   readonly action: string;
@@ -73,6 +84,10 @@ export type ListTenantOptions = {
 export type TenantMembership = {
   readonly tenant: Tenant;
   readonly user: User;
+  // B-USERS-ACESSO-SEG (P-SESSAO-RESTRITA) — a marca `must_change_password` do PAR, preenchida só por
+  // `findMembershipForIdentity` (a troca de organização, que assina token). A listagem não a lê.
+  // Ausente conta como restrita no assinador (falha fechada).
+  readonly mustChangePassword?: boolean;
 };
 
 // B-O6R-01 — candidato INTERNO do login sem organização: só o par (tenant, usuário). A lista

@@ -32,6 +32,7 @@ export async function signAccessToken(
     tenant_id: input.tenant_id,
     email: input.email,
     roles: [...input.roles],
+    ...(input.scope ? { scope: input.scope } : {}),
     type: "access",
     // B-O6R-01 (§3.5) — claim opcional de identidade (dica; nunca fonte de GUC/autorização).
     ...(input.identity_id ? { identity_id: input.identity_id } : {}),
@@ -128,6 +129,10 @@ function parseDurationInSeconds(expiresIn: string, name: string): number {
 }
 
 function parseAccessTokenPayload(payload: JWTPayload): AuthenticatedTokenPayload {
+  if (payload.scope !== undefined && payload.scope !== "password_change") {
+    throw new Error("Invalid access token scope.");
+  }
+
   if (
     typeof payload.sub !== "string" ||
     typeof payload.tenant_id !== "string" ||
@@ -146,6 +151,7 @@ function parseAccessTokenPayload(payload: JWTPayload): AuthenticatedTokenPayload
     tenant_id: payload.tenant_id,
     email: payload.email,
     roles: payload.roles,
+    ...(payload.scope === "password_change" ? { scope: payload.scope } : {}),
     type: "access",
     iat: payload.iat,
     exp: payload.exp,

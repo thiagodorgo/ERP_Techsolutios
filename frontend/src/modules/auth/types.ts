@@ -37,6 +37,10 @@ export type AuthSession = {
   sessionId?: string;
   tenant?: AuthTenant;
   provider: "cognito-compatible" | "local-jwt" | "mock";
+  // B-USERS-ACESSO-SEG (T1, RQ-1) — sessão RESTRITA da senha provisória: só troca a senha. Restrita SÓ com `true`;
+  // ausente (sessão guardada pelo código anterior, de teste ou do modo simulado) é sessão inteira. A falha fechada
+  // (ausente ou diferente de `false` vira restrita) mora só no mapeamento da resposta do login (`auth.adapter.ts`).
+  mustChangePassword?: boolean;
 };
 
 export type AuthTokenUpdate = {

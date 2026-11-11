@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **815** |
-| IDs distintos | 804 |
-| **ABERTAS** | **617** |
+| Cabecalhos `## P-` | **817** |
+| IDs distintos | 806 |
+| **ABERTAS** | **619** |
 | — das quais **diferidas** (balde C) | 62 |
-| — das quais **ativas nesta rodada** | **555** |
+| — das quais **ativas nesta rodada** | **557** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 194 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **815 cabecalhos para 804 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **817 cabecalhos para 806 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -71,7 +71,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 275
+## ABERTAS · balde A — material — 276
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -347,11 +347,12 @@
 | `P-LOGIN-CONTRASTE-ERRO` | 13159 | MÉDIA | sim | P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste |
 | `P-B-ASS-08c-OBRIGACOES-DA-08b` | 13171 | ALTA | sim | P-B-ASS-08c-OBRIGACOES-DA-08b (2026-11-10) — bloco futuro `B-ASS-08c`, com as formas e o |
 | `P-CONTRATO-EMENDA-P5-P8C` | 13178 | ALTA | sim | P-CONTRATO-EMENDA-P5-P8C (2026-11-10) — a P5 e o P8(c) do §C7.7 precisam entrar no CLAUD |
-| `P-DESPACHO-ARRIVED-SEM-CONFERENCIA` | 13190 | MÉDIA | sim | P-DESPACHO-ARRIVED-SEM-CONFERENCIA (2026-11-11) — o "No local" do DESPACHO não confere a |
-| `P-CONSOLE-EDITA-PLACA-DA-OS` | 13202 | MÉDIA | sim | P-CONSOLE-EDITA-PLACA-DA-OS (2026-11-11) — o console não edita a placa de uma OS que já  |
-| `P-CHECKIN-SEM-PLACA-OFFLINE` | 13208 | MÉDIA | sim | P-CHECKIN-SEM-PLACA-OFFLINE (2026-11-11) — OS sem placa e guincheiro sem dados: a OS fic |
+| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13184 | ALTA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
+| `P-DESPACHO-ARRIVED-SEM-CONFERENCIA` | 13208 | MÉDIA | sim | P-DESPACHO-ARRIVED-SEM-CONFERENCIA (2026-11-11) — o "No local" do DESPACHO não confere a |
+| `P-CONSOLE-EDITA-PLACA-DA-OS` | 13220 | MÉDIA | sim | P-CONSOLE-EDITA-PLACA-DA-OS (2026-11-11) — o console não edita a placa de uma OS que já  |
+| `P-CHECKIN-SEM-PLACA-OFFLINE` | 13226 | MÉDIA | sim | P-CHECKIN-SEM-PLACA-OFFLINE (2026-11-11) — OS sem placa e guincheiro sem dados: a OS fic |
 
-## ABERTAS · balde B — processo/registro — 280
+## ABERTAS · balde B — processo/registro — 281
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -632,9 +633,10 @@
 | `P-USERS-DESATIVADO-TOKEN-MOBILE` | 13135 | — | sim | P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-10) — token anterior à desativação ainda alcanç |
 | `P-J522-C3B-01-DOIS-HUNKS` | 13147 | BAIXA | sim | P-J522-C3B-01-DOIS-HUNKS (2026-11-10) — `C3B-01`: dois hunks onde o §5 do plano do segun |
 | `P-LOGIN-WEB-TERMO-TENANT` | 13165 | BAIXA | sim | P-LOGIN-WEB-TERMO-TENANT (2026-11-10) — login web ainda expõe termo técnico de organizaç |
-| `P-INDICE-PENDENCIAS-NAO-LE-GRAVE` | 13184 | BAIXA | sim | P-INDICE-PENDENCIAS-NAO-LE-GRAVE (2026-11-10) — o índice gerado não reconhece a gravidad |
-| `P-CHECKIN-NUMERO-DE-SERIE` | 13196 | BAIXA | sim | P-CHECKIN-NUMERO-DE-SERIE (2026-11-11) — OS de prestador sem referência de check-in (o a |
-| `P-CHECKIN-PLACA-ESTRANGEIRA` | 13214 | BAIXA | sim | P-CHECKIN-PLACA-ESTRANGEIRA (2026-11-11) — placa estrangeira não serve de referência do  |
+| `P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA` | 13196 | BAIXA | sim | P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes d |
+| `P-USERS-SEG-ORDEM-DE-IMPLANTACAO` | 13202 | BAIXA | sim | P-USERS-SEG-ORDEM-DE-IMPLANTACAO (2026-11-11) — o deploy que contém o #527 vai na ordem  |
+| `P-CHECKIN-NUMERO-DE-SERIE` | 13214 | BAIXA | sim | P-CHECKIN-NUMERO-DE-SERIE (2026-11-11) — OS de prestador sem referência de check-in (o a |
+| `P-CHECKIN-PLACA-ESTRANGEIRA` | 13232 | BAIXA | sim | P-CHECKIN-PLACA-ESTRANGEIRA (2026-11-11) — placa estrangeira não serve de referência do  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 62
 

@@ -16,6 +16,7 @@ import {
   type AuthenticatedActor,
   type CreateTenantInput,
   type CreateUserInput,
+  type CreatedUser,
   type ListTenantOptions,
   type LoginCandidate,
   type Tenant,
@@ -24,11 +25,25 @@ import {
   type User,
   type UserStatus,
 } from "../types/core-saas.types.js";
+import type { PrismaClient } from "@prisma/client";
+
 import type { AuthenticatedActor as AuthJwtActor } from "../../auth/types/auth.types.js";
 import { IdentityLinkRepository } from "../../auth/repositories/identity-link.repository.js";
+import { hashPassword } from "../../auth/services/password.service.js";
+import { generateInitialPassword } from "../../authority/authority-password.js";
 
 export class PrismaCoreSaasService {
-  constructor(private readonly store: AsyncCoreSaasStore = new PrismaCoreSaasStore()) {}
+  // B-USERS-ACESSO-SEG (P-SEG-2) — `identityClient` é o client dos fluxos de identidade (listagem de
+  // organizações, troca de organização, normalização do par). Opcional: em produção é o global
+  // (src/database/prisma.ts); o teste passa o papel efêmero NOSUPERUSER NOBYPASSRLS para medir sob RLS.
+  constructor(
+    private readonly store: AsyncCoreSaasStore = new PrismaCoreSaasStore(),
+    private readonly identityClient?: PrismaClient,
+  ) {}
+
+  private async identityPrisma(): Promise<PrismaClient> {
+    return this.identityClient ?? (await import("../../../database/prisma.js")).prisma;
+  }
 
   async createTenant(
     input: CreateTenantInput,
@@ -90,7 +105,7 @@ export class PrismaCoreSaasService {
   async createUser(
     input: CreateUserInput,
     actor?: AuthenticatedActor,
-  ): Promise<User> {
+  ): Promise<CreatedUser> {
     if (actor && input.tenantId !== actor.tenantId) {
       throw accessDeniedAcrossTenants();
     }
@@ -146,17 +161,40 @@ export class PrismaCoreSaasService {
     const roles = uniqueRoles(
       input.roles.map((role) => assertAssignableRole(this.validateRole(role))),
     );
-    const user = await this.store.createUser({
-      ...input,
-      name,
-      email,
-      roles,
-      branchIds: uniqueStrings(input.branchIds ?? []),
-      status: input.status ?? "active",
-      actorUserId: actor?.userId,
-    });
 
-    return user;
+    // B-USERS-ACESSO-SEG (S2, Achado 1 + UEM-01) — o usuário novo nasce com uma senha PROVISÓRIA: o store grava
+    // só o hash, com a marca "trocar no próximo acesso" (P1), na MESMA transação da criação; a provisória em
+    // claro volta UMA vez, no 201 (`temporaryPassword`), e não fica em lugar nenhum. O scrypt roda antes da
+    // transação (fica curta). Sem canal de e-mail ligado (ajuste 8): a tela mostra a provisória ao admin.
+    const temporaryPassword = generateInitialPassword();
+    const password = await hashPassword(temporaryPassword);
+
+    // B-USERS-ACESSO-SEG (S6, ajuste 9 da crítica) — e-mail repetido na MESMA organização é recusado
+    // pelo índice único (tenant_id, email), que também resolve a corrida de duas criações
+    // simultâneas. O 409 sai sem a mensagem do banco (antes, o P2002 caía no 400 genérico de
+    // sendRouteError com o texto do Prisma no corpo). A transação do store volta inteira.
+    try {
+      const user = await this.store.createUser(
+        {
+          ...input,
+          name,
+          email,
+          roles,
+          branchIds: uniqueStrings(input.branchIds ?? []),
+          status: input.status ?? "active",
+          actorUserId: actor?.userId,
+        },
+        { passwordHash: password.password_hash, passwordAlgorithm: password.password_algorithm },
+      );
+
+      return { ...user, temporaryPassword };
+    } catch (error) {
+      if (isUserEmailUniqueViolation(error)) {
+        throw userEmailConflict();
+      }
+
+      throw error;
+    }
   }
 
   async updateUser(
@@ -401,9 +439,9 @@ export class PrismaCoreSaasService {
     actor: AuthJwtActor,
     requestedTenantId: string,
   ): Promise<TenantMembership | null> {
-    const [{ prisma }, { setTenantRlsContext }, { resolveIdentityIdForPair, normalizePairIdentity }] =
+    const [prisma, { setTenantRlsContext }, { resolveIdentityIdForPair, normalizePairIdentity }] =
       await Promise.all([
-        import("../../../database/prisma.js"),
+        this.identityPrisma(),
         import("../../../database/rls.js"),
         import("../../auth/services/identity-resolver.js"),
       ]);
@@ -414,6 +452,18 @@ export class PrismaCoreSaasService {
     // processo (varredura por valor cobre esta rota — §5.7).
     return prisma.$transaction(async (tx) => {
       await setTenantRlsContext(tx, actor.tenantId);
+
+      // B-USERS-ACESSO-SEG (P-SEG-2, Emenda 1) — com a senha provisória ainda não trocada, a sessão
+      // não troca de organização. Lido sob o GUC da organização ATIVA do ator, antes de olhar a
+      // organização pedida: a recusa não lê nem devolve nada dela.
+      const marks = await tx.$queryRaw<Array<{ must_change_password: boolean }>>`
+        SELECT must_change_password FROM local_auth_credentials
+        WHERE tenant_id = ${actor.tenantId}::uuid AND user_id = ${actor.userId}::uuid
+      `;
+
+      if (marks.some((mark) => mark.must_change_password)) {
+        throw passwordChangeRequired();
+      }
 
       let identityId = await resolveIdentityIdForPair(tx, actor.tenantId, actor.userId);
 
@@ -445,6 +495,7 @@ export class PrismaCoreSaasService {
         },
         include: {
           role_assignments: { include: { role: true } },
+          local_auth_credentials: { select: { must_change_password: true } },
         },
       });
 
@@ -458,9 +509,15 @@ export class PrismaCoreSaasService {
         return null;
       }
 
+      // B-USERS-ACESSO-SEG (P-SESSAO-RESTRITA) — a marca do par de DESTINO, lida sob o GUC de
+      // destino junto do usuário: o token da organização pedida nasce restrito se ela estiver
+      // ligada. Par sem linha de credencial conta como NÃO marcado (RQ-3).
+      const { local_auth_credentials: linhas, ...userRow } = user;
+
       return {
         tenant: mapTenantFromPrisma(tenant),
-        user: mapUserFromPrisma(user as Parameters<typeof mapUserFromPrisma>[0]),
+        user: mapUserFromPrisma(userRow as Parameters<typeof mapUserFromPrisma>[0]),
+        mustChangePassword: linhas.some((linha) => linha.must_change_password === true),
       };
     });
   }
@@ -469,8 +526,8 @@ export class PrismaCoreSaasService {
     readonly tenantId: string;
     readonly userId: string;
   }): Promise<string | null> {
-    const [{ prisma }, { withTenantRls }, { normalizePairIdentity }] = await Promise.all([
-      import("../../../database/prisma.js"),
+    const [prisma, { withTenantRls }, { normalizePairIdentity }] = await Promise.all([
+      this.identityPrisma(),
       import("../../../database/rls.js"),
       import("../../auth/services/identity-resolver.js"),
     ]);
@@ -515,6 +572,69 @@ function accessDeniedAcrossTenants(): CoreSaasError {
 
 function notFound(reason: string, message: string): CoreSaasError {
   return new CoreSaasError(404, "NOT_FOUND", reason, message);
+}
+
+// B-USERS-ACESSO-SEG (P-SEG-2) — a sessão da senha provisória só troca a senha. Código e motivo fixos,
+// os mesmos da religação (identity-link.service.ts).
+export function passwordChangeRequired(): CoreSaasError {
+  return new CoreSaasError(
+    403,
+    "FORBIDDEN",
+    "password_change_required",
+    "Password change is required before this action.",
+  );
+}
+
+// B-USERS-ACESSO-SEG (S6) — o mesmo código e o mesmo motivo do caminho de memória.
+export function userEmailConflict(): CoreSaasError {
+  return new CoreSaasError(
+    409,
+    "CONFLICT",
+    "user_email_conflict",
+    "A user with this email already exists in this organization.",
+  );
+}
+
+// P2002 do índice único (tenant_id, email) de `users`. Medido no Postgres 16 do bloco, com o
+// adaptador de driver (PrismaPg): sob o SUPERUSUÁRIO o meta traz
+// driverAdapterError.cause.constraint.fields = ["tenant_id","email"]; sob o papel de runtime
+// (NOSUPERUSER NOBYPASSRLS) NÃO traz — com RLS ligado o Postgres omite o DETAIL com a chave, e o
+// adaptador fica só com a mensagem original, que nomeia o índice. Por isso a leitura aceita os dois:
+// os campos quando existem, o nome do índice quando não. Um teste só com superusuário veria só o
+// primeiro caso e passaria com o código que falha em produção.
+const USERS_EMAIL_UNIQUE_INDEX = "users_tenant_id_email_key";
+
+function isUserEmailUniqueViolation(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const candidate = error as {
+    readonly code?: unknown;
+    readonly meta?: {
+      readonly modelName?: unknown;
+      readonly target?: unknown;
+      readonly driverAdapterError?: {
+        readonly cause?: {
+          readonly originalMessage?: unknown;
+          readonly constraint?: { readonly fields?: unknown };
+        };
+      };
+    };
+  };
+
+  if (candidate.code !== "P2002" || candidate.meta?.modelName !== "User") {
+    return false;
+  }
+
+  const cause = candidate.meta.driverAdapterError?.cause;
+  const fields = cause?.constraint?.fields ?? candidate.meta.target;
+
+  if (Array.isArray(fields)) {
+    return fields.includes("email");
+  }
+
+  return typeof cause?.originalMessage === "string" && cause.originalMessage.includes(USERS_EMAIL_UNIQUE_INDEX);
 }
 
 function uniqueStrings(values: readonly string[]): string[] {
