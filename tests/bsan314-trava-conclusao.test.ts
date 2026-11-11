@@ -16,11 +16,12 @@ process.env.LOG_LEVEL = "silent";
 type RunPhase = { readonly role: string | null; readonly status: string };
 
 async function montar(options: { readonly phases?: () => Promise<readonly RunPhase[]> } = {}) {
-  const [workOrders, checklists, { resolvePermissionsForRoles }, sync] = await Promise.all([
+  const [workOrders, checklists, { resolvePermissionsForRoles }, sync, { verifyCheckin }] = await Promise.all([
     import("../src/modules/work-orders/work-order.service.js"),
     import("../src/modules/checklists/checklist.service.js"),
     import("../src/modules/core-saas/permissions/catalog.js"),
     import("../src/modules/mobile/mobile-work-order-sync.js"),
+    import("../src/modules/work-orders/work-order.checkin.js"),
   ]);
   workOrders.resetWorkOrderRuntimeForTests();
   checklists.resetChecklistRuntimeForTests();
@@ -62,20 +63,26 @@ async function montar(options: { readonly phases?: () => Promise<readonly RunPha
   });
   await checklistService.publishTemplate(atorChecklist, template.id);
 
-  // A OS chega em "Em atendimento" (o caminho até lá não é o que este arquivo mede).
+  // A OS chega em "Em atendimento" (o caminho até lá não é o que este arquivo mede). O "No local" leva o veredito de
+  // check-in emitido por `verifyCheckin` pela porta da base (veredito `office`), como nas suítes `san3-26-*`: o
+  // invariante do B-SAN3-26 (`assertCheckinVerdictForStatus`) vale também para o arnês.
   const criarOsEmAtendimento = async (): Promise<string> => {
     const os = await memoryService.create(gestao as never, { title: "Reboque leve" });
     const repo = workOrders.getMemoryWorkOrderRepositoryForTests();
     let from = os.status;
     for (const status of ["assigned", "accepted", "on_route", "on_site", "in_progress"] as const) {
-      await repo.changeStatus({
+      const atual = await repo.findById(tenantId, os.id);
+      assert.ok(atual);
+      const feito = await repo.changeStatus({
         tenantId,
         workOrderId: os.id,
         status,
         expectedStatus: from,
         actorUserId: userId,
         message: "preparo do teste",
+        ...(status === "on_site" ? { checkin: verifyCheckin(gestao, atual, null, {}, "http_status_route") } : {}),
       } as never);
+      assert.ok(feito, `o arnês levou a OS a ${status}`);
       from = status;
     }
     return os.id;
