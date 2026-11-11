@@ -131,15 +131,61 @@ build nem suíte). Daqui em diante, cada passo pesado espera o `t1-gate.sh` (VER
 | W2 | `return PASSWORD_CHANGE_MESSAGES[…]` → `return body?.message ?? PASSWORD_CHANGE_MESSAGES[…]` (`readPasswordChangeErrorMessage` devolve a mensagem do corpo) | idem | `not ok 6 [W2] cada linha do mapa…`, `not ok 10 [RQ-6]` (o texto do 401 vira o do servidor) · 9/11 |
 | W3 | `isAuthenticated: !!session && session.mustChangePassword !== true,` → `isAuthenticated: Boolean(session),` (`AuthProvider.tsx`) | `troca-senha-live` | `not ok 1 [W3]` · 19/20 |
 | W4 | o desvio `return session?.mustChangePassword === true;` → `return false;` (`isPasswordChangeSession`, `LoginPage.tsx`) | idem | `not ok 1 [W3]`, `not ok 2 [W4]` · 18/20 |
+| W5 | apagar `clearStoredAuthSession();` do 200 em `changeOwnPassword` (`auth.service.ts`) | `troca-senha-live` e `auth-troca-senha.adapter` | `not ok 4 [W5] o 200 apaga a sessão local…` · 19/20; `not ok 11 [RQ-6/W5]` · 10/11 (23:08) |
+| W6 | apagar o campo de confirmação da C (o bloco `lg-campo … c-conf`, `ChangePasswordViewC.tsx`) | `troca-senha-live` | `not ok 17 [W6·C] … mesmos campos`, `not ok 18 [W6·C] … mesmos estados` · 18/20 (23:08) |
+| RQ-6 | o `fetch` de `changePasswordWithJwt` → `apiRequest("/auth/password", { method: "POST", body })` (`auth.adapter.ts`) | `auth-troca-senha.adapter`, caso `[RQ-6] 401` | `not ok 10 [RQ-6]`; a asserção mostra as chamadas a mais: `+ 'POST /auth/refresh'` e `+ 'POST /auth/password'` além da esperada (23:10) |
+| E4.5 | "mostrar e-mail vazio": `<b>{model.email}</b>` → `<b>{""}</b>` (`ChangePasswordViewA.tsx`) | `troca-senha-live` | `not ok 11 [E4.5]` e `not ok 13/15/17 [W6·A/B/C] … a linha do e-mail` · 16/20 (23:08) |
+| E4.3 | a sessão restrita aplica a preferência: `return restricted ? "A" : preferred;` → `return preferred;` (`ChangePasswordPage.tsx`) | `troca-senha-live` | `not ok 12 [E4.3]` · 19/20 (23:08) |
+| RQ-1 (a) | `session.mustChangePassword !== true` → `session.mustChangePassword === false` (`AuthProvider.tsx`) | `test:smoke` inteiro | `# tests 1710 · # pass 1697 · # fail 13` (23:10–23:12): os **11 da crítica** (`not ok 19, 145, 146, 258, 259, 260, 261, 331, 332, 552, 727`: sessões guardadas sem o campo deixam de ser autenticadas) + 2 meus (`109 [W1·ii]`, `1438 [T.2]`) |
+
+**Ajuste no teste do RQ-6, declarado (23:09–23:10).** Na primeira rodada da mutação do RQ-6 sobre o arquivo inteiro, o
+caso do prazo (W2) ficou pendurado (o cliente padrão não passa o sinal de cancelamento) e o `node --test` cancelou os
+casos seguintes; e o caso do RQ-6 caía na asserção do tipo do erro antes da contagem. O teste passou a conferir as
+chamadas PRIMEIRO (a propriedade do RQ-6) e a mutação roda só o teste-dono (`--test-name-pattern`); com isso o vermelho
+sai pela contagem, como o plano descreve. A asserção nova não afrouxa nada: as mesmas três conferências, em outra ordem.
 
 Vermelho-controle no objeto `e09e9667` (as linhas "sim" de T.2): no objeto o campo nem é lido e não existe tela nem rota
 `/change-password` (`git show e09e9667:frontend/src/modules/auth/auth.adapter.ts | grep -c must_change_password` = 0;
 `git show e09e9667:frontend/src/App.tsx | grep -c change-password` = 0). W1, W3 e W4 são mortos pelas mutações acima, que
 devolvem exatamente o comportamento do objeto em cada ponto (campo ignorado; sessão restrita autenticada; desvio ausente).
 
-## 4. Bateria
+## 4. Bateria (23:12–23:15, depois da RETOMADA abaixo)
 
-(em apuração: não rodada; ver a PAUSA abaixo)
+Semáforo `VERDE 02:12:46Z`, 39.316 MB livres de commit; no `test:smoke`, `VERDE 02:13:47Z`.
+
+| Comando | Saída |
+|---|---|
+| `npm --prefix frontend run check` | `tsc -b --noEmit`, saída 0 (23:13:22) |
+| `npm --prefix frontend run build` | `✓ built in 11.81s`, saída 0 (23:13:54); só o aviso antigo de pedaço grande (`maplibre-gl`) |
+| `npm --prefix frontend run test:smoke` | `# tests 1710 · # pass 1710 · # fail 0 · # cancelled 0 · # skipped 0`, saída 0 (23:15:48). 1710 = os 1676 do objeto + 11 (`auth-troca-senha.adapter`) + 20 (`troca-senha-live`) + 3 do guard do registro para `troca-senha` |
+| `git diff --check` | limpo |
+| escopo `git diff --name-only e09e9667..HEAD` | exatamente os caminhos de T.2, a referência e a linha do `README.md` de `screen-refs/`, e este diário; nada em `src/`, `tests/` do backend, `mobile/`, `prisma/` nem `.github/` |
+| limpeza §C5 | `frontend/dist` e `frontend/tsconfig.tsbuildinfo` (ignorados pelo git) removidos; `node_modules` fica |
+
+**Conferência visual:** não subi o Vite deste worktree. A API local (`:3000`) é a da `main`, sem a F2: pelo RQ-1 todo login
+nela seria tratado como restrito, e a troca daria 404 (a rota não existe na `main`). A conferência das 3 aparências contra a
+referência é do orquestrador (T.5); para ver esta tela: `npm --prefix frontend run dev -- --port 5183` neste worktree, com
+o backend do `fix/users-acesso-seg`.
+
+## RETOMADA (P3/P7), 23:07 — depois do reinício das 22:49
+
+Medido antes de seguir: `git status --short` vazio; head `4a83d271`; o `t1-mutate.mjs` e os logs do lote 1 intactos no
+scratchpad; semáforo `VERDE 02:07:03Z`, 40.720 MB livres. Nada meio-escrito.
+
+**O contrato que a tela consome, conferido no backend novo** (`origin/fix/users-acesso-seg` = `a5b56555`, F2 a F5):
+`git show a5b56555:src/modules/auth/routes/auth.routes.ts` — o login responde `must_change_password: tokenScope.restricted`
+(booleano, sempre presente), `user: loginResult.user` (com o e-mail) e `roles`/`permissions` vazios quando restrita
+(linhas 298 e 337); `identity-links.routes.ts` sem diff desde `e09e9667` (a rota `POST /auth/password` e os códigos são os
+mesmos); `API_CONTRACTS.md:198` lista os mesmos códigos do mapa de T.1. **Nada a ajustar na tela.**
+
+**Achado para o orquestrador (fora do PERMITIDO, não mexi):** a F2 também manda `must_change_password` na troca de
+organização (`auth.routes.ts:498`), com a marca do DESTINO: a recusa da `prisma-core-saas.service.ts:456-466` olha só o
+par ATIVO do ator, então uma sessão inteira em A que troca para B, onde o par está marcado, recebe 200 com token restrito
+e `permissions: []`. O `switchTenantContext` da web (`frontend/src/modules/context/repository.ts`) não lê o campo: grava
+essa sessão como inteira, e a seleção de organização mostra "Seu perfil não possui telas associadas." (permissões vazias),
+em vez de levar à troca de senha. Não é brecha (o portão recusa tudo o que não for a troca), é caminho sem saída na web.
+Sugestão: pendência com dono (o próximo bloco que tocar a seleção de organização), ou emenda que ponha `repository.ts` no
+PERMITIDO desta fatia.
 
 ## PAUSA 01:30 UTC (22:30 SP, `date`)
 

@@ -287,17 +287,20 @@ test("[RQ-6] 401 invalid_credentials gera exatamente 1 chamada a /auth/password 
       json(200, { data: { access_token: "tok-renovado", token_type: "Bearer", expires_in: 900, refresh_token: "ref-renovado", session_id: "s-r" } }),
   });
 
-  await assert.rejects(service.changeOwnPassword({ currentPassword: CURRENT, newPassword: NEXT }), {
-    name: "PasswordChangeError",
-    failure: "invalid_credentials",
-    message: "A senha provisória não confere.",
-  });
+  const outcome = await service.changeOwnPassword({ currentPassword: CURRENT, newPassword: NEXT }).then(
+    () => null,
+    (error: unknown) => error,
+  );
 
+  // A propriedade do RQ-6 primeiro: as chamadas (com o cliente padrão seriam password, refresh e password de novo).
   assert.deepEqual(
     calls.map((call) => `${call.method} ${call.path}`),
     ["POST /auth/password"],
     "uma tentativa é uma requisição, sem refresh",
   );
+  assert.ok(outcome instanceof adapter.PasswordChangeError, "a troca recusada vira erro tipado");
+  assert.equal(outcome.failure, "invalid_credentials");
+  assert.equal(outcome.message, "A senha provisória não confere.");
   assert.equal(calls[0].authorization, "Bearer tok-restrito", "o Authorization é o da sessão guardada");
   assert.deepEqual(calls[0].body, { currentPassword: CURRENT, newPassword: NEXT }, "corpo do contrato");
   assert.equal(authStorage.getStoredAuthSession()?.accessToken, "tok-restrito", "a sessão fica: a tela continua aberta");
