@@ -525,10 +525,14 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
 
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     const now = new Date();
+    // B-SAN3-23 (P-23.4) — CAS: grava só se a OS ainda estiver na situação que o serviço validou. Quem espera o
+    // cancelamento re-avalia o predicado contra a linha cancelada (READ COMMITTED) e casa 0 linhas: o cancelamento
+    // não é sobrescrito, e a OS cancelada não volta a aceitar item nem faturamento.
     const updated = await this.client.workOrder.updateManyAndReturn({
       where: {
         tenant_id: input.tenantId,
         id: input.workOrderId,
+        status: input.expectedStatus, // B-SAN3-23:cas-status
       },
       data: compactRecord({
         status: input.status,
@@ -603,11 +607,14 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
     // B-O6R-07c-b1 ciclo 2 (P-ATOMICA) — OS, linha de atribuição e evento `work_order_assigned` no MESMO
     // `$transaction`: se o INSERT do evento falhar, a OS e a linha voltam junto (antes, o evento era uma segunda
     // transação, e a OS ficava atribuída sem ele).
+    // B-SAN3-23 (P-23.4) — CAS sobre a situação que o serviço validou (`event.fromStatus`): a atribuição que esperou um
+    // cancelamento casa 0 linhas e não grava nada (nem a linha, nem o evento).
     const result = await this.client.$transaction(async (tx) => {
       const updated = await tx.workOrder.updateManyAndReturn({
         where: {
           tenant_id: input.tenantId,
           id: input.workOrderId,
+          status: input.event.fromStatus, // B-SAN3-23:cas-assign
         },
         data: {
           assigned_operator_id: input.operatorId,
@@ -658,11 +665,15 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         },
       });
       if (!current) return undefined;
-      const nextStatus = current.status === "open" ? "assigned" : current.status;
+      // B-SAN3-23 (P-23.4, C23R2-01) — o CAS e a situação de destino saem da situação que o SERVIÇO validou
+      // (`event.fromStatus`), nunca desta leitura sem trava: se um cancelamento commitou entre a checagem do serviço e
+      // aqui, esta leitura já diz `cancelled`, e um CAS sobre ela casaria e daria técnico a uma OS cancelada.
+      const nextStatus = input.event.fromStatus === "open" ? "assigned" : input.event.fromStatus;
       const updated = await tx.workOrder.updateManyAndReturn({
         where: {
           tenant_id: input.tenantId,
           id: input.workOrderId,
+          status: input.event.fromStatus, // B-SAN3-23:cas-dispatch
         },
         data: {
           assigned_operator_id: input.operatorId,

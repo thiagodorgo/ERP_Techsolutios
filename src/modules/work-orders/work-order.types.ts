@@ -389,6 +389,10 @@ export type ChangeWorkOrderStatusInput = {
   readonly tenantId: string;
   readonly workOrderId: string;
   readonly status: WorkOrderStatus;
+  // B-SAN3-23 (P-23.4, Q1 = A) — CAS: a situação que o serviço VALIDOU. O repositório só grava se a OS ainda estiver
+  // nela; senão devolve `undefined` e o serviço relê (409/404). OBRIGATÓRIO de propósito (C23R2-06): no Prisma,
+  // `undefined` no `where` descarta o predicado, e um chamador que esquecesse o campo gravaria sem CAS em silêncio.
+  readonly expectedStatus: WorkOrderStatus;
   readonly message: string;
   readonly cancellationReason?: string;
   // Ω3F-6 — só o `cancel` (D-Ω3F-6-CANCEL) preenche. O endpoint de status legado segue sem decisão

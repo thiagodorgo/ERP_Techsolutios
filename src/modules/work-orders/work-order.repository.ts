@@ -424,6 +424,8 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     const current = await this.findById(input.tenantId, input.workOrderId);
     if (!current) return undefined;
+    // B-SAN3-23 (P-23.4) — paridade do CAS do Prisma: situação diferente da validada não grava.
+    if (current.status !== input.expectedStatus) return undefined;
     // Paridade InMemory↔Prisma da invariante do cancelamento (o Prisma tem o CHECK; aqui é a assertion
     // equivalente): OS 'cancelled' EXIGE decisão financeira (o único caminho legítimo é cancel(), que sempre
     // a grava; o /status legado passou a recusar cancelled). Um caminho rogue falha idêntico nos dois lados.
@@ -470,6 +472,7 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
       tenantId: input.tenantId,
       workOrderId: input.workOrderId,
       status: "cancelled",
+      expectedStatus: current.status,
       message: input.event.message,
       cancellationReason: input.cancellationReason,
       financialCancellationDecision: input.decision,
@@ -493,6 +496,8 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   async assign(input: AssignWorkOrderInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
     const current = await this.findById(input.tenantId, input.workOrderId);
     if (!current) return undefined;
+    // B-SAN3-23 (P-23.4) — paridade do CAS do Prisma (`event.fromStatus` = a situação que o serviço validou).
+    if (current.status !== input.event.fromStatus) return undefined;
     const now = new Date();
     const workOrder: WorkOrder = {
       ...current,
@@ -527,6 +532,8 @@ export class InMemoryWorkOrderRepository implements WorkOrderRepository {
   async assignFromDispatch(input: AssignWorkOrderFromDispatchInput): Promise<WorkOrderAssignmentWriteResult | undefined> {
     const current = await this.findById(input.tenantId, input.workOrderId);
     if (!current) return undefined;
+    // B-SAN3-23 (P-23.4, C23R2-01) — paridade do CAS do Prisma: compara com a situação que o serviço validou.
+    if (current.status !== input.event.fromStatus) return undefined;
     const now = new Date();
     const nextStatus: WorkOrderStatus = current.status === "open" ? "assigned" : current.status;
     const workOrder: WorkOrder = {

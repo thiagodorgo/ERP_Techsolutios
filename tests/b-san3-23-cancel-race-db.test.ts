@@ -236,12 +236,17 @@ if (!connectionString) {
 
   test("[A7] regressão N=20 sem barreira: cancelar(zero) × lançar, × faturar e × editar → 0 impasse; OS cancelada/zero sem item ativo; I-Z", async (t) => {
     const base = await seed("a7");
+    // Desfechos permitidos do lado que perde: os do caso sequencial. Além do 422 work_order_cancelled, o faturamento e a
+    // edição têm um pré-check SEM trava, de propósito (fast-fail, fora da unidade): quando ele lê depois do commit do
+    // zero, vê os itens já zerados e responde como responderia em sequência (422 nothing_to_invoice; 404 do item
+    // apagado). Nada persiste nesses desfechos, e as asserções de estado abaixo valem em toda rodada.
     const pairs: Array<{ name: string; items: number[]; other: (s: Seed) => Promise<unknown>; otherOk: Array<[number, string]>; cancelOk: Array<[number, string]> }> = [
       { name: "lançar", items: [], other: (s) => h.financials.create(s.actor, s.workOrderId, manualItemBody()), otherOk: [[422, "work_order_cancelled"]], cancelOk: [] },
-      { name: "faturar", items: [100, 20], other: (s) => h.invoicing.invoice(s.actor, s.workOrderId, {}), otherOk: [[422, "work_order_cancelled"]], cancelOk: [[422, "has_invoiced_items"]] },
-      { name: "editar", items: [100], other: (s) => h.financials.update(s.actor, s.workOrderId, s.itemIds[0]!, { quantity: 2 }), otherOk: [[422, "work_order_cancelled"]], cancelOk: [] },
+      { name: "faturar", items: [100, 20], other: (s) => h.invoicing.invoice(s.actor, s.workOrderId, {}), otherOk: [[422, "work_order_cancelled"], [422, "nothing_to_invoice"]], cancelOk: [[422, "has_invoiced_items"]] },
+      { name: "editar", items: [100], other: (s) => h.financials.update(s.actor, s.workOrderId, s.itemIds[0]!, { quantity: 2 }), otherOk: [[422, "work_order_cancelled"], [404, "financial_item_not_found"]], cancelOk: [] },
     ];
     const tally: Record<string, Record<string, number>> = {};
+    t.after(() => t.diagnostic(`[A7] desfechos=${JSON.stringify(tally)}`));
     for (const pair of pairs) {
       tally[pair.name] = {};
       for (let round = 0; round < 20; round += 1) {
@@ -266,7 +271,6 @@ if (!connectionString) {
         assertInvariantIZ(state, `rodada ${round} (${pair.name})`);
       }
     }
-    t.diagnostic(`[A7] desfechos=${JSON.stringify(tally)}`);
   });
 
   // ------------------------------------------------------------- R-08 — espera longa vira 503, nunca 500

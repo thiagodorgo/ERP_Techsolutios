@@ -1459,13 +1459,14 @@ export class WorkOrderService {
       tenantId: actor.tenantId,
       workOrderId: current.id,
       status: nextStatus,
+      expectedStatus: current.status,
       message,
       cancellationReason,
       actorUserId: actor.userId,
     });
 
     if (!updated) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+      throw await this.statusWriteMissError(actor, current.id, nextStatus);
     }
 
     await this.repository.createEvent({
@@ -1811,10 +1812,28 @@ export class WorkOrderService {
     const result = await this.repository.assign(input);
 
     if (!result) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+      throw await this.statusWriteMissError(actor, current.id, "assigned");
     }
 
     return result.workOrder;
+  }
+
+  /**
+   * B-SAN3-23 (P-23.4, Q1 = A) — o CAS de situação (`changeStatus`, `assign`, `assignFromDispatch`) casou 0 linhas:
+   * relê. A OS existe → `409 invalid_status_transition`, a resposta que a mesma operação recebe fora de corrida
+   * (`assertStatusTransition`; o despacho em OS terminal); sumiu → 404, como antes.
+   */
+  private async statusWriteMissError(actor: WorkOrderActorContext, workOrderId: string, to: WorkOrderStatus): Promise<WorkOrderError> {
+    const reread = await this.repository.findById(actor.tenantId, workOrderId);
+    if (!reread) {
+      return new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+    }
+    return new WorkOrderError(
+      409,
+      "WORK_ORDER_STATUS_INVALID",
+      "invalid_status_transition",
+      `The work order changed to ${reread.status} while this operation ran; cannot apply ${to}.`,
+    );
   }
 
   /**
@@ -1928,7 +1947,7 @@ export class WorkOrderService {
     });
 
     if (!result) {
-      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
+      throw await this.statusWriteMissError(actor, current.id, current.status === "open" ? "assigned" : current.status);
     }
 
     return result.workOrder;
