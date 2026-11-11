@@ -24,6 +24,7 @@ import {
   resolveCheckinReference,
   requireCheckinVerdict,
   verifyCheckin,
+  withoutReservedOfficeMark,
   type CheckinListDescription,
   type CheckinVerdict,
 } from "./work-order.checkin.js";
@@ -1528,8 +1529,11 @@ export class WorkOrderService {
     // B-SAN3-26 (item 53) — o "No local" exige o veredito de check-in, emitido num ponto só. A chave é o DESTINO:
     // `on_site → on_site` (que `assertStatusTransition` deixa passar) também é conferido.
     const checkin = await this.verifyCheckinForStatus(actor, current, nextStatus, body, options?.entry ?? "internal");
-    // Em `on_site` a mensagem da linha do tempo é do servidor ("registrada pela base" só a base escreve, C26-05).
-    const message = checkin ? checkinTimelineMessage(checkin) : optionalString(body.message) ?? defaultStatusMessage(nextStatus);
+    // Em `on_site` a mensagem da linha do tempo é do servidor ("registrada pela base" só a base escreve, C26-05). Nas
+    // outras transições, a mensagem do cliente que imita essa marca é descartada (C1-A1, junta do PR #534).
+    const message = checkin
+      ? checkinTimelineMessage(checkin)
+      : withoutReservedOfficeMark(optionalString(body.message)) ?? defaultStatusMessage(nextStatus);
 
     const statusInputBase = {
       tenantId: actor.tenantId,
@@ -1880,7 +1884,8 @@ export class WorkOrderService {
     const userId = parseOptionalUuid(body.userId, "userId");
     await this.assertTechnicianChangeAllowed(actor, current, { userId, operatorId });
 
-    const message = optionalString(body.message) ?? "Ordem de servico atribuida.";
+    // B-SAN3-26 (C1-A1) — a atribuição também é transição: o cliente não escreve a marca da base.
+    const message = withoutReservedOfficeMark(optionalString(body.message)) ?? "Ordem de servico atribuida.";
     const input: AssignWorkOrderInput = {
       tenantId: actor.tenantId,
       workOrderId: current.id,
@@ -1995,8 +2000,9 @@ export class WorkOrderService {
       ? await resolver({ tenantId: actor.tenantId, userId, roles: [], permissions: [] })
       : undefined;
     const operatorId = operatorProfileId ?? userId;
+    // B-SAN3-26 (C1-A1) — o motivo do despacho vem do cliente: não escreve a marca da base.
     const message =
-      optionalString(input.message) ??
+      withoutReservedOfficeMark(optionalString(input.message)) ??
       (input.source === "field_dispatch_reassign"
         ? "Ordem de serviço reatribuída pelo despacho."
         : "Ordem de serviço atribuída pelo despacho.");

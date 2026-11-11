@@ -417,6 +417,11 @@ a OS a `on_site`: `PATCH /work-orders/:id/status` e a ação `work_order.status_
   `metadata.checkin` diz o caso (`office` · `plate_confirmed` · `exempt_service_type`). O `message` do corpo é
   ignorado nesse destino. Os dígitos nunca vão para o evento, o domínio publicado, o log nem o `conflict.local` de
   nenhum conflito da fila.
+- **A marca da base é do servidor (C1-A1, junta do PR #534):** nas outras transições (`PATCH …/status`, a fila,
+  `POST /work-orders/:id/assign`, a ação `work_order.assign` e o motivo da reatribuição do despacho), a mensagem do
+  cliente que contém "registrada pela base" ou "registrado pela base" é descartada, e o evento leva a mensagem padrão
+  da transição. A comparação ignora caixa, acento, pontuação, espaços e caracteres invisíveis. A transição não é
+  recusada por isso. A marca que vale é o `metadata.checkin = office`.
 - **OS sem placa:** só anda pela base. Com o guincheiro sem dados, a OS fica "A caminho" no app até um pull trazer o
   `on_site` que a base registrou (exceção ao offline-first, declarada: `P-CHECKIN-SEM-PLACA-OFFLINE`).
 - **Ordem de publicação:** app primeiro, servidor depois. O app antigo recebe a recusa como conflito (o cartão de

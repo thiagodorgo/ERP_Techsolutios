@@ -195,6 +195,28 @@ export function checkinTimelineMessage(verdict: CheckinVerdict): string {
   }
 }
 
+// ─── A marca da base é só do servidor (C1-A1 da junta do PR #534) ───────────────────────────────
+// A linha do tempo do console mostra só o texto do evento, e o cliente escreve texto livre em toda transição que não é
+// `on_site` (rota HTTP de status, fila do app, atribuição e despacho). A mensagem do cliente que imita a marca é
+// DESCARTADA, e vale a mensagem padrão da transição. A comparação ignora caixa, acento, pontuação, espaços repetidos e
+// caracteres invisíveis, e cobre "registrada" e "registrado". Residual declarado: letra de outro alfabeto com a mesma
+// forma (homóglifo) não é reconhecida; o fechamento pleno é o console mostrar a marca pelo `metadata.checkin`.
+const RESERVED_OFFICE_MARK = /registrad[ao] pela base/;
+
+function foldForOfficeMark(text: string): string {
+  return text
+    .normalize("NFKD")
+    .replace(/[\p{M}\p{Cf}]/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ");
+}
+
+/** A mensagem do cliente, ou `undefined` (= a padrão da transição) quando ela imita a marca que só a base recebe. */
+export function withoutReservedOfficeMark(message: string | undefined): string | undefined {
+  if (message === undefined) return undefined;
+  return RESERVED_OFFICE_MARK.test(foldForOfficeMark(message)) ? undefined : message;
+}
+
 // ─── Quem confere não escreve a referência (C26-06) ─────────────────────────────────────────────
 /**
  * Compara a referência RESULTANTE com a atual, já normalizadas. O PATCH substitui o objeto inteiro, então trocar,

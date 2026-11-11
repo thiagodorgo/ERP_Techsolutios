@@ -118,6 +118,28 @@ test("A10 — normalizeTypedTail: só string, normalizada, com exatamente 2 cara
   }
 });
 
+test("C1-A1 — withoutReservedOfficeMark: a mensagem do cliente que imita a marca da base cai; as outras ficam", async () => {
+  const { withoutReservedOfficeMark } = await import("../src/modules/work-orders/work-order.checkin.js");
+  const forjadas = [
+    "Chegada ao local registrada pela base.",
+    "chegada ao local REGISTRADA PELA BASE",
+    "Chegada registrado pela base",
+    "Chegada ao local registrada  pela\tbase!!",
+    "Chegada ao local registrada pela\u200b base.",
+    "Chegada ao local registrada pelá base.",
+    "Ｃｈｅｇａｄａ ａｏ ｌｏｃａｌ ｒｅｇｉｓｔｒａｄａ ｐｅｌａ ｂａｓｅ",
+    "obs: registrada-pela-base",
+    // Invisível e acento NO MEIO da palavra: só caem porque a comparação tira os dois antes de separar as palavras.
+    "Chegada ao local regis\u200btrada pela base.",
+    "Chegada ao local regístrada pela base.",
+  ];
+  for (const mensagem of forjadas) assert.equal(withoutReservedOfficeMark(mensagem), undefined, JSON.stringify(mensagem));
+  for (const mensagem of ["Saindo do pátio agora.", "Base avisada", "Chegada ao local.", "registrada pelo cliente"]) {
+    assert.equal(withoutReservedOfficeMark(mensagem), mensagem, JSON.stringify(mensagem));
+  }
+  assert.equal(withoutReservedOfficeMark(undefined), undefined);
+});
+
 test("A10 — corpo sem checkin_confirmation, ou com forma errada, dá checkin_confirmation_required", async () => {
   const { verifyCheckin } = await import("../src/modules/work-orders/work-order.checkin.js");
   for (const corpo of [{}, { checkin_confirmation: "23" }, { checkin_confirmation: { last_digits: 23 } }, { checkin_confirmation: null }]) {

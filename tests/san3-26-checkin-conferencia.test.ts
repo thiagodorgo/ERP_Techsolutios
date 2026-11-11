@@ -602,6 +602,125 @@ test("A12 — a mensagem da chegada é do servidor: o técnico não escreve \"pe
 });
 
 // ------------------------------------------------------------------------------------------------
+// A12b — C1-A1 (junta do PR #534): a marca da base não é forjada pela mensagem do cliente em NENHUMA transição, nas
+// duas portas. A mensagem que a imita é descartada e vale a padrão da transição; outra mensagem continua valendo.
+// ------------------------------------------------------------------------------------------------
+const MARCA_FORJADA = "Chegada ao local registrada pela base.";
+
+function semMarca(evento: any, contexto: string) {
+  assert.ok(evento, `${contexto}: evento ausente`);
+  assert.doesNotMatch(String(evento.message), /registrad[ao] pela base/i, `${contexto}: a marca da base foi forjada`);
+}
+
+test("A12b — pela rota HTTP e pela fila, on_route e in_progress com a frase da base: a mensagem cai para a padrão", async () => {
+  await withApi(async (ctx) => {
+    const hT = ctx.h(ctx.seed.tecnico, "field_technician");
+    const hG = ctx.h(ctx.seed.gestor, "manager");
+    const aceita = async () => {
+      const criada = await ctx.req("/api/v1/work-orders", { method: "POST", headers: hG, body: { title: "OS A12b", service_details: { plate: PLACA } } });
+      assert.equal(criada.status, 201, JSON.stringify(criada.body));
+      const id = criada.body.data.id as string;
+      const despacho = await ctx.req("/api/v1/operations/dispatches", { method: "POST", headers: hG, body: { workOrderId: id, operatorUserId: ctx.seed.tecnico.id } });
+      assert.equal(despacho.status, 201, JSON.stringify(despacho.body));
+      const aceite = await ctx.req(`/api/v1/work-orders/${id}/status`, { method: "PATCH", headers: hT, body: { status: "accepted" } });
+      assert.equal(aceite.status, 200, JSON.stringify(aceite.body));
+      return id;
+    };
+    const noLocalConferido = async () => {
+      const id = await ctx.osACaminho();
+      const r = await ctx.req(`/api/v1/work-orders/${id}/status`, { method: "PATCH", headers: hT, body: noLocal(confirmacao(DIGITOS_CERTOS)) });
+      assert.equal(r.status, 200, JSON.stringify(r.body));
+      return id;
+    };
+    const ultimo = async (id: string, status: string) => (await ctx.timeline(id)).filter((e) => e.toStatus === status).at(-1);
+
+    // Rota HTTP.
+    const httpRota = await aceita();
+    const r1 = await ctx.req(`/api/v1/work-orders/${httpRota}/status`, { method: "PATCH", headers: hT, body: { status: "on_route", message: MARCA_FORJADA } });
+    assert.equal(r1.status, 200, JSON.stringify(r1.body));
+    semMarca(await ultimo(httpRota, "on_route"), "HTTP on_route");
+    assert.equal((await ultimo(httpRota, "on_route")).message, "Operador em deslocamento.");
+
+    const httpExec = await noLocalConferido();
+    const r2 = await ctx.req(`/api/v1/work-orders/${httpExec}/status`, { method: "PATCH", headers: hT, body: { status: "in_progress", message: MARCA_FORJADA } });
+    assert.equal(r2.status, 200, JSON.stringify(r2.body));
+    semMarca(await ultimo(httpExec, "in_progress"), "HTTP in_progress");
+    assert.equal((await ultimo(httpExec, "in_progress")).message, "Atendimento iniciado.");
+
+    // Fila do app.
+    const filaRota = await aceita();
+    const l1 = await ctx.lote(hT, { work_order_id: filaRota, status: "on_route", message: MARCA_FORJADA });
+    assert.equal(l1.acao?.status, "accepted", JSON.stringify(l1.acao));
+    semMarca(await ultimo(filaRota, "on_route"), "fila on_route");
+
+    const filaExec = await noLocalConferido();
+    const l2 = await ctx.lote(hT, { work_order_id: filaExec, status: "in_progress", message: MARCA_FORJADA });
+    assert.equal(l2.acao?.status, "accepted", JSON.stringify(l2.acao));
+    semMarca(await ultimo(filaExec, "in_progress"), "fila in_progress");
+
+    // Controle: outra mensagem do cliente continua valendo.
+    const controle = await aceita();
+    await ctx.req(`/api/v1/work-orders/${controle}/status`, { method: "PATCH", headers: hT, body: { status: "on_route", message: "Saindo do pátio agora." } });
+    assert.equal((await ultimo(controle, "on_route")).message, "Saindo do pátio agora.");
+  });
+});
+
+test("A12c — a atribuição (rota e fila) e o motivo do despacho também não escrevem a marca da base", async () => {
+  await withApi(async (ctx) => {
+    const hG = ctx.h(ctx.seed.gestor, "manager");
+    const hA = ctx.h(ctx.seed.gestor, "tenant_admin");
+    const nova = async () => {
+      const criada = await ctx.req("/api/v1/work-orders", { method: "POST", headers: hG, body: { title: "OS A12c", service_details: { plate: PLACA } } });
+      assert.equal(criada.status, 201, JSON.stringify(criada.body));
+      return criada.body.data.id as string;
+    };
+    const ultimoAtribuido = async (id: string) => (await ctx.timeline(id)).filter((e) => e.toStatus === "assigned").at(-1);
+
+    const pelaRota = await nova();
+    const r = await ctx.req(`/api/v1/work-orders/${pelaRota}/assign`, {
+      method: "POST",
+      headers: hG,
+      // No modo memória o id de usuário não é UUID; a atribuição pede UUID, como nos outros testes de `/assign`.
+      body: { operatorId: randomUUID(), message: MARCA_FORJADA },
+    });
+    assert.equal(r.status, 200, JSON.stringify(r.body));
+    semMarca(await ultimoAtribuido(pelaRota), "assign pela rota");
+
+    const pelaFila = await nova();
+    const id = randomUUID();
+    const lote = await ctx.req(LOTE_OS, {
+      method: "POST",
+      headers: hG,
+      body: {
+        client_batch_id: randomUUID(),
+        actions: [
+          {
+            client_action_id: id,
+            type: "work_order.assign",
+            local_created_at: new Date().toISOString(),
+            payload: { work_order_id: pelaFila, operator_id: randomUUID(), message: MARCA_FORJADA },
+          },
+        ],
+      },
+    });
+    assert.equal(lote.status, 200, JSON.stringify(lote.body));
+    assert.equal(lote.body.data.accepted.length, 1, JSON.stringify(lote.body));
+    semMarca(await ultimoAtribuido(pelaFila), "assign pela fila");
+
+    const doDespacho = await nova();
+    const despacho = await ctx.req("/api/v1/operations/dispatches", { method: "POST", headers: hG, body: { workOrderId: doDespacho, operatorUserId: ctx.seed.tecnico.id } });
+    assert.equal(despacho.status, 201, JSON.stringify(despacho.body));
+    const reatribui = await ctx.req(`/api/v1/operations/dispatches/${despacho.body.data.id}/reassign`, {
+      method: "PATCH",
+      headers: hA,
+      body: { operatorUserId: ctx.seed.outroTecnico.id, reason: MARCA_FORJADA },
+    });
+    assert.equal(reatribui.status, 200, JSON.stringify(reatribui.body));
+    semMarca(await ultimoAtribuido(doDespacho), "motivo do despacho");
+  });
+});
+
+// ------------------------------------------------------------------------------------------------
 // L1 — a lista leva o MODO do check-in e só os 2 caracteres finais (C26-03, N-01).
 // ------------------------------------------------------------------------------------------------
 test("L1 — a lista do técnico traz checkinMode e checkinPlateTail, nunca a placa nem o serviceDetails", async () => {

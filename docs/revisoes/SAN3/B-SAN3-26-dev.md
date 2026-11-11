@@ -489,3 +489,57 @@ registrado como `e0` e nas cap. 05 a 11, e não conta como resultado.
 - O servidor da sonda foi parado (0 listener em 3626). O worktree `w-san326old` foi removido: o
   `git worktree remove --force` falhou por caminho longo depois de tirar o registro, e o diretório saiu com
   `rd /s /q \\?\…`.
+
+## Conserto único da junta (fluxo rápido, §C7 item 10(3), passo 4)
+
+- **Autor:** `dev-san3-26-fix-cl`, Claude Opus 5.5 (subagente da sessão), dev. Não achei nenhum dos achados: os da
+  junta são das cadeiras C1, C2 e C3 (`C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j534/c*-voto.json`, 3 de 3
+  APROVADO, sem grave). A triagem é do orquestrador (11/11, ~08:00 SP). Sem cruzamento, pelo mesmo motivo da
+  pré-revisão (§C7 item 11(2)).
+- **Objeto de partida:** `1a1328ef`, árvore limpa, medido às 07:57 SP por `date`.
+
+### C1-A1 — a marca da base não é forjada pela mensagem do cliente
+
+**Forma escolhida, a menor que fecha a propriedade:** o servidor **descarta** a mensagem do cliente que imita a marca, e
+o evento leva a mensagem padrão da transição. A transição não é recusada.
+- A recusa criaria um motivo novo de erro, um tipo novo de conflito na fila e tratamento no app.
+- Tirar a marca do texto (o console mostrar o `metadata.checkin`) exige mexer no `WorkOrderTimeline.tsx`, fora do
+  PERMITIDO.
+
+**Onde.** Um helper em `work-order.checkin.ts` (`withoutReservedOfficeMark`) e três chamadas em `work-order.service.ts`.
+São todas as transições que gravam mensagem do cliente na linha do tempo da OS:
+- `changeStatus`: a rota HTTP de status e a fila;
+- `assign`: `POST /work-orders/:id/assign` e a ação `work_order.assign` da fila;
+- `assignFromDispatch`: o motivo da reatribuição do despacho, que chega pelo `field-dispatch` e não é tocado.
+
+O cancelamento usa a mensagem padrão.
+
+**LEITURA DECLARADA (§A6).**
+- A reserva é "registrad[ao] pela base", e não a frase inteira: "Chegada no local registrada pela base" também forjaria.
+- A comparação ignora caixa, acento, pontuação, espaços repetidos, caracteres invisíveis e largura (NFKD).
+- **Residual declarado:** letra de outro alfabeto com a mesma forma (homóglifo) não é reconhecida. O fechamento pleno é
+  o console mostrar a marca pelo `metadata.checkin`, registrado como pendência (C3, abaixo).
+
+**Testes.**
+- `tests/san3-26-checkin-conferencia.test.ts`:
+  - A12b: `on_route` e `in_progress`, pela rota HTTP e pela fila, com a frase. Prova que a mensagem cai para a padrão
+    ("Operador em deslocamento." e "Atendimento iniciado.") e que outra mensagem do cliente continua valendo;
+  - A12c: a atribuição pela rota e pela fila, e o motivo da reatribuição do despacho.
+- `tests/san3-26-checkin-normalizacao.test.ts`: 10 formas forjadas (caixa, "registrado", tabulação, invisível, acento,
+  largura total, hífens, e invisível e acento no meio da palavra) e 4 mensagens que ficam.
+
+**Mutações literais.** Âncora com contagem 1, restauradas pela cópia do arquivo.
+
+| # | Mutação | Âncora → troca | Resultado |
+|---|---|---|---|
+| 1 | M-C1a (`changeStatus`) | `      : withoutReservedOfficeMark(optionalString(body.message)) ?? defaultStatusMessage(nextStatus);` → `      : optionalString(body.message) ?? defaultStatusMessage(nextStatus);` | ec=1, VERMELHA: conferência pass 23, fail 1 (A12b) |
+| 2 | M-C1b (`assign`) | `    const message = withoutReservedOfficeMark(optionalString(body.message)) ?? "Ordem de servico atribuida.";` → `    const message = optionalString(body.message) ?? "Ordem de servico atribuida.";` | ec=1, VERMELHA: pass 23, fail 1 (A12c) |
+| 3 | M-C1c (`assignFromDispatch`) | `      withoutReservedOfficeMark(optionalString(input.message)) ??` → `      optionalString(input.message) ??` | ec=1, VERMELHA: pass 23, fail 1 (A12c, "motivo do despacho: a marca da base foi forjada") |
+| 4 | M-C1d (a reserva) | `const RESERVED_OFFICE_MARK = /registrad[ao] pela base/;` → `const RESERVED_OFFICE_MARK = /chegada ao local registrada pela base\.$/;` | ec=1, VERMELHA: normalização pass 7, fail 1 |
+| 5 | M-C1e (a dobra) | `    .replace(/[\p{M}\p{Cf}]/gu, "")` → (apagar) | ec=1, VERMELHA: normalização pass 7, fail 1 |
+
+A M-C1e sobreviveu na 1ª rodada. Invisível e acento no FIM de uma palavra caem mesmo sem a dobra, porque viram
+separador. Entraram os 2 casos com o invisível e o acento no MEIO da palavra ("regis\u200btrada", "regístrada"), e a
+M-C1e ficou vermelha.
+
+**Contrato:** `API_CONTRACTS.md` §3.5.2 ganhou o item "A marca da base é do servidor".
