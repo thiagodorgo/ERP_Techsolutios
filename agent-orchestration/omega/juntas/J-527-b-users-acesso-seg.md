@@ -39,3 +39,21 @@ As condições R1–R8 entraram no briefing (revisão 2) e nos mandatos, às 12:
 - Planeja: identidade nova, topo.
 - Desenvolve: quem não achou nem planejou.
 - Confere: modelo diferente do dev.
+
+## Fechamento (11/11 03:05 SP, orquestrador)
+- **Conserto:** o plano do topo `B-USERS-ACESSO-SEG-conserto-c1.md`, com as Emendas 3 a 6.1. O backend F0 a F6 foi feito pela API e pelo Codex, e as telas T1 e T2 por subagentes Claude.
+- **Conferências de outro modelo:**
+  - `conf-527-back-cl` (Claude, contra o dev da API): CONFERIDO. Os 2 graves estão mortos e os itens 1 e 3 da C1, que a junta não tinha medido, foram medidos;
+  - `conf-527-telas-api` (API, contra os devs Claude): CONFERIDO;
+  - conferência visual do orquestrador: CONFERIDO.
+- **Merge:** #527 em `07898adf` às 02:35 de 11/11, com o head aprovado `221f09fb` e a CI 16/16. Os update-branch trouxeram o #528, o #531 e o #532, todos sem interseção com o PR.
+- **Porteiro `porteiro-527`:** LIBERADO COM RESSALVA (`erp-pausa-2026-10-03/revisoes/porteiro-527-parecer.md`).
+  - As mutações A1 e A8 trazem os graves de volta, e eles estão mortos na main.
+  - Contagens reexecutadas: frontend 1713/1713, Flutter do bloco +44, backend da CI do merge 4962/4964 com 0 falha.
+  - Achado novo, não grave: os `-db` do bloco disputam os papéis globais quando rodam em paralelo numa base nova (56/59), e com os papéis já na base dão 59/59.
+- **Pendências para o próximo registro:**
+  - CONF527B-N01, CONF527B-N02, C527T-01 e `P-USERS-SEG-TELA-EMAIL-NEGRITO`;
+  - os `-db` em paralelo numa base nova;
+  - `P-HTTP-ERRO-ECOA-MENSAGEM-CRUA`, citada mas inexistente: criar ou corrigir a citação;
+  - `D-RESET-AUTORIDADE-PLATAFORMA`, que ainda espera a ratificação do dono e vai no estado das 07:00;
+  - `P-USERS-DESATIVADO-TOKEN-MOBILE`, que passa ao B-SAN3-26 se ele tocar `src/modules/mobile/**`.
