@@ -334,3 +334,33 @@ Os casos novos ficam nos testes do bloco; o produto não muda.
 | 4 | PROPRIA-4b (só o `viewer` escapa) | idem | → `… \|\| isCheckinOfficeOnly(actor) \|\| actor.roles.includes("viewer")) return;` | ec=1, VERMELHA (A7b, pelo serviço) |
 
 As 4/4 restauradas. As linhas 3 e 4 provam que cada metade do A7b mata a sua variante sozinha.
+
+### PR534-06 — os 2 arquivos fora do PERMITIDO
+
+- **Este diário (`docs/revisoes/SAN3/B-SAN3-26-dev.md`) fica.** Ele é o artefato do dev, com o vermelho-controle, a
+  emenda, as mutações, a bateria e este conserto. Não é código nem teste. É a mesma classe do `CONF527B-N01`
+  (conferência do PR #527: os diários dos devs de tela fora do PERMITIDO, um artefato de processo). Ele fica no ramo e
+  vale como registro do bloco.
+- **`mobile/flutter_app/lib/shared/ui/sync_screen.dart` fica, porque é necessário.** O requisito que o exige é do
+  próprio plano v2:
+  - a tabela de abertura, linha N-02: "o cartão de check-in não oferece 'Aceitar servidor' nem 'Manter local'; o
+    caminho é o `redoCheckin`";
+  - o §2.2, "Recusa do servidor = conflito resolvível": "Some 'Manter local', que repetiria a recusa, e 'Aceitar
+    servidor', que não reverte (N-02)".
+
+  A tela Sincronização é a segunda superfície que oferece essas duas saídas para a mesma ação: "Minha versão" (`keepMine`)
+  e "Versão do gestor" (`useServer`), em `sync_screen.dart`. A crítica r2 mediu isso no `C26R2-02`: depois de "Versão
+  do gestor" sobra 1 ação em conflito, e "Minha versão" chama a API de novo e recebe a mesma recusa. O plano v2 não
+  listava o arquivo no PERMITIDO porque não sabia dessa segunda superfície. Sem a mudança, a propriedade do §2.2 cai
+  por essa porta. A mudança se limita a isto:
+  - para as ações presas a uma chegada recusada, o cartão mostra só "Confirmar a placa de novo", que chama o mesmo
+    `undoRefusedCheckin` do cartão da OS;
+  - qualquer outro conflito continua com as 2 escolhas.
+- **Prova por execução (05:27 SP, por `date`):** voltei só este arquivo ao da base (`git show
+  b6caf568:mobile/flutter_app/lib/shared/ui/sync_screen.dart`) e rodei
+  `flutter test --no-pub test/features/work_orders/bsan326_checkin_conflito_test.dart`. Deu ec=1, `+5 -1`, e caiu o M7
+  ("a tela Sincronização (C26R2-02) …"): `Expected: exactly one matching candidate · Actual: Found 0 widgets with key
+  [<'conflict-checkin-redo-chegada'>]`. Na base, a tela mostra as 2 escolhas antigas para a chegada recusada. Depois
+  restaurei com `git checkout -- …sync_screen.dart`, e o `git status --porcelain` ficou vazio.
+- O que muda o PERMITIDO continua sendo uma decisão de plano. Esta justificativa fica aqui, e a confirmação fica para a
+  conferência do item 10(3)5 (outra identidade).
