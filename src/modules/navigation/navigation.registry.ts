@@ -412,6 +412,21 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     requiredModules: ["finance"],
     tenantOnly: true,
   },
+  // B-SAN3-24 (24a, P-MENU) — Cheques: o item aparece se, e só se, a rota deixa entrar (`GET /cheques` e o
+  // `PermissionGuard` do App.tsx comparam `cheques:read`). Ampliação nominal do plano v2 §4.
+  {
+    id: "finance.cheques",
+    label: "Cheques",
+    description: "Cheques recebidos e emitidos da organização.",
+    path: "/finance/cheques",
+    icon: "Banknote",
+    group: "finance",
+    order: 440,
+    status: "implemented",
+    requiredPermissions: ["cheques:read"],
+    requiredModules: ["finance"],
+    tenantOnly: true,
+  },
   // Ω4C PR-14 — Telemetria (app de campo): 4 paths GOVERNADOS (veto coordenador-de-acessos, mesma classe
   // do V1 de Orçamentos). Gate ÚNICO `telemetry:read` (PR-12; SEM permissão nova) e SEM requiredModules —
   // sem provisão de módulo novo; getGovernedNavigationPaths os inclui, então o gating dinâmico ESCONDE o
