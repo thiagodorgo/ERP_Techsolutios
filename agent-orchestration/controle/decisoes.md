@@ -4781,6 +4781,30 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Regra (como implementada no conserto, F3):** `POST /auth/users/:userId/reset-password` lê os papéis do alvo na organização ativa e, se algum for de plataforma (`isPlatformRole`, o mesmo conjunto que o portão de plataforma reconhece), recusa com `403 FORBIDDEN target_not_manageable`, mensagem fixa; nada muda (hash, marca, sessões, auditoria de sucesso).
 - **Se o dono recusar:** a escalada da E8 volta e precisa de outra regra antes do merge do #527.
 
+## D-SAN3-08-DIALOGO-SEM-TRES-OPCOES (aplicação de `D-PORTAO-7-RECOMENDACOES-1011`, decisão do dono de 2026-11-10 23:19 SP) — o diálogo de aprovação do orçamento
+
+- **Fonte:** `REGISTRO-PENDENTE.md` do orquestrador, 10/11 23:19 SP. Perguntado se aceitava as 7 recomendações dos planos `B-O6R-09` (1), `B-SAN3-08` (3) e `B-SAN3-24` (3), o dono respondeu *"Sim, todas (Recomendado)"*. Esta entrada registra só a parte do `B-SAN3-08`; o ID `D-PORTAO-7-RECOMENDACOES-1011` fica para o registro do orquestrador.
+- **Decisão, na parte do `B-SAN3-08`:** (1) o diálogo de aprovação herda a aparência da tela que o abre, **sem 3 opções agora**: a DoD "3 opções aprovadas" (§10, `D-TELAS-TRES-OPCOES`, `D-TELAS-SAEM-COM-TRES`) fica **dispensada para este diálogo por decisão do dono**; as 3 opções entram quando Orçamentos for refeita no ajuste geral (`P-APARENCIA-POR-USUARIO`). (2) "Modo de acionamento" é texto livre opcional. (3) Aprovar dentro da OS cria uma OS nova, com aviso no diálogo, e o vínculo à OS-mãe vira a `P-SAN3-08-APROVAR-NA-OS-CRIA-OS-NOVA`.
+- **Aplicação no código (B-SAN3-08, F1):** `ServiceQuoteApproveDialog.tsx` usa o `Modal` da biblioteca, sem seletor de aparência; "Modo de acionamento (opcional)" com `maxLength={120}` e nunca gera erro; "Será criada uma nova ordem de serviço." em toda abertura.
+
+## D-SAN3-08-PORTAO-Q1-Q2 (aplicação de `D-PORTAO-3-RECOMENDACOES-1111`, decisão do dono de 2026-11-11 01:50 SP) — perguntas da emenda 1 do `B-SAN3-08`
+
+- **Fonte:** `REGISTRO-PENDENTE.md` do orquestrador, 11/11 01:50 SP. Fala literal: *"Sim, todas as 3 (Recomendado)"*. Esta entrada registra só as duas respostas do `B-SAN3-08`; o ID `D-PORTAO-3-RECOMENDACOES-1111` (que também responde a Pergunta 1 do `B-O6R-09`) fica para o registro do orquestrador.
+- **Q1 (c):** a OS em dobro ou órfã por falha no meio da aprovação (`P-SAN3-08-APPROVE-OS-NAO-ATOMICA`) entra no portão, fundida ao `B-O6R-09` (item 7). **Fora do `B-SAN3-08`.**
+- **Q2 (c):** o operador aprova orçamento só até um limite por organização quando a alçada existir; até lá vale a `RBAC_MATRIX.md`, e ele aprova. Isto decide o conflito §A2 `RBAC_MATRIX.md:117` × `APPROVAL_LIMITS.md:45-48` registrado na `P-SAN3-08-ORCAMENTO-SEM-ALCADA`. **O `B-SAN3-08` não muda permissão.**
+
+## D-SAN3-08-P1-CORPO-CAMELCASE (decisão de desenho do plano do `B-SAN3-08`, 2026-11-11) — a paridade do corpo do approve mora na web
+
+- **Fonte:** plano v1 do `B-SAN3-08` (`plano-B-SAN3-08-api`), §2.2, com a emenda 1 (R-A4).
+- **Decisão:** o corpo do `POST /service-quotes/:id/approve` é montado pelo modelo puro `frontend/src/modules/registry/service-quotes/service-quote-approve.model.ts` (`buildServiceQuoteApproveBody`), em camelCase, com as quatro coordenadas, porque o approve do servidor lê só camelCase (`service-quote.service.ts:281-296`) e o §5 do `PLANO_SAN3.md` dá ao bloco só a fronteira do frontend. O servidor fica intocado; aceitar as duas grafias no servidor vira a `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE`.
+- **Prova:** vermelho-controle da F0 (o builder copiado do snake_case de antes recebe `422 destination_required`) e o passo (iv) do `tests/san3-08-financeiro-cria-orcamento-db.test.ts` por HTTP real (diário `docs/revisoes/SAN3/B-SAN3-08-dev.md`).
+
+## D-SAN3-08-NIVEL-DE-REVISAO (divergência registrada, §A2, 2026-11-11) — revisão reforçada, não junta completa
+
+- **Divergência:** o §5 do `PLANO_SAN3.md` (l.283) escrevia, para o `B-SAN3-08`, "unanimidade + `cognicao-visual`". Ele foi escrito antes do `D-JUNTA-FLUXO-RAPIDO` (§C7 item 10, 2026-10-30), que prevalece onde diverge das juntas da época.
+- **Leitura do plano, pelo item 10(1):** o bloco não toca nenhum dos cinco gatilhos de junta completa: não calcula nem escreve dinheiro (a tela não calcula; o approve do servidor não muda), não abre consulta sem escopo, não muda permissão (nenhum grant, gate de rota nem `can()`), não perde dado sem volta (a recusa devolve o orçamento a rascunho; a falha no meio é anterior ao bloco e foi para o `B-O6R-09`) e não abre superfície externa. Nível: **revisão reforçada** (1 revisor que executa testes e mutações + CI) **mais a conferência visual do diálogo**.
+- **Não escolhida em silêncio:** a trava automática do item 10(2) roda sobre o diff do PR (`src/**`, `prisma/**`, `.github/**`, `catalog.ts`, `RBAC_MATRIX.md`, `frontend/src/modules/auth/**`, `frontend/src/providers/**`, e linhas com `permissions.includes(`, `can(` ou `requirePermission(`); se acusar, o bloco sobe para junta completa. Se o dono preferir a junta, o plano não muda; muda só o fim do ciclo.
+
 ## C-B-SAN3-26-P3-PREMISSA (registro de CONFLITO, §A2, 2026-11-11) — a P3 do B-SAN3-26 foi aceita sobre premissa falsa
 
 - **O conflito:** a decisão `D-PORTAO-9-RECOMENDACOES-1011`, item B-SAN3-26 (3) ("sem exceção para OS já abertas sem placa"), foi aceita sobre a recomendação do plano v1, que dizia que "a base completa a placa da OS (é um campo, leva segundos)". Na `main` `d5ec1696`, o console não tem edição de OS (`frontend/src/modules/work-orders/work-orders.service.ts:105`, sem chamador), e a placa só existe na criação de `socorro` (`WorkOrderForm.tsx:283-286`).
