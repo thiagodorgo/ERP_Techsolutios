@@ -13184,3 +13184,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** `agent-orchestration/controle/gerar-indice-pendencias.py` (função `severidade`) · **dono:** a definir pelo orquestrador (as irmãs `P-INDICE-PENDENCIAS-CLASSIFICADOR` e `P-INDICE-PENDENCIAS-CRITICA-COMO-SEVERIDADE`, da mesma família, apontam para o próximo PR de ferramenta de registro) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
 - **fato (medido pelo redator `red-529-cl` no índice regenerado deste PR):** a função `severidade` só reconhece as quatro palavras da escala antiga e não `GRAVE`; por isso `P-UPLOAD-ARMAZENAMENTO-EFEMERO` e `P-USERS-DESATIVADO-TOKEN-MOBILE` saem sem severidade no índice e caem no balde B (processo/registro), junto de itens de forma.
 - **critério de encerramento:** o índice mostra `GRAVE` como gravidade material (balde A), com vermelho-controle numa entrada GRAVE de teste.
+## P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera diárias CALENDAR — MÉDIA
+
+- **status:** ABERTA · **escopo:** preexistente (Ω5P PR-07) · **dono:** próximo bloco da trilha
+  `yard` que tocar transferência/edição de fuso · **bloqueia:** não bloqueia o B-O6R-12.
+- **fato:** `charge-prisma.repository.ts` ainda lê `yards.timezone` pelo pátio corrente. Transferir
+  o processo ou editar o fuso muda o calendário de um processo já aberto. O B-O6R-12 congela o
+  regime normativo do perfil, não o pátio.
+- **critério de encerramento:** processo em custódia mantém o fuso aplicável à abertura, ou a
+  operação impede mudança/transferência que altere o calendário enquanto houver custódia ativa,
+  com teste de concorrência e migração aditiva se houver retrato.

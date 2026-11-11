@@ -24,6 +24,7 @@ test("B-O6R-12 C10: leitores de prazos/liberação usam regime do processo", () 
 
 test("B-O6R-12 C22: cobrança declara somente ponteiro e fuso como insumos vivos", () => {
   const source = read("src/modules/charging/charge-prisma.repository.ts");
+  assert.deepEqual(INSUMOS_VIVOS_DIARIA, ["jp.daily_service_catalog_id", "y.timezone"]);
   for (const input of INSUMOS_VIVOS_DIARIA) assert.match(source, new RegExp(input.replaceAll(".", "\\.")));
   assert.match(read("agent-orchestration/controle/pendencias.md"), /P-O6R-B12-FUSO-DO-PATIO-VIVO/);
   assert.equal(LEITORES_VIVOS.length, 4);

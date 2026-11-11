@@ -101,3 +101,15 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
   validação final.
 - **Executor da fatia:** `dev-o6r12-cdx`.
 - **Próximo comando:** F5 — catraca de leitores vivos e pendência do fuso.
+
+## F5 — 2026-11-11T02:05:08-0300
+
+- Catraca declara `INSUMOS_VIVOS_DIARIA = [jp.daily_service_catalog_id, y.timezone]` e a
+  allowlist dos leitores vivos remanescentes.
+- Nasceu `P-O6R-B12-FUSO-DO-PATIO-VIVO`, MÉDIA, preexistente, dona da trilha `yard`.
+- C22 verde (1/1 selecionado); mutação que remove `y.timezone` produziu `not ok` e foi revertida.
+- C10 permanece deliberadamente vermelho nesta fatia porque notificações/leilão/liberação/painel
+  só trocam a fonte na F6 seguinte; nenhum desvio foi escondido.
+- **Executor da fatia:** `dev-o6r12-cdx`.
+- **Próximo comando:** F6 — substituir os quatro leitores Prisma e três leitores de memória;
+  fazer C10/C20/C20b-d/C21 verdes e executar as mutações.
