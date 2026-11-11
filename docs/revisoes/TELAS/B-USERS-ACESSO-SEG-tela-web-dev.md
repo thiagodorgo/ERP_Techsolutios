@@ -246,3 +246,30 @@ Lidas inteiras no plano (linhas 975-1002). Medido em `8c41ffe3` antes do código
   `PasswordInput`, com "Mostrar senha" → "Ocultar senha", e o C usa `data-step` do `StepList`): `node --test --import tsx
   tests/troca-senha-live.test.tsx tests/auth-troca-senha.adapter.test.ts tests/aparencia-registro.guard.test.ts` =
   `# tests 51 · # pass 51 · # fail 0` (23:32); `npm --prefix frontend run check` limpo.
+
+### Item 2 + E6-R01 a E6-R04 — a troca de organização para um destino marcado (23:33–23:38)
+
+- **Só o corpo de `switchTenantContext`** (`frontend/src/modules/context/repository.ts`) muda: lê
+  `must_change_password === true` da resposta (com cast local, porque o tipo `ActiveTenantResponse` fica fora do corpo) e
+  grava `mustChangePassword` na sessão nova. Sem o campo ou com `false`, a sessão é normal (`false`, não herdada da
+  anterior). A falha fechada `!== false` segue só no login (RQ-1).
+- **Teste de ponta a ponta** `frontend/tests/context-switch-troca-senha.test.tsx` (3 casos), com a linha no `test:smoke`:
+  o `App` real na seleção de organização com sessão inteira, clique real na "Org Dois", `POST /auth/active-tenant`
+  dublado pelo contrato da F2 (`auth.routes.ts:498` em `a5b56555`).
+  - **Vermelho-controle** (o teste escrito antes do conserto, 23:34): `not ok 1` — a troca para o destino marcado ficou
+    em `/select-context` (o achado reproduzido: a pessoa sem saída); `not ok 2` e `not ok 3` — o campo da sessão nova
+    ficava `undefined`.
+  - **Verde** (23:37): `# tests 3 · # pass 3 · # fail 0`.
+- **A cadeia não pediu mexer em `ContextSelectionPage.tsx`, `AuthProvider.tsx` nem `LoginPage.tsx` (E6-R04).** A sessão
+  restrita gravada pela troca não conta como autenticada, a seleção manda ao login, e o desvio do login leva à troca de
+  senha. Registrado, sem mexer: a `ContextSelectionPage` pede a lista de organizações de novo quando a sessão muda, e essa
+  segunda chamada sai com o token restrito (o backend a recusa com 403); o teste aceita só essas duas rotas.
+- **Mutações** (aplicadas sobre um commit temporário local `wip`, desfeito com `git reset --soft HEAD~1`, para o
+  `git checkout` do roteiro reverter ao código consertado):
+  - E6-R02: `.must_change_password === true;` → `.must_change_password !== false;` → `not ok 2 [E6·2] regressão … sem o
+    campo` · 2/3 (23:37);
+  - Emenda 6, item 2 ("ignorar a flag"): apagar `mustChangePassword,` da sessão nova → `not ok 1 [E6·2] trocar para a
+    organização onde o par está marcado…`, `not ok 2`, `not ok 3` · 0/3 (23:37).
+- **Ajuste do arnês, declarado:** nos casos de regressão o destino é `/finance`, carregado sob demanda (`lazy`), e a
+  navegação do roteador é transição: a seleção fica em "Acessando…" até o módulo chegar. O teste espera o caminho mudar,
+  com teto de 15 s (`waitForPathChange`).
