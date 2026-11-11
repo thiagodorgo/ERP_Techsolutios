@@ -7,7 +7,7 @@ import type {
   UpdateWorkOrderFinancialItemInput,
   WorkOrderFinancialItem,
 } from "./work-order-financial.types.js";
-import { WorkOrderFinancialError } from "./work-order-financial.types.js";
+import { WorkOrderFinancialError, workOrderCancelledError } from "./work-order-financial.types.js";
 import { duplicateFinancialItemError, type WorkOrderFinancialItemRepository } from "./work-order-financial.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
@@ -15,8 +15,22 @@ type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancialItemRepository {
   constructor(private readonly client: PrismaExecutor) {}
 
+  // B-SAN3-23 (P-23.2) — trava compartilhada da OS, na transação da escrita e ANTES dela. Conflita com a trava
+  // exclusiva do cancelamento (e com todo UPDATE da OS): quem chega depois espera o commit dele e relê a situação já
+  // commitada (READ COMMITTED). OS cancelada → o mesmo 422 work_order_cancelled da guarda de entrada. Sem linha (OS de
+  // outra organização ou inexistente) não decide nada: o caminho de hoje responde (FK → 400 no create; CAS → 404).
+  // Ordem total (P-23.3): trava consultiva do período → esta → itens em (created_at, id).
+  private async lockWorkOrderRowForFinancialWrite(tenantId: string, workOrderId: string): Promise<void> {
+    const rows = await this.client.$queryRaw<Array<{ status: string }>>`
+      SELECT status FROM work_orders WHERE tenant_id = ${tenantId}::uuid AND id = ${workOrderId}::uuid FOR SHARE
+    `;
+    const row = rows[0];
+    if (row?.status === "cancelled") throw workOrderCancelledError();
+  }
+
   async create(input: CreateWorkOrderFinancialItemInput): Promise<WorkOrderFinancialItem> {
     try {
+      await this.lockWorkOrderRowForFinancialWrite(input.tenantId, input.workOrderId); // B-SAN3-23:trava-create
       const record = await this.client.workOrderFinancialItem.create({
         data: {
           tenant_id: input.tenantId,
@@ -63,7 +77,11 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
   // re-avalia o WHERE contra a versão nova da linha (EvalPlanQual): item apagado ou carimbado por quem venceu a
   // trava sai do conjunto. A Σ do título vem deste conjunto. As colunas são relidas pelo cliente tipado (Decimal
   // mapeado como nos irmãos), já sob a trava desta transação.
+  // B-SAN3-23 (P-23.2, P-23.3) — ANTES dos itens, a trava compartilhada da OS: o faturamento espera um cancelamento em
+  // voo e relê a situação (OS cancelada → 422 work_order_cancelled, nada faturado). A ordem é a do cancelamento (a OS
+  // antes dos itens); travar os itens primeiro formaria ciclo com ele (impasse 40P01).
   async listInvoiceableByWorkOrderForUpdate(tenantId: string, workOrderId: string): Promise<readonly WorkOrderFinancialItem[]> {
+    await this.lockWorkOrderRowForFinancialWrite(tenantId, workOrderId); // B-SAN3-23:trava-fatura
     const locked = await this.client.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM work_order_financial_items
        WHERE tenant_id = ${tenantId}::uuid
@@ -105,6 +123,7 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
     try {
       // B-SAN3-02 (D2, P2) — CAS: `invoiced_at IS NULL` no WHERE. O PATCH que perde a corrida para o faturamento
       // re-avalia o predicado contra a linha carimbada e casa 0 linhas (o serviço relê → 422 item_invoiced).
+      await this.lockWorkOrderRowForFinancialWrite(input.tenantId, input.workOrderId); // B-SAN3-23:trava-update
       const updated = await this.client.workOrderFinancialItem.updateManyAndReturn({
         where: { tenant_id: input.tenantId, work_order_id: input.workOrderId, id: input.itemId, deleted_at: null, invoiced_at: null },
         data: compactRecord({
@@ -126,6 +145,7 @@ export class PrismaWorkOrderFinancialItemRepository implements WorkOrderFinancia
     // Delete LÓGICO: carimba deleted_at; a row persiste mas some dos reads e do total agregado.
     // B-SAN3-02 (D2, P2) — CAS: `invoiced_at IS NULL` no WHERE (item carimbado nunca é apagado, mesmo que o
     // pré-check do serviço tenha passado antes do faturamento commitar).
+    await this.lockWorkOrderRowForFinancialWrite(tenantId, workOrderId); // B-SAN3-23:trava-delete
     const updated = await this.client.workOrderFinancialItem.updateManyAndReturn({
       where: { tenant_id: tenantId, work_order_id: workOrderId, id: itemId, deleted_at: null, invoiced_at: null },
       data: compactRecord({ deleted_at: new Date(), updated_by: deletedBy }),

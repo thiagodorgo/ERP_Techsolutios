@@ -7,6 +7,7 @@ import { buildServiceQuoteApproveBody } from "../frontend/src/modules/registry/s
 import { ROLE_PERMISSIONS } from "../src/modules/core-saas/permissions/catalog.js";
 import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 import { ensurePermission } from "./helpers/db-permissions.js";
+import { sweepTenant } from "./helpers/sweep-tenant.js";
 
 // B-SAN3-08 (item 41 do portão, CE-5 e CE-G2) — o Financeiro monta e aprova orçamento com as permissões DO BANCO
 // (`CORE_SAAS_PERSISTENCE=prisma`), JWT real, papel `finance` resolvido pelo RBAC persistente. Fecha também, por HTTP real,
@@ -276,42 +277,6 @@ if (!connectionString) {
       await client.$disconnect();
     }
   });
-}
-
-type AdminClient = {
-  $queryRawUnsafe<T>(query: string, ...values: unknown[]): Promise<T>;
-  $executeRawUnsafe(query: string, ...values: unknown[]): Promise<number>;
-};
-
-// Limpeza escopada à organização do teste (nunca mass-delete): apaga as concessões dos papéis criados aqui e depois toda linha
-// com `tenant_id` desta organização, em passadas, até a ordem das chaves estrangeiras deixar; por fim, a organização. Lança se
-// sobrar linha, para o resíduo nunca passar calado.
-async function sweepTenant(client: AdminClient, tenantId: string, createdRoleIds: readonly string[]): Promise<void> {
-  for (const roleId of createdRoleIds) {
-    await client.$executeRawUnsafe("DELETE FROM role_permissions WHERE role_id = $1::uuid", roleId);
-  }
-  const tables = await client.$queryRawUnsafe<Array<{ table_name: string }>>(
-    `SELECT c.table_name FROM information_schema.columns c
-       JOIN information_schema.tables t ON t.table_schema = c.table_schema AND t.table_name = c.table_name
-      WHERE c.table_schema = 'public' AND c.column_name = 'tenant_id' AND t.table_type = 'BASE TABLE' AND c.table_name <> 'tenants'`,
-  );
-  let pending = tables.map((row) => row.table_name);
-  let lastErrors: string[] = [];
-  for (let pass = 0; pass < 12 && pending.length > 0; pass += 1) {
-    const failed: string[] = [];
-    lastErrors = [];
-    for (const table of pending) {
-      try {
-        await client.$executeRawUnsafe(`DELETE FROM "${table}" WHERE tenant_id = $1::uuid`, tenantId);
-      } catch (error) {
-        failed.push(table);
-        lastErrors.push(`${table}: ${(error as Error).message.split("\n")[0].slice(0, 160)}`);
-      }
-    }
-    pending = failed;
-  }
-  assert.deepEqual(lastErrors, [], "limpeza da organização do teste não terminou");
-  await client.$executeRawUnsafe("DELETE FROM tenants WHERE id = $1::uuid", tenantId);
 }
 
 async function requestJson(
