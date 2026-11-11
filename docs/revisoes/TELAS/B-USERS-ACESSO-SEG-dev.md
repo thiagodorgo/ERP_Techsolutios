@@ -376,3 +376,46 @@ Recomendação do dev: **(a)**, com o residual como pendência (cabe na janela j
 - Código das fatias relido contra o plano (§2.2, R1-A01, RQ-3, F3): os 3 assinadores, o helper `!== false`, o portão com recusa por padrão, a exceção única em `/password`, o `scope` desconhecido → 401, a marca do destino só em `findMembershipForIdentity`, e a recusa do reset depois do 404 e do 409 `user_inactive`. Dois defeitos achados, cada um num commit próprio:
   1. **F2 — requisito sem teste (Emenda 4, item 4):** "a F2 mantém `data.user.email` na resposta do login da sessão restrita" estava no código, mas nenhum teste o asserta. Acrescentado em `provisoria-db`, `A3-D` (login dirigido) e `A3-B/A3-C` (login sem organização): `data.user.email` igual ao e-mail da sessão. Vermelho-controle: não se aplica (o código das fatias já o cumpria; é guarda de requisito). Mutação extra, declarada: no corpo do login, `user: tokenScope.restricted ? { ...loginResult.user, email: "" } : loginResult.user` → `not ok 3 - A3-D` e `not ok 4 - A3-B/A3-C` (`# tests 15 · pass 13 · fail 2`); revertida, sha1 conferido.
   2. **F3 — comentário trocado de função:** o `targetNotManageableError` foi inserido entre o comentário da UEM-03 e o `resetUnavailableError`, que ficou sem o comentário dele; e o texto dizia "papel que o fluxo de organização não atribui" (a leitura `!isTenantAssignableRole` que a própria F3 descartou). Cada comentário voltou à sua função, e o novo diz `isPlatformRole`. Só comentário; `npm run check` exit 0; `reset-db` + ratchet → `# tests 47 · pass 47 · fail 0` (o ratchet não muda: inventário do gerador igual).
+
+## F6 — bateria (§7) e as mutações literais no head `02e998cc` (11/11 02:11–02:52 UTC, `date`)
+
+- Executor: `dev-527-api-f6` (Claude Opus 5.5 pela API, dev). Container Linux; Postgres 16 e Redis 7 próprios e descartáveis. O `DATABASE_URL` é o administrador do cluster (`rolsuper = t`, `rolbypassrls = t`, medido com `psql`): ele só monta a fixture; o código sob teste roda no papel EFÊMERO de cada suíte `-db`, e os 8 testes de atributo (`S2·0`, `S4·0`, `PT·0`, `P2·0`, `S1·0`, `SR·0`, `S7·0`, `S6·0`) asseguram `rolsuper = false` e `rolbypassrls = false` — todos `ok`.
+- **Mutações literais (29), uma por vez, sobre o head** (harness fora do repositório: aplica a edição, roda o teste-dono, desfaz e confere o sha1; `git status` limpo no fim). **Todas vermelhas.** Nas 4 que APAGAM texto (A3-T, A8, A8-extra, A13), a edição inversa do harness não serve (texto novo vazio); o arquivo voltou pelos bytes guardados antes da mutação, sha1 conferido e `git status` limpo — declarado.
+  - `A1` → not ok 2 - A6 (C2CL-01); not ok 3 - A7 (C1-Q1); not ok 5 - A1 (tests 8 · pass 5 · fail 3); revertida, sha1 igual
+  - `A9` → not ok 2 - A9 (tests 4 · pass 3 · fail 1); revertida, sha1 igual
+  - `A10` → not ok 15 - P2·p2 (regressão); not ok 18 - A10 (tests 19 · pass 17 · fail 2); revertida, sha1 igual
+  - `A3-login-auth.routes` → not ok 2 - A6 (C2CL-01); not ok 3 - A7 (C1-Q1); not ok 7 - A3-D; not ok 8 - A3-B/A3-C (tests 19 · pass 15 · fail 4); revertida, sha1 igual
+  - `A3-D` → not ok 3 - A3-D (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A3-C` → not ok 4 - A3-B/A3-C (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A3-B` → not ok 4 - A3-B/A3-C (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A3-T` → tsc: src/modules/auth/services/anonymous-login.service.ts(248,5): error TS2322: Type '{ kind: "success"; tenantId: ; revertida pelos bytes guardados
+  - `A3-U` → not ok 4 - A3-U (tests 4 · pass 3 · fail 1); revertida, sha1 igual
+  - `A4` → not ok 5 - A4 (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A4-RQ3` → not ok 7 - A4·RQ-3 (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A5` → not ok 6 - A5 (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A5-RQ3` → not ok 8 - A5·RQ-3 (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A8` → not ok 4 - A8b (C1-Q1); not ok 16 - A8/A8b (tests 16 · pass 14 · fail 2); revertida pelos bytes guardados
+  - `A8-extra-reasons` → not ok 12 - A8/A8b (tests 12 · pass 11 · fail 1); revertida pelos bytes guardados
+  - `A11-r1` → not ok 9 - A11·r1 (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A11-r2` → not ok 10 - A11·r2 (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A11-r4` → not ok 14 - P2·r4 (tests 15 · pass 14 · fail 1); revertida, sha1 igual
+  - `A2a` → not ok 1 - A2/G1 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A2b` → not ok 1 - A2/G1 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A2b2` → not ok 1 - A2/G1 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A2c` → not ok 1 - A2/G1 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A12a` → not ok 1 - A12/G2 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A12b` → not ok 1 - A12/G2 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A12b-linha` → not ok 1 - A12/G2 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A12c` → not ok 1 - A12/G2 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A12d-opcao` → not ok 1 - A12/G2 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A12d-prisma` → not ok 1 - A12/G2 (tests 1 · pass 0 · fail 1); revertida, sha1 igual
+  - `A13` → not ok 1 - o inventário do head == congelado (origin/main − sumidas + novas), motivo por chave; not ok 1 - T13 · ratchet semântico: congelado com motivo por chave, 31 formas vermelhas e a 'sumida' vermelha (tests 35 · pass 33 · fail 2); revertida pelos bytes guardados
+  - Contagens do G1 sob as mutações: (a) **53** escapam (as de `/api/v1/platform`); (b) **1** (`zz-escape`, 200); (b2) **1** (`zz-escape-mw`, 200); (c) `rotas enumeradas: 0 (piso 440)`. Sob A8, a cadeia do `A8b` chega ao fim: `reset=200 → login-provisoria=200 → troca=200 → login-nova=200 → platform-tenants=200`. G1 no head: `# tests 1 · pass 1`, 3,3 s (R4: abaixo dos 30 s).
+  - Mutação extra, desta retomada: `E4-email` (corpo do login com `email: ""` na sessão restrita) → `not ok 3 - A3-D`, `not ok 4 - A3-B/A3-C` (RETOMADA 5).
+- **Bateria (§7):**
+  - `npm run check` → exit 0; `npm run lint` (= `tsc --noEmit`) → exit 0; `npm run build` → exit 0 (o `dist/` foi apagado depois); `node scripts/migration-transaction-guard.mjs` → `migrações: 130 · anteriores: 112 · novas: 18 · violações: 0`; `git diff --check a5b56555..HEAD` → limpo.
+  - As 13 suítes `tests/users-acesso-seg-*` no modo do runner (sem exportar `CORE_SAAS_PERSISTENCE`; cada `-db` liga o Prisma no papel efêmero), no head `02e998cc` (02:52 UTC): `# tests 70 · pass 70 · fail 0 · cancelled 0 · skipped 0`.
+  - As 10 suítes `-db` do bloco com `CORE_SAAS_PERSISTENCE=prisma` exportado (forma literal do §7): `# tests 58 · pass 54 · fail 4`. Os 4 vermelhos são todos de `users-acesso-seg-usuarios-db` (`S6·a`, `S6·b`, `S3·p1`, `S8·p`, 403 em vez de 201/409) e são **anteriores ao conserto**: com o `src/` de `3e3b2943` (antes da F0; `git checkout 3e3b2943 -- src`, depois `git checkout HEAD -- src`, `git status` limpo) a mesma suíte dá os mesmos 4 `not ok` (`# tests 9 · pass 5 · fail 4`). No modo do runner ela fica 9/9. Fora do escopo do conserto; nomeado para a conferência.
+  - `npm test` (475 arquivos, `DATABASE_URL` presente, runner em `memory`): `# tests 4930 · pass 4908 · fail 18 · cancelled 2 · skipped 2`, 1327 s. **Os vermelhos, um a um, todos de ambiente (carga: a suíte inteira com o banco do container, prazos curtos e `spawnSync` com teto):** `ass-08-channel-db` `T-OBX-db-5` (claim em < 1 s) e `T-OBX-db-9` (≤ 2 000 ms); `inventory-balance-lock-race-db` `A1 [encerramento]` (corrida de 20 saídas); `o6r07c-census-guard` `T6` e `T14` (classe de `POST /api/v1/authority-credentials/:credentialId/rotate-password`); `owner-portal-photos` `(2b)` (balde de concorrência 1); `san3-05-acessos-de-plataforma-guard` `T13` (`spawnSync … ETIMEDOUT` no gerador); `san3-05-runtime-role-guard-db` `T14a/b` e `T15` (prazo do boot); `san3-09-bootstrap-platform-admin-db` `T2.1` (`migrate deploy falhou: spawnSync … ETIMEDOUT`) e, em cascata, `T2.2`–`T2.6`, `T2.8`, `T2.9` (a fixture não subiu) e o `T2.10` cancelado. **Reexecutado cada arquivo sozinho, em sequência, no mesmo head:** `ass-08-channel-db` 21/21, `inventory-balance-lock-race-db` 16/16, `owner-portal-photos` 18/18, `san3-09-bootstrap-platform-admin-db` 12/12, `san3-05-runtime-role-guard-db` 12/12, `san3-05-acessos-de-plataforma-guard` 35/35, `o6r07c-census-guard` 32/32 — **todos verdes**. Nenhum é do bloco. A CI do head é quem fecha (o container não tem `gh`).
+- Escopo: `git diff --name-only 3e3b2943..HEAD` → 28 caminhos, todos no PERMITIDO (seção 4 + R1). A segunda conferência (`merge-base origin/main`) não roda aqui: o container não tem `origin/main`; fica para o conferente.
+- Limpeza (§C5): `dist/`, `test-results/` e os 15 diretórios de `storage/checklist-attachments/` gerados pelos testes desta sessão (todos com hora de 11/11 02:18–02:36 UTC), por `git clean -fdX` restrito a esses caminhos; nada rastreado, `node_modules` intocado.
