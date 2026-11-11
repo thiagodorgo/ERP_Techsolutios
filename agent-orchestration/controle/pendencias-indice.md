@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **863** |
-| IDs distintos | 852 |
-| **ABERTAS** | **657** |
+| Cabecalhos `## P-` | **870** |
+| IDs distintos | 859 |
+| **ABERTAS** | **664** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **596** |
+| — das quais **ativas nesta rodada** | **603** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 202 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **863 cabecalhos para 852 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **870 cabecalhos para 859 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 292
+## ABERTAS · balde A — material — 295
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -366,8 +366,11 @@
 | `P-ASS-DB-FORA-DA-LISTA-CURADA` | 13579 | MÉDIA | sim | P-ASS-DB-FORA-DA-LISTA-CURADA (2026-11-11) — nenhuma suíte `ass-0*-db` está na lista cur |
 | `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` | 13621 | CRÍTICA | **a atribuir** | P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o |
 | `P-COMISSAO-GATE-SEM-TRAVA` | 13651 | CRÍTICA | sim | P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e f |
+| `P-SAN3-14-DOSSIE-SEM-FASE` | 13675 | CRÍTICA | sim | P-SAN3-14-DOSSIE-SEM-FASE (2026-11-11) — o dossiê de custódia não mostra a fase de cada  |
+| `P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA` | 13681 | MÉDIA | sim | P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA (2026-11-11) — vistoria reaberta ou ca |
+| `P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP` | 13693 | MÉDIA | sim | P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP (2026-11-11) — OS concluída sem a entreg |
 
-## ABERTAS · balde B — processo/registro — 304
+## ABERTAS · balde B — processo/registro — 308
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -675,6 +678,10 @@
 | `P-SAN3-07-SEED-FORA-DO-TYPECHECK` | 13614 | BAIXA | sim | P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed |
 | `P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT` | 13658 | BAIXA | sim | P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT (2026-11-11) — a A7 (regressão sem barreira) só produz  |
 | `P-SAN3-23-503-FORA-DO-CONTRATO` | 13669 | BAIXA | sim | P-SAN3-23-503-FORA-DO-CONTRATO (2026-11-11) — os 2 códigos 503 novos do B-SAN3-23 não es |
+| `P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO` | 13687 | BAIXA | sim | P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO (2026-11-11) — a coleta aberta sem sinal numa OS s |
+| `P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES` | 13699 | BAIXA | sim | P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES (2026-11-11) — a comparação coleta × entrega não |
+| `P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA` | 13705 | BAIXA | sim | P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA (2026-11-11) — a vistoria de entrega de OS cancel |
+| `P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR` | 13711 | BAIXA | sim | P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR (2026-11-11) — a tela de conclusão do prestador recu |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
