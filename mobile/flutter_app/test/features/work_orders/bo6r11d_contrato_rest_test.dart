@@ -116,6 +116,24 @@ void main() {
     );
 
     test(
+      'T1b: com assignedOperatorId ≠ assignedUserId, o técnico lido é o do campo CERTO (assignedUserId)',
+      () async {
+        final dado = _dataDe('detail_response');
+        expect(
+          dado['assignedOperatorId'],
+          isNot(equals(dado['assignedUserId'])),
+          reason: 'pré-condição: a fixture de leitura distingue os dois campos',
+        );
+
+        final backend = _Backend((_) => _secao('detail_response'));
+        final os = await _api(backend).fetchWorkOrder(_osId);
+
+        expect(os.assignedUserId, dado['assignedUserId']);
+        expect(os.assignedUserId, isNot(equals(dado['assignedOperatorId'])));
+      },
+    );
+
+    test(
       'T13: resposta sem envelope, {data:{}} ou {data:{foo:1}} → ApiServerError nos 3 métodos, nunca TypeError '
       'nem OS inventada',
       () async {
