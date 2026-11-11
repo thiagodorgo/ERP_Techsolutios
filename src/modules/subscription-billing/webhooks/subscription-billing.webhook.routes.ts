@@ -40,8 +40,11 @@ export function billingWebhookPublicUrl(publicBaseUrl: string, provider: string)
 }
 
 /** Cabeçalhos em que os provedores mandam o segredo/assinatura do webhook. Na decisão negativa o pedido segue para o app
- * (`next()`) e passa pelo `pinoHttp`, que loga `req.headers`: estes saem do pedido ANTES, para nunca irem ao log (R-WH-7). */
-export const WEBHOOK_SECRET_HEADERS = ["authorization", "asaas-access-token", "x-webhook-token", "x-signature", "x-hub-signature", "x-hub-signature-256"] as const;
+ * (`next()`) e passa pelo `pinoHttp`, que loga `req.headers`: estes saem do pedido ANTES, para nunca irem ao log (R-WH-7).
+ * O `authorization` NÃO está aqui (PR530-01): ele é o cabeçalho da NOSSA autenticação, e a rota inexistente o entrega ao
+ * `attachAuthenticatedActor` (token inválido → 401); apagá-lo deixava o webhook desligado distinguível dela. Nenhum
+ * provedor do portão 1 + 1 manda segredo nele, e o `pinoHttp` já o redige (`req.headers.authorization`, src/app.ts). */
+export const WEBHOOK_SECRET_HEADERS = ["asaas-access-token", "x-webhook-token", "x-signature", "x-hub-signature", "x-hub-signature-256"] as const;
 
 export function stripWebhookSecretHeaders(req: Request): void {
   for (const name of WEBHOOK_SECRET_HEADERS) delete req.headers[name];

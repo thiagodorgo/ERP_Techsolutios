@@ -133,7 +133,7 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
     level: env.LOG_LEVEL,
     // B-ASS-08b — o router do webhook tira os cabeçalhos de segredo antes de passar o pedido adiante (R-WH-7); a redação
     // aqui é a segunda linha de defesa, para qualquer caminho que chegue ao log com esses nomes.
-    redact: ["req.headers.authorization", ...WEBHOOK_SECRET_HEADERS.filter((name) => name !== "authorization").map((name) => `req.headers["${name}"]`)],
+    redact: ["req.headers.authorization", ...WEBHOOK_SECRET_HEADERS.map((name) => `req.headers["${name}"]`)],
   });
 
   app.use(logger);

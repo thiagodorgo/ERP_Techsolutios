@@ -135,3 +135,25 @@ test("a URL registrada no provedor é BILLING_WEBHOOK_PUBLIC_BASE_URL + o caminh
   assert.equal(billingWebhookPublicUrl("https://hooks.exemplo.com/", "focusnfe"), "https://hooks.exemplo.com/api/v1/webhooks/billing/focusnfe");
   assert.equal(billingWebhookPublicUrl("https://hooks.exemplo.com", "asaas"), "https://hooks.exemplo.com/api/v1/webhooks/billing/asaas");
 });
+
+/** A resposta inteira, para comparar: status, corpo e TODOS os cabeçalhos menos `date` (o relógio). */
+async function fullReply(base: string, path: string, body: string, headers: Record<string, string>) {
+  const res = await fetch(`${base}${path}`, { method: "POST", headers: { "content-type": "application/json", ...headers }, body });
+  const responseHeaders = Object.fromEntries([...res.headers.entries()].filter(([name]) => name !== "date"));
+  return { status: res.status, body: await res.text(), headers: responseHeaders };
+}
+
+test("PR530-01: com Authorization dos DOIS lados (Bearer inválido, Basic), o webhook desligado é idêntico à rota inexistente — status, corpo e cabeçalhos", async () => {
+  resetWebhookRuntimeForTests();
+  await withServer(async (base) => {
+    const body = JSON.stringify({ id: "evt_hdr", event: "PAYMENT_CONFIRMED" });
+    for (const authorization of ["Bearer x.y.z", "Basic dXNlcjpzZW5oYQ=="]) {
+      const headers = { authorization, "asaas-access-token": "SEGREDO-DO-PROVEDOR" };
+      const webhook = await fullReply(base, billingWebhookPath("asaas"), body, headers);
+      const unknown = await fullReply(base, UNKNOWN_ROUTE, body, headers);
+      assert.deepEqual(webhook, unknown, `${authorization.split(" ")[0]}: o webhook desligado tem de responder exatamente como a rota inexistente`);
+      assert.equal(unknown.status, 401, "a rota inexistente com token inválido passa pelo ator (o mesmo caminho do webhook desligado)");
+    }
+  });
+  assert.equal(getMemoryWebhookEventsForTests().all().length, 0);
+});
