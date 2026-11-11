@@ -4910,3 +4910,36 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 
 - **Fato:** os devs do `B-SAN3-19b` e do `B-ASS-09a` estão prontos e esperam o parecer do porteiro do #530 (§C2 item 8).
 - **Leitura do orquestrador, declarada (§A6):** o PR de registro não é demanda de produto e começa já (`reg-1111-cl`).
+
+## REGISTRO-SAN3-CONFLITOS — B-SAN3-15 (2026-11-11) — os conflitos C1 a C7 do plano, registrados antes do código (§A2), e as respostas do §9
+
+**Não é decisão nova.** Registro, no PR do `B-SAN3-15a` (`dev-15a-cl`, Claude Opus 5.5, dev declarado), dos 7 conflitos
+que o plano `plano-B-SAN3-15-v2.md` §1.7 manda registrar antes do código, e das respostas do dono às 5 perguntas do §9.
+Fonte do plano e das emendas: fora do repositório (`erp-pausa-2026-10-03/planos/`); o diário do bloco cita as linhas.
+
+- **C1, fronteira.** A linha do `B-SAN3-15` no `PLANO_SAN3.md` (§5) não cobre arquivos que o critério exige. O bloco se
+  divide em **15a** (estoque real do técnico e a contagem do web) e **15b** (portas, diagnóstico, conclusão e peça), e a
+  fronteira por arquivo de cada um é o §4 do plano v2, incluindo `frontend/src/modules/inventory/**`, o fim do `test:smoke`
+  em `frontend/package.json`, a linha do `SUITES=` em `.github/workflows/ci.yml` e o banco local do app. A linha do
+  `PLANO_SAN3.md` foi atualizada neste PR.
+- **C2, custódia da baixa.** O plano do reenvio de material (C) baixa a peça da BASE (ADOTADA (3)); o 15b troca pela
+  custódia que `resolveActorStockCustody` escolhe, pelo mesmo seam, como o próprio plano C previu. Nada muda no 15a.
+- **C3, `router.dart`.** Nem o 14 nem o 15 tocam o `router.dart`; as rotas já existem. A trava do arquivo fica com o 17.
+- **C4, tipo da OS.** O 14 decide "guincho" por `serviceType == tow`, que nunca vem do servidor. Resolvido pela
+  Pergunta 1 (a) no 15b (F3), se o 14 não o trouxer antes.
+- **C5, esforço.** O bloco passa de G (13 h) para cerca de 28 h de dev em 2 PRs (plano §6).
+- **C6, P21 × custódia profissional.** A P21 do plano de reenvios ("o gerente, `tenant_wide`, também baixa pelo app")
+  e o critério "material do estoque real da custódia" colidiam para o ator sem cadastro de profissional. Resolvido pela
+  **Pergunta 5 (a)**: o gerente sem cadastro usa a BASE, na leitura (15a) e na baixa (15b), por uma regra só
+  (`src/modules/inventory/inventory.actor-custody.ts`).
+- **C7, série 15b → 16.** O plano do 16 tira `work_order_repository.dart` da fronteira dele; o `PLANO_SAN3.md` dizia que
+  o 16 depende do 15. A série fica com o orquestrador.
+
+**Respostas do dono (11/11, "Sim, todas (Recomendado)", `D-DONO-TODAS-RECOMENDACOES-1111`):** vale a recomendação de
+cada pergunta do §9 do plano v2 — 1 (a) o servidor decide o tipo do atendimento pelo tipo do catálogo; 2 (a) o 15b só
+entra depois do reenvio de material (C); 3 (a) a conclusão sai sem número de comissão, com o texto do plano; 4 (a)
+maquete com 3 opções, o dono aprova as 3 e o app sai com a A; 5 (a) o gerente sem cadastro de profissional lança a peça
+do estoque da base. **Só para informar (sem pergunta):** a suíte `tests/bsan315-technician-stock-db.test.ts` entra na
+lista curada do job `backend-postgres`, medida 3× antes.
+
+- **Registro:** `dev-15a-cl` (Claude Opus 5.5, subagente da sessão, dev do `B-SAN3-15a`), no PR do bloco.

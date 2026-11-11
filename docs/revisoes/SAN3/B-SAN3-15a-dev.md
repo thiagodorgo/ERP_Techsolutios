@@ -81,7 +81,7 @@
   `docs/claude-code-handoff/API_CONTRACTS.md`.
 - **Regressão (memória):** `node --test --import tsx tests/stock-custody.test.ts tests/inventory.test.ts tests/inventory-items-routes.test.ts tests/stock-movements-routes.test.ts tests/inventory-write-paths-guard.test.ts tests/o6r07c-census-guard.test.ts`
   → `# tests 85 · pass 85 · fail 0 · skipped 0`.
-- **Commit da F1 sem o ramo 2** (o `if (hasTenantWideRole(actor))`): no commit `9567a891`, `bsan315-technician-stock`
+- **Commit da F1 sem o ramo 2** (o `if (hasTenantWideRole(actor))`): no commit da F1 (`24e57cb5` depois do rebase), `bsan315-technician-stock`
   dá 7/9 (T-B9 e a parte "base" do T-B6 vermelhos, como esperado: são da F1g).
 
 ### F1g — o ramo 2 (Pergunta 5 (a): o gerente sem cadastro usa a BASE), 11:26
@@ -144,3 +144,52 @@
   arquivos).
 - **Lateral, pré-existente:** o texto técnico cru das outras exceções (`if (error instanceof Error && error.message) return
   { message: error.message };`) segue; vai para `P-WEB-CONTAGEM-ERRO-CRU` (BAIXA, dono `B-INV-CONTAGEM`).
+
+### F9a (parte servidor e web) — mutações aplicadas, medidas e revertidas, 11:31–11:55
+
+Regra (§3): texto exato; `grep -cF` = 1 no arquivo antes de aplicar (o roteiro aborta se não for 1); roda **só** o
+teste-dono (`--test-name-pattern`); vermelho por **asserção**; o arquivo volta ao conteúdo commitado e `git status` fica
+limpo depois de cada uma. Roteiro e saídas TAP fora do repositório (`scratchpad/mut15a/driver.py` e `M-*.tap`).
+
+| Mutação | Arquivo | Troca | Dono | Resultado |
+|---|---|---|---|---|
+| M-A1 | `inventory.repository.ts` | `movement.custodyOperatorProfileId === custody.custodyOperatorProfileId` → `true` | T-B1 | **vermelho** (AssertionError: aparece `BSAN-Y01:3`, do tecB) |
+| M-A2 | `inventory.service.ts` | `.filter((entry) => entry.available > 0)` → `.filter(() => true)` | T-B2 | **vermelho** (AssertionError: o item zerado aparece) |
+| M-A3 | `inventory.service.ts` | o resolvedor recebe `{ ...actor, userId: String(query.userId ?? actor.userId) }` | T-B3 | **vermelho** (AssertionError: o tecA vê `BSAN-Y01:3` em vez de `BSAN-X01:5`) |
+| M-A4 | `inventory.actor-custody.ts` | `if (profile && profile.isActive) {` → `if (profile) {` | T-B4 | **vermelho** (AssertionError: `custody` = professional "Técnico Inativo") |
+| M-A22 | `inventory.actor-custody.ts` | `if (hasTenantWideRole(actor)) {` → `if (true) {` | T-B4 | **vermelho** (AssertionError: o técnico sem cadastro vê a BASE) |
+| M-A23 | `inventory.repository.ts` | apagar `if (balance.custodyType !== "base") continue;` | T-B9 | **vermelho** (AssertionError: W:2, X:5, Y:3 na BASE do gerente) |
+| M-A23b (N-04) | `inventory-prisma.repository.ts` | apagar `custody_type: { equals: custody.custodyType },` | T-DB1b | **vermelho** (AssertionError: W, X e Y na BASE do gerente, no Postgres) |
+| M-A24 | `inventory.service.ts` | `if (error instanceof OperatorProfileError && error.reason === "invalid_uuid") return undefined;` → `return undefined;` | T-B10 | **vermelho** (AssertionError: `expected: 503`, veio 200) |
+| M-A5 | `inventory.routes.ts` | apagar `requirePermission(TECHNICIAN_STOCK_PERMISSION),` | T-B5 | **vermelho** (AssertionError: 200 onde se espera 403) |
+| M-A6 | `inventory.dto.ts` | acrescentar `operatorProfileId: custody.custodyOperatorProfileId,` depois de `label: custody.label,` | T-B6 | **vermelho** (AssertionError: chave `operatorProfileId` a mais) |
+| M-A7 | `inventory.service.ts` | `if (!item || !item.isActive) continue;` → `if (!item) continue;` | T-B7 | **vermelho** (AssertionError: o item desativado aparece) |
+| M-A8 | `inventory-prisma.repository.ts` | apagar `custody_operator_profile_id: custody.custodyOperatorProfileId,` | T-DB1 | **vermelho** (AssertionError: `BSAN-Y…:3` do tecB aparece, no Postgres) |
+| M-A9 | `tests/fixtures/o6r07c-classificacao-vias.json` | apagar a entrada `ROTA GET /api/v1/mobile/technician/stock` | censo T1 | **vermelho** (T1 e T14 do `o6r07c-census-guard`) |
+| M-W1 | `frontend/src/modules/inventory/cycle-counts.adapter.ts` | a âncora vira o `return { cycleCount: { … status: "concluida" … }, report: buildVarianceReport([], undefined) };` | T-W2 (e T-W1) | **vermelho** (T-W1 e T-W2) |
+
+- **Desvio declarado (âncora da M-A23b):** a 1ª tentativa abortou com `ANCORA count=2` — `custody_type: custody.custodyType,`
+  também existe em `saldoOfCustodyLocked`. A linha do filtro da BASE de `listCustodyBalances` passou a
+  `custody_type: { equals: custody.custodyType },` (mesmo SQL), commit `c20e44a2` (depois do rebase); a M-A23b rodou com essa âncora (count 1).
+  O plano não nomeava a âncora do Prisma (a N-04 manda nomear o arquivo e ter uma mutação por repositório).
+- **Sondas da crítica (P3):** a I2c (7 mutações do servidor num protótipo) foi re-executada como as 13 mutações do servidor
+  acima, no código real; todas vermelhas. A I2d (M-W1) vermelha. A I4a (`X-Tenant-Id` em memória → 200) = T-B3 (ii-a).
+- **Mutações do app** (M-A10 a M-A18, M-A17b, M-A20, M-A25, M-A26) ficam para a F4/F4ui.
+
+### Rebase e registro, 12:15
+
+- `git rebase origin/main` sobre `c95ad4fd` (#536), sem conflito (o #536 não toca `src/modules/inventory/**`; em
+  `src/modules/work-orders/work-order.types.ts` ele não muda o `WORK_ORDER_MUTATION_SCOPE`, conferido por `git diff`).
+- **Registro (plano §4.1):**
+  - `pendencias.md`: `P-SAN3-01-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO` **FECHADA**; `P-MOBILE-ESTOQUE-TECNICO-FABRICADO`
+    **parcial** (o servidor entrou; o app fecha com a F4 — não a fecho antes, porque o teste de encerramento dela pede
+    "app mostra vazio honesto"); apenso a `P-MOBILE-ROTAS-SEM-SERVIDOR`; novo dono `B-INV-CONTAGEM` para
+    `P-O6R-B04-OPEN-NO-TETO-DO-TIMEOUT` e `P-O6R-B04-UI-STATUS-FECHANDO`; novas `P-SAN3-15-QTD-FRACIONADA`,
+    `P-SAN3-15-CUSTODIA-VIATURA`, `P-MOBILE-ESTOQUE-MODULO-SEMENTE`, `P-WEB-CONTAGEM-ERRO-CRU` e
+    `P-SAN3-15-INDICE-CUSTODIA-POR-PERFIL` (o `EXPLAIN` pediu). Índice regenerado pelo gerador
+    (`gerar-indice-pendencias.py`): 863 → 868 cabeçalhos, 657 → 661 abertas; na `main` limpa o gerador não dá diff.
+  - `decisoes.md`: `REGISTRO-SAN3-CONFLITOS — B-SAN3-15` (C1 a C7) e as respostas do §9.
+  - `PLANO_SAN3.md`: as linhas `B-SAN3-15a` e `B-SAN3-15b` sob a do `B-SAN3-15`, e a trava do §6 (`04a` → `15a` → `15b`;
+    `frontend/src/modules/inventory/**` `15a` → `B-INV-CONTAGEM`; `app_database.dart` #534 → `15a` → `15b`).
+  - Comando `agent-orchestration/codex/comandos/B-SAN3-15a-estoque-real.md`.
+- **KPI congelado** (§C7 item 8(5)): `Kpis/**` intocado.

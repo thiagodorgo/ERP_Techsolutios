@@ -8904,7 +8904,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-ESTOQUE-TECNICO-FABRICADO (2026-09-11) — Estoque do técnico é catálogo semente de 8 SKUs; o endpoint não existe — ALTA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: ABERTA — **parcial no `B-SAN3-15a` (2026-11-11):** o servidor já tem `GET /api/v1/mobile/technician/stock` escopado pela custódia do ator (`technician_stock@2026-11.b-san3-15a`; testes `tests/bsan315-technician-stock.test.ts` e `tests/bsan315-technician-stock-db.test.ts`). Falta a parte do app (fatias F4 e F4ui do mesmo PR: a lista vem da rota e mostra o vazio honesto), que espera o merge do #534; fecha quando o app entrar. Valor anterior, preservado: "ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)".
 - **fonte (fatia AUSENTES, §2a):** sintese B40
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/prestador/data/prestador_repository.dart:38-87` 8 SKUs literais (`ELE-0102`…`FIX-0012`); `grep "technician/stock" src` = 0
@@ -9662,7 +9662,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01-INVENTARIO-FECHAMENTO-CONTAGEM-FABRICADO (2026-09-18) — fechar contagem cíclica com 2xx sem entidade vira contagem "concluída" com relatório zerado — MÉDIA
 
-- status: ABERTA (achado C4-05 da junta do ciclo 1 do `B-SAN3-01`, `guardiao-fail-closed`; registrada no ciclo 2)
+- status: FECHADA (`B-SAN3-15a`, 2026-11-11) — `adaptCycleCountCloseResponse` lança `CycleCountResponseError("close_without_entity")` no 2xx sem a contagem e a gaveta mostra "O servidor não confirmou o fechamento da contagem. Recarregue a lista para ver a situação atual."; testes T-W1 e T-W2 em `frontend/tests/bsan315-contagem-fechamento.test.tsx` (no `test:smoke`), vermelhos na `main` antes do conserto e com a mutação M-W1. Valor anterior, preservado: "ABERTA (achado C4-05 da junta do ciclo 1 do `B-SAN3-01`, `guardiao-fail-closed`; registrada no ciclo 2)".
 - **prova:** `frontend/src/modules/inventory/cycle-counts.adapter.ts:88-90`: sem `cycleCount` na resposta 2xx, o adapter monta `{ id: "", abcClass: null, status: "concluida", … }`; o consumidor `CycleCountSessionDrawer.tsx:134-137` põe essa contagem e o relatório `{ lines: [], totalVariance: 0, adjustmentsGenerated: 0 }` na tela. Sonda da C4 com 2xx `{data:{}}`, `{}` e `null` → `cycleCount id='' status=concluida entries=0`. É a forma "2xx sem entidade → entidade e números inventados" dos membros #4/#6 do censo do plano do ciclo 1, que só casava `?? <mock|fallback|seed|demo>`.
 - **escopo:** `pre-existente` — `git blame -L 88,90 frontend/src/modules/inventory/cycle-counts.adapter.ts` → `528e3601` (2026-07-09, #149, "Estoque avançado — ABC, ponto de pedido e contagem cíclica (F7b)"); fora da fronteira do `B-SAN3-01`.
 - **dono:** **emenda nominal ao `B-SAN3-15`** (bloco de estoque; emenda 3 (q) do comando do `B-SAN3-01`, 2026-09-18) — `frontend/src/modules/inventory/cycle-counts.adapter.ts` e `CycleCountSessionDrawer.tsx`. O §5 do `PLANO_SAN3.md` dava ao `B-SAN3-15` só o flutter e o backend de `inventory`.
@@ -10679,7 +10679,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - status: ABERTA (nasce na autoria do `B-O6R-04a`, plano §13-3)
 - **prova:** o backend passa a ter o status `fechando` em `CYCLE_COUNT_STATUSES` (`src/modules/inventory/cycle-count.types.ts`) e três recusas novas com mensagem de negócio: 422 `CYCLE_COUNT_INVALID/entry_already_adjusted` (recontar entrada já ajustada), 422 `CYCLE_COUNT_INVALID/close_in_progress` (cancelar contagem com ajuste aplicado — a saída é recontar as pendentes e concluir) e 409 `CYCLE_COUNT_CONFLICT/items_in_open_session` (abrir contagem com item já em outra contagem aberta). O `CycleCountStatus` do frontend não conhece `fechando` (o adapter mapeia desconhecido para "Aberta" e trata 422 com "Recarregue a lista" — plano §11 R8, não re-medido por este bloco).
 - **escopo:** nasce no bloco; `frontend/**` e `API_CONTRACTS.md` estão fora do escopo do `B-O6R-04a`.
-- **dono:** bloco de frontend de estoque, a designar (sugestão do plano: o próximo `B-SAN3-*` que tocar `frontend/src/modules/inventory/**`).
+- **dono:** `B-INV-CONTAGEM` (bloco de contagem de estoque, a abrir; plano `plano-B-SAN3-15-v2.md` §1.4: não entra no `B-SAN3-15`, que só toca o fechamento sem a contagem). Trava de arquivo `frontend/src/modules/inventory/**`: `B-SAN3-15a` → `B-INV-CONTAGEM`. Valor anterior, preservado: "bloco de frontend de estoque, a designar (sugestão do plano: o próximo `B-SAN3-*` que tocar `frontend/src/modules/inventory/**`)."
 - **bloqueia:** não bloqueia o gate por si; sem ela, a tela mostra "Aberta" para uma contagem em fechamento e esconde a saída do `close_in_progress`.
 - **teste de encerramento:** a tela de contagem exibe `fechando`, leva o usuário a recontar as pendentes no `close_in_progress` e mostra texto próprio para os três códigos; `API_CONTRACTS.md` atualizado no mesmo bloco.
 
@@ -10688,7 +10688,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - status: ABERTA (nasce na junta do ciclo 2 do `B-O6R-04a`, cadeira C1 `agente-dba-guardiao`, achado C1-N1; classificada como **pré-existente** pela regra `D-JUNTA-ESCOPO-E-CALIBRACAO` (a) — não reprova o bloco, vira pendência nomeada com bloco dono)
 - **prova (evidência de origem, conferida no ciclo 2):** `CycleCountService.open` monta o snapshot inteiro numa transação só e grava as entradas com um `cycleCountEntry.createMany` — desenho que existe desde `528e3601` (#149, 2026-07-09, "Estoque avançado — ABC, ponto de pedido e contagem cíclica (F7b)"), **anterior a este bloco**. O teto do snapshot é `SNAPSHOT_LIMIT = 10_000` (`src/modules/inventory/cycle-count.service.ts:41`, valor idêntico em `02bd7dab`, a `main` do momento). Medido pela cadeira C1: com N = 10 000 itens o `open` ocupa **1,6–3,3 s** de um timeout de 5 s — 32 % a 66 % do orçamento, sem margem para carga. O acréscimo deste bloco (o lock da linha do tenant + a consulta de sobreposição da I9) é **20–33 ms de 1 240–1 422 ms**: o bloco não é a causa, e removê-lo não devolveria a margem.
 - **escopo:** `pre-existente` — a transação única do `open` e o `SNAPSHOT_LIMIT` antecedem o `B-O6R-04a` (`528e3601`, #149) e estão fora do escopo permitido dele (o bloco só pôde tocar o predicado da sobreposição).
-- **dono:** `B-SAN3-15` (`fix/mobile-prestador-porta-e-estoque`) — é o **único bloco depois deste com `src/modules/inventory/**` no escopo** (`docs/revisoes/SAN3/PLANO_SAN3.md` §5 l.284: "backend: rota de estoque por custódia em `src/modules/inventory/**`"), e a trava de arquivo do §6 l.356 nomeia exatamente essa passagem: `src/modules/inventory/**` (`04a` → `SAN3-15`). O `B-O6R-04b` proposto pela cadeira **não** tem o arquivo (o escopo dele é `src/modules/mobile/mobile-inventory-sync.ts`).
+- **dono (2026-11-11, plano `plano-B-SAN3-15-v2.md` §1.4):** `B-INV-CONTAGEM` (bloco de contagem de estoque, a abrir), com a trava `B-SAN3-15a` → `B-INV-CONTAGEM`: é desempenho da abertura de contagem, sem relação com os itens 35 a 37. Valor anterior, preservado: `B-SAN3-15` (`fix/mobile-prestador-porta-e-estoque`) — é o **único bloco depois deste com `src/modules/inventory/**` no escopo** (`docs/revisoes/SAN3/PLANO_SAN3.md` §5 l.284: "backend: rota de estoque por custódia em `src/modules/inventory/**`"), e a trava de arquivo do §6 l.356 nomeia exatamente essa passagem: `src/modules/inventory/**` (`04a` → `SAN3-15`). O `B-O6R-04b` proposto pela cadeira **não** tem o arquivo (o escopo dele é `src/modules/mobile/mobile-inventory-sync.ts`).
 - **bloqueia:** não bloqueia o merge deste bloco nem o gate; sem ela, uma organização com o catálogo no teto vê a abertura de contagem falhar por timeout em máquina carregada — e o 503 de falha transitória não distingue "o banco está ocupado" de "esta operação não cabe no orçamento".
 - **teste de encerramento:** `open` de `SNAPSHOT_LIMIT` itens numa máquina sem carga com margem **≥ 50 %** do timeout; **ou** o `createMany` em lotes com estado retomável (o mesmo padrão de unidade retomável que a emenda 2-h já usa no fechamento), com a asserção de que abortar no meio não deixa sessão pela metade.
 
@@ -12849,6 +12849,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** levantamento do app de campo de 04/11 (autor `prompt-emergent-opus`, medido em `origin/main@b10e539a`), feito para um prompt que fica fora do repositório; o conteúdo do prompt não é versionado.
 - **fato medido:** o app chama `/mobile/field-assignments`, `/work-orders/:id/approval-requests`, `/work-orders/:id/evidence`, `/mobile/inventory/items` e `/movements`, `/mobile/technician/stock`, e `/mobile/work-orders/:id/materials` e `/evidence`, que o servidor não expõe. Re-medido neste registro em `origin/main@0c3c7826`: `field-assignments` está em 1 arquivo de `mobile/flutter_app/lib` e em 0 de `src`; `approval-requests`, `technician/stock` e `/materials` estão em `mobile/flutter_app/lib/core/network/api_contracts.dart:42,127,131`.
 - **encerramento:** cada rota chamada pelo app existe no servidor com teste de contrato, ou sai do app.
+- **apenso (`B-SAN3-15a`, 2026-11-11):** `/mobile/technician/stock` passa a existir no servidor (`src/modules/inventory/inventory.routes.ts`, contrato `technician_stock@2026-11.b-san3-15a`, testes `tests/bsan315-technician-stock*.test.ts`). As outras rotas seguem.
 
 ## P-MOBILE-SYNC-ESTOQUE-TIPOS (2026-11-04) — tipos de ação de estoque do app não batem com os do servidor — ALTA
 
@@ -13671,3 +13672,38 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a seção das rotas financeiras da OS no `API_CONTRACTS.md` nunca teve catálogo de erros, nem o 503 `invoice_transient_conflict` do B-SAN3-02; o arquivo está fora do PERMITIDO do plano do B-SAN3-23, cujo §3.5 manda registrar as adições no comando do bloco, o que foi feito) · **dono:** o próximo bloco que tocar o `API_CONTRACTS.md` das rotas financeiras da OS · **PR-alvo:** esse bloco · **bloqueia:** não.
 - **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
 - **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).
+
+## P-SAN3-15-QTD-FRACIONADA (2026-11-11) — a seleção de peça no app é em inteiros: "2,5 m" deixa escolher até 2 — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (decisão do plano `plano-B-SAN3-15-v2.md` §2.1 P6 e §2.5) · **dono:** a nomear pelo orquestrador (bloco de estoque do app) · **bloqueia:** não.
+- **fato:** o servidor devolve `available` decimal (`technician_stock@2026-11.b-san3-15a`); o seletor do app mantém passos inteiros de 1 até `floor(available)` (P6). Uma peça com 2,5 m disponíveis só deixa lançar 2.
+- **origem:** plano do `B-SAN3-15` (v1 §2.5, mantido no v2).
+- **teste de encerramento:** o seletor aceita a fração da unidade da peça, até `available`, com teste; o servidor segue a autoridade da baixa.
+
+## P-SAN3-15-CUSTODIA-VIATURA (2026-11-11) — a custódia de viatura não se resolve pelo ator — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o despacho não tem viatura: `field_dispatches` só tem `operator_user_id`, `prisma/schema.prisma`) · **dono:** a nomear pelo orquestrador · **bloqueia:** não.
+- **fato:** `GET /api/v1/mobile/technician/stock` escolhe a custódia profissional do cadastro do ator, ou a BASE para o ator `tenant_wide` sem cadastro (`src/modules/inventory/inventory.actor-custody.ts`); a peça na custódia de uma viatura nunca aparece no app (T-B1: a W na viatura fica fora).
+- **origem:** plano do `B-SAN3-15` (v1 §2.5, mantido no v2).
+- **teste de encerramento:** o despacho (ou a OS) diz a viatura do atendimento, e o estoque do técnico mostra a custódia dessa viatura, com teste de isolamento.
+
+## P-MOBILE-ESTOQUE-MODULO-SEMENTE (2026-11-11) — o módulo de estoque do app tem uma segunda semente de 8 peças, sem guarda de modo remoto — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`mobile/flutter_app/lib/features/inventory/**` está no PROIBIDO do `B-SAN3-15a`) · **dono (proposto pelo plano):** o bloco que abrir a porta `/inventory` do app, o mesmo da `P-MOBILE-CATALOGO-MODULOS-INERTE` · **bloqueia:** não hoje (o módulo não tem porta e não sincroniza, Ω6R-QUA-002); passa a bloquear no dia em que a porta abrir.
+- **fato (plano v2, E1):** `features/inventory/data/inventory_repository.dart` tem 8 literais `IT-001`…`IT-008` e `load({bool seedIfEmpty = true})`, e o provider não tem `allowSeed…` para o modo remoto.
+- **origem:** crítica r1 do plano do `B-SAN3-15` (A-02), lateral.
+- **guarda até lá:** o T-A8 (ii) do `B-SAN3-15a` prende a contagem exata de literais por arquivo em `lib/` (este arquivo = 8).
+- **teste de encerramento:** a semente do módulo só no app de demonstração local (`!remoteAuthModeProvider`), com teste do provider nos dois modos, e o T-A8 (ii) ajustado por emenda.
+
+## P-WEB-CONTAGEM-ERRO-CRU (2026-11-11) — a contagem do web mostra o texto técnico cru das outras exceções — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`interpretCycleCountError` devolve `error.message` de qualquer `Error`; anterior ao `B-SAN3-15a`, que só acrescentou o ramo de `CycleCountResponseError`) · **dono:** `B-INV-CONTAGEM` · **bloqueia:** não.
+- **fato:** `frontend/src/modules/inventory/cycle-counts.adapter.ts`, `interpretCycleCountError`: `if (error instanceof Error && error.message) return { message: error.message };`.
+- **origem:** crítica r1 do plano do `B-SAN3-15` (A-05), lateral.
+- **teste de encerramento:** cada exceção da contagem mostra uma frase de negócio em PT-BR; a mensagem crua não chega à tela.
+
+## P-SAN3-15-INDICE-CUSTODIA-POR-PERFIL (2026-11-11) — o estoque do técnico percorre a fatia da organização no índice — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (a consulta é do `B-SAN3-15a`; a migração ficou fora por decisão do plano, A-10) · **dono:** a nomear pelo orquestrador (um bloco com `prisma/**` autorizado) · **bloqueia:** não (desempenho, sem dado errado).
+- **prova (`EXPLAIN (ANALYZE, BUFFERS)`, F1db do `B-SAN3-15a`, dados sintéticos de 1 organização com 40.000 movimentos, 50 perfis e 400 itens):** custódia profissional → `Index Scan using stock_movements_custody_lookup_idx` com `Index Cond` em `tenant_id`, `custody_type` e `custody_operator_profile_id`, mas o índice começa por `[tenant_id, item_id, …]`: 593 buffers para 534 linhas (a tabela tem 655 páginas); BASE → `Seq Scan` (1/3 das linhas qualifica). Diário `docs/revisoes/SAN3/B-SAN3-15a-dev.md`, F1db.
+- **teste de encerramento:** índice com `custody_type`/`custody_operator_profile_id` à frente de `item_id` (ou parcial por custódia), e o `EXPLAIN` da consulta por perfil lendo só as linhas do perfil.
