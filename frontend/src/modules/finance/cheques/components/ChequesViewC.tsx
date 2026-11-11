@@ -62,7 +62,7 @@ function MesaItem({ model, cheque, open, onToggle }: { readonly model: ChequesVi
         type="button"
         aria-expanded={open}
         onClick={onToggle}
-        style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", font: "inherit", fontSize: 12.5, textAlign: "left", background: "#fff", border: "1px solid #E2E8F0", borderLeft: `3px solid ${cheque.direction === "received" ? "#7C3AED" : "#F59E0B"}`, borderRadius: 8, padding: "8px 12px", minHeight: 40, cursor: "pointer" }}
+        style={{ display: "flex", gap: 10, alignItems: "center", width: "100%", font: "inherit", fontSize: 12.5, textAlign: "left", background: "#fff", borderTop: "1px solid #E2E8F0", borderRight: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0", borderLeft: `3px solid ${cheque.direction === "received" ? "#7C3AED" : "#F59E0B"}`, borderRadius: 8, padding: "8px 12px", minHeight: 40, cursor: "pointer" }}
       >
         <b style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12 }}>{cheque.chequeNumber}</b>
         <span style={{ flex: 1, color: "#334155" }}>{cheque.titleId ? "Vinculado a título" : "Sem título"}</span>
