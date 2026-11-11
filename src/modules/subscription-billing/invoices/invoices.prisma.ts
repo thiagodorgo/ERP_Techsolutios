@@ -8,7 +8,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { withTenantRls } from "../../../database/rls.js";
 import { nextDpsNumberInTx } from "../invoice-sequence.service.js";
 import { InvoiceProviderError } from "../providers/invoice/invoice-errors.js";
-import type { AuthorizedPatch, BeginIssueInput, StatementInvoiceRepository } from "./invoices.repository.js";
+import { StatementNotPaidError, type AuthorizedPatch, type BeginIssueInput, type StatementInvoiceRepository } from "./invoices.repository.js";
 import { invoiceExternalRef, type StatementInvoiceStatus, type SubscriptionStatementInvoice } from "./invoices.types.js";
 
 type Row = {
@@ -92,17 +92,24 @@ async function mirrorStatement(tx: Prisma.TransactionClient, statementId: string
 export class PrismaStatementInvoiceRepository implements StatementInvoiceRepository {
   constructor(private readonly client: PrismaClient) {}
 
-  async beginIssue(input: BeginIssueInput, now: Date): Promise<{ readonly invoice: SubscriptionStatementInvoice; readonly created: boolean }> {
+  async beginIssue(input: BeginIssueInput, now: Date): Promise<{ readonly invoice: SubscriptionStatementInvoice; readonly created: boolean; readonly statementPaid: boolean }> {
     return withTenantRls(this.client, input.tenantId, async (tx) => {
-      // O demonstrativo PRIMEIRO (§2.1): duas emissões do mesmo demonstrativo se serializam aqui.
-      if (!(await lockStatement(tx, input.statementId))) throw new Error("statement_not_found");
+      // O demonstrativo PRIMEIRO (§2.1): duas emissões do mesmo demonstrativo se serializam aqui. Conserto da J-530 (A): o
+      // status vem na MESMA instrução que espera a trava — no READ COMMITTED, a linha devolvida é a versão já commitada pela
+      // reversão que segurava a trava (é a linearização com o `applyReversal`). Literal no sítio (guard de escritores).
+      const locked = (await tx.$queryRawUnsafe(`SELECT id, status FROM subscription_statements WHERE id = $1::uuid FOR NO KEY UPDATE`, input.statementId)) as Array<{ id: string; status: string }>;
+      if (!locked[0]) throw new Error("statement_not_found");
+      const statementPaid = locked[0].status === "paid";
       const externalRef = invoiceExternalRef(input.statementId, input.seq);
       const existing = (await tx.$queryRawUnsafe(
         `SELECT * FROM subscription_statement_invoices WHERE provider = $1 AND external_ref = $2`,
         input.provider,
         externalRef,
       )) as Row[];
-      if (existing.length > 0) return { invoice: toDomain(existing[0]!), created: false };
+      if (existing.length > 0) return { invoice: toDomain(existing[0]!), created: false, statementPaid };
+      // (A) Nenhuma emissão começa sobre demonstrativo que não está `paid`, decidido sob a trava. O rollback não consome número.
+      // [INTX-12a]
+      if (!statementPaid) throw new StatementNotPaidError();
       const live = (await tx.$queryRawUnsafe(
         `SELECT external_ref FROM subscription_statement_invoices WHERE statement_id = $1::uuid AND ${LIVE_SQL} LIMIT 1`,
         input.statementId,
@@ -124,7 +131,7 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
         now,
       )) as Row[];
       await mirrorStatement(tx, input.statementId, "pending", now);
-      return { invoice: toDomain(rows[0]!), created: true };
+      return { invoice: toDomain(rows[0]!), created: true, statementPaid };
     });
   }
 

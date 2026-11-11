@@ -10,6 +10,16 @@ import { InvoiceProviderError } from "../providers/invoice/invoice-errors.js";
 import type { StatementRepository } from "../statements/statement.repository.js";
 import { invoiceExternalRef, LIVE_INVOICE_STATUSES, type StatementInvoiceStatus, type SubscriptionStatementInvoice } from "./invoices.types.js";
 
+/** Conserto da J-530 (A): o `beginIssue` recusa abrir nota NOVA sobre demonstrativo que não está `paid` (lido sob a trava).
+ * Classe própria, e não `InvoiceProviderError`: a lista de códigos do provedor é fechada e não é deste bloco. */
+export class StatementNotPaidError extends Error {
+  readonly code = "statement_not_paid" as const;
+  constructor() {
+    super("The statement is not paid.");
+    this.name = "StatementNotPaidError";
+  }
+}
+
 export type BeginIssueInput = {
   readonly tenantId: string;
   readonly statementId: string;
@@ -30,8 +40,10 @@ export type AuthorizedPatch = {
 
 export interface StatementInvoiceRepository {
   /** Idempotente por (provider, `<statement_id>:<seq>`): existente → `created: false`, SEM novo número. Outra nota VIVA do
-   * demonstrativo → `InvoiceProviderError("invoice_already_live")` (no banco, o UNIQUE parcial é a última palavra). */
-  beginIssue(input: BeginIssueInput, now: Date): Promise<{ readonly invoice: SubscriptionStatementInvoice; readonly created: boolean }>;
+   * demonstrativo → `InvoiceProviderError("invoice_already_live")` (no banco, o UNIQUE parcial é a última palavra).
+   * Conserto da J-530 (A): `statementPaid` é o status do demonstrativo lido sob a trava; nota NOVA sobre demonstrativo que não
+   * está `paid` → `InvoiceProviderError("statement_not_paid")` (a existente volta, com `statementPaid`, para quem chamou decidir). */
+  beginIssue(input: BeginIssueInput, now: Date): Promise<{ readonly invoice: SubscriptionStatementInvoice; readonly created: boolean; readonly statementPaid: boolean }>;
   findByRef(tenantId: string, provider: string, externalRef: string): Promise<SubscriptionStatementInvoice | undefined>;
   /** A nota VIVA (`pending`/`authorized`/`cancel_pending`) do demonstrativo, se houver. */
   findLive(tenantId: string, statementId: string): Promise<SubscriptionStatementInvoice | undefined>;
@@ -54,10 +66,13 @@ export class InMemoryStatementInvoiceRepository implements StatementInvoiceRepos
   /** Com o repositório de demonstrativos, espelha `invoiceStatus` como o Prisma faz na mesma transação. */
   constructor(private readonly statements?: StatementRepository) {}
 
-  async beginIssue(input: BeginIssueInput, now: Date): Promise<{ readonly invoice: SubscriptionStatementInvoice; readonly created: boolean }> {
+  async beginIssue(input: BeginIssueInput, now: Date): Promise<{ readonly invoice: SubscriptionStatementInvoice; readonly created: boolean; readonly statementPaid: boolean }> {
+    // O portão (A) só vale com o repositório de demonstrativos: o dublê SEM demonstrativos não o aplica (statementPaid = true).
+    const statementPaid = this.statements ? (await this.statements.findStatement(input.tenantId, input.statementId))?.status === "paid" : true;
     const externalRef = invoiceExternalRef(input.statementId, input.seq);
     const existing = await this.findByRef(input.tenantId, input.provider, externalRef);
-    if (existing) return { invoice: existing, created: false };
+    if (existing) return { invoice: existing, created: false, statementPaid };
+    if (!statementPaid) throw new StatementNotPaidError();
     const live = await this.findLive(input.tenantId, input.statementId);
     if (live) throw new InvoiceProviderError("invoice_already_live", "The statement already has a live invoice.", { existingId: live.externalRef });
     const key = `${input.provider}:${input.environment}:${input.serie}`;
@@ -89,7 +104,7 @@ export class InMemoryStatementInvoiceRepository implements StatementInvoiceRepos
     };
     this.#rows.set(row.id, row);
     await this.#mirror(input.tenantId, input.statementId, "pending");
-    return { invoice: row, created: true };
+    return { invoice: row, created: true, statementPaid };
   }
 
   async findByRef(tenantId: string, provider: string, externalRef: string): Promise<SubscriptionStatementInvoice | undefined> {

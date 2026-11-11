@@ -15,8 +15,8 @@ import { InvoiceProviderError } from "../providers/invoice/invoice-errors.js";
 import type { InvoiceLookup, InvoiceProviderPort, InvoiceTaxProfile, IssueInvoiceInput, NfseRoute } from "../providers/invoice/invoice-provider.port.js";
 import type { ProviderSettings } from "../providers/provider-config.repository.js";
 import { ProviderValidationError } from "../providers/http/billing-errors.js";
-import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
-import { sanitizeInvoiceError, type SubscriptionStatementInvoice } from "../invoices/invoices.types.js";
+import { StatementNotPaidError, type StatementInvoiceRepository } from "../invoices/invoices.repository.js";
+import { invoiceExternalRef, sanitizeInvoiceError, type SubscriptionStatementInvoice } from "../invoices/invoices.types.js";
 import type { StatementRepository } from "../statements/statement.repository.js";
 import type { SubscriptionStatement } from "../statements/statement.types.js";
 import type { BillingOutboxRow, OutboxSkipReason } from "./outbox.types.js";
@@ -131,24 +131,31 @@ export class InvoiceOutboxHandler {
     const statement = await this.deps.statements.findStatement(row.tenantId, row.statementId);
     if (!statement) return { kind: "needs_review", code: "statement_not_found" };
     if (statement.status === "cancelled") return { kind: "skipped", reason: "statement_cancelled" };
-    // R-SET-2: nota só depois de pago. Pagamento parcial nunca chega aqui.
-    if (statement.status !== "paid") return { kind: "needs_review", code: "statement_not_paid" };
+    // R-SET-2: nota só depois de pago. Esta leitura SEM trava é só o caminho rápido; a decisão é do `beginIssue`, sob a trava
+    // (A). Conserto da J-530 (CRIT530R2-01): se esta linha já tem nota PENDENTE (órfã ou retentativa) e o demonstrativo saiu de
+    // `paid`, a nota é decidida pela reconsulta — nunca fica viva para sempre sobre receita estornada.
+    // [INTX-12f]
+    if (statement.status !== "paid") return this.#notPaidFastPath(row, port, now);
 
     const context = await this.deps.resolveIssueContext({ tenantId: row.tenantId, statementId: row.statementId, provider: row.provider, statement });
     if ("reason" in context) return { kind: "needs_review", code: context.reason };
 
-    let invoice: SubscriptionStatementInvoice;
+    let begun: { readonly invoice: SubscriptionStatementInvoice; readonly statementPaid: boolean };
     try {
-      invoice = (await this.deps.invoices.beginIssue(
+      begun = await this.deps.invoices.beginIssue(
         { tenantId: row.tenantId, statementId: row.statementId, seq: payloadSeq(row), provider: row.provider, environment: context.environment, serie: context.serie },
         now,
-      )).invoice;
+      );
     } catch (error) {
-      if (error instanceof InvoiceProviderError) return { kind: "needs_review", code: error.code };
+      if (error instanceof InvoiceProviderError || error instanceof StatementNotPaidError) return { kind: "needs_review", code: error.code };
       throw error;
     }
+    const invoice = begun.invoice;
     // Idempotência: a linha já passou de `pending` (autorizada, rejeitada, cancelada) → nada a emitir.
     if (invoice.status !== "pending") return { kind: "sent", externalId: invoice.providerInvoiceId ?? invoice.externalRef };
+    // (A) Nota pendente sobre demonstrativo que saiu de `paid` (lido sob a trava) nunca é (re)enviada: a reconsulta decide.
+    // [INTX-12b]
+    if (!begun.statementPaid) return this.#resolveWithoutIssuing(row, invoice, port, now);
 
     // Órfã de crash, ou emissão que já chegou ao provedor: RECONSULTA pela `ref` ANTES de repetir (G8). `unknown` = nunca
     // chegou → emitir (e a `ref` repetida é recusada pelo provedor como `already_issued`, idempotente).
@@ -185,6 +192,27 @@ export class InvoiceOutboxHandler {
       if (error instanceof ProviderValidationError) return { kind: "needs_review", code: "provider_validation" };
       throw error; // transitório (rede, 5xx, 429): o dispatcher aplica o backoff
     }
+  }
+
+  /** (A) O caminho rápido viu o demonstrativo fora de `paid`: sem nota desta linha, nada a emitir; com nota PENDENTE, ela é
+   * decidida pela reconsulta (CRIT530R2-01). */
+  async #notPaidFastPath(row: BillingOutboxRow, port: InvoiceProviderPort, now: Date): Promise<InvoiceDispatchResult> {
+    const invoice = await this.deps.invoices.findByRef(row.tenantId, row.provider, invoiceExternalRef(row.statementId, payloadSeq(row)));
+    if (invoice?.status === "pending") return this.#resolveWithoutIssuing(row, invoice, port, now);
+    return { kind: "needs_review", code: "statement_not_paid" };
+  }
+
+  /** (A) A nota pendente sobre receita que deixou de estar paga: RECONSULTA, nunca `port.issue`. Conhecida → registra a
+   * verdade (o cancelamento já está na fila desde a reversão); desconhecida e sem id do provedor → nunca chegou ao provedor:
+   * `rejected` com `not_issued_payment_reversed` (o CHECK de status é fechado — leitura do topo, declarada). */
+  async #resolveWithoutIssuing(row: BillingOutboxRow, invoice: SubscriptionStatementInvoice, port: InvoiceProviderPort, now: Date): Promise<InvoiceDispatchResult> {
+    const lookup = await port.getInvoice(invoice.externalRef);
+    if (lookup.status !== "unknown") {
+      await this.#applyLookup(invoice, lookup, port, now);
+      return { kind: "recovered", externalId: invoice.providerInvoiceId ?? invoice.externalRef };
+    }
+    if (!invoice.providerInvoiceId) await this.deps.invoices.markRejected(row.tenantId, invoice.id, "not_issued_payment_reversed", now);
+    return { kind: "needs_review", code: "statement_not_paid" };
   }
 
   async cancel(row: BillingOutboxRow, now: Date): Promise<InvoiceDispatchResult> {
