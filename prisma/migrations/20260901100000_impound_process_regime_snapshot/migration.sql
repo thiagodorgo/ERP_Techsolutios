@@ -1,7 +1,7 @@
 -- B-O6R-12 (Ω6R-DAT-004) — regime normativo gravado no processo na abertura.
 -- O backfill usa o perfil atual por decisão do dono (D-PORTAO-9-RECOMENDACOES-1011, Q4).
 -- Se SET NOT NULL falhar, a transação inteira reverte. Sanear e executar:
--- npx prisma migrate resolve --rolled-back 20260902000000_impound_process_regime_snapshot
+-- npx prisma migrate resolve --rolled-back 20260901100000_impound_process_regime_snapshot
 BEGIN;
 
 ALTER TABLE public."impound_processes" ADD COLUMN "regime_scope" TEXT, ADD COLUMN "regime_owner_notif_days" INTEGER, ADD COLUMN "regime_notice_edict_day" INTEGER, ADD COLUMN "regime_auction_eligible_day" INTEGER, ADD COLUMN "regime_auction_edict_business_days" INTEGER, ADD COLUMN "regime_daily_model" TEXT, ADD COLUMN "regime_daily_cap" TEXT, ADD COLUMN "regime_release_requirements" JSONB, ADD COLUMN "regime_daily_service_catalog_id" UUID;

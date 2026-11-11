@@ -193,3 +193,22 @@ Os cinco arquivos novos foram executados isoladamente antes de qualquer código 
   depois do merge da `main`.
 - **Próximo comando:** acertar os 4 pontos do produto, completar os testes por critério com
   vermelho-controle e mutação literal, e só então a bateria final.
+
+## RECARIMBO DA MIGRAÇÃO — 2026-11-11T07:01-0300 — `dev-o6r12-cl`
+
+- O #530 entrou na `main` (`a0979f51`) com `20260901000000_ass08b_provider_one_enabled_per_kind`,
+  o mesmo carimbo da migração do bloco. Primeiro ela foi para `20260902000000` (commit `e43ace59`,
+  pelo §2.2.4 do plano: "renumerar se já estiver tomado").
+- Às 06:56 o orquestrador mandou recarimbar para DEPOIS de `20260901090000`, por causa da trava de
+  `prisma/**` (`D-B-O6R-09-TRAVA-PRISMA-OPCAO-A`): a primeira migração com PR verde pega a trava, e
+  o #537 (`B-O6R-09`, `20260901090000_field_dispatch_idempotency_key`) está à frente. A migração do
+  bloco passa a `20260901100000_impound_process_regime_snapshot`; o texto não muda, só o nome do
+  diretório e as 2 referências literais (o `resolve --rolled-back` do cabeçalho e o
+  `MIGRATION_NAME` do drill). A menção a `20260901000000` na F2, acima, é histórica.
+- **A ordem vale nos dois casos.** Se o #537 mergear antes, a deste bloco aplica depois da dele.
+  Se este mergear antes, a do #537 tem carimbo anterior, e o `migrate deploy` aplica toda migração
+  pendente, então ela entra depois sem conflito: as duas não tocam as mesmas tabelas
+  (`field_dispatches` × `impound_processes`).
+- Medido depois do recarimbo, em bases novas do zero (132 migrações): `migration-transaction-guard`
+  0 violações; drill 11/11, snapshot-db 12/12 e a catraca de catálogo verdes, `# skipped 0`; K12
+  verde sem tocar a fixture.
