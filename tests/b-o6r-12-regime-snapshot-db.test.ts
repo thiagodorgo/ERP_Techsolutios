@@ -419,6 +419,95 @@ if (!connectionString) {
     }
   });
 
+  test("B-O6R-12 C2-02/C3-02: dois PATCHes concorrentes do mesmo perfil ficam em fila, e o 'from' do 2º é o valor confirmado pelo 1º", async () => {
+    const c = await semear("fila");
+    // A 2ª conexão leva um application_name próprio, para a barreira achá-la em pg_stat_activity.
+    const nomeDaConexao = `b12_patch2_${randomUUID().replaceAll("-", "").slice(0, 10)}`;
+    const urlDoSegundo = new URL(connectionString);
+    urlDoSegundo.searchParams.set("application_name", nomeDaConexao);
+    const segundo = new PrismaClient({ adapter: new PrismaPg({ connectionString: urlDoSegundo.toString() }) });
+    const { Client } = await import("pg");
+    const vigia = new Client({ connectionString });
+    await vigia.connect();
+    try {
+      let patch2: Promise<Awaited<ReturnType<InstanceType<typeof PrismaJurisdictionRepository>["updateProfile"]>>> | undefined;
+      await admin.$transaction(
+        async (tx) => {
+          const primeiro = await new PrismaJurisdictionRepository(tx).updateProfile({
+            tenantId: c.tenantId,
+            profileId: c.profileId,
+            dailyCap: "UNLIMITED",
+            updatedBy: c.userId,
+          });
+          assert.deepEqual(primeiro?.changes.daily_cap, { from: "SIX_MONTHS", to: "UNLIMITED" });
+          patch2 = segundo.$transaction(
+            (tx2) =>
+              new PrismaJurisdictionRepository(tx2).updateProfile({
+                tenantId: c.tenantId,
+                profileId: c.profileId,
+                dailyCap: "THIRTY_DAYS_LEGACY",
+                updatedBy: c.userId,
+              }),
+            { timeout: 20_000 },
+          );
+          // Barreira determinística: só confirma o 1º depois que o 2º está PARADO numa trava (nunca por relógio).
+          let parado = false;
+          for (let tentativa = 0; tentativa < 400 && !parado; tentativa += 1) {
+            const linhas = await vigia.query(
+              `SELECT 1 FROM pg_stat_activity WHERE application_name = $1 AND wait_event_type = 'Lock'`,
+              [nomeDaConexao],
+            );
+            parado = (linhas.rowCount ?? 0) > 0;
+            if (!parado) await new Promise((resolve) => setTimeout(resolve, 25));
+          }
+          assert.ok(parado, "o 2º PATCH ficou parado na trava da linha do perfil");
+        },
+        { timeout: 20_000 },
+      );
+      const segundoResultado = await patch2!;
+      assert.deepEqual(
+        segundoResultado?.changes.daily_cap,
+        { from: "UNLIMITED", to: "THIRTY_DAYS_LEGACY" },
+        "o 'from' da auditoria do 2º PATCH é o valor que o 1º confirmou, não o que havia antes dele",
+      );
+    } finally {
+      await vigia.end();
+      await segundo.$disconnect();
+    }
+  });
+
+  test("B-O6R-12 C3-01: requisito de liberação com 'required' ausente ou malformado continua exigido no retrato, como na liberação", async () => {
+    const c = await semear("req");
+    // Só nasce por SQL direto (o PATCH e o POST sempre gravam 'required' booleano), como no legado.
+    await admin.$executeRawUnsafe(
+      `UPDATE jurisdiction_profiles SET release_requirements = $2::jsonb WHERE id = $1::uuid`,
+      c.profileId,
+      JSON.stringify([
+        { code: "crlv", label: "CRLV legado" },
+        { code: "laudo", label: "Laudo", required: "sim" },
+        { code: "foto", label: "Foto", required: false },
+      ]),
+    );
+    const processId = await abrir(c);
+    const processo = await new PrismaImpoundRepository(admin).findProcessById(c.tenantId, processId);
+    const retrato = processo?.regime?.releaseRequirements.map((r) => [r.code, r.label, r.required]);
+    const liberacao = (await new RlsPrismaReleaseRepository(admin).loadReleaseRequirements(c.tenantId, processId))?.map((r) => [
+      r.code,
+      r.label,
+      r.required,
+    ]);
+    assert.deepEqual(
+      retrato,
+      [
+        ["crlv", "CRLV legado", true],
+        ["laudo", "Laudo", true],
+        ["foto", "Foto", false],
+      ],
+      "na dúvida, o requisito é obrigatório (fail-closed); só o false explícito o dispensa",
+    );
+    assert.deepEqual(retrato, liberacao, "o retrato que o portal mostra é o mesmo que a liberação exige");
+  });
+
   test("B-O6R-12 C8: o PATCH por HTTP grava na auditoria cada campo com valor anterior e novo (allowlist)", async () => {
     const [{ createApp }, { PrismaCoreSaasService }, { PrismaCoreSaasStore }, repositorios, { signAccessToken }] = await Promise.all([
       import("../src/app.js"),

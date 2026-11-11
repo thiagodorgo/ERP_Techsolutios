@@ -374,3 +374,39 @@ junta ataca a E1′.
   - sem banco: `51/51`, `# skipped 0`.
   - `migration-transaction-guard`: 132 migrações e 0 violações; `check` e `lint` com ec 0;
     `git diff --check` limpo.
+
+## Conserto pós-junta (junta de dinheiro do #539: 3 de 3, sem grave) — `dev-o6r12-cl`
+
+O fluxo do §C7 10(3)4 pede um conserto único dos não graves simples, feito por quem não achou: este dev
+não votou nem achou nenhum deles. Cada conserto tem teste vermelho sem ele e mutação literal.
+
+- **C2-02 = C3-02 (a existência da trava do PATCH).** Novo no `-db`: "C2-02/C3-02". Dois PATCHes
+  concorrentes do mesmo perfil, com barreira determinística: o 1º só confirma depois que a 2ª conexão
+  (com `application_name` próprio) aparece em `pg_stat_activity` com `wait_event_type = 'Lock'`. O teste
+  afirma que o `from` da auditoria do 2º é o valor confirmado pelo 1º (`UNLIMITED` → `THIRTY_DAYS_LEGACY`).
+  - Com o código: verde, repetido 3 vezes.
+  - Mutação: apagar a linha `        FOR NO KEY UPDATE` de `jurisdiction-prisma.repository.ts` dá
+    `not ok 12`, com `from: SIX_MONTHS`.
+- **C3-01 (o retrato descartava requisito malformado).** O mapeador `releaseRequirementsFromJson`
+  (`impound-prisma.repository.ts`) passa a seguir a regra do leitor da liberação (`normalizeRequirements`):
+  entram objetos com `code` e `label` não vazios, e `required` vale true salvo o `false` explícito
+  (fail-closed). Teste novo no `-db`: "C3-01". O perfil é gravado por SQL com `required` ausente, `"sim"`
+  e `false`; o retrato e o `loadReleaseRequirements` da liberação dão `[crlv true, laudo true, foto false]`,
+  iguais.
+  - Vermelho-controle no código de antes: `not ok`, porque o retrato só trazia `foto false`.
+  - Mutação: voltar ao descarte (`… && typeof item.required === "boolean" …`) dá `not ok 13`.
+- **C2-04 (registro).** Registrada a `P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA` (BAIXA; dono, o próximo bloco
+  que tocar o fixture) no `pendencias.md`, e o índice foi regenerado.
+- **Viram pendência, sem código (registradas no PR):**
+  - J539-C1-01, C1-02 e C1-03 (MÉDIA; dono, um bloco de endurecimento da catraca): a catraca de leitores
+    vivos deixa passar `AND jp.active`, a relação fluente `.profile()` e o C20c de um só campo;
+  - C2-01 (BAIXA): a abertura espera o PATCH quando ele muda `name`;
+  - C2-03 (BAIXA, anterior ao bloco): a allowlist do `db-catalog-write-guard` afirma a trava sem uma
+    máquina que confira.
+- `main` trazida de novo (#540, `945f2002`). Conflito só em `pendencias.md`; as duas entradas ficam, e o
+  índice foi regenerado.
+- **Bateria do bloco depois do conserto (10:34 → 10:36):**
+  - com banco: `# tests 70 · pass 66 · fail 4 · skipped 0`. As 4 falhas são o `san3-05`: T14a/b, T14c e
+    T14d (falta o `setsid`) e o caso pai. O T15 passou desta vez.
+  - sem banco: `68/68`, `# skipped 0`, com `release` e `owner-portal-dossier` somados.
+  - `migration-transaction-guard`: 0 violações; `check` e `lint` com ec 0; `git diff --check` limpo.

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **862** |
-| IDs distintos | 851 |
-| **ABERTAS** | **657** |
+| Cabecalhos `## P-` | **863** |
+| IDs distintos | 852 |
+| **ABERTAS** | **658** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **596** |
+| — das quais **ativas nesta rodada** | **597** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 201 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **862 cabecalhos para 851 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **863 cabecalhos para 852 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -367,7 +367,7 @@
 | `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` | 13625 | CRÍTICA | **a atribuir** | P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o |
 | `P-O6R-B12-FUSO-DO-PATIO-VIVO` | 13655 | MÉDIA | sim | P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera di |
 
-## ABERTAS · balde B — processo/registro — 304
+## ABERTAS · balde B — processo/registro — 305
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -675,6 +675,7 @@
 | `P-SAN3-07-SEED-USERS-LEGADO` | 13611 | BAIXA | sim | P-SAN3-07-SEED-USERS-LEGADO (2026-11-11) — o `seed-users.ts` ainda cria os 5 papéis lega |
 | `P-SAN3-07-SEED-FORA-DO-TYPECHECK` | 13618 | BAIXA | sim | P-SAN3-07-SEED-FORA-DO-TYPECHECK (2026-11-11) — `npm run check` não compila `prisma/seed |
 | `P-O6R-B12-PORTAL-MEMORIA` | 13666 | BAIXA | sim | P-O6R-B12-PORTAL-MEMORIA (2026-11-11) — processo legado em memória conserva fallback viv |
+| `P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA` | 13677 | BAIXA | sim | P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA (2026-11-11) — o drill do B-O6R-12 deixa bases e  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

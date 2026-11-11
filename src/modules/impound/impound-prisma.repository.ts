@@ -1071,15 +1071,21 @@ function releaseRequirementsInput(value: Prisma.JsonValue): Prisma.InputJsonValu
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
+// B-O6R-12 (C3-01) — a MESMA regra do leitor da liberação (release-prisma.repository.ts, normalizeRequirements): só
+// entram objetos com code e label não vazios, e required vale true salvo o false explícito (fail-closed: na dúvida, o
+// documento é exigido). Assim o portal mostra ao cidadão exatamente o que a liberação do pátio vai exigir.
 function releaseRequirementsFromJson(value: Prisma.JsonValue): NonNullable<ImpoundProcess["regime"]>["releaseRequirements"] {
   if (!Array.isArray(value)) return [];
-  return value.flatMap((entry) => {
-    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+  const out: Array<{ code: string; label: string; required: boolean }> = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
     const item = entry as Record<string, Prisma.JsonValue>;
-    return typeof item.code === "string" && typeof item.label === "string" && typeof item.required === "boolean"
-      ? [{ code: item.code, label: item.label, required: item.required }]
-      : [];
-  });
+    if (!("code" in item) || !("label" in item)) continue;
+    const code = String(item.code ?? "").trim();
+    const label = String(item.label ?? "").trim();
+    if (code && label) out.push({ code, label, required: item.required !== false });
+  }
+  return out;
 }
 
 function translateImpoundError(error: unknown): unknown {

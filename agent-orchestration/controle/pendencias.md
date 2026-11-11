@@ -13673,3 +13673,19 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **critério de encerramento:** quando todo processo suportado tiver retrato obrigatório também
   nas fixtures e importações em memória, retirar o fallback e provar que o portal não consulta o
   perfil vivo em nenhum caminho.
+
+## P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA (2026-11-11) — o drill do B-O6R-12 deixa bases e papéis quando o processo é morto, e nada os recolhe — BAIXA
+
+- **status:** ABERTA · **escopo:** dentro-do-bloco (o drill nasceu no `B-O6R-12`), registrada pela junta do
+  #539 (C2-04) e criada pela Emenda 2 do plano · **dono:** o próximo bloco que tocar o fixture
+  `tests/helpers/auth-identity-fixture.ts` (`SWEPT_ROLE_FAMILIES`) · **bloqueia:** não.
+- **fato:** `tests/b-o6r-12-regime-migration-drill-db.test.ts` derruba cada clone no `finally` e os papéis
+  depois dele, com o `after` como rede. Mas com o processo morto (SIGKILL, `taskkill /F`) nem `finally` nem
+  `after` rodam, e sobram as bases `<db>_b12{t,c7,c7f,c7b,car,imu,col,som,c17,rb}_<sufixo>`, os papéis
+  `b12_mig_<sufixo>` e `b12_rt*_<sufixo>` e a pasta `%TEMP%/o6r12-drill-*`. Medido pela pré-revisão (P539-03)
+  e pela C2 da junta: depois do kill, sobraram `…_b12t_…` e `…_b12car_…`. O prefixo `b12_` não está em
+  `SWEPT_ROLE_FAMILIES`, e não há varredura de bases órfãs. Na CI o runner é efêmero; o resíduo fica na
+  máquina de quem roda local.
+- **critério de encerramento:** a família `b12_` (papéis) entra na varredura do arnês, com o carimbo de tempo
+  no nome que a varredura exige, e uma varredura das bases `%_b12%_<sufixo>` mais velhas que o limite do
+  arnês; com um teste que mata o drill no meio e prova que a execução seguinte recolhe papéis e bases.
