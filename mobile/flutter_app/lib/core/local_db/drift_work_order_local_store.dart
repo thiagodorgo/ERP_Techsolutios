@@ -31,8 +31,9 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
       'service_address, latitude, longitude, status, priority, '
       'assigned_user_id, scheduled_at, started_at, arrived_at, '
       'completed_at, checklist_id, sync_status, created_at, updated_at, '
-      'service_type, vehicle_id, vehicle_plate, team_id, team_name) '
-      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+      'service_type, vehicle_id, vehicle_plate, team_id, team_name, '
+      'checkin_mode, checkin_plate_tail) '
+      'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
       variables: [
         Variable<String>(order.localId),
         Variable<String>(order.serverId),
@@ -61,6 +62,8 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
         Variable<String>(order.vehiclePlate),
         Variable<String>(order.teamId),
         Variable<String>(order.teamName),
+        Variable<String>(checkinModeToApi(order.checkinMode)),
+        Variable<String>(order.checkinPlateTail),
       ],
     );
   }
@@ -281,6 +284,8 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
     vehiclePlate: row.readNullable<String>('vehicle_plate'),
     teamId: row.readNullable<String>('team_id'),
     teamName: row.readNullable<String>('team_name'),
+    checkinMode: checkinModeFromApi(row.readNullable<String>('checkin_mode')),
+    checkinPlateTail: row.readNullable<String>('checkin_plate_tail'),
   );
 
   WorkOrderTimelineEvent _timelineFromRow(QueryRow row) =>

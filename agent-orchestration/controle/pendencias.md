@@ -9101,7 +9101,13 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS (2026-09-11) — Check-in pede dígitos da placa e compara com o código da OS — MÉDIA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA com o merge do PR do `B-SAN3-26` (2026-11-11; antes: ABERTA, inventário SAN3, fatia AUSENTES, 2026-09-11)
+- **fechamento (B-SAN3-26, `dev-san326-cl`; o que fecha, exato, pela C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP, `dev-san3-26-fix-cl`):**
+  - **Fecha a metade do servidor, que é a autoridade.** O servidor confere a placa nas duas portas (`PATCH /work-orders/:id/status` e a ação `work_order.status_change` da fila), recusa por padrão e exige o veredito nos dois repositórios. Teste de encerramento: `tests/san3-26-checkin-conferencia.test.ts` (A2 aceita "23" da placa `ABC1D23`; A3 recusa o fim do código da OS).
+  - **A metade do app está no código, mas ainda não é alcançável com o servidor real.** O app compara com o fim da PLACA que o servidor manda na lista (`checkinMode`, `checkinPlateTail`): `mobile/flutter_app/test/features/work_orders/bsan326_checkin_confere_placa_test.dart` (M1: "42" de `OS-1042` dá o erro, "23" enfileira), com a lista falsa nos nomes de status do app. Com o servidor real, o pull traz toda OS como "Agendada" e o "Iniciar rota" é recusado, então o guincheiro não chega ao diálogo da placa. Isso só muda com o conserto do mapeamento de status (PR534-03; `P-MOBILE-STATUS-NOMES` e `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA`, dono `B-O6R-11d`).
+  - **O que sobra, com o dono de cada um:**
+    - `B-O6R-11d`: `P-CHECKIN-SEM-PLACA-OFFLINE`, `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` e `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA`;
+    - dono a definir pelo orquestrador: `P-DESPACHO-ARRIVED-SEM-CONFERENCIA`, `P-CHECKIN-NUMERO-DE-SERIE`, `P-CONSOLE-EDITA-PLACA-DA-OS`, `P-CHECKIN-PLACA-ESTRANGEIRA` e `P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO`.
 - **junta do PR #386, ciclo 1 (C2-01, 2026-09-12):** entra no gate — a tela declara um controle de segurança que não existe: `work_order_detail_screen.dart:918-931` pede "os 2 últimos dígitos da placa" e compara com o fim do código da OS, e o backend não confere nada. "O GPS coexiste" é mitigação, e o plano não admite exceção por mitigação. Plano SAN3 v5: bloco `B-SAN3-26`.
 - **fonte (fatia AUSENTES, §2a):** sintese A9
 - **situação medida pela fatia:** ATIVO
@@ -12129,6 +12135,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **escopo:** pre-existente (`e79616aa4`, 2026-06-13). A trava estática e a releitura do store neutralizam para a purga.
 - **dono:** bloco de sessão do app.
 - **encerramento:** o provider não cria repositório com sessão de demonstração em build remoto.
+- **nota (C2-03 e C2-04 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP, medidas no emulador com o APK profile do #534):**
+  - C2-03: no lançamento do app com rede, o pull roda 2 vezes em ~200 ms. Ele sobrescreve a OS presa a uma chegada recusada (`arrived/conflict` vira `scheduled/synced`), o cartão "Confirmar a placa de novo" some do detalhe, e o início diz "nada na fila", com a ação ainda `conflict`. A saída fica só na tela Sincronização. É o efeito, neste bloco, da promessa do E-01 ("o pull não apaga o cartão"). HIPÓTESE da cadeira, não medida por dentro do app: o 1º pull roda no repositório de reserva (`tenant-demo`).
+  - C2-04: no mesmo lançamento, o pull sobrescreve também a OS `pending` (`enRoute/pending` vira `scheduled/synced`). O "neutralizado para a purga" acima não vale para o upsert do pull. Perda de ação não foi medida: a fila não é tocada.
 
 ## P-MOBILE-FILA-LER-TUDO-GRAVAR-TUDO (2026-10-25) — enqueue/update da fila sobrescrevem a fila inteira — BAIXA
 - status: ABERTA
@@ -12859,9 +12868,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-STATUS-NOMES (2026-11-04) — nomes de status da OS no app divergem dos do servidor — MÉDIA
 
-- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não declarado na fonte.
+- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** `B-O6R-11d` (C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP; antes: a atribuir pelo orquestrador) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não declarado na fonte.
 - **fato:** os nomes de status do app (`scheduled`, `dispatched`, `enRoute`) não batem com os do servidor, e falta o passo `assigned → accepted`. Medido neste registro: existe tradução em `mobile/flutter_app/lib/core/sync/sync_replay_service.dart:490-492` (`scheduled` → `open`, `dispatched` → `assigned`, `enRoute` → `on_route`); a pendência é a cobertura dessa tradução e o passo que falta.
 - **encerramento:** máquina de estados do app igual à do servidor, inclusive `assigned → accepted`, com teste.
+- **nota do B-SAN3-26 (2026-11-11, `dev-san326-cl`, medido em `d0da291e`):** a tradução existe só na IDA. Na volta, o pull lê o status pelo nome do enum do app (`workOrderStatusFromApiValue`, `work_order_remote_api.dart`): `on_route` e `on_site`, que o servidor manda, viram `scheduled`. O B-SAN3-26 não mexeu nisso (fora do escopo); os testes do app dele usam os nomes do app na lista falsa, como o probe do revisor do plano.
+- **nota (C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP):** o PR534-03 (o pull lê `on_route`/`on_site` como "Agendada") foi passado a este dono. O plano v2 do `B-O6R-11d` já trata disso: o D5 e a P1 da tabela de partida, com o T5. Enquanto isso, a metade do item 53 que fica no app (o diálogo da placa) não é alcançável com o servidor real (`P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS`, fechamento).
 
 ## P-RBAC-FIELD-TECHNICIAN-DESPESA (2026-11-04) — `field_technician` sem permissão de despesa, de checklist e de estoque — MÉDIA
 
@@ -13328,6 +13339,36 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** o `platform_admin` recebe `service_quotes:create` e `:approve` pelo catálogo integral; a matriz (`RBAC_MATRIX.md:117`) não o inclui, e `RBAC_MATRIX.md:62` diz que ele não é o aprovador padrão dos fluxos da organização.
 - **critério de encerramento:** catálogo e matriz reconciliados para o `platform_admin` em `service_quotes:*`, com teste de guarda matriz × catálogo.
 
+## P-DESPACHO-ARRIVED-SEM-CONFERENCIA (2026-11-11) — o "No local" do DESPACHO não confere a placa — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte (plano v2 do B-SAN3-26) não dá gravidade · **escopo:** `src/modules/field-dispatch/**`, fora do PERMITIDO do B-SAN3-26 · **dono:** dono a definir pelo orquestrador (o plano v2 propôs um `B-SAN3-26b`, que não existe; é do despacho no servidor, não do app de OS, da fila nem de texto: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** `PATCH /operations/dispatches/:id/status {arrived}` marca o despacho em "No local" sem conferir a placa; a OS não muda de status por essa porta (o `on_site` da OS segue exigindo o veredito do B-SAN3-26).
+- **critério de encerramento:** o `arrived` do despacho segue a mesma conferência (ou a mesma decisão escrita do dono), com teste que fica vermelho sem ela.
+
+## P-CHECKIN-NUMERO-DE-SERIE (2026-11-11) — OS de prestador sem referência de check-in (o antigo "nº de série") — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** app de campo e `work-order.checkin.ts` · **dono:** dono a definir pelo orquestrador (é decisão de produto do dono, não defeito do app de OS, da fila nem de texto: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** o diálogo antigo pedia "os 2 últimos dígitos do nº de série" para OS de prestador e comparava com o código da OS. Depois do B-SAN3-26 a referência é só a placa; OS de prestador sem placa e que não é `residencial` cai em "sem placa" e só anda pela base (default negar, P1 do dono).
+- **critério de encerramento:** o dono decide se o prestador tem referência própria (número de série) ou segue pela base; a decisão vira teste.
+
+## P-CONSOLE-EDITA-PLACA-DA-OS (2026-11-11) — o console não edita a placa de uma OS que já existe — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6) · **escopo:** detalhe da OS no console (tela, com as 3 opções, `D-TELAS-TRES-OPCOES`) · **dono:** dono a definir pelo orquestrador (um bloco de tela do console, pela decisão B do dono, `D-PORTAO-5-RECOMENDACOES-1111`; não é do app de OS, da fila nem de texto: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** a criação ganhou o campo de placa no B-SAN3-26 (todo tipo menos residencial, emenda E-04), mas não há edição de OS no console (`frontend/src/modules/work-orders/work-orders.service.ts`, `updateWorkOrder` sem chamador). Ficam sem placa, e só andam pela base: as OS abertas antes do deploy, as de orçamento (`service-quote.service.ts`), as da semente da demo e as criadas pelo app (`work_order.create` não leva `service_details`).
+- **critério de encerramento:** a base edita a placa no detalhe da OS, com as 3 opções aprovadas, e a OS passa a ter o check-in pelo app.
+
+## P-CHECKIN-SEM-PLACA-OFFLINE (2026-11-11) — OS sem placa e guincheiro sem dados: a OS fica "A caminho" — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6); o revisor do plano `crit-26-r2-cl` (C26R2-05) a deu média · **escopo:** app de campo · **dono:** `B-O6R-11d` (o pull tem de trazer o `on_site` registrado pela base como "No local"; a exceção ao offline-first segue decisão do dono, que pode rever a B: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não.
+- **fato:** com a decisão B, a OS sem placa não confirma a chegada pelo app (o diálogo mostra "peça à base"), e o grafo local só deixa `enRoute → arrived`. A base registra pelo console, mas o app só vê o `on_site` depois de um pull: sem dados (estrada, só voz), o guincheiro fica em "A caminho" e não inicia o atendimento pelo app. É uma exceção ao offline-first (§6 do contrato), declarada no `API_CONTRACTS.md` §3.5.2.
+- **critério de encerramento:** o dono decide se aceita a exceção ou se o app ganha um caminho offline para a OS sem placa; a decisão vira teste.
+
+## P-CHECKIN-PLACA-ESTRANGEIRA (2026-11-11) — placa estrangeira não serve de referência do check-in — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** `src/modules/work-orders/work-order.checkin.ts` (`resolveCheckinReference`) · **dono:** dono a definir pelo orquestrador (é decisão de produto do dono, não defeito do app de OS, da fila nem de texto: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **fato:** pela emenda E-03 do B-SAN3-26 (C26R2-03), só a placa brasileira (antiga ou Mercosul) vale como referência; o ramo "5 a 8 alfanuméricos" do plano v2 saiu porque transformava "SEM PLACA", "ZERO KM" e "A DEFINIR" em placa. Placa estrangeira ("AB 123 CD") passa a contar como sem placa, e a chegada fica com a base. Residual declarado: "GOL 2010" tem a forma exata de placa antiga e é aceito como placa.
+- **critério de encerramento:** o dono decide se placa estrangeira entra (com que forma) ou segue pela base.
+
 ## P-ASS08C-TRUST-PROXY (2026-11-11) — sem `trust proxy`, o bloqueio por IP do webhook vale para todos atrás do proxy do Fly — ALTA (bloqueia ligar o canal)
 
 - **status:** ABERTA · **escopo:** `src/app.ts` e `webhooks/webhook-runtime.ts` (`clientIp`) · **dono:** `B-ASS-08c`.
@@ -13379,7 +13420,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-APP-DETALHE-OS-LARGURA-INFINITA (2026-11-11) — no APK debug o detalhe da OS fica em branco pelo botão "Abrir mapa" — ALTA
 
-- **status:** ABERTA · **gravidade:** ALTA (a fonte) · **escopo:** anterior ao bloco `B-SAN3-26` (#534); `mobile/flutter_app/lib/features/work_orders/ui/work_order_operational_map_screen.dart:274` · **dono:** a definir pelo orquestrador (candidato da fonte: o `B-O6R-11d` ou um bloco de app) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não segura o #534.
+- **status:** ABERTA · **gravidade:** ALTA (a fonte) · **escopo:** anterior ao bloco `B-SAN3-26` (#534); `mobile/flutter_app/lib/features/work_orders/ui/work_order_operational_map_screen.dart:274` · **dono:** `B-O6R-11d` (C3-01 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP; antes: a definir pelo orquestrador, com o `B-O6R-11d` ou um bloco de app como candidatos) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
 - **origem:** o dev do conserto do #534 (`dev-san3-26-fix-cl`), ao executar o PR534-05 no emulador com o APK da `main` (registro pendente do orquestrador, 11/11 06:22 SP; exceção em `revisoes/dev-534-fix-emulador/app-debug-excecao-do-detalhe.log`, fora do repositório; descrito também no diário do dev, no ramo `fix/checkin-confere-placa`).
 - **fato:** no APK debug, o detalhe da OS fica em branco por `BoxConstraints forces an infinite width` no "Abrir mapa": um `OutlinedButton` numa `Row` sem `Expanded`, com `minimumSize: Size.fromHeight(44)`. No profile, o botão estoura a largura.
 - **critério de encerramento:** o detalhe da OS abre no APK debug e no profile, com o "Abrir mapa" dentro da largura, provado por widget test que fica vermelho com o layout de hoje.
@@ -13390,6 +13431,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** o mesmo ensaio no emulador do PR534-05 (registro pendente do orquestrador, 11/11 06:22 SP; capturas `04-iniciar-rota-recusada-no-app.png` e `20-pull-os2-volta-como-agendada.png` em `revisoes/dev-534-fix-emulador/`, fora do repositório).
 - **fato:** o app antigo recusa "Iniciar rota" de "Agendada" (`scheduled → enRoute`). Somado ao PR534-03 (o pull traz `on_route` e `on_site` do servidor como "Agendada"), o app antigo não chega ao "No local" de OS vindas do servidor. O PR534-03 foi passado ao `B-O6R-11d` pelo orquestrador.
 - **critério de encerramento:** com uma OS do servidor em `on_route` e outra em `on_site`, o app mostra o status certo depois do pull e permite seguir até o "No local", provado por teste do app que fica vermelho no código de hoje.
+- **nota (C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP):** a barreira não é só do app antigo. A sonda `c3probe534_status_test.dart` da cadeira C3 dá a mesma saída com o `lib/` do head do #534 e com o da base `b6caf568`: `on_route`, `open`, `assigned`, `accepted`, `on_site` e `in_progress` do servidor viram "Agendada", e "Iniciar rota" e "No local" ficam recusados. O critério de encerramento vale para o app atual.
 
 ## P-DESPACHO-DUPLICADO-MESMO-TECNICO (2026-11-11) — dois despachos ativos do mesmo técnico na mesma OS — MÉDIA (gravidade: leitura do redator)
 
@@ -13582,6 +13624,28 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** O1 do porteiro `porteiro-530`.
 - **fato:** a convenção escrita em `ci.yml:289-293` manda "toda suíte `-db` nova entre AQUI". O `B-ASS-08b` soma 2 suítes (`ass-08b-invoice-intent-db` e `ass-08b-invoice-leg-db`). Hoje elas rodam de fato no job `backend` (22 linhas T-INTX `ok` nos logs do head e do merge), mas sem o guarda de zero pulos.
 - **critério de encerramento:** as suítes `ass-0*-db` estão na lista curada do `backend-postgres`, com o guarda de zero pulos verde, numa mudança de `.github/**` autorizada pelo dono.
+
+## P-CHECKIN-CARTAO-CONGELADO-NO-PULL (2026-11-11) — com o cartão de check-in aberto, o pull não atualiza o modo nem a cauda da placa — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (triagem do orquestrador) · **escopo:** dentro do `B-SAN3-26` (E-01 e o `redoCheckin`, F3 `23a6a5c5`) · **dono:** `B-O6R-11d` · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
+- **origem:** C2-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`revisoes/j534/c2-voto.json`, fora do repositório).
+- **fato:** enquanto o cartão "Confirmar a placa de novo" existe, o pull pula a OS inteira (E-01), e o `checkinMode` e o `checkinPlateTail` não se atualizam. O toque reabre o diálogo com esse dado congelado. Quando a recusa veio de dado velho no aparelho (OS em cache sem modo, ou placa trocada pela base), o guincheiro repete a mesma recusa, e os dígitos NOVOS são barrados no próprio diálogo como "não conferem". Ele só sai cancelando o diálogo e puxando a lista, e nada lhe diz isso. Prova da cadeira: `c2_unknown_sem_placa_probe_test.dart` (+2) e o emulador (OS-000016, cauda 89 e placa trocada para `QWX7K55`).
+- **critério de encerramento:** o pull atualiza o modo e a cauda da OS presa ao cartão sem apagar o cartão, e a 2ª tentativa usa a placa nova, com teste do app que fica vermelho no código de hoje.
+
+## P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA (2026-11-11) — o técnico ainda apaga ou reescreve uma placa que o servidor não reconhece — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `pre-existente`: na base `b6caf568` o campo trocava qualquer placa, e o `B-SAN3-26` reduziu a classe à placa não reconhecida · **dono:** `B-O6R-11d` (triagem do orquestrador) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não.
+- **origem:** C1-A2 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`revisoes/j534/c1-voto.json`, sonda `c1-sonda-extra`).
+- **fato:** a guarda do `PATCH /work-orders/:id` compara a referência normalizada antes e depois. Com placa estrangeira, com duas placas ou com texto colado, ela é nula dos dois lados, e o técnico atribuído apaga ou reescreve o que a base digitou (200). O evento `work_order_updated` não guarda o valor anterior. Não abre fuga do check-in: a OS segue com `checkin_reference_missing`.
+- **critério de encerramento:** o campo não muda `service_details.plate` quando o texto da base não é placa reconhecida (ou a decisão do dono diz o contrário), com teste que fica vermelho no código de hoje.
+
+## P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO (2026-11-11) — a marca "registrada pela base" vive no texto do evento — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** o console (`frontend/src/modules/work-orders/components/WorkOrderTimeline.tsx`, que mostra só `event.message`), fora do PERMITIDO do `B-SAN3-26` · **dono:** dono a definir pelo orquestrador (é tela do console, não app de OS, fila nem texto do app) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem:** residual declarado do conserto do C1-A1 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`dev-san3-26-fix-cl`, diário do bloco).
+- **fato:** o servidor passou a descartar a mensagem do cliente que contém "registrada/registrado pela base", em toda transição. A comparação ignora caixa, acento, pontuação, espaços e invisíveis, mas letra de outro alfabeto com a mesma forma (homóglifo) passa. O console só tem o texto para distinguir a marca verdadeira.
+- **critério de encerramento:** o console mostra a marca da base pelo `metadata.checkin = office` (e não pelo texto), com teste que fica vermelho com a timeline de hoje.
+- **nota (CONF534-01 da conferência `conf-534-api`, 2026-11-11, CONFERIDO; `saidas-v3/conf-534/saida/conf-534.json`, fora do repositório):** os preenchedores Hangul U+115F, U+3164 e U+FFA0 passam a dobra. Eles são invisíveis, Default_Ignorable e de categoria Lo, e a dobra só tira `\p{M}` e `\p{Cf}`. "Chegada ao local regis\u115Ftrada pela base." é gravada na linha do tempo da OS pela rota HTTP (200). O resíduo do homóglifo continua declarado. O fechamento é o critério acima, ou incluir `Default_Ignorable_Code_Point` na dobra. Não muda permissão: o `metadata.checkin` continua só do servidor.
 
 ## P-SAN3-07-APP-NOME-TECNICO-OFFLINE (2026-11-11) — o app de campo mostra "Tenant Demo" e "Tenant Field Services" no modo offline — MÉDIA
 
