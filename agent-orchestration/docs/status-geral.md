@@ -18,7 +18,7 @@
   - #549 (marco de KPI de 12/11): `7d7ffeb0`, 12/11 10:08; KPI congelado, sem porteiro;
   - #548 (`B-SAN3-15a`, itens 35 a 37): `3a62bd49`, 12/11 10:33; porteiro `porteiro-548` LIBERADO COM RESSALVA.
 - **Portão da versão vendável:** 45/64 (70%), pelo `porteiro-548`. Fechados desde o registro anterior: 40 e 41 (#533), 47 (#535 no seed e #540 no app), 48 (#540), 23 (#536), 53 (#534, servidor), 24 (#539), 7 (#537), 3 (#545), 16 (#544) e 37 (#548). Os itens 35 e 36 dependem do `B-SAN3-15b`.
-- **Juntas (atas versionadas neste PR):** J-534, J-535, J-536, J-537, J-539 (reconstruída por falta de ata escrita), J-540, J-542b, J-543, J-544, J-545 e J-548. As ressalvas dos porteiros foram consolidadas em `pendencias.md`, `PLANO_SAN3.md` e `decisoes.md`.
+- **Juntas (atas versionadas neste PR):** J-534, J-535, J-536, J-537, J-539 (reconstruída por falta de ata escrita), J-540, J-542b, J-543, J-544, J-545 e J-548. As ressalvas dos porteiros foram consolidadas em `pendencias.md`, `PLANO_SAN3.md`, `decisoes.md` e nas atas (a J-537 registra o desvio de carimbo 09 < 12 e a árvore `d1df438d` = `4eaadf2e`); a entrada da `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` como item novo do portão não entrou no `PLANO_SAN3` e virou a pendência `P-PORTAO-ITEM-GATE-CHAVE` (pergunta ao dono).
 - **Pendência sistêmica nova:** `P-DB-FUSO-DA-CONEXAO` (ALTA) — o `@prisma/adapter-pg` grava `Date` sem sufixo de fuso e o Postgres lê no `TimeZone` da sessão; o fechamento fixa a conexão em UTC (investigação `inv-543-fuso`).
 - **Lições em `decisoes.md`:** a regra de terreno do `initdb` no Windows (UTC + UTF8) e a lição "teste novo de dinheiro roda 20 vezes, com o arquivo inteiro, antes da junta".
 

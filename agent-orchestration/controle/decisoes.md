@@ -5068,5 +5068,5 @@ lista curada do job `backend-postgres`, medida 3× antes.
 
 ## LEITURA-ORQ-1211-TESTE-DINHEIRO-20-VEZES (2026-11-12) — lição do #542
 
-- **Fato:** a J-542b e a `conf-542` rodaram o T-E4-1 uma vez; o defeito (artefato do teste, empate triplo de milissegundo no desempate da run) apareceu depois, como ocorrência nova da `P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE` (rodada `43175128180`, 12/11).
+- **Fato:** a J-542b e a `conf-542` rodaram o T-E4-1 uma vez; a CI do `72866b87` ficou vermelha no T-E4-1 (`100 !== 130`, a propriedade do C1-A1 — artefato do teste, empate triplo de milissegundo no desempate da run, que virou a `P-ASS09A-EMPATE-MESMO-MS`) e no B16, intermitente conhecido (ocorrência nova da `P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE`, run `43175128180`, 12/11).
 - **Leitura do orquestrador, declarada (§A6):** teste novo de dinheiro roda 20 vezes, na forma do arquivo inteiro, antes da junta.
