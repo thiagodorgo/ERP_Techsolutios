@@ -36,6 +36,8 @@ export async function signAccessToken(
     type: "access",
     // B-O6R-01 (§3.5) — claim opcional de identidade (dica; nunca fonte de GUC/autorização).
     ...(input.identity_id ? { identity_id: input.identity_id } : {}),
+    // B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA) — a sessão do token; o portão a confere a cada requisição.
+    ...(input.session_id ? { sid: input.session_id } : {}),
   })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setSubject(input.user_id)
@@ -128,9 +130,21 @@ function parseDurationInSeconds(expiresIn: string, name: string): number {
   return seconds;
 }
 
+// B-USERS-SEG-DESATIVADO — o claim `sid`: ausente vale (token anterior ao deploy); UUID vale; qualquer outro valor
+// torna o token inválido (falha fechada).
+const SESSION_ID_CLAIM_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isSessionIdClaim(value: unknown): value is string {
+  return typeof value === "string" && SESSION_ID_CLAIM_PATTERN.test(value);
+}
+
 function parseAccessTokenPayload(payload: JWTPayload): AuthenticatedTokenPayload {
   if (payload.scope !== undefined && payload.scope !== "password_change") {
     throw new Error("Invalid access token scope.");
+  }
+
+  if (payload.sid !== undefined && !isSessionIdClaim(payload.sid)) {
+    throw new Error("Invalid access token session.");
   }
 
   if (
@@ -158,6 +172,7 @@ function parseAccessTokenPayload(payload: JWTPayload): AuthenticatedTokenPayload
     iss: typeof payload.iss === "string" ? payload.iss : undefined,
     aud: typeof payload.aud === "string" ? payload.aud : undefined,
     identity_id: typeof payload.identity_id === "string" ? payload.identity_id : undefined,
+    ...(isSessionIdClaim(payload.sid) ? { sid: payload.sid } : {}),
   };
 }
 

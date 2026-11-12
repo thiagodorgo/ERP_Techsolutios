@@ -296,15 +296,9 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
 
       const roleKeys = loginResult.roles.map((role) => role.key);
       const tokenScope = resolveAccessTokenScope(loginResult.mustChangePassword, roleKeys);
-      const accessToken = await issueAccessToken({
-        user_id: loginResult.user.id,
-        tenant_id: loginResult.user.tenant_id,
-        email: loginResult.user.email,
-        roles: tokenScope.roles,
-        ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
-        ...(identityId ? { identity_id: identityId } : {}),
-      });
-      const session = await (
+      // B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA) — a sessão nasce ANTES do token, para o token carregá-la (`sid`).
+      // Se a assinatura falhar depois, sobra uma sessão sem token entregue, que vence sozinha (R4 do plano).
+      const loginSession = await (
         await resolveSessionService()
       ).createSession({
         tenant_id: loginResult.user.tenant_id,
@@ -312,7 +306,18 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         user_agent: readHeader(request.headers["user-agent"]),
         ip_address: request.ip,
       });
+      const accessToken = await issueAccessToken({
+        user_id: loginResult.user.id,
+        tenant_id: loginResult.user.tenant_id,
+        email: loginResult.user.email,
+        roles: tokenScope.roles,
+        ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
+        ...(identityId ? { identity_id: identityId } : {}),
+        session_id: loginSession.sessionId,
+      });
       const accessTokenExpiresIn = resolveTokenExpiration();
+      // O corpo devolve a MESMA sessão que o token carrega (o `sid`).
+      const { sessionId: loginSessionId } = loginSession;
 
       response.status(200).json({
         data: {
@@ -323,14 +328,14 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
           tokenType: "Bearer",
           expires_in: accessTokenExpiresIn,
           expiresIn: accessTokenExpiresIn,
-          refresh_token: session.refreshToken,
-          refreshToken: session.refreshToken,
-          refresh_expires_at: session.refreshTokenExpiresAt.toISOString(),
-          refreshExpiresAt: session.refreshTokenExpiresAt.toISOString(),
-          refresh_expires_in: session.refreshTokenExpiresIn,
-          refreshExpiresIn: session.refreshTokenExpiresIn,
-          session_id: session.sessionId,
-          sessionId: session.sessionId,
+          refresh_token: loginSession.refreshToken,
+          refreshToken: loginSession.refreshToken,
+          refresh_expires_at: loginSession.refreshTokenExpiresAt.toISOString(),
+          refreshExpiresAt: loginSession.refreshTokenExpiresAt.toISOString(),
+          refresh_expires_in: loginSession.refreshTokenExpiresIn,
+          refreshExpiresIn: loginSession.refreshTokenExpiresIn,
+          session_id: loginSessionId,
+          sessionId: loginSessionId,
           user: loginResult.user,
           tenant: loginResult.tenant,
           // P-SESSAO-RESTRITA — o corpo segue o token (mesma decisão do helper, falha fechada).
@@ -459,15 +464,9 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
 
       // P-SESSAO-RESTRITA — a marca do par de DESTINO; ausente (adaptador que não a leu) = restrita.
       const tokenScope = resolveAccessTokenScope(match.mustChangePassword ?? true, match.user.roles);
-      const accessToken = await issueAccessToken({
-        user_id: match.user.id,
-        tenant_id: match.tenant.id,
-        email: match.user.email,
-        roles: tokenScope.roles,
-        ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
-        ...(identityId ? { identity_id: identityId } : {}),
-      });
-      const session = await (
+      // B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA) — mesma inversão do login: a sessão do par de destino nasce antes
+      // do token, que a carrega (`sid`).
+      const tenantSwitchSession = await (
         await resolveSessionService()
       ).createSession({
         tenant_id: match.tenant.id,
@@ -475,7 +474,18 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
         user_agent: readHeader(request.headers["user-agent"]),
         ip_address: request.ip,
       });
+      const accessToken = await issueAccessToken({
+        user_id: match.user.id,
+        tenant_id: match.tenant.id,
+        email: match.user.email,
+        roles: tokenScope.roles,
+        ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
+        ...(identityId ? { identity_id: identityId } : {}),
+        session_id: tenantSwitchSession.sessionId,
+      });
       const accessTokenExpiresIn = resolveTokenExpiration();
+      // O corpo devolve a MESMA sessão que o token carrega (o `sid`).
+      const { sessionId: tenantSwitchSessionId } = tenantSwitchSession;
 
       response.status(200).json({
         data: {
@@ -485,14 +495,14 @@ export function createAuthRouter(options: AuthRouterOptions = {}): Router {
           tokenType: "Bearer",
           expires_in: accessTokenExpiresIn,
           expiresIn: accessTokenExpiresIn,
-          refresh_token: session.refreshToken,
-          refreshToken: session.refreshToken,
-          refresh_expires_at: session.refreshTokenExpiresAt.toISOString(),
-          refreshExpiresAt: session.refreshTokenExpiresAt.toISOString(),
-          refresh_expires_in: session.refreshTokenExpiresIn,
-          refreshExpiresIn: session.refreshTokenExpiresIn,
-          session_id: session.sessionId,
-          sessionId: session.sessionId,
+          refresh_token: tenantSwitchSession.refreshToken,
+          refreshToken: tenantSwitchSession.refreshToken,
+          refresh_expires_at: tenantSwitchSession.refreshTokenExpiresAt.toISOString(),
+          refreshExpiresAt: tenantSwitchSession.refreshTokenExpiresAt.toISOString(),
+          refresh_expires_in: tenantSwitchSession.refreshTokenExpiresIn,
+          refreshExpiresIn: tenantSwitchSession.refreshTokenExpiresIn,
+          session_id: tenantSwitchSessionId,
+          sessionId: tenantSwitchSessionId,
           tenant: { id: match.tenant.id, name: match.tenant.name },
           user: { id: match.user.id, name: match.user.name, email: match.user.email },
           must_change_password: tokenScope.restricted,

@@ -11,11 +11,13 @@
 //   1. sobe o `docker-compose.prod.yml`                     — Ω6R: o arquivo NÃO subia (5 PORTAL_* faltando)
 //   2. /health/ready 200 COM o bloco `checks.worker` no corpo — mata: remover `checks.worker` do readiness
 //   3. /health/worker com `status:"up"` LIDO NO CORPO        — mata: worker desligado / asserir só o HTTP
-//   4. grava uma ORGANIZAÇÃO pelo agregado core-saas         — o agregado que o Ω6R-DAT-001 perdia
-//   5. reinicia o serviço `api` (PROCESSO NOVO, provado)     — mata: pular o restart
-//   6. relê a organização por HTTP e ela AINDA EXISTE        — mata: CORE_SAAS_PERSISTENCE=memory
-//   7. /health/worker volta a `up` no processo novo          — mata: worker que só sobe "na primeira vez"
-//   8. `down -v` sempre, inclusive em falha                  — §C5
+//   4. provisiona o RBAC e bootstraps o admin de plataforma  — o par de quem LÊ a organização (B-SAN3-09)
+//   5. login REAL na API devolve o token de sessão viva      — o portão exige `sid` (B-USERS-SEG-DESATIVADO)
+//   6. grava uma ORGANIZAÇÃO pelo agregado core-saas         — o agregado que o Ω6R-DAT-001 perdia
+//   7. reinicia o serviço `api` (PROCESSO NOVO, provado)     — mata: pular o restart
+//   8. relê a organização por HTTP e ela AINDA EXISTE        — mata: CORE_SAAS_PERSISTENCE=memory
+//   9. /health/worker volta a `up` no processo novo          — mata: worker que só sobe "na primeira vez"
+//  10. `down -v` sempre, inclusive em falha                  — §C5
 //
 // SE ESTE SMOKE PASSAR COM O WORKER DESLIGADO, ELE NÃO SERVE. O passo 3 só aceita `up` lido no
 // corpo: `starting`, `stale` e `not_expected` NÃO são aceitos — e `not_expected` responde HTTP 200,
@@ -23,11 +25,12 @@
 //
 // TRAVA DE SEGURANÇA (veto secops #7, §11 do plano)
 // ------------------------------------------------
-// Este script assina um token com o JWT_SECRET do compose e RECUSA EXECUTAR se esse segredo não for
-// o placeholder rotulado de validação local (`local-prod-validation-…-not-a-secret`). O alvo HTTP é
-// SEMPRE loopback e nunca vem de variável. As duas coisas juntas tornam o script inutilizável contra
-// um ambiente real POR CONSTRUÇÃO, não por disciplina de quem chama. O token nunca é impresso; toda
-// saída de subprocesso passa por redação de URLs com credencial antes de chegar ao log.
+// Este script loga na API do compose e RECUSA EXECUTAR se o JWT_SECRET do alvo não for o placeholder
+// rotulado de validação local (`local-prod-validation-…-not-a-secret`). O alvo HTTP é SEMPRE loopback e
+// nunca vem de variável. As duas coisas juntas tornam o script inutilizável contra um ambiente real POR
+// CONSTRUÇÃO, não por disciplina de quem chama. O token nunca é impresso; a senha do bootstrap é gerada
+// na rodada (nunca um segredo real) e toda saída de subprocesso passa por redação de URLs com credencial
+// antes de chegar ao log.
 //
 // USO
 //   node scripts/smoke-compose-persistence.mjs
@@ -44,7 +47,7 @@
 // local-prod que o dono possa ter de pé, e o volume criado aqui morre no `down -v` daqui.
 
 import { spawnSync } from "node:child_process";
-import { createHmac, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -67,6 +70,12 @@ const POLL_INTERVAL_MS = numberEnv("SMOKE_POLL_INTERVAL_MS", 3_000);
 
 // Marcador da organização de validação. Sem dado real: nome sintético + uuid da rodada.
 const ORG_NAME = `Validacao Local-Prod O6R ${randomUUID()}`;
+
+// Credencial do administrador de plataforma, gerada POR RODADA (nunca um segredo real, §2.8): a
+// senha só existe no ambiente do `docker compose run` do bootstrap e nunca é impressa nem vai a argv.
+const ADMIN_EMAIL = `smoke-${randomUUID()}@local-prod-validation.invalid`;
+const ADMIN_PASSWORD = randomBytes(18).toString("base64url");
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // §2.8 — o que NUNCA pode aparecer no corpo de um endpoint público de saúde.
 const FORBIDDEN_IN_HEALTH_BODY = [
@@ -128,13 +137,14 @@ function redact(text) {
     .replace(/local-prod-validation-[a-z0-9-]*not-a-secret/gi, "<placeholder-redigido>");
 }
 
-function composeEnv() {
+function composeEnv(extra = {}) {
   return {
     ...process.env,
     COMPOSE_PROJECT_NAME,
     API_PORT: String(PORT),
     // Sem TTY o compose não tenta desenhar barra de progresso (log ilegível em CI).
     COMPOSE_PROGRESS: process.env.COMPOSE_PROGRESS ?? "plain",
+    ...extra,
   };
 }
 
@@ -152,10 +162,10 @@ function dockerInherit(args) {
 }
 
 /** `docker` com a saída CAPTURADA e REDIGIDA (exec: roda código nosso, pode citar a DATABASE_URL). */
-function dockerCapture(args, { allowFailure = false } = {}) {
+function dockerCapture(args, { allowFailure = false, extraEnv = {} } = {}) {
   const result = spawnSync("docker", args, {
     cwd: REPO_ROOT,
-    env: composeEnv(),
+    env: composeEnv(extraEnv),
     encoding: "utf8",
     maxBuffer: 16 * 1024 * 1024,
   });
@@ -255,41 +265,37 @@ function assertNoSecretsInBody(label, text) {
   }
 }
 
-// ---------------------------------------------------------------------------------------------
-// Token — assinado com o PLACEHOLDER do compose (jamais impresso)
-// ---------------------------------------------------------------------------------------------
-
-function base64url(value) {
-  return Buffer.from(value).toString("base64url");
+/** SQL de leitura como `postgres` (migrador/dono das tabelas), no banco do smoke. */
+function psql(sql) {
+  const { stdout } = dockerCapture(
+    compose("exec", "-T", "postgres", "psql", "-U", "postgres", "-d", "erp_techsolutions", "-v", "ON_ERROR_STOP=1", "-At", "-c", sql),
+  );
+  return stdout.trim();
 }
 
 /**
- * Access token no MESMO formato de `src/modules/auth/services/jwt.service.ts` (HS256, issuer
- * `erp-techsolutions`, audience `erp-techsolutions-api`). Escrito à mão com `node:crypto` porque
- * este script não pode importar `jose` (é .mjs solto, sem build) nem ganhar dependência (§C7).
+ * Login DIRIGIDO na organização de sistema `platform`, pela credencial gerada na rodada. Devolve o
+ * access token emitido pelo assinador REAL da API — carrega `sid` e existe uma sessão viva no banco
+ * (E2.1): é exatamente o que o portão exige. Nunca imprime e-mail, senha nem token.
  */
-function signAccessToken(secret) {
-  const issuedAt = Math.floor(Date.now() / 1_000);
-  const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const payload = base64url(
-    JSON.stringify({
-      // Organização nula: o token é de PLATAFORMA, não fala por nenhuma organização real (§2.8).
-      tenant_id: "00000000-0000-0000-0000-000000000000",
-      email: "smoke@local-prod-validation.invalid",
-      roles: ["platform_admin"],
-      type: "access",
-      sub: randomUUID(),
-      iat: issuedAt,
-      exp: issuedAt + 600,
-      iss: "erp-techsolutions",
-      aud: "erp-techsolutions-api",
-    }),
-  );
-  const signingInput = `${header}.${payload}`;
-  const signature = createHmac("sha256", secret).update(signingInput).digest("base64url");
+async function loginPlatformAdmin(email, password, tenantId) {
+  const { status, body, text } = await fetchJson("/api/v1/auth/login", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email, password, tenantId }),
+  });
 
-  return `${signingInput}.${signature}`;
+  if (status !== 200) {
+    throw new Error(`login na API devolveu ${status}: ${redact(text).slice(0, 160)}`);
+  }
+  const token = body?.data?.access_token;
+  if (!token) throw new Error("login na API não devolveu access_token");
+  return token;
 }
+
+// ---------------------------------------------------------------------------------------------
+// Token — vem de um login REAL na API, nunca de assinatura à mão (E2.1: o portão exige `sid`).
+// ---------------------------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------------------------
 // A escrita da organização
@@ -346,7 +352,7 @@ function teardown() {
 process.on("exit", teardown);
 
 try {
-  const jwtSecret = await step(
+  await step(
     "trava de segurança — o alvo é o compose de VALIDAÇÃO LOCAL (veto secops #7)",
     async () => {
       // Quem parseia o YAML é o próprio compose: nada de leitor caseiro divergindo do que sobe.
@@ -373,11 +379,8 @@ try {
         throw new Error("o serviço alvo não declara NODE_ENV=production — não é o compose de produção");
       }
 
-      return secret;
     },
   );
-
-  const token = signAccessToken(jwtSecret);
 
   await step(`sobe o stack (${COMPOSE_FILE}, projeto ${COMPOSE_PROJECT_NAME}, porta ${PORT})`, async () => {
     const shouldBuild = (process.env.SMOKE_COMPOSE_BUILD ?? (process.env.API_IMAGE ? "0" : "1")) === "1";
@@ -416,6 +419,42 @@ try {
   await step("worker do processo: /health/worker diz `up` NO CORPO", async () =>
     assertWorkerUp("boot"),
   );
+
+  await step("RBAC provisionado pelo script oficial (contêiner de build, como o migrador)", async () => {
+    dockerCapture(
+      compose(
+        "run", "--rm", "-T", "--no-deps",
+        "-v", `${path.join(REPO_ROOT, "scripts")}:/app/scripts:ro`,
+        "migrate", "npx", "tsx", "scripts/provision-rbac.ts",
+      ),
+    );
+  });
+
+  await step("bootstrap do administrador de plataforma (credencial gerada na rodada)", async () => {
+    dockerCapture(
+      compose(
+        "run", "--rm", "-T", "--no-deps",
+        "-v", `${path.join(REPO_ROOT, "scripts")}:/app/scripts:ro`,
+        "-e", "PLATFORM_ADMIN_EMAIL",
+        "-e", "PLATFORM_ADMIN_PASSWORD",
+        "migrate", "npx", "tsx", "scripts/bootstrap-platform-admin.ts",
+      ),
+      { extraEnv: { PLATFORM_ADMIN_EMAIL: ADMIN_EMAIL, PLATFORM_ADMIN_PASSWORD: ADMIN_PASSWORD } },
+    );
+  });
+
+  const platformTenantId = await step("lê o id da organização de sistema `platform`", async () => {
+    const id = psql("SELECT id FROM tenants WHERE slug = 'platform';");
+    if (!UUID_PATTERN.test(id)) {
+      throw new Error(`organização de sistema "platform" não encontrada (${redact(id).slice(0, 120)})`);
+    }
+    return id;
+  });
+
+  let token;
+  await step("login REAL na API devolve um access token de sessão viva", async () => {
+    token = await loginPlatformAdmin(ADMIN_EMAIL, ADMIN_PASSWORD, platformTenantId);
+  });
 
   const containerBefore = await step("identidade do contêiner ANTES do restart", () => inspectContainer());
 
