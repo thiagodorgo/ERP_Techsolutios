@@ -8619,6 +8619,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ---
 - **nota B-SAN3-03 (2026-11-02):** a parte "cobrança nunca vira fatura" está RESPONDIDA por `D-COBRANCA-ASSINATURA-FRANQUIA` (o preço do cliente é a assinatura). A parte "custo AWS entra só por CSV manual" é RECOMENDACAO ADOTADA 4 e só fecha com o merge de `B-ASS-09a` (rateio automático) e `B-ASS-10b` (botões na tela); a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
+- **nota B-ASS-09a (2026-11-11):** o rateio automático a partir da importação está no PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`): cada importação concluída cria um rateio por mês de cobrança. Isso cumpre a parte do `B-ASS-09a`; a parte "custo AWS entra só por CSV manual" segue esperando o `B-ASS-10b` (botões na tela), e a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
@@ -12530,6 +12531,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (residual declarado do `B-SAN3-03`, `D-SAN3-03-IMPORT-POR-RUN`) · **dono:** `B-ASS-09a` · **bloqueia:** não.
 - **origem:** `prisma/**` é PROIBIDO no `B-SAN3-03`; a run guarda o import escolhido em `metadata.importId` / `metadata.importResolution` (`src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts`, `createAllocationRun`).
 - **encerramento:** migração aditiva com coluna `import_id` e FK em `cloud_cost_allocation_runs`, com backfill de `metadata.importId`, só com autorização explícita do dono para essa migração; o `B-ASS-09a` usa o import para o rateio automático não repetir run.
+- **encerramento (B-ASS-09a, 2026-11-11):** fecha no merge do PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`); a linha de status passa a FECHADA no registro pós-merge, com o merge. A migração `20260902000000_ass09a_allocation_run_import_id` (coluna `import_id uuid` com FK `ON DELETE SET NULL`, índice e backfill de `metadata.importId` com o cast dentro do `CASE`) foi autorizada pelo dono em 31/10 (`decisoes.md:4183`, P1: "a do rateio automático acrescenta uma coluna"). **O texto "só com autorização explícita" acima está superado por essa fala** (registro do conflito CE-M, §A2: a fonte 1 do §A1, a fala do dono, vence o texto defasado da pendência). Testes de encerramento: `tests/ass-09a-import-id-migration-drill-db.test.ts` (deploy, down, backfill dos 4 casos, prefixos atômicos) e o T-M09a-db de `tests/ass-09a-rateio-automatico-db.test.ts`. A trava do rateio automático continua sendo a PK v5, não a coluna.
 
 ## P-TK11H-BARREIRA-FASE (2026-11-03) — a barreira concorrente do T-K11h não identifica a fase exata — BAIXA
 
@@ -12609,6 +12611,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem medida:** `conf-484b-opus`, `agent-orchestration/omega/juntas/votos/B-SAN3-03-PR484/conf-484-parecer.md`, ressalva 1: `git diff 5b628b88 HEAD -- tests/san3-03-tenant-tag.test.ts` mostra `for (const tag of ["nao-existe", "Duplicada​"])` → `for (const tag of ["nao-existe"])`. O caso saiu do T-TAG-10 sem virar asserção de ambígua. O comportamento falha fechado (sonda 1b′ da conferência: `tagSide` 12/12 ambígua).
 - **leitura do redator, declarada (§A6):** a fonte anotou a pendência sem dono nem PR-alvo (o porteiro `porteiro-484-opus` cobrou os dois); o dono e o PR-alvo acima são do redator deste registro. Corrige-se numa linha.
 - **encerramento:** um teste com a tag `"Duplicada"` mais cada um dos 12 invisíveis do T-TAG-14, nas duas estratégias, afirma o motivo e o valor; a mutação que tira a remoção de invisíveis da tag fica vermelha nele.
+- **encerramento (B-ASS-09a, 2026-11-11):** fecha no merge do PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`); a linha de status passa a FECHADA no registro pós-merge. Teste: T-TAG-10b em `tests/san3-03-tenant-tag.test.ts` (a tag `"Duplicada"` com cada um dos 12 invisíveis, nas duas estratégias, dá `ambiguous_tenant_tag` e 10); a mutação M-TAG (a regex de invisíveis de `normalizeTenantTag` apagada) fica vermelha nele (diário `docs/revisoes/ASSINATURA/B-ASS-09a-dev.md`, F6).
 
 ## P-SAN3-21-PERFIL-LOGISTICO (2026-11-03) — o nome de perfil "Operador Logistico" segue sem acento porque é comparado no código — BAIXA
 
@@ -13009,6 +13012,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** achado B-5 do revisor sênior do #505 · **dono:** `B-ASS-09a` · **PR-alvo:** PR do `B-ASS-09a` · **bloqueia:** não.
 - **fato:** sem medição, o banco é rateado pelas ações mas gravado como `storage_usage_weight` (era `api_request_weight`).
 - **encerramento:** método de fallback do rateio gravado conforme a base efetivamente usada, com teste.
+- **encerramento (B-ASS-09a, 2026-11-11):** fecha no merge do PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`), SÓ para a regra do banco (R8 do plano: P6 restrita ao banco). A regra ganha `methodByMetricKey` e o motor grava `rule.methodByMetricKey?.[basis.metricKey] ?? rule.allocationMethod`: sem medição, o banco é rateado pelas ações e grava `api_request_weight`. Teste: T12 em `tests/cloud-cost-allocation.test.ts`, vermelho por asserção na base `a0979f51` e com a mutação M12. As outras regras com mais de uma base ficam em `P-ASS09A-METODO-OUTRAS-REGRAS`.
 
 ## P-ASS03-PD-SWEEP-CATALOGO (2026-11-06) — `(PD) sweep` vermelho só no head, por concorrência no catálogo de papéis — BAIXA
 
@@ -13264,7 +13268,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-USERS-DESATIVADO-TOKEN-MOBILE (2026-11-10) — token anterior à desativação ainda alcança rotas mobile — GRAVE
 
-- **status:** ABERTA · **gravidade:** GRAVE (C2CL-02 da junta do #527) · **escopo:** `pre-existente` (o roteador não tem diff no PR #527; último commit `40c3651f`, 18/10) · **dono:** o próximo bloco que tocar `src/modules/mobile/**`, ou a varredura de segurança do portão vendável · **PR-alvo:** esse mesmo bloco · **bloqueia:** não segura o conserto do #527.
+- **status:** FECHADA pelo PR do `B-USERS-SEG-DESATIVADO` (ramo `fix/users-seg-desativado`; vale no merge, depois da junta completa e da resposta do dono à P1 do plano, que o PR segue na recomendação (a)). **Teste-dono:** `tests/users-seg-desativado-portao-db.test.ts` (T1: o desativado pela API não cria OS pelo `/mobile`, 401 `session_inactive` e 0 OS; T2: nenhum papel de plataforma lê `/platform/tenants`) e `tests/users-seg-desativado-varredura-db.test.ts` (T9-db: as 438 rotas que leem o token e as 73 camadas recusam o desativado), sob papel NOSUPERUSER NOBYPASSRLS. Vermelho-controle na base `a0979f51`: T1 200 com 1 OS criada; T9-db 511 aceitas. A regra mora no portão (P-SESSAO-VIVA), não em `src/modules/mobile/**`.
+- **status anterior:** ABERTA · **gravidade:** GRAVE (C2CL-02 da junta do #527) · **escopo:** `pre-existente` (o roteador não tem diff no PR #527; último commit `40c3651f`, 18/10) · **dono:** o próximo bloco que tocar `src/modules/mobile/**`, ou a varredura de segurança do portão vendável · **PR-alvo:** esse mesmo bloco · **bloqueia:** não segura o conserto do #527.
 - **origem:** C2CL-02 da junta do PR #527; o roteador mobile autoriza pelos papéis do JWT e, por esse caminho, o usuário desativado cria OS com o token de até 15 min, além do que a `D-USERS-2` aceitou. A fonte diz que pode fechar junto com o conserto do #527.
 - **critério de encerramento (leitura do redator, declarada, §A6: a fonte não escreve o critério):** token de usuário desativado é recusado nas rotas mobile, com prova ponta a ponta no papel de produção; pode fechar junto do portão novo do conserto se a prova cobrir o caso.
 - **dono atualizado (2026-11-11 05:13 SP, `D-ORQ-DESATIVADO-TOKEN-BLOCO-PROPRIO-1111`, leitura do orquestrador declarada):** o bloco próprio `B-USERS-SEG-DESATIVADO`, com plano de topo, crítica e junta completa. Ela NÃO passa ao `B-SAN3-26` (#534), embora ele toque `src/modules/mobile/**`: isso mudaria o portão de autenticação do app sem plano nem crítica. Vale também para o complemento abaixo. Responde à R8 do porteiro do #527.
@@ -13327,13 +13332,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ### Complemento de `P-USERS-DESATIVADO-TOKEN-MOBILE` (F5 do conserto do #527, 2026-11-11; o ID já existe acima, registrado pelo #529 — união do merge, sem duplicar o ID) — o usuário desativado ainda age pelo `/mobile` e pelo `/platform*` na janela do access token — ALTA
 
-- **status:** ABERTA · **escopo:** `src/modules/mobile/**`, `src/modules/platform/**` (fonte de autorização das rotas que decidem pelos papéis do JWT) · **dono:** o próximo bloco que tocar `src/modules/mobile/**`, ou a varredura de segurança do portão vendável (§C7 item 10(6)).
+- **status:** FECHADA pelo PR do `B-USERS-SEG-DESATIVADO` (ramo `fix/users-seg-desativado`; vale no merge, depois da junta completa e da resposta do dono à P1 do plano, que o PR segue na recomendação (a)), junto da entrada acima; mesmos testes-donos (T1, T2 e T9-db).
+- **status anterior:** ABERTA · **escopo:** `src/modules/mobile/**`, `src/modules/platform/**` (fonte de autorização das rotas que decidem pelos papéis do JWT) · **dono:** o próximo bloco que tocar `src/modules/mobile/**`, ou a varredura de segurança do portão vendável (§C7 item 10(6)).
 - **origem:** junta J-527, achado C2CL-02 (GRAVE, pré-existente: o roteador não mudou no bloco); plano do conserto do #527 §2.5. Desativar revoga as sessões e o RBAC persistente filtra pelo status, mas o access token já emitido (até 15 min) segue com os papéis, e `/api/v1/mobile/*` e `/api/v1/platform/*` autorizam por eles, sem consulta por requisição (`D-USERS-2`). A premissa sob a qual o dono aceitou a `D-USERS-2` em 09/11 ("o desativado não executa nada que passe por requirePermission") não cobria essas rotas; o orquestrador leva a linha ao dono. `API_CONTRACTS.md` corrigido no conserto.
 - **teste de encerramento:** o desativado não executa nada pelas rotas que autorizam pelo JWT dentro da janela do token, provado por teste `-db` sob o papel de runtime (`NOSUPERUSER NOBYPASSRLS`).
 
 ## P-USERS-SEG-TOKEN-ANTERIOR-A-TROCA (2026-11-11) — o access token INTEIRO emitido antes da marca (reset) vale até expirar — BAIXA (residual declarado)
 
-- **status:** ABERTA · **escopo:** `src/modules/auth/**` (portão do access token) · **dono:** a varredura de segurança do portão vendável (§C7 item 10(6)), ou bloco que adotar revogação de access token.
+- **status:** FECHADA pelo PR do `B-USERS-SEG-DESATIVADO` (ramo `fix/users-seg-desativado`; vale no merge, depois da junta completa e da resposta do dono à P1 do plano, que o PR segue na recomendação (a)). **Teste-dono:** `tests/users-seg-desativado-portao-db.test.ts` T4 (o reset pelo administrador revoga a sessão, e o token inteiro anterior à marca é recusado em `/mobile/bootstrap`, `/me/tenants` e `/work-orders` com 401 `session_inactive`), sob papel NOSUPERUSER NOBYPASSRLS; vermelho-controle na base: `/mobile/bootstrap` 200. Residual: token emitido antes do deploy, sem `sid`, segue a via de status até expirar (`P-SID-OBRIGATORIO`).
+- **status anterior:** ABERTA · **escopo:** `src/modules/auth/**` (portão do access token) · **dono:** a varredura de segurança do portão vendável (§C7 item 10(6)), ou bloco que adotar revogação de access token.
 - **origem:** `D-USERS-2` e plano do conserto do #527 §2.2/§2.6; a C2 da J-527 a achou ausente do `pendencias.md`. O token emitido ANTES do reset não tem o claim `scope` e vale até expirar (≤ 15 min). As camadas no banco continuam barrando, para ele, a troca de organização, a religação e as rotas com RBAC persistente (provado em `tests/users-acesso-seg-provisoria-db.test.ts`, A11·r1, A11·r2, P2·r4); as rotas que autorizam pelos papéis do JWT, não.
 - **teste de encerramento:** token inteiro anterior à marca recusado em toda rota (ou a decisão do dono de manter o residual, registrada em `decisoes.md`).
 
@@ -13656,6 +13663,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **relação (achada pelo redator `reg-1111-cl`):** a `P-O6R-B01-LOGIN-ORG-SUSPENSA` (2026-08-18, nas pendências derivadas do `B-O6R-01`) já registra o login direto em organização suspensa; esta a amplia ao refresh, ao RBAC persistente e à suspensão em memória. As duas fecham juntas.
 - **pergunta ao dono:** o que a suspensão da organização bloqueia (login, refresh, as rotas com sessão viva)?
 - **critério de encerramento:** a resposta do dono registrada e a regra dela aplicada no login, no refresh e no RBAC persistente, com a suspensão gravada no banco e teste `-db` sob o papel de runtime.
+- **nota do `B-USERS-SEG-DESATIVADO` (dev `dev-users-desat-cl`, 2026-11-11):** o bloco NÃO muda o que a suspensão bloqueia (residual 6 do contrato, `API_CONTRACTS.md`). A conferência nova do portão (`src/modules/auth/services/session-liveness.service.ts`) não lê `tenants.status`; se a resposta do dono for "tudo", é nela que a junção com `tenants` entra, uma vez por requisição.
 ## P-ASS08C-DOC-E-COMENTARIO-NOTA-VIVA (2026-11-11) — o documento e um comentário dizem "nota autorizada", e o código cancela a nota viva — BAIXA
 
 - **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530, defasados pelo conserto da J-530); `docs/subscription-billing.md` ("estorno total ou chargeback com nota **autorizada** → `invoice_cancel`") e o comentário `src/modules/subscription-billing/statements/statement-settlement.service.ts:151` ("com nota `authorized`") · **dono:** `B-ASS-08c`, junto da `P-CONF530-02` (a fonte) · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
@@ -13727,6 +13735,87 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **prova (N = 2 erros; medido por `tsc` com um tsconfig fora do repositório que estende o `tsconfig.json` e inclui `prisma/seed.ts`, antes e depois do bloco):** `prisma/seed.ts(195,3) TS1360`: o `permissionDescriptions … satisfies Record<Permission, string>` não tem 43 das 205 permissões do catálogo (162 com descrição, contado por script); `prisma/seed.ts(257,48) TS2551`: o acesso `permissionDescriptions[permission]`, que cai no fallback genérico `Permissão ${permission}.`. `package.json:19` (`tsc -p tsconfig.json`) e `tsconfig.json` (`include: ["src/**/*.ts"]`) deixam o seed de fora, então nenhum job da CI pega erro de tipo no seed.
 - **origem:** revisão do plano do `B-SAN3-07` (`crit-07-cl`, CRIT07-06).
 - **teste de encerramento:** o seed entra num typecheck que roda na CI, com 0 erro, e as 205 permissões têm descrição.
+
+## P-ASS09A-METODO-OUTRAS-REGRAS (2026-11-11) — fora do banco, regra com mais de uma base grava o método da regra, não o da base usada — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o plano do `B-ASS-09a`, R8) · **escopo:** anterior ao `B-ASS-09a`; `cloud-cost-allocation.rules.ts` (as regras de `s3_requests`, `storage`, `jobs` e `checklists` têm mais de uma métrica de base e um método só) · **dono:** `B-ASS-09` · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** R8 do plano v2 do `B-ASS-09a` (`planos/plano-B-ASS-09a-v2.md`, fora do repositório): a P6 (método honesto) ficou restrita ao banco, como na `P-ASS03-METODO-RATEIO-FALLBACK`; a crítica da rodada 1 (`crit-09a-cl`, A7) mostrou que a mesma classe existe nas outras regras.
+- **fato:** a regra grava `allocationMethod` fixo mesmo quando `resolveBasis` cai para a métrica seguinte da lista. O método e a base são da mesma família em todas elas (não erra valor); erra só o rótulo gravado.
+- **critério de encerramento:** cada regra com mais de uma base grava o método da base efetivamente usada (`methodByMetricKey`), com teste por regra.
+
+## P-ASS09A-RUN-PRESA-EM-PROCESSING (2026-11-11) — a run automática reivindicada fica em `processing` se o worker morrer no meio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o plano do `B-ASS-09a`, §8: não erra valor) · **escopo:** dentro do desenho do `B-ASS-09a` (`executeImportRuns` reivindica `pending → processing` e só então roda o motor) · **dono:** `B-ASS-10b` · **PR-alvo:** o PR do `B-ASS-10b` · **bloqueia:** não.
+- **origem:** §8 do plano v2 do `B-ASS-09a` (fora do repositório).
+- **fato:** a varredura só reenfileira run `pending` e não retoma `processing` nem `failed` (pergunta 3 do §9, recomendação (a)). Uma run presa fica visível; o operador roda o rateio manual.
+- **critério de encerramento:** a run `processing` há mais de um tempo limite volta a `pending` (ou é marcada `failed` com motivo), com teste de tempo controlado, e a tela mostra a run presa.
+
+## P-ASS09A-MES-EM-VARIOS-ARQUIVOS (2026-11-11) — um mês dividido em vários arquivos vira várias importações, e o resumo mostra só a última parte — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (leitura do dev, declarada (§A6): o resumo de um mês pode mostrar só parte do custo; o plano registra o risco H13 sem gravidade) · **escopo:** anterior ao `B-ASS-09a` (o resumo já escolhia UMA run por mês); o `B-ASS-09a` não piora o risco · **dono:** `B-ASS-09` (quem consolida as visões) · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** risco H13 do plano do pacote (`B-ASSINATURA-plano.md:593`, fora do repositório, citado pela crítica `crit-09a-cl`) e §8 do plano v2 do `B-ASS-09a`; declarado em `docs/cloud-cost-allocation.md` ("Rateio automático").
+- **fato:** cada arquivo importado é uma importação, e cada importação ganha o seu rateio do mês; `getAllocationSummary` escolhe a run mais recente do mês, sem somar importações.
+- **critério de encerramento:** o resumo do mês soma as importações do mesmo mês (ou o arquivo parcial é recusado), com teste de dois arquivos do mesmo mês.
+
+## P-ASS09A-BORDA-MICROSSEGUNDO (2026-11-11) — a base de ações da janela [início, fim − 1 ms] perde o último milissegundo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (C1-A4 da junta do #542; não erra valor — só o peso das ações, e o custo se conserva) · **escopo:** o conserto das Emendas 4/4.1 do `B-ASS-09a` não muda `sumUsageBasis` (mudar para fim exclusivo mexe também no rateio manual) · **dono:** `B-ASS-09` · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** C1-A4 da junta do #542, triado na Emenda 4.6 do plano do `B-ASS-09a` (`planos/plano-B-ASS-09a-v2.md`, fora do repositório).
+- **fato:** a base de ações da janela `[início, fim − 1 ms]` perde o último milissegundo em `timestamptz(6)`; o custo se conserva, só o peso da base muda.
+- **critério de encerramento:** `sumUsageBasis` passa a fim exclusivo (sem o `− 1 ms`) sem quebrar o rateio manual, com teste de peso por ação.
+
+## P-ASS09A-REDE-TRANSFERENCIA (2026-11-11) — "rede" na P8 alcança AWSDataTransfer e AmazonCloudFront? — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (C1-A2 da junta do #542, anterior ao bloco) · **escopo:** anterior ao `B-ASS-09a`; a P8 de monitoramento/chaves/DNS/rede não diz se `AWSDataTransfer` e `AmazonCloudFront` entram em "rede" · **dono:** o plano do `B-ASS-09` (pergunta ao dono) · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** C1-A2 da junta do #542, triado na Emenda 4.6 do plano do `B-ASS-09a` (fora do repositório); a pergunta vai ao dono no plano do `B-ASS-09`.
+- **fato:** a P8 define que "rede" entra no rateio pelas ações; o alcance de `AWSDataTransfer` e `AmazonCloudFront` ainda não está decidido.
+- **critério de encerramento:** o dono decide se `AWSDataTransfer` e `AmazonCloudFront` entram em "rede" (P8), e a regra reflete a decisão com teste.
+
+## P-ASS09A-EMPATE-MESMO-MS (2026-11-12) — duas CUR do mesmo mês concluídas no mesmo milissegundo publicam a da run mais velha — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (desenho declarado; Emendas 4.2 e 4.2.1 do plano do `B-ASS-09a`, pela régua do §C7 10(3) não é grave: a ordem é determinística) · **escopo:** dentro do desenho do `B-ASS-09a`; `byPublicationDesc` em `src/modules/cloud-cost-allocation/cloud-cost-allocation.service.ts` (empate de `pub` → run mais velha → `id`) · **dono:** `B-ASS-09` · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** o T-E4-1 intermitente no CI do PR #542 (rodada `43175121083`, job `backend`, `100 !== 130`), medido pelo `inv-542-te41` e triado nas Emendas 4.2 e 4.2.1 do plano do `B-ASS-09a` (`planos/plano-B-ASS-09a-v2.md`, fora do repositório; a 4.2.1 nasce da revisão `rev-emenda42-542`). A âncora normativa é o **R41-02 do plano** (P9(c)): "no empate de `pub`, vale a run mais VELHA; depois, o `id`", e "em empate de `pub`, acrescentar uma run não muda o número publicado". O teste foi consertado no PR #542 (o `importedAt` de X fixado e a pré-condição `X.importedAt < Y.importedAt`); o produto não mudou.
+- **fato:** quando duas importações do mesmo mês têm o mesmo `importedAt` (mesmo milissegundo), a publicada é a da run criada primeiro; se as runs também empatam no milissegundo, decide o `id` da run (um `randomUUID`), e o resultado fica perto de 50/50. **Observação de desenho (RE42-03, não bloqueia):** o `importedAt` é a hora de **conclusão** da importação (`aws-cur.service.ts:86`, `importedAt: new Date()` no `updateImport` de `completed`, depois do parser e das linhas); duas CUR do mesmo mês importadas em paralelo publicam a que concluiu por último, mesmo que seja a mais antiga. Isso cumpre a P9 como enunciada (linha 334 do plano).
+- **critério de encerramento:** o `B-ASS-09` decide se o desempate final deixa de depender do `id` aleatório (por exemplo, pela importação de `createdAt` mais novo) e se a publicação segue a hora de conclusão ou a de início da importação, com teste de empate no mesmo milissegundo; ou registra que o desenho atual fica, e a pendência fecha por decisão.
+
+## P-ALLOC-RUN-STARTED-AT-NULO (2026-11-11) — no Postgres, a run de rateio concluída fica com `started_at` vazio — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a Emenda 2 do plano do `B-ASS-09a`, item 4; não erra valor) · **escopo:** `pre-existente` (anterior ao `B-ASS-09a`); `PrismaCloudCostAllocationRepository.updateRun` (`src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts`) grava `started_at: input.startedAt ?? null` · **dono:** `B-ASS-09` (próximo bloco do motor de rateio; leitura do dev, declarada (§A6), corrige-se numa linha) · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** observação do dev do `B-ASS-09a` na F3 (`docs/revisoes/ASSINATURA/B-ASS-09a-dev.md`), nomeada na Emenda 2 do plano (item 4) e cobrada pela pré-revisão `prerev-542-api` (PR542-04); os dois fora do repositório.
+- **fato:** a conclusão (e a falha) de QUALQUER run, manual ou automática, chama `updateRun` sem `startedAt`, e o Prisma zera a coluna; o dublê em memória preserva (`input.startedAt ?? existing.startedAt`). A suíte em memória não vê a diferença.
+- **critério de encerramento:** `updateRun` só grava `started_at` quando ele vem no pedido (o Prisma igual ao dublê), com teste `-db` de que a run concluída mantém o início.
+
+## P-RBAC-PERSISTENTE-LEITURA-POR-MONTAGEM (2026-11-11) — o RBAC persistente lê o status do usuário até 56 vezes por requisição — MÉDIA (gravidade: leitura do redator)
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): o plano a dá como defeito de desempenho e não dá gravidade · **escopo:** `pre-existente` (anterior ao `B-USERS-SEG-DESATIVADO`); `router.use(createPersistentRbacContextMiddleware())` na raiz de 56 roteadores, cada um montado em `/api/v1` com o próprio portão (`src/app.ts`) · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem:** plano do `B-USERS-SEG-DESATIVADO` §1.3 (sonda 2 do censo, fora do repositório) e §8 ("Pendências novas"): uma requisição atravessa a autorização de todos os roteadores montados antes do dela. Medido pelo planejador: leituras de status por requisição média 21,07 e máximo 56 (`GET`/`POST /api/v1/users`); transações média 21,90 e máximo 57.
+- **o que o bloco fez:** a conferência da sessão viva roda UMA vez por requisição (memo no portão, T14), e não repete o padrão.
+- **critério de encerramento:** a resolução do RBAC persistente roda uma vez por requisição (ou o custo medido é aceito pelo dono), com teste que conta as leituras por requisição.
+
+## P-SESSOES-TEXTO-15MIN (2026-11-11) — a tela de Sessões ainda diz "em até ~15 minutos" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o plano a dá como texto: continua verdadeiro como teto, mas impreciso) · **escopo:** `frontend/src/modules/users/**` (`sessions.adapter.ts:8-13`, `SessoesPage.tsx:62,182`), fora do PERMITIDO do `B-USERS-SEG-DESATIVADO` · **dono:** `B-USERS-TELA`, ou o próximo bloco que tocar Sessões · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
+- **origem:** plano do `B-USERS-SEG-DESATIVADO` §8, R6. Com a P-SESSAO-VIVA, revogar uma sessão corta o acesso na próxima requisição.
+- **critério de encerramento:** a cópia da tela diz que a sessão revogada perde o acesso na hora (com as 3 aparências, §4 item 7), com teste de texto.
+
+## P-SSE-SEGUE-APOS-VENCER-TOKEN (2026-11-11) — o stream do mapa ao vivo não fecha quando o access token vence — BAIXA (gravidade: leitura do redator)
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): o plano não dá gravidade · **escopo:** `src/modules/field-ops-realtime/field-ops-realtime.routes.ts` e o mapa da web (`operations-map.service.ts`, `useOperationsMap.ts`) · **dono:** a definir pelo orquestrador · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem:** plano do `B-USERS-SEG-DESATIVADO` §8, R7, e Emenda 1 E1.1-4. O tique confere a SESSÃO (sessão encerrada fecha o stream em até 25 s), não o vencimento do token: encerrar no vencimento mudaria o mapa de todo usuário ativo. O mapa reconecta em 10 s (`REALTIME_RECONNECT_MS`); não foi medido se a reconexão usa o token renovado.
+- **critério de encerramento:** o stream fecha no vencimento do token e o mapa reconecta com o token renovado, provado por teste (ou a decisão de manter, registrada).
+
+## P-SID-OBRIGATORIO (2026-11-11) — o token sem `sid` ainda é aceito pela via de status — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a revisão do plano, A12) · **escopo:** `src/modules/auth/services/session-liveness.service.ts` (a via sem `sid`) e as fixtures de teste que assinam token direto (48 chamadas de `signAccessToken(` em 30 arquivos, medido pelo planejador) · **dono:** o orquestrador designa o bloco · **PR-alvo:** esse bloco · **bloqueia:** não.
+- **origem:** A12 da revisão do plano do `B-USERS-SEG-DESATIVADO` (E1.7, E1.10). A via sem `sid` existe para o token emitido antes do deploy (até 15 min) e para as fixtures; ela confere o status do usuário, não a sessão.
+- **condição:** depois do primeiro deploy do `B-USERS-SEG-DESATIVADO` em produção, mais o prazo do access token.
+- **critério de encerramento:** a via sem `sid` responde "inactive"; as fixtures de teste criam sessão; o T12 do bloco muda para "sem sid → 401" com vermelho-controle.
+
+## P-CI-LISTA-CURADA-USERS-SEG-DB (2026-11-11) — as suítes `-db` de usuários e da sessão viva não estão na lista curada do `backend-postgres` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o plano, E1.10) · **escopo:** `.github/workflows/ci.yml` (a lista `SUITES=` do job `backend-postgres`, convenção em `ci.yml:289-293`), PROIBIDO ao `B-USERS-SEG-DESATIVADO` · **dono:** o próximo PR que tocar o `ci.yml` · **PR-alvo:** esse PR · **bloqueia:** não.
+- **origem:** Emenda 1 do plano do `B-USERS-SEG-DESATIVADO` (E1.10). As 9 `tests/users-acesso-seg-*-db.test.ts` e as 5 novas (`tests/users-seg-desativado-{portao,varredura,emissao,sse,orcamento}-db.test.ts`) rodam no job `backend` (as 5 novas e a `desativacao-db` forçam e conferem o modo `prisma` no arquivo), mas não no `backend-postgres`, com banco provisionado.
+- **critério de encerramento:** as suítes entram na lista curada do `backend-postgres`, com o guarda de zero pulos verde.
 
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
@@ -14252,3 +14341,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** o `teardown` de `tests/b-o6r-09-quote-approve-atomic-db.test.ts` e de `tests/b-o6r-09-quote-approve-pool-db.test.ts` (do bloco) e o de `tests/o6r07c-b-scope-db.test.ts` (anterior ao bloco). Um `DELETE` por tabela com `tenant_id`, numa `$transaction` sem `timeout` explícito · **dono:** o próximo bloco que mexer nesses arnês (ou um bloco de arnês) · **bloqueia:** não.
 - **origem:** a rodada 9 da série final de 10 do R-ARN-5 (B-O6R-09, Emenda 4, 11/11 12:53 SP), com as 10 suítes juntas: a limpeza expirou em 5 086, 5 050 e 5 217 ms, sem espera de trava acima de 300 ms vista pelo vigia. **Hipótese, não medida:** é a carga da máquina (10 suítes em paralelo e outras frentes no mesmo Docker), somada às esperas curtas (≤ 300 ms) atrás do DDL do arnês em nova tentativa.
 - **critério de encerramento:** a limpeza com `timeout` explícito e folgado (ou pelo `tests/helpers/sweep-tenant.ts` do #541), e N ≥ 10 rodadas das 10 suítes com `# fail 0`.
+
+## P-USERS-SEG-DEMO-TRACCAR-SEM-PROVA (2026-11-12) — o demo do Traccar pede token por login real, mas não tem prova por execução — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (C3-04 da J-543: ferramenta de apresentação, não superfície de segurança) · **escopo:** `dentro-do-bloco` (`scripts/traccar-dev-demo.mjs`, alterado pelo commit `8ebb718b`, E2.2 do `B-USERS-SEG-DESATIVADO`) · **dono:** o próximo bloco da trilha do Traccar que suba o demo · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
+- **origem:** achado C3-04 da J-543 (PR #543), registrado como pendência pela triagem (§C7 10(3)3). A E2.2 trocou o token assinado à mão por login real (`POST /auth/login` com `tenantId`); o demo não roda no CI (`git grep -nE 'traccar-dev-demo' -- .github package.json` → nada) e o diário registra só `node --check`. Por leitura, o caminho é o mesmo do smoke, que o CI provou.
+- **critério de encerramento:** o demo roda de ponta a ponta com a sessão viva (login real, SSE aberto com o token da sessão), com a saída registrada no diário do bloco dono.
+
+## P-WEB-MAPA-STREAM-RECONECTA-TOKEN-MORTO (2026-11-12) — com a sessão encerrada, o mapa web reconecta o stream a cada 10 s com o mesmo token — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (C3-02 da J-543: laço de reconexão limitado, não de refresh) · **escopo:** `pre-existente` (`git diff --name-only f5b79026..HEAD -- frontend mobile` → 0 arquivos no `B-USERS-SEG-DESATIVADO`; `REALTIME_RECONNECT_MS = 10_000` em `frontend/src/modules/operations/map/useOperationsMap.ts:10` vem de blocos anteriores) · **dono:** o próximo bloco que mexer no mapa de operações · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
+- **origem:** achado C3-02 da J-543 (PR #543). Com a sessão encerrada, o servidor fecha o stream, e o mapa reconecta a cada 10 s com o mesmo token (fetch cru, sem refresh) até o polling de 30 s limpar a sessão. Vizinha da `P-SSE-SEGUE-APOS-VENCER-TOKEN`.
+- **critério de encerramento:** o mapa para de reconectar quando recebe 401 de sessão encerrada (ou reconecta só com token renovado), provado por teste.

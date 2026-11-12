@@ -240,6 +240,9 @@ export class AuthSessionService {
         identityId = null;
       }
 
+      // B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA) — o refresh é o terceiro assinador: o token novo carrega a MESMA
+      // sessão que acabou de ser renovada.
+      const refreshedSessionId = payload.session_id;
       const accessToken = await signAccessToken({
         user_id: user.id,
         tenant_id: user.tenant_id,
@@ -247,6 +250,7 @@ export class AuthSessionService {
         roles: tokenScope.roles,
         ...(tokenScope.scope ? { scope: tokenScope.scope } : {}),
         ...(identityId ? { identity_id: identityId } : {}),
+        session_id: refreshedSessionId,
       });
       const refreshTokenExpiresIn = getRefreshTokenExpiresInSeconds();
       const refreshTokenExpiresAt = new Date(Date.now() + refreshTokenExpiresIn * 1000);

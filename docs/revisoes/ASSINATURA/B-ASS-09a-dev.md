@@ -1,0 +1,182 @@
+# B-ASS-09a — diário de dev (incremental, P1)
+
+Bloco **B-ASS-09a** — rateio automático a partir da importação (item 61 do portão). Bloco de DINHEIRO, junta completa.
+Identidade de dev: **`dev-09a-cl`, Claude Opus 5.5 (subagente da sessão), nível menor, DECLARADA** (§C7 item 11(6)).
+Exceção declarada: o plano pede Codex; o Codex 1 está sem cota semanal até 16/11, o Codex 2 está na pré-revisão do #536 e a
+API está no limite do dia até 21:00. Pré-revisão e conferência: de outro modelo (Codex 2, ou a API depois das 21:00).
+Não escrevi o plano nem o critiquei.
+
+- **Plano:** `erp-pausa-2026-10-03/planos/plano-B-ASS-09a-v2.md` + **Emenda 1** (R2-01 a R2-12). Fora do repositório.
+- **Ramo:** `feat/rateio-automatico-importacao` · **worktree:** `C:/Users/thiag/w-09a` · `npm ci` próprio (sem junction) ·
+  `npx prisma generate`.
+- **Base:** `origin/main` = `a0979f51` (#530, B-ASS-08b, com a G14 `20260901000000_ass08b_provider_one_enabled_per_kind`).
+  O plano mediu em `d0da291e`; `git diff --name-only d0da291e a0979f51` toca, do que o bloco usa, só
+  `src/infra/jobs/job-worker.bootstrap.ts`, `job.registry.ts`, `job.types.ts` e `tests/job-worker-bootstrap.test.ts` (o #530).
+  Nenhum arquivo de `cloud-cost*`/`cloud-costs` mudou, então os `arquivo:linha` do plano valem. **A trava com o #530 (§4) não
+  se aplica mais:** o #530 já está na base.
+- **Banco:** Postgres 16 descartável `dev09a-pg` em `127.0.0.1:55496`.
+- **Recomendações do §9 adotadas por padrão (NÃO decisões do dono):** 1(a), 2(a), 3(a); e o comportamento da P4 (R2-05).
+
+## Fatias
+
+| fatia | comando | saída resumida | veredito parcial |
+|---|---|---|---|
+| F0 | âncoras: `git grep -c -F -- '<X>' -- src` na base `a0979f51` | `id: input.id,` 0 · `import_id: input.importId` 0 · `where: { id: runId, status: "pending" }` 0 · `onImportCompleted` 0 · `costSource` 0 · `import_auto` 0 · `autoAllocation` 0 · `sourceBillingPeriod` 0 · `MAX_AUTO_ALLOCATION_PERIODS_PER_IMPORT` 0 · `gt: periodStart` 0 · `return createMemoryCloudCostService();` 1 · `rule.allocationMethod` 1 · a regex de invisíveis 1 | as âncoras † estão em 0, como o plano mediu |
+| F0 | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09a-rateio-automatico.test.ts` (só T4m e T4m-b, código de produção intocado) | `not ok 1 - T4m` `expected: 30` `actual: 130` · `not ok 2 - T4m-b` `expected: '…0003'` (Y, novembro) `actual: '…0002'` (X, só outubro) · `# tests 2 # pass 0 # fail 2` | **vermelho-controle por asserção** do R4, nos dois lados (linha e escolha da importação) |
+| F0 | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/cloud-cost-allocation.test.ts` (T12 e T-AUTO-6 novos, produção intocada) | `ok 1..7` (os 7 de antes) · `not ok 8 - T12`: `actual [['storage_usage_weight','audited_actions_count'],…]` · `not ok 9 - T-AUTO-6`: `AmazonCloudWatch/CW:Requests` `actual costCategory: 'api_requests'` sem `estimate` × `expected 'monitoring'`, `estimate: true` · `# tests 9 # pass 7 # fail 2` | **vermelho-controle por asserção** do R8 e do R5. Os casos entram no commit da F6, que os deixa verdes |
+| F1m | `ls prisma/migrations \| tail -1` na base | `20260901000000_ass08b_provider_one_enabled_per_kind` (a G14 do #530); o PR aberto #537 traz `20260901090000_…` | carimbo da M-09a = `20260902000000`, maior que os dois |
+| F1m | `node scripts/migration-transaction-guard.mjs` (antes do drill) | `G6 20260902000000_ass09a_allocation_run_import_id: falta o drill por prefixo` · `violações: 1` | a M-09a cai sob G2 (4 sentenças com `BEGIN;`/`COMMIT;`), e o G6 exige o drill (R2-03) |
+| F1m | `DATABASE_URL=…55496/erp_09a node --test --import tsx tests/ass-09a-import-id-migration-drill-db.test.ts` | `ok 1` deploy (coluna, FK `confdeltype='n'`, índice) · `ok 2` down em 1 transação, backfill preenchido/NULL/NULL/NULL (UUID inexistente, `'nao-e-uuid'`, `null`) e SET NULL ao apagar a importação · `ok 3` prefixos k=1..4 atômicos · `# tests 3 # pass 3 # fail 0 # skipped 0` (56 s) | drill verde; guard depois: `violações: 0` |
+| F1m | **M6b** (apagar a sentença `UPDATE "cloud_cost_allocation_runs" …` do `migration.sql`) e o drill de novo | `not ok 2`: `+ actual null` × `- expected '107ddbea-…'` (os 4 casos viram NULL) · `not ok 3` · `# pass 1 # fail 2`; `cmp` com o original depois de restaurar | **vermelho**, restaurado |
+| F1m | `DATABASE_URL=… node --test --import tsx tests/ass-09a-rateio-automatico-db.test.ts` (só T-M09a-db) | `ok 1 - T-M09a-db` (coluna `uuid`, FK para `cloud_cost_imports` com `confdeltype='n'`, `createRun` grava, apagar a importação anula) · `# skipped 0` · o código sob teste roda no papel efêmero (`rolsuper=false`, `rolbypassrls=false`, asserido) | verde |
+| F1m | **M6** (`    import_id: input.importId ?? null,` → apagada, âncora com contagem 1) | `not ok 1 - T-M09a-db` · `createRun grava a coluna import_id` · `expected: 'c2331104-…'` `actual: ~` | **vermelho**, restaurado |
+| F1 | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09a-rateio-automatico.test.ts` | `ok` T4m, T4m-b, T2b, T2, T4, T5, T5-cap, T9c · `# tests 8 # pass 8 # fail 0` | verde. T4: exclusiva out 100 + nov 30 = **130** (janelas `…-10-31T23:59:59.999Z` e `…-11-30T23:59:59.999Z`), sobrepostos 40 + 7 = **47**, inclusiva 1 run com fim intacto `…-06-30T23:59:59.000Z` e Σ = total; repetir mantém |
+| F1 | mutações (`mutrun.mjs`: âncora X conta 1 → aplica Y → roda → restaura e confere byte a byte) | **M2** (`return randomUUID();`): `not ok` T2b, T2, T4, T5-cap por `randomUUID is not defined` (o Y literal não compila em runtime: o módulo não importa `randomUUID`) · **M2 suplementar** (`return globalThis.crypto.randomUUID();`): `not ok` T2b, T2, T4 por asserção (`created` 2 a cada passada) · **M2b**: `not ok` T2b (`…-468b-…` × `…-568b-…`) · **M4a**: `not ok` T4 (A = **47**, esperado 40) · **M4b**: `not ok` T4 (A = 47) · **M4d**: `not ok` T4m (`actual: 130`) · **M4e**: `not ok` T4m-b (escolhe X) · **M5a**: `not ok` T5 (o serviço recusa: `Cloud cost import must exist and be completed.`) · **M11**: `not ok` T5-cap (`created: 25`, `outcome: 'ensured'`) · **M9c**: `not ok` T9c (`created: 1`) | as 10 vermelhas, todas restauradas (`restaurado=true`) |
+| F1 | regressões em memória (`cloud-cost-allocation`, `-routes`, `san3-03-*`, `aws-cur-cost-*`, `job-worker-bootstrap`, `ass-03-rateio-banco`, `financial-period-lock-guard`, `o6r06-janela-reservada-guard`) com o R4 aplicado | `# tests 123 # pass 116 # fail 2 # skipped 5` · os 2 `not ok` são T12 e T-AUTO-6 (F6, vermelhos de propósito); os 5 pulados são `-db` sem `DATABASE_URL` | o R4 não regride o caminho manual |
+| F1 | **leitura do dev, declarada (§A6):** a escolha das linhas por `sourceBillingPeriod` (plano §2.2.2, listada na F3) entrou já na F1, no corpo de `executeAllocationRun`, porque o T4 (P3, dono da F1) não fica verde sem ela. A F3 só extrai o corpo para `runAllocation` e põe a reivindicação. O desenho não muda | — | sem mudança de escopo |
+| F2 | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09a-rateio-automatico.test.ts` | os 8 da F1 + `ok` T1, T1-ponte, T1b, T1-mem, T5 (gancho), T8 (síncrono), T-MARK (R2-12(a)), T13 · `# tests 16 # pass 16 # fail 0` | verde. T1: 1 run `trigger:"import"`, `importResolution:"explicit"`, janela `2026-06-01T00:00:00.000Z → 2026-06-30T23:59:59.000Z`, id v5, e `enqueued = [["cloud-cost-allocation.run", {mode:"import_auto", importId}]]`. T13: resumo de outubro `coverage:"imported"`, run v5, 100 |
+| F2 | mutações | **M1**: `not ok` T1, T1-ponte, T1b, T8, T13 (`expected 1 actual 0`) · **M1b**: `not ok` T1, T1-ponte, T1b, T13 (sem a ponte a importação não existe para o rateio: 0 runs) · **M1d**: `not ok` T1-mem (`warn` chamado 1 vez, esperado 0) · **M1e**: `not ok` T1, T1b (`+ []`) · **M8**: `not ok` T8 (`'falha do gancho com Bearer abc.def'` sobe e a importação rejeita) · **M13**: `not ok` T4, T1b, T13 (fim `2026-11-01T00:00:00.000Z`) · **suplementar R2-12(a)** (marcador ANTES do `...metadata`): `not ok` T-MARK (`actual 'x'`) | as 7 vermelhas, restauradas. M1c precisa do Postgres: fica na F5 (T1-db) |
+| F2 | regressões: `aws-cur-cost-import`, `aws-cur-cost-routes`, `o6r06-cost-summary-sum`, `cloud-cost-allocation-routes`, `san3-03-*` (memória) | `# tests 101 # pass 96 # fail 0 # skipped 5` (os 5 `-db` sem `DATABASE_URL`) | a fábrica de memória e as rotas seguem iguais |
+| F3 | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09a-rateio-automatico.test.ts` | os 16 de antes + `ok` T6, T2 (job), T7 · `# tests 19 # pass 19 # fail 0` | verde. T6: 2 `executeImportRuns` intercalados no laço (`Promise.all`) + 1 em sequência → motor chamado **2** vezes (1 por run), as 2 runs `completed`, 1 alocação por run. T7: a reexecução manual da mesma run recalcula (6/6 → 9/3 com a medição nova) |
+| F3 | mutações | **M6m**: `not ok` T6 (`expected: 2` `actual: 4`) · **M7**: `not ok` T7 (`+ 6` × `- 9`: a reexecução manual deixa de recalcular). Com o M7, o caso de E7 que já existia (`cloud-cost-allocation.test.ts` "reexecutar run nao duplica") e o `san3-03-import-scope` seguem verdes: é o T7 quem guarda o E7 | as 2 vermelhas, restauradas. M6p (Postgres) fica na F5 |
+| F3 | **leitura do dev, declarada (§A6):** o plano diz "T6 (memória): o mesmo, em sequência". Em sequência pura a 2ª chamada lista 0 `pending` e o M6m não fica vermelho (o filtro de status da listagem esconde a reivindicação). Por isso o T6 em memória faz as duas execuções intercaladas no laço de eventos (`Promise.all`) e depois uma terceira em sequência. O T6-db (F5) faz a corrida real com barreira | — | sem mudança de escopo |
+| F3 | observação **pré-existente**, fora do escopo (não mexi): `PrismaCloudCostAllocationRepository.updateRun` grava `started_at: input.startedAt ?? null`, então a conclusão de QUALQUER run (manual ou automática) zera `started_at` no Postgres; o dublê em memória preserva. Vem de antes deste bloco | `sed -n 57,74p src/modules/cloud-cost-allocation/cloud-cost-allocation-prisma.repository.ts` | registrar como observação para o orquestrador; não erra valor |
+| F4 | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09a-rateio-automatico.test.ts tests/job-worker-bootstrap.test.ts` | os 19 de antes + `ok` T8 (varredura), T9, T9b, T9d, T9e, T-R2-04, T10b, T11; `job-worker-bootstrap` 7/7 com o T10 · `# tests 34 # pass 34 # fail 0` | verde. T9: 1ª passada `{importsScanned:1, runsCreated:1, importsEnqueued:2}` (a `failed` não volta), 2ª passada 0 criações. T9d: limite 2, a mais nova alcançada. T9e: o reenvio de junho vira importação nova e o resumo de junho passa a ela, sem somar. T-R2-04: com a varredura lançando, o job resolve e enfileira exatamente 1 vez com `delayMs` 21 600 000 |
+| F4 | mutações | **M9**: `not ok` T9 (`importsEnqueued: 3`, a failed voltou) · **M9b**: `not ok` T9b (`actual: 1`, julho da importação antiga ganhou run) · **R2-02** (`!this.hasImportAutoRun(costImport.id)` → `true`): `not ok` T9, T9d (`importsScanned: 3`; a mais nova não é alcançada) · **M10**: `not ok` bootstrap "produção válida…" (falta `'cloud-cost-allocation.import-catch-up'`) · **R2-04** (`throw error;` no `catch`): `not ok` T-R2-04 (`'connection refused 10.0.0.1:5432'` sobe) · **sonda CE-G1** (`src/modules/cloud-costs/__sonda_ceg1.ts`): `not ok` T11 (`+ 'src/modules/cloud-costs/__sonda_ceg1.ts'`); sonda apagada | as 6 vermelhas, restauradas |
+| F4 | regressões: `job-worker-bootstrap`, `ass-08b-channel-handlers`, `ass-08b-channel-jobs`, `cloud-cost-allocation-routes`, `aws-cur-cost-*`, `san3-03-*` (memória) | `# tests 118 # pass 113 # fail 0 # skipped 5` (os 5 `-db` sem `DATABASE_URL`) | o boot do worker e o canal de cobrança seguem iguais |
+| F4 | **leituras do dev, declaradas (§A6):** (1) a varredura isola a falha de UMA importação (registra `cloud_cost_auto_allocation_catch_up_import_failed` só com o código do erro e segue), no padrão de `measureTenantsSequentially` (G-1 do #505); a falha GERAL sobe ao job, que registra e não relança (R2-04). (2) O 1º tique sai com `delayMs` de 60 s (o plano não fixa o atraso). (3) A seleção "sem nenhuma run automática" (R2-02, como escrita) deixa na fila, para sempre, a importação marcada que nunca ganha run automática (mais de 24 pares, ou todos os pares já com run manual): elas não somem da seleção e, se passarem de 50, voltam a tapar a varredura. Hoje é raro (o gancho cria na hora; arquivo da AWS é mensal). **Pergunta ao orquestrador**, sem mudar o plano: abrir pendência para a varredura também pular a importação já avaliada | — | registrado; nenhum arquivo fora do PERMITIDO |
+| F5 | `DATABASE_URL=…55496/erp_09a node --test --import tsx tests/ass-09a-rateio-automatico-db.test.ts` (3 vezes) | `ok` T-M09a-db, T1-db, T3-db, T4-db, T4m-db (com o T4m-b), T6-db, T9b-db · `# tests 7 # pass 7 # fail 0 # skipped 0` nas 3 | verde, denominador constante. O código sob teste roda no papel efêmero (`rolsuper=false`, `rolbypassrls=false`, asserido no `before`); a fábrica de produção usa o cliente global, que a suíte aponta para o papel (`globalThis.prisma`). Barreiras escopadas pelo nome do papel (único por processo): T3-db com 2 `INSERT` bloqueados na FK (o admin segura a importação `FOR UPDATE`), T6-db com 2 `UPDATE` bloqueados na linha da run |
+| F5 | resíduo depois da suíte, no cluster | `cloud_cost_imports 0 · cloud_cost_allocation_runs 0 · cloud_cost_line_items 0 · tenant_cloud_cost_allocations 0 · tenants ass09a-% 0 · papéis o6r_b01_% 0` | limpeza escopada sem resto |
+| F5 | mutações (Postgres) | **M1c**: `not ok` T1-db (`+ []`, a fábrica sem gancho não grava run) · **M3**: `not ok` T1-db e T3-db (id aleatório `ba4d3ae2-…` × v5 `791092a3-…-5…`) · **M4c**: `not ok` T4-db (A = **47**, esperado 40) · **M4f**: `not ok` T4m-db (`actual: 130`) · **M4g**: `not ok` T4m-db (escolhe X) · **M6p**: `not ok` T6-db (motor `actual: 2`) · **M9b-db**: `not ok` T9b-db (a importação antiga ganha run de julho) | as 7 vermelhas, restauradas; cluster limpo depois (`0 0 0 0`) |
+| F5 | regressões `-db` no mesmo cluster: `ass-09a-rateio-automatico-db`, `ass-09a-import-id-migration-drill-db`, `san3-03-import-scope-db`, `san3-03-derived-basis-db`, `o6r06-allocation-basis-rls-db`, `o6r06-cost-summary-sum-db`, `san3-05-leituras-de-plataforma-db`, `san3-03-system-org-db` | `# tests 59 # pass 59 # fail 0 # skipped 0` (37 s) | o `san3-05` (lista fechada de jobs e de rotas) segue verde: nenhum nome de job novo |
+| F6 | condição de entrada CE-P8 / R2-06: `git fetch` e `git show origin/main:agent-orchestration/controle/decisoes.md \| sed -n 4861,4877p` | o PR de registro #538 (`2f8a9a5e`) está na `main`: "anexo CE-P8 … **P8. Monitoramento, chaves, DNS e rede entram no rateio?** (SAN Q3). Recomendação: sim, pelas ações", com o conflito da `decisoes.md:4257` datado em **02/11** e resolvido pelo §A1-1 | a transcrição bate com a CE-P8: a F6 pode seguir. Rebase do ramo em `2f8a9a5e` (só registro; nenhum `src/`, `tests/` ou `prisma/`) |
+| F6 | R2-01: com o mapa P8 aplicado e os testes ainda intocados, `node --test … san3-03-system-org.test.ts` e `DATABASE_URL=… … san3-03-system-org-db.test.ts` | memória `not ok 5 - T-SYS-4`, `not ok 6 - T-SYS-5` (`# pass 6 # fail 2`) · Postgres `not ok 1 - T-SYS-db-1` (`# pass 7 # fail 1`) | o vermelho que a crítica previu, medido. Troca SÓ da linha de referência "sem regra": `AmazonCloudWatch` → `AmazonCognito` (Metrics, Alarms), que segue sem regra. **O contrato não afrouxou:** as asserções de `no_allocation_rule`, de `platformCost` e dos valores (5; 0,3; 0,123458) ficam byte a byte (`git diff -U0`: 4 linhas trocadas, só o código de serviço) |
+| F6 | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/cloud-cost-allocation.test.ts tests/san3-03-*.test.ts tests/ass-03-rateio-banco.test.ts tests/ass-09a-rateio-automatico.test.ts` e as `-db` `san3-03-system-org-db`, `san3-03-derived-basis-db`, `san3-03-import-scope-db`, `o6r06-allocation-basis-rls-db`, `ass-03-metering-db` | memória `# tests 123 # pass 118 # fail 0 # skipped 5` (T12 e T-AUTO-6 agora verdes; T-TAG-10b verde) · Postgres `# tests 39 # pass 39 # fail 0 # skipped 0` | verde |
+| F6 | mutações | **M5** (`["amazonvpc", "network"]` → apagado, âncora sem vírgula pelo R2-07): `not ok` T-AUTO-6 (`AmazonVPC/NatGateway-Bytes` volta a `storage_usage_weight`) · **M12**: `not ok` T12 (`storage_usage_weight` × `api_request_weight`) · **M-TAG** (a regex de invisíveis apagada): `not ok` T-TAG-10b e T-TAG-14 (`unknown_tenant_tag` × `ambiguous_tenant_tag`) | as 3 vermelhas, restauradas |
+| F6 | **leitura do dev, declarada (§A6):** o PERMITIDO diz "o mapa P8 entre a l.62 e a l.64". A CONSULTA ao mapa está ali (logo depois de `CACHE_SERVICES`, antes de `storage`); a CONSTANTE `PLATFORM_SHARED_SERVICES` foi declarada no topo, junto dos outros conjuntos de serviço (`COMPUTE_SERVICES`, `DATABASE_SERVICES`, `CACHE_SERVICES`), para não recriar o mapa a cada linha. Nenhuma outra regra mudou (`git diff` de `rules.ts`: o tipo, a constante, a regra do banco e as 2 linhas da consulta) | — | sem mudança de escopo |
+| F7 | CE-G2 (v1, "igual ao v1" no v2): a run automática guarda `createdBy` = quem importou (`costImport.importedBy`), como ação do sistema | `ok` T1 com `createdBy: "operador-plataforma"` · `# tests 27 # pass 27` · **suplementar** (`createdBy: costImport.importedBy,` → apagado): `not ok` T1 (`+ undefined`) | verde; vermelha e restaurada |
+| F7 | docs e registro | `docs/cloud-cost-allocation.md`: seção "Rateio automático (B-ASS-09a)" em linguagem de dono (R2-05(a): reenviar um mês publicado troca o número, com a base de hoje, e a cobrança calculada não muda; R2-09: o NAT entra como máquina; R2-12(b): importar dispara o rateio como ação do sistema; H13), mais `import_id` no modelo e `mode` no job · `PLANO_SAN3.md:320`: `backend + prisma (M-09a)` · `pendencias.md`: encerramentos "fecha no merge" de `P-SAN3-03-IMPORT-ID-EM-COLUNA` (com o registro do conflito CE-M: a fala de 31/10 supera o "só com autorização explícita"), `P-SAN303-TESTE-TAG-INVISIVEL` e `P-ASS03-METODO-RATEIO-FALLBACK` (só o banco); nota em `P-DONO-CLOUD-BILLING-ESCOPO`; novas `P-ASS09A-METODO-OUTRAS-REGRAS` (B-ASS-09), `P-ASS09A-RUN-PRESA-EM-PROCESSING` (B-ASS-10b) e `P-ASS09A-MES-EM-VARIOS-ARQUIVOS` (B-ASS-09) | as do R2-10 e do R2-11 (`P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS`, `P-ALLOC-MANUAL-INICIO-INCLUSIVO`, `P-AWS-CUR-DUBLE-SOBREPOSICAO`) já estão na `main` pelo #538 e não foram duplicadas |
+| F7 | **perguntas ao orquestrador (desvios NÃO feitos):** (1) `agent-orchestration/controle/pendencias-indice.md` é GERADO a partir do `pendencias.md` e ficou defasado pelas 3 pendências novas; está fora do PERMITIDO, então não o regenerei (o próprio índice diz: "se divergir, vale o `pendencias.md`"). (2) O §0 do plano (R2-05(a) pede a frase também lá) é do plano, fora do repositório: fiz só a parte do `docs/cloud-cost-allocation.md`. (3) A `P-ASS09A-MES-EM-VARIOS-ARQUIVOS` leva gravidade MÉDIA por leitura minha, declarada; o plano não dá gravidade | — | registrado |
+
+## Bateria final (head `306747b6`, rebaseado em `origin/main` `d98481e6`, #535; o #535 não traz migração)
+
+| # | comando | saída |
+|---|---|---|
+| 1-2 | `npm run check` · `npm run lint` | exit 0 (tsc sem erro) |
+| 3 | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09a-rateio-automatico.test.ts` | `# tests 27 # pass 27 # fail 0 # skipped 0` |
+| 4 | `DATABASE_URL=… node --test --import tsx tests/ass-09a-rateio-automatico-db.test.ts tests/ass-09a-import-id-migration-drill-db.test.ts` | `# tests 10 # pass 10 # fail 0 # skipped 0` (código sob o papel efêmero `NOSUPERUSER NOBYPASSRLS`) |
+| 5 | regressões em memória (a lista do §6 item 5) | `# tests 124 # pass 119 # fail 0 # skipped 5` (os 5 `-db` sem `DATABASE_URL`, cobertos na linha seguinte) |
+| 5 | regressões `-db` (`san3-03-import-scope-db`, `san3-03-derived-basis-db`, `o6r06-allocation-basis-rls-db`, `o6r06-cost-summary-sum-db`, `san3-05-leituras-de-plataforma-db`, `san3-03-system-org-db`) | `# tests 49 # pass 49 # fail 0 # skipped 0` |
+| 6 | `npm test` na forma do job `backend` (Git Bash no Windows, `CORE_SAAS_PERSISTENCE=memory`, `DATABASE_URL` e `REDIS_URL` descartáveis `dev09a-pg`/`dev09a-redis`) | `490 arquivo(s) · 5071 teste(s) · pass 5059 · fail 10 · skipped 2`, exit 1. **Os 10 são de ambiente, nenhum de arquivo do bloco:** `san3-05-runtime-role-guard-db` 5 (`setsid: ausente`, só Linux); `san3-09-bootstrap-platform-admin-db` 2 (o `node_modules/.bin/prisma` é um shim de shell, `SyntaxError: missing ) after argument list` no Windows); `traccar-event-migration-drill-db` 1 (`EBUSY … rmdir …\Temp\trc02-mdrill-…`, trava de arquivo do Windows, e por isso o piso de denominador acusa o arquivo); `traccar-position-ingestion-db` 2 ("tempo esgotado → 503", com a CPU da máquina em 90–100 %, verdes isolados) |
+| 6 | 1ª rodada (`a43841fe`, antes do rebase) e reexecução isolada dos 10 arquivos que falharam, `--test-concurrency=1` | 1ª: `5068 · pass 5048 · fail 18 · skipped 2` (CPU 100 %). Isolados: `# tests 111 # pass 102 # fail 9`; ficaram só os de ambiente acima (setsid, shim, `EBUSY` no drill de traccar e no de faturamento de OS) e o `T-MED-db-14` (`57014 statement timeout` com `statement_timeout` de 10 ms), que deu **3/3 verde** sozinho. Ficaram verdes isolados: o drill do cheque (`T-D(f)`, `migrate deploy` passou de 180 s com a carga), o B10 do inventário, o A7 do `o6r06-usage-atomic`, o `o6r07a-anon-lockout` e as 2 de ingestão do traccar. O `T-D(d′)/K12` do drill do cheque (diff do Prisma × schema) ficou verde: o `schema.prisma` bate com as migrações |
+| 7 | `npm run build` | exit 0 |
+| 8 | `node scripts/migration-transaction-guard.mjs` | `migrações: 132 · anteriores: 112 · novas: 20 · violações: 0` |
+| 9 | `git diff --check origin/main...HEAD` | vazio |
+| 10 | mutações | **38 aplicadas e revertidas, 38 vermelhas**: as 35 literais do §3 e da Emenda 1 (M1, M1b, M1c, M1d, M1e, M2, M2b, M3, M4a–M4g, M5, M5a, M6, M6b, M6m, M6p, M7, M8, M9, M9b, M9b-db, M9c, M10, M11, M12, M13, M-TAG, sonda CE-G1, R2-02, R2-04) e 3 suplementares (M2 com `globalThis.crypto.randomUUID()`, o marcador antes do `...metadata`, e o `createdBy` do CE-G2). Cada âncora X contou 1 no arquivo indicado. Os tokens † soltos contam mais de 1 onde são nome de tipo ou de campo (`onImportCompleted` 5, `costSource` 7, `autoAllocation` 5 em 4 arquivos), e nenhum deles é âncora de mutação; o `gt: periodStart` saiu da lista † pelo R2-07 (conta 2, um por ponto do R4) |
+| 11 | limpeza | só artefatos de build (`dist/`); o worktree `C:/Users/thiag/w-09a` e os containers `dev09a-pg` e `dev09a-redis` ficam para a pré-revisão e o conserto |
+
+**Escopo:** `git diff --name-only origin/main...HEAD` = 28 arquivos, todos no PERMITIDO do §4 somado aos itens 1 e 3 da Emenda 1; nada do PROIBIDO; `Kpis/*` intocado (KPI congelado); `pendencias.md` só acrescenta (0 linha removida).
+
+## Conserto da pré-revisão `prerev-542-api` (Emenda 3; APROVADO com 4 não graves)
+
+Pré-revisão: Claude Opus 5.5 pela API (cruzamento com este dev, subagente da sessão). Achados: `saidas-v3/prerev-542/saida/prerev-542.json`, fora do repositório. Quem achou não consertou; o conserto é deste dev, pela Emenda 3 do plano (`D-EMENDA-ANTES-DO-CODIGO`). Sem migração: o marcador mora no `metadata` da importação, sem coluna.
+
+| achado | conserto | teste e saída | mutação literal |
+|---|---|---|---|
+| **PR542-01** (a varredura emperra) | marcador do SISTEMA `metadata.autoAllocationSweep = { status: "done" \| "failed", attempts, at }`: a conclusão da importação o grava `null` DEPOIS do `...metadata` de quem chama; a varredura grava `done` quando `ensureImportRuns` não cria nada (todos os pares com run, mais de 24 pares) e `failed` com `attempts + 1` quando falha; a seleção exclui `done` e `failed` com `attempts >= 3` (`isSweepEligible` em memória; `OR: SWEEP_ELIGIBLE_WHERE` no Prisma). **Medido antes de escrever o `where`:** `NOT { path status = 'done' }` some com a importação SEM a chave (o `NOT` de NULL é NULL); `path status equals Prisma.AnyNull` casa a chave ausente e o `null` (sonda `json-not.mts`: `NOT done → failed1,failed3`; `eligible → failed1,none,null`). O `markImportSweep` do Prisma é um `UPDATE … jsonb_set` só na chave do sistema | memória: T9f (limite 2, 3 eternas com rateio manual + 1 nova: 1ª passada `importsSettled: 2`, 2ª passada a nova ganha a run), T9f-b (3 falhas seguidas e sai da fila: `[[1,1],[1,1],[1,1],[0,0]]`, `attempts: 3`), T-MARK (quem chama manda `{status:"done"}` e a importação conclui com `autoAllocationSweep: null`) · `-db`: T9f-db (marcas `["done","done",null,null]` na 1ª passada; a nova ganha a run na 2ª) | `isSweepEligible(costImport.metadata.autoAllocationSweep)` → `true`: `not ok` T9f e T9f-b · `OR: SWEEP_ELIGIBLE_WHERE, // B-ASS-09a PR542-01 avaliada` → apagada: `not ok` T9f-db · `autoAllocationSweep: null,` → apagada: `not ok` T-MARK (o `{status:"done"}` de quem chama ficava) · suplementar `AUTO_ALLOCATION_SWEEP_MAX_ATTEMPTS = 3` → `1000`: `not ok` T9f-b |
+| **PR542-02** (o anti-join do Prisma sem guarda) | T9d-db, a forma do T9d em Postgres, sob o papel sem bypass | `ok` T9d-db | `allocation_runs: { none: { metadata: { path: ["trigger"], equals: "import" } } },` → apagada: `not ok` T9d-db (`expected 1 actual 0`) |
+| **PR542-03** (índice defasado) | `python agent-orchestration/controle/gerar-indice-pendencias.py` (PERMITIDO pela Emenda 2, item 1) | `indice: 863 cabecalhos / 852 IDs`; rodar de novo e `cmp` com a cópia: idêntico | — |
+| **PR542-04** | `P-ALLOC-RUN-STARTED-AT-NULO` (BAIXA, `pre-existente`, dono `B-ASS-09`) em `pendencias.md` | `git grep -n STARTED-AT-NULO` acha a entrada | — |
+
+Bateria do conserto: `tsc --noEmit` exit 0 · `npm run lint` exit 0 · guard de migração `violações: 0` · `git diff --check` vazio · memória `ass-09a` **29/29** · regressões em memória `# tests 124 # pass 119 # fail 0 # skipped 5` · `-db` do bloco **9/9, `# skipped 0`, 3 vezes** (papel `NOSUPERUSER NOBYPASSRLS`) · drill + regressões `-db` **52/52, `# skipped 0`** · as mutações de F4 e F5 refeitas depois do conserto: as 12 seguem vermelhas · cluster limpo depois (`0 0 0 0`). Não houve migração nova (guard: 20 novas, as mesmas de antes).
+
+
+## Conserto Emenda 4/4.1 — dev `dp-dev-542` (DeepSeek Pro), 2026-11-11 19:19 SP
+
+> **Papel:** dev do conserto único do §C7 10(3)4 (PR #542, rateio automático a partir da importação; DINHEIRO). Não achou nem planejou: achado da junta anterior do #542 (C1-A1, com V1/V2) e das críticas `crit-09a-em4-api` e `dp-crit-542`; plano de `topo-542-opus` (Emenda 4) e `topo-542b` (Emenda 4.1), lido inteiro de `planos/plano-B-ASS-09a-v2.md` (Emenda 4 nas linhas 310-460; Emenda 4.1 nas linhas 461-628). A 4.1 prevalece sobre a 4. Ajustes da crítica r2 viram requisito: **DP542-01** (T-E41-2 `-db` injeta as datas via API Prisma `Date`, `updated.count === 1`, independente de fuso) e **DP542-02** (erro do R41-01 diz a linha de DADOS; forma declarada: o texto diz `at data row N`, com a linha de dados, e linhas em branco não contam). Terreno: worktree `C:/Users/thiag/w-09a`, ramo `feat/rateio-automatico-importacao`, base `cf48cc80`, head de trabalho `af7f23fb` (merge de `origin/main`), limpo.
+
+### Vermelho-controle (F-E4-0 + F-E41-0, antes de qualquer código de produção)
+
+Produção **não alterada** (só os 3 arquivos de teste no `git status`). Postgres 16 descartável em `127.0.0.1:55551` (`C:/Users/thiag/pg-dpdev542`).
+
+**Memória** — `LOG_LEVEL=silent node --test --import tsx tests/ass-09a-rateio-automatico.test.ts`:
+
+```
+# tests 42
+# pass 28
+# fail 14
+# skipped 0
+```
+
+`not ok` (14, todos pela razão certa): `T2b` (a mesma janela de publicação dá o mesmo id), `T-E4-1` (a varredura não regride o número publicado), `T-E4-2` (o resumo continua na manual), `T-E4-3` (a varredura cria o mês que faltou), `T-E4-3b` (a 2ª passada completa o mês que faltou), `T-E4-5` (os dois formatos de fim viram 1 run), `T-E4-6` (a run manual não carrega as 4 chaves reservadas), `T-E4-9` (`markImportSweep` não toca `processing`), `T-E41-1` (a linha invertida falha no parser), `T-E41-2` (a guarda fecha o par invertido já gravado), `T-E41-3` (o resumo continua em Y — `100 !== 130`), `T-E41-4` (1 run de 130), `T-E41-4b` (`periodEnd 23:59:59.999`), `T-E41-5` (13 janelas, não 26 pares).
+
+**Postgres (`-db`)** — `DATABASE_URL="postgresql://postgres@127.0.0.1:55551/postgres?schema=public" LOG_LEVEL=silent node --test --import tsx tests/ass-09a-rateio-automatico-db.test.ts`:
+
+```
+# tests 23
+# pass 11
+# fail 12
+# skipped 0
+```
+
+`not ok` (12): `T3-db` (`Cannot read properties of undefined (reading 'getTime')` — a entrada de `createImportRun` muda de formato), `T-E4-1-db`, `T-E4-2-db`, `T-E4-3-db`, `T-E4-3b-db`, `T-E4-5-db`, `T-E4-7-db`, `T-E4-8-db`, `T-E4-9-db`, `T-E41-1-db`, `T-E41-2-db`, `T-E41-3-db` (duas ordens), `T-E41-4-db`, `T-E41-4b-db`, `T-E41-5-db`.
+
+**Nota de teste (leitura do dev, declarada):** `T-E41-3` (memória) depende de `created_at` distintos das duas runs para ser determinístico no vermelho; adicionei a pausa de 25 ms já usada pelo `T-E4-2` antes de cada `runImportCatchUp`, nas duas ordens. Sem a pausa, o teste passa ou falha conforme o milissegundo do relógio (verde por acidente na suíte cheia, vermelho isolado).
+
+### Âncoras R7 "hoje" (medidas em `HEAD` = `af7f23fb`, produção igual a `cf48cc80`)
+
+- `= 0`: `byPublicationDesc`, `sourceImportedAt`, `markSweepDone`, `importRunWindowKey`, `listCostLineItemsForBillingPeriods`, `sourceBillingPeriods`, `delete metadata.trigger`, `delete metadata.sourceBillingPeriod`.
+- `= 1` (e `= 0` depois do conserto): `allocation_runs: { none: { metadata: { path: ["trigger"], equals: "import" } } }` (prisma), `!this.hasImportAutoRun(costImport.id)` (memória), `const run = pickSummaryRun(candidates);` (service), `if (result.created === 0) mark = { status: "done"` (import-trigger).
+
+
+### Conserto aplicado — commits por fatia
+
+| fatia | commit | conteúdo |
+|---|---|---|
+| F-E4-1 a F-E4-3 + F-E41-1/F-E41-2 | `646dcb3f` | P9 (publicação pela importação mais nova, empate pela run mais velha), P10 (uma run por importação × janela), P11 (varredura mês a mês + guarda `invalid_periods` + teto por janela), P12 (as 4 chaves só do sistema), fim só com data cobre o dia inteiro |
+| Doc + DP542-02 + pendências | `09ba1882` | erro diz `at data row N`; doc E4.7/E41.3; `P-ASS09A-BORDA-MICROSSEGUNDO` e `P-ASS09A-REDE-TRANSFERENCIA` + índice regenerado; `pendencias.md` normalizado de volta a LF |
+
+### Ajustes da crítica r2 (viram requisito)
+
+- **DP542-01 (satisfeito):** `T-E41-2-db` injeta o par invertido pela API Prisma (`admin.cloudCostLineItem.updateMany` com `Date`), sem literal SQL UTC, e assere `updated.count === 1` antes de chamar `ensureImportRuns`. Verde em America/Sao_Paulo, independente de fuso.
+- **DP542-02 (satisfeito, forma declarada):** a 4.1 mantém a linha de DADOS do parser; o texto passa a dizer **`at data row N`** (não `at row N`), deixando claro que linhas em branco não contam. Os 3 testes usam `/at data row 3/` e `/at data row 2/`; o doc declara que o número é o da linha de dados.
+
+### Mutações literais — 27/27 vermelhas no teste-dono, restauradas byte a byte
+
+Cada âncora X contou **1** no arquivo indicado antes de aplicar; a mutação foi aplicada, o teste-dono caiu (`# fail ≥ 1` pela razão certa) e o arquivo foi restaurado com `git checkout --` e comparado byte a byte (igual ao original):
+
+| mutação | arquivo | teste-dono vermelho |
+|---|---|---|
+| M-E4-P1 | service.ts | T-E4-1 e T-E4-2 |
+| M-E4-P2 | service.ts | T-E4-1 |
+| M-E4-H1 / H2 / H3 / M-E41-E | service.ts | T-E4-6 (uma por chave) |
+| M-E41-B | service.ts | T-E41-3 |
+| M4a / M4b | service.ts / repository.ts | T4 |
+| M-E4-W1 / W2m | import-trigger.ts / repository.ts | T-E4-5 |
+| M-E4-Q1 | repository.ts | T-E4-3 e T-E4-3b |
+| M-E4-G9m | repository.ts | T-E4-9 |
+| M-E4-Q2 | import-trigger.ts | T9 |
+| M-E41-A1 | aw-cur.parser.ts | T-E41-1 (memória) e T-E41-1r (rota) |
+| M-E41-A2 | import-trigger.ts | T-E41-2 |
+| M-E41-C1 / C2 | import-trigger.ts | T-E41-4 / T-E41-4b |
+| M-E41-D | import-trigger.ts | T-E41-5 |
+| M13 | import-trigger.ts | T13 |
+| M4c / M-E4-W2 | prisma.repository.ts | T4-db / T-E4-5-db |
+| M-E4-Q1-db | prisma.repository.ts | T-E4-3-db |
+| FailedBranch_lte / JsonbSet_overwrite / MarkCompletedOnly | prisma.repository.ts | T-E4-7-db / T-E4-8-db / T-E4-9-db |
+
+### Bateria final
+
+- memória (6 arquivos): `ass-09a-rateio-automatico` + `cloud-cost-allocation` + `cloud-cost-allocation-routes` + `ass-03-rateio-banco` + `aws-cur-cost-import` + `aws-cur-cost-routes` → `# tests 71 # pass 71 # fail 0 # skipped 0`.
+- `-db` (2 arquivos): `ass-09a-rateio-automatico-db` + `ass-09a-import-id-migration-drill-db` → `# tests 26 # pass 26 # fail 0 # skipped 0` (papel efêmero `NOSUPERUSER NOBYPASSRLS`).
+- `npm run check` exit 0 · `npm run lint` exit 0 · `node scripts/migration-transaction-guard.mjs` → `migrações: 133 · anteriores: 112 · novas: 21 · violações: 0` · `git diff --check` vazio.
+
+### Escopo e migração (E41.3)
+
+- `git diff --name-only af7f23fb..HEAD` = 13 arquivos, todos no PERMITIDO das Emendas 4/4.1; nada de `prisma/**`, `.github/**` nem `Kpis/**`.
+- `git diff --name-only af7f23fb..HEAD -- prisma` **vazio** (o conserto não toca `prisma`).
+- `git diff --name-only cf48cc80..HEAD -- src/modules/cloud-costs` = só `aws-cur.parser.ts`, `+1 −0`.
+- Leitura do dev (§A6): `git diff --name-only cf48cc80..HEAD -- prisma` mostra `schema.prisma` e a migração `20260901100000_impound_process_regime_snapshot`, ambos vindos do `git merge origin/main` obrigatório (`f5b79026`, #539), não do conserto; o conserto, medido a partir da base pós-merge `af7f23fb`, não adiciona nenhuma migração.
+- `pendencias.md` foi normalizado de volta a LF: o merge anterior o deixou CRLF, o que poluía o diff do PR com 27 k linhas. Depois da normalização, `git diff origin/main...HEAD -- pendencias.md` = **45 inserções** (só as pendências reais).
+
+PRONTO PARA AS CADEIRAS — head 1f319c0d324ba69dc4adbebd7e587d82ee9aeca2

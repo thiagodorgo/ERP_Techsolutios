@@ -224,7 +224,7 @@ if (!connectionString) {
     const { verifyAccessToken } = await import("../src/modules/auth/index.js");
     const stillValid = await verifyAccessToken(current.access_token);
 
-    assert.equal(stillValid.sub, org.userId, "declarado: o token de acesso já emitido vale até expirar (D-USERS-2)");
+    assert.equal(stillValid.sub, org.userId, "verifyAccessToken sozinho ainda aceita a assinatura; quem recusa é o portão (P-SESSAO-VIVA)");
 
     const credential = await h.admin.localAuthCredential.findFirst({
       where: { tenant_id: org.tenantId, user_id: org.userId },

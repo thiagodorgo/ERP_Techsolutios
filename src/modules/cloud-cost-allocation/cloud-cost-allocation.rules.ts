@@ -6,6 +6,12 @@ export type CloudCostAllocationRule = {
   readonly basisMetricKeys: readonly AllocationBasisMetricKey[];
   /** B-SAN3-03 · R11 — base aproximada (pelas ações), rotulada como estimativa até a medição própria. */
   readonly estimate?: true;
+  /**
+   * B-ASS-09a · R8 (P6, `P-ASS03-METODO-RATEIO-FALLBACK`) — o método gravado segue a base EFETIVAMENTE usada. Só a regra
+   * do banco preenche: sem medição de espaço ela cai para as ações e grava `api_request_weight`. As outras regras com
+   * mais de uma base ficam como estão (`P-ASS09A-METODO-OUTRAS-REGRAS`, dono `B-ASS-09`).
+   */
+  readonly methodByMetricKey?: Partial<Record<AllocationBasisMetricKey, CloudCostAllocationMethod>>;
 };
 
 // B-SAN3-03 · R11 (RECOMENDACAO ADOTADA 1, não é fala do dono) — máquina, banco e cache, por código de
@@ -15,6 +21,14 @@ export type CloudCostAllocationRule = {
 const COMPUTE_SERVICES = new Set(["amazonec2", "amazonecs", "amazoneks", "awsfargate"]);
 const DATABASE_SERVICES = new Set(["amazonrds"]);
 const CACHE_SERVICES = new Set(["amazonelasticache", "amazonmemorydb"]);
+
+// B-ASS-09a · R5 (P8) — monitoramento, chaves, DNS e rede entram no rateio PELAS AÇÕES, como estimativa: decisão do
+// dono de 31/10 (`D-COBRANCA-RESPOSTAS-3110`, anexo CE-P8: "Recomendação: sim, pelas ações"). O mapa dos códigos é
+// desenho do plano do bloco, não fala do dono; "chaves" inclui o Secrets Manager por leitura declarada do plano (§A6).
+// Por código de serviço EXATO, consultado antes de `storage` e de `api_requests`: sem ele, `AmazonVPC/NatGateway-Bytes`
+// caía em `storage` (por "byte") e `AmazonCloudWatch/…Requests` em `api_requests`. O NAT Gateway do CUR real vem com o
+// código `AmazonEC2` e entra como máquina (R2-09); o `AmazonVPC` fica para endpoint e IPv4 público.
+const PLATFORM_SHARED_SERVICES = new Map<string, string>([["amazoncloudwatch", "monitoring"], ["awskms", "keys"], ["awssecretsmanager", "keys"], ["amazonroute53", "dns"], ["amazonvpc", "network"]]);
 
 function estimatedByActions(costCategory: string): CloudCostAllocationRule {
   return {
@@ -56,10 +70,13 @@ export function resolveAllocationRule(input: {
       costCategory: "database",
       allocationMethod: "storage_usage_weight",
       basisMetricKeys: ["db_bytes_estimated", "audited_actions_count"],
+      methodByMetricKey: { db_bytes_estimated: "storage_usage_weight", audited_actions_count: "api_request_weight" },
       estimate: true,
     };
   }
   if (CACHE_SERVICES.has(service)) return estimatedByActions("cache");
+  const sharedCategory = PLATFORM_SHARED_SERVICES.get(service);
+  if (sharedCategory) return estimatedByActions(sharedCategory);
 
   if (service.includes("s3") || usageType.includes("storage") || usageType.includes("byte")) {
     return {

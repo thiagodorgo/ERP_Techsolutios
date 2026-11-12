@@ -15,8 +15,8 @@
 //      organização com `field_operations`, técnico e operador de despacho pelo agregado core-saas DENTRO da `api`;
 //      viatura, OS, despacho (inserido numa transação e ACEITO noutra) e o vínculo `trcdemo01 → viatura` na instância
 //      `erp-dev`, por SQL como `postgres`;
-//   5. abre o SSE `/api/v1/operations/field-events/stream` com um token `field_dispatcher` (HS256 com o placeholder
-//      do compose, como o smoke de persistência);
+//   5. abre o SSE `/api/v1/operations/field-events/stream` com um token `field_dispatcher` de SESSÃO VIVA, vindo de
+//      login REAL na API (E2.2 — o portão exige `sid`);
 //   6. manda uma posição OsmAnd pelo `traccar-sim` (rede `traccar_devices`; retenta só erro de conexão);
 //   7. espera, até 60 s, `/api/v1/field-locations/latest` devolver o técnico na coordenada enviada (1e-6), `traccar`;
 //   8. confere que o SSE recebeu `field_location.updated` sem nenhuma chave de coordenada;
@@ -38,7 +38,7 @@
 // Projeto: `erp-trc01-demo` por padrão; `TRC_DEMO_PROJECT` troca o nome (o terreno de cada dev).
 
 import { spawnSync } from "node:child_process";
-import { createHmac, randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { statfsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -66,6 +66,9 @@ const SIM_LON = -46.633308;
 const SIM_SPEED_KNOTS = 10;
 
 const forwardSecret = randomBytes(32).toString("base64url");
+// Senha do operador de despacho: a que o dono passou (web), ou uma gerada na rodada — usada no login
+// REAL que emite o token de sessão viva do SSE (E2.2). Nunca impressa.
+const dispatcherPassword = process.env.TRC_DEMO_PASSWORD?.trim() || randomBytes(18).toString("base64url");
 
 function composeEnv(extra = {}) {
   const env = { ...process.env };
@@ -175,15 +178,6 @@ function cidrRange(cidr) {
   return [start, (start | (~mask >>> 0)) >>> 0];
 }
 
-function signAccessToken(secret, claims) {
-  const issuedAt = Math.floor(Date.now() / 1_000);
-  const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
-  const header = encode({ alg: "HS256", typ: "JWT" });
-  const payload = encode({ ...claims, type: "access", iat: issuedAt, exp: issuedAt + 900, iss: "erp-techsolutions", aud: "erp-techsolutions-api" });
-  const signature = createHmac("sha256", secret).update(`${header}.${payload}`).digest("base64url");
-  return `${header}.${payload}.${signature}`;
-}
-
 /** Endereços em LISTEN de um contêiner, lidos de /proc/net/tcp{,6} (sem ferramenta extra na imagem). */
 function listeningAddresses(service) {
   const { stdout } = docker(compose("exec", "-T", service, "cat", "/proc/net/tcp", "/proc/net/tcp6"), { timeout: 60_000, allowFailure: true });
@@ -255,7 +249,7 @@ try {
     }
   });
 
-  const jwtSecret = await step("trava: o alvo é o compose de VALIDAÇÃO LOCAL (placeholder rotulado, NODE_ENV=production)", async () => {
+  await step("trava: o alvo é o compose de VALIDAÇÃO LOCAL (placeholder rotulado, NODE_ENV=production)", async () => {
     const config = JSON.parse(docker(compose("config", "--format", "json"), { timeout: 60_000 }).stdout);
     const environment = config?.services?.api?.environment ?? {};
     if (!PLACEHOLDER_SECRET.test(String(environment.JWT_SECRET ?? ""))) throw new Error("JWT_SECRET do alvo não é o placeholder rotulado de validação local");
@@ -315,11 +309,10 @@ try {
       "  process.exit(1);",
       "}",
     ].join("\n");
-    const execArgs = ["exec", "-T"];
-    if (WITH_WEB && process.env.TRC_DEMO_PASSWORD) execArgs.push("-e", "TRC_DEMO_PASSWORD");
+    const execArgs = ["exec", "-T", "-e", "TRC_DEMO_PASSWORD"];
     const { stdout } = docker(compose(...execArgs, "api", "node", "--input-type=module", "-e", script), {
       timeout: 120_000,
-      extraEnv: WITH_WEB && process.env.TRC_DEMO_PASSWORD ? { TRC_DEMO_PASSWORD: process.env.TRC_DEMO_PASSWORD } : {},
+      extraEnv: { TRC_DEMO_PASSWORD: dispatcherPassword },
     });
     const read = (key) => new RegExp(`${key}=([^\\s]+)`).exec(stdout)?.[1];
     const values = { tenantId: read("DEMO_TENANT"), techId: read("DEMO_TECH"), dispatcherId: read("DEMO_DISPATCHER"), dispatcherEmail: read("DEMO_DISPATCHER_EMAIL") };
@@ -351,11 +344,17 @@ try {
       throw new Error("a OS não ficou com vehicle_assigned_at preenchido pelo gatilho");
   });
 
-  const dispatcherToken = signAccessToken(jwtSecret, {
-    sub: seed.dispatcherId,
-    tenant_id: seed.tenantId,
-    email: seed.dispatcherEmail,
-    roles: ["field_dispatcher"],
+  const dispatcherToken = await step("login REAL do operador de despacho (token de sessão viva)", async () => {
+    const response = await fetchWithTimeout(`${BASE_URL}/api/v1/auth/login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: seed.dispatcherEmail, password: dispatcherPassword, tenantId: seed.tenantId }),
+    });
+    if (response.status !== 200) throw new Error(`login do despacho respondeu ${response.status}`);
+    const body = await response.json();
+    const token = body?.data?.access_token;
+    if (!token) throw new Error("login do despacho sem access_token");
+    return token;
   });
   const authHeaders = { authorization: `Bearer ${dispatcherToken}` };
 
@@ -642,7 +641,7 @@ try {
 
     await step(`web do ERP em 127.0.0.1:${WEB_PORT} (opcional, --with-web)`, async () => {
       docker(compose("up", "-d", "--build", "web"), { timeout: 1_500_000 });
-      console.log(`[traccar-demo]      abra http://127.0.0.1:${WEB_PORT} e entre como o operador de despacho (${process.env.TRC_DEMO_PASSWORD ? "senha: a que você passou em TRC_DEMO_PASSWORD" : "sem TRC_DEMO_PASSWORD: sem login criado"})`);
+      console.log(`[traccar-demo]      abra http://127.0.0.1:${WEB_PORT} e entre como o operador de despacho (${process.env.TRC_DEMO_PASSWORD ? "senha: a que você passou em TRC_DEMO_PASSWORD" : "sem TRC_DEMO_PASSWORD: a senha desta rodada não foi fornecida — passe TRC_DEMO_PASSWORD para entrar na web"})`);
     });
   }
 
