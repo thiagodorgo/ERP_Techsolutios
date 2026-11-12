@@ -3397,6 +3397,7 @@ histórico por etapa sobre um agregado que pode nascer sem evento é construir s
 
 - **emenda (plano SAN3 §4.1 item 7, 2026-09-11):** o plano classifica o `Ω6R-ARQ-004` como bloqueante do gate da versão vendável, com bloco dono `B-O6R-09`; a dependência do `B-O6R-08` é revista: atomicidade despacho+evento na mesma transação não precisa de lease de job — hipótese que o planejador confirma; se cair, o `B-O6R-08` entra no gate.
 - **dono:** `B-O6R-09` (plano SAN3, §4.1 item 7 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
+- **fechamento (B-O6R-09, ramo `fix/dispatch-atomic-timeline`, 2026-11-11; vale no merge):** o despacho, a mudança de status e a reatribuição gravam o estado e o evento obrigatório na MESMA transação (P1), com o vencedor condicional por status e técnico (P2) e a criação idempotente por `idempotencyKey` (P3); o despacho só fica visível depois que a OS aceitou a atribuição (P4, transação-mãe). Testes-dono: `tests/b-o6r-09-dispatch-*-db.test.ts` (falha injetada, barreira escopada, papel `NOSUPERUSER NOBYPASSRLS`), com o vermelho-controle na `main` `07898adf` registrado em `docs/revisoes/SAN3/B-O6R-09-dev.md`. A web envia a chave por intenção (`useDispatchIntentKey`). Resíduos com dono: `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` e `P-B-O6R-09-ESCRITORES-FORA-DE-SRC` (no fim deste arquivo). O item 7 do portão só se declara FECHADO com a fatia 6 (orçamento) na `main`, no mesmo PR.
 
 ## P-O6R-B10 (2026-08-14) — `fix/client-load-shedding` — Ω6R-PERF-002, PERF-003 (2 P1) — **BLOQUEIA web (transversal) e owner-portal**
 
@@ -3473,7 +3474,8 @@ read-modify-write: `mobile/flutter_app/lib/core/sync/sync_queue_repository.dart:
 
 **Bloqueia:** feature no app de campo (OS mobile, prestador). Junta-se à fila do **PR-08 (reconciliação
 mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, ambas ABERTAS.
-- status: ABERTA — 2 P1, sendo `Ω6R-QUA-004` com **1 de 3 componentes já superado** pelo PR #351.
+- status: FECHADA no merge do PR do `B-O6R-11d` (ramo `fix/mobile-os-contrato-b-o6r-11d`) — `Ω6R-QUA-005` fechou no 1º PR do corte do `B-O6R-11`, e o `Ω6R-QUA-004` fecha neste (apenso 2026-11-11 abaixo).
+- status anterior: ABERTA — 2 P1, sendo `Ω6R-QUA-004` com **1 de 3 componentes já superado** pelo PR #351.
   Rascunho arquitetural correlato: `docs/revisoes/O6R/D-004-contratos-clientes.md` (**pauta do dono, não
   decisão**).
 - **severidade medida (inventário SAN3, 2026-09-11):** ALTA — fatia B2: 2 P1 (`Ω6R-QUA-004`, `Ω6R-QUA-005`), um deles de perda de dado — o material do prestador some no restart (`prestador_repository.dart:121`, `forEach` sem `await`); o detalhe/status/assign remoto da OS lê o envelope errado (`work_order_remote_api.dart:99,115,156`).
@@ -3494,6 +3496,22 @@ mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, a
   aparece como "Aguardando envio", sem virar erro nem conflito. A despesa não vira erro e não tem Descartar; sai na
   passada seguinte ao 3º PR (`B-O6R-03b`) se tiver usuário; a gravada antes do 2º PR sai depois de Assumir. A pendência
   segue ABERTA pelo `QUA-004`.
+- **Apenso 2026-11-11 (`B-O6R-11d`, `dev-11d-cl`; plano v2 + Emenda 1; Q1 = A do dono, `D-DONO-TODAS-RECOMENDACOES-1111`):**
+  `Ω6R-QUA-004` **FECHA no merge deste PR**, pelos dois componentes que restavam e pelo critério do `PLANO_SAN3.md`
+  ("Dio fake com `{data:{…}}` → detalhe/status/assign corretos; assign envia o campo que o backend lê"):
+  - **envelope/casing:** os 3 métodos de OS única desembrulham `{data}` e leem o camelCase do DTO pelo mesmo parser da
+    lista; OS sem id é `ApiServerError` (CR2-11D-04). Prova: T1, T2, T3 e T13 de
+    `mobile/flutter_app/test/features/work_orders/bo6r11d_contrato_rest_test.dart`, vermelhos na F0 com `TypeError` em
+    `_workOrderFromJson` (`work_order_remote_api.dart:297` da base), verdes depois.
+  - **"assign envia campo não lido":** o POST manda `userId`/`message` (T8, igual a `rest_assign_request` da fixture,
+    aplicada ao serviço real pelo N1); o PATCH manda o status no vocabulário do backend e recusa no aparelho os 4 sem
+    equivalente (T7, T7b, N4). A ação de viatura/equipe da fila manda `user_id` e declara `expected_technician_id`; o
+    servidor responde conflito se o técnico mudou (T9, N2, N5, N6, N9).
+  - **além do critério literal:** a lista e a linha do tempo passam pelo codec único (T5, T12); a organização nunca vem
+    do corpo (T11, G1).
+  - Residual com dono: `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO`, `P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS`,
+    `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` e `P-MOBILE-REJECTED-DOIS-SENTIDOS` (novas, no fim deste arquivo). Diário:
+    `docs/revisoes/SAN3/B-O6R-11d-dev.md`.
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -8755,6 +8773,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **risco:** 4-faturamento/dinheiro
 - **dependências:** P-WEB-ROTAS-SEM-PORTA (link de provisionamento); decisão de planos
 - **dono:** `B-SAN3-18` (plano SAN3 §4.1 item 16); bloco dono proposto pela fatia: bloco "gate comercial"
+- **apenso 2026-11-11 (`B-SAN3-18`, ramo `fix/gate-de-modulo-no-backend`):** entregue no ramo — o servidor recusa por módulo em toda rota de `/api/v1` com JWT (`src/modules/navigation/module-gate.middleware.ts`, classe por rota em `route-modules.ts`, 444 rotas, 0 sem classe), o registro cobre os 49 caminhos de `MVP_NAV_PATHS` pela string exata e as 13 entradas sem módulo ganharam módulo (40 itens do item 16, medidos em `docs/revisoes/SAN3/B-SAN3-18-medicao.md`). Fecha no merge, com as pendências `P-SAN3-18-*` abertas para o resto.
 - **emenda (junta do `B-SAN3-04a`, achado C2-03, 2026-09-18 — `bloqueia`/`pre-existente`):** medido por login real no objeto
   `fbda96b0`, N = **8** pares papel × item visível com módulo NÃO provisionado na organização demo — `finance` × Clientes
   (`customers`), Aprovações (`approvals`), Estoque (`inventory`), Pedidos (`purchasing`), Relatórios (`reports`); `inventory` ×
@@ -9111,7 +9130,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
   - **Fecha a metade do servidor, que é a autoridade.** O servidor confere a placa nas duas portas (`PATCH /work-orders/:id/status` e a ação `work_order.status_change` da fila), recusa por padrão e exige o veredito nos dois repositórios. Teste de encerramento: `tests/san3-26-checkin-conferencia.test.ts` (A2 aceita "23" da placa `ABC1D23`; A3 recusa o fim do código da OS).
   - **A metade do app está no código, mas ainda não é alcançável com o servidor real.** O app compara com o fim da PLACA que o servidor manda na lista (`checkinMode`, `checkinPlateTail`): `mobile/flutter_app/test/features/work_orders/bsan326_checkin_confere_placa_test.dart` (M1: "42" de `OS-1042` dá o erro, "23" enfileira), com a lista falsa nos nomes de status do app. Com o servidor real, o pull traz toda OS como "Agendada" e o "Iniciar rota" é recusado, então o guincheiro não chega ao diálogo da placa. Isso só muda com o conserto do mapeamento de status (PR534-03; `P-MOBILE-STATUS-NOMES` e `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA`, dono `B-O6R-11d`).
   - **O que sobra, com o dono de cada um:**
-    - `B-O6R-11d`: `P-CHECKIN-SEM-PLACA-OFFLINE`, `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` e `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA`;
+    - `B-O6R-11e`: `P-CHECKIN-SEM-PLACA-OFFLINE`, `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` e `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA`;
     - dono a definir pelo orquestrador: `P-DESPACHO-ARRIVED-SEM-CONFERENCIA`, `P-CHECKIN-NUMERO-DE-SERIE`, `P-CONSOLE-EDITA-PLACA-DA-OS`, `P-CHECKIN-PLACA-ESTRANGEIRA` e `P-CHECKIN-MARCA-DA-BASE-SO-NO-TEXTO`.
 - **junta do PR #386, ciclo 1 (C2-01, 2026-09-12):** entra no gate — a tela declara um controle de segurança que não existe: `work_order_detail_screen.dart:918-931` pede "os 2 últimos dígitos da placa" e compara com o fim do código da OS, e o backend não confere nada. "O GPS coexiste" é mitigação, e o plano não admite exceção por mitigação. Plano SAN3 v5: bloco `B-SAN3-26`.
 - **fonte (fatia AUSENTES, §2a):** sintese A9
@@ -9511,6 +9530,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **bloqueia:** o gate da versão vendável, com o item 16 (critério 3 — permissão).
 - **teste de encerramento:** falha do resolvedor de módulos → menu sem nenhum item de módulo (default negado), com vermelho-controle no head-base.
 - **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** entra no gate pelo item 16, junto da `P-WEB-GATE-MODULO-INCOMPLETO` (plano SAN3 v5, §4.1 item 16); condição de entrada CE-1 do `B-SAN3-18` (§5.6): o default da lista de módulos não resolvida passa a ser negar, e a recusa por módulo no backend nasce de um mapa rota → módulo gerado das montagens do `src/app.ts`.
+- **apenso 2026-11-11 (`B-SAN3-18`, PR do ramo `fix/gate-de-modulo-no-backend`):** entregue no ramo — `filterNavigationByTenantModules` trata `undefined` como lista vazia (`src/modules/navigation/navigation.service.ts`), e o teste de encerramento está em `tests/san3-18-menu-modules.test.ts` ("P3-não resolvida", inclusive pela rota com o resolvedor lançando). Fecha no merge.
 
 ## P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz de papéis sem permissão no catálogo — ALTA
 
@@ -9905,6 +9925,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** `pre-existente`.
 - **dono:** `B-SAN3-06a`.
 - **teste de encerramento:** nenhum item visível negado pelo guard da rota para os 8 papéis de organização; `ALLOWLIST_MENU` vazia.
+- **apenso (Emenda 2 do `B-SAN3-18`, E2.4; orquestrador, 2026-11-11 15:12 SP; aplicado por `apply-544-api`):** as **27** entradas que o `B-SAN3-18` acrescentou ao registro do menu (`src/modules/navigation/navigation.registry.ts`, N = 27, `grep -c "requiredPermissions: \[\]"` = 28 com a linha do comentário) levam `requiredPermissions: []` e são governadas só pelo módulo da organização: `/approvals`, `/cadastros/{clientes,filiais,fornecedores,viaturas,equipes,profissionais,servicos,tabelas-valores,tarifas,tags,pontos-interesse}`, `/patios/painel`, `/fleet/{fuel,maintenance,fines,insurance,damages,statement}`, `/inventory`, `/finance/commissions`, `/finance?aba=rec`, `/finance?aba=pag`, `/users`, `/controle/usuarios/acessos`, `/controle/usuarios/sessoes`, `/audit`. A permissão de cada página continua no `PermissionGuard` e no servidor (F0(d), `docs/revisoes/SAN3/B-SAN3-18-medicao.md`, seção "(d) Permissão do PermissionGuard por página"). O residual de menu que isso abre (item visível a quem não tem a permissão da página) entra NESTA pendência; dono segue `B-SAN3-06a`. **Requisito para a junta do `B-SAN3-18` (`coordenador-de-acessos`):** conferir, rota a rota, que cada uma das 27 páginas tem `PermissionGuard` com a permissão medida na F0(d) e que o servidor recusa sem ela; se faltar uma, é defeito do bloco, não residual.
 
 ## P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Financeiro depois da P2 — BAIXA
 
@@ -10557,6 +10578,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **prova:** `/platform/tenants/:id/modules` permanece sem link no menu e usa o repositório em memória.
 - **dono:** `B-SAN3-18`.
 - **bloqueia:** não.
+- **apenso 2026-11-11 (`B-SAN3-18`, R-A7 do plano v2; `D-B-SAN3-18-PORTA-DE-MODULO`):** o bloco a ESTREITA — o `PATCH` da porta falsa passa a recusar com 409 `module_change_requires_subscription` e não muda nada (`tests/san3-18-platform-modules-patch.test.ts`). O resto, uma porta real por organização gravando em `tenants.modules`, vira `P-SAN3-18-PORTA-DE-MODULO-POR-ORG` (dono `B-SAN3-18b`). Fecha no merge do `B-SAN3-18` a parte "porta que finge gravar".
 
 ## P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT (2026-10-09) — trilha cross-org sem fonte — MÉDIA
 
@@ -12017,19 +12039,23 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   (`P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS`, `P-MOBILE-FILA-RMW-STORE`, `P-MOBILE-DISCARDED-FUTURES`) foram portadas abaixo.
 - `P-MOBILE-EXPENSE-ENVELOPE` (MÉDIA; dono no ramo: `B-O6R-03b`) — 8 leituras do cliente REST de despesas do app ignoram a forma real da resposta — l.9803 do ramo.
 - `P-MOBILE-CHECKLIST-CREATE-RUN-MORTO` (BAIXA; dono no ramo: fila pós-gate) — `createRun` do cliente de vistorias do app lê `runId` na raiz de um `sendResult` e não tem chamador — l.9841 do ramo.
-- `P-WO-ASSIGN-OPERATOR-ID-TORTO` (MÉDIA; dono no ramo: `B-O6R-07c` (provisório no ramo)) — a atribuição de OS grava o id do USUÁRIO em `assigned_operator_id` pelo fallback `operatorId ?? userId` — l.9855 do ramo.
-- `P-MOBILE-APPROVAL-REQUEST-REST-404` (BAIXA; dono no ramo: `B-SAN3-13`) — `createApprovalRequest` REST do app posta numa rota que não existe no backend — l.9895 do ramo.
-- `P-MOBILE-STATUS-ACCEPTED-LOSSY` (MÉDIA; dono no ramo: `B-SAN3-13`) — `accepted` (backend) vira `dispatched` no app: o app não distingue "atribuída" de "aceita" — l.9912 do ramo.
+- `P-WO-ASSIGN-OPERATOR-ID-TORTO` (MÉDIA; dono no ramo: `B-O6R-07c` (provisório no ramo)) — a atribuição de OS grava o id do USUÁRIO em `assigned_operator_id` pelo fallback `operatorId ?? userId` — l.9855 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo.
+- `P-MOBILE-APPROVAL-REQUEST-REST-404` (BAIXA; dono no ramo: `B-SAN3-13`) — `createApprovalRequest` REST do app posta numa rota que não existe no backend — l.9895 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo.
+- `P-MOBILE-STATUS-ACCEPTED-LOSSY` (MÉDIA; dono no ramo: `B-SAN3-13`) — `accepted` (backend) vira `dispatched` no app: o app não distingue "atribuída" de "aceita" — l.9912 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo.
 - `P-MOBILE-CHECKLIST-TENANT-DO-CORPO` (MÉDIA; dono no ramo: fila pós-gate) — o cliente de vistorias do app dá ao modelo de vistoria o tenant do CORPO da resposta, não o da sessão que o chamador passou — l.9957 do ramo.
 - `P-CHECKLIST-DTO-EMITE-TENANT-ID` (MÉDIA; dono no ramo: `B-SAN3-22`) — a API de vistorias do app devolve o `tenant_id` da organização no corpo da resposta — l.9999 do ramo.
-- `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA` (MÉDIA; dono no ramo: `B-SAN3-13`) — status do backend fora do vocabulário do app vira "Agendada", e a tela oferece "Iniciar rota" em cima disso — l.10008 do ramo.
-- `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL` (MÉDIA; dono no ramo: `B-SAN3-13`) — OS urgente aparece "Normal" na lista do técnico — l.10035 do ramo.
-- `P-MOBILE-CODEC-FILA-STATUS-CRU` (BAIXA; dono no ramo: `B-SAN3-16`) — a fila offline manda ao backend três status que ele recusa com 400 — l.10059 do ramo.
+- `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA` (MÉDIA; dono no ramo: `B-SAN3-13`) — status do backend fora do vocabulário do app vira "Agendada", e a tela oferece "Iniciar rota" em cima disso — l.10008 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo.
+- `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL` (MÉDIA; dono no ramo: `B-SAN3-13`) — OS urgente aparece "Normal" na lista do técnico — l.10035 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo.
+- `P-MOBILE-CODEC-FILA-STATUS-CRU` (BAIXA; dono no ramo: `B-SAN3-16`) — a fila offline manda ao backend três status que ele recusa com 400 — l.10059 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo.
 - `P-CI-FLUTTER-SEM-PIN` (MÉDIA; dono no ramo: `B-SAN3-10`) — o job `flutter` do CI instala o canal `stable` sem versão, e a versão muda entre dois runs do mesmo PR — l.10078 do ramo.
 - `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK` (MÉDIA; dono no ramo: fila pós-gate) — o `stop()` da telemetria não espera o tick em voo: um ponto é capturado DEPOIS do stop, e o teste que prova o "foreground-only" cai quando a máquina está carregada — l.10133 do ramo. **FECHADA pelo PR #532** (merge `d0da291e`, 2026-11-11; porteiro `porteiro-532`, R1): o `stop()` invalida o ciclo e o tick em voo não grava depois dele (ver `P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL`).
 - **Apenso 2026-11-02 (emenda 4):** `SyncEngine`/`expenseSyncApiProvider`/`syncEngineProvider` são caminho morto (0
   chamadores em `lib/` fora de `sync_providers.dart`) → `B-O6R-11b`.
 - **dono:** cada linha, o dono escrito no ramo; o índice fecha quando as 12 fecharem ou forem portadas.
+- **Apenso 2026-11-11 (`B-O6R-11d`, CR2-11D-05):** 6 portadas com o texto de `a24f58b5` (`P-WO-ASSIGN-OPERATOR-ID-TORTO`,
+  `P-MOBILE-APPROVAL-REQUEST-REST-404`, `P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA`,
+  `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL`, `P-MOBILE-CODEC-FILA-STATUS-CRU`), antes de o bloco acrescentar ou fechar
+  qualquer coisa nelas. Com a da telemetria (fechada pelo #532), restam 5 só no ramo.
 
 ## P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e depois N ações em transações separadas: um crash entre as duas fases deixa material local sem ação na fila — ALTA
 
@@ -12158,6 +12184,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** B-SAN3-13 (M28). Não afeta a purga (o app não decide "aberta"); afeta só exibição.
 - **dono:** bloco de contrato do app.
 - **encerramento:** um vocabulário de status único entre app e backend.
+- **Apenso 2026-11-11 (`B-O6R-11d`):** a parte de EXIBIÇÃO fica **fechada na leitura**: lista, detalhe e linha do tempo
+  traduzem os 10 status do backend por um codec único (`mobile/flutter_app/lib/core/network/work_order_api_codec.dart`;
+  prova: T4, T5 e T12 dos testes `bo6r11d_*`, e o N10, que amarra `backend_statuses` da fixture a `WORK_ORDER_STATUSES`).
+  O fechamento formal fica com quem conferir. Seguem: o `approved` só no app (a fila o manda cru,
+  `P-MOBILE-CODEC-FILA-STATUS-CRU`) e o `rejected` com dois sentidos (`P-MOBILE-REJECTED-DOIS-SENTIDOS`).
 
 ## P-WO-LIST-SCOPE-WEB-TECNICO (2026-10-25) — confirmar que nenhuma tela web com sessão de técnico dependia da lista inteira — BAIXA
 - status: ABERTA
@@ -12877,6 +12908,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** `B-O6R-11d` (C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP; antes: a atribuir pelo orquestrador) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não declarado na fonte.
 - **fato:** os nomes de status do app (`scheduled`, `dispatched`, `enRoute`) não batem com os do servidor, e falta o passo `assigned → accepted`. Medido neste registro: existe tradução em `mobile/flutter_app/lib/core/sync/sync_replay_service.dart:490-492` (`scheduled` → `open`, `dispatched` → `assigned`, `enRoute` → `on_route`); a pendência é a cobertura dessa tradução e o passo que falta.
 - **encerramento:** máquina de estados do app igual à do servidor, inclusive `assigned → accepted`, com teste.
+- **Apenso 2026-11-11 (`B-O6R-11d`):** a tradução dos nomes passa a ser UMA, coberta: entrada (lista, detalhe e linha do
+  tempo) e saída (REST e fila) pelo codec `work_order_api_codec.dart`, com T4, T5, T7, T10, T10b e T12 dos testes
+  `bo6r11d_*`. **Segue ABERTA** pelo passo `assigned → accepted`: o app não tem estado de OS aceita, e o codec mantém
+  `accepted → dispatched` (`P-MOBILE-STATUS-ACCEPTED-LOSSY`).
 - **nota do B-SAN3-26 (2026-11-11, `dev-san326-cl`, medido em `d0da291e`):** a tradução existe só na IDA. Na volta, o pull lê o status pelo nome do enum do app (`workOrderStatusFromApiValue`, `work_order_remote_api.dart`): `on_route` e `on_site`, que o servidor manda, viram `scheduled`. O B-SAN3-26 não mexeu nisso (fora do escopo); os testes do app dele usam os nomes do app na lista falsa, como o probe do revisor do plano.
 - **nota (C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP):** o PR534-03 (o pull lê `on_route`/`on_site` como "Agendada") foi passado a este dono. O plano v2 do `B-O6R-11d` já trata disso: o D5 e a P1 da tabela de partida, com o T5. Enquanto isso, a metade do item 53 que fica no app (o diálogo da placa) não é alcançável com o servidor real (`P-MOBILE-CHECKIN-CONFERE-CODIGO-DA-OS`, fechamento).
 
@@ -13368,7 +13403,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CHECKIN-SEM-PLACA-OFFLINE (2026-11-11) — OS sem placa e guincheiro sem dados: a OS fica "A caminho" — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6); o revisor do plano `crit-26-r2-cl` (C26R2-05) a deu média · **escopo:** app de campo · **dono:** `B-O6R-11d` (o pull tem de trazer o `on_site` registrado pela base como "No local"; a exceção ao offline-first segue decisão do dono, que pode rever a B: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6); o revisor do plano `crit-26-r2-cl` (C26R2-05) a deu média · **escopo:** app de campo · **dono:** `B-O6R-11e (a planejar)` (fora do PERMITIDO do 11d; o pull tem de trazer o `on_site` registrado pela base como "No local"; a exceção ao offline-first segue decisão do dono, que pode rever a B: C3-03 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não.
 - **fato:** com a decisão B, a OS sem placa não confirma a chegada pelo app (o diálogo mostra "peça à base"), e o grafo local só deixa `enRoute → arrived`. A base registra pelo console, mas o app só vê o `on_site` depois de um pull: sem dados (estrada, só voz), o guincheiro fica em "A caminho" e não inicia o atendimento pelo app. É uma exceção ao offline-first (§6 do contrato), declarada no `API_CONTRACTS.md` §3.5.2.
 - **critério de encerramento:** o dono decide se aceita a exceção ou se o app ganha um caminho offline para a OS sem placa; a decisão vira teste.
 
@@ -13429,17 +13464,20 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-APP-DETALHE-OS-LARGURA-INFINITA (2026-11-11) — no APK debug o detalhe da OS fica em branco pelo botão "Abrir mapa" — ALTA
 
-- **status:** ABERTA · **gravidade:** ALTA (a fonte) · **escopo:** anterior ao bloco `B-SAN3-26` (#534); `mobile/flutter_app/lib/features/work_orders/ui/work_order_operational_map_screen.dart:274` · **dono:** `B-O6R-11d` (C3-01 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP; antes: a definir pelo orquestrador, com o `B-O6R-11d` ou um bloco de app como candidatos) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
+- **status:** ABERTA · **gravidade:** ALTA (a fonte) · **escopo:** anterior ao bloco `B-SAN3-26` (#534); `mobile/flutter_app/lib/features/work_orders/ui/work_order_operational_map_screen.dart:274` · **dono:** `B-O6R-11e (a planejar)` (C3-01 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP) · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não segura o #534.
 - **origem:** o dev do conserto do #534 (`dev-san3-26-fix-cl`), ao executar o PR534-05 no emulador com o APK da `main` (registro pendente do orquestrador, 11/11 06:22 SP; exceção em `revisoes/dev-534-fix-emulador/app-debug-excecao-do-detalhe.log`, fora do repositório; descrito também no diário do dev, no ramo `fix/checkin-confere-placa`).
 - **fato:** no APK debug, o detalhe da OS fica em branco por `BoxConstraints forces an infinite width` no "Abrir mapa": um `OutlinedButton` numa `Row` sem `Expanded`, com `minimumSize: Size.fromHeight(44)`. No profile, o botão estoura a largura.
 - **critério de encerramento:** o detalhe da OS abre no APK debug e no profile, com o "Abrir mapa" dentro da largura, provado por widget test que fica vermelho com o layout de hoje.
+- **Apenso 2026-11-11 (`B-O6R-11d`):** fora do PERMITIDO do 11d (tela e repositório do app). Dono: `B-O6R-11e (a planejar)`.
 
 ## P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA (2026-11-11) — o app antigo recusa "Iniciar rota" de "Agendada" e não chega ao "No local" de OS vinda do servidor — MÉDIA (gravidade: leitura do redator)
 
-- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** anterior ao bloco `B-SAN3-26` (#534); a transição `scheduled → enRoute` do app e o pull que lê o status pelo nome do enum do app (a causa do PR534-03 está na `P-MOBILE-STATUS-NOMES`, de 2026-11-04) · **dono:** `B-O6R-11d` (a fonte) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
+- **status:** FECHADA no merge do PR do `B-O6R-11d` (apenso 2026-11-11 abaixo).
+- **status anterior:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** anterior ao bloco `B-SAN3-26` (#534); a transição `scheduled → enRoute` do app e o pull que lê o status pelo nome do enum do app (a causa do PR534-03 está na `P-MOBILE-STATUS-NOMES`, de 2026-11-04) · **dono:** `B-O6R-11d` (a fonte) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
 - **origem:** o mesmo ensaio no emulador do PR534-05 (registro pendente do orquestrador, 11/11 06:22 SP; capturas `04-iniciar-rota-recusada-no-app.png` e `20-pull-os2-volta-como-agendada.png` em `revisoes/dev-534-fix-emulador/`, fora do repositório).
 - **fato:** o app antigo recusa "Iniciar rota" de "Agendada" (`scheduled → enRoute`). Somado ao PR534-03 (o pull traz `on_route` e `on_site` do servidor como "Agendada"), o app antigo não chega ao "No local" de OS vindas do servidor. O PR534-03 foi passado ao `B-O6R-11d` pelo orquestrador.
 - **critério de encerramento:** com uma OS do servidor em `on_route` e outra em `on_site`, o app mostra o status certo depois do pull e permite seguir até o "No local", provado por teste do app que fica vermelho no código de hoje.
+- **Apenso 2026-11-11 (`B-O6R-11d`, PR534-03):** o pull ("Minhas OS", `fetchAssignedOpenWorkOrders`, o mesmo parser que o repositório usa) traduz `on_route → enRoute` (que segue para "No local"), `on_site → arrived` ("No local") e `assigned → dispatched` (que inicia a rota). Prova: T5 de `mobile/flutter_app/test/features/work_orders/bo6r11d_lista_e_linha_do_tempo_test.dart`, pelo `DioWorkOrderRemoteApi` real com a resposta da lista; vermelho na F0 (`Expected: inService, Actual: scheduled`) e sob as mutações M5 e M5b do diário.
 - **nota (C3-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP):** a barreira não é só do app antigo. A sonda `c3probe534_status_test.dart` da cadeira C3 dá a mesma saída com o `lib/` do head do #534 e com o da base `b6caf568`: `on_route`, `open`, `assigned`, `accepted`, `on_site` e `in_progress` do servidor viram "Agendada", e "Iniciar rota" e "No local" ficam recusados. O critério de encerramento vale para o app atual.
 
 ## P-DESPACHO-DUPLICADO-MESMO-TECNICO (2026-11-11) — dois despachos ativos do mesmo técnico na mesma OS — MÉDIA (gravidade: leitura do redator)
@@ -13637,14 +13675,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CHECKIN-CARTAO-CONGELADO-NO-PULL (2026-11-11) — com o cartão de check-in aberto, o pull não atualiza o modo nem a cauda da placa — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA (triagem do orquestrador) · **escopo:** dentro do `B-SAN3-26` (E-01 e o `redoCheckin`, F3 `23a6a5c5`) · **dono:** `B-O6R-11d` · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não segura o #534.
+- **status:** ABERTA · **gravidade:** MÉDIA (triagem do orquestrador) · **escopo:** dentro do `B-SAN3-26` (E-01 e o `redoCheckin`, F3 `23a6a5c5`) · **dono:** `B-O6R-11e (a planejar)` · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não segura o #534.
 - **origem:** C2-02 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`revisoes/j534/c2-voto.json`, fora do repositório).
 - **fato:** enquanto o cartão "Confirmar a placa de novo" existe, o pull pula a OS inteira (E-01), e o `checkinMode` e o `checkinPlateTail` não se atualizam. O toque reabre o diálogo com esse dado congelado. Quando a recusa veio de dado velho no aparelho (OS em cache sem modo, ou placa trocada pela base), o guincheiro repete a mesma recusa, e os dígitos NOVOS são barrados no próprio diálogo como "não conferem". Ele só sai cancelando o diálogo e puxando a lista, e nada lhe diz isso. Prova da cadeira: `c2_unknown_sem_placa_probe_test.dart` (+2) e o emulador (OS-000016, cauda 89 e placa trocada para `QWX7K55`).
 - **critério de encerramento:** o pull atualiza o modo e a cauda da OS presa ao cartão sem apagar o cartão, e a 2ª tentativa usa a placa nova, com teste do app que fica vermelho no código de hoje.
+- **Apenso 2026-11-11 (`B-O6R-11d`, dp-545):** fora do PERMITIDO do 11d (tela e repositório do app). Dono: `B-O6R-11e (a planejar)`.
 
 ## P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA (2026-11-11) — o técnico ainda apaga ou reescreve uma placa que o servidor não reconhece — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `pre-existente`: na base `b6caf568` o campo trocava qualquer placa, e o `B-SAN3-26` reduziu a classe à placa não reconhecida · **dono:** `B-O6R-11d` (triagem do orquestrador) · **PR-alvo:** o PR do `B-O6R-11d` · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `pre-existente`: na base `b6caf568` o campo trocava qualquer placa, e o `B-SAN3-26` reduziu a classe à placa não reconhecida · **dono:** `B-O6R-11e (a planejar)` (triagem do orquestrador; fora do PERMITIDO do 11d) · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não.
 - **origem:** C1-A2 da junta do PR #534 (`B-SAN3-26`), triagem do orquestrador de 2026-11-11 ~08:00 SP (`revisoes/j534/c1-voto.json`, sonda `c1-sonda-extra`).
 - **fato:** a guarda do `PATCH /work-orders/:id` compara a referência normalizada antes e depois. Com placa estrangeira, com duas placas ou com texto colado, ela é nula dos dois lados, e o técnico atribuído apaga ou reescreve o que a base digitou (200). O evento `work_order_updated` não guarda o valor anterior. Não abre fuga do check-in: a OS segue com `checkin_reference_missing`.
 - **critério de encerramento:** o campo não muda `service_details.plate` quando o texto da base não é placa reconhecida (ou a decisão do dono diz o contrário), com teste que fica vermelho no código de hoje.
@@ -13814,6 +13853,399 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a seção das rotas financeiras da OS no `API_CONTRACTS.md` nunca teve catálogo de erros, nem o 503 `invoice_transient_conflict` do B-SAN3-02; o arquivo está fora do PERMITIDO do plano do B-SAN3-23, cujo §3.5 manda registrar as adições no comando do bloco, o que foi feito) · **dono:** o próximo bloco que tocar o `API_CONTRACTS.md` das rotas financeiras da OS · **PR-alvo:** esse bloco · **bloqueia:** não.
 - **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
 - **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).
+
+## P-SAN3-18-PORTA-DE-MODULO-POR-ORG (2026-11-11) — não existe porta real para ligar ou desligar uma área de UMA organização — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o console de organizações da plataforma é em memória desde o `B-SAN3-06b`) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **origem:** R-A7 do plano v2 do `B-SAN3-18`; estreita a `P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA`, que fica com o `B-SAN3-18` (`D-B-SAN3-18-PORTA-DE-MODULO`).
+- **prova:** `PATCH /api/v1/platform/tenants/:id/modules` gravava em `platform-tenants.repository.ts` (em memória), que nem o gate nem o menu leem; a escrita real de `tenants.modules` só existe pela assinatura (`subscriptions.service.ts` → `tenant-modules.prisma.ts`, que SUBSTITUI a lista) e pelo script `scripts/san3-18-provisionar-modulos.ts` (que só acrescenta).
+- **o que o `B-SAN3-18` entrega:** a porta falsa passa a recusar com 409 `module_change_requires_subscription` (`tests/san3-18-platform-modules-patch.test.ts`).
+- **teste de encerramento:** a plataforma liga e desliga um módulo de uma organização, com auditoria, e o gate e o menu enxergam a mudança na requisição seguinte.
+
+## P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA (2026-11-11) — a tela de módulos da organização mostra "habilitado" e não avisa do 409 — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (o 409 nasce no `B-SAN3-18`; a tela é anterior) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **origem:** R2-03 da crítica r2 do plano, opção (a): sem abrir front num bloco de permissão. O §0 item 6 do plano v2 vale como "a tela continua mostrando a lista antiga e não avisa do 409".
+- **prova:** `frontend/src/modules/platform/pages/PlatformTenantModulesPage.tsx:44-47` — `saveModules()` sem `try/catch`; o selo "habilitado" sai do estado LOCAL (l.83). Com o 409 a promessa rejeita sem nada na tela, e o GET da mesma tela lê o repositório em memória, não `tenants.modules`.
+- **teste de encerramento:** a tela mostra o estado de erro (§7) no 409 e avisa que os módulos mudam pela assinatura; o selo sai da resposta do servidor.
+
+## P-SAN3-18-PORTAL-SEM-GATE (2026-11-11) — os portais do proprietário e da autoridade ficam fora do gate de módulo — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `src/portal-app.ts` é instância `express()` própria (`/portal/v1/*`), fora de `/api/v1`; listada em `SUPERFICIES_FORA_DO_GATE` de `tests/san3-18-superficies.test.ts`.
+- **teste de encerramento:** o portal recusa organização sem `patios`, ou a decisão de que o portal é núcleo fica registrada.
+
+## P-SAN3-18-TRACCAR-SEM-GATE (2026-11-11) — a ingestão do Traccar fica fora do gate de módulo — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `src/integrations/traccar/traccar-ingest.app.ts` é instância `express()` própria; listada em `SUPERFICIES_FORA_DO_GATE`.
+- **teste de encerramento:** posição de dispositivo de organização sem `telemetry` vai para a quarentena, ou a decisão contrária fica registrada.
+
+## P-SAN3-18-JOBS-SEM-GATE (2026-11-11) — os jobs de fundo não olham os módulos da organização — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** os jobs (diária do pátio, alertas, cobrança) não são instância `express()` e não passam pelo gate; não há guard que os liste.
+- **teste de encerramento:** cada job declara a área que exige, e um guard os enumera.
+
+## P-SAN3-18-MENU-WEB-FALLBACK-ABERTO (2026-11-11) — se o `GET /navigation/menu` falhar, a barra lateral da web mostra tudo — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não (o servidor recusa do mesmo jeito).
+- **prova:** `frontend/src/layouts/appSidebarNav.ts:306-319` — no fallback `governedPaths` é vazio e "nada extra é escondido" (N2 do plano v2; R2-07 da crítica r2). O §0 item 3 do plano vale como: o menu DO SERVIDOR esconde; a barra lateral da web ainda mostra tudo se a lista falhar, e o servidor recusa do mesmo jeito.
+- **teste de encerramento:** com o menu indisponível, a barra lateral esconde os itens de módulo (default negar), com vermelho-controle.
+
+## P-SAN3-18-LOTE-EVIDENCIA-QUALQUER-DE (2026-11-11) — o lote de evidências aceita ação de OS de organização só com Operação de Campo — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (consequência declarada da classe `{work_orders, field_operations}`) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `POST /api/v1/mobile/sync/evidence-actions` tem a classe qualquer-de do `generic_evidence_upload` (`src/modules/navigation/route-modules.ts`); separar exige conferir ação por ação em `src/modules/mobile/**`, fora do escopo do bloco.
+- **teste de encerramento:** ação `evidence.work_order_*` de organização sem `work_orders` → recusada por ação.
+
+## P-SAN3-18-BOTAO-ALERTAS-FROTA (2026-11-11) — a Central de Notificações chama o disparo de alertas da Frota — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `frontend/src/modules/notifications/notification.adapter.ts:120` (`/notifications/fleet-alerts/run`, classe `{vehicles}`). Organização com Notificações e sem Frota leva 403 no botão (N1 do plano v2).
+- **teste de encerramento:** o botão some sem Frota.
+
+## P-SAN3-18-BOTAO-REVOGAR-DESPACHO-SEM-CAMPO (2026-11-11) — a lista de OS chama o despacho ativo no clique de revogar — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `frontend/src/modules/work-orders/work-orders-row.handlers.ts:2` → `GET /operations/dispatches?workOrderId=` (classe `{field_operations}`): organização com OS e sem Operação de Campo leva 403 no clique (R2-02 da crítica r2).
+- **teste de encerramento:** o botão some sem Operação de Campo.
+
+## P-SAN3-18-ANEXO-GENERICO-SEM-MODULO (2026-11-11) — `/attachments` é núcleo e serve entidades de várias áreas — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (R5 do plano v2) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `NUCLEO_API` inclui `attachments` (`src/modules/navigation/route-modules.ts`); a rota polimórfica serve dano, multa, apólice e manutenção (Frota).
+- **teste de encerramento:** o anexo exige a área da entidade dona.
+
+## P-SAN3-18-APP-TELEMETRIA-SEM-CAPACIDADE (2026-11-11) — o app envia telemetria sem olhar o bootstrap — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **origem:** R2-08 da crítica r2, decidido pela pendência (e não pela classe qualquer-de): `POST /mobile/telemetry` fica `{telemetry}`, porque organização sem Telemetria não acumula ponto de telemetria.
+- **prova:** `buildFeatureFlags` (`src/modules/mobile/mobile.routes.ts`) não tem capacidade de telemetria; o app envia sem olhar (`telemetry_api.dart`) e o buffer descarta depois do teto de tentativas (`telemetry_sync_service.dart:120-147`). Organização com Operação de Campo e sem Telemetria leva 403 em todo lote; não há consumidor desses pontos em OS ou financeiro (medido pela crítica r2).
+- **teste de encerramento:** o bootstrap tem a capacidade de telemetria, e o app não envia sem ela.
+
+## P-SAN3-18-PLANOS-SEM-CHAVES-NOVAS (2026-11-11) — versões de plano gravadas antes do bloco não têm as chaves novas — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** a plataforma (ato de operação, R3 do plano v2) · **bloqueia:** a próxima sincronização de plano em produção.
+- **prova:** atribuir ou sincronizar um plano SUBSTITUI `tenants.modules` (`tenant-modules.prisma.ts`); uma versão sem `patios`, `telemetry`, `work_orders` ou `master_data` tira essas áreas da organização. O script `scripts/san3-18-provisionar-modulos.ts` imprime `assinaturas_com_versao_sem_chaves=<n>`, lido organização por organização com o GUC (R2-09).
+- **teste de encerramento:** o script em simulação na base real imprime `assinaturas_com_versao_sem_chaves=0`.
+
+## P-SAN3-18-EXTRATO-POR-EFEITO-SEM-FINANCEIRO (2026-11-11) — multa e dano lançam débito no extrato do profissional sem o Financeiro — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o efeito nasce no Ω4C PR-07/PR-09; o gate o torna visível) · **dono:** a definir pelo orquestrador (emenda pedida pelo dev do `B-SAN3-18`, R2-01(2) da Emenda 1) · **bloqueia:** a decidir.
+- **prova:** `POST`/`PATCH /api/v1/fines` e `/api/v1/damages`, com profissional responsável, chamam `createForSource` do extrato (`src/modules/fines/fine.service.ts:450-466`, `src/modules/damages/damage.service.ts:496-512`), sem exigir permissão financeira do usuário — o oráculo por permissão do R2-01 não as vê. A classe dessas rotas é `{vehicles}` (são o cadastro da Frota; `{finance}` trancaria o cadastro de multa e de dano). Logo, uma organização com Frota e sem Financeiro grava débito no extrato que ela não pode ler (`/professional-statements` = `{finance}`).
+- **teste de encerramento:** sem o Financeiro, a multa e o dano são gravados sem débito no extrato (ou o lançamento é recusado com motivo), com teste.
+- **apenso (Emenda 2 do `B-SAN3-18`, E2.3; orquestrador, 2026-11-11 15:12 SP; aplicado por `apply-544-api`):** valores anteriores de dono e bloqueia preservados acima. **escopo:** `pre-existente` (a causa antecede o bloco e está fora do PERMITIDO; o efeito não cruza organização nem pula permissão do usuário: é regra de negócio sem dono). **dono:** o planejador do próximo bloco do Financeiro (item 29). **bloqueia:** não (não segura o #544). **pergunta ao dono:** "sem o Financeiro, multa e dano devem lançar no extrato do profissional?". **recomendação:** sim, lançar; o extrato fica visível quando o Financeiro for ligado.
+
+## P-SAN3-18-DB-FORA-DA-LISTA-CURADA (2026-11-11) — a suíte `san3-18-provision-modules-db` não está na lista do `backend-postgres` — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** o próximo bloco autorizado a tocar `.github/workflows/ci.yml` · **bloqueia:** não.
+- **prova:** a suíte roda no job `backend` (que tem Postgres e roda `npm test` inteiro, com o guarda de pulos); `.github/**` é PROIBIDO no `B-SAN3-18`.
+- **teste de encerramento:** a suíte entra no `SUITES=` do `backend-postgres`, sob o guarda de zero pulos.
+
+## P-SAN3-18-NAV-PROVISIONING-LISTA-LITERAL (2026-11-11) — `tests/navigation-provisioning.test.ts` afirma Pátios e Telemetria sem módulo — ALTA (bloqueia a bateria do bloco)
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-18`, depois da emenda que põe o arquivo no PERMITIDO · **bloqueia:** a bateria verde do `B-SAN3-18`.
+- **prova:** o teste (não é JWT; fora do PERMITIDO do plano v2) monta o menu com uma lista LITERAL de módulos (l.11-14) sem `telemetry` nem `patios` e afirma que os papéis com a permissão VEEM os 11 itens de Pátios e Telemetria — exatamente o comportamento que o item 16 muda. Medido no ramo `fix/gate-de-modulo-no-backend`: 40 `not ok`, todos nesse arquivo.
+- **teste de encerramento:** a lista do teste passa a incluir as chaves novas (ou é lida de `DEMO_TENANT_MODULES`, como faz `tests/san3-04a-menu-front-x-catalogo.test.ts`), e o arquivo fica verde.
+
+## P-WO-ASSIGN-OPERATOR-ID-TORTO (2026-09-18) — a atribuição de OS grava o id do USUÁRIO em `assigned_operator_id` pelo fallback `operatorId ?? userId` — MÉDIA
+
+- **portada (2026-11-11, `B-O6R-11d`, CR2-11D-05):** texto literal de `origin/fix/mobile-work-order-contracts:agent-orchestration/controle/pendencias.md` (`a24f58b5`, ramo do PR #388, fechado sem merge). As linhas de código citadas abaixo são as daquele ramo.
+- status: ABERTA (plano do `B-O6R-11` §6, P3 — backend, `src/**` proibido ao bloco; não consertada)
+- **o quê:** o backend deveria resolver o perfil do operador a partir do usuário; hoje o id do usuário vai para a
+  coluna do operador. O app, depois do `B-O6R-11`, envia `userId` — o contrato documentado para o app —, que
+  preenche `assigned_operator_id` (pelo fallback) e `assigned_user_id`; o que continua torto é o write do backend.
+- **prova:** `src/modules/work-orders/work-order.service.ts:1684` (`operatorId: parseRequiredUuid(body.operatorId ??
+  body.userId, "operatorId")`) e `:817-827` (guard dual-match; o comentário da l.827 diz "O write continua torto e é
+  do `Ω6R-QUA-004`, que segue ABERTO" — o `Ω6R-QUA-004` fecha no app por este bloco, e o residual de backend fica
+  com este ID).
+- **estado (plano §6):** vivo (backend).
+- **severidade:** MÉDIA (emenda 2 (h) do orquestrador, 2026-09-18) — backend vivo.
+- **escopo:** `pre-existente` — `git blame 9dea0ef6`: `:1684` → `51238552` (2026-06-09, "feat: add work orders
+  foundation"); `:817-827` → `dc8168b9` (#369, 2026-09-04).
+- **dono:** `B-O6R-07c` — **provisório, a ratificar pela junta do `B-O6R-11`** (emenda (c) do comando; dono do
+  guard dual-match em `service.ts:812-839`).
+- **Apenso 2026-11-11 (`B-O6R-11d`):** segue como está (§4.3 do plano do `B-O6R-11d`). O bloco não muda o write: o lote passa a mandar `user_id` igual ao `operator_id` que já mandava, o que não endireita a coluna. O plano do 11d dá o `B-O6R-07c-b2` como o bloco que tem esta pendência.
+
+## P-MOBILE-APPROVAL-REQUEST-REST-404 (2026-09-18) — `createApprovalRequest` REST do app posta numa rota que não existe no backend — BAIXA
+
+- **portada (2026-11-11, `B-O6R-11d`, CR2-11D-05):** texto literal de `origin/fix/mobile-work-order-contracts:agent-orchestration/controle/pendencias.md` (`a24f58b5`, ramo do PR #388, fechado sem merge). As linhas de código citadas abaixo são as daquele ramo.
+- status: ABERTA (plano do `B-O6R-11` §6, P5 — não tocada pelo bloco além de 1 linha de comentário)
+- **o quê:** `DioWorkOrderRemoteApi.createApprovalRequest` posta em `/work-orders/:id/approval-requests`; 0
+  chamadores do método remoto (o "pedir aprovação" da tela vai pela fila: `work_order_repository.dart:458`).
+- **prova:** `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:162-180` no head-base
+  `9dea0ef6` (depois do bloco: `:194-213`, com o comentário apontando esta pendência na l.194);
+  `rg "approval-requests" src -g '*.ts'` → 0.
+- **estado (plano §6):** código morto.
+- **severidade:** BAIXA (emenda 2 (h) do orquestrador, 2026-09-18).
+- **escopo:** `pre-existente` — `git blame 9dea0ef6` de `:162-180` → `e79616aa` (2026-06-13).
+- **dono:** **`B-SAN3-13`** (troca de dono no `B-O6R-11` ciclo 2, C3-A4 da junta): o arquivo que esta pendência
+  nomeia é `work_order_remote_api.dart`, que está na fronteira do `B-SAN3-13` (`docs/revisoes/SAN3/PLANO_SAN3.md` §5)
+  e **não** na do `B-SAN3-16` (que tem `sync_replay_service.dart` e `work_order_repository.dart`). O "pedir aprovação
+  pela fila" continua sendo o item 5 do gate, no `B-SAN3-16` — quem apagar o método REST morto confere com ele.
+  *(até 2026-09-18 o dono era `B-SAN3-16`, que não tem o arquivo.)*
+- **Apenso 2026-11-11 (`B-O6R-11d`):** segue como está (§4.3 do plano do `B-O6R-11d`); o 11d não toca `createApprovalRequest`.
+
+## P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no app: o app não distingue "atribuída" de "aceita" — MÉDIA
+
+- **portada (2026-11-11, `B-O6R-11d`, CR2-11D-05):** texto literal de `origin/fix/mobile-work-order-contracts:agent-orchestration/controle/pendencias.md` (`a24f58b5`, ramo do PR #388, fechado sem merge). As linhas de código citadas abaixo são as daquele ramo.
+- status: ABERTA (decisão de produto; plano do `B-O6R-11` §6, P6)
+- **o quê:** o enum `WorkOrderStatus` do app não tem estado de OS aceita; o parser do `B-O6R-11` mapeia
+  `accepted → dispatched` de propósito (plano §7) — antes do bloco, `accepted` caía em `scheduled`.
+- **prova:** `mobile/flutter_app/lib/features/work_orders/domain/work_order_models.dart:14-27` (12 valores, sem
+  `accepted`); `src/modules/work-orders/work-order.types.ts:6-17` (`WORK_ORDER_STATUSES`, 10 valores, com
+  `accepted`); `work_order_remote_api.dart:304` (`'accepted' => WorkOrderStatus.dispatched`, comentário apontando
+  esta pendência); caso 2 do `bo6r11_os_rest_envelope_e_vocabulario_test.dart`.
+- **estado (plano §6):** decisão de produto.
+- **severidade:** MÉDIA (emenda 2 (h) do orquestrador, 2026-09-18).
+- **escopo:** a ausência de `accepted` no enum é `pre-existente` (`git blame 9dea0ef6` de `:14-27` → `e79616aa`,
+  2026-06-13); o mapeamento com perda nasce neste bloco, por decisão do plano §7.
+- **dono:** **`B-SAN3-13`** (fixado no `B-O6R-11` ciclo 2, C3-A4): é o único bloco cuja fronteira do §5 tem
+  `work_order_remote_api.dart`, um dos dois arquivos desta prova. **Fronteira a ampliar no comando do dono:** o
+  enum `features/work_orders/domain/work_order_models.dart` não está na fronteira de bloco algum do §5 do
+  `docs/revisoes/SAN3/PLANO_SAN3.md` (medido no ciclo 2); o arquivo é fonte de verdade fora do escopo deste bloco e
+  não foi tocado — a ampliação está reportada ao orquestrador como divergência. *(até 2026-09-18 o dono era
+  `B-SAN3-13`/`B-SAN3-14`, e nenhum dos dois tinha o arquivo do enum.)*
+- **Apenso 2026-11-11 (`B-O6R-11d`):** segue como está. O codec único do `B-O6R-11d` mantém `accepted → dispatched` de propósito (T4 de `bo6r11d_codec_test.dart`).
+
+## P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA (2026-09-19) — status do backend fora do vocabulário do app vira "Agendada", e a tela oferece "Iniciar rota" em cima disso — MÉDIA
+
+- **portada (2026-11-11, `B-O6R-11d`, CR2-11D-05):** texto literal de `origin/fix/mobile-work-order-contracts:agent-orchestration/controle/pendencias.md` (`a24f58b5`, ramo do PR #388, fechado sem merge). As linhas de código citadas abaixo são as daquele ramo.
+- status: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; achado C2-F3 da junta do ciclo 1, escopo `pre-existente` — não consertada neste PR)
+- **o quê:** `workOrderStatusFromApiValue` termina em `orElse: () => WorkOrderStatus.scheduled`. Status que o app não
+  conhece — um valor novo do backend, um typo, um `''`, um número — não é recusado nem sinalizado: vira `scheduled`,
+  que é um estado **acionável**. O técnico vê "Agendada" e a tela oferece "Iniciar rota" sobre um estado que ninguém
+  confirmou.
+- **prova:** `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart` (o `orElse` do
+  `firstWhere` por nome de enum, hoje na l.366 depois da correção do ciclo 2);
+  `mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart:800` (`label: const Text('Iniciar
+  rota')`). O destino está FIXADO pelo caso 15 do `bo6r11_os_rest_envelope_e_vocabulario_test.dart` (o teste
+  registra qual é o comportamento, não o aprova), e a metade "concordância" do achado foi fechada pelo caso 16
+  (todo valor de `WORK_ORDER_STATUSES` tem entrada explícita em `backendStatusToApp`).
+- **escopo:** `pre-existente`. Medido pelo dev do ciclo 2 em 2026-09-19 contra a base `02bd7dab`:
+  `git log -S 'orElse: () => WorkOrderStatus.scheduled' 02bd7dab -- <arquivo>` → três commits, o mais antigo
+  `e79616aa` (2026-06-13, "feat(mobile): Flutter mobile field ops foundation"), depois `3b56da1a` (2026-06-14) e
+  `9801172c` (2026-06-19, "feat(approvals): add operational approval flow"), que é a quem o `git blame 02bd7dab`
+  atribui a linha atual. *(O §6 do plano do ciclo 2 cita só `e79616aa`; as duas datas ficam registradas — a origem
+  do comportamento é de 13/06, a última escrita da linha é de 19/06.)*
+- **severidade:** MÉDIA.
+- **dono:** `B-SAN3-13` (o §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` tem `work_order_remote_api.dart` na fronteira).
+- **bloqueia:** não bloqueia o `B-O6R-11`; é decisão de produto — precedente `P-CHK-FLUTTER-KIND-COLAPSA`, resolvida
+  na PR-04b.
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** status desconhecido não vira estado
+  acionável — ou um estado próprio ("desconhecida", sem ações), ou erro visível; o caso 15 do T1 muda junto, com
+  vermelho-controle.
+- **Apenso 2026-11-11 (`B-O6R-11d`):** segue ABERTA, agora **só para status FUTURO** do backend: os 10 de `WORK_ORDER_STATUSES` têm entrada explícita no codec (`workOrderStatusHasBackendEntry`, T4) e a fixture é amarrada à lista do backend (N10). Na lista e na OS única o desconhecido ainda cai em `scheduled` (`workOrderStatusFromApi`); na linha do tempo vira `null` (`workOrderStatusFromApiOrNull`, T12).
+
+## P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL (2026-09-19) — OS urgente aparece "Normal" na lista do técnico — MÉDIA
+
+- **portada (2026-11-11, `B-O6R-11d`, CR2-11D-05):** texto literal de `origin/fix/mobile-work-order-contracts:agent-orchestration/controle/pendencias.md` (`a24f58b5`, ramo do PR #388, fechado sem merge). As linhas de código citadas abaixo são as daquele ramo.
+- status: ABERTA até a conferência — fechada na leitura pelo `B-O6R-11d` (apenso abaixo); antes: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; achado C3-A6 da junta do ciclo 1, escopo `pre-existente` — não consertada neste PR)
+- **o quê:** o backend fala `WORK_ORDER_PRIORITIES = ["low","medium","high","urgent"]`; o enum do app é
+  `{low, normal, high, critical}`. O parser casa por NOME e cai em `normal` no resto: `urgent` e `medium` — dois dos
+  quatro valores — viram `normal`. É a mesma classe do achado do vocabulário de status que o `B-O6R-11` consertou,
+  na coluna ao lado, e vale na lista VIVA do B-099.
+- **prova:** `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart:264-267`
+  (`WorkOrderPriority.values.firstWhere((p) => p.name == (json['priority'] as String?), orElse: () =>
+  WorkOrderPriority.normal)`); `mobile/flutter_app/lib/features/work_orders/domain/work_order_models.dart:29`
+  (`enum WorkOrderPriority { low, normal, high, critical }`); `src/modules/work-orders/work-order.types.ts:19`
+  (`WORK_ORDER_PRIORITIES`). Reexecutado pelo dev do ciclo 2 em 2026-09-19.
+- **escopo:** `pre-existente` — `git blame 02bd7dab` do `orElse` → `3b56da1a` (2026-06-14, "feat(mobile): pull real
+  work orders into drift cache"); do enum → `e79616aa` (2026-06-13).
+- **severidade:** MÉDIA.
+- **dono:** `B-SAN3-13` (o §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` tem `work_order_remote_api.dart` na fronteira
+  dele, onde mora o `orElse` desta prova). **Fronteira a ampliar no comando do dono:** o enum
+  `features/work_orders/domain/work_order_models.dart` não está na fronteira de bloco algum do §5 — a ampliação
+  está reportada ao orquestrador como divergência (o arquivo não foi tocado por este PR).
+- **bloqueia:** não bloqueia o `B-O6R-11`.
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** o espelho do caso 16 do T1 para prioridade —
+  todo valor de `WORK_ORDER_PRIORITIES` lido do arquivo do backend tem entrada explícita no app, e `urgent` não
+  aparece como "Normal" na lista.
+- **Apenso 2026-11-11 (`B-O6R-11d`):** **fechada na leitura** pelo `B-O6R-11d`: `urgent → critical`, `medium → normal` pelo codec (`_priorityFromBackend`), na lista viva (T5) e no detalhe (T1); e a prioridade que a fila manda na criação é o inverso exato (T6, CR2-11D-07(b)). O fechamento formal fica com quem conferir.
+
+## P-MOBILE-CODEC-FILA-STATUS-CRU (2026-09-19) — a fila offline manda ao backend três status que ele recusa com 400 — BAIXA
+
+- **portada (2026-11-11, `B-O6R-11d`, CR2-11D-05):** texto literal de `origin/fix/mobile-work-order-contracts:agent-orchestration/controle/pendencias.md` (`a24f58b5`, ramo do PR #388, fechado sem merge). As linhas de código citadas abaixo são as daquele ramo.
+- status: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; achado C3-A7 / C2-N2 da junta do ciclo 1, escopo `pre-existente` — não consertada neste PR)
+- **o quê:** `WorkOrderSyncCodec._backendStatus` traduz o vocabulário do app para o do backend com `_ => status` no
+  fim: `pendingApproval`, `approved` e `exception` viajam CRUS no payload da fila. O REST do mesmo app recusa esses
+  três antes de sair (`backendStatusFor` lança `ArgumentError`, caso 6 do T1); a fila não — ela envia, e o backend
+  devolve 400 `invalid_status`.
+- **prova:** `mobile/flutter_app/lib/core/sync/sync_replay_service.dart:472-480` e `:508` (`_ => status`);
+  `src/modules/work-orders/work-order.validators.ts:74-82` (`parseWorkOrderStatus` → `WorkOrderError(400,
+  "WORK_ORDER_INVALID", "invalid_status", ...)` para qualquer valor fora de `WORK_ORDER_STATUSES`). Reexecutado pelo
+  dev do ciclo 2 em 2026-09-19.
+- **escopo:** `pre-existente` — `git blame 02bd7dab` das duas linhas `_ => status` → `d8a28153` (2026-06-16).
+- **severidade:** BAIXA (a ação fica na fila e o erro é visível; não há perda silenciosa).
+- **dono:** `B-SAN3-16` (o §5 do `docs/revisoes/SAN3/PLANO_SAN3.md` tem `sync_replay_service.dart` na fronteira).
+- **bloqueia:** não bloqueia o `B-O6R-11`; toca o item 5 do gate ("a fila drenada").
+- **teste de encerramento (proposto pelo dev, a ratificar pelo dono):** o codec da fila recusa os estados sem
+  equivalente antes de enfileirar, como o REST já faz, e o caso 11 do T1 (paridade REST × fila) passa a cobrir os
+  três; vermelho-controle no head atual.
+- **Apenso 2026-11-11 (`B-O6R-11d`):** o REST deixou de mandar os 4 status sem equivalente (`pendingApproval`, `approved`, `exception`, `rejected` → `ArgumentError`, 0 requisição; T7b), e a fila continua IDÊNTICA à de `d5ec1696` (T10 e T10b, pelo `WorkOrderSyncReplayService` real). Correção de contagem, medida: na fila são 4 crus, não 3 — o `rejected` também sai cru, e o backend o ACEITA de `assigned` (`work-order.validators.ts`: `assigned → rejected`), encerrando a OS (`P-MOBILE-REJECTED-DOIS-SENTIDOS`). Segue com o `B-SAN3-16`.
+
+## P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS (2026-11-11) — a viatura/equipe pelo app não grava com a OS aceita, em rota, no local, em atendimento ou pausada — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (plano do `B-O6R-11d`, §4.3, reescrita pelo CL11D-10) · **escopo:** pre-existente — o lote `work_order.assign` chama `service.assign`, que força `assigned` (`src/modules/work-orders/work-order.service.ts`, `assertStatusTransition(current.status, "assigned")`) · **dono:** `B-SAN3-16` · **PR-alvo:** o PR do `B-SAN3-16` · **bloqueia:** não.
+- **fato:** o app grava viatura/equipe pela ação `work_order.assign`. Só com a OS em `open` ou `assigned` ela grava; em `accepted`, `on_route`, `on_site`, `in_progress` ou `paused`, o servidor responde 409 `invalid_status_transition`, que o lote devolve em `conflicts[]`, e a viatura/equipe não grava.
+- **prova:** N8 de `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` (caracterização, verde; a mutação M-N8 do diário o deixa vermelho).
+- **critério de encerramento:** a viatura/equipe pelo app grava em qualquer status não terminal sem mudar o status da OS (envio próprio, alternativa D da Q1 do plano do 11d), com teste que fica vermelho no código de hoje.
+
+## P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO (2026-11-11) — `assign` sem `userId` apaga o usuário atribuído da OS, venha de onde vier — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (plano do `B-O6R-11d`, §4.3, CL11D-02) · **escopo:** pre-existente — o repositório grava `assigned_user_id: input.userId ?? null` (`src/modules/work-orders/work-order-prisma.repository.ts`), e o tipo da web admite a forma sem `userId` (`frontend/src/modules/work-orders/work-orders.types.ts`) · **dono:** `B-O6R-07c-b2` (que tem a `P-WO-ASSIGN-OPERATOR-ID-TORTO` e a `D-07CB1-ATRIBUICAO-WEB-REATRIBUI-NO-B2`) · **PR-alvo:** o PR do `B-O6R-07c-b2` · **bloqueia:** não segura o `B-O6R-11d`.
+- **fato:** `POST /work-orders/:id/assign` com `{ operatorId }` sozinho grava `assignedOperatorId = U` e `assignedUserId = null`. O app deixou de disparar isso pelo lote de viatura/equipe (o `B-O6R-11d` manda `user_id`), mas qualquer cliente que mande só `operatorId` o reproduz.
+- **prova:** N7 de `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` (caracterização, verde; a mutação MA2 do diário o deixa vermelho). O N6 prova que o lote do app repara a OS assim apagada (técnico U só em `assignedOperatorId` → `assignedUserId = U`).
+- **inclui:** (i) decidir a semântica (manter o usuário atual quando o alvo é o mesmo técnico, ou exigir `userId`); (ii) **contar as OS com `assigned_user_id IS NULL AND assigned_operator_id IS NOT NULL` antes da entrada em produção** e repará-las. Não há base instalada fora de bancada (o revisor do plano, `crit-11d-cl`, mediu `git tag` vazio), então a previsão é 0 em produção, mas isso não está medido.
+- **critério de encerramento:** a semântica decidida, com teste de serviço que fica vermelho no código de hoje, e a contagem (ii) publicada com N.
+
+## P-MOBILE-OS-UNICA-SEM-ORGANIZACAO (2026-11-11) — os 3 métodos de OS única do app devolvem a OS com organização vazia — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (plano do `B-O6R-11d`, §4.3, CL11D-08) · **escopo:** dentro do `B-O6R-11d`, por desenho declarado · **dono:** o primeiro bloco que ligar `fetchWorkOrder`, `updateWorkOrderStatus` ou `assignWorkOrder` a uma tela · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **fato:** a interface `WorkOrderRemoteApi` não recebe a organização nesses 3 métodos, e o `B-O6R-11d` não a lê do corpo (§2.8): eles devolvem a OS com `tenantId == ''`. Nenhum arquivo de `lib/` os chama hoje. A guarda G1(e) de `mobile/flutter_app/test/features/work_orders/bo6r11d_guard_contrato_test.dart` falha se alguém os ligar (mutação M14e do diário), e quem ligar o primeiro decide a organização no plano dele.
+- **divergência registrada (§A2, CR2-11D-05):** a junta do ramo precursor `origin/fix/mobile-work-order-contracts` (PR #388, `a24f58b5`, fechado sem merge) fechou o tenant vazio e tornou `tenantId` um `required String` nesses métodos (C2-F2/C3-A2 daquele ciclo). O plano v2 do `B-O6R-11d` volta ao vazio por contrato, com motivo declarado: mudar a interface quebraria os 6 dublês que a implementam (5 testes existentes, que o bloco não pode editar, e o stub), e editar teste existente é PROIBIDO no §4.2 do plano. A guarda G1(e) é a contrapartida. Não foi consolidado em silêncio: a escolha entre as duas formas fica com o dono desta pendência.
+- **critério de encerramento:** o primeiro chamador recebe a organização da sessão (parâmetro ou leitura do repositório), com teste que fica vermelho com o vazio, e a G1(e) passa a admitir esse chamador.
+
+## P-MOBILE-REJECTED-DOIS-SENTIDOS (2026-11-11) — `rejected` quer dizer "aprovação negada" no app e "OS encerrada" no backend — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (plano do `B-O6R-11d`, §4.3, CL11D-09) · **escopo:** pre-existente — no backend `rejected` é terminal (`src/modules/work-orders/work-order.validators.ts`, `rejected: []`, e `assigned → rejected` permitido); no app não é final e tem saída para `inService` (`mobile/flutter_app/lib/features/work_orders/domain/work_order_models.dart`) · **dono:** `B-SAN3-16` (o fluxo de aprovação na fila) · **PR-alvo:** o PR do `B-SAN3-16` · **bloqueia:** não.
+- **fato:** leitura do planejador do 11d, declarada: na entrada, `rejected → rejected` (o rótulo "Rejeitada" serve para "o técnico recusou"); pelo REST o app **não** manda `rejected` (`ArgumentError`, T7b e T14). Pela lista ele não chega (`openOnly`). Restam: a tela de "Rejeitada" oferece retomar (`rejected → inService`), e a **fila** ainda manda `rejected` cru, que o backend aceita de `assigned` e encerra a OS (medido por leitura em `work-order.validators.ts`; o caminho de fila é o da `P-MOBILE-CODEC-FILA-STATUS-CRU`).
+- **critério de encerramento:** os dois sentidos separados (status próprio de aprovação negada, ou a fila recusando `rejected` antes de enfileirar), com teste que fica vermelho no código de hoje.
+
+## P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS (2026-11-11) — o app não lê viatura/equipe que o backend emite na OS — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` — o parser `_workOrderFromRemoteJson` já ignorava `vehicleId`/`teamId` antes do bloco, e nenhuma tela lê esses campos hoje (a guarda G1(e) = 0) · **dono:** `B-O6R-11e (a planejar)` · **PR-alvo:** o PR do `B-O6R-11e` · **bloqueia:** não.
+- **origem:** C1-01 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c1-voto.json`).
+- **fato:** o `toWorkOrderDto` emite `vehicleId` e `teamId` no detalhe (e `vehicleId` na lista), mas o parser `_workOrderFromRemoteJson` não lê nenhum dos dois: viatura/equipe ficam `null` no app. Nenhum dos T1–T6 cobre viatura/equipe. Como nenhuma tela usa esses campos hoje, é lacuna de contrato de leitura, não perda ativa.
+- **critério de encerramento:** o app lê `vehicleId`/`teamId` que o backend emite (ou a decisão do dono diz o contrário), com teste que fica vermelho no código de hoje.
+
+## P-AMBIENTE-VAULT-ROUTES-SOB-CARGA (2026-11-11) — `npm test` local trava em `ass-05-vault-routes` sob carga paralela no Windows — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente Windows) · **dono:** a atribuir (ambiente/CI) · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** C3-ENV-01 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c3-voto.json`).
+- **fato:** `npm test` local (Windows, `CORE_SAAS_PERSISTENCE=memory`, sem `DATABASE_URL`) trava em `tests/ass-05-vault-routes.test.ts`: o `T-VLT-5` chama `startServer` que espera `"PORT "` por 30 s (linhas 49–52) e, sob carga paralela, o subprocesso não imprime a tempo (`sem "PORT " em 30 s`) e vaza, deixando o arquivo sem drenar o event loop. Isolado, o arquivo passa (`# tests 5 # pass 5`). Não é bug do bloco.
+- **critério de encerramento:** o `npm test` local roda inteiro no Windows sob carga paralela, com o arnês do `T-VLT-5` drenando o subprocesso e sem timeout falso.
+
+## P-AMBIENTE-DART-LOCAL-DIVERGE (2026-11-11) — `dart format` local diverge só no `bsan313` (Dart 3.11.4 local × Flutter 3.47.5 da CI) — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente, versão do Dart) · **dono:** a atribuir (ambiente/CI) · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** C3-ENV-02 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c3-voto.json`).
+- **fato:** `dart format --output=none --set-exit-if-changed lib test` local sai ec=1 somente por `test/features/bsan313_minhas_os_escopo_test.dart` (fora do bloco, idêntico à `origin/main`; Dart local 3.11.4 × Flutter 3.47.5 fixado na CI). Os arquivos do bloco não têm mudança.
+- **critério de encerramento:** o `dart format` local de `lib test` fica verde na versão do Flutter da CI (ou o arquivo é formatado na versão da CI), sem tocar em arquivo do bloco.
+
+### Fechamento de `P-SAN3-08-APPROVE-OS-NAO-ATOMICA` pelo B-O6R-09 (fatia 6), no merge (o ID já existe acima, registrado pelo #533 — união do merge, sem duplicar o ID)
+
+- **status:** FECHADA no merge do PR do `B-O6R-09` (fundida ao item 7 pelo dono, `D-PORTAO-3-RECOMENDACOES-1111` Q1 (c)) · **escopo:** `src/modules/service-quotes/**` (aprovação) e a divisão do `create` em `src/modules/work-orders/work-order.service.ts`.
+- **o que fecha:** a reserva do orçamento, a OS (com as vistorias e o evento `work_order_created`) e o vínculo `created_work_order_id` passam a ser UMA transação (`RlsPrismaServiceQuoteRepository.approveWithWorkOrder`); na memória, o mesmo contrato (registro em voo, espera do perdedor, desfazer síncrono). A repetição continua 409 `quote_already_approved`, agora com `details.workOrderId` (`D-B-O6R-09-REPLAY-ORCAMENTO-409`).
+- **critério de encerramento (o da emenda 1 do B-SAN3-08, medido no ramo):** atômico no Prisma (T19, T20 e T20b, inclusive sob `NOBYPASSRLS`, com a chamada rejeitando e todo id de OS devolvido existindo); recuperável e com 1 OS na memória (T25); vermelho-controle de `os_total = 2` (T19) e de OS órfã (T20) na `main` `07898adf`, registrado em `docs/revisoes/SAN3/B-O6R-09-dev.md`.
+
+## P-B-O6R-09-ATRIBUICAO-FORA-DA-TX (2026-11-11) — a OS aceita a atribuição e a transação-mãe do despacho não faz commit — MÉDIA (resíduo declarado R1)
+
+- **status:** FECHADA no merge do PR do `B-O6R-09` (Emenda 4); era ABERTA · **gravidade:** MÉDIA — leitura do dev, declarada (§A6): o plano v2 não dá gravidade · **escopo:** `src/modules/field-dispatch/**` × `assignFromDispatch` em `src/modules/work-orders/work-order-prisma.repository.ts` · **dono:** o orquestrador escolhe (plano v2 §8, R1) · **bloqueia:** não.
+- **origem:** plano v2 do `B-O6R-09`, R1. A atribuição da OS é gravada na transação do repositório de OS; a mãe (despacho + evento) só faz commit depois. Se a mãe se perde entre os dois commits (tempo esgotado, queda do banco ou do processo), sobra a OS com o técnico e sem o despacho novo, ou, na reatribuição, a OS com o técnico novo e o despacho com o antigo. A janela é a do commit; o log codificado é `dispatch_commit_lost_after_assignment`.
+- **critério de encerramento:** a atribuição da OS dentro da MESMA transação do despacho (o repositório de OS aceitando o `tx`, como a fatia 6 já faz para a OS do orçamento por `work-order-scope.ts`), com teste de falha injetada no commit.
+- **fechamento (Emenda 4 do plano v2, fatia 7, `169f1428`; vale no merge):** a medição do topo (`topo-537-opus`) achou 7 formas de a mãe falhar depois do gancho, uma delas determinística (DDL na fila), e o R1 deixou de ser resíduo: era defeito GRAVE de integridade (a OS atribuída sem o despacho, ou com outro técnico). A atribuição da OS passou para DENTRO da transação-mãe (P5), pela mesma `tx` (`FieldDispatchTxScope`, `workOrderAssignRepositoryForTx`), sem 2ª conexão (P6). Testes-dono em `tests/b-o6r-09-dispatch-same-tx-db.test.ts` (banco próprio): T26a (commit perdido · criar), T26b (· ativar), T26c (· reatribuir) e T26d (queda da conexão), vermelhos contra o código de antes (OS `assigned` com o despacho ausente, ou a OS com B e o despacho com A) e verdes no head. Mutações: M26, M26c e M26t vermelhas, uma por vez e revertidas.
+
+## P-B-O6R-09-ESCRITORES-FORA-DE-SRC (2026-11-11) — escritores de despacho fora de `src/` gravam despacho sem evento — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `prisma/seed-fleet.ts:160` e `scripts/traccar-dev-demo.mjs:340,345` · **dono:** o próximo bloco que tocar o seed da frota ou a demo do Traccar · **bloqueia:** não.
+- **origem:** plano v2, R-A12 (iii), e a revisão r2 do plano (`crit-09-r2`), R2-10. A guarda `tests/b-o6r-09-dispatch-writers-guard.test.ts` cobre só `src/**`.
+- **critério de encerramento:** os dois escritores passam pelo repositório (`createWithEvent`) ou gravam o evento junto; a guarda passa a cobrir `prisma/seed*.ts` e `scripts/**`.
+
+## P-B-O6R-09-OS-CRIACAO-EVENTO-FORA-DA-TX (2026-11-11) — a criação NORMAL de OS grava a OS e o `work_order_created` em transações separadas — MÉDIA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `src/modules/work-orders/work-order.service.ts` (`create` público com o repositório Rls) · **dono:** um bloco de OS com revisão reforçada · **bloqueia:** não.
+- **origem:** emenda 1 do `B-O6R-09`, §5.3. A fatia 6 só torna atômico o caminho do orçamento; o `create` público segue com uma transação por chamada do repositório.
+- **critério de encerramento:** `persistPreparedCreate` dentro de uma `withTenantRls` no `create` público, com teste de falha injetada no evento (0 OS).
+
+## P-B-O6R-09-NEXTCODE-CORRIDA (2026-11-11) — duas criações simultâneas na mesma organização colidem no código da OS — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `src/modules/work-orders/work-order-prisma.repository.ts` (`nextCode` conta e procura) · **dono:** o mesmo bloco de OS da pendência anterior · **bloqueia:** não.
+- **origem:** emenda 1, §1.5 e §5.3. Na aprovação do orçamento o desfecho é limpo (rollback, orçamento em draft; caso `[Q2 · código]` de `tests/b-o6r-09-quote-approve-atomic-db.test.ts`), mas o perdedor recebe o P2002 cru, e a janela cresce até o commit da transação.
+- **critério de encerramento:** código alocado sem corrida (sequência por organização ou nova tentativa no P2002), com teste de corrida.
+
+## P-B-O6R-09-STATUS-APROVA-SEM-OS (2026-11-11) — o orçamento pela rota de status — BAIXA (anterior ao bloco), 2 itens
+
+- **status:** ABERTA · **escopo:** `PATCH /service-quotes/:id/status` · **dono:** a continuação do `B-SAN3-08` · **bloqueia:** não.
+- **itens:** (i) a rota leva `draft→approved` sem OS, e a aprovação recusa esse orçamento; (ii) o `update` grava sem CAS do status lido (`where` só por organização e id): correndo junto de uma aprovação, ele espera o lock e sobrescreve, e o orçamento fica `rejected` com OS criada. A observação da emenda 1.1 sobre origem e destino em snake_case ficou com a `P-SAN3-08-APPROVE-BACKEND-SO-CAMELCASE`, que o #533 registrou (a paridade do corpo mora na web, `D-SAN3-08-P1-CORPO-CAMELCASE`).
+- **critério de encerramento:** a rota de status não leva a `approved` sem OS e grava com CAS do status lido, com teste de corrida.
+
+## P-B-O6R-09-PAINEL-STATUS-SEM-ERRO (2026-11-11) — o painel "Alterar status" não mostra erro — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `frontend/src/modules/operations/dispatches/components/DispatchStatusActions.tsx` (sem `catch`) · **dono:** `B-SAN3-21` (texto e tela; passa pelas 3 opções se mudar algo visual) · **bloqueia:** não.
+- **origem:** emenda 1, R2-03. Com o 422 `FIELD_DISPATCH_STATUS_UNCHANGED` (mesmo status com observação ou motivo), o painel fica aberto e o texto não se perde, mas não há mensagem; o 409 `FIELD_DISPATCH_STATUS_CONFLICT` também chega sem texto próprio.
+- **critério de encerramento:** o painel mostra a recusa com texto PT-BR de negócio, com teste de tela.
+
+## P-B-O6R-09-WEB-LE-WORKORDERID-DO-409 (2026-11-11) — a web não lê o `details.workOrderId` do 409 da repetição — BAIXA
+
+- **status:** ABERTA · **escopo:** `frontend/src/services/api/client.ts` (o `ApiError` só lê `code` e `reason`) e o diálogo de aprovação do `B-SAN3-08` · **dono:** `B-SAN3-08` · **bloqueia:** não.
+- **origem:** emenda 1.1, EM1-09. O servidor manda o id da OS já criada; a tela ainda não o usa para o link do aviso, e a cópia do 5xx do diálogo cita a `P-SAN3-08-APPROVE-OS-NAO-ATOMICA`, que a fatia 6 fecha.
+- **critério de encerramento:** o aviso de "já aprovado" mostra o link da OS pelo `details.workOrderId`; a cópia do 5xx atualizada.
+
+## P-B-O6R-09-RATCHET-T13-NOVA-CHAVE (2026-11-11) — o desenho da fatia 6 cria 1 chave nova no ratchet do B-SAN3-05, e o arquivo dele está fora do PERMITIDO — ALTA (segura o merge)
+
+- **status:** FECHADA (2026-11-11 05:14 SP), pela Emenda 2 do plano v2 (decisão do orquestrador, saída 1): a chave entrou em `NOVAS` com o motivo, e o T13 deu 35/35; decisão e sonda em `docs/revisoes/SAN3/B-O6R-09-DECISAO-T13.md`. A junta do #537 confere a chave por execução. · **gravidade:** ALTA — leitura do dev, declarada (§A6): deixava `npm test` vermelho · **escopo:** `tests/san3-05-acessos-de-plataforma-guard.test.ts` (T13) × `src/modules/work-orders/work-order-scope.ts` · **dono:** o orquestrador e o planejador do `B-O6R-09` (emenda) · **bloqueia:** o merge do PR do `B-O6R-09`.
+- **fato medido:** o gerador acusa a chave `L2 · src/modules/work-orders/work-order-scope.ts · new PrismaWorkOrderRepository(scope.tx) · OUTRO(scope.tx) · ×1`. O `scope.tx` é o `tx` do callback de `withTenantRls` em `RlsPrismaServiceQuoteRepository.approveWithWorkOrder` (setter do GUC como 1ª instrução), mas o gerador só absolve o parâmetro direto do callback de um envoltório confiado.
+- **saídas (a escolher, `D-EMENDA-ANTES-DO-CODIGO`):** (1) acrescentar a chave em `NOVAS` com motivo, como o B-TRC-01 fez por decisão do orquestrador (`docs/revisoes/TRACCAR/B-TRC-01-DECISAO-T13.md`), pondo o arquivo do ratchet no PERMITIDO; ou (2) emendar o desenho para o `new PrismaWorkOrderRepository(tx)` nascer dentro do callback de `withTenantRls`, no repositório Prisma do orçamento (muda uma âncora da emenda e a lista da guarda (iv)).
+- **critério de encerramento:** o T13 verde no head do PR, com a escolha registrada.
+
+## P-B-O6R-09-TRAVA-PRISMA-REGISTRO (2026-11-11) — a escolha (a) ou (b) da trava de `prisma/` entre o B-O6R-09 e o B-O6R-12 não está registrada — MÉDIA (condição do orquestrador)
+
+- **status:** FECHADA (2026-11-11), pelo registro `D-B-O6R-09-TRAVA-PRISMA-OPCAO-A` em `decisoes.md`; a conferência do carimbo da migração contra a última da `main` fica para o momento do merge (porteiro) · **escopo:** registro (`agent-orchestration/controle/`), plano v2 §4.3 e R2-09 da revisão r2 do plano (`crit-09-r2`) · **dono:** o orquestrador · **bloqueia:** o merge do PR do `B-O6R-09` (a verificação literal da linha A5 do plano).
+- **fato:** `grep -rln "B-O6R-09" agent-orchestration/controle/` no ramo, antes do commit da fatia 3, acha só a pendência antiga `P-O6R-B09`. A migração do bloco (`20260901090000_field_dispatch_idempotency_key`) se recarimba numa linha se o B-O6R-12 entrar antes (opção (a)).
+- **critério de encerramento:** a escolha registrada em `controle/`, e o carimbo conferido contra a última migração da `main` no momento do merge.
+
+## P-B-O6R-09-REATRIBUICAO-MESMA-PESSOA-AUDITA (2026-11-11) — a reatribuição à mesma pessoa não grava nada e é auditada como `field_dispatch.reassigned` — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `src/modules/field-dispatch/field-dispatch.controller.ts` (`reassign` audita sempre) × o no-op de `FieldDispatchService.reassign` (B-O6R-07c-b1) · **dono:** o próximo bloco que tocar o despacho · **bloqueia:** não.
+- **origem:** o conserto do PRE537-01 (pré-revisão do #537) tratou o no-op do MESMO STATUS; a mesma classe já existia na `main` para a reatribuição à mesma pessoa, apontada pelo revisor como anterior.
+- **critério de encerramento:** a reatribuição sem troca não grava auditoria de reatribuição (ou grava o no-op como tal), com teste pelo controlador real que conta `audit_logs`.
+
+## P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES (2026-11-11) — gatilho temporário de suíte irmã fecha um ciclo com a transação-mãe presa à espera do gancho; as suítes `-db` do bloco falham em 3 de 8 rodadas locais — MÉDIA (dentro do bloco)
+
+- **status:** FECHADA (2026-11-11 19:10 SP), pela Emenda 4.2 (conserto único da J-537) · **escopo:** o arnês das suítes `tests/b-o6r-09-dispatch-{atomic,idempotency,pool}-db.test.ts`, `tests/b-o6r-09-quote-approve-atomic-db.test.ts` (o `CREATE`/`DROP TRIGGER` em `work_orders`, `field_dispatch_events`, `work_order_events`, `work_order_assignments` sem `lock_timeout`) e, fora do PERMITIDO do bloco, o `comGatilho` de `tests/o6r07c-b-scope-db.test.ts` · **dono:** B-O6R-09 (#537) · **bloqueia:** a junta do #537 (a cadeira de regressão roda o `-db` 3×), se não for consertado antes.
+- **origem:** medido pelo dev do B-O6R-09 depois do merge da `main` `a0979f51` (11/11): as 8 suítes `-db` (as 7 do bloco e a `o6r07c-b-scope-db`) juntas no Postgres descartável, 8 rodadas: 57, 55, 59, 59, 59, 59, 56 e 59 de 59. Toda falha é "transaction … expired … ~20 000 ms passed". O vigia de trava da rodada 7 (`pg_stat_activity` e `pg_blocking_pids` a cada 2 s) mostrou o ciclo: a mãe da suíte de concorrência, `idle in transaction` à espera do gancho, segura `work_orders` (a FK de `field_dispatches` e de `field_dispatch_events` para `work_orders` tira `FOR KEY SHARE`); o `DROP TRIGGER … ON work_orders` da suíte do orçamento pede `ACCESS EXCLUSIVE` e entra na fila atrás dela; um `SELECT` de `work_orders` em outra conexão da mesma suíte (pela forma, o do gancho; inferência) entra na fila atrás do `DROP`. O ciclo fecha pelo JavaScript, que o Postgres não detecta, e só cai no tempo da mãe (20 s). É a classe do R2-08 da revisão r2 do plano; o ajuste do R2-08 (nenhuma leitura do teste na janela) não a fecha, porque quem espera é o gancho, caminho de produção. O lado da `main` não tocou nada disso (`git diff --stat b6caf568 a0979f51` nos caminhos do bloco: só `tests/helpers/fake-providers/focusnfe.ts` e `tests/helpers/o6r07c-census.ts`).
+- **correção proposta (NÃO aplicada; espera o orquestrador, regra "se o plano não fecha no código, pare e registre"):** todo `CREATE`/`DROP TRIGGER` do arnês sob `SET lock_timeout` curto, com nova tentativa até um prazo nomeado, para a DDL nunca ficar na fila na frente do gancho de outra suíte; o mesmo no `comGatilho` da `o6r07c-b-scope-db`, que é de outro bloco.
+- **critério de encerramento:** as 8 suítes juntas em N ≥ 10 rodadas com `# fail 0`, com o vigia de trava sem espera > 5 s, e a forma do job `backend-postgres` 3× verde.
+- **medição do R-ARN-5 (Emenda 4, fatias 7 e 8; 11/11 12:13–12:55 SP; a pendência SEGUE ABERTA, porque o critério literal não fechou):**
+  - **a aresta do produto saiu com a fatia 7**, e o DDL de gatilho dos 3 arquivos do R-ARN-2 passou pelo `runHarnessDdl` na fatia 8. O `comGatilho` do `o6r07c-b-scope-db` entrou também (R-ARN-6), porque a condição foi medida: um `o6r07cb1_inj_*` esperou 387 ms.
+  - **a série de 12 rodadas (12:35–12:47 SP; as 10 suítes, 3 rodadas também com as 4 `traccar-*-db`)**: os casos das 10 suítes ficaram ok nas 12 (74/74 em cada).
+    - Nas 3 rodadas com o Traccar, 121/123, e as 2 falhas são sempre os casos "tempo esgotado" de `traccar-position-ingestion-db` (`primeira entrega gravada com sucesso · 503 !== 204`), que também caem na `main` (diário do dev, bateria das 06:17).
+    - O vigia de trava não registrou espera do Traccar por DDL do arnês.
+  - **a série final de 10 rodadas (12:48–12:56 SP)**, depois do R-ARN-6 (3 com o Traccar): 9 rodadas verdes (74/74 e 123/123).
+    - A rodada 9 deu 71/74. As 3 falhas são a transação de LIMPEZA (`teardown`, `$transaction` com o prazo padrão de 5 s do Prisma) expirando em 5 086, 5 050 e 5 217 ms, em `b-o6r-09-quote-approve-atomic-db`, `b-o6r-09-quote-approve-pool-db` e `o6r07c-b-scope-db`.
+    - O vigia (`pg_stat_activity` a cada 0,5 s, espera > 300 ms) não viu espera de trava nessa rodada. Ficou a `P-B-O6R-09-TEARDOWN-5S-SOB-CARGA`.
+  - **zero `55P03` em todas as rodadas.**
+  - Os TAPs e os vigias estão em `scratchpad/rarn5-tentativa4/` e `scratchpad/rarn5-final/` da sessão do dev.
+  - **O que falta para fechar:** a classe do teardown (ou a prova de que é só carga) e as 3 rodadas na forma do job (no diário).
+- **fechamento (Emenda 4.2, conserto único da J-537; dev `dp-fix-537`, DeepSeek Pro; 2026-11-11 19:10 SP; vale no merge):** o `runHarnessDdl` (`tests/helpers/pg-barrier.ts`) passou a repetir também o 40P01 (mesmo teto e `lock_timeout` do 55P03); o teardown dos 3 arquivos do R-ARN-2 já limpa via `dropHarnessObjects` e herda a repetição. Teste novo em `tests/b-o6r-09-harness-ddl-db.test.ts` provoca o deadlock de propósito (duas transações cruzam DROP TRIGGER em `work_order_events`, barreira por `pg_stat_activity`), afirma a repetição (`attempts >= 2`) e o catálogo limpo (`pg_trigger`/`pg_proc`, 0 linhas). A mutação de tirar o 40P01 deixa o teste vermelho (revertida). As 10 suítes do R-ARN-5 rodaram juntas N=20 com `# fail 0` e catálogo `0|0` depois de cada rodada. `npm run check`, `npm run lint` e `git diff --check` limpos. Diário em `docs/revisoes/SAN3/B-O6R-09-dev.md`.
+
+## P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S (2026-11-11) — migração com DDL em `work_orders` ou `field_dispatch_events` durante o tráfego pode travar a escrita da OS por até 20 s — BAIXA (do bloco, só na implantação)
+
+- **status:** FECHADA no merge do PR do `B-O6R-09` (Emenda 4); era ABERTA · **escopo:** a transação-mãe do despacho (`FIELD_DISPATCH_HELD_TX_TIMEOUT_MS = 20000`, `field-dispatch-prisma.repository.ts`) × uma DDL que peça `ACCESS EXCLUSIVE` em `work_orders` ou `field_dispatch_events` · **dono:** o bloco de implantação na AWS (runbook de migração) · **bloqueia:** não.
+- **origem:** o mesmo ciclo da `P-B-O6R-09-ARNES-DDL-CICLO-ENTRE-SUITES`, visto pelo lado da produção. Com uma mãe aberta à espera do gancho, a DDL entra na fila atrás dela, e todo acesso a `work_orders` do sistema entra na fila atrás da DDL, até a mãe cair pelo tempo (20 s) e o pedido de despacho falhar sem gravar nada. Inferido do mecanismo medido nos testes; em produção não foi medido.
+- **critério de encerramento:** o runbook de migração manda `SET lock_timeout` em toda DDL dessas tabelas (com nova tentativa), ou a medição mostra que o caso não acontece.
+- **reescrita e fechamento (Emenda 4, `169f1428`; vale no merge):** era "BAIXA, inferida" e passou a MEDIDA, GRAVE e dentro do bloco. O topo mediu, com o código de `75b49051`, o DDL esperando 20 000 ms em `work_orders` e 19 986 ms em `field_dispatches`, um leitor de OUTRA organização esperando 20 002 ms, e, com a mãe de 16 s, a OS atribuída sem o despacho. Com a atribuição dentro da mãe, a mãe passa à frente do DDL (já segura trava que conflita com ele). Medido no head pela T27a (`work_orders`: DDL 18 ms e leitor de outra organização 23 ms depois de soltar) e pela T27b (`field_dispatches` na reatribuição: DDL 19 ms), as duas com teto `LIMITE_PARADA_DDL_MS = 2 000`. Mutações: M26c mata a T27a (DDL 19 974 ms); M27b (C4E-01) mata a T27b (DDL 19 977 ms). A M26t NÃO mata a T27b (medido: DDL 61 ms), como a revisão previu. O resíduo que fica é a `P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE`.
+
+## P-B-O6R-09-MIGRACAO-IMPASSE-COM-MAE (2026-11-11) — com a atribuição dentro da mãe do despacho, uma migração que trave `work_order_events` ou `work_order_assignments` ANTES de `field_dispatches` cai em impasse (40P01) e falha — MÉDIA (resíduo da Emenda 4, só na implantação)
+
+- **status:** ABERTA · **escopo:** toda migração (transacional, `D-MIGRACAO-COM-TRANSACAO-EXPLICITA`) que peça trava forte em `work_order_events`, `work_order_assignments` (ou `work_orders`, no caminho da transição) e depois em `field_dispatches`, com uma mãe do despacho em voo · **dono:** o bloco de implantação na AWS (runbook de migração) · **bloqueia:** não.
+- **origem:** C4E-03 da revisão da Emenda 4 (`crit-09-em4-api`, rodada 1), MEDIDO por ela no protótipo-texto: a mãe presa no INSERT de `work_order_assignments`; outra conexão faz `BEGIN; LOCK work_order_events ACCESS EXCLUSIVE; LOCK field_dispatches ACCESS EXCLUSIVE`; solta → o despacho conclui consistente, e a MIGRAÇÃO cai com `40P01 deadlock detected` em 1 003 ms (criar e reatribuir). No código de antes, a mesma migração esperava ~20 s e quem falhava era o pedido. A Emenda 4 troca o ciclo invisível por um impasse que o Postgres vê: o dado fica consistente, e a vítima é a implantação. **Inferência, não medida:** o `prisma migrate deploy` registra a migração como falha e exige `migrate resolve`.
+- **regra operacional (para o runbook):** migração que toque essas tabelas trava `field_dispatches` PRIMEIRO, ou roda com `lock_timeout` curto e nova tentativa. Não exige código neste bloco.
+- **critério de encerramento:** a regra escrita no runbook de migração (ou na guarda `scripts/migration-transaction-guard.mjs`), com uma migração de ensaio que a cumpra medida contra uma mãe em voo.
+
+## P-PG-BARRIER-EXIGE-BLOQUEADOR (2026-11-11) — a barreira de `tests/helpers/pg-barrier.ts` aceita um pedido preso por QUALQUER bloqueador, inclusive o DDL de outra suíte — BAIXA (anterior ao bloco)
+
+- **status:** ABERTA · **escopo:** `countBlockedStatements` (`tests/helpers/pg-barrier.ts`, cabeçalho "B-O6R-02 ciclo 2 · C3") · **dono:** o próximo bloco que mexer em `pg-barrier.ts` · **bloqueia:** não.
+- **origem:** C09-07 da revisão da Emenda 3 (`crit-09-em3-cl`), transcrito na Emenda 4 §E4.4 R-ARN-7. A barreira exige o pedido preso por `application_name`, mas não exige que o bloqueador seja a trava do próprio teste: um pedido preso atrás do DDL de outra suíte também a satisfaz. O lado silencioso (uma barreira satisfeita pelo motivo errado) é inferência, e não foi medido.
+- **critério de encerramento:** a barreira passa a exigir `pg_blocking_pids(pid) @> ARRAY[<pid da trava do teste>]`, com um controle negativo em `tests/pg-barrier-scoped-db.test.ts`.
+
+## P-B-O6R-09-TEARDOWN-5S-SOB-CARGA (2026-11-11) — a transação de limpeza das suítes `-db` do despacho e do orçamento usa o prazo padrão de 5 s do Prisma e expira sob carga — BAIXA (arnês, do bloco e anterior)
+
+- **status:** ABERTA · **escopo:** o `teardown` de `tests/b-o6r-09-quote-approve-atomic-db.test.ts` e de `tests/b-o6r-09-quote-approve-pool-db.test.ts` (do bloco) e o de `tests/o6r07c-b-scope-db.test.ts` (anterior ao bloco). Um `DELETE` por tabela com `tenant_id`, numa `$transaction` sem `timeout` explícito · **dono:** o próximo bloco que mexer nesses arnês (ou um bloco de arnês) · **bloqueia:** não.
+- **origem:** a rodada 9 da série final de 10 do R-ARN-5 (B-O6R-09, Emenda 4, 11/11 12:53 SP), com as 10 suítes juntas: a limpeza expirou em 5 086, 5 050 e 5 217 ms, sem espera de trava acima de 300 ms vista pelo vigia. **Hipótese, não medida:** é a carga da máquina (10 suítes em paralelo e outras frentes no mesmo Docker), somada às esperas curtas (≤ 300 ms) atrás do DDL do arnês em nova tentativa.
+- **critério de encerramento:** a limpeza com `timeout` explícito e folgado (ou pelo `tests/helpers/sweep-tenant.ts` do #541), e N ≥ 10 rodadas das 10 suítes com `# fail 0`.
 
 ## P-USERS-SEG-DEMO-TRACCAR-SEM-PROVA (2026-11-12) — o demo do Traccar pede token por login real, mas não tem prova por execução — BAIXA
 

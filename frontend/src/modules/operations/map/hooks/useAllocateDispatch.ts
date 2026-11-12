@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import { ApiError } from "../../../../services/api/client";
 import { createDispatch } from "../../dispatches/dispatches.service";
 import type { DispatchCreatePayload, DispatchesApiContext } from "../../dispatches/dispatches.types";
+import { useDispatchIntentKey } from "../../dispatches/useDispatchIntentKey";
 
 /**
  * J-MAPAS-7 (SPRINT ALOCAÇÃO) — ação de ALOCAR (POST /operations/dispatches via `createDispatch`) com
@@ -33,14 +34,18 @@ function messageForError(error: unknown): string {
 export function useAllocateDispatch(context: DispatchesApiContext, onAllocated: () => void | Promise<void>) {
   const [pendingOperatorUserId, setPendingOperatorUserId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<AllocationFeedback | null>(null);
+  // B-O6R-09 — a chave de repetição por intenção: a nova tentativa depois de um erro reusa a mesma; o sucesso a troca.
+  const intent = useDispatchIntentKey();
 
   const allocate = useCallback(
-    async (payload: DispatchCreatePayload, operatorDisplayName: string) => {
+    async (requested: DispatchCreatePayload, operatorDisplayName: string) => {
       if (pendingOperatorUserId) return; // evita clique duplo enquanto o POST corre
+      const payload: DispatchCreatePayload = { ...requested, idempotencyKey: intent.keyFor(requested) };
       setPendingOperatorUserId(payload.operatorUserId);
       setFeedback(null);
       try {
         await createDispatch(context, payload);
+        intent.succeeded();
         setFeedback({
           kind: "success",
           operatorUserId: payload.operatorUserId,
@@ -53,7 +58,7 @@ export function useAllocateDispatch(context: DispatchesApiContext, onAllocated: 
         setPendingOperatorUserId(null);
       }
     },
-    [context, onAllocated, pendingOperatorUserId],
+    [context, intent, onAllocated, pendingOperatorUserId],
   );
 
   const resetFeedback = useCallback(() => setFeedback(null), []);

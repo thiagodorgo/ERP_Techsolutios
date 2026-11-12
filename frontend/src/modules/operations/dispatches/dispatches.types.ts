@@ -90,6 +90,8 @@ export type DispatchCreatePayload = {
   readonly operatorUserId: string;
   readonly status?: Extract<DispatchStatus, "draft" | "assigned">;
   readonly observation?: string;
+  /** B-O6R-09 — a chave de repetição por intenção (`useDispatchIntentKey`); nunca aparece na tela. */
+  readonly idempotencyKey?: string;
 };
 
 export type DispatchStatusPayload = {

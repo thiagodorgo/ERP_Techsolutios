@@ -233,7 +233,9 @@ async function processAction(
 
     if (action.type === "work_order.assign") {
       requireActionPermission(actor, action, "work_orders:assign");
-      const workOrder = await service.assign(actor, parseRequiredString(action.payload.work_order_id, "work_order_id"), {
+      const assignId = parseRequiredString(action.payload.work_order_id, "work_order_id");
+      await assertExpectedTechnician(service, actor, assignId, action.payload.expected_technician_id);
+      const workOrder = await service.assign(actor, assignId, {
         operatorId: action.payload.operator_id,
         userId: action.payload.user_id,
         // D1 — optional viatura/equipe carried by the mobile assign action.
@@ -287,6 +289,29 @@ async function processAction(
   } catch (error) {
     return actionErrorResult(action, error);
   }
+}
+
+// B-O6R-11d (CL11D-01, Q1 = A) — pré-condição DECLARADA pelo app: a ação de viatura/equipe só vale se o técnico da OS
+// ainda é o que o aparelho conhecia. Sem a chave, nada muda (web, testes do 07c, apps antigos). Fail-closed: chave
+// presente e diferente, `null`, vazia ou de outro tipo, ou OS sem técnico → 409, que o lote devolve em `conflicts[]`
+// (`refresh_work_order_and_retry`). Só restringe: nenhum papel ganha poder, e a trava do 07c continua inteira.
+// Janela declarada: entre este `get` e o `assign` (a mesma classe da trava do REST, que lê e depois escreve).
+async function assertExpectedTechnician(
+  service: WorkOrderService,
+  actor: AuthenticatedActor,
+  workOrderId: string,
+  expected: unknown,
+): Promise<void> {
+  if (expected === undefined) return;
+  const current = await service.get(actor, workOrderId);
+  const technician = current.assignedUserId ?? current.assignedOperatorId ?? null;
+  if (typeof expected === "string" && technician === expected) return;
+  throw new WorkOrderError(
+    409,
+    "WORK_ORDER_TECHNICIAN_CHANGED",
+    "technician_changed_since_action",
+    "O técnico desta OS mudou depois do envio; confira antes de reenviar.",
+  );
 }
 
 function requireActionPermission(

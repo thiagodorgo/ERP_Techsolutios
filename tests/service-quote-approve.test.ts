@@ -123,6 +123,8 @@ test("CONCORRÊNCIA (condição critico J-Ω3F-4B): dois approve simultâneos �
   assert.equal(rejected.length, 1);
   const err = (rejected[0] as PromiseRejectedResult).reason;
   assert.ok(err instanceof ServiceQuoteError && err.statusCode === 409 && err.reason === "quote_already_approved");
+  // B-O6R-09 (emenda 1.1, EM1-02) — o perdedor recebe o id da OS do vencedor no corpo do erro.
+  assert.equal((err as ServiceQuoteError & { details?: { workOrderId?: string } }).details?.workOrderId, (fulfilled[0] as PromiseFulfilledResult<{ workOrderId: string }>).value.workOrderId);
 
   // Só UMA OS nasceu no tenant (o perdedor NÃO criou OS órfã).
   const wos = await createMemoryWorkOrderService().list(ctx, {});
@@ -171,10 +173,15 @@ test("approve replay (2ª chamada) → 409 quote_already_approved", async () => 
   const ctx = actor();
   const serviceCatalogId = await seedServiceCatalog(ctx);
   const quote = await svc.create(ctx, { service_catalog_id: serviceCatalogId, price_source: "manual", unit_price: 10 });
-  await svc.approve(ctx, quote.id, {});
+  const first = await svc.approve(ctx, quote.id, {});
   await assert.rejects(
     () => svc.approve(ctx, quote.id, {}),
     (e: unknown) => e instanceof ServiceQuoteError && e.statusCode === 409 && e.reason === "quote_already_approved",
+  );
+  // B-O6R-09 (emenda 1.1, EM1-02) — a repetição leva o id da OS já criada.
+  await assert.rejects(
+    () => svc.approve(ctx, quote.id, {}),
+    (e: unknown) => (e as { details?: { workOrderId?: string } }).details?.workOrderId === first.workOrderId,
   );
 });
 
