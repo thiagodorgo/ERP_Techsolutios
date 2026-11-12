@@ -5,6 +5,8 @@ import type { ICoreSaasService } from "../core-saas/services/core-saas-service.i
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { createDefaultExpenseManagementService } from "../expense-management/expense-management.service.js";
+import { createDefaultInventoryService } from "../inventory/inventory.service.js";
+import { createDefaultWorkOrderService } from "../work-orders/work-order.service.js";
 import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
 import { syncMobileEvidenceActions } from "./mobile-evidence-sync.js";
 import { uploadMobileEvidenceFile } from "./mobile-evidence-upload.js";
@@ -39,6 +41,11 @@ const MOBILE_CATALOG_VERSION = "mobile-catalogs:v1";
 
 export function createMobileRouter(service: ICoreSaasService): Router {
   const router = Router();
+  let inventoryServicePromise: ReturnType<typeof createDefaultInventoryService> | undefined;
+  let workOrderServicePromise: ReturnType<typeof createDefaultWorkOrderService> | undefined;
+
+  const resolveInventoryService = () => inventoryServicePromise ??= createDefaultInventoryService(service);
+  const resolveWorkOrderService = () => workOrderServicePromise ??= createDefaultWorkOrderService();
 
   router.use(tenantContextMiddleware);
 
@@ -168,8 +175,12 @@ export function createMobileRouter(service: ICoreSaasService): Router {
   router.post(
     "/mobile/sync/inventory-actions",
     handleAsyncRoute(async (request, response) => {
+      const [inventory, workOrders] = await Promise.all([
+        resolveInventoryService(),
+        resolveWorkOrderService(),
+      ]);
       response.json({
-        data: await syncMobileInventoryActions(request.tenantContext, request.body ?? {}),
+        data: await syncMobileInventoryActions(request.tenantContext, request.body ?? {}, { inventory, workOrders }),
       });
     }),
   );
