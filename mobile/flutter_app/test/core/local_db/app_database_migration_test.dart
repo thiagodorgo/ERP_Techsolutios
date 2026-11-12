@@ -219,7 +219,7 @@ void main() {
       // checklist_runs.kind (ALTER do schema 8) presente.
       expect(await _columns(db, 'checklist_runs'), contains('kind'));
 
-      expect(await _userVersion(db), 16);
+      expect(await _userVersion(db), 17);
     },
   );
 
@@ -267,7 +267,7 @@ void main() {
         ]),
       );
       expect(await _columns(db, 'checklist_runs'), contains('kind'));
-      expect(await _userVersion(db), 16);
+      expect(await _userVersion(db), 17);
     },
   );
 
@@ -304,7 +304,7 @@ void main() {
         final orders = await DriftWorkOrderLocalStore(db).loadWorkOrders();
         expect(orders.single.checkinMode, CheckinMode.unknown);
         expect(orders.single.checkinPlateTail, isNull);
-        expect(await _userVersion(db), 16);
+        expect(await _userVersion(db), 17);
       },
     );
 
@@ -333,7 +333,7 @@ void main() {
           await _columns(db, 'work_orders'),
           containsAll(<String>['checkin_mode', 'checkin_plate_tail']),
         );
-        expect(await _userVersion(db), 16);
+        expect(await _userVersion(db), 17);
       },
     );
 

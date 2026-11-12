@@ -119,6 +119,7 @@
  "GET /api/v1/mobile/checklists/:checklistId/render": "{tenant_checklist}",
  "GET /api/v1/mobile/checklists/available": "{tenant_checklist}",
  "GET /api/v1/mobile/inventory/availability": "{inventory}",
+ "GET /api/v1/mobile/technician/stock": "{inventory}",
  "GET /api/v1/navigation/menu": "NUCLEO",
  "GET /api/v1/notifications": "{notifications}",
  "GET /api/v1/notifications/scheduled": "{notifications}",

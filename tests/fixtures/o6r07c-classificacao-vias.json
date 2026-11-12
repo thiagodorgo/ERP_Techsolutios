@@ -559,6 +559,10 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/mobile/technician/stock": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/navigation/menu": {
   "classe": "LEITURA",
   "n": 1

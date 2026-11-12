@@ -6,6 +6,8 @@ import type {
   ListStockMovementsResult,
   StockMovement,
   StockTransferResult,
+  TechnicianStock,
+  TechnicianStockCustody,
 } from "./inventory.types.js";
 
 /** Accepts the F7b derived view, tolerating the F7a saldo-only shape (reorder fields default). */
@@ -166,5 +168,31 @@ export function toCustodySummaryDto(itemId: string, summary: CustodySummary) {
       plate: entry.plate,
       qty: entry.qty,
     })),
+  };
+}
+
+/**
+ * B-SAN3-15a (P2; contrato `technician_stock@2026-11.b-san3-15a`) — o estoque do técnico, MÍNIMO (§2.8): nunca
+ * `tenant_id`, id de perfil, ids de custódia nem custo. `kind` é `professional` ou `base` (a custódia que o servidor
+ * escolheu pelo ator); `label` é o nome do profissional ou "Base da organização". `custody: null` = sem custódia.
+ */
+export function toTechnicianStockDto(stock: TechnicianStock) {
+  return {
+    custody: stock.custody ? toTechnicianStockCustodyDto(stock.custody) : null,
+    items: stock.items.map((entry) => ({
+      itemId: entry.itemId,
+      sku: entry.sku,
+      name: entry.name,
+      unit: entry.unit,
+      available: entry.available,
+    })),
+    generatedAt: stock.generatedAt.toISOString(),
+  };
+}
+
+function toTechnicianStockCustodyDto(custody: TechnicianStockCustody) {
+  return {
+    kind: custody.custodyType === "base" ? ("base" as const) : ("professional" as const),
+    label: custody.label,
   };
 }

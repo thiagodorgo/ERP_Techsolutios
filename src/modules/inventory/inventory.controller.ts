@@ -12,6 +12,7 @@ import {
   toStockMovementListDto,
   toStockReverseDto,
   toStockTransferDto,
+  toTechnicianStockDto,
 } from "./inventory.dto.js";
 import type { InventoryService } from "./inventory.service.js";
 
@@ -209,6 +210,16 @@ export class InventoryController {
 
     return {
       data: toCustodySummaryDto(itemId, summary),
+    };
+  }
+
+  /** B-SAN3-15a — `GET /mobile/technician/stock`: o ator vem do contexto; a query segue e o serviço a ignora. */
+  async technicianStock(request: Request) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const stock = await service.technicianStock(actor, request.query as Record<string, unknown>);
+
+    return {
+      data: toTechnicianStockDto(stock),
     };
   }
 

@@ -286,6 +286,10 @@ jobs:
           SUITES="$SUITES tests/inventory-cycle-count-close-units-db.test.ts"
           SUITES="$SUITES tests/inventory-unique-backstops-db.test.ts"
           SUITES="$SUITES tests/inventory-migration-drill-db.test.ts"
+          # B-SAN3-15a (item 37) — o estoque do técnico no Postgres real, sob papel efêmero SEM BYPASSRLS: o técnico vê só a
+          # própria custódia, o gerente sem cadastro só a BASE, o contexto de outra organização não lê nada (RLS) e o app real
+          # com JWT ignora o X-Tenant-Id. Medida 3× nesta forma antes de entrar (11/11): 6 casos, 0 falha, 0 pulo, denominador constante.
+          SUITES="$SUITES tests/bsan315-technician-stock-db.test.ts"
           # B-TRC-01 ciclo 2 (J-B-TRC-01-ciclo1, (a)-1) — as seis suítes `-db` da ingestão do Traccar. Elas JÁ rodam no
           # job `backend` (medido no head 5abdf83b: 44/44 no log do run 38352262796), mas a convenção da lista curada
           # (SAN2-2, B-O6R-06) é que toda suíte `-db` nova entre AQUI, sob o guard de zero pulos, medida 3× antes.

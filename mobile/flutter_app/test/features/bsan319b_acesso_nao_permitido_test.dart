@@ -44,6 +44,7 @@ const _tituloPorArquivo = <String, String>{
   'lib/features/expenses/ui/expense_list_screen.dart': _acao,
   'lib/features/checklists/ui/checklist_available_screen.dart': _acesso,
   'lib/features/inventory/ui/inventory_list_screen.dart': _acesso,
+  'lib/features/prestador/ui/technician_stock_screen.dart': _acesso,
   'lib/shared/ui/module_placeholder_screen.dart': _acesso,
 };
 

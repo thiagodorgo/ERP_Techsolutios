@@ -81,13 +81,27 @@ export function adaptCycleCountEntryResponse(response: unknown): CycleCountEntry
   return adaptCycleCountEntry(entry);
 }
 
+// B-SAN3-15a (P13) — o fechamento voltou 2xx SEM a contagem: o cliente NÃO inventa uma contagem "Concluída" vazia
+// com relatório zerado (era o que a tela mostrava). Lança, e a gaveta mostra a frase abaixo.
+export const CYCLE_COUNT_CLOSE_UNCONFIRMED_MESSAGE =
+  "O servidor não confirmou o fechamento da contagem. Recarregue a lista para ver a situação atual.";
+
+export class CycleCountResponseError extends Error {
+  readonly reason: "close_without_entity";
+
+  constructor(reason: "close_without_entity") {
+    super(CYCLE_COUNT_CLOSE_UNCONFIRMED_MESSAGE);
+    this.name = "CycleCountResponseError";
+    this.reason = reason;
+  }
+}
+
 // Fechamento → relatório de variância + ajustes gerados.
 export function adaptCycleCountCloseResponse(response: unknown): CycleCountCloseResult {
   const payload = readRecord(response);
   const data = readRecord(payload?.data) ?? payload ?? {};
-  const cycleCount =
-    adaptCycleCount(readRecord(data.cycleCount) ?? data) ??
-    ({ id: "", abcClass: null, status: "concluida", notes: null, entries: [], countedCount: 0, totalCount: 0, createdAt: new Date().toISOString() } as CycleCount);
+  const cycleCount = adaptCycleCount(readRecord(data.cycleCount) ?? data);
+  if (!cycleCount) throw new CycleCountResponseError("close_without_entity");
   const adjustmentsOverride = readNumber(data, ["adjustmentsGenerated", "adjustments_generated", "generatedAdjustments"]);
   const report = buildVarianceReport(cycleCount.entries, adjustmentsOverride);
   return { cycleCount, report };
@@ -171,6 +185,11 @@ function adaptCycleCountEntry(input: unknown): CycleCountEntry | null {
 
 // ── Interpretação dos erros de domínio ({error:{reason}}) ────────────────────
 export function interpretCycleCountError(error: unknown): CycleCountSubmitFeedback {
+  // B-SAN3-15a (P13) — 2xx sem a contagem: a frase em PT-BR da classe, nunca um "Concluída" inventado.
+  if (error instanceof CycleCountResponseError) {
+    return { reason: error.reason, message: error.message };
+  }
+
   const status = readErrorStatus(error);
   const reason = readErrorReason(error);
 

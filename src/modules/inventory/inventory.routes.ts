@@ -26,6 +26,12 @@ export const STOCK_MOVEMENT_PERMISSIONS = {
   create: "stock_movements:create",
 } as const satisfies Record<string, Permission>;
 
+/**
+ * B-SAN3-15a (P3) — o estoque do técnico usa a permissão de LEITURA de estoque que o técnico de campo, o técnico e o
+ * gerente já têm (`catalog.ts`); nenhuma permissão nova. Sem ela (finance, support, field_dispatcher): 403.
+ */
+export const TECHNICIAN_STOCK_PERMISSION = "inventory.read" as const satisfies Permission;
+
 export function createInventoryItemRouter(
   coreService: ICoreSaasService,
   resolveService: InventoryServiceResolver = () => createDefaultInventoryService(coreService),
@@ -35,6 +41,17 @@ export function createInventoryItemRouter(
 
   router.use(tenantContextMiddleware);
   router.use(createPersistentRbacContextMiddleware());
+
+  // B-SAN3-15a (P1, P2, P3) — o estoque sob a responsabilidade do ATOR (a custódia é escolhida pelo servidor, pelo
+  // token; nada do pedido a escolhe). Contrato `technician_stock@2026-11.b-san3-15a`. O caminho é o que o app já tem
+  // (`ApiContracts.technicianStock`); o roteador de estoque já está montado, então o `src/app.ts` não muda.
+  router.get(
+    "/mobile/technician/stock",
+    requirePermission(TECHNICIAN_STOCK_PERMISSION),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.technicianStock(request));
+    }),
+  );
 
   router.get(
     "/inventory-items",
