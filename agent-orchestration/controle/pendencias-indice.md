@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **879** |
-| IDs distintos | 868 |
-| **ABERTAS** | **671** |
+| Cabecalhos `## P-` | **880** |
+| IDs distintos | 869 |
+| **ABERTAS** | **672** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **610** |
+| — das quais **ativas nesta rodada** | **611** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 204 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **879 cabecalhos para 868 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **880 cabecalhos para 869 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -372,7 +372,7 @@
 | `P-MOBILE-ESTOQUE-MODULO-SEMENTE` | 13798 | CRÍTICA | **a atribuir** | P-MOBILE-ESTOQUE-MODULO-SEMENTE (2026-11-11) — o módulo de estoque do app tem uma segund |
 | `P-WEB-CONTAGEM-ERRO-CRU` | 13806 | CRÍTICA | sim | P-WEB-CONTAGEM-ERRO-CRU (2026-11-11) — a contagem do web mostra o texto técnico cru das  |
 
-## ABERTAS · balde B — processo/registro — 313
+## ABERTAS · balde B — processo/registro — 314
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -689,6 +689,7 @@
 | `P-SAN3-15-QTD-FRACIONADA` | 13784 | BAIXA | sim | P-SAN3-15-QTD-FRACIONADA (2026-11-11) — a seleção de peça no app é em inteiros: "2,5 m"  |
 | `P-SAN3-15-CUSTODIA-VIATURA` | 13791 | BAIXA | sim | P-SAN3-15-CUSTODIA-VIATURA (2026-11-11) — a custódia de viatura não se resolve pelo ator |
 | `P-SAN3-15-INDICE-CUSTODIA-POR-PERFIL` | 13813 | BAIXA | sim | P-SAN3-15-INDICE-CUSTODIA-POR-PERFIL (2026-11-11) — o estoque do técnico percorre a fati |
+| `P-APP-FORMAT-BSAN313` | 13819 | BAIXA | sim | P-APP-FORMAT-BSAN313 (2026-11-12) — teste do B-SAN3-13 diverge do `dart format` na main  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

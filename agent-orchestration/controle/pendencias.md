@@ -13815,3 +13815,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (a consulta é do `B-SAN3-15a`; a migração ficou fora por decisão do plano, A-10) · **dono:** a nomear pelo orquestrador (um bloco com `prisma/**` autorizado) · **bloqueia:** não (desempenho, sem dado errado).
 - **prova (`EXPLAIN (ANALYZE, BUFFERS)`, F1db do `B-SAN3-15a`, dados sintéticos de 1 organização com 40.000 movimentos, 50 perfis e 400 itens):** custódia profissional → `Index Scan using stock_movements_custody_lookup_idx` com `Index Cond` em `tenant_id`, `custody_type` e `custody_operator_profile_id`, mas o índice começa por `[tenant_id, item_id, …]`: 593 buffers para 534 linhas (a tabela tem 655 páginas); BASE → `Seq Scan` (1/3 das linhas qualifica). Diário `docs/revisoes/SAN3/B-SAN3-15a-dev.md`, F1db.
 - **teste de encerramento:** índice com `custody_type`/`custody_operator_profile_id` à frente de `item_id` (ou parcial por custódia), e o `EXPLAIN` da consulta por perfil lendo só as linhas do perfil.
+
+## P-APP-FORMAT-BSAN313 (2026-11-12) — teste do B-SAN3-13 diverge do `dart format` na main — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`mobile/flutter_app/test/features/bsan313_minhas_os_escopo_test.dart` já diverge do `dart format` na `main` e não é alterado pelo PR #548) · **dono:** sem bloco dono definido · **bloqueia:** não bloqueia o `B-SAN3-15a`.
+- **prova:** a pré-revisão do PR #548 executou `dart format --output=none --set-exit-if-changed lib test`: `Formatted 254 files (1 changed)`, somente `test/features/bsan313_minhas_os_escopo_test.dart`; o arquivo foi restaurado e o diff do PR não o contém (`PREEXIST-FORMAT-BSAN313`).
+- **critério de encerramento:** o próximo PR que tocar o app, ou um PR de registro, aplica o `dart format` vigente ao arquivo; a bateria integral termina com zero arquivo alterável.
