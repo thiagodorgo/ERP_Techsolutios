@@ -62,9 +62,9 @@ if (!connectionString) {
     actor: { tenantId: string; userId: string; roles: ["manager"]; permissions: typeof PERMISSOES };
   };
 
-  async function semear(rotulo: string, perfil: Record<string, unknown> = {}): Promise<Cenario> {
+  async function semear(rotulo: string, perfil: Record<string, unknown> = {}, modules: readonly string[] = []): Promise<Cenario> {
     const marca = `${rotulo}-${randomUUID().slice(0, 8)}`;
-    const tenant = await admin.tenant.create({ data: { name: `B12 ${marca}`, slug: `b12-${marca}` } });
+    const tenant = await admin.tenant.create({ data: { name: `B12 ${marca}`, slug: `b12-${marca}`, modules: [...modules] } });
     tenantsCriados.push(tenant.id);
     const user = await admin.user.create({ data: { tenant_id: tenant.id, name: "B12", email: `b12-${marca}@example.com` } });
     const profile = await admin.jurisdictionProfile.create({
@@ -526,7 +526,7 @@ if (!connectionString) {
         new repositorios.AuditLogRepository(admin),
       ),
     );
-    const c = await semear("aud", { notes: "nota interna antes" });
+    const c = await semear("aud", { notes: "nota interna antes" }, ["patios"]);
     const papel = await admin.role.create({ data: { tenant_id: c.tenantId, key: "manager", name: `Gestão ${randomUUID().slice(0, 6)}`, scope: "tenant" } });
     for (const key of ["jurisdiction:read", "jurisdiction:update"]) {
       const permissao = await admin.permission.upsert({ where: { key }, update: {}, create: { key, description: `Permissão ${key}` } });

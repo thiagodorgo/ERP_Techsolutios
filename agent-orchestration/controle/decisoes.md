@@ -4981,3 +4981,23 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Carimbo da migração:** `20260901100000_impound_process_regime_snapshot`, depois da
   `20260901090000` do #537, pela trava de `prisma/**` (`D-B-O6R-09-TRAVA-PRISMA-OPCAO-A`) e por
   ordem do orquestrador; a ordem vale nos dois sentidos de merge.
+
+## D-B-SAN3-18-RESPOSTAS-DO-DONO (2026-11-11 10:31 SP) — as três perguntas do plano v2 do `B-SAN3-18`, pela recomendação
+
+- **Fato (decisão do dono):** *"Sim, todas (Recomendado)"* (`D-DONO-TODAS-RECOMENDACOES-1111`, registrado pelo orquestrador fora do repositório, `REGISTRO-PENDENTE.md` 11/11 10:31 SP). Para o `B-SAN3-18` vale a recomendação de cada pergunta do §9 do plano v2:
+  - **P1(a):** no dia em que a recusa ligar, toda organização que já existe recebe TODAS as áreas, só acrescentando — `scripts/san3-18-provisionar-modulos.ts`, aditivo, transação única, simulação por padrão, contagem antes e depois;
+  - **P2(a):** o núcleo, que nunca se desliga por plano, é login e sessão, Usuários e perfis (com Acessos e Sessões), Configurações, Minha assinatura e o Painel (`NUCLEO_MENU_PATHS` e `NUCLEO_API`);
+  - **P3(a):** a LEITURA (GET) dos cadastros que a OS usa fica liberada para toda organização; criar e editar exige a área (`READ_CORE_PREFIXES`).
+- **Leituras do dev, declaradas (§A6), sobre os requisitos da Emenda 1 que pediam escolha:**
+  - **R2-02:** `approvals/**` = `{approvals, work_orders}` (qualquer-de), a recomendação da crítica r2 — a pergunta P3 que foi ao dono não tinha o caso das aprovações da OS;
+  - **R2-03:** opção (a), sem front: `P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA` (dono `B-SAN3-18b`);
+  - **R2-08:** pela pendência, não pela classe qualquer-de: `POST /mobile/telemetry` fica `{telemetry}`, e `P-SAN3-18-APP-TELEMETRIA-SEM-CAPACIDADE` (dono `B-SAN3-18b`);
+  - **rota nova sem classe no plano:** `POST /api/v1/webhooks/billing/:provider` (B-ASS-08b, posterior ao plano) entra em `NUCLEO_API` (infra sem módulo, a mesma leitura da classe N do censo do 07c);
+  - **as 27 entradas novas do registro** levam `requiredPermissions: []` (governadas só pelo módulo): com a permissão do `PermissionGuard`, o guard `tests/san3-04a-menu-front-x-catalogo.test.ts` (fora do PERMITIDO) ficava vermelho, porque o resíduo `P-SAN3-04A-MENU-RESIDUAL` (dono `B-SAN3-06a`) deixava de existir por este bloco. A permissão de cada página está em `docs/revisoes/SAN3/B-SAN3-18-medicao.md`, F0(d).
+- **Pedido de emenda ao orquestrador (dev, D-EMENDA-ANTES-DO-CODIGO):** `tests/navigation-provisioning.test.ts` (fora do PERMITIDO) codifica o comportamento antigo e fica vermelho (`P-SAN3-18-NAV-PROVISIONING-LISTA-LITERAL`); e o efeito de multa e dano no extrato do profissional sem o Financeiro (`P-SAN3-18-EXTRATO-POR-EFEITO-SEM-FINANCEIRO`, R2-01(2)) precisa de dono.
+
+## D-B-SAN3-18-PORTA-DE-MODULO (2026-11-11) — a porta de módulo por organização fica com o `B-SAN3-18`, estreitada, e o resto vai para o `B-SAN3-18b`
+
+- **Fato:** `P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA` tem dono `B-SAN3-18`. O console de organizações da plataforma inteiro é em memória (`P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA`), e a porta `PATCH /platform/tenants/:id/modules` respondia "habilitado" sem gravar em `tenants.modules`.
+- **Decisão (plano v2, R-A7, §4; registrada aqui para a troca de dono não ser silenciosa, §A2):** o `B-SAN3-18` ESTREITA a pendência — a porta passa a recusar com 409 `module_change_requires_subscription` —, e a porta real por organização vira `P-SAN3-18-PORTA-DE-MODULO-POR-ORG`, dono `B-SAN3-18b`. **Motivo:** uma porta real exige o console de organizações persistido, que é outro bloco. Até lá, módulos só mudam pela assinatura (versão do plano mais adicionais) ou pelo script de provisionamento.
+- **Ficam com o `B-SAN3-18b`, sem bloquear:** `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` (resto), `P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA`, `P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES` e as `P-SAN3-18-*` novas.

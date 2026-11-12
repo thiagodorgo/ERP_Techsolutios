@@ -8774,6 +8774,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **risco:** 4-faturamento/dinheiro
 - **dependências:** P-WEB-ROTAS-SEM-PORTA (link de provisionamento); decisão de planos
 - **dono:** `B-SAN3-18` (plano SAN3 §4.1 item 16); bloco dono proposto pela fatia: bloco "gate comercial"
+- **apenso 2026-11-11 (`B-SAN3-18`, ramo `fix/gate-de-modulo-no-backend`):** entregue no ramo — o servidor recusa por módulo em toda rota de `/api/v1` com JWT (`src/modules/navigation/module-gate.middleware.ts`, classe por rota em `route-modules.ts`, 444 rotas, 0 sem classe), o registro cobre os 49 caminhos de `MVP_NAV_PATHS` pela string exata e as 13 entradas sem módulo ganharam módulo (40 itens do item 16, medidos em `docs/revisoes/SAN3/B-SAN3-18-medicao.md`). Fecha no merge, com as pendências `P-SAN3-18-*` abertas para o resto.
 - **emenda (junta do `B-SAN3-04a`, achado C2-03, 2026-09-18 — `bloqueia`/`pre-existente`):** medido por login real no objeto
   `fbda96b0`, N = **8** pares papel × item visível com módulo NÃO provisionado na organização demo — `finance` × Clientes
   (`customers`), Aprovações (`approvals`), Estoque (`inventory`), Pedidos (`purchasing`), Relatórios (`reports`); `inventory` ×
@@ -9530,6 +9531,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **bloqueia:** o gate da versão vendável, com o item 16 (critério 3 — permissão).
 - **teste de encerramento:** falha do resolvedor de módulos → menu sem nenhum item de módulo (default negado), com vermelho-controle no head-base.
 - **emenda (decisão do dono D-SAN3-PLANO-OPCAO-B, 2026-09-13):** entra no gate pelo item 16, junto da `P-WEB-GATE-MODULO-INCOMPLETO` (plano SAN3 v5, §4.1 item 16); condição de entrada CE-1 do `B-SAN3-18` (§5.6): o default da lista de módulos não resolvida passa a ser negar, e a recusa por módulo no backend nasce de um mapa rota → módulo gerado das montagens do `src/app.ts`.
+- **apenso 2026-11-11 (`B-SAN3-18`, PR do ramo `fix/gate-de-modulo-no-backend`):** entregue no ramo — `filterNavigationByTenantModules` trata `undefined` como lista vazia (`src/modules/navigation/navigation.service.ts`), e o teste de encerramento está em `tests/san3-18-menu-modules.test.ts` ("P3-não resolvida", inclusive pela rota com o resolvedor lançando). Fecha no merge.
 
 ## P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS (2026-09-12) — quatro células de ação da matriz de papéis sem permissão no catálogo — ALTA
 
@@ -9924,6 +9926,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** `pre-existente`.
 - **dono:** `B-SAN3-06a`.
 - **teste de encerramento:** nenhum item visível negado pelo guard da rota para os 8 papéis de organização; `ALLOWLIST_MENU` vazia.
+- **apenso (Emenda 2 do `B-SAN3-18`, E2.4; orquestrador, 2026-11-11 15:12 SP; aplicado por `apply-544-api`):** as **27** entradas que o `B-SAN3-18` acrescentou ao registro do menu (`src/modules/navigation/navigation.registry.ts`, N = 27, `grep -c "requiredPermissions: \[\]"` = 28 com a linha do comentário) levam `requiredPermissions: []` e são governadas só pelo módulo da organização: `/approvals`, `/cadastros/{clientes,filiais,fornecedores,viaturas,equipes,profissionais,servicos,tabelas-valores,tarifas,tags,pontos-interesse}`, `/patios/painel`, `/fleet/{fuel,maintenance,fines,insurance,damages,statement}`, `/inventory`, `/finance/commissions`, `/finance?aba=rec`, `/finance?aba=pag`, `/users`, `/controle/usuarios/acessos`, `/controle/usuarios/sessoes`, `/audit`. A permissão de cada página continua no `PermissionGuard` e no servidor (F0(d), `docs/revisoes/SAN3/B-SAN3-18-medicao.md`, seção "(d) Permissão do PermissionGuard por página"). O residual de menu que isso abre (item visível a quem não tem a permissão da página) entra NESTA pendência; dono segue `B-SAN3-06a`. **Requisito para a junta do `B-SAN3-18` (`coordenador-de-acessos`):** conferir, rota a rota, que cada uma das 27 páginas tem `PermissionGuard` com a permissão medida na F0(d) e que o servidor recusa sem ela; se faltar uma, é defeito do bloco, não residual.
 
 ## P-SAN3-04A-MATRIZ-BULLETS-101-103 (2026-09-18) — dois tópicos da matriz não citam o Financeiro depois da P2 — BAIXA
 
@@ -10576,6 +10579,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **prova:** `/platform/tenants/:id/modules` permanece sem link no menu e usa o repositório em memória.
 - **dono:** `B-SAN3-18`.
 - **bloqueia:** não.
+- **apenso 2026-11-11 (`B-SAN3-18`, R-A7 do plano v2; `D-B-SAN3-18-PORTA-DE-MODULO`):** o bloco a ESTREITA — o `PATCH` da porta falsa passa a recusar com 409 `module_change_requires_subscription` e não muda nada (`tests/san3-18-platform-modules-patch.test.ts`). O resto, uma porta real por organização gravando em `tenants.modules`, vira `P-SAN3-18-PORTA-DE-MODULO-POR-ORG` (dono `B-SAN3-18b`). Fecha no merge do `B-SAN3-18` a parte "porta que finge gravar".
 
 ## P-SAN3-06B-AUDITORIA-GLOBAL-SEM-ENDPOINT (2026-10-09) — trilha cross-org sem fonte — MÉDIA
 
@@ -13859,6 +13863,101 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a seção das rotas financeiras da OS no `API_CONTRACTS.md` nunca teve catálogo de erros, nem o 503 `invoice_transient_conflict` do B-SAN3-02; o arquivo está fora do PERMITIDO do plano do B-SAN3-23, cujo §3.5 manda registrar as adições no comando do bloco, o que foi feito) · **dono:** o próximo bloco que tocar o `API_CONTRACTS.md` das rotas financeiras da OS · **PR-alvo:** esse bloco · **bloqueia:** não.
 - **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
 - **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).
+
+## P-SAN3-18-PORTA-DE-MODULO-POR-ORG (2026-11-11) — não existe porta real para ligar ou desligar uma área de UMA organização — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o console de organizações da plataforma é em memória desde o `B-SAN3-06b`) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **origem:** R-A7 do plano v2 do `B-SAN3-18`; estreita a `P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA`, que fica com o `B-SAN3-18` (`D-B-SAN3-18-PORTA-DE-MODULO`).
+- **prova:** `PATCH /api/v1/platform/tenants/:id/modules` gravava em `platform-tenants.repository.ts` (em memória), que nem o gate nem o menu leem; a escrita real de `tenants.modules` só existe pela assinatura (`subscriptions.service.ts` → `tenant-modules.prisma.ts`, que SUBSTITUI a lista) e pelo script `scripts/san3-18-provisionar-modulos.ts` (que só acrescenta).
+- **o que o `B-SAN3-18` entrega:** a porta falsa passa a recusar com 409 `module_change_requires_subscription` (`tests/san3-18-platform-modules-patch.test.ts`).
+- **teste de encerramento:** a plataforma liga e desliga um módulo de uma organização, com auditoria, e o gate e o menu enxergam a mudança na requisição seguinte.
+
+## P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA (2026-11-11) — a tela de módulos da organização mostra "habilitado" e não avisa do 409 — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (o 409 nasce no `B-SAN3-18`; a tela é anterior) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **origem:** R2-03 da crítica r2 do plano, opção (a): sem abrir front num bloco de permissão. O §0 item 6 do plano v2 vale como "a tela continua mostrando a lista antiga e não avisa do 409".
+- **prova:** `frontend/src/modules/platform/pages/PlatformTenantModulesPage.tsx:44-47` — `saveModules()` sem `try/catch`; o selo "habilitado" sai do estado LOCAL (l.83). Com o 409 a promessa rejeita sem nada na tela, e o GET da mesma tela lê o repositório em memória, não `tenants.modules`.
+- **teste de encerramento:** a tela mostra o estado de erro (§7) no 409 e avisa que os módulos mudam pela assinatura; o selo sai da resposta do servidor.
+
+## P-SAN3-18-PORTAL-SEM-GATE (2026-11-11) — os portais do proprietário e da autoridade ficam fora do gate de módulo — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `src/portal-app.ts` é instância `express()` própria (`/portal/v1/*`), fora de `/api/v1`; listada em `SUPERFICIES_FORA_DO_GATE` de `tests/san3-18-superficies.test.ts`.
+- **teste de encerramento:** o portal recusa organização sem `patios`, ou a decisão de que o portal é núcleo fica registrada.
+
+## P-SAN3-18-TRACCAR-SEM-GATE (2026-11-11) — a ingestão do Traccar fica fora do gate de módulo — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `src/integrations/traccar/traccar-ingest.app.ts` é instância `express()` própria; listada em `SUPERFICIES_FORA_DO_GATE`.
+- **teste de encerramento:** posição de dispositivo de organização sem `telemetry` vai para a quarentena, ou a decisão contrária fica registrada.
+
+## P-SAN3-18-JOBS-SEM-GATE (2026-11-11) — os jobs de fundo não olham os módulos da organização — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** os jobs (diária do pátio, alertas, cobrança) não são instância `express()` e não passam pelo gate; não há guard que os liste.
+- **teste de encerramento:** cada job declara a área que exige, e um guard os enumera.
+
+## P-SAN3-18-MENU-WEB-FALLBACK-ABERTO (2026-11-11) — se o `GET /navigation/menu` falhar, a barra lateral da web mostra tudo — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não (o servidor recusa do mesmo jeito).
+- **prova:** `frontend/src/layouts/appSidebarNav.ts:306-319` — no fallback `governedPaths` é vazio e "nada extra é escondido" (N2 do plano v2; R2-07 da crítica r2). O §0 item 3 do plano vale como: o menu DO SERVIDOR esconde; a barra lateral da web ainda mostra tudo se a lista falhar, e o servidor recusa do mesmo jeito.
+- **teste de encerramento:** com o menu indisponível, a barra lateral esconde os itens de módulo (default negar), com vermelho-controle.
+
+## P-SAN3-18-LOTE-EVIDENCIA-QUALQUER-DE (2026-11-11) — o lote de evidências aceita ação de OS de organização só com Operação de Campo — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (consequência declarada da classe `{work_orders, field_operations}`) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `POST /api/v1/mobile/sync/evidence-actions` tem a classe qualquer-de do `generic_evidence_upload` (`src/modules/navigation/route-modules.ts`); separar exige conferir ação por ação em `src/modules/mobile/**`, fora do escopo do bloco.
+- **teste de encerramento:** ação `evidence.work_order_*` de organização sem `work_orders` → recusada por ação.
+
+## P-SAN3-18-BOTAO-ALERTAS-FROTA (2026-11-11) — a Central de Notificações chama o disparo de alertas da Frota — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `frontend/src/modules/notifications/notification.adapter.ts:120` (`/notifications/fleet-alerts/run`, classe `{vehicles}`). Organização com Notificações e sem Frota leva 403 no botão (N1 do plano v2).
+- **teste de encerramento:** o botão some sem Frota.
+
+## P-SAN3-18-BOTAO-REVOGAR-DESPACHO-SEM-CAMPO (2026-11-11) — a lista de OS chama o despacho ativo no clique de revogar — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `frontend/src/modules/work-orders/work-orders-row.handlers.ts:2` → `GET /operations/dispatches?workOrderId=` (classe `{field_operations}`): organização com OS e sem Operação de Campo leva 403 no clique (R2-02 da crítica r2).
+- **teste de encerramento:** o botão some sem Operação de Campo.
+
+## P-SAN3-18-ANEXO-GENERICO-SEM-MODULO (2026-11-11) — `/attachments` é núcleo e serve entidades de várias áreas — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (R5 do plano v2) · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **prova:** `NUCLEO_API` inclui `attachments` (`src/modules/navigation/route-modules.ts`); a rota polimórfica serve dano, multa, apólice e manutenção (Frota).
+- **teste de encerramento:** o anexo exige a área da entidade dona.
+
+## P-SAN3-18-APP-TELEMETRIA-SEM-CAPACIDADE (2026-11-11) — o app envia telemetria sem olhar o bootstrap — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-SAN3-18b` · **bloqueia:** não.
+- **origem:** R2-08 da crítica r2, decidido pela pendência (e não pela classe qualquer-de): `POST /mobile/telemetry` fica `{telemetry}`, porque organização sem Telemetria não acumula ponto de telemetria.
+- **prova:** `buildFeatureFlags` (`src/modules/mobile/mobile.routes.ts`) não tem capacidade de telemetria; o app envia sem olhar (`telemetry_api.dart`) e o buffer descarta depois do teto de tentativas (`telemetry_sync_service.dart:120-147`). Organização com Operação de Campo e sem Telemetria leva 403 em todo lote; não há consumidor desses pontos em OS ou financeiro (medido pela crítica r2).
+- **teste de encerramento:** o bootstrap tem a capacidade de telemetria, e o app não envia sem ela.
+
+## P-SAN3-18-PLANOS-SEM-CHAVES-NOVAS (2026-11-11) — versões de plano gravadas antes do bloco não têm as chaves novas — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** a plataforma (ato de operação, R3 do plano v2) · **bloqueia:** a próxima sincronização de plano em produção.
+- **prova:** atribuir ou sincronizar um plano SUBSTITUI `tenants.modules` (`tenant-modules.prisma.ts`); uma versão sem `patios`, `telemetry`, `work_orders` ou `master_data` tira essas áreas da organização. O script `scripts/san3-18-provisionar-modulos.ts` imprime `assinaturas_com_versao_sem_chaves=<n>`, lido organização por organização com o GUC (R2-09).
+- **teste de encerramento:** o script em simulação na base real imprime `assinaturas_com_versao_sem_chaves=0`.
+
+## P-SAN3-18-EXTRATO-POR-EFEITO-SEM-FINANCEIRO (2026-11-11) — multa e dano lançam débito no extrato do profissional sem o Financeiro — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o efeito nasce no Ω4C PR-07/PR-09; o gate o torna visível) · **dono:** a definir pelo orquestrador (emenda pedida pelo dev do `B-SAN3-18`, R2-01(2) da Emenda 1) · **bloqueia:** a decidir.
+- **prova:** `POST`/`PATCH /api/v1/fines` e `/api/v1/damages`, com profissional responsável, chamam `createForSource` do extrato (`src/modules/fines/fine.service.ts:450-466`, `src/modules/damages/damage.service.ts:496-512`), sem exigir permissão financeira do usuário — o oráculo por permissão do R2-01 não as vê. A classe dessas rotas é `{vehicles}` (são o cadastro da Frota; `{finance}` trancaria o cadastro de multa e de dano). Logo, uma organização com Frota e sem Financeiro grava débito no extrato que ela não pode ler (`/professional-statements` = `{finance}`).
+- **teste de encerramento:** sem o Financeiro, a multa e o dano são gravados sem débito no extrato (ou o lançamento é recusado com motivo), com teste.
+- **apenso (Emenda 2 do `B-SAN3-18`, E2.3; orquestrador, 2026-11-11 15:12 SP; aplicado por `apply-544-api`):** valores anteriores de dono e bloqueia preservados acima. **escopo:** `pre-existente` (a causa antecede o bloco e está fora do PERMITIDO; o efeito não cruza organização nem pula permissão do usuário: é regra de negócio sem dono). **dono:** o planejador do próximo bloco do Financeiro (item 29). **bloqueia:** não (não segura o #544). **pergunta ao dono:** "sem o Financeiro, multa e dano devem lançar no extrato do profissional?". **recomendação:** sim, lançar; o extrato fica visível quando o Financeiro for ligado.
+
+## P-SAN3-18-DB-FORA-DA-LISTA-CURADA (2026-11-11) — a suíte `san3-18-provision-modules-db` não está na lista do `backend-postgres` — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** o próximo bloco autorizado a tocar `.github/workflows/ci.yml` · **bloqueia:** não.
+- **prova:** a suíte roda no job `backend` (que tem Postgres e roda `npm test` inteiro, com o guarda de pulos); `.github/**` é PROIBIDO no `B-SAN3-18`.
+- **teste de encerramento:** a suíte entra no `SUITES=` do `backend-postgres`, sob o guarda de zero pulos.
+
+## P-SAN3-18-NAV-PROVISIONING-LISTA-LITERAL (2026-11-11) — `tests/navigation-provisioning.test.ts` afirma Pátios e Telemetria sem módulo — ALTA (bloqueia a bateria do bloco)
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-18`, depois da emenda que põe o arquivo no PERMITIDO · **bloqueia:** a bateria verde do `B-SAN3-18`.
+- **prova:** o teste (não é JWT; fora do PERMITIDO do plano v2) monta o menu com uma lista LITERAL de módulos (l.11-14) sem `telemetry` nem `patios` e afirma que os papéis com a permissão VEEM os 11 itens de Pátios e Telemetria — exatamente o comportamento que o item 16 muda. Medido no ramo `fix/gate-de-modulo-no-backend`: 40 `not ok`, todos nesse arquivo.
+- **teste de encerramento:** a lista do teste passa a incluir as chaves novas (ou é lida de `DEMO_TENANT_MODULES`, como faz `tests/san3-04a-menu-front-x-catalogo.test.ts`), e o arquivo fica verde.
 
 ## P-WO-ASSIGN-OPERATOR-ID-TORTO (2026-09-18) — a atribuição de OS grava o id do USUÁRIO em `assigned_operator_id` pelo fallback `operatorId ?? userId` — MÉDIA
 
