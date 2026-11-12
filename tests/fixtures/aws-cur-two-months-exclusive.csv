@@ -1,0 +1,4 @@
+bill/BillingPeriodStartDate,bill/BillingPeriodEndDate,lineItem/UsageStartDate,lineItem/UsageEndDate,lineItem/ProductCode,lineItem/UsageType,lineItem/Operation,product/region,lineItem/ResourceId,lineItem/UsageAmount,lineItem/UsageUnit,lineItem/UnblendedCost,lineItem/CurrencyCode,resourceTags/user:Project,resourceTags/user:Environment,resourceTags/user:Tenant,resourceTags/user:Module
+2026-10-01T00:00:00Z,2026-11-01T00:00:00Z,2026-10-05T00:00:00Z,2026-10-05T01:00:00Z,AmazonEC2,BoxUsage:m5.large,RunInstances,us-east-1,i-out-1,10,Hrs,60.00,USD,ERP,prod,tenant-a,compute
+2026-10-01T00:00:00Z,2026-11-01T00:00:00Z,2026-10-20T00:00:00Z,2026-10-20T01:00:00Z,AmazonEC2,BoxUsage:m5.large,RunInstances,us-east-1,i-out-2,10,Hrs,40.00,USD,ERP,prod,tenant-a,compute
+2026-11-01T00:00:00Z,2026-12-01T00:00:00Z,2026-11-10T00:00:00Z,2026-11-10T01:00:00Z,AmazonEC2,BoxUsage:m5.large,RunInstances,us-east-1,i-nov-1,10,Hrs,30.00,USD,ERP,prod,tenant-a,compute

@@ -73,6 +73,83 @@ nuvem; o preco do cliente e a assinatura com franquia. O custo rateado por organ
 - **Laco unico.** As leituras e escritas por organizacao passam por `forEachTenantRls` (`src/database/rls.ts`), com o
   canario `tenant_context_leak` do modulo.
 
+## Rateio automático (B-ASS-09a)
+
+Em linguagem de dono:
+
+- **Importar o arquivo de custo da AWS já reparte o custo entre as organizações.** Cada importação concluída cria
+  sozinha **um rateio por mês de cobrança** do arquivo. Isso é uma **ação do sistema**: quem tem permissão de importar
+  dispara o rateio sem precisar da permissão de rodá-lo à mão (R2-12(b)).
+- **Repetir não duplica.** Reenviar a tarefa, repetir o gatilho ou rodar em paralelo deixa a mesma importação com 1
+  rateio por mês.
+- **Um mês nunca é contado duas vezes**, nem no formato real da AWS, que marca o fim do mês como meia-noite do dia 1
+  seguinte. O rateio manual tinha o mesmo erro latente na fronteira e foi corrigido.
+- **Importar de novo um mês já publicado TROCA o número publicado daquele mês** (R2-05(a)). Enviar o mesmo arquivo de
+  novo cria uma importação nova, e ela ganha o seu rateio do mês; o resumo passa a mostrar o mais recente, **sem somar os
+  dois**. O resumo mostra o rateio da **importação mais nova do mês**, mesmo quando a recuperação cria depois o rateio
+  de um arquivo mais velho: o número publicado só muda por uma importação mais nova ou pela ação manual do operador. O
+  rateio novo usa a base de HOJE (arquivos apagados saem, e as organizações são as de agora). A cobrança já
+  calculada não muda, porque ela aponta para o rateio que usou (`sourceAllocationRunId`). Se o dono preferir que o
+  reenvio não troque o número publicado, isso é pergunta aberta (P4 do §9 do plano), não ajuste.
+- **Os meses já rateados antes deste bloco não mudam sozinhos**: só as importações feitas depois dele entram no rateio
+  automático (pergunta 1 do §9, recomendação (a), adotada por padrão, não decisão do dono). Os meses antigos seguem no
+  rateio manual.
+- **O rateio manual continua recalculando** a cada clique (pergunta 2, recomendação (a)). O resumo mostra o mais
+  recente.
+- **Se o rateio automático falhar, a importação continua válida.** Uma varredura de 6 em 6 horas completa **mês a mês**
+  o que faltou. Um arquivo com os dois formatos de fim no mesmo mês (o fim exclusivo da AWS e o fim escrito só com data)
+  vira **um** rateio do mês, somado, nunca dois. Um rateio automático que terminou com erro **não é tentado de novo
+  sozinho** (pergunta 3, recomendação (a)): fica marcado como falho e o operador decide pelo manual.
+- **Monitoramento, chaves, DNS e rede entram no rateio pelas ações**, como estimativa (decisão do dono de 31/10, P8; anexo
+  CE-P8 de `D-COBRANCA-RESPOSTAS-3110`): CloudWatch, KMS, Secrets Manager, Route 53 e VPC. O **NAT Gateway** vem da AWS
+  com o código de máquina (`AmazonEC2`) e entra como **máquina**, pelas ações (R2-09); o `AmazonVPC` fica para endpoint e
+  IPv4 público.
+- **O banco grava o método da base que de fato usou** (R8): com o espaço medido, `storage_usage_weight`; sem medição,
+  cai para as ações e grava `api_request_weight`.
+- **Um mês dividido em vários arquivos** vira várias importações parciais, e o resumo mostra só a última parte (risco
+  H13). Este bloco não piora o risco (o resumo já escolhia uma run); o conserto é `P-ASS09A-MES-EM-VARIOS-ARQUIVOS`, do
+  `B-ASS-09`.
+- **Um arquivo com linha de período invertido é recusado inteiro.** Quando o início de um período vem depois do fim, a
+  importação falha na origem, sem gravar linhas nem criar rateio, e o erro diz a linha. O número da linha é o da linha de
+  **dados** da importação (linhas em branco não contam).
+- **Um fim escrito só com data cobre o dia inteiro.** O fim à meia-noite do dia 1, depois do início, segue o fim
+  exclusivo da AWS; qualquer outro fim escrito só com data vale até o fim daquele dia.
+- **No empate, o número publicado não muda.** Quando duas importações têm a mesma data de publicação, vale a run que já
+  estava publicada, e uma run que chega depois não troca o número.
+- **O teto é de 24 meses por arquivo.** Uma importação com mais de 24 meses não ganha rateio automático e avisa no log.
+
+Como funciona (`src/modules/cloud-cost-allocation/cloud-cost-allocation.import-trigger.ts`):
+
+- **Gatilho.** `CloudCostService.importAwsCurCsv` grava `completed` com `metadata.autoAllocation = "v1"` (DEPOIS do
+  metadata de quem chama) e, FORA do `try`, chama o gancho `onImportCompleted`; falha do gancho é registrada
+  (`cloud_cost_import_completed_hook_failed`) e nunca vira importação `failed`. Só a fábrica Prisma liga o gancho
+  (`createPrismaCloudCostService`); a de memória segue sem gancho.
+- **Uma run por importação × janela de publicação.** `ensureImportRuns` agrupa os pares (`billing_period_start`,
+  `billing_period_end`) das linhas pela janela de publicação (o dia UTC do início e o dia UTC do fim normalizado) e cria
+  UMA run por janela, com id UUIDv5 de `cloud-cost-allocation:import:<importId>:window:<janela>` (a PK é a exclusão;
+  `P2002` relê a existente). A run guarda `trigger: "import"`, `importResolution: "explicit"`, os pares em
+  `metadata.sourceBillingPeriods` e a importação na coluna `import_id` (M-09a). A janela é `[início, fim − 1 ms]` quando
+  o fim é 00:00 UTC do dia 1 (fim exclusivo); um fim escrito só com data cobre o dia inteiro. As linhas entram pela
+  IGUALDADE dos pares que caem na janela: cada linha em exatamente uma run. Pula a janela que já tem run manual da mesma
+  importação no mesmo dia UTC. Acima de 24 janelas, nenhuma run e o aviso
+  `cloud_cost_auto_allocation_skipped_too_many_periods`. Um enfileiramento por importação.
+- **Execução.** O job que já existe, `cloud-cost-allocation.run`, com `mode: "import_auto"`, reivindica cada run
+  (`pending → processing`, condicional) e só a reivindicação vencedora roda o motor.
+- **Varredura** (`mode: "import_catch_up"`, 1º tique no boot do worker, depois a cada 6 h): seleciona pelo que FALTA —
+  importação marcada ainda na fila, e runs automáticas `pending` de qualquer importação —, com limite de 50. Ela completa
+  **mês a mês** o que faltou: cria só as janelas da importação que ainda não têm run. A falha geral é registrada
+  (`cloud_cost_auto_allocation_catch_up_failed`), não relança e reenfileira uma vez.
+- **A fila da varredura não emperra** (PR542-01): a importação avaliada sem nada a criar (todos os meses já com
+  rateio, manual ou automático, ou mais de 24 janelas) recebe o marcador do sistema `metadata.autoAllocationSweep =
+  { status: "done" }` quando a passada termina sem erro e sai da seleção; a que falha recebe `{ status: "failed",
+  attempts }` e sai depois de 3 falhas seguidas. O marcador é só do sistema: a importação nasce com ele vazio (`null`),
+  gravado depois do metadata de quem chama, e quem importa não consegue escondê-la da varredura.
+- **Coluna `import_id`** (migração `20260902000000_ass09a_allocation_run_import_id`, autorizada pelo dono em 31/10):
+  FK para `cloud_cost_imports` com `ON DELETE SET NULL` (apagar a importação não apaga a run), índice e backfill a
+  partir de `metadata.importId`.
+- **Limite conhecido:** uma run automática presa em `processing` (o worker morreu depois de reivindicar) fica visível e o
+  operador roda o manual (`P-ASS09A-RUN-PRESA-EM-PROCESSING`, do `B-ASS-10b`). Não erra valor.
+
 ## Modelo de dados
 
 ### `cloud_cost_allocation_runs`
@@ -93,6 +170,7 @@ Campos principais:
 - `created_by`;
 - `error_message`;
 - `metadata`;
+- `import_id` (B-ASS-09a, M-09a): a importação da run, FK `ON DELETE SET NULL`;
 - timestamps.
 
 ### `tenant_cloud_cost_allocations`
@@ -187,6 +265,8 @@ Exemplo de criacao:
 `cloud-cost-allocation.run`:
 
 - recebe `runId` existente ou `periodStart`, `periodEnd` e `strategy`;
+- B-ASS-09a: com `mode: "import_auto"` e `importId`, executa as runs automáticas `pending` da importação (reivindicadas);
+  com `mode: "import_catch_up"`, roda a varredura e se reenfileira em 6 h (ver "Rateio automático");
 - cria run quando necessario;
 - atualiza status para `processing`;
 - executa o engine;
