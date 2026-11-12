@@ -90,3 +90,13 @@
 - Ambiente: `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` aberta com dono `B-FERR-AGENTES`, conforme E-C23.3; não é defeito do C e não bloqueia o bloco porque a suíte inteira roda no CI do PR.
 - Head: `f01e4a77ef336f8aaf7b1028aee0f4c36ed9f418` antes deste apenso.
 - Próximo passo exato: executar a C-F1 em worktree temporário de `origin/main`: reexecutar `ataque.mts`, `censo.mts` e as sondas `s02`/`s03`, registrar cada vermelho-controle e remover somente o worktree temporário; não iniciar C-F2 antes do commit e push da C-F1.
+
+## RETOMADA 8 — 2026-11-12T19:42:53-03:00 — C-F1 CONCLUÍDA
+
+- Comando: worktree temporário `C:/Users/thiag/w-material-f1` em `origin/main` `ef4e98e7`, com `npm ci` e Prisma próprios; execução de `ataque.mts`, `censo.mts`, sondas `s02`/`s03` e controle Flutter descartável de RC5(1); remoção somente do worktree temporário com `git worktree remove --force` (sem `prune`).
+- Saída resumida de `ataque.mts`: G1 reproduzido (`get` simples deixa tecB ler a OS, `getForMutation` recusa); G4/S3 reproduzidos (mesma origem devolve o movimento de tecA para quantidade e ator divergentes); tipos antigos/contratos continuam como medidos. Exit 0.
+- Saída resumida de `censo.mts`: base com `violacoes: 0`; acrescentar `work_order_material.add` produz `NAO-CLASSIFICADA`; a regex `^work_order[.]` não casa. Exit 0.
+- Sondas C2.1: `s02` provou que o mutante BASE sobrevive aos quatro casos antigos e morre apenas em gerente/misto com cadastro; `s03` devolveu `rejected not_found` mas baixou saldo `5→3`, criou movimento `1→2` e deixou saída fantasma — oráculo literal verde, oráculo `resposta+saldo+razão` vermelho. Ambas exit 0.
+- RC5(1) no head: controle descartável falhou como esperado (`Expected SyncStatus.synced`, `Actual SyncStatus.pending`, exit 1); o `removeMaterial` atual só apaga a linha e não desfaz/enfileira a ação. RC2(1)/RC3 permanecem “não aplicável” porque o handler de material não existe na `main`.
+- Head: `05fd718e25f7c5ac8bb0caf7d8ebed22734968d8` antes deste apenso; árvore do `w-material` limpa antes do diário.
+- Próximo passo exato: C-F2 — implementar somente o seam do estoque dos itens C2(1)-(3), criar `tests/b-material-exit-source.test.ts`, provar RC1(1)-(6), M-C1/M-C2 e os quatro guards de estoque; rodar `npm run check`, registrar, commitar e empurrar antes da C-F2b.
