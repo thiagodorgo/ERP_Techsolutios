@@ -677,6 +677,10 @@ test("T9e · R2-05(b) — reenviar junho cria importação nova, com rateio novo
 
   await new Promise((resolve) => setTimeout(resolve, 5));
   const resent = await chain.costs.importAwsCurCsv({ csv: fixture("aws-cur-sample.csv") });
+  assert.ok(
+    first.importedAt !== undefined && resent.importedAt !== undefined && first.importedAt.getTime() < resent.importedAt.getTime(),
+    `pré-condição: first.importedAt < resent.importedAt (first=${first.importedAt?.toISOString()}, resent=${resent.importedAt?.toISOString()})`,
+  );
   await chain.allocation.executeImportRuns(resent.id);
   const after = await chain.allocation.getAllocationSummary({ periodStart: junStart, periodEnd: junEnd });
 
@@ -754,12 +758,19 @@ test("T-E4-1 · P9 — a varredura não regride o número publicado: X mais velh
   const plain = new CloudCostService(costRepository);
   const hooked = new CloudCostService(costRepository, { onImportCompleted: hook });
 
-  const X = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100)]) });
-  assert.equal(X.status, "completed");
+  const imported = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100)]) });
+  assert.equal(imported.status, "completed");
+  // Emenda 4.2/4.2.1 (RE42-03): X recebe importedAt fixo no passado, no molde do T-E4-2, para que
+  // X, Y e as duas runs nunca empatem no mesmo milissegundo (o empate é a P-ASS09A-EMPATE-MESMO-MS).
+  const X = await costRepository.updateImport(imported.id, { status: "completed", importedAt: new Date("2026-01-01T00:00:00.000Z") });
   assert.equal(X.metadata.autoAllocation, "v1");
   assert.equal((await allocationRepository.listRunsByImport(X.id)).length, 0, "X fica sem run (gancho caído)");
 
   const Y = await hooked.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 130)]) });
+  assert.ok(
+    X.importedAt !== undefined && Y.importedAt !== undefined && X.importedAt.getTime() < Y.importedAt.getTime(),
+    `pré-condição: X.importedAt < Y.importedAt (X=${X.importedAt?.toISOString()}, Y=${Y.importedAt?.toISOString()})`,
+  );
   for (const [, payload] of enqueued.splice(0)) {
     if (payload.mode === "import_auto") await allocation.executeImportRuns(payload.importId);
   }
@@ -787,8 +798,9 @@ test("T-E4-2 · P9 — o manual de outubro sem importId publica Y; a varredura c
 
   const X = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 100)]) });
   const Y = await plain.importAwsCurCsv({ csv: curCsv([curRow("2026-10-01T00:00:00Z", "2026-11-01T00:00:00Z", 130)]) });
-  await costRepository.updateImport(X.id, { status: "completed", importedAt: new Date("2026-01-01T00:00:00.000Z") });
-  await costRepository.updateImport(Y.id, { status: "completed", importedAt: new Date("2026-01-02T00:00:00.000Z") });
+  const Xc = await costRepository.updateImport(X.id, { status: "completed", importedAt: new Date("2026-01-01T00:00:00.000Z") });
+  const Yc = await costRepository.updateImport(Y.id, { status: "completed", importedAt: new Date("2026-01-02T00:00:00.000Z") });
+  assert.ok(Xc.importedAt!.getTime() < Yc.importedAt!.getTime(), "pré-condição: X.importedAt < Y.importedAt");
   assert.equal((await allocationRepository.listRunsByImport(X.id)).length, 0, "X fica sem run (gancho caído)");
   assert.equal((await allocationRepository.listRunsByImport(Y.id)).length, 0, "Y fica sem run (gancho caído)");
 
@@ -872,7 +884,7 @@ test("T-E4-3 · P11 — (a) o gancho que cai no 2º mês; (b) o reenvio cujo gan
         curRow("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z", 30),
       ]),
     });
-    await costRepository.updateImport(X.id, { status: "completed", importedAt: new Date("2026-01-01T00:00:00.000Z") });
+    const Xc = await costRepository.updateImport(X.id, { status: "completed", importedAt: new Date("2026-01-01T00:00:00.000Z") });
     await buildCloudCostImportHook({ allocation, enqueue })(X);
     await drain();
     const xNov = await allocation.getAllocationSummary({ periodStart: NOV_START, periodEnd: NOV_END });
@@ -885,7 +897,8 @@ test("T-E4-3 · P11 — (a) o gancho que cai no 2º mês; (b) o reenvio cujo gan
         curRow("2026-11-01T00:00:00Z", "2026-12-01T00:00:00Z", 45),
       ]),
     });
-    await costRepository.updateImport(Y.id, { status: "completed", importedAt: new Date("2026-01-02T00:00:00.000Z") });
+    const Yc = await costRepository.updateImport(Y.id, { status: "completed", importedAt: new Date("2026-01-02T00:00:00.000Z") });
+    assert.ok(Xc.importedAt!.getTime() < Yc.importedAt!.getTime(), "pré-condição: X.importedAt < Y.importedAt");
     let calls = 0;
     const flaky = Object.create(allocation) as CloudCostAllocationService;
     flaky.createImportRun = async (input: never) => {
@@ -1128,6 +1141,9 @@ test("T-E41-3 · R41-02 — no empate de imported_at, a varredura não troca o n
     await new Promise((resolve) => setTimeout(resolve, 25));
     await runImportCatchUp({ allocation, enqueue: async () => undefined });
     await allocation.executeImportRuns(X.id);
+    const [runY] = await allocationRepository.listRunsByImport(Y.id);
+    const [runX] = await allocationRepository.listRunsByImport(X.id);
+    assert.ok(runY!.createdAt.getTime() < runX!.createdAt.getTime(), "pré-condição: a run de Y nasceu antes da run de X");
     const after = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
     assert.equal(after.totalImportedCost, 130, "o resumo continua em Y");
     assert.equal(after.importId, Y.id);
@@ -1156,6 +1172,9 @@ test("T-E41-3 · R41-02 — no empate de imported_at, a varredura não troca o n
     await new Promise((resolve) => setTimeout(resolve, 25));
     await runImportCatchUp({ allocation, enqueue: async () => undefined });
     await allocation.executeImportRuns(Y.id);
+    const [runX] = await allocationRepository.listRunsByImport(X.id);
+    const [runY] = await allocationRepository.listRunsByImport(Y.id);
+    assert.ok(runX!.createdAt.getTime() < runY!.createdAt.getTime(), "pré-condição: a run de X nasceu antes da run de Y");
     const after = await allocation.getAllocationSummary({ periodStart: OCT_START, periodEnd: OCT_END });
     assert.equal(after.totalImportedCost, 100, "o resumo continua em X");
     assert.equal(after.importId, X.id);
