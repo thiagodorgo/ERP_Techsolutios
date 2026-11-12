@@ -472,6 +472,7 @@ export class InventoryService {
     const sourceId = parseRequiredUuid(input.sourceId, "sourceId");
     const itemId = parseRequiredUuid(input.itemId, "itemId");
     const quantity = assertPositiveQuantity(input.quantity);
+    const workOrderId = input.workOrderId === undefined ? undefined : parseRequiredUuid(input.workOrderId, "workOrderId");
     const vehicleId = input.vehicleId === undefined ? undefined : parseRequiredUuid(input.vehicleId, "vehicleId");
 
     // Posse do item no tenant (404/422 cross-tenant) + regra de combustível (só para abastecimento interno).
@@ -495,6 +496,7 @@ export class InventoryService {
       sourceType,
       sourceId,
       quantity,
+      workOrderId,
       vehicleId,
       reason: STOCK_EXIT_REASON_BY_SOURCE[sourceType],
       createdBy: actor.userId,
@@ -505,6 +507,11 @@ export class InventoryService {
     }
 
     return movement;
+  }
+
+  /** Tenant-scoped exact SKU lookup used by service-to-service sync handlers. */
+  async findItemBySku(actor: InventoryActorContext, sku: string): Promise<InventoryItem | undefined> {
+    return this.repository.findItemBySku(actor.tenantId, parseSku(sku));
   }
 
   /**

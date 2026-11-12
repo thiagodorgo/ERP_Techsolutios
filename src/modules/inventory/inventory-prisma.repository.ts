@@ -173,6 +173,17 @@ export class PrismaInventoryRepository implements InventoryRepository {
     return item ? mapItemRecord(item) : undefined;
   }
 
+  async findItemBySku(tenantId: string, sku: string): Promise<InventoryItem | undefined> {
+    const item = await this.client.inventoryItem.findFirst({
+      where: {
+        tenant_id: tenantId,
+        sku,
+      },
+    });
+
+    return item ? mapItemRecord(item) : undefined;
+  }
+
   async findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined> {
     const item = await this.findItemById(tenantId, itemId);
     if (!item) return undefined;
@@ -491,6 +502,7 @@ export class PrismaInventoryRepository implements InventoryRepository {
         itemId: input.itemId,
         type: "saida",
         quantidadeSinalizada: signed,
+        workOrderId: input.workOrderId,
         vehicleId: input.vehicleId,
         reason: input.reason,
         custody: BASE_CUSTODY,
@@ -841,6 +853,10 @@ export class RlsPrismaInventoryRepository implements InventoryRepository {
 
   findItemById(tenantId: string, itemId: string): Promise<InventoryItem | undefined> {
     return this.tx(tenantId, (repo) => repo.findItemById(tenantId, itemId));
+  }
+
+  findItemBySku(tenantId: string, sku: string): Promise<InventoryItem | undefined> {
+    return this.tx(tenantId, (repo) => repo.findItemBySku(tenantId, sku));
   }
 
   findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined> {

@@ -81,6 +81,7 @@ export interface InventoryRepository {
   createItem(input: CreateInventoryItemInput): Promise<InventoryItem>;
   listItems(input: ListInventoryItemsInput): Promise<ListInventoryItemsResult>;
   findItemById(tenantId: string, itemId: string): Promise<InventoryItem | undefined>;
+  findItemBySku(tenantId: string, sku: string): Promise<InventoryItem | undefined>;
   findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined>;
   updateItem(input: UpdateInventoryItemInput): Promise<InventoryItem | undefined>;
   /**
@@ -189,6 +190,10 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     const item = this.items.get(itemId);
 
     return item?.tenantId === tenantId ? item : undefined;
+  }
+
+  async findItemBySku(tenantId: string, sku: string): Promise<InventoryItem | undefined> {
+    return [...this.items.values()].find((item) => item.tenantId === tenantId && item.sku === sku);
   }
 
   async findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined> {
@@ -426,6 +431,7 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       itemId: input.itemId,
       type: "saida",
       quantidadeSinalizada: signed,
+      workOrderId: input.workOrderId,
       vehicleId: input.vehicleId,
       reason: input.reason,
       custody: BASE_CUSTODY,

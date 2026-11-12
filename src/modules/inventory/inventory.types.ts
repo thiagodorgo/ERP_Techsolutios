@@ -370,13 +370,14 @@ export type CreateMovementOutcome =
  * seam FIXES the whole movement (type=`saida`, custody BASE, source_type/source_id, machine reason) — the consumer
  * only says WHICH item; the quantity is LOCKED at the origin (liters / line quantity). Non-amplifier by design.
  */
-export const STOCK_EXIT_SOURCE_TYPES = ["fuel_log", "maintenance_item"] as const;
+export const STOCK_EXIT_SOURCE_TYPES = ["fuel_log", "maintenance_item", "work_order_material"] as const;
 export type StockExitSourceType = (typeof STOCK_EXIT_SOURCE_TYPES)[number];
 
 /** Ω4C PR-08b — the machine `reason` token of the baixa, per source (NOT PII, §2.8 — a máquina, não texto livre). */
 export const STOCK_EXIT_REASON_BY_SOURCE: Record<StockExitSourceType, string> = {
   fuel_log: "baixa_abastecimento_interno",
   maintenance_item: "baixa_manutencao",
+  work_order_material: "baixa_material_os",
 };
 
 /** Ω4C PR-08b — the non-amplifier contract the consumer passes to `createExitForSource` (service→service). */
@@ -385,6 +386,7 @@ export type CreateExitForSourceInput = {
   readonly sourceId: string;
   readonly itemId: string;
   readonly quantity: number;
+  readonly workOrderId?: string;
   readonly vehicleId?: string;
 };
 
@@ -395,6 +397,7 @@ export type CreateStockExitForSourceInput = {
   readonly sourceType: string;
   readonly sourceId: string;
   readonly quantity: number;
+  readonly workOrderId?: string;
   readonly vehicleId?: string;
   readonly reason: string;
   readonly createdBy?: string;

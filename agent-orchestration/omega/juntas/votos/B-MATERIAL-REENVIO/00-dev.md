@@ -100,3 +100,12 @@
 - RC5(1) no head: controle descartável falhou como esperado (`Expected SyncStatus.synced`, `Actual SyncStatus.pending`, exit 1); o `removeMaterial` atual só apaga a linha e não desfaz/enfileira a ação. RC2(1)/RC3 permanecem “não aplicável” porque o handler de material não existe na `main`.
 - Head: `05fd718e25f7c5ac8bb0caf7d8ebed22734968d8` antes deste apenso; árvore do `w-material` limpa antes do diário.
 - Próximo passo exato: C-F2 — implementar somente o seam do estoque dos itens C2(1)-(3), criar `tests/b-material-exit-source.test.ts`, provar RC1(1)-(6), M-C1/M-C2 e os quatro guards de estoque; rodar `npm run check`, registrar, commitar e empurrar antes da C-F2b.
+
+## RETOMADA 9 — 2026-11-12T19:46:46-03:00 — C-F2 CONCLUÍDA
+
+- Executor da fatia: `dev-c3-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Código: `work_order_material` entrou nas origens de baixa com `reason = baixa_material_os`; `workOrderId` atravessa service → repositórios memória/Prisma → razão; `findItemBySku` é exato e tenant-scoped na interface, memória, Prisma/RLS e serviço. Nenhum arquivo Prisma, rota ou permissão foi tocado.
+- Provas: `tests/b-material-exit-source.test.ts` RC1(1)-(6) = `6/6`; conjunto com os quatro guards de estoque = `49/49`, `fail 0`, `skipped 0`; `npm run check` exit 0; `flutter analyze` = `No issues found`. `dart format`: não aplicável, pois nenhum arquivo Dart mudou.
+- Mutações: M-C1 (não repassar `workOrderId`) deixou RC1(1) vermelho por `undefined`; M-C2 (`includes` no SKU) deixou RC1(4) vermelho por falso positivo; ambas revertidas, e `git diff --check` verde.
+- Head: `d799043bc70edb7cb6464da2ed0ecba701b4babe` antes deste apenso.
+- Próximo passo exato: commitar/push da C-F2 e abrir o PR em rascunho; depois iniciar C-F2b, limitada à custódia no seam (E1), RC1(7)-(8), M-C25/M-C26 e regressões nomeadas.
