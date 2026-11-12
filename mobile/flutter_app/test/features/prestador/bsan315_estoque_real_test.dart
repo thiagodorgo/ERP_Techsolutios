@@ -359,7 +359,7 @@ void main() {
         ]) {
           final failed = await _repo(
             stockRemoteApi: _FakeStockApi(() async => throw error),
-            stockCache: cacheAfter403,
+            stockCache: InMemoryTechnicianStockCache(),
             allowDemoStock: false,
             isDemoSession: true,
           ).loadTechnicianStock();
