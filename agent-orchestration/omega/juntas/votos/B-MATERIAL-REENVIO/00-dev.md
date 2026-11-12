@@ -81,3 +81,12 @@
 - Veredito F0: as três divergências antigas estão cobertas pelas emendas, mas a baseline canônica ainda não bate. **PARADA OBRIGATÓRIA por `D-EMENDA-ANTES-DO-CODIGO`.**
 - Head: `7d1a392a205b1c3d6af8ae2f056f7241a002fc40`.
 - Próximo passo exato: o orquestrador decidir por emenda revisada como executar a forma canônica no Git Bash/Windows diante de `setsid` ausente, shim Prisma interpretado pelo Node e `EBUSY`; só depois refazer N_b e N_f. Não iniciar C-F1.
+
+## RETOMADA 7 — 2026-11-12T19:38:25-03:00 — F0 CONCLUÍDA PELA EMENDA C2.3
+
+- Comando: leitura do run `43249586610` com `gh run view --job ... --log`; subida do Postgres exclusivo em `127.0.0.1:55576` com `timezone`/`log_timezone = UTC`, migração e seed de `bmat_base`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7` + `PONG`; regressões backend, PostgreSQL e Flutter nomeadas pelas Emendas C2/C2.1; registro de `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS`.
+- Saída resumida do CI (`main` `ef4e98e7`): backend `[run-backend-tests] 534 arquivo(s) · 5440 teste(s) · pass 5438 · fail 0 · skipped 2`; `backend-postgres` `610/610`, `fail 0`, `skipped 0`; Flutter `+1170: All tests passed!`. Estes são `N_b = 5440` e `N_f = 1170` pela E-C23.1.
+- Saída resumida no host: Postgres aceitando em `127.0.0.1:55576`, `SHOW timezone` e `SHOW log_timezone` = `UTC`; Redis `127.0.0.1:56576` = `PONG`; regressão backend em memória `123/123`, `fail 0`, `skipped 0`; regressão `-db` `37/37`, `fail 0`, `skipped 0`, incluindo a prova `NOSUPERUSER NOBYPASSRLS`; regressão Flutter `66/66`, `All tests passed!`. Os arquivos `tests/b-material-*` ainda não existem na F0 e entram nas fatias próprias.
+- Ambiente: `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` aberta com dono `B-FERR-AGENTES`, conforme E-C23.3; não é defeito do C e não bloqueia o bloco porque a suíte inteira roda no CI do PR.
+- Head: `f01e4a77ef336f8aaf7b1028aee0f4c36ed9f418` antes deste apenso.
+- Próximo passo exato: executar a C-F1 em worktree temporário de `origin/main`: reexecutar `ataque.mts`, `censo.mts` e as sondas `s02`/`s03`, registrar cada vermelho-controle e remover somente o worktree temporário; não iniciar C-F2 antes do commit e push da C-F1.

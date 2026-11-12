@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **961** |
-| IDs distintos | 950 |
-| **ABERTAS** | **737** |
+| Cabecalhos `## P-` | **962** |
+| IDs distintos | 951 |
+| **ABERTAS** | **738** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **676** |
+| — das quais **ativas nesta rodada** | **677** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 220 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **961 cabecalhos para 950 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **962 cabecalhos para 951 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 314
+## ABERTAS · balde A — material — 315
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -388,6 +388,7 @@
 | `P-J539-C1-01` | 14457 | MÉDIA | sim | P-J539-C1-01 (2026-11-12) — a catraca do regime deixa passar uma condição viva no WHERE  |
 | `P-J539-C1-02` | 14464 | MÉDIA | sim | P-J539-C1-02 (2026-11-12) — a catraca R1–R4 não pega a relação fluente `.profile()`, a p |
 | `P-J539-C1-03` | 14470 | MÉDIA | sim | P-J539-C1-03 (2026-11-12) — escopo e prazos que o gate de leilão lê da cópia não têm tes |
+| `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` | 14533 | MÉDIA | sim | P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS (2026-11-12) — a suíte backend inteira não reproduz  |
 
 ## ABERTAS · balde B — processo/registro — 362
 
@@ -754,7 +755,7 @@
 | `P-FERR-INITDB-WINDOWS-FUSO-E-ENCODING` | 14505 | BAIXA | sim | P-FERR-INITDB-WINDOWS-FUSO-E-ENCODING (2026-11-12) — cluster criado com `initdb` no Wind |
 | `P-C4-02-MENU-TECNICO-403` | 14512 | BAIXA | sim | P-C4-02-MENU-TECNICO-403 (2026-11-12) — o menu do técnico mostra Seguros e Estoque, que  |
 | `P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA` | 14519 | BAIXA | sim | P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA (2026-11-12) — `logistics`, `users` e `audit` prov |
-| `P-PORTAO-ITEM-GATE-CHAVE` | 14527 | — | sim | P-PORTAO-ITEM-GATE-CHAVE (2026-11-12) — acrescentar a P-MOBILE-GATE-CHAVE-FORA-DO-CATALO |
+| `P-PORTAO-ITEM-GATE-CHAVE` | 14526 | — | sim | P-PORTAO-ITEM-GATE-CHAVE (2026-11-12) — acrescentar a P-MOBILE-GATE-CHAVE-FORA-DO-CATALO |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

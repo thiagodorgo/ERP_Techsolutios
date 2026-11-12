@@ -14529,3 +14529,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **pergunta ao dono:** a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` entra no §4.1 como item novo do portão, com bloco próprio de permissão do app? A resposta (a) da `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP) disse que sim, mas acrescentar o item muda o denominador de 64 para 65 e mexe no `mvp_vendavel`.
 - **recomendação:** decidir antes do próximo marco.
 - **origem:** ressalva (item 4) do `porteiro-540`; o item não entra no `PLANO_SAN3` neste PR (decisão do orquestrador, `donos-1211.md`).
+
+## P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS (2026-11-12) — a suíte backend inteira não reproduz o CI no host Windows — MÉDIA (ferramenta)
+
+- **status:** ABERTA · **gravidade:** MÉDIA (ambiente/arnês, não produto) · **escopo:** ferramentas e compatibilidade do arnês no Windows · **dono:** `B-FERR-AGENTES` · **PR-alvo:** o PR do `B-FERR-AGENTES` · **bloqueia:** não o `B-MATERIAL-REENVIO`; a baseline e a suíte inteira deste bloco são aceitas pelo CI.
+- **origem:** RETOMADA 6 do diário do `B-MATERIAL-REENVIO` e Emenda C2.3 (`E-C23.3`).
+- **fato:** no Git Bash/Windows, a suíte inteira da `main` `ef4e98e7` terminou com `534 arquivo(s) · 5431 teste(s) · pass 5420 · fail 9 · skipped 2`: o host não tem `setsid`, um subprocesso tentou interpretar o shim Bash `node_modules/.bin/prisma` como JavaScript, e o drill do Traccar encontrou `EBUSY` no teardown. O run canônico `43249586610` da mesma ref no CI fechou `5440 teste(s) · pass 5438 · fail 0 · skipped 2`; por isso `N_b/N_f` vêm do CI e o host roda as suítes do bloco e a regressão nomeada.
+- **critério de encerramento:** o arnês da suíte inteira executa no Git Bash/Windows sem depender de `setsid`, resolve o executável Prisma correto e faz teardown do drill sem `EBUSY`, reproduzindo o resumo verde do CI sem afrouxar testes nem aumentar skips.
