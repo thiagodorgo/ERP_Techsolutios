@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { getGovernedNavigationPaths, getMenuForCurrentUser } from "../src/modules/navigation/navigation.service.js";
@@ -8,10 +9,15 @@ import { ROLE_PERMISSIONS, type Role } from "../src/modules/core-saas/permission
 // field_location:read. Estes testes travam a MATRIZ por papel e o gating dinâmico (remover módulo → some),
 // codificando o que foi validado por login real (ver T-ACESSO / demo-credentials.md).
 
-const DEMO_MODULES = [
-  "dashboard", "work_orders", "field_operations", "logistics", "finance",
-  "checklists", "tenant_checklist", "notifications", "users", "audit",
-];
+// B-SAN3-18 (Emenda 2, E2.1): os módulos da organização vêm da MESMA fonte do seed (`DEMO_TENANT_MODULES`, lido do
+// texto do prisma/seed.ts, como em tests/san3-04a-menu-front-x-catalogo.test.ts). A lista literal antiga não tinha
+// `telemetry` nem `patios` e afirmava que a permissão bastava para ver Telemetria e Pátios.
+const seedText = readFileSync(new URL("../prisma/seed.ts", import.meta.url), "utf8");
+const DEMO_MODULES = [...seedText.match(/const DEMO_TENANT_MODULES = \[([^\]]*)\]/)![1].matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+
+// B-SAN3-18 (item 16): as entradas de Telemetria, Pátios e da Central de Notificações exigem o módulo da área.
+// Sem o módulo, o item some, mesmo com a permissão.
+const withoutModule = (moduleKey: string): string[] => DEMO_MODULES.filter((m) => m !== moduleKey);
 
 const TENANT = "11111111-1111-1111-1111-111111111111";
 
@@ -104,6 +110,10 @@ for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
         `${role} → ${telemetryPath} deveria ${hasTelemetry ? "aparecer" : "sumir"} no menu`,
       );
     }
+    const pathsSemModulo = menuPathsForRole(role, withoutModule("telemetry"));
+    for (const telemetryPath of TELEMETRY_NAV_PATHS) {
+      assert.equal(pathsSemModulo.includes(telemetryPath), false, `${role} → ${telemetryPath} sem o módulo telemetry deveria sumir`);
+    }
   });
 }
 
@@ -124,6 +134,11 @@ for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
       menuPathsForRole(role).includes(CENTRAL_NOTIFICACOES_PATH),
       hasCreate,
       `${role} → ${CENTRAL_NOTIFICACOES_PATH} deveria ${hasCreate ? "aparecer" : "sumir"} no menu`,
+    );
+    assert.equal(
+      menuPathsForRole(role, withoutModule("notifications")).includes(CENTRAL_NOTIFICACOES_PATH),
+      false,
+      `${role} → ${CENTRAL_NOTIFICACOES_PATH} sem o módulo notifications deveria sumir`,
     );
   });
 }
@@ -157,6 +172,11 @@ for (const { path, permission } of PATIOS_NAV) {
         hasPermission,
         `${role} → ${path} deveria ${hasPermission ? "aparecer" : "sumir"} no menu`,
       );
+      assert.equal(
+        menuPathsForRole(role, withoutModule("patios")).includes(path),
+        false,
+        `${role} → ${path} sem o módulo patios deveria sumir`,
+      );
     });
   }
 }
@@ -181,6 +201,11 @@ for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
       menuPathsForRole(role).includes(PATIOS_PROCESSES_PATH),
       hasPermission,
       `${role} → ${PATIOS_PROCESSES_PATH} deveria ${hasPermission ? "aparecer" : "sumir"} no menu`,
+    );
+    assert.equal(
+      menuPathsForRole(role, withoutModule("patios")).includes(PATIOS_PROCESSES_PATH),
+      false,
+      `${role} → ${PATIOS_PROCESSES_PATH} sem o módulo patios deveria sumir`,
     );
   });
 }
@@ -214,6 +239,11 @@ for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
       hasPermission,
       `${role} → ${PATIOS_RELEASES_PATH} deveria ${hasPermission ? "aparecer" : "sumir"} no menu`,
     );
+    assert.equal(
+      menuPathsForRole(role, withoutModule("patios")).includes(PATIOS_RELEASES_PATH),
+      false,
+      `${role} → ${PATIOS_RELEASES_PATH} sem o módulo patios deveria sumir`,
+    );
   });
 }
 
@@ -244,6 +274,11 @@ for (const role of Object.keys(MAP_VISIBLE_BY_ROLE) as Role[]) {
       menuPathsForRole(role).includes(PATIOS_AUCTIONS_PATH),
       hasPermission,
       `${role} → ${PATIOS_AUCTIONS_PATH} deveria ${hasPermission ? "aparecer" : "sumir"} no menu`,
+    );
+    assert.equal(
+      menuPathsForRole(role, withoutModule("patios")).includes(PATIOS_AUCTIONS_PATH),
+      false,
+      `${role} → ${PATIOS_AUCTIONS_PATH} sem o módulo patios deveria sumir`,
     );
   });
 }

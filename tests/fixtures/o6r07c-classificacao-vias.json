@@ -21,7 +21,11 @@
  },
  "MIDDLEWARE /api/v1 · (anônima)": {
   "classe": "MIDDLEWARE",
-  "n": 117
+  "n": 118
+ },
+ "MIDDLEWARE /api/v1 · moduleGate": {
+  "classe": "MIDDLEWARE",
+  "n": 1
  },
  "MIDDLEWARE /api/v1 · tenantContextMiddleware": {
   "classe": "MIDDLEWARE",

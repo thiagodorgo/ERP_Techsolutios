@@ -8,6 +8,7 @@ import { ROLE_PERMISSIONS } from "../src/modules/core-saas/permissions/catalog.j
 import { createEphemeralRole } from "./helpers/auth-identity-fixture.js";
 import { ensurePermission } from "./helpers/db-permissions.js";
 import { sweepTenant } from "./helpers/sweep-tenant.js";
+import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 
 // B-SAN3-08 (item 41 do portão, CE-5 e CE-G2) — o Financeiro monta e aprova orçamento com as permissões DO BANCO
 // (`CORE_SAAS_PERSISTENCE=prisma`), JWT real, papel `finance` resolvido pelo RBAC persistente. Fecha também, por HTTP real,
@@ -119,7 +120,7 @@ if (!connectionString) {
       const tag = `[braço ${braco} — base ${braco === 1 ? "PROVISIONADA (papel global)" : "SÓ-MIGRADA (papel da organização)"}]`;
 
       const tenant = await client.tenant.create({
-        data: { name: `SAN3-08 Financeiro ${suffix}`, slug: `san3-08-fin-${suffix}` },
+        data: { name: `SAN3-08 Financeiro ${suffix}`, slug: `san3-08-fin-${suffix}`, modules: [...TODOS_OS_MODULOS] }, // B-SAN3-18: o gate de módulo exige as áreas que o teste usa
       });
       tenantId = tenant.id;
 

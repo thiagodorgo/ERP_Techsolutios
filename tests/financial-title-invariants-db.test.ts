@@ -15,6 +15,7 @@ import {
   waitForOwnBlockedStatement,
   withApplicationName,
 } from "./helpers/pg-barrier.js";
+import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 
 const connectionString = process.env.DATABASE_URL;
 // Nome unico desta suite (um processo por arquivo no `node --test`) - escopo da barreira (B-5).
@@ -305,7 +306,7 @@ async function withHarness(tag: string, work: (h: Harness, seed: Seed) => Promis
 
 async function seedTenant(h: Harness, tag: string) {
   const mark = `${tag}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-  const tenant = await h.client.tenant.create({ data: { name: `F6 ${mark}`, slug: `f6-${mark}` } });
+  const tenant = await h.client.tenant.create({ data: { name: `F6 ${mark}`, slug: `f6-${mark}`, modules: [...TODOS_OS_MODULOS] } }); // B-SAN3-18: o gate de módulo exige as áreas que o teste usa
   h.tenantIds.push(tenant.id);
   const user = await h.withTenantRls(h.client, tenant.id, (tx) => tx.user.create({ data: { tenant_id: tenant.id, name: "Financeiro F6", email: `f6-${mark}@example.com` } }));
   const account = await h.withTenantRls(h.client, tenant.id, (tx) => tx.financialAccount.create({ data: { tenant_id: tenant.id, name: `Conta ${mark}`, kind: "cash", currency: "BRL", is_active: true } }));

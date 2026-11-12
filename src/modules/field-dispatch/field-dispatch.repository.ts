@@ -1,8 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type {
-  ChangeFieldDispatchStatusInput,
-  CreateFieldDispatchInput,
+  CreateFieldDispatchWithEventInput,
   FieldDispatch,
   FieldDispatchEvent,
   FieldDispatchEventType,
@@ -11,8 +10,36 @@ import type {
   ListFieldDispatchesResult,
   OperatorAtFixTime,
   OperatorAtFixTimeCandidate,
-  ReassignFieldDispatchInput,
+  FieldDispatchEventDraft,
+  FieldDispatchIdempotencyMatch,
+  FieldDispatchTransitionPatch,
+  FieldDispatchTransitionResult,
+  FieldDispatchWriteHooks,
+  FindFieldDispatchByIdempotencyKeyInput,
+  TransitionFieldDispatchInput,
 } from "./field-dispatch.types.js";
+import { FieldDispatchError, FieldDispatchIdempotencyKeyTakenError } from "./field-dispatch.types.js";
+
+// B-O6R-09 (R-A12 ii do plano v2; R2-06 da crítica r2) — os 4 tipos de evento OBRIGATÓRIOS só nascem na transação que
+// muda o estado do despacho (`createWithEvent`/`transitionWithEvent`). `createEvent` sobra para a auditoria
+// `field_dispatch_checklist_run_failed`; com qualquer um dos 4 ele recusa antes de escrever (erro de programação, 500).
+export const FIELD_DISPATCH_TRANSITION_EVENT_TYPES: ReadonlySet<FieldDispatchEventType> = new Set<FieldDispatchEventType>([
+  "field_dispatch_created",
+  "field_dispatch_status_changed",
+  "field_dispatch_cancelled",
+  "field_dispatch_reassigned",
+]);
+
+export function assertNotTransitionEventType(eventType: FieldDispatchEventType): void {
+  if (!FIELD_DISPATCH_TRANSITION_EVENT_TYPES.has(eventType)) return;
+
+  throw new FieldDispatchError(
+    500,
+    "FIELD_DISPATCH_EVENT_TYPE_RESERVED",
+    "event_type_reserved",
+    `${eventType} só é gravado junto da escrita que ele narra (createWithEvent/transitionWithEvent).`,
+  );
+}
 
 // B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — a regra FAIL-CLOSED do operador no instante do fix, sobre os
 // despachos da viatura cuja janela contém o instante (aceito até ele e não encerrado nele). Elegível é o despacho com
@@ -41,13 +68,25 @@ export function classifyOperatorsAtFixTime(candidates: readonly OperatorAtFixTim
 }
 
 export interface FieldDispatchRepository {
-  create(input: CreateFieldDispatchInput): Promise<FieldDispatch>;
+  /**
+   * B-O6R-09 (P1/P4 do plano v2) — o despacho e o evento `field_dispatch_created` numa transação só. O gancho
+   * `beforeCommit` roda DENTRO dela, depois das duas escritas: se lança (a OS recusou a atribuição), nada fica.
+   */
+  createWithEvent(
+    input: CreateFieldDispatchWithEventInput,
+    hooks?: FieldDispatchWriteHooks,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }>;
   list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult>;
   findById(tenantId: string, dispatchId: string): Promise<FieldDispatch | undefined>;
-  changeStatus(input: ChangeFieldDispatchStatusInput): Promise<FieldDispatch | undefined>;
-  reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined>;
-  deleteById(tenantId: string, dispatchId: string): Promise<void>;
-  restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void>;
+  /** B-O6R-09 (P3) — o despacho de uma chave de repetição e o pedido ORIGINAL dele (do evento de criação). */
+  findByIdempotencyKey(input: FindFieldDispatchByIdempotencyKeyInput): Promise<FieldDispatchIdempotencyMatch | undefined>;
+  /**
+   * B-O6R-09 (P1/P2/P4 do plano v2) — a mudança de status ou a reatribuição e o evento que a narra numa transação só,
+   * condicionada ao `status` E ao `operator_user_id` em que foi validada. Zero linhas → `conflict` (o despacho mudou) ou
+   * `not_found`, sem evento. O gancho `beforeCommit` (a atribuição da OS) roda dentro dela, depois das escritas.
+   */
+  transitionWithEvent(input: TransitionFieldDispatchInput, hooks?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult>;
+  /** Só a auditoria `field_dispatch_checklist_run_failed`; os 4 tipos obrigatórios são recusados. */
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent>;
   listTimeline(tenantId: string, dispatchId: string): Promise<readonly FieldDispatchEvent[]>;
   reset?(): void;
@@ -68,21 +107,88 @@ export type CreateFieldDispatchEventInput = {
 export class InMemoryFieldDispatchRepository implements FieldDispatchRepository {
   private readonly dispatches = new Map<string, FieldDispatch>();
   private readonly events = new Map<string, FieldDispatchEvent>();
+  private readonly dispatchLocks = new Map<string, Promise<void>>();
+  private readonly dispatchIdByIdempotencyId = new Map<string, string>();
+  private readonly pendingIdempotencyKeys = new Set<string>();
+  private readonly idempotencyWaiters = new Map<string, Promise<void>>();
 
-  async create(input: CreateFieldDispatchInput): Promise<FieldDispatch> {
+  // B-O6R-09 — o mesmo contrato do Prisma: o gancho roda ANTES de o despacho e o evento entrarem no mapa, e a entrada
+  // é síncrona (sem `await` entre as duas). Se o gancho lança, nada foi posto.
+  //
+  // A chave (R2-11 da crítica r2): a unicidade `(organização, autor, chave)` e o MESMO erro que o Prisma lança. A chave é
+  // RESERVADA antes do gancho — o equivalente da entrada pendente no índice único do Postgres: um 2º pedido igual espera
+  // a reserva terminar, e então ou recebe o erro (a 1ª ficou) ou cria o seu (a 1ª voltou).
+  async createWithEvent(
+    input: CreateFieldDispatchWithEventInput,
+    hooks?: FieldDispatchWriteHooks,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }> {
+    const idempotencyId =
+      input.idempotencyKey === undefined ? undefined : idempotencyIdOf(input.dispatch.tenantId, input.dispatch.createdBy, input.idempotencyKey);
+    if (idempotencyId === undefined) return this.insertWithEvent(input, hooks);
+
+    for (;;) {
+      const pending = this.idempotencyWaiters.get(idempotencyId);
+      if (!pending || !this.pendingIdempotencyKeys.has(idempotencyId)) break;
+      await pending;
+    }
+    if (this.dispatchIdByIdempotencyId.has(idempotencyId)) throw new FieldDispatchIdempotencyKeyTakenError();
+    this.pendingIdempotencyKeys.add(idempotencyId);
+    const gate = { release: () => {} };
+    this.idempotencyWaiters.set(
+      idempotencyId,
+      new Promise<void>((resolve) => {
+        gate.release = resolve;
+      }),
+    );
+    try {
+      const created = await this.insertWithEvent(input, hooks);
+      this.dispatchIdByIdempotencyId.set(idempotencyId, created.dispatch.id);
+      return created;
+    } finally {
+      this.pendingIdempotencyKeys.delete(idempotencyId);
+      this.idempotencyWaiters.delete(idempotencyId);
+      gate.release();
+    }
+  }
+
+  async findByIdempotencyKey(input: FindFieldDispatchByIdempotencyKeyInput): Promise<FieldDispatchIdempotencyMatch | undefined> {
+    const dispatchId = this.dispatchIdByIdempotencyId.get(idempotencyIdOf(input.tenantId, input.createdBy, input.idempotencyKey));
+    const dispatch = dispatchId ? this.dispatches.get(dispatchId) : undefined;
+    if (!dispatch || dispatch.tenantId !== input.tenantId) return undefined;
+    const created = [...this.events.values()].find(
+      (event) => event.dispatchId === dispatch.id && event.eventType === "field_dispatch_created",
+    );
+    const operatorUserId = created?.metadata.operatorUserId;
+
+    return {
+      dispatch,
+      original:
+        created?.toStatus && typeof operatorUserId === "string"
+          ? { workOrderId: created.workOrderId, operatorUserId, status: created.toStatus }
+          : undefined,
+    };
+  }
+
+  private async insertWithEvent(
+    input: CreateFieldDispatchWithEventInput,
+    hooks?: FieldDispatchWriteHooks,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }> {
     const now = new Date();
     const dispatch: FieldDispatch = {
-      ...input,
+      ...input.dispatch,
       id: randomUUID(),
-      status: input.status ?? "assigned",
-      metadata: input.metadata ?? {},
+      status: input.dispatch.status ?? "assigned",
+      metadata: input.dispatch.metadata ?? {},
       createdAt: now,
       updatedAt: now,
     };
+    const event = buildEvent(dispatch, input.event, now);
 
+    if (hooks?.beforeCommit) await hooks.beforeCommit(dispatch, { dispatches: this });
     this.dispatches.set(dispatch.id, dispatch);
+    this.events.set(event.id, event);
 
-    return dispatch;
+    return { dispatch, event };
   }
 
   async list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult> {
@@ -106,65 +212,30 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
     return dispatch?.tenantId === tenantId ? dispatch : undefined;
   }
 
-  async changeStatus(input: ChangeFieldDispatchStatusInput): Promise<FieldDispatch | undefined> {
-    const current = await this.findById(input.tenantId, input.dispatchId);
-    if (!current) return undefined;
-    const now = new Date();
-    const updated: FieldDispatch = {
-      ...current,
-      status: input.status,
-      reason: input.reason ?? current.reason,
-      observation: input.observation ?? current.observation,
-      updatedBy: input.actorUserId ?? current.updatedBy,
-      updatedAt: now,
-      acceptedAt: input.status === "accepted" ? now : current.acceptedAt,
-      onRouteAt: input.status === "on_route" ? now : current.onRouteAt,
-      arrivedAt: input.status === "arrived" ? now : current.arrivedAt,
-      inServiceAt: input.status === "in_service" ? now : current.inServiceAt,
-      completedAt: input.status === "completed" ? now : current.completedAt,
-      cancelledAt: input.status === "cancelled" ? now : current.cancelledAt,
-      failedAt: input.status === "failed" ? now : current.failedAt,
-    };
-    this.dispatches.set(updated.id, updated);
-
-    return updated;
-  }
-
-  async reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined> {
-    const current = await this.findById(input.tenantId, input.dispatchId);
-    if (!current) return undefined;
-    const now = new Date();
-    const updated: FieldDispatch = {
-      ...current,
-      operatorUserId: input.operatorUserId,
-      status: "reassigned",
-      reason: input.reason ?? current.reason,
-      observation: input.observation ?? current.observation,
-      updatedBy: input.actorUserId ?? current.updatedBy,
-      updatedAt: now,
-    };
-    this.dispatches.set(updated.id, updated);
-
-    return updated;
-  }
-
-  async deleteById(tenantId: string, dispatchId: string): Promise<void> {
-    const current = await this.findById(tenantId, dispatchId);
-    if (!current) return;
-    this.dispatches.delete(dispatchId);
-    for (const [id, event] of this.events.entries()) {
-      if (event.tenantId === tenantId && event.dispatchId === dispatchId) {
-        this.events.delete(id);
+  // B-O6R-09 (P2 do plano v2) — o VENCEDOR CONDICIONAL na memória, com o mesmo contrato do Prisma: um mutex por despacho
+  // serializa as transições; o predicado (status E técnico em que a transição foi validada) é conferido com o mutex
+  // seguro; o gancho roda antes de aplicar; e a aplicação é síncrona. Zero linhas → `not_found` ou `conflict`.
+  async transitionWithEvent(input: TransitionFieldDispatchInput, hooks?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult> {
+    return this.withDispatchLock(input.dispatchId, async () => {
+      const current = await this.findById(input.tenantId, input.dispatchId);
+      if (!current) return { kind: "not_found" } as const;
+      if (current.status !== input.expected.status || current.operatorUserId !== input.expected.operatorUserId) {
+        return { kind: "conflict" } as const;
       }
-    }
-  }
+      const now = new Date();
+      const dispatch = applyTransitionPatch(current, input.patch, now);
+      const event = buildEvent(dispatch, input.event, now);
+      const result = { kind: "ok", dispatch, event } as const;
+      if (hooks?.beforeCommit) await hooks.beforeCommit(result.dispatch, { dispatches: this });
+      this.dispatches.set(dispatch.id, dispatch);
+      this.events.set(event.id, event);
 
-  async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
-    if (snapshot.tenantId !== tenantId) return;
-    this.dispatches.set(snapshot.id, snapshot);
+      return result;
+    });
   }
 
   async createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
+    assertNotTransitionEventType(input.eventType);
     const event: FieldDispatchEvent = {
       id: randomUUID(),
       tenantId: input.tenantId,
@@ -192,11 +263,83 @@ export class InMemoryFieldDispatchRepository implements FieldDispatchRepository 
   reset(): void {
     this.dispatches.clear();
     this.events.clear();
+    this.dispatchLocks.clear();
+    this.dispatchIdByIdempotencyId.clear();
+    this.pendingIdempotencyKeys.clear();
+    this.idempotencyWaiters.clear();
   }
 
   private sortedDispatches(): FieldDispatch[] {
     return [...this.dispatches.values()].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
   }
+
+  // Uma fila por despacho (promessa encadeada pelo id): quem chega espera quem está na frente terminar.
+  private async withDispatchLock<T>(dispatchId: string, work: () => Promise<T>): Promise<T> {
+    const previous = this.dispatchLocks.get(dispatchId) ?? Promise.resolve();
+    const gate = { release: () => {} };
+    const mine = new Promise<void>((resolve) => {
+      gate.release = resolve;
+    });
+    const tail = previous.then(() => mine);
+    this.dispatchLocks.set(dispatchId, tail);
+    await previous;
+    try {
+      return await work();
+    } finally {
+      gate.release();
+      if (this.dispatchLocks.get(dispatchId) === tail) this.dispatchLocks.delete(dispatchId);
+    }
+  }
+}
+
+function idempotencyIdOf(tenantId: string, createdBy: string | undefined, idempotencyKey: string): string {
+  return JSON.stringify([tenantId, createdBy ?? null, idempotencyKey]);
+}
+
+function applyTransitionPatch(current: FieldDispatch, patch: FieldDispatchTransitionPatch, now: Date): FieldDispatch {
+  if (patch.kind === "reassign") {
+    return {
+      ...current,
+      operatorUserId: patch.operatorUserId,
+      status: "reassigned",
+      reason: patch.reason ?? current.reason,
+      observation: patch.observation ?? current.observation,
+      updatedBy: patch.actorUserId ?? current.updatedBy,
+      updatedAt: now,
+    };
+  }
+
+  return {
+    ...current,
+    status: patch.status,
+    reason: patch.reason ?? current.reason,
+    observation: patch.observation ?? current.observation,
+    updatedBy: patch.actorUserId ?? current.updatedBy,
+    updatedAt: now,
+    acceptedAt: patch.status === "accepted" ? now : current.acceptedAt,
+    onRouteAt: patch.status === "on_route" ? now : current.onRouteAt,
+    arrivedAt: patch.status === "arrived" ? now : current.arrivedAt,
+    inServiceAt: patch.status === "in_service" ? now : current.inServiceAt,
+    completedAt: patch.status === "completed" ? now : current.completedAt,
+    cancelledAt: patch.status === "cancelled" ? now : current.cancelledAt,
+    failedAt: patch.status === "failed" ? now : current.failedAt,
+  };
+}
+
+function buildEvent(dispatch: FieldDispatch, draft: FieldDispatchEventDraft, now: Date): FieldDispatchEvent {
+  return {
+    id: randomUUID(),
+    tenantId: dispatch.tenantId,
+    dispatchId: dispatch.id,
+    workOrderId: dispatch.workOrderId,
+    eventType: draft.eventType,
+    fromStatus: draft.fromStatus,
+    toStatus: draft.toStatus,
+    actorUserId: draft.actorUserId,
+    message: draft.message,
+    metadata: draft.metadata ?? {},
+    createdAt: now,
+  };
 }
 
 function matchesSearch(dispatch: FieldDispatch, search: string | undefined): boolean {

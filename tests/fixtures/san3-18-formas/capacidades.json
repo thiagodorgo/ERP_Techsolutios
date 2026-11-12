@@ -1,0 +1,16 @@
+{
+ "_doc": "B-SAN3-18 (P7, R-A5) — capacidade do bootstrap móvel (src/modules/mobile/mobile.routes.ts, buildFeatureFlags) → combinações MÍNIMAS de módulos que a ligam → endpoints que o app chama com ela ligada. Lida por tests/san3-18-bootstrap-capabilities.test.ts e por scripts/san3-18-censo-modulos.mjs (F0 c).",
+ "capacidades": {
+  "work_orders": { "liga": [["work_orders"]], "endpoints": ["GET /api/v1/work-orders", "GET /api/v1/work-orders/:workOrderId", "PATCH /api/v1/work-orders/:workOrderId/status"] },
+  "work_order_sync": { "liga": [["work_orders"]], "endpoints": ["POST /api/v1/mobile/sync/work-order-actions"] },
+  "checklists": { "liga": [["tenant_checklist"]], "endpoints": ["GET /api/v1/mobile/checklists/available", "GET /api/v1/mobile/checklist-runs", "POST /api/v1/mobile/checklist-runs"] },
+  "checklist_sync": { "liga": [["tenant_checklist"]], "endpoints": ["POST /api/v1/mobile/sync/checklist-actions"] },
+  "notifications": { "liga": [["notifications"]], "endpoints": ["GET /api/v1/notifications", "GET /api/v1/notifications/unread-count", "POST /api/v1/notifications/read-all"] },
+  "field_location": { "liga": [["field_operations"]], "endpoints": ["POST /api/v1/mobile/field-locations"] },
+  "expense_management": { "liga": [["expense_management"]], "endpoints": ["GET /api/v1/expense-reports", "GET /api/v1/expense-categories", "GET /api/v1/expense-policies"] },
+  "expense_sync": { "liga": [["expense_management"]], "endpoints": ["POST /api/v1/mobile/sync/expense-actions"] },
+  "inventory_mobile": { "liga": [["inventory"]], "endpoints": ["GET /api/v1/mobile/inventory/availability"] },
+  "inventory_sync": { "liga": [["inventory"]], "endpoints": ["POST /api/v1/mobile/sync/inventory-actions"] },
+  "generic_evidence_upload": { "liga": [["work_orders"], ["field_operations"]], "endpoints": ["POST /api/v1/mobile/evidence-uploads", "POST /api/v1/mobile/sync/evidence-actions"] }
+ }
+}
