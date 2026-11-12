@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test, { after } from "node:test";
 
 import { requestJson } from "./helpers/auth-identity-fixture.js";
+import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 import {
   administradorDe,
   desmontarSessaoReal,
@@ -81,6 +82,7 @@ if (!connectionString) {
     const h = await harness();
     const { fieldOpsRealtimeBroker } = await import("../src/modules/field-ops-realtime/field-ops-realtime.broker.js");
     const org = await novaOrganizacao(h, "t16", { roleKey: "manager" });
+    await h.admin.tenant.update({ where: { id: org.tenantId }, data: { modules: [...TODOS_OS_MODULOS] } }); // B-SAN3-18: o gate de módulo exige as áreas que o teste usa
     const permission = await h.admin.permission.upsert({
       where: { key: "field_location:read" },
       update: {},
@@ -155,6 +157,7 @@ if (!connectionString) {
     const h = await harness();
     const { fieldOpsRealtimeBroker } = await import("../src/modules/field-ops-realtime/field-ops-realtime.broker.js");
     const org = await novaOrganizacao(h, "t16b", { roleKey: "manager" });
+    await h.admin.tenant.update({ where: { id: org.tenantId }, data: { modules: [...TODOS_OS_MODULOS] } }); // B-SAN3-18: o gate de módulo exige as áreas que o teste usa
     const permission = await h.admin.permission.upsert({
       where: { key: "field_location:read" },
       update: {},
