@@ -64,3 +64,20 @@
 - Saída resumida: `checkup material: worktree-preservado(w-material)`.
 - Head antes deste apenso: `248d6603` (F0 registrada e ramo empurrado).
 - Próximo passo exato: aguardar a emenda escrita e revisada pelo orquestrador; não iniciar C-F1.
+
+## RETOMADA 5 — 2026-11-12T15:31:43-03:00
+
+- Comando: leitura integral de `CLAUDE.md`, `PROJECT_MEMORY.md`, das skills `ts-frontend-full`, `ui-ux-pro-max` e `saas-multi-tenant`, do §C e das Emendas C2/C2.1/C2.2; conferência de `HEAD`, remoto, branch, árvore e processos do terreno.
+- Saída resumida: `HEAD`, alvo e `origin/feat/mobile-material-reenvio` iguais a `7d1a392a205b1c3d6af8ae2f056f7241a002fc40`; branch correta; árvore inicialmente limpa; nenhum processo `node`, `dart` ou `flutter` ativo. As três divergências da F0 anterior estão endereçadas pelas emendas: custódia final no C, gate de módulos com casos por ação e `sync_action_labels.dart` no PERMITIDO. A aderência ainda depende da re-medição literal e das baselines fail-closed.
+- Head: `7d1a392a205b1c3d6af8ae2f056f7241a002fc40`.
+- Próximo passo exato: inicializar `C:/Users/thiag/pg-material`, gravar `timezone`/`log_timezone` UTC antes do start, subir em `127.0.0.1:55576`, criar/migrar/semear `bmat_base`, subir `material-redis` em `127.0.0.1:56576` e provar `SHOW timezone = UTC` + `PONG` antes das suítes.
+
+## RETOMADA 6 — 2026-11-12T15:44:01-03:00 — PARADA NA F0 REFEITA
+
+- Comando: `initdb` em `C:/Users/thiag/pg-material`; configuração de `timezone = 'UTC'`, `log_timezone = 'UTC'`, `listen_addresses = '127.0.0.1'` e porta `55576` antes do primeiro start; `SHOW timezone`; criação de `bmat_base`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7`; probe `PONG`; `prisma generate`; `prisma migrate deploy`; `prisma migrate status`; `npm run db:seed`; `npm test` com `DATABASE_URL`, `REDIS_URL` e `CORE_SAAS_PERSISTENCE=memory` exportados na mesma sessão, gravado em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/f0-material-npm-test.tap`.
+- Saída resumida do terreno: Postgres aceitou conexão em `127.0.0.1:55576`; `SHOW timezone` e `SHOW log_timezone` deram `UTC`; 134 migrações aplicadas, status atualizado e seed concluído; Redis em `127.0.0.1:56576` respondeu `PONG`. As âncoras E5 continuam iguais a `ef4e98e7`: código relevante sem diff, blob de `inventory.actor-custody.ts` igual, seam ainda em BASE, gate `{inventory}`, 26 rótulos e os dois caminhos da tela já chamando o gancho.
+- Baseline backend: **INVÁLIDA / NÃO BATE** — `[run-backend-tests] 534 arquivo(s) · 5431 teste(s) · pass 5420 · fail 9 · skipped 2`, com piso de denominador por `tests/traccar-event-migration-drill-db.test.ts` sem registrar teste após `EBUSY` no `after`. Os outros não-verdes foram 5 subtestes de `san3-05-runtime-role-guard-db.test.ts` (quatro ligados à ausência de `setsid`/boot real e um T8d), mais o pai; e `san3-09-bootstrap-platform-admin-db.test.ts` (o subprocesso tentou executar o shim Bash `node_modules/.bin/prisma` como JavaScript), mais o pai. Não apareceu a classe `XX000`; portanto a repetição automática prevista em R-C21-04 não se aplica.
+- Baseline Flutter: **não medida**; a trava fail-closed da baseline backend exigiu parada antes de iniciar outra suíte. Nenhum arquivo de produto foi alterado; C-F1 não começou.
+- Veredito F0: as três divergências antigas estão cobertas pelas emendas, mas a baseline canônica ainda não bate. **PARADA OBRIGATÓRIA por `D-EMENDA-ANTES-DO-CODIGO`.**
+- Head: `7d1a392a205b1c3d6af8ae2f056f7241a002fc40`.
+- Próximo passo exato: o orquestrador decidir por emenda revisada como executar a forma canônica no Git Bash/Windows diante de `setsid` ausente, shim Prisma interpretado pelo Node e `EBUSY`; só depois refazer N_b e N_f. Não iniciar C-F1.
