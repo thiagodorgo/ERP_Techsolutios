@@ -94,9 +94,13 @@ if (!connectionString) {
     readonly w: { id: string; sku: string };
   };
 
-  async function newTenant(h: Harness, tag: string): Promise<string> {
+  async function newTenant(h: Harness, tag: string, modules: readonly string[] = ["inventory"]): Promise<string> {
     const slug = `bsan315-${tag}-${randomUUID().slice(0, 8)}`;
-    const rows = await h.admin.$queryRawUnsafe<Array<{ id: string }>>(`INSERT INTO tenants (name, slug) VALUES ($1, $1) RETURNING id`, slug);
+    const moduleLiteral = modules.length === 0 ? "ARRAY[]::text[]" : `ARRAY[${modules.map((module) => `'${module}'`).join(", ")}]::text[]`;
+    const rows = await h.admin.$queryRawUnsafe<Array<{ id: string }>>(
+      `INSERT INTO tenants (name, slug, modules) VALUES ($1, $1, ${moduleLiteral}) RETURNING id`,
+      slug,
+    );
     h.tenants.push(rows[0]!.id);
     return rows[0]!.id;
   }
@@ -324,6 +328,48 @@ if (!connectionString) {
       assert.equal(crossed.status, 200, raw);
       assert.deepEqual(crossed.body.data.custody, { kind: "professional", label: "Técnico A" });
       assert.deepEqual(summarize(crossed.body.data.items), [`${s.x.sku}:5`], "o cabeçalho é ignorado e vale o token");
+    } finally {
+      await closeServer(server);
+      const { drainCloudUsageBestEffortForTests } = await import("../src/modules/cloud-usage/cloud-usage.service.js");
+      await drainCloudUsageBestEffortForTests();
+    }
+  });
+
+  test("[T-MOD1] [gate] organização sem a área de estoque: 403 module_not_enabled, mesmo com inventory.read", async () => {
+    const h = await harness();
+    const tenantId = await newTenant(h, "mod1", []);
+    const user = await newUser(h, tenantId, "mod1-tec");
+    await grantRole(h, tenantId, user, "field_technician", ["inventory.read"]);
+
+    const [{ createApp }, { PrismaCoreSaasService }, { PrismaCoreSaasStore }, repos, { signAccessToken }] = await Promise.all([
+      import("../src/app.js"),
+      import("../src/modules/core-saas/services/prisma-core-saas.service.js"),
+      import("../src/modules/core-saas/store/prisma-core-saas.store.js"),
+      import("../src/modules/core-saas/repositories/index.js"),
+      import("../src/modules/auth/index.js"),
+    ]);
+    const client = h.role.client;
+    const core = new PrismaCoreSaasService(
+      new PrismaCoreSaasStore(
+        client,
+        new repos.TenantRepository(client),
+        new repos.UserRepository(client),
+        new repos.RoleRepository(client),
+        new repos.UserRoleRepository(client),
+        new repos.AuditLogRepository(client),
+      ),
+    );
+    const server: Server = createApp(core).listen(0);
+    try {
+      const baseUrl = await getBaseUrl(server);
+      const token = await signAccessToken({ user_id: user, tenant_id: tenantId, email: "bsan315-mod1@example.com", roles: ["field_technician"] });
+
+      const response = await requestJson(baseUrl, "/api/v1/mobile/technician/stock", {
+        headers: { authorization: `Bearer ${token}` },
+      });
+
+      assert.equal(response.status, 403, JSON.stringify(response.body));
+      assert.equal(response.body?.error?.reason, "module_not_enabled");
     } finally {
       await closeServer(server);
       const { drainCloudUsageBestEffortForTests } = await import("../src/modules/cloud-usage/cloud-usage.service.js");

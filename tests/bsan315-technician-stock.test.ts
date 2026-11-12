@@ -419,8 +419,8 @@ async function withStockApi(callback: (context: StockApiContext) => Promise<void
   resetOperatorProfileRuntimeForTests();
 
   const core = new CoreSaasRegistry(new InMemoryCoreSaasStore());
-  const tenantA = core.createTenant({ name: "Organização Estoque A", modules: ["dashboard", "work_orders"] });
-  const tenantB = core.createTenant({ name: "Organização Estoque B", modules: ["dashboard", "work_orders"] });
+  const tenantA = core.createTenant({ name: "Organização Estoque A", modules: ["dashboard", "work_orders", "inventory"] });
+  const tenantB = core.createTenant({ name: "Organização Estoque B", modules: ["dashboard", "work_orders", "inventory"] });
   const adminA = core.createUser({ tenantId: tenantA.id, name: "Admin A", email: "bsan315-admin-a@example.com", roles: ["tenant_admin"] });
   const inventoryA = core.createUser({ tenantId: tenantA.id, name: "Estoque A", email: "bsan315-estoque-a@example.com", roles: ["inventory"] });
   const app = createApp(new MemoryCoreSaasAdapter(core));
