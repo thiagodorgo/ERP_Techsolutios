@@ -80,6 +80,9 @@ function parseScope(queryValue: unknown): NavigationScope | undefined {
   return value && isNavigationScope(value) ? value : undefined;
 }
 
+// B-SAN3-18 (P3) — `undefined` (sem serviço, sem organização, ator de plataforma ou leitura que falhou) agora quer dizer
+// NEGAR: `filterNavigationByTenantModules` o trata como lista vazia, e só o núcleo e as entradas de plataforma aparecem.
+// Antes, `undefined` liberava todos os itens de módulo (`P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU`).
 async function resolveEnabledModules(
   service: ICoreSaasService | undefined,
   tenantId: string | undefined,

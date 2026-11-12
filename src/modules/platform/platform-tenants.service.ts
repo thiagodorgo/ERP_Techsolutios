@@ -53,14 +53,15 @@ export class PlatformTenantsService {
     return this.modules.listForTenant(this.requireTenant(tenantId));
   }
 
-  updateTenantModules(tenantId: string, input: UpdatePlatformTenantModulesDto): PlatformModule[] {
-    const tenant = this.tenants.updateModules(tenantId, input.enabledModules);
+  // B-SAN3-18 (R-A7) — esta porta gravava numa lista EM MEMÓRIA (platform-tenants.repository.ts), que nem o gate de
+  // módulo nem o menu leem: respondia "habilitado" sem mudar nada em `tenants.modules`. Agora ela recusa, honesta: os
+  // módulos de uma organização só mudam pela assinatura (versão do plano + adicionais) ou pelo script
+  // `scripts/san3-18-provisionar-modulos.ts`. A porta real por organização é `P-SAN3-18-PORTA-DE-MODULO-POR-ORG`
+  // (dono `B-SAN3-18b`). Organização desconhecida segue 404.
+  updateTenantModules(tenantId: string, _input: UpdatePlatformTenantModulesDto): PlatformModule[] {
+    this.requireTenant(tenantId);
 
-    if (!tenant) {
-      throw notFound(tenantId);
-    }
-
-    return this.modules.listForTenant(tenant);
+    throw new CoreSaasError(409, "CONFLICT", "module_change_requires_subscription", "Organization modules change only through the subscription (plan version and add-ons).");
   }
 
   createTenantAdminUser(tenantId: string, input: CreateTenantAdminDto): PlatformTenant {
