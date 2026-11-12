@@ -99,6 +99,10 @@ export type SignAccessTokenInput = {
   // B-O6R-01 (§3.5) — claim de identidade global: DICA de roteamento/telemetria, NUNCA fonte do
   // GUC nem de autorização. Opcional: token em voo sem o claim resolve por (tenant_id, sub).
   readonly identity_id?: string;
+  // B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA) — a sessão (`auth_sessions.id`) que o token representa, emitida como o
+  // claim `sid`; o portão confere a cada requisição se ela está viva. Opcional no TIPO (P-SID-OBRIGATORIO): os
+  // assinadores do `src/` sempre a passam (guard T17 (e)).
+  readonly session_id?: string;
 };
 
 export type SignRefreshTokenInput = {
@@ -120,6 +124,9 @@ export type AuthenticatedTokenPayload = {
   readonly aud?: string;
   // B-O6R-01 (§3.5) — dica de identidade; ausência é válida (token antigo em voo).
   readonly identity_id?: string;
+  // B-USERS-SEG-DESATIVADO — a sessão do token (UUID). Ausente só no token emitido antes do deploy (ou assinado
+  // direto por teste); presente em outro formato = token inválido.
+  readonly sid?: string;
 };
 
 export type RefreshTokenPayload = {
@@ -141,6 +148,8 @@ export type AuthenticatedActor = {
   readonly email: string;
   readonly roles: readonly string[];
   readonly sessionScope?: "password_change";
+  // B-USERS-SEG-DESATIVADO — a sessão do token, quando ele a carrega (o stream do mapa a reconfere a cada tique).
+  readonly sessionId?: string;
   readonly authType: "jwt";
 };
 

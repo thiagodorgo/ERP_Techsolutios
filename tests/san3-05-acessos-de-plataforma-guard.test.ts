@@ -485,6 +485,20 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/work-orders/work-order-prisma.repository.ts", "new PrismaWorkOrderFinancialItemRepository(tx)", "INJETADO-TRANSITIVO:SUSPEITO-ACIMA(src/modules/work-orders/work-order-scope.ts:new PrismaWorkOrderRepository(tx) PARAMETRO(tx))", "×1"),
     "B-O6R-09 Emenda 4 × B-SAN3-23 (#536): a instanciação do #536 em `PrismaWorkOrderRepository` (o zerar dos itens no cancelamento, `const tx = this.client`) herda, pelo gerador, a suspeita da chave L2 de `workOrderAssignRepositoryForTx(tx)`. O repositório de OS preso ao `tx` da mãe do despacho só é usado, pelo serviço preso de `WorkOrderService.assignFromDispatch`, em `findById` e `assignFromDispatch` (o tipo `WorkOrderAssignRepository`); o cancelamento nunca roda nele. Se rodasse, seria dentro da mãe, sob o GUC da organização posto na 1ª instrução dela. Acesso de organização, não de plataforma.",
   ],
+  // B-USERS-SEG-DESATIVADO (T18): a conferência da sessão viva (P-SESSAO-VIVA), colada da saída do gerador na cabeça da F3b
+  // (944c7987), com o motivo por chave. Gerador e WRAPPERS intocados. Literal L0 intocado: nenhuma tabela FORCE nova.
+  [
+    k("L1", "src/modules/auth/services/session-liveness.service.ts", "-.check", "tx", "RAW-SQL($queryRaw)", "auth_sessions", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA): a conferência do portão, `SELECT 1 … FROM auth_sessions s JOIN users u … WHERE s.tenant_id = $tenant AND s.id = $sid AND s.user_id = $sub AND s.revoked_at IS NULL AND s.expires_at > now() AND u.status = 'active' LIMIT 1`, no callback de `withTenantRlsBudget(prisma, tenantId, SESSION_LIVENESS_BUDGET, …)`, cujo setter do GUC da organização do TOKEN é a 1ª instrução da transação (src/database/rls.ts); só leitura, e só o veredito sai. Provado em tests/users-seg-desativado-portao-db.test.ts (T5b, T6b, T11: zero linhas da sessão alheia) sob papel NOSUPERUSER NOBYPASSRLS, com controle positivo em cada recusa (zero linhas por GUC errado daria 'inativa' para todos).",
+  ],
+  [
+    k("L1", "src/modules/auth/services/session-liveness.service.ts", "-.check", "tx", "RAW-SQL($queryRaw)", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA): a MESMA consulta, pela junção com `users` do PAR (`u.id = s.user_id AND u.tenant_id = s.tenant_id`, `u.status = 'active'`), sob o mesmo GUC da organização do token; só leitura. Provado em tests/users-seg-desativado-portao-db.test.ts (T1b: status desligado sem revogar a sessão) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/auth/services/session-liveness.service.ts", "-.check", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA): a via sem `sid` (token anterior ao deploy; P-SID-OBRIGATORIO), `user.findFirst({ where: { id, tenant_id, status: 'active' }, select: { id } })` no mesmo callback de `withTenantRlsBudget`, sob o GUC da organização do token; só leitura. Provado em tests/users-seg-desativado-portao-db.test.ts (T12) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

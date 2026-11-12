@@ -302,8 +302,13 @@ if (!connectionString) {
       server = app.listen(0, "127.0.0.1");
       await new Promise<void>((resolve) => server!.once("listening", () => resolve()));
       const baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      // B-USERS-SEG-DESATIVADO (Emenda 1, E1.6): o portão confere, por requisição, que o usuário do token existe e
+      // está ativo (token sem `sid`); o ator de plataforma passa a existir no banco, como o do demonstrativo abaixo.
+      const atorPlataforma = await admin.user.create({
+        data: { tenant_id: cenario.tenantA, name: "Ator de plataforma", email: `plataforma-${suffix}@san3-05.test` },
+      });
       const token = await signAccessToken({
-        user_id: randomUUID(),
+        user_id: atorPlataforma.id,
         tenant_id: cenario.tenantA,
         email: `plataforma-${suffix}@san3-05.test`,
         roles: ["platform_admin"],
@@ -1130,6 +1135,8 @@ if (!connectionString) {
       });
     } finally {
       if (server) await new Promise<void>((resolve) => server!.close(() => resolve()));
+      // B-USERS-SEG-DESATIVADO (E1.6) — o ator de plataforma criado para o portão sai antes da organização.
+      await admin.user.deleteMany({ where: { tenant_id: cenario.tenantA, email: `plataforma-${suffix}@san3-05.test` } });
       await limpar(admin, cenario);
       await efemera.drop();
       await admin.$disconnect();

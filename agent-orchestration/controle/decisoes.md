@@ -5001,3 +5001,29 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fato:** `P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA` tem dono `B-SAN3-18`. O console de organizações da plataforma inteiro é em memória (`P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA`), e a porta `PATCH /platform/tenants/:id/modules` respondia "habilitado" sem gravar em `tenants.modules`.
 - **Decisão (plano v2, R-A7, §4; registrada aqui para a troca de dono não ser silenciosa, §A2):** o `B-SAN3-18` ESTREITA a pendência — a porta passa a recusar com 409 `module_change_requires_subscription` —, e a porta real por organização vira `P-SAN3-18-PORTA-DE-MODULO-POR-ORG`, dono `B-SAN3-18b`. **Motivo:** uma porta real exige o console de organizações persistido, que é outro bloco. Até lá, módulos só mudam pela assinatura (versão do plano mais adicionais) ou pelo script de provisionamento.
 - **Ficam com o `B-SAN3-18b`, sem bloquear:** `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` (resto), `P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA`, `P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES` e as `P-SAN3-18-*` novas.
+
+## D-DONO-TODAS-RECOMENDACOES-1111 (2026-11-11 10:31 SP) — o dono aceita as recomendações de cada plano e PR em aberto
+
+- **Fato (decisão do dono, por AskUserQuestion):** *"Sim, todas (Recomendado)"*. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 11/11 10:31 SP).
+- **O que vale:** a recomendação de cada pergunta, nos planos e PRs abaixo.
+  - **As 11 perguntas do estado das 07:00:**
+    - as maquetes de Cheques, Fechamento e Entrega do guincho ficam aprovadas, com as 3 opções;
+    - B-SAN3-14: P1(a), P2(a) e P3(a);
+    - B-O6R-11d: Q1 = A;
+    - B-SAN3-19b: A e (a);
+    - B-SAN3-07: o item 47 fecha;
+    - B-SAN3-18: P1(a), P2(a) e P3(a);
+    - B-ASS-09a: 1(a), 2(a) e 3(a);
+    - #530: as duas perguntas;
+    - B-USERS-SEG-DESATIVADO (o token do usuário desativado): P1(a) e P2(a), e o PR sai do rascunho quando estiver pronto;
+    - `D-RESET-AUTORIDADE-PLATAFORMA` fica ratificada;
+    - #534: a E-04 e "AB 123 CD" ficam ratificadas.
+  - **B-ASS-09a, P4:** reimportar um mês publicado troca o número publicado.
+  - **B-SAN3-15:** 1(a) a 4(a) e 5(a). O gerente lança peça do estoque da base.
+  - **B-SAN3-16:**
+    - a fila de Aprovações vai para bloco próprio (A);
+    - o "não consegui iniciar" fica gravado na OS e avisa quem despachou (B);
+    - os botões levam ao pedido (A).
+  - **B-SAN3-25:** as 4 recomendações do plano.
+  - **O conflito da nota retroativa:** vale a recomendação do #530, a nota para todo demonstrativo pago desde o merge da 08b. A crítica `crit-08c-cl` (A4) mediu que ela é coerente com o código mergeado.
+- **Onde já é citada:** `API_CONTRACTS.md` (as notas do B-USERS-SEG-DESATIVADO), `RBAC_MATRIX.md:128`, a entrada `D-B-SAN3-18-RESPOSTAS-DO-DONO` e o comando do B-O6R-11d. Esta entrada é a que essas citações apontam (achado C3-01 da J-543).
