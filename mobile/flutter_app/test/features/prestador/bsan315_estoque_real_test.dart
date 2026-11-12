@@ -580,5 +580,48 @@ void main() {
       expect(find.text('Acesso não permitido'), findsOneWidget);
       expect(await cache.load(scope), isNull);
     });
+    testWidgets(
+      'T-A11 erro 5xx com lista salva mostra banner e Tentar de novo que recarrega',
+      (t) async {
+        final db = AppDatabase.openInMemory();
+        addTearDown(db.close);
+        final cache = DriftTechnicianStockCache(db);
+        const scope = TechnicianStockCacheScope(
+          tenantId: _tenant,
+          userId: 'employee-1',
+        );
+        await cache.save(scope, const [_remoteItem], _generatedAt);
+
+        var calls = 0;
+        final repo = _repo(
+          stockRemoteApi: _FakeStockApi(() async {
+            calls += 1;
+            throw const ApiServerError(statusCode: 503);
+          }),
+          stockCache: cache,
+          allowDemoStock: false,
+        );
+        await t.pumpWidget(
+          _wrap(const TechnicianStockScreen(workOrderId: _wo), repo),
+        );
+        await t.pumpAndSettle();
+
+        expect(find.text('Item Remoto'), findsOneWidget);
+        expect(
+          find.textContaining(
+            'Não foi possível atualizar. Mostrando o estoque das',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Tentar de novo'), findsOneWidget);
+
+        final before = calls;
+        await t.tap(find.byKey(const Key('stock-retry')));
+        await t.pumpAndSettle();
+
+        expect(calls, before + 1);
+        expect(find.text('Tentar de novo'), findsOneWidget);
+      },
+    );
   });
 }

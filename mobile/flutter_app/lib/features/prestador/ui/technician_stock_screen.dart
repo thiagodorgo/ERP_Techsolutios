@@ -75,7 +75,7 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
         context.pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$_selCount item(ns) adicionado(s) ao servico.'),
+            content: Text('$_selCount item(ns) adicionado(s) ao serviço.'),
           ),
         );
       }
@@ -168,6 +168,11 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
         load.cached!.items,
         custodyLabel: null,
         banner: banner,
+        action: OutlinedButton(
+          key: const Key('stock-retry'),
+          onPressed: () => _retry(repo),
+          child: const Text('Tentar de novo'),
+        ),
       );
     }
 
@@ -202,6 +207,7 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
     List<TechnicianStockItem> all, {
     required String? custodyLabel,
     required String? banner,
+    Widget? action,
   }) {
     final q = _query.trim().toLowerCase();
     final filtered = q.isEmpty
@@ -237,13 +243,18 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Text(banner),
             ),
+          if (action != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Align(alignment: Alignment.centerLeft, child: action),
+            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
               key: const Key('stock-search'),
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
-                hintText: 'Buscar peca ou SKU...',
+                hintText: 'Buscar peça ou SKU...',
                 prefixIcon: const Icon(Icons.search_outlined),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -256,7 +267,7 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
             child: filtered.isEmpty
                 ? const EmptyState(
                     icon: Icons.inventory_2_outlined,
-                    title: 'Nenhuma peca encontrada',
+                    title: 'Nenhuma peça encontrada',
                     message: 'Ajuste a busca para localizar itens.',
                   )
                 : ListView.builder(
@@ -294,8 +305,8 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
                       : () => _confirm(all),
                   child: Text(
                     _selCount > 0
-                        ? 'Adicionar ao servico · $_selCount ${_selCount == 1 ? 'item' : 'itens'}'
-                        : 'Selecione as pecas',
+                        ? 'Adicionar ao serviço · $_selCount ${_selCount == 1 ? 'item' : 'itens'}'
+                        : 'Selecione as peças',
                   ),
                 ),
               ),

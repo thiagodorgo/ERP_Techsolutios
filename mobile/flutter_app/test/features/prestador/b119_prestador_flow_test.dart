@@ -218,7 +218,7 @@ void main() {
         find.byKey(const Key('stock-confirm')),
       );
       expect(btnAfter.onPressed, isNotNull);
-      expect(find.textContaining('Adicionar ao servico'), findsOneWidget);
+      expect(find.textContaining('Adicionar ao serviço'), findsOneWidget);
     });
 
     testWidgets('8. stepper incrementa quantidade selecionada', (t) async {
