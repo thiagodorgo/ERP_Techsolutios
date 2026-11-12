@@ -1,5 +1,14 @@
 # Status Geral
 
+## Atualização 2026-11-11 — B-O6R-11d (o contrato da OS no app; item 3 do portão, resto do `Ω6R-QUA-004`)
+
+- **Autor:** `dev-11d-cl` (Claude Opus 5.5, subagente da sessão, dev, nível menor; exceção declarada: Codex sem cota semanal até 16/11, API reservada para verificação, Antigravity no limite). Ramo `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, base `origin/main@da12fec6` com o merge de `c95ad4fd` (#536).
+- **O que entrega (fato, testes no diário `docs/revisoes/SAN3/B-O6R-11d-dev.md`):** codec único de status e prioridade de OS no app (lista, detalhe, status, atribuição e linha do tempo); os 3 métodos REST de OS única leem `{data}`; o PATCH só manda status do backend; o POST manda `userId`/`message`; a organização nunca vem do corpo; a ação de viatura/equipe da fila manda `user_id` e declara `expected_technician_id`, e o servidor responde conflito `technician_changed_since_action` se o técnico mudou (Q1 = A, `D-DONO-TODAS-RECOMENDACOES-1111`). Fecha o `Ω6R-QUA-004` e a `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` no merge.
+- **Trava de arquivo com o `B-SAN3-26` (#534), CR2-11D-02:** a ordem não estava gravada antes da F0 (medido às 10:52 SP na `origin/main`). Vale "quem mergear primeiro manda". Se o #534 entrar antes, o ramo do 11d faz merge da `main` e leva `checkinMode`/`checkinPlateTail` para o `_workOrderFromRemoteJson` (o `_workOrderFromJson`, que o #534 também edita, é apagado pelo 11d). Se o 11d entrar antes, o #534 faz o merge e re-mede por emenda as mutações dele ancoradas em `_workOrderFromRemoteJson`, `_workOrderFromJson` e `_statusPayload`.
+- **Cadeia de `src/modules/mobile/mobile-work-order-sync.ts`:** `07c` → `11d` → `SAN3-16` (`PLANO_SAN3.md`).
+- **Pendências do #534 com dono `B-O6R-11d`:** PR534-03 coberto (T5); `P-APP-DETALHE-OS-LARGURA-INFINITA` NÃO coberta (tela, PROIBIDO no plano); `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` NÃO coberta (repositório do app, PROIBIDO, e código do #534 fora da `main`). As duas pedem emenda ou outro bloco.
+- **Nível:** junta completa. KPI congelado (§C7 item 8(5)).
+
 ## Atualização 2026-11-11 — 7 PRs na main na noite de 10 → 11/11, portão em 36/64 e as juntas do #535, #534 e #537
 
 - **Autor:** `reg-1111-cl` (Claude Opus 5.5, subagente da sessão, redator de registro, identidade nova, nível menor). A revisão é de outra identidade, ainda não feita. **Base medida:** `origin/main@a0979f51`, worktree próprio `w-reg1111`. Sem cruzamento de modelo, declarado pelo §C7 item 11(2): o Codex 1 está sem cota semanal, o Codex 2 ocupado e a API no limite do dia. Registro documental, revisão simples + CI; `Kpis/**` congelado e intocado.

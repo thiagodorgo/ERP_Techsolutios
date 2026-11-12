@@ -11,6 +11,7 @@ import { buildInitialDispatchesFilters, calculateDispatchesSummary } from "../di
 import { createDispatch, getDispatchFromApi, reassignDispatch, updateDispatchStatus } from "../dispatches.service";
 import type { DispatchDetail, DispatchListItem, DispatchesFilters as DispatchesFilterState } from "../dispatches.types";
 import { useOperationsDispatches } from "../useOperationsDispatches";
+import { useDispatchIntentKey } from "../useDispatchIntentKey";
 import { DispatchCreateForm } from "../components/DispatchCreateForm";
 import { DispatchDetailPanel } from "../components/DispatchDetailPanel";
 import { DispatchReassignForm } from "../components/DispatchReassignForm";
@@ -33,6 +34,8 @@ export function OperationsDispatchesPage() {
   const [quickStatusDispatch, setQuickStatusDispatch] = useState<DispatchListItem | null>(null);
   const [reassignTarget, setReassignTarget] = useState<DispatchListItem | null>(null);
   const [showCreate, setShowCreate] = useState(Boolean(initialWorkOrderId && initialOperatorUserId));
+  // B-O6R-09 — a chave de repetição por intenção da criação: a nova tentativa depois de um erro reusa a mesma.
+  const dispatchIntent = useDispatchIntentKey();
   const { items, allItems, fallbackReason, loading, error, refresh } = useOperationsDispatches(filters);
   // WS-UI-REFRESH — o sistema recarrega sozinho em segundo plano (sem botão "Atualizar").
   useAutoRefresh(refresh, { enabled: Boolean(activeContext) });
@@ -103,7 +106,8 @@ export function OperationsDispatchesPage() {
             initialWorkOrderId={initialWorkOrderId}
             initialOperatorUserId={initialOperatorUserId}
             onSubmit={async (payload) => {
-              await createDispatch(context, payload);
+              await createDispatch(context, { ...payload, idempotencyKey: dispatchIntent.keyFor(payload) });
+              dispatchIntent.succeeded();
               setShowCreate(false);
               await refresh();
             }}
