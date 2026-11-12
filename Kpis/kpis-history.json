@@ -3787,7 +3787,7 @@
     "backend_tests": "4971/4973",
     "frontend_smoke_tests": "1728/1728",
     "blocks_completed": 216,
-    "description": "PR-533 — B-SAN3-08 (itens 40 e 41): a tela permite que o setor financeiro crie orçamentos e aprove serviços de reboque informando origem e destino para gerar novas ordens de serviço. O controle de alçadas de aprovação e a prevenção contra emissões duplicadas continuam desligados.. NÚMEROS DA CI no merge commit `b6caf568` (push na `main`), workflow `ci`, run 42975252227, tentativa 1: backend `4973 teste(s) · pass 4971 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 215 -> 216.",
+    "description": "PR-533 — B-SAN3-08 (itens 40 e 41): a tela permite que o setor financeiro crie orçamentos e aprove serviços de reboque informando origem e destino para gerar novas ordens de serviço. A conferência de alçada na aprovação e a proteção contra ordem de serviço em dobro ficam para etapas próprias.. NÚMEROS DA CI no merge commit `b6caf568` (push na `main`), workflow `ci`, run 42975252227, tentativa 1: backend `4973 teste(s) · pass 4971 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 215 -> 216.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 533`; números do log da rodada 42975252227. Nada fica `null`."
   },
   {
@@ -3829,7 +3829,7 @@
     "backend_tests": "5038/5040",
     "frontend_smoke_tests": "1728/1728",
     "blocks_completed": 218,
-    "description": "PR-535 — B-SAN3-07 (item 47): a inicialização de dados de demonstração passa a contemplar todos os perfis de usuários com suas respectivas permissões e adota o nome oficial para a organização de teste. A padronização dos termos no aplicativo de campo para o modo offline permanece pendente.. NÚMEROS DA CI no merge commit `d98481e6` (push na `main`), workflow `ci`, run 43012508312, tentativa 1: backend `5040 teste(s) · pass 5038 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 217 -> 218.",
+    "description": "PR-535 — B-SAN3-07 (item 47): a inicialização de dados de demonstração passa a contemplar todos os perfis de usuários com suas respectivas permissões e adota o nome oficial para a organização de teste. A padronização dos termos no aplicativo de campo para o sem conexão permanece pendente.. NÚMEROS DA CI no merge commit `d98481e6` (push na `main`), workflow `ci`, run 43012508312, tentativa 1: backend `5040 teste(s) · pass 5038 · fail 0 · skipped 2`; frontend 1728/1728; flutter 1100/1100. `blocks_completed` 217 -> 218.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 535`; números do log da rodada 43012508312. Nada fica `null`."
   },
   {
