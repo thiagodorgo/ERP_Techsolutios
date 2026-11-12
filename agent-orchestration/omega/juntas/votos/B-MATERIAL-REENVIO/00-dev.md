@@ -152,3 +152,11 @@
 - Mutações: M-C35 (tenant-wide forçado à BASE no handler) deixou RC8(6) e (7) vermelhos; M-C36 (tenant-wide forçado à BASE no service) deixou RC8(6) vermelho; M-C37 (escopo movido para depois da baixa) deixou RC2(10),(11),(17t-a),(17t-b) vermelhos pelo razão alterado. Todas foram isoladas, registradas em `revisoes/c-f3c-m-c35.tap`…`c-f3c-m-c37.tap` e revertidas; produto terminou sem diff.
 - Head: `8731fb26d4c9f7b3c5f425eb8a7d548c626b3f7a` antes deste apenso.
 - Próximo passo exato: commitar e empurrar a C-F3c; depois iniciar somente a C-F4, implementando `work_order_material.remove`, RC2(13)-(15),(18), RC8(3) e a parte de estorno do RC8(6), com M-C7.
+
+## RETOMADA 15 — 2026-11-12T20:13:28-03:00 — PARADA ANTES DA C-F4
+
+- Executor: `dev-c3-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Comando/medição: releitura literal do C2 item 4, RC2(15), N4/R-C21 e do próximo passo da C-F4, confrontada com o handler ainda não escrito. A árvore estava limpa e `HEAD = origin/feat/mobile-material-reenvio = d3e98a082394d2dc3fa32a19954bbb2108f69e87` antes deste apenso.
+- Conflito: a regra N4 mais nova manda o remove (1) achar a baixa, (2) aplicar escopo por objeto sobre `exit.workOrderId`, (3) rejeitar `work_order_mismatch` quando o `work_order_id` do payload difere da baixa e só (4) conferir `exit.createdBy`. RC2(15), porém, ainda exige que tecB cite a OS Y dele para a baixa de tecA na OS X e receba `action_owned_by_other_actor`, justificando que “o escopo passa em Y”. Essa justificativa usa a ordem antiga expressamente revogada. Na ordem vigente, tecB ou falha no escopo de X antes da posse, ou, se puder passar em X, recebe `work_order_mismatch` porque Y ≠ X antes da posse. Nenhum setup produz o resultado exigido.
+- Veredito: **PARADA OBRIGATÓRIA antes de qualquer código da C-F4**, por `D-EMENDA-ANTES-DO-CODIGO`. C-F4 e seguintes não começaram; nenhum arquivo de produto ficou modificado.
+- Próximo passo exato: o orquestrador escrever e revisar uma emenda escolhendo a precedência observável do remove — recomendação técnica: manter N4 e a ordem `escopo da baixa → mismatch → posse`, reescrevendo RC2(15)/M-C7 para os resultados alcançáveis; depois o próximo dev retoma na C-F4.
