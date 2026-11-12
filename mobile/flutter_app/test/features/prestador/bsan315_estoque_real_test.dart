@@ -92,6 +92,7 @@ PrestadorRepository _repo({
   TechnicianStockRemoteApi? stockRemoteApi,
   TechnicianStockCache? stockCache,
   bool allowDemoStock = false,
+  bool isDemoSession = false,
 }) => PrestadorRepository(
   session: _session,
   syncQueue: PersistentSyncQueueRepository(InMemorySyncActionStore([])),
@@ -100,6 +101,7 @@ PrestadorRepository _repo({
   stockRemoteApi: stockRemoteApi,
   stockCache: stockCache ?? InMemoryTechnicianStockCache(),
   allowDemoStock: allowDemoStock,
+  isDemoSession: isDemoSession,
 );
 
 Widget _wrap(Widget child, PrestadorRepository repo) {
@@ -315,6 +317,71 @@ void main() {
       expect((await cache.load(u1))!.items.single.sku, 'XYZ-1234');
       expect(await cache.load(u2), isNull);
     });
+
+    test(
+      'T-A5b sessão demo remota não lê, grava nem apaga a lista salva',
+      () async {
+        const scope = TechnicianStockCacheScope(
+          tenantId: _tenant,
+          userId: 'employee-1',
+        );
+
+        // (a) O 200 aparece como fresh, mas não é gravado.
+        final cacheAfter200 = InMemoryTechnicianStockCache();
+        final fresh = await _repo(
+          stockRemoteApi: _FakeStockApi(() async => _remoteResponse()),
+          stockCache: cacheAfter200,
+          allowDemoStock: false,
+          isDemoSession: true,
+        ).loadTechnicianStock();
+        expect(fresh.isFresh, isTrue);
+        expect(fresh.items.single.sku, 'XYZ-1234');
+        expect(await cacheAfter200.load(scope), isNull);
+
+        // (b) O 403 preserva a entrada já gravada.
+        final cacheAfter403 = InMemoryTechnicianStockCache();
+        await cacheAfter403.save(scope, const [_remoteItem], _generatedAt);
+        final forbidden = await _repo(
+          stockRemoteApi: _FakeStockApi(
+            () async => throw const TechnicianStockForbiddenError(),
+          ),
+          stockCache: cacheAfter403,
+          allowDemoStock: false,
+          isDemoSession: true,
+        ).loadTechnicianStock();
+        expect(forbidden.isForbidden, isTrue);
+        expect((await cacheAfter403.load(scope))!.items.single.sku, 'XYZ-1234');
+
+        // (c) Falhas remotas mantêm o estado failed sem devolver lista salva.
+        for (final error in <Object>[
+          const ApiServerError(statusCode: 503),
+          const ApiNetworkError(),
+        ]) {
+          final failed = await _repo(
+            stockRemoteApi: _FakeStockApi(() async => throw error),
+            stockCache: cacheAfter403,
+            allowDemoStock: false,
+            isDemoSession: true,
+          ).loadTechnicianStock();
+          expect(failed.isFresh, isFalse);
+          expect(failed.isForbidden, isFalse);
+          expect(failed.items, isEmpty);
+          expect(failed.cached, isNull);
+          expect(failed.error, same(error));
+        }
+
+        // (d) Mesmo com cache no escopo, um 503 nunca o lê para cached.
+        final failedWithSavedEntry = await _repo(
+          stockRemoteApi: _FakeStockApi(
+            () async => throw const ApiServerError(statusCode: 503),
+          ),
+          stockCache: cacheAfter403,
+          allowDemoStock: false,
+          isDemoSession: true,
+        ).loadTechnicianStock();
+        expect(failedWithSavedEntry.cached, isNull);
+      },
+    );
 
     testWidgets('T-A6 estados e textos honestos', (t) async {
       Future<void> pump(TechnicianStockRemoteApi api) async {

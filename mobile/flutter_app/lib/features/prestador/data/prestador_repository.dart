@@ -83,10 +83,10 @@ class PrestadorRepository extends ChangeNotifier {
         return TechnicianStockLoad.failed(error, cached: cached);
       }
 
-      if (load.isFresh) {
+      if (!_isDemoSession && load.isFresh) {
         await _stockCache.save(scope, load.items, load.fetchedAt);
       }
-      if (load.isForbidden) {
+      if (!_isDemoSession && load.isForbidden) {
         await _stockCache.clear(scope);
       }
       return load;

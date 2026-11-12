@@ -297,3 +297,13 @@ M-A10..M-A18, M-A17b, M-A20, M-A25' e M-A26, todas medidas no teste-dono com ver
   `114b2102..6b05e642 fix/mobile-estoque-real-do-tecnico`.
 
 **F4 PRONTA — head 6b05e642**
+
+---
+
+## Conserto da pré-revisão (fix-548-cdx)
+
+**Identidade:** `fix-548-cdx`, Codex GPT-5.6 Sol, dev declarado deste conserto; não é o `prerev-548-cdx`, não escreveu o plano nem o 15a (`dev-15a-cl` e `dp-548`).
+
+- **2026-11-12T04:32:10-03:00 — terreno:** em `C:/Users/thiag/w-15a`, HEAD `bfdeb155fba22e1a03396882c4904b4f3320a863`, branch `fix/mobile-estoque-real-do-tecnico`, `git status --porcelain` vazio. A consulta global de processos Windows não encontrou nenhum `node`, `dart` ou `flutter`; logo nenhum tinha cwd no worktree. Terreno LIBERADO.
+- **2026-11-12T04:32:39-03:00 — fontes e contrato:** lidos integralmente `CLAUDE.md`, `PROJECT_MEMORY.md` e as skills `ts-frontend-full` e `saas-multi-tenant`; lidas as Emendas 1 (N-11), 2 e 2.1 do plano, `prerev-548.json`, `prerev-548-evidencia.md` (§3 e §8), o diário anterior e as entradas relacionadas da trilha operacional. A Emenda 2.1 prevalece: 200 remoto fica `fresh`, 403 fica `forbidden`, 503/rede fica `failed`; em sessão demo remota o cache salvo não é lido, gravado nem apagado.
+- **2026-11-12T04:33:45-03:00 — E2.2/E2.1 A1–A3:** `loadTechnicianStock` passou a impedir `save` e `clear` quando `_isDemoSession`; a leitura já estava suprimida. O novo T-A5b cobre (a) 200 `fresh` sem gravação, (b) 403 sem apagar, (c) 503/rede em `failed` sem cache e (d) entrada existente + 503 com `cached == null`. Teste focado: `+1 -0`, verde.
