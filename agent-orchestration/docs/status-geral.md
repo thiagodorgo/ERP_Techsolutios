@@ -1,5 +1,27 @@
 # Status Geral
 
+## Atualização 2026-11-12 — registro de 11/11 manhã a 12/11 manhã: portão em 45/64 e as juntas J-534 a J-548
+
+- **Autor:** `reg-1211-dp` (DeepSeek Pro pelo Codex CLI, redator de registro, identidade nova, nível menor). A revisão fica para outro modelo, depois. **Base medida:** `origin/main@3a62bd49`, worktree próprio `w-reg1211`. Registro documental; `Kpis/**` congelado e intocado.
+- **Merges (fato; `git log origin/main` e `gh pr view`; hora de SP):**
+  - #535 (`B-SAN3-07`, item 47): `d98481e6`, 11/11 08:32; porteiro `porteiro-535` LIBERADO COM RESSALVA;
+  - #540 (`B-SAN3-19b`, itens 48 e 47 no app): `945f2002`, 11/11 10:29; porteiro `porteiro-540` LIBERADO COM RESSALVA;
+  - #541 (só teste — a limpeza do `san3-08` tolera a tabela de suíte irmã): `da12fec6`, 11/11 10:50; sem porteiro (§C7 item 8(3));
+  - #536 (`B-SAN3-23`, item 23, dinheiro): `c95ad4fd`, 11/11 11:10; porteiro `porteiro-536` LIBERADO COM RESSALVA;
+  - #534 (`B-SAN3-26`, item 53): `68a208ad`, 11/11 15:14; porteiro `porteiro-534` LIBERADO COM RESSALVA;
+  - #539 (`B-O6R-12`, item 24, dinheiro): `f5b79026`, 11/11 15:54; porteiro `porteiro-539` LIBERADO COM RESSALVA;
+  - #537 (`B-O6R-09`, item 7): `81fb7d27`, 11/11 19:46; porteiro `porteiro-537b` LIBERADO COM RESSALVA;
+  - #545 (`B-O6R-11d`, item 3): `a02aacce`, 11/11 20:22; porteiro `porteiro-545b` LIBERADO COM RESSALVA;
+  - #544 (`B-SAN3-18`, item 16): `fd51409c`, 12/11 04:18; porteiro `porteiro-544` LIBERADO COM RESSALVA;
+  - #543 (`B-USERS-SEG-DESATIVADO`): `50b782e1`, 12/11 05:22; porteiro `porteiro-543` LIBERADO;
+  - #542 (`B-ASS-09a`, item 61): `bf29a86a`, 12/11 05:51; porteiro `porteiro-542` LIBERADO COM RESSALVA;
+  - #549 (marco de KPI de 12/11): `7d7ffeb0`, 12/11 10:08; KPI congelado, sem porteiro;
+  - #548 (`B-SAN3-15a`, itens 35 a 37): `3a62bd49`, 12/11 10:33; porteiro `porteiro-548` LIBERADO COM RESSALVA.
+- **Portão da versão vendável:** 45/64 (70%), pelo `porteiro-548`. Fechados desde o registro anterior: 40 e 41 (#533), 47 (#535 no seed e #540 no app), 48 (#540), 23 (#536), 53 (#534, servidor), 24 (#539), 7 (#537), 3 (#545), 16 (#544) e 37 (#548). Os itens 35 e 36 dependem do `B-SAN3-15b`.
+- **Juntas (atas versionadas neste PR):** J-534, J-535, J-536, J-537, J-539 (reconstruída por falta de ata escrita), J-540, J-542b, J-543, J-544, J-545 e J-548. As ressalvas dos porteiros foram consolidadas em `pendencias.md`, `PLANO_SAN3.md` e `decisoes.md`.
+- **Pendência sistêmica nova:** `P-DB-FUSO-DA-CONEXAO` (ALTA) — o `@prisma/adapter-pg` grava `Date` sem sufixo de fuso e o Postgres lê no `TimeZone` da sessão; o fechamento fixa a conexão em UTC (investigação `inv-543-fuso`).
+- **Lições em `decisoes.md`:** a regra de terreno do `initdb` no Windows (UTC + UTF8) e a lição "teste novo de dinheiro roda 20 vezes, com o arquivo inteiro, antes da junta".
+
 ## Atualização 2026-11-11 — B-O6R-11d (o contrato da OS no app; item 3 do portão, resto do `Ω6R-QUA-004`)
 
 - **Autor:** `dev-11d-cl` (Claude Opus 5.5, subagente da sessão, dev, nível menor; exceção declarada: Codex sem cota semanal até 16/11, API reservada para verificação, Antigravity no limite). Ramo `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, base `origin/main@da12fec6` com o merge de `c95ad4fd` (#536).
