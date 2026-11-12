@@ -109,3 +109,10 @@
 - Mutações: M-C1 (não repassar `workOrderId`) deixou RC1(1) vermelho por `undefined`; M-C2 (`includes` no SKU) deixou RC1(4) vermelho por falso positivo; ambas revertidas, e `git diff --check` verde.
 - Head: `d799043bc70edb7cb6464da2ed0ecba701b4babe` antes deste apenso.
 - Próximo passo exato: commitar/push da C-F2 e abrir o PR em rascunho; depois iniciar C-F2b, limitada à custódia no seam (E1), RC1(7)-(8), M-C25/M-C26 e regressões nomeadas.
+
+## RETOMADA 10 — 2026-11-12T19:47:34-03:00 — PR EM RASCUNHO ABERTO
+
+- Comando: commit/push da C-F2; `gh pr create --base main --head feat/mobile-material-reenvio --draft`.
+- Saída resumida: C-F2 em `e62656d2eebbd122e098b939dadd9ec581741e32`; PR rascunho **#551**, `https://github.com/thiagodorgo/ERP_Techsolutios/pull/551`, com F0/F1/F2 concluídas, fatias restantes e dependência da C-F6b declaradas; corpo termina com a assinatura exigida.
+- Head: `e62656d2eebbd122e098b939dadd9ec581741e32`.
+- Próximo passo exato: C-F2b — implementar `custody?`, `custodyOfMovement`, saldo/inserção na custódia informada e estorno na custódia original; acrescentar RC1(7)-(8), executar M-C25/M-C26, regressões, `npm run check` e `flutter analyze`; commitar/push antes da C-F3.
