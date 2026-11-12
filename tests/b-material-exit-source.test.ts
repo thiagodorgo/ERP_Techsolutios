@@ -137,3 +137,67 @@ test("[RC1(6)] origens anteriores preservam os motivos existentes", async () => 
   assert.equal(fuelExit.reason, "baixa_abastecimento_interno");
   assert.equal(maintenanceExit.reason, "baixa_manutencao");
 });
+
+test("[RC1(7)] baixa de material usa o saldo da custódia profissional informada", async () => {
+  const { repository, service, inventoryActor, item } = await seeded();
+  const profileId = randomUUID();
+  await repository.createTransfer({
+    tenantId: inventoryActor.tenantId,
+    itemId: item.id,
+    type: "link",
+    quantity: 5,
+    custody: { custodyType: "professional", custodyOperatorProfileId: profileId },
+    createdBy: inventoryActor.userId,
+  });
+
+  const movement = await service.createExitForSource(inventoryActor, {
+    sourceType: "work_order_material",
+    sourceId: randomUUID(),
+    itemId: item.id,
+    quantity: 2,
+    workOrderId: randomUUID(),
+    custody: { custodyType: "professional", custodyOperatorProfileId: profileId },
+  });
+  const professional = await repository.listCustodyBalances(inventoryActor.tenantId, {
+    custodyType: "professional",
+    custodyOperatorProfileId: profileId,
+  });
+  const base = await repository.listCustodyBalances(inventoryActor.tenantId, { custodyType: "base" });
+
+  assert.equal(movement.custodyType, "professional");
+  assert.equal(movement.custodyOperatorProfileId, profileId);
+  assert.equal(professional.find((entry) => entry.item?.id === item.id)?.available, 3);
+  assert.equal(base.find((entry) => entry.item?.id === item.id)?.available ?? 0, 0);
+});
+
+test("[RC1(8)] estorno devolve saldo à custódia profissional do movimento original", async () => {
+  const { repository, service, inventoryActor, item } = await seeded();
+  const profileId = randomUUID();
+  const sourceId = randomUUID();
+  await repository.createTransfer({
+    tenantId: inventoryActor.tenantId,
+    itemId: item.id,
+    type: "link",
+    quantity: 5,
+    custody: { custodyType: "professional", custodyOperatorProfileId: profileId },
+    createdBy: inventoryActor.userId,
+  });
+  await service.createExitForSource(inventoryActor, {
+    sourceType: "work_order_material",
+    sourceId,
+    itemId: item.id,
+    quantity: 2,
+    workOrderId: randomUUID(),
+    custody: { custodyType: "professional", custodyOperatorProfileId: profileId },
+  });
+
+  const reversal = await service.removeExitForSource(inventoryActor, "work_order_material", sourceId);
+  const professional = await repository.listCustodyBalances(inventoryActor.tenantId, {
+    custodyType: "professional",
+    custodyOperatorProfileId: profileId,
+  });
+
+  assert.equal(reversal?.custodyType, "professional");
+  assert.equal(reversal?.custodyOperatorProfileId, profileId);
+  assert.equal(professional.find((entry) => entry.item?.id === item.id)?.available, 5);
+});

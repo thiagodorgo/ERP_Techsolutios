@@ -116,3 +116,12 @@
 - Saída resumida: C-F2 em `e62656d2eebbd122e098b939dadd9ec581741e32`; PR rascunho **#551**, `https://github.com/thiagodorgo/ERP_Techsolutios/pull/551`, com F0/F1/F2 concluídas, fatias restantes e dependência da C-F6b declaradas; corpo termina com a assinatura exigida.
 - Head: `e62656d2eebbd122e098b939dadd9ec581741e32`.
 - Próximo passo exato: C-F2b — implementar `custody?`, `custodyOfMovement`, saldo/inserção na custódia informada e estorno na custódia original; acrescentar RC1(7)-(8), executar M-C25/M-C26, regressões, `npm run check` e `flutter analyze`; commitar/push antes da C-F3.
+
+## RETOMADA 11 — 2026-11-12T19:52:20-03:00 — C-F2b CONCLUÍDA
+
+- Executor da fatia: `dev-c3-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Código: `custody?` atravessa o seam de `createExitForSource`; saldo e inserção usam a custódia selecionada, com BASE apenas como default compatível; `custodyOfMovement` reconstrói a custódia persistida e `removeExitForSource` estorna exatamente o balde original. O serviço aceita somente BASE ou profissional com UUID válido e rejeita veículo.
+- Provas: RC1(1)-(8) = `8/8`; regressão nomeada (`b-material-exit-source`, estoque do técnico, decremento, combustível, peças de manutenção e guard de escrita) = `74/74`, `fail 0`, `skipped 0`; `npm run check` exit 0; `flutter analyze` = `No issues found`. `dart format`: não aplicável, pois nenhum arquivo Dart mudou. `git diff --check` verde.
+- Mutações: a primeira tentativa de M-C25 atingiu por engano a ocorrência genérica de `createMovement` e sobreviveu; foi revertida sem permanecer no diff. Reaplicada no ponto correto de `createExitForSource`, M-C25 (forçar BASE na baixa) deixou RC1(7) vermelho por saldo insuficiente. M-C26 (forçar BASE no estorno) deixou RC1(8) vermelho por custódia divergente. Ambas foram revertidas e os testes finais voltaram a verde.
+- Head: `02c992f8110f201defa4c4ed0bec731cda49b33f` antes deste apenso.
+- Próximo passo exato: commitar e empurrar a C-F2b; depois iniciar somente a C-F3, criando o handler `work_order_material.add`, sua rota/classificação prevista e os casos RC2/mutações definidos para essa fatia, sem antecipar a custódia/módulo da C-F3b.
