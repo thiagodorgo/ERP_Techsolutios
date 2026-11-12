@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import test from "node:test";
+import test, { after, before } from "node:test";
 
 import type { AuthenticatedActor } from "../src/modules/core-saas/types/core-saas.types.js";
 import { InMemoryInventoryRepository } from "../src/modules/inventory/inventory.repository.js";
@@ -8,6 +8,17 @@ import { InventoryService } from "../src/modules/inventory/inventory.service.js"
 import { syncMobileInventoryActions } from "../src/modules/mobile/mobile-inventory-sync.js";
 import { InMemoryWorkOrderRepository } from "../src/modules/work-orders/work-order.repository.js";
 import { WorkOrderService } from "../src/modules/work-orders/work-order.service.js";
+import { abrirArnesDoGate, type ArnesDoGate } from "./helpers/san3-18-gate.js";
+
+let gate: ArnesDoGate;
+
+before(async () => {
+  gate = await abrirArnesDoGate();
+});
+
+after(async () => {
+  await gate.fechar();
+});
 
 const materialAction = (
   clientActionId: string,
@@ -45,7 +56,14 @@ async function setup() {
   const inventoryActor = actor(tenantId, "inventory", ["inventory.read", "inventory.manage", "inventory.consume"]);
   const auditor = actor(tenantId, "auditor", ["inventory.read"]);
   const inventoryRepository = new InMemoryInventoryRepository();
-  const inventory = new InventoryService(inventoryRepository);
+  const profiles = new Map([
+    [tecA.userId, { id: randomUUID(), isActive: true, label: "Técnico A" }],
+    [tecB.userId, { id: randomUUID(), isActive: true, label: "Técnico B" }],
+    [technician.userId, { id: randomUUID(), isActive: true, label: "Technician" }],
+  ]);
+  const inventory = new InventoryService(inventoryRepository, {
+    resolveActorOperatorProfile: async (candidate) => profiles.get(candidate.userId),
+  });
   const item = await inventory.createItem(inventoryActor, { sku: "ELE-0102", name: "Disjuntor", unit: "un" });
   await inventory.createMovement(inventoryActor, {
     item_id: item.id,
@@ -53,6 +71,16 @@ async function setup() {
     quantidade: 30,
     unit_cost: 10,
   });
+  for (const profile of profiles.values()) {
+    await inventoryRepository.createTransfer({
+      tenantId,
+      itemId: item.id,
+      type: "link",
+      quantity: 5,
+      custody: { custodyType: "professional", custodyOperatorProfileId: profile.id },
+      createdBy: inventoryActor.userId,
+    });
+  }
 
   const workOrderRepository = new InMemoryWorkOrderRepository();
   const workOrders = new WorkOrderService(workOrderRepository);
@@ -82,7 +110,7 @@ async function setup() {
     return created.id;
   };
   const workOrderId = await createAssignedWorkOrder(tecA);
-  const deps = { inventory, workOrders };
+  const deps = { inventory, workOrders, workOrdersModuleEnabled: async () => true };
   const run = (who: AuthenticatedActor, actions: readonly Record<string, unknown>[]) =>
     syncMobileInventoryActions(who, { client_batch_id: randomUUID(), actions }, deps);
   const movementCount = async () => (await inventory.listMovements(inventoryActor, { limit: 100, offset: 0 })).items
@@ -255,4 +283,66 @@ test("[RC2(17t)] OS de outra organização é not_found e não baixa", async () 
   const response = await ctx.run(ctx.tecA, [materialAction(randomUUID(), workOrderB)]);
   assert.equal(response.rejected[0]?.error?.reason, "not_found");
   assert.equal(await ctx.movementCount(), 0);
+});
+
+async function jwtActor(modules: readonly string[], roles: readonly string[]) {
+  const org = gate.criarOrganizacao(modules);
+  const user = gate.criarUsuario(org.id, roles);
+  const token = await gate.token({ tenantId: org.id, userId: user.id, email: user.email, roles });
+  return { org, user, token };
+}
+
+const invalidButWellFormedMaterial = () => ({
+  client_action_id: randomUUID(),
+  type: "work_order_material.add",
+  local_created_at: "2026-11-12T12:00:00.000Z",
+  payload: { work_order_id: randomUUID(), sku: "ELE-0102", quantity: 1 },
+});
+
+test("[RC2(19)] JWT sem inventory é recusado pelo gate do lote", async () => {
+  const tech = await jwtActor(["work_orders"], ["field_technician"]);
+  const response = await gate.chamar("POST", "/api/v1/mobile/sync/inventory-actions", {
+    token: tech.token,
+    body: { actions: [invalidButWellFormedMaterial()] },
+  });
+
+  assert.equal(response.status, 403);
+  assert.equal(response.reason, "module_not_enabled");
+});
+
+test("[RC2(20)] com inventory e sem work_orders só material é recusado por módulo", async () => {
+  const tech = await jwtActor(["inventory"], ["field_technician"]);
+  const material = await gate.chamar("POST", "/api/v1/mobile/sync/inventory-actions", {
+    token: tech.token,
+    body: { actions: [invalidButWellFormedMaterial()] },
+  });
+  assert.equal(material.status, 200, JSON.stringify(material.body));
+  assert.equal(material.body.data.rejected[0]?.error?.reason, "module_not_enabled");
+
+  const inventory = await jwtActor(["inventory"], ["inventory"]);
+  const consume = await gate.chamar("POST", "/api/v1/mobile/sync/inventory-actions", {
+    token: inventory.token,
+    body: {
+      actions: [{
+        client_action_id: randomUUID(),
+        type: "inventory.consume",
+        local_created_at: "2026-11-12T12:00:00.000Z",
+        payload: { item_id: "inv-item-tow-cable", quantity: 1 },
+      }],
+    },
+  });
+  assert.equal(consume.status, 200, JSON.stringify(consume.body));
+  assert.equal(consume.body.data.accepted.length, 1);
+});
+
+test("[RC2(21)] bootstrap exige inventory e permissão de sync", async () => {
+  const withoutInventory = await jwtActor(["work_orders"], ["field_technician"]);
+  const disabled = await gate.chamar("GET", "/api/v1/mobile/bootstrap", { token: withoutInventory.token });
+  assert.equal(disabled.status, 200, JSON.stringify(disabled.body));
+  assert.equal(disabled.body.data.feature_flags.inventory_sync.enabled, false);
+
+  const withInventory = await jwtActor(["inventory", "work_orders"], ["field_technician"]);
+  const enabled = await gate.chamar("GET", "/api/v1/mobile/bootstrap", { token: withInventory.token });
+  assert.equal(enabled.status, 200, JSON.stringify(enabled.body));
+  assert.equal(enabled.body.data.feature_flags.inventory_sync.enabled, true);
 });

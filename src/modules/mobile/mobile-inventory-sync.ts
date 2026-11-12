@@ -127,6 +127,7 @@ const supportedActionTypes: readonly InventoryActionType[] = [
 export type MobileInventorySyncDeps = {
   readonly inventory: InventoryService;
   readonly workOrders: WorkOrderService;
+  readonly workOrdersModuleEnabled: () => Promise<boolean>;
 };
 
 export function getMobileInventoryAvailability(
@@ -370,7 +371,7 @@ function withMaterialEcho(
 }
 
 async function addWorkOrderMaterial(
-  { inventory, workOrders }: MobileInventorySyncDeps,
+  { inventory, workOrders, workOrdersModuleEnabled }: MobileInventorySyncDeps,
   actor: AuthenticatedActor,
   action: MobileInventoryAction,
 ): Promise<MobileInventoryActionResult> {
@@ -378,6 +379,10 @@ async function addWorkOrderMaterial(
   const sku = parseRequiredString(action.payload.sku, "sku");
   const quantity = parsePositiveInteger(action.payload.quantity, "quantity");
   const workOrderId = parseMaterialWorkOrderId(action.payload.work_order_id);
+
+  if (!(await workOrdersModuleEnabled())) {
+    throw routeError(403, "FORBIDDEN", "module_not_enabled", "The work_orders module is not enabled.");
+  }
 
   await (actorMutatesAssignedOnly(actor)
     ? workOrders.getForMutation(actor, workOrderId)
@@ -393,12 +398,23 @@ async function addWorkOrderMaterial(
     return materialReplayResult(actor, action, existing, item.id, quantity, workOrderId);
   }
 
+  const custody = await inventory.actorStockCustody(actor);
+  if (!custody) {
+    throw routeError(
+      422,
+      "INVENTORY_INVALID",
+      "operator_profile_required",
+      "An active operator profile is required to post material for this field actor.",
+    );
+  }
+
   const movement = await inventory.createExitForSource(actor, {
     sourceType: "work_order_material",
     sourceId,
     itemId: item.id,
     quantity,
     workOrderId,
+    custody,
   });
   const replay = materialReplayResult(actor, action, movement, item.id, quantity, workOrderId);
   if (replay.status === "conflict") return replay;

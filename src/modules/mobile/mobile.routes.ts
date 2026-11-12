@@ -175,12 +175,34 @@ export function createMobileRouter(service: ICoreSaasService): Router {
   router.post(
     "/mobile/sync/inventory-actions",
     handleAsyncRoute(async (request, response) => {
+      const actor = request.tenantContext;
+      let tenantModulesPromise: Promise<readonly string[]> | undefined;
+      const workOrdersModuleEnabled = async () => {
+        if (!actor?.tenantId) return false;
+        try {
+          tenantModulesPromise ??= service
+            .getTenantForActor(actor.tenantId, actor.tenantId)
+            .then((tenant) => tenant.modules);
+          return hasModule(await tenantModulesPromise, "work_orders");
+        } catch {
+          throw {
+            statusCode: 503,
+            code: "SERVICE_UNAVAILABLE",
+            reason: "module_lookup_unavailable",
+            message: "Organization modules could not be checked right now.",
+          };
+        }
+      };
       const [inventory, workOrders] = await Promise.all([
         resolveInventoryService(),
         resolveWorkOrderService(),
       ]);
       response.json({
-        data: await syncMobileInventoryActions(request.tenantContext, request.body ?? {}, { inventory, workOrders }),
+        data: await syncMobileInventoryActions(actor, request.body ?? {}, {
+          inventory,
+          workOrders,
+          workOrdersModuleEnabled,
+        }),
       });
     }),
   );
@@ -281,7 +303,9 @@ function buildFeatureFlags(
       reason: hasModule(modules, "inventory") ? "availability_and_sync_partial" : "module_disabled",
     },
     inventory_sync: {
-      enabled: hasModule(modules, "inventory") && hasPermission(actor, "inventory.manage"),
+      enabled: hasModule(modules, "inventory") && (
+        hasPermission(actor, "inventory.manage") || hasPermission(actor, "work_orders:update")
+      ),
       status: hasModule(modules, "inventory") ? "partial" : "unavailable",
       reason: hasModule(modules, "inventory") ? "in_memory_contract" : "module_disabled",
     },

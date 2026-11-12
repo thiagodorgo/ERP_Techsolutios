@@ -134,3 +134,12 @@
 - Mutações: M-C3 (material exigindo `inventory.manage`) deixou RC2(1) vermelho; M-C4 (`get` no lugar de `getForMutation`) deixou RC2(10) vermelho; M-C5 (retirar a comparação de `createdBy`) deixou RC2(4) vermelho. As três foram executadas isoladamente, gravadas em `revisoes/c-f3-m-c3.tap`, `c-f3-m-c4.tap` e `c-f3-m-c5.tap`, e revertidas antes da bateria final.
 - Head: `adda839e7ceea47898b64dbb0b6094ea8c0c369e` antes deste apenso.
 - Próximo passo exato: commitar e empurrar a C-F3; depois iniciar somente a C-F3b — custódia resolvida pelo ator, `operator_profile_required`, guarda por ação do módulo `work_orders`, injeção preguiçosa na rota e bootstrap, com RC8(1),(2),(4),(5), RC2(19)-(21) e M-C27/M-C28/M-C29/M-C31/M-C32/M-C33.
+
+## RETOMADA 13 — 2026-11-12T20:08:54-03:00 — C-F3b CONCLUÍDA
+
+- Executor da fatia: `dev-c3-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Código: `InventoryService.actorStockCustody` aplica a regra única do cadastro ativo/BASE tenant-wide e normaliza falha de consulta em 503; o handler resolve essa custódia depois do pré-check, recusa campo sem perfil com `operator_profile_required` e a envia ao seam. `work_order_material.add` exige `work_orders` por ação antes de ler a OS; a rota lê os módulos do tenant do ator de forma preguiçosa e memoizada, com falha em 503. O bootstrap mantém o gate de `inventory` e habilita o sync para `inventory.manage` ou `work_orders:update`.
+- Provas: RC8(1),(2),(4),(5) = `4/4`; RC2 completo com os novos (19)-(21) = `17/17`; alvo C-F3b + censo de módulos = `28/28`; regressão ampliada (RC1/RC2/RC8, estoque do técnico, decremento, combustível, manutenção, guard de escrita e contrato mobile) = `120/120`, `fail 0`, `skipped 0`; `npm run check` exit 0; `flutter analyze` = `No issues found`. `dart format`: não aplicável, pois nenhum arquivo Dart mudou. `git diff --check` verde.
+- Mutações: M-C27 deixou RC8(1) vermelho; M-C28 deixou RC8(4) vermelho; M-C29 deixou RC8(5) vermelho; M-C31 deixou RC2(19) e o censo de módulos vermelhos; M-C32 deixou RC2(20) vermelho; M-C33 deixou RC2(21) vermelho. Todas foram isoladas, registradas em `revisoes/c-f3b-m-c27.tap`…`c-f3b-m-c33.tap` e revertidas. `inventory.actor-custody.ts` e `route-modules.ts`, tocados só pelas mutações autorizadas, terminaram sem diff.
+- Head: `6c4327d48883217bb0bdf1c0e726451b685d875a` antes deste apenso.
+- Próximo passo exato: commitar e empurrar a C-F3b; depois iniciar somente a C-F3c, acrescentando RC8(6),(7), RC2(17t-a/b), `razaoIntacto` e as mutações M-C35/M-C36/M-C37, sem antecipar o remove da C-F4.

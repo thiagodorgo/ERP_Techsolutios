@@ -459,6 +459,17 @@ export class InventoryService {
     };
   }
 
+  /** Server-owned custody used by material replay; request payloads never select the bucket. */
+  async actorStockCustody(actor: InventoryActorContext): Promise<StockCustody | undefined> {
+    try {
+      const profile = await this.references.resolveActorOperatorProfile?.(actor);
+      return resolveActorStockCustody(actor, profile);
+    } catch (error) {
+      if (error instanceof InventoryError && error.statusCode === 503) throw error;
+      throw custodyLookupUnavailableError();
+    }
+  }
+
   /**
    * Ω4C PR-08b (D-Ω4C-INV-STOCK-DECREMENT) — the NON-AMPLIFIER seam consumed service→service by the fuel-log /
    * maintenance-item flows (NEVER the public movement API). The consumer passes ONLY which item + the LOCKED
