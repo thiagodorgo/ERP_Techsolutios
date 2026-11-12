@@ -5060,3 +5060,13 @@ lista curada do job `backend-postgres`, medida 3× antes.
   - **B-SAN3-25:** as 4 recomendações do plano.
   - **O conflito da nota retroativa:** vale a recomendação do #530, a nota para todo demonstrativo pago desde o merge da 08b. A crítica `crit-08c-cl` (A4) mediu que ela é coerente com o código mergeado.
 - **Onde já é citada:** `API_CONTRACTS.md` (as notas do B-USERS-SEG-DESATIVADO), `RBAC_MATRIX.md:128`, a entrada `D-B-SAN3-18-RESPOSTAS-DO-DONO` e o comando do B-O6R-11d. Esta entrada é a que essas citações apontam (achado C3-01 da J-543).
+
+## LEITURA-ORQ-1211-INITDB-UTC-UTF8 (2026-11-12) — regra de terreno do `initdb` no Windows
+
+- **Fato:** o porteiro do #543 (`dp-543.md`, "Incidentes de terreno") mediu que todo cluster criado no Windows com `initdb` nasce WIN1252 e em `America/Sao_Paulo`: a migração `20260717000000_add_inventory_core` falhou por encoding (E22P05), e o T8 (sessão vencida → 401) deu 200 com o banco fora de UTC até gravar `timezone='UTC'` e recarregar.
+- **Leitura do orquestrador, declarada (§A6):** daqui em diante, todo mandato com `initdb` grava `timezone='UTC'` no `postgresql.conf` antes do `pg_ctl start`; `--encoding=UTF8 --locale=C`.
+
+## LEITURA-ORQ-1211-TESTE-DINHEIRO-20-VEZES (2026-11-12) — lição do #542
+
+- **Fato:** a J-542b e a `conf-542` rodaram o T-E4-1 uma vez; a CI do `72866b87` ficou vermelha no T-E4-1 (`100 !== 130`, a propriedade do C1-A1 — artefato do teste, empate triplo de milissegundo no desempate da run, que virou a `P-ASS09A-EMPATE-MESMO-MS`) e no B16, intermitente conhecido (ocorrência nova da `P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE`, run `43175128180`, 12/11).
+- **Leitura do orquestrador, declarada (§A6):** teste novo de dinheiro roda 20 vezes, na forma do arquivo inteiro, antes da junta.

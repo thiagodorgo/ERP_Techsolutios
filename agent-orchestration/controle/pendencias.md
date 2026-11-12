@@ -3393,7 +3393,8 @@ independentes, sem transação comum e sem `client_action_id`. Wrapper que abre 
 (ABERTA, verificada) tem como ação da Junta de Mapas *"definir a fonte — snapshot de `FieldOperatorLocation`
 por etapa do despacho"*, ou seja, trabalho em fila que grava/lê exatamente o agregado defeituoso. Construir
 histórico por etapa sobre um agregado que pode nascer sem evento é construir sobre buraco.
-- status: ABERTA — 1 P1.
+- status: FECHADA (2026-11-11, PR #537, squash `81fb7d27` — ressalva 2 do porteiro-537b; o fechamento apenso abaixo vale no merge).
+- status anterior: ABERTA — 1 P1.
 
 - **emenda (plano SAN3 §4.1 item 7, 2026-09-11):** o plano classifica o `Ω6R-ARQ-004` como bloqueante do gate da versão vendável, com bloco dono `B-O6R-09`; a dependência do `B-O6R-08` é revista: atomicidade despacho+evento na mesma transação não precisa de lease de job — hipótese que o planejador confirma; se cair, o `B-O6R-08` entra no gate.
 - **dono:** `B-O6R-09` (plano SAN3, §4.1 item 7 — `D-SAN3-PLANO-OPCAO-B`, 2026-09-13).
@@ -9961,6 +9962,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** `pre-existente` — evidência de data e de origem: (i) `git log -1 -- docs/navigation-matrix.md` = `aff48fbb` (2026-08-08), anterior ao bloco; (ii) 33 das 40 já divergiam no head-base `02bd7dab`, medidas pelo mesmo harness; (iii) o comando do `B-SAN3-04a` **não** põe `docs/**` no escopo permitido, então corrigir o documento estava fora do que o bloco podia tocar (§C7.1-ter(a)).
 - **por que não reprova:** as 7 células novas seguem a `RBAC_MATRIX.md` (fonte §A1.2) e a decisão do dono P1/P2; quem ficou velho foi o documento (§A1.3), que se declara "base do teste por papel". Lado certo escolhido, registro faltando — daí `ajuste` no `C2-02` e pendência aqui.
 - **dono:** `B-SAN3-06a` (proposto pela C2 — já é dono de `P-SAN3-04A-MENU-RESIDUAL` e de `P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`, e o §5 do `PLANO_SAN3.md` l.270 lhe dá `appSidebarNav.ts` e `tenantNavigation.ts`, os arquivos que decidem o menu). **Ampliação nominal DECLARADA** (`B-SAN3-00`, 2026-09-21): `docs/navigation-matrix.md` não estava no §5 de bloco nenhum. Em vez de deixar a ampliação como promessa ("quem executar o `06a` a declara"), ela entrou na **linha do `B-SAN3-06a` no §5** do `PLANO_SAN3.md`, junto com `auth.adapter.ts` — mesma classe de dívida, mesmo bloco, mesma passada. O precedente do `frontend/index.html` na `P-WEB-FONTE-INTER-NAO-CARREGADA` continua valendo para quem ainda não tem bloco dono.
+- **apenso 2026-11-12 (porteiro-535, a):** é também o achado C4-03 da J-535 (`j535-c4-ca`, não grave, anterior ao bloco): a matriz efetiva diverge de `docs/navigation-matrix.md` em 29 células de menu e 16 de acesso nos 5 papéis legados, idênticas na base de staging do `b6caf568`.
 - **bloqueia:** não bloqueia o gate por si — é documento contra realidade, não acesso indevido (o backend é a autoridade e foi medido nas duas pontas). Bloqueia **o método** de quem usar o documento como base de teste por papel.
 - **teste de encerramento:** o documento passa a ser **gerado** (ou conferido por guard) contra a matriz efetiva — o diff doc × efetivo dá 0 célula para os 9 papéis; vermelho-controle: mudar uma célula do documento deixa o guard vermelho.
 
@@ -9971,6 +9973,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **escopo:** `pre-existente` — evidência de data/origem: `src/modules/auth/**` está **fora** do diff `02bd7dab..fbda96b0` (o bloco não tocou um byte ali) e o último commit da base nesses arquivos é `dc8168b9` (2026-09-04). `grep tenant_role` em `pendencias.md` e `decisoes.md` da ref = 0: a divergência nunca tinha sido registrada.
 - **efeito de autorização medido: NENHUM.** O backend autoriza pela tabela `role_permissions` do banco, não pelas claims — a C2 provou 403/200 reais nos dois heads. O que está aberto é o **contrato**: qualquer consumidor que confie na claim (cliente novo, integração, o próprio app) lê um token que não cumpre o que o arquivo-base promete.
 - **dono:** **fila pós-gate** — o orquestrador o nomeia quando o **primeiro bloco tocar `src/modules/auth/**`**; nenhum bloco do §5 do `PLANO_SAN3.md` tem esse diretório hoje.
+- **apenso 2026-11-12 (porteiro-535, a):** é também o achado C4-01 da J-535 (`j535-c4-ca`, não grave, anterior ao bloco) e a `P-AUTH-TOKEN-LOCAL-CLAIMS` cobre a mesma divergência.
 - **bloqueia:** não bloqueia o gate (sem efeito de autorização medido).
 - **teste de encerramento:** login de cada um dos 9 papéis → o token decodificado traz `tenant_id` e `tenant_role` (e `tenant_roles`/`permissions`/`scope` como o contrato define); vermelho-controle: remover a claim do emissor deixa o teste vermelho. **Ou** o `RBAC_MATRIX.md`/`CLAUDE.md` §2.4 é emendado para descrever o que o sistema faz — e aí a decisão é do dono, não do bloco.
 
@@ -10235,7 +10238,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-05-SUITE-DB-SOB-PAPEL-REAL (2026-10-03) — suíte de banco ainda roda majoritariamente como administrador — ALTA
 
-- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-ARNES-2`.
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** `B-ARNES-3` (o sucessor do `B-ARNES-2`, #442, já na `main`; ressalva 2 do porteiro-545b).
 - Rodar a suíte `-db` inteira sob papel real fecha o residual semântico do ratchet: hoje 13 suítes escrevem catálogo, 8 fazem DDL e 10 usam helpers. O `SUITES` de `backend-postgres` também pertence a esse bloco.
 - **sub-item medido no B-SAN3-05/ciclo 2:** os 9 jobs do registro runtime fora da superfície de plataforma — `aws-cur.import-cost-file`, `checklist-attachment-postprocess`, `notification-dispatch`, `notifications.scan-due`, `audit-log-fanout`, `field-ops-event-fanout`, `impound.reconcile-removals`, `charging.accrue-daily` e `impound.notify-due` — ainda não têm diferencial sob papel `NOSUPERUSER NOBYPASSRLS`. O inventário estático não acusa chave em `notifications` nem `charging`, mas só a execução fecha um envoltório que deixe de setar GUC.
 - **recomendação ao dono:** o Ato 2 em produção (troca do `DATABASE_URL` do app para `erp_runtime`) espera a medida desses 9 jobs ou é decidido em ata com o risco explícito; `charging.accrue-daily` toca dinheiro.
@@ -10576,7 +10579,8 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA (2026-10-09) — módulos por organização não têm fluxo real — MÉDIA
 
-- status: ABERTA.
+- status: FECHADA (2026-11-11, PR #544, squash `fd51409c` — a "porta que finge gravar" passou a recusar 409 `module_change_requires_subscription`; ressalva 3 do porteiro-544).
+- status anterior: ABERTA.
 - **prova:** `/platform/tenants/:id/modules` permanece sem link no menu e usa o repositório em memória.
 - **dono:** `B-SAN3-18`.
 - **bloqueia:** não.
@@ -11346,6 +11350,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento:** a causa nomeada por execução, ou N ≥ 20 rodadas do arquivo concorrendo com a suíte sem
   falha.
+- **nova ocorrência (2026-11-12, PR #542):** o run `43175128180` (push, head `72866b87` do #542) falhou no B16 — intermitente conhecido; as duas rodadas dos heads `3acac2ee` e `6c278b84` passaram. Fonte: `REGISTRO-PENDENTE.md` 12/11 04:43.
 - **nova ocorrência (2026-11-02, PR #481):** o run `41386712734`, job `backend` `125089109273`, head `6cea5f3f`, falhou no B16 (`not ok 1772`) e fechou com 4157 testes, 4154 passados, 1 falha e 2 pulados. O head seguinte `c6f74bc3` ficou verde no run `41388491930`, job `backend` `125094505662`. Fonte: `gh run list --branch chore/kpi-marco-2026-11-02 --limit 5`; logs e JSON de `gh run view` desses runs/jobs.
 
 ## P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (2026-10-17) — atribuir pela web uma OS que tem despacho ativo em outro técnico deixa OS e despacho divergentes — MÉDIA (permissão)
@@ -13378,7 +13383,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-08-APPROVE-OS-NAO-ATOMICA (2026-11-11) — falha no meio da aprovação gera OS em dobro ou órfã — MÉDIA (entra no portão, item 7)
 
-- **status:** ABERTA · **gravidade:** MÉDIA, com proposta de subir um nível se a OS derivada puder ser faturada (emenda 1 do `B-SAN3-08`, §5; achado A3 do parecer `crit-08-cl`) · **escopo:** anterior ao bloco; a compensação de `service-quote.service.ts:302-311` e o `WorkOrderService.create`, que grava a OS e o evento em chamadas separadas · **dono:** `B-O6R-09` (item 7 do portão), por decisão do dono `D-PORTAO-3-RECOMENDACOES-1111` Q1 (c), 11/11 01:50 SP: entra no portão, fundida ao `B-O6R-09` · **PR-alvo:** o PR do `B-O6R-09` · **bloqueia:** o item 7 do portão (pela fusão), não o `B-SAN3-08`.
+- **status:** FECHADA (2026-11-11, PR #537, squash `81fb7d27` — ressalva 1 do porteiro-537b).
+- **status anterior:** ABERTA · **gravidade:** MÉDIA, com proposta de subir um nível se a OS derivada puder ser faturada (emenda 1 do `B-SAN3-08`, §5; achado A3 do parecer `crit-08-cl`) · **escopo:** anterior ao bloco; a compensação de `service-quote.service.ts:302-311` e o `WorkOrderService.create`, que grava a OS e o evento em chamadas separadas · **dono:** `B-O6R-09` (item 7 do portão), por decisão do dono `D-PORTAO-3-RECOMENDACOES-1111` Q1 (c), 11/11 01:50 SP: entra no portão, fundida ao `B-O6R-09` · **PR-alvo:** o PR do `B-O6R-09` · **bloqueia:** o item 7 do portão (pela fusão), não o `B-SAN3-08`.
 - **fato (sondas E e F do parecer `crit-08-cl`, em memória):** (E) o evento falha depois de a OS ser gravada → o orçamento volta a `draft` com a OS já existente, e a nova tentativa cria a 2ª OS (`os_total = 2`); (F) falha a gravação do `createdWorkOrderId` → OS órfã e orçamento em `approved` sem OS, e a nova tentativa volta `409 quote_not_approvable`. Mesma classe do `Ω6R-ARQ-004`. O diálogo do `B-SAN3-08` diz isso honestamente no desfecho 5xx ("confira na lista de ordens de serviço se a OS foi criada").
 - **correção do plano v1 do `B-SAN3-08`:** o §5 ("perda de dado sem volta: não") e o rollback do §8 ("não gera dado órfão") valem para a recusa por validação, não para a falha no meio.
 - **critério de encerramento:** criar a OS, gravar o evento e gravar o `createdWorkOrderId` é atômico, ou idempotente pelo orçamento; testes com falha injetada em cada passo, em memória e em Prisma, com no máximo 1 OS por orçamento e nunca `approved` sem OS; vermelho-controle no head-base que reproduz (E) e (F).
@@ -13623,8 +13629,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-07-SENTINELA-SEM-GUARDA (2026-11-11) — o P3 do `B-SAN3-07` passa em vazio se o seed parar de gravar a sentinela — BAIXA (gravidade: leitura do redator)
 
-- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): a cadeira diz "não grave", e o caso exige falha dupla · **escopo:** dentro do bloco `B-SAN3-07` (#535; a porta do P3 pela sentinela `seed.initialized` nasceu no commit `14efda50`, Emenda 2) · **dono:** `B-SAN3-19b` (dono do resíduo do item 47), pela triagem do orquestrador (`LEITURA-ORQ-1111-TRIAGEM-J535`) · **PR-alvo:** o PR do `B-SAN3-19b` · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): a cadeira diz "não grave", e o caso exige falha dupla · **escopo:** dentro do bloco `B-SAN3-07` (#535; a porta do P3 pela sentinela `seed.initialized` nasceu no commit `14efda50`, Emenda 2) · **dono:** `B-ARNES-3` · **PR-alvo:** o PR do `B-ARNES-3` · **bloqueia:** não.
 - **origem:** C2-01 da cadeira C2 da junta do #535 (APROVADO; `revisoes/j535/c2-voto.json`, fora do repositório).
+- **nota do porteiro-535 (c):** o dono `B-SAN3-19b` não tem `tests/permission-catalog-db-parity.test.ts` nem `ci.yml` na fronteira (o #540 não os toca). Saídas: uma ampliação nominal declarada, ou outro dono com o arquivo na fronteira — candidato o `B-SAN3-18`, próximo na trava de `prisma/seed.ts`.
 - **fato:** com o seed mutado para não gravar `seed.initialized` e a organização demo de volta a "Tenant Demo", a paridade dá `# P3 não se aplica: a base não tem a sentinela do seed`, `# fail 0`. Nada exige que a sentinela exista na base em que o seed sempre roda (o job `backend-postgres` prepara a base com `migrate deploy` + `db:seed`).
 - **critério de encerramento:** a base do job que roda o seed exige a sentinela (ou outro sinal de "base semeada" escolhido no `B-SAN3-19b`), e a mutação acima fica vermelha.
 
@@ -13821,9 +13828,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
-  não muda permissão) · **dono (provisório, Emenda 3 do plano do `B-SAN3-19b`):** um bloco próprio de permissão do
-  app, com junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o backend local; vale até a
-  resposta do dono à Pergunta 2 (recomendação (a): entrar no portão) · **bloqueia:** a decidir na Pergunta 2.
+  não muda permissão) · **dono (Emenda 3 do plano do `B-SAN3-19b`; a resposta do dono à Pergunta 2 veio (a) em 11/11):** um bloco próprio de permissão do
+  app, com junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o backend local · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
 - **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
 - **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
   crítica r2 executou `isValidPermission`/`getRolePermissions` em `07898adf`: inválidas e sem papel; as linhas de
@@ -13844,6 +13850,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   Diagnóstico ficam bloqueados para todo perfil. No app de demonstração local, Aprovações e Estoque abrem e Checklists e
   Diagnóstico ficam bloqueados. O `B-SAN3-19b` pôs nessas 4 telas um texto verdadeiro e neutro ("Esta área ainda não
   está disponível no aplicativo."), sem "fale com o administrador", e o T9 do 19b prende isso ao catálogo.
+- **nota do porteiro-540 (item 4):** o dono respondeu (a) na `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP) — a pendência entra no portão como item novo, com bloco próprio de permissão do app, e o `bloqueia` deixa de ser "a decidir na Pergunta 2". O item novo no `PLANO_SAN3` fica para um PR do orquestrador (fora do PERMITIDO deste registro).
 - **teste de encerramento:** cada gate de tela e de botão do app usa uma chave que `isValidPermission` aceita e que
   algum papel recebe, com teste que lê o catálogo; o T9 do `B-SAN3-19b` passa a exigir "Fale com o administrador da
   sua organização." nas 4 telas (a tabela dele vira 11/11 no catálogo).
@@ -14041,7 +14048,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-18-NAV-PROVISIONING-LISTA-LITERAL (2026-11-11) — `tests/navigation-provisioning.test.ts` afirma Pátios e Telemetria sem módulo — ALTA (bloqueia a bateria do bloco)
 
-- **status:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-18`, depois da emenda que põe o arquivo no PERMITIDO · **bloqueia:** a bateria verde do `B-SAN3-18`.
+- **status:** FECHADA (2026-11-11, PR #544, squash `fd51409c` — o teste lê `DEMO_TENANT_MODULES` e passa 94/94; ressalva 2 do porteiro-544).
+- **status anterior:** ABERTA · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-18`, depois da emenda que põe o arquivo no PERMITIDO · **bloqueia:** a bateria verde do `B-SAN3-18`.
 - **prova:** o teste (não é JWT; fora do PERMITIDO do plano v2) monta o menu com uma lista LITERAL de módulos (l.11-14) sem `telemetry` nem `patios` e afirma que os papéis com a permissão VEEM os 11 itens de Pátios e Telemetria — exatamente o comportamento que o item 16 muda. Medido no ramo `fix/gate-de-modulo-no-backend`: 40 `not ok`, todos nesse arquivo.
 - **teste de encerramento:** a lista do teste passa a incluir as chaves novas (ou é lida de `DEMO_TENANT_MODULES`, como faz `tests/san3-04a-menu-front-x-catalogo.test.ts`), e o arquivo fica verde.
 
@@ -14218,14 +14226,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-AMBIENTE-VAULT-ROUTES-SOB-CARGA (2026-11-11) — `npm test` local trava em `ass-05-vault-routes` sob carga paralela no Windows — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente Windows) · **dono:** a atribuir (ambiente/CI) · **PR-alvo:** a definir · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente Windows) · **dono:** `B-SAN3-CI-AMBIENTE` (nomeado pela CONF545B-01, ressalva do porteiro-545b) · **PR-alvo:** a planejar · **bloqueia:** não.
 - **origem:** C3-ENV-01 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c3-voto.json`).
 - **fato:** `npm test` local (Windows, `CORE_SAAS_PERSISTENCE=memory`, sem `DATABASE_URL`) trava em `tests/ass-05-vault-routes.test.ts`: o `T-VLT-5` chama `startServer` que espera `"PORT "` por 30 s (linhas 49–52) e, sob carga paralela, o subprocesso não imprime a tempo (`sem "PORT " em 30 s`) e vaza, deixando o arquivo sem drenar o event loop. Isolado, o arquivo passa (`# tests 5 # pass 5`). Não é bug do bloco.
 - **critério de encerramento:** o `npm test` local roda inteiro no Windows sob carga paralela, com o arnês do `T-VLT-5` drenando o subprocesso e sem timeout falso.
 
 ## P-AMBIENTE-DART-LOCAL-DIVERGE (2026-11-11) — `dart format` local diverge só no `bsan313` (Dart 3.11.4 local × Flutter 3.47.5 da CI) — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente, versão do Dart) · **dono:** a atribuir (ambiente/CI) · **PR-alvo:** a definir · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (ambiente, versão do Dart) · **dono:** `B-SAN3-CI-AMBIENTE` (nomeado pela CONF545B-01, ressalva do porteiro-545b) · **PR-alvo:** a planejar · **bloqueia:** não.
 - **origem:** C3-ENV-02 da J-545 (PR #545, `B-O6R-11d`, `revisoes/j545/c3-voto.json`).
 - **fato:** `dart format --output=none --set-exit-if-changed lib test` local sai ec=1 somente por `test/features/bsan313_minhas_os_escopo_test.dart` (fora do bloco, idêntico à `origin/main`; Dart local 3.11.4 × Flutter 3.47.5 fixado na CI). Os arquivos do bloco não têm mudança.
 - **critério de encerramento:** o `dart format` local de `lib test` fica verde na versão do Flutter da CI (ou o arquivo é formatado na versão da CI), sem tocar em arquivo do bloco.
@@ -14354,3 +14362,170 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA (C3-02 da J-543: laço de reconexão limitado, não de refresh) · **escopo:** `pre-existente` (`git diff --name-only f5b79026..HEAD -- frontend mobile` → 0 arquivos no `B-USERS-SEG-DESATIVADO`; `REALTIME_RECONNECT_MS = 10_000` em `frontend/src/modules/operations/map/useOperationsMap.ts:10` vem de blocos anteriores) · **dono:** o próximo bloco que mexer no mapa de operações · **PR-alvo:** esse mesmo bloco · **bloqueia:** não.
 - **origem:** achado C3-02 da J-543 (PR #543). Com a sessão encerrada, o servidor fecha o stream, e o mapa reconecta a cada 10 s com o mesmo token (fetch cru, sem refresh) até o polling de 30 s limpar a sessão. Vizinha da `P-SSE-SEGUE-APOS-VENCER-TOKEN`.
 - **critério de encerramento:** o mapa para de reconectar quando recebe 401 de sessão encerrada (ou reconecta só com token renovado), provado por teste.
+
+## P-DB-FUSO-DA-CONEXAO (2026-11-12) — toda data gravada pelo Prisma pode ficar deslocada pelo offset do fuso da conexão — ALTA (sistêmica, sem bloqueio hoje)
+
+- **status:** ABERTA · **gravidade:** ALTA (sistêmica) · **escopo:** `pre-existente` (`@prisma/adapter-pg` 7.8.0, `src/database/prisma.ts:15`, `.env.example:12`) · **dono:** `B-DB-FUSO-UTC` (a abrir; o plano espera o sim do dono) · **PR-alvo:** a planejar · **bloqueia:** não (hoje).
+- **origem:** investigação `inv-543-fuso` (registro `REGISTRO-PENDENTE.md`, 12/11 07:37), desdobramento do T8 que o porteiro do #543 chamou de incidente.
+- **fato:** o `@prisma/adapter-pg` manda todo `Date` como texto UTC sem sufixo de fuso, e o Postgres o lê no `TimeZone` da sessão. Num banco fora de UTC, toda data gravada pelo Prisma fica deslocada pelo offset (+3 h em SP). O T8 (sessão vencida → 401) dá 200 com o banco em `America/Sao_Paulo` e 401 em UTC. O `docker-compose.prod.yml` (postgres:16, UTC) e o RDS padrão (UTC, não medido) não disparam; no portão a janela extra efetiva é `min(3 h, vida do token de acesso)`. Pontos que misturam `now()` do banco com data do Prisma: `charge-prisma.repository.ts:150`, `local-auth-credential.repository.ts:152`, `traccar-ingestion.repository.ts:143,199`, `work-order-prisma.repository.ts:210,262,265,511`, `financial-title-prisma.repository.ts:133,167,169,215,238` e outros (lista em `revisoes/j543/inv-fuso/inv-543-fuso.json`).
+- **critério de encerramento:** fixar o `TimeZone` da conexão em UTC (pool `pg` / `DATABASE_URL`) e travar o boot de produção quando `SHOW timezone` ≠ UTC (fail-closed, no molde do `runtime-role`), com teste `-db` sob `America/Sao_Paulo`.
+
+## P-15A-F4UI-TELA-SEM-DONO (2026-11-12) — a F4ui do estoque do técnico (tela contra a maquete de 3 opções) não tem pendência dona — BAIXA
+
+- **status:** FECHADA (2026-11-12, neste PR #550) — dono nomeado: `B-SAN3-15a-tela` (a F4ui: a maquete das 3 aparências e a tela conferida contra ela; só o Claude, `D-DESIGN-SO-CLAUDE`).
+- **status anterior:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-SAN3-15a` (#548; a F4ui fica fora da junta) · **dono:** sem dono nomeado (só o genérico `D-TELAS-SAEM-COM-TRES` / `P-APARENCIA-POR-USUARIO`) · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** ressalva do porteiro do #548 (`porteiro-548-dp`). A maquete `docs/claude-code-handoff/screen-refs/prestador-atendimento-3opcoes.reference.html` não existe na `main` e não está no diff do #548.
+- **fato:** a tela do estoque do técnico deve ser conferida contra a maquete de 3 opções (`D-TELAS-SAEM-COM-TRES`), e hoje nenhuma pendência nomeia esse trabalho com dono.
+- **critério de encerramento:** maquete de 3 opções aprovada e a tela conferida contra ela, com dono nomeado.
+
+## P-REG-CONF542-01 (2026-11-12) — o erro do parser de CUR diz "data row N" (a linha de dados), não a linha física — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-ASS-09a` (#542) · **dono:** `B-ASS-09` (o resto do item 61, na trilha do rateio) · **PR-alvo:** o PR do `B-ASS-09` · **bloqueia:** não.
+- **origem:** CONF542-01 da conferência `conf-542` (ressalva do porteiro do #542, `porteiro-542-dp`).
+- **fato:** `src/modules/cloud-costs/aws-cur.parser.ts:51` (`at data row ${rowNumber}`), `tests/ass-09a-rateio-automatico.test.ts:1068`, `tests/ass-09a-rateio-automatico-db.test.ts:621`, `tests/aws-cur-cost-routes.test.ts:94,108` e `docs/cloud-cost-allocation.md:112-113` já dizem "data row N"; o doc e o T-E41-1r ficam coerentes.
+- **critério de encerramento:** pendência de texto registrada (esta entrada), sem mudança de código.
+
+## P-534-SONDAS-C1-FORA-DO-REPO (2026-11-12) — as sondas da C1 do #534 ficaram fora do repositório — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** processo de junta · **dono:** o próximo PR de registro · **PR-alvo:** o próximo PR de registro · **bloqueia:** não.
+- **origem:** CONF534B-01 da conferência da junção #534 × #536 (`conf-534b-api`; ressalva do porteiro do #534).
+- **fato:** as sondas da C1 ficaram fora do repositório, e o P3 foi refeito por sonda própria do conferente.
+- **critério de encerramento:** as sondas da C1 (ou o equivalente versionado) entram no repositório com o teste.
+
+## P-534-JUNCAO-SO-EM-MEMORIA (2026-11-12) — T-JUNCAO, -b e -c rodam só em memória — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** cobertura · **dono:** `B-ARNES-3` (bloco de arnês, a abrir) · **PR-alvo:** o PR do `B-ARNES-3` · **bloqueia:** não.
+- **origem:** CONF534B-02 da conferência da junção #534 × #536 (`conf-534b-api`; ressalva do porteiro do #534).
+- **fato:** T-JUNCAO, -b e -c rodam só em memória; a ordem no Prisma é coberta pelo G1c.
+- **critério de encerramento:** os testes da junção ganham forma `-db` (ou a cobertura Prisma fica provada por outro guard).
+
+## P-534-ARNES-AS-NEVER (2026-11-12) — `as never` no arnês do `b-san3-23-cas-retentativa` — BAIXA (cosmético)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** cosmético · **dono:** `B-ARNES-3` · **PR-alvo:** o PR do `B-ARNES-3` · **bloqueia:** não.
+- **origem:** CONF534B-03 da conferência da junção #534 × #536 (`conf-534b-api`; ressalva do porteiro do #534).
+- **fato:** `as never` no arnês do `b-san3-23-cas-retentativa`.
+- **critério de encerramento:** o `as never` sai ou é justificado.
+
+## P-B-O6R-09-ARNES-XX000-GRANT (2026-11-12) — 1 rodada em 44 deu XX000 "tuple concurrently deleted" no GRANT do arnês — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (não grave) · **escopo:** arnês (`createEphemeralRole`) · **dono:** `B-ARNES-3` · **PR-alvo:** o PR do `B-ARNES-3` · **bloqueia:** não.
+- **origem:** CONF537-01 da conferência `conf-537` (ressalva 2 do `porteiro-537b`).
+- **fato:** 1 rodada em 44 deu `not ok 60 [Q4]`, com `XX000` "tuple concurrently deleted" no `GRANT … ON ALL TABLES IN SCHEMA public` do `createEphemeralRole`. É outra classe, não o 40P01.
+- **critério de encerramento:** o `GRANT` do arnês é robusto à corrida de catálogo (com teste), ou a causa é nomeada.
+## P-MOBILE-BOTAO-DESABILITADO-PARECE-ATIVO (2026-11-12) — botão desabilitado parece ativo no app — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (anterior ao bloco) · **dono:** `B-SAN3-19c` (a abrir; continua o 19b, os textos e estados do app) · **PR-alvo:** o PR do `B-SAN3-19c` · **bloqueia:** não.
+- **origem:** C2-01 da J-540 (PR #540, `B-SAN3-19b`; ressalva do `porteiro-540`).
+- **fato:** o botão desabilitado parece ativo (C2-01 da cadeira `cognicao-visual`).
+- **critério de encerramento:** o estado desabilitado fica visualmente distinto, com o padrão do design system.
+
+## P-MOBILE-T9-PRESENCA-DE-TEXTO (2026-11-12) — o T9 mede presença de texto, não o que a frase promete — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-SAN3-19b` · **dono:** `B-SAN3-19c` (a abrir; continua o 19b, os textos e estados do app) · **PR-alvo:** o PR do `B-SAN3-19c` · **bloqueia:** não.
+- **origem:** C2-02 da J-540 (PR #540, `B-SAN3-19b`; ressalva do `porteiro-540`).
+- **fato:** o T9 mede presença de texto, não o que a frase promete.
+- **critério de encerramento:** o T9 mede o que a frase promete (ou a frase é corrigida).
+
+## P-MOBILE-HOME-DEMO-EXEMPLO (2026-11-12) — "Exemplo" na home de demonstração do app — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (anterior ao bloco) · **dono:** `B-SAN3-19c` (a abrir; continua o 19b, os textos e estados do app) · **PR-alvo:** o PR do `B-SAN3-19c` · **bloqueia:** não.
+- **origem:** C2-04 da J-540 (PR #540, `B-SAN3-19b`; ressalva do `porteiro-540`).
+- **fato:** "Exemplo" aparece na home de demonstração do app.
+- **critério de encerramento:** a home de demonstração não mostra "Exemplo" (ou o texto vira dado de demo declarado).
+
+## P-MOBILE-TEXTO-TECNICO-INTERPOLADO (2026-11-12) — mensagens de exceção com `$e` cru (interpolação) que o T6 não vê — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a classe veio da crítica r2; a Emenda 2.2 a atribui ao PR de registro) · **dono:** `B-SAN3-19c` (a abrir; continua o 19b, os textos e estados do app) · **PR-alvo:** o PR do `B-SAN3-19c` · **bloqueia:** não.
+- **origem:** Emenda 2 do plano do `B-SAN3-19b` (registro 08:20 de 11/11) e PORT540-09 do `porteiro-540`: a sonda própria achou 2 mensagens da classe em `checklist_repository.dart:664-665` e `work_order_repository.dart:884`.
+- **fato:** 4 SnackBars (e mensagens de exceção) interpolam `$e` cru, que o T6 não vê porque a âncora é literal.
+- **critério de encerramento:** nenhuma mensagem de exceção exibe o erro técnico cru; o usuário vê a frase de negócio (ou a guarda passa a cobrir interpolação).
+
+## P-MOBILE-IDENTIFICADOR-CRU-NA-TELA (2026-11-12) — duas telas exibem identificador interno cru (id de categoria em inglês; "Checklist: cl-seed-1") — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (PR540-05 da pré-revisão do #540; `git blame` e79616aa4, 2026-06-13) · **dono:** `B-SAN3-19c` (a abrir; continua o 19b, os textos e estados do app) · **PR-alvo:** o PR do `B-SAN3-19c` · **bloqueia:** não.
+- **origem:** PR540-05 da pré-revisão do #540 (registro 08:51 de 11/11, item 05).
+- **fato:** no detalhe e no envio da prestação de contas aparece o id da categoria em inglês (`meal · Restaurante Demo`) embora a categoria tenha rótulo (`Alimentacao`); na execução da OS aparece `Checklist: ${data.wo.checklistId}` (`cl-seed-1`). A T6 não vê porque vem por interpolação.
+- **critério de encerramento:** nenhum id/enum interno cru vai à tela; os dois pontos exibem o rótulo de negócio.
+
+## P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS (2026-11-12) — a limpeza do `san3-08` varre tabelas que a suíte irmã `san3-05` criou em paralelo — FECHADA pelo #541
+
+- **status:** FECHADA (2026-11-11, PR #541, squash `da12fec6` — a limpeza passou a tolerar a tabela de suíte irmã que some no meio; 3 rodadas de push do backend sem a falha).
+- **origem:** PR540-06 da pré-revisão do #540 (registro 08:51 de 11/11, item 06; a falha intermitente entre suítes já caíra em 3 PRs). O #541 (só teste, sem porteiro) fecha a pendência.
+- **fato:** o `sweepTenant` de `tests/san3-08-financeiro-cria-orcamento-db.test.ts:313` achou resíduo `s305_c4_*` criado por `tests/san3-05-runtime-role-guard-db.test.ts:134-135` rodando em paralelo no mesmo banco; o erro era "limpeza da organização do teste não terminou".
+- **critério de encerramento:** 3 rodadas de push do backend sem a falha intermitente (medido no #541).
+
+## P-J539-C1-01 (2026-11-12) — a catraca do regime deixa passar uma condição viva no WHERE que para as diárias de processo aberto — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-O6R-12` (#539) · **dono:** `B-O6R-12b` (a abrir; continua o regime do pátio, #539) · **PR-alvo:** o PR do `B-O6R-12b` · **bloqueia:** não.
+- **origem:** achado J539-C1-01 da C1 da J-539 (dinheiro; dívida de registro R1 do `porteiro-539`).
+- **fato:** a C22 só inspeciona a lista do SELECT de `loadAccrualContext`, e a C10 aceita a linha do JOIN em `jurisdiction_profiles` como allowlist; uma condição viva no WHERE faz a edição do perfil (desativar) parar as diárias de processo aberto (extrato 404, liberação `undefined`). Nenhuma guarda nem suíte detecta.
+- **critério de encerramento:** guarda que detecta condição viva no WHERE/ORDER/CASE do caminho do dinheiro (mutação literal vermelha), ou a catraca passa a cobrir a linha viva `jp`.
+
+## P-J539-C1-02 (2026-11-12) — a catraca R1–R4 não pega a relação fluente `.profile()`, a porta `get(` nem o delegate desestruturado — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-O6R-12` (#539) · **dono:** `B-O6R-12b` (a abrir; continua o regime do pátio, #539) · **PR-alvo:** o PR do `B-O6R-12b` · **bloqueia:** não.
+- **origem:** achado J539-C1-02 da C1 da J-539 (dívida de registro R1 do `porteiro-539`).
+- **fato:** o cabeçalho da catraca promete que "leitor novo do perfil vivo, em qualquer módulo e com qualquer alias, deixa isto vermelho", mas a execução mostra o contrário: `.profile()` do Prisma, a porta `get(` do `JurisdictionService` (o módulo é excluído da varredura) e o delegate desestruturado passam sem ficar vermelhos.
+- **critério de encerramento:** a catraca cobre as três formas (ou o plano declara que são aceitas com justificativa).
+## P-J539-C1-03 (2026-11-12) — escopo e prazos que o gate de leilão lê da cópia não têm teste que execute a edição — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-O6R-12` (#539) · **dono:** `B-O6R-12b` (a abrir; continua o regime do pátio, #539) · **PR-alvo:** o PR do `B-O6R-12b` · **bloqueia:** não.
+- **origem:** achado J539-C1-03 da C1 da J-539 (dívida de registro R1 do `porteiro-539`).
+- **fato:** o C20c só edita `auction_eligible_day`; o escopo e os 2 prazos que o gate de leilão também lê da cópia não têm teste que execute a edição. Uma leitura viva desses campos, na forma que a catraca não vê (J539-C1-02), passa pela suíte do bloco e pelas 76 de leilão.
+- **critério de encerramento:** teste que executa a edição do escopo e dos 2 prazos com mutação, ou a cobertura é declarada suficiente no plano.
+
+## P-J539-C2-01 (2026-11-12) — a premissa "a abertura NÃO espera o PATCH" é falsa quando o PATCH muda `name` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-O6R-12` (#539) · **dono:** `B-O6R-12b` (a abrir; continua o regime do pátio, #539) · **PR-alvo:** o PR do `B-O6R-12b` · **bloqueia:** não.
+- **origem:** achado C2-01 da C2 da J-539 (dívida de registro R1 do `porteiro-539`).
+- **fato:** o UPDATE de uma coluna de índice único usável por FK toma trava de linha `FOR UPDATE`, e a FK da abertura (`FOR KEY SHARE`) espera: o processo confirma depois do PATCH, com o regime de antes dele. O teste E1.8′ só exercita `dailyCap`, então não pega. Não erra valor (o regime gravado é o perfil confirmado no carimbo).
+- **critério de encerramento:** o teste cobre o PATCH que muda `name` (ou a premissa da E1.8′ é corrigida no plano).
+
+## P-J539-C2-03 (2026-11-12) — a allowlist afirma "dentro de `withRoleCatalogLock`" e nenhuma máquina confere — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a classe é a do escape (c) da catraca) · **dono:** `B-ARNES-3` · **PR-alvo:** o PR do `B-ARNES-3` · **bloqueia:** não.
+- **origem:** achado C2-03 da C2 da J-539 (dívida de registro R1 do `porteiro-539`).
+- **fato:** a razão da entrada nova da allowlist afirma "CREATE ROLE 1 e DROP ROLE 1 … dentro de `withRoleCatalogLock`", e a catraca só conta palavras; a propriedade que justifica a entrada pode regredir em silêncio.
+- **critério de encerramento:** máquina que confere a razão da allowlist (ou a entrada vira guarda executável).
+
+## P-J539-CONF539-OBS-1 (2026-11-12) — os testes versionados C2-02/C3-02 e C3-01 rodam como superusuário, sem o caminho RLS — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** cobertura (`pre-existente` de forma: o repositório sem RLS é a forma da CI) · **dono:** `B-ARNES-3` · **PR-alvo:** o PR do `B-ARNES-3` · **bloqueia:** não.
+- **origem:** CONF539-OBS-1 da conferência `conf-539` (dívida de registro R1 do `porteiro-539`).
+- **fato:** os testes versionados C2-02/C3-02 e C3-01 rodam como o usuário de `DATABASE_URL` (superusuário na CI), pelo repositório sem RLS; só a sonda descartável do verificador cobriu o caminho RLS.
+- **critério de encerramento:** esses testes rodam (ou têm uma variante que roda) sob papel `NOSUPERUSER NOBYPASSRLS`.
+
+## P-CI-537-COMENTARIO-7-SUITES (2026-11-12) — o comentário do `ci.yml` diz "7 suítes / 45 casos", mas são 9 suítes e 62 casos (DP537-01) — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (cosmético) · **escopo:** `.github/workflows/ci.yml` (PROIBIDO sem ordem do dono) · **dono:** o próximo PR que o dono autorizar em `.github/**` · **PR-alvo:** o próximo PR que o dono autorizar em `.github/**` · **bloqueia:** não.
+- **origem:** ressalva 5 do `porteiro-537b` (DP537-01).
+- **fato:** o comentário do `ci.yml` ainda diz "7 suítes … 45 casos"; o merge do #537 deixou 9 suítes e 62 casos. É cosmético, e o arquivo está fora do PERMITIDO de qualquer bloco sem ordem do dono.
+- **critério de encerramento:** o comentário passa a dizer 9 suítes / 62 casos, em PR autorizado pelo dono.
+
+## P-FERR-INITDB-WINDOWS-FUSO-E-ENCODING (2026-11-12) — cluster criado com `initdb` no Windows nasce WIN1252 e em `America/Sao_Paulo` — BAIXA (ferramenta)
+
+- **status:** ABERTA · **gravidade:** BAIXA (ferramenta de terreno) · **escopo:** scripts/arnês dos agentes no Windows · **dono:** `B-FERR-AGENTES` (ferramentas dos agentes, fora do produto) · **PR-alvo:** o PR do `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** lição de terreno do porteiro do #543 (`dp-543.md`, "Incidentes de terreno") e do `inv-543-fuso`.
+- **fato:** o primeiro cluster nasceu WIN1252 e a migração `20260717000000_add_inventory_core` falhou (E22P05); recriado com `initdb -E UTF8 --locale=C`. Depois o T8 falhou porque o adapter Prisma lia `timestamptz` deslocado 3 h (`America/Sao_Paulo`); corrigido com `timezone='UTC'` + `pg_reload_conf`. A lição operacional (sem código) está em `decisoes.md` (`LEITURA-ORQ-1211-INITDB-UTC-UTF8`).
+- **critério de encerramento:** o arnês/script que cria o cluster grava `timezone='UTC'` e usa `--encoding=UTF8 --locale=C`, com a ordem documentada.
+
+## P-C4-02-MENU-TECNICO-403 (2026-11-12) — o menu do técnico mostra Seguros e Estoque, que dão 403 — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (idêntico na base de staging do `b6caf568`) · **dono:** `B-SAN3-06a` (já dono do `P-SAN3-04A-MENU-RESIDUAL`) · **PR-alvo:** o PR do `B-SAN3-06a` · **bloqueia:** não.
+- **origem:** achado C4-02 da J-535 (cadeira `coordenador-de-acessos`); ressalva (a) do `porteiro-535`.
+- **fato:** o `field_technician` vê Seguros (`/fleet/insurance`) e Estoque (`/inventory`) no menu, o guard nega e o backend responde 403; é a mesma classe da `P-SAN3-04A-MENU-RESIDUAL` (operator e técnico fundidos em "Operador Logistico"), registrada aqui como entrada própria por ordem do porteiro.
+- **critério de encerramento:** o menu não mostra item que a rota nega (ou o rótulo/papel é corrigido), com teste de menu × backend.
+
+## P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA (2026-11-12) — `logistics`, `users` e `audit` provisionados sem item com rota; Configurações escondida por módulo não provisionado — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o gate de módulo e `DEMO_TENANT_MODULES` pertencem ao `B-SAN3-18`) · **dono:** `B-SAN3-06a` (já dono do `P-SAN3-04A-MENU-RESIDUAL`) · **PR-alvo:** o PR do `B-SAN3-06a` · **bloqueia:** não.
+- **origem:** achado C4-04 da J-535 (relato do critério 3 do corpo); ressalva (a) do `porteiro-535`.
+- **fato:** `logistics`, `users` e `audit` estão provisionados sem item implementado com rota no front (registry `/logistics*` planned; `/administrator/users` planned; `/administrator/audit` backend-ready sem rota); e Configurações (`/administrator/settings`) fica escondida de todos porque o registry exige o módulo `tenant-admin`, não provisionado, enquanto `GET /tenant-settings` responde 200 a tenant_admin, manager, auditor e super_admin.
+- **critério de encerramento:** módulo provisionado tem item/rota implementado (ou a provisão é corrigida), e Configurações respeita a provisão sem esconder rota autorizada.
+
+## P-PORTAO-ITEM-GATE-CHAVE (2026-11-12) — acrescentar a P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO como item novo do portão (§4.1)? — decisão do dono
+
+- **status:** ABERTA · **gravidade:** decisão do dono · **escopo:** `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1 (o item novo não entra neste PR; acrescentá-lo muda o denominador de 64 e o `mvp_vendavel`) · **dono:** o dono · **PR-alvo:** o PR de registro após a decisão · **bloqueia:** não (hoje).
+- **pergunta ao dono:** a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` entra no §4.1 como item novo do portão, com bloco próprio de permissão do app? A resposta (a) da `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP) disse que sim, mas acrescentar o item muda o denominador de 64 para 65 e mexe no `mvp_vendavel`.
+- **recomendação:** decidir antes do próximo marco.
+- **origem:** ressalva (item 4) do `porteiro-540`; o item não entra no `PLANO_SAN3` neste PR (decisão do orquestrador, `donos-1211.md`).
