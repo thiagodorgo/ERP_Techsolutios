@@ -349,14 +349,21 @@ async function comGatilho(c: Cenario, tabela: "work_order_events" | "work_order_
     tabela === "work_order_events"
       ? `NEW.event_type = 'work_order_assigned' AND NEW.tenant_id = '${c.tenantId}'::uuid`
       : `NEW.tenant_id = '${c.tenantId}'::uuid`;
-  await c.client.$executeRawUnsafe(`CREATE FUNCTION ${nome}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN RAISE EXCEPTION '${marca}'; END $f$`);
+  // B-O6R-09 · Emenda 4 (R-ARN-6, condição medida: um DDL `o6r07cb1_inj_*` esperou 387 ms > HARNESS_DDL_LOCK_TIMEOUT_MS na
+  // rodada 10 do R-ARN-5) — o DDL do gatilho pelo `runHarnessDdl`, e o DROP do `finally` que não engole. Nenhuma asserção
+  // muda; o import fica dentro da função para o diff do arquivo ficar no `comGatilho`.
+  const { dropHarnessObjects, runHarnessDdl } = await import("./helpers/pg-barrier.js");
+  await runHarnessDdl(c.client, `CREATE FUNCTION ${nome}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN RAISE EXCEPTION '${marca}'; END $f$`);
+  let erroDoCorpo: unknown;
   try {
-    await c.client.$executeRawUnsafe(`CREATE TRIGGER ${nome} BEFORE INSERT ON ${tabela} FOR EACH ROW WHEN (${quando}) EXECUTE FUNCTION ${nome}()`);
+    await runHarnessDdl(c.client, `CREATE TRIGGER ${nome} BEFORE INSERT ON ${tabela} FOR EACH ROW WHEN (${quando}) EXECUTE FUNCTION ${nome}()`);
     await corpo();
+  } catch (error) {
+    erroDoCorpo = error;
   } finally {
-    await c.client.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${nome} ON ${tabela}`);
-    await c.client.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${nome}()`);
+    await dropHarnessObjects(c.client, erroDoCorpo, [`DROP TRIGGER IF EXISTS ${nome} ON ${tabela}`, `DROP FUNCTION IF EXISTS ${nome}()`]);
   }
+  if (erroDoCorpo !== undefined) throw erroDoCorpo;
   const [{ gatilhos }] = await c.sql("SELECT count(*)::int AS gatilhos FROM pg_trigger WHERE tgname = $1", [nome]);
   const [{ funcoes }] = await c.sql("SELECT count(*)::int AS funcoes FROM pg_proc WHERE proname = $1", [nome]);
   assert.deepEqual([gatilhos, funcoes], [0, 0], `o gatilho ${nome} sobrou no catálogo`);

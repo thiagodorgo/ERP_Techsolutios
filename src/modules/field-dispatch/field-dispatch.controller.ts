@@ -27,7 +27,16 @@ export class FieldDispatchController {
 
   async create(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const dispatch = await service.create(actor, request.body ?? {});
+    const { dispatch, replayed } = await service.createOrReplay(actor, request.body ?? {});
+
+    // B-O6R-09 (P3) — a repetição pela mesma chave devolve o despacho já criado com 200 e SEM nova auditoria de criação
+    // (a original foi gravada no primeiro pedido).
+    if (replayed) {
+      return {
+        status: 200,
+        data: toFieldDispatchDto(dispatch),
+      };
+    }
 
     await recordRequestAuditBestEffort(request, {
       action: "field_dispatch.created",
@@ -60,7 +69,10 @@ export class FieldDispatchController {
 
   async changeStatus(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const dispatch = await service.changeStatus(actor, readRouteParam(request.params.dispatchId), request.body ?? {});
+    const { dispatch, changed } = await service.changeStatusOrNoop(actor, readRouteParam(request.params.dispatchId), request.body ?? {});
+
+    // PRE537-01 — o mesmo status sem texto não mudou nada (no-op do serviço): sem auditoria de mudança de status.
+    if (!changed) return { data: toFieldDispatchDto(dispatch) };
 
     await recordRequestAuditBestEffort(request, {
       action: dispatch.status === "cancelled" ? "field_dispatch.cancelled" : "field_dispatch.status_changed",

@@ -3,13 +3,14 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { withTenantRls } from "../../database/rls.js";
 import type {
   ServiceQuote,
+  ServiceQuoteApprovalResult,
   CreateServiceQuoteInput,
   ListServiceQuoteInput,
   ListServiceQuoteResult,
   UpdateServiceQuoteInput,
 } from "./service-quote.types.js";
 import { ServiceQuoteError } from "./service-quote.types.js";
-import type { ServiceQuoteRepository } from "./service-quote.repository.js";
+import type { ApproveWithWorkOrderInput, CreateWorkOrderInScope, ServiceQuoteRepository } from "./service-quote.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -75,6 +76,24 @@ export class PrismaServiceQuoteRepository implements ServiceQuoteRepository {
     return rows[0] ? mapServiceQuoteRecord(rows[0]) : undefined;
   }
 
+  // B-O6R-09 · fatia 6 — o vínculo condicional, preso ao `tx` da aprovação: só o orçamento ainda `approved` e sem OS
+  // recebe o id. Zero linhas LANÇA, dentro da transação, e o rollback leva a reserva e a OS junto.
+  async linkCreatedWorkOrder(tenantId: string, serviceQuoteId: string, workOrderId: string, updatedBy: string): Promise<ServiceQuote> {
+    const rows = await this.client.serviceQuote.updateManyAndReturn({
+      where: { tenant_id: tenantId, id: serviceQuoteId, status: "approved", created_work_order_id: null },
+      data: { created_work_order_id: workOrderId, updated_by: updatedBy, updated_at: new Date() },
+    });
+    if (!rows[0]) {
+      throw new ServiceQuoteError(409, "SERVICE_QUOTE_CONFLICT", "quote_link_lost", "The quote changed while it was being approved.");
+    }
+    return mapServiceQuoteRecord(rows[0]);
+  }
+
+  // O cru não abre transação: a aprovação atômica é do envoltório Rls, que tem o `tx`.
+  async approveWithWorkOrder(): Promise<ServiceQuoteApprovalResult> {
+    throw new Error("approveWithWorkOrder precisa da transação do RlsPrismaServiceQuoteRepository.");
+  }
+
   async update(input: UpdateServiceQuoteInput): Promise<ServiceQuote | undefined> {
     try {
       const updated = await this.client.serviceQuote.updateManyAndReturn({
@@ -121,6 +140,24 @@ export class RlsPrismaServiceQuoteRepository implements ServiceQuoteRepository {
 
   claimForApproval(tenantId: string, serviceQuoteId: string): Promise<ServiceQuote | undefined> {
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaServiceQuoteRepository(tx).claimForApproval(tenantId, serviceQuoteId));
+  }
+
+  // B-O6R-09 · fatia 6 (item fundido pelo dono, `D-PORTAO-3-RECOMENDACOES-1111` Q1 (c); emenda 1 §1.4) — UMA transação,
+  // com o GUC da organização: o CAS da reserva, as escritas da OS (pelo `tx`, via o escopo) e o vínculo. Dentro dela só
+  // há escritas pelo `tx` (as leituras de validação vieram antes, no `prepareCreate`): nada pede uma 2ª conexão. O
+  // perdedor de uma corrida espera o lock da linha no CAS; se o vencedor fez commit, a reavaliação dá zero linhas.
+  approveWithWorkOrder(
+    input: ApproveWithWorkOrderInput,
+    createWorkOrder: CreateWorkOrderInScope,
+  ): Promise<ServiceQuoteApprovalResult> {
+    return withTenantRls(this.prismaClient, input.tenantId, async (tx) => {
+      const repo = new PrismaServiceQuoteRepository(tx);
+      const claimed = await repo.claimForApproval(input.tenantId, input.serviceQuoteId);
+      if (!claimed) return { kind: "not_claimed" } as const;
+      const workOrder = await createWorkOrder({ kind: "prisma", tx });
+      const linked = await repo.linkCreatedWorkOrder(input.tenantId, input.serviceQuoteId, workOrder.id, input.updatedBy);
+      return { kind: "approved", quote: linked, workOrderId: workOrder.id } as const;
+    });
   }
 }
 
