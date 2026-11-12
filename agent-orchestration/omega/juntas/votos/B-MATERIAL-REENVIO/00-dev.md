@@ -57,3 +57,10 @@
 - Veredito F0: **NÃO BATE; PARADA OBRIGATÓRIA antes de C-F1 e antes de qualquer código.** Nenhum cluster Postgres foi criado; nenhuma suíte completa foi iniciada; nenhum arquivo de produto foi alterado.
 - Head: `ef4e98e76215d4ca9d2941f0bb5204b0c46ee881`.
 - Próximo passo exato: o orquestrador escrever e revisar uma emenda ao §C cobrindo (a) custódia pós-#548, (b) requisito/testes do gate de módulo pós-#544 e (c) inclusão de `sync_action_labels.dart` no escopo; depois o dev retoma a F0, reexecuta N_f/N_b e só então decide C-F1.
+
+## RETOMADA 4 — 2026-11-12T14:19:28-03:00
+
+- Comando: `bash C:/Users/thiag/erp-pausa-2026-10-03/ferramentas/checkup-conclusao.sh material`.
+- Saída resumida: `checkup material: worktree-preservado(w-material)`.
+- Head antes deste apenso: `248d6603` (F0 registrada e ramo empurrado).
+- Próximo passo exato: aguardar a emenda escrita e revisada pelo orquestrador; não iniciar C-F1.
