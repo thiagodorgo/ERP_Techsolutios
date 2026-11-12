@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **879** |
-| IDs distintos | 868 |
-| **ABERTAS** | **670** |
+| Cabecalhos `## P-` | **881** |
+| IDs distintos | 870 |
+| **ABERTAS** | **672** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **609** |
+| — das quais **ativas nesta rodada** | **611** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 205 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **879 cabecalhos para 868 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **881 cabecalhos para 870 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -371,7 +371,7 @@
 | `P-O6R-B12-FUSO-DO-PATIO-VIVO` | 13756 | MÉDIA | sim | P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera di |
 | `P-COMISSAO-GATE-SEM-TRAVA` | 13794 | CRÍTICA | sim | P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e f |
 
-## ABERTAS · balde B — processo/registro — 313
+## ABERTAS · balde B — processo/registro — 315
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -688,6 +688,8 @@
 | `P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA` | 13778 | BAIXA | sim | P-B-O6R-12-DRILL-RESIDUO-SEM-VARREDURA (2026-11-11) — o drill do B-O6R-12 deixa bases e  |
 | `P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT` | 13801 | BAIXA | sim | P-SAN3-23-A7-UMA-ORDEM-DE-COMMIT (2026-11-11) — a A7 (regressão sem barreira) só produz  |
 | `P-SAN3-23-503-FORA-DO-CONTRATO` | 13812 | BAIXA | sim | P-SAN3-23-503-FORA-DO-CONTRATO (2026-11-11) — os 2 códigos 503 novos do B-SAN3-23 não es |
+| `P-USERS-SEG-DEMO-TRACCAR-SEM-PROVA` | 13818 | BAIXA | sim | P-USERS-SEG-DEMO-TRACCAR-SEM-PROVA (2026-11-12) — o demo do Traccar pede token por login |
+| `P-WEB-MAPA-STREAM-RECONECTA-TOKEN-MORTO` | 13824 | BAIXA | sim | P-WEB-MAPA-STREAM-RECONECTA-TOKEN-MORTO (2026-11-12) — com a sessão encerrada, o mapa we |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

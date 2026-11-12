@@ -360,9 +360,9 @@ maior que a diferença medida.
 
 - `grep -rln "signAccessToken\|createHmac" scripts/` → (nenhum).
 - `grep -rln "signAccessToken\|createHmac" tests/ --include="*.ts" | wc -l` → 38.
-- Os 38 são testes unitários/suítes que assinam token para EXERCITAR o portão (com o portão substituído/mockado)
-  e o helper `tests/helpers/users-seg-desativado-sessao.ts`; nenhum fala com o portão real de produção → fora do
-  escopo de E2.1/E2.2, sem pendência nova.
+- Os 38 são testes unitários/suítes que assinam token para EXERCITAR o portão e o helper
+  `tests/helpers/users-seg-desativado-sessao.ts`; as suítes `-db` (ex.: `checklist-routes-db`) falam com o portão
+  real, com token sem `sid`, e passam pelo residual (1) (medido pela C3 da J-543) → coberto pela `P-SID-OBRIGATORIO`.
 - Lista: `tests/actor-aware-routes.test.ts`, `tests/auth-active-tenant-permissions.test.ts`,
   `tests/auth-actor-middleware.test.ts`, `tests/auth-identity-links-db.test.ts`, `tests/auth-jwt.test.ts`,
   `tests/b-o6r-12-regime-snapshot-db.test.ts`, `tests/b-san3-12-ce4-db.test.ts`, `tests/checklist-routes-db.test.ts`,
