@@ -115,6 +115,26 @@ async function setup() {
     syncMobileInventoryActions(who, { client_batch_id: randomUUID(), actions }, deps);
   const movementCount = async () => (await inventory.listMovements(inventoryActor, { limit: 100, offset: 0 })).items
     .filter((movement) => movement.sourceType === "work_order_material").length;
+  const snapshotLedger = async () => {
+    const movements = await inventory.listMovements(inventoryActor, { limit: 100, offset: 0 });
+    const base = await inventoryRepository.listCustodyBalances(tenantId, { custodyType: "base" });
+    const professional = await Promise.all([...profiles.values()].map(async (profile) => ({
+      profileId: profile.id,
+      balances: (await inventoryRepository.listCustodyBalances(tenantId, {
+        custodyType: "professional",
+        custodyOperatorProfileId: profile.id,
+      })).map((entry) => [entry.item?.id, entry.available]),
+    })));
+    return {
+      movementIds: movements.items.map((movement) => movement.id).sort(),
+      base: base.map((entry) => [entry.item?.id, entry.available]),
+      professional,
+    };
+  };
+  const assertLedgerUnchanged = async (sourceId: string, before: Awaited<ReturnType<typeof snapshotLedger>>) => {
+    assert.deepEqual(await snapshotLedger(), before);
+    assert.equal(await inventory.findExitBySource(inventoryActor, "work_order_material", sourceId), undefined);
+  };
 
   return {
     tenantB,
@@ -130,6 +150,8 @@ async function setup() {
     workOrderId,
     run,
     movementCount,
+    snapshotLedger,
+    assertLedgerUnchanged,
   };
 }
 
@@ -192,16 +214,20 @@ test("[RC2(4)] outro ator não assume a origem depois de receber a OS", async ()
 
 test("[RC2(5)] SKU inexistente é rejeitado", async () => {
   const ctx = await setup();
-  const response = await ctx.run(ctx.tecA, [materialAction(randomUUID(), ctx.workOrderId, { sku: "NAO-EXISTE" })]);
+  const id = randomUUID();
+  const before = await ctx.snapshotLedger();
+  const response = await ctx.run(ctx.tecA, [materialAction(id, ctx.workOrderId, { sku: "NAO-EXISTE" })]);
   assert.equal(response.rejected[0]?.error?.reason, "inventory_item_not_found");
-  assert.equal(await ctx.movementCount(), 0);
+  await ctx.assertLedgerUnchanged(id, before);
 });
 
 test("[RC2(6)] work_order_id ausente é rejeitado com razão específica", async () => {
   const ctx = await setup();
-  const response = await ctx.run(ctx.tecA, [materialAction(randomUUID(), ctx.workOrderId, { work_order_id: undefined })]);
+  const id = randomUUID();
+  const before = await ctx.snapshotLedger();
+  const response = await ctx.run(ctx.tecA, [materialAction(id, ctx.workOrderId, { work_order_id: undefined })]);
   assert.equal(response.rejected[0]?.error?.reason, "work_order_id_required");
-  assert.equal(await ctx.movementCount(), 0);
+  await ctx.assertLedgerUnchanged(id, before);
 });
 
 test("[RC2(7)] auditor sem permissão recebe 403 no lote", async () => {
@@ -236,9 +262,11 @@ test("[RC2(9)] ator de estoque preserva inventory.consume", async () => {
 
 test("[RC2(10)] técnico nunca atribuído à OS é recusado sem movimento", async () => {
   const ctx = await setup();
-  const response = await ctx.run(ctx.tecB, [materialAction(randomUUID(), ctx.workOrderId)]);
+  const id = randomUUID();
+  const before = await ctx.snapshotLedger();
+  const response = await ctx.run(ctx.tecB, [materialAction(id, ctx.workOrderId)]);
   assert.equal(response.rejected[0]?.error?.reason, "not_assigned_to_actor");
-  assert.equal(await ctx.movementCount(), 0);
+  await ctx.assertLedgerUnchanged(id, before);
 });
 
 test("[RC2(11)] ex-técnico recebe conflito para revisão sem movimento", async () => {
@@ -257,10 +285,12 @@ test("[RC2(11)] ex-técnico recebe conflito para revisão sem movimento", async 
       metadata: {},
     },
   });
-  const response = await ctx.run(ctx.tecA, [materialAction(randomUUID(), ctx.workOrderId)]);
+  const id = randomUUID();
+  const before = await ctx.snapshotLedger();
+  const response = await ctx.run(ctx.tecA, [materialAction(id, ctx.workOrderId)]);
   assert.equal(response.conflicts[0]?.conflict?.conflict_type, "assignment_changed_pending_review");
   assert.equal(response.conflicts[0]?.conflict?.next_action, "await_supervisor_review");
-  assert.equal(await ctx.movementCount(), 0);
+  await ctx.assertLedgerUnchanged(id, before);
 });
 
 test("[RC2(12)] gestor tenant-wide aplica material na mesma OS", async () => {
@@ -276,13 +306,29 @@ test("[RC2(16)] papel technician atribuído aplica material", async () => {
   assert.equal(response.accepted.length, 1);
 });
 
-test("[RC2(17t)] OS de outra organização é not_found e não baixa", async () => {
+test("[RC2(17t-a)] técnico: OS de outro tenant não baixa e a mesma origem segue utilizável", async () => {
   const ctx = await setup();
   const actorB = actor(ctx.tenantB, "field_technician", ["work_orders:update"]);
   const workOrderB = await ctx.createAssignedWorkOrder(actorB, ctx.tenantB);
-  const response = await ctx.run(ctx.tecA, [materialAction(randomUUID(), workOrderB)]);
+  const id = randomUUID();
+  const before = await ctx.snapshotLedger();
+  const response = await ctx.run(ctx.tecA, [materialAction(id, workOrderB)]);
   assert.equal(response.rejected[0]?.error?.reason, "not_found");
-  assert.equal(await ctx.movementCount(), 0);
+  await ctx.assertLedgerUnchanged(id, before);
+
+  const legitimate = await ctx.run(ctx.tecA, [materialAction(id, ctx.workOrderId)]);
+  assert.equal(legitimate.accepted.length, 1);
+});
+
+test("[RC2(17t-b)] gestor: OS de outro tenant não toca a BASE nem o razão", async () => {
+  const ctx = await setup();
+  const actorB = actor(ctx.tenantB, "field_technician", ["work_orders:update"]);
+  const workOrderB = await ctx.createAssignedWorkOrder(actorB, ctx.tenantB);
+  const id = randomUUID();
+  const before = await ctx.snapshotLedger();
+  const response = await ctx.run(ctx.manager, [materialAction(id, workOrderB)]);
+  assert.equal(response.rejected[0]?.error?.reason, "not_found");
+  await ctx.assertLedgerUnchanged(id, before);
 });
 
 async function jwtActor(modules: readonly string[], roles: readonly string[]) {

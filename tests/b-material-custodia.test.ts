@@ -28,9 +28,10 @@ async function setup() {
   const noProfile = actor(tenantId, "field_technician", ["work_orders:update"]);
   const inventoryActor = actor(tenantId, "inventory", ["inventory.read", "inventory.manage", "inventory.consume"]);
   const profileA = { id: randomUUID(), isActive: true, label: "Técnico A" };
+  const profiles = new Map([[tecA.userId, profileA]]);
   const inventoryRepository = new InMemoryInventoryRepository();
   const inventory = new InventoryService(inventoryRepository, {
-    resolveActorOperatorProfile: async (candidate) => candidate.userId === tecA.userId ? profileA : undefined,
+    resolveActorOperatorProfile: async (candidate) => profiles.get(candidate.userId),
   });
   const x = await inventory.createItem(inventoryActor, { sku: "X-0001", name: "Peça X", unit: "un" });
   const y = await inventory.createItem(inventoryActor, { sku: "Y-0001", name: "Peça Y", unit: "un" });
@@ -105,6 +106,10 @@ async function setup() {
     x,
     y,
     z,
+    inventory,
+    inventoryActor,
+    inventoryRepository,
+    profiles,
     workOrderTecA,
     workOrderNoProfile,
     createAssignedWorkOrder,
@@ -159,4 +164,53 @@ test("[RC8(5)] gerente sem cadastro baixa da BASE", async () => {
   assert.equal(response.accepted.length, 1);
   assert.equal(movement?.custodyType, "base");
   assert.equal(await ctx.balance(ctx.z.id, { custodyType: "base" }), 8);
+});
+
+test("[RC8(6)] gerente com cadastro ativo baixa da própria custódia, nunca da BASE", async () => {
+  const ctx = await setup();
+  const profileG = { id: randomUUID(), isActive: true, label: "Gerente profissional" };
+  ctx.profiles.set(ctx.manager.userId, profileG);
+  await ctx.inventory.createMovement(ctx.inventoryActor, {
+    item_id: ctx.x.id,
+    type: "entrada",
+    quantidade: 14,
+    unit_cost: 1,
+  });
+  await ctx.inventoryRepository.createTransfer({
+    tenantId: ctx.manager.tenantId,
+    itemId: ctx.x.id,
+    type: "link",
+    quantity: 4,
+    custody: { custodyType: "professional", custodyOperatorProfileId: profileG.id },
+    createdBy: ctx.inventoryActor.userId,
+  });
+  const workOrderId = await ctx.createAssignedWorkOrder(ctx.tecA);
+  const response = await ctx.run(ctx.manager, workOrderId, ctx.x.sku, 2);
+  const [movement] = await ctx.materialMovements();
+
+  assert.equal(response.accepted.length, 1);
+  assert.equal(movement?.custodyType, "professional");
+  assert.equal(movement?.custodyOperatorProfileId, profileG.id);
+  assert.equal(await ctx.balance(ctx.x.id, {
+    custodyType: "professional",
+    custodyOperatorProfileId: profileG.id,
+  }), 2);
+  assert.equal(await ctx.balance(ctx.x.id, { custodyType: "base" }), 10);
+});
+
+test("[RC8(7)] gerente com cadastro sem saldo não cai para a BASE", async () => {
+  const ctx = await setup();
+  const profileG = { id: randomUUID(), isActive: true, label: "Gerente profissional" };
+  ctx.profiles.set(ctx.manager.userId, profileG);
+  const workOrderId = await ctx.createAssignedWorkOrder(ctx.tecA);
+  const before = await ctx.materialMovements();
+  const response = await ctx.run(ctx.manager, workOrderId, ctx.y.sku, 1);
+
+  assert.equal(response.conflicts[0]?.conflict?.conflict_type, "insufficient_balance");
+  assert.equal(await ctx.balance(ctx.y.id, {
+    custodyType: "professional",
+    custodyOperatorProfileId: profileG.id,
+  }), 0);
+  assert.equal(await ctx.balance(ctx.y.id, { custodyType: "base" }), 10);
+  assert.deepEqual(await ctx.materialMovements(), before);
 });

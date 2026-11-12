@@ -143,3 +143,12 @@
 - Mutações: M-C27 deixou RC8(1) vermelho; M-C28 deixou RC8(4) vermelho; M-C29 deixou RC8(5) vermelho; M-C31 deixou RC2(19) e o censo de módulos vermelhos; M-C32 deixou RC2(20) vermelho; M-C33 deixou RC2(21) vermelho. Todas foram isoladas, registradas em `revisoes/c-f3b-m-c27.tap`…`c-f3b-m-c33.tap` e revertidas. `inventory.actor-custody.ts` e `route-modules.ts`, tocados só pelas mutações autorizadas, terminaram sem diff.
 - Head: `6c4327d48883217bb0bdf1c0e726451b685d875a` antes deste apenso.
 - Próximo passo exato: commitar e empurrar a C-F3b; depois iniciar somente a C-F3c, acrescentando RC8(6),(7), RC2(17t-a/b), `razaoIntacto` e as mutações M-C35/M-C36/M-C37, sem antecipar o remove da C-F4.
+
+## RETOMADA 14 — 2026-11-12T20:12:31-03:00 — C-F3c CONCLUÍDA
+
+- Executor da fatia: `dev-c3-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Código/testes: nenhum arquivo de produto precisou mudar. RC8 ganhou gerente com cadastro ativo, provando que o cadastro vence o papel e que saldo só na BASE não serve de fallback. RC2(17t) foi dividido em técnico e gestor; o técnico prova ainda que a mesma origem recusada pode ser reenviada legitimamente. O helper `snapshotLedger/assertLedgerUnchanged` compara ids do razão, saldos BASE/profissionais e ausência da origem, aplicado também às recusas de SKU, OS ausente, nunca atribuído e ex-técnico.
+- Provas: RC8 completo nesta etapa = `6/6`; RC2 com 17t-a/b e módulo/bootstrap = `18/18`; alvo conjunto = `24/24`; regressão ampliada = `123/123`, `fail 0`, `skipped 0`; `npm run check` exit 0; `flutter analyze` = `No issues found`. `dart format`: não aplicável, pois nenhum arquivo Dart mudou. `git diff --check` verde.
+- Mutações: M-C35 (tenant-wide forçado à BASE no handler) deixou RC8(6) e (7) vermelhos; M-C36 (tenant-wide forçado à BASE no service) deixou RC8(6) vermelho; M-C37 (escopo movido para depois da baixa) deixou RC2(10),(11),(17t-a),(17t-b) vermelhos pelo razão alterado. Todas foram isoladas, registradas em `revisoes/c-f3c-m-c35.tap`…`c-f3c-m-c37.tap` e revertidas; produto terminou sem diff.
+- Head: `8731fb26d4c9f7b3c5f425eb8a7d548c626b3f7a` antes deste apenso.
+- Próximo passo exato: commitar e empurrar a C-F3c; depois iniciar somente a C-F4, implementando `work_order_material.remove`, RC2(13)-(15),(18), RC8(3) e a parte de estorno do RC8(6), com M-C7.
