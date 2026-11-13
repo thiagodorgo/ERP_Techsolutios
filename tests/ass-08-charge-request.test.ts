@@ -34,7 +34,7 @@ class RecordingPort implements PaymentProviderPort {
     return { chargeId: `pay_${this.created.length}`, status: "pending", payUrl: "https://pay.example/x" };
   }
   async getCharge() { return { status: "pending" as const, raw: {} }; }
-  async findChargeByExternalReference() { return null; }
+  async listChargesByExternalReference() { return []; }
   async cancelCharge(id: string) { return { chargeId: id, status: "cancelled" as const }; }
   async refund(id: string) { return { chargeId: id, status: "refunded" as const }; }
   async registerWebhook() { return { externalId: "h" }; }

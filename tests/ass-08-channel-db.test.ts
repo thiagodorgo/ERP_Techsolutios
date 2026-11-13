@@ -492,7 +492,7 @@ if (!connectionString) {
       async ensureCustomer() { return { customerId: "cus_db" }; },
       async createCharge(input: unknown) { created.push(input); return { chargeId: `pay_db_${created.length}`, status: "pending" as const, payUrl: "https://pay.example/db" }; },
       async getCharge() { return { status: "pending" as const, raw: {} }; },
-      async findChargeByExternalReference() { return null; },
+      async listChargesByExternalReference() { return []; },
       async cancelCharge(chargeId: string) { return { chargeId, status: "cancelled" as const }; },
       async refund(chargeId: string) { return { chargeId, status: "refunded" as const }; },
       async registerWebhook() { return { externalId: "hook_db" }; },

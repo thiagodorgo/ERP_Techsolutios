@@ -55,7 +55,7 @@ function portReturning(lookup: ChargeLookup): PaymentProviderPort {
     ensureCustomer: async () => ({ customerId: "c" }),
     createCharge: async () => ({ chargeId: "x", status: "pending" }),
     getCharge: async () => lookup,
-    findChargeByExternalReference: async () => null,
+    listChargesByExternalReference: async () => [],
     cancelCharge: async (id) => ({ chargeId: id, status: "cancelled" }),
     refund: async (id) => ({ chargeId: id, status: "refunded" }),
     registerWebhook: async () => ({ externalId: "h" }),

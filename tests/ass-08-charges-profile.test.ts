@@ -39,7 +39,7 @@ class PixPort implements PaymentProviderPort {
     return { chargeId: "pay_1", status: "pending", payUrl: "https://pay.example/x", pixCopyPaste: "000201...", boletoUrl: "https://b/x" };
   }
   async getCharge() { return { status: "pending" as const, raw: {} }; }
-  async findChargeByExternalReference() { return null; }
+  async listChargesByExternalReference() { return []; }
   async cancelCharge(id: string) { return { chargeId: id, status: "cancelled" as const }; }
   async refund(id: string) { return { chargeId: id, status: "refunded" as const }; }
   async registerWebhook() { return { externalId: "h" }; }
