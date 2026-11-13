@@ -8657,6 +8657,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-24` (plano SAN3, §4.1 item 29) (antes: bloco web financeiro (bloco dono proposto pela fatia; plano SAN3: fora do gate (§4.3) — entra se o dono vender (§10.1)))
 - **impacto vendável:** NAO — não é pré-requisito de venda; condição: comissão configurável vendida → BLOQUEIA
 - **teste de encerramento:** smoke por tela (cheque depositar/compensar; fechar/reabrir; CRUD de política) com 403 por permissão
+- **B-SAN3-24 (2026-11-11, `dev-24-cl`):** a parte da **política de comissão** saiu deste item e do item 29 por `D-PORTAO-7-RECOMENDACOES-1011` e passou para `P-COMISSAO-MOTOR-E-POLITICA`. Esta pendência fecha com o merge do PR do `B-SAN3-24` que entrega as telas de Cheques e de Fechamento do mês; o teste de encerramento passa a ser o dessas duas telas (sem o CRUD de política).
 
 ---
 
@@ -13940,7 +13941,49 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a seção das rotas financeiras da OS no `API_CONTRACTS.md` nunca teve catálogo de erros, nem o 503 `invoice_transient_conflict` do B-SAN3-02; o arquivo está fora do PERMITIDO do plano do B-SAN3-23, cujo §3.5 manda registrar as adições no comando do bloco, o que foi feito) · **dono:** o próximo bloco que tocar o `API_CONTRACTS.md` das rotas financeiras da OS · **PR-alvo:** esse bloco · **bloqueia:** não.
 - **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
 - **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).
+## P-COMISSAO-MOTOR-E-POLITICA (2026-11-11) — a tela de política de comissão só vem depois do motor de comissão — MÉDIA
 
+- **status:** ABERTA · **escopo:** `pre-existente` (o motor de comissão nunca existiu: `docs/commissions.md:9`, `:33`;
+  `grep -rn "commissionCalculation.create" src` = 0, medido pelo plano v1 do `B-SAN3-24`) · **dono:** bloco do motor de
+  comissão, a abrir pelo orquestrador · **fora do portão** (`D-PORTAO-7-RECOMENDACOES-1011`).
+- **origem:** `D-PORTAO-7-RECOMENDACOES-1011` (o dono tirou a política do `B-SAN3-24` e do item 29 até o motor existir);
+  conflitos C-24-1 e C-24-2 (`decisoes.md`, adendo do `B-SAN3-24` ao `REGISTRO-SAN3-CONFLITOS`).
+- **o que falta:** o motor que calcula a comissão; depois dele, a tela de política e de base de cálculo (as rotas
+  `policies`/`basis-events` existem sem consumidor, `P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA`).
+- **teste de encerramento:** o motor grava o cálculo por evento de base, e a tela de política opera sobre as rotas reais
+  com 403 por permissão.
+
+## P-SAN3-24-AUDITORIA-BEST-EFFORT (2026-11-11) — a auditoria da casa é gravada fora da transação e engole a falha — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`src/modules/core-saas/audit/audit-request-context.ts:39-41` e o
+  `catch` seguinte; vale para todas as auditorias, não só o fechamento) · **dono proposto:** a varredura de segurança do
+  §C7.10(6), antes de fechar o portão da versão vendável.
+- **origem:** plano v2 do `B-SAN3-24`, A-04 e Q1 (respondida (b) por `D-DONO-TODAS-RECOMENDACOES-1111`).
+- **forma:** o fechamento do mês (e qualquer escrita auditada) comita, e só depois a auditoria é gravada em transação
+  própria; se ela falhar, o efeito fica e o registro se perde, com um aviso no log.
+- **o que o B-SAN3-24 já fez:** o motivo do fechamento forçado passou a entrar na metadata de `financial_period.closed`,
+  provado pelo banco no `tests/b-san3-24-fechamento-forcado-auditoria-db.test.ts` (B7).
+- **teste de encerramento:** falha injetada na gravação da auditoria desfaz o efeito (ou o efeito e a auditoria
+  comitam juntos), com teste `-db`.
+
+## P-SAN3-24-CHEQUE-FILTRO-VINCULADO (2026-11-11) — a lista de cheques não filtra "pendente" nem "tem título" no servidor — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`GET /cheques` filtra situação e título só por igualdade:
+  `src/modules/cheques/cheque-prisma.repository.ts`, `buildWhere`; medido pela crítica r2 do `B-SAN3-24`, N-02) · **dono
+  proposto:** o próximo bloco de backend financeiro (o mesmo de `P-SAN3-12C-*`).
+- **origem:** N-02 da crítica r2 do plano v2 do `B-SAN3-24`; resolução declarada do dev (`docs/revisoes/SAN3/B-SAN3-24-dev.md`).
+- **o que a tela faz hoje:** "pendentes" = 2 consultas ao servidor (registrado e depositado), com os dois totais lado a
+  lado; "vinculados a título" = filtro sobre os pendentes CARREGADOS (até 100 por situação), dito na própria lista.
+- **teste de encerramento:** `GET /cheques?status=registered,deposited&has_title=true` com total do servidor igual ao
+  `linkedPendingCount` do `/financial-summary`, e a tela usando o filtro do servidor.
+
+## P-SAN3-24-TITULO-PELA-URL (2026-11-11) — o Financeiro não abre um título pela URL — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o estado de URL do Financeiro só tem aba, conta e filtro, e o
+  detalhe aberto é estado local da view; N-03 da crítica r2) · **dono proposto:** o `B-SAN3-25` ou um bloco do Financeiro.
+- **o que a tela faz hoje:** o cheque vinculado mostra o documento do título e leva à ABA do Financeiro
+  (`/finance?aba=rec|pag`), onde o desvínculo do 12b existe.
+- **teste de encerramento:** `/finance?titulo=<id>` abre o detalhe do título, e o link do cheque vinculado usa essa URL.
 ## P-SAN3-14-DOSSIE-SEM-FASE (2026-11-11) — o dossiê de custódia não mostra a fase de cada vistoria — MÉDIA
 
 - **status:** ABERTA · **escopo:** `pre-existente` na forma do dossiê (o `mapRun` de `src/modules/impound/impound.checklist-link-prisma.repository.ts` não carrega `role` e é anterior ao bloco; o par coleta + entrega do mesmo modelo nasce no `B-SAN3-14`) · **dono:** um bloco curto de dossiê no molde do `B-SAN3-11` (DTO em `src/modules/impound/**` + rótulo em `frontend/src/modules/patios/processes/**`), depois do merge do `B-SAN3-14` · **bloqueia:** não (`src/modules/impound/**` é PROIBIDO no `B-SAN3-14`).

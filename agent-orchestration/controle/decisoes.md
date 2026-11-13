@@ -4925,6 +4925,27 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fato:** os devs do `B-SAN3-19b` e do `B-ASS-09a` estão prontos e esperam o parecer do porteiro do #530 (§C2 item 8).
 - **Leitura do orquestrador, declarada (§A6):** o PR de registro não é demanda de produto e começa já (`reg-1111-cl`).
 
+## REGISTRO-SAN3-CONFLITOS — adendo do B-SAN3-24 (2026-11-11) — quatro conflitos do plano v2 (§A2)
+
+**Não é decisão.** É o registro, antes do código, dos conflitos C-24-1..4 do plano v2 do `B-SAN3-24` (§1.5), feito pelo
+dev `dev-24-cl` (Claude Opus 5.5, identidade de dev declarada) na fatia a0, como o plano manda.
+
+1. **C-24-1 (encerrado pela decisão):** a edição de política de comissão não existe no servidor. Com a política fora do
+   bloco (`D-PORTAO-7-RECOMENDACOES-1011`), o conflito vira nota na pendência nova `P-COMISSAO-MOTOR-E-POLITICA`.
+2. **C-24-2 (resolvido pelo dono):** o item 29 tratava a política como "backend pronto", mas o motor de comissão não
+   existe (`docs/commissions.md:9`, `:33`). A política sai do bloco e do item 29 (`D-PORTAO-7-RECOMENDACOES-1011`); o
+   item 29 e a linha do `B-SAN3-24` no §5 do `PLANO_SAN3.md` foram reescritos neste PR.
+3. **C-24-3:** a estimativa G (13 h) do `PLANO_SAN3.md` é anterior a `D-TELAS-SAEM-COM-TRES`; o plano v2 estima
+   ≈ 26,7 h de dev (§6).
+4. **C-24-4:** a decisão do dono pede "auditoria" no fechamento forçado, e o servidor gravava essa auditoria sem o
+   motivo, em modo best-effort. **Resolvido pela Q1 = (b)** (`D-DONO-TODAS-RECOMENDACOES-1111`, 11/11: "Sim, todas
+   (Recomendado)"): o motivo entra na metadata de `financial_period.closed` (1 linha no controller, provada pelo B7(iii)).
+   A gravação garantida da auditoria da casa inteira fica como `P-SAN3-24-AUDITORIA-BEST-EFFORT`.
+
+**Resíduo declarado (N-07 da crítica r2):** a expressão "política de comissão" também aparece na linha 29 do
+`PLANO_SAN3.md` (resumo) e a linha 536 promete "cheques/fechamento/comissão pela web (29)". As duas estão fora do
+PERMITIDO da a0 (só `:157` e `:278`). O dev não as editou: fica a pergunta ao orquestrador, para emenda ou para o PR de
+registro.
 ## REGISTRO-B-SAN3-14 (2026-11-11) — conflitos do plano, respostas do dono e decisões do dev do B-SAN3-14 (item 34)
 
 - **Fonte:** `plano-B-SAN3-14-v2.md` §1.3 e §9 e `plano-B-SAN3-14-emenda1.md` §9 (fora do repositório, na pasta do orquestrador); respostas do dono em `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP, "Sim, todas (Recomendado)"), que entra na `main` pelo PR de registro.
@@ -5093,6 +5114,29 @@ lista curada do job `backend-postgres`, medida 3× antes.
   - **1 — a linha `SUITES=` do `.github/workflows/ci.yml`** (job `backend-postgres`) fica autorizada para `tests/b-material-sync-db.test.ts`, no `B-MATERIAL-REENVIO` (o R-C21-01 da Emenda C2.1). O dev do C pode fazer a C-F6b.
   - **2 — o bloco `B-DB-FUSO-UTC` fica aberto, com o plano escrito** (9 fatias, 6 h 20 min de dev, 1 pergunta Q1 aberta ao dono). Leitura do orquestrador, declarada (§A6): a pergunta 2 era o bloco do fuso da conexão, cujo plano pedia mais teto na API; o teto dado é o sim ao bloco.
   - **3 — o item novo do portão para a GATE-CHAVE entra** (a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` vira item 63 do §4.1, com bloco próprio de permissão do app), e o denominador do vendável passa de 64 para 65 (`P-PORTAO-ITEM-GATE-CHAVE` FECHADA).
+
+## REGISTRO-SAN3-CONFLITOS — adendo do conserto único da J-547 (B-SAN3-24, 2026-11-13) — dois conflitos (§A2)
+
+**Não é decisão.** É o registro, antes de consolidar, de dois conflitos que o conserto único da J-547 achou, feito pelo dev
+`fix-547-cl` (Claude Opus 5.5, subagente, nível menor, declarado). Quem decide é o orquestrador (e o dono, se quiser).
+Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
+
+1. **C-J547-1 — "Tempo médio para fechar" × trava F8 (achado C3-01).** A maquete aprovada
+   (`fechamento-periodo-3opcoes.reference.html`, opção A) pede a MÉDIA do tempo para fechar, e a média pede acumular dias
+   no navegador. A trava F8 (`frontend/tests/finance-no-money-reduce.guard.test.ts`) reprova toda forma de acumulação em
+   `frontend/src/modules/finance/**`, e o plano v2 (A8) congela o inventário dela no B-SAN3-24. Medido: com a média
+   (`total = total + value`), a F8 ficou vermelha (`period-closes/period-rows.ts::total=total+value`). **Saída provisória,
+   declarada:** o indicador é a MEDIANA, com o rótulo "Tempo típico para fechar" e a dica "mediana · N meses acima de 5
+   dias" (ordena e pega o meio, sem acumular). Para ter a média: emenda que acrescente essa entrada (dias, não dinheiro)
+   ao inventário da F8.
+2. **C-J547-2 — o banner informativo pede arquivo fora do PERMITIDO (achado C3-06, não consertado).** O token
+   `.pat-banner--info` da biblioteca só existe dentro de `:is(.financeiro-b, .financeiro-c)`
+   (`frontend/src/styles/app.css:8232`); para valer nas telas de Cheques e de Fechamento, a regra tem de ir para o bloco
+   global dos banners (`app.css:3315-3335`). `app.css` está fora do PERMITIDO do plano v2 (§4) e do `PERMITTED` do D2
+   (`tests/b-san3-24-escopo.test.ts`). Usar outro tom faria dois azuis de aviso no sistema (§4 item 3). **O conserto
+   pronto, se houver emenda:** trocar a regra escopada por `.pat-banner--info { background: #eff6ff; border: 1px solid
+   #bfdbfe; color: #1e40af; }` (o Financeiro B/C não muda de cor) e acrescentar `frontend/src/styles/app.css` ao
+   `PERMITTED` do D2.
 
 ## D-CLAUDE-CODA-40 (2026-11-13) — o Claude da sessão faz cerca de 40% do código e cobre os braços
 
