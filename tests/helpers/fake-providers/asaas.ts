@@ -32,6 +32,36 @@ const PAYMENT_SCENARIO_STATUS: Readonly<Record<string, string>> = {
   validation_400: "PENDING",
 };
 
+/** B-ASS-08c1a (D-6′): o `dateCreated` é o dia civil de São Paulo do relógio do falso, como o Asaas o manda (só o dia). */
+const SAO_PAULO_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+
+/**
+ * B-ASS-08c1a (D-2′) — a forma da página de `GET /v3/payments?externalReference=…`. `complete` (padrão) é a resposta
+ * de sempre, com `limit` e `offset`; as outras não provam que a lista está completa: `has_more` (`hasMore: true`,
+ * `totalCount = n + 1`), `no_meta` (só `{ data }`), `no_total` (sem `totalCount`), `no_has_more` (sem `hasMore`) e
+ * `total_mismatch` (`hasMore: false`, `totalCount = n + 1`). O falso não pagina: `data` traz sempre todas.
+ */
+export type AsaasListShape = "complete" | "has_more" | "no_meta" | "no_total" | "no_has_more" | "total_mismatch";
+
+function listPage(shape: AsaasListShape, data: readonly Record<string, unknown>[], url: URL): Record<string, unknown> {
+  const limit = Number(url.searchParams.get("limit") ?? "10");
+  const offset = Number(url.searchParams.get("offset") ?? "0");
+  switch (shape) {
+    case "complete":
+      return { object: "list", hasMore: false, totalCount: data.length, limit, offset, data };
+    case "has_more":
+      return { object: "list", hasMore: true, totalCount: data.length + 1, limit, offset, data };
+    case "no_meta":
+      return { data };
+    case "no_total":
+      return { object: "list", hasMore: false, limit, offset, data };
+    case "no_has_more":
+      return { object: "list", totalCount: data.length, limit, offset, data };
+    case "total_mismatch":
+      return { object: "list", hasMore: false, totalCount: data.length + 1, limit, offset, data };
+  }
+}
+
 export type AsaasWebhookEvent = {
   readonly id: string;
   readonly event: string;
@@ -40,6 +70,8 @@ export type AsaasWebhookEvent = {
 
 export type AsaasFake = FakeServer & {
   setPaymentStatus(id: string, status: string): void;
+  /** B-ASS-08c1a (§1.7 da Emenda 2.1): muda campos de uma cobrança guardada (`deleted`, `paymentDate`, …). */
+  patchPayment(id: string, patch: Readonly<Record<string, unknown>>): void;
 };
 
 /**
@@ -66,8 +98,13 @@ export async function emitAsaasWebhook(
   return { status: response.status, body };
 }
 
-export async function startAsaasFake(defaultScenario = "ok", options: { ignoreExternalReferenceFilter?: boolean } = {}): Promise<AsaasFake> {
+export async function startAsaasFake(
+  defaultScenario = "ok",
+  options: { ignoreExternalReferenceFilter?: boolean; now?: () => Date; listShape?: AsaasListShape } = {},
+): Promise<AsaasFake> {
   resetAsaasFakeState();
+  const now = options.now ?? (() => new Date());
+  const listShape = options.listShape ?? "complete";
   const server = await startFakeServer(async (req, res, body) => {
     const scenario = scenarioOfReq(req, defaultScenario);
     const path = req.url ?? "/";
@@ -119,7 +156,7 @@ export async function startAsaasFake(defaultScenario = "ok", options: { ignoreEx
         dueDate: parsed.dueDate,
         description: parsed.description,
         externalReference: parsed.externalReference,
-        dateCreated: "2026-11-13",
+        dateCreated: SAO_PAULO_DAY.format(now()), // [FAKE-DAY]
         status: PAYMENT_SCENARIO_STATUS[scenario] ?? "PENDING",
         invoiceUrl: `https://www.asaas.com/i/${nextId("inv_")}`,
         bankSlipUrl: `https://www.asaas.com/b/pdf/${nextId("slip_")}`,
@@ -132,7 +169,7 @@ export async function startAsaasFake(defaultScenario = "ok", options: { ignoreEx
     if (method === "GET" && pathname === "/v3/payments") {
       const externalReference = url.searchParams.get("externalReference");
       const data = options.ignoreExternalReferenceFilter ? [...payments] : payments.filter((p) => p.externalReference === externalReference);
-      return sendJson(res, 200, { object: "list", hasMore: false, totalCount: data.length, data });
+      return sendJson(res, 200, listPage(listShape, data, url));
     }
 
     // /v3/payments/{id}
@@ -179,6 +216,10 @@ export async function startAsaasFake(defaultScenario = "ok", options: { ignoreEx
     setPaymentStatus(id, status) {
       const payment = payments.find((p) => p.id === id);
       if (payment) payment.status = status;
+    },
+    patchPayment(id, patch) {
+      const payment = payments.find((p) => p.id === id);
+      if (payment) Object.assign(payment, patch);
     },
   };
 }

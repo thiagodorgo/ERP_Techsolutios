@@ -151,21 +151,51 @@ function candidateDay(value: string): string | null {
   return Number.isNaN(parsed.getTime()) ? null : SAO_PAULO_DAY.format(parsed);
 }
 
-/** Escolhe por valor exato e dia civil de São Paulo; qualquer ambiguidade falha fechado. */
+/** O veredito da lista por referência (D-1′): criar, adotar a única candidata (pela `adoptionDecision`) ou revisão. */
+export type CandidateVerdict =
+  | { readonly kind: "create" }
+  | { readonly kind: "adopt"; readonly candidate: ExternalChargeCandidate }
+  | { readonly kind: "review"; readonly code: string };
+
+/**
+ * B-ASS-08c1a (Emenda 2.1, D-1′/D-5′) — a regra de adoção por tentativa, PURA, sobre a lista NÃO vazia:
+ *   candidata = estado adotável ∧ valor exato ∧ dia civil de São Paulo da criação ≥ o do `occurred_at` (sempre por dia;
+ *   valor ou data ausentes nunca são candidatos); 2+ → revisão; 1 → adotar (a `adoptionDecision` decide U ∧ V);
+ *   0 → o BLOQUEIO é pelo ESTADO de toda cobrança listada, conhecida ou não: só a `cancelled` (no Asaas, a removida sem
+ *   pagamento, D-2.1) deixa de bloquear. A identidade de uma cobrança nunca libera uma criação — nunca uma 2ª cobrança.
+ */
 export function chargeCandidateDecision(
   row: BillingOutboxRow,
   listed: readonly ExternalChargeCandidate[],
+  facts: Pick<AdoptionFacts, "otherIntents">,
   orphan: boolean,
-): ExternalChargeCandidate | string | null {
-  if (listed.length === 0) return null;
+): CandidateVerdict {
+  const prefix = orphan ? "orphan_found" : "charge_found";
   const amount = Number(row.payload.amountCents);
   const occurredDay = SAO_PAULO_DAY.format(row.occurredAt);
-  const candidates = listed.filter((candidate) => candidate.amountCents === amount && candidateDay(candidate.createdAt) === occurredDay);
-  const prefix = orphan ? "orphan_found" : "charge_found";
-  if (candidates.length === 0) return `${prefix}_no_candidate`;
-  if (candidates.length > 1) return `${prefix}_multiple_candidates`;
-  if (candidates.length === 1) return candidates[0]!;
-  return `${prefix}_no_candidate`;
+  const candidates = listed.filter((candidate) => ADOPTABLE_CHARGE_STATES.has(candidate.status) && candidate.amountCents === amount && (candidateDay(candidate.createdAt) ?? "") >= occurredDay); // [RECONS-01]
+  if (candidates.length > 1) return { kind: "review", code: `${prefix}_multiple_candidates` };
+  if (candidates.length === 1) return { kind: "adopt", candidate: candidates[0]! };
+  const blocking = listed.filter((candidate) => candidate.status !== "cancelled"); // [RECONS-02]
+  if (blocking.length > 0) return { kind: "review", code: facts.otherIntents > 0 ? (orphan ? "orphan_found_previous_intent" : "charge_found_for_previous_intent") : `${prefix}_no_candidate` };
+  return orphan ? { kind: "review", code: "orphan_recovery_not_found" } : { kind: "create" };
+}
+
+/**
+ * D-1′ itens 0 e 1 (D-5′): lista vazia → como hoje, sem ler fatos (a linha nova cria pela posse `[LEASE-02]`; a órfã vai
+ * a `orphan_recovery_not_found`). Lista não vazia → UMA leitura de `adoptionFacts` por tentativa, que segue até a
+ * `adoptionDecision` (a `settleFoundCharge` não relê). Demonstrativo ausente → `*_statement_missing`.
+ */
+async function decideFromList(
+  deps: DispatcherDeps,
+  row: BillingOutboxRow,
+  listed: readonly ExternalChargeCandidate[],
+  orphan: boolean,
+): Promise<{ readonly verdict: CandidateVerdict; readonly facts?: AdoptionFacts }> {
+  if (listed.length === 0) return { verdict: orphan ? { kind: "review", code: "orphan_recovery_not_found" } : { kind: "create" } };
+  const facts = await deps.repo.adoptionFacts(row.tenantId, row.statementId, row.id);
+  if (!facts) return { verdict: { kind: "review", code: `${orphan ? "orphan_found" : "charge_found"}_statement_missing` } };
+  return { verdict: chargeCandidateDecision(row, listed, facts, orphan), facts };
 }
 
 /**
@@ -200,16 +230,17 @@ export function adoptionDecision(
   return "adopt";
 }
 
-/** Achou cobrança pela referência: adota (U ∧ V) ou manda à revisão com auditoria — NUNCA cria. */
+/** Achou cobrança pela referência: adota (U ∧ V) ou manda à revisão com auditoria — NUNCA cria. Recebe os fatos já
+ * lidos pela `decideFromList` (D-5′: uma leitura por tentativa). */
 async function settleFoundCharge(
   deps: DispatcherDeps,
   row: BillingOutboxRow,
   found: { readonly chargeId: string } & ChargeLookup,
+  facts: AdoptionFacts | undefined,
   orphan: boolean,
   clock: () => Date,
 ): Promise<DispatchOutcome> {
   const lease = leaseOf(row);
-  const facts = await deps.repo.adoptionFacts(row.tenantId, row.statementId, row.id);
   const decision = adoptionDecision(row, found, facts, orphan);
   if (decision === "adopt") {
     return recordChargeSafely(deps, row, lease, { kind: "adopted", chargeId: found.chargeId, lookup: found }, "recovered", clock); // [RECOVER-01]
@@ -304,16 +335,13 @@ async function dispatchOne(
   // (2) CHAMADA FORA de transação. Crash órfão → reconsulta por referência ANTES de repetir (nunca cobra 2×), e a cobrança
   // achada só é adotada pela régua U ∧ V (E7′): a fantasma de um fechamento desfeito vai a revisão.
   if (wasOrphan) {
+    // A órfã NUNCA cria (D-1′): lista vazia, ou só com canceladas, → `orphan_recovery_not_found`.
     const listed = await port.listChargesByExternalReference(row.statementId);
-    const selected = chargeCandidateDecision(row, listed, true);
-    if (typeof selected === "string") {
-      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, selected, clock(), lease))) return leaseLost(deps, row);
-      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: selected });
-      return "needs_review";
-    }
-    if (selected) return settleFoundCharge(deps, row, { chargeId: selected.chargeId, ...(await port.getCharge(selected.chargeId)) }, true, clock);
-    if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, "orphan_recovery_not_found", clock(), lease))) return leaseLost(deps, row);
-    await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "orphan_recovery_not_found" });
+    const { verdict, facts } = await decideFromList(deps, row, listed, true);
+    if (verdict.kind === "adopt") return settleFoundCharge(deps, row, { chargeId: verdict.candidate.chargeId, ...(await port.getCharge(verdict.candidate.chargeId)) }, facts, true, clock);
+    const code = verdict.kind === "review" ? verdict.code : "orphan_recovery_not_found";
+    if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, code, clock(), lease))) return leaseLost(deps, row);
+    await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code });
     return "needs_review";
   }
 
@@ -326,16 +354,17 @@ async function dispatchOne(
       await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "billing_profile_missing" });
       return "needs_review";
     }
-    // E6′: a reconsulta vem SEMPRE antes de criar — nenhuma criação às cegas. Achou → adota (U ∧ V) ou revisão, NUNCA
-    // cria; um erro na reconsulta cai no `catch` abaixo (reagenda ou FAILED) e também nunca cria.
+    // E6′: a reconsulta vem SEMPRE antes de criar — nenhuma criação às cegas. Achou → adota (U ∧ V) ou revisão; só cria
+    // quando nada listado bloqueia (D-1′). Um erro na reconsulta (inclusive a lista que não prova estar completa,
+    // `provider_list_incomplete`, D-2′) cai no `catch` abaixo (reagenda ou FAILED) e também nunca cria.
     const listed = await port.listChargesByExternalReference(row.statementId);
-    const selected = chargeCandidateDecision(row, listed, false);
-    if (typeof selected === "string") {
-      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, selected, clock(), lease))) return leaseLost(deps, row);
-      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: selected });
+    const { verdict, facts } = await decideFromList(deps, row, listed, false);
+    if (verdict.kind === "review") {
+      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, verdict.code, clock(), lease))) return leaseLost(deps, row);
+      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: verdict.code });
       return "needs_review";
     }
-    if (selected) return await settleFoundCharge(deps, row, { chargeId: selected.chargeId, ...(await port.getCharge(selected.chargeId)) }, false, clock);
+    if (verdict.kind === "adopt") return await settleFoundCharge(deps, row, { chargeId: verdict.candidate.chargeId, ...(await port.getCharge(verdict.candidate.chargeId)) }, facts, false, clock);
     // A posse é confirmada numa transação curta que termina ANTES do POST remoto.
     if (!(await deps.repo.confirmLease(row.tenantId, row.id, lease))) return leaseLost(deps, row); // [LEASE-02]
     const result = await port.createCharge(chargeInputFromRow(row, customer.customerId));

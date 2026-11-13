@@ -35,6 +35,7 @@ import type {
   VerifyWebhookInput,
   VerifyWebhookResult,
 } from "../payment-provider.port.js";
+import { ProviderListIncompleteError } from "../payment-errors.js";
 import { asaasStatusToOurs } from "./asaas.state-map.js";
 
 export type AsaasSecretKind = "api_token" | "webhook_secret";
@@ -43,14 +44,23 @@ export type AsaasSecretReader = (kind: AsaasSecretKind) => Promise<string | null
 type AsaasPayment = {
   readonly id: string;
   readonly status?: string;
+  readonly deleted?: boolean;
   readonly invoiceUrl?: string;
   readonly bankSlipUrl?: string;
   readonly value?: number;
   readonly confirmedDate?: string;
   readonly paymentDate?: string;
+  readonly clientPaymentDate?: string;
   readonly externalReference?: string;
   readonly dateCreated?: string;
   readonly dueDate?: string;
+};
+
+/** A página crua da listagem do Asaas v3 (`GET /payments`). */
+type AsaasPaymentPage = {
+  readonly data?: readonly AsaasPayment[];
+  readonly hasMore?: boolean;
+  readonly totalCount?: number;
 };
 
 type AsaasErrorBody = {
@@ -79,6 +89,16 @@ function pathId(id: string): string {
     throw new ProviderValidationError("Invalid provider resource id.");
   }
   return encodeURIComponent(id);
+}
+
+/**
+ * D-2.1 (Emenda 2.1 do B-ASS-08c1a) — SÓ para a lista por referência: a cobrança removida no Asaas e sem nenhuma data de
+ * pagamento não recebe dinheiro, e é a única que deixa de bloquear uma criação nova. Removida COM data de pagamento
+ * recebeu dinheiro: segue o mapa e bloqueia. O webhook, os polls e o `getCharge` continuam lendo `DELETED` como `unknown`.
+ */
+function listedRemovedWithoutPayment(payment: AsaasPayment): boolean {
+  const removed = (payment.deleted === true || payment.status === "DELETED") && !payment.paymentDate && !payment.confirmedDate && !payment.clientPaymentDate; // [LIST-REMOVED]
+  return removed;
 }
 
 function headerOf(headers: VerifyWebhookInput["headers"], name: string): string | undefined {
@@ -191,18 +211,26 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
     };
   }
 
+  /**
+   * B-ASS-08c1a — toda cobrança do Asaas para a referência, com valor, dia e estado (a régua de adoção é do despacho).
+   *  - D-2′: a lista só vale com prova POSITIVA de que está completa, lida na página CRUA (antes do filtro local):
+   *    `hasMore === false` e `totalCount` inteiro igual ao tamanho de `data`. Sem a prova → `provider_list_incomplete`.
+   *  - D-2.1: a cobrança REMOVIDA no Asaas (`deleted: true` ou `status: "DELETED"`) e SEM nenhuma data de pagamento vira
+   *    `cancelled` só aqui, na lista; com pagamento, segue o mapa (`unknown`) e bloqueia. O `asaas.state-map.ts` não muda.
+   */
   async listChargesByExternalReference(ref: string): Promise<readonly ExternalChargeCandidate[]> {
-    const list = await this.call<{ readonly data?: readonly AsaasPayment[] }>({
+    const page = await this.call<AsaasPaymentPage>({
       op: "listChargesByExternalReference",
       method: "GET",
-      path: `/payments?externalReference=${encodeURIComponent(ref)}`,
+      path: `/payments?externalReference=${encodeURIComponent(ref)}&offset=0&limit=100`,
       headers: await this.authHeaders(),
     });
-    return (list.data ?? [])
+    if (!(page.hasMore === false && Array.isArray(page.data) && Number.isSafeInteger(page.totalCount) && page.totalCount === page.data.length)) throw new ProviderListIncompleteError(); // [LIST-COMPLETE]
+    return (page.data ?? [])
       .filter((payment) => payment.externalReference === ref)
       .map((payment) => ({
         chargeId: payment.id,
-        status: asaasStatusToOurs(payment.status ?? "").status,
+        status: listedRemovedWithoutPayment(payment) ? "cancelled" : asaasStatusToOurs(payment.status ?? "").status,
         amountCents: typeof payment.value === "number" ? toCents(payment.value) : Number.NaN,
         createdAt: payment.dateCreated ?? "",
       }));
