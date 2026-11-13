@@ -55,8 +55,15 @@ export type EphemeralRole = {
 //     5. `tests/audit-security.test.ts` (audit_rls_),
 //        `tests/impound-process-checklist-link-schema.test.ts` (vid_link_rls_) e
 //        `tests/vehicle-identity-schema.test.ts` (vid_rls_test_) — os TRÊS ÚLTIMOS, que escreviam
-//        catálogo por fora e entraram em B-O6R-ARNES (2026-08-28). A enumeração já não tem exceção:
-//        TODO escritor de `tests/**` passa por este mecanismo.
+//        catálogo por fora e entraram em B-O6R-ARNES (2026-08-28). Todo escritor de ACL de
+//        `tests/**` passa por este mecanismo.
+//
+//     Fora do lock, medido e declarado (B-DB-FUSO-UTC, Emenda 3, E3.5): o ajuste de fuso do papel efêmero
+//     de `tests/db-fuso-utc-sp-db.test.ts` (`alter role … in database … set timezone`, a escrita congelada
+//     com contagem 1 em `tests/db-catalog-write-guard.test.ts`). Ele grava `pg_db_role_setting`, não a
+//     tupla de ACL, e a pré-revisão `prerev-554-cl` mediu 0 conflitos (`XX000`) em 300 rodadas por
+//     processo, contra os escritores de ACL e contra si mesmo, com o controle positivo ACL × ACL dando
+//     96/300 e 79/300. Escritor novo de ACL continua obrigado a tomar o lock.
 //
 //   POR QUE "quase todos" NUNCA SERVIU — o fato medido que fechou a questão: serialização PARCIAL
 //   não protege nem os serializados. Bateria barata da base (6 arquivos, N=13, cluster descartável,
