@@ -15,6 +15,7 @@ class RemoteChecklistRun {
     this.status,
     this.relatedEntityType,
     this.relatedEntityId,
+    this.kind = MobileChecklistRunKind.collection,
   });
 
   /// server_run_id — o id da run no servidor (alvo do multipart e do sync).
@@ -25,6 +26,11 @@ class RemoteChecklistRun {
   final String? status;
   final String? relatedEntityType;
   final String? relatedEntityId;
+
+  /// B-SAN3-14 — a fase declarada pelo servidor (`role`, via
+  /// [MobileChecklistRunKind.fromServerRole]). Servidor que não a manda
+  /// (anterior ao bloco) deixa tudo como coleta legada.
+  final MobileChecklistRunKind kind;
 }
 
 abstract class ChecklistRemoteApi {
@@ -193,6 +199,10 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
       if (checklistId != null && checklistId.isNotEmpty) {
         params['checklistId'] = checklistId;
       }
+      // B-SAN3-14 (R-A1) — este app entende a fase: pede a lista com `role`
+      // e com a vistoria de entrega. Sem o parâmetro, o servidor responde
+      // como para o app antigo (sem entrega, sem `role`).
+      params['roleAware'] = '1';
       final response = await _client.get(
         ChecklistApiEndpoints.runs(),
         queryParameters: params,
@@ -233,7 +243,16 @@ class DioChecklistRemoteApi implements ChecklistRemoteApi {
       status: strOpt('status', 'status'),
       relatedEntityType: strOpt('relatedEntityType', 'related_entity_type'),
       relatedEntityId: strOpt('relatedEntityId', 'related_entity_id'),
+      kind: _kindFromRemoteRole(j['role']),
     );
+  }
+
+  // B-SAN3-14 — `role` ausente ou nulo é legado (coleta); valor que não é
+  // texto é fase desconhecida, nunca palpite.
+  MobileChecklistRunKind _kindFromRemoteRole(Object? raw) {
+    if (raw == null) return MobileChecklistRunKind.fromServerRole(null);
+    if (raw is! String) return MobileChecklistRunKind.unknown;
+    return MobileChecklistRunKind.fromServerRole(raw);
   }
 
   @override

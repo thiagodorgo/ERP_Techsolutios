@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderException;
 import 'package:uuid/uuid.dart';
 
 import '../../../core/auth/auth_notifier.dart';
@@ -15,6 +16,10 @@ import '../../../core/sync/sync_action_factory.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../core/sync/sync_providers.dart';
 import '../../../core/sync/sync_queue_repository.dart';
+import '../../work_orders/data/work_order_local_store.dart';
+import '../../work_orders/data/work_order_repository.dart'
+    show workOrderLocalStoreProvider;
+import '../../work_orders/domain/work_order_models.dart';
 import '../domain/checklist_comparison.dart';
 import '../domain/checklist_models.dart';
 import 'checklist_local_store.dart';
@@ -31,6 +36,11 @@ enum ChecklistRunResolutionStatus {
   /// Nenhuma run pré-criada foi devolvida pelo backend. Pode ser OS sem
   /// checklist despachado OU falha de provisão da run (lista vazia é ambígua).
   awaitingDispatch,
+
+  /// B-SAN3-14 (R-R2-02(i)) — sem sinal, a ENTREGA que o servidor nunca
+  /// confirmou neste aparelho: nenhuma run local é criada (uma entrega local
+  /// sem par ficaria presa e seguraria a OS). "Conecte-se para atualizar."
+  deliveryUnverified,
 }
 
 class ChecklistRunResolution {
@@ -51,6 +61,13 @@ class ChecklistRunResolution {
         null,
       );
 
+  factory ChecklistRunResolution.deliveryUnverified() =>
+      const ChecklistRunResolution._(
+        ChecklistRunResolutionStatus.deliveryUnverified,
+        null,
+        offline: true,
+      );
+
   final ChecklistRunResolutionStatus status;
   final MobileChecklistRun? run;
 
@@ -61,6 +78,8 @@ class ChecklistRunResolution {
   bool get isReady => status == ChecklistRunResolutionStatus.ready;
   bool get isAwaitingDispatch =>
       status == ChecklistRunResolutionStatus.awaitingDispatch;
+  bool get isDeliveryUnverified =>
+      status == ChecklistRunResolutionStatus.deliveryUnverified;
 }
 
 /// Resultado do diagnóstico de fase de [ChecklistRepository.lookupRunByKind].
@@ -95,12 +114,14 @@ class ChecklistRepository extends ChangeNotifier {
     required ChecklistLocalStore localStore,
     required ChecklistRemoteApi remoteApi,
     EvidenceBlobStore? blobStore,
+    WorkOrderLocalStore? workOrderStore,
   }) : _session = session,
        _syncQueue = syncQueue,
        _actionFactory = actionFactory,
        _localStore = localStore,
        _remoteApi = remoteApi,
-       _blobStore = blobStore;
+       _blobStore = blobStore,
+       _workOrderStore = workOrderStore;
 
   final BootstrapSession _session;
   final SyncQueueRepository _syncQueue;
@@ -110,6 +131,10 @@ class ChecklistRepository extends ChangeNotifier {
   // Blob store da foto de checklist (binário local até subir por multipart).
   // Opcional: em testes sem foto pode ser nulo (addAttachment só grava metadado).
   final EvidenceBlobStore? _blobStore;
+  // B-SAN3-14 (R-A5) — a fonte das OS de guincho abertas para a pré-carga.
+  // Opcional: sem ela, [prefetchRunsForOpenTowWorkOrders] não faz nada (o
+  // provedor de produção sempre a monta; um teste prova isso).
+  final WorkOrderLocalStore? _workOrderStore;
   final Uuid _uuid = const Uuid();
 
   static const Set<String> _checklistActionTypes = {
@@ -233,6 +258,36 @@ class ChecklistRepository extends ChangeNotifier {
     String workOrderId,
   ) async => _localStore.loadRunsForWorkOrder(workOrderId);
 
+  /// B-SAN3-14 (J-546, C3-F1) — o modelo em cache no aparelho, sem rede. A
+  /// tela de execução abre com ele (nome e campos obrigatórios); a pré-carga
+  /// é quem atualiza o cache.
+  Future<MobileChecklistSchema?> getCachedSchema(String checklistId) =>
+      _localStore.loadSchema(checklistId);
+
+  /// B-SAN3-14 (J-546, C3-F2) — as execuções desta OS que ainda têm ação de
+  /// vistoria ou foto na fila do aparelho, pelo id local. É o que a tela
+  /// mostra como "Salvo no aparelho" e "Na fila". Só lê o aparelho.
+  Future<Set<String>> localRunIdsWithPendingActions(String workOrderId) async {
+    final tenantId = _session.activeTenant.tenantId;
+    final runIds = {
+      for (final run in await _localStore.loadRunsForWorkOrder(workOrderId))
+        if (run.tenantId == tenantId) run.localId,
+    };
+    if (runIds.isEmpty) return const {};
+    final pending = <String>{};
+    for (final action in await _syncQueue.pendingForTenant(tenantId)) {
+      if (!_checklistActionTypes.contains(action.type)) continue;
+      final localRunId = action.payload['local_run_id'];
+      if (localRunId is String && runIds.contains(localRunId)) {
+        pending.add(localRunId);
+      }
+    }
+    for (final att in await _localStore.loadAttachmentsPendingUpload()) {
+      if (runIds.contains(att.runId)) pending.add(att.runId);
+    }
+    return pending;
+  }
+
   /// D-CHK-DISPATCH-CREATE — o guincheiro NÃO cria a run: o despacho a cria e o
   /// app a BAIXA. Este método resolve a run que o guincheiro deve responder:
   ///
@@ -264,11 +319,13 @@ class ChecklistRepository extends ChangeNotifier {
     }
 
     if (remote != null) {
-      final match = _pickPreCreatedRun(remote, checklistId);
+      final match = _pickPreCreatedRun(remote, checklistId, kind);
       if (match == null || match.id.isEmpty) {
         // Lista vazia = aguardando despacho (ou provisão falhou). Se já existe
-        // uma run local desta OS/fase, mantém-la usável.
-        if (existingLocal != null) {
+        // uma run local desta OS/fase, mantém-la usável. B-SAN3-14
+        // (R-R2-02(iii)): a ENTREGA local sem par fica guardada, não pronta —
+        // respostas e fila intactas, e ela não segura a OS.
+        if (existingLocal != null && !_isDelivery(kind)) {
           return ChecklistRunResolution.ready(existingLocal);
         }
         return ChecklistRunResolution.awaitingDispatch();
@@ -288,6 +345,12 @@ class ChecklistRepository extends ChangeNotifier {
       await _stampServerRunIdOnQueue(run.localId, match.id);
       notifyListeners();
       return ChecklistRunResolution.ready(run);
+    }
+
+    // B-SAN3-14 (R-R2-02(i)) — sem sinal, a entrega só abre se o servidor já
+    // a confirmou neste aparelho (run local com server_run_id).
+    if (_isUnverifiedDelivery(kind, existingLocal)) {
+      return ChecklistRunResolution.deliveryUnverified();
     }
 
     // Offline: retoma ou cria uma run local para não bloquear o campo.
@@ -346,17 +409,136 @@ class ChecklistRepository extends ChangeNotifier {
 
   // Desambigua a run pré-criada quando a OS trocou de checklist entre despachos
   // (>1 run). Prefere a run do checklist vigente; entre elas, a não-terminal.
+  //
+  // B-SAN3-14 (R-A2) — casa SÓ por (modelo, fase). Sem par, não há serverId:
+  // nunca há fallback para a lista inteira nem "primeira não terminal" entre
+  // fases (sem isso, a entrega herdava o serverId da coleta).
   RemoteChecklistRun? _pickPreCreatedRun(
     List<RemoteChecklistRun> runs,
     String checklistId,
+    MobileChecklistRunKind kind,
   ) {
     if (runs.isEmpty) return null;
-    final matching = runs.where((r) => r.checklistId == checklistId).toList();
-    final pool = matching.isNotEmpty ? matching : runs;
-    return pool.firstWhere(
+    final sameModel = runs.where((r) => r.checklistId == checklistId);
+    final matching = sameModel.where((r) => r.kind == kind).toList();
+    if (matching.isEmpty) return null;
+    return matching.firstWhere(
       (r) => r.status == null || !_isTerminalRunStatus(r.status!),
-      orElse: () => pool.first,
+      orElse: () => matching.first,
     );
+  }
+
+  bool _isDelivery(MobileChecklistRunKind kind) =>
+      kind == MobileChecklistRunKind.delivery;
+
+  bool _hasServerRunId(MobileChecklistRun? run) =>
+      (run?.serverId?.trim() ?? '').isNotEmpty;
+
+  bool _isUnverifiedDelivery(
+    MobileChecklistRunKind kind,
+    MobileChecklistRun? existingLocal,
+  ) => _isDelivery(kind) && !_hasServerRunId(existingLocal);
+
+  /// B-SAN3-14 (R-A5, R-R2-04) — PRÉ-CARGA: baixa TODAS as execuções da OS
+  /// (lista com `roleAware=1`, sem `checklistId`) e deixa a coleta e a
+  /// entrega no aparelho antes da estrada, com o modelo em cache. Para cada
+  /// execução remota: fase desconhecida ou status fora de `in_progress` pula;
+  /// a run local da mesma (OS, modelo, fase) que já tem serverId não é
+  /// tocada; a que não tem recebe o serverId (respostas, fase e fila
+  /// preservadas); sem run local, nasce uma com o serverId. Nunca duplica,
+  /// nunca apaga, e o `role` do servidor nunca muda a fase de uma run local.
+  Future<void> prefetchRunsForWorkOrder(
+    String workOrderId, {
+    String? serverWorkOrderId,
+  }) async {
+    final remote = await _remoteApi.fetchRunsForWorkOrder(
+      serverWorkOrderId ?? workOrderId,
+    );
+    final locals = await _localStore.loadRunsForWorkOrder(workOrderId);
+    var changed = false;
+    for (final remoteRun in remote) {
+      if (remoteRun.id.trim().isEmpty) continue;
+      if (remoteRun.kind == MobileChecklistRunKind.unknown) continue;
+      if (!_isPrefetchable(remoteRun.status)) continue;
+      final existing = _localForPhase(locals, remoteRun);
+      if (_hasServerRunId(existing)) continue;
+      if (existing != null) {
+        await _adoptServerRunId(existing, remoteRun.id);
+        changed = true;
+        continue;
+      }
+      await getSchema(remoteRun.checklistId);
+      final schema = await _localStore.loadSchema(remoteRun.checklistId);
+      final prefetched = _buildLocalRun(
+        checklistId: remoteRun.checklistId,
+        workOrderId: workOrderId,
+        schemaVersion: schema?.version ?? '',
+        kind: remoteRun.kind,
+        serverId: remoteRun.id,
+      );
+      await _localStore.saveRun(prefetched);
+      changed = true;
+    }
+    if (changed) notifyListeners();
+  }
+
+  /// B-SAN3-14 (R-A5) — a pré-carga no passe de sync: um GET por OS de
+  /// guincho aberta (fora de concluída, aprovada, recusada e cancelada), com
+  /// vistoria e sem a entrega já casada. A falha de uma OS não para as outras.
+  Future<void> prefetchRunsForOpenTowWorkOrders() async {
+    final store = _workOrderStore;
+    if (store == null) return;
+    final tenantId = _session.activeTenant.tenantId;
+    for (final wo in await store.loadWorkOrders()) {
+      if (wo.tenantId != tenantId || !_isOpenTowWorkOrder(wo)) continue;
+      final locals = await _localStore.loadRunsForWorkOrder(wo.localId);
+      final hasMatchedDelivery = locals.any(
+        (r) => _isDelivery(r.kind) && _hasServerRunId(r),
+      );
+      if (hasMatchedDelivery) continue;
+      try {
+        await prefetchRunsForWorkOrder(
+          wo.localId,
+          serverWorkOrderId: wo.serverId,
+        );
+      } catch (_) {
+        // Sem sinal ou recusa numa OS: as outras seguem; a tela avisa.
+      }
+    }
+  }
+
+  bool _isOpenTowWorkOrder(WorkOrder wo) =>
+      wo.serviceType == WorkOrderServiceType.tow &&
+      wo.checklistId != null &&
+      !_closedWorkOrderStatuses.contains(wo.status);
+
+  static const Set<WorkOrderStatus> _closedWorkOrderStatuses = {
+    WorkOrderStatus.completed,
+    WorkOrderStatus.approved,
+    WorkOrderStatus.rejected,
+    WorkOrderStatus.cancelled,
+  };
+
+  bool _isPrefetchable(String? status) =>
+      status == null || status == 'in_progress';
+
+  MobileChecklistRun? _localForPhase(
+    List<MobileChecklistRun> locals,
+    RemoteChecklistRun remote,
+  ) {
+    final sameModel = locals.where((r) => r.checklistId == remote.checklistId);
+    return sameModel.where((r) => r.kind == remote.kind).firstOrNull;
+  }
+
+  // Grava o serverId sobre a run CARREGADA DO STORE (respostas e fase como
+  // estão) e carimba as ações já enfileiradas dela.
+  Future<void> _adoptServerRunId(
+    MobileChecklistRun run,
+    String serverRunId,
+  ) async {
+    final stored = await _localStore.loadRun(run.localId) ?? run;
+    await _localStore.saveRun(stored.copyWith(serverId: serverRunId));
+    await _stampServerRunIdOnQueue(run.localId, serverRunId);
   }
 
   bool _isTerminalRunStatus(String status) =>
@@ -873,15 +1055,38 @@ final checklistRepositoryProvider = Provider<ChecklistRepository>((ref) {
       .watch(bootstrapSessionProvider)
       .maybeWhen(data: (v) => v, orElse: () => devBootstrapSession);
 
-  return ChecklistRepository(
-    session: session,
-    syncQueue: ref.watch(syncQueueRepositoryProvider),
-    actionFactory: ref.watch(syncActionFactoryProvider),
-    localStore: ref.watch(checklistLocalStoreProvider),
-    remoteApi: ref.watch(checklistRemoteApiProvider),
-    blobStore: ref.watch(evidenceBlobStoreProvider),
-  );
+  ChecklistRepository build({WorkOrderLocalStore? workOrderStore}) =>
+      ChecklistRepository(
+        session: session,
+        syncQueue: ref.watch(syncQueueRepositoryProvider),
+        actionFactory: ref.watch(syncActionFactoryProvider),
+        localStore: ref.watch(checklistLocalStoreProvider),
+        remoteApi: ref.watch(checklistRemoteApiProvider),
+        blobStore: ref.watch(evidenceBlobStoreProvider),
+        workOrderStore: workOrderStore,
+      );
+
+  // B-SAN3-14 (R-A5) — a fonte das OS de guincho para a pré-carga do passe de
+  // sync. O app sempre monta o banco local (`appDatabaseProvider`); só um
+  // teste que monta este provedor sem o banco cai no ramo de baixo, e aí a
+  // pré-carga fica desligada. Qualquer outra falha atravessa.
+  try {
+    return build(workOrderStore: ref.watch(workOrderLocalStoreProvider));
+  } catch (error) {
+    if (!_isMissingProviderOverride(error)) rethrow;
+    return build();
+  }
 });
+
+// `UnimplementedError` é o "este provedor tem de ser sobrescrito" da casa
+// (ex.: `appDatabaseProvider`); o Riverpod o embrulha em `ProviderException`.
+bool _isMissingProviderOverride(Object error) {
+  var current = error;
+  while (current is ProviderException) {
+    current = current.exception;
+  }
+  return current is UnimplementedError;
+}
 
 // ---------------------------------------------------------------------------
 // Demo seeds (simulates schema published by backend/admin)

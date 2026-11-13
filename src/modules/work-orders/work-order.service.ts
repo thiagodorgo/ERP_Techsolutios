@@ -211,7 +211,24 @@ export type WorkOrderReferenceResolvers = {
   // metade do predicado "atendimento iniciado" que só o despacho sabe. AUSENTE = a trava RECUSA toda troca de técnico
   // (fail-closed por composição incompleta, como `assertMutationObjectScope`). Sem `catch`: erro de leitura propaga.
   readonly hasActiveDispatchAtSite?: ActiveDispatchAtSiteResolver;
+  // B-SAN3-14 (R-A4; Pergunta 1 = (a), `D-DONO-TODAS-RECOMENDACOES-1111`) — as vistorias da OS, só fase e situação,
+  // para a trava da conclusão. Sem `catch` na raiz: a falha de leitura propaga e a trava RECUSA (fail-closed). AUSENTE
+  // (composição parcial de teste) = sem trava, como as demais referências opcionais; a raiz de produção sempre a monta.
+  readonly listChecklistRunPhases?: (
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+  ) => Promise<readonly { readonly role: string | null; readonly status: string }[]>;
 };
+
+// B-SAN3-14 (R-R2-01) — a recusa da trava da entrega é 422 ("tente de novo"), não 409. No sync do app, 409 vira
+// `conflict` parado; 422 vira `rejected` → `failed`, que volta no passe seguinte com o MESMO `client_action_id`: a OS
+// concluída sem sinal conclui sozinha depois que a entrega sobe (no máximo 2 passes).
+const DELIVERY_CHECKLIST_PENDING_HTTP_STATUS = 422;
+
+// B-SAN3-14 (R-R2-03; Pergunta 4 = (a)) — "entrega em aberto": fase `delivery` numa destas situações. A concluída com
+// divergência (`pending_acknowledgement`, à espera da ciência), a concluída, a concluída com divergência e a cancelada
+// NÃO seguram a OS. A cadeia reaberta não precisa de filtro: a versão substituída é terminal e a nova segura por si.
+const DELIVERY_BLOCKING_RUN_STATUSES: readonly string[] = ["in_progress"];
 
 type ServiceCatalogTypeInfo = { readonly serviceType: string | null; readonly requiresDestination: boolean } | null;
 
@@ -1335,6 +1352,20 @@ export class WorkOrderService {
     };
   }
 
+  // B-SAN3-14 (R-A4, R-R2-03) — a OS tem vistoria de entrega em aberto? Leitura que falha conta como "em aberto": uma
+  // resposta não confiável não pode virar "pode concluir" (e, com 422, a recusa transitória se resolve no passe seguinte).
+  private async hasOpenDeliveryChecklistRun(actor: WorkOrderActorContext, workOrder: WorkOrder): Promise<boolean> {
+    const resolver = this.references.listChecklistRunPhases;
+    if (!resolver) return false;
+
+    try {
+      const runs = await resolver(actor, workOrder.id);
+      return runs.some((run) => run.role === "delivery" && DELIVERY_BLOCKING_RUN_STATUSES.includes(run.status));
+    } catch {
+      return true;
+    }
+  }
+
   // §10.2.5 — pré-check da vistoria já ENVIADA ao técnico. Sem o porto montado a trava não existe (degrada
   // como as demais referências opcionais) — e é por isso que a suíte a exercita com o porto ligado.
   private async assertChecklistNotDispatched(
@@ -1563,6 +1594,18 @@ export class WorkOrderService {
 
     assertStatusTransition(current.status, nextStatus);
 
+    // B-SAN3-14 (R-A4) — a OS com vistoria de ENTREGA em aberto não conclui por nenhum caminho (console, app, sync):
+    // sem isso, a entrega vazia iria para o dossiê de custódia, que é prova. Depois da transição, para a transição
+    // inválida responder como antes. A OS sem execução de entrega (legada, Pergunta 2 = (a)) conclui como hoje.
+    if (nextStatus === "completed" && (await this.hasOpenDeliveryChecklistRun(actor, current))) {
+      throw new WorkOrderError(
+        DELIVERY_CHECKLIST_PENDING_HTTP_STATUS,
+        "WORK_ORDER_UNPROCESSABLE",
+        "delivery_checklist_pending",
+        "Conclua a vistoria de entrega antes de concluir a OS.",
+      );
+    }
+
     // B-SAN3-26 (item 53) — o "No local" exige o veredito de check-in, emitido num ponto só. A chave é o DESTINO:
     // `on_site → on_site` (que `assertStatusTransition` deixa passar) também é conferido.
     const entry = options?.entry ?? "internal";
@@ -1593,6 +1636,16 @@ export class WorkOrderService {
     if (!updated) {
       const reread = await this.rereadAfterStatusMiss(actor, current.id); // B-SAN3-23:releitura-status
       await this.revalidateStatusChange(actor, reread, nextStatus); // B-SAN3-23:revalida-status
+      // B-SAN3-14 (Emenda 3, E3.1) — a trava R-A4 da entrada, de novo e na mesma ordem, sobre a OS relida: entre a
+      // 1ª leitura e a escrita pode ter nascido uma vistoria de entrega em aberto.
+      if (nextStatus === "completed" && (await this.hasOpenDeliveryChecklistRun(actor, reread))) { // B-SAN3-14:trava-na-releitura
+        throw new WorkOrderError(
+          DELIVERY_CHECKLIST_PENDING_HTTP_STATUS,
+          "WORK_ORDER_UNPROCESSABLE",
+          "delivery_checklist_pending",
+          "Conclua a vistoria de entrega antes de concluir a OS.",
+        );
+      }
       // Emenda 3, item 1 — o veredito é RECALCULADO sobre a OS relida, antes da regravação: a placa pode ter mudado.
       checkin = await this.verifyCheckinForStatus(actor, reread, nextStatus, body, entry); // B-SAN3-26:veredito-na-releitura
       fromStatus = reread.status;
@@ -2475,6 +2528,15 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
         // o erro destrói informação em vez de adiar trabalho.
         return true;
       }
+    },
+    // B-SAN3-14 (R-A4) — fase e situação das vistorias da OS, para a trava da conclusão. SEM `catch`: a falha propaga e
+    // o serviço recusa a conclusão (fail-closed). `roleAware` para enxergar a entrega; a lista é tenant-scoped.
+    listChecklistRunPhases: async (actor, workOrderId) => {
+      const { createDefaultChecklistService } = await import("../checklists/checklist.service.js");
+      const service = await createDefaultChecklistService();
+      const runs = await service.listRunsForWorkOrder(actor, workOrderId, undefined, { roleAware: true });
+
+      return runs.map((run) => ({ role: run.role ?? null, status: run.status }));
     },
     // §10.2.9 — `isApplicabilityRuleCustomerScoped` fica DESLIGADO nesta fatia, e não por esquecimento: sem
     // rota que crie regra, nenhuma linha pode nascer `resolved`, logo nenhuma linha tem `rule_id` e não há o

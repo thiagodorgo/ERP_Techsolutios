@@ -13916,6 +13916,48 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
 - **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).
 
+## P-SAN3-14-DOSSIE-SEM-FASE (2026-11-11) — o dossiê de custódia não mostra a fase de cada vistoria — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` na forma do dossiê (o `mapRun` de `src/modules/impound/impound.checklist-link-prisma.repository.ts` não carrega `role` e é anterior ao bloco; o par coleta + entrega do mesmo modelo nasce no `B-SAN3-14`) · **dono:** um bloco curto de dossiê no molde do `B-SAN3-11` (DTO em `src/modules/impound/**` + rótulo em `frontend/src/modules/patios/processes/**`), depois do merge do `B-SAN3-14` · **bloqueia:** não (`src/modules/impound/**` é PROIBIDO no `B-SAN3-14`).
+- **origem:** crítica r2 do plano do `B-SAN3-14` (A-R2-05), transcrita na emenda 1 §8.
+- **critério de encerramento:** o dossiê carrega a fase de cada vistoria e a rotula "Coleta"/"Entrega" (legado `null` = Coleta); um teste com coleta e entrega do **mesmo modelo** fica vermelho sem o conserto. O PR do `B-SAN3-14` declara o resíduo no corpo.
+
+## P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA (2026-11-11) — vistoria reaberta ou cancelada no servidor não chega ao app que já a baixou — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o app re-casa o `serverId` a cada abertura e não conhece versões; a reabertura existe desde o PR-03; o `B-SAN3-14` só herda a fase na reabertura e, na pré-carga, não regrava `serverId` casado) · **dono:** `B-SAN3-16` (fila e sync do app) ou bloco próprio, a critério do orquestrador · **bloqueia:** não.
+- **origem:** emenda 1 do plano do `B-SAN3-14` §8.
+- **critério de encerramento:** a reabertura no servidor de uma vistoria já baixada aparece no app como run nova da mesma fase, sem regravar a concluída; uma run cancelada no servidor deixa de segurar a OS no app; testes com vermelho-controle nos dois casos.
+
+## P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO (2026-11-11) — a coleta aberta sem sinal numa OS sem execução fica "pronta" para sempre — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`D-CHK-DISPATCH-CREATE`: a coleta aberta sem sinal numa OS cuja provisão falhou cria run local que, com sinal e sem par, volta `ready` sem `serverId`, `checklist_repository.dart`, `resolveRunForWorkOrder`); o `B-SAN3-14` fecha isso só para a entrega (R-R2-02) · **dono:** `B-SAN3-16` · **bloqueia:** não.
+- **origem:** emenda 1 do plano do `B-SAN3-14` §8.
+- **critério de encerramento:** a coleta sem execução no servidor aparece como "aguardando envio" e não é dada como pronta; as respostas ficam preservadas; teste com vermelho-controle.
+
+## P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP (2026-11-11) — OS concluída sem a entrega baixada, recusada pelo servidor, não volta ao atendimento no app — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (nasce da trava nova do `B-SAN3-14`); não grave pela triagem §C7 item 10(3): sem perda de dado · **dono:** `B-SAN3-16` · **bloqueia:** não.
+- **origem:** HIPÓTESE do R-R2-01 (emenda 1 do plano do `B-SAN3-14`), **negada** pela medição do dev na fatia 2 (`controle/decisoes.md`, `REGISTRO-B-SAN3-14`): "Descartar" a ação na tela de sincronização não mexe na OS, que fica `completed`/`pending`, e a carga da lista preserva OS `pending`; a tela de execução só abre em "Em atendimento"/"Pausada". A OS do servidor fica aberta e a entrega continua respondível pelo console ou por outro aparelho.
+- **critério de encerramento:** OS concluída sem sinal, recusada por `delivery_checklist_pending` e com a entrega baixada depois: o técnico chega à entrega pelo app e, concluída a entrega, a OS conclui sem "Descartar"; teste com vermelho-controle.
+
+## P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES (2026-11-11) — a comparação coleta × entrega não serve a modelos diferentes — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (a tela de comparação usa UM schema, o do `checklistId` da rota, e procura as runs por fase em todos os modelos) · **dono:** o próximo bloco que tocar a comparação no app · **bloqueia:** não (o `B-SAN3-14` só mostra "Comparar coleta × entrega" quando as duas vistorias confirmadas são do mesmo modelo, R-D1).
+- **origem:** plano v2 do `B-SAN3-14`, achado derivado D1.
+- **critério de encerramento:** coleta e entrega de modelos diferentes comparam pelos componentes equivalentes (ou a regra de "o que se compara" é decidida pelo dono); teste com os dois modelos.
+
+## P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA (2026-11-11) — a vistoria de entrega de OS cancelada depois do despacho fica em andamento — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (custo aceito pelo dono na decisão A, `D-PORTAO-9-RECOMENDACOES-1011`: uma unidade cobrada e uma execução `in_progress` que nenhum caminho encerra; OS cancelada não abre custódia, então o dossiê não é afetado) · **dono:** um bloco de higiene das vistorias de OS encerrada · **bloqueia:** não.
+- **origem:** plano v2 do `B-SAN3-14` §8.
+- **critério de encerramento:** a vistoria de entrega de OS cancelada sai de "em andamento" (cancelada), sem nova unidade cobrada; teste com vermelho-controle.
+
+## P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR (2026-11-11) — a tela de conclusão do prestador recusa toda OS com vistoria — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`work_order_conclusion_screen.dart` passa `checklistComplete = wo?.checklistId == null`; o `B-SAN3-14` só acrescenta o parâmetro `deliveryComplete` com o mesmo valor conservador) · **dono:** `B-SAN3-15` (fluxo do prestador) · **bloqueia:** não.
+- **origem:** plano v2 do `B-SAN3-14`, achado derivado D2 (nota para o `B-SAN3-15`).
+- **critério de encerramento:** a conclusão do prestador lê a situação real da vistoria da OS; teste com OS com e sem vistoria concluída.
+
 ## P-SAN3-15-QTD-FRACIONADA (2026-11-11) — a seleção de peça no app é em inteiros: "2,5 m" deixa escolher até 2 — BAIXA
 
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (decisão do plano `plano-B-SAN3-15-v2.md` §2.1 P6 e §2.5) · **dono:** a nomear pelo orquestrador (bloco de estoque do app) · **bloqueia:** não.

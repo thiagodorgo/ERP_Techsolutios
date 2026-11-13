@@ -11,10 +11,12 @@ import type { WorkOrderChecklistLink } from "../src/modules/work-orders/work-ord
 //
 //  · §7.2  — congela TODAS as vistorias vivas, não só a que vai a campo;
 //  · §7.3  — provisiona SÓ a primária (escolha (b)), e registra as demais em vez de as esconder;
+//            B-SAN3-14 revê a (b) para a ENTREGA: a linha `delivery` congelada no despacho também vira execução
+//            (decisão A do dono, `D-PORTAO-9-RECOMENDACOES-1011`), e deixa de ser registrada como diferida;
 //  · BLOQ 3 — nunca provisiona linha que o congelamento não viu;
 //  · ALTA 9 — vistoria prometida que não foi (modelo despublicado) vira linha de auditoria, não silêncio.
 
-test("[conjunto] duas fases do MESMO modelo → congela as 2, provisiona SÓ a primária, registra a diferida", async () => {
+test("[conjunto] par coleta+entrega do mesmo modelo → 2 execuções, uma por fase, deferred vazio", async () => {
   await withDispatch(async (ctx) => {
     const tpl = await ctx.publishTemplate("Vistoria do Veículo");
     const workOrder = await ctx.createWorkOrder(tpl.id);
@@ -36,17 +38,118 @@ test("[conjunto] duas fases do MESMO modelo → congela as 2, provisiona SÓ a p
     );
     assert.notEqual((await ctx.getWorkOrder(workOrder.id)).checklistSnapshot, null);
 
-    // §7.3 — UMA execução, a da primária. Provisionar as duas entregaria uma unidade FATURADA que ninguém no
-    // app consegue abrir hoje, e uma vistoria vazia dentro do dossiê de custódia (prova jurídica).
-    assert.equal(ctx.provisioned.length, 1);
-    assert.equal(ctx.provisioned[0].checklistId, tpl.id);
-    assert.equal(ctx.provisioned[0].role, "collection");
+    // B-SAN3-14 (P2) — DUAS execuções, uma por fase. A premissa da escolha (b) do §7.3 (o app não alcança a
+    // entrega) caiu: o app abre a entrega pela tela de execução, casando por (modelo, fase), e a OS não conclui no
+    // servidor com a entrega aberta (a entrega vazia não vai ao dossiê de custódia).
+    assert.deepEqual(
+      ctx.provisioned.map((entry) => `${entry.checklistId}:${entry.role}`),
+      [`${tpl.id}:collection`, `${tpl.id}:delivery`],
+    );
+    const runs = (await ctx.listRuns()) as Array<{ role?: string }>;
+    assert.equal(runs.length, 2);
+    assert.deepEqual(runs.map((run) => run.role).sort(), ["collection", "delivery"]);
 
-    // …e a que ficou para depois NÃO some: vira linha na história da ordem, que o app de campo lê.
+    // R-A11 — a entrega virou execução, então NÃO é mais registrada como diferida.
+    assert.deepEqual(ctx.deferred, []);
+  });
+});
+
+// B-SAN3-14 — só a ENTREGA deixou de ser diferida. As outras secundárias (genérica, ou uma 2ª coleta) seguem a
+// escolha (b) do §7.3: congeladas, registradas como diferidas, sem execução e sem unidade faturada.
+test("[secundária generic segue diferida]", async () => {
+  await withDispatch(async (ctx) => {
+    const coleta = await ctx.publishTemplate("Vistoria de coleta");
+    const geral = await ctx.publishTemplate("Vistoria geral");
+    const workOrder = await ctx.createWorkOrder(coleta.id);
+    ctx.setLinks(workOrder.id, [
+      ctx.link(workOrder.id, coleta.id, "collection", 0),
+      ctx.link(workOrder.id, geral.id, "generic", 1),
+    ]);
+
+    await ctx.dispatch(workOrder.id);
+
+    assert.deepEqual(
+      ctx.provisioned.map((entry) => `${entry.checklistId}:${entry.role}`),
+      [`${coleta.id}:collection`],
+    );
+    assert.equal((await ctx.listRuns()).length, 1);
     assert.deepEqual(
       ctx.deferred.map((entry) => `${entry.checklistId}:${entry.role}`),
-      [`${tpl.id}:delivery`],
+      [`${geral.id}:generic`],
     );
+  });
+});
+
+// B-SAN3-14 (R-A7) — a reatribuição respeita a MESMA trava de congelamento para a entrega: a linha acrescentada
+// depois do despacho nunca recebeu o formulário congelado, então não vai a campo (nem é faturada), e o fato vai
+// para a linha do tempo do DESPACHO com a razão própria.
+test("[reatribuição] entrega acrescentada depois do despacho (sem congelamento) não vira execução e registra checklist_not_frozen", async () => {
+  await withDispatch(async (ctx) => {
+    const coleta = await ctx.publishTemplate("Vistoria de coleta");
+    const entrega = await ctx.publishTemplate("Vistoria de entrega");
+    const workOrder = await ctx.createWorkOrder(coleta.id);
+    ctx.setLinks(workOrder.id, [ctx.link(workOrder.id, coleta.id, "collection", 0)]);
+
+    const dispatch = await ctx.dispatch(workOrder.id);
+    assert.equal((await ctx.listRuns()).length, 1);
+
+    // O operador acrescenta a entrega DEPOIS do despacho: linha viva, sem congelamento.
+    ctx.setLinks(workOrder.id, [...ctx.links(workOrder.id), ctx.link(workOrder.id, entrega.id, "delivery", 1)]);
+    ctx.provisioned.length = 0;
+
+    await ctx.reassign(dispatch.id);
+
+    assert.equal(
+      ctx.provisioned.some((entry) => entry.role === "delivery"),
+      false,
+      "a entrega sem congelamento chegou ao provisionador",
+    );
+    assert.equal((await ctx.listRuns()).length, 1, "nasceu execução da entrega sem congelamento");
+    await ctx.flushCloudUsage();
+    assert.equal(await ctx.billedRuns(), 1);
+    const failures = (await ctx.timeline(dispatch.id)).filter(
+      (event) => event.eventType === "field_dispatch_checklist_run_failed",
+    );
+    assert.equal(failures.length, 1);
+    assert.equal(failures[0].metadata.reason, "checklist_not_frozen");
+    assert.equal(failures[0].metadata.checklistId, entrega.id);
+    assert.deepEqual(ctx.missing, []);
+  });
+});
+
+// B-SAN3-14 (R-A7) — a recuperação: a entrega foi congelada no despacho, mas a execução não nasceu (fail-open). A
+// reatribuição (antes de "No local") a recria, como já fazia com a primária. A falha do despacho foi auditada.
+test("[reatribuição] entrega congelada sem execução é recriada", async () => {
+  await withDispatch(async (ctx) => {
+    const tpl = await ctx.publishTemplate("Vistoria do Veículo");
+    const workOrder = await ctx.createWorkOrder(tpl.id);
+    ctx.setLinks(workOrder.id, [
+      ctx.link(workOrder.id, tpl.id, "collection", 0),
+      ctx.link(workOrder.id, tpl.id, "delivery", 1),
+    ]);
+    // As duas provisões do despacho falham (primária e entrega).
+    ctx.failProvisionOnce();
+    ctx.failProvisionOnce();
+
+    const dispatch = await ctx.dispatch(workOrder.id);
+    assert.equal((await ctx.listRuns()).length, 0);
+    const naCriacao = (await ctx.timeline(dispatch.id)).filter(
+      (event) => event.eventType === "field_dispatch_checklist_run_failed",
+    );
+    assert.deepEqual(
+      naCriacao.map((event) => event.metadata.reason),
+      ["unexpected", "unexpected"],
+      "a falha da entrega no despacho não foi auditada",
+    );
+    assert.notEqual(ctx.links(workOrder.id)[1].checklistSnapshot, null, "a entrega não foi congelada");
+
+    await ctx.reassign(dispatch.id);
+
+    const runs = (await ctx.listRuns()) as Array<{ role?: string }>;
+    assert.deepEqual(runs.map((run) => run.role).sort(), ["collection", "delivery"]);
+    // Re-reatribuir não duplica (a chave carrega a fase).
+    await ctx.reassign(dispatch.id);
+    assert.equal((await ctx.listRuns()).length, 2);
   });
 });
 
@@ -350,11 +453,11 @@ test("[BLOQ 2 · TOCTOU] o laço não cria execução nem com o modelo voltando 
       ctx.link(workOrder.id, geral.id, "generic", 2),
     ]);
 
-    // Despacho #1: congela as três, provisiona só a primária. UMA unidade faturada.
+    // Despacho #1: congela as três, provisiona a primária e a entrega (B-SAN3-14). DUAS unidades faturadas.
     await ctx.dispatch(workOrder.id);
-    assert.equal(ctx.provisioned.length, 1);
+    assert.equal(ctx.provisioned.length, 2);
     await ctx.flushCloudUsage();
-    assert.equal(await ctx.billedRuns(), 1);
+    assert.equal(await ctx.billedRuns(), 2);
 
     // A organização tira a "geral" de circulação…
     await ctx.inactivateTemplate(geral.id);
@@ -366,13 +469,13 @@ test("[BLOQ 2 · TOCTOU] o laço não cria execução nem com o modelo voltando 
 
     // A trava: nenhuma execução NOVA — nem a secundária que a tentativa criava, nem qualquer outra.
     await ctx.flushCloudUsage();
-    assert.equal(await ctx.billedRuns(), 1, "o laço de auditoria emitiu uma unidade faturada");
-    assert.equal((await ctx.listRuns()).length, 1);
-    // O provisionador SÓ foi consultado sobre a primária (o re-despacho a re-pede, e a idempotência devolve a
-    // mesma execução). Nenhuma secundária chegou perto dele — a §7.3 não depende de quem ganhou a corrida.
+    assert.equal(await ctx.billedRuns(), 2, "o laço de auditoria emitiu uma unidade faturada");
+    assert.equal((await ctx.listRuns()).length, 2);
+    // O provisionador SÓ foi consultado sobre a primária e a entrega (o re-despacho as re-pede, e a idempotência
+    // devolve as mesmas execuções). A genérica não chegou perto dele — a §7.3 não depende de quem ganhou a corrida.
     assert.deepEqual(
       [...new Set(ctx.provisioned.map((entry) => `${entry.checklistId}:${entry.role}`))],
-      [`${coleta.id}:collection`],
+      [`${coleta.id}:collection`, `${entrega.id}:delivery`],
     );
     // E a pergunta foi feita por LEITURA, sobre a linha certa.
     assert.deepEqual(
@@ -495,8 +598,12 @@ test("[MÉDIA 3] a trava da linha sem congelamento AUDITA em vez de sair calada"
 
     await ctx.reassign(dispatch.id);
 
-    // A trava continua trancando: nada vai a campo sem congelamento (é o BLOQ 3).
-    assert.equal(ctx.provisioned.length, 0);
+    // A trava continua trancando: nada vai a campo sem congelamento (é o BLOQ 3). B-SAN3-14: a entrega, que ESTÁ
+    // congelada, é a única que o reassign (re)provisiona; a primária sem congelamento não chega ao provisionador.
+    assert.deepEqual(
+      ctx.provisioned.map((entry) => `${entry.checklistId}:${entry.role}`),
+      [`${tpl.id}:delivery`],
+    );
 
     // …mas agora ela DIZ. Razão própria: o modelo está publicadíssimo, colapsá-la em `template_not_published`
     // afirmaria um fato falso.
@@ -536,7 +643,15 @@ test("[MÉDIA 3] a trava da linha sem congelamento AUDITA em vez de sair calada"
 //  4. contrato nomeado e versionado (§C6) em `tests/mobile-backend-contracts.test.ts`;
 //  5. suíte Flutter cobrindo `generic` e `null`.
 // Apagar este guard sem os cinco é reabrir `P-CHK-FLUTTER-KIND-COLAPSA`.
-test("[BLOQ 4] a fase é carimbada na execução mas NÃO é exposta pelo DTO", async () => {
+//
+// B-SAN3-14 — OS CINCO CHEGARAM, E O GUARD VIROU CONTRATO. A fase passa a sair SÓ para o app que a pede
+// (`GET /mobile/checklist-runs?roleAware=1`), no contrato nomeado `checklist_run_role@2026-11.b-san3-14`
+// (`tests/mobile-backend-contracts.test.ts`), que também afirma a lista sem o parâmetro igual à de hoje. Onde cada
+// exigência mora: (1) `MobileChecklistRunKind.fromServerRole` (`generic` e `collection` → coleta); (2) a pré-carga
+// não muda o `kind` de run local conhecida (`bsan314_fase_da_vistoria_test.dart`); (3) o pick por (modelo, fase),
+// sem fallback; (4) o contrato acima; (5) a suíte Flutter com `generic` e `null`. Este caso fica como a metade de
+// ausência: o DTO PADRÃO (todas as superfícies menos a lista do app novo) continua sem a chave.
+test("[BLOQ 4 → contrato b-san3-14] o DTO padrão continua SEM a fase; só `withRole` a expõe", async () => {
   const { toChecklistRunDto } = await import("../src/modules/checklists/checklist.dto.js");
 
   const now = new Date();
@@ -554,6 +669,22 @@ test("[BLOQ 4] a fase é carimbada na execução mas NÃO é exposta pelo DTO", 
 
   assert.equal("role" in dto, false);
   assert.equal(JSON.stringify(dto).includes("generic"), false);
+
+  const comFase = toChecklistRunDto(
+    {
+      id: "11111111-1111-4111-8111-111111111111",
+      tenantId: "22222222-2222-4222-8222-222222222222",
+      templateId: "33333333-3333-4333-8333-333333333333",
+      templateVersion: 1,
+      role: "delivery",
+      status: "in_progress",
+      startedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    },
+    { withRole: true },
+  );
+  assert.equal(comFase.role, "delivery");
 });
 
 // ---------- harness ----------

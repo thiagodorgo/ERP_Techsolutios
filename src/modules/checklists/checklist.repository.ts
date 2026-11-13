@@ -587,6 +587,9 @@ export class InMemoryChecklistRepository implements ChecklistRepository {
       relatedEntityId: previous.relatedEntityId,
       reopenedFromRunId: previous.id,
       reopenReason: data.reason,
+      // B-SAN3-14 (R-A3) — a versão reaberta é a MESMA vistoria (coleta ou entrega): herda a fase da anterior.
+      // Sem isso, a entrega reaberta voltava sem fase e o app a leria como coleta.
+      role: previous.role,
       status: "in_progress",
       startedBy: data.actorUserId,
       startedAt: now,

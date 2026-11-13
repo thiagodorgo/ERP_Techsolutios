@@ -426,10 +426,16 @@ export class ChecklistService {
   // `created_at` desc (mais recente primeiro — a run vigente por recência); (2) o app deve casar pelo checklist
   // VIGENTE da OS passando o filtro opcional `?checklistId=` (aqui aplicado por `templateId`). Re-despacho com o
   // MESMO checklist continua idempotente (1 run). `checklistId` vazio → sem filtro (devolve todas, desc).
+  //
+  // B-SAN3-14 (R-A1) — sem `roleAware`, a vistoria de ENTREGA (`role = "delivery"`) fica fora da lista: o app antigo
+  // casa só por modelo e pega a primeira não terminal, e a entrega do mesmo modelo receberia as respostas da coleta.
+  // Ela só existe a partir deste bloco (o despacho passa a provisioná-la), então a lista sem o parâmetro é, para
+  // esse app, exatamente a de hoje.
   async listRunsForWorkOrder(
     actor: ActorContext,
     workOrderIdRaw: unknown,
     checklistIdRaw?: unknown,
+    options?: { readonly roleAware?: boolean },
   ): Promise<readonly ChecklistRun[]> {
     const workOrderId = typeof workOrderIdRaw === "string" ? workOrderIdRaw.trim() : "";
 
@@ -445,7 +451,13 @@ export class ChecklistService {
     const runs = await this.repository.listRunsByRelatedEntity(actor.tenantId, "work_order", workOrderId);
     const checklistId = typeof checklistIdRaw === "string" ? checklistIdRaw.trim() : "";
 
-    return checklistId ? runs.filter((run) => run.templateId === checklistId) : runs;
+    let visible = checklistId ? runs.filter((run) => run.templateId === checklistId) : runs;
+
+    if (!options?.roleAware) {
+      visible = visible.filter((run) => run.role !== "delivery");
+    }
+
+    return visible;
   }
 
   /**
