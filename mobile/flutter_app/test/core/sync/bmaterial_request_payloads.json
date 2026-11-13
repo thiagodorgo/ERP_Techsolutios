@@ -1,0 +1,38 @@
+{
+  "contrato": "B-MATERIAL-REENVIO RC4b: gerado pela cadeia real do app (bmaterial_codec_test.dart); não editar à mão",
+  "pedidos": {
+    "work_order_material.add": {
+      "client_batch_id": "inventory-batch-0-00000000-0000-4000-8000-000000000001",
+      "actions": [
+        {
+          "client_action_id": "00000000-0000-4000-8000-000000000001",
+          "type": "work_order_material.add",
+          "local_created_at": "2026-11-13T12:00:00.000Z",
+          "payload": {
+            "work_order_local_id": "wo-contrato",
+            "material_local_id": "mat-local-00000000-0000-4000-8000-000000000002",
+            "sku": "ELE-0102",
+            "quantity": 2,
+            "work_order_id": "00000000-0000-4000-8000-000000000003"
+          }
+        }
+      ]
+    },
+    "work_order_material.remove": {
+      "client_batch_id": "inventory-batch-0-00000000-0000-4000-8000-000000000004",
+      "actions": [
+        {
+          "client_action_id": "00000000-0000-4000-8000-000000000004",
+          "type": "work_order_material.remove",
+          "local_created_at": "2026-11-13T12:00:00.000Z",
+          "payload": {
+            "work_order_local_id": "wo-contrato",
+            "material_local_id": "mat-local-00000000-0000-4000-8000-000000000002",
+            "source_client_action_id": "00000000-0000-4000-8000-000000000001",
+            "work_order_id": "00000000-0000-4000-8000-000000000003"
+          }
+        }
+      ]
+    }
+  }
+}

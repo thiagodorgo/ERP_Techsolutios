@@ -338,6 +338,11 @@ jobs:
           SUITES="$SUITES tests/b-o6r-09-harness-ddl-db.test.ts"
           SUITES="$SUITES tests/b-o6r-12-regime-snapshot-db.test.ts"
           SUITES="$SUITES tests/b-o6r-12-regime-migration-drill-db.test.ts"
+          # B-MATERIAL-REENVIO (item 63 do portão; R-C21-01, autorizado pelo dono como no 15a) — a suíte `-db` do material da
+          # OS: baixa durável por origem depois de reinício e sob corrida com payloads diferentes, organização separada, estorno
+          # e reenvio, custódia profissional e gerente sem e com cadastro (RC3(1)-(8), K = 8). Medida a lista inteira 3× nesta
+          # forma antes de entrar (72 arquivos, banco migrado e semeado): 610/610, 0 falha, 0 pulo, denominador constante.
+          SUITES="$SUITES tests/b-material-sync-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

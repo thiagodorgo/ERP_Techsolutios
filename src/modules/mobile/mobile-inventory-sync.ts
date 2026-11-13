@@ -1,4 +1,17 @@
+import pino from "pino";
+
+import { env } from "../../config/env.js";
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import type { InventoryService } from "../inventory/inventory.service.js";
+import type { StockMovement } from "../inventory/inventory.types.js";
+import { parseRequiredUuid } from "../inventory/inventory.validators.js";
+import type { WorkOrderService } from "../work-orders/work-order.service.js";
+import {
+  actorMutatesAssignedOnly,
+  ASSIGNMENT_CHANGED_CONFLICT_TYPE,
+  ASSIGNMENT_CHANGED_NEXT_ACTION,
+  isPreviouslyAssignedRefusal,
+} from "../work-orders/work-order.types.js";
 
 type RawRecord = Record<string, unknown>;
 
@@ -29,6 +42,10 @@ type MobileInventoryActionResult = {
   readonly status: MobileInventoryActionOutcome;
   readonly item_id?: string;
   readonly warehouse_id?: string;
+  readonly work_order_id?: string;
+  readonly work_order_local_id?: string;
+  readonly material_local_id?: string;
+  readonly result_ref?: string;
   readonly server_state?: InventoryItemState | {
     readonly shortage_report_id: string;
     readonly item_id: string;
@@ -36,6 +53,12 @@ type MobileInventoryActionResult = {
     readonly reported_quantity: number;
     readonly reason: string;
     readonly status: "reported";
+  } | {
+    readonly movement_id: string;
+    readonly item_id: string;
+    readonly sku: string;
+    readonly quantity: number;
+    readonly work_order_id: string;
   };
   readonly error?: {
     readonly code: string;
@@ -76,7 +99,7 @@ export type MobileInventoryAvailabilityResponse = {
 export type MobileInventorySyncResponse = {
   readonly contract: {
     readonly name: "mobile_inventory_actions_sync";
-    readonly version: "2026-06-15.b098d";
+    readonly version: "2026-11.b-material-reenvio";
     readonly status: "partial";
   };
   readonly client_batch_id: string | null;
@@ -96,6 +119,7 @@ export type MobileInventorySyncResponse = {
 };
 
 const MAX_BATCH_SIZE = 50;
+const logger = pino({ level: env.LOG_LEVEL });
 const syncReceipts = new Map<string, MobileInventorySyncReceipt>();
 const inventoryByTenant = new Map<string, Map<string, InventoryItemState>>();
 const supportedActionTypes: readonly InventoryActionType[] = [
@@ -103,6 +127,12 @@ const supportedActionTypes: readonly InventoryActionType[] = [
   "inventory.consume",
   "inventory.shortage_report",
 ];
+
+export type MobileInventorySyncDeps = {
+  readonly inventory: InventoryService;
+  readonly workOrders: WorkOrderService;
+  readonly workOrdersModuleEnabled: () => Promise<boolean>;
+};
 
 export function getMobileInventoryAvailability(
   actor: AuthenticatedActor | undefined,
@@ -131,6 +161,7 @@ export function getMobileInventoryAvailability(
 export async function syncMobileInventoryActions(
   actor: AuthenticatedActor | undefined,
   body: unknown,
+  deps: MobileInventorySyncDeps,
 ): Promise<MobileInventorySyncResponse> {
   assertSyncActor(actor);
   const request = parseSyncRequest(body);
@@ -140,9 +171,10 @@ export async function syncMobileInventoryActions(
   const alreadyApplied: MobileInventoryActionResult[] = [];
 
   for (const action of request.actions) {
+    const legacyAction = isSupportedActionType(action.type);
     const fingerprint = fingerprintAction(action);
-    const receiptKey = buildReceiptKey(actor, action.client_action_id);
-    const existingReceipt = syncReceipts.get(receiptKey);
+    const receiptKey = legacyAction ? buildReceiptKey(actor, action.client_action_id) : undefined;
+    const existingReceipt = receiptKey ? syncReceipts.get(receiptKey) : undefined;
 
     if (existingReceipt) {
       if (existingReceipt.fingerprint === fingerprint) {
@@ -157,14 +189,18 @@ export async function syncMobileInventoryActions(
       continue;
     }
 
-    const result = processAction(actor, action);
+    const result = await processAction(deps, actor, action);
 
     if (result.status === "accepted") {
-      syncReceipts.set(receiptKey, {
-        fingerprint,
-        result,
-      });
+      if (receiptKey && fingerprint) {
+        syncReceipts.set(receiptKey, { fingerprint, result });
+      }
       accepted.push(result);
+      continue;
+    }
+
+    if (result.status === "already_applied") {
+      alreadyApplied.push(result);
       continue;
     }
 
@@ -179,7 +215,7 @@ export async function syncMobileInventoryActions(
   return {
     contract: {
       name: "mobile_inventory_actions_sync",
-      version: "2026-06-15.b098d",
+      version: "2026-11.b-material-reenvio",
       status: "partial",
     },
     client_batch_id: request.client_batch_id,
@@ -215,8 +251,13 @@ function assertAvailabilityActor(actor: AuthenticatedActor | undefined): asserts
 function assertSyncActor(actor: AuthenticatedActor | undefined): asserts actor is AuthenticatedActor {
   assertBaseActor(actor);
 
-  if (!hasAnyPermission(actor, ["inventory.manage"])) {
-    throw routeError(403, "FORBIDDEN", "permission_required", "One of these permissions is required: inventory.manage.");
+  if (!hasAnyPermission(actor, ["inventory.manage", "work_orders:update"])) {
+    throw routeError(
+      403,
+      "FORBIDDEN",
+      "permission_required",
+      "One of these permissions is required: inventory.manage, work_orders:update.",
+    );
   }
 }
 
@@ -285,14 +326,27 @@ function parseAction(value: unknown): MobileInventoryAction {
   };
 }
 
-function processAction(
+async function processAction(
+  deps: MobileInventorySyncDeps,
   actor: AuthenticatedActor,
   action: MobileInventoryAction,
-): MobileInventoryActionResult {
+): Promise<MobileInventoryActionResult> {
   try {
+    if (action.type === "work_order_material.add") {
+      requireActionPermission(actor, "work_orders:update");
+      return withMaterialEcho(action, await addWorkOrderMaterial(deps, actor, action));
+    }
+
+    if (action.type === "work_order_material.remove") {
+      requireActionPermission(actor, "work_orders:update");
+      return withMaterialEcho(action, await removeWorkOrderMaterial(deps, actor, action));
+    }
+
     if (!isSupportedActionType(action.type)) {
       throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
     }
+
+    requireActionPermission(actor, "inventory.manage");
 
     if (action.type === "inventory.reserve") {
       return reserveInventory(actor, action);
@@ -304,8 +358,213 @@ function processAction(
 
     return reportShortage(actor, action);
   } catch (error) {
-    return actionErrorResult(action, error);
+    if (isRouteLikeError(error) && error.statusCode === 503) throw error;
+    if (isMaterialActionType(action.type) && !isMaterialRefusal(error)) {
+      throw unexpectedMaterialFailure(action, error);
+    }
+    return withMaterialEcho(action, actionErrorResult(action, error));
   }
+}
+
+function isMaterialActionType(type: string): boolean {
+  return type === "work_order_material.add" || type === "work_order_material.remove";
+}
+
+/** Recusa de domínio (4xx com motivo): vira `rejected`/`conflict` por ação. Todo o resto é falha do servidor. */
+function isMaterialRefusal(error: unknown): boolean {
+  return isRouteLikeError(error) && error.statusCode < 500;
+}
+
+/**
+ * C2 item 4 ("outro → propaga") e C1-02 da J-551. No material, a falha que não é recusa de domínio (banco, rede,
+ * bug) derruba o LOTE com 500 `unexpected_error` e mensagem fixa (`docs/mobile-sync-contracts.md`), nunca o texto
+ * do erro. O app trata o 500 como falha transitória e tenta de novo; o reenvio cai no índice de origem, então o
+ * commit ambíguo (a baixa gravada antes da falha) volta `already_applied`, e o que não gravou volta `accepted`.
+ * O log leva o tipo da ação, o nome e o código do erro, nunca a mensagem.
+ */
+function unexpectedMaterialFailure(action: MobileInventoryAction, error: unknown) {
+  logger.warn(
+    {
+      event: "mobile_inventory_sync.material_failure",
+      type: action.type,
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorCode: readErrorCode(error),
+    },
+    "material sync action failed; the batch answers 500",
+  );
+  return routeError(500, "INTERNAL_SERVER_ERROR", "unexpected_error", "Unexpected error.");
+}
+
+function readErrorCode(error: unknown): string | null {
+  if (typeof error !== "object" || error === null || !("code" in error)) return null;
+  return typeof error.code === "string" ? error.code : null;
+}
+
+function withMaterialEcho(
+  action: MobileInventoryAction,
+  result: MobileInventoryActionResult,
+): MobileInventoryActionResult {
+  if (action.type !== "work_order_material.add" && action.type !== "work_order_material.remove") return result;
+  return {
+    ...result,
+    ...(typeof action.payload.work_order_local_id === "string"
+      ? { work_order_local_id: action.payload.work_order_local_id }
+      : {}),
+    ...(typeof action.payload.material_local_id === "string"
+      ? { material_local_id: action.payload.material_local_id }
+      : {}),
+  };
+}
+
+async function addWorkOrderMaterial(
+  { inventory, workOrders, workOrdersModuleEnabled }: MobileInventorySyncDeps,
+  actor: AuthenticatedActor,
+  action: MobileInventoryAction,
+): Promise<MobileInventoryActionResult> {
+  const sourceId = parseClientActionId(action.client_action_id);
+  const sku = parseRequiredString(action.payload.sku, "sku");
+  const quantity = parsePositiveInteger(action.payload.quantity, "quantity");
+  const workOrderId = parseMaterialWorkOrderId(action.payload.work_order_id);
+
+  if (!(await workOrdersModuleEnabled())) {
+    throw routeError(403, "FORBIDDEN", "module_not_enabled", "The work_orders module is not enabled.");
+  }
+
+  await (actorMutatesAssignedOnly(actor)
+    ? workOrders.getForMutation(actor, workOrderId)
+    : workOrders.get(actor, workOrderId));
+
+  const item = await inventory.findItemBySku(actor, sku);
+  if (!item) {
+    throw routeError(404, "INVENTORY_ITEM_NOT_FOUND", "inventory_item_not_found", "Inventory item not found.");
+  }
+
+  const existing = await inventory.findExitBySource(actor, "work_order_material", sourceId);
+  if (existing) {
+    return materialReplayResult(actor, action, existing, item.id, quantity, workOrderId);
+  }
+
+  const custody = await inventory.actorStockCustody(actor);
+  if (!custody) {
+    throw routeError(
+      422,
+      "INVENTORY_INVALID",
+      "operator_profile_required",
+      "An active operator profile is required to post material for this field actor.",
+    );
+  }
+
+  const movement = await inventory.createExitForSource(actor, {
+    sourceType: "work_order_material",
+    sourceId,
+    itemId: item.id,
+    quantity,
+    workOrderId,
+    custody,
+  });
+  const replay = materialReplayResult(actor, action, movement, item.id, quantity, workOrderId);
+  if (replay.status === "conflict") return replay;
+
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "accepted",
+    item_id: item.id,
+    work_order_id: workOrderId,
+    result_ref: movement.id,
+    server_state: materialServerState(movement, item.sku, quantity, workOrderId),
+  };
+}
+
+async function removeWorkOrderMaterial(
+  { inventory, workOrders, workOrdersModuleEnabled }: MobileInventorySyncDeps,
+  actor: AuthenticatedActor,
+  action: MobileInventoryAction,
+): Promise<MobileInventoryActionResult> {
+  parseClientActionId(action.client_action_id);
+  const sourceId = parseSourceClientActionId(action.payload.source_client_action_id);
+  const payloadWorkOrderId = parseMaterialWorkOrderId(action.payload.work_order_id);
+
+  if (!(await workOrdersModuleEnabled())) {
+    throw routeError(403, "FORBIDDEN", "module_not_enabled", "The work_orders module is not enabled.");
+  }
+
+  const exit = await inventory.findExitBySource(actor, "work_order_material", sourceId);
+  if (!exit) {
+    return {
+      client_action_id: action.client_action_id,
+      type: action.type,
+      status: "already_applied",
+      work_order_id: payloadWorkOrderId,
+    };
+  }
+
+  const exitWorkOrderId = parseMaterialWorkOrderId(exit.workOrderId);
+  try {
+    await (actorMutatesAssignedOnly(actor)
+      ? workOrders.getForMutation(actor, exitWorkOrderId)
+      : workOrders.get(actor, exitWorkOrderId));
+  } catch (error) {
+    // N4 e C1-01 da J-551: o conflito do ex-técnico aponta a OS DA BAIXA, nunca a OS que o payload cita.
+    if (isPreviouslyAssignedRefusal(error) && isRouteLikeError(error)) {
+      return assignmentChangedConflict(action, exitWorkOrderId, error);
+    }
+    throw error;
+  }
+
+  if (payloadWorkOrderId !== exitWorkOrderId) {
+    throw routeError(422, "INVENTORY_INVALID", "work_order_mismatch", "work_order_id differs from the material exit.");
+  }
+
+  if (exit.createdBy !== actor.userId) {
+    return materialConflict(action, "action_owned_by_other_actor", exit);
+  }
+
+  const reversal = await inventory.removeExitForSource(actor, "work_order_material", sourceId);
+  if (!reversal) {
+    return {
+      client_action_id: action.client_action_id,
+      type: action.type,
+      status: "already_applied",
+      work_order_id: exitWorkOrderId,
+    };
+  }
+
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "accepted",
+    item_id: exit.itemId,
+    work_order_id: exitWorkOrderId,
+    result_ref: reversal.id,
+  };
+}
+
+function materialReplayResult(
+  actor: AuthenticatedActor,
+  action: MobileInventoryAction,
+  movement: StockMovement,
+  itemId: string,
+  quantity: number,
+  workOrderId: string,
+): MobileInventoryActionResult {
+  if (movement.createdBy !== actor.userId) {
+    return materialConflict(action, "action_owned_by_other_actor", movement);
+  }
+
+  const samePayload = movement.itemId === itemId
+    && Math.abs(movement.quantidadeSinalizada) === quantity
+    && movement.workOrderId === workOrderId;
+  if (!samePayload) return materialConflict(action, "idempotency_payload_mismatch", movement);
+
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "already_applied",
+    item_id: movement.itemId,
+    work_order_id: movement.workOrderId,
+    result_ref: movement.id,
+  };
 }
 
 function reserveInventory(
@@ -391,6 +650,14 @@ function actionErrorResult(
   action: MobileInventoryAction,
   error: unknown,
 ): MobileInventoryActionResult {
+  if (isPreviouslyAssignedRefusal(error) && isRouteLikeError(error)) {
+    return assignmentChangedConflict(action, readWorkOrderId(action), error);
+  }
+
+  if (isRouteLikeError(error) && error.statusCode === 409) {
+    return materialConflict(action, error.reason);
+  }
+
   if (isRouteLikeError(error)) {
     return {
       client_action_id: action.client_action_id,
@@ -419,6 +686,83 @@ function actionErrorResult(
       reason: "invalid_action",
       message,
     },
+  };
+}
+
+/** O ex-técnico da OS: conflito à espera do supervisor, com `server_id`/`work_order_id` da OS que o escopo julgou. */
+function assignmentChangedConflict(
+  action: MobileInventoryAction,
+  workOrderId: string | undefined,
+  error: { readonly code: string; readonly reason: string; readonly message: string },
+): MobileInventoryActionResult {
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "conflict",
+    work_order_id: workOrderId,
+    conflict: {
+      conflict_type: ASSIGNMENT_CHANGED_CONFLICT_TYPE,
+      server_id: workOrderId,
+      local: sanitizeActionForConflict(action),
+      next_action: ASSIGNMENT_CHANGED_NEXT_ACTION,
+    },
+    error: {
+      code: error.code,
+      reason: error.reason,
+      message: error.message,
+    },
+  };
+}
+
+function materialConflict(
+  action: MobileInventoryAction,
+  conflictType: string,
+  movement?: StockMovement,
+): MobileInventoryActionResult {
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "conflict",
+    item_id: movement?.itemId,
+    work_order_id: movement?.workOrderId ?? readWorkOrderId(action),
+    conflict: {
+      conflict_type: conflictType,
+      server_id: movement?.id,
+      local: sanitizeActionForConflict(action),
+      ...(movement ? {
+        remote: {
+          movement_id: movement.id,
+          item_id: movement.itemId,
+          quantity: Math.abs(movement.quantidadeSinalizada),
+          work_order_id: movement.workOrderId,
+        },
+      } : {}),
+      next_action: conflictType === "assignment_changed_pending_review"
+        ? ASSIGNMENT_CHANGED_NEXT_ACTION
+        : "review_material_and_retry",
+    },
+    error: {
+      code: "MOBILE_SYNC_CONFLICT",
+      reason: conflictType,
+      message: conflictType === "action_owned_by_other_actor"
+        ? "client_action_id belongs to another actor."
+        : "The material action conflicts with server state.",
+    },
+  };
+}
+
+function materialServerState(
+  movement: StockMovement,
+  sku: string,
+  quantity: number,
+  workOrderId: string,
+): Extract<NonNullable<MobileInventoryActionResult["server_state"]>, { movement_id: string }> {
+  return {
+    movement_id: movement.id,
+    item_id: movement.itemId,
+    sku,
+    quantity,
+    work_order_id: workOrderId,
   };
 }
 
@@ -638,6 +982,43 @@ function parsePositiveNumber(value: unknown, field: string): number {
   return value;
 }
 
+function parsePositiveInteger(value: unknown, field: string): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
+    throw routeError(400, "BAD_REQUEST", "invalid_quantity", `${field} must be a positive integer.`);
+  }
+
+  return value;
+}
+
+function parseMaterialWorkOrderId(value: unknown): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw routeError(400, "BAD_REQUEST", "work_order_id_required", "work_order_id is required.");
+  }
+
+  return parseRequiredUuid(value, "work_order_id");
+}
+
+function parseClientActionId(value: unknown): string {
+  try {
+    return parseRequiredUuid(value, "client_action_id");
+  } catch {
+    throw routeError(400, "BAD_REQUEST", "invalid_client_action_id", "client_action_id must be a valid UUID.");
+  }
+}
+
+function parseSourceClientActionId(value: unknown): string {
+  try {
+    return parseRequiredUuid(value, "source_client_action_id");
+  } catch {
+    throw routeError(
+      400,
+      "BAD_REQUEST",
+      "invalid_client_action_id",
+      "source_client_action_id must be a valid UUID.",
+    );
+  }
+}
+
 function asRecord(value: unknown, field: string): RawRecord {
   if (isPlainRecord(value)) {
     return value;
@@ -662,6 +1043,10 @@ function readWarehouseId(action: MobileInventoryAction): string | undefined {
   return typeof action.payload.warehouse_id === "string" ? action.payload.warehouse_id : undefined;
 }
 
+function readWorkOrderId(action: MobileInventoryAction): string | undefined {
+  return typeof action.payload.work_order_id === "string" ? action.payload.work_order_id : undefined;
+}
+
 function sanitizeActionForConflict(action: MobileInventoryAction): RawRecord {
   return {
     type: action.type,
@@ -672,9 +1057,17 @@ function sanitizeActionForConflict(action: MobileInventoryAction): RawRecord {
 
 function hasAnyPermission(
   actor: AuthenticatedActor,
-  permissions: readonly ("inventory.read" | "inventory.manage")[],
+  permissions: readonly ("inventory.read" | "inventory.manage" | "work_orders:update")[],
 ): boolean {
   return permissions.some((permission) => actor.permissions.includes(permission));
+}
+
+function requireActionPermission(
+  actor: AuthenticatedActor,
+  permission: "inventory.manage" | "work_orders:update",
+): void {
+  if (actor.permissions.includes(permission)) return;
+  throw routeError(403, "FORBIDDEN", "permission_required", `One of these permissions is required: ${permission}.`);
 }
 
 function isRouteLikeError(error: unknown): error is {

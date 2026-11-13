@@ -34,6 +34,8 @@ after(() => fs.rmSync(DIR_ANEXOS, { recursive: true, force: true }));
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]);
 const LOTE_OS = "/api/v1/mobile/sync/work-order-actions";
+// B-MATERIAL-REENVIO (Emenda C2.8, E-C28.1(a)): o lote de estoque, cujos pares de material são `OS·07c-a`.
+const LOTE_ESTOQUE = "/api/v1/mobile/sync/inventory-actions";
 
 // ------------------------------------------------------------------------------------------------
 // LAÇO G — uma entrada por via do instantâneo de classes `OS·07a` e `OS·07c-a`, LIDAS DO INSTANTÂNEO (não
@@ -321,6 +323,8 @@ type Ctx = {
   req(caminho: string, opcoes?: { method?: string; headers?: Record<string, string>; body?: unknown }): Promise<Resposta>;
   upload(workOrderId: string, headers: Record<string, string>): Promise<Resposta>;
   sync(headers: Record<string, string>, tipo: string, payload: Record<string, unknown>, clientActionId?: string): Promise<Execucao>;
+  syncEstoque(headers: Record<string, string>, tipo: string, payload: Record<string, unknown>, clientActionId?: string): Promise<Execucao>;
+  semearAdicao(workOrderId: string): Promise<string>;
   criarOsAtribuida(operatorProfileId: string, extra?: Record<string, unknown>): Promise<string>;
   criarOsAtribuidaPorUserId(userId: string): Promise<string>;
   criarTag(nome: string): Promise<string>;
@@ -355,6 +359,18 @@ async function executarEntrada(ctx: Ctx, chave: string, headers: Record<string, 
   }
   if (chave.startsWith("PAR ")) {
     const [lote, tipo] = chave.slice("PAR ".length).split(" · ");
+    // B-MATERIAL-REENVIO (Emenda C2.8, E-C28.1(b) e E-C28.5 A1/A2): a receita do lote de estoque, no molde do
+    // LOTE_OS — um lote válido do tipo da entrada sobre a OS da semente, com o resultado POR AÇÃO. O `add` leva um
+    // SKU que não existe: G-POS e G-WIDE passam com `inventory_item_not_found`, a mesma força do molde do LOTE_OS
+    // (payload só com `work_order_id`). O `remove` desfaz uma adição semeada e aceita (`ctx.semearAdicao`). Tipo de
+    // estoque sem receita cai no `throw` abaixo, que não muda.
+    if (lote === LOTE_ESTOQUE && tipo === "work_order_material.add") {
+      return ctx.syncEstoque(headers, tipo, { work_order_id: semente.workOrderId, sku: "LACO-G-SEM-ITEM", quantity: 1, material_local_id: "mat-local-g" });
+    }
+    if (lote === LOTE_ESTOQUE && tipo === "work_order_material.remove") {
+      const origem = await ctx.semearAdicao(semente.workOrderId);
+      return ctx.syncEstoque(headers, tipo, { work_order_id: semente.workOrderId, source_client_action_id: origem, material_local_id: "mat-local-g" });
+    }
     if (lote !== LOTE_OS) throw new Error(`laço G: lote sem receita em "${chave}" — o laço nunca pula uma entrada`);
     return ctx.sync(headers, tipo, { work_order_id: semente.workOrderId });
   }
@@ -378,6 +394,8 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
+    inventoryModule,
+    inventorySyncModule,
   ] = await Promise.all([
     import("../src/app.js"),
     import("../src/modules/work-orders/work-order.service.js"),
@@ -392,6 +410,8 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     import("../src/modules/core-saas/services/core-saas.service.js"),
     import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
     import("../src/modules/core-saas/store/core-saas.store.js"),
+    import("../src/modules/inventory/inventory.service.js"),
+    import("../src/modules/mobile/mobile-inventory-sync.js"),
   ]);
   const resetAll = () => {
     workOrderModule.resetWorkOrderRuntimeForTests();
@@ -403,6 +423,8 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     tagAssignmentModule.resetTagAssignmentRuntimeForTests();
     tagModule.resetTagRuntimeForTests();
     syncModule.resetMobileWorkOrderSyncRuntimeForTests();
+    inventoryModule.resetInventoryRuntimeForTests();
+    inventorySyncModule.resetMobileInventoryRuntimeForTests();
   };
   resetAll();
 
@@ -454,6 +476,19 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     const acao = todas.find((a: any) => a.client_action_id === clientActionId);
     return { lote: true, status: r.status, acao: acao?.status, reason: acao?.error?.reason ?? r.body?.error?.reason, code: acao?.error?.code ?? r.body?.error?.code };
   };
+  // Emenda C2.8 (E-C28.1(c), E-C28.5 A2): o mesmo envelope do `sync`, no lote de estoque; toda ação leva
+  // `local_created_at`, que o `parseAction` exige (sem ele o lote inteiro dá 400).
+  const syncEstoque = async (headers: Record<string, string>, tipo: string, payload: Record<string, unknown>, clientActionId = randomUUID()): Promise<Execucao> => {
+    const r = await req(LOTE_ESTOQUE, {
+      method: "POST",
+      headers,
+      body: { client_batch_id: randomUUID(), actions: [{ client_action_id: clientActionId, type: tipo, local_created_at: new Date().toISOString(), payload }] },
+    });
+    const data = r.body?.data ?? {};
+    const todas = [...(data.accepted ?? []), ...(data.rejected ?? []), ...(data.conflicts ?? []), ...(data.already_applied ?? [])];
+    const acao = todas.find((a: any) => a.client_action_id === clientActionId);
+    return { lote: true, status: r.status, acao: acao?.status, reason: acao?.error?.reason ?? r.body?.error?.reason, code: acao?.error?.code ?? r.body?.error?.code };
+  };
   const criarOs = async (extra: Record<string, unknown> = {}): Promise<string> => {
     const criada = await req("/api/v1/work-orders", { method: "POST", headers: h(managerA, "manager"), body: { title: "OS 07c", ...extra } });
     assert.equal(criada.status, 201, `criação de OS falhou: ${JSON.stringify(criada.body)}`);
@@ -466,6 +501,41 @@ async function withApi(callback: (ctx: Ctx) => Promise<void>): Promise<void> {
     req,
     upload,
     sync,
+    syncEstoque,
+    // Emenda C2.8 (E-C28.5 A1): a semente do `remove`. Um item com SKU próprio e saldo na custódia PROFISSIONAL do
+    // técnico A (quem faz a adição), no molde de `tests/b-material-sync.test.ts`; a adição sai pela rota real do
+    // lote de estoque e TEM de sair `accepted`, ou a semente falha (nunca um verde falso no `remove`).
+    async semearAdicao(workOrderId) {
+      const inventory = inventoryModule.createMemoryInventoryService();
+      const inventoryRepository = inventoryModule.getMemoryInventoryRepositoryForTests();
+      const inventoryActor = {
+        tenantId: tenantA.id,
+        userId: managerA.id,
+        roles: ["inventory"],
+        permissions: ["inventory.read", "inventory.manage", "inventory.consume"],
+        explicitPermissions: true,
+      } as never;
+      const sku = `LACO-G-${randomUUID().slice(0, 8).toUpperCase()}`;
+      const item = await inventory.createItem(inventoryActor, { sku, name: "Semente do laço G", unit: "un" });
+      await inventory.createMovement(inventoryActor, { item_id: item.id, type: "entrada", quantidade: 10, unit_cost: 1 });
+      await inventoryRepository.createTransfer({
+        tenantId: tenantA.id,
+        itemId: item.id,
+        type: "link",
+        quantity: 5,
+        custody: { custodyType: "professional", custodyOperatorProfileId: perfilA.id },
+        createdBy: managerA.id,
+      });
+      const origem = randomUUID();
+      const adicao = await syncEstoque(
+        h(tecnicoA, "field_technician"),
+        "work_order_material.add",
+        { work_order_id: workOrderId, sku, quantity: 1, material_local_id: "mat-local-g" },
+        origem,
+      );
+      assert.equal(adicao.acao, "accepted", `semente: adição de material ${JSON.stringify(adicao)}`);
+      return origem;
+    },
     async criarOsAtribuida(operatorProfileId, extra = {}) {
       const id = await criarOs(extra);
       const r = await req(`/api/v1/work-orders/${id}/assign`, { method: "POST", headers: h(managerA, "manager"), body: { operatorId: operatorProfileId } });

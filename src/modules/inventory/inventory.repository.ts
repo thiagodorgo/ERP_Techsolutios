@@ -9,6 +9,7 @@ import {
   wouldOverdraw,
 } from "./inventory.calculations.js";
 import {
+  custodyOfMovement,
   duplicateSkuError,
   stockBaixaReversedError,
   insufficientBalanceError,
@@ -81,6 +82,7 @@ export interface InventoryRepository {
   createItem(input: CreateInventoryItemInput): Promise<InventoryItem>;
   listItems(input: ListInventoryItemsInput): Promise<ListInventoryItemsResult>;
   findItemById(tenantId: string, itemId: string): Promise<InventoryItem | undefined>;
+  findItemBySku(tenantId: string, sku: string): Promise<InventoryItem | undefined>;
   findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined>;
   updateItem(input: UpdateInventoryItemInput): Promise<InventoryItem | undefined>;
   /**
@@ -117,7 +119,7 @@ export interface InventoryRepository {
   isExitReversed(tenantId: string, movementId: string): Promise<boolean>;
   /**
    * Ω4C PR-08b — idempotent EXIT for a source inside ONE tx: reuse the existing EXIT (409 when it was already
-   * reversed — re-baixa one-shot), else guard the BASE balance (409 insufficient_balance) and insert a single
+   * reversed — re-baixa one-shot), else guard the selected custody balance (409 insufficient_balance) and insert a single
    * `saida` carrying source_type/source_id. Returns `undefined` when the item is missing in-tenant.
    */
   createExitForSource(input: CreateStockExitForSourceInput): Promise<StockMovement | undefined>;
@@ -189,6 +191,10 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     const item = this.items.get(itemId);
 
     return item?.tenantId === tenantId ? item : undefined;
+  }
+
+  async findItemBySku(tenantId: string, sku: string): Promise<InventoryItem | undefined> {
+    return [...this.items.values()].find((item) => item.tenantId === tenantId && item.sku === sku);
   }
 
   async findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined> {
@@ -413,10 +419,11 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       return existing;
     }
 
-    // RN-BAIXA-01 — o guard de saldo por custódia BASE roda ANTES de gravar (EXIT-first no consumidor garante que
-    // nada do consumidor é persistido antes desta checagem passar). BASE fixada (D-Ω4C-INV-STOCK-DECREMENT).
+    // RN-BAIXA-01 — o guard de saldo da custódia selecionada roda ANTES de gravar. Sem custódia explícita,
+    // combustível e manutenção preservam a BASE fixada por D-Ω4C-INV-STOCK-DECREMENT.
     const signed = -roundToDecimalPrecision(Math.abs(input.quantity));
-    const custodySaldoBefore = this.saldoOfCustody(input.tenantId, input.itemId, BASE_CUSTODY);
+    const custody = input.custody ?? BASE_CUSTODY;
+    const custodySaldoBefore = this.saldoOfCustody(input.tenantId, input.itemId, custody);
     if (wouldOverdraw(custodySaldoBefore, signed)) {
       throw insufficientBalanceError(custodySaldoBefore);
     }
@@ -426,9 +433,10 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       itemId: input.itemId,
       type: "saida",
       quantidadeSinalizada: signed,
+      workOrderId: input.workOrderId,
       vehicleId: input.vehicleId,
       reason: input.reason,
-      custody: BASE_CUSTODY,
+      custody,
       sourceType: input.sourceType,
       sourceId: input.sourceId,
       createdBy: input.createdBy,
@@ -449,7 +457,7 @@ export class InMemoryInventoryRepository implements InventoryRepository {
       quantidadeSinalizada: roundToDecimalPrecision(-exit.quantidadeSinalizada),
       vehicleId: exit.vehicleId,
       reason: input.reason ?? exit.reason,
-      custody: { custodyType: "base" },
+      custody: custodyOfMovement(exit),
       reversesMovementId: exit.id,
       createdBy: input.createdBy ?? exit.createdBy,
     });
