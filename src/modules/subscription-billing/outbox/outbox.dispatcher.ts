@@ -47,6 +47,7 @@ export type DispatchOutcome =
   | "retry"
   | "failed"
   | "skipped"
+  | "record_failed"
   | "lease_lost";
 
 export type DispatchAuditEvent = {
@@ -211,8 +212,7 @@ async function settleFoundCharge(
   const facts = await deps.repo.adoptionFacts(row.tenantId, row.statementId, row.id);
   const decision = adoptionDecision(row, found, facts, orphan);
   if (decision === "adopt") {
-    if (!(await deps.repo.recordChargeOutcome(row.tenantId, row, lease, { kind: "adopted", chargeId: found.chargeId, lookup: found }, clock()))) return leaseLost(deps, row);
-    return "recovered";
+    return recordChargeSafely(deps, row, lease, { kind: "adopted", chargeId: found.chargeId, lookup: found }, "recovered", clock); // [RECOVER-01]
   }
   if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, decision, clock(), lease))) return leaseLost(deps, row);
   await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: decision });
@@ -237,6 +237,7 @@ export async function runDispatchOutbox(deps: DispatcherDeps): Promise<DispatchR
     retry: 0,
     failed: 0,
     skipped: 0,
+    record_failed: 0,
     lease_lost: 0,
   };
 
@@ -338,10 +339,35 @@ async function dispatchOne(
     // [LEASE-02] A posse é confirmada numa transação curta que termina ANTES do POST remoto.
     if (!(await deps.repo.confirmLease(row.tenantId, row.id, lease))) return leaseLost(deps, row);
     const result = await port.createCharge(chargeInputFromRow(row, customer.customerId));
-    if (!(await deps.repo.recordChargeOutcome(row.tenantId, row, lease, { kind: "created", result }, clock()))) return leaseLost(deps, row);
-    return "sent";
+    // R2-01: o POST remoto terminou. Uma falha daqui em diante é de REGISTRO, não do provedor; a linha permanece
+    // PROCESSING para a recuperação por referência e jamais passa por `registerFailure`.
+    return recordChargeSafely(deps, row, lease, { kind: "created", result }, "sent", clock); // [REG-SAFE-01]
   } catch (error) {
     return registerFailure(deps, row, error, clock);
+  }
+}
+
+/** R2-01 — fronteira pós-provedor: falha local preserva PROCESSING e deixa a órfã adotar a cobrança na próxima rodada. */
+async function recordChargeSafely(
+  deps: DispatcherDeps,
+  row: BillingOutboxRow,
+  lease: OutboxLease,
+  outcome: Parameters<OutboxRepository["recordChargeOutcome"]>[3],
+  success: "sent" | "recovered",
+  clock: () => Date,
+): Promise<DispatchOutcome> {
+  try {
+    if (!(await deps.repo.recordChargeOutcome(row.tenantId, row, lease, outcome, clock()))) return leaseLost(deps, row);
+    return success;
+  } catch (error) {
+    await deps.onAudit?.({
+      tenantId: row.tenantId,
+      statementId: row.statementId,
+      kind: row.kind,
+      action: "billing_outbox.record_failed",
+      code: errorCode(error),
+    });
+    return "record_failed";
   }
 }
 
