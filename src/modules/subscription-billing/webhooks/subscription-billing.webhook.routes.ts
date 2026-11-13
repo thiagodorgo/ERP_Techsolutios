@@ -14,6 +14,7 @@
 //   (6) enfileira `billing.reconcile-webhook` → 200 `{}` em < 2 s. NENHUMA decisão de dinheiro acontece aqui (R-WH-4).
 
 import { createHash } from "node:crypto";
+import { isIP } from "node:net";
 
 import express, { type NextFunction, type Request, type Response, type Router } from "express";
 
@@ -76,6 +77,24 @@ export type WebhookRouterDeps = {
   /** IP de origem (F13 injeta o real; prod NUNCA confia em header forjável por padrão). */
   clientIp?(req: Request): string;
 };
+
+/**
+ * Resolve o IP do emissor sem habilitar `trust proxy` global no Express.
+ *
+ * Cada salto confiável acrescenta a própria entrada à direita do `X-Forwarded-For`: por isso o cliente fica na
+ * `hops`-ésima posição contada da direita. Zero saltos nunca confia no cabeçalho. Cabeçalho ausente, curto ou com a
+ * entrada selecionada inválida falha fechado para o endereço do socket.
+ */
+export function webhookClientIp(req: Request, trustedProxyHops: number): string {
+  const socketIp = req.socket.remoteAddress ?? "unknown";
+  if (!Number.isInteger(trustedProxyHops) || trustedProxyHops <= 0) return socketIp;
+
+  const forwarded = req.headers["x-forwarded-for"];
+  if (typeof forwarded !== "string") return socketIp;
+  const hops = forwarded.split(",").map((entry) => entry.trim());
+  const candidate = hops.at(-trustedProxyHops);
+  return candidate && isIP(candidate) !== 0 ? candidate : socketIp;
+}
 
 function sha256Hex(value: string): string {
   return createHash("sha256").update(value, "utf8").digest("hex");

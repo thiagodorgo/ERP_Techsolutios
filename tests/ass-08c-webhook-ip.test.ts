@@ -7,8 +7,13 @@ import test from "node:test";
 
 import express, { type Request } from "express";
 
-import { InMemoryWebhookEventRepository } from "../src/modules/subscription-billing/webhooks/webhook-events.repository.js";
 import { createWebhookRateLimiter, type WebhookRateLimiter } from "../src/modules/subscription-billing/webhooks/webhook.rate-limit.js";
+import {
+  createSubscriptionBillingWebhookRouterForApp,
+  resetWebhookRuntimeForTests,
+  setWebhookEnqueueForTests,
+  setWebhookTargetResolverForTests,
+} from "../src/modules/subscription-billing/webhooks/webhook-runtime.js";
 import * as webhookRoutes from "../src/modules/subscription-billing/webhooks/subscription-billing.webhook.routes.js";
 
 type ClientIpResolver = (req: Request, trustedProxyHops: number) => string;
@@ -26,23 +31,27 @@ function requestWith(socketIp: string, forwardedFor?: string): Request {
   } as unknown as Request;
 }
 
+// Montagem pela composição de PRODUÇÃO (`createSubscriptionBillingWebhookRouterForApp`): o IP sai do `clientIp` do
+// runtime, e não de um resolvedor injetado pelo teste. Só o alvo e a fila são dublês locais (sem cofre, sem rede).
 function buildApp(options: { readonly hops: number; readonly limiter?: WebhookRateLimiter }) {
   let eventSequence = 0;
-  const router = webhookRoutes.createSubscriptionBillingWebhookRouter({
-    resolveTarget: async () => ({
-      provider: "asaas",
-      verify: async ({ headers }) =>
-        headers["x-secret-ok"] === "yes" ? { ok: true, eventId: `evt_${(eventSequence += 1)}` } : { ok: false },
-    }),
-    events: new InMemoryWebhookEventRepository(),
+  resetWebhookRuntimeForTests();
+  setWebhookTargetResolverForTests(async () => ({
+    provider: "asaas",
+    verify: async ({ headers }) =>
+      headers["x-secret-ok"] === "yes" ? { ok: true, eventId: `evt_${(eventSequence += 1)}` } : { ok: false },
+  }));
+  setWebhookEnqueueForTests(async () => undefined);
+  const router = createSubscriptionBillingWebhookRouterForApp({
     limiter: options.limiter ?? createWebhookRateLimiter(),
-    enqueueReconcile: async () => undefined,
-    clientIp: (req) => resolver()(req, options.hops),
+    trustedProxyHops: options.hops,
   });
   const app = express();
   app.use("/webhooks/billing", router);
   return app;
 }
+
+test.after(() => resetWebhookRuntimeForTests());
 
 async function withServer(app: express.Express, body: (baseUrl: string) => Promise<void>): Promise<void> {
   const server: Server = app.listen(0, "127.0.0.1");
