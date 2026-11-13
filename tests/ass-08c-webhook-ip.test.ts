@@ -114,4 +114,3 @@ test("IP4 atacante já bloqueado manda 1 000 pedidos; o legítimo seguinte ainda
   });
   assert.equal(globalCalls, 1, "pedidos de IP já bloqueado não gastam a cota global");
 });
-

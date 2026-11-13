@@ -41,4 +41,3 @@ test("EN6 produção e zero saltos confiáveis recusam com webhook_proxy_hops_un
   if (decision.ok) return;
   assert.ok(decision.failed.includes("webhook_proxy_hops_unset"));
 });
-
