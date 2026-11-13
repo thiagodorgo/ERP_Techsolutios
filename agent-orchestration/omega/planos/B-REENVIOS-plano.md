@@ -966,3 +966,44 @@ A decisão do E1 (o C baixa pela P12), o gate de módulo do E2, o escopo do rót
   - **Se a M-C42 sobreviver, o dev NÃO escreve teste novo fora do PERMITIDO:** relata como achado, que vai para a pré-revisão.
 - **E-C27.4:** o resto da C-F8 e as fatias seguintes (C-F9 a C-F14) seguem as emendas anteriores sem mudança.
 - **E-C27.5 (ajuste C27-A1 da rev-c27, aplicado pelo orquestrador em 13/11 08:46 SP):** a **M-C42 deixa de ser aceite**. Ela passa a ser mutação de diagnóstico, com **sobrevivência esperada**: o F24 aceita o conjunto vazio, o arquivo não tem cenário de remoção, e a retenção de produção consulta o `workOrderLocalReferenceKeys` (que já contém `work_order_local_id`), não o valor do `workOrderActionReferenceKeys`. O dev a roda, registra a sobrevivência e a relata à pré-revisão, sem teste novo fora do PERMITIDO. A M-C41 continua sendo aceite (fica vermelha ao tirar a linha).
+
+### Emenda C2.8 ao §C (B-MATERIAL-REENVIO): a receita do lote de estoque no laço G e a fatia do RC4b (orquestrador, 13/11 10:24 SP; responde à parada da C-F14, RETOMADAS 33 e 40 do `dev-c6-cl`)
+
+> **O que parou.** O job `backend` dá 5489/5485/**2**/2 desde a C-F5. Os 2 `not ok` são o laço G de `tests/o6r07c-subresource-scope.test.ts` para os pares `PAR /api/v1/mobile/sync/inventory-actions · work_order_material.add|remove`.
+> - **Por quê:** a C-F5 classificou esses pares como `OS·07c-a` (C2 item 6), e o laço G executa toda entrada `OS·07c-a`. Mas o `executarEntrada` (l.358) só tem receita para o lote `/api/v1/mobile/sync/work-order-actions` e falha fechado ("o laço nunca pula uma entrada").
+> - **O RC4b** está no §C (linha 349), mas não ganhou fatia nem arquivo no PERMITIDO.
+
+- **E-C28.1, a receita do laço G (amplia o guard, não o afrouxa).** No `tests/o6r07c-subresource-scope.test.ts` fica autorizado SÓ isto:
+  - (a) uma constante `LOTE_ESTOQUE = "/api/v1/mobile/sync/inventory-actions"`;
+  - (b) um ramo em `executarEntrada` para `PAR` com `lote === LOTE_ESTOQUE`, no molde do ramo do `LOTE_OS`. Ele monta um lote válido do tipo da entrada sobre a `semente.workOrderId`:
+    - o `add` com `sku`, `quantity` e `material_local_id`;
+    - o `remove` com o `source_client_action_id` de uma adição semeada;
+    - e devolve a `Execucao` com o resultado POR AÇÃO (status e motivo), como o `ctx.sync` faz para o lote de OS;
+  - (c) um ajudante `ctx.syncEstoque` (ou a semente do `add` para o `remove`), se o (b) precisar.
+  - **Proibido:** mudar o laço, as expectativas por papel e por motivo, a classificação da fixture, o censo, outra entrada ou outro arquivo do guard.
+  - **Se o laço exigir uma expectativa que o handler da C-F4 não dá** (por exemplo, outro motivo de recusa), o dev PARA e relata: isso é decisão.
+- **E-C28.2, o aceite do laço G:**
+  - o `o6r07c-subresource-scope` fica verde no host, e o TAP do job `backend` do head novo dá **fail 0**;
+  - **M-C43:** tirar do handler do `add` a conferência de que a OS é do ator deixa o laço G vermelho no par do `add`;
+  - **M-C44:** o mesmo no `remove` (a ordem N4: o escopo antes da posse) deixa vermelho o par do `remove`;
+  - **M-C45:** apagar o ramo novo do `executarEntrada` volta ao "lote sem receita", ou seja, o fechamento fail-closed continua;
+  - cada mutação é restaurada, com `git diff --stat` como prova.
+- **E-C28.3, a fatia C-F14a do RC4b, antes da bateria final.** Ficam no PERMITIDO:
+  - o `tests/b-material-payload-contract.test.ts` (novo);
+  - o `mobile/flutter_app/test/core/sync/bmaterial_codec_test.dart` (novo; grava a fixture);
+  - a fixture que ele grava, na pasta e no nome do molde RB4b (meça o molde: `git grep -n RB4b`).
+  - **O aceite:** o RC4b verde, com as chaves `client_action_id`, `type`, `work_order_id`, `sku`, `quantity`, `material_local_id` e `source_client_action_id`; e a **M-C11** vermelha aqui, como o §C manda.
+- **E-C28.4:** nada mais muda. O `.github/**` continua só com a linha `SUITES=` autorizada, e o PR sai do rascunho só com os TAPs verdes.
+- **E-C28.5, os ajustes da `rev-c28-cl`** (APROVADO COM AJUSTES; `revisoes/bloco-c/rev-c28.json`; aplicados pelo orquestrador em 13/11 10:41 SP):
+  - **A1, a semente do `remove` no laço G, nomeada.** O ramo da E-C28.1 pode:
+    - semear item e saldo na custódia de quem faz a adição;
+    - importar e reiniciar o módulo de estoque no `withApi`;
+    - confirmar que a adição semeada saiu `accepted` antes do `remove`.
+  - **A2:** toda ação do lote leva `local_created_at` (sem ele o lote inteiro dá 400). O ramo novo entra ANTES do `throw` "lote sem receita", que não muda.
+  - **A3, decidido pela opção (b):** a **M-C11 sai do aceite do RC4b** e fica no RC4, onde já morre (RETOMADA 33). O RC4b cobre o contrato do PEDIDO (Dart → handler TS). A E-C28.3 deixa de exigir "a M-C11 vermelha aqui".
+  - **A4, a fixture versionada:** a fixture do RC4b é `mobile/flutter_app/test/core/sync/bmaterial_request_payloads.json`, versionada.
+    - O teste Dart `bmaterial_codec_test.dart` GERA o pedido e o COMPARA com o arquivo versionado: fica vermelho se divergir e nunca regrava no CI.
+    - O `tests/b-material-payload-contract.test.ts` LÊ esse arquivo e roda o handler real sobre ele.
+    - Mutação **M-C46:** mudar uma chave no codec deixa o teste Dart vermelho. **M-C47:** mudar a mesma chave só na fixture deixa o teste TS vermelho.
+  - **A5:** o pedido sai da cadeia real do app (o enfileiramento em `prestador_repository.dart`, o reenvio que injeta o `work_order_id` e o cliente HTTP com captura), nunca de um mapa escrito no teste. As chaves são por tipo: o `add` leva `sku`, `quantity` e `material_local_id`; o `remove` leva `source_client_action_id` e `material_local_id`, sem `sku` nem `quantity`.
+  - **A6:** no `.github/workflows/ci.yml` valem a linha `SUITES=` e as 4 linhas de comentário de proveniência autorizadas pela R-C21-01. Nada mais.

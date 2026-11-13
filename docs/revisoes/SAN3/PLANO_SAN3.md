@@ -105,7 +105,7 @@ antes de frente com dependência**.
 ### 4.1 Bloqueantes — 66 itens
 
 Coluna **reclass.**: a fatia dava o item como não bloqueante (ou condicional); a regra do §2 o leva ao gate. Todo
-`✓` está no §8.7 e é alvo da junta. **O item 63, a GATE-CHAVE, entrou por `D-DONO-1211-NOITE`.**
+`✓` está no §8.7 e é alvo da junta. **O item 66, a GATE-CHAVE, entrou por `D-DONO-1211-NOITE`** (com o número 63 na decisão, renumerado para 66 no #551: `P-SAN3-ITEM-63-DUPLICADO`).
 
 | # | Item (pendência / achado) | Crit. | Prova curta (fatia) | Bloco | reclass. |
 |--:|---|:-:|---|---|:-:|
@@ -494,7 +494,7 @@ acabamento e processo, na ordem de prioridade do dono, cada uma com o dono e o t
 
 ## 9. Viabilidade — o prazo de 48 horas
 
-**Quantidade exata.** 66 bloqueantes em **52 blocos** — a ampliação documental do `B-ASS-00` acrescenta 7 itens e 13 blocos donos à contagem anterior, o `B-FILA-USUARIO` (item 64, DONO P5) acrescenta 1 item e 1 bloco M, e o `B-MATERIAL-REENVIO` (item 63, DONO P5) acrescenta 1 item e 1 bloco G; o item 63, a GATE-CHAVE, entrou por `D-DONO-1211-NOITE` (bloco próprio de permissão do app, a abrir, fora do §5), com o número 63 duplicado no merge do #551 (`P-SAN3-ITEM-63-DUPLICADO`); 19 G (os 11 anteriores + `B-ASS-02`, `B-ASS-03`, `B-ASS-04`, `B-ASS-05`, `B-ASS-08`, `B-ASS-09`, `B-ASS-10b`, `B-MATERIAL-REENVIO`), 28 M e 5 P (contados na coluna Esf. do §5) — mais
+**Quantidade exata.** 66 bloqueantes em **52 blocos** — a ampliação documental do `B-ASS-00` acrescenta 7 itens e 13 blocos donos à contagem anterior, o `B-FILA-USUARIO` (item 64, DONO P5) acrescenta 1 item e 1 bloco M, e o `B-MATERIAL-REENVIO` (item 63, DONO P5) acrescenta 1 item e 1 bloco G; o item 66, a GATE-CHAVE, entrou por `D-DONO-1211-NOITE` (bloco próprio de permissão do app, a abrir, fora do §5), com o número 63 na decisão, duplicado no merge do #551 e renumerado para 66 (`P-SAN3-ITEM-63-DUPLICADO`); 19 G (os 11 anteriores + `B-ASS-02`, `B-ASS-03`, `B-ASS-04`, `B-ASS-05`, `B-ASS-08`, `B-ASS-09`, `B-ASS-10b`, `B-MATERIAL-REENVIO`), 28 M e 5 P (contados na coluna Esf. do §5) — mais
 os 6 atos do dono e este PR. Os itens 55 e 56 (decisão do dono, opção B — §15) entram em blocos que já existiam
 (`B-SAN3-12` e `B-SAN3-04a`) sem mudar o tamanho de nenhum: o melhor caso e o realista abaixo ficam **inalterados**.
 

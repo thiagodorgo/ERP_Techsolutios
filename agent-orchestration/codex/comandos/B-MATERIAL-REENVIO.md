@@ -5,7 +5,7 @@
 - **Trilha:** backend (Node.js + TypeScript) e mobile (Flutter)
 - **Data:** 2026-11-12 a 2026-11-13
 - **Branch:** `feat/mobile-material-reenvio`
-- **Autores:** dev `dev-c-cdx`, `dev-c3-cdx`, `dev-c4-cdx` e `dev-c5-cdx` (Codex GPT-5.6 Sol, nível menor declarado) da C-F0 à C-F7; `dev-c6-cl` (Claude Opus 5.5, nível menor declarado, cobrindo a conta 1 do Codex) da C-F8 em diante. Plano `planejador-reenvios` e `corretor-cobranca-3110`; emendas `topo-emenda-c`, `topo-emenda-c21` e o orquestrador (C2.2 a C2.7).
+- **Autores:** dev `dev-c-cdx`, `dev-c3-cdx`, `dev-c4-cdx` e `dev-c5-cdx` (Codex GPT-5.6 Sol, nível menor declarado) da C-F0 à C-F7; `dev-c6-cl` (Claude Opus 5.5, nível menor declarado, cobrindo a conta 1 do Codex) da C-F8 em diante. Plano `planejador-reenvios` e `corretor-cobranca-3110`; emendas `topo-emenda-c`, `topo-emenda-c21` e o orquestrador (C2.2 a C2.8, com a E-C28.5 da `rev-c28-cl`). Conserto único da junta J-551: `fix-551-cl` (Claude Opus 5.5, nível menor declarado).
 
 ## Objetivo
 
@@ -14,7 +14,7 @@ Toda peça lançada no app por um técnico numa OS que é dele vira, uma vez só
 ## Contexto / fontes de verdade
 
 - Ler antes: `agent-orchestration/docs/status-geral.md`, `agent-orchestration/controle/`, `agent-orchestration/codex/log-execucao.md`, `PROJECT_MEMORY.md`.
-- Plano canônico: `agent-orchestration/omega/planos/B-REENVIOS-plano.md`, §C, mais as Emendas C2, C2.1 a C2.7 (a mais nova prevalece onde divergirem).
+- Plano canônico: `agent-orchestration/omega/planos/B-REENVIOS-plano.md`, §C, mais as Emendas C2, C2.1 a C2.8 e a E-C28.5 (a mais nova prevalece onde divergirem).
 - Pré-requisitos na `main`: 1º PR do corte do `B-O6R-11`, `B-FILA-USUARIO` (#512), `B-O6R-04a` (#389), `B-SAN3-15a` (#548).
 - Fecha: `P-MOBILE-MATERIAL-SEM-REPLAY` (item 63 do portão), a metade material de `P-MOBILE-SYNC-FAILED-SEM-DESCARTE` e de `P-MOBILE-LINHA-CONFLICT-NAO-LIMPA`. Efeito em produção depois da porta do prestador (`B-SAN3-15b`, nota S11).
 
@@ -29,7 +29,7 @@ Toda peça lançada no app por um técnico numa OS que é dele vira, uma vez só
 
 ## Escopo PERMITIDO / PROIBIDO
 
-Exatamente o §C4 do plano, com as ampliações das Emendas: E3 (rótulo e teste de rótulo, `mobile.routes.ts`, `tests/b-material-custodia.test.ts`), R-C21-01 (uma linha do `SUITES=` do `ci.yml`, autorizada pelo dono), E-C25.4/E-C26 (duas linhas do despacho em `mobile-inventory-sync.ts`) e E-C27.1 (uma linha em `lib/features/work_orders/data/work_order_repository.dart`). PROIBIDO: `prisma/**`, `catalog.ts` e o instantâneo do catálogo, `src/modules/work-orders/**`, `inventory.actor-custody.ts`, `src/modules/navigation/**`, `http_client.dart`, `lib/features/inventory/**`, `lib/features/checklists/**`, `lib/features/expenses/**`, `sync_replay_service.dart`, `sync_models.dart`, `sync_queue_repository.dart`, `sync_user_scope.dart`, `sync_conflict_resolver.dart`, `sync_stalled_resolver.dart`, `app_database.dart`, `pubspec.*`, lockfiles, `frontend/**`, `Kpis/**`, `CLAUDE.md`, `AGENTS.md`.
+Exatamente o §C4 do plano, com as ampliações das Emendas: E3 (rótulo e teste de rótulo, `mobile.routes.ts`, `tests/b-material-custodia.test.ts`), R-C21-01 (uma linha do `SUITES=` do `ci.yml`, autorizada pelo dono), E-C25.4/E-C26 (duas linhas do despacho em `mobile-inventory-sync.ts`) E-C27.1 (uma linha em `lib/features/work_orders/data/work_order_repository.dart`) e E-C28.1/E-C28.3/E-C28.5 (a receita do lote de estoque em `tests/o6r07c-subresource-scope.test.ts`; o RC4b em `tests/b-material-payload-contract.test.ts`, `test/core/sync/bmaterial_codec_test.dart` e `test/core/sync/bmaterial_request_payloads.json`; as 4 linhas de comentário do `ci.yml`). PROIBIDO: `prisma/**`, `catalog.ts` e o instantâneo do catálogo, `src/modules/work-orders/**`, `inventory.actor-custody.ts`, `src/modules/navigation/**`, `http_client.dart`, `lib/features/inventory/**`, `lib/features/checklists/**`, `lib/features/expenses/**`, `sync_replay_service.dart`, `sync_models.dart`, `sync_queue_repository.dart`, `sync_user_scope.dart`, `sync_conflict_resolver.dart`, `sync_stalled_resolver.dart`, `app_database.dart`, `pubspec.*`, lockfiles, `frontend/**`, `Kpis/**`, `CLAUDE.md`, `AGENTS.md`.
 
 ## Bateria de validação
 
@@ -66,4 +66,4 @@ A suíte backend inteira se mede pelo CI do head (Emenda C2.3), lendo o TAP de c
 - **PR #:** 551
 - **Merge commit / Approved head:** `null` na autoria → backfill pós-merge
 - **Gate:** item 63 (`PLANO_SAN3.md` §4.1)
-- **Status:** rascunho; o job `backend` do CI está vermelho pelo laço G do `o6r07c-subresource-scope` (`P-MATERIAL-LACO-G-SEM-RECEITA`), que aguarda emenda.
+- **Status:** a Emenda C2.8 deu a receita do laço G (`P-MATERIAL-LACO-G-SEM-RECEITA` fechada) e a fatia do RC4b; a junta J-551 aprovou o objeto `4749727c` por unanimidade, sem achado grave (ata em `revisoes/j551/J-551-ata.md`, fora do repositório); o conserto único `fix-551-cl` trata os 11 não graves da triagem e registra a C1-04 como `P-551-INMEMORY-TOCTOU-EXIT-SOURCE`. Falta a conferência por outra casa, o merge e o porteiro.

@@ -27,16 +27,16 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **976** |
-| IDs distintos | 964 |
-| **ABERTAS** | **746** |
+| Cabecalhos `## P-` | **977** |
+| IDs distintos | 966 |
+| **ABERTAS** | **745** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **685** |
+| — das quais **ativas nesta rodada** | **684** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 226 |
+| FECHADAS | 228 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **976 cabecalhos para 964 IDs**, porque
-> **7 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
+> O placar conta **cabecalhos**, nao pendencias distintas: **977 cabecalhos para 966 IDs**, porque
+> **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
 ## Diferidas com severidade MATERIAL — 12 (o dono deve olhar)
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 318
+## ABERTAS · balde A — material — 316
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -389,11 +389,9 @@
 | `P-J539-C1-01` | 14524 | MÉDIA | sim | P-J539-C1-01 (2026-11-12) — a catraca do regime deixa passar uma condição viva no WHERE  |
 | `P-J539-C1-02` | 14531 | MÉDIA | sim | P-J539-C1-02 (2026-11-12) — a catraca R1–R4 não pega a relação fluente `.profile()`, a p |
 | `P-J539-C1-03` | 14537 | MÉDIA | sim | P-J539-C1-03 (2026-11-12) — escopo e prazos que o gate de leilão lê da cópia não têm tes |
-| `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` | 14615 | MÉDIA | sim | P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS (2026-11-12) — a suíte backend inteira não reproduz  |
-| `P-MATERIAL-LACO-G-SEM-RECEITA` | 14629 | ALTA | sim | P-MATERIAL-LACO-G-SEM-RECEITA (2026-11-13) — o laço G do `o6r07c-subresource-scope` não  |
-| `P-MATERIAL-RC4B-SEM-FATIA` | 14644 | MÉDIA | sim | P-MATERIAL-RC4B-SEM-FATIA (2026-11-13) — o RC4b do plano (contrato Dart × TS do material |
+| `P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS` | 14615 | MÉDIA | sim | P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS (2026-11-12) — a suíte backend intei |
 
-## ABERTAS · balde B — processo/registro — 367
+## ABERTAS · balde B — processo/registro — 368
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -762,8 +760,9 @@
 | `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` | 14579 | BAIXA | sim | P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS (2026-11-12) — a baseline da suíte inteira não fecha |
 | `P-C4-02-MENU-TECNICO-403` | 14586 | BAIXA | sim | P-C4-02-MENU-TECNICO-403 (2026-11-12) — o menu do técnico mostra Seguros e Estoque, que  |
 | `P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA` | 14593 | BAIXA | sim | P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA (2026-11-12) — `logistics`, `users` e `audit` prov |
-| `P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE` | 14622 | BAIXA | sim | P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE (2026-11-13) — a matriz dá `read` ao `man |
-| `P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO` | 14637 | BAIXA | sim | P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO (2026-11-13) — adição de material que já f |
+| `P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE` | 14623 | BAIXA | sim | P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE (2026-11-13) — a matriz dá `read` ao `man |
+| `P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO` | 14639 | BAIXA | sim | P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO (2026-11-13) — adição de material que já f |
+| `P-551-INMEMORY-TOCTOU-EXIT-SOURCE` | 14662 | BAIXA | sim | P-551-INMEMORY-TOCTOU-EXIT-SOURCE (2026-11-13) — em memória, dois lotes concorrentes com |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -831,7 +830,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3751 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3795 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 226
+## FECHADAS — 228
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1060,4 +1059,6 @@
 | `P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS` | 14517 | — | **a atribuir** | P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS (2026-11-12) — a limpeza do `san3-08` varre tabe |
 | `P-PORTAO-ITEM-GATE-CHAVE` | 14600 | — | sim | P-PORTAO-ITEM-GATE-CHAVE (2026-11-12) — acrescentar a P-MOBILE-GATE-CHAVE-FORA-DO-CATALO |
 | `P-PAINEL-HORA-DA-MEDICAO` | 14608 | BAIXA | sim | P-PAINEL-HORA-DA-MEDICAO (2026-11-13) — a hora da medição da Codex ficava em branco e o  |
-| `P-SAN3-ITEM-63-DUPLICADO` | 14651 | BAIXA | sim | P-SAN3-ITEM-63-DUPLICADO (2026-11-13) — o número 63 do §4.1 do `PLANO_SAN3.md` foi dado  |
+| `P-MATERIAL-LACO-G-SEM-RECEITA` | 14630 | ALTA | sim | P-MATERIAL-LACO-G-SEM-RECEITA (2026-11-13) — o laço G do `o6r07c-subresource-scope` não  |
+| `P-MATERIAL-RC4B-SEM-FATIA` | 14646 | MÉDIA | sim | P-MATERIAL-RC4B-SEM-FATIA (2026-11-13) — o RC4b do plano (contrato Dart × TS do material |
+| `P-SAN3-ITEM-63-DUPLICADO` | 14654 | BAIXA | sim | P-SAN3-ITEM-63-DUPLICADO (2026-11-13) — o número 63 do §4.1 do `PLANO_SAN3.md` foi dado  |
