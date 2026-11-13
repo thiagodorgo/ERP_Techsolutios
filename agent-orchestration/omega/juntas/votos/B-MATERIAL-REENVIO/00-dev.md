@@ -394,3 +394,14 @@
 - Escopo: `git diff --name-only origin/main...HEAD` = 39 arquivos, todos no PERMITIDO do §C4 com as ampliações (E3, R-C21-01, E-C25.4/E-C26, E-C27.1); nada em `prisma/**`, `catalog.ts`, `src/modules/work-orders/**`, `lib/shared/**` (`sync_screen.dart` volta ao blob da `main`), `Kpis/**`; `work_order_repository.dart` = 1 linha.
 - `git diff --check` verde. Head antes do commit: `43ded69ee03309bab2633938abe401620073ebf9`.
 - Próximo passo exato: commit e push; ler o TAP dos jobs `backend`, `backend-postgres` e `flutter` do head novo (`gh run view <run> --job <id> --log | grep -E '^# (tests|pass|fail|skipped)|not ok'`) contra a baseline da C2.3 (backend 5440/5438/0/2; backend-postgres 610/0/0; flutter +1170); o PR fica em rascunho enquanto o job `backend` tiver os 2 do laço G.
+
+## RETOMADA 39 — 2026-11-13T10:04:42-03:00 — C-F14: TAP DO CI DO HEAD `66afe5aa` LIDO; LINT DA 3.47.5 CONSERTADO
+
+- Executor: `dev-c6-cl`, Claude Opus 5.5 (nível menor declarado).
+- Comando: `gh run view 43427907472` e `gh api repos/{owner}/{repo}/actions/jobs/<id>/logs | grep -E '# (tests|pass|fail|skipped) |not ok|run-backend-tests'`, por job.
+- **backend** (job `131893933347`): `[run-backend-tests] 538 arquivo(s) · 5489 teste(s) · pass 5485 · fail 2 · skipped 2`; os 2 `not ok` são o laço G dos pares de estoque (`P-MATERIAL-LACO-G-SEM-RECEITA`), os mesmos desde a C-F5; `ok … [RC3(` = **8 = K**. Contra a baseline da C2.3 (`5440 · 5438 · 0 · 2`): +49 testes (meta M_b ≥ N_b + 45), mas **fail 2**.
+- **backend-postgres** (job `131893933485`): `# tests 618 · pass 618 · fail 0 · skipped 0` (610 da baseline + 8 do RC3), `[RC3(` = **8 = K**. Aceite da R-C21-01 nos dois jobs.
+- **flutter** (job `131893933435`): `Formatted 264 files (0 changed)` (o formatador da 3.47.5 aceita os arquivos do bloco); `flutter analyze` = `1 issue found`: `warning • Returning a 'Future' without 'await' inside a try block … lib/features/prestador/data/prestador_repository.dart:135:30 • unawaited_return_in_try_block` — regra que o host (3.41.6) não tem, nascida da trava de entrada da C-F10. Consertado: `return await _localStore.loadMaterials(workOrderLocalId);` em bloco. Host: `flutter analyze` sem achados; prestador + guard AST + RC4 = `+57`; suíte inteira `+1190: All tests passed!`; `dart format` sem mudança.
+- Demais jobs do run: antivirus, owner-portal, frontend e authority-portal `success`; docker `skipped` (depende do backend).
+- Head antes do commit: `66afe5aa11d0f32481fd355226b4bf0d8268772c`.
+- Próximo passo exato: commit e push do conserto; ler o job `flutter` do head novo; o PR fica em rascunho (o job `backend` só fica verde com a emenda do laço G); depois, parar e apagar só o `pg-material2` e o `material-redis` e rodar o checkup.

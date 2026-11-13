@@ -132,7 +132,9 @@ class PrestadorRepository extends ChangeNotifier {
   }) async {
     final leave = await _enterMaterialLock();
     try {
-      if (selection.isEmpty) return _localStore.loadMaterials(workOrderLocalId);
+      if (selection.isEmpty) {
+        return await _localStore.loadMaterials(workOrderLocalId);
+      }
       final current = await _localStore.loadMaterials(workOrderLocalId);
       final merged = mergeMaterials(
         current: current,
