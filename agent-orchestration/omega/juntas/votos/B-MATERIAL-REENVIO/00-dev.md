@@ -418,3 +418,29 @@
 - Limpeza: `pg-material2` parado (`pg_ctl stop -m fast`; `pg_isready` sem resposta) e apagado; `material-redis` removido; nenhum processo `postgres` com `pg-material2` na linha de comando. O `w-material` fica.
 - Head: `9398bab956b09bdf104dcff3b950362f0919832d` = `origin/feat/mobile-material-reenvio`.
 - Próximo passo exato: o orquestrador escreve e revisa a emenda do laço G (e decide o RC4b); o próximo dev aplica só a receita autorizada, mostra o laço G verde no host e no TAP do job `backend` do head novo, e então tira o PR do rascunho.
+
+## RETOMADA 41 — 2026-11-13T10:43:09-03:00 — TERRENO MEDIDO PARA A EMENDA C2.8 (sucessor `dev-c7-cl`)
+
+- Executor: `dev-c7-cl`, Claude Opus 5.5 (subagente da sessão, nível menor declarado), sucessor do `dev-c6-cl` por `D-CLAUDE-CODA-40` (as Codex sem janela até 12:26/13:22). Não escrevi o plano, as emendas (C2.8 e E-C28.5) nem a revisão `rev-c28-cl`.
+- Comando: `git rev-parse --short HEAD origin/feat/mobile-material-reenvio`; `git status --short`; leitura da Emenda C2.8 com a E-C28.5 (`awk '/^### Emenda C2.8/,0' B-REENVIOS-plano.md`, 40 linhas), do `rev-c28.json`, do `rev-c28-sonda/gerar.cjs` e das RETOMADAS 31–40; `diff` da cauda das duas cópias do diário (iguais, 420 linhas).
+- Saída resumida: HEAD = origin = `49999a0c`; `git status` vazio. Linha de base no host (`CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/o6r07c-subresource-scope.test.ts`, 10:42 SP): `# tests 26 · pass 24 · fail 2`, `not ok 2` (add) e `not ok 3` (remove) com "laço G: lote sem receita em \"PAR /api/v1/mobile/sync/inventory-actions · …\" — o laço nunca pula uma entrada". Confere com o achado da RETOMADA 33 e o item 1 da `rev-c28`.
+- Conferido para a receita: `createMemoryInventoryService`, `getMemoryInventoryRepositoryForTests`, `resetInventoryRuntimeForTests` (`inventory.service.ts` l.731/735/754) e `resetMobileInventoryRuntimeForTests` (`mobile-inventory-sync.ts` l.234) existem; o `parseAction` exige `local_created_at` (l.311, A2); o escopo do `add` em l.392-394 e o do `remove` em l.462-464 (alvos da M-C43 e da M-C44).
+- Head: `49999a0c`.
+- Próximo passo exato: aplicar a receita (E-C28.1 (a)(b)(c) com A1/A2) só em `tests/o6r07c-subresource-scope.test.ts`; rodar o arquivo no host; M-C43, M-C44 e M-C45.
+
+## RETOMADA 42 — 2026-11-13T10:48:05-03:00 — LAÇO G COM RECEITA DO LOTE DE ESTOQUE (E-C28.1, E-C28.2, E-C28.5 A1/A2)
+
+- Executor da fatia: `dev-c7-cl`, Claude Opus 5.5 (nível menor declarado).
+- Código, só em `tests/o6r07c-subresource-scope.test.ts` (`git diff --stat` = `1 file changed, 70 insertions(+)`, 0 linhas removidas):
+  - (a) `LOTE_ESTOQUE = "/api/v1/mobile/sync/inventory-actions"`;
+  - (b) em `executarEntrada`, dois ramos ANTES do `throw` "lote sem receita", que não muda (A2): o `add` com `work_order_id`, `sku`, `quantity` e `material_local_id`; o `remove` com `work_order_id`, `source_client_action_id` (da adição semeada) e `material_local_id`. Tipo de estoque sem receita continua caindo no `throw`;
+  - (c) `ctx.syncEstoque` (o envelope do `sync` no lote de estoque, toda ação com `local_created_at`, A2) e `ctx.semearAdicao` (A1: item com SKU próprio, entrada de 10 na base e transferência de 5 para a custódia PROFISSIONAL do perfil do técnico A, no molde de `tests/b-material-sync.test.ts`; a adição sai pela rota real e a semente afirma `accepted`); o `withApi` só ganha o import de `inventory.service` e `mobile-inventory-sync` e o reset dos dois no `resetAll` (A1). O laço, as expectativas, a fixture, o censo e as outras entradas não mudam.
+  - Declarado (A2 da `rev-c28`): o `add` usa um SKU que não existe; G-POS e G-WIDE passam com `inventory_item_not_found`, a força do molde do LOTE_OS.
+- Comando: `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/o6r07c-subresource-scope.test.ts`.
+- Saída: `# tests 26 · pass 26 · fail 0 · skipped 0` (antes `26 · 24 · 2`); `ok 2` (add) e `ok 3` (remove); as 13 entradas antigas seguem verdes. `npm run check` exit 0; `git diff --check` verde.
+- Mutações (literais, uma por vez, cópia do arquivo restaurada; md5 igual e `git diff --stat` do alvo vazio depois de cada uma):
+  - **M-C43** (`mobile-inventory-sync.ts` l.393, `getForMutation(actor, workOrderId)` → `get(actor, workOrderId)` no `add`; `git diff --stat` = `1 insertion(+), 1 deletion(-)`): `26 · 25 · 1`, só `not ok 2` (add), "G-NEG …add: reason inventory_item_not_found". Restaurada: md5 `f92e3b10…`, diff vazio.
+  - **M-C44** (l.463, o mesmo no `remove`, ordem N4): `26 · 25 · 1`, só `not ok 3` (remove), "G-NEG …remove: ação conflict action_owned_by_other_actor". Restaurada: md5 `f92e3b10…`, diff vazio.
+  - **M-C45** (apagar os dois ramos novos, l.367–373; `git diff --stat` do teste cai a 63 inserções): `26 · 24 · 2`, `not ok 2` e `not ok 3` com a mensagem literal "laço G: lote sem receita em \"PAR /api/v1/mobile/sync/inventory-actions · …\" — o laço nunca pula uma entrada". Restaurada: md5 `761f861f…`, `git diff --stat` volta a 70 inserções.
+- Head antes do commit: `49999a0c`.
+- Próximo passo exato: commit e push; então a C-F14a (fixture `bmaterial_request_payloads.json`, `bmaterial_codec_test.dart`, `b-material-payload-contract.test.ts`, M-C46 e M-C47).
