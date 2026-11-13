@@ -85,15 +85,38 @@ export type WebhookRouterDeps = {
  * `hops`-ésima posição contada da direita. Zero saltos nunca confia no cabeçalho. Cabeçalho ausente, curto ou com a
  * entrada selecionada inválida falha fechado para o endereço do socket.
  */
+function normalizeIp(value: string): string | null {
+  const unwrapped = value.startsWith("[") && value.endsWith("]") ? value.slice(1, -1) : value;
+  const family = isIP(unwrapped);
+  if (family === 0) return null;
+  if (family === 4) return unwrapped;
+
+  let canonical: string;
+  try {
+    const hostname = new URL(`http://[${unwrapped}]`).hostname;
+    canonical = hostname.slice(1, -1).toLowerCase();
+  } catch {
+    return null;
+  }
+
+  const mapped = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/.exec(canonical);
+  if (!mapped) return canonical;
+
+  const high = Number.parseInt(mapped[1], 16);
+  const low = Number.parseInt(mapped[2], 16);
+  return `${high >>> 8}.${high & 0xff}.${low >>> 8}.${low & 0xff}`;
+}
+
 export function webhookClientIp(req: Request, trustedProxyHops: number): string {
-  const socketIp = req.socket.remoteAddress ?? "unknown";
+  const rawSocketIp = req.socket.remoteAddress ?? "unknown";
+  const socketIp = normalizeIp(rawSocketIp) ?? rawSocketIp;
   if (!Number.isInteger(trustedProxyHops) || trustedProxyHops <= 0) return socketIp;
 
   const forwarded = req.headers["x-forwarded-for"];
   if (typeof forwarded !== "string") return socketIp;
   const hops = forwarded.split(",").map((entry) => entry.trim());
   const candidate = hops.at(-trustedProxyHops);
-  return candidate && isIP(candidate) !== 0 ? candidate : socketIp;
+  return candidate ? (normalizeIp(candidate) ?? socketIp) : socketIp;
 }
 
 function sha256Hex(value: string): string {

@@ -139,3 +139,25 @@ test("IP5 fail-closed: hops maior que o XFF, entrada que não é IP e XFF vazio 
   );
   assert.equal(clientIp(requestWith(socketIp, ""), 1), socketIp, "XFF vazio");
 });
+
+test("IP6 IP bloqueado reapresentado como IPv4 mapeado em IPv6 não gasta a cota global", async () => {
+  const app = buildApp({ hops: 1, limiter: createWebhookRateLimiter({ globalPerMinute: 21 }) });
+  await withServer(app, async (baseUrl) => {
+    for (let index = 0; index < 20; index += 1) {
+      assert.equal((await post(baseUrl, "198.51.100.40")).status, 401);
+    }
+
+    const mappedStatus = (await post(baseUrl, "::ffff:198.51.100.40")).status;
+    const legitimateStatus = (await post(baseUrl, "198.51.100.41", true)).status;
+    assert.deepEqual(
+      { mappedStatus, legitimateStatus },
+      { mappedStatus: 429, legitimateStatus: 200 },
+      "a forma IPv4 mapeada continua bloqueada sem consumir a vaga do IP legítimo",
+    );
+  });
+
+  const clientIp = resolver();
+  assert.equal(clientIp(requestWith("192.0.2.200", "[::FFFF:198.51.100.40]"), 1), "198.51.100.40");
+  assert.equal(clientIp(requestWith("::FFFF:198.51.100.40"), 0), "198.51.100.40");
+  assert.equal(clientIp(requestWith("192.0.2.200", "[2001:0DB8:0:0:0:0:0:1]"), 1), "2001:db8::1");
+});
