@@ -363,7 +363,7 @@
 | `P-ASS09A-METODO-OUTRAS-REGRAS` | 13747 | CRÍTICA | sim | P-ASS09A-METODO-OUTRAS-REGRAS (2026-11-11) — fora do banco, regra com mais de uma base g |
 | `P-ASS09A-MES-EM-VARIOS-ARQUIVOS` | 13761 | CRÍTICA | sim | P-ASS09A-MES-EM-VARIOS-ARQUIVOS (2026-11-11) — um mês dividido em vários arquivos vira v |
 | `P-RBAC-PERSISTENTE-LEITURA-POR-MONTAGEM` | 13796 | MÉDIA | sim | P-RBAC-PERSISTENTE-LEITURA-POR-MONTAGEM (2026-11-11) — o RBAC persistente lê o status do |
-| `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` | 13828 | CRÍTICA | sim | P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o |
+| `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` | 13828 | CRÍTICA | **a atribuir** | P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o |
 | `P-O6R-B12-FUSO-DO-PATIO-VIVO` | 13857 | MÉDIA | sim | P-O6R-B12-FUSO-DO-PATIO-VIVO (2026-11-11) — transferência ou edição do fuso retempera di |
 | `P-COMISSAO-GATE-SEM-TRAVA` | 13895 | CRÍTICA | sim | P-COMISSAO-GATE-SEM-TRAVA (2026-11-11) — o evento-base de comissão lê a OS sem trava e f |
 | `P-MOBILE-ESTOQUE-MODULO-SEMENTE` | 13933 | CRÍTICA | **a atribuir** | P-MOBILE-ESTOQUE-MODULO-SEMENTE (2026-11-11) — o módulo de estoque do app tem uma segund |
