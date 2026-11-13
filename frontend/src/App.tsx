@@ -109,6 +109,8 @@ const DispatchConsolePage = lazy(() => import("./modules/dispatch/pages/Dispatch
 const FinanceiroPage = lazy(() => import("./modules/finance/pages/FinanceiroPage").then((m) => ({ default: m.FinanceiroPage })));
 const InvoicesPage = lazy(() => import("./modules/finance/pages/InvoicesPage").then((m) => ({ default: m.InvoicesPage })));
 const RemuneracoesPage = lazy(() => import("./modules/finance/commissions/pages/RemuneracoesPage").then((m) => ({ default: m.RemuneracoesPage })));
+const ChequesPage = lazy(() => import("./modules/finance/cheques/ChequesPage").then((m) => ({ default: m.ChequesPage })));
+const FechamentoPage = lazy(() => import("./modules/finance/period-closes/FechamentoPage").then((m) => ({ default: m.FechamentoPage })));
 
 const PlatformCloudBillingPage = lazy(() =>
   import("./modules/platform/cloud-billing/pages/PlatformCloudBillingPage").then((m) => ({
@@ -664,6 +666,24 @@ export function App() {
               path="/finance/payments"
               // B-SAN3-12b (F13): Pagamentos é a aba "A pagar". As páginas antigas saem do código no B-SAN3-24 (Q4).
               element={<Navigate to="/finance?aba=pag" replace />}
+            />
+            {/* B-SAN3-24 (24a) — Cheques: o guard é o mesmo gate da rota do servidor (GET /cheques → cheques:read). */}
+            <Route
+              path="/finance/cheques"
+              element={
+                <PermissionGuard permissions={["cheques:read"]}>
+                  <ChequesPage />
+                </PermissionGuard>
+              }
+            />
+            {/* B-SAN3-24 (24b) — Fechamento do mês: o guard é o gate da rota do servidor (GET /financial-periods → financial_period:read). */}
+            <Route
+              path="/finance/fechamento"
+              element={
+                <PermissionGuard permissions={["financial_period:read"]}>
+                  <FechamentoPage />
+                </PermissionGuard>
+              }
             />
             {/* F8 Remunerações — extrato de comissões (adaptativo por permissão: read → todos; read_own → próprio). */}
             <Route

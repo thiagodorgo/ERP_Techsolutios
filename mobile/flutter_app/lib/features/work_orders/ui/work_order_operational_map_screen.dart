@@ -273,6 +273,7 @@ class _OperationalLocationCardState
                     ),
                     const SizedBox(width: 8),
                     OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(minimumSize: Size(0, 44)),
                       onPressed: () => context.push(
                         '/field-map?workOrderId=${widget.workOrder.localId}',
                       ),

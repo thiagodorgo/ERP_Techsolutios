@@ -132,6 +132,32 @@ test("Item planned/future pode aparecer com permissao e status correto", () => {
   assert.equal(menu.find((item) => item.id === "finance.invoices")?.status, "future");
 });
 
+// B-SAN3-24 (A9, P-MENU) — Cheques é item IMPLEMENTADO do Financeiro, governado pela mesma permissão que a rota do
+// servidor e o PermissionGuard do App.tsx comparam (`cheques:read`): aparece com ela, some sem ela.
+test("B-SAN3-24: finance.cheques é implementado e só aparece com cheques:read", () => {
+  const actor = { userId: "usr-finance", tenantId: "ten-a", roles: ["finance"], enabledModules: ["finance"], scope: "finance" } as const;
+  const withPermission = getMenuForCurrentUser({ ...actor, permissions: ["cheques:read"] });
+  const cheques = withPermission.find((item) => item.id === "finance.cheques");
+  assert.equal(cheques?.status, "implemented");
+  assert.equal(cheques?.path, "/finance/cheques");
+  assert.deepEqual(cheques?.requiredPermissions, ["cheques:read"]);
+  assert.deepEqual(cheques?.requiredModules, ["finance"]);
+  const without = getMenuForCurrentUser({ ...actor, permissions: ["financial_entries:read", "financial_titles:read", "financial_period:read"] });
+  assert.equal(without.find((item) => item.id === "finance.cheques"), undefined);
+});
+
+// B-SAN3-24 (A9, parte do fechamento; P-MENU) — Fechamento do mês governado por `financial_period:read`.
+test("B-SAN3-24: finance.period_closes é implementado e só aparece com financial_period:read", () => {
+  const actor = { userId: "usr-finance", tenantId: "ten-a", roles: ["finance"], enabledModules: ["finance"], scope: "finance" } as const;
+  const item = getMenuForCurrentUser({ ...actor, permissions: ["financial_period:read"] }).find((entry) => entry.id === "finance.period_closes");
+  assert.equal(item?.status, "implemented");
+  assert.equal(item?.path, "/finance/fechamento");
+  assert.deepEqual(item?.requiredPermissions, ["financial_period:read"]);
+  assert.deepEqual(item?.requiredModules, ["finance"]);
+  const without = getMenuForCurrentUser({ ...actor, permissions: ["financial_entries:read", "cheques:read"] });
+  assert.equal(without.find((entry) => entry.id === "finance.period_closes"), undefined);
+});
+
 test("Cloud Billing aparece com cost allocation read", () => {
   const menu = getMenuForCurrentUser({
     userId: "usr-platform",

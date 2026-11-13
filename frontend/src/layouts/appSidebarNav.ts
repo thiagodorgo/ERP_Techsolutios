@@ -1,11 +1,13 @@
 import {
   AlertTriangle,
   Ban,
+  Banknote,
   Bell,
   BellRing,
   BookUser,
   Building2,
   Calculator,
+  CalendarCheck,
   CheckCircle,
   ClipboardList,
   Coins,
@@ -92,6 +94,10 @@ const FINANCEIRO: NavItem = { label: "Financeiro", path: "/finance", icon: Recei
 // B-SAN3-12b (F13) — Cobranças e Pagamentos são abas do Financeiro (`/finance?aba=rec|pag`).
 const COBRANCAS: NavItem = { label: "Cobranças", path: "/finance?aba=rec", icon: HandCoins };
 const PAGAMENTOS: NavItem = { label: "Pagamentos", path: "/finance?aba=pag", icon: CreditCard };
+// B-SAN3-24 (24a) — Cheques (`/finance/cheques`, gate `cheques:read` no guard e no registro de navegação do servidor).
+const CHEQUES: NavItem = { label: "Cheques", path: "/finance/cheques", icon: Banknote };
+// B-SAN3-24 (24b) — Fechamento do mês (`/finance/fechamento`, gate `financial_period:read`).
+const FECHAMENTO: NavItem = { label: "Fechamento do mês", path: "/finance/fechamento", icon: CalendarCheck };
 
 const USUARIOS: NavItem = { label: "Usuários", path: "/users", icon: Users };
 const NOTIFICACOES: NavItem = { label: "Notificações", path: "/notifications", icon: Bell };
@@ -146,7 +152,7 @@ const G_FROTA_OPERACIONAL: NavGroup = {
 };
 const G_GESTAO_FULL: NavGroup = {
   label: "GESTÃO",
-  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, PROFISSIONAIS, SERVICOS, TABELAS_VALORES, TARIFAS, TAGS, PONTOS_INTERESSE, ESTOQUE, REMUNERACOES, FINANCEIRO, COBRANCAS, PAGAMENTOS],
+  items: [CLIENTES, FILIAIS, FORNECEDORES, EQUIPES, PROFISSIONAIS, SERVICOS, TABELAS_VALORES, TARIFAS, TAGS, PONTOS_INTERESSE, ESTOQUE, REMUNERACOES, FINANCEIRO, COBRANCAS, PAGAMENTOS, CHEQUES, FECHAMENTO],
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
@@ -194,7 +200,7 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
     // levava ao 403. O backend é a autoridade; esta camada só molda o menu.
     { label: "OPERAÇÃO", items: [OS, ORCAMENTOS, APROVACOES, CHECKLISTS] },
     { label: "FROTA", items: [ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS, EXTRATO_PROFISSIONAL] },
-    { label: "GESTÃO", items: [CLIENTES, SERVICOS, ESTOQUE, REMUNERACOES, FINANCEIRO, COBRANCAS, PAGAMENTOS] },
+    { label: "GESTÃO", items: [CLIENTES, SERVICOS, ESTOQUE, REMUNERACOES, FINANCEIRO, COBRANCAS, PAGAMENTOS, CHEQUES, FECHAMENTO] },
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, MODELOS_CHECKLIST] },
   ],
   // B-SAN3-04a (item 38, P-026) — Estoque (inventory): menu PRÓPRIO. Antes o papel não tinha rótulo, caía em "gestor"
@@ -261,6 +267,8 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/finance",
   "/finance?aba=rec",
   "/finance?aba=pag",
+  "/finance/cheques",
+  "/finance/fechamento",
   "/users",
   "/audit",
   "/controle/usuarios/acessos",

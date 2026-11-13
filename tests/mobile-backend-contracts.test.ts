@@ -1272,6 +1272,100 @@ test("mobile checklist sync is durably idempotent across a simulated restart wit
   });
 });
 
+// B-SAN3-14 (R-A1) — CONTRATO `checklist_run_role@2026-11.b-san3-14`. Substitui o guard de ausência `[BLOQ 4]` de
+// `tests/field-dispatch-multi-checklist.test.ts`, que mandava nomear este contrato antes de expor a fase. As 5
+// exigências dele estão neste bloco: (1) `generic` vira coleta no app (`MobileChecklistRunKind.fromServerRole`);
+// (2) o `role` do servidor nunca muda o `kind` de uma run local conhecida (pré-carga); (3) o casamento é por
+// (modelo, fase); (4) este contrato; (5) a suíte Flutter com `generic` e `null`.
+//
+// A PORTA DE COMPATIBILIDADE é o `roleAware=1`: o app que já está nos aparelhos casa a run só por modelo e pega a
+// primeira não terminal, então ver a ENTREGA do mesmo modelo faria a coleta gravar nela. Sem o parâmetro, a lista
+// sai como antes deste bloco: sem a entrega e sem a chave `role`.
+test("[contrato checklist_run_role@2026-11.b-san3-14] sem roleAware a entrega não aparece e não há chave role; com roleAware=1 aparecem as 2, com role", async () => {
+  await withMobileContractApi(async ({ baseUrl, seed }) => {
+    const headers = authHeaders(seed.tenantA, seed.adminA, "tenant_admin");
+    const { templateId } = await publishChecklistTemplateForSync(baseUrl, headers);
+    const workOrderId = "11111111-2222-4333-8444-555555555555";
+    const { createMemoryChecklistService } = await import("../src/modules/checklists/checklist.service.js");
+    const checklists = createMemoryChecklistService();
+    const actor = { tenantId: seed.tenantA.id, userId: seed.adminA.id };
+    // O despacho cria as duas do MESMO modelo (a chave de idempotência carrega a fase).
+    const coleta = await checklists.createRun(actor, {
+      checklistId: templateId,
+      clientRunKey: `dispatch:${workOrderId}:${templateId}:collection`,
+      relatedEntityType: "work_order",
+      relatedEntityId: workOrderId,
+      role: "collection",
+      answers: [],
+    });
+    const entrega = await checklists.createRun(actor, {
+      checklistId: templateId,
+      clientRunKey: `dispatch:${workOrderId}:${templateId}:delivery`,
+      relatedEntityType: "work_order",
+      relatedEntityId: workOrderId,
+      role: "delivery",
+      answers: [],
+    });
+
+    // App antigo: a mesma chamada de hoje (com `checklistId`, sem `roleAware`).
+    const antigo = await requestJson(
+      baseUrl,
+      `/api/v1/mobile/checklist-runs?workOrderId=${workOrderId}&checklistId=${templateId}`,
+      { headers },
+    );
+    assert.equal(antigo.status, 200);
+    assert.deepEqual(
+      antigo.body.data.map((run: { id: string }) => run.id),
+      [coleta.id],
+      "o app antigo viu a vistoria de entrega",
+    );
+    for (const run of antigo.body.data as Record<string, unknown>[]) {
+      assert.equal("role" in run, false, "a lista sem roleAware expôs a chave role");
+    }
+    assert.equal(JSON.stringify(antigo.body).includes("collection"), false);
+
+    // App novo: `roleAware=1`, sem `checklistId` (a pré-carga baixa todas as da OS).
+    const novo = await requestJson(baseUrl, `/api/v1/mobile/checklist-runs?workOrderId=${workOrderId}&roleAware=1`, {
+      headers,
+    });
+    assert.equal(novo.status, 200);
+    const porId = new Map(
+      (novo.body.data as Array<{ id: string; role: unknown }>).map((run) => [run.id, run.role] as const),
+    );
+    assert.equal(porId.size, 2);
+    assert.equal(porId.get(coleta.id), "collection");
+    assert.equal(porId.get(entrega.id), "delivery");
+
+    // A vistoria sem fase (legada) sai com `role: null` para o app novo — nunca uma fase inventada.
+    const legada = await checklists.createRun(actor, {
+      checklistId: templateId,
+      relatedEntityType: "work_order",
+      relatedEntityId: workOrderId,
+      answers: [],
+    });
+    const comLegada = await requestJson(
+      baseUrl,
+      `/api/v1/mobile/checklist-runs?workOrderId=${workOrderId}&roleAware=1`,
+      { headers },
+    );
+    const legadaDto = (comLegada.body.data as Array<Record<string, unknown>>).find((run) => run.id === legada.id);
+    assert.ok(legadaDto);
+    assert.equal("role" in legadaDto, true);
+    assert.equal(legadaDto.role, null);
+
+    // `roleAware` com outro valor que não "1" é a porta antiga (fail-closed para o app que não pediu).
+    const outro = await requestJson(
+      baseUrl,
+      `/api/v1/mobile/checklist-runs?workOrderId=${workOrderId}&roleAware=true`,
+      { headers },
+    );
+    assert.equal(
+      (outro.body.data as Array<{ id: string }>).some((run) => run.id === entrega.id),
+      false,
+    );
+  });
+});
+
 // CHECKLIST P1 PR-03 (junta, ALTA §2.8) — `POST /api/v1/mobile/checklist-runs/:runId/reopen` é superfície do
 // aplicativo de campo, e o `sendRouteError` devolve QUALQUER `Error` solto como HTTP 400 com `error.message`
 // literal. A mensagem do Prisma carrega caminho absoluto do servidor, trecho da query e nomes de coluna

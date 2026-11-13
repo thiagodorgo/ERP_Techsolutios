@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrega do guincho · 3 opções (Claude) · app de campo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Roboto:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS (origin/main 07898adf) ─── */
+:root{
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  /* mobile/flutter_app/lib/shared/theme/erp_mobile_theme.dart:7-24 */
+  --m-primary:#2563EB;--m-success:#059669;--m-warning:#D97706;--m-danger:#DC2626;--m-info:#2563EB;--m-purple:#7C3AED;
+  --m-page:#F1F5F9;--m-border:#E2E8F0;--m-ink:#0F172A;--m-muted:#64748B;--m-faint:#94A3B8;--m-navy:#0D1B2A;
+  /* ícones de lista e de cartão do kit (mobile_kit.dart:389, work_order_execute_screen.dart:651) */
+  --m-icon:#475569;
+  /* cores que o Material 3 gera da semente #2563EB e que não estão em código (aproximação declarada no quadro) */
+  --m3-outline:#74777F;--m3-errc:#FFDAD6;--m3-onerrc:#410002;--m3-snack:#313033;--m3-onsnack:#F4EFF4;
+  --m-font:Roboto,"Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 240px}
+button{font-family:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.nw{white-space:nowrap}
+
+/* ─── MOLDURA (do molde aprovado troca-senha-claude.html, versão "App de campo") ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.app-stage{position:relative;background:#0f172a;display:flex;justify-content:center;padding:20px 0}
+.app-stage__tag{position:absolute;left:24px;top:22px;display:flex;flex-direction:column;gap:6px;width:min(300px,calc((100vw - 410px) / 2 - 40px))}
+.app-stage__tag b{align-self:flex-start;font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-stage__tag>span{font-size:11.5px;color:#94a3b8;line-height:1.5}
+.app-stage__entrega{color:#e2e8f0!important;font-weight:700}
+.app-stage__lado{position:absolute;right:24px;top:22px;width:min(300px,calc((100vw - 410px) / 2 - 40px));display:flex;flex-direction:column;gap:8px}
+.app-stage__lado h2{font-size:15px;font-weight:800;color:#f8fafc;line-height:1.3}
+.app-stage__lado p{font-size:12px;color:#94a3b8;line-height:1.55}
+.app-stage__lado ul{list-style:none;display:grid;gap:6px}
+.app-stage__lado li{font-size:12px;color:#cbd5e1;line-height:1.45;padding-left:12px;position:relative}
+.app-stage__lado li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:700}
+/* alternador de estados da maquete (fora da tela) */
+.estados{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+.estados__grupo{display:flex;flex-direction:column;gap:3px}
+.estados__tit{font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;padding:0 2px}
+.estados button{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid #1e293b;background:#111b2e;color:#cbd5e1;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;line-height:1.3}
+.estados button:hover{border-color:#334155}
+.estados button[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.estados button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.estados button i{font-style:normal;font-size:10px;font-weight:800;color:#94a3b8;min-width:16px}
+.estados button[aria-pressed="true"] i{color:#dbeafe}
+
+.phone{width:410px;height:832px;border-radius:48px;background:#05080f;padding:10px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 30px 60px -20px rgba(0,0,0,.8);flex-shrink:0}
+.phone__screen{width:390px;height:812px;border-radius:38px;overflow:hidden;background:var(--m-page);display:flex;flex-direction:column;font-family:var(--m-font);color:var(--m-ink)}
+.phone__status{height:36px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 28px;font-size:13px;font-weight:600;color:#0F172A}
+.phone__status-ic{display:flex;align-items:center;gap:6px}
+.phone__app{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.phone__app>[data-view]{flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* ─── APP DE CAMPO: componentes que já existem ─── */
+.scr{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;background:var(--m-page)}
+.scr__body{flex:1;min-height:0;overflow-y:auto;padding:16px;scroll-behavior:auto}
+.scr__body::-webkit-scrollbar{width:0}
+/* MobileScreenHeader (mobile_kit.dart:239-300) */
+.m-hdr{flex-shrink:0;background:#fff;padding:10px 14px 12px 12px;display:flex;align-items:center;gap:2px}
+.m-hdr__txt{flex:1;min-width:0;padding-left:2px}
+.m-hdr__tit{font-size:18px;font-weight:800;color:var(--m-ink);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-hdr__sub{font-size:12px;color:var(--m-muted);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-hdr__fim{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.m-iconbtn{width:48px;height:48px;border-radius:50%;border:0;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--m-ink);cursor:pointer;flex-shrink:0}
+.m-iconbtn:hover{background:rgba(15,23,42,.06)}
+.m-iconbtn:focus-visible,.m-obtn:focus-visible,.m-fbtn:focus-visible,.m-tbtn:focus-visible,.m-row:focus-visible,.cmp-card:focus-visible,.m-menu button:focus-visible{outline:2px solid var(--m-primary);outline-offset:2px}
+/* MobilePill (mobile_kit.dart:21-63) */
+.m-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap}
+.t-info{background:#EFF6FF;color:var(--m-info)}.t-warning{background:#FFFBEB;color:var(--m-warning)}.t-success{background:#ECFDF5;color:var(--m-success)}
+.t-danger{background:#FEF2F2;color:var(--m-danger)}.t-purple{background:#F5F3FF;color:var(--m-purple)}.t-neutral{background:#F1F5F9;color:#475569}
+/* OperationalStatusChip (erp_components.dart:63-90): Chip do Material 3, cor a 12 % e borda a 45 % */
+.m-chip{display:inline-flex;align-items:center;height:32px;padding:0 10px;border-radius:8px;font-size:13.5px;font-weight:800;border:1px solid;white-space:nowrap;flex-shrink:0}
+.c-success{color:var(--m-success);background:rgba(5,150,105,.12);border-color:rgba(5,150,105,.45)}
+.c-warning{color:var(--m-warning);background:rgba(217,119,6,.12);border-color:rgba(217,119,6,.45)}
+.c-danger{color:var(--m-danger);background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.45)}
+.c-info{color:var(--m-info);background:rgba(37,99,235,.12);border-color:rgba(37,99,235,.45)}
+.c-pending{color:var(--m-purple);background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.45)}
+/* Card (erp_mobile_theme.dart:56-63): raio 14, borda #E2E8F0, sem sombra, margem vertical 6 */
+.m-card{background:#fff;border:1px solid var(--m-border);border-radius:14px;margin:6px 0}
+.m-card--erro{background:var(--m3-errc);border-color:transparent}
+/* ListTile do Material 3 */
+.m-tile{display:flex;align-items:center;gap:16px;padding:8px 16px;min-height:72px}
+.m-tile__ic{color:var(--m-icon);display:flex;flex-shrink:0}
+.m-tile__txt{flex:1;min-width:0}
+.m-tile__t{font-size:16px;line-height:22px;color:var(--m-ink)}
+.m-tile__s{font-size:13.5px;line-height:19px;color:var(--m-muted)}
+.m-card--erro .m-tile__ic{color:var(--m-danger)}
+.m-card--erro .m-tile__t,.m-card--erro .m-tile__s{color:var(--m3-onerrc)}
+/* botões do tema (erp_mobile_theme.dart:64-77): altura 44, raio 8 */
+.m-obtn,.m-fbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;border-radius:8px;font-family:var(--m-font);font-size:14px;font-weight:500;letter-spacing:.1px;cursor:pointer;padding:0 16px;white-space:nowrap}
+.m-obtn{border:1px solid var(--m3-outline);background:#fff;color:var(--m-primary)}
+.m-obtn:hover{background:#F5F8FF}
+.m-fbtn{border:0;background:var(--m-primary);color:#fff}
+.m-fbtn--ok{background:var(--m-success)}
+.m-fbtn--perigo{background:var(--m-danger)}
+.m-fbtn:disabled,.m-obtn:disabled{background:rgba(29,27,32,.12);color:rgba(29,27,32,.38);border-color:transparent;cursor:default}
+.m-obtn:disabled{background:transparent;border:1px solid rgba(29,27,32,.12)}
+.m-tbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;min-width:64px;padding:0 12px;border:0;border-radius:22px;background:transparent;color:var(--m-primary);font-family:var(--m-font);font-size:14px;font-weight:500;cursor:pointer;flex-shrink:0}
+.m-tbtn:hover{background:rgba(37,99,235,.08)}
+.m-sec{font-size:14px;font-weight:700;color:var(--m-ink);line-height:20px;margin:8px 0}
+.m-div{height:1px;background:var(--m-border);margin:12px 0}
+.m-gap8{height:8px}.m-gap12{height:12px}.m-gap16{height:16px}
+/* SyncStatusBanner (erp_components.dart:31-61): cor a 12 %, borda a 35 %, ícone de sincronizar */
+.m-banner{display:flex;align-items:flex-start;gap:8px;padding:12px;border-radius:8px;font-size:13.5px;line-height:19px;color:var(--m-ink)}
+.m-banner svg{flex-shrink:0;margin-top:-2px}
+.b-pending{background:rgba(217,119,6,.10);border:1px solid rgba(217,119,6,.35)}.b-pending svg{color:var(--m-warning)}
+.b-failed{background:rgba(220,38,38,.10);border:1px solid rgba(220,38,38,.35)}.b-failed svg{color:var(--m-danger)}
+/* NetworkStatusBanner (erp_components.dart:175-220): desenho de hoje, texto da situação */
+.m-netwrap{flex-shrink:0;padding:8px 16px 0;background:var(--m-page)}
+.m-net{display:flex;align-items:flex-start;gap:8px;padding:8px 12px;border-radius:8px;background:rgba(220,38,38,.10);border:1px solid rgba(220,38,38,.30);font-size:13px;line-height:18px;color:#B91C1C}
+.m-net svg{flex-shrink:0;color:var(--m-danger);margin-top:1px}
+/* faixa de dados desatualizados: o mesmo desenho, tom de atenção */
+.m-desat{display:flex;align-items:center;gap:8px;padding:4px 4px 4px 12px;border-radius:8px;background:rgba(217,119,6,.10);border:1px solid rgba(217,119,6,.35);font-size:13px;line-height:18px;color:#92400E;margin-bottom:6px}
+.m-desat svg{flex-shrink:0;color:var(--m-warning)}
+.m-desat span{flex:1}
+/* WorkOrderStepper (work_order_stepper.dart): círculo 26, número 11/700, rótulo 9 */
+.m-steps{display:flex;align-items:flex-start}
+.m-step{flex:1;display:flex;flex-direction:column;align-items:center;padding:4px 2px;min-width:0}
+.m-step__c{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#E2E8F0;color:var(--m-muted)}
+.m-step__l{margin-top:4px;font-size:9px;font-weight:600;color:var(--m-muted);text-align:center;line-height:1.2}
+.m-step.is-done .m-step__c{background:var(--m-success);color:#fff}.m-step.is-done .m-step__l{color:var(--m-success)}
+.m-step.is-active .m-step__c{background:var(--m-primary);color:#fff}.m-step.is-active .m-step__l{color:var(--m-primary);font-weight:700}
+.m-card--passos{padding:12px 8px}
+/* LinearProgressIndicator */
+.m-prog{height:4px;border-radius:2px;background:#E2E8F0;overflow:hidden}
+.m-prog i{display:block;height:100%;background:var(--m-primary);border-radius:2px}
+.m-prog--ok i{background:var(--m-success)}
+/* CircularProgressIndicator */
+.m-spin{width:36px;height:36px;border-radius:50%;border:4px solid rgba(37,99,235,.18);border-top-color:var(--m-primary);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* EmptyState / ErrorState / PermissionBlockedState (erp_components.dart:92-156) */
+.m-vazio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.m-vazio svg{color:var(--m-primary)}
+.m-vazio h3{font-size:16px;font-weight:700;color:var(--m-ink);margin-top:12px}
+.m-vazio p{font-size:14px;line-height:20px;color:var(--m-ink);margin-top:8px;max-width:300px}
+/* evidência (work_order_execute_screen.dart:618-692) */
+.m-evi{display:flex;align-items:stretch;background:#fff;border:1px solid var(--m-border);border-radius:14px;overflow:hidden;margin-bottom:8px}
+.m-evi__barra{width:4px;background:var(--m-success)}
+.m-evi__in{flex:1;display:flex;align-items:center;gap:10px;padding:10px 12px}
+.m-evi__ic{width:36px;height:36px;border-radius:50%;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:#475569;flex-shrink:0}
+.m-evi__n{font-size:13px;font-weight:700;color:var(--m-ink)}
+.m-evi__m{font-size:11px;color:var(--m-muted)}
+/* cartão de localização (work_order_operational_map_screen.dart:195-275), resumido */
+.m-loc{padding:12px}
+.m-loc__cab{display:flex;align-items:center;gap:8px}
+.m-loc__cab b{flex:1;font-size:16px;font-weight:700;color:var(--m-ink)}
+.m-loc p{font-size:12px;line-height:16px;color:var(--m-muted);margin-top:8px}
+.m-loc__l{font-size:13.5px;line-height:19px;color:var(--m-ink);margin-top:8px}
+.m-loc__bt{display:flex;gap:8px;margin-top:12px}
+.m-loc__bt .m-fbtn{flex:1}
+.m-loc__bt .m-obtn{width:auto}
+/* SnackBar do Material 3 */
+.m-snack{position:absolute;left:12px;right:12px;bottom:12px;background:var(--m3-snack);color:var(--m3-onsnack);border-radius:4px;padding:14px 16px;font-size:14px;line-height:20px;box-shadow:0 3px 10px rgba(0,0,0,.25);z-index:9}
+/* menu (PopupMenuButton) */
+.m-menu{position:absolute;right:14px;top:58px;background:#fff;border-radius:4px;box-shadow:0 4px 18px rgba(15,23,42,.22);padding:8px 0;min-width:220px;z-index:8}
+.m-menu button{display:flex;align-items:center;gap:12px;width:100%;height:48px;padding:0 16px;border:0;background:transparent;font-family:var(--m-font);font-size:15px;color:var(--m-ink);cursor:pointer;text-align:left}
+.m-menu button:hover{background:#F1F5F9}
+.m-menu button svg{color:var(--m-icon)}
+.m-menu__perigo svg{color:var(--m-danger)!important}
+
+/* ─── SEÇÃO NOVA · peças comuns ─── */
+.fs-nota{display:flex;align-items:center;gap:6px;font-size:12.5px;line-height:17px;color:var(--m-muted);margin-top:4px}
+.fs-nota svg{flex-shrink:0;color:var(--m-faint)}
+.fs-nota--trava{color:#92400E}
+.fs-nota--trava svg{color:var(--m-warning)}
+.fs-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+
+/* opção A: o cartão de vistoria de hoje (_ChecklistStatusCard, :444-501), uma vez por fase */
+.a-fase .m-tile{align-items:flex-start;padding-top:12px}
+.a-fase .m-tile__ic{margin-top:2px}
+.a-fase__acao{padding:0 16px 12px}
+.a-fase__nota{padding:0 16px 10px;margin-top:-4px}
+
+/* opção B: linha do tempo das fases + barra fixa com a próxima ação */
+.b-passos{flex-shrink:0;background:#fff;border-bottom:1px solid var(--m-border);padding:6px 8px 8px}
+.b-tl{padding:14px 16px 6px}
+.b-tl__tit{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.b-tl__tit b{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--m-faint)}
+.b-no{position:relative;padding-left:40px;padding-bottom:14px}
+.b-no::before{content:"";position:absolute;left:12px;top:30px;bottom:2px;width:2px;border-radius:2px;background:#E2E8F0}
+.b-no:last-child::before{display:none}
+.b-no.is-done::before{background:#A7F3D0}
+.b-marca{position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#E2E8F0;color:var(--m-muted)}
+.b-no.is-done .b-marca{background:var(--m-success);color:#fff}
+.b-no.is-active .b-marca{background:var(--m-primary);color:#fff}
+.b-no.is-lock .b-marca{background:#FFFBEB;color:var(--m-warning);box-shadow:inset 0 0 0 1.5px #FCD34D}
+.b-no__cab{display:flex;align-items:center;gap:8px;min-height:26px}
+.b-no__t{flex:1;min-width:0;font-size:15px;font-weight:700;color:var(--m-ink);line-height:1.25}
+.b-no.is-todo .b-no__t{color:var(--m-muted)}
+.b-no__m{font-size:12.5px;line-height:17px;color:var(--m-muted);margin-top:2px}
+.b-no__prog{margin-top:8px}
+.b-no__acao{display:flex;justify-content:flex-start;margin:4px 0 -6px -12px}
+.m-row{display:flex;align-items:center;gap:12px;width:100%;min-height:48px;border:1px dashed #BFDBFE;background:#F8FAFF;border-radius:10px;padding:6px 8px 6px 12px;color:var(--m-primary);font-family:var(--m-font);font-size:14px;font-weight:600;cursor:pointer;text-align:left;margin:-4px 0 14px}
+.m-row span{flex:1}
+.m-row small{display:block;font-size:12px;font-weight:400;color:var(--m-muted);margin-top:1px}
+.m-row svg:last-child{color:var(--m-faint)}
+.m-osmini{padding:14px 16px}
+.m-osmini__cab{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.m-osmini__cod{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--m-primary)}
+.m-osmini__cli{font-size:16px;font-weight:800;color:var(--m-ink);margin-top:8px}
+.m-osmini__grade{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-top:10px;padding-top:10px;border-top:1px solid #F1F5F9}
+.m-osmini__grade small{display:block;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--m-faint)}
+.m-osmini__grade span{font-size:13px;font-weight:700;color:var(--m-ink)}
+.m-osmini__end{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:#475569;margin-top:10px;line-height:1.4}
+.m-osmini__end svg{flex-shrink:0;color:var(--m-muted)}
+/* MobileStickyBar (mobile_kit.dart:584-605) com texto de apoio, como nas referências */
+.m-sticky{flex-shrink:0;background:#fff;border-top:1px solid var(--m-border);padding:10px 16px 12px}
+.m-sticky__apoio{font-size:12px;line-height:16px;color:var(--m-muted);text-align:center;margin-bottom:8px}
+.m-sticky__apoio--trava{color:#92400E}
+
+/* opção C: coleta e entrega lado a lado + lista do que falta para concluir */
+.c-lado{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin:6px 0 8px}
+.c-fase{background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.c-fase.is-atual{border:1.5px solid var(--m-primary);padding:11.5px}
+.c-fase__cab{display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:20px}
+.c-fase__cab b{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--m-faint)}
+.c-fase__val{font-size:24px;font-weight:800;color:var(--m-ink);line-height:1.1;margin-top:2px}
+.c-fase__val small{font-size:11.5px;font-weight:500;color:var(--m-muted);margin-left:4px}
+.c-fase__m{font-size:12px;line-height:16px;color:var(--m-muted);min-height:32px}
+.c-fase__txt{font-size:12.5px;line-height:17px;color:#475569;flex:1}
+.c-fase .m-obtn{padding:0 8px}
+.cmp-card{display:flex;align-items:center;gap:12px;width:100%;min-height:64px;background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:10px 12px 10px 14px;cursor:pointer;text-align:left;font-family:var(--m-font);margin:0 0 8px}
+.cmp-card__ic{width:36px;height:36px;border-radius:50%;background:#EFF6FF;color:var(--m-primary);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cmp-card__t{font-size:14px;font-weight:700;color:var(--m-ink)}
+.cmp-card__s{font-size:12.5px;line-height:17px;color:var(--m-muted);margin-top:1px}
+.cmp-card>div{flex:1;min-width:0}
+.cmp-card>svg{color:var(--m-faint);flex-shrink:0}
+.c-req{padding:14px 16px 16px}
+.c-req h3{font-size:14px;font-weight:700;color:var(--m-ink);margin-bottom:10px}
+.c-req ul{list-style:none;display:grid;gap:8px;margin-bottom:14px}
+.c-req li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;line-height:19px;color:var(--m-ink)}
+.c-req li svg{flex-shrink:0}
+.c-req .is-ok svg{color:var(--m-success)}
+.c-req .is-pend{color:#92400E}.c-req .is-pend svg{color:var(--m-warning)}
+.c-req .is-fila svg{color:var(--m-warning)}
+.c-req .is-info{color:#475569}.c-req .is-info svg{color:var(--m-faint)}
+
+/* tela de comparação (checklist_comparison_screen.dart), aberta pelo botão */
+.cmp-ov{position:absolute;inset:0;background:var(--m-page);display:flex;flex-direction:column;z-index:7}
+.cmp-item{background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:12px 16px;margin:6px 0}
+.cmp-item h4{font-size:14px;font-weight:700;color:var(--m-ink);margin-bottom:8px}
+.cmp-item__g{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cmp-item__g small{display:block;font-size:11px;font-weight:500;color:var(--m-muted);margin-bottom:4px}
+
+/* ─── seletor A/B/C (fora da tela; molde) ─── */
+.maquete-controles{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:min(470px,calc((100vw - 420px) / 2 - 30px))}
+.seletor-opcoes{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes .dock-rotulo{font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.03em;padding:0 4px 0 6px}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1;font-family:var(--font-sans)}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+
+/* ─── quadro de notas (fora da tela; molde) ─── */
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0;line-height:1.5}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.3}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;overflow-wrap:anywhere}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-box--pergunta{border-color:#2563eb;background:#172554}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="app-stage">
+    <div class="app-stage__tag" data-maquete>
+      <b id="app-tag">App de campo · Execução do guincho · Opção A</b>
+      <span>Aparelho de 390 × 812, tema claro. A seção nova da tela de execução: coleta, entrega, comparação e a trava de conclusão.</span>
+      <span class="app-stage__entrega" id="app-entrega">Entra agora no app (precedente do dono).</span>
+      <div class="estados" role="group" aria-label="Estado da tela na maquete">
+        <div class="estados__grupo"><span class="estados__tit">Caminho do guincho</span>
+          <button type="button" data-estado="coleta" aria-pressed="false"><i>1</i>Coleta em andamento</button>
+          <button type="button" data-estado="rota" aria-pressed="true"><i>2</i>Rota de entrega (entrega não iniciada)</button>
+          <button type="button" data-estado="entrega" aria-pressed="false"><i>3</i>Entrega em andamento</button>
+          <button type="button" data-estado="pronta" aria-pressed="false"><i>4</i>Entrega concluída: pode concluir a OS</button>
+        </div>
+        <div class="estados__grupo"><span class="estados__tit">Sem sinal</span>
+          <button type="button" data-estado="entrega-off" aria-pressed="false"><i>5</i>Entrega em andamento, sem sinal</button>
+          <button type="button" data-estado="pronta-off" aria-pressed="false"><i>6</i>Entrega concluída, sem sinal</button>
+          <button type="button" data-estado="naover" aria-pressed="false"><i>7</i>Entrega não verificada</button>
+        </div>
+        <div class="estados__grupo"><span class="estados__tit">Outros casos</span>
+          <button type="button" data-estado="aguardando" aria-pressed="false"><i>8</i>Entrega aguardando despacho</button>
+          <button type="button" data-estado="sem" aria-pressed="false"><i>9</i>OS antiga, sem vistoria de entrega</button>
+          <button type="button" data-estado="desat" aria-pressed="false"><i>10</i>Dados desatualizados</button>
+        </div>
+        <div class="estados__grupo"><span class="estados__tit">Estados da tela</span>
+          <button type="button" data-estado="carregando" aria-pressed="false"><i>11</i>Carregando</button>
+          <button type="button" data-estado="erro" aria-pressed="false"><i>12</i>Erro ao carregar</button>
+          <button type="button" data-estado="acesso" aria-pressed="false"><i>13</i>Acesso não permitido</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone">
+      <div class="phone__screen">
+        <div class="phone__status" aria-hidden="true">
+          <span>10:58</span>
+          <span class="phone__status-ic" id="status-ic"></span>
+        </div>
+        <div class="phone__app">
+          <div data-view="a"></div>
+          <div data-view="b" hidden></div>
+          <div data-view="c" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-stage__lado" data-maquete aria-live="polite">
+      <h2 id="lado-tit">Opção A · Fiel à tela de hoje</h2>
+      <p id="lado-desc"></p>
+      <ul id="lado-lista"></ul>
+    </div>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono aprovar</div>
+      <h2 id="rv-titulo">Opção A — Fiel à tela de hoje</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true" aria-controls="rv-corpo">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc"><strong>Maquete de <code>maq-14-cl</code> (Claude Opus, subagente da sessão; <code>D-DESIGN-SO-CLAUDE</code>), montada em 11/11/2026, das 03:11 às 03:42 (São Paulo, hora de <code>date</code>).</strong> É a seção nova da tela de execução do app de campo pedida pelo bloco <code>B-SAN3-14</code> (item 34 do portão): a entrega do guincho. O que a seção precisa mostrar vem do plano <code>plano-B-SAN3-14-v2.md</code> (§2.1 P3, P5, P6; §2.2 "Telas") e da <code>plano-B-SAN3-14-emenda1.md</code> (R-R2-01 a R-R2-04). O código citado foi medido na <code>origin/main</code> <code>07898adf</code> (#527) com <code>git show</code> e <code>git grep</code>; o plano mediu em <code>d5ec1696</code> e a emenda em <code>d0da291e</code>, e entre elas e a <code>07898adf</code> só mudaram números de linha do <code>router.dart</code> (comparação em <code>:221</code> e <code>:403</code>) e do <code>schema.prisma</code> (coluna <code>role</code> em <code>:928</code>). A tela-modelo é a própria <code>mobile/flutter_app/lib/features/work_orders/ui/work_order_execute_screen.dart</code>; os componentes são os do app (<code>mobile_kit.dart</code>, <code>erp_components.dart</code>, <code>work_order_stepper.dart</code>, tema <code>erp_mobile_theme.dart</code>); as referências são <code>screen-refs/mobile/entrega-inicio.png</code>, <code>checklist-entrega.png</code>, <code>os-detalhe.png</code> e <code>sincronizacao.png</code>; a moldura, o seletor e este quadro vêm do molde aprovado <code>troca-senha-claude.html</code> (versão "App de campo"). <strong>O conteúdo e as regras são os mesmos nas três opções; muda a composição.</strong> O alternador à esquerda passa por 13 estados, iguais nas três. As capturas <code>entrega-guincho-a/b/c.png</code> estão todas no estado 5 ("Entrega em andamento, sem sinal"), o único que mostra de uma vez o passo "Entrega" aceso, a vistoria de entrega abrindo sem sinal, a trava e o aviso de sincronização. Na maquete dá para tocar: abrir a vistoria, comparar (abre a tela de comparação de hoje), concluir e, na B, "Mais ações".</p>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li><strong>Os 6 passos já existem com os rótulos certos</strong> (<code>work_order_steps.dart:31-38</code>, "Rota entrega" em <code>:35</code>), mas o índice do guincho salta de 2 para 5 (<code>:52-65</code>, <code>WorkOrderStatus.cancelled =&gt; 5</code> em <code>:64</code>): "Rota entrega" e "Entrega" nunca acendem.</li>
+          <li><strong>A coleta já tem tudo no aparelho:</strong> a execução local com respostas, <code>status</code>, <code>completedAt</code> e <code>syncStatus</code> (<code>checklist_models.dart</code>, <code>MobileChecklistRun</code>); a contagem "x de y obrigatórios" já é calculada na tela da vistoria (<code>checklist_run_screen.dart:231</code>); o nome do modelo é o <code>schema.title</code>.</li>
+          <li><strong>A comparação já existe e não tem porta:</strong> rota <code>/checklists/:checklistId/comparison</code> (<code>router.dart:221</code> e <code>:403</code>), tela <code>checklist_comparison_screen.dart</code> e a função local <code>compareChecklistRuns</code> (<code>checklist_comparison.dart:24</code>). Nenhuma tela navega para ela hoje.</li>
+          <li><strong>A fase no app</strong>: <code>MobileChecklistRunKind</code> com os rótulos "Coleta" e "Entrega" (<code>checklist_models.dart</code>). <strong>No banco</strong>: a coluna <code>role</code> de <code>checklist_runs</code> (<code>prisma/schema.prisma:928</code>).</li>
+          <li><strong>Fila e sincronização:</strong> <code>SyncStatus</code> (<code>sync_models.dart:3</code>), a tela de sincronização com "Tentar de novo" (<code>sync_screen.dart:253</code>), o <code>SyncStatusBanner</code> e o <code>NetworkStatusBanner</code> (<code>erp_components.dart:31</code> e <code>:175</code>).</li>
+          <li><strong>Permissão:</strong> a tela já pede <code>work_orders:status</code> (<code>work_order_execute_screen.dart:182-187</code>); nada muda.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend (o próprio B-SAN3-14)</h3><ul class="review-list">
+          <li><strong>A vistoria de entrega não nasce:</strong> o despacho provisiona só a primária (<code>field-dispatch.service.ts:345</code>) e registra a entrega como diferida (<code>:393</code>). É a fatia 1b do plano.</li>
+          <li><strong>O app não recebe a fase:</strong> o DTO não tem <code>role</code> e <code>roleAware</code> não existe (<code>git grep</code> em <code>src</code> e no app = 0). Fatia 1a: <code>role</code> só para quem manda <code>roleAware=1</code>, contrato <code>checklist_run_role@2026-11.b-san3-14</code>, e a reabertura herda a fase.</li>
+          <li><strong>A trava no servidor</strong> (só se a Pergunta 1 do plano for "a"): <code>changeStatus</code> recusa com 422 <code>delivery_checklist_pending</code> e a mensagem "Conclua a vistoria de entrega antes de concluir a OS." (fatia 1c, depois do <code>B-SAN3-23</code>; a trava fica depois de <code>assertStatusTransition</code>, <code>work-order.service.ts:1454</code>).</li>
+          <li><strong>Do lado do app</strong> (não é backend, mas é o que dá dado à seção): <code>kind</code> no <code>RemoteChecklistRun</code>; o casamento por fase sem o atalho de hoje (<code>checklist_repository.dart:355</code>); a pré-carga no passe de sync e ao abrir a tela (R-A5, é ela que abre a entrega sem sinal); <code>deliveryUnverified</code> (R-R2-02); <code>TowLeg</code>/<code>deriveTowLeg</code> (P3); o helper de navegação com <code>kind</code> (R-A9); e os getters <code>confirmedDelivery</code>, <code>deliveryRequired</code>, <code>deliveryGateOpen</code> e <code>canCompare</code>.</li>
+          <li><strong>Nada a mais para a opção A:</strong> todo texto e número da seção sai desses dados.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção A — Fiel à tela de hoje</h3><ul class="review-list">
+          <li><strong>Prós:</strong> é a tela que o técnico já usa. Os dois cartões ocupam o lugar do cartão "Checklist" e repetem o mesmo componente de hoje (<code>_ChecklistStatusCard</code>: linha com ícone, chip de situação e botão de contorno), uma vez por fase. "Comparar" é um botão de contorno, e a trava fica no lugar de hoje ("Concluir OS"), com o mesmo cartão de aviso. É o menor diff da fatia 4 e não pede componente novo, fora a frase da faixa sem sinal. É a que entra agora no app.</li>
+          <li><strong>Contras:</strong> a seção fica no meio de uma rolagem longa. Medido na maquete às 03:38: as vistorias começam a 405 px do topo da lista (477 px no estado 5, com a faixa de alterações locais), depois de "Localização operacional", e o botão "Concluir OS" fica entre 1.022 e 1.236 px, abaixo de "Próxima ação" (Pausada, Ag. aprovação, Exceção), para 644 a 706 px de área visível: fora da primeira tela nos estados 2, 4 e 5. A ordem não diz qual é o próximo passo, e três ações de situação grandes disputam a atenção com a vistoria. A frase "Obrigatória para concluir a OS" no cartão da entrega é o que leva a trava para perto da vistoria.</li>
+          <li><strong>Com o precedente do dono</strong> (troca de senha, #527): é a única das três que entra no app agora.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li>O mesmo da opção A: os passos (<code>work_order_steps.dart:31-38</code>), a coleta local, a contagem de obrigatórios (<code>checklist_run_screen.dart:231</code>), a comparação (<code>router.dart:221</code>, <code>checklist_comparison.dart:24</code>) e a fila.</li>
+          <li><strong>O cartão da OS</strong> (placa, modelo, endereço) usa os campos que a OS do app já tem: <code>vehiclePlate</code>, <code>serviceAddress</code>, <code>customerName</code> (<code>work_order_models.dart</code>), no desenho do <code>MobileOsCard</code> (<code>mobile_kit.dart:412</code>).</li>
+          <li><strong>A barra fixa embaixo</strong> já existe no kit: <code>MobileStickyBar</code> (<code>mobile_kit.dart:584</code>). O texto de apoio acima do botão é o das referências <code>entrega-inicio.png</code> e <code>checklist-entrega.png</code>.</li>
+          <li><strong>"Mais ações"</strong> reúne as mesmas três transições de hoje (<code>allowedTransitions</code> de "Em atendimento", <code>work_order_models.dart:71-92</code>).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend (o próprio B-SAN3-14)</h3><ul class="review-list">
+          <li><strong>O mesmo da opção A</strong> (fatias 1a, 1b e, sob a Pergunta 1 = "a", 1c). Nada a mais.</li>
+          <li><strong>A "próxima ação" é função do que já existe:</strong> a fase (<code>deriveTowLeg</code>, P3) e a trava (<code>deliveryGateOpen</code>). O título da tela também sai da fase. É lógica de tela, não dado novo.</li>
+          <li><strong>Componente novo, que nasce na biblioteca:</strong> a linha do tempo das fases (não existe no kit) e o texto de apoio da <code>MobileStickyBar</code>.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção B — Guiada por fases</h3><ul class="review-list">
+          <li><strong>Prós:</strong> uma ação por vez, sempre no mesmo lugar: a barra fixa diz o que fazer agora ("Abrir vistoria de entrega", "Continuar vistoria de entrega", "Concluir OS") e, quando a OS está travada, diz por quê. O título diz a fase ("Rota de entrega", "Entrega"), como nas referências do protótipo. Os passos ficam presos no topo e não saem da tela ao rolar. A linha do tempo mostra coleta → comparação → entrega → conclusão na ordem real, e a trava aparece no próprio nó "Conclusão da OS". Medido nos estados 2, 4 e 5: a próxima ação fica sempre à vista, na barra fixa. É a que mais ajuda quem está na rua com pressa.</li>
+          <li><strong>Contras:</strong> muda a ordem da tela de hoje: passos e ação em barras fixas, OS e localização descem. Pausar, aprovação e exceção vão para "Mais ações" (um toque a mais e menos visíveis). A linha do tempo e o texto de apoio são componentes novos. O título muda com a fase, e os testes de tela que procuram "Atendimento" precisam mudar. Com o teclado ou o leitor de tela, a barra fixa fica sempre no fim da ordem de foco.</li>
+          <li><strong>Com o precedente do dono:</strong> se aprovada, entra no app quando existir o seletor de aparência do app (<code>P-APARENCIA-APP-SELETOR</code>).</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li>O mesmo da opção A: passos, coleta local, contagem de obrigatórios, comparação e fila.</li>
+          <li><strong>A prévia "2 itens mudaram"</strong> é a mesma função da tela de comparação, <code>compareChecklistRuns</code> (<code>checklist_comparison.dart:24-53</code>), rodada no aparelho, sem servidor, com o modelo em cache. Ela ignora assinatura (<code>:31</code>), igual à tela de comparação.</li>
+          <li><strong>Os números grandes</strong> ("12/12", "7/12") são a mesma contagem de obrigatórios da tela da vistoria (<code>checklist_run_screen.dart:231</code>), no desenho do <code>MobileStatTile</code> (<code>mobile_kit.dart:305</code>).</li>
+          <li><strong>A lista "Para concluir a OS"</strong> lê só o que a trava já lê (coleta concluída, entrega confirmada e concluída) e a rede (<code>NetworkStatus</code>).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend (o próprio B-SAN3-14)</h3><ul class="review-list">
+          <li><strong>O mesmo da opção A.</strong> Nada a mais no servidor.</li>
+          <li><strong>Lógica nova na tela de execução:</strong> rodar <code>compareChecklistRuns</code> ao abrir a tela, só quando as duas vistorias estão concluídas e são do mesmo modelo (R-D1). É barato, mas precisa de teste próprio e de caso "modelo não está em cache".</li>
+          <li><strong>Componente novo, que nasce na biblioteca:</strong> o cartão de fase em meia largura e a lista de requisitos (parente da lista "Requisitos da nova senha" da opção B da troca de senha, que ainda não existe no app).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção C — Coleta × Entrega lado a lado</h3><ul class="review-list">
+          <li><strong>Prós:</strong> as duas vistorias com o mesmo peso, lado a lado, com o progresso de cada uma: fica óbvio o que falta. A comparação ganha uma prévia ("2 itens mudaram: retrovisor esquerdo e para-choque traseiro") antes de abrir a tela, e a avaria nova aparece sem procurar. A trava vira uma lista do que falta para concluir, inclusive o envio quando está sem sinal. Medido nos estados 2, 4 e 5: o botão "Concluir OS" fica a 565 px do topo da lista, dentro da primeira tela (644 a 706 px visíveis), e a comparação logo acima dele. É a que melhor conversa com o dossiê de custódia, que é prova.</li>
+          <li><strong>Contras:</strong> duas colunas de cerca de 175 px apertam os textos: nome de modelo longo corta com reticências e os botões viram só "Ver", "Abrir" e "Continuar". A lista de requisitos repete o que os cartões já dizem. A prévia é lógica nova na tela (teste e caso sem modelo em cache). Com coleta e entrega de modelos diferentes (<code>P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES</code>), o bloco de comparação some e a grade fica sem o elo entre as duas colunas.</li>
+          <li><strong>Com o precedente do dono:</strong> se aprovada, entra no app quando existir o seletor de aparência do app (<code>P-APARENCIA-APP-SELETOR</code>).</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box review-box--pergunta">
+        <h3>O que esta maquete assume, e o que precisa do dono</h3>
+        <ul class="review-list">
+          <li><strong>Precedente aplicado (Pergunta 3 do plano, recomendação "a"; o mesmo do #527):</strong> o dono aprova as três; o app sai só com a A; a B e a C entram com o seletor de aparência do app (<code>P-APARENCIA-APP-SELETOR</code>, <code>pendencias.md:13151</code>). Medido na <code>origin/main</code>: o app só tem o modo de tema (<code>profile_screen.dart:165</code> e <code>:365</code>, <code>_AppearanceCard</code>).</li>
+          <li><strong>Perguntas 1 e 4 do plano seguem com o dono.</strong> A maquete desenha as recomendações: (1a) a trava também no servidor, com a mensagem do plano; (4a) a entrega concluída com divergência não segura a OS. Se a resposta da 1 não for "a", muda só o aviso do estado 7 ("se tiver, a conclusão só é aceita depois dela"), que deixa de ser verdade.</li>
+          <li><strong>Pergunta nova A (leitura minha, declarada, §A6):</strong> a maquete deixa abrir a vistoria de entrega antes de concluir a coleta (estado 1), porque o plano não proíbe. Travar a entrega até a coleta concluir seria regra nova, e pede emenda.</li>
+          <li><strong>Pergunta nova B:</strong> "Comparar" aparece quando as duas vistorias existem e são do mesmo modelo (regra do plano, <code>canCompare =&gt; bothPhasesKnown &amp;&amp; sameModel</code>, mutações 27 e 28). Antes de a entrega ser concluída, o botão abre "Comparação indisponível" (a tela de hoje diz isso). A alternativa é o botão só aparecer com as duas concluídas, e isso muda a âncora da linha 27 (emenda).</li>
+          <li><strong>Pergunta nova C:</strong> no estado 7 (sem sinal, entrega nunca baixada), a regra R-R2-02(ii) deixa concluir, porque o aparelho não sabe se a entrega existe. A maquete mantém o botão liberado e põe um aviso embaixo dele. O texto é novo e é sugestão; a regra não muda.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Textos da tela</h3>
+        <ul class="review-list">
+          <li><strong>Do plano:</strong> "Conclua a vistoria de entrega antes de concluir a OS." (R-R2-01) · "Entrega não verificada — conecte-se para atualizar" (R-R2-02(i)) · "Rota entrega" e "Entrega" (passos de hoje) · "Comparar coleta × entrega" (§3, linha 27).</li>
+          <li><strong>Do app de hoje, com acento:</strong> "Vistoria de coleta pendente" (era "Checklist obrigatorio pendente", <code>:372</code>) · "Em andamento", "Concluída", "Não iniciada" (<code>:454-458</code>) · "Próxima ação", "Concluir OS", "Evidências", "Registrar evidência" · "Alterações locais aguardando sincronização com o servidor." (<code>:268</code>) · "Aguardando despacho" (<code>checklist_run_screen.dart:1087</code>) · "Coleta × Entrega", "Sem divergências", "Comparação indisponível", "É necessário ter coleta e entrega concluídas para comparar.", "Registrar divergências" (tela de comparação).</li>
+          <li><strong>Novos nesta maquete:</strong> "Vistorias" (título da seção) · "Obrigatória para concluir a OS" · "Abrir / Continuar / Ver vistoria de entrega" · "Na fila" (o mesmo da <code>sincronizacao.png</code>) · "Sem conexão. O que você fizer fica salvo no aparelho e é enviado quando o sinal voltar." · "A vistoria de entrega e a conclusão da OS ficam na fila. Quando o sinal voltar, a entrega é enviada primeiro e a OS conclui logo depois." · "A central ainda não liberou a vistoria de entrega desta OS. Ela não impede concluir a OS." · "Esta OS não tem vistoria de entrega e conclui só com a coleta, como antes." · "Não foi possível atualizar as vistorias agora. Os dados podem estar desatualizados." · "Ação não permitida" · na B, "Mais ações" e os textos de apoio da barra · na C, "Para concluir a OS" e "2 itens mudaram: …".</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Os 13 estados (iguais nas três opções) e a regra de cada um</h3>
+      <table class="rv-tabela">
+        <thead><tr><th>Estado</th><th>Passo aceso</th><th>Cartão da entrega</th><th>"Concluir OS"</th><th>Regra (plano)</th></tr></thead>
+        <tbody>
+          <tr><td>1 · Coleta em andamento</td><td>3 · Coleta</td><td>Não iniciada; abre</td><td>travado: coleta pendente</td><td>P3 (coleta não concluída → passo 2 do índice); a trava de hoje</td></tr>
+          <tr><td>2 · Rota de entrega</td><td>4 · Rota entrega</td><td>Não iniciada; "Abrir vistoria de entrega"</td><td>travado: entrega pendente</td><td>P3 (coleta concluída, entrega sem resposta → índice 3); P5</td></tr>
+          <tr><td>3 · Entrega em andamento</td><td>5 · Entrega</td><td>Em andamento 7 de 12; "Continuar"</td><td>travado</td><td>P3 (entrega com resposta → índice 4); "não iniciada" × "em andamento" pelo <code>_hasAnswers</code> (linha 21)</td></tr>
+          <tr><td>4 · Entrega concluída</td><td>5 · Entrega (até a OS concluir)</td><td>Concluída às 11:18</td><td>liberado (verde)</td><td>P3 (passo 4 até <code>completed</code>); <code>deliveryGateOpen</code></td></tr>
+          <tr><td>5 · Entrega em andamento, sem sinal</td><td>5 · Entrega</td><td>abre sem sinal (pré-carregada); respostas no aparelho</td><td>travado</td><td>R-A5 (pré-carga com <code>serverId</code> e modelo em cache); P6</td></tr>
+          <tr><td>6 · Entrega concluída, sem sinal</td><td>5 · Entrega</td><td>Concluída · Na fila</td><td>liberado; vai para a fila</td><td>R-R2-01: 1ª passada a OS é recusada (422, "tente de novo") e a entrega sobe; 2ª passada a OS conclui, sem conflito</td></tr>
+          <tr><td>7 · Entrega não verificada</td><td>3 · Coleta (como hoje)</td><td>"Entrega não verificada — conecte-se para atualizar"; não abre</td><td>liberado, com aviso</td><td>R-R2-02(i)(ii): sem confirmação não há run local e nada é exigido; sob a 1a, o servidor recusa se houver entrega</td></tr>
+          <tr><td>8 · Aguardando despacho</td><td>3 · Coleta</td><td>"Aguardando despacho"; "Atualizar"</td><td>liberado</td><td>R-R2-02(iii): run local sem par fica guardada, não pronta, e não segura a OS</td></tr>
+          <tr><td>9 · OS antiga, sem entrega</td><td>3 · Coleta (depois 6)</td><td>"Sem entrega"</td><td>liberado</td><td>Pergunta 2 (a): OS em voo seguem como hoje</td></tr>
+          <tr><td>10 · Dados desatualizados</td><td>4 · Rota entrega</td><td>como no 2, com a faixa e "Atualizar"</td><td>travado</td><td>§7 do contrato; a pré-carga ao abrir falhou com sinal</td></tr>
+          <tr><td>11 · Carregando</td><td colspan="3">tela inteira com o indicador circular (como hoje, <code>:232-236</code>)</td><td>§7</td></tr>
+          <tr><td>12 · Erro ao carregar</td><td colspan="3">"Não foi possível carregar" (<code>ErrorState</code>)</td><td>§7</td></tr>
+          <tr><td>13 · Acesso não permitido</td><td colspan="3">"Ação não permitida" (<code>PermissionBlockedState</code>); a permissão continua <code>work_orders:status</code></td><td>§7; CE-G2 (nenhuma permissão nova)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas três opções)</h3>
+        <ul class="review-list">
+          <li><strong>Acentos corrigidos</strong> (§11.3): o app de hoje escreve "Concluido", "Nao iniciado", "Proxima acao", "Ag. aprovacao", "Excecao", "Evidencias", "Alteracoes locais…" (<code>work_order_execute_screen.dart</code>, <code>work_order_models.dart:33-46</code>).</li>
+          <li><strong>Sem código na tela:</strong> o cartão de hoje mostra o id do modelo ("Checklist: ${data.wo.checklistId}", <code>:476</code>); a maquete mostra o nome do modelo (<code>schema.title</code>, em cache pela pré-carga). A tela sem permissão de hoje diz "work_orders:status necessario…" (<code>:202</code>), termo técnico (§3); a maquete diz "Ação não permitida". O cartão de localização diz "fix" (<code>work_order_operational_map_screen.dart</code>); a maquete diz "registro".</li>
+          <li><strong>Sem "Cheguei ao local de entrega" nem mapa da rota de entrega</strong> (estão em <code>entrega-inicio.png</code>): a OS do app não tem endereço de entrega nem situação para a perna de entrega (<code>work_order_models.dart</code>, campos e <code>allowedTransitions</code>). No plano, "Rota entrega" acende pela vistoria (P3), não por situação. Ficam para outro bloco.</li>
+          <li><strong>"Aguardando despacho" em vez de "aguardando envio"</strong> (texto do R-R2-02(iii)): é o que o app já usa (<code>checklist_run_screen.dart:1087</code>) e não se confunde com a fila de envio ("Na fila").</li>
+          <li><strong>Faixa sem sinal:</strong> o desenho do <code>NetworkStatusBanner</code> com o texto da situação; o de hoje é fixo, sem acento e promete "alteracoes serao sincronizadas" (<code>erp_components.dart:186</code>). O componente precisa aceitar a mensagem (muda na biblioteca). Texto em <code>#B91C1C</code>: <code>#DC2626</code> sobre o fundo da faixa dá cerca de 3,8:1, abaixo do AA.</li>
+          <li><strong>Passo concluído em verde</strong> (<code>#059669</code>, como na referência e no molde): no app de hoje é <code>colorScheme.tertiary</code>, uma cor que o Material 3 gera da semente (<code>work_order_stepper.dart</code>). O rótulo de 9 px é o de hoje.</li>
+          <li><strong>Cores do Material 3 que não estão em código</strong> (borda do botão de contorno <code>#74777F</code>, cartão de aviso <code>#FFDAD6</code>/<code>#410002</code>, SnackBar <code>#313033</code>): aproximação da paleta gerada da semente <code>#2563EB</code>. Subtítulos e ícones usam os tokens do kit (<code>inkMuted</code>, <code>#475569</code>).</li>
+          <li><strong>Roboto</strong>: o app não declara fonte, então o Android desenha em Roboto (o molde fez o mesmo). Barra de status branca, ícones ilustrativos.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Achados desta leitura, para o orquestrador</h3>
+        <ul class="review-list">
+          <li><strong>Contraste dos tons de atenção do kit:</strong> o âmbar <code>#D97706</code> sobre <code>#FFFBEB</code> (MobilePill) dá cerca de 3,1:1, e o chip de situação âmbar (<code>OperationalStatusChip</code>) fica perto disso. Fica abaixo do AA para texto de 11 a 14 px. É do kit e não deste bloco; vale uma pendência.</li>
+          <li><strong>Telas de fora deste bloco ainda com texto técnico ou sem acento:</strong> "work_orders:status necessario…" (<code>work_order_execute_screen.dart:202</code>), o <code>NetworkStatusBanner</code> (<code>erp_components.dart:186</code>), "Ultimo fix" (cartão de localização). Só a tela de execução é escopo do B-SAN3-14; o resto vira pendência.</li>
+          <li><strong>Para o plano (fatia 4), medido na maquete:</strong> na A o botão "Concluir OS" fica fora da primeira tela nos estados 2, 4 e 5 (entre 1.022 e 1.236 px, para 644 a 706 px visíveis); a frase "Obrigatória para concluir a OS" no cartão é o que leva a regra para perto da ação. Se a A for aprovada sem ela, a trava só aparece depois de rolar.</li>
+          <li><strong>Aviso transitório do R-R2-01:</strong> na 1ª passada a fila mostra por alguns segundos "Servidor recusou a ação". A maquete não desenha a tela de sincronização; o texto do estado 6 diz o que a pessoa vê no fim ("a OS conclui logo depois").</li>
+          <li>Nomes, placa e endereços são exemplos. Com a aprovação, a maquete vira a referência <code>screen-refs/execucao-guincho-3opcoes.reference.html</code> (o nome que o plano dá no §2.2), escrita pelo orquestrador, com uma linha no <code>screen-refs/README.md</code>.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="maquete-controles" data-maquete>
+  <div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+    <span class="dock-rotulo">Opção</span>
+    <button type="button" data-opcao="a" aria-pressed="true">A · Tela de hoje</button>
+    <button type="button" data-opcao="b" aria-pressed="false">B · Por fases</button>
+    <button type="button" data-opcao="c" aria-pressed="false">C · Lado a lado</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+  // ---------- ícones (Material Icons, Apache 2.0) ----------
+  const P = {
+    voltar: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+    build: 'M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z',
+    lista: 'M22 7h-9v2h9V7zm0 8h-9v2h9v-2zM5.54 11L2 7.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 11zm0 8L2 15.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 19z',
+    okc: 'M16.59 7.58L10 14.17l-3.59-3.58L5 12l5 5 8-8zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    okcheio: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z',
+    vazio: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    comparar: 'M9.01 14H2v2h7.01v3L13 15l-3.99-4v3zm5.98-1v-3H22V8h-7.01V5L11 9l3.99 4z',
+    pausa: 'M6 19h4V5H6v14zm8-14v14h4V5h-4z',
+    aprov: 'M4 16v6h16v-6c0-1.1-.9-2-2-2H6c-1.1 0-2 .9-2 2zm14 2H6v-2h12v2zM12 2C9.24 2 7 4.24 7 7l5 7 5-7c0-2.76-2.24-5-5-5zm0 9L9 7c0-1.66 1.34-3 3-3s3 1.34 3 3l-3 4z',
+    alerta: 'M12 5.99L19.53 19H4.47L12 5.99M12 2L1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v4h2v-4z',
+    cadeado: 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6zM18 20H6V10h12v10z',
+    wifioff: 'M23.64 7c-.45-.34-4.93-4-11.64-4-1.5 0-2.89.19-4.15.48L18.18 13.8 23.64 7zm-6.6 8.22L3.27 1.44 2 2.72l2.05 2.06C1.91 5.76.59 6.82.36 7l11.63 14.49.01.01.01-.01 3.9-4.86 3.32 3.32 1.27-1.27-3.46-3.46z',
+    nuvemoff: 'M19.35 10.04C18.67 6.59 15.64 4 12 4c-1.48 0-2.85.43-4.01 1.17l1.46 1.46C10.21 6.23 11.08 6 12 6c3.04 0 5.5 2.46 5.5 5.5v.5H19c1.66 0 3 1.34 3 3 0 1.13-.64 2.11-1.56 2.62l1.45 1.45C23.16 18.16 24 16.68 24 15c0-2.64-2.05-4.78-4.65-4.96zM3 5.27l2.75 2.74C2.56 8.15 0 10.77 0 14c0 3.31 2.69 6 6 6h11.73l2 2L21 20.73 4.27 4 3 5.27zM7.73 10l8 8H6c-2.21 0-4-1.79-4-4s1.79-4 4-4h1.73z',
+    sync: 'M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z',
+    relogio: 'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z',
+    mais: 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+    seta: 'M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',
+    alvo: 'M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z',
+    camera: 'M12 12m-3.2 0a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0-6.4 0M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z',
+    atualizar: 'M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z',
+    erro: 'M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    bandeira: 'M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6z',
+    caminhao: 'M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z',
+    lapis: 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
+    pino: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+    mapa: 'M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z',
+    info: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
+  };
+  const ic = (k, w, extra) => '<svg width="' + (w || 24) + '" height="' + (w || 24) + '" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"' + (extra || '') + '><path d="' + P[k] + '"/></svg>';
+  const sinal = (on) => on
+    ? '<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F172A"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>'
+    : '<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F172A"><rect x="0" y="7" width="3" height="4" rx="1" opacity=".3"/><rect x="4.5" y="5" width="3" height="6" rx="1" opacity=".3"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" opacity=".3"/><rect x="13.5" y="0" width="3" height="11" rx="1" opacity=".3"/></svg><svg width="14" height="14" viewBox="0 0 24 24" fill="#0F172A"><path d="' + P.wifioff + '"/></svg>';
+  const bateria = '<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3" stroke="#0F172A" opacity=".45"/><rect x="2" y="2" width="14" height="8" rx="2" fill="#0F172A"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="#0F172A" opacity=".45"/></svg>';
+
+  // ---------- dados de exemplo ----------
+  const EX = {
+    os: 'OS-2891', titulo: 'Reboque leve', servico: 'Reboque · veículo avariado', cliente: 'Indústria Alfa Ltda',
+    placa: 'ABC-1D23', modelo: 'VW Nivus 2023', cor: 'Prata', end: 'Av. Afonso Pena, 2000 — Centro, Belo Horizonte',
+    vistoria: 'Vistoria de veículo leve', obrig: 12,
+  };
+  const DIVERG = [
+    ['Retrovisor esquerdo', 'Inteiro', 'Trincado'],
+    ['Para-choque traseiro', 'Sem avaria', 'Risco'],
+  ];
+  const PASSOS = ['Início', 'Rota coleta', 'Coleta', 'Rota entrega', 'Entrega', 'Conclusão'];
+
+  // ---------- estados (os mesmos nas três opções) ----------
+  const COL_OK = { st: 'ok', n: 12, h: '09:42' };
+  const E = {
+    coleta: { step: 2, net: true, col: { st: 'and', n: 8 }, ent: { st: 'nao', n: 0 } },
+    rota: { step: 3, net: true, col: COL_OK, ent: { st: 'nao', n: 0 } },
+    entrega: { step: 4, net: true, col: COL_OK, ent: { st: 'and', n: 7 } },
+    pronta: { step: 4, net: true, col: COL_OK, ent: { st: 'ok', n: 12, h: '11:18' } },
+    'entrega-off': { step: 4, net: false, col: COL_OK, ent: { st: 'and', n: 7, local: true } },
+    'pronta-off': { step: 4, net: false, col: COL_OK, ent: { st: 'ok', n: 12, h: '11:18', fila: true } },
+    naover: { step: 2, net: false, col: COL_OK, ent: { st: 'naover' } },
+    aguardando: { step: 2, net: true, col: COL_OK, ent: { st: 'agu' } },
+    sem: { step: 2, net: true, col: COL_OK, ent: { st: 'sem' } },
+    desat: { step: 3, net: true, col: COL_OK, ent: { st: 'nao', n: 0 }, desat: true },
+    carregando: { tela: 'load' }, erro: { tela: 'erro' }, acesso: { tela: 'acesso' },
+  };
+  function der(e) {
+    const conf = ['nao', 'and', 'ok'].includes(e.ent.st);       // entrega confirmada pelo servidor (R-R2-02)
+    const colOk = e.col.st === 'ok';
+    const entOk = e.ent.st === 'ok';
+    const gateOpen = !conf || entOk;                             // deliveryGateOpen
+    return {
+      conf, colOk, entOk, gateOpen,
+      canConclude: colOk && gateOpen,
+      canCompare: conf,                                          // bothPhasesKnown && sameModel (mesmo modelo no exemplo)
+      fase: !colOk ? 'coleta' : !conf ? 'semfase' : e.ent.st === 'nao' ? 'rota' : e.ent.st === 'and' ? 'entrega' : 'pronta',
+    };
+  }
+
+  // ---------- textos por fase ----------
+  function fCol(e) {
+    if (e.col.st === 'ok') return { chip: ['Concluída', 'success'], pill: 'success', linha: e.col.n + ' de ' + EX.obrig + ' obrigatórios · <span class="nw">às ' + e.col.h + '</span>', curto: 'às ' + e.col.h, btn: ['Ver vistoria de coleta', 'okc', 'ver-coleta', 'Ver'] };
+    return { chip: ['Em andamento', 'warning'], pill: 'warning', linha: e.col.n + ' de ' + EX.obrig + ' obrigatórios', curto: 'em andamento', btn: ['Continuar vistoria de coleta', 'lapis', 'abrir-coleta', 'Continuar'] };
+  }
+  function fEnt(e) {
+    const x = e.ent;
+    switch (x.st) {
+      case 'nao': return { chip: ['Não iniciada', 'info'], pill: 'info', linha: '0 de ' + EX.obrig + ' obrigatórios', curto: 'não iniciada', btn: ['Abrir vistoria de entrega', 'lista', 'abrir-entrega', 'Abrir'], trava: true };
+      case 'and': return { chip: ['Em andamento', 'warning'], pill: 'warning', linha: x.n + ' de ' + EX.obrig + ' obrigatórios' + (x.local ? ' · salvas no aparelho' : ''), curto: x.local ? 'salvas no aparelho' : 'em andamento', btn: ['Continuar vistoria de entrega', 'lapis', 'abrir-entrega', 'Continuar'], trava: true };
+      case 'ok': return { chip: ['Concluída', 'success'], pill: 'success', linha: x.n + ' de ' + EX.obrig + ' obrigatórios · <span class="nw">às ' + x.h + '</span>', curto: 'às ' + x.h, btn: ['Ver vistoria de entrega', 'okc', 'ver-entrega', 'Ver'], fila: !!x.fila };
+      case 'naover': return { chip: ['Não verificada', 'pending'], pill: 'purple', texto: 'Entrega não verificada — conecte-se para atualizar.', icone: 'nuvemoff' };
+      case 'agu': return { chip: ['Aguardando despacho', 'pending'], pill: 'purple', texto: 'A central ainda não liberou a vistoria de entrega desta OS. Ela não impede concluir a OS.', btn: ['Atualizar', 'atualizar', 'atualizar', 'Atualizar'], icone: 'relogio' };
+      default: return { chip: ['Sem entrega', 'info'], pill: 'neutral', texto: 'Esta OS não tem vistoria de entrega e conclui só com a coleta, como antes.', icone: 'info' };
+    }
+  }
+  function trava(e, f) {
+    if (!f.colOk) return ['Vistoria de coleta pendente', 'Conclua a vistoria de coleta antes de concluir a OS.'];
+    if (!f.gateOpen) return ['Vistoria de entrega pendente', 'Conclua a vistoria de entrega antes de concluir a OS.'];
+    return null;
+  }
+  const T = {
+    net: 'Sem conexão. O que você fizer fica salvo no aparelho e é enviado quando o sinal voltar.',
+    pendente: 'Alterações locais aguardando sincronização com o servidor.',
+    filaEnt: 'As respostas da entrega ficam salvas no aparelho e vão para o servidor quando o sinal voltar.',
+    filaConc: 'A vistoria de entrega e a conclusão da OS ficam na fila. Quando o sinal voltar, a entrega é enviada primeiro e a OS conclui logo depois.',
+    naover: 'Sem sinal, o aparelho não confirma se esta OS tem vistoria de entrega. Se tiver, a conclusão só é aceita depois dela.',
+    desat: 'Não foi possível atualizar as vistorias agora. Os dados podem estar desatualizados.',
+  };
+  function avisoSync(e, f) {
+    if (e.net) return null;
+    if (e.ent.st === 'and') return T.filaEnt;
+    if (e.ent.st === 'ok') return T.filaConc;
+    if (e.ent.st === 'naover') return T.naover;
+    return null;
+  }
+
+  // ---------- peças comuns ----------
+  const chip = (c) => '<span class="m-chip c-' + c[1] + '">' + c[0] + '</span>';
+  const pill = (txt, tom) => '<span class="m-pill t-' + tom + '">' + txt + '</span>';
+  const banner = (txt, tipo, icone) => '<div class="m-banner b-' + tipo + '" role="status">' + ic(icone || 'sync', 24) + '<span>' + txt + '</span></div>';
+  const netBanner = () => '<div class="m-netwrap"><div class="m-net" role="alert">' + ic('wifioff', 18) + '<span>' + T.net + '</span></div></div>';
+  const desatBanner = () => '<div class="m-desat" role="status">' + ic('alerta', 18) + '<span>' + T.desat + '</span><button type="button" class="m-tbtn" data-acao="atualizar">Atualizar</button></div>';
+  function passos(step) {
+    return '<div class="m-steps" role="list" aria-label="Progresso da execução">' + PASSOS.map((l, i) => {
+      const cls = i < step ? 'is-done' : i === step ? 'is-active' : '';
+      const est = i < step ? 'concluído' : i === step ? 'atual' : 'a fazer';
+      return '<div class="m-step ' + cls + '" role="listitem" aria-label="Passo ' + (i + 1) + ', ' + l + ', ' + est + '"' + (i === step ? ' aria-current="step"' : '') + '><span class="m-step__c">' + (i < step ? ic('check', 15) : (i + 1)) + '</span><span class="m-step__l">' + l + '</span></div>';
+    }).join('') + '</div>';
+  }
+  function hdr(titulo, sub, fim) {
+    return '<header class="m-hdr"><button type="button" class="m-iconbtn" data-acao="voltar" aria-label="Voltar">' + ic('voltar', 24) + '</button>' +
+      '<div class="m-hdr__txt"><div class="m-hdr__tit">' + titulo + '</div>' + (sub ? '<div class="m-hdr__sub">' + sub + '</div>' : '') + '</div>' +
+      (fim ? '<div class="m-hdr__fim">' + fim + '</div>' : '') + '</header>';
+  }
+  const statusPill = () => pill('Em atendimento', 'warning');
+  function concluirBtn(f, net) {
+    return '<button type="button" class="m-fbtn' + (f.canConclude ? ' m-fbtn--ok' : '') + '" data-acao="concluir"' + (f.canConclude ? '' : ' disabled') + '>' + ic('okc', 18) + '<span>Concluir OS</span></button>';
+  }
+  function travaCard(t) {
+    return '<div class="m-card m-card--erro" role="note"><div class="m-tile">' + '<span class="m-tile__ic">' + ic('alerta', 24) + '</span><div class="m-tile__txt"><div class="m-tile__t">' + t[0] + '</div><div class="m-tile__s">' + t[1] + '</div></div></div></div>';
+  }
+  function locCard() {
+    return '<div class="m-card m-loc"><div class="m-loc__cab">' + '<span class="m-tile__ic">' + ic('alvo', 24) + '</span><b>Localização operacional</b>' + chip(['Enviada', 'success']) + '</div>' +
+      '<p>Registrada só durante o atendimento desta OS.</p>' +
+      '<div class="m-loc__l">Último registro: 11/11 10:52 · precisão de 8 m</div>' +
+      '<div class="m-loc__bt"><button type="button" class="m-fbtn" data-acao="loc">' + ic('alvo', 18) + '<span>Enviar localização agora</span></button><button type="button" class="m-obtn" data-acao="mapa" aria-label="Ver no mapa">' + ic('mapa', 18) + '<span>Mapa</span></button></div></div>';
+  }
+  function eviSec() {
+    return '<div class="m-sec">Evidências</div>' +
+      '<div class="m-evi"><span class="m-evi__barra"></span><div class="m-evi__in"><span class="m-evi__ic">' + ic('camera', 17) + '</span><div style="flex:1;min-width:0"><div class="m-evi__n">coleta-frente-0942.jpg</div><div class="m-evi__m">Câmera · 1,8 MB</div></div>' + pill('Armazenado', 'success') + '</div></div>' +
+      '<button type="button" class="m-obtn" data-acao="evidencia">' + ic('camera', 18) + '<span>Registrar evidência</span></button>';
+  }
+  function proximaAcao(cls) {
+    return '<div class="m-sec">Próxima ação</div>' +
+      '<button type="button" class="m-fbtn" data-acao="transicao" style="margin-bottom:8px">' + ic('pausa', 18) + '<span>Pausada</span></button>' +
+      '<button type="button" class="m-fbtn" data-acao="transicao" style="margin-bottom:8px">' + ic('aprov', 18) + '<span>Ag. aprovação</span></button>' +
+      '<button type="button" class="m-fbtn m-fbtn--perigo" data-acao="transicao">' + ic('alerta', 18) + '<span>Exceção</span></button>';
+  }
+  function compararBtn(f, e) {
+    if (!f.canCompare) return '';
+    return '<button type="button" class="m-obtn" data-acao="comparar" style="margin:6px 0 4px">' + ic('comparar', 18) + '<span>Comparar coleta × entrega</span></button>';
+  }
+
+  // ---------- telas de estado (iguais nas três) ----------
+  function telaEstado(e) {
+    const corpo = e.tela === 'load'
+      ? '<div class="m-vazio" role="status"><span class="m-spin"></span><span class="sr">Carregando</span></div>'
+      : e.tela === 'erro'
+        ? '<div class="m-vazio">' + ic('erro', 44) + '<h3>Não foi possível carregar</h3><p>A OS não foi encontrada no aparelho. Volte à lista e tente de novo.</p></div>'
+        : '<div class="m-vazio">' + ic('cadeado', 44) + '<h3>Ação não permitida</h3><p>Seu perfil não pode alterar o andamento desta OS. Fale com a central.</p></div>';
+    return '<div class="scr">' + hdr('Atendimento', e.tela === 'load' ? '' : EX.os + ' · ' + EX.cliente) + corpo + '</div>';
+  }
+
+  // ---------- OPÇÃO A: fiel à tela de hoje ----------
+  function cartaoA(kind, e, f) {
+    const x = kind === 'col' ? fCol(e) : fEnt(e);
+    const nome = kind === 'col' ? 'Coleta' : 'Entrega';
+    const n = kind === 'col' ? e.col.n : e.ent.n;
+    const sub = x.texto ? x.texto : EX.vistoria + '<br>' + n + ' de ' + EX.obrig + ' obrigatórios';
+    const pills = x.fila ? '<div class="fs-pills">' + pill('Na fila', 'warning') + '</div>' : (kind === 'ent' && e.ent.local) ? '<div class="fs-pills">' + pill('Salvo no aparelho', 'info') + '</div>' : '';
+    const nota = (kind === 'ent' && x.trava) ? '<div class="a-fase__nota"><div class="fs-nota fs-nota--trava">' + ic('cadeado', 16) + '<span>Obrigatória para concluir a OS</span></div></div>' : '';
+    const btn = x.btn ? '<div class="a-fase__acao"><button type="button" class="m-obtn" data-acao="' + x.btn[2] + '"' + (x.btn[2] === 'atualizar' && !e.net ? ' disabled' : '') + '>' + ic(x.btn[1], 18) + '<span>' + x.btn[0] + '</span></button></div>' : '';
+    return '<div class="m-card a-fase"><div class="m-tile"><span class="m-tile__ic">' + ic(x.icone || 'lista', 24) + '</span><div class="m-tile__txt"><div class="m-tile__t">' + nome + '</div><div class="m-tile__s">' + sub + '</div>' + pills + '</div>' + chip(x.chip) + '</div>' + nota + btn + '</div>';
+  }
+  function telaA(e) {
+    if (e.tela) return telaEstado(e);
+    const f = der(e);
+    const t = trava(e, f);
+    const av = avisoSync(e, f);
+    let b = '';
+    if (!e.net && e.ent.local || e.ent.fila) b += banner(T.pendente, 'pending') + '<div class="m-gap8"></div>';
+    b += '<div class="m-card"><div class="m-tile"><span class="m-tile__ic">' + ic('build', 24) + '</span><div class="m-tile__txt"><div class="m-tile__t">' + EX.os + ' · ' + EX.titulo + '</div><div class="m-tile__s">' + EX.cliente + '</div></div>' + chip(['Em atendimento', 'warning']) + '</div></div>';
+    b += '<div class="m-gap8"></div><div class="m-card m-card--passos" data-ancora="passos">' + passos(e.step) + '</div>';
+    b += '<div class="m-gap8"></div>' + locCard();
+    b += '<div class="m-gap8"></div><div class="m-sec" data-ancora="secao">Vistorias</div>';
+    if (e.desat) b += desatBanner();
+    b += cartaoA('col', e, f) + cartaoA('ent', e, f) + compararBtn(f, e);
+    b += '<div class="m-gap16"></div>' + proximaAcao();
+    b += '<div class="m-div"></div><div class="m-sec" data-ancora="concluir">Concluir OS</div>';
+    if (t) b += travaCard(t) + '<div class="m-gap8"></div>';
+    if (av && e.ent.st !== 'and') b += banner(av, e.ent.st === 'naover' ? 'pending' : 'pending', e.ent.st === 'naover' ? 'info' : 'sync') + '<div class="m-gap8"></div>';
+    b += concluirBtn(f, e.net);
+    b += '<div class="m-gap16"></div><div class="m-div"></div>' + eviSec();
+    return '<div class="scr">' + hdr('Atendimento', EX.os + ' · ' + EX.cliente, statusPill()) + (e.net ? '' : netBanner()) + '<div class="scr__body">' + b + '</div></div>';
+  }
+
+  // ---------- OPÇÃO B: guiada por fases ----------
+  function tituloB(f) {
+    return {
+      coleta: ['Coleta', EX.os + ' · vistoria no local da coleta'],
+      rota: ['Rota de entrega', EX.os + ' · leve o veículo à entrega'],
+      entrega: ['Entrega', EX.os + ' · vistoria no local da entrega'],
+      pronta: ['Pronta para concluir', EX.os + ' · coleta e entrega feitas'],
+      semfase: ['Atendimento', EX.os + ' · ' + EX.cliente],
+    }[f.fase];
+  }
+  function barraB(e, f) {
+    let apoio = '', btn = '', travado = false;
+    const colX = fCol(e), entX = fEnt(e);
+    if (!f.colOk) { apoio = 'Conclua a vistoria de coleta para seguir para a entrega.'; btn = '<button type="button" class="m-fbtn" data-acao="abrir-coleta">' + ic('lapis', 18) + '<span>Continuar vistoria de coleta</span></button>'; }
+    else if (!f.gateOpen) {
+      travado = true;
+      apoio = e.ent.st === 'nao' ? 'Leve o veículo até o local de entrega e abra a vistoria ao chegar.' : 'Conclua a vistoria de entrega para liberar a conclusão da OS.';
+      btn = '<button type="button" class="m-fbtn" data-acao="abrir-entrega">' + ic(entX.btn[1], 18) + '<span>' + entX.btn[0] + '</span></button>';
+    } else {
+      apoio = !e.net ? (e.ent.st === 'naover' ? 'Sem sinal, a entrega não foi conferida. Se a OS tiver entrega, a conclusão só é aceita depois dela.' : 'Sem sinal: a conclusão fica na fila e é enviada quando o sinal voltar.')
+        : f.conf ? 'Coleta e entrega concluídas.' : e.ent.st === 'agu' ? 'A entrega aguarda a central e não impede concluir a OS.' : 'Esta OS conclui só com a coleta.';
+      btn = concluirBtn(f, e.net);
+    }
+    return '<div class="m-sticky" data-ancora="barra"><p class="m-sticky__apoio' + (travado ? ' m-sticky__apoio--trava' : '') + '">' + apoio + '</p>' + btn + '</div>';
+  }
+  function noB(cls, marca, titulo, pillHtml, meta, extra) {
+    return '<li class="b-no ' + cls + '"><span class="b-marca" aria-hidden="true">' + marca + '</span><div class="b-no__cab"><span class="b-no__t">' + titulo + '</span>' + (pillHtml || '') + '</div>' + (meta ? '<div class="b-no__m">' + meta + '</div>' : '') + (extra || '') + '</li>';
+  }
+  function telaB(e) {
+    if (e.tela) return telaEstado(e);
+    const f = der(e);
+    const tit = tituloB(f);
+    const colX = fCol(e), entX = fEnt(e);
+    // nó da coleta
+    const colCls = f.colOk ? 'is-done' : 'is-active';
+    const colMeta = EX.vistoria + ' · ' + colX.linha;
+    const colExtra = f.colOk ? '<div class="b-no__acao"><button type="button" class="m-tbtn" data-acao="ver-coleta">Ver vistoria de coleta</button></div>'
+      : '<div class="b-no__prog"><div class="m-prog" role="progressbar" aria-label="Coleta" aria-valuenow="' + e.col.n + '" aria-valuemin="0" aria-valuemax="' + EX.obrig + '"><i style="width:' + Math.round(e.col.n / EX.obrig * 100) + '%"></i></div></div>';
+    // nó da entrega
+    let entCls, entMarca, entMeta, entExtra = '';
+    if (f.conf) {
+      entCls = f.entOk ? 'is-done' : (f.colOk ? 'is-active' : 'is-todo');
+      entMarca = f.entOk ? ic('check', 15) : ic('caminhao', 15);
+      entMeta = EX.vistoria + ' · ' + entX.linha;
+      if (e.ent.st === 'and') entExtra = '<div class="b-no__prog"><div class="m-prog" role="progressbar" aria-label="Entrega" aria-valuenow="' + e.ent.n + '" aria-valuemin="0" aria-valuemax="' + EX.obrig + '"><i style="width:' + Math.round(e.ent.n / EX.obrig * 100) + '%"></i></div></div>';
+      if (f.entOk) entExtra = '<div class="b-no__acao"><button type="button" class="m-tbtn" data-acao="ver-entrega">Ver vistoria de entrega</button></div>';
+      if (!f.colOk) entExtra = '<div class="b-no__acao"><button type="button" class="m-tbtn" data-acao="abrir-entrega">Abrir vistoria de entrega</button></div>';
+    } else {
+      entCls = 'is-todo'; entMarca = ic(entX.icone, 15); entMeta = entX.texto;
+      if (entX.btn) entExtra = '<div class="b-no__acao"><button type="button" class="m-tbtn" data-acao="atualizar"' + (e.net ? '' : ' disabled') + '>' + ic('atualizar', 18) + 'Atualizar</button></div>';
+    }
+    const entPill = pill(entX.chip[0], entX.pill) + (entX.fila ? ' ' + pill('Na fila', 'warning') : '');
+    // comparação
+    const cmp = f.canCompare ? '<li style="list-style:none;padding-left:40px"><button type="button" class="m-row" data-acao="comparar">' + ic('comparar', 20) + '<span>Comparar coleta × entrega<small>' + (f.entOk ? 'As duas vistorias concluídas: veja o que mudou.' : 'Fica completa quando a entrega for concluída.') + '</small></span>' + ic('seta', 20) + '</button></li>' : '';
+    // nó da conclusão
+    const t = trava(e, f);
+    const concCls = t ? 'is-lock' : 'is-active';
+    const concMeta = t ? t[1] : (!e.net ? (e.ent.st === 'naover' ? 'Liberada. Sem sinal, a entrega não foi conferida.' : 'Liberada. Sem sinal, a conclusão vai para a fila.') : 'Liberada.');
+    const concPill = t ? pill('Travada', 'warning') : pill('Liberada', 'success');
+    let b = '';
+    if (e.desat) b += desatBanner();
+    b += '<div class="m-card"><ol class="b-tl" data-ancora="secao" aria-label="Vistorias do guincho" style="list-style:none">' +
+      '<li class="b-tl__tit" style="list-style:none"><b>Vistorias do guincho</b>' + (f.canCompare ? '<span class="m-pill t-neutral">Mesmo modelo</span>' : '') + '</li>' +
+      noB(colCls, f.colOk ? ic('check', 15) : ic('lista', 15), 'Vistoria de coleta', pill(colX.chip[0], colX.pill), colMeta, colExtra) +
+      cmp +
+      noB(entCls, entMarca, 'Vistoria de entrega', entPill, entMeta, entExtra) +
+      noB(concCls, t ? ic('cadeado', 15) : ic('bandeira', 15), 'Conclusão da OS', concPill, concMeta, '') +
+      '</ol></div>';
+    const av = avisoSync(e, f);
+    if (av && e.ent.st !== 'naover') b += '<div class="m-gap8"></div>' + banner(av, 'pending');
+    b += '<div class="m-gap8"></div><div class="m-card m-osmini"><div class="m-osmini__cab"><span class="m-osmini__cod">' + EX.os + '</span>' + pill(EX.servico, 'info') + '</div>' +
+      '<div class="m-osmini__cli">' + EX.cliente + '</div>' +
+      '<div class="m-osmini__grade"><div><small>Placa</small><span>' + EX.placa + '</span></div><div><small>Modelo</small><span>' + EX.modelo + '</span></div><div><small>Cor</small><span>' + EX.cor + '</span></div><div><small>Tipo</small><span>Carro de passeio</span></div></div>' +
+      '<div class="m-osmini__end">' + ic('pino', 16) + '<span>' + EX.end + '</span></div></div>';
+    b += '<div class="m-gap8"></div>' + locCard() + '<div class="m-gap16"></div>' + eviSec();
+    const perna = f.fase === 'coleta' ? pill('Coleta', 'info') : (f.fase === 'semfase' ? statusPill() : pill('Entrega', 'info'));
+    const fim = perna + '<button type="button" class="m-iconbtn" data-acao="menu" aria-label="Mais ações" aria-haspopup="menu" aria-expanded="false">' + ic('mais', 24) + '</button>';
+    const menu = '<div class="m-menu" role="menu" hidden><button type="button" role="menuitem" data-acao="transicao">' + ic('pausa', 22) + 'Pausar</button><button type="button" role="menuitem" data-acao="transicao">' + ic('aprov', 22) + 'Solicitar aprovação</button><button type="button" role="menuitem" class="m-menu__perigo" data-acao="transicao">' + ic('alerta', 22) + 'Registrar exceção</button></div>';
+    return '<div class="scr">' + hdr(tit[0], tit[1], fim) + menu + '<div class="b-passos">' + passos(e.step) + '</div>' + (e.net ? '' : netBanner()) + '<div class="scr__body">' + b + '</div>' + barraB(e, f) + '</div>';
+  }
+
+  // ---------- OPÇÃO C: coleta × entrega lado a lado ----------
+  function faseC(kind, e, f) {
+    const x = kind === 'col' ? fCol(e) : fEnt(e);
+    const nome = kind === 'col' ? 'Coleta' : 'Entrega';
+    const atual = kind === 'col' ? !f.colOk : (f.colOk && f.conf && !f.entOk);
+    let corpo;
+    if (x.texto) {
+      corpo = '<div class="c-fase__txt">' + x.texto + '</div>' + (x.btn ? '<button type="button" class="m-obtn" data-acao="atualizar"' + (e.net ? '' : ' disabled') + '>' + ic('atualizar', 18) + '<span>Atualizar</span></button>' : '');
+    } else {
+      const n = kind === 'col' ? e.col.n : e.ent.n;
+      const pct = Math.round(n / EX.obrig * 100);
+      corpo = '<div class="c-fase__val">' + n + '/' + EX.obrig + '<small>obrigatórios</small></div>' +
+        '<div class="m-prog' + (pct === 100 ? ' m-prog--ok' : '') + '" role="progressbar" aria-label="' + nome + '" aria-valuenow="' + n + '" aria-valuemin="0" aria-valuemax="' + EX.obrig + '"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="c-fase__m">' + (pct === 100 ? 'Concluída ' + x.curto : n === 0 ? 'Não iniciada' : x.curto.charAt(0).toUpperCase() + x.curto.slice(1)) + (pct === 100 ? (x.fila ? ' · <b style="color:#92400E;font-weight:600">na fila</b>' : ' · 6 fotos') : n ? ' · 3 fotos' : '') + '</div>' +
+        '<button type="button" class="m-obtn" data-acao="' + x.btn[2] + '" aria-label="' + x.btn[0] + '">' + ic(x.btn[1], 18) + '<span>' + x.btn[3] + '</span></button>';
+    }
+    return '<div class="c-fase' + (atual ? ' is-atual' : '') + '"><div class="c-fase__cab"><b>' + nome + '</b>' + pill(x.chip[0], x.pill) + '</div>' + corpo + '</div>';
+  }
+  function telaC(e) {
+    if (e.tela) return telaEstado(e);
+    const f = der(e);
+    let b = '';
+    b += '<div class="m-card m-card--passos" data-ancora="passos">' + passos(e.step) + '</div>';
+    b += '<div class="m-gap8"></div><div class="m-sec" data-ancora="secao" style="display:flex;align-items:center;justify-content:space-between">Coleta × Entrega' + (f.canCompare ? '<span class="m-pill t-neutral">' + EX.vistoria + '</span>' : '') + '</div>';
+    if (e.desat) b += desatBanner();
+    b += '<div class="c-lado">' + faseC('col', e, f) + faseC('ent', e, f) + '</div>';
+    if (f.canCompare) {
+      const s = f.entOk ? DIVERG.length + ' itens mudaram: retrovisor esquerdo e para-choque traseiro.' : 'Fica completa quando a entrega for concluída.';
+      b += '<button type="button" class="cmp-card" data-acao="comparar"><span class="cmp-card__ic">' + ic('comparar', 20) + '</span><div><div class="cmp-card__t">Comparar coleta × entrega</div><div class="cmp-card__s">' + s + '</div></div>' + ic('seta', 22) + '</button>';
+    }
+    // lista do que falta para concluir
+    const reqs = [];
+    reqs.push(f.colOk ? ['is-ok', 'okcheio', 'Vistoria de coleta concluída'] : ['is-pend', 'vazio', 'Vistoria de coleta concluída']);
+    if (f.conf) reqs.push(f.entOk ? ['is-ok', 'okcheio', 'Vistoria de entrega concluída'] : ['is-pend', 'vazio', 'Vistoria de entrega concluída']);
+    else if (e.ent.st === 'naover') reqs.push(['is-info', 'nuvemoff', 'Vistoria de entrega: não verificada sem sinal. Se a OS tiver entrega, a conclusão só é aceita depois dela.']);
+    else if (e.ent.st === 'agu') reqs.push(['is-info', 'relogio', 'Vistoria de entrega: aguardando despacho, não exigida por enquanto']);
+    else reqs.push(['is-info', 'info', 'Vistoria de entrega: não exigida nesta OS']);
+    reqs.push(e.net ? ['is-ok', 'okcheio', 'Com sinal: a conclusão vai para o servidor na hora'] : ['is-fila', 'sync', e.ent.st === 'ok' ? 'Sem sinal: a entrega e a conclusão ficam na fila; a entrega vai primeiro e a OS conclui logo depois' : 'Sem sinal: o que você fizer fica no aparelho e vai quando o sinal voltar']);
+    const t = trava(e, f);
+    b += '<div class="m-card c-req" data-ancora="concluir"><h3>Para concluir a OS</h3><ul>' + reqs.map(r => '<li class="' + r[0] + '">' + ic(r[1], 20) + '<span>' + r[2] + (r[0] === 'is-pend' ? '<span class="sr"> (falta)</span>' : r[0] === 'is-ok' ? '<span class="sr"> (feito)</span>' : '') + '</span></li>').join('') + '</ul>' + concluirBtn(f, e.net) + (t ? '<p class="fs-nota fs-nota--trava" style="margin-top:8px;justify-content:center">' + ic('cadeado', 16) + '<span>' + t[1] + '</span></p>' : '') + '</div>';
+    b += '<div class="m-gap8"></div><div class="m-card"><div class="m-tile"><span class="m-tile__ic">' + ic('build', 24) + '</span><div class="m-tile__txt"><div class="m-tile__t">' + EX.os + ' · ' + EX.titulo + '</div><div class="m-tile__s">' + EX.cliente + ' · ' + EX.placa + '</div></div></div></div>';
+    b += '<div class="m-gap8"></div>' + locCard();
+    b += '<div class="m-gap16"></div>' + proximaAcao();
+    b += '<div class="m-gap16"></div><div class="m-div"></div>' + eviSec();
+    return '<div class="scr">' + hdr('Atendimento', EX.os + ' · ' + EX.cliente, statusPill()) + (e.net ? '' : netBanner()) + '<div class="scr__body">' + b + '</div></div>';
+  }
+
+  // ---------- tela de comparação (a de hoje, aberta pelo botão) ----------
+  function telaComparacao(e) {
+    const f = der(e);
+    let corpo;
+    if (f.entOk) {
+      corpo = '<div class="scr__body"><div class="m-sec">' + DIVERG.length + ' divergências entre a coleta e a entrega</div>' +
+        DIVERG.map(d => '<div class="cmp-item"><h4>' + d[0] + '</h4><div class="cmp-item__g"><div><small>Coleta</small>' + chip([d[1], 'info']) + '</div><div><small>Entrega</small>' + chip([d[2], 'warning']) + '</div></div></div>').join('') +
+        '<div class="m-gap8"></div><button type="button" class="m-fbtn" data-acao="registrar-div">' + ic('alerta', 18) + '<span>Registrar divergências</span></button></div>';
+    } else {
+      corpo = '<div class="m-vazio">' + ic('comparar', 44) + '<h3>Comparação indisponível</h3><p>É necessário ter coleta e entrega concluídas para comparar.</p></div>';
+    }
+    return '<div class="cmp-ov" role="dialog" aria-label="Comparação coleta e entrega">' + hdr('Coleta × Entrega', EX.os + ' · ' + EX.vistoria, '', 'fechar-cmp').replace('data-acao="voltar"', 'data-acao="fechar-cmp"') + corpo + '</div>';
+  }
+
+  // ---------- desenho e controle ----------
+  const NOMES = { a: 'Fiel à tela de hoje', b: 'Guiada por fases', c: 'Lado a lado' };
+  const LADO = {
+    a: { d: 'A tela de execução de hoje, com os dois cartões no lugar do cartão "Checklist". Só a seção é nova.', l: ['Cartões Coleta e Entrega no componente de hoje, um embaixo do outro.', '"Comparar coleta × entrega" logo abaixo, botão de contorno.', 'A trava continua em "Concluir OS", no fim; o cartão da entrega avisa que ela é obrigatória.', 'Role a tela do aparelho para ver a trava e o aviso de sincronização.'] },
+    b: { d: 'Uma ação por vez: o título diz a fase, os passos ficam presos no topo e a próxima ação mora numa barra fixa embaixo, como nas referências do protótipo.', l: ['Linha do tempo: coleta → comparação → entrega → conclusão da OS.', 'A trava aparece no nó "Conclusão da OS" e no texto da barra.', 'Pausar, aprovação e exceção vão para "Mais ações" (⋮).'] },
+    c: { d: 'Coleta e entrega lado a lado, com o mesmo peso, e uma lista do que falta para concluir a OS.', l: ['Dois cartões de meia largura com o progresso de cada vistoria.', 'Prévia da comparação ("2 itens mudaram") calculada no aparelho.', '"Para concluir a OS" mostra a trava como requisitos, inclusive o envio sem sinal.'] },
+  };
+  const S = { op: 'a', est: 'rota', cmp: false };
+  const RENDER = { a: telaA, b: telaB, c: telaC };
+
+  function desenhar(op) {
+    const v = $('[data-view="' + op + '"]');
+    const e = E[S.est];
+    v.innerHTML = RENDER[op](e) ;
+    if (S.cmp && !e.tela) { $('.scr', v).insertAdjacentHTML('beforeend', telaComparacao(e)); }
+  }
+  function sincronizar() {
+    $$('[data-view]').forEach(el => { el.hidden = el.dataset.view !== S.op; });
+    $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.opcao === S.op)));
+    $$('[data-estado]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.estado === S.est)));
+    const e = E[S.est];
+    $('#status-ic').innerHTML = sinal(e.tela ? true : e.net) + bateria;
+    $('#app-tag').textContent = 'App de campo · Execução do guincho · Opção ' + S.op.toUpperCase();
+    $('#app-entrega').textContent = S.op === 'a' ? 'Entra agora no app (precedente do dono).' : 'No app, entra quando existir o seletor de aparência do app (precedente do dono).';
+    $('#lado-tit').textContent = 'Opção ' + S.op.toUpperCase() + ' · ' + NOMES[S.op];
+    $('#lado-desc').textContent = LADO[S.op].d;
+    $('#lado-lista').innerHTML = LADO[S.op].l.map(x => '<li>' + x + '</li>').join('');
+    $('#rv-titulo').textContent = 'Opção ' + S.op.toUpperCase() + ' — ' + NOMES[S.op];
+    $$('[data-nota]').forEach(n => { n.hidden = n.dataset.nota !== S.op; });
+  }
+  function tudo() { ['a', 'b', 'c'].forEach(desenhar); sincronizar(); }
+  let snackT = 0;
+  function snack(msg) {
+    const v = $('[data-view="' + S.op + '"] .scr');
+    if (!v) return;
+    $$('.m-snack', v).forEach(s => s.remove());
+    v.insertAdjacentHTML('beforeend', '<div class="m-snack" role="status">' + msg + '</div>');
+    clearTimeout(snackT); snackT = setTimeout(() => { $$('.m-snack').forEach(s => s.remove()); }, 3200);
+  }
+  // rola o corpo da tela do aparelho até uma âncora (usado pelas capturas e pela troca de opção)
+  window.__rolar = function (ancora, folga) {
+    const v = $('[data-view="' + S.op + '"]');
+    const corpo = $('.scr__body', v); const alvo = $('[data-ancora="' + ancora + '"]', v);
+    if (!corpo || !alvo) return 0;
+    corpo.scrollTop = Math.max(0, alvo.offsetTop - corpo.offsetTop - (folga || 8));
+    return corpo.scrollTop;
+  };
+  window.__estado = function (est, op) { if (op) S.op = op; S.est = est; S.cmp = false; tudo(); };
+
+  const MSG = {
+    'abrir-coleta': 'Abre a vistoria de coleta.',
+    'ver-coleta': 'Abre a vistoria de coleta, só leitura.',
+    'abrir-entrega': 'Abre a vistoria da fase Entrega.',
+    'ver-entrega': 'Abre a vistoria de entrega, só leitura.',
+    'atualizar': 'Atualizando as vistorias desta OS…',
+    'loc': 'Localização registrada.',
+    'mapa': 'Abre o mapa da operação.',
+    'evidencia': 'Abre a câmera ou a galeria.',
+    'transicao': 'Na maquete esta ação não muda a OS.',
+    'voltar': 'Volta para o detalhe da OS.',
+    'registrar-div': 'Divergências registradas. Enviadas para sincronização.',
+  };
+  document.addEventListener('click', ev => {
+    const el = ev.target.closest('button');
+    if (!el) return;
+    if (el.dataset.opcao) { S.op = el.dataset.opcao; S.cmp = false; tudo(); return; }
+    if (el.dataset.estado) { S.est = el.dataset.estado; S.cmp = false; tudo(); return; }
+    if (el.id === 'rv-recolher') {
+      const corpo = $('#rv-corpo'); const aberto = !corpo.hidden;
+      corpo.hidden = aberto; el.setAttribute('aria-expanded', String(!aberto)); el.textContent = aberto ? 'Mostrar notas' : 'Recolher notas';
+      return;
+    }
+    const a = el.dataset.acao;
+    if (!a || !el.closest('[data-view]')) return;
+    const v = el.closest('[data-view]');
+    if (a === 'menu') { const m = $('.m-menu', v); const ab = m.hidden; m.hidden = !ab; el.setAttribute('aria-expanded', String(ab)); if (ab) $('button', m).focus(); return; }
+    $$('.m-menu', v).forEach(m => { m.hidden = true; });
+    if (a === 'comparar') { S.cmp = true; desenhar(S.op); const b = $('.cmp-ov .m-iconbtn', v); if (b) b.focus(); return; }
+    if (a === 'fechar-cmp') { S.cmp = false; desenhar(S.op); const b = $('[data-acao="comparar"]', v); if (b) b.focus(); return; }
+    if (a === 'concluir') { const e = E[S.est]; snack(e.net ? 'OS concluída.' : 'OS concluída no aparelho. Ela é enviada quando o sinal voltar.'); return; }
+    if (MSG[a]) snack(MSG[a]);
+  });
+  document.addEventListener('keydown', ev => {
+    if (ev.key !== 'Escape') return;
+    const v = $('[data-view="' + S.op + '"]');
+    const m = $('.m-menu:not([hidden])', v);
+    if (m) { m.hidden = true; const b = $('[data-acao="menu"]', v); b.setAttribute('aria-expanded', 'false'); b.focus(); return; }
+    if (S.cmp) { S.cmp = false; desenhar(S.op); }
+  });
+
+  tudo();
+})();
+</script>
+</body>
+</html>

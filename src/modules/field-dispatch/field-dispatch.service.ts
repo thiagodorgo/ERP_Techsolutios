@@ -380,6 +380,29 @@ export class FieldDispatchService {
       }
     }
 
+    // B-SAN3-14 (P2; decisão A do dono, `D-PORTAO-9-RECOMENDACOES-1011`: a vistoria de entrega nasce no despacho) — A
+    // ENTREGA CONGELADA NESTE DESPACHO TAMBÉM VIRA EXECUÇÃO. A premissa da escolha (b) do §7.3 ("o app não alcança a
+    // entrega") cai neste bloco: o app passa a abrir a entrega pela tela de execução, casando por (modelo, fase), e o
+    // app antigo não a vê (porta `roleAware` da lista). Só a linha `delivery` com snapshot NESTE despacho: linha sem
+    // congelamento nunca vai a campo (BLOQ 3). As outras secundárias seguem diferidas. Mesma autoridade, mesma
+    // idempotência (a chave carrega a fase) e o mesmo fail-open auditado da primária. A OS concluída sem a entrega é
+    // recusada no servidor (trava de conclusão, `work-order.service.ts`), para a entrega vazia não ir ao dossiê.
+    const deliveryLines = secondary.filter(({ line, snapshot }) => line.role === "delivery" && snapshot !== null);
+    const deliveryProvisionErrors: { readonly checklistId: string; readonly error: unknown }[] = [];
+    for (const { line } of deliveryLines) {
+      try {
+        await this.provisionChecklistRun({
+          tenantId: actor.tenantId,
+          actorUserId: actor.userId,
+          workOrderId: workOrder.id,
+          checklistId: line.checklistId,
+          role: line.role,
+        });
+      } catch (error) {
+        deliveryProvisionErrors.push({ checklistId: line.checklistId, error });
+      }
+    }
+
     // As vistorias que NÃO viraram execução neste despacho, cada uma com a sua razão. Nenhuma some em silêncio:
     // a de modelo despublicado vira falha auditada (ALTA 9) e a diferida vira linha na história da ordem.
     //
@@ -414,7 +437,11 @@ export class FieldDispatchService {
     // servidor não é decisão da organização. Ele vira `unexpected` só na timeline do DESPACHO, jamais na
     // história da ORDEM — a mesma regra que o `reassign` já pratica e escreve no próprio comentário 300 linhas
     // abaixo ("falha de infraestrutura NÃO vira linha na tela do campo").
-    const deferredLines = secondary.filter(({ snapshot }) => snapshot !== null).map(({ line }) => line);
+    //
+    // B-SAN3-14 (R-A11) — a entrega deixou de ser diferida: ela virou execução acima.
+    const deferredLines = secondary
+      .filter(({ line, snapshot }) => snapshot !== null && line.role !== "delivery")
+      .map(({ line }) => line);
     const unpublishedLines: DispatchChecklistLine[] = [];
     const lookupFailedLines: DispatchChecklistLine[] = [];
 
@@ -512,6 +539,16 @@ export class FieldDispatchService {
         dispatch,
         primary.line.checklistId,
         classifyChecklistProvisionError(checklistRunProvisionError),
+      );
+    }
+
+    // B-SAN3-14 — a mesma auditoria fail-open para a vistoria de entrega que não nasceu.
+    for (const failure of deliveryProvisionErrors) {
+      await this.recordChecklistRunFailure(
+        actor,
+        dispatch,
+        failure.checklistId,
+        classifyChecklistProvisionError(failure.error),
       );
     }
 
@@ -891,10 +928,17 @@ export class FieldDispatchService {
 
     // CHECKLIST P1 PR-04c (§7.1.6) — só a PRIMÁRIA, aqui também. O reassign é recuperação da execução que o
     // despacho já prometeu, não uma segunda chance de o conjunto inteiro virar execução.
-    const primary = (await this.loadDispatchChecklistLines(actor, workOrder))[0];
+    //
+    // B-SAN3-14 (R-A7) — …e a ENTREGA, que o despacho passou a prometer (P2). Cada linha `delivery` passa pela MESMA
+    // trava de congelamento da primária: a entrega acrescentada depois do despacho não vira execução e vira
+    // `checklist_not_frozen` na linha do tempo do despacho. As outras secundárias seguem fora.
+    const lines = await this.loadDispatchChecklistLines(actor, workOrder);
+    const primary = lines[0];
     if (!primary) {
       return;
     }
+    const dispatchLines = lines.slice(1);
+    const deliveryLines = dispatchLines.filter((line) => line.role === "delivery");
 
     // CHECKLIST P1 PR-04c (BLOQ 3, §7.4.3) — GUARD DURO: nenhuma linha de junção sem freeze vira execução.
     //
@@ -920,8 +964,25 @@ export class FieldDispatchService {
     // — "o modelo não está publicado" — que aqui seria falsa.
     if (primary.fromJunction && primary.frozenSnapshot === null) {
       await this.recordChecklistRunFailure(actor, dispatch, primary.checklistId, "checklist_not_frozen");
-      return;
+    } else {
+      await this.reprovisionDispatchLine(actor, dispatch, primary);
     }
+
+    for (const delivery of deliveryLines) {
+      if (delivery.fromJunction && delivery.frozenSnapshot === null) {
+        await this.recordChecklistRunFailure(actor, dispatch, delivery.checklistId, "checklist_not_frozen");
+        continue;
+      }
+      await this.reprovisionDispatchLine(actor, dispatch, delivery);
+    }
+  }
+
+  // A tentativa de (re)provisionar UMA linha já congelada, no reassign. Ver a doutrina logo abaixo.
+  private async reprovisionDispatchLine(
+    actor: FieldDispatchActorContext,
+    dispatch: FieldDispatch,
+    line: DispatchChecklistLine,
+  ): Promise<void> {
 
     // CHECKLIST P1 PR-04c — NÃO HÁ MAIS PRÉ-GATE DE PUBLICAÇÃO AQUI, e a ausência é deliberada.
     //
@@ -954,12 +1015,12 @@ export class FieldDispatchService {
         tenantId: actor.tenantId,
         actorUserId: actor.userId,
         workOrderId: dispatch.workOrderId,
-        checklistId: primary.checklistId,
-        role: primary.role,
+        checklistId: line.checklistId,
+        role: line.role,
       });
     } catch (error) {
       const reason = normalizeChecklistProvisionReason(classifyChecklistProvisionError(error));
-      await this.recordChecklistRunFailure(actor, dispatch, primary.checklistId, reason);
+      await this.recordChecklistRunFailure(actor, dispatch, line.checklistId, reason);
 
       // Simetria com o `create`: quando a razão é o modelo indisponível, a ausência da vistoria também vai para
       // a história da ORDEM — o técnico que acabou de RECEBER a reatribuição é justamente quem precisa saber
@@ -970,8 +1031,8 @@ export class FieldDispatchService {
           tenantId: actor.tenantId,
           actorUserId: actor.userId,
           workOrderId: dispatch.workOrderId,
-          checklistId: primary.checklistId,
-          role: primary.role,
+          checklistId: line.checklistId,
+          role: line.role,
         });
       }
     }

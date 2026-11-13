@@ -13,6 +13,7 @@ class WorkOrderStepper extends StatelessWidget {
     required this.serviceType,
     required this.status,
     this.onStepTap,
+    this.towLeg = TowLeg.none,
     super.key,
   });
 
@@ -20,9 +21,12 @@ class WorkOrderStepper extends StatelessWidget {
   final WorkOrderStatus status;
   final void Function(WorkOrderStepInfo step)? onStepTap;
 
+  /// B-SAN3-14 (P3) — a perna do guincho (o padrão mantém o passo de hoje).
+  final TowLeg towLeg;
+
   @override
   Widget build(BuildContext context) {
-    final steps = buildWorkOrderSteps(serviceType, status);
+    final steps = buildWorkOrderSteps(serviceType, status, towLeg: towLeg);
     final scheme = Theme.of(context).colorScheme;
 
     return Semantics(

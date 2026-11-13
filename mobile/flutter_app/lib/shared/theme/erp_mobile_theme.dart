@@ -24,6 +24,11 @@ class ErpMobileTheme {
   static const inkFaint = Color(0xFF94A3B8); // texto terciário/labels
   static const purple = Color(0xFF7C3AED);
 
+  // Tinta de texto sobre as faixas claras de atenção e de erro, em AA. O texto
+  // no próprio [warning] ou [danger] sobre o fundo a 10 % fica abaixo de 4,5:1.
+  static const warningInk = Color(0xFF92400E);
+  static const dangerInk = Color(0xFFB91C1C);
+
   // Dark palette
   static const _darkBg = Color(0xFF0E1922);
   static const _darkSurface = Color(0xFF182533);

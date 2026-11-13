@@ -71,9 +71,12 @@ class _WorkOrderConclusionScreenState
     try {
       final wo = _repo!.findById(widget.workOrderId);
       final checklistComplete = wo?.checklistId == null;
+      // B-SAN3-14 (D2) — o fluxo do prestador (B-SAN3-15) só ganha o
+      // parâmetro novo, com o mesmo valor conservador.
       await _repo!.completeWorkOrder(
         widget.workOrderId,
         checklistComplete: checklistComplete,
+        deliveryComplete: checklistComplete,
       );
       if (mounted) setState(() => _done = true);
     } on StateError catch (e) {
