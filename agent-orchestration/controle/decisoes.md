@@ -3281,7 +3281,7 @@ do #390 nomeou continuam com o primeiro PR que mergear.
     texto vão para o agente da API, com pacote de contexto;
   - agente Claude só com o Codex fora E tarefa no caminho crítico, 1 por vez, Opus;
   - todo lançamento tem vigia;
-  - teto da API: US$ 15/dia por padrão — sugestão do orquestrador no plano de 11/10, aceita pelo dono com *"siga"* — e
+  - teto da API: <valor omitido: repositório público>/dia por padrão — sugestão do orquestrador no plano de 11/10, aceita pelo dono com *"siga"* — e
     US$ 25 só em 11/10 (*"pode usar ate 25 usd na api hoje"*);
   - em 11/10, planos em modelo abaixo do Astra (*"pode usar o modelo mais baixo que o astra hoje para planos"*).
   Bloco que dá braço de trabalho à API: `B-AGENTE-API-2` (#419).
@@ -5078,3 +5078,9 @@ lista curada do job `backend-postgres`, medida 3× antes.
   - **1 — a linha `SUITES=` do `.github/workflows/ci.yml`** (job `backend-postgres`) fica autorizada para `tests/b-material-sync-db.test.ts`, no `B-MATERIAL-REENVIO` (o R-C21-01 da Emenda C2.1). O dev do C pode fazer a C-F6b.
   - **2 — o bloco `B-DB-FUSO-UTC` fica aberto, com o plano escrito** (9 fatias, 6 h 20 min de dev, 1 pergunta Q1 aberta ao dono). Leitura do orquestrador, declarada (§A6): a pergunta 2 era o bloco do fuso da conexão, cujo plano pedia mais teto na API; o teto dado é o sim ao bloco.
   - **3 — o item novo do portão para a GATE-CHAVE entra** (a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` vira item 63 do §4.1, com bloco próprio de permissão do app), e o denominador do vendável passa de 64 para 65 (`P-PORTAO-ITEM-GATE-CHAVE` FECHADA).
+
+## D-CLAUDE-CODA-40 (2026-11-13) — o Claude da sessão faz cerca de 40% do código e cobre os braços
+
+- **Falas literais do dono:** *"vc deve codar tbm. 40 - 50% das tarefas, deve ser feita por vc, refaca o plano"*; depois, *"usar a api claude e deepseek, corda e cobri(vc), entendido?"*; e, fixando a proporção, *"coloque os codex no plano, seus limites de uso agora eh 40% do codigo vc tem que fazer. o resto seus bracos"*.
+- **O que vale:** o Claude da sessão faz cerca de 40% das tarefas de código lançadas no dia (dev e conserto), por subagente ou por conta própria, e cobre na hora o braço que cair, travar ou ficar sem saldo. Os outros 60% vão para as contas Codex, o DeepSeek e a API Claude, uma tarefa por conta de cada vez.
+- **Continua valendo:** design só Claude; Gemini nunca como revisor único; topo no plano e em toda reprovação; cruzamento do item 11; vigia em todo braço externo; teto de cada braço definido pelo dono e não publicado neste repositório.
