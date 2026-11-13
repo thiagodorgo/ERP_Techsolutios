@@ -16,7 +16,7 @@ import test from "node:test";
 import { requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
 import { InMemoryChargeIntentRepository } from "../src/modules/subscription-billing/charges/charge-intent.repository.js";
 import { InMemoryStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.repository.js";
-import { InMemoryOutboxRepository, type InMemoryOutboxOptions } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
+import { InMemoryOutboxRepository, leaseOf, type InMemoryOutboxOptions } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { chargeCreateClaimVerdict, runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import type { BillingOutboxRow, NewOutboxRow } from "../src/modules/subscription-billing/outbox/outbox.types.js";
 import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
@@ -129,7 +129,11 @@ test("R-CHG-2 /charge fora de closed → 422 statement_not_closed; cobrança viv
   // E a linha NEEDS_REVIEW também segura o 2º pedido (a lista de estados vivos inclui NEEDS_REVIEW).
   const review = await harness("closed", t0);
   const row = await request(review, t0);
-  await review.outbox.markNeedsReview(TENANT, row.id, "orphan_recovery_not_found", t0);
+  {
+    const setup = await review.outbox.claimNext({ enabledProviders: ["asaas"], now: t0, claimedBy: "setup", orphanMs: 600_000, verdict: chargeCreateClaimVerdict });
+    assert.equal(setup?.kind, "claimed", "montagem: posse");
+    assert.equal(await review.outbox.markNeedsReview(TENANT, row.id, "orphan_recovery_not_found", t0, leaseOf(setup.row)), true, "montagem com posse");
+  }
   await assert.rejects(request(review, t0), rejects422("charge_already_exists"), "linha em revisão ainda é intenção viva");
 
   // Controle positivo: `closed` limpo passa, e o verdict do claim (R-OBX-5) concorda com a elegibilidade.
@@ -151,7 +155,11 @@ test("E8: o seq sai SOB a trava — FAILED seq 1 → o novo pedido nasce seq 2; 
   const first = await request(h, t0, withCustomer);
   assert.equal(first.idempotencyKey, `charge_create:${h.statementId}:1`);
   assert.equal("customerId" in first.payload, false, "R-PRF-1: o customerId do payload é descartado");
-  await h.outbox.markFailed(TENANT, first.id, "boom", t0);
+  {
+    const setup = await h.outbox.claimNext({ enabledProviders: ["asaas"], now: t0, claimedBy: "setup", orphanMs: 600_000, verdict: chargeCreateClaimVerdict });
+    assert.equal(setup?.kind, "claimed", "montagem: posse");
+    assert.equal(await h.outbox.markFailed(TENANT, first.id, "boom", t0, leaseOf(setup.row)), true, "montagem com posse");
+  }
   const second = await request(h, t1, withCustomer);
   assert.notEqual(second.id, first.id, "linha NOVA, não a FAILED devolvida");
   assert.equal(second.idempotencyKey, `charge_create:${h.statementId}:2`, "seq = 1 + maior seq do demonstrativo");
@@ -162,10 +170,18 @@ test("E8: o seq sai SOB a trava — FAILED seq 1 → o novo pedido nasce seq 2; 
   // Braço SKIPPED: seq 1 e 2 puladas (reabertura) → a 3ª intenção é seq 3.
   const s = await harness("closed", t0);
   const a = await request(s, t0);
-  await s.outbox.markSkipped(TENANT, a.id, "statement_reopened", t0);
+  {
+    const setup = await s.outbox.claimNext({ enabledProviders: ["asaas"], now: t0, claimedBy: "setup", orphanMs: 600_000, verdict: chargeCreateClaimVerdict });
+    assert.equal(setup?.kind, "claimed", "montagem: posse");
+    assert.equal(await s.outbox.markSkipped(TENANT, a.id, "statement_reopened", t0, leaseOf(setup.row)), true, "montagem com posse");
+  }
   const b = await request(s, t0);
   assert.equal(b.idempotencyKey, `charge_create:${s.statementId}:2`);
-  await s.outbox.markSkipped(TENANT, b.id, "statement_reopened", t0);
+  {
+    const setup = await s.outbox.claimNext({ enabledProviders: ["asaas"], now: t0, claimedBy: "setup", orphanMs: 600_000, verdict: chargeCreateClaimVerdict });
+    assert.equal(setup?.kind, "claimed", "montagem: posse");
+    assert.equal(await s.outbox.markSkipped(TENANT, b.id, "statement_reopened", t0, leaseOf(setup.row)), true, "montagem com posse");
+  }
   const c = await request(s, t1);
   assert.equal(c.idempotencyKey, `charge_create:${s.statementId}:3`);
   assert.equal(c.status, "PENDING");

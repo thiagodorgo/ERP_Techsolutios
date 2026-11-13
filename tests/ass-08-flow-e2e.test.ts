@@ -86,15 +86,15 @@ test("R-FLX-1 (pagamento) fechado → cobrança → payUrl ao cliente → webhoo
 
     // --- dispatcher cria a cobrança no provedor e grava subscription_statement_charges ---
     let createdChargeId = "";
+    outbox.configureChargeOutcomeSink(async (charge, at) => {
+      createdChargeId = charge.externalChargeId;
+      await charges.insert(charge, at);
+      await refs.setExternalChargeId(charge.statementId, charge.externalChargeId, at);
+    });
     await runDispatchOutbox({
       repo: outbox,
       ports: { asaas: adapter },
       resolveCustomer: profileCustomerResolver(async (tenantId) => profiles.find(tenantId)),
-      onChargeCreated: async (row, result, at) => {
-        createdChargeId = result.chargeId;
-        await charges.insert({ tenantId: row.tenantId, statementId: row.statementId, provider: "asaas", externalChargeId: result.chargeId, status: result.status, payUrl: result.payUrl, pixCopyPaste: result.pixCopyPaste, boletoUrl: result.boletoUrl, dueDate: "2026-12-10" }, at);
-        await refs.setExternalChargeId(row.statementId, result.chargeId, at);
-      },
     });
     assert.ok(createdChargeId.startsWith("pay_"), "cobrança criada no provedor");
     const [charge] = await charges.listByStatement(TENANT, statement.id);

@@ -65,15 +65,15 @@ test("T-PAY-WH-2 · token errado, ausente ou segredo ausente → ok:false", asyn
   }
 });
 
-test("T-PAY-WH-3 · reconsulta por referência acha a cobrança criada; sem cobrança → null (R-PAY-10)", async () => {
+test("T-PAY-WH-3 · reconsulta por referência acha a cobrança criada; sem cobrança → lista vazia (R-PAY-10)", async () => {
   const server = await startAsaasFake();
   try {
     const adapter = adapterWithSecret(server);
     await adapter.createCharge(CHARGE);
-    const found = await adapter.findChargeByExternalReference("statement-uuid");
-    assert.ok(found);
-    assert.equal(found.chargeId, "pay_0001");
-    assert.equal(await adapter.findChargeByExternalReference("outra"), null);
+    const list = await adapter.listChargesByExternalReference("statement-uuid");
+    assert.equal(list.length, 1);
+    assert.equal(list[0].chargeId, "pay_0001");
+    assert.deepEqual(await adapter.listChargesByExternalReference("outra"), []);
   } finally {
     await server.close();
   }
