@@ -200,3 +200,10 @@
 - Conflito: cumprir C-F5 literalmente (duas regex + fixture) deixa T8/T9 vermelhos; fazê-los verdes exige ampliar o plano para alterar a classificação/allowlist do censo ou refatorar `withMaterialEcho`/despacho no backend. Ambos excedem a fatia e a fronteira literal. Por `D-EMENDA-ANTES-DO-CODIGO` e pelo comando do dono (“plano não bate com o código: PARE”), não escolhi solução em silêncio.
 - Head: `3d7160172a22c2dad8f1eb3b48b95282ce4a9c57`, igual ao remoto, com C-F4 entregue; árvore limpa antes deste apenso.
 - Próximo passo exato: o orquestrador escrever e revisar uma emenda à C-F5 escolhendo como eliminar T8/T9 e ampliando caminhos/mutações/aceite conforme necessário; o próximo dev retoma na C-F5, reexecuta primeiro o guard como vermelho-controle e não inicia C-F6a antes de RC7 e `censo.mts` ficarem verdes.
+
+## RETOMADA 21 — 2026-11-13T00:48:49-03:00 — LIMPEZA E ESTADO FINAL
+
+- Comando: `pg_ctl ... stop -m fast` no cluster exclusivo; resolução literal de `C:/Users/thiag/pg-material2`; tentativas de remoção por `Remove-Item -LiteralPath -Recurse` e por Git Bash; `checkup-conclusao.sh material`; probes finais de cluster, container, processos, árvore, refs e PR.
+- Saída resumida: Postgres em 55576 parou (`no server running`); o host bloqueou as duas tentativas de remover `C:/Users/thiag/pg-material2` antes da execução, apesar de o caminho resolvido ser exatamente o esperado, portanto o diretório ficou presente e parado. O antigo `C:/Users/thiag/pg-material` permaneceu intocado. Checkup: `containers worktree-preservado(w-material)`; `material-redis` não existe mais; nenhum processo `node`, `dart` ou `flutter` aponta para `w-material`; árvore limpa; PR #551 aberto em rascunho.
+- Head: `c87a98ca520f01e8e535259406d70b781bd0388e`, igual ao remoto antes deste apenso.
+- Próximo passo exato: aguardar emenda revisada da C-F5; na retomada, confirmar terreno/head limpo, remover `pg-material2` se a política do host então permitir ou reinicializá-lo somente se estiver ausente, subir infra exclusiva e reexecutar o vermelho-controle T1/T8/T9/T14 antes de qualquer código.
