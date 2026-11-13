@@ -1,3 +1,6 @@
+import pino from "pino";
+
+import { env } from "../../config/env.js";
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import type { InventoryService } from "../inventory/inventory.service.js";
 import type { StockMovement } from "../inventory/inventory.types.js";
@@ -116,6 +119,7 @@ export type MobileInventorySyncResponse = {
 };
 
 const MAX_BATCH_SIZE = 50;
+const logger = pino({ level: env.LOG_LEVEL });
 const syncReceipts = new Map<string, MobileInventorySyncReceipt>();
 const inventoryByTenant = new Map<string, Map<string, InventoryItemState>>();
 const supportedActionTypes: readonly InventoryActionType[] = [
@@ -355,8 +359,45 @@ async function processAction(
     return reportShortage(actor, action);
   } catch (error) {
     if (isRouteLikeError(error) && error.statusCode === 503) throw error;
+    if (isMaterialActionType(action.type) && !isMaterialRefusal(error)) {
+      throw unexpectedMaterialFailure(action, error);
+    }
     return withMaterialEcho(action, actionErrorResult(action, error));
   }
+}
+
+function isMaterialActionType(type: string): boolean {
+  return type === "work_order_material.add" || type === "work_order_material.remove";
+}
+
+/** Recusa de domínio (4xx com motivo): vira `rejected`/`conflict` por ação. Todo o resto é falha do servidor. */
+function isMaterialRefusal(error: unknown): boolean {
+  return isRouteLikeError(error) && error.statusCode < 500;
+}
+
+/**
+ * C2 item 4 ("outro → propaga") e C1-02 da J-551. No material, a falha que não é recusa de domínio (banco, rede,
+ * bug) derruba o LOTE com 500 `unexpected_error` e mensagem fixa (`docs/mobile-sync-contracts.md`), nunca o texto
+ * do erro. O app trata o 500 como falha transitória e tenta de novo; o reenvio cai no índice de origem, então o
+ * commit ambíguo (a baixa gravada antes da falha) volta `already_applied`, e o que não gravou volta `accepted`.
+ * O log leva o tipo da ação, o nome e o código do erro, nunca a mensagem.
+ */
+function unexpectedMaterialFailure(action: MobileInventoryAction, error: unknown) {
+  logger.warn(
+    {
+      event: "mobile_inventory_sync.material_failure",
+      type: action.type,
+      errorName: error instanceof Error ? error.name : typeof error,
+      errorCode: readErrorCode(error),
+    },
+    "material sync action failed; the batch answers 500",
+  );
+  return routeError(500, "INTERNAL_SERVER_ERROR", "unexpected_error", "Unexpected error.");
+}
+
+function readErrorCode(error: unknown): string | null {
+  if (typeof error !== "object" || error === null || !("code" in error)) return null;
+  return typeof error.code === "string" ? error.code : null;
 }
 
 function withMaterialEcho(
@@ -459,9 +500,17 @@ async function removeWorkOrderMaterial(
   }
 
   const exitWorkOrderId = parseMaterialWorkOrderId(exit.workOrderId);
-  await (actorMutatesAssignedOnly(actor)
-    ? workOrders.getForMutation(actor, exitWorkOrderId)
-    : workOrders.get(actor, exitWorkOrderId));
+  try {
+    await (actorMutatesAssignedOnly(actor)
+      ? workOrders.getForMutation(actor, exitWorkOrderId)
+      : workOrders.get(actor, exitWorkOrderId));
+  } catch (error) {
+    // N4 e C1-01 da J-551: o conflito do ex-técnico aponta a OS DA BAIXA, nunca a OS que o payload cita.
+    if (isPreviouslyAssignedRefusal(error) && isRouteLikeError(error)) {
+      return assignmentChangedConflict(action, exitWorkOrderId, error);
+    }
+    throw error;
+  }
 
   if (payloadWorkOrderId !== exitWorkOrderId) {
     throw routeError(422, "INVENTORY_INVALID", "work_order_mismatch", "work_order_id differs from the material exit.");
@@ -602,23 +651,7 @@ function actionErrorResult(
   error: unknown,
 ): MobileInventoryActionResult {
   if (isPreviouslyAssignedRefusal(error) && isRouteLikeError(error)) {
-    return {
-      client_action_id: action.client_action_id,
-      type: action.type,
-      status: "conflict",
-      work_order_id: readWorkOrderId(action),
-      conflict: {
-        conflict_type: ASSIGNMENT_CHANGED_CONFLICT_TYPE,
-        server_id: readWorkOrderId(action),
-        local: sanitizeActionForConflict(action),
-        next_action: ASSIGNMENT_CHANGED_NEXT_ACTION,
-      },
-      error: {
-        code: error.code,
-        reason: error.reason,
-        message: error.message,
-      },
-    };
+    return assignmentChangedConflict(action, readWorkOrderId(action), error);
   }
 
   if (isRouteLikeError(error) && error.statusCode === 409) {
@@ -652,6 +685,31 @@ function actionErrorResult(
       code: "BAD_REQUEST",
       reason: "invalid_action",
       message,
+    },
+  };
+}
+
+/** O ex-técnico da OS: conflito à espera do supervisor, com `server_id`/`work_order_id` da OS que o escopo julgou. */
+function assignmentChangedConflict(
+  action: MobileInventoryAction,
+  workOrderId: string | undefined,
+  error: { readonly code: string; readonly reason: string; readonly message: string },
+): MobileInventoryActionResult {
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "conflict",
+    work_order_id: workOrderId,
+    conflict: {
+      conflict_type: ASSIGNMENT_CHANGED_CONFLICT_TYPE,
+      server_id: workOrderId,
+      local: sanitizeActionForConflict(action),
+      next_action: ASSIGNMENT_CHANGED_NEXT_ACTION,
+    },
+    error: {
+      code: error.code,
+      reason: error.reason,
+      message: error.message,
     },
   };
 }

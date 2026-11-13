@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test, { after, before } from "node:test";
 
+import { sendRouteError } from "../src/modules/core-saas/routes/http.js";
 import type { AuthenticatedActor } from "../src/modules/core-saas/types/core-saas.types.js";
 import { InMemoryInventoryRepository } from "../src/modules/inventory/inventory.repository.js";
 import { InventoryService } from "../src/modules/inventory/inventory.service.js";
@@ -70,6 +71,7 @@ async function setup() {
   const tecB = actor(tenantId, "field_technician", ["work_orders:update"]);
   const technician = actor(tenantId, "technician", ["work_orders:update"]);
   const inventoryActor = actor(tenantId, "inventory", ["inventory.read", "inventory.manage", "inventory.consume"]);
+  const inventoryActorB = actor(tenantB, "inventory", ["inventory.read", "inventory.manage", "inventory.consume"]);
   const auditor = actor(tenantId, "auditor", ["inventory.read"]);
   const inventoryRepository = new InMemoryInventoryRepository();
   const profiles = new Map([
@@ -97,6 +99,15 @@ async function setup() {
       createdBy: inventoryActor.userId,
     });
   }
+  // A organização B tem a mesma peça, com saldo na BASE: uma baixa que caísse em B apareceria no razão dela
+  // (R-C21-03: o `razaoIntacto` fotografa A e B; C1-05 da J-551).
+  const itemB = await inventory.createItem(inventoryActorB, { sku: "ELE-0102", name: "Disjuntor", unit: "un" });
+  await inventory.createMovement(inventoryActorB, {
+    item_id: itemB.id,
+    type: "entrada",
+    quantidade: 30,
+    unit_cost: 10,
+  });
 
   const workOrderRepository = new InMemoryWorkOrderRepository();
   const workOrders = new WorkOrderService(workOrderRepository);
@@ -141,15 +152,22 @@ async function setup() {
         custodyOperatorProfileId: profile.id,
       })).map((entry) => [entry.item?.id, entry.available]),
     })));
+    const movementsB = await inventory.listMovements(inventoryActorB, { limit: 100, offset: 0 });
+    const baseB = await inventoryRepository.listCustodyBalances(tenantB, { custodyType: "base" });
     return {
       movementIds: movements.items.map((movement) => movement.id).sort(),
       base: base.map((entry) => [entry.item?.id, entry.available]),
       professional,
+      tenantB: {
+        movementIds: movementsB.items.map((movement) => movement.id).sort(),
+        base: baseB.map((entry) => [entry.item?.id, entry.available]),
+      },
     };
   };
   const assertLedgerUnchanged = async (sourceId: string, before: Awaited<ReturnType<typeof snapshotLedger>>) => {
     assert.deepEqual(await snapshotLedger(), before);
     assert.equal(await inventory.findExitBySource(inventoryActor, "work_order_material", sourceId), undefined);
+    assert.equal(await inventory.findExitBySource(inventoryActorB, "work_order_material", sourceId), undefined);
   };
 
   return {
@@ -159,6 +177,7 @@ async function setup() {
     tecB,
     technician,
     inventoryActor,
+    inventoryActorB,
     auditor,
     inventory,
     workOrders,
@@ -203,6 +222,44 @@ test("[RC2(3)] mesmo id com quantidade diferente conflita sem segunda baixa", as
 
   assert.equal(replay.conflicts[0]?.conflict?.conflict_type, "idempotency_payload_mismatch");
   assert.equal(await ctx.movementCount(), 1);
+});
+
+// C1-03 da J-551: o PC3 compara (item, qtd, OS); o (3) só prova a quantidade. M-C1-NOVA (tirar a OS do
+// `samePayload`) deixa o (3b) vermelho; M-C1-NOVA-b (tirar o item) deixa o (3c) vermelho.
+test("[RC2(3b)] mesmo id citando outra OS do mesmo ator conflita sem segunda baixa", async () => {
+  const ctx = await setup();
+  const id = randomUUID();
+  const first = await ctx.run(ctx.tecA, [materialAction(id, ctx.workOrderId)]);
+  assert.equal(first.accepted.length, 1);
+  const otherWorkOrder = await ctx.createAssignedWorkOrder(ctx.tecA);
+  const before = await ctx.snapshotLedger();
+
+  const replay = await ctx.run(ctx.tecA, [materialAction(id, otherWorkOrder)]);
+
+  assert.equal(replay.already_applied.length, 0);
+  assert.equal(replay.conflicts[0]?.conflict?.conflict_type, "idempotency_payload_mismatch");
+  assert.equal(replay.conflicts[0]?.conflict?.remote?.work_order_id, ctx.workOrderId);
+  assert.deepEqual(await ctx.snapshotLedger(), before);
+  assert.equal(
+    (await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", id))?.workOrderId,
+    ctx.workOrderId,
+  );
+});
+
+test("[RC2(3c)] mesmo id com outro item conflita sem segunda baixa", async () => {
+  const ctx = await setup();
+  await ctx.inventory.createItem(ctx.inventoryActor, { sku: "ELE-0103", name: "Fusível", unit: "un" });
+  const id = randomUUID();
+  const first = await ctx.run(ctx.tecA, [materialAction(id, ctx.workOrderId)]);
+  assert.equal(first.accepted.length, 1);
+  const before = await ctx.snapshotLedger();
+
+  const replay = await ctx.run(ctx.tecA, [materialAction(id, ctx.workOrderId, { sku: "ELE-0103" })]);
+
+  assert.equal(replay.already_applied.length, 0);
+  assert.equal(replay.conflicts[0]?.conflict?.conflict_type, "idempotency_payload_mismatch");
+  assert.equal(replay.conflicts[0]?.conflict?.remote?.item_id, first.accepted[0]?.item_id);
+  assert.deepEqual(await ctx.snapshotLedger(), before);
 });
 
 test("[RC2(4)] outro ator não assume a origem depois de receber a OS", async () => {
@@ -393,6 +450,48 @@ test("[RC2(18)] remove recusa work_order_id diferente da OS da baixa", async () 
   assert.ok(await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId));
 });
 
+// C1-01 da J-551, o teste-dono da N4 (§C3, RC2(17)): o escopo do `remove` é julgado sobre a OS DA BAIXA. A M-C22
+// (escopo sobre o `work_order_id` do payload) deixa o tecA passar em Y, e o (17) fica vermelho: sai
+// `rejected work_order_mismatch`, não o conflito do ex-técnico. O conflito aponta X, nunca Y.
+test("[RC2(17)] N4: ex-técnico de X citando a OS Y dele recebe conflito sobre X e a baixa de X fica ativa", async () => {
+  const ctx = await setup();
+  const sourceId = randomUUID();
+  const add = await ctx.run(ctx.tecA, [materialAction(sourceId, ctx.workOrderId)]);
+  assert.equal(add.accepted.length, 1);
+  const workOrderY = await ctx.createAssignedWorkOrder(ctx.tecA);
+  await ctx.workOrderRepository.assign({
+    tenantId: ctx.tecA.tenantId,
+    workOrderId: ctx.workOrderId,
+    operatorId: ctx.tecB.userId,
+    userId: ctx.tecB.userId,
+    message: "Reatribuição",
+    assignedBy: ctx.manager.userId,
+    event: {
+      fromStatus: "assigned",
+      actorUserId: ctx.manager.userId,
+      message: "Reatribuição",
+      metadata: {},
+    },
+  });
+  const before = await ctx.snapshotLedger();
+  const activeBefore = await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId);
+  assert.ok(activeBefore);
+
+  const response = await ctx.run(ctx.tecA, [materialRemoveAction(randomUUID(), sourceId, workOrderY)]);
+
+  assert.equal(response.accepted.length, 0);
+  assert.equal(response.rejected.length, 0);
+  assert.equal(response.conflicts[0]?.conflict?.conflict_type, "assignment_changed_pending_review");
+  assert.equal(response.conflicts[0]?.conflict?.next_action, "await_supervisor_review");
+  assert.equal(response.conflicts[0]?.conflict?.server_id, ctx.workOrderId);
+  assert.equal(response.conflicts[0]?.work_order_id, ctx.workOrderId);
+  assert.deepEqual(await ctx.snapshotLedger(), before);
+  assert.deepEqual(
+    await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId),
+    activeBefore,
+  );
+});
+
 test("[RC2(16)] papel technician atribuído aplica material", async () => {
   const ctx = await setup();
   const workOrderId = await ctx.createAssignedWorkOrder(ctx.technician);
@@ -423,6 +522,129 @@ test("[RC2(17t-b)] gestor: OS de outro tenant não toca a BASE nem o razão", as
   const response = await ctx.run(ctx.manager, [materialAction(id, workOrderB)]);
   assert.equal(response.rejected[0]?.error?.reason, "not_found");
   await ctx.assertLedgerUnchanged(id, before);
+});
+
+// C1-02 da J-551: no material, a falha que não é recusa de domínio derruba o lote com 500 e mensagem fixa
+// (`docs/mobile-sync-contracts.md`, o 500 `unexpected_error`), nunca vira `rejected` com o texto do erro. O app
+// tenta de novo; nos dois pontos de falha o reenvio acaba numa saída só, e nunca em recusa com a baixa ativa.
+const RAW_FAILURE = "Can not reach database server at db-interno.exemplo:5432";
+const FIXED_500 = {
+  statusCode: 500,
+  code: "INTERNAL_SERVER_ERROR",
+  reason: "unexpected_error",
+  message: "Unexpected error.",
+};
+
+async function batchFailure(pending: Promise<unknown>): Promise<unknown> {
+  return pending.then(() => assert.fail("o lote tinha de falhar com 500"), (error: unknown) => error);
+}
+
+function wireOf(error: unknown): { status?: number; body?: unknown } {
+  const wire: { status?: number; body?: unknown } = {};
+  const response = {
+    status(code: number) {
+      wire.status = code;
+      return response;
+    },
+    json(body: unknown) {
+      wire.body = body;
+      return response;
+    },
+  };
+  sendRouteError(response as never, error);
+  return wire;
+}
+
+test("[RC2(22)] falha do servidor ANTES da baixa: 500 fixo, nada gravado, e o reenvio é accepted", async () => {
+  const ctx = await setup();
+  const id = randomUUID();
+  const action = materialAction(id, ctx.workOrderId);
+  const before = await ctx.snapshotLedger();
+  const realFindItem = ctx.inventory.findItemBySku.bind(ctx.inventory);
+  let armed = true;
+  ctx.inventory.findItemBySku = async (...args: Parameters<typeof realFindItem>) => {
+    if (armed) {
+      armed = false;
+      throw new Error(RAW_FAILURE);
+    }
+    return realFindItem(...args);
+  };
+
+  const failure = await batchFailure(ctx.run(ctx.tecA, [action]));
+
+  assert.deepEqual(failure, FIXED_500);
+  assert.deepEqual(wireOf(failure), {
+    status: 500,
+    body: { error: { code: "INTERNAL_SERVER_ERROR", reason: "unexpected_error", message: "Unexpected error." } },
+  });
+  assert.doesNotMatch(JSON.stringify(failure), /db-interno/);
+  await ctx.assertLedgerUnchanged(id, before);
+
+  const retry = await ctx.run(ctx.tecA, [action]);
+  assert.equal(retry.rejected.length, 0);
+  assert.equal(retry.accepted.length, 1);
+  assert.equal(await ctx.movementCount(), 1);
+});
+
+test("[RC2(23)] commit ambíguo: falha DEPOIS da baixa gravada dá 500, e o reenvio é already_applied com uma saída só", async () => {
+  const ctx = await setup();
+  const id = randomUUID();
+  const action = materialAction(id, ctx.workOrderId);
+  const realCreateExit = ctx.inventory.createExitForSource.bind(ctx.inventory);
+  let armed = true;
+  ctx.inventory.createExitForSource = async (...args: Parameters<typeof realCreateExit>) => {
+    const movement = await realCreateExit(...args);
+    if (armed) {
+      armed = false;
+      throw new Error("connection reset after commit");
+    }
+    return movement;
+  };
+
+  const failure = await batchFailure(ctx.run(ctx.tecA, [action]));
+
+  assert.deepEqual(failure, FIXED_500);
+  const recorded = await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", id);
+  assert.ok(recorded, "a baixa ficou gravada antes da falha; a resposta não pode ter sido uma recusa");
+  assert.equal(await ctx.movementCount(), 1);
+
+  const retry = await ctx.run(ctx.tecA, [action]);
+  assert.equal(retry.rejected.length, 0);
+  assert.equal(retry.conflicts.length, 0);
+  assert.equal(retry.already_applied.length, 1);
+  assert.equal(retry.already_applied[0]?.result_ref, recorded.id);
+  assert.equal(await ctx.movementCount(), 1);
+});
+
+test("[RC2(24)] remove: falha DEPOIS do estorno gravado dá 500, e o reenvio é already_applied com um estorno só", async () => {
+  const ctx = await setup();
+  const sourceId = randomUUID();
+  assert.equal((await ctx.run(ctx.tecA, [materialAction(sourceId, ctx.workOrderId)])).accepted.length, 1);
+  const before = await ctx.snapshotLedger();
+  const remove = materialRemoveAction(randomUUID(), sourceId, ctx.workOrderId);
+  const realRemoveExit = ctx.inventory.removeExitForSource.bind(ctx.inventory);
+  let armed = true;
+  ctx.inventory.removeExitForSource = async (...args: Parameters<typeof realRemoveExit>) => {
+    const reversal = await realRemoveExit(...args);
+    if (armed) {
+      armed = false;
+      throw new Error(RAW_FAILURE);
+    }
+    return reversal;
+  };
+
+  const failure = await batchFailure(ctx.run(ctx.tecA, [remove]));
+
+  assert.deepEqual(failure, FIXED_500);
+  assert.equal(await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId), undefined);
+  const afterFailure = await ctx.snapshotLedger();
+  assert.equal(afterFailure.movementIds.length, before.movementIds.length + 1);
+
+  const retry = await ctx.run(ctx.tecA, [remove]);
+  assert.equal(retry.rejected.length, 0);
+  assert.equal(retry.conflicts.length, 0);
+  assert.equal(retry.already_applied.length, 1);
+  assert.deepEqual(await ctx.snapshotLedger(), afterFailure);
 });
 
 async function jwtActor(modules: readonly string[], roles: readonly string[]) {

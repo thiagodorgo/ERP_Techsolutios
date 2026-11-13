@@ -233,7 +233,7 @@ class InventorySyncReplayService {
         lastErrorCode: inventoryWorkOrderNotOnServerErrorCode,
         lastSafeError:
             'A ordem de serviço não foi criada no servidor; '
-            'Versao do gestor descarta a peça',
+            'Versão do gestor descarta a peça',
       );
       await _queue.update(conflict);
       conflicts.add(conflict);
@@ -414,7 +414,7 @@ class InventorySyncReplayService {
     return switch (reason) {
       'inventory_item_not_found' =>
         'Peça não cadastrada no estoque da organização (SKU $sku). '
-            'Versao do gestor tira a peça da OS.',
+            'Versão do gestor tira a peça da OS.',
       'insufficient_balance' =>
         'Sem saldo suficiente desta peça no estoque usado no lançamento.',
       'operator_profile_required' =>

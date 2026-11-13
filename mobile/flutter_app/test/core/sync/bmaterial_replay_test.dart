@@ -351,6 +351,11 @@ void main() {
     expect(bySku['ELE-0104']!.status, SyncStatus.conflict);
     expect(bySku['ELE-0104']!.lastErrorCode, 'inventory_item_not_found');
     expect(bySku['ELE-0104']!.lastSafeError, contains('SKU ELE-0104'));
+    // A1 da J-551: o botão da tela é "Versão do gestor" (`sync_screen.dart`), com acento.
+    expect(
+      bySku['ELE-0104']!.lastSafeError,
+      contains('Versão do gestor tira a peça da OS.'),
+    );
     expect(bySku['ELE-0105']!.status, SyncStatus.conflict);
     expect(
       bySku['ELE-0105']!.lastSafeError,
@@ -449,6 +454,7 @@ void main() {
     expect(add.status, SyncStatus.conflict);
     expect(add.lastErrorCode, inventoryWorkOrderNotOnServerErrorCode);
     expect(add.lastSafeError, contains('não foi criada no servidor'));
+    expect(add.lastSafeError, contains('Versão do gestor descarta a peça'));
     expect(h.queue.everSyncing(add.clientActionId), isFalse);
     final line = (await h.lines.loadMaterials(_woOrphan)).single;
     expect(line.syncStatus, SyncStatus.conflict);

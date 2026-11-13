@@ -3,7 +3,8 @@
 //
 // Mutações (uma por vez, restauradas): M-C17 (linha achada por SKU em vez de `localId`) → (2);
 // M-C18 (`INSERT OR REPLACE` de volta: `saveMaterial` da linha lida no lugar do `updateMaterial`) → (3);
-// M-C19 (a tela não chama o gancho de resolução) → (4). Controle: não compila no head-base.
+// M-C19 (a tela não chama o gancho de resolução) → (4); o "Descartar" do envio encalhado sem o gancho
+// (`_resolveStalled`, `sync_screen.dart`, A2 da J-551) → (4b). Controle: não compila no head-base.
 import 'dart:async';
 
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
@@ -17,6 +18,7 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_replay_service.dart';
+import 'package:erp_techsolutions_mobile/core/sync/sync_stalled_resolver.dart';
 import 'package:erp_techsolutions_mobile/features/checklists/data/checklist_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/expenses/data/expense_repository.dart';
@@ -400,6 +402,48 @@ void main() {
         ),
         isEmpty,
       );
+    });
+
+    // A2 da J-551: o outro caminho da tela que chama o gancho é o "Descartar" do envio encalhado
+    // (`_resolveStalled`, `sync_screen.dart`). Sem a chamada, a linha fica com 5 e nenhum remove vai para a fila.
+    testWidgets('RC6(4b) "Descartar" no envio encalhado: adição de 2 numa '
+        'linha de 5 → linha 3, e o remove dela vai para a fila', (t) async {
+      final store = InMemorySyncActionStore([
+        addition('a1', 'mat-5', 3, SyncStatus.synced, resultRef: 'mov-a1'),
+        addition(
+          'a4',
+          'mat-5',
+          2,
+          SyncStatus.failed,
+          errorCode: 'NETWORK_ERROR',
+          retryCount: kSyncMaxRetry,
+        ),
+      ]);
+      final lines = InMemoryPrestadorLocalStore([
+        row('mat-5', 5, SyncStatus.pending),
+      ]);
+      await t.pumpWidget(wrap(store, lines));
+      await t.pumpAndSettle();
+
+      expect(find.byKey(const Key('stalled-card-a4')), findsOneWidget);
+      await t.tap(find.byKey(const Key('stalled-discard-a4')));
+      await t.pumpAndSettle();
+      await t.tap(find.byKey(const Key('stalled-discard-confirm-a4')));
+      await t.pumpAndSettle();
+
+      final discarded = (await store.load()).singleWhere(
+        (a) => a.clientActionId == 'a4',
+      );
+      expect(discarded.status, SyncStatus.synced);
+      expect(discarded.lastErrorCode, syncDiscardedErrorCode);
+      final line = (await lines.loadMaterials(_wo)).single;
+      expect(line.quantity, 3);
+      expect(line.syncStatus, SyncStatus.synced);
+      final removals = (await store.load())
+          .where((a) => a.type == InventorySyncActionTypes.materialRemove)
+          .toList();
+      expect(removals, hasLength(1));
+      expect(removals.single.payload['source_client_action_id'], 'a4');
     });
   });
 

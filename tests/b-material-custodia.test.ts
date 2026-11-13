@@ -116,6 +116,17 @@ async function setup() {
     .find((entry) => entry.item?.id === itemId)?.available ?? 0;
   const materialMovements = async () => (await inventory.listMovements(inventoryActor, { limit: 100, offset: 0 })).items
     .filter((movement) => movement.sourceType === "work_order_material");
+  /** O razão inteiro da organização (ids de todo movimento) e os saldos da BASE e das custódias dadas. */
+  const ledger = async (profileIds: readonly string[]) => ({
+    movementIds: (await inventory.listMovements(inventoryActor, { limit: 100, offset: 0 })).items
+      .map((movement) => movement.id)
+      .sort(),
+    base: (await inventoryRepository.listCustodyBalances(tenantId, { custodyType: "base" }))
+      .map((entry) => [entry.item?.id, entry.available]),
+    professional: await Promise.all(profileIds.map(async (custodyOperatorProfileId) => (
+      await inventoryRepository.listCustodyBalances(tenantId, { custodyType: "professional", custodyOperatorProfileId })
+    ).map((entry) => [entry.item?.id, entry.available]))),
+  });
 
   return {
     manager,
@@ -136,6 +147,7 @@ async function setup() {
     remove,
     balance,
     materialMovements,
+    ledger,
   };
 }
 
@@ -184,9 +196,14 @@ test("[RC8(3)] remove devolve a peça à custódia profissional original", async
 
 test("[RC8(4)] técnico de campo sem cadastro é recusado sem baixa", async () => {
   const ctx = await setup();
-  const response = await ctx.run(ctx.noProfile, ctx.workOrderNoProfile, ctx.x.sku, 1);
+  const sourceId = randomUUID();
+  const before = await ctx.ledger([ctx.profileA.id]);
+  const response = await ctx.run(ctx.noProfile, ctx.workOrderNoProfile, ctx.x.sku, 1, sourceId);
 
   assert.equal(response.rejected[0]?.error?.reason, "operator_profile_required");
+  // razaoIntacto (R-C21-03; C1-05 da J-551): nenhuma baixa para a origem, e o razão e os saldos iguais.
+  assert.equal(await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId), undefined);
+  assert.deepEqual(await ctx.ledger([ctx.profileA.id]), before);
   assert.equal((await ctx.materialMovements()).length, 0);
 });
 
@@ -248,9 +265,14 @@ test("[RC8(7)] gerente com cadastro sem saldo não cai para a BASE", async () =>
   ctx.profiles.set(ctx.manager.userId, profileG);
   const workOrderId = await ctx.createAssignedWorkOrder(ctx.tecA);
   const before = await ctx.materialMovements();
-  const response = await ctx.run(ctx.manager, workOrderId, ctx.y.sku, 1);
+  const ledgerBefore = await ctx.ledger([profileG.id]);
+  const sourceId = randomUUID();
+  const response = await ctx.run(ctx.manager, workOrderId, ctx.y.sku, 1, sourceId);
 
   assert.equal(response.conflicts[0]?.conflict?.conflict_type, "insufficient_balance");
+  // razaoIntacto (R-C21-03; C1-05 da J-551): nenhuma baixa para a origem, e o razão e os saldos iguais.
+  assert.equal(await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId), undefined);
+  assert.deepEqual(await ctx.ledger([profileG.id]), ledgerBefore);
   assert.equal(await ctx.balance(ctx.y.id, {
     custodyType: "professional",
     custodyOperatorProfileId: profileG.id,
