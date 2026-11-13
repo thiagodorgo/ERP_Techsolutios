@@ -3513,6 +3513,8 @@ mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, a
   - Residual com dono: `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO`, `P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS`,
     `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` e `P-MOBILE-REJECTED-DOIS-SENTIDOS` (novas, no fim deste arquivo). Diário:
     `docs/revisoes/SAN3/B-O6R-11d-dev.md`.
+- **Apenso 2026-11-13:** material reenviado por `B-MATERIAL-REENVIO` (PR #551) — `work_order_material.add|remove` com replay no
+  app e baixa durável por origem no backend.
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -11950,7 +11952,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** como técnico, cada rota acima devolve só o que é dele (ou 403/404), com teste por rota.
 
 ## P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não têm saída: a OS fica retida — MÉDIA
-- status: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA.
+- status: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA, sem o `work_order_material.add`, que saiu dela com o `B-MATERIAL-REENVIO` (PR #551).
 - **origem:** B-SAN3-13 (§2.5, §11-bis 1). A tela de sincronização resolve só `conflict`; `failed` e os tipos sem replay
   (`work_order.approval_request`, `work_order.unable_to_start`, `work_order_material.add`) ficam para sempre.
 - **efeito:** a OS que deixou de ser do técnico (ou concluiu) com uma dessas ações fica no aparelho com selo — nunca é
@@ -11963,6 +11965,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   nunca ganha Descartar — regra única `canDiscardSyncAction`, que o 2º PR reutiliza** (`D-DESPESA-SEM-DESCARTAR`); tipos
   sem replay (`work_order.approval_request`, `work_order.unable_to_start`, `work_order_material.add`) seguem com
   `B-SAN3-16`/4º PR.
+- **Apenso 2026-11-13 (`B-MATERIAL-REENVIO` (PR #551)):** PARCIAL. O `work_order_material.add` sai da lista: tem replay
+  (`inventory_sync_replay_service.dart`) e saída — recusa vira `conflict` decidível, "Descartar" e "Versão do gestor"
+  tiram a peça e enfileiram o estorno quando ela pode ter baixado, e a ação interrompida volta sozinha à fila.
+  `work_order.approval_request` e `work_order.unable_to_start` seguem com `B-SAN3-16`.
 
 ## P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE (2026-10-25) — evidência em conflict com blob não tem caminho — MÉDIA
 - status: ABERTA
@@ -11971,8 +11977,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **dono:** bloco de sync de evidência.
 - **encerramento:** resolver/descartar a evidência em conflito pela tela; a OS sai depois.
 
-## P-MOBILE-MATERIAL-SEM-REPLAY (2026-10-25) — work_order_material.add fica pending para sempre — ALTA
-- status: ABERTA
+## P-MOBILE-MATERIAL-SEM-REPLAY (2026-10-25) — work_order_material.add fica pending para sempre — ALTA — **FECHADA** pelo `B-MATERIAL-REENVIO` (PR #551), nota S11
+- status: FECHADA — `B-MATERIAL-REENVIO` (PR #551), pelo código e pelos testes; o efeito em produção vem com a porta do prestador (`B-SAN3-15b`) — nota S11.
 - **origem:** B-SAN3-13 (R2-6, M23). Não há replay de material do prestador; com este bloco a OS com peça lançada fica
   RETIDA (ramo 1 por `work_order_local_id` e ramo 5 por `work_order_materials`), nunca apagada.
 - **gravidade:** ALTA — consumo de estoque e base de cobrança.
@@ -11982,6 +11988,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Apenso 2026-11-02 (1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`)):** segue ABERTA. O que o 1º PR garante é que a ação **sobrevive** (`Ω6R-QUA-005`,
   fila serializada e `addSelection` com `await`); enviá-la é o 4º PR. Sem porta na UI (`P-MOBILE-PRESTADOR-SEM-PORTA`),
   o efeito só é observável em teste até o `B-SAN3-15` (crítica S11).
+- **Apenso 2026-11-13 (`B-MATERIAL-REENVIO` (PR #551)):** FECHADA. O critério literal ("replay de material com efeito no backend; a ação
+  vira `synced` e a OS drena") está provado por `[RC2(1)]` (`tests/b-material-sync.test.ts`: aceito, um movimento),
+  `[RC3(1)]` (`tests/b-material-sync-db.test.ts`: uma linha em `stock_movements` com origem, OS e custódia), RC4(3)
+  (`test/core/sync/bmaterial_replay_test.dart`: a ação e a linha viram `synced`) e RC6(5)
+  (`test/features/prestador/bmaterial_linha_test.dart`: com tudo aceito a OS sai do aparelho; com um conflito, fica).
+  **Nota S11:** sem porta na UI (`P-MOBILE-PRESTADOR-SEM-PORTA`), nenhum técnico real alcança a tela do prestador; o
+  efeito em produção depende do `B-SAN3-15b`. A baixa já sai da custódia de quem lança (Emenda C2, 5(a) do dono), não
+  da BASE; a `P-MATERIAL-CUSTODIA-BASE` prevista no plano não foi criada.
 
 ## P-MOBILE-SYNC-INTERROMPIDO-REENVIO-MANUAL (2026-11-02) — ação de OS, vistoria ou evidência interrompida em `syncing` volta como conflito para o técnico decidir, sem reenvio automático — MÉDIA
 - status: ABERTA
@@ -12164,10 +12178,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Portada do ramo `fix/mobile-work-order-contracts` (`a24f58b5`) em 2026-11-02** pelo 1º PR do corte do `B-O6R-11` (emenda 2 §3 R6): texto acima verbatim; os números de linha valem para aquele ramo. O PR #388 fecha sem merge e o ramo fica preservado.
 
 ## P-MOBILE-LINHA-CONFLICT-NAO-LIMPA (2026-10-25) — useServer muda só a ação; a linha fica conflict — BAIXA
-- status: ABERTA
+- status: ABERTA — PARCIAL: a linha de material foi resolvida pelo `B-MATERIAL-REENVIO` (PR #551); a linha da OS segue com o dono.
 - **origem:** B-SAN3-13 (CRIT-5). Se a OS continuar do técnico, o selo da linha fica errado até o próximo upsert.
 - **dono:** bloco de sync.
 - **encerramento:** resolver o conflito também reescreve a linha.
+- **Apenso 2026-11-13 (`B-MATERIAL-REENVIO` (PR #551)):** PARCIAL. Na linha de material, o gancho de resolução
+  (`sync_resolution_side_effects.dart`) reescreve a linha em "Minha versão", "Versão do gestor" e "Descartar" (RC6(4),
+  pela `SyncScreen` real). A linha da OS (`work_orders.sync_status`) segue com o bloco de sync / `B-O6R-11c`: o
+  `useServer` de uma ação de OS quer dizer "recarregar a OS do servidor", regra do `WorkOrderConflictResolutionService`,
+  não deste bloco; o gancho genérico já está pronto para receber esse efeito.
 
 ## P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD (2026-10-25) — o provider nasce com a sessão de demonstração durante o recarregamento — BAIXA
 - status: ABERTA
@@ -14662,3 +14681,57 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** o painel de agentes mostrava a hora da medição da Codex em branco. No PowerShell 7, `ConvertFrom-Json` já entregava o campo como `DateTime`; a chamada posterior a `Parse` falhava em silêncio. Por isso, o aviso de medição velha nunca disparava.
 - **fechamento:** o tratamento foi corrigido em 13/11 no painel externo ao repositório.
 - **lição:** medição que falha em silêncio é *fail-open*; o arnês deve tornar a falha visível e não tratar a ausência de hora como medição válida.
+
+## P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS (2026-11-12) — a suíte backend inteira não reproduz o CI no host Windows — MÉDIA (ferramenta)
+
+- **status:** ABERTA · **gravidade:** MÉDIA (ambiente/arnês, não produto) · **escopo:** ferramentas e compatibilidade do arnês no Windows · **dono:** `B-FERR-AGENTES` · **PR-alvo:** o PR do `B-FERR-AGENTES` · **bloqueia:** não o `B-MATERIAL-REENVIO`; a baseline e a suíte inteira deste bloco são aceitas pelo CI.
+- **origem:** RETOMADA 6 do diário do `B-MATERIAL-REENVIO` e Emenda C2.3 (`E-C23.3`).
+- **colisão de ID (registrada em 2026-11-13 pelo conserto da J-551, `fix-551-cl`, achado C3b-F4):** esta entrada nasceu no ramo do PR #551 (commit `05fd718e2`, 12/11 19:39) com o ID `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS`, o mesmo de uma entrada BAIXA que a `main` registrou a partir da mesma E-C23.3 (commit `2f027fe1c`, #552). O merge `d03be37b` juntou as duas, e o registro ficou com o ID repetido (6 IDs duplicados no objeto `4749727c`, contra 5 na `main` `eeccdd27` e no ramo `a2d1d5da`). A do ramo passa a se chamar `P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS` (livre: `git grep` na `main` e no ramo, 0 ocorrências); a da `main` fica com o ID antigo. As duas falam da mesma classe; a de cá tem as 3 causas medidas e a gravidade MÉDIA. Juntar as duas, e decidir a gravidade, é do dono `B-FERR-AGENTES` (§A2: nada se consolida em silêncio). O diário do bloco (`omega/juntas/votos/B-MATERIAL-REENVIO/00-dev.md`, l.90) e a E-C23.3 do plano citam esta entrada pelo ID antigo; são registro datado e não se reescrevem.
+- **fato:** no Git Bash/Windows, a suíte inteira da `main` `ef4e98e7` terminou com `534 arquivo(s) · 5431 teste(s) · pass 5420 · fail 9 · skipped 2`: o host não tem `setsid`, um subprocesso tentou interpretar o shim Bash `node_modules/.bin/prisma` como JavaScript, e o drill do Traccar encontrou `EBUSY` no teardown. O run canônico `43249586610` da mesma ref no CI fechou `5440 teste(s) · pass 5438 · fail 0 · skipped 2`; por isso `N_b/N_f` vêm do CI e o host roda as suítes do bloco e a regressão nomeada.
+- **critério de encerramento:** o arnês da suíte inteira executa no Git Bash/Windows sem depender de `setsid`, resolve o executável Prisma correto e faz teardown do drill sem `EBUSY`, reproduzindo o resumo verde do CI sem afrouxar testes nem aumentar skips.
+
+## P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE (2026-11-13) — a matriz dá `read` ao `manager` em "Inventory movements" e o catálogo dá `stock_movements:create` — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA (registro; matriz × catálogo) · **escopo:** `pre-existente` · **dono:** `B-SAN3-04a` · **bloqueia:** não
+- **origem:** §D2 do plano `B-REENVIOS` (a revisão "ataques que não derrubaram"), registrada no `B-MATERIAL-REENVIO` (PR #551).
+- **fato:** `RBAC_MATRIX.md:47` dá `manager = read` em "Inventory movements"; o catálogo (`src/modules/core-saas/permissions/catalog.ts`) dá `stock_movements:create` ao `manager`. O `B-MATERIAL-REENVIO` não muda nenhuma célula nem permissão: a baixa de material do gerente pelo app sai por `work_orders:update` (P21, nota no `RBAC_MATRIX.md`).
+- **critério de encerramento:** a matriz e o catálogo dizem a mesma coisa para o `manager` em movimentos de estoque (o `B-SAN3-04a` é o dono da conferência matriz × catálogo).
+
+## P-MATERIAL-LACO-G-SEM-RECEITA (2026-11-13) — o laço G do `o6r07c-subresource-scope` não tem receita para o lote de estoque: o job `backend` do CI está vermelho desde a C-F5 — ALTA (bloqueia o merge do `B-MATERIAL-REENVIO`)
+
+- **status:** FECHADA (2026-11-13, no PR #551, pelo conserto da J-551, `fix-551-cl`, achado C3b-F2: o critério foi cumprido no próprio ramo) — era ABERTA · **gravidade:** ALTA (CI vermelho no próprio bloco) · **escopo:** `dentro-do-bloco` · **dono:** `B-MATERIAL-REENVIO` · **bloqueia:** não mais (bloqueava o aceite da C-F14 e o merge do PR #551)
+- **origem:** RETOMADA 33 do diário do `B-MATERIAL-REENVIO` (`dev-c6-cl`), lida no CI.
+- **fato:** runs `43414655090` (head `e7889397`) e `43417866741` (head `ee23c196`), job `backend`: `[run-backend-tests] 538 arquivo(s) · 5489 teste(s) · pass 5485 · fail 2 · skipped 2`. Os 2 são `tests/o6r07c-subresource-scope.test.ts`, "laço G [OS·07c-a] PAR /api/v1/mobile/sync/inventory-actions · work_order_material.add|remove", com `laço G: lote sem receita … — o laço nunca pula uma entrada` (`executarEntrada`: só o lote `/api/v1/mobile/sync/work-order-actions` tem receita). A C-F5 pôs os 2 pares na fixture `o6r07c-classificacao-vias.json` como `OS·07c-a` (C2 item 6), e o laço G gera um caso por entrada `OS·07c-a`.
+- **por que não se consertou:** o conserto é uma receita do lote de estoque em `tests/o6r07c-subresource-scope.test.ts`, que não está no PERMITIDO do §C4 nem das Emendas C2–C2.7 (`D-EMENDA-ANTES-DO-CODIGO`).
+- **critério de encerramento:** emenda que autorize a receita (payload do material com `sku`, `quantity`, `work_order_id` e o estado que o G-NEG/G-POS/G-WIDE exige: módulo, cadastro e saldo); o job `backend` do head com `fail 0`, lido no TAP.
+- **fechamento (2026-11-13, `fix-551-cl`, Claude Opus 5.5, declarado):** a Emenda C2.8 (E-C28.1 e E-C28.5, 13/11 10:24 e 10:41 SP) autorizou a receita, que está no commit `5f4665ac` (`test(censo): receita do lote de estoque no laço G`). No objeto da junta `4749727c`, o TAP do job `backend` (run `43456974286`, job `131993562423`): `[run-backend-tests] 543 arquivo(s) · 5510 teste(s) · pass 5508 · fail 0 · skipped 2`, com `ok 3540 - laço G [OS·07c-a] PAR /api/v1/mobile/sync/inventory-actions · work_order_material.add — G-NEG 403, G-POS e G-WIDE passam` e `ok 3541 … work_order_material.remove …`. Comando: `set -o pipefail; gh run view 43456974286 --job 131993562423 --log | grep -E 'run-backend-tests\] [0-9]+ arquivo|ok [0-9]+ - laço G .*inventory-actions'`. As mutações M-C43, M-C44 e M-C45 da E-C28.2 ficaram vermelhas na cadeira C1 da J-551.
+
+## P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO (2026-11-13) — adição de material que já foi enviada e passou por "Minha versão" ou "Tentar de novo" volta `pending` limpa; removida antes do reenvio, sai sem estorno — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (janela estreita; a peça fica baixada no servidor sem estar na OS) · **escopo:** `dentro-do-bloco`, residual declarado · **dono:** bloco de sync (`B-O6R-11c`) · **bloqueia:** não
+- **origem:** RETOMADA 32 do diário do `B-MATERIAL-REENVIO` (`dev-c6-cl`).
+- **fato:** a regra `materialAdditionMayHaveReachedServer` (`prestador_repository.dart`) reconhece "já esteve `syncing`" pela tentativa gasta e pelas marcas `SYNC_BUSY`/`SYNC_INTERRUPTED`. "Minha versão" (`sync_conflict_resolver.dart`) e "Tentar de novo" (`sync_stalled_resolver.dart`) zeram `retryCount` e limpam a marca; se a peça for removida antes do reenvio, a adição é descartada sem `work_order_material.remove`. Guardar o histórico exige mudar os resolvedores ou o `SyncAction`, PROIBIDOS no §C4.
+- **critério de encerramento:** a ação guarda que já foi enviada (ou o resolvedor preserva a marca), e a remoção dela enfileira o estorno; teste "enviada → Minha versão → removida → um `remove`".
+
+## P-MATERIAL-RC4B-SEM-FATIA (2026-11-13) — o RC4b do plano (contrato Dart × TS do material pelo parser real) não tem fatia nem arquivo no PERMITIDO — MÉDIA
+
+- **status:** FECHADA (2026-11-13, no PR #551, pelo conserto da J-551, `fix-551-cl`, achado C3b-F2: o critério foi cumprido no próprio ramo) — era ABERTA · **gravidade:** MÉDIA (prova de contrato entre app e servidor) · **escopo:** `dentro-do-bloco` (lacuna do plano) · **dono:** `B-MATERIAL-REENVIO` · **bloqueia:** não
+- **origem:** RETOMADA 33 do diário do `B-MATERIAL-REENVIO` (`dev-c6-cl`).
+- **fato:** o §C3 pede o RC4b (`tests/b-material-payload-contract.test.ts` rodando o handler real sobre o payload literal do `InventorySyncCodec`, gravado por `test/core/sync/bmaterial_codec_test.dart`), mas nenhuma fatia do §C5 nem das Emendas C2–C2.7 o executa, e `tests/b-material-payload-contract.test.ts` não está no PERMITIDO do §C4. Hoje o contrato é coberto pelos dois lados em separado (RC2 no servidor; RC4 com o codec real no app).
+- **critério de encerramento:** a emenda inclui o RC4b numa fatia e no PERMITIDO, ou o declara fora com motivo.
+- **fechamento (2026-11-13, `fix-551-cl`, Claude Opus 5.5, declarado):** a E-C28.3 (com os ajustes A3 a A5 da E-C28.5) pôs o RC4b na fatia C-F14a e no PERMITIDO; o código está no commit `b3dc42ea` (`test(mobile): contrato do pedido de material, do Dart ao handler TS (RC4b)`): `tests/b-material-payload-contract.test.ts`, `mobile/flutter_app/test/core/sync/bmaterial_codec_test.dart` e a fixture versionada `mobile/flutter_app/test/core/sync/bmaterial_request_payloads.json`. No objeto `4749727c`, o TAP do job `backend` (run `43456974286`, job `131993562423`, `fail 0`) tem `grep -cE 'ok [0-9]+ - \[RC4b\('` = 2. A M-C46 e a M-C47 ficaram vermelhas na cadeira C3a da J-551.
+
+## P-SAN3-ITEM-63-DUPLICADO (2026-11-13) — o número 63 do §4.1 do `PLANO_SAN3.md` foi dado a dois itens: o material e a GATE-CHAVE — BAIXA (registro, §A2)
+
+- **status:** FECHADA (2026-11-13, decisão do orquestrador, leitura declarada §A6: o 63 fica com o material, pela P5 de 31/10, que é anterior; a GATE-CHAVE vira o item 66; o §4.1 tem 66 itens, e os dois foram aprovados pelo dono. As demais referências ao "item 63" da GATE-CHAVE fora do PLANO_SAN3 vão no próximo PR de registro) · **gravidade:** BAIXA (numeração do registro; nenhum comportamento) · **escopo:** `pre-existente` (as duas atribuições antecedem o merge: a do material vem da P5 de 31/10, a da GATE-CHAVE da `D-DONO-1211-NOITE` de 12/11) · **dono:** o orquestrador (PR de registro) · **bloqueia:** não
+- **origem:** merge da `main` `eeccdd27` no ramo do `B-MATERIAL-REENVIO` (PR #551), RETOMADA 47 do diário do bloco C (`merge-551-cl`, dev de integração).
+- **fato:** na base comum `ef4e98e7`, o §4.1 tinha 64 linhas (1 a 65, sem o 63). O ramo pôs o 63 = `P-MOBILE-MATERIAL-SEM-REPLAY` (P5 de 31/10, "itens 63-64"); a `main` pôs o 63 = `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` (`D-DONO-1211-NOITE`, "denominador de 64 para 65"). O merge ficou com as duas linhas, sem renumerar: o §4.1 tem 66 linhas, e as contagens do `PLANO_SAN3.md` foram somadas (66 bloqueantes, 52 blocos, 19 G).
+- **critério de encerramento:** um dos dois itens recebe número próprio (decisão do orquestrador ou do dono), com as referências ao número atualizadas no registro; o denominador do vendável usado no marco de KPI confere com o número de linhas do §4.1.
+- **nota (2026-11-13, conserto da J-551, `fix-551-cl`, achado C3b-F3): o que faltava.** O fechamento acima (commit `4749727c`) renumerou a linha do §4.1, mas deixou duas linhas do próprio `PLANO_SAN3.md` chamando a GATE-CHAVE de item 63: a l.108 (cabeçalho do §4.1) e a l.497 ("Quantidade exata"). As duas passam a dizer 66 neste PR (`git grep -nE 'item 63, a GATE-CHAVE|O item 63' -- docs/revisoes/SAN3/PLANO_SAN3.md` → nada). Fora do `PLANO_SAN3`, o número 63 da GATE-CHAVE aparece em `agent-orchestration/controle/decisoes.md` (a `D-DONO-1211-NOITE`, l.5095) e em `agent-orchestration/docs/status-geral.md` (as atualizações de 12/11 noite e de 13/11 manhã, l.10 e l.18): são entradas datadas, que diziam a verdade na data delas (a decisão do dono deu o 63), e não se reescrevem; vale o §4.1, onde a GATE-CHAVE é o 66. Faltou também uma RETOMADA no diário do bloco para o `4749727c`; o registro dele está nesta nota e no corpo do PR #551.
+
+## P-551-INMEMORY-TOCTOU-EXIT-SOURCE (2026-11-13) — em memória, dois lotes concorrentes com a mesma origem gravam duas baixas — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA (só o modo memória: o job `backend` da CI, desenvolvimento e demonstração; a produção exige `prisma`) · **escopo:** `pre-existente` (`git blame -L 408,419 eeccdd27 -- src/modules/inventory/inventory.repository.ts` → `acc7f752e`, 2026-07-25, #277, Ω4C PR-08b; o `B-MATERIAL-REENVIO` não mexeu nessas linhas) · **dono:** `B-SAN3-15b` (mexe no mesmo repositório) · **PR-alvo:** o PR do `B-SAN3-15b` · **bloqueia:** não.
+- **origem:** achado C1-04 da cadeira C1 da J-551 (`j551-c1-cl`, sonda S3), triado como pendência na ata da J-551 (13/11 15:40 SP); registrado pelo conserto `fix-551-cl`.
+- **fato:** `InMemoryInventoryRepository.createExitForSource` (`src/modules/inventory/inventory.repository.ts`, l.409) faz `await this.findExitBySource(…)` e só insere depois de outro `await` (TOCTOU). Na sonda S3 (N=1; forma: `Promise.all` de 2 lotes do mesmo ator, mesmo `client_action_id`, quantidades 2 e 3; handler real, `CORE_SAAS_PERSISTENCE=memory`), saíram 2 `accepted` e 2 movimentos com o mesmo `source_id` (`{"acc":2,"conf":[],"movs":2}`). O comentário "Idempotência ABSOLUTA por origem" do arquivo (l.413) não vale em memória. Em produção (`CORE_SAAS_PERSISTENCE=prisma`, exigido por `src/config/env.ts`, Ω6R-DAT-001), quem trava é o índice parcial único (RC3, cadeira C2 da J-551).
+- **critério de encerramento:** a checagem e a inserção do `createExitForSource` em memória viram uma seção sem `await` entre elas (ou uma trava por origem), com um teste de corrida em memória (2 lotes concorrentes, mesma origem, payloads diferentes → 1 movimento, 1 `accepted` e 1 `conflict idempotency_payload_mismatch`), vermelho sem o conserto.

@@ -11,6 +11,7 @@ import {
   wouldOverdraw,
 } from "./inventory.calculations.js";
 import {
+  custodyOfMovement,
   duplicateSkuError,
   stockBaixaReversedError,
   stockBusyError,
@@ -167,6 +168,17 @@ export class PrismaInventoryRepository implements InventoryRepository {
       where: {
         tenant_id: tenantId,
         id: itemId,
+      },
+    });
+
+    return item ? mapItemRecord(item) : undefined;
+  }
+
+  async findItemBySku(tenantId: string, sku: string): Promise<InventoryItem | undefined> {
+    const item = await this.client.inventoryItem.findFirst({
+      where: {
+        tenant_id: tenantId,
+        sku,
       },
     });
 
@@ -478,9 +490,10 @@ export class PrismaInventoryRepository implements InventoryRepository {
       return existing;
     }
 
-    // RN-BAIXA-01 — guard de saldo por custódia BASE dentro da tx (EXIT-first no consumidor). BASE fixada.
+    // RN-BAIXA-01 — guard da custódia selecionada dentro da tx. Sem parâmetro, os consumidores antigos usam BASE.
     const signed = -roundToDecimalPrecision(Math.abs(input.quantity));
-    const custodySaldoBefore = await this.saldoOfCustodyLocked(lock, BASE_CUSTODY);
+    const custody = input.custody ?? BASE_CUSTODY;
+    const custodySaldoBefore = await this.saldoOfCustodyLocked(lock, custody);
     if (wouldOverdraw(custodySaldoBefore, signed)) {
       throw insufficientBalanceError(custodySaldoBefore);
     }
@@ -491,9 +504,10 @@ export class PrismaInventoryRepository implements InventoryRepository {
         itemId: input.itemId,
         type: "saida",
         quantidadeSinalizada: signed,
+        workOrderId: input.workOrderId,
         vehicleId: input.vehicleId,
         reason: input.reason,
-        custody: BASE_CUSTODY,
+        custody,
         sourceType: input.sourceType,
         sourceId: input.sourceId,
         createdBy: input.createdBy,
@@ -527,7 +541,7 @@ export class PrismaInventoryRepository implements InventoryRepository {
         quantidadeSinalizada: roundToDecimalPrecision(-exit.quantidadeSinalizada),
         vehicleId: exit.vehicleId,
         reason: input.reason ?? exit.reason,
-        custody: BASE_CUSTODY,
+        custody: custodyOfMovement(exit),
         reversesMovementId: exit.id,
         createdBy: input.createdBy ?? exit.createdBy,
       },
@@ -841,6 +855,10 @@ export class RlsPrismaInventoryRepository implements InventoryRepository {
 
   findItemById(tenantId: string, itemId: string): Promise<InventoryItem | undefined> {
     return this.tx(tenantId, (repo) => repo.findItemById(tenantId, itemId));
+  }
+
+  findItemBySku(tenantId: string, sku: string): Promise<InventoryItem | undefined> {
+    return this.tx(tenantId, (repo) => repo.findItemBySku(tenantId, sku));
   }
 
   findItemWithSaldo(tenantId: string, itemId: string): Promise<InventoryItemView | undefined> {

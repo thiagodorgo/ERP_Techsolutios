@@ -96,6 +96,13 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       }
       // Work order status sync
       await ref.read(workOrderSyncReplayServiceProvider).replayTenant(tenantId);
+      try {
+        await ref
+            .read(inventorySyncReplayServiceProvider)
+            .replayTenant(tenantId);
+      } catch (_) {
+        // Material falho nao bloqueia vistoria, evidencia nem despesa.
+      }
       // B-SAN3-14 (R-A5) — a coleta e a entrega das OS de guincho no aparelho.
       try {
         final checklistRepo = ref.read(checklistRepositoryProvider);

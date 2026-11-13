@@ -92,6 +92,7 @@ const workOrderActionReferenceKeys = <String, Set<String>>{
   'evidence.field_observation': {},
   // InventorySyncActionTypes — material do prestador por `work_order_local_id` (R2-6); saída por `work_order_id`.
   'work_order_material.add': {'work_order_local_id'},
+  'work_order_material.remove': {'work_order_local_id'},
   'inventory_exit.create': {'work_order_id'},
   'inventory_entry.create': {},
   // ChecklistSyncActionTypes — pela vistoria (`local_run_id`/`server_run_id` → `checklist_runs.work_order_id`):

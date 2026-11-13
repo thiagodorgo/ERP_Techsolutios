@@ -5143,3 +5143,8 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
 - **Falas literais do dono:** *"vc deve codar tbm. 40 - 50% das tarefas, deve ser feita por vc, refaca o plano"*; depois, *"usar a api claude e deepseek, corda e cobri(vc), entendido?"*; e, fixando a proporção, *"coloque os codex no plano, seus limites de uso agora eh 40% do codigo vc tem que fazer. o resto seus bracos"*.
 - **O que vale:** o Claude da sessão faz cerca de 40% das tarefas de código lançadas no dia (dev e conserto), por subagente ou por conta própria, e cobre na hora o braço que cair, travar ou ficar sem saldo. Os outros 60% vão para as contas Codex, o DeepSeek e a API Claude, uma tarefa por conta de cada vez.
 - **Continua valendo:** design só Claude; Gemini nunca como revisor único; topo no plano e em toda reprovação; cruzamento do item 11; vigia em todo braço externo; teto de cada braço definido pelo dono e não publicado neste repositório.
+
+## A2-1311-RN-BAIXA-04-E-MATERIAL-DA-OS (2026-11-13) — RN-BAIXA-04 (BASE fixa) × 5(a) do dono no material da OS: não há conflito
+
+- **Registro §A2 (Emenda C2 do `B-MATERIAL-REENVIO`, E0 item 8 e E4 §C9):** a RN-BAIXA-04 ("custódia FIXADA em BASE", `docs/juntas/J-OMEGA4C.md:1962`) continua para combustível e manutenção; a nova origem `work_order_material` segue a regra 5(a) do dono (`D-DONO-TODAS-RECOMENDACOES-1111`): a peça sai da custódia profissional de quem lança, e o gerente (`tenant_wide`) sem cadastro baixa da base. A P12 do plano do `B-SAN3-15` foi implementada no `B-MATERIAL-REENVIO` (PR #551), e a F2 do `B-SAN3-15b` sai.
+- **Prova:** RC1 (7)-(8) e RC8 em memória; RC3 (6)-(8) em PostgreSQL; `tests/inventory-stock-decrement.test.ts` (BASE fixa dos consumidores do Ω4C) sem asserção mudada.

@@ -45,6 +45,31 @@ class DriftPrestadorLocalStore implements PrestadorLocalStore {
   }
 
   @override
+  Future<void> updateMaterial(
+    String localId, {
+    int? quantity,
+    SyncStatus? syncStatus,
+  }) async {
+    if (quantity == null && syncStatus == null) return;
+    final assignments = <String>[];
+    final variables = <Variable>[];
+    if (quantity != null) {
+      assignments.add('quantity = ?');
+      variables.add(Variable<int>(quantity));
+    }
+    if (syncStatus != null) {
+      assignments.add('sync_status = ?');
+      variables.add(Variable<String>(syncStatus.name));
+    }
+    variables.add(Variable<String>(localId));
+    await _db.customUpdate(
+      'UPDATE work_order_materials SET ${assignments.join(', ')} '
+      'WHERE local_id = ?',
+      variables: variables,
+    );
+  }
+
+  @override
   Future<void> deleteMaterial(String localId) async {
     await _db.customStatement(
       'DELETE FROM work_order_materials WHERE local_id = ?',

@@ -9,11 +9,22 @@ const syncInterruptedAutoSafeError =
     'O envio foi interrompido antes da confirmação. Este item voltou para a '
     'fila de envio.';
 
-// Estes tres tipos possuem recibo duravel/idempotente confirmado pelo backend
-// e, por isso, podem voltar automaticamente para pending. Anexo de recibo,
-// material, OS, checklist, evidencia e tipo desconhecido ficam fora por
-// seguranca (fail-closed) e exigem decisao manual.
-const kAutoResendAfterInterruption = ExpenseSyncActionTypes.backendSupported;
+// Estes tipos possuem recibo duravel/idempotente confirmado pelo backend e, por
+// isso, podem voltar automaticamente para pending:
+// - os quatro de RDV (`ExpenseSyncActionTypes.backendSupported`);
+// - o material da OS (B-MATERIAL-REENVIO, C2 item 16, S10): o servidor baixa por
+//   origem, com indice unico (organizacao, `work_order_material`, `client_action_id`)
+//   e fast-path em `createExitForSource`; o reenvio do mesmo `client_action_id`
+//   pelo mesmo ator volta `already_applied`, e o `remove` sem baixa ativa tambem
+//   (`removeExitForSource` idempotente). Testes: `tests/b-material-sync.test.ts`
+//   RC2(2)/(14) e `tests/b-material-sync-db.test.ts` RC3(2).
+// OS, checklist, evidencia e tipo desconhecido ficam fora por seguranca
+// (fail-closed) e exigem decisao manual.
+const kAutoResendAfterInterruption = <String>{
+  ...ExpenseSyncActionTypes.backendSupported,
+  InventorySyncActionTypes.materialAdd,
+  InventorySyncActionTypes.materialRemove,
+};
 
 List<SyncAction> reclaimInterruptedSyncing(
   Iterable<SyncAction> actions, {

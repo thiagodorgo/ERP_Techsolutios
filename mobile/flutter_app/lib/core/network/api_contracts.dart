@@ -148,6 +148,7 @@ class InventorySyncActionTypes {
   static const entryCreate = 'inventory_entry.create';
   static const exitCreate = 'inventory_exit.create';
   static const materialAdd = 'work_order_material.add';
+  static const materialRemove = 'work_order_material.remove';
 }
 
 class EvidenceApiEndpoints {
