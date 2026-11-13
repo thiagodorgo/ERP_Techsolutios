@@ -94,16 +94,14 @@ if (!connectionString) {
   });
 } else {
   test("C5 · a opção vai na URL (D1): banco real em `America/Sao_Paulo` abre a sessão em `UTC`", async () => {
-    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([
-      import("@prisma/adapter-pg"),
-      import("@prisma/client"),
-    ]);
-    const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+    const { Client } = await import("pg");
+    const admin = new Client({ connectionString });
+    await admin.connect();
     const databaseName = `fuso_conexao_${Date.now()}_${randomUUID().slice(0, 6)}`;
 
     try {
-      await admin.$executeRawUnsafe(`CREATE DATABASE "${databaseName}" TEMPLATE template0`);
-      await admin.$executeRawUnsafe(`ALTER DATABASE "${databaseName}" SET timezone TO 'America/Sao_Paulo'`);
+      await admin.query(`CREATE DATABASE "${databaseName}" TEMPLATE template0`);
+      await admin.query(`ALTER DATABASE "${databaseName}" SET timezone TO 'America/Sao_Paulo'`);
 
       const target = new URL(connectionString);
       target.pathname = `/${databaseName}`;
@@ -120,8 +118,8 @@ if (!connectionString) {
         await client.$disconnect();
       }
     } finally {
-      await admin.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${databaseName}" WITH (FORCE)`);
-      await admin.$disconnect();
+      await admin.query(`DROP DATABASE IF EXISTS "${databaseName}" WITH (FORCE)`);
+      await admin.end();
     }
   });
 }
