@@ -164,16 +164,26 @@ void main() {
       expect(result.map((action) => action.clientActionId), ['5', '6']);
     });
 
-    test('os quatro tipos RDV duráveis voltam para pending', () {
+    // B-MATERIAL-REENVIO (C2 item 16, S10) — mudança de requisito declarada: o material
+    // da OS passou de "falha fechado em conflict" a "volta para pending", porque o backend
+    // agora baixa por origem, de forma durável e idempotente.
+    test('os quatro tipos RDV e os dois de material duráveis voltam para '
+        'pending', () {
       final result = reclaimInterruptedSyncing([
         _action('7', ExpenseSyncActionTypes.reportCreate, SyncStatus.syncing),
         _action('8', ExpenseSyncActionTypes.itemCreate, SyncStatus.syncing),
         _action('9', ExpenseSyncActionTypes.reportSubmit, SyncStatus.syncing),
         // B-RDV-COMPROVANTE: o comprovante interrompido tambem volta sozinho.
         _action('10', ExpenseSyncActionTypes.receiptAttach, SyncStatus.syncing),
+        _action('11', InventorySyncActionTypes.materialAdd, SyncStatus.syncing),
+        _action(
+          '12',
+          InventorySyncActionTypes.materialRemove,
+          SyncStatus.syncing,
+        ),
       ]);
 
-      expect(result, hasLength(4));
+      expect(result, hasLength(6));
       expect(
         result.every((action) => action.status == SyncStatus.pending),
         isTrue,
@@ -191,7 +201,6 @@ void main() {
       // kAutoResendAfterInterruption (comprovante interrompido volta a pending
       // e o replay multipart o retoma; o blob local esta preservado).
       final types = [
-        InventorySyncActionTypes.materialAdd,
         WorkOrderSyncActionTypes.statusUpdate,
         ChecklistSyncActionTypes.answerUpsert,
         EvidenceSyncActionTypes.workOrderPhoto,

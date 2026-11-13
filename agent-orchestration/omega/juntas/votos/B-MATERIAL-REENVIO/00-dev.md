@@ -348,3 +348,13 @@
 - Controle: RC5/RC6 não compilam no head-base (`inventory_sync_replay_service.dart`, `applyMaterialSyncStatus` e `updateMaterial` não existem lá); o RC5(1) no head-base foi registrado vermelho na C-F1.
 - `git diff --check` verde. Head antes do commit: `a98317b08035ad1c2fcd8a84e814b029cf83571f`.
 - Próximo passo exato: commit e push da C-F10; conferir o job `flutter` do CI no head novo; então a C-F11 (`kAutoResendAfterInterruption` + material e o unitário do resgate).
+
+## RETOMADA 35 — 2026-11-13T09:25:59-03:00 — C-F11 CONCLUÍDA
+
+- Executor da fatia: `dev-c6-cl`, Claude Opus 5.5 (nível menor declarado).
+- Código: `lib/core/sync/sync_interrupted_reclaim.dart` — `kAutoResendAfterInterruption` = os 4 de RDV + `work_order_material.add` + `work_order_material.remove` (C2 item 16, S10), com o comentário da evidência (baixa por origem com índice único e fast-path; reenvio do mesmo ator → `already_applied`; `remove` sem baixa ativa também; testes `[RC2(2)]`, `[RC2(14)]` e `[RC3(2)]`, conferidos por `grep` nos arquivos).
+- Teste (mudança de requisito declarada, C4): em `test/core/sync/bo6r11_resgate_syncing_interrompido_test.dart`, o `materialAdd` sai do caso "demais domínios … falham fechados em conflict" e o caso dos duráveis passa a "os quatro tipos RDV e os dois de material duráveis voltam para pending" (`hasLength(4)` → `hasLength(6)`, com `materialAdd` e `materialRemove`). Nenhuma outra asserção muda.
+- Comandos e saídas: `dart format` (0 a mudar); `flutter analyze` = `No issues found!`; `bo6r11_resgate_syncing_interrompido_test.dart` = `+7: All tests passed!` (7/7); suíte Flutter inteira = `+1190: All tests passed!` (o unitário mudou, não somou).
+- Mutação extra (declarada, o plano não lista uma para a C-F11): tirar as 2 entradas de material do conjunto → `+6 -1`, o caso dos duráveis (`Expected: true / Actual: false`); restaurada, md5 igual.
+- `git diff --check` verde. Head antes do commit: `459c2f5060ff5b9ba38238527bd6909244f5f240`.
+- Próximo passo exato: commit e push da C-F11; então a C-F12 (docs: `docs/mobile-sync-contracts.md` l.251-325, `docs/api.md` l.185, nota no `RBAC_MATRIX.md` §D2 com a frase da Emenda C2).
