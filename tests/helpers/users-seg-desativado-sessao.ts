@@ -3,6 +3,8 @@ import type { Server } from "node:http";
 import type { PrismaClient } from "@prisma/client";
 import { decodeJwt } from "jose";
 
+import { createPrismaClient } from "../../src/database/pg-connection.js";
+
 import {
   cleanupIdentityFixture,
   closeServer,
@@ -65,13 +67,11 @@ export async function montarSessaoReal(
     // arquivo não escreve catálogo). Com esta opção, SÓ a listagem de candidatos atravessa a função pela conexão do
     // administrador; a verificação da credencial, a sessão e a assinatura seguem no papel efêmero.
     readonly candidatosPeloAdministrador?: boolean;
+    readonly criarCliente?: (url: string) => PrismaClient;
   } = {},
 ): Promise<SessaoRealHarness> {
-  const [{ PrismaPg }, { PrismaClient: Client }] = await Promise.all([
-    import("@prisma/adapter-pg"),
-    import("@prisma/client"),
-  ]);
-  const admin = new Client({ adapter: new PrismaPg({ connectionString }) });
+  const criar = options.criarCliente ?? createPrismaClient;
+  const admin = criar(connectionString);
   const role = await createEphemeralRole(admin, connectionString);
   const client = options.embrulharCliente ? options.embrulharCliente(role.client) : role.client;
 

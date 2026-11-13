@@ -4,6 +4,8 @@ import type { AddressInfo } from "node:net";
 
 import type { Prisma, PrismaClient } from "@prisma/client";
 
+import { createPrismaClient } from "../../src/database/pg-connection.js";
+
 // -----------------------------------------------------------------------------------------------
 // B-O6R-01 — arnês compartilhado das suítes -db de identidade. Regras do §7 que ele materializa:
 //   - role EFÊMERA NOSUPERUSER (precedente tests/rls-tenant-isolation.test.ts:20-45): o único
@@ -324,10 +326,8 @@ export async function dropEphemeralRoleResilient(
 export async function createEphemeralRole(
   adminClient: PrismaClient,
   connectionString: string,
+  criarCliente: (url: string) => PrismaClient = createPrismaClient,
 ): Promise<EphemeralRole> {
-  const { PrismaPg } = await import("@prisma/adapter-pg");
-  const { PrismaClient } = await import("@prisma/client");
-
   const roleName = `o6r_b01_${Date.now()}_${Math.random().toString(16).slice(2)}`;
   const rolePassword = `o6r-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -345,11 +345,9 @@ export async function createEphemeralRole(
     );
   });
 
-  const client = new PrismaClient({
-    adapter: new PrismaPg({
-      connectionString: buildConnectionStringForRole(connectionString, roleName, rolePassword),
-    }),
-  });
+  const client = criarCliente(
+    buildConnectionStringForRole(connectionString, roleName, rolePassword),
+  );
 
   return {
     roleName,
