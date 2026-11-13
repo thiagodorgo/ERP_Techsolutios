@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **976** |
 | IDs distintos | 964 |
-| **ABERTAS** | **749** |
+| **ABERTAS** | **748** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **688** |
+| — das quais **ativas nesta rodada** | **687** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 223 |
+| FECHADAS | 224 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **976 cabecalhos para 964 IDs**, porque
 > **7 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -394,7 +394,7 @@
 | `P-MATERIAL-LACO-G-SEM-RECEITA` | 14623 | ALTA | sim | P-MATERIAL-LACO-G-SEM-RECEITA (2026-11-13) — o laço G do `o6r07c-subresource-scope` não  |
 | `P-MATERIAL-RC4B-SEM-FATIA` | 14638 | MÉDIA | sim | P-MATERIAL-RC4B-SEM-FATIA (2026-11-13) — o RC4b do plano (contrato Dart × TS do material |
 
-## ABERTAS · balde B — processo/registro — 369
+## ABERTAS · balde B — processo/registro — 368
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -766,7 +766,6 @@
 | `P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA` | 14587 | BAIXA | sim | P-C4-04-FEATURE-PROVISIONADA-SEM-ROTA (2026-11-12) — `logistics`, `users` e `audit` prov |
 | `P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE` | 14616 | BAIXA | sim | P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE (2026-11-13) — a matriz dá `read` ao `man |
 | `P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO` | 14631 | BAIXA | sim | P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO (2026-11-13) — adição de material que já f |
-| `P-SAN3-ITEM-63-DUPLICADO` | 14645 | BAIXA | sim | P-SAN3-ITEM-63-DUPLICADO (2026-11-13) — o número 63 do §4.1 do `PLANO_SAN3.md` foi dado  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -834,7 +833,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3751 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3795 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 223
+## FECHADAS — 224
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1061,3 +1060,4 @@
 | `P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS` | 14511 | — | **a atribuir** | P-SAN3-08-LIMPEZA-VARRE-TABELAS-ALHEIAS (2026-11-12) — a limpeza do `san3-08` varre tabe |
 | `P-PORTAO-ITEM-GATE-CHAVE` | 14594 | — | sim | P-PORTAO-ITEM-GATE-CHAVE (2026-11-12) — acrescentar a P-MOBILE-GATE-CHAVE-FORA-DO-CATALO |
 | `P-PAINEL-HORA-DA-MEDICAO` | 14602 | BAIXA | sim | P-PAINEL-HORA-DA-MEDICAO (2026-11-13) — a hora da medição da Codex ficava em branco e o  |
+| `P-SAN3-ITEM-63-DUPLICADO` | 14645 | BAIXA | sim | P-SAN3-ITEM-63-DUPLICADO (2026-11-13) — o número 63 do §4.1 do `PLANO_SAN3.md` foi dado  |
