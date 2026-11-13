@@ -187,8 +187,9 @@ test("[A4] createInvoiceSubmitter: dois submit() sem aguardar → invoice chamad
   });
   const first = submit();
   const second = submit("2026-12-31");
-  assert.deepEqual(await second, { kind: "ignored" }, "o 2º envio em voo é ignorado");
+  // Conta ANTES de aguardar: sem a trava, o 2º envio chama invoice na hora e fica preso (o teste reprova aqui, sem travar).
   assert.equal(bodies.length, 1, "invoice chamado 1 vez");
+  assert.deepEqual(await second, { kind: "ignored" }, "o 2º envio em voo é ignorado");
   assert.ok(release, "o 1º envio está preso");
   release!();
   const done = await first;
