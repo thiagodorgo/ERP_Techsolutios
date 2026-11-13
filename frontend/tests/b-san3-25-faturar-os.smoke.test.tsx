@@ -95,11 +95,13 @@ test("[A2] originalAmount: no 1º faturamento é o totalAmount do servidor; com 
   const delta = invoiceActionState(DELTA, FINANCE, "completed");
   assert.equal(delta.originalAmount, null, "complementar: a tela não mostra total antes (P-SAN3-25-PREVIA-DO-COMPLEMENTAR)");
 
-  const render = (state: { pendingItems: readonly unknown[]; originalAmount: number | null }) =>
+  const render = (state: { pendingItems: readonly unknown[]; originalAmount: number | null }, os: { code?: string; title?: string } = { code: "OS-77", title: "Reboque" }) =>
     renderToString(
       <InvoiceWorkOrderDialog
         context={CTX}
         workOrderId="wo-1"
+        workOrderCode={os.code}
+        workOrderTitle={os.title}
         pendingItems={state.pendingItems as never}
         originalAmount={state.originalAmount}
         currency="BRL"
@@ -123,6 +125,12 @@ test("[A2] originalAmount: no 1º faturamento é o totalAmount do servidor; com 
   assert.match(deltaHtml, /O valor do título é a soma destes itens, calculada pelo servidor no faturamento\./, "frase do complementar");
   assert.match(deltaHtml, /Diária de pátio/, "o pendente do complementar");
   assert.doesNotMatch(deltaHtml, /Guincho leve/, "o item já faturado não volta na confirmação");
+
+  // Emenda 2 (E2.2): o subtítulo "<código> · <título da OS>", com os valores da OS; sem título, só o código.
+  assert.ok(firstHtml.includes(">OS-77 · Reboque<"), "subtítulo com o código e o título da OS");
+  const noTitle = render(first, { code: "OS-77", title: "" });
+  assert.ok(noTitle.includes(">OS-77<"), "sem título, o subtítulo é só o código");
+  assert.ok(!noTitle.includes("OS-77 ·"), "sem título, nada de separador pendurado");
 });
 
 // ---------------------------------------------------------------- A3 · a tela não soma dinheiro

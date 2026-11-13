@@ -194,7 +194,7 @@ export function WorkOrderDetailView({
         {/* Conteúdo por aba (C2: só abas acesas chegam aqui). Ω3F-3 acende "Financeiro"; as demais
             entram nos blocos seguintes. `accessAllowed=false` já é tratado pelo shell (§7). */}
         {activeTab === "financeiro" ? (
-          <FinancialTab workOrderId={workOrder.id} context={context} permissions={permissions} />
+          <FinancialTab workOrderId={workOrder.id} workOrderStatus={workOrder.status} workOrderCode={workOrder.code} workOrderTitle={workOrder.title} context={context} permissions={permissions} />
         ) : activeTab === "orcamento" ? (
           <QuoteTab workOrderId={workOrder.id} context={context} permissions={permissions} />
         ) : activeTab === "comentarios" ? (

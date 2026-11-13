@@ -1,23 +1,39 @@
 import type { CSSProperties } from "react";
-import { useCallback, useEffect, useState } from "react";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pencil, Plus, Receipt, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
 
+import { Alert } from "../../../../components/ui";
+import { formatDueDate, getTitleStatusLabel, getTitleStatusTone } from "../../../finance/titles/financial-titles.adapter";
 import {
   createManualFinancialItem,
   createTariffFinancialItem,
   deleteFinancialItem,
   formatMoney,
+  getWorkOrderInvoiceTitle,
   listWorkOrderFinancials,
   patchFinancialItem,
 } from "../../financials.service";
-import type { WorkOrderFinancialApiContext, WorkOrderFinancialItem, WorkOrderFinancialList } from "../../financials.types";
+import type {
+  WorkOrderFinancialApiContext,
+  WorkOrderFinancialItem,
+  WorkOrderFinancialList,
+  WorkOrderInvoiceResult,
+  WorkOrderInvoiceTitle,
+} from "../../financials.types";
+import { invoiceActionState, invoiceResultNotice, type InvoiceNotice, type InvoiceOutcome } from "../../work-order-invoice.model";
+import type { WorkOrderStatus } from "../../work-orders.types";
 import { listServiceCatalogFromApi } from "../../../registry/service-catalog/service-catalog.service";
 import type { ServiceItem } from "../../../registry/service-catalog/service-catalog.types";
+import { InvoiceWorkOrderDialog, type InvoiceShown } from "../InvoiceWorkOrderDialog";
 
 // Ω3F-3b — aba "Financeiro" do Hub da OS (spec §1.3 / §1.1 0:24–1:08): itens da tabela de valores
 // (valor CONGELADO no lançamento, anti-refaturamento) + item avulso ("+", ex.: pedágio) + edição
 // inline + TOTAL automático (somado no BACKEND — o front nunca soma). Estados §7: loading/erro/vazio;
 // "acesso não permitido" é tratado pelo shell (a aba exige work_order_financials:read).
+// B-SAN3-25 (item 50) — a aba fatura a OS: botão "Faturar OS" (só com financial_titles:create, item pendente e OS não
+// cancelada), diálogo de confirmação, aviso com o valor que o SERVIDOR faturou (e a divergência, se houver), chip
+// "Faturado" sem editar nem excluir, e o quadro "Títulos desta OS". A recusa vira a frase da lista fechada do modelo.
 
 const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14 };
 const th: CSSProperties = { fontSize: 11.5, color: "#94A3B8", fontWeight: 700, textAlign: "left", padding: "10px 14px", textTransform: "uppercase", letterSpacing: ".3px" };
@@ -25,6 +41,18 @@ const td: CSSProperties = { fontSize: 13, color: "#0F172A", padding: "12px 14px"
 const input: CSSProperties = { width: "100%", padding: "8px 10px", border: "1px solid #CBD5E1", borderRadius: 8, fontSize: 13, fontFamily: "inherit", boxSizing: "border-box" };
 const iconBtn: CSSProperties = { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff", color: "#475569", cursor: "pointer" };
 const primaryBtn: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 15px", background: "#2563EB", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" };
+const pill: CSSProperties = { fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 99, whiteSpace: "nowrap" };
+// Mesma cor do "Pago" do Financeiro (`financial-titles.adapter.ts`, STATUS_TONE.paid).
+const invoicedPill: CSSProperties = { ...pill, background: "#ECFDF5", color: "#059669" };
+const errorBox: CSSProperties = { marginTop: 14, padding: "10px 13px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 9, fontSize: 12.5, color: "#B91C1C" };
+
+type TitleRow =
+  | { readonly kind: "loaded"; readonly title: WorkOrderInvoiceTitle }
+  | { readonly kind: "removed" | "failed"; readonly id: string };
+
+function isNotFoundError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { readonly status?: unknown }).status === 404;
+}
 
 type EditState = { readonly quantity: string; readonly unitAmount: string; readonly notes: string };
 type ManualState = { readonly description: string; readonly unitAmount: string; readonly quantity: string; readonly notes: string };
@@ -34,15 +62,25 @@ const EMPTY_TARIFF: TariffState = { serviceCatalogId: "", quantity: "1", notes: 
 
 export function FinancialTab({
   workOrderId,
+  workOrderStatus,
+  workOrderCode,
+  workOrderTitle,
   context,
   permissions,
+  initialData,
 }: {
   workOrderId: string;
+  // B-SAN3-25 — a situação da OS (o botão some na cancelada) e o código e o título para o subtítulo do diálogo (E2.2).
+  workOrderStatus?: WorkOrderStatus;
+  workOrderCode?: string;
+  workOrderTitle?: string;
   context: WorkOrderFinancialApiContext;
   permissions: readonly string[];
+  // Lista já conhecida (teste, SSR). Sem ela, a aba lê do servidor ao abrir.
+  initialData?: WorkOrderFinancialList;
 }) {
-  const [data, setData] = useState<WorkOrderFinancialList | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<WorkOrderFinancialList | null>(initialData ?? null);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -56,8 +94,18 @@ export function FinancialTab({
   const [services, setServices] = useState<readonly ServiceItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
 
+  // B-SAN3-25 — faturamento e títulos da OS.
+  const [invoicing, setInvoicing] = useState(false);
+  const [notice, setNotice] = useState<InvoiceNotice | null>(null);
+  const [invoiceMessage, setInvoiceMessage] = useState<string | null>(null);
+  const [titles, setTitles] = useState<readonly TitleRow[]>([]);
+  const [titlesLoading, setTitlesLoading] = useState(false);
+
   const canCreate = permissions.includes("work_order_financials:create");
   const canUpdate = permissions.includes("work_order_financials:update");
+  const canReadTitles = permissions.includes("financial_titles:read");
+  // A guarda da rota do Financeiro (`App.tsx`, `/finance`): basta uma das duas.
+  const canOpenFinance = permissions.includes("financial_entries:read") || permissions.includes("finance:read");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -177,8 +225,65 @@ export function FinancialTab({
     }
   };
 
+  // ---------- B-SAN3-25 — faturar ----------
+
+  const openInvoice = () => {
+    setNotice(null);
+    setInvoiceMessage(null);
+    setInvoicing(true);
+  };
+
+  const handleInvoiced = async (result: WorkOrderInvoiceResult, shown: InvoiceShown) => {
+    setInvoicing(false);
+    setNotice(
+      invoiceResultNotice(shown, {
+        invoicedTotal: result.invoicedTotal,
+        currency: result.currency,
+        invoicedItemCount: result.invoicedItemCount,
+        parentTitleId: result.title.parentTitleId,
+      }),
+    );
+    await load();
+  };
+
+  const handleInvoiceFailed = (outcome: InvoiceOutcome) => {
+    setInvoicing(false);
+    setInvoiceMessage(outcome.message);
+    if (outcome.reload) void load();
+  };
+
   const items = data?.items ?? [];
   const currency = data?.currency ?? "BRL";
+  const invoiceAction = data ? invoiceActionState(data, permissions, workOrderStatus) : null;
+
+  // ---------- B-SAN3-25 — títulos desta OS: uma leitura por título distinto ----------
+  const titleKey = useMemo(() => [...new Set(items.map((item) => item.titleId).filter((id): id is string => id !== null))].join("|"), [items]);
+
+  useEffect(() => {
+    if (!canReadTitles || titleKey === "") {
+      setTitles((current) => (current.length === 0 ? current : []));
+      setTitlesLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setTitlesLoading(true);
+    void Promise.all(
+      titleKey.split("|").map(async (id): Promise<TitleRow> => {
+        try {
+          return { kind: "loaded", title: await getWorkOrderInvoiceTitle(context, id) };
+        } catch (error) {
+          return { kind: isNotFoundError(error) ? "removed" : "failed", id };
+        }
+      }),
+    ).then((rows) => {
+      if (cancelled) return;
+      setTitles(rows);
+      setTitlesLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [canReadTitles, context, titleKey]);
 
   return (
     <div style={{ ...card, padding: 20 }}>
@@ -187,20 +292,56 @@ export function FinancialTab({
           <div style={{ fontSize: 15, fontWeight: 800 }}>Itens financeiros</div>
           <div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>Serviços da tabela de valores do cliente (valor congelado no lançamento) e itens avulsos.</div>
         </div>
-        {canCreate ? (
+        {canCreate || invoiceAction?.visible ? (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button type="button" style={primaryBtn} disabled={busy} onClick={() => void openTariffForm()}>
-              <Plus size={16} /> Lançar da tabela
-            </button>
-            <button type="button" style={{ ...primaryBtn, background: "#fff", color: "#2563EB", border: "1px solid #BFDBFE" }} disabled={busy} onClick={() => { setAdding((v) => !v); setAddingTariff(false); }}>
-              <Plus size={16} /> Item avulso
-            </button>
+            {invoiceAction?.visible ? (
+              <button type="button" style={primaryBtn} disabled={busy || loading || invoicing} onClick={openInvoice}>
+                <Receipt size={16} /> Faturar OS
+              </button>
+            ) : null}
+            {canCreate ? (
+              <>
+                <button type="button" style={primaryBtn} disabled={busy} onClick={() => void openTariffForm()}>
+                  <Plus size={16} /> Lançar da tabela
+                </button>
+                <button type="button" style={{ ...primaryBtn, background: "#fff", color: "#2563EB", border: "1px solid #BFDBFE" }} disabled={busy} onClick={() => { setAdding((v) => !v); setAddingTariff(false); }}>
+                  <Plus size={16} /> Item avulso
+                </button>
+              </>
+            ) : null}
           </div>
         ) : null}
       </div>
 
       {error ? (
-        <div style={{ marginTop: 14, padding: "10px 13px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 9, fontSize: 12.5, color: "#B91C1C" }}>{error}</div>
+        <div style={errorBox}>{error}</div>
+      ) : null}
+
+      {/* B-SAN3-25 — o desfecho do faturamento. Sucesso: o valor que o SERVIDOR faturou; se ele difere do que a
+          confirmação mostrou, a frase de divergência (R-DIVERGE). Recusa: a frase da lista fechada do modelo. */}
+      {notice ? (
+        <div role="status" style={{ marginTop: 14, display: "grid", gap: 8 }}>
+          <Alert title="Faturamento concluído" tone="info">{notice.message}</Alert>
+          {notice.divergence ? <Alert title="Confira os valores" tone="warning">{notice.divergence}</Alert> : null}
+        </div>
+      ) : null}
+      {invoiceMessage ? (
+        <div role="alert" style={errorBox}>{invoiceMessage}</div>
+      ) : null}
+
+      {invoicing && invoiceAction ? (
+        <InvoiceWorkOrderDialog
+          context={context}
+          workOrderId={workOrderId}
+          workOrderCode={workOrderCode}
+          workOrderTitle={workOrderTitle}
+          pendingItems={invoiceAction.pendingItems}
+          originalAmount={invoiceAction.originalAmount}
+          currency={currency}
+          onInvoiced={(result, shown) => void handleInvoiced(result, shown)}
+          onFailed={handleInvoiceFailed}
+          onClose={() => setInvoicing(false)}
+        />
       ) : null}
 
       {addingTariff && canCreate ? (
@@ -285,7 +426,10 @@ export function FinancialTab({
                 return (
                   <tr key={item.id}>
                     <td style={td}>
-                      <div style={{ fontWeight: 600 }}>{item.description}</div>
+                      <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        {item.description}
+                        {item.invoiced ? <span style={invoicedPill}>Faturado</span> : null}
+                      </div>
                       {editing ? (
                         <input style={{ ...input, marginTop: 6 }} value={edit.notes} placeholder="Observação" onChange={(e) => setEdit({ ...edit, notes: e.target.value })} />
                       ) : item.notes ? (
@@ -313,7 +457,8 @@ export function FinancialTab({
                     </td>
                     <td style={{ ...td, textAlign: "right", fontWeight: 700 }}>{formatMoney(item.totalAmount, item.currency)}</td>
                     <td style={{ ...td, textAlign: "right" }}>
-                      {canUpdate ? (
+                      {/* Item faturado não se edita nem se exclui (o servidor recusa com 422 item_invoiced). */}
+                      {canUpdate && !item.invoiced ? (
                         editing ? (
                           <div style={{ display: "inline-flex", gap: 6 }}>
                             <button type="button" style={{ ...iconBtn, borderColor: "#2563EB", color: "#2563EB" }} disabled={busy} onClick={() => void saveEdit(item)} aria-label="Salvar item">✓</button>
@@ -343,6 +488,60 @@ export function FinancialTab({
           </table>
         </div>
       )}
+
+      {/* B-SAN3-25 — "Títulos desta OS": só com financial_titles:read; uma leitura por título distinto dos itens. */}
+      {canReadTitles && titleKey !== "" ? (
+        <div style={{ marginTop: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 14, fontWeight: 800 }}>Títulos desta OS</div>
+            {canOpenFinance ? (
+              <Link to="/finance?aba=rec" style={{ fontSize: 12.5, fontWeight: 700, color: "#2563EB" }}>Ver no Financeiro</Link>
+            ) : null}
+          </div>
+          {titlesLoading && titles.length === 0 ? (
+            <div style={{ marginTop: 10, fontSize: 12.5, color: "#94A3B8" }}>Carregando títulos desta OS…</div>
+          ) : (
+            <div style={{ marginTop: 10, overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 520 }}>
+                <thead>
+                  <tr>
+                    <th style={th}>Título</th>
+                    <th style={{ ...th, textAlign: "right" }}>Valor</th>
+                    <th style={th}>Vencimento</th>
+                    <th style={th}>Situação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {titles.map((row) =>
+                    row.kind === "loaded" ? (
+                      <tr key={row.title.id}>
+                        <td style={td}>{row.title.parentTitleId ? "Complementar" : "Original"}</td>
+                        <td style={{ ...td, textAlign: "right", fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{formatMoney(row.title.amount, row.title.currency)}</td>
+                        <td style={td}>{formatDueDate(row.title.dueDate)}</td>
+                        <td style={td}>
+                          {row.title.status ? (
+                            <span style={{ ...pill, background: getTitleStatusTone(row.title.status).bg, color: getTitleStatusTone(row.title.status).color }}>
+                              {getTitleStatusLabel(row.title.status)}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr key={row.id}>
+                        <td style={{ ...td, color: "#64748B" }} colSpan={4}>
+                          {row.kind === "removed" ? "Título removido" : "Não foi possível carregar este título."}
+                        </td>
+                      </tr>
+                    ),
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

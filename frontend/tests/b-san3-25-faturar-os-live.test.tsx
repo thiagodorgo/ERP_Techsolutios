@@ -952,3 +952,70 @@ test("[L11] 401 session_inactive com o refresh recusado → a frase da sessão; 
     await view.unmount();
   }
 });
+
+// =============================== L12 · a página monta a aba com a OS (Emenda 2, E2.2) ===============================
+
+test("[L12] a página real (WorkOrderDetailView, aba Financeiro) passa a situação, o código e o título da OS: o diálogo mostra 'OS-77 · Reboque'; OS cancelada não mostra o botão", async () => {
+  const { WorkOrderDetailView } = await import("../src/modules/work-orders/pages/WorkOrderDetailPage");
+  const renderDetail = async (status: string) => {
+    server = { list: listDto([itemDto(ITEM_A), itemDto(ITEM_B)], 100), titles: {} };
+    dom.storage.clear();
+    setStoredAuthSession({ ...mockSession, user: { ...mockSession.user, permissions: [...FINANCE] } });
+    installFetch();
+    const container = dom.doc.body.appendChild(dom.doc.createElement("div"));
+    const root = createRoot(container as unknown as Element);
+    const workOrder = { id: WO, code: "OS-77", title: "Reboque", status, priority: "high", customerName: "Cliente Alfa", createdAt: STAMP, links: null };
+    await act(async () => {
+      root.render(
+        h(
+          MemoryRouter,
+          null,
+          h(WorkOrderDetailView, {
+            workOrder: workOrder as never,
+            timeline: [],
+            loading: false,
+            status: "ready",
+            error: null,
+            stale: false,
+            lastUpdatedAt: null,
+            timelineUnavailable: false,
+            context: CTX,
+            permissions: [...FINANCE],
+            activeTab: "financeiro",
+            onSelectTab: () => undefined,
+            onRefresh: () => undefined,
+          }),
+        ),
+      );
+    });
+    await settle();
+    return {
+      container,
+      unmount: async () => {
+        await act(async () => root.unmount());
+        dom.doc.body.removeChild(container);
+      },
+    };
+  };
+
+  const open = await renderDetail("completed");
+  try {
+    assert.equal(listReads(), 1, "a aba Financeiro da página leu a lista");
+    const opened = await openDialog(open.container);
+    const subtitle = all(opened, (el) => el.localName === "p" && text(el).startsWith("OS-77"))[0];
+    assert.ok(subtitle, "o diálogo tem o subtítulo da OS");
+    assert.equal(text(subtitle).trim(), "OS-77 · Reboque", "subtítulo com o código e o título que a página passou");
+    assert.deepEqual(unexpected, [], "nenhuma rota fora do contrato");
+  } finally {
+    await open.unmount();
+  }
+
+  const cancelled = await renderDetail("cancelled");
+  try {
+    assert.equal(listReads(), 1, "a lista foi lida");
+    assert.equal(buttonByText(cancelled.container, "Faturar OS"), undefined, "OS cancelada: a página passa a situação e o botão some (Q1 = A)");
+    assert.deepEqual(unexpected, [], "nenhuma rota fora do contrato");
+  } finally {
+    await cancelled.unmount();
+  }
+});
