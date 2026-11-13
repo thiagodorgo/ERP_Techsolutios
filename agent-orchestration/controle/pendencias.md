@@ -13430,12 +13430,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `src/app.ts` e `webhooks/webhook-runtime.ts` (`clientIp`) · **dono:** `B-ASS-08c`.
 - **origem:** J-530, C2-A1 (dentro do bloco, não grave). `webhook-runtime.ts` usa `req.ip`; o dinheiro se recupera pelo poll-pending (atraso, não perda). Que o `req.ip` no Fly seja o do proxy é derivado da topologia, não medido. Registrado pelo conserto da J-530 (plano `B-ASS-08b-conserto-530-v2.md` §8).
 - **teste de encerramento:** com `trust proxy` no salto do Fly, 20 × 401 de um `X-Forwarded-For` não bloqueiam outro pelo mesmo socket; `X-Forwarded-For` forjado com mais saltos não escolhe o IP.
+- **em fechamento pelo `B-ASS-08c-wh` (2026-11-13; fecha no merge, conferido pelo porteiro):** o IP sai de `webhookClientIp(req, BILLING_WEBHOOK_TRUSTED_PROXY_HOPS)` (P25), **sem** `trust proxy` no app; testes-dono IP1–IP3 (`tests/ass-08c-webhook-ip.test.ts`), mutação M27 vermelha. **Premissa corrigida (A14 do plano v2):** a borda é a AWS (`D-INFRA-PROVIDER-AWS`), não o Fly; ALB em modo *append*, CloudFront + ALB = 2 saltos **[HIPÓTESE, fonte da crítica r1, não medida]**. Medir os saltos na borda escolhida é ato do dono; ligar em produção com 0 saltos é recusado (`webhook_proxy_hops_unset`, P23).
 
 ## P-ASS08C-COTA-IP-BLOQUEADO (2026-11-11) — IP já bloqueado ainda consome a cota global do provedor — MÉDIA (bloqueia ligar o canal)
 
 - **status:** ABERTA · **escopo:** `webhooks/subscription-billing.webhook.routes.ts` (`allowGlobal` × `isIpBlocked`) e `webhook.rate-limit.ts` · **dono:** `B-ASS-08c`.
 - **origem:** J-530, C2-A2 (anterior ao bloco: `d5ec1696`/#522). Registrado pelo conserto da J-530 (plano v2 §8).
 - **teste de encerramento:** o atacante bloqueado manda 1 000 pedidos e o legítimo seguinte recebe 200; a mutação "allowGlobal antes de isIpBlocked" fica vermelha.
+- **em fechamento pelo `B-ASS-08c-wh` (2026-11-13; fecha no merge, conferido pelo porteiro):** `isIpBlocked(ip)` antes de `allowGlobal(provider)` (P26); teste-dono IP4, mutação M28 vermelha. A classe (cota gasta antes da autenticação) **não** fecha: segue na `P-ASS08C-COTA-ANTES-DA-AUTENTICACAO`.
 
 ## P-ASS08C-NOTA-DA-BAIXA-MANUAL (2026-11-11) — baixa/estorno manuais sem intenção de nota, e o PASSADO sem nota — ALTA (bloqueia ligar o provedor de NOTA)
 
@@ -14592,3 +14594,20 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** o painel de agentes mostrava a hora da medição da Codex em branco. No PowerShell 7, `ConvertFrom-Json` já entregava o campo como `DateTime`; a chamada posterior a `Parse` falhava em silêncio. Por isso, o aviso de medição velha nunca disparava.
 - **fechamento:** o tratamento foi corrigido em 13/11 no painel externo ao repositório.
 - **lição:** medição que falha em silêncio é *fail-open*; o arnês deve tornar a falha visível e não tratar a ausência de hora como medição válida.
+
+## P-ASS08C-COTA-ANTES-DA-AUTENTICACAO (2026-11-13) — a cota global do webhook é gasta antes da autenticação; IPs rotativos a esgotam — MÉDIA (bloqueia ligar o canal, Emenda 1 R2-02 do plano 08c v2)
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a ordem cota → autenticação vem do B-ASS-08, `webhook.rate-limit.ts`; o `B-ASS-08c-wh` fecha só a letra da `P-ASS08C-COTA-IP-BLOQUEADO`) · **dono:** `B-ASS-08c-wh2`, ou o primeiro bloco que tocar `webhooks/**` depois do ligar · **bloqueia:** ligar o canal, até o R2-02 (poll-pending pela cobrança viva da tabela, 08c1c) entrar — sem ele o dinheiro não se recupera pelo poll.
+- **origem:** A12 da crítica r1 do plano 08c (`crit-08c-cl`), registrada pelo `B-ASS-08c-wh` (CA-29).
+- **N e forma (medido pelo dev `dev-08cwh-api` em 2026-11-13, sobre o head do bloco, relógio fixo, `hops = 1`, limitador padrão, sonda descartável fora do repositório):** 600 pedidos sem autenticação dentro de 60 s esgotam a cota do provedor e o legítimo seguinte recebe 429. Com 20 falhas por IP (o limite antes do bloqueio), bastam **30 IPs** (29 IPs × 20 = 580 → 200; 30 × 20 = 600 → 429); com 1 falha por IP, 600 IPs (599 → 200; 600 → 429). O número da crítica ("60 IPs com 1 falha cada") **não se reproduziu** com o limitador padrão. IPv6: cada endereço conta como um IP distinto, então um /64 dá IPs à vontade.
+- **causa:** `allowGlobal(provider)` conta todo pedido não bloqueado, antes do `verify`; o bloqueio por IP só pesa depois de 20 falhas daquele endereço.
+- **proposta (da crítica, não decidida):** contar a cota depois da autenticação, ou dividi-la em antes e depois; e bloquear por /64 no IPv6.
+- **critério de encerramento:** com N IPs rotativos (inclusive no mesmo /64) mandando pedidos sem autenticação, o provedor legítimo continua recebendo 200; teste-dono com mutação vermelha.
+
+## P-AUTH-IP-ATRAS-DO-PROXY (2026-11-13) — o limitador do login usa o IP do socket, que na borda AWS é o balanceador — MÉDIA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6) · **escopo:** `pre-existente` (`src/modules/auth/routes/auth.routes.ts:686-693`, do `B-O6R-07a`; os portais em `src/modules/owner-portal/owner-portal.controller.ts` e `src/modules/authority/*.controller.ts` usam a mesma forma) · **dono:** a definir pelo orquestrador (o `B-ASS-08c-wh` tem `src/modules/auth/**` no PROIBIDO) · **bloqueia:** não declarado; o orquestrador decide antes da produção.
+- **origem:** plano 08c v2 §2.1 (P27b), registrada pelo `B-ASS-08c-wh` (CA-29).
+- **fato:** sem `trust proxy`, `request.ip` é o socket. Atrás da borda AWS (ALB; CloudFront + ALB = 2 saltos **[HIPÓTESE, fonte da crítica r1, não medida]**), o socket é o balanceador: o limitador de tentativas do login conta todos os clientes como um só IP — um atacante bloqueia o login de todos, e o limite por IP deixa de separar ninguém.
+- **causa:** a escolha de `trust proxy` foi deixada para a infra (comentário em `auth.routes.ts:689`), e a borda mudou de Fly para AWS (`D-INFRA-PROVIDER-AWS`).
+- **critério de encerramento:** o login resolve o IP pelos saltos confiáveis medidos na borda (no molde do `webhookClientIp` do `B-ASS-08c-wh`), com teste: 20 falhas de um `X-Forwarded-For` não bloqueiam outro pelo mesmo socket, e o cabeçalho forjado com mais saltos não escolhe o IP.
