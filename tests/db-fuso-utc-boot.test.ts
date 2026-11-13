@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import ts from "typescript";
 
@@ -11,6 +12,7 @@ import {
   type SessionTimezoneBootstrapLogger,
 } from "../src/database/session-timezone.bootstrap.js";
 import {
+  acceptsSessionTimezoneUtc,
   DATABASE_SESSION_TIMEZONE_NOT_UTC,
   DatabaseSessionTimezoneError,
 } from "../src/database/session-timezone.js";
@@ -122,6 +124,36 @@ for (const timezone of ["America/Sao_Paulo", "Europe/London", "GMT0"]) {
   });
 }
 
+// B2b (J-554, C2-A1): o aceite é a comparação EXATA com os literais `UTC` e `Etc/UTC`, depois do `trim`. Outra caixa
+// não é o literal e é recusada; normalizar a caixa (`toUpperCase`) faria `utc` e `etc/utc` passarem.
+for (const timezone of ["utc", "etc/utc", "Etc/utc", "ETC/UTC"]) {
+  test(`B2b · recusa \`${timezone}\` (outra caixa não é o literal)`, async () => {
+    const fake = fakeClient(() => [{ tz: timezone }]);
+    const { logger, entries } = spyLogger();
+
+    await assert.rejects(
+      () => assertDatabaseSessionTimezoneUtc({ logger, loadClient: async () => fake.client }),
+      (error: unknown) => {
+        assert.ok(error instanceof DatabaseSessionTimezoneError, String(error));
+        assert.equal(error.code, DATABASE_SESSION_TIMEZONE_NOT_UTC);
+        assert.equal(error.timezone, timezone);
+        return true;
+      },
+    );
+    assert.equal(fake.disconnects(), 1, "a recusa tem de fechar a conexão");
+    const refusal = entries.find((entry) => entry.level === "error");
+    assert.ok(refusal, JSON.stringify(entries));
+    assert.deepEqual(refusal.payload, { guard: "timezone", timezone });
+  });
+}
+
+test("B2b · o aceite compara depois do `trim`: espaço em volta do literal passa, o miolo não muda", () => {
+  assert.equal(acceptsSessionTimezoneUtc(" UTC "), true);
+  assert.equal(acceptsSessionTimezoneUtc("\tEtc/UTC\n"), true);
+  assert.equal(acceptsSessionTimezoneUtc(" utc "), false);
+  assert.equal(acceptsSessionTimezoneUtc("Etc/ UTC"), false);
+});
+
 test("B3 · recusa fuso vazio", async () => {
   const fake = fakeClient(() => [{ tz: "" }]);
   const { logger, entries } = spyLogger();
@@ -204,13 +236,74 @@ function calleeName(call: ts.CallExpression): string | undefined {
   return ts.isIdentifier(call.expression) ? call.expression.text : undefined;
 }
 
-test("B6 · server.ts chama a trava de fuso depois do papel e antes de createCoreSaasService (pela AST)", () => {
-  const source = ts.createSourceFile(
-    "server.ts",
-    readFileSync(new URL("../src/server.ts", import.meta.url), "utf8"),
-    ts.ScriptTarget.Latest,
-    true,
+// B6 (J-554, C2-A3) também confere a LIGAÇÃO do identificador, pelo checker do TypeScript: a forma sintática não basta,
+// porque uma declaração local homônima dentro de `main` (`const assertDatabaseSessionTimezoneUtc = async () => {}`)
+// sombreia o import, deixa a chamada no lugar e desliga a trava. O checker resolve o identificador chamado
+// (`getSymbolAtLocation`); ele tem de ser o alias do import de `./database/session-timezone.bootstrap.js`, e o alias tem
+// de resolver (`getAliasedSymbol`) para a declaração `assertDatabaseSessionTimezoneUtc` em
+// `src/database/session-timezone.bootstrap.ts`. O programa só enxerga `src/` (sem lib nem node_modules): o que a
+// ligação precisa está ali, e o que ficar fora não resolve, então a falha fecha.
+const REPO_ROOT = fileURLToPath(new URL("..", import.meta.url));
+const SERVER_TS = fileURLToPath(new URL("../src/server.ts", import.meta.url));
+const TIMEZONE_BOOTSTRAP_REL = "src/database/session-timezone.bootstrap.ts";
+
+function repoRelative(fileName: string): string {
+  return path.relative(REPO_ROOT, fileName).split(path.sep).join("/");
+}
+
+let serverProgramCache: { readonly source: ts.SourceFile; readonly checker: ts.TypeChecker } | undefined;
+
+function serverProgram(): { readonly source: ts.SourceFile; readonly checker: ts.TypeChecker } {
+  if (serverProgramCache !== undefined) return serverProgramCache;
+  const options: ts.CompilerOptions = {
+    target: ts.ScriptTarget.ES2022,
+    module: ts.ModuleKind.NodeNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeNext,
+    noEmit: true,
+    noLib: true,
+    types: [],
+  };
+  const host = ts.createCompilerHost(options, true);
+  const insideSrc = (fileName: string): boolean => repoRelative(fileName).startsWith("src/");
+  const fileExists = host.fileExists.bind(host);
+  const getSourceFile = host.getSourceFile.bind(host);
+  host.fileExists = (fileName) => insideSrc(fileName) && fileExists(fileName);
+  host.getSourceFile = (fileName, languageVersion, onError, shouldCreate) =>
+    insideSrc(fileName) ? getSourceFile(fileName, languageVersion, onError, shouldCreate) : undefined;
+  const program = ts.createProgram({ rootNames: [SERVER_TS], options, host });
+  const source = program.getSourceFile(SERVER_TS);
+  assert.ok(source, "o programa do checker carrega src/server.ts");
+  serverProgramCache = { source, checker: program.getTypeChecker() };
+  return serverProgramCache;
+}
+
+// O que o checker diz do identificador chamado: de onde vem (import ou declaração local) e para onde resolve.
+function describeBinding(checker: ts.TypeChecker, callee: ts.Expression): {
+  readonly viaImportFrom: string | undefined;
+  readonly resolvesTo: string[];
+} {
+  const symbol = checker.getSymbolAtLocation(callee);
+  if (symbol === undefined) return { viaImportFrom: undefined, resolvesTo: [] };
+
+  const specifier = symbol.declarations?.find(ts.isImportSpecifier);
+  const viaImportFrom =
+    (symbol.flags & ts.SymbolFlags.Alias) !== 0 &&
+    specifier !== undefined &&
+    ts.isStringLiteral(specifier.parent.parent.parent.moduleSpecifier)
+      ? specifier.parent.parent.parent.moduleSpecifier.text
+      : undefined;
+  const target = (symbol.flags & ts.SymbolFlags.Alias) !== 0 ? checker.getAliasedSymbol(symbol) : symbol;
+  const resolvesTo = (target.declarations ?? []).map(
+    (declaration) =>
+      `${ts.SyntaxKind[declaration.kind]} ${
+        ts.isFunctionDeclaration(declaration) ? (declaration.name?.text ?? "") : ""
+      }@${repoRelative(declaration.getSourceFile().fileName)}`,
   );
+  return { viaImportFrom, resolvesTo };
+}
+
+test("B6 · server.ts chama a trava de fuso depois do papel e antes de createCoreSaasService (pela AST)", () => {
+  const { source, checker } = serverProgram();
 
   const imported = source.statements.some(
     (statement) =>
@@ -280,6 +373,63 @@ test("B6 · server.ts chama a trava de fuso depois do papel e antes de createCor
     servicePositions.every((pos) => timezoneCall!.pos < pos),
     "a trava de fuso vem antes de createCoreSaasService",
   );
+
+  // A ligação (J-554, C2-A3): o identificador chamado é o do import, e o import resolve para a trava de verdade.
+  assert.deepEqual(
+    describeBinding(checker, timezoneCall!.call.expression),
+    {
+      viaImportFrom: "./database/session-timezone.bootstrap.js",
+      resolvesTo: [`FunctionDeclaration assertDatabaseSessionTimezoneUtc@${TIMEZONE_BOOTSTRAP_REL}`],
+    },
+    "o identificador chamado em main resolve para o import de session-timezone.bootstrap (sem declaração local homônima)",
+  );
+});
+
+test("B6 · controle do leitor da ligação: o import resolve para a trava; a declaração local homônima não", () => {
+  const { checker, source } = serverProgram();
+  const importSpecifier = source.statements
+    .filter(ts.isImportDeclaration)
+    .flatMap((statement) =>
+      statement.importClause?.namedBindings !== undefined && ts.isNamedImports(statement.importClause.namedBindings)
+        ? [...statement.importClause.namedBindings.elements]
+        : [],
+    )
+    .find((element) => element.name.text === "assertDatabaseSessionTimezoneUtc");
+  assert.ok(importSpecifier, "server.ts tem o import nomeado da trava de fuso");
+  assert.deepEqual(describeBinding(checker, importSpecifier.name).resolvesTo, [
+    `FunctionDeclaration assertDatabaseSessionTimezoneUtc@${TIMEZONE_BOOTSTRAP_REL}`,
+  ]);
+
+  // Um programa só em memória, com o mesmo import e a sombra dentro de `main`: o checker tem de ver a sombra.
+  const shadowed = ts.createSourceFile(
+    "sombra.ts",
+    [
+      'import { assertDatabaseSessionTimezoneUtc } from "./database/session-timezone.bootstrap.js";',
+      "async function main(): Promise<void> {",
+      "  const assertDatabaseSessionTimezoneUtc = async (_options: { logger: unknown }): Promise<void> => {};",
+      "  await assertDatabaseSessionTimezoneUtc({ logger: undefined });",
+      "}",
+      "void main;",
+    ].join("\n"),
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  const memoryHost = ts.createCompilerHost({ noLib: true });
+  memoryHost.getSourceFile = (fileName) => (fileName === "sombra.ts" ? shadowed : undefined);
+  memoryHost.fileExists = (fileName) => fileName === "sombra.ts";
+  const memoryProgram = ts.createProgram({ rootNames: ["sombra.ts"], options: { noLib: true, noEmit: true }, host: memoryHost });
+  const memoryChecker = memoryProgram.getTypeChecker();
+  const calls: ts.CallExpression[] = [];
+  const collect = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && calleeName(node) === "assertDatabaseSessionTimezoneUtc") calls.push(node);
+    ts.forEachChild(node, collect);
+  };
+  collect(shadowed);
+  assert.equal(calls.length, 1);
+  const binding = describeBinding(memoryChecker, calls[0]!.expression);
+  assert.equal(binding.viaImportFrom, undefined, "a sombra não é o import");
+  assert.equal(binding.resolvesTo.length, 1, JSON.stringify(binding));
+  assert.match(binding.resolvesTo[0]!, /^VariableDeclaration /, "a sombra resolve para a declaração local");
 });
 
 test("B6 · controle do leitor da AST: a chamada comentada some, a chamada real aparece", () => {

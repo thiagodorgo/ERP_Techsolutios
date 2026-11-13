@@ -1,6 +1,7 @@
 // B-DB-FUSO-UTC — sonda e aceite do fuso de sessão do Postgres.
 //
-// A trava de boot mede `current_setting('TimeZone')` e só aceita `UTC`/`Etc/UTC` (comparação exata, sem caixa).
+// A trava de boot mede `current_setting('TimeZone')` e só aceita os literais `UTC` e `Etc/UTC`: comparação exata,
+// depois do `trim`, sem normalizar a caixa (`utc` e `etc/utc` são recusados; J-554, C2-A1).
 // Fusos que coincidem com UTC apenas em parte do ano (`Europe/London`, `GMT0` via regra) não passam; zona nomeada
 // fixa além dessas duas é recusada por segurança (fail-closed).
 
@@ -15,10 +16,10 @@ export type SessionTimezoneProbeClient = {
   $queryRawUnsafe<T = unknown>(query: string, ...values: unknown[]): PromiseLike<T> | Promise<T>;
 };
 
-export function acceptsSessionTimezoneUtc(timezone: string): boolean {
-  const normalized = timezone.toUpperCase();
+const ACCEPTED_SESSION_TIMEZONES: ReadonlySet<string> = new Set(["UTC", "Etc/UTC"]);
 
-  return normalized === "UTC" || normalized === "ETC/UTC";
+export function acceptsSessionTimezoneUtc(timezone: string): boolean {
+  return ACCEPTED_SESSION_TIMEZONES.has(timezone.trim());
 }
 
 export function isSessionTimezoneProbeTimeout(error: unknown): boolean {
