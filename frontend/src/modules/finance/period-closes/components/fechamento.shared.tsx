@@ -7,9 +7,11 @@ import type { DenseColumn } from "../../../../components/dense-list/types";
 import { PageHeader, StatusPill } from "../../../../components/patterns";
 import { StaleDataBanner } from "../../../work-orders/components/StaleDataBanner";
 import { StatePanel, StatePanelAction } from "../../../work-orders/components/StatePanel";
+import type { CashFlowPoint } from "../../dashboard/financial-summary.types";
 import { PERIOD_STATUS_LABELS, PERIOD_STATUS_TONES } from "../period-actions";
 import type { PeriodAction, PeriodRow, PeriodStatus } from "../period-closes.types";
 import { periodName } from "../period-keys";
+import { closeTimeText, daysOpen, daysToClose, endedAndNotClosed, SLOW_CLOSE_DAYS } from "../period-rows";
 import type { PeriodDetailState, PeriodsList } from "../usePeriods";
 
 // B-SAN3-24 (24b) — peças das 3 aparências do Fechamento do mês (referência aprovada
@@ -17,7 +19,13 @@ import type { PeriodDetailState, PeriodsList } from "../usePeriods";
 // `FinanceiroPage`. Só composição: as ações vêm de `periodActionsFor`, os números do servidor (retrato congelado e
 // checklist ao vivo); nenhuma soma de dinheiro nasce aqui.
 
-export type PeriodFilter = "all" | "closed" | "ended-open" | "reopened";
+/** Os recortes da lista. `slow` = fechou mais de 5 dias depois do fim do mês; `month:AAAA-MM` = um mês aberto pelo gráfico. */
+export type PeriodFilter = "all" | "closed" | "ended-open" | "reopened" | "slow" | `month:${string}`;
+
+/** O mês focado pelo gráfico ou pela exceção (`month:AAAA-MM`), ou `null`. */
+export function focusedMonth(filter: PeriodFilter): string | null {
+  return filter.startsWith("month:") ? filter.slice("month:".length) : null;
+}
 
 export type FechamentoViewModel = {
   readonly list: PeriodsList;
@@ -26,6 +34,11 @@ export type FechamentoViewModel = {
   readonly monthToClose: string;
   readonly filter: PeriodFilter;
   readonly onFilter: (next: PeriodFilter) => void;
+  /** J-547 C3-10 — o gráfico e as exceções abrem o mês: a lista mostra só ele, com o detalhe aberto. */
+  readonly onFocusMonth: (period: string) => void;
+  /** J-547 C3-03 — entradas e saídas AO VIVO por competência (`summary.cashFlow`, 6 meses), para os meses não fechados. */
+  readonly liveCashFlow: readonly CashFlowPoint[] | null;
+  readonly liveLoading: boolean;
   readonly actionsFor: (period: { readonly status: PeriodStatus }) => readonly PeriodAction[];
   readonly onOpen: (period: string) => void;
   readonly onAction: (period: string, action: PeriodAction) => void;
@@ -46,7 +59,10 @@ export function formatDate(iso: string | null): string {
 export function rowMatches(row: PeriodRow, filter: PeriodFilter, currentKey: string): boolean {
   if (filter === "closed") return row.status === "closed";
   if (filter === "reopened") return row.status === "reopened";
-  if (filter === "ended-open") return row.period < currentKey && row.status !== "closed";
+  if (filter === "ended-open") return endedAndNotClosed(row, currentKey);
+  if (filter === "slow") return row.status === "closed" && (daysToClose(row.period, row.closedAt) ?? 0) > SLOW_CLOSE_DAYS;
+  const month = focusedMonth(filter);
+  if (month) return row.period === month;
   return true;
 }
 
@@ -54,11 +70,38 @@ export function countRows(list: PeriodsList, filter: PeriodFilter): number {
   return list.rows.filter((row) => rowMatches(row, filter, list.currentKey)).length;
 }
 
-export const FILTER_LABELS: Readonly<Record<Exclude<PeriodFilter, "all">, string>> = {
+export const FILTER_LABELS = {
   closed: "Fechados",
   "ended-open": "Terminaram e não estão fechados",
   reopened: "Reabertos",
-};
+} as const satisfies Readonly<Record<string, string>>;
+
+export type BlockFilter = keyof typeof FILTER_LABELS;
+
+/** O texto do filtro ativo, para a pílula acima da lista. */
+export function filterChipLabel(filter: PeriodFilter): string | null {
+  if (filter === "all") return null;
+  if (filter === "slow") return `fecharam mais de ${SLOW_CLOSE_DAYS} dias depois do fim do mês`;
+  const month = focusedMonth(filter);
+  if (month) return periodName(month);
+  return FILTER_LABELS[filter as BlockFilter].toLocaleLowerCase("pt-BR");
+}
+
+/** Um indicador em esqueleto (§7 "carregando"). */
+export function KpiSkeleton() {
+  return (
+    <div className="pat-kpi" aria-hidden="true" data-state="loading">
+      <div className="pat-skel" style={{ width: 30, height: 30, borderRadius: 9 }} />
+      <div className="pat-skel" style={{ width: "70%", height: 22, marginTop: 12 }} />
+      <div className="pat-skel" style={{ width: "50%", height: 10, marginTop: 8 }} />
+    </div>
+  );
+}
+
+/** Um bloco de esqueleto (gráfico, cartão), sem afirmar nada enquanto carrega. */
+export function BlockSkeleton({ height }: { readonly height: number }) {
+  return <span className="pat-skel" aria-hidden="true" data-state="loading" style={{ display: "block", width: "100%", height, borderRadius: 10 }} />;
+}
 
 export function PeriodStatusChip({ status }: { readonly status: PeriodStatus }) {
   const tone = PERIOD_STATUS_TONES[status];
@@ -149,6 +192,15 @@ function Prop({ label, children }: { readonly label: string; readonly children: 
   );
 }
 
+function detailCloseTime(period: string, closedAt: string | null, status: PeriodStatus, currentKey: string): string {
+  const days = daysToClose(period, closedAt);
+  if (days !== null && (status === "closed" || status === "reopened")) return `${days} ${days === 1 ? "dia" : "dias"} depois do fim do mês`;
+  if (period === currentKey) return "o mês ainda não terminou";
+  if (period > currentKey) return "—";
+  const open = daysOpen(period) ?? 0;
+  return `ainda não fechado · ${open} ${open === 1 ? "dia" : "dias"} depois do fim do mês`;
+}
+
 /** O detalhe da competência: situação, retrato congelado, checklist ao vivo e as ações de `periodActionsFor`. */
 export function PeriodDetailPanel({ model, row }: { readonly model: FechamentoViewModel; readonly row: PeriodRow }) {
   const state = model.details[row.period];
@@ -167,6 +219,7 @@ export function PeriodDetailPanel({ model, row }: { readonly model: FechamentoVi
             <PeriodStatusChip status={status} />
           </Prop>
           <Prop label="Fechado em">{formatDate(detail?.closedAt ?? row.closedAt)}</Prop>
+          <Prop label="Tempo para fechar">{detailCloseTime(row.period, detail?.closedAt ?? row.closedAt, status, model.list.currentKey)}</Prop>
           {status === "reopened" ? <Prop label="Reaberto em">{formatDate(detail?.reopenedAt ?? row.reopenedAt)}</Prop> : null}
           {status === "reopened" && detail?.reopenReason ? <Prop label="Motivo da reabertura">{detail.reopenReason}</Prop> : null}
           {detail && detail.closeCount > 1 ? <Prop label="Fechamentos">{`${detail.closeCount} vezes`}</Prop> : null}
@@ -231,7 +284,7 @@ export function PeriodsTable({
     {
       key: "period",
       header: "COMPETÊNCIA",
-      width: "24%",
+      width: "20%",
       render: (row) => (
         <>
           <b>{periodName(row.period)}</b>
@@ -239,9 +292,27 @@ export function PeriodsTable({
         </>
       ),
     },
-    { key: "status", header: "SITUAÇÃO", width: "20%", render: (row) => <PeriodStatusChip status={row.status} /> },
-    { key: "closed", header: "FECHADO EM", width: "16%", render: (row) => (row.status === "closed" ? formatDate(row.closedAt) : "—") },
-    { key: "reopened", header: "REABERTO EM", width: "16%", render: (row) => (row.status === "reopened" ? formatDate(row.reopenedAt) : "—") },
+    { key: "status", header: "SITUAÇÃO", width: "15%", render: (row) => <PeriodStatusChip status={row.status} /> },
+    { key: "closed", header: "FECHADO EM", width: "13%", render: (row) => (row.status === "closed" ? formatDate(row.closedAt) : "—") },
+    {
+      // J-547 C3-01 — o tempo para fechar (`closedAt` menos o fim da competência), nas 3 aparências.
+      key: "close-time",
+      header: "TEMPO PARA FECHAR",
+      width: "15%",
+      render: (row) => {
+        const time = closeTimeText(row, model.list.currentKey);
+        if (time.tone === "done") return <b>{time.text}</b>;
+        if (time.tone === "slow")
+          return (
+            <>
+              <b>{time.text}</b> <span style={{ fontSize: 10.5, fontWeight: 800, color: "#B45309" }}>lento</span>
+            </>
+          );
+        if (time.tone === "late") return <span style={{ color: "#B91C1C", fontWeight: 700 }}>{time.text}</span>;
+        return <span className="pat-cell-muted">{time.text}</span>;
+      },
+    },
+    { key: "reopened", header: "REABERTO EM", width: "13%", render: (row) => (row.status === "reopened" ? formatDate(row.reopenedAt) : "—") },
     {
       key: "pending",
       header: "PENDÊNCIAS AGORA",
@@ -272,26 +343,46 @@ export function PeriodsTable({
   );
 }
 
-export function FilterBlocks({ model }: { readonly model: FechamentoViewModel }) {
+/**
+ * Os blocos por situação. J-547 C3-11: o bloco da biblioteca (`financeiro-bc__block`, 36 px com borda, foco e
+ * pressionado do sistema), como a `conc-chip` da referência. J-547 C3-07: esqueleto enquanto a lista carrega.
+ */
+export function FilterBlocks({ model, framed = false }: { readonly model: FechamentoViewModel; readonly framed?: boolean }) {
   return (
-    <div className="pat-os-tabs" role="group" aria-label="Situação da competência" style={{ flexWrap: "wrap" }}>
-      {(Object.keys(FILTER_LABELS) as Exclude<PeriodFilter, "all">[]).map((filter) => {
+    <div className="financeiro-bc__blocks" role="group" aria-label="Situação da competência" style={framed ? undefined : { padding: 0, borderBottom: 0 }}>
+      {(Object.keys(FILTER_LABELS) as BlockFilter[]).map((filter) => {
         const pressed = model.filter === filter;
         const count = model.list.loading ? null : countRows(model.list, filter);
         return (
           <button
             key={filter}
             type="button"
-            className={pressed ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"}
+            className="financeiro-bc__block"
             aria-pressed={pressed}
             aria-label={`${FILTER_LABELS[filter]}: ${count ?? "carregando"} — filtrar a lista`}
             onClick={() => model.onFilter(pressed ? "all" : filter)}
           >
             {FILTER_LABELS[filter]}
-            {count !== null ? <b style={{ marginLeft: 6 }}>{count}</b> : null}
+            {count !== null ? <b>{count}</b> : <span className="pat-skel" aria-hidden="true" data-state="loading" style={{ display: "inline-block", width: 16, height: 11 }} />}
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** A pílula do filtro ativo, acima da lista, que sai com um clique. */
+export function FilterChip({ model }: { readonly model: FechamentoViewModel }) {
+  const label = filterChipLabel(model.filter);
+  if (!label) return null;
+  return (
+    <div className="pat-filtro-chip-bar" style={{ padding: "10px 18px 0" }}>
+      <span className="pat-filtro-chip">
+        {`Filtro: ${label}`}
+        <button type="button" onClick={() => model.onFilter("all")} aria-label="Limpar o filtro da lista">
+          ✕
+        </button>
+      </span>
     </div>
   );
 }

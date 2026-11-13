@@ -29,6 +29,7 @@ export function ChequeClearConfirm({
   cheque,
   action,
   impact,
+  accountLoading = false,
   busy,
   message,
   onConfirm,
@@ -37,6 +38,8 @@ export function ChequeClearConfirm({
   readonly cheque: Cheque;
   readonly action: StateAction;
   readonly impact: CashImpact;
+  /** J-547 C3-05 — o nome da conta ainda está carregando: o texto diz "na conta do cheque" e aparece o marcador. */
+  readonly accountLoading?: boolean;
   readonly busy: boolean;
   readonly message?: string | null;
   readonly onConfirm: (reason: string) => void;
@@ -60,6 +63,12 @@ export function ChequeClearConfirm({
         <Icon size={18} color={tone.fg} aria-hidden="true" style={{ flexShrink: 0, marginTop: 1 }} />
         <span style={{ fontSize: 13.5, fontWeight: 700, color: tone.fg, lineHeight: 1.45 }}>{cashImpactText(impact)}</span>
       </div>
+      {accountLoading && impact.movement !== "none" ? (
+        <p role="status" aria-busy="true" data-state="loading" style={{ display: "flex", alignItems: "center", gap: 8, margin: "-6px 0 0", fontSize: 12, color: "#64748B" }}>
+          <span className="pat-skel" aria-hidden="true" style={{ display: "inline-block", width: 96, height: 10 }} />
+          Carregando o nome da conta…
+        </p>
+      ) : null}
       {action === "bounce" ? (
         <label style={{ display: "grid", gap: 6, fontSize: 12.5, fontWeight: 700, color: "#334155" }}>
           {reasonRequired ? "Motivo da devolução (obrigatório)" : "Motivo da devolução (opcional)"}

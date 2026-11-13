@@ -38,29 +38,17 @@ function Bar({ value, max, color }: { readonly value: number | null; readonly ma
   );
 }
 
+// J-547 C3-11 — o botão de linha usa o cartão clicável da biblioteca (`financeiro-b__account`: borda, passar o mouse,
+// pressionado e o anel de foco de 2 px #2563EB do sistema), deitado em linha; nada de anel padrão do navegador.
 function RowButton({ pressed, label, onClick, children }: { readonly pressed: boolean; readonly label: string; readonly onClick: () => void; readonly children: ReactNode }) {
   return (
     <button
       type="button"
+      className="financeiro-b__account"
       aria-pressed={pressed}
       aria-label={label}
       onClick={onClick}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        width: "100%",
-        textAlign: "left",
-        font: "inherit",
-        fontSize: 12.5,
-        color: "#0F172A",
-        background: pressed ? "#EFF6FF" : "#fff",
-        border: `1px solid ${pressed ? "#93C5FD" : "#E2E8F0"}`,
-        borderRadius: 10,
-        padding: "9px 12px",
-        cursor: "pointer",
-        minHeight: 40,
-      }}
+      style={{ flexDirection: "row", alignItems: "center", gap: 10, padding: "9px 12px", fontSize: 12.5, color: "#0F172A", minHeight: 40 }}
     >
       {children}
     </button>
@@ -72,7 +60,7 @@ export function ChequesViewB(model: ChequesViewModel) {
   const blocking = model.list.forbidden || (model.list.failed && !model.list.stale);
   const go = (next: Partial<ChequeListFilter>) => model.onFilter({ ...EMPTY_FILTER, accountId: filter.accountId, ...next });
   const isPressed = (next: Partial<ChequeListFilter>) =>
-    filter.status === (next.status ?? null) && filter.direction === (next.direction ?? null) && filter.linkedOnly === (next.linkedOnly ?? false) && filter.accountId === (next.accountId ?? filter.accountId);
+    filter.status === (next.status ?? null) && filter.direction === (next.direction ?? null) && filter.link === (next.link ?? null) && filter.accountId === (next.accountId ?? filter.accountId);
   const knownCounts = CHEQUE_STATUSES.map((status) => counts[status]).filter((value): value is number => value !== null);
   const maxCount = Math.max(1, ...knownCounts);
   const maxReceived = summary ? Math.max(summary.pendingReceivedAmount, summary.pendingIssuedAmount, 1) : 1;
@@ -114,9 +102,9 @@ export function ChequesViewB(model: ChequesViewModel) {
                   <b style={{ color: "#B91C1C" }}>{summary ? formatMoney(summary.pendingIssuedAmount) : "—"}</b>
                 </RowButton>
                 <RowButton
-                  pressed={isPressed({ status: "pending", linkedOnly: true })}
+                  pressed={isPressed({ status: "pending", link: "linked" })}
                   label={`Vinculados a título: ${summary ? formatMoney(summary.linkedPendingAmount) : "indisponível"} — filtrar a lista`}
-                  onClick={() => go({ status: "pending", linkedOnly: true })}
+                  onClick={() => go({ status: "pending", link: "linked" })}
                 >
                   <Link2 size={14} color="#1D4ED8" aria-hidden="true" />
                   <span style={{ flex: 1, color: "#1D4ED8", fontWeight: 700 }}>{summary ? `Vinculados a título · ${summary.linkedPendingCount}` : "Vinculados a título"}</span>
@@ -154,7 +142,7 @@ export function ChequesViewB(model: ChequesViewModel) {
                     return (
                       <RowButton
                         key={account.id}
-                        pressed={filter.status === "pending" && filter.accountId === account.id && filter.direction === null && !filter.linkedOnly}
+                        pressed={filter.status === "pending" && filter.accountId === account.id && filter.direction === null && filter.link === null}
                         label={`${account.name}: ${pair?.registered ?? "—"} registrados e ${pair?.deposited ?? "—"} depositados — filtrar a lista`}
                         onClick={() => model.onFilter({ ...EMPTY_FILTER, status: "pending", accountId: account.id })}
                       >

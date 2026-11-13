@@ -31,13 +31,19 @@ export type ChequeDetailState = {
 export type ChequesViewModel = {
   readonly summary: FinancialSummary["cheques"] | null;
   readonly summaryLoading: boolean;
+  /** J-547 C3-08 — o resumo da releitura falhou e a tela mostra o último resumo bom (com a faixa de desatualizado). */
+  readonly summaryStale: boolean;
   readonly list: ChequeList;
   readonly filter: ChequeListFilter;
   readonly onFilter: (next: ChequeListFilter) => void;
   readonly page: { readonly offset: number; readonly limit: number };
   readonly onPage: (offset: number) => void;
   readonly counts: ChequeCounts;
+  /** J-547 C3-07 — as contagens por situação ainda não voltaram do servidor (esqueleto, nunca "indisponível"). */
+  readonly countsLoading: boolean;
   readonly accounts: readonly FinancialAccount[];
+  /** J-547 C3-05 — as contas ainda estão carregando: o nome da conta é um marcador, nunca "Conta não listada". */
+  readonly accountsLoading: boolean;
   readonly accountCounts: AccountPendingCounts;
   /** Aparência C: os pendentes (registrados + depositados), para a agenda e a mesa de hoje. */
   readonly pending: ChequeList | null;
@@ -52,8 +58,22 @@ export type ChequesViewModel = {
   readonly onDismissMessage: () => void;
 };
 
-export function accountNameOf(accounts: readonly FinancialAccount[], id: string): string {
-  return accounts.find((account) => account.id === id)?.name ?? "Conta não listada";
+/**
+ * O nome da conta do cheque. J-547 C3-05: enquanto as contas carregam, devolve `null` (a tela mostra um marcador de
+ * carregando e a confirmação diz "na conta do cheque"); "Conta não listada" só depois de carregar, quando a conta de
+ * fato não está na lista.
+ */
+export function accountNameOf(accounts: readonly FinancialAccount[], id: string, loading = false): string | null {
+  const found = accounts.find((account) => account.id === id)?.name;
+  if (found) return found;
+  return loading ? null : "Conta não listada";
+}
+
+/** O nome da conta, ou o marcador de carregando (esqueleto com rótulo acessível). */
+export function AccountName({ accounts, id, loading }: { readonly accounts: readonly FinancialAccount[]; readonly id: string; readonly loading: boolean }) {
+  const name = accountNameOf(accounts, id, loading);
+  if (name !== null) return <>{name}</>;
+  return <span className="pat-skel" role="status" aria-label="Carregando a conta" data-state="loading" style={{ display: "inline-block", width: 96, height: 11, verticalAlign: "middle" }} />;
 }
 
 /** `AAAA-MM-DD` → dias até hoje (data de calendário de São Paulo); negativo = já passou. */
@@ -98,6 +118,7 @@ export function DirectionIcon({ cheque }: { readonly cheque: Cheque }) {
 export function ChequesTable({
   rows,
   accounts,
+  accountsLoading = false,
   openKey,
   onToggle,
   renderDetail,
@@ -105,6 +126,7 @@ export function ChequesTable({
 }: {
   readonly rows: readonly Cheque[];
   readonly accounts: readonly FinancialAccount[];
+  readonly accountsLoading?: boolean;
   readonly openKey: string | null;
   readonly onToggle: (cheque: Cheque) => void;
   readonly renderDetail: (cheque: Cheque) => ReactNode;
@@ -152,7 +174,7 @@ export function ChequesTable({
         );
       },
     },
-    { key: "account", header: "CONTA", width: "16%", render: (c) => accountNameOf(accounts, c.accountId) },
+    { key: "account", header: "CONTA", width: "16%", render: (c) => <AccountName accounts={accounts} id={c.accountId} loading={accountsLoading} /> },
     {
       key: "amount",
       header: "VALOR",
@@ -173,7 +195,7 @@ export function ChequesTable({
       onRowClick={onToggle}
       expandedKey={openKey}
       renderDetail={renderDetail}
-      cellTitle={(c, key) => (key === "account" ? accountNameOf(accounts, c.accountId) : key === "number" ? `${c.chequeNumber} · ${c.bank}` : undefined)}
+      cellTitle={(c, key) => (key === "account" ? (accountNameOf(accounts, c.accountId, accountsLoading) ?? undefined) : key === "number" ? `${c.chequeNumber} · ${c.bank}` : undefined)}
     />
   );
 }
@@ -203,7 +225,9 @@ export function ChequeDetail({ model, cheque }: { readonly model: ChequesViewMod
           <Prop label="Cheque">{`${fresh.chequeNumber} · ${fresh.bank}`}</Prop>
           <Prop label="Direção">{directionLabel(fresh.direction)}</Prop>
           <Prop label="Valor">{formatMoney(fresh.amount)}</Prop>
-          <Prop label="Conta">{accountNameOf(model.accounts, fresh.accountId)}</Prop>
+          <Prop label="Conta">
+            <AccountName accounts={model.accounts} id={fresh.accountId} loading={model.accountsLoading} />
+          </Prop>
           <Prop label="Bom para">{fresh.dueDate ? formatDay(fresh.dueDate) : "sem data"}</Prop>
         </div>
         <div className="pat-ab-detail-col">
@@ -276,7 +300,7 @@ export function PendingCaption({ list, filter }: { readonly list: ChequeList; re
   return (
     <p className="financeiro-bc__note" style={{ margin: "8px 18px 0", fontSize: 12, color: "#475569" }}>
       {`Pendentes: ${list.pendingTotals.registered} registrados e ${list.pendingTotals.deposited} depositados.`}
-      {filter.linkedOnly ? " Mostrando só os vinculados a título entre eles." : ""}
+      {filter.link === "linked" ? " Mostrando só os vinculados a título entre eles." : filter.link === "unlinked" ? " Mostrando só os sem título entre eles." : ""}
       {list.complete ? "" : " A lista mostra os 100 primeiros de cada situação."}
     </p>
   );
@@ -285,10 +309,27 @@ export function PendingCaption({ list, filter }: { readonly list: ChequeList; re
 export function filterLabel(filter: ChequeListFilter): string | null {
   const parts: string[] = [];
   if (filter.direction) parts.push(directionLabel(filter.direction).toLocaleLowerCase("pt-BR"));
-  if (filter.status === "pending") parts.push(filter.linkedOnly ? "pendentes vinculados a título" : "pendentes");
+  if (filter.status === "pending") parts.push(filter.link === "linked" ? "pendentes vinculados a título" : filter.link === "unlinked" ? "pendentes sem título" : "pendentes");
   else if (filter.status) parts.push(CHEQUE_STATUS_LABELS[filter.status].toLocaleLowerCase("pt-BR"));
-  else if (filter.linkedOnly) parts.push("vinculados a título");
+  else if (filter.link === "linked") parts.push("vinculados a título");
+  else if (filter.link === "unlinked") parts.push("sem título");
   return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+/** Um indicador em esqueleto (§7 "carregando"): nenhum número nem frase de fato enquanto o servidor não respondeu. */
+export function KpiSkeleton() {
+  return (
+    <div className="pat-kpi" aria-hidden="true" data-state="loading">
+      <div className="pat-skel" style={{ width: 30, height: 30, borderRadius: 9 }} />
+      <div className="pat-skel" style={{ width: "70%", height: 22, marginTop: 12 }} />
+      <div className="pat-skel" style={{ width: "50%", height: 10, marginTop: 8 }} />
+    </div>
+  );
+}
+
+/** Uma contagem em esqueleto, para blocos e cabeçalhos de lista. */
+export function CountSkeleton({ width = 18 }: { readonly width?: number }) {
+  return <span className="pat-skel" aria-hidden="true" data-state="loading" style={{ display: "inline-block", width, height: 11, verticalAlign: "middle" }} />;
 }
 
 export function ListStates({ model, children, emptyText }: { readonly model: ChequesViewModel; readonly children: ReactNode; readonly emptyText: string }) {

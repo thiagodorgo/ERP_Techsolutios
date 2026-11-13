@@ -4,6 +4,8 @@ import { Modal } from "../../../components/ui";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useScreenAppearance } from "../../appearance";
+import type { CashFlowPoint } from "../dashboard/financial-summary.types";
+import { useFinancialSummary } from "../dashboard/useFinancialSummary";
 import { FechamentoViewA } from "./components/FechamentoViewA";
 import { FechamentoViewB } from "./components/FechamentoViewB";
 import { FechamentoViewC } from "./components/FechamentoViewC";
@@ -22,6 +24,18 @@ import { usePeriodDetails, usePeriods } from "./usePeriods";
 // e ações a uma view PURA. Fechar e reabrir passam pela MESMA confirmação de 2 passos (`PeriodCloseConfirm`) nas 3
 // aparências. Depois de toda escrita a tela relê a lista e a competência. Estados §7: carregando, vazio (nenhum mês
 // fechado), erro, acesso não permitido (rota guardada por `financial_period:read`; 403 do servidor) e desatualizado.
+
+/**
+ * Aparência B com as entradas e saídas AO VIVO dos meses não fechados (J-547 C3-03): `summary.cashFlow` (6 meses), lido
+ * só quando a B está na tela. Numa releitura que falha, fica o último fluxo bom (§7, desatualizado sem trocar a tela).
+ */
+function FechamentoViewBLive({ model, enabled }: { readonly model: FechamentoViewModel; readonly enabled: boolean }) {
+  const summary = useFinancialSummary();
+  useAutoRefresh(summary.refresh, { enabled });
+  const lastGood = useRef<readonly CashFlowPoint[] | null>(null);
+  if (!summary.loading && summary.data.source !== "fallback") lastGood.current = summary.data.cashFlow;
+  return <FechamentoViewB {...model} liveCashFlow={lastGood.current} liveLoading={summary.loading && lastGood.current === null} />;
+}
 
 export function FechamentoPage() {
   const { can } = usePermissions();
@@ -96,6 +110,12 @@ export function FechamentoPage() {
     monthToClose,
     filter,
     onFilter: setFilter,
+    onFocusMonth: (period) => {
+      setFilter(`month:${period}`);
+      void loadDetail(period);
+    },
+    liveCashFlow: null,
+    liveLoading: false,
     actionsFor: (period) => periodActionsFor(period, perms),
     onOpen: (period) => void loadDetail(period),
     onAction: (period, action) => {
@@ -111,7 +131,7 @@ export function FechamentoPage() {
   const confirmDetail = confirm ? (details.details[confirm.period]?.detail ?? null) : null;
   return (
     <>
-      {appearance === "B" ? <FechamentoViewB {...model} /> : appearance === "C" ? <FechamentoViewC {...model} /> : <FechamentoViewA {...model} />}
+      {appearance === "B" ? <FechamentoViewBLive model={model} enabled={canRead} /> : appearance === "C" ? <FechamentoViewC {...model} /> : <FechamentoViewA {...model} />}
       {confirm ? (
         <Modal title={confirm.action === "close" ? `Fechar ${periodName(confirm.period).toLocaleLowerCase("pt-BR")}` : `Reabrir ${periodName(confirm.period).toLocaleLowerCase("pt-BR")}`} open onClose={() => setConfirm(null)}>
           {confirmDetail ? (

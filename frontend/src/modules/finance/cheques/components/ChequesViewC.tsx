@@ -2,8 +2,8 @@ import { useState, type ReactNode } from "react";
 
 import { formatMoney } from "../cheque-cash-impact";
 import type { Cheque } from "../cheques.types";
-import { EMPTY_FILTER } from "../useCheques";
-import { ChequeDetail, ChequesTable, daysUntilDue, filterLabel, ListStates, ServerPager, type ChequesViewModel } from "./cheques.shared";
+import { EMPTY_FILTER, type ChequeListFilter } from "../useCheques";
+import { ChequeDetail, ChequesTable, CountSkeleton, daysUntilDue, filterLabel, ListStates, ServerPager, type ChequesViewModel } from "./cheques.shared";
 import { AccountSelect, ChequesBlocking, ChequesHeader, ChequesStates, FilterChipBar } from "./ChequesViewA";
 
 // B-SAN3-24 (24a) — APARÊNCIA C "Agenda do bom para" (referência aprovada `screen-refs/cheques-3opcoes.reference.html`,
@@ -37,11 +37,28 @@ function dayKey(date: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
 }
 
-function Block({ label, count, pressed, onClick }: { readonly label: string; readonly count: number | null; readonly pressed: boolean; readonly onClick: () => void }) {
+/**
+ * Mesa de hoje (J-547 C3-09): "depositar hoje" é só o cheque RECEBIDO registrado cujo bom para chegou; o emitido quem
+ * deposita é o fornecedor, então nunca entra aqui. Os depositados se separam pela direção (entram × saem).
+ */
+export function mesaDeHoje(pendingItems: readonly Cheque[], today: Date): { readonly label: string; readonly rows: readonly Cheque[] }[] {
+  return [
+    {
+      label: "Depositar hoje · bom para chegou",
+      rows: pendingItems.filter((cheque) => cheque.status === "registered" && cheque.direction === "received" && (daysUntilDue(cheque.dueDate, today) ?? 1) <= 0),
+    },
+    { label: "Entram quando o banco compensar", rows: pendingItems.filter((cheque) => cheque.status === "deposited" && cheque.direction === "received") },
+    { label: "Saem quando o banco compensar", rows: pendingItems.filter((cheque) => cheque.status === "deposited" && cheque.direction === "issued") },
+  ];
+}
+
+// J-547 C3-11 — os blocos são os da biblioteca (`financeiro-bc__block`, 36 px com borda), como a `conc-chip` da
+// referência aprovada. J-547 C3-07 — enquanto a contagem não voltou, esqueleto (nunca um 0 que ainda não é fato).
+function Block({ label, count, loading, pressed, onClick }: { readonly label: string; readonly count: number | null; readonly loading: boolean; readonly pressed: boolean; readonly onClick: () => void }) {
   return (
-    <button type="button" className={pressed ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"} aria-pressed={pressed} aria-label={`${label}: ${count ?? "contagem indisponível"} — filtrar a lista`} onClick={onClick}>
+    <button type="button" className="financeiro-bc__block" aria-pressed={pressed} aria-label={`${label}: ${loading ? "carregando" : (count ?? "contagem indisponível")} — filtrar a lista`} onClick={onClick}>
       {label}
-      {count !== null ? <b style={{ marginLeft: 6 }}>{count}</b> : null}
+      {loading ? <CountSkeleton /> : count !== null ? <b>{count}</b> : null}
     </button>
   );
 }
@@ -73,6 +90,40 @@ function MesaItem({ model, cheque, open, onToggle }: { readonly model: ChequesVi
   );
 }
 
+/** Um quadro de resumo da agenda: botão que filtra a lista (o valor é do servidor). */
+function SummaryBox({
+  tone,
+  title,
+  value,
+  hint,
+  pressed,
+  ariaLabel,
+  onClick,
+}: {
+  readonly tone: { readonly bg: string; readonly border: string; readonly fg: string };
+  readonly title: string;
+  readonly value: string;
+  readonly hint: string;
+  readonly pressed: boolean;
+  readonly ariaLabel: string;
+  readonly onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="pat-kpi pat-kpi--clickable"
+      aria-pressed={pressed}
+      aria-label={ariaLabel}
+      onClick={onClick}
+      style={{ background: tone.bg, borderColor: pressed ? "#2563EB" : tone.border, borderRadius: 10, padding: 10, fontSize: 11, color: tone.fg, textAlign: "left", minWidth: 0 }}
+    >
+      <b style={{ display: "block", color: tone.fg }}>{title}</b>
+      <span style={{ display: "block", fontSize: 15, fontWeight: 800, color: tone.fg }}>{value}</span>
+      <span style={{ color: tone.fg }}>{hint}</span>
+    </button>
+  );
+}
+
 export function ChequesViewC(model: ChequesViewModel) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [mesaKey, setMesaKey] = useState<string | null>(null);
@@ -83,6 +134,7 @@ export function ChequesViewC(model: ChequesViewModel) {
   const registered = pendingItems.filter((cheque) => cheque.status === "registered");
   const bucketCount = (target: Bucket) => registered.filter((cheque) => bucketOf(cheque, today) === target).length;
   const loadedAll = model.pending?.complete ?? true;
+  const pendingLoading = model.pending === null || model.pending.loading;
   const toggle = (cheque: Cheque) => {
     setOpenKey((current) => (current === cheque.id ? null : cheque.id));
     if (openKey !== cheque.id) model.onOpen(cheque);
@@ -115,11 +167,17 @@ export function ChequesViewC(model: ChequesViewModel) {
     { key: "deposited", label: "Depositados · aguardando o banco", rows: listItems.filter((cheque) => cheque.status === "deposited") },
     { key: "closed", label: "Encerrados", rows: listItems.filter((cheque) => cheque.status === "cleared" || cheque.status === "bounced" || cheque.status === "cancelled") },
   ];
-  const mesa: { readonly label: string; readonly rows: readonly Cheque[] }[] = [
-    { label: "Depositar hoje · bom para chegou", rows: registered.filter((cheque) => (daysUntilDue(cheque.dueDate, today) ?? 1) <= 0) },
-    { label: "Entram quando o banco compensar", rows: pendingItems.filter((cheque) => cheque.status === "deposited" && cheque.direction === "received") },
-    { label: "Saem quando o banco compensar", rows: pendingItems.filter((cheque) => cheque.status === "deposited" && cheque.direction === "issued") },
-  ];
+  const mesa = mesaDeHoje(pendingItems, today);
+  const { summary } = model;
+  // J-547 C3-04 — os 3 quadros da agenda filtram a lista (D-PADRAO-BLOCOS-CLICAVEIS), como os botões da referência.
+  // "Pendentes sem título" sai do resumo do SERVIDOR: pendentes (recebidos + emitidos) menos os vinculados a título.
+  const goSummary = (next: Partial<ChequeListFilter>) => {
+    setBucket(null);
+    model.onFilter({ ...EMPTY_FILTER, accountId: model.filter.accountId, ...next });
+  };
+  const summaryPressed = (next: Partial<ChequeListFilter>) =>
+    bucket === null && model.filter.status === (next.status ?? null) && model.filter.direction === (next.direction ?? null) && model.filter.link === (next.link ?? null);
+  const unlinkedPending = summary ? summary.pendingReceivedCount + summary.pendingIssuedCount - summary.linkedPendingCount : null;
   const card = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: 16 } as const;
   const panelNode = (children: ReactNode) => (
     <section aria-label="Cheques por prazo" style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden" }}>
@@ -127,7 +185,7 @@ export function ChequesViewC(model: ChequesViewModel) {
         <b style={{ fontSize: 14 }}>Cheques por prazo</b>
         <AccountSelect model={model} />
         <span className="pat-os-count" style={{ marginLeft: "auto" }}>
-          {`${model.list.total ?? listItems.length} cheques`}
+          {model.list.loading ? <CountSkeleton width={64} /> : `${model.list.total ?? listItems.length} cheques`}
         </span>
       </div>
       <FilterChipBar model={model} />
@@ -146,12 +204,12 @@ export function ChequesViewC(model: ChequesViewModel) {
         <ChequesBlocking model={model} />
       ) : (
         <>
-          <div className="pat-os-tabs" role="group" aria-label="Prazo e situação" style={{ ...card, padding: "12px 16px", marginBottom: 16, flexWrap: "wrap" }}>
-            <Block label="A depositar ou apresentar" count={model.counts.registered} pressed={model.filter.status === "registered" && bucket === null} onClick={() => setStatusFilter(model.filter.status === "registered" && bucket === null ? null : "registered")} />
-            <Block label="Bom para já passou" count={model.pending ? bucketCount("passed") : null} pressed={bucket === "passed"} onClick={() => chooseBucket("passed")} />
-            <Block label="Bom para hoje" count={model.pending ? bucketCount("today") : null} pressed={bucket === "today"} onClick={() => chooseBucket("today")} />
-            <Block label="Próximos 7 dias" count={model.pending ? bucketCount("week") : null} pressed={bucket === "week"} onClick={() => chooseBucket("week")} />
-            <Block label="Depositados aguardando o banco" count={model.counts.deposited} pressed={model.filter.status === "deposited"} onClick={() => setStatusFilter(model.filter.status === "deposited" ? null : "deposited")} />
+          <div className="financeiro-bc__blocks" role="group" aria-label="Prazo e situação" style={{ ...card, padding: "12px 16px", marginBottom: 16 }}>
+            <Block label="A depositar ou apresentar" count={model.counts.registered} loading={model.countsLoading} pressed={model.filter.status === "registered" && bucket === null} onClick={() => setStatusFilter(model.filter.status === "registered" && bucket === null ? null : "registered")} />
+            <Block label="Bom para já passou" count={pendingLoading ? null : bucketCount("passed")} loading={pendingLoading} pressed={bucket === "passed"} onClick={() => chooseBucket("passed")} />
+            <Block label="Bom para hoje" count={pendingLoading ? null : bucketCount("today")} loading={pendingLoading} pressed={bucket === "today"} onClick={() => chooseBucket("today")} />
+            <Block label="Próximos 7 dias" count={pendingLoading ? null : bucketCount("week")} loading={pendingLoading} pressed={bucket === "week"} onClick={() => chooseBucket("week")} />
+            <Block label="Depositados aguardando o banco" count={model.counts.deposited} loading={model.countsLoading} pressed={model.filter.status === "deposited"} onClick={() => setStatusFilter(model.filter.status === "deposited" ? null : "deposited")} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.25fr) minmax(0, 1fr)", gap: 16, marginBottom: 16 }}>
             <article style={card}>
@@ -171,7 +229,7 @@ export function ChequesViewC(model: ChequesViewModel) {
                     >
                       <div style={{ fontSize: 9.5, fontWeight: 800, color: isToday ? "#2563EB" : "#64748B" }}>{isToday ? "HOJE" : WEEKDAYS[new Date(`${key}T12:00:00Z`).getUTCDay()]}</div>
                       <div style={{ fontSize: 14, fontWeight: 800 }}>{key.slice(8, 10)}</div>
-                      <div style={{ fontSize: 10, color: "#475569" }}>{onDay.length > 0 ? `${onDay.length} chq` : "—"}</div>
+                      <div style={{ fontSize: 10, color: "#475569" }}>{pendingLoading ? <CountSkeleton width={20} /> : onDay.length > 0 ? `${onDay.length} chq` : "—"}</div>
                     </div>
                   );
                 })}
@@ -180,23 +238,41 @@ export function ChequesViewC(model: ChequesViewModel) {
                 Cada dia mostra os cheques registrados com bom para naquela data.
                 {loadedAll ? "" : " A agenda conta os 100 primeiros pendentes de cada situação."}
               </p>
-              {model.summary ? (
+              {model.summaryLoading ? (
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 12 }} aria-busy="true">
+                  {[0, 1, 2].map((index) => (
+                    <span key={index} className="pat-skel" aria-hidden="true" data-state="loading" style={{ display: "block", height: 58, borderRadius: 10 }} />
+                  ))}
+                </div>
+              ) : summary && unlinkedPending !== null ? (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginTop: 12 }}>
-                  <div style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 10, padding: 10, fontSize: 11 }}>
-                    <b style={{ color: "#047857" }}>A RECEBER PENDENTES</b>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#047857" }}>{formatMoney(model.summary.pendingReceivedAmount)}</div>
-                    {`${model.summary.pendingReceivedCount} cheques · entram ao compensar`}
-                  </div>
-                  <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: 10, fontSize: 11 }}>
-                    <b style={{ color: "#B45309" }}>A PAGAR PENDENTES</b>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#B45309" }}>{formatMoney(model.summary.pendingIssuedAmount)}</div>
-                    {`${model.summary.pendingIssuedCount} cheques · saem ao compensar`}
-                  </div>
-                  <div style={{ background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 10, padding: 10, fontSize: 11 }}>
-                    <b style={{ color: "#1D4ED8" }}>VINCULADOS A TÍTULO</b>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "#1D4ED8" }}>{`${model.summary.linkedPendingCount} cheques`}</div>
-                    baixam título ao compensar
-                  </div>
+                  <SummaryBox
+                    tone={{ bg: "#ECFDF5", border: "#A7F3D0", fg: "#047857" }}
+                    title="A RECEBER PENDENTES"
+                    value={formatMoney(summary.pendingReceivedAmount)}
+                    hint={`${summary.pendingReceivedCount} cheques · entram ao compensar`}
+                    pressed={summaryPressed({ status: "pending", direction: "received" })}
+                    ariaLabel={`A receber pendentes: ${formatMoney(summary.pendingReceivedAmount)} — filtrar a lista`}
+                    onClick={() => goSummary({ status: "pending", direction: "received" })}
+                  />
+                  <SummaryBox
+                    tone={{ bg: "#FFFBEB", border: "#FDE68A", fg: "#B45309" }}
+                    title="A PAGAR PENDENTES"
+                    value={formatMoney(summary.pendingIssuedAmount)}
+                    hint={`${summary.pendingIssuedCount} cheques · saem ao compensar`}
+                    pressed={summaryPressed({ status: "pending", direction: "issued" })}
+                    ariaLabel={`A pagar pendentes: ${formatMoney(summary.pendingIssuedAmount)} — filtrar a lista`}
+                    onClick={() => goSummary({ status: "pending", direction: "issued" })}
+                  />
+                  <SummaryBox
+                    tone={{ bg: "#EFF6FF", border: "#BFDBFE", fg: "#1D4ED8" }}
+                    title="PENDENTES SEM TÍTULO"
+                    value={`${unlinkedPending} ${unlinkedPending === 1 ? "cheque" : "cheques"}`}
+                    hint="compensam sem baixar título"
+                    pressed={summaryPressed({ status: "pending", link: "unlinked" })}
+                    ariaLabel={`Pendentes sem título: ${unlinkedPending} — filtrar a lista`}
+                    onClick={() => goSummary({ status: "pending", link: "unlinked" })}
+                  />
                 </div>
               ) : null}
             </article>
@@ -206,7 +282,9 @@ export function ChequesViewC(model: ChequesViewModel) {
               {mesa.map((section) => (
                 <div key={section.label} style={{ marginTop: 12 }}>
                   <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: ".05em", color: "#64748B", textTransform: "uppercase", marginBottom: 6 }}>{section.label}</div>
-                  {section.rows.length === 0 ? (
+                  {pendingLoading ? (
+                    <span className="pat-skel" aria-hidden="true" data-state="loading" style={{ display: "block", height: 34, borderRadius: 8 }} />
+                  ) : section.rows.length === 0 ? (
                     <p style={{ margin: 0, fontSize: 12, color: "#94A3B8" }}>Nenhum cheque.</p>
                   ) : (
                     <div style={{ display: "grid", gap: 6 }}>
@@ -226,7 +304,7 @@ export function ChequesViewC(model: ChequesViewModel) {
                 .map((group) => (
                   <div key={group.key}>
                     <GroupHead label={group.label} count={group.rows.length} tone={group.tone} />
-                    <ChequesTable rows={group.rows} accounts={model.accounts} openKey={openKey} onToggle={toggle} withDirection renderDetail={(cheque) => <ChequeDetail model={model} cheque={cheque} />} />
+                    <ChequesTable rows={group.rows} accounts={model.accounts} accountsLoading={model.accountsLoading} openKey={openKey} onToggle={toggle} withDirection renderDetail={(cheque) => <ChequeDetail model={model} cheque={cheque} />} />
                   </div>
                 ))}
               {model.list.total !== null && model.list.total > model.list.items.length ? <ServerPager model={model} shown={model.list.items.length} /> : null}

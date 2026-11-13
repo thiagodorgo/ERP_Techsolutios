@@ -10,17 +10,26 @@ import { CHEQUE_STATUSES, type Cheque, type ChequeDirection, type ChequeFilters,
 //
 // "Pendentes" (N-02 da crítica r2): a lista do servidor filtra a situação por IGUALDADE a um valor só, e pendente quer
 // dizer registrado OU depositado. A tela pede as duas situações ao servidor (2 consultas, cada uma com o seu total) e
-// mostra as duas contagens lado a lado, sem somar no navegador. O filtro "vinculados a título" não existe no servidor:
-// a tela o aplica sobre os pendentes CARREGADOS e diz isso na própria lista (`complete` = carregou todos).
+// mostra as duas contagens lado a lado, sem somar no navegador. Os filtros "vinculados a título" e "sem título" não
+// existem no servidor: a tela os aplica sobre os pendentes CARREGADOS e diz isso na própria lista (`complete` =
+// carregou todos).
 
 export type ChequeListFilter = {
   readonly status: ChequeStatus | "pending" | null;
   readonly direction: ChequeDirection | null;
   readonly accountId: string | null;
-  readonly linkedOnly: boolean;
+  /** Vínculo com título, aplicado sobre os carregados (o servidor não filtra por "tem título"). */
+  readonly link: "linked" | "unlinked" | null;
 };
 
-export const EMPTY_FILTER: ChequeListFilter = { status: null, direction: null, accountId: null, linkedOnly: false };
+export const EMPTY_FILTER: ChequeListFilter = { status: null, direction: null, accountId: null, link: null };
+
+/** J-547 C3-04 — o recorte de vínculo, igual na lista paginada e nos pendentes. */
+export function byLink(items: readonly Cheque[], link: ChequeListFilter["link"]): readonly Cheque[] {
+  if (link === "linked") return items.filter((cheque) => cheque.titleId !== null);
+  if (link === "unlinked") return items.filter((cheque) => cheque.titleId === null);
+  return items;
+}
 
 export type ChequeList = {
   readonly items: readonly Cheque[];
@@ -77,7 +86,7 @@ export function useCheques(filter: ChequeListFilter, page: { readonly offset: nu
         else {
           const items = [...registered.items, ...deposited.items];
           next = {
-            items: f.linkedOnly ? items.filter((cheque) => cheque.titleId !== null) : items,
+            items: byLink(items, f.link),
             total: null,
             pendingTotals: { registered: registered.pagination.total, deposited: deposited.pagination.total },
             complete: registered.pagination.total <= registered.items.length && deposited.pagination.total <= deposited.items.length,
@@ -86,7 +95,7 @@ export function useCheques(filter: ChequeListFilter, page: { readonly offset: nu
       } else {
         const result = await listCheques(context, { ...baseFilters(f), ...(f.status ? { status: f.status } : {}), limit: p.limit, offset: p.offset });
         if (result.source === "fallback") failedWith = result;
-        else next = { items: f.linkedOnly ? result.items.filter((cheque) => cheque.titleId !== null) : result.items, total: result.pagination.total, pendingTotals: null, complete: true };
+        else next = { items: byLink(result.items, f.link), total: result.pagination.total, pendingTotals: null, complete: true };
       }
       if (next) {
         setData(next);
@@ -125,23 +134,46 @@ export function useCheques(filter: ChequeListFilter, page: { readonly offset: nu
 
 export type ChequeCounts = Readonly<Record<ChequeStatus, number | null>>;
 
-/** O total de cada situação, do servidor (`limit=1`), no mesmo recorte de direção e conta da lista. */
+const NO_COUNTS = Object.fromEntries(CHEQUE_STATUSES.map((status) => [status, null])) as ChequeCounts;
+
+/**
+ * O total de cada situação, do servidor (`limit=1`), no mesmo recorte de direção e conta da lista.
+ * J-547 C3-07 e C3-08 (§7): `loading` enquanto a 1ª leitura do recorte não voltou (a tela mostra esqueleto, nunca
+ * "indisponível"); numa releitura que falha, cada situação MANTÉM o último número bom (dado desatualizado, sem trocar a
+ * tela) e só fica `null` se nunca houve número.
+ */
 export function useChequeCounts(direction: ChequeDirection | null, accountId: string | null, options: { readonly enabled: boolean }) {
   const { context, ready } = useFinanceApiContext();
-  const [counts, setCounts] = useState<ChequeCounts>(() => Object.fromEntries(CHEQUE_STATUSES.map((status) => [status, null])) as ChequeCounts);
+  const [counts, setCounts] = useState<ChequeCounts>(NO_COUNTS);
+  const [loading, setLoading] = useState(true);
+  const [stale, setStale] = useState(false);
+  const scope = `${direction ?? ""}|${accountId ?? ""}`;
+  const loadedScope = useRef<string | null>(null);
   const refresh = useCallback(async () => {
-    if (!ready || !options.enabled) return;
+    if (!ready || !options.enabled) {
+      setLoading(false);
+      return;
+    }
+    if (loadedScope.current !== scope) setLoading(true);
     const results = await Promise.all(
       CHEQUE_STATUSES.map((status) =>
         listCheques(context, { status, limit: 1, ...(direction ? { direction } : {}), ...(accountId ? { accountId } : {}) }),
       ),
     );
-    setCounts(Object.fromEntries(CHEQUE_STATUSES.map((status, index) => [status, results[index].source === "fallback" ? null : results[index].pagination.total])) as ChequeCounts);
-  }, [context, ready, options.enabled, direction, accountId]);
+    const sameScope = loadedScope.current === scope;
+    setCounts((current) =>
+      Object.fromEntries(
+        CHEQUE_STATUSES.map((status, index) => [status, results[index].source === "fallback" ? (sameScope ? current[status] : null) : results[index].pagination.total]),
+      ) as ChequeCounts,
+    );
+    setStale(sameScope && results.some((result) => result.source === "fallback"));
+    loadedScope.current = scope;
+    setLoading(false);
+  }, [context, ready, options.enabled, direction, accountId, scope]);
   useEffect(() => {
     void refresh();
   }, [refresh]);
-  return { counts, refresh };
+  return { counts, loading, stale, refresh };
 }
 
 export type AccountPendingCounts = Readonly<Record<string, { readonly registered: number | null; readonly deposited: number | null }>>;

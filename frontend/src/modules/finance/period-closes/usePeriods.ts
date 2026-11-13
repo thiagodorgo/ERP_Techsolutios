@@ -3,12 +3,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFinanceApiContext } from "../accounts/useFinancialAccounts";
 import { getPeriod, listPeriods } from "./period-closes.service";
 import type { PeriodDetail, PeriodRow } from "./period-closes.types";
-import { previousPeriodKey, toPeriodKey } from "./period-keys";
+import { toPeriodKey } from "./period-keys";
+import { periodRowsFor } from "./period-rows";
 
 // B-SAN3-24 (24b) — as competências da tela de Fechamento. A lista do servidor só tem as competências que já tiveram
-// fechamento; a tela acrescenta a competência CORRENTE (no fuso de negócio, R-COMPETENCIA-SP) e a ANTERIOR quando o
-// servidor não as tem (nunca fechadas = abertas), para o mês a fechar sempre aparecer. O detalhe de cada competência
-// (situação, retrato congelado e checklist AO VIVO) vem de `GET /financial-periods/:period`, sob demanda.
+// fechamento; a tela acrescenta, como ABERTAS (nunca fechadas), as competências do ano corrente até a corrente (no fuso
+// de negócio, R-COMPETENCIA-SP) e a anterior que o servidor não tem — uma regra só para as 3 aparências (J-547 C3-12,
+// `periodRowsFor`). O detalhe de cada competência (situação, retrato congelado e checklist AO VIVO) vem de
+// `GET /financial-periods/:period`, sob demanda.
 
 export type PeriodsList = {
   readonly rows: readonly PeriodRow[];
@@ -19,14 +21,6 @@ export type PeriodsList = {
   readonly stale: boolean;
   readonly lastUpdatedAt: string | null;
 };
-
-function withRecentKeys(rows: readonly PeriodRow[], currentKey: string): PeriodRow[] {
-  const byKey = new Map(rows.map((row) => [row.period, row]));
-  for (const key of [currentKey, previousPeriodKey(currentKey)]) {
-    if (!byKey.has(key)) byKey.set(key, { period: key, status: "open", closedAt: null, reopenedAt: null });
-  }
-  return [...byKey.values()].sort((a, b) => b.period.localeCompare(a.period));
-}
 
 export function usePeriods(options: { readonly enabled: boolean }) {
   const { context, ready } = useFinanceApiContext();
@@ -47,7 +41,7 @@ export function usePeriods(options: { readonly enabled: boolean }) {
       if (!background) setLoading(true);
       const result = await listPeriods(context, { limit: 100 });
       if (result.source !== "fallback") {
-        setRows(withRecentKeys(result.items, currentKey));
+        setRows(periodRowsFor(result.items, currentKey));
         setFailure(null);
         setStale(false);
         hasGood.current = true;

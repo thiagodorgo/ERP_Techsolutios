@@ -9,7 +9,7 @@ import { CHEQUE_STATUS_LABELS } from "../cheque-actions";
 import { formatMoney } from "../cheque-cash-impact";
 import { CHEQUE_STATUSES, type Cheque, type ChequeDirection, type ChequeStatus } from "../cheques.types";
 import { EMPTY_FILTER, type ChequeListFilter } from "../useCheques";
-import { ChequeDetail, ChequesTable, filterLabel, ListStates, PendingCaption, ServerPager, type ChequesViewModel } from "./cheques.shared";
+import { ChequeDetail, ChequesTable, CountSkeleton, filterLabel, KpiSkeleton, ListStates, PendingCaption, ServerPager, type ChequesViewModel } from "./cheques.shared";
 
 // B-SAN3-24 (24a) — APARÊNCIA A "Abas do Financeiro" (referência aprovada `screen-refs/cheques-3opcoes.reference.html`,
 // opção A; tela-modelo `FinanceiroViewA`, padrão D-PADRAO-BLOCOS-CLICAVEIS). VIEW PURA: dados e ações chegam do
@@ -59,7 +59,7 @@ export function ChequesStates({ model }: { readonly model: ChequesViewModel }) {
           </button>
         </div>
       ) : null}
-      {list.stale ? <StaleDataBanner lastUpdatedAt={list.lastUpdatedAt} onRetry={model.onRetry} /> : null}
+      {list.stale || model.summaryStale ? <StaleDataBanner lastUpdatedAt={list.lastUpdatedAt} onRetry={model.onRetry} /> : null}
     </>
   );
 }
@@ -84,16 +84,13 @@ export function ChequesBlocking({ model }: { readonly model: ChequesViewModel })
 export function ChequesKpis({ model, columns = 4 }: { readonly model: ChequesViewModel; readonly columns?: 4 | 5 }) {
   const { summary, filter } = model;
   const pressed = (next: Partial<ChequeListFilter>) =>
-    filter.status === (next.status ?? null) && filter.direction === (next.direction ?? null) && filter.linkedOnly === (next.linkedOnly ?? false);
+    filter.status === (next.status ?? null) && filter.direction === (next.direction ?? null) && filter.link === (next.link ?? null);
   const go = (next: Partial<ChequeListFilter>) => model.onFilter({ ...EMPTY_FILTER, accountId: filter.accountId, ...next });
   if (model.summaryLoading) {
     return (
       <div className={`pat-kpi-row pat-kpi-row--${columns}`} aria-busy="true">
         {Array.from({ length: 4 }).map((_, index) => (
-          <div key={index} className="pat-kpi" aria-hidden="true">
-            <div className="pat-skel" style={{ width: 30, height: 30, borderRadius: 9 }} />
-            <div className="pat-skel" style={{ width: "70%", height: 22, marginTop: 12 }} />
-          </div>
+          <KpiSkeleton key={index} />
         ))}
       </div>
     );
@@ -132,21 +129,25 @@ export function ChequesKpis({ model, columns = 4 }: { readonly model: ChequesVie
         value={summary ? formatMoney(summary.linkedPendingAmount) : "Indisponível"}
         label="Vinculados a título"
         hint={summary ? `${plural(summary.linkedPendingCount, "cheque baixa", "cheques baixam")} título ao compensar` : "o servidor não respondeu"}
-        pressed={pressed({ status: "pending", linkedOnly: true })}
-        onClick={() => go({ status: "pending", linkedOnly: true })}
+        pressed={pressed({ status: "pending", link: "linked" })}
+        onClick={() => go({ status: "pending", link: "linked" })}
         ariaLabel={`Vinculados a título: ${summary ? formatMoney(summary.linkedPendingAmount) : "indisponível"} — filtrar a lista`}
       />
-      <KpiStatCard
-        icon={RotateCcw}
-        iconColor="#DC2626"
-        iconBg="#FEF2F2"
-        value={bounced ?? "Indisponível"}
-        label="Devolvidos"
-        hint={bounced === null ? "o servidor não respondeu" : "todos os devolvidos"}
-        pressed={pressed({ status: "bounced" })}
-        onClick={() => go({ status: "bounced" })}
-        ariaLabel={`Devolvidos: ${bounced ?? "indisponível"} — filtrar a lista`}
-      />
+      {model.countsLoading ? (
+        <KpiSkeleton />
+      ) : (
+        <KpiStatCard
+          icon={RotateCcw}
+          iconColor="#DC2626"
+          iconBg="#FEF2F2"
+          value={bounced ?? "Indisponível"}
+          label="Devolvidos"
+          hint={bounced === null ? "o servidor não respondeu" : "todos os devolvidos"}
+          pressed={pressed({ status: "bounced" })}
+          onClick={() => go({ status: "bounced" })}
+          ariaLabel={`Devolvidos: ${bounced ?? "indisponível"} — filtrar a lista`}
+        />
+      )}
     </div>
   );
 }
@@ -169,9 +170,11 @@ export function AccountSelect({ model }: { readonly model: ChequesViewModel }) {
 
 export function StatusBlocks({ model }: { readonly model: ChequesViewModel }) {
   const { filter } = model;
-  const setStatus = (status: ChequeStatus | null) => model.onFilter({ ...filter, status, linkedOnly: false });
+  const setStatus = (status: ChequeStatus | null) => model.onFilter({ ...filter, status, link: null });
+  // J-547 C3-11 — os blocos são os da biblioteca (`financeiro-bc__block`: borda de 1 px, 36 px, foco e pressionado do
+  // sistema), o mesmo bloco da tela-modelo Financeiro e da `conc-chip` da referência aprovada.
   return (
-    <div className="pat-os-tabs" role="group" aria-label="Situação do cheque" style={{ padding: "10px 18px 0", flexWrap: "wrap" }}>
+    <div className="financeiro-bc__blocks" role="group" aria-label="Situação do cheque">
       {CHEQUE_STATUSES.map((status) => {
         const count = model.counts[status];
         const pressed = filter.status === status;
@@ -179,13 +182,13 @@ export function StatusBlocks({ model }: { readonly model: ChequesViewModel }) {
           <button
             key={status}
             type="button"
-            className={pressed ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"}
+            className="financeiro-bc__block"
             aria-pressed={pressed}
-            aria-label={`${CHEQUE_STATUS_LABELS[status]}: ${count ?? "contagem indisponível"} — filtrar a lista`}
+            aria-label={`${CHEQUE_STATUS_LABELS[status]}: ${model.countsLoading ? "carregando" : (count ?? "contagem indisponível")} — filtrar a lista`}
             onClick={() => setStatus(pressed ? null : status)}
           >
             {`${CHEQUE_STATUS_LABELS[status]}s`}
-            {count !== null ? <b style={{ marginLeft: 6 }}>{count}</b> : null}
+            {model.countsLoading ? <CountSkeleton /> : count !== null ? <b>{count}</b> : null}
           </button>
         );
       })}
@@ -222,9 +225,11 @@ export function ChequeListPanel({ model, title, withDirection }: { readonly mode
   };
   const shown = model.list.items.length;
   const countText = model.list.total !== null ? plural(model.list.total, "cheque", "cheques") : plural(shown, "cheque", "cheques");
+  // J-547 C3-11 — painel e barra da biblioteca (`financeiro-bc__panel`, `financeiro-bc__toolbar`: abas de 30 px), os da
+  // tela-modelo Financeiro.
   return (
-    <section className="pat-panel" aria-label={title ?? "Lista de cheques"} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px 0", flexWrap: "wrap" }}>
+    <section className="financeiro-bc__panel" aria-label={title ?? "Lista de cheques"}>
+      <div className="financeiro-bc__toolbar">
         {title ? <b style={{ fontSize: 14 }}>{title}</b> : null}
         {!title ? (
           <div className="pat-os-tabs" role="tablist" aria-label="Direção">
@@ -246,8 +251,8 @@ export function ChequeListPanel({ model, title, withDirection }: { readonly mode
           </div>
         ) : null}
         <AccountSelect model={model} />
-        <span className="pat-os-count" style={{ marginLeft: "auto" }}>
-          {countText}
+        <span className="pat-os-count" style={{ marginLeft: "auto" }} aria-busy={model.list.loading ? true : undefined}>
+          {model.list.loading ? <CountSkeleton width={64} /> : countText}
         </span>
       </div>
       {!title ? <StatusBlocks model={model} /> : null}
@@ -255,7 +260,7 @@ export function ChequeListPanel({ model, title, withDirection }: { readonly mode
       <PendingCaption list={model.list} filter={model.filter} />
       <div style={{ marginTop: 10 }}>
         <ListStates model={model} emptyText={filterLabel(model.filter) ? "Nenhum cheque com este filtro." : "Nenhum cheque registrado ainda."}>
-          <ChequesTable rows={model.list.items} accounts={model.accounts} openKey={openKey} onToggle={toggle} withDirection={withDirection} renderDetail={(cheque) => <ChequeDetail model={model} cheque={cheque} />} />
+          <ChequesTable rows={model.list.items} accounts={model.accounts} accountsLoading={model.accountsLoading} openKey={openKey} onToggle={toggle} withDirection={withDirection} renderDetail={(cheque) => <ChequeDetail model={model} cheque={cheque} />} />
         </ListStates>
       </div>
       {model.filter.status !== "pending" && !model.list.loading && shown > 0 ? <ServerPager model={model} shown={shown} /> : null}

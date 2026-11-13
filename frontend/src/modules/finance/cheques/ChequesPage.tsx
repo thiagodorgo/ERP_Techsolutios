@@ -1,10 +1,11 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { Modal } from "../../../components/ui";
 import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 import { usePermissions } from "../../../providers/PermissionProvider";
 import { useScreenAppearance } from "../../appearance";
 import { useFinancialAccounts } from "../accounts/useFinancialAccounts";
+import type { FinancialSummary } from "../dashboard/financial-summary.types";
 import { useFinancialSummary } from "../dashboard/useFinancialSummary";
 import { getFinancialTitle } from "../titles/financial-titles.service";
 import { canRegisterCheque, chequeActionsFor, type PermissionSet } from "./cheque-actions";
@@ -146,10 +147,17 @@ export function ChequesPage() {
     else setConfirm({ cheque, action, message: null });
   };
 
-  const summaryData = summary.data.source === "fallback" ? null : summary.data.cheques;
+  // J-547 C3-08 (§7 "dados desatualizados"): o `useFinancialSummary` troca o dado pelo `fallback` quando a releitura em
+  // 2º plano falha. A tela guarda o ÚLTIMO resumo bom e continua mostrando os indicadores de dinheiro com a faixa de
+  // desatualizado, sem trocar a tela; "indisponível" só quando nunca houve resumo bom.
+  const lastGoodSummary = useRef<FinancialSummary["cheques"] | null>(null);
+  if (!summary.loading && summary.data.source !== "fallback") lastGoodSummary.current = summary.data.cheques;
+  const summaryFailed = !summary.loading && summary.data.source === "fallback";
+  const summaryData = summary.loading || summaryFailed ? lastGoodSummary.current : summary.data.cheques;
   const model: ChequesViewModel = {
     summary: summaryData,
-    summaryLoading: summary.loading,
+    summaryLoading: summary.loading && lastGoodSummary.current === null,
+    summaryStale: summaryFailed && lastGoodSummary.current !== null,
     list: cheques.list,
     filter,
     onFilter: (next) => {
@@ -159,7 +167,9 @@ export function ChequesPage() {
     page,
     onPage: setOffset,
     counts: counts.counts,
+    countsLoading: counts.loading,
     accounts: accounts.items,
+    accountsLoading: accounts.loading,
     accountCounts: accountCounts.counts,
     pending: appearance === "C" ? pending.list : null,
     canRegister: canRegisterCheque(perms),
@@ -177,7 +187,10 @@ export function ChequesPage() {
   };
 
   const confirmTitleInfo = confirm ? (details[confirm.cheque.id]?.title ?? null) : null;
-  const impact = confirm ? cashImpactFor(confirm.cheque, confirm.action, { accountName: accountNameOf(accounts.items, confirm.cheque.accountId), title: confirmTitleInfo }) : null;
+  // J-547 C3-05: com as contas ainda carregando, o nome é `null` (o texto diz "na conta do cheque") e a confirmação mostra o
+  // marcador de carregando; nunca "Conta não listada" sobre uma conta que só não chegou ainda.
+  const confirmAccountName = confirm ? accountNameOf(accounts.items, confirm.cheque.accountId, accounts.loading) : null;
+  const impact = confirm ? cashImpactFor(confirm.cheque, confirm.action, { accountName: confirmAccountName, title: confirmTitleInfo }) : null;
 
   return (
     <>
@@ -190,6 +203,7 @@ export function ChequesPage() {
             cheque={confirm.cheque}
             action={confirm.action}
             impact={impact}
+            accountLoading={confirmAccountName === null}
             busy={actions.busy}
             message={confirm.message}
             onConfirm={(reason) => void confirmAction(reason)}

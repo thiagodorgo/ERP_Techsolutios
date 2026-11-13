@@ -5099,3 +5099,26 @@ lista curada do job `backend-postgres`, medida 3× antes.
   - **1 — a linha `SUITES=` do `.github/workflows/ci.yml`** (job `backend-postgres`) fica autorizada para `tests/b-material-sync-db.test.ts`, no `B-MATERIAL-REENVIO` (o R-C21-01 da Emenda C2.1). O dev do C pode fazer a C-F6b.
   - **2 — o bloco `B-DB-FUSO-UTC` fica aberto, com o plano escrito** (9 fatias, 6 h 20 min de dev, 1 pergunta Q1 aberta ao dono). Leitura do orquestrador, declarada (§A6): a pergunta 2 era o bloco do fuso da conexão, cujo plano pedia mais teto na API; o teto dado é o sim ao bloco.
   - **3 — o item novo do portão para a GATE-CHAVE entra** (a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` vira item 63 do §4.1, com bloco próprio de permissão do app), e o denominador do vendável passa de 64 para 65 (`P-PORTAO-ITEM-GATE-CHAVE` FECHADA).
+
+## REGISTRO-SAN3-CONFLITOS — adendo do conserto único da J-547 (B-SAN3-24, 2026-11-13) — dois conflitos (§A2)
+
+**Não é decisão.** É o registro, antes de consolidar, de dois conflitos que o conserto único da J-547 achou, feito pelo dev
+`fix-547-cl` (Claude Opus 5.5, subagente, nível menor, declarado). Quem decide é o orquestrador (e o dono, se quiser).
+Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
+
+1. **C-J547-1 — "Tempo médio para fechar" × trava F8 (achado C3-01).** A maquete aprovada
+   (`fechamento-periodo-3opcoes.reference.html`, opção A) pede a MÉDIA do tempo para fechar, e a média pede acumular dias
+   no navegador. A trava F8 (`frontend/tests/finance-no-money-reduce.guard.test.ts`) reprova toda forma de acumulação em
+   `frontend/src/modules/finance/**`, e o plano v2 (A8) congela o inventário dela no B-SAN3-24. Medido: com a média
+   (`total = total + value`), a F8 ficou vermelha (`period-closes/period-rows.ts::total=total+value`). **Saída provisória,
+   declarada:** o indicador é a MEDIANA, com o rótulo "Tempo típico para fechar" e a dica "mediana · N meses acima de 5
+   dias" (ordena e pega o meio, sem acumular). Para ter a média: emenda que acrescente essa entrada (dias, não dinheiro)
+   ao inventário da F8.
+2. **C-J547-2 — o banner informativo pede arquivo fora do PERMITIDO (achado C3-06, não consertado).** O token
+   `.pat-banner--info` da biblioteca só existe dentro de `:is(.financeiro-b, .financeiro-c)`
+   (`frontend/src/styles/app.css:8232`); para valer nas telas de Cheques e de Fechamento, a regra tem de ir para o bloco
+   global dos banners (`app.css:3315-3335`). `app.css` está fora do PERMITIDO do plano v2 (§4) e do `PERMITTED` do D2
+   (`tests/b-san3-24-escopo.test.ts`). Usar outro tom faria dois azuis de aviso no sistema (§4 item 3). **O conserto
+   pronto, se houver emenda:** trocar a regra escopada por `.pat-banner--info { background: #eff6ff; border: 1px solid
+   #bfdbfe; color: #1e40af; }` (o Financeiro B/C não muda de cor) e acrescentar `frontend/src/styles/app.css` ao
+   `PERMITTED` do D2.
