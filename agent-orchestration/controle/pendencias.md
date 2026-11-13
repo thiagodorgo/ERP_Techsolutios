@@ -14365,10 +14365,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-DB-FUSO-DA-CONEXAO (2026-11-12) — toda data gravada pelo Prisma pode ficar deslocada pelo offset do fuso da conexão — ALTA (sistêmica, sem bloqueio hoje)
 
-- **status:** ABERTA · **gravidade:** ALTA (sistêmica) · **escopo:** `pre-existente` (`@prisma/adapter-pg` 7.8.0, `src/database/prisma.ts:15`, `.env.example:12`) · **dono:** `B-DB-FUSO-UTC` (a abrir; o plano espera o sim do dono) · **PR-alvo:** a planejar · **bloqueia:** não (hoje).
+- **status:** ABERTA · **gravidade:** ALTA (sistêmica) · **escopo:** `pre-existente` (`@prisma/adapter-pg` 7.8.0, `src/database/prisma.ts:15`, `.env.example:12`) · **dono:** `B-DB-FUSO-UTC` (aberto; plano escrito, 9 fatias) · **PR-alvo:** a planejar · **bloqueia:** não (hoje).
 - **origem:** investigação `inv-543-fuso` (registro `REGISTRO-PENDENTE.md`, 12/11 07:37), desdobramento do T8 que o porteiro do #543 chamou de incidente.
 - **fato:** o `@prisma/adapter-pg` manda todo `Date` como texto UTC sem sufixo de fuso, e o Postgres o lê no `TimeZone` da sessão. Num banco fora de UTC, toda data gravada pelo Prisma fica deslocada pelo offset (+3 h em SP). O T8 (sessão vencida → 401) dá 200 com o banco em `America/Sao_Paulo` e 401 em UTC. O `docker-compose.prod.yml` (postgres:16, UTC) e o RDS padrão (UTC, não medido) não disparam; no portão a janela extra efetiva é `min(3 h, vida do token de acesso)`. Pontos que misturam `now()` do banco com data do Prisma: `charge-prisma.repository.ts:150`, `local-auth-credential.repository.ts:152`, `traccar-ingestion.repository.ts:143,199`, `work-order-prisma.repository.ts:210,262,265,511`, `financial-title-prisma.repository.ts:133,167,169,215,238` e outros (lista em `revisoes/j543/inv-fuso/inv-543-fuso.json`).
 - **critério de encerramento:** fixar o `TimeZone` da conexão em UTC (pool `pg` / `DATABASE_URL`) e travar o boot de produção quando `SHOW timezone` ≠ UTC (fail-closed, no molde do `runtime-role`), com teste `-db` sob `America/Sao_Paulo`.
+- **apenso (2026-11-12, `D-DONO-1211-NOITE`):** o bloco está planejado — `B-DB-FUSO-UTC`, 9 fatias (~6 h 20 min de dev), plano escrito pelo topo (Opus declarado). A Q1 do plano fica aberta ao dono: *existe hoje algum banco com dado real (cliente, piloto, demonstração usada por cliente, staging com dado que importa) que rode fora de UTC — por exemplo, um Postgres instalado direto numa máquina no Brasil?* A `P-DB-FUSO-LEGADO` só abre se a Q1 for "sim".
 
 ## P-15A-F4UI-TELA-SEM-DONO (2026-11-12) — a F4ui do estoque do técnico (tela contra a maquete de 3 opções) não tem pendência dona — BAIXA
 
@@ -14509,6 +14510,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** o primeiro cluster nasceu WIN1252 e a migração `20260717000000_add_inventory_core` falhou (E22P05); recriado com `initdb -E UTF8 --locale=C`. Depois o T8 falhou porque o adapter Prisma lia `timestamptz` deslocado 3 h (`America/Sao_Paulo`); corrigido com `timezone='UTC'` + `pg_reload_conf`. A lição operacional (sem código) está em `decisoes.md` (`LEITURA-ORQ-1211-INITDB-UTC-UTF8`).
 - **critério de encerramento:** o arnês/script que cria o cluster grava `timezone='UTC'` e usa `--encoding=UTF8 --locale=C`, com a ordem documentada.
 
+## P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS (2026-11-12) — a baseline da suíte inteira não fecha no host Windows — BAIXA (ferramenta)
+
+- **status:** ABERTA · **gravidade:** BAIXA (ferramenta de terreno) · **escopo:** arnês/scripts dos agentes no Windows (fora do produto) · **dono:** `B-FERR-AGENTES` (ferramentas dos agentes, fora do produto) · **PR-alvo:** o PR do `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** Emenda C2.3 do `B-REENVIOS` (registro `REGISTRO-PENDENTE.md`, 12/11 15:46), depois que a F0 do `dev-c2-cdx` não fechou a baseline da suíte inteira no host.
+- **fato:** no Windows a suíte inteira deu 534 arquivos, 5431 testes, 5420 aprovados, 9 falhas e 2 pulados — falhas de ambiente (sem `setsid`, shim do Prisma, `EBUSY` no drill do Traccar), nenhuma do bloco. A Emenda C2.3 passou a medir `N_b`/`N_f` pelo CI da `main` e, no host, só as suítes do bloco.
+- **critério de encerramento:** a suíte inteira fecha no host Windows (ou o arnês documenta e reproduz a divergência e a CI cobre o resto), sem vermelho de ambiente.
+
 ## P-C4-02-MENU-TECNICO-403 (2026-11-12) — o menu do técnico mostra Seguros e Estoque, que dão 403 — BAIXA (pré-existente)
 
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (idêntico na base de staging do `b6caf568`) · **dono:** `B-SAN3-06a` (já dono do `P-SAN3-04A-MENU-RESIDUAL`) · **PR-alvo:** o PR do `B-SAN3-06a` · **bloqueia:** não.
@@ -14525,7 +14533,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-PORTAO-ITEM-GATE-CHAVE (2026-11-12) — acrescentar a P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO como item novo do portão (§4.1)? — decisão do dono
 
-- **status:** ABERTA · **gravidade:** decisão do dono · **escopo:** `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1 (o item novo não entra neste PR; acrescentá-lo muda o denominador de 64 e o `mvp_vendavel`) · **dono:** o dono · **PR-alvo:** o PR de registro após a decisão · **bloqueia:** não (hoje).
+- **status:** FECHADA (2026-11-12, decisão `D-DONO-1211-NOITE`) — o dono respondeu "3-ok": o item novo entra no §4.1 como item 63, com bloco próprio de permissão do app, e o denominador passa de 64 para 65.
+- **status anterior:** ABERTA · **gravidade:** decisão do dono · **escopo:** `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1 (o item novo não entra neste PR; acrescentá-lo muda o denominador de 64 e o `mvp_vendavel`) · **dono:** o dono · **PR-alvo:** o PR de registro após a decisão · **bloqueia:** não (hoje).
 - **pergunta ao dono:** a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` entra no §4.1 como item novo do portão, com bloco próprio de permissão do app? A resposta (a) da `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP) disse que sim, mas acrescentar o item muda o denominador de 64 para 65 e mexe no `mvp_vendavel`.
 - **recomendação:** decidir antes do próximo marco.
 - **origem:** ressalva (item 4) do `porteiro-540`; o item não entra no `PLANO_SAN3` neste PR (decisão do orquestrador, `donos-1211.md`).

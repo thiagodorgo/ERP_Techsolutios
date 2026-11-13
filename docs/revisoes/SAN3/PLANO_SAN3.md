@@ -24,7 +24,7 @@
    governança; a fatia confirmou 50, uma caiu na reconfirmação). Este PR corrige as 52 linhas de status, registra
    as 49 e corrige os dados das duas pendências do painel de KPI, que seguem ABERTAS (PARCIAL) até o guard do item
    54. Índice (gerador, depois da opção B): 370 cabeçalhos (359 IDs); FECHADAS 72 → 103; ABERTAS 267.
-3. **O gate da versão vendável tem 64 bloqueantes, fechados por 51 blocos, e 6 atos que só o dono pratica**
+3. **O gate da versão vendável tem 65 bloqueantes, fechados por 51 blocos, e 6 atos que só o dono pratica** (o item 63, a GATE-CHAVE, entrou por `D-DONO-1211-NOITE`)
    (§4). **Na redação original, nenhum dos 37 blocos havia começado.** O que o inventário acrescentou à auditoria pesa: pela web um título
    **nunca é baixado** e cheques, fechamento de período e política de comissão **não têm tela**; no app, o
    fluxo Prestador e a entrega do guincho **não têm porta**, o estoque do técnico é **inventado no código** e
@@ -34,7 +34,7 @@
    medido, sem reprovação — é **≈ 120–130 h de relógio**, contadas desde a abertura deste PR. O realista, pela
    mediana medida dos blocos grandes (57 h), é **≈ 14 dias com 4 frentes simultâneas e ≈ 20,5 a 21 dias com 2**
    (§9), sem contar o tempo dos atos do dono. **Não há redução de escopo:** a execução segue pela ordem de risco; o
-   gate só é declarado quando os 64 bloqueantes fecharem **e** os 6 atos estiverem feitos.
+   gate só é declarado quando os 65 bloqueantes fecharem (`D-DONO-1211-NOITE`) **e** os 6 atos estiverem feitos.
 5. **O Traccar não começa antes do gate** — decisão registrada em `D-TRACCAR-HTTP-PRIVADO-AWS` (§11).
 
 ## 1. Fonte e método
@@ -102,10 +102,10 @@ antes de frente com dependência**.
 
 ## 4. O gate, item a item
 
-### 4.1 Bloqueantes — 64 itens
+### 4.1 Bloqueantes — 65 itens
 
 Coluna **reclass.**: a fatia dava o item como não bloqueante (ou condicional); a regra do §2 o leva ao gate. Todo
-`✓` está no §8.7 e é alvo da junta.
+`✓` está no §8.7 e é alvo da junta. **O item 63, a GATE-CHAVE, entrou por `D-DONO-1211-NOITE`.**
 
 | # | Item (pendência / achado) | Crit. | Prova curta (fatia) | Bloco | reclass. |
 |--:|---|:-:|---|---|:-:|
@@ -133,6 +133,7 @@ Coluna **reclass.**: a fatia dava o item como não bloqueante (ou condicional); 
 | 51 | `P-SAN3-CHECKLIST-RUN-SEM-ESCOPO-POR-OBJETO` — técnico responde, conclui e dá ciência em vistoria de OS alheia | 3 | `src/modules/checklists/checklist.routes.ts:164-202` só por permissão (C2-09, pre-existente) | `B-O6R-07c` (ampliado) | ✓ |
 | 52 | `P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND` — o backend grava posição sem conferir consentimento | 3 | `src/modules/field-location/field-location.service.ts:21-38` (C2-12) | `B-SAN3-17` (ampliado ao backend) | ✓ |
 | 56 | `P-RBAC-MATRIZ-X-CATALOGO-QUATRO-CELULAS` — quatro células de ação da matriz sem permissão no catálogo (inclui o `finance` sem `work_orders:read`) | 3 | `src/modules/core-saas/permissions/catalog.ts:730-894` e `RBAC_MATRIX.md:37,44-46` (junta do ciclo 2, lacuna da C1; conferido pelo orquestrador) | `B-SAN3-04a` | ✓ |
+| 63 | `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` — 4 telas do app pedem permissão que o servidor não conhece — **item novo do portão (`D-DONO-1211-NOITE`)** | 3 | `permission_resolver.dart` compara por igualdade exata contra `actor.permissions`; 4 gates de tela (`checklist_available_screen.dart:58`, `inventory_list_screen.dart:24,37`, `router.dart:151,276,338,461`) e 3 chaves sem efeito, com `isValidPermission` = 0 para as 8 (crítica r2 do `B-SAN3-19b`) | bloco próprio de permissão do app (junta completa + `coordenador-de-acessos`; a abrir) | |
 | 64 | `P-O6R-B03-FILA-POR-USUARIO` — a ação offline de um usuário é reenviada sob a sessão de outro no mesmo aparelho | 3 | `pendencias.md:10988`; `mobile/flutter_app/lib/core/sync/sync_models.dart` (sem usuário) | `B-FILA-USUARIO` | ✓ |
 | | **Prioridade 14 — assinatura, franquia, pagamento e nota (`D-ASS-PLANOS-FRANQUIA-E-CANAL`, 2026-11-03)** | | **(valores fora do repositório público)** | | |
 | 57 | ✓ `P-SAN3-06B-PLANOS-SEM-ENDPOINT` + parte `tenant.plan` de `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` — catálogo e assinatura não persistidos; atribuir plano não atualiza os módulos da organização. **FECHADO no PR #504** (merge `43716227`, 2026-11-05; CI do merge: backend 4497/0/2, backend-postgres 503/0/0; prova: 6 planos persistidos, no máximo 1 assinatura vigente e 0 chave de módulo desconhecida; junta `J-504` APROVADO 3/3). **Parte `tenant.plan` (conferida em 08/11):** entregue pelo #504, porque a assinatura vigente fica em tabela própria e os módulos acompanham a versão do plano; o `plan` literal da lista de organizações em memória é exibição e segue com `B-SAN3-18` e o item 46 (apenso de 08/11 em `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA`). **Conflito aberto que segue:** `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`; este item não define quem assina pelas filiais | 13, 4 | `src/modules/platform/platform-tenants.repository.ts:3-45`; `platform.types.ts:3`; `schema.prisma` sem modelo de plano. Critério numérico: 4 planos-base + 2 add-ons persistidos; 1 assinatura vigente no máximo por entidade definida após o conflito; 0 chaves de módulo desconhecidas aceitas | `B-ASS-02` | ✓ |
@@ -491,7 +492,7 @@ acabamento e processo, na ordem de prioridade do dono, cada uma com o dono e o t
 
 ## 9. Viabilidade — o prazo de 48 horas
 
-**Quantidade exata.** 64 bloqueantes em **51 blocos** — a ampliação documental do `B-ASS-00` acrescenta 7 itens e 13 blocos donos à contagem anterior, e o `B-FILA-USUARIO` (item 64, DONO P5) acrescenta 1 item e 1 bloco M; 18 G (os 11 anteriores + `B-ASS-02`, `B-ASS-03`, `B-ASS-04`, `B-ASS-05`, `B-ASS-08`, `B-ASS-09`, `B-ASS-10b`), 28 M e 5 P (contados na coluna Esf. do §5) — mais
+**Quantidade exata.** 65 bloqueantes em **51 blocos** — a ampliação documental do `B-ASS-00` acrescenta 7 itens e 13 blocos donos à contagem anterior, e o `B-FILA-USUARIO` (item 64, DONO P5) acrescenta 1 item e 1 bloco M; o item 63, a GATE-CHAVE, entrou por `D-DONO-1211-NOITE` (bloco próprio de permissão do app, a abrir, fora do §5); 18 G (os 11 anteriores + `B-ASS-02`, `B-ASS-03`, `B-ASS-04`, `B-ASS-05`, `B-ASS-08`, `B-ASS-09`, `B-ASS-10b`), 28 M e 5 P (contados na coluna Esf. do §5) — mais
 os 6 atos do dono e este PR. Os itens 55 e 56 (decisão do dono, opção B — §15) entram em blocos que já existiam
 (`B-SAN3-12` e `B-SAN3-04a`) sem mudar o tamanho de nenhum: o melhor caso e o realista abaixo ficam **inalterados**.
 
@@ -650,7 +651,7 @@ do ciclo 2 como condição de entrada; **P1** — o `finance` lê OS (`work_orde
 Financeiro monta orçamento (`customers:read` e `service_catalog:read`, com a `RBAC_MATRIX.md` atualizada no mesmo bloco).
 As condições estão no §5.6 (CE-G1, CE-G2, CE-1 a CE-7), marcadas por script na célula de teste de cada bloco do §5.
 A primeira aplicação do §C.7 perdeu o critério `as_of` (teste (g) do `B-SAN3-10`), apontada pelo aplicador e restaurada.
-**Números:** 64 bloqueantes (eram 56 antes do `B-ASS-00`; o item 64 entrou com o `B-FILA-USUARIO`) em 51 blocos e 6 atos do dono; a agenda anterior não inclui ainda a duração da Frente 5
+**Números:** 65 bloqueantes (eram 56 antes do `B-ASS-00`; o item 64 entrou com o `B-FILA-USUARIO`; o item 63, a GATE-CHAVE, entrou por `D-DONO-1211-NOITE`) em 51 blocos e 6 atos do dono; a agenda anterior não inclui ainda a duração da Frente 5
 (§9); índice pelo gerador: 370 cabeçalhos (359 IDs), 103 FECHADAS, 267 ABERTAS. **Quem:** planejou o orquestrador
 (`agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`); aplicou um agente distinto, que não achou nem
 planejou (§C7.4-bis); **conferência de aplicação** (`agente-ci-doutor`; não é ciclo de mérito): NÃO CONFERE em `042e689e` (abaixo), **CONFERE em
