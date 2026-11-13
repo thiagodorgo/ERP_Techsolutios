@@ -72,7 +72,7 @@ export async function montarSessaoReal(
 ): Promise<SessaoRealHarness> {
   const criar = options.criarCliente ?? createPrismaClient;
   const admin = criar(connectionString);
-  const role = await createEphemeralRole(admin, connectionString);
+  const role = await createEphemeralRole(admin, connectionString, criar);
   const client = options.embrulharCliente ? options.embrulharCliente(role.client) : role.client;
 
   (globalThis as { prisma?: unknown }).prisma = client;
