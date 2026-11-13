@@ -405,3 +405,16 @@
 - Demais jobs do run: antivirus, owner-portal, frontend e authority-portal `success`; docker `skipped` (depende do backend).
 - Head antes do commit: `66afe5aa11d0f32481fd355226b4bf0d8268772c`.
 - Próximo passo exato: commit e push do conserto; ler o job `flutter` do head novo; o PR fica em rascunho (o job `backend` só fica verde com a emenda do laço G); depois, parar e apagar só o `pg-material2` e o `material-redis` e rodar o checkup.
+
+## RETOMADA 40 — 2026-11-13T10:22:51-03:00 — PARADA NA C-F14: TUDO VERDE, MENOS O LAÇO G (AGUARDA EMENDA)
+
+- Executor: `dev-c6-cl`, Claude Opus 5.5 (nível menor declarado).
+- TAP do CI do head `9398bab956b09bdf104dcff3b950362f0919832d` (run `43430536264`, push), lido por job:
+  - **flutter** (`131902614970`): `Formatted 264 files (0 changed)`; `No issues found!`; `+1190: All tests passed!` (baseline 1170; +20).
+  - **backend** (`131902615088`): `[run-backend-tests] 538 arquivo(s) · 5489 teste(s) · pass 5485 · fail 2 · skipped 2`; `not ok 3519/3520` = laço G dos pares de estoque; `[RC3(` = 8.
+  - **backend-postgres** (`131902614903`): `# tests 618 · pass 618 · fail 0 · skipped 0`; `[RC3(` = 8.
+  - frontend, antivirus, owner-portal e authority-portal `success`; docker `skipped` (depende do backend).
+- **Parada (`D-EMENDA-ANTES-DO-CODIGO`):** o aceite da C-F14 exige o TAP verde, e o job `backend` só fica verde com uma receita do lote de estoque no laço G de `tests/o6r07c-subresource-scope.test.ts`, fora do PERMITIDO (`P-MATERIAL-LACO-G-SEM-RECEITA`). O PR #551 continua em **rascunho**. Pedem emenda também: o RC4b sem fatia (`P-MATERIAL-RC4B-SEM-FATIA`). Para a pré-revisão: a M-C42 sobreviveu, como previsto (E-C27.5), e o residual `P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO`.
+- Limpeza: `pg-material2` parado (`pg_ctl stop -m fast`; `pg_isready` sem resposta) e apagado; `material-redis` removido; nenhum processo `postgres` com `pg-material2` na linha de comando. O `w-material` fica.
+- Head: `9398bab956b09bdf104dcff3b950362f0919832d` = `origin/feat/mobile-material-reenvio`.
+- Próximo passo exato: o orquestrador escreve e revisa a emenda do laço G (e decide o RC4b); o próximo dev aplica só a receita autorizada, mostra o laço G verde no host e no TAP do job `backend` do head novo, e então tira o PR do rascunho.
