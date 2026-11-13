@@ -609,6 +609,22 @@ Norma permanente (não só de uma rodada). Substitui, onde aplicável, a aprova�
    uma IA que usou todo o limite, ou para fazer a tarefa que falta num bloco quando todas as externas estão ocupadas. Valem acima disto: design só Claude, Gemini nunca revisor único, topo no
    plano e em toda reprovação, e todo braço externo com vigia que acorde a sessão quando ele para.
 
+   **O Claude coda 40% (decisão do dono, 2026-11-13, `D-CLAUDE-CODA-40`).** Nas palavras do dono: *"vc deve codar tbm.
+   40 - 50% das tarefas, deve ser feita por vc, refaca o plano"*; depois, *"usar a api claude e deepseek, corda e cobri(vc),
+   entendido?"*; e, fixando a proporção, *"coloque os codex no plano, seus limites de uso agora eh 40% do codigo vc tem
+   que fazer. o resto seus bracos"*.
+   - O Claude da sessão faz cerca de **40% do código** (dev e conserto), por subagente ou por conta própria, e **cobre
+     na hora** o braço que cair, travar ou ficar sem saldo.
+   - Os outros 60% vão para os braços: as contas Codex, o DeepSeek e a API Claude. Cada conta faz uma tarefa por vez.
+   - Isto atualiza o parágrafo anterior, onde o Claude da sessão só "pode até ajudar". Continuam valendo:
+     - design só Claude;
+     - Gemini nunca é revisor único;
+     - topo no plano e em toda reprovação;
+     - o cruzamento do item 11;
+     - todo braço externo com vigia;
+     - o teto de cada braço, que é do dono.
+   - **Leitura do orquestrador, declarada (§A6):** a conta se faz por dia, nas tarefas de código lançadas (dev e conserto).
+
    O `inspetor-de-terreno-da-junta` e o `porteiro-pos-merge` têm `model: opus` fixado no frontmatter (de
    2026-08-24 e 2026-08-12 até 2026-10-10 eram Fable — `D-INSPETOR-TERRENO-JUNTA`, `D-PORTEIRO-POS-MERGE`).
    Cadeiras, dev, crítico e fábrica rodam no modelo passado na invocação: o nível menor, declarado.
