@@ -191,3 +191,12 @@
 - Isolamento: `tenant_id` do payload continua ignorado; OS de outra organização continua `not_found`; nenhuma consulta usa organização do corpo. Nenhum arquivo Prisma, catálogo de permissões, work-orders ou KPI foi tocado.
 - Head: `262cdc9849e4fb69e40f1e40d52a7c2bf56ad27e` antes do commit da fatia.
 - Próximo passo exato: commitar a C-F4 com coautoria exigida e empurrar; depois iniciar somente a C-F5, alterando as duas regex do censo e os dois pares `work_order_material.add|remove` da fixture, provar RC7, `censo.mts = 0` e M-C20, rodar a bateria da fatia, registrar, commitar e empurrar antes da C-F6a.
+
+## RETOMADA 20 — 2026-11-13T00:46:16-03:00 — PARADA ANTES DE EDITAR A C-F5
+
+- Executor: `dev-c4-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Comando/medição: `node --test --import tsx tests/o6r07c-census-guard.test.ts` no head empurrado da C-F4; confronto do resultado com C2 item 6, C4 e C-F5, que autorizam apenas as duas regex `/^work_order[.]/` → `/^work_order(_material)?[.]/` e os dois pares da fixture.
+- Saída resumida: o vermelho esperado apareceu em T1/T14 para `work_order_material.add|remove` como `NAO-CLASSIFICADA`, mas também surgiram dois bloqueantes que a fatia autorizada não consegue corrigir: T8 `TIPO-NAO-RESOLVIDO: mobile-inventory-sync.ts: existingReceipt.fingerprint === fingerprint` e T9 `CURINGA-ESTATICO: action.type.startsWith("work_order_material.")`. Resumo: `32 tests`, `28 pass`, `4 fail`, `0 skipped`. Nenhum arquivo da C-F5 foi editado.
+- Conflito: cumprir C-F5 literalmente (duas regex + fixture) deixa T8/T9 vermelhos; fazê-los verdes exige ampliar o plano para alterar a classificação/allowlist do censo ou refatorar `withMaterialEcho`/despacho no backend. Ambos excedem a fatia e a fronteira literal. Por `D-EMENDA-ANTES-DO-CODIGO` e pelo comando do dono (“plano não bate com o código: PARE”), não escolhi solução em silêncio.
+- Head: `3d7160172a22c2dad8f1eb3b48b95282ce4a9c57`, igual ao remoto, com C-F4 entregue; árvore limpa antes deste apenso.
+- Próximo passo exato: o orquestrador escrever e revisar uma emenda à C-F5 escolhendo como eliminar T8/T9 e ampliando caminhos/mutações/aceite conforme necessário; o próximo dev retoma na C-F5, reexecuta primeiro o guard como vermelho-controle e não inicia C-F6a antes de RC7 e `censo.mts` ficarem verdes.
