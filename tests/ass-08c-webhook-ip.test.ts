@@ -114,3 +114,28 @@ test("IP4 atacante já bloqueado manda 1 000 pedidos; o legítimo seguinte ainda
   });
   assert.equal(globalCalls, 1, "pedidos de IP já bloqueado não gastam a cota global");
 });
+
+// Prende o fail-closed do `webhookClientIp`: quando a posição dos saltos confiáveis não dá um IP válido, o resultado é
+// o socket, nunca uma entrada do XFF (que o cliente controla). A N-IP-FORGE da pré-revisão do PR #557 (o fallback
+// devolve a 1ª entrada do XFF) deixa este teste vermelho.
+test("IP5 fail-closed: hops maior que o XFF, entrada que não é IP e XFF vazio caem no socket", () => {
+  const clientIp = resolver();
+  const socketIp = "192.0.2.200";
+
+  assert.equal(
+    clientIp(requestWith(socketIp, "203.0.113.50"), 2),
+    socketIp,
+    "hops 2 com 1 entrada no XFF: nenhum salto confiável escreveu a entrada",
+  );
+  assert.equal(
+    clientIp(requestWith(socketIp, "203.0.113.51, 198.51.100.51"), 3),
+    socketIp,
+    "hops 3 com 2 entradas no XFF: nenhum salto confiável escreveu as entradas",
+  );
+  assert.equal(
+    clientIp(requestWith(socketIp, "203.0.113.52, nao-e-ip"), 1),
+    socketIp,
+    "a entrada da posição dos saltos não é IP: a entrada forjada à esquerda não vale",
+  );
+  assert.equal(clientIp(requestWith(socketIp, ""), 1), socketIp, "XFF vazio");
+});
