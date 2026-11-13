@@ -13610,10 +13610,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA (2026-11-11) — a leitura do status na mesma instrução da trava (o fecho do CRIT530-02) não tem teste-dono — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); a linearização do `beginIssue` (plano v2 do conserto do #530, §3.4) · **dono:** `B-ASS-08c`, que liga o canal: o teste entra ANTES de o canal ligar · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** ligar o canal (pagamento e nota) até o teste-dono estar no repositório (condição do porteiro do #530, R1).
+- **status:** FECHADA (2026-11-13, pelo `B-ASS-08c0`, ramo `test/billing-conf530-probe`, neste PR; plano `B-ASS-08c-v2` §2.1 P20 e CA-0a) — era ABERTA · **gravidade:** MÉDIA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); a linearização do `beginIssue` (plano v2 do conserto do #530, §3.4) · **dono:** `B-ASS-08c`, que liga o canal: o teste entra ANTES de o canal ligar · **PR-alvo:** o PR do `B-ASS-08c` (o sub-bloco `B-ASS-08c0`) · **bloqueia:** ligar o canal (pagamento e nota) até o teste-dono estar no repositório (condição do porteiro do #530, R1); com este PR na `main`, deixa de bloquear.
 - **origem:** CONF530-01 da conferência `conf-530-cl` (CONFERIDO, sem refazer cadeira; ata `J-530-b-ass-08b.md`); o porteiro `porteiro-530` (LIBERADO COM RESSALVA, R1) pediu o registro com dono `B-ASS-08c` e a trava de ligar o canal.
 - **fato:** a mutação CONF-2 (ler o status numa instrução separada ANTES do `FOR NO KEY UPDATE`) compila e deixa T-INTX-12a a 12d verdes, porque o T-INTX-12a faz o estorno inteiro antes de o `beginIssue` começar. O código do head está certo: a sonda CONF-P1 fica verde nele. A sonda que discrimina está pronta para virar teste-dono (`revisoes/j530/conf-530/zz-conf530-probe-db.test.ts`, fora do repositório). **Leitura do orquestrador, declarada (§A6):** o canal de pagamento e nota segue desligado na produção, então a corrida não emite nota real até o 08c.
 - **critério de encerramento:** o teste CONF-P1 entra no repositório como teste-dono `-db` e a mutação CONF-2 fica vermelha.
+- **fechamento (2026-11-13, `dev-08c0-cl`, Claude Opus 5.5, declarado):** a sonda entrou como `tests/ass-08c-conf530-db.test.ts`, com um cabeçalho de comentário de 9 linhas; daí para baixo o arquivo é byte a byte a sonda (`tail -n +10 tests/ass-08c-conf530-db.test.ts | cmp - revisoes/j530/conf-530/zz-conf530-probe-db.test.ts` sem saída), sem nenhuma asserção mudada. No head `eeccdd27`, sob papel efêmero NOSUPERUSER NOBYPASSRLS num cluster próprio: `# tests 5 · pass 5 · fail 0 · skipped 0`. Com a M22 (= CONF-2, o de/para literal de `revisoes/crit-08c-sondas/conf.json`, da revisão `crit-08c-cl`, âncora `SELECT id, status FROM subscription_statements WHERE id = $1::uuid FOR NO KEY UPDATE` = 1): `pass 4 · fail 1`, só a CONF-P1 (`1 !== 0`, nota `pending` sobre receita estornada); restaurada, `git diff --stat -- src/` vazio. Comandos e saídas no corpo do PR e no diário do dev (`revisoes/b-ass-08c0/dev-08c0-cl.md`, fora do repositório). Na CI: pela `.github/workflows/ci.yml` da `main`, o job `backend` roda o `npm test` com `DATABASE_URL`, e o runner (`scripts/run-backend-tests.mjs`) coleta todo `tests/*.test.ts`; é lá que a suíte roda (o resumo TAP do head está no PR). Ela não está na lista `SUITES=` do `backend-postgres`; isso é do `B-ASS-08c0-ci` (`P-ASS-DB-FORA-DA-LISTA-CURADA`, só com a autorização A1).
 
 ## P-CONF530-02 (2026-11-11) — comentário de `StatementInvoiceRepository.beginIssue` desatualizado — BAIXA
 
@@ -13624,9 +13625,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CONF530-03 (2026-11-11) — 3 caminhos do conserto do #530 fora da letra do PERMITIDO — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); `tests/san3-05-acessos-de-plataforma-guard.test.ts` (1 chave T13 com motivo), `tests/san3-05-leituras-de-plataforma-db.test.ts` (a dubla da reconsulta devolve o `externalReference`; nenhuma asserção mudou) e `agent-orchestration/codex/comandos/B-ASS-08-fluxo-webhooks-outbox.md` (Emenda 2) · **dono:** `B-ASS-08c` (porteiro do #530, R1; a conferência o classifica como registro) · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **status:** FECHADA (2026-11-13, pelo `B-ASS-08c0`, ramo `test/billing-conf530-probe`, neste PR; plano `B-ASS-08c-v2` §2.1 P27a e CA-0b): os três caminhos ficam **aceitos por escrito** — era ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); `tests/san3-05-acessos-de-plataforma-guard.test.ts` (1 chave T13 com motivo), `tests/san3-05-leituras-de-plataforma-db.test.ts` (a dubla da reconsulta devolve o `externalReference`; nenhuma asserção mudou) e `agent-orchestration/codex/comandos/B-ASS-08-fluxo-webhooks-outbox.md` (Emenda 2) · **dono:** `B-ASS-08c` (porteiro do #530, R1; a conferência o classifica como registro) · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
 - **origem:** CONF530-03 da conferência `conf-530-cl`. Os três estão declarados no diário do dev e na Emenda 2, com a razão; nenhum toca dinheiro, permissão ou isolamento. Pela `D-EMENDA-ANTES-DO-CODIGO`, a emenda devia ter vindo antes do código.
 - **critério de encerramento:** o registro aceita os três por escrito, ou o molde de plano passa a prever as chaves do ratchet T13 e as dublas das suítes do `san3-05` quando o bloco muda a superfície de plataforma.
+- **aceite por escrito (2026-11-13, `dev-08c0-cl`, Claude Opus 5.5, declarado; o plano `B-ASS-08c-v2` §2.1 P27a manda este registro, e a revisão reforçada do `B-ASS-08c0` o confere):** os três caminhos ficam aceitos, cada um com a razão que a Emenda 2 da 08b já dava (`agent-orchestration/codex/comandos/B-ASS-08-fluxo-webhooks-outbox.md`, linhas 112 a 114 na `main` `eeccdd27`):
+  - `tests/san3-05-acessos-de-plataforma-guard.test.ts`: a chave `-.findLiveInvoice` (linhas 220 e 221 na `main`), do gerador e com motivo. Ela existe porque a leitura de `subscription_statement_invoices` passou a ocorrer dentro da transação do demonstrativo, e o T13 só ganha chave nova por acréscimo;
+  - `tests/san3-05-leituras-de-plataforma-db.test.ts`: a dubla da reconsulta passou a devolver o `externalReference` que o sistema mandou (linhas 804 a 809 na `main`). É a mesma troca que o conserto fez nas dublas de `tests/ass-08*`, e nenhuma asserção mudou;
+  - `agent-orchestration/codex/comandos/B-ASS-08-fluxo-webhooks-outbox.md`: a própria Emenda 2.
+  - Nenhum dos três toca dinheiro, permissão ou isolamento. O desvio de processo (a emenda depois do código, contra a `D-EMENDA-ANTES-DO-CODIGO`) fica registrado aqui, e não se reabre. A segunda saída do critério (o molde de plano prever as chaves do T13 e as dublas do `san3-05`) não foi feita; ela é da mesma classe da `P-CONF527B-N01-DIARIOS-DE-TELA-FORA-DO-PERMITIDO` e não entra neste bloco.
 
 ## P-SAN3-07-SENTINELA-SEM-GUARDA (2026-11-11) — o P3 do `B-SAN3-07` passa em vazio se o seed parar de gravar a sentinela — BAIXA (gravidade: leitura do redator)
 
@@ -13829,8 +13835,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
-  não muda permissão) · **dono (Emenda 3 do plano do `B-SAN3-19b`; a resposta do dono à Pergunta 2 veio (a) em 11/11):** um bloco próprio de permissão do
-  app, com junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o backend local · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
+  não muda permissão) · **dono:** `B-MOBILE-GATE-CHAVE` (procedência: a Emenda 3 do plano do `B-SAN3-19b` e a resposta (a) do dono à Pergunta 2, em 11/11; o ID do bloco foi dado em 13/11, R552-A2; plano em curso; junta completa + `coordenador-de-acessos`; começa provando o bloqueio contra o backend local) · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
 - **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
 - **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
   crítica r2 executou `isValidPermission`/`getRolePermissions` em `07898adf`: inválidas e sem papel; as linhas de
@@ -13960,6 +13965,48 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **o que a tela faz hoje:** o cheque vinculado mostra o documento do título e leva à ABA do Financeiro
   (`/finance?aba=rec|pag`), onde o desvínculo do 12b existe.
 - **teste de encerramento:** `/finance?titulo=<id>` abre o detalhe do título, e o link do cheque vinculado usa essa URL.
+## P-SAN3-14-DOSSIE-SEM-FASE (2026-11-11) — o dossiê de custódia não mostra a fase de cada vistoria — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` na forma do dossiê (o `mapRun` de `src/modules/impound/impound.checklist-link-prisma.repository.ts` não carrega `role` e é anterior ao bloco; o par coleta + entrega do mesmo modelo nasce no `B-SAN3-14`) · **dono:** um bloco curto de dossiê no molde do `B-SAN3-11` (DTO em `src/modules/impound/**` + rótulo em `frontend/src/modules/patios/processes/**`), depois do merge do `B-SAN3-14` · **bloqueia:** não (`src/modules/impound/**` é PROIBIDO no `B-SAN3-14`).
+- **origem:** crítica r2 do plano do `B-SAN3-14` (A-R2-05), transcrita na emenda 1 §8.
+- **critério de encerramento:** o dossiê carrega a fase de cada vistoria e a rotula "Coleta"/"Entrega" (legado `null` = Coleta); um teste com coleta e entrega do **mesmo modelo** fica vermelho sem o conserto. O PR do `B-SAN3-14` declara o resíduo no corpo.
+
+## P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA (2026-11-11) — vistoria reaberta ou cancelada no servidor não chega ao app que já a baixou — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o app re-casa o `serverId` a cada abertura e não conhece versões; a reabertura existe desde o PR-03; o `B-SAN3-14` só herda a fase na reabertura e, na pré-carga, não regrava `serverId` casado) · **dono:** `B-SAN3-16` (fila e sync do app) ou bloco próprio, a critério do orquestrador · **bloqueia:** não.
+- **origem:** emenda 1 do plano do `B-SAN3-14` §8.
+- **critério de encerramento:** a reabertura no servidor de uma vistoria já baixada aparece no app como run nova da mesma fase, sem regravar a concluída; uma run cancelada no servidor deixa de segurar a OS no app; testes com vermelho-controle nos dois casos.
+
+## P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO (2026-11-11) — a coleta aberta sem sinal numa OS sem execução fica "pronta" para sempre — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`D-CHK-DISPATCH-CREATE`: a coleta aberta sem sinal numa OS cuja provisão falhou cria run local que, com sinal e sem par, volta `ready` sem `serverId`, `checklist_repository.dart`, `resolveRunForWorkOrder`); o `B-SAN3-14` fecha isso só para a entrega (R-R2-02) · **dono:** `B-SAN3-16` · **bloqueia:** não.
+- **origem:** emenda 1 do plano do `B-SAN3-14` §8.
+- **critério de encerramento:** a coleta sem execução no servidor aparece como "aguardando envio" e não é dada como pronta; as respostas ficam preservadas; teste com vermelho-controle.
+
+## P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP (2026-11-11) — OS concluída sem a entrega baixada, recusada pelo servidor, não volta ao atendimento no app — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (nasce da trava nova do `B-SAN3-14`); não grave pela triagem §C7 item 10(3): sem perda de dado · **dono:** `B-SAN3-16` · **bloqueia:** não.
+- **origem:** HIPÓTESE do R-R2-01 (emenda 1 do plano do `B-SAN3-14`), **negada** pela medição do dev na fatia 2 (`controle/decisoes.md`, `REGISTRO-B-SAN3-14`): "Descartar" a ação na tela de sincronização não mexe na OS, que fica `completed`/`pending`, e a carga da lista preserva OS `pending`; a tela de execução só abre em "Em atendimento"/"Pausada". A OS do servidor fica aberta e a entrega continua respondível pelo console ou por outro aparelho.
+- **critério de encerramento:** OS concluída sem sinal, recusada por `delivery_checklist_pending` e com a entrega baixada depois: o técnico chega à entrega pelo app e, concluída a entrega, a OS conclui sem "Descartar"; teste com vermelho-controle.
+
+## P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES (2026-11-11) — a comparação coleta × entrega não serve a modelos diferentes — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (a tela de comparação usa UM schema, o do `checklistId` da rota, e procura as runs por fase em todos os modelos) · **dono:** o próximo bloco que tocar a comparação no app · **bloqueia:** não (o `B-SAN3-14` só mostra "Comparar coleta × entrega" quando as duas vistorias confirmadas são do mesmo modelo, R-D1).
+- **origem:** plano v2 do `B-SAN3-14`, achado derivado D1.
+- **critério de encerramento:** coleta e entrega de modelos diferentes comparam pelos componentes equivalentes (ou a regra de "o que se compara" é decidida pelo dono); teste com os dois modelos.
+
+## P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA (2026-11-11) — a vistoria de entrega de OS cancelada depois do despacho fica em andamento — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (custo aceito pelo dono na decisão A, `D-PORTAO-9-RECOMENDACOES-1011`: uma unidade cobrada e uma execução `in_progress` que nenhum caminho encerra; OS cancelada não abre custódia, então o dossiê não é afetado) · **dono:** um bloco de higiene das vistorias de OS encerrada · **bloqueia:** não.
+- **origem:** plano v2 do `B-SAN3-14` §8.
+- **critério de encerramento:** a vistoria de entrega de OS cancelada sai de "em andamento" (cancelada), sem nova unidade cobrada; teste com vermelho-controle.
+
+## P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR (2026-11-11) — a tela de conclusão do prestador recusa toda OS com vistoria — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`work_order_conclusion_screen.dart` passa `checklistComplete = wo?.checklistId == null`; o `B-SAN3-14` só acrescenta o parâmetro `deliveryComplete` com o mesmo valor conservador) · **dono:** `B-SAN3-15` (fluxo do prestador) · **bloqueia:** não.
+- **origem:** plano v2 do `B-SAN3-14`, achado derivado D2 (nota para o `B-SAN3-15`).
+- **critério de encerramento:** a conclusão do prestador lê a situação real da vistoria da OS; teste com OS com e sem vistoria concluída.
+
 ## P-SAN3-15-QTD-FRACIONADA (2026-11-11) — a seleção de peça no app é em inteiros: "2,5 m" deixa escolher até 2 — BAIXA
 
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (decisão do plano `plano-B-SAN3-15-v2.md` §2.1 P6 e §2.5) · **dono:** a nomear pelo orquestrador (bloco de estoque do app) · **bloqueia:** não.
@@ -14581,3 +14628,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **pergunta ao dono:** a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` entra no §4.1 como item novo do portão, com bloco próprio de permissão do app? A resposta (a) da `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP) disse que sim, mas acrescentar o item muda o denominador de 64 para 65 e mexe no `mvp_vendavel`.
 - **recomendação:** decidir antes do próximo marco.
 - **origem:** ressalva (item 4) do `porteiro-540`; o item não entra no `PLANO_SAN3` neste PR (decisão do orquestrador, `donos-1211.md`).
+
+## P-PAINEL-HORA-DA-MEDICAO (2026-11-13) — a hora da medição da Codex ficava em branco e o aviso de medição velha não disparava — BAIXA — FECHADA
+
+- **status:** FECHADA (2026-11-13; consertado fora do repositório) · **gravidade:** BAIXA (ferramenta de terreno) · **escopo:** painel de agentes fora do repositório · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **fato:** o painel de agentes mostrava a hora da medição da Codex em branco. No PowerShell 7, `ConvertFrom-Json` já entregava o campo como `DateTime`; a chamada posterior a `Parse` falhava em silêncio. Por isso, o aviso de medição velha nunca disparava.
+- **fechamento:** o tratamento foi corrigido em 13/11 no painel externo ao repositório.
+- **lição:** medição que falha em silêncio é *fail-open*; o arnês deve tornar a falha visível e não tratar a ausência de hora como medição válida.

@@ -32,11 +32,16 @@ class SyncStatusBanner extends StatelessWidget {
   const SyncStatusBanner({
     required this.status,
     required this.message,
+    this.icon = Icons.sync_outlined,
     super.key,
   });
 
   final SyncStatus status;
   final String message;
+
+  /// O ícone de sincronizar é o padrão. Um aviso que não fala de fila (por
+  /// exemplo, "o aparelho não confirma…") passa o de informação.
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -51,9 +56,68 @@ class SyncStatusBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.sync_outlined, color: color),
+          Icon(icon, color: color),
           const SizedBox(width: 8),
           Expanded(child: Text(message)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Faixa de dados desatualizados (§7 do contrato): a tela mostra o que está no
+/// aparelho, mas não conseguiu atualizar com o servidor. É o desenho do
+/// [NetworkStatusBanner] no tom de atenção, com a ação de atualizar. Nasceu
+/// para a seção "Vistorias" da execução do guincho (B-SAN3-14, opção A).
+class StaleDataBanner extends StatelessWidget {
+  const StaleDataBanner({
+    required this.message,
+    required this.onRefresh,
+    this.refreshLabel = 'Atualizar',
+    super.key,
+  });
+
+  final String message;
+
+  /// Nulo desabilita "Atualizar" (por exemplo, sem conexão).
+  final VoidCallback? onRefresh;
+  final String refreshLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 4, 4, 4),
+      decoration: BoxDecoration(
+        color: ErpMobileTheme.warning.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ErpMobileTheme.warning.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_outlined,
+            size: 18,
+            color: ErpMobileTheme.warning,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 18 / 13,
+                color: ErpMobileTheme.warningInk,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onRefresh,
+            style: TextButton.styleFrom(minimumSize: const Size(64, 44)),
+            child: Text(refreshLabel),
+          ),
         ],
       ),
     );
@@ -178,17 +242,28 @@ class OfflineState extends StatelessWidget {
 /// Hidden when [status] is [NetworkStatus.online] or [NetworkStatus.unknown].
 /// Pass the value of [networkStatusProvider] from the parent widget.
 class NetworkStatusBanner extends StatelessWidget {
-  const NetworkStatusBanner({required this.status, super.key});
+  const NetworkStatusBanner({
+    required this.status,
+    this.offlineMessage,
+    super.key,
+  });
 
   final NetworkStatus status;
 
+  /// O texto da situação, sem conexão (o que acontece com o que a pessoa
+  /// fizer). Com ele, o texto sai em [ErpMobileTheme.dangerInk], 13 px, que
+  /// passa no AA sobre o fundo da faixa; sem ele, a faixa é a de sempre.
+  final String? offlineMessage;
+
   @override
   Widget build(BuildContext context) {
+    final situation = status == NetworkStatus.offline && offlineMessage != null;
     final (Color color, IconData icon, String message) = switch (status) {
       NetworkStatus.offline => (
         ErpMobileTheme.danger,
         Icons.wifi_off_outlined,
-        'Modo offline — alteracoes serao sincronizadas ao reconectar.',
+        offlineMessage ??
+            'Modo offline — alteracoes serao sincronizadas ao reconectar.',
       ),
       NetworkStatus.checking => (
         ErpMobileTheme.warning,
@@ -212,11 +287,26 @@ class NetworkStatusBanner extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.30)),
       ),
       child: Row(
+        crossAxisAlignment: situation
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 18),
+          Padding(
+            padding: EdgeInsets.only(top: situation ? 1 : 0),
+            child: Icon(icon, color: color, size: 18),
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(message, style: TextStyle(color: color)),
+            child: Text(
+              message,
+              style: situation
+                  ? const TextStyle(
+                      fontSize: 13,
+                      height: 18 / 13,
+                      color: ErpMobileTheme.dangerInk,
+                    )
+                  : TextStyle(color: color),
+            ),
           ),
         ],
       ),
