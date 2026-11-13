@@ -178,6 +178,10 @@ export type EnablePreconditionState = {
   readonly otherProviderEnabledForKind: boolean;
   readonly confirm: string | null;
   readonly now: Date;
+  /** B-ASS-08c-wh (P23): `NODE_ENV` do processo. O chamador (que nasce no B-ASS-08c3) passa o do ambiente. */
+  readonly nodeEnv?: string;
+  /** B-ASS-08c-wh (P23): `BILLING_WEBHOOK_TRUSTED_PROXY_HOPS`. Ausente conta como 0 (fail-closed em produção). */
+  readonly webhookTrustedProxyHops?: number;
 };
 
 export type EnableDecision =
@@ -200,6 +204,8 @@ export function evaluateEnablePreconditions(state: EnablePreconditionState): Ena
   if (state.kind === "invoice" && !state.fiscalComplete) failed.push("fiscal_data_incomplete");
   if (state.otherProviderEnabledForKind) failed.push("another_provider_enabled_for_kind");
   if (state.confirm !== `${state.provider}:${state.environment}`) failed.push("confirm_mismatch");
+  // B-ASS-08c-wh (P23): em produção, sem saltos de proxy medidos o IP do webhook seria o do balanceador → recusa ligar.
+  if (state.nodeEnv === "production" && !((state.webhookTrustedProxyHops ?? 0) >= 1)) failed.push("webhook_proxy_hops_unset");
   return failed.length === 0 ? { ok: true } : { ok: false, reason: "enable_preconditions_failed", failed };
 }
 

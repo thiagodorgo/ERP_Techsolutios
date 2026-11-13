@@ -15,7 +15,7 @@ import { getProviderCatalogEntry } from "../providers/provider.catalog.js";
 import { createDefaultVaultRuntime } from "../vault/vault.factory.js";
 import { InMemoryWebhookEventRepository, type WebhookEventRepository } from "./webhook-events.repository.js";
 import { createWebhookRateLimiter, type WebhookRateLimiter } from "./webhook.rate-limit.js";
-import { createSubscriptionBillingWebhookRouter, type WebhookTarget } from "./subscription-billing.webhook.routes.js";
+import { createSubscriptionBillingWebhookRouter, webhookClientIp, type WebhookTarget } from "./subscription-billing.webhook.routes.js";
 
 type FlatQuery = Readonly<Record<string, string | string[] | undefined>>;
 
@@ -128,8 +128,12 @@ class LazyWebhookEventRepository implements WebhookEventRepository {
   }
 }
 
-/** Composição de produção do router (um limitador por processo). */
-export function createSubscriptionBillingWebhookRouterForApp(options: { readonly limiter?: WebhookRateLimiter } = {}): Router {
+/** Composição de produção do router (um limitador por processo). B-ASS-08c-wh (P25): o IP do emissor sai dos saltos
+ * confiáveis do proxy (`BILLING_WEBHOOK_TRUSTED_PROXY_HOPS`, lido na montagem), nunca de `trust proxy` no app. */
+export function createSubscriptionBillingWebhookRouterForApp(
+  options: { readonly limiter?: WebhookRateLimiter; readonly trustedProxyHops?: number } = {},
+): Router {
+  const trustedProxyHops = options.trustedProxyHops ?? env.BILLING_WEBHOOK_TRUSTED_PROXY_HOPS;
   return createSubscriptionBillingWebhookRouter({
     resolveTarget: (provider) => (targetResolverOverride ?? resolveWebhookTargetFromRuntime)(provider),
     events: new LazyWebhookEventRepository(),
@@ -138,6 +142,6 @@ export function createSubscriptionBillingWebhookRouterForApp(options: { readonly
       if (enqueueOverride) return enqueueOverride(input);
       await getDefaultJobQueue().enqueue("billing.reconcile-webhook", { provider: input.provider, externalEventId: input.externalEventId });
     },
-    clientIp: (req: Request) => req.ip ?? "unknown",
+    clientIp: (req: Request) => webhookClientIp(req, trustedProxyHops),
   });
 }
