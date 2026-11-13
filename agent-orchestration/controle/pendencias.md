@@ -13828,8 +13828,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
-  não muda permissão) · **dono (Emenda 3 do plano do `B-SAN3-19b`; a resposta do dono à Pergunta 2 veio (a) em 11/11):** um bloco próprio de permissão do
-  app, com junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o backend local · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
+  não muda permissão) · **dono:** `B-MOBILE-GATE-CHAVE` (plano em curso; junta completa + `coordenador-de-acessos`; começa provando o bloqueio contra o backend local) · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
 - **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
 - **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
   crítica r2 executou `isValidPermission`/`getRolePermissions` em `07898adf`: inválidas e sem papel; as linhas de
@@ -14538,3 +14537,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **pergunta ao dono:** a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` entra no §4.1 como item novo do portão, com bloco próprio de permissão do app? A resposta (a) da `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP) disse que sim, mas acrescentar o item muda o denominador de 64 para 65 e mexe no `mvp_vendavel`.
 - **recomendação:** decidir antes do próximo marco.
 - **origem:** ressalva (item 4) do `porteiro-540`; o item não entra no `PLANO_SAN3` neste PR (decisão do orquestrador, `donos-1211.md`).
+
+## P-PAINEL-HORA-DA-MEDICAO (2026-11-13) — a hora da medição da Codex ficava em branco e o aviso de medição velha não disparava — BAIXA — FECHADA
+
+- **status:** FECHADA (2026-11-13; consertado fora do repositório) · **gravidade:** BAIXA (ferramenta de terreno) · **escopo:** painel de agentes fora do repositório · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **fato:** o painel de agentes mostrava a hora da medição da Codex em branco. No PowerShell 7, `ConvertFrom-Json` já entregava o campo como `DateTime`; a chamada posterior a `Parse` falhava em silêncio. Por isso, o aviso de medição velha nunca disparava.
+- **fechamento:** o tratamento foi corrigido em 13/11 no painel externo ao repositório.
+- **lição:** medição que falha em silêncio é *fail-open*; o arnês deve tornar a falha visível e não tratar a ausência de hora como medição válida.
