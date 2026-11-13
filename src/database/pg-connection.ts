@@ -19,7 +19,7 @@ export class DatabaseTimezoneConfigError extends Error {
 
   constructor() {
     super(
-      `${DATABASE_URL_TIMEZONE_CONFLICT}: DATABASE_URL fixa um TimeZone de sessão diferente de UTC, ou é inválida.`,
+      `${DATABASE_URL_TIMEZONE_CONFLICT}: DATABASE_URL fixa um TimeZone de sessão diferente de UTC, repete o parâmetro options, ou é inválida.`,
     );
     this.name = "DatabaseTimezoneConfigError";
   }
@@ -38,7 +38,15 @@ export function withUtcSessionTimezone(connectionString: string): string {
     throw new DatabaseTimezoneConfigError();
   }
 
-  const options = url.searchParams.get("options") ?? "";
+  // Emenda 3 (E3.2): olha TODAS as `options`. Repetida, o `pg-connection-string` usa a ÚLTIMA e esta função leria
+  // outra; em vez de adivinhar qual vale, recusa (fail-closed).
+  const allOptions = url.searchParams.getAll("options");
+
+  if (allOptions.length > 1) {
+    throw new DatabaseTimezoneConfigError();
+  }
+
+  const options = allOptions[0] ?? "";
 
   if (options !== "") {
     const found = [...options.matchAll(TIMEZONE_OPTION)];

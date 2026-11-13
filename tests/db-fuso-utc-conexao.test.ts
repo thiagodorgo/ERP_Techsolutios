@@ -19,6 +19,8 @@ import {
 // C3 `TimeZone` já `UTC` na URL devolve a URL igual.
 // C4 `TimeZone` com outro valor → `DATABASE_URL_TIMEZONE_CONFLICT` sem eco da URL; URL inválida → mesmo erro.
 // C5 a opção vai na URL, nunca só no objeto (D1) — banco real em `America/Sao_Paulo` → `SHOW timezone` = `UTC`.
+// C6 (Emenda 3, E3.2) mais de um `options` na URL → `DATABASE_URL_TIMEZONE_CONFLICT` sem eco da URL; o
+//    `pg-connection-string` usa o ÚLTIMO, e a fábrica não adivinha qual vale. Um `options` só → como hoje.
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;
@@ -85,6 +87,45 @@ test("C4 · URL inválida → `DATABASE_URL_TIMEZONE_CONFLICT` sem eco da URL", 
       assert.doesNotMatch(error.message, /db\.interno\.exemplo\.com|5439|us3r|s3nha-sentinela|não-é-uma-url/);
       return true;
     },
+  );
+});
+
+for (const [rotulo, repetidas] of [
+  ["UTC primeiro, outro fuso por último", ["-c TimeZone=UTC", "-c TimeZone=America/Sao_Paulo"]],
+  ["outro fuso primeiro, UTC por último", ["-c TimeZone=America/Sao_Paulo", "-c TimeZone=UTC"]],
+  ["duas UTC", ["-c TimeZone=UTC", "-c TimeZone=UTC"]],
+  ["sem fuso nas duas", ["-c role=x", "-c statement_timeout=0"]],
+] as const) {
+  test(`C6 · mais de um \`options\` na URL → \`DATABASE_URL_TIMEZONE_CONFLICT\` sem eco da URL (${rotulo})`, () => {
+    const input =
+      "postgresql://us3r:s3nha-sentinela@db.interno.exemplo.com:5439/erp?schema=public" +
+      repetidas.map((valor) => `&options=${encodeURIComponent(valor)}`).join("");
+
+    assert.equal(new URL(input).searchParams.getAll("options").length, 2, "premissa: a URL repete `options`");
+    assert.throws(
+      () => withUtcSessionTimezone(input),
+      (error: unknown) => {
+        assert.ok(error instanceof DatabaseTimezoneConfigError, String(error));
+        assert.equal(error.code, DATABASE_URL_TIMEZONE_CONFLICT);
+        assert.doesNotMatch(error.message, /db\.interno\.exemplo\.com|5439|us3r|s3nha-sentinela|postgresql:\/\//);
+        return true;
+      },
+    );
+  });
+}
+
+test("C6 · um `options` só segue como hoje (UTC devolve igual; sem fuso concatena; outro fuso recusa)", () => {
+  const base = "postgresql://erp:erp@db.interno.exemplo.com:5432/erp?schema=public&options=";
+
+  const utc = `${base}${encodeURIComponent("-c TimeZone=UTC")}`;
+  assert.equal(withUtcSessionTimezone(utc), utc);
+
+  const semFuso = new URL(withUtcSessionTimezone(`${base}${encodeURIComponent("-c statement_timeout=0")}`));
+  assert.deepEqual(semFuso.searchParams.getAll("options"), ["-c statement_timeout=0 -c TimeZone=UTC"]);
+
+  assert.throws(
+    () => withUtcSessionTimezone(`${base}${encodeURIComponent("-c TimeZone=America/Sao_Paulo")}`),
+    DatabaseTimezoneConfigError,
   );
 });
 

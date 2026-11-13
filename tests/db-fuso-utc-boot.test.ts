@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import ts from "typescript";
+
 import {
   assertDatabaseSessionTimezoneUtc,
   SessionTimezoneProbeError,
@@ -194,17 +196,112 @@ test("B5 · erro que NÃO é de conexão: 1 sonda só; log e mensagem sem host/p
   assert.doesNotMatch(serializeEntries(entries), new RegExp(`${SENTINEL_HOST}|${SENTINEL_PORT}|${SENTINEL_USER}|${SENTINEL_PASSWORD}`));
 });
 
-test("B6 · server.ts chama a trava de fuso depois do papel e antes de createCoreSaasService", () => {
-  const source = readFileSync(new URL("../src/server.ts", import.meta.url), "utf8");
-  const roleCall = source.indexOf("assertRuntimeDatabaseRoleIfEnforced({ logger })");
-  const timezoneCall = source.indexOf("assertDatabaseSessionTimezoneUtc({ logger })");
-  const serviceCall = source.indexOf("createCoreSaasService()");
+// B6 (Emenda 3, E3.4) confere a chamada pela AST do TypeScript, não pelo texto: comentário não é nó, então a linha
+// comentada não conta. A trava tem de ser um `await` de CallExpression, direto no corpo de `main` (fora de bloco
+// condicional ou de função aninhada), com o identificador importado do bootstrap e só `{ logger }` de argumento,
+// depois da trava de papel e antes de `createCoreSaasService`.
+function calleeName(call: ts.CallExpression): string | undefined {
+  return ts.isIdentifier(call.expression) ? call.expression.text : undefined;
+}
 
-  assert.notEqual(roleCall, -1, "server.ts deve chamar a trava de papel");
-  assert.notEqual(timezoneCall, -1, "server.ts deve chamar a trava de fuso");
-  assert.notEqual(serviceCall, -1, "server.ts deve criar o serviço");
-  assert.ok(roleCall < timezoneCall, "a trava de fuso vem depois da trava de papel");
-  assert.ok(timezoneCall < serviceCall, "a trava de fuso vem antes de createCoreSaasService");
+test("B6 · server.ts chama a trava de fuso depois do papel e antes de createCoreSaasService (pela AST)", () => {
+  const source = ts.createSourceFile(
+    "server.ts",
+    readFileSync(new URL("../src/server.ts", import.meta.url), "utf8"),
+    ts.ScriptTarget.Latest,
+    true,
+  );
+
+  const imported = source.statements.some(
+    (statement) =>
+      ts.isImportDeclaration(statement) &&
+      ts.isStringLiteral(statement.moduleSpecifier) &&
+      statement.moduleSpecifier.text === "./database/session-timezone.bootstrap.js" &&
+      statement.importClause?.namedBindings !== undefined &&
+      ts.isNamedImports(statement.importClause.namedBindings) &&
+      statement.importClause.namedBindings.elements.some(
+        (element) => element.name.text === "assertDatabaseSessionTimezoneUtc" && element.propertyName === undefined,
+      ),
+  );
+  assert.ok(imported, "server.ts importa assertDatabaseSessionTimezoneUtc do bootstrap da trava de fuso, sem alias");
+
+  const main = source.statements.find(
+    (statement): statement is ts.FunctionDeclaration =>
+      ts.isFunctionDeclaration(statement) && statement.name?.text === "main" && statement.body !== undefined,
+  );
+  assert.ok(main?.body, "server.ts declara a função main");
+
+  // As chamadas `await f(...)` que são, elas mesmas, um comando do corpo de `main` (incondicionais).
+  const awaitedStatements: Array<{ readonly name: string; readonly pos: number; readonly call: ts.CallExpression }> = [];
+  for (const statement of main.body.statements) {
+    if (
+      ts.isExpressionStatement(statement) &&
+      ts.isAwaitExpression(statement.expression) &&
+      ts.isCallExpression(statement.expression.expression)
+    ) {
+      const call = statement.expression.expression;
+      const name = calleeName(call);
+      if (name !== undefined) awaitedStatements.push({ name, pos: call.getStart(source), call });
+    }
+  }
+
+  // Toda chamada de `createCoreSaasService` em qualquer ponto de `main`.
+  const servicePositions: number[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && calleeName(node) === "createCoreSaasService") {
+      servicePositions.push(node.getStart(source));
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(main.body);
+
+  const role = awaitedStatements.find((entry) => entry.name === "assertRuntimeDatabaseRoleIfEnforced");
+  const timezone = awaitedStatements.filter((entry) => entry.name === "assertDatabaseSessionTimezoneUtc");
+
+  assert.ok(role, "main deve fazer `await assertRuntimeDatabaseRoleIfEnforced(...)` como comando próprio");
+  assert.equal(timezone.length, 1, "main deve fazer `await assertDatabaseSessionTimezoneUtc(...)` uma vez, como comando próprio");
+  assert.ok(servicePositions.length > 0, "main deve criar o serviço");
+
+  const [timezoneCall] = timezone;
+  const args = timezoneCall!.call.arguments;
+  assert.equal(args.length, 1, "a trava de fuso recebe um argumento só");
+  const [arg] = args;
+  assert.ok(
+    arg !== undefined &&
+      ts.isObjectLiteralExpression(arg) &&
+      arg.properties.length === 1 &&
+      ts.isShorthandPropertyAssignment(arg.properties[0]!) &&
+      arg.properties[0].name.text === "logger",
+    "a trava de fuso roda com `{ logger }` e as dependências reais (sem cliente injetado)",
+  );
+
+  assert.ok(role.pos < timezoneCall!.pos, "a trava de fuso vem depois da trava de papel");
+  assert.ok(
+    servicePositions.every((pos) => timezoneCall!.pos < pos),
+    "a trava de fuso vem antes de createCoreSaasService",
+  );
+});
+
+test("B6 · controle do leitor da AST: a chamada comentada some, a chamada real aparece", () => {
+  const ler = (codigo: string): string[] => {
+    const file = ts.createSourceFile("x.ts", codigo, ts.ScriptTarget.Latest, true);
+    const names: string[] = [];
+    const visit = (node: ts.Node): void => {
+      if (ts.isCallExpression(node)) {
+        const name = calleeName(node);
+        if (name !== undefined) names.push(name);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+    return names;
+  };
+
+  assert.deepEqual(ler("async function main() {\n  // await assertDatabaseSessionTimezoneUtc({ logger });\n}\n"), []);
+  assert.deepEqual(ler("async function main() {\n  /* await assertDatabaseSessionTimezoneUtc({ logger }); */\n}\n"), []);
+  assert.deepEqual(ler("async function main() {\n  await assertDatabaseSessionTimezoneUtc({ logger });\n}\n"), [
+    "assertDatabaseSessionTimezoneUtc",
+  ]);
 });
 
 test("B7 · listener do Traccar recusa banco fora de UTC → timezone_refused, loga só o código", async () => {
