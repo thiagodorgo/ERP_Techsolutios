@@ -36,7 +36,13 @@ export class FinancialPeriodCloseController {
     // forced:true + os ids das disputas SOBREPOSTAS (server-side, nunca no snapshot público — e/ataque).
     await this.audit(request, "financial_period.closed", "close", record, {
       forced: meta.forced,
-      ...(meta.forced ? { overriddenDisputeTitleIds: meta.overriddenDisputeTitleIds } : {}),
+      ...(meta.forced
+        ? {
+            overriddenDisputeTitleIds: meta.overriddenDisputeTitleIds,
+            // B-SAN3-24 (Q1 = (b), D-DONO-TODAS-RECOMENDACOES-1111) — o motivo do "fechar mesmo assim" também na trilha.
+            forcedReason: record.snapshot?.latest.forcedReason ?? null,
+          }
+        : {}),
     });
     return { data: toFinancialPeriodCloseDto(record) };
   }
