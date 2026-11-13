@@ -5070,3 +5070,8 @@ lista curada do job `backend-postgres`, medida 3× antes.
 
 - **Fato:** a J-542b e a `conf-542` rodaram o T-E4-1 uma vez; a CI do `72866b87` ficou vermelha no T-E4-1 (`100 !== 130`, a propriedade do C1-A1 — artefato do teste, empate triplo de milissegundo no desempate da run, que virou a `P-ASS09A-EMPATE-MESMO-MS`) e no B16, intermitente conhecido (ocorrência nova da `P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE`, run `43175128180`, 12/11).
 - **Leitura do orquestrador, declarada (§A6):** teste novo de dinheiro roda 20 vezes, na forma do arquivo inteiro, antes da junta.
+
+## A2-1311-RN-BAIXA-04-E-MATERIAL-DA-OS (2026-11-13) — RN-BAIXA-04 (BASE fixa) × 5(a) do dono no material da OS: não há conflito
+
+- **Registro §A2 (Emenda C2 do `B-MATERIAL-REENVIO`, E0 item 8 e E4 §C9):** a RN-BAIXA-04 ("custódia FIXADA em BASE", `docs/juntas/J-OMEGA4C.md:1962`) continua para combustível e manutenção; a nova origem `work_order_material` segue a regra 5(a) do dono (`D-DONO-TODAS-RECOMENDACOES-1111`): a peça sai da custódia profissional de quem lança, e o gerente (`tenant_wide`) sem cadastro baixa da base. A P12 do plano do `B-SAN3-15` foi implementada no `B-MATERIAL-REENVIO` (PR #551), e a F2 do `B-SAN3-15b` sai.
+- **Prova:** RC1 (7)-(8) e RC8 em memória; RC3 (6)-(8) em PostgreSQL; `tests/inventory-stock-decrement.test.ts` (BASE fixa dos consumidores do Ω4C) sem asserção mudada.
