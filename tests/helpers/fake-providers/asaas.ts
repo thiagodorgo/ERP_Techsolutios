@@ -119,6 +119,7 @@ export async function startAsaasFake(defaultScenario = "ok", options: { ignoreEx
         dueDate: parsed.dueDate,
         description: parsed.description,
         externalReference: parsed.externalReference,
+        dateCreated: "2026-11-13",
         status: PAYMENT_SCENARIO_STATUS[scenario] ?? "PENDING",
         invoiceUrl: `https://www.asaas.com/i/${nextId("inv_")}`,
         bankSlipUrl: `https://www.asaas.com/b/pdf/${nextId("slip_")}`,

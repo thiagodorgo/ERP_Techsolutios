@@ -22,7 +22,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import type { PaymentProviderPort, CreateChargeInput, ChargeResult, ChargeStatus } from "../providers/payment/payment-provider.port.js";
+import type { PaymentProviderPort, CreateChargeInput, ChargeLookup, ChargeResult, ChargeStatus, ExternalChargeCandidate } from "../providers/payment/payment-provider.port.js";
 import {
   backoffMsForAttempt,
   INVOICE_DEFER_MS,
@@ -144,6 +144,31 @@ function chargeInputFromRow(row: BillingOutboxRow, customerId: string): CreateCh
 /** Estados da cobrança achada pela referência que podem ser ADOTADOS: viva ou paga — nunca cancelada nem estornada. */
 export const ADOPTABLE_CHARGE_STATES: ReadonlySet<ChargeStatus> = new Set<ChargeStatus>(["pending", "overdue", "paid", "partially_paid"]);
 
+const SAO_PAULO_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+
+function candidateDay(value: string): string | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : SAO_PAULO_DAY.format(parsed);
+}
+
+/** Escolhe por valor exato e dia civil de São Paulo; qualquer ambiguidade falha fechado. */
+export function chargeCandidateDecision(
+  row: BillingOutboxRow,
+  listed: readonly ExternalChargeCandidate[],
+  orphan: boolean,
+): ExternalChargeCandidate | string | null {
+  if (listed.length === 0) return null;
+  const amount = Number(row.payload.amountCents);
+  const occurredDay = SAO_PAULO_DAY.format(row.occurredAt);
+  const candidates = listed.filter((candidate) => candidate.amountCents === amount && candidateDay(candidate.createdAt) === occurredDay);
+  const prefix = orphan ? "orphan_found" : "charge_found";
+  if (candidates.length === 0) return `${prefix}_no_candidate`;
+  if (candidates.length > 1) return `${prefix}_multiple_candidates`;
+  if (candidates.length === 1) return candidates[0]!;
+  return `${prefix}_no_candidate`;
+}
+
 /**
  * E6′/E7′ (2º conserto do #522, plano §13.1.2) — a cobrança achada pela referência só é ADOTADA com fatos que não se
  * apagam:
@@ -180,7 +205,7 @@ export function adoptionDecision(
 async function settleFoundCharge(
   deps: DispatcherDeps,
   row: BillingOutboxRow,
-  found: { readonly chargeId: string; readonly status: ChargeStatus },
+  found: { readonly chargeId: string } & ChargeLookup,
   orphan: boolean,
   clock: () => Date,
 ): Promise<DispatchOutcome> {
@@ -280,8 +305,14 @@ async function dispatchOne(
   // (2) CHAMADA FORA de transação. Crash órfão → reconsulta por referência ANTES de repetir (nunca cobra 2×), e a cobrança
   // achada só é adotada pela régua U ∧ V (E7′): a fantasma de um fechamento desfeito vai a revisão.
   if (wasOrphan) {
-    const found = await port.findChargeByExternalReference(row.statementId);
-    if (found) return settleFoundCharge(deps, row, found, true, clock);
+    const listed = await port.listChargesByExternalReference(row.statementId);
+    const selected = chargeCandidateDecision(row, listed, true);
+    if (typeof selected === "string") {
+      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, selected, clock(), lease))) return leaseLost(deps, row);
+      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: selected });
+      return "needs_review";
+    }
+    if (selected) return settleFoundCharge(deps, row, { chargeId: selected.chargeId, ...(await port.getCharge(selected.chargeId)) }, true, clock);
     if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, "orphan_recovery_not_found", clock(), lease))) return leaseLost(deps, row);
     await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "orphan_recovery_not_found" });
     return "needs_review";
@@ -298,8 +329,14 @@ async function dispatchOne(
     }
     // E6′: a reconsulta vem SEMPRE antes de criar — nenhuma criação às cegas. Achou → adota (U ∧ V) ou revisão, NUNCA
     // cria; um erro na reconsulta cai no `catch` abaixo (reagenda ou FAILED) e também nunca cria.
-    const found = await port.findChargeByExternalReference(row.statementId);
-    if (found) return await settleFoundCharge(deps, row, found, false, clock);
+    const listed = await port.listChargesByExternalReference(row.statementId);
+    const selected = chargeCandidateDecision(row, listed, false);
+    if (typeof selected === "string") {
+      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, selected, clock(), lease))) return leaseLost(deps, row);
+      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: selected });
+      return "needs_review";
+    }
+    if (selected) return await settleFoundCharge(deps, row, { chargeId: selected.chargeId, ...(await port.getCharge(selected.chargeId)) }, false, clock);
     // [LEASE-02] A posse é confirmada numa transação curta que termina ANTES do POST remoto.
     if (!(await deps.repo.confirmLease(row.tenantId, row.id, lease))) return leaseLost(deps, row);
     const result = await port.createCharge(chargeInputFromRow(row, customer.customerId));

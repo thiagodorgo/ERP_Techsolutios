@@ -28,6 +28,7 @@ import type {
   CustomerProfile,
   PaymentMethod,
   PaymentProviderPort,
+  ExternalChargeCandidate,
   ProviderDescription,
   RegisterWebhookInput,
   RegisterWebhookResult,
@@ -48,6 +49,8 @@ type AsaasPayment = {
   readonly confirmedDate?: string;
   readonly paymentDate?: string;
   readonly externalReference?: string;
+  readonly dateCreated?: string;
+  readonly dueDate?: string;
 };
 
 type AsaasErrorBody = {
@@ -178,6 +181,9 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
     const state = asaasStatusToOurs(payment.status ?? "");
     return {
       status: state.status,
+      payUrl: payment.invoiceUrl,
+      boletoUrl: payment.bankSlipUrl,
+      dueDate: payment.dueDate,
       disputeWonPending: state.disputeWonPending,
       paidAt: payment.confirmedDate ?? payment.paymentDate,
       paidCents: state.status === "paid" && typeof payment.value === "number" ? toCents(payment.value) : undefined,
@@ -185,16 +191,21 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
     };
   }
 
-  async findChargeByExternalReference(ref: string): Promise<{ readonly chargeId: string; readonly status: ChargeStatus } | null> {
+  async listChargesByExternalReference(ref: string): Promise<readonly ExternalChargeCandidate[]> {
     const list = await this.call<{ readonly data?: readonly AsaasPayment[] }>({
-      op: "findChargeByExternalReference",
+      op: "listChargesByExternalReference",
       method: "GET",
       path: `/payments?externalReference=${encodeURIComponent(ref)}`,
       headers: await this.authHeaders(),
     });
-    const found = list.data?.find((payment) => payment.externalReference === ref);
-    if (!found) return null;
-    return { chargeId: found.id, status: asaasStatusToOurs(found.status ?? "").status };
+    return (list.data ?? [])
+      .filter((payment) => payment.externalReference === ref)
+      .map((payment) => ({
+        chargeId: payment.id,
+        status: asaasStatusToOurs(payment.status ?? "").status,
+        amountCents: typeof payment.value === "number" ? toCents(payment.value) : Number.NaN,
+        createdAt: payment.dateCreated ?? "",
+      }));
   }
 
   async cancelCharge(chargeId: string): Promise<{ readonly chargeId: string; readonly status: ChargeStatus }> {

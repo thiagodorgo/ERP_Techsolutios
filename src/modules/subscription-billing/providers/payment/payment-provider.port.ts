@@ -49,12 +49,25 @@ export type ChargeResult = {
 
 export type ChargeLookup = {
   readonly status: ChargeStatus;
+  readonly payUrl?: string;
+  readonly pixCopyPaste?: string;
+  readonly boletoLine?: string;
+  readonly boletoUrl?: string;
+  readonly dueDate?: string;
   readonly paidAt?: string;
   readonly paidCents?: number;
   /** D3/§12.2: `PAYMENT_AWAITING_CHARGEBACK_REVERSAL` → chargeback_disputed com disputa vencida pendente. */
   readonly disputeWonPending?: boolean;
   /** A resposta crua do provedor, para a máquina de estados do B-ASS-08. */
   readonly raw: Readonly<Record<string, unknown>>;
+};
+
+export type ExternalChargeCandidate = {
+  readonly chargeId: string;
+  readonly status: ChargeStatus;
+  readonly amountCents: number;
+  /** Instante ISO ou dia civil `YYYY-MM-DD`, conforme o provedor. */
+  readonly createdAt: string;
 };
 
 export type RegisterWebhookInput = {
@@ -91,7 +104,7 @@ export interface PaymentProviderPort {
   ensureCustomer(profile: CustomerProfile): Promise<{ readonly customerId: string }>;
   createCharge(input: CreateChargeInput): Promise<ChargeResult>;
   getCharge(chargeId: string): Promise<ChargeLookup>;
-  findChargeByExternalReference(ref: string): Promise<{ readonly chargeId: string; readonly status: ChargeStatus } | null>;
+  listChargesByExternalReference(ref: string): Promise<readonly ExternalChargeCandidate[]>;
   cancelCharge(chargeId: string): Promise<{ readonly chargeId: string; readonly status: ChargeStatus }>;
   refund(chargeId: string, amountCents?: number): Promise<{ readonly chargeId: string; readonly status: ChargeStatus }>;
   registerWebhook(input: RegisterWebhookInput): Promise<RegisterWebhookResult>;
