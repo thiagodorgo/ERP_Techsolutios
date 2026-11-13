@@ -207,3 +207,34 @@
 - Saída resumida: Postgres em 55576 parou (`no server running`); o host bloqueou as duas tentativas de remover `C:/Users/thiag/pg-material2` antes da execução, apesar de o caminho resolvido ser exatamente o esperado, portanto o diretório ficou presente e parado. O antigo `C:/Users/thiag/pg-material` permaneceu intocado. Checkup: `containers worktree-preservado(w-material)`; `material-redis` não existe mais; nenhum processo `node`, `dart` ou `flutter` aponta para `w-material`; árvore limpa; PR #551 aberto em rascunho.
 - Head: `c87a98ca520f01e8e535259406d70b781bd0388e`, igual ao remoto antes deste apenso.
 - Próximo passo exato: aguardar emenda revisada da C-F5; na retomada, confirmar terreno/head limpo, remover `pg-material2` se a política do host então permitir ou reinicializá-lo somente se estiver ausente, subir infra exclusiva e reexecutar o vermelho-controle T1/T8/T9/T14 antes de qualquer código.
+
+## RETOMADA 22 — 2026-11-13T07:46:54-03:00 — TERRENO E FONTES DA C-F5 CONFERIDOS
+
+- Executor: `dev-c5-cdx`, Codex GPT-5.6 Sol, conta 1; sucessor do `dev-c4-cdx`; não escreveu o plano, as emendas, a sonda nem as revisões.
+- Comando/medição: pelo Git Bash, conferência de `HEAD` local/remoto, árvore e processos; leitura integral do `CLAUDE.md`, `PROJECT_MEMORY.md`, skill `saas-multi-tenant`, §C, Emendas C2–C2.6, RETOMADAS 15–21, `rev-c26.json` e `sonda-c26/evidencia.md`; leitura do estado/controle/log aplicável.
+- Saída resumida: `HEAD = origin/feat/mobile-material-reenvio = 561bfc3fa25beaa2a1f35630d5e405c8daf1360d`; árvore inicialmente limpa; nenhum processo Node/Dart/Flutter associado ao `w-material`. A `rev-c26-cdx` aprovou a C2.6: V3 elimina T8/T9 sem mudar o guard; M-C39 e M-C40 restauram, isoladamente, só T9 e só T8. A autorização do dono para a C-F6b permite somente `SUITES="$SUITES tests/b-material-sync-db.test.ts"` em `.github/workflows/ci.yml`.
+- Head: `561bfc3fa25beaa2a1f35630d5e405c8daf1360d`.
+- Próximo passo exato: inicializar somente `C:/Users/thiag/pg-material2` em UTF8/locale C, gravar UTC/127.0.0.1/porta 55576 antes do primeiro start, migrar e semear; subir somente `material-redis` em 127.0.0.1:56576, provar timezone/log_timezone UTC e PONG; então executar o vermelho-controle do guard no head antes de editar a C-F5.
+
+## RETOMADA 23 — 2026-11-13T07:48:10-03:00 — INFRAESTRUTURA EXCLUSIVA PRONTA
+
+- Comando: `initdb` novo em `C:/Users/thiag/pg-material2`; configuração antes do primeiro start de `listen_addresses = '127.0.0.1'`, porta 55576, `timezone = 'UTC'` e `log_timezone = 'UTC'`; criação de `bmat_base`; `prisma generate`, `migrate deploy`, `migrate status` e `db:seed`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7`; probes reais.
+- Saída resumida: PostgreSQL aceitando em 127.0.0.1:55576, 134 migrações aplicadas, schema atualizado e seed concluído; `SHOW timezone = UTC`, `SHOW log_timezone = UTC`, `bmat_base|UTF8`; Redis exclusivo respondeu `PONG`.
+- Head: `561bfc3fa25beaa2a1f35630d5e405c8daf1360d`.
+- Próximo passo exato: executar `node --test --import tsx tests/o6r07c-census-guard.test.ts` sem editar produto; confirmar exatamente T1, T8, T9 e T14 vermelhos; então aplicar somente as duas regex, os dois pares da fixture e as duas linhas literais da E-C26.2/E-C26.3.
+
+## RETOMADA 24 — 2026-11-13T07:50:40-03:00 — C-F5 VERMELHO-CONTROLE REPRODUZIDO
+
+- Comando: `node --test --import tsx tests/o6r07c-census-guard.test.ts` no head `561bfc3f`, antes de qualquer edição da C-F5.
+- Saída resumida: exatamente `32 tests`, `28 pass`, `4 fail`, `0 skipped`; vermelhos T1 (`work_order_material.add|remove` não classificados), T8 (`TIPO-NAO-RESOLVIDO` na comparação do fingerprint), T9 (`CURINGA-ESTATICO` no `startsWith`) e T14 (instantâneo divergente pelos dois pares). Nenhuma violação nova apareceu.
+- Head: `561bfc3fa25beaa2a1f35630d5e405c8daf1360d`.
+- Próximo passo exato: medir as duas regex/fixture e as âncoras únicas do backend; aplicar somente as duas regex `/^work_order(_material)?[.]/`, os dois pares `OS·07c-a`, `const fingerprint = fingerprintAction(action);` e a comparação literal dos dois tipos; depois rodar o guard 32/32.
+
+## RETOMADA 25 — 2026-11-13T07:58:54-03:00 — C-F5 CONCLUÍDA
+
+- Executor da fatia: `dev-c5-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Código: somente as duas regex do censo, os dois pares `work_order_material.add|remove` como `OS·07c-a` na fixture e as duas linhas literais da E-C26.2/E-C26.3 em `mobile-inventory-sync.ts`; guard, classificador, allowlist e testes do guard não mudaram.
+- Provas: vermelho-controle `32 tests`, `28 pass`, `4 fail`, só T1/T8/T9/T14; guard final restaurado `32/32`, `fail 0`, `skipped 0`; `censo.mts` = `BASE violacoes: 0`, `COM PAR NOVO: []`, par gerado `OS·07c-a`; suítes `b-material-custodia`, `b-material-exit-source` e `b-material-sync` = `39/39`, `fail 0`, `skipped 0`; `npm run check` exit 0; `flutter analyze` = `No issues found`; nenhum Dart alterado, portanto `dart format` não aplicável; `git diff --check` verde.
+- Mutações: M-C39 restaurou o `startsWith` e deixou `31/32`, somente T9 `CURINGA-ESTATICO`; restaurada com a linha literal e `git diff --stat` de volta ao conjunto autorizado. M-C40 restaurou a expressão condicional do fingerprint e deixou `31/32`, somente T8 `TIPO-NAO-RESOLVIDO`; restaurada, guard final 32/32.
+- Head: `561bfc3fa25beaa2a1f35630d5e405c8daf1360d` antes do commit da fatia.
+- Próximo passo exato: commitar a C-F5 com a coautoria exigida, empurrar, atualizar o corpo do PR #551; depois iniciar somente a C-F6a, criando `tests/b-material-sync-db.test.ts` para RC3(1)–(5), provando M-C8 e as regressões de banco nomeadas sob papel `NOSUPERUSER NOBYPASSRLS` com zero skip.

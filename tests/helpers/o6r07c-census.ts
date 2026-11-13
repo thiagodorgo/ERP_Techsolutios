@@ -438,7 +438,7 @@ export function classificar(c3: any, s3: any, snap: Instantaneo | null): Classif
   }
   for (const p of s3.pares) {
     const k = "PAR " + p.lote + " · " + p.type;
-    vivas.set(k, { k, n: 1, tipo: "PAR", p, prop: /^work_order[.]/.test(p.type) || /^checklist/.test(p.type) || /^evidence[.]work_order_/.test(p.type), semAlcance: !p.field_technician.alcanca && !p.technician.alcanca });
+    vivas.set(k, { k, n: 1, tipo: "PAR", p, prop: /^work_order(_material)?[.]/.test(p.type) || /^checklist/.test(p.type) || /^evidence[.]work_order_/.test(p.type), semAlcance: !p.field_technician.alcanca && !p.technician.alcanca });
   }
   function porRegra(v: any): string {
     if (v.tipo === "MIDDLEWARE" || v.tipo === "ROTEADOR" || v.tipo === "SUBAPP") return v.tipo;
@@ -464,7 +464,7 @@ export function classificar(c3: any, s3: any, snap: Instantaneo | null): Classif
     const t = v.p.type;
     if (v.prop) {
       if (v.semAlcance) return "OS·SEM-ALCANCE";
-      if (/^work_order[.]/.test(t)) return "OS·07c-a";
+      if (/^work_order(_material)?[.]/.test(t)) return "OS·07c-a";
       if (/^checklist/.test(t)) return "VISTORIA·ESCOPO";
       return "EVIDENCIA-OS·ESCOPO";
     }

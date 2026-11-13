@@ -168,7 +168,7 @@ export async function syncMobileInventoryActions(
 
   for (const action of request.actions) {
     const legacyAction = isSupportedActionType(action.type);
-    const fingerprint = legacyAction ? fingerprintAction(action) : undefined;
+    const fingerprint = fingerprintAction(action);
     const receiptKey = legacyAction ? buildReceiptKey(actor, action.client_action_id) : undefined;
     const existingReceipt = receiptKey ? syncReceipts.get(receiptKey) : undefined;
 
@@ -363,7 +363,7 @@ function withMaterialEcho(
   action: MobileInventoryAction,
   result: MobileInventoryActionResult,
 ): MobileInventoryActionResult {
-  if (!action.type.startsWith("work_order_material.")) return result;
+  if (action.type !== "work_order_material.add" && action.type !== "work_order_material.remove") return result;
   return {
     ...result,
     ...(typeof action.payload.work_order_local_id === "string"
