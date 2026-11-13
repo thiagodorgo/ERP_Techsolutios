@@ -8,7 +8,7 @@
 //       (B-ASS-08b; antes o router emitia o corpo 0.43 por conta própria, mas fora de `/api/v1` o 404 do app é o HTML do
 //       Express, e desligado ficava distinguível de inexistente). Nada gravado (R-WH-1).
 //   (2) parser LOCAL `express.raw({ type: "*/*", limit: "256kb" })` → corpo > 256 KB → 413.
-//   (3) teto global do provedor (600/min) e bloqueio por IP com excesso de falhas → 429.
+//   (3) bloqueio por IP com excesso de falhas e, depois, teto global do provedor (600/min) → 429 (ordem do B-ASS-08c-wh, P26).
 //   (4) `verifyWebhook` do adaptador — falha → 401 sem motivo (e conta a falha do IP).
 //   (5) `INSERT billing_webhook_events ON CONFLICT DO NOTHING` — conflito → 200 (replay ignorado).
 //   (6) enfileira `billing.reconcile-webhook` → 200 `{}` em < 2 s. NENHUMA decisão de dinheiro acontece aqui (R-WH-4).
@@ -140,13 +140,14 @@ export function createSubscriptionBillingWebhookRouter(deps: WebhookRouterDeps):
     }
     const rawBody = Buffer.isBuffer(req.body) ? (req.body as Buffer).toString("utf8") : "";
 
-    // (3) teto global do provedor e bloqueio por IP.
+    // (3) bloqueio por IP e, só depois, teto global do provedor. B-ASS-08c-wh (P26): o IP já bloqueado é recusado ANTES
+    // de tocar a cota global, para não gastá-la e tirar o 200 do provedor legítimo.
     const ip = clientIp(req);
-    if (!deps.limiter.allowGlobal(provider)) {
+    if (deps.limiter.isIpBlocked(ip)) {
       res.status(429).json({ error: { code: "rate_limited" } });
       return;
     }
-    if (deps.limiter.isIpBlocked(ip)) {
+    if (!deps.limiter.allowGlobal(provider)) {
       res.status(429).json({ error: { code: "rate_limited" } });
       return;
     }
