@@ -4,11 +4,12 @@ import { previousPeriodKey } from "./period-keys";
 // J-547 (conserto único, C3-12 e C3-01) — as competências que a tela de Fechamento mostra, e o tempo de cada uma, numa
 // regra só para as 3 aparências. Só TypeScript puro (R-E2E-JWT).
 //
-// C3-12 — UMA regra para o mês sem linha no servidor: a competência que nunca teve fechamento está ABERTA (é o que o
-// servidor responde em `GET /financial-periods/:period`). Ela entra na lista como "aberta" e, se já terminou, conta em
-// "Terminaram e não estão fechados"; o calendário da C, os blocos, os indicadores e a lista leem as MESMAS linhas, então
-// o número que a tela mostra é o mesmo em todo lugar. O recorte é o ano corrente até a competência corrente, mais a
-// anterior (em janeiro, dezembro do ano que passou), mais toda competência que o servidor já tem.
+// C3-12 — UMA regra para o mês sem linha no servidor, a da referência aprovada ("os meses aparecem aqui conforme forem
+// fechados"; no vazio, a lista mostra só a corrente): as linhas da tela são as do servidor mais a competência CORRENTE e a
+// ANTERIOR (o mês a fechar), estas como abertas quando o servidor não as tem. O mês que nunca teve fechamento fora dessas
+// duas NÃO é linha: não entra na lista, nos blocos nem nos indicadores, e o calendário da C o mostra neutro, "sem
+// fechamento", nunca "aberto". Calendário, blocos, indicadores e lista leem as MESMAS linhas, então o número
+// que a tela mostra é o mesmo em todo lugar.
 //
 // C3-01 — o tempo para fechar é a data do fechamento (`closedAt`, no calendário de São Paulo) menos o último dia da
 // competência, em dias, como a referência aprovada (`closedAt` menos o fim da competência). Nada aqui soma ou acumula
@@ -21,13 +22,12 @@ const DAY_MS = 86_400_000;
 
 const CIVIL_SP = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
 
-/** As linhas da tela: as do servidor e, sem linha no servidor, as competências do ano corrente até a corrente e a anterior, como abertas. */
+/** As linhas da tela: as do servidor, mais a corrente e a anterior como abertas quando o servidor não as tem. */
 export function periodRowsFor(serverRows: readonly PeriodRow[], currentKey: string): PeriodRow[] {
   const byKey = new Map(serverRows.map((row) => [row.period, row]));
-  const keys = new Set<string>([currentKey, previousPeriodKey(currentKey)]);
-  const match = KEY.exec(currentKey);
-  if (match) for (let month = 1; month <= Number(match[2]); month++) keys.add(`${match[1]}-${String(month).padStart(2, "0")}`);
-  for (const key of keys) if (!byKey.has(key)) byKey.set(key, { period: key, status: "open", closedAt: null, reopenedAt: null });
+  for (const key of [currentKey, previousPeriodKey(currentKey)]) {
+    if (!byKey.has(key)) byKey.set(key, { period: key, status: "open", closedAt: null, reopenedAt: null });
+  }
   return [...byKey.values()].sort((a, b) => b.period.localeCompare(a.period));
 }
 

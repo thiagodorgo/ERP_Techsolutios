@@ -11,8 +11,8 @@ import { MonthToCloseCard } from "./FechamentoViewB";
 // `screen-refs/fechamento-periodo-3opcoes.reference.html`, opção C). Mesma camada de dados e mesmas ações da A. O ano
 // corrente mês a mês (situação de cada competência e o tempo para fechar ou há quantos dias está aberta; mês futuro =
 // ainda não começou), clicar num mês abre o checklist dele ao lado, com as ações; e a lista agrupada por trimestre. O
-// calendário lê as MESMAS linhas dos blocos e da lista (J-547 C3-12, `periodRowsFor`): o mês sem fechamento no servidor
-// está aberto em todo lugar e conta em "Terminaram e não estão fechados".
+// calendário lê as MESMAS linhas dos blocos e da lista (J-547 C3-12, `periodRowsFor`): o mês que nunca teve fechamento
+// (fora a corrente e a anterior) não é linha e aparece neutro, "sem fechamento", sem contar em bloco nenhum.
 
 function quarterLabel(period: string): string {
   const month = Number(period.slice(5, 7));
@@ -65,10 +65,12 @@ export function FechamentoViewC(model: FechamentoViewModel) {
               if (model.list.loading) return <BlockSkeleton key={period} height={56} />;
               const row = model.list.rows.find((item) => item.period === period);
               const future = period > model.list.currentKey;
+              // J-547 C3-12 — mês que não é linha: neutro ("sem fechamento"), nunca "aberto" sem contar no bloco.
+              const neutral = future || !row;
               const status = row?.status ?? "open";
               const tone = PERIOD_STATUS_TONES[status];
-              const label = future ? "ainda não começou" : period === model.list.currentKey && status === "open" ? "em andamento" : PERIOD_STATUS_LABELS[status].toLocaleLowerCase("pt-BR");
-              const time = future || !row ? null : closeTimeText(row, model.list.currentKey);
+              const label = future ? "ainda não começou" : !row ? "sem fechamento" : period === model.list.currentKey && status === "open" ? "em andamento" : PERIOD_STATUS_LABELS[status].toLocaleLowerCase("pt-BR");
+              const time = neutral || !row ? null : closeTimeText(row, model.list.currentKey);
               return (
                 <button
                   key={period}
@@ -86,14 +88,14 @@ export function FechamentoViewC(model: FechamentoViewModel) {
                     borderTop: `1px solid ${target === period ? "#2563EB" : "#E2E8F0"}`,
                     borderRight: `1px solid ${target === period ? "#2563EB" : "#E2E8F0"}`,
                     borderBottom: `1px solid ${target === period ? "#2563EB" : "#E2E8F0"}`,
-                    borderLeft: `3px solid ${future ? "#E2E8F0" : tone.fg}`,
-                    background: future ? "#F8FAFC" : "#fff",
-                    color: future ? "#94A3B8" : "#0F172A",
+                    borderLeft: `3px solid ${neutral ? "#E2E8F0" : tone.fg}`,
+                    background: neutral ? "#F8FAFC" : "#fff",
+                    color: neutral ? "#64748B" : "#0F172A",
                     cursor: future ? "default" : "pointer",
                   }}
                 >
                   <b style={{ fontSize: 12.5, display: "block" }}>{periodMonthName(period)}</b>
-                  <small style={{ fontSize: 11, color: future ? "#94A3B8" : tone.fg, display: "block" }}>{label}</small>
+                  <small style={{ fontSize: 11, color: neutral ? "#64748B" : tone.fg, display: "block" }}>{label}</small>
                   {time && time.text !== "em andamento" && time.text !== "—" ? (
                     <small style={{ fontSize: 10.5, color: time.tone === "late" ? "#B91C1C" : time.tone === "slow" ? "#B45309" : "#64748B", display: "block" }}>
                       {time.tone === "done" || time.tone === "slow" ? `em ${time.text}` : time.text}

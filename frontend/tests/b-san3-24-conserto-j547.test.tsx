@@ -341,7 +341,7 @@ test("C3-11 blocos e abas são os da biblioteca (bloco de 36 px com borda; abas 
 });
 
 // ── C3-12 — uma regra só para o mês sem linha no servidor (os números da tela batem) ──
-test("C3-12 o mês sem linha no servidor está aberto em todo lugar: 7 meses terminados e abertos = 7 no bloco e no calendário", async () => {
+test("C3-12 uma regra só para o mês sem linha no servidor: o calendário marca abertos os MESMOS 2 meses que o bloco conta; os outros ficam 'sem fechamento'", async () => {
   const { periodRowsFor } = await import("../src/modules/finance/period-closes/period-rows");
   const server: PeriodRow[] = [
     { period: "2026-06", status: "closed", closedAt: "2026-07-03T15:00:00.000Z", reopenedAt: null },
@@ -352,13 +352,19 @@ test("C3-12 o mês sem linha no servidor está aberto em todo lugar: 7 meses ter
   const rows = periodRowsFor(server, "2026-11");
   assert.deepEqual(
     rows.map((row) => `${row.period}:${row.status}`),
-    ["2026-11:open", "2026-10:open", "2026-09:closed", "2026-08:closed", "2026-07:reopened", "2026-06:closed", "2026-05:open", "2026-04:open", "2026-03:open", "2026-02:open", "2026-01:open"],
+    ["2026-11:open", "2026-10:open", "2026-09:closed", "2026-08:closed", "2026-07:reopened", "2026-06:closed"],
+    "as linhas do servidor, mais a corrente e a anterior (o mês a fechar)",
   );
   const html = renderFech(FechamentoViewC, fechModel({ list: { rows } }));
-  assert.match(html, /aria-label="Terminaram e não estão fechados: 7 — filtrar a lista"/, "jan, fev, mar, abr, mai, jul e out");
+  assert.match(html, /aria-label="Terminaram e não estão fechados: 2 — filtrar a lista"/, "julho (reaberto) e outubro (aberto)");
   const ended = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro"];
   const openTiles = ended.filter((month) => new RegExp(`aria-label="${month}/2026: (aberto|reaberto) — abrir o checklist"`).test(html));
-  assert.equal(openTiles.length, 7, "o calendário marca os mesmos 7");
+  assert.deepEqual(openTiles, ["Julho", "Outubro"], "o calendário marca abertos os MESMOS 2");
+  for (const month of ["Janeiro", "Fevereiro", "Março", "Abril", "Maio"]) {
+    assert.match(html, new RegExp(`aria-label="${month}/2026: sem fechamento — abrir o checklist"`), `${month}: sem linha no servidor, neutro`);
+  }
   assert.match(html, /aria-label="Fechados: 3 — filtrar a lista"/);
   assert.equal(periodRowsFor([], "2026-01").map((row) => row.period).join(","), "2026-01,2025-12", "em janeiro, a anterior é dezembro do ano que passou");
+  const empty = renderFech(FechamentoViewA, fechModel({ list: { rows: periodRowsFor([], "2026-11") } }));
+  assert.match(empty, /aria-label="Terminaram e não estão fechados: 1 — filtrar a lista"/, "sem fechamento nenhum: só a anterior conta (o mês a fechar)");
 });
