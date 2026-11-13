@@ -259,3 +259,13 @@
 - Bateria da fatia: `npm run check` exit 0; `flutter analyze` = `No issues found`; nenhum Dart alterado, portanto `dart format` não aplicável; `git diff --check` verde; sonda final da lista = 1.
 - Head: `e78893973f00f438f9519788a6ad9b2c32c49144` antes do commit da fatia.
 - Próximo passo exato: commitar e empurrar a C-F6b, atualizar o PR #551; então iniciar somente a C-F7, lendo os itens C2 8, 13, 14 e 15 e aplicando o replay no app com os textos das Emendas C2/C2.2, seguido dos seis testes do coordenador, `dart format`, `flutter analyze` e `npm run check`.
+
+## RETOMADA 28 — 2026-11-13T08:31:17-03:00 — C-F7 CONCLUÍDA
+
+- Executor da fatia: `dev-c5-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Código: criado `inventory_sync_replay_service.dart` com codec do contrato, API autenticada/Pending/Capture, lotes de no máximo 50, filtro exclusivo de `materialAdd|materialRemove`, prontidão pelo `serverId` da OS, S12, injeção de `work_order_id`, resultados `processed|ignored|conflict`, 503 sem custo, 401/403 decidível e falha transitória com tentativa. O callback tipado do atualizador ficou pronto; a ligação ao `PrestadorRepository` depende de `applyMaterialSyncStatus`, que é criada na C-F8 pelos itens 9/10 e portanto não foi antecipada nesta fatia.
+- Integração: providers autenticados usam a fila escopada por usuário e `DriftWorkOrderLocalStore`; o coordenador chama material em `try/catch` isolado logo depois da OS e antes da vistoria; `InventorySyncActionTypes.materialRemove` foi acrescentado.
+- Textos das emendas: `insufficient_balance`, `operator_profile_required` e `SESSION_FORBIDDEN` usam as formas novas de C2/E1/E2; conflito não volta à passada seguinte; API Pending não marca `syncing` nem gasta tentativa.
+- Provas: os 12 arquivos existentes que montam/exercitam o coordenador passaram, `172 tests`, `0 fail`; `dart format` aplicado aos quatro arquivos alterados; `flutter analyze` = `No issues found`; `npm run check` exit 0; `git diff --check` verde.
+- Head: `f0f2698b64c2e0f3b224bce6d594285090e51361` antes do commit da fatia.
+- Próximo passo exato: commitar e empurrar a C-F7, atualizar o PR #551; então iniciar somente a C-F8, implementando os itens 9–12: identidade `material_local_id`, serialização/remoção segura, `updateMaterial`, atualizador de linha, efeito de resolução e rótulo da Emenda E3, com as três regressões nomeadas.

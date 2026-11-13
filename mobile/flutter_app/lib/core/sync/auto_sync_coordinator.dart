@@ -96,6 +96,13 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       }
       // Work order status sync
       await ref.read(workOrderSyncReplayServiceProvider).replayTenant(tenantId);
+      try {
+        await ref
+            .read(inventorySyncReplayServiceProvider)
+            .replayTenant(tenantId);
+      } catch (_) {
+        // Material falho nao bloqueia vistoria, evidencia nem despesa.
+      }
       // Checklist: baixa o server_run_id das runs iniciadas 100% offline ANTES
       // do replay (junta PR-B). Religa o download sem depender de o guincheiro
       // reabrir a tela — as ações offline carimbadas viram replay-elegíveis já

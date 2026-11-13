@@ -28,6 +28,7 @@ import 'sync_queue_repository.dart';
 import 'sync_queue_reclaim_service.dart';
 import 'sync_replay_service.dart';
 import 'expense_receipt_sync.dart';
+import 'inventory_sync_replay_service.dart';
 import 'sync_user_scope.dart';
 
 final syncActionStoreProvider = Provider<SyncActionStore>(
@@ -214,6 +215,37 @@ final workOrderSyncReplayServiceProvider = Provider<WorkOrderSyncReplayService>(
       entityUpdater: buildWorkOrderSyncEntityUpdater(store),
     );
   },
+);
+
+final inventorySyncBatchApiProvider = Provider<InventorySyncBatchApi>((ref) {
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) {
+    return const PendingBackendInventorySyncBatchApi();
+  }
+
+  return DioInventorySyncBatchApi(
+    createAuthenticatedHttpClient(
+      config,
+      onRefresh: () async {
+        await ref.read(authStateProvider.notifier).tryRefresh();
+        return ref
+            .read(authStateProvider)
+            .maybeWhen(
+              data: (state) => state.session?.tokens.accessToken,
+              orElse: () => null,
+            );
+      },
+      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
+    ),
+  );
+});
+
+final inventorySyncReplayServiceProvider = Provider<InventorySyncReplayService>(
+  (ref) => InventorySyncReplayService(
+    queue: ref.watch(replaySyncQueueRepositoryProvider),
+    api: ref.watch(inventorySyncBatchApiProvider),
+    workOrders: DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
+  ),
 );
 
 final workOrderConflictResolutionServiceProvider =
