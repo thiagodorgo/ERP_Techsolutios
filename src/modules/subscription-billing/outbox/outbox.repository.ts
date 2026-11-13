@@ -97,9 +97,9 @@ export interface OutboxRepository {
   markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean>;
   markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean>;
   markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date, lease: OutboxLease): Promise<boolean>;
-  /** [LEASE-02] Confirma a posse sob `FOR UPDATE` numa transação curta, imediatamente antes da criação remota. */
+  /** Confirma a posse sob `FOR UPDATE` numa transação curta, imediatamente antes da criação remota (marcador LEASE-02 no despacho). */
   confirmLease(tenantId: string, id: string, lease: OutboxLease): Promise<boolean>;
-  /** [REG-TX] SENT + cobrança + ref, atômicos no Prisma. `false` significa lease perdida e nenhuma escrita. */
+  /** SENT + cobrança + ref, atômicos no Prisma (marcador REG-TX em `outbox.prisma.ts`). `false` significa lease perdida e nenhuma escrita. */
   recordChargeOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, outcome: ChargeRecordOutcome, now: Date): Promise<boolean>;
   /** Só o dublê em memória usa esta composição para espelhar as tabelas separadas. */
   configureChargeOutcomeSink?(sink: ChargeOutcomeSink): void;

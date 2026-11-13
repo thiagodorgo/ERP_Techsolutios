@@ -152,7 +152,7 @@ const CHARGE_CREATE_JOINT_PICK_SQL = `SELECT o.* FROM subscription_statements s
  * compartilhado o usa para não tocar a outbox de outra suíte (o mesmo motivo do `tenantIds` da medição — M-5 do #505). */
 export type PrismaOutboxScope = {
   readonly tenantIds?: readonly string[];
-  /** Injeção de falha do RG1, executada dentro de [REG-TX] depois do INSERT. */
+  /** Injeção de falha do RG1, executada dentro da transação do registro (`recordChargeOutcome`) depois do INSERT. */
   readonly afterChargeInsert?: () => Promise<void>;
 };
 
@@ -341,7 +341,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
 
   async confirmLease(tenantId: string, id: string, lease: OutboxLease): Promise<boolean> {
     return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
-      // [LEASE-02] A transação termina antes da rede; o lock só serializa a foto da posse.
+      // A confirmação da posse (marcador LEASE-02 no despacho): a transação termina antes da rede; o lock só serializa a foto da posse.
       const rows = (await tx.$queryRawUnsafe(
         `SELECT id FROM billing_outbox
           WHERE id = $1::uuid AND status = 'PROCESSING' AND claimed_by = $2 AND attempt_started_at = $3

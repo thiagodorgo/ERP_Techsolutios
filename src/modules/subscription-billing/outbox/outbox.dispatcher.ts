@@ -336,8 +336,8 @@ async function dispatchOne(
       return "needs_review";
     }
     if (selected) return await settleFoundCharge(deps, row, { chargeId: selected.chargeId, ...(await port.getCharge(selected.chargeId)) }, false, clock);
-    // [LEASE-02] A posse é confirmada numa transação curta que termina ANTES do POST remoto.
-    if (!(await deps.repo.confirmLease(row.tenantId, row.id, lease))) return leaseLost(deps, row);
+    // A posse é confirmada numa transação curta que termina ANTES do POST remoto.
+    if (!(await deps.repo.confirmLease(row.tenantId, row.id, lease))) return leaseLost(deps, row); // [LEASE-02]
     const result = await port.createCharge(chargeInputFromRow(row, customer.customerId));
     // R2-01: o POST remoto terminou. Uma falha daqui em diante é de REGISTRO, não do provedor; a linha permanece
     // PROCESSING para a recuperação por referência e jamais passa por `registerFailure`.
