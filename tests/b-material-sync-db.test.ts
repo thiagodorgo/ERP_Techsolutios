@@ -1,0 +1,364 @@
+import "dotenv/config";
+
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import test, { after } from "node:test";
+
+import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
+import { buildApplicationName, withApplicationName } from "./helpers/pg-barrier.js";
+
+// B-MATERIAL-REENVIO — RC3: o material usa o razão PostgreSQL real como autoridade de idempotência.
+// O serviço roda por dois papéis efêmeros NOSUPERUSER/NOBYPASSRLS; o admin só semeia, observa e limpa.
+// Sem DATABASE_URL a suíte declara o pulo sem usar o prefixo [RC3(, para o aceite do TAP contar só casos reais.
+
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  test("B-MATERIAL-REENVIO RC3 exige DATABASE_URL e um banco migrado", {
+    skip: "Defina DATABASE_URL, suba o PostgreSQL e rode as migrations para executar esta suíte.",
+  });
+} else {
+  process.env.CORE_SAAS_PERSISTENCE = "prisma";
+  process.env.LOG_LEVEL = "silent";
+
+  type Actor = {
+    readonly tenantId: string;
+    readonly userId: string;
+    readonly roles: readonly string[];
+    readonly permissions: readonly string[];
+  };
+
+  type Scenario = {
+    readonly tenantId: string;
+    readonly userId: string;
+    readonly profileId: string;
+    readonly itemId: string;
+    readonly sku: string;
+    readonly workOrderId: string;
+    readonly actor: Actor;
+  };
+
+  type Harness = Awaited<ReturnType<typeof bootstrap>>;
+  let harnessPromise: Promise<Harness> | undefined;
+  const harness = (): Promise<Harness> => (harnessPromise ??= bootstrap());
+
+  async function bootstrap() {
+    const [{ PrismaPg }, { PrismaClient }, inventoryRepository, inventoryModule, workOrderRepository, workOrderModule, syncModule] =
+      await Promise.all([
+        import("@prisma/adapter-pg"),
+        import("@prisma/client"),
+        import("../src/modules/inventory/inventory-prisma.repository.js"),
+        import("../src/modules/inventory/inventory.service.js"),
+        import("../src/modules/work-orders/work-order-prisma.repository.js"),
+        import("../src/modules/work-orders/work-order.service.js"),
+        import("../src/modules/mobile/mobile-inventory-sync.js"),
+      ]);
+
+    const admin = new PrismaClient({
+      adapter: new PrismaPg({ connectionString: withApplicationName(connectionString!, buildApplicationName("bmat-admin")) }),
+    });
+    const roleA: EphemeralRole = await createEphemeralRole(
+      admin,
+      withApplicationName(connectionString!, buildApplicationName("bmat-a")),
+    );
+    const roleB: EphemeralRole = await createEphemeralRole(
+      admin,
+      withApplicationName(connectionString!, buildApplicationName("bmat-b")),
+    );
+    const profileByActor = new Map<string, string>();
+
+    const servicesFor = (role: EphemeralRole) => {
+      const inventory = new inventoryModule.InventoryService(
+        new inventoryRepository.RlsPrismaInventoryRepository(role.client),
+        {
+          resolveActorOperatorProfile: async (actor: Actor) => {
+            const id = profileByActor.get(`${actor.tenantId}:${actor.userId}`);
+            return id ? { id, isActive: true, label: "Técnico RC3" } : undefined;
+          },
+        },
+      );
+      const workOrders = new workOrderModule.WorkOrderService(
+        new workOrderRepository.RlsPrismaWorkOrderRepository(role.client),
+        { resolveActorOperatorProfileId: async () => undefined },
+      );
+      return { inventory, workOrders, workOrdersModuleEnabled: async () => true };
+    };
+
+    return {
+      admin,
+      roleA,
+      roleB,
+      profileByActor,
+      servicesFor,
+      sync: syncModule.syncMobileInventoryActions,
+      resetSync: syncModule.resetMobileInventoryRuntimeForTests,
+      tenants: [] as string[],
+    };
+  }
+
+  after(async () => {
+    if (!harnessPromise) return;
+    const h = await harnessPromise;
+    try {
+      await teardown(h);
+    } finally {
+      await h.roleA.drop();
+      await h.roleB.drop();
+      await h.admin.$disconnect();
+    }
+  });
+
+  async function assertRuntimeRole(role: EphemeralRole): Promise<void> {
+    const rows = await role.client.$queryRaw<Array<{ super: boolean; bypass: boolean }>>`
+      SELECT rolsuper AS super, rolbypassrls AS bypass FROM pg_roles WHERE rolname = current_user
+    `;
+    assert.deepEqual(rows[0], { super: false, bypass: false });
+  }
+
+  async function scenario(h: Harness, tag: string, stock = 20): Promise<Scenario> {
+    const tenantId = randomUUID();
+    const userId = randomUUID();
+    const profileId = randomUUID();
+    const itemId = randomUUID();
+    const workOrderId = randomUUID();
+    const slug = `bmat-${tag}-${randomUUID().slice(0, 8)}`;
+    const sku = `RC3-${tag}-${randomUUID().slice(0, 8)}`.toUpperCase();
+
+    await h.admin.$executeRawUnsafe(
+      `INSERT INTO tenants (id, name, slug, modules) VALUES ($1::uuid, $2, $2, ARRAY['inventory','work_orders']::text[])`,
+      tenantId,
+      slug,
+    );
+    h.tenants.push(tenantId);
+    await h.admin.$executeRawUnsafe(
+      `INSERT INTO users (id, tenant_id, name, email) VALUES ($1::uuid, $2::uuid, $3, $4)`,
+      userId,
+      tenantId,
+      `Técnico ${tag}`,
+      `${slug}@example.test`,
+    );
+    await h.admin.$executeRawUnsafe(
+      `INSERT INTO operator_profiles (id, tenant_id, user_id, full_name, is_active)
+       VALUES ($1::uuid, $2::uuid, $3::uuid, $4, true)`,
+      profileId,
+      tenantId,
+      userId,
+      `Técnico ${tag}`,
+    );
+    await h.admin.$executeRawUnsafe(
+      `INSERT INTO inventory_items (id, tenant_id, sku, name, unit)
+       VALUES ($1::uuid, $2::uuid, $3, $3, 'un')`,
+      itemId,
+      tenantId,
+      sku,
+    );
+    await h.admin.$executeRawUnsafe(
+      `INSERT INTO stock_movements
+         (tenant_id, item_id, type, quantidade_sinalizada, custody_type, custody_operator_profile_id, created_by)
+       VALUES ($1::uuid, $2::uuid, 'entrada', $3::numeric, 'professional', $4::uuid, $5::uuid)`,
+      tenantId,
+      itemId,
+      stock,
+      profileId,
+      userId,
+    );
+    await h.admin.$executeRawUnsafe(
+      `INSERT INTO work_orders
+         (id, tenant_id, code, title, assigned_operator_id, assigned_user_id, created_by, updated_by)
+       VALUES ($1::uuid, $2::uuid, $3, $4, $5::uuid, $5::uuid, $5::uuid, $5::uuid)`,
+      workOrderId,
+      tenantId,
+      `RC3-${randomUUID().slice(0, 8)}`,
+      `OS ${tag}`,
+      userId,
+    );
+    h.profileByActor.set(`${tenantId}:${userId}`, profileId);
+
+    return {
+      tenantId,
+      userId,
+      profileId,
+      itemId,
+      sku,
+      workOrderId,
+      actor: {
+        tenantId,
+        userId,
+        roles: ["field_technician"],
+        permissions: ["work_orders:update"],
+      },
+    };
+  }
+
+  function addAction(s: Scenario, clientActionId: string, quantity = 2) {
+    return {
+      client_action_id: clientActionId,
+      type: "work_order_material.add",
+      local_created_at: "2026-11-13T00:00:00.000Z",
+      payload: {
+        work_order_id: s.workOrderId,
+        work_order_local_id: `local-${s.workOrderId}`,
+        material_local_id: `material-${s.itemId}`,
+        sku: s.sku,
+        quantity,
+      },
+    };
+  }
+
+  function removeAction(s: Scenario, sourceId: string) {
+    return {
+      client_action_id: randomUUID(),
+      type: "work_order_material.remove",
+      local_created_at: "2026-11-13T00:01:00.000Z",
+      payload: {
+        work_order_id: s.workOrderId,
+        source_client_action_id: sourceId,
+        material_local_id: `material-${s.itemId}`,
+      },
+    };
+  }
+
+  async function run(h: Harness, role: EphemeralRole, s: Scenario, action: ReturnType<typeof addAction> | ReturnType<typeof removeAction>) {
+    return h.sync(s.actor as never, { client_batch_id: randomUUID(), actions: [action] }, h.servicesFor(role));
+  }
+
+  async function sourceRows(h: Harness, tenantId: string, sourceId: string) {
+    return h.admin.$queryRawUnsafe<
+      Array<{
+        id: string;
+        quantity: string;
+        sourceType: string;
+        sourceId: string;
+        workOrderId: string | null;
+        custodyType: string;
+        custodyOperatorProfileId: string | null;
+        createdBy: string | null;
+      }>
+    >(
+      `SELECT id::text,
+              quantidade_sinalizada::text AS quantity,
+              source_type AS "sourceType",
+              source_id::text AS "sourceId",
+              work_order_id::text AS "workOrderId",
+              custody_type AS "custodyType",
+              custody_operator_profile_id::text AS "custodyOperatorProfileId",
+              created_by::text AS "createdBy"
+         FROM stock_movements
+        WHERE tenant_id = $1::uuid AND source_type = 'work_order_material' AND source_id = $2::uuid`,
+      tenantId,
+      sourceId,
+    );
+  }
+
+  async function teardown(h: Harness): Promise<void> {
+    for (const tenantId of [...h.tenants].reverse()) {
+      await h.admin.$executeRawUnsafe(`DELETE FROM stock_movements WHERE tenant_id = $1::uuid`, tenantId);
+      await h.admin.$executeRawUnsafe(`DELETE FROM work_order_assignments WHERE tenant_id = $1::uuid`, tenantId);
+      await h.admin.$executeRawUnsafe(`DELETE FROM work_order_events WHERE tenant_id = $1::uuid`, tenantId);
+      await h.admin.$executeRawUnsafe(`DELETE FROM work_orders WHERE tenant_id = $1::uuid`, tenantId);
+      await h.admin.$executeRawUnsafe(`DELETE FROM operator_profiles WHERE tenant_id = $1::uuid`, tenantId);
+      await h.admin.$executeRawUnsafe(`DELETE FROM inventory_items WHERE tenant_id = $1::uuid`, tenantId);
+      await h.admin.$executeRawUnsafe(`DELETE FROM users WHERE tenant_id = $1::uuid`, tenantId);
+      await h.admin.$executeRawUnsafe(`DELETE FROM tenants WHERE id = $1::uuid`, tenantId);
+    }
+  }
+
+  test("[RC3(1)] baixa aceita persiste origem, OS, ator e custódia profissional sob RLS real", async () => {
+    const h = await harness();
+    await Promise.all([assertRuntimeRole(h.roleA), assertRuntimeRole(h.roleB)]);
+    const s = await scenario(h, "r1");
+    const sourceId = randomUUID();
+
+    const response = await run(h, h.roleA, s, addAction(s, sourceId));
+    assert.equal(response.accepted.length, 1);
+    assert.equal(response.accepted[0]?.status, "accepted");
+    const rows = await sourceRows(h, s.tenantId, sourceId);
+    assert.equal(rows.length, 1);
+    assert.deepEqual(
+      {
+        quantity: rows[0]?.quantity,
+        sourceType: rows[0]?.sourceType,
+        sourceId: rows[0]?.sourceId,
+        workOrderId: rows[0]?.workOrderId,
+        custodyType: rows[0]?.custodyType,
+        custodyOperatorProfileId: rows[0]?.custodyOperatorProfileId,
+        createdBy: rows[0]?.createdBy,
+      },
+      {
+        quantity: "-2.000000",
+        sourceType: "work_order_material",
+        sourceId,
+        workOrderId: s.workOrderId,
+        custodyType: "professional",
+        custodyOperatorProfileId: s.profileId,
+        createdBy: s.userId,
+      },
+    );
+  });
+
+  test("[RC3(2)] nova instância reconhece o replay no razão após reinício", async () => {
+    const h = await harness();
+    const s = await scenario(h, "r2");
+    const sourceId = randomUUID();
+    assert.equal((await run(h, h.roleA, s, addAction(s, sourceId))).accepted.length, 1);
+
+    h.resetSync();
+    const replay = await run(h, h.roleA, s, addAction(s, sourceId));
+    assert.equal(replay.already_applied.length, 1);
+    assert.equal(replay.already_applied[0]?.status, "already_applied");
+    assert.equal((await sourceRows(h, s.tenantId, sourceId)).length, 1);
+  });
+
+  test("[RC3(3)] corrida com payloads diferentes grava uma baixa e devolve um conflito", async () => {
+    const h = await harness();
+    const s = await scenario(h, "r3");
+    const sourceId = randomUUID();
+    const [left, right] = await Promise.all([
+      run(h, h.roleA, s, addAction(s, sourceId, 2)),
+      run(h, h.roleB, s, addAction(s, sourceId, 3)),
+    ]);
+    const outcomes = [left, right];
+    assert.equal(outcomes.reduce((n, result) => n + result.accepted.length, 0), 1);
+    assert.equal(outcomes.reduce((n, result) => n + result.conflicts.length, 0), 1);
+    assert.equal(outcomes.flatMap((result) => result.conflicts)[0]?.conflict?.conflict_type, "idempotency_payload_mismatch");
+    assert.equal((await sourceRows(h, s.tenantId, sourceId)).length, 1);
+  });
+
+  test("[RC3(4)] a mesma origem em outra organização produz uma baixa própria", async () => {
+    const h = await harness();
+    const a = await scenario(h, "r4a");
+    const b = await scenario(h, "r4b");
+    const sourceId = randomUUID();
+    const [ra, rb] = await Promise.all([
+      run(h, h.roleA, a, addAction(a, sourceId)),
+      run(h, h.roleB, b, addAction(b, sourceId)),
+    ]);
+    assert.equal(ra.accepted.length, 1);
+    assert.equal(rb.accepted.length, 1);
+    assert.equal((await sourceRows(h, a.tenantId, sourceId)).length, 1);
+    assert.equal((await sourceRows(h, b.tenantId, sourceId)).length, 1);
+  });
+
+  test("[RC3(5)] remove estorna uma vez e o add posterior vê stock_baixa_reversed", async () => {
+    const h = await harness();
+    const s = await scenario(h, "r5");
+    const sourceId = randomUUID();
+    const first = await run(h, h.roleA, s, addAction(s, sourceId));
+    const exitId = first.accepted[0]?.result_ref;
+    assert.ok(exitId);
+
+    const removed = await run(h, h.roleA, s, removeAction(s, sourceId));
+    assert.equal(removed.accepted.length, 1);
+    const reversals = await h.admin.$queryRawUnsafe<Array<{ n: number }>>(
+      `SELECT count(*)::int AS n FROM stock_movements WHERE tenant_id = $1::uuid AND reverses_movement_id = $2::uuid`,
+      s.tenantId,
+      exitId,
+    );
+    assert.equal(reversals[0]?.n, 1);
+
+    const replay = await run(h, h.roleB, s, addAction(s, sourceId));
+    assert.equal(replay.conflicts.length, 1);
+    assert.equal(replay.conflicts[0]?.conflict?.conflict_type ?? replay.conflicts[0]?.error?.reason, "stock_baixa_reversed");
+    assert.equal((await sourceRows(h, s.tenantId, sourceId)).length, 1);
+  });
+}

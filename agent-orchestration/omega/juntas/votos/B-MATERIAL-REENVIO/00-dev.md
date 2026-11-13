@@ -238,3 +238,13 @@
 - Mutações: M-C39 restaurou o `startsWith` e deixou `31/32`, somente T9 `CURINGA-ESTATICO`; restaurada com a linha literal e `git diff --stat` de volta ao conjunto autorizado. M-C40 restaurou a expressão condicional do fingerprint e deixou `31/32`, somente T8 `TIPO-NAO-RESOLVIDO`; restaurada, guard final 32/32.
 - Head: `561bfc3fa25beaa2a1f35630d5e405c8daf1360d` antes do commit da fatia.
 - Próximo passo exato: commitar a C-F5 com a coautoria exigida, empurrar, atualizar o corpo do PR #551; depois iniciar somente a C-F6a, criando `tests/b-material-sync-db.test.ts` para RC3(1)–(5), provando M-C8 e as regressões de banco nomeadas sob papel `NOSUPERUSER NOBYPASSRLS` com zero skip.
+
+## RETOMADA 26 — 2026-11-13T08:07:54-03:00 — C-F6a CONCLUÍDA
+
+- Executor da fatia: `dev-c5-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Código/teste: criado somente `tests/b-material-sync-db.test.ts`, com infraestrutura descartável por organização e dois papéis efêmeros comprovadamente `NOSUPERUSER NOBYPASSRLS`; RC3(1)–(5) exercitam o sync real, repositórios Prisma/RLS reais, persistência após nova instância, corrida com payloads diferentes, separação por organização e estorno seguido de reenvio.
+- Comando/aceite: `node --test --import tsx tests/b-material-sync-db.test.ts tests/inventory-unique-backstops-db.test.ts tests/inventory-balance-lock-race-db.test.ts`, com `DATABASE_URL` do cluster exclusivo, `CORE_SAAS_PERSISTENCE=prisma` e Redis exclusivo: `29 tests`, `29 pass`, `0 fail`, `0 skipped`. A suíte RC3 isolada restaurada foi `5/5`.
+- Mutação M-C8: substituição temporária do lookup persistente `findExitBySource` por `undefined`; resultado `5 tests`, `4 pass`, `1 fail`, `0 skipped`, exclusivamente RC3(2). A linha foi restaurada e `git diff -- src/modules/mobile/mobile-inventory-sync.ts` ficou vazio; `git diff --stat` mostrou somente o novo teste não rastreado.
+- Bateria da fatia: `npm run check` exit 0; `flutter analyze` = `No issues found`; nenhum Dart alterado, portanto `dart format` não aplicável; `git diff --check` verde.
+- Head: `41123eda87c00d6336e861d218dc4d53a1ed6df8` antes do commit da fatia.
+- Próximo passo exato: commitar e empurrar a C-F6a, atualizar o PR #551; depois iniciar somente a C-F6b, acrescentando RC3(6)–(8), provando M-C30, medindo a lista inteira do `backend-postgres` três vezes antes de inserir a única linha autorizada no `SUITES`, e provando M-C38.
