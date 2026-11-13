@@ -248,3 +248,14 @@
 - Bateria da fatia: `npm run check` exit 0; `flutter analyze` = `No issues found`; nenhum Dart alterado, portanto `dart format` não aplicável; `git diff --check` verde.
 - Head: `41123eda87c00d6336e861d218dc4d53a1ed6df8` antes do commit da fatia.
 - Próximo passo exato: commitar e empurrar a C-F6a, atualizar o PR #551; depois iniciar somente a C-F6b, acrescentando RC3(6)–(8), provando M-C30, medindo a lista inteira do `backend-postgres` três vezes antes de inserir a única linha autorizada no `SUITES`, e provando M-C38.
+
+## RETOMADA 27 — 2026-11-13T08:26:06-03:00 — C-F6b CONCLUÍDA
+
+- Executor da fatia: `dev-c5-cdx`, Codex GPT-5.6 Sol, conta 1.
+- RC3: acrescentados RC3(6)–(8), total K = 8 testes com prefixo: custódia profissional, falta de saldo sem fallback na BASE, gerente sem cadastro na BASE, corrida 3+3 sobre saldo 5 e gerente com cadastro baixando/estornando na própria custódia sem tocar a BASE. Suíte restaurada: `8/8`, `fail 0`, `skipped 0`.
+- M-C30: a troca literal em `inventory-prisma.repository.ts` para `const custody = BASE_CUSTODY;` deixou RC3(6) vermelho (e os demais casos profissionais, efeito abrangente esperado da mutação); restaurada, `git diff` desse arquivo vazio. M-C38: a linha do novo teste depois de `node --test` fez a sonda listar 0; restaurada antes do comando, a sonda lista 1.
+- Lista curada antes da edição do workflow, forma exata do job `backend-postgres`, 72 arquivos, Postgres migrado/semeado, `CORE_SAAS_PERSISTENCE=prisma`, `RBAC_DB_PARITY=1`: rodada 1 `610 tests · 610 pass · 0 fail · 0 skipped`; rodada 2 `610 · 610 · 0 · 0`; rodada 3 `610 · 610 · 0 · 0`. Denominador constante. Só então entrou a única linha autorizada `SUITES="$SUITES tests/b-material-sync-db.test.ts"`; nenhuma outra linha em `.github/**` mudou.
+- Regressões de banco: RC3 + `bsan315-technician-stock-db`, `inventory-unique-backstops-db`, `inventory-balance-lock-race-db` e `inventory-migration-drill-db`: `45 tests`, `45 pass`, `0 fail`, `0 skipped`, incluindo papéis `NOSUPERUSER NOBYPASSRLS`.
+- Bateria da fatia: `npm run check` exit 0; `flutter analyze` = `No issues found`; nenhum Dart alterado, portanto `dart format` não aplicável; `git diff --check` verde; sonda final da lista = 1.
+- Head: `e78893973f00f438f9519788a6ad9b2c32c49144` antes do commit da fatia.
+- Próximo passo exato: commitar e empurrar a C-F6b, atualizar o PR #551; então iniciar somente a C-F7, lendo os itens C2 8, 13, 14 e 15 e aplicando o replay no app com os textos das Emendas C2/C2.2, seguido dos seis testes do coordenador, `dart format`, `flutter analyze` e `npm run check`.

@@ -250,6 +250,49 @@ if (!connectionString) {
     );
   }
 
+  async function replaceStocks(h: Harness, s: Scenario, professional: number, base: number): Promise<void> {
+    await h.admin.$executeRawUnsafe(`DELETE FROM stock_movements WHERE tenant_id = $1::uuid AND item_id = $2::uuid`, s.tenantId, s.itemId);
+    if (professional > 0) {
+      await h.admin.$executeRawUnsafe(
+        `INSERT INTO stock_movements
+           (tenant_id, item_id, type, quantidade_sinalizada, custody_type, custody_operator_profile_id, created_by)
+         VALUES ($1::uuid, $2::uuid, 'entrada', $3::numeric, 'professional', $4::uuid, $5::uuid)`,
+        s.tenantId,
+        s.itemId,
+        professional,
+        s.profileId,
+        s.userId,
+      );
+    }
+    if (base > 0) {
+      await h.admin.$executeRawUnsafe(
+        `INSERT INTO stock_movements
+           (tenant_id, item_id, type, quantidade_sinalizada, custody_type, created_by)
+         VALUES ($1::uuid, $2::uuid, 'entrada', $3::numeric, 'base', $4::uuid)`,
+        s.tenantId,
+        s.itemId,
+        base,
+        s.userId,
+      );
+    }
+  }
+
+  async function custodyBalance(h: Harness, s: Scenario, custody: "base" | "professional"): Promise<number> {
+    const rows = await h.admin.$queryRawUnsafe<Array<{ balance: string }>>(
+      `SELECT COALESCE(sum(quantidade_sinalizada), 0)::text AS balance
+         FROM stock_movements
+        WHERE tenant_id = $1::uuid
+          AND item_id = $2::uuid
+          AND custody_type = $3
+          AND ($3 = 'base' OR custody_operator_profile_id = $4::uuid)`,
+      s.tenantId,
+      s.itemId,
+      custody,
+      s.profileId,
+    );
+    return Number(rows[0]?.balance ?? 0);
+  }
+
   async function teardown(h: Harness): Promise<void> {
     for (const tenantId of [...h.tenants].reverse()) {
       await h.admin.$executeRawUnsafe(`DELETE FROM stock_movements WHERE tenant_id = $1::uuid`, tenantId);
@@ -360,5 +403,88 @@ if (!connectionString) {
     assert.equal(replay.conflicts.length, 1);
     assert.equal(replay.conflicts[0]?.conflict?.conflict_type ?? replay.conflicts[0]?.error?.reason, "stock_baixa_reversed");
     assert.equal((await sourceRows(h, s.tenantId, sourceId)).length, 1);
+  });
+
+  test("[RC3(6)] custódia profissional, falta nela e fallback BASE do gerente persistem no razão", async () => {
+    const h = await harness();
+
+    const professional = await scenario(h, "r6-prof", 5);
+    await replaceStocks(h, professional, 5, 0);
+    const professionalSource = randomUUID();
+    assert.equal((await run(h, h.roleA, professional, addAction(professional, professionalSource))).accepted.length, 1);
+    const professionalRows = await sourceRows(h, professional.tenantId, professionalSource);
+    assert.equal(professionalRows[0]?.custodyType, "professional");
+    assert.equal(professionalRows[0]?.custodyOperatorProfileId, professional.profileId);
+    assert.equal(await custodyBalance(h, professional, "professional"), 3);
+
+    const baseOnly = await scenario(h, "r6-base-only");
+    await replaceStocks(h, baseOnly, 0, 10);
+    const denied = await run(h, h.roleA, baseOnly, addAction(baseOnly, randomUUID(), 1));
+    assert.equal(denied.conflicts.length, 1);
+    assert.equal(denied.conflicts[0]?.conflict?.conflict_type, "insufficient_balance");
+    assert.equal(await custodyBalance(h, baseOnly, "base"), 10);
+
+    const managerScenario = await scenario(h, "r6-manager");
+    await replaceStocks(h, managerScenario, 0, 10);
+    h.profileByActor.delete(`${managerScenario.tenantId}:${managerScenario.userId}`);
+    const manager: Scenario = {
+      ...managerScenario,
+      actor: { ...managerScenario.actor, roles: ["manager"] },
+    };
+    const managerSource = randomUUID();
+    const accepted = await run(h, h.roleB, manager, addAction(manager, managerSource));
+    assert.equal(accepted.accepted.length, 1);
+    const managerRows = await sourceRows(h, manager.tenantId, managerSource);
+    assert.equal(managerRows[0]?.custodyType, "base");
+    assert.equal(managerRows[0]?.custodyOperatorProfileId, null);
+    assert.equal(await custodyBalance(h, manager, "base"), 8);
+    assert.equal((await run(h, h.roleB, manager, removeAction(manager, managerSource))).accepted.length, 1);
+    assert.equal(await custodyBalance(h, manager, "base"), 10);
+  });
+
+  test("[RC3(7)] duas baixas concorrentes não deixam a custódia profissional negativa", async () => {
+    const h = await harness();
+    const s = await scenario(h, "r7", 5);
+    await replaceStocks(h, s, 5, 0);
+    const [left, right] = await Promise.all([
+      run(h, h.roleA, s, addAction(s, randomUUID(), 3)),
+      run(h, h.roleB, s, addAction(s, randomUUID(), 3)),
+    ]);
+    const outcomes = [left, right];
+    assert.equal(outcomes.reduce((n, result) => n + result.accepted.length, 0), 1);
+    assert.equal(outcomes.reduce((n, result) => n + result.conflicts.length, 0), 1);
+    assert.equal(outcomes.flatMap((result) => result.conflicts)[0]?.conflict?.conflict_type, "insufficient_balance");
+    assert.equal(await custodyBalance(h, s, "professional"), 2);
+  });
+
+  test("[RC3(8)] gerente com cadastro baixa e estorna na própria custódia sem tocar a BASE", async () => {
+    const h = await harness();
+    const managerScenario = await scenario(h, "r8", 4);
+    await replaceStocks(h, managerScenario, 4, 10);
+    const manager: Scenario = {
+      ...managerScenario,
+      actor: { ...managerScenario.actor, roles: ["manager"] },
+    };
+    const sourceId = randomUUID();
+    const added = await run(h, h.roleA, manager, addAction(manager, sourceId));
+    const exitId = added.accepted[0]?.result_ref;
+    assert.ok(exitId);
+    const exitRows = await sourceRows(h, manager.tenantId, sourceId);
+    assert.equal(exitRows[0]?.custodyType, "professional");
+    assert.equal(exitRows[0]?.custodyOperatorProfileId, manager.profileId);
+    assert.equal(await custodyBalance(h, manager, "professional"), 2);
+    assert.equal(await custodyBalance(h, manager, "base"), 10);
+
+    assert.equal((await run(h, h.roleB, manager, removeAction(manager, sourceId))).accepted.length, 1);
+    const reversals = await h.admin.$queryRawUnsafe<Array<{ custodyType: string; profileId: string | null }>>(
+      `SELECT custody_type AS "custodyType", custody_operator_profile_id::text AS "profileId"
+         FROM stock_movements
+        WHERE tenant_id = $1::uuid AND reverses_movement_id = $2::uuid`,
+      manager.tenantId,
+      exitId,
+    );
+    assert.deepEqual(reversals, [{ custodyType: "professional", profileId: manager.profileId }]);
+    assert.equal(await custodyBalance(h, manager, "professional"), 4);
+    assert.equal(await custodyBalance(h, manager, "base"), 10);
   });
 }
