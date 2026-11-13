@@ -7,10 +7,10 @@ import { fileURLToPath } from "node:url";
 // B-SAN3-12b — F8 como TRAVA com inventário congelado (ratificação do orquestrador, 2026-10-26 14:40Z, no fim do plano).
 // O dinheiro dos indicadores vem do servidor (`/financial-summary`, `/aggregate`, `/balance`); o front não soma.
 // A forma procurada é a do `rg` do §9.2 (`reduce(` ou `+= …amount`) mais `+= <qualquer coisa>` em geral, sobre
-// TODO `frontend/src/modules/finance/**`, comentários fora. As 8 ocorrências abaixo existiam na `origin/main`
+// TODO `frontend/src/modules/finance/**`, comentários fora. As 7 ocorrências abaixo existiam na `origin/main`
 // `c9a2d036` ANTES do ramo (pré-existentes, §C7.1-ter(a)); são comparadas por arquivo e pela expressão normalizada
 // (sem espaços), nunca por número de linha. Pendência `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE` (fecha com o
-// inventário vazio): 7 em `commissions/**` (dono: o bloco das telas de comissões) e 1 em `titles/` (dono: B-SAN3-24).
+// inventário vazio): 7 em `commissions/**` (dono: o bloco das telas de comissões).
 //   (a) qualquer ocorrência FORA do inventário reprova;
 //   (b) entrada do inventário que sumiu do código reprova (para o inventário não guardar entrada morta);
 //   (c) nos diretórios que o 12b cria ou edita (`accounts/**`, `entries/**`, `pages/**`) o inventário é VAZIO;
@@ -28,7 +28,6 @@ export const FROZEN_INVENTORY: readonly string[] = [
   "commissions/components/ConferenciaRemuneracoesView.tsx::selectedItems.reduce((sum,calc)=>sum+(Number.isFinite(calc.amount)?calc.amount:0),0)",
   "commissions/pages/RemuneracoesPage.tsx::summary.items.reduce((sum,item)=>sum+item.count,0)",
   "commissions/pages/RemuneracoesPage.tsx::summary.items.reduce((sum,item)=>sum+item.count,0)",
-  "titles/financial-titles.adapter.ts::items.reduce((total,title)=>(predicate(title)?total+title.amount:total),0)",
 ];
 
 const BLOCK_DIRS = ["accounts/", "entries/", "pages/"];
@@ -36,10 +35,10 @@ const BLOCK_DIRS = ["accounts/", "entries/", "pages/"];
 /**
  * E3/R-E3-2(b) — segunda trava, cega à forma: o token `.reduce(` (também `?.reduce(`, com espaço ou argumento de tipo
  * antes do `(`), contado no código sem comentários, sem olhar o receptor. O inventário tem 6 (`commissions.adapter` 1,
- * `CommissionDetailDrawer` 1, `ConferenciaRemuneracoesView` 1, `RemuneracoesPage` 2, `financial-titles.adapter` 1).
+ * `CommissionDetailDrawer` 1, `ConferenciaRemuneracoesView` 1, `RemuneracoesPage` 2).
  */
 const REDUCE_TOKEN = /\.\s*reduce\s*(?:<[^<>()]*>\s*)?\(/g;
-const FROZEN_REDUCE_TOKENS = 6;
+const FROZEN_REDUCE_TOKENS = 5;
 
 /** Um item (o caminho relativo do arquivo) por token `.reduce(` fora de comentário. */
 export function reduceTokens(root: string = ROOT): string[] {
@@ -151,7 +150,7 @@ function multiset(items: readonly string[]): Map<string, number> {
   return out;
 }
 
-test("F8: o módulo financeiro tem EXATAMENTE as 8 ocorrências do inventário congelado (nenhuma nova, nenhuma morta)", () => {
+test("F8: o módulo financeiro tem EXATAMENTE as 7 ocorrências do inventário congelado (nenhuma nova, nenhuma morta)", () => {
   const found = multiset(scanFinance());
   const frozen = multiset(FROZEN_INVENTORY);
   const extra = [...found].filter(([key, n]) => n > (frozen.get(key) ?? 0)).map(([key]) => key);
@@ -165,7 +164,7 @@ test("F8: nos diretórios do 12b (accounts/, entries/, pages/) o inventário é 
   assert.deepEqual(scanFinance(ROOT, "broad").filter((item) => BLOCK_DIRS.some((dir) => item.startsWith(dir))), []);
 });
 
-test("F8/E3: todo token `.reduce(` fora de comentário conta, seja qual for o receptor — 6 no módulo, 0 em accounts/, entries/ e pages/", () => {
+test("F8/E3: todo token `.reduce(` fora de comentário conta, seja qual for o receptor — 5 no módulo, 0 em accounts/, entries/ e pages/", () => {
   const tokens = reduceTokens();
   assert.deepEqual(
     tokens.filter((rel) => BLOCK_DIRS.some((dir) => rel.startsWith(dir))),
