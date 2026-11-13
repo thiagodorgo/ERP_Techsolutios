@@ -3281,7 +3281,7 @@ do #390 nomeou continuam com o primeiro PR que mergear.
     texto vão para o agente da API, com pacote de contexto;
   - agente Claude só com o Codex fora E tarefa no caminho crítico, 1 por vez, Opus;
   - todo lançamento tem vigia;
-  - teto da API: US$ 15/dia por padrão — sugestão do orquestrador no plano de 11/10, aceita pelo dono com *"siga"* — e
+  - teto da API: <valor omitido: repositório público>/dia por padrão — sugestão do orquestrador no plano de 11/10, aceita pelo dono com *"siga"* — e
     US$ 25 só em 11/10 (*"pode usar ate 25 usd na api hoje"*);
   - em 11/10, planos em modelo abaixo do Astra (*"pode usar o modelo mais baixo que o astra hoje para planos"*).
   Bloco que dá braço de trabalho à API: `B-AGENTE-API-2` (#419).
@@ -4925,6 +4925,21 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Fato:** os devs do `B-SAN3-19b` e do `B-ASS-09a` estão prontos e esperam o parecer do porteiro do #530 (§C2 item 8).
 - **Leitura do orquestrador, declarada (§A6):** o PR de registro não é demanda de produto e começa já (`reg-1111-cl`).
 
+## REGISTRO-B-SAN3-14 (2026-11-11) — conflitos do plano, respostas do dono e decisões do dev do B-SAN3-14 (item 34)
+
+- **Fonte:** `plano-B-SAN3-14-v2.md` §1.3 e §9 e `plano-B-SAN3-14-emenda1.md` §9 (fora do repositório, na pasta do orquestrador); respostas do dono em `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP, "Sim, todas (Recomendado)"), que entra na `main` pelo PR de registro.
+- **Conflitos registrados (§A2), todos resolvidos pelas respostas do dono:**
+  - **C1:** a fronteira do §5 do `PLANO_SAN3.md` listava 3 arquivos Flutter, e o teste de encerramento exige servidor. Resolvido pela emenda da linha do `B-SAN3-14` no próprio `PLANO_SAN3.md` (fronteira app + servidor, junta completa).
+  - **C2:** a escolha (b) do §7.3 da junta do PR-04c ("só a primária vira execução") é revista para a ENTREGA: a premissa dela (o app não alcança a entrega) cai neste bloco. As outras secundárias seguem diferidas.
+  - **C3:** a decisão A do dono (`D-PORTAO-9-RECOMENDACOES-1011`, a vistoria de entrega nasce no despacho) foi tomada sobre um custo incompleto: o custo real era a entrega vazia no dossiê de custódia de toda OS concluída sem ela. Reaberta como Pergunta 1, com a premissa corrigida; o dono respondeu **(a)**, a trava da conclusão no servidor.
+  - **C4:** sob a (a), a trava de arquivo de `src/modules/work-orders/work-order.service.ts` passa a `SAN3-13 → 07c → SAN3-23 → SAN3-14` (emenda no `PLANO_SAN3.md`). A fatia da trava começou depois do merge do #536 (`c95ad4fd`), com o ramo atualizado.
+  - **C5:** só valeria sob a Pergunta 1 = (b) (filtrar o dossiê); não se aplica.
+- **Respostas:** P1 = (a); P2 = (a), as OS em campo no dia da entrada seguem só com a coleta; P3 = (a), o app sai só com a opção A da maquete aprovada (as 3 em `docs/claude-code-handoff/screen-refs/execucao-guincho-3opcoes.reference.html`); a B e a C esperam `P-APARENCIA-APP-SELETOR`. **P4 = (a), leitura do dev, declarada (§A6):** o mandato manda valer a recomendação de cada pergunta do §9, e a emenda 1 traz a P4 com recomendação (a): a entrega concluída com divergência (`pending_acknowledgement`) não segura a conclusão da OS.
+- **Decisões do dev dentro do PERMITIDO, declaradas (§A6):**
+  - a recusa da trava é **422** (`WORK_ORDER_UNPROCESSABLE` / `delivery_checklist_pending`), como manda a emenda 1 (R-R2-01); a porta `listChecklistRunPhases` é opcional no tipo (composição parcial de teste = sem trava) e, montada, falha fechada;
+  - o `checklistRepositoryProvider` do app tolera só a falta de sobrescrita do banco local (`UnimplementedError` dentro de `ProviderException`) e aí monta o repositório sem a fonte das OS, para não quebrar testes antigos que montam o provedor sem banco; qualquer outra falha atravessa. O app de produção sempre monta o banco.
+- **HIPÓTESE do caminho infeliz do R-R2-01, medida por leitura do código (fatia 2): NEGADA.** "Descartar" a conclusão recusada na tela de sincronização marca só a ação (`sync_stalled_resolver.dart`, `sync_resolution_side_effects.dart` não toca a OS), a OS local fica `completed` com `syncStatus: pending`, e a carga da lista preserva toda OS `pending` (`work_order_repository.dart`, `_upsertRemoteOrders`). Logo a OS não volta a "Em atendimento" e o técnico não chega à entrega pelo app. Registrado `P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP`; sem conserto improvisado. Não há perda de dado: a OS do servidor fica aberta e a entrega continua respondível.
+
 ## REGISTRO-SAN3-CONFLITOS — B-SAN3-15 (2026-11-11) — os conflitos C1 a C7 do plano, registrados antes do código (§A2), e as respostas do §9
 
 **Não é decisão nova.** Registro, no PR do `B-SAN3-15a` (`dev-15a-cl`, Claude Opus 5.5, dev declarado), dos 7 conflitos
@@ -5070,6 +5085,20 @@ lista curada do job `backend-postgres`, medida 3× antes.
 
 - **Fato:** a J-542b e a `conf-542` rodaram o T-E4-1 uma vez; a CI do `72866b87` ficou vermelha no T-E4-1 (`100 !== 130`, a propriedade do C1-A1 — artefato do teste, empate triplo de milissegundo no desempate da run, que virou a `P-ASS09A-EMPATE-MESMO-MS`) e no B16, intermitente conhecido (ocorrência nova da `P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE`, run `43175128180`, 12/11).
 - **Leitura do orquestrador, declarada (§A6):** teste novo de dinheiro roda 20 vezes, na forma do arquivo inteiro, antes da junta.
+
+## D-DONO-1211-NOITE (2026-11-12 21:44 SP) — três respostas do dono: a linha `SUITES=` do B-MATERIAL-REENVIO, o bloco do fuso e a entrada da GATE-CHAVE no portão
+
+- **Fato (decisão do dono):** *"1-autorizo / 2-<valor omitido: repositório público> de teto na api claude e no deepseek. / 3-ok"*. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 12/11 21:44 SP). Sem valor transcrito.
+- **O que vale:**
+  - **1 — a linha `SUITES=` do `.github/workflows/ci.yml`** (job `backend-postgres`) fica autorizada para `tests/b-material-sync-db.test.ts`, no `B-MATERIAL-REENVIO` (o R-C21-01 da Emenda C2.1). O dev do C pode fazer a C-F6b.
+  - **2 — o bloco `B-DB-FUSO-UTC` fica aberto, com o plano escrito** (9 fatias, 6 h 20 min de dev, 1 pergunta Q1 aberta ao dono). Leitura do orquestrador, declarada (§A6): a pergunta 2 era o bloco do fuso da conexão, cujo plano pedia mais teto na API; o teto dado é o sim ao bloco.
+  - **3 — o item novo do portão para a GATE-CHAVE entra** (a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` vira item 63 do §4.1, com bloco próprio de permissão do app), e o denominador do vendável passa de 64 para 65 (`P-PORTAO-ITEM-GATE-CHAVE` FECHADA).
+
+## D-CLAUDE-CODA-40 (2026-11-13) — o Claude da sessão faz cerca de 40% do código e cobre os braços
+
+- **Falas literais do dono:** *"vc deve codar tbm. 40 - 50% das tarefas, deve ser feita por vc, refaca o plano"*; depois, *"usar a api claude e deepseek, corda e cobri(vc), entendido?"*; e, fixando a proporção, *"coloque os codex no plano, seus limites de uso agora eh 40% do codigo vc tem que fazer. o resto seus bracos"*.
+- **O que vale:** o Claude da sessão faz cerca de 40% das tarefas de código lançadas no dia (dev e conserto), por subagente ou por conta própria, e cobre na hora o braço que cair, travar ou ficar sem saldo. Os outros 60% vão para as contas Codex, o DeepSeek e a API Claude, uma tarefa por conta de cada vez.
+- **Continua valendo:** design só Claude; Gemini nunca como revisor único; topo no plano e em toda reprovação; cruzamento do item 11; vigia em todo braço externo; teto de cada braço definido pelo dono e não publicado neste repositório.
 
 ## A2-1311-RN-BAIXA-04-E-MATERIAL-DA-OS (2026-11-13) — RN-BAIXA-04 (BASE fixa) × 5(a) do dono no material da OS: não há conflito
 

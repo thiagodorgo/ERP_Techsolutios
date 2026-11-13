@@ -477,12 +477,19 @@ class WorkOrderRepository extends ChangeNotifier {
     ),
   );
 
+  /// [deliveryComplete] (B-SAN3-14, P5) — a trava da entrega do guincho
+  /// está aberta: sem entrega confirmada pelo servidor, ou com ela concluída.
+  /// OBRIGATÓRIO, sem padrão: todo chamador declara (o compilador confere).
   Future<WorkOrderMutationResult> completeWorkOrder(
     String localId, {
     required bool checklistComplete,
+    required bool deliveryComplete,
   }) => _serial(
-    () =>
-        _completeWorkOrderLocked(localId, checklistComplete: checklistComplete),
+    () => _completeWorkOrderLocked(
+      localId,
+      checklistComplete: checklistComplete,
+      deliveryComplete: deliveryComplete,
+    ),
   );
 
   Future<WorkOrderMutationResult> createWorkOrder({
@@ -687,6 +694,7 @@ class WorkOrderRepository extends ChangeNotifier {
   Future<WorkOrderMutationResult> _completeWorkOrderLocked(
     String localId, {
     required bool checklistComplete,
+    required bool deliveryComplete,
   }) async {
     final idx = _orders.indexWhere((o) => o.localId == localId);
     if (idx == -1) throw StateError('WorkOrder $localId not found');
@@ -700,6 +708,12 @@ class WorkOrderRepository extends ChangeNotifier {
       throw StateError(
         'Conclua o checklist obrigatorio antes de finalizar a OS.',
       );
+    }
+
+    // B-SAN3-14 (P5) — a OS de guincho com entrega confirmada só conclui com
+    // a entrega concluída (o servidor também recusa).
+    if (wo.serviceType == WorkOrderServiceType.tow && !deliveryComplete) {
+      throw StateError('Conclua a vistoria de entrega antes de concluir a OS.');
     }
 
     final now = DateTime.now().toUtc();

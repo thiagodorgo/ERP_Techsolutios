@@ -103,6 +103,13 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       } catch (_) {
         // Material falho nao bloqueia vistoria, evidencia nem despesa.
       }
+      // B-SAN3-14 (R-A5) — a coleta e a entrega das OS de guincho no aparelho.
+      try {
+        final checklistRepo = ref.read(checklistRepositoryProvider);
+        await checklistRepo.prefetchRunsForOpenTowWorkOrders();
+      } catch (_) {
+        // Pré-carga falha isolada não bloqueia os demais domínios.
+      }
       // Checklist: baixa o server_run_id das runs iniciadas 100% offline ANTES
       // do replay (junta PR-B). Religa o download sem depender de o guincheiro
       // reabrir a tela — as ações offline carimbadas viram replay-elegíveis já

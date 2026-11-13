@@ -310,10 +310,60 @@ void main() {
         templates: [_template()],
         schemas: [_schema],
       );
+      // B-SAN3-14 (R-R2-02(i)) — sem sinal, só a entrega que o servidor já
+      // confirmou neste aparelho (com serverId) abre.
+      await store.saveRun(
+        MobileChecklistRun(
+          localId: 'clrun-e_b118',
+          serverId: 'srv-e-b118',
+          tenantId: _tenant,
+          checklistId: 'cl-b118',
+          workOrderId: 'wo-b118',
+          schemaVersion: 'v1',
+          status: MobileChecklistRunStatus.inProgress,
+          kind: MobileChecklistRunKind.delivery,
+          executedByUserId: 'u-b118',
+          startedAt: DateTime.utc(2026, 7, 1),
+          syncStatus: SyncStatus.synced,
+          answers: const {},
+        ),
+      );
       await t.pumpWidget(_wrapDeliveryRun(store));
       await t.pumpAndSettle();
 
       expect(find.text('Assinatura de quem recebeu'), findsWidgets);
     });
+
+    // B-SAN3-14 (Emenda 2, R-E2-1) — o caminho que o caso 9 deixou de cobrir:
+    // sem sinal e sem execução local, a entrega não abre nem cai no erro.
+    testWidgets(
+      '9b. sem sinal e sem run local, a entrega fica "não verificada"',
+      (t) async {
+        final store = InMemoryChecklistLocalStore(
+          templates: [_template()],
+          schemas: [_schema],
+        );
+        await t.pumpWidget(_wrapDeliveryRun(store));
+        await t.pumpAndSettle();
+
+        expect(
+          find.text('Entrega não verificada — conecte-se para atualizar.'),
+          findsOneWidget,
+        );
+        expect(find.byType(AwaitingDispatchView), findsOneWidget);
+        // Ausência do estado de erro: o cabeçalho genérico "Checklist" e a
+        // mensagem da exceção só existem no ramo `snapshot.hasError`.
+        expect(find.text('Checklist'), findsNothing);
+        expect(find.textContaining('Null check'), findsNothing);
+        expect(find.text('Assinatura de quem recebeu'), findsNothing);
+        // E a entrega não confirmada não ganhou execução local.
+        expect(
+          (await store.loadRunsForWorkOrder(
+            'wo-b118',
+          )).where((r) => r.kind == MobileChecklistRunKind.delivery),
+          isEmpty,
+        );
+      },
+    );
   });
 }

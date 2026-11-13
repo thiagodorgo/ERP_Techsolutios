@@ -165,12 +165,20 @@ export class ChecklistController {
   // Filtro opcional `?checklistId=` desambigua quando a OS trocou de checklist entre despachos (>1 run); a
   // lista vem ordenada por created_at desc. IMPORTANTE (P0b/app): 200 com lista VAZIA pode significar FALHA de
   // provisão da run (fail-open do despacho), não só ausência de checklist na OS — o app trata os dois casos.
+  //
+  // B-SAN3-14 (R-A1, contrato `checklist_run_role@2026-11.b-san3-14`) — `?roleAware=1` é a porta do app que entende a
+  // FASE: só ele recebe a vistoria de entrega e a chave `role`. Sem o parâmetro, a resposta é a de antes deste bloco
+  // (sem entrega, sem `role`), porque o app que já está nos aparelhos casa só por modelo e gravaria a coleta na
+  // entrega. A permissão não muda: a rota segue com `checklist_runs:read`.
   async listRunsForWorkOrder(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
-    const runs = await service.listRunsForWorkOrder(actor, request.query.workOrderId, request.query.checklistId);
+    const roleAware = request.query.roleAware === "1";
+    const runs = await service.listRunsForWorkOrder(actor, request.query.workOrderId, request.query.checklistId, {
+      roleAware,
+    });
 
     return {
-      data: runs.map(toChecklistRunDto),
+      data: runs.map((run) => toChecklistRunDto(run, { withRole: roleAware })),
     };
   }
 

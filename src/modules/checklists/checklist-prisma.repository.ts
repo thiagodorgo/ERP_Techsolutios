@@ -870,6 +870,8 @@ export class PrismaChecklistRepository implements ChecklistRepository {
         client_run_key: null,
         reopened_from_run_id: previous.run.id,
         reopen_reason: data.reason,
+        // B-SAN3-14 (R-A3) — a versão reaberta herda a fase da anterior (paridade com o repositório em memória).
+        role: previous.run.role ?? null,
         status: "in_progress",
         started_by: data.actorUserId,
       },

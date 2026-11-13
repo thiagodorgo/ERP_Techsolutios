@@ -13847,8 +13847,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
-  não muda permissão) · **dono (Emenda 3 do plano do `B-SAN3-19b`; a resposta do dono à Pergunta 2 veio (a) em 11/11):** um bloco próprio de permissão do
-  app, com junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o backend local · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
+  não muda permissão) · **dono:** `B-MOBILE-GATE-CHAVE` (procedência: a Emenda 3 do plano do `B-SAN3-19b` e a resposta (a) do dono à Pergunta 2, em 11/11; o ID do bloco foi dado em 13/11, R552-A2; plano em curso; junta completa + `coordenador-de-acessos`; começa provando o bloqueio contra o backend local) · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
 - **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
 - **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
   crítica r2 executou `isValidPermission`/`getRolePermissions` em `07898adf`: inválidas e sem papel; as linhas de
@@ -13935,6 +13934,48 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a seção das rotas financeiras da OS no `API_CONTRACTS.md` nunca teve catálogo de erros, nem o 503 `invoice_transient_conflict` do B-SAN3-02; o arquivo está fora do PERMITIDO do plano do B-SAN3-23, cujo §3.5 manda registrar as adições no comando do bloco, o que foi feito) · **dono:** o próximo bloco que tocar o `API_CONTRACTS.md` das rotas financeiras da OS · **PR-alvo:** esse bloco · **bloqueia:** não.
 - **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
 - **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).
+
+## P-SAN3-14-DOSSIE-SEM-FASE (2026-11-11) — o dossiê de custódia não mostra a fase de cada vistoria — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` na forma do dossiê (o `mapRun` de `src/modules/impound/impound.checklist-link-prisma.repository.ts` não carrega `role` e é anterior ao bloco; o par coleta + entrega do mesmo modelo nasce no `B-SAN3-14`) · **dono:** um bloco curto de dossiê no molde do `B-SAN3-11` (DTO em `src/modules/impound/**` + rótulo em `frontend/src/modules/patios/processes/**`), depois do merge do `B-SAN3-14` · **bloqueia:** não (`src/modules/impound/**` é PROIBIDO no `B-SAN3-14`).
+- **origem:** crítica r2 do plano do `B-SAN3-14` (A-R2-05), transcrita na emenda 1 §8.
+- **critério de encerramento:** o dossiê carrega a fase de cada vistoria e a rotula "Coleta"/"Entrega" (legado `null` = Coleta); um teste com coleta e entrega do **mesmo modelo** fica vermelho sem o conserto. O PR do `B-SAN3-14` declara o resíduo no corpo.
+
+## P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA (2026-11-11) — vistoria reaberta ou cancelada no servidor não chega ao app que já a baixou — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o app re-casa o `serverId` a cada abertura e não conhece versões; a reabertura existe desde o PR-03; o `B-SAN3-14` só herda a fase na reabertura e, na pré-carga, não regrava `serverId` casado) · **dono:** `B-SAN3-16` (fila e sync do app) ou bloco próprio, a critério do orquestrador · **bloqueia:** não.
+- **origem:** emenda 1 do plano do `B-SAN3-14` §8.
+- **critério de encerramento:** a reabertura no servidor de uma vistoria já baixada aparece no app como run nova da mesma fase, sem regravar a concluída; uma run cancelada no servidor deixa de segurar a OS no app; testes com vermelho-controle nos dois casos.
+
+## P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO (2026-11-11) — a coleta aberta sem sinal numa OS sem execução fica "pronta" para sempre — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`D-CHK-DISPATCH-CREATE`: a coleta aberta sem sinal numa OS cuja provisão falhou cria run local que, com sinal e sem par, volta `ready` sem `serverId`, `checklist_repository.dart`, `resolveRunForWorkOrder`); o `B-SAN3-14` fecha isso só para a entrega (R-R2-02) · **dono:** `B-SAN3-16` · **bloqueia:** não.
+- **origem:** emenda 1 do plano do `B-SAN3-14` §8.
+- **critério de encerramento:** a coleta sem execução no servidor aparece como "aguardando envio" e não é dada como pronta; as respostas ficam preservadas; teste com vermelho-controle.
+
+## P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP (2026-11-11) — OS concluída sem a entrega baixada, recusada pelo servidor, não volta ao atendimento no app — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (nasce da trava nova do `B-SAN3-14`); não grave pela triagem §C7 item 10(3): sem perda de dado · **dono:** `B-SAN3-16` · **bloqueia:** não.
+- **origem:** HIPÓTESE do R-R2-01 (emenda 1 do plano do `B-SAN3-14`), **negada** pela medição do dev na fatia 2 (`controle/decisoes.md`, `REGISTRO-B-SAN3-14`): "Descartar" a ação na tela de sincronização não mexe na OS, que fica `completed`/`pending`, e a carga da lista preserva OS `pending`; a tela de execução só abre em "Em atendimento"/"Pausada". A OS do servidor fica aberta e a entrega continua respondível pelo console ou por outro aparelho.
+- **critério de encerramento:** OS concluída sem sinal, recusada por `delivery_checklist_pending` e com a entrega baixada depois: o técnico chega à entrega pelo app e, concluída a entrega, a OS conclui sem "Descartar"; teste com vermelho-controle.
+
+## P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES (2026-11-11) — a comparação coleta × entrega não serve a modelos diferentes — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (a tela de comparação usa UM schema, o do `checklistId` da rota, e procura as runs por fase em todos os modelos) · **dono:** o próximo bloco que tocar a comparação no app · **bloqueia:** não (o `B-SAN3-14` só mostra "Comparar coleta × entrega" quando as duas vistorias confirmadas são do mesmo modelo, R-D1).
+- **origem:** plano v2 do `B-SAN3-14`, achado derivado D1.
+- **critério de encerramento:** coleta e entrega de modelos diferentes comparam pelos componentes equivalentes (ou a regra de "o que se compara" é decidida pelo dono); teste com os dois modelos.
+
+## P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA (2026-11-11) — a vistoria de entrega de OS cancelada depois do despacho fica em andamento — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (custo aceito pelo dono na decisão A, `D-PORTAO-9-RECOMENDACOES-1011`: uma unidade cobrada e uma execução `in_progress` que nenhum caminho encerra; OS cancelada não abre custódia, então o dossiê não é afetado) · **dono:** um bloco de higiene das vistorias de OS encerrada · **bloqueia:** não.
+- **origem:** plano v2 do `B-SAN3-14` §8.
+- **critério de encerramento:** a vistoria de entrega de OS cancelada sai de "em andamento" (cancelada), sem nova unidade cobrada; teste com vermelho-controle.
+
+## P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR (2026-11-11) — a tela de conclusão do prestador recusa toda OS com vistoria — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`work_order_conclusion_screen.dart` passa `checklistComplete = wo?.checklistId == null`; o `B-SAN3-14` só acrescenta o parâmetro `deliveryComplete` com o mesmo valor conservador) · **dono:** `B-SAN3-15` (fluxo do prestador) · **bloqueia:** não.
+- **origem:** plano v2 do `B-SAN3-14`, achado derivado D2 (nota para o `B-SAN3-15`).
+- **critério de encerramento:** a conclusão do prestador lê a situação real da vistoria da OS; teste com OS com e sem vistoria concluída.
 
 ## P-SAN3-15-QTD-FRACIONADA (2026-11-11) — a seleção de peça no app é em inteiros: "2,5 m" deixa escolher até 2 — BAIXA
 
@@ -14384,10 +14425,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-DB-FUSO-DA-CONEXAO (2026-11-12) — toda data gravada pelo Prisma pode ficar deslocada pelo offset do fuso da conexão — ALTA (sistêmica, sem bloqueio hoje)
 
-- **status:** ABERTA · **gravidade:** ALTA (sistêmica) · **escopo:** `pre-existente` (`@prisma/adapter-pg` 7.8.0, `src/database/prisma.ts:15`, `.env.example:12`) · **dono:** `B-DB-FUSO-UTC` (a abrir; o plano espera o sim do dono) · **PR-alvo:** a planejar · **bloqueia:** não (hoje).
+- **status:** ABERTA · **gravidade:** ALTA (sistêmica) · **escopo:** `pre-existente` (`@prisma/adapter-pg` 7.8.0, `src/database/prisma.ts:15`, `.env.example:12`) · **dono:** `B-DB-FUSO-UTC` (aberto; plano escrito, 9 fatias) · **PR-alvo:** a planejar · **bloqueia:** não (hoje).
 - **origem:** investigação `inv-543-fuso` (registro `REGISTRO-PENDENTE.md`, 12/11 07:37), desdobramento do T8 que o porteiro do #543 chamou de incidente.
 - **fato:** o `@prisma/adapter-pg` manda todo `Date` como texto UTC sem sufixo de fuso, e o Postgres o lê no `TimeZone` da sessão. Num banco fora de UTC, toda data gravada pelo Prisma fica deslocada pelo offset (+3 h em SP). O T8 (sessão vencida → 401) dá 200 com o banco em `America/Sao_Paulo` e 401 em UTC. O `docker-compose.prod.yml` (postgres:16, UTC) e o RDS padrão (UTC, não medido) não disparam; no portão a janela extra efetiva é `min(3 h, vida do token de acesso)`. Pontos que misturam `now()` do banco com data do Prisma: `charge-prisma.repository.ts:150`, `local-auth-credential.repository.ts:152`, `traccar-ingestion.repository.ts:143,199`, `work-order-prisma.repository.ts:210,262,265,511`, `financial-title-prisma.repository.ts:133,167,169,215,238` e outros (lista em `revisoes/j543/inv-fuso/inv-543-fuso.json`).
 - **critério de encerramento:** fixar o `TimeZone` da conexão em UTC (pool `pg` / `DATABASE_URL`) e travar o boot de produção quando `SHOW timezone` ≠ UTC (fail-closed, no molde do `runtime-role`), com teste `-db` sob `America/Sao_Paulo`.
+- **apenso (2026-11-12, `D-DONO-1211-NOITE`):** o bloco está planejado — `B-DB-FUSO-UTC`, 9 fatias (~6 h 20 min de dev), plano escrito pelo topo (Opus declarado). A Q1 do plano fica aberta ao dono: *existe hoje algum banco com dado real (cliente, piloto, demonstração usada por cliente, staging com dado que importa) que rode fora de UTC — por exemplo, um Postgres instalado direto numa máquina no Brasil?* A `P-DB-FUSO-LEGADO` só abre se a Q1 for "sim".
 
 ## P-15A-F4UI-TELA-SEM-DONO (2026-11-12) — a F4ui do estoque do técnico (tela contra a maquete de 3 opções) não tem pendência dona — BAIXA
 
@@ -14528,6 +14570,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** o primeiro cluster nasceu WIN1252 e a migração `20260717000000_add_inventory_core` falhou (E22P05); recriado com `initdb -E UTF8 --locale=C`. Depois o T8 falhou porque o adapter Prisma lia `timestamptz` deslocado 3 h (`America/Sao_Paulo`); corrigido com `timezone='UTC'` + `pg_reload_conf`. A lição operacional (sem código) está em `decisoes.md` (`LEITURA-ORQ-1211-INITDB-UTC-UTF8`).
 - **critério de encerramento:** o arnês/script que cria o cluster grava `timezone='UTC'` e usa `--encoding=UTF8 --locale=C`, com a ordem documentada.
 
+## P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS (2026-11-12) — a baseline da suíte inteira não fecha no host Windows — BAIXA (ferramenta)
+
+- **status:** ABERTA · **gravidade:** BAIXA (ferramenta de terreno) · **escopo:** arnês/scripts dos agentes no Windows (fora do produto) · **dono:** `B-FERR-AGENTES` (ferramentas dos agentes, fora do produto) · **PR-alvo:** o PR do `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** Emenda C2.3 do `B-REENVIOS` (registro `REGISTRO-PENDENTE.md`, 12/11 15:46), depois que a F0 do `dev-c2-cdx` não fechou a baseline da suíte inteira no host.
+- **fato:** no Windows a suíte inteira deu 534 arquivos, 5431 testes, 5420 aprovados, 9 falhas e 2 pulados — falhas de ambiente (sem `setsid`, shim do Prisma, `EBUSY` no drill do Traccar), nenhuma do bloco. A Emenda C2.3 passou a medir `N_b`/`N_f` pelo CI da `main` e, no host, só as suítes do bloco.
+- **critério de encerramento:** a suíte inteira fecha no host Windows (ou o arnês documenta e reproduz a divergência e a CI cobre o resto), sem vermelho de ambiente.
+
 ## P-C4-02-MENU-TECNICO-403 (2026-11-12) — o menu do técnico mostra Seguros e Estoque, que dão 403 — BAIXA (pré-existente)
 
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (idêntico na base de staging do `b6caf568`) · **dono:** `B-SAN3-06a` (já dono do `P-SAN3-04A-MENU-RESIDUAL`) · **PR-alvo:** o PR do `B-SAN3-06a` · **bloqueia:** não.
@@ -14544,10 +14593,18 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-PORTAO-ITEM-GATE-CHAVE (2026-11-12) — acrescentar a P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO como item novo do portão (§4.1)? — decisão do dono
 
-- **status:** ABERTA · **gravidade:** decisão do dono · **escopo:** `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1 (o item novo não entra neste PR; acrescentá-lo muda o denominador de 64 e o `mvp_vendavel`) · **dono:** o dono · **PR-alvo:** o PR de registro após a decisão · **bloqueia:** não (hoje).
+- **status:** FECHADA (2026-11-12, decisão `D-DONO-1211-NOITE`) — o dono respondeu "3-ok": o item novo entra no §4.1 como item 63, com bloco próprio de permissão do app, e o denominador passa de 64 para 65.
+- **status anterior:** ABERTA · **gravidade:** decisão do dono · **escopo:** `docs/revisoes/SAN3/PLANO_SAN3.md` §4.1 (o item novo não entra neste PR; acrescentá-lo muda o denominador de 64 e o `mvp_vendavel`) · **dono:** o dono · **PR-alvo:** o PR de registro após a decisão · **bloqueia:** não (hoje).
 - **pergunta ao dono:** a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` entra no §4.1 como item novo do portão, com bloco próprio de permissão do app? A resposta (a) da `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP) disse que sim, mas acrescentar o item muda o denominador de 64 para 65 e mexe no `mvp_vendavel`.
 - **recomendação:** decidir antes do próximo marco.
 - **origem:** ressalva (item 4) do `porteiro-540`; o item não entra no `PLANO_SAN3` neste PR (decisão do orquestrador, `donos-1211.md`).
+
+## P-PAINEL-HORA-DA-MEDICAO (2026-11-13) — a hora da medição da Codex ficava em branco e o aviso de medição velha não disparava — BAIXA — FECHADA
+
+- **status:** FECHADA (2026-11-13; consertado fora do repositório) · **gravidade:** BAIXA (ferramenta de terreno) · **escopo:** painel de agentes fora do repositório · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **fato:** o painel de agentes mostrava a hora da medição da Codex em branco. No PowerShell 7, `ConvertFrom-Json` já entregava o campo como `DateTime`; a chamada posterior a `Parse` falhava em silêncio. Por isso, o aviso de medição velha nunca disparava.
+- **fechamento:** o tratamento foi corrigido em 13/11 no painel externo ao repositório.
+- **lição:** medição que falha em silêncio é *fail-open*; o arnês deve tornar a falha visível e não tratar a ausência de hora como medição válida.
 
 ## P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS (2026-11-12) — a suíte backend inteira não reproduz o CI no host Windows — MÉDIA (ferramenta)
 
@@ -14584,3 +14641,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** RETOMADA 33 do diário do `B-MATERIAL-REENVIO` (`dev-c6-cl`).
 - **fato:** o §C3 pede o RC4b (`tests/b-material-payload-contract.test.ts` rodando o handler real sobre o payload literal do `InventorySyncCodec`, gravado por `test/core/sync/bmaterial_codec_test.dart`), mas nenhuma fatia do §C5 nem das Emendas C2–C2.7 o executa, e `tests/b-material-payload-contract.test.ts` não está no PERMITIDO do §C4. Hoje o contrato é coberto pelos dois lados em separado (RC2 no servidor; RC4 com o codec real no app).
 - **critério de encerramento:** a emenda inclui o RC4b numa fatia e no PERMITIDO, ou o declara fora com motivo.
+
+## P-SAN3-ITEM-63-DUPLICADO (2026-11-13) — o número 63 do §4.1 do `PLANO_SAN3.md` foi dado a dois itens: o material e a GATE-CHAVE — BAIXA (registro, §A2)
+
+- **status:** ABERTA · **gravidade:** BAIXA (numeração do registro; nenhum comportamento) · **escopo:** `pre-existente` (as duas atribuições antecedem o merge: a do material vem da P5 de 31/10, a da GATE-CHAVE da `D-DONO-1211-NOITE` de 12/11) · **dono:** o orquestrador (PR de registro) · **bloqueia:** não
+- **origem:** merge da `main` `eeccdd27` no ramo do `B-MATERIAL-REENVIO` (PR #551), RETOMADA 47 do diário do bloco C (`merge-551-cl`, dev de integração).
+- **fato:** na base comum `ef4e98e7`, o §4.1 tinha 64 linhas (1 a 65, sem o 63). O ramo pôs o 63 = `P-MOBILE-MATERIAL-SEM-REPLAY` (P5 de 31/10, "itens 63-64"); a `main` pôs o 63 = `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` (`D-DONO-1211-NOITE`, "denominador de 64 para 65"). O merge ficou com as duas linhas, sem renumerar: o §4.1 tem 66 linhas, e as contagens do `PLANO_SAN3.md` foram somadas (66 bloqueantes, 52 blocos, 19 G).
+- **critério de encerramento:** um dos dois itens recebe número próprio (decisão do orquestrador ou do dono), com as referências ao número atualizadas no registro; o denominador do vendável usado no marco de KPI confere com o número de linhas do §4.1.

@@ -107,6 +107,21 @@ enum MobileChecklistRunKind {
   /// segue a regra estrita e vira [unknown].
   static MobileChecklistRunKind fromLegacyApiValue(String? v) =>
       v == null ? MobileChecklistRunKind.collection : fromApiValue(v);
+
+  /// B-SAN3-14 — a fase que o SERVIDOR declara na lista da OS (`role`, que só
+  /// sai sob `roleAware=1`, contrato `checklist_run_role@2026-11.b-san3-14`).
+  /// `collection` e `generic` (a genérica vale para a OS toda) são coleta;
+  /// `delivery` é entrega; `null` ou ausente é a vistoria anterior à fase
+  /// (legado: antes do bloco só a primária virava execução), lida como coleta.
+  /// Qualquer outro valor vira [unknown], que não casa com nada. O
+  /// [fromApiValue] estrito não muda: ele protege o guard do `b123`.
+  static MobileChecklistRunKind fromServerRole(String? role) => switch (role) {
+    'collection' => MobileChecklistRunKind.collection,
+    'generic' => MobileChecklistRunKind.collection,
+    'delivery' => MobileChecklistRunKind.delivery,
+    null => MobileChecklistRunKind.collection,
+    _ => MobileChecklistRunKind.unknown,
+  };
 }
 
 class MobileChecklistFieldOption {
