@@ -7,6 +7,8 @@
 import { randomUUID } from "node:crypto";
 
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
+import type { ChargeLookup, ChargeResult, ChargeStatus as ProviderChargeStatus } from "../providers/payment/payment-provider.port.js";
+import type { NewStatementCharge } from "../charges/charges.types.js";
 import {
   idempotencyKeyOf,
   type BillingOutboxRow,
@@ -49,6 +51,32 @@ export function leaseOf(row: BillingOutboxRow): OutboxLease {
   return { claimedBy: row.claimedBy, attemptStartedAt: row.attemptStartedAt };
 }
 
+export type ChargeRecordOutcome =
+  | { readonly kind: "created"; readonly result: ChargeResult }
+  | { readonly kind: "adopted"; readonly chargeId: string; readonly lookup: ChargeLookup };
+
+export type ChargeOutcomeSink = (charge: NewStatementCharge, now: Date) => Promise<void>;
+
+export function recordedChargeStatus(kind: ChargeRecordOutcome["kind"], status: ProviderChargeStatus): NewStatementCharge["status"] {
+  if (kind === "created") return "pending";
+  switch (status) {
+    case "pending":
+    case "overdue":
+      return "pending";
+    case "paid":
+    case "partially_paid":
+      return "confirmed";
+    case "cancelled":
+    case "refunded":
+    case "partially_refunded":
+    case "chargeback_disputed":
+    case "charged_back":
+      return status;
+    case "unknown":
+      return "needs_review";
+  }
+}
+
 export interface OutboxRepository {
   /** `INSERT … ON CONFLICT (idempotency_key) DO NOTHING` — devolve a existente se já houver. */
   enqueue(input: NewOutboxRow, now: Date): Promise<{ readonly row: BillingOutboxRow; readonly created: boolean }>;
@@ -71,6 +99,10 @@ export interface OutboxRepository {
   markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date, lease: OutboxLease): Promise<boolean>;
   /** [LEASE-02] Confirma a posse sob `FOR UPDATE` numa transação curta, imediatamente antes da criação remota. */
   confirmLease(tenantId: string, id: string, lease: OutboxLease): Promise<boolean>;
+  /** [REG-TX] SENT + cobrança + ref, atômicos no Prisma. `false` significa lease perdida e nenhuma escrita. */
+  recordChargeOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, outcome: ChargeRecordOutcome, now: Date): Promise<boolean>;
+  /** Só o dublê em memória usa esta composição para espelhar as tabelas separadas. */
+  configureChargeOutcomeSink?(sink: ChargeOutcomeSink): void;
   /** Visibilidade (D5/R-OBX-4): marca `skip_reason = provider_disabled` nas PENDING de provedor desligado, SEM rede e
    * SEM mudar o status. Escrita de PLATAFORMA sobre tabela FORCE → `forEachTenantRls` no Prisma. Devolve quantas marcou. */
   markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number>;
@@ -123,6 +155,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
   #claimGate: Promise<unknown> = Promise.resolve();
   private readonly clock: () => Date;
   private readonly readStatement: StatementClaimReader;
+  private chargeOutcomeSink: ChargeOutcomeSink | undefined;
 
   constructor(options: InMemoryOutboxOptions) {
     this.readStatement = options.readStatement;
@@ -272,6 +305,29 @@ export class InMemoryOutboxRepository implements OutboxRepository {
   async confirmLease(tenantId: string, id: string, lease: OutboxLease): Promise<boolean> {
     const row = this.#rows.get(id);
     return Boolean(row && row.tenantId === tenantId && row.status === "PROCESSING" && row.claimedBy === lease.claimedBy && row.attemptStartedAt?.getTime() === lease.attemptStartedAt.getTime());
+  }
+
+  configureChargeOutcomeSink(sink: ChargeOutcomeSink): void {
+    this.chargeOutcomeSink = sink;
+  }
+
+  async recordChargeOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, outcome: ChargeRecordOutcome, now: Date): Promise<boolean> {
+    if (!(await this.confirmLease(tenantId, row.id, lease))) return false;
+    const chargeId = outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId;
+    const details = outcome.kind === "created" ? outcome.result : outcome.lookup;
+    await this.chargeOutcomeSink?.({
+      tenantId,
+      statementId: row.statementId,
+      provider: row.provider,
+      externalChargeId: chargeId,
+      status: recordedChargeStatus(outcome.kind, details.status),
+      payUrl: details.payUrl ?? null,
+      pixCopyPaste: details.pixCopyPaste ?? null,
+      boletoLine: details.boletoLine ?? null,
+      boletoUrl: details.boletoUrl ?? null,
+      dueDate: (outcome.kind === "adopted" ? outcome.lookup.dueDate : undefined) ?? (typeof row.payload.dueDate === "string" ? row.payload.dueDate : null),
+    }, now);
+    return this.markSent(tenantId, row.id, chargeId, now, lease);
   }
 
   async markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number> {

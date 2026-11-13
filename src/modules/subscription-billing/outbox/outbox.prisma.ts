@@ -28,7 +28,8 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { forEachTenantRls, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
-import type { AdoptionFacts, ClaimParams, ClaimResult, OutboxLease, OutboxRepository } from "./outbox.repository.js";
+import { putRefInTx } from "../webhooks/statement-refs.prisma.js";
+import { recordedChargeStatus, type AdoptionFacts, type ChargeRecordOutcome, type ClaimParams, type ClaimResult, type OutboxLease, type OutboxRepository } from "./outbox.repository.js";
 import {
   idempotencyKeyOf,
   type BillingOutboxRow,
@@ -149,7 +150,11 @@ const CHARGE_CREATE_JOINT_PICK_SQL = `SELECT o.* FROM subscription_statements s
       LIMIT 1`;
 /** Recorte opcional das organizações da varredura de plataforma. Produção não o passa (varre todas); a suíte de banco
  * compartilhado o usa para não tocar a outbox de outra suíte (o mesmo motivo do `tenantIds` da medição — M-5 do #505). */
-export type PrismaOutboxScope = { readonly tenantIds?: readonly string[] };
+export type PrismaOutboxScope = {
+  readonly tenantIds?: readonly string[];
+  /** Injeção de falha do RG1, executada dentro de [REG-TX] depois do INSERT. */
+  readonly afterChargeInsert?: () => Promise<void>;
+};
 
 export class PrismaOutboxRepository implements OutboxRepository {
   constructor(
@@ -346,6 +351,64 @@ export class PrismaOutboxRepository implements OutboxRepository {
         lease.attemptStartedAt,
       )) as Array<{ id: string }>;
       return rows.length === 1;
+    });
+  }
+
+  async recordChargeOutcome(
+    tenantId: string,
+    row: BillingOutboxRow,
+    lease: OutboxLease,
+    outcome: ChargeRecordOutcome,
+    now: Date,
+  ): Promise<boolean> {
+    // [REG-TX] O demonstrativo vem PRIMEIRO; a rede já terminou antes de esta transação começar.
+    return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+      const statements = (await tx.$queryRawUnsafe(
+        `SELECT id, tenant_id, status, total_amount, reopened_at
+           FROM subscription_statements
+          WHERE id = $1::uuid
+          FOR NO KEY UPDATE`,
+        row.statementId,
+      )) as Array<{ id: string; tenant_id: string; status: string; total_amount: unknown; reopened_at: Date | null }>;
+      const statement = statements[0];
+      if (!statement) return false;
+
+      const leased = (await tx.$queryRawUnsafe(
+        `UPDATE billing_outbox
+            SET status = 'SENT', external_id = $4, next_attempt_at = NULL, last_error = NULL, updated_at = $5
+          WHERE id = $1::uuid AND status = 'PROCESSING' AND claimed_by = $2 AND attempt_started_at = $3
+          RETURNING id`,
+        row.id,
+        lease.claimedBy,
+        lease.attemptStartedAt,
+        outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId,
+        now,
+      )) as Array<{ id: string }>;
+      if (leased.length === 0) return false;
+
+      const externalChargeId = outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId;
+      const details = outcome.kind === "created" ? outcome.result : outcome.lookup;
+      const status = recordedChargeStatus(outcome.kind, details.status);
+      await tx.$executeRawUnsafe(
+        `INSERT INTO subscription_statement_charges
+           (tenant_id, statement_id, provider, external_charge_id, status, pay_url, pix_copy_paste, boleto_line, boleto_url, due_date, created_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10::date, $11)
+         ON CONFLICT (provider, external_charge_id) DO NOTHING`,
+        statement.tenant_id,
+        statement.id,
+        row.provider,
+        externalChargeId,
+        status,
+        details.payUrl ?? null,
+        details.pixCopyPaste ?? null,
+        details.boletoLine ?? null,
+        details.boletoUrl ?? null,
+        (outcome.kind === "adopted" ? outcome.lookup.dueDate : undefined) ?? (typeof row.payload.dueDate === "string" ? row.payload.dueDate : null),
+        now,
+      );
+      await this.scope.afterChargeInsert?.();
+      await putRefInTx(tx, { statementId: statement.id, tenantId: statement.tenant_id, provider: row.provider, externalChargeId }, now);
+      return true;
     });
   }
 

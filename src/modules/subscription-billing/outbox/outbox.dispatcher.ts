@@ -22,7 +22,7 @@
 
 import { randomUUID } from "node:crypto";
 
-import type { PaymentProviderPort, CreateChargeInput, ChargeLookup, ChargeResult, ChargeStatus, ExternalChargeCandidate } from "../providers/payment/payment-provider.port.js";
+import type { PaymentProviderPort, CreateChargeInput, ChargeLookup, ChargeStatus, ExternalChargeCandidate } from "../providers/payment/payment-provider.port.js";
 import {
   backoffMsForAttempt,
   INVOICE_DEFER_MS,
@@ -76,8 +76,6 @@ export type DispatcherDeps = {
   readonly now?: () => Date;
   readonly claimedBy?: string;
   readonly orphanMs?: number;
-  /** Persiste a cobrança criada (`subscription_statement_charges`, G11) — F7. */
-  readonly onChargeCreated?: (row: BillingOutboxRow, result: ChargeResult, now: Date) => Promise<void>;
   readonly onAudit?: (event: DispatchAuditEvent) => Promise<void>;
 };
 
@@ -213,7 +211,7 @@ async function settleFoundCharge(
   const facts = await deps.repo.adoptionFacts(row.tenantId, row.statementId, row.id);
   const decision = adoptionDecision(row, found, facts, orphan);
   if (decision === "adopt") {
-    if (!(await deps.repo.markSent(row.tenantId, row.id, found.chargeId, clock(), lease))) return leaseLost(deps, row);
+    if (!(await deps.repo.recordChargeOutcome(row.tenantId, row, lease, { kind: "adopted", chargeId: found.chargeId, lookup: found }, clock()))) return leaseLost(deps, row);
     return "recovered";
   }
   if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, decision, clock(), lease))) return leaseLost(deps, row);
@@ -340,8 +338,7 @@ async function dispatchOne(
     // [LEASE-02] A posse é confirmada numa transação curta que termina ANTES do POST remoto.
     if (!(await deps.repo.confirmLease(row.tenantId, row.id, lease))) return leaseLost(deps, row);
     const result = await port.createCharge(chargeInputFromRow(row, customer.customerId));
-    await deps.onChargeCreated?.(row, result, clock());
-    if (!(await deps.repo.markSent(row.tenantId, row.id, result.chargeId, clock(), lease))) return leaseLost(deps, row);
+    if (!(await deps.repo.recordChargeOutcome(row.tenantId, row, lease, { kind: "created", result }, clock()))) return leaseLost(deps, row);
     return "sent";
   } catch (error) {
     return registerFailure(deps, row, error, clock);
