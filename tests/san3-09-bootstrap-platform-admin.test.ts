@@ -316,7 +316,8 @@ test("T1.6 processo filho: --password=x → exit 2 PASSWORD_IN_ARGV; sentinela n
 
 const IMPORT_ALLOWLIST = new Set([
   "dotenv/config",
-  "@prisma/adapter-pg",
+  // B-DB-FUSO-UTC, Emenda 2 E2.1: o bootstrap abre a conexão pela fábrica única, que fixa o fuso UTC.
+  "../src/database/pg-connection.js",
   "@prisma/client",
   "../src/database/rls.js",
   "../src/modules/auth/repositories/local-auth-credential.repository.js",
