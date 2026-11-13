@@ -14365,10 +14365,37 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-DB-FUSO-DA-CONEXAO (2026-11-12) — toda data gravada pelo Prisma pode ficar deslocada pelo offset do fuso da conexão — ALTA (sistêmica, sem bloqueio hoje)
 
-- **status:** ABERTA · **gravidade:** ALTA (sistêmica) · **escopo:** `pre-existente` (`@prisma/adapter-pg` 7.8.0, `src/database/prisma.ts:15`, `.env.example:12`) · **dono:** `B-DB-FUSO-UTC` (a abrir; o plano espera o sim do dono) · **PR-alvo:** a planejar · **bloqueia:** não (hoje).
+- **status:** ABERTA (em execução; PR draft deste bloco) · **gravidade:** ALTA (sistêmica) · **escopo:** `dentro-do-bloco` (`src/database/pg-connection.ts`, `src/database/session-timezone.ts`, `src/database/session-timezone.bootstrap.ts`, `src/database/prisma.ts`, `src/server.ts`, `src/integrations/traccar/traccar-db.ts`, `src/integrations/traccar/traccar-ingest.bootstrap.ts`, seeds/scripts de operação, `.env.example`, `docs/deployment.md`) · **dono:** `B-DB-FUSO-UTC` · **PR-alvo:** este bloco (PR draft `fix/db-fuso-utc`) · **bloqueia:** não (hoje).
 - **origem:** investigação `inv-543-fuso` (registro `REGISTRO-PENDENTE.md`, 12/11 07:37), desdobramento do T8 que o porteiro do #543 chamou de incidente.
 - **fato:** o `@prisma/adapter-pg` manda todo `Date` como texto UTC sem sufixo de fuso, e o Postgres o lê no `TimeZone` da sessão. Num banco fora de UTC, toda data gravada pelo Prisma fica deslocada pelo offset (+3 h em SP). O T8 (sessão vencida → 401) dá 200 com o banco em `America/Sao_Paulo` e 401 em UTC. O `docker-compose.prod.yml` (postgres:16, UTC) e o RDS padrão (UTC, não medido) não disparam; no portão a janela extra efetiva é `min(3 h, vida do token de acesso)`. Pontos que misturam `now()` do banco com data do Prisma: `charge-prisma.repository.ts:150`, `local-auth-credential.repository.ts:152`, `traccar-ingestion.repository.ts:143,199`, `work-order-prisma.repository.ts:210,262,265,511`, `financial-title-prisma.repository.ts:133,167,169,215,238` e outros (lista em `revisoes/j543/inv-fuso/inv-543-fuso.json`).
 - **critério de encerramento:** fixar o `TimeZone` da conexão em UTC (pool `pg` / `DATABASE_URL`) e travar o boot de produção quando `SHOW timezone` ≠ UTC (fail-closed, no molde do `runtime-role`), com teste `-db` sob `America/Sao_Paulo`.
+
+
+## P-DB-FUSO-TESTES-DIRETOS (2026-11-13) — os 156 arquivos de teste com `new PrismaPg(` direto migram para a fábrica aos poucos — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `fora-do-bloco` (a catraca G3 impede crescer; os arquivos de teste fora do arnês migram aos poucos) · **dono:** a nomear · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** §8 do plano `B-DB-FUSO-UTC`; a varredura `tests/db-fuso-utc-pontos-de-conexao.test.ts` (G3) fixa a catraca em 217 ocorrências de `new PrismaPg(` fora de `tests/helpers/` e fora dos testes deste bloco — só desce.
+- **fato:** os testes com `new PrismaPg(` direto não passam pela fábrica UTC; fora de UTC (só o cenário `-sp-db`) continuam sensíveis ao fuso da sessão.
+- **critério de encerramento:** zero ocorrências de `new PrismaPg(` em `tests/` fora de `tests/helpers/`, sem regressão das suítes.
+
+## P-DB-FUSO-SUITES (2026-11-13) — linha `SUITES=` no job `backend-postgres` para o teste `-sp-db`, se o dono não ordenar — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `.github/workflows/ci.yml` (fora deste bloco; depende de ordem do dono) · **dono:** a nomear · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** §8 do plano `B-DB-FUSO-UTC`; o `tests/db-fuso-utc-sp-db.test.ts` entra no CI pelo job `backend` (roda todo `tests/*.test.ts`) e **falha** (não pula) se `DATABASE_URL` existir e o papel não puder ter o fuso trocado — mitigação sem tocar `.github/**`.
+- **critério de encerramento:** decidir (e, se o dono ordenar, aplicar) a linha `SUITES="$SUITES tests/db-fuso-utc-sp-db.test.ts"` no job `backend-postgres`, mantendo a guarda de zero pulos.
+
+## P-DB-FUSO-POOLER-MEDIR (2026-11-13) — medir no staging da Fly se o pooler aceita `options` de início — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** operação de staging (fora deste bloco) · **dono:** a nomear · **PR-alvo:** a definir · **bloqueia:** o deploy de produção desta mudança (não o merge).
+- **origem:** risco R1 do plano `B-DB-FUSO-UTC`; se houver pooler (PgBouncer/RDS Proxy) na frente, o parâmetro `options` pode ser recusado ou ignorado (hipótese, não medida).
+- **critério de encerramento:** rodar `psql "postgresql://<usuario>:<senha>@<host>:5432/<banco>?options=-c%20TimeZone%3DUTC" -Atc "show timezone"` no staging antes da produção; recusado ⇒ `ALTER DATABASE <db> SET timezone 'UTC'` pelo dono do banco, com a trava continuando a medir.
+
+## P-DB-FUSO-SCRIPTS-SEM-TRAVA (2026-11-13) — seeds e scripts de operação dependem só da fábrica, sem a trava de sessão — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` (P3–P9 migram pela fábrica; a exceção `scripts/gen-tenant-tables.mjs` só lê catálogo) · **dono:** `B-FERR-AGENTES` · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** Emenda 1 E1.3 do plano `B-DB-FUSO-UTC`; os seeds (P3–P5) e os scripts (P6–P9) usam `createPgAdapter`/`createPrismaClient`, mas não passam pela `assertDatabaseSessionTimezoneUtc` — a trava fica no boot da API e do listener do Traccar.
+- **fato:** risco residual declarado: um script/seed roda num banco fora de UTC e grava data deslocada sem a trava recusar. A exceção P10 (`gen-tenant-tables.mjs`) só lê catálogo.
+- **critério de encerramento:** decidir se scripts/seeds ganham a mesma sonda fail-closed (bloco próprio) ou declarar aceite do risco.
 
 ## P-15A-F4UI-TELA-SEM-DONO (2026-11-12) — a F4ui do estoque do técnico (tela contra a maquete de 3 opções) não tem pendência dona — BAIXA
 
