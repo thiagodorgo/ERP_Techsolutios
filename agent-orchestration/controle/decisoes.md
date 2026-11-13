@@ -5073,7 +5073,7 @@ lista curada do job `backend-postgres`, medida 3× antes.
 
 ## D-DONO-1211-NOITE (2026-11-12 21:44 SP) — três respostas do dono: a linha `SUITES=` do B-MATERIAL-REENVIO, o bloco do fuso e a entrada da GATE-CHAVE no portão
 
-- **Fato (decisão do dono):** *"1-autorizo / 2-10 uss de teto na api claude e no deepseek. / 3-ok"*. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 12/11 21:44 SP). Sem valor transcrito.
+- **Fato (decisão do dono):** *"1-autorizo / 2-<valor omitido: repositório público> de teto na api claude e no deepseek. / 3-ok"*. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 12/11 21:44 SP). Sem valor transcrito.
 - **O que vale:**
   - **1 — a linha `SUITES=` do `.github/workflows/ci.yml`** (job `backend-postgres`) fica autorizada para `tests/b-material-sync-db.test.ts`, no `B-MATERIAL-REENVIO` (o R-C21-01 da Emenda C2.1). O dev do C pode fazer a C-F6b.
   - **2 — o bloco `B-DB-FUSO-UTC` fica aberto, com o plano escrito** (9 fatias, 6 h 20 min de dev, 1 pergunta Q1 aberta ao dono). Leitura do orquestrador, declarada (§A6): a pergunta 2 era o bloco do fuso da conexão, cujo plano pedia mais teto na API; o teto dado é o sim ao bloco.
