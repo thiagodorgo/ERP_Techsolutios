@@ -8,6 +8,16 @@ import 'sync_models.dart';
 import 'sync_queue_repository.dart';
 import 'sync_replay_service.dart';
 
+/// 503 do lote: a ação volta a `pending` sem custo, mas pode ter baixado (outra ação do mesmo
+/// lote é que esgotou o lock). C2 item 9(c): conta como "já esteve `syncing`".
+const inventorySyncBusyErrorCode = 'SYNC_BUSY';
+
+/// S12: a OS nunca chegou ao servidor. Nasce no laço de elegibilidade, antes de qualquer envio.
+const inventoryWorkOrderNotOnServerErrorCode = 'work_order_not_on_server';
+
+/// 401/403 no lote (o `mapDioError` não separa os dois).
+const inventorySessionForbiddenErrorCode = 'SESSION_FORBIDDEN';
+
 abstract class InventorySyncBatchApi {
   Future<List<SyncActionResult>> sendBatch(List<SyncAction> actions);
 }
@@ -220,13 +230,14 @@ class InventorySyncReplayService {
 
       final conflict = action.copyWith(
         status: SyncStatus.conflict,
-        lastErrorCode: 'work_order_not_on_server',
+        lastErrorCode: inventoryWorkOrderNotOnServerErrorCode,
         lastSafeError:
             'A ordem de serviço não foi criada no servidor; '
             'Versao do gestor descarta a peça',
       );
       await _queue.update(conflict);
       conflicts.add(conflict);
+      await _updateEntityForLocalConflict(conflict);
     }
 
     if (eligible.isEmpty || _api is PendingBackendInventorySyncBatchApi) {
@@ -258,7 +269,7 @@ class InventorySyncReplayService {
           await _queue.update(
             action.copyWith(
               status: SyncStatus.pending,
-              lastErrorCode: 'SYNC_BUSY',
+              lastErrorCode: inventorySyncBusyErrorCode,
               lastSafeError: 'Servidor ocupado; o envio será refeito.',
             ),
           );
@@ -274,13 +285,14 @@ class InventorySyncReplayService {
       for (final action in syncing) {
         final conflict = action.copyWith(
           status: SyncStatus.conflict,
-          lastErrorCode: 'SESSION_FORBIDDEN',
+          lastErrorCode: inventorySessionForbiddenErrorCode,
           lastSafeError:
               'O servidor não aceitou o envio de material. Entre de novo no app '
               'ou peça ao administrador para ativar o estoque na sua organização.',
         );
         await _queue.update(conflict);
         conflicts.add(conflict);
+        await _updateEntityForLocalConflict(conflict);
       }
       return SyncReplayResult(
         synced: synced,
@@ -369,6 +381,20 @@ class InventorySyncReplayService {
       synced: synced,
       failed: failed,
       conflicts: conflicts,
+    );
+  }
+
+  /// PC5: a linha segue a ação também nos conflitos que não vêm de uma resposta do servidor
+  /// (S12 e 401/403 no lote).
+  Future<void> _updateEntityForLocalConflict(SyncAction conflict) async {
+    await _entityUpdater?.call(
+      conflict,
+      SyncActionResult(
+        clientActionId: conflict.clientActionId,
+        status: 'conflict',
+        errorCode: conflict.lastErrorCode,
+      ),
+      SyncStatus.conflict,
     );
   }
 

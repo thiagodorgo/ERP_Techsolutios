@@ -5,6 +5,7 @@ String syncDomainLabel(String type) {
   if (type.startsWith('expense_') || type.startsWith('rdv_')) {
     return 'Despesas (RDV)';
   }
+  if (type.startsWith('work_order_material')) return 'Materiais da OS';
   if (type.startsWith('work_order') || type.startsWith('work-order')) {
     return 'Ordens de Serviço';
   }
@@ -33,6 +34,7 @@ const _actionLabels = <String, String>{
   'inventory_entry.create': 'Entrada de estoque',
   'inventory_exit.create': 'Saída de estoque',
   'work_order_material.add': 'Material aplicado na OS',
+  'work_order_material.remove': 'Peça retirada da OS',
   'evidence.work_order_photo': 'Foto da OS',
   'evidence.work_order_signature': 'Assinatura da OS',
   'evidence.work_order_observation': 'Observação da OS',

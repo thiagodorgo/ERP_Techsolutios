@@ -20,6 +20,7 @@ import '../../features/work_orders/data/work_order_local_store.dart';
 import '../../features/work_orders/data/work_order_conflict_resolution_service.dart';
 import '../../features/expenses/data/expense_repository.dart';
 import '../../features/expenses/data/expense_sync_entity_updater.dart';
+import '../../features/prestador/data/prestador_repository.dart';
 import 'sync_action_factory.dart';
 import 'sync_action_store.dart';
 import 'sync_engine.dart';
@@ -241,11 +242,20 @@ final inventorySyncBatchApiProvider = Provider<InventorySyncBatchApi>((ref) {
 });
 
 final inventorySyncReplayServiceProvider = Provider<InventorySyncReplayService>(
-  (ref) => InventorySyncReplayService(
-    queue: ref.watch(replaySyncQueueRepositoryProvider),
-    api: ref.watch(inventorySyncBatchApiProvider),
-    workOrders: DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
-  ),
+  (ref) {
+    return InventorySyncReplayService(
+      queue: ref.watch(replaySyncQueueRepositoryProvider),
+      api: ref.watch(inventorySyncBatchApiProvider),
+      workOrders: DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
+      entityUpdater: (action, result, status) async {
+        final localId = action.payload['material_local_id'];
+        if (localId is! String || localId.trim().isEmpty) return;
+        await ref
+            .read(prestadorRepositoryProvider)
+            .applyMaterialSyncStatus(localId.trim(), status);
+      },
+    );
+  },
 );
 
 final workOrderConflictResolutionServiceProvider =
