@@ -367,16 +367,17 @@ export type CreateMovementOutcome =
 
 /**
  * Ω4C PR-08b (D-Ω4C-INV-STOCK-DECREMENT) — the CONSUMER sources that trigger an automatic stock EXIT (baixa). The
- * seam FIXES the whole movement (type=`saida`, custody BASE, source_type/source_id, machine reason) — the consumer
- * only says WHICH item; the quantity is LOCKED at the origin (liters / line quantity). Non-amplifier by design.
+ * seam FIXES the whole movement (type=`saida`, source_type/source_id, machine reason) — the consumer says which item
+ * and, for work-order material, the server-resolved custody. The quantity is LOCKED at the origin.
  */
-export const STOCK_EXIT_SOURCE_TYPES = ["fuel_log", "maintenance_item"] as const;
+export const STOCK_EXIT_SOURCE_TYPES = ["fuel_log", "maintenance_item", "work_order_material"] as const;
 export type StockExitSourceType = (typeof STOCK_EXIT_SOURCE_TYPES)[number];
 
 /** Ω4C PR-08b — the machine `reason` token of the baixa, per source (NOT PII, §2.8 — a máquina, não texto livre). */
 export const STOCK_EXIT_REASON_BY_SOURCE: Record<StockExitSourceType, string> = {
   fuel_log: "baixa_abastecimento_interno",
   maintenance_item: "baixa_manutencao",
+  work_order_material: "baixa_material_os",
 };
 
 /** Ω4C PR-08b — the non-amplifier contract the consumer passes to `createExitForSource` (service→service). */
@@ -385,6 +386,8 @@ export type CreateExitForSourceInput = {
   readonly sourceId: string;
   readonly itemId: string;
   readonly quantity: number;
+  readonly custody?: StockCustody;
+  readonly workOrderId?: string;
   readonly vehicleId?: string;
 };
 
@@ -395,6 +398,8 @@ export type CreateStockExitForSourceInput = {
   readonly sourceType: string;
   readonly sourceId: string;
   readonly quantity: number;
+  readonly custody?: StockCustody;
+  readonly workOrderId?: string;
   readonly vehicleId?: string;
   readonly reason: string;
   readonly createdBy?: string;
@@ -408,6 +413,15 @@ export type RemoveStockExitForSourceInput = {
   readonly reason?: string;
   readonly createdBy?: string;
 };
+
+/** Rebuild the exact custody bucket recorded on an immutable ledger movement. */
+export function custodyOfMovement(movement: StockMovement): StockCustody {
+  return {
+    custodyType: movement.custodyType,
+    custodyOperatorProfileId: movement.custodyOperatorProfileId,
+    custodyVehicleId: movement.custodyVehicleId,
+  };
+}
 
 export class InventoryError extends Error {
   constructor(

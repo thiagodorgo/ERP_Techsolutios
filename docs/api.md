@@ -197,6 +197,8 @@ Resposta segue o envelope mobile de sync com `summary`, `accepted`, `rejected`, 
 
 Lacunas B-098D: persistencia duravel em banco/Redis, reserva transacional multi-instancia, associacao real com OS/armazem, politicas por estoque e consumo pelo Flutter.
 
+Desde o B-MATERIAL-REENVIO, o mesmo lote aceita `work_order_material.add|remove` de quem tem `work_orders:update` (por acao, com escopo por objeto da OS), com baixa duravel por origem na custodia de quem lanca e estorno na remocao; os 3 tipos acima continuam exigindo `inventory.manage` e em memoria (detalhes em `docs/mobile-sync-contracts.md`).
+
 `POST /api/v1/mobile/sync/evidence-actions` esta implementado no B-098E como contrato parcial para registrar manifestos de evidencias de OS e evidencias genericas de campo. O endpoint nao recebe binario/base64 nem caminho local: registra apenas metadados controlados para posterior upload e persistencia duravel.
 
 Tipos aceitos:

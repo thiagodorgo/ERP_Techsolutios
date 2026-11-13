@@ -606,3 +606,404 @@ Texto pronto da §13.6 do mesmo plano.
 > - **Meta:** M = 71 + 31 = 102, com 42 mutações literais.
 > - **Fatias:** 18 (≈ 685 min, 1 com Docker).
 > - **Plano completo:** `erp-pausa-2026-10-03/planos/B-RDV-COMPROVANTE-conserto-c1.md`, §12 e §13.
+
+## Emenda C2 ao §C (B-MATERIAL-REENVIO) — 12/11, topo topo-emenda-c (Claude Opus 5.5, topo por fallback declarado)
+
+> **Origem:** a F0 do `dev-c-cdx` (Codex GPT-5.6 Sol) parou e não bateu, com 3 divergências (diário, RETOMADA 3). Esta emenda entra **antes de qualquer código** (`D-EMENDA-ANTES-DO-CODIGO`) e passa por revisão independente antes da C-F1.
+> **Autor:** `topo-emenda-c`, Claude Opus 5.5, papel de topo **por fallback declarado**: o Fable está suspenso (§C7.6-bis). Ele não escreveu o plano, não é o dev e não critica esta emenda. **Verificador** (§C7 item 11): outra casa, isto é, Codex/Sol, ou identidade nova se não houver crédito, com a falta de cruzamento declarada.
+> **Ref medida:** `ef4e98e76215d4ca9d2941f0bb5204b0c46ee881` (`main` com o #548 `3a62bd49` e o #544). Toda medição tem comando e saída em `topo-emenda-c-evidencia.md`.
+> **Onde esta emenda diverge do §C, vale ela.** O resto do §C fica como está.
+
+### E0 — O que medi (FATO, na ref acima)
+1. **A regra de custódia já está na `main`.** `src/modules/inventory/inventory.actor-custody.ts` exporta `resolveActorStockCustody(actor, profile)`. Ela devolve a custódia profissional quando o cadastro está ativo, a BASE para o ator sem cadastro com algum papel `tenant_wide`, e `undefined` nos outros casos. É a regra 5(a) do dono (`D-DONO-TODAS-RECOMENDACOES-1111`, `decisoes.md:4952-4955`). O comentário do próprio arquivo diz que ela vale para "a leitura (15a) **e** a baixa (15b)". O `InventoryService` resolve o cadastro por `references.resolveActorOperatorProfile` (`inventory.service.ts:102`, ligado em `:799`). Uma falha nessa leitura vira 503 `custody_lookup_unavailable` (`:742-756`) e nunca vira "sem cadastro".
+2. **O seam de saída ainda fixa a BASE**, nos dois repositórios. Na baixa: `inventory.repository.ts:419,431` e `inventory-prisma.repository.ts:483,496`. No estorno: `inventory.repository.ts:452` e `inventory-prisma.repository.ts:530`. A infraestrutura de saldo por custódia já existe e já filtra pelo perfil: `saldoOfCustody` em memória (`:525`) e `saldoOfCustodyLocked` no Prisma (`:632-644`). `createMovement`, `link` e `unlink` já a usam com `input.custody`. O `custodyOfMovement` ainda não existe.
+3. **O app já mostra a custódia de quem lança.** `prestador_repository.dart:55-99` carrega `GET /mobile/technician/stock` no modo remoto, e `addSelection` (`:106`) só aceita peça do `catalog` que veio dessa lista.
+4. **A porta do prestador continua fechada** (`P-MOBILE-PRESTADOR-SEM-PORTA`, `pendencias.md:8812`, ABERTA): nenhum `push`/`go` leva a `/work-orders/:id/service`. Mas a rota `POST /mobile/sync/inventory-actions` é pública para quem tem token. Por isso o intervalo entre o C e o 15b existe **no servidor**, mesmo sem tela.
+5. **O gate de módulo.** `route-modules.ts:152` classifica `/mobile/sync/inventory-actions` como `{inventory}`, e o instantâneo `tests/fixtures/san3-18-route-modules.json:379` registra o mesmo. A rota de estoque do técnico também é `{inventory}` (`:151`). O gate exige pelo menos um módulo da classe e responde 403 `module_not_enabled` (`module-gate.middleware.ts:70-75`). **Sem `request.actor` (sem JWT), o gate deixa passar** (`:12-15`). Logo, os testes com cabeçalho legado não exercitam o gate.
+6. **O app não consulta capacidade nenhuma.** Fora de `bootstrap_session.dart`, `isFeatureEnabled` e `featureStatus` têm **zero** usos em `lib/`. O `mapDioError` junta 401 e 403 em `ApiUnauthorizedError`, sem o motivo (`http_client.dart:79`). No bootstrap, a flag `inventory_mobile` é `hasModule(inventory) && inventory.read`, e a `inventory_sync` é `hasModule(inventory) && inventory.manage` (`mobile.routes.ts:267-276`).
+7. **O rótulo.** `sync_screen.dart:989` delega `_domainLabel` a `syncDomainLabel` (`lib/core/sync/sync_action_labels.dart`). Ali, `work_order_material.*` cai no ramo `work_order` e vira "Ordens de Serviço". O teste `test/core/sync/bo6r11_sync_action_labels_test.dart` prende 26 tipos (`hasLength(26)`) e é o único teste que exercita esse arquivo. `diagnostics_screen.dart:127` também usa `syncActionLabel`.
+8. **RN-BAIXA-04** ("custódia FIXADA em BASE", `docs/juntas/J-OMEGA4C.md:1962`) é regra dos consumidores do Ω4C, combustível e manutenção. Os guardas dela (`tests/inventory-stock-decrement.test.ts:135,354`) não passam custódia e continuam verdes com BASE por padrão. A regra 5(a) do dono é posterior e explícita (§A1, prioridade 1) e vale só para a nova origem `work_order_material`. **Não há conflito**, e a mudança é registrada (§A2) em C-F13.
+
+### E1 — (a) A custódia: **o C já baixa pela P12.** A F2 do 15b sai.
+**Decisão:** a baixa de `work_order_material.add` sai da custódia que `resolveActorStockCustody` escolhe:
+- quem tem cadastro de profissional ativo baixa da custódia profissional dele;
+- o ator sem cadastro e com papel `tenant_wide` (o gerente) baixa da BASE;
+- qualquer outro ator recebe `rejected operator_profile_required`.
+
+O estorno volta para a custódia do movimento original. A regra do dono (5(a)) **não muda**; esta emenda só decide **onde** ela é implementada: no C, e não no 15b.
+
+**Por quê:**
+1. **A regra e a função já estão na `main`.** O seam já sabe guardar saldo por custódia (E0.2). Fazer no C custa um parâmetro no seam, uma chamada no handler e os testes que o 15b ia escrever. Manter a BASE obriga a escrever no C testes de técnico com `custody base` que o 15b teria de reescrever: trabalho jogado fora, e duas regras de "de onde sai a peça" vivas na `main` ao mesmo tempo, contra o "uma regra só" do 15a.
+2. **Manter a BASE grava dado errado num livro imutável.** O técnico escolhe a peça do próprio estoque (E0.3), e a baixa debita a BASE. Ou sai um `insufficient_balance` falso (a BASE tem 0), ou a BASE perde o que o técnico tem no carro. O estorno depois não corrige o livro. A triagem do 15 trata "peça baixada da custódia errada" como **grave** (`plano-B-SAN3-15-v2.md` §5), e a rota é chamável por token mesmo sem a porta da tela (E0.4). Aceitar esse intervalo como risco seria aceitar um defeito grave conhecido.
+3. **Custo líquido menor.** O 15b perde a F2 (120 min). O C ganha cerca de 105 min (E4), e o 15b deixa de depender de reabrir `mobile-inventory-sync.ts` e `src/modules/inventory/**`.
+
+**O que muda no §C:**
+- **Pré-requisitos:** o C passa a depender do `B-SAN3-15a` (#548, já na `main`). Continua sem depender do 15b.
+- **C0.6 e R-C1:** o R-C1 ("falso sem saldo, BASE") **sai**. A pendência nova `P-MATERIAL-CUSTODIA-BASE` (§C9) **não é criada**.
+- **C1:** onde se lê "uma baixa no estoque da organização", lê-se "uma baixa na custódia de onde a peça sai: a do profissional que lança ou, para o gerente sem cadastro, a BASE (5(a))".
+- **Sub-propriedade nova: PC8, de onde sai a peça.** O `add` aceito grava o movimento com a custódia de `resolveActorStockCustody(actor, perfil)` e confere o saldo **dessa** custódia sob o lock do item. Saldo insuficiente nela vira `conflict insufficient_balance`, mesmo que outra custódia tenha a peça. Ator sem custódia vira `rejected operator_profile_required`. O `remove` estorna em `custodyOfMovement(exit)`. Combustível e manutenção seguem na BASE. Testes: RC1(7)-(8), RC8 e RC3(6)-(7).
+- **C2 itens 1-3 (seam), acréscimo:**
+  - `inventory.types.ts`: `custody?: StockCustody` em `CreateExitForSourceInput` e em `CreateStockExitForSourceInput`, e `export function custodyOfMovement(m: StockMovement): StockCustody`, que copia `custodyType`, `custodyOperatorProfileId` e `custodyVehicleId`.
+  - **Repositórios, nos dois:** `createExitForSource` usa `const custody = input.custody ?? BASE_CUSTODY;` no saldo e no `insertMovement`. `removeExitForSource` passa a usar `custody: custodyOfMovement(exit),`. Nada mais muda nas duas funções.
+  - `inventory.service.ts`:
+    - `createExitForSource` aceita `custody` só como `{custodyType:"base"}` ou `{custodyType:"professional", custodyOperatorProfileId:<uuid>}`; qualquer outra forma (inclusive `vehicle`) lança erro, e RN-BAIXA-04 continua valendo para a viatura;
+    - método público novo `actorStockCustody(actor): Promise<StockCustody | undefined>` = `resolveActorStockCustody(actor, await this.references.resolveActorOperatorProfile?.(actor))`. A falha propaga como 503 `custody_lookup_unavailable`;
+    - `technicianStock` e `inventory.actor-custody.ts` **não mudam**.
+- **C2 item 4 (handler `addWorkOrderMaterial`), acréscimo:** depois do pré-check com resultado "ausente" e antes de `createExitForSource`:
+  - `const custody = await inventory.actorStockCustody(actor)`;
+  - se `custody` é `undefined`, `rejected operator_profile_required`;
+  - senão, `createExitForSource({…, custody})`.
+
+  O pré-check (`already_applied` e `conflict`) e o pós-check continuam como estão. A custódia **não** entra na comparação: um reenvio do mesmo ator, depois de o cadastro mudar, é `already_applied`, e isso fica declarado. Na tabela de erros: **todo** `InventoryError` 503 (`stock_busy` e `custody_lookup_unavailable`) **propaga** (lote 503, e o app volta a `pending` sem custo); nunca vira `rejected`.
+- **C2 item 4 (handler `removeWorkOrderMaterial`):** sem mudança de ordem. O estorno sai na custódia original pelo seam, e o remove não resolve custódia.
+- **C2 item 8 (textos do app):**
+  - `insufficient_balance` passa a "Sem saldo suficiente desta peça no estoque usado no lançamento.";
+  - linha nova `operator_profile_required`: "Você não tem cadastro de profissional. Peça ao administrador da sua organização para cadastrar você." (texto do 15 §2.4; leva junto a N-09 do 15).
+- **§C8, riscos novos:**
+  - **R-C12:** o cadastro do técnico é desativado com a peça na fila. O lote dá `rejected operator_profile_required`, que vira conflito visível e decidível ("Versão do gestor" tira a peça).
+  - **R-C13:** o estorno de uma baixa feita por um profissional cujo cadastro foi desativado volta à custódia dele (`custodyOfMovement`). Isso está correto no livro, e o gestor recolhe a peça pelo `unlink`.
+
+**Requisitos (critério, mutação e vermelho-controle).** As mutações são literais, uma por vez, revertidas e conferidas com `git diff`. Os IDs continuam a série do §C; o M-C1..3 do 15b vira M-C27..29 aqui.
+- **RC1, casos novos:**
+  - (7) `createExitForSource(work_order_material, …, custody: profissional P)` com 5 em P e 0 na BASE grava −2 em P; P fica com 3 e a BASE com 0;
+  - (8) o `removeExitForSource` dela devolve +2 em P.
+
+  Os casos (1)-(6) ficam, e o (1) segue sem `custody`, logo em BASE.
+  - **M-C25:** em `inventory.repository.ts`, trocar `const custody = input.custody ?? BASE_CUSTODY;` (no `createExitForSource`) por `const custody = BASE_CUSTODY;`. O (7) fica vermelho.
+  - **M-C26:** em `inventory.repository.ts`, trocar `custody: custodyOfMovement(exit),` por `custody: BASE_CUSTODY,`. O (8) fica vermelho.
+- **RC8, arquivo novo `tests/b-material-custodia.test.ts`** (o T-C1..T-C5 do 15b; arnês de memória do RC2; molde de cadastro e de `link` em `tests/bsan315-technician-stock.test.ts:53,118-157`):
+  - (1) tecA, com cadastro ativo e X 5 na custódia (BASE 0), lança 2 de X: `accepted`; o movimento fica na custódia profissional do tecA, que passa a 3;
+  - (2) X só na BASE (10) e 0 na custódia do tecA: `conflict insufficient_balance`; BASE intacta e 0 movimentos;
+  - (3) o `remove` de (1) estorna na mesma custódia: tecA volta a 5 e a BASE não muda;
+  - (4) técnico de campo sem cadastro, atribuído à OS: `rejected operator_profile_required`, 0 movimentos;
+  - (5) gerente sem cadastro lança 2 de Z (BASE 10): `accepted`, movimento na BASE, que fica com 8; o `remove` volta a 10.
+  - **M-C27:** em `mobile-inventory-sync.ts`, apagar a linha `custody,` do objeto passado a `createExitForSource`. O (1) fica vermelho.
+  - **M-C28:** no handler, trocar `if (!custody) {` por `if (false) {` (o ramo que recusa). O (4) fica vermelho.
+  - **M-C29:** em `inventory.actor-custody.ts`, trocar `return { custodyType: "base" };` por `return undefined;`. É mutação temporária num arquivo PROIBIDO, revertida na hora. O (5) fica vermelho.
+  - **Controle:** na `main`, (1) dá `rejected unsupported_action_type`. Fica registrado como "não aplicável: o caminho não existia"; a prova negativa é a M-C27.
+- **RC2, setup:** tecA e tecB ganham cadastro de profissional ativo e saldo de `ELE-0102` na própria custódia, por `link` feito pelo ator `inventory`. Sem isso, os casos (1)-(18) virariam `operator_profile_required`. O (12) (gerente) e o (16) (`technician`) seguem a regra: o gerente sem cadastro baixa da BASE, e o `technician` com cadastro baixa da custódia dele. **Nenhuma asserção de resultado do RC2 muda.**
+- **RC3 (banco), casos novos:**
+  - (6) RC8 (1), (2) e (5) em Postgres, com `custody_type` e `custody_operator_profile_id` conferidos na linha;
+  - (7) dois `add` concorrentes de clientes diferentes do mesmo tecA, que juntos passam do saldo da custódia (5: 3 + 3): um `accepted` e um `conflict insufficient_balance`, saldo da custódia nunca negativo;
+  - o caso (1) existente passa a esperar `custody_type professional` para o tecA;
+  - **M-C30:** em `inventory-prisma.repository.ts`, trocar `const custody = input.custody ?? BASE_CUSTODY;` por `const custody = BASE_CUSTODY;`. O (6) fica vermelho.
+- **Regressão, sem mudar asserção:** `tests/inventory-stock-decrement.test.ts` (inclusive `:135` e `:354`, BASE fixa), `tests/fuel-logs.test.ts`, `tests/maintenance-order-items.test.ts`, `tests/inventory-write-paths-guard.test.ts`, `tests/bsan315-technician-stock.test.ts`, e, no Docker, `tests/bsan315-technician-stock-db.test.ts`, `inventory-unique-backstops-db`, `inventory-balance-lock-race-db` e `inventory-migration-drill-db`.
+
+**O que muda no 15b** (`plano-B-SAN3-15-v2.md`; o orquestrador apensa uma nota igual ao fim daquele plano):
+- a **F2 sai** de §6.2: total de 895 para **775 min** (625 sem a F3);
+- saem do 15b: P12, T-C1 a T-C6, T-DB4, T-DB5, M-C1 a M-C3, a N-09 e o texto `operator_profile_required` do §2.4, que **já vieram no C**;
+- o "Servidor, F2" sai do PERMITIDO do §4.2, e `src/modules/inventory/**` e `src/modules/mobile/mobile-inventory-sync.ts` passam ao PROIBIDO do 15b;
+- a F0b deixa de medir "a linha `custody: BASE_CUSTODY,` do estorno" e passa a conferir que o C entregou o PC8 (RC8 verde na `main` do dia);
+- a triagem continua tratando "peça baixada da custódia errada" como grave;
+- a junta do 15b continua completa **por decisão do plano** (A-11: perda de dado do P9 e do P11, contrato da OS do P7);
+- a trava "15b só depois do C" (resposta 2(a)) continua;
+- a linha do 15b em `PLANO_SAN3.md:298` perde "baixa da custódia do ator", que vai para a linha do C (C-F13).
+
+**`RBAC_MATRIX.md` (§D2):** a nota do bloco C passa a dizer **de uma vez** a regra final, e não "BASE até o B-SAN3-15": *"a peça sai da custódia profissional de quem lança; o gerente (`tenant_wide`) sem cadastro de profissional baixa da base (DECISÃO DO DONO 11/11, Pergunta 5 (a), `D-DONO-TODAS-RECOMENDACOES-1111`); exige a área de estoque da organização."* A edição dessa frase no §4.2 do 15b **sai** do PERMITIDO dele. Nenhuma célula da tabela muda.
+
+### E2 — (b) O gate de módulo
+**Decisão:**
+1. **Organização sem a área de estoque.** O lote inteiro de `/mobile/sync/inventory-actions` responde 403 `module_not_enabled` antes do handler, como já acontece hoje para os 3 tipos antigos, com 0 movimentos. O C **não** muda a classe da rota, **não** cria rota e **não** toca `route-modules.ts` nem o instantâneo `san3-18-route-modules.json`. Se o dev achar que precisa de rota ou de classe nova: PARE e peça emenda.
+2. **Organização com estoque e sem a área de OS** (leitura do topo, declarada (§A6); aplica o princípio do #544, "o servidor recusa a área não contratada", sem decisão de produto nova; corrige-se numa linha):
+   - o material da OS pertence às duas áreas, e o gate da rota só exige uma (`{inventory}`);
+   - logo, os tipos `work_order_material.add|remove` também exigem o módulo `work_orders`, **por ação**, com `rejected module_not_enabled`. Os tipos antigos do mesmo lote não são afetados;
+   - a rota resolve, de forma preguiçosa e memoizada, e só se o lote tiver material, os módulos da organização **do ator** por `service.getTenantForActor(actor.tenantId, actor.tenantId)` (o mesmo lookup do gate e do bootstrap, `mobile.routes.ts:66`), e injeta `workOrdersModuleEnabled: () => Promise<boolean>` nas `deps`;
+   - falha nessa leitura propaga como 503 (fail-closed, igual ao gate).
+3. **Bootstrap.** A `feature_flags.inventory_sync.enabled` do C2 item 5 passa a `hasModule(modules, "inventory") && (inventory.manage || work_orders:update)`. `status` e `reason` não mudam. **Corrige o C2 item 5**, cuja linha apontada (`:272`) mudou.
+4. **O app não deixa de enfileirar pela capacidade `inventory_mobile`.** Ele não consulta capacidade nenhuma hoje (E0.6), e o servidor é a autoridade (§2.4). Numa organização sem estoque, `GET /mobile/technician/stock` dá 403, a lista salva é apagada e a tela mostra "Acesso não permitido" (15a, P5). Sem peça na lista, `addSelection` não tem o que enfileirar. O que sobra são ações enfileiradas antes de a área ser desligada. O 403 do lote vira `ApiUnauthorizedError`, e cada ação de material do lote vira `conflict` (o `SESSION_FORBIDDEN` do C2 item 8). A ação não é reenviada sem decisão (PC6), e o texto é "O servidor não aceitou o envio de material. Entre de novo no app ou peça ao administrador para ativar o estoque na sua organização." "Versão do gestor" tira a peça, e "Minha versão" reenvia quando a área voltar. O 401 cai no mesmo ramo, porque `mapDioError` não separa um do outro. Separar exigiria mudar `http_client.dart`, que fica fora do C, e isso fica declarado.
+
+**Requisitos:**
+- **Setup:** toda organização dos testes do C que passe pelo gate recebe `TODOS_OS_MODULOS` (`tests/helpers/san3-18-modulos.ts`), no molde do F3 do #544 e da E3.3 do 15.
+- **RC2, casos novos, com JWT, porque o cabeçalho legado não passa pelo gate (E0.5); molde `tests/san3-18-module-gate.test.ts`:**
+  - (19) organização com `work_orders` e **sem** `inventory`: tecA (com `work_orders:update` e cadastro) envia `add` e recebe 403 `module_not_enabled` no lote; 0 movimentos;
+  - (20) organização com `inventory` e **sem** `work_orders`: tecA envia `add` e recebe `rejected module_not_enabled` naquela ação; no mesmo lote, o ator `inventory` com `inventory.consume` continua como hoje; 0 movimentos de material;
+  - (21) bootstrap da organização sem `inventory`: `inventory_sync.enabled === false` para o técnico com `work_orders:update`; com a área, `true`.
+- **Mutações:**
+  - **M-C31:** em `route-modules.ts`, trocar `{ pattern: "/mobile/sync/inventory-actions", modules: ["inventory"] },` por `{ pattern: "/mobile/sync/inventory-actions", nucleo: true },`. O (19) fica vermelho, e o censo também;
+  - **M-C32:** no handler, trocar a guarda `if (!(await deps.workOrdersModuleEnabled())) {` por `if (false) {`. O (20) fica vermelho;
+  - **M-C33:** em `mobile.routes.ts`, apagar `hasModule(modules, "inventory") && ` da `inventory_sync`. O (21) fica vermelho.
+- **Controle:** o (19) já fica verde na `main`, porque o gate existe; ele é guarda de regressão, e a prova é a M-C31. O (20) e o (21) não se aplicam (o caminho e o operando não existiam). Tudo fica registrado.
+- **RC4, caso novo no app:** (9) `ApiUnauthorizedError` no lote deixa todas as ações de material em `conflict` com o texto acima, sem `syncing` na passada seguinte e com `retryCount` igual. Uma ação `operator_profile_required` vira `conflict` com o texto do E1.
+
+### E3 — (c) O escopo do rótulo
+**Entram no PERMITIDO do C4:**
+
+| Caminho | O que pode mudar (e só isso) | Req. |
+|---|---|---|
+| `mobile/flutter_app/lib/core/sync/sync_action_labels.dart` | (i) em `syncDomainLabel`, **um** ramo `if (type.startsWith('work_order_material')) return 'Materiais da OS';` **antes** do ramo `work_order`; (ii) **uma** entrada `'work_order_material.remove': 'Peça retirada da OS',` em `_actionLabels`. Nenhum rótulo existente muda: "Material aplicado na OS" fica | RC6, rótulo |
+| `mobile/flutter_app/test/core/sync/bo6r11_sync_action_labels_test.dart` | `InventorySyncActionTypes.materialRemove` entra em `_allTypes`; `hasLength(26)` passa a `hasLength(27)` (mudança de requisito declarada: tipo novo); caso novo **l3**: `syncDomainLabel(materialAdd) == 'Materiais da OS'`, `syncActionLabel(materialRemove) == 'Peça retirada da OS'` e `syncActionLabel('work_order_material.xyz') == 'Ação de Materiais da OS'`. Nenhuma asserção existente sai | rótulo |
+| `src/modules/mobile/mobile.routes.ts` (ampliação) | além do C4, a injeção de `workOrdersModuleEnabled` e o `hasModule(inventory)` mantido na `inventory_sync` | E2 |
+| `tests/b-material-custodia.test.ts` | NOVO | RC8 |
+
+- `sync_screen.dart`: o ramo de `_domainLabel` **sai** do C4, porque a função só delega. A linha do C4 passa a "nada, salvo se a F0 mostrar que um dos dois caminhos (`_resolveConflict` ou `_resolveStalled`) ainda não chama o gancho"; neste caso, só essa chamada.
+- **M-C34:** apagar o ramo (i). O **l3** fica vermelho.
+- **O PERMITIDO do C4 para `src/modules/inventory/*`** cresce com o E1: `custody?`, `custodyOfMovement`, `actorStockCustody` e as duas linhas de custódia por repositório.
+- **Vai para o PROIBIDO do C:** `src/modules/inventory/inventory.actor-custody.ts`, salvo a M-C29 temporária; a função `technicianStock`; `src/modules/navigation/**` e `tests/fixtures/san3-18-route-modules.json`, salvo a M-C31 temporária; `mobile/flutter_app/lib/core/network/http_client.dart`.
+
+### E4 — Fatias, baseline e junta (o que muda)
+- **C-F2** (45) fica como está. Entra a **C-F2b, custódia no seam** (35): os itens do E1 em types, repositórios e service; RC1 (7)-(8); M-C25 e M-C26; a regressão do E1; `npm run check`.
+- **C-F3** (45) fica como está, com o setup novo do RC2. Entra a **C-F3b, custódia e módulo no handler** (45): `actorStockCustody`, `operator_profile_required`, a regra dos 503, a guarda `work_orders`, a injeção na rota e o bootstrap; RC8 (1), (2), (4), (5); RC2 (19)-(21); M-C27, M-C28, M-C29, M-C31, M-C32, M-C33.
+- **C-F4** soma o RC8(3).
+- **C-F6** soma o RC3 (6)-(7) e a M-C30, e passa de 40 a 55 min. Fica acima do teto de 45, então se divide em **C-F6a** (o RC3 original) e **C-F6b** (os casos novos, 20 min), com Docker nas duas.
+- **C-F7** recebe os textos do E1 e do E2.
+- **C-F8** recebe o E3 (rótulo e teste).
+- **C-F9** soma o RC4(9).
+- **Total C:** 18 fatias, cerca de 675 min (antes, cerca de 570).
+- **Baseline:**
+  - **M_b ≥ N_b + 29 + 2 (RC1) + 5 (RC8) + 3 (RC2) + 2 (RC3) = N_b + 41**;
+  - **M_f ≥ N_f + 17 + 1 (RC4(9)) + 1 (l3) = N_f + 19**;
+  - o `hasLength` e o "material → pending" do resgate mudam e não somam.
+- **Junta (C7):**
+  - a C1 soma ao item 1 o RC8, o RC2 (19)-(21) e as M-C25..M-C29 e M-C31..M-C33;
+  - a C2 soma ao item 1 o RC3 (6)-(7) e a M-C30, e ao item 2 a `bsan315-technician-stock-db`;
+  - a C3 soma o RC4(9), o l3 e a M-C34;
+  - os `arquivos_medidos` da C1 ganham `tests/b-material-custodia.test.ts`, `src/modules/navigation/route-modules.ts` (leitura) e `tests/bsan315-technician-stock.test.ts`; os da C3 ganham `lib/core/sync/sync_action_labels.dart` e `test/core/sync/bo6r11_sync_action_labels_test.dart`;
+  - na triagem, entra como **grave**: peça baixada de custódia diferente da que `resolveActorStockCustody` escolhe, e material aceito em organização sem a área de estoque.
+- **§C9:**
+  - sai a pendência nova `P-MATERIAL-CUSTODIA-BASE`;
+  - a nota S11 fica (o efeito na tela só vem com a porta do 15b);
+  - em `decisoes.md`, um registro curto (§A2): "RN-BAIXA-04 (BASE fixa) continua para combustível e manutenção; `work_order_material` segue a 5(a) do dono; a P12 do 15 foi implementada no C (Emenda C2)".
+
+### E5 — O que a F0 do dev remede depois desta emenda (na `main` do dia; diferença vira emenda)
+1. Âncoras do seam: `inventory.repository.ts` (`createExitForSource` BASE em `:419` e `:431`, estorno em `:452`) e `inventory-prisma.repository.ts` (`:483`, `:496`, `:530`); `saldoOfCustody` e `saldoOfCustodyLocked` com filtro de perfil; `custodyOfMovement` ausente.
+2. `inventory.actor-custody.ts` igual ao blob de `ef4e98e7`; `references.resolveActorOperatorProfile` (`inventory.service.ts:102`, `:435`, `:799`) e `custodyLookupUnavailableError` (`inventory.types.ts:354`).
+3. `route-modules.ts:151-152` e o instantâneo `:379`; o passo 1 do gate (sem ator, segue); `mobile.routes.ts:66` (lookup da organização) e `:267-276` (as duas flags de estoque).
+4. `sync_action_labels.dart` (ramo `work_order` e as 26 entradas) e `bo6r11_sync_action_labels_test.dart` (`hasLength(26)`); se o gancho já é chamado nos dois caminhos de `sync_screen.dart`.
+5. Zero usos de `isFeatureEnabled` e `featureStatus` em `lib/` fora do bootstrap; `http_client.dart:79` (401 e 403 juntos).
+6. A linha de base: `npm test` → **N_b** (o dev mediu `5422/5424` sem rodar a suíte; agora roda) e `flutter test` → **N_f**; `bsan315-technician-stock*.test.ts`, `inventory-stock-decrement`, `fuel-logs` e `maintenance-order-items` verdes no head, como regressão do E1.
+7. O molde de JWT em `tests/san3-18-module-gate.test.ts` e o de cadastro e `link` em `tests/bsan315-technician-stock.test.ts`, para o setup do RC2 e do RC8.
+
+**Perguntas ao dono: nenhuma.** A (a) aplica a 5(a), que já existe. A (b) aplica o gate do #544, e a guarda `work_orders` por ação é leitura declarada, corrigível numa linha. A (c) é escopo.
+
+### Emenda C2.1 ao §C (B-MATERIAL-REENVIO) — 12/11, topo topo-emenda-c21 (Claude Opus 5.5, topo por fallback declarado), pela crítica r1 crit-emenda-c-cdx
+
+> **Origem:** a crítica r1 `crit-emenda-c-cdx` (Codex GPT-5.6 Sol, conta 1) devolveu a Emenda C2 com **VOLTA**: 3 ALTA (C2-CRIT-01..03) e 1 MÉDIA (C2-CRIT-04). Esta emenda entra **antes de qualquer código** (`D-EMENDA-ANTES-DO-CODIGO`). É a rodada 2 de 2.
+> **Autor:** `topo-emenda-c21`, Claude Opus 5.5, topo **por fallback declarado** (Fable suspenso, §C7.6-bis). Identidade nova: não é o `topo-emenda-c`, não é o dev e não critica esta emenda. **Verificador** (§C7 item 11): outra casa (Codex/Sol); sem crédito, identidade nova declarando a falta de cruzamento.
+> **Ref medida:** `ef4e98e76215d4ca9d2941f0bb5204b0c46ee881`. Comandos e saídas em `topo-emenda-c21-evidencia.md` (itens 1-13); sondas em `sondas/`.
+> **Onde esta emenda diverge da C2 (ou do §C), vale ela.** O resto da C2 fica.
+
+#### E0.1 — O que medi (FATO, na ref acima)
+1. **C2-CRIT-01 procede em parte.** O FATO procede: `tests/b-material-sync-db.test.ts` não está (nem pode estar) na lista `SUITES` do job `backend-postgres` (`ci.yml:199-349`), e o §C4 proíbe `.github/**`. A CONSEQUÊNCIA escrita ("auto-pula no job `backend`; M-C30 regride sem gate") **não procede na forma da CI**: o job `backend` exporta `DATABASE_URL` e migra (`ci.yml:40,109`), e o runner reprova o `npm test` se, com `DATABASE_URL`, os pulos passarem do orçamento de 2 (`scripts/run-backend-tests.mjs`, `SKIP_BUDGET_DB = 2`). Medido: no `npm test` com URL, a `bsan315-technician-stock-db` roda (`ok 1194 - [T-DB0] …`). O que fica de pé é a **convenção da lista curada** (comentário `ci.yml:293-297`; SAN2-2; B-O6R-06): toda `-db` nova entra em `SUITES`, sob `CORE_SAAS_PERSISTENCE=prisma`, seed e o guard de zero pulos, medida 3× antes. Há 3 precedentes com autorização do dono para exatamente esta forma: o 15a (`decisoes.md:4937`; comando `B-SAN3-15a-estoque-real.md:28`, "`.github/**` salvo a linha do `SUITES=`"; `3a62bd49` com `ci.yml | 4 +`), o B-O6R-12 (`D-PORTAO-9-RECOMENDACOES-1011`, Q2, `decisoes.md:4745`) e o B-O6R-09 (comentário em `ci.yml`, "Pergunta 1 = (A), D-PORTAO-3-RECOMENDACOES-1111").
+2. **C2-CRIT-02 procede.** Sonda `s02` sobre a função real: o mutante "todo `tenant_wide` → BASE" **sobrevive** a RC8(1), (4), (5) e RC2(16), e só morre no gerente **com** cadastro ativo (e no misto `[field_technician, manager]` com cadastro), caso que a C2 não tem. O molde do caso existe, só na leitura: `tests/bsan315-technician-stock.test.ts:149-158`.
+3. **C2-CRIT-03 procede, e é pior do que escrito.** Sonda `s03` (`InventoryService` + `InMemoryInventoryRepository` reais, seam `maintenance_item` existente): baixar antes do 404 da OS devolve `rejected not_found` (o oráculo literal do RC2 fica VERDE), mas o saldo cai de 5 para 3, o razão ganha 1 movimento e **fica uma saída por origem fantasma** (`findExitBySource` a devolve), que faria um reenvio legítimo do mesmo `client_action_id` virar `already_applied` sobre uma baixa que nunca devia existir. O desenho do C2 item 4 já põe o escopo antes da baixa; falta o teste que prenda a ordem.
+4. **C2-CRIT-04 procede, com causa pré-existente nomeada.** Sem `DATABASE_URL`, `tests/core-saas-role-authority.test.ts` morre no load (`pass 0 · fail 1`, piso de denominador); com URL, 12/12. É a `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP` (`pendencias.md:6314`, MÉDIA, `pre-existente`): a forma sem banco é vermelha por construção nesta ref. Na forma do job `backend` (URL e `REDIS_URL` exportados, base descartável migrada, sem `.env`), medido neste container: **`534 arquivo(s) · 5440 teste(s) · pass 5438 · fail 0 · skipped 2`**, EXIT 0; os 2 pulos são os do orçamento (`permission-catalog-db-parity`, `RBAC_DB_PARITY` ≠ 1). O `5422/5424` da F0 do dev não se reproduz.
+5. **A numeração do RC2 tem duplicata** (§C3): "(17) N4" e "(17) OS de outro tenant"; "(18) `work_order_mismatch`" e "(18) `mobile-backend-contracts` inteiro". Sem rótulo próprio, o caso de outra organização não tem como ser citado sem ambiguidade.
+
+#### R-C21-01 — A suíte de banco nova na lista curada da CI (C2-CRIT-01) — **DEPENDENTE DA AUTORIZAÇÃO DO DONO**
+- **PERMITIDO do C4, acréscimo (só se o dono autorizar):** `.github/workflows/ci.yml`, apenas no passo "Route suites against PostgreSQL" do job `backend-postgres`, logo **antes** da linha `node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap`: um comentário de proveniência no molde das vizinhas (`:289-291`), com N, forma e as 3 medições, e **a linha exata**
+  ```
+          SUITES="$SUITES tests/b-material-sync-db.test.ts"
+  ```
+  Nenhuma outra mudança no arquivo. Fora isso, `.github/**` continua PROIBIDO.
+- **Nomes:** todo teste de `tests/b-material-sync-db.test.ts` começa com `[RC3(` (ex.: `[RC3(1)] …`); prefixo livre hoje (`git grep -c '\[RC3' -- tests` → 0). O teste que declara o pulo sem `DATABASE_URL` (molde `bsan315-technician-stock-db.test.ts:31`) NÃO usa esse prefixo.
+- **Critério (antes de a linha entrar, C-F6b):** a lista inteira medida **3×** na forma do job `backend-postgres` (Postgres descartável próprio; `prisma migrate deploy` + `npm run db:seed`; `CORE_SAAS_PERSISTENCE=prisma`, `RBAC_DB_PARITY=1`, `JWT_SECRET`, `LOG_LEVEL=silent`; `node --test --import tsx $SUITES`): 0 falha, `# skipped 0`, denominador constante; as 3 linhas de resumo no diário e no comentário.
+- **Trava de forma (C-F14):** `git diff origin/main...HEAD -- .github/workflows/ci.yml | grep -E '^[-+]' | grep -vE '^(\+\+\+|---)'` mostra **só** linhas `+`; delas, exatamente **uma** não é comentário, e é a linha acima.
+- **Vermelho-controle (local, determinístico):** `bash sondas/listar-suites.sh | grep -c b-material-sync-db` → **0** na `main` (`ef4e98e7`, medido) e **1** no head. **Mutação M-C38:** colar a linha nova **depois** da linha `node --test …` (fora da lista executada) → o mesmo comando dá **0**. Reverter; `git diff` confere.
+- **Aceite na forma real (§C7 item 11(3)), no run do PR:** `gh run view <run> --job <id do backend-postgres> --log | grep -cE 'ok [0-9]+ - \[RC3\('` = **K**, o número de testes `[RC3(` do arquivo, declarado na C-F6b (K ≥ 8: RC3 (1)-(8)), e o mesmo log tem `# fail 0` e `# skipped 0`; idem no job `backend` (`grep -cE 'ok [0-9]+ - \[RC3\('` = K), onde a suíte também roda. Nunca só a cor do job.
+- **Se o dono NÃO autorizar:** a linha não entra. A suíte continua rodando no job `backend` (E0.1 item 1), e o aceite passa a ser só o do job `backend` (= K, sob o orçamento de pulos do runner). Abre-se `P-MATERIAL-DB-FORA-DA-LISTA-CURADA` (MÉDIA; dono: o próximo bloco autorizado a tocar o `SUITES=`), e a cadeira C2 da junta registra a forma.
+- **Quando a resposta é necessária:** antes da C-F6b. Não segura a C-F0 a C-F5.
+
+**Pergunta ao dono (a única desta emenda):** *"Autoriza, no B-MATERIAL-REENVIO, uma linha no bloco `SUITES=` do `.github/workflows/ci.yml` (job `backend-postgres`), só para `tests/b-material-sync-db.test.ts`, como no 15a e no B-O6R-12?"* — **Recomendação: autorizar a linha, como no 15a.** Por quê: é a convenção da lista curada, a única forma que roda a suíte com seed, `prisma` e o guard de zero pulos; o custo é uma linha aditiva, e o precedente é de ontem.
+
+#### R-C21-02 — Gerente COM cadastro baixa da própria custódia (C2-CRIT-02)
+- **RC8, casos novos** (`tests/b-material-custodia.test.ts`; molde de cadastro e `link` em `tests/bsan315-technician-stock.test.ts:149-158`; o gerente tem papel `manager`, cadastro ativo `profileG` e é atribuído a nada, porque `tenant_wide` passa por `get`):
+  - **(6)** custódia de `profileG` com 4 de X (por `link` do ator `inventory`), BASE com 10 de X; o gerente lança 2 de X → `accepted`; o movimento tem `custodyType professional` e `custodyOperatorProfileId = profileG`; `profileG` fica com 2 e a **BASE continua 10**. O `remove` dessa ação estorna em `profileG` (volta a 4); BASE 10.
+  - **(7)** o mesmo gerente com 0 de Y na própria custódia e 10 de Y na BASE lança 1 de Y → `conflict insufficient_balance`; BASE 10, razão intacto (R-C21-03). Prova que o cadastro vence o papel mesmo sem saldo, sem cair para a BASE.
+- **RC3, caso novo (8)** (Postgres; prefixo `[RC3(8)]`): o RC8(6) no banco, com `custody_type` e `custody_operator_profile_id` conferidos na linha da baixa e na do estorno, e o saldo da BASE lido antes e depois (igual).
+- **Mutações** (literais, uma por vez, revertidas e conferidas com `git diff`):
+  - **M-C35 (handler):** em `src/modules/mobile/mobile-inventory-sync.ts`, trocar a linha `const custody = await inventory.actorStockCustody(actor);` (a do E1; a mutação preserva o receptor que o dev usou) por `const custody = hasTenantWideRole(actor) ? ({ custodyType: "base" } as const) : await inventory.actorStockCustody(actor);` e acrescentar `import { hasTenantWideRole } from "../inventory/inventory.actor-custody.js";`. RC8(6) e (7) ficam vermelhos; na C-F6b, o RC3(8) também.
+  - **M-C36 (service):** em `src/modules/inventory/inventory.service.ts`, trocar o import `import { BASE_CUSTODY_LABEL, resolveActorStockCustody } from "./inventory.actor-custody.js";` por `import { BASE_CUSTODY_LABEL, hasTenantWideRole, resolveActorStockCustody } from "./inventory.actor-custody.js";` e, no corpo de `actorStockCustody`, prefixar o retorno com `hasTenantWideRole(actor) ? { custodyType: "base" } : `. RC8(6) fica vermelho.
+- **Vermelho-controle:** na `main`, RC8(6) dá `rejected unsupported_action_type` ("não aplicável: o caminho não existia"); a prova negativa são M-C35 e M-C36. A classe está provada pela sonda `s02` (mutante sobrevive a todos os casos da C2).
+
+#### R-C21-03 — Nada se baixa antes de autorizar; OS de outra organização não toca o razão (C2-CRIT-03)
+- **Rótulos:** o "(17) OS de outro tenant" do RC2 passa a **RC2(17t)**; o "(18) `tests/mobile-backend-contracts.test.ts` inteiro" passa a **RC2(18c)**. Os demais números ficam.
+- **Ordem obrigatória no `addWorkOrderMaterial`** (explicita o C2 item 4 e o E1/E2 da C2; a posição da guarda `work_orders` é leitura do topo, declarada (§A6): não se lê OS de organização que não tem a área): validação do payload → guarda `work_orders` (E2) → escopo por objeto (`get`/`getForMutation`) → `findItemBySku` → pré-check → `actorStockCustody` → `createExitForSource` → pós-check. **Toda** recusa nasce antes de `createExitForSource`.
+- **Forma exigida do escopo:** um único statement, cujo resultado não é usado entre ele e o `createExitForSource` (ex.: `await (actorMutatesAssignedOnly(actor) ? workOrders.getForMutation(actor, workOrderId) : workOrders.get(actor, workOrderId));`), para que a M-C37 compile.
+- **Ajudante `razaoIntacto`** no arnês do RC2 (memória): antes da ação, fotografa, por organização (A e B), a lista de ids de `listMovements` de um ator `inventory` e o saldo de cada custódia envolvida (a do ator e a BASE); depois, exige igualdade **e** `inventory.findExitBySource(atorA, "work_order_material", client_action_id) === undefined`.
+- **RC2(17t), reescrito em duas variantes** (organização B com OS `osB` atribuída a um técnico de B; organização A com tecA com cadastro e 5 de `ELE-0102` na custódia, BASE de A com 10):
+  - **(17t-a)** tecA envia `add` 2 com `work_order_id = osB.id` → `rejected not_found` **e** `razaoIntacto` em A e em B; depois, a **mesma** ação (mesmo `client_action_id`) reenviada com uma OS de A atribuída ao tecA → `accepted` (nenhum fantasma bloqueia o reenvio legítimo);
+  - **(17t-b)** o gerente de A sem cadastro, idem → `rejected not_found` e `razaoIntacto` (BASE de A = 10).
+- **`razaoIntacto` também em:** RC2 (5), (6), (10), (11), (20) e RC8 (4) e (7) — toda resposta não-`accepted` do `add`. Nenhuma asserção de resultado muda.
+- **Mutação M-C37 (ordem):** em `mobile-inventory-sync.ts`, recortar o statement do escopo por objeto e colá-lo logo **depois** do statement que chama `createExitForSource`. RC2(17t-a), (17t-b), (10) e (11) ficam vermelhos pelo `razaoIntacto`, ainda que a resposta saia igual. Reverter; `git diff` vazio.
+- **Vermelho-controle:** na `main`, (17t) dá `rejected unsupported_action_type` ("não aplicável"); a classe está provada pela sonda `s03` (oráculo antigo VERDE, oráculo novo VERMELHO), registrada na C-F1. Banco: não se exige caso RC3 para a ordem (a ordem é do handler, e o seam Prisma também confirma a baixa na própria transação); declarado.
+
+#### R-C21-04 — Baseline reproduzível (C2-CRIT-04): substitui o item 6 do E5 da C2 e a C-F0 do §C5 no que toca a N_b
+- **Forma única de N_b e M_b: a do job `backend`** (forma canônica 3), na mesma sessão de shell, no worktree próprio, **sem `.env`** (nem copiado nem criado):
+  ```
+  export DATABASE_URL='postgresql://postgres:<senha>@127.0.0.1:<porta-alta>/bmat_base?schema=public'
+  export REDIS_URL='redis://127.0.0.1:<porta-alta-redis>'
+  export CORE_SAAS_PERSISTENCE=memory
+  pg_isready -h 127.0.0.1 -p <porta-alta> && npx prisma generate && npx prisma migrate deploy && npx prisma migrate status
+  npm test 2>&1 | tee <diário>/f0-npm-test.tap
+  ```
+  Postgres e Redis descartáveis do próprio dev (contêiner em porta alta; nunca `erp-*` nem 5432) ou os do orquestrador; base **nova** (`bmat_base`) para N_b e outra nova para M_b. As variáveis são **exportadas** (não prefixadas a um só comando), porque o `npm test` precisa delas; o `prisma generate` com URL só no próprio processo foi o que tornou a F0 irreproduzível.
+- **Trava:** se `pg_isready`, `migrate deploy` ou `migrate status` falhar, **PARE**: nenhum `npm test` com `DATABASE_URL` apontando para base inexistente ou não migrada.
+- **O que se publica:** a linha final do runner (`[run-backend-tests] N arquivo(s) · T teste(s) · pass P · fail F · skipped S`), com S ≤ 2 e os 2 pulos nomeados (os de `permission-catalog-db-parity`); todo não-verde nomeado por arquivo e teste. Referência desta ref, neste container: **5440 / 5438 / 0 / 2**. Se aparecer a classe `XX000` (`pendencias.md:4620`, conhecida da forma 3), repetir 1× e registrar as duas rodadas.
+- **A forma sem banco não é baseline:** é vermelha por `P-O6R-B02-CRASH-NO-LOAD-SEM-SKIP`. Fica registrada, não se conserta aqui (`tests/core-saas-role-authority.test.ts` fora do PERMITIDO).
+- **Docker na C-F0:** passa a ser marcado (o §C4 dizia "Docker só C-F6"); a cota de trabalhos Docker segue a P8(c).
+- **Vermelho-controle:** `env -u DATABASE_URL npm test -- tests/core-saas-role-authority.test.ts` → `pass 0 · fail 1` com o piso de denominador; com a URL exportada → 12/12. Registrado na C-F0.
+
+#### E4.1 — Fatias, baseline e junta (o que muda sobre o E4 da C2)
+- **C-F0** (30 → 45): R-C21-04, com Docker.
+- **C-F1** soma o registro das sondas `s02` e `s03` como vermelho-controle de classe.
+- **C-F3c, nova (30):** RC8 (6), (7); RC2 (17t-a), (17t-b); o `razaoIntacto` nos casos listados; M-C35, M-C36, M-C37. A C-F3b fica como estava.
+- **C-F4** soma o estorno do RC8(6).
+- **C-F6b** (20 → 35): soma o RC3(8) e, se o dono autorizou, a linha do R-C21-01, as 3 medições na forma do `backend-postgres` e a M-C38.
+- **C-F14** soma a trava de forma do `ci.yml` e o aceite no log dos dois jobs.
+- **Total C:** 19 fatias, cerca de 735 min.
+- **Baseline:** **M_b ≥ N_b + 41 + 2 (RC8 (6), (7)) + 1 (RC3(8)) + 1 (RC2(17t-b); a (17t-a) substitui a antiga (17)) = N_b + 45**; M_f inalterado (N_f + 19). N_b e M_b na forma do R-C21-04.
+- **Junta (C7):**
+  - a C1 soma RC8 (6), (7), RC2 (17t-a/b), o `razaoIntacto` e M-C35..M-C37;
+  - a C2 soma RC3(8), a M-C38 e a trava de forma do `ci.yml`; os `arquivos_medidos` dela ganham `.github/workflows/ci.yml`;
+  - na triagem, entram como **grave**: baixa gravada antes de a autorização terminar (inclusive em recusa); gerente com cadastro ativo baixando da BASE.
+
+#### O que esta emenda NÃO muda
+A decisão do E1 (o C baixa pela P12), o gate de módulo do E2, o escopo do rótulo do E3, o 15b e o `RBAC_MATRIX.md`. Nenhuma asserção existente do RC1-RC8 perde força.
+
+**Perguntas ao dono: uma** (R-C21-01), com recomendação "autorizar a linha, como no 15a". As demais correções são requisitos de teste e de forma dentro do PERMITIDO.
+
+### Emenda C2.2 ao §C (B-MATERIAL-REENVIO) — requisitos da crítica r2 (`crit-emenda-c21-cdx`, Codex Sol, rodada 2 de 2, APROVADO COM AJUSTES; orquestrador, 12/11 15:28 SP; transcrição declarada §A6)
+
+> Rodada 2: o que sobreviveu vira requisito do dev. O texto completo de cada achado, com o comando e a saída, está em `revisoes/bloco-c/crit-emenda-c21.json` e `crit-emenda-c21-evidencia.md`. Esta emenda prevalece sobre a C2 e a C2.1 onde divergir.
+
+- **C21-CRIT-01 (ALTA), a guarda de módulo também no `remove`.**
+  - O E2 exige `work_order_material.add` e `.remove` sob o módulo `work_orders`, por ação, mas o RC2(20) só testa o `add`.
+  - **RC2(20-r), novo:** numa organização com `inventory` e sem `work_orders`, o `work_order_material.remove` devolve `rejected module_not_enabled`, não cria estorno, e a baixa original continua ativa (com `razaoIntacto`).
+  - **M-C32 em duas variantes:** tirar a guarda só no `add` deixa o RC2(20) vermelho; tirar só no `remove` deixa o RC2(20-r) vermelho. Cada uma é revertida e conferida com `git diff`.
+- **C21-CRIT-02 (MÉDIA), o Redis antes da baseline.** Na trava do R-C21-04, antes do `npm test`:
+  - sobe um Redis descartável próprio (`docker run -d --name material-redis -p 127.0.0.1:56576:6379 redis:7`);
+  - faz um probe real na mesma `REDIS_URL` (por exemplo, `docker exec material-redis redis-cli ping` dando `PONG`, ou um probe em Node);
+  - se o probe falhar, PARA antes da suíte;
+  - publica a porta do Redis junto da forma da baseline.
+  - O container leva a tag `material` no nome, e o checkup de conclusão o remove.
+
+### Emenda C2.3 ao §C (B-MATERIAL-REENVIO) — a baseline pela forma real do CI (orquestrador, 12/11 15:46 SP; leitura declarada §A6; processo, não produto)
+
+> Fonte: a RETOMADA 6 do diário do dev (`revisoes/dev-c-cdx.md`). No Windows, a baseline canônica não fecha por causa do ambiente: `[run-backend-tests] 534 arquivo(s) · 5431 teste(s) · pass 5420 · fail 9 · skipped 2`, sem `setsid`, com o shim do Prisma lido pelo Node e `EBUSY` no `traccar-event-migration-drill-db`. O CI da mesma `main` dá `fail 0`. O dev parou certo.
+
+- **E-C23.1, a baseline `N_b` e `N_f` vem do CI da `main` `ef4e98e7`** (rodada `43249586610`, `ci`, push), lida no resumo de cada job (§C7 11(3)):
+  - backend: `[run-backend-tests] 534 arquivo(s) · 5440 teste(s) · pass 5438 · fail 0 · skipped 2`;
+  - `backend-postgres`: `# tests 610 # fail 0 # skipped 0 `;
+  - Flutter: `+1170: All tests passed!`.
+  - O dev confere por `gh run view 43249586610 --job <id> --log | grep -E '# (tests|pass|fail|skipped) |run-backend-tests|All tests passed'` e cola a saída.
+- **E-C23.2, no host rodam só as suítes do bloco e a lista de regressão do C6**, com Postgres e Redis próprios (UTF8, UTC, probe). A suíte inteira roda no CI do PR, e o aceite é o resumo do job, nunca a cor.
+- **E-C23.3, o ambiente:** as 9 falhas do Windows viram a pendência `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` (setsid, shim do Prisma, EBUSY no drill do Traccar), com dono `B-FERR-AGENTES`. Não é defeito do C.
+
+### Emenda C2.4 ao §C (B-MATERIAL-REENVIO) — o RC2(15) na ordem N4 (orquestrador, 12/11 20:17 SP; leitura declarada §A6)
+
+> Fonte: a RETOMADA 15 do diário do dev (`revisoes/dev-c-cdx.md`, linhas 156-162). O dev `dev-c3-cdx` parou certo antes da C-F4. A N4 manda o `remove`:
+> 1. achar a baixa;
+> 2. aplicar o escopo por objeto sobre `exit.workOrderId`;
+> 3. recusar `work_order_mismatch` quando o `work_order_id` do payload difere da baixa;
+> 4. só então conferir `exit.createdBy` (a posse).
+>
+> O RC2(15) exige `conflict action_owned_by_other_actor` para o tecB que cita a OS Y dele, com a ação do tecA na OS X. Nessa ordem, o tecB falha no escopo de X antes da posse, e o resultado exigido nunca sai.
+
+- **E-C24.1, a ordem fica:** a N4 prevalece, porque é a mais nova e a mais segura (nada se lê da posse antes do escopo).
+- **E-C24.2, o RC2(15) reescrito:** o tecB, nunca atribuído à OS X, faz `remove` citando a OS Y dele, com o `source_client_action_id` do tecA.
+  - O resultado é `rejected not_assigned_to_actor`: a recusa de escopo sobre `exit.workOrderId` = X.
+  - Com `razaoIntacto`: nenhum estorno, a baixa do tecA continua ativa, e os saldos ficam iguais.
+- **E-C24.3, RC2(15b), novo, a posse alcançável:** um ator que **passa** o escopo de X — o gerente (`tenant_wide`), ou um técnico atribuído a X que não é o autor da baixa — faz `remove` citando X, com o `source_client_action_id` do tecA.
+  - O resultado é `conflict action_owned_by_other_actor`, com `razaoIntacto`.
+  - Se a regra de negócio do C já permite que o gerente estorne a baixa de outro ator, o dev PARA e relata: isso é decisão, não conserto.
+- **E-C24.4, a M-C7, a mutação da posse:** tirar a conferência de `exit.createdBy` deixa o **RC2(15b)** vermelho (o estorno acontece e o resultado é `accepted`). O RC2(15) não muda com a M-C7.
+- **E-C24.5:** a C-F4 passa a ter os casos RC2(13), (14), (15), (15b) e (18), e a mutação M-C7 contra o (15b).
+
+### Emenda C2.5 ao §C (B-MATERIAL-REENVIO) — o guard do censo na C-F5 (orquestrador, 13/11 07:26 SP; leitura declarada §A6)
+
+> Fonte: a RETOMADA 20 do diário do dev (`revisoes/dev-c-cdx.md`). O `dev-c4-cdx` parou certo antes de editar a C-F5. O `tests/o6r07c-census-guard.test.ts` deu 32 testes, 28 aprovados e 4 falhas:
+> - o T1 e o T14 são o vermelho esperado (`work_order_material.add|remove` como `NAO-CLASSIFICADA`), que as duas regex da C-F5 resolvem;
+> - mas surgiram também o **T8** (`TIPO-NAO-RESOLVIDO`: `existingReceipt.fingerprint === fingerprint`, em `mobile-inventory-sync.ts`) e o **T9** (`CURINGA-ESTATICO`: `action.type.startsWith("work_order_material.")`), que a fatia não está autorizada a corrigir.
+
+- **E-C25.1, a regra: o guard não muda, o código muda.** O censo é guard de segurança (classifica toda via de escrita por propriedade). Afrouxar o classificador ou a allowlist para aceitar o curinga seria enfraquecer o guard. A C-F5 conserta o **código do despacho**.
+- **E-C25.2, o T9:** em `src/modules/mobile/mobile-inventory-sync.ts`, o despacho por `action.type.startsWith("work_order_material.")` vira uma **comparação explícita** com os dois tipos (`work_order_material.add` e `work_order_material.remove`), por igualdade ou por um conjunto literal tipado, na forma que o censo já reconhece nos outros despachos do arquivo. Antes de escrever, meça qual é essa forma (`grep -n` nos despachos vizinhos e no classificador `tests/helpers/o6r07c-census.ts`).
+- **E-C25.3, o T8:** a comparação `existingReceipt.fingerprint === fingerprint` ganha tipo resolvido para o censo, por exemplo com a variável tipada explicitamente ou com a mesma forma das comparações de recibo que o censo já aceita no arquivo. Meça a forma aceita antes.
+- **E-C25.4, o escopo:** a C-F5 passa a poder mudar, além das duas regex e da fixture, **só** as linhas do despacho e da comparação do recibo em `mobile-inventory-sync.ts`. **Ficam PROIBIDOS:** `tests/helpers/o6r07c-census.ts`, o classificador, a allowlist e qualquer teste do guard.
+- **E-C25.5, o aceite e as mutações:**
+  - o `o6r07c-census-guard` dá 32/32 (T1, T8, T9 e T14 verdes);
+  - **M-C39:** voltar o `startsWith` deixa o T9 vermelho;
+  - **M-C40:** tirar o tipo da comparação deixa o T8 vermelho;
+  - as suítes do bloco (`b-material-*`) continuam verdes, porque o comportamento não muda.
+  - **Se o T8 ou o T9 só ficarem verdes mudando o guard, PARE e relate:** isso é decisão.
+
+### Emenda C2.6 ao §C (B-MATERIAL-REENVIO): a forma medida do T8 e do T9 (orquestrador, 13/11 07:34 SP; responde à rev-c25, `C25-A1`)
+
+> A rev-c25 (`revisoes/bloco-c/rev-c25.json`) reprovou a E-C25.3: anotar o tipo não muda o classificador, porque a contaminação é sintática. A sonda `revisoes/bloco-c/sonda-c26/` rodou o `analisarTipos` do próprio guard, sem alterá-lo, sobre 4 variantes do arquivo. A saída está em `evidencia.md`.
+
+- **E-C26.1, o que continua:** a E-C25.1 (o guard não muda, o código muda) e a E-C25.4 (escopo e PROIBIDOS) seguem valendo. A E-C25.2, a E-C25.3 e as definições de M-C39 e M-C40 da E-C25.5 passam a valer como escritas abaixo.
+- **E-C26.2, o T8, forma única:** em `mobile-inventory-sync.ts`, a linha
+  `const fingerprint = legacyAction ? fingerprintAction(action) : undefined;`
+  vira
+  `const fingerprint = fingerprintAction(action);`
+  É a forma da `main` e dos três vizinhos que o guard aceita. A causa medida é que o `fingerprint` herdava a contaminação do `legacyAction`, que nasce de `action.type`. O `legacyAction` continua só no `receiptKey`. O comportamento não muda: a comparação só roda com `existingReceipt`, que só nasce do `receiptKey`.
+- **E-C26.3, o T9, forma única:** a linha
+  `if (!action.type.startsWith("work_order_material.")) return result;`
+  vira
+  `if (action.type !== "work_order_material.add" && action.type !== "work_order_material.remove") return result;`
+- **E-C26.4, as mutações, literais:**
+  - **M-C39:** voltar a linha da E-C26.3 à forma com `startsWith` deixa o T9 vermelho (`CURINGA-ESTATICO`), e só o T9;
+  - **M-C40:** voltar a linha da E-C26.2 à forma `legacyAction ? fingerprintAction(action) : undefined` deixa o T8 vermelho (`TIPO-NAO-RESOLVIDO`), e só o T8.
+  - As duas foram medidas na sonda (V1 e V2). No guard inteiro, elas são aceite do dev.
+- **E-C26.5, o aceite:**
+  - o `o6r07c-census-guard` dá 32/32;
+  - as duas mutações acima, cada uma restaurada depois;
+  - as suítes `b-material-*` verdes;
+  - `git diff` da C-F5 só nas duas regex, na fixture e nas duas linhas acima.
+  - **Se o guard inteiro der outra violação além do T1/T14 resolvido pelas regex, o dev PARA e relata.**
+
+### Emenda C2.7 ao §C (B-MATERIAL-REENVIO): a remoção no mapa de retenção da OS (orquestrador, 13/11 08:40 SP; responde à parada da C-F8, RETOMADAS 29–30 do `dev-c5-cdx`)
+
+> O `dev-c5-cdx` fez a C-F5, a C-F6a, a C-F6b e a C-F7 (head `ee23c196`) e parou certo na C-F8. O `test/features/bsan313_os_purga_reconcilia_test.dart` exige que todo tipo de ação declarado tenha entrada no `workOrderActionReferenceKeys` (`mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart:78`), e o tipo novo `work_order_material.remove` não tem. O arquivo está em `lib/features/work_orders/**`, fora do PERMITIDO.
+
+- **E-C27.1, a autorização, exclusiva:** a C-F8 passa a poder acrescentar **uma linha** nesse arquivo, logo depois da `'work_order_material.add': {'work_order_local_id'},` (linha 94):
+  `'work_order_material.remove': {'work_order_local_id'},`
+  Nada mais nesse arquivo nem em `lib/features/work_orders/**`.
+- **E-C27.2, por que essa chave (medido pelo orquestrador no `w-material`):** o app monta a remoção com `work_order_local_id`, `material_local_id` e `source_client_action_id` (`prestador_repository.dart:194-197`, mudança local da C-F8). O reenvio converte o `work_order_local_id` no id do servidor na hora de enviar (`inventory_sync_replay_service.dart:196`). A chave que prende a OS no aparelho é, portanto, a mesma da adição. Sem a linha, a purga trataria a remoção na fila como se não citasse OS nenhuma.
+- **E-C27.3, o aceite:**
+  - o `bsan313_os_purga_reconcilia_test.dart` fica verde;
+  - **M-C41:** tirar a linha deixa esse teste vermelho, e ela é restaurada depois;
+  - **M-C42:** trocar o conjunto por `{}` deve deixar vermelho algum teste de purga, ou seja, uma OS com remoção pendente não pode ser purgada.
+  - **Se a M-C42 sobreviver, o dev NÃO escreve teste novo fora do PERMITIDO:** relata como achado, que vai para a pré-revisão.
+- **E-C27.4:** o resto da C-F8 e as fatias seguintes (C-F9 a C-F14) seguem as emendas anteriores sem mudança.
+- **E-C27.5 (ajuste C27-A1 da rev-c27, aplicado pelo orquestrador em 13/11 08:46 SP):** a **M-C42 deixa de ser aceite**. Ela passa a ser mutação de diagnóstico, com **sobrevivência esperada**: o F24 aceita o conjunto vazio, o arquivo não tem cenário de remoção, e a retenção de produção consulta o `workOrderLocalReferenceKeys` (que já contém `work_order_local_id`), não o valor do `workOrderActionReferenceKeys`. O dev a roda, registra a sobrevivência e a relata à pré-revisão, sem teste novo fora do PERMITIDO. A M-C41 continua sendo aceite (fica vermelha ao tirar a linha).
+
+### Emenda C2.8 ao §C (B-MATERIAL-REENVIO): a receita do lote de estoque no laço G e a fatia do RC4b (orquestrador, 13/11 10:24 SP; responde à parada da C-F14, RETOMADAS 33 e 40 do `dev-c6-cl`)
+
+> **O que parou.** O job `backend` dá 5489/5485/**2**/2 desde a C-F5. Os 2 `not ok` são o laço G de `tests/o6r07c-subresource-scope.test.ts` para os pares `PAR /api/v1/mobile/sync/inventory-actions · work_order_material.add|remove`.
+> - **Por quê:** a C-F5 classificou esses pares como `OS·07c-a` (C2 item 6), e o laço G executa toda entrada `OS·07c-a`. Mas o `executarEntrada` (l.358) só tem receita para o lote `/api/v1/mobile/sync/work-order-actions` e falha fechado ("o laço nunca pula uma entrada").
+> - **O RC4b** está no §C (linha 349), mas não ganhou fatia nem arquivo no PERMITIDO.
+
+- **E-C28.1, a receita do laço G (amplia o guard, não o afrouxa).** No `tests/o6r07c-subresource-scope.test.ts` fica autorizado SÓ isto:
+  - (a) uma constante `LOTE_ESTOQUE = "/api/v1/mobile/sync/inventory-actions"`;
+  - (b) um ramo em `executarEntrada` para `PAR` com `lote === LOTE_ESTOQUE`, no molde do ramo do `LOTE_OS`. Ele monta um lote válido do tipo da entrada sobre a `semente.workOrderId`:
+    - o `add` com `sku`, `quantity` e `material_local_id`;
+    - o `remove` com o `source_client_action_id` de uma adição semeada;
+    - e devolve a `Execucao` com o resultado POR AÇÃO (status e motivo), como o `ctx.sync` faz para o lote de OS;
+  - (c) um ajudante `ctx.syncEstoque` (ou a semente do `add` para o `remove`), se o (b) precisar.
+  - **Proibido:** mudar o laço, as expectativas por papel e por motivo, a classificação da fixture, o censo, outra entrada ou outro arquivo do guard.
+  - **Se o laço exigir uma expectativa que o handler da C-F4 não dá** (por exemplo, outro motivo de recusa), o dev PARA e relata: isso é decisão.
+- **E-C28.2, o aceite do laço G:**
+  - o `o6r07c-subresource-scope` fica verde no host, e o TAP do job `backend` do head novo dá **fail 0**;
+  - **M-C43:** tirar do handler do `add` a conferência de que a OS é do ator deixa o laço G vermelho no par do `add`;
+  - **M-C44:** o mesmo no `remove` (a ordem N4: o escopo antes da posse) deixa vermelho o par do `remove`;
+  - **M-C45:** apagar o ramo novo do `executarEntrada` volta ao "lote sem receita", ou seja, o fechamento fail-closed continua;
+  - cada mutação é restaurada, com `git diff --stat` como prova.
+- **E-C28.3, a fatia C-F14a do RC4b, antes da bateria final.** Ficam no PERMITIDO:
+  - o `tests/b-material-payload-contract.test.ts` (novo);
+  - o `mobile/flutter_app/test/core/sync/bmaterial_codec_test.dart` (novo; grava a fixture);
+  - a fixture que ele grava, na pasta e no nome do molde RB4b (meça o molde: `git grep -n RB4b`).
+  - **O aceite:** o RC4b verde, com as chaves `client_action_id`, `type`, `work_order_id`, `sku`, `quantity`, `material_local_id` e `source_client_action_id`; e a **M-C11** vermelha aqui, como o §C manda.
+- **E-C28.4:** nada mais muda. O `.github/**` continua só com a linha `SUITES=` autorizada, e o PR sai do rascunho só com os TAPs verdes.
+- **E-C28.5, os ajustes da `rev-c28-cl`** (APROVADO COM AJUSTES; `revisoes/bloco-c/rev-c28.json`; aplicados pelo orquestrador em 13/11 10:41 SP):
+  - **A1, a semente do `remove` no laço G, nomeada.** O ramo da E-C28.1 pode:
+    - semear item e saldo na custódia de quem faz a adição;
+    - importar e reiniciar o módulo de estoque no `withApi`;
+    - confirmar que a adição semeada saiu `accepted` antes do `remove`.
+  - **A2:** toda ação do lote leva `local_created_at` (sem ele o lote inteiro dá 400). O ramo novo entra ANTES do `throw` "lote sem receita", que não muda.
+  - **A3, decidido pela opção (b):** a **M-C11 sai do aceite do RC4b** e fica no RC4, onde já morre (RETOMADA 33). O RC4b cobre o contrato do PEDIDO (Dart → handler TS). A E-C28.3 deixa de exigir "a M-C11 vermelha aqui".
+  - **A4, a fixture versionada:** a fixture do RC4b é `mobile/flutter_app/test/core/sync/bmaterial_request_payloads.json`, versionada.
+    - O teste Dart `bmaterial_codec_test.dart` GERA o pedido e o COMPARA com o arquivo versionado: fica vermelho se divergir e nunca regrava no CI.
+    - O `tests/b-material-payload-contract.test.ts` LÊ esse arquivo e roda o handler real sobre ele.
+    - Mutação **M-C46:** mudar uma chave no codec deixa o teste Dart vermelho. **M-C47:** mudar a mesma chave só na fixture deixa o teste TS vermelho.
+  - **A5:** o pedido sai da cadeia real do app (o enfileiramento em `prestador_repository.dart`, o reenvio que injeta o `work_order_id` e o cliente HTTP com captura), nunca de um mapa escrito no teste. As chaves são por tipo: o `add` leva `sku`, `quantity` e `material_local_id`; o `remove` leva `source_client_action_id` e `material_local_id`, sem `sku` nem `quantity`.
+  - **A6:** no `.github/workflows/ci.yml` valem a linha `SUITES=` e as 4 linhas de comentário de proveniência autorizadas pela R-C21-01. Nada mais.
