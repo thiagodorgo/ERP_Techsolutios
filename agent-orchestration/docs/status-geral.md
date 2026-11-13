@@ -1,5 +1,16 @@
 # Status Geral
 
+## Atualização 2026-11-12 (noite) — decisões do dono: a GATE-CHAVE entra no portão (45/65) e o bloco do fuso fica aberto
+
+- **Autor:** `reg-1211n-dp` (DeepSeek Pro pelo Codex CLI, redator de registro, identidade declarada). A revisão fica para outro modelo, depois. **Base medida:** `origin/main@ef4e98e7`, worktree próprio `w-reg1211n`. Registro documental; `Kpis/**` congelado e intocado.
+- **Decisões do dono (12/11 21:44 SP, `D-DONO-1211-NOITE`):** *"1-autorizo / 2-<valor omitido: repositório público> de teto na api claude e no deepseek. / 3-ok"*.
+  - **1 —** autorizada a linha `SUITES=` do `.github/workflows/ci.yml` (job `backend-postgres`) para `tests/b-material-sync-db.test.ts`, no `B-MATERIAL-REENVIO` (o R-C21-01 da Emenda C2.1). O dev do C pode fazer a C-F6b.
+  - **2 —** o bloco `B-DB-FUSO-UTC` fica aberto, com o plano escrito (9 fatias, 6 h 20 min de dev, 1 pergunta Q1 aberta ao dono). Leitura do orquestrador, declarada (§A6): o teto dado é o sim ao bloco.
+  - **3 —** o item novo do portão para a GATE-CHAVE entra: a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` vira item 63 do §4.1, com bloco próprio de permissão do app, e o denominador passa de 64 para 65.
+- **Portão da versão vendável:** 45/65 (69%, pelo piso) — `floor(100 × 45 / 65) = 69`. O item novo (63) segue ABERTO; os 45 fechados não mudam.
+- **Bloco do material:** o `B-MATERIAL-REENVIO` segue em curso (PR #551 em rascunho, head `262cdc98`; Emendas C2.1 a C2.4 apensadas).
+- **Pendências:** `P-PORTAO-ITEM-GATE-CHAVE` FECHADA; `P-DB-FUSO-DA-CONEXAO` ganhou o apenso do plano; `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` registrada com dono `B-FERR-AGENTES`.
+
 ## Atualização 2026-11-12 — registro de 11/11 manhã a 12/11 manhã: portão em 45/64 e as juntas J-534 a J-548
 
 - **Autor:** `reg-1211-dp` (DeepSeek Pro pelo Codex CLI, redator de registro, identidade nova, nível menor). A revisão fica para outro modelo, depois. **Base medida:** `origin/main@3a62bd49`, worktree próprio `w-reg1211`. Registro documental; `Kpis/**` congelado e intocado.
