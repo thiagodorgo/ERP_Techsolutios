@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/evidence/evidence_picker.dart';
 import '../../../core/network/api_error.dart';
+import '../../../core/network/connectivity_repository.dart';
 import '../../../core/permissions/permission_resolver.dart';
 import '../../../core/sync/sync_models.dart';
 import '../../../shared/theme/erp_mobile_theme.dart';
@@ -24,20 +27,65 @@ import 'work_order_stepper.dart';
 // Data container for OS + checklist runs
 // ---------------------------------------------------------------------------
 
+/// B-SAN3-14 — a pré-carga das vistorias ao abrir a tela. Ela corre AO LADO da
+/// leitura local (J-546, C3-F8): a tela abre com o que está no aparelho, e a
+/// resposta do servidor chega depois.
+enum _Refresh {
+  /// O aparelho está perguntando ao servidor.
+  checking,
+
+  /// O servidor respondeu.
+  done,
+
+  /// Sem conexão: a rede estava fora ou a pergunta não saiu do aparelho.
+  offline,
+
+  /// Com conexão, a pergunta falhou (tempo esgotado, recusa): estado 10.
+  failed,
+}
+
 class _ExecData {
   const _ExecData({
     required this.wo,
     required this.runs,
     required this.evidences,
-    this.refreshFailed = false,
+    this.schemas = const {},
+    this.queuedRunIds = const {},
+    this.refresh = _Refresh.done,
   });
 
   final WorkOrder wo;
   final List<MobileChecklistRun> runs;
   final List<WorkOrderEvidence> evidences;
 
-  /// B-SAN3-14 — a pré-carga ao abrir a tela não alcançou o servidor.
-  final bool refreshFailed;
+  /// C3-F1 — os modelos em cache no aparelho, por checklistId: o nome e os
+  /// campos obrigatórios do subtítulo de cada cartão.
+  final Map<String, MobileChecklistSchema> schemas;
+
+  /// C3-F2 — as execuções com ação de vistoria ainda na fila do aparelho.
+  final Set<String> queuedRunIds;
+
+  final _Refresh refresh;
+
+  bool get checking => refresh == _Refresh.checking;
+
+  /// A pré-carga falhou COM conexão: os dados podem estar desatualizados.
+  bool get refreshFailed => refresh == _Refresh.failed;
+
+  /// O servidor não confirmou as vistorias (sem sinal ou falha).
+  bool get deliveryUnverified =>
+      refresh == _Refresh.offline || refresh == _Refresh.failed;
+
+  bool isQueued(MobileChecklistRun? run) =>
+      run != null && queuedRunIds.contains(run.localId);
+
+  bool get hasQueuedTowRuns =>
+      isTow && (isQueued(collectionRun) || isQueued(confirmedDelivery));
+
+  /// Estado 8 da opção A: a entrega local que o servidor ainda não liberou
+  /// tem "Atualizar" (depois de o servidor responder).
+  bool get canRefreshAwaiting =>
+      deliveryRun != null && refresh == _Refresh.done;
 
   bool get isTow => wo.serviceType == WorkOrderServiceType.tow;
 
@@ -134,12 +182,20 @@ class _WorkOrderExecuteScreenState
   Future<_ExecData>? _dataFuture;
   int? _repoKey;
 
+  // B-SAN3-14 (R-A5; J-546, C3-F8) — a pré-carga roda uma vez ao abrir a tela,
+  // e de novo em "Atualizar" ou quando o sinal volta. Ela nunca segura a
+  // leitura do aparelho: quando responde, a tela relê o aparelho.
+  _Refresh _refresh = _Refresh.done;
+  bool _refreshStarted = false;
+  int _refreshRound = 0;
+
   Future<_ExecData> _ensureFuture(
     WorkOrderRepository woRepo,
     ChecklistRepository clRepo,
   ) {
     final key = identityHashCode(woRepo) ^ identityHashCode(clRepo);
     if (_dataFuture == null || _repoKey != key) {
+      if (_repoKey != key) _refreshStarted = false;
       _repoKey = key;
       _dataFuture = _loadData(woRepo, clRepo);
     }
@@ -152,31 +208,78 @@ class _WorkOrderExecuteScreenState
   ) async {
     await woRepo.load();
     final wo = woRepo.findById(widget.workOrderId);
-    if (wo == null) throw StateError('Ordem de servico nao encontrada.');
-    // B-SAN3-14 (R-A5) — com rede, a coleta e a entrega chegam ao aparelho
-    // ao abrir a tela (a pré-carga também roda no passe de sync).
-    var refreshFailed = false;
-    if (wo.checklistId != null && wo.serviceType == WorkOrderServiceType.tow) {
-      try {
-        await clRepo.prefetchRunsForWorkOrder(
-          wo.localId,
-          serverWorkOrderId: wo.serverId,
-        );
-      } catch (_) {
-        refreshFailed = true;
-      }
+    if (wo == null) throw StateError('Ordem de serviço não encontrada.');
+    final towWithChecklist =
+        wo.checklistId != null && wo.serviceType == WorkOrderServiceType.tow;
+    if (towWithChecklist && !_refreshStarted) {
+      _refreshStarted = true;
+      _startRefresh(clRepo, wo);
     }
     final runs = wo.checklistId != null
         ? await clRepo.getRunsForWorkOrder(widget.workOrderId)
         : <MobileChecklistRun>[];
     final evidences = await woRepo.loadEvidence(widget.workOrderId);
+    final schemas = <String, MobileChecklistSchema>{};
+    var queued = const <String>{};
+    if (towWithChecklist) {
+      for (final id in {wo.checklistId!, for (final r in runs) r.checklistId}) {
+        final schema = await clRepo.getCachedSchema(id);
+        if (schema != null) schemas[id] = schema;
+      }
+      queued = await clRepo.localRunIdsWithPendingActions(widget.workOrderId);
+    }
     return _ExecData(
       wo: wo,
       runs: runs,
       evidences: evidences,
-      refreshFailed: refreshFailed,
+      schemas: schemas,
+      queuedRunIds: queued,
+      refresh: towWithChecklist ? _refresh : _Refresh.done,
     );
   }
+
+  // Sem conexão conhecida, nem pergunta; com conexão, pergunta em segundo
+  // plano. A resposta mais nova é a que vale.
+  void _startRefresh(ChecklistRepository clRepo, WorkOrder wo) {
+    final round = ++_refreshRound;
+    if (ref.read(networkStatusProvider) == NetworkStatus.offline) {
+      _refresh = _Refresh.offline;
+      return;
+    }
+    _refresh = _Refresh.checking;
+    unawaited(_runRefresh(clRepo, wo, round));
+  }
+
+  Future<void> _runRefresh(
+    ChecklistRepository clRepo,
+    WorkOrder wo,
+    int round,
+  ) async {
+    _Refresh outcome;
+    try {
+      await clRepo.prefetchRunsForWorkOrder(
+        wo.localId,
+        serverWorkOrderId: wo.serverId,
+      );
+      outcome = _Refresh.done;
+    } on ApiNetworkError {
+      outcome = _Refresh.offline;
+    } catch (_) {
+      outcome = _Refresh.failed;
+    }
+    if (!mounted || round != _refreshRound) return;
+    // Relê o aparelho; o FutureBuilder mantém o dado anterior enquanto isso.
+    setState(() {
+      _refresh = outcome;
+      _dataFuture = null;
+    });
+  }
+
+  // "Atualizar" e a volta do sinal: pergunta de novo ao servidor.
+  void _refreshNow() => setState(() {
+    _refreshStarted = false;
+    _dataFuture = null;
+  });
 
   void _openChecklist(WorkOrder wo) =>
       _openRun(wo.checklistId!, wo.localId, MobileChecklistRunKind.collection);
@@ -205,8 +308,6 @@ class _WorkOrderExecuteScreenState
     );
   }
 
-  void _reload() => setState(() => _dataFuture = null);
-
   Future<void> _doTransition(
     WorkOrderRepository repo,
     WorkOrder wo,
@@ -226,7 +327,7 @@ class _WorkOrderExecuteScreenState
     } catch (_) {
       setState(
         () =>
-            _safeError = 'Nao foi possivel alterar o status. Tente novamente.',
+            _safeError = 'Não foi possível alterar o status. Tente novamente.',
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -254,7 +355,7 @@ class _WorkOrderExecuteScreenState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao registrar evidencia: $e')),
+          SnackBar(content: Text('Erro ao registrar evidência: $e')),
         );
       }
     }
@@ -278,7 +379,7 @@ class _WorkOrderExecuteScreenState
       setState(() => _safeError = e.safeMessage);
     } catch (_) {
       setState(
-        () => _safeError = 'Nao foi possivel concluir a OS. Tente novamente.',
+        () => _safeError = 'Não foi possível concluir a OS. Tente novamente.',
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -292,6 +393,16 @@ class _WorkOrderExecuteScreenState
         .maybeWhen(data: (v) => v, orElse: () => null);
     final woRepo = ref.watch(workOrderRepositoryProvider);
     final clRepo = ref.watch(checklistRepositoryProvider);
+    final networkOffline =
+        ref.watch(networkStatusProvider) == NetworkStatus.offline;
+    // Quando o sinal volta, a seção pergunta de novo ao servidor.
+    ref.listen<NetworkStatus>(networkStatusProvider, (prev, next) {
+      final waiting =
+          _refresh == _Refresh.offline || _refresh == _Refresh.failed;
+      if (next == NetworkStatus.online && _refreshStarted && waiting) {
+        _refreshNow();
+      }
+    });
 
     final canStatus = session == null
         ? false
@@ -357,6 +468,8 @@ class _WorkOrderExecuteScreenState
             .where((t) => t != WorkOrderStatus.completed)
             .toList();
         final canComplete = allTransitions.contains(WorkOrderStatus.completed);
+        // C3-F2 — sem conexão: a rede está fora, ou a pré-carga não saiu.
+        final offline = networkOffline || data.refresh == _Refresh.offline;
 
         return ErpScaffold(
           showAppBar: false,
@@ -371,15 +484,25 @@ class _WorkOrderExecuteScreenState
                   tone: pillToneFromStatus(wo.status.statusTone),
                 ),
               ),
+              if (offline)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: NetworkStatusBanner(
+                    key: ValueKey('bsan314-sem-conexao'),
+                    status: NetworkStatus.offline,
+                    offlineMessage: _kSemConexao,
+                  ),
+                ),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    if (wo.syncStatus == SyncStatus.pending)
-                      SyncStatusBanner(
+                    if (wo.syncStatus == SyncStatus.pending ||
+                        data.hasQueuedTowRuns)
+                      const SyncStatusBanner(
                         status: SyncStatus.pending,
                         message:
-                            'Alteracoes locais aguardando sincronizacao com o servidor.',
+                            'Alterações locais aguardando sincronização com o servidor.',
                       ),
                     const SizedBox(height: 8),
                     Card(
@@ -422,7 +545,7 @@ class _WorkOrderExecuteScreenState
                           leading: const Icon(Icons.check_circle_outline),
                           title: Text('OS ${wo.status.label.toLowerCase()}'),
                           subtitle: const Text(
-                            'Status final — sem transicoes possiveis.',
+                            'Status final — sem transições possíveis.',
                           ),
                         ),
                       )
@@ -430,9 +553,9 @@ class _WorkOrderExecuteScreenState
                       const Card(
                         child: ListTile(
                           leading: Icon(Icons.block_outlined),
-                          title: Text('Nenhuma transicao disponivel'),
+                          title: Text('Nenhuma transição disponível'),
                           subtitle: Text(
-                            'Este status nao permite alteracoes no momento.',
+                            'Este status não permite alterações no momento.',
                           ),
                         ),
                       )
@@ -440,6 +563,7 @@ class _WorkOrderExecuteScreenState
                       if (wo.checklistId != null && data.isTow) ...[
                         _TowChecklistSection(
                           data: data,
+                          offline: offline,
                           onOpenCollection: () => _openRun(
                             data.collectionRun?.checklistId ?? wo.checklistId!,
                             wo.localId,
@@ -451,9 +575,11 @@ class _WorkOrderExecuteScreenState
                             MobileChecklistRunKind.delivery,
                           ),
                           onCompare: () => _openComparison(data),
-                          onRefresh: _reload,
+                          onRefresh: _refreshNow,
                         ),
-                        const SizedBox(height: 16),
+                        // C3-F11 — com a seção, o vão até "Próxima ação" é o
+                        // da opção A (28 px do botão Comparar, 30 do cartão).
+                        const SizedBox(height: 26),
                       ] else if (wo.checklistId != null) ...[
                         Text(
                           'Checklist',
@@ -468,7 +594,7 @@ class _WorkOrderExecuteScreenState
                       ],
                       if (regularTransitions.isNotEmpty) ...[
                         Text(
-                          'Proxima acao',
+                          'Próxima ação',
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
                         const SizedBox(height: 8),
@@ -520,15 +646,29 @@ class _WorkOrderExecuteScreenState
                           ),
                           const SizedBox(height: 8),
                         ],
+                        // Estado 7 da opção A: sem a resposta do servidor e sem
+                        // entrega no aparelho, a conclusão pode ser recusada.
                         if (data.isTow &&
-                            data.refreshFailed &&
+                            data.deliveryUnverified &&
                             data.confirmedDelivery == null) ...[
                           const SyncStatusBanner(
+                            key: ValueKey('bsan314-aviso-nao-verificada'),
                             status: SyncStatus.pending,
-                            message:
-                                'Sem sinal, o aparelho não confirma se esta OS '
-                                'tem vistoria de entrega. Se tiver, a conclusão '
-                                'só é aceita depois dela.',
+                            icon: Icons.info_outline,
+                            message: _kAvisoNaoVerificada,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        // Estado 6 (C3-F2): sem sinal, entrega concluída e na
+                        // fila; a OS conclui depois que a entrega subir.
+                        if (data.isTow &&
+                            offline &&
+                            data.isDeliveryComplete &&
+                            data.isQueued(data.confirmedDelivery)) ...[
+                          const SyncStatusBanner(
+                            key: ValueKey('bsan314-aviso-fila'),
+                            status: SyncStatus.pending,
+                            message: _kAvisoFilaConclusao,
                           ),
                           const SizedBox(height: 8),
                         ],
@@ -561,7 +701,7 @@ class _WorkOrderExecuteScreenState
                     const Divider(),
                     const SizedBox(height: 8),
                     Text(
-                      'Evidencias',
+                      'Evidências',
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
@@ -580,6 +720,21 @@ class _WorkOrderExecuteScreenState
     );
   }
 }
+
+// B-SAN3-14 — textos da opção A aprovada
+// (docs/claude-code-handoff/screen-refs/execucao-guincho-3opcoes.reference.html).
+const _kSemConexao =
+    'Sem conexão. O que você fizer fica salvo no aparelho e é enviado quando '
+    'o sinal voltar.';
+const _kAvisoNaoVerificada =
+    'Sem sinal, o aparelho não confirma se esta OS tem vistoria de entrega. '
+    'Se tiver, a conclusão só é aceita depois dela.';
+const _kAvisoFilaConclusao =
+    'A vistoria de entrega e a conclusão da OS ficam na fila. Quando o sinal '
+    'voltar, a entrega é enviada primeiro e a OS conclui logo depois.';
+const _kDadosDesatualizados =
+    'Não foi possível atualizar as vistorias agora. Os dados podem estar '
+    'desatualizados.';
 
 // B-SAN3-14 — o aviso da trava diz qual vistoria falta (guincho); o fluxo do
 // prestador mantém o texto de hoje.
@@ -608,6 +763,7 @@ String _lockMessage(_ExecData data) {
 class _TowChecklistSection extends StatelessWidget {
   const _TowChecklistSection({
     required this.data,
+    required this.offline,
     required this.onOpenCollection,
     required this.onOpenDelivery,
     required this.onCompare,
@@ -615,6 +771,7 @@ class _TowChecklistSection extends StatelessWidget {
   });
 
   final _ExecData data;
+  final bool offline;
   final VoidCallback onOpenCollection;
   final VoidCallback onOpenDelivery;
   final VoidCallback onCompare;
@@ -624,29 +781,47 @@ class _TowChecklistSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final collection = data.collectionRun;
     final delivery = data.confirmedDelivery;
+    final refresh = offline ? null : onRefresh;
+    // C3-F11 — os vãos são os da opção A: 8 px do título ao primeiro bloco, 6
+    // entre os cartões e 6 até o "Comparar" (o botão tem 2 px de área de toque
+    // em cima e embaixo); os cartões da seção não levam a margem do tema.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text('Vistorias', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         if (data.refreshFailed && delivery != null) ...[
-          _StaleDataBanner(onRefresh: onRefresh),
-          const SizedBox(height: 8),
+          StaleDataBanner(
+            key: const ValueKey('bsan314-desatualizado'),
+            message: _kDadosDesatualizados,
+            onRefresh: refresh,
+          ),
+          const SizedBox(height: 6),
         ],
         _PhaseCard(
           key: const ValueKey('bsan314-fase-coleta'),
           title: 'Coleta',
+          subtitle: _phaseSubtitle(
+            collection,
+            collection?.checklistId ?? data.wo.checklistId!,
+            data,
+          ),
+          pill: _queuePill(collection, data),
           status: _phaseStatus(collection),
           actionLabel: _phaseAction(collection, 'coleta'),
+          actionIcon: _phaseActionIcon(collection),
           onAction: onOpenCollection,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         if (delivery != null)
           _PhaseCard(
             key: const ValueKey('bsan314-fase-entrega'),
             title: 'Entrega',
+            subtitle: _phaseSubtitle(delivery, delivery.checklistId, data),
+            pill: _queuePill(delivery, data),
             status: _phaseStatus(delivery),
             actionLabel: _phaseAction(delivery, 'entrega'),
+            actionIcon: _phaseActionIcon(delivery),
             onAction: onOpenDelivery,
             note: data.isDeliveryComplete
                 ? null
@@ -656,15 +831,15 @@ class _TowChecklistSection extends StatelessWidget {
           _PhaseCard(
             key: const ValueKey('bsan314-fase-entrega'),
             title: 'Entrega',
+            icon: _unconfirmedDeliveryIcon(data),
             status: _unconfirmedDeliveryStatus(data),
-            message: _unconfirmedDeliveryMessage(data),
-            actionLabel: data.deliveryRun != null && !data.refreshFailed
-                ? 'Atualizar'
-                : null,
-            onAction: onRefresh,
+            subtitle: _unconfirmedDeliveryMessage(data),
+            actionLabel: data.canRefreshAwaiting ? 'Atualizar' : null,
+            actionIcon: Icons.refresh_outlined,
+            onAction: refresh,
           ),
         if (data.canCompare) ...[
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
@@ -674,7 +849,8 @@ class _TowChecklistSection extends StatelessWidget {
               label: const Text('Comparar coleta × entrega'),
             ),
           ),
-        ],
+        ] else
+          const SizedBox(height: 4),
       ],
     );
   }
@@ -702,14 +878,57 @@ String _phaseAction(MobileChecklistRun? run, String phase) {
   };
 }
 
+// C3-F4 — o ícone diz a ação, como na opção A: ver (concluída), continuar
+// (lápis) e abrir (lista).
+IconData _phaseActionIcon(MobileChecklistRun? run) {
+  final (label, _) = _phaseStatus(run);
+  return switch (label) {
+    'Concluída' => Icons.check_circle_outline,
+    'Em andamento' => Icons.edit_outlined,
+    _ => Icons.checklist_outlined,
+  };
+}
+
+// C3-F1 — o subtítulo da opção A: o nome do modelo e "N de M obrigatórios",
+// do modelo em cache no aparelho. Sem o modelo em cache, sem subtítulo.
+String? _phaseSubtitle(
+  MobileChecklistRun? run,
+  String checklistId,
+  _ExecData data,
+) {
+  final schema = data.schemas[checklistId];
+  if (schema == null) return null;
+  final required = schema.requiredFields;
+  if (required.isEmpty) return schema.title;
+  final answered = run == null
+      ? 0
+      : required.where((f) => run.answers[f.id]?.hasValue ?? false).length;
+  return '${schema.title}\n$answered de ${required.length} obrigatórios';
+}
+
+// C3-F2 — a vistoria com ação ainda na fila do aparelho: "Na fila" quando
+// concluída, "Salvo no aparelho" quando em andamento.
+(String, PillTone)? _queuePill(MobileChecklistRun? run, _ExecData data) {
+  if (!data.isQueued(run)) return null;
+  return run!.status == MobileChecklistRunStatus.completed
+      ? ('Na fila', PillTone.warning)
+      : ('Salvo no aparelho', PillTone.info);
+}
+
+// C3-F8 — enquanto o aparelho pergunta ao servidor, a entrega que ele ainda
+// não tem é "verificando", nunca "sem entrega".
 _PhaseStatus _unconfirmedDeliveryStatus(_ExecData data) {
-  if (data.refreshFailed) return ('Não verificada', 'pending');
+  if (data.checking) return ('Verificando', 'pending');
+  if (data.deliveryUnverified) return ('Não verificada', 'pending');
   if (data.deliveryRun != null) return ('Aguardando despacho', 'pending');
   return ('Sem entrega', 'info');
 }
 
 String _unconfirmedDeliveryMessage(_ExecData data) {
-  if (data.refreshFailed) {
+  if (data.checking) {
+    return 'Verificando com o servidor se esta OS tem vistoria de entrega.';
+  }
+  if (data.deliveryUnverified) {
     return 'Entrega não verificada — conecte-se para atualizar.';
   }
   if (data.deliveryRun != null) {
@@ -720,46 +939,97 @@ String _unconfirmedDeliveryMessage(_ExecData data) {
       'como antes.';
 }
 
+// C3-F4 — o ícone do cartão da entrega sem confirmação, como na opção A.
+IconData _unconfirmedDeliveryIcon(_ExecData data) {
+  if (data.checking) return Icons.sync_outlined;
+  if (data.deliveryUnverified) return Icons.cloud_off_outlined;
+  if (data.deliveryRun != null) return Icons.schedule_outlined;
+  return Icons.info_outline;
+}
+
 class _PhaseCard extends StatelessWidget {
   const _PhaseCard({
     required this.title,
     required this.status,
     required this.onAction,
+    this.icon = Icons.checklist_outlined,
+    this.subtitle,
+    this.pill,
     this.actionLabel,
-    this.message,
+    this.actionIcon = Icons.checklist_outlined,
     this.note,
     super.key,
   });
 
   final String title;
   final _PhaseStatus status;
+  final IconData icon;
+  final String? subtitle;
+  final (String, PillTone)? pill;
   final String? actionLabel;
-  final VoidCallback onAction;
-  final String? message;
+  final IconData actionIcon;
+
+  /// Nulo desabilita a ação (por exemplo, "Atualizar" sem conexão).
+  final VoidCallback? onAction;
   final String? note;
 
   @override
   Widget build(BuildContext context) {
     final (label, tone) = status;
-    final done = label == 'Concluída';
+    final queue = pill;
     return Card(
+      margin: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ListTile(
-            leading: const Icon(Icons.checklist_outlined),
+            titleAlignment: ListTileTitleAlignment.top,
+            leading: Icon(icon),
             title: Text(title),
-            subtitle: message == null ? null : Text(message!),
+            subtitle: subtitle == null && queue == null
+                ? null
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (subtitle != null)
+                        Text(
+                          subtitle!,
+                          style: const TextStyle(
+                            fontSize: 13.5,
+                            height: 19 / 13.5,
+                            color: ErpMobileTheme.inkMuted,
+                          ),
+                        ),
+                      if (queue != null) ...[
+                        const SizedBox(height: 4),
+                        MobilePill(label: queue.$1, tone: queue.$2),
+                      ],
+                    ],
+                  ),
             trailing: OperationalStatusChip(label: label, status: tone),
           ),
           if (note != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
               child: Row(
                 children: [
-                  const Icon(Icons.lock_outline, size: 16),
+                  // C3-F3 — a nota da trava nos tokens de atenção da opção A.
+                  const Icon(
+                    Icons.lock_outline,
+                    size: 16,
+                    color: ErpMobileTheme.warning,
+                  ),
                   const SizedBox(width: 6),
-                  Expanded(child: Text(note!)),
+                  Expanded(
+                    child: Text(
+                      note!,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        height: 17 / 12.5,
+                        color: ErpMobileTheme.warningInk,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -770,39 +1040,12 @@ class _PhaseCard extends StatelessWidget {
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   onPressed: onAction,
-                  icon: Icon(
-                    done
-                        ? Icons.check_circle_outline
-                        : Icons.checklist_outlined,
-                  ),
+                  icon: Icon(actionIcon),
                   label: Text(actionLabel!),
                 ),
               ),
             ),
         ],
-      ),
-    );
-  }
-}
-
-class _StaleDataBanner extends StatelessWidget {
-  const _StaleDataBanner({required this.onRefresh});
-
-  final VoidCallback onRefresh;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        leading: const Icon(Icons.warning_amber_outlined),
-        title: const Text(
-          'Não foi possível atualizar as vistorias agora. '
-          'Os dados podem estar desatualizados.',
-        ),
-        trailing: TextButton(
-          onPressed: onRefresh,
-          child: const Text('Atualizar'),
-        ),
       ),
     );
   }
@@ -823,10 +1066,10 @@ class _ChecklistStatusCard extends StatelessWidget {
     final isComplete = data.isChecklistComplete;
     final isStarted = data.isChecklistStarted;
     final statusLabel = isComplete
-        ? 'Concluido'
+        ? 'Concluído'
         : isStarted
         ? 'Em andamento'
-        : 'Nao iniciado';
+        : 'Não iniciado';
     final statusTone = isComplete
         ? 'success'
         : isStarted
@@ -1039,7 +1282,7 @@ class _EvidenceSection extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      '${e.captureSource == 'camera' ? 'Camera' : 'Galeria'}'
+                                      '${e.captureSource == 'camera' ? 'Câmera' : 'Galeria'}'
                                       ' · ${_sizeLabel(e.sizeBytes)}',
                                       style: const TextStyle(
                                         fontSize: 11,
@@ -1067,7 +1310,7 @@ class _EvidenceSection extends StatelessWidget {
           child: OutlinedButton.icon(
             onPressed: isLoading ? null : onAdd,
             icon: const Icon(Icons.camera_alt_outlined),
-            label: const Text('Registrar evidencia'),
+            label: const Text('Registrar evidência'),
           ),
         ),
       ],

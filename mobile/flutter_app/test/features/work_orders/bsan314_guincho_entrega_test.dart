@@ -470,9 +470,15 @@ void main() {
       expect(_inDeliveryCard('Não iniciada'), findsOneWidget);
       expect(find.text('Vistoria de entrega pendente'), findsOneWidget);
       expect(_concluir(t).onPressed, isNull);
+      // J-546, C3-F2: sem sinal é a faixa "Sem conexão…" da opção A (estado
+      // 5); "dados desatualizados" é a falha COM sinal (estado 10).
+      expect(
+        find.textContaining('Sem conexão. O que você fizer fica salvo'),
+        findsOneWidget,
+      );
       expect(
         find.textContaining('Não foi possível atualizar as vistorias agora.'),
-        findsOneWidget,
+        findsNothing,
       );
     });
 

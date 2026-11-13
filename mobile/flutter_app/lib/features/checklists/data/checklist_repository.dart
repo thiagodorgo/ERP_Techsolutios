@@ -258,6 +258,36 @@ class ChecklistRepository extends ChangeNotifier {
     String workOrderId,
   ) async => _localStore.loadRunsForWorkOrder(workOrderId);
 
+  /// B-SAN3-14 (J-546, C3-F1) — o modelo em cache no aparelho, sem rede. A
+  /// tela de execução abre com ele (nome e campos obrigatórios); a pré-carga
+  /// é quem atualiza o cache.
+  Future<MobileChecklistSchema?> getCachedSchema(String checklistId) =>
+      _localStore.loadSchema(checklistId);
+
+  /// B-SAN3-14 (J-546, C3-F2) — as execuções desta OS que ainda têm ação de
+  /// vistoria ou foto na fila do aparelho, pelo id local. É o que a tela
+  /// mostra como "Salvo no aparelho" e "Na fila". Só lê o aparelho.
+  Future<Set<String>> localRunIdsWithPendingActions(String workOrderId) async {
+    final tenantId = _session.activeTenant.tenantId;
+    final runIds = {
+      for (final run in await _localStore.loadRunsForWorkOrder(workOrderId))
+        if (run.tenantId == tenantId) run.localId,
+    };
+    if (runIds.isEmpty) return const {};
+    final pending = <String>{};
+    for (final action in await _syncQueue.pendingForTenant(tenantId)) {
+      if (!_checklistActionTypes.contains(action.type)) continue;
+      final localRunId = action.payload['local_run_id'];
+      if (localRunId is String && runIds.contains(localRunId)) {
+        pending.add(localRunId);
+      }
+    }
+    for (final att in await _localStore.loadAttachmentsPendingUpload()) {
+      if (runIds.contains(att.runId)) pending.add(att.runId);
+    }
+    return pending;
+  }
+
   /// D-CHK-DISPATCH-CREATE — o guincheiro NÃO cria a run: o despacho a cria e o
   /// app a BAIXA. Este método resolve a run que o guincheiro deve responder:
   ///
