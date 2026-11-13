@@ -14711,6 +14711,22 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** `InMemoryInventoryRepository.createExitForSource` (`src/modules/inventory/inventory.repository.ts`, l.409) faz `await this.findExitBySource(…)` e só insere depois de outro `await` (TOCTOU). Na sonda S3 (N=1; forma: `Promise.all` de 2 lotes do mesmo ator, mesmo `client_action_id`, quantidades 2 e 3; handler real, `CORE_SAAS_PERSISTENCE=memory`), saíram 2 `accepted` e 2 movimentos com o mesmo `source_id` (`{"acc":2,"conf":[],"movs":2}`). O comentário "Idempotência ABSOLUTA por origem" do arquivo (l.413) não vale em memória. Em produção (`CORE_SAAS_PERSISTENCE=prisma`, exigido por `src/config/env.ts`, Ω6R-DAT-001), quem trava é o índice parcial único (RC3, cadeira C2 da J-551).
 - **critério de encerramento:** a checagem e a inserção do `createExitForSource` em memória viram uma seção sem `await` entre elas (ou uma trava por origem), com um teste de corrida em memória (2 lotes concorrentes, mesma origem, payloads diferentes → 1 movimento, 1 `accepted` e 1 `conflict idempotency_payload_mismatch`), vermelho sem o conserto.
 
+## P-557-PRECONDICAO-CAMPOS-OPCIONAIS (2026-11-13) — a precondição de enable aceita a ausência do ambiente e dos saltos — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (triagem da J-557) · **escopo:** dentro do `B-ASS-08c-wh`, mas fora do conserto único C2-01 · **dono:** `B-ASS-08c3` · **bloqueia:** não o PR #557.
+- **origem:** achado C2-02 da J-557, por `j557-c2-cdx2`; tornar os campos obrigatórios no PR #557 alcançaria `ass-08-provider-enable`, caminho proibido no plano do bloco.
+- **N e forma:** N=1 controle executado omitindo simultaneamente `nodeEnv` e `webhookTrustedProxyHops`; a decisão retornou `ok=true` (1 teste, 1 falha no controle que exigia falha fechada). Em `src/`, N=0 chamadores atuais de `evaluateEnablePreconditions` fora da definição; o chamador real nasce no bloco dono.
+- **causa:** `EnablePreconditionState` declara os dois campos como opcionais e a recusa só entra quando `nodeEnv === "production"`; a omissão, portanto, contorna a condição em vez de falhar fechada.
+- **critério de encerramento:** no `B-ASS-08c3`, `nodeEnv` e `webhookTrustedProxyHops` tornam-se obrigatórios, o chamador real fornece ambos, e testes provam que produção com zero saltos é recusada e que nenhum chamador compila ou executa omitindo os campos.
+
+## P-557-SALTOS-ACIMA-DO-REAL (2026-11-13) — saltos confiáveis configurados acima da borda real deixam o cliente escolher a entrada — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (triagem da J-557; risco operacional) · **escopo:** configuração de implantação, não o algoritmo do conserto C2-01 · **dono:** o go-live na AWS · **bloqueia:** não o PR #557.
+- **origem:** achado C1-A1 da J-557, por `j557-c1-dp2`.
+- **N e forma:** N=1 classe de configuração reproduzível: com `webhookTrustedProxyHops` maior que o número real de proxies, a posição escolhida à direita avança para uma entrada que o cliente pode acrescentar ao XFF. A precondição atual recusa N=1 valor inseguro conhecido (`0`), mas não detecta automaticamente valores positivos acima da topologia real.
+- **causa:** o servidor precisa confiar no número configurado de saltos e não conhece a topologia da borda; um valor superestimado transforma uma entrada controlada pelo cliente na chave de bloqueio/cota.
+- **critério de encerramento:** no go-live, medir na AWS os saltos reais da borda escolhida (ALB e, se usado, CloudFront), configurar exatamente esse valor e registrá-lo em `docs/deployment.md`, com uma verificação de que um XFF acrescentado à esquerda não altera o IP resolvido.
+
 ## P-ASS08C-COTA-ANTES-DA-AUTENTICACAO (2026-11-13) — a cota global do webhook é gasta antes da autenticação; IPs rotativos a esgotam — MÉDIA (bloqueia ligar o canal, Emenda 1 R2-02 do plano 08c v2)
 
 - **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a ordem cota → autenticação vem do B-ASS-08, `webhook.rate-limit.ts`; o `B-ASS-08c-wh` fecha só a letra da `P-ASS08C-COTA-IP-BLOQUEADO`) · **dono:** `B-ASS-08c-wh2`, ou o primeiro bloco que tocar `webhooks/**` depois do ligar · **bloqueia:** ligar o canal, até o R2-02 (poll-pending pela cobrança viva da tabela, 08c1c) entrar — sem ele o dinheiro não se recupera pelo poll.
