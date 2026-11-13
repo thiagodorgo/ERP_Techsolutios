@@ -414,12 +414,38 @@ colidir com o router base.
 | POST | `/work-orders/:workOrderId/geocode` · `/geocode-destination` | `work_orders:update` | Geocodifica origem/destino. **B-O6R-07c-a:** mesmo escopo por objeto (403 `not_assigned_to_actor` para ator só de campo em OS que não é dele), **antes** do 409 `already_geocoded` e do 422 de endereço. |
 | GET | `/work-orders/:workOrderId/map-start-points` | `work_orders:read` | Pontos de partida para o mapa. |
 | GET/POST/PATCH/DELETE | `/work-orders/:workOrderId/financial-items` (+ `/:itemId`) | `work_order_financials:read`/`create`/`update` | Itens financeiros da OS. |
-| POST | `/work-orders/:workOrderId/invoice` | `financial_titles:create` | Fatura a OS (gera título financeiro). |
+| POST | `/work-orders/:workOrderId/invoice` | `financial_titles:create` (módulo `finance`) | Fatura a OS (gera título financeiro). **B-SAN3-25 (item 50):** a aba Financeiro da OS fatura por esta rota. **Corpo:** `{}` (vencimento padrão do servidor, hoje + 30 dias UTC) ou `{ "due_date": "AAAA-MM-DD" }`. **201:** `{ data: <título, sem tenant_id>, invoicedTotal, currency, invoicedItemCount }`; `data.parentTitleId` preenchido = título **complementar** (só os itens novos), `null` = original. **Desfechos:** 404 `work_order_not_found` (inclusive de outra organização); 409 `already_invoiced` (nada novo a faturar, também no reenvio) e `invoice_items_changed` (nada foi faturado); 422 `work_order_cancelled`, `nothing_to_invoice`, `period_closed`, `amount_overflow`; 400 `invalid_due_date` e `invalid_currency`; 403 do RBAC (`permission_required`, `role_required`) e do módulo (`module_not_enabled`); 503 `invoice_transient_conflict` e `tenant_modules_unavailable` (nada persistiu; repetir é seguro). |
 | GET/POST/PATCH/DELETE | `/work-orders/:workOrderId/comments` (+ `/:commentId`, `/:commentId/tags/:tagId`) | `work_orders:read` / `work_orders:comment` | Comentários da OS e marcação por tag. **B-O6R-07c-a:** as cinco escritas (comentar, editar, apagar, marcar e desmarcar tag) seguem o escopo por objeto do `PATCH /work-orders/:id` — 403 `not_assigned_to_actor` para ator só de campo em OS que não é dele, **antes** do parse e da busca do comentário; dentro da OS que lhe cabe, a moderação (autor OU `work_orders:update`, D-Ω3F-5-COMMENT) segue igual. 404 do cross-tenant inalterado. |
 | GET | `/work-orders/:workOrderId/audit-logs` | `work_orders:read` | Auditoria filtrada pela OS. |
 | GET | `/approvals/pending` · `/approvals/:approvalId` | `work_orders:read` | Aprovações pendentes / detalhe (alçadas). |
 | POST | `/approvals/:approvalId/approve` · `/reject` | **`work_orders:approve`** | Decide (aprova/rejeita) a alçada. **B-O6R-07a (Ω6R-SEC-002, P0):** a chave é DEDICADA — até este bloco as duas rotas exigiam `work_orders:update`, a mesma guarda do `PATCH /work-orders/:id`, que `technician` e `field_technician` têm. Quem NÃO decide recebe **403** (papéis de campo, `operator`, `auditor`, `support`; `finance`/`inventory` aguardam política de valor — `P-O6R-B07-APPROVAL-BY-POLICY`). **SoD:** o próprio solicitante decidindo → **403 `self_decision`** (rastro `approval.self_decision_denied`, `outcome: denied`). Preservados: `404` cross-tenant e `409 APPROVAL_ALREADY_DECIDED`. Ler não decide — `GET /approvals/*` seguem em `work_orders:read`. |
 | GET | `/operations/work-orders-timeseries` | `work_orders:read` | Série temporal de OS por dia (zero-fill, fuso America/Sao_Paulo). |
+
+**Lista fechada do que a aba Financeiro da OS traduz no faturamento (B-SAN3-25).** A tela lê a recusa pela chave
+(status, motivo) e mostra a frase abaixo; par fora da lista, rede, 5xx sem motivo e 401 sem motivo recebem a frase genérica
+"Não foi possível confirmar o faturamento. Confira a lista abaixo antes de tentar de novo.", que não afirma que nada foi
+faturado, e a lista é relida. A lista é `INVOICE_UI_REASONS` em `frontend/src/modules/work-orders/work-order-invoice.model.ts`;
+o teste `tests/b-san3-25-motivos-do-faturamento.test.ts` (E2) confere que ela e este parágrafo têm os mesmos pares, e o E1
+confere que todo par alcançável pelo faturamento está nela ou na lista do que fica fora, com o porquê.
+
+- `409 already_invoiced` — "Esta OS já foi faturada e não há item novo para faturar." (relê a lista)
+- `422 nothing_to_invoice` — "Não há item a faturar nesta OS." (relê a lista)
+- `422 work_order_cancelled` — "Esta OS está cancelada e não pode ser faturada." (relê a lista)
+- `422 period_closed` — "O mês atual está fechado no Financeiro. O faturamento volta depois da reabertura do período."
+- `409 invoice_items_changed` — "Os itens mudaram enquanto você faturava, e nada foi faturado. Confira a lista e tente de novo." (relê a lista)
+- `503 invoice_transient_conflict` — "Não deu para faturar agora, e nada foi faturado. Tente de novo." (o diálogo fica aberto e repete o mesmo corpo)
+- `503 tenant_modules_unavailable` — "Não deu para faturar agora, e nada foi faturado. Tente de novo." (o diálogo fica aberto e repete o mesmo corpo)
+- `400 invalid_due_date` — "Informe uma data de vencimento válida." (o diálogo fica aberto)
+- `400 invalid_currency` — "Esta OS tem itens em moeda diferente do real, e o faturamento só aceita real."
+- `422 amount_overflow` — "O valor desta OS passa do limite aceito para um título."
+- `404 work_order_not_found` — "Esta OS não foi encontrada. Ela pode ter sido removida."
+- `403 permission_required` — "Seu perfil não permite faturar."
+- `403 role_required` — "Seu perfil não permite faturar."
+- `403 module_not_enabled` — "O Financeiro não está habilitado nesta organização."
+- `401 session_inactive` — "Sua sessão terminou, e nada foi faturado. Entre de novo para faturar." (antes do router)
+- `503 session_check_unavailable` — "Não deu para faturar agora, e nada foi faturado. Tente de novo." (antes do router; o diálogo fica aberto e repete o mesmo corpo)
+- `403 password_change_required` — "Troque a sua senha antes de faturar. Nada foi faturado." (antes do router)
+- `400 invalid_json` — "O pedido de faturamento chegou com defeito, e nada foi faturado. Recarregue a página e tente de novo." (antes do router)
 
 #### 3.5.2 Chegada ao local: o "No local" confere a placa (B-SAN3-26, item 53)
 

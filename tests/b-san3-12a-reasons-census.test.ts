@@ -24,7 +24,7 @@ const MODULES = ["financial-entries", "financial-titles", "financial-accounts", 
  */
 const PRE_EXISTENTES_SEM_CONTRATO = new Set([
   "account_not_found", "due_date_required", "field_too_long", "financial_write_forbidden", "invalid_boolean",
-  "invalid_client_action_id", "invalid_currency", "invalid_direction", "invalid_due_date", "invalid_issue_date",
+  "invalid_client_action_id", "invalid_direction", "invalid_issue_date",
   "invalid_kind", "invalid_limit", "invalid_occurred_at", "invalid_offset", "invalid_opening_balance",
   "invalid_parent_title_reference", "invalid_party_name", "invalid_party_type", "invalid_source_type",
   "invalid_tenant_reference", "invalid_work_order_reference", "opening_balance_overflow", "party_name_required",
