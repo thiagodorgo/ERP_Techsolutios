@@ -358,3 +358,11 @@
 - Mutação extra (declarada, o plano não lista uma para a C-F11): tirar as 2 entradas de material do conjunto → `+6 -1`, o caso dos duráveis (`Expected: true / Actual: false`); restaurada, md5 igual.
 - `git diff --check` verde. Head antes do commit: `459c2f5060ff5b9ba38238527bd6909244f5f240`.
 - Próximo passo exato: commit e push da C-F11; então a C-F12 (docs: `docs/mobile-sync-contracts.md` l.251-325, `docs/api.md` l.185, nota no `RBAC_MATRIX.md` §D2 com a frase da Emenda C2).
+
+## RETOMADA 36 — 2026-11-13T09:28:51-03:00 — C-F12 CONCLUÍDA
+
+- Executor da fatia: `dev-c6-cl`, Claude Opus 5.5 (nível menor declarado).
+- Docs (C2 item 7, com a Emenda C2 E1/E2 e a C2.4): `docs/mobile-sync-contracts.md` (seção `POST /api/v1/mobile/sync/inventory-actions`: permissão do lote e por ação, status durável × memória, área contratada, os 2 tipos com payload, escopo por objeto, ordem do `add` e do `remove` (N4), custódia, idempotência por origem, 503, a tabela `reason` → resultado → texto no app, versão `2026-11.b-material-reenvio` no exemplo e a nota das lacunas); `docs/api.md` (uma frase depois das lacunas do B-098D); `RBAC_MATRIX.md` (uma nota em `## Notes`, com o prefixo "DECISÃO DO DONO (31/10 ~22:15, P20/P21 pela recomendação; B-REENVIOS):", a exceção P21 do gerente e a regra final de custódia da Emenda C2, literal; a divergência `manager = read` × `stock_movements:create` citada como pendência com dono `B-SAN3-04a`, registrada na C-F13). Nenhuma célula da tabela muda.
+- Comandos e saídas: `rg work_order_material docs RBAC_MATRIX.md | wc -l` = **46** (aceite ≥ 3); `git diff --stat` = `RBAC_MATRIX.md 1 +`, `docs/api.md 2 +`, `docs/mobile-sync-contracts.md 34+/4−`; os testes que leem esses arquivos rodaram verdes no host, com `CORE_SAAS_PERSISTENCE=memory`: `san3-04a-matriz-x-catalogo-guard` + `work-order-audit-logs` = `22/22`; `checklist-snapshot-dispatch` + `work-order-cancel-duplicate-routes` + `work-order-checklists-sticky` + `work-order-timeseries` = `47/47`; `git diff --check` verde.
+- Head antes do commit: `8f6484bca8d8523129363c80ae66de4d359dc077`.
+- Próximo passo exato: commit e push da C-F12; então a C-F13 (registro: §C9, `PLANO_SAN3.md` §D, pendências, decisão §A2, comando, cópia do plano; nada em `Kpis/`).
