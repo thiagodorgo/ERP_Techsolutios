@@ -109,7 +109,7 @@ export function allocateCloudCosts(input: AllocationEngineInput): AllocationEngi
           input,
           line,
           tenantBasis.tenantId,
-          rule.allocationMethod,
+          rule.methodByMetricKey?.[basis.metricKey] ?? rule.allocationMethod,
           basis.metricKey,
           ratio,
           line.unblendedCost * ratio,

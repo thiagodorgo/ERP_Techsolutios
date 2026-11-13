@@ -14,6 +14,7 @@ import {
   waitForOwnAdvisoryWaiters,
   withApplicationName,
 } from "./helpers/pg-barrier.js";
+import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 
 const connectionString = process.env.DATABASE_URL;
 // Nome unico desta suite (um processo por arquivo no `node --test`) - escopo da barreira (B-5).
@@ -448,7 +449,7 @@ async function seedTenant(h: Harness, tag: string) {
 
   const marca = `${tag}-${suffix()}`;
   const tenant = await client.tenant.create({
-    data: { name: `Write-race ${marca}`, slug: `write-race-${marca}` },
+    data: { name: `Write-race ${marca}`, slug: `write-race-${marca}`, modules: [...TODOS_OS_MODULOS] }, // B-SAN3-18: o gate de módulo exige as áreas que o teste usa
   });
   h.tenantIds.push(tenant.id);
 

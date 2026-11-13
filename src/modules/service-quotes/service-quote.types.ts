@@ -111,8 +111,17 @@ export class ServiceQuoteError extends Error {
     readonly code: string,
     readonly reason: string,
     message: string,
+    // B-O6R-09 · fatia 6 (emenda 1.1 EM1-02) — só a repetição da aprovação usa: `{ workOrderId }` da OS já ligada,
+    // serializado pelo wrapper da rota de aprovar. Nada além de ids da organização do ator (§2.8).
+    readonly details?: Readonly<Record<string, unknown>>,
   ) {
     super(message);
     this.name = "ServiceQuoteError";
   }
 }
+
+// B-O6R-09 · fatia 6 — o desfecho da transação da aprovação: o orçamento reservado, a OS criada e o vínculo gravados
+// juntos (`approved`), ou a reserva não aconteceu (`not_claimed`: outro pedido aprovou, ou o orçamento não está em draft).
+export type ServiceQuoteApprovalResult =
+  | { readonly kind: "approved"; readonly quote: ServiceQuote; readonly workOrderId: string }
+  | { readonly kind: "not_claimed" };

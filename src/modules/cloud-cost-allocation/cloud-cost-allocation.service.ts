@@ -1,5 +1,7 @@
 import { env } from "../../config/env.js";
+import type { CloudCostImport } from "../cloud-costs/aws-cur.types.js";
 import { allocateCloudCosts, assertConservation } from "./cloud-cost-allocation.engine.js";
+import { importRunId, normalizeImportPeriodEnd, type ImportSweepMark } from "./cloud-cost-allocation.import-trigger.js";
 import {
   CloudCostAllocationError,
   CLOUD_COST_ALLOCATION_STRATEGIES,
@@ -9,6 +11,9 @@ import {
   type CloudCostAllocationRunFilters,
   type CloudCostAllocationSummary,
   type CloudCostAllocationStrategy,
+  type CreatedCloudCostAllocationRun,
+  type CreateImportRunInput,
+  type ImportBillingPeriod,
   type TenantCloudCostAllocationFilters,
 } from "./cloud-cost-allocation.types.js";
 import {
@@ -40,6 +45,10 @@ export class CloudCostAllocationService {
     const metadata = sanitizeCloudCostAllocationMetadata(input.metadata);
     delete metadata.importId;
     delete metadata.importResolution;
+    delete metadata.trigger; // B-ASS-09a E4 só o sistema
+    delete metadata.sourceBillingPeriods; // B-ASS-09a E4 só o sistema
+    delete metadata.sourceImportedAt; // B-ASS-09a E4 só o sistema
+    delete metadata.sourceBillingPeriod; // B-ASS-09a E4.1 só o sistema
     return this.repository.createRun({
       periodStart: input.periodStart,
       periodEnd: input.periodEnd,
@@ -54,8 +63,116 @@ export class CloudCostAllocationService {
     });
   }
 
+  /**
+   * B-ASS-09a · P1/P2 — a run AUTOMÁTICA de um par BRUTO de período de uma importação. Id determinístico (UUIDv5):
+   * chamar de novo devolve a mesma run (`created: false`). A importação precisa existir e estar `completed`, como no
+   * caminho manual. A janela é `[início, fim normalizado]` (`importRunWindow`); as linhas ficam escolhidas pela
+   * IGUALDADE do par bruto gravado em `metadata.sourceBillingPeriod` (P3, partição por construção).
+   */
+  async createImportRun(input: CreateImportRunInput): Promise<CreatedCloudCostAllocationRun> {
+    if (input.billingPeriods.length === 0) throw new CloudCostAllocationError(400, "CLOUD_COST_ALLOCATION_INVALID", "period_invalid", "empty");
+    for (const period of input.billingPeriods) validatePeriod(period.billingPeriodStart, period.billingPeriodEnd);
+    const first = input.billingPeriods[0]!;
+    const costImport = await this.repository.findBillableImport(EPOCH, EPOCH, input.importId);
+    if (costImport?.status !== "completed") {
+      throw new CloudCostAllocationError(
+        422,
+        "CLOUD_COST_ALLOCATION_IMPORT_NOT_COMPLETED",
+        "import_not_completed",
+        "Cloud cost import must exist and be completed.",
+      );
+    }
+    const window = this.importRunWindow(input.billingPeriods);
+    return this.repository.createRunWithId({
+      id: importRunId(costImport.id, first.billingPeriodStart, first.billingPeriodEnd),
+      periodStart: window.periodStart,
+      periodEnd: window.periodEnd,
+      importId: costImport.id,
+      strategy: normalizeStrategy(undefined),
+      createdBy: input.createdBy,
+      metadata: {
+        trigger: "import",
+        importId: costImport.id,
+        importResolution: "explicit",
+        sourceImportedAt: (costImport.importedAt ?? costImport.createdAt).toISOString(), // B-ASS-09a E4 publicação
+        sourceBillingPeriods: input.billingPeriods.map((period) => ({ start: period.billingPeriodStart.toISOString(), end: period.billingPeriodEnd.toISOString() })),
+      },
+    });
+  }
+
+  /**
+   * B-ASS-09a · E11 — a janela da run automática. O resumo filtra a run pelo MESMO dia UTC de início e de fim
+   * (`sameUtcDay`); com o fim exclusivo da AWS (00:00 do dia 1 seguinte) a janela usa `fim − 1 ms` (o dia 31), senão o
+   * resumo do mês não acharia a run. Fim inclusivo (fixture `aws-cur-sample.csv`) fica como está.
+   */
+  importRunWindow(billingPeriods: readonly ImportBillingPeriod[]): { periodStart: Date; periodEnd: Date } {
+    const starts = billingPeriods.map((period) => period.billingPeriodStart.getTime());
+    const ends = billingPeriods.map((period) => normalizeImportPeriodEnd(period.billingPeriodStart, period.billingPeriodEnd).getTime());
+    return { periodStart: new Date(Math.min(...starts)), periodEnd: new Date(Math.max(...ends)) };
+  }
+
+  /** B-ASS-09a — a importação de uma run automática (ou `undefined`), pela mesma porta que o caminho manual usa. */
+  findImportForAllocation(importId: string): Promise<CloudCostImport | undefined> {
+    return this.repository.findBillableImport(EPOCH, EPOCH, importId);
+  }
+
+  listImportBillingPeriods(importId: string): Promise<readonly ImportBillingPeriod[]> {
+    return this.repository.listImportBillingPeriods(importId);
+  }
+
+  listRunsByImport(importId: string): Promise<readonly CloudCostAllocationRun[]> {
+    return this.repository.listRunsByImport(importId);
+  }
+
+  /** B-ASS-09a · R2-02 — as importações marcadas que ainda não têm nenhuma run automática (o que falta criar). */
+  listImportsForAutoAllocation(limit: number): Promise<readonly CloudCostImport[]> {
+    return this.repository.listImportsForAutoAllocation(limit);
+  }
+
+  /** B-ASS-09a · R2-02 — as runs automáticas `pending`, de qualquer importação (o que falta executar). */
+  listPendingImportRuns(limit: number): Promise<readonly CloudCostAllocationRun[]> {
+    return this.repository.listPendingImportRuns(limit);
+  }
+
+  /** B-ASS-09a · PR542-01 — o marcador da varredura na importação (`done` ou `failed` com as tentativas). */
+  markImportSweep(importId: string, mark: ImportSweepMark): Promise<void> {
+    return this.repository.markImportSweep(importId, mark);
+  }
+
+  /**
+   * Executa (ou REEXECUTA) uma run pelo id. O rateio manual reexecuta de propósito uma run concluída (E7, pergunta 2 do
+   * §9 do plano, recomendação (a)): este caminho não reivindica nada. Só o caminho automático (`executeImportRuns`)
+   * reivindica `pending → processing` antes de executar (P4).
+   */
   async executeAllocationRun(runId: string): Promise<CloudCostAllocationRun> {
     const run = await this.getAllocationRun(runId);
+    return this.runAllocation(run, "unclaimed");
+  }
+
+  /**
+   * B-ASS-09a · P4 — executa as runs AUTOMÁTICAS `pending` de uma importação, uma execução por run: cada uma é
+   * reivindicada (`pending → processing`, condicional) e só a reivindicação vencedora roda o motor. Duas execuções em
+   * paralelo (job repetido, varredura e gancho juntos) gravam as alocações uma vez só. Run `failed` não é retomada
+   * (pergunta 3 do §9, recomendação (a)); run presa em `processing` fica visível (`P-ASS09A-RUN-PRESA-EM-PROCESSING`).
+   */
+  async executeImportRuns(importId: string): Promise<readonly CloudCostAllocationRun[]> {
+    const runs = [...(await this.repository.listRunsByImport(importId))].sort(
+      (a, b) => a.periodStart.getTime() - b.periodStart.getTime(),
+    );
+    const executed: CloudCostAllocationRun[] = [];
+    for (const run of runs) {
+      if (run.metadata.trigger !== "import" || run.status !== "pending") continue;
+      if (!(await this.repository.claimPendingRun(run.id))) continue;
+      executed.push(await this.runAllocation(run, "claimed"));
+    }
+    return executed;
+  }
+
+  /**
+   * O corpo da execução, comum ao manual e ao automático. `claimed`: a reivindicação já gravou `processing` e o início;
+   * `unclaimed`: o caminho manual de sempre, que grava `processing` aqui.
+   */
+  private async runAllocation(run: CloudCostAllocationRun, mode: "claimed" | "unclaimed"): Promise<CloudCostAllocationRun> {
     const importId = readRunImportId(run);
 
     if (!importId) {
@@ -69,22 +186,30 @@ export class CloudCostAllocationService {
       });
     }
 
-    await this.repository.updateRun(run.id, {
-      status: "processing",
-      startedAt: new Date(),
-      metadata: {
-        ...run.metadata,
-        executionStartedAt: new Date().toISOString(),
-      },
-    });
+    if (mode === "unclaimed") {
+      await this.repository.updateRun(run.id, {
+        status: "processing",
+        startedAt: new Date(),
+        metadata: {
+          ...run.metadata,
+          executionStartedAt: new Date().toISOString(),
+        },
+      });
+    }
 
     try {
       // B-O6R-06 — a base de rateio deixa de vir da PROJECAO DIARIA (que ninguem agenda) e passa a ser
       // somada na TABELA DURAVEL, por tenant, sob o contexto RLS de cada um. `listTenants()` vem antes
       // porque e ele que define o universo da varredura.
       const tenants = await this.repository.listTenants();
+      // B-ASS-09a · P3 (R1) — a run automática escolhe as linhas pela IGUALDADE do par bruto da importação: cada linha
+      // entra em exatamente uma run, nas duas formas de fim e com pares sobrepostos. Fica no corpo comum para que
+      // QUALQUER executor (inclusive a reexecução manual da run automática) faça a mesma partição.
+      const sources = readSourceBillingPeriods(run);
       const [costLineItems, usageBasis] = await Promise.all([
-        this.repository.listCostLineItems(run.periodStart, run.periodEnd, importId),
+        sources
+          ? this.repository.listCostLineItemsForBillingPeriods(importId, sources)
+          : this.repository.listCostLineItems(run.periodStart, run.periodEnd, importId),
         this.repository.sumUsageBasis(
           run.periodStart,
           run.periodEnd,
@@ -191,7 +316,7 @@ export class CloudCostAllocationService {
             sameUtcDay(candidate.periodStart, filters.periodStart!) && sameUtcDay(candidate.periodEnd, filters.periodEnd!),
         )
       : runs;
-    const run = pickSummaryRun(candidates);
+    const run = pickSummaryRun(byPublicationDesc(candidates));
 
     if (!run) {
       return {
@@ -325,7 +450,11 @@ export function resetCloudCostAllocationRuntimeForTests(): void {
   defaultServicePromise = undefined;
 }
 
-async function createPrismaCloudCostAllocationService(): Promise<CloudCostAllocationService> {
+/**
+ * O serviço de rateio sobre o Prisma, sem depender de `CORE_SAAS_PERSISTENCE`. B-ASS-09a: exportado para a fábrica Prisma
+ * de `aws-cur.service.ts` montar o gancho da importação (por `import()` dinâmico) com o repositório real.
+ */
+export async function createPrismaCloudCostAllocationService(): Promise<CloudCostAllocationService> {
   const { createPrismaCloudCostAllocationRepository } = await import("./cloud-cost-allocation-prisma.repository.js");
   return new CloudCostAllocationService(await createPrismaCloudCostAllocationRepository());
 }
@@ -346,6 +475,49 @@ function validatePeriod(periodStart: Date, periodEnd: Date): void {
 
 function readRunImportId(run: CloudCostAllocationRun): string | undefined {
   return typeof run.metadata.importId === "string" ? run.metadata.importId : undefined;
+}
+
+/** Quando a importação já vem dada pelo id, a janela não escolhe nada: `findBillableImport` ignora as datas. */
+const EPOCH = new Date(0);
+
+/**
+ * B-ASS-09a · R1 — os pares BRUTOS de uma run automática. Só valem com `trigger: "import"` e as datas válidas; qualquer
+ * outra forma cai no caminho de janela (manual), como antes deste bloco. A rota manual não aceita `metadata` (E12):
+ * ninguém de fora forja `trigger: "import"`.
+ */
+function readSourceBillingPeriods(run: CloudCostAllocationRun): ImportBillingPeriod[] | undefined {
+  if (run.metadata.trigger !== "import") return undefined;
+  const list = run.metadata.sourceBillingPeriods;
+  if (!Array.isArray(list) || list.length === 0) return undefined;
+  const out: ImportBillingPeriod[] = [];
+  for (const source of list) {
+    if (typeof source !== "object" || source === null) return undefined;
+    const { start, end } = source as { start?: unknown; end?: unknown };
+    if (typeof start !== "string" || typeof end !== "string") return undefined;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return undefined;
+    out.push({ billingPeriodStart: startDate, billingPeriodEnd: endDate });
+  }
+  return out;
+}
+
+/** B-ASS-09a · E4 P9 — a data de publicação de uma run concluída: na automática, a da sua importação; na manual, a criação. */
+function publishedAt(run: CloudCostAllocationRun): number {
+  if (run.metadata.trigger === "import" && typeof run.metadata.sourceImportedAt === "string") {
+    const importedAt = new Date(run.metadata.sourceImportedAt).getTime();
+    if (!Number.isNaN(importedAt)) return importedAt;
+  }
+  return run.createdAt.getTime();
+}
+
+function byPublicationDesc(candidates: readonly CloudCostAllocationRun[]): CloudCostAllocationRun[] {
+  return [...candidates].sort(
+    (a, b) =>
+      publishedAt(b) - publishedAt(a) ||
+      a.createdAt.getTime() - b.createdAt.getTime() || // B-ASS-09a E4.1 empate
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+  );
 }
 
 const sensitiveKeyPattern =

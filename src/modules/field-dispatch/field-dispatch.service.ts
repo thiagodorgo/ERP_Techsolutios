@@ -35,12 +35,20 @@ import type {
   DispatchChecklistLine,
   FieldDispatch,
   FieldDispatchActorContext,
+  FieldDispatchCreateRequest,
+  FieldDispatchCreateResult,
   FieldDispatchEvent,
   FieldDispatchStatus,
+  FieldDispatchTransitionResult,
+  FieldDispatchTxScope,
   ListFieldDispatchesInput,
   ListFieldDispatchesResult,
 } from "./field-dispatch.types.js";
-import { FIELD_DISPATCH_TARGET_ROLES, FieldDispatchError } from "./field-dispatch.types.js";
+import {
+  FIELD_DISPATCH_TARGET_ROLES,
+  FieldDispatchError,
+  FieldDispatchIdempotencyKeyTakenError,
+} from "./field-dispatch.types.js";
 import {
   assertNonTerminalStatus,
   assertStatusTransition,
@@ -49,6 +57,7 @@ import {
   parseInitialFieldDispatchStatus,
   parseLimit,
   parseOffset,
+  parseOptionalIdempotencyKey,
   parseOptionalSearch,
   parseOptionalUuid,
   parseRequiredUuid,
@@ -249,9 +258,24 @@ export class FieldDispatchService {
   }
 
   async create(actor: FieldDispatchActorContext, body: RawRecord): Promise<FieldDispatch> {
+    return (await this.createOrReplay(actor, body)).dispatch;
+  }
+
+  // B-O6R-09 (P3 do plano v2) — a criação com chave de repetição opcional. `replayed: true` quando a chave já criou um
+  // despacho com o MESMO pedido: devolve esse despacho como ele está agora, sem escrita, sem evento, sem atribuição e
+  // sem evento de domínio (o controlador responde 200 sem nova auditoria).
+  async createOrReplay(actor: FieldDispatchActorContext, body: RawRecord): Promise<FieldDispatchCreateResult> {
     const workOrderId = parseRequiredUuid(body.workOrderId, "workOrderId");
     const operatorUserId = parseRequiredUuid(body.operatorUserId ?? body.operatorId ?? body.userId, "operatorUserId");
     const status = parseInitialFieldDispatchStatus(body.status);
+    const idempotencyKey = parseOptionalIdempotencyKey(body.idempotencyKey);
+
+    // P3 — a pré-consulta vem antes de qualquer leitura de negócio e de qualquer escrita (freeze, vistoria): a repetição
+    // de um pedido que já deu certo não depende do estado de hoje da OS.
+    if (idempotencyKey !== undefined) {
+      const replay = await this.findReplay(actor, idempotencyKey, { workOrderId, operatorUserId, status });
+      if (replay) return replay;
+    }
 
     const workOrder = await this.assertWorkOrderBelongsToTenant(actor, workOrderId);
     await this.assertOperatorBelongsToTenant(actor.tenantId, operatorUserId);
@@ -443,50 +467,68 @@ export class FieldDispatchService {
       }
     }
 
-    const dispatch = await this.repository.create({
-      tenantId: actor.tenantId,
-      workOrderId,
-      operatorUserId,
-      status,
-      observation: optionalString(body.observation),
-      reason: optionalString(body.reason),
-      createdBy: actor.userId,
-      updatedBy: actor.userId,
-      metadata: {},
-    });
-
-    // B-O6R-07c-b1 (`D1-07c` = (c); crítica, ajuste 2) — DESPACHAR É ATRIBUIR. Ordem declarada: depois da checagem
-    // do operador e da OS (acima), depois de o despacho existir (a linha de atribuição leva o `dispatchId`), antes
-    // do evento e do evento de domínio. Compensação: se a atribuição falhar, o despacho recém-criado é apagado e a
-    // recusa atravessa — não sobra despacho apontando um técnico que não é o da OS. O que já foi feito antes
-    // (snapshot congelado, execução da vistoria provisionada) segue a regra que já valia para falha depois do
-    // freeze: inócuo, e idempotente no próximo despacho.
-    if (dispatch.status !== "draft") {
-      try {
-        await this.assignWorkOrderForDispatch(actor, {
-          workOrderId: dispatch.workOrderId,
-          operatorUserId: dispatch.operatorUserId,
-          dispatchId: dispatch.id,
-          source: "field_dispatch",
-        });
-      } catch (error) {
-        await this.repository.deleteById(actor.tenantId, dispatch.id);
-        throw error;
+    // B-O6R-07c-b1 (`D1-07c` = (c)) — DESPACHAR É ATRIBUIR. B-O6R-09 (P1/P4 do plano v2) — o despacho e o evento
+    // `field_dispatch_created` são gravados numa transação só, que fica aberta enquanto a OS é atribuída (o
+    // `beforeCommit`). Se a OS recusa, a transação volta inteira e a recusa atravessa: nada ficou visível, então não
+    // há compensação (o antigo `deleteById` saiu). O rascunho não atribui. O que já foi feito antes (snapshot
+    // congelado, execução da vistoria provisionada) segue a regra que já valia para falha depois do freeze: inócuo, e
+    // idempotente no próximo despacho.
+    //
+    // P3, a corrida: outro pedido com a mesma chave está com a transação aberta → este INSERT espera no índice único.
+    // Se aquele faz commit, este recebe a chave tomada e devolve o vencedor (a captura fica FORA da transação, que já
+    // voltou). Se aquele volta, este segue e cria o seu — nunca vê um despacho que foi desfeito.
+    // Emenda 4 (P6) — o perfil de campo do técnico é lido ANTES da mãe: dentro dela, nada usa outra conexão.
+    const createOperatorId = status === "draft" ? undefined : await this.workOrderService.resolveDispatchOperatorId(actor, operatorUserId);
+    let dispatch: FieldDispatch;
+    try {
+      ({ dispatch } = await this.repository.createWithEvent(
+        {
+          dispatch: {
+            tenantId: actor.tenantId,
+            workOrderId,
+            operatorUserId,
+            status,
+            observation: optionalString(body.observation),
+            reason: optionalString(body.reason),
+            createdBy: actor.userId,
+            updatedBy: actor.userId,
+            metadata: {},
+          },
+          event: {
+            eventType: "field_dispatch_created",
+            toStatus: status,
+            actorUserId: actor.userId,
+            message: "Despacho operacional criado.",
+            metadata: {
+              operatorUserId,
+            },
+          },
+          idempotencyKey,
+        },
+        {
+          beforeCommit:
+            status === "draft"
+              ? undefined
+              : (created, scope) =>
+                  this.assignWorkOrderForDispatch(
+                    actor,
+                    {
+                      workOrderId: created.workOrderId,
+                      operatorUserId: created.operatorUserId,
+                      dispatchId: created.id,
+                      source: "field_dispatch",
+                      operatorId: createOperatorId,
+                    },
+                    scope,
+                  ),
+        },
+      ));
+    } catch (error) {
+      if (idempotencyKey !== undefined && error instanceof FieldDispatchIdempotencyKeyTakenError) {
+        return await this.replayCreate(actor, idempotencyKey, { workOrderId, operatorUserId, status });
       }
+      throw error;
     }
-
-    await this.repository.createEvent({
-      tenantId: actor.tenantId,
-      dispatchId: dispatch.id,
-      workOrderId: dispatch.workOrderId,
-      eventType: "field_dispatch_created",
-      toStatus: dispatch.status,
-      actorUserId: actor.userId,
-      message: "Despacho operacional criado.",
-      metadata: {
-        operatorUserId: dispatch.operatorUserId,
-      },
-    });
 
     // D-CHK-DISPATCH-CREATE — auditoria FAIL-OPEN: se a provisão da execução falhou acima, registra a falha na
     // timeline do despacho (durável/visível) + notifica o operador. Reason CODIFICADO (§2.8), nunca o
@@ -570,7 +612,42 @@ export class FieldDispatchService {
       { tenantId: actor.tenantId, actorId: actor.userId },
     );
 
-    return dispatch;
+    return { dispatch, replayed: false };
+  }
+
+  // B-O6R-09 (P3; R2-02 da crítica r2) — a repetição compara o corpo com o pedido ORIGINAL (do evento de criação), nunca
+  // com a linha atual: aceito, reatribuído ou rascunho ativado continuam sendo a mesma criação. Outro conteúdo com a
+  // mesma chave → 422, sem escrita. Despacho com chave e sem evento de criação é impossível por P1 → 503, sem escrita.
+  private async findReplay(
+    actor: FieldDispatchActorContext,
+    idempotencyKey: string,
+    request: FieldDispatchCreateRequest,
+  ): Promise<FieldDispatchCreateResult | undefined> {
+    const found = await this.repository.findByIdempotencyKey({ tenantId: actor.tenantId, createdBy: actor.userId, idempotencyKey });
+    if (!found) return undefined;
+    const { workOrderId, operatorUserId, status } = request;
+    const { dispatch: existing, original } = found;
+    if (!original) throw idempotencyRetryError();
+    if (original.workOrderId !== workOrderId || original.operatorUserId !== operatorUserId || original.status !== status) {
+      throw new FieldDispatchError(
+        422,
+        "FIELD_DISPATCH_IDEMPOTENCY_KEY_REUSED",
+        "idempotency_key_reused",
+        "This idempotencyKey was already used for a different dispatch request.",
+      );
+    }
+    return { dispatch: existing, replayed: true };
+  }
+
+  // A releitura do perdedor da corrida: a chave estava tomada, então o vencedor já fez commit e tem de existir.
+  private async replayCreate(
+    actor: FieldDispatchActorContext,
+    idempotencyKey: string,
+    request: FieldDispatchCreateRequest,
+  ): Promise<FieldDispatchCreateResult> {
+    const replay = await this.findReplay(actor, idempotencyKey, request);
+    if (!replay) throw idempotencyRetryError();
+    return replay;
   }
 
   async get(actor: FieldDispatchActorContext, dispatchId: string): Promise<FieldDispatch> {
@@ -583,7 +660,43 @@ export class FieldDispatchService {
     return dispatch;
   }
 
+  // B-O6R-09 — o desfecho da transição condicional: o despacho mudou entre a leitura e a escrita → 409, sem nada gravado;
+  // sumiu → 404.
+  private transitionOutcome(result: FieldDispatchTransitionResult): FieldDispatch {
+    if (result.kind === "ok") return result.dispatch;
+    if (result.kind === "conflict") {
+      throw new FieldDispatchError(
+        409,
+        "FIELD_DISPATCH_STATUS_CONFLICT",
+        "dispatch_changed_concurrently",
+        "The dispatch changed while this request was being processed; reload and try again.",
+      );
+    }
+    throw new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
+  }
+
   async changeStatus(actor: FieldDispatchActorContext, dispatchId: string, body: RawRecord): Promise<FieldDispatch> {
+    return (await this.changeStatusOrNoop(actor, dispatchId, body)).dispatch;
+  }
+
+  // PRE537-01 (pré-revisão do #537) — o mesmo status sem texto não grava nada (R-A3), e quem audita precisa saber disso:
+  // `changed: false` quando a chamada foi no-op, para a rota não registrar uma mudança de status que não aconteceu.
+  async changeStatusOrNoop(
+    actor: FieldDispatchActorContext,
+    dispatchId: string,
+    body: RawRecord,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly changed: boolean }> {
+    const outcome = { changed: false };
+    const dispatch = await this.applyStatusChange(actor, dispatchId, body, outcome);
+    return { dispatch, changed: outcome.changed };
+  }
+
+  private async applyStatusChange(
+    actor: FieldDispatchActorContext,
+    dispatchId: string,
+    body: RawRecord,
+    outcome: { changed: boolean },
+  ): Promise<FieldDispatch> {
     const current = await this.get(actor, dispatchId);
     // B-O6R-07c-b1 (CA8, D-07c-DESPACHO-ALVO) — escopo por objeto ANTES da máquina de estados: o técnico de
     // campo só transiciona o despacho cujo `operatorUserId` é ele mesmo.
@@ -593,6 +706,21 @@ export class FieldDispatchService {
     const message = optionalString(body.message) ?? defaultStatusMessage(nextStatus);
     const reason = optionalString(body.reason);
     const observation = optionalString(body.observation);
+
+    // B-O6R-09 (R-A3 do plano v2; R2-03 da crítica r2) — a transição para o status ATUAL não escreve: nem linha, nem
+    // carimbo, nem evento, nem evento de domínio. Com observação ou motivo, ela é RECUSADA (422), para nunca responder
+    // sucesso descartando o texto (o painel "Alterar status" abre no status atual com a observação preenchida). O escopo
+    // (403) já foi conferido acima. `validators.ts` não muda: a reatribuição a partir de `reassigned` depende de
+    // `from === to` lá.
+    if (nextStatus === current.status && (observation || reason)) {
+      throw new FieldDispatchError(
+        422,
+        "FIELD_DISPATCH_STATUS_UNCHANGED",
+        "status_unchanged",
+        "The dispatch is already in this status; nothing was recorded.",
+      );
+    }
+    if (nextStatus === current.status) return current;
 
     assertStatusTransition(current.status, nextStatus);
     if (nextStatus === "cancelled" && !reason) {
@@ -611,52 +739,58 @@ export class FieldDispatchService {
       });
     }
 
-    const updated = await this.repository.changeStatus({
-      tenantId: actor.tenantId,
-      dispatchId: current.id,
-      status: nextStatus,
-      reason,
-      observation,
-      actorUserId: actor.userId,
-    });
+    // B-O6R-09 (P1/P2/P4 do plano v2) — o status, o carimbo e o evento numa transação só, CONDICIONADA ao status e ao
+    // técnico em que esta transição foi validada (inclusive para o técnico: ele não aceita o despacho que acabou de ir
+    // para outro). Ativar o rascunho atribui a OS dentro dela (`beforeCommit`): se a OS recusa, o rascunho fica como
+    // estava, sem compensação (o antigo `restoreState` saiu).
+    const activatesDraft = current.status === "draft" && nextStatus === "assigned";
+    // Emenda 4 (P6) — o perfil de campo do técnico, lido ANTES da mãe.
+    const activationOperatorId = activatesDraft
+      ? await this.workOrderService.resolveDispatchOperatorId(actor, current.operatorUserId)
+      : undefined;
+    const expectedState = { status: current.status, operatorUserId: current.operatorUserId };
+    const result = await this.repository.transitionWithEvent(
+      {
+        tenantId: actor.tenantId,
+        dispatchId: current.id,
+        expected: expectedState,
+        patch: { kind: "status", status: nextStatus, reason, observation, actorUserId: actor.userId },
+        event: {
+          eventType: statusEventType(nextStatus),
+          fromStatus: current.status,
+          toStatus: nextStatus,
+          actorUserId: actor.userId,
+          message,
+          metadata: {
+            reason,
+            observation,
+          },
+        },
+      },
+      {
+        beforeCommit: activatesDraft
+          ? (activated, scope) =>
+              this.assignWorkOrderForDispatch(
+                actor,
+                {
+                  workOrderId: activated.workOrderId,
+                  operatorUserId: activated.operatorUserId,
+                  dispatchId: activated.id,
+                  source: "field_dispatch",
+                  previousStatus: current.status,
+                  operatorId: activationOperatorId,
+                },
+                scope,
+              )
+          : undefined,
+      },
+    );
+    const updated = this.transitionOutcome(result);
+    outcome.changed = true;
 
-    if (!updated) {
-      throw new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
-    }
-
-    // B-O6R-07c-b1 — ordem e compensação (crítica, ajuste 2): o despacho muda primeiro; se a atribuição da OS
-    // falhar, o despacho volta ao estado de antes (`restoreState`) e a recusa atravessa. Os dois repositórios não
-    // dividem transação; a compensação é o que torna o par atômico do ponto de vista de quem chama.
-    if (current.status === "draft" && nextStatus === "assigned") {
-      try {
-        await this.assignWorkOrderForDispatch(actor, {
-          workOrderId: updated.workOrderId,
-          operatorUserId: updated.operatorUserId,
-          dispatchId: updated.id,
-          source: "field_dispatch",
-        });
-      } catch (error) {
-        await this.repository.restoreState(actor.tenantId, current);
-        throw error;
-      }
-    } else if (nextStatus === "cancelled" || nextStatus === "failed") {
+    if (nextStatus === "cancelled" || nextStatus === "failed") {
       await this.moveAssignmentToRemainingDispatch(actor, updated, current.status);
     }
-
-    await this.repository.createEvent({
-      tenantId: actor.tenantId,
-      dispatchId: updated.id,
-      workOrderId: updated.workOrderId,
-      eventType: statusEventType(nextStatus),
-      fromStatus: current.status,
-      toStatus: nextStatus,
-      actorUserId: actor.userId,
-      message,
-      metadata: {
-        reason,
-        observation,
-      },
-    });
 
     await publishDomainEvent(
       nextStatus === "cancelled" ? "field_dispatch.cancelled" : "field_dispatch.status_changed",
@@ -696,50 +830,57 @@ export class FieldDispatchService {
       operatorId: operatorUserId,
     });
 
-    const updated = await this.repository.reassign({
-      tenantId: actor.tenantId,
-      dispatchId: current.id,
-      operatorUserId,
-      reason: optionalString(body.reason),
-      observation: optionalString(body.observation),
-      actorUserId: actor.userId,
-    });
-
-    if (!updated) {
-      throw new FieldDispatchError(404, "FIELD_DISPATCH_NOT_FOUND", "not_found", "Dispatch was not found.");
-    }
-
-    // Compensação (crítica, ajuste 2): a OS não aceitou o técnico novo → o despacho volta ao alvo e ao status de
-    // antes, e a recusa atravessa. O técnico antigo continua com a linha em `work_order_assignments` (é ex-técnico
-    // da OS a partir daqui: o trabalho offline dele vira conflito, `D2-07c`).
-    try {
-      await this.assignWorkOrderForDispatch(actor, {
-        workOrderId: updated.workOrderId,
-        operatorUserId: updated.operatorUserId,
-        dispatchId: updated.id,
-        source: "field_dispatch_reassign",
-        reason: optionalString(body.reason),
-      });
-    } catch (error) {
-      await this.repository.restoreState(actor.tenantId, current);
-      throw error;
-    }
-
-    await this.repository.createEvent({
-      tenantId: actor.tenantId,
-      dispatchId: updated.id,
-      workOrderId: updated.workOrderId,
-      eventType: "field_dispatch_reassigned",
-      fromStatus: current.status,
-      toStatus: updated.status,
-      actorUserId: actor.userId,
-      message: optionalString(body.message) ?? "Despacho operacional reatribuido.",
-      metadata: {
-        previousOperatorUserId: current.operatorUserId,
-        operatorUserId: updated.operatorUserId,
-        reason: optionalString(body.reason),
+    // B-O6R-09 (P1/P2/P4 do plano v2) — a reatribuição e o evento numa transação só, condicionada ao status e ao técnico
+    // validados; a OS é atribuída ao técnico novo dentro dela (`beforeCommit`). Se a OS recusa, o despacho fica
+    // EXATAMENTE como estava, inclusive `operator_assigned_at` (o rollback desfaz o efeito do gatilho), e a recusa
+    // atravessa — o antigo `restoreState` saiu. O técnico antigo continua com a linha em `work_order_assignments` (é
+    // ex-técnico da OS a partir daqui: o trabalho offline dele vira conflito, `D2-07c`).
+    const expectedBeforeReassign = { status: current.status, operatorUserId: current.operatorUserId };
+    // Emenda 4 (P6) — o perfil de campo do técnico novo, lido ANTES da mãe.
+    const reassignOperatorId = await this.workOrderService.resolveDispatchOperatorId(actor, operatorUserId);
+    const result = await this.repository.transitionWithEvent(
+      {
+        tenantId: actor.tenantId,
+        dispatchId: current.id,
+        expected: expectedBeforeReassign,
+        patch: {
+          kind: "reassign",
+          operatorUserId,
+          reason: optionalString(body.reason),
+          observation: optionalString(body.observation),
+          actorUserId: actor.userId,
+        },
+        event: {
+          eventType: "field_dispatch_reassigned",
+          fromStatus: current.status,
+          toStatus: "reassigned",
+          actorUserId: actor.userId,
+          message: optionalString(body.message) ?? "Despacho operacional reatribuido.",
+          metadata: {
+            previousOperatorUserId: current.operatorUserId,
+            operatorUserId,
+            reason: optionalString(body.reason),
+          },
+        },
       },
-    });
+      {
+        beforeCommit: (reassigned, scope) =>
+          this.assignWorkOrderForDispatch(
+            actor,
+            {
+              workOrderId: reassigned.workOrderId,
+              operatorUserId: reassigned.operatorUserId,
+              dispatchId: reassigned.id,
+              source: "field_dispatch_reassign",
+              reason: optionalString(body.reason),
+              previousStatus: current.status,
+              operatorId: reassignOperatorId,
+            },
+            scope,
+          ),
+      },
+    );
+    const updated = this.transitionOutcome(result);
 
     // D-CHK-DISPATCH-CREATE (achado MÉDIA do crítico, item 3a) — AUTO-RECUPERAÇÃO: o reassign também provisiona
     // a run (idempotente). Se a provisão do create deu certo, o findRunByClientKey a devolve sem duplicar; se
@@ -1038,8 +1179,9 @@ export class FieldDispatchService {
   }
 
   // `D1-07c` = (c) — despachar é atribuir. A recusa da OS (404, 409) atravessa como `FieldDispatchError` com o
-  // mesmo status/código/motivo, e quem chama desfaz o despacho (compensação; ver `create`, `changeStatus`,
-  // `reassign`).
+  // mesmo status/código/motivo. Com o escopo da mãe (Emenda 4), a atribuição é gravada na transação do despacho e a
+  // recusa faz a mãe voltar inteira: não há compensação. Sem escopo, é a chamada de depois do commit
+  // (`moveAssignmentToRemainingDispatch`), que não muda.
   private async assignWorkOrderForDispatch(
     actor: FieldDispatchActorContext,
     input: {
@@ -1048,16 +1190,36 @@ export class FieldDispatchService {
       readonly dispatchId: string;
       readonly source: "field_dispatch" | "field_dispatch_reassign";
       readonly reason?: string;
+      /** Emenda 4 (P7) — o status do despacho ANTES da transição em curso (ausente na criação). */
+      readonly previousStatus?: FieldDispatchStatus;
+      /** Emenda 4 (P6) — o perfil de campo do técnico, resolvido antes da mãe. */
+      readonly operatorId?: string;
     },
+    scope?: FieldDispatchTxScope,
   ): Promise<void> {
     try {
-      await this.workOrderService.assignFromDispatch(actor, {
-        workOrderId: input.workOrderId,
-        operatorUserId: input.operatorUserId,
-        dispatchId: input.dispatchId,
-        source: input.source,
-        message: input.reason,
-      });
+      await this.workOrderService.assignFromDispatch(
+        actor,
+        {
+          workOrderId: input.workOrderId,
+          operatorUserId: input.operatorUserId,
+          dispatchId: input.dispatchId,
+          source: input.source,
+          message: input.reason,
+        },
+        // Emenda 4 — com o escopo da mãe, a OS é lida e gravada pela `tx` dela, e a trava lê `field_dispatches` na mesma
+        // transação. Dentro dela, a escrita do próprio despacho é visível, e o status novo nunca é "No local"; por isso a
+        // trava também responde "sim" quando o status ANTERIOR do despacho em transição era `arrived`/`in_service` (P7).
+        scope
+          ? {
+              repository: scope.workOrders,
+              operatorId: input.operatorId,
+              hasActiveDispatchAtSite: async (tenantId, workOrderId) =>
+                (input.previousStatus !== undefined && DISPATCH_SERVICE_STARTED.has(input.previousStatus)) ||
+                (await hasActiveDispatchAtSiteIn(scope.dispatches, tenantId, workOrderId)),
+            }
+          : undefined,
+      );
     } catch (error) {
       if (error instanceof WorkOrderError) {
         throw new FieldDispatchError(error.statusCode, error.code, error.reason, error.message);
@@ -1169,8 +1331,17 @@ export async function hasActiveDispatchAtSite(tenantId: string, workOrderId: str
     env.CORE_SAAS_PERSISTENCE === "prisma"
       ? await (await import("./field-dispatch-prisma.repository.js")).createPrismaFieldDispatchRepository()
       : memoryRepository;
-  const { items } = await repository.list({ tenantId, workOrderId, limit: 100, offset: 0 });
+  return hasActiveDispatchAtSiteIn(repository, tenantId, workOrderId);
+}
 
+// B-O6R-09 · Emenda 4 — o predicado "No local" num ponto só, sobre um repositório dado: o padrão (acima) ou o da
+// transação da mãe do despacho (`FieldDispatchTxScope.dispatches`), que enxerga a escrita da própria mãe.
+export async function hasActiveDispatchAtSiteIn(
+  repository: Pick<FieldDispatchRepository, "list">,
+  tenantId: string,
+  workOrderId: string,
+): Promise<boolean> {
+  const { items } = await repository.list({ tenantId, workOrderId, limit: 100, offset: 0 });
   return items.some((dispatch) => DISPATCH_SERVICE_STARTED.has(dispatch.status));
 }
 
@@ -1456,6 +1627,16 @@ function defaultStatusMessage(status: FieldDispatchStatus): string {
   };
 
   return labels[status];
+}
+
+// 503, e não 409: o 409 cairia na mensagem "já tem um despacho" da web (`useAllocateDispatch.ts`). Nada foi gravado.
+function idempotencyRetryError(): FieldDispatchError {
+  return new FieldDispatchError(
+    503,
+    "FIELD_DISPATCH_IDEMPOTENCY_RETRY",
+    "idempotency_retry",
+    "The dispatch request could not be confirmed; nothing was recorded. Try again.",
+  );
 }
 
 function statusEventType(status: FieldDispatchStatus) {

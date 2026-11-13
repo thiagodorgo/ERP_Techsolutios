@@ -1,9 +1,11 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
-import { withTenantRls } from "../../database/rls.js";
+import { setTenantRlsContext, withTenantRls } from "../../database/rls.js";
+import { workOrderAssignRepositoryForTx } from "../work-orders/work-order-scope.js";
 import type {
   ChangeFieldDispatchStatusInput,
   CreateFieldDispatchInput,
+  CreateFieldDispatchWithEventInput,
   FieldDispatch,
   FieldDispatchEvent,
   FieldDispatchEventType,
@@ -14,14 +16,34 @@ import type {
   OperatorAtFixTime,
   OperatorAtFixTimeCandidate,
   ReassignFieldDispatchInput,
+  FieldDispatchCreateRequest,
+  FieldDispatchIdempotencyMatch,
+  FieldDispatchTransitionPatch,
+  FieldDispatchTransitionResult,
+  FieldDispatchTxScope,
+  FieldDispatchWriteHooks,
+  FindFieldDispatchByIdempotencyKeyInput,
+  TransitionFieldDispatchInput,
 } from "./field-dispatch.types.js";
+import { FieldDispatchIdempotencyKeyTakenError } from "./field-dispatch.types.js";
 import {
+  assertNotTransitionEventType,
   classifyOperatorsAtFixTime,
   type CreateFieldDispatchEventInput,
   type FieldDispatchRepository,
 } from "./field-dispatch.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
+
+// B-O6R-09 (P1/P4 do plano v2; Emenda 4, P5/P6) — a TRANSAÇÃO-MÃE. O despacho, o seu evento e a atribuição da OS são
+// gravados numa transação só: o gancho (`beforeCommit`) recebe o escopo da mãe e atribui a OS pela MESMA `tx`
+// (`txScope`). Dentro dela não há espera por nada de fora: nenhuma ida ao banco do caminho usa outra conexão (a T15 de 1
+// conexão é a guarda). O semáforo das mães (R-POOL) e o marcador do commit perdido saíram com a Emenda 4: o motivo do
+// primeiro (a mãe segurava 1 conexão e a atribuição pedia OUTRA) e o estado que o segundo relatava (a OS atribuída com a
+// mãe perdida) deixaram de existir.
+// Teto da mãe; dentro dela não há espera por nada de fora. Fica em 20 s: baixá-lo não é necessário para o conserto e
+// mudaria o tempo das barreiras das suítes (Emenda 4 §E4.2.2, declarado).
+export const FIELD_DISPATCH_HELD_TX_TIMEOUT_MS = 20_000;
 
 // B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — o operador da viatura no instante do fix. Recebe o `tx` da fase 2
 // da ingestão (já sob o GUC da organização confirmada, com orçamento de tempo) e NÃO abre transação. Lê só os
@@ -56,22 +78,54 @@ export async function findOperatorsForVehicleAt(
 export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
   constructor(private readonly client: PrismaExecutor) {}
 
-  async create(input: CreateFieldDispatchInput): Promise<FieldDispatch> {
-    const dispatch = await this.client.fieldDispatch.create({
-      data: {
+  // O INSERT cru, preso a um `tx` (as fixtures do Traccar o usam direto, R-A9). B-O6R-09 (P3) — com chave, a violação do
+  // índice único `(tenant_id, created_by, idempotency_key)` vira `FieldDispatchIdempotencyKeyTakenError`: o INSERT que
+  // chega com a chave de uma transação ainda aberta ESPERA por ela no índice, e só falha se ela fizer commit.
+  async create(input: CreateFieldDispatchInput, idempotencyKey?: string): Promise<FieldDispatch> {
+    try {
+      const dispatch = await this.client.fieldDispatch.create({
+        data: {
+          tenant_id: input.tenantId,
+          work_order_id: input.workOrderId,
+          operator_user_id: input.operatorUserId,
+          status: input.status ?? "assigned",
+          observation: input.observation ?? null,
+          reason: input.reason ?? null,
+          created_by: input.createdBy ?? null,
+          updated_by: input.updatedBy ?? null,
+          idempotency_key: idempotencyKey ?? null,
+          metadata: toJsonObject(input.metadata ?? {}),
+        },
+      });
+
+      return mapFieldDispatchRecord(dispatch);
+    } catch (error) {
+      // Com chave, a única unicidade alcançável é a dela: o `id` é gerado pelo banco e os outros índices não são únicos.
+      if (idempotencyKey !== undefined && isUniqueViolation(error)) throw new FieldDispatchIdempotencyKeyTakenError();
+      throw error;
+    }
+  }
+
+  // B-O6R-09 (P3; R2-02 da crítica r2) — o despacho de uma chave e o pedido ORIGINAL dele, lido do evento
+  // `field_dispatch_created` do mesmo despacho (que existe sempre que o despacho existe, por P1).
+  async findByIdempotencyKey(input: FindFieldDispatchByIdempotencyKeyInput): Promise<FieldDispatchIdempotencyMatch | undefined> {
+    const record = await this.client.fieldDispatch.findFirst({
+      where: {
         tenant_id: input.tenantId,
-        work_order_id: input.workOrderId,
-        operator_user_id: input.operatorUserId,
-        status: input.status ?? "assigned",
-        observation: input.observation ?? null,
-        reason: input.reason ?? null,
-        created_by: input.createdBy ?? null,
-        updated_by: input.updatedBy ?? null,
-        metadata: toJsonObject(input.metadata ?? {}),
+        created_by: input.createdBy,
+        idempotency_key: input.idempotencyKey,
       },
     });
+    if (!record) return undefined;
+    const created = await this.client.fieldDispatchEvent.findFirst({
+      where: { tenant_id: input.tenantId, dispatch_id: record.id, event_type: "field_dispatch_created" },
+      orderBy: [{ created_at: "asc" }],
+    });
 
-    return mapFieldDispatchRecord(dispatch);
+    return {
+      dispatch: mapFieldDispatchRecord(record),
+      original: created ? originalCreateRequest(mapFieldDispatchEventRecord(created)) : undefined,
+    };
   }
 
   async list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult> {
@@ -151,32 +205,72 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
     return updated[0] ? mapFieldDispatchRecord(updated[0]) : undefined;
   }
 
-  async deleteById(tenantId: string, dispatchId: string): Promise<void> {
-    await this.client.fieldDispatch.deleteMany({
+  // B-O6R-09 (P2 do plano v2; achado A1 da crítica r1) — preso a um `tx`. O UPDATE é CONDICIONAL ao status E ao técnico
+  // em que a transição foi validada: sob READ COMMITTED, quem chega depois espera a linha e reavalia o `where` sobre a
+  // versão que o vencedor gravou — zero linhas, sem evento. Uma linha → o evento → o gancho (a atribuição da OS).
+  async transitionWithEvent(input: TransitionFieldDispatchInput, hooks?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult> {
+    const updated = await this.client.fieldDispatch.updateManyAndReturn({
       where: {
-        tenant_id: tenantId,
-        id: dispatchId,
+        tenant_id: input.tenantId,
+        id: input.dispatchId,
+        status: input.expected.status,
+        operator_user_id: input.expected.operatorUserId,
       },
+      data: transitionData(input.patch, new Date()),
     });
+    if (!updated[0]) {
+      const exists = await this.client.fieldDispatch.findFirst({
+        where: { tenant_id: input.tenantId, id: input.dispatchId },
+        select: { id: true },
+      });
+      return exists ? { kind: "conflict" } : { kind: "not_found" };
+    }
+    const dispatch = mapFieldDispatchRecord(updated[0]);
+    const event = await this.insertEvent({
+      ...input.event,
+      tenantId: dispatch.tenantId,
+      dispatchId: dispatch.id,
+      workOrderId: dispatch.workOrderId,
+    });
+    const result = { kind: "ok", dispatch, event } as const;
+    if (hooks?.beforeCommit) await hooks.beforeCommit(result.dispatch, this.txScope());
+
+    return result;
   }
 
-  async restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
-    await this.client.fieldDispatch.updateMany({
-      where: {
-        tenant_id: tenantId,
-        id: snapshot.id,
-      },
-      data: {
-        operator_user_id: snapshot.operatorUserId,
-        status: snapshot.status,
-        reason: snapshot.reason ?? null,
-        observation: snapshot.observation ?? null,
-        updated_by: snapshot.updatedBy ?? null,
-      },
+  // B-O6R-09 — preso a um `tx`: o despacho, o evento e o gancho, nesta ordem. O gancho (a atribuição da OS) vem por
+  // ÚLTIMO, para que uma falha no evento nunca chegue a atribuir.
+  async createWithEvent(
+    input: CreateFieldDispatchWithEventInput,
+    hooks?: FieldDispatchWriteHooks,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }> {
+    const dispatch = await this.create(input.dispatch, input.idempotencyKey);
+    const event = await this.insertEvent({
+      ...input.event,
+      tenantId: dispatch.tenantId,
+      dispatchId: dispatch.id,
+      workOrderId: dispatch.workOrderId,
     });
+    if (hooks?.beforeCommit) await hooks.beforeCommit(dispatch, this.txScope());
+
+    return { dispatch, event };
   }
 
+  // Só a auditoria `field_dispatch_checklist_run_failed` (e as fixtures); os 4 tipos obrigatórios são recusados aqui.
   async createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
+    assertNotTransitionEventType(input.eventType);
+
+    return this.insertEvent(input);
+  }
+
+  // Emenda 4 — o escopo da mãe para o gancho: o repositório de OS e este próprio repositório, os dois presos ao `tx`. O
+  // cast é seguro PORQUE só `createWithEvent` e `transitionWithEvent` o chamam, e os dois só rodam presos ao `tx` da
+  // mãe (`RlsPrismaFieldDispatchRepository`); a guarda (vii) congela o único chamador de `workOrderAssignRepositoryForTx`.
+  private txScope(): FieldDispatchTxScope {
+    return { workOrders: workOrderAssignRepositoryForTx(this.client as Prisma.TransactionClient), dispatches: this };
+  }
+
+  private async insertEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
     const event = await this.client.fieldDispatchEvent.create({
       data: {
         tenant_id: input.tenantId,
@@ -212,8 +306,29 @@ export class PrismaFieldDispatchRepository implements FieldDispatchRepository {
 export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository {
   constructor(private readonly prismaClient: PrismaClient) {}
 
-  create(input: CreateFieldDispatchInput): Promise<FieldDispatch> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).create(input));
+  // A transação-mãe da criação: `$transaction` com `timeout` explícito e o GUC da organização como 1ª instrução.
+  async createWithEvent(
+    input: CreateFieldDispatchWithEventInput,
+    hooks?: FieldDispatchWriteHooks,
+  ): Promise<{ readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }> {
+    return this.prismaClient.$transaction(
+      async (tx) => {
+        await setTenantRlsContext(tx, input.dispatch.tenantId);
+        return new PrismaFieldDispatchRepository(tx).createWithEvent(input, hooks);
+      },
+      { timeout: FIELD_DISPATCH_HELD_TX_TIMEOUT_MS },
+    );
+  }
+
+  // A transação-mãe da mudança de status e da reatribuição, na mesma forma da criação.
+  async transitionWithEvent(input: TransitionFieldDispatchInput, hooks?: FieldDispatchWriteHooks): Promise<FieldDispatchTransitionResult> {
+    return this.prismaClient.$transaction(
+      async (tx) => {
+        await setTenantRlsContext(tx, input.tenantId);
+        return new PrismaFieldDispatchRepository(tx).transitionWithEvent(input, hooks);
+      },
+      { timeout: FIELD_DISPATCH_HELD_TX_TIMEOUT_MS },
+    );
   }
 
   list(input: ListFieldDispatchesInput): Promise<ListFieldDispatchesResult> {
@@ -224,24 +339,8 @@ export class RlsPrismaFieldDispatchRepository implements FieldDispatchRepository
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaFieldDispatchRepository(tx).findById(tenantId, dispatchId));
   }
 
-  changeStatus(input: ChangeFieldDispatchStatusInput): Promise<FieldDispatch | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).changeStatus(input));
-  }
-
-  reassign(input: ReassignFieldDispatchInput): Promise<FieldDispatch | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).reassign(input));
-  }
-
-  deleteById(tenantId: string, dispatchId: string): Promise<void> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaFieldDispatchRepository(tx).deleteById(tenantId, dispatchId),
-    );
-  }
-
-  restoreState(tenantId: string, snapshot: FieldDispatch): Promise<void> {
-    return withTenantRls(this.prismaClient, tenantId, (tx) =>
-      new PrismaFieldDispatchRepository(tx).restoreState(tenantId, snapshot),
-    );
+  findByIdempotencyKey(input: FindFieldDispatchByIdempotencyKeyInput): Promise<FieldDispatchIdempotencyMatch | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldDispatchRepository(tx).findByIdempotencyKey(input));
   }
 
   createEvent(input: CreateFieldDispatchEventInput): Promise<FieldDispatchEvent> {
@@ -346,6 +445,58 @@ function mapFieldDispatchEventRecord(record: {
     metadata: isRecord(record.metadata) ? record.metadata : {},
     createdAt: record.created_at,
   };
+}
+
+// Violação de índice único pelo CÓDIGO (P2002 do Prisma ou 23505 do Postgres), nunca pela mensagem. Com o driver
+// adapter, o SQLSTATE pode estar só em `cause`/`meta.driverAdapterError` (medido em
+// `checklist-applicability-prisma.repository.ts`), por isso a varredura em profundidade.
+function isUniqueViolation(error: unknown): boolean {
+  const codes: string[] = [];
+  const collect = (candidate: unknown, depth: number): void => {
+    if (depth > 4 || typeof candidate !== "object" || candidate === null) return;
+    const record = candidate as Record<string, unknown>;
+    for (const key of ["code", "originalCode"]) {
+      const value = record[key];
+      if (typeof value === "string") codes.push(value);
+    }
+    collect(record.cause, depth + 1);
+    collect(record.meta, depth + 1);
+    collect(record.driverAdapterError, depth + 1);
+  };
+  collect(error, 0);
+  return codes.some((code) => code === "P2002" || code === "23505");
+}
+
+function originalCreateRequest(event: FieldDispatchEvent): FieldDispatchCreateRequest | undefined {
+  const operatorUserId = event.metadata.operatorUserId;
+  if (!event.toStatus || typeof operatorUserId !== "string") return undefined;
+  return { workOrderId: event.workOrderId, operatorUserId, status: event.toStatus };
+}
+
+function transitionData(patch: FieldDispatchTransitionPatch, now: Date) {
+  if (patch.kind === "reassign") {
+    return compactRecord({
+      operator_user_id: patch.operatorUserId,
+      status: "reassigned",
+      reason: patch.reason,
+      observation: patch.observation,
+      updated_by: patch.actorUserId,
+    });
+  }
+
+  return compactRecord({
+    status: patch.status,
+    reason: patch.reason,
+    observation: patch.observation,
+    updated_by: patch.actorUserId,
+    accepted_at: patch.status === "accepted" ? now : undefined,
+    on_route_at: patch.status === "on_route" ? now : undefined,
+    arrived_at: patch.status === "arrived" ? now : undefined,
+    in_service_at: patch.status === "in_service" ? now : undefined,
+    completed_at: patch.status === "completed" ? now : undefined,
+    cancelled_at: patch.status === "cancelled" ? now : undefined,
+    failed_at: patch.status === "failed" ? now : undefined,
+  });
 }
 
 function compactRecord<T extends Record<string, unknown>>(input: T): Partial<T> {

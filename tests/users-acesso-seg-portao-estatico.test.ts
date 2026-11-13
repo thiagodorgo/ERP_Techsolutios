@@ -18,7 +18,8 @@ import ts from "typescript";
 //   (c) o segredo do ERP (`env.JWT_SECRET`, `process.env.JWT_SECRET`, `process.env["JWT_SECRET"]`) só é lido
 //       em `jwt.service.ts`, `config/env.ts` e nos 2 baldes de login (`auth.routes.ts`, `anonymous-login.service.ts`);
 //   (d) `acceptPasswordChangeSession: true` aparece UMA vez no `src/`, em `identity-links.routes.ts`, e o
-//       middleware do portão não importa Prisma, banco nem repositório (a `D-USERS-2`: sem consulta por requisição).
+//       middleware do portão não importa Prisma, banco nem repositório (desde o B-USERS-SEG-DESATIVADO a consulta
+//       por requisição existe, mas mora em `session-liveness.service.ts`, o T17 abaixo).
 // Resíduo declarado (plano, Emenda 3): reexportação nova por `export … from` noutro barril escapa; o G1 cobre.
 // -----------------------------------------------------------------------------------------------
 
@@ -174,6 +175,123 @@ test("A12/G2 — APIs JWT, segredo do ERP e exceção da sessão restrita ficam 
 
   assert.deepEqual(proibidos, [], "(d) o portão não importa Prisma, banco nem repositório");
   assert.doesNotMatch(middlewareText, /@prisma\/client|PrismaClient|Repository\b/, "(d) nem por texto");
+});
+
+// -----------------------------------------------------------------------------------------------
+// B-USERS-SEG-DESATIVADO — T17 (G2 emendado; Emenda 1, A10). Pela API do compilador, como o G2:
+//   (d')  o portão não importa Prisma, banco nem repositório, e o ÚNICO módulo de consulta que ele importa é
+//         `session-liveness.service.ts` (lista FECHADA de imports do middleware);
+//   (d'') `session-liveness.service.ts` não tem declaração de import de `database/prisma` nem de `database/rls`,
+//         e tem `import()` dos dois (o `prisma.ts` lança no import sem `DATABASE_URL`);
+//   (e)   toda chamada de `issueAccessToken(` e `signAccessToken(` no `src/` tem a propriedade `session_id` no
+//         literal do argumento (o token nasce com a sessão);
+//   (f)   troca ou dublê de `sessionLiveness` não aparece no `src/` (só o teste troca a conferência).
+// -----------------------------------------------------------------------------------------------
+
+const LIVENESS = "src/modules/auth/services/session-liveness.service.ts";
+const IMPORTS_DO_PORTAO = [
+  "../services/jwt.service.js",
+  "../services/session-liveness.service.js",
+  "../types/auth.types.js",
+  "express",
+];
+const ASSINADORES = new Set(["issueAccessToken", "signAccessToken"]);
+
+function nomeDaPropriedade(node: ts.ObjectLiteralElementLike): string | null {
+  if ((ts.isPropertyAssignment(node) || ts.isShorthandPropertyAssignment(node)) && node.name) {
+    if (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name)) return node.name.text;
+  }
+
+  return null;
+}
+
+function nomeDoChamado(expression: ts.Expression): string | null {
+  if (ts.isIdentifier(expression)) return expression.text;
+  if (ts.isPropertyAccessExpression(expression)) return expression.name.text;
+
+  return null;
+}
+
+test("T17 — o portão consulta só pela conferência, que importa o banco tarde; todo token nasce com a sessão", () => {
+  const importsDoPortao: string[] = [];
+  const declaracoesDaConferencia: string[] = [];
+  const dinamicosDaConferencia: string[] = [];
+  const assinaturas: Array<{ readonly onde: string; readonly temSessao: boolean }> = [];
+  const trocas: string[] = [];
+
+  for (const file of sourceFiles(SRC)) {
+    const relative = slash(path.relative(ROOT, file));
+    const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true);
+    const onde = (node: ts.Node) => `${relative}:${source.getLineAndCharacterOfPosition(node.getStart()).line + 1}`;
+
+    const visit = (node: ts.Node): void => {
+      const mod = moduleOf(node);
+
+      if (mod !== null && relative === MIDDLEWARE) importsDoPortao.push(mod);
+
+      if (mod !== null && relative === LIVENESS) {
+        if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) declaracoesDaConferencia.push(mod);
+        else dinamicosDaConferencia.push(mod);
+      }
+
+      if (ts.isCallExpression(node)) {
+        const chamado = nomeDoChamado(node.expression);
+
+        if (chamado && ASSINADORES.has(chamado)) {
+          const primeiro = node.arguments[0];
+          const temSessao =
+            primeiro !== undefined &&
+            ts.isObjectLiteralExpression(primeiro) &&
+            primeiro.properties.some((propriedade) => nomeDaPropriedade(propriedade) === "session_id");
+
+          assinaturas.push({ onde: onde(node), temSessao });
+        }
+
+        // `mock.method(sessionLiveness, …)`, `Object.assign(sessionLiveness, …)`, `Object.defineProperty(…)`.
+        if (node.arguments.some((argumento) => ts.isIdentifier(argumento) && argumento.text === "sessionLiveness")) {
+          const nome = nomeDoChamado(node.expression);
+
+          if (nome === "method" || nome === "assign" || nome === "defineProperty" || nome === "setPrototypeOf") {
+            trocas.push(`${onde(node)} ${nome}(sessionLiveness, …)`);
+          }
+        }
+      }
+
+      // `sessionLiveness.check = …` ou `sessionLiveness["check"] = …`.
+      if (
+        ts.isBinaryExpression(node) &&
+        node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+        (ts.isPropertyAccessExpression(node.left) || ts.isElementAccessExpression(node.left)) &&
+        ts.isIdentifier(node.left.expression) &&
+        node.left.expression.text === "sessionLiveness"
+      ) {
+        trocas.push(`${onde(node)} atribuição`);
+      }
+
+      ts.forEachChild(node, visit);
+    };
+
+    visit(source);
+  }
+
+  assert.deepEqual([...new Set(importsDoPortao)].sort(), [...IMPORTS_DO_PORTAO].sort(), "(d') a lista fechada de imports do portão");
+  assert.deepEqual(
+    declaracoesDaConferencia.filter((m) => /(^|\/)database\/(prisma|rls)(\.js|\.ts)?$/.test(m)),
+    [],
+    "(d'') a conferência não importa prisma nem rls por declaração",
+  );
+  assert.deepEqual(
+    dinamicosDaConferencia.filter((m) => /(^|\/)database\/(prisma|rls)(\.js|\.ts)?$/.test(m)).sort(),
+    ["../../../database/prisma.js", "../../../database/rls.js"],
+    "(d'') a conferência importa prisma e rls por import()",
+  );
+  assert.ok(assinaturas.length >= 3, `(e) as chamadas de assinatura existem (${assinaturas.length})`);
+  assert.deepEqual(
+    assinaturas.filter((a) => !a.temSessao).map((a) => a.onde),
+    [],
+    "(e) toda assinatura de access token no src/ leva session_id",
+  );
+  assert.deepEqual(trocas, [], "(f) ninguém no src/ troca a conferência");
 });
 
 function sourceFiles(root: string): string[] {

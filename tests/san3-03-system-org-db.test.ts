@@ -21,7 +21,7 @@ if (!connectionString) {
     try {
       await seedImport(ctx, importId, [
         { service: "AmazonKMS", usage: "Keys", tag: "platform", cost: "10.000000" },
-        { service: "AmazonCloudWatch", usage: "Metrics", tag: null, cost: "5.000000" },
+        { service: "AmazonCognito", usage: "Metrics", tag: null, cost: "5.000000" },
       ]);
       const run = await ctx.service.allocateCostsForPeriod({ periodStart, periodEnd, importId });
       runIds.push(run.id);

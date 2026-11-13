@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 16;
+  int get schemaVersion => 17;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -32,6 +32,7 @@ class AppDatabase extends GeneratedDatabase {
       await m.database.customStatement(_kFieldLocationEvents);
       await m.database.customStatement(_kWorkOrderMaterials);
       await m.database.customStatement(_kTelemetryEvents);
+      await m.database.customStatement(_kTechnicianStockCache); // onCreate
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -246,6 +247,11 @@ class AppDatabase extends GeneratedDatabase {
             );
           }
         }
+      }
+      if (from < 17) {
+        // B-SAN3-15a — a última resposta do estoque do técnico, por (organização, usuário).
+        // Migração ADITIVA: só CREATE TABLE IF NOT EXISTS, nenhuma linha de outra tabela se perde.
+        await m.database.customStatement(_kTechnicianStockCache);
       }
     },
   );
@@ -502,6 +508,16 @@ CREATE TABLE IF NOT EXISTS field_location_events (
   last_safe_error TEXT,
   created_at INTEGER NOT NULL,
   synced_at INTEGER
+)''';
+
+// B-SAN3-15a — lista salva do estoque do técnico, chave (tenant_id, user_id).
+const _kTechnicianStockCache = '''
+CREATE TABLE IF NOT EXISTS technician_stock_cache (
+  tenant_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  items_json TEXT NOT NULL,
+  fetched_at INTEGER NOT NULL,
+  PRIMARY KEY (tenant_id, user_id)
 )''';
 
 // Ω4C PR-13 — buffer DEDICADO da telemetria do app (heartbeat/acessos/recusas),

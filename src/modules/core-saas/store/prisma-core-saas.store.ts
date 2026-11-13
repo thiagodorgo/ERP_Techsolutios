@@ -282,8 +282,12 @@ export class PrismaCoreSaasStore implements AsyncCoreSaasStore {
       // sessões ativas do par (organização, usuário). O GUC de tenant já está na organização do par
       // (withTenantRls acima), a condição que o repositório exige para não afetar zero linhas sem
       // erro. A renovação passa a recusar por revogação, e a sessão some da lista de ativas.
+      // B-USERS-SEG-DESATIVADO (P2 = a, A6): trocar o CONJUNTO de papéis também revoga — a pessoa entra de novo
+      // e recebe o perfil novo, e o portão recusa o token antigo na próxima requisição. Renomear, ou mandar os
+      // mesmos papéis em outra ordem (o formulário da web manda `roles` sempre), não revoga.
+      const rolesChanged = input.roles !== undefined && !hasSameRoleKeys(currentRoles, input.roles);
       const revokedSessions =
-        input.status === "inactive"
+        input.status === "inactive" || rolesChanged
           ? (await new AuthSessionRepository(tx).revokeAllActiveByUserForTenant(input.userId, input.tenantId))
               .count
           : undefined;
@@ -541,6 +545,24 @@ function mapUserStatus(status: string): UserStatus {
 
 function uniqueStrings(values: ReadonlyArray<string | null | undefined>): string[] {
   return [...new Set(values.filter((value): value is string => Boolean(value)))];
+}
+
+// B-USERS-SEG-DESATIVADO (A6) — os dois conjuntos de chaves de papel são iguais, sem ordem e sem repetição.
+function hasSameRoleKeys(current: readonly string[], next: readonly string[]): boolean {
+  const currentKeys = new Set(current);
+  const nextKeys = new Set(next);
+
+  if (currentKeys.size !== nextKeys.size) {
+    return false;
+  }
+
+  for (const key of currentKeys) {
+    if (!nextKeys.has(key)) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function uniqueRoles(values: readonly Role[]): Role[] {

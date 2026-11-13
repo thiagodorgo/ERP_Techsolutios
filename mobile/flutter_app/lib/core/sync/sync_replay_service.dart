@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../network/api_contracts.dart';
 import '../network/api_error.dart';
 import '../network/http_client.dart';
+import '../network/work_order_api_codec.dart';
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
 
@@ -860,6 +861,12 @@ class WorkOrderSyncCodec {
   // D1 (seleção viatura/equipe): assign carrega operator_id (obrigatório no
   // backend) + vehicle_id/team_id opcionais. tenant/token/path nunca vão no
   // payload — apenas os campos permitidos.
+  //
+  // B-O6R-11d (Q1 = A, `D-DONO-TODAS-RECOMENDACOES-1111`) — sem `user_id`, o servidor apagava o usuário atribuído da
+  // OS (CL11D-02); e o técnico que a ação carrega é o que o aparelho conhecia QUANDO a enfileirou. Por isso a ação
+  // manda `user_id` e DECLARA `expected_technician_id`: se a gestão trocou o técnico antes do envio, o servidor
+  // responde conflito (`technician_changed_since_action`), e a ação fica em conflito para decisão manual (B-107).
+  // A derivação é na hora do envio, e cobre também as ações já enfileiradas (o repositório não muda).
   Map<String, Object?> _assignPayload(Map<String, Object?> source) {
     final explicitWorkOrderId = _readNonEmptyString(source['work_order_id']);
     final workOrderId =
@@ -869,6 +876,7 @@ class WorkOrderSyncCodec {
             ? explicitWorkOrderId
             : null);
     final operatorId = _readNonEmptyString(source['operator_id']);
+    final userId = _readNonEmptyString(source['user_id']) ?? operatorId;
     final vehicleId = _readNonEmptyString(source['vehicle_id']);
     final teamId = _readNonEmptyString(source['team_id']);
     final message = _readNonEmptyString(source['message']);
@@ -882,6 +890,8 @@ class WorkOrderSyncCodec {
     final payload = <String, Object?>{'metadata': metadata};
     if (workOrderId != null) payload['work_order_id'] = workOrderId;
     if (operatorId != null) payload['operator_id'] = operatorId;
+    if (userId != null) payload['user_id'] = userId;
+    if (userId != null) payload['expected_technician_id'] = userId;
     if (vehicleId != null) payload['vehicle_id'] = vehicleId;
     if (teamId != null) payload['team_id'] = teamId;
     if (message != null) payload['message'] = message;
@@ -897,16 +907,9 @@ class WorkOrderSyncCodec {
     };
   }
 
-  String _backendStatus(String status) {
-    return switch (status) {
-      'scheduled' => 'open',
-      'dispatched' => 'assigned',
-      'enRoute' => 'on_route',
-      'arrived' => 'on_site',
-      'inService' => 'in_progress',
-      _ => status,
-    };
-  }
+  // B-O6R-11d — a fila fala o vocabulário do backend pelo codec único, com o resultado IDÊNTICO ao de d5ec1696 para
+  // os 12 status (T10, T10b). O que não tem tradução segue cru (`P-MOBILE-CODEC-FILA-STATUS-CRU`, `B-SAN3-16`).
+  String _backendStatus(String status) => workOrderStatusNameToApi(status);
 
   String? _readNonEmptyString(Object? value) =>
       value is String && value.trim().isNotEmpty ? value.trim() : null;

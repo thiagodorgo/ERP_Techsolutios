@@ -1,5 +1,7 @@
+import { normalizeModuleKeys } from "../platform/platform-modules.service.js";
 import { NAVIGATION_REGISTRY } from "./navigation.registry.js";
 import type { NavigationItem, NavigationMenuContext, NavigationScope } from "./navigation.types.js";
+import { NUCLEO_MENU_PATHS } from "./nucleo.js";
 
 const platformRoles = new Set(["super_admin", "platform_admin"]);
 const sensitiveMetadataKeys = new Set(["secret", "token", "password", "authorization", "credential", "storageKey"]);
@@ -30,15 +32,14 @@ export function filterNavigationByPermissions(
     .map(sanitizeNavigationItem);
 }
 
+// B-SAN3-18 (P3) — o menu por módulo é FAIL-CLOSED: lista de módulos não resolvida (`undefined`) conta como VAZIA,
+// e nunca mais libera todos os itens (`P-NAV-MODULOS-NAO-RESOLVIDOS-LIBERA-MENU`). As chaves da organização passam
+// por `normalizeModuleKeys` (apelido → canônica), a mesma leitura que o gate de módulo faz.
 export function filterNavigationByTenantModules(
   items: readonly NavigationItem[],
   enabledModules?: readonly string[],
 ): NavigationItem[] {
-  if (!enabledModules) {
-    return items.map(sanitizeNavigationItem);
-  }
-
-  const moduleSet = new Set(enabledModules);
+  const moduleSet = new Set(normalizeModuleKeys(enabledModules ?? []));
 
   return sortItems(items)
     .map((item) => filterItemChildren(item, (child) => hasModule(child, moduleSet)))
@@ -111,8 +112,15 @@ function hasPermission(item: NavigationItem, permissions: ReadonlySet<string>): 
   return item.requiredPermissions.length === 0 || item.requiredPermissions.some((permission) => permissions.has(permission));
 }
 
+// B-SAN3-18 (P3, R-A4/R-A8) — uma entrada aparece quando: é de plataforma; ou está no núcleo (`NUCLEO_MENU_PATHS`);
+// ou a organização tem TODOS os seus `requiredModules` (todos-de: a entrada visível tem todo módulo que as rotas dela
+// exigem, P5). Entrada de organização sem módulo e fora do núcleo NÃO aparece (default negar; o guard do registro em
+// tests/san3-18-menu-modules.test.ts impede que ela exista).
 function hasModule(item: NavigationItem, enabledModules: ReadonlySet<string>): boolean {
-  return !item.requiredModules?.length || item.requiredModules.some((moduleKey) => enabledModules.has(moduleKey));
+  if (item.platformOnly) return true;
+  if (NUCLEO_MENU_PATHS.includes(item.path)) return true;
+  if (!item.requiredModules?.length) return false;
+  return item.requiredModules.every((moduleKey) => enabledModules.has(moduleKey));
 }
 
 function filterItemChildren(

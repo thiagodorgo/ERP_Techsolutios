@@ -187,9 +187,9 @@ void main() {
 
     test('6. loadTechnicianStock retorna catalogo semente', () async {
       final repo = _repo();
-      final stock = await repo.loadTechnicianStock();
-      expect(stock, isNotEmpty);
-      expect(stock.any((s) => s.sku == 'ELE-0031'), isTrue);
+      final load = await repo.loadTechnicianStock();
+      expect(load.items, isNotEmpty);
+      expect(load.items.any((s) => s.sku == 'ELE-0031'), isTrue);
     });
   });
 
@@ -218,7 +218,7 @@ void main() {
         find.byKey(const Key('stock-confirm')),
       );
       expect(btnAfter.onPressed, isNotNull);
-      expect(find.textContaining('Adicionar ao servico'), findsOneWidget);
+      expect(find.textContaining('Adicionar ao serviço'), findsOneWidget);
     });
 
     testWidgets('8. stepper incrementa quantidade selecionada', (t) async {

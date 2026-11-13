@@ -17,6 +17,7 @@ import {
   type CreateStockExitForSourceInput,
   type CreateStockMovementInput,
   type CreateTransferInput,
+  type CustodyItemBalance,
   type CustodySummaryRaw,
   type InventoryItem,
   type InventoryItemView,
@@ -52,6 +53,30 @@ function custodyMatches(movement: StockMovement, custody: StockCustody): boolean
   );
 }
 
+/** B-SAN3-15a — um balde do razão: o saldo de um item numa custódia (derivado, nunca coluna). */
+type CustodyBucket = {
+  readonly itemId: string;
+  readonly custodyType: StockMovement["custodyType"];
+  readonly custodyOperatorProfileId?: string;
+  readonly custodyVehicleId?: string;
+  readonly available: number;
+};
+
+/**
+ * B-SAN3-15a (P1) — a linha do razão (ou o balde que a soma) é da custódia PROFISSIONAL deste perfil? O perfil é o do
+ * ator, escolhido pelo servidor (`resolveActorStockCustody`); a custódia de outro profissional nunca casa.
+ */
+function isSameProfessionalCustody(
+  movement: Pick<StockMovement, "custodyType" | "custodyOperatorProfileId">,
+  custody: StockCustody,
+): boolean {
+  return (
+    custody.custodyType === "professional" &&
+    movement.custodyType === "professional" &&
+    movement.custodyOperatorProfileId === custody.custodyOperatorProfileId
+  );
+}
+
 export interface InventoryRepository {
   createItem(input: CreateInventoryItemInput): Promise<InventoryItem>;
   listItems(input: ListInventoryItemsInput): Promise<ListInventoryItemsResult>;
@@ -77,6 +102,12 @@ export interface InventoryRepository {
   reverseMovement(input: ReverseStockMovementInput): Promise<ReverseStockMovementResult>;
   /** Ω4C PR-08 — per-custody aggregation (baseQty + professionals/vehicles), derived from the ledger. */
   getCustodySummary(tenantId: string, itemId: string): Promise<CustodySummaryRaw>;
+  /**
+   * B-SAN3-15a (P1) — o saldo de CADA item numa custódia (a profissional de um perfil, ou a BASE), derivado do razão
+   * (Σ quantidade_sinalizada), com o item da organização. Leitura de exibição: não decide escrita (a baixa confere o
+   * saldo sob o lock do item). O filtro de saldo > 0 e de item ativo é do serviço.
+   */
+  listCustodyBalances(tenantId: string, custody: StockCustody): Promise<readonly CustodyItemBalance[]>;
   /**
    * Ω4C PR-08b — the EXIT movement (`saida`) posted for a source (fuel_log/maintenance_item), if any. At most one
    * row per (tenant, source_type, source_id) thanks to the partial unique index. Returned RAW (reversed or not).
@@ -333,6 +364,30 @@ export class InMemoryInventoryRepository implements InventoryRepository {
     };
   }
 
+  async listCustodyBalances(tenantId: string, custody: StockCustody): Promise<readonly CustodyItemBalance[]> {
+    const byItem = new Map<string, number>();
+
+    // Os baldes da organização (item × custódia) e, deles, só os da custódia pedida: a BASE, ou a profissional DESTE
+    // perfil. Custódia de viatura não se resolve pelo ator (P-SAN3-15-CUSTODIA-VIATURA): nunca entra.
+    for (const balance of this.custodyBuckets(tenantId)) {
+      if (custody.custodyType === "base") {
+        if (balance.custodyType !== "base") continue;
+      } else if (!isSameProfessionalCustody(balance, custody)) {
+        continue;
+      }
+      byItem.set(balance.itemId, (byItem.get(balance.itemId) ?? 0) + balance.available);
+    }
+
+    return [...byItem.entries()].map(([itemId, available]) => {
+      const item = this.items.get(itemId);
+
+      return {
+        item: item?.tenantId === tenantId ? item : undefined,
+        available: roundToDecimalPrecision(available),
+      };
+    });
+  }
+
   async findExitBySource(tenantId: string, sourceType: string, sourceId: string): Promise<StockMovement | undefined> {
     // At most one EXIT row per (tenant, source_type, source_id) — the partial unique index in Prisma; here a scan.
     return [...this.movements.values()].find(
@@ -445,6 +500,26 @@ export class InMemoryInventoryRepository implements InventoryRepository {
         movement.reversesMovementId !== undefined &&
         movementIds.has(movement.reversesMovementId),
     );
+  }
+
+  /** B-SAN3-15a — Σ quantidade_sinalizada por (item, custódia) da organização: os "baldes" do razão. */
+  private custodyBuckets(tenantId: string): CustodyBucket[] {
+    const buckets = new Map<string, CustodyBucket>();
+
+    for (const movement of this.movements.values()) {
+      if (movement.tenantId !== tenantId) continue;
+      const key = [movement.itemId, movement.custodyType, movement.custodyOperatorProfileId ?? "", movement.custodyVehicleId ?? ""].join("|");
+      const current = buckets.get(key);
+      buckets.set(key, {
+        itemId: movement.itemId,
+        custodyType: movement.custodyType,
+        custodyOperatorProfileId: movement.custodyOperatorProfileId,
+        custodyVehicleId: movement.custodyVehicleId,
+        available: (current?.available ?? 0) + movement.quantidadeSinalizada,
+      });
+    }
+
+    return [...buckets.values()];
   }
 
   private saldoOfCustody(tenantId: string, itemId: string, custody: StockCustody): number {
