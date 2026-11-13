@@ -39,6 +39,22 @@ const materialAction = (
   },
 });
 
+const materialRemoveAction = (
+  clientActionId: string,
+  sourceClientActionId: string,
+  workOrderId: string,
+) => ({
+  client_action_id: clientActionId,
+  type: "work_order_material.remove",
+  local_created_at: "2026-11-12T12:00:00.000Z",
+  payload: {
+    source_client_action_id: sourceClientActionId,
+    work_order_id: workOrderId,
+    work_order_local_id: "wo-local-1",
+    material_local_id: "material-local-1",
+  },
+});
+
 const actor = (
   tenantId: string,
   role: AuthenticatedActor["roles"][number],
@@ -145,6 +161,7 @@ async function setup() {
     inventoryActor,
     auditor,
     inventory,
+    workOrders,
     workOrderRepository,
     createAssignedWorkOrder,
     workOrderId,
@@ -299,6 +316,83 @@ test("[RC2(12)] gestor tenant-wide aplica material na mesma OS", async () => {
   assert.equal(response.accepted.length, 1);
 });
 
+test("[RC2(13)] autor remove material e estorna a baixa por origem", async () => {
+  const ctx = await setup();
+  const sourceId = randomUUID();
+  const add = await ctx.run(ctx.tecA, [materialAction(sourceId, ctx.workOrderId)]);
+  const beforeRemove = await ctx.snapshotLedger();
+  const response = await ctx.run(ctx.tecA, [materialRemoveAction(randomUUID(), sourceId, ctx.workOrderId)]);
+  const afterRemove = await ctx.snapshotLedger();
+
+  assert.equal(add.accepted.length, 1);
+  assert.equal(response.accepted.length, 1);
+  assert.ok(response.accepted[0]?.result_ref);
+  assert.equal(await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId), undefined);
+  assert.equal(afterRemove.movementIds.length, beforeRemove.movementIds.length + 1);
+  assert.ok(afterRemove.movementIds.includes(response.accepted[0]?.result_ref ?? ""));
+});
+
+test("[RC2(14)] segundo remove da mesma origem é already_applied", async () => {
+  const ctx = await setup();
+  const sourceId = randomUUID();
+  await ctx.run(ctx.tecA, [materialAction(sourceId, ctx.workOrderId)]);
+  await ctx.run(ctx.tecA, [materialRemoveAction(randomUUID(), sourceId, ctx.workOrderId)]);
+  const beforeReplay = await ctx.snapshotLedger();
+  const replay = await ctx.run(ctx.tecA, [materialRemoveAction(randomUUID(), sourceId, ctx.workOrderId)]);
+
+  assert.equal(replay.already_applied.length, 1);
+  assert.deepEqual(await ctx.snapshotLedger(), beforeReplay);
+});
+
+test("[RC2(15)] remove falha no escopo da OS da baixa antes de conferir posse", async () => {
+  const ctx = await setup();
+  const sourceId = randomUUID();
+  await ctx.run(ctx.tecA, [materialAction(sourceId, ctx.workOrderId)]);
+  const workOrderTecB = await ctx.createAssignedWorkOrder(ctx.tecB);
+  const before = await ctx.snapshotLedger();
+  const activeBefore = await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId);
+
+  const response = await ctx.run(ctx.tecB, [materialRemoveAction(randomUUID(), sourceId, workOrderTecB)]);
+
+  assert.equal(response.rejected[0]?.error?.reason, "not_assigned_to_actor");
+  assert.deepEqual(await ctx.snapshotLedger(), before);
+  assert.deepEqual(
+    await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId),
+    activeBefore,
+  );
+});
+
+test("[RC2(15b)] ator com escopo não estorna baixa criada por outro usuário", async () => {
+  const ctx = await setup();
+  const sourceId = randomUUID();
+  await ctx.run(ctx.tecA, [materialAction(sourceId, ctx.workOrderId)]);
+  const before = await ctx.snapshotLedger();
+  const activeBefore = await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId);
+
+  const response = await ctx.run(ctx.manager, [materialRemoveAction(randomUUID(), sourceId, ctx.workOrderId)]);
+
+  assert.equal(response.conflicts[0]?.conflict?.conflict_type, "action_owned_by_other_actor");
+  assert.deepEqual(await ctx.snapshotLedger(), before);
+  assert.deepEqual(
+    await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId),
+    activeBefore,
+  );
+});
+
+test("[RC2(18)] remove recusa work_order_id diferente da OS da baixa", async () => {
+  const ctx = await setup();
+  const sourceId = randomUUID();
+  await ctx.run(ctx.tecA, [materialAction(sourceId, ctx.workOrderId)]);
+  const otherWorkOrder = await ctx.createAssignedWorkOrder(ctx.tecA);
+  const before = await ctx.snapshotLedger();
+
+  const response = await ctx.run(ctx.tecA, [materialRemoveAction(randomUUID(), sourceId, otherWorkOrder)]);
+
+  assert.equal(response.rejected[0]?.error?.reason, "work_order_mismatch");
+  assert.deepEqual(await ctx.snapshotLedger(), before);
+  assert.ok(await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId));
+});
+
 test("[RC2(16)] papel technician atribuído aplica material", async () => {
   const ctx = await setup();
   const workOrderId = await ctx.createAssignedWorkOrder(ctx.technician);
@@ -379,6 +473,29 @@ test("[RC2(20)] com inventory e sem work_orders só material é recusado por mó
   });
   assert.equal(consume.status, 200, JSON.stringify(consume.body));
   assert.equal(consume.body.data.accepted.length, 1);
+});
+
+test("[RC2(20-r)] sem work_orders o remove não estorna a baixa ativa", async () => {
+  const ctx = await setup();
+  const sourceId = randomUUID();
+  await ctx.run(ctx.tecA, [materialAction(sourceId, ctx.workOrderId)]);
+  const before = await ctx.snapshotLedger();
+  const activeBefore = await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId);
+
+  const response = await syncMobileInventoryActions(ctx.tecA, {
+    actions: [materialRemoveAction(randomUUID(), sourceId, ctx.workOrderId)],
+  }, {
+    inventory: ctx.inventory,
+    workOrders: ctx.workOrders,
+    workOrdersModuleEnabled: async () => false,
+  });
+
+  assert.equal(response.rejected[0]?.error?.reason, "module_not_enabled");
+  assert.deepEqual(await ctx.snapshotLedger(), before);
+  assert.deepEqual(
+    await ctx.inventory.findExitBySource(ctx.inventoryActor, "work_order_material", sourceId),
+    activeBefore,
+  );
 });
 
 test("[RC2(21)] bootstrap exige inventory e permissão de sync", async () => {

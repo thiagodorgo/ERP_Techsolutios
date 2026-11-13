@@ -77,13 +77,32 @@ async function setup() {
   };
   const workOrderTecA = await createAssignedWorkOrder(tecA);
   const workOrderNoProfile = await createAssignedWorkOrder(noProfile);
-  const run = (who: AuthenticatedActor, workOrderId: string, sku: string, quantity: number) =>
+  const run = (
+    who: AuthenticatedActor,
+    workOrderId: string,
+    sku: string,
+    quantity: number,
+    clientActionId = randomUUID(),
+  ) =>
     syncMobileInventoryActions(who, {
       actions: [{
-        client_action_id: randomUUID(),
+        client_action_id: clientActionId,
         type: "work_order_material.add",
         local_created_at: "2026-11-12T12:00:00.000Z",
         payload: { work_order_id: workOrderId, sku, quantity },
+      }],
+    }, {
+      inventory,
+      workOrders,
+      workOrdersModuleEnabled: async () => true,
+    });
+  const remove = (who: AuthenticatedActor, workOrderId: string, sourceClientActionId: string) =>
+    syncMobileInventoryActions(who, {
+      actions: [{
+        client_action_id: randomUUID(),
+        type: "work_order_material.remove",
+        local_created_at: "2026-11-12T12:00:00.000Z",
+        payload: { source_client_action_id: sourceClientActionId, work_order_id: workOrderId },
       }],
     }, {
       inventory,
@@ -114,6 +133,7 @@ async function setup() {
     workOrderNoProfile,
     createAssignedWorkOrder,
     run,
+    remove,
     balance,
     materialMovements,
   };
@@ -145,6 +165,21 @@ test("[RC8(2)] saldo apenas na BASE não cobre baixa da custódia profissional",
     custodyOperatorProfileId: ctx.profileA.id,
   }), 0);
   assert.equal((await ctx.materialMovements()).length, 0);
+});
+
+test("[RC8(3)] remove devolve a peça à custódia profissional original", async () => {
+  const ctx = await setup();
+  const sourceId = randomUUID();
+  const add = await ctx.run(ctx.tecA, ctx.workOrderTecA, ctx.x.sku, 2, sourceId);
+  const remove = await ctx.remove(ctx.tecA, ctx.workOrderTecA, sourceId);
+
+  assert.equal(add.accepted.length, 1);
+  assert.equal(remove.accepted.length, 1);
+  assert.equal(await ctx.balance(ctx.x.id, {
+    custodyType: "professional",
+    custodyOperatorProfileId: ctx.profileA.id,
+  }), 5);
+  assert.equal(await ctx.balance(ctx.x.id, { custodyType: "base" }), 0);
 });
 
 test("[RC8(4)] técnico de campo sem cadastro é recusado sem baixa", async () => {
@@ -185,7 +220,8 @@ test("[RC8(6)] gerente com cadastro ativo baixa da própria custódia, nunca da 
     createdBy: ctx.inventoryActor.userId,
   });
   const workOrderId = await ctx.createAssignedWorkOrder(ctx.tecA);
-  const response = await ctx.run(ctx.manager, workOrderId, ctx.x.sku, 2);
+  const sourceId = randomUUID();
+  const response = await ctx.run(ctx.manager, workOrderId, ctx.x.sku, 2, sourceId);
   const [movement] = await ctx.materialMovements();
 
   assert.equal(response.accepted.length, 1);
@@ -195,6 +231,14 @@ test("[RC8(6)] gerente com cadastro ativo baixa da própria custódia, nunca da 
     custodyType: "professional",
     custodyOperatorProfileId: profileG.id,
   }), 2);
+  assert.equal(await ctx.balance(ctx.x.id, { custodyType: "base" }), 10);
+
+  const remove = await ctx.remove(ctx.manager, workOrderId, sourceId);
+  assert.equal(remove.accepted.length, 1);
+  assert.equal(await ctx.balance(ctx.x.id, {
+    custodyType: "professional",
+    custodyOperatorProfileId: profileG.id,
+  }), 4);
   assert.equal(await ctx.balance(ctx.x.id, { custodyType: "base" }), 10);
 });
 

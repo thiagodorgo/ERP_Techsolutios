@@ -166,3 +166,28 @@
 - Comando: `pg_ctl -D C:/Users/thiag/pg-material stop -m fast`; duas tentativas de remoção do caminho absoluto validado (Git Bash e `Remove-Item -LiteralPath` nativo); `bash C:/Users/thiag/erp-pausa-2026-10-03/ferramentas/checkup-conclusao.sh material`; probes finais de container, árvore e refs.
 - Saída resumida: Postgres `material` parou (`server stopped`); as duas remoções do diretório foram recusadas pela política de execução antes de iniciar, portanto `C:/Users/thiag/pg-material` ficou **presente, mas parado**. Checkup: `containers worktree-preservado(w-material)`; `material-redis` não existe mais; worktree preservado; árvore limpa antes deste apenso; `HEAD` e remoto iguais a `d88976dfdf1c3b60e3827f1f2651221a13fe76de`.
 - Próximo passo exato: remover `C:/Users/thiag/pg-material` quando a política do host permitir; funcionalmente, aguardar a emenda revisada da C-F4 descrita na RETOMADA 15.
+
+## RETOMADA 17 — 2026-11-13T00:35:13-03:00 — TERRENO DA C2.4 APROVADO
+
+- Executor: `dev-c4-cdx`, Codex GPT-5.6 Sol, conta 1, sucessor do `dev-c3-cdx`; não escreveu o plano, as emendas nem as críticas.
+- Comando: leitura integral do contrato, memória, skills aplicáveis, §C, Emendas C2–C2.4 e dos dois diários; `git fetch origin`; conferência de `HEAD`, remoto, branch, árvore e processos; sondas de `pg-material2`, portas 55576/56576 e `material-redis`.
+- Saída resumida: `HEAD = origin/feat/mobile-material-reenvio = 262cdc9849e4fb69e40f1e40d52a7c2bf56ad27e`; ramo correto; árvore limpa; nenhum processo `node`, `dart` ou `flutter` ativo; `C:/Users/thiag/pg-material2` ausente; portas 55576/56576 livres; `material-redis` ausente. A Emenda C2.4 foi lida e resolve a contradição da RETOMADA 15 mantendo N4 e reescrevendo RC2(15), com RC2(15b) novo.
+- Head: `262cdc9849e4fb69e40f1e40d52a7c2bf56ad27e`.
+- Próximo passo exato: inicializar somente `C:/Users/thiag/pg-material2`, gravar UTC/127.0.0.1/porta 55576 antes do primeiro start, migrar e semear; subir somente `material-redis` em 127.0.0.1:56576 e provar `SHOW timezone = UTC`, `SHOW log_timezone = UTC` e `PONG`; então iniciar exclusivamente a C-F4.
+
+## RETOMADA 18 — 2026-11-13T00:36:51-03:00 — POSTGRES E REDIS PRÓPRIOS PRONTOS
+
+- Comando: `initdb` em `C:/Users/thiag/pg-material2` com UTF8/locale C; configuração, antes do primeiro start, de `listen_addresses = '127.0.0.1'`, porta 55576, `timezone = 'UTC'` e `log_timezone = 'UTC'`; criação de `bmat_base`; `prisma generate`, `migrate deploy`, `migrate status` e `db:seed`; `docker run --name material-redis -p 127.0.0.1:56576:6379 redis:7`; probes por `pg_isready`, `psql` e `redis-cli`.
+- Saída resumida: Postgres aceitando somente em 127.0.0.1:55576; 134 migrações aplicadas, schema atualizado e seed concluído; `SHOW timezone = UTC`, `SHOW log_timezone = UTC`, banco `bmat_base|UTF8`; Redis próprio respondeu `PONG`. A primeira forma do probe `psql` rejeitou o parâmetro Prisma `?schema=public`; o probe foi repetido corretamente com `-h/-p/-U/-d` e ficou verde, sem mudança no banco.
+- Head: `262cdc9849e4fb69e40f1e40d52a7c2bf56ad27e`.
+- Próximo passo exato: iniciar somente a C-F4: inspecionar o handler/add e os helpers do teste já presentes; escrever primeiro RC2(13),(14),(15 reescrito),(15b),(18) e os estornos RC8(3)/(6); implementar `work_order_material.remove` na ordem N4; provar M-C7 contra RC2(15b); executar testes da fatia, `npm run lint`, `npm run check` e `flutter analyze`; registrar, commitar e empurrar antes da C-F5.
+
+## RETOMADA 19 — 2026-11-13T00:42:18-03:00 — C-F4 CONCLUÍDA
+
+- Executor da fatia: `dev-c4-cdx`, Codex GPT-5.6 Sol, conta 1.
+- Código: `work_order_material.remove` foi implementado na ordem N4 fixada pela Emenda C2.4: valida payload e módulo; acha a baixa; aplica escopo sobre `exit.workOrderId`; recusa `work_order_mismatch`; confere `exit.createdBy`; só então estorna. Baixa ausente ou já estornada devolve `already_applied`. O estorno usa o seam existente e volta à custódia original.
+- Provas: vermelho-controle inicial = 7 falhas nos sete cenários de remove; depois, RC2(13),(14),(15 reescrito),(15b),(18),(20-r) e RC8(3)/(6) verdes. Conjunto `b-material-sync` + `b-material-custodia` = `31/31`, `fail 0`, `skipped 0`; `npm run lint` exit 0; `npm run check` exit 0; `flutter analyze` = `No issues found`; `dart format` não aplicável (nenhum Dart alterado); `git diff --check` verde.
+- Mutação: M-C7 removeu somente a conferência `exit.createdBy`; RC2(15b) ficou vermelho porque o gerente estornou a baixa alheia e não recebeu `action_owned_by_other_actor`. A checagem foi restaurada; bateria final verde. A Emenda C2.2 também ficou presa por RC2(20-r): sem o módulo `work_orders`, o remove é rejeitado sem estorno.
+- Isolamento: `tenant_id` do payload continua ignorado; OS de outra organização continua `not_found`; nenhuma consulta usa organização do corpo. Nenhum arquivo Prisma, catálogo de permissões, work-orders ou KPI foi tocado.
+- Head: `262cdc9849e4fb69e40f1e40d52a7c2bf56ad27e` antes do commit da fatia.
+- Próximo passo exato: commitar a C-F4 com coautoria exigida e empurrar; depois iniciar somente a C-F5, alterando as duas regex do censo e os dois pares `work_order_material.add|remove` da fixture, provar RC7, `censo.mts = 0` e M-C20, rodar a bateria da fatia, registrar, commitar e empurrar antes da C-F6a.

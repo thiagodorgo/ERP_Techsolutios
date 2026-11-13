@@ -333,6 +333,11 @@ async function processAction(
       return withMaterialEcho(action, await addWorkOrderMaterial(deps, actor, action));
     }
 
+    if (action.type === "work_order_material.remove") {
+      requireActionPermission(actor, "work_orders:update");
+      return withMaterialEcho(action, await removeWorkOrderMaterial(deps, actor, action));
+    }
+
     if (!isSupportedActionType(action.type)) {
       throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
     }
@@ -427,6 +432,62 @@ async function addWorkOrderMaterial(
     work_order_id: workOrderId,
     result_ref: movement.id,
     server_state: materialServerState(movement, item.sku, quantity, workOrderId),
+  };
+}
+
+async function removeWorkOrderMaterial(
+  { inventory, workOrders, workOrdersModuleEnabled }: MobileInventorySyncDeps,
+  actor: AuthenticatedActor,
+  action: MobileInventoryAction,
+): Promise<MobileInventoryActionResult> {
+  parseClientActionId(action.client_action_id);
+  const sourceId = parseSourceClientActionId(action.payload.source_client_action_id);
+  const payloadWorkOrderId = parseMaterialWorkOrderId(action.payload.work_order_id);
+
+  if (!(await workOrdersModuleEnabled())) {
+    throw routeError(403, "FORBIDDEN", "module_not_enabled", "The work_orders module is not enabled.");
+  }
+
+  const exit = await inventory.findExitBySource(actor, "work_order_material", sourceId);
+  if (!exit) {
+    return {
+      client_action_id: action.client_action_id,
+      type: action.type,
+      status: "already_applied",
+      work_order_id: payloadWorkOrderId,
+    };
+  }
+
+  const exitWorkOrderId = parseMaterialWorkOrderId(exit.workOrderId);
+  await (actorMutatesAssignedOnly(actor)
+    ? workOrders.getForMutation(actor, exitWorkOrderId)
+    : workOrders.get(actor, exitWorkOrderId));
+
+  if (payloadWorkOrderId !== exitWorkOrderId) {
+    throw routeError(422, "INVENTORY_INVALID", "work_order_mismatch", "work_order_id differs from the material exit.");
+  }
+
+  if (exit.createdBy !== actor.userId) {
+    return materialConflict(action, "action_owned_by_other_actor", exit);
+  }
+
+  const reversal = await inventory.removeExitForSource(actor, "work_order_material", sourceId);
+  if (!reversal) {
+    return {
+      client_action_id: action.client_action_id,
+      type: action.type,
+      status: "already_applied",
+      work_order_id: exitWorkOrderId,
+    };
+  }
+
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "accepted",
+    item_id: exit.itemId,
+    work_order_id: exitWorkOrderId,
+    result_ref: reversal.id,
   };
 }
 
@@ -884,6 +945,19 @@ function parseClientActionId(value: unknown): string {
     return parseRequiredUuid(value, "client_action_id");
   } catch {
     throw routeError(400, "BAD_REQUEST", "invalid_client_action_id", "client_action_id must be a valid UUID.");
+  }
+}
+
+function parseSourceClientActionId(value: unknown): string {
+  try {
+    return parseRequiredUuid(value, "source_client_action_id");
+  } catch {
+    throw routeError(
+      400,
+      "BAD_REQUEST",
+      "invalid_client_action_id",
+      "source_client_action_id must be a valid UUID.",
+    );
   }
 }
 
