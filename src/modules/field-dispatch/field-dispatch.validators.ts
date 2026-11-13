@@ -112,6 +112,23 @@ export function parseOffset(value: unknown): number {
   return parsed;
 }
 
+// B-O6R-09 (P3) — a chave de repetição da criação: opcional, de 8 a 128 caracteres em `[A-Za-z0-9._:-]` (cabe um UUID).
+// O padrão do sistema (`commission.service.ts`, até 160, não vazio) é mais largo; o intervalo mais estreito aqui é
+// escolha declarada do plano v2 §2.2. Fora dele, 400. A chave nunca sai em DTO nem em auditoria (§2.8).
+const IDEMPOTENCY_KEY_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
+
+export function parseOptionalIdempotencyKey(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value === "string" && IDEMPOTENCY_KEY_PATTERN.test(value)) return value;
+
+  throw new FieldDispatchError(
+    400,
+    "FIELD_DISPATCH_INVALID",
+    "invalid_idempotency_key",
+    "idempotencyKey must have 8 to 128 characters among letters, digits, '.', '_', ':' and '-'.",
+  );
+}
+
 export function parseOptionalSearch(value: unknown): string | undefined {
   const search = optionalString(value);
   if (!search) return undefined;

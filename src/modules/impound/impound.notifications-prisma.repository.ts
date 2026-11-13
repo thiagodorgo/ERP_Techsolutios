@@ -174,9 +174,10 @@ export class PrismaNotificationRepository implements NotificationRepository {
         notice_edict_day: number;
       }>
     >`
-      SELECT ip.entered_at, ip.frozen_at, ip.status, jp.scope, jp.owner_notif_days, jp.notice_edict_day
+      SELECT ip.entered_at, ip.frozen_at, ip.status,
+             ip.regime_scope AS scope, ip.regime_owner_notif_days AS owner_notif_days,
+             ip.regime_notice_edict_day AS notice_edict_day
       FROM impound_processes ip
-      JOIN jurisdiction_profiles jp ON jp.tenant_id = ip.tenant_id AND jp.id = ip.profile_id
       WHERE ip.tenant_id = ${tenantId}::uuid AND ip.id = ${processId}::uuid
     `;
     const row = rows[0];
@@ -199,11 +200,10 @@ export class PrismaNotificationRepository implements NotificationRepository {
     const rows = await this.client.$queryRaw<Array<{ id: string }>>`
       SELECT ip.id
       FROM impound_processes ip
-      JOIN jurisdiction_profiles jp ON jp.tenant_id = ip.tenant_id AND jp.id = ip.profile_id
       WHERE ip.tenant_id = ${tenantId}::uuid
         AND ip.entered_at IS NOT NULL AND ip.frozen_at IS NULL
         AND ip.status <> 'JUDICIAL_HOLD'
-        AND jp.scope = 'PUBLIC_AGREEMENT'
+        AND ip.regime_scope = 'PUBLIC_AGREEMENT'
       ORDER BY ip.entered_at ASC
       LIMIT ${limit}
     `;

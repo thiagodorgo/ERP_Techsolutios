@@ -107,6 +107,18 @@ test("T-TAG-10 · tag desconhecida falha fechada na estratégia direta", () => {
   }
 });
 
+test("T-TAG-10b · tag \"Duplicada\" com cada um dos 12 invisíveis é ambígua (10), nas duas estratégias", () => {
+  // B-ASS-09a (`P-SAN303-TESTE-TAG-INVISIVEL`) — o caso que saiu do T-TAG-10 volta como asserção. O invisível vai na TAG
+  // da linha (o T-TAG-14 cobre o invisível no NOME da organização). MUTAÇÃO QUE MATA: M-TAG (a remoção de invisíveis em
+  // `normalizeTenantTag`, `.replace(/[\p{Default_Ignorable_Code_Point}\p{Cf}]/gu, "")`, apagada).
+  for (const [label, character] of invisibleTenantTagCharacters) {
+    for (const strategy of ["direct_tag_then_usage_weighted_v1", "usage_weighted_v1"] as const) {
+      const result = run(`Duplicada${character}`, strategy);
+      assert.doesNotThrow(() => assertAmbiguous(result), `${label} em ${strategy}`);
+    }
+  }
+});
+
 test("T-TAG-11 · estratégia só por uso ignora tag desconhecida", () => {
   const result = run("nao-existe", "usage_weighted_v1");
   assert.deepEqual(allocationPairs(result), [[tenantA.id, 2], [tenantB.id, 6]]);

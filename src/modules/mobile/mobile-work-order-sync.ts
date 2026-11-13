@@ -1,6 +1,7 @@
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { toWorkOrderDto } from "../work-orders/work-order.dto.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
+import { isCheckinRefusal } from "../work-orders/work-order.checkin.js";
 import {
   ASSIGNMENT_CHANGED_CONFLICT_TYPE,
   ASSIGNMENT_CHANGED_NEXT_ACTION,
@@ -232,7 +233,9 @@ async function processAction(
 
     if (action.type === "work_order.assign") {
       requireActionPermission(actor, action, "work_orders:assign");
-      const workOrder = await service.assign(actor, parseRequiredString(action.payload.work_order_id, "work_order_id"), {
+      const assignId = parseRequiredString(action.payload.work_order_id, "work_order_id");
+      await assertExpectedTechnician(service, actor, assignId, action.payload.expected_technician_id);
+      const workOrder = await service.assign(actor, assignId, {
         operatorId: action.payload.operator_id,
         userId: action.payload.user_id,
         // D1 — optional viatura/equipe carried by the mobile assign action.
@@ -268,16 +271,47 @@ async function processAction(
     }
 
     requireActionPermission(actor, action, "work_orders:status");
-    const workOrder = await service.changeStatus(actor, parseRequiredString(action.payload.work_order_id, "work_order_id"), {
-      status: action.payload.status,
-      message: action.payload.message,
-      cancellationReason: action.payload.cancellation_reason,
-    });
+    // B-SAN3-26 — a fila repassa a confirmação da placa e se declara `mobile_sync`: por aqui a base NÃO tem a isenção
+    // da rota HTTP, e todo mundo confirma os dígitos.
+    const workOrder = await service.changeStatus(
+      actor,
+      parseRequiredString(action.payload.work_order_id, "work_order_id"),
+      {
+        status: action.payload.status,
+        message: action.payload.message,
+        cancellationReason: action.payload.cancellation_reason,
+        checkin_confirmation: action.payload.checkin_confirmation,
+      },
+      { entry: "mobile_sync" },
+    );
 
     return acceptedResult(action, workOrder);
   } catch (error) {
     return actionErrorResult(action, error);
   }
+}
+
+// B-O6R-11d (CL11D-01, Q1 = A) — pré-condição DECLARADA pelo app: a ação de viatura/equipe só vale se o técnico da OS
+// ainda é o que o aparelho conhecia. Sem a chave, nada muda (web, testes do 07c, apps antigos). Fail-closed: chave
+// presente e diferente, `null`, vazia ou de outro tipo, ou OS sem técnico → 409, que o lote devolve em `conflicts[]`
+// (`refresh_work_order_and_retry`). Só restringe: nenhum papel ganha poder, e a trava do 07c continua inteira.
+// Janela declarada: entre este `get` e o `assign` (a mesma classe da trava do REST, que lê e depois escreve).
+async function assertExpectedTechnician(
+  service: WorkOrderService,
+  actor: AuthenticatedActor,
+  workOrderId: string,
+  expected: unknown,
+): Promise<void> {
+  if (expected === undefined) return;
+  const current = await service.get(actor, workOrderId);
+  const technician = current.assignedUserId ?? current.assignedOperatorId ?? null;
+  if (typeof expected === "string" && technician === expected) return;
+  throw new WorkOrderError(
+    409,
+    "WORK_ORDER_TECHNICIAN_CHANGED",
+    "technician_changed_since_action",
+    "O técnico desta OS mudou depois do envio; confira antes de reenviar.",
+  );
 }
 
 function requireActionPermission(
@@ -309,6 +343,9 @@ function actionErrorResult(
   action: MobileWorkOrderAction,
   error: unknown,
 ): MobileWorkOrderActionResult {
+  // B-SAN3-26 (C26-02) — a recusa do check-in é CONFLITO resolvível pelo guincheiro ("Confirmar a placa de novo"),
+  // nunca `rejected`: `rejected` vira `failed` no app, que reenvia a mesma recusa 5 vezes e aposenta a ação.
+  if (isCheckinRefusal(error)) return checkinConflictResult(action, error);
   // B-O6R-07c-b1 (`D2-07c` = (d)) — status e km de quem JÁ FOI técnico da OS e não é mais: conflito à espera de um
   // superior (`B-O6R-07c-b2`), não recusa. Quem nunca foi técnico segue no `rejected` `not_assigned_to_actor`.
   if (isPreviouslyAssignedRefusal(error) && isRouteLikeError(error)) {
@@ -376,6 +413,29 @@ function actionErrorResult(
       code: "BAD_REQUEST",
       reason: "invalid_action",
       message,
+    },
+  };
+}
+
+function checkinConflictResult(
+  action: MobileWorkOrderAction,
+  error: { readonly code: string; readonly reason: string; readonly message: string },
+): MobileWorkOrderActionResult {
+  return {
+    client_action_id: action.client_action_id,
+    type: action.type,
+    status: "conflict",
+    work_order_id: readWorkOrderId(action),
+    conflict: {
+      conflict_type: error.reason,
+      server_id: readWorkOrderId(action),
+      local: sanitizeActionForConflict(action),
+      next_action: "redo_checkin",
+    },
+    error: {
+      code: error.code,
+      reason: error.reason,
+      message: error.message,
     },
   };
 }
@@ -495,9 +555,15 @@ function readWorkOrderId(action: MobileWorkOrderAction): string | undefined {
 function sanitizeActionForConflict(action: MobileWorkOrderAction): RawRecord {
   return {
     type: action.type,
-    payload: normalizePayload(action.payload),
+    payload: normalizePayload(withoutCheckinConfirmation(action.payload)),
     ...(action.local_created_at ? { local_created_at: action.local_created_at } : {}),
   };
+}
+
+// B-SAN3-26 (C26R2-08) — os dígitos da placa não voltam no `conflict.local` de NENHUM conflito (transição inválida,
+// troca de técnico, reenvio com outro corpo, recusa do check-in): só o que o app precisa para reconhecer a ação.
+function withoutCheckinConfirmation(payload: RawRecord): RawRecord {
+  return Object.fromEntries(Object.entries(payload).filter(([key]) => key !== "checkin_confirmation"));
 }
 
 function hasAnyPermission(

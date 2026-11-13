@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 17;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -32,6 +32,7 @@ class AppDatabase extends GeneratedDatabase {
       await m.database.customStatement(_kFieldLocationEvents);
       await m.database.customStatement(_kWorkOrderMaterials);
       await m.database.customStatement(_kTelemetryEvents);
+      await m.database.customStatement(_kTechnicianStockCache); // onCreate
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -219,6 +220,39 @@ class AppDatabase extends GeneratedDatabase {
           }
         }
       }
+      if (from >= 2 && from < 16) {
+        // B-SAN3-26 (item 53): o modo do check-in e os 2 caracteres finais da placa, que o servidor manda na lista.
+        // Migração ADITIVA: as linhas antigas ficam com as duas colunas NULL (modo `unknown`, que pede os dígitos sem
+        // comparar). Guarda `from >= 2`: abaixo disso a tabela nasce já com as colunas via `_kWorkOrders`. GUARDA da
+        // coluna por `PRAGMA table_info`, no padrão da v15: o app antigo que abre um banco 16 o devolve à versão 15
+        // COM as colunas, e o ALTER duplicaria ("duplicate column").
+        final tables = await m.database
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='work_orders'",
+            )
+            .get();
+        if (tables.isNotEmpty) {
+          final columns = await m.database
+              .customSelect("PRAGMA table_info('work_orders')")
+              .get();
+          final hasCheckinMode = columns.any(
+            (column) => column.read<String>('name') == 'checkin_mode',
+          );
+          if (!hasCheckinMode) {
+            await m.database.customStatement(
+              'ALTER TABLE work_orders ADD COLUMN checkin_mode TEXT',
+            );
+            await m.database.customStatement(
+              'ALTER TABLE work_orders ADD COLUMN checkin_plate_tail TEXT',
+            );
+          }
+        }
+      }
+      if (from < 17) {
+        // B-SAN3-15a — a última resposta do estoque do técnico, por (organização, usuário).
+        // Migração ADITIVA: só CREATE TABLE IF NOT EXISTS, nenhuma linha de outra tabela se perde.
+        await m.database.customStatement(_kTechnicianStockCache);
+      }
     },
   );
 
@@ -324,7 +358,9 @@ CREATE TABLE IF NOT EXISTS work_orders (
   vehicle_id TEXT,
   vehicle_plate TEXT,
   team_id TEXT,
-  team_name TEXT
+  team_name TEXT,
+  checkin_mode TEXT,
+  checkin_plate_tail TEXT
 )''';
 
 const _kWorkOrderTimeline = '''
@@ -472,6 +508,16 @@ CREATE TABLE IF NOT EXISTS field_location_events (
   last_safe_error TEXT,
   created_at INTEGER NOT NULL,
   synced_at INTEGER
+)''';
+
+// B-SAN3-15a — lista salva do estoque do técnico, chave (tenant_id, user_id).
+const _kTechnicianStockCache = '''
+CREATE TABLE IF NOT EXISTS technician_stock_cache (
+  tenant_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  items_json TEXT NOT NULL,
+  fetched_at INTEGER NOT NULL,
+  PRIMARY KEY (tenant_id, user_id)
 )''';
 
 // Ω4C PR-13 — buffer DEDICADO da telemetria do app (heartbeat/acessos/recusas),

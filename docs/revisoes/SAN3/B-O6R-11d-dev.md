@@ -1,0 +1,208 @@
+# B-O6R-11d — diário do dev (P1)
+
+- **Dev:** `dev-11d-cl`, Claude Opus 5.5, subagente da sessão, nível menor. **Exceção declarada** (§C7 itens 6 e 11(6)): as duas contas Codex estão sem cota semanal até 16/11, a API está reservada para verificação e o Antigravity está no limite de 5 h. Por isso a pré-revisão e a conferência serão de outro modelo, pela API. Não escrevi o plano nem o critiquei.
+- **Plano:** `plano-B-O6R-11d-v2.md` (replano de topo, Opus pela API) com a **Emenda 1** (requisitos da crítica r2, `crit-11d-r2-cl`). A emenda prevalece sobre o corpo.
+- **Respostas do dono** (11/11, `D-DONO-TODAS-RECOMENDACOES-1111`): vale a recomendação de cada pergunta. **Q1 = A**: o app declara `expected_technician_id`; se o técnico da OS não for mais esse, o servidor responde conflito `technician_changed_since_action`, e a ação fica em conflito na fila, para decisão manual.
+- **Ramo:** `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, criado a partir da `origin/main` `da12fec6` (#541) às 10:52 SP.
+- Toda hora abaixo vem de `date` (SP).
+
+## Perguntas e desvios abertos (para o orquestrador)
+
+1. **CR2-11D-02, ordem com o `B-SAN3-26` (#534):** a emenda manda o orquestrador gravar no status-geral, antes da F0, qual vai primeiro. Medido às 10:52: `git show origin/main:agent-orchestration/docs/status-geral.md | grep -n 11d` não traz a ordem, e o `REGISTRO-PENDENTE.md` também não. O #534 está OPEN (head `467caf26`). **Como segui, sem mudar o plano:** "quem mergear primeiro manda". Parti da `main` de agora. O #534 mexe em `_workOrderFromRemoteJson` (acrescenta `checkinMode` e `checkinPlateTail`) e em `_workOrderFromJson` (que o 11d apaga); no `sync_replay_service.dart` só no `_statusPayload`; no `mobile-work-order-sync.ts` só no ramo de status e no `actionErrorResult`; no DTO só na lista (`toWorkOrderListDto`), não no `toWorkOrderDto`. Se o #534 entrar antes do meu PR, faço merge da `main` e levo os dois campos para o `_workOrderFromRemoteJson`, conferidos no T1.
+2. **Pendências do #534 com dono B-O6R-11d (mandato):**
+   - **PR534-03 (mapeamento de status no pull): coberta** pelo codec da F1 (T5 com `on_route → enRoute` e `on_site → arrived` pelo `DioWorkOrderRemoteApi` real).
+   - **`P-APP-DETALHE-OS-LARGURA-INFINITA`: NÃO coberta.** O arquivo é `lib/features/work_orders/ui/work_order_operational_map_screen.dart`, e toda tela (`**/ui/**`) é PROIBIDO no §4.2. Precisa de emenda ou de outro bloco.
+   - **`P-CHECKIN-CARTAO-CONGELADO-NO-PULL` (C2-02 da junta do #534): NÃO coberta.** O pull que pula a OS com cartão de check-in vive em `work_order_repository.dart` (PROIBIDO, trava SAN3-14/15/16) e no código do #534, que ainda não está na `main`.
+
+## Fatias
+
+### F0 — vermelhos do QUA-004 (11:08 SP)
+
+- **Arquivos:** a fixture `mobile/flutter_app/test/features/work_orders/bo6r11d_work_order_contract.json` (gerada a partir do `toWorkOrderDto` REAL por um script do scratchpad, para as chaves virem do backend; o script não é versionado); os 5 testes Flutter `bo6r11d_*`; os 2 Node `tests/b-o6r-11d-*`; o codec **esqueleto** `lib/core/network/work_order_api_codec.dart` (toda função `=> throw UnimplementedError('B-O6R-11d F1');`), a única mudança em `lib/`.
+- **Precisões declaradas (dentro do PERMITIDO, sem mudar o plano):**
+  - `detail_response.data` traz também `links` e `checklists`, porque o `GET /:id` os emite (`work-order.controller.ts:57`); o N3 compara o detalhe com `toWorkOrderDto(amostra, links, [])` e status/atribuição com `toWorkOrderDto(amostra)`.
+  - A fixture ganhou `backend_statuses` (CR2-11D-07(a)); o teste Node que a confere contra `WORK_ORDER_STATUSES` chama-se **N10**; o codec expõe `workOrderStatusHasBackendEntry`, que o T4 exige para cada item.
+  - CR2-11D-07(b): o `_backendPriority` está fora do recorte editável de `sync_replay_service.dart`, então ficou a segunda opção da emenda: o T6 fixa, pelo `encodeRequest` real de uma ação de criação, que a prioridade enviada é o inverso exato do `workOrderPriorityFromApi` nas 4 prioridades.
+  - CR2-11D-08: N7 e N8 moram em `tests/b-o6r-11d-lote-tecnico-esperado.test.ts`; as chaves trocadas no servidor são `work_order_id` e `vehicle_id`; o resto do `sync_assign_payload` vai por igualdade (o N2 confere chave a chave).
+  - T14 mora no `bo6r11d_codec_test.dart` (com um adaptador contador); T11 no `bo6r11d_contrato_rest_test.dart`.
+  - O T5 cobre também `on_route → enRoute` e `assigned → dispatched` (que pode iniciar rota), que é o PR534-03.
+- **Node (F0)**, `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-work-order-contract.test.ts tests/b-o6r-11d-lote-tecnico-esperado.test.ts` → `# tests 10 # pass 8 # fail 2`. Vermelhos: **N5** (`expected 'conflict', actual 'accepted'`: o lote atrasado devolve a OS a U), **N9** (`accepted`). Verdes declarados (CR2-11D-03, metade servidor): N1, N2, N3, N4, N6, N10; caracterizações N7, N8.
+- **Flutter (F0)**, os 5 arquivos `--reporter expanded` → `+2 -16` (18 testes). Vermelhos, com a mensagem:
+  - T1, T2, T3: `type 'Null' is not a subtype of type 'String' in type cast` em `work_order_remote_api.dart 297:56 _workOrderFromJson` (o envelope inteiro como OS);
+  - T13: `fetchWorkOrder com DTO cru deu _TypeError`;
+  - T4, T6, T10, T14: `UnimplementedError: B-O6R-11d F1` (esqueleto);
+  - T5: `Expected: inService, Actual: scheduled`;
+  - T12: `Expected: scheduled, Actual: <null>`;
+  - T7: `Expected: {'status': 'open'} Actual: {'status': 'scheduled'}` (manda o nome do app);
+  - T7b: a requisição sai e a resposta estoura (`_TypeError` em vez de `ArgumentError`);
+  - T8: `is missing map key 'userId'` (manda `user_id`/`note`);
+  - T9: `has different length and is missing map key 'user_id'`;
+  - T11: `Expected: 'org-sessao' Actual: 'org-intrusa'`;
+  - G1: `(a) Expected: <0> Actual: <4>`.
+  - **Verdes declarados na F0:** T9c e T10b.
+- `dart format --output=none --set-exit-if-changed test/features/work_orders/ lib/core/network/` → ec 0; `flutter analyze` dos arquivos novos → `No issues found!`.
+
+### F1 — parser único e codec, linha do tempo inclusive (11:18 SP)
+
+- **Código:** `lib/core/network/work_order_api_codec.dart` completo (tabelas `_statusFromBackend`, `_statusToBackend`, `_priorityFromBackend` com o texto das linhas-âncora da §2.2); em `work_order_remote_api.dart`: `_unwrapData` (texto prescrito), `_requireServerId` (CR2-11D-04: id ausente ou vazio → `ApiServerError`), os 3 métodos com `detail`/`updated`/`assigned`, o PATCH com `apiStatus` e `ArgumentError` sem requisição, o POST com `userId`/`message`, `tenantId: fallbackTenantId,`, status e prioridade pelo codec, `_workOrderFromJson` e `_statusFromApi` apagados, linha do tempo pelo `workOrderStatusFromApiOrNull`. `workOrderStatusFromApiValue` continua exportado e delega ao codec.
+- **Desvio de forma declarado:** a checagem do id da CR2-11D-04 é uma linha à parte em cada método (`_requireServerId(detail, resp);` etc.), e não dentro do `_unwrapData`, para não mudar o texto das âncoras M1–M3 e M15 que o plano prescreve. A âncora da mutação nova é `if (id is String && id.trim().isNotEmpty) return;` (única).
+- `dart format` → 0 mudança; `flutter analyze --no-pub` dos 2 arquivos → `No issues found!`.
+- **Flutter, os 5 arquivos do bloco** → `+17 -1`: só o **T9** vermelho (`is missing map key 'user_id'`), que é da F2. T1–T8, T11–T14, G1 verdes.
+- **Regressões:** `b109_approval_state_regression_test.dart`, `b127_timeline_remota_test.dart`, `bsan313_minhas_os_escopo_test.dart` → `+17: All tests passed!`.
+
+### Merge da main (11:20 SP)
+
+- Aviso do orquestrador às 11:17: o #536 (B-SAN3-23) entrou na `main` em `c95ad4fd`, com CAS de status no `changeStatus` e `assign`/`assignFromDispatch` revalidados (OS cancelada não ganha técnico). `git merge origin/main` limpo (`a37eb362`). O 11d não toca `work-order.service.ts` nem os repositórios: a pré-condição do lote roda ANTES do `service.assign` e só recusa; o `assign` continua com o CAS, a releitura e a revalidação do #536. Nenhuma propriedade do #536 é contrariada. A janela entre o `get` da pré-condição e o `get` do `assign` é a declarada no plano (§2.2, risco 6).
+
+### F2 — o lote manda o usuário e não desfaz troca de técnico (11:22 SP)
+
+- **App** (`sync_replay_service.dart`, só o recorte do §4.1): `import` do codec; `_assignPayload` com `userId = user_id ?? operator_id` e as linhas `if (userId != null) payload['user_id'] = userId;` e `if (userId != null) payload['expected_technician_id'] = userId;`; `_backendStatus` vira `String _backendStatus(String status) => workOrderStatusNameToApi(status);`.
+- **Backend** (`mobile-work-order-sync.ts`, só o ramo `work_order.assign` e a função nova): `assignId`, a linha `await assertExpectedTechnician(service, actor, assignId, action.payload.expected_technician_id);` e `assertExpectedTechnician` com as linhas-âncora `if (expected === undefined) return;` e `const technician = current.assignedUserId ?? current.assignedOperatorId ?? null;`. O `throw` foi quebrado em linhas (forma, não âncora).
+- **Trava de arquivo (§4.1):** antes da F2, `git branch -r` só mostra `origin/fix/checkin-confere-placa` (#534) entre os vizinhos; ele mexe no `mobile-work-order-sync.ts` no ramo de status e no `actionErrorResult`, não no ramo de assign. Não há ramo do `B-O6R-07c-b2` nem do `B-SAN3-16`.
+- `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-work-order-contract.test.ts tests/b-o6r-11d-lote-tecnico-esperado.test.ts tests/o6r07c-b-scope.test.ts tests/mobile-work-order-assign-registry.test.ts` → `# tests 202 # pass 202 # fail 0 # skipped 0` (N5 e N9 verdes; o controle positivo do 07c, lote SEM a chave, continua aceito).
+- **Flutter, os 5 arquivos do bloco** → `+18: All tests passed!` (T9 verde).
+- **Regressões do plano** (`b109`, `b126`, `b127`, `b103`, `b099`, `bsan313_minhas_os_escopo`, `bsan313_os_purga_reconcilia`, `bsan313_retencao_ciclo2`, `test/core/sync/`) → `+236: All tests passed!`.
+
+### F3 — mutações literais, rodada R-M (11:26–11:31 SP; T5 reforçado às 11:35)
+
+- **Instrumento:** `rm_runner.py` (scratchpad, não versionado): para cada mutação, `text.count(origem) == 1` antes de aplicar (o `grep -cF` da regra R-M; outro número para a rodada e vira emenda), aplicação isolada numa cópia, o teste-dono pelo arquivo inteiro (`flutter test --no-pub <arquivo> --reporter expanded` ou `node --test --test-reporter=tap --import tsx <arquivo>`, sob `CORE_SAAS_PERSISTENCE=memory`), exigência de `ec ≠ 0` E da linha `[E]`/`not ok` do teste-dono, e restauro do arquivo com comparação byte a byte. `git status --porcelain` depois da rodada: só os 2 arquivos novos de registro.
+- **Resultado: 34 de 34 VERMELHAS, todas restauradas** (`ok_all True`). As do plano: M1, M2, M3, M15, M4, M6, M5, M5b, M16, M7, M10, M7c, M14r, M8, M8b, M13, M14, M14e, M9, M9b, M10b, M9c, M12, M11, M11b, M7f, MA1, MA3, MA4, MA2, M-N8. **Novas, declaradas:** `M-ID` (CR2-11D-04, `if (id is String && id.trim().isNotEmpty) return;` → `return;` → T13), `M4b` (CR2-11D-07(a), apagar `  'paused': WorkOrderStatus.paused,` → T4: o casamento pelo nome do app não salva a entrada explícita) e `M6b` (CR2-11D-07(b), no `_backendPriority`, só na cópia de mutação, `'critical' => 'urgent',` → `'critical' => 'critical',` → T6). A M-IDX é da F4.
+- **CR2-11D-01 provado:** M9, M9b e M10b ficam vermelhas (o T9 e o T10b passam o lote capturado pelo `WorkOrderSyncCodec().encodeRequest`; o T9c e o T10b usam o `WorkOrderSyncReplayService`).
+- **Desvio de forma declarado:** a M14 acrescenta a linha depois do fim de `_workOrderFromRemoteJson` ancorada no trecho `    updatedAt: _parseDate(strOpt('updatedAt', 'updated_at')),\n  );\n}\n` (único), porque a linha nova não tem texto de origem; a M14e acrescenta `// remoteApi.fetchWorkOrder(` depois da linha `  Future<WorkOrderMutationResult> assignRegistry(` de `work_order_repository.dart`.
+
+| id | arquivo | grep -cF | teste-dono (saída) | resultado |
+|---|---|--:|---|---|
+| M1 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 3 [E]; dono T1: vermelho=True; Some tests failed. | VERMELHO |
+| M2 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 3 [E]; dono T2: vermelho=True; Some tests failed. | VERMELHO |
+| M3 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 3 [E]; dono T3: vermelho=True; Some tests failed. | VERMELHO |
+| M15 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T13: vermelho=True; Some tests failed. | VERMELHO |
+| M-ID | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T13: vermelho=True; Some tests failed. | VERMELHO |
+| M4 | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T4: vermelho=True; Some tests failed. | VERMELHO |
+| M4b | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T4: vermelho=True; Some tests failed. | VERMELHO |
+| M6 | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T6: vermelho=True; Some tests failed. | VERMELHO |
+| M6b | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T6: vermelho=True; Some tests failed. | VERMELHO |
+| M5 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_lista_e_linha_do_tempo_test.dart` ec=1: 1 [E]; dono T5: vermelho=True; Some tests failed. | VERMELHO |
+| M5b | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_lista_e_linha_do_tempo_test.dart` ec=1: 2 [E]; dono T5: vermelho=True; Some tests failed.<br>`bo6r11d_lista_e_linha_do_tempo_test.dart` ec=1: 2 [E]; dono T12: vermelho=True; Some tests failed. | VERMELHO |
+| M16 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_lista_e_linha_do_tempo_test.dart` ec=1: 1 [E]; dono T12: vermelho=True; Some tests failed. | VERMELHO |
+| M7 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7: vermelho=True; Some tests failed. | VERMELHO |
+| M10 | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7: vermelho=True; Some tests failed.<br>`bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T10: vermelho=True; Some tests failed. | VERMELHO |
+| M7c | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7b: vermelho=True; Some tests failed. | VERMELHO |
+| M14r | `lib/core/network/work_order_api_codec.dart` | 1 | `bo6r11d_codec_test.dart` ec=1: 1 [E]; dono T14: vermelho=True; Some tests failed.<br>`bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7b: vermelho=True; Some tests failed. | VERMELHO |
+| M8 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T8: vermelho=True; Some tests failed. | VERMELHO |
+| M8b | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T8: vermelho=True; Some tests failed. | VERMELHO |
+| M13 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T11: vermelho=True; Some tests failed. | VERMELHO |
+| M14 | `lib/features/work_orders/data/work_order_remote_api.dart` | 1 | `bo6r11d_guard_contrato_test.dart` ec=1: 1 [E]; dono G1: vermelho=True; Some tests failed. | VERMELHO |
+| M14e | `lib/features/work_orders/data/work_order_repository.dart` | 1 | `bo6r11d_guard_contrato_test.dart` ec=1: 1 [E]; dono G1: vermelho=True; Some tests failed. | VERMELHO |
+| M9 | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T9: vermelho=True; Some tests failed. | VERMELHO |
+| M9b | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T9: vermelho=True; Some tests failed. | VERMELHO |
+| M10b | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T10b vermelho=True; Some tests failed. | VERMELHO |
+| M9c | `lib/core/sync/sync_replay_service.dart` | 1 | `bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T9c vermelho=True; Some tests failed. | VERMELHO |
+| M12 | `test/features/work_orders/bo6r11d_work_order_contract.json` | 1 | `b-o6r-11d-work-order-contract.test.ts` ec=1: 1 not ok; dono N3] vermelho=True; # tests 5 # pass 4 # fail 1<br>`bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T2: vermelho=True; Some tests failed. | VERMELHO |
+| M11 | `test/features/work_orders/bo6r11d_work_order_contract.json` | 1 | `b-o6r-11d-work-order-contract.test.ts` ec=1: 1 not ok; dono N1] vermelho=True; # tests 5 # pass 4 # fail 1<br>`bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T8: vermelho=True; Some tests failed. | VERMELHO |
+| M11b | `test/features/work_orders/bo6r11d_work_order_contract.json` | 1 | `b-o6r-11d-work-order-contract.test.ts` ec=1: 1 not ok; dono N2] vermelho=True; # tests 5 # pass 4 # fail 1<br>`bo6r11d_sync_assign_test.dart` ec=1: 1 [E]; dono T9: vermelho=True; Some tests failed. | VERMELHO |
+| M7f | `test/features/work_orders/bo6r11d_work_order_contract.json` | 1 | `b-o6r-11d-work-order-contract.test.ts` ec=1: 1 not ok; dono N4] vermelho=True; # tests 5 # pass 4 # fail 1<br>`bo6r11d_contrato_rest_test.dart` ec=1: 1 [E]; dono T7: vermelho=True; Some tests failed. | VERMELHO |
+| MA1 | `src/modules/mobile/mobile-work-order-sync.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 2 not ok; dono N5] vermelho=True; # tests 5 # pass 3 # fail 2 | VERMELHO |
+| MA3 | `src/modules/mobile/mobile-work-order-sync.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 1 not ok; dono N6] vermelho=True; # tests 5 # pass 4 # fail 1 | VERMELHO |
+| MA4 | `src/modules/mobile/mobile-work-order-sync.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 1 not ok; dono N9] vermelho=True; # tests 5 # pass 4 # fail 1 | VERMELHO |
+| MA2 | `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 1 not ok; dono N7] vermelho=True; # tests 5 # pass 4 # fail 1 | VERMELHO |
+| M-N8 | `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` | 1 | `b-o6r-11d-lote-tecnico-esperado.test.ts` ec=1: 1 not ok; dono N8] vermelho=True; # tests 5 # pass 4 # fail 1 | VERMELHO |
+
+- **T5 reforçado (11:35):** para a `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` (PR534-03), o T5 afirma também que a OS em "Em rota" vinda do pull pode seguir para "No local" (`canTransitionTo(WorkOrderStatus.arrived)`). T5 verde; M5 e M5b re-executadas, vermelhas e restauradas.
+
+### F4 — registro (11:34–11:40 SP)
+
+- **Comando:** `agent-orchestration/codex/comandos/B-O6R-11d-contrato-os.md`. **Plano versionado:** `docs/revisoes/SAN3/B-O6R-11d-plano.md` (v2 + Emenda 1, cópia fiel; o v1 citado pelo caminho, não copiado).
+- **`pendencias.md`:**
+  - `P-O6R-B11` (o `Ω6R-QUA-004`): status FECHADA no merge deste PR, com apenso da prova (o `Ω6R-QUA-005` já tinha fechado no 1º PR do corte);
+  - `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` (dono `B-O6R-11d`, PR534-03): FECHADA no merge, prova T5;
+  - **CR2-11D-05:** as 6 pendências do ramo do #388 que o bloco toca foram portadas com o texto literal de `a24f58b5` ANTES de qualquer apenso (`P-WO-ASSIGN-OPERATOR-ID-TORTO`, `P-MOBILE-APPROVAL-REQUEST-REST-404`, `P-MOBILE-STATUS-ACCEPTED-LOSSY`, `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA`, `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL`, `P-MOBILE-CODEC-FILA-STATUS-CRU`), e o índice `P-O6R-B11-PENDENCIAS-DO-RAMO-388` marca cada uma como portada;
+  - a `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL` e a parte de exibição da `P-WO-STATUS-VOCABULARIO-APP-BACKEND` ficam **fechadas na leitura** (o fechamento formal é de quem conferir; seguem ABERTAS no índice);
+  - **correção medida** no apenso da `P-MOBILE-CODEC-FILA-STATUS-CRU`: na fila são 4 status crus, não 3 — o `rejected` também sai cru, e o backend o aceita de `assigned`;
+  - novas: `P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS` (MÉDIA, `B-SAN3-16`), `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO` (MÉDIA, `B-O6R-07c-b2`, com a contagem antes da produção), `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` (BAIXA, com a **divergência §A2** do tenant vazio contra o `required String` da junta do #388) e `P-MOBILE-REJECTED-DOIS-SENTIDOS` (BAIXA, `B-SAN3-16`);
+  - notas: `P-MOBILE-STATUS-NOMES` (a tradução é uma e coberta; segue aberta pelo `assigned → accepted`) e `P-APP-DETALHE-OS-LARGURA-INFINITA` (não coberta: tela, PROIBIDO).
+- **`PLANO_SAN3.md`:** só o status do item 3 (as duas linhas) e a cadeia `07c → 11d → SAN3-16` do `mobile-work-order-sync.ts`.
+- **`status-geral.md`:** a trava com o `B-SAN3-26` ("quem mergear primeiro manda") e as pendências do #534. **`log-execucao.md`:** a entrada do bloco.
+- **Índice (CR2-11D-06, com `python`):** `python agent-orchestration/controle/gerar-indice-pendencias.py` → `873 cabecalhos / 862 IDs | {'FECHADA': 204, 'ABERTA': 665, 'SEM-STATUS': 4}`. O diff grande do índice inclui o atraso do #536, que não o regenerou. Um primeiro gerado deu CRÍTICA à `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO`, porque o classificador casa a palavra "crítica" (a do revisor do plano) no corpo; o texto foi reescrito ("o revisor do plano") e o gerado voltou a MÉDIA.
+
+### Bateria final (§6 do plano + §9 do contrato), 11:36–12:10 SP
+
+- **Flutter** (`mobile/flutter_app`): `flutter pub get` ok; `dart format --output=none --set-exit-if-changed lib test` → **ec 1 por 1 arquivo que o bloco não toca** (`test/features/bsan313_minhas_os_escopo_test.dart`, `git diff --quiet origin/main -- <arquivo>` = igual à `main`): o Dart local é 3.11.4 e a CI fixa o Flutter 3.47.5 (`.github/workflows/ci.yml:494`), e o próprio arquivo avisa que foi escrito para a versão da CI. Nos arquivos do bloco: `dart format --output=none --set-exit-if-changed lib test/features/work_orders test/core` → 0 mudança. `flutter analyze` → `No issues found!`. Os 5 do bloco → `+18: All tests passed!`; as regressões do plano → `+236: All tests passed!`; a suíte inteira `flutter test --reporter compact` → **`+1137: All tests passed!`**.
+- **Node do bloco e regressões** (`CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-work-order-contract.test.ts tests/b-o6r-11d-lote-tecnico-esperado.test.ts tests/o6r07c-b-scope.test.ts tests/mobile-work-order-assign-registry.test.ts`) → `# tests 202 # pass 202 # fail 0 # skipped 0`.
+- **Trava do #536** (Postgres 16 `dev11d-pg`, migrado e semeado; o arnês usa papel efêmero `NOSUPERUSER NOBYPASSRLS`, conferido no A8): `tests/b-san3-23-cancel-race-db.test.ts` → `# tests 21 # pass 21 # fail 0 # skipped 0`. E o `-db` do 07c-b: `tests/o6r07c-b-scope-db.test.ts` → `# tests 13 # pass 13 # fail 0 # skipped 0`.
+- `npm run check` ec 0 · `npm run lint` ec 0 · `npm run build` ec 0.
+- **`npm test` na forma do job `backend`** (`DATABASE_URL` num banco NOVO `erp_backend11d` só migrado, como na CI; `REDIS_URL` no `dev11d-redis`; `CORE_SAAS_PERSISTENCE=memory`) → `# tests 5079 # pass 5046 # fail 30 # skipped 2`, ec 1. Os 30 vermelhos estão em 17 arquivos, todos `-db`, de corrida ou de drill (`ass-08-channel*`, `b-san3-12a-pay-pending-cheque-db`, `cheque-title-link-atomic-db`, `core-saas-persistence-restart-db`, `financial-entry-delete-reverse-race-db`, `impound-trigger-durability`, `inventory-*-db`, `san3-04a/05/08/09-*-db`, `traccar-*-db`, `users-acesso-seg-*-db`), com as causas de máquina sob carga: `Transaction API error: Unable to start a transaction in the given time`, transação de 5 s expirada, tetos de tempo (`1970 ms < 1 000`, `3446 ms (teto 2 000)`), `test timed out after 180000ms`, `EBUSY ... rmdir` do Windows. Só um arquivo cita o lote (`users-acesso-seg-portao-db`, o A6), e ele cai antes, na criação do usuário (`400 !== 201`), sem chegar ao lote. A triagem segue abaixo.
+- **Triagem dos 30 (12:12–12:51 SP):** os 17 arquivos re-executados em sequência (`node --test --test-concurrency=1 --test-reporter=tap --import tsx <os 17>`, mesmo ambiente) → `# tests 206 # pass 199 # fail 7 # skipped 0`. 23 dos 30 passam sem a carga da suíte paralela (inclusive os dois `users-acesso-seg-*-db`). Os 7 que sobram, em 3 arquivos, são de máquina Windows: `san3-05-runtime-role-guard-db` (`setsid: ausente — necessário para impedir que psql \password leia a senha do terminal`), `san3-09-bootstrap-platform-admin-db` (`SyntaxError: missing ) after argument list` ao lançar o script do drill) e o teto de tempo do `ass-08-channel-db` T-OBX-db-5. Nenhum dos 3 importa nem chama o que o bloco mudou: `grep -l "mobile-work-order-sync\|work-order-actions\|b-o6r-11d" <os 17>` só acha o `users-acesso-seg-portao-db`, que passou na sequência. A forma real do job `backend` é a da CI (Linux), lida no PR.
+- `python agent-orchestration/controle/gerar-indice-pendencias.py && git diff --exit-code agent-orchestration/controle/pendencias-indice.md` → ec 0; a M-IDX (uma linha em branco no fim do índice, posta no stage) → ec 1, restaurada.
+- `git diff --check origin/main...HEAD` → ec 0. Escopo: `git diff --name-only origin/main...HEAD` → 20 arquivos, todos no PERMITIDO do §4.1; os hunks de `sync_replay_service.dart` só no `import`, no `_assignPayload` e no `_backendStatus`; os de `mobile-work-order-sync.ts` só no ramo `work_order.assign` e na função nova. Nada em `prisma/**`, `.github/**`, `frontend/**`, `Kpis/**`, lockfiles ou `.env`.
+- **Web:** não rodei `npm --prefix frontend run check/build/test:smoke`; o bloco não toca `frontend/**`.
+- **Limpeza §C5:** `dist/` do `npm run build` e os `build/`/`.dart_tool` de teste do Flutter ficam para o fim, depois da CI; o worktree e os containers `dev11d-pg`/`dev11d-redis` ficam (mandato).
+
+## Pré-revisão: conserto (dp-545)
+
+- **Executor:** `dp-545` (DeepSeek Pro, identidade de dev declarada). **Início:** 2026-11-11 16:55 SP.
+- **Origem:** os 3 achados da pré-revisão do #545 (`prerev-545-api`) + o merge do #534. Pré-revisão lida inteira em `C:/Users/thiag/erp-pausa-2026-10-03/saidas-v3/prerev-545/saida/prerev-545.json` e `prerev-545-evidencia.md`.
+
+### Merge da main (#534 e #539)
+- `git fetch origin` + `git merge origin/main` → commit `b16c6bed` (merge(main)).
+- Conflito em `mobile/flutter_app/lib/features/work_orders/data/work_order_remote_api.dart`: mantidos os dois lados — o parser/codec do 11d (linha do tempo) e os campos `checkinMode`/`checkinPlateTail` do #534.
+- Conflito nos registros (`agent-orchestration/controle/pendencias.md` e `pendencias-indice.md`): as duas entradas mantidas e o índice regenerado com `python agent-orchestration/controle/gerar-indice-pendencias.py`.
+- Auto-merge correto: `sync_replay_service.dart` e `src/modules/mobile/mobile-work-order-sync.ts`. Nenhum outro conflito de código.
+
+### PR545-01 — OS despachada com operador ≠ usuário (N11)
+- Novo teste `[B-O6R-11d N11]` em `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` (após o N6): `assignRest(ctx, osId, { operatorId: tecnicoV, userId: tecnicoU })` → OS despachada com o perfil de campo ≠ usuário; o lote é aceito e confere o técnico certo (`assignedUserId`).
+- **Mutação X1** (`src/modules/mobile/mobile-work-order-sync.ts:307`, `assignedUserId ?? assignedOperatorId` → `assignedOperatorId ?? assignedUserId`): N11 fica VERMELHO; linha restaurada → verde.
+- Commit `a757fcff`.
+
+### PR545-02 — pendências do #534 sem dono
+- `P-APP-DETALHE-OS-LARGURA-INFINITA` e `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` ganham dono `B-O6R-11e (a planejar)` e PR-alvo `B-O6R-11e`, com a nota "fora do PERMITIDO do 11d (tela e repositório do app)".
+- Índice regenerado. Commit `8ca3e0dc`.
+
+### PR545-03 — conferência de checkinMode/checkinPlateTail na lista
+- **Nada muda.** Os campos de check-in existem só em `toWorkOrderListDto` (lista, T5/T11); `toWorkOrderDto` (detalhe, T1) não os tem e fica inalterado.
+- **Prova:** `flutter test test/features/work_orders/bsan326_checkin_confere_placa_test.dart --reporter compact` → `+9: All tests passed!`.
+- Sem commit de código — só esta declaração.
+
+### Bateria final
+- **Flutter** (`mobile/flutter_app`): `dart format --output=none --set-exit-if-changed lib test` → ec 1 só por `test/features/bsan313_minhas_os_escopo_test.dart` (fora do bloco, igual à `origin/main`); arquivos do bloco 0 mudanças. `flutter analyze` → `No issues found!`. `flutter test --reporter compact` → `+1155: All tests passed!`.
+- **Node** — 8 arquivos (os 6 do `ls tests | grep -E "^(san3-26|b-o6r-11d|o6r-11d)"` + as regressões do plano `o6r07c-b-scope` e `mobile-work-order-assign-registry`) → `# tests 244 # pass 244 # fail 0 # skipped 0`.
+- **DB SAN3-23** (`tests/b-san3-23-cancel-race-db.test.ts`, PG 16 local porta 55532, papel `NOSUPERUSER NOBYPASSRLS`) → `# tests 21 # pass 21 # fail 0 # skipped 0`.
+- `npm run check` ec 0 (após `DATABASE_URL=... npm run db:generate`, Prisma Client atualizado pós-merge do #539) · `npm run lint` ec 0 · `git diff --check` ec 0.
+- Nada tocado em `prisma/**`, `.github/**`, `Kpis/**`, `.env`, nem portas 3000/5173/5432/6379/8899.
+
+PRONTO PARA CONFERÊNCIA — head 8ca3e0dc (código) · este registro final em cima
+
+---
+
+## Emenda 2 (dp-fix-545)
+
+- **Identidade:** `dp-fix-545`, DeepSeek Pro (DP), identidade de dev declarada. Quem achou: C1/C2/C3 da J-545 e a `conf-545`. Quem planejou: o orquestrador (a Emenda 2). Quem desenvolve: este diário. Quem confere: o Claude, com identidade nova.
+- **Objeto:** `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, head de partida `a0130465`, limpo. `npx prisma generate` rodado (com `DATABASE_URL` local). Toda hora vem de `date` (SP).
+
+### E2.1 (C1-02, a leitura)
+- A fixture de leitura (`bo6r11d_work_order_contract.json`) passa a ter `assignedOperatorId = ...a02` ≠ `assignedUserId = ...a01` nas três seções (`detail_response`, `status_response`, `assign_response`).
+- Teste novo **T1b** em `bo6r11d_contrato_rest_test.dart`: com os dois campos divergindo, o técnico lido é o do campo CERTO (`assignedUserId`).
+- `flutter test --reporter compact test/features/work_orders/bo6r11d_contrato_rest_test.dart` → `+9: All tests passed!` (T1b verde).
+- **Mutação** (parser lê `assignedOperatorId`/`assigned_operator_id` no lugar de `assignedUserId`/`assigned_user_id`, âncora única `grep -cF` = 1): T1b, T1 e T3 VERMELHOS (`+6 -3`); revertida com `git restore`; pós-reversão → `+9: All tests passed!`.
+- Commit `00e7ed80`.
+
+### E2.2 (C2-01 e CONF545-01, a escrita)
+- Teste novo **N12** em `tests/b-o6r-11d-lote-tecnico-esperado.test.ts`: OS legada (`assign {operatorId: U}` e depois `assign {operatorId: U, userId: V}`), envio atrasado que declara U (`payloadDoApp`, `expected_technician_id = U`) → `conflict` `technician_changed_since_action`, sem gravar nada (usuário segue V, perfil segue U, viatura null, sem evento novo).
+- `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-lote-tecnico-esperado.test.ts` → `# tests 7 # pass 7 # fail 0 # skipped 0`.
+- **Mutação M-CONF-2** (`technician === expected` → `(technician === expected || current.assignedOperatorId === expected)`): N12 VERMELHO (`accepted` em vez de `conflict`; `# pass 6 # fail 1`); revertida com `git restore`.
+- Commit `2d2db1aa`.
+
+### E2.3 (CONF545-02, o registro)
+- `P-CHECKIN-SEM-PLACA-OFFLINE` e `P-CHECKIN-CAMPO-REESCREVE-PLACA-NAO-RECONHECIDA` passam para dono `B-O6R-11e (a planejar)` e PR-alvo `B-O6R-11e`, com a nota "fora do PERMITIDO do 11d".
+- `pendencias.md:9131` passa a listar `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` (e as duas acima) sob `B-O6R-11e`.
+- Entram as pendências `P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS` (C1-01, dono `B-O6R-11e`), `P-AMBIENTE-VAULT-ROUTES-SOB-CARGA` (C3-ENV-01) e `P-AMBIENTE-DART-LOCAL-DIVERGE` (C3-ENV-02), todas BAIXA.
+- Índice regenerado: `python agent-orchestration/controle/gerar-indice-pendencias.py` → `887 cabecalhos / 876 IDs | {'FECHADA': 205, 'ABERTA': 678, 'SEM-STATUS': 4}`; 2ª execução sem diff (md5 idêntico).
+- Commit `624c3d71`.
+
+### Bateria (janela fora do pico)
+- **Flutter** (`mobile/flutter_app`): `flutter test --reporter compact` → `+1156: All tests passed!`; `flutter analyze` → `No issues found!`.
+- **Node do bloco (memória):** `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/b-o6r-11d-work-order-contract.test.ts tests/b-o6r-11d-lote-tecnico-esperado.test.ts tests/o6r07c-b-scope.test.ts tests/mobile-work-order-assign-registry.test.ts` → `# tests 204 # pass 204 # fail 0 # skipped 0`.
+- **DB sem Docker** (Postgres 16 local, porta 55556, só `127.0.0.1`, cluster `C:/Users/thiag/pg-dpfix545`, banco UTF8 migrado): `tests/o6r07c-b-scope-db.test.ts` → `# tests 13 # pass 13 # fail 0 # skipped 0` (papel efêmero `NOSUPERUSER NOBYPASSRLS`); `tests/b-san3-23-cancel-race-db.test.ts` → `# tests 21 # pass 21 # fail 0 # skipped 0`.
+- `npm run check` ec 0 · `npm run lint` ec 0 · `git diff --check` ec 0.
+- Nada tocado em `src/**`, `lib/**`, `prisma/**`, `.github/**`, `Kpis/**`, `.env`, nem portas 3000/5173/5432/6379/8899.
+
+PRONTO PARA CONFERÊNCIA — head 624c3d71 (código) · este registro final em cima

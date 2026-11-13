@@ -37,6 +37,9 @@ if (!connectionString) {
   process.env.LOG_LEVEL = "silent";
   process.env.JWT_SECRET = process.env.JWT_SECRET || "dev-only-change-me";
   process.env.JWT_EXPIRES_IN = "15m";
+  // B-USERS-SEG-DESATIVADO (Emenda 1, E1.6 item 1): o modo `prisma` é forçado aqui, antes de qualquer import de
+  // `src/`. Sem isso o S4·c rodaria em memória no job `backend`, com o portão em "skipped".
+  process.env.CORE_SAAS_PERSISTENCE = "prisma";
 
   type Harness = {
     readonly admin: PrismaClient;
@@ -54,6 +57,9 @@ if (!connectionString) {
       ]);
       const admin = new Client({ adapter: new PrismaPg({ connectionString }) });
       const role = await createEphemeralRole(admin, connectionString);
+
+      // B-USERS-SEG-DESATIVADO (E1.6 item 2): o portão consulta pelo Prisma GLOBAL; ele é o papel efêmero.
+      (globalThis as { prisma?: unknown }).prisma = role.client;
 
       return { admin, role, tenantIds: [] };
     })());
@@ -220,7 +226,7 @@ if (!connectionString) {
     assert.ok(control.permissions.includes("users.read"));
   });
 
-  test("S4·c — o MESMO token ainda válido perde o acesso na próxima requisição (403), sem consulta de status no token", async () => {
+  test("S4·c — o MESMO token ainda válido é recusado pelo portão na próxima requisição (401 session_inactive)", async () => {
     const h = await harness();
     const fx = await seedOrganization(h, "c");
     const [
@@ -249,6 +255,13 @@ if (!connectionString) {
       },
     );
 
+    // B-USERS-SEG-DESATIVADO (E1.6 item 3): o modo e o cliente do portão (A9), antes da primeira requisição (e
+    // antes do `listen`: o `getBaseUrl` espera o evento `listening`).
+    const { env } = await import("../src/config/env.js");
+
+    assert.equal(env.CORE_SAAS_PERSISTENCE, "prisma", "E1.5: a suíte roda em prisma, nunca em memória");
+    assert.equal((await import("../src/database/prisma.js")).prisma, h.role.client, "A9: o portão usa o papel");
+
     const server: Server = app.listen(0);
 
     try {
@@ -269,11 +282,12 @@ if (!connectionString) {
 
       const afterDeactivation = await requestJson(baseUrl, "/probe", { headers });
 
-      assert.equal(afterDeactivation.status, 403, "desativado: a próxima requisição é negada");
+      assert.equal(afterDeactivation.status, 401, "desativado: o portão recusa a próxima requisição");
+      assert.equal(afterDeactivation.body.error?.reason, "session_inactive");
 
       const payload = await verifyAccessToken(token);
 
-      assert.equal(payload.sub, fx.targetUserId, "o token continua válido (a janela do D-USERS-2 é só da identidade)");
+      assert.equal(payload.sub, fx.targetUserId, "verifyAccessToken sozinho ainda aceita a assinatura; quem recusa é o portão (P-SESSAO-VIVA)");
     } finally {
       await closeServer(server);
     }

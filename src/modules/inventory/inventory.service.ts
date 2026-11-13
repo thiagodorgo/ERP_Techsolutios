@@ -1,12 +1,15 @@
 import { env } from "../../config/env.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
 import { createDefaultOperatorProfileService } from "../operator-profiles/operator-profile.service.js";
+import { OperatorProfileError } from "../operator-profiles/operator-profile.types.js";
 import { createDefaultVehicleService } from "../vehicles/vehicle.service.js";
 import { createDefaultWorkOrderService } from "../work-orders/work-order.service.js";
 import { classifyAbc, summarizeAbc, type AbcSummary } from "./inventory.abc.js";
+import { BASE_CUSTODY_LABEL, resolveActorStockCustody } from "./inventory.actor-custody.js";
 import { deriveReorder, roundToDecimalPrecision, signQuantity } from "./inventory.calculations.js";
 import { InMemoryInventoryRepository, type InventoryRepository } from "./inventory.repository.js";
 import {
+  custodyLookupUnavailableError,
   invalidCustodyError,
   invalidCustodyReferenceError,
   invalidStockItemReferenceError,
@@ -15,6 +18,7 @@ import {
   movementAlreadyReversedError,
   STOCK_EXIT_REASON_BY_SOURCE,
   type AbcClassAssignment,
+  type ActorOperatorProfile,
   type CreateExitForSourceInput,
   type CreateMovementOutcome,
   type CustodyReferenceInfo,
@@ -29,6 +33,8 @@ import {
   type StockCustody,
   type StockExitSourceType,
   type StockMovement,
+  type TechnicianStock,
+  type TechnicianStockItem,
   type UpdateInventoryItemInput,
 } from "./inventory.types.js";
 
@@ -88,6 +94,12 @@ export type InventoryReferenceResolvers = {
    */
   readonly resolveCustodyOperatorProfile?: (actor: InventoryActorContext, id: string) => Promise<CustodyReferenceInfo | undefined>;
   readonly resolveCustodyVehicle?: (actor: InventoryActorContext, id: string) => Promise<CustodyReferenceInfo | undefined>;
+  /**
+   * B-SAN3-15a (P1b) — o cadastro de profissional do PRÓPRIO ator (organização e usuário do token). `undefined` só
+   * quando não há cadastro (ou o id do usuário não é UUID: vazio honesto); qualquer outra falha PROPAGA — uma falha de
+   * banco nunca vira "sem cadastro". Sem resolvedor, o ator não tem cadastro.
+   */
+  readonly resolveActorOperatorProfile?: (actor: InventoryActorContext) => Promise<ActorOperatorProfile | undefined>;
 };
 
 export class InventoryService {
@@ -412,6 +424,42 @@ export class InventoryService {
   }
 
   /**
+   * B-SAN3-15a (P1, P2) — `GET /mobile/technician/stock`: o estoque sob a responsabilidade do ATOR. A custódia é
+   * escolhida pelo servidor (`resolveActorStockCustody`): a profissional do cadastro ativo, a BASE para o ator sem
+   * cadastro com papel `tenant_wide` (Pergunta 5 (a)), ou nenhuma (vazio honesto). `query` chega do controlador como
+   * nos outros handlers e é IGNORADA: nada do pedido escolhe a custódia (T-B3). Só itens ATIVOS com saldo > 0.
+   */
+  async technicianStock(actor: InventoryActorContext, query: RawRecord): Promise<TechnicianStock> {
+    void query;
+    const generatedAt = new Date();
+    const profile = await this.references.resolveActorOperatorProfile?.(actor);
+    const custody = resolveActorStockCustody(actor, profile);
+
+    if (!custody) {
+      return { custody: null, items: [], generatedAt };
+    }
+
+    const balances = await this.repository.listCustodyBalances(actor.tenantId, custody);
+    const items: TechnicianStockItem[] = [];
+    for (const balance of balances) {
+      const item = balance.item;
+      if (!item || !item.isActive) continue;
+      items.push({ itemId: item.id, sku: item.sku, name: item.name, unit: item.unit, available: balance.available });
+    }
+
+    return {
+      custody: {
+        ...custody,
+        label: custody.custodyType === "base" ? BASE_CUSTODY_LABEL : (profile?.label ?? null),
+      },
+      items: items
+        .filter((entry) => entry.available > 0)
+        .sort((left, right) => left.name.localeCompare(right.name, "pt-BR") || left.sku.localeCompare(right.sku)),
+      generatedAt,
+    };
+  }
+
+  /**
    * Ω4C PR-08b (D-Ω4C-INV-STOCK-DECREMENT) — the NON-AMPLIFIER seam consumed service→service by the fuel-log /
    * maintenance-item flows (NEVER the public movement API). The consumer passes ONLY which item + the LOCKED
    * quantity (liters / line quantity); the seam FIXES type=`saida`, custody BASE, source_type/source_id and the
@@ -686,6 +734,28 @@ async function createPrismaInventoryService(): Promise<InventoryService> {
 }
 
 /**
+ * B-SAN3-15a (P1b; Emenda 1, N-01) — o resolvedor do cadastro de profissional do ATOR, sobre um serviço de perfis
+ * (o padrão, ou o do arnês). NÃO segue o `try/catch` que engole tudo de `resolveCustodyOperatorProfile`: sem cadastro
+ * → `undefined`; id de usuário fora do formato UUID (`invalid_uuid`) → `undefined` (vazio honesto); QUALQUER outra
+ * falha vira 503 com texto neutro (sem a mensagem crua) — nunca "sem cadastro".
+ */
+export function createActorOperatorProfileResolver(
+  getProfiles: () => Promise<{ findByUserId(tenantId: string, userId: string): Promise<{ readonly id: string; readonly isActive: boolean; readonly fullName?: string } | undefined> }>,
+): (actor: InventoryActorContext) => Promise<ActorOperatorProfile | undefined> {
+  return async (actor) => {
+    try {
+      const profiles = await getProfiles();
+      const profile = await profiles.findByUserId(actor.tenantId, actor.userId);
+
+      return profile ? { id: profile.id, isActive: profile.isActive, label: profile.fullName ?? null } : undefined;
+    } catch (error) {
+      if (error instanceof OperatorProfileError && error.reason === "invalid_uuid") return undefined;
+      throw custodyLookupUnavailableError();
+    }
+  };
+}
+
+/**
  * Builds tenant-scoped resolvers over the work-orders and vehicles default
  * services (shared singletons in memory mode). A cross-tenant or missing
  * reference resolves to `false`, surfacing as a 400 invalid reference.
@@ -725,6 +795,8 @@ function createDefaultReferenceResolvers(): InventoryReferenceResolvers {
         return undefined;
       }
     },
+    // B-SAN3-15a (P1b) — o cadastro do próprio ator, pelo serviço padrão de perfis (singleton em memória).
+    resolveActorOperatorProfile: createActorOperatorProfileResolver(createDefaultOperatorProfileService),
     resolveCustodyVehicle: async (actor, id) => {
       try {
         const service = await createDefaultVehicleService();

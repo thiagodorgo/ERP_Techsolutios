@@ -21,7 +21,11 @@
  },
  "MIDDLEWARE /api/v1 · (anônima)": {
   "classe": "MIDDLEWARE",
-  "n": 117
+  "n": 118
+ },
+ "MIDDLEWARE /api/v1 · moduleGate": {
+  "classe": "MIDDLEWARE",
+  "n": 1
  },
  "MIDDLEWARE /api/v1 · tenantContextMiddleware": {
   "classe": "MIDDLEWARE",
@@ -552,6 +556,10 @@
   "n": 1
  },
  "ROTA GET /api/v1/mobile/inventory/availability": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/mobile/technician/stock": {
   "classe": "LEITURA",
   "n": 1
  },

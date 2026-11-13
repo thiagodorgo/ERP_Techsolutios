@@ -307,6 +307,59 @@ export type CustodySummary = {
   readonly vehicles: readonly { readonly vehicleId: string; readonly plate: string | null; readonly qty: number }[];
 };
 
+/**
+ * B-SAN3-15a (P1) — o saldo POR ITEM numa custódia (profissional de um perfil ou a BASE), derivado do razão. `item` é
+ * o item da mesma organização (indefinido só em dado corrompido: a FK composta o garante). Nunca é coluna.
+ */
+export type CustodyItemBalance = {
+  readonly item: InventoryItem | undefined;
+  readonly available: number;
+};
+
+/**
+ * B-SAN3-15a (P1b) — o cadastro de profissional do ATOR (organização e usuário vêm do token). Só o que a escolha da
+ * custódia precisa: o id (nunca vai à resposta), se está ativo e o nome do profissional (o rótulo da custódia).
+ */
+export type ActorOperatorProfile = {
+  readonly id: string;
+  readonly isActive: boolean;
+  readonly label: string | null;
+};
+
+/** B-SAN3-15a (P1, P2) — a custódia escolhida pelo servidor para o ator, com o rótulo que a tela mostra. */
+export type TechnicianStockCustody = StockCustody & {
+  readonly label: string | null;
+};
+
+/** B-SAN3-15a (P2) — uma linha do estoque do técnico: só o que o app mostra (nunca custo nem ids de custódia). */
+export type TechnicianStockItem = {
+  readonly itemId: string;
+  readonly sku: string;
+  readonly name: string;
+  readonly unit: string;
+  readonly available: number;
+};
+
+/** B-SAN3-15a (P1, P2) — `custody: null` e `items: []` é o vazio honesto do ator sem custódia (nunca um erro). */
+export type TechnicianStock = {
+  readonly custody: TechnicianStockCustody | null;
+  readonly items: readonly TechnicianStockItem[];
+  readonly generatedAt: Date;
+};
+
+/**
+ * B-SAN3-15a (P1b + N-01) — a consulta do cadastro de profissional falhou por um motivo que não é "não há cadastro".
+ * Nunca vira "sem cadastro" (custody null): 503 com texto neutro, sem a mensagem crua do erro.
+ */
+export function custodyLookupUnavailableError(): InventoryError {
+  return new InventoryError(
+    503,
+    "STOCK_UNAVAILABLE",
+    "custody_lookup_unavailable",
+    "Não foi possível consultar o seu cadastro de profissional agora. Nada foi alterado; tente novamente em instantes.",
+  );
+}
+
 /** Ω4C PR-08 — the movement-create outcome: a single row, or the LINK/UNLINK sibling pair. */
 export type CreateMovementOutcome =
   | { readonly kind: "single"; readonly movement: StockMovement }

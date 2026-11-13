@@ -286,6 +286,10 @@ jobs:
           SUITES="$SUITES tests/inventory-cycle-count-close-units-db.test.ts"
           SUITES="$SUITES tests/inventory-unique-backstops-db.test.ts"
           SUITES="$SUITES tests/inventory-migration-drill-db.test.ts"
+          # B-SAN3-15a (item 37) — o estoque do técnico no Postgres real, sob papel efêmero SEM BYPASSRLS: o técnico vê só a
+          # própria custódia, o gerente sem cadastro só a BASE, o contexto de outra organização não lê nada (RLS) e o app real
+          # com JWT ignora o X-Tenant-Id. Medida 3× nesta forma antes de entrar (11/11): 6 casos, 0 falha, 0 pulo, denominador constante.
+          SUITES="$SUITES tests/bsan315-technician-stock-db.test.ts"
           # B-TRC-01 ciclo 2 (J-B-TRC-01-ciclo1, (a)-1) — as seis suítes `-db` da ingestão do Traccar. Elas JÁ rodam no
           # job `backend` (medido no head 5abdf83b: 44/44 no log do run 38352262796), mas a convenção da lista curada
           # (SAN2-2, B-O6R-06) é que toda suíte `-db` nova entre AQUI, sob o guard de zero pulos, medida 3× antes.
@@ -317,6 +321,23 @@ jobs:
           # das M-REC-1/2/7a numa base própria. Medidas 3× nesta forma antes de entrar: 7 + 2 = 9 casos, 0 falha, 0 pulo, denominador constante.
           SUITES="$SUITES tests/rec-01-domain-db.test.ts"
           SUITES="$SUITES tests/rec-01-migration-drill-db.test.ts"
+          # B-O6R-09 (item 7 do portão; Pergunta 1 = (A), D-PORTAO-3-RECOMENDACOES-1111) — as 7 suítes `-db` do despacho e
+          # da aprovação de orçamento numa transação só: atomicidade (falha injetada por gatilho escopado, também sob papel
+          # NOSUPERUSER NOBYPASSRLS), vencedor condicional por status e técnico com barreira escopada, criação idempotente
+          # sob corrida, pool da transação-mãe, drill da migração da chave, e a aprovação do orçamento (evento, vínculo,
+          # código, vistorias, corrida, repetição 409, isolamento) com o pool do cliente global. Medidas 3× nesta forma (a lista
+          # inteira, banco migrado e semeado) antes de entrar: 10+6+9+1+4+13+2 = 45 casos, 0 falha, 0 pulo, denominador constante.
+          SUITES="$SUITES tests/b-o6r-09-dispatch-atomic-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-dispatch-concurrency-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-dispatch-idempotency-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-dispatch-pool-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-dispatch-migration-drill-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-quote-approve-atomic-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-quote-approve-pool-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-dispatch-same-tx-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-09-harness-ddl-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-12-regime-snapshot-db.test.ts"
+          SUITES="$SUITES tests/b-o6r-12-regime-migration-drill-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

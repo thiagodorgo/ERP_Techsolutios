@@ -1,5 +1,47 @@
 # Status Geral
 
+## Atualização 2026-11-12 (noite) — decisões do dono: a GATE-CHAVE entra no portão (45/65) e o bloco do fuso fica aberto
+
+- **Autor:** `reg-1211n-dp` (DeepSeek Pro pelo Codex CLI, redator de registro, identidade declarada). A revisão fica para outro modelo, depois. **Base medida:** `origin/main@ef4e98e7`, worktree próprio `w-reg1211n`. Registro documental; `Kpis/**` congelado e intocado.
+- **Decisões do dono (12/11 21:44 SP, `D-DONO-1211-NOITE`):** *"1-autorizo / 2-<valor omitido: repositório público> de teto na api claude e no deepseek. / 3-ok"*.
+  - **1 —** autorizada a linha `SUITES=` do `.github/workflows/ci.yml` (job `backend-postgres`) para `tests/b-material-sync-db.test.ts`, no `B-MATERIAL-REENVIO` (o R-C21-01 da Emenda C2.1). O dev do C pode fazer a C-F6b.
+  - **2 —** o bloco `B-DB-FUSO-UTC` fica aberto, com o plano escrito (9 fatias, 6 h 20 min de dev, 1 pergunta Q1 aberta ao dono). Leitura do orquestrador, declarada (§A6): o teto dado é o sim ao bloco.
+  - **3 —** o item novo do portão para a GATE-CHAVE entra: a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` vira item 63 do §4.1, com bloco próprio de permissão do app, e o denominador passa de 64 para 65.
+- **Portão da versão vendável:** 45/65 (69%, pelo piso) — `floor(100 × 45 / 65) = 69`. O item novo (63) segue ABERTO; os 45 fechados não mudam.
+- **Bloco do material:** o `B-MATERIAL-REENVIO` segue em curso (PR #551 em rascunho, head `262cdc98`; Emendas C2.1 a C2.4 apensadas).
+- **Pendências:** `P-PORTAO-ITEM-GATE-CHAVE` FECHADA; `P-DB-FUSO-DA-CONEXAO` ganhou o apenso do plano; `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS` registrada com dono `B-FERR-AGENTES`.
+
+## Atualização 2026-11-12 — registro de 11/11 manhã a 12/11 manhã: portão em 45/64 e as juntas J-534 a J-548
+
+- **Autor:** `reg-1211-dp` (DeepSeek Pro pelo Codex CLI, redator de registro, identidade nova, nível menor). A revisão fica para outro modelo, depois. **Base medida:** `origin/main@3a62bd49`, worktree próprio `w-reg1211`. Registro documental; `Kpis/**` congelado e intocado.
+- **Merges (fato; `git log origin/main` e `gh pr view`; hora de SP):**
+  - #535 (`B-SAN3-07`, item 47): `d98481e6`, 11/11 08:32; porteiro `porteiro-535` LIBERADO COM RESSALVA;
+  - #540 (`B-SAN3-19b`, itens 48 e 47 no app): `945f2002`, 11/11 10:29; porteiro `porteiro-540` LIBERADO COM RESSALVA;
+  - #541 (só teste — a limpeza do `san3-08` tolera a tabela de suíte irmã): `da12fec6`, 11/11 10:50; sem porteiro (§C7 item 8(3));
+  - #536 (`B-SAN3-23`, item 23, dinheiro): `c95ad4fd`, 11/11 11:10; porteiro `porteiro-536` LIBERADO COM RESSALVA;
+  - #534 (`B-SAN3-26`, item 53): `68a208ad`, 11/11 15:14; porteiro `porteiro-534` LIBERADO COM RESSALVA;
+  - #539 (`B-O6R-12`, item 24, dinheiro): `f5b79026`, 11/11 15:54; porteiro `porteiro-539` LIBERADO COM RESSALVA;
+  - #537 (`B-O6R-09`, item 7): `81fb7d27`, 11/11 19:46; porteiro `porteiro-537b` LIBERADO COM RESSALVA;
+  - #545 (`B-O6R-11d`, item 3): `a02aacce`, 11/11 20:22; porteiro `porteiro-545b` LIBERADO COM RESSALVA;
+  - #544 (`B-SAN3-18`, item 16): `fd51409c`, 12/11 04:18; porteiro `porteiro-544` LIBERADO COM RESSALVA;
+  - #543 (`B-USERS-SEG-DESATIVADO`): `50b782e1`, 12/11 05:22; porteiro `porteiro-543` LIBERADO;
+  - #542 (`B-ASS-09a`, item 61): `bf29a86a`, 12/11 05:51; porteiro `porteiro-542` LIBERADO COM RESSALVA;
+  - #549 (marco de KPI de 12/11): `7d7ffeb0`, 12/11 10:08; KPI congelado, sem porteiro;
+  - #548 (`B-SAN3-15a`, itens 35 a 37): `3a62bd49`, 12/11 10:33; porteiro `porteiro-548` LIBERADO COM RESSALVA.
+- **Portão da versão vendável:** 45/64 (70%), pelo `porteiro-548`. Fechados desde o registro anterior: 40 e 41 (#533), 47 (#535 no seed e #540 no app), 48 (#540), 23 (#536), 53 (#534, servidor), 24 (#539), 7 (#537), 3 (#545), 16 (#544) e 37 (#548). Os itens 35 e 36 dependem do `B-SAN3-15b`.
+- **Juntas (atas versionadas neste PR):** J-534, J-535, J-536, J-537, J-539 (reconstruída por falta de ata escrita), J-540, J-542b, J-543, J-544, J-545 e J-548. As ressalvas dos porteiros foram consolidadas em `pendencias.md`, `PLANO_SAN3.md`, `decisoes.md` e nas atas (a J-537 registra o desvio de carimbo 09 < 12 e a árvore `d1df438d` = `4eaadf2e`); a entrada da `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` como item novo do portão não entrou no `PLANO_SAN3` e virou a pendência `P-PORTAO-ITEM-GATE-CHAVE` (pergunta ao dono).
+- **Pendência sistêmica nova:** `P-DB-FUSO-DA-CONEXAO` (ALTA) — o `@prisma/adapter-pg` grava `Date` sem sufixo de fuso e o Postgres lê no `TimeZone` da sessão; o fechamento fixa a conexão em UTC (investigação `inv-543-fuso`).
+- **Lições em `decisoes.md`:** a regra de terreno do `initdb` no Windows (UTC + UTF8) e a lição "teste novo de dinheiro roda 20 vezes, com o arquivo inteiro, antes da junta".
+
+## Atualização 2026-11-11 — B-O6R-11d (o contrato da OS no app; item 3 do portão, resto do `Ω6R-QUA-004`)
+
+- **Autor:** `dev-11d-cl` (Claude Opus 5.5, subagente da sessão, dev, nível menor; exceção declarada: Codex sem cota semanal até 16/11, API reservada para verificação, Antigravity no limite). Ramo `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, base `origin/main@da12fec6` com o merge de `c95ad4fd` (#536).
+- **O que entrega (fato, testes no diário `docs/revisoes/SAN3/B-O6R-11d-dev.md`):** codec único de status e prioridade de OS no app (lista, detalhe, status, atribuição e linha do tempo); os 3 métodos REST de OS única leem `{data}`; o PATCH só manda status do backend; o POST manda `userId`/`message`; a organização nunca vem do corpo; a ação de viatura/equipe da fila manda `user_id` e declara `expected_technician_id`, e o servidor responde conflito `technician_changed_since_action` se o técnico mudou (Q1 = A, `D-DONO-TODAS-RECOMENDACOES-1111`). Fecha o `Ω6R-QUA-004` e a `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` no merge.
+- **Trava de arquivo com o `B-SAN3-26` (#534), CR2-11D-02:** a ordem não estava gravada antes da F0 (medido às 10:52 SP na `origin/main`). Vale "quem mergear primeiro manda". Se o #534 entrar antes, o ramo do 11d faz merge da `main` e leva `checkinMode`/`checkinPlateTail` para o `_workOrderFromRemoteJson` (o `_workOrderFromJson`, que o #534 também edita, é apagado pelo 11d). Se o 11d entrar antes, o #534 faz o merge e re-mede por emenda as mutações dele ancoradas em `_workOrderFromRemoteJson`, `_workOrderFromJson` e `_statusPayload`.
+- **Cadeia de `src/modules/mobile/mobile-work-order-sync.ts`:** `07c` → `11d` → `SAN3-16` (`PLANO_SAN3.md`).
+- **Pendências do #534 com dono `B-O6R-11d`:** PR534-03 coberto (T5); `P-APP-DETALHE-OS-LARGURA-INFINITA` NÃO coberta (tela, PROIBIDO no plano); `P-CHECKIN-CARTAO-CONGELADO-NO-PULL` NÃO coberta (repositório do app, PROIBIDO, e código do #534 fora da `main`). As duas pedem emenda ou outro bloco.
+- **Nível:** junta completa. KPI congelado (§C7 item 8(5)).
+
 ## Atualização 2026-11-11 — 7 PRs na main na noite de 10 → 11/11, portão em 36/64 e as juntas do #535, #534 e #537
 
 - **Autor:** `reg-1111-cl` (Claude Opus 5.5, subagente da sessão, redator de registro, identidade nova, nível menor). A revisão é de outra identidade, ainda não feita. **Base medida:** `origin/main@a0979f51`, worktree próprio `w-reg1111`. Sem cruzamento de modelo, declarado pelo §C7 item 11(2): o Codex 1 está sem cota semanal, o Codex 2 ocupado e a API no limite do dia. Registro documental, revisão simples + CI; `Kpis/**` congelado e intocado.

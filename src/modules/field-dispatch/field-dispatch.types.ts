@@ -1,5 +1,7 @@
 import type { ChecklistRunRole } from "../checklists/checklist.types.js";
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
+import type { WorkOrderAssignRepository } from "../work-orders/work-order-scope.js";
+import type { FieldDispatchRepository } from "./field-dispatch.repository.js";
 
 export const FIELD_DISPATCH_STATUSES = [
   "draft",
@@ -125,6 +127,126 @@ export type ReassignFieldDispatchInput = {
   readonly reason?: string;
   readonly actorUserId?: string;
 };
+
+// B-O6R-09 (item 7 do portão; plano v2 §2.2) — o evento obrigatório que narra a escrita, sem os campos que o
+// repositório preenche a partir do despacho gravado na MESMA transação (organização, despacho e OS).
+export type FieldDispatchEventDraft = {
+  readonly eventType: FieldDispatchEventType;
+  readonly fromStatus?: FieldDispatchStatus;
+  readonly toStatus?: FieldDispatchStatus;
+  readonly actorUserId?: string;
+  readonly message: string;
+  readonly metadata?: JsonRecord;
+};
+
+/**
+ * B-O6R-09 · Emenda 4 — o ESCOPO da transação do despacho, que o gancho recebe. No Prisma, os dois repositórios estão
+ * presos ao `tx` da mãe: a OS é atribuída e a trava lê `field_dispatches` na MESMA transação e conexão (P5/P6). Na
+ * memória, `workOrders` fica ausente (o serviço de OS usa o dele) e `dispatches` é o próprio repositório.
+ */
+export type FieldDispatchTxScope = {
+  /** Prisma: o repositório de OS preso ao `tx` da mãe. Memória: ausente (o serviço de OS usa o dele). */
+  readonly workOrders?: WorkOrderAssignRepository;
+  /** O repositório de despacho da MESMA transação (Prisma: preso ao `tx`; memória: o próprio). */
+  readonly dispatches: Pick<FieldDispatchRepository, "list">;
+};
+
+/**
+ * O gancho que roda DENTRO da transação do despacho, antes do commit. É por ele que a OS é atribuída, pela `tx` da mãe
+ * (Emenda 4, P5): se ele lança, o despacho, o evento e a atribuição voltam juntos, e nada fica visível a outra conexão.
+ * O escopo é OBRIGATÓRIO: um invólucro que o descartasse deixa de compilar. Nenhum `catch` no caminho do gancho: um
+ * erro dele sempre atravessa até a mãe (C4E-05).
+ */
+export type FieldDispatchWriteHooks = {
+  readonly beforeCommit?: (dispatch: FieldDispatch, scope: FieldDispatchTxScope) => Promise<void>;
+};
+
+export type CreateFieldDispatchWithEventInput = {
+  readonly dispatch: CreateFieldDispatchInput;
+  readonly event: FieldDispatchEventDraft;
+  readonly idempotencyKey?: string;
+};
+
+/**
+ * O estado em que a transição foi VALIDADA. Os dois campos são obrigatórios: um `undefined` sairia do `where` do Prisma
+ * e anularia o predicado (é a forma da mutação M13). O técnico entra porque, partindo de `reassigned`, a reatribuição
+ * mantém o status — só o técnico distingue "o despacho que eu vi" do "despacho que acabou de ir para outro".
+ */
+export type FieldDispatchTransitionExpected = {
+  readonly status: FieldDispatchStatus;
+  readonly operatorUserId: string;
+};
+
+export type FieldDispatchTransitionPatch =
+  | {
+      readonly kind: "status";
+      readonly status: FieldDispatchStatus;
+      readonly reason?: string;
+      readonly observation?: string;
+      readonly actorUserId?: string;
+    }
+  | {
+      readonly kind: "reassign";
+      readonly operatorUserId: string;
+      readonly reason?: string;
+      readonly observation?: string;
+      readonly actorUserId?: string;
+    };
+
+export type TransitionFieldDispatchInput = {
+  readonly tenantId: string;
+  readonly dispatchId: string;
+  readonly expected: FieldDispatchTransitionExpected;
+  readonly patch: FieldDispatchTransitionPatch;
+  readonly event: FieldDispatchEventDraft;
+};
+
+export type FieldDispatchTransitionResult =
+  | { readonly kind: "ok"; readonly dispatch: FieldDispatch; readonly event: FieldDispatchEvent }
+  | { readonly kind: "conflict" }
+  | { readonly kind: "not_found" };
+
+/**
+ * O pedido ORIGINAL de uma criação com chave, lido do evento `field_dispatch_created` do mesmo despacho (R2-02 da crítica
+ * r2): a repetição compara o corpo com ele, nunca com a linha atual, que pode já ter andado (aceito, reatribuído,
+ * rascunho ativado). `undefined` quando o evento não existe — impossível por P1, e tratado como falha fechada (503).
+ */
+export type FieldDispatchCreateRequest = {
+  readonly workOrderId: string;
+  readonly operatorUserId: string;
+  readonly status: FieldDispatchStatus;
+};
+
+export type FieldDispatchIdempotencyMatch = {
+  readonly dispatch: FieldDispatch;
+  readonly original?: FieldDispatchCreateRequest;
+};
+
+export type FindFieldDispatchByIdempotencyKeyInput = {
+  readonly tenantId: string;
+  readonly createdBy: string;
+  readonly idempotencyKey: string;
+};
+
+export type FieldDispatchCreateResult = {
+  readonly dispatch: FieldDispatch;
+  readonly replayed: boolean;
+};
+
+// O erro que os DOIS repositórios lançam quando a chave já está gravada (no Postgres, a violação do índice único
+// `(tenant_id, created_by, idempotency_key)`; na memória, a mesma reserva). Mesmo `code` e `meta.target` do P2002 do
+// Prisma, para o serviço capturar uma forma só (R2-11 da crítica r2).
+export const FIELD_DISPATCH_IDEMPOTENCY_TARGET = ["tenant_id", "created_by", "idempotency_key"] as const;
+
+export class FieldDispatchIdempotencyKeyTakenError extends Error {
+  readonly code = "P2002";
+  readonly meta = { target: [...FIELD_DISPATCH_IDEMPOTENCY_TARGET] };
+
+  constructor() {
+    super("field_dispatch_idempotency_key_taken");
+    this.name = "FieldDispatchIdempotencyKeyTakenError";
+  }
+}
 
 // B-TRC-01 (plano do Traccar v2.1 §4.2; A2-12) — quem dirigia a viatura no instante do fix.
 export type FindOperatorsForVehicleAtInput = {

@@ -4805,6 +4805,20 @@ Plano v3 (final) do `planejador-mestre` (Fable): `docs/revisoes/SAN3/B-SAN3-12-p
 - **Leitura do plano, pelo item 10(1):** o bloco não toca nenhum dos cinco gatilhos de junta completa: não calcula nem escreve dinheiro (a tela não calcula; o approve do servidor não muda), não abre consulta sem escopo, não muda permissão (nenhum grant, gate de rota nem `can()`), não perde dado sem volta (a recusa devolve o orçamento a rascunho; a falha no meio é anterior ao bloco e foi para o `B-O6R-09`) e não abre superfície externa. Nível: **revisão reforçada** (1 revisor que executa testes e mutações + CI) **mais a conferência visual do diálogo**.
 - **Não escolhida em silêncio:** a trava automática do item 10(2) roda sobre o diff do PR (`src/**`, `prisma/**`, `.github/**`, `catalog.ts`, `RBAC_MATRIX.md`, `frontend/src/modules/auth/**`, `frontend/src/providers/**`, e linhas com `permissions.includes(`, `can(` ou `requirePermission(`); se acusar, o bloco sobe para junta completa. Se o dono preferir a junta, o plano não muda; muda só o fim do ciclo.
 
+## C-B-SAN3-26-P3-PREMISSA (registro de CONFLITO, §A2, 2026-11-11) — a P3 do B-SAN3-26 foi aceita sobre premissa falsa
+
+- **O conflito:** a decisão `D-PORTAO-9-RECOMENDACOES-1011`, item B-SAN3-26 (3) ("sem exceção para OS já abertas sem placa"), foi aceita sobre a recomendação do plano v1, que dizia que "a base completa a placa da OS (é um campo, leva segundos)". Na `main` `d5ec1696`, o console não tem edição de OS (`frontend/src/modules/work-orders/work-orders.service.ts:105`, sem chamador), e a placa só existe na criação de `socorro` (`WorkOrderForm.tsx:283-286`).
+- **Quem achou:** a crítica `crit-26-cl` (C26-01), confirmada pelo `replano-B-SAN3-26-api` (plano v2, apêndice A).
+- **Como se resolveu:** a decisão não foi revogada nem aplicada em silêncio. A P3 voltou ao dono reescrita (plano v2, §9), e ele escolheu a alternativa B em `D-PORTAO-5-RECOMENDACOES-1111` (11/11 01:34 SP): sem tela nova agora; o guincheiro de OS sem placa vê "peça à base para cadastrar a placa ou registrar a chegada"; a base registra pelo console; a criação ganha o campo de placa; a edição da placa vai para um bloco próprio, com as 3 opções. As decisões (1) e (2) de 10/11 não dependiam da premissa e seguem valendo.
+- **Registrado por:** `dev-san326-cl`, na F0 do bloco, antes de qualquer fatia de código (o §6 do plano trava o código neste registro).
+
+## C-B-SAN3-26-DESPACHANTE-NA-BASE (registro de CONFLITO, §A2, 2026-11-11) — `field_dispatcher` na base do check-in × `RBAC_MATRIX.md:118`
+
+- **O conflito:** a única lista "base/escritório" escrita na matriz, a da correção de km (`RBAC_MATRIX.md:118`), exclui o `field_dispatcher` ("NÃO: field_technician, field_dispatcher, technician"). O B-SAN3-26 o põe na lista de base do check-in (`CHECKIN_OFFICE_ROLES`), apoiado na P2 do dono ("a base (gestor, despachante, operador)") e no catálogo (o `field_dispatcher` não tem `field_location:send` e tem `field_dispatch:create/cancel/reassign`). A mesma lista põe `platform_admin`/`super_admin` na base pelo "full" de OS (`RBAC_MATRIX.md:45`), embora a l.57 diga que o `platform_admin` "is not the default approver of tenant business flows".
+- **Quem achou:** a crítica `crit-26-r2-cl` (C26R2-07, baixa).
+- **Como fica:** as duas leituras ficam declaradas no código (comentário de `CHECKIN_OFFICE_ROLES` em `src/modules/work-orders/work-order.checkin.ts`, citando as l.45, 57 e 118) e aqui, sem consolidar a matriz. O dono desfaz cada uma em uma linha (tirar o papel da lista). O teste A9d obriga todo papel com `work_orders:status` a estar em exatamente uma das duas listas.
+- **Registrado por:** `dev-san326-cl`.
+
 ## D-J530-G14-BRIEFING-X-CONTRATO (2026-11-11) — o BRIEFING da J-530 pedia BEGIN/COMMIT numa migração de UMA sentença; o contrato a isenta
 
 - **fato:** o §C4 (`D-MIGRACAO-COM-TRANSACAO-EXPLICITA`) exige `BEGIN;`/`COMMIT;` só com mais de uma sentença; `scripts/migration-transaction-guard.mjs` isenta a migração nova de uma sentença ("Nova de UMA sentença transacional → isenta de G2 e G6"); a G14 (`prisma/migrations/20260901000000_ass08b_provider_one_enabled_per_kind/migration.sql`) tem 1 sentença e declara isso na própria linha 3.
@@ -4932,3 +4946,156 @@ dev `dev-24-cl` (Claude Opus 5.5, identidade de dev declarada) na fatia a0, como
 `PLANO_SAN3.md` (resumo) e a linha 536 promete "cheques/fechamento/comissão pela web (29)". As duas estão fora do
 PERMITIDO da a0 (só `:157` e `:278`). O dev não as editou: fica a pergunta ao orquestrador, para emenda ou para o PR de
 registro.
+## REGISTRO-SAN3-CONFLITOS — B-SAN3-15 (2026-11-11) — os conflitos C1 a C7 do plano, registrados antes do código (§A2), e as respostas do §9
+
+**Não é decisão nova.** Registro, no PR do `B-SAN3-15a` (`dev-15a-cl`, Claude Opus 5.5, dev declarado), dos 7 conflitos
+que o plano `plano-B-SAN3-15-v2.md` §1.7 manda registrar antes do código, e das respostas do dono às 5 perguntas do §9.
+Fonte do plano e das emendas: fora do repositório (`erp-pausa-2026-10-03/planos/`); o diário do bloco cita as linhas.
+
+- **C1, fronteira.** A linha do `B-SAN3-15` no `PLANO_SAN3.md` (§5) não cobre arquivos que o critério exige. O bloco se
+  divide em **15a** (estoque real do técnico e a contagem do web) e **15b** (portas, diagnóstico, conclusão e peça), e a
+  fronteira por arquivo de cada um é o §4 do plano v2, incluindo `frontend/src/modules/inventory/**`, o fim do `test:smoke`
+  em `frontend/package.json`, a linha do `SUITES=` em `.github/workflows/ci.yml` e o banco local do app. A linha do
+  `PLANO_SAN3.md` foi atualizada neste PR.
+- **C2, custódia da baixa.** O plano do reenvio de material (C) baixa a peça da BASE (ADOTADA (3)); o 15b troca pela
+  custódia que `resolveActorStockCustody` escolhe, pelo mesmo seam, como o próprio plano C previu. Nada muda no 15a.
+- **C3, `router.dart`.** Nem o 14 nem o 15 tocam o `router.dart`; as rotas já existem. A trava do arquivo fica com o 17.
+- **C4, tipo da OS.** O 14 decide "guincho" por `serviceType == tow`, que nunca vem do servidor. Resolvido pela
+  Pergunta 1 (a) no 15b (F3), se o 14 não o trouxer antes.
+- **C5, esforço.** O bloco passa de G (13 h) para cerca de 28 h de dev em 2 PRs (plano §6).
+- **C6, P21 × custódia profissional.** A P21 do plano de reenvios ("o gerente, `tenant_wide`, também baixa pelo app")
+  e o critério "material do estoque real da custódia" colidiam para o ator sem cadastro de profissional. Resolvido pela
+  **Pergunta 5 (a)**: o gerente sem cadastro usa a BASE, na leitura (15a) e na baixa (15b), por uma regra só
+  (`src/modules/inventory/inventory.actor-custody.ts`).
+- **C7, série 15b → 16.** O plano do 16 tira `work_order_repository.dart` da fronteira dele; o `PLANO_SAN3.md` dizia que
+  o 16 depende do 15. A série fica com o orquestrador.
+
+**Respostas do dono (11/11, "Sim, todas (Recomendado)", `D-DONO-TODAS-RECOMENDACOES-1111`):** vale a recomendação de
+cada pergunta do §9 do plano v2 — 1 (a) o servidor decide o tipo do atendimento pelo tipo do catálogo; 2 (a) o 15b só
+entra depois do reenvio de material (C); 3 (a) a conclusão sai sem número de comissão, com o texto do plano; 4 (a)
+maquete com 3 opções, o dono aprova as 3 e o app sai com a A; 5 (a) o gerente sem cadastro de profissional lança a peça
+do estoque da base. **Só para informar (sem pergunta):** a suíte `tests/bsan315-technician-stock-db.test.ts` entra na
+lista curada do job `backend-postgres`, medida 3× antes.
+
+- **Registro:** `dev-15a-cl` (Claude Opus 5.5, subagente da sessão, dev do `B-SAN3-15a`), no PR do bloco.
+
+## D-B-O6R-09-REPLAY-ORCAMENTO-409 (2026-11-11) — a repetição da aprovação de orçamento continua 409 e passa a levar o id da OS
+
+- **Natureza:** registro da emenda 1.1 do plano do `B-O6R-09` (planejador `emenda11-B-O6R-09-api`, EM1-02 e EM1-03 da crítica `crit-09-em1-cl`), gravado pelo dev `dev-o6r09-cl` na fatia 6, como a emenda manda. Não é decisão nova do dono: segue a `RBAC_MATRIX.md` (linha "replay → 409 `quote_already_approved`"), que o dono mandou seguir na aprovação de orçamento (`D-PORTAO-3-RECOMENDACOES-1111`, Q2 (c)).
+- **Regra:** aprovar de novo um orçamento que já tem `created_work_order_id` responde **409 `SERVICE_QUOTE_CONFLICT` / `quote_already_approved`**, com `error.details.workOrderId` = o id da OS já ligada. Vale para a repetição direta e para o perdedor de uma corrida, que antes espera o vencedor. Corpo diferente na repetição dá o mesmo 409, e a OS existente nunca muda. Não há 2xx de repetição.
+- **Relação com as decisões anteriores:** mantém a linha de repetição da `D-Ω3F-4B-IDEMPOTENCY` e acrescenta só o `details.workOrderId` (§2.8: id da organização do ator). O `D-B-O6R-09-REPLAY-ORCAMENTO-200` da emenda 1 **não** foi gravado: a emenda 1.1 o retirou.
+- **Onde mora:** `ServiceQuoteError` ganhou `details` opcional; a rota `POST /service-quotes/:serviceQuoteId/approve` tem um wrapper local que serializa `details` (molde: `financial-period-close.routes.ts`). `src/modules/core-saas/**` não mudou.
+
+## D-B-O6R-09-TRAVA-PRISMA-OPCAO-A (2026-11-11 05:14 SP) — a trava de `prisma/` entre o B-O6R-09 e o B-O6R-12: opção (a), a primeira migração com PR verde pega a trava
+
+- **Natureza:** o registro R2-09 (crítica r2 do `B-O6R-09`, `crit-09-r2-cl`) da escolha do plano v2 §4.3, feito pelo dev `dev-o6r09-cl` por ordem do orquestrador (mensagem de 11/11 05:13 SP, junto da Emenda 2). **Leitura do dev, declarada (§A6), a confirmar pelo orquestrador:** a ordem não nomeou a opção. A (a) é a única que cabe no que foi ordenado e medido: o orquestrador mandou fazer as fatias 0 a 5, inclusive a 3 (a migração), sem esperar o merge do 12, e a (b) proibia exatamente isso.
+- **Estado medido às 05:14 SP:** a última migração da `origin/main` é `20260900000000_ass08_billing_outbox`. O `B-O6R-09` tem a sua (`20260901090000_field_dispatch_idempotency_key`) no PR #537. O `B-O6R-12` (`fix/jurisdiction-profile-versioning`) não tem ramo remoto nem PR aberto (`git ls-remote --heads origin`, `gh pr list`).
+- **Regra (v2 §4.3 (a)):** as migrações tocam modelos diferentes (`FieldDispatch` × `ImpoundProcess`/`ServiceCatalog`), e o conflito real é só a ordem dos carimbos. A primeira migração a ter o PR verde pega a trava; a outra rebaseia e recarimba a sua para depois da que entrou. Isto revisa, só para este par, a ordem `… B-O6R-12 → B-O6R-09` do §6 do `PLANO_SAN3.md`.
+- **O que fica com o orquestrador:** a emenda simétrica do R6 do plano do `B-O6R-12` (fora do repositório), que o v2 §4.3 (a) pede junto deste registro. No merge, o porteiro confere o carimbo contra a última migração da `main` daquele momento.
+
+## D-B-O6R-09-ATRIBUICAO-NA-MAE (2026-11-11 11:40 SP) — a atribuição da OS passa para dentro da transação-mãe do despacho, e a fronteira de `src/modules/work-orders/**` se alarga só para isso
+
+- **Natureza:** decisão do orquestrador nº 1 da Emenda 4 do plano do `B-O6R-09` (§E4.9; autor da emenda: `topo-537-opus`, Opus por fallback declarado), com a Emenda 4.1 (`crit-09-em4-api`). Transcrita pelo dev `dev-o6r09-cl` antes do commit da fatia 7 (§A2), por ordem do orquestrador de 11/11 ~10:20 SP. Não é decisão do dono: o plano registra "Perguntas ao dono: nenhuma".
+- **Regra:** nos três caminhos que atribuem a OS (criar fora de rascunho, ativar rascunho, reatribuir), o despacho, o seu evento e a atribuição da OS (o UPDATE de `work_orders`, a linha de `work_order_assignments` e o `work_order_assigned`) são gravados na MESMA transação Postgres (P5), sem 2ª conexão enquanto a mãe está aberta (P6). A trava decide igual a antes (P7). Um DDL na fila espera só o resto da mãe (P8).
+- **Fronteira:** em `src/modules/work-orders/**`, o PERMITIDO é só:
+  - em `work-order.service.ts`, o import de tipo (C4E-06), o método novo `resolveDispatchOperatorId` e `assignFromDispatch`. O `assertTechnicianChangeAllowed` está autorizado e não foi tocado: o resolvedor da transação chega pelas referências do serviço preso (ver o diário, merge do #536);
+  - em `work-order-scope.ts`, o acréscimo de `WorkOrderAssignRepository` e `workOrderAssignRepositoryForTx`.
+- **O que supera:** o "não põe a atribuição na mesma transação" do v2 §2.2 e o "não fecha o R1" da Emenda 1 §1.6. Fecha a `P-B-O6R-09-ATRIBUICAO-FORA-DA-TX` (o R1) e a `P-B-O6R-09-DDL-NA-IMPLANTACAO-ESPERA-20S`.
+- **Convivência com o #536 (B-SAN3-23), declarada pelo dev (§A6):** o CAS do despacho do #536 (releitura, revalidação e regravação UMA vez) fica com o corpo intacto e passa a rodar, inteiro, pelo repositório e pelo resolvedor da transação da mãe. As propriedades não se contradizem. As medições estão no diário.
+
+## D-B-O6R-09-ARNES-SEM-PG-DIRETO (2026-11-11 11:40 SP) — o DDL do arnês pela forma por Prisma, com a premissa errada corrigida (C4E-02)
+
+- **Natureza:** decisão do orquestrador nº 2 da Emenda 4 (§E4.9), REVISTA pela Emenda 4.1 (C4E-02, `crit-09-em4-api`). Transcrita pelo dev `dev-o6r09-cl` antes do commit da fatia 7.
+- **A premissa errada, registrada:** a Emenda 4 dizia que nenhum arquivo de `tests/` ou de `src/` importa `pg`, e que usá-lo seria dependência nova. É FALSO. Em `75b49051`, 12 arquivos de `tests/` já fazem `await import("pg")` e usam `pg.Client`, inclusive os 3 do R-ARN-2, cada um com o seu `pgClient(nome)`. O grep do topo só casava `from "pg"`/`require("pg")`. Usar `pg.Client` no arnês NÃO é dependência nova.
+- **Regra:** o dev escolhe a forma que melhor cumpre as 4 condições da C09-04. Escolha do dev: a forma por Prisma (`runHarnessDdl(admin, sql)` em `tests/helpers/pg-barrier.ts`), porque ela mantém literais as mutações M-ARN e M-ARN2 do plano. A equivalência foi medida pelo `tests/b-o6r-09-harness-ddl-db.test.ts`, com M-ARN e M-ARN2 vermelhas:
+  - cada tentativa abre uma transação NOVA (a conexão física pode ser a mesma), sem 25P02;
+  - `SET LOCAL lock_timeout`, que não vaza para o pool;
+  - só se repete o 55P03, lido de `P2010 → meta.driverAdapterError.cause.originalCode`;
+  - o esgotamento lança, e o arnês para quando não cabe mais uma tentativa no teto (C4E-04).
+
+  O `pg.Client` próprio fica como alternativa sem dependência nova.
+
+## D-B-O6R-12-ACEITE-E-EMENDA-E1 (2026-11-11) — regime da abertura e ajustes da crítica v2
+
+- O aceite provisório do item 24 fica ratificado pelas decisões do dono
+  `D-PORTAO-9-RECOMENDACOES-1011` e `D-PORTAO-5-RECOMENDACOES-1111`: o retrato nasce na abertura,
+  alcança cobrança, prazos, leilão, liberação, painel e portal; o backfill usa o valor atual.
+- A crítica de rodada 2 (`crit-12-r2-plano.json`) aprovou o plano v2 com 4 ajustes médios e 6
+  baixos. Todos entram como requisito antes do código na Emenda E1 de
+  `agent-orchestration/codex/comandos/B-O6R-12-jurisdiction-profile-versioning.md`.
+- O ponteiro nulo do serviço diário preserva o catch-up vivo; uma cópia não nula vence.
+- Correção excepcional de retrato errado exige migração aditiva própria, censo e revisão; não
+  nasce bypass de runtime neste bloco.
+- **Emenda E1′ do dev sucessor (`dev-o6r12-cl`, 2026-11-11, antes do código; leitura do dev,
+  declarada, §A6):** E1.2′ — `SET search_path = pg_catalog, public, pg_temp` nas 2 funções, porque
+  sem `pg_temp` no fim a sombra temporária vence para tabelas (sonda medida); E1.8′ — a trava do
+  PATCH é `FOR NO KEY UPDATE`, e a abertura não espera o PATCH; E1.9′ e E1.10′ — onde moram os testes;
+  E1.11′ — o drill entra na catraca `db-catalog-write-guard` com contagem e motivo. Texto inteiro no
+  comando do bloco.
+- **Carimbo da migração:** `20260901100000_impound_process_regime_snapshot`, depois da
+  `20260901090000` do #537, pela trava de `prisma/**` (`D-B-O6R-09-TRAVA-PRISMA-OPCAO-A`) e por
+  ordem do orquestrador; a ordem vale nos dois sentidos de merge.
+
+## D-B-SAN3-18-RESPOSTAS-DO-DONO (2026-11-11 10:31 SP) — as três perguntas do plano v2 do `B-SAN3-18`, pela recomendação
+
+- **Fato (decisão do dono):** *"Sim, todas (Recomendado)"* (`D-DONO-TODAS-RECOMENDACOES-1111`, registrado pelo orquestrador fora do repositório, `REGISTRO-PENDENTE.md` 11/11 10:31 SP). Para o `B-SAN3-18` vale a recomendação de cada pergunta do §9 do plano v2:
+  - **P1(a):** no dia em que a recusa ligar, toda organização que já existe recebe TODAS as áreas, só acrescentando — `scripts/san3-18-provisionar-modulos.ts`, aditivo, transação única, simulação por padrão, contagem antes e depois;
+  - **P2(a):** o núcleo, que nunca se desliga por plano, é login e sessão, Usuários e perfis (com Acessos e Sessões), Configurações, Minha assinatura e o Painel (`NUCLEO_MENU_PATHS` e `NUCLEO_API`);
+  - **P3(a):** a LEITURA (GET) dos cadastros que a OS usa fica liberada para toda organização; criar e editar exige a área (`READ_CORE_PREFIXES`).
+- **Leituras do dev, declaradas (§A6), sobre os requisitos da Emenda 1 que pediam escolha:**
+  - **R2-02:** `approvals/**` = `{approvals, work_orders}` (qualquer-de), a recomendação da crítica r2 — a pergunta P3 que foi ao dono não tinha o caso das aprovações da OS;
+  - **R2-03:** opção (a), sem front: `P-SAN3-18-TELA-MODULOS-DA-ORG-ENGANA` (dono `B-SAN3-18b`);
+  - **R2-08:** pela pendência, não pela classe qualquer-de: `POST /mobile/telemetry` fica `{telemetry}`, e `P-SAN3-18-APP-TELEMETRIA-SEM-CAPACIDADE` (dono `B-SAN3-18b`);
+  - **rota nova sem classe no plano:** `POST /api/v1/webhooks/billing/:provider` (B-ASS-08b, posterior ao plano) entra em `NUCLEO_API` (infra sem módulo, a mesma leitura da classe N do censo do 07c);
+  - **as 27 entradas novas do registro** levam `requiredPermissions: []` (governadas só pelo módulo): com a permissão do `PermissionGuard`, o guard `tests/san3-04a-menu-front-x-catalogo.test.ts` (fora do PERMITIDO) ficava vermelho, porque o resíduo `P-SAN3-04A-MENU-RESIDUAL` (dono `B-SAN3-06a`) deixava de existir por este bloco. A permissão de cada página está em `docs/revisoes/SAN3/B-SAN3-18-medicao.md`, F0(d).
+- **Pedido de emenda ao orquestrador (dev, D-EMENDA-ANTES-DO-CODIGO):** `tests/navigation-provisioning.test.ts` (fora do PERMITIDO) codifica o comportamento antigo e fica vermelho (`P-SAN3-18-NAV-PROVISIONING-LISTA-LITERAL`); e o efeito de multa e dano no extrato do profissional sem o Financeiro (`P-SAN3-18-EXTRATO-POR-EFEITO-SEM-FINANCEIRO`, R2-01(2)) precisa de dono.
+
+## D-B-SAN3-18-PORTA-DE-MODULO (2026-11-11) — a porta de módulo por organização fica com o `B-SAN3-18`, estreitada, e o resto vai para o `B-SAN3-18b`
+
+- **Fato:** `P-SAN3-06B-MODULOS-DA-ORG-SEM-PORTA-E-SEM-PERSISTENCIA` tem dono `B-SAN3-18`. O console de organizações da plataforma inteiro é em memória (`P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA`), e a porta `PATCH /platform/tenants/:id/modules` respondia "habilitado" sem gravar em `tenants.modules`.
+- **Decisão (plano v2, R-A7, §4; registrada aqui para a troca de dono não ser silenciosa, §A2):** o `B-SAN3-18` ESTREITA a pendência — a porta passa a recusar com 409 `module_change_requires_subscription` —, e a porta real por organização vira `P-SAN3-18-PORTA-DE-MODULO-POR-ORG`, dono `B-SAN3-18b`. **Motivo:** uma porta real exige o console de organizações persistido, que é outro bloco. Até lá, módulos só mudam pela assinatura (versão do plano mais adicionais) ou pelo script de provisionamento.
+- **Ficam com o `B-SAN3-18b`, sem bloquear:** `P-SAN3-06B-TENANTS-BACKEND-EM-MEMORIA` (resto), `P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA`, `P-SAN3-06B-MENU-PLATAFORMA-TRES-FONTES` e as `P-SAN3-18-*` novas.
+
+## D-DONO-TODAS-RECOMENDACOES-1111 (2026-11-11 10:31 SP) — o dono aceita as recomendações de cada plano e PR em aberto
+
+- **Fato (decisão do dono, por AskUserQuestion):** *"Sim, todas (Recomendado)"*. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 11/11 10:31 SP).
+- **O que vale:** a recomendação de cada pergunta, nos planos e PRs abaixo.
+  - **As 11 perguntas do estado das 07:00:**
+    - as maquetes de Cheques, Fechamento e Entrega do guincho ficam aprovadas, com as 3 opções;
+    - B-SAN3-14: P1(a), P2(a) e P3(a);
+    - B-O6R-11d: Q1 = A;
+    - B-SAN3-19b: A e (a);
+    - B-SAN3-07: o item 47 fecha;
+    - B-SAN3-18: P1(a), P2(a) e P3(a);
+    - B-ASS-09a: 1(a), 2(a) e 3(a);
+    - #530: as duas perguntas;
+    - B-USERS-SEG-DESATIVADO (o token do usuário desativado): P1(a) e P2(a), e o PR sai do rascunho quando estiver pronto;
+    - `D-RESET-AUTORIDADE-PLATAFORMA` fica ratificada;
+    - #534: a E-04 e "AB 123 CD" ficam ratificadas.
+  - **B-ASS-09a, P4:** reimportar um mês publicado troca o número publicado.
+  - **B-SAN3-15:** 1(a) a 4(a) e 5(a). O gerente lança peça do estoque da base.
+  - **B-SAN3-16:**
+    - a fila de Aprovações vai para bloco próprio (A);
+    - o "não consegui iniciar" fica gravado na OS e avisa quem despachou (B);
+    - os botões levam ao pedido (A).
+  - **B-SAN3-25:** as 4 recomendações do plano.
+  - **O conflito da nota retroativa:** vale a recomendação do #530, a nota para todo demonstrativo pago desde o merge da 08b. A crítica `crit-08c-cl` (A4) mediu que ela é coerente com o código mergeado.
+- **Onde já é citada:** `API_CONTRACTS.md` (as notas do B-USERS-SEG-DESATIVADO), `RBAC_MATRIX.md:128`, a entrada `D-B-SAN3-18-RESPOSTAS-DO-DONO` e o comando do B-O6R-11d. Esta entrada é a que essas citações apontam (achado C3-01 da J-543).
+
+## LEITURA-ORQ-1211-INITDB-UTC-UTF8 (2026-11-12) — regra de terreno do `initdb` no Windows
+
+- **Fato:** o porteiro do #543 (`dp-543.md`, "Incidentes de terreno") mediu que todo cluster criado no Windows com `initdb` nasce WIN1252 e em `America/Sao_Paulo`: a migração `20260717000000_add_inventory_core` falhou por encoding (E22P05), e o T8 (sessão vencida → 401) deu 200 com o banco fora de UTC até gravar `timezone='UTC'` e recarregar.
+- **Leitura do orquestrador, declarada (§A6):** daqui em diante, todo mandato com `initdb` grava `timezone='UTC'` no `postgresql.conf` antes do `pg_ctl start`; `--encoding=UTF8 --locale=C`.
+
+## LEITURA-ORQ-1211-TESTE-DINHEIRO-20-VEZES (2026-11-12) — lição do #542
+
+- **Fato:** a J-542b e a `conf-542` rodaram o T-E4-1 uma vez; a CI do `72866b87` ficou vermelha no T-E4-1 (`100 !== 130`, a propriedade do C1-A1 — artefato do teste, empate triplo de milissegundo no desempate da run, que virou a `P-ASS09A-EMPATE-MESMO-MS`) e no B16, intermitente conhecido (ocorrência nova da `P-INVENTORY-CYCLE-COUNT-B16-INTERMITENTE`, run `43175128180`, 12/11).
+- **Leitura do orquestrador, declarada (§A6):** teste novo de dinheiro roda 20 vezes, na forma do arquivo inteiro, antes da junta.
+
+## D-DONO-1211-NOITE (2026-11-12 21:44 SP) — três respostas do dono: a linha `SUITES=` do B-MATERIAL-REENVIO, o bloco do fuso e a entrada da GATE-CHAVE no portão
+
+- **Fato (decisão do dono):** *"1-autorizo / 2-<valor omitido: repositório público> de teto na api claude e no deepseek. / 3-ok"*. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 12/11 21:44 SP). Sem valor transcrito.
+- **O que vale:**
+  - **1 — a linha `SUITES=` do `.github/workflows/ci.yml`** (job `backend-postgres`) fica autorizada para `tests/b-material-sync-db.test.ts`, no `B-MATERIAL-REENVIO` (o R-C21-01 da Emenda C2.1). O dev do C pode fazer a C-F6b.
+  - **2 — o bloco `B-DB-FUSO-UTC` fica aberto, com o plano escrito** (9 fatias, 6 h 20 min de dev, 1 pergunta Q1 aberta ao dono). Leitura do orquestrador, declarada (§A6): a pergunta 2 era o bloco do fuso da conexão, cujo plano pedia mais teto na API; o teto dado é o sim ao bloco.
+  - **3 — o item novo do portão para a GATE-CHAVE entra** (a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` vira item 63 do §4.1, com bloco próprio de permissão do app), e o denominador do vendável passa de 64 para 65 (`P-PORTAO-ITEM-GATE-CHAVE` FECHADA).

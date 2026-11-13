@@ -11,6 +11,28 @@ extension WorkOrderServiceTypeX on WorkOrderServiceType {
   };
 }
 
+/// B-SAN3-26 (item 53) — como a chegada ao local ("No local") desta OS é conferida. Quem decide é o SERVIDOR, que manda
+/// o modo na lista de OS (`checkinMode`); o app grava e usa, sem regra de tipo própria.
+///   plate            — pede os 2 últimos caracteres da placa e compara com `checkinPlateTail`;
+///   exempt           — serviço sem placa (residencial): confirma a chegada sem dígitos;
+///   referenceMissing — a OS não tem placa: o guincheiro pede à base para cadastrar a placa ou registrar a chegada;
+///   unknown          — o servidor ainda não disse (OS em cache de versão antiga): pede os dígitos sem comparar aqui.
+enum CheckinMode { plate, exempt, referenceMissing, unknown }
+
+CheckinMode checkinModeFromApi(Object? value) => switch (value) {
+  'plate' => CheckinMode.plate,
+  'exempt' => CheckinMode.exempt,
+  'reference_missing' => CheckinMode.referenceMissing,
+  _ => CheckinMode.unknown,
+};
+
+String checkinModeToApi(CheckinMode mode) => switch (mode) {
+  CheckinMode.plate => 'plate',
+  CheckinMode.exempt => 'exempt',
+  CheckinMode.referenceMissing => 'reference_missing',
+  CheckinMode.unknown => 'unknown',
+};
+
 enum WorkOrderStatus {
   scheduled,
   dispatched,
@@ -140,6 +162,8 @@ class WorkOrder extends Equatable {
     this.vehiclePlate,
     this.teamId,
     this.teamName,
+    this.checkinMode = CheckinMode.unknown,
+    this.checkinPlateTail,
   });
 
   final String localId;
@@ -173,6 +197,11 @@ class WorkOrder extends Equatable {
   final String? teamId;
   final String? teamName;
 
+  // B-SAN3-26 — o modo do check-in e só os 2 caracteres finais da placa do veículo atendido (o servidor nunca manda a
+  // placa inteira na lista). `vehiclePlate`, acima, é a VIATURA, não o veículo atendido.
+  final CheckinMode checkinMode;
+  final String? checkinPlateTail;
+
   WorkOrder copyWith({
     String? localId,
     String? serverId,
@@ -201,11 +230,15 @@ class WorkOrder extends Equatable {
     String? vehiclePlate,
     String? teamId,
     String? teamName,
+    CheckinMode? checkinMode,
+    String? checkinPlateTail,
     bool clearServerId = false,
     bool clearAssignedUserId = false,
     bool clearServiceType = false,
     bool clearVehicle = false,
     bool clearTeam = false,
+    bool clearArrivedAt = false,
+    bool clearStartedAt = false,
   }) {
     return WorkOrder(
       localId: localId ?? this.localId,
@@ -225,8 +258,8 @@ class WorkOrder extends Equatable {
           ? null
           : (assignedUserId ?? this.assignedUserId),
       scheduledAt: scheduledAt ?? this.scheduledAt,
-      startedAt: startedAt ?? this.startedAt,
-      arrivedAt: arrivedAt ?? this.arrivedAt,
+      startedAt: clearStartedAt ? null : (startedAt ?? this.startedAt),
+      arrivedAt: clearArrivedAt ? null : (arrivedAt ?? this.arrivedAt),
       completedAt: completedAt ?? this.completedAt,
       checklistId: checklistId ?? this.checklistId,
       syncStatus: syncStatus ?? this.syncStatus,
@@ -237,6 +270,8 @@ class WorkOrder extends Equatable {
       vehiclePlate: clearVehicle ? null : (vehiclePlate ?? this.vehiclePlate),
       teamId: clearTeam ? null : (teamId ?? this.teamId),
       teamName: clearTeam ? null : (teamName ?? this.teamName),
+      checkinMode: checkinMode ?? this.checkinMode,
+      checkinPlateTail: checkinPlateTail ?? this.checkinPlateTail,
     );
   }
 
@@ -269,6 +304,8 @@ class WorkOrder extends Equatable {
     vehiclePlate,
     teamId,
     teamName,
+    checkinMode,
+    checkinPlateTail,
   ];
 }
 

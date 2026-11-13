@@ -5,18 +5,107 @@ class TechnicianStockItem {
   const TechnicianStockItem({
     required this.sku,
     required this.name,
-    required this.category,
+    this.category = '',
     required this.available,
     required this.unit,
-    this.location = 'Van-01',
   });
 
   final String sku;
   final String name;
   final String category;
-  final int available;
+  final num available;
   final String unit;
-  final String location;
+}
+
+/// Custódia de onde o estoque do técnico sai (`professional` ou `base`).
+class TechnicianStockCustody {
+  const TechnicianStockCustody({required this.kind, required this.label});
+
+  final String kind;
+  final String label;
+}
+
+/// Chave da lista salva: a última resposta fica por (organização, usuário).
+class TechnicianStockCacheScope {
+  const TechnicianStockCacheScope({
+    required this.tenantId,
+    required this.userId,
+  });
+
+  final String tenantId;
+  final String userId;
+}
+
+/// Lista salva no aparelho, com a hora em que foi gravada.
+class TechnicianStockCacheEntry {
+  const TechnicianStockCacheEntry({
+    required this.items,
+    required this.fetchedAt,
+  });
+
+  final List<TechnicianStockItem> items;
+  final DateTime fetchedAt;
+}
+
+/// Resultado de `loadTechnicianStock`: o retrato do estoque e o que fazer com a lista salva.
+class TechnicianStockLoad {
+  const TechnicianStockLoad({
+    required this.items,
+    required this.custody,
+    required this.fetchedAt,
+    required this.isFresh,
+    required this.isForbidden,
+    this.cached,
+    this.error,
+  });
+
+  /// 200 — a resposta substitui a lista salva.
+  factory TechnicianStockLoad.fresh(
+    List<TechnicianStockItem> items, {
+    TechnicianStockCustody? custody,
+    DateTime? fetchedAt,
+  }) => TechnicianStockLoad(
+    items: List.unmodifiable(items),
+    custody: custody,
+    fetchedAt: fetchedAt ?? DateTime.now(),
+    isFresh: true,
+    isForbidden: false,
+  );
+
+  /// 5xx / rede / tempo esgotado — não toca na lista salva; itens vazios, hora da tentativa,
+  /// e a lista salva viaja no campo separado [cached].
+  factory TechnicianStockLoad.failed(
+    Object error, {
+    TechnicianStockCacheEntry? cached,
+  }) => TechnicianStockLoad(
+    items: const <TechnicianStockItem>[],
+    custody: null,
+    fetchedAt: DateTime.now(),
+    isFresh: false,
+    isForbidden: false,
+    cached: cached,
+    error: error,
+  );
+
+  /// 403 — apaga a lista salva.
+  factory TechnicianStockLoad.forbidden({DateTime? fetchedAt}) =>
+      TechnicianStockLoad(
+        items: const <TechnicianStockItem>[],
+        custody: null,
+        fetchedAt: fetchedAt ?? DateTime.now(),
+        isFresh: false,
+        isForbidden: true,
+      );
+
+  final List<TechnicianStockItem> items;
+  final TechnicianStockCustody? custody;
+  final DateTime fetchedAt;
+  final bool isFresh;
+  final bool isForbidden;
+  final TechnicianStockCacheEntry? cached;
+  final Object? error;
+
+  bool get hasCached => cached != null && cached!.items.isNotEmpty;
 }
 
 /// Material aplicado em uma OS (peça consumida no atendimento).

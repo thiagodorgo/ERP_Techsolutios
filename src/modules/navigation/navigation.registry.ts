@@ -1,5 +1,13 @@
 import type { NavigationItem } from "./navigation.types.js";
 
+// B-SAN3-18 (item 16 do portão) — REGRA DO REGISTRO, conferida por tests/san3-18-menu-modules.test.ts:
+//   - toda entrada de organização tem `requiredModules` não vazio (TODOS-de: a entrada só aparece se a organização tiver
+//     todos) OU está em `NUCLEO_MENU_PATHS` (nucleo.ts), e nesse caso NÃO tem `requiredModules`;
+//   - só chaves canônicas do catálogo (platform-modules.service.ts); `users` e `tenant-admin` não liberam menu;
+//   - todo caminho de `MVP_NAV_PATHS` (frontend/src/layouts/appSidebarNav.ts) está aqui, pela string EXATA (com a query);
+//   - todo `relatedEndpoints` tem classe NÚCLEO no gate (route-modules.ts) ou uma classe que cruza `requiredModules` (P5).
+// Comentários "SEM requiredModules" abaixo descrevem o estado antes do bloco.
+
 export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
   {
     id: "platform.dashboard",
@@ -69,7 +77,6 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 100,
     status: "partial",
     requiredPermissions: ["dashboard:read"],
-    requiredModules: ["dashboard"],
     tenantOnly: true,
   },
   {
@@ -82,7 +89,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 110,
     status: "implemented",
     requiredPermissions: ["tenant_checklists:read"],
-    requiredModules: ["tenant_checklist", "checklists"],
+    requiredModules: ["tenant_checklist"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/tenant/checklists",
@@ -101,7 +108,6 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 120,
     status: "partial",
     requiredPermissions: ["tenant_settings:read"],
-    requiredModules: ["tenant-admin"],
     tenantOnly: true,
   },
   {
@@ -114,7 +120,6 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 130,
     status: "planned",
     requiredPermissions: ["users:read"],
-    requiredModules: ["users"],
     tenantOnly: true,
   },
   {
@@ -165,7 +170,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
   },
   {
     // Ω4C PR-20 — Central de Notificações (tenant-wide): path GOVERNADO (esconde-fino, lição do PR-14). Gate
-    // ÚNICO `notifications:create` (gestão/broadcast; SEM permissão nova) e SEM requiredModules — sem provisão
+    // ÚNICO `notifications:create` (gestão/broadcast; SEM permissão nova) e SEM requiredModules até o B-SAN3-18 (hoje com o módulo da área) — sem provisão
     // de módulo novo; getGovernedNavigationPaths o inclui, então o gating dinâmico ESCONDE o item de quem NÃO
     // tem notifications:create (ex.: field_technician/finance/auditor), que segue barrado no 403 do backend.
     // Distinto de tenant.notifications (inbox/sino, notifications:read amplo).
@@ -178,6 +183,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 155,
     status: "implemented",
     requiredPermissions: ["notifications:create"],
+    requiredModules: ["notifications"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/notifications/scheduled/central",
@@ -195,7 +201,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 200,
     status: "implemented",
     requiredPermissions: ["checklist_runs:read"],
-    requiredModules: ["tenant_checklist", "checklists"],
+    requiredModules: ["tenant_checklist"],
     tenantOnly: true,
     relatedEndpoints: ["GET /api/v1/mobile/checklists/available"],
   },
@@ -209,7 +215,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 210,
     status: "implemented",
     requiredPermissions: ["checklist_runs:create"],
-    requiredModules: ["tenant_checklist", "checklists"],
+    requiredModules: ["tenant_checklist"],
     tenantOnly: true,
   },
   {
@@ -222,7 +228,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 220,
     status: "implemented",
     requiredPermissions: ["work_orders:read"],
-    requiredModules: ["work_orders", "work-orders"],
+    requiredModules: ["work_orders"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/work-orders",
@@ -244,7 +250,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 230,
     status: "implemented",
     requiredPermissions: ["field_location:read"],
-    requiredModules: ["field_operations"],
+    requiredModules: ["field_operations", "work_orders"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/field-locations/latest",
@@ -283,6 +289,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 245,
     status: "implemented",
     requiredPermissions: ["service_quotes:read"],
+    requiredModules: ["quotes"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/service-quotes",
@@ -443,7 +450,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     tenantOnly: true,
   },
   // Ω4C PR-14 — Telemetria (app de campo): 4 paths GOVERNADOS (veto coordenador-de-acessos, mesma classe
-  // do V1 de Orçamentos). Gate ÚNICO `telemetry:read` (PR-12; SEM permissão nova) e SEM requiredModules —
+  // do V1 de Orçamentos). Gate ÚNICO `telemetry:read` (PR-12; SEM permissão nova) e SEM requiredModules até o B-SAN3-18 (hoje com o módulo da área) —
   // sem provisão de módulo novo; getGovernedNavigationPaths os inclui, então o gating dinâmico ESCONDE o
   // grupo TELEMETRIA de quem não tem telemetry:read (ex.: field_technician), que segue barrado no 403 do
   // backend. O Rastreamento/mapa fica FORA (PR-15, Junta de Mapas).
@@ -457,6 +464,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 160,
     status: "implemented",
     requiredPermissions: ["telemetry:read"],
+    requiredModules: ["telemetry"],
     tenantOnly: true,
     relatedEndpoints: ["GET /api/v1/telemetry/km"],
   },
@@ -470,6 +478,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 170,
     status: "implemented",
     requiredPermissions: ["telemetry:read"],
+    requiredModules: ["telemetry"],
     tenantOnly: true,
     relatedEndpoints: ["GET /api/v1/telemetry/access"],
   },
@@ -483,6 +492,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 180,
     status: "implemented",
     requiredPermissions: ["telemetry:read"],
+    requiredModules: ["telemetry"],
     tenantOnly: true,
     relatedEndpoints: ["GET /api/v1/telemetry/refusals"],
   },
@@ -496,12 +506,13 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 190,
     status: "implemented",
     requiredPermissions: ["telemetry:read"],
+    requiredModules: ["telemetry"],
     tenantOnly: true,
     relatedEndpoints: ["GET /api/v1/telemetry/devices"],
   },
   {
     // Ω4C PR-15 (Junta de Mapas J-MAPAS-9) — Rastreamento (mapa do trajeto): path GOVERNADO (lição de
-    // esconde-fino do PR-14). Gate ÚNICO telemetry:read (SEM permissão nova) e SEM requiredModules — sem
+    // esconde-fino do PR-14). Gate ÚNICO telemetry:read (SEM permissão nova) e SEM requiredModules até o B-SAN3-18 (hoje com o módulo da área) — sem
     // provisão de módulo novo; getGovernedNavigationPaths o inclui (28→29), então o gating dinâmico ESCONDE o
     // item de quem não tem telemetry:read (ex.: field_technician), que segue barrado no 403 do backend. É a
     // ÚNICA superfície que consome /telemetry/track (coordenada crua, gated forte + consent na origem).
@@ -514,6 +525,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 195,
     status: "implemented",
     requiredPermissions: ["telemetry:read"],
+    requiredModules: ["telemetry"],
     tenantOnly: true,
     relatedEndpoints: ["GET /api/v1/telemetry/track"],
   },
@@ -533,6 +545,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 260,
     status: "implemented",
     requiredPermissions: ["yard:read"],
+    requiredModules: ["patios"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/yards",
@@ -549,7 +562,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     ],
   },
   // Ω5P PR-08a — Processos de custódia (console de operação): path GOVERNADO por impound:read (esconde-fino).
-  // SEM requiredModules (permissão pura, igual a operations.quotes/telemetria/patios.*). Quem não tem impound:read
+  // SEM requiredModules até o B-SAN3-18 (hoje com o módulo da área) (permissão pura, igual a operations.quotes/telemetria/patios.*). Quem não tem impound:read
   // (finance/inventory/support) NÃO vê o item e segue barrado no 403 do backend. O dossiê /patios/processos/:id
   // NÃO é item de menu (gate por route-guard), portanto não é governed.
   {
@@ -562,6 +575,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 265,
     status: "implemented",
     requiredPermissions: ["impound:read"],
+    requiredModules: ["patios"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/impound-processes",
@@ -572,7 +586,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     ],
   },
   // Ω5P PR-11 — Liberações (console de operação): path GOVERNADO por impound:read (esconde-fino, ESPELHA
-  // patios.processes). SEM requiredModules (permissão pura). Quem não tem impound:read (finance/inventory/support)
+  // patios.processes). SEM requiredModules até o B-SAN3-18 (hoje com o módulo da área) (permissão pura). Quem não tem impound:read (finance/inventory/support)
   // NÃO vê o item e segue barrado no 403 do backend. As AÇÕES de liberação (start/consume/for-repair) exigem
   // impound:transition; recipient/checks exigem release:process; approve exige release:approve; a quitação exige
   // charging:settle — a UI molda por can(...), o backend é a autoridade. A fila reusa GET /impound-processes.
@@ -586,6 +600,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 267,
     status: "implemented",
     requiredPermissions: ["impound:read"],
+    requiredModules: ["patios"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/impound-processes",
@@ -601,7 +616,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     ],
   },
   // Ω5P PR-15a — Leilões (funil do leilão administrativo): path GOVERNADO por impound:read (esconde-fino, ESPELHA
-  // patios.processes/patios.releases). SEM requiredModules (permissão pura). Quem não tem impound:read (finance/
+  // patios.processes/patios.releases). SEM requiredModules até o B-SAN3-18 (hoje com o módulo da área) (permissão pura). Quem não tem impound:read (finance/
   // inventory/support) NÃO vê o item e segue barrado no 403 do backend. As AÇÕES do leilão exigem impound:transition;
   // a avaliação sigilosa exige auction:appraise (art. 28) — a UI molda por can(...), o backend é a autoridade. O funil
   // reusa GET /impound-processes (sem N+1); o dossiê /patios/processos/:id hospeda o painel de leilão.
@@ -615,6 +630,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 268,
     status: "implemented",
     requiredPermissions: ["impound:read"],
+    requiredModules: ["patios"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/impound-processes",
@@ -643,6 +659,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 270,
     status: "implemented",
     requiredPermissions: ["jurisdiction:read"],
+    requiredModules: ["patios"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/jurisdiction-profiles",
@@ -662,12 +679,547 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     order: 280,
     status: "implemented",
     requiredPermissions: ["price_tables:read"],
+    requiredModules: ["patios"],
     tenantOnly: true,
     relatedEndpoints: [
       "GET /api/v1/price-tables",
       "POST /api/v1/price-tables",
       "GET /api/v1/price-tables/:priceTableId",
       "PATCH /api/v1/price-tables/:priceTableId",
+    ],
+  },
+  // B-SAN3-18 (item 16, D3) — os 27 caminhos do menu web (`MVP_NAV_PATHS`) que estavam fora do registro e, por isso,
+  // escapavam do esconde-fino. Entram governados pelo MÓDULO (`requiredModules`, ou núcleo), com `requiredPermissions: []`:
+  // a permissão dessas páginas continua decidida pelo `PermissionGuard` da rota (frontend/src/App.tsx — a permissão de
+  // cada uma está medida em docs/revisoes/SAN3/B-SAN3-18-medicao.md, F0(d)) e pelo servidor. Pôr a permissão aqui
+  // esconderia do menu os itens que hoje o menu oferece a um papel que a rota nega, e é ESSA classe que
+  // tests/san3-04a-menu-front-x-catalogo.test.ts mede e trava com mutação (resíduo `P-SAN3-04A-MENU-RESIDUAL`, dono
+  // `B-SAN3-06a`): este bloco não a muda.
+  {
+    id: "operations.approvals",
+    label: "Aprovações",
+    description: "Fila de aprovações operacionais da organização.",
+    path: "/approvals",
+    icon: "CheckCircle",
+    group: "operations",
+    order: 246,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["approvals"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/approvals/pending",
+      "GET /api/v1/approvals/:approvalId",
+      "POST /api/v1/approvals/:approvalId/approve",
+      "POST /api/v1/approvals/:approvalId/reject",
+    ],
+  },
+  {
+    id: "registry.customers",
+    label: "Clientes",
+    description: "Cadastro de clientes.",
+    path: "/cadastros/clientes",
+    icon: "Contact",
+    group: "tenant",
+    order: 500,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["customers"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/customers",
+      "POST /api/v1/customers",
+      "GET /api/v1/customers/:customerId",
+      "PATCH /api/v1/customers/:customerId",
+    ],
+  },
+  {
+    id: "registry.branches",
+    label: "Filiais",
+    description: "Cadastro de filiais.",
+    path: "/cadastros/filiais",
+    icon: "Building2",
+    group: "tenant",
+    order: 505,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["master_data"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/branches",
+      "POST /api/v1/branches",
+      "GET /api/v1/branches/:branchId",
+      "PATCH /api/v1/branches/:branchId",
+    ],
+  },
+  {
+    id: "registry.suppliers",
+    label: "Fornecedores",
+    description: "Cadastro de fornecedores.",
+    path: "/cadastros/fornecedores",
+    icon: "Factory",
+    group: "tenant",
+    order: 510,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["suppliers"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/suppliers",
+      "POST /api/v1/suppliers",
+      "GET /api/v1/suppliers/:supplierId",
+      "PATCH /api/v1/suppliers/:supplierId",
+    ],
+  },
+  {
+    id: "registry.vehicles",
+    label: "Viaturas",
+    description: "Cadastro das viaturas da frota.",
+    path: "/cadastros/viaturas",
+    icon: "Truck",
+    group: "tenant",
+    order: 515,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["master_data"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/vehicles",
+      "POST /api/v1/vehicles",
+      "GET /api/v1/vehicles/:vehicleId",
+      "PATCH /api/v1/vehicles/:vehicleId",
+    ],
+  },
+  {
+    id: "registry.teams",
+    label: "Equipes",
+    description: "Cadastro de equipes e membros.",
+    path: "/cadastros/equipes",
+    icon: "UsersRound",
+    group: "tenant",
+    order: 520,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["master_data"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/teams",
+      "POST /api/v1/teams",
+      "GET /api/v1/teams/:teamId",
+      "PATCH /api/v1/teams/:teamId",
+      "POST /api/v1/teams/:teamId/members",
+      "DELETE /api/v1/teams/:teamId/members/:userId",
+    ],
+  },
+  {
+    id: "registry.operatorProfiles",
+    label: "Profissionais",
+    description: "Cadastro dos profissionais.",
+    path: "/cadastros/profissionais",
+    icon: "IdCard",
+    group: "tenant",
+    order: 525,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["master_data"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/operator-profiles",
+      "POST /api/v1/operator-profiles",
+      "GET /api/v1/operator-profiles/:profileId",
+      "PATCH /api/v1/operator-profiles/:profileId",
+    ],
+  },
+  {
+    id: "registry.serviceCatalog",
+    label: "Serviços",
+    description: "Catálogo de serviços.",
+    path: "/cadastros/servicos",
+    icon: "ConciergeBell",
+    group: "tenant",
+    order: 530,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["master_data"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/service-catalog",
+      "POST /api/v1/service-catalog",
+      "GET /api/v1/service-catalog/:serviceId",
+      "PATCH /api/v1/service-catalog/:serviceId",
+    ],
+  },
+  {
+    id: "registry.priceTables",
+    label: "Tabela de Valores",
+    description: "Tabelas de valores dos cadastros.",
+    path: "/cadastros/tabelas-valores",
+    icon: "Coins",
+    group: "tenant",
+    order: 535,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["master_data"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/price-tables",
+      "POST /api/v1/price-tables",
+      "GET /api/v1/price-tables/:priceTableId",
+      "PATCH /api/v1/price-tables/:priceTableId",
+    ],
+  },
+  {
+    id: "registry.tariffs",
+    label: "Tarifas",
+    description: "Cadastro de tarifas.",
+    path: "/cadastros/tarifas",
+    icon: "Tags",
+    group: "tenant",
+    order: 540,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["master_data"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/tariffs",
+      "POST /api/v1/tariffs",
+      "GET /api/v1/tariffs/:tariffId",
+      "PATCH /api/v1/tariffs/:tariffId",
+    ],
+  },
+  {
+    id: "registry.tags",
+    label: "Tags",
+    description: "Cadastro de tags.",
+    path: "/cadastros/tags",
+    icon: "Tag",
+    group: "tenant",
+    order: 545,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["master_data"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/tags",
+      "POST /api/v1/tags",
+      "GET /api/v1/tags/:tagId",
+      "PATCH /api/v1/tags/:tagId",
+    ],
+  },
+  {
+    id: "registry.pois",
+    label: "Pontos de Interesse",
+    description: "Cadastro de pontos de interesse.",
+    path: "/cadastros/pontos-interesse",
+    icon: "MapPin",
+    group: "tenant",
+    order: 550,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["master_data"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/pois",
+      "POST /api/v1/pois",
+      "GET /api/v1/pois/:poiId",
+      "PATCH /api/v1/pois/:poiId",
+    ],
+  },
+  {
+    id: "patios.dashboard",
+    label: "Painel",
+    description: "Painel gerencial dos pátios.",
+    path: "/patios/painel",
+    icon: "LayoutPanelTop",
+    group: "tenant",
+    order: 255,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["patios"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/patios/dashboard/summary",
+    ],
+  },
+  // R2-01(5) da Emenda 1 — a ação "lançar a pagar" (`/<recurso>/:id/payable`, classe {finance}) NÃO entra nos
+  // relatedEndpoints das telas de Frota: senão a P5 obrigaria Frota E Financeiro para o item aparecer.
+  {
+    id: "fleet.fuel",
+    label: "Abastecimento",
+    description: "Abastecimentos da frota.",
+    path: "/fleet/fuel",
+    icon: "Fuel",
+    group: "operations",
+    order: 600,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["vehicles"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/fuel-logs",
+      "POST /api/v1/fuel-logs",
+      "GET /api/v1/fuel-logs/:fuelLogId",
+      "PATCH /api/v1/fuel-logs/:fuelLogId",
+    ],
+  },
+  {
+    id: "fleet.maintenance",
+    label: "Manutenção",
+    description: "Ordens de manutenção da frota.",
+    path: "/fleet/maintenance",
+    icon: "Wrench",
+    group: "operations",
+    order: 605,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["vehicles"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/maintenance-orders",
+      "POST /api/v1/maintenance-orders",
+      "GET /api/v1/maintenance-orders/odometer-suggestion",
+      "GET /api/v1/maintenance-orders/:maintenanceOrderId",
+      "PATCH /api/v1/maintenance-orders/:maintenanceOrderId",
+      "POST /api/v1/maintenance-orders/:maintenanceOrderId/items",
+      "PATCH /api/v1/maintenance-orders/:maintenanceOrderId/items/:itemId",
+      "DELETE /api/v1/maintenance-orders/:maintenanceOrderId/items/:itemId",
+    ],
+  },
+  {
+    id: "fleet.fines",
+    label: "Multas",
+    description: "Multas da frota.",
+    path: "/fleet/fines",
+    icon: "Gavel",
+    group: "operations",
+    order: 610,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["vehicles"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/fines",
+      "POST /api/v1/fines",
+      "GET /api/v1/fines/:fineId",
+      "PATCH /api/v1/fines/:fineId",
+    ],
+  },
+  {
+    id: "fleet.insurance",
+    label: "Seguros",
+    description: "Apólices de seguro da frota.",
+    path: "/fleet/insurance",
+    icon: "ShieldCheck",
+    group: "operations",
+    order: 615,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["vehicles"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/insurance-policies",
+      "POST /api/v1/insurance-policies",
+      "GET /api/v1/insurance-policies/:insurancePolicyId",
+      "PATCH /api/v1/insurance-policies/:insurancePolicyId",
+    ],
+  },
+  {
+    id: "fleet.damages",
+    label: "Danos",
+    description: "Danos da frota.",
+    path: "/fleet/damages",
+    icon: "AlertTriangle",
+    group: "operations",
+    order: 620,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["vehicles"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/damages",
+      "POST /api/v1/damages",
+      "GET /api/v1/damages/:damageId",
+      "PATCH /api/v1/damages/:damageId",
+      "GET /api/v1/damages/:damageId/attachments",
+      "POST /api/v1/damages/:damageId/attachments",
+      "DELETE /api/v1/damages/:damageId/attachments/:attachmentId",
+    ],
+  },
+  // O extrato do profissional fica no grupo FROTA do menu, mas lê e escreve o razão (`/professional-statements`,
+  // classe {finance}): a área exigida é o Financeiro.
+  {
+    id: "fleet.statement",
+    label: "Extrato do Profissional",
+    description: "Extrato de débitos e créditos do profissional.",
+    path: "/fleet/statement",
+    icon: "BookUser",
+    group: "operations",
+    order: 625,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["finance"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/professional-statements",
+      "POST /api/v1/professional-statements",
+      "DELETE /api/v1/professional-statements/:groupId",
+    ],
+  },
+  {
+    id: "inventory.items",
+    label: "Estoque",
+    description: "Itens, movimentações e inventários do estoque.",
+    path: "/inventory",
+    icon: "Package",
+    group: "operations",
+    order: 630,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["inventory"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/inventory-items",
+      "POST /api/v1/inventory-items",
+      "GET /api/v1/inventory-items/:itemId",
+      "PATCH /api/v1/inventory-items/:itemId",
+      "GET /api/v1/inventory-items/:itemId/custody-summary",
+      "POST /api/v1/inventory-items/abc-recalculate",
+      "GET /api/v1/stock-movements",
+      "POST /api/v1/stock-movements",
+      "POST /api/v1/stock-movements/:movementId/reverse",
+      "GET /api/v1/cycle-counts",
+      "POST /api/v1/cycle-counts",
+      "GET /api/v1/cycle-counts/:cycleCountId",
+      "PATCH /api/v1/cycle-counts/:cycleCountId/entries/:entryId",
+      "POST /api/v1/cycle-counts/:cycleCountId/close",
+      "POST /api/v1/cycle-counts/:cycleCountId/cancel",
+    ],
+  },
+  {
+    id: "finance.commissions",
+    label: "Remunerações",
+    description: "Políticas, cálculos e extratos de remuneração.",
+    path: "/finance/commissions",
+    icon: "Wallet",
+    group: "finance",
+    order: 440,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["finance"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/commissions/policies",
+      "GET /api/v1/commissions/calculations",
+      "GET /api/v1/commissions/calculations/mine",
+      "GET /api/v1/commissions/statements",
+      "GET /api/v1/commissions/statements/summary",
+      "GET /api/v1/commissions/statements/my-summary",
+    ],
+  },
+  // R-A6 — as abas do Financeiro entram pela string EXATA, com a query, igual ao `MVP_NAV_PATHS` do front.
+  {
+    id: "finance.receivables",
+    label: "Cobranças",
+    description: "Títulos a receber (aba do Financeiro).",
+    path: "/finance?aba=rec",
+    icon: "HandCoins",
+    group: "finance",
+    order: 450,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["finance"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/financial-titles",
+      "POST /api/v1/financial-titles",
+      "GET /api/v1/financial-titles/:financialTitleId",
+      "POST /api/v1/financial-titles/:financialTitleId/pay",
+    ],
+  },
+  {
+    id: "finance.payables",
+    label: "Pagamentos",
+    description: "Títulos a pagar (aba do Financeiro).",
+    path: "/finance?aba=pag",
+    icon: "CreditCard",
+    group: "finance",
+    order: 455,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["finance"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/financial-titles",
+      "POST /api/v1/financial-titles",
+      "GET /api/v1/financial-titles/:financialTitleId",
+      "POST /api/v1/financial-titles/:financialTitleId/pay",
+    ],
+  },
+  // Núcleo (P2(a) do dono): Usuários, Acessos e Sessões nunca se desligam por plano — sem `requiredModules`.
+  {
+    id: "tenant.usersWeb",
+    label: "Usuários",
+    description: "Usuários e perfis da organização.",
+    path: "/users",
+    icon: "Users",
+    group: "tenant",
+    order: 131,
+    status: "implemented",
+    requiredPermissions: [],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/users",
+      "POST /api/v1/users",
+      "PATCH /api/v1/users/:userId",
+      "GET /api/v1/roles",
+    ],
+  },
+  {
+    id: "tenant.userAccess",
+    label: "Acessos",
+    description: "Histórico de acessos dos usuários.",
+    path: "/controle/usuarios/acessos",
+    icon: "LogIn",
+    group: "tenant",
+    order: 132,
+    status: "implemented",
+    requiredPermissions: [],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/sessions/access-history",
+    ],
+  },
+  {
+    id: "tenant.userSessions",
+    label: "Sessões",
+    description: "Sessões ativas e revogação.",
+    path: "/controle/usuarios/sessoes",
+    icon: "MonitorSmartphone",
+    group: "tenant",
+    order: 133,
+    status: "implemented",
+    requiredPermissions: [],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/sessions",
+      "POST /api/v1/sessions/:id/revoke",
+    ],
+  },
+  {
+    id: "tenant.auditWeb",
+    label: "Auditoria",
+    description: "Eventos auditáveis da organização.",
+    path: "/audit",
+    icon: "ScrollText",
+    group: "tenant",
+    order: 141,
+    status: "implemented",
+    requiredPermissions: [],
+    requiredModules: ["audit"],
+    tenantOnly: true,
+    relatedEndpoints: [
+      "GET /api/v1/audit-events",
+      "GET /api/v1/users",
     ],
   },
 ];

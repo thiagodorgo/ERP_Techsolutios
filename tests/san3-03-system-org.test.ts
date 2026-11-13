@@ -83,7 +83,7 @@ test("T-SYS-8 · sem organização platform cadastrada o rateio é o de sempre e
 
 test("T-SYS-4 · tag da plataforma (10) + linha sem regra (5): plataforma 10, não rateado 5 por motivo", async () => {
   const { service } = setup({
-    lines: [line("tag-p", "AmazonKMS", "Keys", 10, "platform"), line("rule-less", "AmazonCloudWatch", "Metrics", 5)],
+    lines: [line("tag-p", "AmazonKMS", "Keys", 10, "platform"), line("rule-less", "AmazonCognito", "Metrics", 5)],
   });
   await service.allocateCostsForPeriod({ periodStart, periodEnd });
   const summary = await service.getAllocationSummary({ periodStart, periodEnd });
@@ -96,8 +96,8 @@ test("T-SYS-4 · tag da plataforma (10) + linha sem regra (5): plataforma 10, n�
 test("T-SYS-5 · motivos com custos de 6 casas: soma por motivo = totalUnallocatedCost, nenhum falta", async () => {
   const { service } = setup({
     lines: [
-      line("nr-1", "AmazonCloudWatch", "Metrics", 0.1),
-      line("nr-2", "AmazonCloudWatch", "Alarms", 0.2),
+      line("nr-1", "AmazonCognito", "Metrics", 0.1),
+      line("nr-2", "AmazonCognito", "Alarms", 0.2),
       line("mb-1", "AmazonApiGateway", "ApiGatewayRequest", 0.123457),
       line("mb-2", "AmazonApiGateway", "ApiGatewayRequest", 0.000001),
     ],

@@ -5242,6 +5242,36 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Registro: `P-Ω3F4C-ACTIVATION-PROMPT` e a parte do item 41 da `P-Ω3a` com a linha de encerramento (fecham no merge); 6 pendências novas `P-SAN3-08-*`; decisões `D-SAN3-08-DIALOGO-SEM-TRES-OPCOES`, `D-SAN3-08-PORTAO-Q1-Q2`, `D-SAN3-08-P1-CORPO-CAMELCASE` e `D-SAN3-08-NIVEL-DE-REVISAO`. Índice regenerado: 816 cabeçalhos, 805 IDs, 193 FECHADAS, 619 ABERTAS, 4 SEM-STATUS na base `6f727afc`; depois de trazer a `main` `07898adf` (#532 e #527) ao ramo, 818 cabeçalhos, 807 IDs, 193 FECHADAS, 621 ABERTAS, 4 SEM-STATUS.
 - Nada em `src/**`, `prisma/**`, `.github/**` nem `Kpis/**`. Nível: revisão reforçada + conferência visual do diálogo; a trava do item 10(2) não acusa caminho nem linha de permissão.
 
+## 2026-11-11 — B-O6R-12 · regime normativo congelado na abertura (`dev-o6r12-cdx`)
+
+- Executor: Codex 2, GPT-5.6 Sol, identidade nova; plano v2 do Claude Opus pela API e crítica
+  da sessão Claude incorporada como Emenda E1 antes do código.
+- Base `origin/main@6f727afc`, ramo `fix/jurisdiction-profile-versioning`, worktree próprio
+  `C:/Users/thiag/w-o6r12`; PostgreSQL 16 descartável `o6r12-pg` em `127.0.0.1:55492`.
+- O processo grava 9 campos `regime_*` na abertura; migração aditiva transacional carimba,
+  preenche o legado pelo valor atual e torna o retrato imutável. Cobrança, notificações, leilão,
+  liberação, painel e portal leem o retrato. Auditoria da edição é campo a campo com allowlist.
+- F0–F6b em commits separados, testes primeiro e mutações C1–C23 aplicáveis vermelhas e
+  revertidas. F7 acrescenta somente as duas suítes autorizadas ao `SUITES=` e fecha o registro.
+- Pendências não bloqueantes: `P-O6R-B12-FUSO-DO-PATIO-VIVO` e
+  `P-O6R-B12-PORTAL-MEMORIA`. Item 24 com fechamento proposto, sujeito a junta e merge.
+
+## 2026-11-11 — B-O6R-12 · sucessão P3 e fechamento da F7 (`dev-o6r12-cl`)
+
+- Executor: Claude Opus 5.5, subagente da sessão, dev SUCESSOR do `dev-o6r12-cdx` (Codex 2), que
+  caiu às 02:20 por limite de uso de 5 h. Exceção declarada: o Claude cobre na hora.
+- Medido antes de tocar: 8 commits do Codex (F0–F6b), 9 arquivos sem commit e 2 TAP soltos.
+  Decisão: commitar o parcial depois de conferi-lo contra o plano; o produto batia, os testes
+  ficavam abaixo do plano em C1–C3, C8, C10, C12, C20–C20d, C22 e no drill.
+- Feito: emenda E1′ antes do código (search_path com `pg_temp`, `FOR NO KEY UPDATE`, lugar dos
+  testes, catraca de catálogo); drill que relê e executa a migração em bases próprias (C4–C7b,
+  C14, C16, C17 controle, C23, R2-2); `-db` com os testes de propriedade (C1–C3, C8 por HTTP, C12,
+  C13, C15, C17, C20–C20d, E1.8′, E1.9′); catraca por superfície R1–R4 e C22 por conjunto;
+  vermelho-controle no código de leitura da `main` e cada mutação literal aplicada uma por vez,
+  vermelha e desfeita.
+- `main` trazida 2 vezes (#527/#532/#533 e #530). Migração recarimbada para `20260901100000`, por
+  causa da trava de `prisma/**` (depois da `20260901090000` do #537).
+
 ## 2026-11-11 — B-SAN3-23 (`dev-san3-23-cl`)
 
 - Executor: `dev-san3-23-cl`, Claude Opus 5.5 (subagente da sessão; nível menor declarado), cobrindo o Codex (Codex 1 sem cota semanal até 16/11, Codex 2 ocupado; exceção declarada). Plano v2 de `replano-B-SAN3-23-api` (Claude Opus 5.5 pela API, topo substituto declarado); crítica r2 `crit-23-r2-cl` (APROVADO COM AJUSTES, 8 ajustes como requisito); decisão do dono `D-PORTAO-5-RECOMENDACOES-1111`, Q1 = A (a F2b entra no bloco).
@@ -5251,3 +5281,12 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Sem `prisma/**`, `.github/**`, `Kpis/**`, lockfiles ou `.env`. Diário completo: `docs/revisoes/SAN3/B-SAN3-23-dev.md`.
 - **PARADA (04:45 SP, `D-EMENDA-ANTES-DO-CODIGO`):** a CI do push (run `42979498478`, job `backend`) acusou 1 vermelho, reproduzido 6/6 isolado no head e 0/6 na base: dois despachos concorrentes da mesma OS (`checklist-snapshot-dispatch`), o 2º recebe `409` do CAS da F2b, quando em sequência receberia `201`. O §2.2 ("CAS que casa 0 → 409") contradiz o §3.4 (regressão sem editar asserção). As formas do conserto ficam para emenda do plano (diário, seção PARADA). PR #536 em rascunho.
 - **RETOMADA (05:29–06:11 SP), pela Emenda 1 e 1.1 do plano** (precedente `FinancialTitleService.changeStatus`; crítica `crit-23-em1-cl`, EM1-01 a 06): F6a (testes vermelhos no head da parada: memória `tests/b-san3-23-cas-retentativa.test.ts`, 8 de 10 vermelhos; Postgres A15c/A15d), F6b (o serviço relê, revalida a mesma operação e regrava uma vez; a 2ª falha 409, sem laço; o "nao super-conta" 6/6), F6c (a memória com a mesma regra e o CAS sobre a OS viva; acabou o 404 falso com itens zerados), F6d (12 mutações vermelhas: a revalidação por escritor, o laço, o 409 direto, o zerar antes na memória e as M13-M15b) e F6e (bateria: `-db` 114/114, skipped 0).
+
+## 2026-11-11 — B-O6R-11d (`dev-11d-cl`)
+
+- Executor: `dev-11d-cl`, Claude Opus 5.5 (subagente da sessão; nível menor declarado), cobrindo o Codex (as duas contas sem cota semanal até 16/11; exceção declarada). Plano v2 de `replano-B-O6R-11d-api` (Claude Opus 5.5 pela API, topo por fallback declarado) com a Emenda 1 (crítica r2 `crit-11d-r2-cl`, APROVADO COM AJUSTES); decisão do dono `D-DONO-TODAS-RECOMENDACOES-1111`, Q1 = A.
+- Base `origin/main@da12fec6`, worktree `C:/Users/thiag/w-11d`, ramo `fix/mobile-os-contrato-b-o6r-11d`, `npm ci` próprio, `flutter pub get`; Postgres 16 e Redis 7 descartáveis `dev11d-pg` (55524) e `dev11d-redis` (56524). Merge de `c95ad4fd` (#536) às 11:20, pelo aviso do orquestrador.
+- Fatias: F0 `32814b32` (fixture do `toWorkOrderDto` real, testes, codec esqueleto; Flutter +2 -16, Node 8/10), F1 `9a54ece7` (codec e parser único), F2 `67f09b6f` (o lote manda `user_id` e declara o técnico; `assertExpectedTechnician` no servidor), F3 `4fbc72e3` (34 mutações literais, todas vermelhas e restauradas) e F4 (registro).
+- Comando: `agent-orchestration/codex/comandos/B-O6R-11d-contrato-os.md`. Plano versionado: `docs/revisoes/SAN3/B-O6R-11d-plano.md`. Diário: `docs/revisoes/SAN3/B-O6R-11d-dev.md`.
+- Registro: `Ω6R-QUA-004` e `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` fecham no merge; 6 pendências portadas de `a24f58b5`; 4 novas (`P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS`, `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO`, `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` com a divergência §A2 do tenant vazio, `P-MOBILE-REJECTED-DOIS-SENTIDOS`); `PLANO_SAN3.md` itens 3 e a cadeia do `mobile-work-order-sync.ts`. Índice regenerado pelo gerador.
+- Sem `prisma/**`, `.github/**`, `frontend/**`, `Kpis/**`, lockfiles ou `.env`.
