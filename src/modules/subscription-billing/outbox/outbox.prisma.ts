@@ -28,7 +28,7 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { forEachTenantRls, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
-import type { AdoptionFacts, ClaimParams, ClaimResult, OutboxRepository } from "./outbox.repository.js";
+import type { AdoptionFacts, ClaimParams, ClaimResult, OutboxLease, OutboxRepository } from "./outbox.repository.js";
 import {
   idempotencyKeyOf,
   type BillingOutboxRow,
@@ -293,18 +293,23 @@ export class PrismaOutboxRepository implements OutboxRepository {
     return null;
   }
 
-  async #mutate(tenantId: string, id: string, data: Prisma.BillingOutboxUpdateInput): Promise<void> {
-    await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
-      await tx.billingOutbox.updateMany({ where: { id }, data });
+  async #mutate(tenantId: string, id: string, lease: OutboxLease, data: Prisma.BillingOutboxUpdateInput): Promise<boolean> {
+    return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+      // [LEASE-01] A posse faz parte do predicado de TODA escrita do despacho. Zero linhas = lease perdida, sem exceção.
+      const result = await tx.billingOutbox.updateMany({
+        where: { id, status: "PROCESSING", claimed_by: lease.claimedBy, attempt_started_at: lease.attemptStartedAt },
+        data,
+      });
+      return result.count === 1;
     });
   }
 
-  async markSent(tenantId: string, id: string, externalId: string | null, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "SENT", external_id: externalId, next_attempt_at: null, last_error: null, updated_at: now });
+  async markSent(tenantId: string, id: string, externalId: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "SENT", external_id: externalId, next_attempt_at: null, last_error: null, updated_at: now });
   }
 
-  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, options: { readonly refundAttempt?: boolean } = {}): Promise<void> {
-    await this.#mutate(tenantId, id, {
+  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, lease: OutboxLease, options: { readonly refundAttempt?: boolean } = {}): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, {
       status: "PENDING",
       next_attempt_at: nextAttemptAt,
       last_error: lastError,
@@ -317,16 +322,31 @@ export class PrismaOutboxRepository implements OutboxRepository {
     });
   }
 
-  async markFailed(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "FAILED", last_error: lastError, next_attempt_at: null, updated_at: now });
+  async markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "FAILED", last_error: lastError, next_attempt_at: null, updated_at: now });
   }
 
-  async markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "NEEDS_REVIEW", last_error: lastError, next_attempt_at: null, updated_at: now });
+  async markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "NEEDS_REVIEW", last_error: lastError, next_attempt_at: null, updated_at: now });
   }
 
-  async markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "SKIPPED", skip_reason: skipReason, next_attempt_at: null, updated_at: now });
+  async markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "SKIPPED", skip_reason: skipReason, next_attempt_at: null, updated_at: now });
+  }
+
+  async confirmLease(tenantId: string, id: string, lease: OutboxLease): Promise<boolean> {
+    return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+      // [LEASE-02] A transação termina antes da rede; o lock só serializa a foto da posse.
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT id FROM billing_outbox
+          WHERE id = $1::uuid AND status = 'PROCESSING' AND claimed_by = $2 AND attempt_started_at = $3
+          FOR UPDATE`,
+        id,
+        lease.claimedBy,
+        lease.attemptStartedAt,
+      )) as Array<{ id: string }>;
+      return rows.length === 1;
+    });
   }
 
   async markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number> {
