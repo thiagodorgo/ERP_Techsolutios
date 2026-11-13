@@ -38,7 +38,7 @@ if (!connectionString) {
 
   before(async () => {
     const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+    admin = (await import("../src/database/pg-connection.js")).createPrismaClient(connection);
     efemera = await createEphemeralRole(admin, connection);
     (globalThis as { prisma?: unknown }).prisma = efemera.client;
   });
