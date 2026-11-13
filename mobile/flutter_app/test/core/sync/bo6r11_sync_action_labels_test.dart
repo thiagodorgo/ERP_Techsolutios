@@ -20,6 +20,7 @@ const _allTypes = <String>{
   InventorySyncActionTypes.entryCreate,
   InventorySyncActionTypes.exitCreate,
   InventorySyncActionTypes.materialAdd,
+  InventorySyncActionTypes.materialRemove,
   ...EvidenceSyncActionTypes.supported,
 };
 
@@ -33,8 +34,8 @@ String _humanize(String type) => type
     .join(' ');
 
 void main() {
-  test('l1 os 26 tipos têm rótulo próprio sem verbos técnicos em inglês', () {
-    expect(_allTypes, hasLength(26));
+  test('l1 os 27 tipos têm rótulo próprio sem verbos técnicos em inglês', () {
+    expect(_allTypes, hasLength(27));
     for (final type in _allTypes) {
       final label = syncActionLabel(type);
       expect(label, isNot(_humanize(type)), reason: type);
@@ -75,5 +76,20 @@ void main() {
   test('l3 fallback usa domínio conhecido ou sincronização', () {
     expect(syncActionLabel('foo.bar'), 'Ação de sincronização');
     expect(syncActionLabel('work_order.xyz'), 'Ação de Ordens de Serviço');
+  });
+
+  test('l3 material tem domínio e remoção próprios', () {
+    expect(
+      syncDomainLabel(InventorySyncActionTypes.materialAdd),
+      'Materiais da OS',
+    );
+    expect(
+      syncActionLabel(InventorySyncActionTypes.materialRemove),
+      'Peça retirada da OS',
+    );
+    expect(
+      syncActionLabel('work_order_material.xyz'),
+      'Ação de Materiais da OS',
+    );
   });
 }

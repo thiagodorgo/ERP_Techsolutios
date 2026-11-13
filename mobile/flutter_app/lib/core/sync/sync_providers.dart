@@ -20,6 +20,7 @@ import '../../features/work_orders/data/work_order_local_store.dart';
 import '../../features/work_orders/data/work_order_conflict_resolution_service.dart';
 import '../../features/expenses/data/expense_repository.dart';
 import '../../features/expenses/data/expense_sync_entity_updater.dart';
+import '../../features/prestador/data/prestador_repository.dart';
 import 'sync_action_factory.dart';
 import 'sync_action_store.dart';
 import 'sync_engine.dart';
@@ -28,6 +29,7 @@ import 'sync_queue_repository.dart';
 import 'sync_queue_reclaim_service.dart';
 import 'sync_replay_service.dart';
 import 'expense_receipt_sync.dart';
+import 'inventory_sync_replay_service.dart';
 import 'sync_user_scope.dart';
 
 final syncActionStoreProvider = Provider<SyncActionStore>(
@@ -212,6 +214,46 @@ final workOrderSyncReplayServiceProvider = Provider<WorkOrderSyncReplayService>(
       queue: ref.watch(replaySyncQueueRepositoryProvider),
       api: ref.watch(workOrderSyncBatchApiProvider),
       entityUpdater: buildWorkOrderSyncEntityUpdater(store),
+    );
+  },
+);
+
+final inventorySyncBatchApiProvider = Provider<InventorySyncBatchApi>((ref) {
+  final config = ref.watch(authenticatedApiConfigProvider);
+  if (config.accessToken == null) {
+    return const PendingBackendInventorySyncBatchApi();
+  }
+
+  return DioInventorySyncBatchApi(
+    createAuthenticatedHttpClient(
+      config,
+      onRefresh: () async {
+        await ref.read(authStateProvider.notifier).tryRefresh();
+        return ref
+            .read(authStateProvider)
+            .maybeWhen(
+              data: (state) => state.session?.tokens.accessToken,
+              orElse: () => null,
+            );
+      },
+      onClearSession: () => ref.read(authStateProvider.notifier).logout(),
+    ),
+  );
+});
+
+final inventorySyncReplayServiceProvider = Provider<InventorySyncReplayService>(
+  (ref) {
+    return InventorySyncReplayService(
+      queue: ref.watch(replaySyncQueueRepositoryProvider),
+      api: ref.watch(inventorySyncBatchApiProvider),
+      workOrders: DriftWorkOrderLocalStore(ref.watch(appDatabaseProvider)),
+      entityUpdater: (action, result, status) async {
+        final localId = action.payload['material_local_id'];
+        if (localId is! String || localId.trim().isEmpty) return;
+        await ref
+            .read(prestadorRepositoryProvider)
+            .applyMaterialSyncStatus(localId.trim(), status);
+      },
     );
   },
 );

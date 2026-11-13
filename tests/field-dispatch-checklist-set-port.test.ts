@@ -31,17 +31,20 @@ test("[BLOQ 1 · composição real] o porto ligado faz a execução nascer com a
 
     await ctx.dispatch(workOrder.id);
 
-    // 1) A ETAPA. Sem o porto ligado esta linha seria `generic` — e ficaria `generic` para sempre.
+    // 1) A ETAPA. Sem o porto ligado esta linha seria `generic` — e ficaria `generic` para sempre. B-SAN3-14: a
+    // entrega congelada também vira execução, com a própria etapa.
     const runs = await ctx.listRuns();
-    assert.equal(runs.length, 1);
-    assert.equal(runs[0].role, "collection");
+    assert.equal(runs.length, 2);
+    assert.deepEqual(runs.map((run) => run.role).sort(), ["collection", "delivery"]);
     assert.notEqual(await ctx.findRunByKey(`dispatch:${workOrder.id}:${tpl.id}:collection`), null);
+    assert.notEqual(await ctx.findRunByKey(`dispatch:${workOrder.id}:${tpl.id}:delivery`), null);
     // 2) A CHAVE ÓRFÃ que o porto solto criaria — a que, no dia da ligação, viraria a segunda execução.
     assert.equal(await ctx.findRunByKey(`dispatch:${workOrder.id}:${tpl.id}:generic`), null);
 
-    // 3) UMA unidade FATURADA. É a asserção de cabeceira: o dano do porto solto se multiplica por ordem em voo.
+    // 3) UMA unidade FATURADA por etapa (B-SAN3-14: coleta + entrega = 2). É a asserção de cabeceira: o dano do
+    // porto solto (uma 3ª, `generic`) se multiplica por ordem em voo.
     await ctx.flushCloudUsage();
-    assert.equal(await ctx.billedRuns(), 1);
+    assert.equal(await ctx.billedRuns(), 2);
   });
 });
 
@@ -76,12 +79,13 @@ test("[MÉDIA 3a · composição real] o despacho congela TODAS as linhas vivas,
 // vistoria". Ver, para o guincheiro, é a timeline da ORDEM: o aplicativo busca `GET /work-orders/:id/timeline` e
 // renderiza a `message` do evento. Com o porto solto o verbo nunca era chamado; e a auditoria da vistoria que
 // sumiu era gravada na timeline do DESPACHO, que o aplicativo não lê.
+// B-SAN3-14 — a ENTREGA deixou de ser diferida (vira execução no despacho); a diferida que sobra é a genérica.
 test("[MÉDIA 3b · composição real] a vistoria diferida vira linha na história da ORDEM, em PT-BR e sob a allowlist", async () => {
   await withRealComposition(async (ctx) => {
     const tpl = await ctx.publishTemplate("Vistoria do Veículo");
     const workOrder = await ctx.createWorkOrder([
       { checklistId: tpl.id, role: "collection" },
-      { checklistId: tpl.id, role: "delivery" },
+      { checklistId: tpl.id, role: "generic" },
     ]);
 
     await ctx.dispatch(workOrder.id);
@@ -92,7 +96,7 @@ test("[MÉDIA 3b · composição real] a vistoria diferida vira linha na histór
     assert.notEqual(evento, undefined);
     assert.equal(
       evento?.message,
-      'A vistoria "Vistoria do Veículo" da entrega foi registrada nesta ordem de serviço e ainda não foi enviada ao técnico.',
+      'A vistoria "Vistoria do Veículo" foi registrada nesta ordem de serviço e ainda não foi enviada ao técnico.',
     );
     // §3 — nenhum termo técnico atravessa para a tela do campo.
     for (const termo of ["collection", "delivery", "generic", "dispatch", "checklist"]) {
@@ -107,7 +111,7 @@ test("[MÉDIA 3b · composição real] a vistoria diferida vira linha na histór
       "source",
     ]);
     assert.equal(evento?.metadata.checklistId, tpl.id);
-    assert.equal(evento?.metadata.role, "delivery");
+    assert.equal(evento?.metadata.role, "generic");
     assert.equal(evento?.metadata.source, "manual");
     assert.equal(evento?.metadata.ruleId, null);
     assert.equal(JSON.stringify(evento?.metadata).includes(ctx.tenantId), false);
@@ -202,9 +206,9 @@ test("[BLOQ 1 · composição real] o re-despacho com o modelo fora de circulaç
     );
     assert.deepEqual((await ctx.getWorkOrder(workOrder.id)).checklistSnapshot, espelhoNoPrimeiroDespacho);
 
-    // E o re-despacho não cobrou de novo: a execução da primária continua sendo a mesma.
+    // E o re-despacho não cobrou de novo: as execuções da coleta e da entrega (B-SAN3-14) continuam as mesmas.
     await ctx.flushCloudUsage();
-    assert.equal(await ctx.billedRuns(), 1);
+    assert.equal(await ctx.billedRuns(), 2);
   });
 });
 

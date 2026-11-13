@@ -5,6 +5,8 @@ import type { ICoreSaasService } from "../core-saas/services/core-saas-service.i
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
 import { createDefaultExpenseManagementService } from "../expense-management/expense-management.service.js";
+import { createDefaultInventoryService } from "../inventory/inventory.service.js";
+import { createDefaultWorkOrderService } from "../work-orders/work-order.service.js";
 import { syncMobileChecklistActions } from "./mobile-checklist-sync.js";
 import { syncMobileEvidenceActions } from "./mobile-evidence-sync.js";
 import { uploadMobileEvidenceFile } from "./mobile-evidence-upload.js";
@@ -39,6 +41,11 @@ const MOBILE_CATALOG_VERSION = "mobile-catalogs:v1";
 
 export function createMobileRouter(service: ICoreSaasService): Router {
   const router = Router();
+  let inventoryServicePromise: ReturnType<typeof createDefaultInventoryService> | undefined;
+  let workOrderServicePromise: ReturnType<typeof createDefaultWorkOrderService> | undefined;
+
+  const resolveInventoryService = () => inventoryServicePromise ??= createDefaultInventoryService(service);
+  const resolveWorkOrderService = () => workOrderServicePromise ??= createDefaultWorkOrderService();
 
   router.use(tenantContextMiddleware);
 
@@ -168,8 +175,34 @@ export function createMobileRouter(service: ICoreSaasService): Router {
   router.post(
     "/mobile/sync/inventory-actions",
     handleAsyncRoute(async (request, response) => {
+      const actor = request.tenantContext;
+      let tenantModulesPromise: Promise<readonly string[]> | undefined;
+      const workOrdersModuleEnabled = async () => {
+        if (!actor?.tenantId) return false;
+        try {
+          tenantModulesPromise ??= service
+            .getTenantForActor(actor.tenantId, actor.tenantId)
+            .then((tenant) => tenant.modules);
+          return hasModule(await tenantModulesPromise, "work_orders");
+        } catch {
+          throw {
+            statusCode: 503,
+            code: "SERVICE_UNAVAILABLE",
+            reason: "module_lookup_unavailable",
+            message: "Organization modules could not be checked right now.",
+          };
+        }
+      };
+      const [inventory, workOrders] = await Promise.all([
+        resolveInventoryService(),
+        resolveWorkOrderService(),
+      ]);
       response.json({
-        data: await syncMobileInventoryActions(request.tenantContext, request.body ?? {}),
+        data: await syncMobileInventoryActions(actor, request.body ?? {}, {
+          inventory,
+          workOrders,
+          workOrdersModuleEnabled,
+        }),
       });
     }),
   );
@@ -270,7 +303,9 @@ function buildFeatureFlags(
       reason: hasModule(modules, "inventory") ? "availability_and_sync_partial" : "module_disabled",
     },
     inventory_sync: {
-      enabled: hasModule(modules, "inventory") && hasPermission(actor, "inventory.manage"),
+      enabled: hasModule(modules, "inventory") && (
+        hasPermission(actor, "inventory.manage") || hasPermission(actor, "work_orders:update")
+      ),
       status: hasModule(modules, "inventory") ? "partial" : "unavailable",
       reason: hasModule(modules, "inventory") ? "in_memory_contract" : "module_disabled",
     },

@@ -3513,6 +3513,8 @@ mobile)** já apontada por `P-MOBILE-OS-SEEDS` e `P-MOBILE-BANNER-INTEGRACAO`, a
   - Residual com dono: `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO`, `P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS`,
     `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` e `P-MOBILE-REJECTED-DOIS-SENTIDOS` (novas, no fim deste arquivo). Diário:
     `docs/revisoes/SAN3/B-O6R-11d-dev.md`.
+- **Apenso 2026-11-13:** material reenviado por `B-MATERIAL-REENVIO` (PR #551) — `work_order_material.add|remove` com replay no
+  app e baixa durável por origem no backend.
 
 ## P-TESTS-FORA-DO-TYPECHECK (2026-08-14 — ciclo 3 da revisão do CHK P1 PR-04c-A)
 
@@ -8655,6 +8657,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-24` (plano SAN3, §4.1 item 29) (antes: bloco web financeiro (bloco dono proposto pela fatia; plano SAN3: fora do gate (§4.3) — entra se o dono vender (§10.1)))
 - **impacto vendável:** NAO — não é pré-requisito de venda; condição: comissão configurável vendida → BLOQUEIA
 - **teste de encerramento:** smoke por tela (cheque depositar/compensar; fechar/reabrir; CRUD de política) com 403 por permissão
+- **B-SAN3-24 (2026-11-11, `dev-24-cl`):** a parte da **política de comissão** saiu deste item e do item 29 por `D-PORTAO-7-RECOMENDACOES-1011` e passou para `P-COMISSAO-MOTOR-E-POLITICA`. Esta pendência fecha com o merge do PR do `B-SAN3-24` que entrega as telas de Cheques e de Fechamento do mês; o teste de encerramento passa a ser o dessas duas telas (sem o CRUD de política).
 
 ---
 
@@ -11949,7 +11952,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** como técnico, cada rota acima devolve só o que é dele (ou 403/404), com teste por rota.
 
 ## P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não têm saída: a OS fica retida — MÉDIA
-- status: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA.
+- status: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA, sem o `work_order_material.add`, que saiu dela com o `B-MATERIAL-REENVIO` (PR #551).
 - **origem:** B-SAN3-13 (§2.5, §11-bis 1). A tela de sincronização resolve só `conflict`; `failed` e os tipos sem replay
   (`work_order.approval_request`, `work_order.unable_to_start`, `work_order_material.add`) ficam para sempre.
 - **efeito:** a OS que deixou de ser do técnico (ou concluiu) com uma dessas ações fica no aparelho com selo — nunca é
@@ -11962,6 +11965,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   nunca ganha Descartar — regra única `canDiscardSyncAction`, que o 2º PR reutiliza** (`D-DESPESA-SEM-DESCARTAR`); tipos
   sem replay (`work_order.approval_request`, `work_order.unable_to_start`, `work_order_material.add`) seguem com
   `B-SAN3-16`/4º PR.
+- **Apenso 2026-11-13 (`B-MATERIAL-REENVIO` (PR #551)):** PARCIAL. O `work_order_material.add` sai da lista: tem replay
+  (`inventory_sync_replay_service.dart`) e saída — recusa vira `conflict` decidível, "Descartar" e "Versão do gestor"
+  tiram a peça e enfileiram o estorno quando ela pode ter baixado, e a ação interrompida volta sozinha à fila.
+  `work_order.approval_request` e `work_order.unable_to_start` seguem com `B-SAN3-16`.
 
 ## P-MOBILE-EVIDENCIA-CONFLITO-SEM-DESCARTE (2026-10-25) — evidência em conflict com blob não tem caminho — MÉDIA
 - status: ABERTA
@@ -11970,8 +11977,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **dono:** bloco de sync de evidência.
 - **encerramento:** resolver/descartar a evidência em conflito pela tela; a OS sai depois.
 
-## P-MOBILE-MATERIAL-SEM-REPLAY (2026-10-25) — work_order_material.add fica pending para sempre — ALTA
-- status: ABERTA
+## P-MOBILE-MATERIAL-SEM-REPLAY (2026-10-25) — work_order_material.add fica pending para sempre — ALTA — **FECHADA** pelo `B-MATERIAL-REENVIO` (PR #551), nota S11
+- status: FECHADA — `B-MATERIAL-REENVIO` (PR #551), pelo código e pelos testes; o efeito em produção vem com a porta do prestador (`B-SAN3-15b`) — nota S11.
 - **origem:** B-SAN3-13 (R2-6, M23). Não há replay de material do prestador; com este bloco a OS com peça lançada fica
   RETIDA (ramo 1 por `work_order_local_id` e ramo 5 por `work_order_materials`), nunca apagada.
 - **gravidade:** ALTA — consumo de estoque e base de cobrança.
@@ -11981,6 +11988,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Apenso 2026-11-02 (1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`)):** segue ABERTA. O que o 1º PR garante é que a ação **sobrevive** (`Ω6R-QUA-005`,
   fila serializada e `addSelection` com `await`); enviá-la é o 4º PR. Sem porta na UI (`P-MOBILE-PRESTADOR-SEM-PORTA`),
   o efeito só é observável em teste até o `B-SAN3-15` (crítica S11).
+- **Apenso 2026-11-13 (`B-MATERIAL-REENVIO` (PR #551)):** FECHADA. O critério literal ("replay de material com efeito no backend; a ação
+  vira `synced` e a OS drena") está provado por `[RC2(1)]` (`tests/b-material-sync.test.ts`: aceito, um movimento),
+  `[RC3(1)]` (`tests/b-material-sync-db.test.ts`: uma linha em `stock_movements` com origem, OS e custódia), RC4(3)
+  (`test/core/sync/bmaterial_replay_test.dart`: a ação e a linha viram `synced`) e RC6(5)
+  (`test/features/prestador/bmaterial_linha_test.dart`: com tudo aceito a OS sai do aparelho; com um conflito, fica).
+  **Nota S11:** sem porta na UI (`P-MOBILE-PRESTADOR-SEM-PORTA`), nenhum técnico real alcança a tela do prestador; o
+  efeito em produção depende do `B-SAN3-15b`. A baixa já sai da custódia de quem lança (Emenda C2, 5(a) do dono), não
+  da BASE; a `P-MATERIAL-CUSTODIA-BASE` prevista no plano não foi criada.
 
 ## P-MOBILE-SYNC-INTERROMPIDO-REENVIO-MANUAL (2026-11-02) — ação de OS, vistoria ou evidência interrompida em `syncing` volta como conflito para o técnico decidir, sem reenvio automático — MÉDIA
 - status: ABERTA
@@ -12163,10 +12178,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Portada do ramo `fix/mobile-work-order-contracts` (`a24f58b5`) em 2026-11-02** pelo 1º PR do corte do `B-O6R-11` (emenda 2 §3 R6): texto acima verbatim; os números de linha valem para aquele ramo. O PR #388 fecha sem merge e o ramo fica preservado.
 
 ## P-MOBILE-LINHA-CONFLICT-NAO-LIMPA (2026-10-25) — useServer muda só a ação; a linha fica conflict — BAIXA
-- status: ABERTA
+- status: ABERTA — PARCIAL: a linha de material foi resolvida pelo `B-MATERIAL-REENVIO` (PR #551); a linha da OS segue com o dono.
 - **origem:** B-SAN3-13 (CRIT-5). Se a OS continuar do técnico, o selo da linha fica errado até o próximo upsert.
 - **dono:** bloco de sync.
 - **encerramento:** resolver o conflito também reescreve a linha.
+- **Apenso 2026-11-13 (`B-MATERIAL-REENVIO` (PR #551)):** PARCIAL. Na linha de material, o gancho de resolução
+  (`sync_resolution_side_effects.dart`) reescreve a linha em "Minha versão", "Versão do gestor" e "Descartar" (RC6(4),
+  pela `SyncScreen` real). A linha da OS (`work_orders.sync_status`) segue com o bloco de sync / `B-O6R-11c`: o
+  `useServer` de uma ação de OS quer dizer "recarregar a OS do servidor", regra do `WorkOrderConflictResolutionService`,
+  não deste bloco; o gancho genérico já está pronto para receber esse efeito.
 
 ## P-MOBILE-REPO-SESSAO-DEMO-DURANTE-RELOAD (2026-10-25) — o provider nasce com a sessão de demonstração durante o recarregamento — BAIXA
 - status: ABERTA
@@ -13609,10 +13629,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CONF530-01-TESTE-DONO-LEITURA-NA-TRAVA (2026-11-11) — a leitura do status na mesma instrução da trava (o fecho do CRIT530-02) não tem teste-dono — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); a linearização do `beginIssue` (plano v2 do conserto do #530, §3.4) · **dono:** `B-ASS-08c`, que liga o canal: o teste entra ANTES de o canal ligar · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** ligar o canal (pagamento e nota) até o teste-dono estar no repositório (condição do porteiro do #530, R1).
+- **status:** FECHADA (2026-11-13, pelo `B-ASS-08c0`, ramo `test/billing-conf530-probe`, neste PR; plano `B-ASS-08c-v2` §2.1 P20 e CA-0a) — era ABERTA · **gravidade:** MÉDIA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); a linearização do `beginIssue` (plano v2 do conserto do #530, §3.4) · **dono:** `B-ASS-08c`, que liga o canal: o teste entra ANTES de o canal ligar · **PR-alvo:** o PR do `B-ASS-08c` (o sub-bloco `B-ASS-08c0`) · **bloqueia:** ligar o canal (pagamento e nota) até o teste-dono estar no repositório (condição do porteiro do #530, R1); com este PR na `main`, deixa de bloquear.
 - **origem:** CONF530-01 da conferência `conf-530-cl` (CONFERIDO, sem refazer cadeira; ata `J-530-b-ass-08b.md`); o porteiro `porteiro-530` (LIBERADO COM RESSALVA, R1) pediu o registro com dono `B-ASS-08c` e a trava de ligar o canal.
 - **fato:** a mutação CONF-2 (ler o status numa instrução separada ANTES do `FOR NO KEY UPDATE`) compila e deixa T-INTX-12a a 12d verdes, porque o T-INTX-12a faz o estorno inteiro antes de o `beginIssue` começar. O código do head está certo: a sonda CONF-P1 fica verde nele. A sonda que discrimina está pronta para virar teste-dono (`revisoes/j530/conf-530/zz-conf530-probe-db.test.ts`, fora do repositório). **Leitura do orquestrador, declarada (§A6):** o canal de pagamento e nota segue desligado na produção, então a corrida não emite nota real até o 08c.
 - **critério de encerramento:** o teste CONF-P1 entra no repositório como teste-dono `-db` e a mutação CONF-2 fica vermelha.
+- **fechamento (2026-11-13, `dev-08c0-cl`, Claude Opus 5.5, declarado):** a sonda entrou como `tests/ass-08c-conf530-db.test.ts`, com um cabeçalho de comentário de 9 linhas; daí para baixo o arquivo é byte a byte a sonda (`tail -n +10 tests/ass-08c-conf530-db.test.ts | cmp - revisoes/j530/conf-530/zz-conf530-probe-db.test.ts` sem saída), sem nenhuma asserção mudada. No head `eeccdd27`, sob papel efêmero NOSUPERUSER NOBYPASSRLS num cluster próprio: `# tests 5 · pass 5 · fail 0 · skipped 0`. Com a M22 (= CONF-2, o de/para literal de `revisoes/crit-08c-sondas/conf.json`, da revisão `crit-08c-cl`, âncora `SELECT id, status FROM subscription_statements WHERE id = $1::uuid FOR NO KEY UPDATE` = 1): `pass 4 · fail 1`, só a CONF-P1 (`1 !== 0`, nota `pending` sobre receita estornada); restaurada, `git diff --stat -- src/` vazio. Comandos e saídas no corpo do PR e no diário do dev (`revisoes/b-ass-08c0/dev-08c0-cl.md`, fora do repositório). Na CI: pela `.github/workflows/ci.yml` da `main`, o job `backend` roda o `npm test` com `DATABASE_URL`, e o runner (`scripts/run-backend-tests.mjs`) coleta todo `tests/*.test.ts`; é lá que a suíte roda (o resumo TAP do head está no PR). Ela não está na lista `SUITES=` do `backend-postgres`; isso é do `B-ASS-08c0-ci` (`P-ASS-DB-FORA-DA-LISTA-CURADA`, só com a autorização A1).
 
 ## P-CONF530-02 (2026-11-11) — comentário de `StatementInvoiceRepository.beginIssue` desatualizado — BAIXA
 
@@ -13623,9 +13644,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-CONF530-03 (2026-11-11) — 3 caminhos do conserto do #530 fora da letra do PERMITIDO — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); `tests/san3-05-acessos-de-plataforma-guard.test.ts` (1 chave T13 com motivo), `tests/san3-05-leituras-de-plataforma-db.test.ts` (a dubla da reconsulta devolve o `externalReference`; nenhuma asserção mudou) e `agent-orchestration/codex/comandos/B-ASS-08-fluxo-webhooks-outbox.md` (Emenda 2) · **dono:** `B-ASS-08c` (porteiro do #530, R1; a conferência o classifica como registro) · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
+- **status:** FECHADA (2026-11-13, pelo `B-ASS-08c0`, ramo `test/billing-conf530-probe`, neste PR; plano `B-ASS-08c-v2` §2.1 P27a e CA-0b): os três caminhos ficam **aceitos por escrito** — era ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** dentro do bloco `B-ASS-08b` (#530); `tests/san3-05-acessos-de-plataforma-guard.test.ts` (1 chave T13 com motivo), `tests/san3-05-leituras-de-plataforma-db.test.ts` (a dubla da reconsulta devolve o `externalReference`; nenhuma asserção mudou) e `agent-orchestration/codex/comandos/B-ASS-08-fluxo-webhooks-outbox.md` (Emenda 2) · **dono:** `B-ASS-08c` (porteiro do #530, R1; a conferência o classifica como registro) · **PR-alvo:** o PR do `B-ASS-08c` · **bloqueia:** não.
 - **origem:** CONF530-03 da conferência `conf-530-cl`. Os três estão declarados no diário do dev e na Emenda 2, com a razão; nenhum toca dinheiro, permissão ou isolamento. Pela `D-EMENDA-ANTES-DO-CODIGO`, a emenda devia ter vindo antes do código.
 - **critério de encerramento:** o registro aceita os três por escrito, ou o molde de plano passa a prever as chaves do ratchet T13 e as dublas das suítes do `san3-05` quando o bloco muda a superfície de plataforma.
+- **aceite por escrito (2026-11-13, `dev-08c0-cl`, Claude Opus 5.5, declarado; o plano `B-ASS-08c-v2` §2.1 P27a manda este registro, e a revisão reforçada do `B-ASS-08c0` o confere):** os três caminhos ficam aceitos, cada um com a razão que a Emenda 2 da 08b já dava (`agent-orchestration/codex/comandos/B-ASS-08-fluxo-webhooks-outbox.md`, linhas 112 a 114 na `main` `eeccdd27`):
+  - `tests/san3-05-acessos-de-plataforma-guard.test.ts`: a chave `-.findLiveInvoice` (linhas 220 e 221 na `main`), do gerador e com motivo. Ela existe porque a leitura de `subscription_statement_invoices` passou a ocorrer dentro da transação do demonstrativo, e o T13 só ganha chave nova por acréscimo;
+  - `tests/san3-05-leituras-de-plataforma-db.test.ts`: a dubla da reconsulta passou a devolver o `externalReference` que o sistema mandou (linhas 804 a 809 na `main`). É a mesma troca que o conserto fez nas dublas de `tests/ass-08*`, e nenhuma asserção mudou;
+  - `agent-orchestration/codex/comandos/B-ASS-08-fluxo-webhooks-outbox.md`: a própria Emenda 2.
+  - Nenhum dos três toca dinheiro, permissão ou isolamento. O desvio de processo (a emenda depois do código, contra a `D-EMENDA-ANTES-DO-CODIGO`) fica registrado aqui, e não se reabre. A segunda saída do critério (o molde de plano prever as chaves do T13 e as dublas do `san3-05`) não foi feita; ela é da mesma classe da `P-CONF527B-N01-DIARIOS-DE-TELA-FORA-DO-PERMITIDO` e não entra neste bloco.
 
 ## P-SAN3-07-SENTINELA-SEM-GUARDA (2026-11-11) — o P3 do `B-SAN3-07` passa em vazio se o seed parar de gravar a sentinela — BAIXA (gravidade: leitura do redator)
 
@@ -13828,8 +13854,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
-  não muda permissão) · **dono (Emenda 3 do plano do `B-SAN3-19b`; a resposta do dono à Pergunta 2 veio (a) em 11/11):** um bloco próprio de permissão do
-  app, com junta completa e `coordenador-de-acessos`, que começa provando o bloqueio contra o backend local · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
+  não muda permissão) · **dono:** `B-MOBILE-GATE-CHAVE` (procedência: a Emenda 3 do plano do `B-SAN3-19b` e a resposta (a) do dono à Pergunta 2, em 11/11; o ID do bloco foi dado em 13/11, R552-A2; plano em curso; junta completa + `coordenador-de-acessos`; começa provando o bloqueio contra o backend local) · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
 - **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
 - **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
   crítica r2 executou `isValidPermission`/`getRolePermissions` em `07898adf`: inválidas e sem papel; as linhas de
@@ -13916,6 +13941,90 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a seção das rotas financeiras da OS no `API_CONTRACTS.md` nunca teve catálogo de erros, nem o 503 `invoice_transient_conflict` do B-SAN3-02; o arquivo está fora do PERMITIDO do plano do B-SAN3-23, cujo §3.5 manda registrar as adições no comando do bloco, o que foi feito) · **dono:** o próximo bloco que tocar o `API_CONTRACTS.md` das rotas financeiras da OS · **PR-alvo:** esse bloco · **bloqueia:** não.
 - **origem:** junta J-536, achado C2-01 (`revisoes/j536/c2-voto.json`), e a conferência do #536 (CONF536-OBS-1: a pendência não estava no head). Os códigos: `503 WORK_ORDER_FINANCIAL_UNAVAILABLE work_order_financial_transient_conflict` (lançar, editar e apagar item) e `503 WORK_ORDER_UNAVAILABLE work_order_cancel_transient_conflict` (cancelar), hoje só em `agent-orchestration/codex/comandos/B-SAN3-23-cancel-race.md` (contrato versionado `work_order_financial_write@2026-11-11.b-san3-23`), no diário do dev e em `src/`.
 - **critério de encerramento:** o `API_CONTRACTS.md` documenta os dois 503 na seção das rotas financeiras da OS, no formato dos 503 que o arquivo já tem (`reset_unavailable`, `EXPENSE_SYNC_UNAVAILABLE sync_busy`).
+## P-COMISSAO-MOTOR-E-POLITICA (2026-11-11) — a tela de política de comissão só vem depois do motor de comissão — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o motor de comissão nunca existiu: `docs/commissions.md:9`, `:33`;
+  `grep -rn "commissionCalculation.create" src` = 0, medido pelo plano v1 do `B-SAN3-24`) · **dono:** bloco do motor de
+  comissão, a abrir pelo orquestrador · **fora do portão** (`D-PORTAO-7-RECOMENDACOES-1011`).
+- **origem:** `D-PORTAO-7-RECOMENDACOES-1011` (o dono tirou a política do `B-SAN3-24` e do item 29 até o motor existir);
+  conflitos C-24-1 e C-24-2 (`decisoes.md`, adendo do `B-SAN3-24` ao `REGISTRO-SAN3-CONFLITOS`).
+- **o que falta:** o motor que calcula a comissão; depois dele, a tela de política e de base de cálculo (as rotas
+  `policies`/`basis-events` existem sem consumidor, `P-WEB-FIN-CHEQUE-FECHAMENTO-COMISSAO-SEM-TELA`).
+- **teste de encerramento:** o motor grava o cálculo por evento de base, e a tela de política opera sobre as rotas reais
+  com 403 por permissão.
+
+## P-SAN3-24-AUDITORIA-BEST-EFFORT (2026-11-11) — a auditoria da casa é gravada fora da transação e engole a falha — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`src/modules/core-saas/audit/audit-request-context.ts:39-41` e o
+  `catch` seguinte; vale para todas as auditorias, não só o fechamento) · **dono proposto:** a varredura de segurança do
+  §C7.10(6), antes de fechar o portão da versão vendável.
+- **origem:** plano v2 do `B-SAN3-24`, A-04 e Q1 (respondida (b) por `D-DONO-TODAS-RECOMENDACOES-1111`).
+- **forma:** o fechamento do mês (e qualquer escrita auditada) comita, e só depois a auditoria é gravada em transação
+  própria; se ela falhar, o efeito fica e o registro se perde, com um aviso no log.
+- **o que o B-SAN3-24 já fez:** o motivo do fechamento forçado passou a entrar na metadata de `financial_period.closed`,
+  provado pelo banco no `tests/b-san3-24-fechamento-forcado-auditoria-db.test.ts` (B7).
+- **teste de encerramento:** falha injetada na gravação da auditoria desfaz o efeito (ou o efeito e a auditoria
+  comitam juntos), com teste `-db`.
+
+## P-SAN3-24-CHEQUE-FILTRO-VINCULADO (2026-11-11) — a lista de cheques não filtra "pendente" nem "tem título" no servidor — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`GET /cheques` filtra situação e título só por igualdade:
+  `src/modules/cheques/cheque-prisma.repository.ts`, `buildWhere`; medido pela crítica r2 do `B-SAN3-24`, N-02) · **dono
+  proposto:** o próximo bloco de backend financeiro (o mesmo de `P-SAN3-12C-*`).
+- **origem:** N-02 da crítica r2 do plano v2 do `B-SAN3-24`; resolução declarada do dev (`docs/revisoes/SAN3/B-SAN3-24-dev.md`).
+- **o que a tela faz hoje:** "pendentes" = 2 consultas ao servidor (registrado e depositado), com os dois totais lado a
+  lado; "vinculados a título" = filtro sobre os pendentes CARREGADOS (até 100 por situação), dito na própria lista.
+- **teste de encerramento:** `GET /cheques?status=registered,deposited&has_title=true` com total do servidor igual ao
+  `linkedPendingCount` do `/financial-summary`, e a tela usando o filtro do servidor.
+
+## P-SAN3-24-TITULO-PELA-URL (2026-11-11) — o Financeiro não abre um título pela URL — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o estado de URL do Financeiro só tem aba, conta e filtro, e o
+  detalhe aberto é estado local da view; N-03 da crítica r2) · **dono proposto:** o `B-SAN3-25` ou um bloco do Financeiro.
+- **o que a tela faz hoje:** o cheque vinculado mostra o documento do título e leva à ABA do Financeiro
+  (`/finance?aba=rec|pag`), onde o desvínculo do 12b existe.
+- **teste de encerramento:** `/finance?titulo=<id>` abre o detalhe do título, e o link do cheque vinculado usa essa URL.
+## P-SAN3-14-DOSSIE-SEM-FASE (2026-11-11) — o dossiê de custódia não mostra a fase de cada vistoria — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` na forma do dossiê (o `mapRun` de `src/modules/impound/impound.checklist-link-prisma.repository.ts` não carrega `role` e é anterior ao bloco; o par coleta + entrega do mesmo modelo nasce no `B-SAN3-14`) · **dono:** um bloco curto de dossiê no molde do `B-SAN3-11` (DTO em `src/modules/impound/**` + rótulo em `frontend/src/modules/patios/processes/**`), depois do merge do `B-SAN3-14` · **bloqueia:** não (`src/modules/impound/**` é PROIBIDO no `B-SAN3-14`).
+- **origem:** crítica r2 do plano do `B-SAN3-14` (A-R2-05), transcrita na emenda 1 §8.
+- **critério de encerramento:** o dossiê carrega a fase de cada vistoria e a rotula "Coleta"/"Entrega" (legado `null` = Coleta); um teste com coleta e entrega do **mesmo modelo** fica vermelho sem o conserto. O PR do `B-SAN3-14` declara o resíduo no corpo.
+
+## P-SAN3-14-EXECUCAO-ALTERADA-NO-SERVIDOR-NAO-CHEGA (2026-11-11) — vistoria reaberta ou cancelada no servidor não chega ao app que já a baixou — MÉDIA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (o app re-casa o `serverId` a cada abertura e não conhece versões; a reabertura existe desde o PR-03; o `B-SAN3-14` só herda a fase na reabertura e, na pré-carga, não regrava `serverId` casado) · **dono:** `B-SAN3-16` (fila e sync do app) ou bloco próprio, a critério do orquestrador · **bloqueia:** não.
+- **origem:** emenda 1 do plano do `B-SAN3-14` §8.
+- **critério de encerramento:** a reabertura no servidor de uma vistoria já baixada aparece no app como run nova da mesma fase, sem regravar a concluída; uma run cancelada no servidor deixa de segurar a OS no app; testes com vermelho-controle nos dois casos.
+
+## P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO (2026-11-11) — a coleta aberta sem sinal numa OS sem execução fica "pronta" para sempre — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`D-CHK-DISPATCH-CREATE`: a coleta aberta sem sinal numa OS cuja provisão falhou cria run local que, com sinal e sem par, volta `ready` sem `serverId`, `checklist_repository.dart`, `resolveRunForWorkOrder`); o `B-SAN3-14` fecha isso só para a entrega (R-R2-02) · **dono:** `B-SAN3-16` · **bloqueia:** não.
+- **origem:** emenda 1 do plano do `B-SAN3-14` §8.
+- **critério de encerramento:** a coleta sem execução no servidor aparece como "aguardando envio" e não é dada como pronta; as respostas ficam preservadas; teste com vermelho-controle.
+
+## P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP (2026-11-11) — OS concluída sem a entrega baixada, recusada pelo servidor, não volta ao atendimento no app — MÉDIA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (nasce da trava nova do `B-SAN3-14`); não grave pela triagem §C7 item 10(3): sem perda de dado · **dono:** `B-SAN3-16` · **bloqueia:** não.
+- **origem:** HIPÓTESE do R-R2-01 (emenda 1 do plano do `B-SAN3-14`), **negada** pela medição do dev na fatia 2 (`controle/decisoes.md`, `REGISTRO-B-SAN3-14`): "Descartar" a ação na tela de sincronização não mexe na OS, que fica `completed`/`pending`, e a carga da lista preserva OS `pending`; a tela de execução só abre em "Em atendimento"/"Pausada". A OS do servidor fica aberta e a entrega continua respondível pelo console ou por outro aparelho.
+- **critério de encerramento:** OS concluída sem sinal, recusada por `delivery_checklist_pending` e com a entrega baixada depois: o técnico chega à entrega pelo app e, concluída a entrega, a OS conclui sem "Descartar"; teste com vermelho-controle.
+
+## P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES (2026-11-11) — a comparação coleta × entrega não serve a modelos diferentes — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (a tela de comparação usa UM schema, o do `checklistId` da rota, e procura as runs por fase em todos os modelos) · **dono:** o próximo bloco que tocar a comparação no app · **bloqueia:** não (o `B-SAN3-14` só mostra "Comparar coleta × entrega" quando as duas vistorias confirmadas são do mesmo modelo, R-D1).
+- **origem:** plano v2 do `B-SAN3-14`, achado derivado D1.
+- **critério de encerramento:** coleta e entrega de modelos diferentes comparam pelos componentes equivalentes (ou a regra de "o que se compara" é decidida pelo dono); teste com os dois modelos.
+
+## P-SAN3-14-ENTREGA-ORFA-EM-OS-CANCELADA (2026-11-11) — a vistoria de entrega de OS cancelada depois do despacho fica em andamento — BAIXA
+
+- **status:** ABERTA · **escopo:** `dentro-do-bloco` (custo aceito pelo dono na decisão A, `D-PORTAO-9-RECOMENDACOES-1011`: uma unidade cobrada e uma execução `in_progress` que nenhum caminho encerra; OS cancelada não abre custódia, então o dossiê não é afetado) · **dono:** um bloco de higiene das vistorias de OS encerrada · **bloqueia:** não.
+- **origem:** plano v2 do `B-SAN3-14` §8.
+- **critério de encerramento:** a vistoria de entrega de OS cancelada sai de "em andamento" (cancelada), sem nova unidade cobrada; teste com vermelho-controle.
+
+## P-SAN3-14-D2-CONCLUSAO-DO-PRESTADOR (2026-11-11) — a tela de conclusão do prestador recusa toda OS com vistoria — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`work_order_conclusion_screen.dart` passa `checklistComplete = wo?.checklistId == null`; o `B-SAN3-14` só acrescenta o parâmetro `deliveryComplete` com o mesmo valor conservador) · **dono:** `B-SAN3-15` (fluxo do prestador) · **bloqueia:** não.
+- **origem:** plano v2 do `B-SAN3-14`, achado derivado D2 (nota para o `B-SAN3-15`).
+- **critério de encerramento:** a conclusão do prestador lê a situação real da vistoria da OS; teste com OS com e sem vistoria concluída.
 
 ## P-SAN3-15-QTD-FRACIONADA (2026-11-11) — a seleção de peça no app é em inteiros: "2,5 m" deixa escolher até 2 — BAIXA
 
@@ -14538,3 +14647,64 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **pergunta ao dono:** a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` entra no §4.1 como item novo do portão, com bloco próprio de permissão do app? A resposta (a) da `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP) disse que sim, mas acrescentar o item muda o denominador de 64 para 65 e mexe no `mvp_vendavel`.
 - **recomendação:** decidir antes do próximo marco.
 - **origem:** ressalva (item 4) do `porteiro-540`; o item não entra no `PLANO_SAN3` neste PR (decisão do orquestrador, `donos-1211.md`).
+
+## P-PAINEL-HORA-DA-MEDICAO (2026-11-13) — a hora da medição da Codex ficava em branco e o aviso de medição velha não disparava — BAIXA — FECHADA
+
+- **status:** FECHADA (2026-11-13; consertado fora do repositório) · **gravidade:** BAIXA (ferramenta de terreno) · **escopo:** painel de agentes fora do repositório · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **fato:** o painel de agentes mostrava a hora da medição da Codex em branco. No PowerShell 7, `ConvertFrom-Json` já entregava o campo como `DateTime`; a chamada posterior a `Parse` falhava em silêncio. Por isso, o aviso de medição velha nunca disparava.
+- **fechamento:** o tratamento foi corrigido em 13/11 no painel externo ao repositório.
+- **lição:** medição que falha em silêncio é *fail-open*; o arnês deve tornar a falha visível e não tratar a ausência de hora como medição válida.
+
+## P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS (2026-11-12) — a suíte backend inteira não reproduz o CI no host Windows — MÉDIA (ferramenta)
+
+- **status:** ABERTA · **gravidade:** MÉDIA (ambiente/arnês, não produto) · **escopo:** ferramentas e compatibilidade do arnês no Windows · **dono:** `B-FERR-AGENTES` · **PR-alvo:** o PR do `B-FERR-AGENTES` · **bloqueia:** não o `B-MATERIAL-REENVIO`; a baseline e a suíte inteira deste bloco são aceitas pelo CI.
+- **origem:** RETOMADA 6 do diário do `B-MATERIAL-REENVIO` e Emenda C2.3 (`E-C23.3`).
+- **colisão de ID (registrada em 2026-11-13 pelo conserto da J-551, `fix-551-cl`, achado C3b-F4):** esta entrada nasceu no ramo do PR #551 (commit `05fd718e2`, 12/11 19:39) com o ID `P-AMBIENTE-SUITE-INTEIRA-NO-WINDOWS`, o mesmo de uma entrada BAIXA que a `main` registrou a partir da mesma E-C23.3 (commit `2f027fe1c`, #552). O merge `d03be37b` juntou as duas, e o registro ficou com o ID repetido (6 IDs duplicados no objeto `4749727c`, contra 5 na `main` `eeccdd27` e no ramo `a2d1d5da`). A do ramo passa a se chamar `P-AMBIENTE-SUITE-BACKEND-NAO-REPRODUZ-CI-NO-WINDOWS` (livre: `git grep` na `main` e no ramo, 0 ocorrências); a da `main` fica com o ID antigo. As duas falam da mesma classe; a de cá tem as 3 causas medidas e a gravidade MÉDIA. Juntar as duas, e decidir a gravidade, é do dono `B-FERR-AGENTES` (§A2: nada se consolida em silêncio). O diário do bloco (`omega/juntas/votos/B-MATERIAL-REENVIO/00-dev.md`, l.90) e a E-C23.3 do plano citam esta entrada pelo ID antigo; são registro datado e não se reescrevem.
+- **fato:** no Git Bash/Windows, a suíte inteira da `main` `ef4e98e7` terminou com `534 arquivo(s) · 5431 teste(s) · pass 5420 · fail 9 · skipped 2`: o host não tem `setsid`, um subprocesso tentou interpretar o shim Bash `node_modules/.bin/prisma` como JavaScript, e o drill do Traccar encontrou `EBUSY` no teardown. O run canônico `43249586610` da mesma ref no CI fechou `5440 teste(s) · pass 5438 · fail 0 · skipped 2`; por isso `N_b/N_f` vêm do CI e o host roda as suítes do bloco e a regressão nomeada.
+- **critério de encerramento:** o arnês da suíte inteira executa no Git Bash/Windows sem depender de `setsid`, resolve o executável Prisma correto e faz teardown do drill sem `EBUSY`, reproduzindo o resumo verde do CI sem afrouxar testes nem aumentar skips.
+
+## P-RBAC-MANAGER-MOVIMENTO-ESTOQUE-READ-X-CREATE (2026-11-13) — a matriz dá `read` ao `manager` em "Inventory movements" e o catálogo dá `stock_movements:create` — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA (registro; matriz × catálogo) · **escopo:** `pre-existente` · **dono:** `B-SAN3-04a` · **bloqueia:** não
+- **origem:** §D2 do plano `B-REENVIOS` (a revisão "ataques que não derrubaram"), registrada no `B-MATERIAL-REENVIO` (PR #551).
+- **fato:** `RBAC_MATRIX.md:47` dá `manager = read` em "Inventory movements"; o catálogo (`src/modules/core-saas/permissions/catalog.ts`) dá `stock_movements:create` ao `manager`. O `B-MATERIAL-REENVIO` não muda nenhuma célula nem permissão: a baixa de material do gerente pelo app sai por `work_orders:update` (P21, nota no `RBAC_MATRIX.md`).
+- **critério de encerramento:** a matriz e o catálogo dizem a mesma coisa para o `manager` em movimentos de estoque (o `B-SAN3-04a` é o dono da conferência matriz × catálogo).
+
+## P-MATERIAL-LACO-G-SEM-RECEITA (2026-11-13) — o laço G do `o6r07c-subresource-scope` não tem receita para o lote de estoque: o job `backend` do CI está vermelho desde a C-F5 — ALTA (bloqueia o merge do `B-MATERIAL-REENVIO`)
+
+- **status:** FECHADA (2026-11-13, no PR #551, pelo conserto da J-551, `fix-551-cl`, achado C3b-F2: o critério foi cumprido no próprio ramo) — era ABERTA · **gravidade:** ALTA (CI vermelho no próprio bloco) · **escopo:** `dentro-do-bloco` · **dono:** `B-MATERIAL-REENVIO` · **bloqueia:** não mais (bloqueava o aceite da C-F14 e o merge do PR #551)
+- **origem:** RETOMADA 33 do diário do `B-MATERIAL-REENVIO` (`dev-c6-cl`), lida no CI.
+- **fato:** runs `43414655090` (head `e7889397`) e `43417866741` (head `ee23c196`), job `backend`: `[run-backend-tests] 538 arquivo(s) · 5489 teste(s) · pass 5485 · fail 2 · skipped 2`. Os 2 são `tests/o6r07c-subresource-scope.test.ts`, "laço G [OS·07c-a] PAR /api/v1/mobile/sync/inventory-actions · work_order_material.add|remove", com `laço G: lote sem receita … — o laço nunca pula uma entrada` (`executarEntrada`: só o lote `/api/v1/mobile/sync/work-order-actions` tem receita). A C-F5 pôs os 2 pares na fixture `o6r07c-classificacao-vias.json` como `OS·07c-a` (C2 item 6), e o laço G gera um caso por entrada `OS·07c-a`.
+- **por que não se consertou:** o conserto é uma receita do lote de estoque em `tests/o6r07c-subresource-scope.test.ts`, que não está no PERMITIDO do §C4 nem das Emendas C2–C2.7 (`D-EMENDA-ANTES-DO-CODIGO`).
+- **critério de encerramento:** emenda que autorize a receita (payload do material com `sku`, `quantity`, `work_order_id` e o estado que o G-NEG/G-POS/G-WIDE exige: módulo, cadastro e saldo); o job `backend` do head com `fail 0`, lido no TAP.
+- **fechamento (2026-11-13, `fix-551-cl`, Claude Opus 5.5, declarado):** a Emenda C2.8 (E-C28.1 e E-C28.5, 13/11 10:24 e 10:41 SP) autorizou a receita, que está no commit `5f4665ac` (`test(censo): receita do lote de estoque no laço G`). No objeto da junta `4749727c`, o TAP do job `backend` (run `43456974286`, job `131993562423`): `[run-backend-tests] 543 arquivo(s) · 5510 teste(s) · pass 5508 · fail 0 · skipped 2`, com `ok 3540 - laço G [OS·07c-a] PAR /api/v1/mobile/sync/inventory-actions · work_order_material.add — G-NEG 403, G-POS e G-WIDE passam` e `ok 3541 … work_order_material.remove …`. Comando: `set -o pipefail; gh run view 43456974286 --job 131993562423 --log | grep -E 'run-backend-tests\] [0-9]+ arquivo|ok [0-9]+ - laço G .*inventory-actions'`. As mutações M-C43, M-C44 e M-C45 da E-C28.2 ficaram vermelhas na cadeira C1 da J-551.
+
+## P-MATERIAL-RESOLVIDO-PERDE-HISTORICO-DE-ENVIO (2026-11-13) — adição de material que já foi enviada e passou por "Minha versão" ou "Tentar de novo" volta `pending` limpa; removida antes do reenvio, sai sem estorno — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (janela estreita; a peça fica baixada no servidor sem estar na OS) · **escopo:** `dentro-do-bloco`, residual declarado · **dono:** bloco de sync (`B-O6R-11c`) · **bloqueia:** não
+- **origem:** RETOMADA 32 do diário do `B-MATERIAL-REENVIO` (`dev-c6-cl`).
+- **fato:** a regra `materialAdditionMayHaveReachedServer` (`prestador_repository.dart`) reconhece "já esteve `syncing`" pela tentativa gasta e pelas marcas `SYNC_BUSY`/`SYNC_INTERRUPTED`. "Minha versão" (`sync_conflict_resolver.dart`) e "Tentar de novo" (`sync_stalled_resolver.dart`) zeram `retryCount` e limpam a marca; se a peça for removida antes do reenvio, a adição é descartada sem `work_order_material.remove`. Guardar o histórico exige mudar os resolvedores ou o `SyncAction`, PROIBIDOS no §C4.
+- **critério de encerramento:** a ação guarda que já foi enviada (ou o resolvedor preserva a marca), e a remoção dela enfileira o estorno; teste "enviada → Minha versão → removida → um `remove`".
+
+## P-MATERIAL-RC4B-SEM-FATIA (2026-11-13) — o RC4b do plano (contrato Dart × TS do material pelo parser real) não tem fatia nem arquivo no PERMITIDO — MÉDIA
+
+- **status:** FECHADA (2026-11-13, no PR #551, pelo conserto da J-551, `fix-551-cl`, achado C3b-F2: o critério foi cumprido no próprio ramo) — era ABERTA · **gravidade:** MÉDIA (prova de contrato entre app e servidor) · **escopo:** `dentro-do-bloco` (lacuna do plano) · **dono:** `B-MATERIAL-REENVIO` · **bloqueia:** não
+- **origem:** RETOMADA 33 do diário do `B-MATERIAL-REENVIO` (`dev-c6-cl`).
+- **fato:** o §C3 pede o RC4b (`tests/b-material-payload-contract.test.ts` rodando o handler real sobre o payload literal do `InventorySyncCodec`, gravado por `test/core/sync/bmaterial_codec_test.dart`), mas nenhuma fatia do §C5 nem das Emendas C2–C2.7 o executa, e `tests/b-material-payload-contract.test.ts` não está no PERMITIDO do §C4. Hoje o contrato é coberto pelos dois lados em separado (RC2 no servidor; RC4 com o codec real no app).
+- **critério de encerramento:** a emenda inclui o RC4b numa fatia e no PERMITIDO, ou o declara fora com motivo.
+- **fechamento (2026-11-13, `fix-551-cl`, Claude Opus 5.5, declarado):** a E-C28.3 (com os ajustes A3 a A5 da E-C28.5) pôs o RC4b na fatia C-F14a e no PERMITIDO; o código está no commit `b3dc42ea` (`test(mobile): contrato do pedido de material, do Dart ao handler TS (RC4b)`): `tests/b-material-payload-contract.test.ts`, `mobile/flutter_app/test/core/sync/bmaterial_codec_test.dart` e a fixture versionada `mobile/flutter_app/test/core/sync/bmaterial_request_payloads.json`. No objeto `4749727c`, o TAP do job `backend` (run `43456974286`, job `131993562423`, `fail 0`) tem `grep -cE 'ok [0-9]+ - \[RC4b\('` = 2. A M-C46 e a M-C47 ficaram vermelhas na cadeira C3a da J-551.
+
+## P-SAN3-ITEM-63-DUPLICADO (2026-11-13) — o número 63 do §4.1 do `PLANO_SAN3.md` foi dado a dois itens: o material e a GATE-CHAVE — BAIXA (registro, §A2)
+
+- **status:** FECHADA (2026-11-13, decisão do orquestrador, leitura declarada §A6: o 63 fica com o material, pela P5 de 31/10, que é anterior; a GATE-CHAVE vira o item 66; o §4.1 tem 66 itens, e os dois foram aprovados pelo dono. As demais referências ao "item 63" da GATE-CHAVE fora do PLANO_SAN3 vão no próximo PR de registro) · **gravidade:** BAIXA (numeração do registro; nenhum comportamento) · **escopo:** `pre-existente` (as duas atribuições antecedem o merge: a do material vem da P5 de 31/10, a da GATE-CHAVE da `D-DONO-1211-NOITE` de 12/11) · **dono:** o orquestrador (PR de registro) · **bloqueia:** não
+- **origem:** merge da `main` `eeccdd27` no ramo do `B-MATERIAL-REENVIO` (PR #551), RETOMADA 47 do diário do bloco C (`merge-551-cl`, dev de integração).
+- **fato:** na base comum `ef4e98e7`, o §4.1 tinha 64 linhas (1 a 65, sem o 63). O ramo pôs o 63 = `P-MOBILE-MATERIAL-SEM-REPLAY` (P5 de 31/10, "itens 63-64"); a `main` pôs o 63 = `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` (`D-DONO-1211-NOITE`, "denominador de 64 para 65"). O merge ficou com as duas linhas, sem renumerar: o §4.1 tem 66 linhas, e as contagens do `PLANO_SAN3.md` foram somadas (66 bloqueantes, 52 blocos, 19 G).
+- **critério de encerramento:** um dos dois itens recebe número próprio (decisão do orquestrador ou do dono), com as referências ao número atualizadas no registro; o denominador do vendável usado no marco de KPI confere com o número de linhas do §4.1.
+- **nota (2026-11-13, conserto da J-551, `fix-551-cl`, achado C3b-F3): o que faltava.** O fechamento acima (commit `4749727c`) renumerou a linha do §4.1, mas deixou duas linhas do próprio `PLANO_SAN3.md` chamando a GATE-CHAVE de item 63: a l.108 (cabeçalho do §4.1) e a l.497 ("Quantidade exata"). As duas passam a dizer 66 neste PR (`git grep -nE 'item 63, a GATE-CHAVE|O item 63' -- docs/revisoes/SAN3/PLANO_SAN3.md` → nada). Fora do `PLANO_SAN3`, o número 63 da GATE-CHAVE aparece em `agent-orchestration/controle/decisoes.md` (a `D-DONO-1211-NOITE`, l.5095) e em `agent-orchestration/docs/status-geral.md` (as atualizações de 12/11 noite e de 13/11 manhã, l.10 e l.18): são entradas datadas, que diziam a verdade na data delas (a decisão do dono deu o 63), e não se reescrevem; vale o §4.1, onde a GATE-CHAVE é o 66. Faltou também uma RETOMADA no diário do bloco para o `4749727c`; o registro dele está nesta nota e no corpo do PR #551.
+
+## P-551-INMEMORY-TOCTOU-EXIT-SOURCE (2026-11-13) — em memória, dois lotes concorrentes com a mesma origem gravam duas baixas — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA (só o modo memória: o job `backend` da CI, desenvolvimento e demonstração; a produção exige `prisma`) · **escopo:** `pre-existente` (`git blame -L 408,419 eeccdd27 -- src/modules/inventory/inventory.repository.ts` → `acc7f752e`, 2026-07-25, #277, Ω4C PR-08b; o `B-MATERIAL-REENVIO` não mexeu nessas linhas) · **dono:** `B-SAN3-15b` (mexe no mesmo repositório) · **PR-alvo:** o PR do `B-SAN3-15b` · **bloqueia:** não.
+- **origem:** achado C1-04 da cadeira C1 da J-551 (`j551-c1-cl`, sonda S3), triado como pendência na ata da J-551 (13/11 15:40 SP); registrado pelo conserto `fix-551-cl`.
+- **fato:** `InMemoryInventoryRepository.createExitForSource` (`src/modules/inventory/inventory.repository.ts`, l.409) faz `await this.findExitBySource(…)` e só insere depois de outro `await` (TOCTOU). Na sonda S3 (N=1; forma: `Promise.all` de 2 lotes do mesmo ator, mesmo `client_action_id`, quantidades 2 e 3; handler real, `CORE_SAAS_PERSISTENCE=memory`), saíram 2 `accepted` e 2 movimentos com o mesmo `source_id` (`{"acc":2,"conf":[],"movs":2}`). O comentário "Idempotência ABSOLUTA por origem" do arquivo (l.413) não vale em memória. Em produção (`CORE_SAAS_PERSISTENCE=prisma`, exigido por `src/config/env.ts`, Ω6R-DAT-001), quem trava é o índice parcial único (RC3, cadeira C2 da J-551).
+- **critério de encerramento:** a checagem e a inserção do `createExitForSource` em memória viram uma seção sem `await` entre elas (ou uma trava por origem), com um teste de corrida em memória (2 lotes concorrentes, mesma origem, payloads diferentes → 1 movimento, 1 `accepted` e 1 `conflict idempotency_payload_mismatch`), vermelho sem o conserto.

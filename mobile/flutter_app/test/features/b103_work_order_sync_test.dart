@@ -967,7 +967,11 @@ void main() {
         );
         await repo.load(seedIfEmpty: false);
 
-        await repo.completeWorkOrder('wo-local-repo', checklistComplete: true);
+        await repo.completeWorkOrder(
+          'wo-local-repo',
+          checklistComplete: true,
+          deliveryComplete: true,
+        );
         final actions = await queue.pendingForTenant(_tenantId);
 
         expect(actions.single.payload['server_id'], 'srv-wo-repo');

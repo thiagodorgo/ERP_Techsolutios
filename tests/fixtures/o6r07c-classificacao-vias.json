@@ -2011,6 +2011,14 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "PAR /api/v1/mobile/sync/inventory-actions · work_order_material.add": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/inventory-actions · work_order_material.remove": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
  "PAR /api/v1/mobile/sync/evidence-actions · evidence.field_observation": {
   "classe": "N",
   "n": 1

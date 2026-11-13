@@ -9,6 +9,7 @@ import '../../../shared/ui/erp_scaffold.dart';
 import '../../../shared/ui/mobile_kit.dart';
 import '../data/checklist_repository.dart';
 import '../domain/checklist_models.dart';
+import 'checklist_navigation.dart';
 
 class ChecklistAvailableScreen extends ConsumerStatefulWidget {
   const ChecklistAvailableScreen({required this.workOrderId, super.key});
@@ -181,9 +182,13 @@ class _TemplateList extends StatelessWidget {
             return _TemplateCard(
               template: template,
               run: run,
+              // B-SAN3-14 (P4) — a coleta, explícita, pelo helper.
               onStart: () => context.push(
-                '/checklists/${template.id}/run'
-                '?workOrderId=$workOrderId',
+                checklistRunLocation(
+                  checklistId: template.id,
+                  workOrderId: workOrderId,
+                  kind: MobileChecklistRunKind.collection,
+                ),
               ),
             );
           },

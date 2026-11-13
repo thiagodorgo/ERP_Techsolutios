@@ -133,7 +133,15 @@ export function toChecklistTemplateComponentDto(component: ChecklistTemplateComp
   };
 }
 
-export function toChecklistRunDto(run: ChecklistRun) {
+// B-SAN3-14 (R-A1, contrato `checklist_run_role@2026-11.b-san3-14`) — a FASE da vistoria (`role`) só sai para quem a
+// pede. O padrão continua SEM a chave: o app que já está nos aparelhos não conhece fase, e a lista dele tem de sair
+// idêntica à de hoje (o guard do BLOQ 4 cumpria esse papel; as 5 exigências dele estão neste bloco). `withRole` vem
+// só do `GET /mobile/checklist-runs?roleAware=1`; `null` = vistoria anterior à fase (legado, o app lê como coleta).
+export type ChecklistRunDtoOptions = {
+  readonly withRole?: boolean;
+};
+
+export function toChecklistRunDto(run: ChecklistRun, options?: ChecklistRunDtoOptions) {
   return {
     id: run.id,
     tenantId: run.tenantId,
@@ -145,6 +153,7 @@ export function toChecklistRunDto(run: ChecklistRun) {
     // abrir a versão anterior; o motivo é o texto que o gestor declarou ao reabrir (sem termo técnico).
     reopenedFromRunId: run.reopenedFromRunId ?? null,
     reopenReason: run.reopenReason ?? null,
+    ...(options?.withRole ? { role: run.role ?? null } : {}),
     status: run.status,
     startedBy: run.startedBy ?? null,
     completedBy: run.completedBy ?? null,

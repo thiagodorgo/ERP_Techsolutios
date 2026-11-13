@@ -459,12 +459,24 @@ export class InventoryService {
     };
   }
 
+  /** Server-owned custody used by material replay; request payloads never select the bucket. */
+  async actorStockCustody(actor: InventoryActorContext): Promise<StockCustody | undefined> {
+    try {
+      const profile = await this.references.resolveActorOperatorProfile?.(actor);
+      return resolveActorStockCustody(actor, profile);
+    } catch (error) {
+      if (error instanceof InventoryError && error.statusCode === 503) throw error;
+      throw custodyLookupUnavailableError();
+    }
+  }
+
   /**
    * Ω4C PR-08b (D-Ω4C-INV-STOCK-DECREMENT) — the NON-AMPLIFIER seam consumed service→service by the fuel-log /
    * maintenance-item flows (NEVER the public movement API). The consumer passes ONLY which item + the LOCKED
-   * quantity (liters / line quantity); the seam FIXES type=`saida`, custody BASE, source_type/source_id and the
-   * machine reason. Idempotent by source (findExitBySource pre-check + the partial unique index backstop). The
-   * BASE non-negative guard runs inside the tx → 409 insufficient_balance. Fuel (source_type=`fuel_log`) also
+   * quantity (liters / line quantity); the seam FIXES type=`saida`, source_type/source_id and the machine reason.
+   * Custody defaults to BASE for existing consumers and may be server-selected for work-order material. Idempotent
+   * by source (findExitBySource pre-check + the partial unique index backstop). The selected-custody non-negative
+   * guard runs inside the tx → 409 insufficient_balance. Fuel (source_type=`fuel_log`) also
    * requires is_fuel=true → 422 item_not_fuel. NO permission of its own (like scheduleNextDueNotification, PR-06).
    */
   async createExitForSource(actor: InventoryActorContext, input: CreateExitForSourceInput): Promise<StockMovement> {
@@ -472,6 +484,8 @@ export class InventoryService {
     const sourceId = parseRequiredUuid(input.sourceId, "sourceId");
     const itemId = parseRequiredUuid(input.itemId, "itemId");
     const quantity = assertPositiveQuantity(input.quantity);
+    const custody = normalizeExitCustody(input.custody);
+    const workOrderId = input.workOrderId === undefined ? undefined : parseRequiredUuid(input.workOrderId, "workOrderId");
     const vehicleId = input.vehicleId === undefined ? undefined : parseRequiredUuid(input.vehicleId, "vehicleId");
 
     // Posse do item no tenant (404/422 cross-tenant) + regra de combustível (só para abastecimento interno).
@@ -495,6 +509,8 @@ export class InventoryService {
       sourceType,
       sourceId,
       quantity,
+      custody,
+      workOrderId,
       vehicleId,
       reason: STOCK_EXIT_REASON_BY_SOURCE[sourceType],
       createdBy: actor.userId,
@@ -505,6 +521,11 @@ export class InventoryService {
     }
 
     return movement;
+  }
+
+  /** Tenant-scoped exact SKU lookup used by service-to-service sync handlers. */
+  async findItemBySku(actor: InventoryActorContext, sku: string): Promise<InventoryItem | undefined> {
+    return this.repository.findItemBySku(actor.tenantId, parseSku(sku));
   }
 
   /**
@@ -676,6 +697,32 @@ function assertPositiveQuantity(value: number): number {
   }
 
   return value;
+}
+
+/** The material seam accepts only BASE or one professional bucket; vehicle custody remains out of scope. */
+function normalizeExitCustody(custody: StockCustody | undefined): StockCustody | undefined {
+  if (custody === undefined) return undefined;
+
+  if (custody.custodyType === "base") {
+    if (custody.custodyOperatorProfileId !== undefined || custody.custodyVehicleId !== undefined) {
+      throw invalidCustodyError("Custódia BASE não aceita profissional nem viatura.");
+    }
+
+    return { custodyType: "base" };
+  }
+
+  if (
+    custody.custodyType !== "professional" ||
+    custody.custodyOperatorProfileId === undefined ||
+    custody.custodyVehicleId !== undefined
+  ) {
+    throw invalidCustodyError("A baixa por origem aceita somente a BASE ou uma custódia PROFISSIONAL.");
+  }
+
+  return {
+    custodyType: "professional",
+    custodyOperatorProfileId: parseRequiredUuid(custody.custodyOperatorProfileId, "custodyOperatorProfileId"),
+  };
 }
 
 const memoryRepository = new InMemoryInventoryRepository();

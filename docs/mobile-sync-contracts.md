@@ -262,8 +262,10 @@ Regras obrigatorias:
 
 ### POST /api/v1/mobile/sync/inventory-actions
 
-- Permissao: `inventory.manage` para o contrato parcial atual. No catalogo real do repo ainda nao existem permissoes separadas `inventory:reserve`/`inventory:consume`.
-- Status B-098D: parcial para replay offline controlado de inventario, sem persistencia duravel.
+- Permissao do lote: `inventory.manage` **ou** `work_orders:update` (sem nenhuma das duas: 403 `permission_required` no lote). No catalogo real do repo ainda nao existem permissoes separadas `inventory:reserve`/`inventory:consume`.
+- Permissao por acao (B-MATERIAL-REENVIO): `inventory.reserve`, `inventory.consume` e `inventory.shortage_report` continuam exigindo `inventory.manage` (quem so tem `work_orders:update` recebe `rejected permission_required` nelas); `work_order_material.add` e `work_order_material.remove` exigem `work_orders:update`.
+- Status B-098D: parcial para replay offline controlado de inventario, sem persistencia duravel. Status B-MATERIAL-REENVIO: o material da OS e duravel (baixa por origem no razao de estoque); os 3 tipos antigos continuam em memoria ate o B-O6R-04b. `contract.version` = `2026-11.b-material-reenvio`; `contract.status` continua `partial`.
+- Area contratada: a rota exige o modulo `inventory` (403 `module_not_enabled` no lote, antes do handler); o material tambem exige o modulo `work_orders`, por acao (`rejected module_not_enabled`).
 - Request: lote `{ client_batch_id, actions[] }`, cada acao com `client_action_id`, `type`, `local_created_at` e `payload`.
 - Response: envelope em `data` com `summary`, `accepted`, `rejected`, `conflicts` e `already_applied`.
 - Erros de envelope/contexto: 400 ou 403 com envelope JSON seguro.
@@ -295,6 +297,34 @@ Tipos implementados:
 - `inventory.reserve`: payload com `item_id`, `quantity` e `warehouse_id?`.
 - `inventory.consume`: payload com `item_id`, `quantity` e `warehouse_id?`.
 - `inventory.shortage_report`: payload com `item_id`, `quantity`, `reason` e `warehouse_id?`.
+- `work_order_material.add` (B-MATERIAL-REENVIO): `client_action_id` UUID; payload com `work_order_id` (UUID da OS no servidor, obrigatorio), `sku`, `quantity` (inteiro > 0), `work_order_local_id?` e `material_local_id?` (ecoados na resposta, nunca lidos).
+- `work_order_material.remove` (B-MATERIAL-REENVIO): `client_action_id` UUID; payload com `source_client_action_id` (o `client_action_id` da adicao), `work_order_id`, `work_order_local_id?` e `material_local_id?`.
+
+Material da OS (B-MATERIAL-REENVIO):
+
+- **Escopo por objeto.** Papel de campo (`assigned_only`) passa por `getForMutation` da OS: nunca atribuido → `rejected not_assigned_to_actor`; ex-tecnico da OS → `conflict assignment_changed_pending_review` com `next_action` `await_supervisor_review`. Gestao (`tenant_wide`, inclusive o gerente) passa por `get`. OS de outra organizacao → `rejected not_found`. Toda recusa nasce antes de qualquer baixa.
+- **Ordem do `add`:** validacao do payload → area `work_orders` → escopo por objeto → item por `sku` (igualdade exata) → baixa ja existente para a origem → custodia do ator → baixa → conferencia do movimento devolvido.
+- **Custodia.** A peca sai da custodia profissional de quem lanca; o ator `tenant_wide` sem cadastro de profissional baixa da BASE; outro ator sem cadastro → `rejected operator_profile_required`. O saldo e o DESSA custodia: faltou nela → `conflict insufficient_balance`, mesmo que outra custodia tenha a peca. O estorno volta a custodia do movimento original. Combustivel e manutencao seguem na BASE (RN-BAIXA-04).
+- **Durabilidade e idempotencia.** A baixa e um movimento `saida` com `source_type` `work_order_material`, `source_id` = `client_action_id`, `work_order_id` gravado e `reason` `baixa_material_os`; o indice unico por (organizacao, origem) garante um movimento so, apos reinicio e sob corrida. Mesmo ator, mesmo (item, quantidade, OS) → `already_applied`; outro ator → `conflict action_owned_by_other_actor`; mesmo ator com outro payload → `conflict idempotency_payload_mismatch`. O mapa em memoria dos tipos antigos nao e lido nem escrito para o material.
+- **Ordem do `remove` (N4):** acha a baixa pela origem (ausente → `already_applied`, inocuo) → escopo por objeto sobre a OS DA BAIXA → `work_order_id` do payload diferente da baixa → `rejected work_order_mismatch` → autor diferente → `conflict action_owned_by_other_actor` → estorno (`accepted`, `result_ref` = movimento de estorno). Reenvio do `add` depois do estorno → `conflict stock_baixa_reversed`.
+- **503** (`stock_busy`, `custody_lookup_unavailable`) propaga: o lote inteiro responde 503 e o app volta a acao para a fila sem gastar tentativa.
+
+| `reason` / `conflict_type` | Resultado | Texto no app |
+|---|---|---|
+| `inventory_item_not_found` | `rejected` | Peca nao cadastrada no estoque da organizacao (SKU X). |
+| `insufficient_balance` | `conflict` | Sem saldo suficiente desta peca no estoque usado no lancamento. |
+| `operator_profile_required` | `rejected` | Voce nao tem cadastro de profissional. |
+| `not_assigned_to_actor` | `rejected` | Esta ordem de servico nao esta atribuida a voce. |
+| `assignment_changed_pending_review` | `conflict` | Voce deixou de ser o tecnico desta OS; um supervisor vai decidir. |
+| `action_owned_by_other_actor` | `conflict` | Esta peca ja foi lancada por outro usuario. |
+| `idempotency_payload_mismatch` | `conflict` | Este lancamento ja foi recebido com outra quantidade. |
+| `stock_baixa_reversed` | `conflict` | Esta baixa foi estornada no servidor. |
+| `work_order_id_required`, `not_found` | `rejected` | A ordem de servico nao existe no servidor. |
+| `work_order_mismatch` | `rejected` | O servidor recusou este material. |
+| `module_not_enabled` | `rejected` (por acao) ou 403 no lote | O servidor recusou este material. / O servidor nao aceitou o envio de material. |
+| `permission_required` | `rejected` (por acao) ou 403 no lote | Seu perfil nao pode lancar material. / O servidor nao aceitou o envio de material. |
+
+No app, todo `rejected` do material vira `conflict` decidivel (nunca `failed` eterno): "Versao do gestor" tira a peca da OS; "Minha versao" reenvia.
 
 Resposta:
 
@@ -303,7 +333,7 @@ Resposta:
   "data": {
     "contract": {
       "name": "mobile_inventory_actions_sync",
-      "version": "2026-06-15.b098d",
+      "version": "2026-11.b-material-reenvio",
       "status": "partial"
     },
     "client_batch_id": "inventory-batch-local-1",
@@ -333,7 +363,7 @@ Regras obrigatorias:
 - reenvio com mesmo `client_action_id` e payload diferente retorna conflito `idempotency_payload_mismatch`.
 - quantidade indisponivel retorna conflito de estoque, nao aceite silencioso.
 - payload invalido, tipo nao suportado ou permissao ausente retorna rejeicao/erro estruturado sem stack trace.
-- lacunas B-098D: idempotencia duravel em banco/Redis, reserva transacional, vinculacao real com OS/armazem, anexos de evidencia e implementacao Flutter consumindo o endpoint.
+- lacunas B-098D: idempotencia duravel em banco/Redis, reserva transacional, vinculacao real com OS/armazem, anexos de evidencia e implementacao Flutter consumindo o endpoint. O material da OS (B-MATERIAL-REENVIO) fecha essas lacunas para `work_order_material.add|remove` (baixa duravel ligada a OS, consumida pelo app); os 3 tipos antigos seguem com elas ate o B-O6R-04b.
 
 ### POST /api/v1/mobile/sync/evidence-actions
 

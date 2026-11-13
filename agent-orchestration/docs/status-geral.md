@@ -1,5 +1,14 @@
 # Status Geral
 
+## Atualização 2026-11-13 (manhã) — #552 na main, três contas Codex com login e `D-CLAUDE-CODA-40`
+
+- **Autor:** `reg-1311-cdx3` (Codex GPT-5.6 Sol, conta 3, redator de registro, identidade declarada). A revisão fica para outro modelo, depois. **Base medida:** `origin/main@2f027fe1`, worktree próprio `w-reg1311`. Registro documental; `Kpis/**` congelado e intocado.
+- **Portão da versão vendável:** 45/65 (69%, pelo piso) — `floor(100 × 45 / 65) = 69`. O PR #552 está na `main` (`2f027fe1`).
+- **Em desenvolvimento:** o bloco C (`B-MATERIAL-REENVIO`, PR #551) e o fuso (`B-DB-FUSO-UTC`).
+- **Capacidade:** as três contas Codex estão com login.
+- **Decisão do dono:** `D-CLAUDE-CODA-40` — o Claude da sessão faz cerca de 40% das tarefas de código lançadas no dia e cobre na hora o braço que cair, travar ou ficar sem saldo; os outros 60% vão para as contas Codex, o DeepSeek e a API Claude, uma tarefa por conta de cada vez.
+- **Ajustes do #552:** o dono da `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` e do item 63 passa a ser `B-MOBILE-GATE-CHAVE` (plano em curso; junta completa + `coordenador-de-acessos`); o teto histórico da API fica omitido no repositório público. A `P-PAINEL-HORA-DA-MEDICAO` nasce BAIXA e FECHADA no mesmo dia, com a lição de que medição silenciosamente inválida é *fail-open*.
+
 ## Atualização 2026-11-12 (noite) — decisões do dono: a GATE-CHAVE entra no portão (45/65) e o bloco do fuso fica aberto
 
 - **Autor:** `reg-1211n-dp` (DeepSeek Pro pelo Codex CLI, redator de registro, identidade declarada). A revisão fica para outro modelo, depois. **Base medida:** `origin/main@ef4e98e7`, worktree próprio `w-reg1211n`. Registro documental; `Kpis/**` congelado e intocado.

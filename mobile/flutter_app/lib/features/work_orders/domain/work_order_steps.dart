@@ -39,29 +39,51 @@ List<String> workOrderStepLabels(WorkOrderServiceType? serviceType) {
       : const ['Inicio', 'Rota', 'Atendimento', 'Conclusao'];
 }
 
+/// B-SAN3-14 (P3) — a perna do guincho no atendimento, derivada das vistorias
+/// CONFIRMADAS pelo servidor (a entrega local sem serverId não conta).
+enum TowLeg {
+  /// Sem entrega confirmada: o passo é o de hoje (2, depois 5).
+  none,
+
+  /// Coleta ainda não concluída.
+  collection,
+
+  /// Coleta concluída e entrega sem resposta ("Rota entrega").
+  deliveryRoute,
+
+  /// Entrega com resposta, até a OS ir para concluída ("Entrega").
+  delivery,
+}
+
+/// Função pura das vistorias confirmadas: ver [TowLeg].
+TowLeg deriveTowLeg({
+  required bool deliveryConfirmed,
+  required bool collectionComplete,
+  required bool deliveryStarted,
+}) {
+  if (!deliveryConfirmed) return TowLeg.none;
+  if (!collectionComplete) return TowLeg.collection;
+  return deliveryStarted ? TowLeg.delivery : TowLeg.deliveryRoute;
+}
+
 /// Índice do passo ativo derivado do status da OS.
 ///
 /// Mapeamento monotônico com a máquina de status. Guincho tem 6 passos;
-/// Prestador (ou tipo indefinido), 4. As sub-fases de coleta/entrega do
-/// guincho são refinadas nas PRs de checklist (1.7/1.8).
+/// Prestador (ou tipo indefinido), 4. No atendimento do guincho, [towLeg]
+/// acende "Rota entrega" (3) e "Entrega" (4); o padrão mantém o de hoje.
 int workOrderActiveStepIndex(
   WorkOrderServiceType? serviceType,
-  WorkOrderStatus status,
-) {
+  WorkOrderStatus status, {
+  TowLeg towLeg = TowLeg.none,
+}) {
   final isTow = serviceType == WorkOrderServiceType.tow;
   if (isTow) {
-    return switch (status) {
-      WorkOrderStatus.scheduled || WorkOrderStatus.dispatched => 0,
-      WorkOrderStatus.enRoute => 1,
-      WorkOrderStatus.arrived ||
-      WorkOrderStatus.inService ||
-      WorkOrderStatus.paused ||
-      WorkOrderStatus.exception ||
-      WorkOrderStatus.rejected => 2,
-      WorkOrderStatus.pendingApproval ||
-      WorkOrderStatus.completed ||
-      WorkOrderStatus.approved ||
-      WorkOrderStatus.cancelled => 5,
+    final base = _towStatusStepIndex(status);
+    if (base != 2) return base;
+    return switch (towLeg) {
+      TowLeg.none || TowLeg.collection => 2,
+      TowLeg.deliveryRoute => 3,
+      TowLeg.delivery => 4,
     };
   }
   return switch (status) {
@@ -79,16 +101,32 @@ int workOrderActiveStepIndex(
   };
 }
 
+// O passo do guincho só pelo status (o comportamento de antes do B-SAN3-14).
+int _towStatusStepIndex(WorkOrderStatus status) => switch (status) {
+  WorkOrderStatus.scheduled || WorkOrderStatus.dispatched => 0,
+  WorkOrderStatus.enRoute => 1,
+  WorkOrderStatus.arrived ||
+  WorkOrderStatus.inService ||
+  WorkOrderStatus.paused ||
+  WorkOrderStatus.exception ||
+  WorkOrderStatus.rejected => 2,
+  WorkOrderStatus.pendingApproval ||
+  WorkOrderStatus.completed ||
+  WorkOrderStatus.approved ||
+  WorkOrderStatus.cancelled => 5,
+};
+
 /// Constrói a lista completa de passos com estado (done/active/todo).
 ///
 /// Em status final (concluída/aprovada/cancelada) todos os passos ficam
 /// marcados como concluídos.
 List<WorkOrderStepInfo> buildWorkOrderSteps(
   WorkOrderServiceType? serviceType,
-  WorkOrderStatus status,
-) {
+  WorkOrderStatus status, {
+  TowLeg towLeg = TowLeg.none,
+}) {
   final labels = workOrderStepLabels(serviceType);
-  final active = workOrderActiveStepIndex(serviceType, status);
+  final active = workOrderActiveStepIndex(serviceType, status, towLeg: towLeg);
   final allDone = status.isFinal;
   return [
     for (var i = 0; i < labels.length; i++)

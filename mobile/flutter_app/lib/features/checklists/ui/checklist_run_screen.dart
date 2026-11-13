@@ -66,8 +66,13 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
       schemaVersion: schema.version,
       kind: widget.kind,
     );
-    if (resolution.isAwaitingDispatch) {
-      return _RunData(schema: schema, runId: null);
+    // B-SAN3-14 (R-R2-02(i)) — sem sinal, a entrega não confirmada não abre.
+    if (resolution.isAwaitingDispatch || resolution.isDeliveryUnverified) {
+      return _RunData(
+        schema: schema,
+        runId: null,
+        deliveryUnverified: resolution.isDeliveryUnverified,
+      );
     }
     final run = resolution.run!;
     if (run.answers.isNotEmpty) {
@@ -204,6 +209,7 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
           return AwaitingDispatchView(
             title: schema.title,
             kind: widget.kind,
+            deliveryUnverified: data.deliveryUnverified,
             onBack: () => Navigator.of(context).maybePop(),
             onRetry: () => setState(() {
               _lastRepo = null;
@@ -291,12 +297,19 @@ class _ChecklistRunScreenState extends ConsumerState<ChecklistRunScreen> {
 // ---------------------------------------------------------------------------
 
 class _RunData {
-  const _RunData({required this.schema, required this.runId});
+  const _RunData({
+    required this.schema,
+    required this.runId,
+    this.deliveryUnverified = false,
+  });
 
   final MobileChecklistSchema schema;
 
   /// `null` quando a run ainda não foi despachada (estado "aguardando despacho").
   final String? runId;
+
+  /// B-SAN3-14 — sem sinal, a entrega que o servidor nunca confirmou.
+  final bool deliveryUnverified;
 }
 
 // ---------------------------------------------------------------------------
@@ -1051,6 +1064,7 @@ class AwaitingDispatchView extends StatelessWidget {
     required this.kind,
     required this.onBack,
     required this.onRetry,
+    this.deliveryUnverified = false,
     super.key,
   });
 
@@ -1058,6 +1072,7 @@ class AwaitingDispatchView extends StatelessWidget {
   final MobileChecklistRunKind kind;
   final VoidCallback onBack;
   final VoidCallback onRetry;
+  final bool deliveryUnverified;
 
   @override
   Widget build(BuildContext context) {
@@ -1084,17 +1099,23 @@ class AwaitingDispatchView extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Aguardando despacho do checklist',
+                      deliveryUnverified
+                          ? 'Entrega não verificada'
+                          : 'Aguardando despacho do checklist',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'A vistoria ainda não foi liberada para esta ordem de '
-                      'serviço. Assim que a central despachar o checklist, ele '
-                      'aparece aqui para você responder.\n\n'
-                      'Se você já deveria ter recebido, pode ser uma falha ao '
-                      'preparar a vistoria — tente atualizar em instantes.',
+                      deliveryUnverified
+                          ? 'Entrega não verificada — conecte-se para atualizar.'
+                          : 'A vistoria ainda não foi liberada para esta ordem '
+                                'de serviço. Assim que a central despachar o '
+                                'checklist, ele aparece aqui para você '
+                                'responder.\n\n'
+                                'Se você já deveria ter recebido, pode ser uma '
+                                'falha ao preparar a vistoria — tente atualizar '
+                                'em instantes.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),

@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fechamento do mês · 3 opções (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) + os da referência aprovada financeiro-ab ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-primary-strong:#0b263f;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;--color-status-info:#206bc4;
+  --color-chart-inflow:#10b981;--color-chart-outflow:#f87171;--color-chart-neutral:#94a3b8;
+  --surface-page:#e8edf2;--surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-muted:#718196;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button,input,select,textarea{font-family:inherit}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* ─── MOLDURA DA MAQUETE (igual às aprovadas) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:880px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:6px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:10px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__item:focus-visible{outline:2px solid #60a5fa;outline-offset:1px}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800;flex-shrink:0}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css e financeiro-ab.reference.html ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:300px;flex:1 1 300px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;min-height:36px}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-btn--perigo{color:#b91c1c;border-color:#fecaca}
+.pat-btn--perigo:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
+.pat-btn:disabled{opacity:.55;cursor:not-allowed}
+.pat-btn:focus-visible,.pat-link:focus-visible,.pat-select:focus-visible,.pat-os-tab:focus-visible,.pat-pager__btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pat-link{padding:0;border:0;background:none;font-size:12px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:none}
+.pat-link:hover{color:#1d4ed8;text-decoration:underline}
+.pat-select{padding:9px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;min-height:36px}
+
+/* Indicadores (KpiStatCard) — grade de 6 compacta da referência */
+.kpi-grid{display:grid;gap:12px;margin-bottom:16px}
+.kpi-grid--6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpi-grid--5{grid-template-columns:repeat(5,minmax(0,1fr))}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;text-align:left;color:#0f172a;min-width:0;font:inherit}
+.pat-kpi--clickable{cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.pat-kpi--clickable:hover{border-color:#2563eb;transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.08)}
+.pat-kpi--clickable:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pat-kpi--clickable[aria-pressed="true"]{border-color:#2563eb;background:#f8fafc;box-shadow:0 0 0 1px #2563eb,0 4px 12px rgba(37,99,235,.12)}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:6px}
+.pat-kpi__tile{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pat-kpi__tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pat-kpi__value{font-size:18px;font-weight:800;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-kpi__label{font-size:12px;font-weight:600;color:#334155;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-kpi__hint{font-size:10.5px;color:#94a3b8;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-grid--5 .pat-kpi{padding:14px 15px}
+.kpi-grid--5 .pat-kpi__value{font-size:21px}
+.kpi-spark{display:block;width:100%;height:22px;margin-top:6px}
+.delta{font-size:10.5px;font-weight:800;margin-left:4px}
+.delta--up{color:#15803d}.delta--down{color:#b91c1c}
+
+.pat-pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;line-height:1.3;vertical-align:middle}
+.pat-pill__dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600}
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-banner--error{background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c}
+.pat-banner--info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.pat-skel{background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:skel 1.2s infinite;border-radius:6px;display:inline-block}
+@keyframes skel{to{background-position:-200% 0}}
+
+/* ─── Faixa da referência: resultado do mês + 7 dias ─── */
+.faixa-b{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;min-width:0}
+.card__head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #f1f5f9}
+.card__title{font-size:14px;font-weight:800;color:#0f172a}
+.card__sub{font-size:11px;color:#64748b;margin-top:1px}
+.card__tag{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.bar-compact-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:transparent;border:1px solid transparent;border-radius:8px;padding:3px 8px;margin-bottom:1px;font-size:12px;cursor:pointer;text-align:left;min-height:24px}
+.bar-compact-btn:hover{background:#f8fafc;border-color:#e2e8f0}
+.bar-compact-btn[aria-pressed="true"]{background:#eff6ff;border-color:#2563eb}
+.bar-compact-btn:focus-visible{outline:2px solid #2563eb;background:#eff6ff}
+.bar-compact-btn__label{font-weight:600;color:#334155;display:flex;align-items:center;gap:6px;width:170px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
+.bar-compact-btn__dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.bar-compact-btn__track{flex:1;height:6px;background:#f1f5f9;border-radius:99px;overflow:hidden;min-width:40px}
+.bar-compact-btn__fill{height:100%;border-radius:99px}
+.bar-compact-btn__val{font-weight:800;font-family:var(--font-mono);font-size:11px;color:#0f172a;text-align:right;white-space:nowrap;min-width:150px;flex-shrink:0}
+.bar-compact-btn__val small{font-weight:600;color:#94a3b8;font-size:10px;margin-left:4px}
+.resultado-total{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.resultado-total b{font-size:11.5px;font-weight:800;color:#1e40af;text-transform:uppercase;letter-spacing:.04em}
+.resultado-total span{font-size:15px;font-weight:800;color:#1d4ed8;font-family:var(--font-mono)}
+.resultado-total small{font-size:11px;font-weight:700;color:#15803d;margin-left:6px;font-family:var(--font-sans)}
+.v7-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+.v7-btn{display:block;width:100%;border-radius:9px;padding:8px 10px;text-align:left;cursor:pointer;min-height:44px}
+.v7-btn--rec{background:#f0fdf4;border:1px solid #bbf7d0}
+.v7-btn--pag{background:#fffbeb;border:1px solid #fde68a}
+.v7-btn:hover{box-shadow:0 2px 8px rgba(15,23,42,.08)}
+.v7-btn[aria-pressed="true"]{box-shadow:0 0 0 2px #2563eb}
+.v7-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.v7-btn i{display:block;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.v7-btn b{display:block;font-size:16px;font-weight:800;font-family:var(--font-mono);margin-top:2px}
+.v7-btn small{font-size:10.5px;font-weight:600}
+.v7-btn--rec i,.v7-btn--rec b{color:#15803d}.v7-btn--rec small{color:#16a34a}
+.v7-btn--pag i,.v7-btn--pag b{color:#b45309}.v7-btn--pag small{color:#d97706}
+.v7-saldo{display:flex;justify-content:space-between;align-items:center;font-size:11.5px;font-weight:700;color:#334155;background:#f8fafc;border:1px solid #f1f5f9;border-radius:7px;padding:6px 10px;margin-bottom:8px}
+.v7-saldo span{font-family:var(--font-mono);font-weight:800;color:#15803d}
+.v7-ag-t{font-size:10px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin:2px 0 6px}
+.ag-item{display:flex;align-items:center;gap:8px;width:100%;padding:5px 10px;border-radius:7px;background:#f8fafc;border:1px solid #f1f5f9;margin-bottom:5px;font-size:11.5px;cursor:pointer;text-align:left;min-height:30px}
+.ag-item:hover{border-color:#93c5fd}
+.ag-item:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.ag-item--pag{border-left:3px solid #f59e0b}
+.ag-item--rec{border-left:3px solid #22c55e}
+.ag-item__d{font-weight:800;font-size:11px;min-width:62px;color:#334155}
+.ag-item__t{flex:1;min-width:0;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-item__v{font-family:var(--font-mono);font-weight:800;white-space:nowrap}
+
+/* ─── Painel de abas + lista densa (linha de 1 linha, detalhe embaixo) ─── */
+.painel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.painel__toolbar{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.pat-os-tabs{display:flex;gap:3px;background:#f1f5f9;padding:3px;border-radius:9px;flex-wrap:wrap}
+.pat-os-tab{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#64748b;white-space:nowrap;min-height:30px}
+.pat-os-tab:hover:not(.pat-os-tab--active){color:#0f172a}
+.pat-os-tab--active{background:#fff;color:#2563eb;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.pat-os-tab .n{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 5px;border-radius:99px;background:#475569;color:#fff;font-size:10px;font-weight:800}
+.pat-os-tab--active .n{background:#2563eb}
+.pat-os-search{display:flex;align-items:center;gap:8px;padding:7px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;width:210px;color:#94a3b8;min-height:34px}
+.pat-os-search:focus-within{border-color:#2563eb}
+.pat-os-search input{border:none;outline:none;background:transparent;font-size:12px;color:#0f172a;width:100%;min-width:0}
+.pat-os-count{margin-left:auto;font-size:11.5px;color:#64748b;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pat-filtro-chip-bar{padding:10px 18px 2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 6px;border-radius:50%;font-size:11px;line-height:1;min-width:22px;min-height:22px}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-filtro-chip button:focus-visible{outline:2px solid #2563eb}
+.aba-intro{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 18px;font-size:12px;color:#475569;border-bottom:1px solid #f1f5f9;background:#fcfdfe}
+.aba-intro b{color:#0f172a}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff}
+.pat-ab-table thead th{padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-ab-table thead th.r,.pat-ab-row td.r{text-align:right}
+.pat-ab-row{height:40px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 12px;height:40px;max-height:40px;line-height:40px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#334155}
+.pat-ab-row td:last-child{padding:0 8px;text-overflow:clip;text-align:right}
+.pat-ab-row td b{color:#0f172a;font-weight:700}
+.doc{font-family:var(--font-mono);font-weight:700;color:#0f172a;font-size:11.5px}
+.doc-os{font-family:var(--font-mono);color:#94a3b8;font-size:11px;margin-left:6px}
+.val{font-family:var(--font-mono);font-weight:700;color:#0f172a;font-size:11.5px}
+.val--in{color:#15803d}.val--out{color:#b91c1c}
+.muted{color:#94a3b8}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.dir-ic{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;vertical-align:middle}
+.dir-ic--r{background:#dcfce7;color:#15803d}.dir-ic--p{background:#fef3c7;color:#b45309}
+.atraso{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;line-height:1}
+.atraso i{display:block;width:54px;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+.atraso i b{display:block;height:100%;border-radius:99px}
+.atraso span{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.grupo-row td{padding:9px 14px 7px;background:#fff;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;color:#334155}
+.grupo-row td small{margin-left:10px;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:#94a3b8}
+.grupo-row--venc td{color:#b91c1c}
+.grupo-row--hoje td{color:#1d4ed8}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:14px 18px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.15fr 1fr 1.25fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-col h4{font-size:11px;font-weight:800;color:#0f172a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;min-width:0;flex-wrap:wrap}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a;min-width:0;overflow-wrap:anywhere}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-ab-detail-note{font-size:12px;color:#64748b}
+.saldo-bar{display:block;height:7px;border-radius:99px;background:#f1f5f9;overflow:hidden;margin-top:2px}
+.saldo-bar b{display:block;height:100%;background:#22c55e;border-radius:99px}
+.baixas{display:flex;flex-direction:column;gap:5px}
+.baixa-it{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11.5px;color:#334155;padding:5px 8px;border:1px solid #f1f5f9;border-radius:7px;background:#fcfdfe}
+.baixa-it b{font-family:var(--font-mono);font-weight:800;color:#15803d;font-size:11.5px}
+.baixa-it small{color:#94a3b8;font-size:10.5px}
+.itens-desp{display:flex;flex-direction:column;gap:3px}
+.itens-desp div{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:#334155;border-bottom:1px dashed #f1f5f9;padding:2px 0}
+.itens-desp b{font-family:var(--font-mono);font-weight:700}
+.pat-table__empty{padding:40px 18px;text-align:center}
+.pat-table__empty-title{font-size:14px;font-weight:700;color:#0f172a}
+.pat-table__empty-detail{font-size:12.5px;color:#64748b;margin-top:4px}
+.pat-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;flex-wrap:wrap;border-top:1px solid #f1f5f9}
+.pat-pager__size{display:flex;align-items:center;gap:9px;font-size:12px;color:#64748b;font-weight:600}
+.pat-pager__size select{padding:5px 9px;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:600;color:#334155;background:#fff;min-height:30px}
+.pat-pager__nav{display:flex;align-items:center;gap:10px}
+.pat-pager__range{font-size:12px;color:#64748b;font-variant-numeric:tabular-nums;font-weight:600}
+.pat-pager__btn{display:flex;align-items:center;gap:6px;padding:6px 11px;background:#fff;border:1px solid #e2e8f0;border-radius:7px;font-size:12px;font-weight:700;color:#475569;cursor:pointer;min-height:32px}
+.pat-pager__btn:hover:not(:disabled){border-color:#2563eb;color:#2563eb}
+.pat-pager__btn:disabled{color:#cbd5e1;cursor:not-allowed}
+
+/* Contas (cartões clicáveis no topo da aba Contas e extrato) */
+.contas{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:12px 18px;border-bottom:1px solid #f1f5f9}
+.conta-btn{display:flex;flex-direction:column;gap:2px;padding:9px 11px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;text-align:left;cursor:pointer;min-width:0;min-height:44px}
+.conta-btn:hover{border-color:#93c5fd}
+.conta-btn[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe;background:#f8fbff}
+.conta-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.conta-btn span{font-size:11px;font-weight:700;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conta-btn b{font-size:15px;font-weight:800;font-family:var(--font-mono);color:#0f172a}
+.conta-btn small{font-size:10.5px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.conc-chips{display:flex;gap:8px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid #f1f5f9}
+.conc-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;font-size:12px;font-weight:700;color:#334155;min-height:36px}
+.conc-chip b{font-size:14px;font-variant-numeric:tabular-nums}
+.conc-chip[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe}
+.conc-chip:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+
+/* Marca "falta no backend" — âmbar tracejado; o botão do quadro de notas esconde */
+.falta{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#92400e;background:#fffbeb;border:1px dashed #f59e0b;border-radius:6px;padding:1px 6px;white-space:nowrap;vertical-align:middle;line-height:1.4;text-transform:none}
+.fx{outline:1px dashed #f59e0b;outline-offset:2px;border-radius:3px;background-color:rgba(255,251,235,.7)}
+.fx-card{border:1px dashed #f59e0b!important}
+.fx-btn{border-style:dashed!important;border-color:#f59e0b!important;color:#92400e!important;background:#fffbeb!important}
+body.sem-marcas .falta{display:none}
+body.sem-marcas .fx{outline:none;background-color:transparent}
+body.sem-marcas .fx-card{border:1px solid #e2e8f0!important}
+body.sem-marcas .fx-btn{border-style:solid!important;border-color:#e2e8f0!important;color:#475569!important;background:#fff!important}
+
+/* ─── Opção B: faixa analítica (padrão de Pátios B / Usuários B) ─── */
+.analitico{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.an-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;min-width:0}
+.an-card--2{grid-column:span 2}
+.an-card__title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:800;color:#0f172a;margin-bottom:10px;flex-wrap:wrap}
+.an-card__title small{font-size:11px;font-weight:600;color:#94a3b8;white-space:nowrap}
+.an-leitura{display:flex;align-items:center;gap:6px 12px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:#475569}
+.an-leitura b{color:#0f172a}
+.lg-sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;display:inline-block;vertical-align:middle}
+.fluxo-svg{display:block;width:100%;height:auto}
+.fluxo-svg g[role="button"]{cursor:pointer}
+.fluxo-svg g[role="button"]:focus{outline:none}
+.fluxo-svg g[role="button"]:hover rect.bg,.fluxo-svg g[role="button"]:focus-visible rect.bg{fill:#eff6ff}
+.fluxo-svg g[aria-pressed="true"] rect.bg{fill:#dbeafe}
+.eixo{display:flex;justify-content:space-around;margin-top:4px;font-size:10.5px;color:#94a3b8;font-weight:600}
+.barra-btn{display:grid;grid-template-columns:minmax(0,118px) minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;padding:4px 6px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;min-height:28px}
+.barra-btn:hover{background:#f8fafc}
+.barra-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.barra-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.barra-btn__rot{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra-btn__rot i{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.barra-btn__trilho{display:flex;height:9px;background:#f1f5f9;border-radius:99px;overflow:hidden}
+.barra-btn__trilho b{display:block;height:100%;border-radius:99px}
+.barra-btn__n{font-size:11.5px;font-weight:800;color:#0f172a;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.barra-btn__n small{font-weight:600;color:#94a3b8;margin-left:4px;font-size:10.5px}
+.rxp{display:flex;flex-direction:column;gap:8px}
+.rxp-btn{display:flex;flex-direction:column;gap:5px;width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;text-align:left;min-height:44px}
+.rxp-btn:hover{border-color:#93c5fd}
+.rxp-btn[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe}
+.rxp-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.rxp-btn .l{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11.5px;font-weight:700;color:#334155}
+.rxp-btn .l b{font-family:var(--font-mono);font-size:14px;font-weight:800}
+.rxp-btn .t{display:block;height:10px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+.rxp-btn .t i{display:block;height:100%;border-radius:99px}
+.rxp-liq{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:8px 10px}
+.rxp-liq b{font-family:var(--font-mono);font-size:14px}
+.seg{display:inline-flex;gap:2px;background:#f1f5f9;border-radius:8px;padding:2px}
+.seg button{border:0;background:transparent;border-radius:6px;padding:5px 10px;font-size:11.5px;font-weight:700;color:#64748b;cursor:pointer;min-height:28px}
+.seg button[aria-pressed="true"]{background:#fff;color:#2563eb;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.seg button:focus-visible{outline:2px solid #2563eb}
+.an-sub{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 10px;flex-wrap:wrap}
+.an-sub h3{font-size:12px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase}
+.colunas{display:flex;align-items:flex-end;gap:4px;height:132px}
+.colunas .sep{width:1px;align-self:stretch;background:#e2e8f0;margin:0 3px}
+.coluna-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;padding:4px 1px 5px;min-width:0}
+.coluna-btn:hover{background:#f8fafc}
+.coluna-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.coluna-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.coluna-btn b{font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums}
+.coluna-btn em{font-style:normal;font-size:9.5px;font-weight:700;color:#475569;white-space:nowrap}
+.coluna-btn i{display:block;width:72%;max-width:30px;border-radius:5px 5px 2px 2px;min-height:3px}
+.coluna-btn span{font-size:9.5px;font-weight:700;color:#64748b;text-align:center;line-height:1.15}
+.dev-btn{display:flex;flex-direction:column;gap:4px;width:100%;padding:5px 6px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;min-height:36px}
+.dev-btn:hover{background:#f8fafc}
+.dev-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.dev-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.dev-btn .l{display:flex;justify-content:space-between;gap:8px;font-size:11.5px;font-weight:600;color:#334155}
+.dev-btn .l span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.dev-btn .l b{font-weight:800;color:#B91C1C;white-space:nowrap;font-variant-numeric:tabular-nums}
+.dev-btn .t{display:block;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+.dev-btn .t i{display:block;height:100%;border-radius:99px;background:#f87171}
+.col-leg{display:flex;justify-content:space-between;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-top:6px}
+.col-leg span:first-child{color:#b91c1c}.col-leg span:last-child{color:#15803d}
+
+/* ─── Opção C: agenda de caixa ─── */
+.agenda{display:grid;grid-template-columns:repeat(15,minmax(0,1fr));gap:5px}
+.dia-btn{display:flex;flex-direction:column;align-items:stretch;gap:3px;padding:6px 4px 7px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;cursor:pointer;min-width:0;text-align:center;min-height:118px}
+.dia-btn:hover{border-color:#93c5fd}
+.dia-btn[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe;background:#f8fbff}
+.dia-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.dia-btn--fds{background:#f8fafc}
+.dia-btn--hoje{border-color:#2563eb}
+.dia-btn--venc{background:#fef2f2;border-color:#fecaca}
+.dia-btn__sem{font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#64748b}
+.dia-btn--hoje .dia-btn__sem{color:#2563eb}
+.dia-btn--venc .dia-btn__sem{color:#b91c1c}
+.dia-btn__d{font-size:13px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums}
+.dia-btn__bars{display:flex;align-items:flex-end;justify-content:center;gap:3px;height:38px}
+.dia-btn__bars i{display:block;width:9px;border-radius:3px 3px 1px 1px;min-height:2px}
+.dia-btn__n{font-size:9.5px;font-weight:700;color:#475569;white-space:nowrap}
+.dia-btn__liq{font-size:9.5px;font-weight:800;font-family:var(--font-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px;margin:12px 0 16px}
+.proj-svg{display:block;width:100%;height:auto}
+.proj-svg g[role="button"]{cursor:pointer}
+.proj-svg g[role="button"]:focus{outline:none}
+.proj-svg g[role="button"]:hover circle.pt,.proj-svg g[role="button"]:focus-visible circle.pt{r:6}
+.proj-svg g[aria-pressed="true"] circle.pt{fill:#2563eb;r:6}
+.checks{display:flex;flex-direction:column;gap:3px}
+.check-btn{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;padding:6px 8px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;font-size:12.5px;color:#334155;min-height:36px}
+.check-btn:hover{background:#f8fafc}
+.check-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.check-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.check-btn .ic{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:7px}
+.check-btn .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.check-btn .t small{font-weight:600;color:#94a3b8;margin-left:6px}
+.check-btn b{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+
+/* ─── Estados (StatePanel) ─── */
+.state-panel{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:48px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.state-panel__icon{width:60px;height:60px;border-radius:50%;background:#fef2f2;display:flex;align-items:center;justify-content:center;color:#b91c1c}
+.state-panel__title{font-size:16px;font-weight:800;color:#334155}
+.state-panel__detail{font-size:13px;color:#64748b;max-width:440px;line-height:1.5}
+.sem-mov{font-size:12.5px;color:#94a3b8;padding:18px 0;text-align:center}
+
+/* ─── Janelas (Modal) — tamanho FIXO, só o corpo rola ─── */
+.ui-overlay{position:fixed;inset:0;z-index:60;background:rgb(18 26 34 / 42%);display:flex;align-items:center;justify-content:center}
+.mbx{width:min(560px,94vw);height:min(640px,92vh);background:#fff;border-radius:10px;box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;overflow:hidden}
+.mbx > header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 8px 8px 20px;border-bottom:1px solid #e2e8f0}
+.mbx > header h2{font-size:16px;font-weight:800;color:#0f172a}
+.mbx > header button{width:44px;height:44px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#334155;display:inline-flex;align-items:center;justify-content:center}
+.mbx > header button:hover{background:#f1f5f9}
+.mbx > header button:focus-visible{outline:2px solid #2563eb}
+.mbx__corpo{flex:1;min-height:0;overflow-y:auto;padding:16px 20px;scrollbar-gutter:stable}
+.mbx > footer{flex:none;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid #e2e8f0;background:#fcfdfe}
+.mbx > footer .esq{margin-right:auto;font-size:11.5px;color:#64748b}
+.resumo-tit{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:14px}
+.resumo-tit .top{grid-column:1 / -1;display:flex;justify-content:space-between;gap:8px;font-size:12.5px;font-weight:700;color:#0f172a;flex-wrap:wrap}
+.resumo-tit .top span{color:#64748b;font-weight:600}
+.resumo-tit div.c{display:flex;flex-direction:column;gap:1px}
+.resumo-tit div.c > span{font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.resumo-tit div.c b{font-size:13px;font-family:var(--font-mono);font-weight:800;color:#0f172a}
+.form-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form-grade .larga{grid-column:1 / -1}
+.ui-field{display:grid;gap:5px;font-size:12.5px;font-weight:700;color:#334155;align-content:start}
+.ui-field small{font-weight:500;color:#64748b;font-size:11.5px}
+.ui-input{border:1px solid var(--border-strong);border-radius:var(--radius-6);padding:9px 10px;font:inherit;font-weight:400;font-size:13px;width:100%;background:#fff;color:#0f172a;min-height:40px}
+.ui-input[aria-invalid="true"]{border-color:#dc2626;box-shadow:0 0 0 1px #dc2626}
+.ui-input:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.ui-input:disabled{background:#f1f5f9;color:#64748b}
+textarea.ui-input{resize:none;min-height:60px}
+.form-error{color:#b91c1c;font-size:11.5px;font-weight:600}
+.ui-alert{display:flex;gap:10px;padding:10px 12px;border:1px solid #f4d38b;border-radius:var(--radius-6);background:#fff8e9;color:#7c4a03;font-size:12.5px;line-height:1.45;margin-top:14px}
+.ui-alert b{display:block;margin-bottom:2px}
+.ui-alert--danger{border-color:#f0b6b0;background:#fff0ef;color:#9f1c1c}
+.ui-alert--ok{border-color:#a7f3d0;background:#ecfdf5;color:#065f46}
+.ui-alert--info{border-color:#bfdbfe;background:#eff6ff;color:#1e40af}
+.spin{width:16px;height:16px;border:2px solid #bfdbfe;border-top-color:#2563eb;border-radius:50%;animation:gira .8s linear infinite;flex-shrink:0}
+@keyframes gira{to{transform:rotate(360deg)}}
+.radio-l{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;margin-bottom:6px}
+.radio-l:has(input:checked){border-color:#2563eb;background:#eff6ff}
+
+/* ─── Seletor A/B/C e quadro de notas (fora da tela) ─── */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer p.desc code,.review-layer p.desc strong{color:#e2e8f0}
+.review-layer p.desc code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0;margin-bottom:16px}
+.review-grid .review-box{margin-bottom:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.review-list code,.rv-tabela code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;word-break:break-word}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.estados-bar .rot{min-width:190px;color:#94a3b8;font-weight:700}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+
+@media (max-width:1340px){
+  .kpi-grid--6{gap:10px}
+  .kpi-grid--6 .pat-kpi{padding:11px 10px}
+  .kpi-grid--6 .pat-kpi__value{font-size:15.5px;letter-spacing:-.4px}
+  .kpi-grid--6 .pat-kpi__tag{font-size:9.5px;padding:2px 6px}
+  .analitico{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .analitico .an-card--2{grid-column:1 / -1}
+  .bar-compact-btn__label{width:140px}
+  .bar-compact-btn__val{min-width:132px}
+  .faixa-b{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+  .contas{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pat-os-search{width:180px}
+  .c-grid{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+  .dia-btn__liq{font-size:8.5px}
+}
+
+/* ─── B-SAN3-12 — acréscimos desta maquete (só composição das classes acima; nenhum token novo) ─── */
+.kpi-grid--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.faixa-a{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+.pat-ab-table col.c-chev{width:40px}
+.dir-tag{font-size:10.5px;font-weight:700;color:#94a3b8;margin-left:6px}
+.venc-tag{font-size:10.5px;font-weight:800;margin-left:6px}
+.cheque-it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11.5px;color:#334155;padding:6px 8px;border:1px dashed #93c5fd;border-radius:7px;background:#f8fbff}
+.cheque-it b{font-family:var(--font-mono);font-weight:800;color:#1d4ed8}
+.cheque-it small{display:block;color:#64748b;font-size:10.5px}
+.meio-nota{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;line-height:1.45;color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 10px}
+.meio-nota b{display:block;color:#1e3a8a;margin-bottom:1px}
+.meio-nota .pat-link{font-size:11.5px}
+/* Opção B — conta em foco */
+.b-grid{display:grid;grid-template-columns:250px minmax(0,1fr);gap:16px;align-items:start}
+.rail{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;position:sticky;top:12px}
+.rail__total{padding:4px 4px 10px;border-bottom:1px solid #f1f5f9}
+.rail__total span{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.rail__total b{display:block;font-size:20px;font-weight:800;font-family:var(--font-mono);color:#0f172a;margin-top:2px;letter-spacing:-.4px}
+.rail__total small{font-size:11px;color:#94a3b8}
+.rail .conta-btn{width:100%}
+.conta-btn .conta-btn__linha{display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+.conta-btn--inativa{opacity:.7}
+.b-topo{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:12px;margin-bottom:12px}
+.ponte-svg{display:block;width:100%;height:auto}
+.ponte-svg g[role="button"]{cursor:pointer}
+.ponte-svg g[role="button"]:focus{outline:none}
+.ponte-svg g[role="button"]:hover rect.bg,.ponte-svg g[role="button"]:focus-visible rect.bg{fill:#eff6ff}
+.ponte-svg g[aria-pressed="true"] rect.bg{fill:#dbeafe}
+.rosca{display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center}
+.rosca svg{display:block;width:120px;height:120px}
+.b-conta-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.b-conta-head h2{font-size:17px;font-weight:800;color:#0f172a}
+.b-conta-head p{font-size:12px;color:#64748b;margin-top:2px}
+.b-conta-head .saldo{text-align:right}
+.b-conta-head .saldo span{display:block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.b-conta-head .saldo b{font-size:24px;font-weight:800;font-family:var(--font-mono);letter-spacing:-.5px}
+.inline-form{background:#fff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.inline-form h4{font-size:11px;font-weight:800;color:#1d4ed8;letter-spacing:.04em;text-transform:uppercase}
+.inline-form .form-grade{grid-template-columns:repeat(4,minmax(0,1fr))}
+.inline-form .form-grade .larga{grid-column:span 2}
+.inline-form .form-grade .meio-nota{grid-column:1 / -1}
+.inline-form .ui-alert{margin-top:0}
+/* Opção C — conferência */
+.conf-prog{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:700;color:#334155}
+.conf-prog .saldo-bar{width:180px;height:8px;margin:0}
+.conf-prog .saldo-bar b{background:#2563eb}
+.kbd{font-size:10.5px;background:#e2e8f0;color:#475569;padding:1px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+@media (max-width:1340px){
+  .faixa-a{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .b-grid{grid-template-columns:220px minmax(0,1fr)}
+  .b-topo{grid-template-columns:minmax(0,1fr)}
+  .inline-form .form-grade{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+/* ─── Acréscimos das maquetes de Cheques e Fechamento do mês (só composição das classes acima; nenhum token novo) ─── */
+.kpi-grid--5 .pat-kpi__value{font-size:19px}
+.cf-box{background:#fff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.cf-box--perigo{border-color:#fecaca;background:#fffafa}
+.cf-box h4{font-size:11px;font-weight:800;color:#1d4ed8;letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cf-box--perigo h4{color:#b91c1c}
+.cf-passo{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:.02em;text-transform:none}
+.cf-passo i{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#e2e8f0;color:#475569;font-style:normal;font-size:10px}
+.cf-passo i.on{background:#2563eb;color:#fff}
+.cf-passo--perigo i.on{background:#dc2626}
+.impacto{display:flex;flex-direction:column;gap:6px}
+.impacto__linha{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:8px;font-size:12.5px;line-height:1.45;color:#0f172a;border:1px solid #e2e8f0;background:#f8fafc}
+.impacto__linha b{font-family:var(--font-mono);font-weight:800}
+.impacto__ic{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;flex-shrink:0}
+.impacto__linha--in{background:#f0fdf4;border-color:#bbf7d0}
+.impacto__linha--in .impacto__ic{background:#dcfce7;color:#15803d}
+.impacto__linha--in b{color:#15803d}
+.impacto__linha--out{background:#fef2f2;border-color:#fecaca}
+.impacto__linha--out .impacto__ic{background:#fee2e2;color:#b91c1c}
+.impacto__linha--out b{color:#b91c1c}
+.impacto__linha--none .impacto__ic{background:#f1f5f9;color:#475569}
+.impacto__linha--tit .impacto__ic{background:#eff6ff;color:#1d4ed8}
+.impacto__nota{font-size:11.5px;color:#64748b;line-height:1.45}
+.cf-acoes{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cf-contador{font-size:11px;color:#94a3b8;margin-left:auto;font-variant-numeric:tabular-nums}
+.pat-btn--perigo-cheio{background:#dc2626;border-color:#dc2626;color:#fff}
+.pat-btn--perigo-cheio:hover{background:#b91c1c;border-color:#b91c1c;color:#fff}
+.pat-btn--perigo-cheio:disabled{background:#fca5a5;border-color:#fca5a5;color:#fff}
+.vinc-nota{display:flex;gap:8px;align-items:flex-start;font-size:11.5px;line-height:1.45;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px}
+.vinc-nota b{display:block;color:#78350f;margin-bottom:1px}
+.sem-tit{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#64748b;background:#f1f5f9;border-radius:6px;padding:1px 7px;line-height:1.5;vertical-align:middle}
+.link-ic{display:inline-flex;vertical-align:middle;color:#2563eb;margin-left:5px}
+.hist{display:flex;flex-direction:column;gap:4px}
+.hist-it{display:grid;grid-template-columns:14px minmax(0,1fr);gap:8px;font-size:11.5px;color:#334155;line-height:1.4}
+.hist-it i{display:block;width:8px;height:8px;border-radius:50%;margin-top:4px;background:#cbd5e1}
+.hist-it small{color:#94a3b8;font-size:10.5px}
+.prazo{font-size:10.5px;font-weight:800;margin-left:6px}
+/* Faixa analítica da B */
+.an-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.25fr);gap:12px;margin-bottom:12px}
+.an-grid--2{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+.big-num{font-size:20px;font-weight:800;font-family:var(--font-mono);letter-spacing:-.4px;color:#0f172a}
+.taxa{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;font-size:12px;color:#475569;margin-top:6px}
+.taxa b{font-size:18px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums}
+.linha-svg{display:block;width:100%;height:auto}
+.linha-svg g[role="button"]{cursor:pointer}
+.linha-svg g[role="button"]:focus{outline:none}
+.linha-svg g[role="button"]:hover rect.bg,.linha-svg g[role="button"]:focus-visible rect.bg{fill:#eff6ff}
+.linha-svg g[aria-pressed="true"] rect.bg{fill:#dbeafe}
+/* C dos Cheques — agenda do "bom para" */
+.agenda-wrap{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px;margin-bottom:12px}
+.mesa{display:flex;flex-direction:column;gap:5px}
+.mesa h5{font-size:10px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin:4px 0 2px}
+.ag-item--dep{border-left:3px solid #7c3aed}
+/* C do Fechamento — checklist do mês e calendário do ano */
+.fc-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:12px;margin-bottom:12px}
+.etapas{display:flex;flex-direction:column;gap:6px}
+.etapa{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;text-align:left;cursor:pointer;min-height:48px;font:inherit;color:#334155}
+.etapa:hover{border-color:#93c5fd}
+.etapa:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.etapa[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe}
+.etapa__n{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;font-size:12px;font-weight:800}
+.etapa__t{min-width:0}
+.etapa__t b{display:block;font-size:12.5px;color:#0f172a}
+.etapa__t small{display:block;font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.etapa__v{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}
+.etapa--bloq{border-color:#fecaca;background:#fffafa}
+.etapa--bloq .etapa__n{background:#fee2e2;color:#b91c1c}
+.etapa--info .etapa__n{background:#eff6ff;color:#1d4ed8}
+.etapa--ok .etapa__n{background:#dcfce7;color:#15803d}
+.fc-fechar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9}
+.fc-fechar p{font-size:11.5px;color:#64748b;max-width:420px;line-height:1.45}
+.ano-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mes-btn{display:flex;flex-direction:column;gap:3px;padding:8px 9px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;text-align:left;cursor:pointer;min-width:0;min-height:62px;font:inherit}
+.mes-btn:hover{border-color:#93c5fd}
+.mes-btn:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.mes-btn[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe}
+.mes-btn b{font-size:12px;font-weight:800;color:#0f172a;text-transform:capitalize}
+.mes-btn span{font-size:10.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mes-btn small{font-size:10px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mes-btn--fechado{border-left:3px solid #22c55e}
+.mes-btn--forcado{border-left:3px solid #f59e0b}
+.mes-btn--aberto{border-left:3px solid #2563eb}
+.mes-btn--reaberto{border-left:3px solid #7c3aed}
+.mes-btn--futuro{opacity:.55;cursor:default}
+.legenda-mini{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;font-size:11px;color:#64748b}
+.retrato{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;font-size:12px;color:#334155}
+.retrato b{font-family:var(--font-mono);font-weight:800;color:#0f172a;text-align:right;white-space:nowrap}
+.retrato .sep{grid-column:1 / -1;border-top:1px dashed #e2e8f0;margin:3px 0}
+.motivo-box{font-size:12px;line-height:1.45;color:#78350f;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px}
+.motivo-box b{display:block;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:#92400e;margin-bottom:2px}
+.motivo-box--rx{color:#4c1d95;background:#f5f3ff;border-color:#ddd6fe}
+.motivo-box--rx b{color:#5b21b6}
+.tit-disp{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:11.5px;padding:6px 8px;border:1px solid #fde68a;border-radius:7px;background:#fffbeb;color:#78350f}
+.tit-disp b{font-family:var(--font-mono);font-weight:800}
+@media (max-width:1340px){
+  .an-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .an-grid > .an-card:last-child{grid-column:1 / -1}
+  .agenda-wrap{grid-template-columns:minmax(0,1fr)}
+  .fc-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .kpi-grid--5 .pat-kpi{padding:12px 11px}
+  .kpi-grid--5 .pat-kpi__value{font-size:16.5px}
+}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Fechamento do mês · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">FE</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Financeiro Exemplo</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Financeiro</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title">Fechamento do mês</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar ordens, clientes, placas…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"></div>
+        <div data-view="b" style="display:none"></div>
+        <div data-view="c" style="display:none"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir · B-SAN3-24 (fatia 24-M)</div>
+      <h2 id="rv-titulo">Opção A</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc" id="rv-desc"></p>
+    <div class="estados-bar"><span class="rot">Estado desta opção:</span>
+      <button type="button" class="rv-btn" data-estado="normal" aria-pressed="true">Com dados</button>
+      <button type="button" class="rv-btn" data-estado="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado="vazio" aria-pressed="false">Vazio (nenhum mês fechado)</button>
+      <button type="button" class="rv-btn" data-estado="erro" aria-pressed="false">Erro</button>
+      <button type="button" class="rv-btn" data-estado="proibido" aria-pressed="false">Acesso não permitido</button>
+      <button type="button" class="rv-btn" data-estado="desatualizado" aria-pressed="false">Dados desatualizados</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Ver como (vale para as 3):</span>
+      <button type="button" class="rv-btn" data-papel="financeiro" aria-pressed="true">Financeiro</button>
+      <button type="button" class="rv-btn" data-papel="admin" aria-pressed="false">Administrador</button>
+      <button type="button" class="rv-btn" data-papel="gestor" aria-pressed="false">Gestor Operacional</button>
+      <button type="button" class="rv-btn" data-papel="auditor" aria-pressed="false">Auditor</button>
+      <button type="button" class="rv-btn" data-papel="tecnico" aria-pressed="false">Técnico de Campo</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Abrir o fluxo de:</span>
+      <button type="button" class="rv-btn" data-exemplo="2026-10:fechar">Fechar outubro (1 contestação: passo 1)</button>
+      <button type="button" class="rv-btn" data-exemplo="2026-10:forcar">Fechar outubro mesmo assim (passo 2, motivo)</button>
+      <button type="button" class="rv-btn" data-exemplo="2026-09:fechar">Fechar de novo setembro (reaberto, nada impede)</button>
+      <button type="button" class="rv-btn" data-exemplo="2026-11:fechar">Fechar novembro (mês em andamento)</button>
+      <button type="button" class="rv-btn" data-exemplo="2026-08:reabrir">Reabrir agosto (como Administrador)</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Resposta do servidor ao fechar:</span>
+      <button type="button" class="rv-btn" data-cenario="ok" aria-pressed="true">Sucesso</button>
+      <button type="button" class="rv-btn" data-cenario="disputa" aria-pressed="false">Contestação nova no meio (422)</button>
+      <button type="button" class="rv-btn" data-cenario="fechado" aria-pressed="false">Outra pessoa já fechou (409)</button>
+      <button type="button" class="rv-btn" data-cenario="fechando" aria-pressed="false">Fechamento em andamento (409)</button>
+      <span style="flex:1"></span>
+      <button type="button" class="rv-btn" data-marcas aria-pressed="false">Esconder as marcas “falta no backend”</button>
+      <button type="button" class="rv-btn" data-restaurar>Restaurar os dados de exemplo</button>
+    </div>
+    <div id="rv-blocos"></div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Lista de competências</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Visão analítica</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · O ano e o checklist</button>
+</div>
+
+<div class="ui-overlay" id="ov" hidden>
+  <section class="mbx" role="dialog" aria-modal="true" aria-labelledby="mbx-t" id="mbx">
+    <header><h2 id="mbx-t">Janela</h2><button type="button" data-fechar aria-label="Fechar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></header>
+    <div class="mbx__corpo" id="mbx-corpo"></div>
+    <footer id="mbx-rodape"></footer>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide, traço 2 — a mesma família do frontend) ── */
+const I = {
+  chevron:'<path d="m6 9 6 6 6-6"/>',
+  arrowUp:'<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+  arrowDown:'<path d="M7 7l10 10"/><path d="M17 7v10H7"/>',
+  check:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  calculator:'<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><path d="M16 10h.01M12 10h.01M8 10h.01M12 14h.01M8 14h.01M12 18h.01M8 18h.01"/>',
+  checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  truck:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  fuel:'<line x1="3" x2="15" y1="22" y2="22"/><line x1="4" x2="14" y1="9" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2a2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/>',
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  gavel:'<path d="m14.5 12.5-8 8a2.119 2.119 0 1 1-3-3l8-8"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/>',
+  contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  factory:'<path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>',
+  handCoins:'<path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17"/><path d="m7 21 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9"/><path d="m2 16 6 6"/><circle cx="16" cy="9" r="2.9"/><circle cx="6" cy="5" r="3"/>',
+  card:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  scroll:'<path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/>',
+  landmark:'<line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  banknote:'<rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/>',
+  skip:'<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/>',
+  play:'<polygon points="6 3 20 12 6 21 6 3"/>',
+  undo:'<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>'
+};
+function ic(n, s){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[n]+'</svg>'; }
+function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const CHEV = '<span class="pat-chevron-icon">'+ic('chevron', 15)+'</span>';
+const FALTA = t => '<span class="falta" title="'+esc(t || 'O servidor ainda não fornece este dado')+'">falta no backend</span>';
+const FX = (html, t) => '<span class="fx" title="'+esc('Falta no backend: '+(t || 'o servidor ainda não fornece este valor'))+'">'+html+'</span>';
+
+Object.assign(I, {
+  calendarCheck:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+  unlock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  ban:'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
+  rotate:'<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  trend:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  listChecks:'<path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/>',
+  coins:'<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/>',
+  package:'<path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/>',
+  concierge:'<path d="M3 20a1 1 0 0 1-1-1v-1a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1Z"/><path d="M20 16a8 8 0 1 0-16 0"/><path d="M12 4v4"/><path d="M10 4h4"/>',
+  checklist:'<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>'
+});
+
+/* ── Relógio da maquete: quarta-feira, 11/11/2026, 10:00 (fuso de São Paulo) ── */
+const HOJE = new Date(2026, 10, 11);
+const DIA = 86400000;
+const pad = n => String(n).padStart(2, '0');
+const dt = (d, m, a) => new Date(a || 2026, m - 1, d);
+const fData = d => pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+const fDM = d => pad(d.getDate())+'/'+pad(d.getMonth()+1);
+const isoD = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const SEM = ['dom','seg','ter','qua','qui','sex','sáb'];
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MES3 = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const diasAte = d => Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - HOJE) / DIA);
+const fmtNum = n => n.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const brl = n => (n < 0 ? '−' : '')+'R$ '+fmtNum(Math.abs(n));
+function brlK(n){ const a = Math.abs(n), s = n < 0 ? '−' : ''; if (a >= 1e6) return s+'R$ '+(a/1e6).toLocaleString('pt-BR', { maximumFractionDigits:1 })+' mi'; if (a >= 1000) return s+'R$ '+(a/1000).toLocaleString('pt-BR', { maximumFractionDigits:1 })+' mil'; return s+'R$ '+Math.round(a); }
+const parseBR = s => { const t = String(s || '').trim().replace(/\s|R\$/g, ''); if (!t) return NaN; const n = Number(t.replace(/\./g, '').replace(',', '.')); return Number.isFinite(n) ? Math.round(n*100)/100 : NaN; };
+const r2 = n => Math.round(n*100)/100;
+const soma = (arr, f) => r2(arr.reduce((s, x) => s + f(x), 0));
+const pill = (rot, bg, fg) => '<span class="pat-pill" style="background:'+bg+';color:'+fg+'"><span class="pat-pill__dot" style="background:'+fg+'"></span>'+rot+'</span>';
+const td = (html, plain, cls) => '<td'+(cls ? ' class="'+cls+'"' : '')+(plain ? ' title="'+esc(plain)+'"' : '')+'>'+html+'</td>';
+const campo = (rot, val) => '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+'</span><span class="pat-ab-detail-val">'+val+'</span></div>';
+function iniciais(n){ return n.split(' ').filter(Boolean).slice(0, 2).map(x => x[0]).join('').toUpperCase(); }
+
+/* ── Perfis da maquete (o perfil vem da sessão; o seletor do quadro é só para revisar). Nomes fictícios. ── */
+const PAPEIS = {
+  financeiro:{ nome:'Financeiro Exemplo', sub:'Financeiro', nav:'financeiro' },
+  admin:{ nome:'Administrador Exemplo', sub:'Administrador', nav:'admin' },
+  gestor:{ nome:'Gestor Exemplo', sub:'Gestor Operacional', nav:'gestor' },
+  auditor:{ nome:'Auditor Exemplo', sub:'Auditor', nav:'auditor' },
+  tecnico:{ nome:'Técnico Exemplo', sub:'Técnico de Campo', nav:'tecnico' }
+};
+let papel = 'financeiro';
+/* Grupos e rótulos de frontend/src/layouts/appSidebarNav.ts (resumidos), com os 2 itens novos no grupo GESTÃO */
+const G_GESTAO_FIN = [['contact','Clientes'],['concierge','Serviços'],['package','Estoque'],['wallet','Remunerações'],['receipt','Financeiro'],['handCoins','Cobranças'],['card','Pagamentos'],['banknote','Cheques'],['calendarCheck','Fechamento do mês']];
+const NAV = {
+  financeiro:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['calculator','Orçamentos'],['checkCircle','Aprovações'],['checklist','Checklists']]],['GESTÃO',G_GESTAO_FIN],['ADMINISTRAÇÃO',[['bell','Notificações']]]],
+  admin:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['calculator','Orçamentos'],['checkCircle','Aprovações']]],['FROTA',[['truck','Viaturas'],['fuel','Abastecimento'],['wrench','Manutenção']]],['GESTÃO',[['contact','Clientes'],['factory','Fornecedores'],['wallet','Remunerações'],['receipt','Financeiro'],['handCoins','Cobranças'],['card','Pagamentos'],['banknote','Cheques'],['calendarCheck','Fechamento do mês']]],['ADMINISTRAÇÃO',[['users','Usuários'],['settings','Configurações'],['scroll','Auditoria']]]],
+  gestor:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço'],['send','Despachos'],['mapPin','Mapa Operacional'],['checkCircle','Aprovações']]],['GESTÃO',[['contact','Clientes'],['wallet','Remunerações'],['receipt','Financeiro'],['handCoins','Cobranças'],['card','Pagamentos'],['banknote','Cheques'],['calendarCheck','Fechamento do mês']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]],
+  auditor:[['VISÃO GERAL',[['layout','Dashboard']]],['GESTÃO',[['wallet','Remunerações'],['receipt','Financeiro'],['handCoins','Cobranças'],['card','Pagamentos'],['banknote','Cheques'],['calendarCheck','Fechamento do mês']]],['ADMINISTRAÇÃO',[['scroll','Auditoria']]]],
+  tecnico:[['OPERAÇÃO',[['clipboard','Ordens de Serviço']]],['GESTÃO',[['wallet','Remunerações']]],['ADMINISTRAÇÃO',[['bell','Notificações']]]]
+};
+function renderNav(ativo){
+  const P = PAPEIS[papel];
+  $('#sidebar-nav').innerHTML = NAV[P.nav].map(g => '<div class="app-sidebar__group"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => { const on = it[1] === ativo; return '<a class="app-sidebar__item'+(on ? ' app-sidebar__item--active' : '')+'" href="#" '+(on ? 'aria-current="page" ' : '')+'data-menu="'+it[1]+'">'+ic(it[0], 17)+it[1]+'</a>'; }).join('')+'</div>').join('');
+  $('#sb-ini').textContent = iniciais(P.nome); $('#sb-nome').textContent = P.nome; $('#sb-papel').textContent = P.sub;
+}
+
+/* ── Peças comuns do sistema (KpiStatCard, PageHeader, StatePanel, StaleDataBanner, DenseTable) ── */
+function spark(vals, cor){
+  if (vals.length < 2) return '';
+  const mx = Math.max(...vals), mn = Math.min(...vals), w = 100, h = 22;
+  const pts = vals.map((x, i) => (i*(w/(vals.length-1))).toFixed(1)+','+(h-2-((x-mn)/((mx-mn) || 1))*(h-4)).toFixed(1)).join(' ');
+  return '<svg class="kpi-spark" viewBox="0 0 100 22" preserveAspectRatio="none" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="'+cor+'" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>';
+}
+function kpi(st, o){
+  const on = (st.alvo || '') === (o.alvo || '') && !!o.alvo && (!o.aba || st.aba === o.aba);
+  const tag = o.tag ? '<span class="pat-kpi__tag" style="background:'+o.tag[1]+';color:'+o.tag[2]+'">'+o.tag[0]+'</span>' : '';
+  return '<button type="button" class="pat-kpi pat-kpi--clickable'+(o.fx ? ' fx-card' : '')+'" data-alvo="'+(o.alvo || '')+'"'+(o.aba ? ' data-aba="'+o.aba+'"' : '')+' aria-pressed="'+on+'" aria-label="'+esc(o.rot+': '+o.valorTxt+' — '+(o.acao || 'filtrar a lista'))+'"'+(o.fx ? ' title="'+esc('Falta no backend: '+o.fx)+'"' : '')+'>'+
+    '<div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+o.tile[0]+';color:'+o.tile[1]+'">'+ic(o.ic, 15)+'</span>'+tag+'</div>'+
+    '<div class="pat-kpi__value">'+o.valor+'</div><div class="pat-kpi__label">'+o.rot+'</div><div class="pat-kpi__hint">'+o.hint+'</div>'+(o.spark || '')+'</button>';
+}
+function cabecalho(kick, tit, sub, acoes){
+  return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">'+kick+'</div><h1 class="pat-page-header__title">'+tit+'</h1><p class="pat-page-header__subtitle">'+sub+'</p></div><div class="pat-page-header__actions">'+(acoes || '')+'</div></div>';
+}
+function faixaDesatualizado(st){ return st.estado === 'desatualizado' ? '<div class="pat-banner pat-banner--warning" role="status" data-state="stale">'+ic('alert', 14)+'<span>Dados desatualizados — última atualização às 09:42</span><button type="button" class="pat-link" data-tentar>Tentar novamente</button></div>' : ''; }
+function painelProibido(titulo, detalhe){ return '<div class="state-panel" data-state="forbidden"><div class="state-panel__icon" style="background:#f1f5f9;color:#475569">'+ic('lock', 26)+'</div><div class="state-panel__title">'+titulo+'</div><div class="state-panel__detail">'+detalhe+'</div>'+(papel === 'tecnico' ? '<button type="button" class="pat-btn" data-remun>'+ic('wallet', 14)+'Abrir minhas comissões</button>' : '')+'</div>'; }
+function painelErro(titulo){ return '<div class="state-panel" data-state="error" role="alert"><div class="state-panel__icon">'+ic('alert', 26)+'</div><div class="state-panel__title">'+titulo+'</div><div class="state-panel__detail">A consulta ao servidor falhou. Nada foi alterado. Tente de novo em instantes.</div><button type="button" class="pat-btn pat-btn--primary" data-tentar>Tentar novamente</button></div>'; }
+function esqueleto(n){
+  const k = '<div class="pat-kpi"><span class="pat-skel" style="width:28px;height:28px"></span><div style="margin-top:8px"><span class="pat-skel" style="width:70%;height:18px"></span></div><div style="margin-top:6px"><span class="pat-skel" style="width:50%;height:11px"></span></div></div>';
+  const lin = '<div style="display:flex;gap:14px;padding:12px 18px;border-bottom:1px solid #f1f5f9"><span class="pat-skel" style="width:12%;height:12px"></span><span class="pat-skel" style="width:34%;height:12px"></span><span class="pat-skel" style="width:16%;height:12px"></span><span class="pat-skel" style="width:12%;height:12px"></span><span class="pat-skel" style="width:12%;height:12px"></span></div>';
+  return '<div class="kpi-grid kpi-grid--'+n+'" aria-busy="true" aria-label="Carregando">'+k.repeat(n)+'</div><div class="card" style="height:170px;margin-bottom:16px"><span class="pat-skel" style="width:30%;height:14px"></span><div style="margin-top:14px"><span class="pat-skel" style="width:100%;height:110px"></span></div></div><div class="painel">'+lin.repeat(7)+'</div>';
+}
+function vazioPainel(tit, det, acao){ return '<div class="pat-table__empty" data-state="empty"><div class="pat-table__empty-title">'+tit+'</div><div class="pat-table__empty-detail">'+det+'</div>'+(acao ? '<div style="margin-top:12px">'+acao+'</div>' : '')+'</div>'; }
+function rodapeLista(n, rot){ return '<div class="pat-pager"><span class="pat-pager__range">'+(n ? '1–'+n+' de '+n+' '+rot : 'Nada para mostrar')+'</span><div class="pat-pager__nav"><button type="button" class="pat-pager__btn" disabled>Anterior</button><button type="button" class="pat-pager__btn" disabled>Próxima</button></div></div>'; }
+function blocoChip(st, alvo, rot, n, aba){ const on = st.alvo === alvo; return '<button type="button" class="conc-chip" data-alvo="'+alvo+'"'+(aba ? ' data-aba="'+aba+'"' : '')+' aria-pressed="'+on+'" aria-label="'+esc(rot+': '+n+' — filtrar a lista')+'">'+rot+' <b>'+n+'</b></button>'; }
+
+/* Tabela densa: linha de UMA linha (40 px), sem botão; clique, Enter ou Espaço abre o detalhe logo abaixo; um aberto por vez */
+function tabela(v, st, cols, grupos, linha, detalhe){
+  const n = cols.length + 1;
+  let corpo = '';
+  grupos.forEach(g => {
+    if (!g.itens.length && g.rot && !g.mostrarVazio) return;
+    if (g.rot) corpo += '<tr class="grupo-row'+(g.cls ? ' '+g.cls : '')+'"><td colspan="'+n+'">'+g.rot+'<small>'+g.itens.length+' '+(g.itens.length === 1 ? (g.um || 'item') : (g.varios || 'itens'))+'</small></td></tr>';
+    g.itens.forEach(x => {
+      const on = st.aberta === x.id, lid = v+'-'+x.id;
+      corpo += '<tr class="pat-ab-row" tabindex="0" data-linha="'+lid+'" data-id="'+x.id+'" aria-expanded="'+on+'">'+linha(x)+'<td><span data-chevron>'+CHEV+'</span></td></tr>';
+      if (on) corpo += '<tr class="pat-ab-detail-row" data-detalhe-de="'+lid+'"><td class="pat-ab-detail-cell" colspan="'+n+'">'+detalhe(x)+'</td></tr>';
+    });
+  });
+  return '<table class="pat-ab-table"><colgroup>'+cols.map(c => '<col'+(c.w ? ' style="width:'+c.w+'"' : '')+'>').join('')+'<col class="c-chev"></colgroup><thead><tr>'+cols.map(c => '<th scope="col"'+(c.r ? ' class="r"' : '')+'>'+c.rot+'</th>').join('')+'<th scope="col"><span class="sr">Abrir detalhe</span></th></tr></thead><tbody>'+corpo+'</tbody></table>';
+}
+function chipFiltro(rotulo){ return rotulo ? '<div class="pat-filtro-chip-bar"><span class="pat-filtro-chip">Filtro: '+esc(rotulo)+'<button type="button" data-limpar aria-label="Remover o filtro '+esc(rotulo)+'">✕</button></span></div>' : ''; }
+function alertaHtml(a){ if (!a) return ''; return '<div class="ui-alert ui-alert--'+a.tipo+'" role="'+(a.tipo === 'info' || a.tipo === 'ok' ? 'status' : 'alert')+'" style="margin-top:0">'+(a.spin ? '<span class="spin" aria-hidden="true"></span>' : ic(a.tipo === 'ok' ? 'check' : a.tipo === 'info' ? 'info' : 'alert', 16))+'<div><b>'+a.titulo+'</b>'+(a.texto || '')+'</div></div>'; }
+
+function focar(sel){ setTimeout(() => { const el = $(sel); if (el) el.focus(); }, 0); }
+let toastT = null;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4500); }
+function marcar(attr, val){ $$('[data-'+attr+']').forEach(b => b.setAttribute('aria-pressed', String(b.getAttribute('data-'+attr) === val))); }
+function viewDe(el){ const w = el.closest('[data-view]'); return w ? w.getAttribute('data-view') : null; }
+const C_ = t => '<code>'+t+'</code>';
+const lst = a => '<ul class="review-list">'+a.map(x => '<li>'+x+'</li>').join('')+'</ul>';
+
+/* ── Janela fixa (Modal do sistema): foco preso, Esc fecha ── */
+let M = null;
+function abrirModal(titulo, corpo, rodape, retorno){ M = { retorno:retorno || document.activeElement }; $('#mbx-t').textContent = titulo; $('#mbx-corpo').innerHTML = corpo; $('#mbx-rodape').innerHTML = rodape; $('#ov').hidden = false; focar('#mbx [data-foco]'); }
+function fecharModal(){ if (!M) return; const r = M.retorno; M = null; $('#ov').hidden = true; if (r && document.body.contains(r)) r.focus(); }
+function prenderFoco(ev){
+  const f = $$('#mbx button:not([disabled]), #mbx input:not([disabled]), #mbx select:not([disabled]), #mbx textarea:not([disabled])');
+  if (!f.length) return; const i = f.indexOf(document.activeElement);
+  if (ev.shiftKey && i <= 0) { ev.preventDefault(); f[f.length-1].focus(); } else if (!ev.shiftKey && i === f.length-1) { ev.preventDefault(); f[0].focus(); }
+}
+
+/* ══════════════════════ FECHAMENTO DO MÊS ══════════════════════ */
+const ATIVO = 'Fechamento do mês';
+const MES_CORRENTE = '2026-11';
+const rotMes = k => MESES[+k.slice(5)-1]+'/'+k.slice(0, 4);
+const rotMesCap = k => { const r = rotMes(k); return r.charAt(0).toUpperCase()+r.slice(1); };
+const mmaa = k => k.slice(5)+'/'+k.slice(0, 4);
+const fimDoMes = k => new Date(+k.slice(0, 4), +k.slice(5), 0);
+const STM = { open:['Aberto','#EFF6FF','#2563EB'], reopened:['Reaberto','#F5F3FF','#7C3AED'], closed:['Fechado','#ECFDF5','#059669'], closing:['Fechando…','#FFFBEB','#B45309'] };
+
+let MESX;
+function snapDe(k, ent, sai, fech, forcado, motivo){
+  const f = k.charCodeAt(6) % 7;
+  return { computedAt:fech, forced:!!forcado, forcedReason:motivo || null,
+    rec:{ n:38 + f*2, soma:r2(ent*1.06), pago:r2(ent*0.93) }, pag:{ n:29 + f, soma:r2(sai*1.03), pago:r2(sai*0.97) },
+    ent, sai, abertoRec:r2(ent*0.13), abertoPag:r2(sai*0.06) };
+}
+function iniciarDados(){
+  /* [competência, situação, entradas, saídas, fechado [d,m,a], títulos em contestação, não liquidados, a conciliar, fechamentos registrados, forçado, motivo do forçado] */
+  const R = [
+    ['2026-11','open',41250,37980,null,[],14,9],
+    ['2026-10','open',148320,136540,null,[['FAT-2026-0921','Rodovias do Tietê',16500]],12,18],
+    ['2026-09','reopened',144600,131900,[5,10,2026],[],3,2,1],
+    ['2026-08','closed',139250,124800,[4,9,2026],[['FAT-2026-0798','Construtora Vale do Paraíba',11900]],2,0,1,true,'Contestação da Construtora Vale do Paraíba em negociação jurídica; o valor não muda o resultado de agosto e o fechamento não pode esperar o acordo.'],
+    ['2026-07','closed',131900,121600,[3,8,2026],[],1,0,1],
+    ['2026-06','closed',126700,112300,[2,7,2026],[],0,0,1],
+    ['2026-05','closed',118400,104900,[4,6,2026],[],0,0,1],
+    ['2026-04','closed',109800,104100,[6,5,2026],[],0,0,1],
+    ['2026-03','closed',112600,103450,[10,4,2026],[],0,0,2],
+    ['2026-02','closed',104900,97300,[4,3,2026],[],0,0,1],
+    ['2026-01','closed',98450,101200,[5,2,2026],[],0,0,1],
+    ['2025-12','closed',121300,109800,[8,1,2026],[],0,0,1]
+  ];
+  MESX = R.map(r => { const fech = r[4] ? new Date(r[4][2], r[4][1]-1, r[4][0], 17, 40) : null;
+    return { id:r[0], st:r[1], ent:r[2], sai:r[3], fech, por:fech ? 'Financeiro Exemplo' : null, disp:r[5].map(t => ({ doc:t[0], parte:t[1], valor:t[2] })), naoLiq:r[6], aConc:r[7],
+      hist:r[8] || 0, forcado:!!r[9], motivoF:r[10] || null, reab:null, reabPor:null, reabMot:null,
+      snap:fech ? snapDe(r[0], r[2], r[3], fech, r[9], r[10]) : null }; });
+  const set = byId('2026-09'); set.reab = new Date(2026, 10, 3, 9, 15); set.reabPor = 'Administrador Exemplo'; set.reabMot = 'Tarifa bancária de setembro lançada fora do mês; corrigir antes de fechar de novo.'; set.ent = 144600; set.sai = 132089;
+  const mar = byId('2026-03'); mar.histTxt = [['03/04/2026 17:40','fechado'],['07/04/2026 10:05','reaberto · nota de serviço de março chegou atrasada'],['10/04/2026 17:40','fechado de novo']];
+}
+const byId = id => MESX.find(m => m.id === id);
+const terminou = m => m.id !== MES_CORRENTE;
+const diasParaFechar = m => m.fech ? Math.round((new Date(m.fech.getFullYear(), m.fech.getMonth(), m.fech.getDate()) - fimDoMes(m.id)) / DIA) : null;
+const diasAberto = m => Math.round((HOJE - fimDoMes(m.id)) / DIA);
+const aFechar = m => (m.st === 'open' || m.st === 'reopened') && terminou(m);
+
+/* ── Quem pode o quê (financial_period: o Financeiro fecha; só o administrador reabre — RN-FIN-009) ── */
+const PERMS = { financeiro:['ler','fechar'], admin:['ler','fechar','reabrir'], gestor:['ler'], auditor:['ler'], tecnico:[] };
+const tem = k => PERMS[papel].includes(k);
+function acoesMes(m){
+  if (!tem('ler') || m.st === 'closing') return [];
+  const A = [];
+  if ((m.st === 'open' || m.st === 'reopened') && tem('fechar')) A.push('fechar');
+  if (m.st === 'closed' && tem('reabrir')) A.push('reabrir');
+  return A;
+}
+
+/* ── Estado por opção ── */
+const novoEstado = () => ({ estado:'normal', alvo:null, aberta:null });
+const S = { a:novoEstado(), b:novoEstado(), c:novoEstado() };
+let opcao = 'a', cenario = 'ok', FC = null;
+const vazio = v => S[v].estado === 'vazio';
+/* Sem nenhum fechamento: a lista mostra só a competência corrente, que a tela sempre inclui */
+const LIST = v => vazio(v) ? MESX.filter(m => m.id === MES_CORRENTE).map(m => Object.assign({}, m, { disp:[], naoLiq:0, aConc:0 })) : MESX;
+
+function rotAlvo(alvo){
+  if (!alvo) return '';
+  const p = alvo.split(':');
+  if (p[0] === 'st') return STM[p[1]][0]+'s';
+  if (alvo === 'afechar') return 'Meses que terminaram e não estão fechados';
+  if (alvo === 'bloq') return 'Com contestação que impede o fechamento';
+  if (alvo === 'forcado') return 'Fechados com pendência';
+  if (alvo === 'lento') return 'Fecharam mais de 5 dias depois do fim do mês';
+  if (p[0] === 'mes') return rotMesCap(p[1]);
+  if (p[0] === 'ano') return 'Ano '+p[1];
+  return alvo;
+}
+function filtra(v, list){
+  const a = S[v].alvo || '', p = a.split(':');
+  let r = list;
+  if (p[0] === 'st') r = r.filter(m => m.st === p[1]);
+  else if (a === 'afechar') r = r.filter(aFechar);
+  else if (a === 'bloq') r = r.filter(m => (m.st === 'open' || m.st === 'reopened') && m.disp.length);
+  else if (a === 'forcado') r = r.filter(m => m.st === 'closed' && m.forcado);
+  else if (a === 'lento') r = r.filter(m => m.st === 'closed' && diasParaFechar(m) > 5);
+  else if (p[0] === 'mes') r = r.filter(m => m.id === p[1]);
+  return r;
+}
+
+/* ── Peças da lista ── */
+const pillM = m => m.st === 'closed' && m.forcado ? pill('Fechado com pendência', '#FFFBEB', '#B45309') : pill(STM[m.st][0], STM[m.st][1], STM[m.st][2]);
+const FX_SNAP = 'a lista de fechamentos não traz o retrato; o valor vem da leitura de cada mês';
+const FX_CHK = 'a lista de fechamentos não traz as pendências; elas vêm da leitura de cada mês';
+function linhaMes(m){
+  const res = m.ent - m.sai, dias = diasParaFechar(m);
+  const tempo = m.st === 'closed' || (m.st === 'reopened' && m.fech) ? (m.st === 'reopened' ? '<span class="muted">fechou em '+dias+' d</span>' : '<b>'+dias+' d</b>'+(dias > 5 ? ' <span class="prazo" style="color:#B45309">lento</span>' : '')) : m.id === MES_CORRENTE ? '<span class="muted">em andamento</span>' : '<span style="color:#B91C1C;font-weight:700">aberto há '+diasAberto(m)+' d</span>';
+  const valor = '<span class="val '+(res >= 0 ? 'val--in' : 'val--out')+'">'+(res >= 0 ? '+' : '−')+brl(Math.abs(res))+'</span>';
+  const pend = m.st === 'closed' ? '<span class="muted">mês fechado</span>' : (m.disp.length ? '<b style="color:#B91C1C">'+m.disp.length+' impede</b> · ' : '<span style="color:#15803D;font-weight:700">nada impede</span> · ')+(m.naoLiq + m.aConc)+' não impedem';
+  return td('<b>'+rotMesCap(m.id)+'</b>'+(m.id === MES_CORRENTE ? ' <span class="muted">· corrente</span>' : ''), rotMes(m.id))+td(pillM(m))+
+    td(m.fech && m.st === 'closed' ? fDM(m.fech)+'<span class="muted">/'+String(m.fech.getFullYear()).slice(2)+'</span>' : m.st === 'reopened' ? '<span class="muted">reaberto '+fDM(m.reab)+'</span>' : '—')+
+    td(tempo)+td(m.snap && m.st === 'closed' ? FX(valor, FX_SNAP) : valor+' <span class="muted" style="font-size:10.5px">ao vivo</span>', '', 'r')+td(m.st === 'closed' ? pend : FX(pend, FX_CHK));
+}
+const COLS = [{ rot:'COMPETÊNCIA', w:'17%' }, { rot:'SITUAÇÃO', w:'18%' }, { rot:'FECHADO EM', w:'13%' }, { rot:'TEMPO PARA FECHAR', w:'14%' }, { rot:'RESULTADO DO MÊS', w:'15%', r:1 }, { rot:'PENDÊNCIAS AGORA' }];
+
+/* ── Detalhe do mês: situação, pendências ao vivo e o retrato congelado; o fechar abre aqui, em 2 passos ── */
+function detMes(v, m){
+  const dias = diasParaFechar(m);
+  let c1 = '<div class="pat-ab-detail-col"><h4>Situação</h4>'+campo('Competência', rotMesCap(m.id)+' <span class="muted">('+mmaa(m.id)+')</span>')+campo('Situação', pillM(m));
+  if (m.fech) c1 += campo(m.st === 'reopened' ? 'Fechado antes em' : 'Fechado em', fData(m.fech)+' às '+pad(m.fech.getHours())+':'+pad(m.fech.getMinutes()))+campo('Por', FX(esc(m.por), 'o servidor devolve só o identificador de quem fechou; falta o nome'))+campo('Tempo para fechar', dias+' dias depois do fim do mês');
+  else c1 += campo('Fechado em', m.id === MES_CORRENTE ? 'o mês ainda não terminou' : 'ainda não fechado · '+diasAberto(m)+' dias depois do fim do mês');
+  if (m.hist > 1) c1 += campo('Fechamentos registrados', m.hist+' (o histórico guarda cada retrato)');
+  if (m.st === 'closed' && m.forcado) c1 += '<div class="motivo-box"><b>Fechado com pendência · motivo</b>'+esc(m.motivoF)+'</div>';
+  if (m.st === 'reopened') c1 += '<div class="motivo-box motivo-box--rx"><b>Reaberto em '+fDM(m.reab)+' por '+esc(m.reabPor)+' · motivo</b>'+esc(m.reabMot)+'</div>';
+  if (m.histTxt) c1 += '<div class="hist">'+m.histTxt.map(h => '<div class="hist-it"><i></i><span>'+h[0]+' <small>'+h[1]+'</small></span></div>').join('')+'</div>';
+  c1 += '</div>';
+  let c2 = '<div class="pat-ab-detail-col"><h4>Pendências agora · ao vivo</h4>';
+  if (m.st === 'closed') c2 += '<span class="pat-ab-detail-note">O mês está fechado: a lista abaixo é só informativa.</span>';
+  c2 += campo('Impede o fechamento', m.disp.length ? '<b style="color:#B91C1C">'+m.disp.length+' título'+(m.disp.length > 1 ? 's' : '')+' em contestação</b>' : '<span style="color:#15803D;font-weight:700">nenhum título em contestação</span>');
+  c2 += m.disp.map(t => '<div class="tit-disp"><span>'+ic('alert', 13)+' '+esc(t.doc)+' · '+esc(t.parte)+'</span><b>'+brl(t.valor)+'</b></div>').join('');
+  c2 += campo('Não impede', m.naoLiq+' títulos não liquidados <span class="muted">(passam para o mês seguinte)</span>')+campo('Não impede', m.aConc+' lançamentos a conciliar <span class="muted">(o extrato pode chegar depois; a conciliação segue mesmo com o mês fechado)</span>')+'</div>';
+  let c3 = '<div class="pat-ab-detail-col"><h4>'+(m.snap ? 'Retrato do fechamento' : 'Prévia ao vivo')+'</h4>';
+  if (m.snap) { const s = m.snap;
+    c3 += '<div class="retrato"><span>Títulos a receber ('+s.rec.n+')</span><b>'+brl(s.rec.soma)+'</b><span>Títulos a pagar ('+s.pag.n+')</span><b>'+brl(s.pag.soma)+'</b><span class="sep"></span>'+
+      '<span>Entradas de caixa</span><b style="color:#15803D">'+brl(s.ent)+'</b><span>Saídas de caixa</span><b style="color:#B91C1C">'+brl(s.sai)+'</b><span><strong>Resultado</strong></span><b>'+(s.ent - s.sai < 0 ? '−' : '')+brl(Math.abs(s.ent - s.sai))+'</b><span class="sep"></span>'+
+      '<span>Em aberto a receber</span><b>'+brl(s.abertoRec)+'</b><span>Em aberto a pagar</span><b>'+brl(s.abertoPag)+'</b></div><span class="pat-ab-detail-note">Congelado em '+fData(s.computedAt)+(m.st === 'reopened' ? '. O mês foi reaberto: o retrato novo nasce no próximo fechamento.' : '. Não muda depois do fechamento.')+'</span>';
+  } else c3 += '<div class="retrato"><span>Entradas de caixa</span><b style="color:#15803D">'+brl(m.ent)+'</b><span>Saídas de caixa</span><b style="color:#B91C1C">'+brl(m.sai)+'</b><span><strong>Resultado até agora</strong></span><b>'+(m.ent - m.sai < 0 ? '−' : '')+brl(Math.abs(m.ent - m.sai))+'</b></div><span class="pat-ab-detail-note">Ainda sem retrato: ele nasce no fechamento e não muda depois.</span>';
+  c3 += '</div>';
+  let baixo = '';
+  if (FC && FC.v === v && FC.id === m.id) baixo = caixaFecha(v, m);
+  else {
+    const A = acoesMes(m);
+    let ac = A.map(a => a === 'fechar' ? '<button type="button" class="pat-btn pat-btn--primary" data-pacao="fechar" data-mes="'+m.id+'">'+ic('lock', 14)+(m.st === 'reopened' ? 'Fechar de novo' : 'Fechar o mês')+'</button>' : '<button type="button" class="pat-btn pat-btn--perigo" data-pacao="reabrir" data-mes="'+m.id+'">'+ic('unlock', 14)+'Reabrir o mês</button>').join('');
+    if (m.disp.length) ac += '<button type="button" class="pat-btn" data-ver-fin>'+ic('link', 14)+'Ver '+(m.disp.length > 1 ? 'os títulos em contestação' : 'o título em contestação')+'</button>';
+    ac += '<button type="button" class="pat-btn" data-ver-fin>'+ic('receipt', 14)+'Ver o extrato de '+rotMes(m.id)+'</button>';
+    if (m.st === 'closing') ac += '<span class="pat-ab-detail-note">'+ic('clock', 13)+' Fechamento em andamento por outra pessoa. A tela relê em instantes.</span>';
+    else if (!tem('fechar')) ac += '<span class="pat-ab-detail-note">'+ic('lock', 13)+' Seu perfil só consulta os fechamentos.</span>';
+    else if (m.st === 'closed' && !tem('reabrir')) ac += '<span class="pat-ab-detail-note">'+ic('lock', 13)+' Só um administrador reabre um mês fechado.</span>';
+    baixo = '<div class="pat-ab-detail-actions">'+ac+'</div>';
+  }
+  return '<div class="pat-ab-detail-content"><div class="pat-ab-detail-grid">'+c1+c2+c3+'</div>'+baixo+'</div>';
+}
+function passos(n, perigo){ return '<span class="cf-passo'+(perigo ? ' cf-passo--perigo' : '')+'"><i'+(n === 1 ? ' class="on"' : '')+'>1</i> revisar <i'+(n === 2 ? ' class="on"' : '')+'>2</i> '+(perigo ? 'motivo e confirmar' : 'confirmar')+'</span>'; }
+function caixaFecha(v, m){
+  const rot = rotMes(m.id), mm = mmaa(m.id), F = FC;
+  if (F.acao === 'reabrir') {
+    return '<div class="cf-box cf-box--perigo" data-cf role="group" aria-label="Reabrir '+rot+'"><h4>'+ic('unlock', 14)+'Reabrir '+rot+'?</h4>'+
+      '<div class="impacto"><div class="impacto__linha impacto__linha--none"><span class="impacto__ic">'+ic('info', 15)+'</span><span>Os lançamentos voltam a ser aceitos em '+mm+' até alguém fechar de novo. O retrato atual fica guardado no histórico.</span></div></div>'+
+      '<label class="ui-field">Motivo da reabertura (obrigatório; fica na auditoria)<textarea class="ui-input" rows="2" maxlength="2000" data-fc-motivo data-foco placeholder="Ex.: lançamento de tarifa bancária esquecido">'+esc(F.motivo)+'</textarea></label>'+alertaHtml(F.alerta)+
+      '<div class="cf-acoes"><button type="button" class="pat-btn pat-btn--perigo-cheio" data-fc-enviar'+(F.enviando || !F.motivo.trim() ? ' disabled' : '')+'>'+(F.enviando ? '<span class="spin" aria-hidden="true"></span>Enviando…' : 'Reabrir o mês')+'</button><button type="button" class="pat-btn" data-fc-voltar>Voltar</button><span class="cf-contador">'+F.motivo.length+'/2000</span></div></div>';
+  }
+  const nd = m.disp.length;
+  const info = '<div class="impacto__linha impacto__linha--none"><span class="impacto__ic">'+ic('lock', 15)+'</span><span>Depois de fechado, nada mais é lançado em '+mm+'; só um administrador reabre.</span></div>'+
+    '<div class="impacto__linha impacto__linha--tit"><span class="impacto__ic">'+ic('listChecks', 15)+'</span><span>'+m.naoLiq+' títulos não liquidados e '+m.aConc+' lançamentos a conciliar não impedem: os títulos passam para o mês seguinte e a conciliação continua depois de fechado.</span></div>'+
+    (m.id === MES_CORRENTE ? '<div class="impacto__linha impacto__linha--out"><span class="impacto__ic">'+ic('alert', 15)+'</span><span>O mês ainda não terminou: fechado, ele recusa os lançamentos de hoje em diante, inclusive a compensação de cheques.</span></div>' : '');
+  if (F.passo === 1) {
+    const corpo = '<div class="impacto">'+info+'</div>'+(nd ? '<div class="ui-alert ui-alert--danger" role="alert" style="margin-top:0">'+ic('alert', 16)+'<div><b>'+nd+' título'+(nd > 1 ? 's' : '')+' em contestação impede'+(nd > 1 ? 'm' : '')+' o fechamento.</b>Resolva a contestação no Financeiro, ou feche mesmo assim, com motivo.<div style="display:flex;flex-direction:column;gap:5px;margin-top:6px">'+m.disp.map(t => '<div class="tit-disp"><span>'+esc(t.doc)+' · '+esc(t.parte)+'</span><b>'+brl(t.valor)+'</b></div>').join('')+'</div></div></div>' : '')+alertaHtml(F.alerta);
+    const bts = nd ? '<button type="button" class="pat-btn pat-btn--perigo" data-fc-forcar data-foco>Fechar mesmo assim…</button><button type="button" class="pat-btn" data-ver-fin>'+ic('link', 14)+'Resolver no Financeiro</button><button type="button" class="pat-btn" data-fc-voltar>Voltar</button>'
+      : '<button type="button" class="pat-btn pat-btn--primary" data-fc-enviar data-foco'+(F.enviando ? ' disabled' : '')+'>'+(F.enviando ? '<span class="spin" aria-hidden="true"></span>Enviando…' : 'Fechar '+rot)+'</button><button type="button" class="pat-btn" data-fc-voltar>Voltar</button>';
+    return '<div class="cf-box'+(nd ? ' cf-box--perigo' : '')+'" data-cf role="group" aria-label="Fechar '+rot+'"><h4>'+ic('lock', 14)+'Fechar '+rot+'?'+passos(1, nd)+'</h4>'+corpo+'<div class="cf-acoes">'+bts+'</div></div>';
+  }
+  return '<div class="cf-box cf-box--perigo" data-cf role="group" aria-label="Fechar '+rot+' mesmo assim"><h4>'+ic('alert', 14)+'Fechar '+rot+' mesmo assim'+passos(2, true)+'</h4>'+
+    '<div class="impacto"><div class="impacto__linha impacto__linha--out"><span class="impacto__ic">'+ic('alert', 15)+'</span><span>O mês fecha com '+nd+' título'+(nd > 1 ? 's' : '')+' em contestação ('+m.disp.map(t => esc(t.doc)).join(', ')+'). O fechamento fica marcado como <b style="font-family:inherit">feito com pendência</b>: o motivo fica no retrato do mês, e a auditoria registra o fechamento forçado e o título passado por cima.</span></div>'+info+'</div>'+
+    '<label class="ui-field">Motivo (obrigatório)<textarea class="ui-input" rows="3" maxlength="2000" data-fc-motivo data-foco placeholder="Por que fechar agora, com a contestação em aberto?">'+esc(F.motivo)+'</textarea></label>'+alertaHtml(F.alerta)+
+    '<div class="cf-acoes"><button type="button" class="pat-btn pat-btn--perigo-cheio" data-fc-enviar'+(F.enviando || !F.motivo.trim() ? ' disabled' : '')+'>'+(F.enviando ? '<span class="spin" aria-hidden="true"></span>Enviando…' : 'Fechar mesmo assim')+'</button><button type="button" class="pat-btn" data-fc-passo1>Voltar</button><span class="cf-contador">'+F.motivo.length+'/2000</span></div></div>';
+}
+function enviarFecha(){
+  const m = byId(FC.id), v = FC.v, F = FC, forcar = F.acao === 'fechar' && F.passo === 2;
+  if ((F.acao === 'reabrir' || forcar) && !F.motivo.trim()) return;
+  F.enviando = true; render();
+  setTimeout(() => {
+    F.enviando = false;
+    const rot = rotMesCap(m.id);
+    if (F.acao === 'fechar' && cenario === 'disputa' && !forcar) {
+      m.disp.push({ doc:'FAT-2026-0958', parte:'Locadora Via Norte', valor:12600 });
+      F.passo = 1; F.alerta = { tipo:'warning', titulo:'Enquanto você confirmava, um título entrou em contestação.', texto:' A tela releu o mês: agora '+m.disp.length+' título impede o fechamento. Nada foi fechado.' }; render(); focarCf(); return;
+    }
+    if (F.acao === 'fechar' && cenario === 'fechado') { m.st = 'closed'; m.fech = new Date(2026, 10, 11, 9, 58); m.por = 'Administrador Exemplo'; m.hist++; m.snap = snapDe(m.id, m.ent, m.sai, m.fech, false, null); FC = null; render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+m.id+'"]'); toast(rot+' já tinha sido fechado por outra pessoa às 09:58. A tela releu o mês.'); return; }
+    if (F.acao === 'fechar' && cenario === 'fechando') { m.st = 'closing'; FC = null; render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+m.id+'"]'); toast('Outra pessoa está fechando '+rotMes(m.id)+' agora. A tela releu o mês e mostra “Fechando…”.'); return; }
+    if (F.acao === 'reabrir') { m.st = 'reopened'; m.reab = new Date(2026, 10, 11, 10, 0); m.reabPor = PAPEIS[papel].nome; m.reabMot = F.motivo.trim(); FC = null; render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+m.id+'"]'); toast(rot+' reaberto. Os lançamentos voltam a ser aceitos até alguém fechar de novo.'); return; }
+    m.st = 'closed'; m.fech = new Date(2026, 10, 11, 10, 0); m.por = PAPEIS[papel].nome; m.hist++; m.forcado = forcar && m.disp.length > 0; m.motivoF = m.forcado ? F.motivo.trim() : null;
+    m.snap = snapDe(m.id, m.ent, m.sai, m.fech, m.forcado, m.motivoF); m.reab = m.reabPor = m.reabMot = null;
+    FC = null; render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+m.id+'"]');
+    toast(m.forcado ? rot+' fechado com pendência. O motivo ficou no retrato do mês.' : rot+' fechado. Nada mais é lançado nele; só um administrador reabre.');
+  }, 650);
+}
+function focarCf(){ setTimeout(() => { const al = $('[data-cf] .ui-alert'); if (al) { al.setAttribute('tabindex', '-1'); al.focus(); } }, 10); }
+
+/* ── Topo comum ── */
+function topo(){ return cabecalho('Financeiro', 'Fechamento do mês', 'Feche cada competência quando o mês terminar: depois de fechado, nada mais é lançado nela. Só um administrador reabre.', '<button type="button" class="pat-btn" data-ver-fin>'+ic('receipt', 15)+'Ir ao Financeiro</button>'); }
+function bloqueio(v){
+  const st = S[v];
+  if (papel === 'tecnico' || st.estado === 'proibido') return painelProibido('Sem permissão para ver o fechamento do mês', 'Seu perfil não inclui o Financeiro nesta organização. Para mais acesso, fale com o administrador da organização.');
+  if (st.estado === 'erro') return painelErro('Não foi possível carregar os fechamentos');
+  return '';
+}
+function avisoMesAFechar(v){
+  const L = LIST(v), af = L.filter(aFechar); if (!af.length) return '';
+  const m = af.find(x => x.st === 'open') || af[0];
+  return '<div class="pat-banner pat-banner--info" role="status">'+ic('calendarCheck', 14)+'<span><b>'+rotMesCap(m.id)+'</b> terminou há '+diasAberto(m)+' dias e ainda está aberto'+(m.disp.length ? ': '+m.disp.length+' título em contestação impede o fechamento.' : '.')+(af.length > 1 ? ' '+af.filter(x => x !== m).map(x => rotMesCap(x.id)+' está '+STM[x.st][0].toLowerCase()+'.').join(' ') : '')+'</span>'+(tem('fechar') ? '<button type="button" class="pat-link" data-iniciar-fechar="'+m.id+'">Fechar '+rotMes(m.id)+'</button>' : '')+'</div>';
+}
+function corpoLista(v, list, grupos){
+  if (!list.length) return vazioPainel('Nada para este filtro', 'Remova o filtro para ver todos os meses.', S[v].alvo ? '<button type="button" class="pat-btn" data-limpar>Remover o filtro</button>' : '');
+  return tabela(v, S[v], COLS, grupos || [{ itens:list }], linhaMes, m => detMes(v, m)) + (vazio(v) ? vazioPainel('Nenhum mês fechado ainda', 'A lista mostra a competência corrente. Os meses aparecem aqui conforme forem fechados.', '') : '');
+}
+function chipsSituacao(v, extra){
+  const L = LIST(v), st = S[v];
+  return blocoChip(st, 'st:closed', 'Fechados', L.filter(m => m.st === 'closed').length)+blocoChip(st, 'afechar', 'Terminaram e não estão fechados', L.filter(aFechar).length)+
+    blocoChip(st, 'bloq', 'Com contestação que impede', L.filter(m => (m.st === 'open' || m.st === 'reopened') && m.disp.length).length)+blocoChip(st, 'forcado', 'Fechados com pendência', L.filter(m => m.st === 'closed' && m.forcado).length)+
+    blocoChip(st, 'st:reopened', 'Reabertos', L.filter(m => m.st === 'reopened').length)+(extra || '');
+}
+
+/* ══════════ OPÇÃO A — fiel ao Financeiro: indicadores + lista de competências ══════════ */
+function renderA(){
+  const v = 'a', st = S.a, el = $('[data-view="a"]');
+  const head = topo(), bl = bloqueio(v);
+  if (bl) { el.innerHTML = head+bl; return; }
+  if (st.estado === 'carregando') { el.innerHTML = head+esqueleto(5); return; }
+  const L = LIST(v), F = L.filter(m => m.st === 'closed'), D = F.slice().reverse().map(diasParaFechar);
+  const media = D.length ? D.reduce((s, x) => s + x, 0) / D.length : 0;
+  const bloq = L.filter(m => (m.st === 'open' || m.st === 'reopened') && m.disp.length), nb = bloq.reduce((s, m) => s + m.disp.length, 0);
+  const kp = '<div class="kpi-grid kpi-grid--5">'+
+    kpi(st, { alvo:'st:closed', rot:'Meses fechados', valor:String(F.length), valorTxt:F.length+' meses', hint:F.length ? 'de '+rotMes(F[F.length-1].id)+' a '+rotMes(F[0].id) : 'nenhum ainda', ic:'lock', tile:['#ECFDF5','#059669'] })+
+    kpi(st, { alvo:'afechar', rot:'Terminaram e não fecharam', valor:String(L.filter(aFechar).length), valorTxt:L.filter(aFechar).length+' meses', hint:L.filter(aFechar).map(m => MES3[+m.id.slice(5)-1]+' ('+STM[m.st][0].toLowerCase()+')').join(' · ') || 'tudo em dia', ic:'calendar', tile:['#EFF6FF','#2563EB'], tag:L.filter(aFechar).length ? ['a fazer','#EFF6FF','#1D4ED8'] : null })+
+    kpi(st, { alvo:'bloq', rot:'Contestação que impede', valor:nb+' título'+(nb === 1 ? '' : 's'), valorTxt:nb+' títulos', hint:bloq.length ? 'em '+bloq.map(m => rotMes(m.id)).join(', ') : 'nenhuma', ic:'alert', tile:['#FEF2F2','#DC2626'], tag:nb ? ['impede','#FEF2F2','#B91C1C'] : null })+
+    kpi(st, { alvo:'forcado', rot:'Fechados com pendência', valor:String(F.filter(m => m.forcado).length), valorTxt:F.filter(m => m.forcado).length+' meses', hint:F.filter(m => m.forcado).map(m => rotMes(m.id)).join(', ') || 'nenhum', ic:'gavel', tile:['#FFFBEB','#B45309'] })+
+    kpi(st, { alvo:'lento', rot:'Tempo médio para fechar', valor:media.toLocaleString('pt-BR', { maximumFractionDigits:1 })+' dias', valorTxt:media.toFixed(1)+' dias', hint:F.filter(m => diasParaFechar(m) > 5).length+' meses acima de 5 dias', ic:'clock', tile:['#F5F3FF','#7C3AED'], spark:spark(D, '#7C3AED'), acao:'ver os meses que passaram de 5 dias' })+'</div>';
+  const list = filtra(v, L);
+  const toolbar = '<div class="painel__toolbar"><b style="font-size:13px;color:#0F172A">Competências</b><span class="muted" style="font-size:12px">a corrente aparece sempre, mesmo sem fechamento</span><span class="pat-os-count">'+list.length+' meses</span></div>';
+  el.innerHTML = head+faixaDesatualizado(st)+avisoMesAFechar(v)+kp+'<div class="painel">'+toolbar+'<div class="conc-chips" role="group" aria-label="Situação — clique para filtrar">'+chipsSituacao(v)+'</div>'+chipFiltro(rotAlvo(st.alvo))+corpoLista(v, list)+rodapeLista(list.length, 'meses')+'</div>';
+}
+
+/* ══════════ OPÇÃO B — analítica: resultado e tempo de fechamento por mês ══════════ */
+function renderB(){
+  const v = 'b', st = S.b, el = $('[data-view="b"]');
+  const head = topo(), bl = bloqueio(v);
+  if (bl) { el.innerHTML = head+bl; return; }
+  if (st.estado === 'carregando') { el.innerHTML = head+esqueleto(3); return; }
+  const L = LIST(v), on = a => String(st.alvo === a), M12 = L.slice().reverse();
+  const chips = '<div class="conc-chips" style="border:1px solid #e2e8f0;border-radius:12px;background:#fff;margin-bottom:12px" role="group" aria-label="Situação — clique para filtrar">'+chipsSituacao(v)+'</div>';
+  const W = 620, H = 176, base = 140, mx = Math.max(...M12.map(m => Math.max(m.ent, m.sai)), 1), gw = W / Math.max(M12.length, 1);
+  const g = M12.map((m, i) => { const al = 'mes:'+m.id, x0 = i*gw, hi = m.ent/mx*112, ho = m.sai/mx*112, res = m.ent - m.sai, cor = m.st === 'closed' ? (m.forcado ? '#F59E0B' : '#22C55E') : m.st === 'reopened' ? '#7C3AED' : '#2563EB';
+    return '<g role="button" tabindex="0" data-alvo="'+al+'" aria-pressed="'+on(al)+'" aria-label="'+esc(rotMes(m.id)+': entradas '+brl(m.ent)+', saídas '+brl(m.sai)+', '+STM[m.st][0]+' — abrir')+'"><title>'+rotMes(m.id)+' · entradas '+brl(m.ent)+' · saídas '+brl(m.sai)+' · resultado '+brl(res)+'</title>'+
+      '<rect class="bg" x="'+(x0+2)+'" y="2" width="'+(gw-4)+'" height="'+(H-2)+'" rx="8" fill="transparent"/>'+
+      '<rect x="'+(x0+gw/2-13)+'" y="'+(base-hi)+'" width="12" height="'+hi+'" rx="2" fill="var(--color-chart-inflow)"'+(m.snap && m.st === 'closed' ? '' : ' opacity=".55"')+'/><rect x="'+(x0+gw/2+1)+'" y="'+(base-ho)+'" width="12" height="'+ho+'" rx="2" fill="var(--color-chart-outflow)"'+(m.snap && m.st === 'closed' ? '' : ' opacity=".55"')+'/>'+
+      '<text x="'+(x0+gw/2)+'" y="'+(base-Math.max(hi, ho)-5)+'" text-anchor="middle" font-size="9.5" font-weight="800" fill="'+(res >= 0 ? '#15803D' : '#B91C1C')+'">'+(res >= 0 ? '+' : '−')+Math.round(Math.abs(res)/1000)+'k</text>'+
+      '<rect x="'+(x0+gw/2-14)+'" y="'+(base+5)+'" width="28" height="4" rx="2" fill="'+cor+'"/>'+
+      '<text x="'+(x0+gw/2)+'" y="'+(H-14)+'" text-anchor="middle" font-size="10.5" font-weight="700" fill="'+(m.id === MES_CORRENTE ? '#2563EB' : '#64748B')+'">'+MES3[+m.id.slice(5)-1]+'</text><text x="'+(x0+gw/2)+'" y="'+(H-3)+'" text-anchor="middle" font-size="9" fill="#94A3B8">'+m.id.slice(2, 4)+'</text></g>'; }).join('');
+  const resCard = '<div class="an-card"><div class="an-card__title">Entradas × saídas por competência <small>retrato de cada mês fechado; os abertos, ao vivo (mais claros)</small></div><svg class="linha-svg" viewBox="0 0 '+W+' '+H+'" role="group" aria-label="Entradas e saídas por competência">'+g+'</svg>'+
+    '<div class="an-leitura"><span><i class="lg-sw" style="background:var(--color-chart-inflow)"></i> Entradas</span><span><i class="lg-sw" style="background:var(--color-chart-outflow)"></i> Saídas</span><span><i class="lg-sw" style="background:#22C55E"></i> fechado</span><span><i class="lg-sw" style="background:#F59E0B"></i> com pendência</span><span><i class="lg-sw" style="background:#7C3AED"></i> reaberto</span><span><i class="lg-sw" style="background:#2563EB"></i> aberto</span></div></div>';
+  const F = M12.filter(m => m.fech && m.st === 'closed'), mxD = Math.max(...F.map(diasParaFechar), 1);
+  const diasCard = '<div class="an-card"><div class="an-card__title">Dias para fechar depois do fim do mês <small>meta sugerida: até 5</small></div><div class="colunas" style="height:150px;position:relative">'+
+    F.map(m => { const d = diasParaFechar(m), al = 'mes:'+m.id; return '<button type="button" class="coluna-btn" data-alvo="'+al+'" aria-pressed="'+on(al)+'" aria-label="'+esc(rotMes(m.id)+': fechou '+d+' dias depois do fim do mês — abrir')+'"><b style="color:'+(d > 5 ? '#B45309' : '#0F172A')+'">'+d+'</b><i style="height:'+(d/mxD*96)+'px;background:'+(m.st === 'reopened' ? '#C4B5FD' : d > 5 ? '#F59E0B' : '#A78BFA')+'"></i><span>'+MES3[+m.id.slice(5)-1]+'</span></button>'; }).join('')+
+    L.filter(aFechar).reverse().map(m => { const al = 'mes:'+m.id; return '<button type="button" class="coluna-btn" data-alvo="'+al+'" aria-pressed="'+on(al)+'" aria-label="'+esc(rotMes(m.id)+': aberto há '+diasAberto(m)+' dias — abrir')+'"><b style="color:#B91C1C">'+diasAberto(m)+'+</b><i style="height:'+(Math.min(diasAberto(m), mxD)/mxD*96)+'px;background:repeating-linear-gradient(45deg,#FCA5A5 0 4px,#FEE2E2 4px 8px)"></i><span>'+MES3[+m.id.slice(5)-1]+'</span></button>'; }).join('')+'</div>'+
+    '<div class="an-leitura"><span><i class="lg-sw" style="background:#A78BFA"></i> até 5 dias</span><span><i class="lg-sw" style="background:#F59E0B"></i> mais de 5</span><span><i class="lg-sw" style="background:#FCA5A5"></i> ainda aberto</span></div></div>';
+  const af = L.filter(aFechar).find(m => m.st === 'open') || L.filter(aFechar)[0];
+  let mesCard = '<div class="an-card"><div class="an-card__title">Mês a fechar <small>pendências ao vivo</small></div>';
+  if (af) mesCard += '<div class="checks">'+
+    '<button type="button" class="check-btn" data-alvo="mes:'+af.id+'" aria-pressed="'+on('mes:'+af.id)+'" aria-label="'+esc(rotMes(af.id)+': '+af.disp.length+' contestações — abrir')+'"><span class="ic" style="background:'+(af.disp.length ? '#FEE2E2;color:#B91C1C' : '#DCFCE7;color:#15803D')+'">'+ic(af.disp.length ? 'alert' : 'check', 14)+'</span><span class="t">'+rotMesCap(af.id)+' · contestações<small>impede</small></span><b style="color:'+(af.disp.length ? '#B91C1C' : '#15803D')+'">'+af.disp.length+'</b></button>'+
+    '<button type="button" class="check-btn" data-ver-fin aria-label="'+esc('Títulos não liquidados: '+af.naoLiq+' — ver no Financeiro')+'"><span class="ic" style="background:#EFF6FF;color:#1D4ED8">'+ic('receipt', 14)+'</span><span class="t">Títulos não liquidados<small>não impede</small></span><b>'+af.naoLiq+'</b></button>'+
+    '<button type="button" class="check-btn" data-ver-fin aria-label="'+esc('Lançamentos a conciliar: '+af.aConc+' — ver no Financeiro')+'"><span class="ic" style="background:#EFF6FF;color:#1D4ED8">'+ic('checkCircle', 14)+'</span><span class="t">Lançamentos a conciliar<small>não impede</small></span><b>'+af.aConc+'</b></button></div>'+
+    (tem('fechar') ? '<div class="fc-fechar"><p>'+(af.disp.length ? 'Com contestação, fechar pede um 2º passo com motivo.' : 'Nada impede o fechamento.')+'</p><button type="button" class="pat-btn pat-btn--primary" data-iniciar-fechar="'+af.id+'">'+ic('lock', 14)+'Fechar '+rotMes(af.id)+'…</button></div>' : '');
+  else mesCard += '<div class="sem-mov">Todos os meses que terminaram estão fechados.</div>';
+  mesCard += '</div>';
+  const ex = L.filter(m => (m.st === 'closed' && m.forcado) || m.st === 'reopened' || m.hist > 1);
+  const exCard = '<div class="an-card"><div class="an-card__title">Exceções do ano <small>forçados, reabertos e refeitos</small></div><div class="mesa">'+(ex.map(m => { const al = 'mes:'+m.id, t = m.st === 'reopened' ? 'Reaberto em '+fDM(m.reab)+' · '+m.reabMot : m.forcado ? 'Fechado com pendência · '+m.motivoF : 'Fechado '+m.hist+' vezes · reaberto e fechado de novo';
+    return '<button type="button" class="ag-item '+(m.st === 'reopened' ? 'ag-item--dep' : 'ag-item--pag')+'" data-alvo="'+al+'" aria-pressed="'+on(al)+'" aria-label="'+esc(rotMes(m.id)+': '+t+' — abrir')+'"><span class="ag-item__d" style="min-width:76px">'+rotMesCap(m.id)+'</span><span class="ag-item__t">'+esc(t)+'</span></button>'; }).join('') || '<div class="sem-mov">Nenhuma exceção.</div>')+'</div></div>';
+  const list = filtra(v, L);
+  const toolbar = '<div class="painel__toolbar"><b style="font-size:13px;color:#0F172A">Competências</b><span class="pat-os-count">'+list.length+' meses</span></div>';
+  el.innerHTML = head+faixaDesatualizado(st)+chips+'<div class="an-grid an-grid--2">'+resCard+diasCard+'</div><div class="an-grid an-grid--2">'+mesCard+exCard+'</div>'+
+    '<div class="painel">'+toolbar+chipFiltro(rotAlvo(st.alvo))+corpoLista(v, list)+rodapeLista(list.length, 'meses')+'</div>';
+}
+
+/* ══════════ OPÇÃO C — o ano em 12 meses e o checklist do mês a fechar ══════════ */
+function renderC(){
+  const v = 'c', st = S.c, el = $('[data-view="c"]');
+  const head = topo(), bl = bloqueio(v);
+  if (bl) { el.innerHTML = head+bl; return; }
+  if (st.estado === 'carregando') { el.innerHTML = head+esqueleto(4); return; }
+  const L = LIST(v), on = a => String(st.alvo === a);
+  const tiles = []; for (let i = 1; i <= 12; i++) tiles.push('2026-'+pad(i));
+  const cal = '<div class="an-card"><div class="an-card__title">2026 mês a mês <small>clique no mês para abrir</small></div>'+
+    '<div class="conc-chips" style="padding:0 0 10px;border:0" role="group" aria-label="Situação — clique para filtrar">'+chipsSituacao(v)+'</div><div class="ano-grid">'+
+    tiles.map(k => { const m = L.find(x => x.id === k), nome = MESES[+k.slice(5)-1];
+      if (!m) return '<div class="mes-btn mes-btn--futuro" aria-hidden="true"><b>'+nome+'</b><span style="color:#94A3B8">ainda não começou</span><small>&nbsp;</small></div>';
+      const cls = m.st === 'closed' ? (m.forcado ? 'forcado' : 'fechado') : m.st === 'reopened' ? 'reaberto' : 'aberto', al = 'mes:'+k;
+      const sit = m.st === 'closed' ? (m.forcado ? '<span style="color:#B45309">com pendência</span>' : '<span style="color:#15803D">fechado</span>') : m.st === 'reopened' ? '<span style="color:#7C3AED">reaberto</span>' : k === MES_CORRENTE ? '<span style="color:#2563EB">em andamento</span>' : '<span style="color:#B91C1C">aberto há '+diasAberto(m)+' d</span>';
+      const sub = m.fech && m.st === 'closed' ? 'em '+diasParaFechar(m)+' d · '+(m.ent - m.sai >= 0 ? '+' : '−')+brlK(Math.abs(m.ent - m.sai)) : m.disp.length ? m.disp.length+' contestação' : (m.naoLiq + m.aConc)+' não impedem';
+      return '<button type="button" class="mes-btn mes-btn--'+cls+'" data-alvo="'+al+'" aria-pressed="'+on(al)+'" aria-label="'+esc(rotMes(k)+': '+STM[m.st][0]+' — abrir')+'"><b>'+nome+'</b>'+sit+'<small>'+sub+'</small></button>'; }).join('')+'</div>'+
+    '<div class="legenda-mini"><span><i class="lg-sw" style="background:#22C55E"></i> fechado</span><span><i class="lg-sw" style="background:#F59E0B"></i> com pendência</span><span><i class="lg-sw" style="background:#7C3AED"></i> reaberto</span><span><i class="lg-sw" style="background:#2563EB"></i> aberto</span><span class="muted">Dezembro/2025 fica na lista, no grupo de 2025.</span></div></div>';
+  const af = L.filter(aFechar).find(m => m.st === 'open') || L.filter(aFechar)[0];
+  let ck = '<div class="an-card"><div class="an-card__title">'+(af ? 'Checklist para fechar '+rotMes(af.id) : 'Checklist do fechamento')+' <small>ao vivo</small></div>';
+  if (af) {
+    const nd = af.disp.length;
+    ck += '<div class="etapas">'+
+      '<button type="button" class="etapa '+(nd ? 'etapa--bloq' : 'etapa--ok')+'" data-alvo="mes:'+af.id+'" aria-pressed="'+on('mes:'+af.id)+'" aria-label="'+esc('Contestações: '+nd+' — abrir o mês')+'"><span class="etapa__n">'+(nd ? ic('alert', 15) : ic('check', 15))+'</span><span class="etapa__t"><b>Títulos em contestação</b><small>'+(nd ? 'impede o fechamento · '+af.disp.map(t => t.doc+' · '+t.parte).join(', ') : 'nada impede o fechamento')+'</small></span><span class="etapa__v" style="color:'+(nd ? '#B91C1C' : '#15803D')+'">'+nd+'</span></button>'+
+      '<button type="button" class="etapa etapa--info" data-ver-fin aria-label="'+esc('Títulos não liquidados: '+af.naoLiq+' — ver no Financeiro')+'"><span class="etapa__n">'+ic('receipt', 15)+'</span><span class="etapa__t"><b>Títulos não liquidados</b><small>não impede · passam para '+rotMes(af.id === '2026-10' ? '2026-11' : MES_CORRENTE)+'</small></span><span class="etapa__v">'+af.naoLiq+'</span></button>'+
+      '<button type="button" class="etapa etapa--info" data-ver-fin aria-label="'+esc('Lançamentos a conciliar: '+af.aConc+' — ver no Financeiro')+'"><span class="etapa__n">'+ic('checkCircle', 15)+'</span><span class="etapa__t"><b>Lançamentos a conciliar</b><small>não impede · a conciliação segue depois de fechado</small></span><span class="etapa__v">'+af.aConc+'</span></button></div>'+
+      '<div class="fc-fechar"><p>'+(nd ? 'Com contestação aberta, o fechamento pede um 2º passo: “fechar mesmo assim”, com motivo obrigatório.' : 'Nada impede: o fechamento é confirmado em 2 cliques.')+'</p>'+(tem('fechar') ? '<button type="button" class="pat-btn pat-btn--primary" data-iniciar-fechar="'+af.id+'">'+ic('lock', 14)+'Fechar '+rotMes(af.id)+'…</button>' : '<span class="pat-ab-detail-note">'+ic('lock', 13)+' Seu perfil só consulta.</span>')+'</div>';
+    const outros = L.filter(aFechar).filter(m => m !== af);
+    ck += outros.map(m => '<div class="fc-fechar"><p><b>'+rotMesCap(m.id)+'</b> também está '+STM[m.st][0].toLowerCase()+(m.reab ? ' desde '+fDM(m.reab)+' ('+esc(m.reabMot)+')' : '')+'.</p><button type="button" class="pat-btn" data-alvo="mes:'+m.id+'" aria-pressed="'+on('mes:'+m.id)+'">Abrir '+rotMes(m.id)+'</button></div>').join('');
+  } else ck += '<div class="sem-mov">Todos os meses que terminaram estão fechados.</div>';
+  ck += '</div>';
+  const list = filtra(v, L);
+  const tri = (a, t) => list.filter(m => m.id.slice(0, 4) === a && Math.ceil(+m.id.slice(5)/3) === t);
+  const G = [
+    { rot:'4º trimestre de 2026', itens:tri('2026', 4), um:'mês', varios:'meses' },
+    { rot:'3º trimestre de 2026', itens:tri('2026', 3), um:'mês', varios:'meses' },
+    { rot:'2º trimestre de 2026', itens:tri('2026', 2), um:'mês', varios:'meses' },
+    { rot:'1º trimestre de 2026', itens:tri('2026', 1), um:'mês', varios:'meses' },
+    { rot:'2025', itens:list.filter(m => m.id.startsWith('2025')), um:'mês', varios:'meses' }
+  ];
+  const toolbar = '<div class="painel__toolbar"><b style="font-size:13px;color:#0F172A">Competências por trimestre</b><span class="pat-os-count">'+list.length+' meses</span></div>';
+  el.innerHTML = head+faixaDesatualizado(st)+'<div class="fc-grid">'+cal+ck+'</div>'+
+    '<div class="painel">'+toolbar+chipFiltro(rotAlvo(st.alvo))+corpoLista(v, list, G)+rodapeLista(list.length, 'meses')+'</div>';
+}
+
+/* ══════════ Ciclo da tela ══════════ */
+function render(){
+  renderNav(ATIVO);
+  ['a', 'b', 'c'].forEach(v => { $('[data-view="'+v+'"]').style.display = v === opcao ? '' : 'none'; });
+  ({ a:renderA, b:renderB, c:renderC })[opcao]();
+}
+function alternarLinha(v, id){ const st = S[v]; st.aberta = st.aberta === id ? null : id; if (FC && FC.id !== st.aberta) FC = null; render(); focar('[data-view="'+v+'"] [data-linha="'+v+'-'+id+'"]'); }
+function aplicarAlvo(v, el){
+  const st = S[v], alvo = el.getAttribute('data-alvo') || null;
+  st.alvo = st.alvo === alvo ? null : alvo;
+  st.aberta = st.alvo && st.alvo.startsWith('mes:') ? st.alvo.slice(4) : null; FC = null; render();
+  focar('[data-view="'+v+'"] '+(el.tagName.toLowerCase() === 'g' ? 'g' : '')+'[data-alvo="'+(alvo || '')+'"]');
+}
+function iniciarFechar(v, id, acao){
+  const st = S[v]; st.estado = 'normal'; marcar('estado', 'normal'); st.aberta = id;
+  if (!filtra(v, LIST(v)).some(m => m.id === id)) st.alvo = null;
+  FC = { v, id, acao:acao || 'fechar', passo:1, motivo:'', alerta:null, enviando:false }; render();
+  const lin = $('[data-view="'+v+'"] [data-linha="'+v+'-'+id+'"]'); if (lin) lin.scrollIntoView({ block:'center' });
+  focar('[data-cf] [data-foco]');
+}
+function exemplo(spec){
+  const [id, acao] = spec.split(':'), m = byId(id);
+  const precisa = acao === 'reabrir' ? 'reabrir' : 'fechar', base = acao === 'forcar' ? 'fechar' : acao;
+  if (!tem(precisa)) { papel = precisa === 'reabrir' ? 'admin' : 'financeiro'; marcar('papel', papel); }
+  if (!acoesMes(m).includes(base) || (acao === 'forcar' && !m.disp.length)) { toast('Este mês mudou de situação: use “Restaurar os dados de exemplo”.'); return; }
+  iniciarFechar(opcao, id, base);
+  if (acao === 'forcar') { FC.passo = 2; render(); focar('[data-cf] textarea'); }
+}
+
+document.addEventListener('click', ev => {
+  const q = s => ev.target.closest(s);
+  let el;
+  if ((el = q('[data-opcao]'))) { opcao = el.getAttribute('data-opcao'); marcar('opcao', opcao); FC = null; $('#banner-tag').textContent = 'Fechamento do mês · Opção '+opcao.toUpperCase(); marcar('estado', S[opcao].estado); render(); renderReview(); return; }
+  if ((el = q('[data-estado]'))) { S[opcao].estado = el.getAttribute('data-estado'); marcar('estado', S[opcao].estado); FC = null; render(); return; }
+  if ((el = q('[data-papel]'))) { papel = el.getAttribute('data-papel'); marcar('papel', papel); FC = null; render(); return; }
+  if ((el = q('[data-cenario]'))) { cenario = el.getAttribute('data-cenario'); marcar('cenario', cenario); return; }
+  if ((el = q('[data-exemplo]'))) { exemplo(el.getAttribute('data-exemplo')); return; }
+  if ((el = q('[data-marcas]'))) { const ligado = document.body.classList.toggle('sem-marcas'); el.setAttribute('aria-pressed', String(ligado)); return; }
+  if (q('[data-restaurar]')) { iniciarDados(); ['a', 'b', 'c'].forEach(v => { S[v] = novoEstado(); }); FC = null; marcar('estado', 'normal'); render(); toast('Dados de exemplo restaurados.'); return; }
+  if ((el = q('#rv-recolher'))) { const c = $('#rv-corpo'), ab = c.hidden; c.hidden = !ab; el.setAttribute('aria-expanded', String(ab)); el.textContent = ab ? 'Recolher notas' : 'Mostrar notas'; return; }
+  if (q('[data-ver-fin]')) { toast('Abre o Financeiro com os títulos da competência (fora desta maquete).'); return; }
+  if (q('[data-remun]')) { toast('Abre Remunerações (fora desta maquete).'); return; }
+  if ((el = q('[data-menu]'))) { ev.preventDefault(); toast(el.getAttribute('data-menu')+' fica fora desta maquete.'); return; }
+  const v = viewDe(ev.target);
+  if (!v) return;
+  if (q('[data-tentar]')) { S[v].estado = 'normal'; marcar('estado', 'normal'); render(); toast('Dados atualizados.'); return; }
+  if ((el = q('[data-iniciar-fechar]'))) { iniciarFechar(v, el.getAttribute('data-iniciar-fechar'), 'fechar'); return; }
+  if ((el = q('[data-pacao]'))) { FC = { v, id:el.getAttribute('data-mes'), acao:el.getAttribute('data-pacao'), passo:1, motivo:'', alerta:null, enviando:false }; render(); focar('[data-cf] [data-foco]'); return; }
+  if (q('[data-fc-forcar]')) { FC.passo = 2; FC.alerta = null; render(); focar('[data-cf] textarea'); return; }
+  if (q('[data-fc-passo1]')) { FC.passo = 1; render(); focar('[data-cf] [data-fc-forcar]'); return; }
+  if (q('[data-fc-enviar]')) { enviarFecha(); return; }
+  if (q('[data-fc-voltar]')) { const id = FC && FC.id, a = FC && FC.acao; FC = null; render(); focar('[data-view="'+v+'"] [data-pacao="'+a+'"][data-mes="'+id+'"]'); return; }
+  if (q('[data-limpar]')) { S[v].alvo = null; S[v].aberta = null; FC = null; render(); return; }
+  if ((el = q('[data-alvo]'))) { aplicarAlvo(v, el); return; }
+  if ((el = q('tr.pat-ab-row'))) { alternarLinha(v, el.getAttribute('data-id')); return; }
+});
+document.addEventListener('keydown', ev => {
+  const t = ev.target;
+  if ((ev.key === 'Enter' || ev.key === ' ') && t.matches && t.matches('tr.pat-ab-row')) { ev.preventDefault(); alternarLinha(viewDe(t), t.getAttribute('data-id')); return; }
+  if ((ev.key === 'Enter' || ev.key === ' ') && t.matches && t.matches('g[data-alvo]')) { ev.preventDefault(); aplicarAlvo(viewDe(t), t); }
+});
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.matches('[data-fc-motivo]') && FC) { FC.motivo = t.value; const b = $('[data-cf] [data-fc-enviar]'); if (b) b.disabled = !FC.motivo.trim(); const c = $('[data-cf] .cf-contador'); if (c) c.textContent = FC.motivo.length+'/2000'; }
+});
+
+/* ══════════ Quadro de notas (fora da tela) ══════════ */
+const NOTAS = {
+  a:{ titulo:'Opção A — Lista de competências',
+    i:['<strong>Lista:</strong> '+C_('GET /financial-periods')+' traz competência, situação, quando e quem fechou e reabriu ('+C_('src/modules/financial-period-closes/financial-period-close.dto.ts:47-64')+'); a competência corrente entra sempre, mesmo sem linha no servidor (plano §2.2).',
+       '<strong>Meses fechados, reabertos, terminaram e não fecharam:</strong> contados da própria lista (situação e competência; não é soma de dinheiro).',
+       '<strong>Tempo para fechar e o tempo médio:</strong> '+C_('closedAt')+' menos o fim da competência — datas, não dinheiro.',
+       '<strong>Detalhe:</strong> '+C_('GET /financial-periods/:period')+' devolve situação, retrato congelado ('+C_('snapshot')+'), histórico ('+C_('snapshotHistory')+') e o checklist ao vivo ('+C_('dto.ts:29-45')+'; '+C_('types.ts:55-76')+', '+C_(':123-126')+'), inclusive os títulos em contestação.',
+       '<strong>Contestação que impede e fechados com pendência:</strong> '+C_('checklist.blocking.inDisputeTitles')+' e '+C_('snapshot.forced')+' / '+C_('forcedReason')+' de cada mês.'],
+    ii:['<strong>Resultado do mês e pendências NA LINHA</strong> — a lista não traz retrato nem checklist ('+C_('dto.ts:47-64')+'); sem isso, a tela lê mês a mês (12 leituras). Pedir os dois resumidos no item da lista. Marcados.',
+        '<strong>Nome de quem fechou</strong> — o servidor devolve só o identificador ('+C_('closedBy')+'); falta o nome. Marcado.',
+        '<strong>Motivo do fechamento forçado na auditoria</strong> — hoje o motivo fica só no retrato; a auditoria registra '+C_('forced')+' e os títulos passados por cima, sem o motivo ('+C_('financial-period-close.controller.ts:37-40')+'). É a Q1 do plano (recomendação: (b), 1 linha).'],
+    iii:['<strong>Prós:</strong> a composição da aparência A do Financeiro (indicadores que filtram, blocos por situação, linha de 1 linha, detalhe embaixo); o aviso no topo leva direto ao mês que falta fechar; o tempo médio para fechar é um indicador de disciplina do fechamento que hoje não existe.',
+         '<strong>Contras:</strong> sem gráfico de resultado por mês; a coluna de resultado depende de uma leitura por mês (ou de backend novo).'] },
+  b:{ titulo:'Opção B — Visão analítica',
+    i:['<strong>Entradas × saídas por competência:</strong> dos meses fechados, o retrato congelado ('+C_('snapshot.entries.in/out')+'); dos abertos, o resumo ao vivo ('+C_('summary.cashFlow')+', 6 meses — '+C_('financial-summary.types.ts:43-47, :81')+').',
+       '<strong>Dias para fechar e meses ainda abertos:</strong> '+C_('closedAt')+' da lista e o fim de cada competência.',
+       '<strong>Mês a fechar:</strong> o checklist ao vivo do '+C_('GET /financial-periods/:period')+' (contestações, não liquidados e a conciliar).',
+       '<strong>Exceções do ano:</strong> '+C_('snapshot.forced')+', a situação Reaberto com '+C_('reopenReason')+' e o '+C_('snapshotHistory')+' com mais de um fechamento.'],
+    ii:['<strong>O gráfico de 12 meses</strong> pede o retrato de cada mês fechado: 12 leituras. Um agregado (resultado por competência) evitaria. Não está marcado porque funciona com o que existe.',
+        '<strong>Motivo da reabertura</strong> só vem enquanto o mês está Reaberto: depois de fechar de novo, o servidor o apaga da resposta ('+C_('dto.ts:8-19')+'); a trilha completa fica na auditoria.',
+        'Nome de quem fechou e o motivo do forçado na auditoria: iguais à A.'],
+    iii:['<strong>Prós:</strong> BI: o resultado de cada mês ao lado do tempo que ele levou para fechar; a barra listrada mostra na hora o mês atrasado; as exceções (forçado, reaberto, refeito) ficam numa lista só, boa para o auditor; todo gráfico abre o mês.',
+         '<strong>Contras:</strong> a tela mais longa das três; os valores dos meses abertos mudam até o fechamento (estão mais claros e com a legenda “ao vivo”).'] },
+  c:{ titulo:'Opção C — O ano e o checklist',
+    i:['<strong>O ano em 12 meses:</strong> a mesma lista da A desenhada como calendário (situação, dias para fechar e resultado do retrato).',
+       '<strong>Checklist do mês a fechar:</strong> o checklist ao vivo ('+C_('checklist.blocking')+' e '+C_('checklist.informational')+'), com os títulos em contestação pelo nome.',
+       '<strong>Lista por trimestre:</strong> os mesmos itens, agrupados pela competência.'],
+    ii:['<strong>Resultado no calendário</strong> — vem do retrato de cada mês (uma leitura por mês fechado), como na A.',
+        '<strong>Os atalhos “títulos não liquidados” e “a conciliar”</strong> abrem o Financeiro, mas a lista de títulos não filtra por competência, só por vencimento ('+C_('src/modules/financial-titles/financial-title.types.ts:186-197')+'); o extrato filtra por período. Pedir o filtro por competência nos títulos (vale também para a B e para o botão “Ver o título em contestação”).',
+        'Nome de quem fechou e o motivo do forçado na auditoria: iguais à A.'],
+    iii:['<strong>Prós:</strong> segue a rotina real do fim do mês — ver o que falta e fechar —, com o fechar no mesmo lugar do checklist; o calendário mostra o ano de relance (verde fechado, âmbar com pendência, roxo reaberto, azul aberto).',
+         '<strong>Contras:</strong> o calendário é de um ano só (dezembro/2025 fica só na lista); menos espaço para gráficos que a B; mais um componente novo para a biblioteca (o calendário de meses).'] }
+};
+function renderReview(){
+  const n = NOTAS[opcao];
+  $('#rv-titulo').textContent = n.titulo;
+  $('#rv-desc').innerHTML = 'Maquete da tela nova <strong>Fechamento do mês</strong> do Financeiro (bloco <strong>B-SAN3-24</strong>, fatia 24-M; plano v2 §2.2 e linha M1), em 3 aparências para o dono aprovar: as 3 aprovadas viram aparências que cada usuário escolhe ('+C_('D-APARENCIA-POR-USUARIO')+'). Molde: '+C_('screen-refs/financeiro-baixa-conta-conciliacao-3opcoes.reference.html')+' e o padrão de '+C_('financeiro-ab.reference.html')+'. Tela-modelo do plano: '+C_('frontend/src/modules/finance/pages/FinanceiroPage.tsx')+' com '+C_('FinanceiroViewA/B/C.tsx')+'; skills '+C_('ts-frontend-full')+' e '+C_('ui-ux-pro-max')+'. Medido em '+C_('origin/main 6f727afc')+'. Nomes e números são de exemplo (nomes de pessoa fictícios). Hoje = quarta, 11/11/2026, 10:00: outubro terminou e está aberto, com 1 título em contestação; setembro foi reaberto; agosto fechou com pendência. <strong>A política de comissão não aparece</strong> ('+C_('D-PORTAO-7-RECOMENDACOES-1011')+'). <strong>Para ver o “fechar mesmo assim”:</strong> use “Abrir o fluxo de”.';
+  $('#rv-blocos').innerHTML =
+    '<div class="review-grid review-grid--2">'+
+      '<div class="review-box"><h3>Fechar mesmo assim — 2 passos, motivo obrigatório (iguais nas 3)</h3>'+lst([
+        '<strong>A decisão:</strong> '+C_('D-PORTAO-7-RECOMENDACOES-1011')+' — “fechar mesmo assim” com título em contestação fica permitido, em 2 passos, com motivo obrigatório e auditoria.',
+        '<strong>Passo 1 (revisar):</strong> “Fechar” abre a caixa com a trava (“Depois de fechado, nada mais é lançado em MM/AAAA; só um administrador reabre.”) e as pendências do checklist já lido. Sem contestação, o 2º clique fecha (corpo '+C_('{}')+'). Com contestação, a caixa explica o bloqueio, lista os títulos e oferece “Resolver no Financeiro” ou “Fechar mesmo assim…”.',
+        '<strong>Passo 2 (motivo e confirmar):</strong> campo de motivo obrigatório (até 2000 caracteres, '+C_('financial-period-close.validators.ts:37-38')+'); o botão fica desabilitado com o motivo vazio ou só de espaços; o envio leva '+C_('{ force: true, reason: motivo aparado }')+'. Nenhum envio sai com '+C_('force')+' antes do passo 2.',
+        '<strong>O que o servidor grava:</strong> o retrato com '+C_('forced: true')+' e '+C_('forcedReason')+' na mesma escrita ('+C_('financial-period-close.service.ts:67-75')+'); '+C_('forced')+' só fica verdadeiro quando havia contestação de fato; a auditoria '+C_('financial_period.closed')+' leva '+C_('forced')+' e os títulos passados por cima, <strong>sem o motivo</strong> ('+C_('controller.ts:37-40')+') — Q1 do plano.',
+        '<strong>Contestação nova no meio (422 '+C_('pending_items_block_close')+'):</strong> a tela relê o mês e volta ao passo 1 com a contagem nova (R-DISPUTA-DO-GET); nada foi fechado.',
+        '<strong>Já fechado ou fechando (409):</strong> a tela relê e mostra a situação nova; com “Fechando…”, nenhuma ação aparece.'])+'</div>'+
+      '<div class="review-box"><h3>Fechar, reabrir e o mês corrente (iguais nas 3)</h3>'+lst([
+        '<strong>Pendências que NÃO impedem:</strong> títulos não liquidados (passam para o mês seguinte) e lançamentos a conciliar (o extrato chega depois; conciliar não atravessa a trava) — '+C_('types.ts:119-126')+', '+C_('RBAC_MATRIX.md:131')+'.',
+        '<strong>Reabrir:</strong> só o administrador ('+C_('financial_period:reopen')+'); motivo obrigatório; o motivo vai para a auditoria ('+C_('controller.ts:48')+'); o retrato anterior fica no histórico.',
+        '<strong>Competência corrente:</strong> aparece sempre, mesmo sem linha no servidor ('+C_('toPeriodKey')+' no fuso de São Paulo, R-COMPETENCIA-SP). Fechá-la é permitido pelo servidor; a tela avisa que, fechado, o mês recusa os lançamentos de hoje em diante, inclusive a compensação de cheques. Proposta do designer: só aviso, sem bloquear.',
+        '<strong>Retrato congelado:</strong> títulos a receber e a pagar (quantidade e valor), entradas, saídas, resultado e em aberto; não muda depois do fechamento; os valores vêm somados do servidor (a tela não soma dinheiro, F8).',
+        '<strong>Sem política de comissão</strong> nas 3: saiu do bloco até haver motor de comissão ('+C_('P-COMISSAO-MOTOR-E-POLITICA')+').'])+'</div>'+
+    '</div>'+
+    '<div class="review-grid">'+
+      '<div class="review-box"><h3>(i) '+opcao.toUpperCase()+' — o que já tem dado</h3>'+lst(n.i)+'</div>'+
+      '<div class="review-box"><h3>(ii) '+opcao.toUpperCase()+' — o que falta no backend</h3>'+lst(n.ii)+'</div>'+
+      '<div class="review-box"><h3>(iii) '+opcao.toUpperCase()+' — prós e contras</h3>'+lst(n.iii)+'</div>'+
+    '</div>'+
+    '<div class="review-box"><h3>Comportamento por perfil (medido em '+C_('RBAC_MATRIX.md:131')+'; a tela só molda — o servidor decide)</h3><table class="rv-tabela"><thead><tr><th>Perfil</th><th>Vê</th><th>Ações</th><th>Não vê</th></tr></thead><tbody>'+
+      '<tr><td><strong>Financeiro</strong> ('+C_('finance')+')</td><td>tudo ('+C_('financial_period:read')+')</td><td>Fechar e Fechar mesmo assim ('+C_('financial_period:close')+')</td><td>Reabrir (“Só um administrador reabre um mês fechado.”; separação de funções RN-FIN-009)</td></tr>'+
+      '<tr><td><strong>Administrador</strong> ('+C_('tenant_admin')+')</td><td>tudo</td><td>Fechar, Fechar mesmo assim e Reabrir ('+C_('financial_period:reopen')+')</td><td>—</td></tr>'+
+      '<tr><td><strong>Gestor Operacional</strong> ('+C_('manager')+')</td><td>tudo, só leitura</td><td>nenhuma (“Seu perfil só consulta os fechamentos.”)</td><td>Fechar e Reabrir</td></tr>'+
+      '<tr><td><strong>Auditor</strong></td><td>tudo, só leitura (o motivo do forçado e o da reabertura inclusive)</td><td>nenhuma</td><td>idem</td></tr>'+
+      '<tr><td><strong>Técnico de Campo</strong> ('+C_('field_technician')+')</td><td>“Sem permissão para ver o fechamento do mês”; o menu não mostra o item</td><td>atalho para as próprias comissões</td><td>tudo</td></tr>'+
+    '</tbody></table></div>'+
+    '<div class="review-grid review-grid--2">'+
+      '<div class="review-box"><h3>Estados (§7) — teste pelos botões do topo do quadro</h3>'+lst([
+        '<strong>Carregando:</strong> esqueleto no lugar dos indicadores, dos gráficos e das linhas.',
+        '<strong>Vazio:</strong> organização sem nenhum fechamento: a lista mostra só a competência corrente e explica.',
+        '<strong>Erro:</strong> painel com “Tentar novamente” — nunca lista vazia.',
+        '<strong>Acesso não permitido:</strong> o painel de perfil sem acesso; o Técnico de Campo cai nele sempre.',
+        '<strong>Dados desatualizados:</strong> a faixa do '+C_('StaleDataBanner')+' sem trocar a tela.',
+        '<strong>Envio em voo:</strong> o botão fica desabilitado (“Enviando…”) — 1 envio por clique duplo.'])+'</div>'+
+      '<div class="review-box"><h3>Divergências conscientes e perguntas para o dono</h3>'+lst([
+        '<strong>Q1 do plano (aberta):</strong> o motivo do “fechar mesmo assim” entra também na auditoria? Recomendação (b): 1 linha no servidor. A tela diz hoje o que é verdade: “o motivo fica no retrato do mês, e a auditoria registra o fechamento forçado e o título passado por cima”. Se a resposta for (b), o texto passa a dizer que o motivo também fica na auditoria.',
+        '<strong>Aviso ao fechar o mês corrente</strong> (proposta do designer, sem bloqueio).',
+        '<strong>Meta de 5 dias para fechar</strong> (B) é sugestão do designer para o gráfico; não é regra do sistema.',
+        '<strong>Menu:</strong> o item se chama “Fechamento do mês” e entra no grupo GESTÃO, depois de Cheques.',
+        '<strong>Componentes novos para a biblioteca:</strong> a caixa de confirmação em 2 passos (todas); na B, as barras por competência e os dias para fechar; na C, o calendário de 12 meses e o checklist com etapas.',
+        '<strong>Para decidir:</strong> (1) aprovar as 3 como aparências do usuário; (2) a Q1; (3) planejar no backend o resumo do retrato e do checklist no item da lista e o nome de quem fechou, que acendem as marcas âmbar.'])+'</div>'+
+    '</div>';
+}
+
+/* ── Início ── */
+iniciarDados();
+render();
+renderReview();
+</script>
+</body>
+</html>
