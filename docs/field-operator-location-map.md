@@ -96,9 +96,20 @@ Regras:
 
 ```http
 POST /api/v1/mobile/field-locations
+POST /api/v1/mobile/location-consent
+POST /api/v1/mobile/location-consent/revoke
 GET  /api/v1/field-locations/latest
 GET  /api/v1/field-locations/history
 ```
+
+Consentimento de localização (B-SAN3-17, contrato `mobile_location_consent@2026-11.b-san3-17`, itens 18 e 52):
+
+- a posição do app só é gravada para quem tem cadastro de Profissional com o consentimento registrado: sem cadastro (ou com id que não é UUID), `422 operator_profile_required`; sem consentimento, `422 tracking_consent_required`; a validação (`400`) vem antes; na recusa nada é gravado nem publicado;
+- a rota móvel grava sempre a origem `mobile` e recusa `source` do cliente com `400 invalid_source`;
+- o técnico registra e revoga o PRÓPRIO consentimento: `POST /mobile/location-consent` (`field_location:send`) e `POST /mobile/location-consent/revoke` (só o ator com papel; núcleo no gate de módulo). Corpo `{decided_at, client_action_id, text_version}`; `200 {granted, granted_at, client_action_id, status, profile_updated_at}`. A organização e o usuário vêm sempre do ator;
+- ordem: a revogação sempre se aplica e não é recusada por data; um aceite com `decided_at` não posterior ao `updated_at` de um perfil sem consentimento é `superseded` (nada gravado). A idempotência é de ESTADO;
+- leitores ao vivo (`/field-locations/latest` e o detalhe da OS): a posição enviada pelo app só aparece enquanto o dono dela consente; a viatura (`traccar`) segue a D6 e continua. O histórico (`/field-locations/history`) fica para quem tem `field_location:history`;
+- no cadastro, só o titular liga o consentimento; o gestor desliga.
 
 Endpoints de OS consumidos opcionalmente pela UI:
 
@@ -139,7 +150,9 @@ Permissoes:
 
 Matriz aplicada:
 
-- `POST /api/v1/mobile/field-locations`: `field_location:send`
+- `POST /api/v1/mobile/field-locations`: `field_location:send` (e o consentimento do ator)
+- `POST /api/v1/mobile/location-consent`: `field_location:send`
+- `POST /api/v1/mobile/location-consent/revoke`: só o ator autenticado com papel na organização
 - `GET /api/v1/field-locations/latest`: `field_location:read`
 - `GET /api/v1/field-locations/history`: `field_location:history`
 - `GET /api/v1/operations/dispatches`: `field_dispatch:read`
@@ -151,6 +164,7 @@ Matriz aplicada:
 ## Auditoria
 
 - envio mobile registra `field_location.recorded` em modo Prisma;
+- o consentimento próprio registra `field_location.consent_granted`, `field_location.consent_revoked` ou `field_location.consent_superseded`, com metadata só `{userId, hasConsent, textVersion, decidedAt, status}` (nunca organização, coordenada nem `client_action_id`);
 - consulta de historico registra `field_location.history_viewed` em modo Prisma;
 - negacoes de permissao seguem o evento central `permission.denied`.
 

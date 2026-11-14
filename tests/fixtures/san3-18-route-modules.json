@@ -373,6 +373,8 @@
  "POST /api/v1/mobile/checklist-runs/:runId/reopen": "{tenant_checklist}",
  "POST /api/v1/mobile/evidence-uploads": "{work_orders,field_operations}",
  "POST /api/v1/mobile/field-locations": "{field_operations}",
+ "POST /api/v1/mobile/location-consent": "{field_operations}",
+ "POST /api/v1/mobile/location-consent/revoke": "NUCLEO",
  "POST /api/v1/mobile/sync/checklist-actions": "{tenant_checklist}",
  "POST /api/v1/mobile/sync/evidence-actions": "{work_orders,field_operations}",
  "POST /api/v1/mobile/sync/expense-actions": "{expense_management}",

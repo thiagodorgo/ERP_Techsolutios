@@ -1575,6 +1575,14 @@
   "classe": "N",
   "n": 1
  },
+ "ROTA POST /api/v1/mobile/location-consent": {
+  "classe": "N",
+  "n": 1
+ },
+ "ROTA POST /api/v1/mobile/location-consent/revoke": {
+  "classe": "N",
+  "n": 1
+ },
  "ROTA POST /api/v1/mobile/sync/checklist-actions": {
   "classe": "LOTE",
   "n": 1

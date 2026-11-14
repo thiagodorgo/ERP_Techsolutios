@@ -343,6 +343,10 @@ jobs:
           # e reenvio, custódia profissional e gerente sem e com cadastro (RC3(1)-(8), K = 8). Medida a lista inteira 3× nesta
           # forma antes de entrar (72 arquivos, banco migrado e semeado): 610/610, 0 falha, 0 pulo, denominador constante.
           SUITES="$SUITES tests/b-material-sync-db.test.ts"
+          # B-SAN3-17 (itens 18 e 52; A1 da abertura) — o consentimento de localização sob papel efêmero sem BYPASSRLS: nada gravado
+          # sem perfil ou sem consentimento, auditoria com allowlist, a decisão velha não religa e a viatura fica no mapa ao vivo (D1-D7).
+          # Medida a lista inteira 3× nesta forma antes de entrar (14/11, 74 arquivos, migrado e semeado): 628/628, 0 falha, 0 pulo.
+          SUITES="$SUITES tests/bsan317-consentimento-localizacao-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
