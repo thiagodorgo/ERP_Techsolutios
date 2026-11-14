@@ -22,6 +22,7 @@
 import type { BillingProfileInput } from "../billing-profile/billing-profile.js";
 import type { CustomerResolution } from "../outbox/outbox.dispatcher.js";
 import type { BillingOutboxRow } from "../outbox/outbox.types.js";
+import type { PaymentMethod } from "../providers/payment/payment-provider.port.js";
 import { StatementError } from "../statements/statement.types.js";
 import { chargeCreateEligibility, chargeProfileGate } from "./charge-eligibility.js";
 import type { ChargeIntentRepository, ChargeIntentTx } from "./charge-intent.repository.js";
@@ -30,14 +31,76 @@ export type ChargeRequestDeps = {
   readonly intents: ChargeIntentRepository;
 };
 
+/** B-ASS-08c1b (P4): o pedido do OPERADOR pela rota `/charge` — método e vencimento já validados na forma
+ * (`parseOperatorChargeMethod`, `parseOperatorDueDate`). Com ele, o servidor monta o payload com o demonstrativo travado. */
+export type OperatorChargeRequest = { readonly method: PaymentMethod; readonly dueDate?: string };
+
 export type ChargeRequestInput = {
   readonly tenantId: string;
   readonly statementId: string;
   readonly provider: string;
-  /** Nunca carrega `customerId` — o cliente é resolvido pelo PERFIL no dispatcher (R-PRF-1); a chave é descartada. */
+  /** Nunca carrega `customerId` — o cliente é resolvido pelo PERFIL no dispatcher (R-PRF-1); a chave é descartada. Com
+   * `operator`, é só o corpo cru do pedido, e nenhuma chave dele é gravada (`[CHARGE-PAYLOAD]`). */
   readonly payload?: Readonly<Record<string, unknown>>;
+  readonly operator?: OperatorChargeRequest;
   readonly now: Date;
 };
+
+/** B-ASS-08c1b (P4): os métodos que o operador pode pedir; outro valor → 400. */
+export const OPERATOR_CHARGE_METHODS: readonly PaymentMethod[] = ["pix", "boleto", "credit_card", "debit_card"];
+
+const SAO_PAULO_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** O dia civil de America/Sao_Paulo do relógio dado (`Intl`, `en-CA`) — nunca a data UTC. */
+export function saoPauloDay(at: Date): string {
+  return SAO_PAULO_DAY.format(at);
+}
+
+function addDays(day: string, days: number): string {
+  const [y, m, d] = day.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/** B-ASS-08c1b (P4): `method` do corpo; ausente → `pix`; fora da lista → 400 `invalid_method`. */
+export function parseOperatorChargeMethod(value: unknown): PaymentMethod {
+  if (value === undefined || value === null) return "pix";
+  if (typeof value === "string" && OPERATOR_CHARGE_METHODS.includes(value as PaymentMethod)) return value as PaymentMethod;
+  throw new StatementError(400, "invalid_method", "method must be pix, boleto, credit_card or debit_card.");
+}
+
+/** B-ASS-08c1b (P4; Emenda 1 §3.6): o vencimento informado pelo operador — `AAAA-MM-DD`, um dia que existe, de hoje a hoje +
+ * 60 dias (dia civil de São Paulo). Ausente → `undefined`; fora da forma ou da faixa → 400 `invalid_due_date`. */
+export function parseOperatorDueDate(value: unknown, now: Date): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const text = typeof value === "string" ? value.trim() : "";
+  const today = saoPauloDay(now);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text) || addDays(text, 0) !== text || text < today || text > addDays(today, 60)) {
+    throw new StatementError(400, "invalid_due_date", "dueDate must be YYYY-MM-DD, from today to today + 60 days (America/Sao_Paulo).");
+  }
+  return text;
+}
+
+/**
+ * B-ASS-08c1b (P4; Emenda 1 §3.6): o vencimento da cobrança pedida pelo operador. O do demonstrativo, se ainda não venceu (dia
+ * civil de São Paulo); vencido ou nulo (a coluna aceita nulo), o informado, sem o qual → 422 `due_date_required` — o sistema
+ * não inventa prazo para conta antiga (Q1). Informado com o do demonstrativo ainda valendo → 422 `due_date_not_past` (a data
+ * não é ignorada em silêncio, como no `/retry`).
+ */
+export function operatorChargeDueDate(statementDueDate: string | null, informed: string | undefined, now: Date): string {
+  const today = saoPauloDay(now);
+  if (statementDueDate === null || statementDueDate < today) {
+    if (!informed) throw new StatementError(422, "due_date_required", "The statement due date has passed; inform dueDate.");
+    return informed;
+  }
+  if (informed) throw new StatementError(422, "due_date_not_past", "The statement due date has not passed; dueDate is not accepted.");
+  return statementDueDate;
+}
+
+const ELIGIBILITY_MESSAGES = {
+  statement_not_closed: "Charges are requested only on closed statements.",
+  charge_already_exists: "The statement already has a live charge or charge intent.",
+  statement_partially_paid: "The statement has a partial payment; a full-amount charge is refused.",
+} as const;
 
 export function requestChargeCreate(deps: ChargeRequestDeps, input: ChargeRequestInput): Promise<BillingOutboxRow> {
   return deps.intents.transaction(input.tenantId, (tx) => enqueueChargeCreateInTx(tx, input));
@@ -53,18 +116,19 @@ export async function enqueueChargeCreateInTx(tx: ChargeIntentTx, input: ChargeR
   const liveCharge = await tx.findLiveCharge(input.statementId);
   const lines = await tx.listChargeLines(input.statementId);
   const eligibility = chargeCreateEligibility(statement, liveCharge, lines);
-  if (!eligibility.ok) {
-    throw new StatementError(
-      422,
-      eligibility.reason,
-      eligibility.reason === "statement_not_closed"
-        ? "Charges are requested only on closed statements."
-        : "The statement already has a live charge or charge intent.",
-    );
-  }
+  if (!eligibility.ok) throw new StatementError(422, eligibility.reason, ELIGIBILITY_MESSAGES[eligibility.reason]);
   const seq = 1 + maxChargeCreateSeq(lines);
   // R-PRF-1: o payload gravado NÃO carrega `customerId` — por construção (a chave, se vier, é descartada).
-  const { customerId: _droppedCustomerId, ...payload } = (input.payload ?? {}) as Record<string, unknown>;
+  const { customerId: _droppedCustomerId, ...requested } = (input.payload ?? {}) as Record<string, unknown>;
+  // B-ASS-08c1b (P4): no pedido do OPERADOR o servidor monta o payload com o demonstrativo TRAVADO — o valor é o total (a
+  // régua V exige o total) e o corpo (`requested`) nunca decide valor nenhum: chave de valor no corpo é ignorada.
+  const payload = input.operator
+    ? {
+        amountCents: statement.totalCents, // [CHARGE-PAYLOAD]
+        dueDate: operatorChargeDueDate(statement.dueDate, input.operator.dueDate, input.now),
+        method: input.operator.method,
+      }
+    : requested;
   await tx.putRef({ statementId: statement.id, tenantId: input.tenantId, provider: input.provider }, input.now);
   const { row, created } = await tx.enqueue(
     { tenantId: input.tenantId, statementId: statement.id, kind: "charge_create", provider: input.provider, seq, payload },

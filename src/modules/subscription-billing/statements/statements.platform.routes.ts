@@ -16,6 +16,11 @@ import {
   parseBillingProfileInput,
   toBillingProfileDto,
 } from "../billing-profile/billing-profile.js";
+import { parseOperatorChargeMethod, parseOperatorDueDate, requestChargeCreate } from "../charges/charge-request.service.js";
+import { paymentProviderOn } from "../outbox/channel-state.js";
+import { createChargeIntentRepository } from "../outbox/channel.runtime.js";
+import type { BillingOutboxRow } from "../outbox/outbox.types.js";
+import { createDefaultVaultRuntime } from "../vault/vault.factory.js";
 import { createDefaultStatementRuntime } from "./statement.factory.js";
 import { StatementError, type StatementPayment, type SubscriptionCredit, type SubscriptionStatement } from "./statement.types.js";
 
@@ -104,6 +109,25 @@ function toPaymentDto(payment: StatementPayment) {
     paidAt: payment.paidAt.toISOString(),
     method: payment.method,
     note: payment.note,
+  };
+}
+
+/** B-ASS-08c1b — a linha da fila na resposta: lista FECHADA de campos. Nunca o `payload`, o `claimedBy`, a
+ * `providerIdempotencyKey` nem a organização (o `tenantId` só entra, nunca sai). */
+export function toOutboxDto(row: BillingOutboxRow) {
+  return {
+    id: row.id,
+    statementId: row.statementId,
+    kind: row.kind,
+    provider: row.provider,
+    status: row.status,
+    skipReason: row.skipReason,
+    attempts: row.attempts,
+    lastError: row.lastError,
+    externalId: row.externalId,
+    occurredAt: row.occurredAt.toISOString(),
+    nextAttemptAt: row.nextAttemptAt?.toISOString() ?? null,
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
@@ -227,6 +251,28 @@ export function createStatementsPlatformRouter(): Router {
         now: new Date(),
       });
       response.status(201).json({ data: { statement: toStatementDto(result.statement), payment: toPaymentDto(result.payment) } });
+    }),
+  );
+
+  // B-ASS-08c1b (P4): o operador pede a cobrança de uma conta. O servidor monta o payload com o demonstrativo travado
+  // (`[CHARGE-PAYLOAD]`); a rota chama SÓ `requestChargeCreate`. Sem provedor ligado → 422, sem abrir conexão.
+  router.post(
+    "/statements/:statementId/charge",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const statementId = readRouteParam(request.params.statementId);
+      const now = new Date();
+      const method = parseOperatorChargeMethod(input.method);
+      const dueDate = parseOperatorDueDate(input.dueDate, now);
+      const on = await paymentProviderOn(await createDefaultVaultRuntime());
+      if (!on) throw new StatementError(422, "payment_provider_disabled", "No payment provider is enabled.");
+      const row = await requestChargeCreate(
+        { intents: await createChargeIntentRepository() },
+        { tenantId, statementId, provider: on.provider, payload: input, operator: { method, ...(dueDate ? { dueDate } : {}) }, now },
+      );
+      response.status(201).json({ data: toOutboxDto(row) });
     }),
   );
 

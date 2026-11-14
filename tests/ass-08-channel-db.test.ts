@@ -474,7 +474,7 @@ if (!connectionString) {
       assert.ok(events.every((event) => event.kind === "raw"), "o pedido só emite SQL cru");
       const sql = events.map((event) => (event.kind === "raw" ? oneLine(event.sql) : ""));
       for (const index of [0, 1, 2]) assert.match(sql[index]!, /^SELECT set_config\(/, `instrução ${index + 1} = set_config`);
-      assert.match(sql[3]!, /^SELECT id, status FROM subscription_statements WHERE id = \$1::uuid AND tenant_id = \$2::uuid FOR UPDATE$/, "a 4ª instrução é a trava do demonstrativo");
+      assert.match(sql[3]!, /^SELECT id, status, round\(total_amount \* 100\)::bigint AS total_cents, round\(paid_amount \* 100\)::bigint AS paid_cents, to_char\(due_date, 'YYYY-MM-DD'\) AS due_date FROM subscription_statements WHERE id = \$1::uuid AND tenant_id = \$2::uuid FOR UPDATE$/, "a 4ª instrução é a trava do demonstrativo");
       assert.ok(sql.slice(4).every((text) => !/\bsubscription_statements\b/.test(text)), "depois da trava, ninguém mais lê o demonstrativo");
       assert.equal(sql.length, 8, `8 instruções (veio: ${sql.length})`);
     } finally {

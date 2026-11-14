@@ -18,12 +18,13 @@ import type { InMemoryStatementRefRepository } from "../webhooks/statement-refs.
 import type { InMemoryStatementChargeRepository } from "./charges.repository.js";
 import type { SubscriptionStatementCharge } from "./charges.types.js";
 
-/** O que a trava devolve: só o que a elegibilidade lê. */
-export type LockedStatement = Pick<SubscriptionStatement, "id" | "status">;
+/** O que a trava devolve: o que a elegibilidade lê e, B-ASS-08c1b (P4, `[CHARGE-PAYLOAD]`), o que o servidor usa para montar
+ * o payload com o demonstrativo travado (o total, o já pago e o vencimento). */
+export type LockedStatement = Pick<SubscriptionStatement, "id" | "status" | "totalCents" | "paidCents" | "dueDate">;
 
 /** As operações do pedido, todas na MESMA transação e na MESMA conexão da organização. */
 export type ChargeIntentTx = {
-  /** `SELECT id, status … FOR UPDATE` do demonstrativo: a 1ª instrução depois dos `set_config`. `undefined` se não existe. */
+  /** `SELECT … FOR UPDATE` do demonstrativo: a 1ª instrução depois dos `set_config`. `undefined` se não existe. */
   lockStatement(statementId: string): Promise<LockedStatement | undefined>;
   /** A cobrança VIVA (`pending`/`confirmed`), lida DEPOIS da concessão da trava. */
   findLiveCharge(statementId: string): Promise<SubscriptionStatementCharge | undefined>;
@@ -55,7 +56,7 @@ export class InMemoryChargeIntentRepository implements ChargeIntentRepository {
       work({
         async lockStatement(statementId) {
           const statement = await stx.lockById(statementId);
-          return statement && { id: statement.id, status: statement.status };
+          return statement && { id: statement.id, status: statement.status, totalCents: statement.totalCents, paidCents: statement.paidCents, dueDate: statement.dueDate };
         },
         findLiveCharge: (statementId) => charges.findLive(tenantId, statementId),
         listChargeLines: (statementId) => outbox.listByStatement(tenantId, statementId),
