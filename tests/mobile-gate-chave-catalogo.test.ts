@@ -11,9 +11,11 @@ import { getRolePermissions, isValidPermission } from "../src/modules/core-saas/
 //   T4.1 — cada regra de `mobile/flutter_app/lib/core/permissions/mobile_gates.dart` é IGUAL ao que a rota do servidor
 //          exporta: as chaves, o modo das chaves, os módulos (`classifyRoute`) e o modo "qualquer um" dos módulos
 //          (`module-gate.middleware.ts`, `.some`). Nada copiado à mão: as listas vêm dos exports da própria rota.
+//          O conjunto de regras é enumerado pela PROPRIEDADE (J-561, C2B-01): todo construtor `MobileGate(` do `lib/`,
+//          em uma linha ou em várias, em qualquer arquivo. Regra fora de `mobile_gates.dart` ou repetida falha.
 //   T4.2 — nenhum literal em POSIÇÃO DE PERMISSÃO do `lib/` fica fora de `PERMISSION_CATALOG`. O extrator é uma
 //          função pura com um reconhecedor por classe; um canário embutido (texto, não arquivo `.dart`) tem uma
-//          ocorrência de cada classe, e o teste exige as 9 de volta (apagar um reconhecedor fica vermelho, R3.1).
+//          ocorrência de cada classe, e o teste exige as 11 de volta (apagar um reconhecedor fica vermelho, R3.1).
 //          Piso por classe medido no head (R3.2). Argumento não literal só passa numa exceção NOMEADA por
 //          {arquivo, classe} (R3.3), e exceção sem uso também falha (não fica buraco escondido).
 //   T4.3 — as duas listas de demo (e SÓ elas, REV66-03) são subconjunto do que o catálogo dá ao técnico de campo.
@@ -158,7 +160,9 @@ export type Classe =
   | "perms"
   | "permissions_const"
   | "permission_set"
-  | "mobile_gates";
+  | "mobile_gates"
+  | "contains"
+  | "permission_set_tipado";
 
 export type Posicao = { readonly classe: Classe; readonly chave: string | null; readonly linha: number };
 
@@ -196,6 +200,10 @@ const RECONHECEDORES: readonly Reconhecedor[] = [
   { classe: "permissions_const", padrao: /(?<![\w'"])permissions:\s*const\s*\[/g, tomar: colecaoInteira },
   { classe: "permission_set", padrao: /\bPermissionSet\(\s*(?:const\s*)?\{/g, tomar: colecaoInteira },
   { classe: "mobile_gates", padrao: /\bMobileGate\((?!\s*\{)/g, tomar: chavesDoGate },
+  // J-561, C2B-03: o `contains(` do conjunto de permissões, o primitivo que o próprio `MobileGate.permite` usa
+  // (`PermissionSet.contains` e o `Set<String>` cru de `.permissions`), e o `PermissionSet` com o literal tipado.
+  { classe: "contains", padrao: /(?<![\w$])(?:perms|permissions|permissionSet)\s*[?!]?\s*\.\s*contains\(/g, tomar: textoInteiro },
+  { classe: "permission_set_tipado", padrao: /\bPermissionSet\(\s*(?:const\s*)?<[^>]*>\s*\{/g, tomar: colecaoInteira },
 ];
 
 export function extrairPosicoesDePermissao(textoDart: string): Posicao[] {
@@ -248,6 +256,11 @@ const EXCECOES: ReadonlyArray<{ readonly arquivo: string; readonly classe: Class
     classe: "has_all",
     motivo: "ModuleResolver confere os requiredPermissions do módulo (código morto para navegação, P-MOBILE-MODULE-RESOLVER-MORTO)",
   },
+  {
+    arquivo: "lib/core/permissions/permission_resolver.dart",
+    classe: "contains",
+    motivo: "a definição do primitivo: PermissionSet.contains e PermissionResolver.has repassam a chave que recebem (J-561, C2B-03)",
+  },
 ];
 
 // R3.2 — piso por classe, medido no head do bloco (fim da F2, 14/11/2026): o número de chaves (ou de posições não
@@ -263,6 +276,11 @@ const PISO_POR_CLASSE: Readonly<Record<Classe, number>> = {
   permissions_const: 12,
   permission_set: 12,
   mobile_gates: 7,
+  // J-561, C2B-03 (medido no conserto, 14/11/2026): o `.permissions.contains('field_location:send')` da telemetria e as
+  // 2 posições não literais da definição do primitivo (`permission_resolver.dart`, exceção nomeada).
+  contains: 3,
+  // o único `PermissionSet(<String>{…})` do lib/ é o conjunto vazio de `expense_report_detail_screen.dart` (nenhuma chave)
+  permission_set_tipado: 0,
 };
 
 const CANARIO = `
@@ -276,6 +294,8 @@ const CANARIO = `
   final g = AuthUser(permissions: const ['canario:permissions_const']);
   const h = PermissionSet({'canario:permission_set'});
   static const i = MobileGate(nome: 'canario', modulos: ['x'], modoModulo: Modo.any, chaves: ['canario:mobile_gates'], modo: Modo.any);
+  final j = perms.contains('canario:contains');
+  const k = PermissionSet(<String>{'canario:permission_set_tipado'});
 `;
 
 const CLASSES: readonly Classe[] = [
@@ -288,9 +308,11 @@ const CLASSES: readonly Classe[] = [
   "permissions_const",
   "permission_set",
   "mobile_gates",
+  "contains",
+  "permission_set_tipado",
 ];
 
-test("T4.2 · R3.1 — o canário: o extrator devolve as 9 classes, cada uma com a sua chave, e o catálogo recusa as 9", () => {
+test("T4.2 · R3.1 — o canário: o extrator devolve as 11 classes, cada uma com a sua chave, e o catálogo recusa as 11", () => {
   const achadas = extrairPosicoesDePermissao(CANARIO);
   const porClasse = new Map<Classe, string[]>();
   for (const p of achadas) porClasse.set(p.classe, [...(porClasse.get(p.classe) ?? []), String(p.chave)]);
@@ -386,7 +408,9 @@ type Regra = {
 const LINHA_DE_REGRA =
   /^\s*static const (\w+) = MobileGate\(nome: '(G\w+)', modulos: \[([^\]]*)\], modoModulo: Modo\.(any|all), chaves: \[([^\]]*)\], modo: Modo\.(any|all)\);\s*$/;
 
-function lerRegras(): Map<string, Regra> {
+// O formato de `mobile_gates.dart` (o bloco `dart format off`): uma regra por linha. Desde a J-561 (C2B-01) esta leitura
+// só confere o FORMATO; o conjunto fechado vem de `lerRegras`, pela propriedade, e o T4.1 exige os dois iguais.
+function lerRegrasDaLinha(): Map<string, Regra> {
   const fonte = readFileSync(GATES_DART, "utf8");
   const regras = new Map<string, Regra>();
   for (const linha of fonte.split(/\r?\n/)) {
@@ -398,6 +422,73 @@ function lerRegras(): Map<string, Regra> {
   }
   return regras;
 }
+
+type RegraAchada = Regra & { readonly arquivo: string; readonly linha: number };
+
+// J-561, C2B-01 — a enumeração é pela PROPRIEDADE, não pela forma: todo construtor `MobileGate(` (o mesmo padrão do
+// reconhecedor `mobile_gates`, que exclui a declaração `const MobileGate({`), em uma linha ou em várias (a forma que o
+// `dart format` impõe fora do bloco `dart format off`). Os campos são lidos pelos argumentos nomeados, em qualquer
+// ordem; campo ausente ou não literal falha (nada fica de fora do conjunto em silêncio).
+export function enumerarRegras(textoDart: string, arquivo: string): RegraAchada[] {
+  const fonte = semComentarios(textoDart);
+  const saida: RegraAchada[] = [];
+  for (const m of fonte.matchAll(/\bMobileGate\((?!\s*\{)/g)) {
+    const linha = fonte.slice(0, m.index).split("\n").length;
+    const onde = `${arquivo}:${linha}`;
+    const { args } = argumentosAte(fonte, (m.index ?? 0) + m[0].length);
+    const campo = (nome: string): string => {
+      const a = args.find((x) => new RegExp(`^${nome}\\s*:`).test(x));
+      return a === undefined ? assert.fail(`${onde}: regra sem o campo ${nome}`) : a.replace(new RegExp(`^${nome}\\s*:\\s*`), "");
+    };
+    const lista = (nome: string) => colecaoLiteral(campo(nome)) ?? assert.fail(`${onde}: ${nome} não literal`);
+    const modo = (nome: string) => {
+      const v = /^Modo\.(any|all)$/.exec(campo(nome).trim());
+      return v ? (v[1] as "any" | "all") : assert.fail(`${onde}: ${nome} não é Modo.any nem Modo.all`);
+    };
+    const nome = literal(campo("nome")) ?? assert.fail(`${onde}: regra sem nome literal`);
+    saida.push({ nome, modulos: lista("modulos"), modoModulo: modo("modoModulo"), chaves: lista("chaves"), modo: modo("modo"), arquivo, linha });
+  }
+  return saida;
+}
+
+const GATES_RELATIVO = relativo(GATES_DART);
+
+function lerRegras(): Map<string, RegraAchada> {
+  const achadas = arquivosDart(LIB).flatMap((p) => enumerarRegras(readFileSync(p, "utf8"), relativo(p)));
+  assert.deepEqual(
+    achadas.filter((r) => r.arquivo !== GATES_RELATIVO).map((r) => `${r.arquivo}:${r.linha} ${r.nome}`),
+    [],
+    `regra MobileGate fora de ${GATES_RELATIVO} (a régua é única)`,
+  );
+  const regras = new Map<string, RegraAchada>();
+  for (const r of achadas) {
+    assert.equal(regras.has(r.nome), false, `regra repetida: ${r.nome} (${r.arquivo}:${r.linha})`);
+    regras.set(r.nome, r);
+  }
+  return regras;
+}
+
+// O canário da enumeração: uma regra em uma linha e outra em várias (com as listas vazias), e uma em comentário, que
+// nunca conta. Se a leitura voltar a ser por linha ou pela forma canônica, a regra em várias linhas some e fica vermelho.
+const CANARIO_REGRAS = `
+  // static const z = MobileGate(nome: 'canario-comentario', modulos: ['x'], modoModulo: Modo.any, chaves: ['x'], modo: Modo.any);
+  static const a = MobileGate(nome: 'canario-uma-linha', modulos: ['x'], modoModulo: Modo.any, chaves: ['canario:a'], modo: Modo.any);
+  static const b = MobileGate(
+    nome: 'canario-varias-linhas',
+    modulos: [],
+    modoModulo: Modo.any,
+    chaves: [],
+    modo: Modo.all,
+  );
+`;
+
+test("T4.1 · C2B-01 — o canário: a enumeração acha a regra em uma linha e a regra em várias", () => {
+  const achadas = enumerarRegras(CANARIO_REGRAS, "canario.dart").map(({ arquivo: _a, linha: _l, ...r }) => r);
+  assert.deepEqual(achadas, [
+    { nome: "canario-uma-linha", modulos: ["x"], modoModulo: "any", chaves: ["canario:a"], modo: "any" },
+    { nome: "canario-varias-linhas", modulos: [], modoModulo: "any", chaves: [], modo: "all" },
+  ]);
+});
 
 const ordenado = (xs: readonly string[]) => [...xs].sort();
 
@@ -440,6 +531,7 @@ test("T4.1 — cada regra do app é a régua exportada pela rota do servidor (ch
 
   const regras = lerRegras();
   assert.deepEqual([...regras.keys()].sort(), Object.keys(esperado).sort(), "o conjunto de regras do app é fechado: G1, G1b, G2, G3, G4");
+  assert.deepEqual([...lerRegrasDaLinha().keys()].sort(), [...regras.keys()].sort(), "regra de mobile_gates.dart fora do formato de uma linha");
   for (const [nome, e] of Object.entries(esperado)) {
     const r = regras.get(nome)!;
     assert.deepEqual(ordenado(r.chaves), ordenado(e.chaves), `${nome}: chaves`);

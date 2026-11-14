@@ -48,6 +48,8 @@ class MobileGate {
 
 abstract final class MobileGates {
   // Formato fixo: UMA regra por linha (o T4.1 do servidor lê este formato). O `dart format` não reflui estas linhas.
+  // O T4.1 também acha toda regra `MobileGate(` do lib/ pela propriedade, em qualquer forma e em qualquer arquivo
+  // (J-561, C2B-01): regra nova fora desta tabela ou em várias linhas fica vermelha.
   // dart format off
   static const checklistsDaOs = MobileGate(nome: 'G1', modulos: ['tenant_checklist'], modoModulo: Modo.any, chaves: ['checklist_runs:read', 'checklist_runs:create'], modo: Modo.any);
   static const responderChecklist = MobileGate(nome: 'G1b', modulos: ['tenant_checklist'], modoModulo: Modo.any, chaves: ['checklist_runs:update'], modo: Modo.all);
