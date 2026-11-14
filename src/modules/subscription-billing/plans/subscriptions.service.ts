@@ -198,6 +198,19 @@ export class SubscriptionsService {
       ? await this.subscriptions.listActiveAddons(active.tenantId, active.id)
       : [];
 
+    // addons: omitido → migra os vigentes; [] → encerra; lista → cria os novos.
+    const assignments: readonly AddonAssignment[] =
+      input.addons !== undefined
+        ? input.addons
+        : await Promise.all(
+            previousAddons.map(async (addon) => ({
+              planCode: (await this.findPlanById(addon.planId)).code,
+              perVehiclePriceOverrideCents: addon.perVehiclePriceOverrideCents,
+            })),
+          );
+    // B-ASS-12 — ANTES de qualquer escrita (o PUT não é uma transação só): add-on sem preço na data não entra.
+    await this.assertAddonsPriced(assignments, input.validFrom);
+
     // Fecha a vigente e os add-ons vigentes (a nova assinatura começa em validFrom).
     if (active) {
       await this.subscriptions.closeSubscription(
@@ -228,17 +241,6 @@ export class SubscriptionsService {
       status: "active",
       notes: input.notes ?? null,
     });
-
-    // addons: omitido → migra os vigentes; [] → encerra; lista → cria os novos.
-    const assignments: readonly AddonAssignment[] =
-      input.addons !== undefined
-        ? input.addons
-        : await Promise.all(
-            previousAddons.map(async (addon) => ({
-              planCode: (await this.findPlanById(addon.planId)).code,
-              perVehiclePriceOverrideCents: addon.perVehiclePriceOverrideCents,
-            })),
-          );
 
     const createdAddons: (TenantSubscriptionAddon & { plan: SubscriptionPlan })[] = [];
     for (const assignment of assignments) {
@@ -357,6 +359,28 @@ export class SubscriptionsService {
       );
     }
     return resolved;
+  }
+
+  /**
+   * B-ASS-12 — todo add-on que entra na assinatura tem preço utilizável em `at`: versão vigente e, no `per_vehicle`,
+   * preço (da versão ou da sobrescrita). A sobrescrita por veículo vale também sobre versão `flat`.
+   */
+  private async assertAddonsPriced(assignments: readonly AddonAssignment[], at: Date): Promise<void> {
+    const invalid = (reason: string, message: string) =>
+      new SubscriptionBillingError(422, "SUBSCRIPTION_BILLING_INVALID", reason, message);
+    for (const assignment of assignments) {
+      const addonPlan = await this.plans.getPlanByCode(assignment.planCode);
+      if (!addonPlan) continue; // `plan_not_found` já é do resolveAddons / do laço de criação
+      const version = resolveVersionAt(await this.plans.listVersions(addonPlan.id), at);
+      const override = assignment.perVehiclePriceOverrideCents ?? null;
+      if (!version) {
+        throw invalid("addon_without_price", `Add-on "${addonPlan.code}" has no version in effect at validFrom.`);
+      }
+      // A sobrescrita por veículo é preço utilizável em qualquer unidade: ela define o regime da organização.
+      if (override === null && version.pricingUnit !== "flat" && version.perVehiclePriceCents === null) {
+        throw invalid("addon_without_price", `Add-on "${addonPlan.code}" has no per-vehicle price at validFrom.`);
+      }
+    }
   }
 
   private async collectAddonModules(

@@ -44,11 +44,39 @@ export type AddVersionInput = {
   readonly extraUserPriceCents: number;
   readonly extraGbPriceCents: number;
   readonly perVehiclePriceCents: number | null;
-  readonly pricingUnit: PricingUnit;
+  /** Omitido = o padrão do tipo de plano: `flat` no plano base, `per_vehicle` no add-on de rastreamento (B-ASS-12). */
+  readonly pricingUnit?: PricingUnit;
   readonly modules: readonly string[];
   readonly notes: string | null;
   readonly inaugural: boolean;
 };
+
+/**
+ * B-ASS-12 — a unidade de preço de uma versão, por tipo de plano. Plano base é sempre `flat`. Add-on de rastreamento:
+ * `per_vehicle` (padrão) exige o preço por veículo; `flat` cobra a mensalidade e não aceita preço por veículo.
+ * Uma versão de add-on sem preço utilizável nunca nasce — o fechamento não tem como cobrar zero calado.
+ */
+export function resolveVersionPricing(
+  kind: PlanKind,
+  input: { readonly pricingUnit?: PricingUnit; readonly perVehiclePriceCents: number | null },
+): PricingUnit {
+  const invalid = (reason: string, message: string) =>
+    new SubscriptionBillingError(422, "SUBSCRIPTION_BILLING_INVALID", reason, message);
+  if (kind === "base") {
+    if (input.pricingUnit !== undefined && input.pricingUnit !== "flat") {
+      throw invalid("base_plan_requires_flat", "A base plan version is always flat.");
+    }
+    return "flat";
+  }
+  const unit = input.pricingUnit ?? "per_vehicle";
+  if (unit === "per_vehicle" && input.perVehiclePriceCents === null) {
+    throw invalid("addon_version_requires_per_vehicle_price", "A per-vehicle add-on version requires perVehiclePrice.");
+  }
+  if (unit === "flat" && input.perVehiclePriceCents !== null) {
+    throw invalid("addon_flat_rejects_per_vehicle_price", "A flat add-on version cannot carry perVehiclePrice.");
+  }
+  return unit;
+}
 
 export class PlansService {
   constructor(
@@ -197,7 +225,8 @@ export class PlansService {
   }
 
   async addVersion(planId: string, input: AddVersionInput): Promise<SubscriptionPlanVersion> {
-    await this.getPlan(planId);
+    const plan = await this.getPlan(planId);
+    const pricingUnit = resolveVersionPricing(plan.kind, input);
     const existing = await this.repository.listVersions(planId);
 
     const validation = validateNewVersionDate({
@@ -240,7 +269,7 @@ export class PlansService {
       extraUserPriceCents: input.extraUserPriceCents,
       extraGbPriceCents: input.extraGbPriceCents,
       perVehiclePriceCents: input.perVehiclePriceCents,
-      pricingUnit: input.pricingUnit,
+      pricingUnit,
       modules: input.modules,
       notes: input.notes,
       inaugural: input.inaugural,
