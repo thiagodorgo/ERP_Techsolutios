@@ -1,20 +1,30 @@
-# Matriz generica da fixture-exemplo.json (o formato esta no cabecalho de verificar.mjs). Uma linha por pre-condicao.
-passo	id	papel	leitura	esperado
-login	MENU-plataforma	plataforma	GET /navigation/menu	menu tem=/platform/tenants,/platform/dashboard nao_tem=/work-orders
-login	MENU-admin	admin	GET /navigation/menu	menu tem=/dashboard,/users,/administrator/audit nao_tem=/platform/tenants
-login	MENU-gestor	gestor	GET /navigation/menu	menu tem=/work-orders,/operations/map,/patios/painel nao_tem=/platform/tenants
-login	MENU-despacho	despacho	GET /navigation/menu	menu tem=/work-orders,/operations/dispatches nao_tem=/finance,/platform/tenants
-login	MENU-tecnica	tecnica	GET /navigation/menu	menu tem=/work-orders nao_tem=/finance,/operations/map,/platform/tenants
-login	MENU-financeiro	financeiro	GET /navigation/menu	menu tem=/finance,/finance/payments nao_tem=/operations/map,/platform/tenants
-login	MENU-auditor	auditor	GET /navigation/menu	menu tem=/audit,/administrator/audit nao_tem=/platform/tenants
-ET2	USU-gestor	admin	GET /users	existe email=gestor@exemplo.invalid & roles.0=manager & status=active
-ET2	USU-despacho	admin	GET /users	existe email=despacho@exemplo.invalid & roles.0=field_dispatcher
-ET2	USU-tecnica	admin	GET /users	existe email=tecnica@exemplo.invalid & roles.0=field_technician
-ET2	USU-financeiro	admin	GET /users	existe email=financeiro@exemplo.invalid & roles.0=finance
-ET2	USU-auditor	admin	GET /users	existe email=auditor@exemplo.invalid & roles.0=auditor
-ET3	CAD-cliente	admin	GET /customers	existe name=Cliente Exemplo Ltda
-ET3	CAD-viatura	admin	GET /vehicles	existe plate=EXM1A01 & status=active
-ET3	CAD-equipe	admin	GET /teams/{/teams#name=Equipe Exemplo}	campo memberCount=1
-ET3	CAD-servico	admin	GET /service-catalog	existe name=Remoção Exemplo & basePrice=350
-ET3	CAD-tabela	admin	GET /price-tables	existe name=Tabela Exemplo & status=published
-ET3	CAD-tarifa	admin	GET /tariffs	existe name=Remoção padrão & unitPrice=350
+# Matriz generica da fixture-exemplo.json, no formato da matriz do roteiro (o formato esta no cabecalho de verificar.mjs).
+passo	id	papel	leitura_api	esperado	assercao_tela	errata
+login	MENU-plataforma	plataforma	POST /api/v1/auth/login {tenantId do arquivo plataforma.tenant-id} + GET /api/v1/navigation/menu	status=200 E menu⊇{Visão Geral} E menu∌{Ordens de Serviço}	-	-
+login	MENU-admin	admin	POST /api/v1/auth/login {tenantId={tenant:org}} + GET /api/v1/navigation/menu	status=200 E menu⊇{Dashboard|Usuários|Auditoria}	-	-
+login	MENU-gestor	gestor	POST /api/v1/auth/login {tenantId={tenant:org}} + GET /api/v1/navigation/menu	status=200 E menu⊇{Ordens de Serviço|Mapa Operacional|Pátios|Processos}	-	-
+login	MENU-despacho	despacho	POST /api/v1/auth/login {tenantId={tenant:org}} + GET /api/v1/navigation/menu	status=200 E menu⊇{Ordens de Serviço|Despachos} E menu∌{Financeiro}	-	-
+login	MENU-tecnica	tecnica	POST /api/v1/auth/login {tenantId={tenant:org}} + GET /api/v1/navigation/menu	status=200 E menu⊇{Ordens de Serviço} E menu∌{Financeiro|Mapa Operacional}	-	-
+login	MENU-financeiro	financeiro	POST /api/v1/auth/login {tenantId={tenant:org}} + GET /api/v1/navigation/menu	status=200 E menu⊇{Financeiro|Pagamentos} E menu∌{Mapa Operacional}	-	-
+login	MENU-auditor	auditor	POST /api/v1/auth/login {tenantId={tenant:org}} + GET /api/v1/navigation/menu	status=200 E menu⊇{Auditoria}	-	-
+ET2	USU-papeis	admin	GET /api/v1/users	existe(email=gestor@exemplo.invalid; roles∋manager) E existe(email=despacho@exemplo.invalid; roles∋field_dispatcher) E existe(email=tecnica@exemplo.invalid; roles∋field_technician) E existe(email=financeiro@exemplo.invalid; roles∋finance) E existe(email=auditor@exemplo.invalid; roles∋auditor)	-	-
+ET3	CAD-cliente	admin	GET /api/v1/customers?search=Cliente Exemplo Ltda&limit=100	existe(name=Cliente Exemplo Ltda) E conta=1	-	-
+ET3	CAD-viatura	admin	GET /api/v1/vehicles?limit=100	existe(plate~EXM1A01; status=active)	-	-
+ET3	CAD-equipe	admin	GET /api/v1/teams?limit=100	existe(name=Equipe Exemplo)	-	-
+ET3	CAD-servico	admin	GET /api/v1/service-catalog?limit=100	existe(name=Remoção Exemplo; basePrice=350.00; requiresDestination=true)	-	-
+ET3	CAD-tabela	admin	GET /api/v1/price-tables?limit=100	existe(name=Tabela Exemplo; status=published)	-	-
+ET3	CAD-tarifa	admin	GET /api/v1/tariffs?limit=100	existe(name=Remoção padrão; unitPrice=350.00)	-	-
+ET4	PAT-perfil	gestor	GET /api/v1/jurisdiction-profiles/{id:perfil:Perfil Exemplo}	campo(dailyModel)=ROLLING_24H E conta(releaseRequirements: required=true)=2	-	-
+ET4	PAT-vagas	gestor	GET /api/v1/yard-areas/{id:area:Pátio Exemplo/Bloco Exemplo}/spots	existe(code=E-001; status=OCCUPIED; currentProcessId={id:processo:EXM2B01}) E existe(code=E-002; status=FREE) E existe(code=E-003; status=BLOCKED)	-	-
+ET5	PAT-processo	gestor	GET /api/v1/impound-processes/{id:processo:EXM2B01}	campo(status)=ACTIVE_CUSTODY E campo(vehicleModel)≠vazio E campo(originAuthority)=Autoridade Exemplo	-	-
+ET5	PAT-vistoria	gestor	GET /api/v1/impound-processes/{id:processo:EXM2B01}/inspection	campo(complete)=true E conta(photos)>=11 E existe(photos: set=FRONT)	-	-
+ET5	PAT-cadeia	gestor	GET /api/v1/impound-processes/{id:processo:EXM2B01}/verify	campo(valid)=true E campo(eventCount)>=3	-	-
+ET5	PAT-encargo	gestor	GET /api/v1/impound-processes/{id:processo:EXM2B01}/charges	existe(kind=ADDITIONAL; description=Encargo Exemplo) E conta=1	-	-
+ET6	OPS-localizacao	gestor	GET /api/v1/field-locations/latest	existe(operator.email=tecnica@exemplo.invalid) E conta=1	-	-
+ET6	OPS-os-concluida	gestor	GET /api/v1/work-orders/{id:os:EXM Remoção concluída pelo app}/timeline	existe(eventType=work_order_created) E conta(eventType=work_order_assigned)=1 E sequencia(toStatus: accepted,on_route,on_site,in_progress,completed)	-	-
+ET6	OPS-os-tecnica	tecnica	GET /api/v1/work-orders?limit=100	todos(assignedUserId={id:usuario:tecnica@exemplo.invalid}) E existe(title=EXM Remoção atribuída; status=assigned) E existe(title=EXM Remoção concluída pelo app; status=completed) E conta=2	-	-
+ET7	FIN-contas	financeiro	GET /api/v1/financial-accounts?limit=100	existe(name=Caixa Exemplo; kind=cash) E existe(name=Banco Exemplo; kind=bank) E conta=2	-	-
+ET7	FIN-receber	financeiro	GET /api/v1/financial-titles?direction=receivable&limit=100	existe(document=EXM-FIN-1001; status=paid) E existe(document=EXM-FIN-1002; status=open; overdue=true; amount=754.00) E conta=2	-	-
+ET7	FIN-pagar	financeiro	GET /api/v1/financial-titles?direction=payable&limit=100	existe(document=EXM-FIN-2001; status=open) E conta=1	-	-
+ET7	FIN-conciliado	financeiro	GET /api/v1/financial-entries?limit=100	existe(description=Baixa Exemplo; reconciled=true) E conta=1	-	-
+ET8	MARCADOR	admin	GET /api/v1/tenant-settings/demo_isolado.fixture_sha256	campo(value)≠vazio	-	-

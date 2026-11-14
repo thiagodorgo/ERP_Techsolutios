@@ -18,24 +18,54 @@ const MATRIZ = path.resolve("scripts/demo-isolado/matriz-exemplo.tsv");
 const VOCABULARIO = new Set(
   [
     "exemplo", "organização", "administracao", "plataforma", "gestora", "despacho", "técnica", "financeiro",
-    "auditoria", "cliente", "ltda", "viatura", "equipe", "remoção", "padrão", "tabela",
+    "auditoria", "cliente", "ltda", "viatura", "equipe", "remoção", "padrão", "tabela", "perfil", "documento",
+    "do", "de", "veículo", "quem", "retira", "pátio", "rua", "cidade", "bloco", "marca", "modelo", "prata",
+    "autoridade", "base", "frente", "traseira", "lado", "esquerdo", "direito", "teto", "painel", "motor", "chassi",
+    "hodômetro", "objetos", "internos", "avarias", "encargo", "mobile", "exm", "concluída", "pelo", "app", "ordem",
+    "aceita", "a", "caminho", "no", "local", "iniciado", "atribuída", "caixa", "banco", "baixa", "fornecedor",
   ].map((p) => p.toLowerCase()),
 );
 
 // Campos de valor tecnico (codigo, papel, referencia), com a regra propria de cada um.
+const CHAVE = /^[a-z][a-z0-9_]{0,30}$/;
 const TECNICOS: Record<string, RegExp> = {
-  chave: /^[a-z][a-z0-9_]{0,30}$/,
-  membros: /^[a-z][a-z0-9_]{0,30}$/,
+  chave: CHAVE,
+  membros: CHAVE,
+  criada_por: CHAVE,
+  por: CHAVE,
+  tecnica: CHAVE,
+  usuario: CHAVE,
   papel: /^(tenant_admin|manager|field_dispatcher|operator|field_technician|finance|auditor)$/,
   email: /^[a-z0-9._-]+@exemplo\.invalid$/,
   placa: /^EXM[0-9A-Z]{4}$/,
+  placa_atendida: /^EXM[0-9A-Z]{4}$/,
+  viatura: /^EXM[0-9A-Z]{4}$/,
   telefone: /^\(11\) 3000-[0-9]{4}$/,
-  tipo: /^[a-z_]{1,40}$/,
+  tipo: /^[A-Za-z_]{1,40}$/,
   moeda: /^BRL$/,
-  prefixo: /^EXM$/,
+  uf: /^[A-Z]{2}$/,
+  escopo: /^[A-Z_]{1,40}$/,
+  modelo_diaria: /^[A-Z0-9_]{1,40}$/,
+  teto_diaria: /^[A-Z_]{1,40}$/,
+  codigo: /^[A-Z0-9_-]{1,40}$/,
+  vaga: /^[A-Z0-9_-]{1,40}$/,
+  fuso: /^America\/Sao_Paulo$/,
+  classe: /^[A-Z]{1,20}$/,
+  situacao_final: /^[A-Z_]{1,40}$/,
+  set: /^[A-Z_]{1,40}$/,
+  procedimento: /^EXM-[A-Z0-9-]{1,30}$/,
+  chassi: /^EXM[0-9A-Z]{1,30}$/,
+  documento: /^EXM-[A-Z0-9-]{1,30}$/,
+  direcao: /^(receivable|payable)$/,
+  tipo_parte: /^[a-z_]{1,40}$/,
+  meio: /^[a-z_]{1,40}$/,
+  prioridade: /^[a-z]{1,20}$/,
+  para: /^[a-z_]{1,40}$/,
+  agencia: /^[0-9-]{1,20}$/,
+  numero: /^[0-9-]{1,20}$/,
 };
-const DINHEIRO = new Set(["preco_base", "valor"]);
-const NUMEROS = new Set(["versao", "ano"]);
+const DINHEIRO = new Set(["preco_base", "valor", "saldo_inicial"]);
+const NUMEROS = new Set(["ano", "latitude", "longitude", "vencimento_relativo_dias", "duracao_estimada_min"]);
 
 type Falha = string;
 
