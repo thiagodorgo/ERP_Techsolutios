@@ -499,6 +499,10 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/auth/services/session-liveness.service.ts", "-.check", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA): a via sem `sid` (token anterior ao deploy; P-SID-OBRIGATORIO), `user.findFirst({ where: { id, tenant_id, status: 'active' }, select: { id } })` no mesmo callback de `withTenantRlsBudget`, sob o GUC da organização do token; só leitura. Provado em tests/users-seg-desativado-portao-db.test.ts (T12) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  [
+    k("L1", "src/database/session-timezone.ts", "-.probeSessionTimezone", "client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(client)", "×1"),
+    "B-DB-FUSO-UTC, Emenda 2 E2.1: `probeSessionTimezone` executa somente `SELECT current_setting('TimeZone') AS tz`; é leitura da configuração da sessão, sem acesso a tabela (inclusive FORCE RLS). Chave colada da saída do gerador do T13.",
+  ],
   // B-ASS-08c1a: a confirmação da posse antes do POST e o registro transacional do desfecho da cobrança. As 4 chaves são as que
   // o gerador acusou no head; todas no callback de `withTenantRlsBudget(this.client, tenantId, …)`, cujo setter do GUC é a 1ª
   // instrução da transação (src/database/rls.ts l.128). Literal L0 intocado: nenhuma tabela FORCE nova.
