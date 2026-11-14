@@ -242,7 +242,7 @@ if (!connectionString) {
 
   test("setup: base própria, migrate deploy e papel efêmero NOSUPERUSER NOBYPASSRLS; falsos Asaas/Focus", async () => {
     const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString! }) });
+    admin = (await import("../src/database/pg-connection.js")).createPrismaClient(connectionString!);
     dbName = `conf530p_${randomUUID().replaceAll("-", "").slice(0, 10)}`;
     await admin.$executeRawUnsafe(`CREATE DATABASE "${dbName}" TEMPLATE template0`);
     const u = new URL(connectionString!);
@@ -250,7 +250,7 @@ if (!connectionString) {
     targetUrl = u.toString();
     const prismaCli = createRequire(path.join(ROOT, "package.json")).resolve("prisma/build/index.js");
     execFileSync(process.execPath, [prismaCli, "migrate", "deploy"], { cwd: ROOT, env: { ...process.env, DATABASE_URL: targetUrl }, stdio: "pipe" });
-    db = new PrismaClient({ adapter: new PrismaPg({ connectionString: targetUrl }) });
+    db = (await import("../src/database/pg-connection.js")).createPrismaClient(targetUrl);
     role = await createEphemeralRole(db, targetUrl);
     const posture = (await role.client.$queryRawUnsafe(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`)) as any[];
     assert.deepEqual(posture, [{ rolsuper: false, rolbypassrls: false }], "o papel de runtime é NOSUPERUSER NOBYPASSRLS");

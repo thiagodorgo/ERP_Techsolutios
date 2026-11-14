@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { createPgAdapter } from "../src/database/pg-connection.js";
 import { PrismaClient } from "@prisma/client";
 
 import {
@@ -26,7 +26,7 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required to run prisma/seed.ts.");
 }
 
-const adapter = new PrismaPg({ connectionString });
+const adapter = createPgAdapter(connectionString);
 const prisma = new PrismaClient({ adapter });
 
 const permissionDescriptions = {

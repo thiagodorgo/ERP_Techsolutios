@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-import { PrismaPg } from "@prisma/adapter-pg";
+import { createPgAdapter } from "../src/database/pg-connection.js";
 import { PrismaClient } from "@prisma/client";
 
 import {
@@ -75,7 +75,7 @@ if (!connectionString) {
   throw new Error("DATABASE_URL é obrigatório para provisionar o RBAC.");
 }
 
-const adapter = new PrismaPg({ connectionString });
+const adapter = createPgAdapter(connectionString);
 const prisma = new PrismaClient({ adapter });
 
 // "Faltando" = o diff medido ANTES de escrever. Em modo aplicar é o que foi criado; em --dry-run é

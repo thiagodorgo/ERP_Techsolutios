@@ -4,6 +4,7 @@ import { createApp } from "./app.js";
 import { createPortalApp } from "./portal-app.js";
 import { env } from "./config/env.js";
 import { assertRuntimeDatabaseRoleIfEnforced } from "./database/runtime-role.bootstrap.js";
+import { assertDatabaseSessionTimezoneUtc } from "./database/session-timezone.bootstrap.js";
 import { startJobWorkerIfEnabled } from "./infra/jobs/job-worker.bootstrap.js";
 import { startTraccarIngestListenerIfEnabled } from "./integrations/traccar/traccar-ingest.bootstrap.js";
 import { createCoreSaasService } from "./modules/core-saas/index.js";
@@ -16,6 +17,7 @@ const logger = pino({ level: env.LOG_LEVEL });
 
 async function main(): Promise<void> {
   await assertRuntimeDatabaseRoleIfEnforced({ logger });
+  await assertDatabaseSessionTimezoneUtc({ logger });
   const coreSaasRuntime = await createCoreSaasService();
   const app = createApp(coreSaasRuntime);
 
