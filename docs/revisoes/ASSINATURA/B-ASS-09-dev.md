@@ -283,6 +283,97 @@ em outubro.
    `docs/subscription-billing.md`, junto do invariante §3.3. E a pendência `P-ASS08-REVERSAO-CREDITO-APLICADO` (A-E21-5: dono
    `B-ASS-08c`, ALTA, bloqueia ligar o canal) vai ao `pendencias.md`.
 
+## F6 — `overview.service.ts`, as 10 rotas, validadores e trilha (R-ACC-1..3; Emenda 2 §2.2; Emenda 2.1 §2.6; visto A-E21-2)
+
+- **Dev:** `dev-ass09-f13-cl`, Claude Opus 5.5, **identidade de dev declarada** (§C7 item 11(6)), retomado pelo orquestrador em
+  14/11 ~02:27 SP: a F6 era do braço e passou ao Claude (o dono, 13/11: só o Claude trabalha). Não sou planejador, crítico nem
+  revisor do bloco. **Sem cruzamento entre modelos, declarado** (§C7 11(2)).
+- **Ramo:** `feat/ass-09-visao-custo`, worktree `C:/Users/thiag/w-ass09`, a partir de `1a3c7477` (J2), puxado por `--ff-only`.
+- **Arquivos:** `overview/{overview.service.ts, overview.routes.ts, overview.factory.ts, overview.trail.ts, tenant-list.ts,
+  tenant-list.prisma.ts}`, `fx-rates/fx-rates.routes.ts`, `economic-groups/economic-groups.routes.ts`,
+  `subscription-billing.platform.routes.ts` (só montar os 3 routers), `platform-audit/audit-metadata.ts` (só as 8 chaves do
+  §4.3), `tests/ass-05b-audit-allowlist.test.ts` (só a lista congelada), `tests/ass-09-overview-routes.test.ts` (novo).
+
+| passo | comando | saída resumida | veredito |
+|---|---|---|---|
+| leitura | v2 §4.1 (10 rotas) × serviços da F5 (`fx-rates.service.ts`, `economic-groups.service.ts`) | R2–R10 batem rota a rota com os métodos e códigos dos serviços; o R1 é novo | §4.1 bate, sem PARADA |
+| medido | `sendRouteError` (`core-saas/routes/http.ts`) | todo `Error` sem `statusCode` vira **400** `invalid_request` com a mensagem | a rota do R1 traduz as falhas de integridade |
+| vermelho antes | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-overview-routes.test.ts` | `ERR_MODULE_NOT_FOUND … economic-groups.routes.js` | vermelho |
+| verde depois | idem | `# tests 12 # pass 12 # fail 0 # skipped 0` | verde |
+| suítes do bloco (memória) | overview-routes, money, engine, groups, subscription-amount, groups-service, fx-rates, `ass-05b-audit-allowlist`, `financial-period-lock-guard` | `# tests 69 # pass 69 # fail 0 # skipped 0` | verde |
+| regressões (memória) | `cloud-cost-allocation`, `-routes`, `san3-03-summary`, `-system-org`, `-conservation`, `ass-09a-rateio-automatico`, `ass-04-statement-engine`, `-inputs`, `-routes`, `-service`, `ass-02-plans-subscription`, `ass-01-markup-retirado`, `core-saas`, `permission-catalog-migration-parity` | `# tests 196 # pass 196 # fail 0 # skipped 0` | verde |
+| suíte inteira (memória, pelo runner) | `CORE_SAAS_PERSISTENCE=memory npm test` | `560 arquivo(s) · 4596 teste(s) · pass 4400 · fail 22 · skipped 173` (sem Redis e sem Postgres locais; o CI tem 5554) | triagem abaixo |
+| triagem, HEAD × base `1a3c7477` (a F6 num `git stash -u`) | cada arquivo vermelho, sozinho, nos dois | `o6r07c-census-guard` base 32/32 → HEAD 29/32 · `san3-18-route-module-census` base 7/7 → HEAD 3/7 · `san3-05-acessos-de-plataforma-guard` 32/35 nos dois (as 2 chaves sem motivo são da F5a e da F5b; a F6 não acrescenta chave, porque `tenants` não é FORCE) · `core-saas-role-authority` 0/1, `domain-events` 2/4, `job-queue` 0/3 e `worker-heartbeat` 21/22, iguais nos dois (ambiente: sem Redis) · `users-seg-desativado-sse` 6/6 sozinho nos dois (carga da suíte paralela) | **2 arquivos vermelhos por causa da F6: os dois censos de rota (PARADA abaixo)** |
+| `check`/`lint` na forma do CI | `npm ci` (ec 0) · `DATABASE_URL=<fictícia> npm run db:generate` (ec 0) · `npm run check` (ec 0) · `npm run lint` (ec 0) · `git diff --check` | todos 0 | verde |
+
+| mutação (texto literal) | vermelho em | observação |
+|---|---|---|
+| M-ACC-1 tirar `requirePlatformPermission("platform:billing:read"), ` do `GET /overview` | T-ACC-1b | o tenant_admin recebe resposta, não 403 |
+| M-ACC-4 tirar `requirePlatformPermission("platform:billing:read"), ` do `GET /economic-groups/:groupId/history` | T-ACC-1b | rota e guarda numa linha só, para a âncora ser única |
+| M-ACC-5 acrescentar `router.get("/economic-groups/:groupId/members", requirePlatformPermission("platform:billing:read"), (_req, res) => res.json({ data: [] }));` antes do `return router;` dos grupos | T-ACC-1a (11 ≠ 10) | — |
+| M-ACC-3 `const picked = pickBillingAuditMetadata(context, OVERVIEW_TRAIL_KEYS);` → `const picked = context;` | T-ACC-3 | o nome do grupo aparece na trilha de plataforma |
+| M-MG-7 `periodEnd: lastDayOfPeriod(period)` → `periodEnd: firstDayOfNextPeriod(period)` (`overview.service.ts`, conta 1) | T-MG-17b (`no_run` no lugar de `imported`/`ok`), T-OV-1, T-FX-5b | a M-MG-7 literal do plano, que a F2 deixou para cá |
+| M-SUB-12 apagar `  if (error instanceof StatementIntegrityError) return statementIntegrity(error, logger);` (`overview.routes.ts`, conta 1) | T-SUB-12 (**400 `invalid_request`** no lugar de 500 `statement_integrity_violation`) | a âncora que a Emenda 2.1 §2.6 manda registrar aqui |
+| M-GRP-10h (suplementar) apagar `  if (error instanceof MembershipOverlapError) return membershipIntegrity(error, logger, period);` | T-GRP-12 (HTTP) | a metade HTTP do R-GRP-7 (Emenda 2 §2.2) |
+| M-SUB-12L (suplementar) apagar a linha `logger.error({ reason: error.reason, period: error.period, tenantId: error.tenantId }, …)` | T-SUB-12 | o log do A-E21-2 é conferido, não só o corpo |
+
+Todas com a âncora contada 1 vez, aplicadas uma por vez, restauradas e conferidas por md5 (`restaurado=true` nas 8).
+
+**Testes novos (`tests/ass-09-overview-routes.test.ts`, 12):** T-ACC-1a (enumera da pilha do `express.Router` em runtime: os 3 routers
+novos montam **exatamente** as 10 do §4.1, e o router de plataforma as monta) · T-ACC-1b (tenant_admin → 403
+`platform_permission_required` nas 10; a plataforma passa da guarda nas 3 leituras) · T-ACC-2 (`GET /billing/subscription` sem
+`allocatedCost`, `margin`, `marginPct`, `fxRate`, `groupId` nem `cost`) · T-ACC-3 (trilha ⊆ allowlist; sem nome de grupo, de
+organização nem notas; `tenant_id` nunca na metadata; controle positivo das chaves) · T-OV-1 (as 3 formas pela rota; a organização da
+plataforma não é linha) · T-OV-2 (400 `invalid_period`, 400 `invalid_group_by`, 422 `period_in_future`) · T-MG-17b (janela exata pelo
+serviço) · T-FX-5b (a visão usa 5.500000, versão 2) · T-FX-6b (os códigos do câmbio pela rota, `invalid_json` e `range_too_large`) ·
+T-GRP-HTTP (R4–R10 pela rota) · **T-GRP-12 (HTTP)** (repositório de teste que implementa `EconomicGroupsRepository` com as duas linhas
+sobrepostas, não o dublê: 500 `membership_integrity_violation` nas 3 formas, sem `data`, sem a organização no corpo, a organização no
+log) · **T-SUB-12** (demonstrativo gravado sem retrato: 500 `statement_integrity_violation`, sem `data`, sem `tenantId` no corpo; o log
+com `{ reason: "statement_snapshot_missing", period, tenantId }`).
+
+**Leituras do dev na F6, declaradas (§A6):**
+1. **O `sendRouteError` da casa responde 400 `invalid_request` a todo `Error` sem `statusCode`.** Por isso a rota do R1 traduz,
+   ela mesma, as três falhas de integridade em **500**, só com o motivo no corpo: `statement_integrity_violation` (Emenda 2.1
+   §2.6), `membership_integrity_violation` (P5, Emenda 2 §2.2) e **`overview_integrity_violation`** (nome meu, para o
+   `OverviewEngineError` da F2: organização do rateio fora da lista, assinatura ou grupo faltando, taxa a partir de 1000). A F8
+   escreve os três no `API_CONTRACTS.md`.
+2. **A-E21-2:** o `StatementIntegrityError` nasce no serviço com a organização e o mês; a rota grava no LOG
+   `{ reason, period, tenantId }` e responde sem nenhum dos dois. O `MembershipOverlapError` também vai ao log com a organização.
+   O T-SUB-12 e o T-GRP-12 (HTTP) conferem o corpo sem `tenantId` e a linha do log.
+3. **A trilha** (`overview.trail.ts`): uma função só (`trailMetadata`) passa todo contexto pela allowlist do módulo, com as 8
+   chaves novas (`group_id`, `month`, `currency_from`, `currency_to`, `rate`, `version`, `valid_from`, `valid_to`) e o ator.
+   Taxa, criar, renomear e excluir grupo → trilha de plataforma; entrar e sair → `audit_logs` da organização, dentro da troca
+   (o `membershipAuditBuilder` vai ao `EconomicGroupsService` pela fábrica, Emenda 2 §2.4). O contexto chega inteiro (com nome e
+   notas): é o que faz a M-ACC-3 ficar vermelha.
+4. **O diretório de organizações** (`GroupTenantDirectory`, F5b) é montado pela F6 sobre a lista (`tenant-list.ts`), e lê o
+   registro **uma vez por pedido** (achado da revisão pela skill antes do commit: o `putMembers` consulta até 500 organizações, e
+   cada consulta leria o registro inteiro).
+5. **`firstDayOfNextPeriod` importado e não usado no serviço**, com comentário: é o que deixa a M-MG-7 rodar como escrita e cair em
+   `no_run`, em vez de `ReferenceError`.
+6. **Códigos meus, a registrar na F8:** `invalid_tenant_ids` (400, `tenantIds` que não é lista de texto: uma lista malformada não
+   pode virar "tirar todo mundo do grupo") e `overview_integrity_violation` (500).
+7. **Fora do escopo, medido:** a trilha de plataforma é gravada depois da escrita (molde do `PlansService`), não na mesma transação;
+   a da organização vai na transação da troca.
+
+### PARADA — os dois censos de rota pedem instantâneos fora do PERMITIDO (vale a `D-EMENDA-ANTES-DO-CODIGO`)
+
+As 10 rotas novas acendem dois censos, e os dois exigem que **toda** rota montada esteja num instantâneo commitado. Os dois
+instantâneos são **gerados** por script, nunca escritos à mão, e **nenhum dos dois está no PERMITIDO** do plano (v2 §7, Emendas 1,
+2 e 2.1). Não os regenerei.
+
+| guarda | base `1a3c7477` | HEAD da F6 | o que acusa | instantâneo e gerador |
+|---|---|---|---|---|
+| `tests/san3-18-route-module-census.test.ts` | 7/7 | 3/7 | `NOVA (fora do instantâneo)` para cada uma das 10; **nenhuma** `SEM CLASSE` (as `zz-*` são as sondas de mutação do próprio teste) | `tests/fixtures/san3-18-route-modules.json` · `node --import tsx scripts/san3-18-censo-modulos.mjs --gravar tests/fixtures/san3-18-route-modules.json` |
+| `tests/o6r07c-census-guard.test.ts` | 32/32 | 29/32 | `NAO-CLASSIFICADA: ROTA …` para cada uma das 10 | `tests/fixtures/o6r07c-classificacao-vias.json` · `node --import tsx tests/helpers/o6r07c-census.ts gravar tests/fixtures/o6r07c-classificacao-vias.json` |
+
+- **O que falta para fechar:** uma emenda que ponha os dois arquivos no PERMITIDO, **só pela regeneração** (como o
+  `censored-tables.ts` da M6), com o `git diff` de cada um contendo só as 10 entradas novas, e a classe de cada rota conferida pelo
+  revisor. É do tamanho da linha do `san3-05` que a F7 já faz; a leitura minha (§A6) é que cabe na F7.
+- **Por que não regenerei:** o `san3-18` diz que "o diff do instantâneo é o que a junta revisa"; regenerar fora do PERMITIDO seria
+  ampliar o escopo sem emenda.
+- **Vermelho esperado até a emenda:** esses 2 arquivos no job `backend`, além do `san3-05-acessos-de-plataforma-guard` (dono F7, desde
+  a F5) e do `san3-05-leituras-de-plataforma-db` (a superfície fechada, `-db`, dono F7).
+
 ## F4 — ramo `feat/ass-09-banco` (worktree `C:/Users/thiag/w-ass09b`)
 
 Base: `feat/ass-09-banco` nasce do head da F0 (`2b5e0325`), em worktree próprio com `npm ci` próprio (sem junction),
