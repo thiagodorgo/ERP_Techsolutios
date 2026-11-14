@@ -1157,3 +1157,52 @@ emenda pode trocar isso numa linha.
 - o ID repetido na integração do `521f0bcb`.
 
 Depois vem a bateria de novo (o `ass-08-lock-order-db` local e o CI de push) e o PR em rascunho.
+
+## F9, retomada pela Emenda 2.3 e com o #554, 14/11 07:44–08:15 SP
+
+**§4.1: a `main` integrada com a §2.** `198d670b` é o merge de `ae7c0a74` com `521f0bcb` (o #562 e o #563).
+- Conflitos: `pendencias.md`, resolvido por união; o índice, regenerado; e `decisoes.md`, resolvido pela §2.
+- Em `decisoes.md` fica a entrada da `main` da `D-DONO-1311-RECOMENDACOES`. A entrada do bloco perde o cabeçalho e vira o sub-item
+  "**(d) A Q5 e a Q6 do `B-ASS-09`**", antes do "Revogada em parte".
+- Contagem dos cabeçalhos: `grep -c '^## D-DONO-1311-RECOMENDACOES'` = 1. O comando literal da §2 dá 0, porque o cabeçalho da `main`
+  é `## … (2026-11-13 ~23:12 SP) —` e o padrão procura `### ` ou `RECOMENDACOES —`.
+- Linhas próprias do merge (`git show --cc`): 7 no `decisoes.md` (o sub-item), 1 linha em branco no `pendencias.md` e o índice.
+- **Leitura do dev, declarada (§A6):** a §2 chama de "texto próprio" da entrada do bloco as respostas Q5 e Q6, e só elas entram no
+  (d). As respostas Q1 a Q4 não mexem em registro do repositório. Elas ficam no plano, fora do repositório, e valem pela regra
+  geral da entrada da `main` ("toda pergunta ao dono aberta naquela hora é respondida pela recomendação").
+
+**§1: os 3 censos** (`1560cc89`):
+
+| teste | mudança | medida |
+|---|---|---|
+| T-LOCK-2 | +3 chaves `sem-tabela-do-mapa`, cada uma com 1 linha de motivo (`6 0`) | `# tests 7 # pass 7 # fail 0`. Mutação de controle **M-LOCK-E23**: tirar a chave do `appendVersion` → `not ok 6`, com a chave no `actual`; restaurado por cópia, md5 igual |
+| T14a/b | `139 → 142`, com o comentário das 3 tabelas da M6 (`2 1`) | `git diff --name-only origin/main...HEAD -- prisma/migrations` = só a M6, com 3 `CREATE TABLE` (`economic_groups`, `economic_group_members`, `platform_fx_rates`). O teste só roda no Linux, e fica para o CI |
+| T40 | `53 → 63`, com o comentário das 10 rotas (`2 1`) | `--test-name-pattern=T40` da raiz: `# pass 1 # fail 0` (os outros 2 casos do arquivo ficam fora do padrão) |
+
+Nenhuma asserção sai. O `git diff -U0` dos 3 arquivos tem 2 linhas `-assert`, e as duas são os literais trocados (139 e 53), cada uma
+com a substituta.
+
+**Incidente da medição, declarado.** Na 1ª tentativa da mutação de controle, restaurei com `git checkout --`. A edição ainda não estava
+no índice, e o checkout levou junto as 6 linhas do conserto. Medi (`git diff --numstat` sem o arquivo), reapliquei pela mesma âncora
+e pus a edição no índice. Daí em diante, a restauração é por cópia, com md5 igual. A 2ª rodada é a que vale: `7/7` → mutante `6/7` →
+restaurado `7/7`.
+
+**O #554 entrou (`14b693e4`, 07:53 SP).** `149f17ab` é o merge com ele. O conflito do ratchet `san3-05` se resolve por união: as 2
+chaves do bloco ficam ao lado da chave do B-DB-FUSO-UTC, cada uma na sua entrada. O índice foi regenerado, e as únicas linhas
+próprias são as do índice. Com o merge, o ratchet dá `35/35`.
+
+`3a42528c` faz o G3: os 5 `new PrismaPg(` dos 4 `-db` viram
+`(await import("../src/database/pg-connection.js")).createPgAdapter(…)`, como as suítes do #554. Só muda a linha de construção, e o
+connection string é o mesmo, com o `application_name`. O `PrismaPg` desestruturado fica sem uso, porque os testes não entram no
+`tsconfig`.
+- Contagem: 217 `new PrismaPg(` em `tests/`, fora de `tests/helpers/` e de `tests/db-fuso-utc-*`, que é o teto.
+- O G3 (`tests/db-fuso-utc-pontos-de-conexao.test.ts`) dá `# tests 6 # pass 6 # fail 0`.
+
+**Bateria no head `3a42528c`:**
+- `db:generate`, `check`, `lint` e `build`: `0`.
+- Guard de migração: `violações: 0`. `git diff --check`: vazio.
+- As 4 suítes na forma do `backend-postgres` (base nova, `migrate deploy`, `db:seed`): `14/14` nas 3 rodadas, `0` pulo.
+- `ass-08-lock-order-db` + `san3-05-leituras-de-plataforma-db`: `19/19`.
+- Em memória, `ass-09-*`, os censos `san3-18-*` e `o6r07c-*`, `db-catalog-write-guard` e `financial-period-lock-guard`:
+  `# tests 376 # pass 368 # fail 0 # skipped 8` (os 8 pulos são `-db` sem `DATABASE_URL`).
+- Commits próprios desde o F0: 21.
