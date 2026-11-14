@@ -53,15 +53,15 @@ async function main(): Promise<void> {
     process.exit(2);
   }
 
-  // Só depois da trava: nenhum cliente de banco nasce antes de o alvo ser conferido.
-  const [{ PrismaPg }, { PrismaClient }, { ROLE_PERMISSIONS }, auth, { withTenantRls }] = await Promise.all([
-    import("@prisma/adapter-pg"),
-    import("@prisma/client"),
+  // Só depois da trava: nenhum cliente de banco nasce antes de o alvo ser conferido. O cliente sai da fábrica de
+  // conexão (`pg-connection.ts`, B-DB-FUSO-UTC), que fixa o fuso da sessão em UTC, como nos outros arnêses.
+  const [{ createPrismaClient }, { ROLE_PERMISSIONS }, auth, { withTenantRls }] = await Promise.all([
+    import("../../src/database/pg-connection.js"),
     import("../../src/modules/core-saas/permissions/catalog.js"),
     import("../../src/modules/auth/index.js"),
     import("../../src/database/rls.js"),
   ]);
-  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const prisma = createPrismaClient(connectionString);
   const password = process.env.DEMO_ADMIN_PASSWORD?.trim() || "ChangeMe123!";
 
   try {
