@@ -21,7 +21,13 @@ import type {
   WorkOrderInvoiceResult,
   WorkOrderInvoiceTitle,
 } from "../../financials.types";
-import { invoiceActionState, invoiceResultNotice, type InvoiceNotice, type InvoiceOutcome } from "../../work-order-invoice.model";
+import {
+  invoiceActionState,
+  invoiceOutcomeCancelsWorkOrder,
+  invoiceResultNotice,
+  type InvoiceNotice,
+  type InvoiceOutcome,
+} from "../../work-order-invoice.model";
 import type { WorkOrderStatus } from "../../work-orders.types";
 import { listServiceCatalogFromApi } from "../../../registry/service-catalog/service-catalog.service";
 import type { ServiceItem } from "../../../registry/service-catalog/service-catalog.types";
@@ -31,8 +37,8 @@ import { InvoiceWorkOrderDialog, type InvoiceShown } from "../InvoiceWorkOrderDi
 // (valor CONGELADO no lançamento, anti-refaturamento) + item avulso ("+", ex.: pedágio) + edição
 // inline + TOTAL automático (somado no BACKEND — o front nunca soma). Estados §7: loading/erro/vazio;
 // "acesso não permitido" é tratado pelo shell (a aba exige work_order_financials:read).
-// B-SAN3-25 (item 50) — a aba fatura a OS: botão "Faturar OS" (só com financial_titles:create, item pendente e OS não
-// cancelada), diálogo de confirmação, aviso com o valor que o SERVIDOR faturou (e a divergência, se houver), chip
+// B-SAN3-25 (item 50) — a aba fatura a OS: botão "Faturar OS" (só com financial_titles:create, item pendente que vale mais
+// que zero e OS não cancelada), diálogo de confirmação, aviso com o valor que o SERVIDOR faturou (e a divergência, se houver), chip
 // "Faturado" sem editar nem excluir, e o quadro "Títulos desta OS". A recusa vira a frase da lista fechada do modelo.
 
 const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14 };
@@ -42,8 +48,9 @@ const input: CSSProperties = { width: "100%", padding: "8px 10px", border: "1px 
 const iconBtn: CSSProperties = { display: "inline-flex", alignItems: "center", justifyContent: "center", width: 32, height: 32, borderRadius: 8, border: "1px solid #E2E8F0", background: "#fff", color: "#475569", cursor: "pointer" };
 const primaryBtn: CSSProperties = { display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 15px", background: "#2563EB", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, color: "#fff", cursor: "pointer", fontFamily: "inherit" };
 const pill: CSSProperties = { fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 99, whiteSpace: "nowrap" };
-// Mesma cor do "Pago" do Financeiro (`financial-titles.adapter.ts`, STATUS_TONE.paid).
-const invoicedPill: CSSProperties = { ...pill, background: "#ECFDF5", color: "#059669" };
+// O tom do "Pago" do Financeiro, pelo adaptador (J-559, C3-A4: sem o par de cores escrito à mão aqui).
+const paidTone = getTitleStatusTone("paid");
+const invoicedPill: CSSProperties = { ...pill, background: paidTone.bg, color: paidTone.color };
 const errorBox: CSSProperties = { marginTop: 14, padding: "10px 13px", background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 9, fontSize: 12.5, color: "#B91C1C" };
 
 type TitleRow =
@@ -100,6 +107,9 @@ export function FinancialTab({
   const [invoiceMessage, setInvoiceMessage] = useState<string | null>(null);
   const [titles, setTitles] = useState<readonly TitleRow[]>([]);
   const [titlesLoading, setTitlesLoading] = useState(false);
+  // J-559 (C3-A2) — a OS que o servidor disse estar cancelada (422 `work_order_cancelled`) depois que a página a leu: o
+  // botão some até a página reler a OS. Guardado com o id, para não valer para outra OS aberta na mesma aba.
+  const [cancelledByServerId, setCancelledByServerId] = useState<string | null>(null);
 
   const canCreate = permissions.includes("work_order_financials:create");
   const canUpdate = permissions.includes("work_order_financials:update");
@@ -249,12 +259,14 @@ export function FinancialTab({
   const handleInvoiceFailed = (outcome: InvoiceOutcome) => {
     setInvoicing(false);
     setInvoiceMessage(outcome.message);
+    if (invoiceOutcomeCancelsWorkOrder(outcome)) setCancelledByServerId(workOrderId);
     if (outcome.reload) void load();
   };
 
   const items = data?.items ?? [];
   const currency = data?.currency ?? "BRL";
-  const invoiceAction = data ? invoiceActionState(data, permissions, workOrderStatus) : null;
+  const effectiveStatus: WorkOrderStatus | undefined = cancelledByServerId === workOrderId ? "cancelled" : workOrderStatus;
+  const invoiceAction = data ? invoiceActionState(data, permissions, effectiveStatus) : null;
 
   // ---------- B-SAN3-25 — títulos desta OS: uma leitura por título distinto ----------
   const titleKey = useMemo(() => [...new Set(items.map((item) => item.titleId).filter((id): id is string => id !== null))].join("|"), [items]);
@@ -270,7 +282,9 @@ export function FinancialTab({
     void Promise.all(
       titleKey.split("|").map(async (id): Promise<TitleRow> => {
         try {
-          return { kind: "loaded", title: await getWorkOrderInvoiceTitle(context, id) };
+          const title = await getWorkOrderInvoiceTitle(context, id);
+          // J-559 (C3-A1) — o servidor devolve o título apagado com 200 e `active: false`, e não com 404.
+          return title.active ? { kind: "loaded", title } : { kind: "removed", id };
         } catch (error) {
           return { kind: isNotFoundError(error) ? "removed" : "failed", id };
         }

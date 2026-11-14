@@ -71,6 +71,9 @@ export type WorkOrderInvoiceTitle = {
   // preenchido = título COMPLEMENTAR (o id do original); `null` = ORIGINAL
   readonly parentTitleId: string | null;
   readonly overdue: boolean;
+  // J-559 (C3-A1) — `false` = título apagado. O servidor o devolve com 200 e `active: false` (`financial-title.dto.ts:35`),
+  // não com 404; o quadro "Títulos desta OS" o mostra como "Título removido".
+  readonly active: boolean;
 };
 
 // O 201 do faturamento (`work-order-financial.controller.ts:41-49`): o título criado, o total que o SERVIDOR faturou e a

@@ -681,6 +681,32 @@ test("[L4] 409 already_invoiced → o diálogo fecha, a aba diz a frase e relê 
   }
 });
 
+// J-559 (C3-A2) — a OS foi cancelada no servidor depois que a página a leu (a página ainda diz "concluída"). No 422
+// `work_order_cancelled` (o envelope de `workOrderCancelledError`, `work-order-financial.types.ts:97-104`), a aba diz a
+// frase, relê a lista e o botão "Faturar OS" some (Q1 = A), embora a lista continue com os itens pendentes.
+test("[L4c] 422 work_order_cancelled → a frase, a releitura da lista e o botão 'Faturar OS' some, com a página ainda dizendo que a OS não está cancelada", async () => {
+  server = {
+    list: listDto([itemDto(ITEM_A), itemDto(ITEM_B)], 100),
+    titles: {},
+    invoice: () => apiError(422, "WORK_ORDER_FINANCIAL_UNPROCESSABLE", "work_order_cancelled"),
+  };
+  const view = await mount({ status: "completed" });
+  try {
+    assert.ok(buttonByText(view.container, "Faturar OS"), "antes do 422, a OS não cancelada mostra o botão");
+    const opened = await openDialog(view.container);
+    await submit(formIn(opened));
+    assert.equal(invoicePosts().length, 1, "1 POST");
+    assert.equal(dialog(view.container), undefined, "o diálogo fecha");
+    assert.deepEqual(alertTexts(view.container), ["Esta OS está cancelada e não pode ser faturada."], "a frase do 422");
+    assert.equal(listReads(), 2, "a lista foi relida");
+    assert.equal(invoicedChips(view.container), 0, "os itens seguem pendentes na lista");
+    assert.equal(buttonByText(view.container, "Faturar OS"), undefined, "o servidor disse que a OS está cancelada: o botão some");
+    assert.deepEqual(unexpected, [], "nenhuma rota fora do contrato");
+  } finally {
+    await view.unmount();
+  }
+});
+
 test("[L7] rede (TypeError) → frase genérica, que não afirma que nada foi faturado, e releitura da lista", async () => {
   server = {
     list: listDto([itemDto(ITEM_A), itemDto(ITEM_B)], 100),
@@ -762,6 +788,31 @@ test("[L6] título com 404 aparece como 'Título removido'; sem a permissão da 
     assert.equal(titleReads(), 1, "1 leitura");
     assert.ok(text(view.container).includes("Título removido"), "404 → Título removido");
     assert.equal(all(view.container, (el) => el.localName === "a" && text(el).trim() === "Ver no Financeiro").length, 0, "sem atalho sem a permissão da rota");
+    assert.deepEqual(unexpected, [], "nenhuma rota fora do contrato");
+  } finally {
+    await view.unmount();
+  }
+});
+
+// J-559 (C3-A1) — o servidor real devolve o título apagado com 200 e `active: false` (`financial-title.service.ts:257-263`,
+// `financial-title.dto.ts:35`), e não com 404. A aba o mostra como "Título removido", e não como um título "Em aberto".
+test("[L6c] título apagado (200 com active:false, como o servidor responde) aparece como 'Título removido', e não 'Em aberto'; o título ativo ao lado segue com rótulo, valor e situação", async () => {
+  server = {
+    list: listDto([invoicedDto(ITEM_A), invoicedDto({ ...ITEM_C, titleId: "t-2" })], 95),
+    titles: {
+      "t-1": titleDto({ amount: 60, status: "open", active: false }),
+      "t-2": titleDto({ id: "t-2", amount: 35, parentTitleId: "t-1", status: "open", active: true }),
+    },
+  };
+  const view = await mount();
+  try {
+    assert.equal(titleReads(), 2, "uma leitura por título");
+    const rows = all(view.container, (el) => el.localName === "tr").map(text);
+    assert.equal(rows.filter((row) => row.includes("Título removido")).length, 1, `o apagado vira 'Título removido': ${rows.join(" | ")}`);
+    assert.deepEqual(rows.filter((row) => row.startsWith("Original")), [], "o apagado não aparece como título Original a receber");
+    const open = rows.filter((row) => row.includes("Em aberto"));
+    assert.equal(open.length, 1, `só o título ativo aparece Em aberto: ${open.join(" | ")}`);
+    assert.ok(open[0].startsWith("Complementar") && open[0].includes(formatMoney(35, "BRL")), `o ativo segue com rótulo e valor: ${open[0]}`);
     assert.deepEqual(unexpected, [], "nenhuma rota fora do contrato");
   } finally {
     await view.unmount();
@@ -1017,5 +1068,52 @@ test("[L12] a página real (WorkOrderDetailView, aba Financeiro) passa a situaç
     assert.deepEqual(unexpected, [], "nenhuma rota fora do contrato");
   } finally {
     await cancelled.unmount();
+  }
+});
+
+// =============================== L13 · pendentes de valor zero (J-559, C1-01) ===============================
+
+// O servidor aceita item de valor 0 (`financial-item.shape.ts:55`) e só fatura com a soma dos pendentes > 0
+// (`work-order-financial.service.ts:436` e `:454`). O botão segue o mesmo critério: com todo pendente valendo zero, não
+// aparece (antes, aparecia e a recusa voltava a cada clique). Com um pendente de valor > 0 ao lado, aparece, e a
+// confirmação lista os dois, porque o servidor fatura os dois.
+test("[L13] pendentes que valem zero: sem botão no 1º faturamento nem no complementar; com um pendente de valor > 0 ao lado, o botão aparece e a confirmação lista os dois", async () => {
+  const ZERO = { id: "it-z", description: "Cortesia", unitAmount: 0, totalAmount: 0 };
+
+  // (a) a OS só com o item de valor 0: o servidor responderia 422 nothing_to_invoice.
+  server = { list: listDto([itemDto(ZERO)], 0), titles: {} };
+  let view = await mount();
+  try {
+    assert.ok(text(view.container).includes("Cortesia"), "o item de valor 0 aparece na lista");
+    assert.equal(buttonByText(view.container, "Faturar OS"), undefined, "só pendente de valor 0: sem botão");
+    assert.equal(calls.filter((c) => c.method === "POST").length, 0, "nenhum POST");
+    assert.deepEqual(unexpected, [], "nenhuma rota fora do contrato");
+  } finally {
+    await view.unmount();
+  }
+
+  // (b) o original já faturado e 1 pendente de valor 0: o servidor responderia 409 already_invoiced.
+  server = { list: listDto([invoicedDto(ITEM_A), itemDto(ZERO)], 60), titles: { "t-1": titleDto({ amount: 60 }) } };
+  view = await mount();
+  try {
+    assert.equal(invoicedChips(view.container), 1, "o faturado com o chip");
+    assert.equal(buttonByText(view.container, "Faturar OS"), undefined, "complementar com pendente de valor 0: sem botão");
+    assert.equal(calls.filter((c) => c.method === "POST").length, 0, "nenhum POST");
+    assert.deepEqual(unexpected, [], "nenhuma rota fora do contrato");
+  } finally {
+    await view.unmount();
+  }
+
+  // (c) controle: um pendente de valor > 0 e um de valor 0 → o botão aparece e a confirmação lista os dois.
+  server = { list: listDto([itemDto(ITEM_A), itemDto(ZERO)], 60), titles: {} };
+  view = await mount();
+  try {
+    const opened = await openDialog(view.container);
+    assert.ok(text(opened).includes("Guincho leve") && text(opened).includes("Cortesia"), "a confirmação lista os 2 pendentes, o de valor 0 também");
+    assert.ok(text(opened).includes(formatMoney(60, "BRL")), "o valor do título é o totalAmount do servidor");
+    assert.equal(calls.filter((c) => c.method === "POST").length, 0, "abrir a confirmação não envia");
+    assert.deepEqual(unexpected, [], "nenhuma rota fora do contrato");
+  } finally {
+    await view.unmount();
   }
 });

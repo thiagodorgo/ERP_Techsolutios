@@ -326,6 +326,26 @@ test("[A8] SSR da aba com lista hidratada: item faturado → chip 'Faturado' e s
   assert.match(html, /Faturar OS/, "há pendente e permissão: o botão aparece");
 });
 
+// J-559 (C3-A4) — o chip "Faturado" tem o tom do "Pago" do Financeiro pelo `getTitleStatusTone`, sem o par de cores escrito à
+// mão na aba (o corpo `cognicao-visual`: "nunca hex solto em componente").
+test("[A8b] chip 'Faturado' no tom do Financeiro: a aba não escreve à mão o par de cores do 'Pago', e o SSR do chip traz o fundo e a cor de getTitleStatusTone('paid')", async () => {
+  const { getTitleStatusTone } = await import("../src/modules/finance/titles/financial-titles.adapter");
+  const tone = getTitleStatusTone("paid");
+  assert.match(tone.bg, /^#[0-9A-Fa-f]{6}$/, "o tom do 'Pago' tem fundo");
+  assert.match(tone.color, /^#[0-9A-Fa-f]{6}$/, "o tom do 'Pago' tem cor");
+  const tabSource = stripComments(readFileSync(path.join(WO, "components/tabs/FinancialTab.tsx"), "utf8").replace(/\r\n/g, "\n")).toLowerCase();
+  for (const hex of [tone.bg, tone.color]) assert.ok(!tabSource.includes(hex.toLowerCase()), `cor do 'Pago' escrita à mão na aba: ${hex}`);
+
+  const { FinancialTab } = await loadTab();
+  const list = { items: [invoicedItem({ id: "it-a", description: "Guincho leve faturado" })], totalAmount: 60, currency: "BRL" };
+  const html = renderToString(<FinancialTab workOrderId="wo-1" workOrderStatus="completed" context={CTX} permissions={FINANCE} initialData={list} />);
+  const chip = /<span style="([^"]*)">Faturado<\/span>/.exec(html);
+  assert.ok(chip, "o chip Faturado renderizado");
+  const style = chip![1].toLowerCase();
+  assert.ok(style.includes(`background:${tone.bg.toLowerCase()}`), `fundo do chip = o do 'Pago': ${style}`);
+  assert.ok(style.includes(`color:${tone.color.toLowerCase()}`), `cor do chip = a do 'Pago': ${style}`);
+});
+
 // ---------------------------------------------------------------- A10 · aviso de valor defasado
 
 test("[A10] invoiceResultNotice: valor ou quantidade diferentes do mostrado → frase de divergência; iguais → sem frase; complementar compara só a quantidade", async () => {

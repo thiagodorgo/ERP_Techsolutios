@@ -41,6 +41,12 @@ export type InvoiceActionState = {
 
 // Q1 = A (`D-DONO-TODAS-RECOMENDACOES-1111`): o botão aparece em toda OS não cancelada, como o servidor (`service.ts:422`).
 // Sem a situação da OS, quem decide é o servidor.
+// J-559 (C1-01): o botão segue o critério de faturável do servidor, "soma dos pendentes > 0" (`service.ts:436` e `:454`),
+// e não a contagem de pendentes: com todo pendente valendo zero, o servidor recusa (422 `nothing_to_invoice` ou 409
+// `already_invoiced`) e o botão não aparece. A tela não soma: o servidor não guarda item de valor negativo (o total do
+// item passa pela guarda de valor >= 0, `work-order-financial.service.ts:143` e `:207`, `tariffs/financial-item.shape.ts:41`),
+// e uma soma de valores >= 0 é maior que zero exatamente quando algum deles é maior que zero. O item de valor zero
+// continua na confirmação, porque o servidor o fatura junto com os outros.
 export function invoiceActionState(
   list: WorkOrderFinancialList,
   permissions: readonly string[],
@@ -49,8 +55,9 @@ export function invoiceActionState(
   const pendingItems = list.items.filter((item) => !item.invoiced);
   const anyInvoiced = list.items.some((item) => item.invoiced);
   const allowed = permissions.includes(INVOICE_PERMISSION);
+  const invoiceable = pendingItems.some((item) => item.totalAmount > 0);
   return {
-    visible: allowed && workOrderStatus !== "cancelled" && pendingItems.length > 0,
+    visible: allowed && workOrderStatus !== "cancelled" && invoiceable,
     pendingItems,
     originalAmount: anyInvoiced ? null : list.totalAmount,
   };
@@ -189,6 +196,13 @@ export function invoiceOutcome(error: unknown): InvoiceOutcome {
   if (status === undefined || reason === undefined) return INVOICE_GENERIC_OUTCOME;
   const key = `${status} ${reason}`;
   return Object.prototype.hasOwnProperty.call(INVOICE_UI_REASONS, key) ? INVOICE_UI_REASONS[key] : INVOICE_GENERIC_OUTCOME;
+}
+
+// J-559 (C3-A2) — o desfecho em que o SERVIDOR afirma que a OS está cancelada (422 `work_order_cancelled`): a situação que a
+// página leu ficou velha, e a aba esconde o botão "Faturar OS" (Q1 = A). A comparação é pela identidade, porque o
+// `invoiceOutcome` devolve a própria entrada da lista fechada.
+export function invoiceOutcomeCancelsWorkOrder(outcome: InvoiceOutcome): boolean {
+  return outcome === INVOICE_UI_REASONS["422 work_order_cancelled"];
 }
 
 // ---------- envio (trava de envio duplo, R-UM-ENVIO) ----------

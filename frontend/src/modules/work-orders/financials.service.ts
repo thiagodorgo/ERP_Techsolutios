@@ -122,8 +122,9 @@ export async function invoiceWorkOrder(
   return adaptInvoiceResultOrThrow(response);
 }
 
-// B-SAN3-25 — um título da OS para o quadro "Títulos desta OS" (`financial_titles:read`). O 404 propaga: a aba mostra
-// "Título removido". Não há filtro por OS na lista de títulos (`P-SAN3-25-TITULOS-POR-OS-SEM-FILTRO`).
+// B-SAN3-25 — um título da OS para o quadro "Títulos desta OS" (`financial_titles:read`). O 404 propaga, e o título
+// apagado volta com 200 e `active: false` (J-559, C3-A1): nos dois casos a aba mostra "Título removido". Não há filtro por
+// OS na lista de títulos (`P-SAN3-25-TITULOS-POR-OS-SEM-FILTRO`).
 export async function getWorkOrderInvoiceTitle(
   context: WorkOrderFinancialApiContext,
   titleId: string,
@@ -198,6 +199,8 @@ function adaptInvoiceTitleOrThrow(value: unknown): WorkOrderInvoiceTitle {
     dueDate: readString(title.dueDate ?? title.due_date) ?? null,
     parentTitleId: readString(title.parentTitleId ?? title.parent_title_id) ?? null,
     overdue: title.overdue === true,
+    // O DTO sempre traz o booleano (`financial-title.dto.ts:35`); só o `false` explícito marca o título apagado.
+    active: title.active !== false,
   };
 }
 
