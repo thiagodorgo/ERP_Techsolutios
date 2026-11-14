@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1075** |
-| IDs distintos | 1064 |
-| **ABERTAS** | **825** |
+| Cabecalhos `## P-` | **1077** |
+| IDs distintos | 1066 |
+| **ABERTAS** | **827** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **764** |
+| — das quais **ativas nesta rodada** | **766** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 246 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1075 cabecalhos para 1064 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1077 cabecalhos para 1066 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 339
+## ABERTAS · balde A — material — 340
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -413,8 +413,9 @@
 | `P-APP-SEM-RENOVACAO-DE-TOKEN` | 15372 | ALTA | sim | P-APP-SEM-RENOVACAO-DE-TOKEN (2026-11-14) — o app mostra "Sessão expirada" 16 min depois |
 | `P-APP-TELEMETRIA-422` | 15380 | MÉDIA | sim | P-APP-TELEMETRIA-422 (2026-11-14) — `POST /mobile/telemetry` responde 422 a cada sincron |
 | `P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO` | 15417 | MÉDIA | sim | P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO (2026-11-14) — um tratador final falso, de mes |
+| `P-REPO-CAMINHOS-LOCAIS-COM-USUARIO` | 15474 | ALTA | sim | P-REPO-CAMINHOS-LOCAIS-COM-USUARIO (2026-11-14) — 155 arquivos rastreados na `main` têm  |
 
-## ABERTAS · balde B — processo/registro — 425
+## ABERTAS · balde B — processo/registro — 426
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -843,6 +844,7 @@
 | `P-REG-ATA-J554-SEM-POS-JUNTA` | 15453 | BAIXA | sim | P-REG-ATA-J554-SEM-POS-JUNTA (2026-11-14) — a ata `J-554-b-db-fuso-utc.md` da `main` par |
 | `P-WEB-ABA-OS-UMA-PENDENCIA-SO` | 15460 | BAIXA | sim | P-WEB-ABA-OS-UMA-PENDENCIA-SO (2026-11-14) — a aba da OS na web mostra só 1 pendência de |
 | `P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO` | 15467 | BAIXA | sim | P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO (2026-11-14) — a 2ª janela residual do `B-S |
+| `P-SEED-C11-CONTRADIZ-C2B` | 15482 | BAIXA | sim | P-SEED-C11-CONTRADIZ-C2B (2026-11-14) — na letra do plano do seed, a regra de e-mail do  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

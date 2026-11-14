@@ -3,6 +3,7 @@
 ## Atualização 2026-11-14 (tarde) — #561 e #564 na main; portão em 52/67; pausa tática e retomada; atas J-561 e J-564 completas
 
 - **Autor:** `reg-1411b-cl` (Claude Opus 5.5, redator de registro, identidade nova, nível menor declarado; revisão simples, §C7 10(1), que fica com outra identidade). **Base medida:** `origin/main@eeac48a3`, worktree próprio. Registro documental; `Kpis/**` congelado e intocado.
+- **Corte:** o registro fora do repositório (`REGISTRO-PENDENTE.md`) de 14/11 06:12 a 14:03 SP. O que veio depois (a pausa para a demonstração, às 14:24, e o resto) vai ao próximo registro.
 - **Merges de 14/11 depois do #562 (fato; `gh pr view`, hora em SP):**
   - #554 (`B-DB-FUSO-UTC`): `14b693e4`, 07:52. O porteiro `porteiro-554-cl` deu BLOQUEADO, porque a CI da `main` caiu no T15 de outro arquivo. Na re-rodada, a tentativa 2 da `43587307951` deu `success` às 09:39, e pela regra escrita dele o veredito passou a LIBERADO COM RESSALVA;
   - #561 (`B-MOBILE-GATE-CHAVE`, item 66): `e6f3c425`, 10:40, já na sessão nova. CI `43600960034` com 8/8; porteiro `porteiro-561-cl` LIBERADO COM RESSALVA;
@@ -18,10 +19,13 @@
   - `D-DONO-1411-T5-TRES-OPCOES` (as 3 aparências da tela de custos);
   - `D-DONO-1411-REFORCO-DP-API` (DeepSeek, API Claude e as 3 contas Codex; o cruzamento volta);
   - `D-DONO-1411-PAUSA-TATICA` e `D-DONO-1411-RETOMADA`;
-  - `REGISTRO-EMENDAS-ORQ-1411`, com as 9 emendas do orquestrador do dia: seed 1.7 e 1.8; 08c1b 2.2, 2.2.1 e 2.3; 17 1.4; SEC-LOG 1.2.2; 16 1.1.1; e 62 1.1.1.
+  - `D-DONO-1411-CAMINHOS-LOCAIS` (14:01: "quero resolver isso agora", sobre os caminhos locais com o nome de usuário no repositório público; a varredura para frente foi lançada);
+  - `REGISTRO-EMENDAS-ORQ-1411`, com as 11 emendas do orquestrador que a fonte deste registro cita (não todas as do dia; as outras 6 que a revisão mediu estão nomeadas lá): seed 1.7 e 1.8; 08c1b 2.2, 2.2.1 e 2.3; 17 1.4, com a errata do LF; SEC-LOG 1.2.2 e 1.4; 16 1.1.1; 62 1.1.1; e a 2.1 do plano v2 do item 42.
 - **As atas e os pareceres, em `omega/juntas/`:** as atas `J-561-b-mobile-gate-chave` e `J-564-b-san3-15b` ganharam o pós-junta, por acréscimo (o conserto, a conferência, a conferência visual e a C3 refeita no 564, o merge e o porteiro). Os pareceres dos porteiros 554, 561 e 564 entram ao lado das atas, sem caminho de máquina.
 - **As pendências, em `controle/pendencias.md`:**
-  - **27 novas:**
+  - **29 novas:**
+    - do achado das 13:53: `P-REPO-CAMINHOS-LOCAIS-COM-USUARIO` (ALTA, privacidade: 155 arquivos na `main`);
+    - da J-565 (fechada por unanimidade às 13:45): `P-SEED-C11-CONTRADIZ-C2B` (BAIXA, o CROT-565-01);
     - dos porteiros 554 e 561: `P-T15-5432-SUBSTRING-NA-HORA` (MÉDIA), `P-FUSO-BOOT-EXIGE-BANCO-EM-MEMORIA` (MÉDIA), `P-GATE-CHAVE-T4-VARREDURA-SEM-CANARIO` (BAIXA, a O1) e `P-GATE-CHAVE-ARNES-ACEITA-PORTA-NA-QUERY` (MÉDIA, a O2);
     - do #564: as 3 `P-15B-CONCLUSAO-*` (dono `B-SAN3-15c`), `P-GATE-CHAVE-T2-MATRIZ-INSTAVEL` e `P-WO-REPO-ERROS-EM-INGLES`;
     - da Emenda 1.8 do seed: as 9, entre elas a `P-APP-SEM-RENOVACAO-DE-TOKEN` (ALTA, candidata ao portão);
@@ -38,11 +42,11 @@
   - A ressalva V559-R1 já estava na `main`, como `P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE` (#562), e não se duplica.
 - **O que viaja, sem conserto neste PR:**
   - os corpos dos PRs #554, #555, #561 e #564 ficaram velhos; a mensagem de cada squash é o registro fiel;
-  - o conflito §A2 do plano 31 (retirar "Nova Entrada/Saída" do app, contra o `PLANO_SAN3.md` e o critério das pendências do #561) entra com a Emenda 1 desse plano, que ainda está em curso;
+  - o conflito §A2 do plano 31 (retirar "Nova Entrada/Saída" do app, contra o `PLANO_SAN3.md` e o critério das pendências do #561): a Emenda 1 desse plano foi gravada às 13:34, e o registro do conflito sai com ela, no próximo registro ou no do bloco. Antes do dev do 31, o orquestrador ainda decide 3 coisas: o dono da `P-MOBILE-SYNC-ESTOQUE-TIPOS`, o dono do resto da `P-O6R-B04-CONSUMIDORES-503` e a ordem do 67 frente ao 04b;
   - a PA-1 da Minha assinatura (item 62) está com o dono;
   - os 2 arquivos rastreados apagados na árvore principal (RP-4 do porteiro-555) são de outra sessão e existem na `main`;
   - avisos ao dono: a conta Codex 1 está em 99% da semana, e o OpenRouter está sem crédito.
-- **PRs abertos na hora do registro:** #565 (seed isolado; J-565 em curso), #566 (`B-ASS-09`), #567 (tela de custos), #568 (`B-SAN3-17`) e #569 (`B-ASS-08c1b`), todos em rascunho, mais o #419 e o #393 (congelados).
+- **PRs abertos na hora do registro:** #565 (seed isolado; a J-565 fechou às 13:45 por unanimidade, e o PR está em conflito com a `main`, a absorver por união), #566 (`B-ASS-09`), #567 (tela de custos), #568 (`B-SAN3-17`) e #569 (`B-ASS-08c1b`), todos em rascunho, mais o #419 e o #393 (congelados).
 
 ## Atualização 2026-11-14 (madrugada) — só o Claude, recomendações, acesso pessoal, item 67 do portão, item 50 fechado (#559), ata J-559 e cinco pendências
 
