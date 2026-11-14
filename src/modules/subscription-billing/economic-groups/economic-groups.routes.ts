@@ -3,7 +3,7 @@
 // renomear e excluir grupo gravam a trilha de plataforma; entrar e sair gravam a trilha da organização dentro da troca
 // (o serviço recebe o montador pela fábrica). Tudo pela allowlist (§4.3): o nome do grupo nunca entra.
 
-import { Router, type Request } from "express";
+import { Router, type Request, type Response } from "express";
 
 import { resolveRequestActor } from "../../auth/middleware/authenticated-actor.middleware.js";
 import { handleAsyncRoute, readRouteParam } from "../../core-saas/routes/http.js";
@@ -63,11 +63,17 @@ export function createEconomicGroupsPlatformRouter(): Router {
     if (!Array.isArray(body.tenantIds) || !body.tenantIds.every((id) => typeof id === "string")) {
       throw new SubscriptionBillingError(400, "SUBSCRIPTION_BILLING_INVALID", "invalid_tenant_ids", "tenantIds é uma lista de ids de organização.");
     }
-    const detail = await runtime.groups.putMembers(readRouteParam(request.params.groupId), {
-      tenantIds: body.tenantIds as string[],
-      ...(body.validFrom === undefined ? {} : { validFrom: body.validFrom as string }),
-      actorId: actorOf(request),
-    });
+    let detail: GroupDetail;
+    try {
+      detail = await runtime.groups.putMembers(readRouteParam(request.params.groupId), {
+        tenantIds: body.tenantIds as string[],
+        ...(body.validFrom === undefined ? {} : { validFrom: body.validFrom as string }),
+        actorId: actorOf(request),
+      });
+    } catch (error) {
+      if (sendTenantInAnotherGroup(response, error)) return;
+      throw error;
+    }
     response.status(200).json({ data: detailDto(detail) });
   }));
 
@@ -77,6 +83,22 @@ export function createEconomicGroupsPlatformRouter(): Router {
   }));
 
   return router;
+}
+
+/**
+ * O 422 `tenant_in_another_group` leva a lista `tenantIds` no envelope de erro, como o contrato diz (`API_CONTRACTS.md`,
+ * R9; plano v2 P9, "com a lista"). Wrapper local, no molde do `handlePeriodRoute` de `financial-period-close.routes.ts`:
+ * só este erro ganha um campo, e só o do contrato. Todo o resto segue pelo `sendRouteError` da casa, que não muda
+ * (J-566, achado C3-1). A lista é o subconjunto das organizações que o próprio pedido mandou.
+ */
+function sendTenantInAnotherGroup(response: Response, error: unknown): boolean {
+  if (!(error instanceof SubscriptionBillingError) || error.reason !== "tenant_in_another_group") return false;
+  const tenantIds = (error as { readonly tenantIds?: unknown }).tenantIds;
+  if (!Array.isArray(tenantIds) || !tenantIds.every((id) => typeof id === "string")) return false;
+  response.status(error.statusCode).json({
+    error: { code: error.code, reason: error.reason, message: error.message, tenantIds: [...tenantIds] },
+  });
+  return true;
 }
 
 /** A trilha de plataforma do grupo: o contexto inteiro vai à allowlist, que só deixa o id do grupo e o ator. */

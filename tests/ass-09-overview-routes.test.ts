@@ -435,6 +435,43 @@ test("T-GRP-HTTP · os grupos pela rota: criar, nome repetido, membros, históri
   });
 });
 
+test("T-GRP-HTTP-2 · o 422 tenant_in_another_group leva a lista (tenantIds) no corpo, como o contrato; os outros erros seguem com 3 campos (J-566, C3-1)", async () => {
+  freshRuntime(NOV_2);
+  seedTenant("a");
+  seedTenant("b");
+  seedTenant("c");
+  await withApi(async (baseUrl) => {
+    const g1 = (await call(baseUrl, "POST", "/economic-groups", { body: { name: "Grupo 1" } })).body.data.id as string;
+    const g2 = (await call(baseUrl, "POST", "/economic-groups", { body: { name: "Grupo 2" } })).body.data.id as string;
+    const inG1 = await call(baseUrl, "PUT", `/economic-groups/${g1}/members`, { body: { tenantIds: ["a", "c"] } });
+    assert.equal(inG1.status, 200, inG1.text);
+
+    // B está livre; A e C estão no Grupo 1. A lista é a de quem está em outro grupo, na ordem do pedido.
+    const refused = await call(baseUrl, "PUT", `/economic-groups/${g2}/members`, { body: { tenantIds: ["c", "b", "a"] } });
+    assert.equal(refused.status, 422, refused.text);
+    assert.deepEqual(refused.body, {
+      error: {
+        code: "SUBSCRIPTION_BILLING_INVALID",
+        reason: "tenant_in_another_group",
+        message: "Uma ou mais organizações já estão em outro grupo nesse período.",
+        tenantIds: ["c", "a"],
+      },
+    });
+    const one = await call(baseUrl, "PUT", `/economic-groups/${g2}/members`, { body: { tenantIds: ["a"] } });
+    assert.deepEqual([one.status, one.body.error.reason, one.body.error.tenantIds], [422, "tenant_in_another_group", ["a"]]);
+    const history = await call(baseUrl, "GET", `/economic-groups/${g2}/history`);
+    assert.deepEqual(history.body.data, [], "a troca recusada não gravou vínculo");
+
+    // Só o 422 do contrato ganha o campo: os outros erros da mesma rota seguem com code, reason e message.
+    const past = await call(baseUrl, "PUT", `/economic-groups/${g2}/members`, { body: { tenantIds: ["b"], validFrom: "2026-11-01" } });
+    assert.equal(past.status, 422, past.text);
+    assert.deepEqual(Object.keys(past.body.error).sort(), ["code", "message", "reason"]);
+    assert.equal(past.body.error.reason, "membership_retroactive");
+    const unknown = await call(baseUrl, "PUT", `/economic-groups/${g2}/members`, { body: { tenantIds: ["zz"] } });
+    assert.deepEqual([unknown.status, Object.keys(unknown.body.error).sort()], [404, ["code", "message", "reason"]]);
+  });
+});
+
 test("T-ACC-3 · a trilha do câmbio e dos grupos só leva as chaves da allowlist, e nunca o nome do grupo nem o da organização", async () => {
   freshRuntime(DEC_2);
   seedTenant("a");
