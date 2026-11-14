@@ -1,6 +1,6 @@
 {
   "organizacao": { "nome": "Organização Exemplo" },
-  "admin": { "nome": "Administracao Exemplo", "email": "admin@exemplo.invalid" },
+  "admin": { "nome": "Administração Exemplo", "email": "admin@exemplo.invalid" },
   "plataforma": { "email": "plataforma@exemplo.invalid" },
   "usuarios": [
     { "chave": "gestor", "nome": "Gestora Exemplo", "email": "gestor@exemplo.invalid", "papel": "manager" },

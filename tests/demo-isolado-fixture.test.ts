@@ -17,7 +17,7 @@ const MATRIZ = path.resolve("scripts/demo-isolado/matriz-exemplo.tsv");
 
 const VOCABULARIO = new Set(
   [
-    "exemplo", "organização", "administracao", "plataforma", "gestora", "despacho", "técnica", "financeiro",
+    "exemplo", "organização", "administração", "plataforma", "gestora", "despacho", "técnica", "financeiro",
     "auditoria", "cliente", "ltda", "viatura", "equipe", "remoção", "padrão", "tabela", "perfil", "documento",
     "do", "de", "veículo", "quem", "retira", "pátio", "rua", "cidade", "bloco", "marca", "modelo", "prata",
     "autoridade", "base", "frente", "traseira", "lado", "esquerdo", "direito", "teto", "painel", "motor", "chassi",
@@ -119,6 +119,8 @@ test("C7 as 3 chaves congeladas da fundacao (Emenda 1.1 §8.1)", () => {
   assert.ok(fixture.admin.email.endsWith(".invalid"));
   // O nome leva acento e vai em UTF-8 (Emenda 1.3 §2); o slug sai do produto, em ASCII.
   assert.equal(fixture.organizacao.nome, "Organização Exemplo");
+  // O nome do administrador tambem leva acento (Emenda 1.6, PR-A5).
+  assert.equal(fixture.admin.nome, "Administração Exemplo");
   assert.notEqual(fixture.organizacao.nome.toLowerCase(), "demo");
 });
 
