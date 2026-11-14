@@ -25,7 +25,7 @@ import {
 
 /** O que o fechamento precisa saber sobre a organização no período (montado pelo repositório de assinaturas). */
 export type StatementInputs =
-  | { readonly kind: "skip"; readonly reason: "no_subscription" | "plan_without_price" | "platform_organization" }
+  | { readonly kind: "skip"; readonly reason: "no_subscription" | "plan_without_price" | "addon_without_price" | "platform_organization" }
   | {
       readonly kind: "ready";
       readonly subscriptionId: string;

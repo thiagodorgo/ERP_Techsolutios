@@ -84,8 +84,8 @@ test("T-IN-4 · refechar um reaberto usa a versão gravada (pinned), mesmo que e
 });
 
 test("T-IN-4b · refechar fixa TAMBÉM a versão do add-on de rastreamento: o preço por veículo não muda (G5, §3.4)", () => {
-  const trackOld = version("v-track-1", "tracking_basic", "2026-01-01", "2026-10-20", { monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
-  const trackNew = version("v-track-2", "tracking_basic", "2026-10-20", null, { monthlyPriceCents: 0, perVehiclePriceCents: 9_990 });
+  const trackOld = version("v-track-1", "tracking_basic", "2026-01-01", "2026-10-20", { pricingUnit: "per_vehicle", monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
+  const trackNew = version("v-track-2", "tracking_basic", "2026-10-20", null, { pricingUnit: "per_vehicle", monthlyPriceCents: 0, perVehiclePriceCents: 9_990 });
   const addon: TenantSubscriptionAddon = { id: "a1", tenantId: "t", subscriptionId: "s1", planId: "tracking_basic", validFrom: sp("2026-01-01"), validTo: null, perVehiclePriceOverrideCents: null, createdAt: sp("2026-01-01"), updatedAt: sp("2026-01-01") };
   const source = data({
     subscriptions: [subscription("s1", "starter", "2026-01-01", null)],
@@ -147,7 +147,7 @@ test("T-IN-6 · medições: o maior do mês, espaço com teto a 0,001 GB, gaps d
 });
 
 test("T-IN-7 · add-on de rastreamento vigente no último dia dá o preço por veículo; veículos distintos no mês", () => {
-  const tracking = version("v-track", "tracking_basic", "2026-01-01", null, { monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
+  const tracking = version("v-track", "tracking_basic", "2026-01-01", null, { pricingUnit: "per_vehicle", monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
   const addon: TenantSubscriptionAddon = { id: "a1", tenantId: "t", subscriptionId: "s1", planId: "tracking_basic", validFrom: sp("2026-01-01"), validTo: null, perVehiclePriceOverrideCents: null, createdAt: sp("2026-01-01"), updatedAt: sp("2026-01-01") };
   const out = ready(buildStatementInputs("2026-10", data({
     subscriptions: [subscription("s1", "starter", "2026-01-01", null)],
