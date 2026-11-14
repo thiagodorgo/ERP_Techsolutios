@@ -17,6 +17,7 @@ import '../../../shared/ui/mobile_kit.dart';
 import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
 import '../../checklists/ui/checklist_navigation.dart';
+import '../../prestador/domain/prestador_flow.dart';
 import '../data/work_order_repository.dart';
 import '../domain/work_order_models.dart';
 import '../domain/work_order_steps.dart';
@@ -362,6 +363,13 @@ class _WorkOrderExecuteScreenState
   }
 
   Future<void> _doComplete(WorkOrderRepository repo, _ExecData data) async {
+    // B-SAN3-15b (P8) — o prestador conclui pela tela de conclusão: um caminho só, para o
+    // diagnóstico e o serviço executado irem na mensagem. Nada é enfileirado aqui.
+    final viaConclusion = isProviderFlow(data.wo);
+    if (viaConclusion) {
+      context.go('/work-orders/${widget.workOrderId}/conclusion');
+      return;
+    }
     setState(() {
       _isLoading = true;
       _safeError = null;

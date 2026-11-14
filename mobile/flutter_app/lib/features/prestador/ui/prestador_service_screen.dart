@@ -241,12 +241,8 @@ class _PrestadorServiceScreenState
             key: const Key('execution-complete'),
             onPressed: _execReady
                 ? () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Atendimento pronto para conclusao.'),
-                      ),
-                    );
-                    context.go('/work-orders/${widget.workOrderId}/execute');
+                    // B-SAN3-15b (P8) — o fim do atendimento leva à conclusão, onde o diagnóstico viaja.
+                    context.go('/work-orders/${widget.workOrderId}/conclusion');
                   }
                 : null,
             icon: const Icon(Icons.check_circle_outline),
