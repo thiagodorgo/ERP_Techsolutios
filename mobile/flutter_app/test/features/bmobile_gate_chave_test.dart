@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:erp_techsolutions_mobile/app/router.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
+import 'package:erp_techsolutions_mobile/core/permissions/mobile_gates.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_action_store.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_providers.dart';
 import 'package:erp_techsolutions_mobile/features/checklists/data/checklist_local_store.dart';
@@ -29,6 +30,7 @@ import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_lo
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/erp_components.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/home_screen.dart';
+import 'package:erp_techsolutions_mobile/shared/ui/mobile_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -424,5 +426,83 @@ void main() {
         expect(find.byType(TextField), findsNothing);
       });
     }
+  });
+
+  // ── T3: a régua do app é a da rota, célula a célula ───────────────────────
+
+  const regraDoGate = <String, MobileGate>{
+    'G1': MobileGates.checklistsDaOs,
+    'G1b': MobileGates.responderChecklist,
+    'G2': MobileGates.estoque,
+    'G3': MobileGates.movimentarEstoque,
+    'G4': MobileGates.aprovacoes,
+  };
+
+  group('T3 — MobileGates.<g>.permite(sessão) == veredito do servidor', () {
+    for (final papel in _papeis) {
+      for (final gate in _gates) {
+        test('$gate · $papel', () {
+          expect(
+            regraDoGate[gate]!.permite(_sessaoDoPapel(papel)),
+            _libera(papel, gate),
+          );
+        });
+      }
+    }
+    for (final nome in const [
+      'G1_sem_modulo',
+      'G1b_sem_modulo',
+      'G2_sem_modulo',
+      'G3_sem_modulo',
+      'G4_so_approvals',
+      'G4_so_work_orders',
+      'G4_nenhum',
+    ]) {
+      test('módulo · $nome', () {
+        final caso = _caso(nome);
+        expect(
+          regraDoGate[caso['gate'] as String]!.permite(_sessaoDoCaso(nome)),
+          caso['libera'] as bool,
+        );
+      });
+    }
+  });
+
+  // ── T5: as entradas de Diagnóstico da tela inicial (R4.2) ─────────────────
+
+  group('T5 — Diagnóstico na tela inicial só com modoDev', () {
+    Finder icone() => find.byTooltip('Diagnóstico');
+    Finder atalho() => find.widgetWithText(MobileActionTile, 'Diagnóstico');
+
+    testWidgets('modoDev: false → sem o ícone e sem o atalho', (tester) async {
+      final sessao = _sessaoDoPapel('tenant_admin');
+      await _montar(
+        tester,
+        _inicio(sessao, tela: HomeScreen(session: sessao, modoDev: false)),
+      );
+      expect(icone(), findsNothing);
+      expect(atalho(), findsNothing);
+    });
+    testWidgets('modoDev: true → o ícone e o atalho', (tester) async {
+      final sessao = _sessaoDoPapel('tenant_admin');
+      await _montar(
+        tester,
+        _inicio(sessao, tela: HomeScreen(session: sessao, modoDev: true)),
+      );
+      expect(icone(), findsOneWidget);
+      expect(atalho(), findsOneWidget);
+    });
+    testWidgets(
+      'sem o argumento → o padrão é o de produção (sem Diagnóstico)',
+      (tester) async {
+        final sessao = _sessaoDoPapel('tenant_admin');
+        await _montar(
+          tester,
+          _inicio(sessao, tela: HomeScreen(session: sessao)),
+        );
+        expect(icone(), findsNothing);
+        expect(atalho(), findsNothing);
+      },
+    );
   });
 }

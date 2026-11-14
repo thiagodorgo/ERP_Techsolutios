@@ -371,26 +371,30 @@ test("T2 — a matriz papel × gate medida no servidor é a da fixture versionad
 
 test("T2 · R1.4 — G1b: o gestor passa no HTTP e é recusado na ação; o técnico de campo responde", async () => {
   const { matriz, brutos } = await medir();
+  // A matriz primeiro: é ela que vai para a fixture, e é nela que decidir por status (M15) aparece.
+  assert.equal(matriz.papeis.manager.libera.G1b, false, "manager: G1b");
+  assert.equal(matriz.papeis.field_technician.libera.G1b, true, "field_technician: G1b");
   assert.equal(brutos.manager.G1b.status, 200);
   assert.equal(brutos.manager.G1b.balde, "rejected");
   assert.equal(brutos.manager.G1b.motivoDaAcao, "permission_required");
-  assert.equal(matriz.papeis.manager.libera.G1b, false);
   assert.equal(brutos.field_technician.G1b.status, 200);
   assert.equal(brutos.field_technician.G1b.balde, "accepted");
-  assert.equal(matriz.papeis.field_technician.libera.G1b, true);
 });
 
 test("T2 · RA1.5 — G3: gestor, operador e técnico passam na porta e são recusados na ação; o estoque reserva", async () => {
   const { matriz, brutos } = await medir();
+  // A matriz primeiro: é ela que vai para a fixture, e é nela que decidir por status (M17) aparece.
+  for (const papel of ["field_technician", "manager", "operator"] as const) {
+    assert.equal(matriz.papeis[papel].libera.G3, false, `${papel}: G3`);
+  }
+  assert.equal(matriz.papeis.inventory.libera.G3, true, "inventory: G3");
   for (const papel of ["field_technician", "manager", "operator"] as const) {
     assert.equal(brutos[papel].G3.status, 200, `${papel}: HTTP`);
     assert.equal(brutos[papel].G3.balde, "rejected", `${papel}: balde`);
     assert.equal(brutos[papel].G3.motivoDaAcao, "permission_required", `${papel}: motivo`);
-    assert.equal(matriz.papeis[papel].libera.G3, false, `${papel}: G3`);
   }
   assert.equal(brutos.inventory.G3.status, 200);
   assert.equal(brutos.inventory.G3.balde, "accepted");
-  assert.equal(matriz.papeis.inventory.libera.G3, true);
 });
 
 test("T2 · R2.1 — módulo: qualquer um de approvals/work_orders libera o G4; sem o módulo, 403 module_not_enabled", async () => {

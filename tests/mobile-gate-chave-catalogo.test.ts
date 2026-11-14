@@ -248,25 +248,21 @@ const EXCECOES: ReadonlyArray<{ readonly arquivo: string; readonly classe: Class
     classe: "has_all",
     motivo: "ModuleResolver confere os requiredPermissions do módulo (código morto para navegação, P-MOBILE-MODULE-RESOLVER-MORTO)",
   },
-  {
-    arquivo: "lib/shared/ui/module_placeholder_screen.dart",
-    classe: "has",
-    motivo: "F0: o placeholder ainda recebe a chave por parâmetro (sai na F2, quando passa a receber a regra)",
-  },
 ];
 
-// R3.2 — piso por classe, medido no head do bloco (F2). Reduzir uma classe de propósito baixa o piso no mesmo PR,
-// com a contagem nova escrita aqui. Piso 0 é justificado por nome.
+// R3.2 — piso por classe, medido no head do bloco (fim da F2, 14/11/2026): o número de chaves (ou de posições não
+// literais) que cada reconhecedor acha no lib/. Bloco que reduzir uma classe de propósito baixa o piso NO MESMO PR, com
+// a contagem nova escrita aqui. Piso 0 é justificado por nome.
 const PISO_POR_CLASSE: Readonly<Record<Classe, number>> = {
-  has: 0,
-  has_any: 0, // nenhum `.hasAny(` no lib (a regra "qualquer uma" mora no MobileGate)
-  has_all: 0,
-  required_permission: 0,
-  required_permissions: 0,
-  perms: 0,
-  permissions_const: 0,
-  permission_set: 0,
-  mobile_gates: 0,
+  has: 14,
+  has_any: 0, // nenhum `.hasAny(` no lib: a regra "qualquer uma" mora no MobileGate, que não usa o resolvedor
+  has_all: 1,
+  required_permission: 0, // o `ModulePlaceholderScreen` recebe a regra (`gate:`) desde este bloco, não a chave
+  required_permissions: 6,
+  perms: 8,
+  permissions_const: 12,
+  permission_set: 12,
+  mobile_gates: 7,
 };
 
 const CANARIO = `
