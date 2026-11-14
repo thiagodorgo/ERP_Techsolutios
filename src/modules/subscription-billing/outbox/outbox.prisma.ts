@@ -28,7 +28,8 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { forEachTenantRls, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
-import type { AdoptionFacts, ClaimParams, ClaimResult, OutboxRepository } from "./outbox.repository.js";
+import { putRefInTx } from "../webhooks/statement-refs.prisma.js";
+import { recordedChargeStatus, type AdoptionFacts, type ChargeRecordOutcome, type ClaimParams, type ClaimResult, type OutboxLease, type OutboxRepository } from "./outbox.repository.js";
 import {
   idempotencyKeyOf,
   type BillingOutboxRow,
@@ -149,7 +150,11 @@ const CHARGE_CREATE_JOINT_PICK_SQL = `SELECT o.* FROM subscription_statements s
       LIMIT 1`;
 /** Recorte opcional das organizações da varredura de plataforma. Produção não o passa (varre todas); a suíte de banco
  * compartilhado o usa para não tocar a outbox de outra suíte (o mesmo motivo do `tenantIds` da medição — M-5 do #505). */
-export type PrismaOutboxScope = { readonly tenantIds?: readonly string[] };
+export type PrismaOutboxScope = {
+  readonly tenantIds?: readonly string[];
+  /** Injeção de falha do RG1, executada dentro da transação do registro (`recordChargeOutcome`) depois do INSERT. */
+  readonly afterChargeInsert?: () => Promise<void>;
+};
 
 export class PrismaOutboxRepository implements OutboxRepository {
   constructor(
@@ -293,18 +298,23 @@ export class PrismaOutboxRepository implements OutboxRepository {
     return null;
   }
 
-  async #mutate(tenantId: string, id: string, data: Prisma.BillingOutboxUpdateInput): Promise<void> {
-    await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
-      await tx.billingOutbox.updateMany({ where: { id }, data });
+  async #mutate(tenantId: string, id: string, lease: OutboxLease, data: Prisma.BillingOutboxUpdateInput): Promise<boolean> {
+    return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+      // [LEASE-01] A posse faz parte do predicado de TODA escrita do despacho. Zero linhas = lease perdida, sem exceção.
+      const result = await tx.billingOutbox.updateMany({
+        where: { id, status: "PROCESSING", claimed_by: lease.claimedBy, attempt_started_at: lease.attemptStartedAt },
+        data,
+      });
+      return result.count === 1;
     });
   }
 
-  async markSent(tenantId: string, id: string, externalId: string | null, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "SENT", external_id: externalId, next_attempt_at: null, last_error: null, updated_at: now });
+  async markSent(tenantId: string, id: string, externalId: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "SENT", external_id: externalId, next_attempt_at: null, last_error: null, updated_at: now });
   }
 
-  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, options: { readonly refundAttempt?: boolean } = {}): Promise<void> {
-    await this.#mutate(tenantId, id, {
+  async reschedule(tenantId: string, id: string, nextAttemptAt: Date, lastError: string | null, now: Date, lease: OutboxLease, options: { readonly refundAttempt?: boolean } = {}): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, {
       status: "PENDING",
       next_attempt_at: nextAttemptAt,
       last_error: lastError,
@@ -317,16 +327,89 @@ export class PrismaOutboxRepository implements OutboxRepository {
     });
   }
 
-  async markFailed(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "FAILED", last_error: lastError, next_attempt_at: null, updated_at: now });
+  async markFailed(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "FAILED", last_error: lastError, next_attempt_at: null, updated_at: now });
   }
 
-  async markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "NEEDS_REVIEW", last_error: lastError, next_attempt_at: null, updated_at: now });
+  async markNeedsReview(tenantId: string, id: string, lastError: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "NEEDS_REVIEW", last_error: lastError, next_attempt_at: null, updated_at: now });
   }
 
-  async markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date): Promise<void> {
-    await this.#mutate(tenantId, id, { status: "SKIPPED", skip_reason: skipReason, next_attempt_at: null, updated_at: now });
+  async markSkipped(tenantId: string, id: string, skipReason: OutboxSkipReason, now: Date, lease: OutboxLease): Promise<boolean> {
+    return this.#mutate(tenantId, id, lease, { status: "SKIPPED", skip_reason: skipReason, next_attempt_at: null, updated_at: now });
+  }
+
+  async confirmLease(tenantId: string, id: string, lease: OutboxLease): Promise<boolean> {
+    return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+      // A confirmação da posse (marcador LEASE-02 no despacho): a transação termina antes da rede; o lock só serializa a foto da posse.
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT id FROM billing_outbox
+          WHERE id = $1::uuid AND status = 'PROCESSING' AND claimed_by = $2 AND attempt_started_at = $3
+          FOR UPDATE`,
+        id,
+        lease.claimedBy,
+        lease.attemptStartedAt,
+      )) as Array<{ id: string }>;
+      return rows.length === 1;
+    });
+  }
+
+  async recordChargeOutcome(
+    tenantId: string,
+    row: BillingOutboxRow,
+    lease: OutboxLease,
+    outcome: ChargeRecordOutcome,
+    now: Date,
+  ): Promise<boolean> {
+    // [REG-TX] O demonstrativo vem PRIMEIRO; a rede já terminou antes de esta transação começar.
+    return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+      const statements = (await tx.$queryRawUnsafe(
+        `SELECT id, tenant_id, status, total_amount, reopened_at
+           FROM subscription_statements
+          WHERE id = $1::uuid
+          FOR NO KEY UPDATE`,
+        row.statementId,
+      )) as Array<{ id: string; tenant_id: string; status: string; total_amount: unknown; reopened_at: Date | null }>;
+      const statement = statements[0];
+      if (!statement) return false;
+
+      const leased = (await tx.$queryRawUnsafe(
+        `UPDATE billing_outbox
+            SET status = 'SENT', external_id = $4, next_attempt_at = NULL, last_error = NULL, updated_at = $5
+          WHERE id = $1::uuid AND status = 'PROCESSING' AND claimed_by = $2 AND attempt_started_at = $3
+          RETURNING id`,
+        row.id,
+        lease.claimedBy,
+        lease.attemptStartedAt,
+        outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId,
+        now,
+      )) as Array<{ id: string }>;
+      if (leased.length === 0) return false;
+
+      const externalChargeId = outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId;
+      const details = outcome.kind === "created" ? outcome.result : outcome.lookup;
+      const status = recordedChargeStatus(outcome.kind, details.status);
+      await tx.$executeRawUnsafe(
+        `INSERT INTO subscription_statement_charges
+           (tenant_id, statement_id, provider, external_charge_id, status, pay_url, pix_copy_paste, boleto_line, boleto_url, due_date, created_at)
+         VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10::date, $11)
+         ON CONFLICT (provider, external_charge_id) DO NOTHING`,
+        statement.tenant_id,
+        statement.id,
+        row.provider,
+        externalChargeId,
+        status,
+        details.payUrl ?? null,
+        details.pixCopyPaste ?? null,
+        details.boletoLine ?? null,
+        details.boletoUrl ?? null,
+        (outcome.kind === "adopted" ? outcome.lookup.dueDate : undefined) ?? (typeof row.payload.dueDate === "string" ? row.payload.dueDate : null),
+        now,
+      );
+      await this.scope.afterChargeInsert?.();
+      await putRefInTx(tx, { statementId: statement.id, tenantId: statement.tenant_id, provider: row.provider, externalChargeId }, now);
+      return true;
+    });
   }
 
   async markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number> {

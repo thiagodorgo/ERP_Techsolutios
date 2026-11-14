@@ -7,11 +7,20 @@ import type {
   WorkOrderFinancialManualInput,
   WorkOrderFinancialPatchInput,
   WorkOrderFinancialSource,
+  WorkOrderInvoiceBody,
+  WorkOrderInvoiceResult,
+  WorkOrderInvoiceTitle,
+  WorkOrderInvoiceTitleStatus,
 } from "./financials.types";
+
+// O formatador de dinheiro mora no modelo puro do faturamento (os testes da raiz o importam sem o cliente HTTP); este
+// serviço o reexporta para quem já o importava daqui.
+export { formatMoney } from "./work-order-invoice.model";
 
 // Ω3F-3b — camada de dados da aba Financeiro. Contrato:
 //   GET/POST  /work-orders/:id/financial-items
 //   PATCH/DELETE /work-orders/:id/financial-items/:itemId (delete = lógico → 204).
+//   B-SAN3-25: POST /work-orders/:id/invoice (fatura) e GET /financial-titles/:id (o quadro "Títulos desta OS").
 // Leitura DEFENSIVA (o backend pode evoluir campos): cada linha é normalizada; o TOTAL vem do
 // agregado do backend — o front nunca soma.
 
@@ -97,14 +106,31 @@ export async function deleteFinancialItem(
   });
 }
 
-// Dinheiro SEMPRE com a moeda do item (não assume BRL). Fallback gracioso para valor cru.
-export function formatMoney(value: number, currency: string): string {
-  if (!Number.isFinite(value)) return "—";
-  try {
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: currency || "BRL" }).format(value);
-  } catch {
-    return `${value.toFixed(2)} ${currency}`;
-  }
+// B-SAN3-25 — a ÚNICA função da web que monta a rota de faturamento da OS ([G-INVOICE], plano v2 §4.3 A7); só o diálogo
+// a chama, pelo submetedor com trava de envio duplo. Sem ramo de demonstração: o erro propaga com `status` e `reason`
+// (`ApiError`), e quem decide a frase é `invoiceOutcome` no modelo.
+export async function invoiceWorkOrder(
+  context: WorkOrderFinancialApiContext,
+  workOrderId: string,
+  body: WorkOrderInvoiceBody,
+): Promise<WorkOrderInvoiceResult> {
+  const response = await apiRequest<unknown>(`/work-orders/${encodeURIComponent(workOrderId)}/invoice`, {
+    ...context,
+    method: "POST",
+    body,
+  });
+  return adaptInvoiceResultOrThrow(response);
+}
+
+// B-SAN3-25 — um título da OS para o quadro "Títulos desta OS" (`financial_titles:read`). O 404 propaga, e o título
+// apagado volta com 200 e `active: false` (J-559, C3-A1): nos dois casos a aba mostra "Título removido". Não há filtro por
+// OS na lista de títulos (`P-SAN3-25-TITULOS-POR-OS-SEM-FILTRO`).
+export async function getWorkOrderInvoiceTitle(
+  context: WorkOrderFinancialApiContext,
+  titleId: string,
+): Promise<WorkOrderInvoiceTitle> {
+  const response = await apiRequest<unknown>(`/financial-titles/${encodeURIComponent(titleId)}`, context);
+  return adaptInvoiceTitleOrThrow(readData(response));
 }
 
 // ---------- adapters (leitura defensiva) ----------
@@ -139,6 +165,11 @@ function adaptItem(value: unknown): WorkOrderFinancialItem | null {
     currency: readString(item.currency) ?? "BRL",
     source,
     notes: readString(item.notes) ?? null,
+    // B-SAN3-25 — faturado se o servidor disser `invoiced: true` OU trouxer a data do carimbo (fail-closed: na dúvida, o
+    // item não ganha editar nem excluir, que o servidor recusaria com 422 item_invoiced).
+    invoiced: item.invoiced === true || readString(item.invoicedAt ?? item.invoiced_at) !== undefined,
+    invoicedAt: readString(item.invoicedAt ?? item.invoiced_at) ?? null,
+    titleId: readString(item.titleId ?? item.title_id) ?? null,
     createdAt: readString(item.createdAt ?? item.created_at) ?? "",
     updatedAt: readString(item.updatedAt ?? item.updated_at) ?? "",
   };
@@ -149,6 +180,44 @@ function adaptItemOrThrow(value: unknown): WorkOrderFinancialItem {
   const item = adaptItem(value);
   if (!item) throw new Error("invalid_financial_item_response");
   return item;
+}
+
+const TITLE_STATUSES: ReadonlySet<string> = new Set<WorkOrderInvoiceTitleStatus>(["open", "scheduled", "partially_paid", "paid", "in_dispute", "cancelled"]);
+
+// O título do `toFinancialTitleDto`. Sem id ou sem valor é resposta inesperada: erro (a tela não inventa título).
+function adaptInvoiceTitleOrThrow(value: unknown): WorkOrderInvoiceTitle {
+  const title = asRecord(value);
+  const id = readString(title.id);
+  const amount = readNumber(title.amount);
+  if (!id || amount === undefined) throw new Error("invalid_financial_title_response");
+  const status = readString(title.status);
+  return {
+    id,
+    amount,
+    currency: readString(title.currency) ?? "BRL",
+    status: status && TITLE_STATUSES.has(status) ? (status as WorkOrderInvoiceTitleStatus) : null,
+    dueDate: readString(title.dueDate ?? title.due_date) ?? null,
+    parentTitleId: readString(title.parentTitleId ?? title.parent_title_id) ?? null,
+    overdue: title.overdue === true,
+    // O DTO sempre traz o booleano (`financial-title.dto.ts:35`); só o `false` explícito marca o título apagado.
+    active: title.active !== false,
+  };
+}
+
+// O 201 do faturamento: `{ data: título, invoicedTotal, currency, invoicedItemCount }`. Forma inesperada é erro, e o erro
+// vira a frase genérica (que não afirma que nada foi faturado) com releitura da lista.
+function adaptInvoiceResultOrThrow(response: unknown): WorkOrderInvoiceResult {
+  const record = asRecord(response);
+  const invoicedTotal = readNumber(record.invoicedTotal ?? record.invoiced_total);
+  const invoicedItemCount = readNumber(record.invoicedItemCount ?? record.invoiced_item_count);
+  if (invoicedTotal === undefined || invoicedItemCount === undefined) throw new Error("invalid_invoice_response");
+  const title = adaptInvoiceTitleOrThrow(record.data);
+  return {
+    title,
+    invoicedTotal,
+    currency: readString(record.currency) ?? title.currency,
+    invoicedItemCount,
+  };
 }
 
 function readData(response: unknown): unknown {

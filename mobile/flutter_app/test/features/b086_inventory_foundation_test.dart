@@ -25,14 +25,18 @@ const _tenant = 'tenant-b086';
 
 const _sessionFull = BootstrapSession(
   activeTenant: TenantContext(tenantId: _tenant, displayName: 'Tenant B086'),
-  enabledModules: [],
-  permissions: PermissionSet({'inventory:read', 'inventory:write'}),
+  enabledModules: [
+    EnabledModule(id: 'inventory', title: 'Estoque', route: '/inventory'),
+  ],
+  permissions: PermissionSet({'inventory.read', 'inventory.manage'}),
 );
 
 const _sessionReadOnly = BootstrapSession(
   activeTenant: TenantContext(tenantId: _tenant, displayName: 'Tenant B086'),
-  enabledModules: [],
-  permissions: PermissionSet({'inventory:read'}),
+  enabledModules: [
+    EnabledModule(id: 'inventory', title: 'Estoque', route: '/inventory'),
+  ],
+  permissions: PermissionSet({'inventory.read'}),
 );
 
 const _sessionNoInventory = BootstrapSession(
@@ -239,7 +243,7 @@ void main() {
       expect(find.text('Capacitor 100uF 50V'), findsNothing);
     });
 
-    testWidgets('4. permission gate sem inventory:read exibe bloqueio', (
+    testWidgets('4. permission gate sem inventory.read exibe bloqueio', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapList(session: _sessionNoInventory));
@@ -249,7 +253,7 @@ void main() {
       expect(find.text('Capacitor 100uF 50V'), findsNothing);
     });
 
-    testWidgets('5. botoes Entrada e Saida visiveis com inventory:write', (
+    testWidgets('5. botoes Entrada e Saida visiveis com inventory.manage', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapList());
@@ -259,7 +263,7 @@ void main() {
       expect(find.text('Saida'), findsOneWidget);
     });
 
-    testWidgets('6. botoes Entrada e Saida ocultos sem inventory:write', (
+    testWidgets('6. botoes Entrada e Saida ocultos sem inventory.manage', (
       tester,
     ) async {
       await tester.pumpWidget(_wrapList(session: _sessionReadOnly));

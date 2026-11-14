@@ -55,7 +55,7 @@ if (!connectionString) {
       ]);
 
     const admin = new PrismaClient({
-      adapter: new PrismaPg({ connectionString: withApplicationName(connectionString!, buildApplicationName("bmat-admin")) }),
+      adapter: (await import("../src/database/pg-connection.js")).createPgAdapter(withApplicationName(connectionString!, buildApplicationName("bmat-admin"))),
     });
     const roleA: EphemeralRole = await createEphemeralRole(
       admin,

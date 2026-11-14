@@ -10,7 +10,13 @@ import path from "node:path";
 import test, { after } from "node:test";
 import { pathToFileURL } from "node:url";
 
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
+import pg from "pg";
+
 import { withRoleCatalogLock } from "./helpers/auth-identity-fixture.js";
+
+const { Client } = pg;
 
 // B-O6R-12 — DRILL DA MIGRAÇÃO `20260901100000_impound_process_regime_snapshot`.
 //
@@ -120,9 +126,7 @@ if (!connectionString) {
   type Semente = { tenantId: string; profileId: string; outroProfileId: string; processId: string; cap: string };
   let sementes: Semente[] = [];
 
-  const { Client } = await import("pg");
   type PgClient = InstanceType<typeof Client>;
-  const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
   // Cliente na base COMPARTILHADA, só para a trava de catálogo de cluster (E1.11′): a trava consultiva vale por
   // base, então é aqui, e não no clone, que ela serializa com as outras suítes que criam e derrubam papéis.
   const catalogo = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
@@ -133,7 +137,12 @@ if (!connectionString) {
 
   const conectar = async (nome: string): Promise<PgClient> => {
     const client = new Client({ connectionString: urlDe(nome) });
-    await client.connect();
+    try {
+      await client.connect();
+    } catch (error) {
+      await client.end().catch(() => undefined);
+      throw error;
+    }
     return client;
   };
   const comAdmin = async <T>(fn: (admin: PgClient) => Promise<T>): Promise<T> => {
@@ -380,9 +389,17 @@ if (!connectionString) {
   // Base com a migração aplicada (lida do disco, como superusuário) para os cenários de comportamento.
   async function baseMigrada(rotulo: string): Promise<{ nome: string; db: PgClient }> {
     const nome = await clonar(rotulo);
-    const db = await conectar(nome);
-    await db.query(readFileSync(MIGRATION_PATH, "utf8"));
-    return { nome, db };
+    let db: PgClient | undefined;
+    try {
+      db = await conectar(nome);
+      await db.query(readFileSync(MIGRATION_PATH, "utf8"));
+      return { nome, db };
+    } catch (error) {
+      // Quem falha aqui ainda não entregou o cliente a ninguém: fecha e derruba o clone antes de relançar.
+      await db?.end().catch(() => undefined);
+      await derrubarBase(nome).catch(() => undefined);
+      throw error;
+    }
   }
 
   test("B-O6R-12 C4/C5/C16: o carimbo segue o perfil de agora, ignora o payload e devolve 23503 para perfil alheio", async () => {
@@ -568,7 +585,7 @@ if (!connectionString) {
   test("B-O6R-12 C17 (controle): sem SELECT no perfil, o carimbo do papel de runtime não lê e o INSERT cai", async () => {
     const { nome, db } = await baseMigrada("c17");
     const [a] = sementes as [Semente];
-    const papel = await papelDeRuntime(db, "c");
+    let papel: string | undefined;
     const inserir = async () => {
       await db.query(`SET ROLE "${papel}"`);
       await db.query("BEGIN");
@@ -581,20 +598,21 @@ if (!connectionString) {
       }
     };
     try {
+      papel = await papelDeRuntime(db, "c");
       assert.equal((await inserir()).regime_daily_cap, a.cap, "com SELECT no perfil, o carimbo grava o regime");
       await db.query(`REVOKE SELECT ON jurisdiction_profiles FROM "${papel}"`);
       await assert.rejects(inserir(), (error: unknown) => codigoDe(error) === "42501");
     } finally {
       await db.end();
       await derrubarBase(nome);
-      await derrubarPapeis([papel]);
+      if (papel) await derrubarPapeis([papel]);
     }
   });
 
   test("B-O6R-12 C14: rollback padrão e rodapé — a abertura no formato antigo passa antes e depois de desligar", async () => {
     const { nome, db } = await baseMigrada("rb");
     const [a] = sementes as [Semente];
-    const papel = await papelDeRuntime(db, "r");
+    let papel: string | undefined;
     // A forma do create do código revertido: nenhum regime_* no INSERT.
     const abrirComoRuntime = async () => {
       await db.query(`SET ROLE "${papel}"`);
@@ -612,6 +630,7 @@ if (!connectionString) {
       }
     };
     try {
+      papel = await papelDeRuntime(db, "r");
       // (a) git revert só do código: gatilhos e colunas ficam, e o INSERT antigo grava o regime.
       const antes = await abrirComoRuntime();
       assert.equal(antes.regime_daily_cap, a.cap);
@@ -639,7 +658,7 @@ if (!connectionString) {
     } finally {
       await db.end();
       await derrubarBase(nome);
-      await derrubarPapeis([papel]);
+      if (papel) await derrubarPapeis([papel]);
     }
   });
 

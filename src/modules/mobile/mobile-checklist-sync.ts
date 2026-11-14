@@ -83,6 +83,10 @@ const ACTION_PERMISSIONS: Readonly<Record<CanonicalChecklistActionType, Checklis
   "checklist.acknowledgement_create": "checklist_runs:acknowledge",
 };
 
+// B-MOBILE-GATE-CHAVE (item 66) — o mesmo mapa, exportado para o guard do app comparar o gate do botão "Iniciar/Continuar"
+// (G1b) com a permissão que a ação `checklist.item_answer` exige. Mesmo objeto, nenhum valor muda.
+export const MOBILE_CHECKLIST_ACTION_PERMISSIONS = ACTION_PERMISSIONS;
+
 const SYNC_CLIENT_ACTION_METADATA_KEY = "sync_client_action_id";
 
 type MobileChecklistAction = {

@@ -684,3 +684,177 @@ class _NavCell extends StatelessWidget {
     );
   }
 }
+
+/// B-SAN3-15b (`D-PADRAO-BLOCOS-CLICAVEIS`; contrato único das Emendas 5.2 §2.1 e 5.3 §1 a §4, compartilhado com o
+/// B-SAN3-17) — a linha de uma altura que abre o detalhe logo abaixo.
+///
+/// - A linha tem a altura [rowHeight] (o alvo de toque do app, 48) e nenhum botão dentro: toque, Enter e Espaço chamam
+///   [onToggle]. "Um detalhe aberto por vez" é da tela: a peça não guarda estado.
+/// - [title] fica num `Text` só dele; [meta] em outro, de uma linha. A linha corta pelo fim: o título leva a largura
+///   natural dele e o meta fica com o que sobra; se o título sozinho passa do espaço, ele corta com reticências e o
+///   meta some. Sem vão enquanto houver texto cortado, e sem estouro em tela nenhuma a partir de 320.
+/// - A `key` passada à peça identifica a peça INTEIRA (a linha e o detalhe aberto); para fechar pela tela, toca-se no
+///   título.
+/// - A seta e o fundo da linha aberta são da peça: a seta gira e fica azul; o fundo aberto é o azul claro da pílula
+///   de informação da biblioteca (`MobilePill`, `PillTone.info`), porque o tema não tem token com esse valor.
+/// - (J-564 C3-03) Também são da peça, porque as duas maquetes os têm iguais: a linha inteira (título e meta) em peso
+///   normal e na cor do texto forte (`.ln`), e o detalhe aberto com fundo e borda de cima e de baixo (`.det`). O tema
+///   não tem #F8FAFF nem #DBEAFE: o fundo é a cor do tema mais próxima de #F8FAFF (`surfaceBright`) e a borda, a mais
+///   próxima de #DBEAFE (`primaryContainer`). O recuo interno do detalhe continua de quem cria a peça.
+/// - [trailing] é pílula ou marca, nunca botão.
+class MobileExpandableRow extends StatelessWidget {
+  const MobileExpandableRow({
+    required this.title,
+    required this.expanded,
+    required this.onToggle,
+    required this.detail,
+    this.meta,
+    this.leading,
+    this.trailing,
+    super.key,
+  }) : assert(
+         trailing is! ButtonStyleButton && trailing is! IconButton,
+         'trailing não pode ser botão',
+       );
+
+  static const double rowHeight = 48;
+
+  final String title;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final Widget detail;
+  final String? meta;
+  final Widget? leading;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final openFill = MobilePill.colorsFor(PillTone.info).$1;
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          expanded: expanded,
+          child: Material(
+            color: expanded ? openFill : Colors.transparent,
+            child: InkWell(
+              onTap: onToggle,
+              child: SizedBox(
+                height: rowHeight,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 6, 0),
+                  child: Row(
+                    children: [
+                      if (leading != null) ...[
+                        leading!,
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(
+                        child: _RowTexts(title: title, meta: meta),
+                      ),
+                      if (trailing != null) ...[
+                        const SizedBox(width: 10),
+                        trailing!,
+                      ],
+                      const SizedBox(width: 4),
+                      AnimatedRotation(
+                        turns: expanded ? 0.25 : 0,
+                        duration: const Duration(milliseconds: 150),
+                        child: Icon(
+                          Icons.chevron_right,
+                          size: 20,
+                          color: expanded
+                              ? ErpMobileTheme.primary
+                              : ErpMobileTheme.inkFaint,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (expanded)
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: scheme.surfaceBright,
+              border: Border.symmetric(
+                horizontal: BorderSide(color: scheme.primaryContainer),
+              ),
+            ),
+            child: detail,
+          ),
+      ],
+    );
+  }
+}
+
+/// O título e o meta da [MobileExpandableRow]: o meta fica limitado a "largura do texto − largura natural do título"
+/// (no mínimo 0), medida com um `TextPainter` no MESMO estilo do título (Emenda 5.3 §1.2, a forma recomendada).
+class _RowTexts extends StatelessWidget {
+  const _RowTexts({required this.title, this.meta});
+
+  final String title;
+  final String? meta;
+
+  double _naturalTitleWidth(BuildContext context, TextStyle? style) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: title,
+        style: DefaultTextStyle.of(context).style.merge(style),
+      ),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+    )..layout();
+    final width = painter.width.ceilToDouble();
+    painter.dispose();
+    return width;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // J-564 C3-03 — a linha inteira num estilo só: peso normal, na cor do texto forte (`.ln`, 14 px, #0F172A).
+    final titleStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      color: ErpMobileTheme.ink,
+      fontWeight: FontWeight.w400,
+    );
+    final metaStyle = titleStyle;
+    final meta = this.meta;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final metaMax = meta == null
+            ? 0.0
+            : (constraints.maxWidth - _naturalTitleWidth(context, titleStyle))
+                  .clamp(0.0, constraints.maxWidth);
+        return Row(
+          children: [
+            Flexible(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: titleStyle,
+              ),
+            ),
+            if (meta != null)
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: metaMax),
+                child: Text(
+                  meta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: metaStyle,
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}

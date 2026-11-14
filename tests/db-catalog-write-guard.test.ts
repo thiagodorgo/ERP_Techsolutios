@@ -165,6 +165,14 @@ const FROZEN_ALLOWLIST: ReadonlyMap<string, { readonly count: number; readonly r
           "B-O6R-12 (E1.11′): drill da migração do regime em bases PRÓPRIAS E DESCARTÁVEIS (CREATE DATABASE … TEMPLATE por execução). Composição das 11: CREATE ROLE 1 e DROP ROLE 1, os únicos de cluster, dentro de withRoleCatalogLock tomado na base compartilhada (a trava consultiva é por base) · GRANT 6, OWNER TO 2 e REVOKE 1, todos ACL ou dono de objeto do CLONE (a C7b do plano exige o dono sem BYPASSRLS; o REVOKE é o controle da C17) — a varredura é lexical e os conta do mesmo jeito",
       },
     ],
+    [
+      "db-fuso-utc-sp-db.test.ts",
+      {
+        count: 1,
+        reason:
+          "B-DB-FUSO-UTC, Emenda 2 E2.1: o único ALTER ROLE fixa timezone America/Sao_Paulo no papel efêmero do §2 para reproduzir a sessão fora de UTC; o papel é criado e descartado pelo arnês",
+      },
+    ],
   ]);
 
 // Este próprio arquivo carrega os padrões como literais — é o detector, não um escritor. É o

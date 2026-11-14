@@ -75,8 +75,8 @@ class ScriptedPaymentPort implements PaymentProviderPort {
   async getCharge() {
     return this.reference && this.lookup.raw.externalReference === undefined ? { ...this.lookup, raw: { ...this.lookup.raw, externalReference: this.reference } } : this.lookup;
   }
-  async findChargeByExternalReference() {
-    return null;
+  async listChargesByExternalReference() {
+    return [];
   }
   async cancelCharge(id: string) {
     return { chargeId: id, status: "cancelled" as const };
