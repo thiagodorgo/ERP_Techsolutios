@@ -141,6 +141,7 @@ final fieldLocationSyncServiceProvider = Provider<FieldLocationSyncService>(
     store: ref.watch(fieldLocationStoreProvider),
     api: ref.watch(fieldLocationApiProvider),
     deviceLocationProvider: ref.watch(deviceLocationProvider),
+    consentSync: ref.watch(locationConsentSyncProvider),
   ),
 );
 

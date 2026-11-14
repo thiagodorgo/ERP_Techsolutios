@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../features/checklists/data/checklist_attachment_upload.dart';
 import '../../features/checklists/data/checklist_repository.dart';
 import '../bootstrap/bootstrap_repository.dart';
+import '../location/location_consent_providers.dart';
 import '../network/api_error.dart';
 import '../network/connectivity_repository.dart';
 import '../telemetry/telemetry_providers.dart';
@@ -90,7 +91,10 @@ class AutoSyncCoordinator extends Notifier<AutoSyncState> {
       // Ω4C PR-13 — flush da telemetria (buffer Drift dedicado). Try/catch
       // ISOLADO: falha aqui nunca entanga OS/checklist/RDV.
       try {
-        await ref.read(telemetrySyncServiceProvider).flushTenant(tenantId);
+        final consentSync = ref.read(locationConsentSyncProvider);
+        if (await consentSync.settleDecision(tenantId)) {
+          await ref.read(telemetrySyncServiceProvider).flushTenant(tenantId);
+        }
       } catch (_) {
         // Telemetria falha isolada nao deve bloquear os demais dominios.
       }

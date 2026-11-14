@@ -34,6 +34,11 @@ abstract class TelemetryLocalStore {
 
   /// Housekeeping — remove linhas já marcadas `synced` do tenant.
   Future<void> purgeSynced(String tenantId);
+
+  /// Apaga os eventos COM coordenada ainda não enviados (`pending`/`failed`)
+  /// da organização, quando o titular revoga ou a organização recusa
+  /// (B-SAN3-17, P7 e P8). Os eventos sem GPS ficam.
+  Future<void> discardLocationEventsForTenant(String tenantId);
 }
 
 class InMemoryTelemetryLocalStore implements TelemetryLocalStore {
@@ -89,6 +94,17 @@ class InMemoryTelemetryLocalStore implements TelemetryLocalStore {
     _events.removeWhere(
       (_, event) =>
           event.tenantId == tenantId && event.syncStatus == SyncStatus.synced,
+    );
+  }
+
+  @override
+  Future<void> discardLocationEventsForTenant(String tenantId) async {
+    _events.removeWhere(
+      (_, event) =>
+          event.tenantId == tenantId &&
+          event.latitude != null &&
+          (event.syncStatus == SyncStatus.pending ||
+              event.syncStatus == SyncStatus.failed),
     );
   }
 }
@@ -180,6 +196,16 @@ class DriftTelemetryLocalStore implements TelemetryLocalStore {
   Future<void> purgeSynced(String tenantId) async {
     await _db.customStatement(
       "DELETE FROM telemetry_events WHERE tenant_id = ? AND sync_status = 'synced'",
+      [tenantId],
+    );
+  }
+
+  @override
+  Future<void> discardLocationEventsForTenant(String tenantId) async {
+    await _db.customStatement(
+      'DELETE FROM telemetry_events WHERE tenant_id = ? '
+      'AND latitude IS NOT NULL '
+      "AND sync_status IN ('pending', 'failed')",
       [tenantId],
     );
   }

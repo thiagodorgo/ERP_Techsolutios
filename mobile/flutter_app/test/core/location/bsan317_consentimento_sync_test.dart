@@ -26,7 +26,6 @@ import 'package:erp_techsolutions_mobile/core/location/location_consent_api.dart
 import 'package:erp_techsolutions_mobile/core/location/location_consent_providers.dart';
 import 'package:erp_techsolutions_mobile/core/location/location_consent_store.dart';
 import 'package:erp_techsolutions_mobile/core/location/location_consent_sync.dart';
-import 'package:erp_techsolutions_mobile/core/network/api_contracts.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_error.dart';
 import 'package:erp_techsolutions_mobile/core/network/http_client.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
@@ -1096,10 +1095,7 @@ class _FakeConsentApi implements LocationConsentApi {
 
 /// Store real com um portão depois da leitura da decisão pendente (S13).
 class _GatedStore extends SecureLocationConsentStore {
-  _GatedStore(
-    FlutterSecureStorage storage, {
-    required LocationConsentOwnerResolver ownerResolver,
-  }) : super(storage, ownerResolver: ownerResolver);
+  _GatedStore(super.storage, {required super.ownerResolver});
 
   Completer<void>? gateNextRead;
   final Completer<void> readStarted = Completer<void>();
