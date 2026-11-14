@@ -737,7 +737,7 @@
         "data": "2026-11-13",
         "tipo": "correcao_critica",
         "titulo": "App de campo: a peça lançada na OS baixa o estoque uma vez só",
-        "resumo": "A peça que o técnico lança numa OS dele baixa uma vez só o estoque sob a responsabilidade dele (o gerente sem cadastro baixa da base), remover a peça desfaz a baixa, e a peça lançada em OS que não é dele é recusada ou vira conflito para o supervisor; o efeito no uso real depende da etapa seguinte do estoque do prestador."
+        "resumo": "A peça que o técnico lança numa OS dele baixa uma vez só o estoque sob a responsabilidade dele (o gerente sem cadastro baixa da base), remover a peça desfaz a baixa, e a peça lançada em OS que não é dele é recusada ou vira conflito para o supervisor; o efeito no uso real chega quando o prestador ganhar a entrada dele no aplicativo, a etapa seguinte."
       },
       {
         "pr": 547,

@@ -4081,7 +4081,7 @@
     "backend_tests": "5545/5547",
     "frontend_smoke_tests": "1788/1788",
     "blocks_completed": 231,
-    "description": "B-MATERIAL-REENVIO — No aplicativo de campo, a peça que o técnico lança numa OS dele passa a baixar uma vez só o estoque sob a responsabilidade dele (o gerente sem cadastro baixa da base), remover a peça desfaz a baixa, e a peça lançada em OS que não é dele é recusada ou, se já foi dele, vira conflito para o supervisor. O efeito no uso real ainda depende da etapa seguinte do estoque do prestador. NÚMEROS DA CI no merge commit `24f7e792` (push na `main`), workflow `ci`, run 43498036392, tentativa 1: backend `5547 teste(s) · pass 5545 · fail 0 · skipped 2`; frontend 1788/1788; flutter 1241/1241. `blocks_completed` 230 -> 231.",
+    "description": "B-MATERIAL-REENVIO — No aplicativo de campo, a peça que o técnico lança numa OS dele passa a baixar uma vez só o estoque sob a responsabilidade dele (o gerente sem cadastro baixa da base), remover a peça desfaz a baixa, e a peça lançada em OS que não é dele é recusada ou, se já foi dele, vira conflito para o supervisor. O efeito no uso real chega quando o prestador ganhar a entrada dele no aplicativo, a etapa seguinte. NÚMEROS DA CI no merge commit `24f7e792` (push na `main`), workflow `ci`, run 43498036392, tentativa 1: backend `5547 teste(s) · pass 5545 · fail 0 · skipped 2`; frontend 1788/1788; flutter 1241/1241. `blocks_completed` 230 -> 231.",
     "backfill_note": "Gerada por `scripts/kpi-history-append.mjs`: pr, merge_commit, data e approved_head de `gh pr view 551`; números do log da rodada 43498036392. Nada fica `null`."
   },
   {
