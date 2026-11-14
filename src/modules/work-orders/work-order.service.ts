@@ -28,6 +28,7 @@ import {
   type CheckinListDescription,
   type CheckinVerdict,
 } from "./work-order.checkin.js";
+import { fieldServiceKindOf, type FieldServiceKind } from "./work-order.field-kind.js";
 import type {
   ActiveDispatchAtSiteResolver,
   AssignWorkOrderFromDispatchInput,
@@ -1051,6 +1052,44 @@ export class WorkOrderService {
       result.set(item.id, describeCheckinMode(item.serviceDetails, typeInfo));
     }
     return result;
+  }
+
+  /**
+   * B-SAN3-15b (P7) — o tipo de atendimento de campo de cada OS da página, para a lista do app (`serviceKind`). O tipo do
+   * catálogo é resolvido UMA vez por catálogo distinto (memória por chamada, molde de `describeCheckinForList`), pelo
+   * resolvedor da organização do ator: catálogo de outra organização resolve `null` e vira `unknown`.
+   */
+  async describeServiceKindForList(
+    actor: WorkOrderActorContext,
+    items: readonly WorkOrder[],
+  ): Promise<Map<string, FieldServiceKind>> {
+    const typeInfoByCatalog = new Map<string, Promise<ServiceCatalogTypeInfo>>();
+    const result = new Map<string, FieldServiceKind>();
+    for (const item of items) {
+      result.set(item.id, await this.serviceKindOf(actor, item, typeInfoByCatalog));
+    }
+    return result;
+  }
+
+  /** B-SAN3-15b (P7) — o mesmo tipo, para uma OS só (o detalhe), pela MESMA regra da lista. */
+  async describeServiceKind(actor: WorkOrderActorContext, workOrder: WorkOrder): Promise<FieldServiceKind> {
+    return this.serviceKindOf(actor, workOrder, new Map());
+  }
+
+  private async serviceKindOf(
+    actor: WorkOrderActorContext,
+    workOrder: WorkOrder,
+    typeInfoByCatalog: Map<string, Promise<ServiceCatalogTypeInfo>>,
+  ): Promise<FieldServiceKind> {
+    const catalogId = workOrder.serviceCatalogId;
+    if (!catalogId) return "unknown";
+    let pending = typeInfoByCatalog.get(catalogId);
+    if (!pending) {
+      pending = this.resolveServiceCatalogTypeInfo(actor, catalogId);
+      typeInfoByCatalog.set(catalogId, pending);
+    }
+    const typeInfo = await pending;
+    return fieldServiceKindOf(typeInfo?.serviceType);
   }
 
   /**
