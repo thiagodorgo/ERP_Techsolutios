@@ -361,6 +361,9 @@ export const envSchema = z.object({
   // B-ASS-08 — URL pública do webhook (plano §3.9). Usada ao registrar o webhook no provedor. Em produção, exigida e
   // `https://` SÓ quando o canal está ligado (gate abaixo). Vazia por padrão (canal desligado).
   BILLING_WEBHOOK_PUBLIC_BASE_URL: z.string().trim().default(""),
+  // B-ASS-08c-wh (P25) — quantos proxies confiáveis acrescentam entrada ao `X-Forwarded-For` antes do app (0..3). 0 =
+  // usa o socket e ignora o cabeçalho. É medido na borda escolhida (ato do dono); ligar em produção com 0 é recusado.
+  BILLING_WEBHOOK_TRUSTED_PROXY_HOPS: z.preprocess(emptyToUndefined, z.coerce.number().int().min(0).max(3).default(0)),
 }).superRefine((value, context) => {
   const developmentOnlySecrets = new Set([
     "dev-only-change-me",

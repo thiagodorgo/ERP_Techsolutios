@@ -12,10 +12,6 @@ export type FinancialTitleStatus =
   | "in_dispute"
   | "cancelled";
 
-// Alvos MANUAIS de transição (PATCH /:id/status). paid/partially_paid NÃO entram — são dirigidos
-// por pagamentos (fatia futura), nunca oferecidos no seletor de status. Espelha a máquina do backend.
-export type FinancialTitleStatusTarget = "open" | "scheduled" | "in_dispute" | "cancelled";
-
 export type FinancialTitle = {
   readonly id: string;
   readonly direction: FinancialTitleDirection;
@@ -76,24 +72,6 @@ export type FinancialTitlesFilters = {
   readonly limit?: number;
   /** Início da página no servidor. A primeira carga usa 0 e as seguintes avançam pela quantidade já carregada. */
   readonly offset?: number;
-};
-
-// Payload de criação (snake_case do backend). party_type é derivado da direction pela tela; direction
-// é fixado pela tela. paid_amount/competencia/status inicial são responsabilidade do backend.
-export type CreateFinancialTitlePayload = {
-  readonly direction: FinancialTitleDirection;
-  readonly party_type: FinancialTitlePartyType;
-  readonly party_name: string;
-  readonly document?: string;
-  readonly category?: string;
-  readonly description?: string;
-  readonly amount: number;
-  readonly due_date: string;
-};
-
-export type ChangeFinancialTitleStatusPayload = {
-  readonly status: FinancialTitleStatusTarget;
-  readonly reason?: string;
 };
 
 // B-SAN3-12b — corpo da BAIXA (POST /financial-titles/:id/pay). Cheque NÃO é meio de baixa (D-SAN3-20: entra pela
