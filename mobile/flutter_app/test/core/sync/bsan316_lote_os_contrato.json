@@ -1,0 +1,128 @@
+{
+  "_sobre": "B-SAN3-16 (P6) — o contrato único do lote de OS para os 2 tipos novos. O teste do app (A7) passa `entrada` pelo codec e compara a saída com `lote`; o teste do servidor (B8) envia `lote` pela rota real, trocando `id_modelo_da_os` pelo id da OS da semente. Os 2 últimos casos estão acima do limite na entrada e no limite no lote (o codec corta: motivo 500 e impacto 1000 no pedido; motivo 200 e observação 1000 no não iniciou). Gerado por comando (diário do dev-16-cl, F1a); não editar à mão.",
+  "id_modelo_da_os": "00000000-0000-4000-8000-000000000016",
+  "client_batch_id": "bsan316-contrato",
+  "entrada": [
+    {
+      "client_action_id": "bsan316-contrato-pedido",
+      "type": "work_order.approval_request",
+      "created_at": "2026-11-14T15:00:00.000Z",
+      "payload": {
+        "local_id": "wo-local-bsan316-contrato",
+        "server_id": "00000000-0000-4000-8000-000000000016",
+        "reason": "Troca de peça fora do orçamento",
+        "impact": "O serviço atrasa dois dias sem a peça.",
+        "urgency": "high",
+        "requested_at": "2026-11-14T15:00:00.000Z",
+        "requested_by_user_id": "usuario-do-aparelho"
+      }
+    },
+    {
+      "client_action_id": "bsan316-contrato-nao-iniciou",
+      "type": "work_order.unable_to_start",
+      "created_at": "2026-11-14T15:05:00.000Z",
+      "payload": {
+        "local_id": "wo-local-bsan316-contrato",
+        "server_id": "00000000-0000-4000-8000-000000000016",
+        "reason": "Endereco nao localizado",
+        "note": "Número da casa não existe na rua.",
+        "occurred_at": "2026-11-14T15:05:00.000Z",
+        "reported_by_user_id": "usuario-do-aparelho"
+      }
+    },
+    {
+      "client_action_id": "bsan316-contrato-pedido-no-limite",
+      "type": "work_order.approval_request",
+      "created_at": "2026-11-14T15:10:00.000Z",
+      "payload": {
+        "local_id": "wo-local-bsan316-contrato",
+        "server_id": "00000000-0000-4000-8000-000000000016",
+        "reason": "PeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeça",
+        "impact": "AtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtraso",
+        "urgency": "critical",
+        "requested_at": "2026-11-14T15:10:00.000Z",
+        "requested_by_user_id": "usuario-do-aparelho"
+      }
+    },
+    {
+      "client_action_id": "bsan316-contrato-nao-iniciou-no-limite",
+      "type": "work_order.unable_to_start",
+      "created_at": "2026-11-14T15:15:00.000Z",
+      "payload": {
+        "local_id": "wo-local-bsan316-contrato",
+        "server_id": "00000000-0000-4000-8000-000000000016",
+        "reason": "MuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuro",
+        "note": "NotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNota",
+        "occurred_at": "2026-11-14T15:15:00.000Z",
+        "reported_by_user_id": "usuario-do-aparelho"
+      }
+    }
+  ],
+  "lote": {
+    "client_batch_id": "bsan316-contrato",
+    "actions": [
+      {
+        "client_action_id": "bsan316-contrato-pedido",
+        "type": "work_order.approval_request",
+        "local_created_at": "2026-11-14T15:00:00.000Z",
+        "payload": {
+          "work_order_id": "00000000-0000-4000-8000-000000000016",
+          "reason": "Troca de peça fora do orçamento",
+          "impact": "O serviço atrasa dois dias sem a peça.",
+          "urgency": "high",
+          "metadata": {
+            "source": "mobile_offline",
+            "local_id": "wo-local-bsan316-contrato",
+            "requested_at": "2026-11-14T15:00:00.000Z"
+          }
+        }
+      },
+      {
+        "client_action_id": "bsan316-contrato-nao-iniciou",
+        "type": "work_order.unable_to_start",
+        "local_created_at": "2026-11-14T15:05:00.000Z",
+        "payload": {
+          "work_order_id": "00000000-0000-4000-8000-000000000016",
+          "reason": "Endereco nao localizado",
+          "note": "Número da casa não existe na rua.",
+          "metadata": {
+            "source": "mobile_offline",
+            "local_id": "wo-local-bsan316-contrato",
+            "occurred_at": "2026-11-14T15:05:00.000Z"
+          }
+        }
+      },
+      {
+        "client_action_id": "bsan316-contrato-pedido-no-limite",
+        "type": "work_order.approval_request",
+        "local_created_at": "2026-11-14T15:10:00.000Z",
+        "payload": {
+          "work_order_id": "00000000-0000-4000-8000-000000000016",
+          "reason": "PeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeçaPeça",
+          "impact": "AtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtrasoAtra",
+          "urgency": "critical",
+          "metadata": {
+            "source": "mobile_offline",
+            "local_id": "wo-local-bsan316-contrato",
+            "requested_at": "2026-11-14T15:10:00.000Z"
+          }
+        }
+      },
+      {
+        "client_action_id": "bsan316-contrato-nao-iniciou-no-limite",
+        "type": "work_order.unable_to_start",
+        "local_created_at": "2026-11-14T15:15:00.000Z",
+        "payload": {
+          "work_order_id": "00000000-0000-4000-8000-000000000016",
+          "reason": "MuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuroMuro",
+          "note": "NotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNotaNota",
+          "metadata": {
+            "source": "mobile_offline",
+            "local_id": "wo-local-bsan316-contrato",
+            "occurred_at": "2026-11-14T15:15:00.000Z"
+          }
+        }
+      }
+    ]
+  }
+}
