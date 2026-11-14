@@ -1,9 +1,14 @@
 import { createHash } from "node:crypto";
 
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import { createDefaultNotificationService, type NotificationService } from "../notifications/notification.service.js";
 import { createDefaultApprovalService, type ApprovalService } from "../work-orders/approval.service.js";
 import { toWorkOrderDto } from "../work-orders/work-order.dto.js";
-import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
+import {
+  createDefaultWorkOrderService,
+  type FieldRequestOutcome,
+  type WorkOrderService,
+} from "../work-orders/work-order.service.js";
 import { isCheckinRefusal } from "../work-orders/work-order.checkin.js";
 import {
   ASSIGNMENT_CHANGED_CONFLICT_TYPE,
@@ -50,10 +55,12 @@ type MobileWorkOrderActionResult = {
  */
 export type MobileWorkOrderSyncDeps = {
   readonly approvals?: () => Promise<Pick<ApprovalService, "request">>;
+  readonly notifications?: () => Promise<Pick<NotificationService, "createNotification">>;
 };
 
 type ResolvedMobileWorkOrderSyncDeps = {
   readonly approvals: () => Promise<Pick<ApprovalService, "request">>;
+  readonly notifications: () => Promise<Pick<NotificationService, "createNotification">>;
 };
 
 type MobileWorkOrderSyncReceipt = {
@@ -91,6 +98,7 @@ const syncReceipts = new Map<string, MobileWorkOrderSyncReceipt>();
 const APPROVAL_REQUEST_PERMISSION = "work_orders:update";
 const UNABLE_TO_START_PERMISSION = "work_orders:status";
 const APPROVAL_UNAVAILABLE_MESSAGE = "Não foi possível registrar o pedido de aprovação agora. O aplicativo tenta de novo.";
+const NOTICE_UNAVAILABLE_MESSAGE = "Não foi possível avisar quem despachou a OS agora. O aplicativo tenta de novo.";
 
 export async function syncMobileWorkOrderActions(
   actor: AuthenticatedActor | undefined,
@@ -103,6 +111,7 @@ export async function syncMobileWorkOrderActions(
   const service = await resolveService();
   const resolvedDeps: ResolvedMobileWorkOrderSyncDeps = {
     approvals: deps.approvals ?? createDefaultApprovalService,
+    notifications: deps.notifications ?? createDefaultNotificationService,
   };
   const accepted: MobileWorkOrderActionResult[] = [];
   const rejected: MobileWorkOrderActionResult[] = [];
@@ -320,6 +329,8 @@ async function processAction(
         action.payload,
         action.client_action_id,
       );
+      // P8 (P2 = B) — chamado com o evento novo E no reenvio que achou o evento: a chave do aviso é durável.
+      await notifyDispatcher(deps, actor, action, outcome);
 
       return acceptedResult(action, outcome.workOrder);
     }
@@ -383,6 +394,43 @@ async function openFieldApproval(
     return approval.id;
   } catch {
     throw routeError(503, "SERVICE_UNAVAILABLE", "approval_unavailable", APPROVAL_UNAVAILABLE_MESSAGE);
+  }
+}
+
+// B-SAN3-16 (P8, P2 = B) — o "não consegui iniciar" avisa no sino quem atribuiu a OS por último (o serviço de OS o
+// lê na linha do tempo da própria OS, na organização do ator; nunca do corpo). Sem esse ator, fica só o registro na OS.
+// A chave de repetição é durável (`tenant_id + recipient_user_id + idempotency_key`): o reenvio não duplica. A falha do
+// aviso NÃO some em silêncio: a ação sai 503 `notification_unavailable`, o app reenvia, o evento não duplica (a
+// repetição durável o acha) e o aviso é tentado de novo. A observação livre não vai no aviso (Q7), só o motivo da lista.
+function unableToStartNoticeKey(workOrderId: string, userId: string, clientActionId: string): string {
+  return `work_order_unable_to_start:${workOrderId}:${userId}:${clientActionId}`;
+}
+
+async function notifyDispatcher(
+  deps: ResolvedMobileWorkOrderSyncDeps,
+  actor: AuthenticatedActor,
+  action: MobileWorkOrderAction,
+  outcome: FieldRequestOutcome,
+): Promise<void> {
+  const { workOrder, dispatcherUserId, reason } = outcome;
+  if (!dispatcherUserId) return;
+  try {
+    const notifications = await deps.notifications();
+    await notifications.createNotification({
+      tenantId: actor.tenantId,
+      recipientUserId: dispatcherUserId,
+      type: "work_order.unable_to_start",
+      title: "Não foi possível iniciar a OS",
+      message: `O técnico informou que não foi possível iniciar a OS ${workOrder.code}: ${reason}.`,
+      severity: "warning",
+      sourceType: "work_order",
+      sourceId: workOrder.id,
+      actionUrl: `/work-orders/${workOrder.id}`,
+      idempotencyKey: unableToStartNoticeKey(workOrder.id, actor.userId, action.client_action_id),
+      metadata: { workOrderId: workOrder.id, reason },
+    });
+  } catch {
+    throw routeError(503, "SERVICE_UNAVAILABLE", "notification_unavailable", NOTICE_UNAVAILABLE_MESSAGE);
   }
 }
 
