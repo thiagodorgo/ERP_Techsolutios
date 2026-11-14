@@ -135,7 +135,7 @@ if (!connectionString) {
 
   test("M6 drill: migrate deploy aplica as 3 tabelas, a exclusão por intervalo, o btree_gist, os CHECKs e o RLS FORCE", async () => {
     const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString! }) });
+    admin = new PrismaClient({ adapter: (await import("../src/database/pg-connection.js")).createPgAdapter(connectionString!) });
     const source = new URL(connectionString!);
     const base = decodeURIComponent(source.pathname.replace(/^\//, "")) || "postgres";
     databaseName = `${base}_ass09_m6_${randomUUID().replaceAll("-", "").slice(0, 8)}`.slice(0, 63);
@@ -149,7 +149,7 @@ if (!connectionString) {
       env: { ...process.env, DATABASE_URL: target.toString() },
       stdio: "pipe",
     });
-    db = new PrismaClient({ adapter: new PrismaPg({ connectionString: target.toString() }) });
+    db = new PrismaClient({ adapter: (await import("../src/database/pg-connection.js")).createPgAdapter(target.toString()) });
     const applied = (await db.$queryRawUnsafe(
       `SELECT count(*)::int AS n FROM _prisma_migrations WHERE migration_name = $1 AND finished_at IS NOT NULL`,
       M6,

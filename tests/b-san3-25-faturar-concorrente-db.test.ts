@@ -241,7 +241,7 @@ async function bootstrap(connection: string) {
   ]);
   assert.equal(env.CORE_SAAS_PERSISTENCE, "prisma", "assert do modo: esta suíte só é prova no caminho prisma");
 
-  const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+  const admin = new PrismaClient({ adapter: (await import("../src/database/pg-connection.js")).createPgAdapter(connection) });
   await assertApplicationNamePropagated(admin, applicationName);
   const role: EphemeralRole = await createEphemeralRole(admin as any, connection);
   const roleClient = role.client as any;

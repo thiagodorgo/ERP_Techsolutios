@@ -22,7 +22,7 @@
 // mais adicionais) ou por este script; revisar as versões de plano listadas antes de qualquer sincronização.
 import "dotenv/config";
 
-import { PrismaPg } from "@prisma/adapter-pg";
+import { createPrismaClient } from "../src/database/pg-connection.js";
 import { PrismaClient } from "@prisma/client";
 
 import { ALL_MODULE_CLASSES } from "../src/modules/navigation/route-modules.js";
@@ -155,7 +155,7 @@ async function main(): Promise<void> {
     process.exit(2);
   }
   const aplicar = process.argv.includes("--aplicar");
-  const client = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const client = createPrismaClient(connectionString);
   try {
     const relatorio = await provisionarModulos(client, { aplicar });
     console.log(relatorio.linhas.join("\n"));

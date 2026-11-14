@@ -61,7 +61,7 @@ if (!connectionString) {
     const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
 
     // Conexão ADMINISTRATIVA do arnês: só semeia, conta e limpa.
-    const client = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+    const client = new PrismaClient({ adapter: (await import("../src/database/pg-connection.js")).createPgAdapter(connectionString) });
     // Papel do APP: efêmero, NOSUPERUSER NOBYPASSRLS. Criado ANTES de importar o app e injetado no singleton.
     const efemera = await createEphemeralRole(client, connectionString);
     (globalThis as { prisma?: unknown }).prisma = efemera.client;

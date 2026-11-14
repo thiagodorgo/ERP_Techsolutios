@@ -9501,6 +9501,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 - status: FECHADA (2026-11-13, PR #559, bloco `B-SAN3-25`, ramo `feat/web-faturar-os`; o merge e a CI do merge entram no registro pós-merge) — a aba Financeiro da OS fatura pela rota que já existia, e a frase da `InvoicesPage` passa a ser verdadeira. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - status: ABERTA (junta do PR #386, ciclo 1, cadeira C1, achado C1-02; conferido pelo orquestrador em `a143d2c3`)
+- **merge e CI do merge (registro pós-merge, 2026-11-14, `reg-1411-cl`; cumpre o que a 1ª linha `status` acima deixou para depois):** PR #559 mergeado em `729718fe` (14/11, 02:47 SP; squash com a árvore do head `1f2fd245`); CI da `main` no merge, rodada `43563177471` (push), `completed success` nos 8 jobs. Conferido pelo `porteiro-559-cl` (LIBERADO COM RESSALVA), que achou por amostragem no código a única montagem da rota (`frontend/src/modules/work-orders/financials.service.ts:117`) e a única chamada (`InvoiceWorkOrderDialog.tsx:65`), e provou que o `finance` fatura com as permissões do banco (8/8). Ata: `agent-orchestration/omega/juntas/J-559-b-san3-25.md`; item 50 do §4.1 do `PLANO_SAN3.md` marcado FECHADO neste PR.
 - **prova:** backend `src/modules/work-order-financials/work-order-financial.routes.ts:78` (`POST /work-orders/:workOrderId/invoice`, permissão `financial_titles:create`); `git grep -E "/invoice|faturar" -- frontend/src` → só a rota `/finance/invoices` do `App.tsx`; a aba Financeiro da OS (`frontend/src/modules/work-orders/components/tabs/FinancialTab.tsx`) só tem ações de lançar; `frontend/src/modules/finance/pages/InvoicesPage.tsx:53` afirma que "o faturamento continua disponível no Financeiro" — não está.
 - **escopo:** `pre-existente` — a ação web nunca foi construída desde o Ω4-3 (jul/2026); o título nasce por `POST /work-orders/:id/invoice` (`D-Ω4-GANCHO`).
 - **dono:** `B-SAN3-25` (plano SAN3 v5, §4.1 item 50).
@@ -13123,6 +13124,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** infra/CI, intermitente · **dono:** infra/CI · **prioridade:** BAIXA · **bloqueia:** não.
 - **fato:** o `financial-title-status-cas-db` (barreira K11) falhou 1× na `main` por corrida e passou no rerun; flaky conhecido, não regressão de código.
 - **encerramento:** infra/CI reproduz e nomeia a corrida (como nas demais intermitentes), ou uma série suficiente demonstra estabilidade com o caso concorrendo com a suíte.
+- **ocorrência nova (2026-11-14, PR de registro `reg-1411-cl`; N acumulado = 2, contando a de 09/11 acima):** rodada de push `43561339543`, tentativa 1, do #555 (ramo `fix/billing-dispatch-safe`, SHA `78a7c8ab`), job `backend-postgres`: `not ok 274 - K11-db (T-K11h, barreira)` em `tests/financial-title-status-cas-db.test.ts`, com `'changeStatus perdedor (estado mudou duas vezes): tinha de RECUSAR e aceitou'`; total da tentativa 621 testes, 620 passam, 1 falha. No mesmo SHA, a tentativa 2 da mesma rodada e a rodada de PR `43561343994` deram 621/621 (`# fail 0`, `# skipped 0`). O #555 não toca o arquivo (`gh pr view 555 --json files`: 0 caminhos `financial-title-status-cas`). Conferido pelo redator com `gh run view <rodada> --attempt <n> --log`. A barreira é a mesma da `P-TK11H-BARREIRA-FASE` (2026-11-03), que registra que ela não identifica a fase exata.
 
 ## P-ASS07-REGIME-VOCAB-FECHADO (2026-11-09) — classificação de regime fiscal é fail-open para valor não-canônico — MÉDIA
 
@@ -14507,11 +14509,89 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-DB-FUSO-DA-CONEXAO (2026-11-12) — toda data gravada pelo Prisma pode ficar deslocada pelo offset do fuso da conexão — ALTA (sistêmica, sem bloqueio hoje)
 
-- **status:** ABERTA · **gravidade:** ALTA (sistêmica) · **escopo:** `pre-existente` (`@prisma/adapter-pg` 7.8.0, `src/database/prisma.ts:15`, `.env.example:12`) · **dono:** `B-DB-FUSO-UTC` (aberto; plano escrito, 9 fatias) · **PR-alvo:** a planejar · **bloqueia:** não (hoje).
+- **status:** ABERTA (em execução; PR draft deste bloco) · **gravidade:** ALTA (sistêmica) · **escopo:** `dentro-do-bloco` (`src/database/pg-connection.ts`, `src/database/session-timezone.ts`, `src/database/session-timezone.bootstrap.ts`, `src/database/prisma.ts`, `src/server.ts`, `src/integrations/traccar/traccar-db.ts`, `src/integrations/traccar/traccar-ingest.bootstrap.ts`, seeds/scripts de operação, `.env.example`, `docs/deployment.md`) · **dono:** `B-DB-FUSO-UTC` (aberto; plano escrito, 9 fatias) · **PR-alvo:** este bloco (PR #554, ramo `fix/db-fuso-utc`) · **bloqueia:** não (hoje).
 - **origem:** investigação `inv-543-fuso` (registro `REGISTRO-PENDENTE.md`, 12/11 07:37), desdobramento do T8 que o porteiro do #543 chamou de incidente.
 - **fato:** o `@prisma/adapter-pg` manda todo `Date` como texto UTC sem sufixo de fuso, e o Postgres o lê no `TimeZone` da sessão. Num banco fora de UTC, toda data gravada pelo Prisma fica deslocada pelo offset (+3 h em SP). O T8 (sessão vencida → 401) dá 200 com o banco em `America/Sao_Paulo` e 401 em UTC. O `docker-compose.prod.yml` (postgres:16, UTC) e o RDS padrão (UTC, não medido) não disparam; no portão a janela extra efetiva é `min(3 h, vida do token de acesso)`. Pontos que misturam `now()` do banco com data do Prisma: `charge-prisma.repository.ts:150`, `local-auth-credential.repository.ts:152`, `traccar-ingestion.repository.ts:143,199`, `work-order-prisma.repository.ts:210,262,265,511`, `financial-title-prisma.repository.ts:133,167,169,215,238` e outros (lista em `revisoes/j543/inv-fuso/inv-543-fuso.json`).
 - **critério de encerramento:** fixar o `TimeZone` da conexão em UTC (pool `pg` / `DATABASE_URL`) e travar o boot de produção quando `SHOW timezone` ≠ UTC (fail-closed, no molde do `runtime-role`), com teste `-db` sob `America/Sao_Paulo`.
 - **apenso (2026-11-12, `D-DONO-1211-NOITE`):** o bloco está planejado — `B-DB-FUSO-UTC`, 9 fatias (~6 h 20 min de dev), plano escrito pelo topo (Opus declarado). A Q1 do plano fica aberta ao dono: *existe hoje algum banco com dado real (cliente, piloto, demonstração usada por cliente, staging com dado que importa) que rode fora de UTC — por exemplo, um Postgres instalado direto numa máquina no Brasil?* A `P-DB-FUSO-LEGADO` só abre se a Q1 for "sim".
+
+
+## P-DB-FUSO-TESTES-DIRETOS (2026-11-13) — os 156 arquivos de teste com `new PrismaPg(` direto migram para a fábrica aos poucos — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `fora-do-bloco` (a catraca G3 impede crescer; os arquivos de teste fora do arnês migram aos poucos) · **dono:** a nomear · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** §8 do plano `B-DB-FUSO-UTC`; a varredura `tests/db-fuso-utc-pontos-de-conexao.test.ts` (G3) fixa a catraca em 217 ocorrências de `new PrismaPg(` fora de `tests/helpers/` e fora dos testes deste bloco — só desce.
+- **fato:** os testes com `new PrismaPg(` direto não passam pela fábrica UTC; fora de UTC (só o cenário `-sp-db`) continuam sensíveis ao fuso da sessão.
+- **critério de encerramento:** zero ocorrências de `new PrismaPg(` em `tests/` fora de `tests/helpers/`, sem regressão das suítes.
+
+## P-DB-FUSO-SUITES (2026-11-13) — linha `SUITES=` no job `backend-postgres` para o teste `-sp-db`, se o dono não ordenar — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `.github/workflows/ci.yml` (fora deste bloco; depende de ordem do dono) · **dono:** a nomear · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** §8 do plano `B-DB-FUSO-UTC`; o `tests/db-fuso-utc-sp-db.test.ts` entra no CI pelo job `backend` (roda todo `tests/*.test.ts`) e **falha** (não pula) se `DATABASE_URL` existir e o papel não puder ter o fuso trocado — mitigação sem tocar `.github/**`.
+- **critério de encerramento:** decidir (e, se o dono ordenar, aplicar) a linha `SUITES="$SUITES tests/db-fuso-utc-sp-db.test.ts"` no job `backend-postgres`, mantendo a guarda de zero pulos.
+
+## P-DB-FUSO-POOLER-MEDIR (2026-11-13) — medir no staging da Fly se o pooler aceita `options` de início — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** operação de staging (fora deste bloco) · **dono:** a nomear · **PR-alvo:** a definir · **bloqueia:** o deploy de produção desta mudança (não o merge).
+- **origem:** risco R1 do plano `B-DB-FUSO-UTC`; se houver pooler (PgBouncer/RDS Proxy) na frente, o parâmetro `options` pode ser recusado ou ignorado (hipótese, não medida).
+- **critério de encerramento:** rodar `psql "postgresql://<usuario>:<senha>@<host>:5432/<banco>?options=-c%20TimeZone%3DUTC" -Atc "show timezone"` no staging antes da produção; recusado ⇒ `ALTER DATABASE <db> SET timezone 'UTC'` pelo dono do banco, com a trava continuando a medir.
+
+## P-DB-FUSO-SCRIPTS-SEM-TRAVA (2026-11-13) — seeds e scripts de operação dependem só da fábrica, sem a trava de sessão — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` (P3–P9 migram pela fábrica; a exceção `scripts/gen-tenant-tables.mjs` só lê catálogo) · **dono:** `B-FERR-AGENTES` · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** Emenda 1 E1.3 do plano `B-DB-FUSO-UTC`; os seeds (P3–P5) e os scripts (P6–P9) usam `createPgAdapter`/`createPrismaClient`, mas não passam pela `assertDatabaseSessionTimezoneUtc` — a trava fica no boot da API e do listener do Traccar.
+- **fato** (reescrito pela Emenda 3, E3.5, com a nota da pré-revisão `prerev-554-cl`): pela fábrica, a sessão de um seed ou script abre em UTC mesmo num banco em `America/Sao_Paulo`, porque a `options` da URL vence o `ALTER DATABASE`/`ALTER ROLE … SET timezone`. O que P3–P9 deixam aberto, sem a trava, é só a sessão que fica em SP mesmo assim: (1) um pooler na frente do banco (PgBouncer, RDS Proxy) que ignore a `options` (R1 do plano, medição em `P-DB-FUSO-POOLER-MEDIR`); ali a API e o listener do Traccar recusam pela trava, mas um seed ou script grava a data com +3 h; (2) a `options` repetida na URL (achado A2), em que o `pg-connection-string` usa a última e a fábrica lia a primeira; **fechada pelo E3.2**: a fábrica agora recusa mais de uma `options` com `DATABASE_URL_TIMEZONE_CONFLICT` (teste C6). A exceção P10 (`gen-tenant-tables.mjs`) só lê catálogo.
+- **critério de encerramento:** decidir se scripts/seeds ganham a mesma sonda fail-closed (bloco próprio) ou declarar aceite do risco.
+
+## P-LOGIN-READINESS-VAZA-HOST-NO-ERRO (2026-11-13) — no erro de conexão real, a sonda de login sem organização loga o erro cru do Prisma, com o host do banco — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (grave na régua da J-554: dado de infraestrutura no log) · **escopo:** `pre-existente` (`git diff --quiet 3309ba7d..a586ddaa -- src/modules/auth/services/login-readiness.ts` → 0, o bloco do fuso não toca o arquivo; `git blame` atribui a linha 192 ao `0a398246`, de 2026-08-19 20:30 -03, #357) · **dono:** `B-SEC-LOG-SANITIZA` (bloco novo, pequeno) · **PR-alvo:** o PR do `B-SEC-LOG-SANITIZA` · **bloqueia:** não (pela triagem da J-554, não segura o merge do fuso e entra na fila logo depois).
+- **origem:** achado C2-A2 da J-554 (PR #554, cadeira C2, `j554-c2-cdx3`, Codex 3 Sol), triado na ata `J-554-ata.md`. Pelo §C7.1-ter(a), grave `pre-existente` não reprova: vira pendência nomeada com bloco dono.
+- **N, forma e causa (medidos pela C2 no boot real, `NODE_ENV=development … DATABASE_URL='postgresql://us3r-sentinela:s3nha-sentinela@h0st-sentinela:5439/banco-sentinela' npx tsx src/server.ts`):**
+  - **N:** 1 linha de log (a 3ª de 9, na primeira tentativa) com o host-sentinela 3 vezes: na `message`, no `stack` e em `meta.driverAdapterError.cause.host`. As outras 4 sentinelas (porta, usuário, senha, banco) deram 0, porque nesse desfecho o driver só ecoa o host.
+  - **forma:** `{"level":50,…,"err":{"type":"PrismaClientKnownRequestError","message":"…Can't reach database server at h0st-sentinela",…,"cause":{"kind":"DatabaseNotReachable","host":"h0st-sentinela"}}},"msg":"Sonda de login sem organização: desfecho não classificado."}`. Os logs da trava de fuso e a mensagem final (`SESSION_TIMEZONE_PROBE_FAILED`) saíram sanitizados no mesmo boot.
+  - **causa:** o erro cru no logger, em `src/modules/auth/services/login-readiness.ts:192` (`logger.error({ err: error }, …)`).
+  - **mesma forma, sem medição de vazamento (hipótese):** `login-readiness.ts:123` (`logger.error({ err: error }, …)`) e `src/server.ts:56` (`logger.error({ error }, …)`).
+- **evidência:** `revisoes/j554/votos/C2-voto.json` (C2-A2) e `C2-evidencia.md` (item 2), log em `votos/C2-tmp/api-connection-error.log` (fora do repositório).
+- **critério de encerramento:** o sanitizador de erro que o `runtime-role.bootstrap.ts` já usa (`describeDriverError`) aplicado a todo `logger.error` do boot e da sonda de login; teste com a URL-sentinela sobre o log INTEIRO de um boot real com erro de conexão → 0 ocorrência das 5 sentinelas.
+
+## P-554-TRES-DB-FORA-DA-LISTA-CURADA (2026-11-13) — os 3 testes migrados na E3.1 rodam só no job `backend`, fora da lista `SUITES=` do `backend-postgres` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `.github/workflows/ci.yml` (PROIBIDO no `B-DB-FUSO-UTC`) · **dono:** o próximo bloco autorizado a tocar o `.github/**` (junto de `P-DB-FUSO-SUITES`) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** Emenda 3.1 do plano `B-DB-FUSO-UTC` (orquestrador, 13/11 17:10). A premissa da E3 ("os 3 testes passam no `backend-postgres`") era falsa: `tests/ass-08c-conf530-db.test.ts`, `tests/b-san3-24-fechamento-forcado-auditoria-db.test.ts` e `tests/bsan314-provisao-entrega-db.test.ts` não estão na lista curada.
+- **fato:** o aceite passou a ser o job `backend`, lido no TAP sem SKIP (10/10 `ok`, medido pelo `fix-554-cl`). No `backend` não há a guarda de zero pulos do `backend-postgres`.
+- **critério de encerramento:** decidir, e se for o caso incluir, os 3 arquivos na `SUITES=` do `backend-postgres`, com o TAP do job sem SKIP.
+
+## P-554-BACKEND-POSTGRES-TRAVOU-1-DE-3 (2026-11-13) — o job `backend-postgres` travou uma vez no head `5d989406` do PR #554 — MÉDIA
+
+- **status:** FECHADA (2026-11-13, pela medição da Emenda 2, E2.3/E2.5) — o travamento não se reproduziu em 5 rodadas sequenciais.
+- **status anterior:** ABERTA · **gravidade:** MÉDIA (o bloco mexe na construção do pool) · **escopo:** `dentro-do-bloco` (`B-DB-FUSO-UTC`, PR #554) · **dono:** `B-DB-FUSO-UTC` · **bloqueia:** a junta, até a medição fechar.
+- **origem:** Emenda 2, E2.3 do plano: o run `43418618508` (head `5d989406`) parou depois do "[pool] cliente global max:2" (11:40 → cancelado 13:26). O mesmo job, refeito, deu 610/610 em 6 min.
+- **medição que fecha** (diário `revisoes/fuso/dev-fuso-e2-cdx2.md`, seção RESULTADO; run `43465269864`, head `7293c01b`, corte de 20 min da E2.5): 5 rodadas sequenciais, todas 610 tests · 610 pass · 0 fail · 0 skip, com 5m26s, 5m36s, 6m41s, 6m24s e 5m16s (média 5m53s, máxima 6m41s). Duração por `gh run view --json jobs` (startedAt/completedAt).
+- **nota:** N = 5 não exclui uma taxa baixa de travamento. O caso original segue como 1 ocorrência em 8 rodadas medidas. Se voltar a travar, reabre-se esta pendência com o run, e a investigação do pool (conexão que não volta, `max`, `end()` do arnês P12) vem antes de qualquer junta, como a E2.3 manda.
+
+## P-CI-O6R12-DRILL-TMP-SOME-E-TRAVA (2026-11-13) — o job `backend` trava no drill do B-O6R-12: o `after()` roda no início, apaga o diretório temporário e deixa 6 clientes abertos — ALTA
+
+- **status:** FECHADA (2026-11-14, neste PR #554, pela Emenda 4 do plano `B-DB-FUSO-UTC`, commit `31c0f69f`) — o drill registra tudo num trecho síncrono (F1), fecha o cliente quando a preparação falha (F2), e a guarda G-ORD proíbe a classe nos outros arquivos de `tests/`.
+- **status anterior:** ABERTA · **gravidade:** ALTA · **escopo:** `dentro-do-bloco` (gatilho no F5 do #554, `8d87f092`, sobre defeito latente do #539) · **dono:** `B-DB-FUSO-UTC` (PR #554), por emenda do plano do fuso · **bloqueia:** o merge do #554.
+- **origem:** no head `a3d3aeae` do #554, o job `backend` travou em 3 de 6 execuções distintas, sempre com 10 `not ok` em `tests/b-o6r-12-regime-migration-drill-db.test.ts`, o 1º um `ENOENT … o6r12-drill-…/migrations-antes`. Investigação: `inv-554-cl` (mecanismo), `ref-554-cl` (cético) e `inv-554b-cl` (gatilho por intervenção nos dois sentidos, em 1 núcleo no Node da CI: com o F5, 43 de 48; sem o F5, 0 de 48). Plano `B-O6R-12-DRILL-ORDEM` (`plano-drill-fable`), revisão do crítico `crit-drill-cl` (APROVADO COM AJUSTES, CD-1 a CD-6).
+- **o mecanismo:** o drill registrava C23 e R2-1, esperava dois `await import(...)` de módulo e só então registrava os outros 10 testes e o `after()`. Se os 2 primeiros terminassem dentro dessa janela, a raiz do runner rodava o `after()` recém-registrado no início; ele apagava o `tempRoot` e não roda de novo. Os 6 `pg.Client` de `baseMigrada`, fora de `try`, ficavam abertos, e o processo não saía.
+- **comandos que fecham:**
+  - na suíte, determinístico: `node --test --import tsx --test-reporter=tap tests/test-registration-order-guard.test.ts` → G-ORD-1 verde no head; com o drill do `a3d3aeae` (mutação M1), `not ok 1 - G-ORD-1` nomeando o drill (registro l.81, await de módulo l.123, `test` seguinte).
+  - natural, no container da CI (Node 20.20.2, Postgres 16 em UTC), drill sozinho: `taskset -c 0 node --test --import tsx --test-reporter=tap tests/b-o6r-12-regime-migration-drill-db.test.ts`, o original e o consertado intercalados (D0 da Emenda 4). O crítico mediu, no mesmo texto do conserto: original 12 de 12 travas; consertado 0 travas em 36 rodadas, 36 de 36 saíram sozinhas com código 0. Os números do D0 no head final e do D1 (15 execuções distintas do job `backend`) estão no corpo do PR #554.
+
+## P-CI-BACKEND-SEM-TETO (2026-11-14) — os jobs do `ci.yml` não têm `timeout-minutes`, só o `antivirus`; um arquivo de teste que não sai segura o runner até 360 min — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `.github/workflows/ci.yml` (PROIBIDO no `B-DB-FUSO-UTC`; o teto do job é pergunta ao dono) · **dono:** um bloco de CI, de junta completa (toca `.github/**`, a trava do §C7 10(2) manda junta) · **bloqueia:** não.
+- **origem:** plano `B-O6R-12-DRILL-ORDEM` §9, ampliada pelo crítico `crit-drill-cl` (CD-6). As 3 travas do `backend` no `a3d3aeae` foram canceladas à mão entre 27 e 34 min; sem cancelamento, o GitHub espera o padrão de 360 min.
+- **fato medido:** `git show <head>:.github/workflows/ci.yml | grep -nE '^  [a-z-]+:$|timeout-minutes|regime-migration-drill'` → jobs `backend`, `backend-postgres`, `antivirus` (`timeout-minutes: 20`), `frontend`, `owner-portal`, `authority-portal`, `flutter` e `docker`; só o `antivirus` tem teto. O drill do B-O6R-12 roda no `backend` (pela suíte inteira) e no `backend-postgres` (`SUITES=`).
+- **critério de encerramento:** cada job do `ci.yml` com `timeout-minutes` medido contra a duração normal dele (o `backend` leva de 13 a 15 min; o `backend-postgres`, ~6 min), a começar pelo `backend` e pelo `backend-postgres`, que rodam o drill. É a rede sistêmica para o arquivo que um dia volte a não sair.
+
+## P-DRILL-F2-SEM-TESTE-PERMANENTE (2026-11-14) — a F2 do drill (cliente fechado quando a preparação falha) só tem prova de bancada, nenhum teste permanente na suíte — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `tests/b-o6r-12-regime-migration-drill-db.test.ts` · **dono:** o próximo bloco que mexer no drill do B-O6R-12 (ou um bloco de arnês) · **bloqueia:** não.
+- **origem:** plano `B-O6R-12-DRILL-ORDEM` §4 e §9, com a prova natural do crítico `crit-drill-cl` (CD-6).
+- **fato medido:** a G-ORD guarda a ordem de registro (a F1), não o vazamento de cliente; a F2 não tem equivalente estático barato. A prova dela é de bancada: (1) sob o amplificador do `inv-554-cl` (`amplifica2.cjs`), só com a F2 o arquivo dá 10 `not ok`, `# tests 12 / # pass 2 / # fail 10` e sai em ~13 s, 3 de 3, onde o original trava 3 de 3; (2) na corrida natural, em 1 núcleo no container da CI, o drill com a F2 e sem a F1 (registro numa IIFE assíncrona, variante `OIF` do crítico) corre em 8 de 8 e, nas 8, o processo **sai** com `# tests 12 / # pass 2 / # fail 10`, código 1, ~12 s. Sem a F2, a mesma corrida trava.
+- **critério de encerramento:** um teste na suíte que fique vermelho se `baseMigrada` (ou `conectar`) voltar a deixar o cliente aberto quando a preparação falha, ou a decisão escrita de que a prova de bancada basta.
 
 ## P-15A-F4UI-TELA-SEM-DONO (2026-11-12) — a F4ui do estoque do técnico (tela contra a maquete de 3 opções) não tem pendência dona — BAIXA
 
@@ -15063,3 +15143,44 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** achado A-E21-2 da revisão `rev-ass09-e21-cl` (Emenda 2.1 do plano do `B-ASS-09`, fora do repositório); registrada pela F8 do `B-ASS-09` (`dev-ass09-cl`).
 - **fato:** medido pelo revisor: 1 organização inconsistente entre 3 derruba as 3 (o pedido inteiro rejeita); omitir a organização também dá 500 (`subscription_missing`). A rota (F6) grava no log do servidor o motivo, o mês e a organização da linha (a organização só no log, nunca no corpo, §2.8), mas a tela fica sem visão nenhuma. A falha por linha ingênua, sem os agregados falharem fechado, dá número errado em silêncio (total 2000.00 no lugar de 3000.00).
 - **critério de encerramento:** falha fechada por linha (a organização inconsistente sai marcada, sem número) com os agregados também falhando fechado, como na P13 do plano (grupo, totais e global `null` quando faltar uma parcela), por emenda que mexe em `overview.engine.ts` e no contrato `platform_billing_overview`, com teste que fica vermelho na versão ingênua.
+
+## P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM (2026-11-14) — no sync do app, um erro com forma de rota 4xx que embrulhe o texto do driver do banco sai cru ao cliente — MÉDIA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (as 10 linhas `message: error.message` nasceram entre 2026-06-14 e 2026-11-13: `a9574bb1`, `234807d6` e `8560df1a` em 14/06, `40c3651f` em 18/10, `68a208ad` em 11/11 e `24f7e792` em 13/11; o `B-SEC-LOG-SANITIZA` ainda não está na `main`) · **dono:** a varredura de segurança final (§C7 item 10(6)) · **bloqueia:** não.
+- **origem:** Emenda 1.1 do plano v2 do `B-SEC-LOG-SANITIZA` (fora do repositório: `plano-B-SEC-LOG-SANITIZA-v2-emenda1.1.md`, §5), que nomeou a pendência e não ampliou o escopo do bloco.
+- **N e forma:** 10 linhas nos 4 syncs, recontadas pelo redator na `origin/main` (`729718fe`) com `git grep -c 'message: error.message' -- 'src/modules/mobile/*sync*.ts'`: estoque 2 (`mobile-inventory-sync.ts:671,712`), ordem de serviço 4 (`mobile-work-order-sync.ts:366,386,400,438`), vistoria 3 (`mobile-checklist-sync.ts:793,817,831`) e evidência 1 (`mobile-evidence-sync.ts:415`). A emenda mediu o caso C1 com 2 sentinelas: se um serviço lançar um erro com forma de rota e status 4xx cuja mensagem embrulhe o texto do driver, o sync devolve essa mensagem como veio. É o mesmo defeito que o v2 do bloco fecha no `sendRouteError` (o E-10).
+- **latente:** nenhum serviço de estoque nem de ordem de serviço produz o caso hoje (M4 da emenda). **Não medido:** se os serviços de vistoria e de evidência montam erro de rota com a mensagem de outro erro.
+- **critério de encerramento:** as 10 linhas passam a devolver texto público (a forma proposta na emenda é `message: publicText(error.message, "Unexpected error.")`), com teste e mutação por arquivo; ou a varredura final mede, nos 4 syncs, que nenhum erro de rota carrega texto do driver.
+
+## P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE (2026-11-14) — a regra "a OS marcada como cancelada pelo 422 vale só para aquela OS" não tem teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-SAN3-25` (#559, já na `main` em `729718fe`): o estado `cancelledByServerId` nasceu no conserto `c76ce22e` do bloco (`frontend/src/modules/work-orders/components/tabs/FinancialTab.tsx:112` e `:268` na `main`) · **dono:** `B-SAN3-25` (próximo ajuste) · **bloqueia:** não.
+- **origem:** achado V559-R1 da conferência da J-559 (`ver-559-cl`, não grave).
+- **N e forma (medido pela conferência):** trocar `cancelledByServerId === workOrderId` por `cancelledByServerId !== null` em `FinancialTab.tsx:268` deixa verdes os 32 testes dos dois arquivos do front (`tests/b-san3-25-faturar-os.smoke.test.tsx` e `tests/b-san3-25-faturar-os-live.test.tsx`: 32/32, nenhum `not ok`). O código da `main` está certo; falta o teste que o prende. Não é o defeito do achado C3-A2, que tem o `[L4c]` vermelho sob as mutações M5 e M6.
+- **critério de encerramento:** um caso abre duas OS na mesma aba, recebe o 422 de cancelada em uma e prova que a outra continua faturável; com vermelho-controle na mutação acima.
+
+## P-INDICE-SEM-DONO-NUNCA-MARCA (2026-11-14) — o gerador do índice de pendências conta como "com dono" a entrada que diz `**dono:** a atribuir` — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a regra de dono do gerador, `agent-orchestration/controle/gerar-indice-pendencias.py:98`, é de 2026-08-29, `87f6ae61`) · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** achado do `reg-10bseed-cl` em 14/11, passado ao registro pelo orquestrador.
+- **o defeito:** com `**dono:** a atribuir`, o `\s*` antes do `(?!a atribuir)` recua para zero caracteres, o olhar à frente vê o espaço, e a busca casa. Reproduzido pelo redator: `re.search(r'\*\*dono:\*\*\s*(?!a atribuir)', '**dono:** a atribuir')` dá verdadeiro.
+- **N e forma (medido pelo redator na `origin/main`, `729718fe`):**
+  - `grep -c '| não |'` no `pendencias-indice.md` = **0**, como o orquestrador mediu. **Nota do redator, declarada (§A6):** esse 0 é por construção, porque o gerador nunca escreve "não" na coluna dono; o marcador de sem dono que ele escreve é `**a atribuir**` (`gerar-indice-pendencias.py:181`), e ele aparece em 121 linhas do índice (893 têm `sim`).
+  - o efeito do defeito: 89 entradas do `pendencias.md` têm `**dono:** a atribuir`, e 78 delas saem `sim` no índice só pelo recuo do `\s*` (as outras 11 têm também um dono de verdade).
+- **critério de encerramento:** uma pendência com dono "a atribuir" aparece como sem dono no índice regenerado. Pelo texto do orquestrador, isso é "aparecer como `| não |`"; pelo gerador de hoje, é aparecer com `**a atribuir**` na coluna dono. O bloco dono escolhe o marcador e o diz no cabeçalho do índice.
+
+## P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE (2026-11-14) — o servidor aceita `item_answer` do app para um componente que o modelo do checklist não tem — MÉDIA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o `handleAnswer` é de 2026-08-01, `8a938414`) · **dono:** o próximo bloco de backend que tocar `src/modules/mobile/mobile-checklist-sync.ts` · **bloqueia:** não.
+- **origem:** a Emenda 3 do `B-MOBILE-GATE-CHAVE` (PR #561), passada ao registro pelo orquestrador.
+- **onde:** `handleAnswer` em `src/modules/mobile/mobile-checklist-sync.ts:424-455` na `origin/main` (`729718fe`, `git grep -n handleAnswer`: a chamada na `:369`, a função na `:424`); no head do #561 (`7b53b75d`, aberto) a função vai de `:428` a `:459`. A função lê o `component_id` da ação e grava a resposta sem conferir o componente contra o modelo do checklist.
+- **N e forma (medido no #561, em `7b53b75d`, em memória; não re-executado pelo redator):** com a mutação `component_id: randomUUID()`, o T2 continua 4/4 verde.
+- **não medido:** se o caminho do Postgres também aceita.
+- **critério de encerramento:** a resposta para componente que o modelo não tem é recusada (em memória e no Postgres), com teste que fica vermelho sob a mutação acima.
+
+## P-DONO-LINHA-DO-APP-48-OU-44 (2026-11-14) — no app, a linha que abre o detalhe fica com 48 ou com 44 de altura? — decisão do dono — FECHADA
+
+- **status:** FECHADA (2026-11-14, `D-DONO-1311-RECOMENDACOES` (c)) — "48, pela recomendação". Nasce já respondida.
+- **gravidade:** decisão do dono · **escopo:** o `B-SAN3-15b` e o `B-SAN3-17` (a constante única `MobileExpandableRow.rowHeight`) · **dono:** o dono · **bloqueia:** não.
+- **pergunta (Emenda 5.2 do `B-SAN3-15b`, §8.1, fora do repositório):** no app, a linha que abre o detalhe fica com 48 de altura (a regra do Android, igual aos botões que o app já tem) ou com 44 (como a maquete aprovada)? Recomendação: 48. A diferença é de 4 por linha; se fosse 44, mudaria um número nos dois blocos.
+- **conflito registrado (§A2):** ver `D-DONO-1311-RECOMENDACOES` (c) em `decisoes.md`. Na conferência visual, a linha de 48 contra a maquete de 44 não é desvio a reprovar.

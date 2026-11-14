@@ -75,6 +75,7 @@ Nenhum versionado — os cabecalhos dos `fly.*.toml` trazem so os **nomes**.
 | G3 | `JOBS_WORKER_ENABLED=true` | `Ω6R-DIN-006` — o worker de jobs nunca subia |
 | G5 | `REDIS_URL` presente e **fora** de localhost/127.0.0.1 | fila e sinal de vida presos dentro do contêiner |
 | G-DB-ROLE | `DATABASE_RUNTIME_ROLE_GUARD` ausente (default `enforce`) ou `enforce` — `skip` é recusado | `P-INFRA-RLS` (B-SAN3-05) — um `DATABASE_URL` de superusuário/BYPASSRLS anulava toda política FORCE RLS em silêncio |
+| G-DB-TZ | Sessão do Postgres em `UTC`/`Etc/UTC` — a fábrica fixa `-c TimeZone=UTC` na URL e a trava `session-timezone.bootstrap.ts` recusa subir fora de UTC (sempre ligada, sem chave de desligar) | `P-DB-FUSO-DA-CONEXAO` (B-DB-FUSO-UTC) — sessão em SP deslocava escrita/leitura de `timestamptz` (+3 h) |
 
 **Consequencia operacional, sem eufemismo:** configuracao incompleta **nao degrada — ela reprova o boot**,
 com mensagem nomeando o achado, **antes do `listen`**. Um deploy assim nao fica "meio de pe": a maquina nao
@@ -168,6 +169,37 @@ desenho). A imagem `ubuntu-24.04` do runner traz o PostgreSQL 16.
 
 `P-INFRA-RLS` e `P-O6R-B06-LEITURA-PLATAFORMA-SOB-FORCE-RLS` só fecham com a trava **verde no ambiente** (a linha
 do log como evidência). Até lá: código pronto, ato pendente.
+
+#### Fuso da sessão do banco — conferência pré-deploy (B-DB-FUSO-UTC)
+
+**A correção fixa o fuso da sessão em `UTC` NO CÓDIGO.** Toda conexão Prisma nasce pela fábrica
+`src/database/pg-connection.ts`, que acrescenta `-c TimeZone=UTC` na URL (nunca só no objeto de config), e a
+**trava de boot** (`src/database/session-timezone.bootstrap.ts`, gate **G-DB-TZ**) sonda
+`current_setting('TimeZone')` depois do `G-DB-ROLE` e recusa subir se a sessão não for `UTC`/`Etc/UTC` — sempre
+ligada, sem chave de desligar. Nunca loga URL, host, porta, usuário nem senha.
+
+**Antes do deploy de qualquer ambiente com dado real, confira o fuso do banco** (a trava mede a SESSÃO, não o
+histórico: um banco que já rodou fora de UTC fica com o dado antigo deslocado e a trava passa):
+
+```bash
+psql "$DATABASE_URL" -Atc "show timezone"
+```
+
+- `UTC`/`Etc/UTC` → nada a fazer (o esperado para o compose e, por padrão, para RDS).
+- Outro valor → **parar o deploy** e levar ao dono (pergunta Q1 do plano B-DB-FUSO-UTC). Se houver banco com
+  dado real fora de UTC, a correção NÃO é neutra para o dado legado (lê +3 h em SP) e o deploy daquele banco
+  espera um bloco próprio de migração de legado.
+
+**Se houver pooler na frente (PgBouncer/RDS Proxy):** o parâmetro `options` de início pode ser recusado ou
+ignorado. No staging, antes da produção, rode também:
+
+```bash
+psql "postgresql://<usuario>:<senha>@<host>:5432/<banco>?options=-c%20TimeZone%3DUTC" -Atc "show timezone"
+```
+
+Use sempre `%20` (nunca `+`): a libpq não decodifica `+` como espaço. Recusado ⇒ `ALTER DATABASE <db> SET
+timezone 'UTC'` pelo dono do banco, com a trava continuando a medir.
+
 
 #### Provisionamento de RBAC — papéis, permissões e concessões (passo do CD)
 

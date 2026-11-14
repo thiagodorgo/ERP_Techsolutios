@@ -49,7 +49,7 @@ if (!connectionString) {
     process.env.CORE_SAAS_PERSISTENCE = "prisma";
 
     const [{ PrismaPg }, { PrismaClient: Client }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    const admin = new Client({ adapter: new PrismaPg({ connectionString }) }) as unknown as PrismaClient;
+    const admin = new Client({ adapter: (await import("../src/database/pg-connection.js")).createPgAdapter(connectionString) }) as unknown as PrismaClient;
     const role = await createEphemeralRole(admin, connectionString);
     let server: Server | undefined;
     const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;

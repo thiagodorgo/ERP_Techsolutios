@@ -6,7 +6,7 @@
 //   npx tsx prisma/seed-fleet.ts
 //
 import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { createPgAdapter } from "../src/database/pg-connection.js";
 import { PrismaClient } from "@prisma/client";
 
 import {
@@ -24,7 +24,7 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required to run prisma/seed-fleet.ts.");
 }
 
-const adapter = new PrismaPg({ connectionString });
+const adapter = createPgAdapter(connectionString);
 const prisma = new PrismaClient({ adapter });
 
 // São Paulo — ponto base + offsets por operador (pins distintos no mapa).
