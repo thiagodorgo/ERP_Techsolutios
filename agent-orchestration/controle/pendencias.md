@@ -13860,7 +13860,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
-- **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
+- **status:** FECHADA (2026-11-14, no PR do `B-MOBILE-GATE-CHAVE`, item 66; vale no merge). Cada gate de tela e de botão do app passa a ser uma regra de `mobile/flutter_app/lib/core/permissions/mobile_gates.dart`, igual à rota do servidor (módulo "qualquer um", chaves do catálogo e o modo); o `tests/mobile-gate-chave-catalogo.test.ts` prova as regras contra os exports da rota (T4.1), nenhum literal do `lib/` fora do catálogo (T4.2, com o canário das 9 classes) e a demo dentro do técnico de campo (T4.3); o `tests/mobile-gate-chave-matriz.test.ts` mede a matriz no servidor, e o app reproduz cada célula (T3, 52) e cada tela (T1, 66). O T9 do `B-SAN3-19b` exige "Fale com o administrador da sua organização." em Checklists, Estoque, Aprovações e nas telas Nova Entrada e Nova Saída; o Diagnóstico fica indisponível fora do modo de desenvolvimento (resposta 2.2 do dono, `D-DONO-1311-RECOMENDACOES`), por isso o texto do administrador vale em 3 telas do pedido original e no botão, não em 4.
+- **status anterior:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
   não muda permissão) · **dono:** `B-MOBILE-GATE-CHAVE` (procedência: a Emenda 3 do plano do `B-SAN3-19b` e a resposta (a) do dono à Pergunta 2, em 11/11; o ID do bloco foi dado em 13/11, R552-A2; plano em curso; junta completa + `coordenador-de-acessos`; começa provando o bloqueio contra o backend local) · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
 - **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
 - **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
@@ -14857,3 +14858,26 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **N e forma:** 6 peças abaixo de AA (4,5:1 para texto de 14 px): chip "Concluída" 3,25:1, "Não iniciada" 4,37:1 e "Em atendimento" 2,81:1 (14 px); pílula do cabeçalho 3,07:1 (11 px); barra inferior 2,56:1; e o botão "Concluir OS" liberado, branco sobre #059669, 14 px, 3,77:1 (N5). Medido pelo `textContrastGuideline` do Flutter nos 4 estados da sonda da C3 (falha só em peças pré-existentes; `androidTapTarget48` e `labeledTapTarget` passam) e pelo nó semântico do "Concluir OS".
 - **causa:** as cores do kit (chips, pílula, barra e o verde de sucesso) não foram escolhidas para AA; a opção A usa o mesmo verde.
 - **critério de encerramento:** as 6 peças passam no `textContrastGuideline` do Flutter, com teste.
+
+## P-RBAC-MATRIZ-X-CATALOGO-ESTOQUE-CHECKLIST (2026-11-14) — a matriz de papéis dá estoque ao financeiro e ao suporte, e resposta de checklist ao estoque, e o catálogo não — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o catálogo e a `RBAC_MATRIX.md` já divergiam antes do `B-MOBILE-GATE-CHAVE`; medido em `2f027fe1` e re-medido em `d2737339`) · **dono:** o dono (mudar o catálogo depende de ordem dele) · **bloqueia:** não. O app espelha o servidor, então ninguém ganha acesso.
+- **origem:** §2.7 do plano v1 do `B-MOBILE-GATE-CHAVE`.
+- **N e forma:** 3 células. Estoque (`RBAC_MATRIX.md`, linha de movimentações de estoque): `finance` = "read" e `support` = "support-view" na matriz, e o catálogo não dá `inventory.read` a nenhum dos dois. Checklists (linha de execução de checklist): `inventory` = "read/answer-by-scope" na matriz, e o catálogo não lhe dá `checklist_runs:update`.
+- **causa:** o catálogo é mais restritivo que a matriz nas 3 células.
+- **critério de encerramento:** o dono decide qual dos dois vale; o lado que perde é corrigido, com o teste de paridade do catálogo.
+
+## P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram na fila com tipos que o servidor não conhece — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (as telas e a fila são de blocos anteriores; o `B-MOBILE-GATE-CHAVE` só põe o gate nelas) · **dono:** `B-O6R-04b` (item 31; nasce depois do 66, e reaponta o G3 para a ação real) · **bloqueia:** não o 66.
+- **origem:** §2.8 do plano v1 do `B-MOBILE-GATE-CHAVE`, com o texto corrigido pela abertura (A2).
+- **fato (medido em `d2737339`):** o replay de estoque existe (`lib/core/sync/inventory_sync_replay_service.dart:148`), mas só envia `work_order_material.add` e `work_order_material.remove` (`:198-199`). As ações `inventory_entry.create` e `inventory_exit.create`, que as telas Nova Entrada e Nova Saída enfileiram, não têm tipo no servidor (`supportedActionTypes` de `src/modules/mobile/mobile-inventory-sync.ts`: `inventory.reserve`, `inventory.consume`, `inventory.shortage_report`).
+- **efeito:** o movimento registrado no aparelho não chega ao servidor.
+- **critério de encerramento:** a ação do app tem tipo no servidor, o replay a envia, e o G3 do app aponta para a permissão dela (T4.1 do `tests/mobile-gate-chave-catalogo.test.ts`).
+
+## P-MOBILE-MODULE-RESOLVER-MORTO (2026-11-14) — o `ModuleResolver` e o `perms` do mapa de navegação não filtram o menu — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o próximo bloco de navegação do app · **bloqueia:** não.
+- **origem:** §2.5 do plano v1 do `B-MOBILE-GATE-CHAVE`.
+- **fato:** `ModuleResolver` (`lib/core/modules/module_resolver.dart`) é o único leitor de `requiredPermissions` e de `_kNavigationModules[*].perms`, e nenhum widget de produção o usa (só `test/core/resolvers_test.dart`). O `B-MOBILE-GATE-CHAVE` trocou as chaves inventadas desses mapas pelas do catálogo, sem ligar o resolvedor.
+- **critério de encerramento:** ligar o resolvedor à navegação (com a regra de `MobileGates`) ou apagá-lo, com o mapa.
