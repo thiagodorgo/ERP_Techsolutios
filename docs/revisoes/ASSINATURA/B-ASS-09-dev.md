@@ -104,6 +104,29 @@ entre as duas entraram `5728df31` (#557, B-ASS-08c-wh) e `d29b3bef` (#558, B-SAN
    taxa **zero** (zeraria o custo em silêncio; a M6 tem `CHECK (rate > 0)`), e `costStatusOf` trata uma `coverage` que o bloco
    não conhece como `no_import`, nunca como `ok`. Cada uma tem caso no teste.
 
+## F2 — `membership.rules.ts` (F2a) e `overview.engine.ts` (F2b) (R-MG-5, R-GLB-1..3, R-FX-7..9, R-GRP-1, R-GRP-2, R-GRP-7, R-H13-1)
+
+- **Dev:** `dev-ass09-f13-cl` (o mesmo da F1, cobrindo o braço, declarado). Partida em **F2a** e **F2b** pelo acelerador da
+  **Emenda 2 §1.2/§1.6** (`plano-B-ASS-09-v2-emenda2.md`, lida às 23:2x SP, ainda em escrita nas §2 a §6): a F2a empurra só
+  as regras de vigência, para a J1 da F5b poder começar antes do motor.
+
+### F2a — `economic-groups/membership.rules.ts` e `tests/ass-09-groups.test.ts` (só os casos da F2)
+
+| passo | comando | saída resumida | veredito |
+|---|---|---|---|
+| vermelho antes | `membership.rules.ts` fora do lugar · `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-groups.test.ts` | `ERR_MODULE_NOT_FOUND … membership.rules.js` | vermelho |
+| verde depois | idem, com o arquivo | `# tests 2 # pass 2 # fail 0 # skipped 0` | verde |
+| âncoras que a F5b importa (Emenda 2 §1.4) | `grep -cF` no arquivo | `return deriveBusinessDate(now);` 1 · `return row.validTo === null \|\| row.validTo > from;` 1 · `if (validFrom <= row.validFrom) throw retroactive();` 1 · `if (hits.length > 1) throw new MembershipOverlapError(tenantId);` 1 · `day < row.validTo` 1 | cada uma casa **1 vez** |
+| mutações | executor fora do repositório (âncora 1x, aplica, roda, restaura, md5) | **M-GRP-1** `day < row.validTo` → `day <= row.validTo`: T-GRP-1..3 (regra) vermelho · **M-GRP-10** apagar `if (hits.length > 1) throw new MembershipOverlapError(tenantId);`: T-GRP-12 (regra) vermelho (`Missing expected exception`) · `restaurado=true` nas duas | mortas |
+
+**O que a F5b importa (Emenda 2 §1.4), com os nomes livres declarados:**
+- `MemberRow` estrutural (`tenantId`, `groupId`, `validFrom`, `validTo`), que o `EconomicGroupMembership` do repositório já satisfaz;
+- `isMemberOn(row, day)`, `todayBusinessDate(now)`, `overlaps(row, from)`, `groupOfTenantOn(rows, tenantId, day)`;
+- a regra de fechamento se chama **`assertCanClose(row, validFrom)`** e lança `MembershipRuleError` com `reason
+  "membership_retroactive"`; a regra "de hoje em diante" se chama **`assertNotBeforeToday(validFrom, today)`**, com o mesmo erro;
+- `MembershipOverlapError` (`code "membership_integrity_violation"`, `tenantId`).
+- As âncoras da M-GRP-4, da M-GRP-11 e da M-GRP-12 **só se contam** na F2 (acima); quem as mata é a F5b (Emenda 2 §1.6).
+
 ## F4 — ramo `feat/ass-09-banco` (worktree `C:/Users/thiag/w-ass09b`)
 
 (preenchido no ramo `feat/ass-09-banco`)
