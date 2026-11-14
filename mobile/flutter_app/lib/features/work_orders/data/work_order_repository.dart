@@ -28,6 +28,13 @@ import 'work_order_conflict_resolution_service.dart';
 import 'work_order_local_store.dart';
 import 'work_order_remote_api.dart';
 
+/// J-564 C3-01 — a transição recusada vira mensagem em português: as telas mostram o `StateError` como veio, e o
+/// nome do estado interno nunca chega à tela.
+const workOrderCannotCompleteMessage =
+    'A situação desta OS não permite concluir agora.';
+const workOrderTransitionRefusedMessage =
+    'A situação desta OS não permite essa mudança agora.';
+
 class WorkOrderMutationResult {
   const WorkOrderMutationResult({
     required this.workOrder,
@@ -570,7 +577,7 @@ class WorkOrderRepository extends ChangeNotifier {
 
     final wo = _orders[idx];
     if (!wo.status.canTransitionTo(newStatus)) {
-      throw StateError('Invalid transition: ${wo.status} → $newStatus');
+      throw StateError(workOrderTransitionRefusedMessage);
     }
 
     final now = DateTime.now().toUtc();
@@ -706,7 +713,7 @@ class WorkOrderRepository extends ChangeNotifier {
 
     final wo = _orders[idx];
     if (!wo.status.canTransitionTo(WorkOrderStatus.completed)) {
-      throw StateError('Invalid transition: ${wo.status} → completed');
+      throw StateError(workOrderCannotCompleteMessage);
     }
 
     if (wo.checklistId != null && !checklistComplete) {

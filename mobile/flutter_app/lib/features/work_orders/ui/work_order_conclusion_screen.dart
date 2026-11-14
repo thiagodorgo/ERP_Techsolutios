@@ -26,6 +26,7 @@ const _kChecklistTitulo = 'Checklist obrigatório pendente';
 const _kChecklistTexto =
     'Conclua o checklist obrigatório antes de finalizar a OS.';
 const _kFalha = 'Não foi possível concluir. Tente novamente.';
+const _kRetome = 'Retome o atendimento para concluir.';
 const _kSemConexao =
     'Sem conexão. O que você fizer fica salvo no aparelho e é enviado quando '
     'o sinal voltar.';
@@ -205,6 +206,12 @@ class _WorkOrderConclusionScreenState
   }) {
     final scheme = Theme.of(context).colorScheme;
     final s = data.summary;
+    // J-564 C3-01 — "Concluir atendimento" só se oferece quando a OS pode ir para concluída; pausada, a tela diz o
+    // que fazer.
+    final canComplete = data.wo.status.canTransitionTo(
+      WorkOrderStatus.completed,
+    );
+    final paused = data.wo.status == WorkOrderStatus.paused;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -347,6 +354,18 @@ class _WorkOrderConclusionScreenState
           ),
           const SizedBox(height: 8),
         ],
+        if (!canComplete && !_done) ...[
+          Card(
+            key: const Key('conclusion-cannot-complete'),
+            child: ListTile(
+              leading: Icon(
+                paused ? Icons.pause_circle_outline : Icons.info_outline,
+              ),
+              title: Text(paused ? _kRetome : workOrderCannotCompleteMessage),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         if (_error != null) ...[
           SyncStatusBanner(status: SyncStatus.failed, message: _error!),
           const SizedBox(height: 8),
@@ -367,7 +386,8 @@ class _WorkOrderConclusionScreenState
             width: double.infinity,
             child: FilledButton.icon(
               key: const Key('conclude-button'),
-              onPressed: _completing || data.showChecklistWarning
+              onPressed:
+                  _completing || data.showChecklistWarning || !canComplete
                   ? null
                   : () => _conclude(data),
               icon: _completing

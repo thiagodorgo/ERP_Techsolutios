@@ -13,7 +13,9 @@
 //
 // O conserto único da J-564 (ata `J-564-b-san3-15b.md`, triagem) acrescenta:
 //   C3-02 — T-H2 (concluído) e T-H4 asserem a AUSÊNCIA de "Não foi possível concluir" depois do sucesso, e o T-H7
-//           cobre a volta de "Abrir checklist" (sem exceção, aviso some e o botão fica ativo).
+//           cobre a volta de "Abrir checklist" (sem exceção, aviso some e o botão fica ativo);
+//   C3-01 — T-H8: OS pausada → "Concluir atendimento" inativo e "Retome o atendimento para concluir."; a transição
+//           recusada vira mensagem em português nos dois pontos do repositório e na tela, sem o nome do estado interno.
 //
 // VERMELHO-CONTROLE (F0b, `main` d2737339): hoje a tela inventa a comissão (T-H1, T-H3), só avisa do checklist
 // depois do toque e recusa a OS com checklist concluído (T-H2), não refaz o resumo depois de concluir (T-H4) e
@@ -67,7 +69,11 @@ const _session = BootstrapSession(
   ),
 );
 
-WorkOrder _wo({String? checklistId, DateTime? startedAt}) => WorkOrder(
+WorkOrder _wo({
+  String? checklistId,
+  DateTime? startedAt,
+  WorkOrderStatus status = WorkOrderStatus.inService,
+}) => WorkOrder(
   localId: _woId,
   serverId: 'srv-$_woId',
   tenantId: _tenant,
@@ -75,7 +81,7 @@ WorkOrder _wo({String? checklistId, DateTime? startedAt}) => WorkOrder(
   title: 'Troca de disjuntor',
   customerName: 'Indústria Alfa',
   serviceAddress: 'Rua da Conclusão, 36',
-  status: WorkOrderStatus.inService,
+  status: status,
   priority: WorkOrderPriority.high,
   syncStatus: SyncStatus.synced,
   createdAt: DateTime.utc(2026, 11, 14),
@@ -227,6 +233,19 @@ class _Conclusao {
 const _avisoTitulo = 'Checklist obrigatório pendente';
 const _avisoTexto = 'Conclua o checklist obrigatório antes de finalizar a OS.';
 const _falha = 'Não foi possível concluir. Tente novamente.';
+const _retome = 'Retome o atendimento para concluir.';
+
+/// Nenhum texto da tela traz o nome técnico de uma transição (J-564 C3-01): nem a frase em inglês do repositório,
+/// nem o nome do estado interno.
+List<String> _textosTecnicos() => [
+  for (final e in find.byType(Text).evaluate())
+    if (RegExp(
+      r'Invalid transition|WorkOrderStatus\.|→',
+    ).hasMatch(_textoDe(e.widget as Text)))
+      _textoDe(e.widget as Text),
+];
+
+String _textoDe(Text w) => w.data ?? w.textSpan?.toPlainText() ?? '';
 
 void main() {
   group('B-SAN3-15b T-H1 — sem valor em reais na conclusão', () {
@@ -372,6 +391,74 @@ void main() {
         expect(find.text(_avisoTitulo), findsNothing);
         expect(h.concluirAtivo(t), isTrue);
         expect(find.text(_falha), findsNothing);
+      },
+    );
+  });
+
+  group('B-SAN3-15b T-H8 — OS pausada (J-564 C3-01)', () {
+    testWidgets(
+      'pausada: "Concluir atendimento" inativo e "Retome o atendimento para concluir.", nada na fila',
+      (t) async {
+        final h = _Conclusao(_wo(status: WorkOrderStatus.paused));
+        await h.pump(t);
+        expect(h.concluir, findsOneWidget);
+        expect(h.concluirAtivo(t), isFalse);
+        expect(find.text(_retome), findsOneWidget);
+        expect(_textosTecnicos(), isEmpty);
+        expect(await h.conclusoesNaFila(), isEmpty);
+      },
+    );
+
+    testWidgets(
+      'em atendimento: sem o aviso de retomar; pausada depois de abrir a tela: o toque mostra a recusa em português',
+      (t) async {
+        final h = _Conclusao(_wo());
+        await h.pump(t);
+        expect(find.text(_retome), findsNothing);
+        expect(h.concluirAtivo(t), isTrue);
+
+        // A OS é pausada com a tela já aberta (o resumo ainda é o de antes).
+        await h.repo.updateStatus(_woId, WorkOrderStatus.paused);
+        await t.tap(h.concluir);
+        await t.pumpAndSettle();
+
+        expect(find.byKey(const Key('conclusion-synced')), findsNothing);
+        expect(
+          find.text('A situação desta OS não permite concluir agora.'),
+          findsOneWidget,
+        );
+        expect(_textosTecnicos(), isEmpty);
+        expect(await h.conclusoesNaFila(), isEmpty);
+      },
+    );
+
+    test(
+      'o repositório recusa a transição em português, nos dois pontos, sem o nome do estado interno',
+      () async {
+        final repo = WorkOrderRepository(
+          session: _session,
+          syncQueue: InMemorySyncQueueRepository(),
+          actionFactory: SyncActionFactory(),
+          localStore: InMemoryWorkOrderLocalStore([
+            _wo(status: WorkOrderStatus.paused),
+          ]),
+        );
+        await repo.load();
+        Matcher recusa(String mensagem) => throwsA(
+          isA<StateError>().having((e) => e.message, 'message', mensagem),
+        );
+        await expectLater(
+          repo.completeWorkOrder(
+            _woId,
+            checklistComplete: true,
+            deliveryComplete: true,
+          ),
+          recusa('A situação desta OS não permite concluir agora.'),
+        );
+        await expectLater(
+          repo.updateStatus(_woId, WorkOrderStatus.completed),
+          recusa('A situação desta OS não permite essa mudança agora.'),
+        );
       },
     );
   });
