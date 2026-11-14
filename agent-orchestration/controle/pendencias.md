@@ -8625,6 +8625,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **nota B-SAN3-03 (2026-11-02):** a parte "cobrança nunca vira fatura" está RESPONDIDA por `D-COBRANCA-ASSINATURA-FRANQUIA` (o preço do cliente é a assinatura). A parte "custo AWS entra só por CSV manual" é RECOMENDACAO ADOTADA 4 e só fecha com o merge de `B-ASS-09a` (rateio automático) e `B-ASS-10b` (botões na tela); a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
 - **nota B-ASS-09a (2026-11-11):** o rateio automático a partir da importação está no PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`): cada importação concluída cria um rateio por mês de cobrança. Isso cumpre a parte do `B-ASS-09a`; a parte "custo AWS entra só por CSV manual" segue esperando o `B-ASS-10b` (botões na tela), e a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
 - **andamento (B-ASS-09, 2026-11-14):** a visão interna de custo × assinatura por organização, grupo e global (item 61) é entregue pelo `B-ASS-09`; a tela segue com o `B-ASS-10b`.
+- **andamento (B-ASS-10b, 2026-11-14):** a tela de custo e margem com as 3 aparências aprovadas, a importação e o rateio pela tela está no PR do `B-ASS-10b` (ramo `feat/web-custos-t5`, empilhado no `B-ASS-09`). Fecha no merge a parte "tela" desta pendência (plano v2 do `B-ASS-10b`, §14.1); a leitura automática da AWS segue com o `B-ASS-13`.
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
@@ -10631,6 +10632,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 - **dono:** `B-ASS-10b` (importar e rodar pela tela), `B-ASS-09a` (rateio automático), `B-ASS-01` (retirada do cálculo e da edição de markup) e `B-ASS-09` (margem e visão da plataforma), após `P-DONO-CLOUD-BILLING-ESCOPO`.
 - **bloqueia:** não bloqueia leitura; bloqueia qualquer ação monetária na interface.
 - **nota B-SAN3-03 (2026-11-02), donos nomeados:** importar e rodar pela tela → `B-ASS-10b`; rateio automático → `B-ASS-09a`; calcular cobrança e editar regras de markup somem no `B-ASS-01` (`D-COBRANCA-ASSINATURA-FRANQUIA`). Status segue ABERTA.
+- **andamento (B-ASS-10b, 2026-11-14):** "importar e rodar pela tela" está no PR do `B-ASS-10b` (ramo `feat/web-custos-t5`): cada botão com a própria permissão, uma requisição por confirmação, o rateio com o mês da tela (sem o corpo fixo); fecha essa parte no merge. O dólar do mês e os grupos também passam a ser escritos pela tela (R-FX e R-GRP do plano).
 
 ## P-SAN3-06B-SHELL-PLATAFORMA-FANTASMA (2026-10-09) — shell contém controles estáticos — MÉDIA
 
@@ -13717,6 +13719,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** R2-11(b) da revisão r2 do plano do `B-ASS-09a`, transcrito na Emenda 1 do plano (item 11), sem código no `B-ASS-09a`.
 - **fato:** em memória, com fim exclusivo, o resumo de novembro conta outubro; o Prisma filtra por `billing_period_start {gte, lte}`.
 - **critério de encerramento:** o dublê e o Prisma usam a mesma regra de período, com teste de paridade que fica vermelho na regra de hoje.
+- **dono atualizado (B-ASS-10b, 2026-11-14):** muda de `B-ASS-10b` para `B-ASS-10d` (plano v2 do `B-ASS-10b`, §14.1; nome trocável pelo orquestrador). O `B-ASS-10b` não põe backend.
 
 ## P-ORG-SUSPENSA-NAO-CORTA-ACESSO (2026-11-11) — nem o login, nem o refresh, nem o RBAC persistente conferem se a organização está suspensa — MÉDIA (com pergunta ao dono)
 
@@ -13813,6 +13816,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** §8 do plano v2 do `B-ASS-09a` (fora do repositório).
 - **fato:** a varredura só reenfileira run `pending` e não retoma `processing` nem `failed` (pergunta 3 do §9, recomendação (a)). Uma run presa fica visível; o operador roda o rateio manual.
 - **critério de encerramento:** a run `processing` há mais de um tempo limite volta a `pending` (ou é marcada `failed` com motivo), com teste de tempo controlado, e a tela mostra a run presa.
+- **andamento e dono (B-ASS-10b, 2026-11-14):** a metade "a tela mostra a run presa" fecha com o `B-ASS-10b` (aviso "O rateio de <mês> está em processamento desde <data>", T-ACT-3). O resto (a run presa voltar a `pending` ou falhar com motivo) muda de `B-ASS-10b` para `B-ASS-10d`.
 
 ## P-ASS09A-MES-EM-VARIOS-ARQUIVOS (2026-11-11) — um mês dividido em vários arquivos vira várias importações, e o resumo mostra só a última parte — MÉDIA
 
@@ -15184,3 +15188,87 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **gravidade:** decisão do dono · **escopo:** o `B-SAN3-15b` e o `B-SAN3-17` (a constante única `MobileExpandableRow.rowHeight`) · **dono:** o dono · **bloqueia:** não.
 - **pergunta (Emenda 5.2 do `B-SAN3-15b`, §8.1, fora do repositório):** no app, a linha que abre o detalhe fica com 48 de altura (a regra do Android, igual aos botões que o app já tem) ou com 44 (como a maquete aprovada)? Recomendação: 48. A diferença é de 4 por linha; se fosse 44, mudaria um número nos dois blocos.
 - **conflito registrado (§A2):** ver `D-DONO-1311-RECOMENDACOES` (c) em `decisoes.md`. Na conferência visual, a linha de 48 contra a maquete de 44 não é desvio a reprovar.
+
+## P-ASS10B-TROCA-DE-GRUPO-ATOMICA (2026-11-14) — trocar uma organização de grupo pede duas escritas, e o conjunto de membros não tem versão — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** o `PUT /platform/billing/economic-groups/:id/members` troca o conjunto inteiro a partir de uma data e não tem versão (achado A-7 do plano). A tela faz uma escrita por confirmação (R-GRP): em "Mudar de grupo", quem já tem grupo só vê "Sem grupo"; o conjunto sai do grupo relido imediatamente antes de gravar e, se mudou, a janela não grava. A janela entre a releitura e a escrita continua aberta.
+- **critério de encerramento:** o servidor troca uma organização de grupo numa operação e recusa `PUT /members` feito sobre conjunto velho; a tela passa a oferecer a troca direta.
+
+## P-ASS10B-CANCELAR-AGENDADO (2026-11-14) — o vínculo agendado não pode ser cancelado pela tela — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** Emenda 1 do plano v2 do `B-ASS-10b` (A1-r2 (iii), §7, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** na janela "Editar membros", o membro agendado (entra depois de hoje) vem marcado e desabilitado, com a dica "entra em <data>; o cancelamento do agendamento ainda não é feito pela tela" (Emenda 1 do plano, A1-r2 (iii)). Desmarcá-lo levaria ao 422 `membership_retroactive`.
+- **critério de encerramento:** o servidor aceita cancelar um vínculo agendado e a tela oferece o cancelamento.
+
+## P-ASS10B-COMPOSICAO-EM-REAIS (2026-11-14) — a composição por serviço do custo da organização só existe na moeda do arquivo — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** o detalhe da organização mostra a composição por serviço pela rota `tenant-allocations` do rateio, na moeda do arquivo; o front não converte (R-T5-DIN).
+- **critério de encerramento:** composição por serviço, agregada e em reais, vinda do servidor.
+
+## P-ASS10B-IMPORTACAO-1MB (2026-11-14) — a importação manual aceita até 1 MB, e o arquivo mensal real da AWS passa disso — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-13`
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** o servidor recusa acima de 1.000.000 de caracteres (413 `csv_too_large`); a janela confere antes e não envia. O dono é informado.
+- **critério de encerramento:** o arquivo mensal real entra.
+
+## P-ASS10B-VARIACAO-MES-ANTERIOR (2026-11-14) — a tela não mostra a variação do custo sobre o mês anterior — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** a maquete aprovada tem o item "Comparação" (marcado "falta no backend"); a tela não o desenha (B1), porque a variação teria de ser calculada no front.
+- **critério de encerramento:** o servidor devolve a variação e a tela a mostra.
+
+## P-ASS10B-CAMBIO-QUEM-CADASTROU (2026-11-14) — o histórico do dólar do mês não diz quem cadastrou — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** a janela do dólar mostra versão, taxa e data; a resposta do câmbio não traz o autor.
+- **critério de encerramento:** a resposta do câmbio traz quem cadastrou.
+
+## P-ASS10B-CREDITO-GLOBAL (2026-11-14) — o crédito aplicado do mês não vem no global da visão — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** a visão por organização traz o crédito aplicado; o `global` não, e a tela não soma (R-T5-DIN).
+- **critério de encerramento:** `global` traz o crédito aplicado do mês.
+
+## P-ASS10B-LINHAS-POR-MOTIVO (2026-11-14) — o não rateado por motivo não traz as linhas do arquivo nem o valor original — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** o detalhe da parcela "Não rateado" mostra o valor em reais por motivo; sem as linhas e sem o original por motivo.
+- **critério de encerramento:** linhas do arquivo e valor original por motivo.
+
+## P-ASS10B-SERIE-SEIS-MESES (2026-11-14) — a série de 6 meses custa 10 leituras em segundo plano — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** os 5 meses anteriores são lidos um a um (global e por organização), 3 por vez, em segundo plano; falha parcial não derruba a tela.
+- **critério de encerramento:** série numa chamada só, com custo por organização e contagem de alerta.
+
+## P-ASS10B-GRUPOS-AGENDADOS-NA-LISTA (2026-11-14) — a lista de grupos não traz os vínculos agendados — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** a tela lê o detalhe de cada grupo em segundo plano para achar os agendados.
+- **critério de encerramento:** a lista de grupos traz os vínculos agendados.
+
+## P-ASS10B-MENU-SERVIDOR-GUARDA (2026-11-14) — o item do menu do servidor pede menos que a rota da tela — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** `B-ASS-10d` (bloco de servidor nomeado pelo plano do `B-ASS-10b`, trocável pelo orquestrador; não segura o item 61)
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** a rota da tela pede `platform:cloud-cost-allocation:read` e `platform:billing:read` (dois guardas aninhados); o item `platform.cloudBilling` do menu do servidor não pede as duas.
+- **critério de encerramento:** o item `platform.cloudBilling` do menu do servidor pede as duas permissões da rota.
+
+## P-ASS10B-PONTE-UNICA (2026-11-14) — duas pontes de degraus na biblioteca — BAIXA (opcional)
+
+- **status:** ABERTA · **gravidade:** BAIXA (opcional) · **escopo:** fora do `B-ASS-10b` (o bloco não põe backend) · **dono:** bloco de biblioteca, a definir
+- **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
+- **fato:** o `StepBridge` (novo, `B-ASS-10b`) e o `BalanceBridge` (Financeiro, proibido ao bloco) desenham degraus parecidos.
+- **critério de encerramento:** `BalanceBridge` passa a usar o `StepBridge`.
