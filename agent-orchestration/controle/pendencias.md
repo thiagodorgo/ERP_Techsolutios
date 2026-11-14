@@ -8866,7 +8866,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-LGPD-GPS-SEM-PORTA (2026-09-11) — Consentimento LGPD de GPS nunca pode ser dado: `/location` sem porta — ALTA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA (2026-11-14, no PR #568, `B-SAN3-17`; o FECHADO definitivo vem com o merge) — era ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11). **Premissa corrigida:** dar o consentimento já era possível (o cartão de localização da OS oferecia o aceite); o que faltava era a porta e a revogação. Agora o técnico chega à tela por Perfil › Privacidade › Localização e pelo cartão do Início, revoga pela tela, e a decisão vai ao servidor antes de qualquer posição (testes W1 a W12, S1 a S16 e B1 a B24 do bloco).
 - **fonte (fatia AUSENTES, §2a):** sintese B33
 - **situação medida pela fatia:** ATIVO (efeito na captura: HIPÓTESE forte, ramo não lido)
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `router.dart:232,410` `/location` → `LocationConsentScreen`; zero `push/go` para `/location`; `core/location/geolocator_device_location_provider.dart:56-59` exige `LocationConsentStore`
@@ -9521,7 +9521,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-FIELD-LOCATION-SEM-CONSENTIMENTO-NO-BACKEND (2026-09-12) — o backend grava a posição do técnico sem conferir o consentimento — ALTA
 
-- status: ABERTA (junta do PR #386, ciclo 1, cadeira C2, achado C2-12; conferido pelo orquestrador em `a143d2c3`)
+- status: FECHADA (2026-11-14, no PR #568, `B-SAN3-17`; o FECHADO definitivo vem com o merge) — era ABERTA (junta do PR #386, ciclo 1, cadeira C2, achado C2-12; conferido pelo orquestrador em `a143d2c3`). O critério está cumprido: sem cadastro, `422 operator_profile_required`; sem consentimento, `422 tracking_consent_required`; nos dois casos nada é gravado nem publicado; com consentimento, 201 (B1, B2, B3, B12; D1 a D3 no Postgres sob papel sem bypass de RLS).
 - **prova:** `src/modules/field-location/field-location.service.ts:21-38` grava sem checar `tracking_consent`; a telemetria checa (`src/modules/telemetry/telemetry.service.ts:108-111`, RN-TELE-01). O app recusa capturar sem consentimento, mas o backend é a autoridade final.
 - **escopo:** `pre-existente` (`15739c1b`, 2026-06-09).
 - **dono:** `B-SAN3-17` (plano SAN3, §4.1 item 52) (antes: `B-SAN3-17` (plano SAN3 v5, item 18 ampliado ao backend).)
@@ -11361,6 +11361,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **nova ocorrência (2026-11-13, PR #551):** o run `43438519656` (push do `6e2a0e92`, ramo do `B-MATERIAL-REENVIO`), tentativa 1, job `131929928497`, falhou no B16 (`not ok 311`, `422|entry_already_adjusted`); verde na tentativa 2 (`gh run rerun 43438519656 --failed`). Fonte: RETOMADA 45 do diário do bloco (`agent-orchestration/omega/juntas/votos/B-MATERIAL-REENVIO/00-dev.md`), que pediu o registro.
 - **nova ocorrência (2026-11-12, PR #542):** o run `43175128180` (push, head `72866b87` do #542) falhou no B16 — intermitente conhecido; as duas rodadas dos heads `3acac2ee` e `6c278b84` passaram. Fonte: `REGISTRO-PENDENTE.md` 12/11 04:43.
 - **nova ocorrência (2026-11-02, PR #481):** o run `41386712734`, job `backend` `125089109273`, head `6cea5f3f`, falhou no B16 (`not ok 1772`) e fechou com 4157 testes, 4154 passados, 1 falha e 2 pulados. O head seguinte `c6f74bc3` ficou verde no run `41388491930`, job `backend` `125094505662`. Fonte: `gh run list --branch chore/kpi-marco-2026-11-02 --limit 5`; logs e JSON de `gh run view` desses runs/jobs.
+- **nova ocorrência (2026-11-14, `B-SAN3-17`, PR #568):** na 3ª de 3 rodadas locais do subconjunto do `backend-postgres` (74 arquivos, no Windows), o B16 falhou com `expected 'ok'` × `actual '422|invalid_status_transition'`; as outras 2 rodadas passaram, e o arquivo sozinho deu 22/22 duas vezes. O bloco não toca inventário.
 
 ## P-07CB1-ATRIBUICAO-WEB-COM-DESPACHO-ATIVO (2026-10-17) — atribuir pela web uma OS que tem despacho ativo em outro técnico deixa OS e despacho divergentes — MÉDIA (permissão)
 
@@ -12692,6 +12693,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   política saiu acentuado no conserto do #540, PR540-03) e o título do banner (preso por `expense_screens_test.dart:25`); `Em analise` (`expense_models.dart`); `ErrorState`,
   `OfflineState` e `NetworkStatusBanner` em `erp_components.dart` (`Nao foi possivel carregar`, `disponiveis`,
   `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
+- **apenso (2026-11-14, `B-SAN3-17`, PR #568):** os rótulos próprios do cartão de localização da OS seguem sem acento (achado 5 de quem montou a maquete); o cartão é PROIBIDO no bloco.
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 
@@ -13339,6 +13341,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): a fonte não dá gravidade · **escopo:** app de campo e tela de troca de senha · **dono:** um bloco futuro próprio, que entrega o seletor no app e as B/C desta tela · **PR-alvo:** o PR desse bloco · **bloqueia:** não; a aparência A sai agora.
 - **origem:** `D-TROCA-SENHA-APP-A-AGORA`.
 - **critério de encerramento:** o app oferece o seletor de aparência por usuário e entrega as opções B e C aprovadas para a troca de senha.
+- **apenso (2026-11-14, `B-SAN3-17`, PR #568):** a tela de consentimento de localização saiu só com a aparência A (6.5 do dono); a B e a C entram com o seletor do app, e o aviso sobre o bloco "Captura" da C vai junto.
 
 ## P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste mínimo — MÉDIA (gravidade: leitura do redator)
 
@@ -15249,6 +15252,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **N e forma (medido pela C2a, com a máquina carregada):** em `startServer` (`tests/ass-05-vault-routes.test.ts:30-66`), se o filho não escreve `PORT ` em 30 s, o `waitFor` lança e o filho não é morto. Ficaram 4 filhos `tests/helpers/ass-05-vault-server.ts` vivos, e o TAP do `npm test` ficou parado em 185 testes por 13 minutos, até eles serem mortos. Isolado, o arquivo passa (5/5), e a CI do objeto também.
 - **causa:** o caminho de erro do `startServer` não encerra o processo-filho.
 - **critério de encerramento:** o `startServer` mata o filho em todo caminho de erro (tempo esgotado incluído), com um caso que prova que nenhum filho sobra.
+- **nova ocorrência, o mesmo molde em outro arquivo (2026-11-14, `B-SAN3-17`, PR #568):** no `npm test` na forma do job `backend`, rodado no Windows sem o `ass-05-vault-routes`, o TAP parou por ~14 min com `tests/users-acesso-seg-logs-db.test.ts` (do #527) e o filho `tests/helpers/users-seg-log-server.ts` vivos; o `startServer` desse arquivo (`:31-92`) também não mata o filho no caminho de erro. Parado só o filho, a suíte fechou; sozinho, o arquivo passa (1/1). O critério de encerramento vale para os dois arquivos.
 
 ## P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda com o JWT local sem `tenant_role` — BAIXA
 
@@ -15256,3 +15260,147 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** achado C3-02 da cadeira C3 da J-561, triado pela ata da J-561 como "só registro, porque a evidência já o declara" (`agent-orchestration/omega/evidencias/B-MOBILE-GATE-CHAVE/perfil-real-antes.md`, seção 1).
 - **N e forma (medido pela C3, login real nos 9 atores):** o claim `roles` traz o papel esperado nos 9, e `tenant_role`, `tenant_roles` e `permissions` estão ausentes nos 9. Os claims são `aud, email, exp, iat, identity_id, iss, roles, sid, sub, tenant_id, type`. Para a prova do item 66 o efeito é nulo (o bootstrap bate com o catálogo).
 - **critério de encerramento:** o das pendências-mãe (o JWT carrega os claims que o §2.4 exige).
+
+> Pendências da F7 do `B-SAN3-17` (itens 18 e 52; PR #568), transcritas do plano v2, da abertura, das Emendas 1, 1.1,
+> 1.2 e 1.3 e das respostas do orquestrador de 14/11. Nenhuma delas é item do portão.
+
+## P-17-CONSENT-SUBJECT-MISMATCH (2026-11-14) — a decisão de consentimento não leva o usuário dono, e o servidor não recusa a de outro sujeito — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` · **dono:** o 1º bloco que tocar o consentimento depois do `B-SAN3-17`.
+- **origem:** CR17R2-05 (2) da revisão r2 do plano v2, NÃO adotado por decisão do orquestrador de 14/11 (motivo: `D-DONO-1411-ACESSO-PESSOAL` e a CR17R2E-01, que já faz o servidor ignorar o "sim" de quem não é o titular) (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **resíduo declarado:** o corpo `{decided_at, client_action_id, text_version}` não diz de quem é a decisão; a rota aplica ao ator do token. O app confere o dono antes de enviar, sem `await` entre a checagem e o envio (a CR17R2-05 (1), obrigatória e cumprida na raia do app).
+- **gatilho:** o app passar a aceitar 2 contas no mesmo aparelho.
+- **critério de encerramento:** a decisão leva o `user_id` do dono, e o servidor responde 409 `consent_subject_mismatch`, sem gravar, quando ele difere do ator; com teste e mutação.
+
+## P-17-CONSENT-SESSAO-NULA-MOSTRA-PERMITIR (2026-11-14) — com a sessão nula (carregando ou em erro), a tela de consentimento mostra "Permitir" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` (desvio declarado da Emenda 1.3 §4, CR-E12-05 (b)) · **dono:** o próximo bloco que puder mexer no `test/features/location/b121_location_consent_test.dart`.
+- **origem:** Emenda 1.3 da abertura, §4 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **por quê:** o `b121` não monta a sessão, e a raia do app só podia trocar as 8 linhas autorizadas dele. O servidor continua decidindo (o aceite sem `field_location:send` dá 403).
+- **critério de encerramento:** com a sessão nula, a tela não oferece "Permitir"; o `b121` passa a montar a sessão.
+
+## P-LOCALIZACAO-TELEMETRIA-RESIDUO (2026-11-14) — o lote de telemetria em voo na revogação e a recusa do servidor não são tratados pelo serviço de envio da telemetria — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` (resíduo declarado; `lib/core/telemetry/telemetry_sync_service.dart` é PROIBIDO no bloco) · **dono:** o próximo bloco da telemetria do app.
+- **origem:** CR17R2-01 (4) e CR17R2-09 (b) da revisão r2; Emenda 1.2 da abertura, §3 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **resíduo:** (i) o lote em voo que falha volta ao buffer e é recusado pelo servidor no passe seguinte (o servidor já recusa GPS sem consentimento, `telemetry.service.ts:110`); (ii) a recusa do servidor a um pulso com GPS não zera a decisão local, como a P8 do v2 faz para a posição.
+- **critério de encerramento:** o serviço de envio da telemetria confere o consentimento antes de cada lote e trata a recusa como a posição (zera a decisão local e apaga os pulsos com GPS não enviados).
+
+## P-17-CONSENT-SEM-DONO-NAO-SEGURA-LOTE (2026-11-14) — sem dono resolvível, uma decisão pendente de outro dono no aparelho não segura o lote — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o acesso é pessoal: `D-DONO-1411-ACESSO-PESSOAL`) · **escopo:** `dentro-do-bloco` · **dono:** o próximo bloco que tocar o consentimento.
+- **origem:** CR17R2-09 (c) da revisão r2; Emenda 1.2 da abertura, §3 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **resíduo:** `settleDecision` devolve `true` sem dono (sem sessão autenticada); se no aparelho houver decisão pendente de outro dono daquela organização, ela não segura o lote.
+- **critério de encerramento:** sem dono resolvível, `settleDecision` devolve `false` quando há decisão pendente de qualquer dono daquela organização; com teste.
+
+## P-LOCALIZACAO-TEXTO-MODULO-DESLIGADO (2026-11-14) — o aviso "Acesso não permitido" fala de perfil quando o motivo é o plano da organização — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** o bloco que somar a localização à régua da GATE-CHAVE.
+- **origem:** abertura, E2.1 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **fato:** numa organização sem `field_operations`, o aceite dá 403 `module_not_enabled` (B16), e o app mostra o texto de permissão de perfil.
+- **critério de encerramento:** o 403 por módulo mostra um texto que fala do plano da organização.
+
+## P-LOCALIZACAO-GESTOR-MARCA-CONSENTIMENTO (2026-11-14) — o gestor ainda cria o cadastro de Profissional já com o consentimento marcado — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-LOC-DECISAO-COM-HORA` (bloco proposto na F7 do `B-SAN3-17`, sem plano ainda; Emenda 1.1 da abertura, CR17R2E-02).
+- **origem:** plano v2 §4; reduzida pela Emenda 1 da abertura, 2.6, e pela Emenda 1.1 (CR17R2E-01) (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **o que já fecha no bloco:** o gestor não religa um consentimento desligado (422 `tracking_consent_holder_only`, B23) e o não-titular nunca grava `true` (B23b).
+- **o que sobra:** `POST /operator-profiles` com `tracking_consent: true` ainda nasce marcado.
+- **critério de encerramento:** o cadastro nasce sempre sem consentimento, e o gestor só grava "desligado".
+
+## P-WEB-PROFISSIONAIS-CAIXA-DE-CONSENTIMENTO (2026-11-14) — na tela Profissionais, a caixa de consentimento dá erro ao salvar — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-LOC-DECISAO-COM-HORA` (bloco proposto na F7 do `B-SAN3-17`, sem plano ainda; Emenda 1.1 da abertura, CR17R2E-02) (dono único, CR17R2E-02).
+- **origem:** Emenda 1 da abertura, 2.6; Emenda 1.1, CR17R2E-02 e 03 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **fato:** o formulário manda o campo em toda edição. Marcar a caixa de quem está sem consentimento dá 422; e, com o formulário aberto antes de o técnico revogar, salvar só o telefone também dá erro, porque a caixa velha manda `true`. A web troca todo 422 por "Não foi possível concluir a operação.": a mensagem não explica a recusa, e nada vaza.
+- **critério de encerramento:** na edição, a caixa vira só leitura e sai do corpo do `PATCH`, com o texto "só o profissional liga, pelo app".
+
+## P-LOCALIZACAO-ORDEM-DAS-DECISOES (2026-11-14) — sem a hora da decisão no servidor, a ordem das decisões de consentimento tem resíduos — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (a 6.6 do dono saiu (a)) · **dono:** `B-LOC-DECISAO-COM-HORA` (bloco proposto na F7 do `B-SAN3-17`, sem plano ainda; Emenda 1.1 da abertura, CR17R2E-02).
+- **origem:** plano v2 §2.3 e Pergunta 6; Emenda 1 do v2, CR17R2-03 e 04 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **resíduos:** (a) relógio do aparelho adiantado em até 5 min: um aceite reenviado depois de uma revogação feita menos de 5 min depois dele ainda vence; (b) qualquer edição do perfil pelo gestor depois de um aceite pendente faz esse aceite pedir nova confirmação; (c) uma revogação velha que chega depois de um aceite novo se aplica (falha fechada).
+- **critério de encerramento:** a coluna com a hora da última decisão do titular, e o servidor ordena por ela, com o drill da migração.
+
+## P-LOCALIZACAO-PROVA-CONSENTIMENTO-BEST-EFFORT (2026-11-14) — a versão do texto e a hora da decisão só vivem na auditoria, que é best-effort — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-LOC-DECISAO-COM-HORA` (bloco proposto na F7 do `B-SAN3-17`, sem plano ainda; Emenda 1.1 da abertura, CR17R2E-02).
+- **origem:** plano v2, CR17-05 e R13 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **fato:** uma falha da auditoria aplica a decisão sem a prova (`field_location.consent_*`, D5).
+- **critério de encerramento:** a prova da decisão é gravada na mesma transação da decisão.
+
+## P-LOCALIZACAO-SEM-LEITURA-DO-ESTADO (2026-11-14) — o app não lê o consentimento que a organização tem registrado — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** `B-LOC-DECISAO-COM-HORA` (bloco proposto na F7 do `B-SAN3-17`, sem plano ainda; Emenda 1.1 da abertura, CR17R2E-02).
+- **origem:** abertura §2.2 e §10 (achado 2 de quem montou a maquete) (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **fato:** quem troca de celular é perguntado de novo.
+- **critério de encerramento:** uma rota de leitura do próprio estado, e o app a usa ao montar a tela.
+
+## P-LOCALIZACAO-PERFIL-DEMO (2026-11-14) — a demonstração precisa do cadastro de Profissional para a localização funcionar — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** o roteiro do `B-SAN3-10` (CR17-12).
+- **origem:** plano v2 R2; Emenda 1 da abertura, R24 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **fato:** sem cadastro, o servidor recusa a posição e o app mostra "Peça ao gestor". O roteiro que ligava o consentimento editando um perfil já criado para de funcionar (2.6); criar o cadastro já marcado continua funcionando.
+- **critério de encerramento:** o roteiro de demonstração cadastra o técnico e o faz aceitar pelo app.
+
+## P-TELEMETRIA-ATOR-SEM-UUID (2026-11-14) — a telemetria devolve 400 de outro módulo para ator cujo id não é UUID — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`telemetry.service.ts:73`) · **dono:** o próximo bloco que tocar `src/modules/telemetry/**`.
+- **origem:** plano v2 §1.5 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **fato:** `findByUserId` passa por `parseRequiredUuid` e devolve 400 `OPERATOR_PROFILE_INVALID`; a localização, com o bloco, devolve 422 `operator_profile_required` (B12).
+- **critério de encerramento:** a telemetria responde 422 `operator_profile_required` para ator sem UUID.
+
+## P-LOCALIZACAO-HISTORICO-GUARDA-E-APAGAMENTO (2026-11-14) — prazo de guarda do histórico de localização e pedido de apagamento pelo titular — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** o dono do produto, com o advogado.
+- **origem:** abertura E2.3 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **critério de encerramento:** prazo de guarda decidido e o caminho do pedido de apagamento implementado.
+
+## P-LOCALIZACAO-COLETA-SO-COM-OS-ATIVA (2026-11-14) — coletar a localização só com OS ativa — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **dono:** um bloco próprio, depois do portão.
+- **origem:** a (b) da pergunta 3 do v2 (a 6.3 do dono saiu (a), texto verdadeiro) (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **critério de encerramento:** a captura só roda com OS ativa, e o texto da tela passa a dizer isso.
+
+## P-LOCALIZACAO-TEXTO-PARA-O-ADVOGADO (2026-11-14) — o texto da tela de consentimento e a frase do histórico passam pelo advogado antes da venda — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** o dono, antes da venda.
+- **origem:** abertura E2.4 e E2.8; Emenda 1 da abertura, 2.3 e §10 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **critério de encerramento:** o texto aprovado pelo advogado e a versão do texto trocada.
+
+## P-LOCALIZACAO-TITULO-PENDENTE-APOS-NAO (2026-11-14) — "Consentimento pendente" aparece para quem já disse "não" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** o próximo bloco de texto do app.
+- **origem:** abertura E2.6 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **critério de encerramento:** depois de um "não", o título do cartão diz o estado certo.
+
+## P-DESPACHO-SEM-LOCALIZACAO-NEUTRO (2026-11-14) — o despacho na web deve mostrar "sem localização" sem marcar quem recusou — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** o próximo bloco que tocar o despacho na web. A abertura deu o `B-SAN3-21`, que já entrou na `main` (#486); leitura do redator, declarada (§A6).
+- **origem:** abertura E2.3 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **critério de encerramento:** o operador sem posição ao vivo aparece de forma neutra no despacho.
+
+## P-MOBILE-LOCALIZACAO-ABA-INICIO-ACESA (2026-11-14) — a tela de localização acende "Início" mesmo aberta pelo Perfil — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o próximo bloco que tocar `erp_scaffold.dart`.
+- **origem:** abertura §10 (achado 4 de quem montou a maquete) (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **critério de encerramento:** a aba acesa segue a origem da navegação.
+
+## P-MOBILE-CONTRASTE-ABAIXO-DO-AA (2026-11-14) — 3 pontos do app com contraste abaixo do AA — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o bloco de acessibilidade do app.
+- **origem:** abertura §10 (achado 7 de quem montou a maquete) (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **critério de encerramento:** os 3 pontos medidos com contraste AA.
+
+## P-EVIDENCIA-EXIF-DAS-FOTOS (2026-11-14) — a posição dentro do arquivo da foto (EXIF) não foi medida — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o próximo bloco que tocar `src/modules/mobile/mobile-evidence-upload.ts`.
+- **origem:** Emenda 1 da abertura, 2.7 (o gps da ação de evidência já sai sem consentimento: B24) (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **critério de encerramento:** medido se a foto leva coordenada no EXIF; se leva, ela sai quando o titular não consente.
+
+## P-LOCALIZACAO-LATEST-PAGINA-CURTA (2026-11-14) — a página do mapa ao vivo pode vir menor que o limite pedido — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** o próximo bloco do Traccar.
+- **origem:** Emenda 1 da abertura, 2.2 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
+- **fato:** o operador sem consentimento e sem viatura sai da página e não é reposto por outro. Não vaza nada.
+- **critério de encerramento:** a página completa o limite, ou o contrato declara que pode vir menor.
