@@ -5225,3 +5225,19 @@ ancora por conteúdo, nunca por número.
 lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`. O `B-ASS-09` não espera.
 
 - **Registro:** `dev-ass09-cl` (Claude Opus 5.5, subagente da sessão, dev declarado do `B-ASS-09`, F0 cobrindo o braço).
+
+## D-DONO-1311-RECOMENDACOES (2026-11-13 ~23:20 SP) — as 6 perguntas do plano do `B-ASS-09`, todas pela recomendação
+
+- **Fala do dono, repassada pelo orquestrador:** *"minhas decisões vão todas nas recomendações"* (registrada pelo `B-ASS-09`, como
+  a Emenda 2 §9 do plano manda: com o texto como veio no recado).
+- **Q1 (o grupo é um só?):** sim, **sem abrir dado entre filiais**. Nada muda no `B-ASS-09` (a visão é só da plataforma); a
+  proposta de reusar o grupo vai ao plano do pátio, com essa condição escrita lá.
+- **Q2 (quem assina pelo grupo?):** a matriz. A filial sai `no_subscription` e a margem do cliente é a do grupo (D-6).
+- **Q3 (que taxa?):** digitada pela plataforma, a da fatura do mês (`PUT /platform/billing/fx-rates/:month`; nenhuma chamada externa).
+- **Q4 (transferência de dados e CDN são "rede"?):** sim. A regra vai ao `B-ASS-09m` (`P-ASS09A-REDE-TRANSFERENCIA`).
+- **Q5 (qual valor conta como "o que ele pagou no mês"?):** a assinatura do mês **antes** do crédito — o total gravado mais o
+  crédito do retrato do fechamento (`subscriptionBasis: "before_credits"`, com `statementTotal` e `creditsApplied` separados;
+  Emenda 2.1 §2). Troca o padrão do D-9 (`REGISTRO-ASS09-CONFLITOS`).
+- **Q6 (mexer na lista curada do CI?):** sim, só as 4 linhas `SUITES="$SUITES tests/ass-09-…-db.test.ts"` no job `backend-postgres`.
+  A pendência `P-ASS09-SUITES-DB-NO-CURADO` não nasce.
+- **Registro:** `dev-ass09-cl` (Claude Opus 5.5, dev declarado do `B-ASS-09`), na F9.
