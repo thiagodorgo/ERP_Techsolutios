@@ -788,6 +788,12 @@ class WorkOrderSyncCodec {
       WorkOrderSyncActionTypes.create => _createPayload(action.payload),
       WorkOrderSyncActionTypes.statusUpdate => _statusPayload(action.payload),
       WorkOrderSyncActionTypes.assign => _assignPayload(action.payload),
+      WorkOrderSyncActionTypes.approvalRequest => _approvalPayload(
+        action.payload,
+      ),
+      WorkOrderSyncActionTypes.unableToStart => _unableToStartPayload(
+        action.payload,
+      ),
       _ => const {},
     };
   }
@@ -897,6 +903,73 @@ class WorkOrderSyncCodec {
     if (message != null) payload['message'] = message;
 
     return Map.unmodifiable(payload);
+  }
+
+  // B-SAN3-16 (P1) — o pedido de aprovação sai com a LISTA FECHADA do contrato `2026-11-14.b-san3-16`: a OS, o
+  // motivo, o impacto e a urgência, mais os metadados de origem. Nunca `requested_by_user_id`, organização, token ou
+  // caminho (§2.8: o ator vem do token). O texto é cortado nos limites do contrato (CRIT16-02 (a)); a linha do tempo
+  // local guarda o texto inteiro.
+  Map<String, Object?> _approvalPayload(Map<String, Object?> source) {
+    final explicitWorkOrderId = _readNonEmptyString(source['work_order_id']);
+    final workOrderId =
+        _readNonEmptyString(source['server_id']) ??
+        (explicitWorkOrderId != null &&
+                !_isLocalWorkOrderId(explicitWorkOrderId)
+            ? explicitWorkOrderId
+            : null);
+    final localId = _readNonEmptyString(source['local_id']);
+    final requestedAt = _readNonEmptyString(source['requested_at']);
+
+    final metadata = <String, Object?>{'source': 'mobile_offline'};
+    if (localId != null) metadata['local_id'] = localId;
+    if (requestedAt != null) metadata['requested_at'] = requestedAt;
+
+    return Map.unmodifiable(
+      <String, Object?>{
+        'work_order_id': workOrderId,
+        'reason': _cut(source['reason'], 500),
+        'impact': _cut(source['impact'], 1000),
+        'urgency': _readNonEmptyString(source['urgency']),
+        'metadata': metadata,
+      }..removeWhere((_, value) => value == null),
+    );
+  }
+
+  // B-SAN3-16 (P1) — o "não consegui iniciar" sai com a OS, o motivo e a observação, mais os metadados de origem.
+  // Nunca `reported_by_user_id`. Motivo até 200 e observação até 1000.
+  Map<String, Object?> _unableToStartPayload(Map<String, Object?> source) {
+    final explicitWorkOrderId = _readNonEmptyString(source['work_order_id']);
+    final workOrderId =
+        _readNonEmptyString(source['server_id']) ??
+        (explicitWorkOrderId != null &&
+                !_isLocalWorkOrderId(explicitWorkOrderId)
+            ? explicitWorkOrderId
+            : null);
+    final localId = _readNonEmptyString(source['local_id']);
+    final occurredAt = _readNonEmptyString(source['occurred_at']);
+
+    final metadata = <String, Object?>{'source': 'mobile_offline'};
+    if (localId != null) metadata['local_id'] = localId;
+    if (occurredAt != null) metadata['occurred_at'] = occurredAt;
+
+    return Map.unmodifiable(
+      <String, Object?>{
+        'work_order_id': workOrderId,
+        'reason': _cut(source['reason'], 200),
+        'note': _cut(source['note'], 1000),
+        'metadata': metadata,
+      }..removeWhere((_, value) => value == null),
+    );
+  }
+
+  // B-SAN3-16 — corta o texto no limite do contrato sem partir um par substituto (UTF-16) ao meio. O servidor conta o
+  // tamanho na mesma unidade (`String.length`/`length` nos dois lados); vazio não viaja.
+  String? _cut(Object? value, int max) {
+    final text = _readNonEmptyString(value);
+    if (text == null || text.length <= max) return text;
+    final last = text.codeUnitAt(max - 1);
+    final end = last >= 0xD800 && last <= 0xDBFF ? max - 1 : max;
+    return text.substring(0, end);
   }
 
   String _backendPriority(String priority) {
@@ -1014,7 +1087,15 @@ const b107BackendWorkOrderActionTypes = {
   // D1 (seleção viatura/equipe): assign é replay-elegível (precisa de serverId
   // real + operator_id).
   WorkOrderSyncActionTypes.assign,
+  // B-SAN3-16 (item 5) — os 2 pedidos do técnico: dependentes da OS no servidor (saem depois do `create`), com motivo.
+  WorkOrderSyncActionTypes.approvalRequest,
+  WorkOrderSyncActionTypes.unableToStart,
 };
+
+// B-SAN3-16 — o grupo dos dependentes do replay de OS é DERIVADO do conjunto (todo tipo de envio menos a criação): tipo
+// novo no conjunto entra no grupo sem uma segunda lista para esquecer.
+final _dependentWorkOrderActionTypes = b107BackendWorkOrderActionTypes
+    .difference(const {WorkOrderSyncActionTypes.create});
 
 const b103BackendWorkOrderActionTypes = b107BackendWorkOrderActionTypes;
 
@@ -1040,8 +1121,19 @@ bool b103WorkOrderActionReadyForBackend(SyncAction action) {
         _readBackendWorkOrderId(action.payload['operator_id']) != null;
   }
 
+  // B-SAN3-16 — os 2 pedidos do técnico exigem o motivo, além do id remoto da OS.
+  if (action.type == WorkOrderSyncActionTypes.approvalRequest ||
+      action.type == WorkOrderSyncActionTypes.unableToStart) {
+    return hasRealWorkOrderId && workOrderActionHasReason(action);
+  }
+
   return hasRealWorkOrderId;
 }
+
+/// B-SAN3-16 (P1, CRIT16-09) — o pedido de aprovação e o "não consegui iniciar" só saem com motivo: sem ele, o servidor
+/// recusaria sempre (`required_field`). A varredura de rotas usa a mesma regra para marcá-los como não enviáveis.
+bool workOrderActionHasReason(SyncAction action) =>
+    _readBackendWorkOrderId(action.payload['reason']) != null;
 
 String? _readBackendWorkOrderId(Object? value) =>
     value is String && value.trim().isNotEmpty ? value.trim() : null;
@@ -1075,10 +1167,7 @@ class WorkOrderSyncReplayService {
     );
     final dependentResult = await _replayEligible(
       tenantId,
-      actionTypes: const {
-        WorkOrderSyncActionTypes.statusUpdate,
-        WorkOrderSyncActionTypes.assign,
-      },
+      actionTypes: _dependentWorkOrderActionTypes,
     );
     return SyncReplayResult(
       synced: [...createResult.synced, ...dependentResult.synced],

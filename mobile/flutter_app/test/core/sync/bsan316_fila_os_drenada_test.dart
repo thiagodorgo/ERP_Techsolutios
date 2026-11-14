@@ -77,10 +77,10 @@ Map<String, Object?> _naoIniciou({
 
 /// O servidor do lote de OS, no formato da resposta real (`accepted`/`rejected` por ação, com `work_order_id`).
 class _ServidorDoLote implements HttpClientAdapter {
-  _ServidorDoLote({this.recusar = false, this.idDaOsCriada = 'srv-os-criada'});
+  _ServidorDoLote({this.recusar = false});
 
   final bool recusar;
-  final String idDaOsCriada;
+  final String idDaOsCriada = 'srv-os-criada';
   final List<Map<String, dynamic>> lotes = <Map<String, dynamic>>[];
 
   @override
