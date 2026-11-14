@@ -46,6 +46,7 @@ const _tituloPorArquivo = <String, String>{
   'lib/features/inventory/ui/inventory_list_screen.dart': _acesso,
   'lib/features/prestador/ui/technician_stock_screen.dart': _acesso,
   'lib/shared/ui/module_placeholder_screen.dart': _acesso,
+  'lib/features/location/ui/location_consent_screen.dart': _acesso,
 };
 
 // Única exceção nomeada do T1: a mensagem do placeholder é o parâmetro `blockedMessage`, que o
@@ -69,6 +70,8 @@ const _gatePorTela = <String, String>{
   'lib/features/checklists/ui/checklist_available_screen.dart':
       'checklist_run:execute',
   'lib/features/inventory/ui/inventory_list_screen.dart': 'inventory:read',
+  'lib/features/location/ui/location_consent_screen.dart':
+      'field_location:send',
 };
 const _gatePorRota = <String, String>{
   '/approvals': 'workflow:request',

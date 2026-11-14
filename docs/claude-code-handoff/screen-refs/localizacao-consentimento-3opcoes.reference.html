@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Localização e consentimento · 3 opções (Claude) · app de campo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Roboto:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet">
+<style>
+/* ─── TOKENS (origin/main 31324f0d) ─── */
+:root{
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  /* mobile/flutter_app/lib/shared/theme/erp_mobile_theme.dart:7-30 */
+  --m-primary:#2563EB;--m-success:#059669;--m-warning:#D97706;--m-danger:#DC2626;--m-info:#2563EB;--m-purple:#7C3AED;
+  --m-page:#F1F5F9;--m-border:#E2E8F0;--m-ink:#0F172A;--m-muted:#64748B;--m-faint:#94A3B8;--m-navy:#0D1B2A;--m-navy2:#16324A;
+  --m-warning-ink:#92400E;--m-danger-ink:#B91C1C;
+  /* ícones de lista e de cartão do kit (mobile_kit.dart, MobileActionTile) */
+  --m-icon:#475569;
+  /* cores que o Material 3 gera da semente #2563EB e que não estão em código (aproximação declarada no quadro) */
+  --m3-outline:#74777F;--m3-sch:#E1E2EC;--m3-onsv:#44474F;--m3-snack:#313033;--m3-onsnack:#F4EFF4;
+  --m-font:Roboto,"Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 240px}
+button,input{font-family:inherit}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.nw{white-space:nowrap}
+
+/* ─── MOLDURA (do molde aprovado troca-senha-3opcoes / prestador-atendimento-3opcoes) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.app-stage{position:relative;background:#0f172a;display:flex;justify-content:center;padding:20px 0;min-height:872px}
+.app-stage__tag{position:absolute;left:24px;top:22px;display:flex;flex-direction:column;gap:6px;width:min(300px,calc((100vw - 410px) / 2 - 40px))}
+.app-stage__tag b{align-self:flex-start;font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-stage__tag>span{font-size:11.5px;color:#94a3b8;line-height:1.5}
+.app-stage__entrega{color:#e2e8f0!important;font-weight:700}
+.app-stage__lado{position:absolute;right:24px;top:22px;width:min(300px,calc((100vw - 410px) / 2 - 40px));display:flex;flex-direction:column;gap:8px}
+.app-stage__lado h2{font-size:15px;font-weight:800;color:#f8fafc;line-height:1.3}
+.app-stage__lado p{font-size:12px;color:#94a3b8;line-height:1.55}
+.app-stage__lado ul{list-style:none;display:grid;gap:6px}
+.app-stage__lado li{font-size:12px;color:#cbd5e1;line-height:1.45;padding-left:12px;position:relative}
+.app-stage__lado li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:700}
+/* seletor de tela e alternador de estados da maquete (fora da tela) */
+.telas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin-top:8px;background:#111b2e;border:1px solid #1e293b;border-radius:10px;padding:4px}
+.telas button{border:0;border-radius:7px;background:transparent;color:#cbd5e1;font-size:11.5px;font-weight:700;padding:8px 4px;cursor:pointer;line-height:1.2}
+.telas button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.telas button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.estados{margin-top:6px;display:flex;flex-direction:column;gap:7px}
+.estados__grupo{display:flex;flex-direction:column;gap:3px}
+.estados__tit{font-size:10.5px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;padding:0 2px}
+.estados button{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid #1e293b;background:#111b2e;color:#cbd5e1;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;line-height:1.3}
+.estados button:hover{border-color:#334155}
+.estados button[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.estados button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.estados button i{font-style:normal;font-size:10px;font-weight:800;color:#94a3b8;min-width:16px}
+.estados button[aria-pressed="true"] i{color:#dbeafe}
+
+.phone{width:410px;height:832px;border-radius:48px;background:#05080f;padding:10px;box-shadow:0 0 0 1px rgba(255,255,255,.07),0 30px 60px -20px rgba(0,0,0,.8);flex-shrink:0}
+.phone__screen{width:390px;height:812px;border-radius:38px;overflow:hidden;background:var(--m-page);display:flex;flex-direction:column;font-family:var(--m-font);color:var(--m-ink)}
+.phone__status{height:36px;flex-shrink:0;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 28px;font-size:13px;font-weight:600;color:#0F172A}
+.phone__status.is-navy{background:var(--m-navy);color:#fff}
+.phone__status-ic{display:flex;align-items:center;gap:6px}
+.phone__app{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.phone__app>[data-view]{flex:1;min-height:0;display:flex;flex-direction:column}
+
+/* ─── APP DE CAMPO: componentes que já existem ─── */
+.scr{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;background:var(--m-page)}
+.scr__body{flex:1;min-height:0;overflow-y:auto;padding:16px}
+.scr__body::-webkit-scrollbar{width:0}
+/* AppBar do Material 3 (ErpScaffold com title, erp_scaffold.dart:31-33; tema :56-61): 64 px, título titleLarge 22/800 */
+.m-appbar{flex-shrink:0;height:64px;background:#fff;display:flex;align-items:center;gap:4px;padding:0 8px 0 4px}
+.m-appbar__tit{flex:1;min-width:0;padding-left:4px;font-size:22px;font-weight:800;line-height:28px;color:var(--m-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* MobileScreenHeader (mobile_kit.dart:239-300) */
+.m-hdr{flex-shrink:0;background:#fff;padding:8px 14px 8px 4px;display:flex;align-items:center;gap:2px;border-bottom:1px solid var(--m-border)}
+.m-hdr__txt{flex:1;min-width:0;padding-left:2px}
+.m-hdr__tit{font-size:18px;font-weight:800;color:var(--m-ink);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-iconbtn{width:48px;height:48px;border-radius:50%;border:0;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--m-ink);cursor:pointer;flex-shrink:0}
+.m-iconbtn:hover{background:rgba(15,23,42,.06)}
+.m-iconbtn:focus-visible,.m-obtn:focus-visible,.m-fbtn:focus-visible,.m-tbtn:focus-visible,.m-dbtn:focus-visible,.m-nav button:focus-visible,.blk:focus-visible,.pf-nav:focus-visible,.hc-card:focus-visible,.m-act:focus-visible{outline:2px solid var(--m-primary);outline-offset:2px}
+/* MobilePill (mobile_kit.dart:21-63) */
+.m-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap}
+.t-info{background:#EFF6FF;color:var(--m-info)}.t-warning{background:#FFFBEB;color:var(--m-warning-ink)}.t-success{background:#ECFDF5;color:#047857}
+.t-danger{background:#FEF2F2;color:var(--m-danger-ink)}.t-neutral{background:#F1F5F9;color:#475569}
+/* OperationalStatusChip (erp_components.dart:127-154): Chip do Material 3, cor a 12 % e borda a 45 % */
+.m-chip{display:inline-flex;align-items:center;height:32px;padding:0 10px;border-radius:8px;font-size:13.5px;font-weight:800;border:1px solid;white-space:nowrap;flex-shrink:0}
+.m-chip--p{height:24px;padding:0 8px;font-size:12px;border-radius:6px}
+.c-success{color:var(--m-success);background:rgba(5,150,105,.12);border-color:rgba(5,150,105,.45)}
+.c-danger{color:var(--m-danger);background:rgba(220,38,38,.12);border-color:rgba(220,38,38,.45)}
+/* Card (erp_mobile_theme.dart:62-70): raio 14, borda #E2E8F0, sem sombra, margem vertical 6 */
+.m-card{background:#fff;border:1px solid var(--m-border);border-radius:14px;margin:6px 0}
+/* ListTile do Material 3 */
+.m-tile{display:flex;align-items:center;gap:16px;padding:8px 16px;min-height:72px;width:100%;text-align:left;font-family:var(--m-font);color:var(--m-ink)}
+.m-tile--1{min-height:56px}
+.m-tile__ic{color:var(--m-icon);display:flex;flex-shrink:0}
+.m-tile__txt{flex:1;min-width:0}
+.m-tile__t{font-size:16px;line-height:22px;color:var(--m-ink)}
+.m-tile__s{font-size:13.5px;line-height:19px;color:var(--m3-onsv)}
+/* botões do tema (erp_mobile_theme.dart:71-82): altura 44, raio 8 */
+.m-obtn,.m-fbtn,.m-dbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;height:44px;border-radius:8px;font-family:var(--m-font);font-size:14px;font-weight:500;letter-spacing:.1px;cursor:pointer;padding:0 16px;white-space:nowrap}
+.m-obtn{border:1px solid var(--m3-outline);background:#fff;color:var(--m-primary)}
+.m-obtn:hover{background:#F5F8FF}
+.m-fbtn{border:0;background:var(--m-primary);color:#fff}
+.m-fbtn:hover{background:#1D4ED8}
+.m-dbtn{border:1px solid #FECACA;background:#fff;color:var(--m-danger-ink);font-weight:700}
+.m-dbtn:hover{background:#FEF2F2}
+.m-fbtn:disabled,.m-obtn:disabled,.m-dbtn:disabled{background:rgba(29,27,32,.12);color:rgba(29,27,32,.38);border-color:transparent;cursor:default}
+.m-tbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;min-width:64px;padding:0 12px;border:0;border-radius:22px;background:transparent;color:var(--m-primary);font-family:var(--m-font);font-size:14px;font-weight:500;cursor:pointer;flex-shrink:0}
+.m-tbtn:hover{background:rgba(37,99,235,.08)}
+.m-bspin{width:18px;height:18px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .8s linear infinite}
+.m-gap8{height:8px}.m-gap12{height:12px}.m-gap16{height:16px}
+.m-nota{font-size:12.5px;line-height:17px;color:#475569;text-align:center;margin-top:8px}
+/* CircularProgressIndicator */
+.m-spin{width:36px;height:36px;border-radius:50%;border:4px solid rgba(37,99,235,.18);border-top-color:var(--m-primary);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* EmptyState / PermissionBlockedState (erp_components.dart:160-210) */
+.m-vazio{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.m-vazio>svg{color:var(--m-primary)}
+.m-vazio h3{font-size:16px;font-weight:700;color:var(--m-ink);margin-top:12px;line-height:22px}
+.m-vazio p{font-size:14px;line-height:20px;color:var(--m-ink);margin-top:8px;max-width:300px}
+.m-vazio .m-obtn,.m-vazio .m-dbtn{margin-top:16px;width:auto;min-width:240px}
+/* MobileBottomNav (mobile_kit.dart:617-685): 58 px */
+.m-nav{flex-shrink:0;height:58px;background:#fff;border-top:1px solid var(--m-border);display:flex}
+.m-nav button{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-family:var(--m-font);font-size:11px;font-weight:600;color:var(--m-faint);cursor:pointer;min-height:44px}
+.m-nav button.is-on{color:var(--m-primary);font-weight:700}
+/* MobileStickyBar (mobile_kit.dart:584-605) */
+.m-sticky{flex-shrink:0;background:#fff;border-top:1px solid var(--m-border);padding:10px 16px 12px;display:flex;flex-direction:column;gap:8px}
+.m-sticky__apoio{font-size:12px;line-height:16px;color:var(--m-muted);text-align:center}
+
+/* Marca "falta no backend" — âmbar tracejado; o botão do quadro de notas esconde (molde dos aprovados) */
+.falta{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#92400e;background:#fffbeb;border:1px dashed #f59e0b;border-radius:6px;padding:1px 6px;white-space:nowrap;vertical-align:middle;line-height:1.4;text-transform:none}
+.fx{outline:1px dashed #f59e0b;outline-offset:2px;border-radius:3px;background-color:rgba(255,251,235,.7)}
+.nova{display:inline-flex;font-size:10px;font-weight:800;letter-spacing:.3px;color:#065F46;background:#D1FAE5;border-radius:99px;padding:2px 7px;vertical-align:middle;margin-left:6px}
+/* a marca da peça nova nos rótulos da lista não muda a altura da linha (retoque de 14/11): a tela mede igual com e sem marcas */
+.nova--peca{line-height:1;padding:2px 7px;margin-top:-4px;margin-bottom:-4px}
+body.sem-marcas .falta,body.sem-marcas .nova{display:none}
+body.sem-marcas .fx{outline:none;background-color:transparent}
+
+/* ─── A LISTA "Como usamos sua localização" (D-PADRAO-BLOCOS-CLICAVEIS): uma linha, 44 px, sem botão; abre o detalhe logo abaixo.
+   Cada linha é a MobileExpandableRow, peça nova da biblioteca do app (mobile_kit.dart, só por acréscimo no fim; emenda de abertura E2.7),
+   espelho do DenseExpandableRow da web (COMPONENT_LIBRARY.md:85). "Um detalhe aberto por vez" é da tela. ─── */
+.lista{overflow:hidden}
+.lista__cab{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 6px}
+.lista__tit{font-size:14px;font-weight:700;color:var(--m-ink);line-height:20px}
+.ln{display:flex;align-items:center;gap:12px;height:44px;padding:0 10px 0 14px;cursor:pointer;border-top:1px solid #F1F5F9;outline:none;font-size:14px;color:var(--m-ink)}
+.lista>.ln:first-of-type,.lista__cab+.ln{border-top:0}
+.ln:hover{background:#F8FAFC}
+.ln:focus-visible{outline:2px solid var(--m-primary);outline-offset:-2px;border-radius:8px}
+.ln[aria-expanded="true"]{background:#EFF6FF}
+.ln__ic{color:var(--m-icon);display:flex;flex-shrink:0}
+.ln__t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ln__fim{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.ln__chev{display:flex;color:var(--m-faint);flex-shrink:0;transition:transform .15s}
+.ln[aria-expanded="true"] .ln__chev{transform:rotate(90deg);color:var(--m-primary)}
+.ln--ok .ln__ic{color:var(--m-success)}
+.det{background:#F8FAFF;border-top:1px solid #DBEAFE;border-bottom:1px solid #DBEAFE;padding:10px 14px 4px}
+.det__txt{font-size:14px;line-height:20px;color:var(--m-ink)}
+.det__txt+.det__txt{margin-top:6px}
+.det__txt--m{font-size:13px;line-height:18px;color:#475569}
+.det__g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.det__g small{display:block;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--m-faint)}
+.det__g span{display:block;font-size:13px;font-weight:700;color:var(--m-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.det__acoes{display:flex;justify-content:flex-end;gap:4px;margin-top:2px}
+
+/* blocos clicáveis (D-PADRAO-BLOCOS-CLICAVEIS): botão, foco visível; abre a linha correspondente da lista */
+.blk{cursor:pointer;font-family:var(--m-font)}
+.blk[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--m-primary)}
+
+/* ─── OPÇÃO A · cartões da tela de hoje (location_consent_screen.dart:63-153) ─── */
+.a-st{border:1px solid transparent}
+.a-st--pend{background:var(--m3-sch)}
+.a-st--conc{background:#ECFDF5;border-color:#A7F3D0}
+.a-st--conc .m-tile__ic{color:var(--m-success)}
+.a-st--rev{background:var(--m3-sch)}
+
+.tom-ok{color:var(--m-success)!important}.tom-atencao{color:var(--m-warning)!important}.tom-erro{color:var(--m-danger)!important}.tom-neutro{color:var(--m-icon)!important}
+.a-acoes{display:flex;flex-direction:column;gap:8px;margin:10px 0 14px}
+
+/* ─── OPÇÃO B · como o protótipo (consentimento-lgpd.png e status-localizacao.png) ─── */
+.b-hero{text-align:center;padding:8px 8px 4px}
+.b-hero__ic{width:52px;height:52px;border-radius:14px;background:#EFF6FF;color:var(--m-primary);display:inline-flex;align-items:center;justify-content:center}
+.b-hero h1{font-size:19px;font-weight:800;color:var(--m-ink);margin-top:10px;line-height:1.25}
+.b-hero p{font-size:13.5px;line-height:19px;color:#475569;margin:6px auto 0;max-width:320px}
+.b-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
+.b-tiles--2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.b-tile{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;min-height:56px;padding:8px 10px;background:#fff;border:1px solid var(--m-border);border-radius:12px;text-align:left}
+.b-tile small{font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--m-faint);line-height:14px}
+.b-tile b{font-size:13px;font-weight:800;line-height:17px;display:flex;align-items:center;gap:5px}
+.b-tile b i{width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block}
+.dot-ok{background:var(--m-success)}.dot-atencao{background:var(--m-warning)}.dot-erro{background:var(--m-danger)}.dot-neutro{background:var(--m-faint)}
+.v-ok{color:#047857}.v-atencao{color:var(--m-warning-ink)}.v-erro{color:var(--m-danger-ink)}.v-neutro{color:#475569}
+.b-sec{font-size:13px;font-weight:800;color:var(--m-ink);margin:14px 2px 6px}
+.b-lista{margin-top:12px;background:#F8FAFC}
+.b-lista .ln{background:transparent}
+.b-lista .ln:hover{background:#F1F5F9}
+.b-lista .ln[aria-expanded="true"]{background:#EFF6FF}
+.b-lista .ln__ic{color:var(--m-ink)}
+.b-status{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border-radius:14px;border:1px solid;text-align:left;margin-top:4px}
+.b-status--conc{background:#ECFDF5;border-color:#A7F3D0}
+.b-status--pend{background:#fff;border-color:var(--m-border)}
+.b-status__ic{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff}
+.b-status--conc .b-status__ic{background:var(--m-success)}
+.b-status--pend .b-status__ic{background:#E2E8F0;color:#475569}
+.b-status__t{font-size:15px;font-weight:800;line-height:20px}
+.b-status--conc .b-status__t{color:#065F46}
+.b-status--pend .b-status__t{color:var(--m-ink)}
+.b-status__s{font-size:12.5px;line-height:17px;margin-top:1px}
+.b-status--conc .b-status__s{color:#047857}
+.b-status--pend .b-status__s{color:var(--m-muted)}
+.b-btn2{display:flex;align-items:center;justify-content:center;width:100%;height:44px;border-radius:10px;border:1px solid var(--m-border);background:#fff;color:#374151;font-family:var(--m-font);font-size:14px;font-weight:700;cursor:pointer}
+.b-btn2:hover{background:#F8FAFC}
+.b-btn2:focus-visible{outline:2px solid var(--m-primary);outline-offset:2px}
+.b-btn1{border-radius:10px;font-weight:700}
+.b-acoes{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.b-faixa{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:10px;font-size:12.5px;line-height:17px;margin-top:10px;border:1px solid}
+.b-faixa svg{flex-shrink:0;margin-top:1px}
+.f-ok{background:#ECFDF5;border-color:#A7F3D0;color:#065F46}
+.f-atencao{background:#FFFBEB;border-color:#FDE68A;color:var(--m-warning-ink)}
+.f-erro{background:#FEF2F2;border-color:#FECACA;color:var(--m-danger-ink)}
+.f-neutro{background:#EFF6FF;border-color:#BFDBFE;color:#1E3A8A}
+
+/* ─── OPÇÃO C · resumo no topo e ações sempre à vista ─── */
+.c-band{flex-shrink:0;background:#fff;padding:2px 16px 14px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--m-border)}
+.c-band__ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.c-band__ic.pend{background:#F1F5F9;color:#475569}
+.c-band__ic.conc{background:#ECFDF5;color:var(--m-success)}
+.c-band__t{font-size:16px;font-weight:800;line-height:21px;color:var(--m-ink)}
+.c-band__s{font-size:13px;line-height:18px;color:var(--m-muted);margin-top:1px}
+.c-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.c-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:84px;padding:10px 6px;background:#fff;border:1px solid var(--m-border);border-radius:14px;text-align:center}
+.c-tile__ic{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.c-tile__ic.ok{background:#ECFDF5;color:var(--m-success)}.c-tile__ic.atencao{background:#FFFBEB;color:var(--m-warning)}.c-tile__ic.erro{background:#FEF2F2;color:var(--m-danger)}.c-tile__ic.neutro{background:#F1F5F9;color:#475569}
+.c-tile b{font-size:12.5px;font-weight:800;line-height:16px;color:var(--m-ink)}
+.c-tile small{font-size:11px;font-weight:600;line-height:14px;color:var(--m-muted)}
+/* faixa com a linha de estado: SyncStatusBanner (erp_components.dart:31-66), cor a 12 %, borda a 35 % */
+.m-banner{display:flex;align-items:flex-start;gap:8px;padding:12px;border-radius:8px;font-size:14px;line-height:20px;color:var(--m-ink);margin-top:12px}
+.m-banner svg{flex-shrink:0}
+.bn-ok{background:rgba(5,150,105,.12);border:1px solid rgba(5,150,105,.35)}.bn-ok svg{color:var(--m-success)}
+.bn-atencao{background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.35)}.bn-atencao svg{color:var(--m-warning)}
+.bn-erro{background:rgba(220,38,38,.12);border:1px solid rgba(220,38,38,.35)}.bn-erro svg{color:var(--m-danger)}
+.bn-neutro{background:rgba(37,99,235,.10);border:1px solid rgba(37,99,235,.30)}.bn-neutro svg{color:var(--m-info)}
+.c-seclbl{font-size:13px;font-weight:800;color:var(--m-ink);margin:16px 2px 6px}
+
+/* ─── CONTEXTO · Perfil (profile_screen.dart:66-213) ─── */
+.pf-top{flex-shrink:0;background:#fff;padding:12px 16px;text-align:center;font-size:17px;font-weight:800;color:var(--m-ink)}
+.pf-body{flex:1;min-height:0;overflow-y:auto;padding-bottom:20px}
+.pf-body::-webkit-scrollbar{width:0}
+.pf-hero{background:#fff;padding:18px 16px 22px;text-align:center}
+.pf-av{width:68px;height:68px;border-radius:50%;background:var(--m-primary);color:#fff;font-weight:800;font-size:20px;display:inline-flex;align-items:center;justify-content:center}
+.pf-nome{font-size:18px;font-weight:800;color:var(--m-ink);margin-top:10px}
+.pf-mail{font-size:12.5px;color:var(--m-muted);margin-top:2px}
+.pf-papel{font-size:12.5px;font-weight:700;color:var(--m-primary);margin-top:8px}
+.pf-wrap{padding:16px 16px 0}
+.pf-lbl{font-size:12.5px;font-weight:800;color:var(--m-muted);padding:0 0 8px 2px}
+.pf-card{background:#fff;border:1px solid var(--m-border);border-radius:14px;overflow:hidden}
+.pf-card>*+*{border-top:1px solid #F1F5F9}
+.pf-info{display:flex;align-items:center;padding:13px 14px;font-size:13px;color:var(--m-muted)}
+.pf-info span{flex:1}
+.pf-info b{font-size:13.5px;font-weight:700;color:var(--m-ink)}
+.pf-nav{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:13px 14px;border:0;background:#fff;text-align:left;cursor:pointer;font-family:var(--m-font)}
+.pf-nav:hover{background:#F8FAFC}
+.pf-nav__t{flex:1;min-width:0;font-size:13.5px;font-weight:700;color:var(--m-ink)}
+.pf-nav__s{display:block;font-size:12px;font-weight:400;color:var(--m-muted);margin-top:1px}
+.pf-nav__ic{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#EFF6FF;color:var(--m-primary)}
+.pf-nav .seta{color:var(--m-faint);display:flex}
+.pf-gap{height:16px}
+.pf-apar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.pf-apar div{background:#fff;border:1px solid var(--m-border);border-radius:12px;padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:10.5px;font-weight:700;color:var(--m-muted)}
+.pf-apar div.is-on{border:1.5px solid var(--m-primary);color:var(--m-primary)}
+
+/* ─── CONTEXTO · Início (home_screen.dart:147-330) ─── */
+.hm-hdr{flex-shrink:0;background:linear-gradient(135deg,var(--m-navy),var(--m-navy2));padding:16px 8px 38px 20px;display:flex;align-items:flex-start;gap:8px}
+.hm-hdr__txt{flex:1}
+.hm-hdr h1{font-size:22px;font-weight:800;color:#fff}
+.hm-hdr p{font-size:12.5px;color:#9FB4CC;margin-top:2px}
+.hm-hdr .m-iconbtn{color:#fff;width:44px;height:44px;background:rgba(255,255,255,.08);border-radius:12px}
+.hm-body{flex:1;min-height:0;overflow-y:auto;padding:0 16px 20px;margin-top:-22px;position:relative}
+.hm-body::-webkit-scrollbar{width:0}
+.hm-user{background:#fff;border:1px solid var(--m-border);border-radius:16px;box-shadow:0 6px 16px rgba(0,0,0,.08);padding:14px}
+.hm-user__l{display:flex;align-items:center;gap:12px}
+.hm-user__av{width:44px;height:44px;border-radius:12px;background:#1E3A5F;color:#9DC3E6;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center}
+.hm-user__n{font-size:14.5px;font-weight:800;color:var(--m-ink)}
+.hm-user__s{font-size:12px;color:var(--m-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hm-on{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--m-success);margin-left:auto}
+.hm-on i{width:8px;height:8px;border-radius:50%;background:currentColor}
+.hm-user hr{border:0;border-top:1px solid var(--m-border);margin:12px 0}
+.hm-sync{display:flex}
+.hm-sync>div{flex:1;display:flex;align-items:center;gap:8px;padding:0 12px}
+.hm-sync>div+div{border-left:1px solid var(--m-border)}
+.hm-sync b{display:block;font-size:13px;font-weight:800;color:var(--m-ink)}
+.hm-sync small{display:block;font-size:10.5px;color:var(--m-faint)}
+.hm-sync svg{color:var(--m-muted);flex-shrink:0}
+.m-seclbl{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--m-faint);margin:18px 0 8px}
+.hm-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.hm-stat{background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:14px 10px;text-align:center}
+.hm-stat b{display:block;font-size:24px;font-weight:800}
+.hm-stat small{font-size:11.5px;font-weight:600;color:var(--m-muted)}
+.hm-acts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.m-act{background:#fff;border:1px solid var(--m-border);border-radius:14px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--m-ink);cursor:pointer;font-family:var(--m-font)}
+.m-act span{width:38px;height:38px;border-radius:50%;background:#F1F5F9;color:#475569;display:flex;align-items:center;justify-content:center}
+.hm-os-cab{display:flex;align-items:center;margin:18px 0 10px}
+.hm-os-cab b{font-size:16px;font-weight:800;color:var(--m-ink);flex:1}
+.hm-os-cab span{font-size:12.5px;font-weight:700;color:var(--m-primary)}
+.hm-os{background:#fff;border:1px solid var(--m-border);border-left:4px solid var(--m-warning);border-radius:14px;padding:12px 14px}
+.hm-os__cod{font-size:12px;font-weight:800;color:var(--m-primary)}
+.hm-os__t{font-size:14.5px;font-weight:800;color:var(--m-ink);margin-top:2px}
+.hm-os__s{font-size:12.5px;color:var(--m-muted);margin-top:2px}
+.hm-os__p{display:flex;gap:6px;margin-top:8px}
+/* o cartão "Localização", no molde do _ApprovalsBanner (home_screen.dart:576-644) */
+.hc-card{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:14px;border:1px solid #BFDBFE;background:#EFF6FF;text-align:left;cursor:pointer;font-family:var(--m-font);margin-top:18px}
+.hc-card svg{color:var(--m-primary);flex-shrink:0}
+.hc-card__txt{flex:1;min-width:0}
+.hc-card__t{font-size:13px;font-weight:800;color:var(--m-primary)}
+.hc-card__s{font-size:12.5px;color:#475569;margin-top:1px}
+.hc-card__r{font-size:13px;font-weight:700;color:var(--m-primary);flex-shrink:0}
+.hc-card--b{background:#fff;border-color:var(--m-border);margin-top:14px}
+.hc-card--b .hc-ic{width:40px;height:40px;border-radius:12px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hc-card--b .hc-card__t{color:var(--m-ink);font-size:14px}
+.hc-pill{display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:99px;background:var(--m-primary);color:#fff;font-size:13px;font-weight:700;flex-shrink:0}
+/* opção C: a faixa do StaleDataBanner (erp_components.dart:72-125), no tom de informação */
+.hc-faixa{display:flex;align-items:center;gap:8px;padding:4px 4px 4px 12px;border-radius:8px;background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.30);margin-top:14px}
+.hc-faixa svg{color:var(--m-primary);flex-shrink:0}
+.hc-faixa div{flex:1;font-size:13px;line-height:18px;color:#1E3A8A}
+.hc-faixa div b{display:block;font-weight:800}
+
+/* ─── seletor A/B/C (fora da tela; molde) ─── */
+.maquete-controles{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:8px;max-width:min(470px,calc((100vw - 420px) / 2 - 30px))}
+.seletor-opcoes{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes .dock-rotulo{font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.03em;padding:0 4px 0 6px}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1;font-family:var(--font-sans)}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+
+/* ─── quadro de notas (fora da tela; molde) ─── */
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0;line-height:1.5}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__acoes{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px;line-height:1.3}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;overflow-wrap:anywhere}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-box--pergunta{border-color:#2563eb;background:#172554}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.rv-tabela tr.sub td{color:#93c5fd;font-weight:800;font-size:11.5px;background:#172033}
+.rv-pergunta{font-size:13.5px;font-weight:700;color:#fff;line-height:1.5;margin:10px 0 6px}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="app-stage">
+    <div class="app-stage__tag" data-maquete>
+      <b id="app-tag">App de campo · Localização · Opção A</b>
+      <span>Aparelho de 390 × 812, tema claro. A tela de localização (Perfil › Privacidade › Localização), com a linha nova do Perfil e o cartão do Início como contexto.</span>
+      <span class="app-stage__entrega" id="app-entrega">Entra agora no app: o dono decidiu em 13/11 que o app sai só com a A (6.5 (a)).</span>
+      <div class="telas" role="group" aria-label="Tela da maquete">
+        <button type="button" data-tela="loc" aria-pressed="true">Localização</button>
+        <button type="button" data-tela="perfil" aria-pressed="false">Perfil</button>
+        <button type="button" data-tela="inicio" aria-pressed="false">Início</button>
+      </div>
+      <div class="estados" id="estados" role="group" aria-label="Estado da tela na maquete"></div>
+    </div>
+
+    <div class="phone">
+      <div class="phone__screen">
+        <div class="phone__status" id="status-bar" aria-hidden="true">
+          <span>13:52</span>
+          <span class="phone__status-ic" id="status-ic"></span>
+        </div>
+        <div class="phone__app">
+          <div data-view="a"></div>
+          <div data-view="b" hidden></div>
+          <div data-view="c" hidden></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-stage__lado" data-maquete aria-live="polite">
+      <h2 id="lado-tit">Opção A · Cartões de hoje</h2>
+      <p id="lado-desc"></p>
+      <ul id="lado-lista"></ul>
+    </div>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono aprovar</div>
+      <h2 id="rv-titulo">Opção A — Cartões de hoje</h2>
+    </div>
+    <div class="review-layer__acoes">
+      <button type="button" class="rv-btn" data-marcas aria-pressed="true">Esconder as marcas “falta no backend” e “nova”</button>
+      <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true" aria-controls="rv-corpo">Recolher notas</button>
+    </div>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc" id="rv-desc"><strong>Maquete de <code>maq-17-cl</code> (Claude Opus 5.5, subagente da sessão; <code>D-DESIGN-SO-CLAUDE</code>), montada em 13/11/2026, das 13:33 às <span id="rv-hora-fim">14:02</span> (São Paulo, hora de <code>date</code>).</strong> <strong>Ajustada em 13/11 por <code>maq-17-ajustes-cl</code> (Claude Opus 5.5, identidade nova), a partir das 15:02, com 2 correções, sem escolha:</strong> (1) as perguntas 1 a 6, que naquela hora ainda não tinham resposta, passam de “resposta do dono” a recomendação; (2) “Agora não” fica inteiro na tela, sem rolar, sempre que “Permitir” aparece, a 390 × 812 e a 360 × 740. Para isso, na A as ações sobem para logo depois dos três cartões, em todos os estados, e na B, antes da decisão, para logo depois dos blocos, com a lista abaixo e o mesmo rótulo “Como usamos sua localização” que a B já mostra depois da decisão. A C não mudou. Nenhum texto da tela, estado ou ordem das opções mudou além disso. Diário com as medidas: <code>maq-17-ajustes.md</code>. É a tela de localização do app de campo que o bloco <code>B-SAN3-17</code> (itens 18 e 52 do portão, LGPD) refaz, com a linha nova do Perfil e o cartão novo do Início como contexto. O que a tela mostra vem do plano <code>plano-B-SAN3-17-v2.md</code>: o §2.4 (telas-modelo, restrições de regressão, textos literais e estados do §7), o §2.1 (P1, P3, P6, P7, P12, P13 e P14), a Emenda 1 (CR17R2-03: o 400 do aceite também vira “Confirme de novo”) e os textos do v1 (§2.4) que o v2 manda manter. <strong>Retocada em 14/11 por <code>maq-loc-cl</code> (Claude Opus 5.5, identidade nova; <code>D-DESIGN-SO-CLAUDE</code>), a partir das 00:26 (São Paulo, hora de <code>date</code>), para cumprir as decisões do dono de 13/11 e a emenda de abertura (<code>plano-B-SAN3-17-abertura.md</code>, E2.4, E2.6, E2.7 e E2.8):</strong> (1) o quadro passa a dizer que as perguntas estão decididas; (2) a frase do histórico entra no detalhe de “Revogue quando quiser”, nas três opções; (3) o 6º estado, “Não permitido. Nada é capturado.”, para quem nunca permitiu, nas três opções e no selo do Perfil da B; (4) o texto em português correto fica como decisão, não como pergunta; (5) a linha que abre o detalhe aparece como a <code>MobileExpandableRow</code> da biblioteca do app (<code>mobile_kit.dart</code>); (6) só a A entra no app agora, e as três seguem aqui como aparências aprovadas. Diário: <code>localizacao-retoque-1411.md</code>. <strong>As perguntas estão decididas:</strong> em 13/11, às 23:12 e às 23:20 (São Paulo), o dono disse “minhas decisões vão todas nas recomendações” e “pode começar”. Valem 1 a 6 em (a), e a 6 com a (b) como próximo passo; P7 (a), com a frase do histórico na tela; P-A (a); P-B (b); e a maquete aprovada nas três, com os 3 ajustes. O orquestrador registrou isso como <code>D-DONO-1311-RECOMENDACOES</code> (<code>REGISTRO-PENDENTE.md:1958</code>; o ID é proposta e ainda não está na <code>main</code>: medido na <code>origin/main</code> <code>d2737339</code>, 0 ocorrência em <code>decisoes.md</code>). O código foi medido na <code>origin/main</code> <code>31324f0d</code> com <code>git show</code>; a emenda de abertura re-mediu as âncoras em <code>d2737339</code>, e o retoque conferiu ali o <code>mobile_kit.dart</code> (686 linhas, 13 classes, nenhuma de expansão). Telas-modelo: <code>location_consent_screen.dart</code> (cartões <code>:66-132</code>, botões <code>:134-153</code>), <code>profile_screen.dart</code> (<code>_SectionLabel</code> <code>:244</code>, <code>_SectionCard</code> <code>:265</code>, <code>_NavRow</code> <code>:327</code>, uso <code>:150-158</code>), o <code>_ApprovalsBanner</code> de <code>home_screen.dart:576-644</code>, o <code>PermissionBlockedState</code> de <code>erp_components.dart:160-175</code> (do #540), <code>mobile_kit.dart</code> e o tema <code>erp_mobile_theme.dart</code>. Referências: <code>screen-refs/mobile/consentimento-lgpd.png</code>, <code>status-localizacao.png</code> e <code>perfil.png</code>. O esqueleto, o seletor e este quadro vêm do molde <code>troca-senha-3opcoes.reference.html</code>; a moldura de aparelho e os componentes do app, da maquete aprovada <code>execucao-guincho-3opcoes.reference.html</code> (pela do prestador). <strong>O fluxo e os textos do plano são os mesmos nas três opções; muda a composição.</strong> À esquerda, escolha a tela (Localização, Perfil, Início) e o estado (14 da localização, 4 do Perfil, 4 do Início). Dá para tocar: os blocos abrem a linha correspondente, as linhas abrem e fecham (também com Enter ou Espaço), “Permitir”, “Agora não” e “Revogar consentimento” mudam o estado, e “Localização” no Perfil e “Revisar” no Início abrem a tela. As capturas <code>localizacao-a/b/c.png</code> (refeitas em 14/11) mostram, de cada opção, a tela antes da decisão, o estado “Não permitido” com a linha “Revogue quando quiser” aberta (o 6º estado e a frase do histórico), o Perfil no mesmo estado e o Início.</p>
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li><strong>A decisão no aparelho:</strong> o registro por pessoa do plano (§2.2: concedido ou não, <code>decided_at</code>, <code>client_action_id</code>, versão do texto e a confirmação do servidor). “Sua decisão”, “Decidida em” e “Na organização”, no detalhe do registro, saem dele. Hoje o aparelho só guarda <code>accepted</code>, numa chave do aparelho (<code>location_consent_store.dart:19</code>). Com a P-B (b), o registro também guarda o tipo da última decisão “não” (E2.6): “Revogado” só para quem tinha dito “sim” neste registro; todo outro “não”, e a dúvida, lê “Não permitido”.</li>
+          <li><strong>A resposta da organização:</strong> as duas rotas do §2.3. O 200 traz <code>granted</code>, <code>granted_at</code> e <code>status</code> (<code>applied</code> ou <code>superseded</code>). O 422 <code>operator_profile_required</code> vira “Sem cadastro”. <code>superseded</code>, o 403 do aceite (P14) e o 400 do aceite (Emenda 1, CR17R2-03) viram “Confirme de novo”. Sem resposta, “Aguardando conexão”. Com 5xx, a frase de erro do v1.</li>
+          <li><strong>GPS:</strong> <code>gpsAvailableProvider</code> (<code>gps_service.dart:7-16</code>) é “serviço de localização ligado E permissão de uso”. As duas frases do detalhe dizem só isso. “Abrir configurações” já existe no cartão da OS (<code>_openSettings</code>, <code>work_order_operational_map_screen.dart</code>).</li>
+          <li><strong>Permissão de enviar</strong> (sessão, <code>PermissionResolver</code>): sem ela, a tela mostra “Acesso não permitido”; “Revogar consentimento” continua, porque a revogação não depende dela (P6).</li>
+          <li><strong>Perfil e Início:</strong> <code>_SectionLabel</code>, <code>_SectionCard</code> e <code>_NavRow</code> já existem; a linha nova é a do “Trocar de organização”. O cartão do Início segue o <code>_ApprovalsBanner</code> e aparece com <code>canSendLocation &amp;&amp; consentStatus.needsDecision</code> (§2.2).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>A hora da revogação</strong> (marcada na tela, nos estados “Revogado” e “Não permitido”): ao revogar, o servidor limpa <code>tracking_consent_at</code> (<code>operator-profile.service.ts:122-123</code>, §1.5 do plano) e não devolve hora nenhuma. A linha “Registrado na sua organização em dd/mm hh:mm” usa a hora em que o app recebeu a confirmação, também no “Não permitido”. Resolve a (b) da pergunta 6, que o dono marcou como próximo passo: o bloco <code>B-LOC-DECISAO-COM-HORA</code> (nome proposto; seção 2.2 da emenda), que fecha a <code>P-LOCALIZACAO-ORDEM-DAS-DECISOES</code>.</li>
+          <li><strong>Ler o que a organização tem registrado:</strong> o contrato só tem as duas escritas, e nenhuma rota diz ao app o estado atual. Efeito na tela: se o gestor marcou o consentimento pela web (B10, <code>P-LOCALIZACAO-GESTOR-MARCA-CONSENTIMENTO</code>) ou o técnico trocou de celular, o app mostra “Sem decisão” e pergunta de novo. A falha é fechada (pergunta, não presume), mas o bloco “Na sua organização” só sabe o que o próprio aparelho mandou. A rota de leitura vai no mesmo <code>B-LOC-DECISAO-COM-HORA</code> (<code>P-LOCALIZACAO-SEM-LEITURA-DO-ESTADO</code>).</li>
+          <li><strong>Nada mais para a A.</strong></li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção A — Cartões de hoje</h3><ul class="review-list">
+          <li><strong>Prós:</strong> é o esqueleto de hoje (cartão de situação, cartão de texto e cartão do GPS, todos <code>ListTile</code>), com o cartão do meio virando “Na sua organização” e a explicação virando lista. É o menor diff da F5. A única peça nova é a linha que abre o detalhe, e ela nasce na biblioteca do app, não na tela: é a <code>MobileExpandableRow</code>, acrescentada no fim de <code>mobile_kit.dart</code> sem mexer nas 13 classes de hoje, com 1 linha em <code>COMPONENT_LIBRARY.md</code> ao lado do <code>DenseExpandableRow</code> da web (E2.7). Os três blocos clicáveis são os três cartões <code>ListTile</code> de hoje, agora com toque; não são peça nova. As chaves que o <code>b121</code> prende ficam onde estão, e o “Agora não” ganha a chave <code>consent-decline</code> (W11).</li>
+          <li><strong>Contras:</strong> três cartões de situação vêm antes da explicação, então a pessoa lê o estado antes de saber do que se trata. Desde o ajuste de 13/11, os botões também vêm antes da lista: a pessoa decide antes de abrir os usos, que ficam logo abaixo, na mesma tela (sem rolar, aparecem inteiras 5 das 6 linhas a 390 × 812 e 3 a 360 × 740). Em troca, “Permitir” e “Agora não” ficam juntos e inteiros na tela, com a nota: medido antes da decisão, “Permitir” entre 250 e 294 px e “Agora não” entre 302 e 346 px da área rolável, que tem 654 px visíveis (a 360 × 740: 256–300 e 308–352, de 582). Antes do ajuste, “Agora não” ficava 4 px cortado (614 a 658). O botão “Revogar” sai no azul do tema, como hoje, e também sobe para logo depois dos cartões.</li>
+          <li><strong>Decidido em 13/11 (6.5 (a)):</strong> é a única que entra no app agora, e é o alvo de fidelidade da cadeira C3, nesta ordem: os três cartões, as ações, a nota “Você pode mudar isso depois em Perfil › Privacidade.” e, por último, a lista (E2.8).</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li>O mesmo da opção A: a decisão no aparelho, a resposta das duas rotas, o GPS e a permissão.</li>
+          <li><strong>O cartão verde de situação</strong> segue a <code>status-localizacao.png</code> (“Ativa durante atendimentos”), com o texto verdadeiro: “Consentimento concedido · Permitido durante o uso do app.”. Não diz “expira ao sair da OS”, porque o produto não faz isso (C2; decisão 3 (a)).</li>
+          <li><strong>O selo do Perfil</strong> tem quatro situações: Pendente, Permitido, Revogado e, com a P-B (b), Não permitido.</li>
+          <li><strong>As chaves por finalidade da referência</strong> (Check-in, Otimização de rota, Rastreio em segundo plano) <strong>não entram</strong>: o produto não tem consentimento por finalidade (C2). No lugar delas entra a lista, com um ✓ em cada uso.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>O mesmo da opção A:</strong> a hora da revogação e a leitura do estado na organização.</li>
+          <li><strong>Componentes novos, que nascem na biblioteca junto com o seletor de aparência</strong> (<code>P-APARENCIA-APP-SELETOR</code>), não agora (E2.7): a apresentação centrada (ícone, título e frase), os blocos curtos de situação, o cartão verde e o botão vermelho de contorno. Hoje nenhum deles existe em <code>mobile_kit.dart</code> nem em <code>erp_components.dart</code>. A lista é a mesma <code>MobileExpandableRow</code> da A.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção B — Como o protótipo</h3><ul class="review-list">
+          <li><strong>Prós:</strong> é o protótipo aprovado, sem o que ele promete e o produto não faz. Antes da decisão, a pessoa lê para que serve antes de ver qualquer estado. Medido depois do ajuste de 13/11, antes da decisão: “Permitir” fica entre 252 e 296 px e “Agora não” entre 304 e 348 px, com a nota à vista, nos 653 px visíveis a 390 × 812 e nos 581 a 360 × 740; no “Confirme de novo”, entre 318 e 362 e entre 370 e 414 px. Depois de decidir, o verde diz “está ligado” de relance, e “Revogar consentimento” em vermelho é fácil de achar (revogação facilitada, LGPD art. 8º, § 5º).</li>
+          <li><strong>Contras:</strong> a tela muda de forma entre “antes” e “depois” da decisão, e quem volta a ela depois de revogar vê o cartão, não a apresentação. Desde o ajuste de 13/11, antes da decisão os botões vêm antes da lista: a frase de uso fica acima deles, e os usos, logo abaixo (sem rolar, aparecem inteiras 5 das 6 linhas a 390 × 812, 3 no “Confirme de novo”; a 360 × 740, 3 e 2). Antes do ajuste, no “Confirme de novo” a faixa empurrava “Agora não” para fora da tela (648 a 692 px, de 653), e a nota ficava abaixo da dobra. Depois da decisão, “Revogar consentimento” continua no fim, depois da lista, como no protótipo. São quatro componentes novos.</li>
+          <li><strong>Aprovada como aparência (6.5 (a)):</strong> não entra no app agora. Entra com o seletor de aparência do app; a <code>P-APARENCIA-APP-SELETOR</code> passa a cobrir esta tela.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) O que já tem dado</h3><ul class="review-list">
+          <li>O mesmo da opção A.</li>
+          <li><strong>O bloco “Captura”</strong> (só na C) é conta do aparelho: “Com o app aberto” quando há consentimento no aparelho e o GPS está disponível, e “Desligada” no resto. Ele segue P3 (sem consentimento, nada é capturado) e <code>app.dart:60-67</code> (a captura só liga com o app em primeiro plano). Não diz se a posição já chegou à organização; isso fica no bloco ao lado.</li>
+          <li><strong>A faixa da linha de estado</strong> é o <code>SyncStatusBanner</code> (<code>erp_components.dart:31-66</code>), e a barra de baixo é o <code>MobileStickyBar</code> (<code>mobile_kit.dart:584-605</code>), os dois já existentes.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">
+          <li><strong>O mesmo da opção A:</strong> a hora da revogação e a leitura do estado na organização.</li>
+          <li><strong>Componente novo:</strong> o bloco de resumo como botão (o <code>MobileStatTile</code>, <code>mobile_kit.dart:305-350</code>, com ícone e estado de seleção). Nasce na biblioteca junto com o seletor de aparência, não agora (E2.7). A lista é a mesma <code>MobileExpandableRow</code> da A.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) Prós e contras · Opção C — Resumo e ações fixas</h3><ul class="review-list">
+          <li><strong>Prós:</strong> as três perguntas da pessoa (“está registrado?”, “o GPS está ligado?”, “o app está capturando agora?”) aparecem de relance, logo no topo. “Permitir” e “Agora não” ficam sempre à vista, com o mesmo alcance, e não importa quanto a lista cresça. Isso é o mais próximo de “recusar tão fácil quanto aceitar”. O desenho é o mesmo antes e depois da decisão.</li>
+          <li><strong>Contras:</strong> a barra fixa ocupa cerca de 140 px, e a área que rola cai para 450 px antes da decisão (526 px depois). A lista inteira só aparece rolando. É a opção mais densa em informação de situação, então quem só quer decidir lê mais. O bloco “Captura” é um texto novo que as outras duas não têm, e pode dizer “Com o app aberto” enquanto nada chega à organização (sem cadastro, sem conexão): antes de a C entrar no app, o plano dela define o que ele mostra nesses casos (aviso do Fable, nota da <code>P-APARENCIA-APP-SELETOR</code>).</li>
+          <li><strong>Aprovada como aparência (6.5 (a)):</strong> não entra no app agora. Entra com o seletor de aparência do app (<code>P-APARENCIA-APP-SELETOR</code>).</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box review-box--pergunta">
+        <h3>Decisões do dono de 13/11 (todas nas recomendações)</h3>
+        <p class="rv-pergunta">Nenhuma pergunta de produto fica aberta nesta tela.</p>
+        <ul class="review-list">
+          <li><strong>Fonte:</strong> em 13/11, às 23:12 e às 23:20 (São Paulo), o dono disse “minhas decisões vão todas nas recomendações” e “pode começar”. As recomendações são as do Fable (<code>saidas-v3/fable-recs/saida/recomendacoes.md</code> e <code>saidas-v3/fable-recs-2c/saida/recomendacoes-2.md</code>). O registro é do orquestrador: <code>D-DONO-1311-RECOMENDACOES</code>, ID proposto, ainda fora da <code>main</code>.</li>
+          <li><strong>Perguntas 1 a 6, todas em (a):</strong>
+            <ul class="review-list" style="margin-top:6px">
+              <li><strong>1 (a):</strong> consentimento para o celular; a viatura com rastreador segue a decisão anterior;</li>
+              <li><strong>2 (a):</strong> sem cadastro de profissional, o servidor recusa e a tela mostra “Peça ao gestor”;</li>
+              <li><strong>3 (a):</strong> texto verdadeiro, sem o que o protótipo promete e o produto não faz;</li>
+              <li><strong>4 (a):</strong> o item novo do portão (o 67, a posição sem dono no celular compartilhado);</li>
+              <li><strong>5 (a):</strong> só a aparência A entra no app agora; a B e a C ficam aprovadas e entram com o seletor;</li>
+              <li><strong>6 (a):</strong> o “não” vale sempre, com o “Confirme de novo”; a (b), guardar a hora de cada decisão, vira o próximo passo, no <code>B-LOC-DECISAO-COM-HORA</code>.</li>
+            </ul>
+          </li>
+          <li><strong>P7 (a):</strong> quando a revogação chega à organização, o mapa ao vivo e o despacho param de mostrar a localização enviada pelo app (B17 e B20 da emenda); o técnico segue na lista do despacho, e o ponto do rastreador da viatura continua (1 (a)); o histórico continua guardado, só para quem já tem a permissão de histórico. <strong>A tela diz isso numa frase</strong>, no detalhe de “Revogue quando quiser”, nas três opções (ver o achado 8).</li>
+          <li><strong>P-A (a):</strong> a tela sai já com o texto certo (“Disponível”, “Indisponível” e a frase em português no lugar de “Sem background tracking”). Mudam 5 conferências em 3 arquivos de teste, pela emenda (E2.5): <code>b121</code> <code>:46</code>, <code>:82</code> e <code>:91</code>, <code>b105</code> <code>:386</code> e <code>b106</code> <code>:150</code>. O <code>b105</code> e o <code>b106</code> entram porque o texto do consentimento é uma constante só, lida pela tela e pelo cartão da OS.</li>
+          <li><strong>P-B (b):</strong> o 6º caso, “Não permitido. Nada é capturado.”, para quem disse “não” sem ter dito “sim” antes neste registro, inclusive depois de “Confirme de novo”, e na dúvida (E2.6). “Revogado. Nada é capturado.” fica só para quem tinha permitido. Por dentro, o “Agora não” segue o caminho da revogação e fica registrado na organização.</li>
+          <li><strong>A maquete:</strong> aprovadas as três, com os 3 ajustes do Fable:
+            <ul class="review-list" style="margin-top:6px">
+              <li><strong>1, o quadro:</strong> corrigido em 13/11 e corrigido de novo neste retoque, agora com as perguntas decididas;</li>
+              <li><strong>2, “Agora não” inteiro sem rolar na A e na B:</strong> feito em 13/11 e medido de novo neste retoque (o diário tem os números); vira o critério W11 do app;</li>
+              <li><strong>3, a aprovação valia se 1, 2, 3, 5 e 6 saíssem como recomendado:</strong> saíram.</li>
+            </ul>
+          </li>
+          <li><strong>O que segue aberto, sem ser pergunta agora</strong> (pendências da emenda, seção 10):
+            <ul class="review-list" style="margin-top:6px">
+              <li>o texto da tela vai ao advogado antes da venda, com a frase do histórico e a dúvida “Nada é capturado” × “por este celular”, que não entra agora (<code>P-LOCALIZACAO-TEXTO-PARA-O-ADVOGADO</code>);</li>
+              <li>o prazo de guarda do histórico e o pedido de apagamento pelo técnico (<code>P-LOCALIZACAO-HISTORICO-GUARDA-E-APAGAMENTO</code>);</li>
+              <li>o título “Consentimento pendente” depois de um “não”, que o teste antigo prende (<code>P-LOCALIZACAO-TITULO-PENDENTE-APOS-NAO</code>).</li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Textos da tela (iguais nas três opções)</h3>
+        <ul class="review-list">
+          <li><strong>Do plano (literais):</strong>
+            <ul class="review-list" style="margin-top:6px">
+              <li>títulos: “Localização em campo” · “Privacidade · Localização”;</li>
+              <li>as cinco frases de uso: “Sua organização usa a sua localização para o mapa do despacho, o trajeto e a quilometragem do dia.” · “Só com o app aberto: nada é capturado com o app fechado ou minimizado.” · “Quando você toca em Enviar localização na OS e, com o app aberto, a cada minuto.” · “Você pode revogar a qualquer momento em Perfil › Privacidade.” · “Sua decisão fica registrada na sua organização.”;</li>
+              <li>ações: “Permitir durante o uso do app” · “Agora não” · “Você pode mudar isso depois em Perfil › Privacidade.” · “Revogar consentimento”;</li>
+              <li>estados: a linha de estado nos 6 casos (o 6º, “Não permitido. Nada é capturado.”, é da decisão P-B (b) e da emenda E2.6) · “Não foi possível registrar agora. Vamos tentar de novo quando houver conexão.” · “Acesso não permitido” · “Seu perfil não tem permissão para enviar localização. Fale com o administrador da sua organização.”;</li>
+              <li>Início: “Localização” · “Autorize o envio da sua localização durante o trabalho.” · “Revisar”;</li>
+              <li>Perfil: “Privacidade” · “Localização”.</li>
+            </ul>
+          </li>
+          <li><strong>Presos pela regressão (plano):</strong> “Consentimento pendente” e “Consentimento concedido”, cada um uma vez na tela; as chaves <code>consent-accept</code> e <code>consent-revoke</code>; revogar sem diálogo.</li>
+          <li><strong>Da tela de hoje, com acento:</strong> “Autorize para poder enviar sua localização.”, “GPS do dispositivo”, “Disponível” e “Indisponível”. Pela P-A (a), saem já assim.</li>
+          <li><strong>O texto que o técnico aceita</strong> continua uma constante só, lida pela tela e pelo cartão da OS (<code>manualLocationConsentText</code>), com as duas frases desta maquete: “Quando você toca em Enviar localização na OS e, com o app aberto, a cada minuto. Só com o app aberto: nada é capturado com o app fechado ou minimizado.” (E2.5). A versão do texto é <code>2026-11.b-san3-17.v1</code> (E2.4).</li>
+          <li><strong>Novos nesta maquete (leitura minha, declarada):</strong>
+            <ul class="review-list" style="margin-top:6px">
+              <li>o resumo de cada linha: “Mapa, trajeto e quilometragem”, “Ao enviar na OS e a cada minuto”, “Com o app fechado, nada”, “Revogue quando quiser”, “Registro na organização”. A frase inteira do plano fica no detalhe;</li>
+              <li>“Permitido durante o uso do app.”, que vem do botão;</li>
+              <li>“Ao revogar, a captura para na hora, e o que ainda não foi enviado é apagado do celular.”, que vem do §0 e da P7 do plano;</li>
+              <li><strong>a frase do histórico (retoque de 14/11, P7 (a)):</strong> “Quando a revogação chega à sua organização, o mapa e o despacho param de mostrar a localização enviada pelo app; o que já foi registrado continua guardado para a auditoria das OS, só para quem já pode ver o histórico.”. Ela fica no detalhe de “Revogue quando quiser”, logo depois da frase do apagamento. Três escolhas, declaradas:
+                <ul class="review-list" style="margin-top:6px">
+                  <li>“Quando a revogação chega à sua organização”, e não “na hora”: com a revogação ainda sem conexão, o servidor não sabe dela, e o mapa segue com a última posição até ela chegar;</li>
+                  <li>“a localização enviada pelo app”, e não “a sua localização”: o ponto do rastreador da viatura continua (decisão 1 (a); o filtro da emenda só tira o ponto do celular). Também não é “deste celular”, porque o consentimento vale para a pessoa, em qualquer aparelho;</li>
+                  <li>mantém, palavra por palavra, “o que já foi registrado continua guardado para a auditoria das OS”, da âncora da emenda (E2.4); o resto é o que a P7 (a) pede que a tela diga (ver o achado 8).</li>
+                </ul>
+              </li>
+              <li>as duas frases do GPS, que vêm do <code>gps_service.dart</code>;</li>
+              <li>os rótulos curtos dos blocos (“Sua decisão”, “Na sua organização”, “Organização”, “Sem decisão”, “Registrado”, “Aguardando conexão”, “Sem cadastro”, “Vai tentar de novo”);</li>
+              <li>“Decidida em” e “Fechar”;</li>
+              <li>na C, “Captura”, “Com o app aberto” e “Desligada”.</li>
+            </ul>
+          </li>
+          <li><strong>Leitor de tela:</strong> o botão de voltar se chama “Voltar”. Cada linha é um botão com o resumo, e o detalhe é uma região com o mesmo nome. Na <code>MobileExpandableRow</code>, o <code>Semantics</code> diz se a linha está aberta (E2.7).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Estados (§7 do contrato, iguais nas três opções). O vazio não se aplica, porque a tela não lista dado.</h3>
+      <table class="rv-tabela">
+        <thead><tr><th>Estado no alternador</th><th>Situação</th><th>“Sua decisão”</th><th>Linha de estado (“Na sua organização”)</th><th>Ação</th></tr></thead>
+        <tbody>
+          <tr class="sub"><td colspan="5">Sem decisão (o cartão do Início aparece)</td></tr>
+          <tr><td>Não decidiu (inicial)</td><td>nunca decidiu, com permissão de enviar</td><td>Consentimento pendente · Autorize para poder enviar sua localização. (Na B, só o título, no bloco “Sua decisão”; a apresentação explica.)</td><td>Sua decisão fica registrada na sua organização.</td><td>Permitir · Agora não · nota</td></tr>
+          <tr><td>Confirme de novo</td><td><code>superseded</code>, 403 ou 400 do aceite (P12, P14, Emenda 1)</td><td>Consentimento pendente</td><td>Confirme de novo: a sua organização não registrou a decisão anterior.</td><td>Permitir · Agora não</td></tr>
+          <tr class="sub"><td colspan="5">Decidiu</td></tr>
+          <tr><td>Concedido e registrado</td><td>200 <code>applied</code></td><td>Consentimento concedido · Permitido durante o uso do app.</td><td>Registrado na sua organização em 13/11 09:12</td><td>Revogar consentimento</td></tr>
+          <tr><td>Concedido, sem conexão (offline e sincronização)</td><td>decisão pendente no aparelho; nenhuma posição sai</td><td>Consentimento concedido</td><td>Aguardando conexão para registrar na sua organização</td><td>Revogar</td></tr>
+          <tr><td>Sem cadastro de profissional</td><td>422 <code>operator_profile_required</code> (P10; decisão 2 (a))</td><td>Consentimento concedido</td><td>Seu cadastro de profissional ainda não existe nesta organização. Peça ao gestor para cadastrar você em Profissionais.</td><td>Revogar</td></tr>
+          <tr><td>Falha ao registrar (erro)</td><td>5xx no envio da decisão</td><td>Consentimento concedido</td><td>Não foi possível registrar agora. Vamos tentar de novo quando houver conexão.</td><td>Revogar</td></tr>
+          <tr><td>Revogado (tinha permitido)</td><td>revogação confirmada de quem tinha dito “sim” neste registro (P7, P13, E2.6)</td><td>Consentimento pendente · Revogado. Nada é capturado.</td><td>Registrado na sua organização em 13/11 09:30 (hora do app: falta no backend)</td><td>Permitir</td></tr>
+          <tr><td>Revogado, sem conexão</td><td>revogação pendente; a captura já parou</td><td>Consentimento pendente · Revogado. Nada é capturado.</td><td>Aguardando conexão para registrar na sua organização</td><td>Permitir</td></tr>
+          <tr><td>Não permitido (nunca permitiu) <span class="nova">novo em 14/11</span></td><td>“Agora não” sem “sim” antes neste registro, também depois de “Confirme de novo”; e a dúvida (celular novo, registro zerado, registro antigo sem a marca). P-B (b), E2.6. Por dentro, segue o caminho da revogação (P13)</td><td>Consentimento pendente · Não permitido. Nada é capturado.</td><td>Registrado na sua organização em 13/11 09:30 (hora do app: falta no backend)</td><td>Permitir</td></tr>
+          <tr><td>Desatualizado</td><td>sem conexão; o último registro é antigo</td><td>Consentimento concedido</td><td>Registrado na sua organização em 10/11 08:15 (a data é o aviso, como manda o plano)</td><td>Revogar</td></tr>
+          <tr><td>GPS desligado</td><td><code>gpsAvailableProvider</code> = falso</td><td>Consentimento concedido</td><td>Registrado… · GPS “Indisponível”, com “Abrir configurações” no detalhe</td><td>Revogar</td></tr>
+          <tr class="sub"><td colspan="5">Outros</td></tr>
+          <tr><td>Carregando</td><td>lendo o registro do aparelho</td><td colspan="2">o indicador de hoje, no centro</td><td>—</td></tr>
+          <tr><td>Acesso não permitido</td><td>sem a permissão de enviar, sem consentimento</td><td colspan="2"><code>PermissionBlockedState</code>: “Acesso não permitido” · “Seu perfil não tem permissão para enviar localização. Fale com o administrador da sua organização.”</td><td>— (o cartão do Início não aparece: W4)</td></tr>
+          <tr><td>Acesso não permitido, com consentimento</td><td>perdeu a permissão com o consentimento dado (P6)</td><td colspan="2">o mesmo, mais “Consentimento concedido · Permitido durante o uso do app.”</td><td>Revogar consentimento (continua e funciona)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Divergências conscientes (iguais nas três opções)</h3>
+        <ul class="review-list">
+          <li><strong>A linha de estado tem dois lugares.</strong> O plano lista os casos numa linha só (5 no v2, 6 com a E2.6), mas “Revogado. Nada é capturado.” e “Aguardando conexão…” podem valer juntos. Por isso, o que a pessoa decidiu fica no bloco “Sua decisão”, e o que a organização registrou fica em “Na sua organização”. Antes da decisão, esse segundo lugar mostra a frase literal “Sua decisão fica registrada na sua organização.”. Leitura minha, declarada.</li>
+          <li><strong>Texto certo onde o teste antigo prendia o errado:</strong> “Disponível”, “Indisponível” e sem “Sem background tracking”. Deixou de ser divergência: é a decisão P-A (a), com as 5 trocas de teste da E2.5.</li>
+          <li><strong>Verde para “concedido”.</strong> A tela de hoje usa o <code>tertiaryContainer</code> do Material gerado (rosado, <code>location_consent_screen.dart:69</code>). As três opções usam o tom de sucesso do tema (<code>#ECFDF5</code>, borda <code>#A7F3D0</code>, ícone <code>#059669</code>), como a <code>status-localizacao.png</code>. A cor diz o que o estado é.</li>
+          <li><strong>Título com acento:</strong> “Localização em campo” e “Privacidade · Localização”, no lugar de “Localizacao” (<code>:60</code>).</li>
+          <li><strong>O protótipo promete o que o produto não faz</strong> (“só com OS ativa”, “90 dias”, chaves por finalidade, a nota de rodapé da LGPD). Nada disso entra (C2; decisão 3 (a)). Coletar só com OS ativa vira a pendência de melhoria <code>P-LOCALIZACAO-COLETA-SO-COM-OS-ATIVA</code>.</li>
+          <li><strong>A barra de baixo mostra “Início” aceso</strong> na tela de localização: o <code>ErpScaffold</code> devolve o índice 0 para <code>/location</code> (<code>erp_scaffold.dart</code>, <code>_selectedIndex</code>). A maquete mostra isso como está; ver o achado 4.</li>
+          <li><strong>Cores do Material 3</strong> que não estão no código (<code>surfaceContainerHighest</code> <code>#E1E2EC</code> e o contorno <code>#74777F</code>) são aproximações. O app não declara fonte, então desenha em Roboto, e os ícones são ilustrativos (Material Icons).</li>
+          <li><strong>Contraste AA (calculado):</strong>
+            <ul class="review-list" style="margin-top:6px">
+              <li>o texto secundário do tema (<code>#64748B</code>) dá 4,34:1 sobre o fundo da página (<code>#F1F5F9</code>) e 4,37:1 sobre o azul claro do cartão do Início, abaixo de 4,5:1. Onde a frase é do plano (a apresentação da B, a nota “Você pode mudar isso depois…” e o texto do cartão do Início), a maquete usa <code>#475569</code> (6,92:1);</li>
+              <li>o subtítulo dos cartões segue o <code>onSurfaceVariant</code> do Material 3 (<code>#44474F</code>, aproximado), que é o que o <code>ListTile</code> desenha. Com <code>#64748B</code> sobre o cinza do cartão pendente, seriam 3,69:1;</li>
+              <li>nas linhas, o GPS usa o <code>MobilePill</code> (<code>#047857</code> sobre <code>#ECFDF5</code>, 5,21:1), não o <code>OperationalStatusChip</code> (3,25:1, achado 7). O cartão do GPS da A mantém o selo de hoje.</li>
+            </ul>
+          </li>
+          <li><strong>Onde fica “Privacidade” no Perfil:</strong> logo depois de “Conta e organização” e antes de “Aparência”, para aparecer sem rolar. O plano não diz a posição.</li>
+          <li><strong>Nomes, e-mail, organização, OS e horas são exemplos.</strong> Os selos “nova” e “falta no backend” são marcas da maquete e somem com o botão do topo deste quadro. O “nova” ao lado de “Como usamos sua localização” marca a peça nova da biblioteca, a <code>MobileExpandableRow</code>; o do Perfil marca a seção nova “Privacidade”.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Achados para o orquestrador (quem acha não conserta)</h3>
+        <ul class="review-list">
+          <li><strong>Os 7 achados de 13/11, com o destino que a emenda de abertura deu:</strong>
+            <ul class="review-list" style="margin-top:6px">
+              <li><strong>1. A peça nova sem lugar na biblioteca:</strong> resolvido pela E2.7. A <code>MobileExpandableRow</code> nasce em <code>mobile_kit.dart</code>, que entra no PERMITIDO só por acréscimo no fim, com 1 linha em <code>COMPONENT_LIBRARY.md</code>. Os blocos clicáveis da A são os cartões de hoje. As peças da B e da C nascem com o seletor de aparência. Nota ao 15b: quem mergear primeiro cria a peça, e o outro usa;</li>
+              <li><strong>2. Sem rota de leitura do estado na organização:</strong> vai para o <code>B-LOC-DECISAO-COM-HORA</code> (<code>P-LOCALIZACAO-SEM-LEITURA-DO-ESTADO</code>, MÉDIA);</li>
+              <li><strong>3. O <code>b121</code> prendia texto em inglês e sem acento:</strong> resolvido pela P-A (a), com as 5 trocas da E2.5;</li>
+              <li><strong>4. “Início” aceso na barra de baixo:</strong> pendência <code>P-MOBILE-LOCALIZACAO-ABA-INICIO-ACESA</code> (BAIXA, <code>pre-existente</code>);</li>
+              <li><strong>5. O cartão da OS sem acento:</strong> apenso à <code>P-MOBILE-TITULOS-SEM-ACENTO</code>;</li>
+              <li><strong>6. “Revogado” para quem nunca permitiu:</strong> resolvido pela P-B (b), com o 6º estado desta maquete;</li>
+              <li><strong>7. Contraste abaixo do AA</strong> no <code>OperationalStatusChip</code> (3,25:1 e 4,01:1), no <code>MobileSectionLabel</code> (2,34:1) e no <code>inkMuted</code> sobre o fundo (4,34:1): pendência <code>P-MOBILE-CONTRASTE-ABAIXO-DO-AA</code> (BAIXA, <code>pre-existente</code>).</li>
+            </ul>
+          </li>
+          <li><strong>8. A frase do histórico diverge da âncora da emenda (novo, 14/11).</strong>
+            <ul class="review-list" style="margin-top:6px">
+              <li>A âncora da E2.4 é só “O que já foi registrado continua guardado para a auditoria das OS.”, e a própria emenda diz que o texto final é de quem desenha a tela.</li>
+              <li>A P7 (a) pede que a tela diga também que o mapa e o despacho param, e que o histórico fica só para quem já pode vê-lo. A frase desta maquete diz as três coisas, numa frase, e mantém palavra por palavra a parte da âncora.</li>
+              <li>A âncora, o W10 e a MA27 da emenda citam a frase curta. Para o dev seguir a maquete, a âncora precisa de emenda antes da F5 (<code>D-EMENDA-ANTES-DO-CODIGO</code>). Se o orquestrador preferir a frase curta, a maquete volta a ela numa linha (<code>T.historico</code>), e a tela deixa de dizer duas das três coisas.</li>
+            </ul>
+          </li>
+          <li><strong>Com a conferência do orquestrador</strong> (<code>D-CONFERENCIA-APARENCIAS-PELO-ORQUESTRADOR</code>), a maquete vira a referência <code>docs/claude-code-handoff/screen-refs/localizacao-consentimento-3opcoes.reference.html</code>, com uma linha no <code>screen-refs/README.md</code>, no PR do bloco. As duas escritas são do orquestrador.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="maquete-controles" data-maquete>
+  <div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+    <span class="dock-rotulo">Opção</span>
+    <button type="button" data-opcao="a" aria-pressed="true">A · Cartões de hoje</button>
+    <button type="button" data-opcao="b" aria-pressed="false">B · Como o protótipo</button>
+    <button type="button" data-opcao="c" aria-pressed="false">C · Resumo e ações fixas</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // ---------- ícones (Material Icons, Apache 2.0; ilustrativos) ----------
+  const P = {
+    voltar: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+    seta: 'M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',
+    check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    okc: 'M16.59 7.58L10 14.17l-3.59-3.58L5 12l5 5 8-8zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    privacidade: 'M12 3.19l7 3.11V11c0 4.52-2.98 8.69-7 9.93-4.02-1.24-7-5.41-7-9.93V6.3l7-3.11M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 6h2v2h-2V7zm0 4h2v6h-2v-6z',
+    verificado: 'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z',
+    cadeado: 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM8.9 6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9V6zM18 20H6V10h12v10z',
+    mapa: 'M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z',
+    pino: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+    toque: 'M9 11.24V7.5C9 6.12 10.12 5 11.5 5S14 6.12 14 7.5v3.74c1.21-.81 2-2.18 2-3.74C16 5.01 13.99 3 11.5 3S7 5.01 7 7.5c0 1.56.79 2.93 2 3.74zm9.84 4.63l-4.54-2.26c-.17-.07-.35-.11-.54-.11H13v-6c0-.83-.67-1.5-1.5-1.5S10 6.67 10 7.5v10.74l-3.43-.72c-.08-.01-.15-.03-.24-.03-.31 0-.59.13-.79.33l-.79.8 4.94 4.94c.27.27.65.44 1.06.44h6.79c.75 0 1.33-.55 1.44-1.28l.75-5.27c.01-.07.02-.14.02-.2 0-.62-.38-1.16-.91-1.38z',
+    bloqueio: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z',
+    desfazer: 'M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z',
+    empresa: 'M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10zm-2-8h-2v2h2v-2zm0 4h-2v2h2v-2z',
+    gps: 'M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06C6.83 3.52 3.52 6.83 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c4.17-.46 7.48-3.77 7.94-7.94H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z',
+    gpsoff: 'M20.94 11c-.46-4.17-3.77-7.48-7.94-7.94V1h-2v2.06c-1.13.12-2.19.46-3.16.97l1.5 1.5C10.16 5.19 11.06 5 12 5c3.87 0 7 3.13 7 7 0 .94-.19 1.84-.52 2.65l1.5 1.5c.5-.96.84-2.02.97-3.15H23v-2h-2.06zM3 4.27l2.04 2.04C3.97 7.62 3.25 9.23 3.06 11H1v2h2.06c.46 4.17 3.77 7.48 7.94 7.94V23h2v-2.06c1.77-.2 3.38-.91 4.69-1.98L19.73 21 21 19.73 4.27 3 3 4.27zm13.27 13.27C15.09 18.45 13.61 19 12 19c-3.87 0-7-3.13-7-7 0-1.61.55-3.09 1.46-4.27l9.81 9.81z',
+    relogio: 'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z',
+    nuvemoff: 'M19.35 10.04C18.67 6.59 15.64 4 12 4c-1.48 0-2.85.43-4.01 1.17l1.46 1.46C10.21 6.23 11.08 6 12 6c3.04 0 5.5 2.46 5.5 5.5v.5H19c1.66 0 3 1.34 3 3 0 1.13-.64 2.11-1.56 2.62l1.45 1.45C23.16 18.16 24 16.68 24 15c0-2.64-2.05-4.78-4.65-4.96zM3 5.27l2.75 2.74C2.56 8.15 0 10.77 0 14c0 3.31 2.69 6 6 6h11.73l2 2L21 20.73 4.27 4 3 5.27zM7.73 10l8 8H6c-2.21 0-4-1.79-4-4s1.79-4 4-4h1.73z',
+    erro: 'M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    info: 'M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z',
+    sync: 'M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z',
+    wifioff: 'M23.64 7c-.45-.34-4.93-4-11.64-4-1.5 0-2.89.19-4.15.48L18.18 13.8 23.64 7zm-6.6 8.22L3.27 1.44 2 2.72l2.05 2.06C1.91 5.76.59 6.82.36 7l11.63 14.49.01.01.01-.01 3.9-4.86 3.32 3.32 1.27-1.27-3.46-3.46z',
+    escudo: 'M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm7 10c0 4.52-2.98 8.69-7 9.93-4.02-1.24-7-5.41-7-9.93V6.3l7-3.11 7 3.11V11z',
+    linhatempo: 'M23 8c0 1.1-.9 2-2 2-.18 0-.35-.02-.51-.07l-3.56 3.55c.05.16.07.34.07.52 0 1.1-.9 2-2 2s-2-.9-2-2c0-.18.02-.36.07-.52l-2.55-2.55c-.16.05-.34.07-.52.07s-.36-.02-.52-.07l-4.55 4.56c.05.16.07.33.07.51 0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2c.18 0 .35.02.51.07l4.56-4.55C8.02 9.36 8 9.18 8 9c0-1.1.9-2 2-2s2 .9 2 2c0 .18-.02.36-.07.52l2.55 2.55c.16-.05.34-.07.52-.07s.36.02.52.07l3.55-3.56C19.02 8.35 19 8.18 19 8c0-1.1.9-2 2-2s2 .9 2 2z',
+    recibo: 'M19.5 3.5L18 2l-1.5 1.5L15 2l-1.5 1.5L12 2l-1.5 1.5L9 2 7.5 3.5 6 2v14H3v3c0 1.66 1.34 3 3 3h12c1.66 0 3-1.34 3-3V2l-1.5 1.5zM19 19c0 .55-.45 1-1 1s-1-.45-1-1v-3H8V5h11v14z',
+    casa: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
+    os: 'M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 16H5V5h2v3h10V5h2v14z',
+    dinheiro: 'M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z',
+    pessoa: 'M12 5.9c1.16 0 2.1.94 2.1 2.1s-.94 2.1-2.1 2.1S9.9 9.16 9.9 8s.94-2.1 2.1-2.1m0 9c2.97 0 6.1 1.46 6.1 2.1v1.1H5.9V17c0-.64 3.13-2.1 6.1-2.1M12 4C9.79 4 8 5.79 8 8s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 9c-2.67 0-8 1.34-8 4v3h16v-3c0-2.66-5.33-4-8-4z',
+    sol: 'M12 9c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3m0-2c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1z',
+    lua: 'M9.37 5.51c-.18.64-.27 1.31-.27 1.99 0 4.08 3.32 7.4 7.4 7.4.68 0 1.35-.09 1.99-.27C17.45 17.19 14.93 19 12 19c-3.86 0-7-3.14-7-7 0-2.93 1.81-5.45 4.37-6.49zM12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z',
+    contraste: 'M12 22c5.52 0 10-4.48 10-10S17.52 2 12 2 2 6.48 2 12s4.48 10 10 10zm1-17.93c3.94.49 7 3.86 7 7.93s-3.06 7.44-7 7.93V4.07z',
+    auto: 'M10.85 12.65h2.3L12 9l-1.15 3.65zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12 20 8.69zM14.3 16l-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9h-1.9z',
+  };
+  const ic = (k, w) => '<svg width="' + (w || 24) + '" height="' + (w || 24) + '" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="' + P[k] + '"/></svg>';
+  const sinal = on => on
+    ? '<svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.5" y="5" width="3" height="6" rx="1"/><rect x="9" y="2.5" width="3" height="8.5" rx="1"/><rect x="13.5" y="0" width="3" height="11" rx="1"/></svg>'
+    : '<svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4" rx="1" opacity=".3"/><rect x="4.5" y="5" width="3" height="6" rx="1" opacity=".3"/><rect x="9" y="2.5" width="3" height="8.5" rx="1" opacity=".3"/><rect x="13.5" y="0" width="3" height="11" rx="1" opacity=".3"/></svg><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="' + P.wifioff + '"/></svg>';
+  const bateria = '<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="14" height="8" rx="2" fill="currentColor"/><rect x="22.5" y="4" width="2" height="4" rx="1" fill="currentColor" opacity=".45"/></svg>';
+  const FALTA = t => '<span class="falta" title="' + esc(t) + '">falta no backend</span>';
+  const NOVA = '<span class="nova" aria-hidden="true">nova</span>';
+  // marca da peça nova da biblioteca do app (a linha que abre o detalhe); some com o botão do quadro, como as outras marcas
+  const NOVA_PECA = '<span class="nova nova--peca" aria-hidden="true" title="Peça nova da biblioteca do app: a linha que abre o detalhe">nova</span>';
+
+  // ---------- dados de exemplo (genéricos; o repositório é público) ----------
+  const EX = { nome: 'Técnico Exemplo', email: 'tecnico.exemplo@exemplo.com', ini: 'TE', org: 'Guincho Exemplo Ltda', papel: 'Técnico de Campo', dReg: '13/11 09:12', dRev: '13/11 09:30', dAnt: '10/11 08:15' };
+
+  // ---------- textos (plano v2 §2.4, com os do v1 que o v2 manda manter; iguais nas três opções) ----------
+  const T = {
+    tituloND: 'Localização em campo',
+    tituloD: 'Privacidade · Localização',
+    pend: 'Consentimento pendente',
+    conc: 'Consentimento concedido',
+    subPend: 'Autorize para poder enviar sua localização.',
+    subConc: 'Permitido durante o uso do app.',
+    revogado: 'Revogado. Nada é capturado.',
+    // 6º caso da linha de estado (decisão P-B (b) do dono, 13/11; emenda de abertura E2.6): "não" sem "sim" antes neste registro, ou na dúvida
+    naoPermitido: 'Não permitido. Nada é capturado.',
+    confirme: 'Confirme de novo: a sua organização não registrou a decisão anterior.',
+    reg: d => 'Registrado na sua organização em ' + d,
+    aguard: 'Aguardando conexão para registrar na sua organização',
+    semCad: 'Seu cadastro de profissional ainda não existe nesta organização. Peça ao gestor para cadastrar você em Profissionais.',
+    erro: 'Não foi possível registrar agora. Vamos tentar de novo quando houver conexão.',
+    fica: 'Sua decisão fica registrada na sua organização.',
+    intro: 'Sua organização usa a sua localização para o mapa do despacho, o trajeto e a quilometragem do dia.',
+    fechado: 'Só com o app aberto: nada é capturado com o app fechado ou minimizado.',
+    quando: 'Quando você toca em Enviar localização na OS e, com o app aberto, a cada minuto.',
+    revogar: 'Você pode revogar a qualquer momento em Perfil › Privacidade.',
+    depois: 'Você pode mudar isso depois em Perfil › Privacidade.',
+    apaga: 'Ao revogar, a captura para na hora, e o que ainda não foi enviado é apagado do celular.',
+    // frase do histórico (decisão P7 (a) do dono, 13/11; emenda de abertura E2.4): texto final de quem desenha a tela, que passa pelo advogado
+    historico: 'Quando a revogação chega à sua organização, o mapa e o despacho param de mostrar a localização enviada pelo app; o que já foi registrado continua guardado para a auditoria das OS, só para quem já pode ver o histórico.',
+    permitir: 'Permitir durante o uso do app',
+    agoraNao: 'Agora não',
+    btnRevogar: 'Revogar consentimento',
+    acesso: 'Acesso não permitido',
+    semPerm: 'Seu perfil não tem permissão para enviar localização. Fale com o administrador da sua organização.',
+    como: 'Como usamos sua localização',
+    gps: 'GPS do dispositivo',
+    disp: 'Disponível',
+    indisp: 'Indisponível',
+    gpsOk: 'O GPS do aparelho está ligado e o app tem permissão para usá-lo.',
+    gpsOff: 'O GPS do aparelho está desligado ou o app não tem permissão para usá-lo.',
+    abrirConfig: 'Abrir configurações',
+    cardTit: 'Localização',
+    cardSub: 'Autorize o envio da sua localização durante o trabalho.',
+    cardBtn: 'Revisar',
+  };
+
+  // situação do registro na organização (a "linha de estado" do §2.4)
+  const ORG = {
+    nada:     { tom: 'neutro', curto: 'Sem decisão', linha: T.fica, ic: 'empresa' },
+    confirme: { tom: 'atencao', curto: 'Confirme de novo', linha: T.confirme, ic: 'erro' },
+    reg:      { tom: 'ok', curto: 'Registrado', linha: T.reg(EX.dReg), ic: 'empresa', data: EX.dReg },
+    regrev:   { tom: 'ok', curto: 'Registrado', linha: T.reg(EX.dRev), ic: 'empresa', data: EX.dRev, falta: true },
+    regant:   { tom: 'ok', curto: 'Registrado em 10/11', linha: T.reg(EX.dAnt), ic: 'empresa', data: EX.dAnt },
+    aguard:   { tom: 'atencao', curto: 'Aguardando conexão', linha: T.aguard, ic: 'nuvemoff' },
+    semcad:   { tom: 'atencao', curto: 'Sem cadastro', linha: T.semCad, ic: 'pessoa' },
+    erro:     { tom: 'erro', curto: 'Vai tentar de novo', linha: T.erro, ic: 'erro' },
+  };
+  const DEC = {
+    pend: { titulo: T.pend, curto: 'Pendente', tom: 'neutro', sub: T.subPend },
+    conc: { titulo: T.conc, curto: 'Permitido', tom: 'ok', sub: T.subConc },
+    rev:  { titulo: T.pend, curto: 'Revogado', tom: 'neutro', sub: T.revogado },
+    np:   { titulo: T.pend, curto: 'Não permitido', tom: 'neutro', sub: T.naoPermitido },
+  };
+  // estados da tela de localização (iguais nas três opções)
+  const EST = {
+    'nao-decidiu':        { dec: 'pend', org: 'nada', gps: true, rede: true, acoes: 'decidir', decidida: '—' },
+    'confirme':           { dec: 'pend', org: 'confirme', gps: true, rede: true, acoes: 'decidir', decidida: '—' },
+    'concedido':          { dec: 'conc', org: 'reg', gps: true, rede: true, acoes: 'revogar', decidida: EX.dReg },
+    'aguardando':         { dec: 'conc', org: 'aguard', gps: true, rede: false, acoes: 'revogar', decidida: '13/11 13:48' },
+    'sem-cadastro':       { dec: 'conc', org: 'semcad', gps: true, rede: true, acoes: 'revogar', decidida: '13/11 13:48' },
+    'erro':               { dec: 'conc', org: 'erro', gps: true, rede: true, acoes: 'revogar', decidida: '13/11 13:48' },
+    'revogado':           { dec: 'rev', org: 'regrev', gps: true, rede: true, acoes: 'permitir', decidida: EX.dRev },
+    'revogado-aguardando':{ dec: 'rev', org: 'aguard', gps: true, rede: false, acoes: 'permitir', decidida: '13/11 13:50' },
+    'nao-permitido':      { dec: 'np', org: 'regrev', gps: true, rede: true, acoes: 'permitir', decidida: EX.dRev },
+    'desatualizado':      { dec: 'conc', org: 'regant', gps: true, rede: false, acoes: 'revogar', decidida: EX.dAnt },
+    'gps-off':            { dec: 'conc', org: 'reg', gps: false, rede: true, acoes: 'revogar', decidida: EX.dReg },
+    'carregando':         { especial: 'carregando', rede: true },
+    'bloqueado':          { especial: 'bloqueado', com: false, rede: true },
+    'bloqueado-com':      { especial: 'bloqueado', com: true, rede: true },
+  };
+  const GRUPOS = {
+    loc: [
+      ['Sem decisão', [['nao-decidiu', 'Não decidiu (inicial)'], ['confirme', 'Confirme de novo']]],
+      ['Decidiu', [['concedido', 'Concedido e registrado'], ['aguardando', 'Concedido, sem conexão'], ['sem-cadastro', 'Sem cadastro de profissional'], ['erro', 'Falha ao registrar'], ['revogado', 'Revogado (tinha permitido)'], ['revogado-aguardando', 'Revogado, sem conexão'], ['nao-permitido', 'Não permitido (nunca permitiu)'], ['desatualizado', 'Desatualizado (registro antigo)'], ['gps-off', 'GPS desligado']]],
+      ['Outros', [['carregando', 'Carregando'], ['bloqueado', 'Acesso não permitido'], ['bloqueado-com', 'Acesso não permitido, com consentimento']]],
+    ],
+    perfil: [['Perfil › Privacidade', [['perfil-pend', 'Sem decisão'], ['perfil-conc', 'Consentimento concedido'], ['perfil-rev', 'Revogado'], ['perfil-np', 'Não permitido']]]],
+    inicio: [['Início', [['inicio-pend', 'Sem decisão (cartão aparece)'], ['inicio-confirme', 'Confirme de novo (cartão aparece)'], ['inicio-decidiu', 'Já decidiu (sem cartão)'], ['inicio-semperm', 'Sem permissão de enviar (sem cartão)']]]],
+  };
+  const INICIAL = { loc: 'nao-decidiu', perfil: 'perfil-pend', inicio: 'inicio-pend' };
+
+  const NOMES = { a: 'Cartões de hoje', b: 'Como o protótipo', c: 'Resumo e ações fixas' };
+  const LADO = {
+    a: { d: 'A tela de hoje refeita no mesmo esqueleto: três cartões de lista do Material, um embaixo do outro, os botões logo abaixo deles e a lista no fim.', l: ['Cartão da decisão, cartão da organização e cartão do GPS, como os três cartões que a tela já tem.', 'A explicação vira a lista "Como usamos sua localização": uma linha por item, e o toque abre o texto inteiro. A linha é a única peça nova, e nasce na biblioteca do app (MobileExpandableRow, em mobile_kit.dart).', 'No Perfil, a linha "Localização" é igual à "Trocar de organização". No Início, o cartão fica onde está o de aprovações.'] },
+    b: { d: 'As duas referências do protótipo, com o texto verdadeiro: a apresentação centrada antes da decisão e o cartão verde de situação depois dela.', l: ['Antes de decidir: ícone, título, a frase de uso, três blocos curtos de situação e os dois botões; a lista vem logo abaixo deles.', 'Depois de decidir: o cartão de situação (verde quando permitido) e "Revogar consentimento" em vermelho, como no protótipo.', 'No Perfil, a linha mostra a situação num selo. No Início, o cartão sobe para logo depois do cartão do usuário.'] },
+    c: { d: 'A situação primeiro e as ações sempre à vista: três blocos no topo, a linha de estado numa faixa e os botões numa barra fixa embaixo.', l: ['Três blocos: "Na organização", "GPS" e "Captura" (se o app captura ou não agora).', 'A barra fixa deixa "Permitir" e "Agora não" com o mesmo alcance, sem rolar.', 'No Perfil, a linha tem ícone e a situação embaixo. No Início, uma faixa com "Revisar" à direita, no desenho da faixa de dados desatualizados.'] },
+  };
+
+  const S = { op: 'a', tela: 'loc', est: { loc: 'nao-decidiu', perfil: 'perfil-pend', inicio: 'inicio-pend' }, busy: '' };
+
+  // ---------- peças comuns ----------
+  const voltar = () => '<button type="button" class="m-iconbtn js-voltar" aria-label="Voltar">' + ic('voltar') + '</button>';
+  const nav = idx => {
+    const it = [['casa', 'Início', 'inicio'], ['os', 'OS', ''], ['pino', 'Mapa', ''], ['dinheiro', 'Finanças', ''], ['pessoa', 'Perfil', 'perfil']];
+    return '<nav class="m-nav" aria-label="Navegação principal">' + it.map((x, i) => '<button type="button" class="js-nav' + (i === idx ? ' is-on' : '') + '" data-ir="' + x[2] + '"' + (i === idx ? ' aria-current="page"' : '') + '>' + ic(x[0], 22) + '<span>' + x[1] + '</span></button>').join('') + '</nav>';
+  };
+  const chip = (ok, peq) => '<span class="m-chip ' + (peq ? 'm-chip--p ' : '') + (ok ? 'c-success' : 'c-danger') + '">' + (ok ? T.disp : T.indisp) + '</span>';
+  const pillTom = { ok: 't-success', atencao: 't-warning', erro: 't-danger', neutro: 't-neutral' };
+  const linhaOrg = (o) => o.falta
+    ? 'Registrado na sua organização em <span class="fx">' + o.data + '</span> ' + FALTA('O servidor não guarda a hora da revogação (tracking_consent_at é limpo ao revogar). A hora mostrada é a da confirmação que o app recebeu.')
+    : esc(o.linha);
+  const bspin = '<span class="m-bspin" aria-hidden="true"></span><span class="sr">Registrando…</span>';
+
+  // a lista "Como usamos sua localização": as mesmas 6 linhas nas três opções (os textos inteiros ficam no detalhe)
+  function linhas(p, e) {
+    const d = DEC[e.dec], o = ORG[e.org];
+    const fechar = '<div class="det__acoes"><button type="button" class="m-tbtn js-fechar">Fechar</button></div>';
+    return [
+      { id: 'uso', ic: 'mapa', t: 'Mapa, trajeto e quilometragem', det: '<p class="det__txt">' + T.intro + '</p>' + fechar },
+      { id: 'quando', ic: 'toque', t: 'Ao enviar na OS e a cada minuto', det: '<p class="det__txt">' + T.quando + '</p>' + fechar },
+      { id: 'fechado', ic: 'bloqueio', t: 'Com o app fechado, nada', det: '<p class="det__txt">' + T.fechado + '</p>' + fechar },
+      { id: 'mudar', ic: 'desfazer', t: 'Revogue quando quiser', det: '<p class="det__txt">' + T.revogar + '</p><p class="det__txt det__txt--m">' + T.apaga + '</p><p class="det__txt det__txt--m">' + T.historico + '</p>' + fechar },
+      { id: 'registro', ic: 'empresa', t: 'Registro na organização', fim: '<span class="m-pill ' + pillTom[o.tom] + '">' + esc(o.curto) + '</span>',
+        det: '<p class="det__txt">' + linhaOrg(o) + '</p><div class="det__g"><div><small>Sua decisão</small><span>' + d.curto + '</span></div><div><small>Decidida em</small><span>' + e.decidida + '</span></div><div><small>Na organização</small><span title="' + esc(o.curto) + '">' + esc(o.curto) + '</span></div></div>' + fechar },
+      { id: 'gps', ic: e.gps ? 'gps' : 'gpsoff', t: T.gps, fim: '<span class="m-pill ' + (e.gps ? 't-success' : 't-danger') + '">' + (e.gps ? T.disp : T.indisp) + '</span>',
+        det: '<p class="det__txt">' + (e.gps ? T.gpsOk : T.gpsOff) + '</p><div class="det__acoes">' + (e.gps ? '' : '<button type="button" class="m-tbtn js-config">' + T.abrirConfig + '</button>') + '<button type="button" class="m-tbtn js-fechar">Fechar</button></div>' },
+    ].map(r => {
+      const id = p + '-' + r.id;
+      const marca = p === 'b' && ['uso', 'quando', 'fechado', 'mudar'].includes(r.id);
+      // cada linha é a MobileExpandableRow da biblioteca do app (mobile_kit.dart, acréscimo no fim; emenda de abertura E2.7)
+      return '<div class="ln' + (marca ? ' ln--ok' : '') + '" role="button" tabindex="0" data-componente="MobileExpandableRow" data-linha="' + id + '" aria-expanded="false" aria-controls="det-' + id + '" title="' + esc(r.t) + '">' +
+        '<span class="ln__ic">' + ic(marca ? 'check' : r.ic, 20) + '</span>' +
+        '<span class="ln__t">' + esc(r.t) + '</span>' +
+        (r.fim ? '<span class="ln__fim">' + r.fim + '</span>' : '') +
+        '<span class="ln__chev">' + ic('seta', 20) + '</span></div>' +
+        '<div class="det" id="det-' + id + '" data-detalhe-de="' + id + '" role="region" aria-label="' + esc(r.t) + '" hidden>' + r.det + '</div>';
+    }).join('');
+  }
+  function lista(p, e, cls, comTitulo) {
+    return '<div class="m-card lista ' + (cls || '') + '">' + (comTitulo ? '<div class="lista__cab"><span class="lista__tit">' + T.como + NOVA_PECA + '</span></div>' : '') + linhas(p, e) + '</div>';
+  }
+  // botões de decisão (mesmo fluxo nas três)
+  function acoes(e, estilo) {
+    const busy = S.busy;
+    const permitir = (cls) => '<button type="button" class="' + cls + ' js-permitir" data-chave="consent-accept"' + (busy ? ' disabled' : '') + '>' + (busy === 'permitir' ? bspin : ic('okc', 18) + '<span>' + T.permitir + '</span>') + '</button>';
+    const agoraNao = (cls) => '<button type="button" class="' + cls + ' js-agoranao" data-chave="consent-decline"' + (busy ? ' disabled' : '') + '>' + T.agoraNao + '</button>';
+    const revogar = (cls) => '<button type="button" class="' + cls + ' js-revogar" data-chave="consent-revoke"' + (busy ? ' disabled' : '') + '>' + (busy === 'revogar' ? '<span class="m-spin" style="width:18px;height:18px;border-width:2px" aria-hidden="true"></span><span class="sr">Revogando…</span>' : ic('bloqueio', 18) + '<span>' + T.btnRevogar + '</span>') + '</button>';
+    const c = estilo === 'b' ? { f: 'm-fbtn b-btn1', o: 'b-btn2', r: 'm-dbtn b-btn1' } : estilo === 'c' ? { f: 'm-fbtn', o: 'm-obtn', r: 'm-dbtn' } : { f: 'm-fbtn', o: 'm-obtn', r: 'm-obtn' };
+    if (e.acoes === 'decidir') return permitir(c.f) + agoraNao(c.o) + (estilo === 'c' ? '<p class="m-sticky__apoio">' + T.depois + '</p>' : '<p class="m-nota">' + T.depois + '</p>');
+    if (e.acoes === 'permitir') return permitir(c.f);
+    return revogar(c.r);
+  }
+
+  // estados especiais (iguais nas três; muda só o cabeçalho de cada opção)
+  function especial(p, e) {
+    if (e.especial === 'carregando') return '<div class="m-vazio" role="status"><div class="m-spin" aria-hidden="true"></div><span class="sr">Carregando</span></div>';
+    // acesso não permitido: PermissionBlockedState (erp_components.dart:160-175), no padrão do #540
+    return '<div class="m-vazio">' + ic('cadeado', 44) + '<h3>' + T.acesso + '</h3><p>' + T.semPerm + '</p>' +
+      (e.com ? '<p style="font-size:13px;color:#475569;margin-top:14px">' + T.conc + ' · ' + T.subConc + '</p>' + '<button type="button" class="' + (p === 'a' ? 'm-obtn' : 'm-dbtn') + ' js-revogar" data-chave="consent-revoke"' + (S.busy ? ' disabled' : '') + '>' + ic('bloqueio', 18) + '<span>' + T.btnRevogar + '</span></button>' : '') + '</div>';
+  }
+
+  // ---------- OPÇÃO A ----------
+  function locA(e) {
+    const p = 'a';
+    const titulo = e.especial ? (e.especial === 'bloqueado' ? T.tituloD : T.tituloND) : (e.dec === 'pend' ? T.tituloND : T.tituloD);
+    const cab = '<div class="m-appbar">' + voltar() + '<span class="m-appbar__tit">' + titulo + '</span></div>';
+    if (e.especial) return '<div class="scr">' + cab + especial(p, e) + nav(0) + '</div>';
+    const d = DEC[e.dec], o = ORG[e.org];
+    const stCls = e.dec === 'conc' ? 'a-st--conc' : (e.dec === 'rev' || e.dec === 'np') ? 'a-st--rev' : 'a-st--pend';
+    const corpo =
+      '<button type="button" class="m-card m-tile blk a-st ' + stCls + '" data-alvo="dec" data-abre="mudar" aria-pressed="false" data-chave="consent-status-card">' +
+        '<span class="m-tile__ic">' + ic(e.dec === 'conc' ? 'verificado' : 'privacidade') + '</span>' +
+        '<span class="m-tile__txt"><span class="m-tile__t" style="display:block">' + d.titulo + '</span><span class="m-tile__s" style="display:block">' + d.sub + '</span></span></button>' +
+      '<button type="button" class="m-card m-tile blk a-org" data-alvo="org" data-abre="registro" aria-pressed="false">' +
+        '<span class="m-tile__ic tom-' + o.tom + '">' + ic(o.ic) + '</span>' +
+        '<span class="m-tile__txt"><span class="m-tile__t" style="display:block">Na sua organização</span><span class="m-tile__s" style="display:block">' + linhaOrg(o) + '</span></span></button>' +
+      '<button type="button" class="m-card m-tile m-tile--1 blk" data-alvo="gps" data-abre="gps" aria-pressed="false">' +
+        '<span class="m-tile__ic">' + ic(e.gps ? 'gps' : 'gpsoff') + '</span>' +
+        '<span class="m-tile__txt"><span class="m-tile__t">' + T.gps + '</span></span>' + chip(e.gps) + '</button>' +
+      // ajuste de 13/11 (maq-17-ajustes-cl): as ações vêm logo depois dos três cartões, antes da lista, em todos os estados;
+      // assim "Agora não" fica inteiro na tela, sem rolar, sempre que "Permitir" aparece (390 × 812 e 360 × 740)
+      '<div class="a-acoes">' + acoes(e, 'a') + '</div>' +
+      lista(p, e, '', true);
+    return '<div class="scr">' + cab + '<div class="scr__body">' + corpo + '</div>' + nav(0) + '</div>';
+  }
+
+  // ---------- OPÇÃO B ----------
+  function locB(e) {
+    const p = 'b';
+    const cab = '<div class="m-hdr">' + voltar() + '<div class="m-hdr__txt"><div class="m-hdr__tit">' + T.tituloD + '</div></div></div>';
+    if (e.especial) return '<div class="scr">' + cab + especial(p, e) + nav(0) + '</div>';
+    const d = DEC[e.dec], o = ORG[e.org];
+    const tileOrg = '<button type="button" class="b-tile blk" data-alvo="org" data-abre="registro" aria-pressed="false"><small>Organização</small><b class="v-' + o.tom + '"><i class="dot-' + o.tom + '"></i>' + esc(o.curto) + '</b></button>';
+    const tileGps = '<button type="button" class="b-tile blk" data-alvo="gps" data-abre="gps" aria-pressed="false"><small>GPS</small><b class="v-' + (e.gps ? 'ok' : 'erro') + '"><i class="dot-' + (e.gps ? 'ok' : 'erro') + '"></i>' + (e.gps ? T.disp : T.indisp) + '</b></button>';
+    let corpo;
+    if (e.dec === 'pend') {
+      // antes de decidir: consentimento-lgpd.png
+      corpo = '<div class="b-hero"><span class="b-hero__ic">' + ic('pino', 28) + '</span><h1>' + T.tituloND + '</h1><p>' + T.intro + '</p></div>' +
+        '<div class="b-tiles">' +
+          '<button type="button" class="b-tile blk" data-alvo="dec" data-abre="mudar" aria-pressed="false" data-chave="consent-status-card"><small>Sua decisão</small><b class="v-neutro">' + d.titulo + '</b></button>' +
+          tileOrg + tileGps + '</div>' +
+        (e.org === 'confirme' ? '<div class="b-faixa f-atencao">' + ic('erro', 16) + '<span>' + T.confirme + '</span></div>' : '') +
+        // ajuste de 13/11 (maq-17-ajustes-cl): antes da decisão, as ações vêm logo depois da apresentação e dos blocos, e a lista
+        // segue abaixo com o mesmo rótulo que a B já usa depois da decisão; "Agora não" fica inteiro sem rolar, também no "Confirme de novo"
+        '<div class="b-acoes">' + acoes(e, 'b') + '</div>' +
+        '<p class="b-sec">' + T.como + NOVA_PECA + '</p>' + lista(p, e, 'b-lista', false).replace('b-lista"', 'b-lista" style="margin-top:0"');
+    } else {
+      // depois de decidir: status-localizacao.png
+      const conc = e.dec === 'conc';
+      corpo = '<button type="button" class="b-status blk ' + (conc ? 'b-status--conc' : 'b-status--pend') + '" data-alvo="dec" data-abre="mudar" aria-pressed="false" data-chave="consent-status-card">' +
+          '<span class="b-status__ic">' + ic(conc ? 'check' : 'bloqueio', 22) + '</span><span><span class="b-status__t" style="display:block">' + d.titulo + '</span><span class="b-status__s" style="display:block">' + d.sub + '</span></span></button>' +
+        '<div class="b-tiles b-tiles--2" style="margin-top:8px">' + tileOrg + tileGps + '</div>' +
+        '<div class="b-faixa f-' + o.tom + '">' + ic(o.ic, 16) + '<span>' + linhaOrg(o) + '</span></div>' +
+        '<p class="b-sec">' + T.como + NOVA_PECA + '</p>' + lista(p, e, 'b-lista', false).replace('b-lista"', 'b-lista" style="margin-top:0"') +
+        '<div class="b-acoes">' + acoes(e, 'b') + '</div>';
+    }
+    return '<div class="scr">' + cab + '<div class="scr__body">' + corpo + '</div>' + nav(0) + '</div>';
+  }
+
+  // ---------- OPÇÃO C ----------
+  function locC(e) {
+    const p = 'c';
+    const titulo = e.especial ? (e.especial === 'bloqueado' ? T.tituloD : T.tituloND) : (e.dec === 'pend' ? T.tituloND : T.tituloD);
+    const cab = '<div class="m-hdr" style="border-bottom:0">' + voltar() + '<div class="m-hdr__txt"><div class="m-hdr__tit">' + titulo + '</div></div></div>';
+    if (e.especial) return '<div class="scr">' + cab + especial(p, e) + nav(0) + '</div>';
+    const d = DEC[e.dec], o = ORG[e.org];
+    const conc = e.dec === 'conc';
+    const captura = conc && e.gps ? ['ok', 'Com o app aberto'] : ['neutro', 'Desligada'];
+    const band = '<div class="c-band" data-chave="consent-status-card"><span class="c-band__ic ' + (conc ? 'conc' : 'pend') + '">' + ic(conc ? 'verificado' : 'privacidade') + '</span><div><div class="c-band__t">' + d.titulo + '</div><div class="c-band__s">' + d.sub + '</div></div></div>';
+    const tiles = '<div class="c-tiles">' +
+      '<button type="button" class="c-tile blk" data-alvo="org" data-abre="registro" aria-pressed="false"><span class="c-tile__ic ' + o.tom + '">' + ic(o.ic, 18) + '</span><b>' + esc(o.curto) + '</b><small>Na organização</small></button>' +
+      '<button type="button" class="c-tile blk" data-alvo="gps" data-abre="gps" aria-pressed="false"><span class="c-tile__ic ' + (e.gps ? 'ok' : 'erro') + '">' + ic(e.gps ? 'gps' : 'gpsoff', 18) + '</span><b>' + (e.gps ? T.disp : T.indisp) + '</b><small>GPS</small></button>' +
+      '<button type="button" class="c-tile blk" data-alvo="cap" data-abre="fechado" aria-pressed="false"><span class="c-tile__ic ' + captura[0] + '">' + ic(captura[0] === 'ok' ? 'relogio' : 'bloqueio', 18) + '</span><b>' + captura[1] + '</b><small>Captura</small></button>' +
+      '</div>';
+    const faixa = '<div class="m-banner bn-' + o.tom + '">' + ic(o.ic, 20) + '<span>' + linhaOrg(o) + '</span></div>';
+    const corpo = tiles + faixa + '<p class="c-seclbl">' + T.como + NOVA_PECA + '</p>' + lista(p, e, '', false);
+    return '<div class="scr">' + cab + band + '<div class="scr__body">' + corpo + '</div><div class="m-sticky">' + acoes(e, 'c') + '</div>' + nav(0) + '</div>';
+  }
+
+  // ---------- CONTEXTO: Perfil ----------
+  function perfil(p, est) {
+    const dec = est === 'perfil-conc' ? 'conc' : est === 'perfil-rev' ? 'rev' : est === 'perfil-np' ? 'np' : 'pend';
+    const d = DEC[dec];
+    const pill = '<span class="m-pill ' + pillTom[d.tom === 'ok' ? 'ok' : (dec === 'pend' ? 'atencao' : 'neutro')] + '">' + d.curto + '</span>';
+    let navLoc;
+    if (p === 'a') navLoc = '<button type="button" class="pf-nav js-ir-loc"><span class="pf-nav__t">Localização</span><span class="seta">' + ic('seta', 20) + '</span></button>';
+    else if (p === 'b') navLoc = '<button type="button" class="pf-nav js-ir-loc"><span class="pf-nav__t">Localização</span>' + pill + '<span class="seta">' + ic('seta', 20) + '</span></button>';
+    else navLoc = '<button type="button" class="pf-nav js-ir-loc"><span class="pf-nav__ic">' + ic('pino', 18) + '</span><span class="pf-nav__t">Localização<span class="pf-nav__s">' + d.sub + '</span></span><span class="seta">' + ic('seta', 20) + '</span></button>';
+    return '<div class="scr"><div class="pf-top">Perfil</div><div class="pf-body">' +
+      '<div class="pf-hero"><span class="pf-av">' + EX.ini + '</span><div class="pf-nome">' + EX.nome + '</div><div class="pf-mail">' + EX.email + '</div><div class="pf-papel">' + EX.papel + ' · ' + EX.org + '</div></div>' +
+      '<div class="pf-wrap">' +
+        '<div class="pf-lbl">Conta e organização</div><div class="pf-card"><div class="pf-info"><span>Organização</span><b>' + EX.org + '</b></div><div class="pf-info"><span>Papel</span><b>' + EX.papel + '</b></div><button type="button" class="pf-nav js-toast" data-msg="Abre a troca de organização (fora desta maquete)."><span class="pf-nav__t">Trocar de organização</span><span class="seta">' + ic('seta', 20) + '</span></button></div>' +
+        '<div class="pf-gap"></div><div class="pf-lbl">Privacidade' + NOVA + '</div><div class="pf-card">' + navLoc + '</div>' +
+        '<div class="pf-gap"></div><div class="pf-lbl">Aparência</div><div class="pf-apar"><div class="is-on">' + ic('auto', 18) + 'Sistema</div><div>' + ic('sol', 18) + 'Claro</div><div>' + ic('lua', 18) + 'Escuro</div><div>' + ic('contraste', 18) + 'Contraste</div></div>' +
+        '<div class="pf-gap"></div><div class="pf-lbl">Segurança e sessão</div><div class="pf-card"><div class="pf-info"><span>Sessão</span><b>Ativa</b></div><div class="pf-info"><span>Conectividade</span><b style="color:#059669">Online</b></div></div>' +
+      '</div></div>' + nav(4) + '</div>';
+  }
+
+  // ---------- CONTEXTO: Início ----------
+  function inicio(p, est) {
+    const mostra = est === 'inicio-pend' || est === 'inicio-confirme';
+    let card = '';
+    if (mostra) {
+      if (p === 'a') card = '<button type="button" class="hc-card js-ir-loc" data-desde="' + est + '">' + ic('pino') + '<span class="hc-card__txt"><span class="hc-card__t" style="display:block">' + T.cardTit + '</span><span class="hc-card__s" style="display:block">' + T.cardSub + '</span></span><span class="hc-card__r">' + T.cardBtn + '</span>' + ic('seta', 20) + '</button>';
+      else if (p === 'b') card = '<button type="button" class="hc-card hc-card--b js-ir-loc" data-desde="' + est + '"><span class="hc-ic">' + ic('pino') + '</span><span class="hc-card__txt"><span class="hc-card__t" style="display:block">' + T.cardTit + '</span><span class="hc-card__s" style="display:block">' + T.cardSub + '</span></span><span class="hc-pill">' + T.cardBtn + '</span></button>';
+      else card = '<div class="hc-faixa">' + ic('pino', 18) + '<div><b>' + T.cardTit + '</b>' + T.cardSub + '</div><button type="button" class="m-tbtn js-ir-loc" data-desde="' + est + '">' + T.cardBtn + '</button></div>';
+    }
+    const user = '<div class="hm-user"><div class="hm-user__l"><span class="hm-user__av">T</span><div style="min-width:0"><div class="hm-user__n">tecnico.exemplo</div><div class="hm-user__s">' + EX.papel + ' · ' + EX.org + '</div></div><span class="hm-on"><i></i>Online</span></div><hr><div class="hm-sync"><div>' + ic('sync', 18) + '<span><b>Tudo sincronizado</b><small>nada na fila</small></span></div><div>' + ic('okc', 18) + '<span><b>13:40</b><small>último sync</small></span></div></div></div>';
+    const resumo = '<p class="m-seclbl">Resumo de hoje</p><div class="hm-stats"><div class="hm-stat"><b style="color:#2563EB">2</b><small>OS hoje</small></div><div class="hm-stat"><b style="color:#059669">0</b><small>A sincronizar</small></div><div class="hm-stat"><b style="color:#D97706">3</b><small>Pendentes</small></div></div>';
+    const atalhos = '<p class="m-seclbl">Atalhos opcionais</p><div class="hm-acts"><button type="button" class="m-act js-toast" data-msg="Atalho do Início (fora desta maquete)."><span>' + ic('recibo', 19) + '</span>Despesas</button><button type="button" class="m-act js-toast" data-msg="Atalho do Início (fora desta maquete)."><span>' + ic('sync', 19) + '</span>Sincronizar</button><button type="button" class="m-act js-toast" data-msg="Atalho do Início (fora desta maquete)."><span>' + ic('escudo', 19) + '</span>Diagnóstico</button></div>';
+    const os = '<div class="hm-os-cab"><b>Minhas OS</b><span>Ver todas</span></div><div class="hm-os"><div class="hm-os__cod">OS-0001</div><div class="hm-os__t">Remoção de veículo</div><div class="hm-os__s">Cliente Exemplo · Rua Exemplo, 100</div><div class="hm-os__p"><span class="m-pill t-warning">Alta</span><span class="m-pill t-info">Atribuída</span></div></div>';
+    const corpo = user + (p !== 'a' ? card : '') + resumo + atalhos + (p === 'a' ? card : '') + os;
+    return '<div class="scr"><div class="hm-hdr"><div class="hm-hdr__txt"><h1>Boa tarde!</h1><p>' + EX.papel + ' · ' + EX.org + '</p></div><button type="button" class="m-iconbtn js-toast" aria-label="Diagnóstico" data-msg="Abre o diagnóstico (fora desta maquete).">' + ic('linhatempo', 22) + '</button></div><div class="hm-body">' + corpo + '</div>' + nav(0) + '</div>';
+  }
+
+  // ---------- desenho ----------
+  function desenhar(p) {
+    const v = $('[data-view="' + p + '"]');
+    let html;
+    if (S.tela === 'loc') { const e = EST[S.est.loc]; html = p === 'a' ? locA(e) : p === 'b' ? locB(e) : locC(e); }
+    else if (S.tela === 'perfil') html = perfil(p, S.est.perfil);
+    else html = inicio(p, S.est.inicio);
+    v.innerHTML = html;
+  }
+  function desenharTudo() { ['a', 'b', 'c'].forEach(desenhar); sincronizar(); }
+  function estadoRede() {
+    if (S.tela !== 'loc') return true;
+    return EST[S.est.loc].rede !== false;
+  }
+  function sincronizar() {
+    $$('[data-view]').forEach(el => { el.hidden = el.dataset.view !== S.op; });
+    $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.opcao === S.op)));
+    $$('[data-tela]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tela === S.tela)));
+    const nomeOp = 'Opção ' + S.op.toUpperCase();
+    $('#app-tag').textContent = 'App de campo · Localização · ' + nomeOp;
+    $('#app-entrega').textContent = S.op === 'a' ? 'Entra agora no app: o dono decidiu em 13/11 que o app sai só com a A (6.5 (a)).' : 'Aprovada pelo dono como aparência. Entra no app junto com o seletor de aparência do app (6.5 (a)).';
+    $('#lado-tit').textContent = nomeOp + ' · ' + NOMES[S.op];
+    $('#lado-desc').textContent = LADO[S.op].d;
+    $('#lado-lista').innerHTML = LADO[S.op].l.map(x => '<li>' + esc(x) + '</li>').join('');
+    $('#rv-titulo').textContent = 'Opção ' + S.op.toUpperCase() + ' — ' + NOMES[S.op];
+    $$('[data-nota]').forEach(n => { n.hidden = n.dataset.nota !== S.op; });
+    // barra de status: navy no Início (o cabeçalho navy sobe até o topo), sem sinal quando o estado é sem conexão
+    const bar = $('#status-bar');
+    bar.classList.toggle('is-navy', S.tela === 'inicio');
+    $('#status-ic').innerHTML = sinal(estadoRede()) + bateria;
+    // alternador de estados
+    const cont = $('#estados');
+    cont.innerHTML = GRUPOS[S.tela].map(g => '<div class="estados__grupo"><span class="estados__tit">' + g[0] + '</span>' +
+      g[1].map((x, i) => '<button type="button" data-estado="' + x[0] + '" aria-pressed="' + (S.est[S.tela] === x[0]) + '"><i>' + String.fromCharCode(97 + i) + '</i>' + x[1] + '</button>').join('') + '</div>').join('');
+  }
+
+  // ---------- linhas e blocos (sem redesenhar: só abre e fecha) ----------
+  function abrirLinha(v, id, foco) {
+    const ln = v.querySelector('[data-linha="' + id + '"]');
+    if (!ln) return;
+    const aberto = ln.getAttribute('aria-expanded') === 'true';
+    $$('[data-linha]', v).forEach(x => { x.setAttribute('aria-expanded', 'false'); const d = v.querySelector('[data-detalhe-de="' + x.dataset.linha + '"]'); if (d) d.hidden = true; });
+    $$('[data-alvo]', v).forEach(b => b.setAttribute('aria-pressed', 'false'));
+    if (!aberto) {
+      ln.setAttribute('aria-expanded', 'true');
+      v.querySelector('[data-detalhe-de="' + id + '"]').hidden = false;
+      const sufixo = id.split('-').slice(1).join('-');
+      $$('[data-abre="' + sufixo + '"]', v).forEach(b => b.setAttribute('aria-pressed', 'true'));
+    }
+    if (foco) ln.focus();
+  }
+  function fecharLinhas(v) {
+    $$('[data-linha]', v).forEach(x => { x.setAttribute('aria-expanded', 'false'); const d = v.querySelector('[data-detalhe-de="' + x.dataset.linha + '"]'); if (d) d.hidden = true; });
+    $$('[data-alvo]', v).forEach(b => b.setAttribute('aria-pressed', 'false'));
+  }
+
+  // ---------- ações da tela (fluxo igual nas três) ----------
+  function irPara(est) { S.busy = ''; S.est.loc = est; desenharTudo(); }
+  function agir(tipo) {
+    const atual = S.est.loc, e = EST[atual];
+    if (tipo === 'permitir') {
+      S.busy = 'permitir'; desenharTudo();
+      setTimeout(() => irPara(e.rede === false ? 'aguardando' : 'concedido'), 700);
+    } else if (tipo === 'agoranao') {
+      // P-B (b), E2.6: "Agora não" só aparece antes de um "sim" registrado (sem decisão e "Confirme de novo"), então lê "Não permitido";
+      // por dentro segue o caminho da revogação e fica registrado na organização (P13). Os dois estados de decisão têm conexão.
+      irPara('nao-permitido');
+    } else if (tipo === 'revogar') {
+      if (e.especial === 'bloqueado') { irPara('bloqueado'); toast('Revogado. Mesmo sem a permissão de enviar, a revogação vai para a organização.'); return; }
+      irPara(e.rede === false ? 'revogado-aguardando' : 'revogado');
+    }
+  }
+  let toastT = 0;
+  function toast(msg) {
+    let t = $('#toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); t.style.cssText = 'position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:99;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px;font-family:Inter,sans-serif'; t.setAttribute('data-maquete', ''); document.body.appendChild(t); }
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 3200);
+  }
+
+  // ---------- eventos ----------
+  document.addEventListener('click', ev => {
+    const el = ev.target.closest('button, [data-linha]');
+    if (!el) return;
+    if (el.dataset.opcao) { S.op = el.dataset.opcao; S.busy = ''; desenharTudo(); return; }
+    if (el.dataset.tela) { S.tela = el.dataset.tela; S.busy = ''; desenharTudo(); return; }
+    if (el.dataset.estado) { S.est[S.tela] = el.dataset.estado; S.busy = ''; desenharTudo(); return; }
+    if (el.hasAttribute('data-marcas')) { const sem = document.body.classList.toggle('sem-marcas'); el.setAttribute('aria-pressed', String(!sem)); el.textContent = sem ? 'Mostrar as marcas “falta no backend” e “nova”' : 'Esconder as marcas “falta no backend” e “nova”'; return; }
+    if (el.id === 'rv-recolher') { const c = $('#rv-corpo'); const ab = !c.hidden; c.hidden = ab; el.setAttribute('aria-expanded', String(!ab)); el.textContent = ab ? 'Mostrar notas' : 'Recolher notas'; return; }
+    const v = el.closest('[data-view]');
+    if (!v) return;
+    if (el.dataset.linha) { abrirLinha(v, el.dataset.linha, false); return; }
+    if (el.dataset.alvo) {
+      const id = v.dataset.view + '-' + el.dataset.abre;
+      const ln = v.querySelector('[data-linha="' + id + '"]');
+      if (ln && ln.getAttribute('aria-expanded') === 'true') { fecharLinhas(v); return; }
+      abrirLinha(v, id, false);
+      if (ln) ln.scrollIntoView({ block: 'nearest' });
+      return;
+    }
+    if (el.classList.contains('js-fechar')) { fecharLinhas(v); return; }
+    if (el.classList.contains('js-config')) { toast('Abre as configurações de localização do aparelho, como o cartão de localização da OS já faz.'); return; }
+    if (el.classList.contains('js-permitir')) { agir('permitir'); return; }
+    if (el.classList.contains('js-agoranao')) { agir('agoranao'); return; }
+    if (el.classList.contains('js-revogar')) { agir('revogar'); return; }
+    if (el.classList.contains('js-voltar')) { S.tela = 'perfil'; desenharTudo(); toast('Voltar leva para a tela de onde a pessoa veio (aqui, o Perfil).'); return; }
+    if (el.classList.contains('js-ir-loc')) {
+      if (S.tela === 'perfil') S.est.loc = S.est.perfil === 'perfil-conc' ? 'concedido' : S.est.perfil === 'perfil-rev' ? 'revogado' : S.est.perfil === 'perfil-np' ? 'nao-permitido' : 'nao-decidiu';
+      else S.est.loc = el.dataset.desde === 'inicio-confirme' ? 'confirme' : 'nao-decidiu';
+      S.tela = 'loc'; desenharTudo(); return;
+    }
+    if (el.classList.contains('js-nav')) { const ir = el.dataset.ir; if (ir) { S.tela = ir; desenharTudo(); } else toast('Aba fora desta maquete.'); return; }
+    if (el.classList.contains('js-toast')) { toast(el.dataset.msg); return; }
+  });
+  document.addEventListener('keydown', ev => {
+    const ln = ev.target.closest && ev.target.closest('[data-linha]');
+    if (!ln) return;
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); abrirLinha(ln.closest('[data-view]'), ln.dataset.linha, true); }
+  });
+
+  // ---------- início: abre na tela de localização, sem decisão, opção A ----------
+  desenharTudo();
+})();
+</script>
+</body>
+</html>

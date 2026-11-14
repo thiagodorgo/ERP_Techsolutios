@@ -65,3 +65,12 @@ final locationConsentSyncProvider = Provider<LocationConsentSync>((ref) {
     telemetryStore: () => ref.read(telemetryLocalStoreProvider),
   );
 });
+
+/// O estado do consentimento do titular, para as telas (Início, Perfil e a
+/// tela de localização). É folha de UI: pode vigiar a sessão, porque não
+/// alimenta serviço long-lived. Quem muda a decisão o invalida.
+final locationConsentStatusProvider =
+    FutureProvider.autoDispose<LocationConsentStatus>((ref) {
+      ref.watch(currentSyncUserIdProvider);
+      return ref.watch(locationConsentStoreProvider).status();
+    });

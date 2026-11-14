@@ -43,6 +43,9 @@ void main() {
       await t.pumpWidget(_wrap(InMemoryLocationConsentStore()));
       await t.pumpAndSettle();
 
+      await t.ensureVisible(find.byKey(const Key('consent-row-fechado')));
+      await t.tap(find.byKey(const Key('consent-row-fechado')));
+      await t.pumpAndSettle();
       expect(
         find.textContaining('nada é capturado com o app fechado ou minimizado'),
         findsOneWidget,
@@ -82,7 +85,7 @@ void main() {
       );
       await t.pumpAndSettle();
 
-      expect(find.text('Disponivel'), findsOneWidget);
+      expect(find.text('Disponível'), findsNWidgets(2));
     });
 
     testWidgets('6. GPS indisponivel exibe chip Indisponivel', (t) async {
@@ -91,7 +94,7 @@ void main() {
       );
       await t.pumpAndSettle();
 
-      expect(find.text('Indisponivel'), findsOneWidget);
+      expect(find.text('Indisponível'), findsNWidgets(2));
     });
   });
 }

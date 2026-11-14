@@ -684,3 +684,158 @@ class _NavCell extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MobileExpandableRow — a linha que abre o detalhe logo abaixo (B-SAN3-17 e
+// B-SAN3-15b; `D-PADRAO-BLOCOS-CLICAVEIS`). Espelho do `DenseExpandableRow` da
+// web, com a altura de alvo do Android (48). Contrato único dos dois blocos:
+// emenda 5.2 do 15b (§2.1) e emenda 5.3 (§1 a §4).
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Uma linha de altura fixa, sem botão dentro, que abre e fecha o [detail]
+/// logo abaixo dela (toque, Enter ou Espaço). Não guarda estado: "um detalhe
+/// aberto por vez" é da tela. A `key` identifica a peça inteira (a linha e o
+/// detalhe).
+///
+/// O texto corta pelo fim, sem vão: o [title] ocupa a largura natural dele e o
+/// [meta] fica com o que sobra (some, com largura 0, se o título sozinho não
+/// couber). O [trailing] (pílula ou marca; nunca botão) vem logo depois.
+class MobileExpandableRow extends StatelessWidget {
+  const MobileExpandableRow({
+    required this.title,
+    required this.expanded,
+    required this.onToggle,
+    required this.detail,
+    this.meta,
+    this.leading,
+    this.trailing,
+    super.key,
+  });
+
+  /// A altura da linha (alvo de toque mínimo do app).
+  static const double rowHeight = 48;
+
+  static const _titleStyle = TextStyle(
+    fontSize: 13.5,
+    fontWeight: FontWeight.w700,
+    color: ErpMobileTheme.ink,
+  );
+  static const _metaStyle = TextStyle(
+    fontSize: 12.5,
+    fontWeight: FontWeight.w500,
+    color: ErpMobileTheme.inkMuted,
+  );
+
+  final String title;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final Widget detail;
+  final String? meta;
+  final Widget? leading;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    // O fundo da linha aberta: o azul-claro da biblioteca (o mesmo da pílula
+    // informativa, #EFF6FF); o tema não tem token com esse valor.
+    final openBackground = MobilePill.colorsFor(PillTone.info).$1;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          button: true,
+          expanded: expanded,
+          label: title,
+          excludeSemantics: true,
+          child: Material(
+            color: expanded ? openBackground : Colors.transparent,
+            child: InkWell(
+              onTap: onToggle,
+              child: SizedBox(
+                height: rowHeight,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 0, 10, 0),
+                  child: Row(
+                    children: [
+                      if (leading != null) ...[
+                        leading!,
+                        const SizedBox(width: 12),
+                      ],
+                      Expanded(child: _text(context)),
+                      if (trailing != null) ...[
+                        const SizedBox(width: 12),
+                        trailing!,
+                      ],
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        turns: expanded ? 0.25 : 0,
+                        duration: const Duration(milliseconds: 150),
+                        child: Icon(
+                          Icons.chevron_right,
+                          size: 20,
+                          color: expanded
+                              ? ErpMobileTheme.primary
+                              : ErpMobileTheme.inkFaint,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (expanded) detail,
+      ],
+    );
+  }
+
+  Widget _text(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final metaText = meta;
+        final metaWidth = metaText == null
+            ? 0.0
+            : _metaWidth(context, constraints.maxWidth);
+        return Row(
+          children: [
+            Flexible(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: _titleStyle,
+              ),
+            ),
+            if (metaText != null)
+              ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: metaWidth),
+                child: Text(
+                  metaText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: _metaStyle,
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// O meta fica com o que sobra da largura natural do título (mínimo 0).
+  double _metaWidth(BuildContext context, double available) {
+    // O mesmo estilo efetivo do `Text` do título (o herdado do tema + o dele).
+    final style = DefaultTextStyle.of(context).style.merge(_titleStyle);
+    final natural = TextPainter(
+      text: TextSpan(text: title, style: style),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final width = natural.width;
+    natural.dispose();
+    return (available - width).clamp(0.0, available);
+  }
+}

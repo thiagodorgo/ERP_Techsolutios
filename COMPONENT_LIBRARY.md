@@ -106,6 +106,9 @@ Initial shared component library for React and Flutter, aligned with the ERP Tec
 6. tenant and role-aware navigation blocks
 7. blocked-state, retry, and escalation widgets for field execution
 
+### Registro — componentes Flutter na biblioteca (por bloco)
+- `MobileExpandableRow` (`mobile/flutter_app/lib/shared/ui/mobile_kit.dart`) — a linha que abre o detalhe logo abaixo (`D-PADRAO-BLOCOS-CLICAVEIS`), espelho do `DenseExpandableRow` da web, com **48** de altura (o alvo do Android; a web fica com 44). Sem botão dentro; corta pelo fim, sem vão; toque, Enter ou Espaço abrem; um detalhe aberto por vez é da tela. Compartilhada entre o B-SAN3-17 e o B-SAN3-15b (contrato único: emendas 5.2 e 5.3 do 15b); teste `test/shared/ui/mobile_expandable_row_test.dart` (K1 a K4).
+
 ## Cross-platform rules
 - token names should map cleanly across React, Flutter, and Figma
 - semantic state names must remain identical
