@@ -1057,7 +1057,8 @@ export class WorkOrderService {
   /**
    * B-SAN3-15b (P7) — o tipo de atendimento de campo de cada OS da página, para a lista do app (`serviceKind`). O tipo do
    * catálogo é resolvido UMA vez por catálogo distinto (memória por chamada, molde de `describeCheckinForList`), pelo
-   * resolvedor da organização do ator: catálogo de outra organização resolve `null` e vira `unknown`.
+   * resolvedor da organização do ator: catálogo de outra organização resolve `null` e vira `unknown`. O mapa só leva
+   * `tow` e `provider`; a OS sem entrada vale `unknown` no DTO.
    */
   async describeServiceKindForList(
     actor: WorkOrderActorContext,
@@ -1066,7 +1067,9 @@ export class WorkOrderService {
     const typeInfoByCatalog = new Map<string, Promise<ServiceCatalogTypeInfo>>();
     const result = new Map<string, FieldServiceKind>();
     for (const item of items) {
-      result.set(item.id, await this.serviceKindOf(actor, item, typeInfoByCatalog));
+      const kind = await this.serviceKindOf(actor, item, typeInfoByCatalog);
+      // Só o tipo conhecido entra no mapa; o resto cai no `unknown` do DTO (fail-closed, um ponto só de padrão).
+      if (kind !== "unknown") result.set(item.id, kind);
     }
     return result;
   }
