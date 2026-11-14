@@ -15256,3 +15256,120 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** achado C3-02 da cadeira C3 da J-561, triado pela ata da J-561 como "só registro, porque a evidência já o declara" (`agent-orchestration/omega/evidencias/B-MOBILE-GATE-CHAVE/perfil-real-antes.md`, seção 1).
 - **N e forma (medido pela C3, login real nos 9 atores):** o claim `roles` traz o papel esperado nos 9, e `tenant_role`, `tenant_roles` e `permissions` estão ausentes nos 9. Os claims são `aud, email, exp, iat, identity_id, iss, roles, sid, sub, tenant_id, type`. Para a prova do item 66 o efeito é nulo (o bootstrap bate com o catálogo).
 - **critério de encerramento:** o das pendências-mãe (o JWT carrega os claims que o §2.4 exige).
+
+## Apensos B-SAN3-10b-F4-SEED-ISOLADO — F0b do plano v2 e das Emendas 1, 1.1 e 1.2 (2026-11-14) — APPEND, nunca reescrita
+
+- **`P-SAN3-10B-F4-SEED-ISOLADO`** (l.12897): o dono passa a ser este bloco, `B-SAN3-10b-F4-SEED-ISOLADO`, já planejado
+  (comando em `agent-orchestration/codex/comandos/B-SAN3-10b-F4-SEED-ISOLADO.md`; o plano v2 e as Emendas 1, 1.1 e 1.2
+  ficam fora do repositório). A forma passa a ser **fundação pelo serviço do produto, motor e verificador versionados,
+  overlay privado** (P1 e P4 do dono, `D-SEED-10B-RESPOSTAS-1311`), no lugar de "seed fictício fora do repositório". O
+  plano v1 voltou pelos 4 achados da revisão r1, todos procedentes por execução: o censo lia a lista em memória do console
+  da plataforma; nenhuma rota cria organização real; o recibo do sync de OS fica na memória do processo; e o teste do censo
+  usava um `fetch` falso com o comportamento suposto. O v1 também mediu que a F4 de 04/11 rodou um smoke de 4 títulos de
+  página, e não os passos do roteiro. **Novo encerramento:** os quatro fluxos executados na pilha isolada pela F9, com
+  `bloqueados=0`, e a prova registrada com os dois SHA-256, sem conteúdo privado no repositório. O status continua ABERTA.
+- **Tema T1 de `docs/revisoes/DEMO-UX/README.md`** (o README e o `manifesto.tsv` ficam intactos: estão no PROIBIDO do
+  bloco, e o manifesto é gerado): o motor deste bloco substitui os 12 seeds T1 (`scripts/demo-seed/*` e
+  `scripts/seed-demo-*.mjs`, todos em `espera` no manifesto) como caminho de demonstração. Os 12 continuam como referência
+  de comportamento e não entram na `main`: usam SQL cru, foram escritos para o schema de agosto e caem por padrão na base
+  local da porta 5432.
+
+## P-SYNC-OS-RECIBO-EM-MEMORIA (2026-11-14) — depois de reiniciar a API, o reenvio de uma ação do app já aplicada cria a OS em dobro e repete o evento — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (decisão do dono, P5 de `D-SEED-10B-RESPOSTAS-1311`; o orquestrador a reavalia no
+  próximo replanejamento do portão) · **escopo:** `pre-existente` (`src/modules/mobile/mobile-work-order-sync.ts:72`, na
+  `main` antes do bloco, que não toca `src/**`) · **dono:** `B-SAN3-16` (item 5 do portão, "a fila do app de campo
+  drena"), pela Emenda 2 dele, ainda aberta; se ela fechar antes, o orquestrador abre o `B-SAN3-16b`, na mesma frente ·
+  **bloqueia:** não bloqueia o `B-SAN3-10b-F4-SEED-ISOLADO` (o motor do seed desvia do recibo).
+- **origem:** plano v2 do `B-SAN3-10b-F4-SEED-ISOLADO` (E11) e Emenda 1 (§E8), fora do repositório; reexecutado pela
+  revisão r2 do plano.
+- **N e forma:** N=1 recibo, `const syncReceipts = new Map<string, MobileWorkOrderSyncReceipt>();` (l.72). No mesmo
+  processo, o 2º lote dá `already=1`. Depois de reiniciar a API, os MESMOS `client_action_id` dão `accepted=1`: o
+  `work_order.create` cria a OS de novo (v2: títulos 1→2; r2: OS 2→3) e a mudança de situação grava o evento de novo (r2:
+  eventos 4→6). **Todo deploy é um reinício.** Contraria o §6 do `CLAUDE.md` (idempotência por organização, usuário e
+  `client_action_id`).
+- **hipóteses, não medidas:** com mais de uma instância da API, o defeito apareceria sem reinício (não há infra de várias
+  instâncias no repositório; `infra/` só tem `clamav` e `traccar`); uma OS em dobro pode chegar a faturamento
+  (`work-order.types.ts:582`, `has_invoiced_items`), caminho não executado.
+- **critério de encerramento:** o mesmo lote, reenviado depois de reiniciar a API, devolve `already_applied`, sem OS nova e
+  sem evento novo, com teste que fica vermelho sem o conserto.
+
+## P-OS-MESMA-SITUACAO-GRAVA-EVENTO (2026-11-14) — a mudança para a mesma situação grava evento no histórico da OS — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`src/modules/work-orders/work-order.validators.ts:150`,
+  na `main` antes do bloco) · **dono:** `B-SAN3-16`, na mesma emenda da `P-SYNC-OS-RECIBO-EM-MEMORIA` (leitura do planejador
+  da Emenda 1, declarada: o defeito aparece no mesmo caminho do sync) · **bloqueia:** não.
+- **origem:** plano v2 do `B-SAN3-10b-F4-SEED-ISOLADO` (E11), fora do repositório.
+- **N e forma:** N=1 ponto, `if (from === to) return;` (l.150): a validação aceita a transição para a mesma situação, e o
+  replay grava um evento `accepted→accepted` no histórico.
+- **critério de encerramento:** a mudança para a mesma situação não grava evento no histórico, ou grava um marcado como
+  repetição, com teste.
+
+## P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 sai sem a permissão de rede — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o conserto é o #499, `8d7a99ff`, de 04/11; o
+  bloco não toca `mobile/**`) · **dono:** `B-SAN3-10b` (o texto do Op-10 do `docs/ROTEIRO-DEMO-E-OPERACAO.md`) ·
+  **bloqueia:** não.
+- **origem:** acréscimo do coordenador (44-B1) na Emenda 1 do `B-SAN3-10b-F4-SEED-ISOLADO` (§B1.5), fora do repositório;
+  registrada pela F0b.
+- **N e forma:** a contagem de `android.permission.INTERNET` no manifesto de release
+  (`mobile/flutter_app/android/app/src/main/AndroidManifest.xml`) dá 0 em `3aad5277^` e em `8d7a99ff^` (N=2 commits
+  antigos medidos) e 1 na `main`. Os manifestos de debug e profile já tinham a permissão; o de release não. O #499
+  acrescenta 1 linha.
+- **hipótese, não medida:** se algum APK de release anterior a 04/11 foi instalado em aparelho de campo. Se foi, esse
+  aparelho nunca sincronizou e não drena a fila antes de atualizar.
+- **o que falta:** o Op-10 ganhar uma linha para esse caso (atualizar por cima primeiro, drenar depois). A preservação da
+  fila na atualização por cima é o que o ensaio do emulador (44-B3) mede.
+- **critério de encerramento:** o log do 44-B3 com a porta de permissão do APK (≥ 1 no app antigo com a linha do #499; 0 no
+  controle sem ela) e o Op-10 com a linha nova.
+
+## P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME (2026-11-14) — sob o papel de runtime, o login sem organização nasce inerte, e o roteiro de operação não diz como ativá-lo — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (a migração `20260868000000_add_auth_identities`
+  é de 2026-08-19, `0a398246`; o texto "o script do papel **não** concede este EXECUTE" entrou no #405, `a9fbe283`,
+  2026-10-09) · **classe:** lacuna de operação, **não** defeito de código: o produto falha fechado e avisa · **dono:**
+  `B-SAN3-10b` (o roteiro de operação, item 44 do portão), pelo PR de registro do `B-SAN3-10b-F4-SEED-ISOLADO` (F10) ·
+  **bloqueia:** a F9 e o 44-B3 do `B-SAN3-10b-F4-SEED-ISOLADO` até o passo da Q-E11-1 rodar com o par medido.
+- **origem:** Emenda 1.1 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), fora do repositório; registrada pela F0b.
+- **N e forma (medido na `main`):** 1 função, `public.auth_login_candidates`, com `REVOKE ALL … FROM PUBLIC` (1 ocorrência
+  na migração) e 0 `GRANT EXECUTE` em `prisma/migrations` e em `scripts/db-runtime-role.sh`; 2 clientes dependem dela (a
+  tela de login da web manda `tenantId` vazio fora do modo de exemplo, `frontend/src/pages/LoginPage.tsx:33`, e o
+  `docker-compose.prod.yml` não define `VITE_DEFAULT_TENANT_ID`; o app só manda `tenantId` quando ele vem preenchido,
+  `mobile/flutter_app/lib/core/auth/auth_repository.dart:312-317`); 0 menções em `docs/ROTEIRO-DEMO-E-OPERACAO.md`; o
+  `/health/ready` responde 200 com o login inerte (`ready` depende só de Postgres e Redis, `src/routes/health.routes.ts:39`).
+  Sob um papel `NOSUPERUSER NOBYPASSRLS`: sem `tenantId` → 401; com → 200; com o `GRANT` → 200 sem `tenantId`.
+- **por que MÉDIA:** numa implantação que siga só o roteiro de operação, ninguém entra pela web nem pelo app, e a checagem
+  de saúde do roteiro passa. Não vaza nem perde dado; aparece no primeiro login. O runbook de ativação existe
+  (`docs/deployment.md:741-784`, "ATO HUMANO") e `docs/deployment.md:333-334` avisa que, sem ele, a tela responde 401.
+- **hipótese, não medida:** o estado da função no ambiente real (não há ambiente real em pé).
+- **nota de 14/11:** a Q-E11-1 foi decidida pela recomendação (`D-SEED-10B-Q-E11-1-RUNBOOK-INTEIRO`): o ensaio executa o
+  runbook inteiro na pilha descartável, e o passo entra no roteiro na F10.
+- **critério de encerramento:** na pilha isolada, com a API como papel de runtime: antes do passo de ativação do roteiro,
+  `login_without_org` = `inactive` e o login pela tela dá 401; depois dele, `active` e o login pela tela entra. O passo
+  está no roteiro de operação, com esse par medido.
+
+## P-SEED-BASE-TRAVA-SO-NODE-ENV (2026-11-14) — a trava do seed base só olha o `NODE_ENV`, e o seed de usuários imprime a senha — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (`prisma/seed-guard.ts`; a própria
+  `P-SAN-SEED-GUARD`, de 2026-07-14, declara o limite; o bloco não toca `prisma/**`) · **dono:** a atribuir pelo
+  orquestrador (plano v1 §13.3, mantido pelo v2 §10.3) · **bloqueia:** não.
+- **origem:** plano v1 do `B-SAN3-10b-F4-SEED-ISOLADO` (Q2, E2 e E7), fora do repositório; registrada pela F0b.
+- **N e forma (medido na `main`):** 1 trava, `isSeedAllowed` (`prisma/seed-guard.ts:25`): fora de `NODE_ENV=production`,
+  devolve `true` para qualquer `DATABASE_URL`. 3 seeds a chamam (`prisma/seed.ts:21`, `seed-users.ts:18`,
+  `seed-fleet.ts:20`). 1 eco de senha: `prisma/seed-users.ts:91` imprime a senha padrão no log.
+- **por que o conserto não entra no bloco do seed isolado:** o seed base precisa continuar semeando o `localhost` do runner
+  da CI; recusar alvo fora de uma allowlist sem quebrar a CI pede desenho próprio.
+- **critério de encerramento:** o seed base recusa alvo fora de uma allowlist e não imprime senha, sem quebrar a CI, com
+  teste que fica vermelho sem o conserto.
+
+## P-SEED-BASE-NOMES-REAIS (2026-11-14) — os seeds de `prisma/` trazem marcas e órgãos reais num repositório público — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`prisma/seed*.ts`, na `main` antes do bloco, que
+  não toca `prisma/**`) · **dono:** a atribuir pelo orquestrador (plano v1 §13.3, mantido pelo v2 §10.3) · **bloqueia:**
+  não.
+- **origem:** plano v1 do `B-SAN3-10b-F4-SEED-ISOLADO` (Q6 e E3) e plano v2 (E12), fora do repositório; registrada pela
+  F0b.
+- **N e forma (medido na `main` `d2737339`):** a lista proibida do C11 do plano (fora do repositório, porque escrita aqui
+  casaria consigo mesma) dá 23 linhas em `prisma/seed*.ts`: `seed-fleet.ts` 13, `seed.ts` 9, `seed-users.ts` 1,
+  `seed-guard.ts` 0. Os nomes não são repetidos aqui.
+- **critério de encerramento:** a mesma lista dá 0 linhas em `prisma/seed*.ts`, com os testes do seed base verdes.

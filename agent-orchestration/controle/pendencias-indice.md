@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1048** |
-| IDs distintos | 1037 |
-| **ABERTAS** | **799** |
+| Cabecalhos `## P-` | **1054** |
+| IDs distintos | 1043 |
+| **ABERTAS** | **805** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **738** |
+| — das quais **ativas nesta rodada** | **744** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 245 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1048 cabecalhos para 1037 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1054 cabecalhos para 1043 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 330
+## ABERTAS · balde A — material — 333
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -404,8 +404,11 @@
 | `P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA` | 15214 | ALTA | sim | P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram  |
 | `P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE` | 15229 | MÉDIA | sim | P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE (2026-11-14) — o cartão de checklist da OS abre o fo |
 | `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO` | 15237 | MÉDIA | sim | P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre p |
+| `P-SYNC-OS-RECIBO-EM-MEMORIA` | 15277 | MÉDIA | sim | P-SYNC-OS-RECIBO-EM-MEMORIA (2026-11-14) — depois de reiniciar a API, o reenvio de uma a |
+| `P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME` | 15326 | MÉDIA | sim | P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME (2026-11-14) — sob o papel de runtime, o login |
+| `P-SEED-BASE-TRAVA-SO-NODE-ENV` | 15351 | MÉDIA | sim | P-SEED-BASE-TRAVA-SO-NODE-ENV (2026-11-14) — a trava do seed base só olha o `NODE_ENV`,  |
 
-## ABERTAS · balde B — processo/registro — 408
+## ABERTAS · balde B — processo/registro — 411
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -817,6 +820,9 @@
 | `P-MOBILE-MODULE-RESOLVER-MORTO` | 15222 | BAIXA | sim | P-MOBILE-MODULE-RESOLVER-MORTO (2026-11-14) — o `ModuleResolver` e o `perms` do mapa de  |
 | `P-TESTE-VAULT-ROUTES-FILHO-ORFAO` | 15245 | BAIXA | sim | P-TESTE-VAULT-ROUTES-FILHO-ORFAO (2026-11-14) — o `ass-05-vault-routes` não mata o servi |
 | `P-J561-JWT-LOCAL-SEM-TENANT-ROLE` | 15253 | BAIXA | sim | P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda  |
+| `P-OS-MESMA-SITUACAO-GRAVA-EVENTO` | 15297 | BAIXA | sim | P-OS-MESMA-SITUACAO-GRAVA-EVENTO (2026-11-14) — a mudança para a mesma situação grava ev |
+| `P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET` | 15308 | BAIXA | sim | P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 |
+| `P-SEED-BASE-NOMES-REAIS` | 15365 | BAIXA | sim | P-SEED-BASE-NOMES-REAIS (2026-11-14) — os seeds de `prisma/` trazem marcas e órgãos reai |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
