@@ -127,6 +127,61 @@ entre as duas entraram `5728df31` (#557, B-ASS-08c-wh) e `d29b3bef` (#558, B-SAN
 - `MembershipOverlapError` (`code "membership_integrity_violation"`, `tenantId`).
 - As âncoras da M-GRP-4, da M-GRP-11 e da M-GRP-12 **só se contam** na F2 (acima); quem as mata é a F5b (Emenda 2 §1.6).
 
+### F2b — `overview/overview.engine.ts` (linhas, grupo, totais, global, H13, períodos) e o resto do `tests/ass-09-groups.test.ts`
+
+| passo | comando | saída resumida | veredito |
+|---|---|---|---|
+| vermelho antes | `git stash` do motor e dos tipos da F2b (o motor fica o da F1, `3007ce88`) · `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-groups.test.ts tests/ass-09-overview-engine.test.ts` | `SyntaxError: … overview.engine.js does not provide an export named 'buildOverview'` · `# tests 2 # pass 0` | vermelho |
+| verde depois | `git stash pop` · idem | `# tests 22 # pass 22 # fail 0` (motor 17, grupos 5) | verde |
+| tipos | `npx tsc -p tsconfig.json --noEmit` | sem saída, ec 0 | verde |
+| âncoras únicas (Emenda 1 §3.1) | `grep -cF 'members.map((m) => m.costCents)'` e `grep -cF 'lines.map((l) => l.costCents)'` em `overview.engine.ts` | `1` e `1` | ok |
+| mutações | executor fora do repositório (âncora 1x, aplica, roda o motor e os grupos, restaura, md5) | as 17 abaixo, todas `VERMELHO`, `restaurado=true` | todas mortas |
+
+| mutação (texto literal) | vermelho em |
+|---|---|
+| M-FX-10 `if (xs.some((x) => x === null)) return null;` → `xs = xs.map((x) => x ?? 0n);` | T-FX-7, T-FX-8, T-FX-9 |
+| M-FX-11 `costToBrlCents(totalImportedMicro, currency, rateMicro)` → `…, rateMicro ?? MICRO)` | T-FX-7, T-FX-8 |
+| M-FX-12 `platformOwnCost: costToBrlCents(platformMicro, currency, rateMicro),` → `… ?? 0n,` | T-FX-7, T-FX-8 |
+| M-FX-13 `margin: subOrNull(subscriptionTotal, totalCost),` → `margin: subscriptionTotal - (totalCost ?? 0n),` | T-FX-7, T-FX-8 |
+| M-FX-14 `allocatedCost: sumOrNull(members.map((m) => m.costCents)),` → `sumIgnoringNull(…)` | T-FX-9 (só ele: equivalente pela entrada HTTP, Emenda 1 §3) |
+| M-FX-15 `allocatedCost: sumOrNull(lines.map((l) => l.costCents)),` → `sumIgnoringNull(…)` | T-FX-9 (idem) |
+| M-GLB-1 `toMicro(summary.totalUnallocatedCost)` → `toMicro(summary.totalUnallocatedCost + summary.totalPlatformCost)` | T-GLB-1 |
+| M-GLB-2 `const conversionResidualCost = subOrNull(…);` → `const conversionResidualCost = 0n;` | T-GLB-2, T-FX-7, T-FX-8 |
+| M-GLB-3 `subOrNull(subscriptionTotal, totalCost)` → `subOrNull(subscriptionTotal, tenantsCost)` | T-GLB-3 |
+| M-GLB-4 `const orgs = input.tenants.filter((t) => !isPlatformTenant(t));` → `const orgs = input.tenants;` | T-GLB-1 |
+| M-H13-1 apagar `warnings.push("multiple_imports_in_month");` | T-H13-1 |
+| M-H13-2 `const totalImportedMicro = toMicro(…);` → `2n * toMicro(…)` | T-H13-1 (e T-GLB-1..3) |
+| M-MG-7f (suplementar) em `lastDayOfPeriod`, `Date.UTC(year, month, 0)` → `Date.UTC(year, month, 1)` | T-MG-17, T-GRP-1..3 (motor), T-H13-1 |
+| M-GRP-2 `const memberDay = lastDateOfPeriod(period);` → ``const memberDay = `${period}-01`;`` | T-GRP-1..3 (motor), T-GRP-4, T-GRP-12 (motor) |
+| M-GRP-3 apagar `if (ungrouped.length > 0) groupLines.push(noGroupLineOf(ungrouped));` | T-GRP-4, T-FX-7 |
+| M-GRP-1 (de novo, agora também pelo motor) | T-GRP-1..3 (regra e motor) |
+| M-GRP-10 (de novo, agora também pelo motor) | T-GRP-12 (regra e motor) |
+
+**Leituras do dev na F2, declaradas (§A6):**
+1. **R-MG-5 e a M-MG-7.** O plano dá o R-MG-5 à F2, mas a expressão canônica `periodEnd: lastDayOfPeriod(period)` mora no
+   `overview.service.ts`, que é da F6. A F2 entrega `firstDayOfPeriod`, `lastDayOfPeriod`, `firstDayOfNextPeriod` (a função que a
+   M-MG-7 usa) e `lastDateOfPeriod`, e o T-MG-17 prova a janela contra o **resumo real** (`CloudCostAllocationService` em memória,
+   run do 09a com fim `23:59:59.999Z`, fevereiro de 2026 e de 2028), com o controle "fim no dia 1 do mês seguinte → `no_run`".
+   **A M-MG-7 literal só se executa na F6**, quando o serviço existir; aqui roda a suplementar M-MG-7f.
+2. **R-H13-1.** O P11 diz que mora no `overview.service.ts` ("lê `listAllocationRuns`"). O serviço (F6) só LÊ as runs; o motor
+   PURO as classifica: `costSourcesOf(period, runs, usedImportId)` filtra a janela EXATA (mesmo dia UTC de início e de fim, como o
+   resumo) e tem o `warnings.push("multiple_imports_in_month")` da M-H13-1. O T-H13-1 usa o resumo e o `listAllocationRuns` reais
+   (duas runs de outubro com importações distintas, mais uma que só toca outubro e não conta).
+3. **M-H13-2** ("somar o custo das duas runs") não tem texto no plano; a forma literal escolhida é o efeito que o plano descreve
+   ("valor dobrado"), no total importado do global.
+4. **M-GRP-2** ("o 1º dia de P no lugar do último") também não tem texto; a âncora é a do motor.
+5. **"Sem grupo" e o T-FX-7.** O T-FX-7 pede `cost_missing` "nas linhas de grupo"; a linha "Sem grupo" segue a P5 (`alert: null`,
+   só somas e margem). As linhas de grupo de verdade dão `cost_missing`, e "Sem grupo" tem custo e margem `null` como as outras.
+6. **A margem do grupo não é a soma das margens por organização** (D-6): ela desconta o custo de quem não tem assinatura (a filial).
+   A conservação do P7 é em assinatura e em custo; o T-GRP-4 confere as duas e a margem do grupo por `assinatura − custo`.
+7. **O R-GRP-7 é sem HTTP** (Emenda 2 §1.6): `buildOverview` lança `MembershipOverlapError` nas 3 formas (`group`, `tenant` e
+   `global`, porque toda linha de organização leva o grupo). O 500 `membership_integrity_violation` da rota é da F6.
+8. **Falhas fechadas a mais, sem número parcial:** taxa de outro mês ou de outra moeda nunca converte (vira `fx_missing`); taxa a
+   partir de 1000 é recusada (`fx_rate_invalid`); organização do rateio fora da lista da visão (`tenant_list_incomplete`: o custo
+   dela sumiria no resíduo da conversão), assinatura ou grupo faltando (`subscription_missing`, `group_unknown`) lançam
+   `OverviewEngineError`. A F6 mapeia para 500. A lista de grupos que a F6 passa inclui os excluídos (mês passado).
+9. **O formato do `data`** (§4.2): `lines` + `totals` em `groupBy=tenant` e `group`; `global` em `groupBy=global`.
+
 ## F4 — ramo `feat/ass-09-banco` (worktree `C:/Users/thiag/w-ass09b`)
 
 (preenchido no ramo `feat/ass-09-banco`)
