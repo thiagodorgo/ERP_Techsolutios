@@ -135,14 +135,18 @@ class _FalhaNaGravacao extends QueryInterceptor {
   }
 }
 
-/// Store da fila sobre Drift, com atraso na leitura (molde do `_StoreLento` do bo6r11, mas no MESMO banco).
+/// Store da fila sobre Drift, com atraso na leitura (molde do `_StoreLento` do bo6r11, mas no MESMO banco). O atraso
+/// vem DEPOIS de ler: o retrato fica velho enquanto outra mutação pode ler o mesmo retrato. Com o atraso antes da
+/// leitura, a trava de transação do Drift serializava as leituras sozinha e a M-U2 sobrevivia (medido na pré-medição
+/// da F9b, 14/11).
 class _DriftLento extends DriftSyncActionStore {
   _DriftLento(super.db);
 
   @override
   Future<List<SyncAction>> load() async {
+    final retrato = await super.load();
     await Future<void>.delayed(const Duration(milliseconds: 5));
-    return super.load();
+    return retrato;
   }
 }
 
