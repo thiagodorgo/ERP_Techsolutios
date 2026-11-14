@@ -409,3 +409,29 @@ test("T2 · R2.1 — módulo: qualquer um de approvals/work_orders libera o G4; 
     assert.equal(r.reason, "module_not_enabled", `${nome}: motivo`);
   }
 });
+
+// ── J-561, C3-01: o arnês do `platform_admin` da prova com perfil real (Emenda 2, E2.2) está no repositório ────────
+
+const ARNES_PLATFORM_ADMIN = "tests/helpers/mobile-gate-chave-platform-admin.ts";
+
+test("T2 · E2.2 — o arnês do platform_admin está no repositório, recusa o que não é o banco descartável declarado, e a evidência aponta para ele", async () => {
+  const { conferirBancoDescartavel, PLATFORM_ADMIN_EMAIL } = await import("./helpers/mobile-gate-chave-platform-admin.js");
+  const descartavel = "postgresql://postgres@127.0.0.1:55644/erp_prova?schema=public";
+  assert.equal(conferirBancoDescartavel(descartavel, "127.0.0.1:55644/erp_prova"), null, "o banco descartável declarado passa");
+  const recusas: Array<[string, string | undefined, string | undefined]> = [
+    ["sem declaração", descartavel, undefined],
+    ["a 5432 é a base viva", "postgresql://postgres@127.0.0.1:5432/erp_techsolutions", "127.0.0.1:5432/erp_techsolutions"],
+    ["host que não é 127.0.0.1", "postgresql://postgres@db.exemplo.com:55644/erp_prova", "127.0.0.1:55644/erp_prova"],
+    ["banco diferente do declarado", "postgresql://postgres@127.0.0.1:55644/erp_outro", "127.0.0.1:55644/erp_prova"],
+    ["porta implícita", "postgresql://postgres@127.0.0.1/erp_prova", "127.0.0.1:55644/erp_prova"],
+    ["sem DATABASE_URL", undefined, "127.0.0.1:55644/erp_prova"],
+  ];
+  for (const [caso, url, declarado] of recusas) {
+    assert.notEqual(conferirBancoDescartavel(url, declarado), null, `${caso}: o arnês tinha de recusar`);
+  }
+  assert.equal(PLATFORM_ADMIN_EMAIL, "plataforma-pa.demo@example.com");
+  for (const doc of ["perfil-real-antes.md", "perfil-real-depois.md"]) {
+    const texto = readFileSync(path.resolve(path.dirname(ESTE_ARQUIVO), "../agent-orchestration/omega/evidencias/B-MOBILE-GATE-CHAVE", doc), "utf8");
+    assert.ok(texto.includes(ARNES_PLATFORM_ADMIN), `${doc} não aponta para ${ARNES_PLATFORM_ADMIN}`);
+  }
+});

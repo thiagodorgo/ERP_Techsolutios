@@ -88,3 +88,5 @@ Brutos, fora do repositório, em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/b
 - `catalogo-3ece9ff6.json`, idêntico a `catalogo-d2737339.json`;
 - a sonda `zz_gate66p_probe_depois_test.dart`, com as saídas `sonda-dart-depois.txt` e `sonda-dart-depois-controle-M18.txt`;
 - o roteiro `prova-perfil-real.mjs` e o arnês `arnes-platform-admin.ts`, os mesmos do "antes".
+
+O arnês do `platform_admin` (E2.2) está no repositório desde o conserto da J-561 (C3-01): `tests/helpers/mobile-gate-chave-platform-admin.ts`. A trava é parametrizada (banco descartável declarado em `ERP_ARNES_BANCO_DESCARTAVEL`; a 5432 sempre recusada), e o T2 (`tests/mobile-gate-chave-matriz.test.ts`) a confere.
