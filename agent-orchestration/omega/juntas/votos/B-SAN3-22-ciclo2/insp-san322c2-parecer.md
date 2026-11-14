@@ -11,7 +11,7 @@
 - Mapa re-medido: `<objeto>~8` = 44d9cbb3 = objeto dos 3 votos do ciclo 1 e do R-; `<objeto>~9` merge com 2 pais e 2º pai = merge-base; `<objeto>~21` = b08c7557 (head-base do backend no R-); `<objeto>~14` = d7483c28 (partida da fatia web no relatório do dev). Confere com o mandato.
 - PRE-VOO OK nos 4 mandatos (inspetor-san322c2, cadeira-c2r2, cadeira-c1rev, cadeira-c3rev), ec=0, colagem do refs atual; ferramentas iguais às do ciclo 1 e ao ramo salvo a linha `RAIZ`. Toda unidade MEDIDO tem saída colada (22/26/22/22). Dos 103 caminhos absolutos citados, 11 não existem e todos são benignos (prefixo truncado, saída a nascer, sonda apagada citada como histórico).
 - corpos: o conserto não tocou `.claude`/`.agents` (`git diff --name-only <O>~8 <O>` = 0); os 3 corpos de cadeira IDENTICOS nos dois espelhos (EOL-neutro, descontado o bloco Codex); blob `<O>~8` = blob `<O>` = disco do w-san322. O diretório da sessão está em `main` 539b078e (não é o objeto) e NÃO tem os 3 corpos → o corpo de cada cadeira tem de vir do blob do objeto, como os 3 mandatos já mandam (ver ressalva 1).
-- espelho / S0: `sync-agent-agents.mjs --check` num worktree descartável meu no objeto (`C:/Users/AMP/j22r2-insp-wt`) → OK, 92 agentes, ec=0; removido.
+- espelho / S0: `sync-agent-agents.mjs --check` num worktree descartável meu no objeto (`~/j22r2-insp-wt`) → OK, 92 agentes, ec=0; removido.
 
 ## Item 2 de 3 — regra do §C7 item 9, identidades, papéis, cobertura, briefing
 **VERDE, com a monocultura declarada.**
@@ -45,7 +45,7 @@
 - Baseline honesto: `npm run check` no objeto deu exit 0. A CI do objeto tem 14/14 em success.
 
 **Resíduo.**
-- 0 containers `j22`, `dev-san322`, `jur-` ou `crit-`, e 0 caminhos `C:/Users/AMP/j22*`.
+- 0 containers `j22`, `dev-san322`, `jur-` ou `crit-`, e 0 caminhos `~/j22*`.
 - Nenhum worktree do bloco além do `w-san322`, e 0 pastas `j22r2*`.
 - Único container fora de `erp-`: o `agv3-proxy`, parado há 34 h. É inerte e alheio ao bloco; fica reportado, não varrido.
 
@@ -87,7 +87,7 @@
 **P3 e perda de jurado.** Os três mandatos trazem P3 (sucessor de identidade nova re-executa a evidência do caído), P7 e "esgotado o modelo declarado, PARE sem votar" (§C7.6-bis). A queda vai para `00-quedas.md` do ciclo 2 pela P6.
 
 **Ressalva das ferramentas da C2 (a ressalva 1).**
-- Os scripts `j22-c2/ce13.sh`, `ce13b.sh`, `drill.sh` e `silent.sh` têm FIXOS o worktree `C:/Users/AMP/j22-c2-wt`, o Redis na porta 47932 e `OBJ=44d9cbb3…`, que é o objeto do ciclo 1.
+- Os scripts `j22-c2/ce13.sh`, `ce13b.sh`, `drill.sh` e `silent.sh` têm FIXOS o worktree `~/j22-c2-wt`, o Redis na porta 47932 e `OBJ=44d9cbb3…`, que é o objeto do ciclo 1.
 - O restauro deles é `git checkout -q $OBJ -- tests`, `-- src/modules/checklists` e `-- "$f"`.
 - O mandato `cadeira-c2r2.md` (l.399) cita esses scripts só como roteiro, "instrumento seu", e não declara os valores fixos.
 - **Risco:** uma cópia com só o worktree trocado restauraria sobre o worktree da C2 os testes e o `checklist.service.ts` do ciclo 1, e a C2 mediria código antigo sem perceber. Rodar no lugar falha fechado, porque o worktree não existe.
@@ -100,7 +100,7 @@
 O tabuleiro está limpo. A junta pode começar, desde que as ressalvas abaixo entrem em destaque no briefing.
 
 **Ressalvas:**
-1. **Obrigatória no disparo da C2.** Os scripts `C:/Users/AMP/erp-pausa-2026-10-03/j22-c2/{ce13,ce13b,drill,silent}.sh` restauram do objeto do ciclo 1 (`OBJ=44d9cbb3…`), com worktree `j22-c2-wt` e porta 47932 fixos.
+1. **Obrigatória no disparo da C2.** Os scripts `~/erp-pausa-2026-10-03/j22-c2/{ce13,ce13b,drill,silent}.sh` restauram do objeto do ciclo 1 (`OBJ=44d9cbb3…`), com worktree `j22-c2-wt` e porta 47932 fixos.
    - Se a C2 reaproveitar qualquer um, copia para a pasta própria (`j22r2-c2/`) e troca o worktree, a porta **e o OBJ** (para `6b03e44d…`), publicando o diff da cópia na evidência.
    - Nunca roda o script no lugar.
    - O disparo da C2 tem de dizer isso em uma linha. Sem essa linha, a C2 não começa.
@@ -115,7 +115,7 @@ O tabuleiro está limpo. A junta pode começar, desde que as ressalvas abaixo en
 6. **Head que andar invalida a liberação.** Se o head do PR #464 sair de `6b03e44d…` antes da junta, este parecer cai: pré-voo e inspeção de novo.
 
 **Limpeza:**
-- O worktree descartável `C:/Users/AMP/j22r2-insp-wt` foi criado e removido por `git worktree remove --force`.
+- O worktree descartável `~/j22r2-insp-wt` foi criado e removido por `git worktree remove --force`.
 - Nenhum container, nenhum `npm ci`, nenhuma base viva.
 - Os temporários meus no scratchpad da sessão (`cruz.mjs`, `inel-*.txt`, `check.log`) foram apagados.
 - No `w-san322` escrevi apenas `insp-san322c2-evidencia.md` e `insp-san322c2-parecer.md` (sem commit).

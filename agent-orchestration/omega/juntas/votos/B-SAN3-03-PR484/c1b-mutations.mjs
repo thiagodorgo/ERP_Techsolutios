@@ -4,7 +4,7 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import { spawnSync } from "node:child_process";
 
-const root = "C:/Users/thiag/w-j484-c1b";
+const root = "~/w-j484-c1b";
 const engine = "src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts";
 const memoryRepo = "src/modules/cloud-cost-allocation/cloud-cost-allocation.repository.ts";
 const git = (args) => spawnSync("git", ["-C", root, ...args], { encoding: "utf8" });

@@ -12,7 +12,7 @@
 ## Medições (apensadas em ordem)
 
 ### E0 — terreno (16:04-16:10)
-- `git worktree add --detach C:/Users/.../j-bsan304a-c2 fbda96b0` → ec=0; HEAD `fbda96b016ac65f88fe99d695295329e83938bea`.
+- `git worktree add --detach C:/.../j-bsan304a-c2 fbda96b0` → ec=0; HEAD `fbda96b016ac65f88fe99d695295329e83938bea`.
 - `npm ci` root_ec=0; `npm --prefix frontend ci` front_ec=0; `cmd /c dir /AL` na raiz e em `frontend/` do worktree: "Arquivo não encontrado" (0 junction/symlink).
 - `git diff --stat 02bd7dab fbda96b0`: 34 arquivos, 0 deleções de arquivo.
 
@@ -114,9 +114,9 @@ M2 manager + checklist_runs:acknowledge: ec=1 tests=30 pass=28 fail=2 restaurado
     not ok 7 - [item 15 · l.44] execuções: manager = {read, complete, reopen}; finance/inventory = só read; field_technician sem create; excedentes só os
     not ok 8 - [§4.4] DELIBERATE_REVOCATIONS: lista nomeada, cada item ausente do papel e presente no catálogo, com a decisão
 M3 celula l.38 finance = foo: ec=1 tests=17 pass=16 fail=1 restaurado=true
-    not ok 1 - C:\\Users\\AMP\\Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\j-bsan304a-c2\\tests\\san3-04a-matriz-x-catalogo-guard.test.ts
+    not ok 1 - ~/Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\j-bsan304a-c2\\tests\\san3-04a-matriz-x-catalogo-guard.test.ts
 M4 linha nova na tabela: ec=1 tests=17 pass=16 fail=1 restaurado=true
-    not ok 1 - C:\\Users\\AMP\\Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\j-bsan304a-c2\\tests\\san3-04a-matriz-x-catalogo-guard.test.ts
+    not ok 1 - ~/Documents\\GitHub\\ERP_Techsolutios\\.claude\\worktrees\\j-bsan304a-c2\\tests\\san3-04a-matriz-x-catalogo-guard.test.ts
 M5 inventory + checklist_runs:update: ec=1 tests=30 pass=28 fail=2 restaurado=true
     not ok 4 - [B] toda qualificada concedida sem escopo está na allowlist (com evidência ou pendência) — e a allowlist não apodrece
     not ok 7 - [item 15 · l.44] execuções: manager = {read, complete, reopen}; finance/inventory = só read; field_technician sem create; excedentes só os

@@ -4,7 +4,7 @@
   "modelo": "Codex GPT-5.6 Sol — nível menor declarado",
   "objeto": "ea6d4aef54181a0dc4030ec56e174e378aec5e12",
   "voto": "REPROVADO",
-  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/c2-evidencia.md",
+  "evidencia": "~/erp-pausa-2026-10-03/revisoes/j488/c2-evidencia.md",
   "resumo": "Três achados dentro do bloco: o canário não cobre todos os métodos de leitura expostos; a propriedade de conta da organização não é representável nem imposta no objeto; e o parser HTTP lê o corpo antes do portão fechado. RBAC, 403 do operator, catálogo/banco, DTO, filtros explícitos, 404, RLS FORCE da intenção e CHECK XOR passaram.",
   "achados": [
     {
@@ -53,7 +53,7 @@
     ".github/workflows/ci.yml",
     "docs/patio-recebimento.md",
     "docs/revisoes/PATIO/B-PATIO-REC-01-dev.md",
-    "C:/Users/thiag/erp-pausa-2026-10-03/planos/B-PATIO-RECEBIMENTO-plano-v3.md",
-    "C:/Users/thiag/erp-pausa-2026-10-03/planos/B-PATIO-RECEBIMENTO-plano-v3-emenda-1.md"
+    "~/erp-pausa-2026-10-03/planos/B-PATIO-RECEBIMENTO-plano-v3.md",
+    "~/erp-pausa-2026-10-03/planos/B-PATIO-RECEBIMENTO-plano-v3-emenda-1.md"
   ]
 }

@@ -3,11 +3,11 @@ papel: cadeira C1 | identidade: jurado-san312a-c1-opus | corpo: jurado-san312a-c
 # Evidência — cadeira C1, junta de DINHEIRO do B-SAN3-12a, ciclo 2 (PR #459)
 
 ## Terreno (cabeçalho)
-- origin/main no início: aaa9d36a50dfac81a2ce338ef552ab51a0bed650 (= 2º pai do objeto). $SCRATCH = C:/Users/AMP/erp-pausa-2026-10-03/j12a2-c1/
+- origin/main no início: aaa9d36a50dfac81a2ce338ef552ab51a0bed650 (= 2º pai do objeto). $SCRATCH = ~/erp-pausa-2026-10-03/j12a2-c1/
 - node v20.19.5 · docker server 29.6.1 · Postgres `PostgreSQL 16.15 on x86_64-pc-linux-musl` (container j12a2-c1-pg, 127.0.0.1:47813) · Redis 7 (j12a2-c1-redis, 127.0.0.1:47814)
 - livre em C: 11G (antes do npm ci; ≥ 7 GB) · memória de commit livre: 13 GB (≥ 4 GB) · trabalhos Docker fora de `erp-*` antes de subir: 1 (dev-san322) → o meu é o 2º (teto).
 - Variáveis (nomes; nenhum export; prefixo por `run.sh`): DATABASE_URL (senha `***`, aleatória, só por ambiente), REDIS_URL, CORE_SAAS_PERSISTENCE=prisma, C1DB (banco), C1PERS.
-- Worktree próprio: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j12a2-c1-wt 8a9fc1d8…` → HEAD 8a9fc1d8; `.git` existe, `.env` não. `npm ci --no-audit --no-fund` próprio ec=0 (326 pacotes); `prisma generate` ec=0; `node_modules` LinkType vazio (diretório real, sem junction — §C7.1-ter(c)).
+- Worktree próprio: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j12a2-c1-wt 8a9fc1d8…` → HEAD 8a9fc1d8; `.git` existe, `.env` não. `npm ci --no-audit --no-fund` próprio ec=0 (326 pacotes); `prisma generate` ec=0; `node_modules` LinkType vazio (diretório real, sem junction — §C7.1-ter(c)).
 - Portas 47813/47814: fora de faixa excluída do `netsh` e sem escuta antes; `docker ps -a` gravado em $SCRATCH/dockerps.txt. Nunca 5432/6379/55432.
 - `npx prisma migrate deploy` (meu banco j12a2_c1_main) ec=0; última migração aplicada: `20260882000000_grant_finance_unreconcile_and_cheque_unlink_permissions`.
 - Base viva (erp-postgres, erp-redis) e dev-san322 nunca tocados.
@@ -199,9 +199,9 @@ Sondas próprias: `$SCRATCH/zz-j12ac1-i3.test.ts` (D1, A5-bis, ordem de travas, 
 - Bases usadas nos vermelhos-controle: item 1 e item 3 → head-base da emenda `<objeto>~12` = fafd4b36; item 2 → head-base do bloco `<objeto>~18` = 8a7885f4; C1-A1 (origem) → head-base do bloco 8a7885f4.
 - Teardown:
   - `docker rm -f -v j12a2-c1-pg j12a2-c1-redis` → `docker ps -a --filter name=j12a2-c1- -q | wc -l` = 0.
-  - Processos com `j12a2-c1-wt` na linha de comando = 0 → `git worktree remove --force C:/Users/AMP/j12a2-c1-wt` → `git worktree list` sem j12a2-c1 e o caminho ausente.
+  - Processos com `j12a2-c1-wt` na linha de comando = 0 → `git worktree remove --force ~/j12a2-c1-wt` → `git worktree list` sem j12a2-c1 e o caminho ausente.
   - A senha não aparece em lugar nenhum (`grep -c -F` na evidência e no voto = 0; arquivos de log do $SCRATCH com a senha = 0), e o arquivo da senha foi apagado.
-  - As sondas e os scripts (`zz-j12ac1-*.ts`, `run.sh`, `probe.sh`, `mut.sh`, `mutate.mjs`, `vote.mjs`) ficam em `C:/Users/AMP/erp-pausa-2026-10-03/j12a2-c1/`, para re-execução (P3).
+  - As sondas e os scripts (`zz-j12ac1-*.ts`, `run.sh`, `probe.sh`, `mut.sh`, `mutate.mjs`, `vote.mjs`) ficam em `~/erp-pausa-2026-10-03/j12a2-c1/`, para re-execução (P3).
   - A base viva (`erp-postgres`, `erp-redis`) e o `dev-san322` não foram tocados. Em `w-san312a` escrevi só `c1-evidencia.md` e `c1-voto.json`. Livre em C: 11G.
 - Achados:
   - C1-A1 — `ajuste`, pré-existente desde o #456 (medido no head-base do bloco), não grave. Não reprova (§C7.1-ter(a)).

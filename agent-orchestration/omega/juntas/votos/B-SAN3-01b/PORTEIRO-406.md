@@ -97,7 +97,7 @@ Veredito parcial do item 2: promessa = entregue. Duas notas sem efeito no start.
 
 ## 3. Os numeros sao reais — 2026-10-04T15:54Z
 
-Terreno: worktree proprio detached `C:/Users/AMP/w-port406` em origin/main 8ee10bd2; `npm ci --ignore-scripts` proprio (326 pacotes, ec=0, `node_modules` diretorio proprio, nao junction).
+Terreno: worktree proprio detached `~/w-port406` em origin/main 8ee10bd2; `npm ci --ignore-scripts` proprio (326 pacotes, ec=0, `node_modules` diretorio proprio, nao junction).
 O PR 406 nao declara contagem nova (registro puro); o que ha a reexecutar e que nada de KPI se moveu e que os guards seguem verdes.
 medido por: `git diff --stat b404815c 8ee10bd2 -- Kpis/kpis-latest.json Kpis/kpis-history.json Kpis/app.js Kpis/index.html | wc -l`
 ```
@@ -162,7 +162,7 @@ w-reg404: ausente ; w-port404: ausente
 disco C: 8.6G livres as 15:55Z (9.1G antes do meu npm ci; devolvo com a remocao do w-port406)
 ```
 Registro puro: nao mexe em banco, sem residuo de teste a procurar na base viva (base viva nao foi alvo).
-Residuo alheio reportado, nao varrido: `C:/Users/AMP/w-pvreg` (detached em 8ee10bd2, criado ~13 min antes desta medicao; pelo nome, o
+Residuo alheio reportado, nao varrido: `~/w-pvreg` (detached em 8ee10bd2, criado ~13 min antes desta medicao; pelo nome, o
 arnes do pre-voo do orquestrador para este mandato) — conferir que sai quando o pre-voo acabar.
 **R406-1 (ressalva operacional, continua a R404-4):** disco abaixo de ~10 GB (8.6-9.1 GB). Pelo corpo, manda rodar `DEEP_CLEAN=1`
 (`docs/limpeza-de-disco.md`), respeitando a P-CHORE-CLEANUP-DESCE-EM-WORKTREES e os terrenos vivos (w-e5, w-pl11c3, dev do #405).

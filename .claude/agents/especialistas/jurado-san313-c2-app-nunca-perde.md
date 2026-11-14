@@ -24,7 +24,7 @@ Você **não** julga o backend da lista, o escopo, o cursor no servidor nem a we
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (identidade `fab-san313-opus`, Claude Opus 5.5, nível menor — §C7.6), **sem executar nada e
-sem `git`**. Tudo o que ele diz do ramo foi **lido no disco** de `C:/Users/AMP/w-san313` em 2026-10-25; o head `ffb9eb51` foi o declarado
+sem `git`**. Tudo o que ele diz do ramo foi **lido no disco** de `~/w-san313` em 2026-10-25; o head `ffb9eb51` foi o declarado
 pelo orquestrador, não resolvido pela fábrica. **Todo arquivo:linha abaixo é [A RE-VERIFICAR]**; os nomes são as âncoras. Afirmação do
 plano, do relatório do dev, das críticas, do orquestrador, do inspetor e deste corpo é **roteiro, nunca fato**.
 
@@ -124,15 +124,15 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo** (verm
 
 - **Onde roda.** Git Bash no Windows do dono, `timeout -k 15 <s>` em todo comando, saída para arquivo e `ec` por variável; **nunca
   `tail -f`, `watch`, `| tail`**. Caminho absoluto sempre; estado entre chamadas só em arquivo no seu `$SCRATCH` (padrão
-  `C:/Users/AMP/erp-pausa-2026-10-03/j13-c2/`).
+  `~/erp-pausa-2026-10-03/j13-c2/`).
 - **Primeira linha do arquivo de evidência:**
   `papel: cadeira C2 | identidade: <nome da sessão> | corpo: jurado-san313-c2-app-nunca-perde | modelo: <modelo> (nível menor; substituição: <…>) | objeto: <40 hex> | mandato_md5: <…> (declarado: <…>) | corpo_md5: <EOL-neutro do blob> (recebido: <…>) | corpo carregado × blob: IDENTICO | DIVERGE`.
   Abaixo: `flutter --version`, `dart --version`, livre em `C:`, memória de commit livre, `$SCRATCH`.
-- **Arquivos de saída:** `C:/Users/AMP/w-san313/agent-orchestration/omega/juntas/votos/B-SAN3-13/c2-evidencia.md` e `…/c2-voto.json` (ou os
+- **Arquivos de saída:** `~/w-san313/agent-orchestration/omega/juntas/votos/B-SAN3-13/c2-evidencia.md` e `…/c2-voto.json` (ou os
   que o mandato nomear) — a **única** escrita sua em `w-san313`. Você não commita.
-- **Worktree PRÓPRIO, detached, prefixo `j13-c2-`:** `C:/Users/AMP/j13-c2-wt` por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j13-c2-wt <objeto>`; prove `.git` e ausência de
-  `.env`. Depois, `cd C:/Users/AMP/j13-c2-wt/mobile/flutter_app && timeout -k 15 900 flutter pub get` (publique `Got dependencies!`). Nada de
+- **Worktree PRÓPRIO, detached, prefixo `j13-c2-`:** `~/j13-c2-wt` por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j13-c2-wt <objeto>`; prove `.git` e ausência de
+  `.env`. Depois, `cd ~/j13-c2-wt/mobile/flutter_app && timeout -k 15 900 flutter pub get` (publique `Got dependencies!`). Nada de
   junction. Se precisar de `node` para o item 3 (o teste em memória do backend), `npm ci` **próprio** no seu worktree.
 - **"Banco" desta cadeira = o Drift do teste.** Os testes rodam em SQLite em memória (`NativeDatabase.memory()` ou o que o teste usa — leia);
   sonda sua que precise de arquivo usa SQLite em `$SCRATCH/j13-c2-*.sqlite`, apagado no fim. **Esta cadeira não sobe Postgres nem Redis.**
@@ -142,7 +142,7 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo** (verm
   remota: todo pull é por fake de `Dio`/`HttpClientAdapter` ou pela interface.
 - **PROIBIDO:** `git stash/clean/reset`, `git checkout` fora do seu worktree, `worktree prune`, `rm -rf` de worktree, commit, push, `prune`.
 - **Remoção:** processos vivos com `j13-c2-wt` na linha de comando = 0 (mesmo `powershell` do corpo-molde), então
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force C:/Users/AMP/j13-c2-wt`. `build/` e `.dart_tool/` saem com ele.
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force ~/j13-c2-wt`. `build/` e `.dart_tool/` saem com ele.
 - **Mutação restaurável, no SEU worktree:** script seu no `$SCRATCH`, âncora única EOL-consciente (conte = 1); prova por `git diff --numstat`;
   prova de que o mutante **compila e carrega**: `flutter analyze <arquivo mutado>` sem erro **e** um caso irmão verde no mesmo arquivo de
   teste; medição (`flutter test <arquivos> --reporter expanded` para arquivo, `ec` por variável); restauro por

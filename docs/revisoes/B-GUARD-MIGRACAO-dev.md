@@ -3,13 +3,13 @@
 > **Papel:** dev (`dev-guard-migracao-opus`), Claude **Opus**, nível menor declarado (§C7.6). Não planejou. O dono decidiu em
 > 24/10: *"Aceito as recomendações, mas vc cobre o codex nessa rodada"* — os papéis do Codex (dev, revisor) passam ao Claude.
 > **Plano (fonte única):** `docs/revisoes/B-GUARD-MIGRACAO-plano.md` (planejador-mestre, Fable), cópia literal de
-> `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-GUARD-MIGRACAO-plano.md`.
+> `~/erp-pausa-2026-10-03/planos/B-GUARD-MIGRACAO-plano.md`.
 > **Governança:** bloco de FERRAMENTA → regra (1) de `D-GOV-PROPORCIONAL`: um revisor independente + CI verde. Sem junta, sem
 > crítico, sem porteiro, sem KPI (congelado).
 
 ## Etapa 0 — terreno e base medida (04:18 UTC, 2026-10-25)
 
-- Worktree novo `C:/Users/AMP/w-guard`, ramo `chore/guard-migracao-transacao`, a partir de `origin/main` **`8a7885f4`**
+- Worktree novo `~/w-guard`, ramo `chore/guard-migracao-transacao`, a partir de `origin/main` **`8a7885f4`**
   (#454 B-TRC-02; o #456 B-SAN3-20 `37a3f360` já está abaixo dele). `npm ci` próprio (326 pacotes, exit 0), sem junction.
 - Re-medição das migrações (o plano mediu em `c76ec481`, com 113):
   - `find prisma/migrations -mindepth 1 -maxdepth 1 -type d | wc -l` → **116**; `find … -name migration.sql | wc -l` → **116**.

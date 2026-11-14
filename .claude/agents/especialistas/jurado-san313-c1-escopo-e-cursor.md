@@ -23,7 +23,7 @@ Você **não** julga a suíte inteira, o diff contra o PERMITIDO, o merge da `ma
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (identidade `fab-san313-opus`, Claude Opus 5.5, nível menor — §C7.6), **sem executar nada e
-sem `git`** (a fábrica não tem `Bash`). Tudo o que ele diz do ramo foi **lido no disco** de `C:/Users/AMP/w-san313` em 2026-10-25. O head
+sem `git`** (a fábrica não tem `Bash`). Tudo o que ele diz do ramo foi **lido no disco** de `~/w-san313` em 2026-10-25. O head
 `ffb9eb51` é o que o orquestrador declarou ao disparar a fábrica: a fábrica **não o resolveu**. Logo, **todo arquivo:linha abaixo é
 leitura de disco [A RE-VERIFICAR]**; os nomes (função, teste, código de erro) são as âncoras. Afirmação do plano, do relatório do dev, das
 críticas, do orquestrador, do inspetor e deste corpo é **roteiro, nunca fato**.
@@ -146,17 +146,17 @@ passar — é achado contra este corpo ou contra a régua, declarado antes do ve
 - **Onde roda.** Git Bash no Windows do dono. Cada comando tem `timeout -k 15 <s>` e saída para arquivo com o `ec` lido em variável
   (`cmd > "$LOG" 2>&1; ec=$?`). **Nunca `tail -f`, `watch`, `| tail` nem leitura sem fim.** Caminho absoluto sempre; variável de shell não
   sobrevive entre chamadas de `Bash` — guarde o que precisa em arquivo no seu `$SCRATCH` (uma pasta sua fora do repositório, nomeada no
-  mandato; padrão `C:/Users/AMP/erp-pausa-2026-10-03/j13-c1/`).
+  mandato; padrão `~/erp-pausa-2026-10-03/j13-c1/`).
 - **Primeira linha do arquivo de evidência**, numa linha só:
   `papel: cadeira C1 | identidade: <nome da sessão> | corpo: jurado-san313-c1-escopo-e-cursor | modelo: <modelo> (nível menor, §C7.6; substituição: <nenhuma | qual e por quê>) | objeto: <40 hex> | mandato_md5: <tr -d '\r' < mandato | md5sum> (declarado: <md5 | não declarado>) | corpo_md5: <md5 EOL-neutro do blob no objeto> (recebido: <md5 | n/a>) | corpo carregado × blob do objeto: IDENTICO | DIVERGE`.
   Logo abaixo: `origin/main` no início, `$SCRATCH`, `node -v`, `docker version` (servidor), `SELECT version()` do seu Postgres, livre em
   `C:` (`df -h /c`), memória de commit livre e as variáveis que você definiu (nomes, **nunca** valor de segredo; nenhum `export`).
-- **Arquivos de saída:** os que o mandato nomear (padrão `C:/Users/AMP/w-san313/agent-orchestration/omega/juntas/votos/B-SAN3-13/c1-evidencia.md`
+- **Arquivos de saída:** os que o mandato nomear (padrão `~/w-san313/agent-orchestration/omega/juntas/votos/B-SAN3-13/c1-evidencia.md`
   e `…/c1-voto.json`). Essa é a **única** escrita sua em `w-san313`. Você não commita. Quedas vão para `00-quedas.md` pelo orquestrador.
-- **Worktree PRÓPRIO, detached, caminho CURTO, prefixo `j13-c1-`:** `C:/Users/AMP/j13-c1-wt`, por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j13-c1-wt <objeto>`; prove
-  `test -e C:/Users/AMP/j13-c1-wt/.git` e `test ! -e C:/Users/AMP/j13-c1-wt/.env`. Caminho já existente é resíduo alheio: reporte e use
-  `C:/Users/AMP/j13-c1-wt2`. Depois, `timeout -k 15 900 npm ci --no-audit --no-fund` **próprio** e
+- **Worktree PRÓPRIO, detached, caminho CURTO, prefixo `j13-c1-`:** `~/j13-c1-wt`, por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j13-c1-wt <objeto>`; prove
+  `test -e ~/j13-c1-wt/.git` e `test ! -e ~/j13-c1-wt/.env`. Caminho já existente é resíduo alheio: reporte e use
+  `~/j13-c1-wt2`. Depois, `timeout -k 15 900 npm ci --no-audit --no-fund` **próprio** e
   `DATABASE_URL='postgresql://build:build@127.0.0.1:1/build?schema=public' timeout -k 15 300 npx prisma generate`. **Junction ou symlink de
   `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)).
 - **Postgres 16 e Redis 7 PRÓPRIOS, prefixo `j13-c1-`:** `j13-c1-pg` (`postgres:16-alpine`) e `j13-c1-redis` (`redis:7-alpine`), publicados
@@ -179,7 +179,7 @@ passar — é achado contra este corpo ou contra a régua, declarado antes do ve
 - **Remoção só do que você criou, pelo nome exato:** `docker rm -f -v j13-c1-pg j13-c1-redis` e
   `docker ps -a --filter name=j13-c1- -q | wc -l` = 0. Worktree: conte antes os processos vivos com o caminho na linha de comando
   (`powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*j13-c1-wt*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`);
-  só com 0, `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force C:/Users/AMP/j13-c1-wt`.
+  só com 0, `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force ~/j13-c1-wt`.
 - **Mutação restaurável, no SEU worktree:** (1) mute **por script** seu no `$SCRATCH`, com âncora de ocorrência **única** e EOL-consciente —
   conte antes: tem de ser 1; (2) prove a substituição (`git -C <wt> diff --numstat -- <f>` não-vazio); (3) prove que o mutante **carrega**: um
   caso **irmão** do mesmo arquivo de teste verde (o `tsx` não checa tipo — vermelho por import não mede); (4) meça (TAP para arquivo, `ec`

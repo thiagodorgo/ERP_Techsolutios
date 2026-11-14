@@ -4,7 +4,7 @@
   não toca dinheiro e o Fable fica reservado a bloco de dinheiro (`D-FABLE-ASTRA-SO-DINHEIRO`, decisão do dono de 2026-10-08,
   `agent-orchestration/controle/decisoes.md` l.2982 no disco). O frontmatter dos três corpos continua `model: fable`: o fallback é de
   quem lança.
-- **Quando e onde li:** 2026-10-09, depois das 18:32Z, no disco de `C:/Users/AMP/w-o05`. Ref local e de rastreio de
+- **Quando e onde li:** 2026-10-09, depois das 18:32Z, no disco de `~/w-o05`. Ref local e de rastreio de
   `fix/runtime-role-sem-bypass` = `737e8cf37b0eefec40e794bf716d48844b763048` (lidas nos arquivos de ref; reflog: "chore(junta): fecho do
   relatório do dev do ciclo 4 …"); head do disparo do dev `7c63f920` (reflog: "docs(plano): ciclo 4 …"). O dev já tinha fechado (relatório
   com teardown às 18:31Z). Não executei nada: a fábrica não tem `Bash`. Os md5 dos corpos **não** foram medidos por mim.
@@ -29,8 +29,8 @@
 | C3 | `jurado-san305-c4-boot-e-suite` | (1) boot real (`enforce`) recusa com view de dono comum sem grant e aceita sem ela, log sem host/porta/senha/banco (T9/T15); (2) `npm test` (fail 0, skipped ≤ 2, N executado) + build; bootstrap 12, acessos 35 (T13), leituras 13; (3) texto diz a regra — só nota |
 
 Comum aos três: unanimidade de 3 com veto; ciclo 4 só grave com R3/R4; objeto por `ls-remote` = `gh pr view`, check-runs concluídos,
-HC = H0; P1–P7 (P7 com a seção `## PAUSA`); ≤ 3 itens; uma cadeira por vez no Claude; worktree `C:/Users/AMP/w-j05c4cN`; containers
-`j05c4-cN-` sem porta, imagem `erp-junta-node20-pg16:local`, receita `C:/Users/AMP/erp-terreno/receita-pg16.sh`; base viva e
+HC = H0; P1–P7 (P7 com a seção `## PAUSA`); ≤ 3 itens; uma cadeira por vez no Claude; worktree `~/w-j05c4cN`; containers
+`j05c4-cN-` sem porta, imagem `erp-junta-node20-pg16:local`, receita `~/erp-terreno/receita-pg16.sh`; base viva e
 5432/6379/55432 nunca; `docker rm -f -v` só dos seus; inelegíveis por nome (C4.6 + fábrica, orquestrador, as outras duas cadeiras, o
 inspetor da junta 4); a **reprovação por construção do C4.6 (l.2335-2342) copiada verbatim**, com a não-convergência; todo achado com
 gravidade × escopo × classe; não propõe correção; evidência e voto em `ciclo4/C{N}-evidencia.md` e `C{N}-voto.json`; sem `tail -f`;

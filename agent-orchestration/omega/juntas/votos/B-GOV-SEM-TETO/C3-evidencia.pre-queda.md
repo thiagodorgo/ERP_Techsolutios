@@ -1,6 +1,6 @@
 # VOTO-394-C3 — jurado-semteto-c3-escopo-registro
 
-papel: C3 — escopo, registro, KPI e terreno (B-GOV-SEM-TETO, PR #394) · modelo: Opus 5.5 (claude-opus-5-5), rodando como general-purpose · md5 EOL-neutro do corpo aplicado: 4396c0fbd8f6b0ddaf1c555cd6137c32 (conferido: `tr -d '\r' < C:/Users/AMP/w-teto/.claude/agents/especialistas/jurado-semteto-c3-escopo-registro.md | md5sum`)
+papel: C3 — escopo, registro, KPI e terreno (B-GOV-SEM-TETO, PR #394) · modelo: Opus 5.5 (claude-opus-5-5), rodando como general-purpose · md5 EOL-neutro do corpo aplicado: 4396c0fbd8f6b0ddaf1c555cd6137c32 (conferido: `tr -d '\r' < ~/w-teto/.claude/agents/especialistas/jurado-semteto-c3-escopo-registro.md | md5sum`)
 
 Leitura de outras cadeiras: NÃO abri, NÃO li e NÃO cito VOTO-394-C1.md nem VOTO-394-C2.md nem nenhum c1-*/c2-*.
 Escrita: nada no repositório; único arquivo = este, no scratchpad (instrução do orquestrador sobrepõe o destino c3-evidencia.md/c3-voto.json do corpo; o JSON vai embutido no fim).
@@ -11,11 +11,11 @@ Escrita: nada no repositório; único arquivo = este, no scratchpad (instrução
 - Item 3 — KPI e terreno: EM APURAÇÃO
 
 ## Terreno
-- Worktree indicado pelo orquestrador `C:/Users/AMP/w-jst3`: NÃO EXISTIA no início (`ls` → No such file; `git worktree list` sem ele). Criei eu mesma: `git worktree add --detach C:/Users/AMP/w-jst3 7ad08690bad5e9cbc4d34fe6905b14c6ac634046` ec=0; `test -e C:/Users/AMP/w-jst3/.git` OK; HEAD = 7ad08690bad5e9cbc4d34fe6905b14c6ac634046; status --porcelain vazio.
+- Worktree indicado pelo orquestrador `~/w-jst3`: NÃO EXISTIA no início (`ls` → No such file; `git worktree list` sem ele). Criei eu mesma: `git worktree add --detach ~/w-jst3 7ad08690bad5e9cbc4d34fe6905b14c6ac634046` ec=0; `test -e ~/w-jst3/.git` OK; HEAD = 7ad08690bad5e9cbc4d34fe6905b14c6ac634046; status --porcelain vazio.
 - npm ci próprio disparado no w-jst3 (sem junction).
 
 ## Item 1 — Escopo (FECHADO)
-Forma: cwd C:/Users/AMP/w-jst3 (detached no head), `export MSYS_NO_PATHCONV=1`, git.exe com C:/…, node v20.19.5, npm ci próprio ec=0 (326 pacotes, sem junction). Scripts em $SCRATCH/c3-394-escopo.py e c3-394-c4.py.
+Forma: cwd ~/w-jst3 (detached no head), `export MSYS_NO_PATHCONV=1`, git.exe com C:/…, node v20.19.5, npm ci próprio ec=0 (326 pacotes, sem junction). Scripts em $SCRATCH/c3-394-escopo.py e c3-394-c4.py.
 
 (a) Head por duas fontes: `gh pr view 394 --json headRefOid` = 7ad08690bad5e9cbc4d34fe6905b14c6ac634046 · `git ls-remote origin refs/heads/docs/sem-teto-auditoria-no-3` = 7ad08690bad5e9cbc4d34fe6905b14c6ac634046 → COINCIDEM. Não andou desde a liberação do inspetor. Objeto = head (briefing l.7: "o head do ramo, que cada cadeira resolve por si"). origin/main = merge-base = fc3363e38aabd77f54e6b53034128182f8000571 (= baseRefOid do gh). isDraft=true, mergeable=MERGEABLE, CLEAN.
 (b) Delta objeto→head: `git diff --name-status 7ad08690 7ad08690` = 0 linhas (controle irmão: 3e92b2b8→head = 21 linhas). Delta briefing(43b37e4d)→head = 13 arquivos (commits dd79c96f emenda: README, inspetor ×2, AGENTS, CLAUDE, decisoes, pendencias-indice, pendencias, PROTOCOLO; 7ad08690 KPI: Kpis/app.js, kpis-history.json, kpis-history.md, kpis-latest.json). Nenhum corpo de jurado entrou depois do briefing — os 6 entraram JUNTO com o briefing em 43b37e4d. Commits no ramo: 3e92b2b8 (E1, 3 arq.), 43b37e4d (8 arq.), dd79c96f (9 arq.), 7ad08690 (4 arq.) = 24 toques / 21 arquivos distintos.

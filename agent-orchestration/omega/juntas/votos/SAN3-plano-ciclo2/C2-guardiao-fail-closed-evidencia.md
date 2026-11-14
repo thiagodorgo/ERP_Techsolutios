@@ -1,6 +1,6 @@
 # C2 — guardiao-fail-closed — evidencia (ciclo 2, objeto ecc32712)
 
-Modelo: claude-opus-5. Worktree proprio: C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3c2-c2 (detached ecc32712).
+Modelo: claude-opus-5. Worktree proprio: ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3c2-c2 (detached ecc32712).
 Toda medicao na ref via `git show ecc32712:<caminho>` ou no worktree detached (sem mutacao). Mutacoes so em copia no scratchpad.
 
 ## E0 — terreno

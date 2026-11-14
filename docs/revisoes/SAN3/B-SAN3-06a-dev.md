@@ -4,7 +4,7 @@
 
 - Identidade nova: `dev-06a-codex`.
 - Papel/modelo declarado: DEV no Codex, GPT-5.6 Sol, nível menor.
-- Worktree: `C:/Users/AMP/w-06a`.
+- Worktree: `~/w-06a`.
 - Ramo: `fix/menu-sem-tela-ficticia`.
 - Head inicial esperado e medido: `b459f8c19f905e82ccc389461d736092876ad3c6`.
 
@@ -54,7 +54,7 @@ EM APURAÇÃO.
 ## Retomada 2026-10-11T20:03Z
 
 - Identidade NOVA: `dev-06a-claude`. Papel DEV, Claude Opus 5.5, nível menor (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), cobrindo o Codex, que está no limite de uso até 23:15Z (`D-CLAUDE-SO-ORQUESTRA`). Substitui o `dev-06a-codex`, que parou às 18:21Z (P3).
-- Mandato: `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-06a-claude.txt`. Plano: `docs/revisoes/SAN3/B-SAN3-06a-plano.md` (as "Decisões do orquestrador" no fim valem acima do texto do plano).
+- Mandato: `~/erp-pausa-2026-10-03/prompts/dev-06a-claude.txt`. Plano: `docs/revisoes/SAN3/B-SAN3-06a-plano.md` (as "Decisões do orquestrador" no fim valem acima do texto do plano).
 
 ### R-01 — ref alvo (re-execução do item 01 do caído)
 

@@ -545,7 +545,7 @@ O `find` de **M-E32** passa a ser a linha inteira com `// erro: desfaz e classif
 **Não executado (de propósito, pelo mandato):** nenhuma suíte, nenhum worktree, nenhum container, nenhuma porta, nenhuma edição no
 repositório, nenhum commit, sem `tail -f`, nada no disco da sessão como fonte. **Limpeza:** nada a remover no repositório; no scratchpad
 da sessão ficam `emenda/assemble.py` e as 13 fatias `s*.md` (insumos desta montagem, apagáveis). A entrega é
-`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-emenda-v2.1.md`; o dev copia v2 + emenda para `docs/revisoes/TRACCAR/` no PR (v2 §9.6 passo 1).
+`~/erp-pausa-2026-10-03/planos/B-TRC-02-emenda-v2.1.md`; o dev copia v2 + emenda para `docs/revisoes/TRACCAR/` no PR (v2 §9.6 passo 1).
 
 **Estado: COMPLETO** (§0-§5 e Resumo gravados; nenhuma seção `EM APURAÇÃO`).
 

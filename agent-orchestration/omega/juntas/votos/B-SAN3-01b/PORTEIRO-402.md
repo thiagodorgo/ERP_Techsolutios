@@ -2,8 +2,8 @@ papel=porteiro-pos-merge | modelo=Fable (claude-fable-5-1, o do frontmatter; sem
 
 # Parecer do porteiro pos-merge — PR #402 (B-SAN3-01b) — merge 3e40a256
 
-Mandato: `C:/Users/AMP/w-reg402/agent-orchestration/omega/juntas/votos/B-SAN3-01b/00-mandatos/porteiro.md` (ramo docs/registro-402 @3b8fe166).
-Terreno: arvore principal `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios` so para leitura de refs; execucao em worktree proprio detached `C:/Users/AMP/w-port402` @origin/main. Nada escrito no repositorio. Base viva (5432/6379) nao e alvo.
+Mandato: `~/w-reg402/agent-orchestration/omega/juntas/votos/B-SAN3-01b/00-mandatos/porteiro.md` (ramo docs/registro-402 @3b8fe166).
+Terreno: arvore principal `~/Documents/GitHub/ERP_Techsolutios` so para leitura de refs; execucao em worktree proprio detached `~/w-port402` @origin/main. Nada escrito no repositorio. Base viva (5432/6379) nao e alvo.
 Protocolo: P1 (apenso apos cada item) · P2 (este arquivo nasce esqueleto; itens `EM APURACAO` viram medidos) · P7 (sob PAUSA, secao `## PAUSA`).
 
 ## 0. Identidade e md5 — 2026-10-02T22:29Z
@@ -33,7 +33,7 @@ Protocolo: P1 (apenso apos cada item) · P2 (este arquivo nasce esqueleto; itens
 - `git diff --name-only b02745b7 1483a6f7` filtrado por nao-registro → vazio: depois do fechamento do dev (`b02745b7`) so registro, como a ata afirma.
 - Veredito parcial: toda afirmacao do corpo existe no diff; nenhum comentario afirma comportamento que o codigo nao tem; escopo extra (2 corpos de jurado) declarado na ata.
 
-## 3. Numeros reexecutados — 2026-10-02T22:33Z–22:40Z (worktree `C:/Users/AMP/w-port402` @3e40a256, `npm ci` raiz 326 pacotes ec=0 + frontend ec=0, `node_modules` sem reparse point, Node v20.19.5)
+## 3. Numeros reexecutados — 2026-10-02T22:33Z–22:40Z (worktree `~/w-port402` @3e40a256, `npm ci` raiz 326 pacotes ec=0 + frontend ec=0, `node_modules` sem reparse point, Node v20.19.5)
 - `npm --prefix frontend run test:smoke --silent > smoke-402.tap` (nao-TTY = TAP 13) → `# tests 1214 # pass 1214 # fail 0 # cancelled 0 # skipped 0 # todo 0`, `duration_ms 67794`, `grep -c "^not ok"` = 0, stderr 0 linhas, ec=0. **Declarado 1214/1214 — REPRODUZ.**
 - `node --test --import tsx tests/work-orders-page-live.test.tsx` → `# tests 13 # pass 13 # fail 0`, ec=0 (E1: 13 casos — **reproduz**).
 - `node --test --import tsx tests/work-orders-honest-errors.test.tsx` → `# tests 66 # pass 66 # fail 0`, ec=0 (§BAT do dev: 13 + 66 = 79 — **reproduz**).
@@ -74,12 +74,12 @@ Protocolo: P1 (apenso apos cada item) · P2 (este arquivo nasce esqueleto; itens
   6. `C3-N1` (cabecalho da lista de OS diverge da referencia visual, 2026-08-04 #331/#332) → as 3 ocorrencias de `C3-N1` sao de outras juntas (l.324 ciclo 1 do B-SAN3-01, tela de criar OS; l.6021 J-SAN2-6). **Sem pendencia nomeada.**
 - Veredito parcial: o que o bloco abriu/fechou esta certo e provado; **das 6 notas da junta, 5 ainda nao estao no registro (a 1 e o backfill; 2, 3, 5 e 6 sem pendencia nomeada com dono; so a 4 ja tem classe)** → RESSALVA para o `docs/registro-402`.
 
-## 7. Limpeza §C5 — 2026-10-02T22:44Z (arvore principal `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios`)
+## 7. Limpeza §C5 — 2026-10-02T22:44Z (arvore principal `~/Documents/GitHub/ERP_Techsolutios`)
 - `git status --porcelain | grep -c "^ D"` → 0 (nenhum rastreado apagado).
 - `git branch --merged main` (sem `main`) → vazio.
 - `git branch --list fix/web-guarda*` → 0; `git ls-remote --heads origin fix/web-guarda-por-alcance-e-estado-da-pagina` → 0; `git branch -r | grep -c web-guarda` → 0 (remoto apagado e prune feito).
 - `git rev-parse main origin/main` → `3e40a256` = `3e40a256` (main local avancada).
-- `git worktree list | grep -ciE "j01b|nuv01b|dev01b"` → 0; `ls -d /c/Users/AMP/w-j01bc* /c/Users/AMP/w-nuv01b` → inexistentes (worktrees das cadeiras e do dev removidos). Os outros 14 worktrees listados sao de outros blocos (b04a, b11, gov-descuido, devt4c5, mandato, nuv05/05d/09/11, pvnuv/pvpr/pvreg, reg399, reg402) — residuo alheio, reportado, nao varrido.
+- `git worktree list | grep -ciE "j01b|nuv01b|dev01b"` → 0; `ls -d ~/w-j01bc* ~/w-nuv01b` → inexistentes (worktrees das cadeiras e do dev removidos). Os outros 14 worktrees listados sao de outros blocos (b04a, b11, gov-descuido, devt4c5, mandato, nuv05/05d/09/11, pvnuv/pvpr/pvreg, reg399, reg402) — residuo alheio, reportado, nao varrido.
 - `frontend/dist`, `dist`, `coverage`, `.vite`, `frontend/.vite`, `*.tsbuildinfo` (profundidade 2) → ausentes.
 - Base viva: o bloco nao mexeu em banco (diff sem `prisma/`/`src/`); nada a conferir de residuo, e a base nao foi alvo deste parecer.
 - `df -h /c` → **19 GB livres** (93% usado) — acima do limiar de ~10 GB; `DEEP_CLEAN=1` nao e obrigatorio agora, mas a margem e curta.
@@ -92,9 +92,9 @@ Protocolo: P1 (apenso apos cada item) · P2 (este arquivo nasce esqueleto; itens
 - Veredito parcial: nenhum start NEGADO; os dois alvos carregam a mesma obrigacao de integrar esta `main` e recontar o KPI.
 
 ## 9. Encerramento do terreno — 2026-10-02T22:53Z
-- Terreno medido por: `git worktree add --detach C:/Users/AMP/w-port402 origin/main` (3589 arquivos, porcelain 0) · `npm ci` raiz e frontend proprios (ec=0; `fsutil reparsepoint query node_modules` → "nao e um ponto de nova analise" = sem junction) · `MSYS_NO_PATHCONV=1` so inline por comando (nunca `export`) · `timeout` em toda execucao · nenhum `tail -f` · base viva 5432/6379 nunca alvo (suite backend declarada nao executada no item 3) · nada escrito no repositorio (`git status --porcelain` da arvore principal: 0 ` D`; nenhum commit).
+- Terreno medido por: `git worktree add --detach ~/w-port402 origin/main` (3589 arquivos, porcelain 0) · `npm ci` raiz e frontend proprios (ec=0; `fsutil reparsepoint query node_modules` → "nao e um ponto de nova analise" = sem junction) · `MSYS_NO_PATHCONV=1` so inline por comando (nunca `export`) · `timeout` em toda execucao · nenhum `tail -f` · base viva 5432/6379 nunca alvo (suite backend declarada nao executada no item 3) · nada escrito no repositorio (`git status --porcelain` da arvore principal: 0 ` D`; nenhum commit).
 - Processos vivos antes da remocao, medido por `Get-CimInstance Win32_Process | Where CommandLine -like '*w-port402*'` → 5, **todos a propria cadeia de medicao** (bash.exe x2, timeout.exe x2, powershell.exe — o literal esta na linha de comando deles); 0 `node`/`npm`/`git` usando o worktree.
-- `git worktree remove --force /c/Users/AMP/w-port402` → ec=0; `git worktree list | grep -c w-port402` → 0; `ls -d /c/Users/AMP/w-port402` → inexistente; `git worktree prune` ec=0.
+- `git worktree remove --force ~/w-port402` → ec=0; `git worktree list | grep -c w-port402` → 0; `ls -d ~/w-port402` → inexistente; `git worktree prune` ec=0.
 - Residuo alheio reportado, nao varrido (item 7): 14 worktrees de outros blocos; 50 arquivos `??` em `.claude/agents/especialistas/` + espelho na arvore principal (corpos de jurado de outras juntas nao versionados — fora deste mandato).
 - Veredito parcial: terreno encerrado como o mandato pede.
 

@@ -9,8 +9,8 @@ Corpo lido em `origin/main` (`git show origin/main:.claude/agents/inspetor-de-te
 - parcial: VERDE.
 
 ## 2. Mutação viva
-- cmd: `git worktree list` · `git -C C:/Users/thiag/w-rec01 status --porcelain` · `git rev-parse HEAD` · processos com `w-rec01|j488|rec-01` (Win32_Process)
-- saída: o worktree do dev `C:/Users/thiag/w-rec01` AINDA EXISTE, no ramo `feat/patio-rec-01-dominio`, HEAD = ea6d4aef (= objeto), porcelain 0 linhas, stash vazio; nenhum processo node/codex vivo nele (só a fila `fila-j488.sh`, que espera este parecer); registro `agentes-vivos.tsv:360` dá o dev como `concluido`. Container `rec01-pg` não existe (só erp-postgres/erp-redis).
+- cmd: `git worktree list` · `git -C ~/w-rec01 status --porcelain` · `git rev-parse HEAD` · processos com `w-rec01|j488|rec-01` (Win32_Process)
+- saída: o worktree do dev `~/w-rec01` AINDA EXISTE, no ramo `feat/patio-rec-01-dominio`, HEAD = ea6d4aef (= objeto), porcelain 0 linhas, stash vazio; nenhum processo node/codex vivo nele (só a fila `fila-j488.sh`, que espera este parecer); registro `agentes-vivos.tsv:360` dá o dev como `concluido`. Container `rec01-pg` não existe (só erp-postgres/erp-redis).
 - parcial: VERDE COM RESSALVA (a premissa do mandato "já não tem worktree" é falsa; o worktree existe, mas está limpo e igual ao objeto).
 
 ## 3. Insumos
@@ -28,7 +28,7 @@ Corpo lido em `origin/main` (`git show origin/main:.claude/agents/inspetor-de-te
 - saída: só erp-postgres e erp-redis (Up 6 h, ambiente externo); portas 55491/55492/55493 livres; w-j488-c1/c2/c3 não existem; memória de commit livre 31,6 GB, física livre 7,3 GB; disco C livre 274,95 GB. Briefing: worktree próprio + `npm ci` + Postgres próprio por cadeira, proíbe erp-*, 3000/5173/5432/6379, o worktree externo da apresentação, árvore principal, prune e down -v.
 - parcial: VERDE.
 
-## 6. Fatia S0, baseline e corpos (worktree descartável `C:/Users/thiag/w-insp488`, detached em ea6d4aef, `npm ci` próprio)
+## 6. Fatia S0, baseline e corpos (worktree descartável `~/w-insp488`, detached em ea6d4aef, `npm ci` próprio)
 - cmd: `node scripts/sync-agent-agents.mjs --check` → `ec=0`, `[agents-sync] OK — 95 agentes, espelho consistente.`
 - cmd: `npm run check` (exit por variável). 1ª tentativa ec=2 (TS2305 `@prisma/client` sem `PrismaClient`): cliente Prisma não gerado. `npm run db:generate` sem `DATABASE_URL` falha (PrismaConfigEnvError). Com `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npm run db:generate` (ec=0, como o passo "Generate Prisma Client" do job backend, ci.yml l.97) → `npm run check` ec=0.
 - cmd: `node scripts/migration-transaction-guard.mjs` → ec=0, `migrações: 120 · anteriores: 112 · novas: 8 · violações: 0`; `git diff --check <merge-base> HEAD` ec=0; porcelain 0 depois de tudo.

@@ -31,7 +31,7 @@ banco, o guard, a régua e o escopo**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, nível menor do contrato, declarado — §C7.6), **sem executar nada**: a
-fábrica não tem `Bash`. O que ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-07cb1` enquanto **outro agente editava
+fábrica não tem `Bash`. O que ele diz sobre o ramo foi **lido** no disco de `~/w-07cb1` enquanto **outro agente editava
 `src/` e `tests/` nesse mesmo worktree**. A fábrica não leu ref nenhuma por `git`. O relatório do dev cita a base `4fe7524e` e um
 commit do orquestrador `67e5cb1c` (hipótese). Todo SHA, arquivo:linha, contagem e trecho deste corpo é **[A RE-VERIFICAR]** no blob do
 objeto. Afirmação da emenda, do plano, da crítica, do relatório do dev ou deste corpo é **roteiro**, nunca fato.
@@ -198,20 +198,20 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo**. Cont
   `corpo_md5` = `MSYS_NO_PATHCONV=1 git -C <seu-wt> show <objeto>:.claude/agents/especialistas/jurado-07cb1-c3-despacho-censo-persistencia.md | tr -d '\r' | md5sum`,
   e o mesmo para o espelho `.agents/`. Abaixo: objeto, `B`, `origin/main` no início, `$SCRATCH`, `uname -a` (host **e** container),
   `node -v`, `git --version` (host e container), `psql --version` (container), `docker version` (servidor), livre em `C:`, ambiente.
-- **Arquivos de saída:** os que o mandato nomear. Padrão: `C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/C3-evidencia.md`
+- **Arquivos de saída:** os que o mandato nomear. Padrão: `~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/C3-evidencia.md`
   e `…/C3-voto.json`. Nunca no seu worktree de medição. Quedas: do **orquestrador** (P6).
 - **Saída colada: LF, sem espaço no fim de linha** (`sed -E 's/[[:space:]]+$//'`); no fim, `grep -cE '[[:space:]]+$'` = **0** nos dois
   arquivos (publique). **Nunca** cole URL de conexão nem senha.
-- **Worktree PRÓPRIO, detached, caminho CURTO:** `C:/Users/AMP/w-j07cb1c3` (ou o que o mandato nomear), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j07cb1c3 <objeto>`. **Prove**
-  `test -e C:/Users/AMP/w-j07cb1c3/.git`. Caminho existente é resíduo alheio: reporte e use o sufixo `b`. `npm ci --no-audit --no-fund`
+- **Worktree PRÓPRIO, detached, caminho CURTO:** `~/w-j07cb1c3` (ou o que o mandato nomear), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j07cb1c3 <objeto>`. **Prove**
+  `test -e ~/w-j07cb1c3/.git`. Caminho existente é resíduo alheio: reporte e use o sufixo `b`. `npm ci --no-audit --no-fund`
   **próprio**. **Junction/symlink de `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)).
-- **Árvores intocáveis.** `C:/Users/AMP/w-07cb1` é do **desenvolvedor**, e outro agente pode estar escrevendo nela: a sua única escrita
+- **Árvores intocáveis.** `~/w-07cb1` é do **desenvolvedor**, e outro agente pode estar escrevendo nela: a sua única escrita
   lá são os dois arquivos de saída. Nenhum outro `w-*` é seu.
 - **Containers PRÓPRIOS, prefixo `j07cb1-c3-`**, numa rede Docker própria **sem porta publicada no host**:
   - um `postgres:16` (`j07cb1-c3-pg`) e, se a suíte pedir, um `redis:7` (`j07cb1-c3-redis`), descartáveis; imagem ausente: `pull`
     declarado; **não** remova imagem compartilhada;
-  - um cliente Node 20 (`j07cb1-c3-node`); a receita `C:/Users/AMP/erp-terreno/receita-pg16.sh` (hipótese) serve de base: copie para
+  - um cliente Node 20 (`j07cb1-c3-node`); a receita `~/erp-terreno/receita-pg16.sh` (hipótese) serve de base: copie para
     `$SCRATCH`, adapte, publique `diff` e md5; para manter containers de pé entre os passos, um condutor seu, verbatim e md5;
   - a árvore entra por `git -c core.autocrlf=false archive <objeto>` (e de `B`, para a base), com **todos** os blobs conferidos
     (`git hash-object --no-filters` × `ls-tree`) e `md5sum -c` dentro do container; depois `npm ci`, `prisma generate` e
@@ -239,7 +239,7 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo**. Cont
 - **Remoção só do que você criou, pelo nome exato.** Containers por `docker rm -f -v <nome>`, rede por `docker network rm`, contagem
   `j07cb1-c3-` = 0 conferida. Antes de remover o worktree, os processos vivos com o caminho:
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-j07cb1c3*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`;
-  depois `git worktree remove --force C:/Users/AMP/w-j07cb1c3`. Limpe os diretórios que as suítes criam na **sua** árvore e os
+  depois `git worktree remove --force ~/w-j07cb1c3`. Limpe os diretórios que as suítes criam na **sua** árvore e os
   temporários `o6r07cb-*` que você gerou.
 - **Saída para arquivo e exit por variável:** `cmd > "$LOG" 2>&1; ec=$?`. **Nunca `| tail`.** **Caminho absoluto sempre.** Script com
   barra invertida dupla nunca por heredoc; comandos longos em partes de até 7 KB.
@@ -536,7 +536,7 @@ Voto (JSON):
  ],
  "criterios_que_nao_puderam_falhar": [ "controle que NÃO acusou · critério que não pode PASSAR por construção — achado contra este corpo ou contra a régua" ],
  "pendencias_que_aceito": [ "o que é da C1/C2 (nomeie a cadeira) · o b2 · residuais declarados (R5) com N medido · falhas pre-existentes com dono e evidência · o -db sem vigia na CI, com dono · o que este corpo declara reprovação por construção" ],
- "teardown": "src/ trocados e mutações restaurados (hash-object/md5 = blob do objeto) · gatilho temporário removido e provado · containers j07cb1-c3-* (Postgres, Redis, cliente) removidos por docker rm -f -v e rede removida, contagem 0 · árvore temporária da receita removida · diretórios de storage e temporários o6r07cb-* que eu criei removidos · worktree C:/Users/AMP/w-j07cb1c3 removido por `git worktree remove --force`, com 0 processos vivos com o caminho antes · cópias e segredos de $SCRATCH apagados · base viva (erp-postgres/erp-redis) nunca tocada nem religada · w-07cb1 só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
+ "teardown": "src/ trocados e mutações restaurados (hash-object/md5 = blob do objeto) · gatilho temporário removido e provado · containers j07cb1-c3-* (Postgres, Redis, cliente) removidos por docker rm -f -v e rede removida, contagem 0 · árvore temporária da receita removida · diretórios de storage e temporários o6r07cb-* que eu criei removidos · worktree ~/w-j07cb1c3 removido por `git worktree remove --force`, com 0 processos vivos com o caminho antes · cópias e segredos de $SCRATCH apagados · base viva (erp-postgres/erp-redis) nunca tocada nem religada · w-07cb1 só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
 }
 ```
 

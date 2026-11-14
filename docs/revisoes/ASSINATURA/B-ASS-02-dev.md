@@ -1,7 +1,7 @@
 # B-ASS-02 — Relatório do dev (dev-ass02)
 
 > Braço: dev-ass02 (nível menor declarado, identidade de dev). Plano: B-ASSINATURA-plano.md §4.2.
-> Worktree: C:/Users/thiag/w-ass02 · ramo feat/b-ass-02-catalogo-planos · base origin/main = 0f2bfb73 (B-ASS-01 #498).
+> Worktree: ~/w-ass02 · ramo feat/b-ass-02-catalogo-planos · base origin/main = 0f2bfb73 (B-ASS-01 #498).
 
 ## F0 — medição (ref: worktree HEAD = origin/main 0f2bfb73)
 

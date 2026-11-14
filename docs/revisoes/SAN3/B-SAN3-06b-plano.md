@@ -1503,7 +1503,7 @@ Controle por **mutação** (uma seção fabricada `## P-TESTE-MUTACAO … - stat
 
 > **Papel:** `planejador-mestre` · **identidade:** `planejador-remedicao-b-san3-06b` (nova; não planejou, votou nem
 > desenvolveu este bloco) · **modelo que rodou: Claude Opus 5.5 — SUBSTITUIÇÃO DECLARADA (§C7.6-bis):** o frontmatter
-> pede Fable; pela decisão do dono de 2026-10-08 o Fable roda só em bloco de dinheiro. · **worktree:** `C:/Users/AMP/w-06b`
+> pede Fable; pela decisão do dono de 2026-10-08 o Fable roda só em bloco de dinheiro. · **worktree:** `~/w-06b`
 > · **HEAD medido:** `9301a86ac15be22c2125587cd9543bcd1be2d5f0` · **ref de medição:** `origin/main@a9bbde382213627545e9d229c9ab616d83a0a840`.
 >
 > Regra desta seção: o texto antigo (§0–§14, Apêndices) **não foi reescrito**; o que mudou está aqui, com comando e
@@ -1512,7 +1512,7 @@ Controle por **mutação** (uma seção fabricada `## P-TESTE-MUTACAO … - stat
 ### R.0 Terreno desta re-medição
 
 ```
-$ date -u ; git -C C:/Users/AMP/w-06b rev-parse HEAD ; git fetch origin main ; git rev-parse origin/main main
+$ date -u ; git -C ~/w-06b rev-parse HEAD ; git fetch origin main ; git rev-parse origin/main main
 2026-10-09 03:51Z
 9301a86ac15be22c2125587cd9543bcd1be2d5f0
 a9bbde382213627545e9d229c9ab616d83a0a840   (origin/main = main local)
@@ -1527,7 +1527,7 @@ $ git diff --name-only 3b1fe0f9 a9bbde38 | wc -l ; … | grep -c -E '^(src|prism
 **Máquina:** Windows 11 (Git Bash), `node v20.19.5`. **O worktree NÃO tem `node_modules`** (`ls frontend/node_modules` →
 ausente) e o disco está a **96 % (11 GB livres)** — `npm ci` não foi rodado (o mandato é escrever só o plano; §C5).
 Consequência: os geradores (a)–(e) **foram re-executados** (resolvem `typescript` por `createRequire`, e o
-`NODE_PATH=C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/frontend/node_modules` — checkout principal, também em
+`NODE_PATH=~/Documents/GitHub/ERP_Techsolutios/frontend/node_modules` — checkout principal, também em
 `a9bbde38 [main]`, só **lido**, sem junction — dá `typescript 5.9.3`); os **testes dinâmicos** (24 backend, 15+22
 frontend, `test:smoke` inteiro) **não foram re-executados** aqui — ver R.1 linha P-r e a correção C-10 (o passo 0 do dev
 re-mede o baseline). Nada além deste arquivo foi escrito no worktree; os geradores rodaram de cópias no scratchpad.
@@ -1586,7 +1586,7 @@ blob** — e uma amostra foi **re-executada** (R.1), não herdada (§C7.7 P3).
 | (d) | gerador (d): 142 · 4 · 1 | re-executado → `145 · 4 · 1` | **mudou** (só o total de arquivos) |
 | (e) | gerador (e): 437 seções · citam = 5 · abertas = 5 | re-executado → `# seções = 464 · citam B-SAN3-06b = 6 · abertas = 5` — a 6.ª é a **`P-SAN-PROD-BOOTSTRAP` (l.574)**, que o gerador credita por um artefato: a citação (l.596-597) está na subseção `#### P-SAN3-09-ORG-PLATAFORMA-NO-CONSOLE`, que o gerador **não separa** (só corta em `^## `). Linhas novas: `P-019 :228` · `P-WEB-CLOUD-BILLING-CARTAZ :8465` · `P-WEB-PLATAFORMA-TELAS-FICCAO :8569` · `P-WEB-PLATAFORMA-SEGURANCA-FABRICADA :8586` · `P-SAN3-01-MOCKMODE-TRES-AUTORIDADES :9544` · `P-WEB-ROTAS-SEM-PORTA :8603` (cruzamento de conteúdo) · `P-DONO-CLOUD-BILLING-ESCOPO :8482` | **mudou** → C-1, C-6 |
 
-**Insumo, não fato:** a varredura de telas de hoje (`C:/Users/AMP/erp-pausa-2026-10-03/VARREDURA-TELAS-2026-10-09.md`,
+**Insumo, não fato:** a varredura de telas de hoje (`~/erp-pausa-2026-10-03/VARREDURA-TELAS-2026-10-09.md`,
 l.13 e l.40-45) classifica as 6 telas deste bloco como **PLACEHOLDER** e a Saúde como "bloqueada honesta" — **concorda**
 com o §0.3. Duas leituras dela que este plano **não** segue, por medição: (i) l.40 sugere "trocar por `platform.adapter` /
 `GET /platform/overview`" — o `platform.adapter`/`GET /platform/tenants` é memória (P-f), só o `/overview` serve; (ii) l.55
@@ -1717,7 +1717,7 @@ fonte, com selo. O registro do bloco apensa a ela uma linha "parcial: readiness 
 entrega **45** (T1–T40 + T41–T45). Os números "1202/1202", "168 → 169", "`release.pr 394`" do §0.5/§9 estão **velhos** e
 **não** são reescritos em lugar nenhum (KPI congelado, C-5).
 
-**C-10 — Passo 0 do dev (terreno).** O worktree `C:/Users/AMP/w-06b` não tem `node_modules`. Antes de tudo:
+**C-10 — Passo 0 do dev (terreno).** O worktree `~/w-06b` não tem `node_modules`. Antes de tudo:
 `df -h /c` (≥ 5 GB livres; abaixo disso `DEEP_CLEAN=1 bash scripts/post-merge-cleanup.sh`, §C5) → `npm --prefix frontend ci`
 (**próprio**, sem junction — §C7.1-ter(c)) → `npm ci` na raiz (para `npm run lint` e o `tsx` dos geradores) → **baseline
 re-medido**: os 3 testes de plataforma (esperado 15/15), `smoke-flow.test.tsx` (22/22) e `test:smoke` inteiro (número

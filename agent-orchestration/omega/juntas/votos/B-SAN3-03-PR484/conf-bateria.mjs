@@ -3,8 +3,8 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, appendFileSync } from "node:fs";
 
-const root = "C:/Users/thiag/w-conf484";
-const out = "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484";
+const root = "~/w-conf484";
+const out = "~/erp-pausa-2026-10-03/revisoes/j484";
 const txt = readFileSync(`${root}/docs/revisoes/SAN3/B-SAN3-03-bateria.txt`, "utf8").split(/\r?\n/);
 const start = txt.findIndex((l) => l.startsWith("LISTA LITERAL"));
 const list = [];

@@ -13,7 +13,7 @@ papel: C3 | identidade: jurado-07cb1-c3-opus (corpo: jurado-07cb1-c3-despacho-ce
 
 ## Legalidade (antes do mérito)
 
-- L1 parecer do inspetor: `insp-07cb1-parecer.md` (instância inspetor-07cb1-opus, 03:30–03:40Z) → **LIBERADO COM RESSALVA**; nomeia C3 = `jurado-07cb1-c3-despacho-censo-persistencia`, corpo .claude 58eae266…/.agents 74c95ad4… (= meus md5 medidos no blob), worktree `C:/Users/AMP/w-j07cb1c3`, prefixo `j07cb1-c3-`. Executor desta cadeira: Claude Opus 5.5 subagente → confere. Veredito parcial: legal.
+- L1 parecer do inspetor: `insp-07cb1-parecer.md` (instância inspetor-07cb1-opus, 03:30–03:40Z) → **LIBERADO COM RESSALVA**; nomeia C3 = `jurado-07cb1-c3-despacho-censo-persistencia`, corpo .claude 58eae266…/.agents 74c95ad4… (= meus md5 medidos no blob), worktree `~/w-j07cb1c3`, prefixo `j07cb1-c3-`. Executor desta cadeira: Claude Opus 5.5 subagente → confere. Veredito parcial: legal.
 - L2 objeto por duas fontes: `git ls-remote origin refs/heads/fix/o6r07cb1-despacho-atribui` → b198fe35…; `gh pr view 440 --json headRefOid,...` → b198fe35…, OPEN, isDraft=false. Coincidem.
 - L3 check-runs: `gh api repos/.../commits/<O>/check-runs?per_page=100` → total 14 | não-verdes 0 | pendentes 0; backend (117294253935, 117294243720) success; backend-postgres (117294253904, 117294243707) success. Runs 38997853809 e 38997850343.
 - L4 base: `git merge-base origin/main <O>` = 4fe7524e…; `git rev-list --merges --parents B..O` → vazio (0 merges no bloco); `git log --first-parent B..O` → 4 commits (67e5cb1c feature, 77678bb2 trava, 34b8ae73 corpos, b198fe35 carimbo), todos autor thiagodorgo.
@@ -23,13 +23,13 @@ papel: C3 | identidade: jurado-07cb1-c3-opus (corpo: jurado-07cb1-c3-despacho-ce
 
 ## Terreno (parte Windows)
 
-- Worktree próprio: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j07cb1c3 b198fe35…` → `test -e .git` OK, HEAD = objeto. `npm ci --no-audit --no-fund` ec=0 (326 pacotes), sem junction. `DATABASE_URL=postgresql://x:y@127.0.0.1:1/nada npm run db:generate` ec=0 (R7).
-- $SCRATCH = `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/j07cb1c3`.
+- Worktree próprio: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j07cb1c3 b198fe35…` → `test -e .git` OK, HEAD = objeto. `npm ci --no-audit --no-fund` ec=0 (326 pacotes), sem junction. `DATABASE_URL=postgresql://x:y@127.0.0.1:1/nada npm run db:generate` ec=0 (R7).
+- $SCRATCH = `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/j07cb1c3`.
 - Desvio procedimental DECLARADO: o arquivo da sonda v1 foi criado no $SCRATCH com a ferramenta Write (não por Bash); depois só Bash (mv para `.mts`, sed). Nenhum arquivo do repositório foi escrito por Write/Edit.
 
 ## Item 1 — o despacho grava a atribuição (sonda própria, memória, HTTP porta efêmera)
 
-Comando: `cd C:/Users/AMP/w-j07cb1c3 && timeout 600 node --import tsx $SCRATCH/sonda-item1.mts > sonda-obj.log` (v2 md5 6fb90d731b4286ad4836e1c055682b6d; v1 267eaced… só diferia no corpo do cancel/assign do preparo — o 1º run teve preparo inválido: cancel sem `financial_decision`, assign web exige UUID; corrigido e re-executado). Forma: `CORE_SAAS_PERSISTENCE=memory`, `createApp(MemoryCoreSaasAdapter)`, ator por `x-tenant-id/x-user-id/x-role`. Leitor de estado: GET OS, mapa de linhas `assignments` do repositório em memória (com `metadata.source/dispatchId`), timeline da OS (`work_order_assigned`), lista de despachos + `listTimeline` do despacho, runs.
+Comando: `cd ~/w-j07cb1c3 && timeout 600 node --import tsx $SCRATCH/sonda-item1.mts > sonda-obj.log` (v2 md5 6fb90d731b4286ad4836e1c055682b6d; v1 267eaced… só diferia no corpo do cancel/assign do preparo — o 1º run teve preparo inválido: cancel sem `financial_decision`, assign web exige UUID; corrigido e re-executado). Forma: `CORE_SAAS_PERSISTENCE=memory`, `createApp(MemoryCoreSaasAdapter)`, ator por `x-tenant-id/x-user-id/x-role`. Leitor de estado: GET OS, mapa de linhas `assignments` do repositório em memória (com `metadata.source/dispatchId`), timeline da OS (`work_order_assigned`), lista de despachos + `listTimeline` do despacho, runs.
 Limite de terreno declarado: no modo memória o id de usuário não é UUID → `POST /operator-profiles` 400 `invalid_uuid` → o caminho "com perfil" não é exercível em memória (o resolver cai em `undefined` → user id). O "com perfil" é medido no Postgres (item 2).
 
 Resultados no OBJETO (N = 1 execução, 28 casos):
@@ -72,9 +72,9 @@ Veredito parcial item 1: os 8 caminhos pedidos estão corretos no objeto e a bas
 ## Terreno (parte Linux) — containers j07cb1-c3-*
 
 - Antes de subir: `docker ps` → só `erp-postgres`, `erp-redis` (base viva, não alvo) e o grupo alheio `tl179220920218731-{run,redis,pg}` (1 grupo de outro trabalho) → o meu é o 2º trabalho com container (limite 3, `D-BRACOS-E-DOCKER-17-10`, origin/main 79599143:decisoes.md:3716).
-- Imagem: `erp-junta-node20-pg16:local` (da receita) AUSENTE → `docker pull node:20-trixie-slim` (declarado) e `docker build -t j07cb1-c3-img:local - < Dockerfile.c3` (cópia verbatim de `C:/Users/AMP/erp-terreno/Dockerfile.erp-junta-node20-pg16`, md5 323bb15068362b9e00fe7c970963a73a nos dois) → build ec=0. Motivo: `node:20-bookworm-slim` não tem libssl (prisma).
+- Imagem: `erp-junta-node20-pg16:local` (da receita) AUSENTE → `docker pull node:20-trixie-slim` (declarado) e `docker build -t j07cb1-c3-img:local - < Dockerfile.c3` (cópia verbatim de `~/erp-terreno/Dockerfile.erp-junta-node20-pg16`, md5 323bb15068362b9e00fe7c970963a73a nos dois) → build ec=0. Motivo: `node:20-bookworm-slim` não tem libssl (prisma).
 - Rede `j07cb1-c3-net`; `j07cb1-c3-pg` (postgres:16 → PostgreSQL 16.14 Debian 16.14-1.pgdg13+1), `j07cb1-c3-node` (Linux WSL2 x86_64, node v20.20.2, psql 16.14, sem git). Ports: pg `5432/tcp` exposta, NÃO publicada no host; node nenhuma. Senha do Postgres aleatória (24 bytes hex) num arquivo 0600 do $SCRATCH, entra só por `-e NOME` sem valor; o papel `c3_rt` idem.
-- Árvore: `git -c core.autocrlf=false archive b198fe35` → `/c/Users/AMP/t-j07cb1c3` → `git hash-object --no-filters` × `ls-tree`: total=4136 iguais=4136 → tar para `/work` → `md5sum -c` 4136 arquivos ec=0 → árvore temporária removida.
+- Árvore: `git -c core.autocrlf=false archive b198fe35` → `~/t-j07cb1c3` → `git hash-object --no-filters` × `ls-tree`: total=4136 iguais=4136 → tar para `/work` → `md5sum -c` 4136 arquivos ec=0 → árvore temporária removida.
 - Dentro: `npm ci` ec=0 · `prisma generate` ec=0 · `prisma migrate deploy` ec=0 (109 migrations found, 109 aplicadas; `20260877000000_backfill…` aplicada por ÚLTIMO, depois de `20260873000000`; em B e em origin/main 79599143 a última é 20260873 — sem colisão de carimbo).
 - Ruído declarado: eventos de domínio dão `ECONNREFUSED 127.0.0.1:6379` (não subi Redis; fail-open, "Domain event was not enqueued") — não afeta OS/despacho.
 
@@ -163,5 +163,5 @@ Veredito parcial item 3: censo com as 23 reclassificadas e nada mais, T11 vazio 
 
 - Objeto no fim: `git ls-remote` do ramo = b198fe35… (igual). origin/main no fim: 2a49b0159c83a6019a63b4d2af4d119fe7410972 (andou: #442, B-ARNES-2); merge-base com o objeto segue 4fe7524e → a base do bloco não mudou.
 - Terreno: às ~04:55Z o daemon Docker reiniciou; `docker ps -a` mostra erp-postgres, erp-redis e tl179221234520038-{pg,redis} em `Exited (255) 9 minutes ago` (medido 05:03Z). Meus containers estavam ociosos (último uso ~04:10Z). NÃO religuei a base viva (não é minha). Aviso ao orquestrador.
-- Limpeza: containers `j07cb1-c3-node`, `j07cb1-c3-pg` (`docker rm -f -v`), rede `j07cb1-c3-net`, imagens `j07cb1-c3-img:local` e `node:20-trixie-slim` (minhas; 0 containers usando) removidas; contagem j07cb1-c3 = 0; worktree `C:/Users/AMP/w-j07cb1c3` removido por `git worktree remove --force` (0 processos com o caminho, ec 0); subpasta `j07cb1c3` do scratchpad (inclui as senhas) apagada; base viva nunca tocada; resíduo alheio só reportado. Disco C: 11G livres.
+- Limpeza: containers `j07cb1-c3-node`, `j07cb1-c3-pg` (`docker rm -f -v`), rede `j07cb1-c3-net`, imagens `j07cb1-c3-img:local` e `node:20-trixie-slim` (minhas; 0 containers usando) removidas; contagem j07cb1-c3 = 0; worktree `~/w-j07cb1c3` removido por `git worktree remove --force` (0 processos com o caminho, ec 0); subpasta `j07cb1c3` do scratchpad (inclui as senhas) apagada; base viva nunca tocada; resíduo alheio só reportado. Disco C: 11G livres.
 - Voto: `c3-voto.json` — **REPROVADO** (A1: bloqueia, dentro-do-bloco, grave: quebra de permissão). A2 ajuste; N1–N3 notas.

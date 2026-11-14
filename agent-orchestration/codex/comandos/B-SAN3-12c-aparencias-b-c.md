@@ -17,7 +17,7 @@ Entregar as aparências B (“Conta em foco”) e C (“Conferência do caixa”
 - Referência aprovada: `docs/claude-code-handoff/screen-refs/financeiro-baixa-conta-conciliacao-3opcoes.reference.html`.
 - Telas-modelo: `frontend/src/modules/finance/pages/FinanceiroPage.tsx` e `frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx`; lista-modelo: `frontend/src/modules/work-orders/pages/WorkOrdersPage.tsx`.
 - Skills obrigatórias: `.agents/skills/ts-frontend-full/SKILL.md` e `.agents/skills/ui-ux-pro-max/SKILL.md`.
-- O parecer `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/rev-plano-12c-parecer.md` não existia na abertura da FATIA 1.
+- O parecer `~/erp-pausa-2026-10-03/revisoes/rev-plano-12c-parecer.md` não existia na abertura da FATIA 1.
 
 ## Regras
 
@@ -25,7 +25,7 @@ Entregar as aparências B (“Conta em foco”) e C (“Conferência do caixa”
 - Vermelho-controle antes do código; cada mutação é restaurada com hash conferido.
 - Backend continua autoridade de autorização; a UI só molda a experiência. Dados ausentes nunca viram zero, soma local ou placeholder.
 - Reusar queries, ações e formulários existentes. Alteração de autorização, payload de escrita, CAS, idempotência, cálculo ou integridade suspende a implementação e aciona a reclassificação da E5.1.
-- Node por caminho absoluto `C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe`; nunca `nvm use`.
+- Node por caminho absoluto `~/AppData/Local/nvm/v22.14.0/node.exe`; nunca `nvm use`.
 - Espaço livre abaixo de 7.500.000.000 bytes: parar e registrar.
 
 ## Escopo PERMITIDO

@@ -2,11 +2,11 @@
 
 - **Dev:** `dev-19b-cl`, identidade de dev declarada, **Claude Opus 5.5** (subagente da sessão), nível menor. Não escreveu o plano nem as críticas.
 - **Exceção declarada** (§C7 item 6 "IAs externas primeiro" e 11(6)): o plano pede Codex como preferência. O Codex 1 está sem cota semanal até 16/11, o Codex 2 ocupado com a pré-revisão do #536, a API no limite do dia até 21:00 e o Argon só como segundo revisor. Por isso a **pré-revisão será de outro modelo** (o Codex 2, ou a API depois das 21:00).
-- **Plano:** `C:/Users/thiag/erp-pausa-2026-10-03/planos/plano-B-SAN3-19b-v2.md`, com a **Emenda 1** (requisitos da crítica r2, `revisoes/crit-19b-r2-plano.json`).
+- **Plano:** `~/erp-pausa-2026-10-03/planos/plano-B-SAN3-19b-v2.md`, com a **Emenda 1** (requisitos da crítica r2, `revisoes/crit-19b-r2-plano.json`).
 - **Perguntas do §9, sem resposta do dono ao começar:** segue a recomendação, como o plano manda. Pergunta 1 = A (`TODO-DONO`, só neste diário); Pergunta 2 não muda o código e abre a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO`; o resíduo do item 47 no app é deste bloco (F4).
-- **Worktree:** `C:/Users/thiag/w-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`, base `origin/main` `a0979f51` (#530).
+- **Worktree:** `~/w-19b`, ramo `fix/mobile-acesso-nao-permitido-textos`, base `origin/main` `a0979f51` (#530).
 - **Flutter local:** 3.41.6 (o CI fixa 3.47.5). Toda hora vem de `date` (São Paulo).
-- Gravado fatia por fatia (P1). Cópia do progresso em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-19b-progresso.md`.
+- Gravado fatia por fatia (P1). Cópia do progresso em `~/erp-pausa-2026-10-03/revisoes/dev-19b-progresso.md`.
 
 ## Fatias (esqueleto)
 - F0 — vermelho-controle: FEITA (07:31)
@@ -29,7 +29,7 @@ Base citada (§6, F0 "ou na `main` atual, citada"): `origin/main` = `a0979f513b1
 
 | Comando | Exit | Saída resumida |
 |---|---|---|
-| `git fetch origin; git worktree add -b fix/mobile-acesso-nao-permitido-textos C:/Users/thiag/w-19b origin/main` | 0 | `HEAD is now at a0979f51` |
+| `git fetch origin; git worktree add -b fix/mobile-acesso-nao-permitido-textos ~/w-19b origin/main` | 0 | `HEAD is now at a0979f51` |
 | `flutter pub get` | 0 | `Got dependencies!` |
 | `dart format` + `flutter analyze` nos 3 arquivos novos | 0 | `No issues found!` |
 | `flutter test` dos 3 arquivos novos (base) | 1 | `+3 -15: Some tests failed.` |
@@ -219,7 +219,7 @@ Testes da §3.2 e da Emenda 1, só nos literais: `b091_connectivity_profile_test
 
 - Job `flutter`, nos dois gatilhos (push: run `43008192758`, job `130480877738`; pull_request: run `43008231670`, job `130481011991`), resumo lido no log pela API (`gh api repos/thiagodorgo/ERP_Techsolutios/actions/jobs/<job>/logs`), não pela cor (§C7 item 11(3)): `+1118: All tests passed!`, `Formatted 246 files (0 changed)` (no 3.47.5 o `format` do repositório inteiro passa), `No issues found!`, `stable-3.47.5`. As guardas do bloco rodaram no CI: `[T1] chamadas=10`, `[T1-alcance] achadas=10 referencia=10`, `[T1b] chamadas=4`, `[T5] chaves=API_BASE_URL,ERP_APP_VERSION,ERP_AUTH_MODE,ERP_ENV`, `[T6] exibidos=771 violacoes=0 allowlist=2`.
 - `gh pr checks 540` às 08:19: **16/16 `pass`** (antivirus, authority-portal, backend, backend-postgres, docker, flutter, frontend, owner-portal, nos dois gatilhos).
-- Limpeza (08:04): `mobile/flutter_app/build/` (82 MB) e `.dart_tool/` (24 MB) removidos do worktree. O kit de mutações, para o verificador, ficou em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-19b-mutacoes/` (fora do repositório).
+- Limpeza (08:04): `mobile/flutter_app/build/` (82 MB) e `.dart_tool/` (24 MB) removidos do worktree. O kit de mutações, para o verificador, ficou em `~/erp-pausa-2026-10-03/revisoes/dev-19b-mutacoes/` (fora do repositório).
 
 ## Emenda 2 do plano (orquestrador, 11/11 08:20 SP) e este commit (08:21–08:25 SP)
 
@@ -252,7 +252,7 @@ A pré-revisão (`revisoes/prerev-540.json`, APROVADO com 7 não graves) foi fei
 
 **Grep da trava do §5:** passa a ter 3 linhas, as 2 já declaradas mais a nova condição de status do PR540-01 (`+              if (report.status == ExpenseReportStatus.submitted ||`), exceção declarada pela Emenda 3, item 1.
 
-**Rodada completa de mutações (09:00:39–09:06:10):** `python mut.py` M1–M13, M15–M29, MP2 e MP3 = **30 de 30 vermelhas**, todas restauradas (sha igual), 0 abortadas. M23 agora fica vermelha em 3 testes (T6, T6b e o T6c, que espera "Aprovado pelo gestor"). Kit atualizado em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-19b-mutacoes/` (`mutacoes.json`, `mut3-saida.txt`).
+**Rodada completa de mutações (09:00:39–09:06:10):** `python mut.py` M1–M13, M15–M29, MP2 e MP3 = **30 de 30 vermelhas**, todas restauradas (sha igual), 0 abortadas. M23 agora fica vermelha em 3 testes (T6, T6b e o T6c, que espera "Aprovado pelo gestor"). Kit atualizado em `~/erp-pausa-2026-10-03/revisoes/dev-19b-mutacoes/` (`mutacoes.json`, `mut3-saida.txt`).
 
 | Comando | Exit | Saída resumida |
 |---|---|---|

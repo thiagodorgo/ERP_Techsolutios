@@ -24,7 +24,7 @@ dinheiro, o contrato, o escopo e a regressão**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela identidade `fab-red-san312b-opus` (Claude Opus, nível menor — §C7.6), no papel de fábrica, lendo o disco de
-`C:/Users/AMP/w-san312b` em 2026-10-26 com o head `bfbba006` (a **cerca**). Todo `arquivo:linha` abaixo é **leitura de disco
+`~/w-san312b` em 2026-10-26 com o head `bfbba006` (a **cerca**). Todo `arquivo:linha` abaixo é **leitura de disco
 [A RE-VERIFICAR]**; os nomes são as âncoras. Afirmação do plano, do relatório do dev, das críticas, do orquestrador, do inspetor e deste
 corpo é **roteiro, nunca fato**.
 
@@ -37,7 +37,7 @@ comandos de terminal, e o executor é declarado no disparo (Claude Opus ou Codex
 **As ratificações do orquestrador de 2026-10-26** (14:35Z: `finance-errors.ts` entra no PERMITIDO do §7.2, e o F4 vale **32**, não 31;
 14:40Z: o F8 vira **trava com inventário congelado** das 8 ocorrências pré-existentes, vazio em `accounts/**`, `entries/**` e `pages/**`, com
 a pendência `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE`) estão, segundo leitura do fabricante, **só** na cópia do orquestrador
-`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md` (no fim) — o plano versionado no objeto não as tem. Meça as duas coisas. Elas
+`~/erp-pausa-2026-10-03/planos/B-SAN3-12-plano.md` (no fim) — o plano versionado no objeto não as tem. Meça as duas coisas. Elas
 são decisão do orquestrador sobre transcrição do plano (não norma do `CLAUDE.md`); o seu juízo é se o objeto cumpre o plano **com** elas e
 se o registro do objeto as torna rastreáveis (§A5) — não as reabra.
 
@@ -149,15 +149,15 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo** (verm
 
 - **Onde roda.** Git Bash no Windows do dono (ou o terminal do Codex, declarado). `timeout -k 15 <s>`, saída para arquivo, `ec` em
   variável; **nunca `tail -f`, `watch` nem leitura sem fim**; caminho absoluto; estado no `$SCRATCH` (padrão
-  `C:/Users/AMP/erp-pausa-2026-10-03/j12b-c3/`).
+  `~/erp-pausa-2026-10-03/j12b-c3/`).
 - **Primeira linha do arquivo de evidência**, numa linha só:
   `papel: cadeira C3 | identidade: <nome da sessão> | corpo: jurado-san312b-c3-dinheiro-e-contrato | modelo: <modelo> (nível menor, §C7.6; substituição: <nenhuma | qual e por quê>) | objeto: <40 hex> | mandato_md5: <tr -d '\r' < mandato | md5sum> (declarado: <md5 | não declarado>) | corpo_md5: <md5 EOL-neutro do blob no objeto> (recebido: <md5 | n/a>) | corpo carregado × blob do objeto: IDENTICO | DIVERGE`.
   Logo abaixo: `origin/main` no início, `$SCRATCH`, `node -v`, `docker version` (servidor), `SELECT version()` do seu Postgres, livre em
   `C:`, memória de commit livre e as variáveis que definiu (nomes, nunca valor; nenhum `export`).
-- **Arquivos de saída:** os que o mandato nomear (padrão `C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b/c3-evidencia.md`
+- **Arquivos de saída:** os que o mandato nomear (padrão `~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b/c3-evidencia.md`
   e `…/c3-voto.json`). Única escrita sua em `w-san312b`. Você não commita.
-- **Worktree PRÓPRIO, detached, prefixo `j12b-c3-`:** `C:/Users/AMP/j12b-c3-wt` no objeto (e, se o item pedir a base em paralelo, um
-  segundo `C:/Users/AMP/j12b-c3-wtb` no head-base — só se o disco comportar dois `npm ci`; senão, o vermelho-controle por `git checkout`
+- **Worktree PRÓPRIO, detached, prefixo `j12b-c3-`:** `~/j12b-c3-wt` no objeto (e, se o item pedir a base em paralelo, um
+  segundo `~/j12b-c3-wtb` no head-base — só se o disco comportar dois `npm ci`; senão, o vermelho-controle por `git checkout`
   no mesmo worktree). Prove `.git` presente e `.env` ausente; caminho existente é resíduo alheio. `npm ci` **próprio** na raiz e em
   `frontend/`; `npx prisma generate` com URL sintética. **Junction de `node_modules` é PROIBIDA** (§C7.1-ter(c)).
 - **Postgres 16 e Redis 7 PRÓPRIOS, prefixo `j12b-c3-`:** `j12b-c3-pg` (`postgres:16-alpine`) e, se o arnês exigir, `j12b-c3-redis`

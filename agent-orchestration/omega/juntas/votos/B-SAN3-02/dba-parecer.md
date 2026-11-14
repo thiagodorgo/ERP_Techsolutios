@@ -2,10 +2,10 @@
 
 - **Identidade:** `dba-san302-opus` (nova; Claude Opus 5.5 — nível menor declarado, §C7.6). Parecer obrigatório de banco; **não é voto de cadeira**, é insumo das cadeiras.
 - **Objeto:** `prisma/migrations/20260878000000_invoice_complementary_title/migration.sql` e `prisma/schema.prisma` (modelo `FinancialTitle`), contra `docs/revisoes/SAN3/B-SAN3-02-plano.md` (v2 §5 + Anexo A v2.1 + Anexo B v2.2 + Anexo C Q1–Q4) e `docs/revisoes/SAN3/B-SAN3-02-dev.md`.
-- **Onde medi (§A7):** ref `be344c85` (cópia própria `C:/Users/AMP/w-dba302`, `git worktree add … be344c85 --detach`); `main` = merge-base `bf83cda8` (= `origin/main` medido no início). Banco: Postgres 16 descartável via `teste-linux.sh` (rede própria, sem porta publicada; nunca a base viva).
+- **Onde medi (§A7):** ref `be344c85` (cópia própria `~/w-dba302`, `git worktree add … be344c85 --detach`); `main` = merge-base `bf83cda8` (= `origin/main` medido no início). Banco: Postgres 16 descartável via `teste-linux.sh` (rede própria, sem porta publicada; nunca a base viva).
 
 ## Item 1 — Migração ADITIVA; aplica limpo sobre a main (112) e sobre base com dado legado
-**Roteiro:** `C:/Users/AMP/w-dba302/tmp-dba/cenario.sh`, rodado por `teste-linux.sh C:/Users/AMP/w-dba302 "bash tmp-dba/cenario.sh"` (contêiner `tl17924538919161`, ~23:51Z). Bases próprias por `CREATE DATABASE` no Postgres 16.15 efêmero. O nível da main é o mesmo checkout sem o diretório `20260878000000_…` (112 migrações).
+**Roteiro:** `~/w-dba302/tmp-dba/cenario.sh`, rodado por `teste-linux.sh ~/w-dba302 "bash tmp-dba/cenario.sh"` (contêiner `tl17924538919161`, ~23:51Z). Bases próprias por `CREATE DATABASE` no Postgres 16.15 efêmero. O nível da main é o mesmo checkout sem o diretório `20260878000000_…` (112 migrações).
 
 - **Texto (estático):** 6 sentenças ativas. Fora dos comentários, nada de GRANT/REVOKE/SECURITY DEFINER/CONCURRENTLY/POLICY/ROW LEVEL/UPDATE-DELETE de dado/TRUNCATE/DROP TABLE/DROP COLUMN/ALTER COLUMN. O único acerto do grep é o `ON UPDATE CASCADE` da FK (l.10), um falso positivo. O SQL é idêntico ao §5 do plano. O único DROP é o do índice antigo `financial_titles_wo_direction_active_key`, depois de o novo existir, como manda o §5 do SAN3 (troca autorizada; nenhum dado sai). → **ADITIVA**.
 - **Base vazia → head (113):** `migrate deploy` ec 0 (pelo teste-linux); `migrate status` "Database schema is up to date!" ec 0; `_prisma_migrations` 113/113 finalizadas, 0 falhas.
@@ -30,7 +30,7 @@
 - **Veredito item 2: VERDE.**
 
 ## Item 3 — Rollback: ponta A (sem complementar) e ponta B (complementar ativo → 23505 antes de remover objetos); `_prisma_migrations` limpo
-**Roteiro:** `C:/Users/AMP/w-dba302/tmp-dba/c3.sh`, 2º lote do `teste-linux.sh` (~00:2xZ). O 1º lote saiu inválido para este item por defeito do MEU arnês: `CREATE DATABASE dbA` sem aspas cria `dba`, o `psql -d dbA` não achou a base, e o `migrate deploy` criou uma `dbA` vazia. Nada daquele lote foi aproveitado aqui; tudo foi refeito com nomes em minúsculas. O down usado é o **texto do comentário da própria migração** (extraído por `sed`, 6 sentenças), o mesmo do §5 do plano. Quedas do WSL às 23:51Z e ~00:10Z não atingiram contêiner meu: o 1º lote já tinha subido depois do 1º reinício, e este depois do 2º.
+**Roteiro:** `~/w-dba302/tmp-dba/c3.sh`, 2º lote do `teste-linux.sh` (~00:2xZ). O 1º lote saiu inválido para este item por defeito do MEU arnês: `CREATE DATABASE dbA` sem aspas cria `dba`, o `psql -d dbA` não achou a base, e o `migrate deploy` criou uma `dbA` vazia. Nada daquele lote foi aproveitado aqui; tudo foi refeito com nomes em minúsculas. O down usado é o **texto do comentário da própria migração** (extraído por `sed`, 6 sentenças), o mesmo do §5 do plano. Quedas do WSL às 23:51Z e ~00:10Z não atingiram contêiner meu: o 1º lote já tinha subido depois do 1º reinício, e este depois do 2º.
 
 - **Ponta A** (`dbpa` = clone do legado no head, **sem** complementar):
   - `psql -v ON_ERROR_STOP=1 -1 -f down.sql` → 6 sentenças OK, ec 0. Depois, `DELETE FROM _prisma_migrations WHERE migration_name='20260878000000_invoice_complementary_title'`, ec 0.
@@ -89,4 +89,4 @@
   - **Pré-existente / fora do escopo:** PITR e pg_dump agendado para S3 são estado de plataforma (AWS não provisionada), não deste PR.
 - **RPO/RTO medidos (só banco, nesta escala):** pg_dump 0,44 s; restore 14,3 s em base nova; o RPO depende do agendamento, que inexiste na plataforma (fora do PR).
 
-**Limpeza:** cópia `C:/Users/AMP/w-dba302` removida por `git worktree remove --force`; contêineres/redes `tl*` dos dois lotes removidos pelo trap do `teste-linux.sh` (conferido por `docker ps -a`/`docker network ls`). Nada commitado. **P7:** não recebi PAUSA.
+**Limpeza:** cópia `~/w-dba302` removida por `git worktree remove --force`; contêineres/redes `tl*` dos dois lotes removidos pelo trap do `teste-linux.sh` (conferido por `docker ps -a`/`docker network ls`). Nada commitado. **P7:** não recebi PAUSA.

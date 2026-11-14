@@ -10,7 +10,7 @@ Lançada como general-purpose (corpo não está no diretório de agentes da sess
 - `origin/main` no início (fetch 20:18Z): `a9bbde382213627545e9d229c9ab616d83a0a840`.
 - Cerca do mandato (HC): `2400049bf8ec421c3f65a07884c6394d4ab208bc` (objeto do inspetor). `git diff --name-only 2400049b 84831ad9` = 6 arquivos: `00-mandatos/C1c4.md`, `00-mandatos/C2c4.md`, `00-mandatos/C3c4.md`, `ciclo4/00-inspetor-terreno.md`, `ciclo4/C1-evidencia.md`, `ciclo4/C1-voto.json` — só registro (os dois últimos só pelo nome; NÃO abertos). Restrito a `src scripts tests prisma docs Kpis .gitattributes docker-compose.prod.yml` = 0 linhas.
 - Mandato: `tr -d '\r' < .../00-mandatos/C2c4.md | md5sum` = `bfeb025fa6154f817436a42c03104712`; `git hash-object` disco = `git rev-parse 84831ad9:<mandato>` = `6ce2ee58…` (versionado no objeto, igual ao disco).
-- $SCRATCH = `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c2c4`.
+- $SCRATCH = `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c2c4`.
 - Host: `MINGW64_NT-10.0-22631 N3SOH82 3.6.6 x86_64 Msys`; shell `/bin/bash.exe` (Git Bash); cwd por comando com caminho absoluto; nenhum `export`; `MSYS_NO_PATHCONV=1` só como prefixo por comando.
 - Docker servidor 29.6.1 linux/amd64. `docker ps` (rodando) = 0 containers — base viva desligada.
 - Disco `C:` no início: 11 GB livres (96%).
@@ -19,7 +19,7 @@ Lançada como general-purpose (corpo não está no diretório de agentes da sess
 ## L. Legalidade antes do mérito (20:20Z)
 ### L1. Parecer do inspetor da junta 4
 - Comando: `git show 84831ad9:agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo4/00-inspetor-terreno.md | tr -d '\r'` (129 linhas, lido inteiro).
-- Saída: instância `inspetor-de-terreno-da-junta` (Claude Opus 5.5, substituição declarada), aberto 19:14Z, fechado 19:28Z; veredito **LIBERADO COM RESSALVA** (R1 resíduo alheio inerte · R2 disco 11 GB · R3 disparo general-purpose com corpo do blob · R4 objeto que andar: publicar diff só-registro e só começar com check-runs do head novo CONCLUÍDOS). Tabela libera C2 = `jurado-san305-c4-credencial-arnes-escopo`, corpo `3363eb094cdf49a3534a73321b7d1d2f` (.claude) e espelho `.agents` `4b34813d…`, worktree `C:/Users/AMP/w-j05c4c2` (livre), containers `j05c4-c2-*` (inclusive `j05c4-c2-b7-pg`), sem porta. Objeto do inspetor: `2400049b`.
+- Saída: instância `inspetor-de-terreno-da-junta` (Claude Opus 5.5, substituição declarada), aberto 19:14Z, fechado 19:28Z; veredito **LIBERADO COM RESSALVA** (R1 resíduo alheio inerte · R2 disco 11 GB · R3 disparo general-purpose com corpo do blob · R4 objeto que andar: publicar diff só-registro e só começar com check-runs do head novo CONCLUÍDOS). Tabela libera C2 = `jurado-san305-c4-credencial-arnes-escopo`, corpo `3363eb094cdf49a3534a73321b7d1d2f` (.claude) e espelho `.agents` `4b34813d…`, worktree `~/w-j05c4c2` (livre), containers `j05c4-c2-*` (inclusive `j05c4-c2-b7-pg`), sem porta. Objeto do inspetor: `2400049b`.
 - Veredito parcial: confere o meu nome, o meu corpo commitado nos dois espelhos (md5 .claude e .agents medidos por mim = os do parecer), worktree e containers próprios. LIBERADO COM RESSALVA vale. R4 aplicável: o head andou para `84831ad9`.
 
 ### L2. Objeto e delta da cerca
@@ -51,27 +51,27 @@ Lançada como general-purpose (corpo não está no diretório de agentes da sess
 - Veredito parcial: VERDE — 7/7 completed/success no objeto (inclusive docker e backend-postgres). Só agora começo o mérito (R4 do inspetor). Antes disso fiz apenas: leitura (plano C4, DEV-relatorio, corpo, mandato, parecer), worktree git e scripts do condutor (sem container, sem medição).
 
 ### L5. Worktree próprio
-- `ls -d /c/Users/AMP/w-j05c4c2` → inexistente (livre); `ls -d /c/Users/AMP/t-*` → nenhum.
-- `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j05c4c2 84831ad9…` ec=0; `test -e C:/Users/AMP/w-j05c4c2/.git` ok; `rev-parse HEAD` = 84831ad9…; `status --porcelain | wc -l` = 0.
+- `ls -d ~/w-j05c4c2` → inexistente (livre); `ls -d ~/t-*` → nenhum.
+- `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j05c4c2 84831ad9…` ec=0; `test -e ~/w-j05c4c2/.git` ok; `rev-parse HEAD` = 84831ad9…; `status --porcelain | wc -l` = 0.
 - Sem node_modules no worktree (só git); npm ci só dentro do container. Junction: nenhuma.
 
 ## T. Terreno (20:27–20:31Z)
-- Receita `C:/Users/AMP/erp-terreno/receita-pg16.sh` md5 EOL-neutro `9861a2aaa55fc49fcf1c4263261a3668` (= o do inspetor). Copiada (sem CR) para `$S/receita-orig.sh` e adaptada em `$S/setup.sh` (md5 final `a8aacd7050349bfd79d86c8dbd698f7e`): passos 1–4 + servidor B7; seções 5–6 (suíte, sonda) saíram — a suíte roda no meu `lote.sh`, o container fica de pé (trap só derruba em falha). Diff publicado (resumo; arquivo `$S/setup.diff` regenerável):
+- Receita `~/erp-terreno/receita-pg16.sh` md5 EOL-neutro `9861a2aaa55fc49fcf1c4263261a3668` (= o do inspetor). Copiada (sem CR) para `$S/receita-orig.sh` e adaptada em `$S/setup.sh` (md5 final `a8aacd7050349bfd79d86c8dbd698f7e`): passos 1–4 + servidor B7; seções 5–6 (suíte, sonda) saíram — a suíte roda no meu `lote.sh`, o container fica de pé (trap só derruba em falha). Diff publicado (resumo; arquivo `$S/setup.diff` regenerável):
 ```
 27c27
-> REPO="${REPO:-C:/Users/AMP/w-j05c4c2}"
+> REPO="${REPO:-~/w-j05c4c2}"
 43c43
 > dk image inspect sha256:4203157f95ea5e494d975e496f22905ffe184d059ae6aaa62aae840c761c19b5 >/dev/null && dk run --rm "$IMAGE" true || { echo "imagem $IMAGE ausente — construa com Dockerfile.erp-junta-node20-pg16" >&2; exit 2; }
 45c45
 > RUN_ID="j05c4-c2"
 47c47
-> TMP_TREE="/c/Users/AMP/t-j05c4c2"
+> TMP_TREE="~/t-j05c4c2"
 61a62
 >   dk rm -f -v "$RUN_ID-b7-pg" >/dev/null 2>&1
 63c64
->   case "$TMP_TREE" in /c/Users/AMP/t-j05c4c2) rm -rf -- "$TMP_TREE";; esac
+>   case "$TMP_TREE" in ~/t-j05c4c2) rm -rf -- "$TMP_TREE";; esac
 72c73
-> trap 'ec0=$?; if [ "$ec0" -ne 0 ]; then cleanup; else case "$TMP_TREE" in /c/Users/AMP/t-j05c4c2) rm -rf -- "$TMP_TREE";; esac; fi' EXIT
+> trap 'ec0=$?; if [ "$ec0" -ne 0 ]; then cleanup; else case "$TMP_TREE" in ~/t-j05c4c2) rm -rf -- "$TMP_TREE";; esac; fi' EXIT
 75c76
 > say "RUN_ID=$RUN_ID objeto=$SHA modo=$MODE imagem=$(dk image inspect -f '{{.Id}}' sha256:4203157f95ea5e494d975e496f22905ffe184d059ae6aaa62aae840c761c19b5 | cut -c1-19) pg=$PG_IMAGE"
 81a83,84
@@ -83,7 +83,7 @@ Lançada como general-purpose (corpo não está no diretório de agentes da sess
 135,188d139
 (e 135,188d139: saem as seções 5 e 6 da receita)
 ```
-- Pontos da fábrica conferidos: `RUN_ID` (l.45) e o case do `rm -rf` da árvore (l.63) trocados JUNTOS para `j05c4-c2`/`/c/Users/AMP/t-j05c4c2`; `REPO` (l.27) → meu worktree; `TESTS` (l.32) = os 2 arquivos; `git ls-tree -r --name-only HEAD tests | grep -E '^tests/san3-05-.*-db\.test\.ts$'` no objeto = 2 (guard-db, leituras) — não há outro.
+- Pontos da fábrica conferidos: `RUN_ID` (l.45) e o case do `rm -rf` da árvore (l.63) trocados JUNTOS para `j05c4-c2`/`~/t-j05c4c2`; `REPO` (l.27) → meu worktree; `TESTS` (l.32) = os 2 arquivos; `git ls-tree -r --name-only HEAD tests | grep -E '^tests/san3-05-.*-db\.test\.ts$'` no objeto = 2 (guard-db, leituras) — não há outro.
 - **Anomalia de infraestrutura (declarada):** `docker image inspect erp-junta-node20-pg16:local` (pela tag) → "No such image" ec=1, embora `docker images` liste a tag e `docker run --rm erp-junta-node20-pg16:local node -v` → v20.20.2 ec=0; pelo ID `sha256:4203157f95ea…` o inspect funciona. Troquei a checagem da l.43 (inspect pelo ID + `run --rm` pela tag). Não é defeito do bloco.
 - Saída do setup (`timeout 1500 bash $S/setup.sh 84831ad9… normal`, ec=0):
 ```
@@ -103,7 +103,7 @@ Lançada como general-purpose (corpo não está no diretório de agentes da sess
 20:29:57Z md5 no container scripts/db-runtime-role.sh = 5cab4f63b1259450acf68675205d5908
 20:29:57Z md5 no container tests/san3-05-runtime-role-guard-db.test.ts = 57ab4744f6b06e0614b4830237a75467
 20:29:58Z md5 no container tests/san3-05-leituras-de-plataforma-db.test.ts = c3e802162abd60f39b119c2ba76ec960
-20:29:58Z arvore temporaria /c/Users/AMP/t-j05c4c2 removida (a copia vive so no container)
+20:29:58Z arvore temporaria ~/t-j05c4c2 removida (a copia vive so no container)
 20:29:59Z versoes no container: node v20.20.2 · npm 10.8.2 · psql (PostgreSQL) 16.14 (Debian 16.14-1.pgdg13+1)
 20:30:15Z npm ci ec=0 (added 326 packages in 15s)
 20:30:19Z prisma generate ec=0
@@ -289,8 +289,8 @@ Lançada como general-purpose (corpo não está no diretório de agentes da sess
 
 ### F3. Teardown
 - Containers `j05c4-c2-node`, `j05c4-c2-pg`, `j05c4-c2-b7-pg` → `docker rm -f -v` ec=0 (o servidor com `log_statement=all` foi removido junto); volumes anônimos `b3ca1ef5…` (pg) e `391cf0ca…` (b7) → removidos (`docker volume inspect` falha); rede `j05c4-c2-net` → `docker network rm` ec=0; contagem `j05c4-c2` containers = 0, redes = 0; volumes órfãos alheios: 18 antes e 18 depois (reportados, não tocados).
-- Árvore temporária `/c/Users/AMP/t-j05c4c2` → ausente (removida pelo setup após a cópia).
-- Worktree: processos vivos com `w-j05c4c2` na linha de comando = **0**; `git worktree remove --force C:/Users/AMP/w-j05c4c2` ec=0; `git worktree list | grep -ic w-j05c4c2` = 0; diretório ausente.
+- Árvore temporária `~/t-j05c4c2` → ausente (removida pelo setup após a cópia).
+- Worktree: processos vivos com `w-j05c4c2` na linha de comando = **0**; `git worktree remove --force ~/w-j05c4c2` ec=0; `git worktree list | grep -ic w-j05c4c2` = 0; diretório ausente.
 - Mutações de controle (guarda com GRANT a mais; trava com o WHERE da forma M4b) restauradas no container com md5 = blob antes da remoção; o worktree do ramo nunca foi mutado.
 - Scratch: `.secrets` (senhas descartáveis), `.sentinelas`, logs, TAPs e cópias apagados; o resto do `$SCRATCH` (scripts do condutor) é apagado logo após gravar o voto. `/tmp` do host: só os meus arquivos de leitura, apagados.
 - Base viva: `erp-postgres`, `erp-redis`, `erp-postgres-alt` seguem `Exited` (nunca tocados; 5432/6379/55432 nunca alvo). No `w-o05`, `git status` mostra novos só os meus dois arquivos (+ os `C3-*` da outra cadeira, + `scratchpad/` alheio); 33 ` M` fantasmas com `git diff --name-only` = 0 (conteúdo idêntico).

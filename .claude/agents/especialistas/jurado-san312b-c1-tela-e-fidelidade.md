@@ -24,7 +24,7 @@ o que o usuário vê e toca, contra a referência e o padrão.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela identidade `fab-red-san312b-opus` (Claude Opus, nível menor — §C7.6), no papel de fábrica, lendo o disco de
-`C:/Users/AMP/w-san312b` em 2026-10-26 com o head `bfbba006` (a **cerca**: o head que a fábrica recebeu, antes do commit destes corpos).
+`~/w-san312b` em 2026-10-26 com o head `bfbba006` (a **cerca**: o head que a fábrica recebeu, antes do commit destes corpos).
 Todo `arquivo:linha` abaixo é **leitura de disco [A RE-VERIFICAR]**; os nomes (componente, teste, rótulo) são as âncoras. Afirmação do
 plano, do relatório do dev, das críticas, do orquestrador, do inspetor e deste corpo é **roteiro, nunca fato**.
 
@@ -150,17 +150,17 @@ passar — é achado contra este corpo ou contra a régua, declarado antes do ve
 - **Onde roda.** Git Bash no Windows do dono. Cada comando tem `timeout -k 15 <s>` e saída para arquivo com o `ec` lido em variável
   (`cmd > "$LOG" 2>&1; ec=$?`). **Nunca `tail -f`, `watch`, `| tail` nem leitura sem fim.** Caminho absoluto sempre; variável de shell não
   sobrevive entre chamadas de `Bash` — guarde o que precisa em arquivo no seu `$SCRATCH` (uma pasta sua fora do repositório, nomeada no
-  mandato; padrão `C:/Users/AMP/erp-pausa-2026-10-03/j12b-c1/`).
+  mandato; padrão `~/erp-pausa-2026-10-03/j12b-c1/`).
 - **Primeira linha do arquivo de evidência**, numa linha só:
   `papel: cadeira C1 | identidade: <nome da sessão> | corpo: jurado-san312b-c1-tela-e-fidelidade | modelo: <modelo> (nível menor, §C7.6; substituição: <nenhuma | qual e por quê>) | objeto: <40 hex> | mandato_md5: <tr -d '\r' < mandato | md5sum> (declarado: <md5 | não declarado>) | corpo_md5: <md5 EOL-neutro do blob no objeto> (recebido: <md5 | n/a>) | corpo carregado × blob do objeto: IDENTICO | DIVERGE`.
   Logo abaixo: `origin/main` no início, `$SCRATCH`, `node -v`, a versão do Chromium do Playwright que usou, livre em `C:` (`df -h /c`),
   memória de commit livre e as variáveis que você definiu (nomes, **nunca** valor de segredo; nenhum `export`).
-- **Arquivos de saída:** os que o mandato nomear (padrão `C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b/c1-evidencia.md`
+- **Arquivos de saída:** os que o mandato nomear (padrão `~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b/c1-evidencia.md`
   e `…/c1-voto.json`). Essa é a **única** escrita sua em `w-san312b`. Você não commita. Quedas vão para `00-quedas.md` pelo orquestrador.
-- **Worktree PRÓPRIO, detached, caminho CURTO, prefixo `j12b-c1-`:** `C:/Users/AMP/j12b-c1-wt`, por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j12b-c1-wt <objeto>`; prove
-  `test -e C:/Users/AMP/j12b-c1-wt/.git` e `test ! -e C:/Users/AMP/j12b-c1-wt/.env`. Caminho já existente é resíduo alheio: reporte e use
-  `C:/Users/AMP/j12b-c1-wt2`. Depois, `timeout -k 15 900 npm --prefix C:/Users/AMP/j12b-c1-wt/frontend ci --no-audit --no-fund` **próprio**
+- **Worktree PRÓPRIO, detached, caminho CURTO, prefixo `j12b-c1-`:** `~/j12b-c1-wt`, por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j12b-c1-wt <objeto>`; prove
+  `test -e ~/j12b-c1-wt/.git` e `test ! -e ~/j12b-c1-wt/.env`. Caminho já existente é resíduo alheio: reporte e use
+  `~/j12b-c1-wt2`. Depois, `timeout -k 15 900 npm --prefix ~/j12b-c1-wt/frontend ci --no-audit --no-fund` **próprio**
   (e o da raiz, se o Playwright estiver só lá — leia os `package.json`). **Junction ou symlink de `node_modules` entre worktrees é
   PROIBIDO** (§C7.1-ter(c)).
 - **Sem banco.** Esta cadeira **não** sobe Postgres nem Redis: a tela é medida com a API **dublada** (o arnês do `finance-page-live.test.tsx`
@@ -176,7 +176,7 @@ passar — é achado contra este corpo ou contra a régua, declarado antes do ve
   `git commit`, `git push`, `docker` de qualquer forma, matar processo que não é seu. Resíduo alheio se **reporta, não se varre**.
 - **Remoção só do que você criou:** o servidor Vite pelo PID; worktree: conte antes os processos vivos com o caminho na linha de comando
   (`powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*j12b-c1-wt*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`);
-  só com 0, `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force C:/Users/AMP/j12b-c1-wt`.
+  só com 0, `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force ~/j12b-c1-wt`.
 - **Mutação restaurável, no SEU worktree:** (1) mute **por script** seu no `$SCRATCH`, com âncora de ocorrência **única** e EOL-consciente —
   conte antes: tem de ser 1; (2) prove a substituição (`git -C <wt> diff --numstat -- <f>` não-vazio); (3) prove que o mutante **carrega**: um
   caso **irmão** do mesmo arquivo de teste verde; (4) meça (TAP para arquivo, `ec` por variável); (5) restaure por

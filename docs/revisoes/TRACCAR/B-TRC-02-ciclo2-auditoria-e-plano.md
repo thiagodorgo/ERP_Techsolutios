@@ -21,7 +21,7 @@
 | Check-runs do objeto | 14/14 `completed success` (7 jobs × 2 gatilhos) | `gh pr view 454 --json statusCheckRollup` |
 | Commits do ramo | 28 (merge-base `539b078e`); o ramo já tem um merge da `main` (`27ebbdee`) — a convenção do ramo é **merge**, não rebase | `git log --oneline origin/main..HEAD` |
 | Delta do bloco | 75 arquivos, +15446/−130 | `git diff --stat origin/main...HEAD` |
-| Votos do ciclo 1 | não rastreados em `C:/Users/AMP/w-trc02/agent-orchestration/omega/juntas/votos/B-TRC-02/` (3 votos, 3 evidências, inspetor ×2, `00-mandatos/` ×4). **Sem `00-quedas.md`** (P6 exige) | `git status --short`; `ls` |
+| Votos do ciclo 1 | não rastreados em `~/w-trc02/agent-orchestration/omega/juntas/votos/B-TRC-02/` (3 votos, 3 evidências, inspetor ×2, `00-mandatos/` ×4). **Sem `00-quedas.md`** (P6 exige) | `git status --short`; `ls` |
 | Terreno agora | worktrees: raiz (`main` 539b078e), `w-agapi2`, `w-plan21` (detached 539b078e), `w-san320`, `w-trc02`; Docker: só `erp-postgres`/`erp-redis` (0 trabalhos); **disco C: 11 GB livres (96%)** | `git worktree list`; `docker ps`; `df -h` |
 
 **Regras aplicadas (lidas em `git show 38504427:CLAUDE.md`, idêntico ao da `main` — `git diff 38504427 origin/main -- CLAUDE.md` = vazio):**
@@ -136,14 +136,14 @@ guarda amostra; F3 vermelho por contagem") — isso continua valendo; muda a ân
 **Como a evidência parcial da (a) serve (P3, verbatim do contrato: "evidência registrada em arquivo pelo caído é roteiro de re-execução
 barata … Conclusão sem comando registrado continua sendo não-insumo, inclusive parcial favorável"):**
 - `cadeira-a-evidencia.md` tem ~21 seções com **comando → saída → veredito parcial** e as sondas **em disco**, com md5 registrado:
-  `C:/Users/AMP/erp-pausa-2026-10-03/jtrc02-a/` (`zz-jtrc02a-run.sh`, `zz-jtrc02a-sonda1.ts`, `zz-jtrc02a-dmlset.sql`, `zz-jtrc02a-inj.mjs`,
+  `~/erp-pausa-2026-10-03/jtrc02-a/` (`zz-jtrc02a-run.sh`, `zz-jtrc02a-sonda1.ts`, `zz-jtrc02a-dmlset.sql`, `zz-jtrc02a-inj.mjs`,
   `zz-jtrc02a-injloop.sh`, `zz-jtrc02a-mutrun.sh`, `zz-jtrc02a-mut.mjs`, `zz-jtrc02a-e4x20.sh`, `zz-jtrc02a-catalogo.sql`; saídas `dml-B.txt`,
   `inj-k1-17.txt`, `e4-objeto.txt`, `linux-3x.txt`, `regressao.tap`, `mut/`, `e4-objeto/`).
 - O sucessor **re-executa cada comando registrado sobre o objeto NOVO** (não sobre `38504427`), compara a saída com a registrada e **só então
   mede a cauda** que a (a) declarou faltar: "san3-05 runtime-role 12/12, guard 8, aditiva com recibos position, parecer do DBA, T-M sob M-E5x".
   Divergência de saída = mede de novo, não herda. O md5 das sondas é conferido antes de rodar (sonda alterada = sonda nova, não roteiro).
 - O que a (a) **concluiu** sem comando visível (ex.: "motivos NOVAS 7/7 sustentados") **não é insumo**: vale só o que o sucessor re-roda.
-- Idem para a (b): as 19 sondas em `C:/Users/AMP/erp-pausa-2026-10-03/jtrc02-b/` (em especial `zz-jtrc02b-hunks.mjs` 392a997b, `zz-jtrc02b-laco.mjs`,
+- Idem para a (b): as 19 sondas em `~/erp-pausa-2026-10-03/jtrc02-b/` (em especial `zz-jtrc02b-hunks.mjs` 392a997b, `zz-jtrc02b-laco.mjs`,
   `zz-jtrc02b-runmut.sh`) são roteiro para a nova (b): re-executar sobre o objeto novo, com a **base do laço recalculada** (§3.6).
 
 **Trava do item 9 neste ciclo:** não se aplica a nenhuma cadeira (nenhum verde). A ata do ciclo 2 registra, por cadeira, `refeita` — e o comando
@@ -157,7 +157,7 @@ que prova que o voto se refere ao **objeto final** (`objeto` no voto = `git ls-r
 e 7 leem `binding`), a mutação de controle do F3 é re-ancorada para não depender do andaime, o relatório do dev registra o ciclo 2, e o PR volta
 a `MERGEABLE`. **Ator:** `dev-trc02-c2-argon` (§4). **Fluxo:** registro do ciclo 1 → merge da `main` → conserto → relatório → push → CI → junta.
 
-### 3.1 Sequência de commits no ramo (um executor por vez em `C:/Users/AMP/w-trc02`)
+### 3.1 Sequência de commits no ramo (um executor por vez em `~/w-trc02`)
 
 | # | Quem | Commit (Conventional) | Conteúdo |
 |---|---|---|---|
@@ -244,7 +244,7 @@ sem ele" — é **registro**, entra no commit R (redator), não no D.
 ### 3.6 Merge da `main` (commit M) — como, e o que muda nos mandatos
 
 ```
-cd C:/Users/AMP/w-trc02 && git fetch origin && git merge --no-ff origin/main     # conflita SÓ em 2 arquivos de registro (medido, §0)
+cd ~/w-trc02 && git fetch origin && git merge --no-ff origin/main     # conflita SÓ em 2 arquivos de registro (medido, §0)
 ```
 - `agent-orchestration/controle/decisoes.md` (hunk único, l.3820–3901 do merge-tree): **os dois lados ficam inteiros** — o bloco do ramo
   ("Registro de 20/10/2026 — B-TRC-02 …" até `D-MIGRACAO-COM-TRANSACAO-EXPLICITA`) e o da `main` (`D-SAN3-04B-PAINEL-PROPRIO`, `D-SCOPED`), em ordem
@@ -320,11 +320,11 @@ no `OBITUARIO-IDENTIDADES.md`.
 
 ### 4.2 O que cada mandato troca em relação ao ciclo 1
 
-Geradores: **copiar** `C:/Users/AMP/erp-pausa-2026-10-03/redator-trc02-v2/{lib.sh,gerar-a.sh,gerar-b.sh,gerar-c.sh,gerar-i.sh,mandato-refs.sh,mandato-preflight.sh}`
+Geradores: **copiar** `~/erp-pausa-2026-10-03/redator-trc02-v2/{lib.sh,gerar-a.sh,gerar-b.sh,gerar-c.sh,gerar-i.sh,mandato-refs.sh,mandato-preflight.sh}`
 para `…/redator-trc02-c2/` e editar **lá** (a pasta do ciclo 1 é evidência; não se toca).
 
-1. `lib.sh`: `H=<obj2>`; `V=C:/Users/AMP/w-trc02/agent-orchestration/omega/juntas/votos/B-TRC-02-ciclo2`; `R=…/redator-trc02-c2`; `comum_preflight` com
-   `RAIZ=C:/Users/AMP/w-trc02` e PR 454 (ver R7).
+1. `lib.sh`: `H=<obj2>`; `V=~/w-trc02/agent-orchestration/omega/juntas/votos/B-TRC-02-ciclo2`; `R=…/redator-trc02-c2`; `comum_preflight` com
+   `RAIZ=~/w-trc02` e PR 454 (ver R7).
 2. "Você é …": identidade, executor e modelo da tabela; **modelo explícito no disparo** — Codex `--model gpt-5.6-sol`; Antigravity `agy models` antes
    de lançar, `gemini-4-argon` (R-3 do inspetor, generalizada para executores externos).
 3. O parágrafo MONOCULTURA **sai**; entra: "composição mista, declarada: Codex Sol ×4 papéis (redator, inspetor, (a), (c)); Argon ×2 (dev, (b));
@@ -355,7 +355,7 @@ para `…/redator-trc02-c2/` e editar **lá** (a pasta do ciclo 1 é evidência;
 - **Antes de tudo:** `bash scripts/post-merge-cleanup.sh` (disco **11 GB**; cada worktree com `npm ci` ≈ 0,4 GB, mais 2 clusters). Worktrees
   `w-plan21` (detached em `539b078e`), `w-agapi2`, `w-san320`: o orquestrador confere **processo vivo e dono** antes de remover — resíduo alheio se
   reporta, não se varre. Memória de commit livre **≥ 4 GB** a cada lançamento; **≤ 2 trabalhos Docker**.
-- Worktrees por jurado em caminho curto: `C:/Users/AMP/w-jt2c2-a`, `w-jt2c2-b`, `w-jt2c2-c`; `npm ci` próprio (**junction PROIBIDA**); contêineres
+- Worktrees por jurado em caminho curto: `~/w-jt2c2-a`, `w-jt2c2-b`, `w-jt2c2-c`; `npm ci` próprio (**junction PROIBIDA**); contêineres
   `jt2c2-<x>-pg` / `jt2c2-<x>-redis`; remoção só por `git worktree remove --force` com 0 processos. Sondas persistentes em `…/erp-pausa-2026-10-03/jt2c2-<x>/`.
 - **Ordem:** R → M → C → D → push → check-runs concluídos → redator gera 4 mandatos (pré-voo OK) → **inspetor sozinho** → `LIBERADO` →
   **(a) Codex + (b) Argon em paralelo** (2 trabalhos Docker) → **(c) Codex** quando um concluir → ata. 2 quedas em <30 min → pausa de 15 min (P5).
@@ -403,5 +403,5 @@ literais da decisão de 24/10 para o commit R (R8).
 Executado: `git rev-parse/branch/status/fetch`, `gh pr view 454`, `git merge-tree --write-tree 38504427 origin/main`, `git show`/`blame`/`ls-tree`/`grep`
 sobre `38504427`, `c1485c94`, `7c0ed643`, `498c4e26`, `origin/main`; leitura dos 3 votos, 3 evidências, parecer e evidência do inspetor, 4 mandatos,
 `gerar-*.sh`/`lib.sh`; transpilação objeto × conserto (`ts.transpileModule` do `w-trc02`) no scratchpad. **Nada rastreado editado; nada commitado;
-nenhum worktree, contêiner ou banco criado.** Scratchpad: `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/pl02/`
+nenhum worktree, contêiner ou banco criado.** Scratchpad: `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/pl02/`
 (`service.obj.ts`, `service.fix.ts`, `.js` emitidos, `transpile.cjs`, partes deste arquivo) — só o que eu criei; pode ser apagado.

@@ -2,7 +2,7 @@ SE SUSTENTA COM CORRECOES
 
 # 05. Ataque à análise 04, `aud-ataque`
 
-Identidade nova, Claude Opus 5.5, nível menor declarado. Não escrevi 01 a 04, não votei, não planejei, não desenvolvi. Só leitura. Medido em 31/10/2026, a partir das 22:33 SP, em `origin/main` = `0fda595a`; head do #477 no momento: `78f78916` (o conserto segue correndo). "l.N" sem outro nome = linha de `04-analise.md`. Caminhos relativos a `C:/Users/AMP/erp-pausa-2026-10-03/`.
+Identidade nova, Claude Opus 5.5, nível menor declarado. Não escrevi 01 a 04, não votei, não planejei, não desenvolvi. Só leitura. Medido em 31/10/2026, a partir das 22:33 SP, em `origin/main` = `0fda595a`; head do #477 no momento: `78f78916` (o conserto segue correndo). "l.N" sem outro nome = linha de `04-analise.md`. Caminhos relativos a `~/erp-pausa-2026-10-03/`.
 
 ## 1. Em uma página
 

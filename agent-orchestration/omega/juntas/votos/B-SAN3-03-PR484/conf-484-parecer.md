@@ -7,7 +7,7 @@
 
 ## Terreno
 
-- **Comando:** `FreeVirtualMemory` = 39,45 GB (≥ 4 GB); disco C: 294 GB livres; `docker ps` = `rec01-pg` (outro), `erp-postgres`, `erp-redis` (intocados). `git worktree add --detach C:/Users/thiag/w-conf484 35367753…`; `git rev-parse HEAD`; `git status --porcelain`.
+- **Comando:** `FreeVirtualMemory` = 39,45 GB (≥ 4 GB); disco C: 294 GB livres; `docker ps` = `rec01-pg` (outro), `erp-postgres`, `erp-redis` (intocados). `git worktree add --detach ~/w-conf484 35367753…`; `git rev-parse HEAD`; `git status --porcelain`.
 - **Saída:** HEAD = `353677535f855d931a0e02fccc64297cfdb443ae`, status vazio. `git log --graph 5b628b88..HEAD`: 10 commits do conserto (K1 `0f731d4b`, K2 `1af05802`, K3 `03901eb9`, M47-c′ `f1a123ca`, K5 `c7387fd7`, §11 `f4bb114d`, registros) + merge `88e63e11` de `origin/main` (#485 `ceb62a07`, #486 `5da03cac`) + `35367753`.
 - **Comando:** `npm ci --include=dev` no worktree (`conf-npmci.log`) → `npmci_exit=0`, `node_modules` é `Directory` (não junction). `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npx prisma generate`. `docker run -d --name conf484-pg -e POSTGRES_USER=postgres … -p 127.0.0.1:55468:5432 postgres:16` → `accepting connections`; `npx prisma migrate deploy` → `All migrations have been successfully applied.` (`conf-migrate.log`).
 - **Veredito parcial:** terreno próprio apto. `erp-postgres`, `erp-redis`, `rec01-pg`, as portas 3000/5173/5432/6379 e a árvore principal não foram tocados (na árvore principal, só `git worktree add` e leitura).
@@ -19,7 +19,7 @@
 - **Saída:** `normalizeTenantTag` (`engine.ts:155`) passa a `value.replace(/[\p{Default_Ignorable_Code_Point}\p{Cf}]/gu, "").normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase()`, que é a letra do K1. A mesma função serve o índice (id, nome, slug) e a tag.
 
 ### 1b. Sonda da C1 em memória (`c1b-grafias-novas.mts`)
-- **Comando:** `node --import tsx revisoes/j484/c1b-grafias-novas.mts C:/Users/thiag/w-conf484/src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts` → `exit=0`, log `conf-grafias-novas-objeto.log`. Resumi por cenário × estratégia e comparei com o `c1b-grafias-novas-objeto.log` da C1 (medido no `5b628b88`).
+- **Comando:** `node --import tsx revisoes/j484/c1b-grafias-novas.mts ~/w-conf484/src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts` → `exit=0`, log `conf-grafias-novas-objeto.log`. Resumi por cenário × estratégia e comparei com o `c1b-grafias-novas-objeto.log` da C1 (medido no `5b628b88`).
 - **Saída (objeto `35367753`), 12 invisíveis × 2 estratégias:**
   - `nameSide` (A=`"Dupli"+ch+"cada"`, B=`"Duplicada"`, tag `"Duplicada"`): **12/12 `ambiguous_tenant_tag`=10, `alloc[]`**, nas duas estratégias. No `5b628b88` (log da C1): 12/12 `alloc[b=10]` na direta e rateio a/b no só-uso.
   - `nameEdge` (invisível na ponta): 12/12 ambígua, nas duas (antes: só U+FEFF).
@@ -52,7 +52,7 @@
 ## Item 2 — Os não graves fecharam
 
 ### 2a. C2-N1 e C2-N2: sondas da C2 contra o objeto
-- **Comando (memória):** `C2_WT=C:/Users/thiag/w-conf484`, `TZ=America/Sao_Paulo` e depois `TZ=UTC`, `node --test --import tsx revisoes/j484/c2-probe-routes.test.mts` → `exit=0` nos dois. Logs `conf-c2-probe-objeto-America-Sao_Paulo.log` e `conf-c2-probe-objeto-UTC.log`. Comparei com o `c2-probe-objeto.log` da C2 (`5b628b88`).
+- **Comando (memória):** `C2_WT=~/w-conf484`, `TZ=America/Sao_Paulo` e depois `TZ=UTC`, `node --test --import tsx revisoes/j484/c2-probe-routes.test.mts` → `exit=0` nos dois. Logs `conf-c2-probe-objeto-America-Sao_Paulo.log` e `conf-c2-probe-objeto-UTC.log`. Comparei com o `c2-probe-objeto.log` da C2 (`5b628b88`).
 - **Saída (objeto, idêntica nos dois TZ):**
   - O contrato antigo se mantém: sem query → 200/15; `2026-06-01`/`2026-06-30` → 200/15; uma ponta → 400 `summary_period_incomplete`; vazio, texto, 31/02, 13/01, 00/10, array e sozinho-vazio (16 casos) → 400 `summary_period_invalid`; `2028-02-29` → 200.
   - **Hora e fuso (C2-N1), todos 400 `summary_period_invalid`:** `iso-fuso+05-cruza-dia`, `iso-fuso+0500-ambos`, `+23:59`, `-23:59`, `hora-24` (as duas pontas e só o fim), `hora-local-sem-fuso` e `iso-Z-completo`. No `5b628b88` eram 200: 15, 15, 15, 0, 15, 15, 15 e 15. A hora local sem fuso dava 15 em São Paulo e 0 em UTC; agora dá 400 nos dois TZ.
@@ -88,14 +88,14 @@
 - **Regra P3:** só vale o que eu re-executei. A bateria e os logs de CI que o antecessor deixou na pasta (`conf-bateria*`, `conf-ci-*`) não estão no parecer dele; não foram usados como insumo, só como comparação depois da minha execução. Meus logs têm prefixo `confb-`.
 
 ### Terreno (sucessor)
-- **Comando:** `git -C C:/Users/thiag/w-conf484 rev-parse HEAD`; `git status --porcelain | wc -l`; `gh pr view 484 --json headRefOid,state,mergeable`; `FreeVirtualMemory`; `dir /AL` (junction); `docker ps`; `docker exec conf484-pg pg_isready`; `select count(*) from _prisma_migrations …`.
+- **Comando:** `git -C ~/w-conf484 rev-parse HEAD`; `git status --porcelain | wc -l`; `gh pr view 484 --json headRefOid,state,mergeable`; `FreeVirtualMemory`; `dir /AL` (junction); `docker ps`; `docker exec conf484-pg pg_isready`; `select count(*) from _prisma_migrations …`.
 - **Saída:** HEAD `353677535f855d931a0e02fccc64297cfdb443ae` = head do PR (OPEN, MERGEABLE); status 0 linhas; memória de commit livre 38,72 GB (≥ 4 GB); `node_modules` não é junction; `conf484-pg` Up desde 13:30:26Z (criado pelo antecessor), `accepting connections`; 117 migrações aplicadas, 0 pendente ou revertida, 117 pastas em `prisma/migrations`. `erp-postgres`, `erp-redis`, `rec01-pg` vivos e não tocados.
 - **Veredito parcial:** terreno íntegro; reusado.
 
 ### P3 · Item 1 — re-execução
 
 **1b′. Sonda da C1 em memória.**
-- **Comando:** `cd w-conf484 && node --import tsx revisoes/j484/c1b-grafias-novas.mts C:/Users/thiag/w-conf484/src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts > confb-grafias-novas-objeto.log` → `exit=0`; comparação por `node` (decodifica o UTF-16 do log do antecessor, normaliza fim de linha e compara as 24 linhas JSON).
+- **Comando:** `cd w-conf484 && node --import tsx revisoes/j484/c1b-grafias-novas.mts ~/w-conf484/src/modules/cloud-cost-allocation/cloud-cost-allocation.engine.ts > confb-grafias-novas-objeto.log` → `exit=0`; comparação por `node` (decodifica o UTF-16 do log do antecessor, normaliza fim de linha e compara as 24 linhas JSON).
 - **Saída:** 24 linhas, **idênticas** às do antecessor (`iguais true`). Agregado: `nameSide`, `nameEdge` e `tagSide` = `ambiguous_tenant_tag` em 12/12 nas duas estratégias; `tagSingle` = alocação (direta `a=10`; só-uso rateio a/b/plataforma); `closes` 96/96.
 - **Veredito parcial:** reproduz o 1b: nenhum invisível desvia o custo em memória.
 
@@ -112,7 +112,7 @@
 ### P3 · Item 2 (2a–2d) — re-execução
 
 **2a′. Sondas da C2 (C2-N1, C2-N2).**
-- **Comando:** `C2_WT=C:/Users/thiag/w-conf484 TZ=America/Sao_Paulo` e depois `TZ=UTC`, `node --test --import tsx --test-reporter=tap revisoes/j484/c2-probe-routes.test.mts` (`confb-c2-probe-objeto-America-Sao_Paulo.log`, `confb-c2-probe-objeto-UTC.log`); `DATABASE_URL=…55468… TZ=America/Sao_Paulo node --test --import tsx revisoes/j484/c2-probe-routes-db.test.mts` (`confb-c2-probe-db-objeto.log`). Comparação por `node` das linhas `C2PROBE` (ids aleatórios mascarados) com os logs do antecessor.
+- **Comando:** `C2_WT=~/w-conf484 TZ=America/Sao_Paulo` e depois `TZ=UTC`, `node --test --import tsx --test-reporter=tap revisoes/j484/c2-probe-routes.test.mts` (`confb-c2-probe-objeto-America-Sao_Paulo.log`, `confb-c2-probe-objeto-UTC.log`); `DATABASE_URL=…55468… TZ=America/Sao_Paulo node --test --import tsx revisoes/j484/c2-probe-routes-db.test.mts` (`confb-c2-probe-db-objeto.log`). Comparação por `node` das linhas `C2PROBE` (ids aleatórios mascarados) com os logs do antecessor.
 - **Saída:** os três `exit=0`, `# tests 1 · pass 1 · fail 0`. Linhas `C2PROBE`: 41, 41 e 15, **iguais** às do antecessor nos três (`iguais true`). Nos dois TZ: `iso-fuso+05-cruza-dia`, `iso-fuso+0500-ambos`, `iso-fuso±23:59`, `hora-24` (2), `hora-local-sem-fuso`, `iso-Z-completo`, `hora-25` → 400 `summary_period_invalid`; `chave-maiuscula-ignorada` (`PeriodStart`), `start-bracket`, `start-objeto`, `ambos-bracket` → 400 `summary_query_invalid`; sem query e duas pontas → 200/15; uma ponta → 400 `summary_period_incomplete`. No Postgres (`PrismaCloudCostAllocationRepository`): duas pontas 200/77; fuso +23:59, `T24:00Z` e hora local → 400 `summary_period_invalid`.
 - **Veredito parcial:** reproduz o 2a.
 
@@ -177,7 +177,7 @@
 - Ressalvas não graves: 1–3 acima.
 
 ### Limpeza
-- **Comando:** `docker rm -f conf484-pg`; `git worktree remove --force C:/Users/thiag/w-conf484`; `git worktree list`; `docker ps`.
+- **Comando:** `docker rm -f conf484-pg`; `git worktree remove --force ~/w-conf484`; `git worktree list`; `docker ps`.
 - **Saída:** container removido; worktree removido (`exit=0`, ausente da lista e do disco); `erp-postgres`, `erp-redis` e `rec01-pg` seguem no ar, intocados. Os temporários de `/tmp` que criei foram apagados. Nenhum merge.
 
 VEREDITO: CONFERIDO COM RESSALVA

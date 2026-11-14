@@ -6,7 +6,7 @@
   7/7 check-runs verdes, inclusive `docker`.
 - **Inspetor:** primeiro **BLOQUEADO** (B1: sem `psql` 16 no PATH dos jurados; T14a/b falhavam com "psql: ausente"); o
   orquestrador proveu o terreno (imagem local `erp-junta-node20-pg16:local` com o `psql` 16.14 real e a receita
-  `receita-pg16.sh`, em `C:/Users/AMP/erp-terreno/`, provada 19/19 com controle 17/19 sem `psql`); na reavaliação,
+  `receita-pg16.sh`, em `~/erp-terreno/`, provada 19/19 com controle 17/19 sem `psql`); na reavaliação,
   **LIBERADO COM RESSALVA** (R1–R8; R7: o teste da trava intermitente, 2/6). Parecer: `votos/B-SAN3-05/00-inspetor-terreno.md`.
 - **Quórum:** unanimidade de 3 com veto (segurança e permissão); §C7 item 8 (`D-GOV-PROPORCIONAL`): teto de 2 ciclos; KPI
   congelado e não cobrado.

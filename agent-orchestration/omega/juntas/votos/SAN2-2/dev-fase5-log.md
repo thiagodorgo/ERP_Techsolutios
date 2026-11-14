@@ -1,6 +1,6 @@
 # dev-san2-2 — Fase 5: suite backend completa (diario de execucao)
 
-Worktree: `c:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r`
+Worktree: `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r`
 Branch: `fix/san2-2-guard-espelho-ci` · head na largada: `2e4985b`
 Regra: numero sem comando executado nao e fato.
 
@@ -25,7 +25,7 @@ Veredito parcial: terreno correto; alvo e a porta 56432.
 
 ```
 $ ls -la node_modules/.prisma/client/index.d.ts
--rw-r--r-- 1 AMP 197121 15222397 Aug 30 11:48 node_modules/.prisma/client/index.d.ts
+-rw-r--r-- 1 ~ 197121 15222397 Aug 30 11:48 node_modules/.prisma/client/index.d.ts
 ```
 Cliente Prisma gerado **hoje as 11:48** (o orquestrador rodou). NAO regenerei — a pre-condicao ja estava
 satisfeita e regenerar seria mutacao sem necessidade.

@@ -1,6 +1,6 @@
 # Inventario balde C (DIFERIDO-LEVE) — fatia 2 (linhas 39..76 da tabela)
 
-- terreno: C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco (somente leitura)
+- terreno: ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco (somente leitura)
 - head: 15ef3fbed57e217b66e6b307f9ae96502777fd09 (main) — 2026-09-11 05:10:50 -0300 — fix(cloud-usage) B-O6R-06 (#385)
 - iniciado: 2026-09-11 (protocolo P2: uma linha por pendencia assim que medida)
 

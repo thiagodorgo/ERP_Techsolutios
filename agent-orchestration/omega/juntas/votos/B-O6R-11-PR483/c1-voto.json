@@ -4,7 +4,7 @@
   "modelo": "Claude Opus (claude-opus-5-5), nível menor, DECLARADO",
   "objeto": "PR #483, head d3e80027979af647725f61eeb07606e2d000cd16",
   "voto": "APROVADO",
-  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j483/c1-evidencia.md",
+  "evidencia": "~/erp-pausa-2026-10-03/revisoes/j483/c1-evidencia.md",
   "resumo": "P1, P2 e P3 sustentadas por execução: 21 casos de R1/R2 verdes, 44 de resgate/canal verdes; M1-M5, M6-M9, M-D1, M-D2, M-S10, M-Q1, M-R1..M-R6 e M-P1..M-P3 mordem; vermelhos-controle R1/R2 (17, 18, 13-16, guard 21; caso 14 5/5) e R3 (coordenador da base: ações ficam syncing) conferem. Texto do lastSafeError e posição do resgate conformes; canal desligado não consome tentativa nem gera erro/conflito na despesa. Dois achados não graves.",
   "achados": [
     {
@@ -74,5 +74,5 @@
     "R2": "13-16 e guard 21 vermelhos; caso 14 5/5 vermelho",
     "R3": "coordenador de 600c5040: integração F4c (ações ficam syncing), p3 e p4 vermelhos"
   },
-  "terreno": "worktree próprio C:/Users/thiag/w-j483-c1 detached em d3e80027; status vazio ao fim; removido por git worktree remove --force; sem Docker, sem base viva, sem flutter run"
+  "terreno": "worktree próprio ~/w-j483-c1 detached em d3e80027; status vazio ao fim; removido por git worktree remove --force; sem Docker, sem base viva, sem flutter run"
 }

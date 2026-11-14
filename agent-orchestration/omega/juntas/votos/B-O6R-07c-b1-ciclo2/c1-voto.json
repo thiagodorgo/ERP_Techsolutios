@@ -53,6 +53,6 @@
       "evidencia": "D-07CB1-ATRIBUICAO-WEB-REATRIBUI-NO-B2 em origin/main:3729 e no objeto; o b1 somente passa web/lote pela trava única."
     }
   ],
-  "teardown": "Todas as mutações e sondas restauradas por hash; git status vazio; processos próprios 0; containers j07cb1c2-c1-* 0; worktree C:/Users/AMP/w-j07cb1c2-c1-cdx removido por git worktree remove --force e registro ausente; base viva intocada; nenhuma porta publicada/usada.",
+  "teardown": "Todas as mutações e sondas restauradas por hash; git status vazio; processos próprios 0; containers j07cb1c2-c1-* 0; worktree ~/w-j07cb1c2-c1-cdx removido por git worktree remove --force e registro ausente; base viva intocada; nenhuma porta publicada/usada.",
   "justificativa": "VOTO: APROVADO — a única trava por OS recusou antes da escrita todas as trocas a partir de No local, preservou o no-op e a fronteira on_route, cobriu web/lote/despacho sem escritor escapando, falhou fechado na composição e aplicou field_dispatch:create na ativação; vermelho do ciclo 1 e MT1–MT7 discriminaram as propriedades, e Q1/Q2 permaneceram dentro da cerca b1/b2"
 }

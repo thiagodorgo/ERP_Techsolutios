@@ -5,8 +5,8 @@
 - **Data:** 2026-09-20 (13:22–14:10, fuso local). Parecer gravado incrementalmente; o parcial anterior está em `PORTEIRO-390.parcial-anterior.md`.
 
 ## 0. Isolamento
-- Worktree detached PRÓPRIO `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/porteiro-390` em `aadaa6d5` (`git rev-parse HEAD` confere), `npm ci` (326 pacotes, ec=0) e `npm --prefix frontend ci` (103, ec=0) próprios, sem junction.
-- Incidente meu, desfeito: com `MSYS_NO_PATHCONV=1` exportado, `git worktree add /c/Users/...` criou o worktree em `C:/c/Users/...` (a armadilha R5 do inspetor desta junta). Removido pelo nome (`git worktree remove --force`) + `rmdir` da cadeia vazia (`C:/c` ausente ao fim); recriado com `C:/Users/...`.
+- Worktree detached PRÓPRIO `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/porteiro-390` em `aadaa6d5` (`git rev-parse HEAD` confere), `npm ci` (326 pacotes, ec=0) e `npm --prefix frontend ci` (103, ec=0) próprios, sem junction.
+- Incidente meu, desfeito: com `MSYS_NO_PATHCONV=1` exportado, `git worktree add /c/...` criou o worktree em `C:/c/...` (a armadilha R5 do inspetor desta junta). Removido pelo nome (`git worktree remove --force`) + `rmdir` da cadeia vazia (`C:/c` ausente ao fim); recriado com `C:/...`.
 - Postgres `porteiro-390-pg` (postgres:16, 127.0.0.1:56890) e Redis `porteiro-390-redis` (redis:7, 127.0.0.1:56891) descartáveis MEUS; bancos novos `erp_porteiro_390` e `erp_porteiro_390_seed` (`prisma migrate deploy` → 107 migrations cada). `DATABASE_URL`/`REDIS_URL` exportadas só para eles; `CORE_SAAS_PERSISTENCE` não exportada. A base viva não recebeu comando (`erp-postgres` Exited há 9 dias; `erp-redis` e `erp-postgres-alt` Exited).
 - Resíduo alheio visto e NÃO tocado: worktrees `b04a` (738ff531), `b11` (43557a17), `gov-descuido`, `gov-elenco`, `j2-b11-c2`, `j2-b11-c3`; diretório `.claude/worktrees/san2-r` fora do `git worktree list`; contêineres `pastrack-teste-banco-teste-1` (Up), `erp-postgres`/`erp-redis`/`erp-postgres-alt` (Exited).
 

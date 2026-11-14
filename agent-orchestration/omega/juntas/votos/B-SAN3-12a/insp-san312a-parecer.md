@@ -20,7 +20,7 @@
 - **Trava do #458** no objeto: `migrações: 117 · novas: 5 · violações: 0` (ec=0). É fato do terreno para a C3.
 - **Mandatos.** O pré-voo dos 5 mandatos dá `PRE-VOO OK` com ec=0, e os md5 conferem com o relatório r3. Nenhuma unidade MEDIDO está sem saída colada: c1 19/0, c2 21/0, c3 21/0, c4 23/0, inspetor 23/0.
 - **Corpos.** Os 4 corpos são IDENTICOS nos dois espelhos e o disco é igual ao blob. **No diretório da sessão os 4 estão AUSENTES.** Por isso cada cadeira roda como subagente genérico que lê o blob do objeto.
-- **S0.** Num worktree descartável meu, `C:/Users/AMP/j12a-insp3-s0`, já removido: `OK — 89 agentes, espelho consistente.` (ec=0).
+- **S0.** Num worktree descartável meu, `~/j12a-insp3-s0`, já removido: `OK — 89 agentes, espelho consistente.` (ec=0).
 
 ## Item 2 de 3: identidades, papéis, composição, cobertura, briefing. VERDE
 - **Inelegíveis.** Gerei a lista por comando meu e ela bate com a do mandato, inclusive `fab-red-san312a-r3-opus` e `redator-san312a-r2-opus`.
@@ -42,7 +42,7 @@
 - **Briefing presente:** as Emendas E1 e E1-bis, as etapas E10 a E14 do dev, as críticas e as divergências §A2 em todos os mandatos e corpos.
 
 ## Item 3 de 3: terreno. VERDE COM RESSALVA
-- **Worktree.** `C:/Users/AMP/w-san312a` está no objeto, com 0 modificação rastreada. O único não rastreado é o diretório desta junta. O `node_modules` não é junction. Baseline: `npm run check` deu ec=0.
+- **Worktree.** `~/w-san312a` está no objeto, com 0 modificação rastreada. O único não rastreado é o diretório desta junta. O `node_modules` não é junction. Baseline: `npm run check` deu ec=0.
 - **Resíduo.**
   - Nenhum container nem caminho `j12a*`, e nenhuma sonda solta.
   - O `agv3-proxy` está parado (Exited); é alheio e inerte.
@@ -67,6 +67,6 @@
 5. **O objeto é `04b8a667`.** Um head que andar depois dele bloqueia o início até novo pré-voo.
 6. A `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`, que o porteiro do #460 apontou, bloqueia o **merge**, não o start. A dona é a C3, no item 2.
 
-Limpeza: criei e removi o worktree `C:/Users/AMP/j12a-insp3-s0`. O log temporário do `check` foi apagado. Não subi container, não toquei arquivo rastreado e não fiz commit.
+Limpeza: criei e removi o worktree `~/j12a-insp3-s0`. O log temporário do `check` foi apagado. Não subi container, não toquei arquivo rastreado e não fiz commit.
 
 LIBERADO COM RESSALVA

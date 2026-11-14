@@ -2,7 +2,7 @@
 
 - **Dev:** `dev-kpi-guard-estimativa-opus` (Claude Opus, nível menor, declarado; identidade nova). Não achou o problema
   (quem achou foi o orquestrador) e não revisa; um conferidor independente revisa depois.
-- **Worktree / ramo:** `C:/Users/AMP/w-reg1810` · `docs/registro-2026-10-18` (PR #445), head `286d1104` + marco de KPI de
+- **Worktree / ramo:** `~/w-reg1810` · `docs/registro-2026-10-18` (PR #445), head `286d1104` + marco de KPI de
   18/10 não commitado.
 - **Escopo tocado:** `tests/kpi-dashboard-charts.test.ts` (só o caso da estimativa e auxiliares locais) e este relatório.
   `Kpis/app.js` só na mutação temporária, revertida e conferida por hash.
@@ -16,7 +16,7 @@ Com o marco de 18/10, nenhuma métrica de `Kpis/kpis-latest.json` declara mais "
 ## 2. N antes e depois
 
 Comando (as duas vezes, container Linux, `npm ci` próprio):
-`bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-reg1810 "node --test --import tsx tests/kpi-achados-paridade.test.ts tests/kpi-dashboard-charts.test.ts tests/kpi-dashboard-contraste.test.ts tests/kpi-loop-ferramentas.test.ts"`
+`bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-reg1810 "node --test --import tsx tests/kpi-achados-paridade.test.ts tests/kpi-dashboard-charts.test.ts tests/kpi-dashboard-contraste.test.ts tests/kpi-loop-ferramentas.test.ts"`
 
 | Momento | tests | pass | fail | ec | Falha |
 |---|---|---|---|---|---|

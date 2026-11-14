@@ -26,7 +26,7 @@ sync e o destino do trabalho offline**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, nível menor do contrato, declarado — §C7.6), **sem executar
-nada**: a fábrica não tem `Bash`. O que ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-07cb1` enquanto **outro
+nada**: a fábrica não tem `Bash`. O que ele diz sobre o ramo foi **lido** no disco de `~/w-07cb1` enquanto **outro
 agente editava `src/` e `tests/` nesse mesmo worktree**. A fábrica não leu ref nenhuma por `git`. O relatório do dev cita a base
 `4fe7524e` e um commit do orquestrador `67e5cb1c` (hipótese). Todo SHA, arquivo:linha, contagem e trecho deste corpo é
 **[A RE-VERIFICAR]** no blob do objeto. Afirmação da emenda, do plano, da crítica, do relatório do dev ou deste corpo é
@@ -200,16 +200,16 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo**. Cont
   `corpo_md5` = `MSYS_NO_PATHCONV=1 git -C <seu-wt> show <objeto>:.claude/agents/especialistas/jurado-07cb1-c2-mobile-e-conflito.md | tr -d '\r' | md5sum`,
   e o mesmo para o espelho `.agents/`. Abaixo: objeto, `B`, `origin/main` no início, `$SCRATCH`, `uname -a`, `node -v`, livre em `C:`,
   ambiente (nomes, nunca valores de segredo).
-- **Arquivos de saída:** os que o mandato nomear. Padrão: `C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/C2-evidencia.md`
+- **Arquivos de saída:** os que o mandato nomear. Padrão: `~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/C2-evidencia.md`
   e `…/C2-voto.json`. Nunca no seu worktree de medição. Quedas: do **orquestrador** (P6).
 - **Saída colada: LF, sem espaço no fim de linha** (`sed -E 's/[[:space:]]+$//'`); no fim, `grep -cE '[[:space:]]+$'` = **0** nos dois
   arquivos (publique).
-- **Worktree PRÓPRIO, detached, caminho CURTO:** `C:/Users/AMP/w-j07cb1c2` (ou o que o mandato nomear), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j07cb1c2 <objeto>`. **Prove**
-  `test -e C:/Users/AMP/w-j07cb1c2/.git`. Caminho existente é resíduo alheio: reporte e use o sufixo `b`. `npm ci --no-audit --no-fund`
+- **Worktree PRÓPRIO, detached, caminho CURTO:** `~/w-j07cb1c2` (ou o que o mandato nomear), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j07cb1c2 <objeto>`. **Prove**
+  `test -e ~/w-j07cb1c2/.git`. Caminho existente é resíduo alheio: reporte e use o sufixo `b`. `npm ci --no-audit --no-fund`
   **próprio**; `prisma generate` com `DATABASE_URL` fictícia só naquela linha. **Junction/symlink de `node_modules` entre worktrees é
   PROIBIDO** (§C7.1-ter(c)).
-- **Árvores intocáveis.** `C:/Users/AMP/w-07cb1` é do **desenvolvedor**, e outro agente pode estar escrevendo nela: a sua única escrita
+- **Árvores intocáveis.** `~/w-07cb1` é do **desenvolvedor**, e outro agente pode estar escrevendo nela: a sua única escrita
   lá são os dois arquivos de saída. Nenhum outro `w-*` é seu.
 - **Banco e portas.** Sem banco. Container, se houver: prefixo **`j07cb1-c2-`**, rede própria, **nenhuma porta publicada**.
   `erp-postgres` (5432), `erp-redis` (6379), `erp-postgres-alt` (55432) e as portas do dono (3000, 5173, 5050, 8899) **NUNCA** são alvo.
@@ -225,7 +225,7 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo**. Cont
   restauro → **prova do restauro** (`git hash-object <f>` = `git rev-parse <objeto>:<f>`, `git status --porcelain` vazio).
 - **Remoção só do que você criou.** Processos vivos com o caminho:
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-j07cb1c2*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`;
-  depois `git worktree remove --force C:/Users/AMP/w-j07cb1c2`.
+  depois `git worktree remove --force ~/w-j07cb1c2`.
 - **Saída para arquivo e exit por variável:** `cmd > "$LOG" 2>&1; ec=$?`. **Nunca `| tail`.** **Caminho absoluto sempre.** Script com
   barra invertida dupla nunca por heredoc; comandos longos em partes de até 7 KB.
 
@@ -495,7 +495,7 @@ Voto (JSON):
  ],
  "criterios_que_nao_puderam_falhar": [ "controle que NÃO acusou · critério que não pode PASSAR por construção — achado contra este corpo ou contra a régua" ],
  "pendencias_que_aceito": [ "o que é da C1/C3 (nomeie a cadeira) · o b2 · o app (B-SAN3-16) · o residual R5, com N medido · pre-existentes com dono" ],
- "teardown": "src/ trocados e mutações restaurados (hash-object = blob do objeto) e git status --porcelain vazio no meu worktree · servidor da sonda parado (0 processos com o caminho) · diretórios de storage da minha execução apagados · worktree C:/Users/AMP/w-j07cb1c2 removido por `git worktree remove --force` · containers j07cb1-c2-* (se houve) removidos, contagem 0 · sondas e cópias de $SCRATCH apagadas · base viva nunca tocada · w-07cb1 só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
+ "teardown": "src/ trocados e mutações restaurados (hash-object = blob do objeto) e git status --porcelain vazio no meu worktree · servidor da sonda parado (0 processos com o caminho) · diretórios de storage da minha execução apagados · worktree ~/w-j07cb1c2 removido por `git worktree remove --force` · containers j07cb1-c2-* (se houve) removidos, contagem 0 · sondas e cópias de $SCRATCH apagadas · base viva nunca tocada · w-07cb1 só com os meus dois arquivos de saída · espaço no fim de linha nos dois arquivos = 0 · resíduo ALHEIO apenas reportado"
 }
 ```
 

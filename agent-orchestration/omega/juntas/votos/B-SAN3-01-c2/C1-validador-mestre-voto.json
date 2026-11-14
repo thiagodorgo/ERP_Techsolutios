@@ -54,6 +54,6 @@
   "REDIS_URL=redis://127.0.0.1:56402 (contêiner j-bsan301-c1-redis, redis:7-alpine) — npm test",
   "portas 56401/56402 fora das faixas de netsh excludedportrange e sem listener antes; nenhum e2e rodado por esta cadeira (mandato da C2)"
  ],
- "evidencia": "C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01-c2/C1-validador-mestre-evidencia.md (logs: c1-backend-8adaaa31.log, c1-bateria-8adaaa31.log, c1-bloco-8adaaa31.tap, c1-commitA-e3db4d62.tap, c1-mut/, c1-indice-regen/, c1-migrate.log)",
+ "evidencia": "~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-B-SAN3-01-c2/C1-validador-mestre-evidencia.md (logs: c1-backend-8adaaa31.log, c1-bateria-8adaaa31.log, c1-bloco-8adaaa31.tap, c1-commitA-e3db4d62.tap, c1-mut/, c1-indice-regen/, c1-migrate.log)",
  "limpeza": "FEITA 2026-09-19: git -C bsan301 worktree remove --force .claude/worktrees/j-bsan301-c1 → ec=0; worktree list sem j-bsan301-c1; diretório ausente (node_modules, frontend/node_modules e frontend/dist saíram com ele); docker rm -f j-bsan301-c1-pg j-bsan301-c1-redis → ec=0; docker ps -a sem j-bsan301-c1; portas 56401/56402 sem listener; mutações restauradas com porcelain vazio a cada uma e porcelain 0 antes da remoção; bsan301 intocado (status vazio, HEAD 8adaaa31); nada escrito na árvore principal, em bsan301-*, erp-*, pastrack-* ou j-* alheios; df C: 15G livres (95%)."
 }

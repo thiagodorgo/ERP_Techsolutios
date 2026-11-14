@@ -14,7 +14,7 @@
 - A trava `migration-transaction-guard.mjs` do #458 está no objeto e não estava no 1º pai. Executada, deu `migrações: 117 · novas: 5 · violações: 0` (ec=0). A migração do bloco, `<carimbo>_grant_finance_unreconcile_and_cheque_unlink_permissions`, aparece como nova, com 0 violação. É fato do terreno para a C3.
 - Pré-voo dos 4 mandatos: `PRE-VOO OK`, ec=0 em todos. Os md5 conferem com o redator r2. Nenhuma unidade MEDIDO está sem saída colada: c1 19/0, c2 21/0, c3 21/0, inspetor 23/0.
 - Espelho: os 3 corpos são IDENTICOS entre `.claude` e `.agents` no blob, EOL-neutro e sem o bloco Codex. O disco do worktree é igual ao blob. **No diretório da sessão os 3 corpos estão AUSENTES.** Por isso cada cadeira só pode rodar como subagente genérico que lê o corpo do blob do objeto, nunca por `subagent_type`.
-- S0: rodei `sync-agent-agents.mjs --check` num worktree descartável meu, `C:/Users/AMP/j12a-insp2-s0`. Saída: `OK — 88 agentes, espelho consistente.` (ec=0). O worktree foi removido.
+- S0: rodei `sync-agent-agents.mjs --check` num worktree descartável meu, `~/j12a-insp2-s0`. Saída: `OK — 88 agentes, espelho consistente.` (ec=0). O worktree foi removido.
 - O objeto da junta é este merge. **Head que andar depois dele bloqueia até novo pré-voo.**
 
 ## Item 2 de 3: identidades, papéis, composição, cobertura, briefing. VERMELHO
@@ -36,10 +36,10 @@
   O índice diz que as duas pendências do §12.1 "mudam no merge do 12a, pelo porteiro". Então o critério delas precisa ser julgado antes do merge. Hoje os testes delas só passam como regressão dentro do `npm test` da C3, sem mutação nem vermelho-controle de cadeira.
 
 ## Item 3 de 3: terreno. VERDE COM RESSALVA
-- O worktree `C:/Users/AMP/w-san312a` está no objeto, com 0 modificação rastreada. O único não rastreado é o diretório de votos desta junta. O `node_modules` é um diretório comum, sem junction (`fsutil reparsepoint query`).
+- O worktree `~/w-san312a` está no objeto, com 0 modificação rastreada. O único não rastreado é o diretório de votos desta junta. O `node_modules` é um diretório comum, sem junction (`fsutil reparsepoint query`).
 - Baseline honesto: `npm run check` (`tsc --noEmit`) com ec=0, medido por variável. A árvore continuou limpa depois.
 - Resíduo:
-  - Nenhum container `j12a*`, `jur-*` ou `crit-*`, e nenhum caminho `C:/Users/AMP/j12a*`.
+  - Nenhum container `j12a*`, `jur-*` ou `crit-*`, e nenhum caminho `~/j12a*`.
   - O `agv3-proxy` está parado (Exited). É alheio e inerte.
   - Os worktrees `w-agapi2`, `w-med03` e `w-san322` são alheios: reportados, não varridos.
 - Docker: 1 trabalho vivo fora de `erp-*` (`dev-san322-pg` em 127.0.0.1:55432 e `dev-san322-redis`). **Com a cadeira, ficam 2, que é o teto.** Se surgir um terceiro, a cadeira espera.
@@ -70,6 +70,6 @@ Depois disso, me chamem de novo, ou chamem outra identidade de inspetor: muda ma
 
 Sobre a `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`, que o porteiro do #460 pôs como bloqueio **do merge**: ela tem dona, o item 2 da C3. Ela não bloqueia o start da junta, e o fechamento dela é matéria de mérito da C3.
 
-Limpeza: criei e removi o worktree `C:/Users/AMP/j12a-insp2-s0`. O log temporário do `check`, no scratchpad, foi apagado. Não subi container, não toquei arquivo rastreado e não commitei.
+Limpeza: criei e removi o worktree `~/j12a-insp2-s0`. O log temporário do `check`, no scratchpad, foi apagado. Não subi container, não toquei arquivo rastreado e não commitei.
 
 BLOQUEADO

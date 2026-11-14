@@ -22,7 +22,7 @@ Você **não** julga o gerador, o adapter, o service, as mutações M1–M9 do p
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica`, **sem `Bash`**: quem escreveu não executou nada do que está aqui. Tudo o que ele
-diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-nuv11` em 2026-10-03, com o mandato da fábrica versionado em
+diz sobre o ramo foi **lido** no disco de `~/w-nuv11` em 2026-10-03, com o mandato da fábrica versionado em
 `feb0d838` e o código do ramo ainda no head `653532f7` — **antes** de o dev do ciclo 2 implementar: `focusVersionRow`,
 `idPrefix` e `pat-link` davam **0 ocorrências** em `frontend/src/modules/patios/processes/` quando este corpo foi escrito.
 Logo, **todo** arquivo:linha, cor, SHA, número e nome de símbolo do ciclo 2 abaixo vem do plano (§16) ou da trilha do
@@ -155,12 +155,12 @@ este corpo** — declarado antes do veredito. Item cujo controle não acusou é 
   Logo abaixo: objeto resolvido, `$SCRATCH`, `node -v`, `uname -srm`, versão do Playwright e do Chromium, e o ambiente
   (shell, cwd, variáveis que você definiu).
 - **Arquivos de saída:** os que o seu mandato de disparo nomear, no diretório que ele nomear (padrão:
-  `C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/`). Se o mandato não nomear, use
+  `~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/`). Se o mandato não nomear, use
   `C1c2-evidencia.md` e `C1c2-voto.json`. **Nunca** grave em `C1-evidencia.md`/`C1-voto.json`: são do ciclo 1.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Ambiente exportado vaza para a medição. Com o
   prefixo, `git.exe`, `node.exe` e `python.exe` recusam `/c/…`: use sempre `C:/…`.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o seu mandato nomear (padrão deste corpo: `C:/Users/AMP/w-s11k2a`),
-  criado com `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`. Depois
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o seu mandato nomear (padrão deste corpo: `~/w-s11k2a`),
+  criado com `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`. Depois
   **prove** `test -e <caminho>/.git`. No scratchpad, `worktree add` falha com *Filename too long* e **não cria o diretório** —
   e a falha silenciosa já fez comando rodar na árvore principal. Se o caminho já existir, é resíduo alheio: reporte e use o
   sufixo `b`.
@@ -173,8 +173,8 @@ este corpo** — declarado antes do veredito. Item cujo controle não acusou é 
 - **Sem banco e sem Docker.** `erp-postgres` (5432) e `erp-redis` (6379) **nunca** são alvo, nem de leitura. As chamadas
   `/api/v1/**` do app são **interceptadas** (`page.route`) com fixtures no formato do DTO de 12 chaves. Comando seu que abra
   conexão é achado contra a sua própria medição.
-- **Somente leitura fora do seu worktree.** A árvore do ramo (`C:/Users/AMP/w-nuv11`) e os terrenos do dev
-  (`C:/Users/AMP/w-dev11c2`, `C:/Users/AMP/w-dev11c2lf`) **nunca** são mutados: a sua única escrita na árvore do ramo são
+- **Somente leitura fora do seu worktree.** A árvore do ramo (`~/w-nuv11`) e os terrenos do dev
+  (`~/w-dev11c2`, `~/w-dev11c2lf`) **nunca** são mutados: a sua única escrita na árvore do ramo são
   os seus dois arquivos de saída. **PROIBIDO:** `git stash`, `git clean`, `git checkout`/`git reset` do que você não criou,
   `git worktree prune`, `rm -rf` de worktree, `git commit`, `git push`. Quem versiona evidência e voto é o orquestrador.
   Resíduo alheio se **reporta, não se varre**.

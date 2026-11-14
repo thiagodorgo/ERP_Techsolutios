@@ -10,7 +10,7 @@
   "modelo": "claude-opus-5[1m]",
   "corpo_aplicado": ".claude/agents/agente-ci-doutor.md, md5 EOL-neutro 55979e2cc21a1e6aba6bfe36899454a0 - IDENTICO no head 7822deaf, no meu worktree e na raiz demo/investidor (medido por mim, nao herdado do inspetor)",
   "terreno": {
-    "worktree": "C:/Users/AMP/w-j-san300-c3 (detached @ 7822deaf) - o caminho que SAIU do git worktree add e o pedido, conferido por worktree list; nao houve a resolucao para C:/c/Users/... que o briefing avisou",
+    "worktree": "~/w-j-san300-c3 (detached @ 7822deaf) - o caminho que SAIU do git worktree add e o pedido, conferido por worktree list; nao houve a resolucao para C:/c/... que o briefing avisou",
     "npm_ci_proprio": "raiz ec=0 e frontend/ ec=0",
     "junction": "NENHUMA - fsutil reparsepoint query nos dois node_modules devolve: nao e um ponto de nova analise",
     "env": "SEM .env no worktree (ls -la .env devolve No such file or directory); DATABASE_URL e REDIS_URL so no ambiente",
@@ -150,7 +150,7 @@
     "forma_do_dev_auditavel": "PARCIAL, e digo os dois lados: os conteineres do dev ja foram removidos na limpeza dele (portas 56820 e 56821 livres agora), entao NAO posso auditar a forma dele diretamente. O que posso, medi: (a) a afirmacao de que a base viva nao recebeu um comando e VERIFICAVEL e VERDADEIRA - os carimbos Exited de 10 e de 3 dias nao zeraram; (b) o RESULTADO dele esta confirmado por DUAS execucoes independentes (o CI no objeto e eu). A forma nao auditavel nao contamina a conclusao, porque a conclusao nao depende dela"
   },
   "limpeza": {
-    "criei": "worktree C:/Users/AMP/w-j-san300-c3 (npm ci proprio na raiz e no frontend, client Prisma gerado) e os conteineres j-san300-c3-pg e j-san300-c3-redis",
+    "criei": "worktree ~/w-j-san300-c3 (npm ci proprio na raiz e no frontend, client Prisma gerado) e os conteineres j-san300-c3-pg e j-san300-c3-redis",
     "derrubei_pelo_nome": "ver a secao LIMPEZA do C3-evidencia.md",
     "nao_toquei": "nenhuma arvore alheia, nenhum conteiner alheio; nenhum git clean, prune, stash, reset ou checkout fora da MINHA arvore; a base viva nao recebeu um comando"
   },

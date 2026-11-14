@@ -24,6 +24,6 @@ Worktrees/artefatos de cadeira ainda ausentes; zero probe solta; plano exclusivo
 
 Ordem: C1 pode abrir; depois da instalação/rechecagem, C2 pode abrir em paralelo ou aguarda o teardown de C1; C3 começa somente após C2 terminar e limpar. Unanimidade de 3; no ciclo 2 ainda reprova achado não grave.
 
-Limpeza: `C:/Users/AMP/j12b2-insp-wt` removido; nenhum Docker/base viva invocado; nenhum probe ou processo deixado.
+Limpeza: `~/j12b2-insp-wt` removido; nenhum Docker/base viva invocado; nenhum probe ou processo deixado.
 
 Com este parecer fechado, as cadeiras podem começar sob a ressalva 1.

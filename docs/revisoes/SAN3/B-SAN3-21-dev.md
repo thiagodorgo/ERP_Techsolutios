@@ -1,9 +1,9 @@
 # B-SAN3-21 — relatório do dev (acentuação dos textos da web, item 49)
 
 - **Dev:** `dev-san321-opus`, Claude Opus 5.5 (nível menor, declarado). Não escreveu o plano.
-- **Autor do plano:** orquestrador, Claude Opus 5.5 (`C:/Users/thiag/erp-pausa-2026-10-03/planos/B-SAN3-21-plano.md`).
+- **Autor do plano:** orquestrador, Claude Opus 5.5 (`~/erp-pausa-2026-10-03/planos/B-SAN3-21-plano.md`).
 - **Verificador:** Codex GPT-5.6 Sol (§C7 item 11). Sem cruzamento invertido: dev Claude, verificador Codex.
-- **Ramo:** `fix/web-acentuacao`, worktree `C:/Users/thiag/w-san321`, base `origin/main` `7c89c73b`.
+- **Ramo:** `fix/web-acentuacao`, worktree `~/w-san321`, base `origin/main` `7c89c73b`.
 - **Nível:** revisão simples + CI (§C7 item 10(1)).
 
 Gravado por fatia (P1): cada comando, exit e saída resumida.
@@ -13,7 +13,7 @@ Gravado por fatia (P1): cada comando, exit e saída resumida.
 | Comando | Exit | Saída resumida |
 |---|---|---|
 | `git fetch -q origin && git rev-parse origin/main` | 0 | `7c89c73b64d78aceca8af64fb90d2e49261b2bad` |
-| `git worktree add -b fix/web-acentuacao C:/Users/thiag/w-san321 origin/main` | 0 | `HEAD is now at 7c89c73b` |
+| `git worktree add -b fix/web-acentuacao ~/w-san321 origin/main` | 0 | `HEAD is now at 7c89c73b` |
 | `Get-CimInstance Win32_OperatingSystem` (memória de commit livre) | 0 | 15,26 GB livres (≥ 4 GB) |
 | `npm ci` (raiz) e `npm --prefix frontend ci`, no worktree, sem junction | 0 / 0 | dependências próprias |
 
@@ -97,4 +97,4 @@ Gravado por fatia (P1): cada comando, exit e saída resumida.
 - **Próximo comando:** `gh pr checks 486` no head novo, porque este commit de registro dispara o CI de novo. Depois, a revisão do Codex sobre o PR #486. Merge só depois dela.
 - **Arquivos meio-escritos:** nenhum. Antes deste registro, `git status --short` estava vazio.
 - **Postgres descartável:** nunca foi criado (`docker ps -a --filter name=san321-pg` vazio). Nenhum container subido.
-- **Worktree:** `C:/Users/thiag/w-san321` mantido, com `frontend/dist` removido.
+- **Worktree:** `~/w-san321` mantido, com `frontend/dist` removido.

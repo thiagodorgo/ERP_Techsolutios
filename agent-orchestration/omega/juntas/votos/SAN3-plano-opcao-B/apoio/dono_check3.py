@@ -192,7 +192,7 @@ else:
     for a_ in avisos:
         print("   aviso item %d: %s — %s" % (a_[0], a_[1], a_[2][:100]))
     import subprocess
-    orq_out = subprocess.run(["python", r"C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/conferir_donos_pela_fonte.py"],
+    orq_out = subprocess.run(["python", r"~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/conferir_donos_pela_fonte.py"],
                              capture_output=True, text=True, encoding="utf-8").stdout
     orq = {int(m.group(1)) for m in re.finditer(r"^item\s+(\d+) (?:FALHA|PARCIAL)", orq_out, re.M)}
     mo = re.search(r"não OK \(FALHA ou PARCIAL\): (\d+) \| avisos de dono divergente: (\d+)", orq_out)

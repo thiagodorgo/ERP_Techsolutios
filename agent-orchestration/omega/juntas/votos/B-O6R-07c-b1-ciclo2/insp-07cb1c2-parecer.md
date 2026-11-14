@@ -28,12 +28,12 @@ Não julguei o mérito da entrega. Medi o terreno do SHA `7ff1e0039c07b22b84acf8
 
 | cadeira | identidade/executor | terreno autorizado |
 |---|---|---|
-| C1 | `jurado-07cb1c2-c1-trava-unica-e-rbac` · Codex GPT-5.6 Sol, nível menor | `C:/Users/AMP/w-j07cb1c2-c1-*`; memória por padrão; se Docker, `j07cb1c2-c1-*` |
-| C2 | `jurado-07cb1c2-c2-transacao-e-compensacao` · Codex GPT-5.6 Sol, nível menor | `C:/Users/AMP/w-j07cb1c2-c2-*`; cluster/rede próprios `j07cb1c2-c2-*`, sem porta publicada |
-| C3 | `jurado-07cb1c2-c3-censo-escopo-e-regressao` · primeira IA externa com limite livre, nível menor; Claude Opus só reserva declarada | `C:/Users/AMP/w-j07cb1c2-c3-*`; se Docker, `j07cb1c2-c3-*` |
+| C1 | `jurado-07cb1c2-c1-trava-unica-e-rbac` · Codex GPT-5.6 Sol, nível menor | `~/w-j07cb1c2-c1-*`; memória por padrão; se Docker, `j07cb1c2-c1-*` |
+| C2 | `jurado-07cb1c2-c2-transacao-e-compensacao` · Codex GPT-5.6 Sol, nível menor | `~/w-j07cb1c2-c2-*`; cluster/rede próprios `j07cb1c2-c2-*`, sem porta publicada |
+| C3 | `jurado-07cb1c2-c3-censo-escopo-e-regressao` · primeira IA externa com limite livre, nível menor; Claude Opus só reserva declarada | `~/w-j07cb1c2-c3-*`; se Docker, `j07cb1c2-c3-*` |
 
 `D-IAS-EXTERNAS-PRIMEIRO` está obedecida: C1/C2 no Codex; C3 tenta primeiro IA externa com limite. Cada executor efetivo deve constar na primeira linha de sua evidência.
 
 ## Limpeza
 
-Worktree descartável `C:/Users/AMP/w-i07cb1c2` removido por `git worktree remove --force`; nenhum container criado; nenhum resíduo; espaço livre final `10,75 GB`. Base viva intocada.
+Worktree descartável `~/w-i07cb1c2` removido por `git worktree remove --force`; nenhum container criado; nenhum resíduo; espaço livre final `10,75 GB`. Base viva intocada.

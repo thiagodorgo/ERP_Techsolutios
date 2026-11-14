@@ -17,7 +17,7 @@ rebase.
 | Modelo | Claude Opus (bloco sem dinheiro; `D-FABLE-ASTRA-SO-DINHEIRO`) |
 | Papel | `frontend-pixel-master`, subordinado ao plano e ao `CLAUDE.md` §11 |
 | Rota | `D-GOV-PROPORCIONAL` regra (1): um revisor + CI verde. Classificação do plano §10 conferida: sem dinheiro, sem permissão nova (premissa §0.6), sem escrita. Considero a neutralização de fórmula **endurecimento de formato de saída**, não regra de segurança nova. Não peço junta completa. |
-| Terreno | worktree próprio e destacado `C:/Users/AMP/w-rev409` · `npm ci` próprio na raiz (326 pacotes, ec 0) e em `frontend/` (103, ec 0) · sem junction · sem `.env` (só `.env.example`) · `env \| grep DATABASE_URL` vazio · nenhum banco nem Redis ligado (portas 5432/6379 sem escuta) |
+| Terreno | worktree próprio e destacado `~/w-rev409` · `npm ci` próprio na raiz (326 pacotes, ec 0) e em `frontend/` (103, ec 0) · sem junction · sem `.env` (só `.env.example`) · `env \| grep DATABASE_URL` vazio · nenhum banco nem Redis ligado (portas 5432/6379 sem escuta) |
 
 ---
 
@@ -203,7 +203,7 @@ segue `work_orders:read`, e em 403 os botões e o cartão somem (`[FE2]`, `[FE10
 - Chromium: cada roteiro fecha o navegador no `finally`. Contagem por linha de comando (`*ms-playwright*`, `*w-rev409*`,
   `*vite-server.mjs*`, sem os shells da consulta) = **0 vivos** antes da remoção.
 - `git status --porcelain` do worktree vazio (nenhuma mudança rastreada; as mutações voltaram ao hash), então
-  `git worktree remove --force C:/Users/AMP/w-rev409` → ec 0, diretório ausente, `git worktree list` sem `w-rev409`.
+  `git worktree remove --force ~/w-rev409` → ec 0, diretório ausente, `git worktree list` sem `w-rev409`.
   `w-osfe` (585d178a) e `w-o05` (dee3f821) intactos; nenhum dos dois nem a árvore principal recebeu escrita.
 - Scratchpad: apagado só `work/vite-cache` (15 MB, regenerável) e `work/vite.pid`. Ficam como evidência (6,6 MB): este parecer,
   `rev409-telas.png`, `shots/`, os 3 CSVs, os logs da bateria e das mutações, `mutacoes.json`, `work/medidas-rev409.json`,

@@ -30,19 +30,19 @@
 
 ## 3. Contagens reexecutadas
 
-- Comandos de preparo: verificação prévia de inexistência de `C:/Users/AMP/w-port03a`; `git worktree add --detach C:/Users/AMP/w-port03a d910c97f...`; `npm ci` no worktree.
+- Comandos de preparo: verificação prévia de inexistência de `~/w-port03a`; `git worktree add --detach ~/w-port03a d910c97f...`; `npm ci` no worktree.
 - Saída resumida: worktree criado em `d910c97f`; `npm ci` ec=0, `326` pacotes instalados. Aviso de engine de pacote opcional e auditoria npm (`13` vulnerabilidades) não impediram a instalação e não são conclusão sobre o bloco.
 - Veredito parcial do preparo: **CONFORME**. Dependências próprias, sem junction/symlink, prontas para reexecução.
 
 ### 3.1 T-A
 
-- Comando: `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-port03a "node --test --import tsx --test-reporter=tap tests/expense-sync-atomic-db.test.ts"`.
+- Comando: `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-port03a "node --test --import tsx --test-reporter=tap tests/expense-sync-atomic-db.test.ts"`.
 - Saída resumida: `teste-linux ec=0`; `24` testes, `24` pass, `0` fail, `0` skipped; duração Node `11077 ms`. Inclui papéis sem superusuário/BYPASSRLS, concorrência, rollback, conflito entre atores, recibos legados, isolamento e determinismo pós-reinício.
 - Veredito parcial: **CONFORME**; reproduz exatamente T-A `24/24` da ata.
 
 ### 3.2 T-B/C
 
-- Comando: `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-port03a "CORE_SAAS_PERSISTENCE=memory node scripts/run-backend-tests.mjs tests/expense-management-routes.test.ts && node --test --import tsx --test-reporter=tap tests/expense-sync-fingerprint.test.ts"`.
+- Comando: `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-port03a "CORE_SAAS_PERSISTENCE=memory node scripts/run-backend-tests.mjs tests/expense-management-routes.test.ts && node --test --import tsx --test-reporter=tap tests/expense-sync-fingerprint.test.ts"`.
 - Saída resumida: `teste-linux ec=0`; T-B `14/14`, `0` fail, `0` skipped; T-C `9/9`, `0` fail, `0` skipped; total T-B/C `23/23`.
 - Veredito parcial: **CONFORME**; reproduz exatamente T-B/C `23/23` da ata. Total reexecutado do bloco: `47/47` (`24 + 14 + 9`), sem pulos.
 
@@ -55,8 +55,8 @@
 ## 5. Limpeza
 
 - Comandos antes do teardown: `git ls-remote --heads origin refs/heads/fix/expense-sync-atomic`; `git worktree list --porcelain | Select-String 03a`; `docker ps -a --format ... | Select-String 03a`; busca por deleções rastreadas na árvore da sessão; medição de espaço livre em C:.
-- Saída resumida: branch remota `fix/expense-sync-atomic` AUSENTE; o único worktree com `03a` era `C:/Users/AMP/w-port03a`, criado por este porteiro; nenhum container `03a`; nenhuma deleção rastreada encontrada; `18,07 GiB` livres, acima do piso aproximado de 10 GiB.
-- Comando de teardown: `git worktree remove --force C:/Users/AMP/w-port03a`.
+- Saída resumida: branch remota `fix/expense-sync-atomic` AUSENTE; o único worktree com `03a` era `~/w-port03a`, criado por este porteiro; nenhum container `03a`; nenhuma deleção rastreada encontrada; `18,07 GiB` livres, acima do piso aproximado de 10 GiB.
+- Comando de teardown: `git worktree remove --force ~/w-port03a`.
 - Comandos finais: nova listagem de worktrees, `Test-Path`, nova listagem de containers e nova consulta da branch remota.
 - Saída resumida final: `WORKTREE_03A=NONE`; `OWN_PATH_EXISTS=NO`; `CONTAINER_03A=NONE`; `REMOTE_BRANCH=ABSENT`.
 - Veredito parcial: **CONFORME**. O recurso criado por este porteiro foi removido; não toquei nos worktrees/containers alheios nem na base viva.

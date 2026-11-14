@@ -1133,18 +1133,18 @@ FROM (
 > limite de uso às 14:57Z, com o C2.1 escrito e C2.2–C2.6 em apuração (versionado em `cd267978`). Identidade
 > nova: não achou, não desenvolveu, não votou e não desenvolverá (§C7.4-bis). **Modelo:** Claude Opus,
 > substituição declarada (§C7 item 6-bis): o bloco não toca dinheiro e, por decisão do dono de 2026-10-08,
-> Fable só em bloco de dinheiro. **Objeto re-medido por mim:** `git -C C:/Users/AMP/w-o05 rev-parse HEAD` =
+> Fable só em bloco de dinheiro. **Objeto re-medido por mim:** `git -C ~/w-o05 rev-parse HEAD` =
 > `git ls-remote origin fix/runtime-role-sem-bypass` = `cd267978eb44a195497b2dfec6f663e96df06f79`;
 > `git diff --stat c251c9b7 cd267978` = só este plano (+133), logo o código julgado é o mesmo que o antecessor
 > mediu. `origin/main` andou para `c8af6458` (merge-base continua `b404815c`). **Protocolo:** o C2.1 abaixo é
 > roteiro, não fato — cada vermelho-controle foi re-executado por mim em recursos `pl05c2s-*` (PostgreSQL 16.14
 > descartável, imagem `erp-junta-node20-pg16:local` `sha256:4203157f95ea`, sem porta no host; `erp-postgres`,
 > `erp-redis`, 5432 e 6379 nunca tocados), e o resultado vai como **"Re-execução do sucessor"** em cada B, com
-> a divergência apontada quando houver. Sondas e saídas: `C:/Users/AMP/w-o05/scratchpad/pl05c2s/` (não
+> a divergência apontada quando houver. Sondas e saídas: `~/w-o05/scratchpad/pl05c2s/` (não
 > rastreado; `evidencia.md` com comando → saída → veredito parcial por item).
 
-**Objeto medido.** `git -C C:/Users/AMP/w-o05 rev-parse HEAD` e
-`git -C C:/Users/AMP/w-o05 ls-remote origin fix/runtime-role-sem-bypass` devolveram, ambos,
+**Objeto medido.** `git -C ~/w-o05 rev-parse HEAD` e
+`git -C ~/w-o05 ls-remote origin fix/runtime-role-sem-bypass` devolveram, ambos,
 `c251c9b7aaa8610799796713d6135c711dabb9fe`; merge-base com a `main` =
 `b404815ce3d1f1b8e5121bd1526978f7222e7479`. A árvore só tinha este plano modificado. O `CLAUDE.md` do
 objeto ainda não contém `D-GOV-PROPORCIONAL` (`grep -c` = 0), enquanto a fonte governante atual
@@ -1240,7 +1240,7 @@ bloqueia. Pelo item 8(5), KPI está **congelado**: o desenvolvimento restaura os
   barreira observa efeito/erro antes da liberação e reprova de modo determinístico.
 - **Re-execução do sucessor (2026-10-08) — a CAUSA reproduz (determinística); o SINTOMA não reproduziu em N=13.**
   (1) Os mesmos três comandos do antecessor, com prefixo `pl05c2s` (`receita-pg16.sh` copiada, só prefixo e
-  `REPO=C:/Users/AMP/w-o05` trocados; `timeout 1500` por rodada): **19/19, 19/19, 19/19** (3.652/3.652 blobs,
+  `REPO=~/w-o05` trocados; `timeout 1500` por rodada): **19/19, 19/19, 19/19** (3.652/3.652 blobs,
   PG 16.14, resíduo 0). (2) Dez execuções do lote no mesmo container (`receita-pl05c2s-loop.sh`, `LOOP=10`):
   **10/10 verdes**, resíduo `s305%` 0 entre execuções — mas a execução 1 teve **um** `XX000 tuple concurrently
   updated` no TAP: o teardown do arnês (`DROP OWNED BY "o6r_b01_…"`, do arquivo `leituras-de-plataforma-db`,
@@ -1444,7 +1444,7 @@ incluir o host → vermelho sob qualquer `DATABASE_URL` (CI `localhost:5432`, re
 
 **Ponto de partida obrigatório (antes de qualquer edição de produto).** O dev — identidade nova, que não achou,
 não planejou e não votou — trabalha num worktree próprio do ramo `fix/runtime-role-sem-bypass` em caminho curto
-(`C:/Users/AMP/w-<id>`), com `npm ci` próprio e `prisma generate` com `DATABASE_URL` só no ambiente (nunca
+(`~/w-<id>`), com `npm ci` próprio e `prisma generate` com `DATABASE_URL` só no ambiente (nunca
 junction de `node_modules`). (1) Mede `HEAD` = `git ls-remote origin fix/runtime-role-sem-bypass`; se divergir
 do head que o orquestrador passar, para. (2) **Integra a `origin/main` por merge** (`git merge origin/main`,
 sem rebase e sem force-push): resolve os 4 conflitos de registro medidos (J20) por **união** das entradas, sem
@@ -1493,7 +1493,7 @@ o B1 exigir algo que o `psql` 16 da imagem não ofereça.
 ### C2.4 Bateria do ciclo 2
 
 **Onde roda.** No Windows do dono, **só** `git`/`gh` (leitura do objeto, check-runs, diff de escopo). Todo o resto
-roda em **Linux, dentro de container**, a partir da receita do terreno (`C:/Users/AMP/erp-terreno/receita-pg16.sh`,
+roda em **Linux, dentro de container**, a partir da receita do terreno (`~/erp-terreno/receita-pg16.sh`,
 com prefixo próprio por cadeira): `git archive` do head com `core.autocrlf=false`, conferência de **todos** os
 blobs (`git hash-object --no-filters` × `ls-tree`), imagem `erp-junta-node20-pg16:local` (Node 20.20.2, `psql`
 16.14), PostgreSQL 16 descartável numa rede Docker própria **sem porta no host**, `npm ci` + `prisma generate` +
@@ -1709,16 +1709,16 @@ e `src/server.ts` seguem PROIBIDOS.
 > votou e não planejou nenhum ciclo anterior deste bloco). **Modelo que rodou: Claude Opus 5.5 (`claude-opus-5-5`) —
 > substituição declarada (§C7.6-bis):** o B-SAN3-05 não toca dinheiro, e o Fable está reservado a bloco de dinheiro por
 > decisão do dono (2026-10-08, `D-FABLE-ASTRA-SO-DINHEIRO`). **Medido no objeto** `fix/runtime-role-sem-bypass@b37b9af0`
-> (worktree `C:/Users/AMP/w-o05`). Escrito incrementalmente a partir de 2026-10-09 14:44Z; não commito (o orquestrador
+> (worktree `~/w-o05`). Escrito incrementalmente a partir de 2026-10-09 14:44Z; não commito (o orquestrador
 > versiona). **Decisões do dono já tomadas** (2026-10-09, *"aprovo os 9, comece agora"*, sobre
-> `C:/Users/AMP/erp-pausa-2026-10-03/PLANO-DIA-2026-10-09.md`): escopo do ciclo 3 = **só o A2 (grave) + o A3** (sai
+> `~/erp-pausa-2026-10-03/PLANO-DIA-2026-10-09.md`): escopo do ciclo 3 = **só o A2 (grave) + o A3** (sai
 > junto); C2-A1 e C3-c2-05 num PR **só de testes** depois do merge (revisor + CI); C3-c2-01 vira pendência com dono;
 > ajustes e notas viram pendências nomeadas; junta 3 = só defeito **grave** bloqueia (§C7 item 8(2)); dev = Codex
 > `gpt-5.6-sol` (identidade `dev-ciclo3-b-san3-05`).
 
 ### C3.1 Vermelho-controle do A2 e do A3, medidos no objeto
 
-**Terreno (14:48–14:50Z).** Condutor próprio `setup.sh` (md5 `36f515c8…`), adaptado de `C:/Users/AMP/erp-terreno/receita-pg16.sh`
+**Terreno (14:48–14:50Z).** Condutor próprio `setup.sh` (md5 `36f515c8…`), adaptado de `~/erp-terreno/receita-pg16.sh`
 (passos 1–4: rede Docker própria, `postgres:16` descartável, `git archive` com `core.autocrlf=false`, `npm ci` + `prisma
 generate` + `prisma migrate deploy` dentro). Diferenças declaradas: prefixo `pl05c3-` (`pl05c3-net`, `pl05c3-pg`,
 `pl05c3-node`), sem `trap EXIT` (os contêineres ficam de pé para as medições; teardown por nome no fim), senha do pg aleatória
@@ -1927,7 +1927,7 @@ A candidata é **especificação**, não entrega: o dev escreve o código no ram
 ### C3.3 Escopo do desenvolvimento (PERMITIDO / PROIBIDO)
 
 **Ponto de partida obrigatório.** O dev (`dev-ciclo3-b-san3-05`, Codex `gpt-5.6-sol`; identidade nova) trabalha no worktree
-`C:/Users/AMP/w-o05` (ou outro worktree próprio em caminho curto `C:/Users/AMP/w-<id>`, com `npm ci` próprio — nunca junction de
+`~/w-o05` (ou outro worktree próprio em caminho curto `~/w-<id>`, com `npm ci` próprio — nunca junction de
 `node_modules`). (1) Mede `git rev-parse HEAD` = `git ls-remote origin refs/heads/fix/runtime-role-sem-bypass` = o head que o
 orquestrador passar no disparo (hoje `b37b9af0`, mais o commit deste plano); se divergir, **para**. (2) **Não integra a
 `origin/main`** (a integração é do orquestrador, depois do voto da junta 3 — ressalva R4 do inspetor do ciclo 2; medido no plano do
@@ -1973,7 +1973,7 @@ em entrada que não a do arquivo de guarda.
 ### C3.4 Bateria do dev e o que a junta 3 cobra
 
 **Onde roda.** No Windows, **só** `git`/`gh`. Todo o resto em Linux, em contêiner, pela receita
-`C:/Users/AMP/erp-terreno/receita-pg16.sh` adaptada com prefixo próprio do dev (ex.: `dv05c3-`; rede própria, `postgres:16`
+`~/erp-terreno/receita-pg16.sh` adaptada com prefixo próprio do dev (ex.: `dv05c3-`; rede própria, `postgres:16`
 descartável **sem porta no host**, `git archive` com `core.autocrlf=false`, conferência de todos os blobs, `npm ci` + `prisma
 generate` + `prisma migrate deploy` dentro, teardown verificado). `erp-postgres`, `erp-redis`, 5432, 6379 e 55432 **nunca** são
 alvo. Todo comando com `timeout`; `ec` lido em variável; nenhum `tail -f`; nenhum `export` de conveniência no condutor.
@@ -2156,7 +2156,7 @@ quem desenvolve = `dev-ciclo3-b-san3-05` (Codex `gpt-5.6-sol`). Nenhum acumula. 
 a candidata viveu só no scratchpad e no contêiner descartável, e foi apagada no teardown.
 
 **Terreno deste planejador — teardown (15:16Z):** `docker rm -f -v pl05c3-node pl05c3-pg` ec=0; `docker network rm pl05c3-net`
-ec=0; contêineres `pl05c3` = 0, redes = 0, volume anônimo do pg = removido, árvore temporária `/c/Users/AMP/t-pl05c3` ausente
+ec=0; contêineres `pl05c3` = 0, redes = 0, volume anônimo do pg = removido, árvore temporária `~/t-pl05c3` ausente
 (removida no setup); candidata, mutantes e segredos descartáveis apagados do scratchpad; nenhum outro contêiner tocado; `erp-postgres`,
 `erp-redis`, 5432 e 6379 nunca foram alvo; disco 11 GB livres (igual ao início). No `w-o05`, o único arquivo alterado é este plano
 (`git diff --ignore-cr-at-eol --stat` = 461 linhas acrescentadas com este fecho, 0 removidas; `git diff --check` ec=0). Nada commitado — o orquestrador versiona.
@@ -2169,7 +2169,7 @@ bloco de dinheiro, decisão do dono de 2026-10-08) · 2026-10-09 15:17Z · objet
 > **Papel:** `planejador-mestre` · **identidade nova:** `planejador-ciclo4-b-san3-05` (não achou, não desenvolveu, não votou,
 > não planejou ciclo anterior). **Modelo: Claude Opus 5.5 (`claude-opus-5-5`) — substituição declarada (§C7.6-bis):** o bloco
 > não toca dinheiro; Fable só em dinheiro (`D-FABLE-ASTRA-SO-DINHEIRO`). **Objeto medido:** `fix/runtime-role-sem-bypass@37c83064`
-> (worktree `C:/Users/AMP/w-o05`). **Fonte §A1.1:** `D-405-PROIBIR-VIEWS` (decisoes.md, 2026-10-09) — *"Proibir qualquer view
+> (worktree `~/w-o05`). **Fonte §A1.1:** `D-405-PROIBIR-VIEWS` (decisoes.md, 2026-10-09) — *"Proibir qualquer view
 > (Recomendado)"*. Escrito incrementalmente; não commito.
 
 ### C4.1 Vermelho-controle no objeto (medido 17:32–17:45Z)
@@ -2347,7 +2347,7 @@ commits do ciclo (antes do merge) ou do squash (depois); sem migração; a trava
 view futura sobre tabela FORCE derruba o boot; hoje 0, nenhuma funcionalidade quebra.
 
 **Teardown deste planejador (17:50Z):** `docker rm -f -v pl05c4-node pl05c4-pg` ec=0, rede `pl05c4-net` removida; contêineres e redes
-`pl05c4` = 0, volume anônimo do pg removido, árvore `/c/Users/AMP/t-pl05c4` ausente; candidata, mutantes e senhas descartáveis
+`pl05c4` = 0, volume anônimo do pg removido, árvore `~/t-pl05c4` ausente; candidata, mutantes e senhas descartáveis
 apagados do scratchpad; nenhum outro contêiner tocado (0 vivos); `erp-postgres`, `erp-redis`, 5432 e 6379 nunca foram alvo; disco
 11 GB livres (igual ao início). No `w-o05` o único arquivo que alterei é este plano; nada commitado — o orquestrador versiona.
 

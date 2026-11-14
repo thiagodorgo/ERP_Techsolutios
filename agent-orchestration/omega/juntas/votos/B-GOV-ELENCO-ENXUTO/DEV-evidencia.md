@@ -7,7 +7,7 @@ Papel: **dev**. Não julgo a validade de achado nenhum (§C7.4-bis) — implemen
 
 | item | valor |
 |---|---|
-| worktree | `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` |
+| worktree | `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` |
 | branch | `chore/gov-elenco-enxuto` |
 | head ao iniciar | `6f17b2bb6324427cc17f2e1d2178eb57bacdfd42` |
 | Node | `v20.19.5` |

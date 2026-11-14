@@ -71,7 +71,7 @@
     "node": "v20.19.5",
     "autocrlf": "true",
     "shell": "Git Bash",
-    "worktree": "C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco",
+    "worktree": "~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco",
     "branch": "chore/gov-elenco-enxuto",
     "mutacao": "somente em copia isolada FORA do repositorio (scratchpad da sessao), removida ao final; worktree somente-leitura, `git diff --stat` vazio no fim",
     "N_do_diff": "113 arquivos (36 A, 30 D, 15 M, 32 R) em fe2748c8..adc41a54; 4 arquivos, todos em agent-orchestration/, em adc41a54..HEAD"

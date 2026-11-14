@@ -2,7 +2,7 @@
 
 - **Papel:** porteiro-pos-merge · **Modelo:** Fable 5.1 (o do contrato; sem fallback) · **Corpo aplicado:** `git show b3f0af5f:.claude/agents/porteiro-pos-merge.md`, md5 EOL-neutro `374b1b0d091a85cddf1733d3e51456ae`, 78 linhas — bate com o esperado.
 - **Harness:** lançada como `general-purpose` porque o diretório de agentes da sessão (árvore em `demo/investidor`, `d1fab3bc`) está velho. Tenho Write/Edit pelo harness; o corpo não os dá — **nada é escrito no repositório**. Único arquivo: este parecer.
-- **Isolamento:** worktree detached `C:/Users/AMP/w-port394` @ `b3f0af5f` (criado às 2026-09-28; `git status --porcelain` = 0 linhas). Base viva 5432/6379 não é alvo. Nenhum `stash`/`clean`/`checkout`/`reset`/`prune`.
+- **Isolamento:** worktree detached `~/w-port394` @ `b3f0af5f` (criado às 2026-09-28; `git status --porcelain` = 0 linhas). Base viva 5432/6379 não é alvo. Nenhum `stash`/`clean`/`checkout`/`reset`/`prune`.
 - **Merge:** `b3f0af5f82aca23502326f18b644a28df3236b5a` (squash, #394) · **approved_head (ata):** `7ad08690…` · **head no merge:** `3f791a7d…`.
 - **Parecer incremental** — cada seção é escrita logo após a medição.
 
@@ -70,7 +70,7 @@ Bloco sem código nem teste; o que ele tocou foi **reexecutado**: guards 29/29 �
 - **BLOQUEIA:** varredura das 304 seções `ABERTA` pela linha `bloqueia`: as que dizem BLOQUEIA são todas do gate da versão vendável (SAN3, produto); **nenhuma nomeia #393, #389, B-GOV-MANDATO ou B-O6R-04a**; as 4 novas dizem "não bloqueia".
 
 ## 7. Limpeza (§C5) — parte 2
-- Worktrees: `w-teto`, `w-jst1/2/3`, `w-insp394` ausentes de `git worktree list` e do disco (`ls -d /c/Users/AMP/w-*` → devs2, devs393, devt393, e4, mandato, port394); `--porcelain | grep -c prunable` = 0. `mobile/flutter_app/build` ausente na principal ✓. Disco 23 GB livres (> ~10 GB; `DEEP_CLEAN` não exigido).
+- Worktrees: `w-teto`, `w-jst1/2/3`, `w-insp394` ausentes de `git worktree list` e do disco (`ls -d ~/w-*` → devs2, devs393, devt393, e4, mandato, port394); `--porcelain | grep -c prunable` = 0. `mobile/flutter_app/build` ausente na principal ✓. Disco 23 GB livres (> ~10 GB; `DEEP_CLEAN` não exigido).
 - **O achado do orquestrador, classificado:** `scripts/post-merge-cleanup.sh:39` = `find . -type f -name "*.tsbuildinfo" -not -path "*/node_modules/*" -print -delete` — sem `-prune` de `.claude/worktrees/`, o `find` desce nos worktrees aninhados de OUTROS blocos; `ls .claude/worktrees/b04a/frontend/tsconfig.tsbuildinfo` → inexistente (a remoção aconteceu). Origem da linha: `db4370cc` 2026-07-20 (#251) → **`pre-existente`**. Efeito: arquivo gitignored (`.gitignore:11`) e regenerável; nenhum rastreado tocado. **Gravidade `ajuste`**: é o script oficial do §C5 mutando worktree alheio — contraria "resíduo alheio se reporta, não se varre" e o isolamento por worktree (§C7.1-ter(c)); numa corrida com um `tsc --build` vivo em outro bloco (a E4 roda há ~5 h em `w-e4`) o apagar no meio vira falha espúria. **Não bloqueia.** Sem pendência (`grep post-merge-cleanup` em `pendencias.md` só acha `P-WORKTREE-INTEROP-ORFAO`, outro assunto) → precisa de uma, com dono.
 - Não-alvos vivos e intactos por mim: `w-e4`, `w-mandato`, `w-devs2`. Resíduos reportados, não varridos: `w-devs393`, `w-devt393`, `.claude/worktrees/{b04a,b11,gov-descuido,gov-elenco}` (este em `[main]`@`15ef3fbe`: um ramo `main` local desatualizado dentro de um worktree — só reporto).
 - Árvore principal (`demo/investidor`): `git status --porcelain` = as mesmas 13 linhas do snapshot inicial (4 ` M` + 9 `??`); nada meu. Meu worktree: 0 linhas.
@@ -98,6 +98,6 @@ Três instâncias, nenhuma grave: (1) o inspetor 2.2 lê o número do ciclo do *
 - **R6** — #389 (e #388): corpos das cadeiras com "CICLO 2 — o ÚLTIMO" emendados e versionados nos dois espelhos, integração da `main`, checagem por propriedade pelo inspetor, pendência C2-2-2 com dono — antes da junta, não do start.
 
 ## 11. Limpeza minha (1 linha)
-Removidos: worktree `C:/Users/AMP/w-port394` (`git worktree remove`, pelo nome, sem processo meu vivo), `scratchpad/gen394/`, `grep-teto-vivo.txt`, `grep-ciclos-vivo.txt`, `CLAUDE.b3f.md`, `AGENTS.b3f.md`, `p394-*.md` (partes deste parecer). Nada rastreado, nada da base viva, nenhum worktree alheio.
+Removidos: worktree `~/w-port394` (`git worktree remove`, pelo nome, sem processo meu vivo), `scratchpad/gen394/`, `grep-teto-vivo.txt`, `grep-ciclos-vivo.txt`, `CLAUDE.b3f.md`, `AGENTS.b3f.md`, `p394-*.md` (partes deste parecer). Nada rastreado, nada da base viva, nenhum worktree alheio.
 
 **LIBERADO COM RESSALVA: PR de registro do #394 (votos + inspetor + este parecer + backfill) como próximo merge; depois #393 (integração da `main` por merge → junta 3) e #389 (corpos emendados antes da junta) | R1–R6**

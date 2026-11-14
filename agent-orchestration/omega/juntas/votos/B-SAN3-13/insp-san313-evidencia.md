@@ -23,13 +23,13 @@ executor: subagente Claude Code genérico (o tipo `inspetor-de-terreno-da-junta`
 - cmd: awk próprio sobre cada mandato: em `## MEDIDO`, toda linha com `medido por:` seguida de cerca ``` antes da próxima unidade; e cercas vazias
 - saída: c1 13/13, c2 14/14, c3 13/13, inspetor 18/18 unidades com saída colada; 0 sem saída; 0 cercas vazias
 - parcial: nenhuma unidade MEDIDO sem saída.
-- cmd: extração de todo caminho absoluto `C:/Users/AMP/...` dos 4 mandatos (82 únicos) e `[ -e ]`
-- saída: ausentes = só prefixos/destinos a criar (j13-c{1,2,3}-wt, scratch `erp-pausa-2026-10-03/j13-c{1,2,3}/`, `c{1,2,3}-evidencia.md`/`-voto.json`, `j13-insp-s0`, prefixos truncados `jurado-san313-`/`cadeira-`) e o `RAIZ` `C:/Users/AMP/w-trc02` (fronteira já declarada no mandato)
+- cmd: extração de todo caminho absoluto `~/...` dos 4 mandatos (82 únicos) e `[ -e ]`
+- saída: ausentes = só prefixos/destinos a criar (j13-c{1,2,3}-wt, scratch `erp-pausa-2026-10-03/j13-c{1,2,3}/`, `c{1,2,3}-evidencia.md`/`-voto.json`, `j13-insp-s0`, prefixos truncados `jurado-san313-`/`cadeira-`) e o `RAIZ` `~/w-trc02` (fronteira já declarada no mandato)
 - parcial: nenhum INSUMO citado ausente.
 - cmd: por cadeira, md5 EOL-neutro `git show <O>:.claude/agents/especialistas/jurado-san313-<c>.md` × worktree × diretório da sessão; .agents blob × wt; diff do corpo descontado o bloco "Papel para o Codex"
 - saída: c1 claude 174e0578… (blob=wt), c2 637aecf0… (blob=wt), c3 170a5f5a… (blob=wt); .agents blob=wt nos 3; corpo sem bloco Codex IDENTICO nos 3; na SESSÃO os 3 corpos AUSENTES (a sessão está na main, sem o commit dos corpos)
 - parcial: os corpos só existem no objeto → as cadeiras têm de carregar do blob; os 3 mandatos exigem declarar IDENTICO/DIVERGE do corpo carregado contra o blob (c1 l.133, c2 l.139, c3 l.176). Ressalva operacional: o tipo de subagente não existe na sessão; carregar corpo por `git show <O>:…`.
-- cmd: `git worktree add --detach C:/Users/AMP/j13-insp-s0 <O>`; `node scripts/sync-agent-agents.mjs --check` (cwd no worktree descartável); `git worktree remove --force`
+- cmd: `git worktree add --detach ~/j13-insp-s0 <O>`; `node scripts/sync-agent-agents.mjs --check` (cwd no worktree descartável); `git worktree remove --force`
 - saída: HEAD ed4e229e…; `[agents-sync] OK — 85 agentes, espelho consistente.` sync ec=0; `worktree S0 removido`; nenhum worktree j13 registrado
 - parcial: S0 verde no objeto. ITEM 1 = VERDE (com ressalva operacional de carga do corpo).
 
@@ -59,16 +59,16 @@ executor: subagente Claude Code genérico (o tipo `inspetor-de-terreno-da-junta`
 - parcial: briefing presente; nenhuma conclusão herdada como fato. ITEM 2 = VERDE COM RESSALVAS (R2 executor/monocultura; R3 §8.14 sem dono).
 
 ## Item 3 — terreno (2026-10-25T14:55Z–15:01Z)
-- cmd: `git -C C:/Users/AMP/w-san313 rev-parse HEAD; git status --porcelain --untracked-files=all`
+- cmd: `git -C ~/w-san313 rev-parse HEAD; git status --porcelain --untracked-files=all`
 - saída: ed4e229e…; só `??` em `votos/B-SAN3-13/` (4 mandatos + evidência e parecer do inspetor); 0 modificação rastreada
 - parcial: árvore no objeto, sem mutação viva.
 - cmd: `docker ps -a --format '{{.Names}} {{.Status}} {{.Ports}}'`
 - saída: `dev-san312a-pg2` Up ~1h 127.0.0.1:55413; `agv3-proxy` Up 12h 8888/tcp; `erp-postgres` 0.0.0.0:5432; `erp-redis` 0.0.0.0:6379. Nenhum `jur-*`/`crit-*`/`j13-*`/`san313`; `dev-san322-*` NÃO existe (o orquestrador o dava como possível)
 - parcial: sem resíduo de jurado; trabalhos Docker fora de `erp-*` = 2 (agv3-proxy, dev-san312a) = NO TETO.
-- cmd: `git worktree list`; `ls -d C:/Users/AMP/j13-*`; busca de `*probe*`/`jur-*` não rastreados no worktree
+- cmd: `git worktree list`; `ls -d ~/j13-*`; busca de `*probe*`/`jur-*` não rastreados no worktree
 - saída: worktrees: principal(main 539b078e), w-agapi2, w-aparencia, w-med03, w-san312a, w-san313, w-san322; 0 caminhos `j13-*`; 0 probes
 - parcial: nenhum resíduo; os worktrees `j13-c{1,2,3}-wt` ainda não existem (nascem por cadeira).
-- cmd: `fsutil reparsepoint query C:\Users\AMP\w-san313\node_modules`; `(Get-Item).LinkType`
+- cmd: `fsutil reparsepoint query ~/w-san313\node_modules`; `(Get-Item).LinkType`
 - saída: "não é um ponto de nova análise"; LinkType vazio
 - parcial: `node_modules` do worktree do objeto é diretório real, sem junction.
 - cmd: plano de isolamento nos mandatos (`grep` de `j13-c*-wt`, `j13-c*-pg/redis`, `npm ci`, `junction`, `127.0.0.1`, `5432`, `6379`, `erp-`, `commit livre`, `teto`, `DEEP_CLEAN|10 GB`, `git worktree remove --force`, `Opus/Sol esgotado`)

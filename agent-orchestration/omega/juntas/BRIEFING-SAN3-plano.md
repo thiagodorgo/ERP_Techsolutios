@@ -27,7 +27,7 @@
   data/origem) além de `gravidade` (`bloqueia` | `ajuste` | `nota`). "Não consigo medir" = REPROVADO. Nenhuma
   cadeira propõe correção (§C7.4-bis).
 - **P2:** cada cadeira grava o voto **incrementalmente**, via Bash, em
-  `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-SAN3/<Cn>-<papel>-voto.json`
+  `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/votos-SAN3/<Cn>-<papel>-voto.json`
   e `<Cn>-<papel>-evidencia.md`. O orquestrador versiona em `votos/SAN3-plano/` ao consolidar.
 - **P5:** no máximo 2 cadeiras em paralelo.
 
@@ -133,7 +133,7 @@ Parecer: `votos/SAN3-plano/00b-inspetor-terreno.md` (Fable, sem fallback) — **
 - **R5 ("registradas para não serem remedidas", crítico r2, l.6).** Não é licença: toda medição que o voto usar é
   re-executada pela cadeira.
 - **R6 (33 corpos sepultados na árvore da sessão).** Não são cadeira de nada; nenhuma cadeira os lê.
-- **R7 (armadilhas de terreno).** (a) crie o seu worktree num caminho curto — `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3-<cadeira>` — com
+- **R7 (armadilhas de terreno).** (a) crie o seu worktree num caminho curto — `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3-<cadeira>` — com
   `git -c core.longpaths=true worktree add --detach <caminho> a143d2c3`; (b) `prisma generate` exige `DATABASE_URL`
   no ambiente (valor fictício serve) — só relevante se alguém rodar `npm run check`, que nenhum mandato exige; (c) os
   guards de KPI só precisam de `tsx` + builtins (`npm ci` próprio no worktree).

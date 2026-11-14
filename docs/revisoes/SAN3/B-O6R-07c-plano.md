@@ -6,7 +6,7 @@
 > (decisão de 08/10); este bloco é de **PERMISSÃO**. O frontmatter do `planejador-mestre` continua `fable`.
 > **Ref medida:** ramo `fix/o6r07c-subresource-scope`, head `39e7c836e63e71b56b6abf303d3ea4e64b9f8a86` (v1, r1, v2, r2);
 > código em `origin/main` = `c1cfdabe12c74b58f8393dbee4f333224c56b303` (o ramo não toca `src/`). Medido por
-> `git rev-parse HEAD origin/main` no worktree `C:/Users/AMP/w-07c` (§A7).
+> `git rev-parse HEAD origin/main` no worktree `~/w-07c` (§A7).
 > **Insumos:** crítica r1 (`B-O6R-07c-CRITICA-r1.md`, `critico-b-o6r-07c-r1`) e crítica r2 (`B-O6R-07c-CRITICA-r2.md`,
 > `critico-b-o6r-07c-r2`): **07c-a volta ao plano só no guard; 07c-b pronto para planejar depois de D1/D2**. A r2 foi a
 > última rodada de crítica (máximo de 2): o guard será julgado **pela junta, por mutação**. Versões anteriores no
@@ -111,7 +111,7 @@ decidia "não alcança" por **substring** do motivo (`/role_required/` casava `c
    comentários, anexos, linha do tempo, vistorias, despachos) antes e depois do GET do técnico **não atribuído**: mudou
    → vermelho. Classe `*SEM-ALCANCE*` exige que o campo **não** alcance (status 401/403 iguais com e sem permissão).
 
-**Números em `c1cfdabe`** (cwd `C:/Users/AMP/w-07c`, Node v20.19.5, sem `DATABASE_URL`/`REDIS_URL`; Apêndice A):
+**Números em `c1cfdabe`** (cwd `~/w-07c`, Node v20.19.5, sem `DATABASE_URL`/`REDIS_URL`; Apêndice A):
 
 ```
 node --import tsx census-v3.mts c3.json            (21 s)
@@ -348,7 +348,7 @@ exige (crítica, parágrafo da ampliação). `work-order.routes.ts` fica permiti
 (07c-b), `mobile/**`, `frontend/**`, `Kpis/**` (KPI congelado, §C7.8(5)), `src/app.ts`, `.github/**`, `package.json`,
 `package-lock.json`, `.env*`, `RBAC_MATRIX.md` e os demais arquivos-base, as classes R e N (`damages`, `fuel-logs`,
 `expense-management`, `telemetry`, `notifications`, `attachments`). **Worktrees de outros agentes, intocáveis:**
-`C:/Users/AMP/w-389`, `C:/Users/AMP/w-insp389`, `C:/Users/AMP/w-traccar` (A10: a v1 nomeava `w-389j`, que não existe
+`~/w-389`, `~/w-insp389`, `~/w-traccar` (A10: a v1 nomeava `w-389j`, que não existe
 na saída de `git worktree list`).
 
 **Interseção com PRs abertos, medida (A10):** o #389 (head `ae863e1a`) toca, além de `src/modules/inventory/**` e
@@ -728,7 +728,7 @@ premissa corrigida do A4, o laço G-NEG/G-POS/G-WIDE com `managerA`, os semânti
   saída do app que o 07c-b exige antes de mergear."
 ## Apêndice A — os geradores v3, verbatim (P3: roteiro de reexecução)
 
-Rodados com cwd = `C:/Users/AMP/w-07c` (código de `c1cfdabe`), depois de `npm ci` e `prisma generate`, sem
+Rodados com cwd = `~/w-07c` (código de `c1cfdabe`), depois de `npm ci` e `prisma generate`, sem
 `DATABASE_URL`/`REDIS_URL`. Ordem: `node --import tsx census-v3.mts c3.json [injecao.mts]` → `node --import tsx
 sync-v3.mts c3.json s3.json [injecao.mts]` → `node classify-v3.cjs c3.json s3.json [instantaneo.json] [--gravar arq]`
 (sai com código 1 se houver violação). As injeções das críticas são as dos apêndices delas, sem edição (`inject.mts` da

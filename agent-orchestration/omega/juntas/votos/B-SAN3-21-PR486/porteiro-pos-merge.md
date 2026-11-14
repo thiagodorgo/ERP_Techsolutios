@@ -16,7 +16,7 @@ MEDIDO E ÍNTEGRO.
 - `git show -s --format='%H%n%P%n%s' 5da03cac` confirmou pai `7c89c73b64d78aceca8af64fb90d2e49261b2bad` e assunto `fix(web): acentuação dos textos da web (B-SAN3-21) (#486)`.
 - `gh pr view 486 --repo thiagodorgo/ERP_Techsolutios --json ...` confirmou `state=MERGED`, `mergedAt=2026-11-03T11:54:39Z`, `mergeCommit=5da03cac...` e head aprovado `03012d66...`.
 - `git diff --exit-code 03012d66... 5da03cac...` retornou `0`: a árvore do squash é idêntica à árvore aprovada.
-- Worktree próprio criado por `git worktree add --detach C:/Users/thiag/w-port486 origin/main`; `HEAD` medido em `5da03cac...`, árvore inicialmente limpa.
+- Worktree próprio criado por `git worktree add --detach ~/w-port486 origin/main`; `HEAD` medido em `5da03cac...`, árvore inicialmente limpa.
 
 ## 2. Promessa × diff real
 
@@ -56,7 +56,7 @@ RESSALVA DOCUMENTAL, sem bloqueio do próximo start.
 - O bloco foi de revisão simples + CI, não junta completa; portanto não há ata de junta a cobrar. Há parecer independente `rev-486-sol` e comentário de triagem do dono no PR, ambos aprovando com ajuste não grave.
 - Em `origin/main`, `agent-orchestration/controle/pendencias.md:313` ainda deixa `P-028` ABERTA (PARCIAL), e a seção `P-Ω3F2B-ACENTOS` em torno da linha 692 ainda diz `status: aberto`; a linha 49 de `docs/revisoes/SAN3/PLANO_SAN3.md:174` ainda não registra o fechamento factual do PR #486.
 - Para o próximo marco contar o item 49 como FECHADO, o próximo registro deve: (1) criar `P-SAN3-21-PERFIL-LOGISTICO` e transferir para ela a exceção/chave técnica `Operador Logistico`; (2) marcar `P-028` e `P-Ω3F2B-ACENTOS` como fechadas pelo PR #486, head `03012d66...`, merge `5da03cac...`, CI `41631321827` e prova reexecutada `310/42 → 0`; (3) atualizar a linha 49 do gate; (4) regenerar `pendencias-indice.md`.
-- As três dívidas propostas pelo dev estão anotadas para o próximo registro em `C:/Users/thiag/erp-pausa-2026-10-03/REGISTRO-PENDENTE.md:228-233` e também no roteiro `PAUSA-2026-11-02b.md:16-18`: `P-SAN3-21-PERFIL-LOGISTICO`, o termo técnico em `auth.adapter.ts:209` e o teste vacuoso de `smoke-flow.test.tsx:1456`. Logo, não estão perdidas; ainda não foram consolidadas em `agent-orchestration/controle/pendencias.md`.
+- As três dívidas propostas pelo dev estão anotadas para o próximo registro em `~/erp-pausa-2026-10-03/REGISTRO-PENDENTE.md:228-233` e também no roteiro `PAUSA-2026-11-02b.md:16-18`: `P-SAN3-21-PERFIL-LOGISTICO`, o termo técnico em `auth.adapter.ts:209` e o teste vacuoso de `smoke-flow.test.tsx:1456`. Logo, não estão perdidas; ainda não foram consolidadas em `agent-orchestration/controle/pendencias.md`.
 
 ## 6. Limpeza pós-merge
 
@@ -64,11 +64,11 @@ CONFERE.
 
 - `git ls-remote --heads origin fix/web-acentuacao`: vazio; ramo remoto apagado.
 - `git branch --list fix/web-acentuacao`: vazio; ramo local ausente.
-- `git worktree list --porcelain`: não contém `C:/Users/thiag/w-san321`; `test ! -e C:/Users/thiag/w-san321` retornou `0`, confirmando remoção do worktree do dev.
+- `git worktree list --porcelain`: não contém `~/w-san321`; `test ! -e ~/w-san321` retornou `0`, confirmando remoção do worktree do dev.
 - `git status --porcelain | grep '^ D'` na árvore principal: vazio; nenhum arquivo rastreado aparece apagado.
 - Disco `C:`: `276G` livres, acima do limiar de limpeza profunda.
 - A restauração temporária do vermelho-controle deixou os 42 arquivos medidos marcados apenas por conversão de EOL (`6990/6990`); `git diff --ignore-space-at-eol --exit-code -- frontend/src` retornou `0`, provando ausência de mudança semântica. O resíduo morreu com o worktree isolado.
-- Ref temporária `refs/tmp/porteiro-486-head` apagada; `git worktree remove --force C:/Users/thiag/w-port486` retornou `0` ao final.
+- Ref temporária `refs/tmp/porteiro-486-head` apagada; `git worktree remove --force ~/w-port486` retornou `0` ao final.
 
 ## 7. Bloqueio do próximo alvo
 

@@ -3,7 +3,7 @@
 - **Bloco:** SAN2-6 (PR #368)
 - **Cadeira:** C1 — inserção pura, paridade §A2, greps que definem "feito"
 - **Head julgado:** `d90fbbb` · **Base:** `origin/main` = `e6a6461`
-- **Worktree de medição:** `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r` (R1 do inspetor)
+- **Worktree de medição:** `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r` (R1 do inspetor)
 - **Regra:** toda afirmação do briefing e do diário do dev é re-medida aqui. Sem veto individual; quórum = maioria de 3.
 
 ---

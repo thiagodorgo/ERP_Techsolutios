@@ -10,9 +10,9 @@
 
 > **Papel:** `planejador-mestre` (identidade nova `planejador-dash-ciclo2-fable`) · **Modelo que rodou:** Fable (claude-fable-5-1), o modelo de TOPO do frontmatter — sem substituição. · **Regra:** `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO` (§C7.4): em toda reprovação de junta o topo audita e replaneja; quem achou (C1 Codex, C3 Opus) não planeja; quem planeja não desenvolve nem vota.
 >
-> **Objeto julgado no ciclo 1:** `849bf840f2bdecae87b82a17b26adf505d8a2a8e` (PR #446). **Ramo:** `fix/dash-perfil`, head medido agora `840fe3964ccd0cb80b6a9bc9880e28ab6966acb7` (`git -C C:/Users/AMP/w-dash rev-parse HEAD`); o diff `849bf840..840fe396` é só registro da junta (16 arquivos, +766, em `agent-orchestration/omega/juntas/`), nenhum produto. **Base:** `3fbcaea2` (merge-base com `origin/main`); `origin/main` agora `bf83cda8`.
+> **Objeto julgado no ciclo 1:** `849bf840f2bdecae87b82a17b26adf505d8a2a8e` (PR #446). **Ramo:** `fix/dash-perfil`, head medido agora `840fe3964ccd0cb80b6a9bc9880e28ab6966acb7` (`git -C ~/w-dash rev-parse HEAD`); o diff `849bf840..840fe396` é só registro da junta (16 arquivos, +766, em `agent-orchestration/omega/juntas/`), nenhum produto. **Base:** `3fbcaea2` (merge-base com `origin/main`); `origin/main` agora `bf83cda8`.
 >
-> **Este documento é somente leitura do repositório:** nenhuma edição, commit, Docker, base viva ou `tail -f`. Sondas rodaram via `npx --no-install tsx -e` com cwd em `C:/Users/AMP/w-dash/frontend` (resolução de módulos a partir do worktree, sem criar arquivo na árvore); `git status` conferido antes e depois.
+> **Este documento é somente leitura do repositório:** nenhuma edição, commit, Docker, base viva ou `tail -f`. Sondas rodaram via `npx --no-install tsx -e` com cwd em `~/w-dash/frontend` (resolução de módulos a partir do worktree, sem criar arquivo na árvore); `git status` conferido antes e depois.
 >
 > **Gravado aos poucos (P1):** cada seção abaixo é apensada ao ser medida. A seção `## PAUSA` só existe se o dono ordenar pausa.
 
@@ -22,15 +22,15 @@
 
 ### 1.0 Insumos lidos (comando → saída → veredito parcial)
 
-- `Read` da ata `C:/Users/AMP/w-dash/agent-orchestration/omega/juntas/J-B-DASH-PERFIL-ciclo1.md` → REPROVADO 1 × 2; C1-01 (grave, quebra de permissão, dentro-do-bloco), C3-01 (bloqueia, dentro-do-bloco); C2 APROVADO com C2-opus-01/02 não bloqueantes; C3-02..05 notas/ressalvas → **insumo aceito como A RE-VERIFICAR**, não como fato.
+- `Read` da ata `~/w-dash/agent-orchestration/omega/juntas/J-B-DASH-PERFIL-ciclo1.md` → REPROVADO 1 × 2; C1-01 (grave, quebra de permissão, dentro-do-bloco), C3-01 (bloqueia, dentro-do-bloco); C2 APROVADO com C2-opus-01/02 não bloqueantes; C3-02..05 notas/ressalvas → **insumo aceito como A RE-VERIFICAR**, não como fato.
 - `Read` de `votos/B-DASH-PERFIL/{c1,c2,c3}-voto.json` e `{c1,c3}-evidencia.md` → C1 mediu por sonda runtime (`roles=["Super Admin"], permissions=[]` → `can("dashboard:view")=true`, `can(<inventada>)=true`); C3 mediu M1 (provider volta a unir) e M1b (união + `dashboard:view`) sobrevivendo a 1327/1327 e M3 (`resolveLoginPermissions` forçando `dashboard:view`) sobrevivendo a 92/92 em 14 arquivos de auth; só M2 (muda o texto da linha vigiada) ficou vermelha → **os comandos estão registrados; re-executo o que posso sem Docker (abaixo).**
-- `Read` de `docs/revisoes/TELAS/B-DASH-PERFIL-{plano,critica,dev,emenda-dev}.md` e da emenda `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-emenda-2026-10-18.md` → a crítica (achado 2) previu a classe de C3-01 ("Com isso o critério 6 passa mesmo se o Suporte continuar vendo o CTA"); a emenda mandou "injetar na sessão do mesmo jeito que o app real" e PROIBIU tocar `PermissionProvider`/produto; o vermelho-controle da emenda foi "comentar o helper → o teste falha" → **prova que o provider LÊ a sessão, não que IGNORA o contexto.**
+- `Read` de `docs/revisoes/TELAS/B-DASH-PERFIL-{plano,critica,dev,emenda-dev}.md` e da emenda `~/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-emenda-2026-10-18.md` → a crítica (achado 2) previu a classe de C3-01 ("Com isso o critério 6 passa mesmo se o Suporte continuar vendo o CTA"); a emenda mandou "injetar na sessão do mesmo jeito que o app real" e PROIBIU tocar `PermissionProvider`/produto; o vermelho-controle da emenda foi "comentar o helper → o teste falha" → **prova que o provider LÊ a sessão, não que IGNORA o contexto.**
 
 ### 1.1 C1-01 — o atalho do Super Admin no `PermissionProvider`
 
 **Pergunta 1: o atalho já existia na `main` antes do bloco?** SIM.
 
-- Comando: `git -C C:/Users/AMP/w-dash show origin/main:frontend/src/providers/PermissionProvider.tsx` e `git show HEAD:frontend/src/providers/PermissionProvider.tsx`, depois `git diff origin/main HEAD -- frontend/src/providers/PermissionProvider.tsx`.
+- Comando: `git -C ~/w-dash show origin/main:frontend/src/providers/PermissionProvider.tsx` e `git show HEAD:frontend/src/providers/PermissionProvider.tsx`, depois `git diff origin/main HEAD -- frontend/src/providers/PermissionProvider.tsx`.
 - Saída: o diff do bloco é **UMA linha** — `const permissions = [...new Set([...(session?.user.permissions ?? []), ...(activeContext?.permissions ?? [])])]` → `[...new Set(session?.user.permissions ?? [])]` (blobs `89a51e87..8ab79873`). As linhas `can(permission) { return permissions.includes(permission) || isPlatformAdmin({ roles, permissions }); }` e `hasAny(...) || isPlatformAdmin(...)` são **idênticas** nos dois lados; `roles` continua unindo `session.user.roles` com `activeContext.role` nos dois lados.
 - Comando: `git log --format='%h %ad %s' --date=short -S"isPlatformAdmin" origin/main -- frontend/src/providers/PermissionProvider.tsx`.
 - Saída: `011632f1 2026-06-07 feat: standardize RBAC sidebar navigation` — único commit que introduz/remove o símbolo nesse arquivo. A branch começou em 2026-10-16 (`af89abbb`).
@@ -52,7 +52,7 @@
 
 ### 1.2 Sonda executada no objeto (sem tocar a árvore) — reproduz C1 e mede a propriedade que o arnês não prende
 
-- Comando: `node --import tsx <scratchpad>/dash-c2-plan/probe-provider.mts` com cwd `C:/Users/AMP/w-dash/frontend` (imports por `file:///C:/Users/AMP/w-dash/frontend/...`; stub de `window.localStorage` igual ao dos smokes; `VITE_USE_MOCKS=true`; render `AuthProvider -> TenantProvider -> PermissionProvider -> Probe(usePermissions)` via `renderToString`). `git status --short` (filtrado de `.agents/.claude`, que já estavam ` M` antes de eu começar) vazio antes e depois.
+- Comando: `node --import tsx <scratchpad>/dash-c2-plan/probe-provider.mts` com cwd `~/w-dash/frontend` (imports por `file:///~/w-dash/frontend/...`; stub de `window.localStorage` igual ao dos smokes; `VITE_USE_MOCKS=true`; render `AuthProvider -> TenantProvider -> PermissionProvider -> Probe(usePermissions)` via `renderToString`). `git status --short` (filtrado de `.agents/.claude`, que já estavam ` M` antes de eu começar) vazio antes e depois.
 - Saída (4 cenários, literal):
   - **S1** sessão `roles=["Super Admin"], permissions=[]`, sem contexto: `can("dashboard:view")=true`, `can("definitely:not:granted")=true`, `hasAny([dashboard:read,dashboard:view])=true`. **Reproduz C1-01** (mesmo código em `origin/main`: as linhas de `can`/`hasAny` são idênticas nos dois blobs).
   - **S2** sessão Financeiro `["financial_entries:read"]`, contexto `["financial_entries:read","work_orders:create"]`: `permissions=["financial_entries:read"]`, `can("work_orders:create")=false`. **É a propriedade do bloco** ("só a sessão libera"): no provider da base (M1 = união) daria `true`. Nenhum teste versionado semeia contexto mais largo que a sessão; por isso M1 sobrevive.
@@ -177,8 +177,8 @@ Arnês local `buildActiveTenantHarness()` (espelho de `o6r07a` + `actor-aware-ro
 ### 2.7 Bateria de validação (a exata, nesta ordem; Windows onde cabe, contêiner onde o Windows não serve)
 
 ```bash
-# 0. terreno (worktree próprio do dev em C:/Users/AMP/w-dash, ramo fix/dash-perfil; npm ci próprio; sem junction)
-git -C C:/Users/AMP/w-dash status --short
+# 0. terreno (worktree próprio do dev em ~/w-dash, ramo fix/dash-perfil; npm ci próprio; sem junction)
+git -C ~/w-dash status --short
 git diff --check
 
 # 1. escopo: zero produto, zero helper/setups, zero proibido
@@ -209,8 +209,8 @@ npm run lint
 npm run build
 
 # 6. contêiner Linux (backend com Prisma; 1 trabalho por vez; memória de commit >= 3 GB antes de subir)
-bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-dash "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"
-bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-dash "npm test"
+bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-dash "node --test --import tsx tests/auth-active-tenant-permissions.test.ts tests/dashboard-profile-permissions.test.ts tests/dashboard-summary.test.ts tests/dashboard-prisma-repository.test.ts"
+bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-dash "npm test"
 #    os 9 `not ok` de tests/traccar-dev-topology.test.ts por `docker ENOENT` são C3-05 (pré-existente, c1485c94): publicar N, forma e causa; zero falha fora desse arquivo
 
 # 7. espelhos e fechamento
@@ -255,7 +255,7 @@ Registrar no relatório do dev: SO/Node/SHA, cada comando com exit code e `# tes
 1. **`P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI`** (C1-01 + S4) — `PermissionProvider.can/hasAny` fazem `|| isPlatformAdmin({ roles, permissions })`, e `isPlatformAdmin` aceita o **rótulo** `"Super Admin"`; `roles` une `session.user.roles` com `activeContext.role` (ambos de `011632f1`, 2026-06-07). Efeito: estado sintético `roles=["Super Admin"], permissions=[]` ou contexto obsoleto com `role:"Super Admin"` no `localStorage` libera a UI (backend continua negando; `platform_admin`/`super_admin` recebem o catálogo inteiro, `catalog.ts:412/729`). **Dono:** `B-SAN3-06a` (já dono do contexto/mapa estático: `P-SAN3-04A-FRONT-PERMISSOES-POR-PAPEL-DEFASADAS`, C2-opus-02) — ou bloco próprio se o dono preferir. **Decisão que é do dono:** derivar "admin de plataforma" só de `permissions` (`platform:tenants:read`, que o perfil mock `platform` já tem) e derivar `roles` só da sessão. Classe: UI-only, não grave. N=2/2 permissões sintéticas (S1), 1/1 vetor de contexto (S4).
 2. **`P-DASH-PERFIL-TROCA-CLIQUE-SEM-TESTE`** (C2-opus-01, M3b) — `ContextSelectionPage.handleActivate` (`navigate(landing)`; M3b = `navigate("/dashboard")`) não tem teste executado: `renderToString` não exercita `onClick`. Hoje só a guarda de forma de `dashboard-profile-behavior.test.tsx` ("troca de organização decide e persiste pelas permissões da sessão efetiva") vigia. **Dono:** o primeiro bloco de frontend que introduzir arnês de interação (`react-dom/test-utils`/jsdom) — candidato: o bloco das 3 aparências do Dashboard (`P-APARENCIA-POR-USUARIO`). Até lá, C2 provou por navegador real no ciclo 1.
 3. **C2-opus-02** — `enabledModules` do contexto por mapa estático: dono `B-SAN3-06a` (já registrado na ata do ciclo 1).
-4. **C3-05** — imagem `erp-teste-linux:1` sem `docker compose` → 9 falhas de ambiente em `traccar-dev-topology`: dono = ferramenta do terreno (`C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh`); o ciclo 2 publica N/forma/causa, não conserta.
+4. **C3-05** — imagem `erp-teste-linux:1` sem `docker compose` → 9 falhas de ambiente em `traccar-dev-topology`: dono = ferramenta do terreno (`~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh`); o ciclo 2 publica N/forma/causa, não conserta.
 5. **Guardas de forma remanescentes** em `dashboard-profile-behavior.test.tsx` (Nova OS, KPI, troca): ficam como complemento; não são convertidas neste ciclo (o Dashboard é renderizado em `smoke-flow` com vermelho-controle provado por C3; a troca cai no item 2).
 6. **C3-03 / C3-04:** nada a fazer (artefato de processo aceito; entrada de teste legítima).
 
@@ -269,6 +269,6 @@ Registrar no relatório do dev: SO/Node/SHA, cada comando com exit code e `# tes
 ## Fechamento (estado ao entregar, 2026-10-19)
 
 - Arquivo completo: Partes 1–4 gravadas; nenhuma seção `## PAUSA` (não houve ordem de pausa após a retomada das 06:20).
-- Terreno: `C:/Users/AMP/w-dash` em `840fe396`, `git status --short` sem nenhuma entrada fora das ` M .agents/` e ` M .claude/` que já existiam antes desta auditoria; zero untracked em `frontend/tests` e `tests`; nenhum `frontend/dist` criado; nenhum worktree, commit, Docker, base viva ou porta tocados.
-- Artefatos desta auditoria (fora do repositório): `<scratchpad>/dash-c2-plan/probe-provider.mts` (sonda S1–S4, re-executável com `cd C:/Users/AMP/w-dash/frontend && node --import tsx <caminho>`), `sec-*.md` (rascunhos já concatenados aqui).
+- Terreno: `~/w-dash` em `840fe396`, `git status --short` sem nenhuma entrada fora das ` M .agents/` e ` M .claude/` que já existiam antes desta auditoria; zero untracked em `frontend/tests` e `tests`; nenhum `frontend/dist` criado; nenhum worktree, commit, Docker, base viva ou porta tocados.
+- Artefatos desta auditoria (fora do repositório): `<scratchpad>/dash-c2-plan/probe-provider.mts` (sonda S1–S4, re-executável com `cd ~/w-dash/frontend && node --import tsx <caminho>`), `sec-*.md` (rascunhos já concatenados aqui).
 - Próximo passo do orquestrador: registrar `omega/reprovacoes/R-B-DASH-PERFIL-1.md` apontando para este arquivo; disparar o dev do ciclo 2 (identidade nova, Opus/Sol declarado) com a Parte 2 como mandato e a Parte 3 como lista do que NÃO fazer; depois inspetor e as 3 cadeiras com o briefing da seção 2.8.

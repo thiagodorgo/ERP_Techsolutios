@@ -5,7 +5,7 @@ papel: agente-fabrica (instância nova, junta 1 do B-SAN3-01b, PR 402, cadeira C
 ## Resultado
 
 Escrevi um corpo novo de jurado para a cadeira C2:
-`C:/Users/AMP/w-nuv01b/.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md`.
+`~/w-nuv01b/.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md`.
 
 Ele substitui o `coordenador-de-acessos`, que o inspetor de terreno declarou inelegível (item 3.1: foi ele quem achou o
 C2-05, o mesmo botão que o bloco conserta). O corpo mantém a competência dele, a cadeia de acesso de ponta a ponta. A
@@ -17,7 +17,7 @@ arquivo.
 
 ## O que li
 
-Tudo no worktree `C:/Users/AMP/w-nuv01b`, que o disparo diz estar no head do PR:
+Tudo no worktree `~/w-nuv01b`, que o disparo diz estar no head do PR:
 
 - o mandato `agent-orchestration/omega/juntas/votos/B-SAN3-01b/00-mandatos/fabrica-c2.md`, inteiro;
 - o parecer do inspetor `agent-orchestration/omega/juntas/votos/B-SAN3-01b/00-inspetor-terreno.md`, inteiro. O item 3.1
@@ -58,7 +58,7 @@ Tudo no worktree `C:/Users/AMP/w-nuv01b`, que o disparo diz estar no head do PR:
 
 ## O que escrevi
 
-1. `C:/Users/AMP/w-nuv01b/.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md`, o corpo novo, criado do
+1. `~/w-nuv01b/.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md`, o corpo novo, criado do
    zero. Depois de criá-lo, fiz duas edições no mesmo arquivo:
    - tirei `": "` da `description`, que é um escalar YAML sem aspas e quebraria o parse;
    - acrescentei uma nota de que `\|\|` na tabela de mutações se lê `||`.
@@ -88,7 +88,7 @@ porque não tenho como medi-lo. O teste que a derruba é
     `P-SAN3-01B-*` e não é o nome;
   - os Greps que tentei no repositório inteiro esgotaram o tempo, e por isso restringi às pastas acima.
 - **O que esperar do teste que a derruba:** antes de versionar, o
-  `git -C C:/Users/AMP/w-nuv01b grep -il 'jurado-san3-01b-c2-cadeia-de-acesso' HEAD -- agent-orchestration .claude .agents | wc -l`
+  `git -C ~/w-nuv01b grep -il 'jurado-san3-01b-c2-cadeia-de-acesso' HEAD -- agent-orchestration .claude .agents | wc -l`
   deve dar 1 (só o mandato da fábrica). Depois de versionar, deve dar o mandato mais os dois espelhos do corpo, e mais o
   `00-mandatos/C2.md` regenerado, se ele citar o nome.
 
@@ -144,7 +144,7 @@ São pontos de desenho e de terreno. Não são achados, porque a fábrica não j
    inspetor).
 3. **O mandato `00-mandatos/C2.md` tem de ser regenerado** para a identidade nova. Hoje ele nomeia o
    `coordenador-de-acessos` na l.33, e o inspetor pediu isso no remédio, item 2. Isso não é trabalho meu. Para o caso de o
-   mandato não nomear, o corpo assume como padrão o worktree `C:/Users/AMP/w-j01bc2` e o diretório
+   mandato não nomear, o corpo assume como padrão o worktree `~/w-j01bc2` e o diretório
    `votos/B-SAN3-01b/` (`C2-evidencia.md`, `C2-voto.json`).
 4. **P4.** O corpo tem 3 itens, mas o item 2 tem 5 sub-medições, de (a) a (e). Se a série de quedas (P6) recomendar,
    ele pode ser dividido em medir e julgar, no padrão 4a/4b. Essa decisão é do orquestrador.

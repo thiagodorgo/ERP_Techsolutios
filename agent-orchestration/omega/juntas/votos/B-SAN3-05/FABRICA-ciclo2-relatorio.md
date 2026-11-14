@@ -7,10 +7,10 @@
   continua com `model: fable`, porque o fallback cabe a quem invoca e não ao arquivo. Cada corpo manda a cadeira declarar papel, modelo
   e motivo na 1ª linha da evidência e no voto.
 - **Janela:** de 2026-10-09T03:12:28Z a 03:36Z. Prazo 05:50Z, corte duro 05:55Z. Terminei antes do prazo, então não há seção PAUSA.
-- **O que a fábrica leu e onde.** Li no disco de `C:/Users/AMP/w-o05` estes arquivos: o plano
+- **O que a fábrica leu e onde.** Li no disco de `~/w-o05` estes arquivos: o plano
   `docs/revisoes/SAN3/B-SAN3-05-plano.md` (C2.1 a C2.6, Fecho e as três erratas ao D4), `R-B-SAN3-05-1.md`, `J-B-SAN3-05.md`,
   `DEV-ciclo2-relatorio.md`, `00-inspetor-terreno.md` (por grep), os arquivos de produto e teste citados nos corpos (por grep, com
-  leitura de trechos), a receita `C:/Users/AMP/erp-terreno/receita-pg16.sh` e o `TERRENO-PG16.md`.
+  leitura de trechos), a receita `~/erp-terreno/receita-pg16.sh` e o `TERRENO-PG16.md`.
   O molde foi lido do **checkout principal** (divergência D-2). Li o head nos arquivos de ref, **sem rodar `git`**:
   `refs/heads/fix/runtime-role-sem-bypass` = `refs/remotes/origin/fix/runtime-role-sem-bypass` = `02544a79cead8d9713354697f8ee78dac1575546`.
   O dev do ciclo 2 (Codex) trabalhava nessa mesma árvore durante a leitura. Por isso cada corpo marca todo arquivo:linha, SHA e
@@ -18,10 +18,10 @@
 
 ## ANOMALIA — gravação em `.claude/` negada; os corpos estão no scratchpad
 
-Às 03:24Z o sistema de permissões da sessão **negou** a gravação em `C:/Users/AMP/w-o05/.claude/agents/especialistas/`. Não contornei
+Às 03:24Z o sistema de permissões da sessão **negou** a gravação em `~/w-o05/.claude/agents/especialistas/`. Não contornei
 o bloqueio (não usei Bash nem outro caminho). Os três corpos foram gravados, **completos**, no scratchpad da sessão:
 
-`C:/Users/AMP/AppData/Local/Temp/claude/C--Users-AMP-w-o05/614ddb03-1721-48aa-989c-1543d4e0e83c/scratchpad/especialistas/`
+`~/AppData/Local/Temp/claude/C--Users-~-w-o05/614ddb03-1721-48aa-989c-1543d4e0e83c/scratchpad/especialistas/`
 
 | cadeira | arquivo | linhas | EOL | md5 (cru = EOL-neutro, 0 CR) |
 |---|---|--:|---|---|
@@ -55,8 +55,8 @@ inelegíveis por nome, legalidade, quórum/teto/queda/PAUSA, §A7, a classe caç
 - **Reprovação por construção:** C2.5 l.1591-1612, **verbatim** nos três corpos, mais os itens próprios de cada cadeira.
 - **Objeto e HC = H0:** C2.5 l.1563-1566 e J15 (l.1400). Cada cadeira resolve o objeto por `git ls-remote` e `gh pr view 405`.
 - **Terreno:** C2.4 l.1495-1502 (só `git`/`gh` no Windows, o resto em container Linux) e C2.5 l.1569 para os prefixos
-  `j05c2-c1-`, `j05c2-c2-`, `j05c2-c3-`. Worktrees `C:/Users/AMP/w-j05c2c{1,2,3}`, imagem `erp-junta-node20-pg16:local`,
-  receita `C:/Users/AMP/erp-terreno/receita-pg16.sh`. `erp-postgres`/`erp-redis`/5432/6379/55432 nunca são alvo.
+  `j05c2-c1-`, `j05c2-c2-`, `j05c2-c3-`. Worktrees `~/w-j05c2c{1,2,3}`, imagem `erp-junta-node20-pg16:local`,
+  receita `~/erp-terreno/receita-pg16.sh`. `erp-postgres`/`erp-redis`/5432/6379/55432 nunca são alvo.
   `docker rm -f -v` só no próprio prefixo, nunca `volume prune`. Sem `tail -f`, tudo sob `timeout`.
 - **Mutações:** a tabela das 16 mutações da junta (C2.4 l.1527-1547) foi repartida por cadeira exatamente como o C2.5 manda.
   - **C1:** M-B1a, M-B1b, M-D1, M-D2, M-D3a, M-D3b, M-D4.
@@ -113,7 +113,7 @@ Cada uma está escrita no corpo da cadeira que a mede, como **ponto de leitura a
   **depois** do "STATUS: COMPLETO" e do "Fecho do ciclo 2", nas l.1676-1704 (lidas). O D4 original (l.1438-1441) fica antes do C2.3.
   O conteúdo é o mesmo; só a posição muda. O corpo da C1 manda conferir a posição no objeto.
 - **D-2 — O molde não está no ramo.** `jurado-san3-09c2-c2-dryrun-e-concorrencia.md` **não existe** em
-  `w-o05/.claude/agents/especialistas/`. Ele foi lido em `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/`,
+  `w-o05/.claude/agents/especialistas/`. Ele foi lido em `~/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/`,
   o checkout principal (outra ref).
 - **D-3 — O C2.3 proíbe `.claude/**` e `.agents/**`, mas os corpos precisam estar commitados no ramo.** O C2.3 (l.1484) põe esses
   caminhos no PROIBIDO ("só chegam pela integração da `main`"). Só que o protocolo exige que os corpos desta junta estejam

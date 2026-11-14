@@ -5,8 +5,8 @@ papel: C2 | identidade: jurado-07ca-c2-censo-e-guard | modelo: Claude Opus 5.5 (
 ## Cabeçalho de terreno (2026-10-10T17:19Z)
 - objeto: 4ca2be43c3b4b32b9bed670f02d78145620cdc2e — `git ls-remote origin refs/heads/fix/o6r07c-subresource-scope` = `gh pr view 414 headRefOid` (OPEN, isDraft=true, MERGEABLE, base main)
 - B = merge-base(origin/main, objeto) = 9b611468902f3984d7704ef2dd6e3ad1d0c08b3a = origin/main no início
-- worktree: C:/Users/AMP/w-ciclo1-07ca-c2 (detached em 4ca2be43; `test -e .git` ok); `npm ci --no-audit --no-fund` próprio: ec=0, 326 pacotes, sem junction
-- SCRATCH: C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c2
+- worktree: ~/w-ciclo1-07ca-c2 (detached em 4ca2be43; `test -e .git` ok); `npm ci --no-audit --no-fund` próprio: ec=0, 326 pacotes, sem junction
+- SCRATCH: ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/c2
 - uname: MINGW64_NT-10.0-22631 3.6.6 x86_64 Msys · node v20.19.5 · typescript 5.9.3 · express 5.2.1 · git 2.53.0.windows.2
 - disco C: 18 GB livres (df -h /c) — acima de 10 GB
 - ambiente: nada exportado; censo sob `env -u DATABASE_URL -u REDIS_URL`; `MSYS_NO_PATHCONV=1` só como prefixo
@@ -19,7 +19,7 @@ papel: C2 | identidade: jurado-07ca-c2-censo-e-guard | modelo: Claude Opus 5.5 (
 - L4 normas citadas, `git show <ref>:CLAUDE.md | grep -c` objeto/main: C7.1-bis 2/2 · C7.1-ter 3/3 · C7.4-bis 5/5 · C7.6-bis 1/1 · D-GOV-PROPORCIONAL 3/3 · D-MEDIR-NA-REF-ALVO 1/1 · "P7 — Pausa" 1/1 · "Junta proporcional ao risco" 1/1 · "Teto de 2 ciclos" 2/2; PLANO_SAN3.md CE-G1 7/7, CE-2 2. D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO: objeto decisoes.md:3132 (entrou com o merge do #415). → VERDE
 - L5 S0: `node scripts/sync-agent-agents.mjs --check` no meu worktree → "[agents-sync] OK — 52 agentes, espelho consistente." ec=0
 - L6 quórum: unanimidade de 3 com veto (permissão, §C7 item 8(1)); ciclo 1 (régua: bloqueia+dentro-do-bloco reprova, de qualquer classe)
-- L7 terreno alheio observado (só reportado): `git worktree list` mostra `C:/Users/AMP/w-ciclo1-07ca-c1 4ca2be43 (detached HEAD) prunable` — worktree da C1 marcado prunable; não toquei.
+- L7 terreno alheio observado (só reportado): `git worktree list` mostra `~/w-ciclo1-07ca-c1 4ca2be43 (detached HEAD) prunable` — worktree da C1 marcado prunable; não toquei.
 
 ## Item 1 — gerador próprio, contagens e instantâneo regenerado
 - 1.0 (17:22Z) `DATABASE_URL=<fictícia, só na linha> npx prisma generate` no meu worktree → ec=0.
@@ -359,5 +359,5 @@ console.log("TXT ROTA do gerador sem registro textual: " + genSemTexto.length); 
 
 ## Veredito (18:58Z)
 - Item 1 VERDE · Item 2 VERMELHO (A1, A2, A3) · Item 3 VERMELHO (CE-G1(b); A1–A3 bloqueia, A4 ajuste) · notas N1–N4.
-- Teardown: worktree `C:/Users/AMP/w-ciclo1-07ca-c2` removido por `git worktree remove --force` (ec=0) depois de 0 processos vivos com o caminho; `git worktree list | grep -c w-ciclo1-07ca-c2` = 0; 0 containers `j07ca-c2-*`; 0 `.pristino` e 0 `o6r07c-*` no tmpdir; scratch próprio apagado depois do voto. Resíduo alheio reportado: `w-ciclo1-07ca-c1` aparecia como prunable às 17:19Z (não tocado).
+- Teardown: worktree `~/w-ciclo1-07ca-c2` removido por `git worktree remove --force` (ec=0) depois de 0 processos vivos com o caminho; `git worktree list | grep -c w-ciclo1-07ca-c2` = 0; 0 containers `j07ca-c2-*`; 0 `.pristino` e 0 `o6r07c-*` no tmpdir; scratch próprio apagado depois do voto. Resíduo alheio reportado: `w-ciclo1-07ca-c1` aparecia como prunable às 17:19Z (não tocado).
 - VOTO: REPROVADO — ver `07ca-C2-voto.json`.

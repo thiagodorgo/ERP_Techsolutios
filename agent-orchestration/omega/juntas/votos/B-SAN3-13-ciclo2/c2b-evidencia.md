@@ -1,14 +1,14 @@
 papel: cadeira C2 REFEITA (C2b), ciclo 2 | identidade: jurado-san313-c2b-opus | executor: subagente Claude Code genérico (corpo lido do blob do objeto, R1) | corpo: jurado-san313-c2-app-nunca-perde | modelo: Claude Opus 5.5 (claude-opus-5-5; nível menor DECLARADO; substituição: nenhuma) | objeto: cbf2db292f0643b9647017005c361a2e11da61c7 | mandato_md5: ed69d66d01ad35d1d47a476596a87bdf (CR retirado; = md5 cru e = declarado no pré-voo) | corpo_md5: 637aecf020d024a7e5c36a6ea5531d66 (EOL-neutro do blob cbf2db29:.claude/...c2-app-nunca-perde.md; recebido: 637aecf020d024a7e5c36a6ea5531d66) | corpo carregado × blob: IDENTICO | flutter 3.41.6 · dart 3.11.4
 
-- livre em C: 9,9G (piso 7 GB) · memória de commit livre 13,65 GB (P8 c ≥ 4) · SCRATCH: C:/Users/AMP/erp-pausa-2026-10-03/j13c2-c2/ (pasta minha; j13-c2/ e j13-plan-c2/ só leitura, copiados)
+- livre em C: 9,9G (piso 7 GB) · memória de commit livre 13,65 GB (P8 c ≥ 4) · SCRATCH: ~/erp-pausa-2026-10-03/j13c2-c2/ (pasta minha; j13-c2/ e j13-plan-c2/ só leitura, copiados)
 - monocultura declarada: achador (jurado-san313-c2-opus), dev do ciclo 2 (dev-san313-c2-opus) e eu rodamos em Claude Opus; toda conclusão abaixo sai de execução minha.
 - independência: não li c1-* nem c3-* deste ciclo; li o voto e a evidência da C2 do ciclo 1 (roteiro P3, A RE-VERIFICAR), R-B-SAN3-13-ciclo1.md, a seção Ciclo 2 do plano e o relatório do dev (roteiro).
 - legalidade: insp-san313c2-parecer.md (inspetor-san313c2-opus) = LIBERADO COM RESSALVA (R1 corpo do blob; R2 monocultura; R3 disco/limpeza), me nomeia (jurado-san313-c2b-opus), ordem C2b → C1 → C3. Objeto por duas fontes: `git ls-remote origin refs/heads/fix/mobile-minhas-os` = `gh pr view 460` headRefOid = cbf2db29… (OPEN, draft=false, MERGEABLE). Check-runs no mandato: 14 | 0 não-verdes | 0 pendentes; flutter SUCCESS ×2 (re-medidos no fim).
 - régua: DADO, unanimidade de 3 com veto, CICLO 2 (todo bloqueia dentro-do-bloco reprova). Vermelho-controle = objeto do ciclo 1 ed4e229e (= cbf2db29~6).
-- divergência de terreno declarada: o mandato diz worktree `C:/Users/AMP/j13c2-c2-wt`; o orquestrador, no disparo, mandou `C:/Users/AMP/j13c2-c2b-wt`. Usei o do disparo (exclusivo, prefixo meu); nenhum outro uso de nenhum dos dois.
+- divergência de terreno declarada: o mandato diz worktree `~/j13c2-c2-wt`; o orquestrador, no disparo, mandou `~/j13c2-c2b-wt`. Usei o do disparo (exclusivo, prefixo meu); nenhum outro uso de nenhum dos dois.
 
 ## Terreno
-- `git -C .../ERP_Techsolutios worktree add --detach C:/Users/AMP/j13c2-c2b-wt cbf2db29…` → ec 0; HEAD = objeto; `.git` presente, `.env` ausente; sem junction (sem npm ci).
+- `git -C .../ERP_Techsolutios worktree add --detach ~/j13c2-c2b-wt cbf2db29…` → ec 0; HEAD = objeto; `.git` presente, `.env` ausente; sem junction (sem npm ci).
 - `cd .../mobile/flutter_app && timeout -k 15 900 flutter pub get` → ec 0, `Got dependencies!`.
 - "Banco" = Drift em memória dos testes; nenhum container, nenhum Postgres/Redis, nenhuma API remota.
 
@@ -92,7 +92,7 @@ Fonte: a mesma execução `zz_j13c2b_sonda_test.dart` do item 1 (`sonda-obj.log`
 ## Objeto no fim e teardown
 - `git ls-remote origin refs/heads/fix/mobile-minhas-os` = `gh pr view 460` headRefOid = cbf2db292f0643b9647017005c361a2e11da61c7 (OPEN, draft=false, MERGEABLE). Check-runs pela API: `14 | 0 não-verdes | 0 pendentes`, `flutter` = success,success.
 - Sondas `zz_j13c2b_*` apagadas do worktree (contagem 0). SQLite `j13c2-c2-*` nenhum criado (0). Nenhum container. `git status --porcelain` do worktree = 0 linhas antes da remoção. Processos com `j13c2-c2b-wt` na linha de comando, fora powershell/bash: 0.
-- `git -C …/ERP_Techsolutios worktree remove --force C:/Users/AMP/j13c2-c2b-wt` → ec 0, diretório removido, `worktree list | grep j13c2-c2b` = 0.
+- `git -C …/ERP_Techsolutios worktree remove --force ~/j13c2-c2b-wt` → ec 0, diretório removido, `worktree list | grep j13c2-c2b` = 0.
 - Disco: os logs pesados (`mut-*.log`, `viz*.log`) foram apagados depois de medidos; ficam os resumos `mut-item1.out`, `mut-item2.out`, `mut-f24.out`, `sonda-obj.log`, `ctl6.log` e `t-bloco.log`. A pasta `j13c2-c2/` ocupa 190K. Livre em C: 9,9G.
 - Escritas em w-san313: só `c2b-evidencia.md` e `c2b-voto.json`. Nada commitado.
 

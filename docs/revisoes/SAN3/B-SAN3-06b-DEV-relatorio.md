@@ -2,7 +2,7 @@
 
 Identidade: `dev-b-san3-06b`
 
-Worktree: `C:/Users/AMP/w-06b`
+Worktree: `~/w-06b`
 
 Ramo: `feat/b-san3-06b-plataforma`
 
@@ -71,7 +71,7 @@ Ramo: `feat/b-san3-06b-plataforma`
 ## Sucessão — E8 e bateria final
 
 Identidade: `dev-b-san3-06b-sucessor` · modelo que rodou: **Claude Opus 5.5** (bloco de leitura, não de dinheiro;
-Fable só em bloco de dinheiro, decisão do dono de 2026-10-08) · worktree `C:/Users/AMP/w-06b` · ramo
+Fable só em bloco de dinheiro, decisão do dono de 2026-10-08) · worktree `~/w-06b` · ramo
 `feat/b-san3-06b-plataforma`. O antecessor (`dev-b-san3-06b`, Codex GPT-5.6 Sol) caiu por limite de uso no meio da E8,
 editando o 3.º argumento de `scripts/san3-06b-testes-com-literal.mjs` (cauda do log bruto). Nada dele foi herdado como
 fato: cada arquivo não commitado foi medido antes de ser aceito.
@@ -203,7 +203,7 @@ orquestrador).
 
 Identidade `dev-ajustes-b-san3-06b` (Claude Opus 5.5, `claude-opus-5-5`; o bloco só lê dinheiro). Não achou os
 defeitos (achou o revisor independente, `REVISAO-PR-411.md`) e não julgou a validade deles: implementou. Worktree
-`C:/Users/AMP/w-06b`, head inicial `af6f345a` = remoto (medido por `rev-parse` e `ls-remote`). Cloud Billing continua
+`~/w-06b`, head inicial `af6f345a` = remoto (medido por `rev-parse` e `ls-remote`). Cloud Billing continua
 só leitura: `git diff af6f345a..HEAD -- cloud-billing.adapter.ts cloud-billing.service.ts` → vazio (as 5 escritas e os
 5 nomes do serviço intocados); nenhuma aritmética monetária nova (a única comparação nova é de datas de período).
 

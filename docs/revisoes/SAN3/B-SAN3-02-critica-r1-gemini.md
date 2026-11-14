@@ -25,8 +25,8 @@
 ## Comandos Executados
 
 ```bash
-git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch -q origin
-git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios show origin/main:.claude/agents/critico-adversarial.md
-git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios grep "assertPeriodOpenShared" origin/main
-git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios show origin/main:src/modules/financial-titles/financial-title-prisma.repository.ts | sed -n '468,475p'
+git -C ~/Documents/GitHub/ERP_Techsolutios fetch -q origin
+git -C ~/Documents/GitHub/ERP_Techsolutios show origin/main:.claude/agents/critico-adversarial.md
+git -C ~/Documents/GitHub/ERP_Techsolutios grep "assertPeriodOpenShared" origin/main
+git -C ~/Documents/GitHub/ERP_Techsolutios show origin/main:src/modules/financial-titles/financial-title-prisma.repository.ts | sed -n '468,475p'
 ```

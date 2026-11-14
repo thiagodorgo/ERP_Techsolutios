@@ -18,7 +18,7 @@ ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido
 not ok 4 - T-SUM-9 · summary aceita somente AAAA-MM-DD independentemente do TZ
   ---
   duration_ms: 20.8472
-  location: 'C:\\Users\\thiag\\w-conf484\\tests\\cloud-cost-allocation-routes.test.ts:1:3554'
+  location: '~/w-conf484\\tests\\cloud-cost-allocation-routes.test.ts:1:3554'
   failureType: 'testCodeFailure'
   error: |-
     Expected values to be strictly equal:
@@ -31,11 +31,11 @@ not ok 4 - T-SUM-9 · summary aceita somente AAAA-MM-DD independentemente do TZ
   actual: 200
   operator: 'strictEqual'
   stack: |-
-    assertInvalidPeriod (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:257:10)
-    <anonymous> (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:139:11)
+    assertInvalidPeriod (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:257:10)
+    <anonymous> (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:139:11)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    async withAllocationApi (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:234:5)
-    async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:116:3)
+    async withAllocationApi (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:234:5)
+    async TestContext.<anonymous> (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:116:3)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...
