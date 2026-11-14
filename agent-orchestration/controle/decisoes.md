@@ -5149,6 +5149,20 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
 - **Registro §A2 (Emenda C2 do `B-MATERIAL-REENVIO`, E0 item 8 e E4 §C9):** a RN-BAIXA-04 ("custódia FIXADA em BASE", `docs/juntas/J-OMEGA4C.md:1962`) continua para combustível e manutenção; a nova origem `work_order_material` segue a regra 5(a) do dono (`D-DONO-TODAS-RECOMENDACOES-1111`): a peça sai da custódia profissional de quem lança, e o gerente (`tenant_wide`) sem cadastro baixa da base. A P12 do plano do `B-SAN3-15` foi implementada no `B-MATERIAL-REENVIO` (PR #551), e a F2 do `B-SAN3-15b` sai.
 - **Prova:** RC1 (7)-(8) e RC8 em memória; RC3 (6)-(8) em PostgreSQL; `tests/inventory-stock-decrement.test.ts` (BASE fixa dos consumidores do Ω4C) sem asserção mudada.
 
+## D-DONO-1311-RECOMENDACOES, parte do B-SAN3-15b (2026-11-13) — as cinco respostas do atendimento do prestador, os achados A1 e A2 e a declaração do §C7 11(2)
+
+- **Fala literal do dono (13/11, ~23:12 SP):** *"minhas decisoes vao todas nas recomendacoes"* (`plano-CLAUDE-SOLO-1311.md`, ordem do dono; o ID `D-DONO-1311-RECOMENDACOES` cobre todas as recomendações daquele plano, e esta entrada registra só as do `B-SAN3-15b`). Fonte das recomendações: `plano-CLAUDE-SOLO-1311.md` §1.1 e `revisoes/fable-recs/perguntas-pendentes.md` §1.
+- **As decisões, como requisito do bloco** (Emenda 5, abertura, do `plano-B-SAN3-15-v2.md`, §2):
+  - **1.0** — aprovadas as 3 opções do atendimento do prestador (`docs/claude-code-handoff/screen-refs/prestador-atendimento-3opcoes.reference.html`); a **A** entra no app agora (o app não tem seletor de aparência, `P-APARENCIA-APP-SELETOR`);
+  - **1.A** — "Diagnóstico e peças" só para quem pode mudar a situação da OS (`work_orders:status`), na OS de prestador em atendimento ou pausada;
+  - **1.B** — "Última unidade" = saldo de 1 ou menos (`available.floor() <= 1`), conta no aparelho sobre a lista que veio;
+  - **1.C** — o aviso do checklist obrigatório aparece na conclusão **antes** do toque, com "Concluir atendimento" desabilitado; com o checklist concluído, a OS conclui pela tela;
+  - **1.D** — a linha "Equipamento" sai da conclusão do prestador até existir o dado.
+- **Achado A1 (medido na `d2737339`):** o tipo da OS só chega à resposta pelo controlador (`work-order.controller.ts`, `list` e `get`), que o PERMITIDO do v1 não listava; entra no PERMITIDO do 15b, só nesses dois métodos.
+- **Achado A2 (medido na `d2737339`):** o app só consome a LISTA de OS do servidor, e o parser não lê o tipo; toda OS que vem do servidor fica com o tipo nulo. A Emenda 5.1 (§1) mediu os escritores da sincronização: o atualizador do replay e o serviço de conflito preservam o tipo (S-K(a), 14 de 14 verdes na F0b), e o pull regrava o tipo a partir da lista (S-K(b), 3 de 3). Depois da F3 a única fonte do tipo é a lista; servidor antigo, `unknown` ou falha do catálogo → tipo nulo → porta fechada (fail-closed).
+- **Declaração do §C7 11(2), para todo artefato do bloco:** sem cruzamento entre casas; as outras IAs dormem por ordem do dono de 13/11 (ID proposto `D-CLAUDE-SOLO-1311`); o verificador é identidade nova Claude; as regras (3) a (7) do item 11 valem iguais.
+- **Registrado por:** `dev-15b-cl` (Claude Opus 5.5, dev declarado), na F0b, como a Emenda 5 §6 pede.
+
 ## D-SAN3-25-RESPOSTAS-DO-DONO (2026-11-11 10:31 SP; aplicada em 2026-11-13) — as 4 perguntas do plano do `B-SAN3-25`, pela recomendação
 
 - **Fato (decisão do dono):** *"B-SAN3-25: as 4 recomendações do plano"*, dentro de `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP). Para o `B-SAN3-25` vale a recomendação de cada pergunta do v1, aplicada no §0.4 do plano v2 (fora do repositório, na pasta do orquestrador):

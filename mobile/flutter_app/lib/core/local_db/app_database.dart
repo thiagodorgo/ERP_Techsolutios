@@ -8,7 +8,7 @@ class AppDatabase extends GeneratedDatabase {
   AppDatabase(super.e);
 
   @override
-  int get schemaVersion => 17;
+  int get schemaVersion => 18;
 
   @override
   Iterable<TableInfo<Table, dynamic>> get allTables => const [];
@@ -33,6 +33,7 @@ class AppDatabase extends GeneratedDatabase {
       await m.database.customStatement(_kWorkOrderMaterials);
       await m.database.customStatement(_kTelemetryEvents);
       await m.database.customStatement(_kTechnicianStockCache); // onCreate
+      await m.database.customStatement(_kWorkOrderServiceNotes); // onCreate
     },
     onUpgrade: (m, from, to) async {
       if (from < 2) {
@@ -252,6 +253,11 @@ class AppDatabase extends GeneratedDatabase {
         // B-SAN3-15a — a última resposta do estoque do técnico, por (organização, usuário).
         // Migração ADITIVA: só CREATE TABLE IF NOT EXISTS, nenhuma linha de outra tabela se perde.
         await m.database.customStatement(_kTechnicianStockCache);
+      }
+      if (from < 18) {
+        // B-SAN3-15b (P9) — o diagnóstico e o serviço executado, por (organização, usuário, OS).
+        // Migração ADITIVA: só CREATE TABLE IF NOT EXISTS, nenhuma linha de outra tabela se perde.
+        await m.database.customStatement(_kWorkOrderServiceNotes);
       }
     },
   );
@@ -511,6 +517,19 @@ CREATE TABLE IF NOT EXISTS field_location_events (
 )''';
 
 // B-SAN3-15a — lista salva do estoque do técnico, chave (tenant_id, user_id).
+// B-SAN3-15b (P9) — as notas do atendimento do prestador, por usuário: outro usuário no mesmo aparelho vê os campos
+// vazios. A purga da OS (B-SAN3-13) apaga as notas dela de todos os usuários.
+const _kWorkOrderServiceNotes = '''
+CREATE TABLE IF NOT EXISTS work_order_service_notes (
+  tenant_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  work_order_local_id TEXT NOT NULL,
+  diagnosis TEXT NOT NULL,
+  execution TEXT NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (tenant_id, user_id, work_order_local_id)
+)''';
+
 const _kTechnicianStockCache = '''
 CREATE TABLE IF NOT EXISTS technician_stock_cache (
   tenant_id TEXT NOT NULL,

@@ -129,17 +129,17 @@ void main() {
 
   // ── Group 3: resumo do atendimento (pura) ────────────────────────────────
   group('B-120 WorkOrderConclusionSummary', () {
-    test('6. resumo do prestador usa rotulo Equipamento', () {
+    // B-SAN3-15b (P10, decisão 1.D e Pergunta 3 (a)): o resumo do prestador não tem
+    // linha de equipamento nem comissão.
+    test('6. resumo do prestador sem linha de equipamento nem comissão', () {
       final s = WorkOrderConclusionSummary.fromWorkOrder(
         _wo(),
         materialsCount: 3,
-        baseValueCents: 100000,
-        ratePercent: 10,
       );
-      expect(s.assetLabel, 'Equipamento');
+      expect(s.assetLabel, isNull);
+      expect(s.assetValue, isNull);
       expect(s.service, 'Manutencao preventiva');
       expect(s.materialsCount, 3);
-      expect(s.commissionCents, 10000);
     });
 
     test('7. elapsed calculado entre started e completed', () {
@@ -165,12 +165,26 @@ void main() {
 
   // ── Group 4: tela de conclusao (sync silenciosa) ─────────────────────────
   group('B-120 WorkOrderConclusionScreen', () {
-    testWidgets('8. exibe comissao e resumo', (t) async {
+    // B-SAN3-15b (P10, Pergunta 3 (a)): o cartão "Comissão" só com o texto, sem valor.
+    testWidgets('8. exibe o cartão Comissão sem valor e o resumo', (t) async {
       final repo = _woRepo([_wo()]);
       await t.pumpWidget(_wrap(repo));
       await t.pumpAndSettle();
 
       expect(find.byKey(const Key('commission-card')), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('commission-card')),
+          matching: find.textContaining(RegExp(r'R\$\s?\d')),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.text(
+          'A comissão deste atendimento é calculada pela empresa depois que a OS for enviada.',
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Manutencao preventiva'), findsOneWidget);
       expect(find.text('Industria Alfa'), findsOneWidget);
     });
