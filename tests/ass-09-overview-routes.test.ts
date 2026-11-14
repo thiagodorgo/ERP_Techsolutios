@@ -19,6 +19,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
 
+import type { PrismaClient } from "@prisma/client";
 import type { Router } from "express";
 
 import {
@@ -28,6 +29,7 @@ import {
 import { CoreSaasRegistry } from "../src/modules/core-saas/services/core-saas.service.js";
 import { MemoryCoreSaasAdapter } from "../src/modules/core-saas/services/memory-core-saas.adapter.js";
 import { InMemoryCoreSaasStore } from "../src/modules/core-saas/store/core-saas.store.js";
+import { PrismaEconomicGroupsRepository } from "../src/modules/subscription-billing/economic-groups/economic-groups.prisma.js";
 import type {
   EconomicGroup,
   EconomicGroupMembership,
@@ -470,6 +472,67 @@ test("T-GRP-HTTP-2 · o 422 tenant_in_another_group leva a lista (tenantIds) no 
     const unknown = await call(baseUrl, "PUT", `/economic-groups/${g2}/members`, { body: { tenantIds: ["zz"] } });
     assert.deepEqual([unknown.status, Object.keys(unknown.body.error).sort()], [404, ["code", "message", "reason"]]);
   });
+});
+
+/**
+ * Um `PrismaClient` de mentira em que o INSERT do vínculo lança `error`, dentro da transação: o caminho de escrita real do
+ * `PrismaEconomicGroupsRepository` (com o `mapMembershipError`), sem banco.
+ */
+function prismaClientWhoseInsertThrows(error: Error): PrismaClient {
+  const tx = {
+    $executeRaw: async () => 1,
+    economicGroupMember: {
+      create: async () => {
+        throw error;
+      },
+    },
+  };
+  return { $transaction: async (work: (client: unknown) => Promise<unknown>) => work(tx) } as unknown as PrismaClient;
+}
+
+test("T-GRP-HTTP-3 · 40P01 no INSERT do vínculo (impasse na checagem da EXCLUDE) → 409 membership_conflict pela rota, sem texto do driver no corpo (J-566, C3-2)", async () => {
+  freshRuntime(NOV_2);
+  seedTenant("a");
+  const deadlocks: Array<[string, Error]> = [
+    [
+      "adapter-pg (a forma da rodada 43589206521)",
+      Object.assign(new Error("deadlock detected"), {
+        name: "DriverAdapterError",
+        cause: { originalCode: "40P01", originalMessage: "deadlock detected", kind: "postgres" },
+      }),
+    ],
+    ["pg (code de topo)", Object.assign(new Error("deadlock detected"), { code: "40P01" })],
+  ];
+  for (const [label, deadlock] of deadlocks) {
+    const memory = getMemoryOverviewEconomicGroupsForTests();
+    const prisma = new PrismaEconomicGroupsRepository(prismaClientWhoseInsertThrows(deadlock));
+    const racing: EconomicGroupsRepository = {
+      createGroup: (input) => memory.createGroup(input),
+      getGroup: (id) => memory.getGroup(id),
+      listGroups: () => memory.listGroups(),
+      updateGroup: (id, patch) => memory.updateGroup(id, patch),
+      softDeleteGroup: (id, actor, at) => memory.softDeleteGroup(id, actor, at),
+      listMembershipsOfTenants: (ids) => memory.listMembershipsOfTenants(ids),
+      applyMembershipChanges: (changes) => prisma.applyMembershipChanges(changes),
+    };
+    setOverviewRuntimeOverridesForTests({ clock: () => NOV_2, groupsRepository: racing });
+    await withApi(async (baseUrl) => {
+      const created = await call(baseUrl, "POST", "/economic-groups", { body: { name: `Grupo ${label}` } });
+      assert.equal(created.status, 201, created.text);
+      const response = await call(baseUrl, "PUT", `/economic-groups/${created.body.data.id}/members`, { body: { tenantIds: ["a"] } });
+      assert.equal(response.status, 409, `${label}: ${response.text}`);
+      assert.deepEqual(response.body, {
+        error: {
+          code: "CONFLICT",
+          reason: "membership_conflict",
+          message: "Outra troca de grupo da mesma organização chegou antes: leia de novo e repita.",
+        },
+      });
+      assert.doesNotMatch(response.text, /deadlock|40P01|DriverAdapterError|ShareLock|exclusion|economic_group_members/i, `${label}: nada do driver no corpo`);
+      const history = await call(baseUrl, "GET", `/economic-groups/${created.body.data.id}/history`);
+      assert.deepEqual(history.body.data, [], `${label}: a troca perdida não gravou vínculo`);
+    });
+  }
 });
 
 test("T-ACC-3 · a trilha do câmbio e dos grupos só leva as chaves da allowlist, e nunca o nome do grupo nem o da organização", async () => {
