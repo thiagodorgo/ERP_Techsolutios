@@ -1113,3 +1113,47 @@ tabela do mapa"), como as extensões do 08b e do 08c1a fizeram. Fica para a emen
 - **Próximo comando, depois da emenda:** aplicar as 3 linhas pela emenda; depois
   `DATABASE_URL=… node --test --import tsx tests/ass-08-lock-order-db.test.ts`.
 - Cluster `pg-ass09` parado depois deste registro (pasta `C:/Users/thiag/pg-ass09`, `127.0.0.1:55561`, bases `erp_ass09` e `erp_ass09_ci` mantidas). Nenhum papel efêmero restante.
+
+### Adendo à PARADA, 2026-11-14 10:41 UTC (07:41 SP): o CI no Linux mostra mais 2 censos e um ID repetido
+
+O CI de push rodou no Linux, e o que o Windows mascarava apareceu. A `main` está verde no `9f1eadc2` (rodada `43576957097`).
+
+| rodada · head | job | resultado |
+|---|---|---|
+| `43576090192` · `76a31641` | `backend` | `573 arquivo(s) · 5739 teste(s) · pass 5734 · fail 3 · skipped 2`: o T-LOCK-2, o T14a/b e o pai dele (`san3-05-runtime-role-guard-db`) |
+| `43576090192` · `76a31641` | `frontend` | `# tests 1806 # pass 1805 # fail 1`: o T40 |
+| `43585218449` · `06732ccb` | `backend-postgres` | `# tests 635 # pass 635 # fail 0 # skipped 0`. A `main` dá 621, e 621 + 14 = 635: as 4 suítes da Q6 rodaram, sem pulo |
+| `43585218449` · `06732ccb` | `frontend` | o mesmo T40 (`1805/1806`) |
+
+**Os 2 censos novos.** Os dois nasceram do bloco e ficam fora do PERMITIDO. Cada um tem precedente de atualização no PR do
+bloco que mexeu no número.
+
+1. `tests/san3-05-runtime-role-guard-db.test.ts:1019` (T14a/b), o literal `tabelas_com_dml`:
+   - o esperado é `…|0|0|139` e o CI lê `…|0|0|142`;
+   - `142 − 139 = 3` são exatamente as 3 tabelas da M6 (`grep -c 'CREATE TABLE'` no `migration.sql` = 3);
+   - `posse_force` e `views_sobre_force` seguem 0;
+   - precedente: o B-ASS-08 foi de 133 para 139, com a linha de comentário `:1016`;
+   - no Windows o teste cai antes, por `setsid` ausente, e isso escondeu o número.
+2. `frontend/tests/san3-06b-navegacao-plataforma.test.ts:61` (T40), o literal `endpoints sob /api/v1/platform = 53`:
+   - o gerador `scripts/san3-06b-endpoints-de-plataforma.mjs` dá 63 no CI e aqui;
+   - `grep -c 'billing/(overview|fx-rates|economic-groups)'` na saída = 10, as rotas R1–R10;
+   - precedente: o B-ASS-04 foi de 35 para 48, e o B-ASS-05 de 48 para 53;
+   - não rodei o teste do frontend aqui, porque o worktree não tem `frontend/node_modules`.
+
+**O ID repetido.** A `main` andou para `521f0bcb` (#562, registro). Esse merge traz o `D-DONO-1311-RECOMENDACOES`
+(`decisoes.md`, "~23:12 SP"), o mesmo ID da entrada que o `ab53a546` pôs ("~23:20 SP", com Q1–Q6). Hoje
+`git merge-tree --write-tree HEAD origin/main` sai com 1: há conflito em `decisoes.md`, `pendencias.md`, no índice e no
+`PLANO_SAN3.md`. Na próxima integração, a entrada do bloco não pode entrar com o ID repetido (§A2). A da `main` é a fala; a
+minha é a aplicação ao B-ASS-09. A emenda decide entre tirá-la e trocar o título por uma aplicação da entrada da `main`.
+
+**A "praxe" das 4 linhas.** A entrada da `main` diz, para o `B-SAN3-17`, "entra no `SUITES=` … com o comentário de praxe". É a
+mesma expressão do coordenador. A Emenda 2 §9.3 deste bloco tira o comentário, e o C-E2-10 conta 4 linhas. Mantive o plano. A
+emenda pode trocar isso numa linha.
+
+**A emenda pedida consolida 4 pontos:**
+- as 3 chaves da `FROZEN` (T-LOCK-2), medidas: 7/7;
+- `139 → 142` (T14a/b, com a linha de comentário);
+- `53 → 63` (T40);
+- o ID repetido na integração do `521f0bcb`.
+
+Depois vem a bateria de novo (o `ass-08-lock-order-db` local e o CI de push) e o PR em rascunho.
