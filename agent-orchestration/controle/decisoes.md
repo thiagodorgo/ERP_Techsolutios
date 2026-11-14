@@ -5251,3 +5251,68 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
 - **Também decidido pela mesma regra (recomendação da abertura, §2 A5):** o guard nas telas Nova Entrada e Nova Saída entra agora; o texto delas segue a recomendação da revisão `rev-66-abre-cl` (REV66-02): "Ação não permitida".
 - **Cruzamento:** por ordem do dono, sem cruzamento entre casas (§C7 11(2)), declarado; todo verificador é identidade Claude nova.
 - **Gravado por:** `dev-66-cl` (Claude Opus 5.5, dev do bloco), por ordem do orquestrador, em 14/11/2026.
+
+## D-DONO-1411-T5-TRES-OPCOES (2026-11-14 04:00 SP) — aprovadas as 3 opções da tela de custos e margem (T5 do `B-ASS-10b`, item 61)
+
+- **Fato (decisão do dono):** *"aprovo as telas de custos"*. Hora medida pelo redator na transcrição da sessão (07:00Z). Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 14/11 04:01 SP, onde o ID nasceu como proposta). Redator: `reg-1411b-cl` (Claude Opus 5.5, nível menor, declarado).
+- **O que vale:**
+  - as 3 opções da maquete da T5 (fora do repositório: `maquetes/t5-custos-3opcoes.reference.html`, autor `maq-t5-cl`, `checar-3opcoes` 17/17 no Edge) são as 3 aparências da tela, pela `D-TELAS-TRES-OPCOES`. No PR #567 (`feat/web-custos-t5`), a mesma maquete entra como `docs/claude-code-handoff/screen-refs/platform-cloud-billing-3opcoes.reference.html`: o redator mediu md5 igual nos dois arquivos (`89c140bf…`);
+  - **as 2 escolhas pequenas** (a tela abre no último mês com o rateio; o "Uso medido" fica no detalhe da organização) valem pela recomendação escrita na maquete, pela `D-DONO-1311-RECOMENDACOES`. **Leitura do orquestrador, declarada (§A6).**
+- **Conferência das 3 aparências (orquestrador, 14/11 12:36 SP, no #567):** CONFERIDA COM 1 RESSALVA. Na opção C, o botão "+ Novo grupo" quebra em 2 linhas a 1440 px; não é grave e vai ao dev na leva da pré-revisão.
+
+## D-DONO-1411-REFORCO-DP-API (2026-11-14 07:40–07:55 SP) — DeepSeek, API Claude e as 3 contas Codex reforçam o Claude da sessão; o cruzamento volta
+
+- **Fato (decisão do dono), em quatro falas, com a hora medida pelo redator na transcrição da sessão:**
+  - **07:40, o pedido:** *"pode colocar o deepseek e api claude para ajudar, faca o plano, vc continuar com o mesmo nivel de empenho e as api clade e o deepseek reforcam o desenvolvimento, retorne o plano pra aprovacao, metas e perspectiva"*;
+  - **07:54, a aprovação do plano, com os tetos:** *"api claude, teto 10 uss. deepseek, teto 9 uss, pode comecar, com forca total e sua ajuda tem que ser a mais alta possivel, quem cair vc cobre, o limite eh o que o pc aguentar"*;
+  - **07:54:** *"vc nao pode parar, contonue no mesmo ritmo"*;
+  - **07:55, as contas Codex:** *"adcione as contas codex tambem, todo mudo trabalhando"*.
+- **Fonte:** o plano fora do repositório `plano-REFORCO-DP-API-1411.md` (07:45 SP) e o registro `REGISTRO-PENDENTE.md` (14/11 07:54 SP, onde o ID nasceu como proposta). O briefing da J-565 registra as contas Codex às 08:01 SP; a hora da fala, medida na transcrição, é 07:55.
+- **O que vale:**
+  - **tetos do dia:** US$ 10 para a API Claude e US$ 9 para o DeepSeek, aplicados no orçamento do lançador (fora do repositório). O teto da API acabou às ~09:10 SP, com os 3 planos de topo (65, 31 e 67), e o Fable da sessão cobriu o resto, declarado;
+  - **as 3 contas Codex voltam ao trabalho,** uma tarefa por conta;
+  - **quem cair, o Claude cobre na hora,** com a evidência do caído como roteiro (P3). No dia, isso valeu para a revisão do plano 65 (Codex 2 no limite de 5 h às 11:20) e para a C-SEG da J-565 (Codex 3 no limite às 13:13);
+  - **o limite é o que a máquina aguenta,** com o piso de memória do P8(c) (§C7 item 7);
+  - **o cruzamento entre casas volta** (§C7 item 11(1)): o que o Claude faz, outra casa verifica, e vice-versa, enquanto houver braço de outra casa livre. Sem braço livre, vale o §C7 item 11(2), com identidade nova e o artefato declarando que não houve cruzamento e por quê (as atas e os pareceres do dia declaram cada caso).
+- **O que muda na `D-CLAUDE-SOLO-1311`** (leitura do redator, declarada (§A6), a partir do §3 do plano do reforço e do briefing da J-565): o trecho "deixe as ias dormindo" e o cruzamento `false` deixam de valer. As cadeiras em paralelo, o Fable a critério do orquestrador e os agentes até o limite da máquina seguem. A `D-DONO-1311-RECOMENDACOES` não muda.
+- **Avisos ao dono registrados no dia:** a conta Codex 1 está em 99% do limite semanal (09:10 SP); o OpenRouter ficou sem crédito (resposta 402 às 10:49 SP).
+
+## D-DONO-1411-PAUSA-TATICA (2026-11-14 10:16 SP) — pausa de tudo e reinício tático da máquina, depois da queda do Docker
+
+- **Fato (decisão do dono):** *"vamos fazer uma reinicializacao tatica? pause tudo"*. Hora medida pelo redator na transcrição da sessão (13:16Z). A seção de PAUSA do orquestrador foi gravada às 10:22 SP (13:22Z), com uma cópia fora do repositório (`pausa-1411-secao.md`).
+- **Por que pausar:** o Docker Desktop caiu às 10:10 SP (o processo sumiu, e a distro `docker-desktop` ficou parada). A queda derrubou as pilhas das 3 cadeiras da J-565 e a base viva. O orquestrador religou o Docker às 10:12, e ele respondeu às 10:22. Os logs do Windows não mostram a causa.
+- **O que se aplicou:**
+  - **P7 (`D-PAUSA-GRAVA-E-PARA`):** cada agente vivo recebeu a PAUSA, gravou a sua seção `## PAUSA` (onde parou e o próximo passo) e parou;
+  - **a C-SEG (Codex 3) e a C-DADO (DeepSeek) da J-565** foram paradas pelo orquestrador às 10:19, porque as pilhas tinham morrido, e se relançaram do mesmo mandato na retomada;
+  - **o reinício da máquina foi ato do dono** (a máquina reiniciou às 10:36 SP).
+- **Incidente (P6), declarado:** a conferência `ver-561-cl` rodou em 2 cópias depois da PAUSA. Um `SendMessage` a um agente de dentro de um workflow abriu uma 2ª continuação, e a original seguiu viva dentro do workflow, que não foi parado. A cópia fez login (200) e mutações do C3-01 sem evidência própria; o worktree ficou limpo, e o verificador original detectou e tratou o caso. **Lição:** para pausar um agente de workflow, para-se o workflow, não se manda mensagem ao agente. O caso está na ata `J-561-b-mobile-gate-chave.md` (pós-junta).
+
+## D-DONO-1411-RETOMADA (2026-11-14 10:38 SP) — a retomada no mesmo padrão das pausas anteriores
+
+- **Fato (decisão do dono):** *"plano e retomada no mesmo padrao, tenho pressa e eh urgente"*. Hora medida pelo redator na transcrição da sessão (13:38Z), já na sessão nova, depois do reinício.
+- **O que vale:** a retomada segue o roteiro gravado na PAUSA (P8, `D-ORQ-QUEDA-DA-SESSAO`), sem plano novo a aprovar:
+  1. o `retomada.sh` (fora do repositório);
+  2. o Docker e a base viva de pé;
+  3. os 3 vigias religados;
+  4. cada subagente da PAUSA retomado pelo seu id, medindo o parcial antes de seguir (P3);
+  5. a C-SEG e a C-DADO da J-565 relançadas do mesmo mandato;
+  6. o Fable do SEC-LOG retomado pelo id (o workflow não se re-roda);
+  7. as emendas P-4 e P-5 do `B-ASS-08c1b` (Emenda 2.2, abaixo);
+  8. a junta do #566;
+  9. as revisões cruzadas dos 6 planos (65, 31, 67, 42, 5 e 62);
+  10. o loop de KPI do dia.
+- **Medido na retomada (registro das 10:44 SP):** o Docker respondeu; o #561 foi mergeado às 10:40 SP (`e6f3c425`, item 66); os agentes da PAUSA foram relançados, cada um pela sua seção; os vigias foram religados.
+
+## REGISTRO-EMENDAS-ORQ-1411 (2026-11-14) — as emendas do orquestrador do dia, uma linha por emenda
+
+**Não é decisão nova do dono.** São as emendas que o orquestrador escreveu em 14/11 (Claude Opus 5.5, `D-EMENDA-ANTES-DO-CODIGO`; a emenda do orquestrador mede antes). Todas ficam fora do repositório, na pasta `planos/` do orquestrador; a hora é a da gravação do arquivo. Cada uma diz o que não muda: o resto do plano e das emendas anteriores.
+
+- **`B-SAN3-10b-F4-SEED-ISOLADO`, Emenda 1.7** (decidida às 08:13, escrita às 09:07): o G1 do fuso ganha a exceção nominal de `scripts/demo-isolado/alvo.mjs` só na lista do módulo (o arquivo resolve o parser do driver sem conectar); a lista do construtor e o G3 não mudam; sem a exceção, o G1 fica vermelho — `plano-B-SAN3-10b-F4-SEED-ISOLADO-v2-emenda1.7.md`.
+- **`B-SAN3-10b-F4-SEED-ISOLADO`, Emenda 1.8** (09:09): o aceite do Op-10 do 44-B3 se lê por três provas juntas (a fila do aparelho com o código, o `git grep` que mostra que só o servidor o produz, e a OS não cancelada antes do gestor); o ensaio não se refaz; nascem 9 pendências (em `pendencias.md`); conferida pelo `ver-e18-seed-dp` (DeepSeek, cruzamento) às 09:20, com 0 achados — `plano-B-SAN3-10b-F4-SEED-ISOLADO-v2-emenda1.8.md`.
+- **`B-ASS-08c1b`, Emenda 2.2** (10:45): P-4, o `dueDate` dos payloads que os testes despacham passa a `DUE_FUTURA` (a data de negócio de hoje em SP mais 30 dias), com vermelho-controle em hoje menos 1; P-5, `tests/san3-05-leituras-de-plataforma-db.test.ts` só por acréscimo (6 entradas e 6 cenários), com 2 mutações de controle — `plano-B-ASS-08c1b-abertura-emenda2.2.md`.
+- **`B-ASS-08c1b`, Emenda 2.2.1** (10:55): os ajustes E22-01 (as 5 linhas SQL do vencimento do demonstrativo ficam intactas, provado por `diff`) e E22-02 (o inventário de tabelas com `arquivo:linha` e o "só acréscimo" medido por `--numstat`, com a mutação de controle 3) da conferência do Codex 2 (CONFERIDO COM AJUSTES) — `plano-B-ASS-08c1b-abertura-emenda2.2.1.md`.
+- **`B-ASS-08c1b`, Emenda 2.3** (13:20): PARADA P-6, opção A; o `due_date_required` do financeiro passa a ser documentado no §3.11 do `API_CONTRACTS.md` (1 linha) e sai da lista congelada do censo A17-bis (24 → 23), com mutação de controle — `plano-B-ASS-08c1b-abertura-emenda2.3.md`.
+- **`B-SAN3-17`, Emenda 1.4** (medida às 13:20): o W11 lê a Roboto de `mobile/flutter_app/test/assets/fonts/roboto/` (3 TTF e a licença Apache 2.0, byte a byte do SDK), e não do `FLUTTER_ROOT`, que não tem as fontes no runner da CI; medido `+4`, e o controle sem uma fonte fica vermelho — `plano-B-SAN3-17-abertura-emenda1.4.md`.
+- **`B-SEC-LOG-SANITIZA`, Emenda 1.2.2** (12:35): o ajuste E121-01 da revisão r2; a pré-revisão lê e registra os 3 textos (o corpo do PR, as linhas acrescentadas aos 2 textos de contrato e os títulos dos commits); nasce a `P-SECLOG-ACEITE-PORTA-OCUPADA-MENSAGEM` — `plano-B-SEC-LOG-SANITIZA-v2-emenda1.2.2.md`.
+- **`B-SAN3-16` (item 5), Emenda 1.1.1** (13:01): os 5 ajustes BAIXA da conferência `ver-emendas-5-62-cl` (VER5-01 a 05); nascem a `P-WEB-ABA-OS-UMA-PENDENCIA-SO` e a `P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO`; o plano vai ao dev (19 fatias) — `plano-B-SAN3-16-abertura-emenda1.1.1.md`.
+- **`B-ASS-11` (item 62), Emenda 1.1.1** (13:02): os 2 ajustes BAIXA da mesma conferência (VER62-01, onde está a maquete v3 enviada ao dono para a PA-1; VER62-02, "aprovação de tela não se responde pela recomendação" passa a ser leitura declarada (§A6) do orquestrador, que o dono pode desfazer); a Parte R pode seguir, e a Parte T espera a PA-1 — `plano-B-ASS-11-emenda1.1.1.md`.
