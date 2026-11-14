@@ -43,7 +43,7 @@ export function ProportionBars({ items, ariaLabel, pressedKey = null, onSelect }
         >
           <span className="ui-proportion-bars__label">
             <span className="ui-proportion-bars__dot" style={{ background: item.color }} aria-hidden="true" />
-            {item.label}
+            <span className="ui-proportion-bars__text">{item.label}</span>
           </span>
           <span className="ui-proportion-bars__track" aria-hidden="true">
             <span className="ui-proportion-bars__fill" style={{ width: widthOf(item.value, peak), background: item.color }} />

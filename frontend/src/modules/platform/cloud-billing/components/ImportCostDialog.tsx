@@ -107,7 +107,7 @@ export function ImportCostDialog({ model, actions, onClose, onDone, onMonth }: D
       />
       <label className="ui-field">
         <span>Arquivo de custo da AWS (CSV)</span>
-        <input className="ui-input" type="file" accept=".csv,text/csv" disabled={phase !== "form"} onChange={(event) => void choose(event)} data-arquivo="" />
+        <input className="ui-input" type="file" accept=".csv,text/csv" disabled={phase !== "form"} onChange={(event) => void choose(event)} data-arquivo="" data-autofoco="" />
         <small>
           Envie o <b>arquivo completo do mês</b>, até 1 MB. {chosen ? `Escolhido: ${chosen.name}.` : "Nenhum arquivo escolhido."}
         </small>

@@ -63,7 +63,7 @@ export function GroupFormDialog({ actions, onClose, onDone, groupId, initialName
     >
       <label className="ui-field">
         <span>Nome do grupo</span>
-        <input className="ui-input" maxLength={120} value={name} aria-invalid={fieldError !== null} disabled={phase !== "form"} onChange={(event) => setName(event.currentTarget.value)} data-nome="" />
+        <input className="ui-input" maxLength={120} value={name} aria-invalid={fieldError !== null} disabled={phase !== "form"} onChange={(event) => setName(event.currentTarget.value)} data-nome="" data-autofoco="" />
         <small>De 1 a 120 caracteres. Dois grupos não podem ter o mesmo nome.</small>
         {fieldError ? <span className="form-error" role="alert">{fieldError}</span> : null}
       </label>

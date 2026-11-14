@@ -85,6 +85,7 @@ export function FxRateDialog({ model, access, actions, onClose, onDone }: Dialog
               setFieldError(null);
             }}
             data-taxa=""
+            data-autofoco=""
           />
           <small>
             Use a <b>cotação da fatura da AWS</b> de {monthName(model.month)}, com até 6 casas. Corrigir cria uma versão nova; as anteriores ficam no histórico, e cada mês mostra qual versão usou.

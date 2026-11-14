@@ -456,6 +456,26 @@ test("T-GRP-3 (F11) 'Mudar de grupo': depois de salvar e a tela reler, a janela 
   }
 });
 
+test("T-UI (F11) as janelas seguem a referência: o foco vai ao campo marcado, Escape fecha e o foco volta a quem abriu", async () => {
+  serve();
+  const opener = dom.doc.createElement("button");
+  dom.doc.body.appendChild(opener);
+  opener.focus();
+  const view = await openDialog({ kind: "fx" });
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    assert.equal(dom.doc.activeElement?.getAttribute("data-taxa"), "", "o foco vai ao campo do dólar (data-autofoco)");
+    (globalThis.window as unknown as { dispatchEvent: (event: unknown) => boolean }).dispatchEvent({ type: "keydown", key: "Enter" });
+    assert.deepEqual(view.done, [], "outra tecla não fecha");
+    (globalThis.window as unknown as { dispatchEvent: (event: unknown) => boolean }).dispatchEvent({ type: "keydown", key: "Escape" });
+    assert.deepEqual(view.done, ["fechou"], "Escape fecha");
+  } finally {
+    await view.unmount();
+    assert.equal(dom.doc.activeElement, opener, "o foco volta a quem abriu");
+    dom.doc.body.removeChild(opener);
+  }
+});
+
 test("T-GRP-5 (A1-r2) grupo com 1 vigente e 1 agendado: marcar uma 3ª e salvar envia as 3; a caixa do agendado vem marcada e desabilitada", async () => {
   serve(on("GET", "/economic-groups/g1", { data: groupDetail(G1_MEMBERS) }), tenantOverviewRoute, on("PUT", "/members", (call) => ({ data: groupDetail((call.body as { tenantIds: string[] }).tenantIds.map((id) => member(id, id, "2026-11-14"))) })));
   const view = await openDialog({ kind: "group-members", groupId: "g1" });

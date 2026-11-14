@@ -1,5 +1,5 @@
 import { CheckCircle2, AlertTriangle, Info, Loader2 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { Modal } from "../../../../components/ui";
 import type { CloudBillingAccess } from "../cloud-billing.access";
@@ -47,10 +47,36 @@ export function Sending({ text }: { readonly text: string }) {
   );
 }
 
+/**
+ * A moldura das janelas, com o comportamento da referência (`abrirModal`/`fecharModal` da maquete): ao abrir, o foco vai
+ * ao campo marcado `data-autofoco` (ou ao "Fechar" do cabeçalho); Escape fecha; ao fechar, o foco volta a quem abriu.
+ * O `Modal` da biblioteca não faz isso, e a biblioteca está fora do escopo do bloco (achado da conferência, F11).
+ */
 export function DialogFrame({ title, onClose, children, footer, size = "md" }: { readonly title: string; readonly onClose: () => void; readonly children: ReactNode; readonly footer: ReactNode; readonly size?: "md" | "lg" }) {
+  const frame = useRef<HTMLDivElement | null>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    if (typeof document === "undefined" || typeof document.addEventListener !== "function") return undefined;
+    const opener = document.activeElement as HTMLElement | null;
+    const timer = setTimeout(() => {
+      const dialog = frame.current?.closest?.("[role='dialog']");
+      const target = (dialog?.querySelector?.("[data-autofoco]") ?? dialog?.querySelector?.("header button")) as HTMLElement | null | undefined;
+      if (typeof target?.focus === "function") target.focus();
+    }, 30);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close.current();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("keydown", onKey);
+      if (opener && typeof opener.focus === "function" && (typeof document.contains !== "function" || document.contains(opener))) opener.focus();
+    };
+  }, []);
   return (
     <Modal title={title} open onClose={onClose} size={size}>
-      <div className="cb-dialog">
+      <div className="cb-dialog" ref={frame}>
         {children}
         <div className="cb-dialog__footer">{footer}</div>
       </div>

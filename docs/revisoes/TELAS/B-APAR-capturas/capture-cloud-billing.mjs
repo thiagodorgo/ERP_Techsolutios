@@ -26,7 +26,7 @@ if (!OUT) throw new Error("informe a pasta de saída");
 mkdirSync(OUT, { recursive: true });
 
 const fx = await import(pathToFileURL(resolve(process.cwd(), "tests/helpers/cloud-billing.fixture.ts")).href);
-const { MONTH, COST_OK, NULL_ORIGINAL } = fx;
+const { MONTH, CURRENT_MONTH, COST_OK, NULL_ORIGINAL } = fx;
 const AGORA = new Date("2026-11-14T15:00:00.000Z");
 
 const FULL = [
@@ -56,16 +56,21 @@ const NULL_COSTS = { tenantsCost: null, platformOwnCost: null, unallocatedOther:
 const noCost = (status, extra = {}) => ({ ...COST_OK, status, runId: status === "no_run" ? null : "run-out", fxRate: null, fxRateVersion: null, ...extra });
 const linesWithoutCost = () => fx.tenantLines().map((line) => ({ ...line, allocatedCost: null, allocatedCostOriginal: null, margin: null, marginPct: null, alert: "cost_missing" }));
 
+/** Sem nenhum rateio (vazio, sem rateio), a tela abre no mês corrente (A12); nos outros, no mês do rateio (outubro). */
+const NO_RUNS = new Set(["vazio", "sem-rateio"]);
+const screenMonthOf = (scenario) => (NO_RUNS.has(scenario) ? CURRENT_MONTH : MONTH);
+
 /** O mês da tela por cenário: { tenant, group, global } na forma do servidor. */
 function screenMonth(scenario) {
+  const month = screenMonthOf(scenario);
   if (scenario === "vazio") {
     const cost = noCost("no_run");
-    return { tenant: fx.tenantPayload(MONTH, cost, [], NULL_TOTALS), group: { ...fx.groupPayload(MONTH, cost), lines: [], totals: NULL_TOTALS }, global: fx.globalPayload(MONTH, cost, fx.globalJson({ ...NULL_COSTS, subscriptionTotal: null, original: NULL_ORIGINAL })) };
+    return { tenant: fx.tenantPayload(month, cost, [], NULL_TOTALS), group: { ...fx.groupPayload(month, cost), lines: [], totals: NULL_TOTALS }, global: fx.globalPayload(month, cost, fx.globalJson({ ...NULL_COSTS, subscriptionTotal: null, original: NULL_ORIGINAL })) };
   }
   if (scenario === "sem-rateio" || scenario === "sem-dolar") {
     const cost = scenario === "sem-rateio" ? noCost("no_run") : noCost("fx_missing", { currencyOriginal: "USD" });
     const original = scenario === "sem-rateio" ? NULL_ORIGINAL : undefined;
-    return { tenant: fx.tenantPayload(MONTH, cost, linesWithoutCost(), { ...NULL_TOTALS, subscriptionAmount: "7770.00" }), group: fx.groupPayload(MONTH, cost), global: fx.globalPayload(MONTH, cost, fx.globalJson(original ? { ...NULL_COSTS, original } : NULL_COSTS)) };
+    return { tenant: fx.tenantPayload(month, cost, linesWithoutCost(), { ...NULL_TOTALS, subscriptionAmount: "7770.00" }), group: fx.groupPayload(month, cost), global: fx.globalPayload(month, cost, fx.globalJson(original ? { ...NULL_COSTS, original } : NULL_COSTS)) };
   }
   if (scenario === "rateio-antigo") {
     const cost = { ...COST_OK, status: "legacy_unscoped", coverage: "legacy_unscoped" };
@@ -75,7 +80,7 @@ function screenMonth(scenario) {
 }
 
 function previousMonth(month) {
-  const months = ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09"];
+  const months = ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"];
   const index = Math.max(0, months.indexOf(month));
   const tenant = fx.tenantPayload(month, { ...COST_OK, runId: `run-${month}` }, fx.tenantLines().map((item) => ({ ...item, allocatedCost: null, margin: null, marginPct: null, allocatedCostOriginal: null })), NULL_TOTALS);
   return { tenant, group: { ...fx.groupPayload(month), lines: [], totals: NULL_TOTALS }, global: fx.previousGlobalPayload(month, index) };
@@ -94,7 +99,7 @@ function apiHandler(scenario, unknown) {
     if (path === "/platform/billing/overview") {
       const period = url.searchParams.get("period");
       const groupBy = url.searchParams.get("groupBy");
-      if (period === MONTH) {
+      if (period === screenMonthOf(scenario)) {
         if (scenario === "carregando") return; // nunca responde
         if (scenario === "proibido") return route.fulfill(fail(403, "permission_required"));
         if (scenario === "erro") return route.fulfill(fail(500, "unknown_error"));
@@ -257,15 +262,14 @@ const PARTS = {
       await shot(page, `janela-${name}`, 1440, 900);
       await closeDialog();
     }
-    // arquivos do mês (o aviso/o painel de importações)
-    const imports = page.locator("button", { hasText: /Ver arquivos|arquivos do mês|Arquivos/ }).first();
-    if (await imports.count()) {
-      await imports.click();
-      await page.waitForSelector('[role="dialog"]', { timeout: 10000 });
-      await page.waitForTimeout(1000);
-      await shot(page, "janela-arquivos", 1440, 900);
-      await closeDialog();
-    } else note("  janela-arquivos: botão não achado na A");
+    // as importações do mês: pela "Visão global", no detalhe de uma parcela que não é a das organizações
+    await page.locator('button[role="tab"]', { hasText: "Visão global" }).first().click();
+    await page.waitForTimeout(600);
+    await page.locator("table.pat-ab-table tbody tr", { hasText: "Custo da plataforma" }).first().click();
+    await page.waitForTimeout(800);
+    await openFrom("[data-detalhe]", "Ver importações do mês");
+    await shot(page, "janela-importacoes", 1440, 900);
+    await closeDialog();
     // grupos: pela lista "Por grupo"
     await page.locator('button[role="tab"]', { hasText: "Por grupo" }).first().click();
     await page.waitForTimeout(600);

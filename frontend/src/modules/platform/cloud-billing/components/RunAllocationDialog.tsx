@@ -46,7 +46,7 @@ export function RunAllocationDialog({ model, actions, onClose, onDone }: DialogP
         ) : (
           <>
             <CloseButton onClose={onClose} label="Cancelar" />
-            <button type="button" className="pat-btn pat-btn--primary" onClick={() => void confirm()} disabled={phase === "sending"}>
+            <button type="button" className="pat-btn pat-btn--primary" onClick={() => void confirm()} disabled={phase === "sending"} data-autofoco="">
               <Play size={13} aria-hidden="true" />
               Rodar rateio de {monthName(model.month)}
             </button>

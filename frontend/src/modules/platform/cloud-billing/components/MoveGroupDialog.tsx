@@ -124,7 +124,7 @@ export function MoveGroupDialog({ model, actions, onClose, onDone, tenantId }: D
         <>
           <label className="ui-field">
             <span>Grupo</span>
-            <select className="ui-input" value={current ? "" : target} disabled={phase !== "form"} onChange={(event) => setTarget(event.currentTarget.value)} data-grupo-sel="">
+            <select className="ui-input" value={current ? "" : target} disabled={phase !== "form"} onChange={(event) => setTarget(event.currentTarget.value)} data-grupo-sel="" data-autofoco="">
               {current ? (
                 <option value="">Sem grupo</option>
               ) : (
