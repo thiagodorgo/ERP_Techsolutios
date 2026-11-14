@@ -25,7 +25,7 @@ import { useCloudBilling, useInitialBillingMonth } from "../useCloudBilling";
 import { useCloudBillingActions } from "../useCloudBillingActions";
 import { CloudBillingViewA } from "../views/CloudBillingViewA";
 import { CloudBillingViewB } from "../views/CloudBillingViewB";
-import { MonthSelect, type CloudBillingViewProps } from "../views/cloudBilling.shared";
+import { CloudBillingBanners, CloudBillingHeader, type CloudBillingViewProps } from "../views/cloudBilling.shared";
 import { CloudBillingDialogs, type DialogAction } from "../components/CloudBillingDialogs";
 
 // B-ASS-10b (T5) — a tela de custo e margem da plataforma (`/platform/cloud-billing`), com as 3 aparências aprovadas pelo
@@ -127,16 +127,10 @@ export function PlatformCloudBillingScreen({ data, loading, month, model, access
   if (data.source === "mock" || model.empty) {
     return (
       <div className="cb-view">
-        <div className="pat-page-header">
-          <div className="pat-page-header__lead">
-            <div className="pat-page-header__kicker">Plataforma · custo e margem</div>
-            <h1 className="pat-page-header__title">Cloud Billing</h1>
-            <p className="pat-page-header__subtitle">Custo da nuvem e margem por organização · {monthLabel(month)}</p>
-          </div>
-          <div className="pat-page-header__actions">
-            <MonthSelect model={model} onMonth={handlers.onMonth} />
-          </div>
-        </div>
+        {/* o cabeçalho inteiro, como a maquete (`cabecalhoVazio`): o mês, o dólar e, com a permissão, rodar e importar; e os
+            avisos do custo do mês que o vazio não diz (rateio em processamento, rateio vazio, moeda desconhecida) */}
+        <CloudBillingHeader model={model} access={access} onMonth={handlers.onMonth} onAction={handlers.onAction} />
+        <CloudBillingBanners model={model} access={access} onAction={handlers.onAction} emptyState />
         <StatePanel icon={Inbox} tone="info" title={`Nenhum custo nem assinatura em ${monthLabel(month)}`} detail="Escolha outro mês no seletor acima ou importe o arquivo de custo deste mês.">
           {access.importCosts ? (
             <button type="button" className="pat-btn pat-btn--primary" onClick={() => handlers.onAction({ kind: "import" })}>

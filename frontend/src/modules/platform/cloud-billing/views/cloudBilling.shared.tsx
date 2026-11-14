@@ -127,7 +127,12 @@ function Banner({ tone, icon: Icon, children, action }: { readonly tone: "warnin
   );
 }
 
-export function CloudBillingBanners({ model, access, onAction }: Pick<CloudBillingViewProps, "model" | "access" | "onAction">) {
+/**
+ * Os avisos do custo do mês. `emptyState`: no estado vazio da página, o painel "Nenhum custo nem assinatura" já diz que o
+ * mês não tem rateio — o aviso "ainda não tem rateio" não se repete; os outros (rateio em processamento, rateio vazio,
+ * moeda desconhecida, dois arquivos) continuam, porque o vazio não os diz (achado do aceite na base real, F11).
+ */
+export function CloudBillingBanners({ model, access, onAction, emptyState = false }: Pick<CloudBillingViewProps, "model" | "access" | "onAction"> & { readonly emptyState?: boolean }) {
   const month = monthLabel(model.month);
   const importButton = access.importCosts ? (
     <button type="button" className="pat-btn" onClick={() => onAction({ kind: "import" })}>
@@ -147,7 +152,7 @@ export function CloudBillingBanners({ model, access, onAction }: Pick<CloudBilli
       </Banner>,
     );
   }
-  if (model.status === "no_run" && !model.pendingRun) {
+  if (model.status === "no_run" && !model.pendingRun && !emptyState) {
     out.push(
       <Banner key="no_run" tone="warning" icon={AlertTriangle} action={model.isCurrentMonth ? null : importButton}>
         <b>{capitalize(month)} ainda não tem rateio.</b>{" "}

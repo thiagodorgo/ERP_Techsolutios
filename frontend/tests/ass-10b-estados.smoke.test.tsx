@@ -14,7 +14,7 @@ import type { CloudBillingData } from "../src/modules/platform/cloud-billing/clo
 import { emptyCloudBilling } from "../src/modules/platform/cloud-billing/cloud-billing.types";
 import { PlatformCloudBillingScreen } from "../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage";
 import type { CloudBillingViewProps } from "../src/modules/platform/cloud-billing/views/cloudBilling.shared";
-import { COST_OK, CURRENT_MONTH, fixtureData, fixtureGroupDetails, fixtureSeries, globalJson, globalPayload, groupPayload, MONTH, tenantPayload, TODAY } from "./helpers/cloud-billing.fixture";
+import { COST_OK, CURRENT_MONTH, fixtureData, fixtureGroupDetails, fixtureSeries, globalJson, globalPayload, groupPayload, MONTH, NULL_ORIGINAL, tenantPayload, TODAY } from "./helpers/cloud-billing.fixture";
 
 // B-ASS-10b (T5) · os estados da tela (plano v2 §6.5 e §7 do contrato), iguais nas 3 aparências — T-UI-3; a linguagem
 // (T-UI-4: sem andaime, sem termo técnico, acentos certos). Cada estado com a sua fixture, na forma do servidor. O T-UI-3
@@ -42,12 +42,12 @@ function model(data: CloudBillingData, series = fixtureSeries()): CloudBillingVi
   return buildCloudBillingView({ data, series, groupDetails: fixtureGroupDetails(), ui: INITIAL_UI, currentMonth: CURRENT_MONTH, today: TODAY });
 }
 
-function screen(data: CloudBillingData, appearance: string, options: { readonly loading?: boolean; readonly series?: ReturnType<typeof fixtureSeries> } = {}): string {
-  return renderToString(<PlatformCloudBillingScreen data={data} loading={options.loading ?? false} month={MONTH} model={model(data, options.series)} access={FULL} appearance={appearance} handlers={handlers} onRetry={noop} />);
+function screen(data: CloudBillingData, appearance: string, options: { readonly loading?: boolean; readonly series?: ReturnType<typeof fixtureSeries>; readonly access?: typeof FULL } = {}): string {
+  return renderToString(<PlatformCloudBillingScreen data={data} loading={options.loading ?? false} month={MONTH} model={model(data, options.series)} access={options.access ?? FULL} appearance={appearance} handlers={handlers} onRetry={noop} />);
 }
 
 const NO_COST = (status: string, extra: Record<string, unknown> = {}) => ({ ...COST_OK, status, runId: status === "no_run" ? null : "run-out", fxRate: null, fxRateVersion: null, ...extra });
-const NULL_COSTS = { tenantsCost: null, platformOwnCost: null, unallocatedOther: null, unallocatedByReason: [], roundingResidualCost: null, conversionResidualCost: null, totalCost: null, margin: null, marginPct: null, alert: "cost_missing" };
+const NULL_COSTS = { tenantsCost: null, platformOwnCost: null, unallocatedOther: null, unallocatedByReason: [], roundingResidualCost: null, conversionResidualCost: null, totalCost: null, margin: null, marginPct: null, alert: "cost_missing", original: NULL_ORIGINAL };
 
 function dataWithCost(cost: Record<string, unknown>, globalOver: Record<string, unknown> = NULL_COSTS): CloudBillingData {
   const lines = (tenantPayload().lines as Record<string, unknown>[]).map((line) => ({ ...line, allocatedCost: null, allocatedCostOriginal: null, margin: null, marginPct: null, alert: "cost_missing" }));
@@ -87,6 +87,48 @@ test("T-UI-3 os estados que tomam a tela: carregando, vazio, erro, acesso negado
     // o rótulo do mês é o da TELA (o seletor); a organização e o mês do servidor ficam só no log dele: nenhum outro número
     assert.doesNotMatch(visible(screen({ ...empty, source: "fallback", failure: "membership_integrity_violation" }, appearance)).replace("outubro de 2026", ""), /\d/, `${appearance}: nenhum número no erro 500`);
   }
+});
+
+// Os 2 achados do aceite na base real (F11): numa base sem assinatura, o mês com arquivo e sem rateio cai no vazio — o
+// vazio tem de deixar rodar o rateio (o cabeçalho inteiro, como o `cabecalhoVazio()` da maquete); e o "sem dólar" sem
+// assinatura NÃO é vazio, porque o custo na moeda do arquivo existe (a tela mostra o aviso e os valores em dólar).
+test("T-UI-3 (F11) o vazio tem o cabeçalho inteiro: o mês, o dólar e, com a permissão, rodar o rateio e importar", () => {
+  for (const appearance of LETTERS) {
+    const full = visible(screen(emptyMonth(), appearance));
+    assert.match(full, /Nenhum custo nem assinatura em outubro de 2026/, appearance);
+    assert.match(full, /Dólar do mês/, `${appearance}: o dólar do mês`);
+    assert.match(full, /Rodar rateio do mês/, `${appearance}: rodar o rateio no vazio`);
+    assert.match(full, /Importar arquivo de custo/, `${appearance}: importar no vazio`);
+    // o painel já diz que o mês não tem rateio: o aviso não se repete
+    assert.doesNotMatch(full, /ainda não tem rateio/, `${appearance}: sem aviso repetido`);
+    const readOnly = visible(screen(emptyMonth(), appearance, { access: NO_WRITE_ACCESS }));
+    assert.match(readOnly, /Nenhum custo nem assinatura em outubro de 2026/, `${appearance}: só leitura`);
+    assert.doesNotMatch(readOnly, /Rodar rateio do mês|Importar arquivo de custo/, `${appearance}: sem a permissão, sem os botões`);
+    // o rateio em processamento num mês ainda vazio: o aviso aparece (o vazio não o diz)
+    const pending = { ...emptyMonth(), runs: fixtureData({ runs: [{ id: "run-p", status: "processing", periodStart: "2026-10-01T00:00:00.000Z", startedAt: "2026-11-04T12:13:00.000Z", createdAt: "2026-11-04T12:13:00.000Z" }] }).runs };
+    const pendingHtml = visible(screen(pending, appearance));
+    assert.match(pendingHtml, /Nenhum custo nem assinatura em outubro de 2026/, `${appearance}: processando e vazio`);
+    assert.match(pendingHtml, /está em processamento desde 04\/11 09:13/, `${appearance}: o aviso do rateio em processamento`);
+  }
+});
+
+test("T-UI-3 (F11) sem dólar e sem assinatura não é vazio: o aviso e o custo em dólar aparecem, nenhum real", () => {
+  const cost = NO_COST("fx_missing", { currencyOriginal: "USD" });
+  const lines = (tenantPayload().lines as Record<string, unknown>[]).map((line) => ({ ...line, groupId: null, groupName: null, subscriptionAmount: null, statementTotal: null, creditsApplied: null, subscriptionSource: "none", subscriptionSkipReason: "no_subscription", estimate: false, allocatedCost: null, margin: null, marginPct: null, alert: "no_subscription" }));
+  const nullTotals = { subscriptionAmount: null, allocatedCost: null, margin: null, marginPct: null };
+  const original = { currency: "USD", tenantsCost: "1101.000000", platformOwnCost: "386.400000", unallocatedOther: "41.250000", roundingResidualCost: "0.003812", totalImportedCost: "1528.653812" };
+  const data = fixtureData({ cost, tenant: tenantPayload(MONTH, cost, lines, nullTotals), group: { ...groupPayload(MONTH, cost), lines: [], totals: nullTotals }, global: globalPayload(MONTH, cost, globalJson({ ...NULL_COSTS, subscriptionTotal: null, original })) });
+  assert.equal(model(data).empty, false, "o modelo não é vazio");
+  for (const appearance of LETTERS) {
+    const html = visible(screen(data, appearance));
+    assert.doesNotMatch(html, /Nenhum custo nem assinatura/, `${appearance}: não é o vazio`);
+    assert.match(html, /Falta o dólar de outubro de 2026/, `${appearance}: o aviso`);
+    assert.match(html, /US\$ 1\.528,65/, `${appearance}: o importado em dólar`);
+    assert.doesNotMatch(html, /R\$ ?\d/, `${appearance}: nenhum valor em reais`);
+  }
+  // o controle: sem o original (o servidor manda tudo nulo fora de ok, legacy_unscoped e fx_missing), é o vazio
+  const noOriginal = fixtureData({ cost: NO_COST("no_run"), tenant: tenantPayload(MONTH, NO_COST("no_run"), lines.map((line) => ({ ...line, allocatedCostOriginal: null })), nullTotals), group: { ...groupPayload(MONTH, NO_COST("no_run")), lines: [], totals: nullTotals }, global: globalPayload(MONTH, NO_COST("no_run"), globalJson({ ...NULL_COSTS, subscriptionTotal: null })) });
+  assert.equal(model(noOriginal).empty, true, "sem original e sem assinatura, vazio");
 });
 
 test("T-UI-3 dados desatualizados: o aviso aparece e os últimos valores confirmados continuam", () => {

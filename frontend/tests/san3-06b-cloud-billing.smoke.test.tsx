@@ -13,7 +13,7 @@ import type { CloudBillingData } from "../src/modules/platform/cloud-billing/clo
 import { emptyCloudBilling } from "../src/modules/platform/cloud-billing/cloud-billing.types";
 import { PlatformCloudBillingScreen } from "../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage";
 import { CloudBillingViewA } from "../src/modules/platform/cloud-billing/views/CloudBillingViewA";
-import { FX_PAYLOAD, globalJson, globalPayload, groupPayload, GROUPS_PAYLOAD, IMPORTS_PAYLOAD, RUNS_PAYLOAD, tenantPayload } from "./helpers/cloud-billing.fixture";
+import { FX_PAYLOAD, globalJson, globalPayload, groupPayload, GROUPS_PAYLOAD, IMPORTS_PAYLOAD, NULL_ORIGINAL, RUNS_PAYLOAD, tenantPayload } from "./helpers/cloud-billing.fixture";
 
 // B-SAN3-06b E8 — Cloud Billing, adaptado ao B-ASS-10b (T5; plano v2 §8.2). Ficam com a MESMA propriedade, sobre a tela
 // nova: T11, T12 (estendido pelo T-DIN-2), T13, T14, T16, T17, T18, T19, T46, T47, T48 (A1) e T49. Saíram, com substituto
@@ -165,7 +165,7 @@ test("T17 erro de leitura devolve falha sem zero apresentado como fato", async (
 });
 
 test("T18 respostas vazias preservam o estado vazio", async () => {
-  const emptyGlobal = globalJson({ subscriptionTotal: null, tenantsCost: null, platformOwnCost: null, unallocatedOther: null, unallocatedByReason: [], roundingResidualCost: null, conversionResidualCost: null, totalCost: null, margin: null, marginPct: null, alert: "cost_missing" });
+  const emptyGlobal = globalJson({ subscriptionTotal: null, tenantsCost: null, platformOwnCost: null, unallocatedOther: null, unallocatedByReason: [], roundingResidualCost: null, conversionResidualCost: null, totalCost: null, margin: null, marginPct: null, alert: "cost_missing", original: NULL_ORIGINAL });
   const noRun = { status: "no_run", coverage: "none", runId: null, importId: null, currencyOriginal: null, fxRate: null, fxRateVersion: null, warnings: [], sources: { runs: 0, importIds: [], usedImportId: null } };
   const result = await withFetch(
     (url) => {

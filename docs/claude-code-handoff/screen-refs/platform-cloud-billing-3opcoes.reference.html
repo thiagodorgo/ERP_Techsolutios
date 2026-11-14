@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloud Billing · custo e margem · 3 opções (Claude)</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css), copiados do molde financeiro-3opcoes ─── */
+:root{
+  --color-core-primary:#12385c;--color-core-primary-strong:#0b263f;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;--color-status-info:#206bc4;
+  --color-chart-inflow:#10b981;--color-chart-outflow:#f87171;--color-chart-neutral:#94a3b8;
+  --surface-page:#e8edf2;--surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;
+  --text-primary:#17212c;--text-secondary:#526273;--text-muted:#718196;--text-inverse:#f8fafc;
+  --radius-6:6px;--shadow-overlay:0 16px 40px rgb(18 26 34 / 22%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button,input,select,textarea{font-family:inherit}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* ─── MOLDURA DA MAQUETE (igual às aprovadas) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:880px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__brand-l{display:flex;align-items:center;gap:10px}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__collapse{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;color:#9FB4CC}
+.app-sidebar__nav{flex:1;padding:12px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:6px 10px 7px}
+.app-sidebar__group-title + .app-sidebar__item{margin-top:0}
+.app-sidebar__group-title--2{padding-top:14px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13.5px;font-weight:600;text-decoration:none}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__footer{padding:12px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800;flex-shrink:0}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:14px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:280px;padding:8px 13px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:13px}
+.app-topbar__org{display:flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{position:relative;width:38px;height:38px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css e financeiro-ab.reference.html ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:280px;flex:1 1 280px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap;min-height:36px}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-btn--perigo{color:#b91c1c;border-color:#fecaca}
+.pat-btn--perigo:hover{border-color:#dc2626;color:#dc2626;background:#fef2f2}
+.pat-btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+.pat-btn:focus-visible,.pat-select:focus-visible,.pat-os-tab:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pat-btn b{font-family:var(--font-mono);font-weight:800;color:#0f172a}
+.mes-sel{display:inline-flex;align-items:center;gap:7px;padding:0 11px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#334155;min-height:36px}
+.mes-sel select{border:0;background:transparent;font:inherit;color:inherit;cursor:pointer;min-height:34px}
+.mes-sel:focus-within{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe}
+
+.kpi-grid{display:grid;gap:12px;margin-bottom:16px}
+.kpi-grid--4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.pat-kpi{display:block;width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 15px;text-align:left;color:#0f172a;min-width:0;font:inherit;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.pat-kpi:hover{border-color:#2563eb;transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.08)}
+.pat-kpi:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pat-kpi[aria-pressed="true"]{border-color:#2563eb;background:#f8fafc;box-shadow:0 0 0 1px #2563eb,0 4px 12px rgba(37,99,235,.12)}
+.pat-kpi__head{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-bottom:8px}
+.pat-kpi__tile{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pat-kpi__tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pat-kpi__value{font-size:21px;font-weight:800;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-kpi__value small{font-size:12px;font-weight:700;color:#64748b;letter-spacing:0;margin-left:6px}
+.pat-kpi__label{font-size:12px;font-weight:700;color:#334155;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pat-kpi__hint{font-size:11px;color:#64748b;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi-spark{display:block;width:100%;height:30px;margin-top:8px}
+.mini-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:-4px 0 16px}
+.mini-kpi{display:flex;align-items:center;gap:10px;width:100%;padding:9px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;text-align:left;cursor:pointer;min-height:44px;min-width:0}
+.mini-kpi:hover{border-color:#93c5fd}
+.mini-kpi[aria-pressed="true"]{border-color:#2563eb;box-shadow:0 0 0 2px #dbeafe}
+.mini-kpi:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.mini-kpi span.t{flex:1;min-width:0;font-size:11.5px;font-weight:700;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-kpi span.t small{display:block;font-weight:600;color:#94a3b8;font-size:10.5px;overflow:hidden;text-overflow:ellipsis}
+.mini-kpi b{font-family:var(--font-mono);font-size:14px;font-weight:800;color:#0f172a;white-space:nowrap}
+.mini-kpi--col{align-items:flex-start;padding:10px 12px}
+.mini-kpi--col span.t b{display:block;font-size:16px;margin:2px 0 1px;overflow:hidden;text-overflow:ellipsis}
+.gs__head b{white-space:nowrap}
+
+.pat-pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;white-space:nowrap;line-height:1.3;vertical-align:middle}
+.pat-pill__dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600;line-height:1.45}
+.pat-banner > span{flex:1 1 380px}
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-banner--error{background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c}
+.pat-banner--info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.pat-banner .pat-btn{min-height:32px;padding:6px 12px}
+.pat-skel{background:linear-gradient(90deg,#f1f5f9 25%,#e2e8f0 50%,#f1f5f9 75%);background-size:200% 100%;animation:skel 1.2s infinite;border-radius:6px;display:block}
+@keyframes skel{to{background-position:-200% 0}}
+
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:16px 18px;min-width:0}
+.card__head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.card__title{font-size:14px;font-weight:800;color:#0f172a}
+.card__sub{font-size:11.5px;color:#94a3b8;margin-top:1px}
+.card__tag{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.legenda{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:#475569}
+.legenda span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.lg-sw{width:9px;height:9px;border-radius:3px;flex-shrink:0;display:inline-block}
+.bar-compact-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:transparent;border:1px solid transparent;border-radius:8px;padding:5px 8px;margin-bottom:2px;font-size:12px;cursor:pointer;text-align:left;min-height:34px}
+.bar-compact-btn:hover{background:#f8fafc;border-color:#e2e8f0}
+.bar-compact-btn[aria-pressed="true"]{background:#eff6ff;border-color:#2563eb}
+.bar-compact-btn:focus-visible{outline:2px solid #2563eb;background:#eff6ff}
+.bar-compact-btn__label{font-weight:600;color:#334155;display:flex;align-items:center;gap:6px;width:46%;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
+.bar-compact-btn__dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.bar-compact-btn__track{flex:1;height:6px;background:#f1f5f9;border-radius:99px;overflow:hidden;min-width:30px}
+.bar-compact-btn__fill{height:100%;border-radius:99px;display:block}
+.bar-compact-btn__val{font-weight:800;font-family:var(--font-mono);font-size:11px;color:#0f172a;text-align:right;white-space:nowrap;min-width:88px;flex-shrink:0}
+
+/* Opção A — fileira de gráficos da referência (1.6fr 1fr 1fr) e o painel de atenção ao lado da lista */
+.charts-a{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);gap:14px;margin-bottom:16px}
+.base-a{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:start}
+.att{background:#fff;border:1px solid #e2e8f0;border-radius:13px;overflow:hidden}
+.att__head{padding:14px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:8px}
+.att__head b{font-size:14px;font-weight:800;color:#0f172a}
+.att__head span{margin-left:auto;font-size:10px;font-weight:700;background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:99px}
+.att-item{display:flex;align-items:flex-start;gap:10px;width:100%;padding:11px 16px;border:0;border-bottom:1px solid #f8fafc;background:#fff;text-align:left;cursor:pointer;min-height:44px;font:inherit}
+.att-item:hover{background:#f8fafc}
+.att-item[aria-pressed="true"]{background:#eff6ff}
+.att-item:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.att-item--fixo{cursor:default}
+.att-item--fixo:hover{background:#fff}
+.att-item__ic{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.att-item__k{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;margin-bottom:2px;text-transform:uppercase}
+.att-item__t{display:block;font-size:12.5px;color:#334155;line-height:1.45}
+
+/* Opção B — faixa analítica */
+.ana{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.ana .card--2{grid-column:span 2}
+.svg-chart{display:block;width:100%;height:auto;overflow:visible}
+.svg-chart g[role="button"]{cursor:pointer;outline:none}
+.svg-chart g[role="button"] .hit{fill:transparent}
+.svg-chart g[role="button"]:hover .hit,.svg-chart g[role="button"]:focus-visible .hit{fill:#eff6ff}
+.svg-chart g[role="button"][aria-pressed="true"] .hit{fill:#dbeafe}
+.svg-chart g[role="button"]:focus-visible .foco{stroke:#2563eb;stroke-width:2}
+.svg-chart g.ponto:hover circle.pt,.svg-chart g.ponto:focus-visible circle.pt{stroke:#0f172a;stroke-width:2.5}
+.svg-chart g.ponto[aria-pressed="true"] circle.pt{stroke:#2563eb;stroke-width:3}
+.svg-chart text{font-family:var(--font-sans)}
+.donut-wrap{display:flex;align-items:center;gap:14px}
+.donut-wrap svg{flex-shrink:0}
+.legs{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.leg-btn{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;padding:5px 8px;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;text-align:left;font-size:12px;color:#334155;min-height:32px}
+.leg-btn:hover{background:#f8fafc}
+.leg-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.leg-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.leg-btn i{width:10px;height:10px;border-radius:3px}
+.leg-btn span{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leg-btn b{font-weight:800;font-variant-numeric:tabular-nums}
+.colunas{display:flex;align-items:flex-end;gap:6px;height:150px}
+.coluna-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;border:1px solid transparent;border-radius:8px;background:none;cursor:pointer;padding:4px 2px 6px;min-width:0}
+.coluna-btn:hover{background:#f8fafc}
+.coluna-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.coluna-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.coluna-btn b{font-size:11.5px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.coluna-btn em{font-style:normal;font-size:10px;font-weight:700;color:#475569;white-space:nowrap}
+.coluna-btn i{display:block;width:70%;max-width:38px;border-radius:5px 5px 2px 2px;min-height:3px}
+.coluna-btn span{font-size:10px;font-weight:700;color:#64748b;text-align:center;line-height:1.15;white-space:nowrap}
+.coluna-btn--neg i{border-radius:2px 2px 5px 5px}
+
+/* Opção C — ponte, fechamento do mês e grupos ao lado */
+.topo-c{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:14px;margin-bottom:14px}
+.meses-c{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-bottom:16px}
+.base-c{display:grid;grid-template-columns:minmax(0,1fr) 276px;gap:14px;align-items:start}
+.checks{display:flex;flex-direction:column;gap:4px}
+.check-btn{display:grid;grid-template-columns:26px minmax(0,1fr) auto;align-items:center;gap:9px;width:100%;padding:7px 9px;border:1px solid #f1f5f9;border-radius:9px;background:#fcfdfe;cursor:pointer;text-align:left;font-size:12.5px;color:#334155;min-height:44px}
+.check-btn:hover{border-color:#93c5fd;background:#fff}
+.check-btn[aria-pressed="true"]{border-color:#2563eb;background:#eff6ff}
+.check-btn:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+.check-btn .ic{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px}
+.check-btn .t{min-width:0;font-weight:700;color:#0f172a;line-height:1.3}
+.check-btn .t small{display:block;font-weight:600;color:#64748b;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.check-btn > b{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.check-btn > em{font-style:normal;font-size:11.5px;font-weight:700;color:#2563eb;white-space:nowrap}
+.gs{background:#fff;border:1px solid #e2e8f0;border-radius:13px;overflow:hidden}
+.gs__head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px;border-bottom:1px solid #f1f5f9}
+.gs__head b{font-size:14px;font-weight:800}
+.gs__head .pat-btn{min-height:32px;padding:6px 10px}
+.gs-item{display:block;width:100%;padding:10px 14px;border:0;border-bottom:1px solid #f8fafc;background:#fff;text-align:left;cursor:pointer;font:inherit;min-height:44px}
+.gs-item:hover{background:#f8fafc}
+.gs-item[aria-pressed="true"]{background:#eff6ff;box-shadow:inset 3px 0 0 #2563eb}
+.gs-item:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.gs-item__l{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.gs-item__n{font-size:13px;font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gs-item__s{display:block;font-size:11.5px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gs__nota{padding:10px 14px;font-size:11.5px;color:#64748b;line-height:1.5;background:#fcfdfe}
+
+/* ─── Painel da lista (linha de 1 linha, detalhe embaixo) ─── */
+.painel{background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;min-width:0}
+.painel__toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap}
+.painel__titulo{font-size:14px;font-weight:800;color:#0f172a;margin-right:4px}
+.pat-os-tabs{display:flex;gap:3px;background:#f1f5f9;padding:3px;border-radius:9px;flex-wrap:wrap}
+.pat-os-tab{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;background:transparent;color:#64748b;white-space:nowrap;min-height:30px}
+.pat-os-tab:hover:not(.pat-os-tab--active){color:#0f172a}
+.pat-os-tab--active{background:#fff;color:#2563eb;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.pat-os-tab .n{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:16px;padding:0 5px;border-radius:99px;background:#475569;color:#fff;font-size:10px;font-weight:800}
+.pat-os-tab--active .n{background:#2563eb}
+.pat-os-search{display:flex;align-items:center;gap:8px;padding:6px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;width:190px;color:#94a3b8;min-height:34px}
+.pat-os-search:focus-within{border-color:#2563eb}
+.pat-os-search input{border:none;outline:none;background:transparent;font-size:12px;color:#0f172a;width:100%;min-width:0}
+.pat-os-count{margin-left:auto;font-size:11.5px;color:#64748b;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pat-filtro-chip-bar{padding:10px 16px 2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-filtro-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px;border-radius:99px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11.5px;font-weight:700}
+.pat-filtro-chip button{background:none;border:none;color:#1d4ed8;font-weight:800;cursor:pointer;padding:2px 6px;border-radius:50%;font-size:11px;line-height:1;min-width:22px;min-height:22px}
+.pat-filtro-chip button:hover{background:#dbeafe}
+.pat-filtro-chip button:focus-visible{outline:2px solid #2563eb}
+.pat-ab-table{width:100%;border-collapse:collapse;table-layout:fixed;background:#fff;margin-top:6px}
+.pat-ab-table thead th{padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e2e8f0;border-top:1px solid #f1f5f9;font-size:10px;font-weight:800;letter-spacing:.07em;color:#64748b;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase}
+.pat-ab-table th.r,.pat-ab-row td.r{text-align:right}
+.pat-ab-row{height:40px;cursor:pointer;border-bottom:1px solid #f1f5f9;outline:none}
+.pat-ab-row:hover{background:#f8fafc}
+.pat-ab-row:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+.pat-ab-row[aria-expanded="true"]{background:#eff6ff;border-bottom-color:#bfdbfe}
+.pat-ab-row td{padding:0 10px;height:40px;max-height:40px;line-height:40px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;color:#334155}
+.pat-ab-row td:last-child{padding:0 8px;text-overflow:clip;text-align:right}
+.pat-ab-row td b{color:#0f172a;font-weight:700}
+.val{font-family:var(--font-mono);font-weight:700;color:#0f172a;font-size:11.5px}
+.val--neg{color:#b91c1c}.val--pos{color:#15803d}
+.usd{font-family:var(--font-mono);color:#94a3b8;font-size:10.5px;margin-left:5px}
+.muted{color:#94a3b8}
+.est-ic{display:inline-flex;vertical-align:middle;margin-left:4px;color:#b45309}
+.pctbar{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;line-height:1;justify-content:flex-end;width:100%}
+.pctbar i{display:block;width:40px;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden;flex-shrink:0}
+.pctbar i b{display:block;height:100%;border-radius:99px}
+.pctbar span{font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.base-a .pctbar i,.base-c .pctbar i{display:none}
+.base-a col.col-pct,.base-c col.col-pct{width:64px!important}
+.pat-ab-row td.r{padding:0 8px}
+.pat-ab-row td:nth-last-child(2){padding:0 6px;text-overflow:clip}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+.pat-ab-row[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+.pat-ab-detail-row{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+.pat-ab-detail-cell{padding:14px 16px;line-height:1.5}
+.pat-ab-detail-content{display:flex;flex-direction:column;gap:12px}
+.pat-ab-detail-grid{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-col h4{font-size:11px;font-weight:800;color:#0f172a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+.pat-ab-detail-col h4 + .pat-ab-detail-field{margin-top:0}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;min-width:0;flex-wrap:wrap}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a;min-width:0;overflow-wrap:anywhere}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pat-ab-detail-note{font-size:12px;color:#64748b;flex:1 1 260px}
+.serv{display:flex;flex-direction:column;gap:4px}
+.serv div{display:grid;grid-template-columns:minmax(0,1fr) 60px auto;gap:8px;align-items:center;font-size:11.5px;color:#334155}
+.serv div span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.serv div i{display:block;height:6px;border-radius:99px;background:#f1f5f9;overflow:hidden}
+.serv div i b{display:block;height:100%;background:#7c3aed;border-radius:99px}
+.serv div em{font-style:normal;font-family:var(--font-mono);font-weight:700;font-size:11px;white-space:nowrap}
+.membros{display:flex;flex-direction:column;gap:4px}
+.membro{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;font-size:12px;color:#334155;padding:5px 8px;border:1px solid #f1f5f9;border-radius:7px;background:#fcfdfe}
+.membro b{font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.membro small{display:block;color:#94a3b8;font-size:10.5px}
+.tot{display:flex;align-items:center;justify-content:flex-end;gap:6px 18px;flex-wrap:wrap;padding:11px 16px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b;font-weight:600;background:#fcfdfe}
+.tot b{font-family:var(--font-mono);color:#0f172a;font-weight:800}
+.pat-table__empty{padding:36px 18px;text-align:center}
+.pat-table__empty-title{font-size:14px;font-weight:700;color:#0f172a}
+.pat-table__empty-detail{font-size:12.5px;color:#64748b;margin-top:4px}
+
+/* Marca "falta no backend" — âmbar tracejado; o botão do quadro de notas esconde */
+.falta{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:.02em;color:#92400e;background:#fffbeb;border:1px dashed #f59e0b;border-radius:6px;padding:1px 6px;white-space:nowrap;vertical-align:middle;line-height:1.4;text-transform:none}
+.fx{outline:1px dashed #f59e0b;outline-offset:2px;border-radius:3px;background-color:rgba(255,251,235,.7)}
+body.sem-marcas .falta{display:none}
+body.sem-marcas .fx{outline:none;background-color:transparent}
+
+/* ─── Estados (StatePanel) ─── */
+.state-panel{background:#fff;border:1px solid #e2e8f0;border-radius:13px;padding:48px 32px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.state-panel__icon{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.state-panel__title{font-size:16px;font-weight:800;color:#334155}
+.state-panel__detail{font-size:13px;color:#64748b;max-width:480px;line-height:1.5}
+
+/* ─── Janelas (Modal) — tamanho FIXO, só o corpo rola ─── */
+.ui-overlay{position:fixed;inset:0;z-index:60;background:rgb(18 26 34 / 42%);display:flex;align-items:center;justify-content:center}
+.mbx{width:min(560px,94vw);height:min(640px,92vh);background:#fff;border-radius:10px;box-shadow:var(--shadow-overlay);display:flex;flex-direction:column;overflow:hidden}
+.mbx > header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 8px 8px 20px;border-bottom:1px solid #e2e8f0}
+.mbx > header h2{font-size:16px;font-weight:800;color:#0f172a}
+.mbx > header button{width:44px;height:44px;border:0;background:transparent;border-radius:8px;cursor:pointer;color:#334155;display:inline-flex;align-items:center;justify-content:center}
+.mbx > header button:hover{background:#f1f5f9}
+.mbx > header button:focus-visible{outline:2px solid #2563eb}
+.mbx__corpo{flex:1;min-height:0;overflow-y:auto;padding:16px 20px;scrollbar-gutter:stable}
+.mbx > footer{flex:none;display:flex;justify-content:flex-end;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid #e2e8f0;background:#fcfdfe}
+.mbx > footer .esq{margin-right:auto;font-size:11.5px;color:#64748b}
+.resumo-tit{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;margin-bottom:14px}
+.resumo-tit div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.resumo-tit span{font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.04em}
+.resumo-tit b{font-size:13px;font-family:var(--font-mono);font-weight:800;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.form-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.form-grade .larga{grid-column:1 / -1}
+.ui-field{display:grid;gap:5px;font-size:12.5px;font-weight:700;color:#334155;align-content:start}
+.ui-field small{font-weight:500;color:#64748b;font-size:11.5px;line-height:1.45}
+.ui-input{border:1px solid var(--border-strong);border-radius:var(--radius-6);padding:9px 10px;font:inherit;font-weight:400;font-size:13px;width:100%;background:#fff;color:#0f172a;min-height:40px}
+.ui-input[aria-invalid="true"]{border-color:#dc2626;box-shadow:0 0 0 1px #dc2626}
+.ui-input:focus-visible{outline:2px solid #2563eb;outline-offset:1px}
+textarea.ui-input{resize:none;min-height:60px}
+.form-error{color:#b91c1c;font-size:11.5px;font-weight:600}
+.ui-alert{display:flex;gap:10px;padding:10px 12px;border:1px solid #f4d38b;border-radius:var(--radius-6);background:#fff8e9;color:#7c4a03;font-size:12.5px;line-height:1.45;margin-top:14px}
+.ui-alert b{display:block;margin-bottom:2px}
+.ui-alert--danger{border-color:#f0b6b0;background:#fff0ef;color:#9f1c1c}
+.ui-alert--ok{border-color:#a7f3d0;background:#ecfdf5;color:#065f46}
+.ui-alert--info{border-color:#bfdbfe;background:#eff6ff;color:#1e40af}
+.spin{width:16px;height:16px;border:2px solid #bfdbfe;border-top-color:#2563eb;border-radius:50%;animation:gira .8s linear infinite;flex-shrink:0}
+@keyframes gira{to{transform:rotate(360deg)}}
+.tab-hist{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+.tab-hist th{font-size:10px;font-weight:800;letter-spacing:.06em;color:#64748b;text-transform:uppercase;text-align:left;padding:7px 8px;background:#f8fafc;border-bottom:1px solid #e2e8f0}
+.tab-hist td{padding:8px;border-bottom:1px solid #f1f5f9;color:#334155}
+.tab-hist td.m{font-family:var(--font-mono);font-weight:700;color:#0f172a}
+.marca-l{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;margin-bottom:0}
+.marcas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.marca-l:has(input:checked){border-color:#2563eb;background:#eff6ff}
+.marca-l input{width:16px;height:16px}
+.marca-l small{margin-left:auto;font-size:11px;color:#64748b;font-weight:600;white-space:nowrap}
+.sec-t{font-size:11px;font-weight:800;color:#64748b;letter-spacing:.06em;text-transform:uppercase;margin:16px 0 6px}
+
+/* ─── Seletor A/B/C e quadro de notas (fora da tela) ─── */
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:16px}
+.review-layer p.desc code,.review-layer p.desc strong{color:#e2e8f0}
+.review-layer p.desc code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0;margin-bottom:16px}
+.review-grid .review-box{margin-bottom:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.review-list code,.rv-tabela code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc;word-break:break-word}
+.rv-tabela{width:100%;border-collapse:collapse;font-size:12px;color:#cbd5e1;table-layout:fixed}
+.rv-tabela th,.rv-tabela td{padding:7px 8px;border-bottom:1px solid #334155;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+.rv-tabela th{color:#f1f5f9;font-size:11.5px}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.estados-bar .rot{min-width:200px;color:#94a3b8;font-weight:700}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+
+@media (max-width:1340px){
+  .pat-kpi__value{font-size:18px}
+  .charts-a{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .charts-a > :first-child{grid-column:1 / -1}
+  .base-a{grid-template-columns:minmax(0,1fr)}
+  .ana{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ana .card--2{grid-column:1 / -1}
+  .base-c{grid-template-columns:minmax(0,1fr)}
+  .topo-c{grid-template-columns:minmax(0,1fr)}
+  .mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pat-os-search{width:160px}
+  .review-grid{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Administração da <strong>plataforma</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Cloud Billing · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__brand-l">
+          <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+          <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+        </div>
+        <div class="app-sidebar__collapse" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></div>
+      </div>
+      <nav class="app-sidebar__nav" aria-label="Menu da plataforma">
+        <div class="app-sidebar__group-title">PRINCIPAL</div>
+        <a class="app-sidebar__item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Visão Geral</a>
+        <a class="app-sidebar__item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6 6h.01"/><path d="M6 18h.01"/></svg>Organizações</a>
+        <a class="app-sidebar__item app-sidebar__item--active" aria-current="page"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>Cloud Billing</a>
+        <div class="app-sidebar__group-title app-sidebar__group-title--2">PLATAFORMA</div>
+        <a class="app-sidebar__item"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Saúde do Sistema</a>
+      </nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar">AP</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff">Admin Plataforma</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Super-administrador</div></div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#41607A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title">Cloud Billing</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><span>Buscar organização, recurso, serviço…</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/></svg>Todas as organizações</div>
+          <div class="app-topbar__bell" aria-label="Notificações"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"></div>
+        <div data-view="b" style="display:none"></div>
+        <div data-view="c" style="display:none"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · para o dono decidir</div>
+      <h2 id="rv-titulo">Opção A</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc">Tela T5 do bloco de telas da plataforma (custo e margem, item 61 do portão), em três opções para o senhor aprovar. As três partem da tela de hoje (<code>frontend/src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage.tsx</code>), do padrão-ouro <code>screen-refs/Cloud Billing.reference.html</code> e do padrão aprovado de blocos clicáveis com linha que abre o detalhe (<code>screen-refs/financeiro-ab.reference.html</code>); a moldura, o seletor e este quadro vêm de <code>screen-refs/financeiro-3opcoes.reference.html</code>. Fluxo igual nas três: <strong>indicador ou gráfico filtra a lista → linha de 1 linha → detalhe embaixo, um aberto por vez → ações</strong>. A lista tem três visões, como o seletor do contrato: <strong>por organização, por grupo e global</strong>. Os dados seguem o contrato da visão de custo e margem (<code>plano-B-ASS-09-v2.md</code> §4.2, com a Emenda 2: a assinatura do mês é a de <strong>antes do crédito</strong>, e a linha mostra separados o total do demonstrativo e o crédito aplicado). Medido em <code>origin/main</code> <code>d2737339</code>. Nomes e números são de exemplo. O que o servidor não fornece está marcado <strong>falta no backend</strong> (na tela: etiqueta e contorno âmbar tracejado; o botão abaixo esconde as marcas). Hoje, na maquete: sábado, 14/11/2026.</p>
+    <div class="estados-bar"><span class="rot">Estado (vale para as 3):</span>
+      <button type="button" class="rv-btn" data-estado="normal" aria-pressed="true">Com dados</button>
+      <button type="button" class="rv-btn" data-estado="carregando" aria-pressed="false">Carregando</button>
+      <button type="button" class="rv-btn" data-estado="vazio" aria-pressed="false">Vazio</button>
+      <button type="button" class="rv-btn" data-estado="erro" aria-pressed="false">Erro</button>
+      <button type="button" class="rv-btn" data-estado="proibido" aria-pressed="false">Acesso não permitido</button>
+      <button type="button" class="rv-btn" data-estado="desatualizado" aria-pressed="false">Dados desatualizados</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Custo do mês (P2, P11, P13):</span>
+      <button type="button" class="rv-btn" data-estado="no_run" aria-pressed="false">Sem rateio do mês</button>
+      <button type="button" class="rv-btn" data-estado="no_import" aria-pressed="false">Rateio vazio</button>
+      <button type="button" class="rv-btn" data-estado="legacy" aria-pressed="false">Rateio antigo</button>
+      <button type="button" class="rv-btn" data-estado="fx_missing" aria-pressed="false">Sem dólar do mês</button>
+      <button type="button" class="rv-btn" data-estado="currency_unknown" aria-pressed="false">Moeda desconhecida</button>
+      <button type="button" class="rv-btn" data-estado="multi" aria-pressed="false">Dois arquivos no mês</button>
+      <button type="button" class="rv-btn" data-estado="presa" aria-pressed="false">Rateio parado</button>
+      <button type="button" class="rv-btn" data-estado="overlap" aria-pressed="false">Vínculo de grupo inconsistente</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Ver como (vale para as 3):</span>
+      <button type="button" class="rv-btn" data-papel="admin" aria-pressed="true">Admin Plataforma (todas as ações)</button>
+      <button type="button" class="rv-btn" data-papel="leitura" aria-pressed="false">Só consulta (hipotético)</button>
+      <button type="button" class="rv-btn" data-papel="org" aria-pressed="false">Perfil de organização</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Resposta do servidor nas janelas:</span>
+      <button type="button" class="rv-btn" data-cen="ok" aria-pressed="true">Sucesso</button>
+      <button type="button" class="rv-btn" data-cen="outro-mes" aria-pressed="false">Importar: arquivo de outro mês</button>
+      <button type="button" class="rv-btn" data-cen="grande" aria-pressed="false">Importar: acima de 1 MB (413)</button>
+      <button type="button" class="rv-btn" data-cen="falha" aria-pressed="false">Importar ou rodar: falha</button>
+      <button type="button" class="rv-btn" data-cen="futuro" aria-pressed="false">Dólar: mês futuro (422)</button>
+      <button type="button" class="rv-btn" data-cen="outro-grupo" aria-pressed="false">Grupo: já está em outro (422)</button>
+      <button type="button" class="rv-btn" data-cen="conflito" aria-pressed="false">Grupo: conflito (409)</button>
+      <button type="button" class="rv-btn" data-cen="nome" aria-pressed="false">Grupo: nome repetido (409)</button>
+    </div>
+    <div class="estados-bar"><span class="rot">Marcas e dados:</span>
+      <button type="button" class="rv-btn" data-marcas aria-pressed="false">Esconder as marcas “falta no backend”</button>
+      <button type="button" class="rv-btn" data-restaurar>Restaurar os dados de exemplo</button>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Fluxo de hoje no sistema (medido em <code>origin/main</code> <code>d2737339</code>)</h3>
+        <ul class="review-list">
+          <li><strong>Rota e guarda:</strong> <code>/platform/cloud-billing</code> com <code>PermissionGuard</code> de <code>platform:cloud-usage:read</code> + <code>platform:cloud-costs:read</code> + <code>platform:cloud-cost-allocation:read</code> (<code>frontend/src/App.tsx:255-268</code>). O plano da T5 pede <code>platform:cloud-cost-allocation:read</code> + <code>platform:billing:read</code>, com câmbio e grupos por <code>platform:billing:manage</code>.</li>
+          <li><strong>Menu:</strong> PRINCIPAL (Visão Geral, Organizações, Cloud Billing) e PLATAFORMA (Saúde do Sistema), <code>frontend/src/layouts/PlatformLayout.tsx:35-50</code>. Topo: título, busca e “Todas as organizações” (<code>:270-285</code>). A maquete reproduz os dois; Planos e Demonstrativos entram com o bloco das telas T1 a T3.</li>
+          <li><strong>A tela de hoje</strong> (<code>PlatformCloudBillingPage.tsx:79-115</code>): título, seletor de mês, 5 indicadores que não filtram nada (custo importado, linhas, rateado, não rateado, última importação), um selo “série diária e projeção ainda não fornecida”, barras por serviço e por organização, uso medido e importações. <strong>Nenhum botão de ação, nenhuma margem, nenhum câmbio, nenhum grupo.</strong> Estados §7 já existem (<code>:121-130</code>): carregando, acesso não permitido, falha, vazio.</li>
+          <li><strong>Ações que existem e a tela não usa:</strong> <code>importCloudCostsFromApi()</code> manda um CSV fixo de custo zero (<code>cloud-billing.adapter.ts:26-35</code>, sai no bloco) e <code>runCloudAllocationFromApi()</code> usa <code>defaultPeriodBody()</code> (<code>:50-54</code>, <code>:134-138</code>), que pega o mês do relógio e fecha no dia 28. A T5 usa <code>periodForMonth(month)</code> (<code>cloud-billing.service.ts:15</code>) com o mês da tela.</li>
+          <li><strong>Servidor de hoje:</strong> importação manual <code>POST /cloud-costs/imports/manual-csv</code> (<code>src/modules/cloud-costs/aws-cur.routes.ts:33-72</code>, <strong>até 1 MB</strong>, 413 <code>csv_too_large</code>); rateio <code>POST /cloud-cost-allocations/runs</code>, resumo com <code>coverage</code>, <code>totalPlatformCost</code>, <code>roundingResidualCost</code>, <code>unallocatedByReason[]</code> e <code>platformCostByService[]</code> (<code>cloud-cost-allocation.types.ts:216-246</code>); composição por serviço de cada organização em <code>GET /runs/:runId/tenant-allocations</code> (<code>cloud-cost-allocation.routes.ts:59-70</code>), <strong>na moeda original</strong>.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Decisões do dono que a maquete aplica (iguais nas 3)</h3>
+        <ul class="review-list">
+          <li><strong>3.Q1 — um grupo só, sem abrir dado entre filiais:</strong> o grupo é só uma visão da plataforma. Na janela de membros e no detalhe do grupo está escrito: “O grupo serve para cobrança e para a visão de custo da plataforma. Ele não dá a uma filial acesso aos dados de outra.”</li>
+          <li><strong>3.Q2 — a matriz assina:</strong> a filial aparece com custo e o selo “Sem assinatura própria”; a margem do cliente é a da linha do grupo. A tela não tem campo “matriz”: ela mostra como “quem assina” o membro que tem assinatura.</li>
+          <li><strong>3.Q3 — dólar digitado por mês, o da fatura:</strong> a janela “Dólar do mês” pede a cotação da fatura da AWS, com 6 casas; corrigir cria versão nova, e a anterior fica no histórico. Sem taxa, custo e margem em reais ficam em branco, nunca zero (P13).</li>
+          <li><strong>3.extra — telas separadas:</strong> esta tela não tem nada dos provedores de pagamento e nota; isso fica na tela de Configurações › Provedores, com bloco próprio.</li>
+          <li><strong>Q5 (Emenda 2) — assinatura antes do crédito:</strong> a coluna “Assinatura” é o total do demonstrativo somado de volta o crédito aplicado (<code>subscriptionBasis: "before_credits"</code>); o detalhe mostra, separados, o total do demonstrativo e o crédito. O alerta segue essa base (P4: crítico se custo &gt; assinatura; atenção se custo ≥ 80 % da assinatura).</li>
+          <li><strong>Linha própria da plataforma (dono, 31/10):</strong> “Custo da plataforma” é um indicador e uma parcela da visão global, fora de “Não rateado”.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="nota" data-nota="a">
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) A — o que já tem dado</h3><ul class="review-list">
+          <li><strong>Os 8 indicadores</strong>: custo total, custo da plataforma, não rateado, resíduo de arredondamento (com o de conversão na dica), assinaturas, margem global, organizações em alerta e sem assinatura própria — todos campos de <code>global</code> e das linhas do §4.2. As contagens (em alerta, sem assinatura própria, estimativas) são contagem de linhas, não soma de dinheiro.</li>
+          <li><strong>“Mês anterior” na dica e o gráfico de 6 meses:</strong> uma leitura da visão por mês (o contrato é de um mês por chamada). Clicar no mês troca o mês da tela.</li>
+          <li><strong>“Para onde vai o custo”:</strong> as 5 parcelas do global, que fecham exato no custo total (P7). <strong>“Maior custo por organização”:</strong> as linhas por organização.</li>
+          <li><strong>Botões</strong> “Importar arquivo de custo” e “Rodar rateio do mês”: rotas que existem na <code>main</code>; o rateio roda sozinho depois da importação desde o bloco do rateio automático (#542).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) A — o que falta no backend</h3><ul class="review-list">
+          <li><strong>A visão de custo e margem, o câmbio e os grupos</strong> chegam com o bloco da visão (em desenvolvimento, contrato fechado). Na <code>main</code> de hoje as três rotas dão 404.</li>
+          <li><strong>Variação sobre o mês anterior em %</strong> no painel “O que pede atenção”: quem calcula é o servidor (a tela não faz conta de dinheiro).</li>
+          <li><strong>Composição por serviço em reais</strong> no detalhe: a rota dá a composição na moeda original; converter é só no servidor.</li>
+          <li><strong>Quem digitou o dólar:</strong> a coluna existe na tabela, mas a resposta não a devolve. <strong>Crédito aplicado no mês, somado:</strong> o global não traz.</li>
+          <li>A referência tem “O que mudou?” com IA: a opção A mantém o painel, com regras do mês e sem IA (não há análise automática no servidor).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) A — prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> é o padrão-ouro aprovado (8 indicadores em 4 × 2, três gráficos, o painel ao lado da lista), agora com margem, dólar e grupos; quem já usa a tela reconhece tudo; menor custo de implementação.</li>
+          <li><strong>Contras:</strong> a lista divide a largura com o painel (abaixo de 1340 px o painel sobe); não mostra de relance quem dá prejuízo como a B; o grupo fica só na aba da lista.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="b" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) B — o que já tem dado</h3><ul class="review-list">
+          <li><strong>Dispersão assinatura × custo por organização</strong>, com as linhas de 80 % e 100 %: as linhas por organização (assinatura e custo em reais, e o alerta do servidor). Clicar num ponto abre a organização.</li>
+          <li><strong>Rosca da situação</strong> (crítico, atenção, normal, sem assinatura própria, sem custo) e <strong>colunas da margem por faixa</strong>: contagem de linhas pelo alerta e pelo percentual que o servidor manda.</li>
+          <li><strong>Seis meses de assinaturas, custo e margem</strong> e as tendências dos indicadores: uma leitura por mês.</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) B — o que falta no backend</h3><ul class="review-list">
+          <li>A visão, o câmbio e os grupos (bloco da visão, como na A).</li>
+          <li><strong>Série de 6 meses numa chamada só</strong> (opcional): hoje seriam 6 leituras ao abrir a tela.</li>
+          <li>Composição por serviço em reais e quem digitou o dólar (como na A).</li>
+          <li>Componentes novos na biblioteca: a dispersão (<code>ScatterMargin</code>) e o indicador com tendência (o <code>KpiStatCard</code> com <code>Sparkline</code>, que já existem separados). A rosca usa o <code>CategoryDonut</code> e as colunas, o <code>ColumnBars</code>, que já existem.</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) B — prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> segue a B “Analítica” que o senhor preferiu em Pátios; responde de relance “quem dá prejuízo, quem está perto, e por quê”; todo gráfico filtra a lista.</li>
+          <li><strong>Contras:</strong> tela mais longa; um componente novo (a dispersão); 6 leituras ao abrir até existir a série; a composição do custo da plataforma fica nos indicadores pequenos.</li>
+        </ul></div>
+      </div>
+    </div>
+    <div class="nota" data-nota="c" hidden>
+      <div class="review-grid">
+        <div class="review-box"><h3>(i) C — o que já tem dado</h3><ul class="review-list">
+          <li><strong>Ponte “da assinatura à margem”</strong>: assinaturas − organizações − plataforma − não rateado − arredondamento − conversão = margem, todos valores literais do global (a ponte só desenha; o padrão do <code>BalanceBridge</code>).</li>
+          <li><strong>Fechamento do mês</strong>: importações e rateios do mês (rotas da <code>main</code>), a versão do dólar, e as contagens de estimativas, alertas e sem assinatura.</li>
+          <li><strong>Grupos ao lado da lista</strong>: <code>GET /economic-groups</code>, membros vigentes e agendados, histórico. A lista abre na visão por grupo, porque a margem do cliente é a do grupo (3.Q2).</li>
+        </ul></div>
+        <div class="review-box"><h3>(ii) C — o que falta no backend</h3><ul class="review-list">
+          <li>A visão, o câmbio e os grupos (bloco da visão, como na A).</li>
+          <li><strong>A run parada há quanto tempo</strong>: a tela lê a lista de rateios e mostra “em processamento desde…”; o limite de tempo e a volta automática são da pendência <code>P-ASS09A-RUN-PRESA-EM-PROCESSING</code>, que é deste bloco.</li>
+          <li>Componente novo na biblioteca: a ponte da margem (o <code>BalanceBridge</code> tem a semântica de saldo de conta; esta precisa de 7 degraus).</li>
+        </ul></div>
+        <div class="review-box"><h3>(iii) C — prós e contras</h3><ul class="review-list">
+          <li><strong>Prós:</strong> pensada para a rotina do mês (“o arquivo entrou? o rateio rodou? o dólar está certo?”), com a ação ao lado de cada passo; mostra de onde sai a margem; grupos sempre à vista.</li>
+          <li><strong>Contras:</strong> menos indicadores soltos (eles viram degraus da ponte); a lista abre por grupo, e quem procura uma organização dá um clique a mais; componente novo.</li>
+        </ul></div>
+      </div>
+    </div>
+
+    <div class="review-box">
+      <h3>Comportamento por perfil (a tela só molda; o servidor decide — <code>src/modules/core-saas/permissions/catalog.ts</code>)</h3>
+      <table class="rv-tabela">
+        <thead><tr><th style="width:22%">Perfil</th><th>Vê</th><th>Ações</th><th style="width:24%">Não vê</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Admin Plataforma</strong> (<code>platform_admin</code> e <code>super_admin</code>, catálogo inteiro, <code>:429</code> e <code>:750</code>)</td><td>tudo</td><td>importar (<code>platform:cloud-costs:import</code>), rodar rateio (<code>platform:cloud-cost-allocation:run</code>), dólar e grupos (<code>platform:billing:manage</code>)</td><td>—</td></tr>
+          <tr><td><strong>Só consulta</strong> (hipotético: hoje nenhum papel de plataforma tem leitura sem gestão)</td><td>tudo</td><td>nenhuma; “Dólar do mês” abre só o histórico</td><td>importar, rodar, corrigir dólar, criar e mudar grupo — cada botão some (requisito R-UI-10: botão sem guarda = vermelho)</td></tr>
+          <tr><td><strong>Perfil de organização</strong> (qualquer papel de cliente)</td><td>“Acesso não permitido”; o menu da plataforma nem aparece</td><td>—</td><td>tudo: as 10 rotas da visão são de plataforma (P8), e ator de organização recebe 403</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="review-grid review-grid--2">
+      <div class="review-box">
+        <h3>Estados cobertos (iguais nas 3; botões acima)</h3>
+        <ul class="review-list">
+          <li><strong>§7:</strong> carregando (esqueleto), vazio (mês sem custo nem assinatura, com o seletor de mês e “Importar”), erro (nenhum valor, “Tentar de novo”), acesso não permitido, dados desatualizados (faixa e os últimos dados confirmados).</li>
+          <li><strong>Custo do mês</strong> (<code>cost.status</code>): sem rateio, rateio vazio, rateio antigo (valores com aviso), sem dólar, moeda desconhecida. Nos quatro sem custo, todo custo e margem em reais fica “—” em toda linha, grupo, total e no global (P13); o original em dólar aparece quando a moeda é conhecida (“Sem dólar do mês”).</li>
+          <li><strong>Dois arquivos no mês</strong> (<code>multiple_imports_in_month</code>): faixa que diz qual arquivo vale e que nada é somado. <strong>Rateio parado</strong>: “em processamento desde 04/11 09:13”, com “Rodar rateio do mês”. <strong>Vínculo de grupo inconsistente</strong> (500 <code>membership_integrity_violation</code>): nenhum número, só a explicação.</li>
+          <li><strong>Estimativa</strong> na linha (relógio âmbar ao lado da assinatura) quando o demonstrativo do mês está aberto ou reaberto. <strong>Novembro</strong> (o mês corrente) mostra o estado natural: sem rateio, porque o arquivo da AWS só chega depois que o mês fecha; as assinaturas aparecem como projeção.</li>
+          <li><strong>Janelas</strong> (tamanho fixo 560 × 640, só o corpo rola): importar, rodar rateio, dólar do mês, novo grupo, membros, histórico, renomear, mudar de grupo e importações do mês, com as respostas do servidor nos botões acima.</li>
+        </ul>
+      </div>
+      <div class="review-box">
+        <h3>Achados para o orquestrador e perguntas ao dono</h3>
+        <ul class="review-list">
+          <li><strong>Importação manual limitada a 1 MB</strong> (<code>aws-cur.routes.ts:53-62</code>; o corpo JSON aceita 2 MB, <code>src/app.ts:127</code>). O arquivo de custo do mês da AWS costuma passar disso, e o plano manda o botão pedir “o arquivo completo do mês”. A janela avisa o limite e trata o 413. Quem resolve: o bloco da leitura automática da AWS ou um envio por arquivo. Não é desta tela.</li>
+          <li><strong>A guarda da rota muda</strong> de <code>cloud-usage:read</code> + <code>cloud-costs:read</code> + <code>cloud-cost-allocation:read</code> para <code>cloud-cost-allocation:read</code> + <code>billing:read</code> (plano da T5). A tela nova não mostra mais o “Uso medido” da tela de hoje; ele pode ficar no detalhe da organização, se o senhor quiser.</li>
+          <li><strong>Mês que a tela abre:</strong> hoje é o mês corrente, que nunca tem rateio (o arquivo chega depois). Proposta: abrir no último mês com rateio concluído (aqui, outubro). Pergunta ao dono.</li>
+          <li><strong>Pendência <code>P-AWS-CUR-DUBLE-SOBREPOSICAO</code></strong> (dono: este bloco) é do servidor de teste, sem efeito na tela.</li>
+          <li><strong>Para decidir:</strong> as 3 viram aparências que cada usuário escolhe (<code>D-APARENCIA-POR-USUARIO</code>, chave <code>platform-cloud-billing</code>). Se alguma não servir, diga qual sai ou o que muda; e se quer a dispersão da B também na A.</li>
+          <li><strong>Fonte:</strong> sem a Inter (CDN é proibido); o navegador usa a fonte do sistema.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+  <button type="button" data-opcao="a" aria-pressed="true">A · Fiel à referência</button>
+  <button type="button" data-opcao="b" aria-pressed="false">B · Analítica</button>
+  <button type="button" data-opcao="c" aria-pressed="false">C · Fechamento e grupos</button>
+</div>
+
+<div class="ui-overlay" id="ov" hidden>
+  <section class="mbx" role="dialog" aria-modal="true" aria-labelledby="mbx-t" id="mbx">
+    <header><h2 id="mbx-t">Janela</h2><button type="button" data-fechar aria-label="Fechar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></header>
+    <div class="mbx__corpo" id="mbx-corpo"></div>
+    <footer id="mbx-rodape"></footer>
+  </section>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide, traço 2) ── */
+const I = {
+  chevron:'<path d="m6 9 6 6 6-6"/>',
+  cloud:'<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>',
+  server:'<rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><path d="M6 6h.01"/><path d="M6 18h.01"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  scale:'<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  trend:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  building:'<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M16 6h.01M12 6h.01M12 10h.01M12 14h.01M16 10h.01M16 14h.01M8 10h.01M8 14h.01"/>',
+  dollar:'<line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+  play:'<polygon points="6 3 20 12 6 21 6 3"/>',
+  calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  check:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  x:'<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  inbox:'<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>'
+};
+function ic(n, s){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+I[n]+'</svg>'; }
+function esc(t){ return String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const CHEV = '<span data-chevron class="pat-chevron-icon">'+ic('chevron',15)+'</span>';
+const FALTA = (t) => '<span class="falta" title="'+esc(t || 'O servidor ainda não fornece este dado')+'">falta no backend</span>';
+const FX = (html, t) => '<span class="fx" title="'+esc('Falta no backend: '+(t || 'o servidor ainda não fornece este valor'))+'">'+html+'</span>';
+const pill = (rot, bg, fg) => '<span class="pat-pill" style="background:'+bg+';color:'+fg+'"><span class="pat-pill__dot" style="background:'+fg+'"></span>'+rot+'</span>';
+
+/* ── Tempo e formatos — hoje na maquete: sábado, 14/11/2026 (São Paulo) ── */
+const HOJE = '2026-11-14', HOJE_BR = '14/11/2026', MES_CORRENTE = '2026-11', DADOS_DESDE = '2026-05';
+const pad = n => String(n).padStart(2, '0');
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MES3 = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const rotMes = k => MESES[+k.slice(5)-1]+' de '+k.slice(0,4);
+const rotMesCurto = k => MES3[+k.slice(5)-1]+'/'+k.slice(2,4);
+const capital = s => s.charAt(0).toUpperCase()+s.slice(1);
+function mesesAte(k, n){ const out = []; let y = +k.slice(0,4), m = +k.slice(5); for (let i = 0; i < n; i++) { out.unshift(y+'-'+pad(m)); m--; if (!m) { m = 12; y--; } } return out; }
+const ultimoDia = k => { const y = +k.slice(0,4), m = +k.slice(5); return k+'-'+pad(new Date(y, m, 0).getDate()); };
+const dBR = iso => iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4);
+const f2 = c => (Math.abs(c)/100).toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+const R = c => c === null || c === undefined ? '—' : (c < 0 ? '−' : '')+'R$ '+f2(c);
+const U = c => c === null || c === undefined ? '—' : (c < 0 ? '−' : '')+'US$ '+f2(c);
+const Umicro = m => (m < 0 ? '−' : '')+'US$ '+(Math.abs(m)/1e6).toLocaleString('pt-BR', { minimumFractionDigits:6, maximumFractionDigits:6 });
+const Rk = c => { if (c === null) return '—'; const a = Math.abs(c)/100, s = c < 0 ? '−' : ''; if (a < 10) return s+'R$ '+a.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 }); return a >= 1000 ? s+'R$ '+(a/1000).toLocaleString('pt-BR', { minimumFractionDigits:1, maximumFractionDigits:1 })+' mil' : s+'R$ '+Math.round(a); };
+const P = p => p === null || p === undefined ? '—' : (p < 0 ? '−' : '')+Math.abs(p).toLocaleString('pt-BR', { minimumFractionDigits:1, maximumFractionDigits:1 })+' %';
+const taxa6 = s => s.replace('.', ',');
+const taxa4 = s => (+s).toLocaleString('pt-BR', { minimumFractionDigits:4, maximumFractionDigits:4 });
+function rng(str){ let h = 2166136261; for (const ch of str) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } let s = h >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+
+/* ── Rótulos do contrato (plano da visão, §3 P2–P5 e §4.2) ── */
+const AL = {
+  critical:['Crítico','#FEF2F2','#B91C1C'], warning:['Atenção','#FFFBEB','#B45309'], none:['Normal','#ECFDF5','#047857'],
+  no_subscription:['Sem assinatura','#F1F5F9','#475569'], cost_missing:['Sem custo','#F1F5F9','#64748B']
+};
+const AL_COR = { critical:'#dc2626', warning:'#f59e0b', none:'#10b981', no_subscription:'#94a3b8', cost_missing:'#cbd5e1' };
+const AL_REGRA = { critical:'o custo passou da assinatura', warning:'o custo chegou a 80 % da assinatura ou mais', none:'o custo está abaixo de 80 % da assinatura', no_subscription:'não há assinatura neste mês para comparar', cost_missing:'o mês está sem custo em reais' };
+const SRC = { statement:'Demonstrativo fechado ou pago', statement_reopened:'Demonstrativo reaberto', cancelled:'Demonstrativo cancelado', projection:'Projeção do mês (demonstrativo em aberto)', none:'Sem demonstrativo' };
+const MOTIVO = {
+  no_allocation_rule:['Sem regra de rateio','O serviço ainda não tem regra que diga como dividir o custo entre as organizações. Até ter regra, a plataforma paga.'],
+  unknown_tenant_tag:['Marcação de organização desconhecida','O recurso na AWS tem etiqueta de organização que não bate com nenhuma organização cadastrada. Corrija a etiqueta e rode o rateio.'],
+  ambiguous_tenant_tag:['Marcação ambígua','O recurso tem mais de uma etiqueta de organização. Deixe uma só e rode o rateio.'],
+  missing_usage_basis:['Sem medida de uso','Não houve uso medido no mês para dividir este custo entre as organizações.'],
+  unspecified:['Sem motivo informado','O rateio não informou o motivo.']
+};
+const CST = { legacy_unscoped:'Rateio antigo', no_run:'Sem rateio do mês', no_import:'Rateio vazio', fx_missing:'Sem dólar do mês', currency_unknown:'Moeda desconhecida' };
+const SERV = [['AmazonRDS','Banco de dados',.34],['AmazonECS','Processamento',.24],['AmazonS3','Arquivos e fotos',.17],['AWSLambda','Tarefas agendadas',.1],['AWSDataTransfer','Rede e transferência',.09],['AmazonCloudWatch','Monitoramento',.06]];
+const MESES_DADOS = ['2026-05','2026-06','2026-07','2026-08','2026-09','2026-10'];
+
+/* ── Dados de exemplo (o que o servidor teria) ──
+   sub: preço do mês em centavos (null = sem assinatura própria; 'sem_preco' = plano sem preço)
+   usd: custo de outubro em centavos de dólar; cresc: fator de maio (a série sobe até outubro) */
+const ORGS = [
+  { id:'o01', nome:'Auto Socorro Litoral', sub:489000, usd:21238, cresc:.82 },
+  { id:'o02', nome:'Litoral Santos', sub:null, usd:8820, cresc:.7 },
+  { id:'o03', nome:'Litoral Guarujá', sub:null, usd:4675, cresc:.5, inicio:'2026-07' },
+  { id:'o04', nome:'Frota Vale Transportes', sub:329000, usd:49810, cresc:.68, out:{ src:'statement', cred:29000 } },
+  { id:'o05', nome:'Vale Taubaté', sub:null, usd:6140, cresc:.8 },
+  { id:'o06', nome:'Guincho Exemplo Ltda', sub:199000, usd:40290, cresc:.52 },
+  { id:'o07', nome:'Reboque Rápido Norte', sub:149000, usd:4830, cresc:.9 },
+  { id:'o08', nome:'Auto Socorro Estrela', sub:99000, usd:15160, cresc:.75 },
+  { id:'o09', nome:'Estrela Campinas', sub:null, usd:4010, cresc:.6 },
+  { id:'o10', nome:'Pátio Central Logística', sub:249000, usd:10175, cresc:.95, out:{ src:'statement_reopened', est:true } },
+  { id:'o11', nome:'Remoções Serra Azul', sub:59000, usd:2240, cresc:.6, inicio:'2026-09', out:{ src:'projection', est:true } },
+  { id:'o12', nome:'Assistência 24h Paulista', sub:'sem_preco', usd:3410, cresc:.85 },
+  { id:'o13', nome:'Transportes Ipê', sub:79000, usd:1430, cresc:1.1, cancelaEm:'2026-10' }
+];
+const ORG = Object.fromEntries(ORGS.map(o => [o.id, o]));
+const PLAT_USD = { '2026-05':33120, '2026-06':34480, '2026-07':35210, '2026-08':36050, '2026-09':37390, '2026-10':38640 };
+const NR_USD = { '2026-05':[['no_allocation_rule',2190],['ambiguous_tenant_tag',380]], '2026-06':[['no_allocation_rule',2275]], '2026-07':[['no_allocation_rule',2390]], '2026-08':[['no_allocation_rule',2511],['missing_usage_basis',420]], '2026-09':[['no_allocation_rule',2604]], '2026-10':[['no_allocation_rule',2815],['unknown_tenant_tag',1312]] };
+const RES_MICRO = { '2026-05':1404, '2026-06':2210, '2026-07':-980, '2026-08':1625, '2026-09':-2140, '2026-10':3812 };
+const IMPORTS = {
+  '2026-05':[{ em:'04/06/2026 09:05', linhas:2811 }], '2026-06':[{ em:'03/07/2026 08:58', linhas:2904 }], '2026-07':[{ em:'05/08/2026 09:20', linhas:2987 }],
+  '2026-08':[{ em:'03/09/2026 09:11', linhas:3040 }], '2026-09':[{ em:'05/10/2026 09:02', linhas:3118 }], '2026-10':[{ em:'04/11/2026 09:12', linhas:3214 }]
+};
+let CAMBIO, GRUPOS, VINCULOS, SEQ;
+function iniciarDados(){
+  SEQ = 4;
+  CAMBIO = {
+    '2026-05':[{ v:1, r:'5.621800', em:'04/06/2026 10:02' }], '2026-06':[{ v:1, r:'5.463000', em:'03/07/2026 09:40' }],
+    '2026-07':[{ v:1, r:'5.501200', em:'05/08/2026 11:15' }], '2026-08':[{ v:1, r:'5.448700', em:'03/09/2026 09:58' }],
+    '2026-09':[{ v:1, r:'5.360100', em:'05/10/2026 10:20' }], '2026-10':[{ v:1, r:'5.398000', em:'04/11/2026 09:30' },{ v:2, r:'5.412300', em:'05/11/2026 10:41' }]
+  };
+  GRUPOS = [
+    { id:'g1', nome:'Grupo Litoral', obs:'Matriz em Santos, duas filiais.' },
+    { id:'g2', nome:'Grupo Vale', obs:'Frota do Vale do Paraíba.' },
+    { id:'g3', nome:'Grupo Estrela', obs:'' }
+  ];
+  VINCULOS = [
+    { org:'o01', g:'g1', de:'2026-08-01', ate:null }, { org:'o02', g:'g1', de:'2026-08-01', ate:null }, { org:'o03', g:'g1', de:'2026-10-01', ate:null },
+    { org:'o04', g:'g2', de:'2026-09-01', ate:null }, { org:'o05', g:'g2', de:'2026-09-01', ate:null }, { org:'o07', g:'g2', de:'2026-12-01', ate:null },
+    { org:'o08', g:'g3', de:'2026-10-01', ate:null }, { org:'o09', g:'g3', de:'2026-10-01', ate:null }, { org:'o06', g:'g3', de:'2026-08-01', ate:'2026-10-01' }
+  ];
+}
+const grupoDe = (org, dia) => { const v = VINCULOS.find(x => x.org === org && x.de <= dia && (x.ate === null || dia < x.ate)); return v ? v.g : null; };
+const nomeGrupo = g => (GRUPOS.find(x => x.id === g) || {}).nome || 'Grupo';
+const rateMicro = s => Math.round(parseFloat(s) * 1e6);
+function centsDeUsd(usdC, rM){ const p = BigInt(Math.abs(usdC)) * BigInt(rM); const c = Number((p + 500000n) / 1000000n); return usdC < 0 ? -c : c; }
+function centsDeMicro(mic, rM){ const p = BigInt(Math.abs(mic)) * BigInt(rM); const c = Number((p + 5000000000n) / 10000000000n); return mic < 0 ? -c : c; }
+function alertFor(sub, cost){ if (cost === null) return 'cost_missing'; if (sub === null) return 'no_subscription'; if (cost > sub) return 'critical'; if (sub > 0 && cost * 100 >= 80 * sub) return 'warning'; return 'none'; }
+function pctDe(m, sub){ if (m === null || sub === null || sub === 0) return null; const x = m * 10000 / sub; return Math.sign(x) * Math.round(Math.abs(x)) / 100; }
+const sumOrNull = xs => xs.some(x => x === null) ? null : xs.reduce((a, x) => a + x, 0);
+const sumIgnoringNull = xs => xs.every(x => x === null) ? null : xs.reduce((a, x) => a + (x || 0), 0);
+
+function usdDoMes(o, mes){
+  const i = MESES_DADOS.indexOf(mes); if (i < 0) return null;
+  const f = o.cresc + (1 - o.cresc) * i / 5, ruido = i === 5 ? 1 : .96 + .08 * rng(o.id+mes)();
+  return Math.round(o.usd * f * ruido);
+}
+function assinaturaDoMes(o, mes){
+  if (o.sub === null) return { sub:null, stmt:null, cred:null, src:'none', skip:'no_subscription', est:false };
+  if (o.sub === 'sem_preco') return { sub:null, stmt:null, cred:null, src:'none', skip:'plan_without_price', est:false };
+  if (o.cancelaEm && mes === o.cancelaEm) return { sub:0, stmt:0, cred:0, src:'cancelled', skip:null, est:false };
+  if (o.cancelaEm && mes > o.cancelaEm) return { sub:null, stmt:null, cred:null, src:'none', skip:'no_subscription', est:false };
+  if (mes === MES_CORRENTE) return { sub:o.sub, stmt:o.sub, cred:0, src:'projection', skip:null, est:true };
+  if (mes === '2026-10' && o.out) { const cred = o.out.cred || 0; return { sub:o.sub, stmt:o.sub - cred, cred, src:o.out.src, skip:null, est:!!o.out.est }; }
+  return { sub:o.sub, stmt:o.sub, cred:0, src:'statement', skip:null, est:false };
+}
+const versaoAtual = mes => { const h = CAMBIO[mes]; return h && h.length ? h[h.length - 1] : null; };
+
+/* Simula GET /platform/billing/overview?period=mes (as três visões de uma vez) */
+function visao(mes, estado){
+  if (mes < DADOS_DESDE || mes > MES_CORRENTE) return { vazio:true, mes };
+  const dia = ultimoDia(mes), fx = estado === 'fx_missing' ? null : versaoAtual(mes);
+  let status = mes === MES_CORRENTE ? 'no_run' : 'ok';
+  if (estado === 'no_run' || estado === 'presa') status = 'no_run';
+  else if (estado === 'no_import') status = 'no_import';
+  else if (estado === 'fx_missing') status = 'fx_missing';
+  else if (estado === 'currency_unknown') status = 'currency_unknown';
+  else if (estado === 'legacy' && status === 'ok') status = 'legacy_unscoped';
+  if (status === 'ok' && !fx) status = 'fx_missing';
+  const custoOk = status === 'ok' || status === 'legacy_unscoped', origOk = custoOk || status === 'fx_missing';
+  const rM = custoOk ? rateMicro(fx.r) : null;
+  const linhas = ORGS.filter(o => (o.inicio || '2026-01') <= mes).map(o => {
+    const a = assinaturaDoMes(o, mes), usd = origOk ? usdDoMes(o, mes) : null;
+    const cost = custoOk ? centsDeUsd(usd, rM) : null, gid = grupoDe(o.id, dia);
+    const margin = a.sub !== null && cost !== null ? a.sub - cost : null;
+    return { id:o.id, nome:o.nome, gid, ...a, usd, cost, margin, pct:pctDe(margin, a.sub), alert:alertFor(a.sub, cost) };
+  });
+  const plat = PLAT_USD[mes] || 0, nr = (NR_USD[mes] || []), res = RES_MICRO[mes] || 0;
+  const tenantsUsd = linhas.reduce((s, l) => s + (usdDoMes(ORG[l.id], mes) || 0), 0), nrUsd = nr.reduce((s, x) => s + x[1], 0);
+  const totalMicro = (tenantsUsd + plat + nrUsd) * 10000 + res;
+  const g = { subscriptionTotal: sumIgnoringNull(linhas.map(l => l.sub)) || 0 };
+  g.tenantsCost = custoOk ? linhas.reduce((s, l) => s + l.cost, 0) : null;
+  g.platformOwnCost = custoOk ? centsDeUsd(plat, rM) : null;
+  g.porMotivo = nr.map(([reason, u]) => ({ reason, usd: origOk ? u : null, cost: custoOk ? centsDeUsd(u, rM) : null }));
+  g.unallocatedOther = custoOk ? centsDeUsd(nrUsd, rM) : null;
+  g.arred = custoOk ? centsDeMicro(res, rM) : null;
+  g.totalCost = custoOk ? centsDeMicro(totalMicro, rM) : null;
+  g.conv = custoOk ? g.totalCost - (g.tenantsCost + g.platformOwnCost + g.unallocatedOther + g.arred) : null;
+  g.margin = g.totalCost === null ? null : g.subscriptionTotal - g.totalCost;
+  g.pct = pctDe(g.margin, g.subscriptionTotal); g.alert = alertFor(g.subscriptionTotal, g.totalCost);
+  g.original = origOk ? { tenants:tenantsUsd, plat, nr:nrUsd, res, total:totalMicro } : null;
+  const grupos = [];
+  GRUPOS.forEach(gr => {
+    const m = linhas.filter(l => l.gid === gr.id); if (!m.length) return;
+    const sub = sumIgnoringNull(m.map(l => l.sub)), cost = custoOk ? sumOrNull(m.map(l => l.cost)) : null;
+    const margin = sub !== null && cost !== null ? sub - cost : null;
+    grupos.push({ id:gr.id, nome:gr.nome, membros:m, semAss:m.filter(l => l.sub === null).length, sub, cred:sumIgnoringNull(m.map(l => l.cred)), cost, margin, pct:pctDe(margin, sub), alert:alertFor(sub, cost), est:m.some(l => l.est) });
+  });
+  const sg = linhas.filter(l => !l.gid);
+  if (sg.length) { const sub = sumIgnoringNull(sg.map(l => l.sub)), cost = custoOk ? sumOrNull(sg.map(l => l.cost)) : null, margin = sub !== null && cost !== null ? sub - cost : null;
+    grupos.push({ id:'sem', nome:'Sem grupo', membros:sg, semAss:sg.filter(l => l.sub === null).length, sub, cred:sumIgnoringNull(sg.map(l => l.cred)), cost, margin, pct:pctDe(margin, sub), alert:null, est:sg.some(l => l.est) }); }
+  const imports = (IMPORTS[mes] || []).slice();
+  if (estado === 'multi' && mes === '2026-10') imports.push({ em:'06/11/2026 14:20', linhas:41 });
+  if ((status === 'no_run' && mes !== MES_CORRENTE && estado !== 'presa') || status === 'no_import') imports.length = 0;
+  const runs = status === 'no_run' ? (estado === 'presa' ? [{ em:'04/11/2026 09:13', st:'processing' }] : []) : [{ em: imports.length ? imports[imports.length - 1].em.replace(/:(\d\d)$/, (x, mm) => ':'+pad(+mm + 1)) : '04/11/2026 09:13', st:'completed' }];
+  return { mes, status, custoOk, origOk, fx, linhas, grupos, g, imports, runs, warnings: estado === 'multi' && mes === '2026-10' ? ['multiple_imports_in_month'] : [] };
+}
+
+/* ── Estado da maquete ── */
+const G = { mes:'2026-10', estado:'normal', papel:'admin', cen:'ok', opcao:'a' };
+const S = {};
+function iniciarEstado(){
+  S.a = { modo:'tenant', alvo:null, aberta:null, busca:'' };
+  S.b = { modo:'tenant', alvo:null, aberta:null, busca:'' };
+  S.c = { modo:'group', alvo:null, aberta:null, busca:'' };
+}
+const podeGerir = () => G.papel === 'admin';
+const V = () => visao(G.mes, G.estado);
+const serie = (mes, n) => mesesAte(mes, n).map(m => visao(m, m === G.mes ? G.estado : 'normal'));
+
+/* ── Filtros (bloco clicável → lista filtrada) ── */
+const ALVO_ROT = { custo:'Com custo no mês', sub:'Com assinatura no mês', est:'Assinatura estimada', alerta:'Em alerta (crítico ou atenção)', semass:'Sem assinatura própria', margem:'Menor margem primeiro',
+  'alert:critical':'Situação: crítico', 'alert:warning':'Situação: atenção', 'alert:none':'Situação: normal', 'alert:no_subscription':'Sem assinatura própria', 'alert:cost_missing':'Situação: sem custo',
+  'faixa:neg':'Margem negativa', 'faixa:0':'Margem de 0 a 20 %', 'faixa:20':'Margem de 20 a 50 %', 'faixa:50':'Margem acima de 50 %',
+  orgs:'Parcela: organizações', plat:'Parcela: custo da plataforma', nr:'Parcela: não rateado', res:'Parcela: resíduos', arr:'Parcela: arredondamento', conv:'Parcela: conversão' };
+const GLOBAIS = ['orgs','plat','nr','res','arr','conv'];
+function rotAlvo(k){ if (k.startsWith('org:')) return 'Organização: '+ORG[k.slice(4)].nome; if (k.startsWith('nr:')) return 'Não rateado: '+MOTIVO[k.slice(3)][0].toLowerCase(); return ALVO_ROT[k] || k; }
+function faixa(p){ if (p === null) return null; if (p < 0) return 'neg'; if (p < 20) return '0'; if (p < 50) return '20'; return '50'; }
+function filtraOrg(l, k){
+  if (!k) return true;
+  if (k === 'custo') return l.cost !== null; if (k === 'sub') return l.sub !== null; if (k === 'est') return l.est;
+  if (k === 'alerta') return l.alert === 'critical' || l.alert === 'warning'; if (k === 'semass') return l.sub === null;
+  if (k.startsWith('alert:')) return l.alert === k.slice(6); if (k.startsWith('faixa:')) return faixa(l.pct) === k.slice(6);
+  if (k.startsWith('org:')) return l.id === k.slice(4); return true;
+}
+const ORDEM_AL = { critical:0, warning:1, none:2, no_subscription:3, cost_missing:4 };
+function linhasOrg(v, d){
+  const st = S[v], q = st.busca.trim().toLowerCase();
+  let ls = d.linhas.filter(l => filtraOrg(l, st.alvo) && (!q || l.nome.toLowerCase().includes(q) || (l.gid && nomeGrupo(l.gid).toLowerCase().includes(q))));
+  if (st.alvo === 'margem') ls.sort((x, y) => (x.pct === null) - (y.pct === null) || (x.pct || 0) - (y.pct || 0));
+  else ls.sort((x, y) => ORDEM_AL[x.alert] - ORDEM_AL[y.alert] || (y.cost || 0) - (x.cost || 0) || x.nome.localeCompare(y.nome));
+  return ls;
+}
+function parcelas(d){
+  const g = d.g, o = d.g.original, n = d.linhas.length, ps = [
+    { k:'orgs', rot:'Organizações ('+n+')', cost:g.tenantsCost, usd:o ? o.tenants : null, cor:'#2563eb' },
+    { k:'plat', rot:'Custo da plataforma', cost:g.platformOwnCost, usd:o ? o.plat : null, cor:'#7c3aed' }
+  ];
+  g.porMotivo.forEach(m => ps.push({ k:'nr:'+m.reason, rot:'Não rateado · '+MOTIVO[m.reason][0].toLowerCase(), cost:m.cost, usd:m.usd, cor:'#f59e0b' }));
+  ps.push({ k:'arr', rot:'Resíduo de arredondamento', cost:g.arred, usdMicro:o ? o.res : null, cor:'#94a3b8' });
+  ps.push({ k:'conv', rot:'Resíduo de conversão', cost:g.conv, usd:null, cor:'#cbd5e1' });
+  return ps;
+}
+function filtraParcela(p, k){ if (!k || !GLOBAIS.concat([]).includes(k.split(':')[0])) return true; if (k === 'nr') return p.k.startsWith('nr:'); if (k === 'res') return p.k === 'arr' || p.k === 'conv'; if (k.startsWith('nr:')) return p.k === k; return p.k === k; }
+
+/* ── Peças comuns ── */
+function cabecalho(v, d){
+  const fx = d.fx, up = d.runs.length && d.runs[0].st === 'completed' ? 'atualizado em '+d.runs[0].em.slice(0,5)+' '+d.runs[0].em.slice(11) : 'sem rateio concluído';
+  const opts = mesesAte(MES_CORRENTE, 12).reverse().map(m => '<option value="'+m+'"'+(m === G.mes ? ' selected' : '')+'>'+capital(rotMes(m))+'</option>').join('');
+  return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">Plataforma · custo e margem</div><h1 class="pat-page-header__title">Cloud Billing</h1>'
+    +'<p class="pat-page-header__subtitle">Custo da nuvem e margem por organização · '+rotMes(G.mes)+' · '+up+'</p></div>'
+    +'<div class="pat-page-header__actions"><label class="mes-sel">'+ic('calendar',14)+'<span class="sr">Mês de referência</span><select data-mes aria-label="Mês de referência">'+opts+'</select></label>'
+    +'<button type="button" class="pat-btn" data-acao="fx">'+ic('dollar',14)+'Dólar do mês '+(fx ? '<b>'+taxa4(fx.r)+'</b>' : '<b>—</b>')+'</button>'
+    +(podeGerir() ? '<button type="button" class="pat-btn" data-acao="rodar">'+ic('play',13)+'Rodar rateio do mês</button><button type="button" class="pat-btn pat-btn--primary" data-acao="importar">'+ic('upload',14)+'Importar arquivo de custo</button>' : '')
+    +'</div></div>';
+}
+function faixasDeAviso(d){
+  const m = rotMes(G.mes), out = [];
+  if (G.estado === 'desatualizado') out.push('<div class="pat-banner pat-banner--warning" role="status">'+ic('clock',16)+'<span><b>Dados desatualizados.</b> A atualização falhou às 00:10. Os últimos dados confirmados (13/11 23:40) continuam na tela enquanto a plataforma tenta de novo.</span><button type="button" class="pat-btn" data-acao="tentar">Tentar de novo</button></div>');
+  const acaoImp = podeGerir() ? '<button type="button" class="pat-btn" data-acao="importar">Importar arquivo de custo</button>' : '';
+  const acaoRun = podeGerir() ? '<button type="button" class="pat-btn" data-acao="rodar">Rodar rateio do mês</button>' : '';
+  if (d.status === 'no_run' && G.estado === 'presa') out.push('<div class="pat-banner pat-banner--warning" role="status">'+ic('alert',16)+'<span><b>O rateio de '+m+' está em processamento desde 04/11 09:13 e não terminou.</b> Custo e margem ficam em branco até um rateio concluir. Rode o rateio de novo.</span>'+acaoRun+'</div>');
+  else if (d.status === 'no_run') out.push('<div class="pat-banner pat-banner--warning" role="status">'+ic('alert',16)+'<span><b>'+capital(m)+' ainda não tem rateio.</b> '+(G.mes === MES_CORRENTE ? 'O arquivo de custo da AWS chega depois que o mês fecha. Até lá, as assinaturas aparecem como projeção e custo e margem ficam em branco.' : 'Importe o arquivo de custo do mês: o rateio roda sozinho em seguida. Custo e margem ficam em branco até lá, nunca zero.')+'</span>'+(G.mes === MES_CORRENTE ? '' : acaoImp)+'</div>');
+  if (d.status === 'no_import') out.push('<div class="pat-banner pat-banner--warning" role="status">'+ic('alert',16)+'<span><b>O rateio de '+m+' rodou sem arquivo de custo e ficou vazio.</b> Importe o arquivo completo do mês; o rateio roda de novo sozinho.</span>'+acaoImp+'</div>');
+  if (d.status === 'legacy_unscoped') out.push('<div class="pat-banner pat-banner--info" role="status">'+ic('alert',16)+'<span><b>Rateio antigo.</b> Este rateio foi feito antes de guardar de qual arquivo veio. Os valores aparecem, mas rode o rateio de novo para confirmar.</span>'+acaoRun+'</div>');
+  if (d.status === 'fx_missing') out.push('<div class="pat-banner pat-banner--warning" role="status">'+ic('dollar',16)+'<span><b>Falta o dólar de '+m+'.</b> Sem a taxa do mês, custo e margem em reais ficam em branco. Importado no mês: <b class="pat-mono">'+Umicro(d.g.original.total).replace(/(\d),(\d{2})\d{4}$/, '$1,$2')+'</b>.</span>'+(podeGerir() ? '<button type="button" class="pat-btn" data-acao="fx">Digitar o dólar do mês</button>' : '')+'</div>');
+  if (d.status === 'currency_unknown') out.push('<div class="pat-banner pat-banner--error" role="status">'+ic('alert',16)+'<span><b>O arquivo de '+m+' não informa a moeda.</b> Custo e margem ficam em branco até importar um arquivo com a moeda.</span>'+acaoImp+'</div>');
+  if (d.warnings.includes('multiple_imports_in_month')) out.push('<div class="pat-banner pat-banner--info" role="status">'+ic('layers',16)+'<span><b>'+capital(m)+' tem 2 arquivos de custo importados.</b> A tela usa o mais recente (06/11 14:20) e não soma os dois. Se um deles for só parte do mês, importe o arquivo completo.</span><button type="button" class="pat-btn" data-acao="importacoes">Ver importações do mês</button></div>');
+  return out.join('');
+}
+function kpiBtn(v, o){
+  const pr = S[v].alvo === o.alvo;
+  return '<button type="button" class="pat-kpi" data-alvo="'+o.alvo+'" aria-pressed="'+pr+'">'
+    +'<div class="pat-kpi__head"><span class="pat-kpi__tile" style="background:'+o.tileBg+';color:'+o.tileFg+'">'+ic(o.ic,15)+'</span>'+(o.tag ? '<span class="pat-kpi__tag" style="background:'+o.tag[1]+';color:'+o.tag[2]+'">'+o.tag[0]+'</span>' : '')+'</div>'
+    +'<div class="pat-kpi__value">'+o.valor+'</div><div class="pat-kpi__label">'+o.rot+'</div><div class="pat-kpi__hint">'+o.dica+'</div>'+(o.spark || '')+'</button>';
+}
+function contar(d){
+  const c = { critical:0, warning:0, none:0, no_subscription:0, cost_missing:0, est:0, fechadas:0, semass:0 };
+  d.linhas.forEach(l => { c[l.alert]++; if (l.sub === null) c.semass++; if (l.est) c.est++; if (l.src === 'statement' || l.src === 'cancelled') c.fechadas++; });
+  return c;
+}
+function kpis(d){
+  const g = d.g, c = contar(d), ant = visao(mesesAte(G.mes, 2)[0], 'normal'), fx = d.fx;
+  const dicaAnt = (val) => ant.vazio ? '' : capital(MESES[+ant.mes.slice(5)-1])+': '+val(ant);
+  const semCusto = d.custoOk ? null : CST[d.status];
+  return {
+    custo:{ alvo:'custo', ic:'cloud', tileBg:'#eff6ff', tileFg:'#2563eb', rot:'Custo total do mês', valor:R(g.totalCost), tag: semCusto ? [semCusto,'#F1F5F9','#64748B'] : ['dólar v'+fx.v,'#EFF6FF','#2563EB'], dica: d.origOk && g.original ? Umicro(g.original.total).replace(/(\d),(\d{2})\d{4}$/, '$1,$2')+(d.custoOk ? ' · '+dicaAnt(a => Rk(a.g.totalCost)) : '') : 'sem custo importado' },
+    plat:{ alvo:'plat', ic:'server', tileBg:'#f5f3ff', tileFg:'#7c3aed', rot:'Custo da plataforma', valor:R(g.platformOwnCost), tag:['linha própria','#F5F3FF','#7C3AED'], dica: d.custoOk ? 'fora do não rateado · '+dicaAnt(a => Rk(a.g.platformOwnCost)) : (d.origOk ? U(g.original.plat) : '—') },
+    nr:{ alvo:'nr', ic:'alert', tileBg:'#fffbeb', tileFg:'#b45309', rot:'Não rateado', valor:R(g.unallocatedOther), tag: g.porMotivo.length ? [g.porMotivo.length+(g.porMotivo.length > 1 ? ' motivos' : ' motivo'),'#FFFBEB','#B45309'] : null, dica: g.porMotivo.map(m => MOTIVO[m.reason][0].toLowerCase()).join(' · ') || 'nada sem rateio' },
+    res:{ alvo:'res', ic:'scale', tileBg:'#f1f5f9', tileFg:'#475569', rot:'Resíduo de arredondamento', valor:R(g.arred), tag: d.custoOk ? ['conversão '+R(g.conv),'#F1F5F9','#475569'] : null, dica:'centavos do rateio e do câmbio' },
+    sub:{ alvo:'sub', ic:'receipt', tileBg:'#ecfdf5', tileFg:'#047857', rot:'Assinaturas do mês', valor:R(g.subscriptionTotal), tag: c.est ? [c.est+(c.est > 1 ? ' estimativas' : ' estimativa'),'#FFFBEB','#B45309'] : ['fechadas','#ECFDF5','#047857'], dica:'antes do crédito aplicado' },
+    margem:{ alvo:'margem', ic:'trend', tileBg:'#ecfdf5', tileFg:'#15803d', rot:'Margem global', valor:R(g.margin)+(g.pct !== null ? '<small>'+P(g.pct)+'</small>' : ''), tag:[AL[g.alert][0],AL[g.alert][1],AL[g.alert][2]], dica: d.custoOk ? 'assinaturas menos o custo total · '+dicaAnt(a => P(a.g.pct)) : 'sem custo, sem margem' },
+    alerta:{ alvo:'alerta', ic:'alert', tileBg:'#fef2f2', tileFg:'#b91c1c', rot:'Organizações em alerta', valor: d.custoOk ? String(c.critical + c.warning) : '—', tag: !d.custoOk ? ['sem custo','#F1F5F9','#64748B'] : c.critical ? [c.critical+(c.critical > 1 ? ' críticas' : ' crítica'),'#FEF2F2','#B91C1C'] : (c.warning ? ['atenção','#FFFBEB','#B45309'] : ['nenhuma','#ECFDF5','#047857']), dica: c.critical+' crítica · '+c.warning+' em atenção · regra 80 % e 100 %' },
+    semass:{ alvo:'semass', ic:'building', tileBg:'#f1f5f9', tileFg:'#475569', rot:'Sem assinatura própria', valor:String(c.semass), tag:['a matriz assina','#EFF6FF','#2563EB'], dica:'filiais de grupo e plano sem preço' }
+  };
+}
+
+/* ── Gráficos (SVG inline, sem biblioteca — PD-004) ── */
+function hitMes(m, x, w, top, h, extra){
+  const pr = m === G.mes;
+  return '<g role="button" tabindex="0" data-alvo="mes:'+m+'" aria-pressed="'+pr+'" aria-label="'+esc(capital(rotMes(m))+(extra ? ': '+extra : ''))+'"><rect class="hit foco" x="'+x+'" y="'+top+'" width="'+w+'" height="'+h+'" rx="6"/>'+'</g>';
+}
+function graficoLinhas(sr){
+  const W = 560, H = 196, x0 = 52, x1 = 552, y0 = 158, y1 = 14, n = sr.length, cw = (x1 - x0) / n;
+  const vals = sr.flatMap(s => s.vazio ? [] : [s.g.subscriptionTotal, s.g.totalCost].filter(x => x !== null));
+  const mx = Math.max(100000, ...vals) * 1.1, sy = v => y0 - v / mx * (y0 - y1), sx = i => x0 + (i + .5) * cw;
+  let o = '<svg class="svg-chart" viewBox="0 0 '+W+' '+H+'" role="group" aria-label="Assinaturas e custo total dos últimos 6 meses">';
+  for (let k = 0; k <= 4; k++) { const v = mx / 1.1 * k / 4, y = sy(v); o += '<line x1="'+x0+'" x2="'+x1+'" y1="'+y+'" y2="'+y+'" stroke="#f1f5f9"/><text x="'+(x0 - 6)+'" y="'+(y + 3)+'" font-size="11" fill="#94a3b8" text-anchor="end">'+Rk(Math.round(v))+'</text>'; }
+  sr.forEach((s, i) => { o += hitMes(s.mes, x0 + i * cw + 3, cw - 6, y1 - 6, y0 - y1 + 34, s.vazio ? 'sem dados' : 'assinaturas '+R(s.g.subscriptionTotal)+', custo '+R(s.g.totalCost)+', margem '+R(s.g.margin)); });
+  const linha = (get, cor, tracejado) => { let d = '', pts = ''; sr.forEach((s, i) => { const v = s.vazio ? null : get(s); if (v === null) return; d += (d ? ' L' : 'M')+sx(i).toFixed(1)+' '+sy(v).toFixed(1); pts += '<circle cx="'+sx(i).toFixed(1)+'" cy="'+sy(v).toFixed(1)+'" r="3.5" fill="#fff" stroke="'+cor+'" stroke-width="2" pointer-events="none"/>'; }); return '<path d="'+d+'" fill="none" stroke="'+cor+'" stroke-width="2.4"'+(tracejado ? ' stroke-dasharray="5 4"' : '')+' pointer-events="none"/>'+pts; };
+  sr.forEach((s, i) => { if (s.vazio || s.g.margin === null) return; const yA = sy(s.g.subscriptionTotal), yB = sy(s.g.totalCost); o += '<rect x="'+(sx(i) - 7)+'" y="'+Math.min(yA, yB)+'" width="14" height="'+Math.abs(yA - yB)+'" rx="3" fill="'+(s.g.margin >= 0 ? '#bbf7d0' : '#fecaca')+'" pointer-events="none"/>'; });
+  o += linha(s => s.g.subscriptionTotal, '#2563eb') + linha(s => s.g.totalCost, '#ef4444');
+  sr.forEach((s, i) => { o += '<text x="'+sx(i)+'" y="'+(y0 + 16)+'" font-size="12" font-weight="'+(s.mes === G.mes ? 800 : 600)+'" fill="'+(s.mes === G.mes ? '#2563eb' : '#64748b')+'" text-anchor="middle" pointer-events="none">'+rotMesCurto(s.mes)+'</text>'
+    +'<text x="'+sx(i)+'" y="'+(y0 + 30)+'" font-size="9.5" font-weight="700" fill="'+(!s.vazio && s.g.margin !== null && s.g.margin < 0 ? '#b91c1c' : '#15803d')+'" text-anchor="middle" pointer-events="none">'+(s.vazio || s.g.pct === null ? '—' : P(s.g.pct))+'</text>'; });
+  return o + '</svg>';
+}
+function spark(vals, cor, cor2, vals2){
+  const W = 200, H = 30, all = vals.concat(vals2 || []).filter(x => x !== null); if (!all.length) return '<svg class="kpi-spark" viewBox="0 0 200 30" aria-hidden="true"></svg>';
+  const mn = Math.min(0, ...all), mx = Math.max(...all, 1), sx = i => 4 + i * (W - 8) / (vals.length - 1), sy = v => H - 3 - (v - mn) / (mx - mn || 1) * (H - 6);
+  const path = vs => { let d = ''; vs.forEach((v, i) => { if (v === null) return; d += (d ? ' L' : 'M')+sx(i).toFixed(1)+' '+sy(v).toFixed(1); }); return d; };
+  let o = '<svg class="kpi-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" aria-hidden="true">';
+  if (vals2) o += '<path d="'+path(vals2)+'" fill="none" stroke="'+cor2+'" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-dasharray="3 3"/>';
+  o += '<path d="'+path(vals)+'" fill="none" stroke="'+cor+'" stroke-width="2" vector-effect="non-scaling-stroke"/>';
+  const ul = vals.length - 1; if (vals[ul] !== null) o += '<circle cx="'+sx(ul)+'" cy="'+sy(vals[ul])+'" r="2.5" fill="'+cor+'"/>';
+  return o + '</svg>';
+}
+function barraCustos(v, d, itens){
+  const tot = Math.max(1, ...itens.map(x => Math.abs(x.cost || 0)));
+  return itens.map(x => '<button type="button" class="bar-compact-btn" title="'+esc(x.rot+': '+R(x.cost))+'" data-alvo="'+x.alvo+'" aria-pressed="'+(S[v].alvo === x.alvo)+'"><span class="bar-compact-btn__label"><span class="bar-compact-btn__dot" style="background:'+x.cor+'"></span>'+esc(x.rot)+'</span><span class="bar-compact-btn__track"><span class="bar-compact-btn__fill" style="width:'+(x.cost === null ? 0 : Math.max(1.5, Math.abs(x.cost) / tot * 100))+'%;background:'+x.cor+'"></span></span><span class="bar-compact-btn__val">'+R(x.cost)+'</span></button>').join('');
+}
+function dispersao(v, d){
+  const W = 760, H = 292, x0 = 132, x1 = 744, y0 = 250, y1 = 16, lx = 46;
+  const comSub = d.linhas.filter(l => l.sub !== null && l.cost !== null), semSub = d.linhas.filter(l => l.sub === null && l.cost !== null);
+  if (!d.custoOk) return '<div class="pat-table__empty"><div class="pat-table__empty-title">Sem custo no mês</div><div class="pat-table__empty-detail">A dispersão volta quando o mês tiver custo em reais.</div></div>';
+  const Xm = Math.max(...comSub.map(l => l.sub), 100000) * 1.08, Ym = Math.max(...d.linhas.map(l => l.cost || 0), 100000) * 1.12;
+  const sx = val => x0 + val / Xm * (x1 - x0), sy = val => y0 - val / Ym * (y0 - y1);
+  const pol = pts => pts.map(p => sx(p[0]).toFixed(1)+','+sy(p[1]).toFixed(1)).join(' ');
+  let o = '<svg class="svg-chart" viewBox="0 0 '+W+' '+H+'" role="group" aria-label="Assinatura e custo de cada organização"><defs><clipPath id="cp-'+v+'"><rect x="'+x0+'" y="'+y1+'" width="'+(x1 - x0)+'" height="'+(y0 - y1)+'"/></clipPath></defs>';
+  o += '<g clip-path="url(#cp-'+v+')"><polygon points="'+pol([[0,0],[Xm,0],[Xm,Xm*.8]])+'" fill="#f0fdf4"/><polygon points="'+pol([[0,0],[Xm,Xm*.8],[Xm,Xm]])+'" fill="#fffbeb"/><polygon points="'+pol([[0,0],[Xm,Xm],[Xm,Ym*4],[0,Ym*4]])+'" fill="#fef2f2"/>'
+    +'<line x1="'+sx(0)+'" y1="'+sy(0)+'" x2="'+sx(Xm)+'" y2="'+sy(Xm)+'" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4 3"/><line x1="'+sx(0)+'" y1="'+sy(0)+'" x2="'+sx(Xm)+'" y2="'+sy(Xm*.8)+'" stroke="#d97706" stroke-width="1.2" stroke-dasharray="4 3"/></g>';
+  o += '<rect x="'+(lx - 34)+'" y="'+y1+'" width="68" height="'+(y0 - y1)+'" rx="6" fill="#f8fafc"/><text x="'+lx+'" y="'+(y0 + 14)+'" font-size="9.5" fill="#64748b" text-anchor="middle">sem</text><text x="'+lx+'" y="'+(y0 + 25)+'" font-size="9.5" fill="#64748b" text-anchor="middle">assinatura</text>';
+  o += '<line x1="'+x0+'" x2="'+x1+'" y1="'+y0+'" y2="'+y0+'" stroke="#cbd5e1"/><line x1="'+x0+'" x2="'+x0+'" y1="'+y1+'" y2="'+y0+'" stroke="#cbd5e1"/>';
+  for (let k = 1; k <= 3; k++) { const vx = Xm / 1.08 * k / 3, vy = Ym / 1.12 * k / 3; o += '<text x="'+sx(vx)+'" y="'+(y0 + 14)+'" font-size="9.5" fill="#94a3b8" text-anchor="middle">'+Rk(Math.round(vx))+'</text><text x="'+(x0 - 6)+'" y="'+(sy(vy) + 3)+'" font-size="9.5" fill="#94a3b8" text-anchor="end">'+Rk(Math.round(vy))+'</text>'; }
+  o += '<text x="'+x1+'" y="'+(y0 + 27)+'" font-size="10" font-weight="700" fill="#475569" text-anchor="end">assinatura do mês →</text><text x="'+(x0 + 4)+'" y="'+(y1 + 10)+'" font-size="10" font-weight="700" fill="#475569">↑ custo</text>';
+  const t100 = Math.min(Xm, Ym) * .5, t80 = Math.min(Xm, Ym / .8) * .72;
+  o += '<text x="'+(sx(t100) - 8).toFixed(1)+'" y="'+(sy(t100) - 4).toFixed(1)+'" font-size="9.5" font-weight="800" fill="#b91c1c" text-anchor="end">custo = assinatura</text><text x="'+(sx(t80) + 8).toFixed(1)+'" y="'+(sy(t80 * .8) + 12).toFixed(1)+'" font-size="9.5" font-weight="800" fill="#b45309">custo = 80 %</text>';
+  const ponto = (l, cx, cy, rotulo) => { const pr = S[v].alvo === 'org:'+l.id; return '<g class="ponto" role="button" tabindex="0" data-alvo="org:'+l.id+'" aria-pressed="'+pr+'" aria-label="'+esc(l.nome+': assinatura '+R(l.sub)+', custo '+R(l.cost)+', '+rotAlerta(l))+'"><circle class="pt" cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="7" fill="'+AL_COR[l.alert]+'" stroke="#fff" stroke-width="2"/>'+(rotulo ? '<text x="'+(cx + 10).toFixed(1)+'" y="'+(cy + 3.5).toFixed(1)+'" font-size="10" font-weight="700" fill="#0f172a" pointer-events="none">'+esc(rotulo)+'</text>' : '')+'</g>'; };
+  comSub.forEach(l => { o += ponto(l, sx(l.sub), sy(l.cost), l.alert === 'critical' || l.alert === 'warning' ? l.nome.split(' ').slice(0, 2).join(' ') : ''); });
+  semSub.sort((x, y) => y.cost - x.cost).forEach((l, i) => { o += ponto(l, lx - 18 + (i % 3) * 18, sy(l.cost), ''); });
+  return o + '</svg>';
+}
+function rosca(v, d){
+  const c = contar(d), cats = ['critical','warning','none','no_subscription','cost_missing'].filter(k => c[k] || k !== 'cost_missing' || !d.custoOk);
+  const tot = d.linhas.length, r = 46, cf = 2 * Math.PI * r; let acc = 0, seg = '';
+  cats.forEach(k => { const f = c[k] / tot; if (!f) return; seg += '<circle cx="60" cy="60" r="'+r+'" fill="none" stroke="'+AL_COR[k]+'" stroke-width="18" stroke-dasharray="'+(f * cf).toFixed(2)+' '+cf.toFixed(2)+'" stroke-dashoffset="'+(-acc * cf).toFixed(2)+'" transform="rotate(-90 60 60)"/>'; acc += f; });
+  const svg = '<svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Situação das '+tot+' organizações"><circle cx="60" cy="60" r="'+r+'" fill="none" stroke="#f1f5f9" stroke-width="18"/>'+seg+'<text x="60" y="58" text-anchor="middle" font-size="22" font-weight="800" fill="#0f172a">'+tot+'</text><text x="60" y="74" text-anchor="middle" font-size="9.5" font-weight="700" fill="#64748b">organizações</text></svg>';
+  const rot = { critical:'Crítico', warning:'Atenção', none:'Normal', no_subscription:'Sem assinatura própria', cost_missing:'Sem custo' };
+  return '<div class="donut-wrap">'+svg+'<div class="legs">'+cats.map(k => '<button type="button" class="leg-btn" data-alvo="alert:'+k+'" aria-pressed="'+(S[v].alvo === 'alert:'+k)+'"><i style="background:'+AL_COR[k]+'"></i><span>'+rot[k]+'</span><b>'+c[k]+'</b></button>').join('')+'</div></div>';
+}
+function colunasFaixa(v, d){
+  const fx = [['neg','Negativa','#ef4444'],['0','0 a 20 %','#f59e0b'],['20','20 a 50 %','#34d399'],['50','Acima de 50 %','#059669']];
+  const n = k => d.linhas.filter(l => faixa(l.pct) === k).length, mx = Math.max(1, ...fx.map(f => n(f[0])));
+  return '<div class="colunas" style="height:140px">'+fx.map(f => '<button type="button" class="coluna-btn" data-alvo="faixa:'+f[0]+'" aria-pressed="'+(S[v].alvo === 'faixa:'+f[0])+'" aria-label="'+f[1]+': '+n(f[0])+' organizações"><b>'+(d.custoOk ? n(f[0]) : '—')+'</b><i style="height:'+(d.custoOk ? Math.max(3, n(f[0]) / mx * 86) : 0)+'px;background:'+f[2]+'"></i><span>'+f[1]+'</span></button>').join('')+'</div>';
+}
+function barrasMeses(sr){
+  const W = 760, H = 206, x0 = 56, x1 = 752, y0 = 166, y1 = 14, n = sr.length, cw = (x1 - x0) / n;
+  const vals = sr.flatMap(s => s.vazio ? [] : [s.g.subscriptionTotal, s.g.totalCost].filter(x => x !== null));
+  const mx = Math.max(100000, ...vals) * 1.1, sy = v => y0 - v / mx * (y0 - y1);
+  let o = '<svg class="svg-chart" viewBox="0 0 '+W+' '+H+'" role="group" aria-label="Assinaturas, custo e margem dos últimos 6 meses">';
+  for (let k = 0; k <= 4; k++) { const v = mx / 1.1 * k / 4, y = sy(v); o += '<line x1="'+x0+'" x2="'+x1+'" y1="'+y+'" y2="'+y+'" stroke="#f1f5f9"/><text x="'+(x0 - 6)+'" y="'+(y + 3)+'" font-size="9.5" fill="#94a3b8" text-anchor="end">'+Rk(Math.round(v))+'</text>'; }
+  sr.forEach((s, i) => {
+    const cx = x0 + (i + .5) * cw;
+    o += hitMes(s.mes, x0 + i * cw + 3, cw - 6, y1 - 6, y0 - y1 + 34, s.vazio ? 'sem dados' : 'assinaturas '+R(s.g.subscriptionTotal)+', custo '+R(s.g.totalCost)+', margem '+R(s.g.margin));
+    if (!s.vazio) { const a = s.g.subscriptionTotal, c = s.g.totalCost; o += '<rect x="'+(cx - 17)+'" y="'+sy(a)+'" width="15" height="'+(y0 - sy(a))+'" rx="3" fill="#2563eb" pointer-events="none"/>'; if (c !== null) o += '<rect x="'+(cx + 2)+'" y="'+sy(c)+'" width="15" height="'+(y0 - sy(c))+'" rx="3" fill="#f87171" pointer-events="none"/>'; else o += '<rect x="'+(cx + 2)+'" y="'+(y0 - 30)+'" width="15" height="30" rx="3" fill="none" stroke="#cbd5e1" stroke-dasharray="3 2" pointer-events="none"/>'; }
+    o += '<text x="'+cx+'" y="'+(y0 + 16)+'" font-size="10" font-weight="'+(s.mes === G.mes ? 800 : 600)+'" fill="'+(s.mes === G.mes ? '#2563eb' : '#64748b')+'" text-anchor="middle" pointer-events="none">'+rotMesCurto(s.mes)+'</text><text x="'+cx+'" y="'+(y0 + 30)+'" font-size="9.5" font-weight="700" fill="#15803d" text-anchor="middle" pointer-events="none">'+(s.vazio || s.g.pct === null ? '—' : P(s.g.pct))+'</text>';
+  });
+  return o + '</svg>';
+}
+function ponte(v, d){
+  const g = d.g; if (!d.custoOk) return '<div class="pat-table__empty"><div class="pat-table__empty-title">Sem custo no mês</div><div class="pat-table__empty-detail">A ponte aparece quando o mês tiver custo em reais. Assinaturas do mês: <b class="pat-mono">'+R(g.subscriptionTotal)+'</b>.</div></div>';
+  const passos = [['sub','Assinaturas',g.subscriptionTotal,'+'],['custo','Organizações',g.tenantsCost,'-'],['plat','Plataforma',g.platformOwnCost,'-'],['nr','Não rateado',g.unallocatedOther,'-'],['arr','Arredonda-|mento',g.arred,'-'],['conv','Conversão',g.conv,'-'],['margem','Margem',g.margin,'=']];
+  const W = 640, H = 236, x0 = 14, x1 = 630, y1 = 26, y0 = 184, cw = (x1 - x0) / passos.length;
+  let nivel = 0; const geo = passos.map(p => { if (p[3] === '+') { const r = [0, p[2]]; nivel = p[2]; return r; } if (p[3] === '-') { const r = [nivel - p[2], nivel]; nivel -= p[2]; return r; } return [0, p[2]]; });
+  const mn = Math.min(0, ...geo.flat()), mx = Math.max(...geo.flat()), sy = val => y0 - (val - mn) / (mx - mn || 1) * (y0 - y1);
+  let o = '<svg class="svg-chart" viewBox="0 0 '+W+' '+H+'" role="group" aria-label="Da assinatura à margem do mês">';
+  o += '<line x1="'+x0+'" x2="'+x1+'" y1="'+sy(0)+'" y2="'+sy(0)+'" stroke="#cbd5e1"/>';
+  passos.forEach((p, i) => {
+    const [a, b] = geo[i], top = sy(Math.max(a, b)), bot = sy(Math.min(a, b)), cx = x0 + (i + .5) * cw, cor = p[3] === '+' ? '#2563eb' : p[3] === '=' ? (p[2] >= 0 ? '#16a34a' : '#dc2626') : (p[0] === 'nr' ? '#f59e0b' : p[0] === 'plat' ? '#7c3aed' : p[0] === 'custo' ? '#ef4444' : '#94a3b8');
+    const pr = S[v].alvo === p[0], rot = p[1].split('|');
+    o += '<g role="button" tabindex="0" data-alvo="'+p[0]+'" aria-pressed="'+pr+'" aria-label="'+esc(p[1].replace('|','')+': '+(p[3] === '-' ? 'menos ' : '')+R(p[2]))+'"><rect class="hit foco" x="'+(x0 + i * cw + 3)+'" y="2" width="'+(cw - 6)+'" height="'+(H - 4)+'" rx="8"/>'
+      +'<rect x="'+(cx - 22)+'" y="'+top.toFixed(1)+'" width="44" height="'+Math.max(2, bot - top).toFixed(1)+'" rx="4" fill="'+cor+'"'+(p[3] === '-' ? ' opacity=".85"' : '')+'/>'
+      +'<text x="'+cx+'" y="'+(top - 6).toFixed(1)+'" font-size="10.5" font-weight="800" fill="#0f172a" text-anchor="middle">'+(p[3] === '-' ? (p[2] >= 0 ? '−' : '+') : '')+Rk(p[3] === '-' ? Math.abs(p[2]) : p[2])+'</text>'
+      +'<text x="'+cx+'" y="'+(y0 + 18)+'" font-size="10.5" font-weight="700" fill="#334155" text-anchor="middle">'+esc(rot[0])+'</text>'+(rot[1] ? '<text x="'+cx+'" y="'+(y0 + 30)+'" font-size="10.5" font-weight="700" fill="#334155" text-anchor="middle">'+esc(rot[1])+'</text>' : '')
+      +(p[0] === 'margem' && g.pct !== null ? '<text x="'+cx+'" y="'+(y0 + 31)+'" font-size="10" font-weight="800" fill="'+cor+'" text-anchor="middle">'+P(g.pct)+'</text>' : '')+'</g>';
+    if (i < passos.length - 1 && p[3] !== '=') { const lv = p[3] === '+' ? b : a; o += '<line x1="'+(cx + 22)+'" x2="'+(cx + cw - 22)+'" y1="'+sy(lv).toFixed(1)+'" y2="'+sy(lv).toFixed(1)+'" stroke="#94a3b8" stroke-dasharray="3 3" pointer-events="none"/>'; }
+  });
+  return o + '</svg>';
+}
+function colunasMargem(sr){
+  const vals = sr.map(s => s.vazio ? null : s.g.margin), mx = Math.max(1, ...vals.filter(x => x !== null).map(Math.abs));
+  return '<div class="colunas" style="height:132px">'+sr.map(s => { const m = s.vazio ? null : s.g.margin, pr = s.mes === G.mes;
+    return '<button type="button" class="coluna-btn'+(m !== null && m < 0 ? ' coluna-btn--neg' : '')+'" data-alvo="mes:'+s.mes+'" aria-pressed="'+pr+'" aria-label="'+esc(capital(rotMes(s.mes))+': margem '+R(m))+'"><b style="color:'+(m === null ? '#94a3b8' : m < 0 ? '#b91c1c' : '#15803d')+'">'+Rk(m)+'</b><em>'+(m === null ? 'sem custo' : P(s.g.pct))+'</em><i style="height:'+(m === null ? 0 : Math.max(3, Math.abs(m) / mx * 64))+'px;background:'+(m === null ? '#e2e8f0' : m < 0 ? '#f87171' : '#4ade80')+'"></i><span>'+rotMesCurto(s.mes)+' · dólar '+(s.vazio || !s.fx ? '—' : taxa4(s.fx.r))+'</span></button>'; }).join('')+'</div>';
+}
+
+/* ── Lista (as três visões) ── */
+function rotAlerta(l){ if (l.alert === 'no_subscription') { if (l.skip === 'plan_without_price') return 'Plano sem preço'; return l.gid ? 'Sem assinatura própria' : 'Sem assinatura'; } return AL[l.alert][0]; }
+const pillAlerta = l => { const a = AL[l.alert]; return pill(rotAlerta(l), a[1], a[2]); };
+const pillCurto = l => { const a = AL[l.alert], t = l.alert === 'no_subscription' ? (l.skip === 'plan_without_price' ? 'Sem preço' : 'Sem assinatura') : a[0]; return pill(t, a[1], a[2]); };
+const estIc = '<span class="est-ic" title="Estimativa: o demonstrativo do mês está em aberto ou reaberto" aria-label="estimativa">'+ic('clock',12)+'</span>';
+function pctCel(p){ if (p === null) return '<span class="muted">—</span>'; const cor = p < 0 ? '#ef4444' : p < 20 ? '#f59e0b' : '#10b981'; return '<span class="pctbar"><i><b style="width:'+Math.min(100, Math.max(4, Math.abs(p)))+'%;background:'+cor+'"></b></i><span style="color:'+(p < 0 ? '#b91c1c' : '#334155')+'">'+P(p)+'</span></span>'; }
+function custoCel(cost, usd){ return cost === null ? '<span class="muted" title="Sem custo em reais neste mês">—</span>'+(usd !== null && usd !== undefined ? '<span class="usd">'+U(usd)+'</span>' : '') : '<span class="val">'+R(cost)+'</span>'+(usd !== null && usd !== undefined ? '<span class="usd">'+U(usd)+'</span>' : ''); }
+function margemCel(m){ return m === null ? '<span class="muted">—</span>' : '<span class="val '+(m < 0 ? 'val--neg' : '')+'">'+R(m)+'</span>'; }
+function painel(v, d){
+  const st = S[v], nT = d.linhas.length, nG = d.grupos.length;
+  const tabs = '<div class="pat-os-tabs" role="tablist" aria-label="Agrupar a lista"><button type="button" role="tab" class="pat-os-tab'+(st.modo === 'tenant' ? ' pat-os-tab--active' : '')+'" aria-selected="'+(st.modo === 'tenant')+'" data-modo="tenant">Por organização <span class="n">'+nT+'</span></button><button type="button" role="tab" class="pat-os-tab'+(st.modo === 'group' ? ' pat-os-tab--active' : '')+'" aria-selected="'+(st.modo === 'group')+'" data-modo="group">Por grupo <span class="n">'+nG+'</span></button><button type="button" role="tab" class="pat-os-tab'+(st.modo === 'global' ? ' pat-os-tab--active' : '')+'" aria-selected="'+(st.modo === 'global')+'" data-modo="global">Visão global</button></div>';
+  let corpo = '', cont = '', tot = '';
+  if (st.modo === 'tenant') {
+    const ls = linhasOrg(v, d), cg = v !== 'a'; cont = ls.length+(ls.length === 1 ? ' organização' : ' organizações');
+    corpo = '<table class="pat-ab-table"><colgroup><col>'+(cg ? '<col style="width:96px">' : '')+'<col style="width:108px"><col style="width:164px"><col style="width:106px"><col class="col-pct" style="width:96px"><col style="width:124px"><col style="width:32px"></colgroup><thead><tr><th>Organização</th>'+(cg ? '<th>Grupo</th>' : '')+'<th class="r">Assinatura</th><th class="r">Custo</th><th class="r">Margem</th><th class="r">%</th><th>Situação</th><th></th></tr></thead><tbody>'
+      + (ls.length ? ls.map(l => linhaOrg(v, d, l, cg)).join('') : '<tr><td colspan="8"><div class="pat-table__empty"><div class="pat-table__empty-title">Nenhuma organização neste filtro</div><div class="pat-table__empty-detail">Tire o filtro acima ou troque o mês.</div></div></td></tr>') + '</tbody></table>';
+    tot = '<span>Total do mês</span><span>Assinaturas <b>'+R(d.g.subscriptionTotal)+'</b></span><span>Custo das organizações <b>'+R(d.g.tenantsCost)+'</b></span><span>Margem <b>'+R(d.g.tenantsCost === null ? null : d.g.subscriptionTotal - d.g.tenantsCost)+'</b></span>';
+  } else if (st.modo === 'group') {
+    const q = st.busca.trim().toLowerCase(), gs = d.grupos.filter(g => !q || g.nome.toLowerCase().includes(q) || g.membros.some(m => m.nome.toLowerCase().includes(q)));
+    cont = gs.length+(gs.length === 1 ? ' linha' : ' linhas');
+    corpo = '<table class="pat-ab-table"><colgroup><col><col style="width:116px"><col style="width:112px"><col style="width:112px"><col style="width:106px"><col class="col-pct" style="width:96px"><col style="width:96px"><col style="width:32px"></colgroup><thead><tr><th>Grupo</th><th>Organizações</th><th class="r">Assinatura</th><th class="r">Custo</th><th class="r">Margem</th><th class="r">%</th><th>Situação</th><th></th></tr></thead><tbody>'
+      + gs.map(g => linhaGrupo(v, d, g)).join('') + '</tbody></table>';
+    tot = '<span>Uma organização fica em um grupo só, e mudança de grupo vale de hoje em diante.</span>';
+  } else {
+    const ps = parcelas(d).filter(p => filtraParcela(p, st.alvo)), tc = Math.max(1, ...parcelas(d).map(p => Math.abs(p.cost || 0)));
+    cont = ps.length+' parcelas';
+    corpo = '<table class="pat-ab-table"><colgroup><col style="width:36%"><col style="width:18%"><col style="width:18%"><col style="width:24%"><col style="width:34px"></colgroup><thead><tr><th>Parcela do custo</th><th class="r">Valor</th><th class="r">Original</th><th>Peso no custo</th><th></th></tr></thead><tbody>'
+      + ps.map(p => linhaParcela(v, d, p, tc)).join('') + '</tbody></table>';
+    tot = '<span>Assinaturas <b>'+R(d.g.subscriptionTotal)+'</b></span><span>− Custo total <b>'+R(d.g.totalCost)+'</b></span><span>= Margem <b>'+R(d.g.margin)+'</b>'+(d.g.pct !== null ? ' ('+P(d.g.pct)+')' : '')+'</span>';
+  }
+  const chip = st.alvo ? '<div class="pat-filtro-chip-bar"><span class="pat-filtro-chip">'+esc(rotAlvo(st.alvo))+'<button type="button" data-limpar aria-label="Tirar o filtro">✕</button></span></div>' : '';
+  return '<section class="painel" data-lista aria-label="Lista de custo e margem"><div class="painel__toolbar">'+tabs
+    +'<label class="pat-os-search">'+ic('search',14)+'<span class="sr">Buscar</span><input data-busca value="'+esc(st.busca)+'" placeholder="Buscar organização ou grupo"></label>'
+    +(st.modo === 'group' && podeGerir() ? '<button type="button" class="pat-btn" data-acao="grupo-novo" style="min-height:34px;padding:6px 11px">'+ic('plus',13)+'Novo grupo</button>' : '')
+    +'<span class="pat-os-count">'+cont+'</span></div>'+chip+corpo+'<div class="tot">'+tot+'</div></section>';
+}
+function linhaOrg(v, d, l, cg){
+  const id = v+'-t-'+l.id, ab = S[v].aberta === id, gn = l.gid ? nomeGrupo(l.gid) : '—';
+  return '<tr class="pat-ab-row" data-linha="'+id+'" tabindex="0" aria-expanded="'+ab+'" title="'+esc(l.nome+(l.gid ? ' · '+gn : '')+' · '+rotAlerta(l))+'"><td><b>'+esc(l.nome)+'</b></td>'+(cg ? '<td'+(l.gid ? '' : ' class="muted"')+'>'+esc(gn)+'</td>' : '')
+    +'<td class="r">'+(l.sub === null ? '<span class="muted">—</span>' : '<span class="val">'+R(l.sub)+'</span>')+(l.est ? estIc : '')+'</td><td class="r">'+custoCel(l.cost, l.usd)+'</td><td class="r">'+margemCel(l.margin)+'</td><td class="r">'+pctCel(l.pct)+'</td><td>'+pillCurto(l)+'</td><td>'+CHEV+'</td></tr>'
+    +(ab ? '<tr class="pat-ab-detail-row" data-detalhe-de="'+id+'"><td colspan="'+(cg ? 8 : 7)+'" class="pat-ab-detail-cell">'+detalheOrg(v, d, l)+'</td></tr>' : '');
+}
+function campo(rot, val){ return '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+'</span><span class="pat-ab-detail-val">'+val+'</span></div>'; }
+function detalheOrg(v, d, l){
+  const sr = serie(G.mes, 6).map(s => s.vazio ? null : s.linhas.find(x => x.id === l.id) || null);
+  const subs = sr.map(x => x ? x.sub : null), custos = sr.map(x => x ? x.cost : null);
+  const gm = l.gid ? d.linhas.filter(x => x.gid === l.gid) : [], quem = gm.filter(x => x.sub !== null);
+  const usdRef = l.usd; let serv = '';
+  if (usdRef !== null) { const r = rng(l.id+G.mes); let rest = usdRef; const ps = SERV.map((s, i) => { const share = i === SERV.length - 1 ? null : s[2] * (.8 + .4 * r()); const val = share === null ? rest : Math.round(usdRef * share); rest -= share === null ? 0 : val; return [s[1], s[0], Math.max(0, val)]; }); const mx = Math.max(...ps.map(p => p[2]), 1);
+    serv = '<div class="serv">'+ps.map(p => '<div><span title="'+esc(p[1])+'">'+esc(p[0])+'</span><i><b style="width:'+(p[2] / mx * 100)+'%"></b></i><em>'+U(p[2])+'</em></div>').join('')+'</div>'; }
+  else serv = '<div class="pat-ab-detail-note">Sem composição: o mês não tem custo importado.</div>';
+  const grupoTxt = l.gid ? esc(nomeGrupo(l.gid))+' · '+(l.sub !== null ? 'assina pelo grupo' : 'filial; quem assina: '+(quem.length ? esc(quem.map(x => x.nome).join(', ')) : 'ninguém neste mês')) : 'sem grupo';
+  return '<div class="pat-ab-detail-content"><div class="pat-ab-detail-grid">'
+    +'<div class="pat-ab-detail-col"><h4>Assinatura do mês</h4>'
+      +campo('Assinatura', l.sub === null ? (l.skip === 'plan_without_price' ? 'plano sem preço cadastrado' : 'sem assinatura própria') : '<b class="pat-mono">'+R(l.sub)+'</b> <span class="muted">antes do crédito</span>')
+      +campo('Total do demonstrativo', R(l.stmt))+campo('Crédito aplicado', R(l.cred))
+      +campo('Origem', esc(SRC[l.src])+(l.est ? ' '+pill('Estimativa','#FFFBEB','#B45309') : ''))+campo('Grupo', grupoTxt)+'</div>'
+    +'<div class="pat-ab-detail-col"><h4>Custo e margem</h4>'
+      +campo('Custo em reais', l.cost === null ? 'em branco ('+(CST[d.status] || 'sem custo').toLowerCase()+')' : '<b class="pat-mono">'+R(l.cost)+'</b>')
+      +campo('Custo em dólar', l.usd === null ? '—' : '<span class="pat-mono">'+U(l.usd)+'</span>')
+      +campo('Dólar usado', d.fx && d.custoOk ? '<span class="pat-mono">'+taxa6(d.fx.r)+'</span> (versão '+d.fx.v+')' : '—')
+      +campo('Margem', l.margin === null ? '—' : '<b class="pat-mono" style="color:'+(l.margin < 0 ? '#b91c1c' : '#15803d')+'">'+R(l.margin)+'</b> · '+P(l.pct))
+      +campo('Situação', pillAlerta(l)+' <span class="muted">'+AL_REGRA[l.alert]+'</span>')+'</div>'
+    +'<div class="pat-ab-detail-col"><h4>Assinatura × custo · 6 meses</h4>'+spark(subs, '#2563eb', '#ef4444', custos).replace('class="kpi-spark"', 'class="kpi-spark" style="height:56px"')
+      +'<div class="legenda"><span><i class="lg-sw" style="background:#2563eb"></i>assinatura</span><span><i class="lg-sw" style="background:#ef4444"></i>custo</span><span>'+mesesAte(G.mes, 6).map(rotMesCurto)[0]+' a '+rotMesCurto(G.mes)+'</span></div>'
+      +'<h4 style="margin-top:6px">Composição por serviço · dólar '+FALTA('o rateio por organização vem na moeda original; em reais, só o servidor converte')+'</h4>'+serv+'</div>'
+    +'</div><div class="pat-ab-detail-actions"><button type="button" class="pat-btn" data-acao="abrir-org:'+l.id+'">'+ic('building',14)+'Abrir organização</button>'
+      +(l.sub !== null ? '<button type="button" class="pat-btn" data-acao="demonstrativo:'+l.id+'">'+ic('receipt',14)+'Ver demonstrativo de '+MESES[+G.mes.slice(5)-1]+'</button>' : '')
+      +(podeGerir() ? '<button type="button" class="pat-btn" data-acao="mover:'+l.id+'">'+ic('users',14)+'Mudar de grupo</button>' : '')
+      +'<span class="pat-ab-detail-note">'+(l.alert === 'critical' ? 'O custo passou da assinatura: revise o plano desta organização ou o uso dela.' : l.alert === 'warning' ? 'O custo já passou de 80 % da assinatura.' : l.alert === 'no_subscription' && l.gid ? 'A matriz assina pelo grupo; a margem do cliente está na linha do grupo.' : 'A margem é a assinatura do mês menos o custo rateado.')+'</span></div></div>';
+}
+function linhaGrupo(v, d, g){
+  const id = v+'-g-'+g.id, ab = S[v].aberta === id, quem = g.membros.filter(m => m.sub !== null);
+  const sit = g.alert === null ? '<span class="muted">—</span>' : pill(AL[g.alert][0], AL[g.alert][1], AL[g.alert][2]);
+  return '<tr class="pat-ab-row" data-linha="'+id+'" tabindex="0" aria-expanded="'+ab+'" title="'+esc(g.nome+(g.id !== 'sem' ? ' · assina: '+(quem.length ? quem.map(x => x.nome).join(', ') : 'ninguém') : ''))+'"><td><b>'+esc(g.nome)+'</b></td><td>'+g.membros.length+(g.membros.length > 1 ? ' organizações' : ' organização')+'</td>'
+    +'<td class="r">'+(g.sub === null ? '<span class="muted">—</span>' : '<span class="val">'+R(g.sub)+'</span>')+(g.est ? estIc : '')+'</td><td class="r">'+custoCel(g.cost, null)+'</td><td class="r">'+margemCel(g.margin)+'</td><td class="r">'+pctCel(g.pct)+'</td><td>'+sit+'</td><td>'+CHEV+'</td></tr>'
+    +(ab ? '<tr class="pat-ab-detail-row" data-detalhe-de="'+id+'"><td colspan="8" class="pat-ab-detail-cell">'+detalheGrupo(v, d, g)+'</td></tr>' : '');
+}
+function detalheGrupo(v, d, g){
+  const quem = g.membros.filter(m => m.sub !== null), agend = VINCULOS.filter(x => x.g === g.id && x.de > HOJE);
+  const membros = g.membros.map(m => { const vin = VINCULOS.find(x => x.org === m.id && x.g === g.id && x.ate === null); return '<div class="membro"><span><b>'+esc(m.nome)+'</b><small>'+(g.id === 'sem' ? 'sem grupo' : 'desde '+(vin ? dBR(vin.de) : '—'))+' · '+(m.sub !== null ? 'assina '+R(m.sub) : 'sem assinatura própria')+'</small></span><span class="val">'+R(m.cost)+'</span></div>'; }).join('');
+  const sem = g.id === 'sem';
+  return '<div class="pat-ab-detail-content"><div class="pat-ab-detail-grid">'
+    +'<div class="pat-ab-detail-col"><h4>'+(sem ? 'Organizações sem grupo' : 'Assinatura do grupo')+'</h4>'
+      +campo('Assinatura', g.sub === null ? 'nenhum membro assina' : '<b class="pat-mono">'+R(g.sub)+'</b> <span class="muted">antes do crédito</span>')
+      +campo('Crédito aplicado', R(g.cred))
+      +(sem ? campo('Leitura', 'soma das organizações avulsas; não é um cliente, e por isso não tem situação') : campo('Quem assina', quem.length ? esc(quem.map(x => x.nome).join(', '))+(quem.length === 1 ? ' (matriz)' : '') : 'ninguém neste mês'))
+      +campo('Sem assinatura própria', g.semAss+(g.semAss === 1 ? ' organização' : ' organizações'))+'</div>'
+    +'<div class="pat-ab-detail-col"><h4>Custo e margem</h4>'+campo('Custo', g.cost === null ? 'em branco' : '<b class="pat-mono">'+R(g.cost)+'</b>')
+      +campo('Margem', g.margin === null ? '—' : '<b class="pat-mono" style="color:'+(g.margin < 0 ? '#b91c1c' : '#15803d')+'">'+R(g.margin)+'</b> · '+P(g.pct))
+      +campo('Situação', g.alert === null ? '<span class="muted">sem situação: não é um cliente</span>' : pill(AL[g.alert][0], AL[g.alert][1], AL[g.alert][2])+' <span class="muted">'+AL_REGRA[g.alert]+'</span>')
+      +(agend.length ? campo('Agendado', agend.map(x => esc(ORG[x.org].nome)+' entra em '+dBR(x.de)).join('; ')) : '')+'</div>'
+    +'<div class="pat-ab-detail-col"><h4>Organizações no fim de '+MESES[+G.mes.slice(5)-1]+'</h4><div class="membros">'+membros+'</div></div>'
+    +'</div><div class="pat-ab-detail-actions">'
+      +(sem ? (podeGerir() ? '<button type="button" class="pat-btn" data-acao="grupo-novo">'+ic('plus',14)+'Novo grupo</button>' : '<button type="button" class="pat-btn" data-modo-ir="tenant">Ver por organização</button>')
+        : (podeGerir() ? '<button type="button" class="pat-btn" data-acao="grupo-membros:'+g.id+'">'+ic('users',14)+'Editar membros</button>' : '')+'<button type="button" class="pat-btn" data-acao="grupo-hist:'+g.id+'">'+ic('clock',14)+'Histórico</button>'+(podeGerir() ? '<button type="button" class="pat-btn" data-acao="grupo-renomear:'+g.id+'">Renomear</button><button type="button" class="pat-btn pat-btn--perigo" data-acao="grupo-excluir:'+g.id+'" aria-disabled="true">Excluir grupo</button>' : ''))
+      +'<span class="pat-ab-detail-note">O grupo serve para cobrança e para a visão de custo da plataforma. Ele não dá a uma filial acesso aos dados de outra.</span></div></div>';
+}
+function linhaParcela(v, d, p, tc){
+  const id = v+'-p-'+p.k.replace(':', '-'), ab = S[v].aberta === id, orig = p.usdMicro !== undefined ? (p.usdMicro === null ? '—' : Umicro(p.usdMicro)) : (p.usd === null ? '—' : U(p.usd));
+  return '<tr class="pat-ab-row" data-linha="'+id+'" tabindex="0" aria-expanded="'+ab+'" title="'+esc(p.rot)+'"><td><b>'+esc(p.rot)+'</b></td><td class="r">'+(p.cost === null ? '<span class="muted">—</span>' : '<span class="val '+(p.cost < 0 ? 'val--neg' : '')+'">'+R(p.cost)+'</span>')+'</td><td class="r"><span class="usd" style="margin:0">'+orig+'</span></td>'
+    +'<td><span class="bar-compact-btn__track" style="display:block;max-width:220px"><span class="bar-compact-btn__fill" style="width:'+(p.cost === null ? 0 : Math.max(1.5, Math.abs(p.cost) / tc * 100))+'%;background:'+p.cor+'"></span></span></td><td>'+CHEV+'</td></tr>'
+    +(ab ? '<tr class="pat-ab-detail-row" data-detalhe-de="'+id+'"><td colspan="5" class="pat-ab-detail-cell">'+detalheParcela(v, d, p)+'</td></tr>' : '');
+}
+function detalheParcela(v, d, p){
+  let col1 = '', col2 = '', acao = '<button type="button" class="pat-btn" data-acao="importacoes">'+ic('layers',14)+'Ver importações do mês</button>';
+  if (p.k === 'orgs') { const top = d.linhas.filter(l => l.cost !== null).sort((x, y) => y.cost - x.cost).slice(0, 3);
+    col1 = campo('O que é', 'o custo rateado entre as organizações pelo uso de cada uma (regras do rateio)')+campo('Valor', '<b class="pat-mono">'+R(p.cost)+'</b> · '+U(p.usd));
+    col2 = '<h4>As 3 maiores</h4>'+top.map(l => campo(esc(l.nome), '<span class="pat-mono">'+R(l.cost)+'</span>')).join('');
+    acao = '<button type="button" class="pat-btn" data-modo-ir="tenant">'+ic('building',14)+'Ver por organização</button>'; }
+  else if (p.k === 'plat') { col1 = campo('O que é', 'o custo que fica com a plataforma: a organização da própria plataforma e os atos de plataforma. É linha própria, fora do não rateado (decisão de 31/10).')+campo('Valor', '<b class="pat-mono">'+R(p.cost)+'</b> · '+U(p.usd));
+    col2 = '<h4>Por serviço · dólar</h4>'+SERV.slice(0, 4).map((s, i) => campo(s[1], '<span class="pat-mono">'+U(Math.round(p.usd * [.41,.29,.18,.12][i]))+'</span>')).join(''); }
+  else if (p.k.startsWith('nr:')) { const m = MOTIVO[p.k.slice(3)]; col1 = campo('Motivo', m[0])+campo('Valor', '<b class="pat-mono">'+R(p.cost)+'</b> · '+U(p.usd)); col2 = '<h4>O que fazer</h4><div class="pat-ab-detail-note">'+m[1]+'</div><div>'+FALTA('as linhas do arquivo por motivo não vêm na resposta')+'</div>'; }
+  else if (p.k === 'arr') { col1 = campo('O que é', 'a diferença de centavos que o rateio deixa ao dividir o custo; vem com sinal')+campo('Valor', '<b class="pat-mono">'+R(p.cost)+'</b> · '+(p.usdMicro === null ? '—' : Umicro(p.usdMicro))); col2 = '<h4>Por que aparece</h4><div class="pat-ab-detail-note">Dividir um custo em várias organizações sempre sobra fração de centavo. A soma das parcelas fecha exato no custo total.</div>'; }
+  else { col1 = campo('O que é', 'a diferença de centavos da conversão de cada parcela de dólar para reais')+campo('Valor', '<b class="pat-mono">'+R(p.cost)+'</b>'); col2 = '<h4>Por que aparece</h4><div class="pat-ab-detail-note">Cada parcela é convertida com o dólar do mês e arredondada; o que sobra fica aqui, para o total fechar exato.</div>'; }
+  return '<div class="pat-ab-detail-content"><div class="pat-ab-detail-grid" style="grid-template-columns:1.2fr 1fr"><div class="pat-ab-detail-col"><h4>'+esc(p.rot)+'</h4>'+col1+'</div><div class="pat-ab-detail-col">'+col2+'</div></div><div class="pat-ab-detail-actions">'+acao+'<span class="pat-ab-detail-note">As parcelas somam o custo total do mês, sem sobra (o servidor garante).</span></div></div>';
+}
+
+/* ── Estados que tomam a tela ── */
+function estadoTela(v){
+  const e = G.estado;
+  const sp = (cor, bg, icone, t, dt, extra) => '<div class="state-panel"><div class="state-panel__icon" style="background:'+bg+';color:'+cor+'">'+ic(icone,26)+'</div><div class="state-panel__title">'+t+'</div><div class="state-panel__detail">'+dt+'</div>'+(extra || '')+'</div>';
+  const cab = '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">Plataforma · custo e margem</div><h1 class="pat-page-header__title">Cloud Billing</h1><p class="pat-page-header__subtitle">Custo da nuvem e margem por organização</p></div></div>';
+  if (G.papel === 'org' || e === 'proibido') return cab + sp('#b91c1c','#fef2f2','lock','Acesso não permitido','Seu perfil não tem permissão para ver o custo e a margem da plataforma.');
+  if (e === 'carregando') { const sk = (h, w) => '<span class="pat-skel" style="height:'+h+'px;width:'+(w || '100%')+'"></span>';
+    return cab + '<div class="kpi-grid kpi-grid--4">'+Array.from({ length: v === 'b' ? 4 : 8 }, () => '<div class="pat-kpi" style="cursor:default">'+sk(28, '28px')+'<div style="height:10px"></div>'+sk(22, '70%')+'<div style="height:8px"></div>'+sk(11, '50%')+'</div>').join('')+'</div><div class="card" style="margin-bottom:16px">'+sk(180)+'</div><div class="painel" style="padding:16px;display:grid;gap:10px">'+Array.from({ length: 7 }, () => sk(26)).join('')+'</div>'; }
+  if (e === 'erro') return cab + sp('#b91c1c','#fef2f2','alert','Não foi possível carregar o custo e a margem','A plataforma vai tentar de novo. Nenhum valor é exibido enquanto não houver resposta confirmada.','<button type="button" class="pat-btn pat-btn--primary" data-acao="tentar">Tentar de novo</button>');
+  if (e === 'overlap') return cab + sp('#b91c1c','#fef2f2','users','Não foi possível montar a visão de '+rotMes(G.mes),'Uma organização aparece em dois grupos no mesmo dia. Nenhum número é exibido até o vínculo ser corrigido: a visão falha inteira, para não mostrar margem errada.','<button type="button" class="pat-btn" data-acao="tentar">Tentar de novo</button>');
+  return null;
+}
+function vazioTela(v){
+  return cabecalhoVazio() + '<div class="state-panel"><div class="state-panel__icon" style="background:#eff6ff;color:#2563eb">'+ic('inbox',26)+'</div><div class="state-panel__title">Nenhum custo nem assinatura em '+rotMes(G.mes)+'</div><div class="state-panel__detail">Escolha outro mês no seletor acima ou importe o arquivo de custo deste mês.</div>'+(podeGerir() ? '<button type="button" class="pat-btn pat-btn--primary" data-acao="importar">'+ic('upload',14)+'Importar arquivo de custo</button>' : '')+'</div>';
+}
+function cabecalhoVazio(){ return cabecalho('a', { fx:null, runs:[] }); }
+
+/* ── As três opções ── */
+function renderA(v, d){
+  const k = kpis(d), sr = serie(G.mes, 6), c = contar(d), g = d.g;
+  const ordemK = ['custo','plat','nr','res','sub','margem','alerta','semass'];
+  const comp = [{ alvo:'orgs', rot:'Organizações', cost:g.tenantsCost, cor:'#2563eb' },{ alvo:'plat', rot:'Custo da plataforma', cost:g.platformOwnCost, cor:'#7c3aed' },{ alvo:'nr', rot:'Não rateado', cost:g.unallocatedOther, cor:'#f59e0b' },{ alvo:'arr', rot:'Arredondamento', cost:g.arred, cor:'#94a3b8' },{ alvo:'conv', rot:'Conversão', cost:g.conv, cor:'#cbd5e1' }];
+  const top = d.linhas.filter(l => l.cost !== null).sort((x, y) => y.cost - x.cost).slice(0, 5).map(l => ({ alvo:'org:'+l.id, rot:l.nome, cost:l.cost, cor:AL_COR[l.alert] }));
+  const att = [];
+  d.linhas.filter(l => l.alert === 'critical').forEach(l => att.push(['org:'+l.id, '#FEF2F2', '#DC2626', 'trend', 'Crítico', l.sub === 0 ? esc(l.nome)+': demonstrativo do mês cancelado, e o custo de '+R(l.cost)+' continua.' : esc(l.nome)+': custo de '+R(l.cost)+' passou da assinatura de '+R(l.sub)+'.']));
+  if (c.warning) att.push(['alert:warning', '#FFFBEB', '#D97706', 'alert', 'Atenção', c.warning+(c.warning > 1 ? ' organizações com custo' : ' organização com custo')+' em 80 % da assinatura ou mais.']);
+  if (c.semass) att.push(['semass', '#EFF6FF', '#2563EB', 'building', 'Grupos', c.semass+' sem assinatura própria: filiais em que a matriz assina, e plano sem preço.']);
+  if (g.unallocatedOther) att.push(['nr', '#FFFBEB', '#D97706', 'layers', 'Não rateado', R(g.unallocatedOther)+' sem dono neste mês: '+g.porMotivo.map(m => MOTIVO[m.reason][0].toLowerCase()).join(' e ')+'.']);
+  if (c.est) att.push(['est', '#F5F3FF', '#7C3AED', 'clock', 'Estimativa', c.est+(c.est > 1 ? ' assinaturas são estimativa' : ' assinatura é estimativa')+': demonstrativo do mês em aberto ou reaberto.']);
+  if (d.fx && d.fx.v > 1) att.push(['acao:fx', '#F1F5F9', '#475569', 'dollar', 'Dólar', 'O dólar de '+MESES[+G.mes.slice(5)-1]+' foi corrigido: versão '+d.fx.v+' ('+taxa4(d.fx.r)+').']);
+  const attHtml = att.map(a => a[0].startsWith('acao:') ? '<button type="button" class="att-item" data-acao="'+a[0].slice(5)+'"><span class="att-item__ic" style="background:'+a[1]+';color:'+a[2]+'">'+ic(a[3],14)+'</span><span><span class="att-item__k" style="color:'+a[2]+'">'+a[4]+'</span><span class="att-item__t">'+a[5]+'</span></span></button>'
+    : '<button type="button" class="att-item" data-alvo="'+a[0]+'" aria-pressed="'+(S[v].alvo === a[0])+'"><span class="att-item__ic" style="background:'+a[1]+';color:'+a[2]+'">'+ic(a[3],14)+'</span><span><span class="att-item__k" style="color:'+a[2]+'">'+a[4]+'</span><span class="att-item__t">'+a[5]+'</span></span></button>').join('')
+    + '<div class="att-item att-item--fixo"><span class="att-item__ic" style="background:#F1F5F9;color:#64748B">'+ic('trend',14)+'</span><span><span class="att-item__k" style="color:#64748B">Comparação '+FALTA('a variação sobre o mês anterior, calculada pelo servidor')+'</span><span class="att-item__t">'+FX('Quanto o custo variou sobre o mês anterior, e quais organizações mais pesaram nessa variação.', 'comparação entre meses em %')+'</span></span></div>';
+  return cabecalho(v, d) + faixasDeAviso(d)
+    + '<div class="kpi-grid kpi-grid--4">'+ordemK.map(x => kpiBtn(v, k[x])).join('')+'</div>'
+    + '<div class="charts-a">'
+      + '<div class="card"><div class="card__head"><div><div class="card__title">Assinaturas × custo · 6 meses</div><div class="card__sub">clique no mês para trocar o mês da tela · faixa verde = margem</div></div><div class="legenda"><span><i class="lg-sw" style="background:#2563eb"></i>Assinaturas</span><span><i class="lg-sw" style="background:#ef4444"></i>Custo total</span></div></div>'+graficoLinhas(sr)+'</div>'
+      + '<div class="card"><div class="card__head"><div><div class="card__title">Para onde vai o custo</div><div class="card__sub">as 5 parcelas fecham o custo total</div></div></div>'+barraCustos(v, d, comp)+'</div>'
+      + '<div class="card"><div class="card__head"><div><div class="card__title">Maior custo por organização</div><div class="card__sub">cor = situação da margem</div></div></div>'+(top.length ? barraCustos(v, d, top) : '<div class="pat-table__empty-detail">Sem custo em reais neste mês.</div>')+'</div>'
+    + '</div>'
+    + '<div class="base-a"><div class="att"><div class="att__head">'+ic('alert',16)+'<b>O que pede atenção</b><span>regras do mês</span></div>'+attHtml+'</div>'+painel(v, d)+'</div>';
+}
+function miniKpi(v, o, col){
+  const tile = '<span class="pat-kpi__tile" style="background:'+o.tileBg+';color:'+o.tileFg+'">'+ic(o.ic,14)+'</span>';
+  if (col) return '<button type="button" class="mini-kpi mini-kpi--col" data-alvo="'+o.alvo+'" aria-pressed="'+(S[v].alvo === o.alvo)+'">'+tile+'<span class="t">'+o.rot+'<b>'+o.valor+'</b><small>'+o.dica+'</small></span></button>';
+  return '<button type="button" class="mini-kpi" data-alvo="'+o.alvo+'" aria-pressed="'+(S[v].alvo === o.alvo)+'">'+tile+'<span class="t">'+o.rot+'<small>'+o.dica+'</small></span><b>'+o.valor+'</b></button>';
+}
+function renderB(v, d){
+  const k = kpis(d), sr = serie(G.mes, 6), g = d.g;
+  const sp = { sub:spark(sr.map(s => s.vazio ? null : s.g.subscriptionTotal), '#2563eb'), custo:spark(sr.map(s => s.vazio ? null : s.g.totalCost), '#ef4444'), margem:spark(sr.map(s => s.vazio ? null : s.g.margin), '#16a34a'), alerta:spark(sr.map(s => s.vazio || !s.custoOk ? null : s.linhas.filter(l => l.alert === 'critical' || l.alert === 'warning').length), '#dc2626') };
+  const grandes = ['sub','custo','margem','alerta'].map(x => kpiBtn(v, Object.assign({}, k[x], { spark:sp[x] }))).join('');
+  const mini = (o) => miniKpi(v, o);
+  return cabecalho(v, d) + faixasDeAviso(d)
+    + '<div class="kpi-grid kpi-grid--4">'+grandes+'</div>'
+    + '<div class="mini-grid">'+['plat','nr','res','semass'].map(x => mini(k[x])).join('')+'</div>'
+    + '<div class="ana">'
+      + '<div class="card card--2"><div class="card__head"><div><div class="card__title">Assinatura × custo por organização</div><div class="card__sub">acima da linha vermelha, o custo passou da assinatura; entre as linhas, passou de 80 % · clique no ponto</div></div><div class="legenda"><span><i class="lg-sw" style="background:#dc2626"></i>Crítico</span><span><i class="lg-sw" style="background:#f59e0b"></i>Atenção</span><span><i class="lg-sw" style="background:#10b981"></i>Normal</span><span><i class="lg-sw" style="background:#94a3b8"></i>Sem assinatura</span></div></div>'+dispersao(v, d)+'</div>'
+      + '<div class="card"><div class="card__head"><div><div class="card__title">Situação das organizações</div><div class="card__sub">regra de 80 % e 100 % da assinatura</div></div></div>'+rosca(v, d)
+        + '<div class="card__head" style="margin:14px 0 4px"><div><div class="card__title">Margem por faixa</div><div class="card__sub">organizações com assinatura e custo</div></div></div>'+colunasFaixa(v, d)+'</div>'
+      + '<div class="card card--2"><div class="card__head"><div><div class="card__title">6 meses: assinaturas, custo e margem</div><div class="card__sub">clique no mês para trocar o mês da tela · a % embaixo é a margem</div></div><div class="legenda"><span><i class="lg-sw" style="background:#2563eb"></i>Assinaturas</span><span><i class="lg-sw" style="background:#f87171"></i>Custo total</span></div></div>'+barrasMeses(sr)+'</div>'
+      + '<div class="card"><div class="card__head"><div><div class="card__title">Para onde vai o custo</div><div class="card__sub">parcelas do custo total</div></div></div>'+barraCustos(v, d, [{ alvo:'orgs', rot:'Organizações', cost:g.tenantsCost, cor:'#2563eb' },{ alvo:'plat', rot:'Plataforma', cost:g.platformOwnCost, cor:'#7c3aed' },{ alvo:'nr', rot:'Não rateado', cost:g.unallocatedOther, cor:'#f59e0b' },{ alvo:'arr', rot:'Arredondamento', cost:g.arred, cor:'#94a3b8' },{ alvo:'conv', rot:'Conversão', cost:g.conv, cor:'#cbd5e1' }])
+        + '<div class="pat-kpi__hint" style="margin-top:10px;white-space:normal">Dólar de '+MESES[+G.mes.slice(5)-1]+': <b class="pat-mono">'+(d.fx ? taxa6(d.fx.r)+'</b> (versão '+d.fx.v+')' : '—</b>')+' · '+FX('digitado por —', 'quem digitou o dólar não vem na resposta')+'</div></div>'
+    + '</div>' + painel(v, d);
+}
+function renderC(v, d){
+  const sr = serie(G.mes, 6), c = contar(d), m = MESES[+G.mes.slice(5)-1], imp = d.imports, run = d.runs[0];
+  const menorM = d.linhas.filter(l => l.pct !== null).sort((x, y) => x.pct - y.pct)[0];
+  const chk = (tipo, attr, icone, cor, bg, t, sub, dir) => '<button type="button" class="check-btn" '+attr+'><span class="ic" style="background:'+bg+';color:'+cor+'">'+ic(icone,15)+'</span><span class="t">'+t+'<small>'+sub+'</small></span>'+dir+'</button>';
+  const ok = ['check','#15803d','#dcfce7'], av = ['alert','#b45309','#fef3c7'], er = ['x','#b91c1c','#fee2e2'];
+  const it = [];
+  if (G.mes === MES_CORRENTE) it.push(chk('acao', 'data-acao="importacoes"', ...av, 'Arquivo de custo ainda não chegou', 'a AWS fecha o mês e libera o arquivo nos primeiros dias de dezembro', '<em>Ver</em>'));
+  else if (!imp.length) it.push(chk('acao', 'data-acao="'+(podeGerir() ? 'importar' : 'importacoes')+'"', ...er, 'Arquivo de custo não importado', 'importe o arquivo completo do mês', '<em>'+(podeGerir() ? 'Importar' : 'Ver')+'</em>'));
+  else if (imp.length > 1) it.push(chk('acao', 'data-acao="importacoes"', ...av, imp.length+' arquivos importados no mês', 'vale o mais recente ('+imp[imp.length - 1].em.slice(0,5)+' '+imp[imp.length - 1].em.slice(11)+'); nada é somado', '<em>Ver</em>'));
+  else if (d.status === 'currency_unknown') it.push(chk('acao', 'data-acao="importacoes"', ...er, 'Arquivo sem moeda', imp[0].em.slice(0,5)+' '+imp[0].em.slice(11)+' · '+imp[0].linhas.toLocaleString('pt-BR')+' linhas', '<em>Ver</em>'));
+  else it.push(chk('acao', 'data-acao="importacoes"', ...ok, 'Arquivo de custo importado', imp[0].em.slice(0,5)+' '+imp[0].em.slice(11)+' · '+imp[0].linhas.toLocaleString('pt-BR')+' linhas · dólar', '<em>Ver</em>'));
+  const rodar = podeGerir() ? '<em>Rodar de novo</em>' : '';
+  if (G.estado === 'presa') it.push(chk('acao', 'data-acao="rodar"', ...av, 'Rateio parado em processamento', 'desde 04/11 09:13; nenhum rateio concluído no mês', rodar));
+  else if (d.status === 'no_import') it.push(chk('acao', 'data-acao="rodar"', ...av, 'Rateio vazio', 'rodou sem arquivo de custo', rodar));
+  else if (d.status === 'legacy_unscoped') it.push(chk('acao', 'data-acao="rodar"', ...av, 'Rateio antigo', 'feito antes de guardar o arquivo de origem', rodar));
+  else if (run && run.st === 'completed') it.push(chk('acao', 'data-acao="rodar"', ...ok, 'Rateio do mês concluído', run.em.slice(0,5)+' '+run.em.slice(11)+' · rodou sozinho depois da importação', rodar));
+  else it.push(chk('acao', 'data-acao="rodar"', ...er, 'Sem rateio no mês', 'roda sozinho depois da importação', rodar));
+  if (d.fx && d.status !== 'fx_missing') it.push(chk('acao', 'data-acao="fx"', ...ok, 'Dólar do mês digitado', taxa6(d.fx.r)+' · versão '+d.fx.v+' · '+d.fx.em.slice(0,5), '<em>'+(podeGerir() ? 'Corrigir' : 'Ver')+'</em>'));
+  else it.push(chk('acao', 'data-acao="fx"', ...er, 'Dólar do mês não digitado', 'sem a taxa, custo e margem em reais ficam em branco', '<em>'+(podeGerir() ? 'Digitar' : 'Ver')+'</em>'));
+  it.push(chk('alvo', 'data-alvo="est" aria-pressed="'+(S[v].alvo === 'est')+'"', ...(c.est ? av : ok), 'Assinaturas do mês', c.fechadas+' em demonstrativo fechado, pago ou cancelado · '+c.est+' estimativa'+(c.est === 1 ? '' : 's'), '<b>'+c.est+'</b>'));
+  if (d.custoOk) it.push(chk('alvo', 'data-alvo="alerta" aria-pressed="'+(S[v].alvo === 'alerta')+'"', ...(c.critical ? er : c.warning ? av : ok), 'Organizações em alerta', c.critical+' crítica · '+c.warning+' em atenção', '<b>'+(c.critical + c.warning)+'</b>'));
+  else it.push(chk('alvo', 'data-alvo="alerta" aria-pressed="'+(S[v].alvo === 'alerta')+'"', 'clock', '#64748b', '#f1f5f9', 'Organizações em alerta', 'sem custo no mês, não há o que comparar', '<b>—</b>'));
+  it.push(chk('alvo', 'data-alvo="semass" aria-pressed="'+(S[v].alvo === 'semass')+'"', 'building', '#1d4ed8', '#dbeafe', 'Sem assinatura própria', 'filiais em que a matriz assina e plano sem preço', '<b>'+c.semass+'</b>'));
+  const gsBtns = d.grupos.map(g => { const quem = g.membros.filter(x => x.sub !== null); const pr = S[v].aberta === v+'-g-'+g.id && S[v].modo === 'group';
+    return '<button type="button" class="gs-item" data-alvo="grp:'+g.id+'" aria-pressed="'+pr+'"><span class="gs-item__l"><span class="gs-item__n">'+esc(g.nome)+'</span>'+(g.alert ? pill(AL[g.alert][0], AL[g.alert][1], AL[g.alert][2]) : '')+'</span><span class="gs-item__s">'+g.membros.length+(g.membros.length > 1 ? ' organizações' : ' organização')+(g.id === 'sem' ? ' avulsas' : ' · assina: '+(quem.length ? esc(quem.map(x => x.nome).join(', ')) : 'ninguém'))+'</span><span class="gs-item__s">margem '+R(g.margin)+(g.pct !== null ? ' · '+P(g.pct) : '')+'</span></button>'; }).join('');
+  const vazios = GRUPOS.filter(gr => !d.grupos.some(x => x.id === gr.id)).map(gr => '<div class="gs-item" style="cursor:default"><span class="gs-item__n">'+esc(gr.nome)+'</span><span class="gs-item__s">sem organizações em '+m+'</span></div>').join('');
+  const agend = VINCULOS.filter(x => x.de > HOJE).map(x => esc(ORG[x.org].nome)+' entra no '+esc(nomeGrupo(x.g))+' em '+dBR(x.de)).join('; ');
+  return cabecalho(v, d) + faixasDeAviso(d)
+    + '<div class="topo-c"><div class="card"><div class="card__head"><div><div class="card__title">Da assinatura à margem · '+m+'</div><div class="card__sub">cada degrau é um valor do mês; clique para ver na lista</div></div><span class="card__tag" style="background:'+AL[d.g.alert][1]+';color:'+AL[d.g.alert][2]+'">margem '+(d.g.pct === null ? '—' : P(d.g.pct))+'</span></div>'+ponte(v, d)
+      + '<div class="mini-grid" style="grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0 0">'
+        + miniKpi(v, { alvo:'custo', ic:'cloud', tileBg:'#eff6ff', tileFg:'#2563eb', rot:'Custo total do mês', dica: d.origOk && d.g.original ? Umicro(d.g.original.total).replace(/(\d),(\d{2})\d{4}$/, '$1,$2')+(d.fx && d.custoOk ? ' · dólar '+taxa4(d.fx.r) : '') : 'sem custo importado', valor:R(d.g.totalCost) }, true)
+        + miniKpi(v, { alvo:'margem', ic:'trend', tileBg:'#ecfdf5', tileFg:'#15803d', rot:'Margem global', dica: d.g.pct === null ? 'sem custo, sem margem' : P(d.g.pct)+' das assinaturas', valor:R(d.g.margin) }, true)
+        + (menorM ? miniKpi(v, { alvo:'org:'+menorM.id, ic:'alert', tileBg:'#fef2f2', tileFg:'#b91c1c', rot:'Menor margem', dica: esc(menorM.nome), valor:P(menorM.pct) }, true) : miniKpi(v, { alvo:'sub', ic:'receipt', tileBg:'#ecfdf5', tileFg:'#047857', rot:'Assinaturas do mês', dica:'antes dos créditos', valor:R(d.g.subscriptionTotal) }, true))
+      + '</div></div>'
+      + '<div class="card"><div class="card__head"><div><div class="card__title">Fechamento de '+m+'</div><div class="card__sub">o que precisa estar certo para a margem valer</div></div></div><div class="checks">'+it.join('')+'</div></div></div>'
+    + '<div class="meses-c"><div class="card"><div class="card__head"><div><div class="card__title">Margem mês a mês</div><div class="card__sub">com o dólar usado em cada mês · clique para trocar o mês da tela</div></div></div>'+colunasMargem(sr)+'</div></div>'
+    + '<div class="base-c">'+painel(v, d)
+      + '<aside class="gs" aria-label="Grupos econômicos"><div class="gs__head"><b>Grupos econômicos</b>'+(podeGerir() ? '<button type="button" class="pat-btn" data-acao="grupo-novo">'+ic('plus',13)+'Novo grupo</button>' : '')+'</div>'+gsBtns+vazios
+        + (agend ? '<div class="gs__nota"><b>Agendado:</b> '+agend+'.</div>' : '')
+        + '<div class="gs__nota">A matriz assina pelo grupo, e a margem do cliente é a do grupo. O grupo serve para cobrança e para a visão de custo da plataforma: não dá a uma filial acesso aos dados de outra.</div></aside>'
+    + '</div>';
+}
+function render(v){
+  const root = $('[data-view="'+v+'"]');
+  const e = estadoTela(v); if (e) { root.innerHTML = e; return; }
+  const d = V();
+  if (d.vazio || G.estado === 'vazio') { root.innerHTML = vazioTela(v); return; }
+  root.innerHTML = v === 'a' ? renderA(v, d) : v === 'b' ? renderB(v, d) : renderC(v, d);
+}
+function renderLista(v){ const el = $('[data-view="'+v+'"] [data-lista]'); if (!el) { render(v); return; } const d = V(); el.outerHTML = painel(v, d); }
+function renderTudo(){ ['a','b','c'].forEach(render); }
+
+/* ── Janelas ── */
+let M = null;
+function abrirModal(m){ M = m; M.volta = document.activeElement; $('#ov').hidden = false; desenharModal(); setTimeout(() => { const f = $('#mbx [data-autofoco]') || $('#mbx header button'); if (f) f.focus(); }, 30); }
+function fecharModal(){ $('#ov').hidden = true; const vt = M && M.volta; M = null; if (vt && document.contains(vt)) vt.focus(); }
+function rodape(btns, esq){ return (esq ? '<span class="esq">'+esq+'</span>' : '')+btns; }
+const BTN_FECHAR = '<button type="button" class="pat-btn" data-fechar>Fechar</button>';
+function desenharModal(){
+  const m = M, mes = rotMes(G.mes), d = V(), corpo = $('#mbx-corpo'), rod = $('#mbx-rodape'), tit = $('#mbx-t');
+  const fase = m.fase || 'form', esperando = '<div class="ui-alert ui-alert--info" style="align-items:center"><span class="spin"></span><span>'+(m.esperando || 'Enviando…')+'</span></div>';
+  const res = m.resultado ? '<div class="ui-alert ui-alert--'+m.resultado[0]+'">'+ic(m.resultado[0] === 'ok' ? 'check' : 'alert',16)+'<span><b>'+m.resultado[1]+'</b>'+m.resultado[2]+'</span></div>' : '';
+  if (m.tipo === 'importar') {
+    tit.textContent = 'Importar arquivo de custo';
+    corpo.innerHTML = '<div class="resumo-tit"><div><span>Mês da tela</span><b>'+capital(mes)+'</b></div><div><span>Arquivos no mês</span><b>'+d.imports.length+'</b></div><div><span>Último rateio</span><b>'+(d.runs[0] && d.runs[0].st === 'completed' ? d.runs[0].em.slice(0,5)+' '+d.runs[0].em.slice(11) : '—')+'</b></div></div>'
+      + '<label class="ui-field">Arquivo de custo da AWS (CSV)<input class="ui-input" type="file" accept=".csv,text/csv" data-arquivo data-autofoco'+(fase !== 'form' ? ' disabled' : '')+'><small>Envie o <b>arquivo completo do mês</b>, até 1 MB. '+(m.arquivo ? 'Escolhido: <b>'+esc(m.arquivo.nome)+'</b> · '+(m.arquivo.tam / 1048576).toLocaleString('pt-BR', { maximumFractionDigits:2 })+' MB.' : 'Nenhum arquivo escolhido. <button type="button" class="pat-link" data-exemplo style="background:none;border:0;color:#2563eb;font-weight:700;cursor:pointer;padding:0">Usar o arquivo de exemplo</button>')+'</small></label>'
+      + '<div class="ui-alert ui-alert--info">'+ic('refresh',16)+'<span><b>Depois da importação, o rateio do mês roda sozinho.</b>Se o mês já tem um arquivo, o novo passa a valer e nada é somado. O arquivo de outro mês é importado para o mês dele.</span></div>'
+      + (fase === 'enviando' ? esperando : '') + res;
+    rod.innerHTML = fase === 'final' ? BTN_FECHAR : rodape('<button type="button" class="pat-btn" data-fechar>Cancelar</button><button type="button" class="pat-btn pat-btn--primary" data-confirmar'+(fase === 'enviando' ? ' aria-disabled="true"' : '')+'>'+ic('upload',14)+'Importar arquivo</button>', 'O mês do rateio é o mês da tela.');
+  } else if (m.tipo === 'rodar') {
+    tit.textContent = 'Rodar rateio do mês';
+    const ult = d.imports[d.imports.length - 1];
+    corpo.innerHTML = '<div class="resumo-tit"><div><span>Mês</span><b>'+capital(mes)+'</b></div><div><span>Arquivo que vale</span><b>'+(ult ? ult.em.slice(0,5)+' '+ult.em.slice(11) : 'nenhum')+'</b></div><div><span>Último rateio</span><b>'+(d.runs[0] ? d.runs[0].em.slice(0,5)+' '+d.runs[0].em.slice(11)+(d.runs[0].st === 'completed' ? '' : ' · parado') : '—')+'</b></div></div>'
+      + '<p style="font-size:13px;color:#334155;line-height:1.55">O rateio refaz a divisão do custo de '+mes+' entre as organizações, com o arquivo que vale no mês. O rateio anterior fica no histórico, e a tela passa a usar o novo.</p>'
+      + (!ult ? '<div class="ui-alert">'+ic('alert',16)+'<span><b>O mês não tem arquivo de custo.</b>O rateio vai rodar vazio. Importe o arquivo do mês primeiro.</span></div>' : '')
+      + (fase === 'enviando' ? esperando : '') + res;
+    rod.innerHTML = fase === 'final' ? BTN_FECHAR : '<button type="button" class="pat-btn" data-fechar>Cancelar</button><button type="button" class="pat-btn pat-btn--primary" data-confirmar data-autofoco'+(fase === 'enviando' ? ' aria-disabled="true"' : '')+'>'+ic('play',13)+'Rodar rateio de '+MESES[+G.mes.slice(5)-1]+'</button>';
+  } else if (m.tipo === 'fx') {
+    tit.textContent = 'Dólar do mês · '+mes;
+    const h = d.fx ? (CAMBIO[G.mes] || []).slice().reverse() : [];
+    corpo.innerHTML = (podeGerir() ? '<label class="ui-field">Quanto valia 1 dólar em reais neste mês<input class="ui-input pat-mono" data-taxa data-autofoco inputmode="decimal" value="'+esc(m.campos.taxa)+'" aria-invalid="'+(!!m.erroCampo)+'"'+(fase !== 'form' ? ' disabled' : '')+'><small>Use a <b>cotação da fatura da AWS</b> de '+MESES[+G.mes.slice(5)-1]+', com até 6 casas. Corrigir cria uma versão nova; as anteriores ficam no histórico, e cada mês mostra qual versão usou.</small>'+(m.erroCampo ? '<span class="form-error">'+m.erroCampo+'</span>' : '')+'</label>' : '<div class="ui-alert ui-alert--info">'+ic('lock',16)+'<span><b>Seu perfil só consulta o dólar.</b>Quem corrige é quem administra a cobrança da plataforma.</span></div>')
+      + '<div class="sec-t">Histórico de '+mes+'</div>'+(h.length ? '<table class="tab-hist"><thead><tr><th>Versão</th><th>Dólar</th><th>Cadastrado em</th><th>Por</th></tr></thead><tbody>'+h.map((x, i) => '<tr><td>'+x.v+(i === 0 ? ' '+pill('vale','#ECFDF5','#047857') : '')+'</td><td class="m">'+taxa6(x.r)+'</td><td>'+x.em+'</td><td>'+FALTA('a resposta não traz quem cadastrou')+'</td></tr>').join('')+'</tbody></table>' : '<div class="pat-ab-detail-note">Nenhuma taxa cadastrada para este mês.</div>')
+      + (fase === 'enviando' ? esperando : '') + res;
+    rod.innerHTML = fase === 'final' || !podeGerir() ? BTN_FECHAR : '<button type="button" class="pat-btn" data-fechar>Cancelar</button><button type="button" class="pat-btn pat-btn--primary" data-confirmar'+(fase === 'enviando' ? ' aria-disabled="true"' : '')+'>Salvar nova versão</button>';
+  } else if (m.tipo === 'grupo-novo' || m.tipo === 'grupo-renomear') {
+    const novo = m.tipo === 'grupo-novo'; tit.textContent = novo ? 'Novo grupo econômico' : 'Renomear grupo';
+    corpo.innerHTML = '<div class="form-grade"><label class="ui-field larga">Nome do grupo<input class="ui-input" data-nome data-autofoco maxlength="120" value="'+esc(m.campos.nome)+'" aria-invalid="'+(!!m.erroCampo)+'"'+(fase !== 'form' ? ' disabled' : '')+'><small>De 1 a 120 caracteres. Dois grupos não podem ter o mesmo nome.</small>'+(m.erroCampo ? '<span class="form-error">'+m.erroCampo+'</span>' : '')+'</label>'
+      + '<label class="ui-field larga">Observações<textarea class="ui-input" data-obs rows="3"'+(fase !== 'form' ? ' disabled' : '')+'>'+esc(m.campos.obs)+'</textarea></label></div>'
+      + '<div class="ui-alert ui-alert--info">'+ic('shield',16)+'<span><b>O grupo junta as organizações de um mesmo cliente.</b>Serve para cobrança e para a visão de custo da plataforma. Ele não dá a uma filial acesso aos dados de outra. A matriz assina pelo grupo.</span></div>'
+      + (fase === 'enviando' ? esperando : '') + res;
+    rod.innerHTML = fase === 'final' ? BTN_FECHAR : '<button type="button" class="pat-btn" data-fechar>Cancelar</button><button type="button" class="pat-btn pat-btn--primary" data-confirmar'+(fase === 'enviando' ? ' aria-disabled="true"' : '')+'>'+(novo ? 'Criar grupo' : 'Salvar nome')+'</button>';
+  } else if (m.tipo === 'grupo-membros' || m.tipo === 'mover') {
+    const mover = m.tipo === 'mover', gr = mover ? null : GRUPOS.find(x => x.id === m.gid);
+    tit.textContent = mover ? 'Mudar de grupo · '+ORG[m.org].nome : 'Membros · '+gr.nome;
+    const lista = mover ? '<label class="ui-field larga">Grupo<select class="ui-input" data-grupo-sel data-autofoco'+(fase !== 'form' ? ' disabled' : '')+'><option value="">Sem grupo</option>'+GRUPOS.map(x => '<option value="'+x.id+'"'+(m.campos.g === x.id ? ' selected' : '')+'>'+esc(x.nome)+'</option>').join('')+'</select></label>'
+      : '<div class="larga"><div class="sec-t" style="margin-top:0">Organizações no grupo a partir da data abaixo</div><div class="marcas">'+ORGS.map(o => { const g0 = grupoDe(o.id, HOJE), outro = g0 && g0 !== m.gid; return '<label class="marca-l"><input type="checkbox" data-membro="'+o.id+'"'+(m.campos.membros.includes(o.id) ? ' checked' : '')+(fase !== 'form' ? ' disabled' : '')+'>'+esc(o.nome)+'<small>'+(outro ? 'hoje no '+esc(nomeGrupo(g0)) : g0 === m.gid ? 'no grupo' : 'sem grupo')+'</small></label>'; }).join('')+'</div></div>';
+    corpo.innerHTML = '<div class="form-grade">'+lista+'<label class="ui-field larga">Vale a partir de<input class="ui-input" type="date" data-desde min="'+HOJE+'" value="'+esc(m.campos.desde)+'" aria-invalid="'+(!!m.erroCampo)+'"'+(fase !== 'form' ? ' disabled' : '')+'><small>A mudança vale de hoje ('+HOJE_BR+') em diante; os meses passados não mudam. Uma organização fica em um grupo só.</small>'+(m.erroCampo ? '<span class="form-error">'+m.erroCampo+'</span>' : '')+'</label></div>'
+      + '<div class="ui-alert ui-alert--info">'+ic('shield',16)+'<span><b>Só a plataforma vê o grupo.</b>Ele serve para cobrança e para a visão de custo; não dá a uma filial acesso aos dados de outra.</span></div>'
+      + (fase === 'enviando' ? esperando : '') + res;
+    rod.innerHTML = fase === 'final' ? BTN_FECHAR : '<button type="button" class="pat-btn" data-fechar>Cancelar</button><button type="button" class="pat-btn pat-btn--primary" data-confirmar'+(fase === 'enviando' ? ' aria-disabled="true"' : '')+'>Salvar</button>';
+  } else if (m.tipo === 'grupo-hist') {
+    const gr = GRUPOS.find(x => x.id === m.gid); tit.textContent = 'Histórico · '+gr.nome;
+    const ls = VINCULOS.filter(x => x.g === m.gid).sort((a, b) => a.de < b.de ? -1 : 1);
+    corpo.innerHTML = '<table class="tab-hist"><thead><tr><th>Organização</th><th>Entrou</th><th>Saiu</th><th>Situação</th></tr></thead><tbody>'+ls.map(x => '<tr><td>'+esc(ORG[x.org].nome)+'</td><td>'+dBR(x.de)+'</td><td>'+(x.ate ? dBR(x.ate) : '—')+'</td><td>'+(x.de > HOJE ? pill('Agendado','#EFF6FF','#2563EB') : x.ate ? pill('Encerrado','#F1F5F9','#64748B') : pill('Vigente','#ECFDF5','#047857'))+'</td></tr>').join('')+'</tbody></table><div class="pat-ab-detail-note" style="margin-top:10px">Cada mês usa o grupo do último dia do mês. Uma saída fecha o vínculo no dia anterior à data informada.</div>';
+    rod.innerHTML = BTN_FECHAR;
+  } else if (m.tipo === 'grupo-excluir') {
+    tit.textContent = 'Excluir grupo';
+    corpo.innerHTML = '<div class="ui-alert">'+ic('alert',16)+'<span><b>Este grupo tem organizações.</b>Tire as organizações do grupo antes de excluir. A exclusão guarda o histórico.</span></div>';
+    rod.innerHTML = BTN_FECHAR;
+  } else if (m.tipo === 'importacoes') {
+    tit.textContent = 'Importações de '+mes;
+    corpo.innerHTML = '<div class="sec-t" style="margin-top:0">Arquivos de custo</div>'+(d.imports.length ? '<table class="tab-hist"><thead><tr><th>Importado em</th><th>Linhas</th><th>Moeda</th><th>Situação</th></tr></thead><tbody>'+d.imports.map((x, i) => '<tr><td>'+x.em+'</td><td class="m">'+x.linhas.toLocaleString('pt-BR')+'</td><td>'+(d.status === 'currency_unknown' ? '—' : 'dólar')+'</td><td>'+(i === d.imports.length - 1 ? pill('Vale no mês','#ECFDF5','#047857') : pill('Substituído','#F1F5F9','#64748B'))+'</td></tr>').join('')+'</tbody></table>' : '<div class="pat-ab-detail-note">Nenhum arquivo importado para este mês.</div>')
+      + '<div class="sec-t">Rateios</div>'+(d.runs.length ? '<table class="tab-hist"><thead><tr><th>Iniciado em</th><th>Situação</th></tr></thead><tbody>'+d.runs.map(x => '<tr><td>'+x.em+'</td><td>'+(x.st === 'completed' ? pill('Concluído','#ECFDF5','#047857') : pill('Em processamento','#FFFBEB','#B45309'))+'</td></tr>').join('')+'</tbody></table>' : '<div class="pat-ab-detail-note">Nenhum rateio neste mês.</div>');
+    rod.innerHTML = BTN_FECHAR;
+  }
+}
+function confirmar(){
+  const m = M; if (!m || m.fase === 'enviando') return;
+  const cen = G.cen, mesNome = MESES[+G.mes.slice(5)-1];
+  if (m.tipo === 'importar') {
+    if (!m.arquivo) { m.resultado = ['danger','Escolha o arquivo do mês. ','Use o botão do campo ou o arquivo de exemplo.']; desenharModal(); return; }
+    m.fase = 'enviando'; m.resultado = null; m.esperando = 'Enviando o arquivo…'; desenharModal();
+    setTimeout(() => {
+      if (cen === 'grande' || m.arquivo.tam > 1048576) { m.fase = 'form'; m.resultado = ['danger','O arquivo passa de 1 MB. ','Hoje a importação manual aceita até 1 MB por arquivo. Nada foi importado.']; desenharModal(); return; }
+      if (cen === 'falha') { m.fase = 'form'; m.resultado = ['danger','A importação falhou. ','O servidor recusou o arquivo (linha 1: coluna de custo ausente). Nada mudou em '+mesNome+'.']; desenharModal(); return; }
+      m.esperando = 'Arquivo importado. Rodando o rateio de '+mesNome+'…'; desenharModal();
+      setTimeout(() => {
+        m.fase = 'final';
+        if (cen === 'outro-mes') m.resultado = ['warning','O arquivo é de setembro de 2026. ','Ele foi importado e o rateio rodou para setembro; '+mesNome+' continua como estava.'];
+        else { m.resultado = ['ok','Arquivo importado: 3.214 linhas de '+rotMes(G.mes)+', em dólar. ','O rateio do mês terminou às 00:18 e a tela já usa os números novos.']; if (['no_run','no_import','presa','currency_unknown','legacy'].includes(G.estado)) { G.estado = 'normal'; marcarRv(); } }
+        desenharModal(); renderTudo(); toast(m.resultado[0] === 'ok' ? 'Arquivo importado e rateio de '+mesNome+' concluído.' : 'Arquivo de setembro importado.');
+      }, 700);
+    }, 700);
+  } else if (m.tipo === 'rodar') {
+    m.fase = 'enviando'; m.resultado = null; m.esperando = 'Rodando o rateio de '+mesNome+'…'; desenharModal();
+    setTimeout(() => {
+      if (cen === 'falha') { m.fase = 'form'; m.resultado = ['danger','O rateio falhou. ','O servidor respondeu com erro; o rateio anterior continua valendo. Tente de novo.']; desenharModal(); return; }
+      m.fase = 'final'; m.resultado = ['ok','Rateio de '+mesNome+' concluído às 00:18. ','A tela já usa o rateio novo; o anterior fica no histórico.'];
+      if (['presa','legacy','no_import'].includes(G.estado)) { G.estado = 'normal'; marcarRv(); }
+      desenharModal(); renderTudo(); toast('Rateio de '+mesNome+' concluído.');
+    }, 900);
+  } else if (m.tipo === 'fx') {
+    const t = String(m.campos.taxa).trim().replace(/\s/g, '').replace(',', '.');
+    if (!/^\d{1,3}(\.\d{1,6})?$/.test(t) || +t <= 0) { m.erroCampo = 'Digite um número maior que zero, menor que 1.000, com até 6 casas decimais (ex.: 5,412300).'; desenharModal(); return; }
+    m.erroCampo = null; m.fase = 'enviando'; m.esperando = 'Salvando a nova versão…'; desenharModal();
+    setTimeout(() => {
+      if (cen === 'futuro' || G.mes > MES_CORRENTE) { m.fase = 'form'; m.resultado = ['danger','Não dá para cadastrar o dólar de um mês que ainda não começou. ','Escolha um mês até '+rotMes(MES_CORRENTE)+'.']; desenharModal(); return; }
+      const h = CAMBIO[G.mes] || (CAMBIO[G.mes] = []); const r6 = (+t).toFixed(6); h.push({ v:h.length + 1, r:r6, em:HOJE_BR+' 00:18' });
+      m.fase = 'final'; m.resultado = ['ok','Dólar de '+mesNome+' salvo: '+taxa6(r6)+' (versão '+h.length+'). ','Custo e margem do mês já usam a versão nova.'];
+      if (G.estado === 'fx_missing') { G.estado = 'normal'; marcarRv(); }
+      desenharModal(); renderTudo(); toast('Dólar de '+mesNome+' salvo: versão '+h.length+'.');
+    }, 700);
+  } else if (m.tipo === 'grupo-novo' || m.tipo === 'grupo-renomear') {
+    const nome = String(m.campos.nome).trim();
+    if (!nome || nome.length > 120) { m.erroCampo = 'Digite um nome de 1 a 120 caracteres.'; desenharModal(); return; }
+    m.erroCampo = null; m.fase = 'enviando'; m.esperando = 'Salvando…'; desenharModal();
+    setTimeout(() => {
+      if (cen === 'nome' || GRUPOS.some(x => x.nome.toLowerCase() === nome.toLowerCase() && x.id !== m.gid)) { m.fase = 'form'; m.erroCampo = 'Já existe um grupo com esse nome.'; desenharModal(); return; }
+      if (m.tipo === 'grupo-novo') { const id = 'g'+(SEQ++); GRUPOS.push({ id, nome, obs:m.campos.obs }); m.fase = 'final'; m.resultado = ['ok','Grupo “'+esc(nome)+'” criado. ','Agora escolha as organizações em “Editar membros”, no grupo; ele aparece na lista quando tiver organizações no mês.']; }
+      else { GRUPOS.find(x => x.id === m.gid).nome = nome; m.fase = 'final'; m.resultado = ['ok','Nome salvo. ','A lista e o histórico já mostram o nome novo.']; }
+      desenharModal(); renderTudo(); toast(m.tipo === 'grupo-novo' ? 'Grupo criado.' : 'Grupo renomeado.');
+    }, 600);
+  } else if (m.tipo === 'grupo-membros' || m.tipo === 'mover') {
+    if (!m.campos.desde || m.campos.desde < HOJE) { m.erroCampo = 'A data não pode ser anterior a hoje ('+HOJE_BR+'): os meses passados não mudam.'; desenharModal(); return; }
+    m.erroCampo = null; m.fase = 'enviando'; m.esperando = 'Salvando os vínculos…'; desenharModal();
+    setTimeout(() => {
+      if (cen === 'outro-grupo') { m.fase = 'form'; m.resultado = ['danger','Reboque Rápido Norte já está agendada no Grupo Vale a partir de 01/12/2026. ','Uma organização fica em um grupo só. Tire-a do Grupo Vale primeiro.']; desenharModal(); return; }
+      if (cen === 'conflito') { m.fase = 'form'; m.resultado = ['danger','Outra pessoa mudou este grupo agora. ','Feche a janela, confira a lista e tente de novo.']; desenharModal(); return; }
+      const desde = m.campos.desde;
+      const aplica = (org, alvo) => { const atual = VINCULOS.find(x => x.org === org && x.ate === null && x.de <= desde); if (atual && atual.g === alvo) return; if (atual) atual.ate = desde; VINCULOS = VINCULOS.filter(x => !(x.org === org && x.de >= desde && x.ate === null && x !== atual)); if (alvo) VINCULOS.push({ org, g:alvo, de:desde, ate:null }); };
+      if (m.tipo === 'mover') aplica(m.org, m.campos.g || null);
+      else { ORGS.forEach(o => { const no = m.campos.membros.includes(o.id), g0 = grupoDe(o.id, desde); if (no && g0 !== m.gid) aplica(o.id, m.gid); if (!no && g0 === m.gid) aplica(o.id, null); }); }
+      m.fase = 'final'; m.resultado = ['ok','Vínculos salvos a partir de '+dBR(desde)+'. ','Meses anteriores não mudam; o mês de '+MESES[+desde.slice(5,7)-1]+' já usa o grupo novo no fim do mês.'];
+      desenharModal(); renderTudo(); toast('Grupo atualizado a partir de '+dBR(desde)+'.');
+    }, 700);
+  }
+}
+
+/* ── Interação ── */
+function vistaDe(el){ const r = el.closest('[data-view]'); return r ? r.dataset.view : G.opcao; }
+function focar(sel){ const el = $(sel); if (el) el.focus({ preventScroll:true }); }
+function aplicarAlvo(v, key){
+  const st = S[v];
+  if (key.startsWith('mes:')) { G.mes = key.slice(4); ['a','b','c'].forEach(x => { S[x].aberta = null; }); renderTudo(); focar('[data-view="'+v+'"] [data-alvo="'+key+'"]'); return; }
+  if (key.startsWith('grp:')) { const id = v+'-g-'+key.slice(4), igual = st.modo === 'group' && st.aberta === id; Object.assign(st, { modo:'group', alvo:null, busca:'', aberta: igual ? null : id }); render(v); focar('[data-view="'+v+'"] [data-alvo="'+key+'"]'); return; }
+  if (st.alvo === key) { st.alvo = null; st.aberta = null; render(v); focar('[data-view="'+v+'"] [data-alvo="'+CSS.escape(key)+'"]'); return; }
+  const glob = GLOBAIS.includes(key) || key.startsWith('nr:');
+  Object.assign(st, { alvo:key, aberta:null, busca:'', modo: glob ? 'global' : 'tenant' });
+  if (key.startsWith('org:')) st.aberta = v+'-t-'+key.slice(4);
+  if (glob) { const d = V(), ps = parcelas(d).filter(p => filtraParcela(p, key)); if (ps.length === 1) st.aberta = v+'-p-'+ps[0].k.replace(':', '-'); }
+  render(v); focar('[data-view="'+v+'"] [data-alvo="'+CSS.escape(key)+'"]');
+}
+function alternarLinha(row){ const v = vistaDe(row), id = row.dataset.linha; S[v].aberta = S[v].aberta === id ? null : id; renderLista(v); focar('[data-view="'+v+'"] [data-linha="'+id+'"]'); }
+function trocarOpcao(o){
+  G.opcao = o;
+  ['a','b','c'].forEach(k => { $('[data-view="'+k+'"]').style.display = k === o ? '' : 'none'; });
+  $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.opcao === o)));
+  $$('[data-nota]').forEach(n => { n.hidden = n.dataset.nota !== o; });
+  const nomes = { a:'Opção A — Fiel à referência (padrão-ouro Cloud Billing), com margem, dólar e grupos', b:'Opção B — Analítica: quem dá prejuízo, quem está perto e por quê', c:'Opção C — Fechamento do mês e grupos: da assinatura à margem' };
+  $('#rv-titulo').textContent = nomes[o]; $('#banner-tag').textContent = 'Cloud Billing · Opção '+o.toUpperCase();
+}
+function marcarRv(){ $$('[data-estado]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.estado === G.estado))); $$('[data-papel]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.papel === G.papel))); $$('[data-cen]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cen === G.cen))); }
+let toastT = null;
+function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 3200); }
+
+document.addEventListener('click', ev => {
+  const el = s => ev.target.closest(s); let x;
+  if ((x = el('[data-opcao]'))) { trocarOpcao(x.dataset.opcao); return; }
+  if ((x = el('[data-fechar]'))) { fecharModal(); return; }
+  if (ev.target.id === 'ov') { fecharModal(); return; }
+  if ((x = el('[data-confirmar]'))) { if (x.getAttribute('aria-disabled') !== 'true') confirmar(); return; }
+  if ((x = el('[data-exemplo]'))) { M.arquivo = { nome:'custo-aws-'+G.mes+'.csv', tam:838861 }; M.resultado = null; desenharModal(); return; }
+  if ((x = el('[data-estado]'))) { G.estado = x.dataset.estado; iniciarEstado(); marcarRv(); renderTudo(); return; }
+  if ((x = el('[data-papel]'))) { G.papel = x.dataset.papel; $('#sb-papel').textContent = G.papel === 'org' ? 'Gestor de organização' : G.papel === 'leitura' ? 'Consulta' : 'Super-administrador'; marcarRv(); renderTudo(); return; }
+  if ((x = el('[data-cen]'))) { G.cen = x.dataset.cen; marcarRv(); return; }
+  if ((x = el('[data-marcas]'))) { const on = document.body.classList.toggle('sem-marcas'); x.setAttribute('aria-pressed', String(on)); return; }
+  if ((x = el('[data-restaurar]'))) { iniciarDados(); iniciarEstado(); G.mes = '2026-10'; G.estado = 'normal'; G.papel = 'admin'; G.cen = 'ok'; marcarRv(); renderTudo(); toast('Dados de exemplo restaurados.'); return; }
+  if ((x = el('#rv-recolher'))) { const c = $('#rv-corpo'); c.hidden = !c.hidden; x.setAttribute('aria-expanded', String(!c.hidden)); x.textContent = c.hidden ? 'Abrir notas' : 'Recolher notas'; return; }
+  if ((x = el('[data-limpar]'))) { const v = vistaDe(x); Object.assign(S[v], { alvo:null, aberta:null }); render(v); focar('[data-view="'+v+'"] [data-lista]'); return; }
+  if ((x = el('[data-modo]'))) { const v = vistaDe(x); Object.assign(S[v], { modo:x.dataset.modo, alvo:null, aberta:null }); render(v); focar('[data-view="'+v+'"] [data-modo="'+x.dataset.modo+'"]'); return; }
+  if ((x = el('[data-modo-ir]'))) { const v = vistaDe(x); Object.assign(S[v], { modo:x.dataset.modoIr, alvo:null, aberta:null }); render(v); return; }
+  if ((x = el('[data-alvo]'))) { aplicarAlvo(vistaDe(x), x.dataset.alvo); return; }
+  if ((x = el('[data-acao]'))) {
+    if (x.getAttribute('aria-disabled') === 'true' && !x.dataset.acao.startsWith('grupo-excluir')) return;
+    const [a, arg] = x.dataset.acao.split(':'), d = V();
+    if (a === 'tentar') { G.estado = 'normal'; marcarRv(); renderTudo(); toast('Dados recarregados.'); return; }
+    if (a === 'importar') { abrirModal({ tipo:'importar', campos:{} }); return; }
+    if (a === 'rodar') { if (!podeGerir()) { toast('Seu perfil só consulta os rateios.'); return; } abrirModal({ tipo:'rodar', campos:{} }); return; }
+    if (a === 'fx') { const fx = d.fx; abrirModal({ tipo:'fx', campos:{ taxa: fx ? taxa6(fx.r) : '' } }); return; }
+    if (a === 'importacoes') { abrirModal({ tipo:'importacoes' }); return; }
+    if (a === 'grupo-novo') { abrirModal({ tipo:'grupo-novo', campos:{ nome:'', obs:'' } }); return; }
+    if (a === 'grupo-renomear') { const g = GRUPOS.find(y => y.id === arg); abrirModal({ tipo:'grupo-renomear', gid:arg, campos:{ nome:g.nome, obs:g.obs } }); return; }
+    if (a === 'grupo-membros') { abrirModal({ tipo:'grupo-membros', gid:arg, campos:{ membros: ORGS.filter(o => grupoDe(o.id, HOJE) === arg).map(o => o.id), desde:HOJE } }); return; }
+    if (a === 'grupo-hist') { abrirModal({ tipo:'grupo-hist', gid:arg }); return; }
+    if (a === 'grupo-excluir') { abrirModal({ tipo:'grupo-excluir', gid:arg }); return; }
+    if (a === 'mover') { abrirModal({ tipo:'mover', org:arg, campos:{ g: grupoDe(arg, HOJE) || '', desde:HOJE } }); return; }
+    if (a === 'abrir-org') { toast('Abre a página de '+ORG[arg].nome+' em Organizações.'); return; }
+    if (a === 'demonstrativo') { toast('Abre o demonstrativo de '+MESES[+G.mes.slice(5)-1]+' de '+ORG[arg].nome+' na tela de Demonstrativos.'); return; }
+  }
+  if ((x = el('[data-linha]'))) { alternarLinha(x); return; }
+});
+document.addEventListener('keydown', ev => {
+  if (ev.key === 'Escape' && M) { fecharModal(); return; }
+  const row = ev.target.closest && ev.target.closest('[data-linha]');
+  if (row && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); alternarLinha(row); return; }
+  if (row && ev.key === 'Escape') { const v = vistaDe(row); if (S[v].aberta) { S[v].aberta = null; renderLista(v); focar('[data-view="'+v+'"] [data-linha="'+row.dataset.linha+'"]'); } return; }
+  const g = ev.target.closest && ev.target.closest('g[role="button"][data-alvo]');
+  if (g && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); aplicarAlvo(vistaDe(g), g.dataset.alvo); }
+});
+document.addEventListener('change', ev => {
+  const t = ev.target;
+  if (t.matches('[data-mes]')) { G.mes = t.value; ['a','b','c'].forEach(x => { S[x].aberta = null; }); renderTudo(); focar('[data-view="'+G.opcao+'"] [data-mes]'); return; }
+  if (!M) return;
+  if (t.matches('[data-arquivo]')) { const f = t.files && t.files[0]; M.arquivo = f ? { nome:f.name, tam:f.size } : null; M.resultado = null; desenharModal(); return; }
+  if (t.matches('[data-membro]')) { const id = t.dataset.membro; M.campos.membros = t.checked ? M.campos.membros.concat(id) : M.campos.membros.filter(y => y !== id); return; }
+  if (t.matches('[data-grupo-sel]')) { M.campos.g = t.value; return; }
+  if (t.matches('[data-desde]')) { M.campos.desde = t.value; return; }
+});
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.matches('[data-busca]')) { const v = vistaDe(t); Object.assign(S[v], { busca:t.value, aberta:null }); renderLista(v); const i = $('[data-view="'+v+'"] [data-busca]'); i.focus(); i.setSelectionRange(i.value.length, i.value.length); return; }
+  if (!M) return;
+  if (t.matches('[data-taxa]')) M.campos.taxa = t.value;
+  if (t.matches('[data-nome]')) M.campos.nome = t.value;
+  if (t.matches('[data-obs]')) M.campos.obs = t.value;
+  if (t.matches('[data-desde]')) M.campos.desde = t.value;
+});
+
+iniciarDados(); iniciarEstado(); renderTudo(); trocarOpcao('a');
+</script>
+</body>
+</html>

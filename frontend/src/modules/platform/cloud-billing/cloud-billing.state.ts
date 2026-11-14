@@ -420,7 +420,15 @@ export function buildCloudBillingView(input: CloudBillingViewInput): CloudBillin
     if (current) currentGroupByTenant[tenantId] = { groupId: current.groupId, groupName: current.groupName };
   }
 
-  const empty = !!data.global && rawLines.every((line) => line.subscriptionAmount === null && line.allocatedCost === null) && data.global.global.subscriptionTotal === null && data.global.global.totalCost === null;
+  // Vazio = nenhuma assinatura, nenhum custo em reais E nenhum custo na moeda do arquivo (no "sem dólar" o original existe:
+  // a tela mostra o aviso e os valores em dólar, não o vazio). Achado do aceite na forma real (F11).
+  const global0 = data.global?.global ?? null;
+  const empty =
+    !!global0 &&
+    rawLines.every((line) => line.subscriptionAmount === null && line.allocatedCost === null && line.allocatedCostOriginal === null) &&
+    global0.subscriptionTotal === null &&
+    global0.totalCost === null &&
+    global0.original.totalImportedCost === null;
 
   return {
     month: data.month,

@@ -96,6 +96,12 @@ export function globalJson(over: Json = {}): Json {
   };
 }
 
+/**
+ * O `original` que o servidor manda quando o custo do mês não tem original sabido (`no_run`, `no_import`,
+ * `currency_unknown`): tudo `null`, inclusive a moeda (`overview.engine.ts`, `globalOf` com `ORIGINAL_KNOWN_STATUSES`).
+ */
+export const NULL_ORIGINAL: Json = { currency: null, tenantsCost: null, platformOwnCost: null, unallocatedOther: null, roundingResidualCost: null, totalImportedCost: null };
+
 export function globalPayload(month = MONTH, cost: Json = COST_OK, global: Json = globalJson()): Json {
   return { period: month, groupBy: "global", currency: "BRL", generatedAt: "2026-11-04T12:20:00.000Z", cost, global };
 }
