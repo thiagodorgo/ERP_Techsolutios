@@ -110,6 +110,7 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.listForTenant#withTenantRls": "cenario:outbox.listForTenant",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.resolve#withTenantRlsBudget": "cenario:outbox.resolve",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.retryByOperator#withTenantRlsBudget": "cenario:outbox.retryByOperator",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.recordChargeCancelOutcome#withTenantRlsBudget": "cenario:outbox.recordChargeCancelOutcome",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.closeAddon#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.closeSubscription#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.createAddon#withTenantRls": "sem-tabela-do-mapa",
@@ -310,6 +311,31 @@ if (!connectionString) {
     // A semeadura não tem `dueDate` no payload (vencimento "passado"): o operador informa a data nova, que é regravada no MESMO UPDATE.
     const newDue = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000));
     await scenario("outbox.retryByOperator", () => outbox.retryByOperator(n.tenantId, review, now, { dueDate: newDue }));
+    // B-ASS-08c1b (F6): o registro do cancelamento — o demonstrativo PRIMEIRO, depois a linha `charge_cancel` (com a posse), a
+    // cobrança da tabela e a `charge_create` alvo.
+    const q = await seedStatement("q");
+    const createQ = await seedRow(q.tenantId, q.statementId, provider, "SENT");
+    const chargeQ = `pay_lk2_rc_${randomUUID().slice(0, 8)}`;
+    await db.$executeRawUnsafe(`UPDATE billing_outbox SET external_id = $2 WHERE id = $1::uuid`, createQ, chargeQ);
+    await db.$executeRawUnsafe(
+      `INSERT INTO subscription_statement_charges (tenant_id, statement_id, provider, external_charge_id, status, due_date, created_at) VALUES ($1::uuid, $2::uuid, $3, $4, 'pending', '2026-11-20', now())`,
+      q.tenantId,
+      q.statementId,
+      provider,
+      chargeQ,
+    );
+    const cancelQ = ((await db.$queryRawUnsafe(
+      `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, attempts, attempt_started_at)
+       VALUES ($1::uuid, $2::uuid, 'charge_cancel', $3, $4, gen_random_uuid(), $5::jsonb, now(), 'PROCESSING', 1, now()) RETURNING id`,
+      q.tenantId,
+      q.statementId,
+      provider,
+      `charge_cancel:${q.statementId}:1`,
+      JSON.stringify({ chargeId: chargeQ, chargeCreateId: createQ }),
+    )) as Array<{ id: string }>)[0]!.id;
+    const leaseQ = await seedLease(cancelQ, now);
+    const rowQ = (await outbox.findById(q.tenantId, cancelQ))!;
+    await scenario("outbox.recordChargeCancelOutcome", () => outbox.recordChargeCancelOutcome(q.tenantId, rowQ, leaseQ, chargeQ, now));
 
     const f = await seedStatement("f");
     await scenario("charges.insert", () => charges.insert({ tenantId: f.tenantId, statementId: f.statementId, provider, externalChargeId: `pay_lk2_${randomUUID().slice(0, 8)}`, status: "pending", payUrl: null, dueDate: "2026-11-20" }, now));

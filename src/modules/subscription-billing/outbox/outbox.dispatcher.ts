@@ -326,8 +326,9 @@ async function dispatchOne(
     if (!(await deps.repo.markSkipped(row.tenantId, row.id, "provider_disabled", clock(), lease))) return leaseLost(deps, row);
     return "skipped";
   }
+  if (row.kind === "charge_cancel") return dispatchChargeCancel(deps, row, port, clock);
   if (row.kind !== "charge_create") {
-    // `charge_cancel`/`refund` nascem nas fatias seguintes; sem handler → NEEDS_REVIEW.
+    // `refund` nasce num bloco seguinte; sem handler → NEEDS_REVIEW.
     if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, "unsupported_kind", clock(), lease))) return leaseLost(deps, row);
     return "needs_review";
   }
@@ -365,6 +366,9 @@ async function dispatchOne(
       return "needs_review";
     }
     if (verdict.kind === "adopt") return await settleFoundCharge(deps, row, { chargeId: verdict.candidate.chargeId, ...(await port.getCharge(verdict.candidate.chargeId)) }, facts, false, clock);
+    // B-ASS-08c1b (Emenda 1 §3.6.2): decidido "criar", a data vencida (ou que não é data) nunca vai ao provedor — a linha vai à
+    // conferência com 0 POST. "Hoje" é o dia civil de São Paulo do relógio. A adoção, acima, não olha a data.
+    if (!dueDateStillValid(row.payload.dueDate, SAO_PAULO_DAY.format(clock()))) return reviewDueDatePast(deps, row, clock); // [DUE-PAST]
     // A posse é confirmada numa transação curta que termina ANTES do POST remoto.
     if (!(await deps.repo.confirmLease(row.tenantId, row.id, lease))) return leaseLost(deps, row); // [LEASE-02]
     const result = await port.createCharge(chargeInputFromRow(row, customer.customerId));
@@ -373,6 +377,105 @@ async function dispatchOne(
     return recordChargeSafely(deps, row, lease, { kind: "created", result }, "sent", clock); // [REG-SAFE-01]
   } catch (error) {
     return registerFailure(deps, row, error, clock);
+  }
+}
+
+/** B-ASS-08c1b (Emenda 1 §3.6.2): a data de vencimento do payload ainda vale em `today` (dia civil de São Paulo)? */
+export function dueDateStillValid(value: unknown, today: string): boolean {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) && value >= today;
+}
+
+async function reviewDueDatePast(deps: DispatcherDeps, row: BillingOutboxRow, clock: () => Date): Promise<DispatchOutcome> {
+  if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, "due_date_past", clock(), leaseOf(row)))) return leaseLost(deps, row);
+  await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "due_date_past" });
+  return "needs_review";
+}
+
+/** B-ASS-08c1b (Emenda 1 §2.1; Emenda 2 §1.3) — o veredito do cancelamento pela lista COMPLETA por referência. */
+export type CancelVerdict = { readonly kind: "register" } | { readonly kind: "proceed" } | { readonly kind: "review"; readonly code: string };
+
+/**
+ * B-ASS-08c1b — o veredito do cancelamento, PURO, pela entrada do `chargeId` na lista completa por referência (o `getCharge`
+ * nunca decide: no Asaas ele não diz "cancelada"). Exige EXATAMENTE uma entrada (conta com `filter`, nunca decide pela
+ * primeira): zero → `charge_not_listed` (ou `unknown_charge_not_in_reference` no `cancel-unknown`); duas ou mais →
+ * `charge_listed_twice`. Uma entrada: `cancelled` → registrar, 0 DELETE; paga, estornada ou em disputa → `charge_already_paid`
+ * (o dinheiro chega pelo webhook); `pending`/`overdue` → seguir para o DELETE; `unknown` → `charge_state_unknown`.
+ */
+export function cancelTargetVerdict(listed: readonly ExternalChargeCandidate[], chargeId: string, unknown: boolean): CancelVerdict {
+  const entries = listed.filter((candidate) => candidate.chargeId === chargeId); // [CANCEL-LIST-FIRST]
+  if (entries.length === 0) return { kind: "review", code: unknown ? "unknown_charge_not_in_reference" : "charge_not_listed" };
+  if (entries.length > 1) return { kind: "review", code: "charge_listed_twice" };
+  switch (entries[0]!.status) {
+    case "cancelled":
+      return { kind: "register" };
+    case "paid":
+    case "partially_paid":
+    case "refunded":
+    case "partially_refunded":
+    case "chargeback_disputed":
+    case "charged_back":
+      return { kind: "review", code: "charge_already_paid" };
+    case "pending":
+    case "overdue":
+      return { kind: "proceed" };
+    case "unknown":
+      return { kind: "review", code: "charge_state_unknown" };
+  }
+}
+
+/**
+ * B-ASS-08c1b (P9b; Emenda 1 §2.1) — o handler do `charge_cancel`, TODO dentro do `try`; a linha nova e a órfã seguem o
+ * MESMO caminho:
+ *   1. a lista por referência e o `cancelTargetVerdict`;
+ *   2. "seguir": a posse confirmada e o DELETE. Recusado por 429 → `registerFailure`; recusado por outro motivo → o passo 1
+ *      de novo: "registrar" registra, conferência vai à conferência, "seguir" de novo (ou a reconsulta que lança) →
+ *      `registerFailure` com o erro do DELETE;
+ *   3. o registro numa transação (`recordChargeCancelOutcome`): demonstrativo, linha → SENT, cobrança da tabela →
+ *      `cancelled`, a `charge_create` alvo → SKIPPED, mantendo o `external_id`;
+ *   4. a falha do registro NÃO passa por `registerFailure`: a linha fica PROCESSING e a órfã volta ao passo 1.
+ */
+async function dispatchChargeCancel(deps: DispatcherDeps, row: BillingOutboxRow, port: PaymentProviderPort, clock: () => Date): Promise<DispatchOutcome> {
+  const lease = leaseOf(row);
+  const chargeId = typeof row.payload.chargeId === "string" ? row.payload.chargeId : "";
+  const unknown = row.payload.unknown === true;
+  try {
+    let verdict = cancelTargetVerdict(await port.listChargesByExternalReference(row.statementId), chargeId, unknown);
+    if (verdict.kind === "proceed") {
+      if (!(await deps.repo.confirmLease(row.tenantId, row.id, lease))) return leaseLost(deps, row);
+      try {
+        await port.cancelCharge(chargeId);
+        verdict = { kind: "register" };
+      } catch (deleteError) {
+        if (rateLimitRetryMs(deleteError) !== null) return await registerFailure(deps, row, deleteError, clock);
+        let reread: CancelVerdict;
+        try {
+          reread = cancelTargetVerdict(await port.listChargesByExternalReference(row.statementId), chargeId, unknown);
+        } catch {
+          return await registerFailure(deps, row, deleteError, clock);
+        }
+        if (reread.kind === "proceed") return await registerFailure(deps, row, deleteError, clock);
+        verdict = reread;
+      }
+    }
+    if (verdict.kind === "review") {
+      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, verdict.code, clock(), lease))) return leaseLost(deps, row);
+      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: verdict.code });
+      return "needs_review";
+    }
+    return await recordChargeCancelSafely(deps, row, lease, chargeId, clock); // [CANCEL-SAFE-01]
+  } catch (error) {
+    return registerFailure(deps, row, error, clock);
+  }
+}
+
+/** B-ASS-08c1b (P9b) — a fronteira pós-provedor do cancelamento (o padrão do R2-01): falha local preserva PROCESSING. */
+async function recordChargeCancelSafely(deps: DispatcherDeps, row: BillingOutboxRow, lease: OutboxLease, chargeId: string, clock: () => Date): Promise<DispatchOutcome> {
+  try {
+    if (!(await deps.repo.recordChargeCancelOutcome(row.tenantId, row, lease, chargeId, clock()))) return leaseLost(deps, row);
+    return "sent";
+  } catch (error) {
+    await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.record_failed", code: errorCode(error) });
+    return "record_failed";
   }
 }
 

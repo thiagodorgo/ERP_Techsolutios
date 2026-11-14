@@ -56,6 +56,8 @@ export type ChargeRecordOutcome =
   | { readonly kind: "adopted"; readonly chargeId: string; readonly lookup: ChargeLookup };
 
 export type ChargeOutcomeSink = (charge: NewStatementCharge, now: Date) => Promise<void>;
+/** B-ASS-08c1b: o cancelamento da cobrança da tabela (provedor + id externo) no dublê em memória. */
+export type ChargeCancelSink = (charge: { readonly tenantId: string; readonly provider: string; readonly externalChargeId: string }, now: Date) => Promise<void>;
 
 export function recordedChargeStatus(kind: ChargeRecordOutcome["kind"], status: ProviderChargeStatus): NewStatementCharge["status"] {
   if (kind === "created") return "pending";
@@ -101,8 +103,15 @@ export interface OutboxRepository {
   confirmLease(tenantId: string, id: string, lease: OutboxLease): Promise<boolean>;
   /** SENT + cobrança + ref, atômicos no Prisma (marcador REG-TX em `outbox.prisma.ts`). `false` significa lease perdida e nenhuma escrita. */
   recordChargeOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, outcome: ChargeRecordOutcome, now: Date): Promise<boolean>;
+  /** B-ASS-08c1b (P9b, o marcador CANCEL-TX em `outbox.prisma.ts`) — o registro do cancelamento numa transação: o
+   * demonstrativo PRIMEIRO, a linha `charge_cancel` → SENT com a posse no predicado, a cobrança da tabela → `cancelled` (só se
+   * `pending`) e a `charge_create` alvo (`payload.chargeCreateId`) SENT → SKIPPED (`skip_reason` NULL, `last_error =
+   * charge_cancelled`), MANTENDO o `external_id`. `false` = posse perdida e nenhuma escrita. */
+  recordChargeCancelOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, chargeId: string, now: Date): Promise<boolean>;
   /** Só o dublê em memória usa esta composição para espelhar as tabelas separadas. */
   configureChargeOutcomeSink?(sink: ChargeOutcomeSink): void;
+  /** B-ASS-08c1b: o espelho do cancelamento da cobrança da tabela no dublê em memória (o Prisma o faz na transação). */
+  configureChargeCancelSink?(sink: ChargeCancelSink): void;
   /** Visibilidade (D5/R-OBX-4): marca `skip_reason = provider_disabled` nas PENDING de provedor desligado, SEM rede e
    * SEM mudar o status. Escrita de PLATAFORMA sobre tabela FORCE → `forEachTenantRls` no Prisma. Devolve quantas marcou. */
   markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number>;
@@ -219,6 +228,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
   private readonly clock: () => Date;
   private readonly readStatement: StatementClaimReader;
   private chargeOutcomeSink: ChargeOutcomeSink | undefined;
+  private chargeCancelSink: ChargeCancelSink | undefined;
 
   constructor(options: InMemoryOutboxOptions) {
     this.readStatement = options.readStatement;
@@ -391,6 +401,23 @@ export class InMemoryOutboxRepository implements OutboxRepository {
       dueDate: (outcome.kind === "adopted" ? outcome.lookup.dueDate : undefined) ?? (typeof row.payload.dueDate === "string" ? row.payload.dueDate : null),
     }, now);
     return this.markSent(tenantId, row.id, chargeId, now, lease);
+  }
+
+  configureChargeCancelSink(sink: ChargeCancelSink): void {
+    this.chargeCancelSink = sink;
+  }
+
+  /** O espelho do registro do cancelamento: a posse primeiro; depois a cobrança (pelo sink, se ligado), a `charge_create` alvo
+   * SENT → SKIPPED mantendo o `external_id`, e a própria linha → SENT. Sem `await` entre ler e gravar as linhas da fila. */
+  async recordChargeCancelOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, chargeId: string, now: Date): Promise<boolean> {
+    if (!(await this.confirmLease(tenantId, row.id, lease))) return false;
+    await this.chargeCancelSink?.({ tenantId, provider: row.provider, externalChargeId: chargeId }, now);
+    if (!(await this.confirmLease(tenantId, row.id, lease))) return false;
+    const target = typeof row.payload.chargeCreateId === "string" ? this.#rows.get(row.payload.chargeCreateId) : undefined;
+    if (target && target.tenantId === tenantId && target.kind === "charge_create" && target.status === "SENT") {
+      this.#rows.set(target.id, { ...target, status: "SKIPPED", skipReason: null, lastError: "charge_cancelled", updatedAt: now });
+    }
+    return this.#patch(tenantId, row.id, lease, { status: "SENT", externalId: chargeId, nextAttemptAt: null, lastError: null, updatedAt: now });
   }
 
   async markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number> {

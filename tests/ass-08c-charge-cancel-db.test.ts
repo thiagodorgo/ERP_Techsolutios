@@ -16,7 +16,8 @@ import "dotenv/config";
 
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { createRequire } from "node:module";
@@ -147,6 +148,13 @@ if (!connectionString) {
     ]);
     (env as unknown as { CORE_SAAS_PERSISTENCE: string }).CORE_SAAS_PERSISTENCE = "prisma";
     resetStatementRuntimeForTests();
+    // F6: o Asaas LIGADO na base descartável (a fixture; o código de produção só liga por `setEnabled`), com chave de cofre de
+    // teste gerada agora — o CC1 pede um novo `/charge` pela rota no fim.
+    await db.$executeRawUnsafe(`INSERT INTO billing_provider_configs (provider, kind, environment, enabled, enabled_environment) VALUES ('asaas', 'payment', 'sandbox', true, 'sandbox')`);
+    (env as unknown as { BILLING_PROVIDERS_ENABLED: boolean }).BILLING_PROVIDERS_ENABLED = true;
+    const [vaultFactory, { EnvVaultKeyProvider }] = await Promise.all([import("../src/modules/subscription-billing/vault/vault.factory.js"), import("../src/modules/subscription-billing/vault/vault-keys.js")]);
+    vaultFactory.resetVaultRuntimeForTests();
+    vaultFactory.setVaultKeysForTests(new EnvVaultKeyProvider({ BILLING_VAULT_KEY: randomBytes(32).toString("base64"), BILLING_VAULT_KEY_VERSION: "1" }));
     const app = createApp(new MemoryCoreSaasAdapter(new CoreSaasRegistry(new InMemoryCoreSaasStore())));
     server = app.listen(0, "127.0.0.1");
     await new Promise<void>((resolve) => server!.once("listening", resolve));
@@ -285,4 +293,263 @@ if (!connectionString) {
     assert.deepEqual(statuses, ["FAILED", "PENDING"], "nada reaberto: 1 charge_cancel vivo");
     assert.equal((await lines(other.statementId)).find((line) => line.kind === "charge_create")!.status, "FAILED");
   });
+
+  // --------------------------------------------------------------------------------- F6: o handler do `charge_cancel`
+  // O despacho REAL (`runDispatchOutbox` + `PrismaOutboxRepository` do papel) sobre o falso do Asaas pelo adaptador real.
+  // A cobrança nasce de verdade: `/charge` pela rota → despacho (POST /v3/payments) → SENT + cobrança `pending` na tabela.
+
+  type Fake = Awaited<ReturnType<typeof import("./helpers/fake-providers/asaas.js").startAsaasFake>>;
+
+  // UM falso para o arquivo inteiro: os ids `pay_NNNN` recomeçam a cada `startAsaasFake`, e a tabela de cobranças é UNIQUE por
+  // (provedor, id externo) — com um falso por caso, o 2º caso repetiria o id do 1º. As opções do cancelamento são lidas a cada
+  // requisição do MESMO objeto, que cada caso preenche e esvazia; `recorded` é a fatia do próprio caso.
+  const fakeOptions: Record<string, unknown> = {};
+  let sharedFake: Fake | undefined;
+  after(async () => {
+    await sharedFake?.close();
+  });
+
+  async function withFake<T>(options: Record<string, unknown>, fn: (fake: Fake) => Promise<T>): Promise<T> {
+    if (!sharedFake) {
+      const { startAsaasFake } = await import("./helpers/fake-providers/asaas.js");
+      sharedFake = await startAsaasFake("ok", fakeOptions as never);
+    }
+    const shared = sharedFake;
+    const from = shared.recorded.length;
+    Object.assign(fakeOptions, options);
+    const view = { ...shared, get recorded() { return shared.recorded.slice(from); } } as Fake;
+    try {
+      return await fn(view);
+    } finally {
+      for (const key of Object.keys(fakeOptions)) delete fakeOptions[key];
+    }
+  }
+
+  async function portOver(fake: Fake) {
+    const [http, asaas] = await Promise.all([
+      import("../src/modules/subscription-billing/providers/http/billing-http.client.js"),
+      import("../src/modules/subscription-billing/providers/payment/asaas/index.js"),
+    ]);
+    const client = new http.BillingHttpClient({ provider: "asaas", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${fake.baseUrl}/v3` });
+    return new asaas.AsaasPaymentAdapter(client, async (kind) => (kind === "api_token" ? "TOKEN-FAKE" : "WEBHOOK-FAKE"));
+  }
+
+  async function dispatch(tenantId: string, port: unknown, options: { readonly at?: Date; readonly failRecord?: boolean } = {}) {
+    const [dispatcher, outboxPrisma] = await Promise.all([
+      import("../src/modules/subscription-billing/outbox/outbox.dispatcher.js"),
+      import("../src/modules/subscription-billing/outbox/outbox.prisma.js"),
+    ]);
+    const at = options.at ?? new Date();
+    return dispatcher.runDispatchOutbox({
+      repo: new outboxPrisma.PrismaOutboxRepository(role.client, {
+        tenantIds: [tenantId],
+        ...(options.failRecord ? { afterChargeCancelRecord: async () => { throw new Error("falha_injetada_do_registro_do_cancelamento"); } } : {}),
+      }),
+      ports: { asaas: port as never },
+      resolveCustomer: async () => ({ ok: true as const, customerId: "cus_fake_cc" }),
+      now: () => at,
+    });
+  }
+
+  const deletes = (fake: Fake) => fake.recorded.filter((request) => request.method === "DELETE").length;
+  const chargeRoute = (fixture: Fixture) => `/api/v1/platform/billing/statements/${fixture.statementId}/charge`;
+
+  /** A cobrança criada de verdade: `/charge` pela rota → despacho → SENT + `pending` na tabela; depois o `charge/cancel`. */
+  async function chargeThenCancel(tag: string, fake: Fake, port: unknown): Promise<{ fixture: Fixture; chargeId: string; createId: string; cancelId: string }> {
+    const fixture = await seedClosed(tag);
+    const charged = await api("POST", chargeRoute(fixture), { tenantId: fixture.tenantId });
+    assert.equal(charged.status, 201, JSON.stringify(charged.body));
+    const created = await dispatch(fixture.tenantId, port);
+    assert.equal(created.outcomes.sent, 1, JSON.stringify(created.outcomes));
+    const create = (await lines(fixture.statementId)).find((line) => line.kind === "charge_create")!;
+    assert.equal(create.status, "SENT");
+    const cancel = await api("POST", cancelRoute(fixture), { tenantId: fixture.tenantId, reason: REASON });
+    assert.equal(cancel.status, 200, JSON.stringify(cancel.body));
+    assert.equal(cancel.body.data.result, "cancel_enqueued");
+    return { fixture, chargeId: create.external_id!, createId: create.id, cancelId: cancel.body.data.outbox.id };
+  }
+
+  async function chargeRow(statementId: string): Promise<{ status: string; cancelled_at: Date | null }> {
+    return ((await db.$queryRawUnsafe(`SELECT status, cancelled_at FROM subscription_statement_charges WHERE statement_id = $1::uuid`, statementId)) as any[])[0];
+  }
+
+  test("CC1: SENT → charge_cancel → despacho → 1 DELETE, cobrança cancelled, a velha SKIPPED COM external_id (skip_reason NULL, last_error charge_cancelled), e um novo /charge passa", async () => {
+    await withFake({}, async (fake) => {
+      const port = await portOver(fake);
+      const { fixture, chargeId, createId, cancelId } = await chargeThenCancel("cc1", fake, port);
+      const result = await dispatch(fixture.tenantId, port);
+      assert.equal(result.outcomes.sent, 1, JSON.stringify(result.outcomes));
+      assert.equal(deletes(fake), 1, "1 DELETE");
+      const all = await lines(fixture.statementId);
+      const create = all.find((line) => line.id === createId)!;
+      assert.deepEqual(
+        { status: create.status, skip_reason: create.skip_reason, last_error: create.last_error, external_id: create.external_id },
+        { status: "SKIPPED", skip_reason: null, last_error: "charge_cancelled", external_id: chargeId },
+      );
+      assert.equal(all.find((line) => line.id === cancelId)!.status, "SENT");
+      const charge = await chargeRow(fixture.statementId);
+      assert.equal(charge.status, "cancelled");
+      assert.ok(charge.cancelled_at);
+      const again = await api("POST", chargeRoute(fixture), { tenantId: fixture.tenantId });
+      assert.equal(again.status, 201, JSON.stringify(again.body));
+    });
+  });
+
+  test("CC2: a lista diz PAGA → NEEDS_REVIEW charge_already_paid, 0 DELETE", async () => {
+    await withFake({}, async (fake) => {
+      const port = await portOver(fake);
+      const { fixture, chargeId, cancelId } = await chargeThenCancel("cc2", fake, port);
+      fake.setPaymentStatus(chargeId, "RECEIVED");
+      const result = await dispatch(fixture.tenantId, port);
+      assert.equal(result.outcomes.needs_review, 1, JSON.stringify(result.outcomes));
+      assert.equal(deletes(fake), 0, "0 DELETE");
+      const cancel = (await lines(fixture.statementId)).find((line) => line.id === cancelId)!;
+      assert.deepEqual({ status: cancel.status, last_error: cancel.last_error }, { status: "NEEDS_REVIEW", last_error: "charge_already_paid" });
+      assert.equal((await chargeRow(fixture.statementId)).status, "pending", "nada registrado como cancelado");
+    });
+  });
+
+  test("CC2b: paga ENTRE a consulta e o DELETE (o falso recusa com 400) → a reconsulta diz paga → conferência, 1 DELETE recusado, nada registrado", async () => {
+    await withFake({ refuseDeleteWhenReceived: true }, async (fake) => {
+      const port = await portOver(fake);
+      const { fixture, chargeId, cancelId } = await chargeThenCancel("cc2b", fake, port);
+      let calls = 0;
+      const racing = Object.create(port) as typeof port;
+      racing.listChargesByExternalReference = async (ref: string) => {
+        const listed = await port.listChargesByExternalReference(ref);
+        calls += 1;
+        if (calls === 1) fake.setPaymentStatus(chargeId, "RECEIVED");
+        return listed;
+      };
+      const result = await dispatch(fixture.tenantId, racing);
+      assert.equal(result.outcomes.needs_review, 1, JSON.stringify(result.outcomes));
+      assert.equal(deletes(fake), 1, "1 DELETE, recusado");
+      assert.equal(calls, 2, "a reconsulta veio depois do DELETE recusado");
+      const cancel = (await lines(fixture.statementId)).find((line) => line.id === cancelId)!;
+      assert.deepEqual({ status: cancel.status, last_error: cancel.last_error }, { status: "NEEDS_REVIEW", last_error: "charge_already_paid" });
+      assert.equal((await chargeRow(fixture.statementId)).status, "pending");
+    });
+  });
+
+  /** A falha do registro DEPOIS do DELETE deixa a linha PROCESSING; a órfã (11 min depois) termina pelo passo 1. */
+  async function failThenOrphan(tag: string, options: Record<string, unknown>) {
+    return withFake(options, async (fake) => {
+      const port = await portOver(fake);
+      const { fixture, cancelId, createId } = await chargeThenCancel(tag, fake, port);
+      const t0 = new Date();
+      const first = await dispatch(fixture.tenantId, port, { at: t0, failRecord: true });
+      assert.equal(first.outcomes.record_failed, 1, JSON.stringify(first.outcomes));
+      const afterFailure = (await lines(fixture.statementId)).find((line) => line.id === cancelId)!;
+      assert.equal(afterFailure.status, "PROCESSING", "a falha do registro não passa por registerFailure");
+      const rounds: string[] = [];
+      for (let round = 1; round <= 8; round += 1) {
+        await dispatch(fixture.tenantId, port, { at: new Date(t0.getTime() + round * 11 * 60 * 1000) });
+        rounds.push((await lines(fixture.statementId)).find((line) => line.id === cancelId)!.status);
+      }
+      const all = await lines(fixture.statementId);
+      return { fake, fixture, cancel: all.find((line) => line.id === cancelId)!, create: all.find((line) => line.id === createId)!, rounds };
+    });
+  }
+
+  test("CC6-falso: a falha do registro depois do DELETE → PROCESSING; a órfã vê a removida como cancelled e registra; 1 DELETE no total", async () => {
+    const outcome = await failThenOrphan("cc6-falso", {});
+    assert.equal(deletes(outcome.fake), 1, "1 DELETE no total");
+    assert.equal(outcome.cancel.status, "SENT");
+    assert.equal(outcome.create.status, "SKIPPED");
+    assert.equal((await chargeRow(outcome.fixture.statementId)).status, "cancelled");
+  });
+
+  test("CC6-doc: a mesma falha na forma DOCUMENTADA do DELETE (status mantido + deleted: true) → a órfã registra; 1 DELETE no total", async () => {
+    const outcome = await failThenOrphan("cc6-doc", { deleteDocumented: true });
+    assert.equal(deletes(outcome.fake), 1, "1 DELETE no total");
+    assert.equal(outcome.cancel.status, "SENT");
+    assert.equal((await chargeRow(outcome.fixture.statementId)).status, "cancelled");
+  });
+
+  test("CC6c: removida entre a consulta e o DELETE, e o DELETE responde 404 → a reconsulta registra; 0 FAILED, 0 reagendamento", async () => {
+    await withFake({ deleteRemoved404: true }, async (fake) => {
+      const port = await portOver(fake);
+      const { fixture, chargeId, cancelId } = await chargeThenCancel("cc6c", fake, port);
+      let calls = 0;
+      const racing = Object.create(port) as typeof port;
+      racing.listChargesByExternalReference = async (ref: string) => {
+        const listed = await port.listChargesByExternalReference(ref);
+        calls += 1;
+        if (calls === 1) fake.patchPayment(chargeId, { status: "DELETED", deleted: true });
+        return listed;
+      };
+      const result = await dispatch(fixture.tenantId, racing);
+      assert.equal(result.outcomes.sent, 1, JSON.stringify(result.outcomes));
+      assert.equal(result.outcomes.retry + result.outcomes.failed, 0, "0 reagendamento, 0 FAILED");
+      assert.equal(deletes(fake), 1);
+      assert.equal((await lines(fixture.statementId)).find((line) => line.id === cancelId)!.status, "SENT");
+      assert.equal((await chargeRow(fixture.statementId)).status, "cancelled");
+    });
+  });
+
+  test("CC6d: removida com status PAGO e sem data → charge_already_paid, nunca registrada como cancelada; 0 DELETE", async () => {
+    await withFake({}, async (fake) => {
+      const port = await portOver(fake);
+      const { fixture, chargeId, cancelId } = await chargeThenCancel("cc6d", fake, port);
+      fake.patchPayment(chargeId, { deleted: true, status: "RECEIVED" });
+      const result = await dispatch(fixture.tenantId, port);
+      assert.equal(result.outcomes.needs_review, 1, JSON.stringify(result.outcomes));
+      assert.equal(deletes(fake), 0);
+      const cancel = (await lines(fixture.statementId)).find((line) => line.id === cancelId)!;
+      assert.deepEqual({ status: cancel.status, last_error: cancel.last_error }, { status: "NEEDS_REVIEW", last_error: "charge_already_paid" });
+      assert.equal((await chargeRow(fixture.statementId)).status, "pending");
+    });
+  });
+
+  test("CC6e: cobrança conhecida AUSENTE da lista completa → NEEDS_REVIEW charge_not_listed, 0 DELETE, e nunca FAILED em 8 rodadas", async () => {
+    await withFake({ omitRemoved: true }, async (fake) => {
+      const port = await portOver(fake);
+      const { fixture, chargeId, cancelId } = await chargeThenCancel("cc6e", fake, port);
+      fake.patchPayment(chargeId, { status: "DELETED", deleted: true });
+      const t0 = new Date();
+      for (let round = 0; round < 8; round += 1) await dispatch(fixture.tenantId, port, { at: new Date(t0.getTime() + round * 11 * 60 * 1000) });
+      assert.equal(deletes(fake), 0, "nenhum DELETE às cegas");
+      const cancel = (await lines(fixture.statementId)).find((line) => line.id === cancelId)!;
+      assert.deepEqual({ status: cancel.status, last_error: cancel.last_error }, { status: "NEEDS_REVIEW", last_error: "charge_not_listed" });
+    });
+  });
+
+  test("CC6f: na forma da 5ª opção (status mantido + deleted + estimatedCreditDate), com a falha do registro → a órfã termina charge_state_unknown; 1 DELETE; nunca FAILED; nada registrado", async () => {
+    const outcome = await failThenOrphan("cc6f", { deleteDocumentedWithEstimate: true });
+    assert.equal(deletes(outcome.fake), 1, "1 DELETE no total, nunca um 2º");
+    assert.deepEqual({ status: outcome.cancel.status, last_error: outcome.cancel.last_error }, { status: "NEEDS_REVIEW", last_error: "charge_state_unknown" });
+    assert.ok(!outcome.rounds.includes("FAILED"), `nunca FAILED: ${outcome.rounds.join(",")}`);
+    assert.equal(outcome.create.status, "SENT", "a charge_create não foi registrada como cancelada");
+    assert.equal((await chargeRow(outcome.fixture.statementId)).status, "pending", "a cobrança da tabela continua pending");
+  });
 }
+
+// CC9 (puro, sem banco; Emenda 2 §1.3): o veredito exige EXATAMENTE 1 entrada do `chargeId` — conta com `filter`.
+test("CC9: duas entradas do mesmo chargeId, nas duas ordens → charge_listed_twice; uma pending ao lado de outra cobrança → seguir", async () => {
+  const { cancelTargetVerdict } = await import("../src/modules/subscription-billing/outbox/outbox.dispatcher.js");
+  const entry = (chargeId: string, status: string) => ({ chargeId, status, amountCents: 12345, createdAt: "2026-11-14" }) as never;
+  assert.deepEqual(cancelTargetVerdict([entry("pay_1", "pending"), entry("pay_1", "cancelled")], "pay_1", false), { kind: "review", code: "charge_listed_twice" });
+  assert.deepEqual(cancelTargetVerdict([entry("pay_1", "cancelled"), entry("pay_1", "pending")], "pay_1", false), { kind: "review", code: "charge_listed_twice" });
+  assert.deepEqual(cancelTargetVerdict([entry("pay_2", "paid"), entry("pay_1", "pending")], "pay_1", false), { kind: "proceed" });
+  assert.deepEqual(cancelTargetVerdict([entry("pay_2", "pending")], "pay_1", false), { kind: "review", code: "charge_not_listed" });
+  assert.deepEqual(cancelTargetVerdict([entry("pay_2", "pending")], "pay_1", true), { kind: "review", code: "unknown_charge_not_in_reference" });
+  assert.deepEqual(cancelTargetVerdict([entry("pay_1", "unknown")], "pay_1", false), { kind: "review", code: "charge_state_unknown" });
+  assert.deepEqual(cancelTargetVerdict([entry("pay_1", "cancelled")], "pay_1", false), { kind: "register" });
+  for (const paid of ["paid", "partially_paid", "refunded", "partially_refunded", "chargeback_disputed", "charged_back"]) {
+    assert.deepEqual(cancelTargetVerdict([entry("pay_1", paid)], "pay_1", false), { kind: "review", code: "charge_already_paid" }, paid);
+  }
+  for (const live of ["pending", "overdue"]) assert.deepEqual(cancelTargetVerdict([entry("pay_1", live)], "pay_1", false), { kind: "proceed" }, live);
+});
+
+// GT-GET (guarda de texto, Emenda 1 §2.4): dentro do handler do `charge_cancel`, `getCharge` aparece 0 vezes — o veredito
+// vem SÓ da lista por referência.
+test("GT-GET · guarda: o handler do charge_cancel não chama getCharge", () => {
+  const source = readFileSync(path.join(ROOT, "src/modules/subscription-billing/outbox/outbox.dispatcher.ts"), "utf8");
+  const start = source.indexOf("async function dispatchChargeCancel(");
+  assert.ok(start > 0, "o handler existe");
+  const rest = source.slice(start + 1);
+  const end = rest.search(/\n(async )?function |\nexport /);
+  const body = rest.slice(0, end < 0 ? undefined : end);
+  assert.equal(body.split("getCharge").length - 1, 0, "getCharge no handler do cancelamento");
+  assert.ok(body.includes("cancelTargetVerdict("), "o handler decide pela lista");
+});

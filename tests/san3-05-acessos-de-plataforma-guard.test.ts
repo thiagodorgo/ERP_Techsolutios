@@ -557,6 +557,22 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.resolve", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-ASS-08c1b (F5, [RESOLVE-LOCK]): `… FROM subscription_statements s JOIN billing_outbox o … WHERE o.id = $1 AND o.tenant_id = $2 FOR UPDATE OF s` — o demonstrativo travado PRIMEIRO (regra §2.1, ORD-1 do T-LOCK-2), no callback de `withTenantRlsBudget`; tabela FORCE da MESMA organização.",
   ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F6, [CANCEL-TX], passo 1): `SELECT id FROM subscription_statements WHERE id = $1 AND tenant_id = $2 FOR NO KEY UPDATE` — o registro do cancelamento trava o demonstrativo PRIMEIRO, no callback de `withTenantRlsBudget(this.client, tenantId, …)` (GUC na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC1, CC6-*) e no cenário `outbox.recordChargeCancelOutcome` do T-LOCK-2, sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F6, [CANCEL-TX], passo 2): `UPDATE billing_outbox SET status = 'SENT', external_id = $5 … WHERE id = $1 AND tenant_id = $2 AND status = 'PROCESSING' AND claimed_by = $3 AND attempt_started_at = $4 RETURNING id` — a linha do cancelamento, com a posse no predicado, depois da trava do demonstrativo (ORD-1); 0 linhas = nada escrito. billing_outbox (FORCE) da MESMA organização.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F6, [CANCEL-TX], passo 3): `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4 WHERE tenant_id = $1 AND provider = $2 AND external_charge_id = $3 AND status = 'pending'` — a cobrança da tabela, só se `pending`, com a organização no predicado; tabela FORCE da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC1; CC6f: a injeção de falha depois deste passo desfaz tudo).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F6, [CANCEL-TX], passo 4): `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = NULL, last_error = 'charge_cancelled' … WHERE id = $1 AND tenant_id = $2 AND kind = 'charge_create' AND status = 'SENT'` — a `charge_create` alvo deixa o conjunto vivo MANTENDO o `external_id` (EK1); billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC1: `external_id` mantido, `skip_reason` NULL).",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

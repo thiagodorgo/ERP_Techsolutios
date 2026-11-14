@@ -279,7 +279,7 @@ if (!connectionString) {
     const chargeId = `pay_q4_${randomUUID().slice(0, 8)}`;
     await db.$executeRawUnsafe(
       `INSERT INTO subscription_statement_charges (tenant_id, statement_id, provider, external_charge_id, status, pay_url, due_date, created_at)
-       VALUES ($1::uuid, $2::uuid, 'asaas', $3, 'pending', 'https://www.asaas.com/i/inv_q4', $4::date, now())`,
+       VALUES ($1::uuid, $2::uuid, 'asaas', $3, 'pending', 'https://pagamento.exemplo.invalid/i/inv_q4', $4::date, now())`,
       fixture.tenantId,
       fixture.statementId,
       chargeId,
@@ -333,5 +333,63 @@ if (!connectionString) {
     const withDate = await api("POST", route, { tenantId: fixture.tenantId, dueDate: informed });
     assert.equal(withDate.status, 201, JSON.stringify(withDate.body));
     assert.equal((await chargeLines(fixture.statementId))[0]!.payload.dueDate, informed);
+  });
+
+  /** Uma `charge_create` PENDING semeada direto (a que nasceu antes de o vencimento passar), com o payload do servidor. */
+  async function seedPendingCreate(fixture: { tenantId: string; statementId: string }, dueDate: string): Promise<string> {
+    await db.$executeRawUnsafe(`INSERT INTO billing_statement_refs (statement_id, tenant_id, provider) VALUES ($1::uuid, $2::uuid, 'asaas') ON CONFLICT DO NOTHING`, fixture.statementId, fixture.tenantId);
+    const rows = (await db.$queryRawUnsafe(
+      `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status)
+       VALUES ($1::uuid, $2::uuid, 'charge_create', 'asaas', $3, gen_random_uuid(), $4::jsonb, now(), 'PENDING') RETURNING id`,
+      fixture.tenantId,
+      fixture.statementId,
+      `charge_create:${fixture.statementId}:1`,
+      JSON.stringify({ amountCents: 12345, dueDate, method: "pix" }),
+    )) as Array<{ id: string }>;
+    return rows[0]!.id;
+  }
+
+  function postedDueDates(): string[] {
+    return fake!.recorded
+      .filter((request) => request.method === "POST" && request.path.split("?")[0] === "/v3/payments")
+      .map((request) => (JSON.parse(request.body || "{}") as { dueDate?: string }).dueDate ?? "");
+  }
+
+  test("CR7: linha PENDING com o vencimento PASSADO → o despacho a põe em due_date_past com 0 POST; /resolve + /retry com data → 1 POST com a data nova", async () => {
+    const fixture = await seedClosed("cr7");
+    const id = await seedPendingCreate(fixture, "2026-11-01");
+    const before = postsToPayments();
+    const repo = new modules.PrismaOutboxRepository(role.client, { tenantIds: [fixture.tenantId] });
+    const port = adapterOverFake();
+    const first = await modules.runDispatchOutbox({ repo, ports: { asaas: port }, resolveCustomer: async () => ({ ok: true as const, customerId: "cus_fake_cr7" }) });
+    assert.equal(first.outcomes.needs_review, 1, JSON.stringify(first.outcomes));
+    assert.equal(postsToPayments() - before, 0, "0 POST com a data vencida");
+    const row = (await db.$queryRawUnsafe(`SELECT status, last_error FROM billing_outbox WHERE id = $1::uuid`, id)) as Array<{ status: string; last_error: string }>;
+    assert.deepEqual(row[0], { status: "NEEDS_REVIEW", last_error: "due_date_past" });
+    const resolved = await api("POST", `/api/v1/platform/billing/outbox/${id}/resolve`, { tenantId: fixture.tenantId, reason: "vencimento passou, nova data combinada" });
+    assert.equal(resolved.status, 200, JSON.stringify(resolved.body));
+    const newDate = spDayPlus(9);
+    const retried = await api("POST", `/api/v1/platform/billing/outbox/${id}/retry`, { tenantId: fixture.tenantId, dueDate: newDate });
+    assert.equal(retried.status, 200, JSON.stringify(retried.body));
+    const second = await modules.runDispatchOutbox({ repo, ports: { asaas: port }, resolveCustomer: async () => ({ ok: true as const, customerId: "cus_fake_cr7" }) });
+    assert.equal(second.outcomes.sent, 1, JSON.stringify(second.outcomes));
+    assert.equal(postsToPayments() - before, 1, "1 POST");
+    assert.equal(postedDueDates().at(-1), newDate, "o POST sai com a data nova");
+  });
+
+  test("CR7b: relógio em 02:30Z do dia seguinte (ainda o dia anterior em São Paulo) → o vencimento igual ao dia de São Paulo NÃO é passado", async () => {
+    const fixture = await seedClosed("cr7b");
+    await seedPendingCreate(fixture, "2027-03-10");
+    const before = postsToPayments();
+    const clock = new Date("2027-03-11T02:30:00.000Z"); // 23:30 de 10/03 em São Paulo
+    const result = await modules.runDispatchOutbox({
+      repo: new modules.PrismaOutboxRepository(role.client, { tenantIds: [fixture.tenantId] }),
+      ports: { asaas: adapterOverFake() },
+      resolveCustomer: async () => ({ ok: true as const, customerId: "cus_fake_cr7b" }),
+      now: () => clock,
+    });
+    assert.equal(result.outcomes.sent, 1, JSON.stringify(result.outcomes));
+    assert.equal(postsToPayments() - before, 1);
+    assert.equal(postedDueDates().at(-1), "2027-03-10");
   });
 }

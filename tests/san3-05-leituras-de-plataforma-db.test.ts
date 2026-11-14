@@ -97,6 +97,14 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`POST ${P}/billing/credits/:creditId/write-off`, S("FORCE-POR-TENANT", ["subscription_credits", "audit_logs"], "FOR UPDATE do crédito sob withTenantRls")],
   [`GET ${P}/billing/tenants/:tenantId/billing-profile`, S("FORCE-POR-TENANT", ["tenant_billing_profiles"], "perfil de cobrança sob withTenantRls")],
   [`PUT ${P}/billing/tenants/:tenantId/billing-profile`, S("FORCE-POR-TENANT", ["tenant_billing_profiles", "audit_logs"], "upsert por tenant_id sob withTenantRls")],
+  // B-ASS-08c1b (Emenda 2.2 §2): a cobrança do operador e a revisão da fila. A lista leva só as tabelas com FORCE (o T11g as
+  // confere no catálogo); as GLOBAIS que a rota também toca vão nomeadas na nota. O inventário, com arquivo:linha, está no diário.
+  [`POST ${P}/billing/statements/:statementId/charge`, S("FORCE-POR-TENANT", ["subscription_statements", "subscription_statement_charges", "billing_outbox"], "requestChargeCreate sob withTenantRlsBudget, o demonstrativo travado primeiro; globais: billing_provider_configs (paymentProviderOn) e billing_statement_refs (putRefInTx)")],
+  [`POST ${P}/billing/statements/:statementId/charge/cancel`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "subscription_statement_charges", "audit_logs"], "requestChargeCancel sob withTenantRlsBudget, o demonstrativo travado primeiro e a trilha no mesmo tx")],
+  [`GET ${P}/billing/statements/:statementId/charges`, S("FORCE-POR-TENANT", ["subscription_statements", "subscription_statement_charges"], "findStatement e listByStatement sob withTenantRls; global: billing_provider_configs (createChannelRuntime)")],
+  [`GET ${P}/billing/outbox`, S("FORCE-POR-TENANT", ["billing_outbox"], "listForTenant sob withTenantRls, com o tenant_id no predicado; global: billing_provider_configs (createChannelRuntime)")],
+  [`POST ${P}/billing/outbox/:id/resolve`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "audit_logs"], "resolve sob withTenantRlsBudget (FOR UPDATE OF s) e a trilha no mesmo tx; global: billing_provider_configs (createChannelRuntime)")],
+  [`POST ${P}/billing/outbox/:id/retry`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox"], "retryByOperator sob withTenantRlsBudget (FOR UPDATE OF s); global: billing_provider_configs (createChannelRuntime)")],
   // B-ASS-05: o cofre e a configuração dos provedores tocam só as 3 tabelas GLOBAIS da M4 (sem tenant_id, sem RLS).
   [`GET ${P}/billing/providers`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials"], "configuração e resumo das credenciais: tabelas globais da plataforma (M4)")],
   [`GET ${P}/billing/providers/:provider`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials"], "configuração e resumo das credenciais: tabelas globais da plataforma (M4)")],
@@ -957,6 +965,150 @@ if (!connectionString) {
           await admin.subscriptionCredit.deleteMany({ where: { tenant_id: { in: orgs } } });
           await admin.subscriptionStatementPayment.deleteMany({ where: { tenant_id: { in: orgs } } });
           await admin.subscriptionStatement.deleteMany({ where: { id: { in: [...st.values()] } } });
+        }
+
+        // B-ASS-08c1b (Emenda 2.2 §2) — as 6 rotas da cobrança do operador e da revisão da fila, na ordem de uso, sobre UM
+        // demonstrativo fechado da organização B: pedir a cobrança → o despacho (executor real sobre o repositório Prisma no
+        // client ROTEADO e uma porta FALSA sem rede) → ler as cobranças → cancelar → ler a fila → o despacho do cancelamento cai
+        // em conferência (a lista do provedor não traz a cobrança: 0 DELETE) → resolver → reabrir. Cada corpo é projetado em
+        // campos estáveis (sem id, relógio nem id do provedor), e o efeito tem de ser o MESMO nos dois papéis.
+        {
+          const [{ env: envCanal }, vaultFactory, { EnvVaultKeyProvider }, { runDispatchOutbox }, { PrismaOutboxRepository: OutboxDoOperador }, { randomBytes }] =
+            await Promise.all([
+              import("../src/config/env.js"),
+              import("../src/modules/subscription-billing/vault/vault.factory.js"),
+              import("../src/modules/subscription-billing/vault/vault-keys.js"),
+              import("../src/modules/subscription-billing/outbox/outbox.dispatcher.js"),
+              import("../src/modules/subscription-billing/outbox/outbox.prisma.js"),
+              import("node:crypto"),
+            ]);
+          const canal = envCanal as unknown as { BILLING_PROVIDERS_ENABLED: boolean };
+          const B = cenario.tenantB;
+          const runtimeOperador = await createDefaultStatementRuntime();
+          const stOp = await runtimeOperador.repository.transaction(B, async (tx) => {
+            const { statement } = await tx.insertIfAbsentAndLock({ tenantId: B, period: "2031-09" });
+            return tx.saveStatement({ ...statement, status: "closed", chargeStatus: "none", totalCents: 10_000, dueDate: "2031-10-10", closedAt: new Date() });
+          });
+
+          // A porta FALSA: a cobrança ganha um id por papel (a tabela de cobranças é UNIQUE pelo id do provedor); a lista do
+          // provedor vem vazia, e o DELETE só seria chamado se o veredito mandasse seguir. Sem rede.
+          const cobranca = `san305-operador-${papel}-${suffix}`;
+          const deletes: string[] = [];
+          const porta = {
+            ensureCustomer: async () => ({ customerId: "cus_san305" }),
+            createCharge: async () => ({ chargeId: cobranca, status: "pending", payUrl: "https://pay.example/san305-operador" }),
+            getCharge: async () => ({ status: "pending", raw: { externalReference: stOp.id } }),
+            listChargesByExternalReference: async () => [],
+            cancelCharge: async (id: string) => {
+              deletes.push(id);
+              return { chargeId: id, status: "cancelled" };
+            },
+            refund: async (id: string) => ({ chargeId: id, status: "refunded" }),
+            registerWebhook: async () => ({ externalId: "h" }),
+            verifyWebhook: async () => ({ ok: false }),
+            supportedMethods: () => ["pix"],
+            describe: () => ({ provider: "asaas", supportedMethods: ["pix"], pendingHomologation: [], webhookRegistration: "api" }),
+          };
+          const despachar = () =>
+            runDispatchOutbox({
+              repo: new OutboxDoOperador(appClient, { tenantIds: [B] }),
+              ports: { asaas: porta } as never,
+              resolveCustomer: async () => ({ ok: true as const, customerId: "cus_san305" }),
+            });
+          const projetarLinha = (row: Record<string, unknown>) => ({
+            kind: row.kind,
+            provider: row.provider,
+            status: row.status,
+            skipReason: row.skipReason,
+            attempts: row.attempts,
+            lastError: row.lastError,
+            idDoProvedor: row.externalId === null ? null : row.externalId === cobranca,
+          });
+
+          // POST /charge: o canal LIGADO só durante o pedido — a flag do processo, uma chave de cofre de teste gerada agora e o
+          // Asaas habilitado na tabela GLOBAL de configuração, que volta ao estado de antes no `finally`.
+          const configAntes = await admin.$queryRawUnsafe<Array<{ enabled: boolean; environment: string; enabled_environment: string | null }>>(
+            "SELECT enabled, environment, enabled_environment FROM billing_provider_configs WHERE provider = 'asaas'",
+          );
+          const canalAntes = canal.BILLING_PROVIDERS_ENABLED;
+          let pedido: { status: number; body: Record<string, unknown> };
+          try {
+            await admin.$executeRawUnsafe(
+              `INSERT INTO billing_provider_configs (provider, kind, environment, enabled, enabled_environment) VALUES ('asaas', 'payment', 'sandbox', true, 'sandbox')
+               ON CONFLICT (provider) DO UPDATE SET environment = 'sandbox', enabled = true, enabled_environment = 'sandbox'`,
+            );
+            canal.BILLING_PROVIDERS_ENABLED = true;
+            vaultFactory.resetVaultRuntimeForTests();
+            vaultFactory.setVaultKeysForTests(new EnvVaultKeyProvider({ BILLING_VAULT_KEY: randomBytes(32).toString("base64"), BILLING_VAULT_KEY_VERSION: "1" }));
+            pedido = await http("POST", `${P}/billing/statements/${stOp.id}/charge`, { tenantId: B, method: "pix" });
+          } finally {
+            canal.BILLING_PROVIDERS_ENABLED = canalAntes;
+            vaultFactory.resetVaultRuntimeForTests();
+            const antes = configAntes[0];
+            if (antes) {
+              await admin.$executeRawUnsafe(
+                "UPDATE billing_provider_configs SET enabled = $1, environment = $2, enabled_environment = $3 WHERE provider = 'asaas'",
+                antes.enabled,
+                antes.environment,
+                antes.enabled_environment,
+              );
+            } else {
+              await admin.$executeRawUnsafe("DELETE FROM billing_provider_configs WHERE provider = 'asaas'");
+            }
+          }
+          assert.equal(pedido.status, 201, JSON.stringify(pedido.body));
+          registrarRota(`POST ${P}/billing/statements/:statementId/charge`, projetarLinha(pedido.body.data as Record<string, unknown>));
+
+          const criada = await despachar();
+          assert.equal(criada.outcomes.sent, 1, "o despacho cria a cobrança pedida pela rota");
+
+          const cobrancas = await http("GET", `${P}/billing/statements/${stOp.id}/charges?tenantId=${B}`);
+          assert.equal(cobrancas.status, 200, JSON.stringify(cobrancas.body));
+          const cobrancasData = cobrancas.body.data as { charges: Array<Record<string, unknown>>; notice: unknown };
+          assert.equal(cobrancasData.charges.length, 1, "a cobrança criada pelo despacho aparece na leitura da organização");
+          registrarRota(`GET ${P}/billing/statements/:statementId/charges`, {
+            charges: cobrancasData.charges.map((row) => ({
+              provider: row.provider,
+              status: row.status,
+              payUrl: row.payUrl,
+              dueDate: row.dueDate,
+              daCobranca: row.externalChargeId === cobranca,
+            })),
+            notice: cobrancasData.notice,
+          });
+
+          const cancelado = await http("POST", `${P}/billing/statements/${stOp.id}/charge/cancel`, { tenantId: B, reason: "o cliente pediu o cancelamento" });
+          assert.equal(cancelado.status, 200, JSON.stringify(cancelado.body));
+          const canceladoData = cancelado.body.data as { result: string; outbox: Record<string, unknown> };
+          assert.equal(canceladoData.result, "cancel_enqueued");
+          registrarRota(`POST ${P}/billing/statements/:statementId/charge/cancel`, { result: canceladoData.result, outbox: projetarLinha(canceladoData.outbox) });
+          const idCancelamento = String(canceladoData.outbox.id);
+
+          const fila = await http("GET", `${P}/billing/outbox?tenantId=${B}`);
+          assert.equal(fila.status, 200, JSON.stringify(fila.body));
+          const linhasFila = fila.body.data as Array<Record<string, unknown>>;
+          assert.deepEqual(linhasFila.map((row) => [row.kind, row.status]), [["charge_create", "SENT"], ["charge_cancel", "PENDING"]]);
+          registrarRota(`GET ${P}/billing/outbox`, linhasFila.map(projetarLinha));
+
+          const revisto = await despachar();
+          assert.equal(revisto.outcomes.needs_review, 1, "a lista do provedor não traz a cobrança: o cancelamento vai à conferência");
+          assert.deepEqual(deletes, [], "nenhum DELETE às cegas");
+
+          const resolvido = await http("POST", `${P}/billing/outbox/${idCancelamento}/resolve`, { tenantId: B, reason: "conferido no painel do provedor" });
+          assert.equal(resolvido.status, 200, JSON.stringify(resolvido.body));
+          registrarRota(`POST ${P}/billing/outbox/:id/resolve`, projetarLinha(resolvido.body.data as Record<string, unknown>));
+
+          const reaberto = await http("POST", `${P}/billing/outbox/${idCancelamento}/retry`, { tenantId: B });
+          assert.equal(reaberto.status, 200, JSON.stringify(reaberto.body));
+          const reabertoData = reaberto.body.data as { outbox: Record<string, unknown>; notice: unknown };
+          registrarRota(`POST ${P}/billing/outbox/:id/retry`, { outbox: projetarLinha(reabertoData.outbox), notice: reabertoData.notice });
+
+          // Limpeza do cenário, nesta volta (FK Restrict para o demonstrativo).
+          await admin.billingOutbox.deleteMany({ where: { tenant_id: B } });
+          await admin.subscriptionStatementCharge.deleteMany({ where: { tenant_id: B } });
+          await admin.billingStatementRef.deleteMany({ where: { tenant_id: B } });
+          await admin.auditLog.deleteMany({ where: { tenant_id: B, action: { startsWith: "billing_outbox." } } });
+          await admin.subscriptionStatement.delete({ where: { id: stOp.id } });
         }
 
         medidas.set(papel, {

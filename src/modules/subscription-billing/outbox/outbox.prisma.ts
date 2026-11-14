@@ -257,6 +257,8 @@ export type PrismaOutboxScope = {
   readonly tenantIds?: readonly string[];
   /** Injeção de falha do RG1, executada dentro da transação do registro (`recordChargeOutcome`) depois do INSERT. */
   readonly afterChargeInsert?: () => Promise<void>;
+  /** B-ASS-08c1b: injeção de falha do CC6, dentro da transação do registro do cancelamento, depois de cancelar a cobrança. */
+  readonly afterChargeCancelRecord?: () => Promise<void>;
 };
 
 export class PrismaOutboxRepository implements OutboxRepository {
@@ -511,6 +513,54 @@ export class PrismaOutboxRepository implements OutboxRepository {
       );
       await this.scope.afterChargeInsert?.();
       await putRefInTx(tx, { statementId: statement.id, tenantId: statement.tenant_id, provider: row.provider, externalChargeId }, now);
+      return true;
+    });
+  }
+
+  async recordChargeCancelOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, chargeId: string, now: Date): Promise<boolean> {
+    // B-ASS-08c1b (P9b): o demonstrativo PRIMEIRO; a rede já terminou antes de esta transação começar.
+    return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => { // [CANCEL-TX]
+      const statements = (await tx.$queryRawUnsafe(
+        `SELECT id FROM subscription_statements WHERE id = $1::uuid AND tenant_id = $2::uuid FOR NO KEY UPDATE`,
+        row.statementId,
+        tenantId,
+      )) as Array<{ id: string }>;
+      if (statements.length === 0) return false;
+      // A linha do cancelamento → SENT, com a posse no predicado: 0 linhas = posse perdida, nada escrito.
+      const leased = (await tx.$queryRawUnsafe(
+        `UPDATE billing_outbox
+            SET status = 'SENT', external_id = $5, next_attempt_at = NULL, last_error = NULL, updated_at = $6
+          WHERE id = $1::uuid AND tenant_id = $2::uuid AND status = 'PROCESSING' AND claimed_by = $3 AND attempt_started_at = $4
+          RETURNING id`,
+        row.id,
+        tenantId,
+        lease.claimedBy,
+        lease.attemptStartedAt,
+        chargeId,
+        now,
+      )) as Array<{ id: string }>;
+      if (leased.length === 0) return false;
+      await tx.$executeRawUnsafe(
+        `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4
+          WHERE tenant_id = $1::uuid AND provider = $2 AND external_charge_id = $3 AND status = 'pending'`,
+        tenantId,
+        row.provider,
+        chargeId,
+        now,
+      );
+      await this.scope.afterChargeCancelRecord?.();
+      const chargeCreateId = typeof row.payload.chargeCreateId === "string" ? row.payload.chargeCreateId : null;
+      if (chargeCreateId) {
+        // A `charge_create` alvo deixa o conjunto vivo (um novo `/charge` passa) MANTENDO o `external_id`: nenhum escritor o
+        // zera (a régua U da adoção depende disso). `skip_reason` NULL — o CHECK da M5 não tem motivo de cancelamento.
+        await tx.$executeRawUnsafe(
+          `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = NULL, last_error = 'charge_cancelled', updated_at = $3
+            WHERE id = $1::uuid AND tenant_id = $2::uuid AND kind = 'charge_create' AND status = 'SENT'`,
+          chargeCreateId,
+          tenantId,
+          now,
+        );
+      }
       return true;
     });
   }
