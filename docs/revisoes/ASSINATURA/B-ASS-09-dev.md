@@ -580,3 +580,105 @@ ALTER INDEX "tenant_cloud_cost_allocations_tenant_idx" RENAME TO "tenant_cloud_c
 **Leitura do dev, declarada (§A6):** o mandato limita a F4 e a F5 a `prisma/**`, `*.prisma.ts`, `*.repository.ts`, `*.service.ts`
 e testes `-db`; a linha da F4 no plano (§9) inclui "censo". Fiz o censo só pela regeneração (o arquivo está no PERMITIDO do plano
 §7 com essa condição, e nenhuma fatia do braço o toca). Sem ele, o T-MED-db-8 fica vermelho com a M6 (controle acima).
+
+## F5 — ramo `feat/ass-09-banco` (PARCIAL: paradas declaradas no serviço de grupos e na trava do câmbio)
+
+**Feito** (só `*.repository.ts`, `*.prisma.ts`, `*.service.ts` de grupos e câmbio e testes `-db`):
+
+- `src/modules/subscription-billing/fx-rates/`: `fx-rates.repository.ts` (tipos, porta e dublê em memória), `fx-rates.prisma.ts`
+  (versão nova sob `pg_advisory_xact_lock(hashtextextended(<mês:origem:destino>, 0))`, maior versão por `aggregate`, vigente
+  por `orderBy: { version: "desc" }`), `fx-rates.service.ts` (validação do R-FX-6 e do P10, `putRate`, `currentRate`,
+  `listRates` com até 24 meses; erros no molde `SubscriptionBillingError`).
+- `src/modules/subscription-billing/economic-groups/`: `economic-groups.repository.ts` (tipos, porta e dublê que **espelha a
+  M6**: exclusão por intervalo `[)`, CHECK do fim, nome único `lower(btrim)` entre os não excluídos e CHECK de 1 a 120, troca
+  tudo ou nada) e `economic-groups.prisma.ts` (vínculos só por `forEachTenantRls`, com o canário `assertRowsBelongToTenant`;
+  23P01 → `MembershipConflictError`, 23514 → `MembershipRangeError`/`GroupNameCheckError`, 23505 → `GroupNameTakenError`).
+- Forma do erro do Prisma 7 + `@prisma/adapter-pg`, **medida** por sonda no cluster antes do mapeamento: `create` →
+  `DriverAdapterError` com `cause.originalCode` (`23P01`, `23514`); `$executeRawUnsafe` → `P2010` com
+  `meta.driverAdapterError.cause.originalCode`; nome duplicado → `P2002` com `originalMessage` citando
+  `economic_groups_name_active_key`.
+- Testes: `tests/ass-09-fx-rates-db.test.ts` (4) e `tests/ass-09-groups-db.test.ts` (4), o código sob teste no papel efêmero
+  `NOSUPERUSER NOBYPASSRLS` do arnês (`rolsuper=false`, `rolbypassrls=false`, asserido); o T-FX-db-1 com barreira escopada
+  por `application_name` (o admin segura `LOCK TABLE platform_fx_rates IN SHARE MODE` até os dois `putRate` estarem presos).
+
+| passo | comando | saída resumida | veredito |
+|---|---|---|---|
+| suítes `-db` da F5 + drill, 3× | `DATABASE_URL=…55561/erp_ass09 CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-groups-fx-migration-drill-db.test.ts tests/ass-09-fx-rates-db.test.ts tests/ass-09-groups-db.test.ts` | rodadas 1, 2 e 3: `# tests 11 # pass 11 # fail 0 # skipped 0` | verde, denominador constante (3 + 4 + 4) |
+| regressões `-db` | `san3-05-leituras-de-plataforma-db`, `san3-03-system-org-db`, `ass-09a-rateio-automatico-db`, `ass-03-metering-census-db` | `# tests 44 # pass 44 # fail 0 # skipped 0` | verde |
+| resíduo | `psql … erp_ass09`: `economic_group_members`, `economic_groups`, `platform_fx_rates`, organizações `ass09-%`, papéis `o6r_b01_%` | `0 · 0 · 0 · 0 · 0` | teardown sem resto |
+| **M-FX-6** | no dublê, `.sort((a, b) => b.version - a.version)` → `.sort((a, b) => a.version - b.version)` | `not ok 3` (espelho): `dublê e Postgres divergem depois de 2026-08 5.500000` (`+ 1, '5.400000'` × `- 2, '5.500000'`) · `restaurado=true` | **vermelho** |
+| **M-FX-7** | `const RATE_PATTERN = /^\d{1,3}(\.\d{1,6})?$/;` → `/^\d{1,3}(\.\d+)?$/` | `not ok 4` (T-FX-6): `Missing expected rejection: rate "5.1234567"` · `restaurado=true` | **vermelho** |
+| **M-FX-8** | a linha `await tx.$executeRaw\`SELECT pg_advisory_xact_lock(…)\`;` apagada | `not ok 2` (T-FX-db-1): `nenhum dos dois PUT falha` × `Unique constraint failed on the fields: (month, currency_from, currency_to, version)` · `restaurado=true` | **vermelho** |
+| **M-FX-9** | `orderBy: { version: "desc" }` → `orderBy: { version: "asc" }` | `not ok 1` (T-FX-db-2: `actual '5.400000'` × `expected '5.600000'`), e `not ok 2`, `not ok 3` · `restaurado=true` | **vermelho** |
+| **M-GRP-9** | a M6 sem a sentença `ALTER TABLE economic_group_members ADD CONSTRAINT economic_group_members_no_overlap EXCLUDE …`, numa base nova (`fresh-db-run.sh`: `CREATE DATABASE`, `migrate deploy`, a suíte, `DROP DATABASE`) | `not ok 2` (T-GRP-db-3: `Missing expected rejection.` — o 2º vínculo de C, que cruza o 1º, é aceito) · `not ok 3` (espelho: `2-…:ok`, `4-…:ok`, `6-…:ok` no Postgres × `membership_conflict` no dublê) · `restaurado=true` | **vermelho** |
+| **M-GRP-6** (= M-MIG-2) | a M6 sem `FORCE ROW LEVEL SECURITY`, numa base nova | `not ok 1` (T-GRP-db-2: `+ forced: false` × `- forced: true`) · `restaurado=true` | **vermelho** |
+| **M-GRP-8** | no dublê, `  return btrimSpaces(name).toLowerCase();` → `  return btrimSpaces(name);` | `not ok 4` (espelho de grupos): `mesmo nome, outra caixa…:ok` e `renomeia para o nome ativo:ok` no dublê × `group_name_exists` no Postgres · `restaurado=true` | **vermelho** |
+| suplementar (minha, declarada §A6) | dublê sem a checagem da exclusão | `not ok 3`: `2-…:ok`, `4-…:ok` × `membership_conflict` | **vermelho**, restaurado |
+| suplementar | dublê sem a checagem do CHECK do fim | `not ok 3`: `5-fecha A@G2 no dia do início:ok` × `membership_range_invalid` | **vermelho**, restaurado |
+| suplementar | dublê sem a cópia da troca (`const staged = this.memberships;`) | `not ok 3`: `7-…:membership_conflict` × `ok` (o passo 6 deixou B gravado pela metade) | **vermelho**, restaurado |
+| guards em memória | `db-catalog-write-guard`, `migration-transaction-guard`, `san3-05-acessos-de-plataforma-guard`, `auth-invariant-guards`, `inventory-write-paths-guard`, `b-o6r-12-regime-census` | `# tests 88 # pass 84 # fail 3 # skipped 1` · os 3 `not ok` são do `san3-05-acessos-de-plataforma-guard`: o L0 (`124` × `123`, da F4), o T13 que o contém, e **1 chave nova sem motivo**: `L1 src/modules/subscription-billing/fx-rates/fx-rates.prisma.ts PrismaFxRatesRepository.appendVersion tx RAW-SQL($executeRaw) OPACO ? $TRANSACTION-SEM-SETTER-PROVADO ×1` (a trava consultiva, que não lê nem grava tabela). Os acessos a `economic_group_members` entram reconhecidos (`forEachTenantRls`) e não acusam | **vermelho esperado, dono F7** (o ratchet e o literal L0 são da F7, plano §9; o arquivo está fora do que a F4 e a F5 tocam). O `db-catalog-write-guard` fica verde: os 3 arquivos novos não escrevem catálogo |
+| `check`/`lint` | `npm run check` · `npm run lint` (depois de `npm ci` e `npm run db:generate` com o `DATABASE_URL` do cluster) | `check=0` · `lint=0` | verde |
+
+**Leituras do dev, declaradas (§A6):**
+1. Os tipos de câmbio e de grupo moram nos `*.repository.ts` (como os `Create…Record` do molde `plans.repository.ts`), e não
+   em `fx-rates.types.ts`/`economic-groups.types.ts` da árvore do plano §3: o mandato limita a F5 a `*.repository.ts`,
+   `*.prisma.ts` e `*.service.ts`, e um `economic-groups.types.ts` meu colidiria com o `MemberRow` que a F2 do braço vai
+   declarar para `membership.rules.ts`. O meu tipo de vínculo (`EconomicGroupMembership`) tem `tenantId`, `groupId`,
+   `validFrom` e `validTo` em `AAAA-MM-DD`, compatível por estrutura com o `isMemberOn`/`overlaps` canônicos.
+2. O R-FX-6 (T-FX-6) e o R-FX-5 (T-FX-5) são testes em memória no plano, fora do que o mandato me deixa tocar. Cobri a
+   validação **no serviço contra o Postgres** (o código, o motivo e "nada gravado"), e o T-FX-5 pelo T-FX-db-2 e pelo espelho
+   do dublê. O 400/422 por HTTP e "a visão usa 5.500000" passam pela rota e pela visão (F6).
+3. A trilha do câmbio e dos grupos (`platform_audit_logs`, `audit_logs` da organização) não está aqui: é a "trilha" da F6, com
+   as chaves novas da allowlist em `audit-metadata.ts`, que é arquivo do braço.
+
+### PARADA — o que da F5 não roda como escrito (vale a `D-EMENDA-ANTES-DO-CODIGO`)
+
+1. **`economic-groups.service.ts` não pode ser escrito neste ramo sem improvisar.** A P9 do serviço (checagem por intervalo,
+   `validFrom ≥ hoje` em SP, `validFrom > valid_from` da linha que fecha) é feita, pelo plano §6, das expressões canônicas de
+   `membership.rules.ts` (`overlaps`, `todayBusinessDate`, a regra `if (validFrom <= row.validFrom) throw retroactive();`), e é
+   onde as mutações M-GRP-4, M-GRP-11 e M-GRP-12 atuam. O plano §9 diz: "o `membership.rules.ts` é do braço (F2) e o Claude
+   só o importa". Mas este ramo nasce da F0 e corre em paralelo com a F1–F3: o arquivo não existe aqui
+   (`git ls-tree -r HEAD --name-only | grep -c membership.rules` = 0). Escrevê-lo seria tomar a fatia do braço; reescrever as
+   regras no serviço quebraria as âncoras canônicas.
+2. **Os testes em memória da F5 caem em arquivo da F2.** R-GRP-3..6 e R-GRP-8 (T-GRP-5..11, T-GRP-13) moram em
+   `tests/ass-09-groups.test.ts`, o mesmo arquivo do T-GRP-1..4 e do T-GRP-12 (F2), e o mandato limita a F5 a testes `-db`.
+3. **Dependem do serviço e ficam pendentes com ele:** R-GRP-db-1 (corrida de dois `PUT members`) e R-GRP-db-3 (b) e (c)
+   (422 pelo serviço; 409 com a M-GRP-11 aplicada); as mutações M-GRP-4, M-GRP-7, M-GRP-11 e M-GRP-12.
+4. **A trava do câmbio do plano (P10) bate num guard da casa.** `tests/financial-period-lock-guard.test.ts` ›
+   "guard — pg_advisory em src/** vive SÓ em src/database/financial-period-lock.ts" (`B-O6R-02`, Ω6R-DIN-008) reprova
+   qualquer `pg_advisory` em `src/**` fora de `src/database/financial-period-lock.ts`, comentário incluído (a busca é
+   `/pg_advisory/` linha a linha). O plano manda a versão nova do câmbio "sob `pg_advisory_xact_lock`" em
+   `fx-rates/fx-rates.prisma.ts` (P10) e escreve a M-FX-8 como "apagar a linha do `pg_advisory_xact_lock`". Medido: na `main`,
+   `git grep -n pg_advisory origin/main -- 'src/**'` só acha `src/database/financial-period-lock.ts` (l.7, 41, 49); no ramo,
+   `fx-rates.prisma.ts` l.5 (comentário) e l.41 (a trava) → o guard fica **vermelho**, e vermelho só por causa deste bloco
+   (controle abaixo). Tanto o lar único (`src/database/**`) quanto o guard estão fora do PERMITIDO. **Não troquei o
+   mecanismo**: o código fica como o plano escreveu, a prova (T-FX-db-1 verde, M-FX-8 vermelha) fica no diário, e a escolha é
+   da emenda. Caminhos que vi, sem escolher: (a) a trava do câmbio no lar único, como segunda chave, com o guard 2 intacto
+   (`src/database/financial-period-lock.ts`, PROIBIDO hoje); (b) o guard passa a aceitar `fx-rates.prisma.ts` com motivo
+   (`tests/financial-period-lock-guard.test.ts`, PROIBIDO hoje); (c) serializar sem trava consultiva — `LOCK TABLE
+   platform_fx_rates IN SHARE ROW EXCLUSIVE MODE` na transação (modo que conflita consigo mesmo), ou repetir a inserção na
+   violação do `UNIQUE` —, com a M-FX-8 reescrita por emenda.
+
+**O que a emenda precisa dizer (proposta, não decisão minha):** (a) a ordem — o resto da F5 roda depois que a F2 estiver na
+linha (rebase de `feat/ass-09-banco` sobre a F2 do braço, ou na junção, antes da F6); (b) o arquivo dos testes em memória do
+serviço de grupos (por exemplo, `tests/ass-09-groups-service.test.ts`, dentro de `tests/ass-09-*.test.ts` do PERMITIDO), para
+não dividir `tests/ass-09-groups.test.ts` entre duas fatias; (c) quem faz; (d) o mecanismo da trava do câmbio diante do guard
+de `pg_advisory` (item 4).
+
+### Suíte inteira em memória (sinal de regressão, fora da bateria do mandato)
+
+`npm test` no head da F5 (Git Bash, `CORE_SAAS_PERSISTENCE=memory`, **sem** `DATABASE_URL` e sem `REDIS_URL`, porque a 6379 é
+proibida): `553 arquivo(s) · 4534 teste(s) · pass 4344 · fail 16 · skipped 173` (as `-db` pulam sem banco). Para separar
+defeito do bloco de ambiente, rodei os arquivos que falharam nas duas árvores, no mesmo ambiente:
+
+| arquivo | `main` (`w-ass09`, `d29b3bef`) | ramo (`w-ass09b`) | classe |
+|---|---|---|---|
+| `core-saas-role-authority`, `domain-events` (2), `job-queue` (3), `worker-heartbeat` (1) | `not ok` | `not ok` | ambiente: sem Redis e sem banco |
+| `users-seg-desativado-sse` (16b-1 a 16b-6) | `ok` isolado | `ok` isolado | instável sob a carga da suíte inteira; verde nas duas árvores isoladas |
+| `financial-period-lock-guard` › guard 1 | `ok` | **`not ok`** | **do bloco** — PARADA 4 acima |
+| `san3-05-acessos-de-plataforma-guard` › T13 (L0 e a chave RAW) | `ok` | **`not ok`** | **do bloco**, esperado — dono F7 |
+
+Comando da comparação: `node --test --import tsx tests/core-saas-role-authority.test.ts tests/domain-events.test.ts
+tests/job-queue.test.ts tests/users-seg-desativado-sse.test.ts tests/worker-heartbeat.test.ts
+tests/financial-period-lock-guard.test.ts` → `main`: `# tests 38 # pass 31 # fail 7`; ramo: `# tests 38 # pass 30 # fail 8`
+(a diferença é o guard da PARADA 4).
