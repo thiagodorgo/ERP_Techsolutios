@@ -80,7 +80,7 @@ export function avaliarAlvo(env, base) {
     return recusa(2, "ALVO_RECUSADO");
   }
   if (url.protocol !== "http:") return recusa(2, "ALVO_RECUSADO");
-  const porta = Number(url.port);
+  const porta = Number.parseInt(url.port, 10);
   const naRede = url.hostname === "api" && url.port === "3000";
   const noHost = url.hostname === "127.0.0.1" && porta >= PORTA_MIN && porta <= PORTA_MAX;
   if (!naRede && !noHost) return recusa(2, "ALVO_RECUSADO");
@@ -90,7 +90,7 @@ export function avaliarAlvo(env, base) {
 function destinoPermitido(host, porta, banco) {
   if (!/^[0-9]{1,5}$/.test(porta)) return false;
   if (host === "postgres" && porta === "5432" && banco === "erp_techsolutions") return true;
-  const n = Number(porta);
+  const n = Number.parseInt(porta, 10);
   return host === "127.0.0.1" && n >= PG_PORTA_MIN && n <= PG_PORTA_MAX && /^[a-z0-9_]{1,63}$/.test(banco);
 }
 
@@ -119,7 +119,7 @@ export function avaliarAlvoBanco(env, parse = parserDoDriver()) {
     return recusa(2, "REDIS_RECUSADO");
   }
   if (redis.protocol !== "redis:" || /[?#]/.test(redisBruto)) return recusa(2, "REDIS_RECUSADO");
-  const rp = Number(redis.port);
+  const rp = Number.parseInt(redis.port, 10);
   const redisNaRede = redis.hostname === "redis" && redis.port === "6379";
   const redisNoHost = redis.hostname === "127.0.0.1" && rp >= REDIS_PORTA_MIN && rp <= REDIS_PORTA_MAX;
   if (!redisNaRede && !redisNoHost) return recusa(2, "REDIS_RECUSADO");
@@ -129,7 +129,7 @@ export function avaliarAlvoBanco(env, parse = parserDoDriver()) {
 // Censo (logica pura, usada pela fundacao e pelo motor). `orgs` = [{ slug, name }].
 // Permitidas: exatamente 1 `platform` e no maximo 1 organizacao com o nome da fixture.
 export function avaliarCenso(orgs, nomeFixture, papel) {
-  if (orgs.length === 0) return recusa(3, "PERSISTENCIA_NAO_REAL");
+  if (orgs.length === 0) return recusa(3, papel === "motor" ? "PERSISTENCIA_NAO_REAL" : "BASE_SEM_OP6");
   if (!orgs.some((o) => o.slug === "platform")) return recusa(3, "BASE_SEM_OP6");
   const estranhas = orgs.filter((o) => o.slug !== "platform" && o.name !== nomeFixture);
   const mesmas = orgs.filter((o) => o.name === nomeFixture);

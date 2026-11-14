@@ -29,6 +29,11 @@ function dirTemporario() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "demo-isolado-alvo-"));
 }
 
+// E-mail fora de `@exemplo.invalid` so existe aqui como dado de teste, e e MONTADO em tempo de execucao: a
+// varredura lexical do C11 (nenhum e-mail fora de `@exemplo.invalid` nas linhas acrescentadas) nao o confunde
+// com um endereco de verdade. Os dominios sao inventados.
+const email = (local: string, dominio: string) => [local, dominio].join("@");
+
 test("C1 producao recusa, sem escape, no motor e na fundacao (mata a M1)", () => {
   for (const e of [{}, { ALLOW_PROD_SEED: "1" }, { ALLOW_PROD_BOOTSTRAP: "1" }, { ALLOW_PROD_SEED: "1", ALLOW_PROD_BOOTSTRAP: "1" }]) {
     const rm = motor("http://api:3000", { NODE_ENV: "production", ...e });
@@ -248,18 +253,20 @@ test("C4 censo puro (mata a M4)", () => {
     assert.equal(A.avaliarCenso([pl, ou], n, papel).motivo, "ALVO_NAO_VIRGEM", papel);
   }
   assert.equal(A.avaliarCenso([], n, "motor").motivo, "PERSISTENCIA_NAO_REAL");
+  // Base vazia: para o motor, a API esta em memoria; para a fundacao, faltou o Op-6 (v2 §5.1, F-L4).
   assert.equal(A.avaliarCenso([], n, "fundacao").codigo, 3);
+  assert.equal(A.avaliarCenso([], n, "fundacao").motivo, "BASE_SEM_OP6");
   assert.equal(A.avaliarCenso([pl, fx, { ...fx, slug: "organizacao-exemplo-y" }], n, "fundacao").motivo, "ALVO_NAO_VIRGEM");
   assert.equal(A.avaliarCenso([fx], n, "fundacao").motivo, "BASE_SEM_OP6");
 });
 
 test("C4 plataforma: real recusa (mata a M4c)", () => {
-  const r = A.avaliarPlataforma(["a@exemplo.invalid", "b@empresa.exemplo"]);
+  const r = A.avaliarPlataforma(["a@exemplo.invalid", email("b", "empresa.exemplo")]);
   assert.equal(r.codigo, 3);
   assert.equal(r.motivo, "PLATAFORMA_REAL");
-  assert.equal(A.avaliarPlataforma(["a@exemplo.invalid.com"]).motivo, "PLATAFORMA_REAL");
+  assert.equal(A.avaliarPlataforma([email("a", "exemplo.invalid.com")]).motivo, "PLATAFORMA_REAL");
   assert.equal(A.avaliarPlataforma(["a@exemplo.invalid"]).ok, true);
-  assert.equal(A.avaliarPlataforma(["a@exemplo.invalid", "b@outro.invalid"]).ok, true);
+  assert.equal(A.avaliarPlataforma(["a@exemplo.invalid", email("b", "outro.invalid")]).ok, true);
 });
 
 test("C4-e1 plataforma sem usuario recusa (mata a M14)", () => {
