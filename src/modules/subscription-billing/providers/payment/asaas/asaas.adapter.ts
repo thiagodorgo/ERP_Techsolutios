@@ -51,6 +51,8 @@ type AsaasPayment = {
   readonly confirmedDate?: string;
   readonly paymentDate?: string;
   readonly clientPaymentDate?: string;
+  readonly creditDate?: string;
+  readonly estimatedCreditDate?: string;
   readonly externalReference?: string;
   readonly dateCreated?: string;
   readonly dueDate?: string;
@@ -91,14 +93,26 @@ function pathId(id: string): string {
   return encodeURIComponent(id);
 }
 
+const REMOVED_UNPAID_STATUS: ReadonlySet<string> = new Set(["PENDING", "OVERDUE", "DELETED"]); // [REMOVED-STATUS]
+const PAYMENT_EVIDENCE = ["paymentDate", "confirmedDate", "clientPaymentDate", "creditDate", "estimatedCreditDate"] as const; // [REMOVED-EVIDENCE]
+
 /**
- * D-2.1 (Emenda 2.1 do B-ASS-08c1a) — SÓ para a lista por referência: a cobrança removida no Asaas e sem nenhuma data de
- * pagamento não recebe dinheiro, e é a única que deixa de bloquear uma criação nova. Removida COM data de pagamento
- * recebeu dinheiro: segue o mapa e bloqueia. O webhook, os polls e o `getCharge` continuam lendo `DELETED` como `unknown`.
+ * D-2.1 (Emenda 2.1 do B-ASS-08c1a), com a prova POSITIVA do C2-04 da J-555 (Emenda 2.6 §4) — o estado de cada cobrança
+ * SÓ na lista por referência. A removida no Asaas (`deleted: true` ou `status: "DELETED"`) é a única que pode deixar de
+ * bloquear uma criação nova, e só com as duas provas juntas de que não recebeu dinheiro: o status na lista fechada
+ * `[REMOVED-STATUS]` (status ausente não vale) e nenhuma data de `[REMOVED-EVIDENCE]`. Aí ela vira `cancelled`.
+ * A removida SEM essa prova nunca sai viva nem adotável: só a família paga, estornada ou em disputa segue o mapa, e todo
+ * o resto (inclusive `pending` e `overdue`) vira `unknown`, que bloqueia e vai à revisão. A não removida segue o mapa.
+ * O webhook, os polls e o `getCharge` continuam lendo `DELETED` como `unknown`.
  */
-function listedRemovedWithoutPayment(payment: AsaasPayment): boolean {
-  const removed = (payment.deleted === true || payment.status === "DELETED") && !payment.paymentDate && !payment.confirmedDate && !payment.clientPaymentDate; // [LIST-REMOVED]
-  return removed;
+function listedChargeStatus(payment: AsaasPayment): ChargeStatus {
+  const mapped = asaasStatusToOurs(payment.status ?? "").status;
+  const deletedInAsaas = payment.deleted === true || payment.status === "DELETED";
+  const removed = deletedInAsaas && REMOVED_UNPAID_STATUS.has(payment.status ?? "") && !PAYMENT_EVIDENCE.some((field) => Boolean(payment[field])); // [LIST-REMOVED]
+  if (removed) return "cancelled";
+  if (!deletedInAsaas) return mapped;
+  const moneyStates: readonly ChargeStatus[] = ["paid", "partially_paid", "refunded", "partially_refunded", "chargeback_disputed", "charged_back"];
+  return moneyStates.includes(mapped) ? mapped : "unknown"; // [LIST-REMOVED-NEVER-LIVE]
 }
 
 function headerOf(headers: VerifyWebhookInput["headers"], name: string): string | undefined {
@@ -230,7 +244,7 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
       .filter((payment) => payment.externalReference === ref)
       .map((payment) => ({
         chargeId: payment.id,
-        status: listedRemovedWithoutPayment(payment) ? "cancelled" : asaasStatusToOurs(payment.status ?? "").status,
+        status: listedChargeStatus(payment),
         amountCents: typeof payment.value === "number" ? toCents(payment.value) : Number.NaN,
         createdAt: payment.dateCreated ?? "",
       }));

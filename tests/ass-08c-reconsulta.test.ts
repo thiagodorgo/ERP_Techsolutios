@@ -399,3 +399,64 @@ test("RV-CENTAVOS-NEGA (adaptador real): retentativa de R$ 99,00 com uma viva de
     await server.close();
   }
 });
+
+// ------------------------------------------------------------------ J-555 (C2-04): a removida só é cancelled com prova POSITIVA
+
+/** A linha da retentativa de uma intenção ÚNICA, com o MESMO valor e o mesmo dia da cobrança listada (10 000 centavos,
+ * 01/12): uma cobrança viva aqui seria candidata e ADOTADA. */
+const retryRow = { payload: { amountCents: 10_000 }, attempts: 2, lastError: "provider_timeout", occurredAt: T0 } as unknown as BillingOutboxRow;
+/** A linha nova de OUTRO valor com outra intenção no demonstrativo: uma removida que libera a criação daria `create`. */
+const otherIntentRow = { payload: { amountCents: 15_000 }, occurredAt: T0 } as unknown as BillingOutboxRow;
+
+const REMOVED_PROOF: ReadonlyArray<{ readonly label: string; readonly patch: Readonly<Record<string, unknown>>; readonly expected: ChargeStatus }> = [
+  { label: "(h) deleted: true com status RECEIVED, sem data → paid, nunca cancelled", patch: { deleted: true, status: "RECEIVED" }, expected: "paid" },
+  { label: "(i) deleted: true com status CONFIRMED, sem data → paid, nunca cancelled", patch: { deleted: true, status: "CONFIRMED" }, expected: "paid" },
+  { label: "(j) deleted: true com status RECEIVED_IN_CASH, sem data → paid, nunca cancelled", patch: { deleted: true, status: "RECEIVED_IN_CASH" }, expected: "paid" },
+  { label: "(k) DELETED com creditDate → unknown, nunca cancelled", patch: { status: "DELETED", creditDate: "2026-12-01" }, expected: "unknown" },
+  { label: "(l) DELETED com estimatedCreditDate → unknown, nunca cancelled", patch: { status: "DELETED", estimatedCreditDate: "2026-12-01" }, expected: "unknown" },
+  { label: "(m) deleted: true com status REFUNDED → refunded, nunca cancelled", patch: { deleted: true, status: "REFUNDED" }, expected: "refunded" },
+  { label: "(n) deleted: true com status desconhecido → unknown, nunca cancelled", patch: { deleted: true, status: "ESTADO_NOVO" }, expected: "unknown" },
+  { label: "(p) deleted: true SEM status → unknown, nunca cancelled", patch: { deleted: true, status: undefined }, expected: "unknown" },
+  { label: "(o) deleted: true com status OVERDUE, sem data → cancelled (controle positivo)", patch: { deleted: true, status: "OVERDUE" }, expected: "cancelled" },
+];
+
+for (const line of REMOVED_PROOF) {
+  test(`RV-LISTA-PROVA (adaptador, C2-04) ${line.label}`, async () => {
+    const { server, adapter } = await adapterOver({ now: () => T0 });
+    try {
+      const created = await adapter.createCharge(charge(10_000));
+      server.patchPayment(created.chargeId, line.patch);
+      const listed = await adapter.listChargesByExternalReference(STATEMENT);
+      assert.deepEqual(listed.map((candidate) => [candidate.chargeId, candidate.status]), [[created.chargeId, line.expected]]);
+      if (line.expected !== "cancelled") assert.notEqual(chargeCandidateDecision(otherIntentRow, listed, { otherIntents: 1 }, false).kind, "create", "nunca libera a criação");
+    } finally {
+      await server.close();
+    }
+  });
+}
+
+// A forma DOCUMENTADA do Asaas (`deleted: true` com o status mantido), Emenda 2.6 §4 (A1): a removida SEM a prova positiva
+// nunca sai viva nem adotável (`pending`/`overdue`) — sai `unknown`, que bloqueia e vai à revisão.
+const REMOVED_DOCUMENTED: ReadonlyArray<{ readonly label: string; readonly patch: Readonly<Record<string, unknown>> }> = [
+  { label: "(D1) deleted: true, PENDING com estimatedCreditDate", patch: { deleted: true, status: "PENDING", estimatedCreditDate: "2026-12-01" } },
+  { label: "(D2) deleted: true, PENDING com creditDate", patch: { deleted: true, status: "PENDING", creditDate: "2026-12-01" } },
+  { label: "(D3) deleted: true, OVERDUE com estimatedCreditDate", patch: { deleted: true, status: "OVERDUE", estimatedCreditDate: "2026-12-01" } },
+  { label: "(D4) deleted: true, AWAITING_RISK_ANALYSIS sem data", patch: { deleted: true, status: "AWAITING_RISK_ANALYSIS" } },
+  { label: "(D5) deleted: true, PENDING com paymentDate", patch: { deleted: true, status: "PENDING", paymentDate: "2026-12-01" } },
+];
+
+for (const line of REMOVED_DOCUMENTED) {
+  test(`RV-LISTA-PROVA (adaptador, C2-04, A1) ${line.label} → unknown: nem cria nem adota`, async () => {
+    const { server, adapter } = await adapterOver({ now: () => T0 });
+    try {
+      const created = await adapter.createCharge(charge(10_000));
+      server.patchPayment(created.chargeId, line.patch);
+      const listed = await adapter.listChargesByExternalReference(STATEMENT);
+      assert.deepEqual(listed.map((candidate) => [candidate.chargeId, candidate.status]), [[created.chargeId, "unknown"]]);
+      assert.deepEqual(chargeCandidateDecision(retryRow, listed, { otherIntents: 0 }, false), { kind: "review", code: "charge_found_no_candidate" }, "retentativa de intenção única: nunca adota a removida");
+      assert.notEqual(chargeCandidateDecision(otherIntentRow, listed, { otherIntents: 1 }, false).kind, "create", "nunca libera a criação");
+    } finally {
+      await server.close();
+    }
+  });
+}
