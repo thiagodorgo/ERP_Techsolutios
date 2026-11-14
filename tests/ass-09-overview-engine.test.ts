@@ -216,7 +216,7 @@ function paying(cents: bigint): SubscriptionAmount {
     subscriptionAmountCents: cents,
     statementTotalCents: cents,
     creditsAppliedCents: 0n,
-    subscriptionBasis: "statement_total",
+    subscriptionBasis: "before_credits",
     source: "statement",
     skipReason: null,
     estimate: false,
@@ -228,7 +228,7 @@ function notSubscribed(reason: SubscriptionAmount["skipReason"] = "no_subscripti
     subscriptionAmountCents: null,
     statementTotalCents: null,
     creditsAppliedCents: null,
-    subscriptionBasis: "statement_total",
+    subscriptionBasis: "before_credits",
     source: "none",
     skipReason: reason,
     estimate: false,
@@ -346,7 +346,7 @@ test("T-FX-1b · a linha inteira: 100.000000 USD × 5.400000, assinatura 1000.00
   assert.equal(line!.marginPct, "46.00");
   assert.equal(line!.alert, "none");
   assert.equal(line!.subscriptionAmount, "1000.00");
-  assert.equal(line!.subscriptionBasis, "statement_total");
+  assert.equal(line!.subscriptionBasis, "before_credits");
   assert.equal(data.currency, "BRL");
 });
 

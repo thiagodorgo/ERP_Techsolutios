@@ -86,7 +86,7 @@ function paying(cents: bigint | null): SubscriptionAmount {
     subscriptionAmountCents: cents,
     statementTotalCents: cents,
     creditsAppliedCents: cents === null ? null : 0n,
-    subscriptionBasis: "statement_total",
+    subscriptionBasis: "before_credits",
     source: cents === null ? "none" : "statement",
     skipReason: cents === null ? "no_subscription" : null,
     estimate: false,

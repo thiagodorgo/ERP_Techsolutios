@@ -182,6 +182,57 @@ entre as duas entraram `5728df31` (#557, B-ASS-08c-wh) e `d29b3bef` (#558, B-SAN
    `OverviewEngineError`. A F6 mapeia para 500. A lista de grupos que a F6 passa inclui os excluídos (mês passado).
 9. **O formato do `data`** (§4.2): `lines` + `totals` em `groupBy=tenant` e `group`; `global` em `groupBy=global`.
 
+## F3 — `overview/subscription-amount.ts` (R-SUB-1..7)
+
+- **Dev:** `dev-ass09-f13-cl` (o mesmo da F1 e da F2, cobrindo o braço, declarado).
+- **Q5 = recomendação, D-DONO-1311-RECOMENDACOES.** Decisão do dono de 13/11 ~23:20 SP ("minhas decisões vão todas nas
+  recomendações"), repassada pelo orquestrador às 23:2x SP e escrita na Emenda 2 (decisão 5 e §5.1: "Q5 = antes do crédito … a
+  expressão canônica, o `subscriptionBasis`, o T-SUB-1, o T-SUB-7 e a M-SUB-1 invertida"; **§9.2**, lida às 23:33, e o
+  **C-E2-9** do §6). A assinatura do mês é o valor do demonstrativo **antes** de abater o crédito: `totalCents + creditsAppliedCents`. O total
+  do demonstrativo e o crédito usado seguem **separados** na resposta. Troca o padrão D-9 do v2 (a alternativa A).
+
+| passo | comando | saída resumida | veredito |
+|---|---|---|---|
+| vermelho antes | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-subscription-amount.test.ts` sem o módulo | `ERR_MODULE_NOT_FOUND … subscription-amount.js` · `# tests 1 # pass 0` | vermelho |
+| verde depois | as 4 suítes das fatias: `tests/ass-09-subscription-amount.test.ts`, `-overview-money`, `-overview-engine`, `-groups` | `# tests 35 # pass 35 # fail 0 # skipped 0` (F3: 8) | verde |
+| tipos | `npx tsc -p tsconfig.json --noEmit` | sem saída, ec 0 | verde |
+| mutações | executor fora do repositório (âncora 1x, aplica, roda, restaura, md5) | as 7 abaixo, todas `VERMELHO`, `restaurado=true` | todas mortas |
+
+| mutação (texto literal) | vermelho em |
+|---|---|
+| M-SUB-1 (invertida, forma da Emenda 2 §9.2) `BigInt(statement.totalCents + statement.creditsAppliedCents)` → `BigInt(statement.totalCents)` | T-SUB-1, T-SUB-4, T-SUB-7 |
+| M-SUB-7 `BigInt(statement.totalCents + statement.creditsAppliedCents)` → `BigInt(statement.paidCents)` | T-SUB-1, T-SUB-4, T-SUB-7 |
+| M-SUB-2 `return projectAmount(runtime, tenantId, period);` → `return fromStatement((await runtime.service.close({ tenantId, period, now, actorId: "overview", source: "manual" })).statement)` | T-SUB-2 (1 linha gravada), T-SUB-5, F3 apoio |
+| M-SUB-3 `case "paid":` → `case "paid":` seguido de `case "cancelled":` (o cancelado cai no ramo do fechado) | T-SUB-3 (`"500.00"`) |
+| M-SUB-4 `{ source: "statement_reopened", estimate: true }` → `… estimate: false }` | T-SUB-4 |
+| M-SUB-5 `subscriptionAmountCents: null,` → `subscriptionAmountCents: 0n,` | T-SUB-5 (alerta `critical`) |
+| M-SUB-6 apagar `if (statement && statement.status !== "open") return fromStatement(statement);` | T-SUB-6 (chamadas > 0), T-SUB-1, T-SUB-3, T-SUB-4, T-SUB-7 |
+
+**Expectativas que a Q5 mudou:** T-SUB-1 → `subscriptionAmount "1000.00"`, `statementTotal "900.00"`, `creditsApplied "100.00"`,
+e o custo `750.00` dá alerta `none` (75 %; na base líquida seria `warning`, 83 %). T-SUB-7 → setembro `"100.00"`, outubro
+`"100.00"` (conta `"50.00"` + crédito `"50.00"`); somados `"200.00"`, o contratado dos dois meses; os 50 pagos a mais contam uma vez,
+em outubro.
+
+**Leituras do dev na F3, declaradas (§A6):**
+1. **O valor de `subscriptionBasis`** passa a `"before_credits"` (nome da Emenda 2 §9.2, que troca o `statement_total` em todo
+   lugar). Ele é a constante `SUBSCRIPTION_BASIS` e o tipo literal do campo em `overview.types.ts` (arquivo da F2), e aparece em
+   2 testes da F2 (`ass-09-overview-engine`, `ass-09-groups`): os três mudam neste commit da F3, por causa da Q5. O
+   `API_CONTRACTS.md` e o `docs/subscription-billing.md` são da F8.
+2. **As expressões canônicas** são as da Emenda 2 §9.2, cada uma 1 vez, num ramo único (`statementAmount`) para `closed`,
+   `paid` e `reopened`: `subscriptionAmountCents: BigInt(statement.totalCents + statement.creditsAppliedCents),`,
+   `statementTotalCents: BigInt(statement.totalCents),` e `creditsAppliedCents: BigInt(statement.creditsAppliedCents),`.
+3. **Cancelado:** assinatura `0`; o total e o crédito gravados na linha seguem à vista, separados, pelo mesmo ramo único
+   (`{ ...statementAmount(…, { source: "cancelled" }), subscriptionAmountCents: 0n }`), para as âncoras seguirem únicas.
+4. **Projeção** (sem linha ou linha `open`): `inputs.resolve(t, P, { pin: null })` + `computeStatement` sem ajuste e sem crédito,
+   sem gravar; `statementTotal` e `creditsApplied` `null` (não há demonstrativo). Com a base antes do crédito, a projeção e o mês
+   fechado passam a estar na mesma base (o K17 encolhe: o crédito ainda não aplicado não mudaria o valor).
+5. **C-E2-9, rodado por mim antes do push:** as 3 âncoras `grep -cF` = 1/1/1; `subscriptionBasis: "before_credits"` presente em
+   `overview/` (no tipo do campo); `statement_total` em `src`, `tests` e `API_CONTRACTS.md`: sem saída; `paidCents` em `overview/`: sem
+   saída (o comentário que o citava foi reescrito); `tests/ass-09-subscription-amount.test.ts` 8/8; M-SUB-1 e M-SUB-7 como escritas
+   no §9.2: vermelhas.
+6. **`now`** é o relógio do pedido: o período depois do mês corrente (SP) é recusado (`period_in_future`) antes de qualquer
+   leitura; o período mal formado, `invalid_period`. Isso também mantém `now` no escopo, que a M-SUB-2 usa como texto.
+
 ## F4 — ramo `feat/ass-09-banco` (worktree `C:/Users/thiag/w-ass09b`)
 
 (preenchido no ramo `feat/ass-09-banco`)

@@ -47,8 +47,11 @@ export const SUBSCRIPTION_SOURCES = ["statement", "statement_reopened", "cancell
 export type SubscriptionSource = (typeof SUBSCRIPTION_SOURCES)[number];
 export type SubscriptionSkipReason = "no_subscription" | "plan_without_price" | "platform_organization";
 
-/** A base da assinatura (D-9, Q5 com padrão): o total do demonstrativo, líquido do crédito aplicado. */
-export const SUBSCRIPTION_BASIS = "statement_total" as const;
+/**
+ * A base da assinatura (D-9; Q5 = RECOMENDAÇÃO, D-DONO-1311-RECOMENDACOES, 13/11): o valor do demonstrativo ANTES de abater o
+ * crédito aplicado (`totalCents + creditsAppliedCents`). O total do demonstrativo e o crédito usado vêm separados.
+ */
+export const SUBSCRIPTION_BASIS = "before_credits" as const;
 
 /** A assinatura de UMA organização no período, em centavos (montada pela F3, `subscription-amount.ts`). */
 export type SubscriptionAmount = {
@@ -58,7 +61,7 @@ export type SubscriptionAmount = {
   readonly statementTotalCents: bigint | null;
   /** O crédito aplicado no demonstrativo, separado; `null` sem demonstrativo lido. */
   readonly creditsAppliedCents: bigint | null;
-  readonly subscriptionBasis: typeof SUBSCRIPTION_BASIS;
+  readonly subscriptionBasis: "before_credits";
   readonly source: SubscriptionSource;
   readonly skipReason: SubscriptionSkipReason | null;
   readonly estimate: boolean;
@@ -184,7 +187,7 @@ export type TenantLineJson = {
   readonly groupId: string | null;
   readonly groupName: string | null;
   readonly subscriptionAmount: string | null;
-  readonly subscriptionBasis: typeof SUBSCRIPTION_BASIS;
+  readonly subscriptionBasis: "before_credits";
   readonly statementTotal: string | null;
   readonly creditsApplied: string | null;
   readonly subscriptionSource: SubscriptionSource;
