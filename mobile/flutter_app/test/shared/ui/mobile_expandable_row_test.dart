@@ -1,7 +1,13 @@
-// A peça `MobileExpandableRow` (lib/shared/ui/mobile_kit.dart), compartilhada
-// entre o B-SAN3-17 e o B-SAN3-15b. Contrato: emenda 5.2 do 15b (§2.1, §2.2 e
-// §3.1) e emenda 5.3 (§1 a §4). Arnês do K1, K2, K2b e K4: o tema do app, um
-// `Padding` de 16 nos quatro lados e uma `Column`, sem rolável em volta.
+// B-SAN3-15b (criado na ordem 1: o 15b chegou antes do B-SAN3-17) — os testes da `MobileExpandableRow`, a linha que
+// abre o detalhe, contrato único das Emendas 5.2 (§2.1, §2.2, §3.1) e 5.3 (§1 a §4) do B-SAN3-15b.
+//   K1  — o toque no título abre e fecha; fechada, a peça tem 48.0 de altura; o detalhe começa 48.0 abaixo do topo da
+//         linha; o título está num `Text` só dele e o meta em outro;
+//   K2  — com foco (Tab), Enter abre e Espaço fecha; `androidTapTargetGuideline` e `labeledTapTargetGuideline` passam;
+//   K2b — vermelho-controle permanente do arnês: no mesmo arnês, um `InkWell` de 200 por 44 reprova a diretriz de 48;
+//   K3  — a peça não existe em dobro em `lib/`;
+//   K4  — a linha corta pelo fim, sem vão e sem estouro, a 390 e a 320 de largura.
+// O arnês é parte do contrato: o tema do app, um `Padding` de 16 nos quatro lados e uma `Column`, sem rolável (sem a
+// margem, a diretriz pula a linha que encosta na borda e não mede nada).
 import 'dart:io';
 
 import 'package:erp_techsolutions_mobile/shared/theme/erp_mobile_theme.dart';
@@ -11,206 +17,220 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Widget _harness(Widget child) => MaterialApp(
+const _titulo = 'Disjuntor tripolar 25A';
+const _meta = ' · ELE-0102 · 2 un';
+
+Widget _arnes(Widget filho) => MaterialApp(
   theme: ErpMobileTheme.light(),
   home: Scaffold(
     body: Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(children: [child]),
+      child: Column(children: [filho]),
     ),
   ),
 );
 
-class _Toggle extends StatefulWidget {
-  const _Toggle({this.meta});
-
-  final String? meta;
+class _Host extends StatefulWidget {
+  const _Host();
 
   @override
-  State<_Toggle> createState() => _ToggleState();
+  State<_Host> createState() => _HostState();
 }
 
-class _ToggleState extends State<_Toggle> {
-  bool open = false;
+class _HostState extends State<_Host> {
+  bool _aberta = false;
 
   @override
   Widget build(BuildContext context) => MobileExpandableRow(
-    key: const ValueKey('peca'),
-    title: 'Revogue quando quiser',
-    meta: widget.meta,
-    expanded: open,
-    onToggle: () => setState(() => open = !open),
-    detail: const Padding(
-      key: ValueKey('detalhe'),
-      padding: EdgeInsets.all(12),
-      child: Text('Você pode revogar a qualquer momento.'),
+    key: const Key('peca'),
+    title: _titulo,
+    meta: _meta,
+    expanded: _aberta,
+    onToggle: () => setState(() => _aberta = !_aberta),
+    detail: const SizedBox(
+      key: Key('detalhe'),
+      height: 60,
+      child: Text('Saldo'),
     ),
   );
 }
 
 void main() {
-  testWidgets('K1 o toque abre e fecha; a linha tem 48 e o detalhe nasce logo '
-      'abaixo; título e meta em Text separados', (tester) async {
-    await tester.pumpWidget(_harness(const _Toggle(meta: ' · 2 un')));
+  testWidgets(
+    'K1 o toque no título abre e fecha; 48 de altura; o detalhe logo abaixo',
+    (t) async {
+      await t.pumpWidget(_arnes(const _Host()));
+      expect(t.getSize(find.byKey(const Key('peca'))).height, 48.0);
+      expect(find.byKey(const Key('detalhe')), findsNothing);
 
-    expect(find.byKey(const ValueKey('detalhe')), findsNothing);
-    expect(tester.getSize(find.byKey(const ValueKey('peca'))).height, 48.0);
-    expect(find.text('Revogue quando quiser'), findsOneWidget);
-    expect(find.text(' · 2 un'), findsOneWidget);
+      // O título e o meta, cada um num `Text` só dele.
+      expect(find.text(_titulo), findsOneWidget);
+      expect(find.text(_meta), findsOneWidget);
 
-    await tester.tap(find.text('Revogue quando quiser'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('detalhe')), findsOneWidget);
-    final rowTop = tester.getTopLeft(find.byKey(const ValueKey('peca'))).dy;
-    final detailTop = tester
-        .getTopLeft(find.byKey(const ValueKey('detalhe')))
-        .dy;
-    expect(detailTop - rowTop, 48.0);
+      await t.tap(find.text(_titulo));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('detalhe')), findsOneWidget);
+      final topoDaLinha = t.getTopLeft(find.byKey(const Key('peca'))).dy;
+      expect(
+        t.getTopLeft(find.byKey(const Key('detalhe'))).dy,
+        topoDaLinha + 48.0,
+      );
 
-    await tester.tap(find.text('Revogue quando quiser'));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('detalhe')), findsNothing);
-  });
+      await t.tap(find.text(_titulo));
+      await t.pumpAndSettle();
+      expect(find.byKey(const Key('detalhe')), findsNothing);
+      expect(t.getSize(find.byKey(const Key('peca'))).height, 48.0);
+    },
+  );
 
-  testWidgets('K2 com foco, Enter abre e Espaço fecha; as diretrizes de alvo '
-      'passam', (tester) async {
-    final handle = tester.ensureSemantics();
-    await tester.pumpWidget(_harness(const _Toggle()));
+  testWidgets(
+    'K2 com foco, Enter abre e Espaço fecha; diretrizes de 48 e de rótulo',
+    (t) async {
+      final semantica = t.ensureSemantics();
+      await t.pumpWidget(_arnes(const _Host()));
+      await t.sendKeyEvent(LogicalKeyboardKey.tab);
+      await t.pumpAndSettle();
+      await t.sendKeyEvent(LogicalKeyboardKey.enter);
+      await t.pumpAndSettle();
+      expect(
+        find.byKey(const Key('detalhe')),
+        findsOneWidget,
+        reason: 'Enter abre',
+      );
+      await t.sendKeyEvent(LogicalKeyboardKey.space);
+      await t.pumpAndSettle();
+      expect(
+        find.byKey(const Key('detalhe')),
+        findsNothing,
+        reason: 'Espaço fecha',
+      );
+      await expectLater(t, meetsGuideline(androidTapTargetGuideline));
+      await expectLater(t, meetsGuideline(labeledTapTargetGuideline));
+      semantica.dispose();
+    },
+  );
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-    await tester.pumpAndSettle();
-    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('detalhe')), findsOneWidget);
-    await tester.sendKeyEvent(LogicalKeyboardKey.space);
-    await tester.pumpAndSettle();
-    expect(find.byKey(const ValueKey('detalhe')), findsNothing);
-
-    await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
-    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
-    handle.dispose();
-  });
-
-  testWidgets('K2b vermelho-controle do arnês: um InkWell de 200 por 44 '
-      'reprova a diretriz do Android', (tester) async {
-    final handle = tester.ensureSemantics();
-    await tester.pumpWidget(
-      _harness(
-        SizedBox(
-          width: 200,
-          height: 44,
-          child: InkWell(
-            onTap: () {},
-            child: Semantics(label: 'Controle de 44', child: const SizedBox()),
+  testWidgets(
+    'K2b o arnês mede: um InkWell de 200 por 44 reprova a diretriz de 48',
+    (t) async {
+      final semantica = t.ensureSemantics();
+      await t.pumpWidget(
+        _arnes(
+          Semantics(
+            label: 'controle',
+            child: SizedBox(
+              width: 200,
+              height: 44,
+              child: InkWell(onTap: () {}),
+            ),
           ),
         ),
-      ),
-    );
+      );
+      final avaliacao = await androidTapTargetGuideline.evaluate(t);
+      expect(avaliacao.passed, isFalse, reason: avaliacao.reason);
+      semantica.dispose();
+    },
+  );
 
-    final result = await androidTapTargetGuideline.evaluate(tester);
-    expect(result.passed, isFalse);
-    handle.dispose();
-  });
-
-  test('K3 a peça não existe em dobro', () {
-    final declaration = RegExp(
+  test('K3 a peça não existe em dobro em lib/', () {
+    final declaracao = RegExp(
       r'^(?:(?:abstract|base|final|interface|sealed|mixin)\s+)*class\s+(\w*Expandable\w*)',
       multiLine: true,
     );
-    final found = <String>[];
-    for (final file in Directory('lib').listSync(recursive: true)) {
-      if (file is! File || !file.path.endsWith('.dart')) continue;
-      final path = file.path.replaceAll(r'\', '/');
-      for (final match in declaration.allMatches(file.readAsStringSync())) {
-        found.add('$path:${match.group(1)}');
+    final lib = Directory('lib');
+    expect(
+      lib.existsSync(),
+      isTrue,
+      reason: 'rode a partir de mobile/flutter_app',
+    );
+    final achadas = <String>[];
+    var arquivos = 0;
+    for (final f in lib.listSync(recursive: true).whereType<File>()) {
+      if (!f.path.endsWith('.dart')) continue;
+      arquivos += 1;
+      final caminho = f.path.replaceAll(r'\', '/');
+      for (final m in declaracao.allMatches(f.readAsStringSync())) {
+        achadas.add('$caminho:${m.group(1)}');
       }
     }
-
-    expect(found, ['lib/shared/ui/mobile_kit.dart:MobileExpandableRow']);
+    expect(arquivos, greaterThan(100), reason: 'a guarda mede algo');
+    expect(achadas, ['lib/shared/ui/mobile_kit.dart:MobileExpandableRow']);
     expect(
       File('lib/shared/ui/erp_clickable_blocks.dart').existsSync(),
       isFalse,
     );
   });
 
-  const cases = <String, (String, String?)>{
-    'C1': (
-      'Disjuntor tripolar 25A curva C para quadro de distribuicao',
-      ' · ELE-0102 · 2 un',
-    ),
-    'C2': ('Mapa, trajeto e quilometragem da jornada de hoje', null),
-    'C3': ('Cabo', ' · ELE-0102 · 2 un'),
-    'C4': (
-      'Disjuntor tripolar 25A curva C para quadro de distribuicao',
-      ' · 2 un',
-    ),
-  };
-
-  for (final width in [390.0, 320.0]) {
-    for (final entry in cases.entries) {
-      testWidgets('K4 ${entry.key} a $width: sem vão, sem estouro, corta pelo '
-          'fim', (tester) async {
-        await tester.binding.setSurfaceSize(Size(width, 640));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-        final (title, meta) = entry.value;
-        await tester.pumpWidget(
-          _harness(
+  // K4 — Emenda 5.3 §1.3: os 4 casos, a 390 e a 320, num teste só.
+  testWidgets('K4 a linha corta pelo fim, sem vão e sem estouro, a 390 e a 320', (
+    t,
+  ) async {
+    const tituloLongo =
+        'Disjuntor tripolar 25A curva C para quadro de distribuicao';
+    const casos = <String, (String, String?)>{
+      'C1': (tituloLongo, ' · ELE-0102 · 2 un'),
+      'C2': ('Mapa, trajeto e quilometragem da jornada de hoje', null),
+      'C3': ('Cabo', ' · ELE-0102 · 2 un'),
+      'C4': (tituloLongo, ' · 2 un'),
+    };
+    addTearDown(() => t.binding.setSurfaceSize(null));
+    for (final largura in [390.0, 320.0]) {
+      await t.binding.setSurfaceSize(Size(largura, 640));
+      for (final caso in casos.entries) {
+        final onde = '${caso.key} a ${largura.toInt()}';
+        final (titulo, meta) = caso.value;
+        await t.pumpWidget(
+          _arnes(
             MobileExpandableRow(
-              title: title,
+              key: UniqueKey(),
+              title: titulo,
               meta: meta,
               expanded: false,
               onToggle: () {},
+              detail: const SizedBox.shrink(),
               trailing: const Text('+2', key: ValueKey('k4-trailing')),
-              detail: const SizedBox(),
             ),
           ),
         );
 
-        // (a) nada estoura
-        expect(tester.takeException(), isNull);
+        // (a) nada estoura.
+        expect(t.takeException(), isNull, reason: onde);
 
-        final titleCut = tester
-            .renderObject<RenderParagraph>(find.text(title))
+        final tituloCortado = t
+            .renderObject<RenderParagraph>(find.text(titulo))
             .didExceedMaxLines;
-        final metaCut =
+        final metaCortado =
             meta != null &&
-            tester
-                .renderObject<RenderParagraph>(find.text(meta))
-                .didExceedMaxLines;
-        final titleWidth = tester.getSize(find.text(title)).width;
-        final metaWidth = meta == null
-            ? 0.0
-            : tester.getSize(find.text(meta)).width;
-        final gap =
-            (tester.getTopLeft(find.byKey(const ValueKey('k4-trailing'))).dx -
-                tester.getTopLeft(find.text(title)).dx) -
-            (titleWidth + metaWidth);
-        // ignore: avoid_print
-        print(
-          'BSAN317-K4 $width ${entry.key} titulo_cortado=$titleCut '
-          'meta_cortado=$metaCut titulo=${titleWidth.toStringAsFixed(1)} '
-          'meta=${metaWidth.toStringAsFixed(1)} vao=${gap.toStringAsFixed(1)}',
-        );
-
-        // (b) a precondição: o caso corta o que tem de cortar
-        if (entry.key == 'C3') {
-          expect(metaCut, isTrue, reason: 'C3 corta o meta');
-          expect(titleCut, isFalse, reason: 'C3: o título curto não corta');
+            t.renderObject<RenderParagraph>(find.text(meta)).didExceedMaxLines;
+        // (b) a precondição: C1, C2 e C4 cortam o título; C3 corta o meta.
+        if (caso.key == 'C3') {
+          expect(metaCortado, isTrue, reason: '$onde: corta o meta');
         } else {
-          expect(titleCut, isTrue, reason: '${entry.key} corta o título');
+          expect(tituloCortado, isTrue, reason: '$onde: corta o título');
         }
-        // (c) cortado, não há vão
-        if (titleCut || metaCut) {
-          expect(gap, lessThanOrEqualTo(16.0));
+
+        final xTitulo = t.getTopLeft(find.text(titulo)).dx;
+        final xTrailing = t
+            .getTopLeft(find.byKey(const ValueKey('k4-trailing')))
+            .dx;
+        final larguraTitulo = t.getSize(find.text(titulo)).width;
+        final larguraMeta = meta == null
+            ? 0.0
+            : t.getSize(find.text(meta)).width;
+        final vao = (xTrailing - xTitulo) - (larguraTitulo + larguraMeta);
+        // (c) com texto cortado, sem vão (o vão fixo da peça entre o texto e o trailing é 10).
+        if (tituloCortado || metaCortado) {
+          expect(vao, lessThanOrEqualTo(16.0), reason: '$onde: vão $vao');
         }
-        // (d) C1: o título leva o espaço do texto e o meta some
-        if (entry.key == 'C1') {
+        // (d) C1: o título leva o espaço e o meta some.
+        if (caso.key == 'C1') {
           expect(
-            titleWidth,
-            greaterThanOrEqualTo(0.9 * (titleWidth + metaWidth)),
+            larguraTitulo,
+            greaterThanOrEqualTo(0.9 * (larguraTitulo + larguraMeta)),
+            reason: '$onde: título $larguraTitulo, meta $larguraMeta',
           );
         }
-      });
+      }
     }
-  }
+  });
 }

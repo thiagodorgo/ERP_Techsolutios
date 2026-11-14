@@ -685,21 +685,19 @@ class _NavCell extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MobileExpandableRow — a linha que abre o detalhe logo abaixo (B-SAN3-17 e
-// B-SAN3-15b; `D-PADRAO-BLOCOS-CLICAVEIS`). Espelho do `DenseExpandableRow` da
-// web, com a altura de alvo do Android (48). Contrato único dos dois blocos:
-// emenda 5.2 do 15b (§2.1) e emenda 5.3 (§1 a §4).
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Uma linha de altura fixa, sem botão dentro, que abre e fecha o [detail]
-/// logo abaixo dela (toque, Enter ou Espaço). Não guarda estado: "um detalhe
-/// aberto por vez" é da tela. A `key` identifica a peça inteira (a linha e o
-/// detalhe).
+/// B-SAN3-15b (`D-PADRAO-BLOCOS-CLICAVEIS`; contrato único das Emendas 5.2 §2.1 e 5.3 §1 a §4, compartilhado com o
+/// B-SAN3-17) — a linha de uma altura que abre o detalhe logo abaixo.
 ///
-/// O texto corta pelo fim, sem vão: o [title] ocupa a largura natural dele e o
-/// [meta] fica com o que sobra (some, com largura 0, se o título sozinho não
-/// couber). O [trailing] (pílula ou marca; nunca botão) vem logo depois.
+/// - A linha tem a altura [rowHeight] (o alvo de toque do app, 48) e nenhum botão dentro: toque, Enter e Espaço chamam
+///   [onToggle]. "Um detalhe aberto por vez" é da tela: a peça não guarda estado.
+/// - [title] fica num `Text` só dele; [meta] em outro, de uma linha. A linha corta pelo fim: o título leva a largura
+///   natural dele e o meta fica com o que sobra; se o título sozinho passa do espaço, ele corta com reticências e o
+///   meta some. Sem vão enquanto houver texto cortado, e sem estouro em tela nenhuma a partir de 320.
+/// - A `key` passada à peça identifica a peça INTEIRA (a linha e o detalhe aberto); para fechar pela tela, toca-se no
+///   título.
+/// - A seta e o fundo da linha aberta são da peça: a seta gira e fica azul; o fundo aberto é o azul claro da pílula
+///   de informação da biblioteca (`MobilePill`, `PillTone.info`), porque o tema não tem token com esse valor.
+/// - [trailing] é pílula ou marca, nunca botão.
 class MobileExpandableRow extends StatelessWidget {
   const MobileExpandableRow({
     required this.title,
@@ -710,21 +708,12 @@ class MobileExpandableRow extends StatelessWidget {
     this.leading,
     this.trailing,
     super.key,
-  });
+  }) : assert(
+         trailing is! ButtonStyleButton && trailing is! IconButton,
+         'trailing não pode ser botão',
+       );
 
-  /// A altura da linha (alvo de toque mínimo do app).
   static const double rowHeight = 48;
-
-  static const _titleStyle = TextStyle(
-    fontSize: 13.5,
-    fontWeight: FontWeight.w700,
-    color: ErpMobileTheme.ink,
-  );
-  static const _metaStyle = TextStyle(
-    fontSize: 12.5,
-    fontWeight: FontWeight.w500,
-    color: ErpMobileTheme.inkMuted,
-  );
 
   final String title;
   final bool expanded;
@@ -736,9 +725,7 @@ class MobileExpandableRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // O fundo da linha aberta: o azul-claro da biblioteca (o mesmo da pílula
-    // informativa, #EFF6FF); o tema não tem token com esse valor.
-    final openBackground = MobilePill.colorsFor(PillTone.info).$1;
+    final openFill = MobilePill.colorsFor(PillTone.info).$1;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -746,28 +733,28 @@ class MobileExpandableRow extends StatelessWidget {
         Semantics(
           button: true,
           expanded: expanded,
-          label: title,
-          excludeSemantics: true,
           child: Material(
-            color: expanded ? openBackground : Colors.transparent,
+            color: expanded ? openFill : Colors.transparent,
             child: InkWell(
               onTap: onToggle,
               child: SizedBox(
                 height: rowHeight,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 0, 10, 0),
+                  padding: const EdgeInsets.fromLTRB(12, 0, 6, 0),
                   child: Row(
                     children: [
                       if (leading != null) ...[
                         leading!,
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                       ],
-                      Expanded(child: _text(context)),
+                      Expanded(
+                        child: _RowTexts(title: title, meta: meta),
+                      ),
                       if (trailing != null) ...[
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         trailing!,
                       ],
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       AnimatedRotation(
                         turns: expanded ? 0.25 : 0,
                         duration: const Duration(milliseconds: 150),
@@ -790,14 +777,48 @@ class MobileExpandableRow extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _text(BuildContext context) {
+/// O título e o meta da [MobileExpandableRow]: o meta fica limitado a "largura do texto − largura natural do título"
+/// (no mínimo 0), medida com um `TextPainter` no MESMO estilo do título (Emenda 5.3 §1.2, a forma recomendada).
+class _RowTexts extends StatelessWidget {
+  const _RowTexts({required this.title, this.meta});
+
+  final String title;
+  final String? meta;
+
+  double _naturalTitleWidth(BuildContext context, TextStyle? style) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: title,
+        style: DefaultTextStyle.of(context).style.merge(style),
+      ),
+      maxLines: 1,
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      locale: Localizations.maybeLocaleOf(context),
+    )..layout();
+    final width = painter.width.ceilToDouble();
+    painter.dispose();
+    return width;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final titleStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
+      color: ErpMobileTheme.ink,
+      fontWeight: FontWeight.w600,
+    );
+    final metaStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: ErpMobileTheme.inkMuted);
+    final meta = this.meta;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final metaText = meta;
-        final metaWidth = metaText == null
+        final metaMax = meta == null
             ? 0.0
-            : _metaWidth(context, constraints.maxWidth);
+            : (constraints.maxWidth - _naturalTitleWidth(context, titleStyle))
+                  .clamp(0.0, constraints.maxWidth);
         return Row(
           children: [
             Flexible(
@@ -805,37 +826,22 @@ class MobileExpandableRow extends StatelessWidget {
                 title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: _titleStyle,
+                style: titleStyle,
               ),
             ),
-            if (metaText != null)
+            if (meta != null)
               ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: metaWidth),
+                constraints: BoxConstraints(maxWidth: metaMax),
                 child: Text(
-                  metaText,
+                  meta,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: _metaStyle,
+                  style: metaStyle,
                 ),
               ),
           ],
         );
       },
     );
-  }
-
-  /// O meta fica com o que sobra da largura natural do título (mínimo 0).
-  double _metaWidth(BuildContext context, double available) {
-    // O mesmo estilo efetivo do `Text` do título (o herdado do tema + o dele).
-    final style = DefaultTextStyle.of(context).style.merge(_titleStyle);
-    final natural = TextPainter(
-      text: TextSpan(text: title, style: style),
-      maxLines: 1,
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-    )..layout();
-    final width = natural.width;
-    natural.dispose();
-    return (available - width).clamp(0.0, available);
   }
 }

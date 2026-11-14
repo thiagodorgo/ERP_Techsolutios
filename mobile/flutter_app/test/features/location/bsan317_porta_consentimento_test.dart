@@ -494,6 +494,46 @@ void main() {
     }
   });
 
+  testWidgets('W12. P14: um aceite que volta 403 leva ao "Acesso não '
+      'permitido", sem "Confirme de novo" nem "Permitir"; com consentimento '
+      'registrado, o "Acesso não permitido" mantém o Revogar, que funciona', (
+    t,
+  ) async {
+    // (i) a sessão em cache ainda tem `field_location:send`; a organização
+    // recusa o aceite com 403.
+    final w = _World();
+    w.api.script.add(
+      const LocationConsentRefusedError('permission_required', statusCode: 403),
+    );
+    await t.pumpWidget(_app(w));
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('consent-accept')));
+    await t.pumpAndSettle();
+
+    expect(find.text('Acesso não permitido'), findsOneWidget);
+    expect(
+      find.text(
+        'Confirme de novo: a sua organização não registrou a decisão anterior.',
+      ),
+      findsNothing,
+    );
+    expect(find.byKey(const Key('consent-accept')), findsNothing);
+
+    // (ii) sem a permissão de enviar e com o consentimento registrado.
+    final w2 = _World();
+    await w2.sync.accept(_tenant);
+    await t.pumpWidget(
+      const SizedBox(),
+    ); // um ProviderScope novo, com a sessão nova
+    await t.pumpWidget(_app(w2, send: false));
+    await t.pumpAndSettle();
+    expect(find.text('Acesso não permitido'), findsOneWidget);
+    await t.tap(find.byKey(const Key('consent-revoke')));
+    await t.pumpAndSettle();
+    expect(w2.api.calls, ['grant', 'revoke']);
+    expect((await w2.store.status()).kind, LocationConsentDecisionKind.revoked);
+  });
+
   group('W11 (com a Roboto do SDK)', () {
     setUpAll(_loadRoboto);
     for (final size in const [Size(390, 812), Size(360, 740)]) {

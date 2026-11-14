@@ -51,9 +51,22 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
     final statusAsync = ref.watch(locationConsentStatusProvider);
     final session = ref.watch(bootstrapSessionProvider).asData?.value;
     final tenantId = session?.activeTenant.tenantId ?? '';
-    // O backend é a autoridade; a tela só esconde quando a sessão diz "não".
+    final userId = ref.watch(currentSyncUserIdProvider);
+    // P14: o aceite deste dono voltou 403 desde o último bootstrap.
+    final grantForbidden =
+        userId != null &&
+        tenantId.isNotEmpty &&
+        ref
+            .read(locationConsentSyncProvider)
+            .grantForbiddenFor(
+              LocationConsentOwner(tenantId: tenantId, userId: userId),
+            );
+    // O backend é a autoridade; a tela só esconde quando a sessão (ou a
+    // organização, no P14) diz "não".
     final canSend =
-        session == null || session.permissions.contains('field_location:send');
+        !grantForbidden &&
+        (session == null ||
+            session.permissions.contains('field_location:send'));
     final status = statusAsync.asData?.value;
     final needsDecision = status == null || status.needsDecision;
 

@@ -18,20 +18,34 @@ class LocationConsentSync {
     required LocationConsentApi Function() api,
     required FieldLocationStore Function() fieldLocationStore,
     required TelemetryLocalStore Function() telemetryStore,
+    Object? Function()? currentSession,
   }) : _store = store,
        _currentOwner = currentOwner,
        _api = api,
        _fieldLocationStore = fieldLocationStore,
-       _telemetryStore = telemetryStore;
+       _telemetryStore = telemetryStore,
+       _currentSession = currentSession ?? _noSession;
 
   final LocationConsentStore _store;
   final LocationConsentOwnerResolver _currentOwner;
   final LocationConsentApi Function() _api;
   final FieldLocationStore Function() _fieldLocationStore;
   final TelemetryLocalStore Function() _telemetryStore;
+  final Object? Function() _currentSession;
 
   Future<bool>? _inFlight;
   DateTime? _supersededProfileAt;
+  LocationConsentOwner? _grantForbidden;
+  Object? _grantForbiddenSession;
+
+  static Object? _noSession() => null;
+
+  /// P14 (Emenda 1.3 §4 (a)): a organização recusou o aceite deste dono com
+  /// 403 (perdeu `field_location:send`, ou o módulo está desligado). A tela
+  /// mostra "Acesso não permitido". Vale até o próximo bootstrap que traga a
+  /// sessão nova (uma sessão diferente da que estava no momento do 403).
+  bool grantForbiddenFor(LocationConsentOwner owner) =>
+      _grantForbidden == owner && _currentSession() == _grantForbiddenSession;
 
   /// `true` quando a organização já conhece a última decisão do dono da
   /// sessão. Sem dono (sem sessão autenticada) não há decisão a enviar, e a
@@ -125,6 +139,7 @@ class LocationConsentSync {
             return false;
           }
           if (!_refusesTheGrant(decision, refusal)) return false;
+          if (refusal.statusCode == 403) _forbidGrant(owner);
           result = null; // 403 ou 400 do aceite: o mesmo caminho do superseded
         }
 
@@ -154,6 +169,11 @@ class LocationConsentSync {
   ) =>
       decision.granted &&
       (refusal.statusCode == 403 || refusal.statusCode == 400);
+
+  void _forbidGrant(LocationConsentOwner owner) {
+    _grantForbidden = owner;
+    _grantForbiddenSession = _currentSession();
+  }
 
   Future<void> _resetAfterServerRefusal(
     LocationConsentOwner owner,

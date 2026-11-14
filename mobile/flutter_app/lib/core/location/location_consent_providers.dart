@@ -63,6 +63,7 @@ final locationConsentSyncProvider = Provider<LocationConsentSync>((ref) {
     api: () => ref.read(locationConsentApiProvider),
     fieldLocationStore: () => ref.read(fieldLocationStoreProvider),
     telemetryStore: () => ref.read(telemetryLocalStoreProvider),
+    currentSession: () => ref.read(bootstrapSessionProvider).asData?.value,
   );
 });
 
