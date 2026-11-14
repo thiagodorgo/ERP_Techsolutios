@@ -134,6 +134,51 @@ export async function listByStatementInTx(tx: Prisma.TransactionClient, statemen
   return rows.map(toDomain);
 }
 
+/** B-ASS-08c1b (P9a): sobre um `tx` JÁ ABERTO e DEPOIS da trava do demonstrativo, a `charge_create` PENDING vira SKIPPED
+ * (`skip_reason` NULL — o CHECK da M5 não tem motivo de cancelamento — e `last_error` = o motivo). O predicado leva a
+ * organização e o status: 0 linhas = o claim a pegou primeiro. */
+export async function skipPendingChargeCreateInTx(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  id: string,
+  lastError: string,
+  now: Date,
+): Promise<BillingOutboxRow | undefined> {
+  const rows = (await tx.$queryRawUnsafe(
+    `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = NULL, last_error = $3, next_attempt_at = NULL, updated_at = $4
+       WHERE id = $1::uuid AND tenant_id = $2::uuid AND kind = 'charge_create' AND status = 'PENDING' RETURNING *`,
+    id,
+    tenantId,
+    lastError,
+    now,
+  )) as Row[];
+  return rows.length > 0 ? toDomain(rows[0]!) : undefined;
+}
+
+const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** B-ASS-08c1b: a trilha de uma ação de operador sobre a fila, em `audit_logs` da organização, NO `tx` da ação (se a trilha
+ * falhar, a ação cai junto). Só ids, `kind`, códigos e o motivo; ator sem UUID (cabeçalho legado de dev) fica `null`. */
+export async function writeOutboxAuditInTx(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  event: { readonly actorId: string | null; readonly action: string; readonly entityId: string; readonly metadata: Readonly<Record<string, string | number | boolean | null>> },
+): Promise<void> {
+  const [{ EnterpriseAuditLogService }, { AuditLogRepository }] = await Promise.all([
+    import("../../core-saas/audit/audit-log.service.js"),
+    import("../../core-saas/repositories/audit-log.repository.js"),
+  ]);
+  await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
+    tenantId,
+    actorId: event.actorId !== null && UUID_TEXT.test(event.actorId) ? event.actorId : null,
+    actorType: event.actorId === null ? "system" : "user",
+    action: event.action,
+    resourceType: "billing_outbox",
+    resourceId: event.entityId,
+    metadata: event.metadata,
+  });
+}
+
 const CLAIM_BUDGET = { maxWait: 5_000, timeout: 30_000, lockTimeoutMs: 5_000, statementTimeoutMs: 10_000 } as const;
 
 /** E5″ (2º conserto do #522, §14.2): a pick conjunta das PENDING `charge_create` — o demonstrativo e a linha numa instrução

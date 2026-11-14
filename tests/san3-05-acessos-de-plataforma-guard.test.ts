@@ -529,6 +529,18 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.hasOutboxNeedsReview", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx)", "×1"),
     "B-ASS-08c1b (P8, [GUARD-01]): `SELECT 1 FROM billing_outbox WHERE statement_id = $1 AND status = 'NEEDS_REVIEW' LIMIT 1`, só leitura, no MESMO `tx` do `reopen` (o `withTenantRls(this.client, tenantId, …)` do `PrismaStatementRepository.transaction`), depois da trava do demonstrativo; billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-outbox-review-db.test.ts (RO1, pela rota, 1 conexão) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  [
+    k("L1", "src/modules/subscription-billing/charges/charges.prisma.ts", "-.listByStatementInTx", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08c1b (P9a): `SELECT * FROM subscription_statement_charges WHERE statement_id = $1 ORDER BY created_at`, só leitura, sobre o `tx` de `prismaChargeIntentTx(tx, tenantId)` (o `withTenantRlsBudget` de `PrismaChargeIntentRepository.transaction`, setter do GUC na 1ª instrução, rls.ts l.128), DEPOIS da trava do demonstrativo; tabela FORCE da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC4) e no cenário `chargeIntent.cancel` do T-LOCK-2, sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "-.skipPendingChargeCreateInTx", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08c1b (P9a, regra 3): `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = NULL, last_error = $3 … WHERE id = $1 AND tenant_id = $2 AND kind = 'charge_create' AND status = 'PENDING' RETURNING *`, com a organização no predicado além do RLS, sobre o `tx` de `prismaChargeIntentTx` e DEPOIS da trava do demonstrativo (ORD-1 do T-LOCK-2); billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC5) e no cenário `chargeIntent.cancel (PENDING → SKIPPED)` do T-LOCK-2.",
+  ],
+  [
+    k("L2", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08c1b: a trilha das ações do operador sobre a fila (`writeOutboxAuditInTx`), o MESMO molde de `writeAuditInTx` do statement.prisma-runtime.ts — `EnterpriseAuditLogService(new AuditLogRepository(tx))` sobre o `tx` da própria ação (o `withTenantRlsBudget` da organização): se a trilha falhar, a ação cai junto; `audit_logs` da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

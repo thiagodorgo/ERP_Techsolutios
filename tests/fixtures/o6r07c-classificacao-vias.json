@@ -1651,6 +1651,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/charge/cancel": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/platform/billing/statements/:statementId/payments": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1

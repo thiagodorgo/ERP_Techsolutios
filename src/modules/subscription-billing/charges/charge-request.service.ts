@@ -138,6 +138,95 @@ export async function enqueueChargeCreateInTx(tx: ChargeIntentTx, input: ChargeR
   return row;
 }
 
+/** B-ASS-08c1b (P9a): os estados de um `charge_cancel` VIVO (o `[CANCEL-ONE]`: nunca dois para a mesma cobrança). */
+export const LIVE_CHARGE_CANCEL_STATUSES: ReadonlySet<BillingOutboxRow["status"]> = new Set(["PENDING", "PROCESSING", "NEEDS_REVIEW"]);
+
+export type ChargeCancelInput = {
+  readonly tenantId: string;
+  readonly statementId: string;
+  /** O motivo do operador (10 caracteres ou mais, validado na rota); vai só para a trilha. */
+  readonly reason: string;
+  readonly actorId: string | null;
+  readonly now: Date;
+};
+
+export type ChargeCancelOutcome = { readonly result: "skipped" | "cancel_enqueued"; readonly row: BillingOutboxRow };
+
+/**
+ * B-ASS-08c1b (P9a, abertura §4.3) — o `charge/cancel` do operador: UMA transação, o demonstrativo travado PRIMEIRO
+ * (`[CANCEL-LOCK]`), e vale a 1ª regra que casar:
+ *   1. `charge_create` PROCESSING → 409 `charge_in_flight` (a chamada em voo pode estar criando a cobrança);
+ *   2. `charge_cancel` vivo para a MESMA cobrança → 409 `charge_cancel_in_progress` (`[CANCEL-ONE]`);
+ *   3. `charge_create` PENDING → SKIPPED (`skip_reason` NULL, `last_error = charge_cancel_requested`), 0 rede; 0 linhas →
+ *      409 `charge_in_flight`;
+ *   4. `charge_create` SENT com a cobrança `pending` NA TABELA → enfileira `charge_cancel` (`seq` = 1 + o maior
+ *      `charge_cancel` do demonstrativo; payload `{ chargeId, chargeCreateId }`; o provedor da linha SENT);
+ *   5. só `charge_create` em NEEDS_REVIEW → 422 `outbox_needs_review` (a saída é o `/resolve`);
+ *   6. nada disso → 422 `no_live_charge`.
+ * A rota não fala com o provedor; quem cancela é o despacho. A trilha vai no MESMO `tx`.
+ */
+export function requestChargeCancel(deps: ChargeRequestDeps, input: ChargeCancelInput): Promise<ChargeCancelOutcome> {
+  return deps.intents.transaction(input.tenantId, async (tx) => {
+    const statement = await tx.lockStatement(input.statementId); // [CANCEL-LOCK]
+    if (!statement) throw new StatementError(404, "statement_not_found", "Statement not found.");
+    const lines = await tx.listChargeLines(input.statementId);
+    const creates = lines.filter((line) => line.kind === "charge_create");
+    if (creates.some((line) => line.status === "PROCESSING")) throw new StatementError(409, "charge_in_flight", "A charge request is in flight; try again.");
+    const charges = await tx.listCharges(input.statementId);
+    const target = creates.find(
+      (line) =>
+        line.status === "SENT" &&
+        line.externalId !== null &&
+        charges.some((charge) => charge.provider === line.provider && charge.externalChargeId === line.externalId && charge.status === "pending"),
+    );
+    if (target && lines.some((line) => line.kind === "charge_cancel" && LIVE_CHARGE_CANCEL_STATUSES.has(line.status) && line.payload.chargeId === target.externalId)) throw new StatementError(409, "charge_cancel_in_progress", "A cancellation for this charge is already in progress."); // [CANCEL-ONE]
+    const pending = creates.find((line) => line.status === "PENDING");
+    let outcome: ChargeCancelOutcome;
+    if (pending) {
+      const skipped = await tx.skipPendingChargeCreate(pending.id, "charge_cancel_requested", input.now);
+      if (!skipped) throw new StatementError(409, "charge_in_flight", "A charge request is in flight; try again.");
+      outcome = { result: "skipped", row: skipped };
+    } else if (target) {
+      const seq = 1 + maxOutboxSeq(lines, "charge_cancel");
+      const { row, created } = await tx.enqueue(
+        { tenantId: input.tenantId, statementId: statement.id, kind: "charge_cancel", provider: target.provider, seq, payload: { chargeId: target.externalId, chargeCreateId: target.id } },
+        input.now,
+      );
+      if (!created) throw new StatementError(409, "charge_intent_conflict", "The charge intent key is already in use.");
+      outcome = { result: "cancel_enqueued", row };
+    } else if (creates.some((line) => line.status === "NEEDS_REVIEW")) {
+      throw new StatementError(422, "outbox_needs_review", "The charge intent is awaiting review; resolve it first.");
+    } else {
+      throw new StatementError(422, "no_live_charge", "The statement has no live charge to cancel.");
+    }
+    await tx.recordAudit({
+      actorId: input.actorId,
+      action: "billing_outbox.charge_cancel_requested",
+      entityId: outcome.row.id,
+      metadata: { statementId: statement.id, kind: outcome.row.kind, code: outcome.result, reason: input.reason },
+    });
+    return outcome;
+  });
+}
+
+/**
+ * B-ASS-08c1b: o maior `seq` já usado pelas linhas `kind` do demonstrativo (0 se nenhuma), lido da chave
+ * `<kind>:<statement_id>:<seq>`. Chave fora desse formato é invariante quebrado: falha fechado (nada é gravado).
+ */
+export function maxOutboxSeq(lines: readonly BillingOutboxRow[], kind: BillingOutboxRow["kind"]): number {
+  let max = 0;
+  for (const line of lines) {
+    if (line.kind !== kind) continue;
+    const [lineKind, statementId, seqText, ...rest] = line.idempotencyKey.split(":");
+    const seq = Number(seqText);
+    if (lineKind !== kind || statementId !== line.statementId || rest.length > 0 || !/^[1-9][0-9]*$/.test(seqText ?? "") || !Number.isSafeInteger(seq)) {
+      throw new Error(`billing_outbox: idempotency_key fora do formato ${kind}:<statement_id>:<seq> (linha ${line.id}).`);
+    }
+    if (seq > max) max = seq;
+  }
+  return max;
+}
+
 /**
  * O maior `seq` já usado pelas `charge_create` do demonstrativo (0 se nenhuma), lido da chave
  * `charge_create:<statement_id>:<seq>`. Chave fora desse formato é invariante quebrado: falha fechado (nada é gravado).

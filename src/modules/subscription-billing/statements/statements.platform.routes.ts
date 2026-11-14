@@ -16,7 +16,7 @@ import {
   parseBillingProfileInput,
   toBillingProfileDto,
 } from "../billing-profile/billing-profile.js";
-import { parseOperatorChargeMethod, parseOperatorDueDate, requestChargeCreate } from "../charges/charge-request.service.js";
+import { parseOperatorChargeMethod, parseOperatorDueDate, requestChargeCancel, requestChargeCreate } from "../charges/charge-request.service.js";
 import { paymentProviderOn } from "../outbox/channel-state.js";
 import { createChargeIntentRepository } from "../outbox/channel.runtime.js";
 import type { BillingOutboxRow } from "../outbox/outbox.types.js";
@@ -35,6 +35,13 @@ function requireTenantId(value: unknown): string {
   const text = typeof value === "string" ? value.trim() : "";
   if (!UUID_OR_ID.test(text)) throw new StatementError(400, "tenant_id_required", "tenantId is required.");
   return text;
+}
+
+/** B-ASS-08c1b: o motivo das ações do operador sobre a cobrança e a fila — 10 caracteres ou mais, como o do reopen. */
+function requireOperatorReason(value: unknown): string {
+  const reason = typeof value === "string" ? value.trim() : "";
+  if (reason.length < 10) throw new StatementError(400, "reason_too_short", "reason must have at least 10 characters.");
+  return reason.slice(0, 500);
 }
 
 function body(request: Request): Record<string, unknown> {
@@ -273,6 +280,23 @@ export function createStatementsPlatformRouter(): Router {
         { tenantId, statementId, provider: on.provider, payload: input, operator: { method, ...(dueDate ? { dueDate } : {}) }, now },
       );
       response.status(201).json({ data: toOutboxDto(row) });
+    }),
+  );
+
+  // B-ASS-08c1b (P9a): o operador cancela a cobrança da conta. Sob a trava do demonstrativo, numa transação; a rota NÃO fala
+  // com o provedor (quem cancela é o despacho, pelo `charge_cancel`). Com o canal desligado, a linha nasce e fica PENDING.
+  router.post(
+    "/statements/:statementId/charge/cancel",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const reason = requireOperatorReason(input.reason);
+      const outcome = await requestChargeCancel(
+        { intents: await createChargeIntentRepository() },
+        { tenantId, statementId: readRouteParam(request.params.statementId), reason, actorId: actorId(request), now: new Date() },
+      );
+      response.status(200).json({ data: { result: outcome.result, outbox: toOutboxDto(outcome.row) } });
     }),
   );
 

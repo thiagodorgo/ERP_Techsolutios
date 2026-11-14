@@ -374,6 +374,16 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     return reopened;
   }
 
+  /** B-ASS-08c1b (P9a): o espelho de `skipPendingChargeCreateInTx` — a `charge_create` PENDING vira SKIPPED (`skip_reason`
+   * NULL, `last_error` = o motivo) SÓ se ainda está PENDING. Sem `await` entre ler e gravar (atômico no dublê). */
+  async skipPendingChargeCreate(tenantId: string, id: string, lastError: string, now: Date): Promise<BillingOutboxRow | undefined> {
+    const row = this.#rows.get(id);
+    if (!row || row.tenantId !== tenantId || row.kind !== "charge_create" || row.status !== "PENDING") return undefined;
+    const skipped: BillingOutboxRow = { ...row, status: "SKIPPED", skipReason: null, lastError, nextAttemptAt: null, updatedAt: now };
+    this.#rows.set(id, skipped);
+    return skipped;
+  }
+
   async findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined> {
     const row = this.#rows.get(id);
     return row && row.tenantId === tenantId ? row : undefined;

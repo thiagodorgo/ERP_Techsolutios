@@ -14,11 +14,11 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRlsBudget } from "../../../database/rls.js";
-import { enqueueInTx, listByStatementInTx, postgresErrorCode } from "../outbox/outbox.prisma.js";
+import { enqueueInTx, listByStatementInTx, postgresErrorCode, skipPendingChargeCreateInTx, writeOutboxAuditInTx } from "../outbox/outbox.prisma.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import { putRefInTx } from "../webhooks/statement-refs.prisma.js";
 import type { ChargeIntentRepository, ChargeIntentTx } from "./charge-intent.repository.js";
-import { findLiveInTx } from "./charges.prisma.js";
+import { findLiveInTx, listByStatementInTx as listChargesByStatementInTx } from "./charges.prisma.js";
 
 export const CHARGE_INTENT_BUDGET = { maxWait: 5_000, timeout: 15_000, lockTimeoutMs: 5_000, statementTimeoutMs: 10_000 } as const;
 
@@ -49,6 +49,9 @@ export function prismaChargeIntentTx(tx: Prisma.TransactionClient, tenantId: str
       await putRefInTx(tx, ref, now);
     },
     enqueue: (input, now) => enqueueInTx(tx, input, now),
+    listCharges: (statementId) => listChargesByStatementInTx(tx, statementId),
+    skipPendingChargeCreate: (outboxId, lastError, now) => skipPendingChargeCreateInTx(tx, tenantId, outboxId, lastError, now),
+    recordAudit: (event) => writeOutboxAuditInTx(tx, tenantId, event),
   };
 }
 
