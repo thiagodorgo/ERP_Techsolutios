@@ -1,4 +1,4 @@
-# B-SEC-LOG-SANITIZA — erro de conexão não sai em log nem em resposta, por construção
+# B-SEC-LOG-SANITIZA — fábrica única de log; sendRouteError e o ramo genérico dos syncs sem texto de driver
 
 - **Tipo:** feature (correção de segurança)
 - **Fase:** Execution
@@ -37,9 +37,8 @@ Nenhuma dependência nem variável de ambiente nova.
 
 ## Vermelho-controle da F0 (H0 = `origin/main` `d2737339`, 14/11, 02:16 a 02:31 SP)
 
-Medido em worktree próprio (`C:/Users/thiag/w-seclog`, `npm ci` próprio) e cluster descartável próprio (PostgreSQL 16,
-UTC, só em `127.0.0.1:55598`). O detalhe, com cada comando e a saída, está no diário do dev
-(`erp-pausa-2026-10-03/revisoes/b-sec-log/dev-seclog-cl.md`).
+Medido em worktree próprio (`npm ci` próprio) e cluster descartável próprio (PostgreSQL 16, UTC, só em
+`127.0.0.1:55598`). O detalhe, com cada comando e a saída, está no diário do dev, fora do repositório.
 
 | Item | Comando | H0 medido | Esperado no head |
 |---|---|---|---|
