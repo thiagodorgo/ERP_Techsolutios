@@ -77,32 +77,16 @@ function invoiceHandlerOf(deps: ChannelDeps): InvoiceOutboxHandler | undefined {
  * id do provedor entra no índice `billing_statement_refs` (para os polls a acharem). A nota entra pelo mesmo claim. */
 export async function runBillingDispatch(deps: ChannelDeps): Promise<DispatchRunResult> {
   const invoices = invoiceHandlerOf(deps);
+  deps.outbox.configureChargeOutcomeSink?.(async (charge, at) => {
+    await deps.charges.insert(charge, at);
+    await deps.refs.setExternalChargeId(charge.statementId, charge.externalChargeId, at);
+  });
   return runDispatchOutbox({
     repo: deps.outbox,
     ports: deps.ports,
     resolveCustomer: deps.resolveCustomer,
     ...(invoices ? { invoices } : {}),
     ...(deps.now ? { now: deps.now } : {}),
-    onChargeCreated: async (row, result, at) => {
-      const dueDate = typeof row.payload.dueDate === "string" ? row.payload.dueDate : null;
-      await deps.charges.insert(
-        {
-          tenantId: row.tenantId,
-          statementId: row.statementId,
-          provider: row.provider,
-          externalChargeId: result.chargeId,
-          // Uma cobrança recém-criada está sempre pendente; o resto do ciclo vem da reconsulta.
-          status: "pending",
-          payUrl: result.payUrl ?? null,
-          pixCopyPaste: result.pixCopyPaste ?? null,
-          boletoLine: result.boletoLine ?? null,
-          boletoUrl: result.boletoUrl ?? null,
-          dueDate,
-        },
-        at,
-      );
-      await deps.refs.setExternalChargeId(row.statementId, result.chargeId, at);
-    },
   });
 }
 

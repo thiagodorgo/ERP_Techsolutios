@@ -42,7 +42,7 @@ class ScriptedPort implements PaymentProviderPort {
     return { chargeId: `pay_${this.created}`, status: "pending", payUrl: "https://pay.example/x", pixCopyPaste: "00020..." };
   }
   async getCharge() { this.lookups += 1; return this.reference && this.lookup.raw.externalReference === undefined ? { ...this.lookup, raw: { ...this.lookup.raw, externalReference: this.reference } } : this.lookup; }
-  async findChargeByExternalReference() { return null; }
+  async listChargesByExternalReference() { return []; }
   async cancelCharge(id: string) { return { chargeId: id, status: "cancelled" as const }; }
   async refund(id: string) { return { chargeId: id, status: "refunded" as const }; }
   async registerWebhook() { return { externalId: "h" }; }

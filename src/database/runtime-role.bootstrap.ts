@@ -78,6 +78,23 @@ export function isRuntimeRoleConnectionError(error: unknown): boolean {
 
 // A mensagem do erro do driver traz `host:porta` ("Can't reach database server at …"): quem sobe com ela no
 // log do `main().catch` publicaria o endereço do banco. O que sobe é só o nome, o SQLSTATE e o tipo do driver.
+export type DriverErrorDescription = {
+  readonly name: string;
+  readonly sqlState: string | null;
+  readonly driverKind: string | null;
+};
+
+// Sanitizador ÚNICO do erro do driver (B-DB-FUSO-UTC reusa na sonda de fuso): extrai só o que é seguro subir.
+export function describeDriverError(error: unknown, isTimeout: (error: unknown) => boolean): DriverErrorDescription {
+  const name = error instanceof Error ? error.name : "unknown";
+  const sqlState = /Code: `([0-9A-Z]{5})`/.exec(error instanceof Error ? error.message : "")?.[1] ?? null;
+  const kind = (error as { meta?: { driverAdapterError?: { cause?: { kind?: unknown } } } } | null)?.meta
+    ?.driverAdapterError?.cause?.kind;
+  const driverKind = typeof kind === "string" ? kind : isTimeout(error) ? "ProbeTimeout" : null;
+
+  return { name, sqlState, driverKind };
+}
+
 export class RuntimeRoleProbeError extends Error {
   readonly code = "RUNTIME_ROLE_PROBE_FAILED";
   readonly attempts: number;
@@ -85,11 +102,7 @@ export class RuntimeRoleProbeError extends Error {
   readonly driverKind: string | null;
 
   constructor(error: unknown, attempts: number) {
-    const name = error instanceof Error ? error.name : "unknown";
-    const sqlState = /Code: `([0-9A-Z]{5})`/.exec(error instanceof Error ? error.message : "")?.[1] ?? null;
-    const kind = (error as { meta?: { driverAdapterError?: { cause?: { kind?: unknown } } } } | null)?.meta
-      ?.driverAdapterError?.cause?.kind;
-    const driverKind = typeof kind === "string" ? kind : isRuntimeRoleProbeTimeout(error) ? "ProbeTimeout" : null;
+    const { name, sqlState, driverKind } = describeDriverError(error, isRuntimeRoleProbeTimeout);
 
     super(
       `RUNTIME_ROLE_PROBE_FAILED: a sonda do papel de banco falhou depois de ${attempts} tentativa(s) ` +
