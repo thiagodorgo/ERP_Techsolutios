@@ -130,3 +130,146 @@ test("CA-OFF: com o canal desligado, jobs, composição e cliente do canal abrem
     resetChannelRuntimeForTests();
   }
 });
+
+// ----------------------------------------------------------------------------------------------------------------
+// B-ASS-08c1b (F10; abertura §5.1, CA-OFF e CV2) — as 7 rotas novas de plataforma, com o canal DESLIGADO e o app real no
+// modo memória: nenhuma abre conexão de saída (a única permitida é a do próprio teste ao app, no loopback da porta dele);
+// o `/charge` → 422 `payment_provider_disabled`; o `charge/cancel` e o `cancel-unknown` gravam a fila sem rede. CV2: nenhuma
+// resposta traz o `payload`, o `tenantId`, segredo, token do provedor ou a chave do cofre (busca profunda nas chaves e nos
+// valores).
+
+/** Conta e BLOQUEIA a rede, como `probeConnections`, salvo o loopback do próprio app do teste (`127.0.0.1:<port>`). */
+async function probeOutbound(port: number, fn: () => Promise<void>): Promise<string[]> {
+  const attempts: string[] = [];
+  const originalFetch = globalThis.fetch;
+  const originalConnect = net.Socket.prototype.connect;
+  const own = `http://127.0.0.1:${port}/`;
+  globalThis.fetch = (async (input: unknown, init?: unknown) => {
+    if (String(input).startsWith(own)) return originalFetch(input as never, init as never);
+    attempts.push(`fetch ${String(input)}`);
+    throw new Error("ca_off_probe: rede bloqueada");
+  }) as typeof fetch;
+  net.Socket.prototype.connect = function guarded(this: net.Socket, ...args: unknown[]) {
+    const target = (Array.isArray(args[0]) ? args[0][0] : args[0]) as { port?: unknown; host?: unknown } | number | undefined;
+    const targetPort = typeof target === "object" && target !== null ? Number(target.port) : Number(target);
+    const host = typeof target === "object" && target !== null ? String(target.host ?? "") : String(args[1] ?? "");
+    if (targetPort === port && (host === "127.0.0.1" || host === "localhost" || host === "")) return (originalConnect as (...a: unknown[]) => net.Socket).apply(this, args);
+    attempts.push(`socket ${JSON.stringify(args[0])}`);
+    throw new Error("ca_off_probe: rede bloqueada");
+  } as typeof net.Socket.prototype.connect;
+  try {
+    await fn();
+  } finally {
+    globalThis.fetch = originalFetch;
+    net.Socket.prototype.connect = originalConnect;
+  }
+  return attempts;
+}
+
+const FORBIDDEN_KEYS = /^(payload|tenantId|tenant_id|secret|token|apiKey|api_key|accessToken|credential|credentials|ciphertext|vaultKey)$/i;
+
+/** CV2: as chaves e os valores proibidos em qualquer profundidade do corpo. */
+function forbiddenIn(value: unknown, secrets: readonly string[], where = "$"): string[] {
+  if (Array.isArray(value)) return value.flatMap((item, index) => forbiddenIn(item, secrets, `${where}[${index}]`));
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>).flatMap(([key, inner]) => [
+      ...(FORBIDDEN_KEYS.test(key) ? [`${where}.${key}`] : []),
+      ...forbiddenIn(inner, secrets, `${where}.${key}`),
+    ]);
+  }
+  if (typeof value === "string" && secrets.some((secret) => value.includes(secret))) return [`${where} (segredo no valor)`];
+  return [];
+}
+
+test("CA-OFF (08c1b): as 7 rotas novas, com o canal desligado, abrem 0 conexões de saída; /charge → 422; charge/cancel e cancel-unknown gravam sem rede; CV2 sem payload, tenantId nem segredo", async () => {
+  const previous = { ...mutableEnv };
+  let server: import("node:http").Server | undefined;
+  try {
+    mutableEnv.CORE_SAAS_PERSISTENCE = "memory";
+    mutableEnv.BILLING_PROVIDERS_ENABLED = false;
+    mutableEnv.NODE_ENV = "test";
+    await arrangeEnabledProviders();
+    const vaultKey = randomBytes(32).toString("base64");
+    setVaultKeysForTests(new EnvVaultKeyProvider({ BILLING_VAULT_KEY: vaultKey, BILLING_VAULT_KEY_VERSION: "1" }));
+    const [{ createApp }, { MemoryCoreSaasAdapter }, { CoreSaasRegistry }, { InMemoryCoreSaasStore }, statementFactory] = await Promise.all([
+      import("../src/app.js"),
+      import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
+      import("../src/modules/core-saas/services/core-saas.service.js"),
+      import("../src/modules/core-saas/store/core-saas.store.js"),
+      import("../src/modules/subscription-billing/statements/statement.factory.js"),
+    ]);
+    statementFactory.resetStatementRuntimeForTests();
+    const tenantId = randomUUID();
+    const dueDate = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + 10 * 24 * 60 * 60 * 1000));
+    const statement = await statementFactory.getMemoryStatementRepositoryForTests().transaction(tenantId, async (tx) => {
+      const { statement: fresh } = await tx.insertIfAbsentAndLock({ tenantId, period: "2026-10" });
+      return tx.saveStatement({ ...fresh, status: "closed", totalCents: 12_345, dueDate, closedAt: new Date() });
+    });
+    // Uma `charge_create` PENDING na fila em memória: o `charge/cancel` a pula (SKIPPED), sem rede.
+    const deps = await createChannelRuntime();
+    await deps.outbox.enqueue({ tenantId, statementId: statement.id, kind: "charge_create", provider: "asaas", seq: 1, payload: { amountCents: 12_345, dueDate, method: "pix" } }, new Date());
+
+    const app = createApp(new MemoryCoreSaasAdapter(new CoreSaasRegistry(new InMemoryCoreSaasStore())));
+    server = app.listen(0, "127.0.0.1");
+    await new Promise<void>((resolve) => server!.once("listening", () => resolve()));
+    const port = (server.address() as import("node:net").AddressInfo).port;
+    const P = `http://127.0.0.1:${port}/api/v1/platform/billing`;
+    const responses: Array<{ route: string; status: number; body: Record<string, any> }> = [];
+    const call = async (method: string, route: string, body?: unknown) => {
+      const response = await fetch(P + route, {
+        method,
+        headers: { "content-type": "application/json", "x-user-id": "usr_platform", "x-role": "super_admin" },
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      });
+      const entry = { route: `${method} ${route}`, status: response.status, body: (await response.json()) as Record<string, any> };
+      responses.push(entry);
+      return entry;
+    };
+
+    const st = statement.id;
+    const attempts = await probeOutbound(port, async () => {
+      await call("POST", `/statements/${st}/charge`, { tenantId, method: "pix" });
+      await call("POST", `/statements/${st}/charge/cancel`, { tenantId, reason: "cancelamento do caso CA-OFF" });
+      await call("POST", `/statements/${st}/charge/cancel-unknown`, { tenantId, chargeId: "pay_ca_off_desconhecida", reason: "cancelamento do caso CA-OFF" });
+      await call("GET", `/statements/${st}/charges?tenantId=${tenantId}`);
+      const queue = await call("GET", `/outbox?tenantId=${tenantId}`);
+      const unknownLine = (queue.body.data as Array<{ id: string; kind: string }>).find((row) => row.kind === "charge_cancel")!;
+      await call("POST", `/outbox/${unknownLine.id}/resolve`, { tenantId, reason: "conferência do caso CA-OFF" });
+      await call("POST", `/outbox/${unknownLine.id}/retry`, { tenantId });
+    });
+    assert.deepEqual(attempts, [], "as 7 rotas: 0 conexões de saída");
+
+    const outcome = responses.map((entry) => [
+      entry.route.replace(st, ":st").replace(/outbox\/[0-9a-f-]{36}/, "outbox/:id").replace(/tenantId=[^&]+/, "tenantId="),
+      entry.status,
+      entry.body.error?.reason ?? entry.body.data?.result ?? null,
+    ]);
+    assert.deepEqual(outcome, [
+      ["POST /statements/:st/charge", 422, "payment_provider_disabled"],
+      ["POST /statements/:st/charge/cancel", 200, "skipped"],
+      ["POST /statements/:st/charge/cancel-unknown", 200, "cancel_enqueued"],
+      ["GET /statements/:st/charges?tenantId=", 200, null],
+      ["GET /outbox?tenantId=", 200, null],
+      ["POST /outbox/:id/resolve", 422, "outbox_not_in_review"],
+      ["POST /outbox/:id/retry", 422, "outbox_not_failed"],
+    ]);
+    const lines = await deps.outbox.listForTenant(tenantId, {});
+    assert.deepEqual(
+      lines.map((row) => [row.kind, row.status, row.lastError]),
+      [
+        ["charge_create", "SKIPPED", "charge_cancel_requested"],
+        ["charge_cancel", "PENDING", null],
+      ],
+      "o charge/cancel e o cancel-unknown gravaram a fila, sem rede",
+    );
+
+    // CV2: nenhuma resposta traz o payload, o tenantId, segredo, token ou a chave do cofre.
+    const secrets = [vaultKey, "token-ficticio-ca-off", "TOKEN-FAKE"];
+    assert.deepEqual(responses.flatMap((entry) => forbiddenIn(entry.body, secrets, entry.route)), [], "CV2");
+  } finally {
+    await new Promise<void>((resolve) => (server ? server.close(() => resolve()) : resolve()));
+    Object.assign(mutableEnv, previous);
+    resetVaultRuntimeForTests();
+    resetChannelRuntimeForTests();
+  }
+});

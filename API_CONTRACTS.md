@@ -383,6 +383,40 @@ Tags de organização ambíguas nunca são atribuídas: a linha inteira entra em
 com `reason: "unknown_tenant_tag"`; na estratégia `usage_weighted_v1`, a tag desconhecida continua ignorada por
 definição. Os dois motivos aparecem em `unallocatedByReason` e compõem `totalUnallocatedCost`.
 
+**Cobrança do operador e revisão da fila — `subscription_billing_channel@2026-11-14.b-ass-08c1b`.** Fonte:
+`src/modules/subscription-billing/statements/statements.platform.routes.ts`, montado em `/api/v1/platform/billing`.
+Toda rota recebe o `tenantId` da organização (na consulta, nas leituras; no corpo, nas escritas) e roda sob o contexto
+dela; o demonstrativo é travado antes de qualquer linha da fila. **Nenhuma rota fala com o provedor**: quem cria e
+cancela a cobrança no provedor é o despacho (`billing.dispatch-outbox`). Com o canal desligado, as escritas gravam a
+fila e nada sai. As respostas trazem só a linha da fila numa lista fechada de campos (`id`, `statementId`, `kind`,
+`provider`, `status`, `skipReason`, `attempts`, `lastError`, `externalId`, `occurredAt`, `nextAttemptAt`, `updatedAt`):
+nunca o `payload`, o `tenantId`, segredo ou chave do cofre. Erro = `{ error: { reason } }`.
+
+| Método | Caminho | Permissão | Corpo / consulta | Sucesso | Recusas (`reason`) |
+|---|---|---|---|---|---|
+| POST | `/platform/billing/statements/:statementId/charge` | `platform:billing:settle` | `{ tenantId, method?, dueDate? }` (`method`: `pix`, `boleto`, `credit_card`, `debit_card`; ausente = `pix`) | `201` `{ data: <linha> }` (`charge_create` `PENDING`; valor = o total do demonstrativo travado) | `400` `tenant_id_required`, `invalid_method`, `invalid_due_date` (fora de hoje a hoje + 60 dias, dia de São Paulo) · `404` `statement_not_found` · `409` `statement_busy`, `charge_intent_conflict` · `422` `payment_provider_disabled`, `statement_not_closed`, `charge_already_exists`, `statement_partially_paid`, `due_date_required` (o vencimento do demonstrativo passou ou é nulo, e não veio `dueDate`), `due_date_not_past` (veio `dueDate` com o do demonstrativo ainda valendo) |
+| POST | `/platform/billing/statements/:statementId/charge/cancel` | `platform:billing:settle` | `{ tenantId, reason }` (10 caracteres ou mais) | `200` `{ data: { result, outbox } }`: `skipped` (a `charge_create` `PENDING` vira `SKIPPED`, sem rede) ou `cancel_enqueued` (nasce um `charge_cancel` para a cobrança `pending`) | `400` `reason_too_short` · `404` `statement_not_found` · `409` `charge_in_flight`, `charge_cancel_in_progress`, `statement_busy` · `422` `outbox_needs_review` (a saída é o `/resolve`), `no_live_charge` |
+| POST | `/platform/billing/statements/:statementId/charge/cancel-unknown` | `platform:billing:settle` | `{ tenantId, chargeId, reason }` (`chargeId` = o id da cobrança no provedor, `^[A-Za-z0-9_-]{1,64}$`) | `200` `{ data: { result: "cancel_enqueued", outbox } }` | `400` `invalid_charge_id`, `reason_too_short` · `404` `statement_not_found` · `409` `charge_in_flight`, `charge_cancel_in_progress`, `statement_busy` · `422` `charge_is_known` (o caminho é o `charge/cancel`), `no_live_charge` (o demonstrativo nunca teve pedido de cobrança) |
+| GET | `/platform/billing/statements/:statementId/charges?tenantId=` | `platform:billing:read` | — | `200` `{ data: { charges, notice } }`; cada cobrança: `id`, `provider`, `externalChargeId`, `status`, `payUrl`, `dueDate`, `createdAt`, `cancelledAt` | `400` `tenant_id_required` · `404` `statement_not_found` |
+| GET | `/platform/billing/outbox?tenantId=&status=&provider=` | `platform:billing:read` | filtros opcionais | `200` `{ data: [<linha>] }`, só da organização pedida | `400` `tenant_id_required`, `invalid_status`, `invalid_provider` |
+| POST | `/platform/billing/outbox/:id/resolve` | `platform:billing:settle` | `{ tenantId, reason }` | `200` `{ data: <linha> }`: `NEEDS_REVIEW` → `FAILED`, com o `lastError` mantido e a trilha `billing_outbox.resolved` | `400` `reason_too_short` · `404` `outbox_not_found` (inclusive id de outra organização, ou que não é UUID) · `409` `statement_busy` · `422` `outbox_not_in_review` |
+| POST | `/platform/billing/outbox/:id/retry` | `platform:billing:settle` | `{ tenantId, dueDate? }` | `200` `{ data: { outbox, notice } }`: `FAILED` → `PENDING`; com `dueDate`, o vencimento do pedido é regravado na mesma transação | `400` `invalid_due_date` · `404` `outbox_not_found` · `409` `charge_cancel_in_progress`, `statement_busy` · `422` `outbox_not_failed`, `charge_already_exists`, `statement_partially_paid`, `due_date_past` (o vencimento gravado passou e não veio `dueDate`), `due_date_not_past`, `due_date_not_applicable` (`dueDate` numa linha que não é `charge_create`) |
+
+- **`notice`:** no `GET …/charges` e na resposta da baixa manual (`POST …/statements/:statementId/payments`, que passa
+  a trazer `notice` ao lado de `statement` e `payment`), `full_amount_charge_open` quando o demonstrativo fechado tem
+  baixa parcial e uma cobrança `pending` do valor cheio no provedor; senão `null`. No `/retry`,
+  `due_date_applies_only_if_created` quando a data nova foi gravada: ela só vale se o despacho criar a cobrança (a desta
+  intenção que já existe no provedor é adotada como está).
+- **A saída do vencimento passado:** o despacho manda a linha cujo `dueDate` já passou (dia de São Paulo) a
+  `NEEDS_REVIEW` com `lastError = due_date_past`, sem chamar o provedor. O operador faz `/resolve` e depois `/retry` com
+  um `dueDate` novo.
+- **A saída da cobrança desconhecida** (a recobrança cuja resposta se perdeu, `lastError =
+  charge_found_for_previous_intent`): `cancel-unknown` da cobrança que o operador vê no provedor; o despacho só a
+  cancela se ela estiver na lista da referência deste demonstrativo (senão `unknown_charge_not_in_reference`, sem
+  DELETE), e paga vai à conferência (`charge_already_paid`). Depois, `/resolve` + `/retry` da linha.
+- **O `reopen` do demonstrativo** (`POST …/statements/:statementId/reopen`) recusa com `422` `outbox_needs_review`
+  enquanto houver linha da fila em conferência para ele.
+
 ### 3.4 Navegação
 
 Fonte: `src/modules/navigation/navigation.routes.ts` (montado em `/api/v1/navigation`).
@@ -665,6 +699,7 @@ Fontes: `financial-accounts/`, `financial-titles/` (+ `payable-source.routes.ts`
 | GET/POST/PATCH | `/expense-reports` (+ `/:id`, `/:id/items`, `/:id/submit`) · `/expense-policies` · `/expense-categories` | `expense_report:read`/`create`/`update`/`submit`, `expense_policy:read` | Relatórios de despesa (RDV). |
 | POST | `/mobile/sync/expense-actions` | `expense_sync:write` | Replay offline de ações de despesa (mobile) — atômico por ação, conflito por ação (contrato abaixo). |
 | GET/POST/GET:id/PATCH:id/DELETE:id | `/professional-statements` | `professional_statements:read`/`create`/`update` | Remunerações/demonstrativos profissionais (liquidação em lote → crédito no extrato). |
+- `POST`/`PATCH` `/financial-titles` com `due_date` ausente ou fora de data ISO → `400 FINANCIAL_TITLE_INVALID` `due_date_required` (`financial-title.validators.ts`, `parseDueDate`).
 
 **Web financeiro — baixa, conta com extrato e conciliação (`financeiro_baixa_conta_conciliacao@2026-10-24.b-san3-12`, B-SAN3-12a, plano v3 §4):**
 
