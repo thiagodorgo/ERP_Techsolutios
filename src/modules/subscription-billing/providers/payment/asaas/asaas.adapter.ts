@@ -28,12 +28,14 @@ import type {
   CustomerProfile,
   PaymentMethod,
   PaymentProviderPort,
+  ExternalChargeCandidate,
   ProviderDescription,
   RegisterWebhookInput,
   RegisterWebhookResult,
   VerifyWebhookInput,
   VerifyWebhookResult,
 } from "../payment-provider.port.js";
+import { ProviderListIncompleteError } from "../payment-errors.js";
 import { asaasStatusToOurs } from "./asaas.state-map.js";
 
 export type AsaasSecretKind = "api_token" | "webhook_secret";
@@ -42,12 +44,25 @@ export type AsaasSecretReader = (kind: AsaasSecretKind) => Promise<string | null
 type AsaasPayment = {
   readonly id: string;
   readonly status?: string;
+  readonly deleted?: boolean;
   readonly invoiceUrl?: string;
   readonly bankSlipUrl?: string;
   readonly value?: number;
   readonly confirmedDate?: string;
   readonly paymentDate?: string;
+  readonly clientPaymentDate?: string;
+  readonly creditDate?: string;
+  readonly estimatedCreditDate?: string;
   readonly externalReference?: string;
+  readonly dateCreated?: string;
+  readonly dueDate?: string;
+};
+
+/** A página crua da listagem do Asaas v3 (`GET /payments`). */
+type AsaasPaymentPage = {
+  readonly data?: readonly AsaasPayment[];
+  readonly hasMore?: boolean;
+  readonly totalCount?: number;
 };
 
 type AsaasErrorBody = {
@@ -76,6 +91,28 @@ function pathId(id: string): string {
     throw new ProviderValidationError("Invalid provider resource id.");
   }
   return encodeURIComponent(id);
+}
+
+const REMOVED_UNPAID_STATUS: ReadonlySet<string> = new Set(["PENDING", "OVERDUE", "DELETED"]); // [REMOVED-STATUS]
+const PAYMENT_EVIDENCE = ["paymentDate", "confirmedDate", "clientPaymentDate", "creditDate", "estimatedCreditDate"] as const; // [REMOVED-EVIDENCE]
+
+/**
+ * D-2.1 (Emenda 2.1 do B-ASS-08c1a), com a prova POSITIVA do C2-04 da J-555 (Emenda 2.6 §4) — o estado de cada cobrança
+ * SÓ na lista por referência. A removida no Asaas (`deleted: true` ou `status: "DELETED"`) é a única que pode deixar de
+ * bloquear uma criação nova, e só com as duas provas juntas de que não recebeu dinheiro: o status na lista fechada
+ * `[REMOVED-STATUS]` (status ausente não vale) e nenhuma data de `[REMOVED-EVIDENCE]`. Aí ela vira `cancelled`.
+ * A removida SEM essa prova nunca sai viva nem adotável: só a família paga, estornada ou em disputa segue o mapa, e todo
+ * o resto (inclusive `pending` e `overdue`) vira `unknown`, que bloqueia e vai à revisão. A não removida segue o mapa.
+ * O webhook, os polls e o `getCharge` continuam lendo `DELETED` como `unknown`.
+ */
+function listedChargeStatus(payment: AsaasPayment): ChargeStatus {
+  const mapped = asaasStatusToOurs(payment.status ?? "").status;
+  const deletedInAsaas = payment.deleted === true || payment.status === "DELETED";
+  const removed = deletedInAsaas && REMOVED_UNPAID_STATUS.has(payment.status ?? "") && !PAYMENT_EVIDENCE.some((field) => Boolean(payment[field])); // [LIST-REMOVED]
+  if (removed) return "cancelled";
+  if (!deletedInAsaas) return mapped;
+  const moneyStates: readonly ChargeStatus[] = ["paid", "partially_paid", "refunded", "partially_refunded", "chargeback_disputed", "charged_back"];
+  return moneyStates.includes(mapped) ? mapped : "unknown"; // [LIST-REMOVED-NEVER-LIVE]
 }
 
 function headerOf(headers: VerifyWebhookInput["headers"], name: string): string | undefined {
@@ -178,6 +215,9 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
     const state = asaasStatusToOurs(payment.status ?? "");
     return {
       status: state.status,
+      payUrl: payment.invoiceUrl,
+      boletoUrl: payment.bankSlipUrl,
+      dueDate: payment.dueDate,
       disputeWonPending: state.disputeWonPending,
       paidAt: payment.confirmedDate ?? payment.paymentDate,
       paidCents: state.status === "paid" && typeof payment.value === "number" ? toCents(payment.value) : undefined,
@@ -185,16 +225,29 @@ export class AsaasPaymentAdapter implements PaymentProviderPort {
     };
   }
 
-  async findChargeByExternalReference(ref: string): Promise<{ readonly chargeId: string; readonly status: ChargeStatus } | null> {
-    const list = await this.call<{ readonly data?: readonly AsaasPayment[] }>({
-      op: "findChargeByExternalReference",
+  /**
+   * B-ASS-08c1a — toda cobrança do Asaas para a referência, com valor, dia e estado (a régua de adoção é do despacho).
+   *  - D-2′: a lista só vale com prova POSITIVA de que está completa, lida na página CRUA (antes do filtro local):
+   *    `hasMore === false` e `totalCount` inteiro igual ao tamanho de `data`. Sem a prova → `provider_list_incomplete`.
+   *  - D-2.1: a cobrança REMOVIDA no Asaas (`deleted: true` ou `status: "DELETED"`) e SEM nenhuma data de pagamento vira
+   *    `cancelled` só aqui, na lista; com pagamento, segue o mapa (`unknown`) e bloqueia. O `asaas.state-map.ts` não muda.
+   */
+  async listChargesByExternalReference(ref: string): Promise<readonly ExternalChargeCandidate[]> {
+    const page = await this.call<AsaasPaymentPage>({
+      op: "listChargesByExternalReference",
       method: "GET",
-      path: `/payments?externalReference=${encodeURIComponent(ref)}`,
+      path: `/payments?externalReference=${encodeURIComponent(ref)}&offset=0&limit=100`,
       headers: await this.authHeaders(),
     });
-    const found = list.data?.find((payment) => payment.externalReference === ref);
-    if (!found) return null;
-    return { chargeId: found.id, status: asaasStatusToOurs(found.status ?? "").status };
+    if (!(page.hasMore === false && Array.isArray(page.data) && Number.isSafeInteger(page.totalCount) && page.totalCount === page.data.length)) throw new ProviderListIncompleteError(); // [LIST-COMPLETE]
+    return (page.data ?? [])
+      .filter((payment) => payment.externalReference === ref)
+      .map((payment) => ({
+        chargeId: payment.id,
+        status: listedChargeStatus(payment),
+        amountCents: typeof payment.value === "number" ? toCents(payment.value) : Number.NaN,
+        createdAt: payment.dateCreated ?? "",
+      }));
   }
 
   async cancelCharge(chargeId: string): Promise<{ readonly chargeId: string; readonly status: ChargeStatus }> {

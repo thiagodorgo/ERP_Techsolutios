@@ -15,7 +15,7 @@ import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity
 import { clauseTables, lockClauses, oneLine, recordingClient } from "./helpers/lock-order-recorder.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
 import { chargeCreateClaimVerdict, runDispatchOutbox } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
-import type { ClaimResult } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
+import { leaseOf, type ClaimResult } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { PrismaWebhookEventRepository } from "../src/modules/subscription-billing/webhooks/webhook-events.prisma.js";
 import { PrismaStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.prisma.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
@@ -492,7 +492,7 @@ if (!connectionString) {
       async ensureCustomer() { return { customerId: "cus_db" }; },
       async createCharge(input: unknown) { created.push(input); return { chargeId: `pay_db_${created.length}`, status: "pending" as const, payUrl: "https://pay.example/db" }; },
       async getCharge() { return { status: "pending" as const, raw: {} }; },
-      async findChargeByExternalReference() { return null; },
+      async listChargesByExternalReference() { return []; },
       async cancelCharge(chargeId: string) { return { chargeId, status: "cancelled" as const }; },
       async refund(chargeId: string) { return { chargeId, status: "refunded" as const }; },
       async registerWebhook() { return { externalId: "hook_db" }; },
@@ -638,14 +638,17 @@ if (!connectionString) {
   // ---------------------------------------------------------------- F5b: a adoção por fato que não se apaga, no Postgres
 
   /** Porta roteirizada (sem rede): `stored` é o que existe no provedor, na ordem da listagem; `createScript` ("lost" cria e
-   * PERDE a resposta) e `lookupScript` ("5xx" falha a reconsulta). */
+   * PERDE a resposta) e `lookupScript` ("5xx" falha a reconsulta). Cada cobrança guarda o dia de SP em que nasceu
+   * (`createdAt`): a do `createCharge` pelo relógio da porta, que o `dispatchDb` acerta para o `at` do despacho. */
   type ScriptedPort = ReturnType<typeof scriptedPort>;
+  const SP_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
   function scriptedPort(provider: string) {
     const failure = (code: string) => Object.assign(new Error(code), { code });
     const port = {
       created: [] as Array<{ readonly externalReference: string; readonly amountCents: number }>,
       lookups: [] as string[],
-      stored: [] as Array<{ readonly chargeId: string; readonly ref: string; readonly amountCents: number; readonly status: "pending" }>,
+      stored: [] as Array<{ readonly chargeId: string; readonly ref: string; readonly amountCents: number; readonly status: "pending"; readonly createdAt: string }>,
+      clock: (() => new Date()) as () => Date,
       createScript: [] as Array<"ok" | "lost">,
       lookupScript: [] as Array<"ok" | "5xx">,
       async ensureCustomer() { return { customerId: "cus_db" }; },
@@ -653,16 +656,15 @@ if (!connectionString) {
         port.created.push(input);
         const step = port.createScript.shift() ?? "ok";
         const chargeId = `pay_db_${port.stored.length + 1}`;
-        port.stored.push({ chargeId, ref: input.externalReference, amountCents: input.amountCents, status: "pending" });
+        port.stored.push({ chargeId, ref: input.externalReference, amountCents: input.amountCents, status: "pending", createdAt: SP_DAY.format(port.clock()) });
         if (step === "lost") throw failure("provider_timeout");
         return { chargeId, status: "pending" as const, payUrl: "https://pay.example/db" };
       },
       async getCharge() { return { status: "pending" as const, raw: {} }; },
-      async findChargeByExternalReference(ref: string) {
+      async listChargesByExternalReference(ref: string) {
         port.lookups.push(ref);
         if (port.lookupScript.shift() === "5xx") throw failure("provider_unavailable");
-        const found = port.stored.find((charge) => charge.ref === ref);
-        return found ? { chargeId: found.chargeId, status: found.status } : null;
+        return port.stored.filter((charge) => charge.ref === ref).map((charge) => ({ chargeId: charge.chargeId, status: charge.status, amountCents: charge.amountCents, createdAt: charge.createdAt }));
       },
       async cancelCharge(chargeId: string) { return { chargeId, status: "cancelled" as const }; },
       async refund(chargeId: string) { return { chargeId, status: "refunded" as const }; },
@@ -678,6 +680,7 @@ if (!connectionString) {
   const afterOrphanCutoff = (base: Date) => new Date(base.getTime() + OUTBOX_ORPHAN_MS + 60_000);
 
   function dispatchDb(client: any, provider: string, port: ScriptedPort, at: Date) {
+    port.clock = () => at;
     return runDispatchOutbox({ repo: new PrismaOutboxRepository(client), ports: { [provider]: port as any }, resolveCustomer: async () => ({ ok: true, customerId: "cus_db" }), now: () => at });
   }
 
@@ -712,7 +715,7 @@ if (!connectionString) {
     const r1 = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(client) }, { tenantId, statementId, provider, payload: { amountCents: 15000, dueDate: "2026-11-10", method: "pix" }, now: t1 });
     assert.equal(r1.idempotencyKey, `charge_create:${statementId}:2`);
     const port = scriptedPort(provider);
-    port.stored.push({ chargeId: `pay_phantom_${slug}`, ref: statementId, amountCents: phantomCents, status: "pending" });
+    port.stored.push({ chargeId: `pay_phantom_${slug}`, ref: statementId, amountCents: phantomCents, status: "pending", createdAt: SP_DAY.format(t0) });
     return { provider, r1, t1, port };
   }
 
@@ -754,7 +757,7 @@ if (!connectionString) {
         const row = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 10000, dueDate: "2026-11-10", method: "pix" }, now: t0 });
         await claimAndDieDb(role.client, provider, t0);
         const port = scriptedPort(provider);
-        port.stored.push({ chargeId: `pay_own_${variant}`, ref: statementId, amountCents: 10000, status: "pending" }); // o POST do worker que morreu
+        port.stored.push({ chargeId: `pay_own_${variant}`, ref: statementId, amountCents: 10000, status: "pending", createdAt: SP_DAY.format(t0) }); // o POST do worker que morreu
         if (variant === "L5") {
           await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'closed', reopened_at = $2, total_amount = 150 WHERE id = $1::uuid`, statementId, minutesAfter(t0, 1));
         }
@@ -886,7 +889,8 @@ if (!connectionString) {
         assert.equal(port.stored.length, 1);
         if (attack === "ATK-2d") {
           // … vai a FAILED e o operador dá retry (E9: last_error mantido)
-          await repo.markFailed(tenantId, r0.id, "provider_timeout", minutesAfter(t0, 1));
+          const dying = await claimAndDieDb(role.client, provider, minutesAfter(t0, 1));
+          assert.equal(await repo.markFailed(tenantId, r0.id, "provider_timeout", minutesAfter(t0, 1), leaseOf(dying)), true, "montagem com posse");
           assert.equal((await repo.retry(tenantId, r0.id, minutesAfter(t0, 1)))?.status, "PENDING");
         }
         // reaberto: o claim relê e pula R0

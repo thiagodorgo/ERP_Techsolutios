@@ -10,7 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 
-import { InMemoryOutboxRepository, type StatementClaimReader } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
+import { InMemoryOutboxRepository, leaseOf, type StatementClaimReader } from "../src/modules/subscription-billing/outbox/outbox.repository.js";
 import { chargeCreateClaimVerdict, runDispatchOutbox, type DispatchAuditEvent, type DispatcherDeps } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
 import { PrismaOutboxRepository } from "../src/modules/subscription-billing/outbox/outbox.prisma.js";
 import { OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
@@ -29,6 +29,7 @@ import type {
   PaymentProviderPort,
 } from "../src/modules/subscription-billing/providers/payment/payment-provider.port.js";
 
+const SP_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
 const STMT = "11111111-1111-1111-1111-111111111111";
 const STMT_2 = "11111111-1111-1111-1111-222222222222";
 const TENANT = "22222222-2222-2222-2222-222222222222";
@@ -57,8 +58,9 @@ class RecordingPort implements PaymentProviderPort {
   readonly created: CreateChargeInput[] = [];
   readonly lookups: string[] = [];
   readonly ensured: string[] = [];
-  readonly stored: Array<{ readonly chargeId: string; readonly ref: string; readonly amountCents: number; readonly status: ChargeResult["status"] }> = [];
-  existingByRef: { chargeId: string; status: ChargeResult["status"] } | null = null;
+  readonly stored: Array<{ readonly chargeId: string; readonly ref: string; readonly amountCents: number; readonly status: ChargeResult["status"]; readonly createdAt?: string }> = [];
+  clock: () => Date = () => new Date("2026-12-01T12:00:00Z");
+  existingByRef: { chargeId: string; status: ChargeResult["status"]; amountCents?: number } | null = null;
   /** `createCharge` lança SEM criar. */
   nextError: Error | null = null;
   readonly createScript: Array<"ok" | "lost" | "5xx" | "429"> = [];
@@ -80,19 +82,18 @@ class RecordingPort implements PaymentProviderPort {
     if (step === "5xx") throw providerError("provider_unavailable");
     if (step === "429") throw new ProviderRateLimitedError(1000);
     const chargeId = `pay_${this.stored.length + 1}`;
-    this.stored.push({ chargeId, ref: input.externalReference, amountCents: input.amountCents, status: "pending" });
+    this.stored.push({ chargeId, ref: input.externalReference, amountCents: input.amountCents, status: "pending", createdAt: SP_DAY.format(this.clock()) });
     if (step === "lost") throw providerError("provider_timeout");
     return { chargeId, status: "pending", payUrl: "https://pay.example/x" };
   }
   async getCharge() {
     return { status: "pending" as const, raw: {} };
   }
-  async findChargeByExternalReference(ref: string) {
+  async listChargesByExternalReference(ref: string) {
     this.lookups.push(ref);
     if (this.lookupScript.shift() === "5xx") throw providerError("provider_unavailable");
-    if (this.existingByRef) return this.existingByRef;
-    const found = this.stored.find((charge) => charge.ref === ref);
-    return found ? { chargeId: found.chargeId, status: found.status } : null;
+    if (this.existingByRef) return [{ chargeId: this.existingByRef.chargeId, status: this.existingByRef.status, amountCents: this.existingByRef.amountCents ?? 19990, createdAt: SP_DAY.format(this.clock()) }];
+    return this.stored.filter((charge) => charge.ref === ref).map((charge) => ({ chargeId: charge.chargeId, status: charge.status, amountCents: charge.amountCents, createdAt: charge.createdAt ?? SP_DAY.format(this.clock()) }));
   }
   async cancelCharge(chargeId: string) {
     return { chargeId, status: "cancelled" as const };
@@ -169,8 +170,8 @@ test("R-OBX-1 crash entre chamada e registro: linha PROCESSING órfã reconsulta
   port.nextError = null;
   const later = new Date(start.getTime() + OUTBOX_ORPHAN_MS + 60_000);
   // claim fresco (reschedule pôs nextAttemptAt futuro? reschedule usa backoff; vamos reconsultar com relógio adiante)
-  // A cobrança JÁ existe no provedor: findChargeByExternalReference a encontra.
-  port.existingByRef = { chargeId: "pay_crashed", status: "pending" };
+  // A cobrança JÁ existe no provedor: a listagem por referência a encontra.
+  port.existingByRef = { chargeId: "pay_crashed", status: "pending", amountCents: 19990 };
   // Marca a linha como PROCESSING órfã manualmente via um claim seguido de nada.
   const claimed = await repo.claimNext({ enabledProviders: ["asaas"], now: new Date(start.getTime() + 60_000), claimedBy: "t", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
   assert.ok(claimed);
@@ -234,7 +235,11 @@ test("R-OBX-2 retry reabre FAILED → PENDING e dispatch volta a tentar (T-OBX-9
   const now = new Date("2026-12-01T12:00:00Z");
   const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
   const { row } = await enqueueCharge(repo, now);
-  await repo.markFailed(TENANT, row.id, "boom", now);
+  {
+    const setup = await repo.claimNext({ enabledProviders: ["asaas"], now: now, claimedBy: "setup", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+    assert.equal(setup?.kind, "claimed", "montagem: posse");
+    assert.equal(await repo.markFailed(TENANT, row.id, "boom", now, leaseOf(setup.row)), true, "montagem com posse");
+  }
   const reopened = await repo.retry(TENANT, row.id, now);
   assert.equal(reopened?.status, "PENDING");
   assert.equal(reopened?.attempts, 0);
@@ -250,7 +255,11 @@ test("E9: retry com outra charge_create VIVA no demonstrativo → 422 charge_alr
   const now = new Date("2026-12-01T12:00:00Z");
   const repo = new InMemoryOutboxRepository({ readStatement: alwaysClosed, clock: () => now });
   const { row: failed } = await enqueueCharge(repo, now, 1);
-  await repo.markFailed(TENANT, failed.id, "boom", now);
+  {
+    const setup = await repo.claimNext({ enabledProviders: ["asaas"], now: now, claimedBy: "setup", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+    assert.equal(setup?.kind, "claimed", "montagem: posse");
+    assert.equal(await repo.markFailed(TENANT, failed.id, "boom", now, leaseOf(setup.row)), true, "montagem com posse");
+  }
   await enqueueCharge(repo, now, 2); // a 2ª intenção, PENDING: viva no D1
   await assert.rejects(
     repo.retry(TENANT, failed.id, now),
@@ -410,7 +419,11 @@ test("R-OBX-5 baixa manual TOTAL depois de enfileirada → SKIPPED statement_pai
 
   // Braço do retry — D2 (ii): "o retry revalida como o claim". FAILED → retry → PENDING em demonstrativo pago → não sai.
   const r = await obx5Harness(t0);
-  await r.outbox.markFailed(TENANT, r.rowId, "boom", t0);
+  {
+    const setup = await r.outbox.claimNext({ enabledProviders: ["asaas"], now: t0, claimedBy: "setup", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+    assert.equal(setup?.kind, "claimed", "montagem: posse");
+    assert.equal(await r.outbox.markFailed(TENANT, r.rowId, "boom", t0, leaseOf(setup.row)), true, "montagem com posse");
+  }
   await r.service.recordManualPayment({ tenantId: TENANT, statementId: r.statementId, amountCents: 10000, method: "pix", note: null, actorId: ACTOR, now: t1 });
   assert.equal((await r.outbox.retry(TENANT, r.rowId, t1))?.status, "PENDING");
   const retried = await dispatch(r, t1);
@@ -471,7 +484,11 @@ test("R-OBX-5 linha NEEDS_REVIEW → reopen recusa 422 outbox_needs_review; cobr
 
   // D2 (iv): a linha está em revisão → reabrir é recusado; o demonstrativo continua `closed`.
   const h = await obx5Harness(t0);
-  await h.outbox.markNeedsReview(TENANT, h.rowId, "orphan_recovery_not_found", t0);
+  {
+    const setup = await h.outbox.claimNext({ enabledProviders: ["asaas"], now: t0, claimedBy: "setup", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+    assert.equal(setup?.kind, "claimed", "montagem: posse");
+    assert.equal(await h.outbox.markNeedsReview(TENANT, h.rowId, "orphan_recovery_not_found", t0, leaseOf(setup.row)), true, "montagem com posse");
+  }
   await assert.rejects(
     h.service.reopen({ tenantId: TENANT, statementId: h.statementId, reason: "recalcular o uso do mês", actorId: ACTOR, now: t1 }),
     (error: unknown) => error instanceof StatementError && error.statusCode === 422 && error.reason === "outbox_needs_review",
@@ -548,6 +565,7 @@ function requestIntent(arm: ChargeArm, now: Date, amountCents: number) {
 }
 
 function dispatchArm(arm: ChargeArm, now: Date, resolveCustomer: DispatcherDeps["resolveCustomer"] = okResolver) {
+  arm.port.clock = () => now;
   return runDispatchOutbox({ repo: arm.outbox, ports: { asaas: arm.port }, resolveCustomer, now: () => now, onAudit: async (event) => void arm.audits.push(event) });
 }
 
@@ -673,7 +691,7 @@ test("E6′/E7′: nenhuma cobrança criada nem adotada às cegas (T-OBX-17, bra
     const arm = await chargeArm(t0);
     const row = await requestIntent(arm, t0, 10000);
     await claimAndDie(arm, t0);
-    arm.port.stored.push({ chargeId: "pay_own", ref: arm.statementId, amountCents: 10000, status: "pending" }); // o POST do worker que morreu
+    arm.port.stored.push({ chargeId: "pay_own", ref: arm.statementId, amountCents: 10000, status: "pending", createdAt: SP_DAY.format(t0) }); // o POST do worker que morreu
     const run = await dispatchArm(arm, afterOrphan(t0));
     assert.equal(run.outcomes.recovered, 1);
     const final = await arm.outbox.findById(TENANT, row.id);
@@ -686,9 +704,13 @@ test("E6′/E7′: nenhuma cobrança criada nem adotada às cegas (T-OBX-17, bra
   async function erasedEvidence() {
     const arm = await chargeArm(t0);
     const r0 = await requestIntent(arm, t0, 10000);
-    await arm.outbox.markSkipped(TENANT, r0.id, "statement_reopened", t0);
-    arm.port.stored.push({ chargeId: "pay_phantom", ref: arm.statementId, amountCents: 10000, status: "pending" });
-    await setStatement(arm, { status: "closed", reopenedAt: minutes(t0, 1), totalCents: 15000, closedAt: minutes(t0, 2) });
+    await setStatement(arm, { status: "reopened", reopenedAt: minutes(t0, 1) });
+    const skippedByClaim = await arm.outbox.claimNext({ enabledProviders: ["asaas"], now: minutes(t0, 1), claimedBy: "setup", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+    assert.equal(skippedByClaim?.kind, "skipped", "montagem: R0 pulada pelo claim");
+    const r0Now = await arm.outbox.findById(TENANT, r0.id);
+    assert.deepEqual([r0Now?.status, r0Now?.skipReason, r0Now?.attempts, r0Now?.lastError], ["SKIPPED", "statement_reopened", 0, null], "montagem: a mesma foto de antes");
+    arm.port.stored.push({ chargeId: "pay_phantom", ref: arm.statementId, amountCents: 10000, status: "pending", createdAt: SP_DAY.format(t0) });
+    await setStatement(arm, { status: "closed", totalCents: 15000, closedAt: minutes(t0, 2) });
     const r1 = await requestIntent(arm, minutes(t0, 3), 15000);
     return { arm, r1, t1: minutes(t0, 3) };
   }
@@ -716,7 +738,7 @@ test("E6′/E7′: nenhuma cobrança criada nem adotada às cegas (T-OBX-17, bra
     const arm = await chargeArm(t0);
     const row = await requestIntent(arm, t0, 10000);
     await claimAndDie(arm, t0);
-    arm.port.stored.push({ chargeId: "pay_own", ref: arm.statementId, amountCents: 10000, status: "pending" });
+    arm.port.stored.push({ chargeId: "pay_own", ref: arm.statementId, amountCents: 10000, status: "pending", createdAt: SP_DAY.format(t0) });
     await setStatement(arm, { status: "closed", reopenedAt: minutes(t0, 1), totalCents: 15000, closedAt: minutes(t0, 2) });
     await dispatchArm(arm, afterOrphan(t0));
     const final = await arm.outbox.findById(TENANT, row.id);
@@ -727,7 +749,7 @@ test("E6′/E7′: nenhuma cobrança criada nem adotada às cegas (T-OBX-17, bra
     const orphanArm = await chargeArm(t0, { readerWithTotal: false });
     const orphanRow = await requestIntent(orphanArm, t0, 10000);
     await claimAndDie(orphanArm, t0);
-    orphanArm.port.stored.push({ chargeId: "pay_own", ref: orphanArm.statementId, amountCents: 10000, status: "pending" });
+    orphanArm.port.stored.push({ chargeId: "pay_own", ref: orphanArm.statementId, amountCents: 10000, status: "pending", createdAt: SP_DAY.format(t0) });
     await dispatchArm(orphanArm, afterOrphan(t0));
     assert.equal((await orphanArm.outbox.findById(TENANT, orphanRow.id))?.lastError, "orphan_found_stale_closing");
 
@@ -768,7 +790,11 @@ test("E9 × E6′: o retry não apaga a evidência de que a linha já foi tentad
     const row = await requestIntent(arm, t0, 10000);
     arm.port.createScript.push("lost");
     await dispatchArm(arm, t0);
-    await arm.outbox.markFailed(TENANT, row.id, "provider_timeout", minutes(t0, 1));
+    {
+      const setup = await arm.outbox.claimNext({ enabledProviders: ["asaas"], now: minutes(t0, 1), claimedBy: "setup", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+      assert.equal(setup?.kind, "claimed", "montagem: posse");
+      assert.equal(await arm.outbox.markFailed(TENANT, row.id, "provider_timeout", minutes(t0, 1), leaseOf(setup.row)), true, "montagem com posse");
+    }
     assert.equal((await arm.outbox.retry(TENANT, row.id, minutes(t0, 2)))?.status, "PENDING");
     const run = await dispatchArm(arm, minutes(t0, 2));
     assert.equal(arm.port.created.length, 1, "nunca recria");
@@ -782,7 +808,11 @@ test("E9 × E6′: o retry não apaga a evidência de que a linha já foi tentad
     const r0 = await requestIntent(arm, t0, 10000);
     arm.port.createScript.push("lost");
     await dispatchArm(arm, t0);
-    await arm.outbox.markFailed(TENANT, r0.id, "provider_timeout", minutes(t0, 1));
+    {
+      const setup = await arm.outbox.claimNext({ enabledProviders: ["asaas"], now: minutes(t0, 1), claimedBy: "setup", orphanMs: OUTBOX_ORPHAN_MS, verdict: chargeCreateClaimVerdict });
+      assert.equal(setup?.kind, "claimed", "montagem: posse");
+      assert.equal(await arm.outbox.markFailed(TENANT, r0.id, "provider_timeout", minutes(t0, 1), leaseOf(setup.row)), true, "montagem com posse");
+    }
     await arm.outbox.retry(TENANT, r0.id, minutes(t0, 1));
     await setStatement(arm, { status: "reopened", reopenedAt: minutes(t0, 2) });
     await dispatchArm(arm, minutes(t0, 3)); // R0 reaberta pelo retry, relida no claim → SKIPPED
