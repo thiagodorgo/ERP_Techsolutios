@@ -60,6 +60,50 @@ entre as duas entraram `5728df31` (#557, B-ASS-08c-wh) e `d29b3bef` (#558, B-SAN
 | `pendencias.md`, dono `B-ASS-09` | `d29b3bef` | `git diff 24f7e792 <ref> -- …pendencias.md \| grep -c B-ASS-09` = **0** (o arquivo ganhou 35 linhas de outros blocos) | idem | sim: nenhuma nova com dono `B-ASS-09` |
 | fora do repositório (`REGISTRO-PENDENTE.md`, `porteiro-542-parecer.md`, `B-ASSINATURA-plano.md`) | — | não re-medíveis no repositório | — | como na Emenda 1 (E9) |
 
+## F1 — `overview-money.ts`, constantes, `costStatusOf`, `alertFor`, `marginPct` (R-FX-1..4, R-MG-1..4)
+
+- **Dev:** `dev-ass09-f13-cl`, Claude Opus 5.5 (subagente da sessão), nível menor, **identidade de dev declarada**
+  (§C7 item 11(6)), **cobrindo o braço, declarado**: as 3 contas Codex na junta J-555 a partir das 23:29 SP e o DeepSeek no
+  pico e com pouco saldo. Não sou `dev-ass09-cl`, nem planejador, nem crítico do bloco. **A pré-revisão das F1, F2 e F3 passa a
+  ser de outra casa (Codex ou DeepSeek).**
+- **Ramo:** `feat/ass-09-visao-custo`, worktree `C:/Users/thiag/w-ass09`, a partir de `2b5e0325` (F0). Sem banco.
+- **Arquivos:** `src/modules/subscription-billing/overview/{overview-money.ts, overview.constants.ts, overview.types.ts,
+  overview.engine.ts}`, `tests/ass-09-overview-money.test.ts`, `tests/ass-09-overview-engine.test.ts`.
+
+| passo | comando | saída resumida | veredito |
+|---|---|---|---|
+| vermelho antes | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-overview-money.test.ts tests/ass-09-overview-engine.test.ts` | `ERR_MODULE_NOT_FOUND … overview-money.js` · `# tests 2 # pass 0 # fail 2` | vermelho (o módulo não existe) |
+| verde depois | idem | `# tests 11 # pass 11 # fail 0 # skipped 0` | verde |
+| tipos | `npx tsc -p tsconfig.json --noEmit` | sem saída, ec 0 | verde |
+| mutações | executor fora do repositório: a âncora tem de casar **1 vez**; aplica, roda o teste-dono, restaura e confere o md5 | as 12 abaixo, todas `VERMELHO`, `restaurado=true` | todas mortas |
+
+| mutação (texto literal) | teste que fica vermelho | observação |
+|---|---|---|
+| M-FX-1 `costMicro * rateMicro` → `costMicro * MICRO` | T-FX-1 (e T-FX-2, T-FX-2b) | — |
+| M-FX-2 `r * 2n >= d ? q + 1n : q` → `q` | T-FX-2, T-FX-2b | — |
+| M-FX-3 corpo de `roundHalfAwayFromZero` → `return (n + d / 2n) / d;` | T-FX-2b | o corpo está numa linha só, igual ao texto do plano, para a troca ser literal |
+| M-FX-4 `if (rateMicro === null) return null;` → `if (rateMicro === null) rateMicro = MICRO;` | T-FX-3 | — |
+| M-FX-5 `if (currency === "BRL")` → `if (currency === "BRL" && rateMicro !== null)` | T-FX-4 (e T-MG-14) | — |
+| M-MG-1 `cost > sub` → `cost >= sub` | T-MG-1..8 (caso T-MG-3) | — |
+| M-MG-2 `80n` → `90n` (`overview.constants.ts`) | T-MG-1..8 (caso T-MG-2) | — |
+| M-MG-3 tirar `sub > 0n && ` | T-MG-1..8 (caso T-MG-5) | — |
+| M-MG-4 corpo de `costStatusOf` → `return summary.runId === null ? "no_run" : "ok";` | T-MG-12..15 (caso T-MG-13), T-FX-3, T-MG-16 | — |
+| M-MG-5 `entry === undefined ? 0n :` → `entry === undefined ? null :` | T-MG-12..15 (caso T-MG-15) | o plano não dá o texto; a âncora é esta |
+| M-MG-6 `roundHalfAwayFromZero(margin * 10_000n, sub)` → `(…, cost)` | T-MG-9..11 | **fica vermelho por `ReferenceError: cost is not defined`, não pelo `"85.19"` do plano**: a assinatura canônica `marginPct(margin, sub)` não tem `cost` no escopo |
+| M-MG-8 `summary.currency ?? null` → `summary.currency ?? "BRL"` | T-MG-16 | o plano só dá o texto mutado; a âncora original é `summary.currency ?? null` (em `summaryCurrencyOf`, lida por `costStatusOf` e pelo motor) |
+
+**Leituras do dev, declaradas (§A6):**
+1. **Divisão F1 × F2.** O R-FX-1, o R-FX-3 e o R-MG-3 (T-MG-15: "fora de `tenants[]` → `0.00`") precisam do custo de UMA
+   organização. Por isso a F1 entrega também `tenantCostOf` e `pricingOf` no `overview.engine.ts`; a F2 monta as linhas, o
+   grupo, `totals` e o global em cima deles. O T-FX-1 da F1 confere a conversão, a margem e o original pelo dinheiro; o
+   formato da linha inteira é da F2.
+2. **Porteiro único de P13.** `pricingOf(status, moeda, taxa)` devolve `UNPRICED` (moeda `""`, taxa `null`) para todo
+   status sem custo válido: toda conversão por `costToBrlCents` dá `null`, inclusive em real (`no_import` com moeda `BRL`).
+   O original (`costMicro`) só existe em `ok`, `legacy_unscoped` e `fx_missing`.
+3. **Falha fechada a mais (achado da revisão pela skill `backend-review-ts-prisma`, antes do commit):** `rateToMicro` recusa
+   taxa **zero** (zeraria o custo em silêncio; a M6 tem `CHECK (rate > 0)`), e `costStatusOf` trata uma `coverage` que o bloco
+   não conhece como `no_import`, nunca como `ok`. Cada uma tem caso no teste.
+
 ## F4 — ramo `feat/ass-09-banco` (worktree `C:/Users/thiag/w-ass09b`)
 
 (preenchido no ramo `feat/ass-09-banco`)
