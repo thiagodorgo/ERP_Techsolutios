@@ -697,6 +697,10 @@ class _NavCell extends StatelessWidget {
 ///   título.
 /// - A seta e o fundo da linha aberta são da peça: a seta gira e fica azul; o fundo aberto é o azul claro da pílula
 ///   de informação da biblioteca (`MobilePill`, `PillTone.info`), porque o tema não tem token com esse valor.
+/// - (J-564 C3-03) Também são da peça, porque as duas maquetes os têm iguais: a linha inteira (título e meta) em peso
+///   normal e na cor do texto forte (`.ln`), e o detalhe aberto com fundo e borda de cima e de baixo (`.det`). O tema
+///   não tem #F8FAFF nem #DBEAFE: o fundo é a cor do tema mais próxima de #F8FAFF (`surfaceBright`) e a borda, a mais
+///   próxima de #DBEAFE (`primaryContainer`). O recuo interno do detalhe continua de quem cria a peça.
 /// - [trailing] é pílula ou marca, nunca botão.
 class MobileExpandableRow extends StatelessWidget {
   const MobileExpandableRow({
@@ -726,6 +730,7 @@ class MobileExpandableRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final openFill = MobilePill.colorsFor(PillTone.info).$1;
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -773,7 +778,16 @@ class MobileExpandableRow extends StatelessWidget {
             ),
           ),
         ),
-        if (expanded) detail,
+        if (expanded)
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: scheme.surfaceBright,
+              border: Border.symmetric(
+                horizontal: BorderSide(color: scheme.primaryContainer),
+              ),
+            ),
+            child: detail,
+          ),
       ],
     );
   }
@@ -805,13 +819,12 @@ class _RowTexts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // J-564 C3-03 — a linha inteira num estilo só: peso normal, na cor do texto forte (`.ln`, 14 px, #0F172A).
     final titleStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
       color: ErpMobileTheme.ink,
-      fontWeight: FontWeight.w600,
+      fontWeight: FontWeight.w400,
     );
-    final metaStyle = Theme.of(
-      context,
-    ).textTheme.bodyMedium?.copyWith(color: ErpMobileTheme.inkMuted);
+    final metaStyle = titleStyle;
     final meta = this.meta;
     return LayoutBuilder(
       builder: (context, constraints) {
