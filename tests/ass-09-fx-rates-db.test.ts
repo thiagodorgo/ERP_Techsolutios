@@ -10,10 +10,13 @@ import test, { after, before } from "node:test";
 // dentro do lock de catálogo); a URL admin só semeia a barreira e limpa. `platform_fx_rates` é global: cada execução usa
 // uma moeda de origem PRÓPRIA (3 letras sorteadas, nunca `BRL`), e o teardown apaga só as linhas dela.
 //
-// A barreira do T-FX-db-1 é escopada pelo `application_name` da suíte (`tests/helpers/pg-barrier.ts`): o admin segura
-// `LOCK TABLE platform_fx_rates IN SHARE MODE` (a leitura passa; o INSERT espera) e os dois `putRate` correm até
-// ficarem os DOIS bloqueados — com a trava consultiva, um no INSERT e o outro na trava; sem ela (M-FX-8), os dois no
-// INSERT depois de lerem a mesma maior versão.
+// A barreira do T-FX-db-1 é DE LINHA (Emenda 2.1 §1.3) e escopada pelo `application_name` da suíte: o admin grava a versão
+// 2 do mesmo mês e moeda SEM COMMIT (segura `ROW EXCLUSIVE` na tabela e a linha no índice único) e só a desfaz depois que os
+// dois `putRate` estão presos. Com a trava certa (`SHARE ROW EXCLUSIVE`), os dois param no próprio `LOCK TABLE`; desfeita a
+// barreira, um ganha a trava e o outro espera: versões 2 e 3. Ela mata por construção as três mutações do mecanismo:
+//   - M-FX-8 (sem a trava) e M-FX-16 (`ROW EXCLUSIVE`, que não se exclui): os dois leem `max = 1`, param no índice único à
+//     espera do admin e, desfeita a barreira, os dois gravam a versão 2 → `Unique constraint failed`;
+//   - M-FX-17 (`SHARE`): os dois param no `LOCK`, são concedidos juntos e cada INSERT espera o `SHARE` do outro → deadlock.
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;
@@ -73,7 +76,8 @@ if (!connectionString) {
   });
 
   test("T-FX-db-1 · dois PUT do mesmo mês ao mesmo tempo → versões n+1 e n+2, nenhuma perdida, nenhum erro", async () => {
-    // MUTAÇÃO QUE MATA: M-FX-8 (a linha do `pg_advisory_xact_lock` apagada → os dois leem a mesma maior versão → UNIQUE).
+    // MUTAÇÕES QUE MATAM: M-FX-8 (a linha do `LOCK TABLE … SHARE ROW EXCLUSIVE MODE` apagada → UNIQUE), M-FX-16
+    // (`IN ROW EXCLUSIVE MODE` → UNIQUE) e M-FX-17 (`IN SHARE MODE` → deadlock). A barreira é a versão 2 do admin, sem COMMIT.
     const c = ctx!;
     await c.service.putRate("2026-10", { currencyFrom: c.currency, rate: "5.000000", actorId: null });
     const before = await c.service.currentRate("2026-10", c.currency);
@@ -89,9 +93,13 @@ if (!connectionString) {
     });
     const holder = c.admin.$transaction(
       async (tx: any) => {
-        await tx.$executeRawUnsafe("LOCK TABLE platform_fx_rates IN SHARE MODE");
+        await tx.$executeRawUnsafe(
+          "INSERT INTO platform_fx_rates (month, currency_from, currency_to, rate, version) VALUES ('2026-10', $1, 'BRL', 9, 2)",
+          c.currency,
+        );
         locked();
         await released;
+        throw BARRIER_ROLLBACK;
       },
       { maxWait: 10_000, timeout: 30_000 },
     );
@@ -103,10 +111,14 @@ if (!connectionString) {
     ].map((p) => p.then((value) => ({ ok: true as const, value }), (error: unknown) => ({ ok: false as const, error })));
 
     try {
-      await c.waitForOwnBlocked(2, "os dois putRate presos (trava consultiva e INSERT, ou dois INSERT)");
+      await c.waitForOwnBlocked(2, "os dois putRate presos atrás da versão 2 do admin");
     } finally {
       release();
-      await holder;
+      await assert.rejects(
+        holder,
+        (error: unknown) => error === BARRIER_ROLLBACK,
+        "a barreira só termina pela sentinela: a versão 2 do admin é desfeita, nunca gravada",
+      );
     }
     const outcomes = await Promise.all(racers);
     const failures = outcomes.filter((o) => !o.ok).map((o) => String((o as { error: unknown }).error));
@@ -225,6 +237,9 @@ if (!connectionString) {
 }
 
 const FIXED_NOW = new Date("2026-11-14T01:30:00.000Z");
+
+/** A única rejeição que a barreira do T-FX-db-1 aceita: desfaz a versão 2 do admin. */
+const BARRIER_ROLLBACK = new Error("B-ASS-09 · barreira do T-FX-db-1 desfeita de propósito");
 
 async function bootstrap(connection: string) {
   const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);

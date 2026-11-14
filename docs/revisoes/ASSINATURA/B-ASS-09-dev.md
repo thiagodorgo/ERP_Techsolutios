@@ -702,3 +702,31 @@ Retomada de `dev-ass09-cl` pelo id (Emenda 2 §1.3). Roteiro da §1.5, com `OLD=
 **Depois da J1:** o `git fetch` seguinte mostrou `origin/feat/ass-09-visao-custo` = `121d2f21` (a F3, `feat(billing): F3 do B-ASS-09 —
 assinatura do período, antes do crédito`), empurrada pelo `dev-ass09-f13-cl` durante a J1. Ela não entra na J1; é a base da J2
 (§1.2). A F5a, a F5b e a J2 esperam a mensagem "EMENDA 2 REVISADA" do orquestrador.
+
+## F5a — a trava do câmbio por tabela (Emenda 2 §3.3, §2.3; Emenda 2.1 §1), 14/11 01:10–01:20 SP
+
+Retomada depois de "EMENDA 2 REVISADA". Base: `feat/ass-09-banco` = `de037d9e`. Cluster `pg-ass09` religado (`127.0.0.1:55561`,
+UTC), base `erp_ass09` migrada na J1. Código sob teste no papel efêmero `NOSUPERUSER NOBYPASSRLS` do arnês.
+
+- `fx-rates.prisma.ts`: a 1ª sentença da transação passa a ser, literal, `await tx.$executeRaw\`LOCK TABLE platform_fx_rates IN
+  SHARE ROW EXCLUSIVE MODE\`;` (`grep -c` = 1); sai a `fxRateLockKey` (`git grep -n fxRateLockKey -- src tests` sem saída) e o
+  comentário dela; o comentário do topo descreve a trava de tabela e o privilégio que ela exige (K18).
+- `tests/ass-09-fx-rates-db.test.ts`: barreira **de linha** (Emenda 2.1 §1.3). O admin grava a versão 2 do mesmo mês e moeda sem
+  `COMMIT` (`INSERT … VALUES ('2026-10', $1, 'BRL', 9, 2)`, conta 1), espera os dois `putRate` presos e termina por `throw
+  BARRIER_ROLLBACK`; o `finally` aceita só essa rejeição (`assert.rejects(holder, (error) => error === BARRIER_ROLLBACK)`).
+  `grep -c 'RawUnsafe("LOCK TABLE'` no teste = 0. Cabeçalho e comentário do T-FX-db-1 nomeiam M-FX-8, M-FX-16 e M-FX-17.
+- `tests/ass-09-fx-rates.test.ts` (novo, em memória): T-FX-5 e T-FX-6 com o dublê e o serviço, sem banco.
+
+| passo | comando | saída | veredito |
+|---|---|---|---|
+| C-E2-1 | `git diff --quiet origin/main -- src/database/financial-period-lock.ts tests/financial-period-lock-guard.test.ts` · `git grep -l pg_advisory -- 'src/**'` · `node --test … tests/financial-period-lock-guard.test.ts` | exit 0 · só `src/database/financial-period-lock.ts` · `ok 3`, `ok 4` (os 2 guards) | a guarda e o lar intactos, e verdes |
+| C-E2-2 (3×) | `DATABASE_URL=…/erp_ass09 CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-fx-rates-db.test.ts` | rodadas 1, 2, 3: `# tests 4 # pass 4 # fail 0 # skipped 0` | verde, N constante |
+| **M-FX-8** (5×) | apagar `      await tx.$executeRaw\`LOCK TABLE platform_fx_rates IN SHARE ROW EXCLUSIVE MODE\`;` (âncora conta 1, restauração por md5) | 5 de 5: `T-FX-db-1 = not ok 2` · `Unique constraint failed on the fields: (month, currency_from, currency_to, version)` · `restaurado=true` | **vermelha nas 5** |
+| **M-FX-16** (5×) | `IN SHARE ROW EXCLUSIVE MODE` → `IN ROW EXCLUSIVE MODE` | 5 de 5: `not ok 2` · `Unique constraint failed …` · `restaurado=true` | **vermelha nas 5** |
+| **M-FX-17** (5×) | `IN SHARE ROW EXCLUSIVE MODE` → `IN SHARE MODE` | 5 de 5: `not ok 2` · `deadlock detected` · `restaurado=true` | **vermelha nas 5** |
+| vermelho-controle (5×) | barreira devolvida a `await tx.$executeRawUnsafe("LOCK TABLE platform_fx_rates IN SHARE MODE");` **e** a M-FX-17 aplicada (duas mutações aninhadas, cada uma com âncora 1 e restauração por md5) | 5 de 5: `T-FX-db-1 = ok 2`, nenhuma mensagem | a M-FX-17 sobrevive à barreira antiga: é a barreira de linha que a mata |
+| C-E2-3 | sem `DATABASE_URL`: `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-fx-rates.test.ts` | `ok 1` T-FX-5 · `ok 2` T-FX-6 · `# tests 2 # pass 2 # fail 0 # skipped 0` | verde, sem banco |
+| **M-FX-6** (memória) | no dublê, `.sort((a, b) => b.version - a.version)` → `.sort((a, b) => a.version - b.version)` | `not ok 1` T-FX-5: `expected '5.500000'` · `actual '5.400000'` · `restaurado=true` | **vermelha** sem banco |
+| **M-FX-7** (memória) | `const RATE_PATTERN = /^\d{1,3}(\.\d{1,6})?$/;` → `/^\d{1,3}(\.\d+)?$/` | `not ok 2` T-FX-6: `Missing expected rejection: rate "5.1234567"` · `restaurado=true` | **vermelha** sem banco |
+| ratchet | `san3-05-acessos-de-plataforma-guard` | a mesma chave da F5: `L1 … fx-rates.prisma.ts PrismaFxRatesRepository.appendVersion tx RAW-SQL($executeRaw) OPACO ? $TRANSACTION-SEM-SETTER-PROVADO ×1`, e o L0 124 | **vermelho esperado, dono F7** (motivo: "trava de tabela, não lê nem grava linha") |
+| `check`/`lint` | `npm run check` · `npm run lint` · `git diff --check` | `0` · `0` · vazio | verde |

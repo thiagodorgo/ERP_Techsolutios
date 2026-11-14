@@ -1,10 +1,13 @@
 // B-ASS-09 (F5) — câmbio do mês da plataforma no Prisma (caminho de produção). `platform_fx_rates` é GLOBAL (sem RLS): só
 // rotas `requirePlatformPermission` chegam aqui, e nenhuma leitura ou escrita precisa de GUC de organização.
 //
-// P10 do plano: `PUT /fx-rates/:month` ACRESCENTA versão, nunca faz `UPDATE`. Dois `PUT` do mesmo par e mês ao mesmo
-// tempo dão versões consecutivas, nenhuma perdida: a transação toma `pg_advisory_xact_lock` da chave (mês, origem,
-// destino) ANTES de ler a maior versão, e o segundo espera o primeiro terminar. Sem a trava, os dois leriam a mesma
-// maior versão e o segundo bateria no `UNIQUE (month, currency_from, currency_to, version)`.
+// P10 do plano (Emenda 2 §3.3): `PUT /fx-rates/:month` ACRESCENTA versão, nunca faz `UPDATE`. Dois `PUT` ao mesmo tempo dão
+// versões consecutivas, nenhuma perdida: a PRIMEIRA sentença da transação é `LOCK TABLE platform_fx_rates IN SHARE ROW
+// EXCLUSIVE MODE`, um modo que se exclui a si mesmo e não bloqueia leitura (`ACCESS SHARE`). O segundo `PUT` espera o
+// primeiro terminar e só então lê a maior versão. Sem a trava, os dois leriam a mesma maior versão e o segundo bateria no
+// `UNIQUE (month, currency_from, currency_to, version)`. A trava serializa toda escrita de câmbio (qualquer mês e par): a
+// escrita é manual, da plataforma, poucas por mês. PRIVILÉGIO: o modo exige `UPDATE`, `DELETE` ou `TRUNCATE` na tabela para
+// o papel que escreve; quem revogar esses privilégios do papel de runtime tem de trocar a trava no mesmo bloco (K18).
 
 import type { Prisma, PrismaClient } from "@prisma/client";
 
@@ -27,18 +30,13 @@ type FxRateRow = {
   readonly created_at: Date;
 };
 
-/** A chave da trava consultiva de uma versão nova. O prefixo separa esta fila de qualquer outra trava da casa. */
-export function fxRateLockKey(key: FxRateKey): string {
-  return `platform_fx_rates:${key.month}:${key.currencyFrom}:${key.currencyTo}`;
-}
-
 export class PrismaFxRatesRepository implements FxRatesRepository {
   constructor(private readonly client: PrismaClient) {}
 
   async appendVersion(input: AppendFxRateRecord): Promise<FxRate> {
     const where = { month: input.month, currency_from: input.currencyFrom, currency_to: input.currencyTo };
     return this.client.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${fxRateLockKey(input)}, 0))`;
+      await tx.$executeRaw`LOCK TABLE platform_fx_rates IN SHARE ROW EXCLUSIVE MODE`;
       const latest = await tx.platformFxRate.aggregate({ where, _max: { version: true } });
       const created = await tx.platformFxRate.create({
         data: {
