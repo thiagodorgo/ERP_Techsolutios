@@ -10,7 +10,6 @@ import {
   type CloudAllocationRun,
   type CloudBillingPeriod,
   type CloudCostImport,
-  type CloudUsageSummary,
   type EconomicGroup,
   type EconomicGroupDetail,
   type FxMonth,
@@ -313,22 +312,6 @@ function mapTenantAllocation(data: Json): TenantAllocationLine {
     costCategory: readString(data.costCategory) ?? null,
     allocatedCostOriginal: originalAmountOf(data.allocatedCost),
     currency: readString(data.currency) ?? null,
-  };
-}
-
-/** Uso medido (B-SAN3-06b). A F10 do bloco leva esta função para `platform-tenant-usage.adapter.ts` (detalhe da organização). */
-export function mapUsageSummary(data: Record<string, unknown>): CloudUsageSummary {
-  return {
-    periodStart: readString(data.periodStart) ?? "",
-    periodEnd: readString(data.periodEnd) ?? "",
-    metrics: readArray(data.metrics)
-      .map((metric) => ({
-        metricKey: readString(metric.metricKey) ?? "",
-        quantity: typeof metric.quantity === "number" && Number.isFinite(metric.quantity) ? metric.quantity : 0,
-        unit: readString(metric.unit) ?? "",
-      }))
-      .filter((metric) => metric.metricKey),
-    generatedAt: readString(data.generatedAt) ?? "",
   };
 }
 

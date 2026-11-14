@@ -219,17 +219,3 @@ export type CloudBillingSeries = {
   readonly global: Readonly<Record<string, BackgroundRead<GlobalOverview>>>;
   readonly tenant: Readonly<Record<string, BackgroundRead<TenantOverview>>>;
 };
-
-// ---- uso medido (sai na F10: vai para o detalhe da organização) ---------------------------------------------------
-export type CloudUsageMetric = {
-  readonly metricKey: string;
-  readonly quantity: number;
-  readonly unit: "bytes" | "count" | "gb_month" | string;
-};
-
-export type CloudUsageSummary = {
-  readonly periodStart: string;
-  readonly periodEnd: string;
-  readonly metrics: readonly CloudUsageMetric[];
-  readonly generatedAt: string;
-};

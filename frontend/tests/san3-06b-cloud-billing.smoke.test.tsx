@@ -8,7 +8,6 @@ import { renderToString } from "react-dom/server";
 import {
   mapAllocationSummary,
   mapCostSummary,
-  mapUsageSummary,
 } from "../src/modules/platform/cloud-billing/cloud-billing.adapter";
 import {
   currentBillingMonth,
@@ -71,12 +70,8 @@ function responseFor(url: string, status = 200): Response {
   return new Response(JSON.stringify({ data }), { status, headers: { "Content-Type": "application/json" } });
 }
 
-test("T10 adapter de uso espelha métricas reais", () => {
-  const result = mapUsageSummary({ periodStart: PERIOD.start, periodEnd: PERIOD.end, metrics: [{ metricKey: "api_requests_count", quantity: 4, unit: "count" }], generatedAt: "agora" });
-  assert.equal(result.metrics.length, 1);
-  assert.equal(result.metrics[0].quantity, 4);
-  assert.equal("totalComputeHours" in result, false);
-});
+// T10 (adapter de uso) migrou para o T-USO-1 (`ass-10b-uso-medido.smoke.test.tsx`, B-ASS-10b F10): o uso medido saiu da
+// tela de custos e foi para o detalhe da organização.
 
 test("T11 adapter de custos descarta serviço sem identidade", () => {
   const result = mapCostSummary({ provider: "aws", periodStart: PERIOD.start, periodEnd: PERIOD.end, totalUnblendedCost: 12.75, totalUnblendedCostExact: "12.750000", lineItemCount: 2, currencies: ["BRL"], services: [{ serviceCode: "AmazonEC2", unblendedCost: 12.75, currency: "BRL" }, { unblendedCost: 9 }] });

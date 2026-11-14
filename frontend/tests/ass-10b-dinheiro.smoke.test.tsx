@@ -40,8 +40,6 @@ const NUMBER_FIELDS_ALLOWED = new Set([
   "fxRateVersion",
   // índices
   "index",
-  // F10 do bloco (Dev-B) leva o uso medido para o detalhe da organização: `quantity` sai daqui junto com `mapUsageSummary`
-  "quantity",
 ]);
 
 function moduleFiles(directory: string): string[] {
