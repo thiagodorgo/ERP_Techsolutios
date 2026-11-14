@@ -682,3 +682,23 @@ Comando da comparação: `node --test --import tsx tests/core-saas-role-authorit
 tests/job-queue.test.ts tests/users-seg-desativado-sse.test.ts tests/worker-heartbeat.test.ts
 tests/financial-period-lock-guard.test.ts` → `main`: `# tests 38 # pass 31 # fail 7`; ramo: `# tests 38 # pass 30 # fail 8`
 (a diferença é o guard da PARADA 4).
+
+## J1 — rebase de `feat/ass-09-banco` sobre a F2a (Emenda 2 §1.5), 13/11 23:36–23:39 SP
+
+Retomada de `dev-ass09-cl` pelo id (Emenda 2 §1.3). Roteiro da §1.5, com `OLD=202ba18d`, `BASE=2b5e0325` e o alvo
+`origin/feat/ass-09-visao-custo` = **`75f27800`** no `git fetch` da J1 (F1 `3007ce88` → F2a `2cb13671` → F2b `75f27800`;
+`git merge-base --is-ancestor 2cb13671 origin/feat/ass-09-visao-custo` → verdadeiro).
+
+| passo | comando | saída | veredito |
+|---|---|---|---|
+| (1) | `git rebase origin/feat/ass-09-visao-custo` · `test -z "$(git diff --name-only --diff-filter=U)"` | `Rebasing (1/2)Rebasing (2/2)Successfully rebased and updated refs/heads/feat/ass-09-banco.` · nenhum arquivo em conflito | limpo |
+| (2) | `git diff "$BASE" "$OLD" -- . ":(exclude)$D" \| git patch-id --stable` × `git diff origin/feat/ass-09-visao-custo HEAD -- . ":(exclude)$D" \| git patch-id --stable` | A = `56e6c8a8da032fe39968f2e7882d9948f6d3f49f` · B = `56e6c8a8da032fe39968f2e7882d9948f6d3f49f` | iguais: o código do banco saiu igual da rebase |
+| (3) | linhas acrescentadas ao diário por cada lado, `comm -23` contra o diário do HEAD | lado do bloco: 104 linhas distintas, **0** perdidas · lado do banco (`202ba18d`): 229 linhas distintas, **0** perdidas | o diário guarda os dois lados |
+| bateria antes do push | `npm run db:generate` · `npm run check` · `npm run lint` (com o `DATABASE_URL` do cluster) | `gen=0` · `check=0` · `lint=0` | verde, já com a F1 e a F2 no ramo |
+| `-db` da fatia | cluster `pg-ass09` refeito (`initdb` UTF8 `locale=C`, `timezone`/`log_timezone` UTC antes do start, `127.0.0.1:55561`), `npx prisma migrate deploy` (135), guard (`violações: 0`), e `node --test --import tsx tests/ass-09-groups-fx-migration-drill-db.test.ts tests/ass-09-fx-rates-db.test.ts tests/ass-09-groups-db.test.ts` | `# tests 11 # pass 11 # fail 0 # skipped 0` | verde |
+| conferência (não é bateria minha) | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-groups.test.ts tests/ass-09-overview-engine.test.ts tests/ass-09-overview-money.test.ts` | `# tests 27 # pass 27 # fail 0 # skipped 0` | a F1/F2 seguem verdes por cima do banco |
+| push | `git push --force-with-lease=feat/ass-09-banco:202ba18d origin HEAD:feat/ass-09-banco` | `+ 202ba18d...b84b2998 HEAD -> feat/ass-09-banco (forced update)` | **J1 feita**: `feat/ass-09-banco` = `b84b2998`. O ramo do bloco não recebeu push |
+
+**Depois da J1:** o `git fetch` seguinte mostrou `origin/feat/ass-09-visao-custo` = `121d2f21` (a F3, `feat(billing): F3 do B-ASS-09 —
+assinatura do período, antes do crédito`), empurrada pelo `dev-ass09-f13-cl` durante a J1. Ela não entra na J1; é a base da J2
+(§1.2). A F5a, a F5b e a J2 esperam a mensagem "EMENDA 2 REVISADA" do orquestrador.
