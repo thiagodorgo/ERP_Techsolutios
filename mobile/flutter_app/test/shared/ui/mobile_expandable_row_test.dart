@@ -5,7 +5,10 @@
 //   K2  — com foco (Tab), Enter abre e Espaço fecha; `androidTapTargetGuideline` e `labeledTapTargetGuideline` passam;
 //   K2b — vermelho-controle permanente do arnês: no mesmo arnês, um `InkWell` de 200 por 44 reprova a diretriz de 48;
 //   K3  — a peça não existe em dobro em `lib/`;
-//   K4  — a linha corta pelo fim, sem vão e sem estouro, a 390 e a 320 de largura.
+//   K4  — a linha corta pelo fim, sem vão e sem estouro, a 390 e a 320 de largura;
+//   K5  — (J-564 C3-03) o que as duas maquetes têm igual é da peça: a linha inteira (título e meta) em peso normal e
+//         na cor do texto forte (`.ln`), e o detalhe aberto com o fundo e a borda de cima e de baixo (`.det`), pelas
+//         cores do tema mais próximas (o tema não tem #F8FAFF nem #DBEAFE).
 // O arnês é parte do contrato: o tema do app, um `Padding` de 16 nos quatro lados e uma `Column`, sem rolável (sem a
 // margem, a diretriz pula a linha que encosta na borda e não mede nada).
 import 'dart:io';
@@ -233,4 +236,43 @@ void main() {
       }
     }
   });
+
+  // K5 — J-564 C3-03 (pontos 1 e 3): `.ln` e `.det` são iguais nas maquetes do 15b e do 17.
+  testWidgets(
+    'K5 a linha em peso normal e cor do texto forte; o detalhe com o fundo e a borda',
+    (t) async {
+      await t.pumpWidget(_arnes(const _Host()));
+      final esquema = ErpMobileTheme.light().colorScheme;
+      for (final texto in [_titulo, _meta]) {
+        final estilo = t.widget<Text>(find.text(texto)).style;
+        expect(estilo?.color, ErpMobileTheme.ink, reason: texto);
+        expect(estilo?.fontWeight, FontWeight.w400, reason: texto);
+      }
+
+      await t.tap(find.text(_titulo));
+      await t.pumpAndSettle();
+      final caixa = find.ancestor(
+        of: find.byKey(const Key('detalhe')),
+        matching: find.byWidgetPredicate(
+          (w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).color == esquema.surfaceBright,
+        ),
+      );
+      expect(caixa, findsOneWidget, reason: 'o detalhe fica na caixa');
+      final decoracao =
+          t.widget<DecoratedBox>(caixa).decoration as BoxDecoration;
+      final borda = decoracao.border! as Border;
+      expect(borda.top, BorderSide(color: esquema.primaryContainer));
+      expect(borda.bottom, BorderSide(color: esquema.primaryContainer));
+      expect(borda.left, BorderSide.none);
+      expect(borda.right, BorderSide.none);
+      expect(
+        t.getTopLeft(caixa).dy,
+        t.getTopLeft(find.byKey(const Key('peca'))).dy + 48.0,
+        reason: 'a caixa começa logo abaixo da linha',
+      );
+    },
+  );
 }

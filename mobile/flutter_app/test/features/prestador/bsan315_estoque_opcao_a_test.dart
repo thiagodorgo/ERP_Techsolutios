@@ -18,7 +18,12 @@
 //           " A seleção é em números inteiros.";
 //   T-E2c — com o detalhe de uma peça de saldo 1 aberto, tocar em "Última unidade" fecha o detalhe;
 //   T-E3  — saldo 0,5 un → o detalhe abre COM "Quantidade" e o "Adicionar" presente e desabilitado, e a nota
-//           "O saldo é menor que 1 un. A seleção é em números inteiros.".
+//           "O saldo é menor que 1 un. A seleção é em números inteiros.";
+//   T-E4  — (J-564 C3-03) a fidelidade à opção A nos 7 pontos medidos pela C3: o fundo e a borda do detalhe, a cor do
+//           ícone da linha, o peso e a cor da linha, o estilo dos rótulos do detalhe (10, 700, caixa alta, a cor dos
+//           rótulos), os valores (13, 700; o código em fonte mono, 12,5, 500), "Quantidade" (13, 700) e o recuo de
+//           topo do detalhe (10). Os rótulos saem em caixa alta, por isso os testes acima procuram "CÓDIGO", "SALDO",
+//           "RESPONSÁVEL" e "ATUALIZADO".
 //
 // Chaves: a linha continua `stock-item-CODIGO`, e `stock-add-`, `stock-inc-` e `stock-dec-CODIGO` continuam no
 // detalhe (Emenda 5.1 §3). Os três `FilterChip` têm as chaves `stock-filter-todas`, `stock-filter-sel` e
@@ -44,6 +49,7 @@ import 'package:erp_techsolutions_mobile/features/prestador/data/technician_stoc
 import 'package:erp_techsolutions_mobile/features/prestador/domain/prestador_models.dart';
 import 'package:erp_techsolutions_mobile/features/prestador/ui/technician_stock_screen.dart';
 import 'package:erp_techsolutions_mobile/shared/theme/erp_mobile_theme.dart';
+import 'package:erp_techsolutions_mobile/shared/ui/mobile_kit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -311,7 +317,7 @@ void main() {
           );
         }
         expect(
-          find.text('Código'),
+          find.text('CÓDIGO'),
           findsNothing,
           reason: 'nenhum detalhe aberto',
         );
@@ -319,9 +325,9 @@ void main() {
         await expectLater(t, meetsGuideline(labeledTapTargetGuideline));
 
         await _tocar(t, _linha(_dois));
-        expect(find.text('Código'), findsOneWidget);
-        expect(find.text('Saldo'), findsOneWidget);
-        expect(find.text('Responsável'), findsOneWidget);
+        expect(find.text('CÓDIGO'), findsOneWidget);
+        expect(find.text('SALDO'), findsOneWidget);
+        expect(find.text('RESPONSÁVEL'), findsOneWidget);
         expect(find.text('Quantidade'), findsOneWidget);
         expect(
           find.text(_dois.sku),
@@ -329,14 +335,14 @@ void main() {
           reason: 'o código no detalhe',
         );
         expect(
-          t.getTopLeft(find.text('Código')).dy,
+          t.getTopLeft(find.text('CÓDIGO')).dy,
           greaterThan(t.getTopLeft(_linha(_dois)).dy),
           reason: 'o detalhe vem logo abaixo da linha',
         );
 
         await _tocar(t, _linha(_um));
         expect(
-          find.text('Código'),
+          find.text('CÓDIGO'),
           findsOneWidget,
           reason: 'um detalhe aberto por vez',
         );
@@ -351,16 +357,16 @@ void main() {
       (t) async {
         await _abrir(t);
         await _tocar(t, _linha(_dois));
-        expect(find.text('Responsável'), findsOneWidget);
+        expect(find.text('RESPONSÁVEL'), findsOneWidget);
         expect(find.text('Ana Souza'), findsOneWidget);
-        expect(find.text('Atualizado'), findsNothing);
+        expect(find.text('ATUALIZADO'), findsNothing);
 
         final salvaEm = DateTime(2026, 11, 13, 10, 42);
         await _abrir(t, listaSalva: true, salvaEm: salvaEm);
         await _tocar(t, _linha(_dois));
-        expect(find.text('Atualizado'), findsOneWidget);
+        expect(find.text('ATUALIZADO'), findsOneWidget);
         expect(find.text('10:42 de 13/11'), findsOneWidget);
-        expect(find.text('Responsável'), findsNothing);
+        expect(find.text('RESPONSÁVEL'), findsNothing);
       },
     );
 
@@ -381,7 +387,7 @@ void main() {
     testWidgets('T-E2c — trocar de filtro fecha o detalhe aberto', (t) async {
       await _abrir(t);
       await _tocar(t, _linha(_um));
-      expect(find.text('Código'), findsOneWidget);
+      expect(find.text('CÓDIGO'), findsOneWidget);
 
       await _tocar(t, find.byKey(_filtroUltima));
       expect(
@@ -389,7 +395,7 @@ void main() {
         findsOneWidget,
         reason: 'a peça continua na lista filtrada',
       );
-      expect(find.text('Código'), findsNothing, reason: 'o detalhe fechou');
+      expect(find.text('CÓDIGO'), findsNothing, reason: 'o detalhe fechou');
     });
   });
 
@@ -408,6 +414,84 @@ void main() {
             'O saldo é menor que 1 un. A seleção é em números inteiros.',
           ),
           findsOneWidget,
+        );
+      },
+    );
+  });
+
+  group('B-SAN3-15b T-E4 — fiel à opção A nos 7 pontos (J-564 C3-03)', () {
+    testWidgets(
+      'o detalhe, o ícone, a linha, os rótulos, os valores, "Quantidade" e o recuo de topo',
+      (t) async {
+        await _abrir(t);
+        final esquema = ErpMobileTheme.light().colorScheme;
+
+        // (2) O ícone da linha: a cor de ícone de lista do kit (#475569, `--m-icon`).
+        final icone = t.widget<Icon>(
+          find.descendant(
+            of: _linha(_dois),
+            matching: find.byIcon(Icons.inventory_2_outlined),
+          ),
+        );
+        expect(icone.color, MobilePill.colorsFor(PillTone.neutral).$2);
+
+        // (3) A linha inteira (título e meta) em peso normal, na cor do texto forte (`.ln`).
+        for (final texto in [_dois.name, ' · ${_dois.sku} · 2 ${_dois.unit}']) {
+          final estilo = t.widget<Text>(find.text(texto)).style;
+          expect(estilo?.color, ErpMobileTheme.ink, reason: texto);
+          expect(estilo?.fontWeight, FontWeight.w400, reason: texto);
+        }
+
+        await _tocar(t, _linha(_dois));
+
+        // (1) O fundo e a borda de cima e de baixo do detalhe (`.det`), pelas cores do tema mais próximas.
+        final caixa = find.ancestor(
+          of: find.text('CÓDIGO'),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is DecoratedBox &&
+                w.decoration is BoxDecoration &&
+                (w.decoration as BoxDecoration).color == esquema.surfaceBright,
+          ),
+        );
+        expect(caixa, findsOneWidget, reason: 'o fundo do detalhe');
+        final borda =
+            (t.widget<DecoratedBox>(caixa).decoration as BoxDecoration).border!
+                as Border;
+        expect(borda.top.color, esquema.primaryContainer);
+        expect(borda.bottom.color, esquema.primaryContainer);
+
+        // (4) Os rótulos: 10, 700, caixa alta, a cor dos rótulos (`.det__g small`).
+        for (final rotulo in ['CÓDIGO', 'SALDO', 'RESPONSÁVEL']) {
+          final estilo = t.widget<Text>(find.text(rotulo)).style;
+          expect(estilo?.fontSize, 10, reason: rotulo);
+          expect(estilo?.fontWeight, FontWeight.w700, reason: rotulo);
+          expect(estilo?.color, ErpMobileTheme.inkFaint, reason: rotulo);
+        }
+        expect(find.text('Código'), findsNothing, reason: 'caixa alta');
+
+        // (5) Os valores: 13, 700 (`.det__g span`); o código em fonte mono, 12,5, 500 (`.mono`).
+        for (final valor in ['2 ${_dois.unit}', _custodia.label]) {
+          final estilo = t.widget<Text>(find.text(valor)).style;
+          expect(estilo?.fontSize, 13, reason: valor);
+          expect(estilo?.fontWeight, FontWeight.w700, reason: valor);
+          expect(estilo?.color, ErpMobileTheme.ink, reason: valor);
+        }
+        final codigo = t.widget<Text>(find.text(_dois.sku)).style;
+        expect(codigo?.fontFamily, 'monospace');
+        expect(codigo?.fontSize, 12.5);
+        expect(codigo?.fontWeight, FontWeight.w500);
+
+        // (6) "Quantidade": 13, 700 (`.det__qtd>span`).
+        final quantidade = t.widget<Text>(find.text('Quantidade')).style;
+        expect(quantidade?.fontSize, 13);
+        expect(quantidade?.fontWeight, FontWeight.w700);
+        expect(quantidade?.color, ErpMobileTheme.ink);
+
+        // (7) O recuo de topo do detalhe: 10 (`.det`, padding 10 14 12).
+        expect(
+          t.getTopLeft(find.text('CÓDIGO')).dy - t.getTopLeft(caixa).dy,
+          10,
         );
       },
     );

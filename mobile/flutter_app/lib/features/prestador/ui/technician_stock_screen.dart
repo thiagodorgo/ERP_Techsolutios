@@ -414,10 +414,11 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
     final max = item.available.floor();
     return MobileExpandableRow(
       key: Key('stock-item-${item.sku}'),
-      leading: const Icon(
+      // J-564 C3-03 — a cor de ícone de lista do kit (#475569, `--m-icon` da opção A).
+      leading: Icon(
         Icons.inventory_2_outlined,
         size: 20,
-        color: ErpMobileTheme.inkMuted,
+        color: MobilePill.colorsFor(PillTone.neutral).$2,
       ),
       title: item.name,
       meta: ' · ${item.sku} · ${_formatQty(item.available)} ${item.unit}',
@@ -477,7 +478,8 @@ class _StockDetail extends StatelessWidget {
         : 'Você pode usar de 1 a $max ${item.unit} nesta OS.';
     final savedAt = this.savedAt;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+      // J-564 C3-03 — o recuo de topo da opção A (`.det`, 10).
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -485,7 +487,11 @@ class _StockDetail extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: _DetailField(label: 'Código', value: item.sku),
+                child: _DetailField(
+                  label: 'Código',
+                  value: item.sku,
+                  mono: true,
+                ),
               ),
               Expanded(
                 child: _DetailField(
@@ -508,7 +514,17 @@ class _StockDetail extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Expanded(child: Text('Quantidade')),
+              // J-564 C3-03 — "Quantidade" como na opção A (`.det__qtd>span`, 13, 700).
+              Expanded(
+                child: Text(
+                  'Quantidade',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: ErpMobileTheme.ink,
+                  ),
+                ),
+              ),
               if (qty > 0)
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -548,26 +564,45 @@ class _StockDetail extends StatelessWidget {
   }
 }
 
+/// J-564 C3-03 — o campo do detalhe como na opção A: o rótulo em 10, 700, caixa alta e na cor dos rótulos
+/// (`.det__g small`); o valor em 13, 700 (`.det__g span`); o código em fonte mono, 12,5, 500 (`.mono`).
 class _DetailField extends StatelessWidget {
-  const _DetailField({required this.label, required this.value});
+  const _DetailField({
+    required this.label,
+    required this.value,
+    this.mono = false,
+  });
 
   final String label;
   final String value;
+  final bool mono;
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        Text(
+          label.toUpperCase(),
+          style: textTheme.labelSmall?.copyWith(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+            color: ErpMobileTheme.inkFaint,
+          ),
+        ),
         const SizedBox(height: 2),
         Text(
           value,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: textTheme.bodyMedium?.copyWith(
+            fontFamily: mono ? 'monospace' : null,
+            fontSize: mono ? 12.5 : 13,
+            fontWeight: mono ? FontWeight.w500 : FontWeight.w700,
+            color: ErpMobileTheme.ink,
+          ),
         ),
       ],
     );
