@@ -5149,6 +5149,84 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
 - **Registro §A2 (Emenda C2 do `B-MATERIAL-REENVIO`, E0 item 8 e E4 §C9):** a RN-BAIXA-04 ("custódia FIXADA em BASE", `docs/juntas/J-OMEGA4C.md:1962`) continua para combustível e manutenção; a nova origem `work_order_material` segue a regra 5(a) do dono (`D-DONO-TODAS-RECOMENDACOES-1111`): a peça sai da custódia profissional de quem lança, e o gerente (`tenant_wide`) sem cadastro baixa da base. A P12 do plano do `B-SAN3-15` foi implementada no `B-MATERIAL-REENVIO` (PR #551), e a F2 do `B-SAN3-15b` sai.
 - **Prova:** RC1 (7)-(8) e RC8 em memória; RC3 (6)-(8) em PostgreSQL; `tests/inventory-stock-decrement.test.ts` (BASE fixa dos consumidores do Ω4C) sem asserção mudada.
 
+## D-SAN3-25-RESPOSTAS-DO-DONO (2026-11-11 10:31 SP; aplicada em 2026-11-13) — as 4 perguntas do plano do `B-SAN3-25`, pela recomendação
+
+- **Fato (decisão do dono):** *"B-SAN3-25: as 4 recomendações do plano"*, dentro de `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP). Para o `B-SAN3-25` vale a recomendação de cada pergunta do v1, aplicada no §0.4 do plano v2 (fora do repositório, na pasta do orquestrador):
+  - **Q1 = A:** o botão "Faturar OS" aparece em toda OS não cancelada, como o servidor (a guarda de cancelada do `invoice()`), só para quem tem `financial_titles:create` e só com item pendente;
+  - **Q2 = A:** campo opcional "Vencimento". Vazio mostra "em 30 dias (padrão)" e manda `{}`; com data, manda `{ "due_date": "AAAA-MM-DD" }`;
+  - **Q3 = A:** a ação herda a aparência da aba, sem maquete de 3 opções (como no `D-SAN3-08-DIALOGO-SEM-TRES-OPCOES`). O item "3 opções" da DoD (§10 do contrato) não se aplica a este bloco, por decisão do dono;
+  - **Q4 = A:** o título original cancelado continua sendo o pai do delta. `P-SAN3-02-PAI-CANCELADO` fecha com a regra escrita e o `[T-C10]` (`tests/work-order-invoicing.test.ts:652`) como teste dela; o quadro "Títulos desta OS" mostra o cancelado como "Cancelado".
+- **Onde vale:** o PR #559 e o comando `agent-orchestration/codex/comandos/B-SAN3-25-faturar-os.md`.
+
+## D-SAN3-25-ORDEM (2026-11-13) — os portões do `B-SAN3-25` e o nível de revisão
+
+- **Fato (plano v2 §5.1, com a Emenda 1):** três portões, cada um medido por comando:
+  - **0:** a crítica r2 aprova o plano, ou o orquestrador grava a emenda que ela pedir. Abriu com a Emenda 1 (crítica r2 APROVADO COM AJUSTES, achado R2-1), gravada em 13/11 às 18:46 SP;
+  - **B:** o #547 mergeado e o parecer do `porteiro-pos-merge` dele `LIBERADO` ou `LIBERADO COM RESSALVA`, sem pendência que bloqueie o 25. Já estava satisfeito quando a Emenda 1 foi gravada (#547 `MERGED` em `3309ba7d`, 15:49 SP), e as fases A e B correram em sequência a partir da `origin/main`;
+  - **C:** o PR do 24d mergeado. Só então se tocam `frontend/src/modules/finance/pages/InvoicesPage.tsx` (a linha `:53`), o caso `[A9]` e a linha `test:smoke` de `frontend/package.json`. Abriu com o #558 (`d29b3bef`), e o porteiro dele deu `LIBERADO COM RESSALVA`; a ressalva (1) virou a Emenda 3 (a guarda D3 do 24d entra no `test:smoke` na fatia C1).
+- **Leitura do planejador, declarada (§A6):** o portão C existe porque a trava `frontend/src/modules/finance/**` do `PLANO_SAN3.md` vai do 24 ao 25 e o 24d editava essa pasta. A inversão (o 25 mergear antes do 24d) era segura por medição e ficou com o orquestrador; não foi usada.
+- **Prova da ordem:** o `T-ORDEM` do §7.2 do plano em cada portão: vazio antes do B e antes do C; depois da C1, lista só `frontend/src/modules/finance/pages/InvoicesPage.tsx` e `frontend/package.json`, o PERMITIDO da fase C.
+- **Nível de revisão:** junta completa (inspetor + 3 cadeiras, unanimidade; §C7 item 10(1)), porque a tela dispara escrita de dinheiro (cria título e carimba itens) e tem gate de permissão. Fluxo do item 10(3): pré-revisão cruzada, junta uma vez, triagem, um conserto, conferência, merge e porteiro.
+
+## D-CLAUDE-SOLO-1311 (2026-11-13 ~23:12 SP; início autorizado às ~23:20 SP) — só o Claude, cadeiras em paralelo, Fable liberado e agentes até o limite da máquina
+
+- **Fato (decisão do dono):** *"claude, agora eh so vc. faca um plano para vc atacar tudo sozinho, deixe as ias dormindo, vc vai pegar tudo, nas juntas cadeiras em paralelo, quero dar o maior gas agora, minhas decisoes vao todas nas recomendacoes. esta liberado usar fable se assim o julgar necessario. pode empurar agentes ate o sistema/pc aguentar. faca o plano e me retorne com a previsao para eu atorizar o inicio"*. Às ~23:20 SP, com o plano e a previsão em mãos, o dono autorizou o início: *"pode comecar"*. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 13/11 23:19 e 23:23 SP). Redator: `reg-1411-cl` (Claude Opus 5.5, nível menor, declarado).
+- **O que vale, enquanto a ordem vigorar:**
+  - **só o Claude trabalha:** as IAs externas dormem, e o Claude pega todas as tarefas;
+  - **nas juntas, as cadeiras em paralelo;**
+  - **Fable liberado,** a critério do orquestrador, onde ele o julgar necessário;
+  - **agentes até o limite da máquina,** com o piso de memória do P8(c) (§C7 item 7): só se lança agente novo com memória de commit livre ≥ 4 GB;
+  - **o cruzamento entre casas (§C7 item 11(1)) fica `false`, declarado,** pela regra 11(2): *"usar um modelo so, sem preferencia e com metas a seguir, rigoroso e eficaz"*. O verificador é uma identidade nova, e o artefato declara que não houve cruzamento e por quê.
+- **O que não muda:** a ordem não revoga regra nenhuma além do cruzamento, enquanto vigorar. Continuam valendo, entre outras, as paradas irredutíveis (§C7.5), a separação de papéis (§C7.4-bis), P1–P8, o fluxo rápido de junta (§C7 item 10), o "design só Claude" e a escada de modelo do §C7 item 6-bis.
+- **Medido na `origin/main` (`729718fe`, §A7):** as cadeiras em paralelo e os agentes até o limite já são a regra escrita do P5 e do P8(c) desde 10/11 (`D-JUNTA-PARALELA-1011` e `D-AGENTES-ATE-O-LIMITE-1011`, o P5 começa em `CLAUDE.md:699` e o P8(c) em `:750`); a ordem os reafirma. A pausa de janela instável do P5 (2 quedas em menos de 30 min) e o piso de 4 GB continuam.
+- **A parte "minhas decisoes vao todas nas recomendacoes"** é a `D-DONO-1311-RECOMENDACOES`, logo abaixo.
+
+## D-DONO-1311-RECOMENDACOES (2026-11-13 ~23:12 SP) — as perguntas ao dono abertas naquela hora valem pela recomendação
+
+- **Fato (decisão do dono):** o trecho *"minhas decisoes vao todas nas recomendacoes"* da fala da `D-CLAUDE-SOLO-1311`, logo acima. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 13/11 23:23 SP, onde o ID nasceu como proposta).
+- **O que vale:** toda pergunta ao dono aberta naquela hora é respondida pela recomendação escrita no artefato que a fez. As fontes são as recomendações de 13/11 fora do repositório (`recomendacoes.md` e `recomendacoes-2.md`, na pasta do orquestrador) e o painel.
+- **Leitura do orquestrador, declarada (§A6):** vale também para pergunta nascida depois, enquanto a ordem vigorar. É o mesmo padrão da `D-DONO-1211-NOITE` item 1 e da Q6 do `B-ASS-09`. O dono pode desfazer qualquer uma.
+- **Aplicações que mexem em registro do repositório:**
+  - **(a) A A1 do `B-SAN3-17`** (abertura, §2.3, "autorização nascida da medição"): a suíte `-db` do bloco (`tests/bsan317-consentimento-localizacao-db.test.ts`, pelo plano) entra no `SUITES=` do job `backend-postgres` de `.github/workflows/ci.yml`, com o comentário de praxe. Só acréscimo, de 2 a 4 linhas; nada mais muda no arquivo. Com isso, a pendência alternativa da abertura (`P-SAN317-DB-FORA-DO-CI`) não nasce.
+  - **(b) A P1 do `B-SAN3-16` = opção (A):** o bloco `B-APROVACOES-DURAVEIS` entra no portão como **item 67** do §4.1 de `docs/revisoes/SAN3/PLANO_SAN3.md` (tabela nova com migração só aditiva, isolamento por organização no banco, e todas as aprovações passam a ser gravadas). A escolha (A) já constava, para a fila de Aprovações, na `D-DONO-TODAS-RECOMENDACOES-1111` (11/11: "a fila de Aprovações vai para bloco próprio (A)"). O que esta aplicação acrescenta é a linha do portão, que entra neste PR, e o denominador, que passa de 66 para 67.
+  - **(c) A linha do app que abre o detalhe tem 48 de altura,** no `B-SAN3-15b` e no `B-SAN3-17` (a constante única `MobileExpandableRow.rowHeight`). Origem: a pergunta da Emenda 5.2 do 15b, §8.1. O conflito fica registrado (§A2), sem escolha silenciosa:
+    - a maquete aprovada do estoque do prestador (`prestador-atendimento-3opcoes.reference.html`, `:177-178`, ainda fora da `main`) desenha a linha com 44;
+    - a diretriz do Android pede 48, e os botões, os chips e a busca do app já têm 48;
+    - o contrato pede alvo de toque "≥ 44" no app (§10, A11y), que 48 cumpre; o "até 44 px" da linha está na regra Web (§4 item 6).
+    - **Resolução:** vale 48, pela recomendação. A pergunta ganha o ID `P-DONO-LINHA-DO-APP-48-OU-44`, que nasce já respondido ("48, pela recomendação"; ver `pendencias.md`). Na conferência visual, a linha de 48 contra a maquete de 44 não é desvio a reprovar.
+- **Revogada em parte:** a recomendação 6.4 (a) do `B-SAN3-17`, que a abertura do 17 aplicou por esta regra, caiu pela `D-DONO-1411-ACESSO-PESSOAL`, logo abaixo.
+
+## D-DONO-1411-ACESSO-PESSOAL (2026-11-14 ~01:19 SP) — não existe celular compartilhado: o acesso é pessoal e intransferível
+
+- **Fato (decisão do dono):** *"posição sem dono em celular compartilhado, NAO EXISTE CELULAR COMPARTILHADO, O ACESSO EH PESSOAL E INTRANFERIVEL"*. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 14/11 01:22 SP).
+- **O que revoga:** a 6.4 (a) da `D-DONO-1311-RECOMENDACOES` que a abertura do `B-SAN3-17` aplicou (o item novo do portão para a posição sem dono no celular compartilhado). Não há caso de aparelho compartilhado a tratar.
+- **O que vale:**
+  - **nenhum item do portão nasce desta decisão.** O único item novo é o 67, o `B-APROVACOES-DURAVEIS` (`D-DONO-1311-RECOMENDACOES` (b));
+  - **o S9 do `B-SAN3-17`** fica com o enunciado "o consentimento não passa de um usuário para outro no mesmo aparelho", sem ser requisito de aparelho compartilhado.
+- **Registro §A2 (conflito resolvido, sem consolidação silenciosa):** a abertura do `B-SAN3-17` (fora do repositório, `plano-B-SAN3-17-abertura.md`, §2.1) dava o número **67** ao item `P-FIELD-LOCATION-PONTO-SEM-USUARIO`, com o bloco proposto `B-LOC-PONTO-COM-DONO`, e deixava o 68 para o item que nasceria do bloco 16. Com esta decisão, aquele item não nasce, o bloco proposto sai, não há item 68, e o **67 é o `B-APROVACOES-DURAVEIS`**. A F7 do 17 não grava a linha do 67 nem a do bloco proposto: a linha do 67 entra por este PR de registro.
+
+## REGISTRO-SAN3-CONFLITOS — B-ASS-08c1b (2026-11-14) — as 3 contradições entre a Emenda 1 da abertura e a triagem final da J-555 (§A2)
+
+**Não é decisão nova.** É o registro, pela regra §A2, de três divergências que a Emenda 2 da abertura do `B-ASS-08c1b` (fora do repositório: `plano-B-ASS-08c1b-abertura-emenda2.md`, §6.3; autor `plano-08c1b-e2-fable`, Fable 5.2, topo) achou e resolveu por escrito. A Emenda 1 fechou às 01:14 SP de 14/11, antes da triagem final da J-555 (`aud-555-fable` §2, 01:20 SP). O `reg-1411-cl` copiou os dois quadros sem mudar o conteúdo.
+
+| # | A Emenda 1 dizia | A triagem diz | Resolução (vale esta) |
+|---|---|---|---|
+| 1 | C1-02: "nunca volta ao 08c1b"; no §5.3, o 08c1b "deixa de fechar" o C1-02 | pendência `P-ASS08C-POSSE-NAO-COBRE-O-POST`, dono `B-ASS-08c1b`, encerramento pelo F2R | **Vale a triagem.** O 08c1b **fecha** essa pendência com o **F2R** e a **M-RS1** (os dois já estão na F9 e na F5), mais o LF3 como guarda de tempo. No §5.3 da Emenda 1, o C1-02 sai de "deixa de fechar" e vai para "fecha". O C1-01 e o C1-03 continuam fora |
+| 2 | se o C2-04 virar pendência, "o dono é o da triagem" | "se o orquestrador não quiser a crítica, o C2-04 volta a ser pendência com dono `B-ASS-08c1b`" | **O caso não se aplica.** A crítica curta veio (`crit-c204-cl`, APROVADO COM AJUSTES, 01:50), e o C2-04 está sendo consertado no #555 pela Emenda 2.6 §4. **Se** o conserto fosse abandonado, o dono **não poderia** ser o 08c1b: `providers/**` é PROIBIDO nele. O dono seria um bloco próprio antes do 08c3, e o G7 do gate sairia por emenda curta |
+| 3 | H5 = "o Asaas recusa o DELETE de cobrança recebida?" | H5 = "o Asaas preenche `estimatedCreditDate` em cobrança não paga?" (já escrita na `P-ASS08-RECONSULTA-CONSISTENCIA` pelo conserto do #555, que mergeia primeiro) | **O #555 fica com H1 a H5. As do 08c1b passam a H6, H7 e H8** |
+
+**A numeração única na `P-ASS08-RECONSULTA-CONSISTENCIA`:**
+
+| Nova | Era, na Emenda 1 e na crítica r2 | A pergunta para o ambiente de teste do Asaas |
+|---|---|---|
+| H1 a H5 | — | as do 08c1a, como o #555 as gravou (a H5 é a do `estimatedCreditDate`) |
+| **H6** | H5 | o Asaas recusa o DELETE de cobrança recebida ou confirmada? Com que código? |
+| **H7** | H6 | a cobrança removida aparece em `GET /payments?externalReference=`, com `deleted: true`? (detalha a H2 na perna do cancelamento) |
+| **H8** | H7 | o GET e o DELETE de uma cobrança removida respondem 200 com `deleted: true`, ou 404? |
+
+- Onde a Emenda 1 e a crítica r2 escrevem H5, H6 e H7 **do 08c1b**, leia-se H6, H7 e H8. O dev grava a pendência já com a numeração nova.
+- **Estado medido na `origin/main` (`729718fe`, na madrugada de 14/11):** a `P-ASS08C-POSSE-NAO-COBRE-O-POST` ainda não existe na `main` (`git grep -c` = 0). Ela nasce com o conserto do #555, que está aberto (head `78a7c8ab`).
+
 ## D-SEED-10B-RESPOSTAS-1311 (2026-11-13 ~23:20 SP) — as cinco perguntas do plano v2 do `B-SAN3-10b-F4-SEED-ISOLADO`, pela recomendação
 
 - **Fato (decisão do dono):** *"minhas decisoes vao todas nas recomendacoes"* (ordem de 13/11, ~23:12 SP) e *"pode comecar"* (~23:20 SP). Transcrição do redator `reg-10bseed-cl` (Claude Opus 5.5, declarado, §A6), a partir do registro do orquestrador fora do repositório (`REGISTRO-PENDENTE.md`, 13/11 23:19 e 23:23), que lista para o seed: *"P1 versionar; P2 roteiro com errata; P3 datas não recuam; P4 organização pelo script; P5 OS em dobro como pendência média"*. O ID geral que o orquestrador propôs para a ordem inteira (`D-DONO-1311-RECOMENDACOES`) e o da ordem "só Claude" (`D-CLAUDE-SOLO-1311`) ainda não estão neste arquivo e entram no PR de registro do dia; esta entrada cobre só o seed.

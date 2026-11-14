@@ -22,6 +22,10 @@
 // `charge/cancel`, o `/resolve` e a rota de `retry` NÃO existem na 08b (passaram ao B-ASS-08c, decisão do orquestrador de
 // 10/11): os cenários deles nascem com eles. Mutação literal da 08b: M-08b-LK (a emissão grava a nota ANTES de travar o
 // demonstrativo) → ORD-0.
+// B-ASS-08c1a (esta extensão): 2 aberturas novas, com cenário gravado — `confirmLease` (a posse antes do POST) e
+// `recordChargeOutcome` (o registro transacional: demonstrativo PRIMEIRO, depois a linha da fila, a cobrança e o ref); e o
+// cenário do `#mutate` passa a apresentar a posse. Mutações: M-REGa (o registro trava a linha da fila antes do
+// demonstrativo) → ORD-1; M14 (apagar o cenário do registro) → cobertura.
 // Mutações literais: M7a (retry com o UPDATE da fila antes da trava do demonstrativo) → ORD-1; M7b (≡ M5g: claim sem
 // SKIP LOCKED no demonstrativo) → ORD-2; M7c (abertura nova em charges.prisma.ts) → censo; M7d (cenário do retry apagado)
 // → cobertura; M7e (`WITH x AS (UPDATE …)`) → UNK.
@@ -92,11 +96,14 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.#mutate#withTenantRlsBudget": "cenario:outbox.#mutate",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.adoptionFacts#withTenantRls": "cenario:outbox.adoptionFacts",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.claimNext#withTenantRlsBudget": "cenario:outbox.claimNext",
+  // B-ASS-08c1a: a confirmação da posse antes do POST ([LEASE-02]) e o registro transacional ([REG-TX]).
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.confirmLease#withTenantRlsBudget": "cenario:outbox.confirmLease",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.enqueue#withTenantRls": "cenario:outbox.enqueue",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.findById#withTenantRls": "cenario:outbox.findById",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.listByStatement#withTenantRls": "cenario:outbox.listByStatement",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.listByStatus#forEachTenantRls": "cenario:outbox.listByStatus",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.markDisabledProvidersVisible#forEachTenantRls": "cenario:outbox.markDisabledProvidersVisible",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.recordChargeOutcome#withTenantRlsBudget": "cenario:outbox.recordChargeOutcome",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.retry#withTenantRlsBudget": "cenario:outbox.retry",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.closeAddon#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.closeSubscription#withTenantRls": "sem-tabela-do-mapa",
@@ -222,6 +229,13 @@ if (!connectionString) {
     return rows[0]!.id;
   }
 
+  /** A posse de uma linha semeada em PROCESSING, gravada com o `now` do JS (milissegundo, como o claim — R2-13). */
+  async function seedLease(outboxId: string, at: Date): Promise<{ readonly claimedBy: string; readonly attemptStartedAt: Date }> {
+    const lease = { claimedBy: `dispatch-outbox:lk2-${randomUUID().slice(0, 8)}`, attemptStartedAt: at };
+    await db.$executeRawUnsafe(`UPDATE billing_outbox SET claimed_by = $2, attempt_started_at = $3 WHERE id = $1::uuid`, outboxId, lease.claimedBy, lease.attemptStartedAt);
+    return lease;
+  }
+
   async function openHolder() {
     const { Client } = (await import("pg")) as any;
     const client = new Client({ connectionString: targetUrl });
@@ -263,7 +277,17 @@ if (!connectionString) {
     await holder.rollback();
     const d = await seedStatement("d");
     const processing = await seedRow(d.tenantId, d.statementId, provider, "PROCESSING");
-    await scenario("outbox.#mutate (markSent)", () => outbox.markSent(d.tenantId, processing, "pay_lk2", now));
+    // B-ASS-08c1a: toda escrita do despacho apresenta a posse ([LEASE-01]); a semeadura grava uma posse em milissegundo.
+    const leaseD = await seedLease(processing, now);
+    await scenario("outbox.#mutate (markSent)", () => outbox.markSent(d.tenantId, processing, "pay_lk2", now, leaseD));
+    const h = await seedStatement("h");
+    const leasedH = await seedRow(h.tenantId, h.statementId, provider, "PROCESSING");
+    const leaseH = await seedLease(leasedH, now);
+    await scenario("outbox.confirmLease", () => outbox.confirmLease(h.tenantId, leasedH, leaseH));
+    const rowH = (await outbox.findById(h.tenantId, leasedH))!;
+    await scenario("outbox.recordChargeOutcome", () =>
+      outbox.recordChargeOutcome(h.tenantId, rowH, leaseH, { kind: "created", result: { chargeId: `pay_lk2_reg_${randomUUID().slice(0, 8)}`, status: "pending" } }, now),
+    );
     await scenario("outbox.markDisabledProvidersVisible", () => outbox.markDisabledProvidersVisible([provider], now));
     const e = await seedStatement("e");
     const failed = await seedRow(e.tenantId, e.statementId, provider, "FAILED", { attempts: 8, lastError: "provider_timeout" });

@@ -499,6 +499,29 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/auth/services/session-liveness.service.ts", "-.check", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA): a via sem `sid` (token anterior ao deploy; P-SID-OBRIGATORIO), `user.findFirst({ where: { id, tenant_id, status: 'active' }, select: { id } })` no mesmo callback de `withTenantRlsBudget`, sob o GUC da organização do token; só leitura. Provado em tests/users-seg-desativado-portao-db.test.ts (T12) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  [
+    k("L1", "src/database/session-timezone.ts", "-.probeSessionTimezone", "client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(client)", "×1"),
+    "B-DB-FUSO-UTC, Emenda 2 E2.1: `probeSessionTimezone` executa somente `SELECT current_setting('TimeZone') AS tz`; é leitura da configuração da sessão, sem acesso a tabela (inclusive FORCE RLS). Chave colada da saída do gerador do T13.",
+  ],
+  // B-ASS-08c1a: a confirmação da posse antes do POST e o registro transacional do desfecho da cobrança. As 4 chaves são as que
+  // o gerador acusou no head; todas no callback de `withTenantRlsBudget(this.client, tenantId, …)`, cujo setter do GUC é a 1ª
+  // instrução da transação (src/database/rls.ts l.128). Literal L0 intocado: nenhuma tabela FORCE nova.
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.confirmLease", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1a ([LEASE-02]): `SELECT id FROM billing_outbox WHERE id = $1 AND status = 'PROCESSING' AND claimed_by = $2 AND attempt_started_at = $3 FOR UPDATE` — a posse confirmada numa transação curta que termina antes do POST remoto; billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-lease-db.test.ts (L1b, L1c, L3) e no cenário `outbox.confirmLease` do T-LOCK-2, sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeOutcome", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1a ([REG-TX], passo 1): `SELECT … FROM subscription_statements WHERE id = $1 FOR NO KEY UPDATE`, sem SKIP LOCKED — o registro espera quem está com o demonstrativo; tabela FORCE da MESMA organização (o id de outra não é visto e o registro devolve `false`). Provado em tests/ass-08c-register-db.test.ts (RG1, RG2, RACE-6, R1-db) e no cenário `outbox.recordChargeOutcome` do T-LOCK-2.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeOutcome", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1a ([REG-TX], passo 2): `UPDATE billing_outbox SET status = 'SENT' … WHERE id = $1 AND status = 'PROCESSING' AND claimed_by = $2 AND attempt_started_at = $3 RETURNING id` — condicionado à posse, depois da trava do demonstrativo (ORD-1 do T-LOCK-2); 0 linhas desfaz a transação inteira. Provado em tests/ass-08c-register-db.test.ts (RG2) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1a ([REG-TX], passo 3): `INSERT INTO subscription_statement_charges … ON CONFLICT (provider, external_charge_id) DO NOTHING`, com `tenant_id` e `statement_id` da linha do demonstrativo travada no passo 1 (nunca do payload); tabela FORCE da MESMA organização. Provado em tests/ass-08c-register-db.test.ts (RG1: falha injetada depois do INSERT desfaz cobrança, ref e SENT).",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

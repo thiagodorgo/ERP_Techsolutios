@@ -20,11 +20,12 @@ const MODULES = ["financial-entries", "financial-titles", "financial-accounts", 
 
 /**
  * Medido na base `8a7885f4` (comando no relatório do dev, E5): 37 `reason` lançados sem contrato escrito. Este bloco
- * escreveu 11 deles no contrato (a lista fechada do que a tela traduz, §4.1) — ficam os 26 abaixo.
+ * escreveu 11 deles no contrato (a lista fechada do que a tela traduz, §4.1), e o B-SAN3-25 escreveu mais 2
+ * (`invalid_currency` e `invalid_due_date`, na lista fechada do faturamento da OS) — ficam os 24 abaixo.
  */
 const PRE_EXISTENTES_SEM_CONTRATO = new Set([
   "account_not_found", "due_date_required", "field_too_long", "financial_write_forbidden", "invalid_boolean",
-  "invalid_client_action_id", "invalid_currency", "invalid_direction", "invalid_due_date", "invalid_issue_date",
+  "invalid_client_action_id", "invalid_direction", "invalid_issue_date",
   "invalid_kind", "invalid_limit", "invalid_occurred_at", "invalid_offset", "invalid_opening_balance",
   "invalid_parent_title_reference", "invalid_party_name", "invalid_party_type", "invalid_source_type",
   "invalid_tenant_reference", "invalid_work_order_reference", "opening_balance_overflow", "party_name_required",
@@ -77,6 +78,13 @@ test("A17-bis: a dívida pré-existente só encolhe (documentado ou extinto sai 
   assert.deepEqual(documentados, [], `já documentado — remova da lista congelada: ${documentados.join(", ")}`);
   const extintos = [...PRE_EXISTENTES_SEM_CONTRATO].filter((reason) => !census.has(reason));
   assert.deepEqual(extintos, [], `não é mais lançado — remova da lista congelada: ${extintos.join(", ")}`);
+});
+
+test("A17-bis: o comentário da lista congelada diz quantos `reason` ficam nela (J-559, N3)", () => {
+  const self = readFileSync(fileURLToPath(import.meta.url), "utf8");
+  const declared = [...self.matchAll(/ficam os (\d+) abaixo/g)].map((match) => Number(match[1]));
+  assert.equal(declared.length, 1, `o comentário declara uma vez quantos ficam: ${declared.join(", ")}`);
+  assert.equal(declared[0], PRE_EXISTENTES_SEM_CONTRATO.size, "o número do comentário é o tamanho da lista congelada");
 });
 
 test("A17-bis: o censo reconhece a forma multi-linha e a de parser (controle do próprio extrator)", () => {

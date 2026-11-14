@@ -1,6 +1,7 @@
 import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+
+import { createPgAdapter } from "./pg-connection.js";
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
@@ -12,7 +13,7 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required to initialize Prisma Client.");
 }
 
-const adapter = new PrismaPg({ connectionString });
+const adapter = createPgAdapter(connectionString);
 
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({ adapter });
 

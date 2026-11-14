@@ -52,7 +52,7 @@ import "dotenv/config";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { PrismaPg } from "@prisma/adapter-pg";
+import { createPrismaClient } from "../src/database/pg-connection.js";
 import { PrismaClient, type Prisma } from "@prisma/client";
 
 import { setTenantRlsContext } from "../src/database/rls.js";
@@ -511,7 +511,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const prisma = createPrismaClient(connectionString);
   try {
     const tenants = await prisma.tenant.findMany({
       where: { status: "active" },
