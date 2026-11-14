@@ -8,7 +8,7 @@ import { emptyCloudBilling } from "./cloud-billing.types";
 
 export function useCloudBilling(month = currentBillingMonth()) {
   const period = periodForMonth(month);
-  const [data, setData] = useState<CloudBillingData>(() => emptyCloudBilling(period, "api"));
+  const [data, setData] = useState<CloudBillingData>(() => emptyCloudBilling(month, period, "api"));
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   // A1: o período selecionado AGORA. Uma resposta que chega depois de o usuário trocar de mês é descartada, para o
@@ -19,7 +19,7 @@ export function useCloudBilling(month = currentBillingMonth()) {
   const refresh = useCallback(async (background = false) => {
     if (background) setIsRefreshing(true);
     else setLoading(true);
-    const next = await getCloudBilling(period);
+    const next = await getCloudBilling(month);
     if (!isSamePeriod(next.period, selected.current)) {
       if (background) setIsRefreshing(false);
       return;
@@ -27,7 +27,7 @@ export function useCloudBilling(month = currentBillingMonth()) {
     setData((current) => nextCloudBillingState(current, next, background, selected.current));
     setLoading(false);
     setIsRefreshing(false);
-  }, [period.end, period.start]);
+  }, [month]);
 
   useEffect(() => { void refresh(); }, [refresh]);
   useAutoRefresh(refresh, { enabled: !data.forbidden });
