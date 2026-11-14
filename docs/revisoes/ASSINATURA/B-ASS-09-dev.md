@@ -233,6 +233,56 @@ em outubro.
 6. **`now`** é o relógio do pedido: o período depois do mês corrente (SP) é recusado (`period_in_future`) antes de qualquer
    leitura; o período mal formado, `invalid_period`. Isso também mantém `now` no escopo, que a M-SUB-2 usa como texto.
 
+## F3b — `overview/subscription-amount.ts`: o crédito do retrato do fechamento (Emenda 2.1 §2; A2)
+
+- **Dev:** `dev-ass09-f3fix-cl` (Claude Opus 5.5, dev declarado). Não escrevi a F3 (`dev-ass09-f13-cl`), não achei o A2
+  (`rev-ass09-e2-cl`), não planejei a Emenda 2.1 (`plano-ass09-e21-fable`) e não dei o visto (`rev-ass09-e21-cl`). Sem
+  cruzamento entre modelos, declarado (§C7 11(2)).
+- **Lei:** Emenda 2.1 §2 (P3 nova, 6 expressões canônicas, T-SUB-8 a T-SUB-11, 6 mutações) mais o visto `rev-ass09-e21-cl`
+  (APROVADO COM AJUSTES), dos quais esta fatia aplica **A-E21-1** (a âncora vira `if (latest == null) throw snapshotMissing();`,
+  igualdade frouxa, e o T-SUB-10 ganha o 5º caso, retrato sem a chave `latest`) e **A-E21-4** (M-SUB-1 e M-SUB-7 também deixam
+  o T-SUB-9 vermelho). A-E21-2 e A-E21-3 são da F6 e da F8 (abaixo).
+- **Partida:** `121d2f21`; só os 4 caminhos do §6.2. `overview.types.ts`: só o comentário da base (l.51-52).
+
+| passo | comando | saída resumida | veredito |
+|---|---|---|---|
+| vermelho antes | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-subscription-amount.test.ts` com a F3 de hoje (md5 `2d945ad8…`) | `# tests 12 # pass 8 # fail 4`: T-SUB-8 `'50.00'`/`'0.00'`, T-SUB-9 `'150.00'`, T-SUB-10 `Missing expected rejection: closed`, T-SUB-11 `Missing expected rejection.` | vermelho |
+| verde depois | o mesmo comando, com o conserto | `# tests 12 # pass 12 # fail 0 # skipped 0` | verde |
+| regressão | as 4 suítes do braço (`-subscription-amount`, `-overview-money`, `-overview-engine`, `-groups`) | `# tests 39 # pass 39 # fail 0` | verde |
+| tipos | `npm run db:generate` + `npm run check` (= `npm run lint`) | ec 0 | verde |
+| mutações | executor fora do repositório (âncora conta 1, aplica, roda, restaura bytes, md5) | as 11 abaixo `VERMELHO`, `restaurado=true` | todas mortas |
+
+| mutação (texto literal) | vermelho em |
+|---|---|
+| M-SUB-1 `BigInt(statement.totalCents + latest.creditsAppliedCents)` → `BigInt(statement.totalCents)` | T-SUB-1 (`'900.00'`), T-SUB-4, T-SUB-7, T-SUB-8 (`'50.00'`), T-SUB-9 (refechado `'50.00'`) |
+| M-SUB-7 `BigInt(statement.totalCents + latest.creditsAppliedCents)` → `BigInt(statement.paidCents)` | T-SUB-1 (`'0.00'`), T-SUB-4, T-SUB-7, T-SUB-8, T-SUB-9 |
+| M-SUB-8 `BigInt(statement.totalCents + latest.creditsAppliedCents)` → `BigInt(statement.totalCents + statement.creditsAppliedCents)` | T-SUB-8 (`'50.00'`), T-SUB-9 (`'150.00'`); **controle:** T-SUB-1 a T-SUB-7 verdes |
+| M-SUB-9 `creditsAppliedCents: BigInt(latest.creditsAppliedCents),` → `creditsAppliedCents: BigInt(statement.creditsAppliedCents),` | T-SUB-8 (`creditsApplied '0.00'`), T-SUB-9 (`'50.00'`) |
+| M-SUB-10 apagar `if (latest == null) throw snapshotMissing();` | T-SUB-10 (`TypeError: Cannot destructure property 'terms' of 'input' as it is null.`) |
+| M-SUB-11 apagar `if (recompute(latest) !== statement.totalCents) throw snapshotMismatch();` | T-SUB-11 (`Missing expected rejection.`) |
+| M-SUB-2 a M-SUB-6 (textos da F3, âncoras conta 1) | as mesmas da F3 (M-SUB-4 também T-SUB-9; M-SUB-6 também T-SUB-8 a 11) |
+| controle do A-E21-1: `latest == null` → `latest === null` | T-SUB-10, só o 5º caso (`TypeError … as it is undefined.`) |
+
+**Leituras do dev na F3b, declaradas (§A6):**
+1. **Outubro aberto no T-SUB-8 sai do próprio fechamento:** o `close` com o mês sem preço pula a organização e deixa a linha
+   `open` (`statement.service.ts:113` e l.124-125), que é o único caminho do serviço que cria linha. Assim nenhuma linha do
+   T-SUB-8 e do T-SUB-9 é montada à mão; o crédito de 50.00 nasce de um pagamento de 150.00 do provedor (`settle`) sobre
+   setembro fechado em 100.00.
+2. **O 5º caso do T-SUB-10** grava `snapshot: { history: [] }` (só por SQL manual, como o caso nulo). O teste falha nomeando o
+   erro que saiu (`<status>: saiu <erro>`), para a M-SUB-10 e o controle mostrarem o `TypeError` e não só "validação falhou".
+3. **`seedInconsistent`** é a única porta do teste que grava linha sem retrato coerente, e só o T-SUB-10 e o T-SUB-11 a usam.
+   O `seed` dos T-SUB-1 a 7 confere `recompute(latest) === totalCents` antes de gravar.
+4. **C-E2-9 com a âncora do A-E21-1:** a linha `git grep -c 'if (latest === null) throw snapshotMissing();'` do §7 passa a ser
+   `git grep -c 'if (latest == null) throw snapshotMissing();'` (conta 1); a forma estrita dá 0 de propósito.
+5. **Para a F6 (A-E21-2), não feito aqui:** ao traduzir `statement_snapshot_missing` / `statement_snapshot_mismatch` em 500
+   `statement_integrity_violation`, a rota grava no log do servidor o `reason`, o mês e a organização da linha (o `tenantId` só
+   no log, nunca no corpo); o T-SUB-12 confere que o corpo não leva `tenantId`. A falha por linha fica como pendência BAIXA
+   `P-ASS09-INTEGRIDADE-POR-LINHA` (dono: B-ASS-12).
+6. **Para a F8 (A-E21-3), não feito aqui:** o risco K29 (mudança no `computeStatement` que altere o total de um retrato antigo
+   derruba a visão em todo mês com demonstrativo gravado; mitigação: mudar o cálculo só com versão) entra em
+   `docs/subscription-billing.md`, junto do invariante §3.3. E a pendência `P-ASS08-REVERSAO-CREDITO-APLICADO` (A-E21-5: dono
+   `B-ASS-08c`, ALTA, bloqueia ligar o canal) vai ao `pendencias.md`.
+
 ## F4 — ramo `feat/ass-09-banco` (worktree `C:/Users/thiag/w-ass09b`)
 
 (preenchido no ramo `feat/ass-09-banco`)

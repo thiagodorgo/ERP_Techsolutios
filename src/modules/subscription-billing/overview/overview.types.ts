@@ -49,7 +49,7 @@ export type SubscriptionSkipReason = "no_subscription" | "plan_without_price" | 
 
 /**
  * A base da assinatura (D-9; Q5 = RECOMENDAÇÃO, D-DONO-1311-RECOMENDACOES, 13/11): o valor do demonstrativo ANTES de abater o
- * crédito aplicado (`totalCents + creditsAppliedCents`). O total do demonstrativo e o crédito usado vêm separados.
+ * crédito: o total gravado mais o crédito do retrato do fechamento (Emenda 2.1 §2.2). Total e crédito vêm separados.
  */
 export const SUBSCRIPTION_BASIS = "before_credits" as const;
 
