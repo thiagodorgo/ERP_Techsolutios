@@ -246,7 +246,7 @@ async function bootstrap(connection: string) {
   const barrier = await import("./helpers/pg-barrier.js");
   const applicationName = barrier.buildApplicationName("ass09-fx");
   const tagged = barrier.withApplicationName(connection, applicationName);
-  const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+  const admin = new PrismaClient({ adapter: (await import("../src/database/pg-connection.js")).createPgAdapter(connection) });
   const { createEphemeralRole } = await import("./helpers/auth-identity-fixture.js");
   const role = await createEphemeralRole(admin, tagged);
   const attributes = (await admin.$queryRawUnsafe(

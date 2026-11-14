@@ -376,7 +376,7 @@ if (!connectionString) {
 
 async function bootstrap(connection: string) {
   const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-  const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+  const admin = new PrismaClient({ adapter: (await import("../src/database/pg-connection.js")).createPgAdapter(connection) });
   const barrier = await import("./helpers/pg-barrier.js");
   const applicationName = barrier.buildApplicationName("ass09-grp");
   const { createEphemeralRole } = await import("./helpers/auth-identity-fixture.js");
