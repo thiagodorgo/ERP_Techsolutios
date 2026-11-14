@@ -82,7 +82,18 @@ export class OperatorProfileService {
     const current = await this.get(actor, profileId);
 
     const nextConsent = readOptionalBoolean(body.tracking_consent ?? body.trackingConsent, "tracking_consent");
-    const consent = resolveConsentTransition(current, nextConsent);
+    // B-SAN3-17 (Emenda 1 da abertura 2.6): ligar o consentimento (de desligado para ligado) é ato do titular; o gestor
+    // desliga, nunca religa. E (Emenda 1.1, CR17R2E-01) o não-titular nunca grava `true`: com o perfil já ligado, a
+    // reafirmação dele não escreve o campo, para não desfazer uma revogação que chegue entre a leitura e a escrita.
+    if (nextConsent === true && current.trackingConsent !== true && current.userId !== actor.userId) {
+      throw new OperatorProfileError(
+        422,
+        "OPERATOR_PROFILE_CONSENT_HOLDER_ONLY",
+        "tracking_consent_holder_only",
+        "Only the profile holder can grant tracking consent.",
+      );
+    }
+    const consent = resolveConsentTransition(current, nextConsent === true && current.userId !== actor.userId ? undefined : nextConsent);
 
     const input: UpdateOperatorProfileInput = {
       tenantId: actor.tenantId,

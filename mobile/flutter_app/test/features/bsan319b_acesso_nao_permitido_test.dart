@@ -50,6 +50,7 @@ const _tituloPorArquivo = <String, String>{
   'lib/features/inventory/ui/stock_exit_screen.dart': _acao,
   'lib/features/prestador/ui/technician_stock_screen.dart': _acesso,
   'lib/shared/ui/module_placeholder_screen.dart': _acesso,
+  'lib/features/location/ui/location_consent_screen.dart': _acesso,
 };
 
 // Única exceção nomeada do T1: a mensagem do placeholder é o parâmetro `blockedMessage`, que o
@@ -70,6 +71,8 @@ const _gatePorTela = <String, String>{
   'lib/features/work_orders/ui/work_order_approval_request_screen.dart':
       'work_orders:update',
   'lib/features/expenses/ui/expense_list_screen.dart': 'expense_report:create',
+  'lib/features/location/ui/location_consent_screen.dart':
+      'field_location:send',
 };
 
 // B-MOBILE-GATE-CHAVE (item 66): as telas cujo gate é uma regra de `MobileGates` (a régua da rota do servidor), com o

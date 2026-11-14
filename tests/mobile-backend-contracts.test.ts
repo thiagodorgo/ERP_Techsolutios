@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { Server } from "node:http";
@@ -250,7 +250,18 @@ test("mobile backend exposes ready checklist, expense, work order, inventory, ev
 });
 
 test("mobile field location contract validates actor tenant, payload and history permissions", async () => {
-  await withMobileContractApi(async ({ baseUrl, seed }) => {
+  await withMobileContractApi(async ({ baseUrl, seed: registrySeed }) => {
+    // B-SAN3-17 (CR17-04, item 52): o perfil de operador exige UUID, e a posição só é gravada com o consentimento
+    // registrado. O ator de campo deste teste vira um UUID só de cabeçalho, e o gestor o cadastra consentido.
+    const seed = { ...registrySeed, adminA: { ...registrySeed.adminA, id: randomUUID() } };
+    await requestJson(baseUrl, "/api/v1/operator-profiles", {
+      method: "POST",
+      headers: {
+        ...authHeaders(registrySeed.tenantA, registrySeed.adminA, "manager"),
+        "x-permissions": "operator_profiles:create",
+      },
+      body: { user_id: seed.adminA.id, tracking_consent: true },
+    });
     const sendHeaders = {
       ...authHeaders(seed.tenantA, seed.adminA, "technician"),
       "x-permissions": "field_location:send",

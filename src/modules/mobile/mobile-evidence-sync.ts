@@ -1,4 +1,5 @@
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import { createDefaultFieldLocationService } from "../field-location/field-location.service.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
 import {
   actorMutatesAssignedOnly,
@@ -253,6 +254,22 @@ function parseAction(value: unknown): MobileEvidenceAction {
   };
 }
 
+// B-SAN3-17 (Emenda 1 da abertura 2.7): o ator consente com a localização? Mesma leitura do filtro ao vivo; qualquer
+// erro vira `false` (falha fechada).
+async function actorHasTrackingConsent(actor: AuthenticatedActor): Promise<boolean> {
+  try {
+    const service = await createDefaultFieldLocationService();
+    return await service.hasOwnTrackingConsent({
+      tenantId: actor.tenantId,
+      userId: actor.userId,
+      roles: actor.roles,
+      permissions: actor.permissions,
+    });
+  } catch {
+    return false;
+  }
+}
+
 async function processAction(
   service: WorkOrderService,
   actor: AuthenticatedActor,
@@ -289,6 +306,9 @@ async function processAction(
       }
     }
     const metadata = validateAndNormalizeMetadata(action, descriptor.scope, descriptor.kind);
+    if (metadata.gps !== undefined && !(await actorHasTrackingConsent(actor))) {
+      delete metadata.gps;
+    }
     const evidenceId = `evidence:${actor.tenantId}:${action.client_evidence_id}`;
 
     return {

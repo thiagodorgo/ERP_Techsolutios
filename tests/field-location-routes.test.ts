@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import test from "node:test";
@@ -7,6 +8,7 @@ import type { Tenant, User } from "../src/modules/core-saas/types/core-saas.type
 
 test("field location routes record mobile points and expose tenant-scoped latest/history", async () => {
   await withFieldLocationApi(async ({ baseUrl, seed }) => {
+    await arrangeConsentedOperator(baseUrl, seed);
     const recorded = await requestJson(baseUrl, "/api/v1/mobile/field-locations", {
       method: "POST",
       headers: authHeaders(seed.tenantA, seed.operatorA, "operator"),
@@ -110,18 +112,21 @@ async function withFieldLocationApi(callback: (context: FieldLocationApiContext)
   const [
     { createApp },
     { resetFieldLocationRuntimeForTests },
+    { resetOperatorProfileRuntimeForTests },
     { CoreSaasRegistry },
     { MemoryCoreSaasAdapter },
     { InMemoryCoreSaasStore },
   ] = await Promise.all([
     import("../src/app.js"),
     import("../src/modules/field-location/index.js"),
+    import("../src/modules/operator-profiles/operator-profile.service.js"),
     import("../src/modules/core-saas/services/core-saas.service.js"),
     import("../src/modules/core-saas/services/memory-core-saas.adapter.js"),
     import("../src/modules/core-saas/store/core-saas.store.js"),
   ]);
 
   resetFieldLocationRuntimeForTests();
+  resetOperatorProfileRuntimeForTests();
 
   const core = new CoreSaasRegistry(new InMemoryCoreSaasStore());
   const seed = seedCoreSaas(core);
@@ -178,11 +183,21 @@ function seedCoreSaas(service: {
   return {
     tenantA,
     tenantB,
-    operatorA,
+    // B-SAN3-17 (CR17-04): o perfil de operador exige UUID; o técnico do teste é um ator só de cabeçalho.
+    operatorA: { ...operatorA, id: randomUUID() },
     managerA,
     managerB,
     viewerA,
   };
+}
+
+// B-SAN3-17 (item 52): a posição só é gravada para quem tem cadastro com o consentimento registrado.
+async function arrangeConsentedOperator(baseUrl: string, seed: SeedData): Promise<void> {
+  await requestJson(baseUrl, "/api/v1/operator-profiles", {
+    method: "POST",
+    headers: authHeaders(seed.tenantA, seed.managerA, "manager"),
+    body: { user_id: seed.operatorA.id, tracking_consent: true },
+  });
 }
 
 function authHeaders(

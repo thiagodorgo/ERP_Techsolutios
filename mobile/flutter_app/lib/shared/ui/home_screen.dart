@@ -7,12 +7,15 @@ import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/bootstrap/bootstrap_session.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_error.dart';
+import '../../core/location/location_consent_providers.dart';
+import '../../core/location/location_consent_store.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/permissions/mobile_gates.dart';
 import '../../core/permissions/permission_resolver.dart';
 import '../../core/sync/sync_models.dart';
 import '../../features/expenses/data/expense_repository.dart';
 import '../../features/expenses/domain/expense_models.dart';
+import '../../features/location/ui/location_consent_home_card.dart';
 import '../../features/work_orders/data/work_order_repository.dart';
 import '../../features/work_orders/domain/work_order_models.dart';
 import '../theme/erp_mobile_theme.dart';
@@ -127,6 +130,14 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
     // B-MOBILE-GATE-CHAVE — o banner usa o mesmo G4 da tela Aprovações (resposta 2.1 do dono).
     final canApprove = MobileGates.aprovacoes.permite(session);
     final modoDev = widget.modoDev;
+    // B-SAN3-17 (P1): o aviso de localização, só para quem envia e ainda não
+    // decidiu (ou precisa confirmar de novo).
+    final canSendLocation = resolver.has(perms, 'field_location:send');
+    final consentStatus = canSendLocation
+        ? (ref.watch(locationConsentStatusProvider).asData?.value ??
+              const LocationConsentStatus.withoutOwner())
+        : const LocationConsentStatus.withoutOwner();
+    final showLocationCard = canSendLocation && consentStatus.needsDecision;
 
     final today = DateTime.now();
     final allTenantOrders = woRepository.workOrders
@@ -275,6 +286,11 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                         ],
                       ),
                       const SizedBox(height: 18),
+
+                      if (showLocationCard) ...[
+                        const LocationConsentHomeCard(),
+                        const SizedBox(height: 18),
+                      ],
 
                       if (canApprove) ...[
                         _ApprovalsBanner(pendingCount: pendingApprovalCount),

@@ -70,6 +70,7 @@ export class PrismaFieldLocationRepository implements FieldLocationRepository {
       where: {
         tenant_id: input.tenantId,
         operator_user_id: input.operatorUserId,
+        ...(input.sources ? { source: { in: [...input.sources] } } : {}),
         ...(input.from || input.to
           ? {
               recorded_at: {

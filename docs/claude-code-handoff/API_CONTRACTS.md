@@ -68,7 +68,7 @@ header `Authorization: Bearer` + `X-Tenant-Id` · `Idempotency-Key` em POST.
 | Método | Rota | Uso |
 |---|---|---|
 | POST | `/mobile/field-locations` | enviar localização agora |
-| GET/POST/PUT | `/mobile/location-consent` | consentimento / status |
+| POST | `/mobile/location-consent` · `/mobile/location-consent/revoke` | o técnico registra (`field_location:send`) e revoga (só o papel) o PRÓPRIO consentimento; corpo `{decided_at, client_action_id, text_version}`; `200 {granted, granted_at, client_action_id, status: applied\|superseded, profile_updated_at}`; `422 operator_profile_required`; sem consentimento a posição dá `422 tracking_consent_required` e nada é gravado; `PATCH /operator-profiles/:id` dá `422 tracking_consent_holder_only` a quem não é o titular e tenta ligar (`mobile_location_consent@2026-11.b-san3-17`, B-SAN3-17) |
 
 ## sync (offline)
 | Método | Rota | Uso |
