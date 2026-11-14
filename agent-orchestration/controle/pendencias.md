@@ -14899,3 +14899,85 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** ressalva (1) do porteiro do #558 (`porteiro-558-cl`, LIBERADO COM RESSALVA); Emenda 3 do plano v2 do `B-SAN3-25` (E3.2).
 - **fato:** o job `frontend` da CI roda só `check`, `test:smoke` e `build`. Na `origin/main` `d29b3bef`, 198 dos 199 `frontend/tests/*.test.{ts,tsx}` estavam na lista do `test:smoke` de `frontend/package.json`; o único fora era `tests/b-san3-24-titles-sem-orfao.test.ts` (a guarda D3 do 24d, 1 caso), que a C1 do `B-SAN3-25` pôs na lista (PR #559). Medição: `comm -23 <(git ls-tree -r --name-only <ref> frontend/tests | grep -E '\.test\.(ts|tsx)$' | sed 's#^frontend/##' | sort) <(git show <ref>:frontend/package.json | grep -o '"test:smoke": "[^"]*' | tr ' ' '\n' | grep 'tests/' | sort)` → 1 linha na `d29b3bef`, 0 no ramo do #559.
 - **critério de encerramento:** uma guarda que falha quando um `frontend/tests/*.test.{ts,tsx}` não está na lista do `test:smoke`, com vermelho-controle (tirar um arquivo da lista → vermelho).
+
+## P-J559-C1-02-GUARDA-A3-FORMA (2026-11-14) — a guarda A3 ("a tela não soma dinheiro") do faturamento da OS reconhece a forma, não a propriedade — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` (o `[A3]` de `frontend/tests/b-san3-25-faturar-os.smoke.test.tsx` é do `B-SAN3-25`; a forma `.reduce(` e `+=` foi prescrita pelo plano v2 §4.3 e vem da F8 de `frontend/tests/finance-no-money-reduce.guard.test.ts`, `3c27f1bf`, 2026-10-28, `B-SAN3-12`) · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** achado C1-02 da cadeira C1 da J-559 (`j559-c1-cl`), triado como pendência pela ata da J-559.
+- **N e forma (medido pela C1 sobre `d05264af`):** duas somas que a A3 não vê, cada uma posta no `InvoiceWorkOrderDialog.tsx` e medida pelos 28 casos do bloco: `pendingItems[0].totalAmount + pendingItems[1].totalAmount` → 28/28 verdes; `for (const i of pendingItems) soma = soma + i.totalAmount` → 28/28 verdes. Controle: `.reduce(` deixa a A3 vermelha (27/28). Hoje o código do bloco não soma (0 linha de aritmética sobre `amount`/`total`/`quantity`).
+- **causa:** a guarda procura dois tokens, e não o que eles representam (somar valores de dinheiro).
+- **critério de encerramento:** uma guarda que acusa a soma de dinheiro também por `+` binário e por laço (pela AST ou por uma regra que enuncie a propriedade), com vermelho-controle nas duas formas acima.
+
+## P-J559-N1-VENCIMENTO-PADRAO-UTC (2026-11-14) — o vencimento padrão do faturamento é "agora + 30 dias" em UTC, e das 21h às 24h SP dá 31 dias no calendário — MÉDIA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (`git blame -L 511,517 d05264af -- src/modules/work-order-financials/work-order-financial.service.ts` → `a74efa53`, 2026-07-18, #212, Ω4-3; `src/**` era PROIBIDO no `B-SAN3-25`) · **dono:** o bloco de backend que tocar `src/modules/work-order-financials/**` · **bloqueia:** não.
+- **origem:** N1 da pré-revisão do #559 (`prerev-559-cl`), julgado pela cadeira C1 da J-559 como C1-03; triado como pendência pela ata da J-559.
+- **N e forma (medido pela C1, relógio fixo, serviço real em memória, tela pelo `formatDueDate`):** 12:00 SP → tela 14/12, 30 dias; 21:30 SP → 15/12, **31** dias; 23:59 SP → 15/12, **31** dias; 00:01 SP → 15/12, 30 dias. A pré-revisão viu o mesmo no banco real às 23:56 SP de 13/11 (`due_date` 2026-12-14 02:56 UTC; `issue_date` e competência também do dia UTC).
+- **causa:** o servidor soma 30 dias ao instante UTC e a tela mostra a data em UTC; o diálogo diz "em 30 dias (padrão)" (a cópia da Q2 = A).
+- **critério de encerramento:** o vencimento padrão é o dia de hoje no calendário de São Paulo + 30 dias (e `issue_date`/competência pelo mesmo calendário), com teste de relógio fixo nas 4 horas acima.
+
+## P-J559-C1-04-ABORTO-DURO-PAPEL-COM-LOGIN (2026-11-14) — a morte do processo no meio do teste de concorrência do faturamento deixa um papel `o6r_b01_*` com LOGIN e dados de fixture — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`tests/helpers/auth-identity-fixture.ts:78-85`, `df496d22`, 2026-08-31: o papel deixado por SIGKILL só é recolhido depois de 60 min; o precedente `tests/work-order-invoicing-atomic-db.test.ts:564-576`, `079332a5`, tem o mesmo `close()`; `tests/helpers/**` era PROIBIDO no `B-SAN3-25`) · **dono:** `B-FERR-AGENTES` (arnês) · **bloqueia:** não. Junta-se à `P-O6R-ARNES-ISOLAMENTO` ("o aborto deixa dados, não só roles").
+- **origem:** achado C1-04 da cadeira C1 da J-559, triado como pendência pela ata da J-559.
+- **N e forma (medido pela C1 num cluster próprio):** `timeout -s KILL 3.5 node --import tsx tests/b-san3-25-faturar-concorrente-db.test.ts` → ec=137, 3 casos concluídos; depois, 1 papel `o6r_b01_*` com `rolsuper=f rolbypassrls=f rolcanlogin=t`, sem expiração e com 556 concessões, mais 4 organizações, 4 títulos e 5 itens. A rodada completa e a abortada por `assert` limpam tudo (vaza-metro 0 em 36 execuções). Na CI o banco é efêmero.
+- **critério de encerramento:** depois da morte do processo, a execução seguinte (ou o desmonte) recolhe o papel e os dados de fixture sem esperar 60 min, com teste que mata o processo e conta o resíduo.
+
+## P-J559-C1-05-A5-LEITURA-DA-OS-COMO-SUPERUSUARIO (2026-11-14) — no teste de concorrência do faturamento, a leitura da OS e o pré-check rodam como o superusuário — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o precedente que o plano mandou copiar não injeta o singleton: `grep -n globalThis.prisma tests/work-order-invoicing-atomic-db.test.ts` = 0, `079332a5`, 2026-10-20) · **dono:** `B-FERR-AGENTES` (arnês) · **bloqueia:** não.
+- **origem:** achado C1-05 da cadeira C1 da J-559, triado como pendência pela ata da J-559.
+- **N e forma (medido pela C1 com `log_statement=all` e o usuário no prefixo da linha, 1 execução do A5):** `pg_advisory_xact_lock_shared` 70×, `INSERT INTO financial_titles` 24×, `UPDATE work_order_financial_items` 24× e `FOR UPDATE` 46× sob o papel efêmero (NOSUPERUSER NOBYPASSRLS); `FROM work_orders` 47× e 26 leituras de `financial_titles` sob `postgres`. A prova de "um título" não enfraquece: as três camadas estão na unidade, que roda sob o papel.
+- **causa:** `tests/b-san3-25-faturar-concorrente-db.test.ts` não injeta o papel no singleton de `src/database/prisma.ts` (o `b-san3-25-faturar-os-db.test.ts:66` injeta e confere); o comentário das linhas 37-38 ("o serviço roda num papel efêmero") vale só para a unidade.
+- **critério de encerramento:** o A5 roda o serviço inteiro sob o papel efêmero (singleton injetado e conferido), ou o comentário diz exatamente o que roda sob o papel; com a contagem por usuário no log.
+
+## P-J559-N-C2-2-R-ENUM-FRONTEIRA-DE-IMPORTES (2026-11-14) — a varredura dos motivos do faturamento (R-ENUM) não é fail-closed para o motivo que nasce num destino da fronteira de importes — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` (o E1 de `tests/b-san3-25-motivos-do-faturamento.test.ts` é do `B-SAN3-25`; a classe vem da regra (b) do plano v2 §2.1(b), mantida pela Emenda 1 E1.3(b): `src/modules/work-orders/work-order.service.ts` está em `INVOICE_IMPORTS_SEM_MOTIVO` e não é varrido) · **dono:** `B-SAN3-25` (próximo ajuste) ou `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** achado N-C2-2 da cadeira C2 da J-559 (`j559-c2-cl`), triado como pendência pela ata da J-559.
+- **N e forma (medido pela C2):** com um `throw new WorkOrderError(409, "WORK_ORDER_LOCKED", "c2_work_order_locked", …)` posto no `get()` da OS, o E1 continua verde (`# pass 9 # fail 0`) e a sonda de referência acha 0 ocorrência; o `POST /invoice` responde 409 `c2_work_order_locked`, 0 título, e a tela mostra a frase genérica com releitura. Não afeta dinheiro, permissão nem isolamento.
+- **critério de encerramento:** o E1 acusa um motivo novo criado em qualquer destino que alcance a resposta do faturamento (inclusive os da fronteira de importes), com vermelho-controle na mutação acima.
+
+## P-J559-N-C2-1-CABECALHOS-LEGADOS-FORA-DE-PRODUCAO (2026-11-14) — fora do modo produção, um pedido sem token e com os cabeçalhos legados de contexto fatura a OS — ALTA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (`allowsLegacyTenantHeaders`, `src/modules/core-saas/middleware/tenant-context.middleware.ts:102-106`, commit `cc7affae`, 2026-06-07; o `B-SAN3-25` não toca `src/**`) · **dono:** a varredura de segurança final (§C7 item 10(6)) e o go-live na AWS · **bloqueia:** o go-live, se algum ambiente publicado rodar com `NODE_ENV` diferente de `production`.
+- **origem:** achado N-C2-1 da cadeira C2 da J-559, triado como pendência pela ata da J-559.
+- **N e forma (medido pela C2, sonda temporária):** `POST /api/v1/work-orders/<os>/invoice` sem `Authorization`, com `x-tenant-id`, `x-user-id` (de um gerente), `x-roles: finance` e `x-permissions: financial_titles:create`: com `NODE_ENV=production` → 403 `legacy_headers_disabled`; com `NODE_ENV` vazio → **201 e 1 título**. Os ambientes publicados de hoje usam `production` (`docker-compose.prod.yml:61`, `fly.production.toml:40`, `fly.staging.toml:31`), e `checklist-routes.test.ts:316` já prova o bloqueio.
+- **causa:** o contexto pelos cabeçalhos legados é um mecanismo de desenvolvimento, e o `createPersistentRbacContextMiddleware` só reescreve o contexto quando há ator de JWT.
+- **critério de encerramento:** a varredura final decide (desligar os cabeçalhos legados fora do desenvolvimento local explícito, ou provar que nenhum ambiente alcançável os aceita), com teste que manda o pedido acima em cada modo.
+
+## P-J559-C3-A3-401-SEM-MENSAGEM (2026-11-14) — no 401 `session_inactive` com o refresh recusado, a web vai para o login sem mensagem — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`frontend/src/services/api/client.ts:129-134`, `aa820b0b`, 2026-06-08; PROIBIDO no `B-SAN3-25`, plano §6.2 e E1.6) · **dono:** o próximo bloco de autenticação da web · **bloqueia:** não.
+- **origem:** achado C3-A3 da cadeira C3 da J-559 (`j559-c3-cl`), triado como pendência pela ata da J-559.
+- **N e forma (medido pela C3 no navegador real):** diálogo de faturamento aberto → sessões revogadas no banco → "Faturar" → 1 POST, alerta vazio, `url=/login`. A frase "Sua sessão terminou, e nada foi faturado. Entre de novo para faturar." não chega a ser lida; o `[L11]` a prova só no arnês. Nada é faturado.
+- **causa:** o cliente apaga a sessão quando o refresh falha (`clearStoredAuthSession()`), e a guarda de rota leva ao login antes de a aba mostrar a frase.
+- **critério de encerramento:** o login mostra que a sessão terminou (ou a frase aparece antes do redirecionamento), com teste no navegador ou no arnês da página.
+
+## P-J559-C3-A5-CONTRASTE-11PX (2026-11-14) — o texto de 11 px dos chips "Faturado" e "Cancelado", e o tom de sucesso do design system, ficam abaixo de 4,5:1 — MÉDIA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA (acessibilidade; §10 DoD) · **escopo:** `pre-existente` (o par vem de `frontend/src/modules/finance/titles/financial-titles.adapter.ts:32`, `447e80ae`, 2026-07-18; o `ui-tone-success` de `styles/app.css:538` também falha; `finance/**` era PROIBIDO no `B-SAN3-25`, salvo a `InvoicesPage:53`) · **dono:** design system · **bloqueia:** não.
+- **origem:** achado C3-A5 da cadeira C3 da J-559, triado como pendência pela ata da J-559.
+- **N e forma (medido pela C3, fórmula WCAG):** chip "Faturado" 3,58:1 (`#059669` sobre `#ECFDF5`, 11 px, peso 700; o mesmo par do "Pago", que o conserto da J-559 passou a ler do `getTitleStatusTone`); "Cancelado" 4,34:1; `ui-tone-success` 3,92:1. Controles: "Em aberto" 4,75:1; "Faturar OS" 5,17:1.
+- **critério de encerramento:** os tons de situação do Financeiro e o `ui-tone-success` passam de 4,5:1 no tamanho em que são usados, com teste de contraste.
+
+## P-J559-C3-A6-BOTOES-SEM-HOVER (2026-11-14) — os botões da aba Financeiro da OS e do diálogo de faturamento não mudam com o mouse — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `primaryBtn` inline já tinha 3 usos na `FinancialTab` em `d29b3bef`; `.ui-button` não tem `:hover`, `styles/app.css:390`, 2026-05-26; a Q3 = A mandou a ação herdar a aparência da aba) · **dono:** design system · **bloqueia:** não. Junta-se à `P-V533-P3-MODAL-TECLADO` na parte do `.ui-button` sem `:hover`.
+- **origem:** achado C3-A6 da cadeira C3 da J-559, triado como pendência pela ata da J-559.
+- **N e forma (medido pela C3, `getComputedStyle` antes e depois do `hover()`):** "Faturar OS" `rgb(37,99,235)` antes e depois; "Faturar" do diálogo `rgb(18,56,92)` antes e depois; "Cancelar" sem mudança; só o cursor muda.
+- **critério de encerramento:** os botões da aba (do estilo inline para a biblioteca) e o `.ui-button` têm `:hover` visível, com teste.
+
+## P-J559-C3-A7-DIALOGO-TECLADO (2026-11-14) — no diálogo de faturamento pelo teclado, o foco cai no BODY, o Tab sai para trás do véu e o Esc não fecha — MÉDIA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o `Modal` da biblioteca, `frontend/src/components/ui/index.tsx:121-150`, `6f3da6a2`, 2026-08-01, PROIBIDO no `B-SAN3-25`; a tela-modelo `ServiceQuoteApproveDialog.tsx:123-125` faz o mesmo) · **dono:** design system (diálogo) · **bloqueia:** não. Junta-se à `P-V533-P3-MODAL-TECLADO`, que já registra as faltas de teclado do `Modal`; esta acrescenta a medição no faturamento da OS.
+- **origem:** achado C3-A7 da cadeira C3 da J-559, triado como pendência pela ata da J-559.
+- **N e forma (medido pela C3 no navegador real):** Enter no "Faturar OS" abre o diálogo e o foco vai a `BODY` (o gatilho fica `disabled`); os 2 Tab seguintes vão a "Lançar da tabela" e "Item avulso", atrás do véu; Esc não fecha (`aberto=1`). Depois de um 503 pelo teclado, o foco cai em `BODY` e o Tab vai a "Editar item". Faturar só pelo teclado funciona (9 Tab), e todo elemento tem foco visível.
+- **critério de encerramento:** o `Modal` põe o foco dentro ao abrir, prende o Tab, fecha no Esc e devolve o foco ao gatilho, com teste da biblioteca e um caso no diálogo de faturamento.
+
+## P-J559-N2-TESTE-VIVO-FORMA-A-MAO (2026-11-14) — o teste vivo do faturamento escreve à mão a forma das respostas do servidor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` (`frontend/tests/b-san3-25-faturar-os-live.test.tsx`, os dublês `itemDto`, `listDto` e `titleDto`) · **dono:** `B-SAN3-25` (próximo ajuste) · **bloqueia:** não.
+- **origem:** N2 da pré-revisão do #559 (`prerev-559-cl`), triado como pendência pela ata da J-559. O N3 da mesma pré-revisão (o comentário do censo dizia 26) foi consertado no conserto da J-559 (`d2bcb387`).
+- **N e forma (medido pela pré-revisão):** as chaves de `toFinancialTitleDto` e as do `titleDto` do teste batem hoje (27 × 27, nenhuma só de um lado), e o navegador real leu os bytes do servidor. Se o servidor renomear um campo, os casos `[L*]` continuam verdes; o `[D2]` (`-db`) amarra só o lado do servidor.
+- **critério de encerramento:** os dublês do teste vivo nascem dos DTOs do servidor (ou um caso compara as chaves dos dois lados e fica vermelho com um campo renomeado).
