@@ -403,7 +403,7 @@ export type CancelVerdict = { readonly kind: "register" } | { readonly kind: "pr
  */
 export function cancelTargetVerdict(listed: readonly ExternalChargeCandidate[], chargeId: string, unknown: boolean): CancelVerdict {
   const entries = listed.filter((candidate) => candidate.chargeId === chargeId); // [CANCEL-LIST-FIRST]
-  if (entries.length === 0) return { kind: "review", code: unknown ? "unknown_charge_not_in_reference" : "charge_not_listed" };
+  if (entries.length === 0) return { kind: "review", code: unknown ? "unknown_charge_not_in_reference" : "charge_not_listed" }; // [UNKNOWN-REF]
   if (entries.length > 1) return { kind: "review", code: "charge_listed_twice" };
   switch (entries[0]!.status) {
     case "cancelled":

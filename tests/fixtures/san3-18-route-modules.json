@@ -397,6 +397,7 @@
  "POST /api/v1/platform/billing/statements/:statementId/cancel": "PLATAFORMA",
  "POST /api/v1/platform/billing/statements/:statementId/charge": "PLATAFORMA",
  "POST /api/v1/platform/billing/statements/:statementId/charge/cancel": "PLATAFORMA",
+ "POST /api/v1/platform/billing/statements/:statementId/charge/cancel-unknown": "PLATAFORMA",
  "POST /api/v1/platform/billing/statements/:statementId/payments": "PLATAFORMA",
  "POST /api/v1/platform/billing/statements/:statementId/payments/:paymentId/reverse": "PLATAFORMA",
  "POST /api/v1/platform/billing/statements/:statementId/reopen": "PLATAFORMA",

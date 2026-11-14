@@ -56,6 +56,7 @@ import {
 } from "./helpers/lock-order-recorder.js";
 import { requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
 import { requestChargeCancel } from "../src/modules/subscription-billing/charges/charge-request.service.js";
+import { requestUnknownChargeCancel } from "../src/modules/subscription-billing/charges/charge-request.service.js";
 import { PrismaChargeIntentRepository } from "../src/modules/subscription-billing/charges/charge-intent.prisma.js";
 import { PrismaStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.prisma.js";
 import { chargeCreateClaimVerdict } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
@@ -75,6 +76,7 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/charges/charge-intent.repository.ts#InMemoryChargeIntentRepository.transaction#.transaction": "dublê-em-memória",
   "src/modules/subscription-billing/charges/charge-request.service.ts#requestChargeCreate#.transaction": "cenario:charge-request.service.requestChargeCreate",
   "src/modules/subscription-billing/charges/charge-request.service.ts#requestChargeCancel#.transaction": "cenario:chargeIntent.cancel",
+  "src/modules/subscription-billing/charges/charge-request.service.ts#requestUnknownChargeCancel#.transaction": "cenario:chargeIntent.cancelUnknown",
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.cancel#withTenantRls": "cenario:charges.cancel",
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.findLive#withTenantRls": "cenario:charges.findLive",
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.insert#withTenantRls": "cenario:charges.insert",
@@ -373,6 +375,15 @@ if (!connectionString) {
     await seedRow(m.tenantId, m.statementId, provider, "PENDING");
     await scenario("chargeIntent.cancel (PENDING → SKIPPED)", () =>
       requestChargeCancel({ intents: new PrismaChargeIntentRepository(recording.client) }, { tenantId: m.tenantId, statementId: m.statementId, reason: "cancelamento do cenário lk2", actorId: null, now }),
+    );
+    // B-ASS-08c1b (F7): o `cancel-unknown` — o demonstrativo PRIMEIRO, depois as linhas, as cobranças e o INSERT do `charge_cancel`.
+    const u = await seedStatement("u");
+    await seedRow(u.tenantId, u.statementId, provider, "SENT");
+    await scenario("chargeIntent.cancelUnknown (desconhecida → charge_cancel)", () =>
+      requestUnknownChargeCancel(
+        { intents: new PrismaChargeIntentRepository(recording.client) },
+        { tenantId: u.tenantId, statementId: u.statementId, chargeId: `pay_lk2_uc_${randomUUID().slice(0, 8)}`, reason: "cancelamento do cenário lk2", actorId: null, now },
+      ),
     );
   });
   // ------------------------------------------------------------------ F6c: cenários de statements/ (código REAL)

@@ -29,6 +29,8 @@ import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// O vencimento que ainda vale: a data de negócio de hoje em São Paulo + 30 dias (nunca a data UTC, nunca um literal que envelhece).
+const DUE_FUTURA = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 const PLATFORM = { "x-user-id": "usr_platform", "x-role": "super_admin" } as const;
 const REASON = "cliente pediu o cancelamento da cobrança";
 
@@ -72,7 +74,7 @@ if (!connectionString) {
           storage_extra_gb, tracked_vehicles, days_in_month, days_measured, extra_user_price, extra_gb_price,
           base_amount, users_extra_amount, storage_extra_amount, tracking_amount, adjustments_amount,
           credits_applied_amount, total_amount, due_date, closed_at, snapshot)
-       VALUES ($1::uuid, '2026-10', 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 123.45,0,0,0,0,0,123.45, '2026-12-10', now(),
+       VALUES ($1::uuid, '2026-10', 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 123.45,0,0,0,0,0,123.45, '${DUE_FUTURA}', now(),
                '{"latest":null,"history":[]}'::jsonb)
        RETURNING id`,
       tenantId,
@@ -87,7 +89,7 @@ if (!connectionString) {
     const rows = (await db.$queryRawUnsafe(
       `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, attempts,
                                   external_id, claimed_by, claimed_at, attempt_started_at, last_error)
-       VALUES ($1::uuid, $2::uuid, 'charge_create', 'asaas', $3, gen_random_uuid(), '{"amountCents":12345,"dueDate":"2026-12-10","method":"pix"}'::jsonb, now(), $4, 1,
+       VALUES ($1::uuid, $2::uuid, 'charge_create', 'asaas', $3, gen_random_uuid(), '{"amountCents":12345,"dueDate":"${DUE_FUTURA}","method":"pix"}'::jsonb, now(), $4, 1,
                $5, CASE WHEN $4 = 'PROCESSING' THEN 'dispatch-outbox:cc' END, CASE WHEN $4 = 'PROCESSING' THEN now() END, CASE WHEN $4 = 'PROCESSING' THEN now() END,
                CASE WHEN $4 = 'NEEDS_REVIEW' THEN 'charge_found_no_candidate' END)
        RETURNING id`,
@@ -100,7 +102,7 @@ if (!connectionString) {
     if (chargeId) {
       await db.$executeRawUnsafe(
         `INSERT INTO subscription_statement_charges (tenant_id, statement_id, provider, external_charge_id, status, due_date, created_at)
-         VALUES ($1::uuid, $2::uuid, 'asaas', $3, 'pending', '2026-12-10', now())`,
+         VALUES ($1::uuid, $2::uuid, 'asaas', $3, 'pending', '${DUE_FUTURA}', now())`,
         fixture.tenantId,
         fixture.statementId,
         chargeId,

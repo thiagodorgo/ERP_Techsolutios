@@ -209,6 +209,62 @@ export function requestChargeCancel(deps: ChargeRequestDeps, input: ChargeCancel
   });
 }
 
+export type UnknownChargeCancelInput = ChargeCancelInput & {
+  /** O id da cobrança NO PROVEDOR, que o operador viu lá e o sistema não conhece (forma validada na rota). */
+  readonly chargeId: string;
+};
+
+/**
+ * B-ASS-08c1b (F7, abertura §4.7) — o `cancel-unknown` do operador: a saída da cobrança que existe no provedor com a
+ * referência deste demonstrativo e que o sistema não conhece (a recobrança cuja resposta se perdeu). UMA transação, o
+ * demonstrativo travado PRIMEIRO, e vale a 1ª regra que casar:
+ *   1. o `chargeId` é CONHECIDO (o `external_id` de uma linha do demonstrativo, ou uma cobrança da tabela) → 422
+ *      `charge_is_known`: o caminho dele é o `charge/cancel`;
+ *   2. `charge_create` PROCESSING → 409 `charge_in_flight` (a chamada em voo pode estar criando justamente essa cobrança);
+ *   3. `charge_cancel` vivo para o MESMO `chargeId` → 409 `charge_cancel_in_progress`;
+ *   4. o demonstrativo nunca teve pedido de cobrança → 422 `no_live_charge` (não há cobrança nossa a cancelar, nem provedor);
+ *   5. senão, enfileira `charge_cancel` com `{ chargeId, chargeCreateId: null, unknown: true }`, no provedor da última
+ *      `charge_create` do demonstrativo, e a trilha `billing_outbox.unknown_charge_cancel_requested` no MESMO `tx`.
+ * A rota não fala com o provedor: quem confere que a cobrança é da referência deste demonstrativo é o despacho (a lista do
+ * provedor tem de trazê-la; senão, conferência e 0 DELETE).
+ */
+export function requestUnknownChargeCancel(deps: ChargeRequestDeps, input: UnknownChargeCancelInput): Promise<ChargeCancelOutcome> {
+  return deps.intents.transaction(input.tenantId, async (tx) => {
+    const statement = await tx.lockStatement(input.statementId);
+    if (!statement) throw new StatementError(404, "statement_not_found", "Statement not found.");
+    const lines = await tx.listChargeLines(input.statementId);
+    const charges = await tx.listCharges(input.statementId);
+    const known = lines.some((line) => line.externalId === input.chargeId) || charges.some((charge) => charge.externalChargeId === input.chargeId);
+    if (known) throw new StatementError(422, "charge_is_known", "The charge is known to the system; use charge/cancel.");
+    const creates = lines.filter((line) => line.kind === "charge_create");
+    if (creates.some((line) => line.status === "PROCESSING")) throw new StatementError(409, "charge_in_flight", "A charge request is in flight; try again.");
+    if (lines.some((line) => line.kind === "charge_cancel" && LIVE_CHARGE_CANCEL_STATUSES.has(line.status) && line.payload.chargeId === input.chargeId)) {
+      throw new StatementError(409, "charge_cancel_in_progress", "A cancellation for this charge is already in progress.");
+    }
+    const latest = creates.at(-1);
+    if (!latest) throw new StatementError(422, "no_live_charge", "The statement never had a charge request; there is no charge of ours to cancel.");
+    const { row, created } = await tx.enqueue(
+      {
+        tenantId: input.tenantId,
+        statementId: statement.id,
+        kind: "charge_cancel",
+        provider: latest.provider,
+        seq: 1 + maxOutboxSeq(lines, "charge_cancel"),
+        payload: { chargeId: input.chargeId, chargeCreateId: null, unknown: true },
+      },
+      input.now,
+    );
+    if (!created) throw new StatementError(409, "charge_intent_conflict", "The charge intent key is already in use.");
+    await tx.recordAudit({
+      actorId: input.actorId,
+      action: "billing_outbox.unknown_charge_cancel_requested",
+      entityId: row.id,
+      metadata: { statementId: statement.id, kind: row.kind, code: "cancel_enqueued", chargeId: input.chargeId, reason: input.reason },
+    });
+    return { result: "cancel_enqueued", row };
+  });
+}
+
 /**
  * B-ASS-08c1b: o maior `seq` já usado pelas linhas `kind` do demonstrativo (0 se nenhuma), lido da chave
  * `<kind>:<statement_id>:<seq>`. Chave fora desse formato é invariante quebrado: falha fechado (nada é gravado).

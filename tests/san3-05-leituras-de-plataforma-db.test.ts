@@ -101,6 +101,7 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   // confere no catálogo); as GLOBAIS que a rota também toca vão nomeadas na nota. O inventário, com arquivo:linha, está no diário.
   [`POST ${P}/billing/statements/:statementId/charge`, S("FORCE-POR-TENANT", ["subscription_statements", "subscription_statement_charges", "billing_outbox"], "requestChargeCreate sob withTenantRlsBudget, o demonstrativo travado primeiro; globais: billing_provider_configs (paymentProviderOn) e billing_statement_refs (putRefInTx)")],
   [`POST ${P}/billing/statements/:statementId/charge/cancel`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "subscription_statement_charges", "audit_logs"], "requestChargeCancel sob withTenantRlsBudget, o demonstrativo travado primeiro e a trilha no mesmo tx")],
+  [`POST ${P}/billing/statements/:statementId/charge/cancel-unknown`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "subscription_statement_charges", "audit_logs"], "requestUnknownChargeCancel sob withTenantRlsBudget (F7), o demonstrativo travado primeiro e a trilha no mesmo tx")],
   [`GET ${P}/billing/statements/:statementId/charges`, S("FORCE-POR-TENANT", ["subscription_statements", "subscription_statement_charges"], "findStatement e listByStatement sob withTenantRls; global: billing_provider_configs (createChannelRuntime)")],
   [`GET ${P}/billing/outbox`, S("FORCE-POR-TENANT", ["billing_outbox"], "listForTenant sob withTenantRls, com o tenant_id no predicado; global: billing_provider_configs (createChannelRuntime)")],
   [`POST ${P}/billing/outbox/:id/resolve`, S("FORCE-POR-TENANT", ["subscription_statements", "billing_outbox", "audit_logs"], "resolve sob withTenantRlsBudget (FOR UPDATE OF s) e a trilha no mesmo tx; global: billing_provider_configs (createChannelRuntime)")],
@@ -1102,6 +1103,17 @@ if (!connectionString) {
           assert.equal(reaberto.status, 200, JSON.stringify(reaberto.body));
           const reabertoData = reaberto.body.data as { outbox: Record<string, unknown>; notice: unknown };
           registrarRota(`POST ${P}/billing/outbox/:id/retry`, { outbox: projetarLinha(reabertoData.outbox), notice: reabertoData.notice });
+
+          // F7: o `cancel-unknown` de uma cobrança que o sistema não conhece → enfileira o `charge_cancel` (a rota não fala com o
+          // provedor; quem confere a referência é o despacho).
+          const desconhecida = await http("POST", `${P}/billing/statements/${stOp.id}/charge/cancel-unknown`, {
+            tenantId: B,
+            chargeId: `san305-desconhecida-${papel}`,
+            reason: "cobrança achada no painel do provedor",
+          });
+          assert.equal(desconhecida.status, 200, JSON.stringify(desconhecida.body));
+          const desconhecidaData = desconhecida.body.data as { result: string; outbox: Record<string, unknown> };
+          registrarRota(`POST ${P}/billing/statements/:statementId/charge/cancel-unknown`, { result: desconhecidaData.result, outbox: projetarLinha(desconhecidaData.outbox) });
 
           // Limpeza do cenário, nesta volta (FK Restrict para o demonstrativo).
           await admin.billingOutbox.deleteMany({ where: { tenant_id: B } });

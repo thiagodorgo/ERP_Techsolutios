@@ -16,7 +16,7 @@ import {
   parseBillingProfileInput,
   toBillingProfileDto,
 } from "../billing-profile/billing-profile.js";
-import { parseOperatorChargeMethod, parseOperatorDueDate, requestChargeCancel, requestChargeCreate } from "../charges/charge-request.service.js";
+import { parseOperatorChargeMethod, parseOperatorDueDate, requestChargeCancel, requestChargeCreate, requestUnknownChargeCancel } from "../charges/charge-request.service.js";
 import { paymentProviderOn } from "../outbox/channel-state.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import { createChannelRuntime, createChargeIntentRepository } from "../outbox/channel.runtime.js";
@@ -51,6 +51,12 @@ function requireOperatorReason(value: unknown): string {
   const reason = typeof value === "string" ? value.trim() : "";
   if (reason.length < 10) throw new StatementError(400, "reason_too_short", "reason must have at least 10 characters.");
   return reason.slice(0, 500);
+}
+
+/** B-ASS-08c1b (F7; Emenda 1 §3.6.5): o id de cobrança do PROVEDOR no `cancel-unknown` — `^[A-Za-z0-9_-]{1,64}$`; senão 400. */
+function requireProviderChargeId(value: unknown): string {
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(value)) throw new StatementError(400, "invalid_charge_id", "chargeId must match ^[A-Za-z0-9_-]{1,64}$.");
+  return value;
 }
 
 function body(request: Request): Record<string, unknown> {
@@ -350,6 +356,25 @@ export function createStatementsPlatformRouter(): Router {
       const outcome = await requestChargeCancel(
         { intents: await createChargeIntentRepository() },
         { tenantId, statementId: readRouteParam(request.params.statementId), reason, actorId: actorId(request), now: new Date() },
+      );
+      response.status(200).json({ data: { result: outcome.result, outbox: toOutboxDto(outcome.row) } });
+    }),
+  );
+
+  // B-ASS-08c1b (F7): o operador cancela no provedor uma cobrança DESCONHECIDA daqui, que ele viu lá com a referência desta
+  // conta. Sob a trava do demonstrativo, numa transação; a rota NÃO fala com o provedor — o despacho confere, pela lista do
+  // provedor, que a cobrança é desta referência antes de qualquer DELETE.
+  router.post(
+    "/statements/:statementId/charge/cancel-unknown",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const chargeId = requireProviderChargeId(input.chargeId);
+      const reason = requireOperatorReason(input.reason);
+      const outcome = await requestUnknownChargeCancel(
+        { intents: await createChargeIntentRepository() },
+        { tenantId, statementId: readRouteParam(request.params.statementId), chargeId, reason, actorId: actorId(request), now: new Date() },
       );
       response.status(200).json({ data: { result: outcome.result, outbox: toOutboxDto(outcome.row) } });
     }),

@@ -25,6 +25,8 @@ import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// O vencimento que ainda vale: a data de negócio de hoje em São Paulo + 30 dias (nunca a data UTC, nunca um literal que envelhece).
+const DUE_FUTURA = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 const PLATFORM = { "x-user-id": "usr_platform", "x-role": "super_admin" } as const;
 
 type Json = Record<string, any>;
@@ -71,7 +73,7 @@ if (!connectionString) {
           storage_extra_gb, tracked_vehicles, days_in_month, days_measured, extra_user_price, extra_gb_price,
           base_amount, users_extra_amount, storage_extra_amount, tracking_amount, adjustments_amount,
           credits_applied_amount, total_amount, due_date, closed_at, snapshot)
-       VALUES ($1::uuid, '2026-10', 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 123.45,0,0,0,0,0,123.45, '2026-11-20', now(),
+       VALUES ($1::uuid, '2026-10', 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 123.45,0,0,0,0,0,123.45, '${DUE_FUTURA}', now(),
                '{"latest":null,"history":[]}'::jsonb)
        RETURNING id`,
       tenantId,
@@ -93,7 +95,7 @@ if (!connectionString) {
       fixture.statementId,
       kind,
       `${kind}:${fixture.statementId}:${extra.seq ?? 1}`,
-      JSON.stringify(extra.payload ?? { amountCents: 12345, dueDate: "2026-11-20", method: "pix" }),
+      JSON.stringify(extra.payload ?? { amountCents: 12345, dueDate: DUE_FUTURA, method: "pix" }),
       status,
       extra.lastError ?? null,
     )) as Array<{ id: string }>;
