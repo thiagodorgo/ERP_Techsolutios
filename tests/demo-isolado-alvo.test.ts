@@ -230,9 +230,9 @@ test("C3 projeto (mata a M6)", () => {
 
 test("C4 censo puro (mata a M4)", () => {
   const pl = { slug: "platform", name: "Plataforma" };
-  const fx = { slug: "organizacao-exemplo-x", name: "Organizacao Exemplo" };
+  const fx = { slug: "organizacao-exemplo-x", name: "Organização Exemplo" };
   const ou = { slug: "outra", name: "Outra Exemplo" };
-  const n = "Organizacao Exemplo";
+  const n = "Organização Exemplo";
   assert.equal(A.avaliarCenso([pl], n, "motor").motivo, "FUNDACAO_AUSENTE");
   const cria = A.avaliarCenso([pl], n, "fundacao");
   assert.equal(cria.ok, true);

@@ -1,0 +1,20 @@
+# Matriz generica da fixture-exemplo.json (o formato esta no cabecalho de verificar.mjs). Uma linha por pre-condicao.
+passo	id	papel	leitura	esperado
+login	MENU-plataforma	plataforma	GET /navigation/menu	menu tem=/platform/tenants,/platform/dashboard nao_tem=/work-orders
+login	MENU-admin	admin	GET /navigation/menu	menu tem=/dashboard,/users,/administrator/audit nao_tem=/platform/tenants
+login	MENU-gestor	gestor	GET /navigation/menu	menu tem=/work-orders,/operations/map,/patios/painel nao_tem=/platform/tenants
+login	MENU-despacho	despacho	GET /navigation/menu	menu tem=/work-orders,/operations/dispatches nao_tem=/finance,/platform/tenants
+login	MENU-tecnica	tecnica	GET /navigation/menu	menu tem=/work-orders nao_tem=/finance,/operations/map,/platform/tenants
+login	MENU-financeiro	financeiro	GET /navigation/menu	menu tem=/finance,/finance/payments nao_tem=/operations/map,/platform/tenants
+login	MENU-auditor	auditor	GET /navigation/menu	menu tem=/audit,/administrator/audit nao_tem=/platform/tenants
+ET2	USU-gestor	admin	GET /users	existe email=gestor@exemplo.invalid & roles.0=manager & status=active
+ET2	USU-despacho	admin	GET /users	existe email=despacho@exemplo.invalid & roles.0=field_dispatcher
+ET2	USU-tecnica	admin	GET /users	existe email=tecnica@exemplo.invalid & roles.0=field_technician
+ET2	USU-financeiro	admin	GET /users	existe email=financeiro@exemplo.invalid & roles.0=finance
+ET2	USU-auditor	admin	GET /users	existe email=auditor@exemplo.invalid & roles.0=auditor
+ET3	CAD-cliente	admin	GET /customers	existe name=Cliente Exemplo Ltda
+ET3	CAD-viatura	admin	GET /vehicles	existe plate=EXM1A01 & status=active
+ET3	CAD-equipe	admin	GET /teams/{/teams#name=Equipe Exemplo}	campo memberCount=1
+ET3	CAD-servico	admin	GET /service-catalog	existe name=Remoção Exemplo & basePrice=350
+ET3	CAD-tabela	admin	GET /price-tables	existe name=Tabela Exemplo & status=published
+ET3	CAD-tarifa	admin	GET /tariffs	existe name=Remoção padrão & unitPrice=350

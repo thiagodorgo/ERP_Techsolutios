@@ -1,4 +1,28 @@
 {
-  "organizacao": { "nome": "Organizacao Exemplo" },
-  "admin": { "nome": "Administracao Exemplo", "email": "admin@exemplo.invalid" }
+  "versao": 1,
+  "prefixo": "EXM",
+  "organizacao": { "nome": "Organização Exemplo" },
+  "admin": { "nome": "Administracao Exemplo", "email": "admin@exemplo.invalid" },
+  "plataforma": { "email": "plataforma@exemplo.invalid" },
+  "usuarios": [
+    { "chave": "gestor", "nome": "Gestora Exemplo", "email": "gestor@exemplo.invalid", "papel": "manager" },
+    { "chave": "despacho", "nome": "Despacho Exemplo", "email": "despacho@exemplo.invalid", "papel": "field_dispatcher" },
+    { "chave": "tecnica", "nome": "Técnica Exemplo", "email": "tecnica@exemplo.invalid", "papel": "field_technician" },
+    { "chave": "financeiro", "nome": "Financeiro Exemplo", "email": "financeiro@exemplo.invalid", "papel": "finance" },
+    { "chave": "auditor", "nome": "Auditoria Exemplo", "email": "auditor@exemplo.invalid", "papel": "auditor" }
+  ],
+  "cadastros": {
+    "clientes": [{ "nome": "Cliente Exemplo Ltda", "telefone": "(11) 3000-0000" }],
+    "viaturas": [{ "placa": "EXM1A01", "tipo": "tow_truck", "modelo": "Viatura Exemplo", "ano": 2024 }],
+    "equipes": [{ "nome": "Equipe Exemplo", "membros": ["tecnica"] }],
+    "servicos": [{ "nome": "Remoção Exemplo", "tipo": "towing", "preco_base": "350.00" }],
+    "tabelas": [
+      {
+        "nome": "Tabela Exemplo",
+        "moeda": "BRL",
+        "publicar": true,
+        "tarifas": [{ "nome": "Remoção padrão", "servico": "Remoção Exemplo", "valor": "350.00", "origem": "Tabela Exemplo" }]
+      }
+    ]
+  }
 }
