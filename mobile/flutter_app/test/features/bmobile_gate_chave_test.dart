@@ -194,6 +194,17 @@ class _RotaDoApp extends StatelessWidget {
   }
 }
 
+/// J-561, C2B-04: o `bootstrapNotifierProvider` fixo na sessão, para montar `const HomeScreen()` pelo ramo do
+/// provider, que é o caminho do app de verdade (`router.dart` monta a home sem sessão).
+class _BootstrapFixo extends BootstrapNotifier {
+  _BootstrapFixo(this._sessao);
+
+  final BootstrapSession _sessao;
+
+  @override
+  Future<BootstrapSession> build() async => _sessao;
+}
+
 Widget _inicio(BootstrapSession sessao, {required Widget tela}) {
   final router = GoRouter(
     initialLocation: '/',
@@ -212,6 +223,7 @@ Widget _inicio(BootstrapSession sessao, {required Widget tela}) {
   return ProviderScope(
     overrides: [
       bootstrapSessionProvider.overrideWith((_) async => sessao),
+      bootstrapNotifierProvider.overrideWith(() => _BootstrapFixo(sessao)),
       workOrderLocalStoreProvider.overrideWithValue(
         InMemoryWorkOrderLocalStore([]),
       ),
@@ -502,6 +514,105 @@ void main() {
         );
         expect(icone(), findsNothing);
         expect(atalho(), findsNothing);
+      },
+    );
+
+    // J-561, C2B-04: o app de verdade monta `const HomeScreen()` (router.dart), que lê a sessão pelo provider. O
+    // atalho "Sincronizar" prova que a home do provider foi montada (não é o carregamento nem o erro).
+    Finder sincronizar() =>
+        find.widgetWithText(MobileActionTile, 'Sincronizar');
+
+    testWidgets(
+      'pelo ramo do provider (const HomeScreen(), o do app) → sem Diagnóstico',
+      (tester) async {
+        final sessao = _sessaoDoPapel('tenant_admin');
+        await _montar(tester, _inicio(sessao, tela: const HomeScreen()));
+        expect(sincronizar(), findsOneWidget);
+        expect(icone(), findsNothing);
+        expect(atalho(), findsNothing);
+      },
+    );
+    testWidgets(
+      'pelo ramo do provider com modoDev: true → o ícone e o atalho',
+      (tester) async {
+        final sessao = _sessaoDoPapel('tenant_admin');
+        await _montar(
+          tester,
+          _inicio(sessao, tela: const HomeScreen(modoDev: true)),
+        );
+        expect(sincronizar(), findsOneWidget);
+        expect(icone(), findsOneWidget);
+        expect(atalho(), findsOneWidget);
+      },
+    );
+  });
+
+  // ── J-561, C2B-02: lista vazia nunca vale "tudo" (MobileGate.permite) ────
+
+  group('T3 · C2B-02 — regra com lista vazia nega (fail-closed)', () {
+    // A sonda da C2b: o bootstrap do servidor para o `support`, sem nenhuma permissão e sem nenhum módulo.
+    BootstrapSession sessaoVazia() {
+      final bootstrap = Map<String, dynamic>.from(
+        _celula('support')['bootstrap'] as Map<String, dynamic>,
+      );
+      bootstrap['permissions'] = <String>[];
+      bootstrap['modules'] = <dynamic>[];
+      return _sessaoDe(bootstrap);
+    }
+
+    test('a sessão vazia não tem permissão nem módulo', () {
+      final sessao = sessaoVazia();
+      expect(sessao.permissions.permissions, isEmpty);
+      expect(sessao.enabledModules, isEmpty);
+    });
+    test('módulos e chaves vazios (Modo.all) negam a sessão vazia', () {
+      const regra = MobileGate(
+        nome: 'G6',
+        modulos: [],
+        modoModulo: Modo.any,
+        chaves: [],
+        modo: Modo.all,
+      );
+      expect(regra.permite(sessaoVazia()), isFalse);
+    });
+    test('módulos vazios negam quem tem a chave', () {
+      const regra = MobileGate(
+        nome: 'G6',
+        modulos: [],
+        modoModulo: Modo.any,
+        chaves: ['checklist_runs:read'],
+        modo: Modo.any,
+      );
+      final sessao = _sessaoDoPapel('tenant_admin');
+      expect(sessao.permissions.contains('checklist_runs:read'), isTrue);
+      expect(regra.permite(sessao), isFalse);
+    });
+    test('chaves vazias (Modo.all) negam mesmo com o módulo ligado', () {
+      const regra = MobileGate(
+        nome: 'G6',
+        modulos: ['tenant_checklist'],
+        modoModulo: Modo.any,
+        chaves: [],
+        modo: Modo.all,
+      );
+      final sessao = _sessaoDoPapel('tenant_admin');
+      expect(
+        sessao.enabledModules.map((m) => m.id),
+        contains('tenant_checklist'),
+      );
+      expect(regra.permite(sessao), isFalse);
+    });
+    test(
+      'controle: a mesma regra com módulo e chave libera o tenant_admin',
+      () {
+        const regra = MobileGate(
+          nome: 'G6',
+          modulos: ['tenant_checklist'],
+          modoModulo: Modo.any,
+          chaves: ['checklist_runs:read'],
+          modo: Modo.all,
+        );
+        expect(regra.permite(_sessaoDoPapel('tenant_admin')), isTrue);
       },
     );
   });

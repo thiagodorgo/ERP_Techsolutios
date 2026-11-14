@@ -31,8 +31,11 @@ class MobileGate {
   final Modo modo;
 
   /// `true` só quando a organização tem o módulo da rota e o perfil tem as chaves que ela confere. Sem sessão, nega.
+  /// Lista vazia nunca vale "tudo" (J-561, C2B-02): regra sem módulo ou sem chave nega. O desenho não tem marca de
+  /// núcleo (todo gate espelha uma rota de módulo), então não há exceção.
   bool permite(BootstrapSession? sessao) {
     if (sessao == null) return false;
+    if (modulos.isEmpty || chaves.isEmpty) return false;
     final enabled = sessao.enabledModules.map((m) => m.id).toSet();
     final modules = modulos;
     if (modules.isNotEmpty) {
