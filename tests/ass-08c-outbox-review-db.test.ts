@@ -495,6 +495,56 @@ if (!connectionString) {
     assert.equal(response.body.error?.reason, "due_date_not_applicable");
     assert.equal((await outboxRow(id)).status, "FAILED");
   });
+
+  // B-ASS-08c1b (F9; Emenda 1 §3.1 e Emenda 2, a P-ASS08C-POSSE-NAO-COBRE-O-POST): a saída do C1-02 dentro do 08c1b.
+  test("F2R: a forma F2 (a cobrança criada no provedor e desconhecida aqui, a órfã em orphan_recovery_not_found) → /resolve + /retry pelas rotas → o despacho ADOTA: recovered 1, 0 POST, 1 cobrança viva, external_id e a referência preenchidos", async () => {
+    const { fakeModule, http, asaas } = await dispatchModules();
+    const fake = await fakeModule.startAsaasFake();
+    try {
+      const fixture = await seedStatement("f2r");
+      // A órfã: PROCESSING com a posse vencida há 11 min (> OUTBOX_ORPHAN_MS): o POST saiu e a resposta não voltou.
+      const id = await seedOutbox(fixture, "charge_create", "PROCESSING", { payload: { amountCents: 12345, dueDate: spDayPlus(10), method: "pix" } });
+      await db.$executeRawUnsafe(
+        `UPDATE billing_outbox SET claimed_by = 'dispatch-outbox:f2r', claimed_at = now() - interval '11 minutes', attempt_started_at = now() - interval '11 minutes' WHERE id = $1::uuid`,
+        id,
+      );
+      // 1ª rodada: a lista da referência ainda não traz a cobrança → a órfã nunca cria: orphan_recovery_not_found.
+      const first = await dispatchOnFake(fixture.tenantId, fake);
+      assert.equal(first.outcomes.needs_review, 1, JSON.stringify(first.outcomes));
+      assert.deepEqual({ status: (await outboxRow(id)).status, last_error: (await outboxRow(id)).last_error }, { status: "NEEDS_REVIEW", last_error: "orphan_recovery_not_found" });
+      // A cobrança daquela tentativa aparece no provedor (o POST chegou depois da posse).
+      const client = new http.BillingHttpClient({ provider: "asaas", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${fake.baseUrl}/v3` });
+      const adapter = new asaas.AsaasPaymentAdapter(client, async (kind) => (kind === "api_token" ? "TOKEN-FAKE" : "WEBHOOK-FAKE"));
+      // O falso numera as cobranças a partir de `pay_0001` a cada `startAsaasFake`, e a tabela de cobranças é UNIQUE por
+      // (provedor, id): o RS8b, neste arquivo, já gravou `pay_0001`. Uma cobrança de OUTRA referência, antes, desloca a numeração.
+      await adapter.createCharge({ customerId: "cus_fake_rs", amountCents: 100, dueDate: spDayPlus(10), externalReference: randomUUID(), method: "pix", idempotencyKey: randomUUID() });
+      const created = await adapter.createCharge({ customerId: "cus_fake_rs", amountCents: 12345, dueDate: spDayPlus(10), externalReference: fixture.statementId, method: "pix", idempotencyKey: randomUUID() });
+      const taken = (await db.$queryRawUnsafe(`SELECT count(*)::int AS n FROM subscription_statement_charges WHERE external_charge_id = $1`, created.chargeId)) as Array<{ n: number }>;
+      assert.equal(taken[0]!.n, 0, `o id ${created.chargeId} do falso já está na tabela (outro caso deste arquivo): o F2R mediria a colisão, e não a adoção`);
+      const postsBefore = postsToPayments(fake);
+
+      const resolved = await api("POST", `/api/v1/platform/billing/outbox/${id}/resolve`, { tenantId: fixture.tenantId, reason: "a cobrança apareceu no painel do provedor" });
+      assert.equal(resolved.status, 200, JSON.stringify(resolved.body));
+      assert.equal(resolved.body.data.status, "FAILED");
+      const retried = await api("POST", `/api/v1/platform/billing/outbox/${id}/retry`, { tenantId: fixture.tenantId });
+      assert.equal(retried.status, 200, JSON.stringify(retried.body));
+      assert.equal(retried.body.data.outbox.status, "PENDING");
+
+      // O estado da linha vem antes da contagem: se o /resolve apagar o last_error (a M-RS1), o vermelho mostra o efeito, a
+      // linha de volta à conferência com charge_found_unknown_origin.
+      const result = await dispatchOnFake(fixture.tenantId, fake);
+      const row = ((await db.$queryRawUnsafe(`SELECT status, last_error, external_id FROM billing_outbox WHERE id = $1::uuid`, id)) as Array<{ status: string; last_error: string | null; external_id: string | null }>)[0]!;
+      assert.deepEqual(row, { status: "SENT", last_error: null, external_id: created.chargeId });
+      assert.equal(result.outcomes.recovered, 1, JSON.stringify(result.outcomes));
+      assert.equal(postsToPayments(fake) - postsBefore, 0, "0 POST: a cobrança da própria tentativa é adotada");
+      const table = (await db.$queryRawUnsafe(`SELECT external_charge_id, status FROM subscription_statement_charges WHERE statement_id = $1::uuid`, fixture.statementId)) as Array<{ external_charge_id: string; status: string }>;
+      assert.deepEqual(table, [{ external_charge_id: created.chargeId, status: "pending" }], "1 cobrança viva, a adotada");
+      const ref = (await db.$queryRawUnsafe(`SELECT external_charge_id FROM billing_statement_refs WHERE statement_id = $1::uuid`, fixture.statementId)) as Array<{ external_charge_id: string | null }>;
+      assert.deepEqual(ref, [{ external_charge_id: created.chargeId }], "a referência ganha o id da cobrança");
+    } finally {
+      await fake.close();
+    }
+  });
 }
 
 // M-RT (guarda de texto, roda sem banco; Emenda 2 §3.2): nenhuma chamada `.retry(` em `src/` inteiro — a rota de operador

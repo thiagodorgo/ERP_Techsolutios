@@ -237,7 +237,7 @@ export async function writeOutboxAuditInTx(
   });
 }
 
-const CLAIM_BUDGET = { maxWait: 5_000, timeout: 30_000, lockTimeoutMs: 5_000, statementTimeoutMs: 10_000 } as const;
+export const CLAIM_BUDGET = { maxWait: 5_000, timeout: 30_000, lockTimeoutMs: 5_000, statementTimeoutMs: 10_000 } as const;
 
 /** E5″ (2º conserto do #522, §14.2): a pick conjunta das PENDING `charge_create` — o demonstrativo e a linha numa instrução
  * só, o demonstrativo PRIMEIRO (o LockRows trava na ordem das cláusulas: a candidata pulada não fica com trava nenhuma na
