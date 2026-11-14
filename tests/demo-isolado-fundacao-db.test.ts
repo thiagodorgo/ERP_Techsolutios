@@ -54,6 +54,10 @@ function dirTemporario(rotulo: string): string {
   temporarios.push(d);
   return d;
 }
+// Os diretorios temporarios saem no fim tambem sem banco (a parte 1 roda sempre).
+after(() => {
+  for (const d of temporarios) fs.rmSync(d, { recursive: true, force: true });
+});
 
 // ------------------------------------------------------------------------------------------------ PARTE 1
 // Ambiente do processo filho: herda o do teste, sem as variaveis do dotenv, com alvo e Redis permitidos e vazios.
@@ -223,7 +227,6 @@ if (!connectionString) {
       if (modelo) await admin.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${modelo}" WITH (FORCE)`);
       await admin.$disconnect();
     }
-    for (const d of temporarios) fs.rmSync(d, { recursive: true, force: true });
   });
 
   type Contagem = { tenants: number; users: number; audit_logs: number; credenciais: number };
