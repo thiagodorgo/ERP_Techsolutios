@@ -9,6 +9,7 @@ import '../../../core/bootstrap/bootstrap_repository.dart';
 import '../../../core/bootstrap/bootstrap_session.dart';
 import '../../../core/local_db/database_provider.dart';
 import '../../../core/local_db/drift_prestador_local_store.dart';
+import '../../../core/local_db/drift_service_notes_store.dart';
 import '../../../core/local_db/drift_technician_stock_cache.dart';
 import '../../../core/network/api_contracts.dart';
 import '../../../core/network/api_error.dart';
@@ -23,6 +24,7 @@ import '../../work_orders/data/work_order_repository.dart';
 import '../domain/prestador_models.dart';
 import 'material_enqueue_unit.dart';
 import 'prestador_local_store.dart';
+import 'service_notes_store.dart';
 import 'technician_stock_cache.dart';
 import 'technician_stock_demo.dart';
 import 'technician_stock_remote_api.dart';
@@ -35,6 +37,7 @@ class PrestadorRepository extends ChangeNotifier {
     required PrestadorLocalStore localStore,
     TechnicianStockRemoteApi? stockRemoteApi,
     TechnicianStockCache? stockCache,
+    ServiceNotesStore? serviceNotesStore,
     bool allowDemoStock = true,
     bool isDemoSession = false,
   }) : _session = session,
@@ -43,6 +46,7 @@ class PrestadorRepository extends ChangeNotifier {
        _localStore = localStore,
        _stockRemoteApi = stockRemoteApi,
        _stockCache = stockCache ?? InMemoryTechnicianStockCache(),
+       _notesStore = serviceNotesStore ?? InMemoryServiceNotesStore(),
        _allowDemoStock = allowDemoStock,
        _isDemoSession = isDemoSession,
        // B-SAN3-15b (P11) — a unidade de peça e fila nasce do MESMO `syncQueue` recebido.
@@ -57,6 +61,7 @@ class PrestadorRepository extends ChangeNotifier {
   final PrestadorLocalStore _localStore;
   final TechnicianStockRemoteApi? _stockRemoteApi;
   final TechnicianStockCache _stockCache;
+  final ServiceNotesStore _notesStore;
   final bool _allowDemoStock;
   final bool _isDemoSession;
   final MaterialEnqueueUnit _materialUnit;
@@ -133,6 +138,32 @@ class PrestadorRepository extends ChangeNotifier {
 
   Future<List<WorkOrderMaterial>> loadMaterials(String workOrderLocalId) =>
       _localStore.loadMaterials(workOrderLocalId);
+
+  // B-SAN3-15b (P9, Emenda 1 N-11) — as notas só leem e gravam com sessão real: a sessão de demonstração com o app
+  // no modo remoto não lê nem grava nada.
+  bool get _notesAllowed => !(_isDemoSession && !_allowDemoStock);
+
+  ServiceNotesScope _notesScope(String workOrderLocalId) => ServiceNotesScope(
+    tenantId: _session.activeTenant.tenantId,
+    userId: _session.user.userId,
+    workOrderLocalId: workOrderLocalId,
+  );
+
+  /// B-SAN3-15b (P9) — o diagnóstico e o serviço executado desta OS, do usuário da sessão ativa.
+  Future<ServiceNotes?> loadServiceNotes(String workOrderLocalId) async {
+    if (!_notesAllowed) return null;
+    return _notesStore.load(_notesScope(workOrderLocalId));
+  }
+
+  /// B-SAN3-15b (P9) — grava as notas a cada mudança (sobrevivem a reinício).
+  Future<void> saveServiceNotes(
+    String workOrderLocalId,
+    ServiceNotes notes,
+  ) async {
+    if (!_notesAllowed) return;
+    final scope = _notesScope(workOrderLocalId);
+    await _notesStore.save(scope, notes);
+  }
 
   /// Adiciona a seleção de peças (sku→qty) aos materiais da OS, mesclando
   /// quantidades, persistindo localmente e enfileirando para sync.
@@ -378,6 +409,10 @@ final technicianStockCacheProvider = Provider<TechnicianStockCache>((ref) {
   return DriftTechnicianStockCache(ref.watch(appDatabaseProvider));
 });
 
+final serviceNotesStoreProvider = Provider<ServiceNotesStore>((ref) {
+  return DriftServiceNotesStore(ref.watch(appDatabaseProvider));
+});
+
 final prestadorRepositoryProvider = Provider<PrestadorRepository>((ref) {
   final sessionState = ref.watch(bootstrapSessionProvider);
   final session = sessionState.maybeWhen(
@@ -391,6 +426,7 @@ final prestadorRepositoryProvider = Provider<PrestadorRepository>((ref) {
     localStore: ref.watch(prestadorLocalStoreProvider),
     stockRemoteApi: ref.watch(technicianStockRemoteApiProvider),
     stockCache: ref.watch(technicianStockCacheProvider),
+    serviceNotesStore: ref.watch(serviceNotesStoreProvider),
     allowDemoStock: !ref.watch(remoteAuthModeProvider),
     isDemoSession: session == devBootstrapSession,
   );

@@ -11,8 +11,10 @@
 //   T-D6 — u1 salva notas na OS; u2 no mesmo aparelho vê os campos vazios; u1 volta e vê as dele.
 //
 // Os testes são de caixa-preta pela tela: digitam no Atendimento (`PrestadorServiceScreen`), reabrem a tela sobre o
-// mesmo banco do aparelho e leem os campos, ou concluem pela tela de Conclusão e leem a fila. Assim não dependem do
-// nome do store novo.
+// mesmo banco do aparelho e leem os campos, ou concluem pela tela de Conclusão e leem a fila. O repositório do
+// prestador é o da FIAÇÃO DE PRODUÇÃO (`prestadorRepositoryProvider`, montado sobre o `appDatabaseProvider` e a sessão
+// sobrepostos), e não um repositório de memória: é ele que liga as notas ao banco do aparelho. (F5a: o primeiro
+// arnês sobrepunha o repositório com stores de memória; a F5a o tirou, sem mudar asserção nenhuma.)
 //
 // LEITURA do dev, declarada (§A6): "corte em 2.000 caracteres, com '…'" é lido como a MENSAGEM inteira com no máximo
 // 2.000 caracteres, terminando em "…" (o texto do diagnóstico vem primeiro e é o que se corta).
@@ -32,8 +34,6 @@ import 'package:erp_techsolutions_mobile/core/sync/sync_action_factory.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_models.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_queue_repository.dart';
 import 'package:erp_techsolutions_mobile/core/sync/sync_replay_service.dart';
-import 'package:erp_techsolutions_mobile/features/prestador/data/prestador_local_store.dart';
-import 'package:erp_techsolutions_mobile/features/prestador/data/prestador_repository.dart';
 import 'package:erp_techsolutions_mobile/features/prestador/ui/prestador_service_screen.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_local_store.dart';
 import 'package:erp_techsolutions_mobile/features/work_orders/data/work_order_repository.dart';
@@ -131,19 +131,12 @@ Future<void> _abrirAtendimento(
   BootstrapSession sessao,
 ) async {
   _telaAlta(t);
-  final prestRepo = PrestadorRepository(
-    session: sessao,
-    syncQueue: InMemorySyncQueueRepository(),
-    actionFactory: SyncActionFactory(),
-    localStore: InMemoryPrestadorLocalStore(),
-  );
   await t.pumpWidget(
     ProviderScope(
       key: UniqueKey(),
       overrides: [
         appDatabaseProvider.overrideWithValue(aparelho.abrir()),
         bootstrapSessionProvider.overrideWith((_) async => sessao),
-        prestadorRepositoryProvider.overrideWithValue(prestRepo),
       ],
       child: MaterialApp.router(
         routerConfig: GoRouter(
@@ -226,12 +219,6 @@ Future<SyncAction> _concluir(
     actionFactory: SyncActionFactory(),
     localStore: InMemoryWorkOrderLocalStore([wo]),
   );
-  final prestRepo = PrestadorRepository(
-    session: sessao,
-    syncQueue: InMemorySyncQueueRepository(),
-    actionFactory: SyncActionFactory(),
-    localStore: InMemoryPrestadorLocalStore(),
-  );
   await t.pumpWidget(
     ProviderScope(
       key: UniqueKey(),
@@ -239,7 +226,6 @@ Future<SyncAction> _concluir(
         appDatabaseProvider.overrideWithValue(aparelho.abrir()),
         bootstrapSessionProvider.overrideWith((_) async => sessao),
         workOrderRepositoryProvider.overrideWithValue(woRepo),
-        prestadorRepositoryProvider.overrideWithValue(prestRepo),
       ],
       child: MaterialApp.router(
         routerConfig: GoRouter(

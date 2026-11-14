@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/ui/erp_scaffold.dart';
 import '../data/prestador_repository.dart';
+import '../data/service_notes_store.dart';
 import '../domain/prestador_models.dart';
 
 enum _Phase { diagnosis, execution }
@@ -26,13 +27,55 @@ class _PrestadorServiceScreenState
   final _execCtrl = TextEditingController();
   List<WorkOrderMaterial> _materials = [];
   PrestadorRepository? _repo;
+  // B-SAN3-15b (P9) — as notas são gravadas no aparelho a cada mudança, uma gravação depois da outra.
+  Future<void> _notesTail = Future<void>.value();
+  bool _notesTouched = false;
+  bool _notesSaveFailed = false;
 
   static const _minDiagnosis = 8;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _reloadMaterials());
+  /// O repositório muda quando a sessão chega; materiais e notas são relidos do repositório da sessão ativa.
+  void _bindRepo(PrestadorRepository repo) {
+    if (identical(repo, _repo)) return;
+    _repo = repo;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !identical(repo, _repo)) return;
+      _reloadMaterials();
+      _loadNotes(repo);
+    });
+  }
+
+  Future<void> _loadNotes(PrestadorRepository repo) async {
+    final notes = await repo.loadServiceNotes(widget.workOrderId);
+    if (!mounted || !identical(repo, _repo) || notes == null) return;
+    if (_notesTouched) return;
+    setState(() {
+      _diagCtrl.text = notes.diagnosis;
+      _execCtrl.text = notes.execution;
+    });
+  }
+
+  void _onNotesChanged() {
+    _notesTouched = true;
+    setState(() {});
+    final repo = _repo;
+    if (repo == null) return;
+    final notes = ServiceNotes(
+      diagnosis: _diagCtrl.text,
+      execution: _execCtrl.text,
+    );
+    _notesTail = _notesTail
+        .then((_) => repo.saveServiceNotes(widget.workOrderId, notes))
+        .then(
+          (_) {
+            if (mounted && _notesSaveFailed) {
+              setState(() => _notesSaveFailed = false);
+            }
+          },
+          onError: (Object _) {
+            if (mounted) setState(() => _notesSaveFailed = true);
+          },
+        );
   }
 
   @override
@@ -43,10 +86,12 @@ class _PrestadorServiceScreenState
   }
 
   Future<void> _reloadMaterials() async {
-    final repo = ref.read(prestadorRepositoryProvider);
-    _repo = repo;
+    final repo = _repo;
+    if (repo == null) return;
     final materials = await repo.loadMaterials(widget.workOrderId);
-    if (mounted) setState(() => _materials = materials);
+    if (mounted && identical(repo, _repo)) {
+      setState(() => _materials = materials);
+    }
   }
 
   bool get _diagReady => _diagCtrl.text.trim().length >= _minDiagnosis;
@@ -61,13 +106,23 @@ class _PrestadorServiceScreenState
 
   @override
   Widget build(BuildContext context) {
-    // Mantém o repo observado para rebuilds de materiais.
-    ref.watch(prestadorRepositoryProvider);
+    // Mantém o repo observado: quando a sessão chega, materiais e notas são relidos.
+    _bindRepo(ref.watch(prestadorRepositoryProvider));
     return ErpScaffold(
       title: 'Atendimento',
       body: _phase == _Phase.diagnosis ? _buildDiagnosis() : _buildExecution(),
     );
   }
+
+  /// B-SAN3-15b (P9) — a gravação no aparelho falhou: o texto continua na tela e a próxima alteração tenta de novo.
+  Widget _notesSaveWarning() => Padding(
+    key: const Key('service-notes-save-failed'),
+    padding: const EdgeInsets.only(top: 6),
+    child: Text(
+      'Não foi possível salvar no aparelho. A próxima alteração tenta de novo.',
+      style: TextStyle(color: Theme.of(context).colorScheme.error),
+    ),
+  );
 
   Widget _buildDiagnosis() {
     return ListView(
@@ -82,12 +137,13 @@ class _PrestadorServiceScreenState
           key: const Key('diagnosis-text'),
           controller: _diagCtrl,
           maxLines: 5,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => _onNotesChanged(),
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             hintText: 'Descreva o diagnostico tecnico...',
           ),
         ),
+        if (_notesSaveFailed) _notesSaveWarning(),
         const SizedBox(height: 8),
         Text(
           _diagReady
@@ -132,12 +188,13 @@ class _PrestadorServiceScreenState
           key: const Key('execution-text'),
           controller: _execCtrl,
           maxLines: 4,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => _onNotesChanged(),
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
             hintText: 'Descreva o servico executado...',
           ),
         ),
+        if (_notesSaveFailed) _notesSaveWarning(),
         const SizedBox(height: 16),
         Text(
           'Materiais utilizados',

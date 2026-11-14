@@ -480,15 +480,19 @@ class WorkOrderRepository extends ChangeNotifier {
   /// [deliveryComplete] (B-SAN3-14, P5) — a trava da entrega do guincho
   /// está aberta: sem entrega confirmada pelo servidor, ou com ela concluída.
   /// OBRIGATÓRIO, sem padrão: todo chamador declara (o compilador confere).
+  /// [message] (B-SAN3-15b, P9) — o texto que vai para o histórico da OS (o
+  /// diagnóstico e o serviço executado do prestador); sem ele, a mensagem padrão.
   Future<WorkOrderMutationResult> completeWorkOrder(
     String localId, {
     required bool checklistComplete,
     required bool deliveryComplete,
+    String? message,
   }) => _serial(
     () => _completeWorkOrderLocked(
       localId,
       checklistComplete: checklistComplete,
       deliveryComplete: deliveryComplete,
+      message: message,
     ),
   );
 
@@ -695,6 +699,7 @@ class WorkOrderRepository extends ChangeNotifier {
     String localId, {
     required bool checklistComplete,
     required bool deliveryComplete,
+    String? message,
   }) async {
     final idx = _orders.indexWhere((o) => o.localId == localId);
     if (idx == -1) throw StateError('WorkOrder $localId not found');
@@ -734,7 +739,7 @@ class WorkOrderRepository extends ChangeNotifier {
         'new_status': WorkOrderStatus.completed.name,
         'previous_status': wo.status.name,
         'occurred_at': now.toIso8601String(),
-        'message': 'Mobile completed work order.',
+        'message': message ?? 'Mobile completed work order.',
       },
     );
 

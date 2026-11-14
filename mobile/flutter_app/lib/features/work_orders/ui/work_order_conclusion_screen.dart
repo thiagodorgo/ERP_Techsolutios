@@ -5,6 +5,7 @@ import '../../../core/sync/sync_models.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
 import '../../prestador/data/prestador_repository.dart';
+import '../../prestador/data/service_notes_store.dart';
 import '../data/work_order_repository.dart';
 import '../domain/work_order_conclusion.dart';
 import '../domain/work_order_models.dart';
@@ -24,6 +25,7 @@ class _WorkOrderConclusionScreenState
     extends ConsumerState<WorkOrderConclusionScreen> {
   Future<WorkOrderConclusionSummary>? _future;
   WorkOrderRepository? _repo;
+  PrestadorRepository? _prestRepo;
   bool _completing = false;
   bool _done = false;
   String? _error;
@@ -32,6 +34,7 @@ class _WorkOrderConclusionScreenState
     WorkOrderRepository woRepo,
     PrestadorRepository prestRepo,
   ) {
+    _prestRepo = prestRepo;
     if (_repo != woRepo) {
       _repo = woRepo;
       _future = _load(woRepo, prestRepo);
@@ -71,12 +74,15 @@ class _WorkOrderConclusionScreenState
     try {
       final wo = _repo!.findById(widget.workOrderId);
       final checklistComplete = wo?.checklistId == null;
+      // B-SAN3-15b (P9) — o diagnóstico e o serviço executado vão na mensagem da conclusão.
+      final notes = await _prestRepo?.loadServiceNotes(widget.workOrderId);
       // B-SAN3-14 (D2) — o fluxo do prestador (B-SAN3-15) só ganha o
       // parâmetro novo, com o mesmo valor conservador.
       await _repo!.completeWorkOrder(
         widget.workOrderId,
         checklistComplete: checklistComplete,
         deliveryComplete: checklistComplete,
+        message: serviceConclusionMessage(notes),
       );
       if (mounted) setState(() => _done = true);
     } on StateError catch (e) {
