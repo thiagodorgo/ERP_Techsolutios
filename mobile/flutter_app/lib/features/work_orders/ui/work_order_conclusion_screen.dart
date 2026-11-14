@@ -120,7 +120,10 @@ class _WorkOrderConclusionScreenState
     final prestRepo = _prestRepo;
     if (repo == null || prestRepo == null) return;
     final future = _load(repo, prestRepo);
-    setState(() => _future = future);
+    // J-564 C3-02: corpo de bloco. Com a seta, o callback devolveria o Future e o `setState` lançaria (em depuração).
+    setState(() {
+      _future = future;
+    });
     await future;
   }
 

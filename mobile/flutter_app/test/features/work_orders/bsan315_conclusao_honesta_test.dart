@@ -11,6 +11,10 @@
 //   T-H6 — CRIT-04: OS SEM checklist não toca no repositório de checklist (o b120 caso 9 continua sem sobrepor o
 //          provider).
 //
+// O conserto único da J-564 (ata `J-564-b-san3-15b.md`, triagem) acrescenta:
+//   C3-02 — T-H2 (concluído) e T-H4 asserem a AUSÊNCIA de "Não foi possível concluir" depois do sucesso, e o T-H7
+//           cobre a volta de "Abrir checklist" (sem exceção, aviso some e o botão fica ativo).
+//
 // VERMELHO-CONTROLE (F0b, `main` d2737339): hoje a tela inventa a comissão (T-H1, T-H3), só avisa do checklist
 // depois do toque e recusa a OS com checklist concluído (T-H2), não refaz o resumo depois de concluir (T-H4) e
 // mostra "Equipamento" com o código da OS (T-H5). O T-H6 é verde na `main` (a tela de hoje não lê checklist) e é a
@@ -132,6 +136,9 @@ class _Conclusao {
   );
   late _ChecklistContado checklists;
 
+  /// O armazenamento das execuções do checklist (T-H7 conclui a vistoria nele antes de voltar).
+  late InMemoryChecklistLocalStore checklistStore;
+
   /// Quantas vezes o provider do repositório de checklist foi criado (lido ou observado).
   int criacoesDoProvider = 0;
 
@@ -146,6 +153,7 @@ class _Conclusao {
     for (final run in _runs) {
       await store.saveRun(run);
     }
+    checklistStore = store;
     checklists = _ChecklistContado(store);
     final prestRepo = PrestadorRepository(
       session: _session,
@@ -182,7 +190,20 @@ class _Conclusao {
               ),
               GoRoute(
                 path: '/checklists/:checklistId/run',
-                builder: (_, s) => Scaffold(body: Text('Vistoria ${s.uri}')),
+                builder: (_, s) => Scaffold(
+                  body: Builder(
+                    builder: (c) => Column(
+                      children: [
+                        Text('Vistoria ${s.uri}'),
+                        TextButton(
+                          key: const Key('checklist-voltar'),
+                          onPressed: () => c.pop(),
+                          child: const Text('Voltar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -205,6 +226,7 @@ class _Conclusao {
 
 const _avisoTitulo = 'Checklist obrigatório pendente';
 const _avisoTexto = 'Conclua o checklist obrigatório antes de finalizar a OS.';
+const _falha = 'Não foi possível concluir. Tente novamente.';
 
 void main() {
   group('B-SAN3-15b T-H1 — sem valor em reais na conclusão', () {
@@ -260,6 +282,8 @@ void main() {
         await t.pumpAndSettle();
         expect(find.byKey(const Key('conclusion-synced')), findsOneWidget);
         expect(await h.conclusoesNaFila(), hasLength(1));
+        // J-564 C3-02: depois do sucesso, nenhuma falha na tela.
+        expect(find.text(_falha), findsNothing, reason: 'falha falsa');
       },
     );
   });
@@ -318,7 +342,38 @@ void main() {
         find.textContaining(RegExp(r'^1h (29|30|31)min$')),
         findsOneWidget,
       );
+      // J-564 C3-02: depois do sucesso, nenhuma falha na tela.
+      expect(find.text(_falha), findsNothing, reason: 'falha falsa');
     });
+  });
+
+  group('B-SAN3-15b T-H7 — a volta de "Abrir checklist" (J-564 C3-02)', () {
+    testWidgets(
+      'abre o checklist, conclui a vistoria e volta: sem exceção, o aviso some e o botão fica ativo',
+      (t) async {
+        final h = _Conclusao(
+          _wo(checklistId: _cl),
+          runs: [_run(MobileChecklistRunStatus.inProgress)],
+        );
+        await h.pump(t);
+        expect(find.text(_avisoTitulo), findsOneWidget);
+        expect(h.concluirAtivo(t), isFalse);
+
+        await t.tap(find.byKey(const Key('conclusion-open-checklist')));
+        await t.pumpAndSettle();
+        expect(find.byKey(const Key('checklist-voltar')), findsOneWidget);
+        await h.checklistStore.saveRun(
+          _run(MobileChecklistRunStatus.completed),
+        );
+        await t.tap(find.byKey(const Key('checklist-voltar')));
+        await t.pumpAndSettle();
+
+        expect(t.takeException(), isNull);
+        expect(find.text(_avisoTitulo), findsNothing);
+        expect(h.concluirAtivo(t), isTrue);
+        expect(find.text(_falha), findsNothing);
+      },
+    );
   });
 
   group(
