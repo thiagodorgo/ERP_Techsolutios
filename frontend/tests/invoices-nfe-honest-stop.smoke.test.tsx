@@ -103,3 +103,12 @@ test("faturas: atalho para Cobranças só com financial_titles:read", async () =
   const withoutPerm = await renderInvoices(["dashboard:read"], "auditor.web@techsolutions.example");
   assert.doesNotMatch(withoutPerm, /Ver cobranças/);
 });
+
+// B-SAN3-25 (item 50) — a web fatura a OS na aba Financeiro dela. A tela Faturas diz isso e deixa de
+// afirmar que "o faturamento continua disponível no Financeiro", o que não era verdade.
+test("[A9] faturas: aponta o faturamento para a aba Financeiro da OS e não promete faturar no Financeiro", async () => {
+  const html = await renderInvoices(["financial_titles:read"]);
+
+  assert.match(html, /aba Financeiro de cada ordem de serviço/);
+  assert.doesNotMatch(html, /faturamento continuam disponíveis no Financeiro/);
+});
