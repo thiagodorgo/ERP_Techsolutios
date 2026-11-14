@@ -24,7 +24,8 @@ import type { CloudBillingData } from "../cloud-billing.types";
 import { useCloudBilling, useInitialBillingMonth } from "../useCloudBilling";
 import { useCloudBillingActions } from "../useCloudBillingActions";
 import { CloudBillingViewA } from "../views/CloudBillingViewA";
-import { MonthSelect, type CloudBillingAction, type CloudBillingViewProps } from "../views/cloudBilling.shared";
+import { MonthSelect, type CloudBillingViewProps } from "../views/cloudBilling.shared";
+import { CloudBillingDialogs, type DialogAction } from "../components/CloudBillingDialogs";
 
 // B-ASS-10b (T5) — a tela de custo e margem da plataforma (`/platform/cloud-billing`), com as 3 aparências aprovadas pelo
 // dono em 14/11 ("aprovo as telas de custos"; referência `screen-refs/platform-cloud-billing-3opcoes.reference.html`).
@@ -168,9 +169,9 @@ function CloudBillingContent({ initialMonth }: { readonly initialMonth: string }
   const { appearance } = useScreenAppearance("platform-cloud-billing");
   const [month, setMonth] = useState(initialMonth);
   const [ui, setUi] = useState<CloudBillingUi>(INITIAL_UI);
-  const [, setDialog] = useState<CloudBillingAction | null>(null);
+  const [dialog, setDialog] = useState<DialogAction | null>(null);
   const reading = useCloudBilling(month, { readImports: access.readImports });
-  useCloudBillingActions(access);
+  const actions = useCloudBillingActions(access);
   const currentMonth = currentBillingMonth();
   const today = todayInSaoPaulo();
   const model = useMemo(
@@ -208,17 +209,27 @@ function CloudBillingContent({ initialMonth }: { readonly initialMonth: string }
     onRetrySeries: () => void reading.retrySeries(model.seriesFailed),
   };
 
+  // Depois de uma escrita com sucesso, a tela relê o mês (em segundo plano: o dado confirmado fica até a resposta).
+  const rereadAfterWrite = () => {
+    void reading.refresh(true);
+    void reading.reloadGroupDetails();
+    void reading.retrySeries();
+  };
+
   return (
-    <PlatformCloudBillingScreen
-      data={reading.data}
-      loading={reading.loading}
-      month={month}
-      model={model}
-      access={access}
-      appearance={appearance}
-      handlers={handlers}
-      onRetry={() => void reading.reloadAll()}
-    />
+    <>
+      <PlatformCloudBillingScreen
+        data={reading.data}
+        loading={reading.loading}
+        month={month}
+        model={model}
+        access={access}
+        appearance={appearance}
+        handlers={handlers}
+        onRetry={() => void reading.reloadAll()}
+      />
+      <CloudBillingDialogs dialog={dialog} model={model} access={access} actions={actions} onClose={() => setDialog(null)} onDone={rereadAfterWrite} onMonth={changeMonth} />
+    </>
   );
 }
 

@@ -157,6 +157,8 @@ export type SeriesPoint = {
   readonly cost: Money | null;
   readonly margin: Money | null;
   readonly marginPct: Pct | null;
+  /** O custo da plataforma do mês (`global.platformOwnCost`), para a dica "mês anterior" do indicador. */
+  readonly platformCost: Money | null;
   readonly costValid: boolean;
   readonly fxRate: Rate | null;
   /** Linhas `critical` + `warning` do mês (contagem); `null` sem a leitura por organização ou sem custo válido. */
@@ -223,6 +225,8 @@ export type CloudBillingView = {
   readonly scheduled: readonly { readonly tenantName: string; readonly groupName: string; readonly validFrom: string }[] | null | "loading";
   /** O grupo de hoje de cada organização (para "Mudar de grupo" e "hoje no <grupo>"). */
   readonly currentGroupByTenant: Readonly<Record<string, { readonly groupId: string; readonly groupName: string }>>;
+  /** O arquivo de custo que o servidor usou no mês (`cost.importId`); os outros do mês aparecem como substituídos. */
+  readonly usedImportId: string | null;
   readonly empty: boolean;
 };
 
@@ -304,8 +308,8 @@ function seriesPoint(month: string, input: CloudBillingViewInput, fxByMonth: Rea
     : mapRead(input.series.global[month], (value) => ({ global: value.global, status: value.cost.status }));
   const tenantRead = own ? (input.data.tenant ? { state: "ok" as const, value: input.data.tenant } : { state: "error" as const }) : input.series.tenant[month];
   const fxRate = fxByMonth[month]?.rate ?? null;
-  if (!globalRead || globalRead.state === "loading") return { month, state: "loading", subscription: null, cost: null, margin: null, marginPct: null, costValid: false, fxRate, alertCount: null };
-  if (globalRead.state === "error") return { month, state: "error", subscription: null, cost: null, margin: null, marginPct: null, costValid: false, fxRate, alertCount: null };
+  if (!globalRead || globalRead.state === "loading") return { month, state: "loading", subscription: null, cost: null, margin: null, marginPct: null, platformCost: null, costValid: false, fxRate, alertCount: null };
+  if (globalRead.state === "error") return { month, state: "error", subscription: null, cost: null, margin: null, marginPct: null, platformCost: null, costValid: false, fxRate, alertCount: null };
   const { global, status } = globalRead.value;
   const costValid = COST_VALID_STATUSES.includes(status);
   const alertCount = costValid && tenantRead?.state === "ok" ? tenantRead.value.lines.filter((line) => line.alert === "critical" || line.alert === "warning").length : null;
@@ -316,6 +320,7 @@ function seriesPoint(month: string, input: CloudBillingViewInput, fxByMonth: Rea
     // P13 na tela: sem custo válido, custo e margem ficam ausentes, seja qual for o valor do campo
     cost: costValid ? global.totalCost : null,
     margin: costValid ? global.margin : null,
+    platformCost: costValid ? global.platformOwnCost : null,
     marginPct: costValid ? global.marginPct : null,
     costValid,
     fxRate,
@@ -455,6 +460,7 @@ export function buildCloudBillingView(input: CloudBillingViewInput): CloudBillin
     emptyGroups: data.groups.filter((group) => !groupIdsInMonth.has(group.id)),
     scheduled: detailsFailed ? null : detailsLoading ? "loading" : scheduledEntries(details, today),
     currentGroupByTenant,
+    usedImportId: data.global?.cost.importId ?? data.tenant?.cost.importId ?? null,
     empty,
   };
 }
