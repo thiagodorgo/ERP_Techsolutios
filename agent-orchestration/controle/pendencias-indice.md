@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **998** |
-| IDs distintos | 987 |
-| **ABERTAS** | **763** |
+| Cabecalhos `## P-` | **1004** |
+| IDs distintos | 993 |
+| **ABERTAS** | **769** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **702** |
+| — das quais **ativas nesta rodada** | **708** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 231 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **998 cabecalhos para 987 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1004 cabecalhos para 993 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 322
+## ABERTAS · balde A — material — 325
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -396,8 +396,11 @@
 | `P-AUTH-IP-ATRAS-DO-PROXY` | 14745 | CRÍTICA | sim | P-AUTH-IP-ATRAS-DO-PROXY (2026-11-13) — o limitador do login usa o IP do socket, que na  |
 | `P-547-TEMPO-MEDIO-FECHAR` | 14779 | MÉDIA | sim | P-547-TEMPO-MEDIO-FECHAR (2026-11-13) — a maquete pede o "Tempo médio para fechar", e a  |
 | `P-APP-KIT-CONTRASTE-AA` | 14853 | MÉDIA | sim | P-APP-KIT-CONTRASTE-AA (2026-11-13) — chips, pílula, barra inferior e o "Concluir OS" do |
+| `P-SYNC-OS-RECIBO-EM-MEMORIA` | 14878 | MÉDIA | sim | P-SYNC-OS-RECIBO-EM-MEMORIA (2026-11-14) — depois de reiniciar a API, o reenvio de uma a |
+| `P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME` | 14927 | MÉDIA | sim | P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME (2026-11-14) — sob o papel de runtime, o login |
+| `P-SEED-BASE-TRAVA-SO-NODE-ENV` | 14952 | MÉDIA | sim | P-SEED-BASE-TRAVA-SO-NODE-ENV (2026-11-14) — a trava do seed base só olha o `NODE_ENV`,  |
 
-## ABERTAS · balde B — processo/registro — 380
+## ABERTAS · balde B — processo/registro — 383
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -781,6 +784,9 @@
 | `P-546-ACENTOS-FORA-DO-AUTORIZADO` | 14829 | BAIXA | sim | P-546-ACENTOS-FORA-DO-AUTORIZADO (2026-11-13) — textos do app sem acento fora do que o c |
 | `P-546-N3-SUBTITULO-QUEBRA` | 14837 | BAIXA | sim | P-546-N3-SUBTITULO-QUEBRA (2026-11-13) — com nome longo de modelo, o subtítulo do cartão |
 | `P-APP-TEMA-SUCESSO-TERTIARY` | 14845 | BAIXA | sim | P-APP-TEMA-SUCESSO-TERTIARY (2026-11-13) — o passo concluído do app usa o roxo `tertiary |
+| `P-OS-MESMA-SITUACAO-GRAVA-EVENTO` | 14898 | BAIXA | sim | P-OS-MESMA-SITUACAO-GRAVA-EVENTO (2026-11-14) — a mudança para a mesma situação grava ev |
+| `P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET` | 14909 | BAIXA | sim | P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 |
+| `P-SEED-BASE-NOMES-REAIS` | 14966 | BAIXA | sim | P-SEED-BASE-NOMES-REAIS (2026-11-14) — os seeds de `prisma/` trazem marcas e órgãos reai |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
