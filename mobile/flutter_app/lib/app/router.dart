@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../core/auth/auth_notifier.dart';
 import '../core/bootstrap/bootstrap_repository.dart';
 import '../core/config/app_config.dart';
+import '../core/permissions/mobile_gates.dart';
 import '../core/diagnostics/diagnostics_screen.dart';
 import '../features/auth/change_password_screen.dart';
 import '../features/auth/login_screen.dart';
@@ -148,10 +149,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ? const DiagnosticsScreen()
             : const ModulePlaceholderScreen(
                 title: 'Diagnóstico',
-                requiredPermission: 'diagnostics:read',
+                gate: null,
                 message:
-                    'Esta área só está disponível no ambiente de desenvolvimento.',
-                blockedMessage:
                     'Esta área não está disponível nesta versão do aplicativo.',
               ),
       ),
@@ -273,9 +272,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/approvals',
         builder: (context, state) => const ModulePlaceholderScreen(
           title: 'Aprovações',
-          requiredPermission: 'workflow:request',
+          gate: MobileGates.aprovacoes,
           message: 'As aprovações ainda não estão disponíveis no aplicativo.',
-          blockedMessage: 'Esta área ainda não está disponível no aplicativo.',
+          blockedMessage:
+              'Seu perfil não tem permissão para aprovar ordens de serviço. '
+              'Fale com o administrador da sua organização.',
         ),
       ),
     ],
@@ -335,10 +336,8 @@ final appRouter = GoRouter(
           ? const DiagnosticsScreen()
           : const ModulePlaceholderScreen(
               title: 'Diagnóstico',
-              requiredPermission: 'diagnostics:read',
+              gate: null,
               message:
-                  'Esta área só está disponível no ambiente de desenvolvimento.',
-              blockedMessage:
                   'Esta área não está disponível nesta versão do aplicativo.',
             ),
     ),
@@ -458,9 +457,11 @@ final appRouter = GoRouter(
       path: '/approvals',
       builder: (context, state) => const ModulePlaceholderScreen(
         title: 'Aprovações',
-        requiredPermission: 'workflow:request',
+        gate: MobileGates.aprovacoes,
         message: 'As aprovações ainda não estão disponíveis no aplicativo.',
-        blockedMessage: 'Esta área ainda não está disponível no aplicativo.',
+        blockedMessage:
+            'Seu perfil não tem permissão para aprovar ordens de serviço. '
+            'Fale com o administrador da sua organização.',
       ),
     ),
   ],

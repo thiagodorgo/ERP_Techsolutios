@@ -37,7 +37,7 @@ const _wo = 'wo-bsan315';
 const _session = BootstrapSession(
   activeTenant: TenantContext(tenantId: _tenant, displayName: 'Tenant BSAN315'),
   enabledModules: [],
-  permissions: PermissionSet({'inventory:read', 'work_orders:read'}),
+  permissions: PermissionSet({'inventory.read', 'work_orders:read'}),
 );
 
 const _remoteItem = TechnicianStockItem(
@@ -466,6 +466,8 @@ void main() {
 
       expect(find.textContaining('2,5 m'), findsOneWidget);
 
+      await t.tap(find.byKey(const Key('stock-item-XYZ-1234')));
+      await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('stock-add-XYZ-1234')));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('stock-inc-XYZ-1234')));
