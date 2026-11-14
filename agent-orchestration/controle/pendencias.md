@@ -13881,6 +13881,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
 - **status:** FECHADA (2026-11-14, no PR do `B-MOBILE-GATE-CHAVE`, item 66; vale no merge). Cada gate de tela e de botão do app passa a ser uma regra de `mobile/flutter_app/lib/core/permissions/mobile_gates.dart`, igual à rota do servidor (módulo "qualquer um", chaves do catálogo e o modo); o `tests/mobile-gate-chave-catalogo.test.ts` prova as regras contra os exports da rota (T4.1), nenhum literal do `lib/` fora do catálogo (T4.2, com o canário das 9 classes) e a demo dentro do técnico de campo (T4.3); o `tests/mobile-gate-chave-matriz.test.ts` mede a matriz no servidor, e o app reproduz cada célula (T3, 52) e cada tela (T1, 66). O T9 do `B-SAN3-19b` exige "Fale com o administrador da sua organização." em Checklists, Estoque, Aprovações e nas telas Nova Entrada e Nova Saída; o Diagnóstico fica indisponível fora do modo de desenvolvimento (resposta 2.2 do dono, `D-DONO-1311-RECOMENDACOES`), por isso o texto do administrador vale em 3 telas do pedido original e no botão, não em 4.
+- **merge e CI do merge (registro pós-merge, 2026-11-14 tarde, `reg-1411b-cl`; cumpre o "vale no merge" da linha acima):** PR #561 mergeado em `e6f3c425` (14/11, 10:40 SP; a árvore do squash é a do head conferido `8fd50887`). CI da `main` no merge: rodada `43600960034` (push), 8 de 8 jobs `success` (backend 5729 passam e 0 falham; Flutter `+1367`). Conferido pelo `porteiro-561-cl` (LIBERADO COM RESSALVA), que achou 0 ocorrências das 8 chaves inventadas em `mobile/flutter_app/lib` e as 6 chaves das 5 regras no `catalog.ts`. **Correção (A2-3 do porteiro):** o canário do T4.2 tem **11** classes, não 9; o log do job `backend` mostra o caso "canário de 11 classes" `ok`. A linha `status` acima fica como estava, por acréscimo. Ata: `agent-orchestration/omega/juntas/J-561-b-mobile-gate-chave.md`.
 - **status anterior:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
   não muda permissão) · **dono:** `B-MOBILE-GATE-CHAVE` (procedência: a Emenda 3 do plano do `B-SAN3-19b` e a resposta (a) do dono à Pergunta 2, em 11/11; o ID do bloco foi dado em 13/11, R552-A2; plano em curso; junta completa + `coordenador-de-acessos`; começa provando o bloqueio contra o backend local) · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
 - **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
@@ -14502,6 +14503,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-DB-FUSO-DA-CONEXAO (2026-11-12) — toda data gravada pelo Prisma pode ficar deslocada pelo offset do fuso da conexão — ALTA (sistêmica, sem bloqueio hoje)
 
+- **status:** FECHADA (2026-11-14, PR #554, merge `14b693e4` às 07:52 SP; registro pós-merge `reg-1411b-cl`, achado N3 do `porteiro-554-cl`) — a conexão abre com o fuso fixo em UTC pela fábrica `src/database/pg-connection.ts`, e o boot recusa quando a sessão não está em UTC (fail-closed); os testes `-db` sob `America/Sao_Paulo` (`tests/db-fuso-utc-sp-db.test.ts`, 6/6) e o do boot (`tests/db-fuso-utc-boot.test.ts`, 17/17) foram reexecutados pelo porteiro no merge. CI da `main` no merge: rodada `43587307951`, tentativa 2 `success` (09:39 SP); a tentativa 1 caiu no T15 de outro arquivo (`P-T15-5432-SUBSTRING-NA-HORA`). A linha `status` de baixo é a de antes, mantida por acréscimo. O que resta do fuso segue nas irmãs (`P-DB-FUSO-POOLER-MEDIR`, `P-DB-FUSO-TESTES-DIRETOS`, `P-DB-FUSO-SUITES` e `P-DB-FUSO-SCRIPTS-SEM-TRAVA`) e na `P-FUSO-BOOT-EXIGE-BANCO-EM-MEMORIA`.
 - **status:** ABERTA (em execução; PR draft deste bloco) · **gravidade:** ALTA (sistêmica) · **escopo:** `dentro-do-bloco` (`src/database/pg-connection.ts`, `src/database/session-timezone.ts`, `src/database/session-timezone.bootstrap.ts`, `src/database/prisma.ts`, `src/server.ts`, `src/integrations/traccar/traccar-db.ts`, `src/integrations/traccar/traccar-ingest.bootstrap.ts`, seeds/scripts de operação, `.env.example`, `docs/deployment.md`) · **dono:** `B-DB-FUSO-UTC` (aberto; plano escrito, 9 fatias) · **PR-alvo:** este bloco (PR #554, ramo `fix/db-fuso-utc`) · **bloqueia:** não (hoje).
 - **origem:** investigação `inv-543-fuso` (registro `REGISTRO-PENDENTE.md`, 12/11 07:37), desdobramento do T8 que o porteiro do #543 chamou de incidente.
 - **fato:** o `@prisma/adapter-pg` manda todo `Date` como texto UTC sem sufixo de fuso, e o Postgres o lê no `TimeZone` da sessão. Num banco fora de UTC, toda data gravada pelo Prisma fica deslocada pelo offset (+3 h em SP). O T8 (sessão vencida → 401) dá 200 com o banco em `America/Sao_Paulo` e 401 em UTC. O `docker-compose.prod.yml` (postgres:16, UTC) e o RDS padrão (UTC, não medido) não disparam; no portão a janela extra efetiva é `min(3 h, vida do token de acesso)`. Pontos que misturam `now()` do banco com data do Prisma: `charge-prisma.repository.ts:150`, `local-auth-credential.repository.ts:152`, `traccar-ingestion.repository.ts:143,199`, `work-order-prisma.repository.ts:210,262,265,511`, `financial-title-prisma.repository.ts:133,167,169,215,238` e outros (lista em `revisoes/j543/inv-fuso/inv-543-fuso.json`).
@@ -14544,6 +14546,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   - **forma:** `{"level":50,…,"err":{"type":"PrismaClientKnownRequestError","message":"…Can't reach database server at h0st-sentinela",…,"cause":{"kind":"DatabaseNotReachable","host":"h0st-sentinela"}}},"msg":"Sonda de login sem organização: desfecho não classificado."}`. Os logs da trava de fuso e a mensagem final (`SESSION_TIMEZONE_PROBE_FAILED`) saíram sanitizados no mesmo boot.
   - **causa:** o erro cru no logger, em `src/modules/auth/services/login-readiness.ts:192` (`logger.error({ err: error }, …)`).
   - **mesma forma, sem medição de vazamento (hipótese):** `login-readiness.ts:123` (`logger.error({ err: error }, …)`) e `src/server.ts:56` (`logger.error({ error }, …)`).
+  - **dado novo sobre o `src/server.ts:56` (registro de 2026-11-14 tarde, `reg-1411b-cl`; medido pelo `porteiro-554-cl` no boot real do merge `14b693e4`, E9):** o logger não serializa a chave `error`. Um `Error` comum sai como `"error":{}` (a mensagem "DATABASE_URL is required" some), e um erro nomeado sai só com as propriedades próprias (`code`, `name`). Nos 2 casos medidos não houve vazamento, mas o operador fica sem o motivo da recusa (ver `P-FUSO-BOOT-EXIGE-BANCO-EM-MEMORIA`).
 - **evidência:** `revisoes/j554/votos/C2-voto.json` (C2-A2) e `C2-evidencia.md` (item 2), log em `votos/C2-tmp/api-connection-error.log` (fora do repositório).
 - **critério de encerramento:** o sanitizador de erro que o `runtime-role.bootstrap.ts` já usa (`describeDriverError`) aplicado a todo `logger.error` do boot e da sonda de login; teste com a URL-sentinela sobre o log INTEIRO de um boot real com erro de conexão → 0 ocorrência das 5 sentinelas.
 
@@ -14655,6 +14658,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** Emenda 2 do plano do `B-SAN3-19b` (registro 08:20 de 11/11) e PORT540-09 do `porteiro-540`: a sonda própria achou 2 mensagens da classe em `checklist_repository.dart:664-665` e `work_order_repository.dart:884`.
 - **fato:** 4 SnackBars (e mensagens de exceção) interpolam `$e` cru, que o T6 não vê porque a âncora é literal.
 - **critério de encerramento:** nenhuma mensagem de exceção exibe o erro técnico cru; o usuário vê a frase de negócio (ou a guarda passa a cobrir interpolação).
+- **vínculo (registro de 2026-11-14 tarde, `reg-1411b-cl`):** ver `P-WO-REPO-ERROS-EM-INGLES`, que lista os 7 `StateError` em inglês de `work_order_repository.dart`; o 'Tenant mismatch' citado aqui está na `:930` da `main` `eeac48a3`.
 
 ## P-MOBILE-IDENTIFICADOR-CRU-NA-TELA (2026-11-12) — duas telas exibem identificador interno cru (id de categoria em inglês; "Checklist: cl-seed-1") — BAIXA
 
@@ -14960,12 +14964,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-SAN3-15-CONCLUSAO-VEICULO-COM-CODIGO (2026-11-14) — a linha "Veiculo" da conclusão do guincho mostra o código da OS — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (`work_order_conclusion.dart`, antes do `B-SAN3-15b`: `assetValue: wo.code`) · **dono:** a nomear pelo orquestrador.
+- **dono proposto (registro de 2026-11-14 tarde, `reg-1411b-cl`, pela ressalva PORT564-04 do `porteiro-564-cl`; leitura do redator, declarada (§A6), que o orquestrador confirma ou troca):** `B-SAN3-15c`, o acabamento da Conclusão do prestador (a mesma tela das `P-15B-CONCLUSAO-*`) · **PR-alvo:** o PR do `B-SAN3-15c`.
 - **fato:** no resumo da conclusão, o guincho tem a linha "Veiculo" com o código da OS como valor (`assetValue: isTow ? wo.code : null`). Depois da porta do prestador (P8), o guincho não chega a esta tela (conclui pela tela Atendimento). Achado lateral da Emenda 5 (abertura) do `B-SAN3-15b`, §2.4; o 15b não o conserta.
 - **encerramento:** o resumo do guincho mostra a placa ou o veículo de verdade, ou a linha sai, com teste.
 
 ## P-SAN3-15-TIPO-NULO-EM-FALHA-DO-CATALOGO (2026-11-14) — falha passageira do catálogo faz o pull gravar o tipo da OS como nulo — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (`work-order.service.ts`, `resolveServiceCatalogTypeInfo`: `catch` → `null`) · **dono:** a nomear pelo orquestrador (sem conserto no `B-SAN3-15b`, Emenda 5.1 §8 (iv)).
+- **dono proposto (registro de 2026-11-14 tarde, `reg-1411b-cl`, pela ressalva PORT564-04 do `porteiro-564-cl`; leitura do redator, declarada (§A6), que o orquestrador confirma ou troca):** o próximo bloco de backend que tocar `resolveServiceCatalogTypeInfo` em `src/modules/work-orders/work-order.service.ts` · **PR-alvo:** o PR desse bloco.
 - **fato:** com o `B-SAN3-15b`, a lista de OS manda `serviceKind`, e o app regrava o tipo a cada pull (S-K(b)). Se o catálogo falhar numa leitura, o servidor responde `unknown` e o aparelho grava o tipo nulo até o pull seguinte: a porta do prestador fecha (fail-closed) e a trava de entrega do guincho no aparelho desliga (`work_order_repository.dart`, `serviceType == tow`); o servidor continua recusando.
 - **encerramento:** a falha do catálogo não troca um tipo conhecido por nulo no aparelho (ou a resposta diz que não conseguiu ler), com teste.
 
@@ -14978,6 +14984,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-SAN3-15-ACHADOS-DA-MAQUETE-FORA-DO-BLOCO (2026-11-14) — achados da maquete do prestador que o 15b não conserta — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (camada de revisão de `screen-refs/prestador-atendimento-3opcoes.reference.html`; Emenda 5 (abertura) do `B-SAN3-15b`, §2.5) · **dono:** a nomear pelo orquestrador.
+- **dono proposto (registro de 2026-11-14 tarde, `reg-1411b-cl`, pela ressalva PORT564-04 do `porteiro-564-cl`; leitura do redator, declarada (§A6), que o orquestrador confirma ou troca):** `B-SAN3-15c`, o acabamento do prestador · **PR-alvo:** o PR do `B-SAN3-15c`.
 - **fato, item a item:**
   1. o 403 da área de estoque desligada (`module_not_enabled`) mostra "Seu perfil não tem permissão": a causa é a organização, e o app trata todo 403 igual (`technician_stock_remote_api.dart:46-47`);
   2. o vazio da base de estoque usa o texto do técnico ("Nenhuma peça com você");
@@ -14989,12 +14996,14 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-SAN3-15-ASSINATURA-CLIENTE-PRESTADOR (2026-11-14) — a tela "Resumo" e a assinatura do cliente do prestador não existem no app — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (referências `screen-refs/mobile/prestador-resumo.png` e `assinatura.png`) · **dono:** a nomear pelo orquestrador.
+- **dono proposto (registro de 2026-11-14 tarde, `reg-1411b-cl`, pela ressalva PORT564-04 do `porteiro-564-cl`; leitura do redator, declarada (§A6), que o orquestrador confirma ou troca):** o dono, porque o encerramento começa pela decisão dele sobre a assinatura no fluxo do prestador; se ela entrar, o bloco que a construir · **PR-alvo:** a definir pela decisão.
 - **fato:** não são item do portão; no `B-SAN3-15b` a conclusão continua sendo o resumo, e a assinatura não é fabricada (plano v1 do `B-SAN3-15`, §2.5).
 - **encerramento:** decisão do dono sobre a assinatura no fluxo do prestador e, se entrar, a tela com teste.
 
 ## P-MOBILE-CLEARALL-SEM-FILHAS (2026-11-14) — `DriftWorkOrderLocalStore.clearAll` não apaga materiais nem notas — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (`drift_work_order_local_store.dart`, `clearAll`: apaga evidências, linha do tempo e OS, e não `work_order_materials`; desde o `B-SAN3-15b`, também não `work_order_service_notes`) · **dono:** a nomear pelo orquestrador.
+- **dono proposto (registro de 2026-11-14 tarde, `reg-1411b-cl`, pela ressalva PORT564-04 do `porteiro-564-cl`; leitura do redator, declarada (§A6), que o orquestrador confirma ou troca):** o próximo bloco do app que tocar `drift_work_order_local_store.dart` · **PR-alvo:** o PR desse bloco.
 - **fato:** achado lateral do `dev-15b-cl`. Em `lib/` o `clearAll` não tem chamador fora da interface (medido por `grep -rn "clearAll()" lib`); os dois caminhos da purga por OS apagam as filhas (o 15b acrescentou as notas nos dois).
 - **encerramento:** ou o `clearAll` apaga as filhas (com teste), ou sai da interface.
 
@@ -15256,3 +15265,208 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** achado C3-02 da cadeira C3 da J-561, triado pela ata da J-561 como "só registro, porque a evidência já o declara" (`agent-orchestration/omega/evidencias/B-MOBILE-GATE-CHAVE/perfil-real-antes.md`, seção 1).
 - **N e forma (medido pela C3, login real nos 9 atores):** o claim `roles` traz o papel esperado nos 9, e `tenant_role`, `tenant_roles` e `permissions` estão ausentes nos 9. Os claims são `aud, email, exp, iat, identity_id, iss, roles, sid, sub, tenant_id, type`. Para a prova do item 66 o efeito é nulo (o bootstrap bate com o catálogo).
 - **critério de encerramento:** o das pendências-mãe (o JWT carrega os claims que o §2.4 exige).
+
+## P-T15-5432-SUBSTRING-NA-HORA (2026-11-14) — o T15 do `san3-05-runtime-role-guard-db` procura a porta da conexão como texto solto no log e pode casar com a hora da linha — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (deixa a `main` vermelha por acaso e pula o job `docker`, que é o smoke do compose de produção e a imagem) · **escopo:** `pre-existente` (a asserção é do #405, de 2026-10-09, pelo `git blame` do porteiro; o #554 não toca o arquivo) · **dono:** infra/CI (leitura do redator, declarada (§A6): o porteiro e o orquestrador deixaram o dono a nomear, e esta é a casa das outras intermitentes, como a `P-CI-FINANCIAL-TITLE-CAS-FLAKY`) · **PR-alvo:** o PR que trocar a asserção · **bloqueia:** não.
+- **origem:** achado G1 do `porteiro-554-cl` (parecer ao lado da ata `J-554-b-db-fuso-utc.md`). O orquestrador re-rodou o job falho às 09:23 SP, e a tentativa 2 deu verde às 09:39; pela regra escrita do porteiro, o veredito passou a LIBERADO COM RESSALVA e o T15 instável virou esta pendência (registro das 09:50 SP).
+- **N e forma:** rodada `43587307951` (push do merge `14b693e4`), tentativa 1: `not ok 11 - T15 · boot real recusa super antes do Redis e aceita papel limpo` (chamado em `tests/san3-05-runtime-role-guard-db.test.ts:1503`), com "port da conexão apareceu no log"; o job `backend` deu 5720 testes, 5716 passam e 2 `not ok` (o T15 e o pai), e o `docker` foi pulado. A mesma árvore deu `ok` nas rodadas `43581524914` e `43581528153` e na tentativa 2. A asserção é `withoutAllowedRoleIdentities.includes(value)` (`:440`, lido pelo redator na `main` `eeac48a3`): procura cada parte da URL da conexão, a porta "5432" inclusive, como substring do log.
+- **mecanismo (hipótese do porteiro, declarada, não provada):** toda linha do log traz `"time"` em epoch ms. Entre 11:05:20Z e 11:05:30Z, todo `time` começa com `179465432`, e o T15 rodou até 11:05:48Z. Os 2 boots de recusa, que vêm antes do boot limpo e usam a mesma porta, passaram, o que descarta o hostname e aponta um campo numérico da linha.
+- **critério de encerramento:** o T15 procura a porta como campo (token delimitado, ou a chave do log), e não como substring; um caso com uma hora que contém "5432" fica verde, e o vermelho-controle (a porta de verdade no log) continua vermelho.
+
+## P-FUSO-BOOT-EXIGE-BANCO-EM-MEMORIA (2026-11-14) — desde o #554, a API em modo memória não sobe sem Postgres, e a recusa sem `DATABASE_URL` loga `"error":{}` — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-DB-FUSO-UTC` (#554, já na `main` em `14b693e4`: a trava de boot em `src/server.ts`) · **dono:** `B-DB-FUSO-UTC` (o seguimento do bloco) · **PR-alvo:** o PR do seguimento · **bloqueia:** não (o CI e a produção sobem com banco).
+- **origem:** achado N5 do `porteiro-554-cl`.
+- **N e forma (medido pelo porteiro, com o boot real de `src/server.ts` e o controle no mesmo worktree com o `server.ts` do `521f0bcb`):**
+
+  | Cenário | Antes (`521f0bcb`) | Depois (`14b693e4`) |
+  |---|---|---|
+  | banco fora do ar | sobe | recusa depois de 5 sondas (~30 s), `SESSION_TIMEZONE_PROBE_FAILED` |
+  | sem `DATABASE_URL` | sobe | recusa em 0,1 s, com `"error":{}` |
+
+  - o `tests/job-worker-bootstrap.test.ts` ("o boot REAL") passa a falhar sem `DATABASE_URL`, e o controle passa; o comentário das `:290-292` ("persistência em MEMÓRIA … não precisa de Redis nem de Postgres") ficou falso (lido pelo redator na `main`);
+  - nem o PR, nem o `.env.example`, nem o `docs/deployment.md` dizem que o Postgres virou obrigatório; o §1.3 do plano declarou só "uma consulta no boot";
+  - o `logger.error({ error }, …)` de `src/server.ts:56` não serializa a chave `error`, e a mensagem "DATABASE_URL is required" some do log (E9 do porteiro).
+- **o que não é:** não perde dado, não vaza e não toca permissão nem dinheiro (§C7 10(3)3).
+- **critério de encerramento:** decidir, por escrito, se a API em memória sem banco é ambiente suportado. (a) Se não é: o `.env.example` e o `docs/deployment.md` dizem que a API exige Postgres em qualquer modo, e o comentário das `:290-292` fica fiel. (b) Se é: a trava pula a sonda no modo memória sem banco, com teste. Nos dois casos, a recusa do boot loga o motivo, e não `"error":{}`.
+
+## P-GATE-CHAVE-T4-VARREDURA-SEM-CANARIO (2026-11-14) — a varredura de todo o `lib/` do app em `lerRegras` não tem canário — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-MOBILE-GATE-CHAVE` (#561, já na `main` em `e6f3c425`) · **dono:** o próximo bloco que tocar `tests/mobile-gate-chave-catalogo.test.ts` · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** ressalva O1 da conferência `ver-561-cl` (CONFERIDO COM RESSALVA), reproduzida pelo `porteiro-561-cl`.
+- **N e forma:** controle, um gate G6 em `inventory_list_screen.dart` deixa o T4 vermelho (`not ok 6`); volta, com a varredura de `lerRegras` estreitada para `mobile_gates.dart`, o T4 fica verde (6/6), mesmo com o G6 lá (a volta R01b da conferência). O código entregue está certo; o que falta é o canário, para que uma edição futura do próprio teste não tire essa metade do conserto C2B-01 sem nada ficar vermelho.
+- **critério de encerramento:** com a varredura estreitada para `mobile_gates.dart` e um gate em outro arquivo, o T4 fica vermelho.
+
+## P-GATE-CHAVE-ARNES-ACEITA-PORTA-NA-QUERY (2026-11-14) — a trava do arnês do `platform_admin` aceita `?port=5432` ou `&host=` na query da URL do banco — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (é a trava que protege a base viva) · **escopo:** `dentro-do-bloco` do `B-MOBILE-GATE-CHAVE` (#561: `tests/helpers/mobile-gate-chave-platform-admin.ts`) · **dono:** `B-FERR-AGENTES`, ou o próximo bloco que tocar `tests/helpers/`, o que vier antes · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** ressalva O2 da conferência `ver-561-cl`, medida de novo pelo `porteiro-561-cl` pelo caminho real (A2-4).
+- **N e forma:** o comentário das `:9-11` do arnês promete que, fora do banco declarado, "qualquer outra coisa sai com RECUSADO", e que a 5432 é sempre recusada. A trava confere host, porta e banco pelo `URL`, mas o `pg-connection-string` 2.13.0 copia todo parâmetro de query para a configuração. Medido sem abrir conexão (trava → `withUtcSessionTimezone` → `ConnectionParameters` do `pg` 8.21.0): com `?…&port=5432` e com `&host=localhost&port=5432`, a trava ACEITA, e o `pg` conectaria na 5432. Ninguém conectou na 5432 para medir.
+- **critério de encerramento:** as 2 URLs da evidência dão RECUSA, porque a trava confere host, porta e banco efetivos do `pg` (pelo mesmo parser do driver) ou recusa todo parâmetro de query fora de `schema` e `options`; o comentário das `:9-11` fica fiel ao código.
+
+## P-15B-CONCLUSAO-CARTAO-GENERICO (2026-11-14) — na Conclusão do prestador, o cartão de "não pode concluir" diz a mesma frase em 10 situações, sem dizer o que resolve — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-SAN3-15b` (#564, já na `main` em `eeac48a3`: o cartão nasce no conserto, `64dd78c1`) · **dono:** `B-SAN3-15c`, o bloco curto de acabamento que o orquestrador abre logo em seguida · **PR-alvo:** o PR do `B-SAN3-15c` (o bloco ainda não tem plano nem linha no `PLANO_SAN3.md`) · **bloqueia:** não.
+- **origem:** achado C3B-01 da C3 refeita (`j564-c3b-cl`, REPROVA sem defeito grave), que vira pendência pela §C7 10(4) da ata J-564.
+- **N e forma (medido pela C3 refeita, sonda de estados a 390 e a 320):** em 10 das 11 situações em que o cartão aparece (agendada, despachada, a caminho, no local, aguardando aprovação, concluída, aprovada, rejeitada, exceção e cancelada), ele diz só "A situação desta OS não permite concluir agora." (`work_order_repository.dart:34` na `main`). Não diz por quê nem o que resolve, que é o que o `DESIGN_SYSTEM.md:93` pede ("blocked states should explain why the action is blocked and what resolves it"). A rejeitada e a exceção só vão para "em atendimento", como a pausada, mas não recebem "Retome o atendimento"; nas finais, o "agora" sugere que depois será possível. Só a pausada diz o que fazer. O texto está em PT-BR, sem enum cru.
+- **critério de encerramento:** em cada situação em que o cartão aparece, ele diz por que não conclui e o que resolve (nas finais, sem "agora"), com teste por situação a 390 e a 320.
+
+## P-15B-CONCLUSAO-PAUSADA-SEM-ACAO (2026-11-14) — a Conclusão da OS pausada manda retomar o atendimento e não dá o caminho: sem seta de voltar e sem ação — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-SAN3-15b` (o destino da Conclusão nasce no bloco, `prestador_service_screen.dart:245`, `context.go('/work-orders/${widget.workOrderId}/conclusion')`; o cartão nasce no `64dd78c1`) · **dono:** `B-SAN3-15c` · **PR-alvo:** o PR do `B-SAN3-15c` · **bloqueia:** não.
+- **origem:** achado C3B-02 da C3 refeita (`j564-c3b-cl`), que vira pendência pela §C7 10(4).
+- **N e forma (medido pela sonda de fluxo real da C3 refeita):** a Conclusão pausada mostra "Retome o atendimento para concluir." e o botão inativo. O `context.go` para uma rota plana deixa a Conclusão sozinha na pilha, e o cabeçalho fica sem seta de voltar (`seta_voltar=0`, `pode_voltar=false`); no corpo, não há ação ativa. O técnico precisa sair pela barra de baixo (OS → a OS → "Continuar atendimento" → "Em atendimento" → "Diagnóstico e peças" → "Concluir atendimento"). Nada se perde: as notas ficam no aparelho, e a conclusão leva o diagnóstico.
+- **critério de encerramento:** a Conclusão pausada oferece o caminho de retomar (a seta de voltar ou uma ação no corpo), e o teste do fluxo real o percorre até concluir.
+
+## P-15B-CONCLUSAO-TELA-ABERTA-NAO-RELE-SITUACAO (2026-11-14) — com a Conclusão aberta, a mudança da situação da OS não chega à tela: o botão segue ativo, e o app recusa no toque — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` no comportamento (o `canComplete` e o `onPressed` nascem no `64dd78c1`, e o T-H8 (b) do conserto fixa esse comportamento), sobre um mecanismo `pre-existente` (o cache `_ensure`, que não relê a OS com a tela aberta, já estava na `main` `729718fe`) · **dono:** `B-SAN3-15c` (leitura do redator, declarada (§A6): o porteiro achou este item sem destino, e a tela é a mesma das duas irmãs acima) · **PR-alvo:** o PR do `B-SAN3-15c` · **bloqueia:** não.
+- **origem:** achado C3B-03 da C3 refeita (`j564-c3b-cl`), que o voto deu como registro; reproduzido pelo `porteiro-564-cl` (PORT564-03).
+- **N e forma (medido pela C3 refeita, a 390 e a 320):** com a Conclusão aberta em "em atendimento" e a situação mudando para "pausada", o botão "Concluir atendimento" continua ativo e o cartão não aparece. O toque é recusado pelo próprio app: a fila fica sem a conclusão, e o servidor não é chamado. Aparece a faixa de falha de sincronização, com o ícone de sincronizar, para uma recusa que não é de fila (o kit pede o ícone de informação, `erp_components.dart:41-43`), e com o texto genérico em vez de "Retome…". Depois da recusa, o botão segue ativo; saindo e voltando, a tela relê a OS e mostra o cartão. Nada se perde, e o texto é PT-BR.
+- **critério de encerramento:** a mudança da situação com a tela aberta atualiza o botão e o cartão (ou o toque mostra o cartão certo, com o ícone de informação), com teste.
+
+## P-GATE-CHAVE-T2-MATRIZ-INSTAVEL (2026-11-14) — o T2 do #561 (`tests/mobile-gate-chave-matriz.test.ts`) caiu 1 vez sem motivo capturado — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` para o #564 (o 15b não toca nenhuma rota que o T2 mede); o teste é do `B-MOBILE-GATE-CHAVE` (#561) · **dono:** infra/CI (leitura do redator, declarada (§A6), como nas outras intermitentes) · **PR-alvo:** o PR que nomear a causa · **bloqueia:** não.
+- **origem:** o conserto `fix-564-cl` (seção 9 do diário dele), a conferência `ver-564-cl` e o `porteiro-564-cl` (PORT564-03).
+- **N e forma:** a 1ª rodada do consertador (11:13–11:15 SP, memória) deu 1 `ok` e 4 `not ok`, com o motivo perdido, porque a saída foi filtrada; a 2ª e a 3ª deram 5/5. A `ver-564-cl` deu 0 vermelhas em 5 rodadas locais e 0 nas 2 rodadas da CI: **1 em 10** pela conta dela. O porteiro somou mais 3 rodadas 5/5 e contou **1 em 14** rodadas medidas. A causa segue desconhecida; a leitura do consertador (a 1ª carga do `tsx` depois do reinício da máquina) é declarada e não provada.
+- **critério de encerramento:** na próxima falha, o motivo é capturado (o TAP inteiro, sem filtro) e a causa é nomeada; ou uma série de N ≥ 20 rodadas seguidas, com o log inteiro guardado, mostra estabilidade.
+
+## P-WO-REPO-ERROS-EM-INGLES (2026-11-14) — o repositório de OS do app lança `StateError` com texto em inglês ('WorkOrder … not found', 'Tenant mismatch') — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (as mensagens já estavam na `main` antes do #564; o consertador e a conferência só as observaram) · **dono:** `B-SAN3-19c` (a abrir; continua o 19b, os textos e estados do app), o mesmo da irmã abaixo · **PR-alvo:** o PR do `B-SAN3-19c` · **bloqueia:** não.
+- **origem:** observação do `fix-564-cl` (seção 13), da `ver-564-cl` e do `porteiro-564-cl` (PORT564-03); o ID é do orquestrador (registro das 12:48 SP).
+- **N e forma (medido pelo redator na `main` `eeac48a3`):** `mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart`, 6 `StateError('WorkOrder … not found')` (`:576`, `:644`, `:712`, `:843`, `:928` e `:1006`) e 1 `StateError('Tenant mismatch')` (`:930`).
+- **vínculo declarado:** sobrepõe-se à `P-MOBILE-TEXTO-TECNICO-INTERPOLADO` (dono `B-SAN3-19c`), que já cita o 'Tenant mismatch' (na linha `:884` da época). Fica como ID próprio, porque o orquestrador o nomeou, e fecha junto com a irmã se o 19c cobrir as duas.
+- **critério de encerramento:** nenhuma dessas mensagens chega à tela em inglês; o usuário vê a frase de negócio em PT-BR (ou a guarda do 19b passa a cobri-las), com teste.
+
+## P-SYNC-RECUSA-SEM-LOG-NO-SERVIDOR (2026-11-14) — o lote de sincronização responde 200, e o motivo da recusa de cada ação não vai ao log do servidor nem a recibo — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (observabilidade) · **escopo:** `pre-existente` · **dono:** o próximo bloco de backend que tocar `src/modules/mobile/mobile-work-order-sync.ts` (a Emenda 1.8 deixou "bloco de observabilidade do sync, a nomear no registro"; leitura do redator, declarada (§A6), pelo padrão "o próximo bloco que tocar o arquivo") · **PR-alvo:** o PR desse bloco · **bloqueia:** não (não segura o item 44).
+- **origem:** a Emenda 1.8 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), a partir do ensaio 44-B3 (`ens-44b3-cl`, 14/11, na pilha isolada).
+- **N e forma:** `dc logs --since 10m api | grep -c cancel_via_status_forbidden` deu 0. O `POST /api/v1/mobile/sync/work-order-actions` responde 200 e leva a recusa de cada ação no corpo da resposta; o log de acesso grava só o 200; em `mobile_action_receipts` só está a despesa. Quem produz o código é só o servidor: `src/modules/work-orders/work-order.service.ts:1632` na `main` `eeac48a3` (fora dele, só um comentário em `work_order_models.dart:100`). O aparelho recebeu o código (a fila local mostra `last_error_code=cancel_via_status_forbidden` nas 5 tentativas).
+- **critério de encerramento:** a recusa por ação do lote deixa no servidor um registro com o código e a ação (log estruturado ou recibo), sem texto cru do driver, com teste.
+
+## P-ROTEIRO-OP10-ASSUMIR-DESCARTAR (2026-11-14) — o Op-10 do roteiro não cita "Assumir" nem avisa para não tocar "Descartar" na ação da versão anterior do app — MÉDIA (texto)
+
+- **status:** ABERTA · **gravidade:** MÉDIA (texto; o técnico pode perder o cancelamento) · **escopo:** `pre-existente` (o texto do roteiro) · **dono:** a F10 (registro) do `B-SAN3-10b-F4-SEED-ISOLADO`, em `docs/ROTEIRO-DEMO-E-OPERACAO.md` · **PR-alvo:** o PR #565 (`feat/demo-seed-isolado`) ou o seguinte do bloco · **bloqueia:** não.
+- **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
+- **N e forma (diário do ensaio):** no aparelho do caso §B1.5 (o app de antes da separação por usuário), a primeira seção que aparece em Sincronização é "Ação da versão anterior do app — sem usuário", com **Descartar** e **Assumir**; o envio só acontece depois de **Assumir**. O Op-10 manda procurar "Envio não concluído", não cita "Assumir" e não diz para não tocar "Descartar" nessa seção.
+- **critério de encerramento:** o Op-10 descreve a seção, manda tocar "Assumir" e avisa para não tocar "Descartar" nela.
+
+## P-ROTEIRO-OP10-OS-PAUSADA (2026-11-14) — o passo 4 do Op-10 não diz que a OS pausada precisa ser retomada antes de cancelar — BAIXA (texto)
+
+- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** a F10 (registro) do `B-SAN3-10b-F4-SEED-ISOLADO`, em `docs/ROTEIRO-DEMO-E-OPERACAO.md` · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
+- **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
+- **N e forma:** com a OS pausada, o cancelamento do gestor pela rota do console deu `422 invalid_status_transition`, porque OS pausada não cancela; o cancelamento só valeu depois que o gestor retomou a OS.
+- **critério de encerramento:** o passo 4 diz para retomar a OS pausada antes de cancelar.
+
+## P-ROTEIRO-OP10-SESSAO-APOS-ATUALIZAR (2026-11-14) — o roteiro não diz que a sessão do app antigo não sobrevive à atualização — BAIXA (texto)
+
+- **status:** ABERTA · **gravidade:** BAIXA (texto) · **escopo:** `pre-existente` · **dono:** a F10 (registro) do `B-SAN3-10b-F4-SEED-ISOLADO`, em `docs/ROTEIRO-DEMO-E-OPERACAO.md` · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
+- **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
+- **N e forma:** depois de atualizar o app, a sessão do app antigo não vale mais, e o técnico precisa entrar de novo, com rede.
+- **critério de encerramento:** o roteiro diz isso no passo da atualização.
+
+## P-APP-SEM-RENOVACAO-DE-TOKEN (2026-11-14) — o app mostra "Sessão expirada" 16 min depois do login, sem chamar `/auth/refresh` — ALTA (produto)
+
+- **status:** ABERTA · **gravidade:** ALTA (produto: o técnico em campo perde a sessão) · **escopo:** `pre-existente` (observado no app da `main` `521f0bcb`, o APK do ensaio) · **dono:** a próxima revisão do portão: o orquestrador decide se vira item do portão e abre o bloco do app (a Emenda 1.8 deixou "bloco mobile, a nomear no registro") · **PR-alvo:** o PR desse bloco · **bloqueia:** não o item 44. **Leitura do orquestrador, declarada (§A6) na Emenda 1.8:** é a observação mais séria do ensaio e é candidata ao portão da versão vendável.
+- **origem:** a Emenda 1.8 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), a partir do ensaio 44-B3.
+- **N e forma (diário do ensaio):** às 11:21:43Z, 16 min depois do login, o app recebeu `GET /api/v1/work-orders 401` e mostrou "Sessao expirada. Faca login novamente.", sem nenhum `POST /auth/refresh` no log da API; o `JWT_EXPIRES_IN` da pilha é 15m.
+- **não medido:** por que a renovação do app não disparou (há um interceptador que renova o token uma vez no 401, `mobile/flutter_app/lib/core/network/auth_interceptor.dart`, lido pelo redator na `main`), e se o caso repete fora da pilha isolada.
+- **critério de encerramento:** com o token de acesso vencido e o de renovação válido, o app renova sozinho e a ação segue, sem "Sessão expirada"; teste no app e prova no emulador.
+
+## P-APP-TELEMETRIA-422 (2026-11-14) — `POST /mobile/telemetry` responde 422 a cada sincronização do app — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** o próximo bloco que tocar a telemetria do app ou `src/modules/mobile/mobile-telemetry-sync.ts` (a rota é a `mobile.routes.ts:231`; a Emenda 1.8 deixou "bloco mobile, a nomear no registro"; leitura do redator, declarada (§A6)) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** a Emenda 1.8 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), a partir do ensaio 44-B3.
+- **N e forma (diário do ensaio):** o app novo manda `POST /api/v1/mobile/telemetry` e recebe 422 a cada sincronização (11:08:19Z, 11:13:41Z, 11:14:09Z e seguintes).
+- **não medido:** o corpo do 422 e o campo que o servidor recusa.
+- **critério de encerramento:** o app manda a telemetria no contrato do servidor e recebe 2xx, com teste de contrato dos dois lados.
+
+## P-APP-401-FICA-SINCRONIZANDO (2026-11-14) — depois do 401 da rotação de sessão, a ação da fila fica em "Sincronizando" até o "Sincronizar agora" manual — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o próximo bloco do app que tocar a fila de sincronização (a Emenda 1.8 deixou "bloco mobile, a nomear no registro"; leitura do redator, declarada (§A6)) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** a Emenda 1.8 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), a partir do Op-8 do ensaio 44-B3.
+- **N e forma (diário do ensaio):** offline, a despesa nova ficou `syncing` durante o 401 da rotação; depois do novo login, a tela mostrou "Falha na sincronização. Tente novamente." e o item seguiu "Sincronizando" até o toque manual. Nada se perdeu: a fila tinha 3 linhas antes e depois, e o contador de tentativas variou 0.
+- **critério de encerramento:** depois do novo login, a ação presa pelo 401 volta a pendente e sai sozinha na sincronização seguinte, com teste.
+
+## P-B10B-MIGRATE-P1001-NA-1A-SUBIDA (2026-11-14) — na 1ª subida da pilha isolada, o healthcheck do banco responde cedo e o `migrate` falha com P1001 — BAIXA (ferramenta)
+
+- **status:** ABERTA · **gravidade:** BAIXA (ferramenta) · **escopo:** `pre-existente` (a pilha isolada da 10b) · **dono:** o `B-SAN3-10b-F4-SEED-ISOLADO`, nas ferramentas da pilha isolada · **PR-alvo:** o PR #565 ou o seguinte do bloco · **bloqueia:** não.
+- **origem:** a Emenda 1.8 do bloco (§3), a partir do ensaio 44-B3.
+- **N e forma (diário do ensaio, 06:56 SP):** a pilha subiu com `rc=1` em 442 s, e o `migrate` deu "P1001: Can't reach database server". Causa, pelo log do Postgres: o initdb roda o `10-runtime-role.sh` e reinicia o servidor, e o healthcheck (`pg_isready` no socket) deu "healthy" no servidor temporário. O `dc up -d api` de novo passou em 49 s.
+- **não medido:** se o healthcheck está no repositório ou só nas ferramentas de fora.
+- **critério de encerramento:** a 1ª subida passa sem retry, porque o healthcheck espera o servidor definitivo.
+
+## P-B10B-VIGIA-720-AMOSTRAS (2026-11-14) — o vigia passivo do ensaio para em 720 amostras (1 h) e deixa o resto do ensaio sem amostragem — BAIXA (ferramenta)
+
+- **status:** ABERTA · **gravidade:** BAIXA (ferramenta) · **escopo:** `pre-existente` (o vigia do ensaio da 10b, fora do repositório) · **dono:** as ferramentas do ensaio da 10b, que o orquestrador mantém · **PR-alvo:** nenhum (fora do repositório) · **bloqueia:** não.
+- **origem:** a Emenda 1.8 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), a partir do ensaio 44-B3.
+- **N e forma (diário do ensaio):** o vigia contou 720 amostras com 0 conexões do emulador às portas da base viva; a F3 durou mais que 1 h, e de 08:14 a 08:46 SP não houve amostragem contínua (a amostra avulsa do fim deu 0).
+- **critério de encerramento:** o vigia cobre o ensaio inteiro (teto pela duração ou sem teto fixo), e o relatório dá a cobertura.
+
+## P-SECLOG-ACEITE-PORTA-OCUPADA-MENSAGEM (2026-11-14) — o aceite de boot do SEC-LOG manda "rodar com a máquina mais livre" quando a causa é uma porta ocupada — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` à Emenda 1.2.1 (o script do aceite do `B-SEC-LOG-SANITIZA`, fora da `main`) · **dono:** `B-SEC-LOG-SANITIZA`, na fatia de aceite · **PR-alvo:** o PR do `B-SEC-LOG-SANITIZA` · **bloqueia:** não.
+- **origem:** observação da revisão r2 `crit-seclog-e121-cl`, registrada pela Emenda 1.2.2 do plano v2 (§3).
+- **N e forma:** no controle c6, a mensagem do INCONCLUSIVO manda "rodar com a máquina mais livre", mas a causa era um processo na porta 5439; o script não confere, antes de rodar, que as portas 5439 e 6391 estão fechadas.
+- **critério de encerramento:** o aceite confere as portas antes de rodar e, se alguma estiver ocupada, diz qual porta e qual processo.
+
+## P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO (2026-11-14) — um tratador final falso, de mesmo nome e 4 argumentos, passa na G4, em H5 a H7 e no censo — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `dentro-do-bloco` do `B-SEC-LOG-SANITIZA` (a G4 e H5 a H7 são do bloco, no ramo `fix/sec-log-sanitiza`, fora da `main`) · **dono:** uma emenda própria do `B-SEC-LOG-SANITIZA` que endureça a G4 (registro das 07:19 SP; a Emenda 1.3 sugeria antes o bloco dono do censo, o `B-O6R-07c`, e o ajuste A1′ da revisão dela trocou para o SEC-LOG) · **PR-alvo:** o PR do `B-SEC-LOG-SANITIZA` ou o da emenda · **bloqueia:** não (não é vazamento vivo).
+- **origem:** a Emenda 1.3 do plano v2 do `B-SEC-LOG-SANITIZA` (fora do repositório) e o ajuste A1′ da revisão dela.
+- **N e forma:** o censo da base não provoca erro não tratado, então o T5 não exercita nenhum tratador de erro (nem `rejectMalformedJson` nem `finalErrorHandler`). Medido pela sonda `sonda-413.mts` (fora do repositório): um homônimo de 4 argumentos que responde 200, posto em `src/app.ts`, passa na G4, em H5 a H7 e no censo; com ele, um corpo de 3 MB recebe 200 em vez de 413.
+- **critério de encerramento:** a G4 compara o corpo da função instalada com o do `installFinalErrorHandler` (ou o censo provoca o erro), e o homônimo da sonda fica vermelho.
+
+## P-ASS08-JSDOC-LIST-CHARGES-VELHO (2026-11-14) — o comentário de `listChargesByExternalReference` descreve a regra antiga da cobrança removida — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (comentário, sem efeito no comportamento) · **escopo:** `dentro-do-bloco` do `B-ASS-08c1a` (#555, já na `main` em `101c9db4`) · **dono:** o próximo bloco com `src/modules/subscription-billing/providers/payment/asaas/**` no PERMITIDO (o provável é o `B-ASS-08c2`) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** a ressalva R1 da conferência `ver-555-cl`, que o `porteiro-555-cl` (RP-3) mandou ao `pendencias.md`.
+- **registro §A2 (conflito resolvido):** o porteiro propôs o dono `B-ASS-08c1b`. O orquestrador decidiu (registro das 06:46 SP) que a R1 **não** entra no 08c1b, porque `providers/**` é PROIBIDO nele; vale o dono acima.
+- **N e forma (lido pelo redator na `main` `eeac48a3`):** `asaas.adapter.ts:232-233`, o item D-2.1 do comentário diz que a removida "SEM nenhuma data de pagamento vira `cancelled` só aqui, na lista; com pagamento, segue o mapa (`unknown`)". Não cita a lista de estados nem a A1 (só a família paga, estornada ou em disputa segue o mapa; o resto vira `unknown`). O comentário da função, nas `:99-107`, está certo.
+- **critério de encerramento:** o comentário das `:232-233` diz a regra do código.
+
+## P-ASS08C1B-CC6-MAPEAR-UNKNOWN (2026-11-14) — a tabela do cancelamento do `B-ASS-08c1b` precisa levar a cobrança `unknown` a `charge_state_unknown` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (requisito do bloco seguinte; a propriedade de dinheiro do 08c1a vale) · **escopo:** `fora-do-bloco` do 08c1a; requisito do `B-ASS-08c1b` (CC6d) · **dono:** `B-ASS-08c1b` · **PR-alvo:** o PR do `B-ASS-08c1b` · **bloqueia:** não.
+- **origem:** a ressalva R2 da conferência `ver-555-cl`, que o `porteiro-555-cl` (RP-3) mandou ao `pendencias.md`.
+- **N e forma:** a Emenda 2.6 §4 A1 do 08c1a dizia que a removida sem prova "sai como unknown, e a decisão vira `charge_state_unknown`"; esse código é da tabela de cancelamento do 08c1b e não existe na `main` (`git grep -c charge_state_unknown -- src tests` = 0, medido pelo redator em `eeac48a3`). No 08c1a, `unknown` leva à revisão `charge_found_no_candidate` (intenção única) ou `charge_found_for_previous_intent` (outra intenção). A frase do plano já foi corrigida (Emenda 2.6 §5); falta o mapa no 08c1b.
+- **critério de encerramento:** na tabela do cancelamento do 08c1b, a cobrança em `unknown` dá `charge_state_unknown`, com teste que fica vermelho sem o mapa.
+
+## P-ASS08-CATALOGOS-MUTACAO-VELHOS (2026-11-14) — dois catálogos de mutação de fora do repositório ancoram numa linha que o #555 trocou — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a prova não enfraqueceu; o catálogo é que ficou velho) · **escopo:** fora do repositório (os catálogos do orquestrador e da junta) · **dono:** o orquestrador, antes de o `B-ASS-08c1b` reusar esses catálogos · **PR-alvo:** nenhum (fora do repositório) · **bloqueia:** não.
+- **origem:** a ressalva R3 da conferência `ver-555-cl`, que o `porteiro-555-cl` (RP-3) mandou ao `pendencias.md`.
+- **N e forma:** 4 mutações antigas ancoram na linha `[LIST-REMOVED]` de `141b72f2` e têm âncora 0 no head mergeado: a M-ADAPT-STATUS (regra 2 da Emenda 2.3, `planos/emenda23-08c1a-roteiro/mutacoes-regra2.json`) e a M-REMOVED, a M-REMOVED-PAGO e a M-REMOVED-FLAG (§7.3 da Emenda 2.1, `votos/C2-tmp/c2-mut20.json` da J-555). Traduzidas para o head (`ver-555-tmp/traduz-antigas.json`), as 4 ficam vermelhas nos alvos originais.
+- **critério de encerramento:** os 2 catálogos trazem as traduções e, re-rodados sobre a `main`, cada mutação tem âncora 1 e fica vermelha.
+
+## P-REG-ATA-J555-FORA-DO-REPO (2026-11-14) — a ata da J-555 (#555, `B-ASS-08c1a`) ainda não está em `omega/juntas/` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (registro) · **escopo:** registro (§C7 8(3)) · **dono:** o próximo PR de registro · **PR-alvo:** esse PR · **bloqueia:** não.
+- **origem:** a ressalva RP-2 do `porteiro-555-cl`.
+- **N e forma:** a ata existe fora do repositório (`revisoes/j555/J-555-ata.md`) e bate com os votos (C1 APROVA, C2 REPROVA, C3 APROVA, sobre `141b72f2`), mas não está na `main`, e não traz o desfecho (o `5972ed10`, a conferência pós-R4 e o merge `101c9db4`) nem o incidente do §0 da auditoria (um `rm -rf` no scratchpad compartilhado apagou o cluster `gate66p`).
+- **critério de encerramento:** a ata entra em `agent-orchestration/omega/juntas/` com os três, sem caminho de máquina e sem nome de pessoa.
+
+## P-REG-ATA-J554-SEM-POS-JUNTA (2026-11-14) — a ata `J-554-b-db-fuso-utc.md` da `main` para em 13/11 21:50 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (registro) · **escopo:** registro · **dono:** o próximo PR de registro · **PR-alvo:** esse PR · **bloqueia:** não.
+- **origem:** o achado N2 do `porteiro-554-cl`. Este PR de registro traz só o parecer do porteiro, ao lado da ata.
+- **N e forma:** a ata diz "Ainda não houve conferência de outra casa, merge nem porteiro". Faltam a Emenda 4, as Emendas 3.3 e 3.4, as 3 conferências (NÃO CONFERIDO → COM RESSALVA → CONFERIDO), o head `4ecb318d`, o merge `14b693e4`, o porteiro e o desvio declarado do papel "Confere: identidade de OUTRA casa" (foi Claude, pela ordem do dono de 13/11, §C7 11(2), registrado em cada parecer da conferência).
+- **critério de encerramento:** a ata ganha o pós-junta, por acréscimo.
+
+## P-WEB-ABA-OS-UMA-PENDENCIA-SO (2026-11-14) — a aba da OS na web mostra só 1 pendência de aprovação, a mais nova — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a aba da OS na web; `frontend/**` é PROIBIDO no `B-SAN3-16`) · **dono:** `B-SAN3-21` · **PR-alvo:** o PR do `B-SAN3-21` · **bloqueia:** não.
+- **origem:** o ajuste VER5-01 da conferência `ver-emendas-5-62-cl`, gravado como pendência irmã pela Emenda 1.1.1 da abertura do `B-SAN3-16` (item 5).
+- **N e forma:** a aba lê `list[0]`. Com o pedido do técnico e a conclusão na mesma OS, a aba mostra a conclusão e esconde o pedido. O §2.3 do plano do 16 declara o comportamento.
+- **critério de encerramento:** a aba mostra todas as pendências da OS (ou diz quantas há e abre as outras), com teste.
+
+## P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO (2026-11-14) — a 2ª janela residual do `B-SAN3-16`: o evento falha e a OS fica terminal antes do reenvio, que cai em 422 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (sem perda: o pedido continua na fila do gestor) · **escopo:** `dentro-do-bloco` do `B-SAN3-16` (declarada no §2.4 e no R12 do plano) · **dono:** `B-SAN3-16`, na 2ª versão · **PR-alvo:** o PR da 2ª versão do `B-SAN3-16` · **bloqueia:** não.
+- **origem:** o ajuste VER5-03 da conferência `ver-emendas-5-62-cl`, gravado pela Emenda 1.1.1 da abertura do `B-SAN3-16`.
+- **N e forma:** a fila grava o pedido, o evento falha, e a OS fica terminal antes do reenvio; o reenvio cai em 422 `work_order_closed`. É a 2ª janela, ao lado da "decidida antes do reenvio".
+- **critério de encerramento:** o reenvio dessa janela tem destino definido (o pedido sai da fila do técnico com motivo, ou o gestor o decide), com teste; ou a 2ª versão declara a janela aceita, por escrito.

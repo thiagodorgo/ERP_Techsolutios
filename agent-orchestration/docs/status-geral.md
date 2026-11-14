@@ -1,5 +1,49 @@
 # Status Geral
 
+## Atualização 2026-11-14 (tarde) — #561 e #564 na main; portão em 52/67; pausa tática e retomada; atas J-561 e J-564 completas
+
+- **Autor:** `reg-1411b-cl` (Claude Opus 5.5, redator de registro, identidade nova, nível menor declarado; revisão simples, §C7 10(1), que fica com outra identidade). **Base medida:** `origin/main@eeac48a3`, worktree próprio. Registro documental; `Kpis/**` congelado e intocado.
+- **Merges de 14/11 depois do #562 (fato; `gh pr view`, hora em SP):**
+  - #554 (`B-DB-FUSO-UTC`): `14b693e4`, 07:52. O porteiro `porteiro-554-cl` deu BLOQUEADO, porque a CI da `main` caiu no T15 de outro arquivo. Na re-rodada, a tentativa 2 da `43587307951` deu `success` às 09:39, e pela regra escrita dele o veredito passou a LIBERADO COM RESSALVA;
+  - #561 (`B-MOBILE-GATE-CHAVE`, item 66): `e6f3c425`, 10:40, já na sessão nova. CI `43600960034` com 8/8; porteiro `porteiro-561-cl` LIBERADO COM RESSALVA;
+  - #564 (`B-SAN3-15b`, itens 35 e 36): `eeac48a3`, 12:47. CI `43612069075` com 8/8; porteiro `porteiro-564-cl` LIBERADO COM RESSALVA.
+- **Portão:** **52/67** (77%, pelo piso: `floor(100 × 52 / 67) = 77`). É o 49/67 do registro da madrugada mais os itens 66, 35 e 36, marcados FECHADOS no `PLANO_SAN3.md` com o PR, o merge e a CI; sem recontagem do zero.
+- **A pausa e a retomada:**
+  - o Docker Desktop caiu às 10:10;
+  - o dono pediu a pausa às 10:16 (`D-DONO-1411-PAUSA-TATICA`), e cada agente gravou a sua PAUSA (P7);
+  - a máquina reiniciou às 10:36;
+  - às 10:38 o dono pediu a retomada no mesmo padrão (`D-DONO-1411-RETOMADA`), e ela foi registrada às 10:44;
+  - incidente declarado: a conferência do #561 rodou em 2 cópias depois da PAUSA (P6; ver a ata J-561).
+- **As decisões e os registros, em `controle/decisoes.md`:**
+  - `D-DONO-1411-T5-TRES-OPCOES` (as 3 aparências da tela de custos);
+  - `D-DONO-1411-REFORCO-DP-API` (DeepSeek, API Claude e as 3 contas Codex; o cruzamento volta);
+  - `D-DONO-1411-PAUSA-TATICA` e `D-DONO-1411-RETOMADA`;
+  - `REGISTRO-EMENDAS-ORQ-1411`, com as 9 emendas do orquestrador do dia: seed 1.7 e 1.8; 08c1b 2.2, 2.2.1 e 2.3; 17 1.4; SEC-LOG 1.2.2; 16 1.1.1; e 62 1.1.1.
+- **As atas e os pareceres, em `omega/juntas/`:** as atas `J-561-b-mobile-gate-chave` e `J-564-b-san3-15b` ganharam o pós-junta, por acréscimo (o conserto, a conferência, a conferência visual e a C3 refeita no 564, o merge e o porteiro). Os pareceres dos porteiros 554, 561 e 564 entram ao lado das atas, sem caminho de máquina.
+- **As pendências, em `controle/pendencias.md`:**
+  - **27 novas:**
+    - dos porteiros 554 e 561: `P-T15-5432-SUBSTRING-NA-HORA` (MÉDIA), `P-FUSO-BOOT-EXIGE-BANCO-EM-MEMORIA` (MÉDIA), `P-GATE-CHAVE-T4-VARREDURA-SEM-CANARIO` (BAIXA, a O1) e `P-GATE-CHAVE-ARNES-ACEITA-PORTA-NA-QUERY` (MÉDIA, a O2);
+    - do #564: as 3 `P-15B-CONCLUSAO-*` (dono `B-SAN3-15c`), `P-GATE-CHAVE-T2-MATRIZ-INSTAVEL` e `P-WO-REPO-ERROS-EM-INGLES`;
+    - da Emenda 1.8 do seed: as 9, entre elas a `P-APP-SEM-RENOVACAO-DE-TOKEN` (ALTA, candidata ao portão);
+    - do SEC-LOG: `P-SECLOG-ACEITE-PORTA-OCUPADA-MENSAGEM` e `P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO`;
+    - do porteiro-555 (RP-2 e RP-3): `P-ASS08-JSDOC-LIST-CHARGES-VELHO`, `P-ASS08C1B-CC6-MAPEAR-UNKNOWN`, `P-ASS08-CATALOGOS-MUTACAO-VELHOS` e `P-REG-ATA-J555-FORA-DO-REPO`;
+    - do porteiro-554 (N2): `P-REG-ATA-J554-SEM-POS-JUNTA`;
+    - as irmãs dos planos 5 e 62: `P-WEB-ABA-OS-UMA-PENDENCIA-SO` e `P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO`;
+  - **fechada:** `P-DB-FUSO-DA-CONEXAO`, pelo #554;
+  - **por acréscimo:**
+    - o merge e as "11 classes" na `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO`;
+    - o dado do `src/server.ts:56` na `P-LOGIN-READINESS-VAZA-HOST-NO-ERRO`;
+    - o vínculo na `P-MOBILE-TEXTO-TECNICO-INTERPOLADO`;
+    - um dono proposto, declarado, em 5 BAIXA do 15b (PORT564-04).
+  - A ressalva V559-R1 já estava na `main`, como `P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE` (#562), e não se duplica.
+- **O que viaja, sem conserto neste PR:**
+  - os corpos dos PRs #554, #555, #561 e #564 ficaram velhos; a mensagem de cada squash é o registro fiel;
+  - o conflito §A2 do plano 31 (retirar "Nova Entrada/Saída" do app, contra o `PLANO_SAN3.md` e o critério das pendências do #561) entra com a Emenda 1 desse plano, que ainda está em curso;
+  - a PA-1 da Minha assinatura (item 62) está com o dono;
+  - os 2 arquivos rastreados apagados na árvore principal (RP-4 do porteiro-555) são de outra sessão e existem na `main`;
+  - avisos ao dono: a conta Codex 1 está em 99% da semana, e o OpenRouter está sem crédito.
+- **PRs abertos na hora do registro:** #565 (seed isolado; J-565 em curso), #566 (`B-ASS-09`), #567 (tela de custos), #568 (`B-SAN3-17`) e #569 (`B-ASS-08c1b`), todos em rascunho, mais o #419 e o #393 (congelados).
+
 ## Atualização 2026-11-14 (madrugada) — só o Claude, recomendações, acesso pessoal, item 67 do portão, item 50 fechado (#559), ata J-559 e cinco pendências
 
 Registro documental de 13/11 noite e 14/11 madrugada, pelo `reg-1411-cl` (Claude Opus 5.5, redator de registro, identidade nova, nível menor declarado; sem cruzamento, pelo §C7 item 11(2)), sobre a `origin/main@729718fe` (#559) num worktree próprio; `Kpis/**` congelado e intocado. Entram em `controle/decisoes.md` três decisões do dono: a `D-CLAUDE-SOLO-1311` (13/11 ~23:12 SP, início autorizado às ~23:20: só o Claude, cadeiras em paralelo, Fable liberado, agentes até o limite da máquina com o piso de 4 GB, cruzamento `false` declarado), a `D-DONO-1311-RECOMENDACOES` (as perguntas abertas valem pela recomendação; aplicadas a A1 do `B-SAN3-17`, a P1 (A) do `B-SAN3-16` e a linha de 48 no app) e a `D-DONO-1411-ACESSO-PESSOAL` (14/11 ~01:19: não existe celular compartilhado; a 6.4 (a) do 17 cai e não nasce item de portão dela), mais o registro §A2 das 3 contradições do `B-ASS-08c1b` (H6 a H8). No `PLANO_SAN3.md`, o portão ganha o item 67 (`B-APROVACOES-DURAVEIS`, a fila de Aprovações gravada em banco), e o item 50 fica FECHADO no PR #559 (merge `729718fe`, CI da `main` `43563177471`, porteiro `porteiro-559-cl` LIBERADO COM RESSALVA); a ata `J-559-b-san3-25` entra em `omega/juntas/`, com o pós-junta, e a `P-WEB-FATURAR-OS-SEM-TELA` ganha o merge e o CI. **Portão:** 49/67 (73%, pelo piso: `floor(100 × 49 / 67) = 73`), derivado do 48/66 do registro de 13/11 noite mais o item 50, sem recontagem do zero. Em `controle/pendencias.md` nascem `P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM` (MÉDIA), `P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE` (BAIXA), `P-INDICE-SEM-DONO-NUNCA-MARCA` (BAIXA), `P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE` (MÉDIA) e `P-DONO-LINHA-DO-APP-48-OU-44` (já FECHADA), e a `P-CI-FINANCIAL-TITLE-CAS-FLAKY` ganha a 2ª ocorrência (#555, rodada `43561339543`, tentativa 1).
