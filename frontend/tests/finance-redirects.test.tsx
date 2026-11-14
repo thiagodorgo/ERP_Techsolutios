@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { buildSidebarNav, NAV_BY_ROLE } from "../src/layouts/appSidebarNav";
@@ -28,6 +28,12 @@ test("F13: /finance/charges e /finance/payments redirecionam (replace) para /fin
   assert.equal(routeElement("/finance/charges"), '{<Navigate to="/finance?aba=rec" replace />}');
   assert.equal(routeElement("/finance/payments"), '{<Navigate to="/finance?aba=pag" replace />}');
   assert.doesNotMatch(APP, /<ChargesPage|<PaymentsPage/, "as páginas antigas não são mais montadas por rota nenhuma");
+});
+
+test("D1: as telas legadas de Cobranças, Pagamentos e títulos foram removidas", () => {
+  assert.equal(existsSync(new URL("../src/modules/finance/pages/ChargesPage.tsx", import.meta.url)), false);
+  assert.equal(existsSync(new URL("../src/modules/finance/pages/PaymentsPage.tsx", import.meta.url)), false);
+  assert.equal(existsSync(new URL("../src/modules/finance/titles/components/TitlesListView.tsx", import.meta.url)), false);
 });
 
 test("F13: o menu do Financeiro leva Cobranças e Pagamentos às abas, e os itens continuam visíveis no menu MVP", () => {
