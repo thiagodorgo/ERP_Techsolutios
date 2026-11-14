@@ -518,6 +518,13 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-ASS-08c1a ([REG-TX], passo 3): `INSERT INTO subscription_statement_charges … ON CONFLICT (provider, external_charge_id) DO NOTHING`, com `tenant_id` e `statement_id` da linha do demonstrativo travada no passo 1 (nunca do payload); tabela FORCE da MESMA organização. Provado em tests/ass-08c-register-db.test.ts (RG1: falha injetada depois do INSERT desfaz cobrança, ref e SENT).",
   ],
+  // B-ASS-08c1b: a fila operável (o guard do reopen no `tx`, o pedido e o cancelamento de cobrança, a revisão da fila). Cada
+  // chave é a que o gerador acusou no head, só acréscimo; todas sobre o `tx` de uma transação JÁ ABERTA sob o GUC da
+  // organização. Literal L0 intocado: nenhuma tabela FORCE nova.
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.hasOutboxNeedsReview", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08c1b (P8, [GUARD-01]): `SELECT 1 FROM billing_outbox WHERE statement_id = $1 AND status = 'NEEDS_REVIEW' LIMIT 1`, só leitura, no MESMO `tx` do `reopen` (o `withTenantRls(this.client, tenantId, …)` do `PrismaStatementRepository.transaction`), depois da trava do demonstrativo; billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-outbox-review-db.test.ts (RO1, pela rota, 1 conexão) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

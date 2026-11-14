@@ -41,11 +41,16 @@ export type StatementTx = {
   enqueueOutbox?(row: NewOutboxRow, now: Date): Promise<void>;
   /** A nota VIVA (`pending`/`authorized`/`cancel_pending`) do demonstrativo, lida da tabela da nota (não do espelho). */
   findLiveInvoice?(statementId: string): Promise<LiveInvoiceRef | undefined>;
+  /** B-ASS-08c1b (P8, A7/A8) — OBRIGATÓRIO: há linha da fila em `NEEDS_REVIEW` para o demonstrativo? Lida NO MESMO `tx`,
+   * depois da trava do demonstrativo (o `reopen` a chama no `[GUARD-01]`). O dublê sem as lojas do canal devolve `false`:
+   * não há fila. */
+  hasOutboxNeedsReview(statementId: string): Promise<boolean>;
 };
 
-/** As lojas do canal no modo memória, para o dublê sustentar a intenção de nota (conserto da J-530). */
+/** As lojas do canal no modo memória, para o dublê sustentar a intenção de nota (conserto da J-530) e a leitura da fila do
+ * `reopen` (B-ASS-08c1b, P8). */
 export type InMemoryChannelStores = {
-  readonly outbox: Pick<OutboxRepository, "enqueue">;
+  readonly outbox: Pick<OutboxRepository, "enqueue" | "listByStatement">;
   readonly invoices: Pick<StatementInvoiceRepository, "findLive">;
 };
 
@@ -148,6 +153,10 @@ export class InMemoryStatementRepository implements StatementRepository {
       : {};
     return {
       ...intent,
+      async hasOutboxNeedsReview(statementId) {
+        if (!channel) return false;
+        return (await channel.outbox.listByStatement(tenantId, statementId)).some((row) => row.status === "NEEDS_REVIEW");
+      },
       async insertIfAbsentAndLock(input) {
         const existing = [...self.statements.values()].find(
           (row) => row.tenantId === input.tenantId && row.period === input.period,
