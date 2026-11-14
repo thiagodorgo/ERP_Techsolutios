@@ -9,10 +9,18 @@ export type AppearanceOption = {
   readonly label: string;
 };
 
+/**
+ * B-ASS-10b (T5) — onde a tela vive: no app da organização (`"tenant"`, o padrão) ou no console da plataforma
+ * (`"platform"`). O menu de cada moldura lista só as telas do próprio escopo, e a escolha de uma tela de plataforma fica
+ * numa chave sem organização (`techsol.aparencia.plataforma.<userId>`): o console não tem organização ativa.
+ */
+export type AppearanceScope = "tenant" | "platform";
+
 export type AppearanceScreen = {
   readonly key: string;
   readonly label: string;
   readonly options: readonly AppearanceOption[];
+  readonly scope?: AppearanceScope;
 };
 
 export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
@@ -99,4 +107,26 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Em duas etapas" },
     ],
   },
+  // B-ASS-10b (T5) — Cloud Billing, no console da plataforma (referência `screen-refs/platform-cloud-billing-3opcoes.reference.html`,
+  // "aprovo as telas de custos", 14/11, `D-DONO-1411-T5-TRES-OPCOES`); padrão A, sem entrada em SCREEN_DEFAULT_APPEARANCE.
+  {
+    key: "platform-cloud-billing",
+    label: "Cloud Billing",
+    scope: "platform",
+    options: [
+      { value: "A", label: "Fiel à referência" },
+      { value: "B", label: "Analítica" },
+      { value: "C", label: "Fechamento e grupos" },
+    ],
+  },
 ];
+
+/** O escopo da tela; tela fora do registro conta como da organização (o comportamento de antes do escopo). */
+export function appearanceScopeOf(screenKey: string): AppearanceScope {
+  return APPEARANCE_SCREENS.find((screen) => screen.key === screenKey)?.scope ?? "tenant";
+}
+
+/** As telas que o menu de uma moldura oferece: só as do escopo dela. */
+export function appearanceScreensFor(scope: AppearanceScope): readonly AppearanceScreen[] {
+  return APPEARANCE_SCREENS.filter((screen) => (screen.scope ?? "tenant") === scope);
+}

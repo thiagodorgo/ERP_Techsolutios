@@ -6,6 +6,8 @@ export {
   APPEARANCE_STORAGE_PREFIX,
   SCREEN_DEFAULT_APPEARANCE,
   appearanceStorageKey,
+  platformAppearanceStorageKey,
+  PLATFORM_APPEARANCE_SEGMENT,
   defaultAppearanceFor,
   isAppearance,
   readScreenAppearance,
@@ -13,6 +15,6 @@ export {
   writeScreenAppearance,
 } from "./appearance.storage";
 export type { Appearance, AppearancePrefs } from "./appearance.storage";
-export { APPEARANCE_SCREENS } from "./appearance.registry";
-export type { AppearanceOption, AppearanceScreen } from "./appearance.registry";
+export { APPEARANCE_SCREENS, appearanceScopeOf, appearanceScreensFor } from "./appearance.registry";
+export type { AppearanceOption, AppearanceScope, AppearanceScreen } from "./appearance.registry";
 export { AppearanceChoices, AppearanceMenu } from "./AppearanceMenu";

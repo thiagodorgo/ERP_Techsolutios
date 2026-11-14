@@ -431,6 +431,8 @@ const rolePermissions: Record<string, string[]> = {
     "platform:cloud-costs:import",
     "platform:cloud-cost-allocation:read",
     "platform:cloud-cost-allocation:run",
+    "platform:billing:read",
+    "platform:billing:manage",
   ],
   platform_admin: [
     "platform:tenants:read",
@@ -442,6 +444,8 @@ const rolePermissions: Record<string, string[]> = {
     "platform:cloud-costs:import",
     "platform:cloud-cost-allocation:read",
     "platform:cloud-cost-allocation:run",
+    "platform:billing:read",
+    "platform:billing:manage",
   ],
   tenant_admin: [
     "tenant.manage",
