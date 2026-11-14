@@ -1,5 +1,23 @@
 # Status Geral
 
+## Atualização 2026-11-13 (tarde e noite) — #546, #556, #547, #551, #557 e #558 na main; portão em 48/66; atas J-546, J-547, J-551, J-554 e J-557
+
+- **Autor:** `reg-1311n-cl` (Claude Opus 5.5, redator de registro, identidade nova, nível menor declarado). A revisão fica para outro modelo, depois. **Base medida:** `origin/main@d29b3bef`, worktree próprio `w-reg1311n`. Registro documental; `Kpis/**` congelado e intocado.
+- **Merges de 13/11 depois do #553 (fato; `git log origin/main`, hora do commit em SP):**
+  - #546 (`B-SAN3-14`, item 34): `eeccdd27`, 10:37; porteiro `porteiro-546-cl` LIBERADO COM RESSALVA;
+  - #556 (`B-ASS-08c0`, a sonda CONF530 como teste-dono): `31324f0d`, 12:53; só teste, sem porteiro (§C7 item 8(3));
+  - #547 (`B-SAN3-24`, item 29): `3309ba7d`, 15:49; porteiro `porteiro-547-dp` LIBERADO COM RESSALVA;
+  - #551 (`B-MATERIAL-REENVIO`, item 63): `24f7e792`, 17:03; porteiro `porteiro-551-dp` LIBERADO COM RESSALVA;
+  - #557 (`B-ASS-08c-wh`, o 1º PR do item 60, que não fecha com ele): `5728df31`, 19:44; porteiro `porteiro-557-api` LIBERADO COM RESSALVA (sucessor do `porteiro-557-cdx3`, que caiu por limite); CI da `main` conferido pelo orquestrador às 20:01 (rodada `43521788979`, todos os jobs `success`);
+  - #558 (`B-SAN3-24d`, a limpeza das telas legadas do Financeiro, só remoção): `d29b3bef`, 20:52; revisão simples `rev-558-api` APROVADO; porteiro `porteiro-558-cl` LIBERADO COM RESSALVA (21:30), que libera a fase C do #559.
+- **Portão da versão vendável:** **48/66** (72%, pelo piso — `floor(100 × 48 / 66) = 72`; o diário do orquestrador escreveu 73%, arredondado). Fecharam hoje os itens 34 (#546), 29 (#547) e 63 (#551), marcados no §4.1 do `PLANO_SAN3.md` neste PR.
+- **Abertos à noite (`gh pr view`, 22:00 SP):**
+  - **#554** (`B-DB-FUSO-UTC`): rascunho, head `a3d3aeae`. A J-554 aprovou por unanimidade, e o conserto dela (`fix-554b-cl`) está no head; mas o job `backend` travou em 3 de 6 rodadas no drill `tests/b-o6r-12-regime-migration-drill-db.test.ts` (#539), e a investigação (`inv-554-cl`, corpo `agente-ci-doutor`) está em curso, com a causa e o escopo EM APURAÇÃO. Falta a conferência, o merge e o porteiro. A pergunta Q1 do dono segura a publicação em ambiente com dado real, não o merge.
+  - **#555** (`B-ASS-08c1a`, o despacho seguro da cobrança): rascunho, head `141b72f2`, CI verde nos 8 jobs. Pré-revisão `prerev-555-dp` APROVADO, sem achados, com a Emenda 2.5 reproduzida; inspetor `insp-555-cl` LIBERADO COM RESSALVA (21:45, R1 a R8). A J-555 (dinheiro, junta completa, unanimidade de 3) tem as cadeiras marcadas para as 23:29.
+  - **#559** (`B-SAN3-25`, item 50, faturar a OS pela web): rascunho, head `9c4c0840`, atrás da `main`. As fases A e B estão feitas (Dev T e Dev S); a fase C (`dev-25c-cl`) está em curso, com a Emenda 3 (a guarda D3 do 24d no `test:smoke`). Depois vêm a pré-revisão de outra casa e a junta completa.
+- **Este PR registra:** as atas J-546, J-547 (composta das fontes, porque não havia ata formal), J-551, J-554 e J-557; 13 pendências novas, cobradas pelos porteiros 546, 547, 551 e 558, pelas atas e pelo diário do orquestrador; os fechamentos da `P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL`, da `P-ASS08C-TRUST-PROXY` e da `P-ASS08C-COTA-IP-BLOQUEADO`; a parte `titles/` da `P-FINANCE-FRONT-SOMA-DINHEIRO-PRE-EXISTENTE`; o dono da `P-AUTH-IP-ATRAS-DO-PROXY` (o go-live na AWS, leitura do redator, declarada); a nota da GATE-CHAVE (o item 63 da decisão é o 66 do §4.1); e uma ocorrência nova do B16 intermitente.
+- **Fora deste PR (têm dono em outro):** a `P-FRONT-TESTE-FORA-DO-SMOKE` (PR #559); as 7 pendências do plano `B-SEC-LOG-SANITIZA` (esperam a crítica); a `P-SYNC-OS-RECIBO-EM-MEMORIA` e a `P-OS-MESMA-SITUACAO-GRAVA-EVENTO` (F0b do 10b); e o que é do #554, do #555 e do #559, que estão abertos.
+
 ## Atualização 2026-11-13 (manhã) — #552 na main, três contas Codex com login e `D-CLAUDE-CODA-40`
 
 - **Autor:** `reg-1311-cdx3` (Codex GPT-5.6 Sol, conta 3, redator de registro, identidade declarada). A revisão fica para outro modelo, depois. **Base medida:** `origin/main@2f027fe1`, worktree próprio `w-reg1311`. Registro documental; `Kpis/**` congelado e intocado.

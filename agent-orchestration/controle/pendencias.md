@@ -8883,7 +8883,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-GUINCHO-ENTREGA-INALCANCAVEL (2026-09-11) — Perna de entrega do guincho nunca acende: sem `kind=delivery` nem passos 3/4 — ALTA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA (2026-11-13, no PR #546, merge `eeccdd27`; conferido pelo `porteiro-546-cl`, §8 do parecer) — era ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
 - **fonte (fatia AUSENTES, §2a):** sintese B34
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `features/work_orders/ui/work_order_execute_screen.dart:94` push `/checklists/…/run?workOrderId=` sem `kind`; `router.dart:194,373` "ausência de `?kind=` … = coleta"; `features/work_orders/domain/work_order_steps.dart` (guincho): índice vai de 2 a 5 (`pendingApproval/completed/approved/cancelled => 5`)
@@ -8895,6 +8895,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 - **dono:** `B-SAN3-14` (plano SAN3 §4.1 item 34); bloco dono proposto pela fatia: bloco mobile "portas"
 - **impacto vendável:** **BLOQUEIA** — o app cobre só a coleta, metade do serviço de guincho
 - **teste de encerramento:** widget test: OS em rota de entrega abre run com `kind=delivery`; passos "Rota entrega"/"Entrega" acendem; comparação coleta×entrega alcançável
+- **fechamento (2026-11-13, PR de registro de 13/11 noite, `reg-1311n-cl`, pela ressalva do `porteiro-546-cl`):** o `B-SAN3-14` (PR #546, squash `eeccdd27`, árvore igual à do head `38eafdbd`) cumpre o teste de encerramento. Medido pelo porteiro na `main` `eeccdd27`: `checklist_navigation.dart:15` monta `…&kind=${kind.apiValue}`; a tela de execução abre a entrega com `MobileChecklistRunKind.delivery` pelo helper; `router.dart` lê `kind`; `flutter test …/bsan314_guincho_entrega_test.dart --plain-name "kind=delivery"` → `+1` e `--plain-name "Rota entrega"` → `+1` (os passos 3 e 4 acendem); o servidor cria a vistoria de entrega no despacho (`-db` T1) e a conclusão a exige (trava 8/8 e releitura 1/1, 422). CI do merge (run `43435282783`): flutter `+1219`, backend 5459/5457/0/2, backend-postgres 610/610. Reconferido neste PR na `main` `d29b3bef`: `grep -rn 'kind=${kind.apiValue}' mobile/flutter_app/lib` → `checklist_navigation.dart:15`. Alcance declarado (Pergunta 2 = (a)): vale para as OS despachadas depois da entrada. Item 34 do §4.1 do `PLANO_SAN3.md`.
 
 ---
 
@@ -11356,6 +11357,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **bloqueia:** não.
 - **teste de encerramento:** a causa nomeada por execução, ou N ≥ 20 rodadas do arquivo concorrendo com a suíte sem
   falha.
+- **nova ocorrência (2026-11-13, PR #551):** o run `43438519656` (push do `6e2a0e92`, ramo do `B-MATERIAL-REENVIO`), tentativa 1, job `131929928497`, falhou no B16 (`not ok 311`, `422|entry_already_adjusted`); verde na tentativa 2 (`gh run rerun 43438519656 --failed`). Fonte: RETOMADA 45 do diário do bloco (`agent-orchestration/omega/juntas/votos/B-MATERIAL-REENVIO/00-dev.md`), que pediu o registro.
 - **nova ocorrência (2026-11-12, PR #542):** o run `43175128180` (push, head `72866b87` do #542) falhou no B16 — intermitente conhecido; as duas rodadas dos heads `3acac2ee` e `6c278b84` passaram. Fonte: `REGISTRO-PENDENTE.md` 12/11 04:43.
 - **nova ocorrência (2026-11-02, PR #481):** o run `41386712734`, job `backend` `125089109273`, head `6cea5f3f`, falhou no B16 (`not ok 1772`) e fechou com 4157 testes, 4154 passados, 1 falha e 2 pulados. O head seguinte `c6f74bc3` ficou verde no run `41388491930`, job `backend` `125094505662`. Fonte: `gh run list --branch chore/kpi-marco-2026-11-02 --limit 5`; logs e JSON de `gh run view` desses runs/jobs.
 
@@ -12328,6 +12330,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **inventário (por arquivo e expressão normalizada):** 7 em `frontend/src/modules/finance/commissions/**` (`commissions.adapter.ts`, `CommissionDetailDrawer.tsx`, `ConferenciaRemuneracoesView.tsx` ×3, `RemuneracoesPage.tsx` ×2) e 1 em `titles/financial-titles.adapter.ts` (`sumAmount` de `computeTitleKpis`, usado só pelas telas legadas de Cobranças e Pagamentos).
 - **donos:** as 7 de `commissions/**` — o bloco das telas de comissões; a 1 de `titles/` — o `B-SAN3-24`, quando as telas legadas saírem (resposta do dono à Q4).
 - **encerramento:** inventário vazio; o guard então afirma zero ocorrência em `frontend/src/modules/finance/**`.
+- **a parte `titles/` fechou (2026-11-13, no PR #558, `B-SAN3-24d`, merge `d29b3bef`; conferida pelo `porteiro-558-cl`, §6 do parecer; registrada pelo PR de registro de 13/11 noite, `reg-1311n-cl`):** as telas legadas de Cobranças, Pagamentos e Títulos saíram, e o `sumAmount` de `computeTitleKpis` saiu com elas. Medido na `main` `d29b3bef`: `git grep -n -E 'reduce\(|\+=' d29b3bef -- 'frontend/src/modules/finance/titles/**' | wc -l` → 0; o `FROZEN_INVENTORY` de `frontend/tests/finance-no-money-reduce.guard.test.ts` tem 7 entradas, todas em `commissions/**` (5 tokens `.reduce(` e 2 `+=`), e `FROZEN_REDUCE_TOKENS = 5` (era 6 em `24f7e792`, com a entrada de `titles/financial-titles.adapter.ts`). **Segue ABERTA** pela parte de `commissions/**` (7 entradas, os 5 tokens `.reduce(` que restam), com o dono de sempre.
 
 ## P-SAN3-12B-MENU-ABAS-FORA-DO-GOVERNO (2026-10-26) — os itens Cobranças/Pagamentos do menu viram `/finance?aba=…` — BAIXA
 - **status:** ABERTA · **escopo:** `dentro-do-bloco`, consequência declarada do F13 (D-4 do relatório do dev) · **dono:** `B-SAN3-24` (tira as telas legadas e mexe no menu) · **bloqueia:** não.
@@ -13454,17 +13457,19 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS08C-TRUST-PROXY (2026-11-11) — sem `trust proxy`, o bloqueio por IP do webhook vale para todos atrás do proxy do Fly — ALTA (bloqueia ligar o canal)
 
-- **status:** ABERTA · **escopo:** `src/app.ts` e `webhooks/webhook-runtime.ts` (`clientIp`) · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-13, no PR #557, `B-ASS-08c-wh`, merge `5728df31`; conferida pelo `porteiro-557-api`, R1) — era ABERTA · **escopo:** `src/app.ts` e `webhooks/webhook-runtime.ts` (`clientIp`) · **dono:** `B-ASS-08c`.
 - **origem:** J-530, C2-A1 (dentro do bloco, não grave). `webhook-runtime.ts` usa `req.ip`; o dinheiro se recupera pelo poll-pending (atraso, não perda). Que o `req.ip` no Fly seja o do proxy é derivado da topologia, não medido. Registrado pelo conserto da J-530 (plano `B-ASS-08b-conserto-530-v2.md` §8).
 - **teste de encerramento:** com `trust proxy` no salto do Fly, 20 × 401 de um `X-Forwarded-For` não bloqueiam outro pelo mesmo socket; `X-Forwarded-For` forjado com mais saltos não escolhe o IP.
 - **em fechamento pelo `B-ASS-08c-wh` (2026-11-13; fecha no merge, conferido pelo porteiro):** o IP sai de `webhookClientIp(req, BILLING_WEBHOOK_TRUSTED_PROXY_HOPS)` (P25), **sem** `trust proxy` no app; testes-dono IP1–IP3 (`tests/ass-08c-webhook-ip.test.ts`), mutação M27 vermelha. **Premissa corrigida (A14 do plano v2):** a borda é a AWS (`D-INFRA-PROVIDER-AWS`), não o Fly; ALB em modo *append*, CloudFront + ALB = 2 saltos **[HIPÓTESE, fonte da crítica r1, não medida]**. Medir os saltos na borda escolhida é ato do dono; ligar em produção com 0 saltos é recusado (`webhook_proxy_hops_unset`, P23).
+- **fechamento (2026-11-13; registrado pelo PR de registro de 13/11 noite, `reg-1311n-cl`):** o PR #557 entrou na `main` em `5728df31` (19:45 SP; árvore igual à do head `5a34f4fc`; CI da `main`, rodada `43521788979`, todos os jobs `success`). O `porteiro-557-api` (LIBERADO COM RESSALVA) leu o código e rodou os testes-dono `ass-08c-webhook-ip` + `ass-08c-enable` (7/7, fail 0, com o IP6 da J-557, que normaliza o IPv4 mapeado em IPv6) e as 5 regressões do webhook (29/29); o `git grep "trust proxy"` acha só comentários. Reconferido neste PR na `main` `d29b3bef`: `git grep -n -E "set\(['\"]trust proxy|enable\(['\"]trust proxy" d29b3bef -- src | wc -l` → 0; `webhookClientIp` em `subscription-billing.webhook.routes.ts:110`; IP1 a IP6 em `tests/ass-08c-webhook-ip.test.ts`. Os saltos reais da borda seguem na `P-557-SALTOS-ACIMA-DO-REAL` (go-live na AWS), e o login atrás do proxy na `P-AUTH-IP-ATRAS-DO-PROXY`.
 
 ## P-ASS08C-COTA-IP-BLOQUEADO (2026-11-11) — IP já bloqueado ainda consome a cota global do provedor — MÉDIA (bloqueia ligar o canal)
 
-- **status:** ABERTA · **escopo:** `webhooks/subscription-billing.webhook.routes.ts` (`allowGlobal` × `isIpBlocked`) e `webhook.rate-limit.ts` · **dono:** `B-ASS-08c`.
+- **status:** FECHADA (2026-11-13, no PR #557, `B-ASS-08c-wh`, merge `5728df31`; conferida pelo `porteiro-557-api`, R1) — era ABERTA · **escopo:** `webhooks/subscription-billing.webhook.routes.ts` (`allowGlobal` × `isIpBlocked`) e `webhook.rate-limit.ts` · **dono:** `B-ASS-08c`.
 - **origem:** J-530, C2-A2 (anterior ao bloco: `d5ec1696`/#522). Registrado pelo conserto da J-530 (plano v2 §8).
 - **teste de encerramento:** o atacante bloqueado manda 1 000 pedidos e o legítimo seguinte recebe 200; a mutação "allowGlobal antes de isIpBlocked" fica vermelha.
 - **em fechamento pelo `B-ASS-08c-wh` (2026-11-13; fecha no merge, conferido pelo porteiro):** `isIpBlocked(ip)` antes de `allowGlobal(provider)` (P26); teste-dono IP4, mutação M28 vermelha. A classe (cota gasta antes da autenticação) **não** fecha: segue na `P-ASS08C-COTA-ANTES-DA-AUTENTICACAO`.
+- **fechamento (2026-11-13; registrado pelo PR de registro de 13/11 noite, `reg-1311n-cl`):** o PR #557 entrou na `main` em `5728df31` (CI da `main`, rodada `43521788979`, todos os jobs `success`). O `porteiro-557-api` leu o código e fez uma mutação própria: inverter a ordem `isIpBlocked`/`allowGlobal` deixou o IP4 e o IP6 vermelhos (pass 4, fail 2); restaurada, ficou limpa. Reconferido neste PR na `main` `d29b3bef`: `subscription-billing.webhook.routes.ts:169` (`isIpBlocked`) vem antes da `:173` (`allowGlobal`). A classe maior segue aberta na `P-ASS08C-COTA-ANTES-DA-AUTENTICACAO`.
 
 ## P-ASS08C-NOTA-DA-BAIXA-MANUAL (2026-11-11) — baixa/estorno manuais sem intenção de nota, e o PASSADO sem nota — ALTA (bloqueia ligar o provedor de NOTA)
 
@@ -14656,6 +14661,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **pergunta ao dono:** a `P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO` entra no §4.1 como item novo do portão, com bloco próprio de permissão do app? A resposta (a) da `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP) disse que sim, mas acrescentar o item muda o denominador de 64 para 65 e mexe no `mvp_vendavel`.
 - **recomendação:** decidir antes do próximo marco.
 - **origem:** ressalva (item 4) do `porteiro-540`; o item não entra no `PLANO_SAN3` neste PR (decisão do orquestrador, `donos-1211.md`).
+- **nota (2026-11-13, PR de registro de 13/11 noite, `reg-1311n-cl`): o "item 63" desta decisão é hoje o item 66 do §4.1.** A renumeração foi feita no PR #551 (`P-SAN3-ITEM-63-DUPLICADO`: o 63 ficou com o material, pela P5 de 31/10, e a GATE-CHAVE virou o 66; o §4.1 tem 66 itens). O texto acima diz o que era verdade em 12/11 e não se reescreve; vale o §4.1.
 
 ## P-PAINEL-HORA-DA-MEDICAO (2026-11-13) — a hora da medição da Codex ficava em branco e o aviso de medição velha não disparava — BAIXA — FECHADA
 
@@ -14750,6 +14756,114 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** sem `trust proxy`, `request.ip` é o socket. Atrás da borda AWS (ALB; CloudFront + ALB = 2 saltos **[HIPÓTESE, fonte da crítica r1, não medida]**), o socket é o balanceador: o limitador de tentativas do login conta todos os clientes como um só IP — um atacante bloqueia o login de todos, e o limite por IP deixa de separar ninguém.
 - **causa:** a escolha de `trust proxy` foi deixada para a infra (comentário em `auth.routes.ts:689`), e a borda mudou de Fly para AWS (`D-INFRA-PROVIDER-AWS`).
 - **critério de encerramento:** o login resolve o IP pelos saltos confiáveis medidos na borda (no molde do `webhookClientIp` do `B-ASS-08c-wh`), com teste: 20 falhas de um `X-Forwarded-For` não bloqueiam outro pelo mesmo socket, e o cabeçalho forjado com mais saltos não escolhe o IP.
+- **dono nomeado (2026-11-13, PR de registro de 13/11 noite, `reg-1311n-cl`, pela R2 do `porteiro-557-api`):** **o go-live na AWS** — leitura do redator, declarada (§A6), porque nenhuma fonte nomeou o dono ("a definir pelo orquestrador" no plano `B-ASS-08c`, P27): a premissa desta pendência é a mesma da `P-557-SALTOS-ACIMA-DO-REAL` (dono: o go-live na AWS), e o critério de encerramento depende da mesma medição dos saltos reais da borda. O conserto toca `src/modules/auth/**` e os portais, e o bloco que o fizer precisa dessa medição. O orquestrador troca o dono numa linha, se outro bloco for o certo. O **bloqueia** segue como estava (não declarado; decisão do orquestrador antes da produção).
+
+## P-SAN3-24-GUARDA-ESCOPO-INERTE (2026-11-13) — a guarda de escopo do `B-SAN3-24` não mede o diff no worktree destacado nem no checkout raso da CI — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (efetividade de teste de escopo; nenhum comportamento do produto) · **escopo:** `dentro-do-bloco` do `B-SAN3-24` (`git diff --name-status 2f027fe1...a18192e1 -- tests/b-san3-24-escopo.test.ts` → `A`: o teste nasceu no PR #547) · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** A1-D2-N01 da pré-revisão `prerev-547-dp` e J547-C2-01 da cadeira C2 da J-547 (`j547-c2-cdx`), triados como pendência na triagem da J-547 (13/11 13:43 SP); cobrada pela R1 do `porteiro-547-dp` e pelo §6 do `porteiro-558-cl`. Registrada pelo PR de registro de 13/11 noite (`reg-1311n-cl`).
+- **N e forma:** N=2 terrenos de aceite em que a parte do diff real nunca roda. (a) Worktree destacado: `git rev-parse --abbrev-ref HEAD` devolve `HEAD`, e o teste encurta com o diagnóstico "ramo HEAD não é o do bloco" (`tests/b-san3-24-escopo.test.ts:90-92`). (b) Checkout raso da CI: sem `origin/main` nem base comum, o teste só registra um diagnóstico (l.95-96). Nos dois, a mutação literal do D2 (um arquivo vazio `frontend/src/modules/finance/commissions/politicas.ts`, sem commit) dá 2/2 verde. Controle: com `GITHUB_HEAD_REF=feat/web-cheques-fechamento` e a base disponível, o mesmo arquivo dá `not ok 2` (58 a 59 caminhos medidos, 1 novo).
+- **nota do `B-SAN3-24d` (PR #558, 13/11):** o `BLOCK_BRANCH` é fixo em `feat/web-cheques-fechamento` (l.16); em qualquer outro ramo só a regra geral roda. No ramo do 24d, a mutação D2 ficou VERDE. O aceite do D2 passou a ser o comando (Emendas 24d-1 e 24d-1.1): antes do commit, `git diff --cached --name-only origin/main` deu 13 caminhos, 14 com o mutante indexado (1 em `commissions/`) e 13 depois de `git rm --cached`; depois do commit, `origin/main...HEAD`. O 24d não editou a guarda.
+- **causa:** a guarda decide pelo nome do ramo e pela presença de `origin/main` no clone; quando não acha os dois, não falha: registra um diagnóstico e passa.
+- **critério de encerramento:** a guarda mede o diff real nos terrenos de aceite (worktree destacado e job da CI) ou falha fechada quando não pode medir; a mutação D2 fica vermelha no job da CI, lida no TAP. O conserto mexe no `.github` (`fetch-depth`) ou no próprio teste.
+
+## P-SAN3-24-BLOCOS-CONTESTACAO-E-PENDENCIA (2026-11-13) — o Fechamento não tem os blocos "Com contestação que impede" e "Fechados com pendência" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-SAN3-24` (os arquivos do Fechamento nasceram no PR #547) · **dono:** `B-SAN3-24-fino` · **bloqueia:** não.
+- **origem:** C3-02 (CONF547-02) da cadeira C3 da J-547 (`j547-c3-cl`), triado como pendência (13/11 13:43 SP); cobrada pela R1 do `porteiro-547-dp`. A `main` já cita o ID num comentário (`frontend/src/modules/finance/period-closes/components/FechamentoViewA.tsx:32`).
+- **N e forma:** os filtros do Fechamento têm 3 rótulos (`fechamento.shared.tsx:57-61`, no objeto `a18192e1`) e a maquete aprovada tem 5; faltam "Com contestação que impede" e "Fechados com pendência", e o indicador "Fechados com pendência". Medido pela C3 com setembro fechado mesmo assim (o fechar deu 422 `pending_items_block_close`, depois `force: true` deu 200): setembro aparece "Fechado" na lista das 3 aparências e "fechado" no calendário da C; o indicador "Contestação que impede" da A conta só o mês a fechar e, clicado, filtra "Terminaram e não estão fechados", sem filtro próprio.
+- **causa:** os dois blocos pedem a leitura mês a mês do retrato (12 leituras), que a maquete admite mas que pesa. O orquestrador decide se vale um agregado no servidor.
+- **critério de encerramento:** os 2 blocos e o indicador existem nas aparências que a maquete pede, cada um com filtro próprio e estado pressionado, com teste.
+
+## P-547-BANNER-INFO-GLOBAL (2026-11-13) — o banner informativo sai sem estilo nas telas de Cheques e de Fechamento — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (visual; nenhum dado errado) · **escopo:** `dentro-do-bloco` do `B-SAN3-24` (C3-06 da J-547, não consertado pelo conserto único) · **dono:** `B-SAN3-24-fino` (correção do orquestrador às 15:38 SP: o `B-SAN3-24d` é "só remoção, mais as guardas", e este conserto pede o `app.css`) · **bloqueia:** não.
+- **origem:** C3-06 da cadeira C3 da J-547; não consertado pelo `fix-547-cl` porque o arquivo está fora do PERMITIDO (conflito `C-J547-2`, em `decisoes.md`); decisão do orquestrador pelo fluxo rápido (§C7 10(4)), 13/11 15:02 SP; cobrada pela R1 do `porteiro-547-dp`.
+- **N e forma:** nas 2 telas, o aviso informativo e as mensagens de sucesso (na `main` `d29b3bef`: `fechamento.shared.tsx:131` e `:171`, `ChequesViewA.tsx:55`) saem como texto solto. Medido pela C3 (`getComputedStyle`): fundo `rgba(0, 0, 0, 0)` e borda `0px none`. Na conferência visual do conserto (head `24fbd47d`), continua igual.
+- **causa:** `.pat-banner--info` só é estilizado dentro de `:is(.financeiro-b, .financeiro-c)` (`frontend/src/styles/app.css:8232`), e o `app.css` estava fora do PERMITIDO do `B-SAN3-24`.
+- **critério de encerramento:** a regra vai para o bloco global dos banners do `app.css` (o conserto pronto está descrito no `C-J547-2`), sem mudar a cor do Financeiro B e C; o banner das 2 telas sai com fundo e borda, medido.
+
+## P-547-TEMPO-MEDIO-FECHAR (2026-11-13) — a maquete pede o "Tempo médio para fechar", e a tela mostra a mediana — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (o número mostrado é verdadeiro e rotulado como mediana) · **escopo:** `dentro-do-bloco` do `B-SAN3-24` (saída provisória do conserto do C3-01) · **dono:** `B-SAN3-24-fino` (mesma correção de dono das 15:38 SP) · **bloqueia:** não.
+- **origem:** conflito `C-J547-1` (`decisoes.md`), achado no conserto único da J-547 (C3-01); decisão do orquestrador pelo fluxo rápido, 13/11 15:02 SP; confirmado na conferência visual do conserto; cobrada pela R1 do `porteiro-547-dp`.
+- **N e forma:** N=1 indicador. A opção A aprovada pede a MÉDIA do tempo para fechar; na `main` `d29b3bef` o indicador é "Tempo típico para fechar", a MEDIANA (`frontend/src/modules/finance/period-closes/period-rows.ts:86`; `FechamentoViewA.tsx:165-166`). Medido pelo dev: com a média (`total = total + value`), a trava F8 ficou vermelha (`period-closes/period-rows.ts::total=total+value`).
+- **causa:** a trava F8 (`frontend/tests/finance-no-money-reduce.guard.test.ts`) reprova toda acumulação em `frontend/src/modules/finance/**`, e o inventário dela estava congelado no `B-SAN3-24`.
+- **critério de encerramento:** o indicador da A mostra a média que a maquete pede, pela emenda que acrescenta essa entrada (dias, não dinheiro) ao inventário da F8, como descreve o `C-J547-1`, com teste e com a F8 verde.
+
+## P-547-MES-ANTIGO-NUNCA-FECHADO-SOME (2026-11-13) — um mês antigo que terminou e nunca foi fechado aparece neutro e não conta como "terminou e não fechou" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (nada se lança num mês por causa disso) · **escopo:** `dentro-do-bloco` do `B-SAN3-24`, na regra do C3-12 · **dono:** `B-SAN3-24-fino` · **bloqueia:** não.
+- **origem:** conferência visual do conserto da J-547, feita pelo orquestrador (13/11 15:04–15:29 SP, head `24fbd47d`, ambiente descartável próprio); cobrada pela R1 do `porteiro-547-dp`.
+- **N e forma:** pela regra do mês sem linha no servidor (neutro, "sem fechamento"), um mês que terminou e nunca foi fechado, mais antigo que o anterior (por exemplo, agosto entre julho fechado e setembro fechado), aparece neutro e não conta em "Terminaram e não estão fechados". A forma vem da regra; não há contagem de casos reais.
+- **causa:** o servidor só tem linha para o mês que já teve fechamento, e a regra segue a referência aprovada ("sem nenhum fechamento, a lista mostra só a corrente"; "os meses aparecem conforme forem fechados").
+- **critério de encerramento:** a contagem parte do primeiro mês com movimento financeiro da organização (um dado do servidor), com teste.
+
+## P-551-CI-COMENTARIO-K8 (2026-11-13) — o comentário da linha `SUITES=` do material no `ci.yml` ainda diz K = 8 e 610/610 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (registro; comentário, nenhum comportamento) · **escopo:** `dentro-do-bloco` do `B-MATERIAL-REENVIO` (o comentário entrou no PR #551, que só podia tocar a linha `SUITES=` e os comentários dela; o conserto da J-551 não podia editar o `.github/**`) · **dono:** a próxima edição autorizada de `.github/workflows/ci.yml` (ou um PR de registro com autorização do dono para o `.github`) · **bloqueia:** não.
+- **origem:** R2 da conferência `conf-551-dp` e ressalva do `porteiro-551-dp`; desvio declarado pelo conserto `fix-551-cl`.
+- **N e forma:** N=1 comentário: `.github/workflows/ci.yml:343-344` (na `main` `d29b3bef`) diz "RC3(1)-(8), K = 8" e "610/610". O CI da `main` mede RC3 = 11 e backend-postgres 621/621 (run `43498036392`, no merge `24f7e792`; e run `43530268818`, em `d29b3bef`).
+- **causa:** o conserto da J-551 subiu o RC3 de 8 para 11 casos (RC2(22-24)/RC3(11)), e o `.github/**` era proibido além da linha autorizada.
+- **critério de encerramento:** o comentário diz o K e o total que o TAP do job `backend-postgres` mostra no momento da edição (hoje, K = 11 e 621/621).
+
+## P-MAQ17-PREMISSA-RESPOSTAS-1A6 (2026-11-13) — o quadro de notas da maquete 17 dava como fato respostas do dono que não existem — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a tela não muda: ela supõe a opção (a) em todas, a mesma da recomendação) · **escopo:** a maquete de 3 opções da localização e do consentimento de GPS (item 18), fora do repositório · **dono:** o bloco que levar a maquete 17 ao repositório (`screen-refs/`), hoje o `B-SAN3-17`, dono do item 18 · **bloqueia:** não.
+- **origem:** achado do orquestrador (13/11 14:34 SP) sobre o quadro de notas da `maq-17-cl`.
+- **N e forma:** N=1 afirmação. O quadro dizia que "as respostas do dono às perguntas 1 a 6 valem como fato (`D-DONO-TODAS-RECOMENDACOES-1111`)". Medido pelo orquestrador no `decisoes.md` da `main`: o "Sim, todas" de 11/11 não cita o `B-SAN3-17`; as perguntas 1 a 6 do 17 seguem abertas.
+- **causa:** a maquete herdou como fato uma decisão do dono que não alcança o bloco.
+- **estado em 13/11 15:30 SP:** a `maq-17-ajustes-cl` corrigiu o quadro e o resumo (as perguntas 1 a 6 passaram a "recomendação ainda não respondida"); conferência do orquestrador: 0 "valem como fato" e 0 "resposta 5 do dono"; a versão corrigida foi republicada para o dono. A correção existe só fora do repositório.
+- **critério de encerramento:** a maquete entra em `screen-refs/` com o quadro corrigido (0 ocorrência de "valem como fato" no arquivo versionado), ou o dono responde as perguntas 1 a 6 do 17 e o quadro passa a citar as respostas.
+
+## P-SAN305-NOME-PAPEL-CONTEM-PORTA (2026-11-13) — o nome aleatório do papel no T5/T6/T9 do `san3-05` pode conter a porta e dar falso vermelho — BAIXA (intermitente)
+
+- **status:** ABERTA · **gravidade:** BAIXA (arnês de teste; nenhum comportamento do produto) · **escopo:** `pre-existente` (o arquivo nasceu no PR #405, `a9fbe283`, 2026-10-09; o `B-MATERIAL-REENVIO` não toca o arquivo nem `src/database/**`) · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** RETOMADA 45 do diário do `B-MATERIAL-REENVIO` (`agent-orchestration/omega/juntas/votos/B-MATERIAL-REENVIO/00-dev.md`, `dev-c7-cl`), registrada pelo orquestrador às 11:57 SP.
+- **N e forma:** N=1 vermelho, na rodada `43438519656` (push do `6e2a0e92`, tentativa 1, job `131929929009`), no teste "T5/T6/T9 · papel limpo passa; postgres recusa; log não expõe conexão" de `tests/san3-05-runtime-role-guard-db.test.ts`; verde na tentativa 2 (`gh run rerun 43438519656 --failed`). O controle da l.628 (o `assert.throws` que espera "username da conexão" para `{ database_user: <nome do papel> }`) recebeu "port".
+- **causa (por eliminação, no diário):** o nome do papel é `token("s305_clean")` = `s305_clean_<Date.now()>_<8 hex>` (l.47-48); a porta da conexão é `5432` no CI; `connectionParts` (l.367) devolve `hostname`, `port` e só depois `username`, e o laço de `assertConnectionSecretsAbsent` (l.438) confere nessa ordem. Quando o nome aleatório contém `5432`, a mensagem sai "port".
+- **critério de encerramento:** o controle da l.628 deixa de depender do acaso (o nome do papel não contém nenhuma parte da URL da conexão), com um caso que força a colisão e fica vermelho sem o conserto.
+
+## P-546-N1-AVISO-DURANTE-VERIFICANDO (2026-11-13) — durante "Verificando", o "Concluir OS" fica liberado sem o aviso do estado 7 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-SAN3-14` (a janela nasce do conserto C3-F8 da J-546) · **dono:** `B-SAN3-15b` (mexe no fluxo de conclusão) · **bloqueia:** não.
+- **origem:** N1 da conferência `conf-546-cl` do conserto da J-546; ata da J-546; cobrada pelo §6 do `porteiro-546-cl`.
+- **N e forma:** N=1 estado. Durante "Verificando" (o aparelho não tem a entrega e o servidor ainda não respondeu; até ~25 s com sinal fraco), o "Concluir OS" fica liberado SEM o aviso do estado 7. Medido por uma sonda golden com o tema real, no caso "Verificando: entrega desconhecida enquanto o servidor não responde".
+- **por que não é grave:** o cartão não mente (diz "Verificando"); a conclusão vai para a fila; o servidor recusa com 422 enquanto houver entrega `in_progress` (`work-order.service.ts`, R-R2-01), e a OS não conclui no servidor sem a entrega.
+- **causa:** o estado "Verificando" não liga o aviso que a opção A manda para a mesma incerteza do estado 7 ("liberado, com aviso").
+- **critério de encerramento:** em "Verificando", o "Concluir OS" sai liberado com o aviso, como na opção A; teste de widget vermelho sem o conserto.
+
+## P-546-ACENTOS-FORA-DO-AUTORIZADO (2026-11-13) — textos do app sem acento fora do que o conserto da J-546 podia tocar — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (§11 regra 3) · **escopo:** `pre-existente` (cada texto já estava na `main` `f5b79026`, antes do `B-SAN3-14`) · **dono:** `B-SAN3-15b` · **bloqueia:** não.
+- **origem:** C3-F5 da cadeira C3 da J-546, parte fora do autorizado; o `fix-546-c3-cl` acentuou só a tela de execução (PERMITIDO) e relatou o resto; ata da J-546; cobrada pelo §6 do `porteiro-546-cl`.
+- **N e forma (medido na `main` `d29b3bef`):** "Ag. aprovacao" e "Excecao" (`mobile/flutter_app/lib/features/work_orders/domain/work_order_models.dart:61,65`); "Inicio" e "Conclusao" (`work_order_steps.dart:32,37,39`); no cartão de localização, "fix", "Localizacao operacional", "Localizacao do dispositivo indisponivel nesta versao" e "Enviar localizacao agora" (`work_order_operational_map_screen.dart:74,159,162,208,240,242,271,307,502`); mais o `ErrorState` e o aviso do prestador no `b092`, citados na ata.
+- **causa:** os arquivos ficavam fora do PERMITIDO do `B-SAN3-14` (o `work_order_steps.dart` só para `towLeg`, e o mapa só a linha do C3-F7).
+- **critério de encerramento:** os textos com acento e sem termo técnico ("fix"), com os testes que os prendem atualizados.
+
+## P-546-N3-SUBTITULO-QUEBRA (2026-11-13) — com nome longo de modelo, o subtítulo do cartão da Entrega quebra em 3 linhas — BAIXA (junta-se à `P-APP-KIT-CONTRASTE-AA`)
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): o N3 é não grave e de layout; a ata não lhe dá gravidade própria · **escopo:** `pre-existente` (a largura do chip `OperationalStatusChip` e a margem final do `ListTile` do kit; o conserto da J-546 não mexe nas duas) · **dono:** `B-FERR-AGENTES`, junto com a `P-APP-KIT-CONTRASTE-AA`, até haver bloco próprio de design system do app · **bloqueia:** não.
+- **origem:** N3 da conferência `conf-546-cl`; a ata da J-546 o junta à `P-APP-KIT-CONTRASTE-AA`; cobrada pelo §6 do `porteiro-546-cl`.
+- **N e forma:** com o nome do modelo da opção A ("Vistoria de veículo leve"), o subtítulo novo do cartão da Entrega quebra em 3 linhas, e o cartão fica com 184 px contra 165 na A (+19). Medido: Coleta 138 px (igual à A); Entrega 184 px; subtítulo 57 px de altura e 132,8 px de largura; chip da Entrega com 129,2 px (≈112 na A); margem final do `ListTile` de 24 px (16 na A).
+- **causa:** a largura do chip do kit e a margem final do `ListTile` deixam pouco espaço ao texto.
+- **critério de encerramento:** com o nome longo, o cartão da Entrega fica na altura da A, pelo ajuste do kit, com teste de geometria.
+
+## P-APP-TEMA-SUCESSO-TERTIARY (2026-11-13) — o passo concluído do app usa o roxo `tertiary` do Material 3, e a opção A usa verde — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`git diff f5b79026..0a5d6c32 -- mobile/flutter_app/lib/features/work_orders/ui/work_order_stepper.dart | grep -c tertiary` = 0; o PERMITIDO do stepper no `B-SAN3-14` era só `towLeg`) · **dono:** o bloco do seletor de aparência do app (o dono da `P-APARENCIA-APP-SELETOR`; a triagem da J-546 o chamou de `P-APARENCIA-APP`) · **bloqueia:** não.
+- **origem:** C3-F6 da cadeira C3 da J-546, triado como pendência (13/11 08:43 SP); cobrada pelo §6 do `porteiro-546-cl`.
+- **N e forma:** N=2 cores, medidas por golden contra a maquete e por uma sonda de geometria: o passo concluído em `colorScheme.tertiary` (roxo) contra o verde #059669 da A; o título dos cartões em #1A1B21 (o do `ListTile` do tema, `size=16.0 color=0xFF1A1B21`) contra #0F172A da A.
+- **causa:** o stepper usa o `tertiary` do esquema gerado pelo Material 3, e o título herda a cor do `ListTile` do tema, em vez dos tokens da opção A.
+- **critério de encerramento:** o passo concluído no verde de sucesso e o título no tom da A, por token do tema do app; golden contra a A.
+
+## P-APP-KIT-CONTRASTE-AA (2026-11-13) — chips, pílula, barra inferior e o "Concluir OS" do app abaixo do contraste AA — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA (acessibilidade; §10 DoD) · **escopo:** `pre-existente` (`erp_components.dart:63-90`, o `OperationalStatusChip`, sem diff no `B-SAN3-14`; o verde do "Concluir OS" vem de `f5b79026`, `work_order_execute_screen.dart`, `backgroundColor: ErpMobileTheme.success`) · **dono:** `B-FERR-AGENTES`, até haver bloco próprio de design system do app · **bloqueia:** não.
+- **origem:** C3-F9 da cadeira C3 da J-546, triado como pendência; N5 da conferência `conf-546-cl`; a `P-546-N3-SUBTITULO-QUEBRA` junta-se a esta; cobrada pelo §6 do `porteiro-546-cl`.
+- **N e forma:** 6 peças abaixo de AA (4,5:1 para texto de 14 px): chip "Concluída" 3,25:1, "Não iniciada" 4,37:1 e "Em atendimento" 2,81:1 (14 px); pílula do cabeçalho 3,07:1 (11 px); barra inferior 2,56:1; e o botão "Concluir OS" liberado, branco sobre #059669, 14 px, 3,77:1 (N5). Medido pelo `textContrastGuideline` do Flutter nos 4 estados da sonda da C3 (falha só em peças pré-existentes; `androidTapTarget48` e `labeledTapTarget` passam) e pelo nó semântico do "Concluir OS".
+- **causa:** as cores do kit (chips, pílula, barra e o verde de sucesso) não foram escolhidas para AA; a opção A usa o mesmo verde.
+- **critério de encerramento:** as 6 peças passam no `textContrastGuideline` do Flutter, com teste.
 
 ## P-SAN3-25-BRACO-PROVISIONADO-FORA-DA-CI (2026-11-13) — o braço provisionado dos testes de banco do faturamento pela web não roda na CI — BAIXA (pré-existente)
 
