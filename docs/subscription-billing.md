@@ -274,7 +274,9 @@ separados, `statementTotal` (o total gravado, líquido) e `creditsApplied` (o cr
 mesmo retrato). Fontes: `closed`/`paid` → o demonstrativo; `reopened` → o mesmo, como estimativa; `cancelled` → 0; sem linha ou
 `open` → projeção, como estimativa, sem gravar nada; sem assinatura → `null` com o motivo. **Nunca** o valor pago (o caixa).
 Demonstrativo gravado sem retrato, ou com retrato que não reproduz o total, é linha inconsistente: a visão responde 500
-`statement_integrity_violation`, sem número parcial.
+`statement_integrity_violation`, sem número parcial. Pelo mesmo desenho, organização em dois grupos no mesmo dia dá 500
+`membership_integrity_violation`, e entrada incoerente do motor dá 500 `overview_integrity_violation`; a organização e o mês só
+vão para o log do servidor, nunca para a resposta.
 
 **Margem e alerta.** `margem = assinatura − custo`. O alerta segue esta ordem: `cost_missing` (custo ausente) →
 `no_subscription` (sem assinatura: a filial, que não paga assinatura própria, nunca sai "crítica") → `critical` (custo acima da
@@ -309,7 +311,8 @@ organização, sob RLS FORCE, com vigência `[validFrom, validTo)` em data de ne
 - `PUT …/members` define o conjunto a partir de `validFrom` (padrão: hoje em SP): abre vínculo para quem entra e fecha quem sai.
   Entrada e saída só valem de hoje em diante e depois do início do vínculo (422 `membership_retroactive`); um fim igual ao
   início é recusado (422 `membership_range_invalid`). A organização da plataforma não entra (422 `platform_organization`); até
-  500 por grupo.
+  500 por grupo. Lista de organizações malformada → 400 `invalid_tenant_ids`; data fora de `AAAA-MM-DD` → 400
+  `invalid_valid_from`.
 - O nome é único sem diferenciar maiúsculas entre os grupos não excluídos; excluir é lógico, e só sem membro vigente ou agendado
   (422 `group_has_members`).
 - Entrar e sair grava linha em `audit_logs` da organização **na mesma transação** da troca; nome de grupo e de organização nunca

@@ -994,3 +994,26 @@ própria (é o aceite).
 | regressões `-db` | `san3-03-system-org-db`, `ass-09a-rateio-automatico-db`, `ass-03-metering-census-db` | `# tests 32 # pass 32 # fail 0 # skipped 0` |
 | memória | `tests/ass-09-*.test.ts`, o par de censos, o ratchet, `db-catalog-write-guard`, `financial-period-lock-guard` | `# tests 146 # pass 141 # fail 0 # skipped 5` (os 5 pulos: os `-db` sem `DATABASE_URL`) |
 | resíduo | `psql … erp_ass09` | vínculos 0 · grupos 0 · câmbio 0 · organizações 1 (`platform`, da migração) · importações 0 · papéis `o6r_b01_%` 0 |
+
+## F8 (parte 2) — `API_CONTRACTS.md` e o T-API-1 (R-API-1; D-10), 14/11 04:10–04:18 SP
+
+Re-medido antes de editar (Emenda 1 §1.2): o §3.3 começa em `### 3.3 Plataforma`; as 3 linhas de markup e a última linha da
+tabela (`/platform/cloud-usage/tenants/:tenantId/summary` · `/daily`) casam 1 vez cada; a edição se ancora pelo conteúdo.
+
+- `API_CONTRACTS.md` (`git diff --numstat` `62 3`): as 3 linhas de markup ficam, com "**Retiradas (B-ASS-01, 404).**" (D-10);
+  as 10 rotas R1–R10 entram na tabela do §3.3, uma por linha, com a permissão; e a seção
+  `platform_billing_overview@2026-11.b-ass-09`, com o formato por `groupBy`, a base `before_credits` (total gravado + crédito do
+  retrato), os 15 campos que ficam `null` sem custo válido (P13), e os códigos de R1 a R10 como a F6 e a F5 os escrevem
+  (`overview_integrity_violation`, `invalid_tenant_ids`, `invalid_valid_from` e `invalid_json` inclusive).
+- `tests/ass-09-api-contracts.test.ts` (novo): o §3.3 × o runtime — o caminho sai da pilha dos 3 routers, e a permissão de uma
+  sonda HTTP por rota (ator sem papel de plataforma com `x-permissions`; exatamente uma das duas permissões passa da guarda);
+  mais a seção do contrato e as 3 linhas retiradas. `# tests 3 # pass 3 # fail 0 # skipped 0`.
+- **M-API-1** (apagar a linha de `GET /platform/billing/economic-groups/:groupId/history`) → `not ok 1`:
+  `- 'GET /economic-groups/:groupId/history platform:billing:read'` some do documentado · `restaurado=true`. **Vermelha.**
+- Suplementar (minha, declarada §A6): `PUT /economic-groups/:groupId/members` com `platform:billing:read` na rota → `not ok 1`
+  (`documentado … manage` × `runtime … read`) · `restaurado=true`. A sonda de permissão enxerga a troca.
+- `docs/subscription-billing.md` (`5 2`): os 500 `membership_integrity_violation` e `overview_integrity_violation` e os 400
+  `invalid_tenant_ids` e `invalid_valid_from`, como a F6 escreveu.
+- Bateria: `check` `0` · `lint` `0` · `git diff --check` vazio · em memória `ass-09-api-contracts`, `ass-09-overview-routes`,
+  `ass-09-markup-inalcancavel`, `db-catalog-write-guard`, `b-san3-12a-reasons-census` (que também lê o `API_CONTRACTS.md`):
+  `# tests 23 # pass 22 # fail 0 # skipped 1` (o pulo é o `-db` do guard de catálogo, sem `DATABASE_URL`).
