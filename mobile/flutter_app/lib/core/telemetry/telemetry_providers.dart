@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../auth/auth_notifier.dart';
 import '../bootstrap/bootstrap_repository.dart';
@@ -33,7 +32,7 @@ final telemetrySignalSourceProvider = Provider<TelemetrySignalSource>(
 /// `LocationConsentStore` do B-121 (cujo texto já afirma "Sem background
 /// tracking."). O `tracking_consent` do PERFIL é autoridade do servidor (PR-12).
 final telemetryConsentStoreProvider = Provider<LocationConsentStore>(
-  (ref) => const SecureLocationConsentStore(FlutterSecureStorage()),
+  (ref) => ref.watch(locationConsentStoreProvider),
 );
 
 final telemetryApiProvider = Provider<TelemetryApi>((ref) {

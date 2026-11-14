@@ -147,7 +147,10 @@ void main() {
       await tester.pumpWidget(_cardApp());
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Sem background tracking'), findsOneWidget);
+      expect(
+        find.textContaining('nada é capturado com o app fechado ou minimizado'),
+        findsOneWidget,
+      );
       expect(find.text('Aceitar captura manual'), findsOneWidget);
     });
 
