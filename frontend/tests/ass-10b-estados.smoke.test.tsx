@@ -136,6 +136,25 @@ test("T-UI-3 (F11) sem dólar e sem assinatura não é vazio: o aviso e o custo 
   assert.equal(model(noOriginal).empty, true, "sem original e sem assinatura, vazio");
 });
 
+test("T-UI-3 (F11) mês com custo e sem assinatura: a margem mês a mês não diz 'sem custo' nem traceja o custo", () => {
+  // achado do aceite na base real: sem assinatura, a margem falta porque falta ASSINATURA; o custo existe
+  const lines = (tenantPayload().lines as Record<string, unknown>[]).map((line) => ({ ...line, subscriptionAmount: null, statementTotal: null, creditsApplied: null, subscriptionSource: "none", subscriptionSkipReason: "no_subscription", estimate: false, margin: null, marginPct: null, alert: "no_subscription" }));
+  const data = fixtureData({ tenant: tenantPayload(MONTH, COST_OK, lines, { subscriptionAmount: null, allocatedCost: "5944.07", margin: null, marginPct: null }), global: globalPayload(MONTH, COST_OK, globalJson({ subscriptionTotal: null, margin: null, marginPct: null, alert: "no_subscription" })) });
+  const own = (html: string) => /<button[^>]*data-mes="2026-10"[^>]*>[\s\S]*?<\/button>/.exec(html)?.[0] ?? "";
+  for (const appearance of LETTERS.filter((letter) => letter === "C")) {
+    const column = own(screen(data, appearance));
+    assert.ok(column, "C: a coluna do mês da tela existe");
+    assert.doesNotMatch(visible(column), /sem custo/, "C: não diz 'sem custo' com custo");
+    assert.match(visible(column), /sem assinatura/, "C: diz o que falta");
+    assert.doesNotMatch(column, /ui-month-series__dashed/, "C: sem o tracejado do custo ausente");
+    assert.match(column, /aria-label="[^"]*custo R\$[^"]*sem assinatura/, "C: o texto acessível diz o custo e a falta da assinatura");
+    // o controle: sem custo (sem rateio) e com assinatura, o tracejado e o "sem custo" continuam
+    const noRun = own(screen(dataWithCost(NO_COST("no_run")), appearance));
+    assert.match(noRun, /ui-month-series__dashed/, "C: controle — sem custo, tracejado");
+    assert.match(visible(noRun), /sem custo/, "C: controle — sem custo");
+  }
+});
+
 test("T-UI-3 dados desatualizados: o aviso aparece e os últimos valores confirmados continuam", () => {
   for (const appearance of LETTERS) {
     const html = screen({ ...fixtureData(), stale: true }, appearance);

@@ -26,6 +26,9 @@ export type MonthSeriesPoint = {
   /** Só na `margin`: o valor em cima da coluna e a linha embaixo dele (já formatados pela tela). */
   readonly topLabel?: string;
   readonly topSubLabel?: string;
+  /** Só na `margin`: a coluna sem margem desenha o tracejado do CUSTO ausente. Padrão: `true`. A tela passa `false` quando
+   *  a margem falta por outro motivo (há custo e não há assinatura): aí não há custo ausente a tracejar. */
+  readonly dashed?: boolean;
   readonly state: MonthSeriesState;
   readonly ariaLabel: string;
 };
@@ -158,7 +161,7 @@ function MarginColumns({ points, pressedKey, onSelect, ariaLabel }: { readonly p
         const negative = point.a !== null && point.a < 0;
         const height = point.state === "ok" && point.a !== null ? Math.max(3, (Math.abs(point.a) / peak) * 64) : 0;
         // §6.5.1: o mês com assinaturas e sem custo continua no gráfico, com o custo tracejado (o mesmo traço do `bars`)
-        const missing = point.state === "ok" && point.a === null;
+        const missing = point.state === "ok" && point.a === null && (point.dashed ?? true);
         return (
           <button
             key={point.key}

@@ -17,7 +17,9 @@ const SAME_TIME = "Outra pessoa mudou este grupo agora. Confira a lista e tente 
 export function MoveGroupDialog({ model, actions, onClose, onDone, tenantId }: DialogProps & { readonly tenantId: string }) {
   const line = model.lines.find((item) => item.tenantId === tenantId);
   const tenantName = line?.tenantName ?? "Organização";
-  const current = model.currentGroupByTenant[tenantId] ?? null;
+  // O grupo de HOJE, fixado ao abrir: depois de salvar a tela relê o mês e o modelo muda; a janela continua a mostrar
+  // a operação feita, sem virar a oposta (achado do aceite na base real, F11).
+  const [current] = useState(() => model.currentGroupByTenant[tenantId] ?? null);
   const groupsReady = model.scheduled !== "loading";
   const [target, setTarget] = useState<string>(current ? "" : "");
   const [detail, setDetail] = useState<EconomicGroupDetail | null>(null);

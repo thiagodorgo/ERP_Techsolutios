@@ -121,6 +121,16 @@ export async function getCloudBilling(month: string, access: CloudBillingAccess 
   }
 }
 
+/**
+ * O resumo de custo do mês, no contrato que o T39 do B-ASS-09 importa (`tests/san3-06b-navegacao-plataforma.test.ts`,
+ * arquivo PROIBIDO para este bloco): em demonstração, nenhum dado; na API, o global do mês, que é a fonte nova do custo.
+ * Achado A-B2 (Dev-B): a F1 tinha tirado o nome, e o arquivo inteiro do T38-T40 deixou de carregar.
+ */
+export async function getCloudCostSummary(month = currentBillingMonth()) {
+  if (isMockMode()) return { data: null, source: "mock" as const };
+  return { data: await getGlobalOverviewFromApi(month), source: "api" as const };
+}
+
 // ---- leituras de segundo plano (série de 6 meses, detalhes de grupo, composição, histórico) -------------------------
 export const getGlobalOverview = getGlobalOverviewFromApi;
 export const getTenantOverview = getTenantOverviewFromApi;

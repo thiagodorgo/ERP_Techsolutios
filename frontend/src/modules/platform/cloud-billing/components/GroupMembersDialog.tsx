@@ -113,6 +113,10 @@ export function GroupMembersDialog({ model, actions, onClose, onDone, groupId }:
       return;
     }
     setPhase("final");
+    // A caixa passa a mostrar o grupo que o SERVIDOR devolveu (quem entrou aparece "no grupo", não mais "sem grupo";
+    // achado do aceite na base real, F11).
+    setDetail(result.value);
+    setChange({ add: [], remove: [] });
     // Pós-condição (§6.4.2.4): todo id enviado está na resposta, sem fim; senão, aviso e releitura.
     if (!membersPostconditionHolds(plan.body.tenantIds, result.value.members)) {
       setNotice({ tone: "warning", title: "O servidor não confirmou todos os vínculos.", detail: "A tela vai reler o grupo; confira a lista." });

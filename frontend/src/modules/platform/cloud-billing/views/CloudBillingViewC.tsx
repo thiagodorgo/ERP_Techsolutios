@@ -274,6 +274,8 @@ function marginAria(point: SeriesPoint): string {
   if (point.state === "loading") return `${month}: carregando`;
   if (point.state === "error") return `${month}: não foi possível carregar`;
   if (isEmptyMonth(point)) return `${month}: sem dados`;
+  // sem margem por falta de assinatura (o custo existe): não é "sem custo" (achado do aceite na base real, F11)
+  if (point.margin === null && point.cost !== null && point.subscription === null) return `${month}: custo ${plain(formatBRL(point.cost))}, sem assinatura, margem —`;
   if (point.margin === null) return `${month}: assinaturas ${plain(formatBRL(point.subscription))}, sem custo, margem —`;
   return `${month}: margem ${plain(formatBRL(point.margin))}`;
 }
@@ -288,7 +290,9 @@ function marginPoints(model: CloudBillingView): MonthSeriesPoint[] {
       a: point.state === "ok" ? geometryNumber(point.margin) : null,
       b: null,
       topLabel: point.state === "ok" ? formatBRL(point.margin) : "—",
-      topSubLabel: point.state !== "ok" || empty ? "" : point.margin === null ? "sem custo" : formatPct(point.marginPct),
+      topSubLabel: point.state !== "ok" || empty ? "" : point.margin === null ? (point.cost === null ? "sem custo" : "sem assinatura") : formatPct(point.marginPct),
+      // o tracejado é do CUSTO ausente; com custo e sem assinatura, a coluna fica sem barra e sem tracejado
+      dashed: point.cost === null,
       state: empty ? "empty" : point.state,
       ariaLabel: marginAria(point),
     };

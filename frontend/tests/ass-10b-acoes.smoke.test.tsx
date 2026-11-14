@@ -89,7 +89,8 @@ const G1_MEMBERS = [member("t2", "Frota Vale Transportes", "2026-06-01"), member
 const tenantOverviewRoute = on("GET", "/platform/billing/overview", { data: fixture.tenantPayload(fixture.CURRENT_MONTH) });
 
 // ---- montagem das janelas -------------------------------------------------------------------------------------------
-type Mounted = { readonly container: MiniDomElement; readonly done: string[]; readonly months: string[]; readonly unmount: () => Promise<void> };
+type Model = ReturnType<typeof fixture.fixtureModel>;
+type Mounted = { readonly container: MiniDomElement; readonly done: string[]; readonly months: string[]; readonly model: Model; readonly rerender: (next: Model) => Promise<void>; readonly unmount: () => Promise<void> };
 
 async function openDialog(dialog: DialogAction, access: Access = FULL, ui = state.INITIAL_UI): Promise<Mounted> {
   const container = dom.doc.createElement("div");
@@ -98,14 +99,23 @@ async function openDialog(dialog: DialogAction, access: Access = FULL, ui = stat
   const done: string[] = [];
   const months: string[] = [];
   const model = fixture.fixtureModel(ui);
+  const render = (current: Model) =>
+    root.render(React.createElement(CloudBillingDialogs, { dialog, model: current, access, actions: cloudBillingActions(access), onClose: () => done.push("fechou"), onDone: () => done.push("releu"), onMonth: (month: string) => months.push(month) }));
   await act(async () => {
-    root.render(React.createElement(CloudBillingDialogs, { dialog, model, access, actions: cloudBillingActions(access), onClose: () => done.push("fechou"), onDone: () => done.push("releu"), onMonth: (month: string) => months.push(month) }));
+    render(model);
   });
   await settle();
   return {
     container,
     done,
     months,
+    model,
+    rerender: async (next: Model) => {
+      await act(async () => {
+        render(next);
+      });
+      await settle();
+    },
     unmount: async () => {
       await act(async () => root.unmount());
       dom.doc.body.removeChild(container);
@@ -404,6 +414,43 @@ test("T-GRP-4 membros diferentes entre abrir e gravar: zero PUT e a mensagem; re
     assert.equal(writes().length, 1);
     assert.match(notice(view.container), /não confirmou todos os vínculos/);
     assert.deepEqual(view.done, ["releu"]);
+  } finally {
+    await view.unmount();
+  }
+});
+
+test("T-GRP-5 (F11) depois de salvar, a caixa mostra o grupo que o servidor devolveu: quem entrou está no grupo", async () => {
+  serve(on("GET", "/economic-groups/g1", { data: groupDetail(G1_MEMBERS) }), tenantOverviewRoute, on("PUT", "/members", { data: groupDetail([member("t1", "Guincho Exemplo Ltda", fixture.TODAY), member("t2", "Frota Vale Transportes", "2026-06-01"), member("t9", "Reboque Rápido Norte", "2026-12-01", null, true)]) }));
+  const view = await openDialog({ kind: "group-members", groupId: "g1" });
+  try {
+    const added = () => byData(view.container, "data-membro", "t1")!;
+    assert.match(text(added().parentNode as MiniDomElement), /sem grupo/, "antes: sem grupo");
+    await check(added(), true);
+    await click(button(view.container, /^Salvar$/));
+    assert.match(notice(view.container), /Vínculos salvos/);
+    assert.match(text(added().parentNode as MiniDomElement), /no grupo/, "depois: no grupo, pela resposta");
+    assert.doesNotMatch(text(added().parentNode as MiniDomElement), /sem grupo/);
+    assert.equal(propsOf(added()).checked, true);
+    assert.match(text(byData(view.container, "data-membro", "t9")!.parentNode as MiniDomElement), /entra em 01\/12\/2026/, "o agendado continua agendado");
+  } finally {
+    await view.unmount();
+  }
+});
+
+test("T-GRP-3 (F11) 'Mudar de grupo': depois de salvar e a tela reler, a janela continua a mostrar a operação feita", async () => {
+  serve(on("GET", "/economic-groups/g1", { data: groupDetail(G1_MEMBERS) }), on("PUT", "/members", { data: groupDetail([member("t1", "Guincho Exemplo Ltda", fixture.TODAY), ...G1_MEMBERS]) }));
+  const view = await openDialog({ kind: "move", tenantId: "t1" });
+  try {
+    await type(byData(view.container, "data-grupo-sel"), "g1");
+    await settle();
+    await click(button(view.container, /^Salvar$/));
+    assert.deepEqual(view.done, ["releu"]);
+    // a tela releu: hoje t1 está no g1
+    await view.rerender({ ...view.model, currentGroupByTenant: { ...view.model.currentGroupByTenant, t1: { groupId: "g1", groupName: "Grupo Vale" } } });
+    const options = elements(byData(view.container, "data-grupo-sel")!, (el) => el.localName === "option").map((el) => text(el));
+    assert.ok(options.includes("Grupo Vale"), `o destino escolhido continua na janela (${options.join(" | ")})`);
+    assert.doesNotMatch(text(view.container), /Hoje em Grupo Vale/, "a janela não vira a operação oposta");
+    assert.equal(writes().length, 1, "uma escrita só");
   } finally {
     await view.unmount();
   }
