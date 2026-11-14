@@ -9501,6 +9501,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 - status: FECHADA (2026-11-13, PR #559, bloco `B-SAN3-25`, ramo `feat/web-faturar-os`; o merge e a CI do merge entram no registro pós-merge) — a aba Financeiro da OS fatura pela rota que já existia, e a frase da `InvoicesPage` passa a ser verdadeira. A linha `status` de baixo é a de antes, mantida por acréscimo.
 - status: ABERTA (junta do PR #386, ciclo 1, cadeira C1, achado C1-02; conferido pelo orquestrador em `a143d2c3`)
+- **merge e CI do merge (registro pós-merge, 2026-11-14, `reg-1411-cl`; cumpre o que a 1ª linha `status` acima deixou para depois):** PR #559 mergeado em `729718fe` (14/11, 02:47 SP; squash com a árvore do head `1f2fd245`); CI da `main` no merge, rodada `43563177471` (push), `completed success` nos 8 jobs. Conferido pelo `porteiro-559-cl` (LIBERADO COM RESSALVA), que achou por amostragem no código a única montagem da rota (`frontend/src/modules/work-orders/financials.service.ts:117`) e a única chamada (`InvoiceWorkOrderDialog.tsx:65`), e provou que o `finance` fatura com as permissões do banco (8/8). Ata: `agent-orchestration/omega/juntas/J-559-b-san3-25.md`; item 50 do §4.1 do `PLANO_SAN3.md` marcado FECHADO neste PR.
 - **prova:** backend `src/modules/work-order-financials/work-order-financial.routes.ts:78` (`POST /work-orders/:workOrderId/invoice`, permissão `financial_titles:create`); `git grep -E "/invoice|faturar" -- frontend/src` → só a rota `/finance/invoices` do `App.tsx`; a aba Financeiro da OS (`frontend/src/modules/work-orders/components/tabs/FinancialTab.tsx`) só tem ações de lançar; `frontend/src/modules/finance/pages/InvoicesPage.tsx:53` afirma que "o faturamento continua disponível no Financeiro" — não está.
 - **escopo:** `pre-existente` — a ação web nunca foi construída desde o Ω4-3 (jul/2026); o título nasce por `POST /work-orders/:id/invoice` (`D-Ω4-GANCHO`).
 - **dono:** `B-SAN3-25` (plano SAN3 v5, §4.1 item 50).
@@ -13123,6 +13124,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** infra/CI, intermitente · **dono:** infra/CI · **prioridade:** BAIXA · **bloqueia:** não.
 - **fato:** o `financial-title-status-cas-db` (barreira K11) falhou 1× na `main` por corrida e passou no rerun; flaky conhecido, não regressão de código.
 - **encerramento:** infra/CI reproduz e nomeia a corrida (como nas demais intermitentes), ou uma série suficiente demonstra estabilidade com o caso concorrendo com a suíte.
+- **ocorrência nova (2026-11-14, PR de registro `reg-1411-cl`; N acumulado = 2, contando a de 09/11 acima):** rodada de push `43561339543`, tentativa 1, do #555 (ramo `fix/billing-dispatch-safe`, SHA `78a7c8ab`), job `backend-postgres`: `not ok 274 - K11-db (T-K11h, barreira)` em `tests/financial-title-status-cas-db.test.ts`, com `'changeStatus perdedor (estado mudou duas vezes): tinha de RECUSAR e aceitou'`; total da tentativa 621 testes, 620 passam, 1 falha. No mesmo SHA, a tentativa 2 da mesma rodada e a rodada de PR `43561343994` deram 621/621 (`# fail 0`, `# skipped 0`). O #555 não toca o arquivo (`gh pr view 555 --json files`: 0 caminhos `financial-title-status-cas`). Conferido pelo redator com `gh run view <rodada> --attempt <n> --log`. A barreira é a mesma da `P-TK11H-BARREIRA-FASE` (2026-11-03), que registra que ela não identifica a fase exata.
 
 ## P-ASS07-REGIME-VOCAB-FECHADO (2026-11-09) — classificação de regime fiscal é fail-open para valor não-canônico — MÉDIA
 
@@ -15063,3 +15065,44 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** achado A-E21-2 da revisão `rev-ass09-e21-cl` (Emenda 2.1 do plano do `B-ASS-09`, fora do repositório); registrada pela F8 do `B-ASS-09` (`dev-ass09-cl`).
 - **fato:** medido pelo revisor: 1 organização inconsistente entre 3 derruba as 3 (o pedido inteiro rejeita); omitir a organização também dá 500 (`subscription_missing`). A rota (F6) grava no log do servidor o motivo, o mês e a organização da linha (a organização só no log, nunca no corpo, §2.8), mas a tela fica sem visão nenhuma. A falha por linha ingênua, sem os agregados falharem fechado, dá número errado em silêncio (total 2000.00 no lugar de 3000.00).
 - **critério de encerramento:** falha fechada por linha (a organização inconsistente sai marcada, sem número) com os agregados também falhando fechado, como na P13 do plano (grupo, totais e global `null` quando faltar uma parcela), por emenda que mexe em `overview.engine.ts` e no contrato `platform_billing_overview`, com teste que fica vermelho na versão ingênua.
+
+## P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM (2026-11-14) — no sync do app, um erro com forma de rota 4xx que embrulhe o texto do driver do banco sai cru ao cliente — MÉDIA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (as 10 linhas `message: error.message` nasceram entre 2026-06-14 e 2026-11-13: `a9574bb1`, `234807d6` e `8560df1a` em 14/06, `40c3651f` em 18/10, `68a208ad` em 11/11 e `24f7e792` em 13/11; o `B-SEC-LOG-SANITIZA` ainda não está na `main`) · **dono:** a varredura de segurança final (§C7 item 10(6)) · **bloqueia:** não.
+- **origem:** Emenda 1.1 do plano v2 do `B-SEC-LOG-SANITIZA` (fora do repositório: `plano-B-SEC-LOG-SANITIZA-v2-emenda1.1.md`, §5), que nomeou a pendência e não ampliou o escopo do bloco.
+- **N e forma:** 10 linhas nos 4 syncs, recontadas pelo redator na `origin/main` (`729718fe`) com `git grep -c 'message: error.message' -- 'src/modules/mobile/*sync*.ts'`: estoque 2 (`mobile-inventory-sync.ts:671,712`), ordem de serviço 4 (`mobile-work-order-sync.ts:366,386,400,438`), vistoria 3 (`mobile-checklist-sync.ts:793,817,831`) e evidência 1 (`mobile-evidence-sync.ts:415`). A emenda mediu o caso C1 com 2 sentinelas: se um serviço lançar um erro com forma de rota e status 4xx cuja mensagem embrulhe o texto do driver, o sync devolve essa mensagem como veio. É o mesmo defeito que o v2 do bloco fecha no `sendRouteError` (o E-10).
+- **latente:** nenhum serviço de estoque nem de ordem de serviço produz o caso hoje (M4 da emenda). **Não medido:** se os serviços de vistoria e de evidência montam erro de rota com a mensagem de outro erro.
+- **critério de encerramento:** as 10 linhas passam a devolver texto público (a forma proposta na emenda é `message: publicText(error.message, "Unexpected error.")`), com teste e mutação por arquivo; ou a varredura final mede, nos 4 syncs, que nenhum erro de rota carrega texto do driver.
+
+## P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE (2026-11-14) — a regra "a OS marcada como cancelada pelo 422 vale só para aquela OS" não tem teste — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` do `B-SAN3-25` (#559, já na `main` em `729718fe`): o estado `cancelledByServerId` nasceu no conserto `c76ce22e` do bloco (`frontend/src/modules/work-orders/components/tabs/FinancialTab.tsx:112` e `:268` na `main`) · **dono:** `B-SAN3-25` (próximo ajuste) · **bloqueia:** não.
+- **origem:** achado V559-R1 da conferência da J-559 (`ver-559-cl`, não grave).
+- **N e forma (medido pela conferência):** trocar `cancelledByServerId === workOrderId` por `cancelledByServerId !== null` em `FinancialTab.tsx:268` deixa verdes os 32 testes dos dois arquivos do front (`tests/b-san3-25-faturar-os.smoke.test.tsx` e `tests/b-san3-25-faturar-os-live.test.tsx`: 32/32, nenhum `not ok`). O código da `main` está certo; falta o teste que o prende. Não é o defeito do achado C3-A2, que tem o `[L4c]` vermelho sob as mutações M5 e M6.
+- **critério de encerramento:** um caso abre duas OS na mesma aba, recebe o 422 de cancelada em uma e prova que a outra continua faturável; com vermelho-controle na mutação acima.
+
+## P-INDICE-SEM-DONO-NUNCA-MARCA (2026-11-14) — o gerador do índice de pendências conta como "com dono" a entrada que diz `**dono:** a atribuir` — BAIXA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a regra de dono do gerador, `agent-orchestration/controle/gerar-indice-pendencias.py:98`, é de 2026-08-29, `87f6ae61`) · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** achado do `reg-10bseed-cl` em 14/11, passado ao registro pelo orquestrador.
+- **o defeito:** com `**dono:** a atribuir`, o `\s*` antes do `(?!a atribuir)` recua para zero caracteres, o olhar à frente vê o espaço, e a busca casa. Reproduzido pelo redator: `re.search(r'\*\*dono:\*\*\s*(?!a atribuir)', '**dono:** a atribuir')` dá verdadeiro.
+- **N e forma (medido pelo redator na `origin/main`, `729718fe`):**
+  - `grep -c '| não |'` no `pendencias-indice.md` = **0**, como o orquestrador mediu. **Nota do redator, declarada (§A6):** esse 0 é por construção, porque o gerador nunca escreve "não" na coluna dono; o marcador de sem dono que ele escreve é `**a atribuir**` (`gerar-indice-pendencias.py:181`), e ele aparece em 121 linhas do índice (893 têm `sim`).
+  - o efeito do defeito: 89 entradas do `pendencias.md` têm `**dono:** a atribuir`, e 78 delas saem `sim` no índice só pelo recuo do `\s*` (as outras 11 têm também um dono de verdade).
+- **critério de encerramento:** uma pendência com dono "a atribuir" aparece como sem dono no índice regenerado. Pelo texto do orquestrador, isso é "aparecer como `| não |`"; pelo gerador de hoje, é aparecer com `**a atribuir**` na coluna dono. O bloco dono escolhe o marcador e o diz no cabeçalho do índice.
+
+## P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE (2026-11-14) — o servidor aceita `item_answer` do app para um componente que o modelo do checklist não tem — MÉDIA (pré-existente)
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o `handleAnswer` é de 2026-08-01, `8a938414`) · **dono:** o próximo bloco de backend que tocar `src/modules/mobile/mobile-checklist-sync.ts` · **bloqueia:** não.
+- **origem:** a Emenda 3 do `B-MOBILE-GATE-CHAVE` (PR #561), passada ao registro pelo orquestrador.
+- **onde:** `handleAnswer` em `src/modules/mobile/mobile-checklist-sync.ts:424-455` na `origin/main` (`729718fe`, `git grep -n handleAnswer`: a chamada na `:369`, a função na `:424`); no head do #561 (`7b53b75d`, aberto) a função vai de `:428` a `:459`. A função lê o `component_id` da ação e grava a resposta sem conferir o componente contra o modelo do checklist.
+- **N e forma (medido no #561, em `7b53b75d`, em memória; não re-executado pelo redator):** com a mutação `component_id: randomUUID()`, o T2 continua 4/4 verde.
+- **não medido:** se o caminho do Postgres também aceita.
+- **critério de encerramento:** a resposta para componente que o modelo não tem é recusada (em memória e no Postgres), com teste que fica vermelho sob a mutação acima.
+
+## P-DONO-LINHA-DO-APP-48-OU-44 (2026-11-14) — no app, a linha que abre o detalhe fica com 48 ou com 44 de altura? — decisão do dono — FECHADA
+
+- **status:** FECHADA (2026-11-14, `D-DONO-1311-RECOMENDACOES` (c)) — "48, pela recomendação". Nasce já respondida.
+- **gravidade:** decisão do dono · **escopo:** o `B-SAN3-15b` e o `B-SAN3-17` (a constante única `MobileExpandableRow.rowHeight`) · **dono:** o dono · **bloqueia:** não.
+- **pergunta (Emenda 5.2 do `B-SAN3-15b`, §8.1, fora do repositório):** no app, a linha que abre o detalhe fica com 48 de altura (a regra do Android, igual aos botões que o app já tem) ou com 44 (como a maquete aprovada)? Recomendação: 48. A diferença é de 4 por linha; se fosse 44, mudaria um número nos dois blocos.
+- **conflito registrado (§A2):** ver `D-DONO-1311-RECOMENDACOES` (c) em `decisoes.md`. Na conferência visual, a linha de 48 contra a maquete de 44 não é desvio a reprovar.
