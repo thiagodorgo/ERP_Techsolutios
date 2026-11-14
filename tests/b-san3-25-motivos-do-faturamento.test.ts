@@ -150,6 +150,10 @@ const INVOICE_SITIOS_NAO_LITERAIS: ReadonlyArray<{ readonly sitio: string; reado
     produz: "o status e o motivo do erro de domínio que chegou ao tratador: os pares P1 das fontes.",
   },
   {
+    sitio: "P5 src/modules/core-saas/routes/http.ts | response.status(INFRA_DOWN_STATUS).json({",
+    produz: "500 unknown_error, mensagem fixa: infra caída no tratador comum (B-SEC-LOG-SANITIZA H1); INFRA_DOWN_STATUS = 500 é o ponto do rollback R1.",
+  },
+  {
     sitio: "P4 src/modules/navigation/module-gate.middleware.ts | function deny(response: Response, status: number, code: string, reason: string, message: string): void {",
     produz: "a definição; os pares são as chamadas deny(response, <status>, \"…\", \"…\") do mesmo arquivo (P4 literal).",
   },
