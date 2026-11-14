@@ -149,7 +149,17 @@ if (!connectionString) {
   test("RO1: reopen com linha NEEDS_REVIEW → 422 outbox_needs_review pela rota, a leitura no mesmo tx (1 conexão do papel)", async () => {
     const fixture = await seedClosed("ro1");
     await seedOutbox(fixture, "charge_create", "NEEDS_REVIEW", { lastError: "charge_found_no_candidate" });
-    assert.equal(await roleBackends(), 0, "premissa: o papel ainda não abriu conexão (o RO1 é o 1º pedido do arquivo)");
+    // O `createApp` dispara SEM await a sonda do login sem organização (`src/app.ts`), que consulta o singleton do Prisma, aqui
+    // o cliente do papel: ela pode ter 1 conexão do papel aberta (em voo, ou ociosa no pool) antes do RO1 (a queda do run de PR do
+    // #569, 14/11). Disparada de novo aqui (no-op se a do boot ainda está em voo) e esperada até assentar, ela não corre mais
+    // com a contagem. A propriedade continua medida: depois do pedido, exatamente 1 conexão do papel.
+    const readiness = await import("../src/modules/auth/services/login-readiness.js");
+    readiness.triggerLoginReadinessProbe();
+    const settle = Date.now() + 10_000;
+    while (readiness.isLoginReadinessProbing() && Date.now() < settle) await new Promise((resolve) => setTimeout(resolve, 20));
+    assert.equal(readiness.isLoginReadinessProbing(), false, "a sonda do login assentou antes da contagem");
+    const before = await roleBackends();
+    assert.ok(before <= 1, `premissa: no máximo a conexão ociosa que a sonda do login deixou (achei ${before})`);
 
     const response = await api("POST", `/api/v1/platform/billing/statements/${fixture.statementId}/reopen`, { tenantId: fixture.tenantId, reason: "reabrir para conferir o fechamento" });
     assert.equal(response.status, 422, JSON.stringify(response.body));
