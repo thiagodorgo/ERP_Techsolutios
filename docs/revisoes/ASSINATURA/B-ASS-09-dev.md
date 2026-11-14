@@ -781,3 +781,22 @@ dá **1** para cada âncora — `return deriveBusinessDate(now);`, `return row.v
    sem cruzar), porque o repositório não reabre linha. O v2 não fixa o caso; está coberto por um teste próprio.
 4. **Os testes da F2 continuam intocados:** `tests/ass-09-groups.test.ts` e `membership.rules.ts` não estão no diff deste ramo
    (`git diff --name-only origin/feat/ass-09-visao-custo...HEAD`); as mutações da F2 foram só aplicadas e restauradas.
+
+## J2 — o ramo do banco entra no ramo do bloco (Emenda 2 §1.5; Emenda 2.1 §4 e §6.1), 14/11 02:20–02:25 SP
+
+Condição de entrada: a F3b está em `origin/feat/ass-09-visao-custo` = `96a0f84d` (`git log --format=%s origin/feat/ass-09-visao-custo
+| grep -c 'F3b do B-ASS-09'` = 1), por fast-forward a partir de `121d2f21` (`git merge-base --is-ancestor 121d2f21 …` → verdadeiro),
+aprovada pela verificação `ver-f3b-cl`. Roteiro da §1.5 com `OLD=317004e7` (F5b) e `BASE=75f27800` (o head do bloco usado na J1).
+
+| passo | comando | saída | veredito |
+|---|---|---|---|
+| (1) | `git rebase origin/feat/ass-09-visao-custo` · `test -z "$(git diff --name-only --diff-filter=U)"` | `Rebasing (1/5)…(5/5)Successfully rebased and updated refs/heads/feat/ass-09-banco.` · nenhum conflito | limpo |
+| (2) | `git diff "$BASE" "$OLD" -- . ":(exclude)$D" \| git patch-id --stable` × `git diff origin/feat/ass-09-visao-custo HEAD -- . ":(exclude)$D" \| git patch-id --stable` | A = `05ffc7b04c79eddfebd0f8c1010c740bba4bab29` · B = `05ffc7b04c79eddfebd0f8c1010c740bba4bab29` | iguais |
+| (3) | linhas acrescentadas ao diário por cada lado desde a `BASE`, `comm -23` contra o diário do HEAD | lado do bloco (F3, F3b): 87 linhas distintas, **0** perdidas · lado do banco (`317004e7`): 307, **0** perdidas | o diário guarda os dois lados |
+| C-E2-4 (o laço da Emenda 2.1 §4, `H=HEAD`) | cada commit de `2b5e0325..HEAD` pelo 1º rótulo do assunto | `SEM-ROTULO: 0` · `DOIS LADOS: 0` · 14 caminhos do banco, 10 do braço | nenhum arquivo com commit dos dois lados |
+| bateria antes do push | `npm run db:generate` · `check` · `lint`; guard de migração; `-db` da fatia (drill, câmbio, grupos); memória (câmbio, serviço de grupos, F2, motor, dinheiro, assinatura da F3b, guarda do período) | `0` · `0` · `0` · `violações: 0` · `# tests 13 # pass 13 # fail 0 # skipped 0` · `# tests 52 # pass 52 # fail 0 # skipped 0` | verde |
+| push do banco | `git push --force-with-lease=feat/ass-09-banco:317004e7 origin HEAD:feat/ass-09-banco` | `+ 317004e7...c26a1f06 HEAD -> feat/ass-09-banco (forced update)` | só no ramo do banco |
+| avanço do bloco | `git merge-base --is-ancestor origin/feat/ass-09-visao-custo HEAD` → verdadeiro · `git push origin HEAD:feat/ass-09-visao-custo` | `96a0f84d..c26a1f06  HEAD -> feat/ass-09-visao-custo` (sem `--force`) | **fast-forward** |
+| C-E2-4 depois | `git rev-parse origin/feat/ass-09-visao-custo origin/feat/ass-09-banco` · `git merge-base --is-ancestor 75f27800 origin/feat/ass-09-visao-custo` | os dois `c26a1f06…` · verdadeiro | os dois ramos no mesmo SHA; o bloco só andou para a frente |
+
+**J2 feita.** A partir daqui o trabalho é no ramo do bloco (`feat/ass-09-visao-custo`); a F6 é de outro dev.
