@@ -50,7 +50,7 @@ export function InvoicesPage() {
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#94A3B8" }}>
           <FileText size={15} />
-          <span>Os títulos a receber e o faturamento continuam disponíveis no Financeiro.</span>
+          <span>O faturamento da OS fica na aba Financeiro de cada ordem de serviço. Os títulos a receber ficam no Financeiro, em A receber.</span>
         </div>
         {canReadTitles && (
           <button
