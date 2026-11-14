@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { createLogger } from "../logging/logger.js";
 
 import { getDefaultJobQueue, type JobQueue } from "../jobs/job.queue.js";
 import { recordCloudUsageForDomainEvent } from "../../modules/cloud-usage/cloud-usage.events.js";
@@ -92,7 +93,7 @@ export async function publishDomainEvent<TPayload extends DomainEventPayload>(
       throw error;
     }
 
-    (options.logger ?? console).warn(
+    (options.logger ?? createLogger()).warn(
       {
         eventName: name,
         tenantId: context.tenantId,

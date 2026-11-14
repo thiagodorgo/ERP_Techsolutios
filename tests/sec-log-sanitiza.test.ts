@@ -29,6 +29,8 @@ process.env.LOG_LEVEL = "info";
 const { createHttpLogger, createLogger, SANITIZER_FAILED_MESSAGE } = await import("../src/infra/logging/logger.js");
 const { classifyPublicError, PG_CONNECTION_LOST_MESSAGES } = await import("../src/infra/logging/public-error.js");
 const { RedisClient, RedisCommandError } = await import("../src/infra/redis/redis.client.js");
+const { installFinalErrorHandler } = await import("../src/infra/http/final-error-handler.js");
+const { default: express } = await import("express");
 
 const RAIZ = fileURLToPath(new URL("..", import.meta.url));
 
@@ -609,4 +611,104 @@ test("K3 matriz text: erro de domínio, e a regra do pg é fechada", () => {
     ["frase do pg com code de aplicação", Object.assign(new Error("Connection terminated"), { code: "X_APP" })],
   ];
   conferirClasse(casos, "text");
+});
+
+// =====================================================================================================================
+// H5 a H7 — o tratador final de erro (o módulo, num app Express do próprio teste).
+// =====================================================================================================================
+
+type Resposta = { readonly status: number; readonly corpo: string; readonly falhou: boolean };
+
+/** Sobe o app, faz 1 pedido e devolve a resposta e tudo que foi escrito no stderr durante o pedido. */
+async function pedir(
+  app: ReturnType<typeof express>,
+  caminho: string,
+  init: RequestInit = {},
+): Promise<{ readonly resposta: Resposta; readonly stderr: string }> {
+  const servidor = await new Promise<http.Server>((resolve) => {
+    const s = app.listen(0, "127.0.0.1", () => resolve(s));
+  });
+  const porta = (servidor.address() as net.AddressInfo).port;
+  const escritas: string[] = [];
+  const escreverOriginal = process.stderr.write.bind(process.stderr);
+  process.stderr.write = ((pedaco: string | Uint8Array, ...resto: unknown[]) => {
+    escritas.push(String(pedaco));
+    return escreverOriginal(pedaco as string, ...(resto as []));
+  }) as typeof process.stderr.write;
+  try {
+    let resposta: Resposta;
+    try {
+      const r = await fetch(`http://127.0.0.1:${porta}${caminho}`, init);
+      resposta = { status: r.status, corpo: await r.text(), falhou: false };
+    } catch {
+      resposta = { status: 0, corpo: "", falhou: true };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    return { resposta, stderr: escritas.join("") };
+  } finally {
+    process.stderr.write = escreverOriginal;
+    servidor.closeAllConnections();
+    servidor.close();
+  }
+}
+
+const CORPO_500 = { error: { code: "INTERNAL_SERVER_ERROR", reason: "unknown_error", message: "Unexpected error." } };
+const CORPO_4XX = { error: { code: "BAD_REQUEST", reason: "invalid_request", message: "Invalid request." } };
+
+test("H5 o tratador final responde 500 fixo em development e production; corpo, stderr e log com 0 sentinela", async () => {
+  for (const ambiente of ["development", "production"]) {
+    const { logger, linhas, texto } = capturar();
+    const app = express();
+    app.set("env", ambiente);
+    app.get("/boom", () => {
+      throw p1001Modelo();
+    });
+    installFinalErrorHandler(app, logger);
+    const { resposta, stderr } = await pedir(app, "/boom?x=hstdb-sentinela");
+    assert.equal(resposta.status, 500, ambiente);
+    assert.deepEqual(JSON.parse(resposta.corpo), CORPO_500, ambiente);
+    assertSemSentinela(resposta.corpo + stderr + texto());
+    const linha = ultimaLinha(linhas);
+    assert.equal(linha.method, "GET");
+    assert.equal(linha.path, "/boom");
+    assert.equal((linha.err as Record<string, unknown>).code, "P1001");
+  }
+});
+
+test("H6 o tratador final mantém o 413 do body-parser, com o envelope fixo", async () => {
+  const { logger } = capturar();
+  const app = express();
+  app.use(express.json({ limit: "16b" }));
+  app.post("/x", (_request, response) => {
+    response.json({ ok: true });
+  });
+  installFinalErrorHandler(app, logger);
+  const { resposta } = await pedir(app, "/x", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ campo: "x".repeat(200) }),
+  });
+  assert.equal(resposta.status, 413);
+  assert.deepEqual(JSON.parse(resposta.corpo), CORPO_4XX);
+});
+
+test("H7 com a resposta já começada, o tratador final não chama next e o stderr fica com 0 sentinela", async () => {
+  const { logger, linhas, texto } = capturar();
+  const app = express();
+  app.set("env", "development");
+  app.get("/meio", (_request, response, next) => {
+    response.writeHead(200, { "content-type": "text/plain" });
+    response.write("parcial");
+    next(p1001Modelo());
+  });
+  installFinalErrorHandler(app, logger);
+  let chamouNext = false;
+  app.use((error: unknown, _request: unknown, _response: unknown, next: (error: unknown) => void) => {
+    chamouNext = true;
+    next(error);
+  });
+  const { stderr } = await pedir(app, "/meio");
+  assert.equal(chamouNext, false, "o tratador final chamou next(error)");
+  assertSemSentinela(stderr + texto());
+  assert.equal(ultimaLinha(linhas).path, "/meio");
 });

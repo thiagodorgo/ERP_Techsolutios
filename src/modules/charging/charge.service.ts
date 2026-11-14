@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import { getMemoryImpoundRepositoryForTests } from "../impound/impound.service.js";
@@ -35,7 +35,7 @@ type RawRecord = Record<string, unknown>;
 const CANDIDATE_PAGE = 500;
 // C4 — observabilidade do fail-closed POR PROCESSO (sem PII: só tenantId/processId/reason). O error_count no
 // DailyAccrualRun conta; o log warn torna a diária bloqueada RASTREÁVEL na operação.
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 export type TenantAccrualScanResult = {
   readonly runId: string;

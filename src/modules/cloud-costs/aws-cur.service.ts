@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import type { CloudCostAllocationEnqueue } from "../cloud-cost-allocation/cloud-cost-allocation.import-trigger.js";
@@ -36,7 +36,7 @@ export type CloudCostServiceOptions = {
   readonly onImportCompleted?: CloudCostImportCompletedHook;
 };
 
-const hookLogger = pino({ level: env.LOG_LEVEL });
+const hookLogger = createLogger();
 
 /** B-ASS-09a — o log da falha do gancho. Objeto exportado para o teste espiar (T1-mem prova que a memória não tem gancho). */
 export const cloudCostImportLogger = {

@@ -1,7 +1,8 @@
 import cors from "cors";
 import express, { type Express, type Router } from "express";
 import helmet from "helmet";
-import { pinoHttp } from "pino-http";
+import { createHttpLogger, createLogger } from "./infra/logging/logger.js";
+import { installFinalErrorHandler } from "./infra/http/final-error-handler.js";
 
 import { env } from "./config/env.js";
 import { createAuthorityPortalRouter } from "./modules/authority/index.js";
@@ -34,8 +35,7 @@ export function createPortalApp(options: { ownerRouter?: Router; authorityRouter
   });
 
   app.use(
-    pinoHttp({
-      level: env.LOG_LEVEL,
+    createHttpLogger({
       // Redige cabeçalhos sensíveis; o portal não usa Authorization do ERP, mas a redação é defensiva.
       redact: ["req.headers.authorization", "req.headers.cookie"],
     }),
@@ -51,5 +51,6 @@ export function createPortalApp(options: { ownerRouter?: Router; authorityRouter
     response.status(404).json({ error: { code: "NOT_FOUND", message: "Route not found." } });
   });
 
+  installFinalErrorHandler(app, createLogger());
   return app;
 }

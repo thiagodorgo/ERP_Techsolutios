@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
@@ -76,7 +76,7 @@ const ACTIVE_DISPATCH_STATUSES: ReadonlySet<FieldDispatchStatus> = new Set<Field
   "reassigned",
 ]);
 
-const dispatchLogger = pino({ level: env.LOG_LEVEL });
+const dispatchLogger = createLogger();
 
 // `D-07CB1-TRAVA-ATE-B2` + `D-DESP-INICIO-ATENDIMENTO` (decisões do dono, 17/10) — o atendimento começa em "No local":
 // no DESPACHO é `arrived` (e o que vem depois, `in_service`); na OS é `on_site` (e `in_progress`, `paused`). Até o

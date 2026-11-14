@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import { sniffMimeType, type SniffableMimeType } from "./content-sniff.js";
@@ -49,7 +49,7 @@ import { resolveEvidenceScanner } from "./evidence-scanner.factory.js";
  * requisição e não há segundo detentor), mas é a fronteira honesta da garantia.
  */
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 declare const uploadVerificationBrand: unique symbol;
 

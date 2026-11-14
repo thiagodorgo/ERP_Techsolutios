@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "./infra/logging/logger.js";
 
 import { createApp } from "./app.js";
 import { createPortalApp } from "./portal-app.js";
@@ -8,7 +8,7 @@ import { startJobWorkerIfEnabled } from "./infra/jobs/job-worker.bootstrap.js";
 import { startTraccarIngestListenerIfEnabled } from "./integrations/traccar/traccar-ingest.bootstrap.js";
 import { createCoreSaasService } from "./modules/core-saas/index.js";
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 // Ω6R-DIN-006 — o bootstrap do worker de jobs mora em `src/infra/jobs/job-worker.bootstrap.ts`.
 // Aqui ele era inalcançável por teste (função não exportada num módulo que executa `main()` ao ser

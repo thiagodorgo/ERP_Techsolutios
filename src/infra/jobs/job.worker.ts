@@ -1,4 +1,5 @@
 import { JobQueue, getDefaultJobQueue } from "./job.queue.js";
+import { createLogger } from "../logging/logger.js";
 import { JobRegistry, getDefaultJobRegistry } from "./job.registry.js";
 import {
   captureJobExecution,
@@ -24,7 +25,7 @@ export class JobWorker {
   constructor(options: JobWorkerOptions = {}) {
     this.queue = options.queue ?? getDefaultJobQueue();
     this.registry = options.registry ?? getDefaultJobRegistry();
-    this.logger = options.logger ?? console;
+    this.logger = options.logger ?? createLogger();
     this.captureJobExecution = options.captureJobExecution ?? captureJobExecution;
   }
 

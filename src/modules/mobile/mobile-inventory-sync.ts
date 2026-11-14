@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
@@ -119,7 +119,7 @@ export type MobileInventorySyncResponse = {
 };
 
 const MAX_BATCH_SIZE = 50;
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 const syncReceipts = new Map<string, MobileInventorySyncReceipt>();
 const inventoryByTenant = new Map<string, Map<string, InventoryItemState>>();
 const supportedActionTypes: readonly InventoryActionType[] = [

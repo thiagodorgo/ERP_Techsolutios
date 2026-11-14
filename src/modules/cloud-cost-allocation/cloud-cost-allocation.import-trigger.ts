@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import type { CloudCostImport } from "../cloud-costs/aws-cur.types.js";
@@ -83,7 +83,7 @@ export type ImportTriggerLogger = {
   error(payload: Record<string, unknown>, message: string): void;
 };
 
-const moduleLogger = pino({ level: env.LOG_LEVEL });
+const moduleLogger = createLogger();
 
 export const defaultImportTriggerLogger: ImportTriggerLogger = {
   warn: (payload, message) => moduleLogger.warn(payload, message),

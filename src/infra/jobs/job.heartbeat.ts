@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { createLogger } from "../logging/logger.js";
 
 import type { RedisClient } from "../redis/redis.client.js";
 
@@ -207,7 +208,7 @@ export class WorkerHeartbeatWriter {
     this.ttlSeconds = options.ttlSeconds ?? WORKER_HEARTBEAT_TTL_SECONDS;
     this.intervalMs = options.intervalMs ?? WORKER_HEARTBEAT_WRITE_INTERVAL_MS;
     this.freshMs = options.freshMs ?? WORKER_TICK_FRESH_MS;
-    this.logger = options.logger ?? console;
+    this.logger = options.logger ?? createLogger();
   }
 
   /**

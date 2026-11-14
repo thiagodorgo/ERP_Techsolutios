@@ -22,7 +22,8 @@
 // tipo/código fora do catálogo → `ignored` (204, nada gravado, uma linha de log com `outcome`/`reason` e nunca o `type` cru).
 
 import express, { type ErrorRequestHandler, type Express, type RequestHandler } from "express";
-import pino, { type Logger } from "pino";
+import type { Logger } from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { buildTraccarEventCommand, type TraccarEventCommand } from "./traccar-event.adapter.js";
 import { parseTraccarEventEnvelope } from "./traccar-event.schema.js";
@@ -198,7 +199,7 @@ function answerWithinDeadline(
 export function createTraccarIngestApp(deps: TraccarIngestAppDeps): Express {
   const app = express();
   const now = deps.now ?? (() => new Date());
-  const logger = deps.logger ?? pino({ level: "info" });
+  const logger = deps.logger ?? createLogger({ level: "info" });
 
   app.disable("x-powered-by");
   app.use(createTraccarIngestHttpLogger(logger));

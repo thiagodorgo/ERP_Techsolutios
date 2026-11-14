@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import { createDefaultImpoundService, type ImpoundService } from "./impound.service.js";
@@ -9,7 +9,7 @@ import { createDefaultImpoundService, type ImpoundService } from "./impound.serv
 // na-conclusão-da-OS foi REJEITADO (acopla o caminho genérico work-order.changeStatus + barramento best-effort).
 export const IMPOUND_RECONCILE_SCAN_INTERVAL_MS = 60_000;
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 type RemovalCandidate = {
   readonly id: string;
