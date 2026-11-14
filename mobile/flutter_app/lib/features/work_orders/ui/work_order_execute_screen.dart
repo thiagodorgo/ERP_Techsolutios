@@ -19,6 +19,7 @@ import '../../checklists/domain/checklist_models.dart';
 import '../../checklists/ui/checklist_navigation.dart';
 import '../../prestador/domain/prestador_flow.dart';
 import '../data/work_order_repository.dart';
+import '../domain/work_order_conclusion.dart';
 import '../domain/work_order_models.dart';
 import '../domain/work_order_steps.dart';
 import 'work_order_operational_map_screen.dart';
@@ -113,11 +114,7 @@ class _ExecData {
   MobileChecklistRun? get confirmedDelivery =>
       _hasServerRunId(deliveryRun) ? deliveryRun : null;
 
-  bool get isCollectionComplete => runs.any(
-    (r) =>
-        r.kind == MobileChecklistRunKind.collection &&
-        r.status == MobileChecklistRunStatus.completed,
-  );
+  bool get isCollectionComplete => isCollectionChecklistComplete(runs);
 
   bool get isDeliveryComplete =>
       confirmedDelivery?.status == MobileChecklistRunStatus.completed;
