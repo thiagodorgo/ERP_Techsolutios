@@ -1,4 +1,7 @@
+import { createHash } from "node:crypto";
+
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import { createDefaultApprovalService, type ApprovalService } from "../work-orders/approval.service.js";
 import { toWorkOrderDto } from "../work-orders/work-order.dto.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
 import { isCheckinRefusal } from "../work-orders/work-order.checkin.js";
@@ -41,6 +44,18 @@ type MobileWorkOrderActionResult = {
   };
 };
 
+/**
+ * B-SAN3-16 — o que o lote usa além do serviço de OS, injetável nos testes (falha da fila de Aprovações). Padrão: os
+ * serviços de runtime. A rota (`mobile.routes.ts`) não muda.
+ */
+export type MobileWorkOrderSyncDeps = {
+  readonly approvals?: () => Promise<Pick<ApprovalService, "request">>;
+};
+
+type ResolvedMobileWorkOrderSyncDeps = {
+  readonly approvals: () => Promise<Pick<ApprovalService, "request">>;
+};
+
 type MobileWorkOrderSyncReceipt = {
   readonly fingerprint: string;
   readonly result: MobileWorkOrderActionResult;
@@ -75,15 +90,20 @@ const syncReceipts = new Map<string, MobileWorkOrderSyncReceipt>();
 // `work_orders:status` (o mesmo botão do app). Nenhuma permissão nova; o catálogo e a RBAC_MATRIX não mudam.
 const APPROVAL_REQUEST_PERMISSION = "work_orders:update";
 const UNABLE_TO_START_PERMISSION = "work_orders:status";
+const APPROVAL_UNAVAILABLE_MESSAGE = "Não foi possível registrar o pedido de aprovação agora. O aplicativo tenta de novo.";
 
 export async function syncMobileWorkOrderActions(
   actor: AuthenticatedActor | undefined,
   body: unknown,
   resolveService: () => Promise<WorkOrderService> = createDefaultWorkOrderService,
+  deps: MobileWorkOrderSyncDeps = {},
 ): Promise<MobileWorkOrderSyncResponse> {
   assertSyncActor(actor);
   const request = parseSyncRequest(body);
   const service = await resolveService();
+  const resolvedDeps: ResolvedMobileWorkOrderSyncDeps = {
+    approvals: deps.approvals ?? createDefaultApprovalService,
+  };
   const accepted: MobileWorkOrderActionResult[] = [];
   const rejected: MobileWorkOrderActionResult[] = [];
   const conflicts: MobileWorkOrderActionResult[] = [];
@@ -107,7 +127,7 @@ export async function syncMobileWorkOrderActions(
       continue;
     }
 
-    const result = await processAction(service, actor, action);
+    const result = await processAction(service, actor, action, resolvedDeps);
 
     if (result.status === "accepted") {
       syncReceipts.set(receiptKey, {
@@ -220,6 +240,7 @@ async function processAction(
   service: WorkOrderService,
   actor: AuthenticatedActor,
   action: MobileWorkOrderAction,
+  deps: ResolvedMobileWorkOrderSyncDeps,
 ): Promise<MobileWorkOrderActionResult> {
   try {
     if (action.type === "work_order.create") {
@@ -281,6 +302,10 @@ async function processAction(
         "approval_request",
         action.payload,
         action.client_action_id,
+        {
+          openApproval: (workOrder, reason) =>
+            openFieldApproval(deps, actor, workOrder, action.client_action_id, reason),
+        },
       );
 
       return acceptedResult(action, outcome.workOrder);
@@ -321,6 +346,43 @@ async function processAction(
     return acceptedResult(action, workOrder);
   } catch (error) {
     return actionErrorResult(action, error);
+  }
+}
+
+// B-SAN3-16 (Emenda 1.1 §2.3) — a identidade do pedido do técnico na fila de Aprovações: própria, determinística e
+// opaca (43 caracteres), da MESMA tripla da repetição durável do evento (OS + usuário + `client_action_id`). Com ela,
+// o pedido do técnico e a aprovação de conclusão da mesma OS são DUAS pendências (a fila funde por `entity_id`), e o
+// reenvio cai na mesma pendência. O tipo de entidade continua `work_order` (um tipo novo quebraria a tela da web).
+function fieldApprovalEntityId(workOrderId: string, userId: string, clientActionId: string): string {
+  const digest = createHash("sha256")
+    .update(`${workOrderId}\n${userId}\n${clientActionId}`)
+    .digest("hex");
+  return `pedido-app:${digest.slice(0, 32)}`;
+}
+
+// B-SAN3-16 (Emenda 1.1 §2.4) — a fila de Aprovações é chamada ANTES do evento, pela porta pública (o item 67 a torna
+// durável sem editar esta regra). Falha da fila → 503 `approval_unavailable`, com mensagem fixa (o texto do erro
+// nunca sai): o app reenvia, e a chave determinística devolve a pendência que já existir.
+async function openFieldApproval(
+  deps: ResolvedMobileWorkOrderSyncDeps,
+  actor: AuthenticatedActor,
+  workOrder: WorkOrder,
+  clientActionId: string,
+  reason: string,
+): Promise<string> {
+  try {
+    const approvals = await deps.approvals();
+    const approval = await approvals.request({
+      tenantId: actor.tenantId,
+      entityType: "work_order",
+      entityId: fieldApprovalEntityId(workOrder.id, actor.userId, clientActionId),
+      workOrderId: workOrder.id,
+      requestedByUserId: actor.userId,
+      pendingReason: reason,
+    });
+    return approval.id;
+  } catch {
+    throw routeError(503, "SERVICE_UNAVAILABLE", "approval_unavailable", APPROVAL_UNAVAILABLE_MESSAGE);
   }
 }
 
