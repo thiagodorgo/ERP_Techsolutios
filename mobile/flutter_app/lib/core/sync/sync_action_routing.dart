@@ -104,7 +104,18 @@ SyncActionRoute routeOf(SyncAction action) {
   if (_fieldRequestTypes.contains(action.type)) {
     if (!workOrderActionHasReason(action)) return SyncActionRoute.unroutable;
   }
+  if (_isStatusWithoutServerEquivalent(action)) {
+    return SyncActionRoute.unroutable;
+  }
   return route;
+}
+
+// B-SAN3-16 (P7) — mudança de status para "Ag. aprovação", "Aprovada" ou "Exceção" já na fila (de antes deste bloco):
+// o servidor recusaria sempre (`invalid_status`), então vira não enviável em vez de 5 recusas.
+bool _isStatusWithoutServerEquivalent(SyncAction action) {
+  if (action.type != WorkOrderSyncActionTypes.statusUpdate) return false;
+  final newStatus = action.payload['new_status'];
+  return kStatusSemEquivalenteNoServidor.contains(newStatus);
 }
 
 /// A mensagem do erro visível de uma ação cuja rota é "sem envio".
@@ -112,6 +123,9 @@ String syncUnroutableMessageFor(SyncAction action) {
   if (_fieldRequestTypes.contains(action.type) &&
       !workOrderActionHasReason(action)) {
     return syncUnroutableMissingReasonMessage;
+  }
+  if (_isStatusWithoutServerEquivalent(action)) {
+    return syncUnroutableStatusMessage;
   }
   return syncUnroutableVersionMessage;
 }
