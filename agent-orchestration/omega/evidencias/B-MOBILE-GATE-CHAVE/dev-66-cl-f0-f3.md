@@ -83,3 +83,31 @@ A M19 (o uso de `:349` trocado pelo literal) deixa a T4.1 verde, como a REV66-01
 - `npm test` (memória, sem banco nem Redis): 4540 · pass 4357 · fail 12 · cancelled 1 · skipped 170. Triagem por execução isolada na base `d2737339` e no head: as mesmas 7 falhas nos dois (`core-saas-role-authority` sem `DATABASE_URL`; `domain-events` ×2, `job-queue` ×3 e `worker-heartbeat` ×1 com `ECONNREFUSED` do Redis); os 6 `16b-*` de `users-seg-desativado-sse` passam isolados nos dois (timeout por carga no run completo). Nenhuma toca código do bloco; o job `backend` da CI, que tem banco e Redis, é a prova.
 - Fixture regenerada no head com `UPDATE_MOBILE_GATE_FIXTURE=1`: igual byte a byte à da F0.
 - `git diff --check`: limpo. `Kpis/**`, `prisma/**`, `.github/**`, `catalog.ts`, `pubspec.*`: sem diff.
+
+## Acréscimo de 14/11 (03:18 SP): a M16′ da Emenda 3
+
+- **Fonte:** `erp-pausa-2026-10-03/planos/plano-B-MOBILE-GATE-CHAVE-emenda3.md` (orquestrador, 14/11 03:15 SP). **A M16 sai e entra a M16′**; a propriedade provada é a mesma (R1.3: um desfecho "outro motivo" derruba o T2 sem gravar a fixture), e **o total segue 39 mutações**. A linha da M16 acima fica como o registro do que se mediu antes da emenda; ela não conta mais.
+- **Troca literal** em `tests/mobile-gate-chave-matriz.test.ts`: `payload: { run_id: alvo.runId, component_id: alvo.componentId,` → `payload: { run_id: randomUUID(), component_id: alvo.componentId,`.
+- **Comando:** `r=0; UPDATE_MOBILE_GATE_FIXTURE=1 node --test --import tsx tests/mobile-gate-chave-matriz.test.ts || r=1; git diff --quiet -- mobile/flutter_app/test/fixtures/mobile_gate_matrix.json && echo FIXTURE_INTACTA || echo FIXTURE_MUDOU; exit $r`, com `CORE_SAAS_PERSISTENCE=memory`.
+- **Rodada por `dev-66-cl`** no head `7b53b75d` (worktree `w-gate66`), aplicada com 1 ocorrência e restaurada byte a byte:
+
+| mutação | resultado | testes |
+|---|---|---|
+| M16′ | VERMELHO | T2 — a matriz: VERMELHO; T2 · R1.4: VERMELHO; T2 · RA1.5: VERMELHO; T2 · R2.1: VERMELHO; FIXTURE_INTACTA: ACHADO; checklist_run_not_found: ACHADO (vermelhos: 4) |
+
+Saída (recorte do TAP):
+
+```
+not ok 1 - T2 — a matriz papel × gate medida no servidor é a da fixture versionada
+  error: 'platform_admin/G1b: ação em "rejected" com motivo "checklist_run_not_found" (…)'
+not ok 2 - T2 · R1.4 — G1b: o gestor passa no HTTP e é recusado na ação; o técnico de campo responde
+not ok 3 - T2 · RA1.5 — G3: gestor, operador e técnico passam na porta e são recusados na ação; o estoque reserva
+not ok 4 - T2 · R2.1 — módulo: qualquer um de approvals/work_orders libera o G4; sem o módulo, 403 module_not_enabled
+# tests 4
+# pass 0
+# fail 4
+FIXTURE_INTACTA
+```
+
+- **Resultado final das 39, com a M16′ no lugar da M16: 39 de 39 vermelhas como escritas.**
+- **Achado lateral** (Emenda 3 §3): o servidor aceita `item_answer` para componente que o modelo não tem. Vira a `P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE` (MÉDIA, `pre-existente`), registrada no PR de registro `reg-1411-cl`, fora deste bloco.
