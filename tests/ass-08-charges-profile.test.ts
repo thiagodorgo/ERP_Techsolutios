@@ -39,7 +39,7 @@ class PixPort implements PaymentProviderPort {
     return { chargeId: "pay_1", status: "pending", payUrl: "https://pay.example/x", pixCopyPaste: "000201...", boletoUrl: "https://b/x" };
   }
   async getCharge() { return { status: "pending" as const, raw: {} }; }
-  async findChargeByExternalReference() { return null; }
+  async listChargesByExternalReference() { return []; }
   async cancelCharge(id: string) { return { chargeId: id, status: "cancelled" as const }; }
   async refund(id: string) { return { chargeId: id, status: "refunded" as const }; }
   async registerWebhook() { return { externalId: "h" }; }
@@ -66,14 +66,14 @@ test("R-CHG-1 dispatch grava a cobrança com payUrl/pix/boleto (T-CHG-1)", async
   const charges = new InMemoryStatementChargeRepository();
   await outbox.enqueue({ tenantId: TENANT, statementId: STMT, kind: "charge_create", provider: "asaas", seq: 1, payload: { customerId: "c", amountCents: 10000, dueDate: "2026-12-10", method: "pix" } }, now);
   const port = new PixPort();
+  outbox.configureChargeOutcomeSink(async (charge, at) => {
+    await charges.insert(charge, at);
+  });
   await runDispatchOutbox({
     repo: outbox,
     ports: { asaas: port },
     resolveCustomer: resolverWith(COMPLETE_PROFILE),
     now: () => now,
-    onChargeCreated: async (row, result, at) => {
-      await charges.insert({ tenantId: row.tenantId, statementId: row.statementId, provider: row.provider, externalChargeId: result.chargeId, status: result.status, payUrl: result.payUrl, pixCopyPaste: result.pixCopyPaste, boletoUrl: result.boletoUrl, dueDate: "2026-12-10" }, at);
-    },
   });
   const stored = await charges.listByStatement(TENANT, STMT);
   assert.equal(stored.length, 1);

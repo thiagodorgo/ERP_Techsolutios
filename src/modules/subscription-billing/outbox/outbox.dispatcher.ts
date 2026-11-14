@@ -20,7 +20,9 @@
 // demonstrativo) e pela mesma régua de falha, delegados ao `InvoiceOutboxHandler` (outbox/invoice.dispatch.ts) ANTES da perna
 // de cobrança; sem ele, esses tipos vão a NEEDS_REVIEW `unsupported_kind`.
 
-import type { PaymentProviderPort, CreateChargeInput, ChargeResult, ChargeStatus } from "../providers/payment/payment-provider.port.js";
+import { randomUUID } from "node:crypto";
+
+import type { PaymentProviderPort, CreateChargeInput, ChargeLookup, ChargeStatus, ExternalChargeCandidate } from "../providers/payment/payment-provider.port.js";
 import {
   backoffMsForAttempt,
   INVOICE_DEFER_MS,
@@ -32,7 +34,10 @@ import {
   type StatementClaimSnapshot,
 } from "./outbox.types.js";
 import type { InvoiceDispatchResult, InvoiceOutboxHandler } from "./invoice.dispatch.js";
-import type { AdoptionFacts, OutboxRepository } from "./outbox.repository.js";
+import { leaseOf, type AdoptionFacts, type OutboxLease, type OutboxRepository } from "./outbox.repository.js";
+
+// [CLAIMED-BY] Uma identidade por processo impede duas instâncias de compartilharem a mesma lease nominal.
+const PROCESS_ID = randomUUID();
 
 export type DispatchOutcome =
   | "sent"
@@ -41,13 +46,15 @@ export type DispatchOutcome =
   | "rate_limited"
   | "retry"
   | "failed"
-  | "skipped";
+  | "skipped"
+  | "record_failed"
+  | "lease_lost";
 
 export type DispatchAuditEvent = {
   readonly tenantId: string;
   readonly statementId: string;
   readonly kind: OutboxKind;
-  readonly action: "billing_outbox.failed" | "billing_outbox.needs_review";
+  readonly action: "billing_outbox.failed" | "billing_outbox.needs_review" | "billing_outbox.lease_lost" | "billing_outbox.record_failed";
   readonly code: string;
 };
 
@@ -70,8 +77,6 @@ export type DispatcherDeps = {
   readonly now?: () => Date;
   readonly claimedBy?: string;
   readonly orphanMs?: number;
-  /** Persiste a cobrança criada (`subscription_statement_charges`, G11) — F7. */
-  readonly onChargeCreated?: (row: BillingOutboxRow, result: ChargeResult, now: Date) => Promise<void>;
   readonly onAudit?: (event: DispatchAuditEvent) => Promise<void>;
 };
 
@@ -138,6 +143,61 @@ function chargeInputFromRow(row: BillingOutboxRow, customerId: string): CreateCh
 /** Estados da cobrança achada pela referência que podem ser ADOTADOS: viva ou paga — nunca cancelada nem estornada. */
 export const ADOPTABLE_CHARGE_STATES: ReadonlySet<ChargeStatus> = new Set<ChargeStatus>(["pending", "overdue", "paid", "partially_paid"]);
 
+const SAO_PAULO_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+
+function candidateDay(value: string): string | null {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : SAO_PAULO_DAY.format(parsed);
+}
+
+/** O veredito da lista por referência (D-1′): criar, adotar a única candidata (pela `adoptionDecision`) ou revisão. */
+export type CandidateVerdict =
+  | { readonly kind: "create" }
+  | { readonly kind: "adopt"; readonly candidate: ExternalChargeCandidate }
+  | { readonly kind: "review"; readonly code: string };
+
+/**
+ * B-ASS-08c1a (Emenda 2.1, D-1′/D-5′) — a regra de adoção por tentativa, PURA, sobre a lista NÃO vazia:
+ *   candidata = estado adotável ∧ valor exato ∧ dia civil de São Paulo da criação ≥ o do `occurred_at` (sempre por dia;
+ *   valor ou data ausentes nunca são candidatos); 2+ → revisão; 1 → adotar (a `adoptionDecision` decide U ∧ V);
+ *   0 → o BLOQUEIO é pelo ESTADO de toda cobrança listada, conhecida ou não: só a `cancelled` (no Asaas, a removida sem
+ *   pagamento, D-2.1) deixa de bloquear. A identidade de uma cobrança nunca libera uma criação — nunca uma 2ª cobrança.
+ */
+export function chargeCandidateDecision(
+  row: BillingOutboxRow,
+  listed: readonly ExternalChargeCandidate[],
+  facts: Pick<AdoptionFacts, "otherIntents">,
+  orphan: boolean,
+): CandidateVerdict {
+  const prefix = orphan ? "orphan_found" : "charge_found";
+  const amount = Number(row.payload.amountCents);
+  const occurredDay = SAO_PAULO_DAY.format(row.occurredAt);
+  const candidates = listed.filter((candidate) => ADOPTABLE_CHARGE_STATES.has(candidate.status) && candidate.amountCents === amount && (candidateDay(candidate.createdAt) ?? "") >= occurredDay); // [RECONS-01]
+  if (candidates.length > 1) return { kind: "review", code: `${prefix}_multiple_candidates` };
+  if (candidates.length === 1) return { kind: "adopt", candidate: candidates[0]! };
+  const blocking = listed.filter((candidate) => candidate.status !== "cancelled"); // [RECONS-02]
+  if (blocking.length > 0) return { kind: "review", code: facts.otherIntents > 0 ? (orphan ? "orphan_found_previous_intent" : "charge_found_for_previous_intent") : `${prefix}_no_candidate` };
+  return orphan ? { kind: "review", code: "orphan_recovery_not_found" } : { kind: "create" };
+}
+
+/**
+ * D-1′ itens 0 e 1 (D-5′): lista vazia → como hoje, sem ler fatos (a linha nova cria pela posse `[LEASE-02]`; a órfã vai
+ * a `orphan_recovery_not_found`). Lista não vazia → UMA leitura de `adoptionFacts` por tentativa, que segue até a
+ * `adoptionDecision` (a `settleFoundCharge` não relê). Demonstrativo ausente → `*_statement_missing`.
+ */
+async function decideFromList(
+  deps: DispatcherDeps,
+  row: BillingOutboxRow,
+  listed: readonly ExternalChargeCandidate[],
+  orphan: boolean,
+): Promise<{ readonly verdict: CandidateVerdict; readonly facts?: AdoptionFacts }> {
+  if (listed.length === 0) return { verdict: orphan ? { kind: "review", code: "orphan_recovery_not_found" } : { kind: "create" } };
+  const facts = await deps.repo.adoptionFacts(row.tenantId, row.statementId, row.id);
+  if (!facts) return { verdict: { kind: "review", code: `${orphan ? "orphan_found" : "charge_found"}_statement_missing` } };
+  return { verdict: chargeCandidateDecision(row, listed, facts, orphan), facts };
+}
+
 /**
  * E6′/E7′ (2º conserto do #522, plano §13.1.2) — a cobrança achada pela referência só é ADOTADA com fatos que não se
  * apagam:
@@ -170,21 +230,22 @@ export function adoptionDecision(
   return "adopt";
 }
 
-/** Achou cobrança pela referência: adota (U ∧ V) ou manda à revisão com auditoria — NUNCA cria. */
+/** Achou cobrança pela referência: adota (U ∧ V) ou manda à revisão com auditoria — NUNCA cria. Recebe os fatos já
+ * lidos pela `decideFromList` (D-5′: uma leitura por tentativa). */
 async function settleFoundCharge(
   deps: DispatcherDeps,
   row: BillingOutboxRow,
-  found: { readonly chargeId: string; readonly status: ChargeStatus },
+  found: { readonly chargeId: string } & ChargeLookup,
+  facts: AdoptionFacts | undefined,
   orphan: boolean,
   clock: () => Date,
 ): Promise<DispatchOutcome> {
-  const facts = await deps.repo.adoptionFacts(row.tenantId, row.statementId, row.id);
+  const lease = leaseOf(row);
   const decision = adoptionDecision(row, found, facts, orphan);
   if (decision === "adopt") {
-    await deps.repo.markSent(row.tenantId, row.id, found.chargeId, clock());
-    return "recovered";
+    return recordChargeSafely(deps, row, lease, { kind: "adopted", chargeId: found.chargeId, lookup: found }, "recovered", clock); // [RECOVER-01]
   }
-  await deps.repo.markNeedsReview(row.tenantId, row.id, decision, clock());
+  if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, decision, clock(), lease))) return leaseLost(deps, row);
   await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: decision });
   return "needs_review";
 }
@@ -195,7 +256,7 @@ async function settleFoundCharge(
  */
 export async function runDispatchOutbox(deps: DispatcherDeps): Promise<DispatchRunResult> {
   const clock = deps.now ?? (() => new Date());
-  const claimedBy = deps.claimedBy ?? "dispatch-outbox";
+  const claimedBy = deps.claimedBy ?? `dispatch-outbox:${PROCESS_ID}`;
   const orphanMs = deps.orphanMs ?? OUTBOX_ORPHAN_MS;
   // Os provedores de nota LIGADOS entram na elegibilidade do claim junto com os de pagamento (R-OBX-4 vale para os dois).
   const enabledProviders = [...new Set([...Object.keys(deps.ports), ...(deps.invoices?.providers ?? [])])];
@@ -207,6 +268,8 @@ export async function runDispatchOutbox(deps: DispatcherDeps): Promise<DispatchR
     retry: 0,
     failed: 0,
     skipped: 0,
+    record_failed: 0,
+    lease_lost: 0,
   };
 
   await deps.repo.markDisabledProvidersVisible(enabledProviders, clock());
@@ -242,10 +305,11 @@ async function dispatchOne(
   wasOrphan: boolean,
   clock: () => Date,
 ): Promise<DispatchOutcome> {
+  const lease = leaseOf(row);
   // B-ASS-08b — a perna da NOTA vem ANTES da de cobrança (§11 (a) do conserto-c2): o provedor de nota não está em `ports`.
   if (row.kind === "invoice_issue" || row.kind === "invoice_cancel") {
     if (!deps.invoices) {
-      await deps.repo.markNeedsReview(row.tenantId, row.id, "unsupported_kind", clock());
+      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, "unsupported_kind", clock(), lease))) return leaseLost(deps, row);
       return "needs_review";
     }
     try {
@@ -259,22 +323,25 @@ async function dispatchOne(
   const port = deps.ports[row.provider];
   if (!port) {
     // Nunca deveria acontecer (claim filtra por provedor ligado); fail-closed sem rede.
-    await deps.repo.markSkipped(row.tenantId, row.id, "provider_disabled", clock());
+    if (!(await deps.repo.markSkipped(row.tenantId, row.id, "provider_disabled", clock(), lease))) return leaseLost(deps, row);
     return "skipped";
   }
   if (row.kind !== "charge_create") {
     // `charge_cancel`/`refund` nascem nas fatias seguintes; sem handler → NEEDS_REVIEW.
-    await deps.repo.markNeedsReview(row.tenantId, row.id, "unsupported_kind", clock());
+    if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, "unsupported_kind", clock(), lease))) return leaseLost(deps, row);
     return "needs_review";
   }
 
   // (2) CHAMADA FORA de transação. Crash órfão → reconsulta por referência ANTES de repetir (nunca cobra 2×), e a cobrança
   // achada só é adotada pela régua U ∧ V (E7′): a fantasma de um fechamento desfeito vai a revisão.
   if (wasOrphan) {
-    const found = await port.findChargeByExternalReference(row.statementId);
-    if (found) return settleFoundCharge(deps, row, found, true, clock);
-    await deps.repo.markNeedsReview(row.tenantId, row.id, "orphan_recovery_not_found", clock());
-    await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "orphan_recovery_not_found" });
+    // A órfã NUNCA cria (D-1′): lista vazia, ou só com canceladas, → `orphan_recovery_not_found`.
+    const listed = await port.listChargesByExternalReference(row.statementId);
+    const { verdict, facts } = await decideFromList(deps, row, listed, true);
+    if (verdict.kind === "adopt") return settleFoundCharge(deps, row, { chargeId: verdict.candidate.chargeId, ...(await port.getCharge(verdict.candidate.chargeId)) }, facts, true, clock);
+    const code = verdict.kind === "review" ? verdict.code : "orphan_recovery_not_found";
+    if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, code, clock(), lease))) return leaseLost(deps, row);
+    await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code });
     return "needs_review";
   }
 
@@ -283,44 +350,78 @@ async function dispatchOne(
     // NEEDS_REVIEW com os campos visíveis em `last_error` (TEXT livre; sem skip_reason novo — CHECK da M5) e 0 rede.
     const customer = await deps.resolveCustomer(row, port);
     if (!customer.ok) {
-      await deps.repo.markNeedsReview(row.tenantId, row.id, `billing_profile_missing:${customer.missing.join(",")}`, clock());
+      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, `billing_profile_missing:${customer.missing.join(",")}`, clock(), lease))) return leaseLost(deps, row);
       await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: "billing_profile_missing" });
       return "needs_review";
     }
-    // E6′: a reconsulta vem SEMPRE antes de criar — nenhuma criação às cegas. Achou → adota (U ∧ V) ou revisão, NUNCA
-    // cria; um erro na reconsulta cai no `catch` abaixo (reagenda ou FAILED) e também nunca cria.
-    const found = await port.findChargeByExternalReference(row.statementId);
-    if (found) return await settleFoundCharge(deps, row, found, false, clock);
+    // E6′: a reconsulta vem SEMPRE antes de criar — nenhuma criação às cegas. Achou → adota (U ∧ V) ou revisão; só cria
+    // quando nada listado bloqueia (D-1′). Um erro na reconsulta (inclusive a lista que não prova estar completa,
+    // `provider_list_incomplete`, D-2′) cai no `catch` abaixo (reagenda ou FAILED) e também nunca cria.
+    const listed = await port.listChargesByExternalReference(row.statementId);
+    const { verdict, facts } = await decideFromList(deps, row, listed, false);
+    if (verdict.kind === "review") {
+      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, verdict.code, clock(), lease))) return leaseLost(deps, row);
+      await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: verdict.code });
+      return "needs_review";
+    }
+    if (verdict.kind === "adopt") return await settleFoundCharge(deps, row, { chargeId: verdict.candidate.chargeId, ...(await port.getCharge(verdict.candidate.chargeId)) }, facts, false, clock);
+    // A posse é confirmada numa transação curta que termina ANTES do POST remoto.
+    if (!(await deps.repo.confirmLease(row.tenantId, row.id, lease))) return leaseLost(deps, row); // [LEASE-02]
     const result = await port.createCharge(chargeInputFromRow(row, customer.customerId));
-    await deps.onChargeCreated?.(row, result, clock());
-    await deps.repo.markSent(row.tenantId, row.id, result.chargeId, clock());
-    return "sent";
+    // R2-01: o POST remoto terminou. Uma falha daqui em diante é de REGISTRO, não do provedor; a linha permanece
+    // PROCESSING para a recuperação por referência e jamais passa por `registerFailure`.
+    return recordChargeSafely(deps, row, lease, { kind: "created", result }, "sent", clock); // [REG-SAFE-01]
   } catch (error) {
     return registerFailure(deps, row, error, clock);
   }
 }
 
+/** R2-01 — fronteira pós-provedor: falha local preserva PROCESSING e deixa a órfã adotar a cobrança na próxima rodada. */
+async function recordChargeSafely(
+  deps: DispatcherDeps,
+  row: BillingOutboxRow,
+  lease: OutboxLease,
+  outcome: Parameters<OutboxRepository["recordChargeOutcome"]>[3],
+  success: "sent" | "recovered",
+  clock: () => Date,
+): Promise<DispatchOutcome> {
+  try {
+    if (!(await deps.repo.recordChargeOutcome(row.tenantId, row, lease, outcome, clock()))) return leaseLost(deps, row);
+    return success;
+  } catch (error) {
+    await deps.onAudit?.({
+      tenantId: row.tenantId,
+      statementId: row.statementId,
+      kind: row.kind,
+      action: "billing_outbox.record_failed",
+      code: errorCode(error),
+    });
+    return "record_failed";
+  }
+}
+
 /** (3) REGISTRO do desfecho da perna da nota, na mesma régua das cobranças. */
 async function registerInvoiceResult(deps: DispatcherDeps, row: BillingOutboxRow, result: InvoiceDispatchResult, clock: () => Date): Promise<DispatchOutcome> {
+  const lease = leaseOf(row);
   switch (result.kind) {
     case "sent":
-      await deps.repo.markSent(row.tenantId, row.id, result.externalId, clock());
+      if (!(await deps.repo.markSent(row.tenantId, row.id, result.externalId, clock(), lease))) return leaseLost(deps, row);
       return "sent";
     case "recovered":
-      await deps.repo.markSent(row.tenantId, row.id, result.externalId, clock());
+      if (!(await deps.repo.markSent(row.tenantId, row.id, result.externalId, clock(), lease))) return leaseLost(deps, row);
       return "recovered";
     case "skipped":
-      await deps.repo.markSkipped(row.tenantId, row.id, result.reason, clock());
+      if (!(await deps.repo.markSkipped(row.tenantId, row.id, result.reason, clock(), lease))) return leaseLost(deps, row);
       return "skipped";
     case "needs_review":
-      await deps.repo.markNeedsReview(row.tenantId, row.id, result.code, clock());
+      if (!(await deps.repo.markNeedsReview(row.tenantId, row.id, result.code, clock(), lease))) return leaseLost(deps, row);
       await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.needs_review", code: result.code });
       return "needs_review";
     case "deferred":
       // Conserto da J-530 (C): a nota ainda pendente — a linha volta a PENDING em +15 min e DEVOLVE a tentativa que o claim
       // somou (uma espera longa não esgota as 8 tentativas da falha de verdade).
       // [INTX-11r]
-      await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + INVOICE_DEFER_MS), result.code, clock(), { refundAttempt: true });
+      if (!(await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + INVOICE_DEFER_MS), result.code, clock(), lease, { refundAttempt: true }))) return leaseLost(deps, row);
       return "retry";
   }
 }
@@ -328,17 +429,23 @@ async function registerInvoiceResult(deps: DispatcherDeps, row: BillingOutboxRow
 /** Falha da chamada: 429 → próxima janela do provedor; transitória → backoff 1/5/15/60 min; 8ª → FAILED + trilha (R-OBX-2).
  * A MESMA régua para a cobrança e para a nota (B-ASS-08b). */
 async function registerFailure(deps: DispatcherDeps, row: BillingOutboxRow, error: unknown, clock: () => Date): Promise<DispatchOutcome> {
+  const lease = leaseOf(row);
   const retryMs = rateLimitRetryMs(error);
   if (retryMs !== null) {
-    await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + retryMs), "rate_limited", clock());
+    if (!(await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + retryMs), "rate_limited", clock(), lease))) return leaseLost(deps, row);
     return "rate_limited";
   }
   const code = errorCode(error);
   if (row.attempts >= OUTBOX_MAX_ATTEMPTS) {
-    await deps.repo.markFailed(row.tenantId, row.id, code, clock());
+    if (!(await deps.repo.markFailed(row.tenantId, row.id, code, clock(), lease))) return leaseLost(deps, row);
     await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.failed", code });
     return "failed";
   }
-  await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + backoffMsForAttempt(row.attempts)), code, clock());
+  if (!(await deps.repo.reschedule(row.tenantId, row.id, new Date(clock().getTime() + backoffMsForAttempt(row.attempts)), code, clock(), lease))) return leaseLost(deps, row);
   return "retry";
+}
+
+async function leaseLost(deps: DispatcherDeps, row: BillingOutboxRow): Promise<"lease_lost"> {
+  await deps.onAudit?.({ tenantId: row.tenantId, statementId: row.statementId, kind: row.kind, action: "billing_outbox.lease_lost", code: "lease_lost" });
+  return "lease_lost";
 }

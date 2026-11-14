@@ -148,15 +148,15 @@ test("T-PAY-ASAAS-6 · getCharge: paidCents só em estado pago (A2)", async () =
   }
 });
 
-test("T-PAY-ASAAS-7 · findChargeByExternalReference acha a cobrança criada; sem cobrança → null", async () => {
+test("T-PAY-ASAAS-7 · a listagem por referência acha a cobrança criada; sem cobrança → lista vazia", async () => {
   const { server, adapter } = await setup();
   try {
     await adapter.createCharge(CHARGE);
-    const found = await adapter.findChargeByExternalReference(STATEMENT_ID);
-    assert.ok(found);
-    assert.equal(found.chargeId, "pay_0001");
-    assert.equal(found.status, "pending");
-    assert.equal(await adapter.findChargeByExternalReference("outra-ref"), null);
+    const list = await adapter.listChargesByExternalReference(STATEMENT_ID);
+    assert.equal(list.length, 1);
+    assert.equal(list[0].chargeId, "pay_0001");
+    assert.equal(list[0].status, "pending");
+    assert.deepEqual(await adapter.listChargesByExternalReference("outra-ref"), []);
   } finally {
     await server.close();
   }
@@ -267,7 +267,7 @@ test("T-PAY-ASAAS-14 · refund parcial envia value em REAIS (fromCents), nunca c
   }
 });
 
-test("T-PAY-ASAAS-15 · findChargeByExternalReference usa filtro local quando o provedor ignora o filtro (M-PAY10b)", async () => {
+test("T-PAY-ASAAS-15 · a listagem por referência usa filtro local quando o provedor ignora o filtro (M-PAY10b)", async () => {
   const server = await startAsaasFake("ok", { ignoreExternalReferenceFilter: true });
   const client = new BillingHttpClient({
     provider: "asaas",
@@ -281,9 +281,8 @@ test("T-PAY-ASAAS-15 · findChargeByExternalReference usa filtro local quando o 
   try {
     const first = await adapter.createCharge({ ...CHARGE, externalReference: "stmt-2" });
     const second = await adapter.createCharge({ ...CHARGE, externalReference: "stmt-1" });
-    const found = await adapter.findChargeByExternalReference("stmt-1");
-    assert.equal(found?.chargeId, second.chargeId, "filtro local acha o alvo, não data[0]");
-    assert.notEqual(found?.chargeId, first.chargeId);
+    const list = await adapter.listChargesByExternalReference("stmt-1");
+    assert.deepEqual(list.map((c) => c.chargeId), [second.chargeId]);
   } finally {
     await server.close();
   }
