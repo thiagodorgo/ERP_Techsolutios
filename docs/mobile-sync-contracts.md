@@ -653,6 +653,11 @@ Um conflito deve retornar:
 
 O app deve gravar o conflito em fila propria e exigir decisao explicita quando houver risco de perda de dados.
 
+## Erro de infraestrutura e de driver nos syncs (B-SEC-LOG-SANITIZA)
+
+- No ramo genérico, erro de infraestrutura ou de driver sai com mensagem fixa (`Unexpected error.`) nos syncs de ordem de servico, vistoria, evidencia e estoque; a acao continua `rejected`, com `BAD_REQUEST` / `invalid_action`, e o erro de regra de negocio segue com a mensagem dele, limpa de dado de conexao.
+- No ramo de erro com forma de rota, a mensagem é a do erro, sem mudança (pendência `P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM`).
+
 ## Backend Foundation - GD-002
 
 Na fundacao backend inicial, `POST /api/v1/mobile/sync/expense-actions` aceita lote idempotente com estes tipos de acao:

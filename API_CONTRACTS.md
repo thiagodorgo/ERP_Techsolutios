@@ -44,6 +44,10 @@
 | **423** | Conta bloqueada (fluxo de login). |
 | **500 / 503** | Erro interno / `503` em readiness quando dependência (Postgres/Redis) está down. |
 
+### Erro de infraestrutura e de driver na resposta (B-SEC-LOG-SANITIZA)
+
+Nas rotas que respondem pelo tratador comum de erro (`sendRouteError`), o erro que não é de domínio cai numa de três classes, por lista fechada: **infraestrutura caída** (banco, Redis, rede ou S3 que não respondeu, recusou a conexão ou foi desligado) responde **500** `INTERNAL_SERVER_ERROR` / `unknown_error` / `"Unexpected error."`; **outro erro de driver, de sistema ou de SDK** (dado malformado, duplicado ou faltando, arquivo ausente, acesso negado pelo S3) responde **400** `BAD_REQUEST` / `invalid_request` / `"Invalid request."`; e o erro **de regra de negócio** responde 400 com a mensagem dele, limpa de dado de conexão. As duas primeiras classes vão para o log do servidor, saneadas pela fábrica de log. O erro de domínio mantém o status e o código dele, e a mensagem troca por `"Unexpected error."` quando tem marca de texto de driver. Nos outros pontos do bloco, as mesmas três classes decidem a saída: no ramo genérico dos 4 syncs do app, a mensagem da ação `rejected` (fixa nas duas primeiras); no tratador final do Express, 500 fixo nas três; e no texto de erro dos custos de nuvem (rateio, importação AWS CUR e cobrança), a mensagem fixa do módulo nas duas primeiras, com o texto já gravado limpo na leitura. As rotas que montam a própria resposta de erro e o ramo de erro de rota da sincronização do app ainda devolvem a mensagem do erro como veio (pendência `P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM`).
+
 ---
 
 ## 2. Superfícies isoladas (fora de `/api/v1`)

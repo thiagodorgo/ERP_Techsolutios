@@ -1,4 +1,5 @@
 import { createLogger } from "../../infra/logging/logger.js";
+import { publicErrorMessage } from "../../infra/logging/public-error.js";
 
 import { env } from "../../config/env.js";
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
@@ -673,7 +674,7 @@ function actionErrorResult(
     };
   }
 
-  const message = error instanceof Error ? error.message : "Invalid inventory action.";
+  const message = publicErrorMessage(error, "Unexpected error.");
 
   return {
     client_action_id: action.client_action_id,

@@ -1,4 +1,5 @@
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import { publicErrorMessage } from "../../infra/logging/public-error.js";
 import { toWorkOrderDto } from "../work-orders/work-order.dto.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
 import { isCheckinRefusal } from "../work-orders/work-order.checkin.js";
@@ -402,7 +403,7 @@ function actionErrorResult(
     };
   }
 
-  const message = error instanceof Error ? error.message : "Invalid work order action.";
+  const message = publicErrorMessage(error, "Unexpected error.");
 
   return {
     client_action_id: action.client_action_id,

@@ -1,4 +1,5 @@
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
+import { publicErrorMessage } from "../../infra/logging/public-error.js";
 import {
   toChecklistRunAnswerDto,
   toChecklistRunDto,
@@ -833,7 +834,7 @@ function actionErrorResult(
     };
   }
 
-  const message = error instanceof Error ? error.message : "Invalid checklist action.";
+  const message = publicErrorMessage(error, "Unexpected error.");
 
   return {
     client_action_id: action.client_action_id,
