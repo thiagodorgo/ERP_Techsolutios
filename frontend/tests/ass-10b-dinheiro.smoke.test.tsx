@@ -23,6 +23,18 @@ const NUMBER_FIELDS_ALLOWED = new Set([
   "rowCount",
   "duplicateRowsSkipped",
   "runs",
+  // contagens do modelo único (cloud-billing.state.ts): linhas por situação, estimativas, fechadas, sem assinatura, em alerta
+  "lineCount",
+  "criticalCount",
+  "warningCount",
+  "normalCount",
+  "noSubscriptionCount",
+  "costMissingCount",
+  "unknownCount",
+  "estimateCount",
+  "closedCount",
+  "withoutSubscriptionCount",
+  "alertCount",
   // versões
   "version",
   "fxRateVersion",
