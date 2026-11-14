@@ -6,3 +6,5 @@ export { ColumnBars, DayBars, type ColumnBarsItem, type ColumnBarsProps, type Co
 export { CategoryDonut, CATEGORY_DONUT_MAX_SEGMENTS, type CategoryDonutProps, type CategoryDonutSegment } from "./CategoryDonut";
 export { ScatterPlot, type ScatterGuide, type ScatterPlotProps, type ScatterPoint, type ScatterTone } from "./ScatterPlot";
 export { StepBridge, type StepBridgeKind, type StepBridgeProps, type StepBridgeStep, type StepBridgeTone } from "./StepBridge";
+export { MonthSeriesChart, type MonthSeriesChartProps, type MonthSeriesPoint, type MonthSeriesState } from "./MonthSeriesChart";
+export { ProportionBar, ProportionBars, type ProportionBarItem, type ProportionBarsProps } from "./ProportionBars";

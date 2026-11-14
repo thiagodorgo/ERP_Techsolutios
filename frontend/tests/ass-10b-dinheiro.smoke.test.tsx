@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
-import { readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
+import React from "react";
+import { renderToString } from "react-dom/server";
 import ts from "typescript";
 
 import { asMoney, asPct, formatBRL, formatPct } from "../src/modules/platform/cloud-billing/cloud-billing.money";
+import { INITIAL_UI } from "../src/modules/platform/cloud-billing/cloud-billing.state";
+import type { CloudBillingViewProps } from "../src/modules/platform/cloud-billing/views/cloudBilling.shared";
+import { COST_OK, fixtureModel, globalJson, globalPayload, groupPayload, MONTH, tenantPayload } from "./helpers/cloud-billing.fixture";
 
 // B-ASS-10b (T5) · R-T5-DIN (plano v2 §6.2) — a tela não calcula dinheiro. Dinheiro, percentual e taxa entram como
 // STRING marcada; número, vazio e lixo viram ausência ("—"), nunca zero. T-DIN-1 e T-DIN-3 (as aparências) ficam neste
@@ -92,4 +97,48 @@ test("T-DIN-2 nenhum campo dos tipos do módulo é `number`, fora as contagens, 
   console.log(`# campos number do módulo: ${JSON.stringify(found)}`);
   assert.ok(found.length > 0, "controle de vacuidade: o detector acha ao menos as contagens");
   assert.deepEqual(offending, []);
+});
+
+// ---- T-DIN-1 — fixture INCOERENTE de propósito: a tela mostra o literal do servidor, nunca uma conta própria -------
+const VIEWS_DIR = path.join(HERE, "../src/modules/platform/cloud-billing/views");
+const LETTERS = ["A", "B", "C"].filter((letter) => existsSync(path.join(VIEWS_DIR, `CloudBillingView${letter}.tsx`)));
+const noop = () => undefined;
+
+function incoherentModel() {
+  const line = (tenantId: string, tenantName: string, subscriptionAmount: string, allocatedCost: string, margin: string, marginPct: string) => ({
+    tenantId, tenantName, groupId: null, groupName: null, subscriptionAmount, subscriptionBasis: "before_credits", statementTotal: subscriptionAmount, creditsApplied: null,
+    subscriptionSource: "statement", subscriptionSkipReason: null, estimate: false, allocatedCost, allocatedCostOriginal: null, margin, marginPct, alert: "none",
+  });
+  // as linhas somam 60,00 + 40,00 = 100,00; o servidor diz 999,99 no total. Assinatura 900, custo 750 e margem 1,23.
+  const lines = [line("ta", "Org Alfa", "500.01", "60.00", "440.02", "88.00"), line("tb", "Org Beta", "400.03", "40.00", "360.04", "90.00")];
+  return fixtureModel(INITIAL_UI, {
+    tenant: tenantPayload(MONTH, COST_OK, lines, { subscriptionAmount: "900.00", allocatedCost: "999.99", margin: "1.23", marginPct: "0.14" }),
+    group: groupPayload(MONTH, COST_OK),
+    global: globalPayload(MONTH, COST_OK, globalJson({ subscriptionTotal: "900.00", tenantsCost: "999.99", platformOwnCost: "0.50", unallocatedOther: "0.60", unallocatedByReason: [{ reason: "no_allocation_rule", cost: "0.60" }], roundingResidualCost: "0.01", conversionResidualCost: "0.02", totalCost: "750.00", margin: "1.23", marginPct: "0.14", alert: "none" })),
+  });
+}
+
+const VIEW_COMPONENTS: Record<string, (props: CloudBillingViewProps) => React.ReactElement> = {};
+for (const letter of LETTERS) {
+  const module = (await import(pathToFileURL(path.join(VIEWS_DIR, `CloudBillingView${letter}.tsx`)).href)) as Record<string, (props: CloudBillingViewProps) => React.ReactElement>;
+  VIEW_COMPONENTS[letter] = module[`CloudBillingView${letter}`]!;
+}
+const shownMoney = (decimal: string) => formatBRL(asMoney(decimal)).replace(/\s/g, " ");
+// o que o servidor mandou (o literal) e o que só a conta da tela daria (a soma das linhas; assinatura − custo)
+const SERVER_TOTAL = shownMoney("999.99");
+const SERVER_MARGIN = shownMoney("1.23");
+const SUM_OF_LINES = shownMoney("100.00");
+const SUB_MINUS_COST = shownMoney("150.00");
+
+test("T-DIN-1 com o servidor incoerente, as aparências mostram R$ 999,99 e R$ 1,23 e nunca a conta da tela (R$ 100,00, R$ 150,00)", () => {
+  assert.ok(LETTERS.includes("A"));
+  const model = incoherentModel();
+  for (const [letter, View] of Object.entries(VIEW_COMPONENTS)) {
+    const props: CloudBillingViewProps = { model, access: { importCosts: true, readImports: true, runAllocation: true, manageBilling: true }, onTarget: noop, onToggleRow: noop, onClearTarget: noop, onMode: noop, onSearch: noop, onMonth: noop, onAction: noop, onRetrySeries: noop };
+    const shown = renderToString(<View {...props} />).replace(/<[^>]+>/g, " ").replace(/\s/g, " ");
+    assert.ok(shown.includes(SERVER_TOTAL), `${letter}: o total do servidor`);
+    assert.ok(shown.includes(SERVER_MARGIN), `${letter}: a margem do servidor`);
+    assert.ok(!shown.includes(SUM_OF_LINES), `${letter}: soma das linhas`);
+    assert.ok(!shown.includes(SUB_MINUS_COST), `${letter}: assinatura menos custo`);
+  }
 });

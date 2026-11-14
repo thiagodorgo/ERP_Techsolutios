@@ -5,33 +5,27 @@ import test from "node:test";
 import React from "react";
 import { renderToString } from "react-dom/server";
 
-import {
-  mapAllocationSummary,
-  mapCostSummary,
-} from "../src/modules/platform/cloud-billing/cloud-billing.adapter";
-import {
-  currentBillingMonth,
-  getCloudBilling,
-  getCloudCostSummary,
-  periodForMonth,
-} from "../src/modules/platform/cloud-billing/cloud-billing.service";
-import { nextCloudBillingState } from "../src/modules/platform/cloud-billing/cloud-billing.state";
+import { mapGroupOverview, mapTenantOverview } from "../src/modules/platform/cloud-billing/cloud-billing.adapter";
+import { NO_WRITE_ACCESS } from "../src/modules/platform/cloud-billing/cloud-billing.access";
+import { currentBillingMonth, getCloudBilling, monthsEndingAt, periodForMonth } from "../src/modules/platform/cloud-billing/cloud-billing.service";
+import { buildCloudBillingView, INITIAL_UI, nextCloudBillingState } from "../src/modules/platform/cloud-billing/cloud-billing.state";
 import type { CloudBillingData } from "../src/modules/platform/cloud-billing/cloud-billing.types";
 import { emptyCloudBilling } from "../src/modules/platform/cloud-billing/cloud-billing.types";
-import { PlatformCloudBillingScreen, PlatformCloudBillingView } from "../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage";
+import { PlatformCloudBillingScreen } from "../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage";
+import { CloudBillingViewA } from "../src/modules/platform/cloud-billing/views/CloudBillingViewA";
+import { FX_PAYLOAD, globalJson, globalPayload, groupPayload, GROUPS_PAYLOAD, IMPORTS_PAYLOAD, RUNS_PAYLOAD, tenantPayload } from "./helpers/cloud-billing.fixture";
 
-// B-SAN3-06b E8 — Cloud Billing (T10–T20, T45). Fixtures com a forma dos DTOs do backend (§4.1); a `Screen` recebe o
-// resultado REAL do serviço (`fetch` é o único dublê) e escolhe o estado §7; a `View` recebe o estado controlado.
+// B-SAN3-06b E8 — Cloud Billing, adaptado ao B-ASS-10b (T5; plano v2 §8.2). Ficam com a MESMA propriedade, sobre a tela
+// nova: T11, T12 (estendido pelo T-DIN-2), T13, T14, T16, T17, T18, T19, T46, T47, T48 (A1) e T49. Saíram, com substituto
+// nomeado: T10 → T-USO-1 (`ass-10b-uso-medido.smoke.test.tsx`, F10: o uso medido foi para o detalhe da organização); T15 → T-DIN-1
+// (`ass-10b-dinheiro.smoke.test.tsx`); T20 → o caso da série no T-UI-3 (`ass-10b-estados.smoke.test.tsx`, F8); T45 → T-UI-1
+// (`ass-10b-aparencias.smoke.test.tsx`). Fixtures com a forma dos DTOs do B-ASS-09; `fetch` é o único dublê.
 
-const PERIOD = { start: "2026-09-01", end: "2026-09-30" } as const;
-
-function screen(data: CloudBillingData): string {
-  return renderToString(<PlatformCloudBillingScreen data={data} loading={false} month="2026-09" />);
-}
-
-function visibleText(html: string): string {
-  return html.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, " ");
-}
+const SEPTEMBER = "2026-09";
+const PERIOD = periodForMonth(SEPTEMBER);
+const AUGUST = "2026-08";
+const AUGUST_PERIOD = periodForMonth(AUGUST);
+const noop = () => undefined;
 
 const storage = new Map<string, string>();
 Object.defineProperty(globalThis, "window", {
@@ -47,250 +41,236 @@ Object.defineProperty(globalThis, "window", {
   },
 });
 
-function realData(overrides: Partial<CloudBillingData> = {}): CloudBillingData {
-  return {
-    period: PERIOD,
-    usage: { periodStart: PERIOD.start, periodEnd: PERIOD.end, metrics: [{ metricKey: "api_requests_count", quantity: 4, unit: "count" }], generatedAt: "2026-09-30T12:00:00Z" },
-    costs: { provider: "aws", periodStart: PERIOD.start, periodEnd: PERIOD.end, totalUnblendedCost: 12.75, totalUnblendedCostExact: "12.750000", lineItemCount: 2, currencies: ["BRL"], services: [{ serviceCode: "AmazonEC2", unblendedCost: 12.75, currency: "BRL" }], generatedAt: "2026-09-30T12:00:00Z" },
-    allocation: { periodStart: PERIOD.start, periodEnd: PERIOD.end, currency: "BRL", totalImportedCost: 12.75, totalAllocatedCost: 12, totalUnallocatedCost: 0.75, tenants: [{ tenantId: "t1", tenantName: "Org Um", allocatedCost: 12, allocationRatio: 0.94 }], services: [], generatedAt: "2026-09-30T12:00:00Z" },
-    imports: [{ id: "i1", provider: "aws", status: "completed", importedAt: "2026-09-30T12:00:00Z", rowCount: 2, currency: "BRL" }],
-    source: "api",
-    forbidden: false,
-    stale: false,
-    ...overrides,
-  };
+function visibleText(html: string): string {
+  return html.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, " ").replace(/\s/g, " ");
 }
 
-function responseFor(url: string, status = 200): Response {
-  let data: unknown = {};
-  if (url.includes("cloud-usage/summary")) data = realData().usage;
-  else if (url.includes("cloud-costs/summary")) data = realData().costs;
-  else if (url.includes("cloud-cost-allocations/summary")) data = realData().allocation;
-  else if (url.includes("cloud-costs/imports")) data = realData().imports;
-  return new Response(JSON.stringify({ data }), { status, headers: { "Content-Type": "application/json" } });
+function Screen({ data, month, onMonth = noop }: { readonly data: CloudBillingData; readonly month: string; readonly onMonth?: (month: string) => void }) {
+  const model = buildCloudBillingView({ data, series: { months: monthsEndingAt(data.month, 6), global: {}, tenant: {} }, groupDetails: {}, ui: INITIAL_UI, currentMonth: "2026-11", today: "2026-11-14" });
+  const handlers = { onTarget: noop, onToggleRow: noop, onClearTarget: noop, onMode: noop, onSearch: noop, onMonth, onAction: noop, onRetrySeries: noop };
+  return <PlatformCloudBillingScreen data={data} loading={false} month={month} model={model} access={NO_WRITE_ACCESS} appearance="A" handlers={handlers} onRetry={noop} />;
+}
+
+function screen(data: CloudBillingData, month = SEPTEMBER): string {
+  return renderToString(<Screen data={data} month={month} />);
+}
+
+/** A resposta do servidor para cada leitura do mês (a forma dos DTOs do B-ASS-09). */
+function payloadFor(url: string, overrides: { readonly totalCost?: string } = {}): unknown {
+  const parsed = new URL(url, "http://localhost");
+  const month = parsed.searchParams.get("period") ?? SEPTEMBER;
+  if (parsed.pathname.endsWith("/platform/billing/overview")) {
+    const groupBy = parsed.searchParams.get("groupBy");
+    if (groupBy === "group") return groupPayload(month);
+    if (groupBy === "global") return globalPayload(month, undefined, globalJson(overrides.totalCost ? { totalCost: overrides.totalCost } : {}));
+    return tenantPayload(month);
+  }
+  if (parsed.pathname.endsWith("/platform/billing/fx-rates")) return FX_PAYLOAD;
+  if (parsed.pathname.endsWith("/platform/billing/economic-groups")) return GROUPS_PAYLOAD;
+  const periodMonth = (parsed.searchParams.get("periodStart") ?? `${SEPTEMBER}-01`).slice(0, 7);
+  if (parsed.pathname.endsWith("/platform/cloud-costs/imports")) return IMPORTS_PAYLOAD.map((item) => ({ ...item, periodStart: `${periodMonth}-01T00:00:00.000Z` }));
+  if (parsed.pathname.endsWith("/platform/cloud-cost-allocations/runs")) return RUNS_PAYLOAD.map((item) => ({ ...item, periodStart: `${periodMonth}-01T00:00:00.000Z` }));
+  return {};
+}
+
+function json(data: unknown, status = 200, reason?: string): Response {
+  const body = status >= 400 ? { error: { code: "ERRO", reason: reason ?? "erro", message: "falha" } } : { data };
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+}
+
+async function withFetch<T>(handler: (url: string, init?: RequestInit) => Promise<Response> | Response, run: () => Promise<T>): Promise<T> {
+  process.env.VITE_USE_MOCKS = "false";
+  const original = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => handler(String(input), init)) as typeof fetch;
+  try {
+    return await run();
+  } finally {
+    globalThis.fetch = original;
+    process.env.VITE_USE_MOCKS = "";
+  }
 }
 
 // T10 (adapter de uso) migrou para o T-USO-1 (`ass-10b-uso-medido.smoke.test.tsx`, B-ASS-10b F10): o uso medido saiu da
 // tela de custos e foi para o detalhe da organização.
 
-test("T11 adapter de custos descarta serviço sem identidade", () => {
-  const result = mapCostSummary({ provider: "aws", periodStart: PERIOD.start, periodEnd: PERIOD.end, totalUnblendedCost: 12.75, totalUnblendedCostExact: "12.750000", lineItemCount: 2, currencies: ["BRL"], services: [{ serviceCode: "AmazonEC2", unblendedCost: 12.75, currency: "BRL" }, { unblendedCost: 9 }] });
-  assert.equal(result.totalUnblendedCost, 12.75);
-  assert.equal(result.services.length, 1);
-  assert.equal(result.services[0].serviceCode, "AmazonEC2");
-  assert.equal("tenants" in result, false);
+test("T11 adapter da visão descarta linha de organização sem identidade e guarda a linha 'Sem grupo'", () => {
+  const tenant = mapTenantOverview(tenantPayload(SEPTEMBER, undefined, [...(tenantPayload().lines as Record<string, unknown>[]), { tenantName: "sem id", allocatedCost: "9.99" }]));
+  assert.equal(tenant.lines.length, 5);
+  assert.equal(tenant.lines.some((line) => line.tenantName === "sem id"), false);
+  const group = mapGroupOverview(groupPayload(SEPTEMBER));
+  assert.equal(group.lines.length, 2);
+  assert.equal(group.lines[1]!.groupId, null);
 });
 
-test("T12 adapter de rateio não converte string em dinheiro", () => {
-  const result = mapAllocationSummary({ periodStart: PERIOD.start, periodEnd: PERIOD.end, totalAllocatedCost: 12, totalUnallocatedCost: 0, tenants: [{ tenantId: "t1", tenantName: "Org Um", allocatedCost: 12, allocationRatio: 1 }, { tenantId: "t2", allocatedCost: "12", allocationRatio: 0 }] });
-  assert.equal(result.totalAllocatedCost, 12);
-  assert.equal(result.totalUnallocatedCost, 0);
-  assert.equal(result.tenants[0].allocatedCost, 12);
-  assert.equal(result.tenants[1].allocatedCost, 0);
+test("T12 adapter não converte dinheiro: string decimal fica literal; número, vazio e lixo viram ausência, nunca zero", () => {
+  const lines = [
+    { tenantId: "t1", tenantName: "Org Um", allocatedCost: "12.00", margin: "1.50", marginPct: "11.11", subscriptionAmount: "13.50", alert: "none" },
+    { tenantId: "t2", tenantName: "Org Dois", allocatedCost: 12, margin: "", marginPct: "abc", subscriptionAmount: 0, alert: "none" },
+  ];
+  const tenant = mapTenantOverview(tenantPayload(SEPTEMBER, undefined, lines));
+  assert.equal(tenant.lines[0]!.allocatedCost, "12.00");
+  assert.equal(tenant.lines[0]!.margin, "1.50");
+  assert.equal(tenant.lines[1]!.allocatedCost, null);
+  assert.equal(tenant.lines[1]!.margin, null);
+  assert.equal(tenant.lines[1]!.marginPct, null);
+  assert.equal(tenant.lines[1]!.subscriptionAmount, null);
 });
 
-test("T13 tela não contém cobrança por markup", () => {
-  const html = renderToString(<PlatformCloudBillingView data={realData()} month="2026-09" />);
-  assert.doesNotMatch(visibleText(html), /Valor cobrável|Margem|Organizações com cobrança|Cobrança por organização/);
+test("T13 tela não contém cobrança por markup", async () => {
+  const data = await withFetch((url) => json(payloadFor(url)), () => getCloudBilling(SEPTEMBER));
+  const html = visibleText(screen(data));
+  assert.match(html, /Cloud Billing/);
+  assert.match(html, /Margem global/, "controle: a tela de verdade foi desenhada");
+  assert.doesNotMatch(html, /Valor cobrável|Organizações com cobrança|Cobrança por organização|markup/i);
 });
 
-test("T14 serviço envia o mesmo período aos quatro GETs e respeita ano bissexto", async () => {
-  process.env.VITE_USE_MOCKS = "false";
-  const original = globalThis.fetch;
-  const urls: string[] = [];
-  globalThis.fetch = (async (input) => {
-    const url = String(input);
-    urls.push(url);
-    return responseFor(url);
-  }) as typeof fetch;
-  try {
-    const result = await getCloudBilling(PERIOD);
-    assert.equal(result.source, "api");
-    assert.equal(urls.length, 4);
-    for (const url of urls) assert.match(url, /periodStart=2026-09-01&periodEnd=2026-09-30/);
-    assert.deepEqual(periodForMonth("2028-02"), { start: "2028-02-01", end: "2028-02-29" });
-  } finally {
-    globalThis.fetch = original;
-    process.env.VITE_USE_MOCKS = "";
-  }
-});
-
-test("T15 visão de Cloud Billing mostra apenas valores e rótulos do payload", () => {
-  const html = renderToString(<PlatformCloudBillingView data={realData()} month="2026-09" />);
-  for (const label of ["Custo importado", "Linhas de custo", "Custo rateado", "Não rateado", "Última importação"]) assert.match(html, new RegExp(label));
-  assert.match(html, /AmazonEC2/);
-  assert.match(html, /Org Um/);
-  assert.match(html, /Requisições da API/);
-  const text = visibleText(html);
-  // Valores do fixture formatados em pt-BR (Intl separa "R$" do número com espaço não separável, coberto por \s).
-  assert.match(text, /R\$\s12,75/); // custo importado = totalUnblendedCost
-  assert.match(text, /R\$\s12,00/); // custo rateado = totalAllocatedCost
-  assert.match(text, /R\$\s0,75/); // não rateado = totalUnallocatedCost
-  assert.match(text, /4 unid\./); // uso medido
-  assert.doesNotMatch(html, /O que mudou|Junho 2026|há 4 min|48,2k|Produção|IA/);
+test("T14 serviço envia o mesmo mês às 7 leituras, todas GET, e respeita ano bissexto", async () => {
+  const calls: { url: string; method: string }[] = [];
+  const result = await withFetch(
+    (url, init) => {
+      calls.push({ url, method: init?.method ?? "GET" });
+      return json(payloadFor(url));
+    },
+    () => getCloudBilling(SEPTEMBER),
+  );
+  assert.equal(result.source, "api");
+  assert.equal(calls.length, 7);
+  for (const call of calls) assert.equal(call.method, "GET", call.url);
+  const overview = calls.filter((call) => call.url.includes("/platform/billing/overview"));
+  assert.deepEqual(overview.map((call) => new URL(call.url, "http://x").searchParams.get("groupBy")).sort(), ["global", "group", "tenant"]);
+  for (const call of overview) assert.match(call.url, /period=2026-09/);
+  assert.match(calls.find((call) => call.url.includes("fx-rates"))!.url, /from=2026-04&to=2026-09/);
+  for (const call of calls.filter((item) => /cloud-costs\/imports|cloud-cost-allocations\/runs/.test(item.url))) assert.match(call.url, /periodStart=2026-09-01&periodEnd=2026-09-30/);
+  assert.deepEqual(periodForMonth("2028-02"), { start: "2028-02-01", end: "2028-02-29" });
 });
 
 test("T16 um 403 em qualquer leitura fecha a tela por permissão", async () => {
-  process.env.VITE_USE_MOCKS = "false";
-  const original = globalThis.fetch;
   let count = 0;
-  globalThis.fetch = (async (input) => responseFor(String(input), ++count === 3 ? 403 : 200)) as typeof fetch;
-  try {
-    const result = await getCloudBilling(PERIOD);
-    assert.equal(result.forbidden, true);
-    assert.equal(result.source, "fallback");
-    const html = screen(result);
-    assert.match(html, /Acesso não permitido/);
-    assert.doesNotMatch(visibleText(html), /R\$|Custo importado/);
-  } finally {
-    globalThis.fetch = original;
-    process.env.VITE_USE_MOCKS = "";
-  }
+  const result = await withFetch((url) => (++count === 3 ? json(null, 403) : json(payloadFor(url))), () => getCloudBilling(SEPTEMBER));
+  assert.equal(result.forbidden, true);
+  assert.equal(result.source, "fallback");
+  const html = screen(result);
+  assert.match(html, /Acesso não permitido/);
+  assert.doesNotMatch(visibleText(html), /R\$|Custo total/);
 });
 
 test("T17 erro de leitura devolve falha sem zero apresentado como fato", async () => {
-  process.env.VITE_USE_MOCKS = "false";
-  const original = globalThis.fetch;
-  globalThis.fetch = (async (input) => responseFor(String(input), String(input).includes("cloud-usage") ? 500 : 200)) as typeof fetch;
-  try {
-    const result = await getCloudBilling(PERIOD);
-    assert.equal(result.source, "fallback");
-    assert.equal(result.costs, null);
-    const html = screen(result);
-    assert.match(html, /Não foi possível carregar Cloud Billing/);
-    assert.doesNotMatch(visibleText(html), /R\$|\d/);
-  } finally {
-    globalThis.fetch = original;
-    process.env.VITE_USE_MOCKS = "";
-  }
+  const result = await withFetch((url) => (url.includes("groupBy=global") ? json(null, 500, "overview_integrity_violation") : json(payloadFor(url))), () => getCloudBilling(SEPTEMBER));
+  assert.equal(result.source, "fallback");
+  assert.equal(result.failure, "overview_integrity_violation");
+  assert.equal(result.global, null);
+  const html = screen(result);
+  assert.match(html, /Não foi possível carregar o custo e a margem/);
+  assert.doesNotMatch(visibleText(html), /R\$|\d/);
 });
 
-test("T18 quatro respostas vazias preservam o estado vazio", async () => {
-  process.env.VITE_USE_MOCKS = "false";
-  const original = globalThis.fetch;
-  globalThis.fetch = (async (input) => {
-    const url = String(input);
-    const payload = url.includes("imports") ? [] : {};
-    return new Response(JSON.stringify({ data: payload }), { status: 200, headers: { "Content-Type": "application/json" } });
-  }) as typeof fetch;
-  try {
-    const result = await getCloudBilling(PERIOD);
-    assert.equal(result.source, "api");
-    assert.equal(result.imports.length, 0);
-    assert.equal(result.costs?.lineItemCount, 0);
-    const html = screen(result);
-    assert.match(html, /Nenhum custo importado no período/);
-    assert.doesNotMatch(visibleText(html), /R\$/);
-  } finally {
-    globalThis.fetch = original;
-    process.env.VITE_USE_MOCKS = "";
-  }
+test("T18 respostas vazias preservam o estado vazio", async () => {
+  const emptyGlobal = globalJson({ subscriptionTotal: null, tenantsCost: null, platformOwnCost: null, unallocatedOther: null, unallocatedByReason: [], roundingResidualCost: null, conversionResidualCost: null, totalCost: null, margin: null, marginPct: null, alert: "cost_missing" });
+  const noRun = { status: "no_run", coverage: "none", runId: null, importId: null, currencyOriginal: null, fxRate: null, fxRateVersion: null, warnings: [], sources: { runs: 0, importIds: [], usedImportId: null } };
+  const result = await withFetch(
+    (url) => {
+      if (url.includes("groupBy=global")) return json(globalPayload(SEPTEMBER, noRun, emptyGlobal));
+      if (url.includes("groupBy=group")) return json({ ...groupPayload(SEPTEMBER, noRun), lines: [], totals: { subscriptionAmount: null, allocatedCost: null, margin: null, marginPct: null } });
+      if (url.includes("/overview")) return json(tenantPayload(SEPTEMBER, noRun, [], { subscriptionAmount: null, allocatedCost: null, margin: null, marginPct: null }));
+      return json([]);
+    },
+    () => getCloudBilling(SEPTEMBER),
+  );
+  assert.equal(result.source, "api");
+  assert.equal(result.imports?.length, 0);
+  const html = screen(result);
+  assert.match(html, /Nenhum custo nem assinatura em setembro de 2026/);
+  assert.doesNotMatch(visibleText(html), /R\$/);
 });
 
 test("T19 modo demonstração é vazio e o fixture antigo não existe", async () => {
   process.env.VITE_USE_MOCKS = "true";
   try {
-    const result = await getCloudBilling(PERIOD);
-    const summary = await getCloudCostSummary(PERIOD);
+    const result = await getCloudBilling(SEPTEMBER);
     assert.equal(result.source, "mock");
-    assert.equal(result.imports.length, 0);
-    assert.equal(summary.data, null);
+    assert.equal(result.imports, null);
+    assert.equal(result.global, null);
     assert.equal(existsSync(new URL("../src/modules/platform/cloud-billing/cloud-billing.mock.ts", import.meta.url)), false);
     const html = screen(result);
-    assert.match(html, /Nenhum custo importado no período/);
+    assert.match(html, /Nenhum custo nem assinatura em/);
     assert.doesNotMatch(visibleText(html), /R\$|Techsolutions Industrial/);
   } finally {
     process.env.VITE_USE_MOCKS = "";
   }
 });
 
-test("T20 lacuna de série diária aparece como selo, sem projeção inventada", () => {
-  const html = renderToString(<PlatformCloudBillingView data={realData()} month="2026-09" />);
-  assert.match(html, /Série diária e projeção/);
-  assert.match(html, /não há uma série temporal nem projeção/);
-});
-
-test("T45 a grade mantém só os cinco indicadores sem markup", () => {
-  const html = renderToString(<PlatformCloudBillingView data={realData()} month="2026-09" />);
-  assert.equal((html.match(/Custo importado|Linhas de custo|Custo rateado|Não rateado|Última importação/g) ?? []).length, 5);
-  assert.doesNotMatch(visibleText(html), /cobrável|margem/i);
-});
-
-// A1 da revisão do PR 411 — o dinheiro exibido é sempre do período rotulado. Agosto tem um "Valor cobrável" que
-// setembro não tem (999,99 × 18,00): se ele aparecer sob "setembro de 2026", a tela mentiu sobre dinheiro.
-const AUGUST = periodForMonth("2026-08");
-
-function augustData(): CloudBillingData {
-  const base = realData();
-  return { ...base, period: AUGUST, costs: base.costs ? { ...base.costs, periodStart: AUGUST.start, periodEnd: AUGUST.end, totalUnblendedCost: 999.99 } : null };
+// A1 da revisão do PR 411 — o dinheiro exibido é sempre do período rotulado. Agosto tem um custo total que setembro não
+// tem (9.999,99 × 8.258,91): se ele aparecer sob "setembro de 2026", a tela mentiu sobre dinheiro.
+async function augustData(): Promise<CloudBillingData> {
+  return withFetch((url) => json(payloadFor(url, { totalCost: "9999.99" })), () => getCloudBilling(AUGUST));
 }
 
-test("T46 dado de outro mês nunca aparece sob o rótulo do mês selecionado (A1)", () => {
-  const otherMonth = [augustData(), emptyCloudBilling(AUGUST, "api"), emptyCloudBilling(AUGUST, "fallback"), { ...emptyCloudBilling(AUGUST, "fallback"), forbidden: true }];
+test("T46 dado de outro mês nunca aparece sob o rótulo do mês selecionado (A1)", async () => {
+  const august = await augustData();
+  const otherMonth = [august, emptyCloudBilling(AUGUST, AUGUST_PERIOD, "api"), emptyCloudBilling(AUGUST, AUGUST_PERIOD, "fallback"), { ...emptyCloudBilling(AUGUST, AUGUST_PERIOD, "fallback"), forbidden: true }];
   for (const data of otherMonth) {
-    const html = screen(data);
+    const html = screen(data, SEPTEMBER);
     assert.match(html, /aria-busy="true"/);
-    assert.doesNotMatch(visibleText(html), /R\$|999|Nenhum custo importado|Acesso não permitido|Não foi possível/);
+    assert.doesNotMatch(visibleText(html), /R\$|9\.999|Nenhum custo|Acesso não permitido|Não foi possível/);
   }
   // Controle: o mesmo dado sob o rótulo do PRÓPRIO mês aparece — a guarda não esconde dinheiro do período certo.
-  const own = visibleText(renderToString(<PlatformCloudBillingScreen data={augustData()} loading={false} month="2026-08" />));
+  const own = visibleText(screen(august, AUGUST));
   assert.match(own, /agosto de 2026/);
-  assert.match(own, /R\$\s999,99/);
+  assert.match(own, /R\$ 9\.999,99/);
 });
 
 test("T47 resposta atrasada do mês anterior é descartada e o mês novo não herda o anterior (A1)", async () => {
-  process.env.VITE_USE_MOCKS = "false";
-  const original = globalThis.fetch;
   let releaseAugust: () => void = () => undefined;
-  const augustGate = new Promise<void>((resolve) => { releaseAugust = resolve; });
-  globalThis.fetch = (async (input) => {
-    const url = String(input);
-    if (!url.includes(`periodStart=${AUGUST.start}`)) return responseFor(url);
-    await augustGate;
-    const costs = url.includes("cloud-costs/summary") ? { ...realData().costs, periodStart: AUGUST.start, periodEnd: AUGUST.end, totalUnblendedCost: 999.99 } : null;
-    return costs ? new Response(JSON.stringify({ data: costs }), { status: 200, headers: { "Content-Type": "application/json" } }) : responseFor(url);
-  }) as typeof fetch;
-  try {
-    // O usuário abre agosto (resposta lenta) e troca para setembro antes de ela chegar — serviço e regra reais.
-    let state = emptyCloudBilling(AUGUST, "api");
-    const augustRequest = getCloudBilling(AUGUST);
-    const september = await getCloudBilling(PERIOD);
-    state = nextCloudBillingState(state, september, false, PERIOD);
-    releaseAugust();
-    const august = await augustRequest;
-    assert.equal(august.costs?.totalUnblendedCost, 999.99); // controle: a resposta atrasada é real e diferente
-    state = nextCloudBillingState(state, august, false, PERIOD);
-    state = nextCloudBillingState(state, august, true, PERIOD);
-    assert.deepEqual(state.period, PERIOD);
-    assert.equal(state.costs?.totalUnblendedCost, 12.75);
-    const text = visibleText(renderToString(<PlatformCloudBillingScreen data={state} loading={false} month="2026-09" />));
-    assert.match(text, /setembro de 2026/);
-    assert.match(text, /R\$\s12,75/);
-    assert.doesNotMatch(text, /999/);
+  const augustGate = new Promise<void>((resolve) => {
+    releaseAugust = resolve;
+  });
+  await withFetch(
+    async (url) => {
+      const isAugust = /period=2026-08|periodStart=2026-08-01|to=2026-08/.test(url);
+      if (!isAugust) return json(payloadFor(url));
+      await augustGate;
+      return json(payloadFor(url, { totalCost: "9999.99" }));
+    },
+    async () => {
+      // O usuário abre agosto (resposta lenta) e troca para setembro antes de ela chegar — serviço e regra reais.
+      let state = emptyCloudBilling(AUGUST, AUGUST_PERIOD, "api");
+      const augustRequest = getCloudBilling(AUGUST);
+      const september = await getCloudBilling(SEPTEMBER);
+      state = nextCloudBillingState(state, september, false, PERIOD);
+      releaseAugust();
+      const august = await augustRequest;
+      assert.equal(august.global?.global.totalCost, "9999.99"); // controle: a resposta atrasada é real e diferente
+      state = nextCloudBillingState(state, august, false, PERIOD);
+      state = nextCloudBillingState(state, august, true, PERIOD);
+      assert.deepEqual(state.period, PERIOD);
+      assert.equal(state.global?.global.totalCost, "8258.91");
+      const text = visibleText(screen(state, SEPTEMBER));
+      assert.match(text, /setembro de 2026/);
+      assert.match(text, /R\$ 8\.258,91/);
+      assert.doesNotMatch(text, /9\.999/);
 
-    // Agosto na tela e a 1ª resposta de setembro é uma falha em 2º plano: a tela mostra a falha de setembro, não
-    // agosto marcado como "desatualizado".
-    const failed = emptyCloudBilling(PERIOD, "fallback");
-    const afterFailure = nextCloudBillingState(august, failed, true, PERIOD);
-    assert.deepEqual(afterFailure.period, PERIOD);
-    assert.equal(afterFailure.costs, null);
-    assert.equal(afterFailure.stale, false);
-    const failureText = visibleText(renderToString(<PlatformCloudBillingScreen data={afterFailure} loading={false} month="2026-09" />));
-    assert.match(failureText, /Não foi possível carregar Cloud Billing/);
-    assert.doesNotMatch(failureText, /R\$|999/);
+      // Agosto na tela e a 1ª resposta de setembro é uma falha em 2º plano: a tela mostra a falha de setembro, não
+      // agosto marcado como "desatualizado".
+      const failed = { ...emptyCloudBilling(SEPTEMBER, PERIOD, "fallback"), failure: "unavailable" as const };
+      const afterFailure = nextCloudBillingState(august, failed, true, PERIOD);
+      assert.deepEqual(afterFailure.period, PERIOD);
+      assert.equal(afterFailure.global, null);
+      assert.equal(afterFailure.stale, false);
+      const failureText = visibleText(screen(afterFailure, SEPTEMBER));
+      assert.match(failureText, /Não foi possível carregar o custo e a margem/);
+      assert.doesNotMatch(failureText, /R\$|9\.999/);
 
-    // Dentro do mesmo período a regra do E1b continua: falha em 2º plano preserva setembro com o aviso.
-    const kept = nextCloudBillingState(state, failed, true, PERIOD);
-    assert.equal(kept.stale, true);
-    assert.equal(kept.costs?.totalUnblendedCost, 12.75);
-  } finally {
-    globalThis.fetch = original;
-    process.env.VITE_USE_MOCKS = "";
-  }
+      // Dentro do mesmo período a regra do E1b continua: falha em 2º plano preserva setembro com o aviso.
+      const kept = nextCloudBillingState(state, failed, true, PERIOD);
+      assert.equal(kept.stale, true);
+      assert.equal(kept.global?.global.totalCost, "8258.91");
+      assert.match(visibleText(screen(kept, SEPTEMBER)), /Dados desatualizados/);
+    },
+  );
 });
 
-// Fiação do hook (sem biblioteca de DOM no repo, como T2/T8 — guarda de forma, declarada como tal): o hook descarta a
-// resposta pelo período selecionado AGORA e aplica a regra de T47, não a genérica `nextRefreshState`.
+// Fiação do hook (guarda de forma, declarada como tal): o hook descarta a resposta pelo período selecionado AGORA e aplica
+// a regra de T47, não a genérica `nextRefreshState`.
 test("T48 o hook de Cloud Billing descarta resposta de outro período e usa a regra de T47 (A1)", () => {
   const hook = readFileSync(new URL("../src/modules/platform/cloud-billing/useCloudBilling.ts", import.meta.url), "utf8");
   assert.match(hook, /selected\.current = period;/);
@@ -299,9 +279,7 @@ test("T48 o hook de Cloud Billing descarta resposta de outro período e usa a re
   assert.doesNotMatch(hook, /nextRefreshState/);
 });
 
-// A2 da revisão do PR 411 — o vazio diz "Selecione outro mês": o seletor tem de estar lá e de trocar o mês. Sem
-// biblioteca de DOM, a fiação do `onChange` é provada chamando os componentes sem hooks da árvore (a `Screen`, o
-// seletor e o `EmptyState`) e acionando o `<select>` encontrado.
+// A2 da revisão do PR 411 — o vazio diz "Escolha outro mês": o seletor tem de estar lá e de trocar o mês.
 function findElement(node: unknown, predicate: (element: React.ReactElement) => boolean): React.ReactElement | null {
   if (Array.isArray(node)) {
     for (const child of node) {
@@ -325,19 +303,16 @@ function findElement(node: unknown, predicate: (element: React.ReactElement) => 
 test("T49 estado vazio oferece o seletor de mês que o texto promete (A2)", async () => {
   process.env.VITE_USE_MOCKS = "true";
   try {
-    // O mês corrente é o de entrada da tela (e o que fica vazio até haver importação confirmada).
     const month = currentBillingMonth();
-    const period = periodForMonth(month);
-    const states = [emptyCloudBilling(period, "api"), await getCloudBilling(period)];
+    const states = [emptyCloudBilling(month, periodForMonth(month), "mock"), await getCloudBilling(month)];
     for (const data of states) {
-      const html = renderToString(<PlatformCloudBillingScreen data={data} loading={false} month={month} />);
-      assert.match(html, /Nenhum custo importado no período/);
-      assert.match(html, /Selecione outro mês/);
+      const html = renderToString(<Screen data={data} month={month} />);
+      assert.match(html, /Nenhum custo nem assinatura em/);
+      assert.match(html, /Escolha outro mês/);
       assert.match(html, /<select[^>]*aria-label="Mês de referência"/);
       assert.equal(html.match(/<option /g)?.length, 12);
-      assert.match(html, new RegExp(`<option value="${month}" selected="">`));
       const chosen: string[] = [];
-      const tree = PlatformCloudBillingScreen({ data, loading: false, month, onMonthChange: (next) => chosen.push(next) });
+      const tree = Screen({ data, month, onMonth: (next) => chosen.push(next) });
       const select = findElement(tree, (element) => element.type === "select");
       assert.ok(select, "o estado vazio não tem <select>");
       (select.props as { onChange: (event: { target: { value: string } }) => void }).onChange({ target: { value: "2026-08" } });
@@ -346,4 +321,10 @@ test("T49 estado vazio oferece o seletor de mês que o texto promete (A2)", asyn
   } finally {
     process.env.VITE_USE_MOCKS = "";
   }
+});
+
+test("T13 (controle) a aparência A rende sem dado do mês e marca a raiz com a letra", () => {
+  const model = buildCloudBillingView({ data: emptyCloudBilling(SEPTEMBER, PERIOD, "api"), series: { months: monthsEndingAt(SEPTEMBER, 6), global: {}, tenant: {} }, groupDetails: {}, ui: INITIAL_UI, currentMonth: "2026-11", today: "2026-11-14" });
+  const html = renderToString(<CloudBillingViewA model={model} access={NO_WRITE_ACCESS} onTarget={noop} onToggleRow={noop} onClearTarget={noop} onMode={noop} onSearch={noop} onMonth={noop} onAction={noop} onRetrySeries={noop} />);
+  assert.match(html, /data-aparencia="A"/);
 });
