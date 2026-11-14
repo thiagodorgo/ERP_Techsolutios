@@ -142,3 +142,39 @@ test("T-DIN-1 com o servidor incoerente, as aparências mostram R$ 999,99 e R$ 1
     assert.ok(!shown.includes(SUB_MINUS_COST), `${letter}: assinatura menos custo`);
   }
 });
+
+// ---- T-DIN-3 — P13 na tela: sem custo válido, NENHUM custo nem margem em reais, seja qual for o valor do campo -------
+// Achado A-1 do plano: com `no_run`/`no_import` o servidor manda `global.tenantsCost: "0.00"` e `totals.allocatedCost:
+// "0.00"` enquanto os outros campos de custo vêm `null`. A tela não pode mostrar R$ 0,00 em custo nem em margem.
+function noCostModel(status: string, ui: typeof INITIAL_UI) {
+  const cost = { ...COST_OK, status, runId: status === "no_run" ? null : "run-out", fxRate: null, fxRateVersion: null };
+  const lines = [
+    { tenantId: "ta", tenantName: "Org Alfa", groupId: "g1", groupName: "Grupo Vale", subscriptionAmount: "500.01", subscriptionBasis: "before_credits", statementTotal: "500.01", creditsApplied: null, subscriptionSource: "statement", subscriptionSkipReason: null, estimate: false, allocatedCost: "0.00", allocatedCostOriginal: null, margin: "0.00", marginPct: "0.00", alert: "cost_missing" },
+  ];
+  return fixtureModel(ui, {
+    cost,
+    tenant: tenantPayload(MONTH, cost, lines, { subscriptionAmount: "500.01", allocatedCost: "0.00", margin: "0.00", marginPct: null }),
+    group: { ...groupPayload(MONTH, cost), lines: [{ groupId: "g1", groupName: "Grupo Vale", memberCount: 1, membersWithoutSubscription: 0, subscriptionAmount: "500.01", creditsApplied: null, allocatedCost: "0.00", margin: "0.00", marginPct: null, alert: "cost_missing", estimate: false }] },
+    global: globalPayload(MONTH, cost, globalJson({ subscriptionTotal: "500.01", tenantsCost: "0.00", platformOwnCost: "0.00", unallocatedOther: "0.00", unallocatedByReason: [{ reason: "no_allocation_rule", cost: "0.00" }], roundingResidualCost: "0.00", conversionResidualCost: "0.00", totalCost: "0.00", margin: "0.00", marginPct: "0.00", alert: "cost_missing" })),
+  });
+}
+const ZERO = shownMoney("0.00");
+
+test("T-DIN-3 P13: com o custo do mês nos 4 estados sem custo, nenhuma aparência mostra R$ 0,00 em custo nem em margem", () => {
+  assert.ok(LETTERS.includes("A"));
+  const uis = [INITIAL_UI, { ...INITIAL_UI, aberta: "t:ta" }, { ...INITIAL_UI, modo: "group" as const, aberta: "g:g1" }, { ...INITIAL_UI, modo: "global" as const }];
+  for (const status of ["no_run", "no_import", "fx_missing", "currency_unknown"]) {
+    for (const ui of uis) {
+      const model = noCostModel(status, ui);
+      for (const [letter, View] of Object.entries(VIEW_COMPONENTS)) {
+        const props: CloudBillingViewProps = { model, access: { importCosts: true, readImports: true, runAllocation: true, manageBilling: true }, onTarget: noop, onToggleRow: noop, onClearTarget: noop, onMode: noop, onSearch: noop, onMonth: noop, onAction: noop, onRetrySeries: noop };
+        const shown = renderToString(<View {...props} />)
+          .replace(/<text[^>]*data-escala[^>]*>[\s\S]*?<\/text>/g, " ")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s/g, " ");
+        assert.ok(shown.includes(shownMoney("500.01")), `${letter} ${status}: controle — a assinatura do servidor aparece`);
+        assert.ok(!shown.includes(ZERO), `${letter} ${status} ${JSON.stringify(ui)}: R$ 0,00 inventado`);
+      }
+    }
+  }
+});

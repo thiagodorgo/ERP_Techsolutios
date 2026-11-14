@@ -268,7 +268,7 @@ export function buildKpis(model: CloudBillingView): Readonly<Record<KpiKey, KpiM
       label: "Custo da plataforma",
       value: formatBRL(global?.platformOwnCost ?? null),
       tag: { label: "linha própria", bg: "#F5F3FF", fg: "#7C3AED" },
-      hint: model.costValid ? `fora do não rateado${previousHint(model, () => null)}` : formatOriginal(global?.original.platformOwnCost ?? null, model.originalCurrency),
+      hint: model.costValid ? `fora do não rateado${previousHint(model, (point) => (point.platformCost === null ? null : formatBRLCompact(point.platformCost)))}` : formatOriginal(global?.original.platformOwnCost ?? null, model.originalCurrency),
     },
     nr: {
       alvo: "nr",
