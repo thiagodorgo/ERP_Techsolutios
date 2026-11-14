@@ -314,10 +314,12 @@ void main() {
 
         final acao = await _concluir(t, aparelho, _u1, _wo());
         final mensagem = acao.payload['message']! as String;
+        // J-564 C2-01: o `reason` não pode lançar com mensagem curta (a padrão tem 28), para o caso cair pela
+        // asserção do corte e não por `RangeError`.
         expect(
           mensagem.startsWith('Diagnóstico: aaa'),
           isTrue,
-          reason: mensagem.substring(0, 40),
+          reason: mensagem.substring(0, mensagem.length.clamp(0, 40)),
         );
         expect(mensagem.endsWith('…'), isTrue);
         expect(mensagem.length, lessThanOrEqualTo(2000));
