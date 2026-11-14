@@ -18,7 +18,8 @@ import {
 } from "../billing-profile/billing-profile.js";
 import { parseOperatorChargeMethod, parseOperatorDueDate, requestChargeCancel, requestChargeCreate } from "../charges/charge-request.service.js";
 import { paymentProviderOn } from "../outbox/channel-state.js";
-import { createChargeIntentRepository } from "../outbox/channel.runtime.js";
+import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
+import { createChannelRuntime, createChargeIntentRepository } from "../outbox/channel.runtime.js";
 import type { BillingOutboxRow } from "../outbox/outbox.types.js";
 import { createDefaultVaultRuntime } from "../vault/vault.factory.js";
 import { createDefaultStatementRuntime } from "./statement.factory.js";
@@ -136,6 +137,33 @@ export function toOutboxDto(row: BillingOutboxRow) {
     nextAttemptAt: row.nextAttemptAt?.toISOString() ?? null,
     updatedAt: row.updatedAt.toISOString(),
   };
+}
+
+/** B-ASS-08c1b (P11a): a cobrança do demonstrativo, numa lista fechada de campos (o link de pagamento; nunca valor). */
+function toChargeDto(charge: SubscriptionStatementCharge) {
+  return {
+    id: charge.id,
+    provider: charge.provider,
+    externalChargeId: charge.externalChargeId,
+    status: charge.status,
+    payUrl: charge.payUrl,
+    dueDate: charge.dueDate,
+    createdAt: charge.createdAt.toISOString(),
+    cancelledAt: charge.cancelledAt?.toISOString() ?? null,
+  };
+}
+
+/**
+ * B-ASS-08c1b (P11a, Q4 = (a), com aviso): o demonstrativo está `closed`, já tem pagamento e ainda há cobrança `pending` do
+ * valor cheio no provedor → `full_amount_charge_open`; senão `null`. É só um código, sem valor e sem texto de tela (a tela é
+ * do B-ASS-10b).
+ */
+export function fullAmountChargeNotice(
+  statement: Pick<SubscriptionStatement, "status" | "paidCents">,
+  charges: readonly Pick<SubscriptionStatementCharge, "status">[],
+): "full_amount_charge_open" | null {
+  if (statement.status === "closed" && statement.paidCents > 0 && charges.some((charge) => charge.status === "pending")) return "full_amount_charge_open"; // [Q4-NOTICE]
+  return null;
 }
 
 function toCreditDto(credit: SubscriptionCredit) {
@@ -257,7 +285,26 @@ export function createStatementsPlatformRouter(): Router {
         actorId: actorId(request),
         now: new Date(),
       });
-      response.status(201).json({ data: { statement: toStatementDto(result.statement), payment: toPaymentDto(result.payment) } });
+      // B-ASS-08c1b (P11a, Q4 = (a)): a rota lê a cobrança viva DEPOIS de o serviço responder (o serviço não muda).
+      const { charges } = await createChannelRuntime();
+      const notice = fullAmountChargeNotice(result.statement, await charges.listByStatement(result.statement.tenantId, result.statement.id));
+      response.status(201).json({ data: { statement: toStatementDto(result.statement), payment: toPaymentDto(result.payment), notice } });
+    }),
+  );
+
+  // B-ASS-08c1b (P11a): as cobranças do demonstrativo (a tabela, com o link), e o sinal da Q4.
+  router.get(
+    "/statements/:statementId/charges",
+    requirePlatformPermission("platform:billing:read"),
+    handleAsyncRoute(async (request, response) => {
+      const tenantId = requireTenantId(request.query.tenantId);
+      const statementId = readRouteParam(request.params.statementId);
+      const { repository } = await createDefaultStatementRuntime();
+      const statement = await repository.findStatement(tenantId, statementId);
+      if (!statement) throw new StatementError(404, "statement_not_found", "Statement not found.");
+      const { charges } = await createChannelRuntime();
+      const rows = await charges.listByStatement(tenantId, statementId);
+      response.status(200).json({ data: { charges: rows.map(toChargeDto), notice: fullAmountChargeNotice(statement, rows) } });
     }),
   );
 

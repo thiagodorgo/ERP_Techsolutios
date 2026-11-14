@@ -145,6 +145,7 @@
  "GET /api/v1/platform/billing/providers/:provider": "PLATAFORMA",
  "GET /api/v1/platform/billing/statements": "PLATAFORMA",
  "GET /api/v1/platform/billing/statements/:statementId": "PLATAFORMA",
+ "GET /api/v1/platform/billing/statements/:statementId/charges": "PLATAFORMA",
  "GET /api/v1/platform/billing/tenants/:tenantId/billing-profile": "PLATAFORMA",
  "GET /api/v1/platform/billing/tenants/:tenantId/subscription": "PLATAFORMA",
  "GET /api/v1/platform/billing/tenants/:tenantId/subscription/history": "PLATAFORMA",

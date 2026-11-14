@@ -663,6 +663,10 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/platform/billing/statements/:statementId/charges": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/platform/billing/tenants/:tenantId/billing-profile": {
   "classe": "LEITURA",
   "n": 1

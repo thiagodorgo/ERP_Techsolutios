@@ -274,6 +274,55 @@ if (!connectionString) {
     assert.equal(far.status, 400, JSON.stringify(far.body));
   });
 
+  /** Uma cobrança `pending` na tabela para o demonstrativo (a que o provedor criou). */
+  async function seedPendingCharge(fixture: { tenantId: string; statementId: string }): Promise<string> {
+    const chargeId = `pay_q4_${randomUUID().slice(0, 8)}`;
+    await db.$executeRawUnsafe(
+      `INSERT INTO subscription_statement_charges (tenant_id, statement_id, provider, external_charge_id, status, pay_url, due_date, created_at)
+       VALUES ($1::uuid, $2::uuid, 'asaas', $3, 'pending', 'https://www.asaas.com/i/inv_q4', $4::date, now())`,
+      fixture.tenantId,
+      fixture.statementId,
+      chargeId,
+      spDayPlus(20),
+    );
+    return chargeId;
+  }
+
+  test("Q4-1: baixa PARCIAL com cobrança pending → notice full_amount_charge_open na baixa e no GET …/charges", async () => {
+    const fixture = await seedClosed("q4a");
+    const chargeId = await seedPendingCharge(fixture);
+    const payment = await api("POST", `/api/v1/platform/billing/statements/${fixture.statementId}/payments`, { tenantId: fixture.tenantId, amount: "50.00", method: "pix" });
+    assert.equal(payment.status, 201, JSON.stringify(payment.body));
+    assert.equal(payment.body.data.statement.status, "closed");
+    assert.equal(payment.body.data.notice, "full_amount_charge_open");
+    const listed = await api("GET", `/api/v1/platform/billing/statements/${fixture.statementId}/charges?tenantId=${fixture.tenantId}`);
+    assert.equal(listed.status, 200, JSON.stringify(listed.body));
+    assert.equal(listed.body.data.notice, "full_amount_charge_open");
+    assert.equal(listed.body.data.charges.length, 1);
+    assert.deepEqual(Object.keys(listed.body.data.charges[0]).sort(), ["cancelledAt", "createdAt", "dueDate", "externalChargeId", "id", "payUrl", "provider", "status"]);
+    assert.equal(listed.body.data.charges[0].externalChargeId, chargeId);
+    assert.equal(listed.body.data.charges[0].status, "pending");
+  });
+
+  test("Q4-2: baixa que QUITA, ou baixa parcial sem cobrança → notice null", async () => {
+    const quits = await seedClosed("q4b");
+    await seedPendingCharge(quits);
+    const full = await api("POST", `/api/v1/platform/billing/statements/${quits.statementId}/payments`, { tenantId: quits.tenantId, amount: "123.45", method: "pix" });
+    assert.equal(full.status, 201, JSON.stringify(full.body));
+    assert.equal(full.body.data.statement.status, "paid");
+    assert.equal(full.body.data.notice, null);
+    const listedPaid = await api("GET", `/api/v1/platform/billing/statements/${quits.statementId}/charges?tenantId=${quits.tenantId}`);
+    assert.equal(listedPaid.status, 200, JSON.stringify(listedPaid.body));
+    assert.equal(listedPaid.body.data.notice, null);
+
+    const noCharge = await seedClosed("q4c");
+    const partial = await api("POST", `/api/v1/platform/billing/statements/${noCharge.statementId}/payments`, { tenantId: noCharge.tenantId, amount: "10.00", method: "pix" });
+    assert.equal(partial.status, 201, JSON.stringify(partial.body));
+    assert.equal(partial.body.data.notice, null);
+    const listed = await api("GET", `/api/v1/platform/billing/statements/${noCharge.statementId}/charges?tenantId=${noCharge.tenantId}`);
+    assert.deepEqual(listed.body.data, { charges: [], notice: null });
+  });
+
   test("CR6: due_date nulo conta como vencido — sem dueDate → 422; com → 1 linha", async () => {
     const fixture = await seedClosed("cr6", { dueDate: null });
     const route = `/api/v1/platform/billing/statements/${fixture.statementId}/charge`;
