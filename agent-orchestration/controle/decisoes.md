@@ -5149,6 +5149,25 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
 - **Registro §A2 (Emenda C2 do `B-MATERIAL-REENVIO`, E0 item 8 e E4 §C9):** a RN-BAIXA-04 ("custódia FIXADA em BASE", `docs/juntas/J-OMEGA4C.md:1962`) continua para combustível e manutenção; a nova origem `work_order_material` segue a regra 5(a) do dono (`D-DONO-TODAS-RECOMENDACOES-1111`): a peça sai da custódia profissional de quem lança, e o gerente (`tenant_wide`) sem cadastro baixa da base. A P12 do plano do `B-SAN3-15` foi implementada no `B-MATERIAL-REENVIO` (PR #551), e a F2 do `B-SAN3-15b` sai.
 - **Prova:** RC1 (7)-(8) e RC8 em memória; RC3 (6)-(8) em PostgreSQL; `tests/inventory-stock-decrement.test.ts` (BASE fixa dos consumidores do Ω4C) sem asserção mudada.
 
+## D-SAN3-25-RESPOSTAS-DO-DONO (2026-11-11 10:31 SP; aplicada em 2026-11-13) — as 4 perguntas do plano do `B-SAN3-25`, pela recomendação
+
+- **Fato (decisão do dono):** *"B-SAN3-25: as 4 recomendações do plano"*, dentro de `D-DONO-TODAS-RECOMENDACOES-1111` (11/11 10:31 SP). Para o `B-SAN3-25` vale a recomendação de cada pergunta do v1, aplicada no §0.4 do plano v2 (fora do repositório, na pasta do orquestrador):
+  - **Q1 = A:** o botão "Faturar OS" aparece em toda OS não cancelada, como o servidor (a guarda de cancelada do `invoice()`), só para quem tem `financial_titles:create` e só com item pendente;
+  - **Q2 = A:** campo opcional "Vencimento". Vazio mostra "em 30 dias (padrão)" e manda `{}`; com data, manda `{ "due_date": "AAAA-MM-DD" }`;
+  - **Q3 = A:** a ação herda a aparência da aba, sem maquete de 3 opções (como no `D-SAN3-08-DIALOGO-SEM-TRES-OPCOES`). O item "3 opções" da DoD (§10 do contrato) não se aplica a este bloco, por decisão do dono;
+  - **Q4 = A:** o título original cancelado continua sendo o pai do delta. `P-SAN3-02-PAI-CANCELADO` fecha com a regra escrita e o `[T-C10]` (`tests/work-order-invoicing.test.ts:652`) como teste dela; o quadro "Títulos desta OS" mostra o cancelado como "Cancelado".
+- **Onde vale:** o PR #559 e o comando `agent-orchestration/codex/comandos/B-SAN3-25-faturar-os.md`.
+
+## D-SAN3-25-ORDEM (2026-11-13) — os portões do `B-SAN3-25` e o nível de revisão
+
+- **Fato (plano v2 §5.1, com a Emenda 1):** três portões, cada um medido por comando:
+  - **0:** a crítica r2 aprova o plano, ou o orquestrador grava a emenda que ela pedir. Abriu com a Emenda 1 (crítica r2 APROVADO COM AJUSTES, achado R2-1), gravada em 13/11 às 18:46 SP;
+  - **B:** o #547 mergeado e o parecer do `porteiro-pos-merge` dele `LIBERADO` ou `LIBERADO COM RESSALVA`, sem pendência que bloqueie o 25. Já estava satisfeito quando a Emenda 1 foi gravada (#547 `MERGED` em `3309ba7d`, 15:49 SP), e as fases A e B correram em sequência a partir da `origin/main`;
+  - **C:** o PR do 24d mergeado. Só então se tocam `frontend/src/modules/finance/pages/InvoicesPage.tsx` (a linha `:53`), o caso `[A9]` e a linha `test:smoke` de `frontend/package.json`. Abriu com o #558 (`d29b3bef`), e o porteiro dele deu `LIBERADO COM RESSALVA`; a ressalva (1) virou a Emenda 3 (a guarda D3 do 24d entra no `test:smoke` na fatia C1).
+- **Leitura do planejador, declarada (§A6):** o portão C existe porque a trava `frontend/src/modules/finance/**` do `PLANO_SAN3.md` vai do 24 ao 25 e o 24d editava essa pasta. A inversão (o 25 mergear antes do 24d) era segura por medição e ficou com o orquestrador; não foi usada.
+- **Prova da ordem:** o `T-ORDEM` do §7.2 do plano em cada portão: vazio antes do B e antes do C; depois da C1, lista só `frontend/src/modules/finance/pages/InvoicesPage.tsx` e `frontend/package.json`, o PERMITIDO da fase C.
+- **Nível de revisão:** junta completa (inspetor + 3 cadeiras, unanimidade; §C7 item 10(1)), porque a tela dispara escrita de dinheiro (cria título e carimba itens) e tem gate de permissão. Fluxo do item 10(3): pré-revisão cruzada, junta uma vez, triagem, um conserto, conferência, merge e porteiro.
+
 ## REGISTRO-ASS09-CONFLITOS — B-ASS-09 (2026-11-13) — as divergências D-1 a D-11 do plano, registradas antes do código (§A2)
 
 **Não é decisão nova do dono.** Registro, no ramo do `B-ASS-09` (`dev-ass09-cl`, Claude Opus 5.5, dev declarado, na F0),

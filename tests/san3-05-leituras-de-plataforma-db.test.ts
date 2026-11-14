@@ -857,7 +857,7 @@ if (!connectionString) {
               const dono = [...st.keys()].find((tenantId) => cobrancaDe(tenantId) === chargeId);
               return { ...atual, raw: { ...(dono ? { externalReference: st.get(dono) } : {}), ...atual.raw } };
             },
-            findChargeByExternalReference: async () => null,
+            listChargesByExternalReference: async () => [],
             cancelCharge: async (id: string) => ({ chargeId: id, status: "cancelled" }),
             refund: async (id: string) => ({ chargeId: id, status: "refunded" }),
             registerWebhook: async () => ({ externalId: "h" }),
