@@ -42,7 +42,7 @@ if (!connectionString) {
     process.env.CORE_SAAS_PERSISTENCE = "prisma";
 
     const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    const client = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+    const client = (await import("../src/database/pg-connection.js")).createPrismaClient(connectionString);
     const efemera = await createEphemeralRole(client, connectionString);
     (globalThis as { prisma?: unknown }).prisma = efemera.client;
 

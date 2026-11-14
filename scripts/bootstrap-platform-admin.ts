@@ -40,7 +40,7 @@
 
 import "dotenv/config";
 
-import { PrismaPg } from "@prisma/adapter-pg";
+import { createPrismaClient } from "../src/database/pg-connection.js";
 import { PrismaClient } from "@prisma/client";
 
 import { setTenantRlsContext } from "../src/database/rls.js";
@@ -399,7 +399,7 @@ async function main(): Promise<void> {
   const stdinPassword = flags.passwordStdin ? await readStdinFirstLine() : undefined;
   const input = readBootstrapInput(process.env, flags, stdinPassword);
 
-  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  const prisma = createPrismaClient(connectionString);
   try {
     const report = await bootstrapPlatformAdmin(prisma, input, { dryRun: flags.dryRun });
     log(`banco: ${report.database} · modo: ${report.dryRun ? "simulação (--dry-run)" : "aplicar"}`);
