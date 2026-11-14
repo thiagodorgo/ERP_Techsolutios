@@ -4,9 +4,13 @@
 // a ingestão não roubar conexão do ERP, ela tem o PRÓPRIO pool, com `max = TRACCAR_DB_POOL_MAX` (5), mesmo papel de
 // runtime, e marca as conexões com `application_name=erp-traccar-ingest` (contável em `pg_stat_activity`). A ingestão
 // NUNCA importa `src/database/prisma.ts`.
+//
+// B-DB-FUSO-UTC: o cliente nasce pela fábrica `createPgAdapter` (TimeZone=UTC na URL), na ordem
+// `withTraccarIngestApplicationName` → fábrica, para preservar o `application_name`.
 
-import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
+
+import { createPgAdapter } from "../../database/pg-connection.js";
 
 export const TRACCAR_INGEST_APPLICATION_NAME = "erp-traccar-ingest";
 
@@ -24,9 +28,6 @@ export function createTraccarIngestPrismaClient(options: { readonly connectionSt
     throw new Error("traccar ingest: TRACCAR_DB_POOL_MAX precisa ser inteiro positivo.");
   }
   return new PrismaClient({
-    adapter: new PrismaPg({
-      connectionString: withTraccarIngestApplicationName(options.connectionString),
-      max: options.max,
-    }),
+    adapter: createPgAdapter(withTraccarIngestApplicationName(options.connectionString), { max: options.max }),
   });
 }

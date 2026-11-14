@@ -509,6 +509,10 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/subscription-billing/economic-groups/economic-groups.prisma.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
     "B-ASS-09 (Emenda 2 §2.4): a trilha de entrar e sair de grupo, `new EnterpriseAuditLogService(new AuditLogRepository(tx)).record(…)`, gravada no `tx` da volta da organização do evento, dentro de `forEachTenantRls` (GUC na 1ª instrução da volta, rls.ts), no molde `writeAuditInTx` de statement.prisma-runtime.ts; evento de organização fora da troca recusa a troca (MembershipAuditTenantError). Provado em tests/ass-09-groups-db.test.ts (T-GRP-db-3 (b) e T-GRP-db-1: a trilha só da troca que valeu).",
   ],
+  [
+    k("L1", "src/database/session-timezone.ts", "-.probeSessionTimezone", "client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(client)", "×1"),
+    "B-DB-FUSO-UTC, Emenda 2 E2.1: `probeSessionTimezone` executa somente `SELECT current_setting('TimeZone') AS tz`; é leitura da configuração da sessão, sem acesso a tabela (inclusive FORCE RLS). Chave colada da saída do gerador do T13.",
+  ],
   // B-ASS-08c1a: a confirmação da posse antes do POST e o registro transacional do desfecho da cobrança. As 4 chaves são as que
   // o gerador acusou no head; todas no callback de `withTenantRlsBudget(this.client, tenantId, …)`, cujo setter do GUC é a 1ª
   // instrução da transação (src/database/rls.ts l.128). Literal L0 intocado: nenhuma tabela FORCE nova.

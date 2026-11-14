@@ -14509,11 +14509,89 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-DB-FUSO-DA-CONEXAO (2026-11-12) — toda data gravada pelo Prisma pode ficar deslocada pelo offset do fuso da conexão — ALTA (sistêmica, sem bloqueio hoje)
 
-- **status:** ABERTA · **gravidade:** ALTA (sistêmica) · **escopo:** `pre-existente` (`@prisma/adapter-pg` 7.8.0, `src/database/prisma.ts:15`, `.env.example:12`) · **dono:** `B-DB-FUSO-UTC` (aberto; plano escrito, 9 fatias) · **PR-alvo:** a planejar · **bloqueia:** não (hoje).
+- **status:** ABERTA (em execução; PR draft deste bloco) · **gravidade:** ALTA (sistêmica) · **escopo:** `dentro-do-bloco` (`src/database/pg-connection.ts`, `src/database/session-timezone.ts`, `src/database/session-timezone.bootstrap.ts`, `src/database/prisma.ts`, `src/server.ts`, `src/integrations/traccar/traccar-db.ts`, `src/integrations/traccar/traccar-ingest.bootstrap.ts`, seeds/scripts de operação, `.env.example`, `docs/deployment.md`) · **dono:** `B-DB-FUSO-UTC` (aberto; plano escrito, 9 fatias) · **PR-alvo:** este bloco (PR #554, ramo `fix/db-fuso-utc`) · **bloqueia:** não (hoje).
 - **origem:** investigação `inv-543-fuso` (registro `REGISTRO-PENDENTE.md`, 12/11 07:37), desdobramento do T8 que o porteiro do #543 chamou de incidente.
 - **fato:** o `@prisma/adapter-pg` manda todo `Date` como texto UTC sem sufixo de fuso, e o Postgres o lê no `TimeZone` da sessão. Num banco fora de UTC, toda data gravada pelo Prisma fica deslocada pelo offset (+3 h em SP). O T8 (sessão vencida → 401) dá 200 com o banco em `America/Sao_Paulo` e 401 em UTC. O `docker-compose.prod.yml` (postgres:16, UTC) e o RDS padrão (UTC, não medido) não disparam; no portão a janela extra efetiva é `min(3 h, vida do token de acesso)`. Pontos que misturam `now()` do banco com data do Prisma: `charge-prisma.repository.ts:150`, `local-auth-credential.repository.ts:152`, `traccar-ingestion.repository.ts:143,199`, `work-order-prisma.repository.ts:210,262,265,511`, `financial-title-prisma.repository.ts:133,167,169,215,238` e outros (lista em `revisoes/j543/inv-fuso/inv-543-fuso.json`).
 - **critério de encerramento:** fixar o `TimeZone` da conexão em UTC (pool `pg` / `DATABASE_URL`) e travar o boot de produção quando `SHOW timezone` ≠ UTC (fail-closed, no molde do `runtime-role`), com teste `-db` sob `America/Sao_Paulo`.
 - **apenso (2026-11-12, `D-DONO-1211-NOITE`):** o bloco está planejado — `B-DB-FUSO-UTC`, 9 fatias (~6 h 20 min de dev), plano escrito pelo topo (Opus declarado). A Q1 do plano fica aberta ao dono: *existe hoje algum banco com dado real (cliente, piloto, demonstração usada por cliente, staging com dado que importa) que rode fora de UTC — por exemplo, um Postgres instalado direto numa máquina no Brasil?* A `P-DB-FUSO-LEGADO` só abre se a Q1 for "sim".
+
+
+## P-DB-FUSO-TESTES-DIRETOS (2026-11-13) — os 156 arquivos de teste com `new PrismaPg(` direto migram para a fábrica aos poucos — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `fora-do-bloco` (a catraca G3 impede crescer; os arquivos de teste fora do arnês migram aos poucos) · **dono:** a nomear · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** §8 do plano `B-DB-FUSO-UTC`; a varredura `tests/db-fuso-utc-pontos-de-conexao.test.ts` (G3) fixa a catraca em 217 ocorrências de `new PrismaPg(` fora de `tests/helpers/` e fora dos testes deste bloco — só desce.
+- **fato:** os testes com `new PrismaPg(` direto não passam pela fábrica UTC; fora de UTC (só o cenário `-sp-db`) continuam sensíveis ao fuso da sessão.
+- **critério de encerramento:** zero ocorrências de `new PrismaPg(` em `tests/` fora de `tests/helpers/`, sem regressão das suítes.
+
+## P-DB-FUSO-SUITES (2026-11-13) — linha `SUITES=` no job `backend-postgres` para o teste `-sp-db`, se o dono não ordenar — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `.github/workflows/ci.yml` (fora deste bloco; depende de ordem do dono) · **dono:** a nomear · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** §8 do plano `B-DB-FUSO-UTC`; o `tests/db-fuso-utc-sp-db.test.ts` entra no CI pelo job `backend` (roda todo `tests/*.test.ts`) e **falha** (não pula) se `DATABASE_URL` existir e o papel não puder ter o fuso trocado — mitigação sem tocar `.github/**`.
+- **critério de encerramento:** decidir (e, se o dono ordenar, aplicar) a linha `SUITES="$SUITES tests/db-fuso-utc-sp-db.test.ts"` no job `backend-postgres`, mantendo a guarda de zero pulos.
+
+## P-DB-FUSO-POOLER-MEDIR (2026-11-13) — medir no staging da Fly se o pooler aceita `options` de início — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** operação de staging (fora deste bloco) · **dono:** a nomear · **PR-alvo:** a definir · **bloqueia:** o deploy de produção desta mudança (não o merge).
+- **origem:** risco R1 do plano `B-DB-FUSO-UTC`; se houver pooler (PgBouncer/RDS Proxy) na frente, o parâmetro `options` pode ser recusado ou ignorado (hipótese, não medida).
+- **critério de encerramento:** rodar `psql "postgresql://<usuario>:<senha>@<host>:5432/<banco>?options=-c%20TimeZone%3DUTC" -Atc "show timezone"` no staging antes da produção; recusado ⇒ `ALTER DATABASE <db> SET timezone 'UTC'` pelo dono do banco, com a trava continuando a medir.
+
+## P-DB-FUSO-SCRIPTS-SEM-TRAVA (2026-11-13) — seeds e scripts de operação dependem só da fábrica, sem a trava de sessão — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` (P3–P9 migram pela fábrica; a exceção `scripts/gen-tenant-tables.mjs` só lê catálogo) · **dono:** `B-FERR-AGENTES` · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** Emenda 1 E1.3 do plano `B-DB-FUSO-UTC`; os seeds (P3–P5) e os scripts (P6–P9) usam `createPgAdapter`/`createPrismaClient`, mas não passam pela `assertDatabaseSessionTimezoneUtc` — a trava fica no boot da API e do listener do Traccar.
+- **fato** (reescrito pela Emenda 3, E3.5, com a nota da pré-revisão `prerev-554-cl`): pela fábrica, a sessão de um seed ou script abre em UTC mesmo num banco em `America/Sao_Paulo`, porque a `options` da URL vence o `ALTER DATABASE`/`ALTER ROLE … SET timezone`. O que P3–P9 deixam aberto, sem a trava, é só a sessão que fica em SP mesmo assim: (1) um pooler na frente do banco (PgBouncer, RDS Proxy) que ignore a `options` (R1 do plano, medição em `P-DB-FUSO-POOLER-MEDIR`); ali a API e o listener do Traccar recusam pela trava, mas um seed ou script grava a data com +3 h; (2) a `options` repetida na URL (achado A2), em que o `pg-connection-string` usa a última e a fábrica lia a primeira; **fechada pelo E3.2**: a fábrica agora recusa mais de uma `options` com `DATABASE_URL_TIMEZONE_CONFLICT` (teste C6). A exceção P10 (`gen-tenant-tables.mjs`) só lê catálogo.
+- **critério de encerramento:** decidir se scripts/seeds ganham a mesma sonda fail-closed (bloco próprio) ou declarar aceite do risco.
+
+## P-LOGIN-READINESS-VAZA-HOST-NO-ERRO (2026-11-13) — no erro de conexão real, a sonda de login sem organização loga o erro cru do Prisma, com o host do banco — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (grave na régua da J-554: dado de infraestrutura no log) · **escopo:** `pre-existente` (`git diff --quiet 3309ba7d..a586ddaa -- src/modules/auth/services/login-readiness.ts` → 0, o bloco do fuso não toca o arquivo; `git blame` atribui a linha 192 ao `0a398246`, de 2026-08-19 20:30 -03, #357) · **dono:** `B-SEC-LOG-SANITIZA` (bloco novo, pequeno) · **PR-alvo:** o PR do `B-SEC-LOG-SANITIZA` · **bloqueia:** não (pela triagem da J-554, não segura o merge do fuso e entra na fila logo depois).
+- **origem:** achado C2-A2 da J-554 (PR #554, cadeira C2, `j554-c2-cdx3`, Codex 3 Sol), triado na ata `J-554-ata.md`. Pelo §C7.1-ter(a), grave `pre-existente` não reprova: vira pendência nomeada com bloco dono.
+- **N, forma e causa (medidos pela C2 no boot real, `NODE_ENV=development … DATABASE_URL='postgresql://us3r-sentinela:s3nha-sentinela@h0st-sentinela:5439/banco-sentinela' npx tsx src/server.ts`):**
+  - **N:** 1 linha de log (a 3ª de 9, na primeira tentativa) com o host-sentinela 3 vezes: na `message`, no `stack` e em `meta.driverAdapterError.cause.host`. As outras 4 sentinelas (porta, usuário, senha, banco) deram 0, porque nesse desfecho o driver só ecoa o host.
+  - **forma:** `{"level":50,…,"err":{"type":"PrismaClientKnownRequestError","message":"…Can't reach database server at h0st-sentinela",…,"cause":{"kind":"DatabaseNotReachable","host":"h0st-sentinela"}}},"msg":"Sonda de login sem organização: desfecho não classificado."}`. Os logs da trava de fuso e a mensagem final (`SESSION_TIMEZONE_PROBE_FAILED`) saíram sanitizados no mesmo boot.
+  - **causa:** o erro cru no logger, em `src/modules/auth/services/login-readiness.ts:192` (`logger.error({ err: error }, …)`).
+  - **mesma forma, sem medição de vazamento (hipótese):** `login-readiness.ts:123` (`logger.error({ err: error }, …)`) e `src/server.ts:56` (`logger.error({ error }, …)`).
+- **evidência:** `revisoes/j554/votos/C2-voto.json` (C2-A2) e `C2-evidencia.md` (item 2), log em `votos/C2-tmp/api-connection-error.log` (fora do repositório).
+- **critério de encerramento:** o sanitizador de erro que o `runtime-role.bootstrap.ts` já usa (`describeDriverError`) aplicado a todo `logger.error` do boot e da sonda de login; teste com a URL-sentinela sobre o log INTEIRO de um boot real com erro de conexão → 0 ocorrência das 5 sentinelas.
+
+## P-554-TRES-DB-FORA-DA-LISTA-CURADA (2026-11-13) — os 3 testes migrados na E3.1 rodam só no job `backend`, fora da lista `SUITES=` do `backend-postgres` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `.github/workflows/ci.yml` (PROIBIDO no `B-DB-FUSO-UTC`) · **dono:** o próximo bloco autorizado a tocar o `.github/**` (junto de `P-DB-FUSO-SUITES`) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** Emenda 3.1 do plano `B-DB-FUSO-UTC` (orquestrador, 13/11 17:10). A premissa da E3 ("os 3 testes passam no `backend-postgres`") era falsa: `tests/ass-08c-conf530-db.test.ts`, `tests/b-san3-24-fechamento-forcado-auditoria-db.test.ts` e `tests/bsan314-provisao-entrega-db.test.ts` não estão na lista curada.
+- **fato:** o aceite passou a ser o job `backend`, lido no TAP sem SKIP (10/10 `ok`, medido pelo `fix-554-cl`). No `backend` não há a guarda de zero pulos do `backend-postgres`.
+- **critério de encerramento:** decidir, e se for o caso incluir, os 3 arquivos na `SUITES=` do `backend-postgres`, com o TAP do job sem SKIP.
+
+## P-554-BACKEND-POSTGRES-TRAVOU-1-DE-3 (2026-11-13) — o job `backend-postgres` travou uma vez no head `5d989406` do PR #554 — MÉDIA
+
+- **status:** FECHADA (2026-11-13, pela medição da Emenda 2, E2.3/E2.5) — o travamento não se reproduziu em 5 rodadas sequenciais.
+- **status anterior:** ABERTA · **gravidade:** MÉDIA (o bloco mexe na construção do pool) · **escopo:** `dentro-do-bloco` (`B-DB-FUSO-UTC`, PR #554) · **dono:** `B-DB-FUSO-UTC` · **bloqueia:** a junta, até a medição fechar.
+- **origem:** Emenda 2, E2.3 do plano: o run `43418618508` (head `5d989406`) parou depois do "[pool] cliente global max:2" (11:40 → cancelado 13:26). O mesmo job, refeito, deu 610/610 em 6 min.
+- **medição que fecha** (diário `revisoes/fuso/dev-fuso-e2-cdx2.md`, seção RESULTADO; run `43465269864`, head `7293c01b`, corte de 20 min da E2.5): 5 rodadas sequenciais, todas 610 tests · 610 pass · 0 fail · 0 skip, com 5m26s, 5m36s, 6m41s, 6m24s e 5m16s (média 5m53s, máxima 6m41s). Duração por `gh run view --json jobs` (startedAt/completedAt).
+- **nota:** N = 5 não exclui uma taxa baixa de travamento. O caso original segue como 1 ocorrência em 8 rodadas medidas. Se voltar a travar, reabre-se esta pendência com o run, e a investigação do pool (conexão que não volta, `max`, `end()` do arnês P12) vem antes de qualquer junta, como a E2.3 manda.
+
+## P-CI-O6R12-DRILL-TMP-SOME-E-TRAVA (2026-11-13) — o job `backend` trava no drill do B-O6R-12: o `after()` roda no início, apaga o diretório temporário e deixa 6 clientes abertos — ALTA
+
+- **status:** FECHADA (2026-11-14, neste PR #554, pela Emenda 4 do plano `B-DB-FUSO-UTC`, commit `31c0f69f`) — o drill registra tudo num trecho síncrono (F1), fecha o cliente quando a preparação falha (F2), e a guarda G-ORD proíbe a classe nos outros arquivos de `tests/`.
+- **status anterior:** ABERTA · **gravidade:** ALTA · **escopo:** `dentro-do-bloco` (gatilho no F5 do #554, `8d87f092`, sobre defeito latente do #539) · **dono:** `B-DB-FUSO-UTC` (PR #554), por emenda do plano do fuso · **bloqueia:** o merge do #554.
+- **origem:** no head `a3d3aeae` do #554, o job `backend` travou em 3 de 6 execuções distintas, sempre com 10 `not ok` em `tests/b-o6r-12-regime-migration-drill-db.test.ts`, o 1º um `ENOENT … o6r12-drill-…/migrations-antes`. Investigação: `inv-554-cl` (mecanismo), `ref-554-cl` (cético) e `inv-554b-cl` (gatilho por intervenção nos dois sentidos, em 1 núcleo no Node da CI: com o F5, 43 de 48; sem o F5, 0 de 48). Plano `B-O6R-12-DRILL-ORDEM` (`plano-drill-fable`), revisão do crítico `crit-drill-cl` (APROVADO COM AJUSTES, CD-1 a CD-6).
+- **o mecanismo:** o drill registrava C23 e R2-1, esperava dois `await import(...)` de módulo e só então registrava os outros 10 testes e o `after()`. Se os 2 primeiros terminassem dentro dessa janela, a raiz do runner rodava o `after()` recém-registrado no início; ele apagava o `tempRoot` e não roda de novo. Os 6 `pg.Client` de `baseMigrada`, fora de `try`, ficavam abertos, e o processo não saía.
+- **comandos que fecham:**
+  - na suíte, determinístico: `node --test --import tsx --test-reporter=tap tests/test-registration-order-guard.test.ts` → G-ORD-1 verde no head; com o drill do `a3d3aeae` (mutação M1), `not ok 1 - G-ORD-1` nomeando o drill (registro l.81, await de módulo l.123, `test` seguinte).
+  - natural, no container da CI (Node 20.20.2, Postgres 16 em UTC), drill sozinho: `taskset -c 0 node --test --import tsx --test-reporter=tap tests/b-o6r-12-regime-migration-drill-db.test.ts`, o original e o consertado intercalados (D0 da Emenda 4). O crítico mediu, no mesmo texto do conserto: original 12 de 12 travas; consertado 0 travas em 36 rodadas, 36 de 36 saíram sozinhas com código 0. Os números do D0 no head final e do D1 (15 execuções distintas do job `backend`) estão no corpo do PR #554.
+
+## P-CI-BACKEND-SEM-TETO (2026-11-14) — os jobs do `ci.yml` não têm `timeout-minutes`, só o `antivirus`; um arquivo de teste que não sai segura o runner até 360 min — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `.github/workflows/ci.yml` (PROIBIDO no `B-DB-FUSO-UTC`; o teto do job é pergunta ao dono) · **dono:** um bloco de CI, de junta completa (toca `.github/**`, a trava do §C7 10(2) manda junta) · **bloqueia:** não.
+- **origem:** plano `B-O6R-12-DRILL-ORDEM` §9, ampliada pelo crítico `crit-drill-cl` (CD-6). As 3 travas do `backend` no `a3d3aeae` foram canceladas à mão entre 27 e 34 min; sem cancelamento, o GitHub espera o padrão de 360 min.
+- **fato medido:** `git show <head>:.github/workflows/ci.yml | grep -nE '^  [a-z-]+:$|timeout-minutes|regime-migration-drill'` → jobs `backend`, `backend-postgres`, `antivirus` (`timeout-minutes: 20`), `frontend`, `owner-portal`, `authority-portal`, `flutter` e `docker`; só o `antivirus` tem teto. O drill do B-O6R-12 roda no `backend` (pela suíte inteira) e no `backend-postgres` (`SUITES=`).
+- **critério de encerramento:** cada job do `ci.yml` com `timeout-minutes` medido contra a duração normal dele (o `backend` leva de 13 a 15 min; o `backend-postgres`, ~6 min), a começar pelo `backend` e pelo `backend-postgres`, que rodam o drill. É a rede sistêmica para o arquivo que um dia volte a não sair.
+
+## P-DRILL-F2-SEM-TESTE-PERMANENTE (2026-11-14) — a F2 do drill (cliente fechado quando a preparação falha) só tem prova de bancada, nenhum teste permanente na suíte — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `tests/b-o6r-12-regime-migration-drill-db.test.ts` · **dono:** o próximo bloco que mexer no drill do B-O6R-12 (ou um bloco de arnês) · **bloqueia:** não.
+- **origem:** plano `B-O6R-12-DRILL-ORDEM` §4 e §9, com a prova natural do crítico `crit-drill-cl` (CD-6).
+- **fato medido:** a G-ORD guarda a ordem de registro (a F1), não o vazamento de cliente; a F2 não tem equivalente estático barato. A prova dela é de bancada: (1) sob o amplificador do `inv-554-cl` (`amplifica2.cjs`), só com a F2 o arquivo dá 10 `not ok`, `# tests 12 / # pass 2 / # fail 10` e sai em ~13 s, 3 de 3, onde o original trava 3 de 3; (2) na corrida natural, em 1 núcleo no container da CI, o drill com a F2 e sem a F1 (registro numa IIFE assíncrona, variante `OIF` do crítico) corre em 8 de 8 e, nas 8, o processo **sai** com `# tests 12 / # pass 2 / # fail 10`, código 1, ~12 s. Sem a F2, a mesma corrida trava.
+- **critério de encerramento:** um teste na suíte que fique vermelho se `baseMigrada` (ou `conectar`) voltar a deixar o cliente aberto quando a preparação falha, ou a decisão escrita de que a prova de bancada basta.
 
 ## P-15A-F4UI-TELA-SEM-DONO (2026-11-12) — a F4ui do estoque do técnico (tela contra a maquete de 3 opções) não tem pendência dona — BAIXA
 
