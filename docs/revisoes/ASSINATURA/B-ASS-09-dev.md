@@ -285,4 +285,298 @@ em outubro.
 
 ## F4 — ramo `feat/ass-09-banco` (worktree `C:/Users/thiag/w-ass09b`)
 
-(preenchido no ramo `feat/ass-09-banco`)
+Base: `feat/ass-09-banco` nasce do head da F0 (`2b5e0325`), em worktree próprio com `npm ci` próprio (sem junction),
+`exit=0`. `git merge-base HEAD origin/main` = `d29b3bef`.
+
+| passo | comando | saída resumida | veredito |
+|---|---|---|---|
+| `schema.prisma` | 3 modelos (`EconomicGroup`, `EconomicGroupMember`, `PlatformFxRate`) e a relação inversa `economic_group_members` em `model Tenant`; `map:` nas 2 FKs, nos 2 índices e no único do câmbio, iguais aos nomes da M6 | `git diff --numstat` → `61 0 prisma/schema.prisma` (só acréscimo) · `npx prisma validate` → `The schema at prisma\schema.prisma is valid` (ec 0) | verde. O `prisma format --check` acusa arquivo não formatado **também na `main`** (`w-ass09`, `d29b3bef`); não formatei (reescreveria 2 044 linhas fora do bloco) |
+| M6 | `prisma/migrations/20260903000000_ass09_economic_groups_fx_rates/migration.sql`: `BEGIN;` … `COMMIT;`, 15 sentenças (extensão, 3 tabelas, índice único funcional, 2 índices, 2 FKs, a exclusão, ENABLE, FORCE, `DROP POLICY IF EXISTS` e a política, índice único do câmbio) e o runbook `down` | a sentença da exclusão é a do plano, literal: `grep -c "ALTER TABLE economic_group_members ADD CONSTRAINT economic_group_members_no_overlap EXCLUDE"` = **1** (âncora da M-GRP-9) | aditiva; nenhuma tabela existente muda |
+| guard | `node scripts/migration-transaction-guard.mjs` | `migrações: 135 · anteriores: 112 · novas: 23 · violações: 0` | verde |
+| drill (R-MIG-1) | `DATABASE_URL=…55561/erp_ass09 node --test --import tsx tests/ass-09-groups-fx-migration-drill-db.test.ts` | `ok 1` deploy (3 tabelas; índice `economic_groups_name_active_key` UNIQUE em `lower(btrim(name))` onde `deleted_at IS NULL`; único do câmbio; 2 índices; `economic_group_members_no_overlap` com `contype='x'` e `pg_get_constraintdef` = `EXCLUDE USING gist (tenant_id WITH =, daterange(valid_from, valid_to, '[)'::text) WITH &&)`; 6 CHECKs; `relrowsecurity` e `relforcerowsecurity`; a política com o GUC; 2 FKs `RESTRICT`; `btree_gist`) · `ok 2` down em 1 transação (as 3 tabelas saem, `btree_gist` fica, `tenants` intacto) e o corpo reaplica · `ok 3` prefixos k = 1..15 atômicos, inclusive a extensão · `# tests 3 # pass 3 # fail 0 # skipped 0` | verde |
+| **M-MIG-1** | `COMMIT;` final apagado (`mutrun`: âncora conta 1, aplica, roda, restaura e confere md5) → `node scripts/migration-transaction-guard.mjs` | `G2 20260903000000_ass09_economic_groups_fx_rates: n = 15 sentenças sem BEGIN;/COMMIT; nas pontas …` · `violações: 1` · exit 1 · `restaurado=true` | **vermelho**, restaurado |
+| **M-MIG-2** | sentença `ALTER TABLE "economic_group_members" FORCE ROW LEVEL SECURITY;` apagada → o drill | `not ok 1` (`+ rlsForced: 0` × `- rlsForced: 1`) · `not ok 2` (`expected 15 actual 14` sentenças) · `not ok 3` · `# pass 0 # fail 3` · `restaurado=true` | **vermelho**, restaurado |
+| censo | `DATABASE_URL=…/erp_ass09` (com a M6 aplicada) `node scripts/gen-tenant-tables.mjs` | `119 tabelas gravadas`; `git diff` de `censored-tables.ts`: **+1 linha**, `"economic_group_members"` | só pela regeneração |
+| censo (controle) | `tests/ass-03-metering-census-db.test.ts` (T-MED-db-8) com o censo regenerado, e com o arquivo antigo reposto | regenerado: `ok 1` · antigo: `not ok 1 … censo divergente — faltando: [economic_group_members]; sobrando: []` | o censo é exigido pela M6 e casa com o catálogo |
+| **K12** (hipótese medida) | `psql` no cluster: `CREATE EXTENSION IF NOT EXISTS btree_gist` sob 3 papéis `NOSUPERUSER NOBYPASSRLS` | `btree_gist` 1.7 `trusted = t` · papel sem `CREATE` na base: `ERROR: permission denied to create extension "btree_gist"` (`Must have CREATE privilege on current database to create this extension.`) · papel com `CREATE` na base: `CREATE EXTENSION` · dono da base: `CREATE EXTENSION` | a extensão nasce sem superusuário, desde que o papel da migração tenha `CREATE` na base (ou seja o dono) |
+| **K12** (cadeia inteira) | `npx prisma migrate deploy` das 135 migrações (com a M6) numa base `OWNER ass09_mig`, papel `NOSUPERUSER BYPASSRLS` | `All migrations have been successfully applied.` · 135 aplicadas · `btree_gist` com dono `ass09_mig` · `economic_group_members_no_overlap` `x` | verde. Sob `NOSUPERUSER NOBYPASSRLS` a cadeia **não sobe, por desenho anterior ao bloco**: a `20260873000000_add_stock_movements_unique_backstops` recusa com `EP0001 … censo CEGO sob o papel "ass09_app" (FORCE RLS sem superusuario/BYPASSRLS) … NADA foi mutado` (`P-O6R-B04-CENSO-DUPLICATAS-STAGING-PROD`). Logo o papel de migração de produção já precisa de superusuário ou `BYPASSRLS`, e, com `CREATE` na base, a M6 sobe. O CI roda `migrate deploy` como `postgres` (`ci.yml` l.40 e l.109) |
+
+### Deriva (Emenda 1 §2.1), duas bases
+
+Comandos, na ordem da emenda, no cluster Postgres 16 descartável próprio (`127.0.0.1:55561`):
+
+1. `npx prisma validate` → ec 0.
+2. `MB=$(git merge-base HEAD origin/main)` → `d29b3bef`; `git worktree add --detach ../w-ass09-drift-base "$MB"` e `npm ci`
+   próprio (`exit=0`).
+3. (a) `ass09_drift_base`: `migrate deploy` e `migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`
+   no worktree do merge-base; (b) `ass09_drift_head`: `migrate deploy`, `migrate status` e o mesmo `migrate diff` no worktree do
+   dev; (c) `norm()` e `diff` como a emenda escreve.
+
+**O que não rodou como escrito, com a saída literal, e o que fiz:**
+- Com o papel `ass09_app` (`NOSUPERUSER NOBYPASSRLS`), o `migrate deploy` para na `20260873000000` (a saída `EP0001` acima). É
+  uma trava anterior ao bloco, por desenho; não é a M6.
+- Com o deploy por outro papel e o `migrate status`/`migrate diff` por `ass09_app`, sem privilégio nas tabelas: `migrate status`
+  → `Error: ERROR: permission denied for table _prisma_migrations` (ec 1); `migrate diff` → 4 833 linhas na base e 4 882 no
+  head, todas `ADD COLUMN`/`CREATE` (o `information_schema` só mostra colunas de tabela que o papel alcança). Medida inválida,
+  guardada fora do repositório e descartada.
+- **Medida válida:** as 3 etapas (deploy, status e diff), nas duas bases, pelo papel dono das bases, `ass09_mig`
+  (`NOSUPERUSER BYPASSRLS`, o menor papel que a cadeia aceita). Nenhum superusuário na medida.
+
+| medida | base (`d29b3bef`) | head (`feat/ass-09-banco`) |
+|---|---|---|
+| `migrate deploy` | `All migrations have been successfully applied.` (134) | idem (135) |
+| `migrate status` | — | `Database schema is up to date!` (ec 0) |
+| linhas do `migrate diff --script` | **220** | **220** |
+| `md5sum` | `ea7c0780690adc81351cee0971215a8c` | `ea7c0780690adc81351cee0971215a8c` |
+| `grep -ciE 'economic\|platform_fx'` | — | **0** |
+| delta normalizado | — | **vazio** (0 linha) |
+
+**Critério de aceite:** (1) as 220 linhas da base estão todas no head, iguais (md5 igual); (2) o delta é vazio, portanto
+subconjunto da lista nominal: o Prisma 7.8 **não** emite `DROP INDEX "economic_groups_name_active_key"` (índice de expressão com
+`WHERE`, ignorado; a base só tem 1 `DROP INDEX`, de `impound_processes_tenant_id_identity_id_idx`), e nenhuma linha cita
+`economic_group_members` ou `platform_fx_rates` (a exclusão, os CHECKs e a extensão não aparecem, como a r2 mediu); (3) nenhuma
+outra linha. **VERDE.** A base de 220 linhas é a mesma contagem que o `B-TRC-02` mediu (`B-TRC-02-dev.md`).
+
+**M-MIG-3** (vermelho de controle do critério): no `EconomicGroupMember`, a linha `  valid_to   DateTime? @db.Date` tirada do
+`schema.prisma` (neste schema o campo tem o nome da coluna, no padrão da casa), a M6 intacta → o mesmo diff no head e o mesmo
+critério: `linhas base=220 mmig3=223` · delta `> ALTER TABLE "economic_group_members" DROP COLUMN "valid_to";` ·
+`CRITERIO: VERMELHO` (exit 1) · `restaurado=true`. O critério enxerga deriva nova.
+
+<details><summary>Saída do <code>migrate diff --script</code> (base e head idênticos, md5 <code>ea7c0780…</code>, 220 linhas)</summary>
+
+```sql
+-- DropForeignKey
+ALTER TABLE "financial_entries" DROP CONSTRAINT "financial_entries_reversal_pair_fk";
+
+-- DropForeignKey
+ALTER TABLE "financial_titles" DROP CONSTRAINT "financial_titles_parent_title_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quote_items" DROP CONSTRAINT "service_quote_items_tenant_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quote_items" DROP CONSTRAINT "service_quote_items_tenant_id_price_table_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quote_items" DROP CONSTRAINT "service_quote_items_tenant_id_service_quote_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quote_items" DROP CONSTRAINT "service_quote_items_tenant_id_tariff_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quotes" DROP CONSTRAINT "service_quotes_tenant_id_customer_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quotes" DROP CONSTRAINT "service_quotes_tenant_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quotes" DROP CONSTRAINT "service_quotes_tenant_id_service_catalog_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quotes" DROP CONSTRAINT "service_quotes_tenant_id_source_price_table_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quotes" DROP CONSTRAINT "service_quotes_tenant_id_source_tariff_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "service_quotes" DROP CONSTRAINT "service_quotes_tenant_id_work_order_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "tag_assignments" DROP CONSTRAINT "tag_assignments_tenant_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "tag_assignments" DROP CONSTRAINT "tag_assignments_tenant_id_tag_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "work_order_comments" DROP CONSTRAINT "work_order_comments_tenant_id_author_user_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "work_order_comments" DROP CONSTRAINT "work_order_comments_tenant_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "work_order_comments" DROP CONSTRAINT "work_order_comments_tenant_id_work_order_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "work_order_financial_items" DROP CONSTRAINT "work_order_financial_items_tenant_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "work_order_financial_items" DROP CONSTRAINT "work_order_financial_items_tenant_id_price_table_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "work_order_financial_items" DROP CONSTRAINT "work_order_financial_items_tenant_id_tariff_id_fkey";
+
+-- DropForeignKey
+ALTER TABLE "work_order_financial_items" DROP CONSTRAINT "work_order_financial_items_tenant_id_work_order_id_fkey";
+
+-- DropIndex
+DROP INDEX "impound_processes_tenant_id_identity_id_idx";
+
+-- AlterTable
+ALTER TABLE "cloud_charge_calculation_runs" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "cloud_charge_rules" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "cloud_cost_allocation_runs" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "cloud_cost_imports" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "cloud_cost_line_items" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "cloud_usage_daily_aggregates" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "cloud_usage_events" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "commission_basis_events" ALTER COLUMN "payload" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "commission_calculations" ALTER COLUMN "calculation_snapshot" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "commission_policy_rules" ALTER COLUMN "conditions" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "expense_policies" ALTER COLUMN "category_rules" DROP DEFAULT,
+ALTER COLUMN "limits" DROP DEFAULT,
+ALTER COLUMN "approval_rules" DROP DEFAULT,
+ALTER COLUMN "receipt_rules" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "field_dispatch_events" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "field_dispatches" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "field_operator_locations" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "notifications" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "tenant_cloud_charges" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "tenant_cloud_cost_allocations" ALTER COLUMN "source_cost_line_item_ids" DROP DEFAULT,
+ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "work_order_assignments" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "work_order_events" ALTER COLUMN "metadata" DROP DEFAULT;
+
+-- RenameForeignKey
+ALTER TABLE "checklist_applicability_rules" RENAME CONSTRAINT "checklist_applicability_rules_tenant_id_service_catalog_i_fkey" TO "checklist_applicability_rules_tenant_id_service_catalog_id_fkey";
+
+-- RenameForeignKey
+ALTER TABLE "impound_process_checklist_links" RENAME CONSTRAINT "impound_process_checklist_links_tenant_id_checklist_run_i_fkey" TO "impound_process_checklist_links_tenant_id_checklist_run_id_fkey";
+
+-- RenameForeignKey
+ALTER TABLE "tenant_cloud_cost_allocations" RENAME CONSTRAINT "tenant_cloud_cost_allocations_run_id_fkey" TO "tenant_cloud_cost_allocations_allocation_run_id_fkey";
+
+-- RenameIndex
+ALTER INDEX "audit_logs_tenant_entity_idx" RENAME TO "audit_logs_tenant_id_entity_entity_id_created_at_idx";
+
+-- RenameIndex
+ALTER INDEX "checklist_runs_tenant_id_related_entity_type_related_entity_id_" RENAME TO "checklist_runs_tenant_id_related_entity_type_related_entity_idx";
+
+-- RenameIndex
+ALTER INDEX "checklist_template_components_tenant_id_template_id_component_k" RENAME TO "checklist_template_components_tenant_id_template_id_compone_key";
+
+-- RenameIndex
+ALTER INDEX "cloud_charge_calculation_runs_period_idx" RENAME TO "cloud_charge_calculation_runs_period_start_period_end_idx";
+
+-- RenameIndex
+ALTER INDEX "cloud_charge_calculation_runs_source_allocation_run_idx" RENAME TO "cloud_charge_calculation_runs_source_allocation_run_id_idx";
+
+-- RenameIndex
+ALTER INDEX "cloud_charge_rules_effective_idx" RENAME TO "cloud_charge_rules_effective_from_effective_until_idx";
+
+-- RenameIndex
+ALTER INDEX "cloud_charge_rules_tenant_idx" RENAME TO "cloud_charge_rules_tenant_id_idx";
+
+-- RenameIndex
+ALTER INDEX "cloud_cost_allocation_runs_period_idx" RENAME TO "cloud_cost_allocation_runs_period_start_period_end_idx";
+
+-- RenameIndex
+ALTER INDEX "cloud_cost_imports_period_idx" RENAME TO "cloud_cost_imports_period_start_period_end_idx";
+
+-- RenameIndex
+ALTER INDEX "cloud_cost_line_items_billing_period_idx" RENAME TO "cloud_cost_line_items_billing_period_start_billing_period_e_idx";
+
+-- RenameIndex
+ALTER INDEX "cloud_usage_daily_aggregates_tenant_date_metric_unit_source_key" RENAME TO "cloud_usage_daily_aggregates_tenant_id_date_metric_key_unit_key";
+
+-- RenameIndex
+ALTER INDEX "commission_statements_tenant_id_payee_id_period_start_period_en" RENAME TO "commission_statements_tenant_id_payee_id_period_start_perio_key";
+
+-- RenameIndex
+ALTER INDEX "field_operator_locations_tenant_id_operator_user_id_recorded_at" RENAME TO "field_operator_locations_tenant_id_operator_user_id_recorde_idx";
+
+-- RenameIndex
+ALTER INDEX "impound_process_checklist_links_tenant_id_process_id_chec_key" RENAME TO "impound_process_checklist_links_tenant_id_process_id_checkl_key";
+
+-- RenameIndex
+ALTER INDEX "portal_access_logs_tenant_fp_idx" RENAME TO "portal_access_logs_tenant_id_query_fingerprint_occurred_at_idx";
+
+-- RenameIndex
+ALTER INDEX "portal_access_logs_tenant_ip_idx" RENAME TO "portal_access_logs_tenant_id_ip_hash_occurred_at_idx";
+
+-- RenameIndex
+ALTER INDEX "tag_assignments_tenant_entity_tag_key" RENAME TO "tag_assignments_tenant_id_entity_type_entity_id_tag_id_key";
+
+-- RenameIndex
+ALTER INDEX "tariffs_natural_key" RENAME TO "tariffs_tenant_id_price_table_id_service_catalog_id_custome_key";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_charges_calculation_run_idx" RENAME TO "tenant_cloud_charges_calculation_run_id_idx";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_charges_period_idx" RENAME TO "tenant_cloud_charges_period_start_period_end_idx";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_charges_rule_idx" RENAME TO "tenant_cloud_charges_cloud_charge_rule_id_idx";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_charges_run_tenant_key" RENAME TO "tenant_cloud_charges_calculation_run_id_tenant_id_key";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_charges_source_allocation_run_idx" RENAME TO "tenant_cloud_charges_source_allocation_run_id_idx";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_charges_tenant_idx" RENAME TO "tenant_cloud_charges_tenant_id_idx";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_cost_allocations_period_idx" RENAME TO "tenant_cloud_cost_allocations_period_start_period_end_idx";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_cost_allocations_run_idx" RENAME TO "tenant_cloud_cost_allocations_allocation_run_id_idx";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_cost_allocations_run_tenant_service_usage_category" RENAME TO "tenant_cloud_cost_allocations_allocation_run_id_tenant_id_s_key";
+
+-- RenameIndex
+ALTER INDEX "tenant_cloud_cost_allocations_tenant_idx" RENAME TO "tenant_cloud_cost_allocations_tenant_id_idx";
+
+```
+
+</details>
+
+### Regressões da F4 (cluster `erp_ass09`, com a M6 aplicada)
+
+| comando | saída | veredito |
+|---|---|---|
+| `DATABASE_URL=…/erp_ass09 node --test --import tsx` em `ass-09-groups-fx-migration-drill-db`, `san3-05-leituras-de-plataforma-db`, `san3-03-system-org-db`, `ass-09a-rateio-automatico-db`, `ass-03-metering-census-db` | `# tests 47 # pass 47 # fail 0 # skipped 0` (3 do drill + os 44 da baseline) | verde; o código sob teste das suítes de regressão roda no papel efêmero `NOSUPERUSER NOBYPASSRLS` do arnês |
+| `CORE_SAAS_PERSISTENCE=memory` nos guards que leem `schema.prisma`/`prisma/migrations` (13 arquivos: `ass-02-plan-catalog`, `auth-invariant-guards`, `b-san3-24-escopo`, `financial-entry-link-census`, `inventory-write-paths-guard`, `migration-transaction-guard`, `permission-catalog-migration-parity`, `rec-01-live-link-guard`, `san3-03-basis-census`, `san3-05-acessos-de-plataforma-guard`, `traccar-event-topology`, `db-catalog-write-guard`, `b-o6r-12-regime-census`) | `# tests 114 # pass 111 # fail 2 # skipped 1` · os 2 `not ok` são **um só**: `san3-05-acessos-de-plataforma-guard` › `L0 exato` (e o T13 que o contém): `# L0: tabelas ENABLE=124 FORCE=124 · acessores Prisma em FORCE=124` × o literal `123` | **vermelho esperado, dono F7**: a M6 traz exatamente 1 tabela FORCE nova e 1 model. O literal L0 e as chaves do ratchet são da F7 (plano §9, "ratchet"), e o arquivo está fora do que a F4 e a F5 podem tocar |
+| `npm ci` → `DATABASE_URL=…/erp_ass09 npm run db:generate` → `npm run check` · `npm run lint` · `git diff --check` | `check=0` · `lint=0` · vazio | verde |
+
+**Leitura do dev, declarada (§A6):** o mandato limita a F4 e a F5 a `prisma/**`, `*.prisma.ts`, `*.repository.ts`, `*.service.ts`
+e testes `-db`; a linha da F4 no plano (§9) inclui "censo". Fiz o censo só pela regeneração (o arquivo está no PERMITIDO do plano
+§7 com essa condição, e nenhuma fatia do braço o toca). Sem ele, o T-MED-db-8 fica vermelho com a M6 (controle acima).

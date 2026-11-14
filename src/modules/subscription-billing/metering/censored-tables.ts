@@ -36,6 +36,7 @@ export const CENSORED_TENANT_TABLES = [
   "daily_accrual_runs",
   "damage_attachments",
   "damages",
+  "economic_group_members",
   "expense_advances",
   "expense_approval_steps",
   "expense_events",
