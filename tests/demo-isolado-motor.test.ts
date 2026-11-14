@@ -693,6 +693,16 @@ test("C4 motor: censo na fonte real — fundacao ausente, base nao virgem e API 
   }
 });
 
+test("C6-e11 a ancora literal do login: 1 por arquivo, com tenantId, sem dotenv (Emenda 1.1 §2 e 1.2 A3)", () => {
+  const ancora = "const corpo = { email, password: senha, tenantId };";
+  for (const arquivo of ["scripts/demo-isolado/semear.mjs", "scripts/demo-isolado/verificar.mjs"]) {
+    const texto = fs.readFileSync(path.resolve(arquivo), "utf8");
+    assert.equal(texto.split(ancora).length - 1, 1, `${arquivo}: a ancora do login`);
+    assert.equal(texto.split("/auth/login").length - 1, 1, `${arquivo}: um ponto de login`);
+    assert.equal(texto.includes("dotenv"), false, `${arquivo}: dotenv`);
+  }
+});
+
 test("verificador: depois do motor, a matriz generica fecha com falta=0 e 7 linhas MENU OK", async () => {
   const api = criarApi();
   const d = prepararDir(api);
