@@ -42,7 +42,7 @@ export type StatementTx = {
   /** A nota VIVA (`pending`/`authorized`/`cancel_pending`) do demonstrativo, lida da tabela da nota (não do espelho). */
   findLiveInvoice?(statementId: string): Promise<LiveInvoiceRef | undefined>;
   /** B-ASS-08c1b (P8, A7/A8) — OBRIGATÓRIO: há linha da fila em `NEEDS_REVIEW` para o demonstrativo? Lida NO MESMO `tx`,
-   * depois da trava do demonstrativo (o `reopen` a chama no `[GUARD-01]`). O dublê sem as lojas do canal devolve `false`:
+   * depois da trava do demonstrativo (o `reopen` a chama no o marcador GUARD-01). O dublê sem as lojas do canal devolve `false`:
    * não há fila. */
   hasOutboxNeedsReview(statementId: string): Promise<boolean>;
 };

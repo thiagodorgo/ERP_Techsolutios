@@ -29,7 +29,22 @@ import type { Prisma, PrismaClient } from "@prisma/client";
 import { forEachTenantRls, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import { putRefInTx } from "../webhooks/statement-refs.prisma.js";
-import { recordedChargeStatus, type AdoptionFacts, type ChargeRecordOutcome, type ClaimParams, type ClaimResult, type OutboxLease, type OutboxRepository } from "./outbox.repository.js";
+import {
+  recordedChargeStatus,
+  retryCancelConflict,
+  retryDueDate,
+  type AdoptionFacts,
+  type ChargeRecordOutcome,
+  type ClaimParams,
+  type ClaimResult,
+  type OutboxLease,
+  type OutboxListFilter,
+  type OutboxRepository,
+  type ResolveInput,
+  type ResolveOutcome,
+  type RetryByOperatorInput,
+  type RetryByOperatorOutcome,
+} from "./outbox.repository.js";
 import {
   idempotencyKeyOf,
   type BillingOutboxRow,
@@ -153,6 +168,49 @@ export async function skipPendingChargeCreateInTx(
     now,
   )) as Row[];
   return rows.length > 0 ? toDomain(rows[0]!) : undefined;
+}
+
+/**
+ * O núcleo comum do `retry` e do `retryByOperator` (E9 do 2º conserto do #522; B-ASS-08c1b, Emenda 1 §3.3-§3.6 e Emenda 2
+ * §3): as MESMAS 3 instruções (as constantes abaixo) e a MESMA decisão pura (`reopenChecks`), sobre o `tx` que cada método
+ * abre. O demonstrativo PRIMEIRO (regra §2.1), pela junção, sob FOR UPDATE — o reabrir serializa com o pedido, o fechamento,
+ * o cancelamento e outro reabrir do mesmo demonstrativo. A organização vai no predicado além do RLS. Nunca toca em
+ * `last_error` nem em `occurred_at`.
+ */
+const REOPEN_OWNER_SQL = `SELECT s.id, s.status AS statement_status, round(s.paid_amount * 100)::bigint AS paid_cents, o.kind, o.status, o.payload
+       FROM subscription_statements s JOIN billing_outbox o ON o.statement_id = s.id AND o.tenant_id = s.tenant_id
+      WHERE o.id = $1::uuid AND o.tenant_id = $2::uuid FOR UPDATE OF s`;
+/** As irmãs VIVAS que decidem o reabrir: outra `charge_create` viva (o conjunto do D1) e todo `charge_cancel` vivo. */
+const REOPEN_SIBLINGS_SQL = `SELECT id, kind, status, payload FROM billing_outbox
+      WHERE statement_id = $1::uuid AND tenant_id = $2::uuid AND id <> $3::uuid
+        AND ((kind = 'charge_create' AND status IN ('PENDING', 'PROCESSING', 'SENT', 'NEEDS_REVIEW'))
+          OR (kind = 'charge_cancel' AND status IN ('PENDING', 'PROCESSING', 'NEEDS_REVIEW')))`;
+/** `attempts` zera (o backoff recomeça); `last_error` FICA (E9: a evidência de que a linha já foi tentada, que a reconsulta usa
+ * para adotar a PRÓPRIA cobrança); a data nova, se houver, é regravada na MESMA instrução. */
+const REOPEN_UPDATE_SQL = `UPDATE billing_outbox SET status = 'PENDING', attempts = 0, skip_reason = NULL,
+       next_attempt_at = $3, claimed_at = NULL, claimed_by = NULL, attempt_started_at = NULL, updated_at = $3,
+       payload = CASE WHEN $4::text IS NULL THEN payload ELSE jsonb_set(payload, '{dueDate}', to_jsonb($4::text)) END
+       WHERE id = $1::uuid AND tenant_id = $2::uuid AND status = 'FAILED' RETURNING *`;
+
+type ReopenOwner = {
+  readonly id: string;
+  readonly statement_status: string;
+  readonly paid_cents: bigint | number | string;
+  readonly kind: BillingOutboxRow["kind"];
+  readonly status: OutboxStatus;
+  readonly payload: Record<string, unknown> | null;
+};
+type ReopenSibling = { readonly id: string; readonly kind: BillingOutboxRow["kind"]; readonly status: OutboxStatus; readonly payload: Record<string, unknown> | null };
+
+/** A decisão do reabrir, PURA, depois da trava e da leitura das irmãs. Devolve a data a regravar (só no operador) ou lança. */
+function reopenChecks(id: string, owner: ReopenOwner, siblings: readonly ReopenSibling[], operator: RetryByOperatorInput | null, now: Date): string | undefined {
+  if (operator?.dueDate !== undefined && owner.kind !== "charge_create") throw new StatementError(422, "due_date_not_applicable", "dueDate applies only to a charge request.");
+  const liveCancels = siblings.filter((sibling) => sibling.kind === "charge_cancel").map((cancel) => ({ id: cancel.id, payload: cancel.payload ?? {} }));
+  if (owner.status === "FAILED" && retryCancelConflict({ id, kind: owner.kind, payload: owner.payload ?? {} }, liveCancels)) throw new StatementError(409, "charge_cancel_in_progress", "A cancellation is in progress for this statement."); // [RETRY-CANCEL-ONE]
+  // Outra `charge_create` VIVA (o conjunto do D1) no demonstrativo → reabrir esta daria duas vivas: recusa.
+  if (owner.kind === "charge_create" && siblings.some((sibling) => sibling.kind === "charge_create")) throw new StatementError(422, "charge_already_exists", "Another charge intent is live for this statement.");
+  if (owner.kind === "charge_create" && owner.status === "FAILED" && owner.statement_status === "closed" && Number(owner.paid_cents) > 0) throw new StatementError(422, "statement_partially_paid", "The statement has a partial payment; a full-amount charge is refused."); // [RETRY-PARTIAL]
+  return operator && owner.kind === "charge_create" ? retryDueDate(owner.payload?.dueDate, operator.dueDate, now) : undefined;
 }
 
 const UUID_TEXT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -476,36 +534,12 @@ export class PrismaOutboxRepository implements OutboxRepository {
   async retry(tenantId: string, id: string, now: Date): Promise<BillingOutboxRow | undefined> {
     try {
       return await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
-        // E9 (R-OBX-2, 2º conserto do #522): o demonstrativo PRIMEIRO (regra §2.1), sob FOR UPDATE — o retry serializa com o
-        // pedido, o fechamento e outro retry do mesmo demonstrativo.
-        const owners = (await tx.$queryRawUnsafe(
-          `SELECT s.id, o.kind FROM subscription_statements s JOIN billing_outbox o ON o.statement_id = s.id
-             WHERE o.id = $1::uuid FOR UPDATE OF s`,
-          id,
-        )) as Array<{ id: string; kind: string }>;
-        const owner = owners[0];
+        // O retorno do `retry` antigo não muda: linha de outra organização ou que não está FAILED → `undefined`.
+        const owner = ((await tx.$queryRawUnsafe(REOPEN_OWNER_SQL, id, tenantId)) as ReopenOwner[])[0];
         if (!owner) return undefined;
-        if (owner.kind === "charge_create") {
-          // Outra `charge_create` VIVA (o conjunto do D1) no demonstrativo → reabrir esta daria duas vivas: recusa.
-          const other = (await tx.$queryRawUnsafe(
-            `SELECT 1 FROM billing_outbox
-               WHERE statement_id = $1::uuid AND kind = 'charge_create' AND id <> $2::uuid
-                 AND status IN ('PENDING', 'PROCESSING', 'SENT', 'NEEDS_REVIEW')
-               LIMIT 1`,
-            owner.id,
-            id,
-          )) as unknown[];
-          if (other.length > 0) throw new StatementError(422, "charge_already_exists", "Another charge intent is live for this statement.");
-        }
-        // `last_error` FICA (E9): é a evidência de que a linha já foi tentada, que a reconsulta usa para adotar a PRÓPRIA
-        // cobrança. `attempts` zera (o backoff recomeça).
-        const rows = (await tx.$queryRawUnsafe(
-          `UPDATE billing_outbox SET status = 'PENDING', attempts = 0, skip_reason = NULL,
-             next_attempt_at = $2, claimed_at = NULL, claimed_by = NULL, attempt_started_at = NULL, updated_at = $2
-             WHERE id = $1::uuid AND status = 'FAILED' RETURNING *`,
-          id,
-          now,
-        )) as Row[];
+        const siblings = (await tx.$queryRawUnsafe(REOPEN_SIBLINGS_SQL, owner.id, tenantId, id)) as ReopenSibling[];
+        reopenChecks(id, owner, siblings, null, now);
+        const rows = (await tx.$queryRawUnsafe(REOPEN_UPDATE_SQL, id, tenantId, now, null)) as Row[];
         return rows.length > 0 ? toDomain(rows[0]!) : undefined;
       });
     } catch (error) {
@@ -513,6 +547,74 @@ export class PrismaOutboxRepository implements OutboxRepository {
       if (postgresErrorCode(error) === "55P03") throw new StatementError(409, "statement_busy", "The statement is busy; try again.");
       throw error;
     }
+  }
+
+  async retryByOperator(tenantId: string, id: string, now: Date, input: RetryByOperatorInput): Promise<RetryByOperatorOutcome> {
+    try {
+      return await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx): Promise<RetryByOperatorOutcome> => {
+        const owner = ((await tx.$queryRawUnsafe(REOPEN_OWNER_SQL, id, tenantId)) as ReopenOwner[])[0];
+        if (!owner) return { kind: "not_found" };
+        if (owner.status !== "FAILED") return { kind: "not_failed" };
+        const siblings = (await tx.$queryRawUnsafe(REOPEN_SIBLINGS_SQL, owner.id, tenantId, id)) as ReopenSibling[];
+        const dueDate = reopenChecks(id, owner, siblings, input, now);
+        const rows = (await tx.$queryRawUnsafe(REOPEN_UPDATE_SQL, id, tenantId, now, dueDate ?? null)) as Row[];
+        if (rows.length === 0) return { kind: "not_failed" };
+        return { kind: "reopened", row: toDomain(rows[0]!), dueDateRewritten: dueDate !== undefined };
+      });
+    } catch (error) {
+      if (postgresErrorCode(error) === "55P03") throw new StatementError(409, "statement_busy", "The statement is busy; try again.");
+      throw error;
+    }
+  }
+
+  async resolve(tenantId: string, id: string, input: ResolveInput): Promise<ResolveOutcome> {
+    try {
+      return await withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
+        // O demonstrativo PRIMEIRO (regra §2.1), pela junção, como o `retry`; a organização no predicado além do RLS.
+        const owners = (await tx.$queryRawUnsafe(
+          `SELECT s.id, o.kind, o.status, o.last_error FROM subscription_statements s JOIN billing_outbox o ON o.statement_id = s.id AND o.tenant_id = s.tenant_id
+             WHERE o.id = $1::uuid AND o.tenant_id = $2::uuid FOR UPDATE OF s`, // [RESOLVE-LOCK]
+          id,
+          tenantId,
+        )) as Array<{ id: string; kind: string; status: string; last_error: string | null }>;
+        const owner = owners[0];
+        if (!owner) return { kind: "not_found" } satisfies ResolveOutcome;
+        if (owner.status !== "NEEDS_REVIEW") return { kind: "not_in_review" } satisfies ResolveOutcome;
+        // `last_error` FICA: é o código que levou à conferência (a regra dos 7 dias do 08c1c e a adoção o leem).
+        const rows = (await tx.$queryRawUnsafe(
+          `UPDATE billing_outbox SET status = 'FAILED', next_attempt_at = NULL, updated_at = $3
+             WHERE id = $1::uuid AND tenant_id = $2::uuid AND status = 'NEEDS_REVIEW' RETURNING *`,
+          id,
+          tenantId,
+          input.now,
+        )) as Row[];
+        if (rows.length === 0) return { kind: "not_in_review" } satisfies ResolveOutcome;
+        await writeOutboxAuditInTx(tx, tenantId, {
+          actorId: input.actorId,
+          action: "billing_outbox.resolved",
+          entityId: id,
+          metadata: { statementId: owner.id, kind: owner.kind, previousCode: owner.last_error, reason: input.reason },
+        });
+        return { kind: "resolved", row: toDomain(rows[0]!), previousCode: owner.last_error } satisfies ResolveOutcome;
+      });
+    } catch (error) {
+      if (postgresErrorCode(error) === "55P03") throw new StatementError(409, "statement_busy", "The statement is busy; try again.");
+      throw error;
+    }
+  }
+
+  async listForTenant(tenantId: string, filter: OutboxListFilter): Promise<readonly BillingOutboxRow[]> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT * FROM billing_outbox
+           WHERE tenant_id = $1::uuid AND ($2::text IS NULL OR status = $2) AND ($3::text IS NULL OR provider = $3)
+           ORDER BY created_at ASC, id ASC`,
+        tenantId,
+        filter.status ?? null,
+        filter.provider ?? null,
+      )) as Row[];
+      return rows.map(toDomain);
+    });
   }
 
   async findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined> {

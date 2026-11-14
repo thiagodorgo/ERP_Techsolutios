@@ -40,7 +40,7 @@ export type ChargeRequestInput = {
   readonly statementId: string;
   readonly provider: string;
   /** Nunca carrega `customerId` — o cliente é resolvido pelo PERFIL no dispatcher (R-PRF-1); a chave é descartada. Com
-   * `operator`, é só o corpo cru do pedido, e nenhuma chave dele é gravada (`[CHARGE-PAYLOAD]`). */
+   * `operator`, é só o corpo cru do pedido, e nenhuma chave dele é gravada (o marcador CHARGE-PAYLOAD). */
   readonly payload?: Readonly<Record<string, unknown>>;
   readonly operator?: OperatorChargeRequest;
   readonly now: Date;
@@ -138,7 +138,7 @@ export async function enqueueChargeCreateInTx(tx: ChargeIntentTx, input: ChargeR
   return row;
 }
 
-/** B-ASS-08c1b (P9a): os estados de um `charge_cancel` VIVO (o `[CANCEL-ONE]`: nunca dois para a mesma cobrança). */
+/** B-ASS-08c1b (P9a): os estados de um `charge_cancel` VIVO (o o marcador CANCEL-ONE: nunca dois para a mesma cobrança). */
 export const LIVE_CHARGE_CANCEL_STATUSES: ReadonlySet<BillingOutboxRow["status"]> = new Set(["PENDING", "PROCESSING", "NEEDS_REVIEW"]);
 
 export type ChargeCancelInput = {
@@ -154,9 +154,9 @@ export type ChargeCancelOutcome = { readonly result: "skipped" | "cancel_enqueue
 
 /**
  * B-ASS-08c1b (P9a, abertura §4.3) — o `charge/cancel` do operador: UMA transação, o demonstrativo travado PRIMEIRO
- * (`[CANCEL-LOCK]`), e vale a 1ª regra que casar:
+ * (o marcador CANCEL-LOCK), e vale a 1ª regra que casar:
  *   1. `charge_create` PROCESSING → 409 `charge_in_flight` (a chamada em voo pode estar criando a cobrança);
- *   2. `charge_cancel` vivo para a MESMA cobrança → 409 `charge_cancel_in_progress` (`[CANCEL-ONE]`);
+ *   2. `charge_cancel` vivo para a MESMA cobrança → 409 `charge_cancel_in_progress` (o marcador CANCEL-ONE);
  *   3. `charge_create` PENDING → SKIPPED (`skip_reason` NULL, `last_error = charge_cancel_requested`), 0 rede; 0 linhas →
  *      409 `charge_in_flight`;
  *   4. `charge_create` SENT com a cobrança `pending` NA TABELA → enfileira `charge_cancel` (`seq` = 1 + o maior

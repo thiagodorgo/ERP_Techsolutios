@@ -244,4 +244,45 @@ if (!connectionString) {
     assert.equal(short.status, 400, JSON.stringify(short.body));
     assert.equal(short.body.error?.reason, "reason_too_short");
   });
+
+  /** Uma linha `charge_cancel` no estado pedido, para a cobrança `chargeId`. */
+  async function seedChargeCancel(fixture: Fixture, status: string, chargeId: string, seq: number, chargeCreateId: string): Promise<string> {
+    const rows = (await db.$queryRawUnsafe(
+      `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, attempts, last_error)
+       VALUES ($1::uuid, $2::uuid, 'charge_cancel', 'asaas', $3, gen_random_uuid(), $4::jsonb, now(), $5, 1, CASE WHEN $5 = 'FAILED' THEN 'provider_unavailable' END) RETURNING id`,
+      fixture.tenantId,
+      fixture.statementId,
+      `charge_cancel:${fixture.statementId}:${seq}`,
+      JSON.stringify({ chargeId, chargeCreateId }),
+      status,
+    )) as Array<{ id: string }>;
+    return rows[0]!.id;
+  }
+
+  test("CC8: o /retry não contorna o [CANCEL-ONE] — um 2º charge_cancel da mesma cobrança, e uma charge_create com charge_cancel vivo → 409", async () => {
+    const fixture = await seedClosed("cc8");
+    const sent = await seedChargeCreate(fixture, "SENT");
+    const failedCancel = await seedChargeCancel(fixture, "FAILED", sent.chargeId!, 1, sent.id);
+    await seedChargeCancel(fixture, "PENDING", sent.chargeId!, 2, sent.id);
+    const first = await api("POST", `/api/v1/platform/billing/outbox/${failedCancel}/retry`, { tenantId: fixture.tenantId });
+    assert.equal(first.status, 409, JSON.stringify(first.body));
+    assert.equal(first.body.error?.reason, "charge_cancel_in_progress");
+
+    const other = await seedClosed("cc8-create");
+    const failedCreate = (await db.$queryRawUnsafe(
+      `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, attempts, last_error)
+       VALUES ($1::uuid, $2::uuid, 'charge_create', 'asaas', $3, gen_random_uuid(), '{"amountCents":12345,"dueDate":"2099-12-10","method":"pix"}'::jsonb, now(), 'FAILED', 8, 'provider_unavailable') RETURNING id`,
+      other.tenantId,
+      other.statementId,
+      `charge_create:${other.statementId}:1`,
+    )) as Array<{ id: string }>;
+    await seedChargeCancel(other, "NEEDS_REVIEW", "pay_cc8_unknown", 1, failedCreate[0]!.id);
+    const second = await api("POST", `/api/v1/platform/billing/outbox/${failedCreate[0]!.id}/retry`, { tenantId: other.tenantId });
+    assert.equal(second.status, 409, JSON.stringify(second.body));
+    assert.equal(second.body.error?.reason, "charge_cancel_in_progress");
+
+    const statuses = (await lines(fixture.statementId)).filter((line) => line.kind === "charge_cancel").map((line) => line.status).sort();
+    assert.deepEqual(statuses, ["FAILED", "PENDING"], "nada reaberto: 1 charge_cancel vivo");
+    assert.equal((await lines(other.statementId)).find((line) => line.kind === "charge_create")!.status, "FAILED");
+  });
 }

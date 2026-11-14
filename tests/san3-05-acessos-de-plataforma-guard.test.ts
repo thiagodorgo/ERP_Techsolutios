@@ -541,6 +541,22 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
     "B-ASS-08c1b: a trilha das ações do operador sobre a fila (`writeOutboxAuditInTx`), o MESMO molde de `writeAuditInTx` do statement.prisma-runtime.ts — `EnterpriseAuditLogService(new AuditLogRepository(tx))` sobre o `tx` da própria ação (o `withTenantRlsBudget` da organização): se a trilha falhar, a ação cai junto; `audit_logs` da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.retryByOperator", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×3"),
+    "B-ASS-08c1b (F5, Emenda 1 §3.3): o `/retry` do operador — as MESMAS 3 instruções do `retry` (as constantes REOPEN_OWNER_SQL, REOPEN_SIBLINGS_SQL e REOPEN_UPDATE_SQL: a junção com o demonstrativo, as irmãs vivas e o UPDATE … WHERE id AND tenant_id AND status = 'FAILED', que regrava a data nova no payload) no callback de `withTenantRlsBudget(this.client, tenantId, …)` (GUC na 1ª instrução, rls.ts l.128); billing_outbox (FORCE) da MESMA organização, com `tenant_id` no predicado. Provado em tests/ass-08c-outbox-review-db.test.ts (RS2, RS3, RS3c, RS6-RS9) e no cenário `outbox.retryByOperator` do T-LOCK-2, sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.retryByOperator", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F5): a trava do demonstrativo do `/retry` do operador (REOPEN_OWNER_SQL: `… JOIN billing_outbox o ON … AND o.tenant_id = s.tenant_id WHERE o.id = $1 AND o.tenant_id = $2 FOR UPDATE OF s`), a 1ª instrução depois do GUC; tabela FORCE da MESMA organização. Provado no T-LOCK-2 (`outbox.retryByOperator`: o demonstrativo primeiro) e em RS3c (o superusuário não acha a linha de outra organização).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.resolve", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "B-ASS-08c1b (F5, P10): o `/resolve` — a junção com o demonstrativo ([RESOLVE-LOCK]) e o UPDATE NEEDS_REVIEW → FAILED com `tenant_id` no predicado, sem tocar no `last_error`, no callback de `withTenantRlsBudget(this.client, tenantId, …)`; billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-outbox-review-db.test.ts (RS1, RS3, RS3c, RS4) e no cenário `outbox.resolve` do T-LOCK-2.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.resolve", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F5, [RESOLVE-LOCK]): `… FROM subscription_statements s JOIN billing_outbox o … WHERE o.id = $1 AND o.tenant_id = $2 FOR UPDATE OF s` — o demonstrativo travado PRIMEIRO (regra §2.1, ORD-1 do T-LOCK-2), no callback de `withTenantRlsBudget`; tabela FORCE da MESMA organização.",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };

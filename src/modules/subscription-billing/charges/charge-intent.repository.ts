@@ -18,7 +18,7 @@ import type { InMemoryStatementRefRepository } from "../webhooks/statement-refs.
 import type { InMemoryStatementChargeRepository } from "./charges.repository.js";
 import type { SubscriptionStatementCharge } from "./charges.types.js";
 
-/** O que a trava devolve: o que a elegibilidade lê e, B-ASS-08c1b (P4, `[CHARGE-PAYLOAD]`), o que o servidor usa para montar
+/** O que a trava devolve: o que a elegibilidade lê e, B-ASS-08c1b (P4, o marcador CHARGE-PAYLOAD), o que o servidor usa para montar
  * o payload com o demonstrativo travado (o total, o já pago e o vencimento). */
 export type LockedStatement = Pick<SubscriptionStatement, "id" | "status" | "totalCents" | "paidCents" | "dueDate">;
 

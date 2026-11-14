@@ -31,7 +31,7 @@ export function prismaChargeIntentTx(tx: Prisma.TransactionClient, tenantId: str
     async lockStatement(statementId) {
       // Id que não é UUID responde "não existe" sem ir ao banco (o cast falharia com 22P02), como o `lockById`.
       if (!UUID.test(statementId)) return undefined;
-      // B-ASS-08c1b (P4, `[CHARGE-PAYLOAD]`): a MESMA instrução devolve também o total e o já pago em centavos (por texto,
+      // B-ASS-08c1b (P4, o marcador CHARGE-PAYLOAD): a MESMA instrução devolve também o total e o já pago em centavos (por texto,
       // sem float: `round(x * 100)::bigint`) e o vencimento como dia (`to_char`, sem fuso).
       const rows = (await tx.$queryRawUnsafe(
         `SELECT id, status, round(total_amount * 100)::bigint AS total_cents, round(paid_amount * 100)::bigint AS paid_cents, to_char(due_date, 'YYYY-MM-DD') AS due_date FROM subscription_statements WHERE id = $1::uuid AND tenant_id = $2::uuid FOR UPDATE`,

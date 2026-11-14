@@ -20,7 +20,7 @@ import { parseOperatorChargeMethod, parseOperatorDueDate, requestChargeCancel, r
 import { paymentProviderOn } from "../outbox/channel-state.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import { createChannelRuntime, createChargeIntentRepository } from "../outbox/channel.runtime.js";
-import type { BillingOutboxRow } from "../outbox/outbox.types.js";
+import { OUTBOX_STATUSES, type BillingOutboxRow, type OutboxStatus } from "../outbox/outbox.types.js";
 import { createDefaultVaultRuntime } from "../vault/vault.factory.js";
 import { createDefaultStatementRuntime } from "./statement.factory.js";
 import { StatementError, type StatementPayment, type SubscriptionCredit, type SubscriptionStatement } from "./statement.types.js";
@@ -36,6 +36,14 @@ function requireTenantId(value: unknown): string {
   const text = typeof value === "string" ? value.trim() : "";
   if (!UUID_OR_ID.test(text)) throw new StatementError(400, "tenant_id_required", "tenantId is required.");
   return text;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** B-ASS-08c1b: o id de uma linha da fila; o que não é UUID não existe (404, como o demonstrativo que não é da organização). */
+function requireOutboxId(value: string): string {
+  if (!UUID.test(value)) throw new StatementError(404, "outbox_not_found", "Queue line not found.");
+  return value;
 }
 
 /** B-ASS-08c1b: o motivo das ações do operador sobre a cobrança e a fila — 10 caracteres ou mais, como o do reopen. */
@@ -309,7 +317,7 @@ export function createStatementsPlatformRouter(): Router {
   );
 
   // B-ASS-08c1b (P4): o operador pede a cobrança de uma conta. O servidor monta o payload com o demonstrativo travado
-  // (`[CHARGE-PAYLOAD]`); a rota chama SÓ `requestChargeCreate`. Sem provedor ligado → 422, sem abrir conexão.
+  // (o marcador CHARGE-PAYLOAD); a rota chama SÓ `requestChargeCreate`. Sem provedor ligado → 422, sem abrir conexão.
   router.post(
     "/statements/:statementId/charge",
     requirePlatformPermission("platform:billing:settle"),
@@ -462,6 +470,57 @@ export function createStatementsPlatformRouter(): Router {
         metadata: { complete: dto.complete, missingCount: dto.missing.length, paymentMethod: dto.paymentMethod },
       });
       response.status(200).json({ data: dto });
+    }),
+  );
+
+  // B-ASS-08c1b (P10): a revisão da fila — SEMPRE com o `tenantId` da entrada (A10), a escrita sob o GUC dessa organização,
+  // o demonstrativo travado primeiro e nenhuma linha apagada (T-OBX-NODEL).
+  router.get(
+    "/outbox",
+    requirePlatformPermission("platform:billing:read"),
+    handleAsyncRoute(async (request, response) => {
+      const tenantId = requireTenantId(request.query.tenantId);
+      const status = request.query.status === undefined ? undefined : String(request.query.status);
+      if (status !== undefined && !(OUTBOX_STATUSES as readonly string[]).includes(status)) throw new StatementError(400, "invalid_status", "status is not a queue status.");
+      const provider = request.query.provider === undefined ? undefined : String(request.query.provider);
+      if (provider !== undefined && !UUID_OR_ID.test(provider)) throw new StatementError(400, "invalid_provider", "provider is invalid.");
+      const { outbox } = await createChannelRuntime();
+      const rows = await outbox.listForTenant(tenantId, { ...(status ? { status: status as OutboxStatus } : {}), ...(provider ? { provider } : {}) }); // [OUTBOX-TENANT]
+      response.status(200).json({ data: rows.map(toOutboxDto) });
+    }),
+  );
+
+  router.post(
+    "/outbox/:id/resolve",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const reason = requireOperatorReason(input.reason);
+      const id = requireOutboxId(readRouteParam(request.params.id));
+      const { outbox } = await createChannelRuntime();
+      const outcome = await outbox.resolve(tenantId, id, { reason, actorId: actorId(request), now: new Date() });
+      if (outcome.kind === "not_found") throw new StatementError(404, "outbox_not_found", "Queue line not found.");
+      if (outcome.kind === "not_in_review") throw new StatementError(422, "outbox_not_in_review", "Only a line awaiting review can be resolved.");
+      response.status(200).json({ data: toOutboxDto(outcome.row) });
+    }),
+  );
+
+  router.post(
+    "/outbox/:id/retry",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const now = new Date();
+      const dueDate = parseOperatorDueDate(input.dueDate, now);
+      const id = requireOutboxId(readRouteParam(request.params.id));
+      const { outbox } = await createChannelRuntime();
+      const outcome = await outbox.retryByOperator(tenantId, id, now, dueDate ? { dueDate } : {});
+      if (outcome.kind === "not_found") throw new StatementError(404, "outbox_not_found", "Queue line not found.");
+      if (outcome.kind === "not_failed") throw new StatementError(422, "outbox_not_failed", "Only a failed line can be retried.");
+      // A data nova só vale se a cobrança for criada: se a desta intenção já existe no provedor, ela é adotada como está.
+      response.status(200).json({ data: { outbox: toOutboxDto(outcome.row), notice: outcome.dueDateRewritten ? "due_date_applies_only_if_created" : null } });
     }),
   );
 

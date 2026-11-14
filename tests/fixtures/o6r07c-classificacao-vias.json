@@ -631,6 +631,10 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/platform/billing/outbox": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/platform/billing/plans": {
   "classe": "LEITURA",
   "n": 1
@@ -1636,6 +1640,14 @@
   "n": 1
  },
  "ROTA POST /api/v1/platform/billing/credits/:creditId/write-off": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/outbox/:id/resolve": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/outbox/:id/retry": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },

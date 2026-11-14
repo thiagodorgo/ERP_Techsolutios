@@ -107,6 +107,9 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.markDisabledProvidersVisible#forEachTenantRls": "cenario:outbox.markDisabledProvidersVisible",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.recordChargeOutcome#withTenantRlsBudget": "cenario:outbox.recordChargeOutcome",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.retry#withTenantRlsBudget": "cenario:outbox.retry",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.listForTenant#withTenantRls": "cenario:outbox.listForTenant",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.resolve#withTenantRlsBudget": "cenario:outbox.resolve",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.retryByOperator#withTenantRlsBudget": "cenario:outbox.retryByOperator",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.closeAddon#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.closeSubscription#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.createAddon#withTenantRls": "sem-tabela-do-mapa",
@@ -298,6 +301,15 @@ if (!connectionString) {
     await scenario("outbox.listByStatus", () => outbox.listByStatus("PENDING", provider));
     await scenario("outbox.listByStatement", () => outbox.listByStatement(e.tenantId, e.statementId));
     await scenario("outbox.adoptionFacts", () => outbox.adoptionFacts(e.tenantId, e.statementId, failed));
+    // B-ASS-08c1b (F5): a revisão da fila — a listagem da organização (só leitura), o `/resolve` (o demonstrativo PRIMEIRO,
+    // [RESOLVE-LOCK]) e o `retryByOperator` (o mesmo núcleo do `retry`, o demonstrativo primeiro).
+    await scenario("outbox.listForTenant", () => outbox.listForTenant(e.tenantId, { status: "PENDING" }));
+    const n = await seedStatement("n");
+    const review = await seedRow(n.tenantId, n.statementId, provider, "NEEDS_REVIEW", { lastError: "charge_found_no_candidate" });
+    await scenario("outbox.resolve", () => outbox.resolve(n.tenantId, review, { reason: "cenário lk2 do resolve", actorId: null, now }));
+    // A semeadura não tem `dueDate` no payload (vencimento "passado"): o operador informa a data nova, que é regravada no MESMO UPDATE.
+    const newDue = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000));
+    await scenario("outbox.retryByOperator", () => outbox.retryByOperator(n.tenantId, review, now, { dueDate: newDue }));
 
     const f = await seedStatement("f");
     await scenario("charges.insert", () => charges.insert({ tenantId: f.tenantId, statementId: f.statementId, provider, externalChargeId: `pay_lk2_${randomUUID().slice(0, 8)}`, status: "pending", payUrl: null, dueDate: "2026-11-20" }, now));

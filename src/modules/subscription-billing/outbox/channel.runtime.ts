@@ -109,7 +109,7 @@ async function repositories(statements: StatementRepository): Promise<Repositori
             const statement = await statements.findStatement(tenantId, statementId);
             if (!statement) return undefined;
             const live = await charges.findLive(tenantId, statementId);
-            return { status: statement.status, reopenedAt: statement.reopenedAt, totalCents: statement.totalCents, hasLiveCharge: live !== undefined };
+            return { status: statement.status, reopenedAt: statement.reopenedAt, totalCents: statement.totalCents, paidCents: statement.paidCents, hasLiveCharge: live !== undefined };
           },
         }),
         refs: new InMemoryStatementRefRepository(),
