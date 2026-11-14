@@ -204,6 +204,7 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
         'DELETE FROM work_order_materials WHERE work_order_local_id = ?',
         variables: id,
       );
+      await _deleteServiceNotes(id);
       await _db.customUpdate(
         'DELETE FROM work_orders WHERE local_id = ?',
         variables: id,
@@ -238,8 +239,18 @@ class DriftWorkOrderLocalStore implements WorkOrderLocalStore {
         'DELETE FROM work_order_materials WHERE work_order_local_id = ?',
         variables: id,
       );
+      await _deleteServiceNotes(id);
       return true;
     });
+  }
+
+  /// B-SAN3-15b (P9) — as notas do atendimento da OS, de TODOS os usuários, saem com ela (os dois caminhos da purga
+  /// chamam este, dentro da transação deles).
+  Future<void> _deleteServiceNotes(List<Variable<String>> id) async {
+    await _db.customUpdate(
+      'DELETE FROM work_order_service_notes WHERE work_order_local_id = ?',
+      variables: id,
+    );
   }
 
   @override

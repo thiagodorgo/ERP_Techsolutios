@@ -466,6 +466,8 @@ void main() {
 
       expect(find.textContaining('2,5 m'), findsOneWidget);
 
+      await t.tap(find.byKey(const Key('stock-item-XYZ-1234')));
+      await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('stock-add-XYZ-1234')));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('stock-inc-XYZ-1234')));
