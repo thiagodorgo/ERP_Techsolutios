@@ -499,6 +499,16 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/auth/services/session-liveness.service.ts", "-.check", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA): a via sem `sid` (token anterior ao deploy; P-SID-OBRIGATORIO), `user.findFirst({ where: { id, tenant_id, status: 'active' }, select: { id } })` no mesmo callback de `withTenantRlsBudget`, sob o GUC da organização do token; só leitura. Provado em tests/users-seg-desativado-portao-db.test.ts (T12) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  // B-ASS-09 (F7): as 2 chaves que o bloco acrescenta, coladas da saída do gerador no head do bloco (b9a5972f), com o motivo.
+  // Gerador e WRAPPERS intocados. O literal L0 vai de 123 a 124: exatamente a 1 tabela FORCE nova da M6 (economic_group_members).
+  [
+    k("L1", "src/modules/subscription-billing/fx-rates/fx-rates.prisma.ts", "PrismaFxRatesRepository.appendVersion", "tx", "RAW-SQL($executeRaw) OPACO", "?", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-ASS-09 (P10, Emenda 2 §3.3): a trava de tabela da versão nova do câmbio, `LOCK TABLE platform_fx_rates IN SHARE ROW EXCLUSIVE MODE`, 1ª sentença da transação de `appendVersion`; não lê nem grava linha, e `platform_fx_rates` é GLOBAL (sem RLS). Provado em tests/ass-09-fx-rates-db.test.ts (T-FX-db-1, barreira de linha; M-FX-8, M-FX-16 e M-FX-17 vermelhas).",
+  ],
+  [
+    k("L2", "src/modules/subscription-billing/economic-groups/economic-groups.prisma.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-ASS-09 (Emenda 2 §2.4): a trilha de entrar e sair de grupo, `new EnterpriseAuditLogService(new AuditLogRepository(tx)).record(…)`, gravada no `tx` da volta da organização do evento, dentro de `forEachTenantRls` (GUC na 1ª instrução da volta, rls.ts), no molde `writeAuditInTx` de statement.prisma-runtime.ts; evento de organização fora da troca recusa a troca (MembershipAuditTenantError). Provado em tests/ass-09-groups-db.test.ts (T-GRP-db-3 (b) e T-GRP-db-1: a trilha só da troca que valeu).",
+  ],
 ]);
 
 type GeneratorRun = { readonly status: number | null; readonly stdout: string; readonly stderr: string; readonly keys: string[] };
@@ -581,7 +591,9 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     // B-ASS-08 (M5): 120 → 123 — exatamente as 3 tabelas FORCE novas (billing_outbox, subscription_statement_invoices,
     // subscription_statement_charges) e os 3 models delas; as 3 globais da M5 (webhook_events, statement_refs,
     // invoice_sequences) não têm RLS e não entram no L0.
-    assert.match(f2.stdout, /tabelas ENABLE=123 FORCE=123 · acessores Prisma em FORCE=123/);
+    // B-ASS-09 (M6): 123 → 124 — exatamente a 1 tabela FORCE nova (economic_group_members) e o model dela; as 2 globais da M6
+    // (economic_groups, platform_fx_rates) não têm RLS e não entram no L0.
+    assert.match(f2.stdout, /tabelas ENABLE=124 FORCE=124 · acessores Prisma em FORCE=124/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);

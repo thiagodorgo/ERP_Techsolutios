@@ -936,3 +936,61 @@ este diário (a F6 escreveu antes da linha `## F4 — ramo`; a F8, no fim); `git
 | avanço do bloco | `git merge-base --is-ancestor origin/feat/ass-09-visao-custo HEAD` → verdadeiro · `git push origin HEAD:feat/ass-09-visao-custo` | `4fb0d7b9..4851b97b` (sem `--force`) | **fast-forward**; os dois ramos em `4851b97b` |
 
 Corrigido neste commit: o fim da F8 parte 1 é 02:37 (medido), não 02:50.
+
+## F7 — censos de rota, `san3-05` com as 10 rotas, ratchet e o fim a fim (plano v2 §9; Emenda 2.2), 14/11 03:44–04:10 SP
+
+Base: `b9a5972f` (J3: F6 + F8 parte 1), nos dois ramos. Liberada pela Emenda 2.2 (03:43 SP). `git log d29b3bef..origin/main`
+traz o #559 e o #560; nenhum dos dois toca o `san3-05` nem o `ci.yml`, e o #555 (que mexe no `san3-05`) segue aberto. Por isso
+não há rebase sobre a `main` nesta fatia (ele exigiria force-push no ramo do bloco); a integração com a `main` é da F9 (Emenda 2.1
+§3). Nenhuma rota além das 10 da F6.
+
+**Censos (Emenda 2.2), só pelos geradores oficiais:**
+
+| passo | comando | saída | veredito |
+|---|---|---|---|
+| antes | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/san3-18-route-module-census.test.ts tests/o6r07c-census-guard.test.ts` | `# tests 39 # pass 32 # fail 7` | o vermelho que a Emenda 2.2 mediu |
+| `san3-18` | `node --import tsx scripts/san3-18-censo-modulos.mjs --gravar tests/fixtures/san3-18-route-modules.json` | `instantâneo gravado: 455 rotas · sem classe 0 · sem caminho 0` | — |
+| `o6r07c` | `node --import tsx tests/helpers/o6r07c-census.ts gravar tests/fixtures/o6r07c-classificacao-vias.json`, e o `\n` final recolocado (o gerador grava sem) | `chaves vivas: 524 \| entradas ·07c-b: 0 \| VIOLAÇÕES: 0` · `instantâneo gravado: 524 chaves` | — |
+| `git diff --stat -- tests/fixtures` | — | `o6r07c-classificacao-vias.json \| 42 +++…-` · `san3-18-route-modules.json \| 10 +++` · `2 files changed, 51 insertions(+), 1 deletion(-)` (numstat `41 1` e `10 0`) | o equivalente com o `\n` mantido |
+| as chaves | `git diff … \| grep -E '^[+-][^+-]'` | `san3-18`: +10 linhas `"PLATAFORMA"` (`DELETE …/economic-groups/:groupId`, `GET …/economic-groups`, `GET …/economic-groups/:groupId`, `GET …/economic-groups/:groupId/history`, `GET …/fx-rates`, `GET …/overview`, `PATCH …/economic-groups/:groupId`, `POST …/economic-groups`, `PUT …/economic-groups/:groupId/members`, `PUT …/fx-rates/:month`) · `o6r07c`: +10 chaves `ROTA` — `LEITURA` em `GET …/economic-groups`, `GET …/economic-groups/:groupId`, `GET …/economic-groups/:groupId/history`, `GET …/fx-rates`, `GET …/overview`; `SEM-ALCANCE-CAMPO` em `DELETE …/:groupId`, `PATCH …/:groupId`, `POST …/economic-groups`, `PUT …/:groupId/members`, `PUT …/fx-rates/:month` — e `"ROTEADOR /api/v1/platform/billing"` `n: 3` → `n: 6` | **exatamente** o diff da Emenda 2.2 §2; nenhuma outra linha |
+| depois | o mesmo par de testes | `# tests 39 # pass 39 # fail 0 # skipped 0` | verde |
+
+**Ratchet** (`tests/san3-05-acessos-de-plataforma-guard.test.ts`): as 2 chaves, coladas da saída do gerador, com uma linha de
+motivo cada — `L1 … fx-rates.prisma.ts PrismaFxRatesRepository.appendVersion tx RAW-SQL($executeRaw) OPACO ? $TRANSACTION-SEM-SETTER-PROVADO ×1`
+("trava de tabela, não lê nem grava linha") e `L2 … economic-groups.prisma.ts new AuditLogRepository(tx) PARAMETRO(tx) ×1`
+(a trilha no `tx` da volta da organização) — e o literal L0 `123 → 124` (a 1 tabela FORCE nova). Gerador e WRAPPERS
+intocados. `git diff --numstat` `13 1`. Resultado: `# tests 35 # pass 35 # fail 0 # skipped 0` (antes: `fail 3`).
+
+**`tests/san3-05-leituras-de-plataforma-db.test.ts`:**
+- A linha do `manual-csv` passa a declarar `cloud_cost_allocation_runs` (a importação cria a run do rateio automático e enfileira
+  o job) — o encerramento previsto da `P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS`.
+- As 10 rotas entram na lista fechada: 3 `SEM-FORCE` (`GET`/`PUT` do câmbio, `POST` do grupo) e 7 `FORCE-POR-TENANT` (a visão e
+  as 6 do grupo que leem ou gravam `economic_group_members`, a PUT de membros também `audit_logs`). A rota FORCE nomeia só as
+  tabelas FORCE que toca, como o resto da lista.
+- Cada uma das 7 FORCE tem cenário próprio, nos dois papéis, recortado às 2 organizações e aos 2 grupos do seed (S, com A desde
+  `0999-01-01`; T, vazio): a visão de `0999-03` por organização (a linha de A sai no grupo S), a lista de grupos (contagem de
+  hoje), o detalhe e o histórico de S, a PUT de membros de T com B, a renomeação de T e a exclusão de S recusada (422
+  `group_has_members`). O estado de B e o nome de T voltam ao seed antes de cada papel; a limpeza apaga vínculos, a trilha
+  `economic_group.%` e os 2 grupos antes das organizações. `git diff --numstat` `109 1`.
+- Resultado: `# tests 12 # pass 12 # fail 0 # skipped 0` (o T11e com as 7 rotas novas iguais nos dois papéis; o T11g com as 10
+  na lista fechada e o FORCE de cada tabela conferido no catálogo).
+- **Mutação suplementar (minha, declarada §A6):** a leitura dos vínculos fora do `tx` da volta
+  (`tx.economicGroupMember.findMany` → `this.client.economicGroupMember.findMany` em `listMembershipsOfTenants`) → `not ok`:
+  `GET /api/v1/platform/billing/economic-groups/:groupId/history: resultado vazio` sob o papel efêmero · `restaurado=true`. O
+  diferencial enxerga o defeito de RLS.
+
+**Fim a fim na forma real (R-E2E-db-1)**, `tests/ass-09-overview-e2e-db.test.ts`: o app de verdade, o papel efêmero
+`NOSUPERUSER NOBYPASSRLS` como cliente global, um mês sorteado entre 1950 e 1998. O CSV sintético (`aws-cur-sample.csv`, no mês
+da suíte, com a tag da organização) pela rota `manual-csv` → 1 run automática por importação → o job
+`cloud-cost-allocation.run` a conclui → `PUT /billing/fx-rates/<mês>` com `5.000000` → `GET /billing/overview`. Sonda temporária
+(aplicada e restaurada): `mes=1958-06 usd=12.75 brl=63.75 parcelas=63.75/0.00/0.00/0.00/0.00 total=63.75 status=ok` — o custo em
+reais é o original vezes a taxa, a visão lê a run do rateio automático, e as 5 parcelas do global somam o total. Sem mutação
+própria (é o aceite).
+
+| bateria da F7 | comando | saída |
+|---|---|---|
+| `check`/`lint` | `npm run check` · `npm run lint` | `0` · `0` |
+| `-db`, 3× | drill, câmbio, grupos, fim a fim e `san3-05-leituras-de-plataforma-db` | rodadas 1, 2, 3: `# tests 26 # pass 26 # fail 0 # skipped 0` |
+| regressões `-db` | `san3-03-system-org-db`, `ass-09a-rateio-automatico-db`, `ass-03-metering-census-db` | `# tests 32 # pass 32 # fail 0 # skipped 0` |
+| memória | `tests/ass-09-*.test.ts`, o par de censos, o ratchet, `db-catalog-write-guard`, `financial-period-lock-guard` | `# tests 146 # pass 141 # fail 0 # skipped 5` (os 5 pulos: os `-db` sem `DATABASE_URL`) |
+| resíduo | `psql … erp_ass09` | vínculos 0 · grupos 0 · câmbio 0 · organizações 1 (`platform`, da migração) · importações 0 · papéis `o6r_b01_%` 0 |
