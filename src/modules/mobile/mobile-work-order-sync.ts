@@ -49,7 +49,7 @@ type MobileWorkOrderSyncReceipt = {
 export type MobileWorkOrderSyncResponse = {
   readonly contract: {
     readonly name: "mobile_work_order_actions_sync";
-    readonly version: "2026-07-07.d1";
+    readonly version: "2026-11-14.b-san3-16";
     readonly status: "implemented";
   };
   readonly client_batch_id: string | null;
@@ -70,6 +70,11 @@ export type MobileWorkOrderSyncResponse = {
 
 const MAX_BATCH_SIZE = 50;
 const syncReceipts = new Map<string, MobileWorkOrderSyncReceipt>();
+// B-SAN3-16 (item 5) — a permissão de cada pedido do técnico é a mesma da tela do app: o pedido de aprovação exige
+// `work_orders:update` (a Operação de Campo tem `:status` e não tem `:update`); o "não consegui iniciar" exige
+// `work_orders:status` (o mesmo botão do app). Nenhuma permissão nova; o catálogo e a RBAC_MATRIX não mudam.
+const APPROVAL_REQUEST_PERMISSION = "work_orders:update";
+const UNABLE_TO_START_PERMISSION = "work_orders:status";
 
 export async function syncMobileWorkOrderActions(
   actor: AuthenticatedActor | undefined,
@@ -124,7 +129,7 @@ export async function syncMobileWorkOrderActions(
   return {
     contract: {
       name: "mobile_work_order_actions_sync",
-      version: "2026-07-07.d1",
+      version: "2026-11-14.b-san3-16",
       status: "implemented",
     },
     client_batch_id: request.client_batch_id,
@@ -266,6 +271,34 @@ async function processAction(
       return acceptedResult(action, workOrder);
     }
 
+    // B-SAN3-16 (item 5, P2) — os dois pedidos do técnico: a permissão da ação, e o resto (escopo por objeto antes do
+    // corpo, repetição durável, validação, OS terminal, evento) em `recordFieldRequest`. O status da OS não muda.
+    if (action.type === "work_order.approval_request") {
+      requireActionPermission(actor, action, APPROVAL_REQUEST_PERMISSION);
+      const outcome = await service.recordFieldRequest(
+        actor,
+        parseRequiredString(action.payload.work_order_id, "work_order_id"),
+        "approval_request",
+        action.payload,
+        action.client_action_id,
+      );
+
+      return acceptedResult(action, outcome.workOrder);
+    }
+
+    if (action.type === "work_order.unable_to_start") {
+      requireActionPermission(actor, action, UNABLE_TO_START_PERMISSION);
+      const outcome = await service.recordFieldRequest(
+        actor,
+        parseRequiredString(action.payload.work_order_id, "work_order_id"),
+        "unable_to_start",
+        action.payload,
+        action.client_action_id,
+      );
+
+      return acceptedResult(action, outcome.workOrder);
+    }
+
     if (action.type !== "work_order.status_change") {
       throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
     }
@@ -317,7 +350,7 @@ async function assertExpectedTechnician(
 function requireActionPermission(
   actor: AuthenticatedActor,
   action: MobileWorkOrderAction,
-  permission: "work_orders:create" | "work_orders:assign" | "work_orders:status",
+  permission: "work_orders:create" | "work_orders:assign" | "work_orders:status" | "work_orders:update",
 ): void {
   if (actor.permissions.includes(permission)) {
     return;

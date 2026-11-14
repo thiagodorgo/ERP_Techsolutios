@@ -35,6 +35,7 @@ import type {
   AssignWorkOrderInput,
   CancelWorkOrderWithFinancialDecisionResult,
   CheckinEntry,
+  FieldRequestKind,
   ListWorkOrdersInput,
   ListWorkOrdersResult,
   UpdateWorkOrderInput,
@@ -43,6 +44,7 @@ import type {
   WorkOrderActorContext,
   WorkOrderCustomerLink,
   WorkOrderEvent,
+  WorkOrderEventType,
   WorkOrderLinks,
   WorkOrderMapBase,
   WorkOrderMapStartPoints,
@@ -83,6 +85,7 @@ import {
   parseWorkOrderPriority,
   parseWorkOrderStatus,
   WORK_ORDER_STATUS_TRANSITIONS,
+  WORK_ORDER_TERMINAL_STATUSES,
   type ChecklistAdjustmentRemoval,
   type ChecklistSelectionItem,
   type ChecklistSetSelection,
@@ -1599,6 +1602,88 @@ export class WorkOrderService {
     return updated;
   }
 
+  /**
+   * B-SAN3-16 (item 5, P2 e P3) — o pedido do técnico que chega pela fila do app: "pedir aprovação"
+   * (`approval_request`) ou "não consegui iniciar" (`unable_to_start`). Espelho de `setMileage`. A ordem é a da
+   * Emenda 1 do plano (CRIT16-01) com a Emenda 1.1 (§2.4):
+   *  1. a permissão da ação vive no caller (o lote do app), como na km;
+   *  2. escopo por objeto ANTES de ler o corpo (`getForMutation`): OS inexistente ou de outra organização → 404, sem
+   *     diferença; quem nunca foi técnico dela → 403 `not_assigned_to_actor`; ex-técnico → a marca do 07c-b1 (conflito
+   *     no lote). Validar antes do escopo quebraria o laço G do 07c (F-S13);
+   *  3. repetição durável: a linha do tempo da OS (lida na organização do ator) já tem evento do MESMO tipo, do MESMO
+   *     ator e com o MESMO `client_action_id` → `created: false`. Não valida, não confere a OS terminal, não grava e não
+   *     chama a fila de Aprovações (o pedido já decidido não renasce, CRIT16-03). Vale o primeiro conteúdo gravado;
+   *  4. validação (400 `required_field`, `invalid_urgency`, `field_too_long`);
+   *  5. OS terminal → 422 `work_order_closed`;
+   *  6. só o pedido de aprovação: a fila de Aprovações PRIMEIRO, pelo efeito do caller (este serviço não importa a
+   *     fila). Se ela falhar, nada é gravado aqui, e o reenvio cai na mesma pendência (a chave é determinística);
+   *  7. o evento, com metadados por lista fechada (§2.8: o ator vem do token, nunca do corpo) e o `approval_id`.
+   * O status da OS NÃO muda. Devolve também quem atribuiu a OS por último (o destinatário do aviso do "não iniciou",
+   * P8) e o motivo como ficou gravado (rotulado).
+   */
+  async recordFieldRequest(
+    actor: WorkOrderActorContext,
+    workOrderId: string,
+    kind: FieldRequestKind,
+    body: RawRecord,
+    clientActionId: string,
+    effects: FieldRequestEffects = {},
+  ): Promise<FieldRequestOutcome> {
+    const target = await this.getForMutation(actor, workOrderId);
+    const eventType = FIELD_REQUEST_EVENT_TYPES[kind];
+    const timeline = await this.repository.listTimeline(actor.tenantId, target.id);
+    const recorded = timeline.find(
+      (event) =>
+        event.eventType === eventType &&
+        event.actorUserId === actor.userId &&
+        event.metadata.client_action_id === clientActionId,
+    );
+    const alreadyRecorded = recorded !== undefined;
+    const dispatcherUserId = kind === "unable_to_start" ? lastAssignerOtherThan(timeline, actor) : undefined;
+    if (alreadyRecorded) {
+      return { workOrder: target, created: false, dispatcherUserId, reason: recordedReason(recorded) };
+    }
+
+    const parsed = parseFieldRequestBody(kind, body);
+    if (WORK_ORDER_TERMINAL_STATUSES.includes(target.status)) {
+      throw new WorkOrderError(
+        422,
+        "WORK_ORDER_UNPROCESSABLE",
+        "work_order_closed",
+        "Esta OS já foi encerrada; o pedido não pode ser registrado.",
+      );
+    }
+
+    const approvalId = await effects.openApproval?.(target, parsed.reason);
+    await this.repository.createEvent({
+      tenantId: actor.tenantId,
+      workOrderId: target.id,
+      eventType,
+      actorUserId: actor.userId,
+      message: fieldRequestMessage(parsed),
+      // Lista fechada (§2.8). `source` é decidido pelo servidor, como o `source="app"` da km.
+      metadata:
+        parsed.kind === "approval_request"
+          ? {
+              source: FIELD_REQUEST_SOURCE,
+              client_action_id: clientActionId,
+              urgency: parsed.urgency,
+              ...(parsed.impact ? { impact: parsed.impact } : {}),
+              ...(parsed.requestedAt ? { requested_at: parsed.requestedAt } : {}),
+              ...(approvalId ? { approval_id: approvalId } : {}),
+            }
+          : {
+              source: FIELD_REQUEST_SOURCE,
+              client_action_id: clientActionId,
+              reason: parsed.reason,
+              ...(parsed.note ? { note: parsed.note } : {}),
+              ...(parsed.occurredAt ? { occurred_at: parsed.occurredAt } : {}),
+            },
+    });
+
+    return { workOrder: target, created: true, dispatcherUserId, reason: parsed.reason };
+  }
+
   async changeStatus(
     actor: WorkOrderActorContext,
     workOrderId: string,
@@ -2890,4 +2975,144 @@ function statusEventType(status: WorkOrderStatus) {
   if (status === "cancelled") return "work_order_cancelled" as const;
   if (status === "completed") return "work_order_completed" as const;
   return "work_order_status_changed" as const;
+}
+
+// ─── B-SAN3-16 (item 5) — os auxiliares de `recordFieldRequest` ─────────────────────────────────────────────────
+
+/** O efeito que o caller injeta: a fila de Aprovações, chamada ANTES do evento (Emenda 1.1 §2.4). Devolve o id dela. */
+export type FieldRequestEffects = {
+  readonly openApproval?: (workOrder: WorkOrder, reason: string) => Promise<string>;
+};
+
+export type FieldRequestOutcome = {
+  readonly workOrder: WorkOrder;
+  /** `false` quando a repetição durável achou o evento: nada foi gravado nesta chamada. */
+  readonly created: boolean;
+  /** Só no "não iniciou": quem atribuiu a OS por último, se não for o próprio ator (P8). */
+  readonly dispatcherUserId?: string;
+  /** O motivo como está (ou ficou) gravado no evento; no "não iniciou", já rotulado em PT-BR. */
+  readonly reason: string;
+};
+
+const FIELD_REQUEST_EVENT_TYPES = {
+  approval_request: "work_order_approval_requested",
+  unable_to_start: "work_order_unable_to_start",
+} as const satisfies Record<FieldRequestKind, WorkOrderEventType>;
+
+const FIELD_REQUEST_SOURCE = "mobile_sync";
+const FIELD_REQUEST_URGENCIES: readonly string[] = ["low", "normal", "high", "critical"];
+const FIELD_REQUEST_LIMITS = { approvalReason: 500, impact: 1000, unableReason: 200, note: 1000 } as const;
+const FIELD_REQUEST_FIELD_LABELS: Readonly<Record<string, string>> = {
+  reason: "O motivo",
+  impact: "O impacto",
+  note: "A observação",
+};
+
+// P8 (Q4 do §12.2 da Emenda 1) — os 5 motivos fixos do app chegam sem acento (`work_order_detail_screen.dart`,
+// `_BlockSheet`); o servidor os rotula em PT-BR correto no evento e no aviso. Motivo fora do mapa segue como veio.
+const UNABLE_TO_START_REASON_LABELS: Readonly<Record<string, string>> = {
+  "Cliente ausente no local": "Cliente ausente no local",
+  "Endereco nao localizado": "Endereço não localizado",
+  "Veiculo inacessivel / impedimento": "Veículo inacessível / impedimento",
+  "Condicoes de seguranca": "Condições de segurança",
+  "Outro motivo": "Outro motivo",
+};
+
+type ParsedFieldRequest =
+  | {
+      readonly kind: "approval_request";
+      readonly reason: string;
+      readonly impact?: string;
+      readonly urgency: string;
+      readonly requestedAt?: string;
+    }
+  | {
+      readonly kind: "unable_to_start";
+      readonly reason: string;
+      readonly note?: string;
+      readonly occurredAt?: string;
+    };
+
+function parseFieldRequestBody(kind: FieldRequestKind, body: RawRecord): ParsedFieldRequest {
+  const deviceMetadata = isFieldRequestRecord(body.metadata) ? body.metadata : {};
+  if (kind === "approval_request") {
+    return {
+      kind,
+      reason: requiredFieldRequestText(body.reason, "reason", FIELD_REQUEST_LIMITS.approvalReason),
+      impact: optionalFieldRequestText(body.impact, "impact", FIELD_REQUEST_LIMITS.impact),
+      urgency: parseFieldRequestUrgency(body.urgency),
+      requestedAt: deviceTime(deviceMetadata.requested_at),
+    };
+  }
+  const reason = requiredFieldRequestText(body.reason, "reason", FIELD_REQUEST_LIMITS.unableReason);
+  return {
+    kind,
+    reason: Object.prototype.hasOwnProperty.call(UNABLE_TO_START_REASON_LABELS, reason)
+      ? UNABLE_TO_START_REASON_LABELS[reason]!
+      : reason,
+    note: optionalFieldRequestText(body.note, "note", FIELD_REQUEST_LIMITS.note),
+    occurredAt: deviceTime(deviceMetadata.occurred_at),
+  };
+}
+
+function requiredFieldRequestText(value: unknown, field: string, max: number): string {
+  const text = optionalFieldRequestText(value, field, max);
+  if (!text) {
+    throw new WorkOrderError(400, "WORK_ORDER_INVALID", "required_field", `${FIELD_REQUEST_FIELD_LABELS[field]} é obrigatório.`);
+  }
+  return text;
+}
+
+// Valor que não é texto conta como ausente (a regra de `parseRequiredString` do lote): o obrigatório cai em
+// `required_field`, o opcional fica de fora.
+function optionalFieldRequestText(value: unknown, field: string, max: number): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const text = value.trim();
+  if (text.length > max) {
+    throw new WorkOrderError(
+      400,
+      "WORK_ORDER_INVALID",
+      "field_too_long",
+      `${FIELD_REQUEST_FIELD_LABELS[field]} aceita até ${max} caracteres.`,
+    );
+  }
+  return text || undefined;
+}
+
+function parseFieldRequestUrgency(value: unknown): string {
+  if (value === undefined || value === null || value === "") return "normal";
+  if (typeof value === "string" && FIELD_REQUEST_URGENCIES.includes(value.trim())) return value.trim();
+  throw new WorkOrderError(400, "WORK_ORDER_INVALID", "invalid_urgency", "A urgência tem de ser baixa, normal, alta ou crítica.");
+}
+
+/** A hora do aparelho só entra como data ISO válida; o resto é descartado (nunca recusa o pedido por isso). */
+function deviceTime(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  const time = Date.parse(value);
+  return Number.isNaN(time) ? undefined : new Date(time).toISOString();
+}
+
+function isFieldRequestRecord(value: unknown): value is RawRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function fieldRequestMessage(parsed: ParsedFieldRequest): string {
+  return parsed.kind === "approval_request"
+    ? `Aprovação solicitada pelo técnico: ${parsed.reason}`
+    : `Não foi possível iniciar: ${parsed.reason}`;
+}
+
+function recordedReason(event: WorkOrderEvent): string {
+  return typeof event.metadata.reason === "string" ? event.metadata.reason : "";
+}
+
+/**
+ * P8 [LEITURA do plano; o B10 mede] — quem recebe o aviso do "não iniciou": o ator do `work_order_assigned` MAIS
+ * RECENTE da OS que não é o próprio ator. O despacho atribui com o ator de quem despachou, e a atribuição pela web
+ * grava o mesmo evento. A linha do tempo vem em ordem crescente de `createdAt` nas duas persistências.
+ */
+function lastAssignerOtherThan(timeline: readonly WorkOrderEvent[], actor: WorkOrderActorContext): string | undefined {
+  return timeline
+    .filter((event) => event.eventType === "work_order_assigned" && event.actorUserId !== actor.userId)
+    .at(-1)?.actorUserId;
 }
