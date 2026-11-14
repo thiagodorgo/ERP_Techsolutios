@@ -184,7 +184,7 @@ test("T-ST-45 · o job NUNCA fecha um reaberto (3 ciclos); só o fechamento manu
   assert.equal((await repository.listStatements(TENANT))[0]!.status, "reopened");
   const manual = await service.close({ tenantId: TENANT, period: "2026-10", now: NOV_1_0030_SP, actorId: "u", source: "manual" });
   assert.equal(manual.kind, "closed");
-  assert.deepEqual(calls.at(-1)!.pinned, { planVersionIds: ["ver-1"], addonPlanVersionId: null }, "refechar usa as versões gravadas no snapshot");
+  assert.deepEqual(calls.at(-1)!.pinned, { planVersionIds: ["ver-1"], addonPlanVersionIds: [] }, "refechar usa as versões gravadas no snapshot");
 });
 
 test("T-ST-46/47/48 · reabrir: com pagamento → 422; com cobrança pending → 422; com nota authorized → 422", async () => {

@@ -303,7 +303,22 @@ function computeTracking(input: StatementComputationInput): TrackingComputation 
     assertCents(perVehicleCents, "trackingPerVehicleCents");
   }
 
+  let previousTo = 0;
   const flatSegments: TrackingFlatSegment[] = [];
+  for (const segment of tracking.flatSegments) {
+    assertNonNegativeInt(segment.monthlyPriceCents, "tracking.monthlyPriceCents");
+    assertBilled(segment.billedVehicles, "flatSegment.billedVehicles");
+    if (segment.fromDay < 1 || segment.toDay > input.daysInMonth || segment.fromDay > segment.toDay) {
+      throw new StatementEngineError("invalid_segment", "tracking segment days must lie inside the month, from <= to.");
+    }
+    if (segment.fromDay <= previousTo) {
+      throw new StatementEngineError("overlapping_segments", "tracking segments must be ordered and must not overlap.");
+    }
+    previousTo = segment.toDay;
+    const days = segment.toDay - segment.fromDay + 1;
+    const cents = segment.billedVehicles === 0 ? 0 : halfUpDiv(segment.monthlyPriceCents * days, input.daysInMonth);
+    flatSegments.push({ ...segment, days, cents });
+  }
   const flatCents = flatSegments.reduce((total, segment) => total + segment.cents, 0);
   const cents = perVehicleCents + flatCents;
   assertCents(cents, "trackingCents");

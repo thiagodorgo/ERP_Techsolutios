@@ -79,7 +79,7 @@ test("T-IN-4 · refechar um reaberto usa a versão gravada (pinned), mesmo que e
   const versions = new Map([["starter", [{ ...STARTER, validTo: sp("2026-10-20") }, newer]]]);
   const live = ready(buildStatementInputs("2026-10", data({ versionsByPlan: versions, subscriptions: [subscription("s1", "starter", "2026-01-01", null)] }), { pin: null }));
   assert.equal(live.computation.segments.length, 2, "sem pin, a versão nova entra no dia 20");
-  const pinned = ready(buildStatementInputs("2026-10", data({ versionsByPlan: versions, subscriptions: [subscription("s1", "starter", "2026-01-01", null)] }), { pin: { planVersionIds: ["v-starter"], addonPlanVersionId: null } }));
+  const pinned = ready(buildStatementInputs("2026-10", data({ versionsByPlan: versions, subscriptions: [subscription("s1", "starter", "2026-01-01", null)] }), { pin: { planVersionIds: ["v-starter"], addonPlanVersionIds: [] } }));
   assert.deepEqual(pinned.computation.segments.map((s) => [s.planVersionId, s.fromDay, s.toDay]), [["v-starter", 1, 31]]);
 });
 
@@ -95,7 +95,7 @@ test("T-IN-4b · refechar fixa TAMBÉM a versão do add-on de rastreamento: o pr
   });
   const live = ready(buildStatementInputs("2026-10", source, { pin: null }));
   assert.deepEqual([live.addonPlanVersionId, live.computation.perVehiclePriceCents], ["v-track-2", 9_990], "sem pin, vale a versão nova");
-  const pinned = ready(buildStatementInputs("2026-10", source, { pin: { planVersionIds: ["v-starter"], addonPlanVersionId: "v-track-1" } }));
+  const pinned = ready(buildStatementInputs("2026-10", source, { pin: { planVersionIds: ["v-starter"], addonPlanVersionIds: ["v-track-1"] } }));
   assert.deepEqual([pinned.addonPlanVersionId, pinned.computation.perVehiclePriceCents], ["v-track-1", 1_990], "refechar usa a versão gravada");
 });
 
@@ -111,7 +111,7 @@ test("T-IN-4c · refechar um mês com troca de plano e troca de versão mantém 
     versionsByPlan: versions,
     subscriptions: [subscription("s1", "starter", "2026-09-01", "2026-10-11"), subscription("s2", "professional", "2026-10-11", null)],
   });
-  const pinned = ready(buildStatementInputs("2026-10", source, { pin: { planVersionIds: ["v-starter", "v-starter-2", "v-pro"], addonPlanVersionId: null } }));
+  const pinned = ready(buildStatementInputs("2026-10", source, { pin: { planVersionIds: ["v-starter", "v-starter-2", "v-pro"], addonPlanVersionIds: [] } }));
   assert.deepEqual(
     pinned.computation.segments.map((s) => [s.planVersionId, s.fromDay, s.toDay, s.monthlyPriceCents]),
     [["v-starter", 1, 5, 31_000], ["v-starter-2", 6, 10, 40_000], ["v-pro", 11, 31, 62_000]],

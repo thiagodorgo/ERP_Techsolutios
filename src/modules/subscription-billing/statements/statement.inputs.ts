@@ -24,6 +24,7 @@ import {
   type StatementMeasurements,
   type StatementSegmentInput,
   type TrackingCharge,
+  type TrackingFlatSegmentInput,
   type TrackingPerVehicleInput,
 } from "./statement.engine.js";
 import type { StatementInputs } from "./statement.service.js";
@@ -51,7 +52,7 @@ export type StatementSourceData = {
 /** Refechar um reaberto (G5, §3.4): as versões gravadas no snapshot — a de cada trecho do plano base e a do add-on. */
 export type StatementVersionPin = {
   readonly planVersionIds: readonly string[];
-  readonly addonPlanVersionId: string | null;
+  readonly addonPlanVersionIds: readonly string[];
 };
 
 export type StatementResolveOptions = {
@@ -87,6 +88,10 @@ function versionForDay(
 
 function dayStart(period: string, day: number): Date {
   return parseBusinessDate(`${period}-${String(day).padStart(2, "0")}`);
+}
+
+function rangeDays(fromDay: number, toDay: number): number[] {
+  return Array.from({ length: toDay - fromDay + 1 }, (_, offset) => fromDay + offset);
 }
 
 function activeAt<T extends { validFrom: Date; validTo: Date | null }>(rows: readonly T[], at: Date): T | null {
@@ -167,7 +172,7 @@ export function buildStatementInputs(
     readonly unit: "per_vehicle" | "flat";
     readonly priceCents: number;
   };
-  const pinnedAddonIds = options.pin && options.pin.addonPlanVersionId ? [options.pin.addonPlanVersionId] : null;
+  const pinnedAddonIds = options.pin && options.pin.addonPlanVersionIds.length > 0 ? options.pin.addonPlanVersionIds : null;
   const trackingDays: (DayTracking | null)[] = [];
   for (let index = 0; index < days.length; index += 1) {
     const current = days[index];
@@ -218,10 +223,41 @@ export function buildStatementInputs(
       };
     }
 
+    // Mensalidade fixa (P17/R-B): um trecho por dias consecutivos com o mesmo add-on, a mesma versão e o mesmo preço.
+    const flatSegments: TrackingFlatSegmentInput[] = [];
+    for (let index = 0; index < trackingDays.length; index += 1) {
+      const current = trackingDays[index];
+      if (!current || current.unit !== "flat") continue;
+      const previous = index > 0 ? trackingDays[index - 1] : null;
+      const last = flatSegments.at(-1);
+      const continues =
+        last !== undefined &&
+        previous !== null &&
+        previous !== undefined &&
+        previous.unit === "flat" &&
+        previous.addon.id === current.addon.id &&
+        previous.version.id === current.version.id &&
+        previous.priceCents === current.priceCents;
+      if (continues) {
+        flatSegments[flatSegments.length - 1] = { ...last, toDay: index + 1 };
+      } else {
+        flatSegments.push({
+          addonId: current.addon.id,
+          addonPlanVersionId: current.version.id,
+          fromDay: index + 1,
+          toDay: index + 1,
+          monthlyPriceCents: current.priceCents,
+          billedVehicles: 0,
+        });
+      }
+    }
     tracking = {
       billedVehicles: countDistinctVehiclesInDays(period, data.bindings, addonDays),
       perVehicle,
-      flatSegments: [],
+      flatSegments: flatSegments.map((segment) => ({
+        ...segment,
+        billedVehicles: countDistinctVehiclesInDays(period, data.bindings, rangeDays(segment.fromDay, segment.toDay)),
+      })),
     };
   }
 
