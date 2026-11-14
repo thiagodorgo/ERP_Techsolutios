@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1051** |
-| IDs distintos | 1040 |
-| **ABERTAS** | **800** |
+| Cabecalhos `## P-` | **1057** |
+| IDs distintos | 1046 |
+| **ABERTAS** | **806** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **739** |
+| — das quais **ativas nesta rodada** | **745** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 247 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1051 cabecalhos para 1040 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1057 cabecalhos para 1046 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 330
+## ABERTAS · balde A — material — 333
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -404,8 +404,11 @@
 | `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO` | 15245 | MÉDIA | sim | P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre p |
 | `P-ASS08C-CANCELADA-FORA-DA-LISTA` | 15268 | CRÍTICA | sim | P-ASS08C-CANCELADA-FORA-DA-LISTA (2026-11-14) — um cancelamento que cai em `charge_not_l |
 | `P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO` | 15277 | MÉDIA | sim | P-ASS08-TRILHA-DO-DESPACHO-SEM-DESTINO (2026-11-14) — as trilhas do despacho não chegam  |
+| `P-SYNC-OS-RECIBO-EM-MEMORIA` | 15308 | MÉDIA | sim | P-SYNC-OS-RECIBO-EM-MEMORIA (2026-11-14) — depois de reiniciar a API, o reenvio de uma a |
+| `P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME` | 15357 | MÉDIA | sim | P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME (2026-11-14) — sob o papel de runtime, o login |
+| `P-SEED-BASE-TRAVA-SO-NODE-ENV` | 15382 | MÉDIA | sim | P-SEED-BASE-TRAVA-SO-NODE-ENV (2026-11-14) — a trava do seed base só olha o `NODE_ENV`,  |
 
-## ABERTAS · balde B — processo/registro — 409
+## ABERTAS · balde B — processo/registro — 412
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -818,6 +821,9 @@
 | `P-TESTE-VAULT-ROUTES-FILHO-ORFAO` | 15253 | BAIXA | sim | P-TESTE-VAULT-ROUTES-FILHO-ORFAO (2026-11-14) — o `ass-05-vault-routes` não mata o servi |
 | `P-J561-JWT-LOCAL-SEM-TENANT-ROLE` | 15261 | BAIXA | sim | P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda  |
 | `P-ASS08C-COBRANCA-DO-SALDO` | 15284 | BAIXA | sim | P-ASS08C-COBRANCA-DO-SALDO (2026-11-14) — a conta com pagamento parcial não tem cobrança |
+| `P-OS-MESMA-SITUACAO-GRAVA-EVENTO` | 15328 | BAIXA | sim | P-OS-MESMA-SITUACAO-GRAVA-EVENTO (2026-11-14) — a mudança para a mesma situação grava ev |
+| `P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET` | 15339 | BAIXA | sim | P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 |
+| `P-SEED-BASE-NOMES-REAIS` | 15396 | BAIXA | sim | P-SEED-BASE-NOMES-REAIS (2026-11-14) — os seeds de `prisma/` trazem marcas e órgãos reai |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
