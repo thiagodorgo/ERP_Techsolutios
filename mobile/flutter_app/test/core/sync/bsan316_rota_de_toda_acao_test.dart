@@ -501,16 +501,22 @@ void main() {
   testWidgets('R7. o cartão do não enviável mostra a mensagem do erro, não '
       '"N tentativas"; tem Tentar de novo e Descartar; Tentar de novo, '
       'passe, e o cartão volta com a mesma mensagem', (t) async {
+    // A tela lê a organização da sessão de desenvolvimento (`devBootstrapSession`).
+    final tenantDaTela = devBootstrapSession.activeTenant.tenantId;
     final store = InMemorySyncActionStore([
-      _acao('r7', 'work_order.tipo_inexistente'),
+      _acao(
+        'r7',
+        'work_order.tipo_inexistente',
+      ).copyWith(tenantId: tenantDaTela),
     ]);
     final fila = UserScopedSyncQueueRepository(
       queue: PersistentSyncQueueRepository(store),
       currentUserId: () => _eu,
     );
-    await t.runAsync(
-      () => SyncActionRoutingSweep(queue: fila).sweepTenant(_tenant),
-    );
+    // A fila em memória só depende de microtarefas: espera-se direto na zona do teste (dentro de `runAsync`, o futuro
+    // criado na zona falsa nunca completa).
+    await SyncActionRoutingSweep(queue: fila).sweepTenant(tenantDaTela);
+    _confereNaoEnviavel((await store.load()).single, _msgVersao);
     await _abrirTela(t, store);
 
     final cartao = find.byKey(const Key('stalled-card-r7'));
@@ -530,12 +536,12 @@ void main() {
     await t.tap(find.byKey(const Key('stalled-retry-r7')));
     await t.pumpAndSettle();
     expect(find.byKey(const Key('stalled-card-r7')), findsNothing);
-    final devolvida = (await t.runAsync(() => store.load()))!.single;
+    final devolvida = (await store.load()).single;
     expect(devolvida.status, SyncStatus.pending);
 
-    await t.runAsync(
-      () => SyncActionRoutingSweep(queue: fila).sweepTenant(_tenant),
-    );
+    // A fila em memória só depende de microtarefas: espera-se direto na zona do teste (dentro de `runAsync`, o futuro
+    // criado na zona falsa nunca completa).
+    await SyncActionRoutingSweep(queue: fila).sweepTenant(tenantDaTela);
     await t.pumpWidget(const SizedBox.shrink());
     await _abrirTela(t, store);
     expect(
