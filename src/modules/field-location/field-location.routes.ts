@@ -1,5 +1,6 @@
-import { Router, type Response } from "express";
+import { Router, type NextFunction, type Request, type Response } from "express";
 
+import { recordRequestAuditBestEffort } from "../core-saas/audit/audit-request-context.js";
 import { createPersistentRbacContextMiddleware } from "../core-saas/middleware/persistent-rbac-context.middleware.js";
 import { requirePermission } from "../core-saas/middleware/rbac.middleware.js";
 import { tenantContextMiddleware } from "../core-saas/middleware/tenant-context.middleware.js";
@@ -19,6 +20,11 @@ export const FIELD_LOCATION_PERMISSIONS = {
   history: "field_location:history",
 } as const;
 
+// B-SAN3-17 (P6 do plano v2): o aceite exige a permissão de enviar posição; a revogação não exige permissão nominal
+// (só o ator autenticado com papel na organização), porque a LGPD pede revogação facilitada e quem perdeu o `send`
+// continua podendo dizer não. As duas só alcançam o perfil do próprio ator.
+const LOCATION_CONSENT_GRANT_PERMISSION = FIELD_LOCATION_PERMISSIONS.send;
+
 export function createFieldLocationRouter(
   resolveService: FieldLocationServiceResolver = createDefaultFieldLocationService,
 ): Router {
@@ -33,6 +39,22 @@ export function createFieldLocationRouter(
     requirePermission(FIELD_LOCATION_PERMISSIONS.send),
     handleAsyncRoute(async (request, response) => {
       sendResult(response, await controller.recordMobileLocation(request));
+    }),
+  );
+
+  router.post(
+    "/mobile/location-consent",
+    requirePermission(LOCATION_CONSENT_GRANT_PERMISSION),
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.setOwnTrackingConsent(request, true));
+    }),
+  );
+
+  router.post(
+    "/mobile/location-consent/revoke",
+    requireAuthenticatedTenantActor,
+    handleAsyncRoute(async (request, response) => {
+      sendResult(response, await controller.setOwnTrackingConsent(request, false));
     }),
   );
 
@@ -53,6 +75,53 @@ export function createFieldLocationRouter(
   );
 
   return router;
+}
+
+// A guarda da revogação, local a este roteador (`core-saas/middleware/**` fica intocado): o mesmo formato de erro e a
+// mesma auditoria de negação do `requirePermission`, sem permissão nominal. Como `/auth/password`, alcança todo
+// usuário com papel na organização.
+async function requireAuthenticatedTenantActor(request: Request, response: Response, next: NextFunction): Promise<void> {
+  const tenantContext = request.tenantContext;
+
+  if (!tenantContext?.tenantId) {
+    await recordRevocationDenied(request, "tenant_required");
+    sendForbidden(response, "tenant_required", "Tenant context is required.");
+    return;
+  }
+
+  if (tenantContext.roles.length === 0) {
+    await recordRevocationDenied(request, "role_required");
+    sendForbidden(response, "role_required", "Role is required.");
+    return;
+  }
+
+  next();
+}
+
+function recordRevocationDenied(request: Request, reason: string): Promise<void> {
+  return recordRequestAuditBestEffort(request, {
+    action: "permission.denied",
+    resourceType: "http_route",
+    resourceId: `${request.method} ${request.path}`,
+    outcome: "denied",
+    severity: "warning",
+    metadata: {
+      reason,
+      requiredPermissions: [],
+      roles: request.tenantContext?.roles ?? [],
+      permissions: request.tenantContext?.permissions ?? [],
+    },
+  });
+}
+
+function sendForbidden(response: Response, reason: string, message: string): void {
+  response.status(403).json({
+    error: {
+      code: "FORBIDDEN",
+      reason,
+      message,
+    },
+  });
 }
 
 function sendResult(response: Response, result: ControllerResult): void {

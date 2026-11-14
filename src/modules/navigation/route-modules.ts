@@ -147,6 +147,8 @@ export const ROUTE_MODULE_OVERRIDES: readonly RouteOverride[] = [
   { pattern: "/mobile/evidence-uploads", modules: ["work_orders", "field_operations"] },
   { pattern: "/mobile/sync/evidence-actions", modules: ["work_orders", "field_operations"] },
   { pattern: "/mobile/field-locations", modules: ["field_operations"] },
+  { pattern: "/mobile/location-consent", modules: ["field_operations"] },
+  { pattern: "/mobile/location-consent/revoke", nucleo: true },
   { pattern: "/mobile/inventory", modules: ["inventory"] },
   { pattern: "/mobile/technician/stock", modules: ["inventory"] },
   { pattern: "/mobile/sync/inventory-actions", modules: ["inventory"] },

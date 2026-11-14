@@ -204,9 +204,13 @@ if (!connectionString) {
     };
   }
 
+  // A decisão padrão é de 1 s no futuro (dentro dos 5 min do contrato): um aceite feito logo depois de o gestor criar o
+  // perfil não pode cair no mesmo milissegundo do `updated_at` dele, ou a guarda de ordem o trataria como velho.
   function decision(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-    return { decided_at: new Date().toISOString(), client_action_id: randomUUID(), text_version: TEXT_VERSION, ...overrides };
+    return { decided_at: new Date(Date.now() + 1_000).toISOString(), client_action_id: randomUUID(), text_version: TEXT_VERSION, ...overrides };
   }
+
+  const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
   async function post(h: Harness, path: string, actor: Actor, body: Record<string, unknown>) {
     return requestJson(h.baseUrl, path, { method: "POST", headers: actor.headers, body });
@@ -290,9 +294,13 @@ if (!connectionString) {
   test("[D5] audit_logs: granted, revoked e superseded, com o metadata da allowlist e nada de organização ou coordenada", async () => {
     const h = await harness();
     const s = await scenario(h, "d5", "not-consented");
-    const first = decision({ decided_at: new Date(Date.now() - 60_000).toISOString() });
+    // O 1º aceite é posterior ao cadastro e anterior à revogação.
+    await pause(20);
+    const first = decision({ decided_at: new Date().toISOString() });
+    await pause(20);
 
-    assert.equal((await post(h, ACCEPT_ROUTE, s.tech, first)).status, 200);
+    const granted = await post(h, ACCEPT_ROUTE, s.tech, first);
+    assert.equal(granted.body?.data?.status, "applied", JSON.stringify(granted.body));
     assert.equal((await post(h, REVOKE_ROUTE, s.tech, decision())).status, 200);
     const replay = await post(h, ACCEPT_ROUTE, s.tech, first);
     assert.equal(replay.body?.data?.status, "superseded", JSON.stringify(replay.body));
@@ -332,9 +340,12 @@ if (!connectionString) {
   test("[D6] CR17R2-07: concede → revoga → reenvio do 1º aceite → superseded; tracking_consent false e a contagem não muda", async () => {
     const h = await harness();
     const s = await scenario(h, "d6", "not-consented");
-    const first = decision({ decided_at: new Date(Date.now() - 60_000).toISOString() });
+    await pause(20);
+    const first = decision({ decided_at: new Date().toISOString() });
+    await pause(20);
 
-    assert.equal((await post(h, ACCEPT_ROUTE, s.tech, first)).status, 200);
+    const granted = await post(h, ACCEPT_ROUTE, s.tech, first);
+    assert.equal(granted.body?.data?.status, "applied", JSON.stringify(granted.body));
     assert.equal((await post(h, POSITION, s.tech, { latitude: -23.55, longitude: -46.63 })).status, 201, "arranjo: 1 posição consentida");
     assert.equal((await post(h, REVOKE_ROUTE, s.tech, decision())).status, 200);
     const replay = await post(h, ACCEPT_ROUTE, s.tech, first);

@@ -44,7 +44,7 @@ test("consent true na criação grava tracking_consent_at", async () => {
 test("conceder consentimento no update (false→true) carimba consent_at", async () => {
   const svc = service();
   const ctx = actor();
-  const created = await svc.create(ctx, { user_id: randomUUID() });
+  const created = await svc.create(ctx, { user_id: ctx.userId });
   assert.equal(created.trackingConsentAt, undefined);
   const granted = await svc.update(ctx, created.id, { tracking_consent: true });
   assert.equal(granted.trackingConsent, true);

@@ -1,7 +1,9 @@
 import type { Permission, Role } from "../core-saas/permissions/catalog.js";
 
-// O que o CLIENTE (rota móvel) pode declarar como fonte (`parseSource`). NÃO inclui `traccar`: o app nunca se diz
-// Traccar (B-TRC-01, P-07; a rota móvel responde `400 invalid_source` a `source: "traccar"`).
+// As fontes que o cadastro aceita além do Traccar (espelho do CHECK `field_operator_locations_source_check`). O CLIENTE
+// não declara origem: a rota móvel grava sempre `mobile` e responde `400 invalid_source` a qualquer outro valor
+// (B-SAN3-17, Emenda 1 da abertura 2.1; antes, B-TRC-01 P-07, já recusava `traccar`). `web` e `system` só existem
+// em ponto antigo, gravado antes desta regra.
 export const FIELD_LOCATION_SOURCES = ["mobile", "web", "system"] as const;
 
 export type FieldLocationSource = (typeof FIELD_LOCATION_SOURCES)[number];
@@ -70,6 +72,21 @@ export type ListFieldLocationHistoryInput = {
   readonly from?: Date;
   readonly to?: Date;
   readonly limit?: number;
+  // B-SAN3-17 (Emenda 1 da abertura 2.2): só para os leitores ao vivo do serviço; a rota de histórico não passa.
+  readonly sources?: readonly FieldLocationStoredSource[];
+};
+
+// B-SAN3-17 — o resultado da decisão de consentimento do próprio técnico (contrato
+// `mobile_location_consent@2026-11.b-san3-17`, plano v2 §2.3).
+export type OwnTrackingConsentResult = {
+  readonly granted: boolean;
+  readonly grantedAt: Date | null;
+  readonly clientActionId: string;
+  readonly status: "applied" | "superseded";
+  readonly profileId: string;
+  readonly profileUpdatedAt: Date;
+  readonly textVersion: string;
+  readonly decidedAt: Date;
 };
 
 export class FieldLocationError extends Error {

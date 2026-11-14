@@ -60,6 +60,7 @@ export class InMemoryFieldLocationRepository implements FieldLocationRepository 
       .filter((location) => location.operatorUserId === input.operatorUserId)
       .filter((location) => !input.from || location.recordedAt >= input.from)
       .filter((location) => !input.to || location.recordedAt <= input.to)
+      .filter((location) => !input.sources || input.sources.includes(location.source))
       .slice(0, input.limit ?? 100);
   }
 

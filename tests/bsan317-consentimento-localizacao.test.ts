@@ -108,9 +108,13 @@ async function withHarness(callback: (h: Harness) => Promise<void>): Promise<voi
   }
 }
 
+// A decisão padrão é de 1 s no futuro (dentro dos 5 min do contrato): um aceite feito logo depois de o gestor criar o
+// perfil não pode cair no mesmo milissegundo do `updated_at` dele, ou a guarda de ordem o trataria como velho.
 function decision(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  return { decided_at: new Date().toISOString(), client_action_id: randomUUID(), text_version: TEXT_VERSION, ...overrides };
+  return { decided_at: new Date(Date.now() + 1_000).toISOString(), client_action_id: randomUUID(), text_version: TEXT_VERSION, ...overrides };
 }
+
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function point(extra: Record<string, unknown> = {}): Record<string, unknown> {
   return { latitude: -23.55052, longitude: -46.633308, ...extra };
@@ -331,9 +335,13 @@ test("[B11] P11: aceite cid1 → revoga → reenvio de cid1 → superseded, gran
     const tech = randomUUID();
     await createProfile(h, tech, false);
     const headers = h.as(tech, "field_technician");
-    const first = decision({ decided_at: new Date(Date.now() - 60_000).toISOString() });
+    // O 1º aceite é posterior ao cadastro e anterior à revogação (o caso do reenvio que a guarda pega).
+    await pause(10);
+    const first = decision({ decided_at: new Date().toISOString() });
+    await pause(10);
 
     const accepted = await h.req(ACCEPT_ROUTE, headers, "POST", first);
+    assert.equal(accepted.body?.data?.status, "applied", JSON.stringify(accepted.body));
     const revoked = await h.req(REVOKE_ROUTE, headers, "POST", decision());
     const replay = await h.req(ACCEPT_ROUTE, headers, "POST", first);
     const recorded = await h.req(POSITION, headers, "POST", point());
