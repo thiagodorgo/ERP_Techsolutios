@@ -225,9 +225,7 @@ List<Override> _profileOverrides() => [
 /// encaixe da tela com a Roboto do próprio SDK (a fonte do Material no
 /// Android), como a maquete mediu no navegador com fonte real.
 Future<void> _loadRoboto() async {
-  final root = Platform.environment['FLUTTER_ROOT'];
-  expect(root, isNotNull, reason: 'FLUTTER_ROOT é definido pelo flutter test');
-  final dir = '$root/bin/cache/artifacts/material_fonts';
+  const dir = 'test/assets/fonts/roboto';
   final loader = FontLoader('Roboto');
   for (final name in const [
     'roboto-regular.ttf',
@@ -235,7 +233,7 @@ Future<void> _loadRoboto() async {
     'roboto-bold.ttf',
   ]) {
     final file = File('$dir/$name');
-    expect(file.existsSync(), isTrue, reason: 'fonte $name no SDK');
+    expect(file.existsSync(), isTrue, reason: 'fonte $name no repositório');
     loader.addFont(
       file.readAsBytes().then((bytes) => ByteData.sublistView(bytes)),
     );
