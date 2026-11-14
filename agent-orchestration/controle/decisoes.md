@@ -5251,3 +5251,24 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
 - **Também decidido pela mesma regra (recomendação da abertura, §2 A5):** o guard nas telas Nova Entrada e Nova Saída entra agora; o texto delas segue a recomendação da revisão `rev-66-abre-cl` (REV66-02): "Ação não permitida".
 - **Cruzamento:** por ordem do dono, sem cruzamento entre casas (§C7 11(2)), declarado; todo verificador é identidade Claude nova.
 - **Gravado por:** `dev-66-cl` (Claude Opus 5.5, dev do bloco), por ordem do orquestrador, em 14/11/2026.
+
+## D-ASS12-ALERTA-EM-BLOCO-MENOR (2026-11-14) — o alerta "rastreamento sem adicional" sai do B-ASS-12
+
+- **Origem:** leitura do orquestrador, declarada (§A6), adotada na F0 do `B-ASS-12`. A decisão já existia fora do
+  repositório (`plano-CLAUDE-SOLO-1311.md:178`); este registro a traz para o repo.
+- **O que vale:** o alerta na visão da plataforma ("rastreia veículo sem o adicional") sai do `B-ASS-12` para um bloco
+  menor depois do `B-ASS-09` (`B-ASS-12b`), porque o lugar do alerta (`overview`) nasce no `B-ASS-09`. O `B-ASS-12` só
+  mede (`tracked_vehicles`), cobra 0 sem adicional e não bloqueia ingestão nem leitura; o dado de que o alerta precisa
+  já fica gravado no demonstrativo (`tracked_vehicles > 0` com `addon_plan_version_id` nulo).
+- **Pendências abertas por ela:** `P-ASS12-ALERTA-SEM-ADICIONAL` e `P-ASS12-PULO-SEM-AVISO` (dono `B-ASS-12b`).
+
+## D-ASS12-Q1-P10 (2026-11-14) — a diferença Básico × Plus é a da P10; hoje o adicional só cobra
+
+- **Conflito §A2 registrado (sem consolidação silenciosa):** o plano original listava a Q1 ("o que cada adicional
+  libera?") como pergunta em aberto. A Emenda 1 mediu que a P10 (`fidelidade-3110.md:155`, resposta do dono de 31/10)
+  já fixou a unidade e a diferença: Básico = posição ao vivo + histórico; Plus = Básico + eventos, alarmes e telemetria.
+- **Leitura do planejador, declarada (§A6), desfazível numa linha:** hoje não há função de rastreamento veicular para
+  ligar; o `B-ASS-12` não cria chave de módulo nem de permissão. A diferença entra com o `B-TRC-04`, por cadastro de
+  módulos na versão do adicional.
+- **O conflito filial × organização continua ABERTO** (`P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`): o `B-ASS-12` não
+  infere a resolução; o demonstrativo continua por organização e período.

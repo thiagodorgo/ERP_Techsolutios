@@ -55,8 +55,8 @@ desenvolvimento consome `SUBSCRIPTION_PLAN_SEEDS`, em
 | Enterprise | Regras complexas | sem chave — gate pendente (`B-SAN3-18`) |
 | Enterprise | ESG | sem chave — gate pendente (`B-SAN3-18`) |
 
-Os add-ons de rastreamento usam `tracking`; apenas um add-on de rastreamento pode estar vigente por
-assinatura.
+Os add-ons de rastreamento hoje só cobram: não liberam chave de módulo própria (a diferença entre
+Básico e Plus entra com o `B-TRC-04`). Apenas um add-on de rastreamento pode estar vigente por assinatura.
 
 ## Migrações e rollback
 
@@ -123,6 +123,55 @@ As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demons
 **Trilha.** Fechar, reabrir, ajustar, cancelar, registrar e estornar pagamento, criar, aplicar e baixar crédito e gravar o perfil viram linha em `audit_logs` da organização, só com ids, período, estados e centavos.
 
 **Rollback.** Retire o job do bootstrap, reverta o PR e rode o rollback do rodapé da M3 e da M3b.
+
+## Rastreamento cobrado (B-ASS-12)
+
+O rastreamento é a parcela de veículos do demonstrativo, cobrada pelos dois add-ons (`tracking_basic` e
+`tracking_plus`). A regra resolve **dia a dia** o adicional vigente e a versão dele:
+
+- A contratação com **sobrescrita por veículo** vale como por veículo, pelo preço combinado com aquela
+  organização (zero = cortesia), qualquer que seja a unidade da versão. Publicar uma versão de mensalidade
+  fixa nova não apaga a cortesia combinada.
+- Sem sobrescrita, a versão de **mensalidade fixa** cobra por trecho; a versão **por veículo** cobra por
+  veículo, pelo preço da versão.
+- **Por veículo (sem pro-rata):** um preço só no mês — o do último dia em regime por veículo — e os veículos
+  distintos com vínculo em pelo menos um dia desse regime: `veículos × preço`.
+- **Mensalidade fixa:** um trecho = dias consecutivos no mesmo adicional, na mesma versão e no mesmo preço;
+  cada trecho cobra `arredonda_meio_para_cima(mensalidade × dias do trecho ÷ dias do mês)` e só se algum
+  veículo teve vínculo em algum dia do trecho. Soma dos trechos.
+- A linha = por veículo + mensalidade fixa. No mês em que os dois regimes aparecem, somam (`mixed`).
+- Sem adicional no mês, rastreamento 0 e nenhuma versão de adicional.
+
+O vínculo vale do dia em que começou ao dia em que terminou, os dois incluídos, em data de São Paulo. Vínculo
+encerrado exatamente à meia-noite conta no dia que começava naquela meia-noite.
+
+A medição do mês (`tracked_vehicles`) não muda e continua sendo feita mesmo sem adicional: é o que a
+organização vê como uso. A organização nunca vê preço — só a quantidade.
+
+**Sem preço utilizável.** Adicional vigente sem versão em algum dia do mês, ou por veículo com preço nulo e
+sem sobrescrita, pula o fechamento daquela organização com o motivo `addon_without_price` (como o
+`plan_without_price` que já existe). O fechamento nunca sai com rastreamento zero calado.
+
+**No máximo um vigente.** Um segundo adicional vigente na mesma assinatura é recusado pelo índice único
+parcial e pela recusa `addon_duplicate_tracking` no serviço.
+
+**Travas de escrita da versão.** Para o adicional nunca ficar sem preço, o cadastro de versão recusa:
+
+| Tipo do plano | Unidade pedida | Recusa (422) |
+|---|---|---|
+| base | `per_vehicle` | `base_plan_requires_flat` |
+| adicional | `per_vehicle` sem preço por veículo | `addon_version_requires_per_vehicle_price` |
+| adicional | `flat` com preço por veículo | `addon_flat_rejects_per_vehicle_price` |
+
+E o `PUT` da assinatura, antes da primeira escrita, recusa o adicional sem versão vigente ou por veículo sem
+preço e sem sobrescrita (`addon_without_price`).
+
+**Refechamento.** O refechamento fixa a versão de cada trecho e da parte por veículo (`addonPlanVersionIds`);
+publicar uma versão nova depois do fechamento não muda o total de um demonstrativo reaberto.
+
+**O que cada adicional libera.** Hoje nada de novo: o adicional só cobra. A diferença entre Básico e Plus é a
+que o dono fixou (Básico = posição ao vivo + histórico; Plus = Básico + eventos, alarmes e telemetria) e entra
+com o `B-TRC-04`, por cadastro de módulos na versão do adicional.
 
 ## Cofre de credenciais e configuração dos provedores (B-ASS-05)
 

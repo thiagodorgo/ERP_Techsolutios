@@ -12824,7 +12824,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS-RASTREAMENTO-NAO-COBRADO (2026-11-04) — rastreamento aprovado como item próprio ainda não entra na cobrança — ALTA
 
-- **status:** ABERTA · **escopo:** item 65 do portão vendável · **dono:** `B-ASS-12` · **PR-alvo:** PR do `B-ASS-12` · **bloqueia:** item 65.
+- **status:** FECHADA (B-ASS-12, 2026-11-14) — os dois add-ons, no máximo um vigente, 1 linha de rastreamento no demonstrativo com a regra da Emenda 1 (por veículo no último dia; mensalidade fixa por trecho com half-up; 0 cobrança sem vínculo) e o pulo addon_without_price, provados por T-TRK-1..19, T-ADD-1..7, T-TRK-db-1..6 e T-TRK-rota-1..2; sem inferir P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO. Valor anterior, preservado: "ABERTA" · **escopo:** item 65 do portão vendável · **dono:** `B-ASS-12` · **PR-alvo:** PR do `B-ASS-12` · **bloqueia:** item 65.
 - **origem:** fala literal do dono de 31/10 ~22:15, P5: *"siga na recomendação de tudo"*; a recomendação aprovada incluía a cobrança de rastreamento como item próprio.
 - **encerramento:** dois add-ons de rastreamento, no máximo um vigente por assinatura, medição de veículos e linha própria no demonstrativo, sem inferir a resolução de `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`.
 - **andamento (PR #507):** o demonstrativo do `B-ASS-04` já tem a linha própria de rastreamento (veículos distintos no mês × preço por veículo do add-on vigente, com a versão do add-on fixada no refechamento). O demonstrativo já conta os veículos distintos do mês (`countDistinctVehiclesInMonth`, sobre os vínculos), e o `B-ASS-03` já mede `tracked_vehicles`. Falta o `B-ASS-12`: os dois add-ons, no máximo um vigente por assinatura, e o ramo de `pricing_unit` no motor.
@@ -13041,7 +13041,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS03-VEICULOS-SEM-DB (2026-11-06) — o SQL real de veículos não tem variante `-db` — BAIXA
 
-- **status:** ABERTA · **escopo:** achado B-4 do revisor sênior do #505; conforme o plano (T-MED-9..11 no dublê) · **dono:** `B-ASS-12` (rastreamento) · **PR-alvo:** PR do `B-ASS-12` · **bloqueia:** não.
+- **status:** FECHADA (B-ASS-12, 2026-11-14) — SQL real de veículos coberto pela suíte -db (T-TRK-db-3) e pela mutação M20 (count distinct → count). Valor anterior, preservado: "ABERTA" · **escopo:** achado B-4 do revisor sênior do #505; conforme o plano (T-MED-9..11 no dublê) · **dono:** `B-ASS-12` (rastreamento) · **PR-alvo:** PR do `B-ASS-12` · **bloqueia:** não.
 - **fato:** o SQL real de veículos não tem `-db`; a mutação sem `distinct` sobrevive.
 - **encerramento:** SQL real de veículos coberto por suíte `-db`, com mutação que o deixa vermelho.
 
@@ -15256,3 +15256,45 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** achado C3-02 da cadeira C3 da J-561, triado pela ata da J-561 como "só registro, porque a evidência já o declara" (`agent-orchestration/omega/evidencias/B-MOBILE-GATE-CHAVE/perfil-real-antes.md`, seção 1).
 - **N e forma (medido pela C3, login real nos 9 atores):** o claim `roles` traz o papel esperado nos 9, e `tenant_role`, `tenant_roles` e `permissions` estão ausentes nos 9. Os claims são `aud, email, exp, iat, identity_id, iss, roles, sid, sub, tenant_id, type`. Para a prova do item 66 o efeito é nulo (o bootstrap bate com o catálogo).
 - **critério de encerramento:** o das pendências-mãe (o JWT carrega os claims que o §2.4 exige).
+
+## P-ASS12-ALERTA-SEM-ADICIONAL (2026-11-14) — a plataforma não vê aviso de organização que rastreia sem adicional — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** aviso na visão da plataforma · **dono:** `B-ASS-12b` (bloco menor depois do `B-ASS-09`) · **bloqueia:** não.
+- **origem:** `D-ASS12-ALERTA-EM-BLOCO-MENOR` — o alerta saiu do `B-ASS-12` porque o lugar (`overview`) nasce no `B-ASS-09`.
+- **encerramento:** a visão da plataforma avisa quando `tracked_vehicles > 0` sem adicional de rastreamento vigente; o dado já fica gravado no demonstrativo (`tracked_vehicles > 0` com `addon_plan_version_id` nulo).
+
+## P-ASS12-PULO-SEM-AVISO (2026-11-14) — organização pulada por `addon_without_price` não aparece como aviso — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** aviso na visão da plataforma · **dono:** `B-ASS-12b` (bloco menor depois do `B-ASS-09`) · **bloqueia:** não.
+- **origem:** regra nova do `B-ASS-12` — agora qualquer dia com adicional e sem versão pula o fechamento, e a única saída é a resposta do fechamento, não um aviso.
+- **encerramento:** a organização pulada por `addon_without_price` aparece como aviso na visão da plataforma, não só na resposta do fechamento.
+
+## P-ASS12-PUT-ASSINATURA-NAO-ATOMICO (2026-11-14) — o `PUT` da assinatura fecha, cria e grava módulos em transações separadas — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** bloco próprio de assinatura · **bloqueia:** não.
+- **origem:** classe pré-existente (B-ASS-02); o `B-ASS-12` só garante que a recusa nova (`addon_without_price`) vem antes da primeira escrita.
+- **encerramento:** o `PUT` da assinatura vira uma transação única (ou equivalente), sem janela em que fechou a assinatura mas não gravou os adicionais/módulos.
+
+## P-ASS12-VINCULO-SEM-CADASTRO (2026-11-14) — nenhum caminho de produto cria vínculo rastreador × viatura — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA para faturar, não bloqueia o item 65 · **escopo:** cadastro de vínculo · **dono:** `B-TRC-03` · **bloqueia:** faturar rastreamento em produção.
+- **origem:** `B-ASS-12`; vizinha de `P-TRC-VINCULO-POSSE` (quem vincula), esta trata de **não existir caminho de produto** para vincular.
+- **encerramento:** um caminho de produto cria o vínculo rastreador × viatura; sem ele, a cobrança de rastreamento continua 0.
+
+## P-ASS12-O-QUE-O-ADICIONAL-LIBERA (2026-11-14) — aplicar a P10 e a Q11 quando houver função de rastreamento — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** funções ligadas aos add-ons · **dono:** `B-TRC-04` (telas do Traccar) · **bloqueia:** não.
+- **origem:** `D-ASS12-Q1-P10` — hoje o adicional só cobra; a diferença entre Básico e Plus é a da P10 e entra por cadastro de módulos na versão do adicional.
+- **encerramento:** Básico liga posição ao vivo e histórico; Plus liga também eventos, alarmes e telemetria; por cadastro de módulos na versão do adicional, sem chave nova de código.
+
+## P-ASS12-UNIDADE-SO-NO-SNAPSHOT (2026-11-14) — a unidade e os veículos cobrados vivem só no snapshot — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** relatório por SQL · **dono:** `B-ASS-10` (telas da plataforma) · **bloqueia:** não.
+- **origem:** o `B-ASS-12` não migra coluna: `tracking_unit`, veículos cobrados e trechos vivem no snapshot (JSON); as colunas existentes bastam.
+- **encerramento:** se um relatório por SQL precisar da unidade e dos veículos cobrados, nasce coluna própria (migração aditiva).
+
+## P-ASS12-AVISO-PRECO-COMBINADO (2026-11-14) — publicar mensalidade fixa não avisa as organizações com preço combinado — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** telas da plataforma · **dono:** `B-ASS-10` · **bloqueia:** não.
+- **origem:** a sobrescrita por veículo define o regime da organização (zero = cortesia) e sobrevive à publicação de versão fixa; o DTO mostra `trackingUnit`, mas não há aviso de quantas organizações continuam no preço combinado.
+- **encerramento:** ao publicar versão de mensalidade fixa num adicional, a tela mostra quantas organizações têm preço combinado por veículo e continuam nele.

@@ -101,6 +101,8 @@ para que o trajeto de um técnico nunca vá para outro (`decisoes.md:2290-2292`)
 | **b — aceitar também "a caminho" sem aceite** | mostra mais; se o despachante muda o status pelo técnico, o trajeto pode cair no técnico errado |
 | **c — "posição da viatura" sem técnico** | atende o plano pago de localização de veículos (`decisoes.md:2293-2294`); é modelo novo, bloco próprio e junta |
 
+> Nota (B-ASS-12): o plano pago de localização de veículos são os dois add-ons de rastreamento do B-ASS-12 (`tracking_basic` e `tracking_plus`); a diferença entre eles (P10) entra com o `B-TRC-04`.
+
 **Recomendação: a agora.** A decidir antes do B-TRC-04: se o plano pago exige ver a viatura sem técnico (a **c**).
 Porquê: é a regra que o senhor já fixou, e privacidade vem antes de cobertura.
 

@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1048** |
-| IDs distintos | 1037 |
-| **ABERTAS** | **799** |
+| Cabecalhos `## P-` | **1055** |
+| IDs distintos | 1044 |
+| **ABERTAS** | **804** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **738** |
+| — das quais **ativas nesta rodada** | **743** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 245 |
+| FECHADAS | 247 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1048 cabecalhos para 1037 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1055 cabecalhos para 1044 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 330
+## ABERTAS · balde A — material — 334
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -297,7 +297,6 @@
 | `P-CLOUD-BILLING-3-APARENCIAS` | 12755 | MÉDIA | sim | P-CLOUD-BILLING-3-APARENCIAS (2026-11-03) — Cloud Billing da plataforma ainda não segue  |
 | `P-ASS-CANAL-DESLIGADO` | 12811 | ALTA | sim | P-ASS-CANAL-DESLIGADO (2026-11-03) — canal de pagamento e nota, cofre e webhooks ainda n |
 | `P-ASS-VISAO-DO-CLIENTE` | 12818 | ALTA | sim | P-ASS-VISAO-DO-CLIENTE (2026-11-03) — cliente sem rota e tela honestas da assinatura — A |
-| `P-ASS-RASTREAMENTO-NAO-COBRADO` | 12825 | ALTA | sim | P-ASS-RASTREAMENTO-NAO-COBRADO (2026-11-04) — rastreamento aprovado como item próprio ai |
 | `P-ASS-ADAPTADORES-FORA-DO-PORTAO` | 12832 | MÉDIA | sim | P-ASS-ADAPTADORES-FORA-DO-PORTAO (2026-11-03) — adaptadores posteriores ao primeiro par  |
 | `P-ASS-SANDBOX-REAL` | 12838 | MÉDIA | sim | P-ASS-SANDBOX-REAL (2026-11-03) — homologação real dos provedores escolhidos depende de  |
 | `P-ASS-SECRETS-MANAGER` | 12844 | MÉDIA | sim | P-ASS-SECRETS-MANAGER (2026-11-03) — chave do cofre ainda sem integração ao gerenciador  |
@@ -404,8 +403,13 @@
 | `P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA` | 15214 | ALTA | sim | P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram  |
 | `P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE` | 15229 | MÉDIA | sim | P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE (2026-11-14) — o cartão de checklist da OS abre o fo |
 | `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO` | 15237 | MÉDIA | sim | P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre p |
+| `P-ASS12-ALERTA-SEM-ADICIONAL` | 15260 | MÉDIA | sim | P-ASS12-ALERTA-SEM-ADICIONAL (2026-11-14) — a plataforma não vê aviso de organização que |
+| `P-ASS12-PULO-SEM-AVISO` | 15266 | MÉDIA | sim | P-ASS12-PULO-SEM-AVISO (2026-11-14) — organização pulada por `addon_without_price` não a |
+| `P-ASS12-PUT-ASSINATURA-NAO-ATOMICO` | 15272 | MÉDIA | sim | P-ASS12-PUT-ASSINATURA-NAO-ATOMICO (2026-11-14) — o `PUT` da assinatura fecha, cria e gr |
+| `P-ASS12-VINCULO-SEM-CADASTRO` | 15278 | ALTA | sim | P-ASS12-VINCULO-SEM-CADASTRO (2026-11-14) — nenhum caminho de produto cria vínculo rastr |
+| `P-ASS12-O-QUE-O-ADICIONAL-LIBERA` | 15284 | MÉDIA | sim | P-ASS12-O-QUE-O-ADICIONAL-LIBERA (2026-11-14) — aplicar a P10 e a Q11 quando houver funç |
 
-## ABERTAS · balde B — processo/registro — 408
+## ABERTAS · balde B — processo/registro — 409
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -658,7 +662,6 @@
 | `P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO` | 13017 | BAIXA | sim | P-ASS02-WRITER-MODULES-FORA-DO-REPOSITORIO (2026-11-05) — escrita de `tenants.modules` e |
 | `P-SAN3-05-ETIQUETA-UNICA-POR-ROTA` | 13023 | BAIXA | sim | P-SAN3-05-ETIQUETA-UNICA-POR-ROTA (2026-11-05) — a taxonomia de etiquetas aceita uma só  |
 | `P-ASS03-CANARIO-LIMIT1` | 13036 | BAIXA | sim | P-ASS03-CANARIO-LIMIT1 (2026-11-06) — o canário `LIMIT 1` só pega bypass por acaso — BAI |
-| `P-ASS03-VEICULOS-SEM-DB` | 13042 | BAIXA | sim | P-ASS03-VEICULOS-SEM-DB (2026-11-06) — o SQL real de veículos não tem variante `-db` — B |
 | `P-ASS03-METODO-RATEIO-FALLBACK` | 13048 | BAIXA | sim | P-ASS03-METODO-RATEIO-FALLBACK (2026-11-06) — sem medição, o rateio do banco grava `stor |
 | `P-ASS03-PD-SWEEP-CATALOGO` | 13055 | BAIXA | sim | P-ASS03-PD-SWEEP-CATALOGO (2026-11-06) — `(PD) sweep` vermelho só no head, por concorrên |
 | `P-ASS-SPLIT-MARGEM-CONTRATO` | 13067 | — | sim | P-ASS-SPLIT-MARGEM-CONTRATO (2026-11-06) — redação do contrato e nota sobre a tarifa do  |
@@ -817,6 +820,8 @@
 | `P-MOBILE-MODULE-RESOLVER-MORTO` | 15222 | BAIXA | sim | P-MOBILE-MODULE-RESOLVER-MORTO (2026-11-14) — o `ModuleResolver` e o `perms` do mapa de  |
 | `P-TESTE-VAULT-ROUTES-FILHO-ORFAO` | 15245 | BAIXA | sim | P-TESTE-VAULT-ROUTES-FILHO-ORFAO (2026-11-14) — o `ass-05-vault-routes` não mata o servi |
 | `P-J561-JWT-LOCAL-SEM-TENANT-ROLE` | 15253 | BAIXA | sim | P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda  |
+| `P-ASS12-UNIDADE-SO-NO-SNAPSHOT` | 15290 | BAIXA | sim | P-ASS12-UNIDADE-SO-NO-SNAPSHOT (2026-11-14) — a unidade e os veículos cobrados vivem só  |
+| `P-ASS12-AVISO-PRECO-COMBINADO` | 15296 | BAIXA | sim | P-ASS12-AVISO-PRECO-COMBINADO (2026-11-14) — publicar mensalidade fixa não avisa as orga |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -884,7 +889,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3752 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3796 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 245
+## FECHADAS — 247
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1100,8 +1105,10 @@
 | `P-SAN3-19-PLACEHOLDER-CHAVE-CRUA` | 12744 | BAIXA | sim | P-SAN3-19-PLACEHOLDER-CHAVE-CRUA (2026-11-03) — placeholder do app mostra a chave crua d |
 | `P-ASS-MEDICAO-FRANQUIA` | 12797 | ALTA | sim | P-ASS-MEDICAO-FRANQUIA (2026-11-03) — franquia sem medição diária por organização — ALTA |
 | `P-ASS-DEMONSTRATIVO` | 12804 | ALTA | sim | P-ASS-DEMONSTRATIVO (2026-11-03) — demonstrativo mensal e baixa da assinatura inexistent |
+| `P-ASS-RASTREAMENTO-NAO-COBRADO` | 12825 | ALTA | sim | P-ASS-RASTREAMENTO-NAO-COBRADO (2026-11-04) — rastreamento aprovado como item próprio ai |
 | `P-OS-TIPO-GUINCHO-PRESTADOR` | 12966 | BAIXA | sim | P-OS-TIPO-GUINCHO-PRESTADOR (2026-11-04) — a OS não tem tipo de serviço próprio — BAIXA  |
 | `P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE` | 13010 | ALTA | sim | P-MOBILE-SEM-PERMISSAO-INTERNET-RELEASE (2026-11-04) — o APK de release não declarava ac |
+| `P-ASS03-VEICULOS-SEM-DB` | 13042 | BAIXA | sim | P-ASS03-VEICULOS-SEM-DB (2026-11-06) — o SQL real de veículos não tem variante `-db` — B |
 | `P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA` | 13101 | MÉDIA | sim | P-ASS02-TRILHA-PLATAFORMA-EM-MEMORIA (2026-11-08) — a trilha de plataforma do serviço de |
 | `P-ASS08-MUTATE-SEM-GUARDA` | 13262 | ALTA | sim | P-ASS08-MUTATE-SEM-GUARDA (2026-11-10) — o `#mutate` da outbox atualiza por id sem confe |
 | `P-ASS08-RECONSULTA-SEM-VALOR` | 13270 | MÉDIA | sim | P-ASS08-RECONSULTA-SEM-VALOR (2026-11-10) — a reconsulta por referência devolve só `{ ch |
