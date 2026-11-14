@@ -24,6 +24,7 @@ import type { CloudBillingData } from "../cloud-billing.types";
 import { useCloudBilling, useInitialBillingMonth } from "../useCloudBilling";
 import { useCloudBillingActions } from "../useCloudBillingActions";
 import { CloudBillingViewA } from "../views/CloudBillingViewA";
+import { CloudBillingViewB } from "../views/CloudBillingViewB";
 import { MonthSelect, type CloudBillingViewProps } from "../views/cloudBilling.shared";
 import { CloudBillingDialogs, type DialogAction } from "../components/CloudBillingDialogs";
 
@@ -36,7 +37,7 @@ import { CloudBillingDialogs, type DialogAction } from "../components/CloudBilli
 // (nenhum valor; os 3 erros 500 do contrato), vazio e dados desatualizados.
 
 /** As aparências prontas; a que ainda não existe cai na A (o Dev-B acrescenta B e C nas F5 e F6). */
-const VIEWS: Readonly<Record<string, ComponentType<CloudBillingViewProps>>> = { A: CloudBillingViewA };
+const VIEWS: Readonly<Record<string, ComponentType<CloudBillingViewProps>>> = { A: CloudBillingViewA, B: CloudBillingViewB };
 
 export type CloudBillingScreenProps = {
   readonly data: CloudBillingData;

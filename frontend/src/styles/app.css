@@ -8223,6 +8223,38 @@ a.pat-mini--ocupada:focus-visible { outline: 2px solid #2563eb; outline-offset: 
 .ui-step-bridge__step--success .ui-step-bridge__note { fill: #16a34a; }
 .ui-step-bridge__step--danger .ui-step-bridge__note { fill: #dc2626; }
 
+/* ── B-ASS-10b (T5) · Dev-B — aparência B · Analítica do Cloud Billing ─────────────────────────────────────────────────
+   Referência: screen-refs/platform-cloud-billing-3opcoes.reference.html (`.mini-grid`, `.mini-kpi`, `.ana`, `.card--2`,
+   `.kpi-spark`). As peças comuns (cabeçalho, indicadores, cartões, lista) são as `.cb-*` do Dev-A; os gráficos são da
+   biblioteca. Só tokens e cores que o sistema já usa. */
+.cb-spark { display: block; height: 30px; margin-top: 8px; min-width: 0; }
+.cb-mini-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: -4px 0 16px; }
+.cb-mini { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fff; font: inherit; text-align: left; cursor: pointer; min-height: 44px; min-width: 0; transition: border-color .15s ease, box-shadow .15s ease; }
+.cb-mini:hover { border-color: #93c5fd; }
+.cb-mini[aria-pressed="true"] { border-color: #2563eb; box-shadow: 0 0 0 2px #dbeafe; }
+.cb-mini:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.cb-mini__tile { width: 28px; height: 28px; }
+.cb-mini__text { flex: 1; min-width: 0; font-size: 11.5px; font-weight: 700; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cb-mini__text small { display: block; font-weight: 600; color: #94a3b8; font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; }
+.cb-mini__value { font-family: var(--font-mono); font-size: 14px; font-weight: 800; color: #0f172a; white-space: nowrap; }
+.cb-ana { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.cb-ana > .cb-card--wide { grid-column: span 2; }
+.cb-card__head--sub { margin: 14px 0 4px; }
+.cb-bands .ui-column-bars__column:nth-child(1) .ui-column-bars__bar { background: #ef4444; }
+.cb-bands .ui-column-bars__column:nth-child(3) .ui-column-bars__bar { background: #34d399; }
+.cb-bands .ui-column-bars__column:nth-child(4) .ui-column-bars__bar { background: #059669; }
+.cb-bands .ui-column-bars__bar { width: 70%; max-width: 38px; }
+.cb-fx-note { margin-top: 10px; font-size: 11px; color: #64748b; white-space: normal; }
+.cb-view--b .cb-panel { margin-top: 0; }
+@media (max-width: 1200px) {
+  .cb-ana { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cb-ana > .cb-card--wide { grid-column: 1 / -1; }
+  .cb-mini-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 900px) {
+  .cb-ana { grid-template-columns: minmax(0, 1fr); }
+}
+
 .ui-reconcile-donut { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; align-items: center; }
 .ui-reconcile-donut svg { display: block; width: 120px; height: 120px; }
 .ui-reconcile-donut--empty { display: block; }

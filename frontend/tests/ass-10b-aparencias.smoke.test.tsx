@@ -225,3 +225,69 @@ test("T-UI-2 indicador filtra e publica aria-pressed; a faixa sai com um clique;
     }
   }
 });
+
+// ---- B · Analítica (F5 do Dev-B) -------------------------------------------------------------------------------------
+test("T-UI-1 (b) B: o texto de cada bloco é o literal formatado do campo que o §6.3 aponta", async () => {
+  assert.ok(LETTERS.includes("B"), "a aparência B existe");
+  const model = fixtureModel();
+  const g = model.global!;
+  // a tabela do §6.3 para a aparência B: os 4 indicadores grandes (com tendência), os 4 pequenos e "Para onde vai o custo"
+  const TABLE_B: Record<string, string[]> = {
+    sub: [formatBRL(g.subscriptionTotal)],
+    custo: [formatBRL(g.totalCost)],
+    margem: [formatBRL(g.margin), formatPct(g.marginPct)],
+    alerta: ["2"],
+    plat: [formatBRL(g.platformOwnCost)],
+    nr: [formatBRL(g.unallocatedOther)],
+    res: [formatBRL(g.roundingResidualCost)],
+    semass: ["2"],
+    orgs: [formatBRL(g.tenantsCost)],
+    arr: [formatBRL(g.roundingResidualCost)],
+    conv: [formatBRL(g.conversionResidualCost)],
+  };
+  const { container, unmount } = await mount(React.createElement(VIEWS.B as never, props(model) as never));
+  try {
+    for (const [alvo, expected] of Object.entries(TABLE_B)) {
+      const blocks = elements(container, (el) => el.getAttribute("data-alvo") === alvo);
+      assert.ok(blocks.length > 0, `bloco ${alvo} ausente na B`);
+      for (const block of blocks) for (const literal of expected) assert.ok(plain(text(block)).includes(plain(literal)), `bloco ${alvo}: falta ${plain(literal)} em "${plain(text(block))}"`);
+    }
+    // dispersão: um ponto por organização com custo; o texto acessível traz os literais de assinatura e custo da linha
+    for (const line of model.lines.filter((item) => item.allocatedCost !== null)) {
+      const point = elements(container, (el) => el.getAttribute("data-alvo") === `org:${line.tenantId}` && el.getAttribute("role") === "button")[0];
+      assert.ok(point, `ponto da organização ${line.tenantId}`);
+      const aria = plain(point.getAttribute("aria-label") ?? "");
+      assert.ok(aria.includes(plain(formatBRL(line.allocatedCost))), `ponto ${line.tenantId}: custo literal em "${aria}"`);
+      assert.ok(aria.includes(plain(formatBRL(line.subscriptionAmount))), `ponto ${line.tenantId}: assinatura literal em "${aria}"`);
+    }
+    // os 6 meses em barras, cada mês um botão; o dólar do mês com a versão
+    assert.equal(elements(container, (el) => el.hasAttribute("data-mes") && el.getAttribute("role") === "button").length, 6, "6 meses no gráfico de barras");
+    assert.match(plain(text(container)), /Dólar de outubro: 5,412300 \(versão 2\)/);
+  } finally {
+    await unmount();
+  }
+});
+
+test("T-UI-1 (b′) B: dispersão, situação, faixa e indicador pequeno filtram a lista (alvo do modelo)", async () => {
+  assert.ok(LETTERS.includes("B"), "a aparência B existe");
+  const targets: string[] = [];
+  const model = fixtureModel(state.selectTarget(state.INITIAL_UI, "org:t1"));
+  const { container, unmount } = await mount(React.createElement(VIEWS.B as never, props(model, { onTarget: (key: string) => targets.push(key) }) as never));
+  try {
+    const point = elements(container, (el) => el.getAttribute("data-alvo") === "org:t1" && el.getAttribute("role") === "button")[0]!;
+    assert.equal(point.getAttribute("aria-pressed"), "true", "o ponto do alvo publica aria-pressed");
+    await click(point);
+    const legend = elements(container, (el) => el.localName === "button" && /^Crítico: 1/.test(el.getAttribute("aria-label") ?? ""))[0]!;
+    assert.ok(legend, "a legenda da situação é botão");
+    await click(legend);
+    const band = elements(container, (el) => el.localName === "button" && /^Negativa: 1 organização/.test(el.getAttribute("aria-label") ?? ""))[0]!;
+    assert.ok(band, "a coluna da faixa negativa é botão");
+    await click(band);
+    const mini = elements(container, (el) => el.localName === "button" && (el.parentNode as MiniDomElement).getAttribute?.("data-alvo") === "plat")[0]!;
+    assert.ok(mini, "o indicador pequeno é botão");
+    await click(mini);
+    assert.deepEqual(targets, ["org:t1", "alert:critical", "faixa:neg", "plat"]);
+  } finally {
+    await unmount();
+  }
+});

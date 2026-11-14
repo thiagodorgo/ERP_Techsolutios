@@ -5,7 +5,8 @@ import { useId, type KeyboardEvent } from "react";
 // prontos (x, y em número de DESENHO, nunca dinheiro para exibir), o tom de cada ponto (a cor vem da regra do servidor,
 // não daqui) e o texto acessível de cada um. Cada ponto é um botão (`role="button"`, Tab, Enter/Espaço, `aria-pressed`).
 // Linhas-guia passam pela origem (`y = slope × x`) e pintam as faixas entre elas. O texto do eixo é ESCALA: calculado aqui
-// dentro e marcado `data-escala` (Emenda 1 do plano, A8-r2), para nunca ser confundido com valor de negócio.
+// dentro e marcado `data-escala` (Emenda 1 do plano, A8-r2), para nunca ser confundido com valor de negócio. Cada ponto
+// leva `data-alvo` com a própria chave (como as linhas do `ProportionBars`), para a tela e o T-UI-1 acharem o bloco.
 // Sem ponto desenhável → "Sem dados para comparar.", nunca um gráfico vazio que pareça zero.
 
 export type ScatterTone = "danger" | "warning" | "success" | "neutral" | "muted";
@@ -111,6 +112,7 @@ export function ScatterPlot({ points, guides = [], pressedKey = null, onSelect, 
       tabIndex={0}
       aria-pressed={pressedKey === item.key}
       aria-label={item.ariaLabel}
+      data-alvo={item.key}
       onClick={() => activate(item.key)}
       onKeyDown={(event) => onKeyDown(event, item.key)}
     >

@@ -76,6 +76,7 @@ test("T-LIB-1 ScatterPlot: um botão focável por ponto, com o texto acessível 
   assert.equal(count(html, /aria-pressed="true"/g), 1, "um ponto escolhido");
   assert.match(html, /aria-pressed="true" aria-label="Beta: assinatura R\$ 1\.000,00, custo R\$ 850,00, Atenção"/);
   for (const point of POINTS) assert.ok(html.includes(`aria-label="${point.ariaLabel}"`), `ponto ${point.key} com o texto do chamador`);
+  for (const point of POINTS) assert.ok(html.includes(`data-alvo="${point.key}"`), `ponto ${point.key} marcado com data-alvo (F5)`);
   for (const tone of ["danger", "warning", "success", "neutral"]) assert.match(html, new RegExp(`ui-scatter__point--${tone}`), `cor do tom ${tone} vem do chamador`);
   assert.match(html, />Alfa</, "o rótulo curto opcional aparece ao lado do ponto");
   assert.doesNotMatch(html, /NaN|Infinity/);
