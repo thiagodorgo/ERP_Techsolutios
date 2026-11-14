@@ -238,7 +238,7 @@ if (!connectionString) {
         pixCopyPaste: "PIX-FICTICIO-R1",
         boletoLine: "00000.00000 00000.000000 00000.000000 0 00000000000000",
         boletoUrl: "https://boleto.invalid/r1.pdf",
-        dueDate: "2026-11-20",
+        dueDate: "2026-11-25",
         raw: {},
       }),
       cancelCharge: async (chargeId) => ({ chargeId, status: "cancelled" }),
@@ -270,7 +270,7 @@ if (!connectionString) {
       pix_copy_paste: "PIX-FICTICIO-R1",
       boleto_line: "00000.00000 00000.000000 00000.000000 0 00000000000000",
       boleto_url: "https://boleto.invalid/r1.pdf",
-      due_date: "2026-11-20",
+      due_date: "2026-11-25",
     }]);
     const after = await persisted(fixture);
     assert.deepEqual([after.outbox, after.ref], [{ status: "SENT", external_id: "charge-fake-r1-db" }, { external_charge_id: "charge-fake-r1-db" }]);

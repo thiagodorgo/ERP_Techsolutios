@@ -331,3 +331,71 @@ for (const [instant, day] of [["2026-12-01T02:50:00Z", "2026-11-30"], ["2026-12-
     }
   });
 }
+
+// ------------------------------------------------------------------ J-555 (C2-02): os centavos pelo adaptador REAL
+
+/** O adaptador real com o 1º `createCharge` roteirizado: "lost" cria a cobrança no falso e PERDE a resposta (timeout);
+ * "unavailable" falha sem criar nada. A lista, o `getCharge` e todo o resto são o adaptador real, sem embrulho. */
+function firstCreateFails(adapter: AsaasPaymentAdapter, mode: "lost" | "unavailable"): PaymentProviderPort {
+  let first = true;
+  return new Proxy(adapter, {
+    get(target, prop) {
+      if (prop === "createCharge") {
+        return async (input: Parameters<AsaasPaymentAdapter["createCharge"]>[0]) => {
+          if (!first) return target.createCharge(input);
+          first = false;
+          if (mode === "unavailable") throw failure("provider_unavailable");
+          await target.createCharge(input);
+          throw failure("provider_timeout");
+        };
+      }
+      const value = Reflect.get(target, prop, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  }) as unknown as PaymentProviderPort;
+}
+const postsOf = (server: AsaasFake) => server.recorded.filter((recorded) => recorded.method === "POST" && recorded.path === "/v3/payments").length;
+
+for (const cents of [9_999, 29, 10_029]) {
+  test(`RV3-ASAAS-CENTAVOS (adaptador): ${cents} centavos criados voltam na lista como ${cents}`, async () => {
+    const { server, adapter } = await adapterOver({ now: () => T0 });
+    try {
+      const created = await adapter.createCharge(charge(cents));
+      assert.deepEqual((await adapter.listChargesByExternalReference(STATEMENT)).map((candidate) => [candidate.chargeId, candidate.amountCents]), [[created.chargeId, cents]]);
+    } finally {
+      await server.close();
+    }
+  });
+}
+
+test("RV-CENTAVOS-DESPACHO (adaptador real): a retentativa adota a PRÓPRIA cobrança de R$ 99,99 — recovered, SENT, 1 POST", async () => {
+  const { server, adapter } = await adapterOver({ now: () => T0 });
+  try {
+    const a = await arm(T0, 9_999, firstCreateFails(adapter, "lost"));
+    const r = await request(a, T0, 9_999);
+    await run(a, T0);
+    const result = await run(a, min(T0, 2));
+    const f = await rowOf(a, r.id);
+    const own = await adapter.listChargesByExternalReference(a.statementId);
+    assert.deepEqual([result.outcomes.recovered, f.status, f.lastError, postsOf(server)], [1, "SENT", null, 1]);
+    assert.deepEqual(own.map((candidate) => [candidate.chargeId, candidate.amountCents]), [[f.externalId, 9_999]], "a adotada é a própria, de 9 999 centavos");
+  } finally {
+    await server.close();
+  }
+});
+
+test("RV-CENTAVOS-NEGA (adaptador real): retentativa de R$ 99,00 com uma viva de R$ 99,99 na referência → nunca adota o valor errado, 0 POST novo", async () => {
+  const { server, adapter } = await adapterOver({ now: () => T0 });
+  try {
+    const a = await arm(T0, 9_900, firstCreateFails(adapter, "unavailable"));
+    const r = await request(a, T0, 9_900);
+    const first = await run(a, T0); // lista vazia → o POST falha sem criar → reagenda com last_error
+    await adapter.createCharge(charge(9_999, a.statementId)); // a viva de OUTRO valor aparece na mesma referência
+    const posts = postsOf(server);
+    await run(a, min(T0, 2)); // a retentativa: é aqui que uma candidata de mesmo valor seria ADOTADA
+    const f = await rowOf(a, r.id);
+    assert.deepEqual([first.outcomes.retry, f.status, f.lastError, f.externalId, postsOf(server) - posts], [1, "NEEDS_REVIEW", "charge_found_no_candidate", null, 0]);
+  } finally {
+    await server.close();
+  }
+});

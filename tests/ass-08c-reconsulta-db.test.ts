@@ -226,4 +226,61 @@ if (!connectionString) {
       }
     });
   }
+
+  // J-555 (C2-02): os centavos pelo adaptador REAL e pelo Prisma real, sob o papel sem bypass. O 1º POST cria a cobrança no
+  // falso e PERDE a resposta (o embrulho só intercepta o `createCharge`); a lista e o `getCharge` são o adaptador real.
+  test("RV-CENTAVOS-db (adaptador real): a retentativa adota a PRÓPRIA cobrança de R$ 99,99 — recovered, SENT, 1 POST, 1 cobrança pending", async () => {
+    const provider = `asaas-cent-${randomUUID().slice(0, 8)}`;
+    const tenants = (await db.$queryRawUnsafe(`INSERT INTO tenants (name, slug) VALUES ($1, $1) RETURNING id`, `ass08c-cent-${randomUUID().slice(0, 8)}`)) as Array<{ id: string }>;
+    const tenantId = tenants[0]!.id;
+    const t0 = new Date();
+    const statements = (await db.$queryRawUnsafe(
+      `INSERT INTO subscription_statements
+         (tenant_id, period, status, segments, users_included, users_peak, users_extra, storage_included_gb, storage_peak_gb,
+          storage_extra_gb, tracked_vehicles, days_in_month, days_measured, extra_user_price, extra_gb_price,
+          base_amount, users_extra_amount, storage_extra_amount, tracking_amount, adjustments_amount,
+          credits_applied_amount, total_amount, due_date, closed_at, snapshot)
+       VALUES ($1::uuid, '2026-10', 'closed', '[]'::jsonb, 0,0,0, 0,0,0, 0, 31,31, 0,0, 99.99,0,0,0,0,0,99.99, '2026-11-10', $2, '{"latest":null,"history":[]}'::jsonb)
+       RETURNING id`,
+      tenantId,
+      t0,
+    )) as Array<{ id: string }>;
+    const statementId = statements[0]!.id;
+    await db.$executeRawUnsafe(`INSERT INTO billing_statement_refs (statement_id, tenant_id, provider) VALUES ($1::uuid, $2::uuid, 'asaas')`, statementId, tenantId);
+    const server = await startAsaasFake();
+    try {
+      const client = new BillingHttpClient({ provider: "asaas", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${server.baseUrl}/v3` });
+      const adapter = new AsaasPaymentAdapter(client, async (kind) => (kind === "api_token" ? "TOKEN-FAKE" : "WEBHOOK-FAKE"));
+      let first = true;
+      const port = new Proxy(adapter, {
+        get(target, prop) {
+          if (prop === "createCharge") {
+            return async (input: Parameters<AsaasPaymentAdapter["createCharge"]>[0]) => {
+              const created = await target.createCharge(input);
+              if (first) {
+                first = false;
+                throw Object.assign(new Error("provider_timeout"), { code: "provider_timeout" });
+              }
+              return created;
+            };
+          }
+          const value = Reflect.get(target, prop, target);
+          return typeof value === "function" ? value.bind(target) : value;
+        },
+      });
+      const r = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 9_999, dueDate: "2026-11-10", method: "pix" }, now: t0 });
+      const go = (now: Date) =>
+        runDispatchOutbox({ repo: new PrismaOutboxRepository(role.client, { tenantIds: [tenantId] }), ports: { [provider]: port }, resolveCustomer: async () => ({ ok: true, customerId: "cus_0001" }), now: () => now });
+      const firstRun = await go(t0);
+      const retry = await go(minutesAfter(t0, 2));
+      const [row] = (await db.$queryRawUnsafe(`SELECT status, last_error, external_id FROM billing_outbox WHERE id = $1::uuid`, r.id)) as Array<{ status: string; last_error: string | null; external_id: string | null }>;
+      const charges = (await db.$queryRawUnsafe(`SELECT external_charge_id, status FROM subscription_statement_charges WHERE statement_id = $1::uuid`, statementId)) as Array<{ external_charge_id: string; status: string }>;
+      const own = await adapter.listChargesByExternalReference(statementId);
+      assert.deepEqual([firstRun.outcomes.retry, retry.outcomes.recovered, row!.status, row!.last_error, postsToPayments(server)], [1, 1, "SENT", null, 1], JSON.stringify({ firstRun, retry, row }));
+      assert.deepEqual(own.map((candidate) => [candidate.chargeId, candidate.amountCents]), [[row!.external_id, 9_999]], "a adotada é a própria, de 9 999 centavos");
+      assert.deepEqual(charges, [{ external_charge_id: row!.external_id, status: "pending" }], "1 cobrança pending na tabela, a adotada");
+    } finally {
+      await server.close();
+    }
+  });
 }

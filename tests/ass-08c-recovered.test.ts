@@ -56,7 +56,7 @@ test("RACE-6/R2-01: falha de registro pós-provedor mantém PROCESSING e a órf�
     listChargesByExternalReference: async () => remoteCreated
       ? [{ chargeId: "charge-fake-race6", status: "pending", amountCents: 12_345, createdAt: "2026-11-13" }]
       : [],
-    getCharge: async () => ({ status: "pending", dueDate: "2026-11-20", raw: {} }),
+    getCharge: async () => ({ status: "pending", dueDate: "2026-11-25", raw: {} }),
     cancelCharge: async (chargeId) => ({ chargeId, status: "cancelled" }),
     refund: async (chargeId) => ({ chargeId, status: "refunded" }),
     registerWebhook: async () => ({ manual: true }),
@@ -80,9 +80,13 @@ test("RACE-6/R2-01: falha de registro pós-provedor mantém PROCESSING e a órf�
   assert.deepEqual(audits, ["billing_outbox.record_failed:record_unavailable"]);
 
   failRecord = false;
+  // J-555 (C2-03): daqui em diante o coletor original não faz nada; este o substitui e guarda o que a adotada grava.
+  const recorded: Array<{ externalChargeId: string; dueDate?: string | null }> = [];
+  repo.configureChargeOutcomeSink?.(async (charge) => { recorded.push({ externalChargeId: charge.externalChargeId, dueDate: charge.dueDate }); });
   now = new Date(first.getTime() + 60_001);
   const recovered = await runDispatchOutbox(deps);
   assert.equal(recovered.outcomes.recovered, 1);
   assert.equal(createCalls, 1, "a recuperação por referência não repete a criação remota");
   assert.equal((await repo.findById(enqueued.row.tenantId, enqueued.row.id))?.status, "SENT");
+  assert.deepEqual(recorded, [{ externalChargeId: "charge-fake-race6", dueDate: "2026-11-25" }], "a adotada grava o vencimento do PROVEDOR, não o do payload");
 });
