@@ -343,6 +343,11 @@ jobs:
           # e reenvio, custódia profissional e gerente sem e com cadastro (RC3(1)-(8), K = 8). Medida a lista inteira 3× nesta
           # forma antes de entrar (72 arquivos, banco migrado e semeado): 610/610, 0 falha, 0 pulo, denominador constante.
           SUITES="$SUITES tests/b-material-sync-db.test.ts"
+          # B-SAN3-16 (item 5 do portão; a 12.1 da Emenda 1 = (A), pela D-DONO-1311-RECOMENDACOES) — a suíte -db do pedido
+          # de aprovação e do "não consegui iniciar" do app: evento durável sob RLS, reenvio com serviço novo e recibo zerado,
+          # drill de RLS com papel efêmero e o aviso a quem atribuiu a OS (D1 a D4). Medida a lista inteira 3× nesta forma antes
+          # de entrar (74 arquivos, banco migrado e semeado): 625/625, 0 falha, 0 pulo, denominador constante.
+          SUITES="$SUITES tests/bsan316-fila-os-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo
