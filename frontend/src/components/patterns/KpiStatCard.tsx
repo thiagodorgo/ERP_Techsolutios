@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 // PR-A TELAS PADRONIZADAS — KPI card "de decisão" do padrão transversal
 // (fonte: "ERP Web - Telas Padronizadas.dc.html", bloco dashKpis/osKpis/userKpis).
@@ -27,9 +28,11 @@ export type KpiStatCardProps = {
   ariaLabel?: string;
   /** B-SAN3-12b — indicador que FILTRA (D-PADRAO-BLOCOS-CLICAVEIS): com `onClick`, publica `aria-pressed`. */
   pressed?: boolean;
+  /** B-ASS-10b — rodapé opcional no fim do card (ex.: a `Sparkline` de tendência da aparência B do Cloud Billing). Sem ele, nada muda. */
+  footer?: ReactNode;
 };
 
-export function KpiStatCard({ icon: Icon, iconColor, iconBg, value, label, hint, tag, border, onClick, ariaLabel, pressed }: KpiStatCardProps) {
+export function KpiStatCard({ icon: Icon, iconColor, iconBg, value, label, hint, tag, border, onClick, ariaLabel, pressed, footer }: KpiStatCardProps) {
   const borderStyle = border ? { borderColor: border } : undefined;
   const body = (
     <>
@@ -46,6 +49,7 @@ export function KpiStatCard({ icon: Icon, iconColor, iconBg, value, label, hint,
       <div className="pat-kpi__value">{value}</div>
       <div className="pat-kpi__label">{label}</div>
       {hint ? <div className="pat-kpi__hint">{hint}</div> : null}
+      {footer ? <div className="pat-kpi__footer">{footer}</div> : null}
     </>
   );
 

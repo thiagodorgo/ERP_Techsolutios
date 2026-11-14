@@ -8169,6 +8169,60 @@ a.pat-mini--ocupada:focus-visible { outline: 2px solid #2563eb; outline-offset: 
 .ui-balance-bridge g[aria-pressed="true"] .ui-balance-bridge__hit { fill: #dbeafe; }
 .ui-balance-bridge--empty, .ui-reconcile-donut--empty, .ui-day-bars--empty { padding: 18px 0; font-size: 12.5px; text-align: center; color: #94a3b8; }
 
+/* B-ASS-10b (T5) — componentes da biblioteca: ScatterPlot (dispersão, aparência B do Cloud Billing), StepBridge (ponte
+   em degraus, aparência C) e o rodapé do KpiStatCard. Cores e foco copiados da referência aprovada
+   (`screen-refs/platform-cloud-billing-3opcoes.reference.html`: `.svg-chart`, `.ponto`, `.hit`, `.foco`, `AL_COR`). */
+.pat-kpi__footer { margin-top: 8px; min-width: 0; }
+.ui-scatter, .ui-step-bridge { margin: 0; }
+.ui-scatter svg, .ui-step-bridge svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ui-scatter text, .ui-step-bridge text { font-family: var(--font-sans); }
+.ui-scatter--empty, .ui-step-bridge--empty { padding: 18px 0; font-size: 12.5px; text-align: center; color: #94a3b8; }
+.ui-scatter__zone--success { fill: #f0fdf4; }
+.ui-scatter__zone--warning { fill: #fffbeb; }
+.ui-scatter__zone--danger { fill: #fef2f2; }
+.ui-scatter__guide { stroke-width: 1.2; stroke-dasharray: 4 3; }
+.ui-scatter__guide--danger { stroke: #dc2626; }
+.ui-scatter__guide--warning { stroke: #d97706; }
+.ui-scatter__guide-label--danger { fill: #b91c1c; }
+.ui-scatter__guide-label--warning { fill: #b45309; }
+.ui-scatter__lane rect { fill: #f8fafc; }
+.ui-scatter__lane text { fill: #64748b; }
+.ui-scatter__axis { stroke: #cbd5e1; }
+.ui-scatter__scale text { fill: #94a3b8; }
+.ui-scatter__title { fill: #475569; }
+.ui-scatter__point { cursor: pointer; outline: none; }
+.ui-scatter__hit { fill: transparent; }
+.ui-scatter__ring { fill: none; stroke: transparent; stroke-width: 2; }
+.ui-scatter__dot { stroke: #fff; stroke-width: 2; transition: stroke .15s ease, stroke-width .15s ease; }
+.ui-scatter__point--danger .ui-scatter__dot { fill: #dc2626; }
+.ui-scatter__point--warning .ui-scatter__dot { fill: #f59e0b; }
+.ui-scatter__point--success .ui-scatter__dot { fill: #10b981; }
+.ui-scatter__point--neutral .ui-scatter__dot { fill: #94a3b8; }
+.ui-scatter__point--muted .ui-scatter__dot { fill: #cbd5e1; }
+.ui-scatter__label { fill: #0f172a; }
+.ui-scatter__point:hover .ui-scatter__dot { stroke: #0f172a; stroke-width: 2.5; }
+.ui-scatter__point[aria-pressed="true"] .ui-scatter__dot { stroke: #2563eb; stroke-width: 3; }
+.ui-scatter__point:focus-visible .ui-scatter__ring { stroke: #2563eb; }
+.ui-step-bridge__base { stroke: #cbd5e1; }
+.ui-step-bridge__link { stroke: #94a3b8; stroke-dasharray: 3 3; pointer-events: none; }
+.ui-step-bridge__step { cursor: pointer; outline: none; }
+.ui-step-bridge__hit { fill: transparent; transition: fill .15s ease; }
+.ui-step-bridge__step:hover .ui-step-bridge__hit, .ui-step-bridge__step:focus-visible .ui-step-bridge__hit { fill: #eff6ff; }
+.ui-step-bridge__step:focus-visible .ui-step-bridge__hit { stroke: #2563eb; stroke-width: 2; }
+.ui-step-bridge__step[aria-pressed="true"] .ui-step-bridge__hit { fill: #dbeafe; }
+.ui-step-bridge__value { fill: #0f172a; pointer-events: none; }
+.ui-step-bridge__label { fill: #334155; pointer-events: none; }
+.ui-step-bridge__note { pointer-events: none; }
+.ui-step-bridge__step--accent .ui-step-bridge__bar { fill: #2563eb; }
+.ui-step-bridge__step--danger .ui-step-bridge__bar { fill: #ef4444; opacity: .85; }
+.ui-step-bridge__step--violet .ui-step-bridge__bar { fill: #7c3aed; opacity: .85; }
+.ui-step-bridge__step--warning .ui-step-bridge__bar { fill: #f59e0b; opacity: .85; }
+.ui-step-bridge__step--neutral .ui-step-bridge__bar { fill: #94a3b8; opacity: .85; }
+.ui-step-bridge__step--muted .ui-step-bridge__bar { fill: #cbd5e1; opacity: .85; }
+.ui-step-bridge__step--success .ui-step-bridge__bar { fill: #16a34a; }
+.ui-step-bridge__step--success .ui-step-bridge__note { fill: #16a34a; }
+.ui-step-bridge__step--danger .ui-step-bridge__note { fill: #dc2626; }
+
 .ui-reconcile-donut { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; align-items: center; }
 .ui-reconcile-donut svg { display: block; width: 120px; height: 120px; }
 .ui-reconcile-donut--empty { display: block; }
