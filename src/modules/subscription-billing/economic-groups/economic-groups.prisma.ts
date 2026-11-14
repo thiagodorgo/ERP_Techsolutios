@@ -7,8 +7,9 @@
 //
 // Uma troca de vínculos (`applyMembershipChanges`) é uma transação: os fechamentos antes das aberturas, organização por
 // organização. A exclusão da M6 é a última palavra sobre "dois grupos no mesmo dia": o SQLSTATE 23P01 vira
-// `MembershipConflictError` (a rota responde 409 `membership_conflict`) e a transação inteira volta. O dublê em memória
-// (`economic-groups.repository.ts`) lança os mesmos erros para as mesmas entradas.
+// `MembershipConflictError` (a rota responde 409 `membership_conflict`) e a transação inteira volta. O impasse na checagem
+// dessa mesma exclusão (40P01) tem o mesmo destino (J-566, C2-1). O dublê em memória (`economic-groups.repository.ts`)
+// lança os mesmos erros para as mesmas entradas.
 
 import type { Prisma, PrismaClient } from "@prisma/client";
 
@@ -35,6 +36,20 @@ import {
 
 const MEMBERS_TABLE = "economic_group_members";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Os SQLSTATE da corrida de troca de grupo, que viram `MembershipConflictError` (409 `membership_conflict`):
+ * - `23P01`: a EXCLUDE `economic_group_members_no_overlap` recusou o vínculo que cruzaria outro;
+ * - `40P01`: impasse NA CHECAGEM dessa mesma EXCLUDE. Dois INSERT conflitantes da mesma organização gravam a tupla no
+ *   índice GiST e cada um espera a transação do outro ("ShareLock on transaction … while checking exclusion constraint");
+ *   o detector aborta um. Medido na J-566 (C2-1): 5 em 30 no T-GRP-db-1 e 3 em 2000 sem barreira.
+ * Nos dois, outra troca da mesma organização chegou antes e a transação inteira voltou: o cliente lê de novo e repete.
+ * Nenhum texto do driver sobe.
+ */
+const MEMBERSHIP_CONFLICT_STATES: ReadonlySet<string> = new Set(["23P01", "40P01"]);
+/** SQLSTATE: 5 caracteres de dígito ou maiúscula. O código do Prisma (P1xxx a P6xxx) não é SQLSTATE; o P0xxx do PL/pgSQL é. */
+const SQLSTATE_PATTERN = /^[0-9A-Z]{5}$/;
+const PRISMA_CODE_PATTERN = /^P[1-9][0-9]{3}$/;
 
 type GroupRow = {
   readonly id: string;
@@ -190,7 +205,10 @@ async function writeAuditInTx(tx: Prisma.TransactionClient, event: MembershipAud
   });
 }
 
-/** O SQLSTATE do Postgres por baixo do erro do Prisma 7 com `@prisma/adapter-pg` (forma medida no cluster do bloco). */
+/**
+ * O SQLSTATE do Postgres por baixo do erro do Prisma 7 com `@prisma/adapter-pg` (forma medida no cluster do bloco) ou do
+ * `pg` puro (`code` de topo; molde `tests/helpers/sweep-tenant.ts`). O código do Prisma nunca passa por SQLSTATE.
+ */
 export function sqlStateOf(error: unknown): string | null {
   const e = error as {
     code?: unknown;
@@ -200,6 +218,7 @@ export function sqlStateOf(error: unknown): string | null {
   const fromCause = e?.cause?.originalCode ?? e?.meta?.driverAdapterError?.cause?.originalCode;
   if (typeof fromCause === "string") return fromCause;
   if (e?.code === "P2002") return "23505";
+  if (typeof e?.code === "string" && SQLSTATE_PATTERN.test(e.code) && !PRISMA_CODE_PATTERN.test(e.code)) return e.code;
   return null;
 }
 
@@ -226,7 +245,7 @@ function mapMembershipError(error: unknown, tenantId: string | null): unknown {
     return error;
   }
   const state = sqlStateOf(error);
-  if (state === "23P01") return new MembershipConflictError(tenantId);
+  if (state !== null && MEMBERSHIP_CONFLICT_STATES.has(state)) return new MembershipConflictError(tenantId);
   if (state === "23514" && errorText(error).includes("economic_group_members_valid_to_check")) return new MembershipRangeError();
   return error;
 }
