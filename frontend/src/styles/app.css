@@ -8255,6 +8255,53 @@ a.pat-mini--ocupada:focus-visible { outline: 2px solid #2563eb; outline-offset: 
   .cb-ana { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* ── B-ASS-10b (T5) · Dev-B — aparência C · Fechamento e grupos do Cloud Billing ───────────────────────────────────────
+   Referência: screen-refs/platform-cloud-billing-3opcoes.reference.html (`.topo-c`, `.checks`, `.check-btn`, `.meses-c`,
+   `.base-c`, `.gs*`, `.mini-kpi--col`). A ponte é o StepBridge e a margem mês a mês é o MonthSeriesChart (biblioteca). */
+.cb-topo-c { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 14px; margin-bottom: 14px; }
+.cb-meses-c { margin-bottom: 16px; }
+.cb-base-c { display: grid; grid-template-columns: minmax(0, 1fr) 276px; gap: 14px; align-items: start; }
+.cb-tag { font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.cb-mini-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 12px 0 0; }
+.cb-mini--col { align-items: flex-start; padding: 10px 12px; }
+.cb-mini--col .cb-mini__value { display: block; font-size: 16px; margin: 2px 0 1px; overflow: hidden; text-overflow: ellipsis; }
+.cb-checks { display: flex; flex-direction: column; gap: 4px; }
+.cb-check { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 9px; width: 100%; padding: 7px 9px; border: 1px solid #f1f5f9; border-radius: 9px; background: #fcfdfe; font: inherit; cursor: pointer; text-align: left; font-size: 12.5px; color: #334155; min-height: 44px; }
+.cb-check:hover { border-color: #93c5fd; background: #fff; }
+.cb-check[aria-pressed="true"] { border-color: #2563eb; background: #eff6ff; }
+.cb-check:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
+.cb-check--static { cursor: default; grid-template-columns: 26px minmax(0, 1fr); }
+.cb-check--static:hover { border-color: #f1f5f9; background: #fcfdfe; }
+.cb-check__icon { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 8px; }
+.cb-check__icon--ok { background: #dcfce7; color: #15803d; }
+.cb-check__icon--atencao { background: #fef3c7; color: #b45309; }
+.cb-check__icon--erro { background: #fee2e2; color: #b91c1c; }
+.cb-check__icon--neutro { background: #f1f5f9; color: #64748b; }
+.cb-check__text { min-width: 0; font-weight: 700; color: #0f172a; line-height: 1.3; }
+.cb-check__text small { display: block; font-weight: 600; color: #64748b; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cb-check__count { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cb-check__action { font-style: normal; font-size: 11.5px; font-weight: 700; color: #2563eb; white-space: nowrap; }
+.cb-groups { background: #fff; border: 1px solid #e2e8f0; border-radius: 13px; overflow: hidden; }
+.cb-groups__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #f1f5f9; }
+.cb-groups__head b { font-size: 14px; font-weight: 800; white-space: nowrap; }
+.cb-group { display: block; width: 100%; padding: 10px 14px; border: 0; border-bottom: 1px solid #f8fafc; background: #fff; text-align: left; cursor: pointer; font: inherit; min-height: 44px; }
+.cb-group:hover { background: #f8fafc; }
+.cb-group[aria-pressed="true"] { background: #eff6ff; box-shadow: inset 3px 0 0 #2563eb; }
+.cb-group:focus-visible { outline: 2px solid #2563eb; outline-offset: -2px; }
+.cb-group--static { cursor: default; }
+.cb-group--static:hover { background: #fff; }
+.cb-group__line { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cb-group__name { display: block; font-size: 13px; font-weight: 800; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cb-group__sub { display: block; font-size: 11.5px; color: #64748b; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cb-groups__note { padding: 10px 14px; font-size: 11.5px; color: #64748b; line-height: 1.5; background: #fcfdfe; }
+.cb-view--c .ui-month-columns__col span { white-space: normal; }
+@media (max-width: 1200px) {
+  .cb-topo-c, .cb-base-c { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+  .cb-mini-grid--3 { grid-template-columns: minmax(0, 1fr); }
+}
+
 .ui-reconcile-donut { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; align-items: center; }
 .ui-reconcile-donut svg { display: block; width: 120px; height: 120px; }
 .ui-reconcile-donut--empty { display: block; }

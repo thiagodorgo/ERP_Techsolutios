@@ -120,11 +120,16 @@ test("T-UI-3 (F11) sem dólar e sem assinatura não é vazio: o aviso e o custo 
   const data = fixtureData({ cost, tenant: tenantPayload(MONTH, cost, lines, nullTotals), group: { ...groupPayload(MONTH, cost), lines: [], totals: nullTotals }, global: globalPayload(MONTH, cost, globalJson({ ...NULL_COSTS, subscriptionTotal: null, original })) });
   assert.equal(model(data).empty, false, "o modelo não é vazio");
   for (const appearance of LETTERS) {
-    const html = visible(screen(data, appearance));
+    const raw = screen(data, appearance);
+    const html = visible(raw);
     assert.doesNotMatch(html, /Nenhum custo nem assinatura/, `${appearance}: não é o vazio`);
     assert.match(html, /Falta o dólar de outubro de 2026/, `${appearance}: o aviso`);
     assert.match(html, /US\$ 1\.528,65/, `${appearance}: o importado em dólar`);
-    assert.doesNotMatch(html, /R\$ ?\d/, `${appearance}: nenhum valor em reais`);
+    // F6 (Dev-B): a margem mês a mês da C escreve, em cada coluna, a margem em reais DAQUELE mês (os meses anteriores têm
+    // dólar). O "nenhum real" vale para o mês da tela: as colunas dos outros meses saem da conta, e só elas.
+    const ownMonth = appearance === "C" ? visible(raw.replace(new RegExp(`<button[^>]*data-mes="(?!${MONTH}")[^"]*"[\\s\\S]*?</button>`, "g"), " ")) : html;
+    if (appearance === "C") assert.match(html, /R\$ ?\d/, "C: controle — as colunas dos outros meses mostram o real delas");
+    assert.doesNotMatch(ownMonth, /R\$ ?\d/, `${appearance}: nenhum valor em reais`);
   }
   // o controle: sem o original (o servidor manda tudo nulo fora de ok, legacy_unscoped e fx_missing), é o vazio
   const noOriginal = fixtureData({ cost: NO_COST("no_run"), tenant: tenantPayload(MONTH, NO_COST("no_run"), lines.map((line) => ({ ...line, allocatedCostOriginal: null })), nullTotals), group: { ...groupPayload(MONTH, NO_COST("no_run")), lines: [], totals: nullTotals }, global: globalPayload(MONTH, NO_COST("no_run"), globalJson({ ...NULL_COSTS, subscriptionTotal: null })) });

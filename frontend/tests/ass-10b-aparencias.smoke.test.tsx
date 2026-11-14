@@ -144,7 +144,11 @@ test("T-UI-1 (c) todo R$ exibido pertence aos valores do modelo; a escala dos ei
       const { container, unmount } = await mount(React.createElement(VIEWS[letter] as never, props(model) as never));
       try {
         const scales = elements(container, (el) => el.hasAttribute("data-escala"));
-        assert.ok(scales.length > 0, `${letter}: o eixo da biblioteca marca a escala (controle de vacuidade da exclusão)`);
+        // a C não tem gráfico com eixo (a ponte e a margem mês a mês desenham sem escala, como na maquete): nela a escala
+        // só existe no detalhe aberto da organização (o gráfico de 6 meses do detalhe, comum às 3 aparências)
+        const axisExpected = letter !== "C" || (ui.aberta ?? "").startsWith("t:");
+        if (axisExpected) assert.ok(scales.length > 0, `${letter}: o eixo da biblioteca marca a escala (controle de vacuidade da exclusão)`);
+        else assert.equal(scales.length, 0, `${letter} ${JSON.stringify(ui)}: sem eixo, nenhuma escala`);
         const shown = plain(visibleTextWithoutScale(container)).match(/-?R\$ [\d.]+(,\d+)?( mil| mi)?/g) ?? [];
         assert.ok(shown.length > 10, `${letter}: controle de vacuidade (R$ achados: ${shown.length})`);
         const strays = shown.filter((value) => !allowed.has(value));
@@ -287,6 +291,126 @@ test("T-UI-1 (b′) B: dispersão, situação, faixa e indicador pequeno filtram
     assert.ok(mini, "o indicador pequeno é botão");
     await click(mini);
     assert.deepEqual(targets, ["org:t1", "alert:critical", "faixa:neg", "plat"]);
+  } finally {
+    await unmount();
+  }
+});
+
+// ---- C · Fechamento e grupos (F6 do Dev-B) ---------------------------------------------------------------------------
+const hasClass = (el: MiniDomElement, name: string) => (el.getAttribute("class") ?? "").split(/\s+/).includes(name);
+
+test("T-UI-1 (b) C: o texto de cada bloco é o literal formatado do campo que o §6.3 aponta", async () => {
+  assert.ok(LETTERS.includes("C"), "a aparência C existe");
+  const model = fixtureModel();
+  const g = model.global!;
+  const min = model.minMarginLine!;
+  const groupLine = (id: string | null) => model.groupRows.find((row) => row.line.groupId === id)!.line;
+  // a ponte "da assinatura à margem" (7 degraus; o valor final é o literal `global.margin`, nunca a soma dos degraus)
+  const BRIDGE: Record<string, string[]> = {
+    sub: [formatBRL(g.subscriptionTotal)],
+    custo: [formatBRL(g.tenantsCost)],
+    plat: [formatBRL(g.platformOwnCost)],
+    nr: [formatBRL(g.unallocatedOther)],
+    arr: [formatBRL(g.roundingResidualCost)],
+    conv: [formatBRL(g.conversionResidualCost)],
+    margem: [formatBRL(g.margin), formatPct(g.marginPct)],
+  };
+  // os 3 indicadores pequenos (custo total, margem global, menor margem), as contagens do fechamento e os grupos do painel
+  const BLOCKS: Record<string, string[]> = {
+    custo: [formatBRL(g.totalCost)],
+    margem: [formatBRL(g.margin), formatPct(g.marginPct)],
+    [`org:${min.tenantId}`]: [formatPct(min.marginPct), min.tenantName],
+    est: ["1"],
+    alerta: ["2"],
+    semass: ["2"],
+    "grp:g1": [formatBRL(groupLine("g1").margin), formatPct(groupLine("g1").marginPct)],
+    "grp:sem": [formatBRL(groupLine(null).margin)],
+  };
+  const { container, unmount } = await mount(React.createElement(VIEWS.C as never, props(model) as never));
+  try {
+    for (const [alvo, expected] of Object.entries(BRIDGE)) {
+      const step = elements(container, (el) => hasClass(el, "ui-step-bridge__step") && el.getAttribute("data-alvo") === alvo)[0];
+      assert.ok(step, `degrau ${alvo} ausente na ponte da C`);
+      for (const literal of expected) assert.ok(plain(text(step)).includes(plain(literal)), `degrau ${alvo}: falta ${plain(literal)} em "${plain(text(step))}"`);
+    }
+    for (const [alvo, expected] of Object.entries(BLOCKS)) {
+      const blocks = elements(container, (el) => hasClass(el, "cb-alvo") && el.getAttribute("data-alvo") === alvo);
+      assert.ok(blocks.length > 0, `bloco ${alvo} ausente na C`);
+      for (const block of blocks) for (const literal of expected) assert.ok(plain(text(block)).includes(plain(literal)), `bloco ${alvo}: falta ${plain(literal)} em "${plain(text(block))}"`);
+    }
+    // a lista de fechamento traz o arquivo, o rateio e o dólar do mês, do modelo
+    const closing = plain(text(elements(container, (el) => el.getAttribute("aria-label") === "Fechamento de outubro")[0]!));
+    assert.match(closing, /Arquivo de custo importado/);
+    assert.match(closing, /3\.214 linhas · USD/);
+    assert.match(closing, /Rateio do mês concluído/);
+    assert.match(closing, /Dólar do mês digitado/);
+    assert.match(closing, /5,412300 · versão 2/);
+    // a margem mês a mês: os 6 meses, e o mês da tela mostra o literal da margem global e o dólar dele
+    const months = elements(container, (el) => el.hasAttribute("data-mes") && el.localName === "button");
+    assert.equal(months.length, 6, "6 meses na margem mês a mês");
+    const october = months.find((el) => el.getAttribute("data-mes") === "2026-10")!;
+    assert.ok(plain(text(october)).includes(plain(formatBRL(g.margin))), `outubro: ${plain(text(october))}`);
+    assert.match(plain(text(october)), /dólar 5,4123/);
+    // o agendado do grupo (dos detalhes dos grupos) e o grupo sem organização no mês
+    assert.match(plain(text(container)), /Agendado: Reboque Rápido Norte entra no Grupo Vale em 01\/12\/2026/);
+    assert.match(plain(text(container)), /Grupo Vazio\s*sem organizações em outubro/);
+  } finally {
+    await unmount();
+  }
+});
+
+test("T-UI-1 (b′) C: degrau, item do fechamento e grupo filtram; a ação ao lado abre a janela; sem permissão, não há escrita", async () => {
+  assert.ok(LETTERS.includes("C"), "a aparência C existe");
+  const targets: string[] = [];
+  const actions: string[] = [];
+  const model = fixtureModel({ ...state.INITIAL_UI, modo: "group", aberta: "g:g1" });
+  const handlers = { onTarget: (key: string) => targets.push(key), onAction: (action: { kind: string }) => actions.push(action.kind) };
+  const full = await mount(React.createElement(VIEWS.C as never, props(model, handlers as never) as never));
+  try {
+    const group = elements(full.container, (el) => el.localName === "button" && (el.parentNode as MiniDomElement).getAttribute?.("data-alvo") === "grp:g1")[0]!;
+    assert.equal(group.getAttribute("aria-pressed"), "true", "o grupo aberto na lista publica aria-pressed no painel");
+    await click(group);
+    const step = elements(full.container, (el) => hasClass(el, "ui-step-bridge__step") && el.getAttribute("data-alvo") === "plat")[0]!;
+    await click(step);
+    const alert = elements(full.container, (el) => el.localName === "button" && (el.parentNode as MiniDomElement).getAttribute?.("data-alvo") === "alerta")[0]!;
+    await click(alert);
+    const file = elements(full.container, (el) => el.getAttribute("data-fechamento") === "arquivo" && el.localName === "button")[0]!;
+    await click(file);
+    const dollar = elements(full.container, (el) => el.getAttribute("data-fechamento") === "dolar" && el.localName === "button")[0]!;
+    assert.match(text(dollar), /Corrigir/);
+    await click(dollar);
+    assert.deepEqual(targets, ["grp:g1", "plat", "alerta"]);
+    assert.deepEqual(actions, ["imports", "fx"]);
+    assert.match(text(full.container), /Novo grupo/);
+    assert.match(text(full.container), /Rodar de novo/);
+  } finally {
+    await full.unmount();
+  }
+  const readOnly = await mount(React.createElement(VIEWS.C as never, props(model, { access: NO_WRITE_ACCESS }) as never));
+  try {
+    const html = text(readOnly.container);
+    assert.doesNotMatch(html, /Novo grupo|Rodar de novo|Corrigir|Importar arquivo de custo/, "sem permissão, nenhum botão de escrita");
+    const dollar = elements(readOnly.container, (el) => el.getAttribute("data-fechamento") === "dolar" && el.localName === "button")[0]!;
+    assert.match(text(dollar), /Ver/, "o dólar vira \"Ver\" (o histórico)");
+    assert.equal(elements(readOnly.container, (el) => el.getAttribute("data-fechamento") === "arquivo" && el.localName === "button").length, 0, "sem ler importações, o item do arquivo só informa");
+  } finally {
+    await readOnly.unmount();
+  }
+});
+
+test("T-UI-2 C: a lista da C abre por grupo (como na referência); A e B abrem por organização", async () => {
+  assert.ok(LETTERS.includes("C"), "a aparência C existe");
+  const { initialUiFor } = await import("../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage");
+  assert.deepEqual(initialUiFor("A"), state.INITIAL_UI);
+  assert.deepEqual(initialUiFor("B"), state.INITIAL_UI);
+  assert.deepEqual(initialUiFor("C"), { ...state.INITIAL_UI, modo: "group" });
+  const { container, unmount } = await mount(React.createElement(VIEWS.C as never, props(fixtureModel(initialUiFor("C"))) as never));
+  try {
+    const keys = rowKeys(container);
+    assert.ok(keys.length > 0 && keys.every((key) => (key ?? "").startsWith("g:")), `a C abre com as linhas por grupo: ${JSON.stringify(keys)}`);
+    const tab = elements(container, (el) => el.getAttribute("role") === "tab" && el.getAttribute("aria-selected") === "true")[0];
+    assert.ok(tab, "uma aba escolhida");
+    assert.match(text(tab), /Por grupo/);
   } finally {
     await unmount();
   }

@@ -18,7 +18,8 @@ export type MonthSeriesPoint = {
   /** Texto embaixo do mês (a margem em %, já formatada; "—" sem valor). */
   readonly sublabel: string;
   readonly sublabelTone?: "positive" | "negative" | "muted";
-  /** Geometria da 1ª série (assinaturas; na `margin`, a margem). `null` = sem valor. */
+  /** Geometria da 1ª série (assinaturas; na `margin`, a margem). `null` = sem valor; na `margin`, `null` num mês `ok`
+   *  é o mês com assinaturas e sem custo: a coluna vira o tracejado (o mês sem nada vem como `empty`). */
   readonly a: number | null;
   /** Geometria da 2ª série (custo). `null` com `a` presente = tracejado. */
   readonly b: number | null;
@@ -156,6 +157,8 @@ function MarginColumns({ points, pressedKey, onSelect, ariaLabel }: { readonly p
       {points.map((point) => {
         const negative = point.a !== null && point.a < 0;
         const height = point.state === "ok" && point.a !== null ? Math.max(3, (Math.abs(point.a) / peak) * 64) : 0;
+        // §6.5.1: o mês com assinaturas e sem custo continua no gráfico, com o custo tracejado (o mesmo traço do `bars`)
+        const missing = point.state === "ok" && point.a === null;
         return (
           <button
             key={point.key}
@@ -169,7 +172,13 @@ function MarginColumns({ points, pressedKey, onSelect, ariaLabel }: { readonly p
           >
             <b className={point.a === null ? "ui-month-columns__value ui-month-columns__value--muted" : "ui-month-columns__value"}>{point.topLabel ?? "—"}</b>
             <em>{point.topSubLabel ?? ""}</em>
-            <i style={{ height: `${height}px` }} aria-hidden="true" />
+            {missing ? (
+              <svg className="ui-month-columns__missing" width={15} height={30} viewBox="0 0 15 30" aria-hidden="true">
+                <rect className="ui-month-series__dashed" x={0.5} y={0.5} width={14} height={29} rx={3} />
+              </svg>
+            ) : (
+              <i style={{ height: `${height}px` }} aria-hidden="true" />
+            )}
             <span>{point.label}</span>
           </button>
         );

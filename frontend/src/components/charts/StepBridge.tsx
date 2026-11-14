@@ -113,6 +113,7 @@ export function StepBridge({ steps, pressedKey = null, onSelect, ariaLabel, empt
                 tabIndex={0}
                 aria-pressed={pressedKey === step.key}
                 aria-label={`${step.label.replace("\n", "")}: ${minus ? "menos " : ""}${step.displayValue}`}
+                data-alvo={step.key}
                 onClick={() => activate(step.key)}
                 onKeyDown={(event) => onKeyDown(event, step.key)}
               >

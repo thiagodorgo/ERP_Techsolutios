@@ -145,6 +145,7 @@ test("T-LIB-1 StepBridge: um botão focável por degrau, aria-pressed no escolhi
   assert.equal(count(html, /tabindex="0"/g), 5);
   assert.equal(count(html, /aria-pressed="true"/g), 1);
   assert.match(html, /aria-pressed="true" aria-label="Plataforma: menos R\$ 50,00"/);
+  for (const step of STEPS) assert.ok(html.includes(`data-alvo="${step.key}"`), `degrau ${step.key} marcado com data-alvo (F6)`);
   assert.match(html, /aria-label="Assinaturas: R\$ 900,00"/);
   assert.match(html, /aria-label="Margem: R\$ 1,23"/);
   assert.match(html, />−R\$ 700,00</, "degrau que tira mostra o sinal de menos");

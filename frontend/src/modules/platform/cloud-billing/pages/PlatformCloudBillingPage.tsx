@@ -25,6 +25,7 @@ import { useCloudBilling, useInitialBillingMonth } from "../useCloudBilling";
 import { useCloudBillingActions } from "../useCloudBillingActions";
 import { CloudBillingViewA } from "../views/CloudBillingViewA";
 import { CloudBillingViewB } from "../views/CloudBillingViewB";
+import { CloudBillingViewC } from "../views/CloudBillingViewC";
 import { CloudBillingBanners, CloudBillingHeader, type CloudBillingViewProps } from "../views/cloudBilling.shared";
 import { CloudBillingDialogs, type DialogAction } from "../components/CloudBillingDialogs";
 
@@ -37,7 +38,12 @@ import { CloudBillingDialogs, type DialogAction } from "../components/CloudBilli
 // (nenhum valor; os 3 erros 500 do contrato), vazio e dados desatualizados.
 
 /** As aparências prontas; a que ainda não existe cai na A (o Dev-B acrescenta B e C nas F5 e F6). */
-const VIEWS: Readonly<Record<string, ComponentType<CloudBillingViewProps>>> = { A: CloudBillingViewA, B: CloudBillingViewB };
+const VIEWS: Readonly<Record<string, ComponentType<CloudBillingViewProps>>> = { A: CloudBillingViewA, B: CloudBillingViewB, C: CloudBillingViewC };
+
+/** O estado inicial da lista em cada aparência: a C abre por grupo (a referência: `S.c = { modo:'group', … }`). */
+export function initialUiFor(appearance: string): CloudBillingUi {
+  return appearance === "C" ? { ...INITIAL_UI, modo: "group" } : INITIAL_UI;
+}
 
 export type CloudBillingScreenProps = {
   readonly data: CloudBillingData;
@@ -163,7 +169,13 @@ function CloudBillingContent({ initialMonth }: { readonly initialMonth: string }
   const access = useMemo(() => cloudBillingAccess(permissions), [permissions]);
   const { appearance } = useScreenAppearance("platform-cloud-billing");
   const [month, setMonth] = useState(initialMonth);
-  const [ui, setUi] = useState<CloudBillingUi>(INITIAL_UI);
+  const [ui, setUi] = useState<CloudBillingUi>(() => initialUiFor(appearance));
+  // Trocar de aparência recomeça a lista no estado inicial dela (como cada vista da referência tem o seu).
+  const [uiAppearance, setUiAppearance] = useState(appearance);
+  if (uiAppearance !== appearance) {
+    setUiAppearance(appearance);
+    setUi(initialUiFor(appearance));
+  }
   const [dialog, setDialog] = useState<DialogAction | null>(null);
   const reading = useCloudBilling(month, { readImports: access.readImports });
   const actions = useCloudBillingActions(access);
