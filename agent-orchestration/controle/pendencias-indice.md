@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1028** |
-| IDs distintos | 1017 |
-| **ABERTAS** | **785** |
+| Cabecalhos `## P-` | **1032** |
+| IDs distintos | 1021 |
+| **ABERTAS** | **789** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **724** |
+| — das quais **ativas nesta rodada** | **728** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 239 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1028 cabecalhos para 1017 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1032 cabecalhos para 1021 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 328
+## ABERTAS · balde A — material — 330
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -402,8 +402,10 @@
 | `P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE` | 15069 | MÉDIA | sim | P-CHECKLIST-RESPOSTA-COMPONENTE-INEXISTENTE (2026-11-14) — o servidor aceita `item_answe |
 | `P-RBAC-MATRIZ-X-CATALOGO-ESTOQUE-CHECKLIST` | 15085 | MÉDIA | sim | P-RBAC-MATRIZ-X-CATALOGO-ESTOQUE-CHECKLIST (2026-11-14) — a matriz de papéis dá estoque  |
 | `P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA` | 15093 | ALTA | sim | P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram  |
+| `P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE` | 15108 | MÉDIA | sim | P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE (2026-11-14) — o cartão de checklist da OS abre o fo |
+| `P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO` | 15116 | MÉDIA | sim | P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre p |
 
-## ABERTAS · balde B — processo/registro — 396
+## ABERTAS · balde B — processo/registro — 398
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -803,6 +805,8 @@
 | `P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE` | 15052 | BAIXA | sim | P-SAN3-25-CANCELADA-SO-ESTA-OS-SEM-TESTE (2026-11-14) — a regra "a OS marcada como cance |
 | `P-INDICE-SEM-DONO-NUNCA-MARCA` | 15059 | BAIXA | sim | P-INDICE-SEM-DONO-NUNCA-MARCA (2026-11-14) — o gerador do índice de pendências conta com |
 | `P-MOBILE-MODULE-RESOLVER-MORTO` | 15101 | BAIXA | sim | P-MOBILE-MODULE-RESOLVER-MORTO (2026-11-14) — o `ModuleResolver` e o `perms` do mapa de  |
+| `P-TESTE-VAULT-ROUTES-FILHO-ORFAO` | 15124 | BAIXA | sim | P-TESTE-VAULT-ROUTES-FILHO-ORFAO (2026-11-14) — o `ass-05-vault-routes` não mata o servi |
+| `P-J561-JWT-LOCAL-SEM-TENANT-ROLE` | 15132 | BAIXA | sim | P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

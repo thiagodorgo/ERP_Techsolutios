@@ -15104,3 +15104,34 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** §2.5 do plano v1 do `B-MOBILE-GATE-CHAVE`.
 - **fato:** `ModuleResolver` (`lib/core/modules/module_resolver.dart`) é o único leitor de `requiredPermissions` e de `_kNavigationModules[*].perms`, e nenhum widget de produção o usa (só `test/core/resolvers_test.dart`). O `B-MOBILE-GATE-CHAVE` trocou as chaves inventadas desses mapas pelas do catálogo, sem ligar o resolvedor.
 - **critério de encerramento:** ligar o resolvedor à navegação (com a regra de `MobileGates`) ou apagá-lo, com o mapa.
+
+## P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE (2026-11-14) — o cartão de checklist da OS abre o formulário da vistoria para quem não pode responder — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (`work_order_detail_screen.dart:150` é de `2537558f`, 05/07/2026, e o botão `:698-700` de `e79616aa`, 13/06/2026; `checklist_run_screen.dart` nasceu em `e79616aa`; os dois ficam fora do PERMITIDO do `B-MOBILE-GATE-CHAVE`) · **dono:** o próximo bloco que tocar `mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart` ou `mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart` · **bloqueia:** não.
+- **origem:** achado C1-01 da cadeira C1 da J-561 (`coordenador-de-acessos`), triado como pendência pela ata da J-561.
+- **N e forma (medido pela C1, sonda de widget com o bootstrap do servidor):** 3 perfis com o G1b falso (gestor, financeiro e auditor) veem "Abrir/Continuar checklist" no `_ChecklistCard` da tela da OS e abrem o formulário da vistoria (`PermissionBlockedState` 0). O cartão não tem gate de papel nem de módulo, e a tela da vistoria também não. Controle: o técnico de campo (G1b verdadeiro) vê o botão e o formulário.
+- **causa:** o G1b do `B-MOBILE-GATE-CHAVE` só esconde o botão da tela "Checklists da OS"; a entrada pela tela da OS é anterior ao bloco e ficou sem gate. O servidor recusa cada resposta no sync (`rejected`, `permission_required`), então não há escrita indevida.
+- **critério de encerramento:** o cartão da OS e a tela da vistoria usam o `MobileGates.responderChecklist` (G1b), com teste de widget que fica vermelho quando o gate sai.
+
+## P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre por link — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`inventory_list_screen.dart` nasceu em `e79616aa`, 13/06/2026; `git grep` de `go('/inventory')`/`push('/inventory')` dá 0 em `729718fe` e no objeto; o plano v1 §2.5 já media "Estoque: nenhuma entrada de navegação") · **dono:** `B-O6R-04b` (item 31) · **bloqueia:** não.
+- **origem:** achado C1-02 da cadeira C1 da J-561, triado como pendência pela ata da J-561.
+- **N e forma:** 1 tela. `/inventory` tem rota registrada, o módulo `inventory` existe e o servidor autoriza 7 perfis (G2), mas nenhum item de navegação do app a abre.
+- **causa:** a tela nasceu sem entrada na navegação; a `P-MOBILE-MODULE-RESOLVER-MORTO` trata do resolvedor que não filtra o menu, não da entrada que falta.
+- **critério de encerramento:** a tela Estoque tem entrada na navegação do app para quem passa no G2, com teste.
+
+## P-TESTE-VAULT-ROUTES-FILHO-ORFAO (2026-11-14) — o `ass-05-vault-routes` não mata o servidor-filho no tempo esgotado, e o `npm test` não termina — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`tests/ass-05-vault-routes.test.ts`, `015234d0`, 08/11/2026, B-ASS-05, #510; fora do diff do `B-MOBILE-GATE-CHAVE`) · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** achado C2A-01 da cadeira C2a da J-561, triado como pendência pela ata da J-561.
+- **N e forma (medido pela C2a, com a máquina carregada):** em `startServer` (`tests/ass-05-vault-routes.test.ts:30-66`), se o filho não escreve `PORT ` em 30 s, o `waitFor` lança e o filho não é morto. Ficaram 4 filhos `tests/helpers/ass-05-vault-server.ts` vivos, e o TAP do `npm test` ficou parado em 185 testes por 13 minutos, até eles serem mortos. Isolado, o arquivo passa (5/5), e a CI do objeto também.
+- **causa:** o caminho de erro do `startServer` não encerra o processo-filho.
+- **critério de encerramento:** o `startServer` mata o filho em todo caminho de erro (tempo esgotado incluído), com um caso que prova que nenhum filho sobra.
+
+## P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda com o JWT local sem `tenant_role` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (já registrado como `P-AUTH-CLAIMS-SEM-TENANT-ROLE`, 2026-09-18, e `P-AUTH-TOKEN-LOCAL-CLAIMS`, 2026-11-04; o diff do `B-MOBILE-GATE-CHAVE` não toca `src/modules/auth/**`) · **dono:** auth (o contrato do §2.4) · **bloqueia:** não. Junta-se às duas pendências citadas e fecha com elas.
+- **origem:** achado C3-02 da cadeira C3 da J-561, triado pela ata da J-561 como "só registro, porque a evidência já o declara" (`agent-orchestration/omega/evidencias/B-MOBILE-GATE-CHAVE/perfil-real-antes.md`, seção 1).
+- **N e forma (medido pela C3, login real nos 9 atores):** o claim `roles` traz o papel esperado nos 9, e `tenant_role`, `tenant_roles` e `permissions` estão ausentes nos 9. Os claims são `aud, email, exp, iat, identity_id, iss, roles, sid, sub, tenant_id, type`. Para a prova do item 66 o efeito é nulo (o bootstrap bate com o catálogo).
+- **critério de encerramento:** o das pendências-mãe (o JWT carrega os claims que o §2.4 exige).
