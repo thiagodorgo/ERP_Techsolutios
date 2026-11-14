@@ -1,0 +1,141 @@
+{
+  "organizacao": { "nome": "Organização Exemplo" },
+  "admin": { "nome": "Administração Exemplo", "email": "admin@exemplo.invalid" },
+  "plataforma": { "email": "plataforma@exemplo.invalid" },
+  "usuarios": [
+    { "chave": "gestor", "nome": "Gestora Exemplo", "email": "gestor@exemplo.invalid", "papel": "manager" },
+    { "chave": "despacho", "nome": "Despacho Exemplo", "email": "despacho@exemplo.invalid", "papel": "field_dispatcher" },
+    { "chave": "tecnica", "nome": "Técnica Exemplo", "email": "tecnica@exemplo.invalid", "papel": "field_technician" },
+    { "chave": "financeiro", "nome": "Financeiro Exemplo", "email": "financeiro@exemplo.invalid", "papel": "finance" },
+    { "chave": "auditor", "nome": "Auditoria Exemplo", "email": "auditor@exemplo.invalid", "papel": "auditor" }
+  ],
+  "clientes": [{ "nome": "Cliente Exemplo Ltda", "telefone": "(11) 3000-0000", "cidade": "Cidade Exemplo", "uf": "SP" }],
+  "viaturas": [{ "placa": "EXM1A01", "modelo": "Viatura Exemplo", "tipo": "tow_truck", "ano": 2024 }],
+  "equipes": [{ "nome": "Equipe Exemplo", "membros": ["tecnica"] }],
+  "servicos": [{ "nome": "Remoção Exemplo", "tipo": "reboque", "exige_destino": true, "preco_base": "350.00", "duracao_estimada_min": 60 }],
+  "tabelas": [
+    {
+      "nome": "Tabela Exemplo",
+      "moeda": "BRL",
+      "publicar": true,
+      "tarifas": [{ "nome": "Remoção padrão", "servico": "Remoção Exemplo", "valor": "350.00", "origem": "Tabela Exemplo" }]
+    }
+  ],
+  "perfis_normativos": [
+    {
+      "nome": "Perfil Exemplo",
+      "escopo": "PUBLIC_AGREEMENT",
+      "modelo_diaria": "ROLLING_24H",
+      "teto_diaria": "SIX_MONTHS",
+      "requisitos_liberacao": [
+        { "codigo": "DOC_VEICULO", "rotulo": "Documento do veículo", "obrigatorio": true },
+        { "codigo": "DOC_RETIRANTE", "rotulo": "Documento de quem retira", "obrigatorio": true }
+      ]
+    }
+  ],
+  "patios": [
+    {
+      "nome": "Pátio Exemplo",
+      "endereco": "Rua Exemplo, 100 — Cidade Exemplo",
+      "fuso": "America/Sao_Paulo",
+      "areas": [
+        {
+          "nome": "Bloco Exemplo",
+          "tipo": "BLOCK",
+          "vagas": [
+            { "codigo": "E-001", "classe": "ANY" },
+            { "codigo": "E-002", "classe": "ANY" },
+            { "codigo": "E-003", "classe": "ANY", "bloqueada": true }
+          ]
+        }
+      ]
+    }
+  ],
+  "processos": [
+    {
+      "placa": "EXM2B01",
+      "marca": "Marca Exemplo",
+      "modelo": "Modelo Exemplo",
+      "cor": "Prata",
+      "ano": 2020,
+      "chassi": "EXM0000000000P001",
+      "perfil": "Perfil Exemplo",
+      "autoridade": "Autoridade Exemplo",
+      "procedimento": "EXM-PROC-001",
+      "fundamento_legal": "Base Exemplo",
+      "patio": "Pátio Exemplo",
+      "vaga": "E-001",
+      "situacao_final": "ACTIVE_CUSTODY",
+      "vistoria": {
+        "fotos": [
+          { "set": "FRONT", "legenda": "Frente" },
+          { "set": "REAR", "legenda": "Traseira" },
+          { "set": "LEFT", "legenda": "Lado esquerdo" },
+          { "set": "RIGHT", "legenda": "Lado direito" },
+          { "set": "ROOF", "legenda": "Teto" },
+          { "set": "DASH_PANEL", "legenda": "Painel" },
+          { "set": "ENGINE", "legenda": "Motor" },
+          { "set": "CHASSIS_ID", "legenda": "Chassi" },
+          { "set": "ODOMETER", "legenda": "Hodômetro" },
+          { "set": "INNER_OBJECTS", "legenda": "Objetos internos" },
+          { "set": "DAMAGES", "legenda": "Avarias" }
+        ]
+      },
+      "encargos": [{ "tipo": "ADDITIONAL", "descricao": "Encargo Exemplo", "valor": "50.00" }]
+    }
+  ],
+  "localizacoes": [{ "usuario": "tecnica", "latitude": -23.5505, "longitude": -46.6333, "origem": "mobile" }],
+  "ordens_de_servico": [
+    {
+      "titulo": "EXM Remoção concluída pelo app",
+      "descricao": "Ordem Exemplo",
+      "criada_por": "despacho",
+      "prioridade": "high",
+      "cliente": "Cliente Exemplo Ltda",
+      "viatura": "EXM1A01",
+      "equipe": "Equipe Exemplo",
+      "servico": "Remoção Exemplo",
+      "placa_atendida": "EXM1A23",
+      "origem": { "endereco": "Rua Exemplo, 1", "cidade": "Cidade Exemplo", "uf": "SP", "latitude": -23.55, "longitude": -46.63 },
+      "destino": { "endereco": "Pátio Exemplo", "cidade": "Cidade Exemplo", "uf": "SP", "latitude": -23.56, "longitude": -46.64 },
+      "atribuicao": { "por": "gestor", "tecnica": "tecnica" },
+      "passos_do_app": [
+        { "para": "accepted", "mensagem": "Aceita" },
+        { "para": "on_route", "mensagem": "A caminho" },
+        { "para": "on_site", "mensagem": "No local" },
+        { "para": "in_progress", "mensagem": "Iniciado" },
+        { "para": "completed", "mensagem": "Concluída" }
+      ]
+    },
+    {
+      "titulo": "EXM Remoção atribuída",
+      "descricao": "Ordem Exemplo",
+      "criada_por": "gestor",
+      "prioridade": "medium",
+      "cliente": "Cliente Exemplo Ltda",
+      "servico": "Remoção Exemplo",
+      "placa_atendida": "EXM1A45",
+      "origem": { "endereco": "Rua Exemplo, 2", "cidade": "Cidade Exemplo", "uf": "SP", "latitude": -23.54, "longitude": -46.62 },
+      "destino": { "endereco": "Pátio Exemplo", "cidade": "Cidade Exemplo", "uf": "SP", "latitude": -23.56, "longitude": -46.64 },
+      "atribuicao": { "por": "gestor", "tecnica": "tecnica" },
+      "passos_do_app": []
+    }
+  ],
+  "contas": [
+    { "nome": "Caixa Exemplo", "tipo": "cash", "saldo_inicial": "1500.00" },
+    { "nome": "Banco Exemplo", "tipo": "bank", "banco": "Banco Exemplo", "agencia": "0001", "numero": "00001-0", "saldo_inicial": "8000.00" }
+  ],
+  "titulos": [
+    {
+      "documento": "EXM-FIN-1001",
+      "direcao": "receivable",
+      "tipo_parte": "customer",
+      "parte": "Cliente Exemplo Ltda",
+      "valor": "980.00",
+      "vencimento_relativo_dias": -20,
+      "baixa": { "conta": "Caixa Exemplo", "meio": "pix", "valor": "980.00", "descricao": "Baixa Exemplo", "conciliar": true }
+    },
+    { "documento": "EXM-FIN-1002", "direcao": "receivable", "tipo_parte": "customer", "parte": "Cliente Exemplo Ltda", "valor": "754.00", "vencimento_relativo_dias": -12 },
+    { "documento": "EXM-FIN-2001", "direcao": "payable", "tipo_parte": "supplier", "parte": "Fornecedor Exemplo Ltda", "valor": "640.00", "vencimento_relativo_dias": 10 }
+  ]
+}

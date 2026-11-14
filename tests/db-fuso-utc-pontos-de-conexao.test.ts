@@ -174,7 +174,9 @@ test("G1 · o módulo `@prisma/adapter-pg` (e `new PrismaPg(`) em src/scripts/pr
   // Os dois permitidos também são o controle do detector: o import estático de um `.ts` e o `import()` dinâmico de um
   // `.mjs` têm de ser vistos; se o detector quebrar, a lista sai vazia e o teste fica vermelho.
   const allowed = ["scripts/gen-tenant-tables.mjs", "src/database/pg-connection.ts"];
-  assert.deepEqual(moduleHits.sort(), allowed, `módulo ${ADAPTER_MODULE} referenciado fora da fábrica`);
+  // Exceção nominal do módulo (B-SAN3-10b-F4-SEED-ISOLADO, Emenda 1.7): resolve o parser do driver por `createRequire().resolve`, sem conectar (Emenda 1 §E1 item 3, canário C2b).
+  const allowedModule = ["scripts/demo-isolado/alvo.mjs", ...allowed];
+  assert.deepEqual(moduleHits.sort(), allowedModule, `módulo ${ADAPTER_MODULE} referenciado fora da fábrica`);
   assert.deepEqual(constructorHits.sort(), allowed, "`new PrismaPg(` fora da fábrica");
 
   const timezoneSetters: string[] = [];
