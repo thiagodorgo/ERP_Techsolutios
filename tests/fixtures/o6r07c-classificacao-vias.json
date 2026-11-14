@@ -1927,6 +1927,10 @@
   "classe": "ROTEADOR",
   "n": 1
  },
+ "PAR /api/v1/mobile/sync/work-order-actions · work_order.approval_request": {
+  "classe": "OS·07c-a",
+  "n": 1
+ },
  "PAR /api/v1/mobile/sync/work-order-actions · work_order.assign": {
   "classe": "OS·SEM-ALCANCE",
   "n": 1
@@ -1941,6 +1945,10 @@
  },
  "PAR /api/v1/mobile/sync/work-order-actions · work_order.status_change": {
   "classe": "OS·07a",
+  "n": 1
+ },
+ "PAR /api/v1/mobile/sync/work-order-actions · work_order.unable_to_start": {
+  "classe": "OS·07c-a",
   "n": 1
  },
  "PAR /api/v1/mobile/sync/checklist-actions · checklist.acknowledgement_create": {

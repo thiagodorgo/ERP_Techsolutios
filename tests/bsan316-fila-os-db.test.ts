@@ -211,7 +211,12 @@ if (!connectionString) {
   }
 
   async function teardown(h: Harness): Promise<void> {
+    // O aviso grava o consumo em segundo plano (`recordCloudUsageBestEffort`): espera as gravações em voo antes de
+    // apagar a organização, ou a FK de `cloud_usage_events` segura o DELETE de `tenants`.
+    const { drainCloudUsageBestEffortForTests } = await import("../src/modules/cloud-usage/cloud-usage.service.js");
+    await drainCloudUsageBestEffortForTests();
     for (const tenantId of [...h.tenants].reverse()) {
+      await h.admin.$executeRawUnsafe(`DELETE FROM cloud_usage_events WHERE tenant_id = $1::uuid`, tenantId);
       await h.admin.$executeRawUnsafe(`DELETE FROM notifications WHERE tenant_id = $1::uuid`, tenantId);
       await h.admin.$executeRawUnsafe(`DELETE FROM work_order_events WHERE tenant_id = $1::uuid`, tenantId);
       await h.admin.$executeRawUnsafe(`DELETE FROM work_order_assignments WHERE tenant_id = $1::uuid`, tenantId);
