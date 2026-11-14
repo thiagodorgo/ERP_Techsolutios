@@ -1,11 +1,13 @@
 import { Boxes, ChevronLeft, Info, Users, type LucideIcon } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { Alert, EmptyState, ErrorState, Skeleton } from "../../../components/ui";
 import { usePlatformTenantDetail } from "../usePlatformTenantDetail";
 import type { PlatformTenantDetailData, PlatformTenantDetailInfo } from "../platform-tenant-detail.types";
 import { PLATFORM_SYSTEM_ORG_SLUG } from "../platform-overview.types";
+import { usePlatformTenantUsage } from "../usePlatformTenantUsage";
+import { usePermissions } from "../../../providers/PermissionProvider";
 
 // PR-SCALE-5c — "Detalhe da Organização" (sc tenantDetail). Consome GET
 // /api/v1/platform/tenants/:tenantId/detail via usePlatformTenantDetail, lendo o :tenantId REAL da rota
@@ -97,7 +99,7 @@ function StatCard({ icon: Icon, iconBg, iconColor, value, label, sub }: StatCard
 
 // Composição rica com DADO REAL (cabeçalho + stats reais + selo honesto + módulos + usuários). Exportada
 // para teste direto (render síncrono com dado real, sem depender do fetch assíncrono do hook).
-export function PlatformTenantDetailView({ detail }: { detail: PlatformTenantDetailInfo }) {
+export function PlatformTenantDetailView({ detail, usage = null }: { detail: PlatformTenantDetailInfo; usage?: ReactNode }) {
   const status = orgStatusView(detail.status);
   const isSystemOrg = detail.slug === PLATFORM_SYSTEM_ORG_SLUG;
 
@@ -180,6 +182,10 @@ export function PlatformTenantDetailView({ detail }: { detail: PlatformTenantDet
         )}
       </div>
 
+      {/* B-ASS-10b (T5, F10) — "Uso medido" da organização: o bloco que saiu da tela de custos. Só entra quando a
+          página o monta (com `platform:cloud-usage:read`); a view pura não busca nada. */}
+      {usage}
+
       {/* Usuários da organização (REAL — PII by-design da tela platform-only, §2.8) */}
       <div style={{ ...card, overflow: "hidden" }}>
         <div style={{ padding: "14px 18px", borderBottom: "1px solid #F1F5F9", fontSize: 15, fontWeight: 800 }}>Usuários</div>
@@ -215,7 +221,7 @@ export function PlatformTenantDetailView({ detail }: { detail: PlatformTenantDet
 }
 
 // Decisão de estados §7 → tela (pura; exportada para teste direto de cada estado sem o fetch do hook).
-export function PlatformTenantDetailContent({ data, loading }: { data: PlatformTenantDetailData; loading: boolean }) {
+export function PlatformTenantDetailContent({ data, loading, usage = null }: { data: PlatformTenantDetailData; loading: boolean; usage?: ReactNode }) {
   const { detail, forbidden, notFound, source } = data;
 
   // §7 — carregando: skeleton (sem inventar número enquanto a resposta não chega).
@@ -286,13 +292,87 @@ export function PlatformTenantDetailContent({ data, loading }: { data: PlatformT
   }
 
   // Populado: dado REAL → composição rica (stats reais + selo honesto + módulos + usuários).
-  return <PlatformTenantDetailView detail={detail} />;
+  return <PlatformTenantDetailView detail={detail} usage={usage} />;
+}
+
+// B-ASS-10b (T5, F10) — "Uso medido" no detalhe da organização. Rótulos das métricas e das unidades vieram da tela de
+// custos de hoje (que deixa de mostrar o uso). Quantidade é contagem de uso, não dinheiro: formatada aqui, sem conta.
+const USAGE_NUMBER = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
+const USAGE_MONTH = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" });
+
+function usageMetricLabel(key: string): string {
+  const labels: Record<string, string> = { api_requests_count: "Requisições da API", storage_gb_month: "Armazenamento", database_storage_gb_month: "Armazenamento do banco", active_users_count: "Usuários ativos" };
+  return labels[key] ?? "Métrica medida";
+}
+
+function usageUnitLabel(unit: string): string {
+  if (unit === "count") return "unid.";
+  if (unit === "gb_month") return "GB·mês";
+  if (unit === "bytes") return "bytes";
+  return "unidade não identificada";
+}
+
+function usageMonthLabel(month: string): string {
+  const [year, monthNumber] = month.split("-").map(Number);
+  if (!year || !monthNumber) return "mês corrente";
+  return USAGE_MONTH.format(new Date(Date.UTC(year, monthNumber - 1, 15)));
+}
+
+export function TenantUsageBlock({ tenantId }: { readonly tenantId: string }) {
+  const { data, loading, retry } = usePlatformTenantUsage(tenantId, true);
+  const head = (
+    <div style={{ padding: "14px 18px", borderBottom: "1px solid #F1F5F9", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10 }}>
+      <span style={{ fontSize: 15, fontWeight: 800 }}>Uso medido</span>
+      <span style={{ fontSize: 12, color: "#64748B" }}>{data ? usageMonthLabel(data.month) : "mês corrente"}</span>
+    </div>
+  );
+  let body: ReactNode;
+  if (loading || !data) {
+    body = (
+      <div style={{ padding: 18 }}>
+        <Skeleton lines={3} />
+      </div>
+    );
+  } else if (data.status === "forbidden") {
+    body = <div style={{ padding: 18, fontSize: 13, color: "#64748B" }}>Seu perfil não consulta o uso medido desta organização.</div>;
+  } else if (data.status === "error") {
+    body = (
+      <div style={{ padding: 18, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13, color: "#B45309" }}>
+        <span>Não foi possível carregar o uso medido. Nenhum número é exibido enquanto isso.</span>
+        <button type="button" className="pat-btn" onClick={retry}>
+          Tentar de novo
+        </button>
+      </div>
+    );
+  } else if (data.status === "mock") {
+    body = <div style={{ padding: 18, fontSize: 13, color: "#94A3B8" }}>O uso medido aparece quando a plataforma está conectada aos dados de produção.</div>;
+  } else if (!data.summary || data.summary.metrics.length === 0) {
+    body = <div style={{ padding: 18, fontSize: 13, color: "#94A3B8" }}>Nenhuma métrica de uso neste mês.</div>;
+  } else {
+    body = data.summary.metrics.map((metric, index, all) => (
+      <div key={`${metric.metricKey}-${metric.unit}-${index}`} data-uso={metric.metricKey} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "11px 18px", borderBottom: index === all.length - 1 ? "none" : "1px solid #F8FAFC" }}>
+        <span style={{ fontSize: 13, color: "#475569" }}>{usageMetricLabel(metric.metricKey)}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{`${USAGE_NUMBER.format(metric.quantity)} ${usageUnitLabel(metric.unit)}`}</span>
+      </div>
+    ));
+  }
+  return (
+    <section aria-label="Uso medido da organização" data-bloco="uso-medido" style={{ ...card, overflow: "hidden", marginBottom: 14 }}>
+      {head}
+      {body}
+    </section>
+  );
 }
 
 export function PlatformTenantDetailPage() {
   const { tenantId } = useParams();
   const { data, loading } = usePlatformTenantDetail(tenantId);
-  return <PlatformTenantDetailContent data={data} loading={loading} />;
+  // Conferência ESTRITA da permissão: `can()`/`hasAny()` liberam tudo para o Admin Plataforma (isPlatformAdmin), e o
+  // servidor recusaria a leitura sem `platform:cloud-usage:read` (`requirePlatformPermission`). Sem ela, o bloco não existe.
+  const { permissions } = usePermissions();
+  const canReadUsage = permissions.includes("platform:cloud-usage:read");
+  const usage = canReadUsage && tenantId ? <TenantUsageBlock tenantId={tenantId} /> : null;
+  return <PlatformTenantDetailContent data={data} loading={loading} usage={usage} />;
 }
 
 export default PlatformTenantDetailPage;

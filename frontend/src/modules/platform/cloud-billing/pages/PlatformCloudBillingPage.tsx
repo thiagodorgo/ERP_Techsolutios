@@ -1,140 +1,249 @@
-import { AlertTriangle, CalendarDays, Cloud, Database, Info, Server } from "lucide-react";
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { AlertTriangle, Inbox, Lock, RefreshCw, Upload, Users, type LucideIcon } from "lucide-react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { Alert, EmptyState, ErrorState, Skeleton } from "../../../../components/ui";
-import { currentBillingMonth } from "../cloud-billing.service";
-import { isPeriodOfMonth } from "../cloud-billing.state";
-import type { CloudBillingData, CloudCostImport } from "../cloud-billing.types";
-import { useCloudBilling } from "../useCloudBilling";
+import { Alert, Skeleton } from "../../../../components/ui";
+import { usePermissions } from "../../../../providers/PermissionProvider";
+import { useScreenAppearance } from "../../../appearance";
+import { cloudBillingAccess, type CloudBillingAccess } from "../cloud-billing.access";
+import { capitalize, monthLabel } from "../cloud-billing.labels";
+import { currentBillingMonth, todayInSaoPaulo } from "../cloud-billing.service";
+import {
+  buildCloudBillingView,
+  clearTarget,
+  INITIAL_UI,
+  isPeriodOfMonth,
+  selectTarget,
+  setListMode,
+  setSearch,
+  toggleRow,
+  type CloudBillingUi,
+  type CloudBillingView,
+} from "../cloud-billing.state";
+import type { CloudBillingData } from "../cloud-billing.types";
+import { useCloudBilling, useInitialBillingMonth } from "../useCloudBilling";
+import { useCloudBillingActions } from "../useCloudBillingActions";
+import { CloudBillingViewA } from "../views/CloudBillingViewA";
+import { CloudBillingViewB } from "../views/CloudBillingViewB";
+import { CloudBillingViewC } from "../views/CloudBillingViewC";
+import { CloudBillingBanners, CloudBillingHeader, type CloudBillingViewProps } from "../views/cloudBilling.shared";
+import { CloudBillingDialogs, type DialogAction } from "../components/CloudBillingDialogs";
 
-const card: CSSProperties = { background: "#fff", border: "1px solid #E2E8F0", borderRadius: 13 };
-const NUMBER = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 });
-const DATE_TIME = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
-const MONTH = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric", timeZone: "America/Sao_Paulo" });
+// B-ASS-10b (T5) — a tela de custo e margem da plataforma (`/platform/cloud-billing`), com as 3 aparências aprovadas pelo
+// dono em 14/11 ("aprovo as telas de custos"; referência `screen-refs/platform-cloud-billing-3opcoes.reference.html`).
+// Esta página é o CONTÊINER (molde: `PatiosPage.tsx` e `FinanceiroPage.tsx`): lê uma vez (`useCloudBilling`), guarda o
+// estado da tela (mês, `modo/alvo/aberta/busca`), monta o MODELO ÚNICO (`buildCloudBillingView`) e o entrega à aparência
+// escolhida pelo usuário (`useScreenAppearance("platform-cloud-billing")`) — trocar de aparência não repete leitura.
+// É a ÚNICA porta do módulo para fora (T44: só o `App.tsx` a monta). Estados §7: carregando, acesso não permitido, erro
+// (nenhum valor; os 3 erros 500 do contrato), vazio e dados desatualizados.
 
-function formatMoney(value: number, currency?: string): string {
-  if (!currency || !/^[A-Z]{3}$/.test(currency)) return `${NUMBER.format(value)} · moeda não informada`;
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
+/** As aparências prontas; a que ainda não existe cai na A (o Dev-B acrescenta B e C nas F5 e F6). */
+const VIEWS: Readonly<Record<string, ComponentType<CloudBillingViewProps>>> = { A: CloudBillingViewA, B: CloudBillingViewB, C: CloudBillingViewC };
+
+/** O estado inicial da lista em cada aparência: a C abre por grupo (a referência: `S.c = { modo:'group', … }`). */
+export function initialUiFor(appearance: string): CloudBillingUi {
+  return appearance === "C" ? { ...INITIAL_UI, modo: "group" } : INITIAL_UI;
 }
 
-function formatDate(value?: string): string {
-  if (!value) return "não informada";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "não informada" : DATE_TIME.format(date);
-}
+export type CloudBillingScreenProps = {
+  readonly data: CloudBillingData;
+  readonly loading: boolean;
+  readonly month: string;
+  readonly model: CloudBillingView;
+  readonly access: CloudBillingAccess;
+  readonly appearance: string;
+  readonly handlers: Omit<CloudBillingViewProps, "model" | "access">;
+  readonly onRetry: () => void;
+};
 
-function formatMonth(month: string): string {
-  const date = new Date(`${month}-15T12:00:00-03:00`);
-  return Number.isNaN(date.getTime()) ? month : MONTH.format(date);
-}
-
-function importStatus(importItem?: CloudCostImport): string {
-  if (!importItem) return "Nenhuma";
-  if (importItem.status === "completed") return "Concluída";
-  if (importItem.status === "processing") return "Em processamento";
-  if (importItem.status === "failed") return "Falhou";
-  return "Pendente";
-}
-
-function metricLabel(key: string): string {
-  const labels: Record<string, string> = { api_requests_count: "Requisições da API", storage_gb_month: "Armazenamento", database_storage_gb_month: "Armazenamento do banco", active_users_count: "Usuários ativos" };
-  return labels[key] ?? "Métrica medida";
-}
-
-function unitLabel(unit: string): string {
-  if (unit === "count") return "unid.";
-  if (unit === "gb_month") return "GB·mês";
-  if (unit === "bytes") return "bytes";
-  return "unidade não identificada";
-}
-
-type KpiProps = { readonly label: string; readonly value: string; readonly note: string; readonly icon: ReactNode; readonly warning?: boolean };
-function Kpi({ label, value, note, icon, warning = false }: KpiProps) {
+function StateHeader() {
   return (
-    <div style={{ ...card, padding: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        <span style={{ fontSize: 11.5, color: "#64748B", fontWeight: 700 }}>{label}</span>
-        <span style={{ width: 30, height: 30, borderRadius: 8, background: warning ? "#FFFBEB" : "#EFF6FF", color: warning ? "#D97706" : "#2563EB", display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</span>
+    <div className="pat-page-header">
+      <div className="pat-page-header__lead">
+        <div className="pat-page-header__kicker">Plataforma · custo e margem</div>
+        <h1 className="pat-page-header__title">Cloud Billing</h1>
+        <p className="pat-page-header__subtitle">Custo da nuvem e margem por organização</p>
       </div>
-      <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: "-.35px", marginBottom: 5, fontVariantNumeric: "tabular-nums" }}>{value}</div>
-      <div style={{ fontSize: 11.5, color: warning ? "#D97706" : "#64748B" }}>{note}</div>
     </div>
   );
 }
 
-function HonestSeal({ title, detail }: { readonly title: string; readonly detail: string }) {
-  return <div style={{ ...card, padding: 18, background: "#F8FAFC", borderStyle: "dashed", display: "flex", alignItems: "center", gap: 12 }}><Info size={18} style={{ color: "#2563EB", flexShrink: 0 }} /><div><div style={{ fontSize: 13, fontWeight: 800 }}>{title}</div><div style={{ fontSize: 12, color: "#64748B", marginTop: 3 }}>{detail}</div></div></div>;
-}
-
-function monthOptions(baseMonth: string): readonly string[] {
-  const [year, month] = baseMonth.split("-").map(Number);
-  return Array.from({ length: 12 }, (_, index) => {
-    const date = new Date(Date.UTC(year, month - 1 - index, 15));
-    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-  });
-}
-
-// Seletor de mês único da tela: o cabeçalho com dados e o estado vazio usam o mesmo (A2 da revisão do PR 411 — o vazio
-// diz "Selecione outro mês", então tem de oferecer o seletor).
-function MonthSelect({ month, onMonthChange }: { readonly month: string; readonly onMonthChange: (month: string) => void }) {
-  return <label style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 11px", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 9, fontSize: 12.5, fontWeight: 700, color: "#334155" }}><CalendarDays size={14} aria-hidden="true" /><span className="sr-only">Mês de referência</span><select aria-label="Mês de referência" value={month} onChange={(event) => onMonthChange(event.target.value)} style={{ border: 0, background: "transparent", font: "inherit", color: "inherit" }}>{monthOptions(currentBillingMonth()).map((option) => <option key={option} value={option}>{formatMonth(option)}</option>)}</select></label>;
-}
-
-export function PlatformCloudBillingView({ data, month, onMonthChange = () => undefined }: { readonly data: CloudBillingData; readonly month: string; readonly onMonthChange?: (month: string) => void }) {
-  const { usage, costs, allocation, imports } = data;
-  const latestImport = imports[0];
-  const updatedAt = allocation?.generatedAt || costs?.generatedAt || usage?.generatedAt;
-  const maxServiceCost = Math.max(0, ...(costs?.services.map((service) => service.unblendedCost) ?? []));
-
+function StatePanel({ icon: Icon, tone, title, detail, children }: { readonly icon: LucideIcon; readonly tone: "danger" | "info"; readonly title: string; readonly detail: string; readonly children?: ReactNode }) {
   return (
-    <div style={{ color: "#0F172A" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, paddingBottom: 18, borderBottom: "1px solid #F1F5F9", flexWrap: "wrap", gap: 10 }}>
-        <div><div style={{ fontSize: 20, fontWeight: 800 }}>Cloud Billing</div><div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>{formatMonth(month)} · atualizado {formatDate(updatedAt)}</div></div>
-        <MonthSelect month={month} onMonthChange={onMonthChange} />
+    <section className={`cb-state cb-state--${tone}`} role={tone === "danger" ? "alert" : "status"}>
+      <span className="cb-state__icon" aria-hidden="true">
+        <Icon size={26} />
+      </span>
+      <div className="cb-state__title">{title}</div>
+      <div className="cb-state__detail">{detail}</div>
+      {children}
+    </section>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div className="cb-view" aria-busy="true">
+      <StateHeader />
+      <div className="cb-loading">
+        <Skeleton lines={8} />
       </div>
-
-      {data.stale ? <div style={{ marginBottom: 14 }}><Alert title="Dados desatualizados" tone="warning">A atualização falhou. Os últimos dados confirmados permanecem visíveis enquanto a plataforma tenta novamente.</Alert></div> : null}
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 16 }}>
-        <Kpi label="Custo importado" value={formatMoney(costs?.totalUnblendedCost ?? 0, costs?.currencies[0])} note={`${costs?.lineItemCount ?? 0} linhas de custo`} icon={<Cloud size={16} />} />
-        <Kpi label="Linhas de custo" value={NUMBER.format(costs?.lineItemCount ?? 0)} note="quantidade informada pelo resumo" icon={<Database size={16} />} />
-        <Kpi label="Custo rateado" value={formatMoney(allocation?.totalAllocatedCost ?? 0, allocation?.currency)} note="valor informado pelo rateio" icon={<Server size={16} />} />
-        <Kpi label="Não rateado" value={formatMoney(allocation?.totalUnallocatedCost ?? 0, allocation?.currency)} note="exige classificação quando houver valor" icon={<AlertTriangle size={16} />} warning={(allocation?.totalUnallocatedCost ?? 0) > 0} />
-        <Kpi label="Última importação" value={importStatus(latestImport)} note={formatDate(latestImport?.importedAt)} icon={<CalendarDays size={16} />} warning={latestImport?.status === "failed"} />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1.35fr 1fr 1fr", gap: 14, marginBottom: 16 }}>
-        <HonestSeal title="Série diária e projeção" detail="Ainda não há uma série temporal nem projeção fornecida pela API." />
-        <div style={{ ...card, padding: 18 }}><div style={{ fontSize: 14, fontWeight: 800, marginBottom: 4 }}>Por serviço</div><div style={{ fontSize: 11.5, color: "#94A3B8", marginBottom: 14 }}>Custos informados pelo resumo</div>{costs?.services.length ? costs.services.map((service) => <div key={`${service.serviceCode}-${service.currency}`} style={{ marginBottom: 11 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 5 }}><span style={{ fontSize: 12, fontWeight: 600 }}>{service.serviceCode}</span><span style={{ fontSize: 12, fontWeight: 700 }}>{formatMoney(service.unblendedCost, service.currency)}</span></div><div style={{ height: 7, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}><div style={{ height: "100%", width: `${maxServiceCost > 0 ? Math.min(100, (service.unblendedCost / maxServiceCost) * 100) : 0}%`, background: "#2563EB", borderRadius: 99 }} /></div></div>) : <div style={{ fontSize: 12, color: "#64748B" }}>Nenhum serviço medido no período.</div>}</div>
-        <div style={{ ...card, padding: 18 }}><div style={{ fontSize: 14, fontWeight: 800, marginBottom: 4 }}>Por organização</div><div style={{ fontSize: 11.5, color: "#94A3B8", marginBottom: 14 }}>Rateio informado pela API</div>{allocation?.tenants.length ? allocation.tenants.map((tenant) => <div key={tenant.tenantId} style={{ marginBottom: 11 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 5 }}><span style={{ fontSize: 12, fontWeight: 600 }}>{tenant.tenantName ?? "Organização sem nome"}</span><span style={{ fontSize: 12, fontWeight: 700 }}>{formatMoney(tenant.allocatedCost, allocation.currency)}</span></div><div style={{ height: 7, background: "#F1F5F9", borderRadius: 99, overflow: "hidden" }}><div style={{ height: "100%", width: `${Math.min(100, Math.max(0, tenant.allocationRatio * 100))}%`, background: "#7C3AED", borderRadius: 99 }} /></div></div>) : <div style={{ fontSize: 12, color: "#64748B" }}>Nenhuma organização rateada no período.</div>}</div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 16 }}>
-        <div style={{ ...card, overflow: "hidden" }}><div style={{ padding: "14px 18px", borderBottom: "1px solid #F1F5F9", fontSize: 14, fontWeight: 800 }}>Uso medido</div>{usage?.metrics.length ? usage.metrics.map((metric) => <div key={metric.metricKey} style={{ display: "flex", justifyContent: "space-between", padding: "11px 18px", borderBottom: "1px solid #F8FAFC" }}><span style={{ fontSize: 12.5, color: "#475569" }}>{metricLabel(metric.metricKey)}</span><span style={{ fontSize: 12.5, fontWeight: 700 }}>{NUMBER.format(metric.quantity)} {unitLabel(metric.unit)}</span></div>) : <div style={{ padding: 18, fontSize: 12, color: "#64748B" }}>Nenhuma métrica de uso no período.</div>}</div>
-        <div style={{ ...card, overflow: "hidden" }}><div style={{ padding: "14px 18px", borderBottom: "1px solid #F1F5F9", fontSize: 14, fontWeight: 800 }}>Importações</div>{imports.length ? imports.map((item) => <div key={item.id} style={{ display: "flex", justifyContent: "space-between", padding: "11px 18px", borderBottom: "1px solid #F8FAFC", gap: 8 }}><span style={{ fontSize: 12.5, color: "#475569" }}>{formatDate(item.importedAt)}</span><span style={{ fontSize: 12.5, fontWeight: 700 }}>{importStatus(item)} · {NUMBER.format(item.rowCount)} linhas</span></div>) : <div style={{ padding: 18, fontSize: 12, color: "#64748B" }}>Nenhuma importação registrada no período.</div>}</div>
-      </div>
-
     </div>
   );
 }
 
-// Estados §7 da tela, separados do hook para serem renderizáveis no teste (B-SAN3-06b E8): carregando, acesso não
-// permitido, falha (nenhum valor), vazio e, por fim, a composição com os dados do backend. Dado de um período que não
-// é o do mês rotulado (troca de mês com resposta em voo) é tratado como carregando: nunca aparece sob outro rótulo (A1).
-export function PlatformCloudBillingScreen({ data, loading, month, onMonthChange = () => undefined }: { readonly data: CloudBillingData; readonly loading: boolean; readonly month: string; readonly onMonthChange?: (month: string) => void }) {
-  const empty = !data.costs?.lineItemCount && !data.allocation?.tenants.length && !data.usage?.metrics.length && data.imports.length === 0;
-  const base: CSSProperties = { color: "#0F172A" };
-  if (loading || !isPeriodOfMonth(data.period, month)) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><div style={{ ...card, padding: 20 }}><Skeleton lines={8} /></div></div>;
-  if (data.forbidden) return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><ErrorState title="Acesso não permitido" detail="Seu perfil não tem permissão para consultar os dados de cobrança cloud." /></div>;
-  if (data.source === "fallback") return <div style={base}><div style={{ fontSize: 20, fontWeight: 800, marginBottom: 18 }}>Cloud Billing</div><Alert title="Não foi possível carregar Cloud Billing" tone="warning">A plataforma tentará novamente. Nenhum valor é exibido enquanto não houver uma resposta confirmada.</Alert></div>;
-  if (empty) return <div style={base}><div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 18, flexWrap: "wrap", gap: 10 }}><div><div style={{ fontSize: 20, fontWeight: 800 }}>Cloud Billing</div><div style={{ fontSize: 12.5, color: "#64748B", marginTop: 3 }}>{formatMonth(month)}</div></div><MonthSelect month={month} onMonthChange={onMonthChange} /></div><div style={{ ...card, padding: 8 }}><EmptyState title="Nenhum custo importado no período" detail="Selecione outro mês ou aguarde uma importação confirmada pela plataforma." /></div></div>;
-  return <PlatformCloudBillingView data={data} month={month} onMonthChange={onMonthChange} />;
+/** Os estados que tomam a tela inteira, separados do hook para serem renderizáveis no teste. */
+export function PlatformCloudBillingScreen({ data, loading, month, model, access, appearance, handlers, onRetry }: CloudBillingScreenProps) {
+  // A1: dado de outro período é tratado como carregando — nunca aparece sob o rótulo do mês selecionado.
+  if (loading || !isPeriodOfMonth(data.period, month)) return <LoadingScreen />;
+  if (data.forbidden) {
+    return (
+      <div className="cb-view">
+        <StateHeader />
+        <StatePanel icon={Lock} tone="danger" title="Acesso não permitido" detail="Seu perfil não tem permissão para ver o custo e a margem da plataforma." />
+      </div>
+    );
+  }
+  const retry = (
+    <button type="button" className="pat-btn pat-btn--primary" onClick={onRetry}>
+      <RefreshCw size={14} aria-hidden="true" />
+      Tentar de novo
+    </button>
+  );
+  if (data.failure === "membership_integrity_violation") {
+    return (
+      <div className="cb-view">
+        <StateHeader />
+        <StatePanel icon={Users} tone="danger" title={`Não foi possível montar a visão de ${monthLabel(month)}`} detail="Uma organização aparece em dois grupos no mesmo dia. Nenhum número é exibido até o vínculo ser corrigido: a visão falha inteira, para não mostrar margem errada.">
+          {retry}
+        </StatePanel>
+      </div>
+    );
+  }
+  if (data.failure !== null || data.source === "fallback") {
+    return (
+      <div className="cb-view">
+        <StateHeader />
+        <StatePanel icon={AlertTriangle} tone="danger" title="Não foi possível carregar o custo e a margem" detail="A plataforma vai tentar de novo. Nenhum valor é exibido enquanto não houver resposta confirmada.">
+          {retry}
+        </StatePanel>
+      </div>
+    );
+  }
+  if (data.source === "mock" || model.empty) {
+    return (
+      <div className="cb-view">
+        {/* o cabeçalho inteiro, como a maquete (`cabecalhoVazio`): o mês, o dólar e, com a permissão, rodar e importar; e os
+            avisos do custo do mês que o vazio não diz (rateio em processamento, rateio vazio, moeda desconhecida) */}
+        <CloudBillingHeader model={model} access={access} onMonth={handlers.onMonth} onAction={handlers.onAction} />
+        <CloudBillingBanners model={model} access={access} onAction={handlers.onAction} emptyState />
+        <StatePanel icon={Inbox} tone="info" title={`Nenhum custo nem assinatura em ${monthLabel(month)}`} detail="Escolha outro mês no seletor acima ou importe o arquivo de custo deste mês.">
+          {access.importCosts ? (
+            <button type="button" className="pat-btn pat-btn--primary" onClick={() => handlers.onAction({ kind: "import" })}>
+              <Upload size={14} aria-hidden="true" />
+              Importar arquivo de custo
+            </button>
+          ) : null}
+        </StatePanel>
+      </div>
+    );
+  }
+  const View = VIEWS[appearance] ?? CloudBillingViewA;
+  return (
+    <>
+      {data.stale ? (
+        <div className="cb-stale">
+          <Alert title="Dados desatualizados" tone="warning">
+            A atualização falhou. Os últimos dados confirmados de {capitalize(monthLabel(month))} continuam na tela enquanto a plataforma tenta de novo.
+          </Alert>
+        </div>
+      ) : null}
+      <View model={model} access={access} {...handlers} />
+    </>
+  );
+}
+
+function CloudBillingContent({ initialMonth }: { readonly initialMonth: string }) {
+  const navigate = useNavigate();
+  const { permissions } = usePermissions();
+  const access = useMemo(() => cloudBillingAccess(permissions), [permissions]);
+  const { appearance } = useScreenAppearance("platform-cloud-billing");
+  const [month, setMonth] = useState(initialMonth);
+  const [ui, setUi] = useState<CloudBillingUi>(() => initialUiFor(appearance));
+  // Trocar de aparência recomeça a lista no estado inicial dela (como cada vista da referência tem o seu).
+  const [uiAppearance, setUiAppearance] = useState(appearance);
+  if (uiAppearance !== appearance) {
+    setUiAppearance(appearance);
+    setUi(initialUiFor(appearance));
+  }
+  const [dialog, setDialog] = useState<DialogAction | null>(null);
+  const reading = useCloudBilling(month, { readImports: access.readImports });
+  const actions = useCloudBillingActions(access);
+  const currentMonth = currentBillingMonth();
+  const today = todayInSaoPaulo();
+  const model = useMemo(
+    () => buildCloudBillingView({ data: reading.data, series: reading.series, groupDetails: reading.groupDetails, composition: reading.composition, ui, currentMonth, today }),
+    [reading.data, reading.series, reading.groupDetails, reading.composition, ui, currentMonth, today],
+  );
+
+  // A linha da organização que abre lê a composição por serviço do rateio do mês (moeda original; B2).
+  const runId = reading.data.tenant?.cost.runId ?? null;
+  const openTenant = ui.aberta?.startsWith("t:") ? ui.aberta.slice(2) : null;
+  const { loadComposition, composition } = reading;
+  useEffect(() => {
+    if (openTenant && runId && model.originalKnown && !composition[openTenant]) void loadComposition(runId, openTenant);
+  }, [openTenant, runId, model.originalKnown, composition, loadComposition]);
+
+  const changeMonth = (next: string) => {
+    setMonth(next);
+    setUi((current) => ({ ...current, aberta: null }));
+  };
+  const handlers: Omit<CloudBillingViewProps, "model" | "access"> = {
+    onTarget: (key) => {
+      if (key.startsWith("mes:")) changeMonth(key.slice(4));
+      else setUi((current) => selectTarget(current, key, model.parcels));
+    },
+    onToggleRow: (rowId) => setUi((current) => toggleRow(current, rowId)),
+    onClearTarget: () => setUi((current) => clearTarget(current)),
+    onMode: (modo) => setUi((current) => setListMode(current, modo)),
+    onSearch: (text) => setUi((current) => setSearch(current, text)),
+    onMonth: changeMonth,
+    onAction: (action) => {
+      if (action.kind === "open-org") navigate(`/platform/tenants/${encodeURIComponent(action.tenantId)}`);
+      else if (action.kind === "retry") void reading.reloadAll();
+      else setDialog(action);
+    },
+    onRetrySeries: () => void reading.retrySeries(model.seriesFailed),
+  };
+
+  // Depois de uma escrita com sucesso, a tela relê o mês (em segundo plano: o dado confirmado fica até a resposta).
+  const rereadAfterWrite = () => {
+    void reading.refresh(true);
+    void reading.reloadGroupDetails();
+    void reading.retrySeries();
+  };
+
+  return (
+    <>
+      <PlatformCloudBillingScreen
+        data={reading.data}
+        loading={reading.loading}
+        month={month}
+        model={model}
+        access={access}
+        appearance={appearance}
+        handlers={handlers}
+        onRetry={() => void reading.reloadAll()}
+      />
+      <CloudBillingDialogs dialog={dialog} model={model} access={access} actions={actions} onClose={() => setDialog(null)} onDone={rereadAfterWrite} onMonth={changeMonth} />
+    </>
+  );
 }
 
 export function PlatformCloudBillingPage() {
-  const [month, setMonth] = useState(currentBillingMonth());
-  const { data, loading } = useCloudBilling(month);
-  return <PlatformCloudBillingScreen data={data} loading={loading} month={month} onMonthChange={setMonth} />;
+  const initialMonth = useInitialBillingMonth();
+  if (initialMonth === null) return <LoadingScreen />;
+  return <CloudBillingContent initialMonth={initialMonth} />;
 }
 
 export default PlatformCloudBillingPage;
