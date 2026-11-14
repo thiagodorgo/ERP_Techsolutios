@@ -10,6 +10,9 @@ class DriftPrestadorLocalStore implements PrestadorLocalStore {
 
   final AppDatabase _db;
 
+  /// B-SAN3-15b (P11) — o banco, para a unidade de peça e fila conferir que a fila grava no MESMO.
+  AppDatabase get database => _db;
+
   @override
   Future<List<WorkOrderMaterial>> loadMaterials(String workOrderLocalId) async {
     final rows = await _db

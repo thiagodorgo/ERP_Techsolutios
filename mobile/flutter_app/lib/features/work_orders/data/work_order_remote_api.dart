@@ -312,6 +312,8 @@ WorkOrder _workOrderFromRemoteJson(
       (json[camel] as String?) ?? (json[snake] as String?) ?? '';
   String? strOpt(String camel, String snake) =>
       (json[camel] as String?) ?? (json[snake] as String?);
+  // B-SAN3-15b (P7) — guincho ou prestador, como o servidor decidiu; o resto vira nulo.
+  final serviceKindRaw = json['serviceKind'] ?? json['service_kind'];
   return WorkOrder(
     localId: serverId ?? 'wo-remote-${DateTime.now().millisecondsSinceEpoch}',
     serverId: serverId,
@@ -339,6 +341,7 @@ WorkOrder _workOrderFromRemoteJson(
       json['checkinMode'] ?? json['checkin_mode'],
     ),
     checkinPlateTail: strOpt('checkinPlateTail', 'checkin_plate_tail'),
+    serviceType: workOrderServiceTypeFromApi(serviceKindRaw),
   );
 }
 

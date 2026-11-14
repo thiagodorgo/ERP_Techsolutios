@@ -7,6 +7,7 @@ import type {
 } from "./work-order.types.js";
 import type { WorkOrderChecklistRole, WorkOrderChecklistSource } from "./work-order-checklists.types.js";
 import type { CheckinListDescription } from "./work-order.checkin.js";
+import type { FieldServiceKind } from "./work-order.field-kind.js";
 
 /**
  * CHECKLIST P1 PR-04c-A — a projeção pública de uma linha do conjunto de vistorias.
@@ -38,6 +39,9 @@ export function toWorkOrderDto(
   workOrder: WorkOrder,
   links?: WorkOrderLinks,
   checklists?: readonly WorkOrderChecklistView[],
+  // B-SAN3-15b (P7) — só o handler `get` passa o tipo; as outras respostas de OS não ganham a chave (o `server_state`
+  // do lote do app sai daqui sem ela, e um "unknown" ali poderia apagar o tipo no aparelho).
+  serviceKind?: FieldServiceKind,
 ) {
   return {
     id: workOrder.id,
@@ -106,6 +110,7 @@ export function toWorkOrderDto(
     updatedAt: workOrder.updatedAt.toISOString(),
     ...(links === undefined ? {} : { links }),
     ...(checklists === undefined ? {} : { checklists: checklists.map(toWorkOrderChecklistDto) }),
+    ...(serviceKind === undefined ? {} : { serviceKind }),
   };
 }
 
@@ -124,6 +129,9 @@ export function toWorkOrderListDto(
   // B-SAN3-26 (C26-03) — o modo do check-in por OS (`WorkOrderService.describeCheckinForList`). Item sem entrada no
   // mapa vale `reference_missing`, que é fail-closed (o app não confirma a chegada dessa OS).
   checkinByWorkOrder?: ReadonlyMap<string, CheckinListDescription>,
+  // B-SAN3-15b (P7) — o tipo de atendimento por OS (`WorkOrderService.describeServiceKindForList`). Item sem entrada no
+  // mapa vale `unknown`, que é fail-closed (o app não abre porta especializada).
+  serviceKindByWorkOrder?: ReadonlyMap<string, FieldServiceKind>,
 ) {
   return {
     items: result.items.map((workOrder) => {
@@ -153,6 +161,7 @@ export function toWorkOrderListDto(
         // senha de acesso do residencial) ficam no detalhe.
         checkinMode: checkin?.mode ?? "reference_missing",
         checkinPlateTail: checkin?.plateTail ?? null,
+        serviceKind: serviceKindByWorkOrder?.get(workOrder.id) ?? "unknown",
       };
     }),
     pagination: {
