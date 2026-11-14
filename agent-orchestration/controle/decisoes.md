@@ -5240,3 +5240,14 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
 
 - Onde a Emenda 1 e a crítica r2 escrevem H5, H6 e H7 **do 08c1b**, leia-se H6, H7 e H8. O dev grava a pendência já com a numeração nova.
 - **Estado medido na `origin/main` (`729718fe`, na madrugada de 14/11):** a `P-ASS08C-POSSE-NAO-COBRE-O-POST` ainda não existe na `main` (`git grep -c` = 0). Ela nasce com o conserto do #555, que está aberto (head `78a7c8ab`).
+
+## D-DONO-1311-RECOMENDACOES · parte do app (2.1, 2.2 e 2.3) — as 3 respostas que ligam o B-MOBILE-GATE-CHAVE (item 66)
+
+- **Fala literal do dono (13/11, por volta de 23:12 SP):** *"claude, agora eh so vc. faca um plano para vc atacar tudo sozinho, deixe as ias dormindo, vc vai pegar tudo, nas juntas cadeiras em paralelo, quero dar o maior gas agora, minhas decisoes vao todas nas recomendacoes."*; e, autorizando, por volta de 23:20 SP: *"pode comecar"*.
+- **Leitura do orquestrador, declarada (§A6):** "minhas decisões vão todas nas recomendações" responde às perguntas em aberto pela recomendação de cada uma (`D-DONO-1311-RECOMENDACOES`, proposta de ID). Este registro grava, por acréscimo, só a parte do app, as 3 perguntas do plano do `B-MOBILE-GATE-CHAVE` (§9 do v1; §3 da abertura). As outras partes da mesma decisão entram pelo registro de cada bloco.
+  1. **2.1 — Quem vê "Aprovações" no app: (a), só quem pode aprovar.** O gate G4 = módulo `approvals` **ou** `work_orders` e a chave `work_orders:approve`. Passam o admin da plataforma, o admin da organização e o gestor. O banner de Aprovações da tela inicial usa o mesmo gate.
+  2. **2.2 — Diagnóstico fora do ambiente de desenvolvimento: (a), escondido na versão do cliente.** As duas entradas da tela inicial (o ícone do cabeçalho e o atalho) só aparecem no modo de desenvolvimento; a rota `/diagnostics`, fora dele, fica sem permissão inventada e mostra "Esta área não está disponível nesta versão do aplicativo.", sem "acesso não permitido" e sem "fale com o administrador". O texto do administrador vale em 3 telas e no botão, não em 4.
+  3. **2.3 — Checklists para quem só consulta: (a), a lista e o estado, sem o botão.** O gate G1 (a tela) passa os 9 perfis com o módulo; o botão "Iniciar/Continuar" (G1b) = módulo `tenant_checklist` e `checklist_runs:update`, a régua da ação de responder no servidor. Veem o botão o admin da plataforma, o admin da organização, o operador e o técnico de campo; o gestor, que conclui mas não responde, não vê.
+- **Também decidido pela mesma regra (recomendação da abertura, §2 A5):** o guard nas telas Nova Entrada e Nova Saída entra agora; o texto delas segue a recomendação da revisão `rev-66-abre-cl` (REV66-02): "Ação não permitida".
+- **Cruzamento:** por ordem do dono, sem cruzamento entre casas (§C7 11(2)), declarado; todo verificador é identidade Claude nova.
+- **Gravado por:** `dev-66-cl` (Claude Opus 5.5, dev do bloco), por ordem do orquestrador, em 14/11/2026.
