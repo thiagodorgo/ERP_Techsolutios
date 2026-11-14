@@ -891,3 +891,30 @@ aprovada pela verificação `ver-f3b-cl`. Roteiro da §1.5 com `OLD=317004e7` (F
 | C-E2-4 depois | `git rev-parse origin/feat/ass-09-visao-custo origin/feat/ass-09-banco` · `git merge-base --is-ancestor 75f27800 origin/feat/ass-09-visao-custo` | os dois `c26a1f06…` · verdadeiro | os dois ramos no mesmo SHA; o bloco só andou para a frente |
 
 **J2 feita.** A partir daqui o trabalho é no ramo do bloco (`feat/ass-09-visao-custo`); a F6 é de outro dev.
+
+## F8 (parte 1, sem depender da F6) — guarda do markup, `PLANO_SAN3.md`, docs e registro, 14/11 02:26–02:50 SP
+
+Pedido do orquestrador: adiantar no ramo do banco o que não depende das rotas da F6 (a F6 corre ao mesmo tempo no ramo do bloco,
+em arquivos disjuntos: `overview.service.ts`, rotas, validadores e trilha). O resto da F8 (o `API_CONTRACTS.md` e o T-API-1) vem
+depois da J3. Base: `1a3c7477` (J2).
+
+| passo | comando | saída | veredito |
+|---|---|---|---|
+| guarda do markup (R-REG-1) | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx tests/ass-09-markup-inalcancavel.test.ts` | `ok 1` (nenhum módulo de `src/modules/cloud-charges/` alcançável a partir dos 5 pontos de entrada: `src/app.ts`, `core-saas.ts`, `portal-app.ts`, `server.ts` e `src/infra/jobs/job-worker.bootstrap.ts`; 907 arquivos percorridos; 0 import relativo sem resolver; 0 `import()` com especificador não literal) · `ok 2` (controle: partindo de `cloud-charges/index.ts`, o caminhador vê o motor do markup) | verde |
+| **M-REG-1** | recolocar em `src/modules/platform/platform.routes.ts` a linha de `0f2bfb73^:6`, `import { createCloudChargesPlatformRouter } from "../cloud-charges/cloud-charge.routes.js";` (âncora conta 1, restauração por md5) | `not ok 1`: 8 módulos de `cloud-charges` alcançáveis (`cloud-charge.routes.ts`, `.service.ts`, `.engine.ts`, `.rules.ts`, …) · `restaurado=true` | **vermelha**: é o vermelho-controle real |
+| `PLANO_SAN3.md` (re-medido, Emenda 1 §1.2) | `grep -cE '^\| *61 *\|'` = 1 (l.144) · ``grep -cF '`B-ASS-09` · `feat/subscription-cost-overview`'`` = 1 (l.326); edição ancorada pelo conteúdo | item 61: `cloud-charge.engine.ts:80-97` e `PlatformCloudBillingPage.tsx:122-124,139` → "código de markup congelado e inalcançável (guard `tests/ass-09-markup-inalcancavel.test.ts`, `B-ASS-09`); tela em `frontend/src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage.tsx`" (D-1, D-3) · linha do bloco: `backend` → `backend + prisma (M6)` (D-2) · `git diff --numstat` `2 2` | só as 2 linhas |
+| `docs/subscription-billing.md` | seção nova "Visão da plataforma: custo × assinatura (B-ASS-09)", com "Câmbio do mês" e "Grupos"; e, junto do invariante do retrato (seção do demonstrativo), a frase do **K29** (A-E21-3) | `git diff --numstat` `82 1` (a linha trocada é a do invariante, que ganhou a frase do K29 no fim) | o texto descreve o contrato do plano e das emendas; confiro contra a F6 na parte 2 da F8 |
+| `docs/cloud-cost-allocation.md` | uma linha, depois do risco H13: a visão mostra `multiple_imports_in_month` e nunca soma; o resto fica com o `B-ASS-13` | `1 0` | uma linha |
+| `pendencias.md` (só acréscimo) | `node pend.mjs` (fora do repositório): 11 marcadores dentro das entradas e 2 entradas novas no fim | `git diff --numstat` `26 0`; `git diff -U0 … \| grep -c '^-[^-]'` = **0** | só acréscimo |
+| triagem do D-4 | marcadores em: `P-REG-CONF542-01` (encerramento), `P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS` (encerramento previsto, F7), `P-ASS09A-MES-EM-VARIOS-ARQUIVOS` (parte aqui; o resto ao `B-ASS-13`), `P-ASS09A-EMPATE-MESMO-MS` (encerramento por decisão), `P-ALLOC-MANUAL-INICIO-INCLUSIVO`, `P-ASS09A-BORDA-MICROSSEGUNDO`, `P-ASS09A-METODO-OUTRAS-REGRAS`, `P-ALLOC-RUN-STARTED-AT-NULO` (os 4 ao `B-ASS-09m`), `P-ASS09A-REDE-TRANSFERENCIA` (Q4 = sim, regra ao `B-ASS-09m`); e andamento em `P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO` (Q2) e `P-DONO-CLOUD-BILLING-ESCOPO` | — | as linhas de status mudam no registro pós-merge, como na casa |
+| entradas novas | `P-ASS08-REVERSAO-CREDITO-APLICADO` (ALTA, `pre-existente`, dono `B-ASS-08c`, bloqueia ligar o canal; A-E21-5) · `P-ASS09-INTEGRIDADE-POR-LINHA` (BAIXA, dono `B-ASS-12`, gatilho "alcance deixar de ser 0"; A-E21-2) | — | registradas |
+| índice | `python agent-orchestration/controle/gerar-indice-pendencias.py` (2 vezes, mesma saída) | `987 cabecalhos / 976 IDs · ABERTA 755`; as 2 novas no índice (ALTA na linha 400, BAIXA na 775) | regenerado, nunca digitado |
+| testes que leem esses arquivos | `CORE_SAAS_PERSISTENCE=memory node --test --import tsx` em `b-o6r-12-regime-census`, `b-san3-24-escopo`, `financial-ledger-helper`, `impound-checklist-link`, `kpi-dashboard-charts`, `o6r07c-subresource-scope`, `ass-09-markup-inalcancavel`, `db-catalog-write-guard`, `ass-01-markup-retirado`, `cloud-charge-markup-rules` | `# tests 107 # pass 106 # fail 0 # skipped 1` | verde |
+| `check`/`lint` | `npm run check` · `npm run lint` · `git diff --check` | `0` · `0` · vazio | verde |
+
+**Para a pré-revisão e a junta (V-F3b-1):** a âncora do C-E2-9 no head é `if (latest == null) throw snapshotMissing();` (com `==`, que
+cobre o retrato nulo e o sem a chave), não `=== null` como a Emenda 2.1 escreve em §2.2, §2.5 (M-SUB-10) e §7. O
+`git grep -c -F` com `===` dá 0; com `==`, 1.
+
+**Leitura do dev, declarada (§A6):** o K29 entra também na seção do demonstrativo, junto da frase do invariante do retrato, porque o
+A-E21-3 manda escrevê-lo "junto do invariante §3.3"; a seção nova da visão o repete com o mitigante.
