@@ -730,3 +730,54 @@ UTC), base `erp_ass09` migrada na J1. Código sob teste no papel efêmero `NOSUP
 | **M-FX-7** (memória) | `const RATE_PATTERN = /^\d{1,3}(\.\d{1,6})?$/;` → `/^\d{1,3}(\.\d+)?$/` | `not ok 2` T-FX-6: `Missing expected rejection: rate "5.1234567"` · `restaurado=true` | **vermelha** sem banco |
 | ratchet | `san3-05-acessos-de-plataforma-guard` | a mesma chave da F5: `L1 … fx-rates.prisma.ts PrismaFxRatesRepository.appendVersion tx RAW-SQL($executeRaw) OPACO ? $TRANSACTION-SEM-SETTER-PROVADO ×1`, e o L0 124 | **vermelho esperado, dono F7** (motivo: "trava de tabela, não lê nem grava linha") |
 | `check`/`lint` | `npm run check` · `npm run lint` · `git diff --check` | `0` · `0` · vazio | verde |
+
+## F5b — o serviço de grupos (Emenda 2 §1.4, §2.1, §2.4; Emenda 2.1 §5), 14/11 01:20–01:45 SP
+
+**Contrato da F2 conferido antes do código (§1.4):** em `membership.rules.ts` do ramo (vindo da F2a pela J1), `git grep -c -F`
+dá **1** para cada âncora — `return deriveBusinessDate(now);`, `return row.validTo === null || row.validTo > from;`,
+`if (hits.length > 1) throw new MembershipOverlapError(tenantId);`, `if (validFrom <= row.validFrom) throw retroactive();` — e
+`export function isMemberOn` = 1. A função de fechamento da F2 se chama `assertCanClose`; o serviço a importa, com
+`assertNotBeforeToday`, `overlaps`, `todayBusinessDate`, `isMemberOn` e `MembershipRuleError`. Nenhuma regra reescrita.
+
+- `economic-groups.service.ts` (novo): R4–R10 sem HTTP. P9 por intervalo; `23P01` → 409 `membership_conflict`;
+  `MembershipRangeError` → 422 `membership_range_invalid` (âncora `if (error instanceof MembershipRangeError) throw
+  rangeInvalid();`, conta 1); `MembershipRuleError` → 422 `membership_retroactive`; e os códigos do §4.1 do v2
+  (`group_not_found`, `tenant_not_found`, `platform_organization`, `too_many_members`, `group_name_exists`, `name_invalid`,
+  `group_has_members`, vigente ou agendado). Âncora da M-GRP-7: `if (inAnotherGroup.length > 0) throw
+  tenantInAnotherGroup(inAnotherGroup);` (conta 1).
+- Trilha na mesma transação (§2.4): `MembershipChanges.audit` leva os eventos prontos (a F6 monta o conteúdo pela allowlist e o
+  injeta no serviço por `MembershipAuditBuilder`); o Prisma grava cada um no `tx` da volta da organização, pelo molde
+  `writeAuditInTx` de `statement.prisma-runtime.ts`; o dublê guarda os eventos. Evento de organização fora da troca recusa a
+  troca inteira (`MembershipAuditTenantError`).
+- `tests/ass-09-groups-service.test.ts` (novo, em memória): T-GRP-5..7, 8, 9..10, 11, 13, 14 e mais 3 casos (os outros códigos
+  do R9/R6; a saída agendada pedida de novo; a trilha).
+- `tests/ass-09-groups-db.test.ts`: T-GRP-db-3 (b) pelo serviço sobre o Prisma (o (c) é a M-GRP-11 nele) e T-GRP-db-1 (corrida,
+  barreira `LOCK TABLE economic_group_members IN SHARE MODE` no admin, escopada pelo `application_name` da suíte); um
+  `beforeEach` limpa vínculos e trilha das organizações da suíte, para um caso vermelho não contaminar o seguinte.
+
+| passo | comando | saída | veredito |
+|---|---|---|---|
+| memória, 3× | sem `DATABASE_URL`: `node --test --import tsx tests/ass-09-fx-rates.test.ts tests/ass-09-groups-service.test.ts tests/ass-09-groups.test.ts tests/ass-09-overview-engine.test.ts tests/ass-09-overview-money.test.ts tests/financial-period-lock-guard.test.ts` | rodadas 1, 2, 3: `# tests 40 # pass 40 # fail 0 # skipped 0` | verde, N constante |
+| `-db`, 3× | `DATABASE_URL=…/erp_ass09 node --test --import tsx tests/ass-09-groups-fx-migration-drill-db.test.ts tests/ass-09-fx-rates-db.test.ts tests/ass-09-groups-db.test.ts` | rodadas 1, 2, 3: `# tests 13 # pass 13 # fail 0 # skipped 0` (3 + 4 + 6) | verde, N constante, papel `NOSUPERUSER NOBYPASSRLS` |
+| T-GRP-db-1, quem perde | sonda temporária (uma linha de `console.log`, aplicada e restaurada por md5), 3× | `SONDA-PERDEDOR 409 membership_conflict` nas 3 | o banco segura a corrida (exclusão), nunca 500 |
+| regressões `-db` | `san3-05-leituras-de-plataforma-db`, `san3-03-system-org-db`, `ass-09a-rateio-automatico-db`, `ass-03-metering-census-db` | `# tests 44 # pass 44 # fail 0 # skipped 0` | verde |
+| resíduo | `psql … erp_ass09`: vínculos, grupos, câmbio, trilha `economic_group.%`, organizações `ass09%`, papéis `o6r_b01_%` | `0 0 0 0 0 0` | teardown sem resto |
+| **M-GRP-7** | tirar `      if (inAnotherGroup.length > 0) throw tenantInAnotherGroup(inAnotherGroup);` | `not ok` T-GRP-5..7 (`expected 422` · `actual 409`, `membership_conflict` do espelho), T-GRP-11, trilha · `restaurado=true` | **vermelha**, 409 como a Emenda 2 §2.1 escreve |
+| **M-GRP-4** (arquivo da F2, só no worktree) | `  return deriveBusinessDate(now);` → `  return now.toISOString().slice(0, 10);` | `not ok` T-GRP-8: o `validFrom 2026-10-13` cai em `membership_retroactive` · `restaurado=true` | **vermelha** |
+| **M-GRP-8** (dublê) | `  return btrimSpaces(name).toLowerCase();` → `  return btrimSpaces(name);` | `not ok` T-GRP-9..10: `Missing expected rejection: mesmo nome em outra caixa` · `restaurado=true` | **vermelha** |
+| **M-GRP-11** (F2) | `  return row.validTo === null \|\| row.validTo > from;` → `  return row.validTo === null;` | memória: `not ok` T-GRP-11 (`expected 422` · `actual 409`, `membership_conflict`) · Postgres: `not ok` só o T-GRP-db-3 (b), `actual [409, 'membership_conflict']` × `expected [422, 'tenant_in_another_group']` — é o (c): o banco segura · `restaurado=true` | **vermelha**, 409, nunca 200 |
+| **M-GRP-12** (F2) | `  if (validFrom <= row.validFrom) throw retroactive();` → `  if (validFrom < row.validFrom) throw retroactive();` | `not ok` T-GRP-13: `actual 'membership_range_invalid'` × `expected 'membership_retroactive'` · `restaurado=true` | **vermelha**, 422 `membership_range_invalid` (Emenda 2.1 §5) |
+| **M-GRP-13** (nova) | tirar `      if (error instanceof MembershipRangeError) throw rangeInvalid();` | `not ok` T-GRP-14: `statusCode` indefinido (o erro cru, `code membership_range_invalid`, sobe) · `restaurado=true` | **vermelha** |
+| **M-GRP-9** (base nova) | a M6 sem a `EXCLUDE` (`fresh-db-run.sh`) | `not ok` T-GRP-db-1: `exatamente um dos dois vence` · `2 !== 1`; e T-GRP-db-3 (a), espelho · `restaurado=true` | **vermelha**: os dois vencem |
+| guards | `san3-05-acessos-de-plataforma-guard`, `db-catalog-write-guard`, `auth-invariant-guards`, `migration-transaction-guard` | `# tests 73 # pass 69 # fail 3 # skipped 1`; os 3 do `san3-05`: o L0 (124), o T13 e 2 chaves novas sem motivo: a do câmbio (F5a) e `L2 src/modules/subscription-billing/economic-groups/economic-groups.prisma.ts new AuditLogRepository(tx) PARAMETRO(tx) ×1` (a trilha no `tx`, molde do demonstrativo) | **vermelho esperado, dono F7** (motivo por chave) |
+| `check`/`lint` | `npm run check` · `npm run lint` · `git diff --check` | `0` · `0` · vazio | verde |
+
+**Leituras do dev, declaradas (§A6):**
+1. **O diretório de organizações é uma porta do serviço** (`GroupTenantDirectory`: `getTenant`, `listTenantIds`). Os vínculos
+   estão sob RLS FORCE e só se leem organização por organização; a rota (F6) monta o diretório (a `tenant-list` da visão). Nos
+   testes, um diretório próprio de cada suíte.
+2. **`validFrom` fora de `AAAA-MM-DD` → 400 `invalid_valid_from`.** O v2 não nomeia esse código.
+3. **A organização com saída agendada do mesmo grupo, pedida de novo:** o serviço abre a continuação na data da saída (sem buraco,
+   sem cruzar), porque o repositório não reabre linha. O v2 não fixa o caso; está coberto por um teste próprio.
+4. **Os testes da F2 continuam intocados:** `tests/ass-09-groups.test.ts` e `membership.rules.ts` não estão no diff deste ramo
+   (`git diff --name-only origin/feat/ass-09-visao-custo...HEAD`); as mutações da F2 foram só aplicadas e restauradas.

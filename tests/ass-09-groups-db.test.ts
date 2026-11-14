@@ -1,7 +1,7 @@
 import "dotenv/config";
 
 import assert from "node:assert/strict";
-import test, { after, before } from "node:test";
+import test, { after, before, beforeEach } from "node:test";
 
 // -----------------------------------------------------------------------------------------------
 // B-ASS-09 · F5 — grupo econômico e vínculo de organização a grupo contra o PostgreSQL REAL.
@@ -14,8 +14,11 @@ import test, { after, before } from "node:test";
 // O "espelho" prova que o dublê em memória lança, para a mesma sequência, os mesmos erros de domínio que o caminho Prisma
 // lança para 23P01 (exclusão), 23514 (CHECK) e 23505 (nome), e termina no mesmo estado.
 //
-// Fora deste arquivo, por ora: R-GRP-db-1 (corrida de dois PUT de membros) e R-GRP-db-3 (b)(c), que passam pelo serviço
-// de grupos — ele depende de `membership.rules.ts` (fatia F2), que ainda não está no ramo. Ver o diário do bloco.
+// F5b (Emenda 2 §2.1): R-GRP-db-1 (a corrida de dois `putMembers`, com barreira escopada pelo `application_name` da suíte:
+// o admin segura `LOCK TABLE economic_group_members IN SHARE MODE` — a leitura passa, o INSERT espera — até os dois estarem
+// presos no INSERT, depois de os dois terem passado pela conferência do serviço) e R-GRP-db-3 (b) pelo serviço sobre o
+// Prisma; o (c) é a M-GRP-11 aplicada a esse mesmo caso (409 `membership_conflict`: quem segura é o banco). A trilha da troca
+// entra na MESMA transação (Emenda 2 §2.4): a troca perdida não deixa linha em `audit_logs`.
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;
@@ -35,6 +38,11 @@ if (!connectionString) {
 
   after(async () => {
     await ctx?.close();
+  });
+
+  // Cada caso parte sem vínculo nem trilha das organizações da suíte: um caso vermelho não contamina o seguinte.
+  beforeEach(async () => {
+    await ctx?.clearMemberships();
   });
 
   test("T-GRP-db-2 · RLS: com o GUC de A não se vê B; sem GUC, 0 linhas; gravar linha de outra organização com o GUC de A é recusado", async () => {
@@ -154,6 +162,85 @@ if (!connectionString) {
       return true;
     });
     assert.equal(openState, "23P01");
+    await c.clearMemberships();
+  });
+
+  test("T-GRP-db-3 (b) · a sequência do crítico pelo serviço sobre o Prisma: 422 tenant_in_another_group; a fronteira [) passa", async () => {
+    // MUTAÇÃO QUE MATA, o (c): M-GRP-11 (`overlaps` sem o fechado no futuro) → a 3ª chamada chega ao banco e cai no 23P01:
+    // 409 `membership_conflict` no lugar de 422 — é o banco que segura.
+    const c = ctx!;
+    const service = c.serviceAt("2026-10-01T15:00:00.000Z");
+    await service.putMembers(c.group1, { tenantIds: [c.tenantC], validFrom: "2026-10-01", actorId: null });
+    await service.putMembers(c.group1, { tenantIds: [], validFrom: "2026-12-01", actorId: null });
+    await assert.rejects(
+      service.putMembers(c.group2, { tenantIds: [c.tenantC], validFrom: "2026-11-15", actorId: null }),
+      (error: any) => {
+        assert.deepEqual([error?.statusCode, error?.reason], [422, "tenant_in_another_group"]);
+        assert.deepEqual(error?.tenantIds, [c.tenantC]);
+        return true;
+      },
+    );
+    await service.putMembers(c.group2, { tenantIds: [c.tenantC], validFrom: "2026-12-01", actorId: null });
+    const rows = await c.prismaRepository.listMembershipsOfTenants([c.tenantC]);
+    assert.deepEqual(
+      rows.map((row) => [row.groupId === c.group1 ? "G1" : "G2", row.validFrom, row.validTo]),
+      [
+        ["G1", "2026-10-01", "2026-12-01"],
+        ["G2", "2026-12-01", null],
+      ],
+      "histórico de C no Postgres: 2 linhas sem sobreposição",
+    );
+    assert.deepEqual(
+      await c.auditActions(c.tenantC),
+      ["economic_group.member_joined", "economic_group.member_left", "economic_group.member_joined"],
+      "a trilha da organização tem uma linha por troca que valeu, e nenhuma da recusada",
+    );
+    await c.clearMemberships();
+  });
+
+  test("T-GRP-db-1 · dois putMembers de grupos diferentes para a mesma organização, ao mesmo tempo → exatamente 1 vence", async () => {
+    // MUTAÇÃO QUE MATA: M-GRP-9 (a M6 sem a `EXCLUDE`, em base nova) → os dois vencem e C fica em dois grupos.
+    const c = ctx!;
+    const service = c.serviceAt("2026-10-01T15:00:00.000Z");
+    let release!: () => void;
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked!: () => void;
+    const lockHeld = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const holder = c.admin.$transaction(
+      async (tx: any) => {
+        await tx.$executeRawUnsafe("LOCK TABLE economic_group_members IN SHARE MODE");
+        locked();
+        await released;
+      },
+      { maxWait: 10_000, timeout: 30_000 },
+    );
+    await lockHeld;
+    const racers = [
+      service.putMembers(c.group1, { tenantIds: [c.tenantC], validFrom: "2026-11-01", actorId: null }),
+      service.putMembers(c.group2, { tenantIds: [c.tenantC], validFrom: "2026-11-15", actorId: null }),
+    ].map((p) => p.then(() => ({ ok: true as const }), (error: any) => ({ ok: false as const, error })));
+    try {
+      await c.waitForOwnBlocked(2, "os dois putMembers presos no INSERT, depois da conferência do serviço");
+    } finally {
+      release();
+      await holder;
+    }
+    const outcomes = await Promise.all(racers);
+    const winners = outcomes.filter((o) => o.ok).length;
+    const losers = outcomes.filter((o) => !o.ok).map((o) => (o as { error: any }).error);
+    assert.equal(winners, 1, "exatamente um dos dois vence");
+    assert.equal(losers.length, 1);
+    assert.ok(
+      ["409 membership_conflict", "422 tenant_in_another_group"].includes(`${losers[0]?.statusCode} ${losers[0]?.reason}`),
+      `o perdedor responde 409 membership_conflict ou 422 tenant_in_another_group, nunca 500 (veio ${losers[0]?.statusCode} ${losers[0]?.reason ?? losers[0]})`,
+    );
+    const rows = await c.prismaRepository.listMembershipsOfTenants([c.tenantC]);
+    assert.equal(rows.length, 1, "C tem um vínculo só");
+    assert.deepEqual(await c.auditActions(c.tenantC), ["economic_group.member_joined"], "a troca perdida não deixou trilha");
     await c.clearMemberships();
   });
 
@@ -290,18 +377,22 @@ if (!connectionString) {
 async function bootstrap(connection: string) {
   const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
   const admin = new PrismaClient({ adapter: new PrismaPg({ connectionString: connection }) });
+  const barrier = await import("./helpers/pg-barrier.js");
+  const applicationName = barrier.buildApplicationName("ass09-grp");
   const { createEphemeralRole } = await import("./helpers/auth-identity-fixture.js");
-  const role = await createEphemeralRole(admin, connection);
+  const role = await createEphemeralRole(admin, barrier.withApplicationName(connection, applicationName));
   const attributes = (await admin.$queryRawUnsafe(
     "SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1",
     role.roleName,
   )) as Array<{ rolsuper: boolean; rolbypassrls: boolean }>;
   assert.deepEqual(attributes, [{ rolsuper: false, rolbypassrls: false }], "o código sob teste roda SEM superusuário e SEM bypass de RLS");
+  await barrier.assertApplicationNamePropagated(role.client, applicationName);
 
-  const [{ withTenantRls }, prismaModule, memoryModule] = await Promise.all([
+  const [{ withTenantRls }, prismaModule, memoryModule, serviceModule] = await Promise.all([
     import("../src/database/rls.js"),
     import("../src/modules/subscription-billing/economic-groups/economic-groups.prisma.js"),
     import("../src/modules/subscription-billing/economic-groups/economic-groups.repository.js"),
+    import("../src/modules/subscription-billing/economic-groups/economic-groups.service.js"),
   ]);
   const suffix = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
   const tenant = async (letter: string): Promise<string> =>
@@ -316,6 +407,28 @@ async function bootstrap(connection: string) {
   const group3 = await group(3);
   const tenants = [tenantA, tenantB, tenantC];
   const createdGroups: string[] = [];
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  // As organizações desta suíte, lidas do registro global `tenants` pelo papel de runtime.
+  const directory = {
+    async getTenant(id: string) {
+      if (!UUID.test(id)) return null;
+      const row = await role.client.tenant.findUnique({ where: { id }, select: { id: true, slug: true, name: true } });
+      return row ? { id: row.id, slug: row.slug, name: row.name } : null;
+    },
+    async listTenantIds() {
+      return tenants;
+    },
+  };
+  const prismaRepository = new prismaModule.PrismaEconomicGroupsRepository(role.client);
+  const audit = (change: { kind: string; tenantId: string; groupId: string; validFrom: string; actorId: string | null }) => ({
+    tenantId: change.tenantId,
+    actorId: change.actorId,
+    action: `economic_group.member_${change.kind}`,
+    entityId: change.groupId,
+    metadata: { valid_from: change.validFrom },
+  });
+  const serviceAt = (instant: string) =>
+    new serviceModule.EconomicGroupsService(prismaRepository, directory, () => new Date(instant), audit);
 
   return {
     admin,
@@ -330,10 +443,32 @@ async function bootstrap(connection: string) {
     createdGroups,
     withTenantRls,
     sqlStateOf: prismaModule.sqlStateOf,
-    prismaRepository: new prismaModule.PrismaEconomicGroupsRepository(role.client),
+    prismaRepository,
+    serviceAt,
+    async waitForOwnBlocked(minWaiters: number, label: string): Promise<void> {
+      const deadline = Date.now() + 15_000;
+      for (;;) {
+        const rows = (await admin.$queryRawUnsafe(
+          `SELECT count(*)::int AS waiting FROM pg_stat_activity
+            WHERE pid <> pg_backend_pid() AND wait_event_type = 'Lock' AND state = 'active' AND application_name = $1`,
+          applicationName,
+        )) as Array<{ waiting: number }>;
+        if ((rows[0]?.waiting ?? 0) >= minWaiters) return;
+        if (Date.now() > deadline) assert.fail(`timeout esperando ${minWaiters} statements presos da suíte: ${label}`);
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+    },
+    async auditActions(tenantId: string): Promise<string[]> {
+      const rows = (await admin.$queryRawUnsafe(
+        `SELECT action FROM audit_logs WHERE tenant_id = $1::uuid AND action LIKE 'economic_group.%' ORDER BY created_at, id`,
+        tenantId,
+      )) as Array<{ action: string }>;
+      return rows.map((row) => row.action);
+    },
     InMemoryEconomicGroupsRepository: memoryModule.InMemoryEconomicGroupsRepository,
     async clearMemberships(): Promise<void> {
       await admin.$executeRawUnsafe(`DELETE FROM economic_group_members WHERE tenant_id = ANY($1::uuid[])`, tenants);
+      await admin.$executeRawUnsafe(`DELETE FROM audit_logs WHERE tenant_id = ANY($1::uuid[])`, tenants);
     },
     async deleteCreatedGroups(): Promise<void> {
       await admin.$executeRawUnsafe(`DELETE FROM economic_groups WHERE id = ANY($1::uuid[])`, createdGroups.splice(0));
@@ -341,6 +476,7 @@ async function bootstrap(connection: string) {
     async close(): Promise<void> {
       try {
         await admin.$executeRawUnsafe(`DELETE FROM economic_group_members WHERE tenant_id = ANY($1::uuid[])`, tenants);
+        await admin.$executeRawUnsafe(`DELETE FROM audit_logs WHERE tenant_id = ANY($1::uuid[])`, tenants);
         await admin.$executeRawUnsafe(
           `DELETE FROM economic_groups WHERE id = ANY($1::uuid[])`,
           [group1, group2, group3, ...createdGroups],

@@ -10,12 +10,14 @@
 // `MembershipConflictError` (a rota responde 409 `membership_conflict`) e a transação inteira volta. O dublê em memória
 // (`economic-groups.repository.ts`) lança os mesmos erros para as mesmas entradas.
 
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { assertRowsBelongToTenant, forEachTenantRls } from "../../../database/rls.js";
 import {
+  assertAuditTenants,
   GroupNameCheckError,
   GroupNameTakenError,
+  MembershipAuditTenantError,
   MembershipConflictError,
   MembershipNotFoundError,
   MembershipRangeError,
@@ -24,6 +26,7 @@ import {
   type EconomicGroup,
   type EconomicGroupMembership,
   type EconomicGroupsRepository,
+  type MembershipAuditEvent,
   type MembershipChanges,
   type MembershipChangesResult,
   type OpenMembershipRecord,
@@ -121,6 +124,7 @@ export class PrismaEconomicGroupsRepository implements EconomicGroupsRepository 
   }
 
   async applyMembershipChanges(changes: MembershipChanges): Promise<MembershipChangesResult> {
+    assertAuditTenants(changes);
     const tenants = uniqueSorted([...changes.closes.map((c) => c.tenantId), ...changes.opens.map((o) => o.tenantId)]);
     type Applied = { readonly kind: "closed" | "opened"; readonly index: number; readonly row: EconomicGroupMembership };
     let applied: Applied[];
@@ -148,6 +152,9 @@ export class PrismaEconomicGroupsRepository implements EconomicGroupsRepository 
             });
             out.push({ kind: "opened", index, row: mapMembership(row) });
           }
+          for (const event of changes.audit ?? []) {
+            if (event.tenantId === tenantId) await writeAuditInTx(tx, event);
+          }
         } catch (error) {
           throw mapMembershipError(error, tenantId);
         }
@@ -164,6 +171,23 @@ export class PrismaEconomicGroupsRepository implements EconomicGroupsRepository 
         .map((item) => item.row);
     return { closed: pick("closed"), opened: pick("opened") };
   }
+}
+
+/** A linha de `audit_logs` da organização dentro do `tx` da troca (molde `statement.prisma-runtime.ts`, `writeAuditInTx`). */
+async function writeAuditInTx(tx: Prisma.TransactionClient, event: MembershipAuditEvent): Promise<void> {
+  const [{ EnterpriseAuditLogService }, { AuditLogRepository }] = await Promise.all([
+    import("../../core-saas/audit/audit-log.service.js"),
+    import("../../core-saas/repositories/audit-log.repository.js"),
+  ]);
+  await new EnterpriseAuditLogService(new AuditLogRepository(tx)).record({
+    tenantId: event.tenantId,
+    actorId: actorColumn(event.actorId),
+    actorType: event.actorId === null ? "system" : "user",
+    action: event.action,
+    resourceType: "economic_group",
+    resourceId: event.entityId,
+    metadata: event.metadata,
+  });
 }
 
 /** O SQLSTATE do Postgres por baixo do erro do Prisma 7 com `@prisma/adapter-pg` (forma medida no cluster do bloco). */
@@ -194,6 +218,7 @@ function mapGroupError(error: unknown): unknown {
 
 function mapMembershipError(error: unknown, tenantId: string | null): unknown {
   if (
+    error instanceof MembershipAuditTenantError ||
     error instanceof MembershipConflictError ||
     error instanceof MembershipRangeError ||
     error instanceof MembershipNotFoundError

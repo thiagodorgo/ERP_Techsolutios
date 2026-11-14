@@ -66,10 +66,25 @@ export type CloseMembershipRecord = {
   readonly closedBy: string | null;
 };
 
+/**
+ * Um evento da trilha da organização (`audit_logs`) para entrar ou sair de grupo (plano v2 §4.3, Emenda 2 §2.4). Chega
+ * PRONTO e já filtrado pela allowlist (quem monta o conteúdo é a rota, F6); o repositório só o grava DENTRO da transação da
+ * troca, na volta da organização dele — se a troca cair, a trilha cai junto, e vice-versa.
+ */
+export type MembershipAuditEvent = {
+  readonly tenantId: string;
+  readonly actorId: string | null;
+  readonly action: string;
+  readonly entityId: string;
+  readonly metadata: Readonly<Record<string, string | number | boolean | null>>;
+};
+
 export type MembershipChanges = {
   /** Aplicados ANTES das aberturas: fechar o vínculo antigo e abrir o novo no mesmo dia é uma troca válida. */
   readonly closes: readonly CloseMembershipRecord[];
   readonly opens: readonly OpenMembershipRecord[];
+  /** A trilha da troca. Todo evento é de uma organização da troca; outro qualquer recusa a troca inteira (falha fechada). */
+  readonly audit?: readonly MembershipAuditEvent[];
 };
 
 export type MembershipChangesResult = {
@@ -109,6 +124,27 @@ export class MembershipRangeError extends Error {
     super("membership_range_invalid: o fim do vínculo tem de ser depois do início.");
     this.name = "MembershipRangeError";
   }
+}
+
+/** Evento de trilha de uma organização que não está na troca: nada é gravado. */
+export class MembershipAuditTenantError extends Error {
+  readonly code = "audit_event_for_another_organization";
+
+  constructor() {
+    super("audit_event_for_another_organization: evento de trilha de organização fora da troca.");
+    this.name = "MembershipAuditTenantError";
+  }
+}
+
+/** Organizações tocadas pela troca: as dos fechamentos e as das aberturas. */
+export function tenantsOfChanges(changes: MembershipChanges): Set<string> {
+  return new Set([...changes.closes.map((c) => c.tenantId), ...changes.opens.map((o) => o.tenantId)]);
+}
+
+/** Todo evento da trilha tem de ser de uma organização da troca. */
+export function assertAuditTenants(changes: MembershipChanges): void {
+  const tenants = tenantsOfChanges(changes);
+  if ((changes.audit ?? []).some((event) => !tenants.has(event.tenantId))) throw new MembershipAuditTenantError();
 }
 
 /** O vínculo a fechar não existe para aquela organização. */
@@ -168,6 +204,12 @@ export function rangesOverlap(
 export class InMemoryEconomicGroupsRepository implements EconomicGroupsRepository {
   private readonly groups = new Map<string, EconomicGroup>();
   private memberships: EconomicGroupMembership[] = [];
+  private auditEvents: MembershipAuditEvent[] = [];
+
+  /** A trilha gravada pelas trocas que valeram (para o teste ler). */
+  listAuditEvents(): readonly MembershipAuditEvent[] {
+    return this.auditEvents;
+  }
 
   async createGroup(input: CreateGroupRecord): Promise<EconomicGroup> {
     this.assertNameFitsCheck(input.name);
@@ -232,6 +274,7 @@ export class InMemoryEconomicGroupsRepository implements EconomicGroupsRepositor
 
   async applyMembershipChanges(changes: MembershipChanges): Promise<MembershipChangesResult> {
     // Tudo ou nada: aplica numa cópia e só troca o estado no fim, como a transação do caminho Prisma.
+    assertAuditTenants(changes);
     const staged = [...this.memberships];
     const now = new Date();
     const closed: EconomicGroupMembership[] = [];
@@ -261,6 +304,7 @@ export class InMemoryEconomicGroupsRepository implements EconomicGroupsRepositor
       opened.push(row);
     }
     this.memberships = staged;
+    this.auditEvents = [...this.auditEvents, ...(changes.audit ?? [])];
     return { closed, opened };
   }
 
