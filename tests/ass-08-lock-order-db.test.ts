@@ -55,6 +55,8 @@ import {
   type Recording,
 } from "./helpers/lock-order-recorder.js";
 import { requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
+import { requestChargeCancel } from "../src/modules/subscription-billing/charges/charge-request.service.js";
+import { requestUnknownChargeCancel } from "../src/modules/subscription-billing/charges/charge-request.service.js";
 import { PrismaChargeIntentRepository } from "../src/modules/subscription-billing/charges/charge-intent.prisma.js";
 import { PrismaStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.prisma.js";
 import { chargeCreateClaimVerdict } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
@@ -73,6 +75,8 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/charges/charge-intent.prisma.ts#PrismaChargeIntentRepository.transaction#withTenantRlsBudget": "cenario:charge-intent.prisma.transaction",
   "src/modules/subscription-billing/charges/charge-intent.repository.ts#InMemoryChargeIntentRepository.transaction#.transaction": "dublê-em-memória",
   "src/modules/subscription-billing/charges/charge-request.service.ts#requestChargeCreate#.transaction": "cenario:charge-request.service.requestChargeCreate",
+  "src/modules/subscription-billing/charges/charge-request.service.ts#requestChargeCancel#.transaction": "cenario:chargeIntent.cancel",
+  "src/modules/subscription-billing/charges/charge-request.service.ts#requestUnknownChargeCancel#.transaction": "cenario:chargeIntent.cancelUnknown",
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.cancel#withTenantRls": "cenario:charges.cancel",
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.findLive#withTenantRls": "cenario:charges.findLive",
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.insert#withTenantRls": "cenario:charges.insert",
@@ -105,6 +109,10 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.markDisabledProvidersVisible#forEachTenantRls": "cenario:outbox.markDisabledProvidersVisible",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.recordChargeOutcome#withTenantRlsBudget": "cenario:outbox.recordChargeOutcome",
   "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.retry#withTenantRlsBudget": "cenario:outbox.retry",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.listForTenant#withTenantRls": "cenario:outbox.listForTenant",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.resolve#withTenantRlsBudget": "cenario:outbox.resolve",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.retryByOperator#withTenantRlsBudget": "cenario:outbox.retryByOperator",
+  "src/modules/subscription-billing/outbox/outbox.prisma.ts#PrismaOutboxRepository.recordChargeCancelOutcome#withTenantRlsBudget": "cenario:outbox.recordChargeCancelOutcome",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.closeAddon#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.closeSubscription#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/plans/subscriptions-prisma.repository.ts#PrismaSubscriptionsRepository.createAddon#withTenantRls": "sem-tabela-do-mapa",
@@ -296,6 +304,40 @@ if (!connectionString) {
     await scenario("outbox.listByStatus", () => outbox.listByStatus("PENDING", provider));
     await scenario("outbox.listByStatement", () => outbox.listByStatement(e.tenantId, e.statementId));
     await scenario("outbox.adoptionFacts", () => outbox.adoptionFacts(e.tenantId, e.statementId, failed));
+    // B-ASS-08c1b (F5): a revisão da fila — a listagem da organização (só leitura), o `/resolve` (o demonstrativo PRIMEIRO,
+    // [RESOLVE-LOCK]) e o `retryByOperator` (o mesmo núcleo do `retry`, o demonstrativo primeiro).
+    await scenario("outbox.listForTenant", () => outbox.listForTenant(e.tenantId, { status: "PENDING" }));
+    const n = await seedStatement("n");
+    const review = await seedRow(n.tenantId, n.statementId, provider, "NEEDS_REVIEW", { lastError: "charge_found_no_candidate" });
+    await scenario("outbox.resolve", () => outbox.resolve(n.tenantId, review, { reason: "cenário lk2 do resolve", actorId: null, now }));
+    // A semeadura não tem `dueDate` no payload (vencimento "passado"): o operador informa a data nova, que é regravada no MESMO UPDATE.
+    const newDue = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000));
+    await scenario("outbox.retryByOperator", () => outbox.retryByOperator(n.tenantId, review, now, { dueDate: newDue }));
+    // B-ASS-08c1b (F6): o registro do cancelamento — o demonstrativo PRIMEIRO, depois a linha `charge_cancel` (com a posse), a
+    // cobrança da tabela e a `charge_create` alvo.
+    const q = await seedStatement("q");
+    const createQ = await seedRow(q.tenantId, q.statementId, provider, "SENT");
+    const chargeQ = `pay_lk2_rc_${randomUUID().slice(0, 8)}`;
+    await db.$executeRawUnsafe(`UPDATE billing_outbox SET external_id = $2 WHERE id = $1::uuid`, createQ, chargeQ);
+    await db.$executeRawUnsafe(
+      `INSERT INTO subscription_statement_charges (tenant_id, statement_id, provider, external_charge_id, status, due_date, created_at) VALUES ($1::uuid, $2::uuid, $3, $4, 'pending', '2026-11-20', now())`,
+      q.tenantId,
+      q.statementId,
+      provider,
+      chargeQ,
+    );
+    const cancelQ = ((await db.$queryRawUnsafe(
+      `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, attempts, attempt_started_at)
+       VALUES ($1::uuid, $2::uuid, 'charge_cancel', $3, $4, gen_random_uuid(), $5::jsonb, now(), 'PROCESSING', 1, now()) RETURNING id`,
+      q.tenantId,
+      q.statementId,
+      provider,
+      `charge_cancel:${q.statementId}:1`,
+      JSON.stringify({ chargeId: chargeQ, chargeCreateId: createQ }),
+    )) as Array<{ id: string }>)[0]!.id;
+    const leaseQ = await seedLease(cancelQ, now);
+    const rowQ = (await outbox.findById(q.tenantId, cancelQ))!;
+    await scenario("outbox.recordChargeCancelOutcome", () => outbox.recordChargeCancelOutcome(q.tenantId, rowQ, leaseQ, chargeQ, now));
 
     const f = await seedStatement("f");
     await scenario("charges.insert", () => charges.insert({ tenantId: f.tenantId, statementId: f.statementId, provider, externalChargeId: `pay_lk2_${randomUUID().slice(0, 8)}`, status: "pending", payUrl: null, dueDate: "2026-11-20" }, now));
@@ -310,6 +352,38 @@ if (!connectionString) {
     const g = await seedStatement("g", { refs: false });
     await scenario("pedido (requestChargeCreate + PrismaChargeIntentRepository.transaction)", () =>
       requestChargeCreate({ intents: new PrismaChargeIntentRepository(recording.client) }, { tenantId: g.tenantId, statementId: g.statementId, provider, payload: { amountCents: 10000 }, now }),
+    );
+
+    // B-ASS-08c1b (F3): o `charge/cancel` do operador — o demonstrativo PRIMEIRO ([CANCEL-LOCK]), depois as linhas da fila, as
+    // cobranças e a escrita. Regra 4 (SENT com cobrança `pending` na tabela → enfileira `charge_cancel`) e regra 3 (PENDING →
+    // SKIPPED, o UPDATE da linha depois da trava).
+    const k = await seedStatement("k");
+    const sentK = await seedRow(k.tenantId, k.statementId, provider, "SENT");
+    const chargeK = `pay_lk2_cc_${randomUUID().slice(0, 8)}`;
+    await db.$executeRawUnsafe(`UPDATE billing_outbox SET external_id = $2 WHERE id = $1::uuid`, sentK, chargeK);
+    await db.$executeRawUnsafe(
+      `INSERT INTO subscription_statement_charges (tenant_id, statement_id, provider, external_charge_id, status, due_date, created_at) VALUES ($1::uuid, $2::uuid, $3, $4, 'pending', '2026-11-20', now())`,
+      k.tenantId,
+      k.statementId,
+      provider,
+      chargeK,
+    );
+    await scenario("chargeIntent.cancel (SENT → charge_cancel)", () =>
+      requestChargeCancel({ intents: new PrismaChargeIntentRepository(recording.client) }, { tenantId: k.tenantId, statementId: k.statementId, reason: "cancelamento do cenário lk2", actorId: null, now }),
+    );
+    const m = await seedStatement("m");
+    await seedRow(m.tenantId, m.statementId, provider, "PENDING");
+    await scenario("chargeIntent.cancel (PENDING → SKIPPED)", () =>
+      requestChargeCancel({ intents: new PrismaChargeIntentRepository(recording.client) }, { tenantId: m.tenantId, statementId: m.statementId, reason: "cancelamento do cenário lk2", actorId: null, now }),
+    );
+    // B-ASS-08c1b (F7): o `cancel-unknown` — o demonstrativo PRIMEIRO, depois as linhas, as cobranças e o INSERT do `charge_cancel`.
+    const u = await seedStatement("u");
+    await seedRow(u.tenantId, u.statementId, provider, "SENT");
+    await scenario("chargeIntent.cancelUnknown (desconhecida → charge_cancel)", () =>
+      requestUnknownChargeCancel(
+        { intents: new PrismaChargeIntentRepository(recording.client) },
+        { tenantId: u.tenantId, statementId: u.statementId, chargeId: `pay_lk2_uc_${randomUUID().slice(0, 8)}`, reason: "cancelamento do cenário lk2", actorId: null, now },
+      ),
     );
   });
   // ------------------------------------------------------------------ F6c: cenários de statements/ (código REAL)

@@ -16,6 +16,12 @@ import {
   parseBillingProfileInput,
   toBillingProfileDto,
 } from "../billing-profile/billing-profile.js";
+import { parseOperatorChargeMethod, parseOperatorDueDate, requestChargeCancel, requestChargeCreate, requestUnknownChargeCancel } from "../charges/charge-request.service.js";
+import { paymentProviderOn } from "../outbox/channel-state.js";
+import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
+import { createChannelRuntime, createChargeIntentRepository } from "../outbox/channel.runtime.js";
+import { OUTBOX_STATUSES, type BillingOutboxRow, type OutboxStatus } from "../outbox/outbox.types.js";
+import { createDefaultVaultRuntime } from "../vault/vault.factory.js";
 import { createDefaultStatementRuntime } from "./statement.factory.js";
 import { StatementError, type StatementPayment, type SubscriptionCredit, type SubscriptionStatement } from "./statement.types.js";
 
@@ -30,6 +36,27 @@ function requireTenantId(value: unknown): string {
   const text = typeof value === "string" ? value.trim() : "";
   if (!UUID_OR_ID.test(text)) throw new StatementError(400, "tenant_id_required", "tenantId is required.");
   return text;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** B-ASS-08c1b: o id de uma linha da fila; o que não é UUID não existe (404, como o demonstrativo que não é da organização). */
+function requireOutboxId(value: string): string {
+  if (!UUID.test(value)) throw new StatementError(404, "outbox_not_found", "Queue line not found.");
+  return value;
+}
+
+/** B-ASS-08c1b: o motivo das ações do operador sobre a cobrança e a fila — 10 caracteres ou mais, como o do reopen. */
+function requireOperatorReason(value: unknown): string {
+  const reason = typeof value === "string" ? value.trim() : "";
+  if (reason.length < 10) throw new StatementError(400, "reason_too_short", "reason must have at least 10 characters.");
+  return reason.slice(0, 500);
+}
+
+/** B-ASS-08c1b (F7; Emenda 1 §3.6.5): o id de cobrança do PROVEDOR no `cancel-unknown` — `^[A-Za-z0-9_-]{1,64}$`; senão 400. */
+function requireProviderChargeId(value: unknown): string {
+  if (typeof value !== "string" || !/^[A-Za-z0-9_-]{1,64}$/.test(value)) throw new StatementError(400, "invalid_charge_id", "chargeId must match ^[A-Za-z0-9_-]{1,64}$.");
+  return value;
 }
 
 function body(request: Request): Record<string, unknown> {
@@ -105,6 +132,52 @@ function toPaymentDto(payment: StatementPayment) {
     method: payment.method,
     note: payment.note,
   };
+}
+
+/** B-ASS-08c1b — a linha da fila na resposta: lista FECHADA de campos. Nunca o `payload`, o `claimedBy`, a
+ * `providerIdempotencyKey` nem a organização (o `tenantId` só entra, nunca sai). */
+export function toOutboxDto(row: BillingOutboxRow) {
+  return {
+    id: row.id,
+    statementId: row.statementId,
+    kind: row.kind,
+    provider: row.provider,
+    status: row.status,
+    skipReason: row.skipReason,
+    attempts: row.attempts,
+    lastError: row.lastError,
+    externalId: row.externalId,
+    occurredAt: row.occurredAt.toISOString(),
+    nextAttemptAt: row.nextAttemptAt?.toISOString() ?? null,
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+/** B-ASS-08c1b (P11a): a cobrança do demonstrativo, numa lista fechada de campos (o link de pagamento; nunca valor). */
+function toChargeDto(charge: SubscriptionStatementCharge) {
+  return {
+    id: charge.id,
+    provider: charge.provider,
+    externalChargeId: charge.externalChargeId,
+    status: charge.status,
+    payUrl: charge.payUrl,
+    dueDate: charge.dueDate,
+    createdAt: charge.createdAt.toISOString(),
+    cancelledAt: charge.cancelledAt?.toISOString() ?? null,
+  };
+}
+
+/**
+ * B-ASS-08c1b (P11a, Q4 = (a), com aviso): o demonstrativo está `closed`, já tem pagamento e ainda há cobrança `pending` do
+ * valor cheio no provedor → `full_amount_charge_open`; senão `null`. É só um código, sem valor e sem texto de tela (a tela é
+ * do B-ASS-10b).
+ */
+export function fullAmountChargeNotice(
+  statement: Pick<SubscriptionStatement, "status" | "paidCents">,
+  charges: readonly Pick<SubscriptionStatementCharge, "status">[],
+): "full_amount_charge_open" | null {
+  if (statement.status === "closed" && statement.paidCents > 0 && charges.some((charge) => charge.status === "pending")) return "full_amount_charge_open"; // [Q4-NOTICE]
+  return null;
 }
 
 function toCreditDto(credit: SubscriptionCredit) {
@@ -226,7 +299,84 @@ export function createStatementsPlatformRouter(): Router {
         actorId: actorId(request),
         now: new Date(),
       });
-      response.status(201).json({ data: { statement: toStatementDto(result.statement), payment: toPaymentDto(result.payment) } });
+      // B-ASS-08c1b (P11a, Q4 = (a)): a rota lê a cobrança viva DEPOIS de o serviço responder (o serviço não muda).
+      const { charges } = await createChannelRuntime();
+      const notice = fullAmountChargeNotice(result.statement, await charges.listByStatement(result.statement.tenantId, result.statement.id));
+      response.status(201).json({ data: { statement: toStatementDto(result.statement), payment: toPaymentDto(result.payment), notice } });
+    }),
+  );
+
+  // B-ASS-08c1b (P11a): as cobranças do demonstrativo (a tabela, com o link), e o sinal da Q4.
+  router.get(
+    "/statements/:statementId/charges",
+    requirePlatformPermission("platform:billing:read"),
+    handleAsyncRoute(async (request, response) => {
+      const tenantId = requireTenantId(request.query.tenantId);
+      const statementId = readRouteParam(request.params.statementId);
+      const { repository } = await createDefaultStatementRuntime();
+      const statement = await repository.findStatement(tenantId, statementId);
+      if (!statement) throw new StatementError(404, "statement_not_found", "Statement not found.");
+      const { charges } = await createChannelRuntime();
+      const rows = await charges.listByStatement(tenantId, statementId);
+      response.status(200).json({ data: { charges: rows.map(toChargeDto), notice: fullAmountChargeNotice(statement, rows) } });
+    }),
+  );
+
+  // B-ASS-08c1b (P4): o operador pede a cobrança de uma conta. O servidor monta o payload com o demonstrativo travado
+  // (o marcador CHARGE-PAYLOAD); a rota chama SÓ `requestChargeCreate`. Sem provedor ligado → 422, sem abrir conexão.
+  router.post(
+    "/statements/:statementId/charge",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const statementId = readRouteParam(request.params.statementId);
+      const now = new Date();
+      const method = parseOperatorChargeMethod(input.method);
+      const dueDate = parseOperatorDueDate(input.dueDate, now);
+      const on = await paymentProviderOn(await createDefaultVaultRuntime());
+      if (!on) throw new StatementError(422, "payment_provider_disabled", "No payment provider is enabled.");
+      const row = await requestChargeCreate(
+        { intents: await createChargeIntentRepository() },
+        { tenantId, statementId, provider: on.provider, payload: input, operator: { method, ...(dueDate ? { dueDate } : {}) }, now },
+      );
+      response.status(201).json({ data: toOutboxDto(row) });
+    }),
+  );
+
+  // B-ASS-08c1b (P9a): o operador cancela a cobrança da conta. Sob a trava do demonstrativo, numa transação; a rota NÃO fala
+  // com o provedor (quem cancela é o despacho, pelo `charge_cancel`). Com o canal desligado, a linha nasce e fica PENDING.
+  router.post(
+    "/statements/:statementId/charge/cancel",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const reason = requireOperatorReason(input.reason);
+      const outcome = await requestChargeCancel(
+        { intents: await createChargeIntentRepository() },
+        { tenantId, statementId: readRouteParam(request.params.statementId), reason, actorId: actorId(request), now: new Date() },
+      );
+      response.status(200).json({ data: { result: outcome.result, outbox: toOutboxDto(outcome.row) } });
+    }),
+  );
+
+  // B-ASS-08c1b (F7): o operador cancela no provedor uma cobrança DESCONHECIDA daqui, que ele viu lá com a referência desta
+  // conta. Sob a trava do demonstrativo, numa transação; a rota NÃO fala com o provedor — o despacho confere, pela lista do
+  // provedor, que a cobrança é desta referência antes de qualquer DELETE.
+  router.post(
+    "/statements/:statementId/charge/cancel-unknown",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const chargeId = requireProviderChargeId(input.chargeId);
+      const reason = requireOperatorReason(input.reason);
+      const outcome = await requestUnknownChargeCancel(
+        { intents: await createChargeIntentRepository() },
+        { tenantId, statementId: readRouteParam(request.params.statementId), chargeId, reason, actorId: actorId(request), now: new Date() },
+      );
+      response.status(200).json({ data: { result: outcome.result, outbox: toOutboxDto(outcome.row) } });
     }),
   );
 
@@ -345,6 +495,57 @@ export function createStatementsPlatformRouter(): Router {
         metadata: { complete: dto.complete, missingCount: dto.missing.length, paymentMethod: dto.paymentMethod },
       });
       response.status(200).json({ data: dto });
+    }),
+  );
+
+  // B-ASS-08c1b (P10): a revisão da fila — SEMPRE com o `tenantId` da entrada (A10), a escrita sob o GUC dessa organização,
+  // o demonstrativo travado primeiro e nenhuma linha apagada (T-OBX-NODEL).
+  router.get(
+    "/outbox",
+    requirePlatformPermission("platform:billing:read"),
+    handleAsyncRoute(async (request, response) => {
+      const tenantId = requireTenantId(request.query.tenantId);
+      const status = request.query.status === undefined ? undefined : String(request.query.status);
+      if (status !== undefined && !(OUTBOX_STATUSES as readonly string[]).includes(status)) throw new StatementError(400, "invalid_status", "status is not a queue status.");
+      const provider = request.query.provider === undefined ? undefined : String(request.query.provider);
+      if (provider !== undefined && !UUID_OR_ID.test(provider)) throw new StatementError(400, "invalid_provider", "provider is invalid.");
+      const { outbox } = await createChannelRuntime();
+      const rows = await outbox.listForTenant(tenantId, { ...(status ? { status: status as OutboxStatus } : {}), ...(provider ? { provider } : {}) }); // [OUTBOX-TENANT]
+      response.status(200).json({ data: rows.map(toOutboxDto) });
+    }),
+  );
+
+  router.post(
+    "/outbox/:id/resolve",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const reason = requireOperatorReason(input.reason);
+      const id = requireOutboxId(readRouteParam(request.params.id));
+      const { outbox } = await createChannelRuntime();
+      const outcome = await outbox.resolve(tenantId, id, { reason, actorId: actorId(request), now: new Date() });
+      if (outcome.kind === "not_found") throw new StatementError(404, "outbox_not_found", "Queue line not found.");
+      if (outcome.kind === "not_in_review") throw new StatementError(422, "outbox_not_in_review", "Only a line awaiting review can be resolved.");
+      response.status(200).json({ data: toOutboxDto(outcome.row) });
+    }),
+  );
+
+  router.post(
+    "/outbox/:id/retry",
+    requirePlatformPermission("platform:billing:settle"),
+    handleAsyncRoute(async (request, response) => {
+      const input = body(request);
+      const tenantId = requireTenantId(input.tenantId);
+      const now = new Date();
+      const dueDate = parseOperatorDueDate(input.dueDate, now);
+      const id = requireOutboxId(readRouteParam(request.params.id));
+      const { outbox } = await createChannelRuntime();
+      const outcome = await outbox.retryByOperator(tenantId, id, now, dueDate ? { dueDate } : {});
+      if (outcome.kind === "not_found") throw new StatementError(404, "outbox_not_found", "Queue line not found.");
+      if (outcome.kind === "not_failed") throw new StatementError(422, "outbox_not_failed", "Only a failed line can be retried.");
+      // A data nova só vale se a cobrança for criada: se a desta intenção já existe no provedor, ela é adotada como está.
+      response.status(200).json({ data: { outbox: toOutboxDto(outcome.row), notice: outcome.dueDateRewritten ? "due_date_applies_only_if_created" : null } });
     }),
   );
 

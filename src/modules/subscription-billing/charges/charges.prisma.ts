@@ -52,6 +52,16 @@ export async function findLiveInTx(tx: Pick<PrismaClient, "$queryRawUnsafe">, st
   return rows.length > 0 ? toDomain(rows[0]!) : undefined;
 }
 
+/** B-ASS-08c1b (P9a): as cobranças do demonstrativo (qualquer status) sobre um `tx` JÁ ABERTO sob o GUC da organização — a
+ * MESMA leitura de `listByStatement`. O cancelamento a lê no `tx` da trava do demonstrativo. */
+export async function listByStatementInTx(tx: Pick<PrismaClient, "$queryRawUnsafe">, statementId: string): Promise<readonly SubscriptionStatementCharge[]> {
+  const rows = (await tx.$queryRawUnsafe(
+    `SELECT * FROM subscription_statement_charges WHERE statement_id = $1::uuid ORDER BY created_at ASC`,
+    statementId,
+  )) as Row[];
+  return rows.map(toDomain);
+}
+
 export class PrismaStatementChargeRepository implements StatementChargeRepository {
   constructor(private readonly client: PrismaClient) {}
 

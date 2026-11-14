@@ -631,6 +631,10 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/platform/billing/outbox": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/platform/billing/plans": {
   "classe": "LEITURA",
   "n": 1
@@ -660,6 +664,10 @@
   "n": 1
  },
  "ROTA GET /api/v1/platform/billing/statements/:statementId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/statements/:statementId/charges": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -1635,6 +1643,14 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/platform/billing/outbox/:id/resolve": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/outbox/:id/retry": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/platform/billing/plans": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1644,6 +1660,18 @@
   "n": 1
  },
  "ROTA POST /api/v1/platform/billing/statements/:statementId/cancel": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/charge": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/charge/cancel": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/charge/cancel-unknown": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },

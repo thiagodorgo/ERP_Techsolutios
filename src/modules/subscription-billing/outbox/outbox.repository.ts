@@ -56,6 +56,8 @@ export type ChargeRecordOutcome =
   | { readonly kind: "adopted"; readonly chargeId: string; readonly lookup: ChargeLookup };
 
 export type ChargeOutcomeSink = (charge: NewStatementCharge, now: Date) => Promise<void>;
+/** B-ASS-08c1b: o cancelamento da cobrança da tabela (provedor + id externo) no dublê em memória. */
+export type ChargeCancelSink = (charge: { readonly tenantId: string; readonly provider: string; readonly externalChargeId: string }, now: Date) => Promise<void>;
 
 export function recordedChargeStatus(kind: ChargeRecordOutcome["kind"], status: ProviderChargeStatus): NewStatementCharge["status"] {
   if (kind === "created") return "pending";
@@ -101,8 +103,15 @@ export interface OutboxRepository {
   confirmLease(tenantId: string, id: string, lease: OutboxLease): Promise<boolean>;
   /** SENT + cobrança + ref, atômicos no Prisma (marcador REG-TX em `outbox.prisma.ts`). `false` significa lease perdida e nenhuma escrita. */
   recordChargeOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, outcome: ChargeRecordOutcome, now: Date): Promise<boolean>;
+  /** B-ASS-08c1b (P9b, o marcador CANCEL-TX em `outbox.prisma.ts`) — o registro do cancelamento numa transação: o
+   * demonstrativo PRIMEIRO, a linha `charge_cancel` → SENT com a posse no predicado, a cobrança da tabela → `cancelled` (só se
+   * `pending`) e a `charge_create` alvo (`payload.chargeCreateId`) SENT → SKIPPED (`skip_reason` NULL, `last_error =
+   * charge_cancelled`), MANTENDO o `external_id`. `false` = posse perdida e nenhuma escrita. */
+  recordChargeCancelOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, chargeId: string, now: Date): Promise<boolean>;
   /** Só o dublê em memória usa esta composição para espelhar as tabelas separadas. */
   configureChargeOutcomeSink?(sink: ChargeOutcomeSink): void;
+  /** B-ASS-08c1b: o espelho do cancelamento da cobrança da tabela no dublê em memória (o Prisma o faz na transação). */
+  configureChargeCancelSink?(sink: ChargeCancelSink): void;
   /** Visibilidade (D5/R-OBX-4): marca `skip_reason = provider_disabled` nas PENDING de provedor desligado, SEM rede e
    * SEM mudar o status. Escrita de PLATAFORMA sobre tabela FORCE → `forEachTenantRls` no Prisma. Devolve quantas marcou. */
   markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number>;
@@ -111,6 +120,16 @@ export interface OutboxRepository {
    * `charge_create` viva → 422 `charge_already_exists`; 55P03 → 409 `statement_busy`) e o claim revalida o demonstrativo
    * (R-OBX-5): toda PENDING passa por `ClaimParams.verdict` antes de virar PROCESSING. */
   retry(tenantId: string, id: string, now: Date): Promise<BillingOutboxRow | undefined>;
+  /** B-ASS-08c1b (P10; Emenda 1 §3.3-§3.6; Emenda 2 §3): o `/retry` do OPERADOR, sobre o MESMO núcleo do `retry`, com o
+   * resultado discriminado (404 × 422) e as travas novas: o marcador RETRY-CANCEL-ONE, o marcador RETRY-PARTIAL e o vencimento (a data
+   * nova é regravada no payload na MESMA transação). Não toca em `last_error` nem em `occurred_at`. */
+  retryByOperator(tenantId: string, id: string, now: Date, input: RetryByOperatorInput): Promise<RetryByOperatorOutcome>;
+  /** B-ASS-08c1b (P10): o `/resolve` do operador — o demonstrativo travado PRIMEIRO (o marcador RESOLVE-LOCK), e `NEEDS_REVIEW` →
+   * `FAILED` com o `last_error` MANTIDO; a trilha `billing_outbox.resolved` (ids, `kind`, o código anterior e o motivo) vai
+   * na MESMA transação. Vale para todos os `kind`. */
+  resolve(tenantId: string, id: string, input: ResolveInput): Promise<ResolveOutcome>;
+  /** B-ASS-08c1b (P10, o marcador OUTBOX-TENANT): a fila de UMA organização, sob o GUC dela e com `tenant_id` no predicado. */
+  listForTenant(tenantId: string, filter: OutboxListFilter): Promise<readonly BillingOutboxRow[]>;
   findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined>;
   /** Leitura de PLATAFORMA (tela de outbox) sobre tabela FORCE → `forEachTenantRls` no Prisma. */
   listByStatus(status?: OutboxStatus, provider?: string): Promise<readonly BillingOutboxRow[]>;
@@ -133,13 +152,66 @@ export type AdoptionFacts = {
 };
 
 /** O que o dublê lê do demonstrativo no claim (R-OBX-5). `hasLiveCharge` opcional: o dublê OR-a com a própria fila.
- * `totalCents` é o V da adoção (E6′/E7′): sem ele, o dublê falha fechado (a cobrança achada vai a revisão). */
+ * `totalCents` é o V da adoção (E6′/E7′): sem ele, o dublê falha fechado (a cobrança achada vai a revisão).
+ * `paidCents` (B-ASS-08c1b, Emenda 2 §4): o já pago, para o o marcador RETRY-PARTIAL; leitor sem ele conta como "sem pagamento". */
 export type StatementClaimReadResult = {
   readonly status: StatementStatus;
   readonly reopenedAt: Date | null;
   readonly hasLiveCharge?: boolean;
   readonly totalCents?: number;
+  readonly paidCents?: number;
 };
+
+/** B-ASS-08c1b (P10): a entrada e os desfechos das ações do operador sobre a fila. */
+export type OutboxListFilter = { readonly status?: OutboxStatus; readonly provider?: string };
+export type ResolveInput = { readonly reason: string; readonly actorId: string | null; readonly now: Date };
+export type ResolveOutcome =
+  | { readonly kind: "not_found" }
+  | { readonly kind: "not_in_review" }
+  | { readonly kind: "resolved"; readonly row: BillingOutboxRow; readonly previousCode: string | null };
+export type RetryByOperatorInput = { readonly dueDate?: string };
+export type RetryByOperatorOutcome =
+  | { readonly kind: "not_found" }
+  | { readonly kind: "not_failed" }
+  | { readonly kind: "reopened"; readonly row: BillingOutboxRow; readonly dueDateRewritten: boolean };
+
+/** Os estados de uma linha da fila VIVA (o conjunto do D1). */
+const LIVE_STATUSES: ReadonlySet<OutboxStatus> = new Set(["PENDING", "PROCESSING", "SENT", "NEEDS_REVIEW"]);
+/** Os estados de um `charge_cancel` VIVO (o o marcador CANCEL-ONE da rota e o o marcador RETRY-CANCEL-ONE do núcleo). */
+export const LIVE_CANCEL_STATUSES: ReadonlySet<OutboxStatus> = new Set(["PENDING", "PROCESSING", "NEEDS_REVIEW"]);
+
+/**
+ * B-ASS-08c1b (Emenda 1 §3.4, o marcador RETRY-CANCEL-ONE): reabrir `row` conflita com algum `charge_cancel` vivo do demonstrativo?
+ * Um `charge_cancel` conflita com outro vivo para o MESMO `payload.chargeId`; uma `charge_create` conflita com QUALQUER
+ * `charge_cancel` vivo. PURA.
+ */
+export function retryCancelConflict(
+  row: Pick<BillingOutboxRow, "id" | "kind" | "payload">,
+  liveCancels: readonly Pick<BillingOutboxRow, "id" | "payload">[],
+): boolean {
+  const others = liveCancels.filter((cancel) => cancel.id !== row.id);
+  if (row.kind === "charge_cancel") return others.some((cancel) => cancel.payload.chargeId === row.payload.chargeId);
+  if (row.kind === "charge_create") return others.length > 0;
+  return false;
+}
+
+const SAO_PAULO_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+
+/**
+ * B-ASS-08c1b (Emenda 1 §3.6.3): o vencimento de uma `charge_create` reaberta pelo operador. "Hoje" é o dia civil de São
+ * Paulo do relógio dado. Gravado passado, ausente ou fora da forma → exige a data nova (sem ela, 422 `due_date_past`) e a
+ * devolve para regravar; gravado ainda valendo → a data nova é recusada (422 `due_date_not_past`) e nada se regrava. PURA.
+ */
+export function retryDueDate(payloadDueDate: unknown, informed: string | undefined, now: Date): string | undefined {
+  const today = SAO_PAULO_DAY.format(now);
+  const current = typeof payloadDueDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payloadDueDate) ? payloadDueDate : null;
+  if (current === null || current < today) {
+    if (!informed) throw new StatementError(422, "due_date_past", "The charge due date has passed; inform dueDate.");
+    return informed;
+  }
+  if (informed) throw new StatementError(422, "due_date_not_past", "The charge due date has not passed; dueDate is not accepted.");
+  return undefined;
+}
 export type StatementClaimReader = (tenantId: string, statementId: string) => Promise<StatementClaimReadResult | undefined>;
 
 export type InMemoryOutboxOptions = {
@@ -156,6 +228,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
   private readonly clock: () => Date;
   private readonly readStatement: StatementClaimReader;
   private chargeOutcomeSink: ChargeOutcomeSink | undefined;
+  private chargeCancelSink: ChargeCancelSink | undefined;
 
   constructor(options: InMemoryOutboxOptions) {
     this.readStatement = options.readStatement;
@@ -330,6 +403,23 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     return this.markSent(tenantId, row.id, chargeId, now, lease);
   }
 
+  configureChargeCancelSink(sink: ChargeCancelSink): void {
+    this.chargeCancelSink = sink;
+  }
+
+  /** O espelho do registro do cancelamento: a posse primeiro; depois a cobrança (pelo sink, se ligado), a `charge_create` alvo
+   * SENT → SKIPPED mantendo o `external_id`, e a própria linha → SENT. Sem `await` entre ler e gravar as linhas da fila. */
+  async recordChargeCancelOutcome(tenantId: string, row: BillingOutboxRow, lease: OutboxLease, chargeId: string, now: Date): Promise<boolean> {
+    if (!(await this.confirmLease(tenantId, row.id, lease))) return false;
+    await this.chargeCancelSink?.({ tenantId, provider: row.provider, externalChargeId: chargeId }, now);
+    if (!(await this.confirmLease(tenantId, row.id, lease))) return false;
+    const target = typeof row.payload.chargeCreateId === "string" ? this.#rows.get(row.payload.chargeCreateId) : undefined;
+    if (target && target.tenantId === tenantId && target.kind === "charge_create" && target.status === "SENT") {
+      this.#rows.set(target.id, { ...target, status: "SKIPPED", skipReason: null, lastError: "charge_cancelled", updatedAt: now });
+    }
+    return this.#patch(tenantId, row.id, lease, { status: "SENT", externalId: chargeId, nextAttemptAt: null, lastError: null, updatedAt: now });
+  }
+
   async markDisabledProvidersVisible(enabledProviders: readonly string[], now: Date): Promise<number> {
     const enabled = new Set(enabledProviders);
     let marked = 0;
@@ -343,22 +433,36 @@ export class InMemoryOutboxRepository implements OutboxRepository {
   }
 
   async retry(tenantId: string, id: string, now: Date): Promise<BillingOutboxRow | undefined> {
-    // A MESMA ordem do Prisma (E9), sem `await` entre ler e gravar (atômico no dublê): a linha é da organização? outra
-    // `charge_create` VIVA no demonstrativo → 422; só então reabre a FAILED. `lastError` fica.
-    const row = this.#rows.get(id);
-    if (!row || row.tenantId !== tenantId) return undefined;
-    if (row.kind === "charge_create") {
-      const otherLive = [...this.#rows.values()].some(
-        (other) =>
-          other.id !== id &&
-          other.tenantId === tenantId &&
-          other.statementId === row.statementId &&
-          other.kind === "charge_create" &&
-          (other.status === "PENDING" || other.status === "PROCESSING" || other.status === "SENT" || other.status === "NEEDS_REVIEW"),
-      );
-      if (otherLive) throw new StatementError(422, "charge_already_exists", "Another charge intent is live for this statement.");
+    const outcome = await this.#reopen(tenantId, id, now, null);
+    return outcome.kind === "reopened" ? outcome.row : undefined;
+  }
+
+  async retryByOperator(tenantId: string, id: string, now: Date, input: RetryByOperatorInput): Promise<RetryByOperatorOutcome> {
+    return this.#reopen(tenantId, id, now, input);
+  }
+
+  /**
+   * O núcleo comum do `retry` e do `retryByOperator`, na MESMA ordem do Prisma (E9; B-ASS-08c1b). O leitor do demonstrativo é
+   * chamado ANTES; depois, SEM `await`, a linha é relida e decidida (o bloco "ler e gravar" continua atômico no dublê).
+   * `operator = null` é o `retry` antigo: o retorno dele não muda (linha de outra organização ou que não está FAILED →
+   * `undefined`).
+   */
+  async #reopen(tenantId: string, id: string, now: Date, operator: RetryByOperatorInput | null): Promise<RetryByOperatorOutcome> {
+    const first = this.#rows.get(id);
+    if (!first || first.tenantId !== tenantId) return { kind: "not_found" };
+    const statement = first.kind === "charge_create" ? await this.readStatement(tenantId, first.statementId) : undefined;
+    const row = this.#rows.get(id)!;
+    if (operator && row.status !== "FAILED") return { kind: "not_failed" };
+    if (operator?.dueDate !== undefined && row.kind !== "charge_create") throw new StatementError(422, "due_date_not_applicable", "dueDate applies only to a charge request.");
+    const siblings = [...this.#rows.values()].filter((other) => other.id !== id && other.tenantId === tenantId && other.statementId === row.statementId);
+    const liveCancels = siblings.filter((other) => other.kind === "charge_cancel" && LIVE_CANCEL_STATUSES.has(other.status));
+    if (row.status === "FAILED" && retryCancelConflict(row, liveCancels)) throw new StatementError(409, "charge_cancel_in_progress", "A cancellation is in progress for this statement."); // [RETRY-CANCEL-ONE]
+    if (row.kind === "charge_create" && siblings.some((other) => other.kind === "charge_create" && LIVE_STATUSES.has(other.status))) {
+      throw new StatementError(422, "charge_already_exists", "Another charge intent is live for this statement.");
     }
-    if (row.status !== "FAILED") return undefined;
+    if (row.kind === "charge_create" && row.status === "FAILED" && statement?.status === "closed" && (statement.paidCents ?? 0) > 0) throw new StatementError(422, "statement_partially_paid", "The statement has a partial payment; a full-amount charge is refused."); // [RETRY-PARTIAL]
+    const dueDate = operator && row.kind === "charge_create" ? retryDueDate(row.payload.dueDate, operator.dueDate, now) : undefined;
+    if (row.status !== "FAILED") return { kind: "not_failed" };
     const reopened: BillingOutboxRow = {
       ...row,
       status: "PENDING",
@@ -369,9 +473,39 @@ export class InMemoryOutboxRepository implements OutboxRepository {
       claimedBy: null,
       attemptStartedAt: null,
       updatedAt: now,
+      ...(dueDate !== undefined ? { payload: { ...row.payload, dueDate } } : {}),
     };
     this.#rows.set(id, reopened);
-    return reopened;
+    return { kind: "reopened", row: reopened, dueDateRewritten: dueDate !== undefined };
+  }
+
+  /** A trilha do dublê (o Prisma grava em `audit_logs`): o `/resolve`. */
+  readonly audits: Array<{ readonly tenantId: string; readonly action: string; readonly entityId: string; readonly metadata: Readonly<Record<string, string | number | boolean | null>> }> = [];
+
+  async resolve(tenantId: string, id: string, input: ResolveInput): Promise<ResolveOutcome> {
+    const row = this.#rows.get(id);
+    if (!row || row.tenantId !== tenantId) return { kind: "not_found" };
+    if (row.status !== "NEEDS_REVIEW") return { kind: "not_in_review" };
+    const resolved: BillingOutboxRow = { ...row, status: "FAILED", nextAttemptAt: null, updatedAt: input.now };
+    this.#rows.set(id, resolved);
+    this.audits.push({ tenantId, action: "billing_outbox.resolved", entityId: id, metadata: { statementId: row.statementId, kind: row.kind, previousCode: row.lastError, reason: input.reason } });
+    return { kind: "resolved", row: resolved, previousCode: row.lastError };
+  }
+
+  async listForTenant(tenantId: string, filter: OutboxListFilter): Promise<readonly BillingOutboxRow[]> {
+    return [...this.#rows.values()]
+      .filter((row) => row.tenantId === tenantId && (filter.status ? row.status === filter.status : true) && (filter.provider ? row.provider === filter.provider : true))
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+
+  /** B-ASS-08c1b (P9a): o espelho de `skipPendingChargeCreateInTx` — a `charge_create` PENDING vira SKIPPED (`skip_reason`
+   * NULL, `last_error` = o motivo) SÓ se ainda está PENDING. Sem `await` entre ler e gravar (atômico no dublê). */
+  async skipPendingChargeCreate(tenantId: string, id: string, lastError: string, now: Date): Promise<BillingOutboxRow | undefined> {
+    const row = this.#rows.get(id);
+    if (!row || row.tenantId !== tenantId || row.kind !== "charge_create" || row.status !== "PENDING") return undefined;
+    const skipped: BillingOutboxRow = { ...row, status: "SKIPPED", skipReason: null, lastError, nextAttemptAt: null, updatedAt: now };
+    this.#rows.set(id, skipped);
+    return skipped;
   }
 
   async findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined> {
