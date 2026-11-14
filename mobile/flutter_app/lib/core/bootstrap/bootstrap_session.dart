@@ -206,32 +206,39 @@ const devBootstrapSession = BootstrapSession(
       requiredPermissions: ['field_location:send'],
     ),
     EnabledModule(
+      id: 'tenant_checklist',
+      title: 'Checklists',
+      route: '/checklists',
+      requiredPermissions: ['checklist_runs:read'],
+    ),
+    EnabledModule(
       id: 'inventory',
       title: 'Estoque do Tecnico',
       route: '/inventory',
-      requiredPermissions: ['inventory:read'],
+      requiredPermissions: ['inventory.read'],
     ),
     EnabledModule(
       id: 'approvals',
       title: 'Aprovacoes',
       route: '/approvals',
-      requiredPermissions: ['workflow:request'],
+      requiredPermissions: ['work_orders:approve'],
     ),
   ],
+  // B-MOBILE-GATE-CHAVE — subconjunto do que o catálogo do servidor dá ao técnico de campo (T4.3), igual à lista do
+  // `LocalDevAuthRepository`. Sem chave inventada.
   permissions: PermissionSet({
     'dashboard:read',
     'expense_report:create',
-    'expense_report:read',
+    'expense_report:read_own',
     'expense_report:update',
     'expense_report:submit',
-    'receipt:attach',
-    'ocr:run_local',
     'expense_sync:write',
-    'sync_diagnostics:read',
     'field_location:send',
     'work_orders:read',
-    'inventory:read',
-    'workflow:request',
+    'inventory.read',
+    'checklist_runs:read',
+    'checklist_runs:update',
+    'checklist_runs:complete',
   }),
   expenseCategories: [
     ExpenseCategorySnapshot(

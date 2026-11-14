@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../core/auth/role_labels.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
 import '../../core/bootstrap/bootstrap_session.dart';
+import '../../core/config/app_config.dart';
 import '../../core/network/api_error.dart';
 import '../../core/location/location_consent_providers.dart';
 import '../../core/location/location_consent_store.dart';
 import '../../core/network/connectivity_repository.dart';
+import '../../core/permissions/mobile_gates.dart';
 import '../../core/permissions/permission_resolver.dart';
 import '../../core/sync/sync_models.dart';
 import '../../features/expenses/data/expense_repository.dart';
@@ -22,15 +24,19 @@ import 'erp_scaffold.dart';
 import 'mobile_kit.dart';
 
 class HomeScreen extends ConsumerWidget {
-  const HomeScreen({this.session, super.key});
+  const HomeScreen({this.session, this.modoDev = kIsDevMode, super.key});
 
   final BootstrapSession? session;
+
+  /// As duas entradas de Diagnóstico (o ícone do cabeçalho e o atalho) só aparecem no modo de desenvolvimento
+  /// (resposta 2.2 do dono, B-MOBILE-GATE-CHAVE). O padrão é a constante de compilação; o teste injeta o valor.
+  final bool modoDev;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fixedSession = session;
     if (fixedSession != null) {
-      return _HomeContent(session: fixedSession);
+      return _HomeContent(session: fixedSession, modoDev: modoDev);
     }
 
     final asyncSession = ref.watch(bootstrapNotifierProvider);
@@ -42,7 +48,7 @@ class HomeScreen extends ConsumerWidget {
             if (context.mounted) context.go('/tenant-select');
           });
         }
-        return _HomeContent(session: value);
+        return _HomeContent(session: value, modoDev: modoDev);
       },
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
@@ -76,9 +82,10 @@ String _hhmm(DateTime dt) =>
     '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
 class _HomeContent extends ConsumerStatefulWidget {
-  const _HomeContent({required this.session});
+  const _HomeContent({required this.session, required this.modoDev});
 
   final BootstrapSession session;
+  final bool modoDev;
 
   @override
   ConsumerState<_HomeContent> createState() => _HomeContentState();
@@ -120,7 +127,9 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
     final resolver = const PermissionResolver();
     final perms = session.permissions;
     final canCreatePc = resolver.has(perms, 'expense_report:create');
-    final canApprove = resolver.has(perms, 'work_orders:cancel');
+    // B-MOBILE-GATE-CHAVE — o banner usa o mesmo G4 da tela Aprovações (resposta 2.1 do dono).
+    final canApprove = MobileGates.aprovacoes.permite(session);
+    final modoDev = widget.modoDev;
     // B-SAN3-17 (P1): o aviso de localização, só para quem envia e ainda não
     // decidiu (ou precisa confirmar de novo).
     final canSendLocation = resolver.has(perms, 'field_location:send');
@@ -164,11 +173,12 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
             subtitle:
                 '${roleLabel(session.user.tenantRole)} · ${session.activeTenant.displayName}',
             actions: [
-              MobileHeaderIconButton(
-                icon: Icons.monitor_heart_outlined,
-                tooltip: 'Diagnóstico',
-                onPressed: () => context.go('/diagnostics'),
-              ),
+              if (modoDev)
+                MobileHeaderIconButton(
+                  icon: Icons.monitor_heart_outlined,
+                  tooltip: 'Diagnóstico',
+                  onPressed: () => context.go('/diagnostics'),
+                ),
             ],
           ),
           Expanded(
@@ -263,14 +273,16 @@ class _HomeContentState extends ConsumerState<_HomeContent> {
                               onTap: () => context.go('/sync'),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: MobileActionTile(
-                              icon: Icons.shield_outlined,
-                              label: 'Diagnóstico',
-                              onTap: () => context.go('/diagnostics'),
+                          if (modoDev) ...[
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: MobileActionTile(
+                                icon: Icons.shield_outlined,
+                                label: 'Diagnóstico',
+                                onTap: () => context.go('/diagnostics'),
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                       const SizedBox(height: 18),

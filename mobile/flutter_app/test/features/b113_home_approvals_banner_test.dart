@@ -17,16 +17,26 @@ import 'package:go_router/go_router.dart';
 
 const _tenant = 'tenant-b113';
 
+// B-MOBILE-GATE-CHAVE (E2.1): o banner usa a régua de aprovar no servidor — o módulo (`approvals` ou `work_orders`) e
+// `work_orders:approve`, que o gestor tem no catálogo.
 const _sessionManager = BootstrapSession(
   activeTenant: TenantContext(tenantId: _tenant, displayName: 'Tenant B113'),
-  enabledModules: [],
+  enabledModules: [
+    EnabledModule(
+      id: 'work_orders',
+      title: 'Ordens de Serviço',
+      route: '/work-orders',
+    ),
+    EnabledModule(id: 'approvals', title: 'Aprovações', route: '/approvals'),
+  ],
   permissions: PermissionSet({
     'work_orders:read',
     'work_orders:create',
     'work_orders:update',
     'work_orders:assign',
     'work_orders:status',
-    'work_orders:cancel', // distingue Gestor
+    'work_orders:cancel',
+    'work_orders:approve', // distingue Gestor
     'expense_report:approve_manager',
   }),
 );
