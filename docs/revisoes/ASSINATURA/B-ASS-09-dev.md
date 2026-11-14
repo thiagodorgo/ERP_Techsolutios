@@ -1017,3 +1017,99 @@ tabela (`/platform/cloud-usage/tenants/:tenantId/summary` · `/daily`) casam 1 v
 - Bateria: `check` `0` · `lint` `0` · `git diff --check` vazio · em memória `ass-09-api-contracts`, `ass-09-overview-routes`,
   `ass-09-markup-inalcancavel`, `db-catalog-write-guard`, `b-san3-12a-reasons-census` (que também lê o `API_CONTRACTS.md`):
   `# tests 23 # pass 22 # fail 0 # skipped 1` (o pulo é o `-db` do guard de catálogo, sem `DATABASE_URL`).
+
+## F9 — a `main` integrada, as 4 suítes no `backend-postgres` (Q6) e a bateria (plano v2 §9; Emenda 2 §9.3; Emenda 2.1 §3), 14/11 05:13–07:23 SP (PARADA)
+
+Retomada pelo `## PAUSA` de 04:20 SP, medindo o parcial antes (P3/P7): os dois ramos remotos em `b929a6dc`, `w-ass09b` limpo, o
+cluster parado com a base `erp_ass09` migrada. Nada meio-escrito.
+
+**Integração da `main` (`101c9db4`, com o #559, o #560 e o #555).** `git merge --no-ff origin/main` → `76a31641`, pais
+`b929a6dc` e `101c9db4`. Conflitos (`git merge-tree --write-tree --name-only b929a6dc 101c9db4`): `decisoes.md`, `pendencias.md`
+(o lado da `main` primeiro, porque o 1º item dele continua a entrada anterior) e
+`tests/san3-05-acessos-de-plataforma-guard.test.ts` (as 4 chaves do B-ASS-08c1a ao lado das 2 do bloco no `NOVAS`), por união do
+texto, nada próprio; e o `pendencias-indice.md`, regenerado pelo gerador
+(`python agent-orchestration/controle/gerar-indice-pendencias.py`). O `API_CONTRACTS.md`, o `PLANO_SAN3.md` e o
+`san3-05-leituras-de-plataforma-db.test.ts` se fundiram sozinhos. `git show --cc 76a31641`: as linhas novas em relação aos
+dois pais são só as do índice regenerado e 1 linha em branco entre os dois lados do `decisoes.md`. `git diff 76a31641^2 76a31641
+--stat` = `52 files changed, 9520 insertions(+), 720 deletions(-)`, que é a mudança do bloco sobre a `main`. Os dois ramos em
+`76a31641`, por push sem força.
+
+Depois disso a `main` ganhou o #563 (`9f1eadc2`, marco de KPI, só `Kpis/**`): nenhum arquivo em comum com o bloco e
+`git merge-tree --write-tree HEAD origin/main` limpo, então não integrei de novo (o PR é mesclável).
+
+**G3 e `createPgAdapter`.** O teste do fuso (`tests/db-fuso-utc-pontos-de-conexao.test.ts`) e a fábrica
+`src/database/pg-connection.ts` não estão na `main` (`git ls-tree origin/main` vazio; `git show origin/main:src/database/pg-connection.ts`
+→ `does not exist`): chegam com o #554, que não entrou. Os 4 `-db` novos do bloco constroem o adaptador com `new PrismaPg(` em
+5 pontos (`grep -c`: `ass-09-fx-rates-db` 1, `ass-09-groups-db` 1, `ass-09-groups-fx-migration-drill-db` 2,
+`ass-09-overview-e2e-db` 1). A troca, só da construção e sem mexer em asserção, fica para quando o #554 entrar (pendência
+declarada no PR); não a fiz contra uma fábrica que não existe na base.
+
+**As 4 linhas no `SUITES=` (Q6, `D-DONO-1311-RECOMENDACOES`).** `ab53a546`: exatamente 4 linhas, juntas e nesta ordem, depois da
+última `SUITES="$SUITES tests/b-material-sync-db.test.ts"` e antes do `node --test … | tee postgres-subset.tap`. **Divergência
+declarada (§A2):** o coordenador pediu "com o comentário de praxe"; a Emenda 2 §9.3 tira o comentário e o C-E2-10 conta
+exatamente 4 linhas. Segui o plano (o plano é a lei; a emenda é a mais nova sobre o ponto). Se o comentário for querido, é 1
+emenda e 1 linha. No mesmo commit, `decisoes.md` ganha a `D-DONO-1311-RECOMENDACOES` (Q1–Q6, *"minhas decisões vão todas nas
+recomendações"*), por acréscimo.
+
+Medição antes, na forma do job (`CORE_SAAS_PERSISTENCE=prisma`, `JWT_SECRET=dev-only-change-me`, `JWT_EXPIRES_IN=15m`,
+`LOG_LEVEL=silent`, `RBAC_DB_PARITY=1`; base nova `erp_ass09_ci` → `migrate deploy` → `npm run db:seed`): as 4 suítes juntas,
+3×, `# tests 14 # pass 14 # fail 0 # skipped 0` nas 3; cada uma sozinha, 3×, `6`/`4`/`3`/`1`, `fail 0`, `skipped 0`.
+
+**Bateria da F9** (head `ab53a546`):
+
+| item | comando | saída |
+|---|---|---|
+| tipos, lint, build | `npm run check` · `npm run lint` · `npm run build` · `npm run db:generate` | `0` · `0` · `0` · `0` |
+| guard de migração | `node scripts/migration-transaction-guard.mjs` | `violações: 0` (135 migrações) |
+| espaços | `git diff --check origin/main...HEAD` | vazio |
+| C-E2-1 | `pg_advisory` em `src/**` | só `src/database/financial-period-lock.ts`; âncora do `LOCK TABLE` 1; `fxRateLockKey` 0; INSERT da barreira 1; `RawUnsafe("LOCK TABLE` no teste 0 |
+| C-E2-4 | rótulo do 1º marcador de cada commit próprio (`git log --no-merges 2b5e0325..HEAD --not origin/main`) | 17 commits; sem rótulo 0; arquivo com commits dos dois lados 0 |
+| C-E2-10 | as linhas novas do `ci.yml` | 4, na ordem, entre a âncora e o `node --test` |
+| suíte, 1ª | `npm test` (forma do job `backend`: `CORE_SAAS_PERSISTENCE=memory`, `DATABASE_URL` do cluster próprio, sem Redis), `timeout 3000` | `exit=124`: a suíte travou no `ass-05-vault-routes` (o servidor próprio do teste não imprimiu `PORT` em 30 s sob a carga de 15 arquivos em paralelo, e os filhos vivos seguraram o arquivo). Sozinho: `# tests 5 # pass 5 # fail 0`, 38 s. Fora do diff do bloco |
+| suíte, 2ª | `node scripts/run-backend-tests.mjs` com os 572 arquivos menos o `ass-05-vault-routes`, mesma forma | `572 arquivo(s) · 5724 teste(s) · pass 5694 · fail 26 · skipped 2` (+ `cancelled 2`), 1306 s, `exit=1` |
+
+As 28 linhas `not ok` da 2ª, por arquivo e por causa:
+
+| arquivo | n | causa | prova |
+|---|---|---|---|
+| `ass-08-lock-order-db` (T-LOCK-2, o censo) | 1 | **do bloco** | ver a PARADA abaixo |
+| `domain-events` · `job-queue` · `worker-heartbeat` | 2 · 3 · 1 | sem Redis (a 6379 é proibida no mandato) | `code: 'ECONNREFUSED'` |
+| `san3-05-runtime-role-guard-db` | 6 | Windows: ferramenta de Linux | `program "cat >/dev/null" failed` (38000), `setsid: ausente`, boot real sem saída em 15 s |
+| `san3-09-bootstrap-platform-admin-db` | 2 | Windows | o `migrate deploy` do teste executa o shim de shell `node_modules/.bin/prisma` pelo `node` (`SyntaxError`); vermelho também sozinho |
+| `users-seg-desativado-sse` | 6 | anterior ao bloco | vermelho sozinho (0/6) e também com o `src/` da `main` (`git checkout origin/main -- src/`, medido e restaurado: status limpo) |
+| `ass-03-metering-db` · `users-acesso-seg-usuarios-db` | 1 · 6 | carga (`57014` statement timeout; corrida sob paralelismo) | sozinhos: `9/9` e `9/9` |
+
+### PARADA 2026-11-14 10:23 UTC (07:23 SP) — o censo do T-LOCK-2 não conhece as 3 aberturas novas do bloco
+
+**O defeito, medido.** `tests/ass-08-lock-order-db.test.ts` (do B-ASS-08, na `main` desde o #522) faz o censo, pelo
+compilador, de toda abertura de transação em `src/modules/subscription-billing/**` contra a tabela congelada `FROZEN`. Uma
+chave nova sem classe dá vermelho. Sozinho, no head `ab53a546`: `# tests 7 # pass 6 # fail 1`. A falha é
+`not ok 6 - T-LOCK-2: o censo das aberturas bate com a tabela congelada…`, com `actual` igual a estas 3 chaves e `expected []`:
+- `…/economic-groups/economic-groups.prisma.ts#PrismaEconomicGroupsRepository.listMembershipsOfTenants#forEachTenantRls`
+- `…/economic-groups/economic-groups.prisma.ts#PrismaEconomicGroupsRepository.applyMembershipChanges#forEachTenantRls`
+- `…/fx-rates/fx-rates.prisma.ts#PrismaFxRatesRepository.appendVersion#.$transaction`
+
+Elas nasceram na F5a e na F5b. O teste já existia no F0 (`git merge-base --is-ancestor d5ec1696 2b5e0325` verdadeiro), mas o
+plano e as emendas não o citam (`grep -i 'lock-order\|T-LOCK\|FROZEN'` nos 9 arquivos do plano: 0). E eu não o rodei antes:
+ele só roda com `DATABASE_URL`, e as minhas baterias `-db` das fatias não o incluíam. No CI ele roda no job `backend`, que tem
+`DATABASE_URL`; ele não está no `SUITES=` do `backend-postgres`. O job `backend` do PR ficaria vermelho.
+
+**Por que parei.** O conserto mexe em `tests/ass-08-lock-order-db.test.ts`, que não está no PERMITIDO de fatia nenhuma. Pelo
+mandato e pela `D-EMENDA-ANTES-DO-CODIGO`, não improviso. Não abri o PR.
+
+**Medida da proposta, para quem escrever a emenda (sonda aplicada e restaurada, sem commit).** As 3 chaves entram na `FROZEN`
+com a classe `sem-tabela-do-mapa`, em ordem alfabética, depois da linha do `provider-customer…set`. `git diff --numstat`
+dá `3 0`. A condição da isenção vale: `MAP_MENTION` casa 0 vezes nos dois arquivos, porque eles não citam
+`billing_outbox`/`subscription_statements*`/`StatementTx` nem `.transaction(`. Resultado: `# tests 7 # pass 7 # fail 0 # skipped 0`,
+`restaurado=true` por md5, `git status` limpo. Também caberia uma linha no cabeçalho do arquivo ("B-ASS-09: 3 aberturas, sem
+tabela do mapa"), como as extensões do 08b e do 08c1a fizeram. Fica para a emenda decidir.
+
+- **Head medido:** `ab53a546` (F9: o `ci.yml` e o `decisoes.md`), mais o commit deste diário. Empurrados aos dois ramos por
+  fast-forward, para o CI de push rodar no Linux.
+- **Feito:** F0 a F8, a integração da `main` e o `ci.yml` (Q6). Bateria: tudo verde, exceto o T-LOCK-2. As outras 27 linhas
+  vermelhas são de ambiente ou anteriores ao bloco (tabela acima).
+- **Falta:** a emenda; o conserto de 3 linhas; reexecutar o `ass-08-lock-order-db` e a suíte; abrir o PR em rascunho (o corpo já
+  está pronto em `dev-ass09-cl-tmp/pr-body.md`); a limpeza. A troca de `new PrismaPg(` por `createPgAdapter` espera o #554.
+- **Próximo comando, depois da emenda:** aplicar as 3 linhas pela emenda; depois
+  `DATABASE_URL=… node --test --import tsx tests/ass-08-lock-order-db.test.ts`.
+- Cluster `pg-ass09` parado depois deste registro (pasta `C:/Users/thiag/pg-ass09`, `127.0.0.1:55561`, bases `erp_ass09` e `erp_ass09_ci` mantidas). Nenhum papel efêmero restante.
