@@ -1,0 +1,4 @@
+{
+  "organizacao": { "nome": "Organizacao Exemplo" },
+  "admin": { "nome": "Administracao Exemplo", "email": "admin@exemplo.invalid" }
+}
