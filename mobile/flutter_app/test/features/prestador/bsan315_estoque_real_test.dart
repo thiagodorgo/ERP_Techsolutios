@@ -37,7 +37,7 @@ const _wo = 'wo-bsan315';
 const _session = BootstrapSession(
   activeTenant: TenantContext(tenantId: _tenant, displayName: 'Tenant BSAN315'),
   enabledModules: [],
-  permissions: PermissionSet({'inventory:read', 'work_orders:read'}),
+  permissions: PermissionSet({'inventory.read', 'work_orders:read'}),
 );
 
 const _remoteItem = TechnicianStockItem(

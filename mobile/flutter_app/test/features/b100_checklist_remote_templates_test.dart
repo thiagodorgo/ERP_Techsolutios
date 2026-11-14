@@ -180,8 +180,14 @@ const _tenantId = 'tenant-b100';
 
 const _session = BootstrapSession(
   activeTenant: TenantContext(tenantId: _tenantId, displayName: 'B-100 Tenant'),
-  enabledModules: [],
-  permissions: PermissionSet({'checklist_run:execute'}),
+  enabledModules: [
+    EnabledModule(
+      id: 'tenant_checklist',
+      title: 'Checklists',
+      route: '/checklists',
+    ),
+  ],
+  permissions: PermissionSet({'checklist_runs:read', 'checklist_runs:update'}),
 );
 
 MobileChecklistTemplate _tpl(String id, {String? tenantId}) =>
