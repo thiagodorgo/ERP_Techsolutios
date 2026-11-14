@@ -7,7 +7,6 @@
 // (A1, A3, S7 e S9, pelos providers reais, com a sessão sobreposta e o
 // armazenamento seguro simulado); depois os casos da API nova, que derrubam a
 // compilação na base.
-import 'dart:async';
 
 import 'package:erp_techsolutions_mobile/core/auth/auth_notifier.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';

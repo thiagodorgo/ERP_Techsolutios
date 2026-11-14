@@ -383,7 +383,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Localizacao operacional'), findsOneWidget);
-      expect(find.textContaining('Sem background tracking'), findsOneWidget);
+      expect(
+        find.textContaining('nada é capturado com o app fechado ou minimizado'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('19. card mostra ultimo envio e botao chama service mock', (

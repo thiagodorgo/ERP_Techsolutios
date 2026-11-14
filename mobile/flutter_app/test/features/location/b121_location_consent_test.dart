@@ -43,7 +43,10 @@ void main() {
       await t.pumpWidget(_wrap(InMemoryLocationConsentStore()));
       await t.pumpAndSettle();
 
-      expect(find.textContaining('Sem background tracking'), findsOneWidget);
+      expect(
+        find.textContaining('nada é capturado com o app fechado ou minimizado'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('3. autorizar persiste e mostra estado concedido', (t) async {
