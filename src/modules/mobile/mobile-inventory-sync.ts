@@ -240,10 +240,16 @@ export function resetMobileInventoryRuntimeForTests(): void {
   inventoryByTenant.clear();
 }
 
+// B-MOBILE-GATE-CHAVE (item 66) — a régua da leitura de estoque e a das ações de estoque, exportadas para o guard do app
+// (`tests/mobile-gate-chave-catalogo.test.ts`, T4.1) comparar os gates G2 e G3 com o que a rota confere de fato. Os
+// valores e o comportamento são os de antes; a porta do envio (`assertSyncActor`) não muda.
+export const MOBILE_INVENTORY_READ_PERMISSIONS = ["inventory.read", "inventory.manage"] as const;
+export const MOBILE_INVENTORY_STOCK_ACTION_PERMISSION = "inventory.manage" as const;
+
 function assertAvailabilityActor(actor: AuthenticatedActor | undefined): asserts actor is AuthenticatedActor {
   assertBaseActor(actor);
 
-  if (!hasAnyPermission(actor, ["inventory.read", "inventory.manage"])) {
+  if (!hasAnyPermission(actor, MOBILE_INVENTORY_READ_PERMISSIONS)) {
     throw routeError(403, "FORBIDDEN", "permission_required", "One of these permissions is required: inventory.read, inventory.manage.");
   }
 }
@@ -346,7 +352,7 @@ async function processAction(
       throw routeError(400, "BAD_REQUEST", "unsupported_action_type", "type is not supported.");
     }
 
-    requireActionPermission(actor, "inventory.manage");
+    requireActionPermission(actor, MOBILE_INVENTORY_STOCK_ACTION_PERMISSION);
 
     if (action.type === "inventory.reserve") {
       return reserveInventory(actor, action);

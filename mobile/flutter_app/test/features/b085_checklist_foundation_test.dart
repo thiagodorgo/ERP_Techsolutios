@@ -31,11 +31,18 @@ const _tenant = 'tenant-b085';
 
 const _sessionFull = BootstrapSession(
   activeTenant: TenantContext(tenantId: _tenant, displayName: 'Tenant B085'),
-  enabledModules: [],
+  enabledModules: [
+    EnabledModule(
+      id: 'tenant_checklist',
+      title: 'Checklists',
+      route: '/checklists',
+    ),
+  ],
   permissions: PermissionSet({
     'work_orders:read',
     'work_orders:status',
-    'checklist_run:execute',
+    'checklist_runs:read',
+    'checklist_runs:update',
   }),
 );
 
@@ -241,7 +248,7 @@ void main() {
       expect(find.text('Iniciar'), findsOneWidget);
     });
 
-    testWidgets('2. permission gate sem checklist_run:execute exibe bloqueio', (
+    testWidgets('2. permission gate sem checklist_runs:read exibe bloqueio', (
       tester,
     ) async {
       await tester.pumpWidget(

@@ -267,10 +267,10 @@ void main() {
 
     test('2.4 parses permissions from user object in minimal body', () {
       final session = bootstrapSessionFromJson(
-        _minimalBody(permissions: ['work_orders:read', 'inventory:read']),
+        _minimalBody(permissions: ['work_orders:read', 'inventory.read']),
       );
       expect(session.permissions.contains('work_orders:read'), isTrue);
-      expect(session.permissions.contains('inventory:read'), isTrue);
+      expect(session.permissions.contains('inventory.read'), isTrue);
     });
 
     test('2.5 minimal contract produces empty featureFlags', () {

@@ -18,6 +18,7 @@ import 'package:analyzer/dart/ast/visitor.dart';
 import 'package:erp_techsolutions_mobile/app/router.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dart';
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
+import 'package:erp_techsolutions_mobile/core/permissions/mobile_gates.dart';
 import 'package:erp_techsolutions_mobile/core/permissions/permission_resolver.dart';
 import 'package:erp_techsolutions_mobile/shared/ui/erp_components.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +45,9 @@ const _tituloPorArquivo = <String, String>{
   'lib/features/expenses/ui/expense_list_screen.dart': _acao,
   'lib/features/checklists/ui/checklist_available_screen.dart': _acesso,
   'lib/features/inventory/ui/inventory_list_screen.dart': _acesso,
+  // B-MOBILE-GATE-CHAVE (A5, REV66-02): as telas de movimento são telas de AÇÃO.
+  'lib/features/inventory/ui/stock_entry_screen.dart': _acao,
+  'lib/features/inventory/ui/stock_exit_screen.dart': _acao,
   'lib/features/prestador/ui/technician_stock_screen.dart': _acesso,
   'lib/shared/ui/module_placeholder_screen.dart': _acesso,
 };
@@ -66,13 +70,33 @@ const _gatePorTela = <String, String>{
   'lib/features/work_orders/ui/work_order_approval_request_screen.dart':
       'work_orders:update',
   'lib/features/expenses/ui/expense_list_screen.dart': 'expense_report:create',
-  'lib/features/checklists/ui/checklist_available_screen.dart':
-      'checklist_run:execute',
-  'lib/features/inventory/ui/inventory_list_screen.dart': 'inventory:read',
 };
-const _gatePorRota = <String, String>{
-  '/approvals': 'workflow:request',
-  '/diagnostics': 'diagnostics:read',
+
+// B-MOBILE-GATE-CHAVE (item 66): as telas cujo gate é uma regra de `MobileGates` (a régua da rota do servidor), com o
+// nome do campo que o arquivo tem de usar. Todas as chaves de toda regra estão no catálogo (o T4.1 do servidor prova).
+const _gateMobilePorTela = <String, (String, MobileGate)>{
+  'lib/features/checklists/ui/checklist_available_screen.dart': (
+    'checklistsDaOs',
+    MobileGates.checklistsDaOs,
+  ),
+  'lib/features/inventory/ui/inventory_list_screen.dart': (
+    'estoque',
+    MobileGates.estoque,
+  ),
+  'lib/features/inventory/ui/stock_entry_screen.dart': (
+    'movimentarEstoque',
+    MobileGates.movimentarEstoque,
+  ),
+  'lib/features/inventory/ui/stock_exit_screen.dart': (
+    'movimentarEstoque',
+    MobileGates.movimentarEstoque,
+  ),
+};
+
+// Rota do placeholder → regra (`null` = sem regra: o Diagnóstico fora do modo dev, resposta 2.2 do dono).
+const _gatePorRota = <String, (String?, MobileGate?)>{
+  '/approvals': ('aprovacoes', MobileGates.aprovacoes),
+  '/diagnostics': (null, null),
 };
 
 const _catalogo = '../../src/modules/core-saas/permissions/catalog.ts';
@@ -284,15 +308,55 @@ class _VisitaGoRoute extends RecursiveAstVisitor<void> {
   }
 }
 
+/// Os campos de `MobileGates` que o arquivo usa (`MobileGates.<campo>`), pela árvore sintática (comentário não conta).
+Set<String> _regrasUsadas(String caminho, String fonte) {
+  final campos = <String>{};
+  _parse(caminho, fonte).accept(_ColetaRegras(campos));
+  return campos;
+}
+
+class _ColetaRegras extends RecursiveAstVisitor<void> {
+  _ColetaRegras(this.campos);
+  final Set<String> campos;
+
+  @override
+  void visitPrefixedIdentifier(PrefixedIdentifier node) {
+    if (node.prefix.name == 'MobileGates') campos.add(node.identifier.name);
+    super.visitPrefixedIdentifier(node);
+  }
+}
+
+/// O argumento `gate:` de um placeholder: `'null'` para `gate: null`, `'MobileGates.<campo>'` para uma regra, `null`
+/// para qualquer outra forma (o T1b acusa).
+String? _gateDoPlaceholder(_Chamada c) {
+  final g = c.nomeados['gate'];
+  if (g is NullLiteral) return 'null';
+  if (g is PrefixedIdentifier && g.prefix.name == 'MobileGates') {
+    return 'MobileGates.${g.identifier.name}';
+  }
+  return null;
+}
+
 // ── widgets ──────────────────────────────────────────────────────────────────
 
-BootstrapSession _sessao(Set<String> permissoes) => BootstrapSession(
+BootstrapSession _sessao(
+  Set<String> permissoes, {
+  List<EnabledModule> modulos = const [],
+}) => BootstrapSession(
   activeTenant: const TenantContext(
     tenantId: 'org-bsan319b',
     displayName: 'Guinchos Brasil',
   ),
-  enabledModules: const [],
+  enabledModules: modulos,
   permissions: PermissionSet(permissoes),
+);
+
+// B-MOBILE-GATE-CHAVE — a sessão que passa no G4 (a régua de aprovar no servidor): o módulo e `work_orders:approve`.
+BootstrapSession _sessaoQueAprova() => _sessao(
+  {'work_orders:approve'},
+  modulos: const [
+    EnabledModule(id: 'approvals', title: 'Aprovações', route: '/approvals'),
+  ],
 );
 
 class _App extends StatelessWidget {
@@ -391,20 +455,31 @@ void main() {
       final teste = <String, List<String?>>{};
       for (final p in ps) {
         final onde = 'lib/app/router.dart:${p.chamada.linha}';
-        final literais = <String?>[];
-        for (final nome in const [
-          'title',
-          'message',
-          'blockedMessage',
-          'requiredPermission',
-        ]) {
-          final v = _literalPuro(p.chamada.nomeados[nome]);
+        // B-MOBILE-GATE-CHAVE: o placeholder recebe a REGRA (`gate:`), nunca a chave; `gate: null` = área
+        // indisponível para todo perfil, sem texto de bloqueio.
+        final gate = _gateDoPlaceholder(p.chamada);
+        if (gate == null) {
+          violacoes.add('$onde: gate ausente ou fora de MobileGates');
+        }
+        if (p.chamada.nomeados.containsKey('requiredPermission')) {
+          violacoes.add('$onde: chave de permissão literal no placeholder');
+        }
+        final literais = <String?>[gate];
+        for (final nome in const ['title', 'message', 'blockedMessage']) {
+          final expr = p.chamada.nomeados[nome];
+          if (nome == 'blockedMessage' && gate == 'null') {
+            if (expr != null) {
+              violacoes.add('$onde: blockedMessage numa área sem regra');
+            }
+            literais.add(null);
+            continue;
+          }
+          final v = _literalPuro(expr);
           literais.add(v);
           if (v == null) {
             violacoes.add('$onde: $nome ausente ou não literal');
             continue;
           }
-          if (nome == 'requiredPermission') continue;
           for (final pr in _problemas(v)) {
             violacoes.add('$onde: $nome "$v" com $pr');
           }
@@ -458,9 +533,7 @@ void main() {
 
     testWidgets('T3 — /approvals com a permissão: cartão "Em breve", sem '
         'banner de andaime', (tester) async {
-      await tester.pumpWidget(
-        _App('/approvals', _sessao({'workflow:request'})),
-      );
+      await tester.pumpWidget(_App('/approvals', _sessaoQueAprova()));
       await tester.pumpAndSettle();
 
       expect(find.text('Aprovações'), findsWidgets);
@@ -476,17 +549,25 @@ void main() {
       }
     });
 
-    testWidgets('T3 — /diagnostics fora do modo dev: Diagnóstico e acesso '
-        'não permitido', (tester) async {
+    testWidgets('T3 — /diagnostics fora do modo dev: Diagnóstico indisponível, '
+        'sem acesso não permitido', (tester) async {
+      // B-MOBILE-GATE-CHAVE (resposta 2.2 do dono): fora do modo de desenvolvimento a área não está disponível para
+      // perfil nenhum; não é um bloqueio de permissão, e não promete o administrador.
       await tester.pumpWidget(
         _App('/diagnostics', _sessao({'work_orders:read'})),
       );
       await tester.pumpAndSettle();
 
       expect(find.text('Diagnóstico'), findsWidgets);
-      expect(find.text(_acesso), findsOneWidget);
-      for (final t in _textosSob(tester, find.byType(PermissionBlockedState))) {
+      expect(find.text(_acesso), findsNothing);
+      expect(find.byType(PermissionBlockedState), findsNothing);
+      expect(
+        find.text('Esta área não está disponível nesta versão do aplicativo.'),
+        findsOneWidget,
+      );
+      for (final t in _textosSob(tester, find.byType(EmptyState))) {
         expect(_problemas(t), isEmpty, reason: 'texto "$t"');
+        expect(t.toLowerCase().contains('administrador'), isFalse);
       }
     });
 
@@ -501,9 +582,7 @@ void main() {
 
       // Sessão nova = ProviderScope novo (a troca de override não vale no mesmo escopo).
       await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pumpWidget(
-        _App('/approvals', _sessao({'workflow:request'})),
-      );
+      await tester.pumpWidget(_App('/approvals', _sessaoQueAprova()));
       await tester.pumpAndSettle();
       expect(find.byType(PermissionBlockedState), findsNothing);
       expect(find.byType(ApprovalDecisionCard), findsOneWidget);
@@ -560,22 +639,69 @@ void main() {
         );
       }
 
+      // B-MOBILE-GATE-CHAVE: o gate é uma regra de `MobileGates`; "no catálogo" = todas as chaves da regra.
+      void confereRegra(String onde, MobileGate regra, String? mensagem) {
+        if (mensagem == null) {
+          violacoes.add('$onde: mensagem não literal');
+          return;
+        }
+        final pertence =
+            regra.chaves.isNotEmpty && regra.chaves.every(noCatalogo);
+        if (!pertence) {
+          violacoes.add(
+            '$onde (${regra.nome}): chave da regra fora do catálogo',
+          );
+        }
+        if (pertence && !mensagem.contains(_fAdm)) {
+          violacoes.add('$onde (${regra.nome}, no catálogo): falta "$_fAdm"');
+        }
+      }
+
+      for (final e in _gateMobilePorTela.entries) {
+        final (campo, regra) = e.value;
+        final fonte = fontes[e.key];
+        expect(fonte, isNotNull, reason: '${e.key} sumiu');
+        if (!_regrasUsadas(e.key, fonte!).contains(campo)) {
+          violacoes.add('${e.key}: não usa MobileGates.$campo');
+        }
+        final cs = porArquivo[e.key] ?? const [];
+        if (cs.length != 1) {
+          violacoes.add('${e.key}: ${cs.length} chamadas (esperado 1)');
+          continue;
+        }
+        confereRegra(
+          '${e.key}:${cs.single.linha}',
+          regra,
+          _literalPuro(cs.single.nomeados['message']),
+        );
+      }
+
       final roteador = fontes['lib/app/router.dart']!;
       final ps = _placeholdersDoRoteador(roteador);
       for (final e in _gatePorRota.entries) {
+        final (campo, regra) = e.value;
         final daRota = ps.where((p) => p.rota == e.key).toList();
         if (daRota.length != 2) {
           violacoes.add('${e.key}: ${daRota.length} chamadas (esperado 2)');
         }
         for (final p in daRota) {
           final onde = 'lib/app/router.dart:${p.chamada.linha}';
-          final chave = _literalPuro(p.chamada.nomeados['requiredPermission']);
-          if (chave != e.value) {
-            violacoes.add('$onde: requiredPermission $chave ≠ ${e.value}');
+          final gate = _gateDoPlaceholder(p.chamada);
+          final esperado = campo == null ? 'null' : 'MobileGates.$campo';
+          if (gate != esperado) {
+            violacoes.add('$onde: gate $gate ≠ $esperado');
           }
-          confere(
+          if (regra == null) {
+            // Sem regra: a área é indisponível para todos e não promete o administrador.
+            final msg = _literalPuro(p.chamada.nomeados['message']);
+            if (msg == null || msg.toLowerCase().contains('administrador')) {
+              violacoes.add('$onde: área sem regra promete administrador');
+            }
+            continue;
+          }
+          confereRegra(
             onde,
-            e.value,
+            regra,
             _literalPuro(p.chamada.nomeados['blockedMessage']),
           );
         }

@@ -14,6 +14,7 @@ import '../../../shared/ui/mobile_kit.dart';
 import '../../checklists/data/checklist_repository.dart';
 import '../../checklists/domain/checklist_models.dart';
 import '../../checklists/ui/checklist_navigation.dart';
+import '../../prestador/domain/prestador_flow.dart';
 import '../data/work_order_repository.dart';
 import '../data/work_order_conflict_resolution_service.dart';
 import '../domain/work_order_models.dart';
@@ -947,6 +948,17 @@ class _CheckinActionsState extends ConsumerState<_CheckinActions> {
               icon: const Icon(Icons.play_arrow_outlined),
               label: const Text('Continuar atendimento'),
             ),
+        ],
+        // --- B-SAN3-15b (P8, decisão 1.A): a porta do atendimento do prestador, logo abaixo de
+        // "Continuar atendimento" (opção A), só para quem pode mudar a situação da OS ---
+        if (!isFinal && widget.canStatus && showsProviderServiceDoor(wo)) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const Key('provider-service-door'),
+            onPressed: () => context.go('/work-orders/${wo.localId}/service'),
+            icon: const Icon(Icons.build_outlined),
+            label: const Text('Diagnóstico e peças'),
+          ),
         ],
         // --- Final state ---
         if (isFinal)

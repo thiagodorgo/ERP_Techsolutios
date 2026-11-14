@@ -11,6 +11,15 @@ extension WorkOrderServiceTypeX on WorkOrderServiceType {
   };
 }
 
+/// B-SAN3-15b (P7) — o tipo de atendimento que o SERVIDOR manda na lista de OS (`serviceKind`): `tow` → guincho,
+/// `provider` → prestador; `unknown`, ausente ou qualquer outro valor → nulo (fail-closed: sem porta especializada).
+WorkOrderServiceType? workOrderServiceTypeFromApi(Object? value) =>
+    switch (value) {
+      'tow' => WorkOrderServiceType.tow,
+      'provider' => WorkOrderServiceType.provider,
+      _ => null,
+    };
+
 /// B-SAN3-26 (item 53) — como a chegada ao local ("No local") desta OS é conferida. Quem decide é o SERVIDOR, que manda
 /// o modo na lista de OS (`checkinMode`); o app grava e usa, sem regra de tipo própria.
 ///   plate            — pede os 2 últimos caracteres da placa e compara com `checkinPlateTail`;

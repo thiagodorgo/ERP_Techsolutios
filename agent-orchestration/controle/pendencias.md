@@ -8813,9 +8813,9 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ---
 
-## P-MOBILE-PRESTADOR-SEM-PORTA (2026-09-11) — Fluxo Prestador (diagnóstico, execução, materiais) sem porta de entrada — ALTA
+## P-MOBILE-PRESTADOR-SEM-PORTA (2026-09-11) — Fluxo Prestador (diagnóstico, execução, materiais) sem porta de entrada — ALTA — **FECHADA** pelo `B-SAN3-15b`
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — `B-SAN3-15b`, ramo `feat/mobile-prestador-15b` (F5b `bbfa1bbe`, mais a F3 `5f567756` e `142bedcf`, que traz o tipo do servidor): na OS de prestador em atendimento ou pausada, o detalhe mostra "Diagnóstico e peças" logo abaixo de "Continuar atendimento", só para quem tem `work_orders:status`, e leva a `/work-orders/<id>/service`. Teste de encerramento: `bsan315_portas_test.dart` T-P1, T-P2 e T-P2c, e o ciclo do tipo T-K2b; mutações M-P1, M-P1b e M-P1c vermelhas. Antes: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11).
 - **fonte (fatia AUSENTES, §2a):** sintese B30
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `mobile/flutter_app/lib/app/router.dart:159,339` únicos registros de `/work-orders/:id/service`; nenhum `push/go` para ele em `lib/` (o único `go` de `prestador_service_screen.dart:192` sai para `/execute`)
@@ -8830,9 +8830,9 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ---
 
-## P-MOBILE-CONCLUSAO-SEM-PORTA (2026-09-11) — Tela de Conclusão, onde a comissão aparece, é inalcançável — MÉDIA
+## P-MOBILE-CONCLUSAO-SEM-PORTA (2026-09-11) — Tela de Conclusão, onde a comissão aparece, é inalcançável — MÉDIA — **FECHADA** pelo `B-SAN3-15b`
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA — `B-SAN3-15b`, ramo `feat/mobile-prestador-15b` (F5b `bbfa1bbe` e F5c `8bb52663`): o fim do atendimento do prestador navega a `/work-orders/<id>/conclusion`, e o "Concluir OS" do prestador na tela Atendimento também (um caminho só); a conclusão não inventa comissão e mede a vistoria. Teste de encerramento: `bsan315_portas_test.dart` T-P3 e T-P4, `bsan315_conclusao_honesta_test.dart` T-H1 a T-H6; mutações M-P2, M-P3 e M-H1 a M-H6 vermelhas. Antes: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11).
 - **fonte (fatia AUSENTES, §2a):** sintese B31
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): `router.dart:165,345` únicos registros de `/work-orders/:id/conclusion`; zero `push/go` para ela
@@ -12089,9 +12089,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL`, `P-MOBILE-CODEC-FILA-STATUS-CRU`), antes de o bloco acrescentar ou fechar
   qualquer coisa nelas. Com a da telemetria (fechada pelo #532), restam 5 só no ramo.
 
-## P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e depois N ações em transações separadas: um crash entre as duas fases deixa material local sem ação na fila — ALTA
+## P-MOBILE-MATERIAL-E-FILA-NAO-ATOMICOS (2026-09-18) — `addSelection` grava N materiais e depois N ações em transações separadas: um crash entre as duas fases deixa material local sem ação na fila — ALTA — **FECHADA** pelo `B-SAN3-15b`
 
-- status: ABERTA (residual após o `B-O6R-11`; plano §6, P4)
+- status: FECHADA — `B-SAN3-15b`, ramo `feat/mobile-prestador-15b` (F6 `bdd79f90`, mais `8fe8b5b3` no arnês do T-U3): `addSelection` grava materiais e ações numa transação única do Drift, dentro da cauda serializada da MESMA fila do app; a unidade nasce do `syncQueue` recebido (nenhuma instância nova) e recusa com `material_unit_db_mismatch` quando fila e materiais não estão no mesmo banco. Prova: `bsan315_material_atomico_test.dart` T-U1 (falha injetada na k-ésima gravação, k de 1 a 6 → 0 materiais e 0 ações), T-U2 a T-U5 e T-U7; mutações M-U1 a M-U5 vermelhas (M-U4 10 de 10, com o teste 21 do `bo6r11_fila_serializada_test.dart`). Antes: ABERTA (residual após o `B-O6R-11`; plano §6, P4).
 - **o quê:** mesmo `AppDatabase`, mas `PrestadorLocalStore` e `SyncQueueRepository` não expõem transação; o
   `B-O6R-11` fez o método esperar cada gravação (fecha o `Ω6R-QUA-005`), não tornou as duas fases uma unidade.
 - **prova:** `mobile/flutter_app/lib/features/prestador/data/prestador_repository.dart:117-133` no head-base
@@ -12681,6 +12681,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** corpo do PR #487, "Pendências propostas (não feitas)": "títulos sem acento no app (`Aprovacoes`, `Diagnostico`…), em bloco próprio". Relaciona-se com `P-O6R11-TEXTOS-FORA-DE-D-T` e com o apenso de 02/11 em `P-MOBILE-FAXINA-TERMOS-TECNICOS`.
 - **leitura do redator, declarada (§A6):** o nome do bloco é do redator deste registro.
 - **encerramento:** guard de termos sem acento nos textos exibidos do app, como o do `B-SAN3-21` na web, em `ocorrencias=0`.
+- **apenso 2026-11-14 (`B-SAN3-15b`):** o 15b acentuou o que reescreveu (a conclusão inteira, o estoque na opção A e a porta "Diagnóstico e peças"). Ficam para cá, medidos no ramo: a tela de Atendimento do prestador (`prestador_service_screen.dart`: "Diagnostico tecnico", "Descreva o diagnostico tecnico...", "Diagnostico registrado · siga para a execucao", "Avancar para execucao", "Execucao do servico", "Descreva o servico executado...", "Adicione pecas do estoque do tecnico.", "Adicionar pecas do estoque"), que o 15b não reescreveu porque o `b119_prestador_flow_test.dart:288` assere `find.text('Execucao do servico')` e o `b119` só podia ganhar o passo novo; o título do `ErrorState` ("Nao foi possivel carregar", `erp_components.dart:221`); os passos do detalhe da OS ("Concluida", "Em exec."); e os rótulos de situação da OS ("Ag. aprovacao", "Excecao").
 - **apenso 2026-11-11 (`B-SAN3-19b`; plano v2 §2.3, que NÃO abre pendência duplicada):** o 19b acentuou só o que tocou
   (acesso não permitido, placeholder, P-O6R11, despesas). Exemplos medidos em `a0979f51` que ficam para cá: títulos de
   módulo da sessão de demonstração (`bootstrap_session.dart`, `Gestao de Despesas`, `Operacoes de Campo`, `Estoque do
@@ -12962,9 +12963,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** a permissão de despesa está no papel `technician`, não no `field_technician`; o `field_technician` também não tem `checklist_runs:create` nem `inventory.manage`.
 - **encerramento:** catálogo reconciliado com `RBAC_MATRIX.md`, `APPROVAL_LIMITS.md` e `docs/03-atores-papeis.md` antes do código (§2.6 do contrato), com teste de permissão no backend.
 
-## P-OS-TIPO-GUINCHO-PRESTADOR (2026-11-04) — a OS não tem tipo de serviço próprio — BAIXA
+## P-OS-TIPO-GUINCHO-PRESTADOR (2026-11-04) — a OS não tem tipo de serviço próprio — BAIXA — **FECHADA** pelo `B-SAN3-15b`
 
-- **status:** ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não.
+- **status:** FECHADA — `B-SAN3-15b`, ramo `feat/mobile-prestador-15b` (F3 `5f567756` e `142bedcf`): pela Pergunta 1 (a) do dono, o tipo mora no catálogo de serviço, e o servidor o expõe na lista e no detalhe da OS como `serviceKind` (`reboque` → `tow`; `socorro`, `residencial` e `outro` → `provider`; o resto → `unknown`, fail-closed; contrato `work_order_service_kind@2026-11.b-san3-15b` em `API_CONTRACTS.md`); o app grava em `serviceType`. Prova: `tests/bsan315-service-kind.test.ts` (T-K1, T-K1d) e `bsan315_tipo_da_os_test.dart` (T-K2, T-K2b, S-K(a), S-K(b)). · Antes: ABERTA · **escopo:** pre-existente; achado do levantamento de 04/11 · **dono:** a atribuir pelo orquestrador (a fonte diz "dono a definir") · **PR-alvo:** o primeiro PR do bloco nomeado · **bloqueia:** não.
 - **fato:** a OS não tem `serviceType`; o tipo vem do catálogo de serviço. Placa e número de série viajam em `serviceDetails`.
 - **encerramento:** decisão registrada sobre onde mora o tipo (guincho × prestador) e contrato do app alinhado a ela.
 
@@ -13526,6 +13527,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** no APK debug, o detalhe da OS fica em branco por `BoxConstraints forces an infinite width` no "Abrir mapa": um `OutlinedButton` numa `Row` sem `Expanded`, com `minimumSize: Size.fromHeight(44)`. No profile, o botão estoura a largura.
 - **critério de encerramento:** o detalhe da OS abre no APK debug e no profile, com o "Abrir mapa" dentro da largura, provado por widget test que fica vermelho com o layout de hoje.
 - **Apenso 2026-11-11 (`B-O6R-11d`):** fora do PERMITIDO do 11d (tela e repositório do app). Dono: `B-O6R-11e (a planejar)`.
+- **Apenso 2026-11-14 (`B-SAN3-15b`; Emenda 5.2 §1.4 e Emenda 5.3 §5) — `P-MOBILE-TESTES-SEM-O-TEMA-DO-APP` (MÉDIA, `pre-existente`), mesma causa:** a maior parte dos testes de tela do app não monta o tema do app; dois montam (`busers_seg_troca_senha_test.dart:244` e `bsan314_conserto_j546_test.dart:699`, o J-546 C3-F7). O tema fixa `minimumSize: const Size.fromHeight(44)` nos botões (`erp_mobile_theme.dart:73` e `:79`), que é largura mínima infinita. Com ele, a tela de estoque da `main` quebrava o layout ("Trailing widget consumes the entire tile width": o "Adicionar" no `trailing` de um `ListTile`). O 15b consertou a tela do estoque por construção (o botão foi para o detalhe, com largura limitada) e o teste novo dela monta o tema (`bsan315_estoque_opcao_a_test.dart`). As outras telas não foram medidas. Dono: o orquestrador escolhe o bloco.
 
 ## P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA (2026-11-11) — o app antigo recusa "Iniciar rota" de "Agendada" e não chega ao "No local" de OS vinda do servidor — MÉDIA (gravidade: leitura do redator)
 
@@ -13878,7 +13880,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-MOBILE-GATE-CHAVE-FORA-DO-CATALOGO (2026-11-11) — 4 telas do app pedem permissão que o servidor não conhece — ALTA
 
-- **status:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
+- **status:** FECHADA (2026-11-14, no PR do `B-MOBILE-GATE-CHAVE`, item 66; vale no merge). Cada gate de tela e de botão do app passa a ser uma regra de `mobile/flutter_app/lib/core/permissions/mobile_gates.dart`, igual à rota do servidor (módulo "qualquer um", chaves do catálogo e o modo); o `tests/mobile-gate-chave-catalogo.test.ts` prova as regras contra os exports da rota (T4.1), nenhum literal do `lib/` fora do catálogo (T4.2, com o canário das 9 classes) e a demo dentro do técnico de campo (T4.3); o `tests/mobile-gate-chave-matriz.test.ts` mede a matriz no servidor, e o app reproduz cada célula (T3, 52) e cada tela (T1, 66). O T9 do `B-SAN3-19b` exige "Fale com o administrador da sua organização." em Checklists, Estoque, Aprovações e nas telas Nova Entrada e Nova Saída; o Diagnóstico fica indisponível fora do modo de desenvolvimento (resposta 2.2 do dono, `D-DONO-1311-RECOMENDACOES`), por isso o texto do administrador vale em 3 telas do pedido original e no botão, não em 4.
+- **status anterior:** ABERTA · **escopo:** `pre-existente` (as chaves vêm de blocos anteriores; o `B-SAN3-19b` só troca texto e
   não muda permissão) · **dono:** `B-MOBILE-GATE-CHAVE` (procedência: a Emenda 3 do plano do `B-SAN3-19b` e a resposta (a) do dono à Pergunta 2, em 11/11; o ID do bloco foi dado em 13/11, R552-A2; plano em curso; junta completa + `coordenador-de-acessos`; começa provando o bloqueio contra o backend local) · **bloqueia:** a entrada no portão como item novo (`P-PORTAO-ITEM-GATE-CHAVE`).
 - **origem:** crítica r1 do plano do `B-SAN3-19b` (CRIT19B-05) e crítica r2 (CRIT19B-R2-08), conferido pelo dev.
 - **N medido** (`grep -c '"<chave>"' src/modules/core-saas/permissions/catalog.ts` = 0 para as 8, em `a0979f51`; a
@@ -14954,6 +14957,47 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **causa:** as cores do kit (chips, pílula, barra e o verde de sucesso) não foram escolhidas para AA; a opção A usa o mesmo verde.
 - **critério de encerramento:** as 6 peças passam no `textContrastGuideline` do Flutter, com teste.
 
+## P-SAN3-15-CONCLUSAO-VEICULO-COM-CODIGO (2026-11-14) — a linha "Veiculo" da conclusão do guincho mostra o código da OS — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`work_order_conclusion.dart`, antes do `B-SAN3-15b`: `assetValue: wo.code`) · **dono:** a nomear pelo orquestrador.
+- **fato:** no resumo da conclusão, o guincho tem a linha "Veiculo" com o código da OS como valor (`assetValue: isTow ? wo.code : null`). Depois da porta do prestador (P8), o guincho não chega a esta tela (conclui pela tela Atendimento). Achado lateral da Emenda 5 (abertura) do `B-SAN3-15b`, §2.4; o 15b não o conserta.
+- **encerramento:** o resumo do guincho mostra a placa ou o veículo de verdade, ou a linha sai, com teste.
+
+## P-SAN3-15-TIPO-NULO-EM-FALHA-DO-CATALOGO (2026-11-14) — falha passageira do catálogo faz o pull gravar o tipo da OS como nulo — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`work-order.service.ts`, `resolveServiceCatalogTypeInfo`: `catch` → `null`) · **dono:** a nomear pelo orquestrador (sem conserto no `B-SAN3-15b`, Emenda 5.1 §8 (iv)).
+- **fato:** com o `B-SAN3-15b`, a lista de OS manda `serviceKind`, e o app regrava o tipo a cada pull (S-K(b)). Se o catálogo falhar numa leitura, o servidor responde `unknown` e o aparelho grava o tipo nulo até o pull seguinte: a porta do prestador fecha (fail-closed) e a trava de entrega do guincho no aparelho desliga (`work_order_repository.dart`, `serviceType == tow`); o servidor continua recusando.
+- **encerramento:** a falha do catálogo não troca um tipo conhecido por nulo no aparelho (ou a resposta diz que não conseguiu ler), com teste.
+
+## P-MOBILE-UNIFICAR-CHIPS-DE-FILTRO (2026-11-14) — o app tem três formas de chip de filtro — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` · **dono:** junto do seletor de aparência do app (`P-APARENCIA-APP-SELETOR`).
+- **fato:** o `_FilterChip` privado da lista de OS (`work_order_list_screen.dart:440`), o `ChoiceChip` das despesas (`expense_list_screen.dart:133`) e, desde o `B-SAN3-15b`, o `FilterChip` do Material no estoque do técnico (Emenda 5.2 §1.5, que substitui a `P-MOBILE-LISTA-OS-USAR-MOBILEFILTERCHIP` da Emenda 5.1, nunca aberta).
+- **encerramento:** uma forma só de chip de filtro no app, na biblioteca, usada pelas três telas.
+
+## P-SAN3-15-ACHADOS-DA-MAQUETE-FORA-DO-BLOCO (2026-11-14) — achados da maquete do prestador que o 15b não conserta — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (camada de revisão de `screen-refs/prestador-atendimento-3opcoes.reference.html`; Emenda 5 (abertura) do `B-SAN3-15b`, §2.5) · **dono:** a nomear pelo orquestrador.
+- **fato, item a item:**
+  1. o 403 da área de estoque desligada (`module_not_enabled`) mostra "Seu perfil não tem permissão": a causa é a organização, e o app trata todo 403 igual (`technician_stock_remote_api.dart:46-47`);
+  2. o vazio da base de estoque usa o texto do técnico ("Nenhuma peça com você");
+  3. a lista salva perde o rótulo da custódia ("Peças com …" some sem sinal);
+  4. o detalhe da OS mostra identificadores ("Técnico atribuído" e "Checklist vinculado" com o id do modelo);
+  5. "Adicionar ao serviço · N itens" soma unidades diferentes.
+- **encerramento:** cada item consertado com teste, ou decidido pelo dono como fica.
+
+## P-SAN3-15-ASSINATURA-CLIENTE-PRESTADOR (2026-11-14) — a tela "Resumo" e a assinatura do cliente do prestador não existem no app — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (referências `screen-refs/mobile/prestador-resumo.png` e `assinatura.png`) · **dono:** a nomear pelo orquestrador.
+- **fato:** não são item do portão; no `B-SAN3-15b` a conclusão continua sendo o resumo, e a assinatura não é fabricada (plano v1 do `B-SAN3-15`, §2.5).
+- **encerramento:** decisão do dono sobre a assinatura no fluxo do prestador e, se entrar, a tela com teste.
+
+## P-MOBILE-CLEARALL-SEM-FILHAS (2026-11-14) — `DriftWorkOrderLocalStore.clearAll` não apaga materiais nem notas — BAIXA
+
+- **status:** ABERTA · **escopo:** `pre-existente` (`drift_work_order_local_store.dart`, `clearAll`: apaga evidências, linha do tempo e OS, e não `work_order_materials`; desde o `B-SAN3-15b`, também não `work_order_service_notes`) · **dono:** a nomear pelo orquestrador.
+- **fato:** achado lateral do `dev-15b-cl`. Em `lib/` o `clearAll` não tem chamador fora da interface (medido por `grep -rn "clearAll()" lib`); os dois caminhos da purga por OS apagam as filhas (o 15b acrescentou as notas nos dois).
+- **encerramento:** ou o `clearAll` apaga as filhas (com teste), ou sai da interface.
+
 ## P-SAN3-25-BRACO-PROVISIONADO-FORA-DA-CI (2026-11-13) — o braço provisionado dos testes de banco do faturamento pela web não roda na CI — BAIXA (pré-existente)
 
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `B-SAN3-12` e o `B-SAN3-08` têm o mesmo desenho: o job `backend-postgres` roda uma lista curada `SUITES=`, e `.github/**` era PROIBIDO no `B-SAN3-25`) · **dono:** o bloco que mexer na lista `SUITES=` do job `backend-postgres` · **bloqueia:** não.
@@ -15158,6 +15202,60 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **gravidade:** decisão do dono · **escopo:** o `B-SAN3-15b` e o `B-SAN3-17` (a constante única `MobileExpandableRow.rowHeight`) · **dono:** o dono · **bloqueia:** não.
 - **pergunta (Emenda 5.2 do `B-SAN3-15b`, §8.1, fora do repositório):** no app, a linha que abre o detalhe fica com 48 de altura (a regra do Android, igual aos botões que o app já tem) ou com 44 (como a maquete aprovada)? Recomendação: 48. A diferença é de 4 por linha; se fosse 44, mudaria um número nos dois blocos.
 - **conflito registrado (§A2):** ver `D-DONO-1311-RECOMENDACOES` (c) em `decisoes.md`. Na conferência visual, a linha de 48 contra a maquete de 44 não é desvio a reprovar.
+
+## P-RBAC-MATRIZ-X-CATALOGO-ESTOQUE-CHECKLIST (2026-11-14) — a matriz de papéis dá estoque ao financeiro e ao suporte, e resposta de checklist ao estoque, e o catálogo não — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (o catálogo e a `RBAC_MATRIX.md` já divergiam antes do `B-MOBILE-GATE-CHAVE`; medido em `2f027fe1` e re-medido em `d2737339`) · **dono:** o dono (mudar o catálogo depende de ordem dele) · **bloqueia:** não. O app espelha o servidor, então ninguém ganha acesso.
+- **origem:** §2.7 do plano v1 do `B-MOBILE-GATE-CHAVE`.
+- **N e forma:** 3 células. Estoque (`RBAC_MATRIX.md`, linha de movimentações de estoque): `finance` = "read" e `support` = "support-view" na matriz, e o catálogo não dá `inventory.read` a nenhum dos dois. Checklists (linha de execução de checklist): `inventory` = "read/answer-by-scope" na matriz, e o catálogo não lhe dá `checklist_runs:update`.
+- **causa:** o catálogo é mais restritivo que a matriz nas 3 células.
+- **critério de encerramento:** o dono decide qual dos dois vale; o lado que perde é corrigido, com o teste de paridade do catálogo.
+
+## P-MOBILE-ESTOQUE-REPLAY-SEM-ROTA (2026-11-14) — Nova Entrada e Nova Saída do app entram na fila com tipos que o servidor não conhece — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA · **escopo:** `pre-existente` (as telas e a fila são de blocos anteriores; o `B-MOBILE-GATE-CHAVE` só põe o gate nelas) · **dono:** `B-O6R-04b` (item 31; nasce depois do 66, e reaponta o G3 para a ação real) · **bloqueia:** não o 66.
+- **origem:** §2.8 do plano v1 do `B-MOBILE-GATE-CHAVE`, com o texto corrigido pela abertura (A2).
+- **fato (medido em `d2737339`):** o replay de estoque existe (`lib/core/sync/inventory_sync_replay_service.dart:148`), mas só envia `work_order_material.add` e `work_order_material.remove` (`:198-199`). As ações `inventory_entry.create` e `inventory_exit.create`, que as telas Nova Entrada e Nova Saída enfileiram, não têm tipo no servidor (`supportedActionTypes` de `src/modules/mobile/mobile-inventory-sync.ts`: `inventory.reserve`, `inventory.consume`, `inventory.shortage_report`).
+- **efeito:** o movimento registrado no aparelho não chega ao servidor.
+- **critério de encerramento:** a ação do app tem tipo no servidor, o replay a envia, e o G3 do app aponta para a permissão dela (T4.1 do `tests/mobile-gate-chave-catalogo.test.ts`).
+
+## P-MOBILE-MODULE-RESOLVER-MORTO (2026-11-14) — o `ModuleResolver` e o `perms` do mapa de navegação não filtram o menu — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o próximo bloco de navegação do app · **bloqueia:** não.
+- **origem:** §2.5 do plano v1 do `B-MOBILE-GATE-CHAVE`.
+- **fato:** `ModuleResolver` (`lib/core/modules/module_resolver.dart`) é o único leitor de `requiredPermissions` e de `_kNavigationModules[*].perms`, e nenhum widget de produção o usa (só `test/core/resolvers_test.dart`). O `B-MOBILE-GATE-CHAVE` trocou as chaves inventadas desses mapas pelas do catálogo, sem ligar o resolvedor.
+- **critério de encerramento:** ligar o resolvedor à navegação (com a regra de `MobileGates`) ou apagá-lo, com o mapa.
+
+## P-MOBILE-CHECKLIST-PELA-OS-SEM-GATE (2026-11-14) — o cartão de checklist da OS abre o formulário da vistoria para quem não pode responder — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` (`work_order_detail_screen.dart:150` é de `2537558f`, 05/07/2026, e o botão `:698-700` de `e79616aa`, 13/06/2026; `checklist_run_screen.dart` nasceu em `e79616aa`; os dois ficam fora do PERMITIDO do `B-MOBILE-GATE-CHAVE`) · **dono:** o próximo bloco que tocar `mobile/flutter_app/lib/features/work_orders/ui/work_order_detail_screen.dart` ou `mobile/flutter_app/lib/features/checklists/ui/checklist_run_screen.dart` · **bloqueia:** não.
+- **origem:** achado C1-01 da cadeira C1 da J-561 (`coordenador-de-acessos`), triado como pendência pela ata da J-561.
+- **N e forma (medido pela C1, sonda de widget com o bootstrap do servidor):** 3 perfis com o G1b falso (gestor, financeiro e auditor) veem "Abrir/Continuar checklist" no `_ChecklistCard` da tela da OS e abrem o formulário da vistoria (`PermissionBlockedState` 0). O cartão não tem gate de papel nem de módulo, e a tela da vistoria também não. Controle: o técnico de campo (G1b verdadeiro) vê o botão e o formulário.
+- **causa:** o G1b do `B-MOBILE-GATE-CHAVE` só esconde o botão da tela "Checklists da OS"; a entrada pela tela da OS é anterior ao bloco e ficou sem gate. O servidor recusa cada resposta no sync (`rejected`, `permission_required`), então não há escrita indevida.
+- **critério de encerramento:** o cartão da OS e a tela da vistoria usam o `MobileGates.responderChecklist` (G1b), com teste de widget que fica vermelho quando o gate sai.
+
+## P-MOBILE-ESTOQUE-SEM-ENTRADA-NA-NAVEGACAO (2026-11-14) — a tela Estoque do app só abre por link — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`inventory_list_screen.dart` nasceu em `e79616aa`, 13/06/2026; `git grep` de `go('/inventory')`/`push('/inventory')` dá 0 em `729718fe` e no objeto; o plano v1 §2.5 já media "Estoque: nenhuma entrada de navegação") · **dono:** `B-O6R-04b` (item 31) · **bloqueia:** não.
+- **origem:** achado C1-02 da cadeira C1 da J-561, triado como pendência pela ata da J-561.
+- **N e forma:** 1 tela. `/inventory` tem rota registrada, o módulo `inventory` existe e o servidor autoriza 7 perfis (G2), mas nenhum item de navegação do app a abre.
+- **causa:** a tela nasceu sem entrada na navegação; a `P-MOBILE-MODULE-RESOLVER-MORTO` trata do resolvedor que não filtra o menu, não da entrada que falta.
+- **critério de encerramento:** a tela Estoque tem entrada na navegação do app para quem passa no G2, com teste.
+
+## P-TESTE-VAULT-ROUTES-FILHO-ORFAO (2026-11-14) — o `ass-05-vault-routes` não mata o servidor-filho no tempo esgotado, e o `npm test` não termina — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (`tests/ass-05-vault-routes.test.ts`, `015234d0`, 08/11/2026, B-ASS-05, #510; fora do diff do `B-MOBILE-GATE-CHAVE`) · **dono:** `B-FERR-AGENTES` · **bloqueia:** não.
+- **origem:** achado C2A-01 da cadeira C2a da J-561, triado como pendência pela ata da J-561.
+- **N e forma (medido pela C2a, com a máquina carregada):** em `startServer` (`tests/ass-05-vault-routes.test.ts:30-66`), se o filho não escreve `PORT ` em 30 s, o `waitFor` lança e o filho não é morto. Ficaram 4 filhos `tests/helpers/ass-05-vault-server.ts` vivos, e o TAP do `npm test` ficou parado em 185 testes por 13 minutos, até eles serem mortos. Isolado, o arquivo passa (5/5), e a CI do objeto também.
+- **causa:** o caminho de erro do `startServer` não encerra o processo-filho.
+- **critério de encerramento:** o `startServer` mata o filho em todo caminho de erro (tempo esgotado incluído), com um caso que prova que nenhum filho sobra.
+
+## P-J561-JWT-LOCAL-SEM-TENANT-ROLE (2026-11-14) — a prova com perfil real do item 66 roda com o JWT local sem `tenant_role` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (já registrado como `P-AUTH-CLAIMS-SEM-TENANT-ROLE`, 2026-09-18, e `P-AUTH-TOKEN-LOCAL-CLAIMS`, 2026-11-04; o diff do `B-MOBILE-GATE-CHAVE` não toca `src/modules/auth/**`) · **dono:** auth (o contrato do §2.4) · **bloqueia:** não. Junta-se às duas pendências citadas e fecha com elas.
+- **origem:** achado C3-02 da cadeira C3 da J-561, triado pela ata da J-561 como "só registro, porque a evidência já o declara" (`agent-orchestration/omega/evidencias/B-MOBILE-GATE-CHAVE/perfil-real-antes.md`, seção 1).
+- **N e forma (medido pela C3, login real nos 9 atores):** o claim `roles` traz o papel esperado nos 9, e `tenant_role`, `tenant_roles` e `permissions` estão ausentes nos 9. Os claims são `aud, email, exp, iat, identity_id, iss, roles, sid, sub, tenant_id, type`. Para a prova do item 66 o efeito é nulo (o bootstrap bate com o catálogo).
+- **critério de encerramento:** o das pendências-mãe (o JWT carrega os claims que o §2.4 exige).
 
 ## Apensos B-SAN3-10b-F4-SEED-ISOLADO — F0b do plano v2 e das Emendas 1, 1.1 e 1.2 (2026-11-14) — APPEND, nunca reescrita
 

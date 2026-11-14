@@ -6,7 +6,7 @@ import '../sync/sync_action_store.dart';
 import '../sync/sync_models.dart';
 import 'app_database.dart';
 
-class DriftSyncActionStore implements SyncActionStore {
+class DriftSyncActionStore implements TransactionalSyncActionStore {
   DriftSyncActionStore(this._db);
 
   final AppDatabase _db;
@@ -53,6 +53,23 @@ class DriftSyncActionStore implements SyncActionStore {
           ],
         );
       }
+    });
+  }
+
+  // B-SAN3-15b (P11) — a mesma instância do banco: só então as duas gravações cabem numa transação.
+  @override
+  bool sharesDatabaseWith(Object database) => identical(database, _db);
+
+  // B-SAN3-15b (P11) — `inTransaction` (os materiais, pelo mesmo banco) e a fila numa transação só. O `save` abre a
+  // transação dele, que aqui fica aninhada (ponto de salvamento) dentro desta: uma falha desfaz as duas.
+  @override
+  Future<void> saveWithin(
+    List<SyncAction> actions,
+    Future<void> Function() inTransaction,
+  ) async {
+    await _db.transaction(() async {
+      await inTransaction();
+      await save(actions);
     });
   }
 
