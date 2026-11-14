@@ -5,6 +5,7 @@
 //   N9 — controle: caminho em ARRAY (deve cair em "camada sem caminho de texto", T3)
 import { pathToFileURL } from "node:url";
 import { createRequire } from "node:module";
+import { moverParaAntesDo404 } from "./antes-do-404.mts";
 export async function inject(app: any) {
   const root = new URL(pathToFileURL(process.cwd()).href + "/src/");
   const imp = (p: string) => import(new URL(p, root).href);
@@ -29,7 +30,6 @@ export async function inject(app: any) {
   const st = app.router.stack; const before = st.length;
   app.use("/api/v1", attachAuthenticatedActor(), r);
   app.use("/api/v1", attachAuthenticatedActor(), sub);
-  const added = st.splice(before, st.length - before);
-  st.splice(before - 1, 0, ...added);
+  const added = moverParaAntesDo404(st, before);
   console.log("[inject-novas] camadas adicionadas antes do 404:", added.length);
 }
