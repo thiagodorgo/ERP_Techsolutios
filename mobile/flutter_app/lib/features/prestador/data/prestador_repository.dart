@@ -21,6 +21,7 @@ import '../../../core/sync/sync_queue_repository.dart';
 import '../../../core/sync/sync_stalled_resolver.dart';
 import '../../work_orders/data/work_order_repository.dart';
 import '../domain/prestador_models.dart';
+import 'material_enqueue_unit.dart';
 import 'prestador_local_store.dart';
 import 'technician_stock_cache.dart';
 import 'technician_stock_demo.dart';
@@ -43,7 +44,12 @@ class PrestadorRepository extends ChangeNotifier {
        _stockRemoteApi = stockRemoteApi,
        _stockCache = stockCache ?? InMemoryTechnicianStockCache(),
        _allowDemoStock = allowDemoStock,
-       _isDemoSession = isDemoSession;
+       _isDemoSession = isDemoSession,
+       // B-SAN3-15b (P11) — a unidade de peça e fila nasce do MESMO `syncQueue` recebido.
+       _materialUnit = materialEnqueueUnitFor(
+         queue: syncQueue,
+         materials: localStore,
+       );
 
   final BootstrapSession _session;
   final SyncQueueRepository _syncQueue;
@@ -53,7 +59,12 @@ class PrestadorRepository extends ChangeNotifier {
   final TechnicianStockCache _stockCache;
   final bool _allowDemoStock;
   final bool _isDemoSession;
+  final MaterialEnqueueUnit _materialUnit;
   final Uuid _uuid = const Uuid();
+
+  /// A unidade montada para esta fila e estes materiais (os testes conferem o tipo).
+  @visibleForTesting
+  MaterialEnqueueUnit get materialUnit => _materialUnit;
   // C2 item 9(b): as escritas da linha (`addSelection`, `removeMaterial`, `applyMaterialSyncStatus` e a
   // compensação) passam pela MESMA cauda. É uma trava de entrada, e não um executor de closure, para que toda
   // gravação na fila fique aguardada no próprio método (guard P-FILA-AWAIT, Ω6R-QUA-005). `null` = ociosa.
@@ -145,15 +156,10 @@ class PrestadorRepository extends ChangeNotifier {
         idFor: (sku) => 'mat-local-${_uuid.v4()}',
       );
 
-      for (final material in merged) {
-        await _localStore.saveMaterial(material);
-      }
-
-      // B-O6R-11 (Ω6R-QUA-005) — `for-in` com `await`, nunca `selection.forEach`: o callback do
-      // `forEach` é `void`, a `Future` de cada `enqueue` era descartada, e o método retornava (e
-      // notificava a tela) ANTES de qualquer ação gravada. Um reinício logo depois perdia todas; e
-      // as N gravações concorrentes da fila (read-modify-write) deixavam 1 de N. Retorno e
+      // B-O6R-11 (Ω6R-QUA-005) — `for-in`, nunca `selection.forEach`: o callback do `forEach` é
+      // `void`, e o método retornava (e notificava a tela) ANTES de qualquer ação gravada. Retorno e
       // notificação só depois do último `await`.
+      final actions = <SyncAction>[];
       for (final entry in selection.entries) {
         if (entry.value <= 0) continue;
         final material = merged.firstWhere((row) => row.sku == entry.key);
@@ -167,8 +173,11 @@ class PrestadorRepository extends ChangeNotifier {
             'quantity': entry.value,
           },
         );
-        await _syncQueue.enqueue(action);
+        actions.add(action);
       }
+
+      // B-SAN3-15b (P11) — materiais e ações numa unidade só: uma falha não deixa nada gravado.
+      await _materialUnit.commit(materials: merged, actions: actions);
 
       notifyListeners();
       return merged;

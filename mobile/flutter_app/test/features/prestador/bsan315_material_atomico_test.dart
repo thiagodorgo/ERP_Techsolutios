@@ -20,10 +20,9 @@
 // `work_order_materials` e em `sync_actions`), e não num store falso: assim o teste mede o que o banco guardou,
 // qualquer que seja a forma do código.
 //
-// LEITURA do dev, declarada (§A6): o T-U4 prova a montagem pelo EFEITO (pelo provider de produção, uma falha no meio
-// não deixa nada gravado), para compilar na `main` e ficar vermelho por asserção; a M-U3 (`DriftMaterialEnqueueUnit`
-// → `SequentialMaterialEnqueueUnit`) o derruba do mesmo jeito. A conferência do TIPO da unidade montada (T-U4 e a
-// pré-condição do T-U3, Emenda 1 N-02) entra na F6, quando o tipo existir.
+// LEITURA do dev, declarada (§A6): o T-U4 prova a montagem pelo TIPO e pelo EFEITO (pelo provider de produção, uma
+// falha no meio não deixa nada gravado). Na F0b só o efeito existia (o tipo não existia na `main`); a F6 acrescentou
+// a conferência do tipo no T-U4 e como pré-condição do T-U3 (Emenda 1 N-02: o T-U3 roda no ramo (a)).
 //
 // VERMELHO-CONTROLE (F0b, `main` d2737339): `addSelection` grava em duas fases (materiais, depois ações), então a
 // falha no meio deixa k−1 gravações (T-U1 de k=2 a 6, T-U4) e não há a recusa do banco trocado (T-U7). T-U2, T-U3 e
@@ -34,6 +33,7 @@ import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_repository.dar
 import 'package:erp_techsolutions_mobile/core/bootstrap/bootstrap_session.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/app_database.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/database_provider.dart';
+import 'package:erp_techsolutions_mobile/core/local_db/drift_material_enqueue_unit.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/drift_prestador_local_store.dart';
 import 'package:erp_techsolutions_mobile/core/local_db/drift_sync_action_store.dart';
 import 'package:erp_techsolutions_mobile/core/network/api_contracts.dart';
@@ -235,6 +235,12 @@ void main() {
       () async {
         final banco = _Banco(lento: true);
         final repo = banco.repositorio();
+        expect(
+          repo.materialUnit,
+          isA<DriftMaterialEnqueueUnit>(),
+          reason:
+              'Emenda 1 N-02: o T-U3 roda no ramo (a), fila e materiais no mesmo banco',
+        );
 
         // Preparo (com await): a peça M0, já baixada (synced, com result_ref), e a peça M9, pendente.
         final m0 = (await repo.addSelection(
@@ -338,6 +344,7 @@ void main() {
         addTearDown(container.dispose);
         await container.read(bootstrapSessionProvider.future);
         final repo = container.read(prestadorRepositoryProvider);
+        expect(repo.materialUnit, isA<DriftMaterialEnqueueUnit>());
 
         falha.armar(2);
         await expectLater(
