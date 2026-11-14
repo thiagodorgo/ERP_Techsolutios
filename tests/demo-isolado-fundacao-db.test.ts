@@ -181,8 +181,8 @@ if (!connectionString) {
   let preparo: Promise<void> | undefined;
 
   async function clientePara(url: string) {
-    const [{ PrismaPg }, { PrismaClient }] = await Promise.all([import("@prisma/adapter-pg"), import("@prisma/client")]);
-    return new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
+    const [{ createPgAdapter }, { PrismaClient }] = await Promise.all([import("../src/database/pg-connection.ts"), import("@prisma/client")]);
+    return new PrismaClient({ adapter: createPgAdapter(url) });
   }
 
   // O modelo: migrate deploy + provision-rbac + plataforma com usuario `.invalid`. Uma vez por arquivo.
