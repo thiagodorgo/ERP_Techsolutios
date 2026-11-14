@@ -892,7 +892,7 @@ aprovada pela verificação `ver-f3b-cl`. Roteiro da §1.5 com `OLD=317004e7` (F
 
 **J2 feita.** A partir daqui o trabalho é no ramo do bloco (`feat/ass-09-visao-custo`); a F6 é de outro dev.
 
-## F8 (parte 1, sem depender da F6) — guarda do markup, `PLANO_SAN3.md`, docs e registro, 14/11 02:26–02:50 SP
+## F8 (parte 1, sem depender da F6) — guarda do markup, `PLANO_SAN3.md`, docs e registro, 14/11 02:26–02:37 SP
 
 Pedido do orquestrador: adiantar no ramo do banco o que não depende das rotas da F6 (a F6 corre ao mesmo tempo no ramo do bloco,
 em arquivos disjuntos: `overview.service.ts`, rotas, validadores e trilha). O resto da F8 (o `API_CONTRACTS.md` e o T-API-1) vem
@@ -918,3 +918,21 @@ cobre o retrato nulo e o sem a chave), não `=== null` como a Emenda 2.1 escreve
 
 **Leitura do dev, declarada (§A6):** o K29 entra também na seção do demonstrativo, junto da frase do invariante do retrato, porque o
 A-E21-3 manda escrevê-lo "junto do invariante §3.3"; a seção nova da visão o repete com o mitigante.
+
+## J3 — a F8 (parte 1) por cima da F6, e o bloco avança (Emenda 2 §1.5), 14/11 03:34–03:41 SP
+
+A F6 (`dev-ass09-f13-cl`) entrou em `origin/feat/ass-09-visao-custo` = `4fb0d7b9`, a partir de `1a3c7477`. Parcial medido antes de
+seguir (P3/P7): `w-ass09b` limpo, em `7035a686` = `origin/feat/ass-09-banco`; os arquivos das duas linhas são disjuntos, salvo
+este diário (a F6 escreveu antes da linha `## F4 — ramo`; a F8, no fim); `git merge-tree --write-tree` limpo. Roteiro da §1.5 com
+`OLD=7035a686` e `BASE=1a3c7477`.
+
+| passo | comando | saída | veredito |
+|---|---|---|---|
+| (1) | `git rebase origin/feat/ass-09-visao-custo` · `test -z "$(git diff --name-only --diff-filter=U)"` | `Rebasing (1/1)Successfully rebased and updated refs/heads/feat/ass-09-banco.` · nenhum conflito | limpo |
+| (2) | `git diff "$BASE" "$OLD" -- . ":(exclude)$D" \| git patch-id --stable` × `git diff origin/feat/ass-09-visao-custo HEAD -- . ":(exclude)$D" \| git patch-id --stable` | A = `d7ef7d35b1225ac8e8ddbdbbed2abeb033e00353` · B = `d7ef7d35b1225ac8e8ddbdbbed2abeb033e00353` | iguais |
+| (3) | linhas acrescentadas ao diário por cada lado desde a `BASE`, `comm -23` contra o diário do HEAD | lado do bloco (F6): 81 distintas, **0** perdidas · lado do banco (`7035a686`): 23, **0** perdidas | os dois lados ficam |
+| bateria antes do push | `db:generate` · `check` · `lint`; `-db` da fatia (drill, câmbio, grupos); memória `tests/ass-09-*.test.ts` (com as rotas da F6 e a guarda do markup) + `financial-period-lock-guard` + `ass-05b-audit-allowlist` | `0` · `0` · `0` · `# tests 13 # pass 13 # fail 0 # skipped 0` · `# tests 74 # pass 71 # fail 0 # skipped 3` (os 3 pulos são os 3 `-db` sem `DATABASE_URL`, cobertos na linha anterior) | verde |
+| push do banco | `git push --force-with-lease=feat/ass-09-banco:7035a686 origin HEAD:feat/ass-09-banco` | `+ 7035a686...4851b97b` | só no ramo do banco |
+| avanço do bloco | `git merge-base --is-ancestor origin/feat/ass-09-visao-custo HEAD` → verdadeiro · `git push origin HEAD:feat/ass-09-visao-custo` | `4fb0d7b9..4851b97b` (sem `--force`) | **fast-forward**; os dois ramos em `4851b97b` |
+
+Corrigido neste commit: o fim da F8 parte 1 é 02:37 (medido), não 02:50.
