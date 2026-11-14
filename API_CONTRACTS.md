@@ -305,9 +305,9 @@ Fontes: `src/modules/platform/platform.routes.ts` (montado em `/api/v1/platform`
 | GET | `/platform/tenants/:tenantId/modules` | `platform:tenants:read` | Módulos provisionados na organização. |
 | PATCH | `/platform/tenants/:tenantId/modules` | `platform:modules:manage` | Habilita/desabilita módulos. |
 | POST | `/platform/tenants/:tenantId/admin-user` | `platform:users:create_admin` | Cria usuário administrador da organização. |
-| GET/POST/PATCH | `/platform/cloud-charge-rules` (+ `/:ruleId`) | `platform:cloud-charge-rules:read` / `:write` | Regras de cobrança de nuvem (+ CRUD padrão). |
-| GET/POST | `/platform/cloud-charges/calculation-runs` (+ `/:runId`, `/:runId/tenant-charges`) | `platform:cloud-charges:read` / `:calculate` | Execuções de cálculo de cobrança de nuvem. |
-| GET | `/platform/cloud-charges/summary` | `platform:cloud-charges:read` | Resumo de cobranças de nuvem. |
+| GET/POST/PATCH | `/platform/cloud-charge-rules` (+ `/:ruleId`) | `platform:cloud-charge-rules:read` / `:write` | **Retiradas (B-ASS-01, 404).** Regras de cobrança de nuvem (+ CRUD padrão). |
+| GET/POST | `/platform/cloud-charges/calculation-runs` (+ `/:runId`, `/:runId/tenant-charges`) | `platform:cloud-charges:read` / `:calculate` | **Retiradas (B-ASS-01, 404).** Execuções de cálculo de cobrança de nuvem. |
+| GET | `/platform/cloud-charges/summary` | `platform:cloud-charges:read` | **Retirada (B-ASS-01, 404).** Resumo de cobranças de nuvem. |
 | GET/POST | `/platform/cloud-cost-allocations/runs` (+ `/:runId`, `/:runId/tenant-allocations`) | `platform:cloud-cost-allocation:read` / `:run` | Rateio de custo de nuvem por organização. |
 | GET | `/platform/cloud-cost-allocations/summary` | `platform:cloud-cost-allocation:read` | Resumo de rateio. |
 | GET | `/platform/cloud-costs/imports` (+ `/:importId`) | `platform:cloud-costs:read` | Importações de custo (AWS CUR). |
@@ -315,6 +315,65 @@ Fontes: `src/modules/platform/platform.routes.ts` (montado em `/api/v1/platform`
 | GET | `/platform/cloud-costs/line-items` · `/platform/cloud-costs/summary` | `platform:cloud-costs:read` | Itens de linha / resumo de custo. |
 | GET | `/platform/cloud-usage/summary` | `platform:cloud-usage:read` | Uso agregado da plataforma. |
 | GET | `/platform/cloud-usage/tenants/:tenantId/summary` · `/daily` | `platform:cloud-usage:read` | Uso por organização (resumo/diário). |
+| GET | `/platform/billing/overview` | `platform:billing:read` | Visão de custo × assinatura do mês (`?period=AAAA-MM&groupBy=tenant\|group\|global`), contrato `platform_billing_overview@2026-11.b-ass-09` (B-ASS-09). |
+| GET | `/platform/billing/fx-rates` | `platform:billing:read` | Taxas de câmbio por mês (`?from=AAAA-MM&to=AAAA-MM`, até 24 meses), com o histórico de versões (B-ASS-09). |
+| PUT | `/platform/billing/fx-rates/:month` | `platform:billing:manage` | Acrescenta a versão seguinte da taxa do mês; nunca altera uma versão (B-ASS-09). |
+| GET | `/platform/billing/economic-groups` | `platform:billing:read` | Grupos econômicos não excluídos, com a contagem de membros vigentes hoje (B-ASS-09). |
+| POST | `/platform/billing/economic-groups` | `platform:billing:manage` | Cria um grupo econômico (B-ASS-09). |
+| GET | `/platform/billing/economic-groups/:groupId` | `platform:billing:read` | O grupo, com os membros vigentes hoje e os agendados (`scheduled: true`) (B-ASS-09). |
+| PATCH | `/platform/billing/economic-groups/:groupId` | `platform:billing:manage` | Renomeia ou anota o grupo (B-ASS-09). |
+| DELETE | `/platform/billing/economic-groups/:groupId` | `platform:billing:manage` | Exclusão lógica; recusada com membro vigente ou agendado (B-ASS-09). |
+| PUT | `/platform/billing/economic-groups/:groupId/members` | `platform:billing:manage` | Define o conjunto de organizações do grupo a partir de `validFrom` (B-ASS-09). |
+| GET | `/platform/billing/economic-groups/:groupId/history` | `platform:billing:read` | Todas as linhas do grupo, inclusive as fechadas e as agendadas (B-ASS-09). |
+
+**Visão de custo × assinatura — `platform_billing_overview@2026-11.b-ass-09`.** As 10 rotas `/platform/billing/overview`,
+`/fx-rates` e `/economic-groups` da tabela acima (B-ASS-09). Só a plataforma (`platform:billing:read` para ler,
+`platform:billing:manage` para gravar); ator de organização → `403`. Todo valor em dinheiro é string decimal com 2 casas,
+calculado em centavos inteiros (metade para longe do zero); o original do arquivo de custo vem com 6 casas.
+
+- **`GET /overview?period=AAAA-MM&groupBy=tenant|group|global`** (padrão `tenant`) → `{ data }` com `period`, `groupBy`,
+  `currency: "BRL"`, `generatedAt` e `cost` (`status`, `coverage`, `runId`, `importId`, `currencyOriginal`, `fxRate`,
+  `fxRateVersion`, `warnings`, `sources`). Por `groupBy`:
+  - `tenant`: `lines[]` com `tenantId`, `tenantName`, `groupId`, `groupName`, `subscriptionAmount`, `subscriptionBasis`,
+    `statementTotal`, `creditsApplied`, `subscriptionSource`, `subscriptionSkipReason`, `estimate`, `allocatedCost`,
+    `allocatedCostOriginal`, `margin`, `marginPct`, `alert`; e `totals` (`subscriptionAmount`, `allocatedCost`, `margin`,
+    `marginPct`);
+  - `group`: `lines[]` com `groupId` (`null` = "Sem grupo"), `groupName`, `memberCount`, `membersWithoutSubscription`,
+    `subscriptionAmount`, `creditsApplied`, `allocatedCost`, `margin`, `marginPct`, `alert` (`null` na linha "Sem grupo"),
+    `estimate`; e `totals`;
+  - `global`: `global` com `subscriptionTotal`, `tenantsCost`, `platformOwnCost`, `unallocatedOther`,
+    `unallocatedByReason[{ reason, cost }]`, `roundingResidualCost`, `conversionResidualCost`, `totalCost`, `margin`,
+    `marginPct`, `alert` e `original` (`currency`, `tenantsCost`, `platformOwnCost`, `unallocatedOther`,
+    `roundingResidualCost`, `totalImportedCost`). As 5 parcelas somam `totalCost`, exato.
+- **Base da assinatura:** `subscriptionBasis: "before_credits"` — o total gravado do demonstrativo mais o crédito do retrato
+  do fechamento. `statementTotal` é o total gravado (líquido); `creditsApplied` é o crédito que entrou no total no
+  fechamento. Nunca o valor pago. `subscriptionSource`: `statement`, `statement_reopened`, `cancelled`, `projection`,
+  `none`. `alert`: `cost_missing`, `no_subscription`, `critical`, `warning`, `none` (o enum fica aberto para o B-ASS-12).
+- **Campos que podem ser `null`.** Com `cost.status` em `no_run`, `no_import`, `fx_missing` ou `currency_unknown`, TODO campo
+  de custo e margem em reais é `null`: `lines[*].allocatedCost`, `lines[*].margin`, `lines[*].marginPct`,
+  `totals.allocatedCost`, `totals.margin`, `totals.marginPct`, `global.tenantsCost`, `global.platformOwnCost`,
+  `global.unallocatedOther`, `global.unallocatedByReason[*].cost`, `global.roundingResidualCost`,
+  `global.conversionResidualCost`, `global.totalCost`, `global.margin`, `global.marginPct`; os originais (`global.original`,
+  `allocatedCostOriginal`) também, salvo em `fx_missing`. Taxa ausente nunca vira 1. Sem assinatura, `subscriptionAmount`,
+  `statementTotal` e `creditsApplied` são `null` e o alerta é `no_subscription`. `marginPct` é `null` com assinatura zero.
+- **Códigos (R1):** `400` `invalid_period`, `invalid_group_by`; `422` `period_in_future` (mês depois do corrente em São
+  Paulo); `500` `statement_integrity_violation` (demonstrativo gravado sem retrato do fechamento, ou com retrato que não
+  reproduz o total), `membership_integrity_violation` (organização em dois grupos no mesmo dia),
+  `overview_integrity_violation` (entrada incoerente) — sem número parcial; a organização e o mês só no log do servidor.
+- **Câmbio (R2, R3):** `GET /fx-rates?from&to` → `[{ month, currencyFrom, currencyTo, rate, version, createdAt, history[] }]`;
+  `400` `invalid_month`; `422` `range_too_large` (mais de 24 meses). `PUT /fx-rates/:month` com
+  `{ currencyFrom, currencyTo: "BRL", rate }` → `{ current, history[] }`; `400` `invalid_month`, `invalid_json`; `422`
+  `rate_invalid` (decimal maior que zero e menor que 1000, até 6 casas), `currency_pair_unsupported`, `fx_month_in_future`.
+- **Grupos (R4–R10):** `POST` → `201`; `409` `group_name_exists` (sem diferenciar maiúsculas, entre os não excluídos); `422`
+  `name_invalid` (1 a 120 caracteres). `GET`/`PATCH`/`DELETE`/`history` de grupo inexistente ou excluído → `404`
+  `group_not_found`. `DELETE` com membro vigente ou agendado → `422` `group_has_members`. `PUT …/members` com
+  `{ tenantIds, validFrom? }` (padrão: hoje em São Paulo) → o grupo com os membros; `400` `invalid_tenant_ids`,
+  `invalid_valid_from`; `404` `tenant_not_found`; `422` `tenant_in_another_group` (com `tenantIds`), `membership_retroactive`,
+  `membership_range_invalid`, `platform_organization`, `too_many_members` (mais de 500); `409` `membership_conflict` (a
+  exclusão do banco segurou uma corrida). Uma organização tem no máximo um vínculo de grupo em qualquer dia.
+- **Trilha:** grupo e câmbio em `platform_audit_logs`; entrar e sair de grupo em `audit_logs` da organização, na mesma
+  transação. Metadata só pela allowlist (ids, mês, moedas, taxa, versão, datas de vigência); nome de grupo e de organização
+  nunca entram.
 
 **Faturamento da vistoria — `checklist_run_billing@2026-09-06.b-o6r-06`.** `POST /checklists/:id/runs` (201),
 `POST /checklists/runs/:id/complete` e `POST /api/v1/mobile/sync/checklists` (`checklist.run_create` /

@@ -5182,6 +5182,64 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
 - **Prova da ordem:** o `T-ORDEM` do §7.2 do plano em cada portão: vazio antes do B e antes do C; depois da C1, lista só `frontend/src/modules/finance/pages/InvoicesPage.tsx` e `frontend/package.json`, o PERMITIDO da fase C.
 - **Nível de revisão:** junta completa (inspetor + 3 cadeiras, unanimidade; §C7 item 10(1)), porque a tela dispara escrita de dinheiro (cria título e carimba itens) e tem gate de permissão. Fluxo do item 10(3): pré-revisão cruzada, junta uma vez, triagem, um conserto, conferência, merge e porteiro.
 
+## REGISTRO-ASS09-CONFLITOS — B-ASS-09 (2026-11-13) — as divergências D-1 a D-11 do plano, registradas antes do código (§A2)
+
+**Não é decisão nova do dono.** Registro, no ramo do `B-ASS-09` (`dev-ass09-cl`, Claude Opus 5.5, dev declarado, na F0),
+das 11 divergências que o plano `plano-B-ASS-09-v2.md` §2 manda colar antes do código que depende delas. Plano, emenda 1 e
+evidências: fora do repositório (`erp-pausa-2026-10-03/planos/`). Números de linha re-medidos em `origin/main` `d29b3bef`
+(o diário `docs/revisoes/ASSINATURA/B-ASS-09-dev.md` traz a tabela de âncoras com os comandos); a edição de cada arquivo se
+ancora por conteúdo, nunca por número.
+
+- **D-1, "markup vivo" × código morto.** O parecer do porteiro do #542 leu "o código existe" como "o cálculo está vivo".
+  Medido: o `B-ASS-01` (#498, `0f2bfb73`) tirou as 9 rotas (404) e o job; `calculateGrossCharge`
+  (`src/modules/cloud-charges/cloud-charge.engine.ts:80`) só tem chamador de teste. O critério do item 61 ("0 rota e 0
+  chamada de markup") está cumprido. `src/modules/cloud-charges/**` fica congelado, sem bloco de remoção. O bloco entrega o
+  guard `tests/ass-09-markup-inalcancavel.test.ts` e troca a evidência do item 61 no `PLANO_SAN3.md` (linha do item 61, hoje
+  l.144).
+- **D-2, a linha do bloco diz `backend` × o bloco precisa de `prisma` (M6).** A linha do `B-ASS-09` no `PLANO_SAN3.md`
+  (hoje l.326) passa a `backend + prisma (M6)`, como o `B-ASS-09a` fez com a dele. A M6 está coberta pela P1 de 31/10
+  (`D-COBRANCA-RESPOSTAS-3110`).
+- **D-3, caminho velho da tela.** O item 61 do `PLANO_SAN3.md` cita `PlatformCloudBillingPage.tsx:122-124,139` num caminho
+  que não existe; a página está em `frontend/src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage.tsx` (140
+  linhas, sem markup). Corrige-se a citação neste bloco e no plano do `B-ASS-10b`.
+- **D-4, o motor de rateio é PROIBIDO ao B-ASS-09 × 8 pendências que nasceram com dono `B-ASS-09`.** Triagem do plano:
+  `P-REG-CONF542-01` e `P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS` fecham neste bloco; `P-ASS09A-EMPATE-MESMO-MS` fecha por
+  decisão de desenho (o empate só nasce de duas importações paralelas do mesmo mês, e esse caso passa a aparecer como
+  `multiple_imports_in_month` na visão); `P-ASS09A-MES-EM-VARIOS-ARQUIVOS` em parte aqui (o aviso na visão, nunca soma) e o
+  resto ao `B-ASS-13`; `P-ALLOC-MANUAL-INICIO-INCLUSIVO`, `P-ASS09A-BORDA-MICROSSEGUNDO`, `P-ASS09A-METODO-OUTRAS-REGRAS` e
+  `P-ALLOC-RUN-STARTED-AT-NULO` vão ao bloco novo do motor (`B-ASS-09m`, nome do plano, trocável pelo orquestrador);
+  `P-ASS09A-REDE-TRANSFERENCIA` vira pergunta ao dono (Q4) e a regra vai ao `B-ASS-09m`. Os fechamentos e as transferências
+  entram em `pendencias.md` na fatia de registro do bloco.
+- **D-5, dois grupos de organizações à vista.** O plano do pátio (fora da `main`) prevê um grupo de pagamento próprio que
+  "espelha" o grupo deste bloco. Nenhum dos dois existe ainda. Pergunta Q1 ao dono; padrão sem resposta: um conceito só,
+  "grupo", criado por este bloco. O `B-ASS-09` não espera.
+- **D-6, a filial não paga assinatura × margem por organização.** A organização sem assinatura no mês sai com
+  `subscriptionSource: "none"`, `margin: null` e `alert: "no_subscription"` (nunca "crítico"); a margem que vale para o
+  cliente é a do grupo. Pergunta Q2 ao dono para o resto do conflito (`P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`). O
+  `B-ASS-09` não espera.
+- **D-7, linhas citadas no mandato antigo.** As linhas do `B-ASS-09` e do `B-ASS-10b` no `PLANO_SAN3.md` são hoje 326-327.
+  Sem efeito além da citação.
+- **D-8, vigência do membro em data de negócio (SP).** `valid_from`/`valid_to` em `date` (`@db.Date`), `valid_to`
+  exclusivo, como o vencimento do demonstrativo. Desenho do plano, não decisão do dono; desfaz-se numa linha.
+- **D-9, base da receita: total do demonstrativo (líquido do crédito) × bruto.** O v1 do plano somava o crédito de volta sem
+  registro (violava o §A2). Vale até a resposta do dono o **total do demonstrativo**, que já desconta o crédito aplicado, e a
+  resposta da visão traz `subscriptionBasis: "statement_total"`, `statementTotal` e `creditsApplied` em campos separados.
+  Pergunta **Q5** ao dono (qual valor conta como "o que ele pagou no mês"); padrão sem resposta: o total do demonstrativo.
+  Trocar a base exige emenda escrita antes do código (`D-EMENDA-ANTES-DO-CODIGO`).
+- **D-10, o `API_CONTRACTS.md` ainda lista as rotas de markup retiradas.** As 3 linhas de §3.3 de
+  `/platform/cloud-charge-rules`, `/platform/cloud-charges/calculation-runs` e `/platform/cloud-charges/summary` passam a
+  "retiradas (B-ASS-01, 404)", sem apagar.
+- **D-11, defeitos do v1 do plano, só para rastro.** O v1 deixava uma organização em dois grupos no mesmo dia (vigência
+  futura passava pelo índice parcial) e fechava vínculo no dia do início com erro 500. Corrigidos no v2: trava por intervalo
+  no banco (`btree_gist` + `EXCLUDE`), checagem por intervalo no serviço, motor que falha fechado, e `validFrom` estritamente
+  maior que o início da linha que fecha (o igual vira 422 `membership_retroactive`).
+
+**Pergunta Q6 ao dono (aberta):** acrescentar as 4 suítes `-db` do bloco à lista curada do job `backend-postgres` em
+`.github/workflows/ci.yml`. Padrão sem resposta: não mexer no `ci.yml`; as 4 suítes rodam no job `backend`, a conferência
+lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`. O `B-ASS-09` não espera.
+
+- **Registro:** `dev-ass09-cl` (Claude Opus 5.5, subagente da sessão, dev declarado do `B-ASS-09`, F0 cobrindo o braço).
+
 ## D-CLAUDE-SOLO-1311 (2026-11-13 ~23:12 SP; início autorizado às ~23:20 SP) — só o Claude, cadeiras em paralelo, Fable liberado e agentes até o limite da máquina
 
 - **Fato (decisão do dono):** *"claude, agora eh so vc. faca um plano para vc atacar tudo sozinho, deixe as ias dormindo, vc vai pegar tudo, nas juntas cadeiras em paralelo, quero dar o maior gas agora, minhas decisoes vao todas nas recomendacoes. esta liberado usar fable se assim o julgar necessario. pode empurar agentes ate o sistema/pc aguentar. faca o plano e me retorne com a previsao para eu atorizar o inicio"*. Às ~23:20 SP, com o plano e a previsão em mãos, o dono autorizou o início: *"pode comecar"*. Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 13/11 23:19 e 23:23 SP). Redator: `reg-1411-cl` (Claude Opus 5.5, nível menor, declarado).
@@ -5208,6 +5266,13 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
     - a diretriz do Android pede 48, e os botões, os chips e a busca do app já têm 48;
     - o contrato pede alvo de toque "≥ 44" no app (§10, A11y), que 48 cumpre; o "até 44 px" da linha está na regra Web (§4 item 6).
     - **Resolução:** vale 48, pela recomendação. A pergunta ganha o ID `P-DONO-LINHA-DO-APP-48-OU-44`, que nasce já respondido ("48, pela recomendação"; ver `pendencias.md`). Na conferência visual, a linha de 48 contra a maquete de 44 não é desvio a reprovar.
+  - **(d) A Q5 e a Q6 do `B-ASS-09`** (as perguntas do plano `plano-B-ASS-09-v2.md`, fora do repositório). Registradas pelo
+    `dev-ass09-cl` (Claude Opus 5.5, dev declarado) na F9 e trazidas para cá pela Emenda 2.3 §2, porque o ID não se repete (§A2):
+    - **Q5 (qual valor conta como "o que ele pagou no mês"?):** a assinatura do mês **antes** do crédito — o total gravado mais o
+      crédito do retrato do fechamento (`subscriptionBasis: "before_credits"`, com `statementTotal` e `creditsApplied` separados;
+      Emenda 2.1 §2). Troca o padrão do D-9 (`REGISTRO-ASS09-CONFLITOS`).
+    - **Q6 (mexer na lista curada do CI?):** sim, só as 4 linhas `SUITES="$SUITES tests/ass-09-…-db.test.ts"` no job `backend-postgres`.
+      A pendência `P-ASS09-SUITES-DB-NO-CURADO` não nasce.
 - **Revogada em parte:** a recomendação 6.4 (a) do `B-SAN3-17`, que a abertura do 17 aplicou por esta regra, caiu pela `D-DONO-1411-ACESSO-PESSOAL`, logo abaixo.
 
 ## D-DONO-1411-ACESSO-PESSOAL (2026-11-14 ~01:19 SP) — não existe celular compartilhado: o acesso é pessoal e intransferível

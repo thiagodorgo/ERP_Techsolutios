@@ -20,6 +20,19 @@ const count: Rule = (value) => (typeof value === "number" && Number.isInteger(va
 // `SHORT_CODE`; qualquer item fora da forma derruba a chave inteira.
 const codeList: Rule = (value) =>
   Array.isArray(value) && value.length <= 50 && value.every((item) => typeof item === "string" && SHORT_CODE.test(item)) ? [...value] : undefined;
+// B-ASS-09 (plano v2 §4.3): a trilha do câmbio e dos grupos. Id do grupo, mês, par de moedas, taxa normalizada (6 casas),
+// versão e as datas de negócio da vigência. Nome de grupo e de organização nunca entram (não há regra para eles).
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+const CURRENCY = /^[A-Z]{3}$/;
+const RATE = /^\d{1,3}\.\d{6}$/;
+const BUSINESS_DATE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/;
+const uuid: Rule = (value) => (typeof value === "string" && UUID.test(value) ? value : undefined);
+const month: Rule = (value) => (typeof value === "string" && MONTH.test(value) ? value : undefined);
+const currency: Rule = (value) => (typeof value === "string" && CURRENCY.test(value) ? value : undefined);
+const rate: Rule = (value) => (typeof value === "string" && RATE.test(value) ? value : undefined);
+const version: Rule = (value) => (typeof value === "number" && Number.isInteger(value) && value >= 1 ? value : undefined);
+const businessDate: Rule = (value) => (typeof value === "string" && BUSINESS_DATE.test(value) ? value : undefined);
+const businessDateOrNull: Rule = (value) => (value === null ? null : businessDate(value));
 
 /** As chaves que a trilha do cofre, dos provedores e dos planos aceita, e a forma de cada valor. Nada além disto. */
 export const BILLING_AUDIT_RULES: Readonly<Record<string, Rule>> = {
@@ -35,6 +48,15 @@ export const BILLING_AUDIT_RULES: Readonly<Record<string, Rule>> = {
   // B-ASS-05b: a trilha dos planos semeados pela migração (`plans.service.ts`).
   codes: codeList,
   count,
+  // B-ASS-09: a trilha do câmbio (`platform_audit_logs`) e da entrada e saída de grupo (`audit_logs` da organização).
+  group_id: uuid,
+  month,
+  currency_from: currency,
+  currency_to: currency,
+  rate,
+  version,
+  valid_from: businessDate,
+  valid_to: businessDateOrNull,
 };
 
 export type BillingAuditMetadata = Readonly<Record<string, unknown>>;

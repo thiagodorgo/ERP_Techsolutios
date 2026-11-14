@@ -1016,7 +1016,8 @@ test(
         // tabelas_com_dml: B-ASS-08 (M5) 133 → 139 — exatamente as 6 tabelas novas (billing_outbox,
         // subscription_statement_invoices, subscription_statement_charges, billing_webhook_events, billing_statement_refs,
         // billing_invoice_sequences) recebem DML pelo DEFAULT PRIVILEGES do script; posse_force e views_sobre_force seguem 0.
-        assert.match(first.stdout, new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|139$`, "m"));
+        // B-ASS-09 (M6) 139 → 142 — exatamente as 3 tabelas da M6 (economic_groups, economic_group_members, platform_fx_rates).
+        assert.match(first.stdout, new RegExp(`^${runtime}\\|f\\|f\\|f\\|f\\|0\\|0\\|142$`, "m"));
         const firstPassword = await admin.$queryRawUnsafe<Array<{ rolpassword: string | null }>>(
           `SELECT rolpassword FROM pg_authid WHERE rolname = ${literal(runtime)}`,
         );

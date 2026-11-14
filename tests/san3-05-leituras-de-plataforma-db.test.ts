@@ -45,6 +45,9 @@ const DAILY_INICIO = iso(9 * DIA_MS);
 const DAILY_FIM = iso(19 * DIA_MS + DIA_MS - 1);
 const DAILY_B = data(13);
 const DAILY_A = data(14);
+// B-ASS-09 — o mês da visão: anterior a qualquer janela sorteada (anos 1000–9760), então nenhuma run nem demonstrativo de
+// outra suíte cai nele; o vínculo de A ao grupo S vale nele (desde 0999-01-01).
+const PERIODO_VISAO = "0999-03";
 
 type Etiqueta = "FORCE-SEM-TENANT" | "FORCE-POR-TENANT" | "SEM-FORCE";
 type Superficie = { readonly etiqueta: Etiqueta; readonly tabelas: readonly string[]; readonly nota: string };
@@ -69,7 +72,7 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`GET ${P}/cloud-cost-allocations/runs/:runId`, S("SEM-FORCE", ["cloud_cost_allocation_runs"], "excluída")],
   [`GET ${P}/cloud-costs/imports`, S("SEM-FORCE", ["cloud_cost_imports"], "excluída")],
   [`GET ${P}/cloud-costs/imports/:importId`, S("SEM-FORCE", ["cloud_cost_imports"], "excluída")],
-  [`POST ${P}/cloud-costs/imports/manual-csv`, S("SEM-FORCE", ["cloud_cost_imports", "cloud_cost_line_items"], "excluída")],
+  [`POST ${P}/cloud-costs/imports/manual-csv`, S("SEM-FORCE", ["cloud_cost_imports", "cloud_cost_line_items", "cloud_cost_allocation_runs"], "excluída; a importação cria a run do rateio automático (B-ASS-09a) e enfileira o job, que tem diferencial próprio (P-SAN3-05-LISTA-SEM-ALLOCATION-RUNS, fechada pelo B-ASS-09)")],
   [`GET ${P}/cloud-costs/line-items`, S("SEM-FORCE", ["cloud_cost_line_items"], "excluída")],
   [`GET ${P}/cloud-costs/summary`, S("SEM-FORCE", ["cloud_cost_line_items"], "excluída")],
   [`GET ${P}/billing/plans`, S("SEM-FORCE", ["subscription_plans", "subscription_plan_versions"], "catálogo global")],
@@ -97,6 +100,19 @@ const SUPERFICIE: ReadonlyMap<string, Superficie> = new Map([
   [`POST ${P}/billing/credits/:creditId/write-off`, S("FORCE-POR-TENANT", ["subscription_credits", "audit_logs"], "FOR UPDATE do crédito sob withTenantRls")],
   [`GET ${P}/billing/tenants/:tenantId/billing-profile`, S("FORCE-POR-TENANT", ["tenant_billing_profiles"], "perfil de cobrança sob withTenantRls")],
   [`PUT ${P}/billing/tenants/:tenantId/billing-profile`, S("FORCE-POR-TENANT", ["tenant_billing_profiles", "audit_logs"], "upsert por tenant_id sob withTenantRls")],
+  // B-ASS-09: a visão de custo × assinatura, o câmbio do mês e os grupos. `platform_fx_rates` e `economic_groups` são GLOBAIS
+  // (sem RLS); `economic_group_members` é da organização, sob RLS FORCE, e só se lê e grava por `forEachTenantRls`. A rota
+  // FORCE nomeia só as tabelas FORCE que toca; cada uma tem cenário próprio nos dois papéis (T11e).
+  [`GET ${P}/billing/overview`, S("FORCE-POR-TENANT", ["economic_group_members", "tenant_subscriptions", "tenant_subscription_addons", "subscription_statements"], "visão: vínculos, assinatura e demonstrativo de cada organização sob forEachTenantRls/withTenantRls (B-ASS-09)")],
+  [`GET ${P}/billing/fx-rates`, S("SEM-FORCE", ["platform_fx_rates"], "câmbio do mês: tabela global (M6)")],
+  [`PUT ${P}/billing/fx-rates/:month`, S("SEM-FORCE", ["platform_fx_rates", "platform_audit_logs"], "versão nova do câmbio sob LOCK TABLE e trilha de plataforma (M6)")],
+  [`GET ${P}/billing/economic-groups`, S("FORCE-POR-TENANT", ["economic_group_members"], "a contagem de membros lê os vínculos de cada organização sob forEachTenantRls (B-ASS-09)")],
+  [`POST ${P}/billing/economic-groups`, S("SEM-FORCE", ["economic_groups", "platform_audit_logs"], "o grupo é global (M6); nenhum vínculo é lido")],
+  [`GET ${P}/billing/economic-groups/:groupId`, S("FORCE-POR-TENANT", ["economic_group_members"], "membros vigentes e agendados sob forEachTenantRls (B-ASS-09)")],
+  [`PATCH ${P}/billing/economic-groups/:groupId`, S("FORCE-POR-TENANT", ["economic_group_members"], "renomeia o grupo global e relê a contagem de membros sob forEachTenantRls (B-ASS-09)")],
+  [`DELETE ${P}/billing/economic-groups/:groupId`, S("FORCE-POR-TENANT", ["economic_group_members"], "a exclusão confere membro vigente ou agendado sob forEachTenantRls (B-ASS-09)")],
+  [`PUT ${P}/billing/economic-groups/:groupId/members`, S("FORCE-POR-TENANT", ["economic_group_members", "audit_logs"], "a troca de vínculos e a trilha da organização na mesma transação, por forEachTenantRls (B-ASS-09)")],
+  [`GET ${P}/billing/economic-groups/:groupId/history`, S("FORCE-POR-TENANT", ["economic_group_members"], "todas as linhas do grupo sob forEachTenantRls (B-ASS-09)")],
   // B-ASS-05: o cofre e a configuração dos provedores tocam só as 3 tabelas GLOBAIS da M4 (sem tenant_id, sem RLS).
   [`GET ${P}/billing/providers`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials"], "configuração e resumo das credenciais: tabelas globais da plataforma (M4)")],
   [`GET ${P}/billing/providers/:provider`, S("SEM-FORCE", ["billing_provider_configs", "billing_provider_credentials"], "configuração e resumo das credenciais: tabelas globais da plataforma (M4)")],
@@ -152,6 +168,8 @@ type Cenario = {
   subscriptionPlanId: string;
   subscriptionPlanCode: string;
   subscriptionValidFrom: string;
+  grupoS: string;
+  grupoT: string;
 };
 
 if (!connectionString) {
@@ -188,6 +206,8 @@ if (!connectionString) {
       // abaixo grava `valid_to = agora` < `valid_from` → 400 `tenant_subscriptions_valid_to_check` (medido em 09/11 no
       // B-ASS-08b). Defeito pré-existente do arnês, consertado aqui porque barrava o cenário do canal nessa janela.
       subscriptionValidFrom: new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date()),
+      grupoS: "",
+      grupoT: "",
     };
     let server: Server | undefined;
 
@@ -400,6 +420,35 @@ if (!connectionString) {
         const tenantDetail = await http("GET", `${P}/tenants/${cenario.tenantA}/detail`);
         assert.equal(tenantDetail.status, 200, JSON.stringify(tenantDetail.body));
         registrarRota(`GET ${P}/tenants/:tenantId/detail`, tenantDetail.body.data);
+
+        // B-ASS-09 — as 7 rotas FORCE da visão e dos grupos. O estado de B e o nome do grupo T voltam ao do seed antes de
+        // cada papel; os corpos se recortam às 2 organizações e aos 2 grupos do seed (a base é compartilhada na CI).
+        await admin.economicGroupMember.deleteMany({ where: { tenant_id: cenario.tenantB } });
+        await admin.$executeRawUnsafe(`DELETE FROM audit_logs WHERE tenant_id = $1::uuid AND action LIKE 'economic_group.%'`, cenario.tenantB);
+        await admin.economicGroup.update({ where: { id: cenario.grupoT }, data: { name: `SAN3-05 Grupo T ${suffix}` } });
+        const visao = await http("GET", `${P}/billing/overview?period=${PERIODO_VISAO}&groupBy=tenant`);
+        assert.equal(visao.status, 200, JSON.stringify(visao.body));
+        registrarRota(`GET ${P}/billing/overview`, recortarVisao(visao.body.data, cenario));
+        const grupos = await http("GET", `${P}/billing/economic-groups`);
+        assert.equal(grupos.status, 200, JSON.stringify(grupos.body));
+        registrarRota(`GET ${P}/billing/economic-groups`, recortarGrupos(grupos.body.data, cenario));
+        const grupoS = await http("GET", `${P}/billing/economic-groups/${cenario.grupoS}`);
+        assert.equal(grupoS.status, 200, JSON.stringify(grupoS.body));
+        registrarRota(`GET ${P}/billing/economic-groups/:groupId`, recortarGrupo(grupoS.body.data, cenario));
+        const historico = await http("GET", `${P}/billing/economic-groups/${cenario.grupoS}/history`);
+        assert.equal(historico.status, 200, JSON.stringify(historico.body));
+        registrarRota(`GET ${P}/billing/economic-groups/:groupId/history`, recortarMembros(historico.body.data, cenario));
+        const membros = await http("PUT", `${P}/billing/economic-groups/${cenario.grupoT}/members`, { tenantIds: [cenario.tenantB] });
+        assert.equal(membros.status, 200, JSON.stringify(membros.body));
+        registrarRota(`PUT ${P}/billing/economic-groups/:groupId/members`, recortarGrupo(membros.body.data, cenario));
+        const renomeado = await http("PATCH", `${P}/billing/economic-groups/${cenario.grupoT}`, { name: `SAN3-05 Grupo T renomeado ${suffix}` });
+        assert.equal(renomeado.status, 200, JSON.stringify(renomeado.body));
+        registrarRota(`PATCH ${P}/billing/economic-groups/:groupId`, recortarGrupoResumo(renomeado.body.data, cenario));
+        // A exclusão de um grupo com membro vigente é recusada: a recusa só sai igual nos dois papéis se o vínculo de A
+        // (tabela FORCE) for lido sob o GUC dele.
+        const exclusao = await http("DELETE", `${P}/billing/economic-groups/${cenario.grupoS}`);
+        assert.equal(exclusao.status, 422, JSON.stringify(exclusao.body));
+        registrarRota(`DELETE ${P}/billing/economic-groups/:groupId`, { status: exclusao.status, reason: (exclusao.body.error as { reason: string }).reason });
 
         const activeSubscription = await http(
           "GET",
@@ -1209,6 +1258,54 @@ type TenantRow = { readonly tenantId: string };
  * Respostas de plataforma agregam o banco inteiro. O diferencial compara somente as linhas criadas
  * por este cenário; contagens globais mudam legitimamente quando outra suíte grava entre as leituras.
  */
+/** B-ASS-09 — as linhas da visão das 2 organizações do seed, com o grupo nomeado pelo papel no seed (S, T ou nenhum). */
+function recortarVisao(value: unknown, cenario: Cenario) {
+  const data = value as { period: string; groupBy: string; cost: { status: string }; lines: Array<Record<string, unknown>> };
+  const linhas = data.lines.filter((line) => line.tenantId === cenario.tenantA || line.tenantId === cenario.tenantB);
+  assert.equal(linhas.length, 2, "a visão precisa conter as duas organizações do seed");
+  const grupo = (id: unknown): string => (id === cenario.grupoS ? "S" : id === cenario.grupoT ? "T" : id === null ? "nenhum" : `alheio:${String(id)}`);
+  return {
+    period: data.period,
+    groupBy: data.groupBy,
+    costStatus: data.cost.status,
+    lines: linhas
+      .map((line) => ({
+        tenant: line.tenantId === cenario.tenantA ? "A" : "B",
+        group: grupo(line.groupId),
+        subscriptionSource: line.subscriptionSource,
+        allocatedCost: line.allocatedCost,
+        alert: line.alert,
+      }))
+      .sort((a, b) => a.tenant.localeCompare(b.tenant)),
+  };
+}
+
+/** B-ASS-09 — os 2 grupos do seed na lista, com a contagem de membros vigentes hoje. */
+function recortarGrupos(value: unknown, cenario: Cenario) {
+  const grupos = (value as Array<Record<string, unknown>>).filter((group) => group.id === cenario.grupoS || group.id === cenario.grupoT);
+  assert.equal(grupos.length, 2, "a lista precisa conter os dois grupos do seed");
+  return grupos.map((group) => recortarGrupoResumo(group, cenario)).sort((a, b) => a.group.localeCompare(b.group));
+}
+
+function recortarGrupoResumo(value: unknown, cenario: Cenario) {
+  const group = value as { id: string; memberCount: number };
+  return { group: group.id === cenario.grupoS ? "S" : group.id === cenario.grupoT ? "T" : `alheio:${group.id}`, memberCount: group.memberCount };
+}
+
+function recortarMembros(value: unknown, cenario: Cenario) {
+  return (value as Array<{ tenantId: string; validFrom: string; validTo: string | null; scheduled: boolean }>).map((member) => ({
+    tenant: member.tenantId === cenario.tenantA ? "A" : member.tenantId === cenario.tenantB ? "B" : `alheio:${member.tenantId}`,
+    validFrom: member.validFrom,
+    validTo: member.validTo,
+    scheduled: member.scheduled,
+  }));
+}
+
+function recortarGrupo(value: unknown, cenario: Cenario) {
+  const detail = value as { members: unknown };
+  return { ...recortarGrupoResumo(value, cenario), members: recortarMembros(detail.members, cenario) };
+}
+
 function recortarOverview(value: unknown, cenario: Cenario) {
   const orgs = ((value as { orgs?: Array<Record<string, unknown> & { id: string }> }).orgs ?? [])
     .filter((org) => org.id === cenario.tenantA || org.id === cenario.tenantB);
@@ -1269,6 +1366,12 @@ async function semear(admin: PrismaClient, suffix: string, cenario: Cenario): Pr
   const tenantB = await admin.tenant.create({ data: { name: `SAN3-05 B ${suffix}`, slug: `san3-05-b-${suffix}` } });
   cenario.tenantA = tenantA.id;
   cenario.tenantB = tenantB.id;
+  // B-ASS-09 — dois grupos do seed: S, com A vinculada desde 0999-01-01 (anterior a qualquer janela do arnês), e T, vazio.
+  cenario.grupoS = (await admin.economicGroup.create({ data: { name: `SAN3-05 Grupo S ${suffix}` } })).id;
+  cenario.grupoT = (await admin.economicGroup.create({ data: { name: `SAN3-05 Grupo T ${suffix}` } })).id;
+  await admin.economicGroupMember.create({
+    data: { tenant_id: tenantA.id, group_id: cenario.grupoS, valid_from: new Date("0999-01-01T00:00:00.000Z") },
+  });
 
   const plan = await admin.subscriptionPlan.create({
     data: {
@@ -1438,6 +1541,11 @@ async function limpar(admin: PrismaClient, cenario: Cenario): Promise<void> {
   await admin.subscriptionCredit.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.subscriptionStatementPayment.deleteMany({ where: { tenant_id: { in: tenantIds } } });
   await admin.subscriptionStatement.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  // B-ASS-09 — os vínculos (FK RESTRICT para tenants), a trilha deles e os 2 grupos do seed.
+  await admin.economicGroupMember.deleteMany({ where: { tenant_id: { in: tenantIds } } });
+  await admin.$executeRawUnsafe(`DELETE FROM audit_logs WHERE tenant_id = ANY($1::uuid[]) AND action LIKE 'economic_group.%'`, tenantIds);
+  const grupos = [cenario.grupoS, cenario.grupoT].filter(Boolean);
+  if (grupos.length > 0) await admin.economicGroup.deleteMany({ where: { id: { in: grupos } } });
   await admin.tenant.deleteMany({ where: { id: { in: tenantIds } } });
   if (cenario.subscriptionPlanId) {
     await admin.subscriptionPlanVersion.deleteMany({ where: { plan_id: cenario.subscriptionPlanId } });
