@@ -1,5 +1,12 @@
 # Status Geral
 
+## Atualização 2026-11-15 (madrugada) — item 42: o e2e no portão obrigatório da CI (`B-SAN3-10-E2E-CI`, PR em rascunho)
+
+- **Autor:** `dev-42-cl` (Claude Opus 5.5, dev declarado da F3 em diante, cobrindo o Codex 1). As fatias F0 a F2 são do Codex. O registro do PR e as rodadas da CI estão em `docs/revisoes/SAN3/B-SAN3-10-E2E-CI-dev.md`.
+- **O que o PR entrega:** o job `e2e` no `ci.yml`, sem `if:` no job, com o canário que tem de falhar pelo sentinela e a suíte inteira (13 testes + o preparo) conferida pelo guarda do relatório contra o disco; o `docker` espera o `e2e` (P2, `D-CI-DOCKER-ESPERA-E2E`); o freio de login intocado (`src/` e `prisma/` sem diff).
+- **Pendências:** fecham, ao entrar na `main`, a `P-SAN-E2E`, a `P-SAN3-01-E2E-LOGIN-DEFASADO` e a `P-SAN3-06B-E2E-PLATAFORMA-DEFASADO`; nascem 7, entre elas a `P-SAN3-10-E2E-PERSONAS` (ALTA, bloqueia o portão: a parte (b) do `B-SAN3-10`) e a `P-E2E-DESPACHOS-SEM-TECNICO` (fato novo da F3).
+- **Para os blocos seguintes:** a partir do merge, bloco que muda texto, rótulo ou rota de tela olhada pelo e2e atualiza o e2e no mesmo PR; o check `e2e` vale na tentativa 1, e re-rodar exige registro (P7).
+
 ## Atualização 2026-11-15 (madrugada) — `B-ASS-11`, a Parte T do item 62: a tela "Minha assinatura" com as 3 aparências (PR #576, em rascunho)
 
 - **Autor:** `dev-62t-cl` (Claude Opus 5.5, dev, identidade nova, declarada; tela no Claude, `D-DESIGN-SO-CLAUDE`). **Base medida:** `origin/main@b00f3161` (#574), atualizada por merge com a `4acd14ad` (#569); worktree próprio. Registro do próprio bloco; `Kpis/**` congelado.
