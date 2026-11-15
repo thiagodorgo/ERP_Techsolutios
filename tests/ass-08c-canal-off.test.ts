@@ -515,3 +515,65 @@ test("J569-403: as 7 rotas novas da plataforma negam quem não é da plataforma 
     assert.equal(denied, actors.filter((actor) => actor.deny).length * routes.length, "toda chamada negada foi contada");
   });
 });
+
+// B-ASS-08c1c (plano §5.5, CA-OFF; só acréscimo): com o canal DESLIGADO, os movimentos do demonstrativo que o bloco liga à fila
+// (o fechamento pelo job e o manual, a baixa que quita, o cancelamento e o reopen) abrem 0 conexões e não enfileiram
+// `charge_create`. Pela composição de PRODUÇÃO do modo memória (o `StatementChannel` do serviço que a fábrica monta; só as entradas
+// do mês por stub), com Asaas e Focus NFe LIGADOS no cofre.
+test("CA-OFF (08c1c): canal desligado → fechamento (job e manual), baixa que quita, cancel e reopen abrem 0 conexões e não enfileiram charge_create", async () => {
+  const [factory, serviceModule] = await Promise.all([
+    import("../src/modules/subscription-billing/statements/statement.factory.js"),
+    import("../src/modules/subscription-billing/statements/statement.service.js"),
+  ]);
+  const before = { persistence: mutableEnv.CORE_SAAS_PERSISTENCE, enabled: mutableEnv.BILLING_PROVIDERS_ENABLED };
+  mutableEnv.CORE_SAAS_PERSISTENCE = "memory";
+  mutableEnv.BILLING_PROVIDERS_ENABLED = false;
+  factory.resetStatementRuntimeForTests();
+  await arrangeEnabledProviders();
+  const ready = {
+    kind: "ready" as const,
+    subscriptionId: "sub_off",
+    planVersionId: "pv_off",
+    addonPlanVersionId: null,
+    computation: {
+      daysInMonth: 31,
+      segments: [{ fromDay: 1, toDay: 31, monthlyPriceCents: 10_000 }],
+      terms: { includedUsers: 10, includedStorageMilliGb: 10_000, extraUserPriceCents: 500, extraGbPriceCents: 200 },
+      measurements: { usersPeak: 1, storagePeakMilliGb: 100, trackedVehicles: 0 },
+      perVehiclePriceCents: null,
+    } as never,
+    daysMeasured: 31,
+    gaps: [],
+    dueDays: 10,
+  };
+  try {
+    const runtime = await factory.createDefaultStatementRuntime();
+    const service = new serviceModule.StatementService(runtime.repository, { resolve: async () => ready }, runtime.audit, (runtime.service as unknown as { channel: never }).channel);
+    const tenants = { job: `ten_off_job_${randomUUID().slice(0, 6)}`, manual: `ten_off_man_${randomUUID().slice(0, 6)}`, cancel: `ten_off_can_${randomUUID().slice(0, 6)}` };
+    const statements: string[] = [];
+    const attempts = await probeConnections(async () => {
+      const now = new Date();
+      const viaJob = (await service.close({ tenantId: tenants.job, period: "2026-10", now, actorId: null, source: "job" })) as { statement: { id: string } };
+      const viaManual = (await service.close({ tenantId: tenants.manual, period: "2026-10", now, actorId: "op", source: "manual" })) as { statement: { id: string } };
+      const toCancel = (await service.close({ tenantId: tenants.cancel, period: "2026-10", now, actorId: null, source: "job" })) as { statement: { id: string } };
+      statements.push(viaJob.statement.id, viaManual.statement.id, toCancel.statement.id);
+      await service.recordManualPayment({ tenantId: tenants.job, statementId: viaJob.statement.id, amountCents: 10_000, method: "pix", note: null, actorId: "op", now });
+      await service.cancel({ tenantId: tenants.cancel, statementId: toCancel.statement.id, reason: "lançado por engano", actorId: "op", now });
+      await service.reopen({ tenantId: tenants.manual, statementId: viaManual.statement.id, reason: "medição corrigida", actorId: "op", now });
+    });
+    assert.deepEqual(attempts, [], "nenhuma conexão de saída");
+    const deps = await createChannelRuntime();
+    const creates = [
+      ...(await deps.outbox.listByStatement(tenants.job, statements[0]!)),
+      ...(await deps.outbox.listByStatement(tenants.manual, statements[1]!)),
+      ...(await deps.outbox.listByStatement(tenants.cancel, statements[2]!)),
+    ].filter((row) => row.kind === "charge_create");
+    assert.deepEqual(creates, [], "nenhuma charge_create com o canal desligado");
+  } finally {
+    mutableEnv.CORE_SAAS_PERSISTENCE = before.persistence;
+    mutableEnv.BILLING_PROVIDERS_ENABLED = before.enabled;
+    factory.resetStatementRuntimeForTests();
+    resetChannelRuntimeForTests();
+    resetVaultRuntimeForTests();
+  }
+});
