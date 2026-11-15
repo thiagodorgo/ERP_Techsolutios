@@ -621,7 +621,7 @@ jobs:
       - name: E2E — a suíte inteira, sem filtro, sem pulo e sem flaky
         run: |
           set -o pipefail
-          PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report/suite.json npx playwright test -c playwright.config.ts --forbid-only --fail-on-flaky-tests -g "logout real"
+          PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report/suite.json npx playwright test -c playwright.config.ts --forbid-only --fail-on-flaky-tests
           node scripts/e2e-report-guard.mjs playwright-report/suite.json --modo=suite
 
       # Só o retrato da página de cada teste que falhou. Nunca a sessão salva (test-results/.auth/), nunca artefato.
