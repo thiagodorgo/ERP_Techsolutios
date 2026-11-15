@@ -85,7 +85,7 @@ AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '07cb1
 AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '07cb1c2' em .claude/agents/especialistas/jurado-07cb1c2-c3-censo-escopo-e-regressao.md — l.38
 AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '07cb1c2' em .agents/agents/especialistas/jurado-07cb1c2-c3-censo-escopo-e-regressao.md — l.39
 AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '07cb1c2' em .claude/agents/especialistas/jurado-07cb1c2-c1-trava-unica-e-rbac.md — l.62
-AVISO      cabeca-aprovada NAO DETERMINAVEL (mandato-refs.sh ec=3) — a proveniencia dos SHAs vale; rode 'bash ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/<scratch-id>/scratchpad/mandatos-07cb1/redator-07cb1c2-cdx/mandato-refs.sh 440' para ver o que a ferramenta viu. 
+AVISO      cabeca-aprovada NAO DETERMINAVEL (mandato-refs.sh ec=3) — a proveniencia dos SHAs vale; rode 'bash ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/<scratch-id>/scratchpad/mandatos-07cb1/redator-07cb1c2-cdx/mandato-refs.sh 440' para ver o que a ferramenta viu.
 
 PRE-VOO OK — ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1-ciclo2/00-mandatos/cadeira-c1.md
 ec=0
