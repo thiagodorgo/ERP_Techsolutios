@@ -204,7 +204,18 @@ export function fixtureData(options: FixtureOptions = {}): CloudBillingData {
 }
 
 /** A série dos 5 meses anteriores, já carregada (cada mês com valores próprios). */
-export function fixtureSeries(state: "ok" | "loading" | "error" = "ok", failed: readonly string[] = []): CloudBillingSeries {
+/**
+ * J-567: os meses especiais da série. `empty`: o mês SEM DADO NENHUM (sem rateio, nenhuma assinatura, nenhum custo; §6.5.1,
+ * linha 3). `invalidWithCost`: o mês SEM CUSTO VÁLIDO (sem rateio) cujas linhas ainda trazem um custo — o valor que a P13
+ * manda ignorar (a forma do achado A-1), com sentinelas únicas por organização (`7xx.11`).
+ */
+export type FixtureSeriesMonths = { readonly empty?: readonly string[]; readonly invalidWithCost?: readonly string[] };
+const NO_RUN_COST: Json = { ...COST_OK, status: "no_run", coverage: "none", runId: null, importId: null, currencyOriginal: null, fxRate: null, fxRateVersion: null, sources: { runs: 0, importIds: [], usedImportId: null } };
+const NULL_LINE_TOTALS: Json = { subscriptionAmount: null, allocatedCost: null, margin: null, marginPct: null };
+const NULL_GLOBAL: Json = { subscriptionTotal: null, tenantsCost: null, platformOwnCost: null, unallocatedOther: null, unallocatedByReason: [], roundingResidualCost: null, conversionResidualCost: null, totalCost: null, margin: null, marginPct: null, alert: "cost_missing" };
+export const SENTINEL_COST = (index: number) => `7${String(index + 1).padStart(2, "0")}.11`;
+
+export function fixtureSeries(state: "ok" | "loading" | "error" = "ok", failed: readonly string[] = [], special: FixtureSeriesMonths = {}): CloudBillingSeries {
   const months = monthsEndingAt(MONTH, 6);
   const global: Record<string, BackgroundRead<GlobalOverview>> = {};
   const tenant: Record<string, BackgroundRead<TenantOverview>> = {};
@@ -212,6 +223,18 @@ export function fixtureSeries(state: "ok" | "loading" | "error" = "ok", failed: 
     if (state !== "ok" || failed.includes(month)) {
       global[month] = state === "loading" ? { state: "loading" } : { state: "error" };
       tenant[month] = state === "loading" ? { state: "loading" } : { state: "error" };
+      return;
+    }
+    if (special.empty?.includes(month)) {
+      const lines = tenantLines().map((item) => ({ ...item, subscriptionAmount: null, statementTotal: null, creditsApplied: null, subscriptionSource: "none", subscriptionSkipReason: "no_subscription", estimate: false, allocatedCost: null, allocatedCostOriginal: null, margin: null, marginPct: null, alert: "cost_missing" }));
+      global[month] = { state: "ok", value: mapGlobalOverview(globalPayload(month, NO_RUN_COST, globalJson({ ...NULL_GLOBAL, original: NULL_ORIGINAL }))) };
+      tenant[month] = { state: "ok", value: mapTenantOverview(tenantPayload(month, NO_RUN_COST, lines, NULL_LINE_TOTALS)) };
+      return;
+    }
+    if (special.invalidWithCost?.includes(month)) {
+      const lines = tenantLines().map((item, line) => ({ ...item, allocatedCost: SENTINEL_COST(line), allocatedCostOriginal: null, margin: null, marginPct: null, alert: "cost_missing" }));
+      global[month] = { state: "ok", value: mapGlobalOverview(globalPayload(month, NO_RUN_COST, globalJson({ ...NULL_GLOBAL, subscriptionTotal: "7400.99", original: NULL_ORIGINAL }))) };
+      tenant[month] = { state: "ok", value: mapTenantOverview(tenantPayload(month, NO_RUN_COST, lines, { ...NULL_LINE_TOTALS, subscriptionAmount: "7400.99" })) };
       return;
     }
     global[month] = { state: "ok", value: mapGlobalOverview(previousGlobalPayload(month, index)) };

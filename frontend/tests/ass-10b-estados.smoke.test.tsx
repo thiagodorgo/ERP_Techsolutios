@@ -266,6 +266,56 @@ test("T-UI-3 (substituto do T20, A6) a série: os 6 meses sempre têm o seu bot�
   }
 });
 
+const SIX_MONTHS = ["2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10"];
+
+/** Os meses (`data-mes`) na ordem em que a tela os desenha. */
+const monthOrder = (html: string) => [...html.matchAll(/data-mes="(\d{4}-\d{2})"/g)].map((match) => match[1]!);
+
+/** O elemento do mês na série (o `<g>` das linhas e barras, ou o `<button>` da margem mês a mês), com o conteúdo. */
+function monthElements(html: string, month: string): string[] {
+  return [...html.matchAll(new RegExp(`<(g|button)[^>]*data-mes="${month}"[^>]*>[\\s\\S]*?</\\1>`, "g"))].map((match) => match[0]);
+}
+
+/** Quantos pontos tem o caminho da série (as linhas da A): cada "M" ou "L" do `d`. */
+const pathPoints = (html: string, color: string) => {
+  const path = new RegExp(`<path d="([^"]*)" fill="none" stroke="${color}"`).exec(html);
+  return path ? (path[1]!.match(/[ML]/g) ?? []).length : -1;
+};
+
+// J-567 (C3-01): a série de 6 meses vem do mais VELHO ao mais NOVO, nas 3 aparências (cada gráfico com os 6 meses na ordem).
+test("T-UI-3 (J-567, C3-01) a ordem da série de 6 meses: do mais velho ao mais novo", () => {
+  for (const appearance of LETTERS) {
+    const order = monthOrder(screen(fixtureData(), appearance));
+    assert.ok(order.length >= 6 && order.length % 6 === 0, `${appearance}: cada gráfico tem os 6 meses (${order.length})`);
+    for (let start = 0; start < order.length; start += 6) assert.deepEqual(order.slice(start, start + 6), SIX_MONTHS, `${appearance}: o gráfico ${start / 6 + 1} na ordem`);
+  }
+});
+
+// J-567 (C3-02): o mês SEM DADO NENHUM (§6.5.1, linha 3) continua na série, sem barra nem ponto, com "—" e o texto acessível
+// "sem dados" — nunca desenhado como zero.
+test("T-UI-3 (J-567, C3-02) o mês sem dado nenhum: sem barra nem ponto, '—' e 'sem dados', nunca zero", () => {
+  const series = fixtureSeries("ok", [], { empty: ["2026-06"] });
+  for (const appearance of LETTERS) {
+    const html = screen(fixtureData(), appearance, { series });
+    const elements = monthElements(html, "2026-06");
+    assert.ok(elements.length >= 1, `${appearance}: o mês vazio continua na série`);
+    for (const element of elements) {
+      assert.match(element, /data-estado="empty"/, `${appearance}: o mês vazio é "empty"`);
+      assert.match(element, /aria-label="[^"]*sem dados"/, `${appearance}: o texto acessível diz "sem dados"`);
+      assert.doesNotMatch(element, /R\$/, `${appearance}: nenhum valor em reais no mês vazio`);
+      assert.doesNotMatch(element, /fill="#2563eb"|fill="#f87171"/, `${appearance}: sem barra de assinatura nem de custo`);
+      assert.doesNotMatch(element, /height:\s*[1-9]/, `${appearance}: sem coluna desenhada`);
+    }
+    if (appearance === "A") {
+      // as linhas: o mês vazio não é ponto (5 dos 6 meses têm valor)
+      assert.equal(pathPoints(html, "#2563eb"), 5, "A: a linha das assinaturas pula o mês vazio");
+      assert.equal(pathPoints(html, "#ef4444"), 5, "A: a linha do custo pula o mês vazio");
+    }
+    // o controle: com os 6 meses com valor, a linha tem 6 pontos (o contador não é vácuo)
+    if (appearance === "A") assert.equal(pathPoints(screen(fixtureData(), appearance), "#2563eb"), 6, "A: controle, 6 pontos");
+  }
+});
+
 test("T-UI-4 nenhuma aparência tem andaime, termo técnico ou acento faltando", () => {
   const variants = [fixtureData(), dataWithCost(NO_COST("no_run")), fixtureData({ cost: { ...COST_OK, warnings: ["multiple_imports_in_month"] } })];
   for (const appearance of LETTERS) {
