@@ -52,7 +52,7 @@ O T40 do pai (achado A-8) passa com o pai em `fa5e5372`; o arquivo do T38-T40 vo
 
 ## Aceite na forma real (§9.2)
 
-Cluster Postgres 16 descartável `C:/Users/thiag/pg-10b` (porta 55662, `timezone='UTC'` antes do start, só 127.0.0.1),
+Cluster Postgres 16 descartável `~/pg-10b` (porta 55662, `timezone='UTC'` antes do start, só 127.0.0.1),
 `prisma migrate deploy`, RBAC e o admin de plataforma; API real (`createApp` + `createCoreSaasService`, prisma, sem portal
 e sem worker) em `127.0.0.1:58411`; Vite próprio em `127.0.0.1:58412` (`VITE_USE_MOCKS=false`). Roteiro PELA TELA no Edge
 headless (Playwright, canal msedge):
@@ -90,9 +90,10 @@ vale é do `cognicao-visual` (§9.3).
 
 ## Desvios e leituras declarados
 
-- `MonthSeriesChart` e `ProportionBars` são componentes NOVOS na biblioteca, fora da lista PERMITIDO do §10 (a proporção e
-  o eixo com `data-escala` só podem nascer na biblioteca, L8 e A8-r2; nenhum existente os desenha). Registrados em
-  `COMPONENT_LIBRARY.md`. **A pré-revisão decide.**
+- `frontend/src/components/charts/MonthSeriesChart.tsx` e `frontend/src/components/charts/ProportionBars.tsx` são
+  componentes NOVOS na biblioteca (a proporção e o eixo com `data-escala` só podem nascer na biblioteca, L8 e A8-r2; nenhum
+  existente os desenha), registrados em `COMPONENT_LIBRARY.md`. Estavam fora da lista PERMITIDO do §10; **a Emenda 1.1
+  (PR567-1) os acrescenta ao PERMITIDO**, sem mudança de código.
 - A F11 saiu em 3 commits (a PAUSA de 10:18 e a integração do Dev-B no meio).
 - O Dev-A mexeu em arquivo do Dev-B (View C e o CSS de quebra de B e C), e o Dev-B no teste do Dev-A (o recorte da C no
   T-UI-3 (F11)); os dois declarados nos diários. O Dev-A conferiu que o T-UI-3 continua dizendo o que deve.
@@ -106,3 +107,24 @@ vale é do `cognicao-visual` (§9.3).
   `can`: cada botão confere a própria permissão por igualdade exata, e o servidor é a autoridade.
 - **Biblioteca:** o `Modal` (`components/ui`) não fecha com Escape nem cuida do foco; a tela faz isso na própria moldura.
 - Do plano, seguem: A-1, A-7 (servidor, B-ASS-09) e A-9.
+
+## Emenda 1.1 — os 4 achados da pré-revisão `prerev-567-cl` (APROVADO, 4 não graves), 14/11 à noite
+
+| achado | o que foi feito | prova |
+|---|---|---|
+| PR567-1 | só registro: os 2 componentes da biblioteca entram no PERMITIDO (ver "Desvios e leituras declarados") | — |
+| PR567-2 | merge por UNIÃO da ponta do B-ASS-09 (`fa5e5372` → `662ddb42`: consertos da J-566 e a `main` com o #561 e o #564); os 4 conflitos de registro (`decisoes.md`, `pendencias.md`, `pendencias-indice.md`, `screen-refs/README.md`) com as duas contribuições; o índice regenerado pelo `gerar-indice-pendencias.py`; o código juntou sem conflito | T-CTR-1 + ASS-01 `# tests 11 · # pass 11 · # fail 0`; trava `base=662ddb42 (ponta do B-ASS-09) · arquivos do bloco=79 · TRAVA: ok`, exit 0 |
+| PR567-3 | na C, o "+ Novo grupo" do painel "Grupos econômicos" fica numa linha (`.cb-groups__head .pat-btn`: `white-space: nowrap`, sem encolher, o recuo da referência); o seletor só existe na C, então A e B não mudam | captura C a 1440×900 e a 924×540: o rótulo numa linha (altura 34); controle sem o conserto, a 1440×900: o rótulo em 2 linhas (altura 46) |
+| PR567-4 | o vazio cede ao rateio em processamento (ou preso): fica só o aviso do rateio; com a importação do mês e sem rateio, o vazio diz que o arquivo já entrou e oferece "Rodar rateio do mês"; o vazio de "importe o arquivo" só sem importação | teste novo `T-UI-3 (Emenda 1.1, PR567-4)` nas 3 aparências; vermelho-controle com a página anterior; captura do estado nas 3 aparências |
+
+**Asserção invertida, declarada:** o teste `T-UI-3 (F11) o vazio tem o cabeçalho inteiro…` exigia o painel vazio junto do aviso do
+rateio em processamento — o comportamento que a Emenda 1.1 §4 manda trocar. A asserção não saiu: passou a exigir a AUSÊNCIA do
+painel, e o aviso continua exigido. **Leitura do dev, declarada:** o botão "Importar arquivo de custo" que deve sumir é o do
+painel vazio; o do cabeçalho fica (a referência o tem em toda a tela, com a permissão), e o teste conta 1 ocorrência (só o
+cabeçalho) no estado em processamento e 2 (painel + cabeçalho) no vazio de verdade.
+
+**Bateria do §9.1 depois da Emenda 1.1** (árvore sobre o merge `68edffb9`): frontend `check` 0; `test:smoke` `# tests 1904 ·
+# pass 1904 · # fail 0 · # skipped 0`; `build` 0; raiz `check` 0; raiz `ass-01` + `ass-10b-contrato-overview` `# tests 11 · # pass
+11 · # fail 0`; telas `rotas /platform em App.tsx = 10 · … LIGADA = 6 · PARADA-HONESTA = 4 · SEM-FONTE = 0`; `git diff --check`
+limpo; trava `base=662ddb42 (ponta do B-ASS-09) · arquivos do bloco=79 · TRAVA: ok`; presença 0/0/0; referência `169bbdbc…`;
+`checar-3opcoes` `RESULTADO: PASSOU`.

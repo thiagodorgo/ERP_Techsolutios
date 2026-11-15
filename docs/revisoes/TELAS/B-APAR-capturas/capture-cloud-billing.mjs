@@ -57,13 +57,16 @@ const noCost = (status, extra = {}) => ({ ...COST_OK, status, runId: status === 
 const linesWithoutCost = () => fx.tenantLines().map((line) => ({ ...line, allocatedCost: null, allocatedCostOriginal: null, margin: null, marginPct: null, alert: "cost_missing" }));
 
 /** Sem nenhum rateio (vazio, sem rateio), a tela abre no mês corrente (A12); nos outros, no mês do rateio (outubro). */
-const NO_RUNS = new Set(["vazio", "sem-rateio"]);
+const NO_RUNS = new Set(["vazio", "sem-rateio", "importado-pendente"]);
+// Emenda 1.1 (PR567-4): o arquivo do mês corrente importado e o rateio `pending` (a base real sem worker, ou o rateio preso)
+const PENDING_RUN = { id: "run-p", provider: "aws", status: "pending", periodStart: "2026-11-01T00:00:00.000Z", periodEnd: "2026-11-30T00:00:00.000Z", startedAt: null, createdAt: "2026-11-14T14:35:00.000Z" };
+const NOV_IMPORT = { ...fx.IMPORTS_PAYLOAD[0], id: "imp-nov", periodStart: "2026-11-01T00:00:00.000Z", periodEnd: "2026-11-30T00:00:00.000Z", importedAt: "2026-11-14T14:34:00.000Z", createdAt: "2026-11-14T14:34:00.000Z" };
 const screenMonthOf = (scenario) => (NO_RUNS.has(scenario) ? CURRENT_MONTH : MONTH);
 
 /** O mês da tela por cenário: { tenant, group, global } na forma do servidor. */
 function screenMonth(scenario) {
   const month = screenMonthOf(scenario);
-  if (scenario === "vazio") {
+  if (scenario === "vazio" || scenario === "importado-pendente") {
     const cost = noCost("no_run");
     return { tenant: fx.tenantPayload(month, cost, [], NULL_TOTALS), group: { ...fx.groupPayload(month, cost), lines: [], totals: NULL_TOTALS }, global: fx.globalPayload(month, cost, fx.globalJson({ ...NULL_COSTS, subscriptionTotal: null, original: NULL_ORIGINAL })) };
   }
@@ -110,6 +113,7 @@ function apiHandler(scenario, unknown) {
     }
     if (path === "/platform/cloud-cost-allocations/runs") {
       if (scenario === "processando") return route.fulfill(ok([...fx.RUNS_PAYLOAD, { id: "run-p", provider: "aws", status: "processing", periodStart: "2026-10-01T00:00:00.000Z", periodEnd: "2026-10-31T00:00:00.000Z", startedAt: "2026-11-14T14:40:00.000Z", createdAt: "2026-11-14T14:40:00.000Z" }]));
+      if (scenario === "importado-pendente") return route.fulfill(ok([PENDING_RUN]));
       return route.fulfill(ok(scenario === "vazio" || scenario === "sem-rateio" ? [] : fx.RUNS_PAYLOAD));
     }
     if (/^\/platform\/cloud-cost-allocations\/runs\/[^/]+\/tenant-allocations$/.test(path)) {
@@ -127,7 +131,7 @@ function apiHandler(scenario, unknown) {
       if (!detail) return route.fulfill(fail(404, "group_not_found"));
       return route.fulfill(ok(group[2] ? detail.members : detail));
     }
-    if (path === "/platform/cloud-costs/imports") return route.fulfill(ok(scenario === "vazio" || scenario === "sem-rateio" ? [] : fx.IMPORTS_PAYLOAD));
+    if (path === "/platform/cloud-costs/imports") return route.fulfill(ok(scenario === "importado-pendente" ? [NOV_IMPORT] : scenario === "vazio" || scenario === "sem-rateio" ? [] : fx.IMPORTS_PAYLOAD));
     unknown.add(`${method} ${path}`);
     return route.fulfill(json(599, { error: { code: "FIXTURE_MISSING", message: "rota sem fixture na conferência visual" } }));
   };
@@ -318,6 +322,47 @@ const PARTS = {
         reportUnknown(unknown);
         await context.close();
       }
+    }
+  },
+  /** Emenda 1.1: PR567-3 ("+ Novo grupo" numa linha na C; A e B sem mudança) e PR567-4 (o vazio cede ao rateio). */
+  async emenda11() {
+    for (const [width, height] of [
+      [1440, 900],
+      [924, 540],
+    ]) {
+      const { context, page, unknown } = await open({ appearance: "C", width, height });
+      const button = page.locator(".cb-groups__head .pat-btn").first();
+      await button.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(300);
+      const m = await button.evaluate((el) => {
+        // as linhas do RÓTULO: os retângulos do nó de texto "Novo grupo" (o ícone fica de fora)
+        const label = [...el.childNodes].find((node) => node.nodeType === 3 && node.textContent.trim());
+        const range = document.createRange();
+        range.selectNodeContents(label);
+        const tops = new Set([...range.getClientRects()].filter((r) => r.width > 0).map((r) => Math.round(r.top)));
+        const head = el.parentElement.getBoundingClientRect();
+        const box = el.getBoundingClientRect();
+        return { linhasDoRotulo: tops.size, altura: Math.round(box.height), dentroDoCabecalho: box.right <= head.right + 0.5 && box.left >= head.left - 0.5 };
+      });
+      note(`C ${width}x${height} "+ Novo grupo" ${JSON.stringify(m)}`);
+      await shot(page, "c-novo-grupo", width, height);
+      reportUnknown(unknown);
+      await context.close();
+    }
+    for (const appearance of ["A", "B"]) {
+      const { context, page, unknown } = await open({ appearance, width: 1440, height: 900 });
+      note(`${appearance} 1440x900 ${JSON.stringify(await measure(page))}`);
+      await shotScrolled(page, `${appearance.toLowerCase()}-emenda11`, 1440, 900);
+      reportUnknown(unknown);
+      await context.close();
+    }
+    for (const appearance of ["A", "B", "C"]) {
+      const { context, page, unknown } = await open({ appearance, width: 1440, height: 900, scenario: "importado-pendente" });
+      const text = await page.locator("body").innerText();
+      note(`${appearance} importado-pendente: aviso=${/está em processamento desde/.test(text)} · "importe o arquivo"=${/importe o arquivo de custo deste mês/.test(text)} · painel vazio=${/Nenhum custo nem assinatura/.test(text)}`);
+      await shot(page, `${appearance.toLowerCase()}-importado-pendente`, 1440, 900);
+      reportUnknown(unknown);
+      await context.close();
     }
   },
   async consulta() {

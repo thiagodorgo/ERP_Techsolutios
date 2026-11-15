@@ -104,11 +104,35 @@ test("T-UI-3 (F11) o vazio tem o cabeçalho inteiro: o mês, o dólar e, com a p
     const readOnly = visible(screen(emptyMonth(), appearance, { access: NO_WRITE_ACCESS }));
     assert.match(readOnly, /Nenhum custo nem assinatura em outubro de 2026/, `${appearance}: só leitura`);
     assert.doesNotMatch(readOnly, /Rodar rateio do mês|Importar arquivo de custo/, `${appearance}: sem a permissão, sem os botões`);
-    // o rateio em processamento num mês ainda vazio: o aviso aparece (o vazio não o diz)
+    // o rateio em processamento num mês ainda vazio: o aviso aparece (o vazio não o diz). Emenda 1.1 (PR567-4): o painel
+    // vazio cede ao rateio em processamento — esta asserção, que exigia o painel, passou a exigir a ausência dele
     const pending = { ...emptyMonth(), runs: fixtureData({ runs: [{ id: "run-p", status: "processing", periodStart: "2026-10-01T00:00:00.000Z", startedAt: "2026-11-04T12:13:00.000Z", createdAt: "2026-11-04T12:13:00.000Z" }] }).runs };
     const pendingHtml = visible(screen(pending, appearance));
-    assert.match(pendingHtml, /Nenhum custo nem assinatura em outubro de 2026/, `${appearance}: processando e vazio`);
+    assert.doesNotMatch(pendingHtml, /Nenhum custo nem assinatura em outubro de 2026/, `${appearance}: processando, sem o painel vazio`);
     assert.match(pendingHtml, /está em processamento desde 04\/11 09:13/, `${appearance}: o aviso do rateio em processamento`);
+  }
+});
+
+test("T-UI-3 (Emenda 1.1, PR567-4) o vazio cede ao rateio em processamento; o vazio de 'importe o arquivo' só sem importação do mês", () => {
+  const RUN_PENDING = { id: "run-p", status: "pending", periodStart: "2026-10-01T00:00:00.000Z", startedAt: null, createdAt: "2026-11-14T23:35:00.000Z" };
+  const count = (text: string, label: RegExp) => (text.match(new RegExp(label.source, "g")) ?? []).length;
+  for (const appearance of LETTERS) {
+    // arquivo do mês importado e o rateio `pending` (a base real sem worker, ou o rateio preso): só o aviso do rateio
+    const pending = visible(screen({ ...emptyMonth(), runs: fixtureData({ runs: [RUN_PENDING] }).runs }, appearance));
+    assert.match(pending, /O rateio de outubro de 2026 está em processamento desde/, `${appearance}: o aviso do rateio`);
+    assert.doesNotMatch(pending, /importe o arquivo de custo deste mês/, `${appearance}: sem "importe o arquivo"`);
+    assert.doesNotMatch(pending, /Nenhum custo nem assinatura/, `${appearance}: sem o painel vazio`);
+    assert.equal(count(pending, /Importar arquivo de custo/), 1, `${appearance}: "Importar arquivo de custo" só no cabeçalho, não no painel`);
+    // o vazio de verdade (sem importação e sem rateio): o texto e o botão do painel continuam
+    const empty = visible(screen({ ...emptyMonth(), imports: [], runs: [] }, appearance));
+    assert.match(empty, /Nenhum custo nem assinatura em outubro de 2026/, `${appearance}: o vazio de verdade`);
+    assert.match(empty, /importe o arquivo de custo deste mês/, `${appearance}: o vazio de verdade manda importar`);
+    assert.equal(count(empty, /Importar arquivo de custo/), 2, `${appearance}: o botão do painel e o do cabeçalho`);
+    // arquivo importado e nenhum rateio (nem em processamento): o vazio não manda importar de novo, manda rodar
+    const imported = visible(screen({ ...emptyMonth(), runs: [] }, appearance));
+    assert.doesNotMatch(imported, /importe o arquivo de custo deste mês/, `${appearance}: com importação, sem "importe o arquivo"`);
+    assert.match(imported, /já foi importado/, `${appearance}: diz que o arquivo já entrou`);
+    assert.equal(count(imported, /Rodar rateio do mês/), 2, `${appearance}: rodar no painel e no cabeçalho`);
   }
 });
 

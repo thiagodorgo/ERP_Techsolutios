@@ -1,4 +1,4 @@
-import { AlertTriangle, Inbox, Lock, RefreshCw, Upload, Users, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Inbox, Lock, Play, RefreshCw, Upload, Users, type LucideIcon } from "lucide-react";
 import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -131,20 +131,35 @@ export function PlatformCloudBillingScreen({ data, loading, month, model, access
     );
   }
   if (data.source === "mock" || model.empty) {
+    // Emenda 1.1 (PR567-4): com o rateio em processamento (ou preso, `P-ASS09A-RUN-PRESA-EM-PROCESSING`), o vazio cede e
+    // fica só o aviso do rateio; o vazio de "importe o arquivo" vale só quando o mês não tem importação.
+    const pending = data.source !== "mock" && model.pendingRun !== null;
+    const imported = data.source !== "mock" && (model.imports?.length ?? 0) > 0;
     return (
       <div className="cb-view">
         {/* o cabeçalho inteiro, como a maquete (`cabecalhoVazio`): o mês, o dólar e, com a permissão, rodar e importar; e os
             avisos do custo do mês que o vazio não diz (rateio em processamento, rateio vazio, moeda desconhecida) */}
         <CloudBillingHeader model={model} access={access} onMonth={handlers.onMonth} onAction={handlers.onAction} />
         <CloudBillingBanners model={model} access={access} onAction={handlers.onAction} emptyState />
-        <StatePanel icon={Inbox} tone="info" title={`Nenhum custo nem assinatura em ${monthLabel(month)}`} detail="Escolha outro mês no seletor acima ou importe o arquivo de custo deste mês.">
-          {access.importCosts ? (
-            <button type="button" className="pat-btn pat-btn--primary" onClick={() => handlers.onAction({ kind: "import" })}>
-              <Upload size={14} aria-hidden="true" />
-              Importar arquivo de custo
-            </button>
-          ) : null}
-        </StatePanel>
+        {pending ? null : imported ? (
+          <StatePanel icon={Inbox} tone="info" title={`Nenhum custo nem assinatura em ${monthLabel(month)}`} detail={`O arquivo de custo de ${monthLabel(month)} já foi importado; o custo aparece quando o rateio do mês concluir.`}>
+            {access.runAllocation ? (
+              <button type="button" className="pat-btn pat-btn--primary" onClick={() => handlers.onAction({ kind: "run" })}>
+                <Play size={13} aria-hidden="true" />
+                Rodar rateio do mês
+              </button>
+            ) : null}
+          </StatePanel>
+        ) : (
+          <StatePanel icon={Inbox} tone="info" title={`Nenhum custo nem assinatura em ${monthLabel(month)}`} detail="Escolha outro mês no seletor acima ou importe o arquivo de custo deste mês.">
+            {access.importCosts ? (
+              <button type="button" className="pat-btn pat-btn--primary" onClick={() => handlers.onAction({ kind: "import" })}>
+                <Upload size={14} aria-hidden="true" />
+                Importar arquivo de custo
+              </button>
+            ) : null}
+          </StatePanel>
+        )}
       </div>
     );
   }

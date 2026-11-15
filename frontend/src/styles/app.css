@@ -8284,6 +8284,8 @@ a.pat-mini--ocupada:focus-visible { outline: 2px solid #2563eb; outline-offset: 
 .cb-groups { background: #fff; border: 1px solid #e2e8f0; border-radius: 13px; overflow: hidden; }
 .cb-groups__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #f1f5f9; }
 .cb-groups__head b { font-size: 14px; font-weight: 800; white-space: nowrap; }
+/* Emenda 1.1 (PR567-3): "+ Novo grupo" numa linha só, como a referência (`.gs__head .pat-btn`, com o `nowrap` do botão) */
+.cb-groups__head .pat-btn { white-space: nowrap; flex-shrink: 0; padding: 6px 10px; }
 .cb-group { display: block; width: 100%; padding: 10px 14px; border: 0; border-bottom: 1px solid #f8fafc; background: #fff; text-align: left; cursor: pointer; font: inherit; min-height: 44px; }
 .cb-group:hover { background: #f8fafc; }
 .cb-group[aria-pressed="true"] { background: #eff6ff; box-shadow: inset 3px 0 0 #2563eb; }
