@@ -24,13 +24,17 @@ import {
 import { PrismaPlansRepository } from "../plans/plans-prisma.repository.js";
 import { PrismaSubscriptionsRepository } from "../plans/subscriptions-prisma.repository.js";
 import { PrismaTenantLookup } from "../plans/tenant-lookup.prisma.js";
+import { prismaChargeIntentTx } from "../charges/charge-intent.prisma.js";
+import { listByStatementInTx as listChargesByStatementInTx } from "../charges/charges.prisma.js";
+import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import { enqueueInTx } from "../outbox/outbox.prisma.js";
 import { computeStatement, type StatementSnapshot } from "./statement.engine.js";
 import type { StatementRuntime } from "./statement.factory.js";
 import { RepositoryStatementInputsProvider, type BindingsSource, type UsageSource } from "./statement.inputs-provider.js";
 import type { UsageDayRow, VehicleBindingWindow } from "./statement.inputs.js";
 import { emptyStatement, type LiveInvoiceRef, type StatementRepository, type StatementTx } from "./statement.repository.js";
-import { StatementService, type StatementAuditSink } from "./statement.service.js";
+import { closingMethodOf } from "./statement-charge-lines.js";
+import { StatementService, type StatementAuditSink, type StatementChannel } from "./statement.service.js";
 import type {
   ChargeStatus,
   CreditReason,
@@ -432,6 +436,30 @@ export class PrismaStatementRepository implements StatementRepository {
     return withTenantRls(this.client, tenantId, async (tx) =>
       (await tx.subscriptionCredit.findMany({ where: { tenant_id: tenantId }, orderBy: { created_at: "asc" } })).map(mapCredit),
     );
+  }
+
+  /** B-ASS-08c1c (P11b, plano §4.9): a cobrança `pending` que o cliente pode pagar — a da `charge_create` SENT do fechamento
+   * VIGENTE (nasceu depois da última reabertura e com o total atual), sem `charge_cancel` vivo. Uma leitura, sem trava. */
+  findPayableCharge(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined> {
+    if (!isUuid(statementId)) return Promise.resolve(undefined);
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT c.id FROM subscription_statements s
+           JOIN subscription_statement_charges c ON c.statement_id = s.id AND c.tenant_id = s.tenant_id AND c.status = 'pending'
+           JOIN billing_outbox o ON o.statement_id = s.id AND o.tenant_id = s.tenant_id AND o.kind = 'charge_create' AND o.status = 'SENT'
+                                AND c.provider = o.provider AND c.external_charge_id = o.external_id
+          WHERE s.id = $1::uuid AND s.tenant_id = $2::uuid
+            AND (s.reopened_at IS NULL OR o.occurred_at > s.reopened_at) AND (o.payload->>'amountCents')::bigint = round(s.total_amount * 100)::bigint -- [VIEW-VIGENTE]
+            AND NOT EXISTS (SELECT 1 FROM billing_outbox k WHERE k.statement_id = s.id AND k.kind = 'charge_cancel' AND k.status IN ('PENDING', 'PROCESSING', 'NEEDS_REVIEW') AND k.payload->>'chargeId' = c.external_charge_id) -- [VIEW-LIVE]
+          ORDER BY c.created_at DESC
+          LIMIT 1`,
+        statementId,
+        tenantId,
+      )) as Array<{ id: string }>;
+      const id = rows[0]?.id;
+      if (!id) return undefined;
+      return (await listChargesByStatementInTx(tx, statementId)).find((charge) => charge.id === id);
+    });
   }
 }
 

@@ -4,10 +4,15 @@
 
 import { randomUUID } from "node:crypto";
 
+import type { ChargeIntentAuditEvent, ChargeIntentTx } from "../charges/charge-intent.repository.js";
+import type { InMemoryStatementChargeRepository } from "../charges/charges.repository.js";
+import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
-import type { OutboxRepository } from "../outbox/outbox.repository.js";
-import type { NewOutboxRow } from "../outbox/outbox.types.js";
+import type { InMemoryOutboxRepository, OutboxRepository } from "../outbox/outbox.repository.js";
+import type { BillingOutboxRow, NewOutboxRow } from "../outbox/outbox.types.js";
+import type { InMemoryStatementRefRepository } from "../webhooks/statement-refs.repository.js";
 import type {
+  ChargeStatus,
   StatementAuditEvent,
   StatementPayment,
   SubscriptionCredit,
@@ -75,6 +80,9 @@ export type StatementRepository = {
   findStatement(tenantId: string, statementId: string): Promise<SubscriptionStatement | undefined>;
   listPayments(tenantId: string, statementId: string): Promise<readonly StatementPayment[]>;
   listCredits(tenantId: string): Promise<readonly SubscriptionCredit[]>;
+  /** B-ASS-08c1c (P11b, plano §4.9): a cobrança `pending` da tabela que o cliente pode pagar — a do fechamento VIGENTE (a
+   * `charge_create` SENT dela nasceu depois da última reabertura, com o total atual) e sem `charge_cancel` vivo. */
+  findPayableCharge(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined>;
 };
 
 export function emptyStatement(input: NewStatement, now: Date): SubscriptionStatement {
@@ -241,6 +249,80 @@ export class InMemoryStatementRepository implements StatementRepository {
         return saved;
       },
     };
+  }
+
+  /** B-ASS-08c1c (plano §4.0 itens 1 e 2): a cobrança sobre o `tx` serializado. SÓ com as QUATRO lojas (fila, nota, cobranças,
+   * índice); com menos, o "sem canal": as leituras da fila e das cobranças voltam vazias e toda escrita lança. O dublê não
+   * reproduz o rollback destas escritas (escreve direto): a atomicidade é provada nos `-db`. */
+  #charging(tenantId: string): ChargeIntentTx {
+    const self = this;
+    const channel = this.channel;
+    const full = channel !== undefined && channel.charges !== undefined && channel.refs !== undefined; // [FOUR-STORES]
+    const lockStatement: ChargeIntentTx["lockStatement"] = async (statementId) => {
+      const statement = self.statements.get(statementId);
+      return statement && statement.tenantId === tenantId
+        ? { id: statement.id, status: statement.status, totalCents: statement.totalCents, paidCents: statement.paidCents, dueDate: statement.dueDate }
+        : undefined;
+    };
+    if (!full) {
+      const unsupported = async (): Promise<never> => {
+        throw new Error("charge_channel_tx_unsupported");
+      };
+      return {
+        lockStatement,
+        findLiveCharge: async () => undefined,
+        listChargeLines: async () => [],
+        listCharges: async () => [],
+        putRef: unsupported,
+        enqueue: unsupported,
+        skipPendingChargeCreate: unsupported,
+        skipChargeCreate: unsupported,
+        recordAudit: unsupported,
+      };
+    }
+    const { outbox, charges, refs } = channel as Required<InMemoryChannelStores>;
+    return {
+      lockStatement,
+      findLiveCharge: (statementId) => charges.findLive(tenantId, statementId),
+      listChargeLines: (statementId) => outbox.listByStatement(tenantId, statementId),
+      listCharges: (statementId) => charges.listByStatement(tenantId, statementId),
+      async putRef(ref, now) {
+        await refs.put(ref, now);
+      },
+      enqueue: (input, now) => outbox.enqueue(input, now),
+      async skipPendingChargeCreate(outboxId, lastError, now) {
+        if (!outbox.skipPendingChargeCreate) throw new Error("charge_channel_tx_unsupported");
+        return outbox.skipPendingChargeCreate(tenantId, outboxId, lastError, now);
+      },
+      async skipChargeCreate(outboxId, skipReason, from, now) {
+        if (!outbox.skipChargeCreate) throw new Error("charge_channel_tx_unsupported");
+        return outbox.skipChargeCreate(tenantId, outboxId, skipReason, from, now);
+      },
+      async recordAudit(event) {
+        self.channelAudits.push({ ...event, tenantId });
+      },
+    };
+  }
+
+  async findPayableCharge(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined> {
+    const channel = this.channel;
+    const statement = this.statements.get(statementId);
+    if (!channel?.charges || !statement || statement.tenantId !== tenantId) return undefined;
+    const lines = await channel.outbox.listByStatement(tenantId, statementId);
+    const currentClosing = (current: SubscriptionStatement, line: BillingOutboxRow | undefined) =>
+      line !== undefined &&
+      (current.reopenedAt === null || line.occurredAt.getTime() > current.reopenedAt.getTime()) &&
+      Number(line.payload.amountCents) === current.totalCents;
+    const liveCancelFor = (all: readonly BillingOutboxRow[], charge: SubscriptionStatementCharge) =>
+      all.some((line) => line.kind === "charge_cancel" && (line.status === "PENDING" || line.status === "PROCESSING" || line.status === "NEEDS_REVIEW") && line.payload.chargeId === charge.externalChargeId);
+    for (const charge of await channel.charges.listByStatement(tenantId, statementId)) {
+      if (charge.status !== "pending") continue;
+      const line = lines.find((candidate) => candidate.kind === "charge_create" && candidate.status === "SENT" && candidate.provider === charge.provider && candidate.externalId === charge.externalChargeId);
+      if (!currentClosing(statement, line)) continue; // [VIEW-VIGENTE]
+      if (liveCancelFor(lines, charge)) continue; // [VIEW-LIVE]
+      return charge;
+    }
+    return undefined;
   }
 
   async listStatements(tenantId: string) {
