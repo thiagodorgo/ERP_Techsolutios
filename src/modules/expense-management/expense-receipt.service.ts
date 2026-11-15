@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import { ChecklistError } from "../checklists/checklist.types.js";
@@ -222,7 +222,7 @@ export class ReceiptStorageError extends Error {
 /** O objeto gravado por esta requisição, antes da transação decidir se ele fica. */
 type SavedReceiptObject = { readonly storage: ChecklistStorageProvider; readonly storageKey: string };
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 /**
  * §12.2 item 3 — log de falha da via V6: rota, operação, NOME e CÓDIGO do erro (Prisma, Postgres ou AWS). Nunca a
