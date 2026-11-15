@@ -38,12 +38,20 @@ function visible(html: string): string {
   return html.replace(/<text[^>]*data-escala[^>]*>[\s\S]*?<\/text>/g, " ").replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
 }
 
-function model(data: CloudBillingData, series = fixtureSeries()): CloudBillingView {
-  return buildCloudBillingView({ data, series, groupDetails: fixtureGroupDetails(), ui: INITIAL_UI, currentMonth: CURRENT_MONTH, today: TODAY });
+function model(data: CloudBillingData, series = fixtureSeries(), ui = INITIAL_UI): CloudBillingView {
+  return buildCloudBillingView({ data, series, groupDetails: fixtureGroupDetails(), ui, currentMonth: CURRENT_MONTH, today: TODAY });
 }
 
-function screen(data: CloudBillingData, appearance: string, options: { readonly loading?: boolean; readonly series?: ReturnType<typeof fixtureSeries>; readonly access?: typeof FULL } = {}): string {
-  return renderToString(<PlatformCloudBillingScreen data={data} loading={options.loading ?? false} month={MONTH} model={model(data, options.series)} access={options.access ?? FULL} appearance={appearance} handlers={handlers} onRetry={noop} />);
+function screen(data: CloudBillingData, appearance: string, options: { readonly loading?: boolean; readonly series?: ReturnType<typeof fixtureSeries>; readonly access?: typeof FULL; readonly ui?: typeof INITIAL_UI } = {}): string {
+  return renderToString(<PlatformCloudBillingScreen data={data} loading={options.loading ?? false} month={MONTH} model={model(data, options.series, options.ui)} access={options.access ?? FULL} appearance={appearance} handlers={handlers} onRetry={noop} />);
+}
+
+/** O detalhe aberto de uma linha (`data-detalhe`), só o texto visível dele. */
+function detailOf(html: string, rowId: string): string {
+  const start = html.indexOf(`data-detalhe="${rowId}"`);
+  assert.ok(start >= 0, `o detalhe ${rowId} está aberto`);
+  const end = html.indexOf("pat-ab-detail-actions", start);
+  return visible(html.slice(start, html.indexOf("</div></div>", end) + 12));
 }
 
 const NO_COST = (status: string, extra: Record<string, unknown> = {}) => ({ ...COST_OK, status, runId: status === "no_run" ? null : "run-out", fxRate: null, fxRateVersion: null, ...extra });
@@ -176,6 +184,27 @@ test("T-UI-3 (F11) mês com custo e sem assinatura: a margem mês a mês não di
     const noRun = own(screen(dataWithCost(NO_COST("no_run")), appearance));
     assert.match(noRun, /ui-month-series__dashed/, "C: controle — sem custo, tracejado");
     assert.match(visible(noRun), /sem custo/, "C: controle — sem custo");
+  }
+});
+
+// J-567 (C3-05): o detalhe de um MEMBRO DE GRUPO sem assinatura segue o motivo real. Com "plano sem preço" não é filial
+// e a matriz não assina por ele; com "sem assinatura" (o controle) é a filial do grupo.
+test("T-UI-3 (J-567, C3-05) membro de grupo com plano sem preço: o detalhe não diz 'filial' nem 'a matriz assina'", () => {
+  const withReason = (reason: string) => {
+    const lines = (tenantPayload().lines as Record<string, unknown>[]).map((line) => (line.tenantId === "t3" ? { ...line, subscriptionSkipReason: reason } : line));
+    return fixtureData({ tenant: tenantPayload(MONTH, COST_OK, lines) });
+  };
+  const ui = { ...INITIAL_UI, modo: "tenant" as const, aberta: "t:t3" };
+  for (const appearance of LETTERS) {
+    const sem = detailOf(screen(withReason("plan_without_price"), appearance, { ui }), "t:t3");
+    assert.match(sem, /plano sem preço cadastrado/, `${appearance}: o motivo real`);
+    assert.doesNotMatch(sem, /filial/, `${appearance}: não é filial`);
+    assert.doesNotMatch(sem, /A matriz assina pelo grupo/, `${appearance}: a matriz não assina por ele`);
+    assert.match(sem, /Grupo Vale/, `${appearance}: o grupo continua dito`);
+    // o controle: sem assinatura própria, no grupo, é a filial e a matriz assina
+    const filial = detailOf(screen(withReason("no_subscription"), appearance, { ui }), "t:t3");
+    assert.match(filial, /filial; quem assina: Frota Vale Transportes/, `${appearance}: controle, a filial`);
+    assert.match(filial, /A matriz assina pelo grupo/, `${appearance}: controle, a matriz assina`);
   }
 });
 

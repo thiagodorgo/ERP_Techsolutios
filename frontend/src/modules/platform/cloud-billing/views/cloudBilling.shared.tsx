@@ -569,17 +569,28 @@ function Composition({ model, line }: { readonly model: CloudBillingView; readon
 export function TenantDetail({ model, line, access, onAction, onMonth }: { readonly model: CloudBillingView; readonly line: TenantLineJson; readonly access: CloudBillingAccess; readonly onAction: (action: CloudBillingAction) => void; readonly onMonth: (month: string) => void }) {
   const groupMembers = line.groupId ? model.lines.filter((item) => item.groupId === line.groupId) : [];
   const payers = groupMembers.filter((item) => item.subscriptionAmount !== null);
+  // J-567 (C3-05): o texto segue o MOTIVO real de não haver assinatura. "Plano sem preço" não é filial de grupo: ninguém
+  // assina por ela, e a margem do grupo não a cobre.
+  const planWithoutPrice = line.subscriptionAmount === null && line.subscriptionSkipReason === "plan_without_price";
   const groupText = line.groupId
-    ? `${line.groupName ?? "Grupo sem nome"} · ${line.subscriptionAmount !== null ? "assina pelo grupo" : `filial; quem assina: ${payers.length ? payers.map((item) => item.tenantName).join(", ") : "ninguém neste mês"}`}`
+    ? `${line.groupName ?? "Grupo sem nome"} · ${
+        line.subscriptionAmount !== null
+          ? "assina pelo grupo"
+          : planWithoutPrice
+            ? "plano sem preço cadastrado"
+            : `filial; quem assina: ${payers.length ? payers.map((item) => item.tenantName).join(", ") : "ninguém neste mês"}`
+      }`
     : "sem grupo";
   const note =
     line.alert === "critical"
       ? "O custo passou da assinatura: revise o plano desta organização ou o uso dela."
       : line.alert === "warning"
         ? "O custo já passou de 80 % da assinatura."
-        : line.alert === "no_subscription" && line.groupId
-          ? "A matriz assina pelo grupo; a margem do cliente está na linha do grupo."
-          : "A margem é a assinatura do mês menos o custo rateado.";
+        : planWithoutPrice
+          ? "O plano desta organização não tem preço cadastrado; sem assinatura, não há margem do mês."
+          : line.alert === "no_subscription" && line.groupId
+            ? "A matriz assina pelo grupo; a margem do cliente está na linha do grupo."
+            : "A margem é a assinatura do mês menos o custo rateado.";
   return (
     <div className="pat-ab-detail-content" data-detalhe={`t:${line.tenantId}`}>
       <div className="pat-ab-detail-grid">
