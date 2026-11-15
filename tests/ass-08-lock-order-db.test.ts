@@ -80,6 +80,12 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/charges/charges.prisma.ts#PrismaStatementChargeRepository.setStatus#withTenantRls": "cenario:charges.setStatus",
   "src/modules/subscription-billing/charges/provider-customer.prisma.ts#PrismaProviderCustomerStore.get#withTenantRls": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/charges/provider-customer.prisma.ts#PrismaProviderCustomerStore.set#withTenantRls": "sem-tabela-do-mapa",
+  // B-ASS-09 (Emenda 2.3 §1): troca os vínculos da organização (`economic_group_members`) e grava a trilha (`audit_logs`); nenhuma tabela do mapa.
+  "src/modules/subscription-billing/economic-groups/economic-groups.prisma.ts#PrismaEconomicGroupsRepository.applyMembershipChanges#forEachTenantRls": "sem-tabela-do-mapa",
+  // B-ASS-09 (Emenda 2.3 §1): só lê os vínculos da organização (`economic_group_members`); nenhuma tabela do mapa.
+  "src/modules/subscription-billing/economic-groups/economic-groups.prisma.ts#PrismaEconomicGroupsRepository.listMembershipsOfTenants#forEachTenantRls": "sem-tabela-do-mapa",
+  // B-ASS-09 (Emenda 2.3 §1): a versão nova do câmbio sob `LOCK TABLE platform_fx_rates` (tabela global, sem RLS); nenhuma tabela do mapa.
+  "src/modules/subscription-billing/fx-rates/fx-rates.prisma.ts#PrismaFxRatesRepository.appendVersion#.$transaction": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/invoice-sequence.service.ts#nextDpsNumber#.$transaction": "sem-tabela-do-mapa",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.beginIssue#withTenantRls": "cenario:invoices.beginIssue",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.findByRef#withTenantRls": "cenario:invoices.findByRef",
