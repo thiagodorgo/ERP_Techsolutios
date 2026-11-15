@@ -395,7 +395,12 @@ test.describe("administrador da plataforma pela tela", () => {
   await expect(page).toHaveURL(/\/platform\/cloud-billing$/);
   await expect(page.getByRole("combobox", { name: "Mês de referência" })).toBeVisible();
   await expect(page.getByText("Acesso não permitido", { exact: true })).toHaveCount(0);
-  await expect(page.getByText("Não foi possível carregar Cloud Billing", { exact: true })).toHaveCount(0);
+  // Emenda 2.3: o estado que a tela mostra no e2e presente, e os 2 erros de carga da tela nova (#567) ausentes. Num banco
+  // novo é o vazio do mês, medido no e2e local; o nome do mês muda com a data, por isso a regex. A positiva vem antes:
+  // uma ausência se satisfaz durante o esqueleto de carregamento (medido), e só depois dela as ausências provam algo.
+  await expect(page.getByRole("status").filter({ hasText: /^Nenhum custo nem assinatura em \S/ })).toBeVisible();
+  await expect(page.getByText("Não foi possível carregar o custo e a margem", { exact: true })).toHaveCount(0);
+  await expect(page.getByText(/^Não foi possível montar a visão de /)).toHaveCount(0);
   });
 });
 
