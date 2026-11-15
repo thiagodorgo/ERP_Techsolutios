@@ -5272,3 +5272,101 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
   módulos na versão do adicional.
 - **O conflito filial × organização continua ABERTO** (`P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`): o `B-ASS-12` não
   infere a resolução; o demonstrativo continua por organização e período.
+## D-SEED-10B-RESPOSTAS-1311 (2026-11-13 ~23:20 SP) — as cinco perguntas do plano v2 do `B-SAN3-10b-F4-SEED-ISOLADO`, pela recomendação
+
+- **Fato (decisão do dono):** *"minhas decisoes vao todas nas recomendacoes"* (ordem de 13/11, ~23:12 SP) e *"pode comecar"* (~23:20 SP). Transcrição do redator `reg-10bseed-cl` (Claude Opus 5.5, declarado, §A6), a partir do registro do orquestrador fora do repositório (`REGISTRO-PENDENTE.md`, 13/11 23:19 e 23:23), que lista para o seed: *"P1 versionar; P2 roteiro com errata; P3 datas não recuam; P4 organização pelo script; P5 OS em dobro como pendência média"*. O ID geral que o orquestrador propôs para a ordem inteira (`D-DONO-1311-RECOMENDACOES`) e o da ordem "só Claude" (`D-CLAUDE-SOLO-1311`) ainda não estão neste arquivo e entram no PR de registro do dia; esta entrada cobre só o seed.
+- **O que vale, pergunta a pergunta (§11 do plano v2, fora do repositório):**
+  - **P1 — versionar:** a demonstração genérica entra no repositório (`scripts/demo-isolado/` e 4 testes `tests/demo-isolado-*`), com nomes genéricos, e qualquer pessoa a sobe do zero numa pilha isolada. A trava e a fundação ganham CI, e o censo é testado contra um Postgres real. O overlay que reproduz o roteiro privado fica fora do repositório.
+  - **P2 — o roteiro de 02/11 roda como está,** com uma errata de ambiente escrita antes da execução, por outra identidade. A errata só relaxa número automático, histórico de dias, ruído de organizações de teste e rótulo cosmético; nunca o resultado essencial de um passo.
+  - **P3 — nenhuma data do sistema recua.** O gráfico de volume de OS dos últimos dias mostra só o dia em que a base foi semeada. Data de negócio (vencimento, data de lançamento) pode ficar no passado.
+  - **P4 — a organização de demonstração nasce pelo script da fundação,** só na pilha isolada, pelo mesmo serviço do produto que cria organização e usuário, sem SQL e sem mexer no schema. Hoje o console da plataforma responde "criada" sem gravar (medido no plano v2), e o console real é do `B-SAN3-18b`.
+  - **P5 — a OS em dobro do app ao reiniciar o servidor vira pendência MÉDIA, com dono, sem segurar este bloco:** `P-SYNC-OS-RECIBO-EM-MEMORIA` (dono `B-SAN3-16`). O orquestrador decide a data no próximo replanejamento do portão.
+- **Emenda do encerramento de `P-SAN3-10B-F4-SEED-ISOLADO` (o conflito §A2 que o plano v1 registrou, agora resolvido pelo dono):** o encerramento de 04/11, escrito pelo orquestrador na Emenda 3(c) do 10b e não pelo dono, dizia "seed fictício próprio dos ensaios, fora do repositório". Com P1 = versionar e P4 = script, a forma passa a ser **fundação pelo serviço do produto, motor e verificador versionados, overlay privado**. O apenso está em `pendencias.md` (14/11).
+- **Leituras do planejador, declaradas no plano v2 (§11, "decidido aqui, sem perguntar"), não decisão do dono:** o nome genérico da organização é "Organização Exemplo", com o slug que o produto gera (`organizacao-exemplo-<sufixo>`); a organização nasce com os 17 módulos que o servidor exige (`ALL_MODULE_CLASSES`), não com os 19 do seed base. Cada uma se corrige numa linha da fixture.
+- **Comando do bloco:** `agent-orchestration/codex/comandos/B-SAN3-10b-F4-SEED-ISOLADO.md`.
+
+## D-SEED-10B-Q-E11-1-RUNBOOK-INTEIRO (2026-11-14 02:11 SP) — na pilha descartável, o ensaio executa o runbook inteiro de ativação do login sem organização
+
+- **Fato (decisão do dono, pela recomendação):** a pergunta Q-E11-1 da Emenda 1.1 do plano (como a web e o app entram na pilha isolada da demonstração) fica na opção (1), a recomendada, pela ordem de 13/11 *"minhas decisoes vao todas nas recomendacoes"*. Transcrição do redator `reg-10bseed-cl` (declarado, §A6), a partir do registro do orquestrador fora do repositório (`REGISTRO-PENDENTE.md`, 14/11 02:11) e da Emenda 1.2 do plano (A1).
+- **O que vale (Emenda 1.2, A1):**
+  - **O runbook certo:** `docs/deployment.md:741-784`, "Runbook de ativação do login sem organização", passos 0 a 7. O passo 7 (l.780) é o smoke do login sem `tenantId`; logo depois vem a proibição do `GRANT <role_dona> TO <role_da_app>` (l.782-784), que continua valendo.
+  - **O passo, em toda pilha descartável nova** (o `down -v` desfaz a ativação): (1) `dc exec -T postgres psql` com os passos 2 a 5 do runbook; (2) `dc restart api`; (3) os passos 6 e 7.
+  - **A prova:** o par **inactive/401 → active/200** gravado no `ensaio.log`: o campo `login_without_org` de `GET /api/v1/health/ready` e o login sem `tenantId`, antes e depois do passo.
+  - **O que a conferência `rev-seed-e11-cl` mediu, num banco descartável:** os passos 2 a 5 com rc 0; a trava de boot `enforce` aceitou (`runtime database role verified`); o ready passou a `active` e o login sem `tenantId` deu 200.
+- **Exceção escrita às 3 proibições da Emenda 1.1** (§2, "sem conceder `EXECUTE` neste bloco"; §9.6, o PROIBIDO "conceder `EXECUTE` em `auth_login_candidates` neste bloco"; §13, a PARADA por "necessidade de conceder `EXECUTE`"): **este passo, e só ele,** é o ato que o runbook prevê, executado na pilha DESCARTÁVEL do ensaio. **Leitura do redator, declarada (§A6):** a exceção não alcança o repositório (nenhum `GRANT` em migração, no script do papel, em teste, na fundação ou no motor) nem pilha que não seja descartável; o motor continua mandando `tenantId` em todo login (Emenda 1.1, §2).
+- **Efeito nas fatias:** a F9 e o 44-B3, que esperavam esta resposta, passam a depender do passo executado com o par medido. Na F10, o passo entra no `docs/ROTEIRO-DEMO-E-OPERACAO.md` (hoje com 0 menções), o que fecha a lacuna da `P-AUTH-LOGIN-SEM-TENANT-SOB-PAPEL-RUNTIME`.
+- **Inelegibilidade (Emenda 1.2, "Registro"):** o revisor da 44-B2b se chama `rev-seed-e11-cl` (a Emenda 1.1 o chamou de `prerev-seed-e11-cl`) e entra na lista de inelegíveis para cadeira, inspetor e conferência; a lista completa está no comando do bloco.
+
+## D-DONO-1411-T5-TRES-OPCOES (2026-11-14 04:00 SP) — aprovadas as 3 opções da tela de custos e margem (T5 do `B-ASS-10b`, item 61)
+
+- **Fato (decisão do dono):** *"aprovo as telas de custos"*. Hora medida pelo redator na transcrição da sessão (07:00Z). Transcrição do orquestrador, declarada (§A6), a partir do registro fora do repositório (`REGISTRO-PENDENTE.md`, 14/11 04:01 SP, onde o ID nasceu como proposta). Redator: `reg-1411b-cl` (Claude Opus 5.5, nível menor, declarado).
+- **O que vale:**
+  - as 3 opções da maquete da T5 (fora do repositório: `maquetes/t5-custos-3opcoes.reference.html`, autor `maq-t5-cl`, `checar-3opcoes` 17/17 no Edge) são as 3 aparências da tela, pela `D-TELAS-TRES-OPCOES`. No PR #567 (`feat/web-custos-t5`), a mesma maquete entra como `docs/claude-code-handoff/screen-refs/platform-cloud-billing-3opcoes.reference.html`: o redator mediu md5 igual nos dois arquivos (`89c140bf…`);
+  - **as 2 escolhas pequenas** (a tela abre no último mês com o rateio; o "Uso medido" fica no detalhe da organização) valem pela recomendação escrita na maquete, pela `D-DONO-1311-RECOMENDACOES`. **Leitura do orquestrador, declarada (§A6).**
+- **Conferência das 3 aparências (orquestrador, 14/11 12:36 SP, no #567):** CONFERIDA COM 1 RESSALVA. Na opção C, o botão "+ Novo grupo" quebra em 2 linhas a 1440 px; não é grave e vai ao dev na leva da pré-revisão.
+
+## D-DONO-1411-REFORCO-DP-API (2026-11-14 07:40–07:55 SP) — DeepSeek, API Claude e as 3 contas Codex reforçam o Claude da sessão; o cruzamento volta
+
+- **Fato (decisão do dono), em quatro falas, com a hora medida pelo redator na transcrição da sessão:**
+  - **07:40, o pedido:** *"pode colocar o deepseek e api claude para ajudar, faca o plano, vc continuar com o mesmo nivel de empenho e as api clade e o deepseek reforcam o desenvolvimento, retorne o plano pra aprovacao, metas e perspectiva"*;
+  - **07:54, a aprovação do plano, com os tetos:** *"api claude, teto 10 uss. deepseek, teto 9 uss, pode comecar, com forca total e sua ajuda tem que ser a mais alta possivel, quem cair vc cobre, o limite eh o que o pc aguentar"*;
+  - **07:54:** *"vc nao pode parar, contonue no mesmo ritmo"*;
+  - **07:55, as contas Codex:** *"adcione as contas codex tambem, todo mudo trabalhando"*.
+- **Fonte:** o plano fora do repositório `plano-REFORCO-DP-API-1411.md` (07:45 SP) e o registro `REGISTRO-PENDENTE.md` (14/11 07:54 SP, onde o ID nasceu como proposta). O briefing da J-565 registra as contas Codex às 08:01 SP; a hora da fala, medida na transcrição, é 07:55.
+- **O que vale:**
+  - **tetos do dia:** US$ 10 para a API Claude e US$ 9 para o DeepSeek, aplicados no orçamento do lançador (fora do repositório). O teto da API acabou às ~09:10 SP, com os 3 planos de topo (65, 31 e 67), e o Fable da sessão cobriu o resto, declarado;
+  - **as 3 contas Codex voltam ao trabalho,** uma tarefa por conta;
+  - **quem cair, o Claude cobre na hora,** com a evidência do caído como roteiro (P3). No dia, isso valeu para a revisão do plano 65 (Codex 2 no limite de 5 h às 11:20) e para a C-SEG da J-565 (Codex 3 no limite às 13:13);
+  - **o limite é o que a máquina aguenta,** com o piso de memória do P8(c) (§C7 item 7);
+  - **o cruzamento entre casas volta** (§C7 item 11(1)): o que o Claude faz, outra casa verifica, e vice-versa, enquanto houver braço de outra casa livre. Sem braço livre, vale o §C7 item 11(2), com identidade nova e o artefato declarando que não houve cruzamento e por quê (as atas e os pareceres do dia declaram cada caso).
+- **O que muda na `D-CLAUDE-SOLO-1311`** (leitura do redator, declarada (§A6), a partir do §3 do plano do reforço e do briefing da J-565): o trecho "deixe as ias dormindo" e o cruzamento `false` deixam de valer. As cadeiras em paralelo, o Fable a critério do orquestrador e os agentes até o limite da máquina seguem. A `D-DONO-1311-RECOMENDACOES` não muda.
+- **Avisos ao dono registrados no dia:** a conta Codex 1 está em 99% do limite semanal (09:10 SP); o OpenRouter ficou sem crédito (resposta 402 às 10:49 SP).
+
+## D-DONO-1411-PAUSA-TATICA (2026-11-14 10:16 SP) — pausa de tudo e reinício tático da máquina, depois da queda do Docker
+
+- **Fato (decisão do dono):** *"vamos fazer uma reinicializacao tatica? pause tudo"*. Hora medida pelo redator na transcrição da sessão (13:16Z). A seção de PAUSA do orquestrador foi gravada às 10:22 SP (13:22Z), com uma cópia fora do repositório (`pausa-1411-secao.md`).
+- **Por que pausar:** o Docker Desktop caiu às 10:10 SP (o processo sumiu, e a distro `docker-desktop` ficou parada). A queda derrubou as pilhas das 3 cadeiras da J-565 e a base viva. O orquestrador religou o Docker às 10:12, e ele respondeu às 10:22. Os logs do Windows não mostram a causa.
+- **O que se aplicou:**
+  - **P7 (`D-PAUSA-GRAVA-E-PARA`):** cada agente vivo recebeu a PAUSA, gravou a sua seção `## PAUSA` (onde parou e o próximo passo) e parou;
+  - **a C-SEG (Codex 3) e a C-DADO (DeepSeek) da J-565** foram paradas pelo orquestrador às 10:19, porque as pilhas tinham morrido, e se relançaram do mesmo mandato na retomada;
+  - **o reinício da máquina foi ato do dono** (a máquina reiniciou às 10:36 SP).
+- **Incidente (P6), declarado:** a conferência `ver-561-cl` rodou em 2 cópias depois da PAUSA. Um `SendMessage` a um agente de dentro de um workflow abriu uma 2ª continuação, e a original seguiu viva dentro do workflow, que não foi parado. A cópia fez login (200) e mutações do C3-01 sem evidência própria; o worktree ficou limpo, e o verificador original detectou e tratou o caso. **Lição:** para pausar um agente de workflow, para-se o workflow, não se manda mensagem ao agente. O caso está na ata `J-561-b-mobile-gate-chave.md` (pós-junta).
+
+## D-DONO-1411-RETOMADA (2026-11-14 10:38 SP) — a retomada no mesmo padrão das pausas anteriores
+
+- **Fato (decisão do dono):** *"plano e retomada no mesmo padrao, tenho pressa e eh urgente"*. Hora medida pelo redator na transcrição da sessão (13:38Z), já na sessão nova, depois do reinício.
+- **O que vale:** a retomada segue o roteiro gravado na PAUSA (P8, `D-ORQ-QUEDA-DA-SESSAO`), sem plano novo a aprovar:
+  1. o `retomada.sh` (fora do repositório);
+  2. o Docker e a base viva de pé;
+  3. os 3 vigias religados;
+  4. cada subagente da PAUSA retomado pelo seu id, medindo o parcial antes de seguir (P3);
+  5. a C-SEG e a C-DADO da J-565 relançadas do mesmo mandato;
+  6. o Fable do SEC-LOG retomado pelo id (o workflow não se re-roda);
+  7. as emendas P-4 e P-5 do `B-ASS-08c1b` (Emenda 2.2, abaixo);
+  8. a junta do #566;
+  9. as revisões cruzadas dos 6 planos (65, 31, 67, 42, 5 e 62);
+  10. o loop de KPI do dia.
+- **Medido na retomada (registro das 10:44 SP):** o Docker respondeu; o #561 foi mergeado às 10:40 SP (`e6f3c425`, item 66); os agentes da PAUSA foram relançados, cada um pela sua seção; os vigias foram religados.
+
+## REGISTRO-EMENDAS-ORQ-1411 (2026-11-14) — as emendas do orquestrador que a fonte deste registro cita, uma linha por emenda
+
+**Não é decisão nova do dono.** São as emendas do orquestrador (Claude Opus 5.5, `D-EMENDA-ANTES-DO-CODIGO`; a emenda do orquestrador mede antes) que o registro fora do repositório (`REGISTRO-PENDENTE.md`) cita entre 14/11 06:12 e 14:03 SP, o trecho deste PR. **Não são todas as do dia.** Ficam fora, por estarem antes do trecho ou sem linha nele, pelo menos estas 6, que a revisão `rev-570-cl` mediu (o cabeçalho de cada arquivo diz "Orquestrador"): seed 1.5 (06:41) e 1.6 (07:49), a Emenda 1 do v2 da T5 do `B-ASS-10b` (07:08), a 1.3 do `B-SAN3-17` (07:29), a 2.3 do `B-ASS-09` (07:44) e a 2.1 do `B-ASS-08c1b` (07:48). Elas vão no registro de cada bloco ou no próximo PR de registro. Todas ficam fora do repositório, na pasta `planos/` do orquestrador; a hora é a da gravação do arquivo. Cada uma diz o que não muda: o resto do plano e das emendas anteriores.
+
+- **`B-SAN3-10b-F4-SEED-ISOLADO`, Emenda 1.7** (decidida às 08:13, escrita às 09:07): o G1 do fuso ganha a exceção nominal de `scripts/demo-isolado/alvo.mjs` só na lista do módulo (o arquivo resolve o parser do driver sem conectar); a lista do construtor e o G3 não mudam; sem a exceção, o G1 fica vermelho — `plano-B-SAN3-10b-F4-SEED-ISOLADO-v2-emenda1.7.md`.
+- **`B-SAN3-10b-F4-SEED-ISOLADO`, Emenda 1.8** (09:09): o aceite do Op-10 do 44-B3 se lê por três provas juntas (a fila do aparelho com o código, o `git grep` que mostra que só o servidor o produz, e a OS não cancelada antes do gestor); o ensaio não se refaz; nascem 9 pendências (em `pendencias.md`); conferida pelo `ver-e18-seed-dp` (DeepSeek, cruzamento) às 09:20, com 0 achados — `plano-B-SAN3-10b-F4-SEED-ISOLADO-v2-emenda1.8.md`.
+- **`B-ASS-08c1b`, Emenda 2.2** (10:45): P-4, o `dueDate` dos payloads que os testes despacham passa a `DUE_FUTURA` (a data de negócio de hoje em SP mais 30 dias), com vermelho-controle em hoje menos 1; P-5, `tests/san3-05-leituras-de-plataforma-db.test.ts` só por acréscimo (6 entradas e 6 cenários), com 2 mutações de controle — `plano-B-ASS-08c1b-abertura-emenda2.2.md`.
+- **`B-ASS-08c1b`, Emenda 2.2.1** (10:55): os ajustes E22-01 (as 5 linhas SQL do vencimento do demonstrativo ficam intactas, provado por `diff`) e E22-02 (o inventário de tabelas com `arquivo:linha` e o "só acréscimo" medido por `--numstat`, com a mutação de controle 3) da conferência do Codex 2 (CONFERIDO COM AJUSTES) — `plano-B-ASS-08c1b-abertura-emenda2.2.1.md`.
+- **`B-ASS-08c1b`, Emenda 2.3** (13:20): PARADA P-6, opção A; o `due_date_required` do financeiro passa a ser documentado no §3.11 do `API_CONTRACTS.md` (1 linha) e sai da lista congelada do censo A17-bis (24 → 23), com mutação de controle — `plano-B-ASS-08c1b-abertura-emenda2.3.md`.
+- **`B-SAN3-17`, Emenda 1.4** (medida às 13:20): o W11 lê a Roboto de `mobile/flutter_app/test/assets/fonts/roboto/` (3 TTF e a licença Apache 2.0, byte a byte do SDK), e não do `FLUTTER_ROOT`, que não tem as fontes no runner da CI; medido `+4`, e o controle sem uma fonte fica vermelho — `plano-B-SAN3-17-abertura-emenda1.4.md`. **Errata (13:32):** o arquivo de teste é LF, e não CRLF, como a emenda dizia; o dev manteve o LF. No PR #568 (head `310d724a`), o job `flutter` ficou verde (`+1499`).
+- **`B-SEC-LOG-SANITIZA`, Emenda 1.2.2** (12:35): o ajuste E121-01 da revisão r2; a pré-revisão lê e registra os 3 textos (o corpo do PR, as linhas acrescentadas aos 2 textos de contrato e os títulos dos commits); nasce a `P-SECLOG-ACEITE-PORTA-OCUPADA-MENSAGEM` — `plano-B-SEC-LOG-SANITIZA-v2-emenda1.2.2.md`.
+- **`B-SAN3-16` (item 5), Emenda 1.1.1** (13:01): os 5 ajustes BAIXA da conferência `ver-emendas-5-62-cl` (VER5-01 a 05); nascem a `P-WEB-ABA-OS-UMA-PENDENCIA-SO` e a `P-SAN316-JANELA-OS-TERMINAL-ANTES-DO-REENVIO`; o plano vai ao dev (19 fatias) — `plano-B-SAN3-16-abertura-emenda1.1.1.md`.
+- **`B-ASS-11` (item 62), Emenda 1.1.1** (13:02): os 2 ajustes BAIXA da mesma conferência (VER62-01, onde está a maquete v3 enviada ao dono para a PA-1; VER62-02, "aprovação de tela não se responde pela recomendação" passa a ser leitura declarada (§A6) do orquestrador, que o dono pode desfazer); a Parte R pode seguir, e a Parte T espera a PA-1 — `plano-B-ASS-11-emenda1.1.1.md`.
+- **Testes de navegador no CI (item 42), Emenda 2.1 do plano v2** (13:38): os 5 ajustes da revisão r2, a última (APROVADO COM AJUSTES, sem cruzamento, declarado). R2-A1 (MÉDIA), a desestruturação de `skip`/`configure` passa a ser recusada pelos guardas (S1, a G11 nova e a G8), com 2 vermelhos-controle novos; R2-A2 a R2-A3, o canário por igualdade e a asserção vazia declarada para a revisão; R2-A4, opção (a): o teste 13 afirma o logout no servidor; R2-A5, o `outputDir` numa subpasta. A P2 (o `docker` esperar o `e2e`, em `.github/**`) segue com o dono; o plano fica pronto para o dev — `plano-B-SAN3-10-E2E-CI-v2-emenda2.1.md`.
+- **`B-SEC-LOG-SANITIZA`, Emenda 1.4** (13:52): responde à PARADA do dev da F3. (1) O censo do `B-SAN3-25` ganha exatamente 1 entrada de 4 linhas para o sítio novo do H1 (o arquivo dá 9/9), com vermelho-controle nas duas direções; (2) o comando do bloco commitado no ramo (ainda fora da `main`) tinha caminhos locais com o nome de usuário da máquina e "por construção" no título: os dois saem, com varredura de caminho local em todo o diff do bloco (o repositório é público); (3) o aceite B1–B4 da CI passa a ser lido pelo prefixo próprio do bloco — `plano-B-SEC-LOG-SANITIZA-v2-emenda1.4.md`.
+
+## D-DONO-1411-CAMINHOS-LOCAIS (2026-11-14 14:01 SP) — tirar do repositório público os caminhos locais com o nome de usuário da máquina, agora
+
+- **Fato (decisão do dono):** o dono citou a frase do orquestrador e respondeu: *"\"A varredura encontrou 155 arquivos na main com caminhos locais contendo o nome de usuário da máquina, sobretudo atas e diários; como o repositório é público,\" quero resolver isso agora"*. Hora medida pelo redator na transcrição da sessão (17:01Z); o registro fora do repositório (`REGISTRO-PENDENTE.md`) a anota às 14:03.
+- **Origem:** o achado das 13:53 (a `P-REPO-CAMINHOS-LOCAIS-COM-USUARIO`, ALTA de privacidade, em `pendencias.md`), com a recomendação do orquestrador: (1) um PR de varredura que troque os caminhos por um marcador neutro; (2) um guarda que recuse caminho local novo.
+- **O que vale:** a varredura para frente, lançada às 14:03 (`sweep-caminhos-cl`): troca os caminhos por `~/` e põe o guarda `tests/repo-sem-caminho-local.test.ts` no `npm test`. O histórico antigo só sai reescrevendo a `main` com `push --force`, que é proibido; isso ficou como pergunta ao dono, com a recomendação.
+- **Corte deste registro:** a resposta do dono à pergunta do histórico e a pausa para a demonstração vieram às 14:24, depois do trecho deste PR, e vão ao próximo registro.
