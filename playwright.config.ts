@@ -20,9 +20,10 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: 1,
   maxFailures: process.env.CI ? 3 : 0,
+  // O relator de passos (Emenda 2.1, G11) deixa a rodada vermelha se algum passo for pulado; o JSON esconde isso.
   reporter: process.env.CI
-    ? [["list"], ["json"]]
-    : [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
+    ? [["list"], ["json"], ["./tests/e2e/apoio/relator-passos.mjs"]]
+    : [["list"], ["html", { open: "never", outputFolder: "playwright-report" }], ["./tests/e2e/apoio/relator-passos.mjs"]],
   use: {
     baseURL: frontendBaseUrl,
     trace: "retain-on-failure",
