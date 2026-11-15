@@ -96,6 +96,15 @@ for (const [name, mutate, expected] of [
   });
 }
 
+// C1-2 da J-575 (a parte que entrou): a G1 com o relatório AUSENTE, o fecho que o plano dá a ela (§3.5).
+test("G1 relatório ausente fica vermelho", () => {
+  const ausente = join(scratch, "relatorio-que-nao-existe.json");
+  const result = spawnSync(process.execPath, [join(root, "scripts", "e2e-report-guard.mjs"), ausente, "--modo=suite"], { cwd: root, encoding: "utf8" });
+  assert.notEqual(result.status, 0, `${result.stdout}
+${result.stderr}`);
+  assert.match(result.stdout, new RegExp(VERMELHO + "G1: relatório ausente ou ilegível"));
+});
+
 function canaryReport(error: string, status = "failed"): Json {
   return {
     config: { projects: [{ name: "controle", repeatEach: 1, retries: 0, timeout: 45_000 }] },

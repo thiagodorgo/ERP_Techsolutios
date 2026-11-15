@@ -2,6 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 
 const apiPort = process.env.E2E_API_PORT ?? "3442";
 const frontendPort = process.env.E2E_FRONTEND_PORT ?? "5442";
+// C3-A1 da J-575: a API sobe também o portal público (PORTAL_PORT, padrão 3100 no `env.ts`). O e2e fixa a porta dele, fora
+// de 3000, 3100 e 5173, para não ocupar a pilha viva nem disputar porta com outra rodada em paralelo.
+const portalPort = process.env.E2E_PORTAL_PORT ?? "3452";
 const databaseUrl =
   process.env.DATABASE_URL ??
   "postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public";
@@ -43,6 +46,7 @@ export default defineConfig({
         LOG_LEVEL: "warn",
         NODE_ENV: "test",
         PORT: apiPort,
+        PORTAL_PORT: portalPort,
       },
     },
     {

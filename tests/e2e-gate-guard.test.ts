@@ -163,3 +163,103 @@ test("Y1-Y4: job e2e é obrigatório, literal e sem filtros", () => {
   assert.doesNotMatch(chromium, /\bgrep(?:Invert)?\s*:/);
   assert.doesNotMatch(config, /\bgrepInvert\s*:/);
 });
+
+// C1-1 da J-575: o ENVELOPE do job `e2e` por lista de permissão. O texto dos 2 corpos não basta: quem os executa
+// (`defaults`, `shell:`) e a lista de passos também são do plano (§3.1). Chave, passo ou `defaults` a mais é vermelho.
+const CHAVES_DO_TOPO = ["name", "on", "concurrency", "jobs"];
+const CHAVES_DO_JOB = ["runs-on", "timeout-minutes", "env", "services", "steps"];
+const AMBIENTE_DO_JOB = [
+  "DATABASE_URL: postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public",
+  "REDIS_URL: redis://localhost:6379",
+  "CORE_SAAS_PERSISTENCE: prisma",
+  "JWT_SECRET: dev-only-change-me",
+  "JWT_EXPIRES_IN: 15m",
+  "LOG_LEVEL: warn",
+];
+const PASSOS_DO_JOB = [
+  "Checkout",
+  "Setup Node.js",
+  "Install dependencies",
+  "Install frontend dependencies",
+  "Generate Prisma Client",
+  "Apply migrations (Prisma)",
+  "Provision database (seed)",
+  "Build web (compiled mode)",
+  "Install Chromium for Playwright",
+  PASSO_CANARIO,
+  PASSO_SUITE,
+  "Diagnóstico (só na falha)",
+];
+
+test("Y5: o envelope do job e2e é o do plano (lista de permissão)", () => {
+  const workflow = readFileSync(join(root, ".github", "workflows", "ci.yml"), "utf8").replace(/\r/g, "");
+  const topo = workflow.split("\n").filter((line) => /^[^\s#]/.test(line)).map((line) => line.replace(/:.*$/, ""));
+  assert.deepEqual(topo, CHAVES_DO_TOPO, "chaves do topo do workflow (nenhum defaults, nenhum env no topo)");
+
+  const lines = workflowJob(workflow, "e2e").split("\n");
+  assert.equal(lines[0], "  e2e:");
+  const chaves = lines.filter((line) => /^ {4}[^\s#]/.test(line));
+  assert.deepEqual(chaves.map((line) => line.trim().replace(/:.*$/, "")), CHAVES_DO_JOB, "chaves do job (nenhum defaults, nenhum if, nenhuma outra)");
+  assert.ok(chaves.includes("    runs-on: ubuntu-24.04"), "runs-on");
+  assert.ok(chaves.includes("    timeout-minutes: 15"), "timeout-minutes");
+
+  const inicioEnv = lines.indexOf("    env:");
+  const ambiente: string[] = [];
+  for (let index = inicioEnv + 1; index < lines.length && !/^ {0,4}\S/.test(lines[index]); index += 1) {
+    if (lines[index].trim() !== "") ambiente.push(lines[index]);
+  }
+  assert.deepEqual(ambiente, AMBIENTE_DO_JOB.map((line) => `      ${line}`), "o env do job é exatamente o do plano");
+
+  const itens = lines.filter((line) => /^ {6}- /.test(line));
+  assert.ok(itens.every((line) => line.startsWith("      - name: ")), "todo passo começa por name:");
+  assert.deepEqual(itens.map((line) => line.slice("      - name: ".length)), PASSOS_DO_JOB, "a lista de passos do job, em nomes e em ordem");
+  assert.equal(lines.filter((line) => /^\s+shell\s*:/.test(line)).length, 0, "nenhum shell: no job");
+});
+
+// C1-2 (a parte que entrou) e C3-A1 da J-575: o config que a CI de fato carrega. Ele é importado com CI ligado e sem
+// E2E_PORTAL_PORT, e não lido como texto.
+test("Y6: na CI o config tem o relator json, o chromium casa com os testes do disco e o portal não usa a 3100", async () => {
+  const antes = { CI: process.env.CI, E2E_PORTAL_PORT: process.env.E2E_PORTAL_PORT, E2E_CANARIO: process.env.E2E_CANARIO };
+  process.env.CI = "1";
+  delete process.env.E2E_PORTAL_PORT;
+  delete process.env.E2E_CANARIO;
+  try {
+    const { default: config } = (await import("../playwright.config.ts")) as { default: Record<string, unknown> };
+    const reporter = config.reporter as Array<[string, unknown?]>;
+    assert.ok(Array.isArray(reporter) && reporter.some((item) => Array.isArray(item) && item[0] === "json"), "o relator json na CI");
+
+    const projects = config.projects as Array<{ name: string; testMatch?: unknown; testIgnore?: unknown }>;
+    assert.deepEqual(projects.map((project) => project.name), ["preparo", "chromium"], "sem E2E_CANARIO, só preparo e chromium");
+    const casa = (padrao: unknown, caminho: string) => {
+      const lista = Array.isArray(padrao) ? padrao : [padrao];
+      assert.ok(lista.length > 0 && lista.every((item) => item instanceof RegExp), "testMatch/testIgnore têm de ser RegExp");
+      // como o Playwright: no Windows ele testa também a forma do caminho com "/"
+      const formas = [caminho, caminho.split(sep).join("/")];
+      return lista.some((item) => formas.some((forma) => (item as RegExp).test(forma)));
+    };
+    const arquivosDoDisco = (projeto: string) => [...new Set(enumerarDisco().filter((item: { projeto: string }) => item.projeto === projeto).map((item: { arquivo: string }) => item.arquivo))];
+    for (const projeto of projects) {
+      const esperados = arquivosDoDisco(projeto.name);
+      assert.ok(esperados.length > 0, `o disco tem testes do projeto ${projeto.name}`);
+      const todos = filesBelow(e2eRoot).map((path) => relative(e2eRoot, path).split(sep).join("/"));
+      const selecionados = todos.filter((arquivo) => {
+        const absoluto = join(e2eRoot, arquivo);
+        return casa(projeto.testMatch, absoluto) && !(projeto.testIgnore !== undefined && casa(projeto.testIgnore, absoluto));
+      });
+      assert.deepEqual(selecionados.sort(), esperados.sort(), `o projeto ${projeto.name} seleciona exatamente os arquivos com os testes dele`);
+    }
+    const contados = enumerarDisco().filter((item: { projeto: string }) => item.projeto === "chromium").length;
+    assert.equal(contados, (lerContagem() as Record<string, number>).chromium, "os arquivos do chromium têm os testes do número preso");
+
+    const api = (config.webServer as Array<{ env?: Record<string, string> }>)[0];
+    const portal = api.env?.PORTAL_PORT;
+    assert.ok(portal !== undefined && /^\d+$/.test(portal), "o webServer da API define PORTAL_PORT");
+    assert.ok(!["3000", "3100", "5173"].includes(portal), `PORTAL_PORT=${portal} não pode ser porta da pilha viva`);
+    assert.notEqual(portal, api.env?.PORT, "o portal numa porta diferente da API");
+  } finally {
+    for (const [chave, valor] of Object.entries(antes)) {
+      if (valor === undefined) delete process.env[chave];
+      else process.env[chave] = valor;
+    }
+  }
+});
