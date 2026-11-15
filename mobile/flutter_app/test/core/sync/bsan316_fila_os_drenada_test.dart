@@ -285,14 +285,11 @@ void main() {
     final primeiro = (h.servidor.lotes.first['actions'] as List).cast<Map>();
     expect(primeiro.map((a) => a['type']), [WorkOrderSyncActionTypes.create]);
     final segundo = (h.servidor.lotes.last['actions'] as List).cast<Map>();
-    expect(
-      segundo.map((a) => a['type']).toSet(),
-      {
-        WorkOrderSyncActionTypes.approvalRequest,
-        WorkOrderSyncActionTypes.unableToStart,
-      },
-      reason: 'os dois saem no mesmo passe da criação',
-    );
+    final tipos = segundo.map((a) => a['type']).toSet();
+    expect(tipos, {
+      WorkOrderSyncActionTypes.approvalRequest,
+      WorkOrderSyncActionTypes.unableToStart,
+    }, reason: 'os dois saem no mesmo passe da criação');
     for (final acao in segundo) {
       expect(acao['payload']['work_order_id'], 'srv-os-criada');
     }
