@@ -139,6 +139,8 @@ model Tenant {
   billing_statement_refs          BillingStatementRef[]
   subscription_statement_charges  SubscriptionStatementCharge[]
   subscription_statement_invoices SubscriptionStatementInvoice[]
+  // B-ASS-09 — relacao reversa exigida pelo Prisma para o vinculo de grupo economico da M6 (sem coluna em tenants).
+  economic_group_members          EconomicGroupMember[]
   @@map("tenants")
 }
 
@@ -4482,4 +4484,63 @@ model BillingInvoiceSequence {
 
   @@unique([provider, environment, serie])
   @@map("billing_invoice_sequences")
+}
+
+// B-ASS-09 (M6) — grupo econômico: junta organizações de um mesmo cliente para a visão de custo × assinatura da
+// plataforma. GLOBAL (exceção declarada no plano: o grupo não pertence a nenhuma organização; só rotas
+// requirePlatformPermission leem e escrevem). O CHECK do nome e o índice único funcional
+// lower(btrim(name)) WHERE deleted_at IS NULL vivem só na migração (o Prisma não modela índice de expressão).
+model EconomicGroup {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  notes      String?
+  created_by String?   @db.Uuid
+  updated_by String?   @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  deleted_at DateTime? @db.Timestamptz(6)
+
+  members EconomicGroupMember[]
+
+  @@map("economic_groups")
+}
+
+// B-ASS-09 (M6) — vínculo de uma organização a um grupo, por vigência em data de negócio (SP): [valid_from, valid_to),
+// valid_to NULL = aberto. Tabela DA ORGANIZAÇÃO, RLS ENABLE + FORCE pela política da casa. Uma organização tem no máximo
+// um vínculo em qualquer dia: EXCLUDE USING gist (tenant_id WITH =, daterange(valid_from, valid_to, '[)') WITH &&), com
+// btree_gist; essa restrição e o CHECK (valid_to IS NULL OR valid_to > valid_from) vivem só na migração.
+model EconomicGroupMember {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id  String    @db.Uuid
+  group_id   String    @db.Uuid
+  valid_from DateTime  @db.Date
+  valid_to   DateTime? @db.Date
+  created_by String?   @db.Uuid
+  closed_by  String?   @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  tenant Tenant        @relation(fields: [tenant_id], references: [id], onDelete: Restrict, map: "economic_group_members_tenant_id_fkey")
+  group  EconomicGroup @relation(fields: [group_id], references: [id], onDelete: Restrict, map: "economic_group_members_group_id_fkey")
+
+  @@index([tenant_id, valid_from], map: "economic_group_members_tenant_id_valid_from_idx")
+  @@index([group_id, valid_from], map: "economic_group_members_group_id_valid_from_idx")
+  @@map("economic_group_members")
+}
+
+// B-ASS-09 (M6) — taxa de câmbio do mês, cadastrada pela plataforma. GLOBAL e só de acréscimo: cada correção é uma
+// versão nova (nunca UPDATE); a vigente é a de maior version para (month, currency_from, currency_to). Os CHECKs (mês
+// AAAA-MM, rate > 0, version >= 1, moeda de 3 letras maiúsculas, destino BRL e as duas diferentes) vivem só na migração.
+model PlatformFxRate {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  month         String   @db.Char(7)
+  currency_from String   @db.Char(3)
+  currency_to   String   @default("BRL") @db.Char(3)
+  rate          Decimal  @db.Decimal(18, 6)
+  version       Int
+  created_by    String?  @db.Uuid
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([month, currency_from, currency_to, version], map: "platform_fx_rates_month_currency_from_currency_to_version_key")
+  @@map("platform_fx_rates")
 }

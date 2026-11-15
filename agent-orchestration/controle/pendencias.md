@@ -8624,6 +8624,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 ---
 - **nota B-SAN3-03 (2026-11-02):** a parte "cobrança nunca vira fatura" está RESPONDIDA por `D-COBRANCA-ASSINATURA-FRANQUIA` (o preço do cliente é a assinatura). A parte "custo AWS entra só por CSV manual" é RECOMENDACAO ADOTADA 4 e só fecha com o merge de `B-ASS-09a` (rateio automático) e `B-ASS-10b` (botões na tela); a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
 - **nota B-ASS-09a (2026-11-11):** o rateio automático a partir da importação está no PR do `B-ASS-09a` (ramo `feat/rateio-automatico-importacao`): cada importação concluída cria um rateio por mês de cobrança. Isso cumpre a parte do `B-ASS-09a`; a parte "custo AWS entra só por CSV manual" segue esperando o `B-ASS-10b` (botões na tela), e a leitura automática da AWS é do `B-ASS-13`. Status segue ABERTA.
+- **andamento (B-ASS-09, 2026-11-14):** a visão interna de custo × assinatura por organização, grupo e global (item 61) é entregue pelo `B-ASS-09`; a tela segue com o `B-ASS-10b`.
 
 ## P-WEB-FIN-BAIXA-E-CONTA-SEM-TELA (2026-09-11) — Web emite título mas não liquida: sem tela de baixa nem de conta — ALTA
 
@@ -12633,6 +12634,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **lado de 02/11:** o dono disse que cada filial é *"orgamizacao propria"* e, à pergunta se paga assinatura, respondeu *"Não, só vê uso e custo"*.
 - **estado:** conflito registrado sem inferir se a assinatura pertence ao grupo econômico, à matriz ou a outra entidade de cobrança.
 - **encerramento:** decisão explícita do dono define o assinante do grupo, o agregador de franquia/excedente e o comportamento de cada organização-filial.
+- **andamento (B-ASS-09, 2026-11-14):** a parte da visão de custo está no `B-ASS-09`, pela Q2 do plano dele, respondida pela recomendação (`D-DONO-1311-RECOMENDACOES`): a matriz assina, a filial sai `no_subscription` (nunca "crítica") e a margem que vale para o cliente é a do grupo. Segue aberta a franquia somada do grupo, que é do demonstrativo.
 
 ## P-SAN303-HOMOGLIFO-NOME (2026-11-03) — letra de outro alfabeto no nome da organização desvia a tag do rateio — BAIXA
 
@@ -12821,6 +12823,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** fala literal registrada em `D-COBRANCA-ASSINATURA-FRANQUIA`: o cliente vê somente plano, uso da franquia e situação.
 - **encerramento:** rota derivada das claims e tela com as três aparências expõem somente a allowlist aprovada; custo interno, dados de outras organizações e números comerciais não aparecem. **(valores fora do repositório público)**.
 - **andamento (PR #507):** `GET /api/v1/billing/subscription` e `/billing/usage-history` tiram a organização da sessão (`?tenantId` → 400; ator de plataforma e organização de sistema → 403), com `billing:read`, e a resposta não tem nenhuma chave de dinheiro (varredura de chaves no T-ST-29). Os campos de pagamento saem `null` e `invoicePdfAvailable: false`, e a rota do PDF da nota não existe, até haver as tabelas de notas e de cobranças (`B-ASS-08` e `B-ASS-09`). O menu "Minha assinatura" já existe; a tela é do `B-ASS-11`.
+- **andamento (`B-ASS-11b`, ramo `fix/ass-cliente-sem-tendencia`; vale no merge):** a rota de tendência (`/billing/subscription/usage-history`) sai, pela P12 e pela decisão 8.2 do dono (`D-ASS11-TENDENCIA-SAI`; a `P-ASS-USAGE-HISTORY-X-P12` fecha com ela). **Correção do andamento acima (Emenda 1 do plano do `B-ASS-11`, §2):** o "menu 'Minha assinatura' já existe" vale só para o registro do servidor (`navigation.registry.ts`, item `tenant.billing`); no menu do portal o item não existe, e entra com a tela.
+- **regra de fechamento (Emenda 1.1 do plano do `B-ASS-11`, §1.3 e §9.1):** fecha com o item 62, e só pelos três comandos do §1.3 colados no corpo do PR que o marcar, rodados no próprio head com rebase na `origin/main`: nenhum `usage-history` em `src/` e `tests/fixtures/`, a rota `/administrator/subscription` no `App.tsx` e a referência `minha-assinatura-3opcoes.reference.html` em `screen-refs/`. Não fecha mais "no merge da Parte T".
 
 ## P-ASS-RASTREAMENTO-NAO-COBRADO (2026-11-04) — rastreamento aprovado como item próprio ainda não entra na cobrança — ALTA
 
@@ -12840,12 +12844,61 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** ato externo pós-implementação · **dono:** dono do produto, com roteiro técnico do `B-ASS-08` · **PR-alvo:** fora do PR documental; evidência anexada ao roteiro do `B-ASS-08` · **bloqueia:** ligar o canal, não bloqueia os blocos fail-closed.
 - **origem:** `D-P14-ASAAS-FOCUS`; as contas e credenciais não pertencem ao repositório.
 - **encerramento:** dono cadastra as credenciais no cofre, executa o roteiro de homologação e registra o resultado sem versionar segredo.
+- **pré-requisito de ligar a cobrança automática (Emenda 1 do plano do `B-ASS-11`, §3.2; registrado pelo `B-ASS-11b`):** o `B-ASS-11c`, que faz os meios de pagamento da visão do cliente virem da cobrança viva (`P-ASS-VISAO-CLIENTE-PAGAMENTO-FIXO`). Sem ele, com a cobrança ligada, a tela "Minha assinatura" diria "pague com a equipe" a um cliente que tem cobrança emitida.
 
 ## P-ASS-SECRETS-MANAGER (2026-11-03) — chave do cofre ainda sem integração ao gerenciador de segredos da AWS — MEDIA
 
 - **status:** ABERTA · **escopo:** infraestrutura futura · **dono:** `B-INFRA-AWS-01` · **PR-alvo:** PR do `B-INFRA-AWS-01` · **bloqueia:** produção AWS com o canal ligado; não bloqueia o cofre fail-closed local.
 - **origem:** plano B-ASS §9; a primeira implementação usa provedor de chave por ambiente e deixa a porta para o serviço gerenciado.
 - **encerramento:** integração ao gerenciador de segredos implementada sem segredo no banco, log ou repositório e aprovada pelo gate de serviço externo/dependência aplicável.
+
+## P-ASS-USAGE-HISTORY-X-P12 (2026-11-14) — a rota de tendência entregava ao cliente o que a P12 tira do payload — BAIXA
+
+- **status:** FECHADA pelo `B-ASS-11b` (ramo `fix/ass-cliente-sem-tendencia`; vale no merge) · antes: aberta e fechada no mesmo PR · **gravidade:** BAIXA (a fonte: "não grave"; são quantidades do próprio cliente, sem dinheiro e sem outra organização) · **escopo:** `pre-existente` (nasceu no `B-ASS-04`, PR #507, merge `e4e181f2`, 2026-11-06) · **dono:** `B-ASS-11b` (Parte R do item 62) · **bloqueia:** o item 62 (Emenda 1.1 do plano do `B-ASS-11`, §1: o item só fecha com a rota fora da `main`).
+- **origem:** conflito §A2 registrado pelo orquestrador em 10/11 ~00:22 SP (`REGISTRO-PENDENTE.md`, fora do repositório), "a pendência nova a abrir no PR de registro"; a P12 do dono (31/10, `B-ASSINATURA-plano.md:130`) tira "da tela e do payload do cliente" os veículos rastreados e a tendência de 6 meses; a decisão 8.2 do dono (13/11, `D-DONO-1311-RECOMENDACOES`) diz "a tendência sai".
+- **fato (medido na `main` `adec93ce`):** `GET /api/v1/billing/subscription/usage-history?months=1..12` respondia 200 a todo papel com `billing:read`, com `trackedVehicles` em cada mês; o T-ST-64 antigo afirmava isso.
+- **fato no fechamento:** a rota, `buildUsageHistory`, `UsageHistoryRow` e `shiftPeriod` saíram; o registro de navegação, as 2 fixtures de censo (pelos geradores, `--numstat` `0 4` e `0 1`) e `docs/subscription-billing.md` também. O caminho antigo cai no 404 padrão de `/api/v1` (`route_not_found`), e `GET /billing/subscription` não mudou. Quem mantém a rota fora: o T-R1 a T-R5 (`tests/ass-11b-cliente-so-p12.test.ts`) e o T-ST-64 novo.
+- **critério de encerramento:** a rota sai (cumprido no ramo; vale no merge).
+
+## P-ASS-VISAO-CLIENTE-PAGAMENTO-FIXO (2026-11-14) — os meios de pagamento da visão do cliente saem fixos em `null` — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): com a cobrança automática desligada (o padrão de hoje), `null` é a verdade; com ela ligada, a tela diria "pague com a equipe" a quem tem cobrança emitida · **escopo:** `pre-existente` (`src/modules/subscription-billing/statements/subscription-view.ts`, o bloco `payment`, do `B-ASS-04`) · **dono:** `B-ASS-11c` (plano próprio; junta completa) · **PR-alvo:** o PR do `B-ASS-11c` · **bloqueia:** ligar a cobrança automática (ver `P-ASS-SANDBOX-REAL`); não bloqueia o item 62.
+- **origem:** relatório do dev do `B-ASS-08b`, 10/11 00:43 SP (`REGISTRO-PENDENTE.md`, fora do repositório), "nome a abrir"; decisão de dono e de bloco na Emenda 1 do plano do `B-ASS-11` (§3.2), aberta pelo `B-ASS-11b`.
+- **fato:** `payUrl`, `pixCopyPaste`, `boletoLine` e `boletoUrl` saem `null` e `invoicePdfAvailable` sai `false`. Existe `toClientPaymentView` em `charges/charge-view.ts`, do `B-ASS-08`, mas nenhum arquivo de `src/` a chama. O runtime do demonstrativo não tem o repositório de cobranças (em memória, ele vive em outro runtime), e há uma escolha de forma: `toClientPaymentView` some com o `payment` sem cobrança viva, e a visão de hoje o mantém com `null`.
+- **critério de encerramento:** os meios vêm da cobrança viva, com teste de banco em 2 organizações, antes de o dono ligar a cobrança automática. A tela "Minha assinatura" já nasce mostrando só o meio que o servidor mandar.
+
+## P-ASS-NOTA-PDF-CLIENTE (2026-11-14) — não existe rota do PDF da nota fiscal para o cliente — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** `pre-existente` (`subscription-billing.tenant.routes.ts` não tem rota de PDF) · **dono:** `B-ASS-11c` · **PR-alvo:** o PR do `B-ASS-11c` · **bloqueia:** o botão "Baixar nota fiscal" da tela "Minha assinatura", que fica fora dela até a rota existir (pergunta 6 da Emenda 1 do plano do `B-ASS-11`, pela recomendação).
+- **origem:** Emenda 1 do plano do `B-ASS-11`, §3.2 e §12; aberta pelo `B-ASS-11b`.
+- **critério de encerramento:** a rota do PDF da nota para o cliente existe, derivada das claims e com teste; só então o botão entra na tela.
+
+## P-ASS-E2E-COMENTARIO-PAYURL (2026-11-14) — o comentário do e2e diz que a rota do cliente traz o `payUrl`, e ela não traz — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `pre-existente` (`tests/ass-08-flow-e2e.test.ts:2` e `:103`, do `B-ASS-08`) · **dono:** `B-ASS-11c` · **PR-alvo:** o PR do `B-ASS-11c` · **bloqueia:** não.
+- **origem:** Emenda 1 do plano do `B-ASS-11`, §2 e §12; aberta pelo `B-ASS-11b`.
+- **fato:** o teste chama `toClientPaymentView` direto, não a rota; pela rota, hoje, o `payUrl` sai `null`.
+- **critério de encerramento:** o comentário passa a ser verdade pela rota (com o `B-ASS-11c`) ou é corrigido.
+
+## P-TRAVA-MODULO-COBRANCA-FORA (2026-11-14) — a trava de risco não vê o módulo de cobrança da assinatura — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): é dinheiro, e a trava decide o nível de revisão · **escopo:** `pre-existente`, ferramenta fora do repositório (`ferramentas/trava-risco.sh`, na pasta do orquestrador) · **dono:** o orquestrador · **PR-alvo:** nenhum (a ferramenta não está no repositório) · **bloqueia:** não.
+- **origem:** Emenda 1 do plano do `B-ASS-11`, E7 e §12; medida de novo na Emenda 1.1 (§4: a trava dá 0 para `subscription-view.ts` e para `navigation.registry.ts`); aberta pelo `B-ASS-11b`.
+- **fato:** a expressão de JUNTA casa `^src/modules/(financial|finance|cheques|billing|…)`, e `src/modules/subscription-billing/**` não casa (o nome começa por `subscription-`). O módulo só sobe por `tenant`, `permission` ou `auth` no nome do arquivo.
+- **critério de encerramento:** a trava passa a casar `src/modules/subscription-billing/`, com o caso medido.
+
+## P-PALETA-SEM-MAPA-DE-PERMISSAO (2026-11-14) — a paleta de comandos não aplica os caminhos escondidos pelo servidor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): o guard da rota recusa, e a tela mostra "Acesso não permitido" · **escopo:** `pre-existente` (`frontend/src/components/command-palette/logic.ts:1-36` usa `buildSidebarNav(roles)` sem os caminhos escondidos) · **dono:** a nomear pelo orquestrador (sem bloco) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem:** Emenda 1 do plano do `B-ASS-11`, E6, §11 e §12; aberta pelo `B-ASS-11b`.
+- **fato:** a paleta pode oferecer a um perfil de reserva uma tela que o guard da rota recusa; o menu lateral a esconde (`computeHiddenNavPaths`).
+- **critério de encerramento:** a paleta aplica os caminhos escondidos pelo servidor, com teste.
+
+## P-NAV-TENANT-BILLING-STATUS (2026-11-14) — o item "Minha assinatura" do registro de navegação segue `backend-ready` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `src/modules/navigation/navigation.registry.ts`, item `tenant.billing` (`status: "backend-ready"`) · **dono:** `B-ASS-11c` (já mexe no servidor) · **PR-alvo:** o PR do `B-ASS-11c` · **bloqueia:** não.
+- **origem:** Emenda 1.1 do plano do `B-ASS-11`, §7 (A10): na ordem planejada, o `B-ASS-11b` entra antes da tela e não troca o `status`; a pendência nasce com ele.
+- **critério de encerramento:** o item `tenant.billing` diz `status: "implemented"`, com a tela na `main`.
 
 ## Apensos B-SAN3-10b — roteiro técnico de operação (2026-11-04)
 
@@ -13701,6 +13754,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** R2-10 da revisão r2 do plano do `B-ASS-09a` (`crit-09a-r2-cl`), transcrito na Emenda 1 do plano (item 10), os dois fora do repositório.
 - **fato:** com o gancho do `B-ASS-09a`, a rota passa a escrever também em `cloud_cost_allocation_runs` durante o próprio pedido; a lista declara só `cloud_cost_imports` e `cloud_cost_line_items`. O teste segue verde, porque o rótulo SEM-FORCE continua verdadeiro e a rota não é chamada lá. O `B-ASS-09a` não edita o arquivo.
 - **critério de encerramento:** a lista do `san3-05` declara `cloud_cost_allocation_runs` nessa rota.
+- **encerramento previsto (B-ASS-09, 2026-11-14):** a F7 do `B-ASS-09` declara `cloud_cost_allocation_runs` na rota do `manual-csv` da lista fechada do `san3-05` (plano D-4); fecha no merge do PR do `B-ASS-09` (ramo `feat/ass-09-visao-custo`); a linha de status passa a FECHADA no registro pós-merge, com o merge.
 
 ## P-ALLOC-MANUAL-INICIO-INCLUSIVO (2026-11-11) — no rateio manual, o lado do início continua com `<=` — BAIXA
 
@@ -13708,6 +13762,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** R2-11(a) da revisão r2 do plano do `B-ASS-09a`, transcrito na Emenda 1 do plano (item 11), sem código no `B-ASS-09a`.
 - **fato:** uma run de outubro cujo fim é o dia 1 seguinte soma novembro dentro de outubro (medido pelo revisor `crit-09a-r2-cl` numa simulação em memória).
 - **critério de encerramento:** o período do rateio manual tem fim exclusivo dos dois lados, com teste que fica vermelho na run de outubro descrita acima.
+- **dono atualizado (B-ASS-09, 2026-11-14):** `B-ASS-09m`, o bloco novo do motor de rateio (nome do plano do `B-ASS-09`, D-4, trocável pelo orquestrador; nível: junta completa, porque mexe no rateio de custo por organização). O motor (`src/modules/cloud-cost-allocation/**`) é PROIBIDO ao `B-ASS-09`. Não contamina a visão: o resumo só aceita run com o mesmo dia UTC de início e de fim do pedido, e a visão pede `[P-01, último dia de P]`.
 
 ## P-AWS-CUR-DUBLE-SOBREPOSICAO (2026-11-11) — o dublê em memória do resumo de custo filtra por sobreposição, e o Prisma por contenção do início — BAIXA
 
@@ -13803,6 +13858,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** R8 do plano v2 do `B-ASS-09a` (`planos/plano-B-ASS-09a-v2.md`, fora do repositório): a P6 (método honesto) ficou restrita ao banco, como na `P-ASS03-METODO-RATEIO-FALLBACK`; a crítica da rodada 1 (`crit-09a-cl`, A7) mostrou que a mesma classe existe nas outras regras.
 - **fato:** a regra grava `allocationMethod` fixo mesmo quando `resolveBasis` cai para a métrica seguinte da lista. O método e a base são da mesma família em todas elas (não erra valor); erra só o rótulo gravado.
 - **critério de encerramento:** cada regra com mais de uma base grava o método da base efetivamente usada (`methodByMetricKey`), com teste por regra.
+- **dono atualizado (B-ASS-09, 2026-11-14):** `B-ASS-09m`, o bloco novo do motor de rateio (nome do plano do `B-ASS-09`, D-4, trocável pelo orquestrador; nível: junta completa, porque mexe no rateio de custo por organização). O motor (`src/modules/cloud-cost-allocation/**`) é PROIBIDO ao `B-ASS-09`. É só o rótulo do método, não o valor.
 
 ## P-ASS09A-RUN-PRESA-EM-PROCESSING (2026-11-11) — a run automática reivindicada fica em `processing` se o worker morrer no meio — BAIXA
 
@@ -13817,6 +13873,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** risco H13 do plano do pacote (`B-ASSINATURA-plano.md:593`, fora do repositório, citado pela crítica `crit-09a-cl`) e §8 do plano v2 do `B-ASS-09a`; declarado em `docs/cloud-cost-allocation.md` ("Rateio automático").
 - **fato:** cada arquivo importado é uma importação, e cada importação ganha o seu rateio do mês; `getAllocationSummary` escolhe a run mais recente do mês, sem somar importações.
 - **critério de encerramento:** o resumo do mês soma as importações do mesmo mês (ou o arquivo parcial é recusado), com teste de dois arquivos do mesmo mês.
+- **andamento e dono atualizado (B-ASS-09, 2026-11-14):** a parte do `B-ASS-09` é a visão de custo mostrar o aviso `multiple_imports_in_month` e quantas importações o mês tem, sem nunca somar (plano D-4, R-H13-1). Somar estaria errado quando a 2ª importação é correção da 1ª, e separar parte de correção pede o manifesto da AWS. **O resto passa ao `B-ASS-13`** (leitura automática da AWS), dono novo; a linha de status muda no registro pós-merge.
 
 ## P-ASS09A-BORDA-MICROSSEGUNDO (2026-11-11) — a base de ações da janela [início, fim − 1 ms] perde o último milissegundo — BAIXA
 
@@ -13824,6 +13881,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** C1-A4 da junta do #542, triado na Emenda 4.6 do plano do `B-ASS-09a` (`planos/plano-B-ASS-09a-v2.md`, fora do repositório).
 - **fato:** a base de ações da janela `[início, fim − 1 ms]` perde o último milissegundo em `timestamptz(6)`; o custo se conserva, só o peso da base muda.
 - **critério de encerramento:** `sumUsageBasis` passa a fim exclusivo (sem o `− 1 ms`) sem quebrar o rateio manual, com teste de peso por ação.
+- **dono atualizado (B-ASS-09, 2026-11-14):** `B-ASS-09m`, o bloco novo do motor de rateio (nome do plano do `B-ASS-09`, D-4, trocável pelo orquestrador; nível: junta completa, porque mexe no rateio de custo por organização). O motor (`src/modules/cloud-cost-allocation/**`) é PROIBIDO ao `B-ASS-09`. A mudança é de peso de base do motor; o custo se conserva.
 
 ## P-ASS09A-REDE-TRANSFERENCIA (2026-11-11) — "rede" na P8 alcança AWSDataTransfer e AmazonCloudFront? — BAIXA
 
@@ -13831,6 +13889,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** C1-A2 da junta do #542, triado na Emenda 4.6 do plano do `B-ASS-09a` (fora do repositório); a pergunta vai ao dono no plano do `B-ASS-09`.
 - **fato:** a P8 define que "rede" entra no rateio pelas ações; o alcance de `AWSDataTransfer` e `AmazonCloudFront` ainda não está decidido.
 - **critério de encerramento:** o dono decide se `AWSDataTransfer` e `AmazonCloudFront` entram em "rede" (P8), e a regra reflete a decisão com teste.
+- **resposta do dono e dono atualizado (B-ASS-09, 2026-11-14):** a pergunta foi ao dono como Q4 do plano do `B-ASS-09`. Resposta de 13/11 ~23:20 SP, todas pela recomendação (`D-DONO-1311-RECOMENDACOES`, repassada pelo orquestrador): **sim**, a transferência de dados (`AWSDataTransfer`) e a entrega de conteúdo (`AmazonCloudFront`) entram em "rede", rateadas pelas ações. A regra vai ao `B-ASS-09m`, o bloco novo do motor de rateio (nome do plano do `B-ASS-09`, D-4, trocável pelo orquestrador; nível: junta completa, porque mexe no rateio de custo por organização). O motor (`src/modules/cloud-cost-allocation/**`) é PROIBIDO ao `B-ASS-09`; nada muda no `B-ASS-09`.
 
 ## P-ASS09A-EMPATE-MESMO-MS (2026-11-12) — duas CUR do mesmo mês concluídas no mesmo milissegundo publicam a da run mais velha — BAIXA
 
@@ -13838,6 +13897,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** o T-E4-1 intermitente no CI do PR #542 (rodada `43175121083`, job `backend`, `100 !== 130`), medido pelo `inv-542-te41` e triado nas Emendas 4.2 e 4.2.1 do plano do `B-ASS-09a` (`planos/plano-B-ASS-09a-v2.md`, fora do repositório; a 4.2.1 nasce da revisão `rev-emenda42-542`). A âncora normativa é o **R41-02 do plano** (P9(c)): "no empate de `pub`, vale a run mais VELHA; depois, o `id`", e "em empate de `pub`, acrescentar uma run não muda o número publicado". O teste foi consertado no PR #542 (o `importedAt` de X fixado e a pré-condição `X.importedAt < Y.importedAt`); o produto não mudou.
 - **fato:** quando duas importações do mesmo mês têm o mesmo `importedAt` (mesmo milissegundo), a publicada é a da run criada primeiro; se as runs também empatam no milissegundo, decide o `id` da run (um `randomUUID`), e o resultado fica perto de 50/50. **Observação de desenho (RE42-03, não bloqueia):** o `importedAt` é a hora de **conclusão** da importação (`aws-cur.service.ts:86`, `importedAt: new Date()` no `updateImport` de `completed`, depois do parser e das linhas); duas CUR do mesmo mês importadas em paralelo publicam a que concluiu por último, mesmo que seja a mais antiga. Isso cumpre a P9 como enunciada (linha 334 do plano).
 - **critério de encerramento:** o `B-ASS-09` decide se o desempate final deixa de depender do `id` aleatório (por exemplo, pela importação de `createdAt` mais novo) e se a publicação segue a hora de conclusão ou a de início da importação, com teste de empate no mesmo milissegundo; ou registra que o desenho atual fica, e a pendência fecha por decisão.
+- **encerramento por decisão (B-ASS-09, 2026-11-14):** o critério pede decidir o desempate ou registrar que fica. Decisão do plano do `B-ASS-09` (D-4): o desenho fica. Ele é determinístico, e o empate no mesmo milissegundo só nasce de duas importações paralelas do mesmo mês, caso que a visão passa a mostrar como `multiple_imports_in_month`. fecha no merge do PR do `B-ASS-09` (ramo `feat/ass-09-visao-custo`); a linha de status passa a FECHADA no registro pós-merge, com o merge.
 
 ## P-ALLOC-RUN-STARTED-AT-NULO (2026-11-11) — no Postgres, a run de rateio concluída fica com `started_at` vazio — BAIXA
 
@@ -13845,6 +13905,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** observação do dev do `B-ASS-09a` na F3 (`docs/revisoes/ASSINATURA/B-ASS-09a-dev.md`), nomeada na Emenda 2 do plano (item 4) e cobrada pela pré-revisão `prerev-542-api` (PR542-04); os dois fora do repositório.
 - **fato:** a conclusão (e a falha) de QUALQUER run, manual ou automática, chama `updateRun` sem `startedAt`, e o Prisma zera a coluna; o dublê em memória preserva (`input.startedAt ?? existing.startedAt`). A suíte em memória não vê a diferença.
 - **critério de encerramento:** `updateRun` só grava `started_at` quando ele vem no pedido (o Prisma igual ao dublê), com teste `-db` de que a run concluída mantém o início.
+- **dono atualizado (B-ASS-09, 2026-11-14):** `B-ASS-09m`, o bloco novo do motor de rateio (nome do plano do `B-ASS-09`, D-4, trocável pelo orquestrador; nível: junta completa, porque mexe no rateio de custo por organização). O motor (`src/modules/cloud-cost-allocation/**`) é PROIBIDO ao `B-ASS-09`. É o repositório do motor, não valor.
 
 ## P-RBAC-PERSISTENTE-LEITURA-POR-MONTAGEM (2026-11-11) — o RBAC persistente lê o status do usuário até 56 vezes por requisição — MÉDIA (gravidade: leitura do redator)
 
@@ -14603,6 +14664,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** CONF542-01 da conferência `conf-542` (ressalva do porteiro do #542, `porteiro-542-dp`).
 - **fato:** `src/modules/cloud-costs/aws-cur.parser.ts:51` (`at data row ${rowNumber}`), `tests/ass-09a-rateio-automatico.test.ts:1068`, `tests/ass-09a-rateio-automatico-db.test.ts:621`, `tests/aws-cur-cost-routes.test.ts:94,108` e `docs/cloud-cost-allocation.md:112-113` já dizem "data row N"; o doc e o T-E41-1r ficam coerentes.
 - **critério de encerramento:** pendência de texto registrada (esta entrada), sem mudança de código.
+- **encerramento (B-ASS-09, 2026-11-14):** o critério é a própria entrada ("pendência de texto registrada, sem mudança de código"), e o plano do `B-ASS-09` (D-4) a fecha neste bloco; fecha no merge do PR do `B-ASS-09` (ramo `feat/ass-09-visao-custo`); a linha de status passa a FECHADA no registro pós-merge, com o merge.
 
 ## P-534-SONDAS-C1-FORA-DO-REPO (2026-11-12) — as sondas da C1 do #534 ficaram fora do repositório — BAIXA
 
@@ -15170,6 +15232,21 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** na forma «método» (G5, `ass-08-outbox`/`RecordingPort`; G6, `ass-08-channel-db`/`scriptedPort`), duas promessas reconhecem forma: (iii) "1 escrita no canal `lookups` no arquivo inteiro" e (iv) "nada sobrescreve nem embrulha a porta". O detector só conhece `x.lookups.<mutador>(…)`, `lookups[i] = …` e `x.lookups = …`, e conta o nome por token. A forma «arquivo» (G1 a G4) prova o que diz: igualdade de tokens do arquivo inteiro.
 - **N e forma (medidos pela C2, sonda `votos/C2-tmp/bin/sonda-gmont.mjs`):** 7 evasões de uma linha fora do método; 6 passam IGUAL (o cast `as string[]`, o colchete com string, o alias, o `!`, `Object.assign` com chave computada e `Object.defineProperty`); só `arm.port.lookups.length = 1` é acusada. No objeto, o censo independente acha 1 escrita por canal e nenhum `Object.assign`, `defineProperty` ou `Proxy` sobre a porta.
 - **critério de encerramento:** as 7 evasões da C2 dão DIFERE na G-MONT, ou a forma «método» declara o alcance e os escapes medidos (o padrão do `tests/db-catalog-write-guard.test.ts`).
+
+## P-ASS08-REVERSAO-CREDITO-APLICADO (2026-11-14) — o estorno do pagamento que gerou um crédito já aplicado baixa o crédito do alvo sem recalcular o total: o valor desfeito nunca é cobrado — ALTA (bloqueia ligar o canal)
+
+- **status:** ABERTA · **gravidade:** ALTA (perda de receita, sem trilha nem alerta) · **escopo:** `pre-existente` (`d5ec1696`, 2026-11-10, #522, B-ASS-08 parte 1; `credits/**` e `statements/**` são PROIBIDOS no `B-ASS-09`; o código é igual no ramo e na `main`) · **dono:** `B-ASS-08c` (o bloco que liga o canal) · **bloqueia:** ligar o canal (`BILLING_PROVIDERS_ENABLED`), na mesma classe da `P-ASS08-MUTATE-SEM-GUARDA`.
+- **origem:** achado A-E21-5 da revisão `rev-ass09-e21-cl` (Emenda 2.1 do plano do `B-ASS-09`, §2.1 e §2.7, fora do repositório); registrada pela F8 do `B-ASS-09` (`dev-ass09-cl`).
+- **fato:** no crédito `applied`, `CreditService.absorbReversal` (`src/modules/subscription-billing/credits/credit.service.ts`, l.43-56) baixa o `creditsAppliedCents` do alvo e não mexe no `totalCents`. Então `stillPaid = paid >= total` segue verdadeiro, e o alvo fica `paid` com saldo 0: o crédito desfeito nunca é cobrado. Medido pelo revisor no Postgres, com valores sintéticos: outubro 112.00 pago com 150.00 (crédito 38.00), crédito aplicado a novembro (62.00, pago), estorno total de outubro → novembro fica `paid 6200 6200 0` e outubro volta a `closed` com 112.00; o devido real é 150.00 e o sistema cobra 112.00. Nada acusa a diferença: o caminho da reversão não grava trilha (0 `action:` em `statement-settlement.service.ts`), o reconcile ignora `creditReversed`, e o alerta `credit_reversed` do comentário (`credit.service.ts:6`) não existe. Latente hoje: `applyReversal` só roda pelo canal do provedor, desligado por env (`webhook-runtime.ts:35`), e a reversão manual não passa pelo `CreditService`.
+- **condição para quem consertar:** manter `recompute(snapshot.latest) === totalCents` no demonstrativo; sem isso, a visão de custo do `B-ASS-09` responde 500 `statement_integrity_violation` de propósito (T-SUB-11).
+- **critério de encerramento:** depois do estorno de um crédito aplicado, o alvo volta a dever o crédito desfeito (o total sobe pelo valor dele, e o status vai a `closed` se o pago ficar abaixo); o retrato fica coerente; a mudança do alvo grava trilha; e há um teste pelo caminho real (`applyReversal`) que fica vermelho no código de hoje.
+
+## P-ASS09-INTEGRIDADE-POR-LINHA (2026-11-14) — um demonstrativo inconsistente derruba a visão de custo inteira (500), sem dizer na tela qual — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (alcance hoje 0 por construção: a coluna do retrato nasceu NOT NULL com a tabela, #507, e só o fechamento sai de `open` e grava o retrato) · **escopo:** `dentro-do-bloco` do `B-ASS-09` (D-A2-1 da Emenda 2.1; a F6 faz o 500 e o log) · **dono:** `B-ASS-12` (o próximo bloco da visão, o dos alertas) · **gatilho:** o alcance deixar de ser 0 · **bloqueia:** não.
+- **origem:** achado A-E21-2 da revisão `rev-ass09-e21-cl` (Emenda 2.1 do plano do `B-ASS-09`, fora do repositório); registrada pela F8 do `B-ASS-09` (`dev-ass09-cl`).
+- **fato:** medido pelo revisor: 1 organização inconsistente entre 3 derruba as 3 (o pedido inteiro rejeita); omitir a organização também dá 500 (`subscription_missing`). A rota (F6) grava no log do servidor o motivo, o mês e a organização da linha (a organização só no log, nunca no corpo, §2.8), mas a tela fica sem visão nenhuma. A falha por linha ingênua, sem os agregados falharem fechado, dá número errado em silêncio (total 2000.00 no lugar de 3000.00).
+- **critério de encerramento:** falha fechada por linha (a organização inconsistente sai marcada, sem número) com os agregados também falhando fechado, como na P13 do plano (grupo, totais e global `null` quando faltar uma parcela), por emenda que mexe em `overview.engine.ts` e no contrato `platform_billing_overview`, com teste que fica vermelho na versão ingênua.
 
 ## P-SYNC-RAMO-DE-ROTA-PASSA-MENSAGEM (2026-11-14) — no sync do app, um erro com forma de rota 4xx que embrulhe o texto do driver do banco sai cru ao cliente — MÉDIA (pré-existente)
 

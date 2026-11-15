@@ -149,7 +149,7 @@ export const NAVIGATION_REGISTRY: readonly NavigationItem[] = [
     status: "backend-ready",
     requiredPermissions: ["billing:read"],
     tenantOnly: true,
-    relatedEndpoints: ["GET /api/v1/billing/subscription", "GET /api/v1/billing/subscription/usage-history"],
+    relatedEndpoints: ["GET /api/v1/billing/subscription"],
   },
   {
     id: "tenant.notifications",
