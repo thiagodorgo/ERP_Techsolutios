@@ -2526,8 +2526,7 @@ function createDefaultReferenceResolvers(): WorkOrderReferenceResolvers {
     resolveAssignedOperatorLocation: async (actor, operatorUserId) => {
       try {
         const service = await createDefaultFieldLocationService();
-        const history = await service.listHistory(actor, { operatorUserId, limit: 1 });
-        const latest = history[0];
+        const latest = await service.latestLiveForOperator(actor, operatorUserId);
         if (!latest) return null;
         return { latitude: latest.latitude, longitude: latest.longitude, capturedAt: latest.recordedAt };
       } catch {

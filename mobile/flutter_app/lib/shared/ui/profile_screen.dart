@@ -160,6 +160,18 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 16),
 
+                      // ── Privacidade (B-SAN3-17) ──
+                      const _SectionLabel('Privacidade'),
+                      _SectionCard(
+                        children: [
+                          _NavRow(
+                            label: 'Localização',
+                            onTap: () => context.push('/location'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
                       // ── Aparência ──
                       const _SectionLabel('Aparência'),
                       _AppearanceCard(ref: ref),

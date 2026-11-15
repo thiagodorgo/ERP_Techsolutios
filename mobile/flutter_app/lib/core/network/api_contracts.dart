@@ -162,6 +162,13 @@ class FieldLocationApiEndpoints {
   const FieldLocationApiEndpoints._();
 
   static const mobileFieldLocations = '/api/v1/mobile/field-locations';
+
+  // B-SAN3-17 — o técnico registra (aceite, com `field_location:send`) e revoga
+  // (só com a sessão) o PRÓPRIO consentimento de localização. Contrato
+  // `mobile_location_consent@2026-11.b-san3-17`.
+  static const mobileLocationConsent = '/api/v1/mobile/location-consent';
+  static const mobileLocationConsentRevoke =
+      '/api/v1/mobile/location-consent/revoke';
 }
 
 class TelemetryApiEndpoints {
