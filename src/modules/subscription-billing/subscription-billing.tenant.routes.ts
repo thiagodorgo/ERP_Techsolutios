@@ -13,7 +13,7 @@ import { PLATFORM_ROLES } from "../core-saas/permissions/catalog.js";
 import { handleAsyncRoute, sendRouteError } from "../core-saas/routes/http.js";
 import { createDefaultStatementRuntime } from "./statements/statement.factory.js";
 import { StatementError } from "./statements/statement.types.js";
-import { buildTenantSubscriptionView, buildUsageHistory } from "./statements/subscription-view.js";
+import { buildTenantSubscriptionView } from "./statements/subscription-view.js";
 
 const BASE = "/billing/subscription";
 const PLATFORM_ROLE_SET = new Set<string>(PLATFORM_ROLES);
@@ -63,18 +63,6 @@ export function createSubscriptionBillingTenantRouter(): Router {
     handleAsyncRoute(async (request, response) => {
       const runtime = await createDefaultStatementRuntime();
       response.status(200).json({ data: await buildTenantSubscriptionView(runtime, tenantIdOf(request), new Date()) });
-    }),
-  );
-
-  router.get(
-    `${BASE}/usage-history`,
-    handleAsyncRoute(async (request, response) => {
-      const raw = request.query.months === undefined ? "6" : String(request.query.months);
-      if (!/^\d{1,2}$/.test(raw) || Number(raw) < 1 || Number(raw) > 12) {
-        throw new StatementError(400, "invalid_months", "months must be between 1 and 12.");
-      }
-      const runtime = await createDefaultStatementRuntime();
-      response.status(200).json({ data: await buildUsageHistory(runtime, tenantIdOf(request), Number(raw), new Date()) });
     }),
   );
 

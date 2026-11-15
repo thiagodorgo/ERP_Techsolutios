@@ -31,7 +31,6 @@
  "GET /api/v1/auth/identity-links": "NUCLEO",
  "GET /api/v1/authority-credentials": "{patios}",
  "GET /api/v1/billing/subscription": "NUCLEO",
- "GET /api/v1/billing/subscription/usage-history": "NUCLEO",
  "GET /api/v1/branches": "NUCLEO",
  "GET /api/v1/branches/:branchId": "NUCLEO",
  "GET /api/v1/cheques": "{finance}",

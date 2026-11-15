@@ -207,10 +207,6 @@
   "classe": "LEITURA",
   "n": 1
  },
- "ROTA GET /api/v1/billing/subscription/usage-history": {
-  "classe": "LEITURA",
-  "n": 1
- },
  "ROTA GET /api/v1/branches": {
   "classe": "LEITURA",
   "n": 1
