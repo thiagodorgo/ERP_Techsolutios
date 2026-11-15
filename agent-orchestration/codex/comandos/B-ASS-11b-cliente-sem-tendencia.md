@@ -83,7 +83,8 @@ Fecha `P-ASS-USAGE-HISTORY-X-P12` (aberta e fechada neste PR). É **condição**
 5. A regressão do §8.3 e o teste novo, em memória.
 6. As 4 mutações, aplicadas como escritas e revertidas, com a saída vermelha no diário.
 7. `git diff --name-only origin/main...HEAD` = exatamente a lista do §6.1 (§4.3); `git diff --check`.
-8. `git diff origin/main...HEAD | grep -nE '^\+.*(C:[/\\]Users|/c/Users/)'` → 0 linhas (repositório público).
+8. A guarda de caminho local do repositório público sobre `git diff origin/main...HEAD` (nenhuma linha acrescentada com
+   o caminho da pasta de usuário do Windows, em nenhuma das duas grafias) → 0 linhas. Caminho local se escreve com `~/`.
 
 ## Ordem de merge
 
@@ -92,4 +93,4 @@ estiver aberto, a Parte R entra primeiro, e quem faz rebase e regenera as 2 fixt
 
 ## Rastreabilidade
 
-ID `B-ASS-11b` · PR (a preencher) · status `in_progress`.
+ID `B-ASS-11b` · PR em rascunho (o número fica no registro pós-merge) · status `draft_pr`.
