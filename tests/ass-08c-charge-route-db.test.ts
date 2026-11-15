@@ -392,4 +392,24 @@ if (!connectionString) {
     assert.equal(postsToPayments() - before, 1);
     assert.equal(postedDueDates().at(-1), "2027-03-10");
   });
+
+  // Conserto da J-569 (leva A, C3-02): as 2 recusas do `/charge` que não tinham teste. Cada uma fica VERMELHA sem a sua
+  // linha (S-CHG-METHOD e S-CHG-NOTPAST da junta). O sucesso com a data informada (vencimento passado) é o CR5.
+  test("J569-CHG1: /charge com method fora da lista → 400 invalid_method, nada gravado", async () => {
+    const fixture = await seedClosed("j569-chg1");
+    const response = await api("POST", `/api/v1/platform/billing/statements/${fixture.statementId}/charge`, { tenantId: fixture.tenantId, method: "cheque" });
+    assert.equal(response.status, 400, JSON.stringify(response.body));
+    assert.equal(response.body.error?.reason, "invalid_method");
+    assert.equal(response.body.data, undefined);
+    assert.equal((await chargeLines(fixture.statementId)).length, 0);
+  });
+
+  test("J569-CHG2: /charge com dueDate e o vencimento do demonstrativo ainda valendo → 422 due_date_not_past, nada gravado", async () => {
+    const fixture = await seedClosed("j569-chg2", { dueDate: spDayPlus(20) });
+    const response = await api("POST", `/api/v1/platform/billing/statements/${fixture.statementId}/charge`, { tenantId: fixture.tenantId, dueDate: spDayPlus(5) });
+    assert.equal(response.status, 422, JSON.stringify(response.body));
+    assert.equal(response.body.error?.reason, "due_date_not_past");
+    assert.equal(response.body.data, undefined);
+    assert.equal((await chargeLines(fixture.statementId)).length, 0);
+  });
 }
