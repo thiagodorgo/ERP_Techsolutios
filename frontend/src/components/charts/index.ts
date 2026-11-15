@@ -8,3 +8,4 @@ export { ScatterPlot, type ScatterGuide, type ScatterPlotProps, type ScatterPoin
 export { StepBridge, type StepBridgeKind, type StepBridgeProps, type StepBridgeStep, type StepBridgeTone } from "./StepBridge";
 export { MonthSeriesChart, type MonthSeriesChartProps, type MonthSeriesPoint, type MonthSeriesState } from "./MonthSeriesChart";
 export { ProportionBar, ProportionBars, type ProportionBarItem, type ProportionBarsProps } from "./ProportionBars";
+export { OVER_LIMIT_NOTE, UsageBadge, UsagePie, formatUsageNumber, usageFraction, usagePercent, type UsagePieProps } from "./UsagePie";

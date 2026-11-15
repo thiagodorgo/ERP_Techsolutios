@@ -106,6 +106,10 @@ const NOTIFICACOES: NavItem = { label: "Notificações", path: "/notifications",
 const CENTRAL_NOTIFICACOES: NavItem = { label: "Central de Notificações", path: "/controle/notificacoes", icon: BellRing };
 const CONFIGURACOES: NavItem = { label: "Configurações", path: "/administrator/settings", icon: Settings };
 const AUDITORIA: NavItem = { label: "Auditoria", path: "/audit", icon: ScrollText };
+// B-ASS-11 — Minha assinatura (item 62): a organização vê o plano, o uso da franquia e a situação. Gate billing:read na rota
+// e no registro de navegação do servidor (`tenant.billing`); fica no FIM de ADMINISTRAÇÃO dos perfis que cobrem os papéis
+// com a permissão (admin, gestor — e o auditor, que usa o menu do gestor —, financeiro e suporte).
+const MINHA_ASSINATURA: NavItem = { label: "Minha assinatura", path: "/administrator/subscription", icon: CreditCard };
 // Ω4C PR-11 — Controle > Usuários: Acessos (último login) + Sessões ativas (revogação REAL).
 const ACESSOS: NavItem = { label: "Acessos", path: "/controle/usuarios/acessos", icon: LogIn };
 const SESSOES: NavItem = { label: "Sessões", path: "/controle/usuarios/sessoes", icon: MonitorSmartphone };
@@ -156,7 +160,7 @@ const G_GESTAO_FULL: NavGroup = {
 };
 const G_ADMIN_FULL: NavGroup = {
   label: "ADMINISTRAÇÃO",
-  items: [USUARIOS, ACESSOS, SESSOES, NOTIFICACOES, CENTRAL_NOTIFICACOES, MODELOS_CHECKLIST, CONFIGURACOES, AUDITORIA],
+  items: [USUARIOS, ACESSOS, SESSOES, NOTIFICACOES, CENTRAL_NOTIFICACOES, MODELOS_CHECKLIST, CONFIGURACOES, AUDITORIA, MINHA_ASSINATURA],
 };
 // Ω4C PR-14 — grupo TELEMETRIA (papéis com telemetry:read: tenant_admin/manager/field_dispatcher/auditor).
 // Visível para os roleKind admin/gestor/dispatcher; o backend é a autoridade final (rota PermissionGuard
@@ -201,7 +205,7 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
     { label: "OPERAÇÃO", items: [OS, ORCAMENTOS, APROVACOES, CHECKLISTS] },
     { label: "FROTA", items: [ABASTECIMENTO, MANUTENCAO, MULTAS, SEGUROS, DANOS, EXTRATO_PROFISSIONAL] },
     { label: "GESTÃO", items: [CLIENTES, SERVICOS, ESTOQUE, REMUNERACOES, FINANCEIRO, COBRANCAS, PAGAMENTOS, CHEQUES, FECHAMENTO] },
-    { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, MODELOS_CHECKLIST] },
+    { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, MODELOS_CHECKLIST, MINHA_ASSINATURA] },
   ],
   // B-SAN3-04a (item 38, P-026) — Estoque (inventory): menu PRÓPRIO. Antes o papel não tinha rótulo, caía em "gestor"
   // e o backend negava 24 dos 28 itens que o menu oferecia. Cada item aqui tem guard que o papel TEM
@@ -215,7 +219,7 @@ export const NAV_BY_ROLE: Record<RoleKind, readonly NavGroup[]> = {
     { label: "ADMINISTRAÇÃO", items: [NOTIFICACOES, MODELOS_CHECKLIST] },
   ],
   // support — apenas administração limitada (nunca Frota/Cadastros/Operação).
-  support: [{ label: "ADMINISTRAÇÃO", items: [USUARIOS, NOTIFICACOES, AUDITORIA] }],
+  support: [{ label: "ADMINISTRAÇÃO", items: [USUARIOS, NOTIFICACOES, AUDITORIA, MINHA_ASSINATURA] }],
 };
 
 export const ROLE_SUBTITLE: Record<RoleKind, string> = {
@@ -282,6 +286,7 @@ export const MVP_NAV_PATHS = new Set<string>([
   "/controle/notificacoes",
   "/administrator/checklists",
   "/administrator/settings",
+  "/administrator/subscription",
 ]);
 
 // Resolve o RoleKind a partir dos rótulos de papel (UserRole) da sessão. Coarse por
