@@ -128,3 +128,36 @@ cabeçalho) no estado em processamento e 2 (painel + cabeçalho) no vazio de ver
 11 · # fail 0`; telas `rotas /platform em App.tsx = 10 · … LIGADA = 6 · PARADA-HONESTA = 4 · SEM-FONTE = 0`; `git diff --check`
 limpo; trava `base=662ddb42 (ponta do B-ASS-09) · arquivos do bloco=79 · TRAVA: ok`; presença 0/0/0; referência `169bbdbc…`;
 `checar-3opcoes` `RESULTADO: PASSOU`.
+
+## §6.2 — a regra do dinheiro e os limites declarados da trava (T-DIN-P)
+
+A tela não calcula dinheiro para exibir (R-T5-DIN, plano v2 §6.2); a trava `frontend/tests/ass-10b-nao-calcula.guard.ts`
+enuncia a propriedade (R1 a R12) e declara os seus limites no cabeçalho. Os limites declarados são três:
+1. **A4-r2 forma 2** (Emenda 1): a geometria que perde a marca dentro de lista ou contêiner (`const xs: number[] = …`).
+2. **A4-r2 forma 4** (Emenda 1): o valor marcado entregue a uma função de fora do módulo e da biblioteca.
+3. **J567-C1-01** (junta J-567, cadeira de dinheiro): a desmarcação SEM `as` — por template (`${money}` vira `string` sem
+   marca, e `Number`/`parseFloat` sobre ela não é R3) e por parâmetro `string` de função do próprio módulo (a R10 só olha
+   `geometry`). O objeto não usa a via (sonda da cadeira: 0). Com a conta no texto visível, o T-DIN-1 e o T-UI-1 (b) pegam;
+   no texto acessível de um gráfico, nenhum teste pega. **Endurecer a trava é pendência**, não conserto deste bloco:
+   `P-567-TRAVA-DINHEIRO-TEMPLATE` (leva B da ata da J-567).
+
+Quem cobre os limites 1 e 2 é a cadeira de dinheiro da junta, pelos 2 `git grep` da Emenda 1 §2; o 3, a mesma cadeira,
+pela sonda `scan-desmarca` da J-567.
+
+## Conserto da J-567 (leva A da triagem; a junta aprovou 4/4, sem grave)
+
+- **Guardas** (`59bc7df8`): C2-1, o T44 recolhe o `export default` anônimo (teste K7); C2-3, teste-dono da releitura e da
+  edição simultânea no "Mudar de grupo"; C3-04, o T-CTR-1 deriva os enums do servidor nos 2 formatos (listas `as const` e
+  uniões de textos literais), com as 2 mutações do requisito vermelhas (um membro novo numa lista e na união
+  `SubscriptionSkipReason`).
+- **Texto falso** (`0f898fba`): C3-05, o membro de grupo com plano sem preço não é "filial" nem "a matriz assina".
+- **Série** (`6c3629d1` e `87da684a`): C3-01 a ordem; C3-02 o mês sem dado nenhum; C1-02 = C3-03 a série da organização
+  (P13 e mês vazio nunca zero).
+- **Fidelidade** (`87da684a`): CV-1 a CV-4, CV-6 a CV-10 e CV-12 a CV-14. **CV-5** não entra: o console não tem tela de
+  demonstrativo para a ação abrir; ficou a pendência `P-567-VER-DEMONSTRATIVO` (o botão sem destino seria tela morta).
+- **Declarado:**
+  - o `KpiStatCard` (biblioteca) aceita valor composto (`ReactNode`), para a margem com o % em `<small>` (CV-7). A saída
+    de quem passa texto não muda (o T-LIB-1 byte a byte continua verde);
+  - asserções que acompanham a mudança mandada pela junta: o T-DIN-2 espera o "−" U+2212 (CV-6); o T-UI-1 (b) da C
+    espera "dólar" em vez de "USD" (CV-14); o T-UI-1 (c) lê o "−" U+2212 e não espera eixo no detalhe da C (CV-3).
+    Nenhuma asserção saiu.

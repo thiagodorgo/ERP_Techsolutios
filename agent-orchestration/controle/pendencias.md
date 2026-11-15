@@ -15716,3 +15716,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** plano v2 do `B-ASS-10b` (`plano-B-ASS-10b-T5-v2.md`, §14.1, fora do repositório); registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`).
 - **fato:** o `StepBridge` (novo, `B-ASS-10b`) e o `BalanceBridge` (Financeiro, proibido ao bloco) desenham degraus parecidos.
 - **critério de encerramento:** `BalanceBridge` passa a usar o `StepBridge`.
+
+## P-567-VER-DEMONSTRATIVO (2026-11-15) — o detalhe da organização na tela de custos não abre o demonstrativo do mês — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** fora do `B-ASS-10b` (não existe a tela que a ação abriria) · **dono:** o bloco que fizer a tela do demonstrativo da organização no console da plataforma (leitura do dev, declarada: o `B-ASS-10c`, a T4 do item 61, se for ele; trocável pelo orquestrador)
+- **origem:** achado CV-5 do `cognicao-visual` na J-567 (#567), triado pela ata da J-567 na leva A com a nota "se não existir rota de demonstrativo, a ação NÃO é inventada: vira pendência"; registrada pelo conserto da J-567 (`dev-10b-a-cl`).
+- **fato:** a referência aprovada (`screen-refs/platform-cloud-billing-3opcoes.reference.html`) traz "Ver demonstrativo de <mês>" entre "Abrir organização" e "Mudar de grupo" no detalhe da organização (só com assinatura no mês). Medido em 15/11 no ramo do #567: o console da plataforma não tem rota nem tela de demonstrativo (`App.tsx`: as rotas `/platform/*` são overview, plans-modules, audit, health, apis, settings, tenants, tenants/:tenantId, tenants/:tenantId/modules e cloud-billing). Um botão sem destino seria tela morta, proibida.
+- **critério de encerramento:** existe a tela do demonstrativo da organização no console da plataforma, e o detalhe da organização na tela de custos ganha "Ver demonstrativo de <mês>" que a abre (só quando há assinatura no mês), com teste.

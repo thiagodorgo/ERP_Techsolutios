@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1097** |
-| IDs distintos | 1086 |
-| **ABERTAS** | **847** |
+| Cabecalhos `## P-` | **1098** |
+| IDs distintos | 1087 |
+| **ABERTAS** | **848** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **786** |
+| — das quais **ativas nesta rodada** | **787** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
 | FECHADAS | 246 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1097 cabecalhos para 1086 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1098 cabecalhos para 1087 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -422,7 +422,7 @@
 | `P-ASS10B-COMPOSICAO-EM-REAIS` | 15650 | MÉDIA | sim | P-ASS10B-COMPOSICAO-EM-REAIS (2026-11-14) — a composição por serviço do custo da organiz |
 | `P-ASS10B-IMPORTACAO-1MB` | 15657 | MÉDIA | sim | P-ASS10B-IMPORTACAO-1MB (2026-11-14) — a importação manual aceita até 1 MB, e o arquivo  |
 
-## ABERTAS · balde B — processo/registro — 439
+## ABERTAS · balde B — processo/registro — 440
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -865,6 +865,7 @@
 | `P-ASS10B-GRUPOS-AGENDADOS-NA-LISTA` | 15699 | BAIXA | sim | P-ASS10B-GRUPOS-AGENDADOS-NA-LISTA (2026-11-14) — a lista de grupos não traz os vínculos |
 | `P-ASS10B-MENU-SERVIDOR-GUARDA` | 15706 | BAIXA | sim | P-ASS10B-MENU-SERVIDOR-GUARDA (2026-11-14) — o item do menu do servidor pede menos que a |
 | `P-ASS10B-PONTE-UNICA` | 15713 | BAIXA | sim | P-ASS10B-PONTE-UNICA (2026-11-14) — duas pontes de degraus na biblioteca — BAIXA (opcion |
+| `P-567-VER-DEMONSTRATIVO` | 15720 | BAIXA | sim | P-567-VER-DEMONSTRATIVO (2026-11-15) — o detalhe da organização na tela de custos não ab |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

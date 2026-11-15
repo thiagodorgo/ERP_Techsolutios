@@ -15,6 +15,12 @@
 // …geometryNumber(…)`) e valor marcado entregue a função de fora do módulo e da biblioteca. Quem cobre é a cadeira de
 // dinheiro da junta, pelos 2 `git grep` da Emenda 1 §2 (e o T-DIN-1). Base: a referência executada pelo plano
 // (`planos/plano-B-ASS-10b-T5-v2-ref-nao-calcula.guard.ts.txt`), com as regras da emenda acrescentadas.
+// LIMITE DECLARADO NOVO (J-567, achado J567-C1-01 da cadeira de dinheiro): a desmarcação do dinheiro SEM `as` — (1) por
+// template (`${money}` vira `string` sem marca, e `Number`/`parseFloat` sobre ela não é R3, que olha a marca do argumento);
+// (2) por parâmetro `string` de função do próprio módulo (a R10 só olha `geometry`). A soma entre `number` sem marca não é
+// R1. O objeto não usa a via (sonda da cadeira: 0 template, 0 JSX cru, 0 método de string, 0 anotação). Com a conta no
+// texto visível, o T-DIN-1 e o T-UI-1 (b) pegam; no texto acessível de um gráfico, nenhum teste pega. Endurecer a trava
+// nos 2 caminhos é a pendência `P-567-TRAVA-DINHEIRO-TEMPLATE` (dono: o próximo bloco de tela de dinheiro).
 import path from "node:path";
 import ts from "typescript";
 
