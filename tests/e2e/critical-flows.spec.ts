@@ -488,8 +488,6 @@ test.describe("logout com sessão própria", () => {
   test.use({ storageState: emptyStorageState });
 
   test("logout real revoga sessao local e volta ao login", async ({ page }) => {
-  test.fail();
-  expect(1).toBe(2);
   const login = await entrarPelaTela(page, DEMO_EMAIL, DEMO_PASSWORD);
   expect(login.status()).toBe(200);
   await escolherOrganizacaoDemo(page);
