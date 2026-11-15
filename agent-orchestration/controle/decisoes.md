@@ -5427,6 +5427,12 @@ lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`.
 - **Fica para o PR da Parte T:** a fala do dono na PA-1 (a maquete das 3 aparências, ID proposto `D-ASS11-MAQUETE-APROVADA`) e as respostas 5 e 6 da Emenda 1, com a marca de leitura.
 - **Comando do bloco:** `agent-orchestration/codex/comandos/B-ASS-11b-cliente-sem-tendencia.md`.
 
+## D-DONO-1411-T5-TRES-OPCOES · complemento do B-ASS-10b (2026-11-14) — o texto do §16 do plano v2 da T5
+
+Complementa a entrada de mesmo ID acima (gravada pelo registro de 14/11, `reg-1411b-cl`), que vale como o registro da decisão; este é o texto que o plano v2 do `B-ASS-10b` deixou pronto, gravado pela F12 do bloco, mantido na união com a `main` (Emenda 1.1).
+
+O dono aprovou as 3 opções da tela de custo e margem da plataforma: *"aprovo as telas de custos"*. As três (A · Fiel à referência, B · Analítica, C · Fechamento e grupos) entram como aparências que cada usuário escolhe (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`); a referência é `screen-refs/platform-cloud-billing-3opcoes.reference.html`. **Seguem a recomendação, pela `D-DONO-1311-RECOMENDACOES` (não são fala própria):** a tela abre no último mês com rateio concluído; o "Uso medido" passa para o detalhe da organização. **Leituras do planejador, declaradas (§A6):** L1 a L11 do plano `plano-B-ASS-10b-T5-v2.md`; entre elas, "Mudar de grupo" restrito a uma escrita (a troca direta entre grupos espera o servidor) e o bloco em junta completa. O bloco é só a T5; a T4 fica no `B-ASS-10c`. Registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`), com o texto pronto do §16 do plano v2.
+
 ## D-ASS11-MAQUETE-APROVADA (2026-11-14 21:08 SP) — as 3 aparências da tela "Minha assinatura" (PA-1 do item 62), aprovadas sem ajuste
 
 - **Fato (decisão do dono):** às 14/11 21:08 SP, depois de ver a página "Decisões pendentes do dono" com as 4 recomendações e as capturas das 3 aparências, o dono respondeu: *"aprovo suas recomendacoes"* (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 14/11 21:08). Para a PA-1 (Emenda 1.1 do plano do `B-ASS-11`, §2.6) a recomendação era aprovar as 3, e por isso a aprovação é a fala do dono sobre a tela que ele viu, não a regra geral das recomendações.
