@@ -10,7 +10,7 @@ import type {
 } from "./operator-profile.types.js";
 import { OperatorProfileError } from "./operator-profile.types.js";
 import type { OperatorProfileRepository } from "./operator-profile.repository.js";
-import type { HolderConsentGrantInput, HolderConsentGrantResult } from "./operator-profile.repository.js";
+import type { HolderConsentGrantInput, HolderConsentGrantResult, HolderConsentLock } from "./operator-profile.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -61,7 +61,8 @@ export class PrismaOperatorProfileRepository implements OperatorProfileRepositor
     return profile ? mapOperatorProfileRecord(profile) : undefined;
   }
 
-  async update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined> {
+  async update(input: UpdateOperatorProfileInput & HolderConsentLock): Promise<OperatorProfile | undefined> {
+    await boundLockWait(this.client, input.lockTimeoutMs);
     try {
       // user_id NÃO é atualizado — vínculo imutável (referência estável 1-1).
       const updated = await this.client.operatorProfile.updateManyAndReturn({
@@ -90,6 +91,7 @@ export class PrismaOperatorProfileRepository implements OperatorProfileRepositor
   // ordem do aceite é reavaliada sobre a linha travada. Uma revogação que confirma depois da leitura do serviço é vista
   // aqui e o aceite velho sai `superseded`, sem escrever.
   async applyHolderConsentGrant(input: HolderConsentGrantInput): Promise<HolderConsentGrantResult | undefined> {
+    await boundLockWait(this.client, input.lockTimeoutMs);
     const rows = await this.client.$queryRaw<Array<{ tracking_consent: boolean; updated_at: Date }>>`
       SELECT tracking_consent, updated_at FROM operator_profiles
        WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.profileId}::uuid
@@ -130,7 +132,7 @@ export class RlsPrismaOperatorProfileRepository implements OperatorProfileReposi
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaOperatorProfileRepository(tx).findByUserId(tenantId, userId));
   }
 
-  update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined> {
+  update(input: UpdateOperatorProfileInput & HolderConsentLock): Promise<OperatorProfile | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaOperatorProfileRepository(tx).update(input));
   }
 
@@ -200,6 +202,17 @@ function mapOperatorProfileRecord(record: {
 
 // P2002 (unique (tenant_id,user_id)) → 409 duplicate_profile (relação 1-1). P2003 (FK composta inválida —
 // user inexistente ou de outro tenant) → 400 invalid_user_reference. Espelha o tratamento de FK do tariffs.
+// B-SAN3-17 (J-568, C2-01): o `lock_timeout` LOCAL da transação aberta pelo `RlsPrismaOperatorProfileRepository` (o
+// mesmo `set_config(..., true)` do `withTenantRlsBudget`). Esperada a trava além do prazo, o Postgres responde 55P03, que
+// o serviço de localização traduz em 503 `field_location_busy`, sem gravar.
+async function boundLockWait(client: PrismaExecutor, lockTimeoutMs: number | undefined): Promise<void> {
+  if (lockTimeoutMs === undefined) return;
+  if (!Number.isInteger(lockTimeoutMs) || lockTimeoutMs <= 0) {
+    throw new Error("lockTimeoutMs precisa ser inteiro positivo em ms.");
+  }
+  await client.$executeRaw`SELECT set_config('lock_timeout', ${`${lockTimeoutMs}ms`}, true)`;
+}
+
 function translatePersistenceError(error: unknown): unknown {
   if (isPrismaError(error, "P2002")) {
     return new OperatorProfileError(409, "OPERATOR_PROFILE_CONFLICT", "duplicate_profile", "This user already has an operator profile.");

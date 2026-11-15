@@ -3,7 +3,7 @@ import {
   InMemoryOperatorProfileRepository,
   type OperatorProfileRepository,
 } from "./operator-profile.repository.js";
-import type { HolderConsentGrantResult } from "./operator-profile.repository.js";
+import type { HolderConsentGrantResult, HolderConsentLock } from "./operator-profile.repository.js";
 import type {
   OperatorProfile,
   OperatorProfileActorContext,
@@ -78,7 +78,13 @@ export class OperatorProfileService {
     return this.repository.findByUserId(tenantId, parseRequiredUuid(userId, "userId"));
   }
 
-  async update(actor: OperatorProfileActorContext, profileId: string, body: RawRecord): Promise<OperatorProfile> {
+  // `options.lockTimeoutMs` só vem de quem chama por código (a revogação do titular pelo app, J-568 C2-01), nunca do corpo.
+  async update(
+    actor: OperatorProfileActorContext,
+    profileId: string,
+    body: RawRecord,
+    options: HolderConsentLock = {},
+  ): Promise<OperatorProfile> {
     // Carrega o atual (isolamento cross-tenant → 404) para resolver a transição de consentimento LGPD.
     const current = await this.get(actor, profileId);
 
@@ -119,7 +125,7 @@ export class OperatorProfileService {
       isActive: readOptionalBoolean(body.is_active ?? body.isActive, "is_active"),
       updatedBy: actor.userId,
     };
-    const updated = await this.repository.update(input);
+    const updated = await this.repository.update(options.lockTimeoutMs === undefined ? input : { ...input, lockTimeoutMs: options.lockTimeoutMs });
     if (!updated) {
       throw new OperatorProfileError(404, "OPERATOR_PROFILE_NOT_FOUND", "not_found", "Operator profile was not found.");
     }
@@ -132,6 +138,7 @@ export class OperatorProfileService {
     actor: OperatorProfileActorContext,
     profileId: string,
     decidedAt: Date,
+    options: HolderConsentLock = {},
   ): Promise<HolderConsentGrantResult> {
     const current = await this.get(actor, profileId);
     if (current.userId !== actor.userId) {
@@ -147,6 +154,7 @@ export class OperatorProfileService {
       profileId: parseRequiredUuid(profileId, "profileId"),
       decidedAt,
       updatedBy: actor.userId,
+      ...(options.lockTimeoutMs === undefined ? {} : { lockTimeoutMs: options.lockTimeoutMs }),
     });
     if (!result) {
       throw new OperatorProfileError(404, "OPERATOR_PROFILE_NOT_FOUND", "not_found", "Operator profile was not found.");

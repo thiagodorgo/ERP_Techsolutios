@@ -68,6 +68,9 @@ type ConsentDecisionInput = {
 // B-SAN3-17 (Emenda 1.8, E17-02): no máximo HOLDER_CONSENT_SLOTS decisões de consentimento do MESMO titular seguram
 // conexão ao mesmo tempo, por processo; as demais esperam na fila do titular, fora do pool (com o mesmo prazo).
 export const HOLDER_CONSENT_SLOTS = 2;
+// B-SAN3-17 (J-568, C2-01): o aceite e a revogação pelo app esperam a trava da linha do perfil no máximo este prazo
+// (`lock_timeout` local da transação, o mesmo da escrita guardada da posição); passado dele, 503 `field_location_busy`.
+export const HOLDER_CONSENT_LOCK_TIMEOUT_MS = 3_000;
 
 export type FieldLocationServiceOptions = {
   // Só para teste: o prazo da fila de consentimento e o aviso de quem ficou nela.
@@ -151,8 +154,11 @@ export class FieldLocationService {
     // Emenda 1.8 (E17-02): a decisão passa pela fila do titular; estourado o prazo, ou sem conexão/trava a tempo, 503.
     const decide = async () =>
       granted
-        ? profileService.applyOwnTrackingConsentGrant(actor, ownProfile.id, input.decidedAt)
-        : { status: "applied" as const, profile: await profileService.update(actor, ownProfile.id, { tracking_consent: false }) };
+        ? profileService.applyOwnTrackingConsentGrant(actor, ownProfile.id, input.decidedAt, { lockTimeoutMs: HOLDER_CONSENT_LOCK_TIMEOUT_MS })
+        : {
+            status: "applied" as const,
+            profile: await profileService.update(actor, ownProfile.id, { tracking_consent: false }, { lockTimeoutMs: HOLDER_CONSENT_LOCK_TIMEOUT_MS }),
+          };
     const decision = await this.consentGate
       .run(`${actor.tenantId}:${actor.userId}`, decide, {
         onWait: this.options.onConsentGateWait,

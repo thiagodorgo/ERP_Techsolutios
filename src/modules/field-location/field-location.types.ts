@@ -139,8 +139,14 @@ const BUSY_DATABASE_CODES = new Set(["P2024", "P2028", "55P03", "57014", "40P01"
 
 export function isBusyDatabaseFailure(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
-  const e = error as { code?: unknown; meta?: { code?: unknown; driverAdapterError?: { cause?: { originalCode?: unknown } } } };
-  return [e.code, e.meta?.code, e.meta?.driverAdapterError?.cause?.originalCode].some(
+  // J-568 (C2-01): a consulta de modelo (`updateManyAndReturn`, a revogação) devolve o `DriverAdapterError` cru, com o
+  // código do Postgres em `cause.originalCode`.
+  const e = error as {
+    code?: unknown;
+    cause?: { originalCode?: unknown };
+    meta?: { code?: unknown; driverAdapterError?: { cause?: { originalCode?: unknown } } };
+  };
+  return [e.code, e.meta?.code, e.meta?.driverAdapterError?.cause?.originalCode, e.cause?.originalCode].some(
     (code) => typeof code === "string" && BUSY_DATABASE_CODES.has(code),
   );
 }
