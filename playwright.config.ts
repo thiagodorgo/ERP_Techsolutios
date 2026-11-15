@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const apiPort = process.env.E2E_API_PORT ?? "3200";
-const frontendPort = process.env.E2E_FRONTEND_PORT ?? "5173";
+const apiPort = process.env.E2E_API_PORT ?? "3442";
+const frontendPort = process.env.E2E_FRONTEND_PORT ?? "5442";
 const databaseUrl =
   process.env.DATABASE_URL ??
   "postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public";
@@ -10,16 +10,19 @@ const frontendBaseUrl = process.env.E2E_FRONTEND_BASE_URL ?? `http://127.0.0.1:$
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  outputDir: "test-results/artefatos",
   timeout: 45_000,
   expect: {
     timeout: 10_000,
   },
   fullyParallel: false,
+  forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  reporter: [
-    ["list"],
-    ["html", { open: "never", outputFolder: "playwright-report" }],
-  ],
+  workers: 1,
+  maxFailures: process.env.CI ? 3 : 0,
+  reporter: process.env.CI
+    ? [["list"], ["json"]]
+    : [["list"], ["html", { open: "never", outputFolder: "playwright-report" }]],
   use: {
     baseURL: frontendBaseUrl,
     trace: "retain-on-failure",
@@ -28,7 +31,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: "npm run dev",
+      command: process.env.CI ? "npx tsx src/server.ts" : "npm run dev",
       url: `${apiBaseUrl}/health`,
       timeout: 120_000,
       reuseExistingServer: false,
@@ -42,7 +45,9 @@ export default defineConfig({
       },
     },
     {
-      command: `npm --prefix frontend run dev -- --host 127.0.0.1 --port ${frontendPort}`,
+      command: process.env.CI
+        ? `npm --prefix frontend run preview -- --host 127.0.0.1 --port ${frontendPort} --strictPort`
+        : `npm --prefix frontend run dev -- --host 127.0.0.1 --port ${frontendPort} --strictPort`,
       url: frontendBaseUrl,
       timeout: 120_000,
       reuseExistingServer: false,
@@ -56,8 +61,19 @@ export default defineConfig({
   ],
   projects: [
     {
-      name: "chromium",
+      name: "preparo",
+      testMatch: /.*\.setup\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "chromium",
+      testMatch: /.*\.spec\.ts/,
+      testIgnore: /controle\//,
+      dependencies: ["preparo"],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    ...(process.env.E2E_CANARIO
+      ? [{ name: "controle", testMatch: /controle\/.*\.spec\.ts/, use: { ...devices["Desktop Chrome"] } }]
+      : []),
   ],
 });

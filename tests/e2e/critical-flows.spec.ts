@@ -1,24 +1,30 @@
 import { expect, test, type Page } from "@playwright/test";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
-const databaseUrl =
-  process.env.DATABASE_URL ??
-  "postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public";
-const demoEmail = process.env.E2E_DEMO_ADMIN_EMAIL ?? "admin.demo@example.com";
-const demoPassword = process.env.DEMO_ADMIN_PASSWORD ?? "ChangeMe123!";
-const platformEmail = process.env.E2E_PLATFORM_EMAIL ?? "platform.admin@erp.local";
-const platformPassword = process.env.E2E_PLATFORM_PASSWORD ?? "platform-admin-dev-password";
+import { createE2ePrisma } from "./apoio/banco.js";
+import {
+  DEMO_EMAIL,
+  DEMO_PASSWORD,
+  PLATFORM_EMAIL,
+  PLATFORM_PASSWORD,
+  SESSAO_ADMIN,
+  entrarPelaTela,
+  escolherOrganizacaoDemo,
+} from "./apoio/sessao.js";
+
+const emptyStorageState = { cookies: [], origins: [] };
+const apiPort = process.env.E2E_API_PORT ?? "3442";
+const apiBaseUrl = process.env.E2E_API_BASE_URL ?? `http://127.0.0.1:${apiPort}/api/v1`;
 const e2eChecklistId = "11111111-2222-4333-8444-555555555555";
 const e2eVehicleComponentId = "11111111-2222-4333-8444-555555555556";
 const e2ePhotoComponentId = "11111111-2222-4333-8444-555555555557";
 
 let demoTenantId = "";
 
+test.use({ storageState: SESSAO_ADMIN });
+
 test.beforeAll(async () => {
-  const prisma = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: databaseUrl }),
-  });
+  const prisma = createE2ePrisma();
 
   try {
     const tenant = await prisma.tenant.findUnique({
@@ -83,36 +89,32 @@ test.beforeAll(async () => {
   }
 });
 
-test.beforeEach(async ({ page }) => {
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.evaluate(() => window.localStorage.clear());
-});
+test.describe("entrada pela tela", () => {
+  test.use({ storageState: emptyStorageState });
 
-test("login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth", async ({ page }) => {
+  test("login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth", async ({ page }) => {
   await page.goto("/administrator/checklists");
   await expect(page).toHaveURL(/\/login$/);
 
-  await page.getByLabel("Tenant ID").fill(demoTenantId);
-  await page.getByLabel("E-mail corporativo").fill(demoEmail);
-  await page.getByRole("textbox", { name: /Senha/i }).fill("senha-invalida");
-  await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByText("Tenant, e-mail ou senha invalidos.")).toBeVisible();
+  const invalid = await entrarPelaTela(page, DEMO_EMAIL, "senha-invalida");
+  expect(invalid.status()).toBe(401);
+  await expect(page.getByText(/e-mail ou senha inválidos/i)).toBeVisible();
 
   await resetDemoAuthState();
-  await loginAsTenantAdmin(page);
+  const valid = await entrarPelaTela(page, DEMO_EMAIL, DEMO_PASSWORD);
+  expect(valid.status()).toBe(200);
   await expect(page).toHaveURL(/\/select-context$/);
 
   const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
-  expect(session).toContain(demoEmail);
+  expect(session).toContain(DEMO_EMAIL);
   expect(session).toContain("accessToken");
   expect(session).toContain("refreshToken");
+  });
 });
 
 test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console", async ({ page }) => {
-  await loginAsTenantAdmin(page);
   const navigationResponse = page.waitForResponse((response) => response.url().includes("/api/v1/navigation/menu"));
-  await activateFirstContext(page);
+  await page.goto("/dashboard");
   await navigationResponse;
 
   await expect(page).toHaveURL(/\/dashboard$/);
@@ -343,14 +345,16 @@ async function ensureWorkOrderId(page: Page): Promise<string> {
   return id;
 }
 
-test("platform admin acessa Platform Console", async ({ page }) => {
-  const navigationResponse = page.waitForResponse((response) => response.url().includes("/api/v1/navigation/menu?scope=platform"));
-  await loginAsPlatformAdmin(page);
-  await navigationResponse;
+test.describe("administrador da plataforma pela tela", () => {
+  test.use({ storageState: emptyStorageState });
+
+  test("platform admin acessa Platform Console", async ({ page }) => {
+  const login = await entrarPelaTela(page, PLATFORM_EMAIL, PLATFORM_PASSWORD);
+  expect(login.status()).toBe(200);
 
   await expect(page).toHaveURL(/\/platform\/tenants$/);
   const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
-  expect(session).toContain(platformEmail);
+  expect(session).toContain(PLATFORM_EMAIL);
   expect(session).toContain("accessToken");
   expect(session).toContain("refreshToken");
 
@@ -364,6 +368,7 @@ test("platform admin acessa Platform Console", async ({ page }) => {
   await expect(page).toHaveURL(/\/platform\/cloud-billing$/);
   await expect(page.getByRole("heading", { name: "Cloud Billing", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Visao geral" })).toBeVisible();
+  });
 });
 
 // CHECKLIST P1 PR-02a — a tela virou "Modelos de Checklist" no desenho do protótipo do dono
@@ -417,42 +422,36 @@ test("W03 Configuracoes renderiza categorias e temas planejados", async ({ page 
   }
 });
 
-test("logout real revoga sessao local e volta ao login", async ({ page }) => {
-  await loginAndActivateContext(page);
+test.describe("logout com sessão própria", () => {
+  test.use({ storageState: emptyStorageState });
 
+  test("logout real revoga sessao local e volta ao login", async ({ page }) => {
+  const login = await entrarPelaTela(page, DEMO_EMAIL, DEMO_PASSWORD);
+  expect(login.status()).toBe(200);
+  await escolherOrganizacaoDemo(page);
+  const refreshToken = await page.evaluate(() => {
+    const raw = window.localStorage.getItem("erp-techsolutions.auth-session");
+    return raw ? (JSON.parse(raw) as { refreshToken?: string }).refreshToken ?? "" : "";
+  });
+  expect(refreshToken).not.toBe("");
+
+  const logoutResponse = page.waitForResponse(
+    (response) => response.url().endsWith("/api/v1/auth/logout") && response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "Sair" }).click();
+  expect((await logoutResponse).status()).toBe(200);
 
   await expect(page).toHaveURL(/\/login$/);
   const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
   expect(session).toBeNull();
+  const refresh = await page.request.post(`${apiBaseUrl}/auth/refresh`, { data: { refreshToken } });
+  expect(refresh.status()).toBe(401);
+  });
 });
 
 async function loginAndActivateContext(page: Page): Promise<void> {
-  await loginAsTenantAdmin(page);
-  await activateFirstContext(page);
-}
-
-async function loginAsTenantAdmin(page: Page): Promise<void> {
-  await page.goto("/login");
-  await page.getByLabel("Tenant ID").fill(demoTenantId);
-  await page.getByLabel("E-mail corporativo").fill(demoEmail);
-  await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
-  await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page).toHaveURL(/\/select-context$/);
-}
-
-async function loginAsPlatformAdmin(page: Page): Promise<void> {
-  await page.goto("/login");
-  await page.getByLabel("Tenant ID").fill(demoTenantId);
-  await page.getByLabel("E-mail corporativo").fill(platformEmail);
-  await page.getByRole("textbox", { name: /Senha/i }).fill(platformPassword);
-  await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page).toHaveURL(/\/platform\/tenants$/);
-}
-
-async function activateFirstContext(page: Page): Promise<void> {
-  await expect(page.getByRole("heading", { name: "Definir tenant, filial e papel ativo" })).toBeVisible();
-  await page.getByRole("button", { name: "Ativar contexto" }).first().click();
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/dashboard$/);
 }
 
 async function enableOperationsMapFrontendContext(page: Page): Promise<void> {
@@ -513,15 +512,13 @@ async function enableWorkOrdersFrontendContext(page: Page): Promise<void> {
 }
 
 async function resetDemoAuthState(): Promise<void> {
-  const prisma = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: databaseUrl }),
-  });
+  const prisma = createE2ePrisma();
 
   try {
     await prisma.localAuthCredential.updateMany({
       where: {
         tenant_id: demoTenantId,
-        email: demoEmail,
+        email: DEMO_EMAIL,
       },
       data: {
         failed_attempts: 0,
@@ -543,7 +540,7 @@ async function upsertChecklistComponent(
     label: string;
     required: boolean;
     order_index: number;
-    config: Record<string, unknown>;
+    config: Prisma.InputJsonValue;
   },
 ): Promise<void> {
   await prisma.checklistTemplateComponent.upsert({
