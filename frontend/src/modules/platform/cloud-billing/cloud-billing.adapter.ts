@@ -302,7 +302,7 @@ export function mapAllocationRun(data: Json): CloudAllocationRun {
     completedAt: readString(data.completedAt) ?? null,
     createdAt: readString(data.createdAt) ?? null,
     errorMessage: readString(data.errorMessage) ?? null,
-    metadata: isRecord(data.metadata) ? { importResolution: data.metadata.importResolution } : null,
+    metadata: isRecord(data.metadata) ? { importResolution: data.metadata.importResolution, trigger: readString(data.metadata.trigger) ?? null } : null,
   };
 }
 

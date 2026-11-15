@@ -165,7 +165,7 @@ export type CloudAllocationRun = {
   readonly completedAt: string | null;
   readonly createdAt: string | null;
   readonly errorMessage: string | null;
-  readonly metadata: { readonly importResolution?: unknown } | null;
+  readonly metadata: { readonly importResolution?: unknown; readonly trigger?: string | null } | null;
 };
 
 /** Uma linha do rateio da organização (composição por serviço), na moeda ORIGINAL do arquivo (B2: sem reais). */

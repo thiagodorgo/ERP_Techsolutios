@@ -150,7 +150,7 @@ export const IMPORTS_PAYLOAD: Json[] = [
 ];
 
 export const RUNS_PAYLOAD: Json[] = [
-  { id: "run-out", provider: "aws", status: "completed", periodStart: "2026-10-01T00:00:00.000Z", periodEnd: "2026-10-31T00:00:00.000Z", startedAt: "2026-11-04T12:13:00.000Z", completedAt: "2026-11-04T12:13:30.000Z", createdAt: "2026-11-04T12:13:00.000Z", metadata: { importResolution: "latest_completed" } },
+  { id: "run-out", provider: "aws", status: "completed", periodStart: "2026-10-01T00:00:00.000Z", periodEnd: "2026-10-31T00:00:00.000Z", startedAt: "2026-11-04T12:13:00.000Z", completedAt: "2026-11-04T12:13:30.000Z", createdAt: "2026-11-04T12:13:00.000Z", metadata: { importResolution: "latest_completed", trigger: "import" } },
 ];
 
 export type FixtureOptions = {

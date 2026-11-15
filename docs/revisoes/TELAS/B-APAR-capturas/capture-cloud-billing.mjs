@@ -232,6 +232,14 @@ const PARTS = {
         await context.close();
       }
     }
+    // a C também a 924×540 (a largura dos PNGs da referência; ela transborda igual à referência)
+    {
+      const { context, page, unknown } = await open({ appearance: "C", width: 924, height: 540 });
+      note(`C 924x540 ${JSON.stringify(await measure(page))}`);
+      await shotScrolled(page, "c", 924, 540);
+      reportUnknown(unknown);
+      await context.close();
+    }
   },
   async detalhe() {
     for (const appearance of ["A", "B", "C"]) {

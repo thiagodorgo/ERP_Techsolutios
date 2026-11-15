@@ -8,13 +8,17 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 
 import { NO_WRITE_ACCESS } from "../src/modules/platform/cloud-billing/cloud-billing.access";
+import { asMoney, formatBRL } from "../src/modules/platform/cloud-billing/cloud-billing.money";
 import { periodForMonth } from "../src/modules/platform/cloud-billing/cloud-billing.service";
 import { buildCloudBillingView, INITIAL_UI, type CloudBillingView } from "../src/modules/platform/cloud-billing/cloud-billing.state";
 import type { CloudBillingData } from "../src/modules/platform/cloud-billing/cloud-billing.types";
 import { emptyCloudBilling } from "../src/modules/platform/cloud-billing/cloud-billing.types";
 import { PlatformCloudBillingScreen } from "../src/modules/platform/cloud-billing/pages/PlatformCloudBillingPage";
 import type { CloudBillingViewProps } from "../src/modules/platform/cloud-billing/views/cloudBilling.shared";
-import { COST_OK, CURRENT_MONTH, fixtureData, fixtureGroupDetails, fixtureSeries, globalJson, globalPayload, groupPayload, MONTH, NULL_ORIGINAL, tenantPayload, TODAY } from "./helpers/cloud-billing.fixture";
+import { COST_OK, CURRENT_MONTH, fixtureData, fixtureGroupDetails, fixtureSeries, globalJson, globalPayload, groupPayload, MONTH, NULL_ORIGINAL, SENTINEL_COST, tenantPayload, TODAY } from "./helpers/cloud-billing.fixture";
+
+/** O texto sem os espaços inquebráveis que o `Intl` põe entre "R$" e o número. */
+const plain = (text: string) => text.replace(/\u00a0|\u202f/g, " ");
 
 // B-ASS-10b (T5) · os estados da tela (plano v2 §6.5 e §7 do contrato), iguais nas 3 aparências — T-UI-3; a linguagem
 // (T-UI-4: sem andaime, sem termo técnico, acentos certos). Cada estado com a sua fixture, na forma do servidor. O T-UI-3
@@ -213,6 +217,32 @@ test("T-UI-3 dados desatualizados: o aviso aparece e os últimos valores confirm
     const html = screen({ ...fixtureData(), stale: true }, appearance);
     assert.match(visible(html), /Dados desatualizados/);
     assert.match(visible(html), /R\$ 8\.258,91|R\$ 7\.770,11/);
+    // J-567 (CV-13): o mês em minúscula no meio da frase
+    assert.match(visible(html), /Os últimos dados confirmados de outubro de 2026 continuam/, `${appearance}: o mês em minúscula`);
+  }
+});
+
+// J-567: a fidelidade que o texto e as classes mostram (os desvios visuais medidos pela cognição visual)
+test("T-UI-3 (J-567, CV-7, CV-10, CV-12) a margem com o % menor, o contador das abas do sistema e o aviso de rateio em processamento", () => {
+  const processing = { id: "run-p", status: "processing", periodStart: "2026-10-01T00:00:00.000Z", startedAt: "2026-11-14T14:40:00.000Z", createdAt: "2026-11-14T14:40:00.000Z" };
+  const completed = { id: "run-out", status: "completed", periodStart: "2026-10-01T00:00:00.000Z", startedAt: "2026-11-04T12:13:00.000Z", completedAt: "2026-11-04T12:13:30.000Z", createdAt: "2026-11-04T12:13:00.000Z", metadata: { importResolution: "latest_completed" } };
+  for (const appearance of LETTERS) {
+    const html = screen(fixtureData(), appearance);
+    // CV-10: o contador das abas é o do sistema, sem paleta nova
+    assert.match(html, /class="financeiro-bc__tab-count"/, `${appearance}: o contador das abas do sistema`);
+    assert.doesNotMatch(html, /cb-tab-count/, `${appearance}: sem a classe nova do contador`);
+    // CV-12: com um rateio concluído e outro em processamento, custo e margem aparecem — o aviso não diz "em branco"
+    const withValues = visible(screen(fixtureData({ runs: [processing, completed] }), appearance));
+    assert.match(withValues, /está em processamento desde/, `${appearance}: o aviso`);
+    assert.match(withValues, /Custo e margem são os do último rateio concluído até este terminar/, `${appearance}: o aviso diz que os valores são do rateio anterior`);
+    assert.doesNotMatch(withValues, /ficam em branco até um rateio concluir/, `${appearance}: não diz "em branco" com valores na tela`);
+    // o controle: sem custo válido (sem rateio concluído), o aviso diz "em branco"
+    const blank = visible(screen({ ...dataWithCost(NO_COST("no_run")), runs: fixtureData({ runs: [processing] }).runs }, appearance));
+    assert.match(blank, /ficam em branco até um rateio concluir/, `${appearance}: controle, "em branco" sem custo`);
+  }
+  // CV-7: a margem global com o % menor ao lado (A e B, onde o indicador grande mostra a margem)
+  for (const appearance of LETTERS.filter((letter) => letter !== "C")) {
+    assert.match(screen(fixtureData(), appearance), /<div class="pat-kpi__value">[^<]*488,80<small>[^<]*6,3 %<\/small><\/div>/, `${appearance}: a margem com o % em <small>`);
   }
 });
 
@@ -314,6 +344,32 @@ test("T-UI-3 (J-567, C3-02) o mês sem dado nenhum: sem barra nem ponto, '—' e
     // o controle: com os 6 meses com valor, a linha tem 6 pontos (o contador não é vácuo)
     if (appearance === "A") assert.equal(pathPoints(screen(fixtureData(), appearance), "#2563eb"), 6, "A: controle, 6 pontos");
   }
+});
+
+// J-567 (C1-02 = C3-03): a série da organização no detalhe aberto. No mês SEM CUSTO VÁLIDO o custo é "—" mesmo que a
+// linha traga um valor (P13; as sentinelas `7xx.11` do fixture), e o mês SEM DADO NENHUM é buraco na linha, nunca zero.
+test("T-UI-3 (J-567, C1-02/C3-03) a série da organização: P13 no custo e o mês vazio nunca vira zero", () => {
+  const series = fixtureSeries("ok", [], { empty: ["2026-06"], invalidWithCost: ["2026-08"] });
+  const ui = { ...INITIAL_UI, modo: "tenant" as const, aberta: "t:t1" };
+  for (const appearance of LETTERS) {
+    const html = screen(fixtureData(), appearance, { series, ui });
+    const trend = /<svg class="ui-month-trend"[^>]*aria-label="([^"]*)"[^>]*>([\s\S]*?)<\/svg>/.exec(html);
+    assert.ok(trend, `${appearance}: a linha de tendência da organização está no detalhe`);
+    const aria = trend[1]!.replace(/&nbsp;|\u00a0/g, " ");
+    const points = (serie: "a" | "b") => ((new RegExp(`<path d="([^"]*)"[^>]*data-serie="${serie}"`).exec(trend[2]!)?.[1] ?? "").match(/[ML]/g) ?? []).length;
+    // P13: nenhuma sentinela do mês sem custo válido, nem no texto acessível nem no desenho
+    for (let line = 0; line < 5; line += 1) assert.ok(!aria.includes(plain(formatBRL(asMoney(SENTINEL_COST(line))))), `${appearance}: sem o custo do mês sem custo válido (${SENTINEL_COST(line)})`);
+    assert.match(aria, /ago\/26: assinatura R\$ 1\.990,00, custo —/, `${appearance}: agosto sem custo válido diz "—"`);
+    assert.equal(points("b"), 1, `${appearance}: o custo só tem ponto no mês com custo válido (outubro)`);
+    // o mês vazio: "sem dados", e buraco na linha (5 dos 6 meses têm assinatura)
+    assert.match(aria, /jun\/26: sem dados/, `${appearance}: junho sem dados`);
+    assert.equal(points("a"), 5, `${appearance}: a assinatura pula o mês vazio`);
+    // sem texto no desenho (a `spark` da referência) e nenhum R$ de outra organização
+    assert.doesNotMatch(trend[2]!, /<text/, `${appearance}: a linha de tendência não tem texto`);
+  }
+  // o controle: com a série normal, o custo de outubro e a assinatura dos 6 meses aparecem
+  const control = /<svg class="ui-month-trend"[^>]*aria-label="([^"]*)"/.exec(screen(fixtureData(), "A", { ui }));
+  assert.match(control?.[1] ?? "", /out\/26: assinatura R\$ 1\.990,00, custo R\$ 2\.180,62/, "controle: outubro com assinatura e custo");
 });
 
 test("T-UI-4 nenhuma aparência tem andaime, termo técnico ou acento faltando", () => {

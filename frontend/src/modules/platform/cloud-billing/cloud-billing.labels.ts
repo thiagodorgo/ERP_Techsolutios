@@ -117,3 +117,43 @@ export function formatDay(value: string | null | undefined): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "—" : DATE.format(date);
 }
+const DAY_SHORT = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "America/Sao_Paulo" });
+/** "05/11" (São Paulo), a data curta da referência no fechamento da C. */
+export function formatDayShort(value: string | null | undefined): string {
+  if (!value) return "—";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${value.slice(8, 10)}/${value.slice(5, 7)}`;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : DAY_SHORT.format(date);
+}
+
+/** J-567 (CV-14): o nome da moeda do arquivo em pt-BR ("dólar"), nunca o código ("USD"). Sem moeda conhecida, o genérico. */
+export function currencyName(code: string | null | undefined): string {
+  if (code === "USD") return "dólar";
+  if (code === "BRL") return "real";
+  if (code === "EUR") return "euro";
+  return "moeda do arquivo";
+}
+
+/**
+ * J-567 (CV-14): o serviço da AWS em linguagem de negócio (os nomes da referência aprovada); o código da AWS fica só no
+ * `title`. Serviço que a tela não conhece cai na categoria do rateio; sem ela, "Outro serviço da nuvem".
+ */
+const SERVICE_LABEL: Readonly<Record<string, string>> = {
+  AmazonRDS: "Banco de dados",
+  AmazonECS: "Processamento",
+  AmazonEC2: "Processamento",
+  AWSLambda: "Tarefas agendadas",
+  AmazonS3: "Arquivos e fotos",
+  AWSDataTransfer: "Rede e transferência",
+  AmazonCloudWatch: "Monitoramento",
+};
+const CATEGORY_LABEL: Readonly<Record<string, string>> = {
+  database: "Banco de dados",
+  compute: "Processamento",
+  storage: "Arquivos e fotos",
+  network: "Rede e transferência",
+  monitoring: "Monitoramento",
+};
+export function serviceLabel(serviceCode: string, costCategory: string | null): string {
+  return SERVICE_LABEL[serviceCode] ?? (costCategory ? CATEGORY_LABEL[costCategory.toLowerCase()] : undefined) ?? "Outro serviço da nuvem";
+}

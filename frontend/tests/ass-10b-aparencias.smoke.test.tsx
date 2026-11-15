@@ -130,6 +130,8 @@ test("T-UI-1 (b) A: o texto de cada bloco é o literal formatado do campo que o 
   }
 });
 
+const MINUS = String.fromCharCode(0x2212);
+
 test("T-UI-1 (c) todo R$ exibido pertence aos valores do modelo; a escala dos eixos sai pela marca data-escala", async () => {
   assert.ok(LETTERS.includes("A"), "controle de vacuidade: a aparência A existe");
   const variants = [state.INITIAL_UI, { ...state.INITIAL_UI, aberta: "t:t2" }, { ...state.INITIAL_UI, modo: "group" as const, aberta: "g:g1" }, { ...state.INITIAL_UI, modo: "global" as const, aberta: "p:orgs" }];
@@ -144,14 +146,16 @@ test("T-UI-1 (c) todo R$ exibido pertence aos valores do modelo; a escala dos ei
       const { container, unmount } = await mount(React.createElement(VIEWS[letter] as never, props(model) as never));
       try {
         const scales = elements(container, (el) => el.hasAttribute("data-escala"));
-        // a C não tem gráfico com eixo (a ponte e a margem mês a mês desenham sem escala, como na maquete): nela a escala
-        // só existe no detalhe aberto da organização (o gráfico de 6 meses do detalhe, comum às 3 aparências)
-        const axisExpected = letter !== "C" || (ui.aberta ?? "").startsWith("t:");
+        // a C não tem gráfico com eixo (a ponte e a margem mês a mês desenham sem escala, como na maquete). J-567 (CV-3): o
+        // detalhe aberto da organização também não (a série dele é a linha de tendência sem texto da referência)
+        const axisExpected = letter !== "C";
         if (axisExpected) assert.ok(scales.length > 0, `${letter}: o eixo da biblioteca marca a escala (controle de vacuidade da exclusão)`);
         else assert.equal(scales.length, 0, `${letter} ${JSON.stringify(ui)}: sem eixo, nenhuma escala`);
-        const shown = plain(visibleTextWithoutScale(container)).match(/-?R\$ [\d.]+(,\d+)?( mil| mi)?/g) ?? [];
+        // J-567 (CV-6): o sinal de menos é o U+2212 da referência (o hífen continua aceito, para não esconder um valor)
+        const shown = plain(visibleTextWithoutScale(container)).match(/[-−]?R\$ [\d.]+(,\d+)?( mil| mi)?/g) ?? [];
         assert.ok(shown.length > 10, `${letter}: controle de vacuidade (R$ achados: ${shown.length})`);
-        const strays = shown.filter((value) => !allowed.has(value));
+        // o "−" do degrau que tira, na ponte da C (biblioteca), é sinal de apresentação de um valor do servidor
+        const strays = shown.filter((value) => !allowed.has(value) && !(value.startsWith(MINUS) && allowed.has(value.slice(1))));
         assert.deepEqual(strays, [], `${letter} ${JSON.stringify(ui)}: R$ que não vem do modelo`);
       } finally {
         await unmount();
@@ -341,10 +345,13 @@ test("T-UI-1 (b) C: o texto de cada bloco é o literal formatado do campo que o 
     // a lista de fechamento traz o arquivo, o rateio e o dólar do mês, do modelo
     const closing = plain(text(elements(container, (el) => el.getAttribute("aria-label") === "Fechamento de outubro")[0]!));
     assert.match(closing, /Arquivo de custo importado/);
-    assert.match(closing, /3\.214 linhas · USD/);
+    // J-567 (CV-9, CV-14): a moeda pelo nome ("dólar", não "USD"), o rateio automático dito, e a data curta da referência
+    assert.match(closing, /3\.214 linhas · dólar/);
+    assert.doesNotMatch(closing, /USD/);
     assert.match(closing, /Rateio do mês concluído/);
+    assert.match(closing, /rodou sozinho depois da importação/);
     assert.match(closing, /Dólar do mês digitado/);
-    assert.match(closing, /5,412300 · versão 2/);
+    assert.match(closing, /5,412300 · versão 2 · 05\/11(?!\/)/);
     // a margem mês a mês: os 6 meses, e o mês da tela mostra o literal da margem global e o dólar dele
     const months = elements(container, (el) => el.hasAttribute("data-mes") && el.localName === "button");
     assert.equal(months.length, 6, "6 meses na margem mês a mês");

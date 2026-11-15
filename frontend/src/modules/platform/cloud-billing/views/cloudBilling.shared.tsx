@@ -13,6 +13,7 @@ import {
   SOURCE_LABEL,
   alertLabelOf,
   capitalize,
+  currencyName,
   formatDateTime,
   formatDay,
   monthLabel,
@@ -20,6 +21,7 @@ import {
   monthShort,
   reasonAction,
   reasonLabel,
+  serviceLabel,
   shortAlertLabel,
 } from "../cloud-billing.labels";
 import { compareMoney, formatBRL, formatBRLCompact, formatCount, formatOriginal, formatPct, formatRate, geometryNumber, isNegative, marginBandOf, type Money, type Pct } from "../cloud-billing.money";
@@ -148,7 +150,9 @@ export function CloudBillingBanners({ model, access, onAction, emptyState = fals
   if (model.pendingRun) {
     out.push(
       <Banner key="run" tone="warning" icon={Clock} action={runButton}>
-        <b>O rateio de {month} está em processamento desde {formatDateTime(model.pendingRun.startedAt ?? model.pendingRun.createdAt)}.</b> Custo e margem ficam em branco até um rateio concluir. Se não terminar, rode o rateio de novo.
+        <b>O rateio de {month} está em processamento desde {formatDateTime(model.pendingRun.startedAt ?? model.pendingRun.createdAt)}.</b>{" "}
+        {/* J-567 (CV-12): "em branco" só quando estão em branco; com um rateio concluído antes, a tela mostra os valores dele */}
+        {model.costValid ? "Custo e margem são os do último rateio concluído até este terminar." : "Custo e margem ficam em branco até um rateio concluir."} Se não terminar, rode o rateio de novo.
       </Banner>,
     );
   }
@@ -232,6 +236,8 @@ export type KpiModel = {
   readonly iconBg: string;
   readonly label: string;
   readonly value: string;
+  /** J-567 (CV-7): a parte menor ao lado do valor (a margem em %, como `<small>` na referência). */
+  readonly valueSmall?: string;
   readonly hint: string;
   readonly tag?: { readonly label: string; readonly bg: string; readonly fg: string };
 };
@@ -311,7 +317,8 @@ export function buildKpis(model: CloudBillingView): Readonly<Record<KpiKey, KpiM
       iconColor: "#15803d",
       iconBg: "#ecfdf5",
       label: "Margem global",
-      value: global?.marginPct ? `${formatBRL(global.margin)} · ${formatPct(global.marginPct)}` : formatBRL(global?.margin ?? null),
+      value: formatBRL(global?.margin ?? null),
+      valueSmall: global?.marginPct ? formatPct(global.marginPct) : undefined,
       tag: { label: ALERT_LABEL[global?.alert ?? "unknown"], bg: alertTone.bg, fg: alertTone.fg },
       hint: model.costValid ? `assinaturas menos o custo total${previousHint(model, (point) => (point.marginPct === null ? null : formatPct(point.marginPct)))}` : "sem custo, sem margem",
     },
@@ -352,12 +359,21 @@ export function KpiBlock({ kpi, pressed, onTarget, footer }: { readonly kpi: Kpi
         icon={kpi.icon}
         iconColor={kpi.iconColor}
         iconBg={kpi.iconBg}
-        value={kpi.value}
+        value={
+          kpi.valueSmall ? (
+            <>
+              {kpi.value}
+              <small>{kpi.valueSmall}</small>
+            </>
+          ) : (
+            kpi.value
+          )
+        }
         label={kpi.label}
         hint={kpi.hint}
         tag={kpi.tag}
         pressed={pressed}
-        ariaLabel={`${kpi.label}: ${plain(kpi.value)} — filtrar a lista`}
+        ariaLabel={`${kpi.label}: ${plain(kpi.value)}${kpi.valueSmall ? ` · ${plain(kpi.valueSmall)}` : ""} — filtrar a lista`}
         onClick={() => onTarget(kpi.alvo)}
         footer={footer}
       />
@@ -526,7 +542,12 @@ function Field({ label, children }: { readonly label: string; readonly children:
   );
 }
 
-function TenantMiniSeries({ points, onMonth }: { readonly points: readonly TenantSeriesPoint[]; readonly onMonth: (month: string) => void }) {
+/**
+ * J-567 (CV-3): a série da organização no detalhe é a LINHA DE TENDÊNCIA 200×30 da referência (sem texto, a assinatura
+ * cheia e o custo tracejado), não o gráfico de 6 meses encolhido. O mês vazio é buraco na linha (nunca zero), e o custo
+ * já chega `null` no mês sem custo válido (P13, `tenantSeries` do modelo). O texto acessível diz cada mês.
+ */
+function TenantMiniSeries({ points }: { readonly points: readonly TenantSeriesPoint[] }) {
   const chartPoints: MonthSeriesPoint[] = points.map((point) => ({
     key: point.month,
     label: monthShort(point.month),
@@ -535,14 +556,27 @@ function TenantMiniSeries({ points, onMonth }: { readonly points: readonly Tenan
     b: point.state === "ok" ? geometryNumber(point.cost) : null,
     state: point.state === "ok" ? (point.subscription === null && point.cost === null ? "empty" : "ok") : point.state,
     ariaLabel:
-      point.state === "ok"
-        ? `${capitalize(monthLabel(point.month))}: assinatura ${plain(formatBRL(point.subscription))}, custo ${plain(formatBRL(point.cost))}`
-        : `${capitalize(monthLabel(point.month))}: ${point.state === "loading" ? "carregando" : "não foi possível carregar"}`,
+      point.state !== "ok"
+        ? `${monthShort(point.month)}: ${point.state === "loading" ? "carregando" : "não foi possível carregar"}`
+        : point.subscription === null && point.cost === null
+          ? `${monthShort(point.month)}: sem dados`
+          : `${monthShort(point.month)}: assinatura ${plain(formatBRL(point.subscription))}, custo ${plain(formatBRL(point.cost))}`,
   }));
+  const period = points.length ? `${monthShort(points[0]!.month)} a ${monthShort(points[points.length - 1]!.month)}` : "";
   return (
     <div className="cb-mini-series">
-      <MonthSeriesChart mode="lines" points={chartPoints} onSelect={onMonth} ariaLabel="Assinatura e custo desta organização nos últimos 6 meses" />
-      <ChartLegend items={[{ label: "assinatura", color: "#2563eb" }, { label: "custo", color: "#ef4444" }]} />
+      <MonthSeriesChart mode="trend" points={chartPoints} ariaLabel="Assinatura e custo desta organização nos últimos 6 meses" />
+      <div className="cb-legend">
+        <span>
+          <i style={{ background: "#2563eb" }} aria-hidden="true" />
+          assinatura
+        </span>
+        <span>
+          <i style={{ background: "#ef4444" }} aria-hidden="true" />
+          custo
+        </span>
+        {period ? <span>{period}</span> : null}
+      </div>
     </div>
   );
 }
@@ -553,20 +587,19 @@ function Composition({ model, line }: { readonly model: CloudBillingView; readon
   if (!read || read.state === "loading") return <div className="pat-ab-detail-note" aria-busy="true">Carregando a composição…</div>;
   if (read.state === "error") return <div className="pat-ab-detail-note">Não foi possível carregar a composição por serviço.</div>;
   if (!read.value.length) return <div className="pat-ab-detail-note">O rateio não tem linhas desta organização no mês.</div>;
-  return (
-    <div className="cb-serv">
-      {read.value.map((item, index) => (
-        <div key={`${item.serviceCode}-${item.costCategory ?? ""}-${index}`}>
-          <span title={item.costCategory ?? undefined}>{item.serviceCode}</span>
-          <small>{item.costCategory ?? "—"}</small>
-          <em>{formatOriginal(item.allocatedCostOriginal, item.currency)}</em>
-        </div>
-      ))}
-    </div>
-  );
+  // J-567 (CV-14): o serviço em linguagem de negócio (o nome da AWS só no `title`), com a barra de proporção da biblioteca
+  const items: ProportionBarItem[] = read.value.map((item, index) => ({
+    key: `${item.serviceCode}-${item.costCategory ?? ""}-${index}`,
+    label: serviceLabel(item.serviceCode, item.costCategory),
+    title: `${serviceLabel(item.serviceCode, item.costCategory)} (${item.serviceCode}): ${formatOriginal(item.allocatedCostOriginal, item.currency)}`,
+    value: geometryNumber(item.allocatedCostOriginal),
+    displayValue: formatOriginal(item.allocatedCostOriginal, item.currency),
+    color: "#7c3aed",
+  }));
+  return <ProportionBars kind="list" items={items} ariaLabel="Composição por serviço" />;
 }
 
-export function TenantDetail({ model, line, access, onAction, onMonth }: { readonly model: CloudBillingView; readonly line: TenantLineJson; readonly access: CloudBillingAccess; readonly onAction: (action: CloudBillingAction) => void; readonly onMonth: (month: string) => void }) {
+export function TenantDetail({ model, line, access, onAction }: { readonly model: CloudBillingView; readonly line: TenantLineJson; readonly access: CloudBillingAccess; readonly onAction: (action: CloudBillingAction) => void; readonly onMonth: (month: string) => void }) {
   const groupMembers = line.groupId ? model.lines.filter((item) => item.groupId === line.groupId) : [];
   const payers = groupMembers.filter((item) => item.subscriptionAmount !== null);
   // J-567 (C3-05): o texto segue o MOTIVO real de não haver assinatura. "Plano sem preço" não é filial de grupo: ninguém
@@ -615,7 +648,7 @@ export function TenantDetail({ model, line, access, onAction, onMonth }: { reado
         <div className="pat-ab-detail-col">
           <h4>Custo e margem</h4>
           <Field label="Custo em reais">{line.allocatedCost === null ? `em branco (${COST_STATUS_LABEL[model.status].toLocaleLowerCase("pt-BR")})` : <b className="pat-mono">{formatBRL(line.allocatedCost)}</b>}</Field>
-          <Field label="Custo na moeda do arquivo">{line.allocatedCostOriginal === null ? "—" : <span className="pat-mono">{formatOriginal(line.allocatedCostOriginal, model.originalCurrency)}</span>}</Field>
+          <Field label={`Custo em ${currencyName(model.originalCurrency)}`}>{line.allocatedCostOriginal === null ? "—" : <span className="pat-mono">{formatOriginal(line.allocatedCostOriginal, model.originalCurrency)}</span>}</Field>
           <Field label="Dólar usado">
             {model.fx && model.costValid ? (
               <>
@@ -640,8 +673,8 @@ export function TenantDetail({ model, line, access, onAction, onMonth }: { reado
         </div>
         <div className="pat-ab-detail-col">
           <h4>Assinatura × custo · 6 meses</h4>
-          <TenantMiniSeries points={model.tenantSeries[line.tenantId] ?? []} onMonth={onMonth} />
-          <h4>Composição por serviço · moeda do arquivo</h4>
+          <TenantMiniSeries points={model.tenantSeries[line.tenantId] ?? []} />
+          <h4>Composição por serviço · {currencyName(model.originalCurrency)}</h4>
           <Composition model={model} line={line} />
         </div>
       </div>
@@ -1055,7 +1088,7 @@ export function ListPanel({ model, access, onTarget, onToggleRow, onClearTarget,
           {tabs.map((tab) => (
             <button key={tab.id} type="button" role="tab" aria-selected={ui.modo === tab.id} className={ui.modo === tab.id ? "pat-os-tab pat-os-tab--active" : "pat-os-tab"} onClick={() => onMode(tab.id)}>
               {tab.label}
-              {tab.rowCount !== undefined ? <span className="cb-tab-count">{formatCount(tab.rowCount)}</span> : null}
+              {tab.rowCount !== undefined ? <span className="financeiro-bc__tab-count">{formatCount(tab.rowCount)}</span> : null}
             </button>
           ))}
         </div>

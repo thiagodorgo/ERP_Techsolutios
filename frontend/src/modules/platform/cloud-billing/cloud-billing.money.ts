@@ -63,33 +63,37 @@ export function marginBandOf(pct: Pct | null): MarginBand | null {
   return "50";
 }
 
+/** J-567 (CV-6): o sinal de menos da referência é o U+2212 ("−R$ 190,62"), não o hífen que o `Intl` escreve. */
+const MINUS = "−";
+const withMinus = (text: string) => text.replace(/^-/, MINUS);
+
 const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 /** Formata a STRING decimal (`format` aceita string, sem passar por `Number`); ausência é "—". */
 export function formatBRL(value: Money | null): string {
-  return value === null ? "—" : BRL.format(value as unknown as number);
+  return value === null ? "—" : withMinus(BRL.format(value as unknown as number));
 }
 const BRL_COMPACT = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", notation: "compact", maximumFractionDigits: 1 });
 /** "R$ 15,7 mil" — a forma curta da maquete (`Rk`), só formatação da string do servidor. */
 export function formatBRLCompact(value: Money | null): string {
-  return value === null ? "—" : BRL_COMPACT.format(value as unknown as number);
+  return value === null ? "—" : withMinus(BRL_COMPACT.format(value as unknown as number));
 }
 const USD = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD" });
 export function formatUSD(value: Money | null): string {
-  return value === null ? "—" : USD.format(value as unknown as number);
+  return value === null ? "—" : withMinus(USD.format(value as unknown as number));
 }
 /** Valor na moeda original do arquivo de custo (`"USD"` → "US$ …"). Moeda ausente ou estranha → "—" (nunca BRL). */
 export function formatOriginal(value: Money | null, currency: string | null): string {
   if (value === null || !currency || !/^[A-Z]{3}$/.test(currency)) return "—";
   if (currency === "USD") return formatUSD(value);
   try {
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value as unknown as number);
+    return withMinus(new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value as unknown as number));
   } catch {
     return "—";
   }
 }
 const PCT = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 export function formatPct(value: Pct | null): string {
-  return value === null ? "—" : `${PCT.format(value as unknown as number)} %`;
+  return value === null ? "—" : `${withMinus(PCT.format(value as unknown as number))} %`;
 }
 const RATE4 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 const RATE6 = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 6, maximumFractionDigits: 6 });

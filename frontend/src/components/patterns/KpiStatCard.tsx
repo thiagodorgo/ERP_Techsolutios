@@ -18,7 +18,8 @@ export type KpiStatCardProps = {
   icon: LucideIcon;
   iconColor: string;
   iconBg: string;
-  value: string | number;
+  /** B-ASS-10b (J-567, CV-7) — o valor pode trazer uma parte menor (`<small>`), como a margem com o % ao lado. */
+  value: ReactNode;
   label: string;
   hint?: string;
   tag?: KpiStatTag;

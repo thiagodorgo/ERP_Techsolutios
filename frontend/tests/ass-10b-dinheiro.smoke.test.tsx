@@ -62,7 +62,9 @@ test("T-DIN-2 dinheiro só entra como string decimal; número, vazio e lixo vira
   assert.equal(asPct("26.0"), "26.0");
   for (const raw of [26, "", "26 %", null]) assert.equal(asPct(raw), null, String(raw));
   assert.equal(formatBRL(asMoney("12345678901234.56")).replace(/\s/g, " "), "R$ 12.345.678.901.234,56");
-  assert.equal(formatBRL(asMoney("-190.62")).replace(/\s/g, " "), "-R$ 190,62");
+  // J-567 (CV-6): o sinal de menos é o U+2212 da referência ("−R$ 190,62"), não o hífen do `Intl`
+  assert.equal(formatBRL(asMoney("-190.62")).replace(/\s/g, " "), "−R$ 190,62");
+  assert.equal(formatPct(asPct("-9.6")).replace(/\s/g, " "), "−9,6 %");
   assert.equal(formatBRL(null), "—");
   assert.equal(formatBRL(asMoney(0)), "—", "o número 0 do servidor não vira R$ 0,00");
   assert.equal(formatPct(asPct("26.0")).replace(/\s/g, " "), "26,0 %");

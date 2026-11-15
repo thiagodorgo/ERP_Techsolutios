@@ -7,6 +7,10 @@ import type { KeyboardEvent } from "react";
 // escala em R$) nascem aqui dentro (L8 do plano), e cada `<text>` de escala leva `data-escala` (Emenda 1, A8-r2) para a
 // cláusula (c) do T-UI-1 separá-lo dos valores do servidor. Nenhum mês é retirado: todo mês tem o seu botão; o mês sem o
 // segundo valor desenha o tracejado; o mês que falhou ou não tem dado não desenha barra e diz isso no texto acessível.
+// J-567 (CV-1): cada modo tem a geometria da referência (`lines` 560×196, a de `graficoLinhas`; `bars` 760×206, a de
+// `barrasMeses`). J-567 (CV-3): o modo `trend` é a linha de tendência 200×30 SEM texto do detalhe da organização (a
+// `spark` da referência): duas linhas (a 1ª cheia, a 2ª tracejada), o mês sem valor é um buraco na linha, nunca zero, e
+// o texto acessível do gráfico inteiro diz cada mês.
 
 export type MonthSeriesState = "ok" | "loading" | "error" | "empty";
 
@@ -34,7 +38,7 @@ export type MonthSeriesPoint = {
 };
 
 export type MonthSeriesChartProps = {
-  readonly mode: "lines" | "bars" | "margin";
+  readonly mode: "lines" | "bars" | "margin" | "trend";
   readonly points: readonly MonthSeriesPoint[];
   readonly pressedKey?: string | null;
   readonly onSelect?: (key: string) => void;
@@ -43,12 +47,11 @@ export type MonthSeriesChartProps = {
   readonly currency?: string;
 };
 
-const W = 760;
-const H = 206;
-const X0 = 60;
-const X1 = 752;
-const Y0 = 166;
-const Y1 = 14;
+type Geometry = { readonly w: number; readonly h: number; readonly x0: number; readonly x1: number; readonly y0: number; readonly y1: number };
+const GEOMETRY: Readonly<Record<"lines" | "bars", Geometry>> = {
+  lines: { w: 560, h: 196, x0: 52, x1: 552, y0: 158, y1: 14 },
+  bars: { w: 760, h: 206, x0: 56, x1: 752, y0: 166, y1: 14 },
+};
 const COLOR_A = "#2563eb";
 const COLOR_B = "#ef4444";
 
@@ -71,6 +74,8 @@ function onKey(event: KeyboardEvent<SVGGElement>, select: () => void) {
 
 export function MonthSeriesChart({ mode, points, pressedKey = null, onSelect, ariaLabel, currency = "BRL" }: MonthSeriesChartProps) {
   if (mode === "margin") return <MarginColumns points={points} pressedKey={pressedKey} onSelect={onSelect} ariaLabel={ariaLabel} />;
+  if (mode === "trend") return <TrendLines points={points} ariaLabel={ariaLabel} />;
+  const { w: W, h: H, x0: X0, x1: X1, y0: Y0, y1: Y1 } = GEOMETRY[mode];
   const values = points.flatMap((point) => (point.state === "ok" ? [point.a, point.b].filter((value): value is number => value !== null && Number.isFinite(value)) : []));
   const peak = Math.max(1000, ...values.map((value) => Math.abs(value)));
   const top = peak * 1.1;
@@ -91,7 +96,7 @@ export function MonthSeriesChart({ mode, points, pressedKey = null, onSelect, ar
   };
 
   return (
-    <svg className="ui-month-series" viewBox={`0 0 ${W} ${H}`} role="group" aria-label={ariaLabel}>
+    <svg className={`ui-month-series ui-month-series--${mode}`} viewBox={`0 0 ${W} ${H}`} role="group" aria-label={ariaLabel}>
       {ticks.map((tick) => (
         <g key={tick}>
           <line x1={X0} x2={X1} y1={y(tick)} y2={y(tick)} className="ui-month-series__grid" />
@@ -148,6 +153,40 @@ export function MonthSeriesChart({ mode, points, pressedKey = null, onSelect, ar
           )}
         </>
       ) : null}
+    </svg>
+  );
+}
+
+/**
+ * A linha de tendência 200×30 do detalhe (a `spark` da referência): sem eixo e sem texto, o mês sem valor é buraco na
+ * linha (nunca zero), e o último ponto da 1ª série ganha um marcador. O texto acessível é o do gráfico mais o de cada mês.
+ */
+function TrendLines({ points, ariaLabel }: { readonly points: readonly MonthSeriesPoint[]; readonly ariaLabel: string }) {
+  const W = 200;
+  const H = 30;
+  const values = points.flatMap((point) => (point.state === "ok" ? [point.a, point.b].filter((value): value is number => value !== null && Number.isFinite(value)) : []));
+  const low = Math.min(0, ...values);
+  const high = Math.max(1, ...values);
+  const span = high - low || 1;
+  const x = (index: number) => 4 + (index * (W - 8)) / Math.max(1, points.length - 1);
+  const y = (value: number) => H - 3 - ((value - low) / span) * (H - 6);
+  const path = (pick: (point: MonthSeriesPoint) => number | null) => {
+    let d = "";
+    points.forEach((point, index) => {
+      const value = point.state === "ok" ? pick(point) : null;
+      if (value === null || !Number.isFinite(value)) return;
+      d += `${d ? " L" : "M"}${x(index).toFixed(1)} ${y(value).toFixed(1)}`;
+    });
+    return d;
+  };
+  const last = points.length - 1;
+  const lastA = last >= 0 && points[last]!.state === "ok" ? points[last]!.a : null;
+  const label = [ariaLabel, ...points.map((point) => point.ariaLabel)].join(". ");
+  return (
+    <svg className="ui-month-trend" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={label}>
+      <path d={path((point) => point.b)} fill="none" stroke={COLOR_B} strokeWidth={1.6} strokeDasharray="3 3" vectorEffect="non-scaling-stroke" data-serie="b" />
+      <path d={path((point) => point.a)} fill="none" stroke={COLOR_A} strokeWidth={2} vectorEffect="non-scaling-stroke" data-serie="a" />
+      {lastA !== null ? <circle cx={x(last)} cy={y(lastA)} r={2.5} fill={COLOR_A} /> : null}
     </svg>
   );
 }

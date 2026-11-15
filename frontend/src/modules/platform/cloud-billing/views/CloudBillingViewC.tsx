@@ -1,8 +1,8 @@
-import { AlertTriangle, Building2, Check, Clock, Cloud, Plus, Receipt, TrendingUp, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, Building2, CircleCheck, CircleX, Clock, Cloud, Plus, Receipt, TrendingUp, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { MonthSeriesChart, StepBridge, type MonthSeriesPoint, type StepBridgeStep } from "../../../../components/charts";
-import { ALERT_TONE, capitalize, formatDateTime, formatDay, monthLabel, monthName, monthShort } from "../cloud-billing.labels";
+import { ALERT_TONE, capitalize, currencyName, formatDateTime, formatDay, formatDayShort, monthLabel, monthName, monthShort } from "../cloud-billing.labels";
 import { formatBRL, formatCount, formatOriginal, formatPct, formatRate, geometryNumber, isNegative } from "../cloud-billing.money";
 import type { CloudBillingView, GroupRow, SeriesPoint } from "../cloud-billing.state";
 import { AlertPill, Card, CloudBillingBanners, CloudBillingHeader, ListPanel, plain, SeriesStatus, type CloudBillingAction, type CloudBillingViewProps } from "./cloudBilling.shared";
@@ -121,8 +121,9 @@ function BridgeCard({ model, onTarget }: Pick<CloudBillingViewProps, "model" | "
 }
 
 // ---- o fechamento do mês --------------------------------------------------------------------------------------------
-type CheckState = "ok" | "atencao" | "erro" | "neutro";
-const CHECK_ICON: Readonly<Record<CheckState, LucideIcon>> = { ok: Check, atencao: AlertTriangle, erro: X, neutro: Clock };
+// J-567 (CV-9): os ícones e as cores da referência (o círculo com o sinal; o prédio azul de "Sem assinatura própria")
+type CheckState = "ok" | "atencao" | "erro" | "neutro" | "info";
+const CHECK_ICON: Readonly<Record<CheckState, LucideIcon>> = { ok: CircleCheck, atencao: AlertTriangle, erro: CircleX, neutro: Clock, info: Building2 };
 
 type CheckItem = {
   readonly key: string;
@@ -166,7 +167,7 @@ function closingItems(model: CloudBillingView, access: CloudBillingViewProps["ac
       key: "arquivo",
       state: unknown ? "erro" : "ok",
       title: unknown ? "Arquivo sem moeda" : "Arquivo de custo importado",
-      detail: `${formatDateTime(only.importedAt ?? only.createdAt)} · ${plural(only.rowCount, "linha", "linhas")}${only.currency ? ` · ${only.currency}` : ""}`,
+      detail: `${formatDateTime(only.importedAt ?? only.createdAt)} · ${plural(only.rowCount, "linha", "linhas")}${only.currency ? ` · ${currencyName(only.currency)}` : ""}`,
       action: seeImports,
     });
   }
@@ -179,7 +180,9 @@ function closingItems(model: CloudBillingView, access: CloudBillingViewProps["ac
   } else if (model.status === "legacy_unscoped") {
     items.push({ key: "rateio", state: "atencao", title: "Rateio antigo", detail: "feito antes de guardar o arquivo de origem", action: rerun });
   } else if (model.lastCompletedRun) {
-    items.push({ key: "rateio", state: "ok", title: "Rateio do mês concluído", detail: formatDateTime(model.lastCompletedRun.completedAt ?? model.lastCompletedRun.createdAt), action: rerun });
+    // o rateio automático da importação diz que rodou sozinho (o servidor marca `metadata.trigger = "import"`); o manual, só a hora
+    const automatic = model.lastCompletedRun.metadata?.trigger === "import";
+    items.push({ key: "rateio", state: "ok", title: "Rateio do mês concluído", detail: `${formatDateTime(model.lastCompletedRun.completedAt ?? model.lastCompletedRun.createdAt)}${automatic ? " · rodou sozinho depois da importação" : ""}`, action: rerun });
   } else {
     items.push({ key: "rateio", state: "erro", title: "Sem rateio no mês", detail: "roda sozinho depois da importação", action: rerun });
   }
@@ -189,7 +192,7 @@ function closingItems(model: CloudBillingView, access: CloudBillingViewProps["ac
       key: "dolar",
       state: "ok",
       title: "Dólar do mês digitado",
-      detail: `${formatRate(model.fx.rate, 6)} · versão ${model.fx.version} · ${formatDay(model.fx.createdAt)}`,
+      detail: `${formatRate(model.fx.rate, 6)} · versão ${model.fx.version} · ${formatDayShort(model.fx.createdAt)}`,
       action: { label: access.manageBilling ? "Corrigir" : "Ver", run: { kind: "fx" } },
     });
   } else {
@@ -214,7 +217,7 @@ function closingItems(model: CloudBillingView, access: CloudBillingViewProps["ac
   } else {
     items.push({ key: "alerta", state: "neutro", title: "Organizações em alerta", detail: "sem custo no mês, não há o que comparar", alvo: { key: "alerta", value: "—" } });
   }
-  items.push({ key: "semass", state: "neutro", title: "Sem assinatura própria", detail: "filiais em que a matriz assina e plano sem preço", alvo: { key: "semass", value: formatCount(counts.withoutSubscriptionCount) } });
+  items.push({ key: "semass", state: "info", title: "Sem assinatura própria", detail: "filiais em que a matriz assina e plano sem preço", alvo: { key: "semass", value: formatCount(counts.withoutSubscriptionCount) } });
   return items;
 }
 

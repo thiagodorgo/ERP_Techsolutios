@@ -6,7 +6,7 @@ import { Alert, Skeleton } from "../../../../components/ui";
 import { usePermissions } from "../../../../providers/PermissionProvider";
 import { useScreenAppearance } from "../../../appearance";
 import { cloudBillingAccess, type CloudBillingAccess } from "../cloud-billing.access";
-import { capitalize, monthLabel } from "../cloud-billing.labels";
+import { monthLabel } from "../cloud-billing.labels";
 import { currentBillingMonth, todayInSaoPaulo } from "../cloud-billing.service";
 import {
   buildCloudBillingView,
@@ -169,7 +169,7 @@ export function PlatformCloudBillingScreen({ data, loading, month, model, access
       {data.stale ? (
         <div className="cb-stale">
           <Alert title="Dados desatualizados" tone="warning">
-            A atualização falhou. Os últimos dados confirmados de {capitalize(monthLabel(month))} continuam na tela enquanto a plataforma tenta de novo.
+            A atualização falhou. Os últimos dados confirmados de {monthLabel(month)} continuam na tela enquanto a plataforma tenta de novo.
           </Alert>
         </div>
       ) : null}

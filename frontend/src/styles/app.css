@@ -8277,6 +8277,7 @@ a.pat-mini--ocupada:focus-visible { outline: 2px solid #2563eb; outline-offset: 
 .cb-check__icon--atencao { background: #fef3c7; color: #b45309; }
 .cb-check__icon--erro { background: #fee2e2; color: #b91c1c; }
 .cb-check__icon--neutro { background: #f1f5f9; color: #64748b; }
+.cb-check__icon--info { background: #dbeafe; color: #1d4ed8; }
 .cb-check__text { min-width: 0; font-weight: 700; color: #0f172a; line-height: 1.3; }
 .cb-check__text small { display: block; font-weight: 600; color: #64748b; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cb-check__count { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -8751,8 +8752,8 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .cb-panel .pat-table__empty { padding: 28px 16px; text-align: center; }
 .cb-panel__totals { display: flex; justify-content: flex-end; gap: 18px; flex-wrap: wrap; padding: 10px 16px; border-top: 1px solid #f1f5f9; font-size: 12px; color: #64748b; }
 .cb-panel__totals b { font-family: var(--font-mono); color: #0f172a; font-weight: 800; }
-.cb-tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 99px; background: #e2e8f0; color: #334155; font-size: 10.5px; font-weight: 800; }
-.pat-os-tab--active .cb-tab-count { background: #2563eb; color: #fff; }
+/* J-567 (CV-10): o contador das abas é o do sistema (`.financeiro-bc__tab-count`, as cores da referência); aqui, só o espaço */
+.cb-view .pat-os-tab .financeiro-bc__tab-count { margin-left: 6px; }
 .cb-btn--compact { min-height: 34px; padding: 6px 11px; }
 .cb-btn--danger { color: #b91c1c; border-color: #fecaca; }
 .cb-btn--danger:hover { background: #fef2f2; }
@@ -8768,12 +8769,12 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .cb-members { display: flex; flex-direction: column; gap: 6px; }
 .cb-member { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; font-size: 12px; }
 .cb-member small { display: block; color: #64748b; font-size: 11px; }
-.cb-serv { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; }
-.cb-serv > div { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; }
-.cb-serv span { font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cb-serv small { color: #94a3b8; }
-.cb-serv em { font-style: normal; font-family: var(--font-mono); font-weight: 700; color: #0f172a; }
-.cb-mini-series .ui-month-series { max-height: 140px; }
+/* J-567: o detalhe da linha como a referência — os títulos das colunas (CV-2), o dinheiro sem quebra (CV-4), a margem com
+   o % menor ao lado (CV-7) e as dicas dos indicadores numa linha, com reticências (CV-8) */
+.cb-view .pat-ab-detail-col h4 { margin: 0 0 2px; font-size: 11px; font-weight: 800; color: #0f172a; letter-spacing: .04em; text-transform: uppercase; }
+.cb-view .pat-ab-detail-val .pat-mono { white-space: nowrap; }
+.cb-view .pat-kpi__value small { margin-left: 6px; font-size: 12px; font-weight: 700; color: #64748b; letter-spacing: 0; }
+.cb-view .pat-kpi__hint { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cb-att { background: #fff; border: 1px solid #e2e8f0; border-radius: 13px; overflow: hidden; }
 .cb-att__head { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 8px; }
 .cb-att__head b { font-size: 14px; font-weight: 800; color: #0f172a; }
@@ -8806,6 +8807,10 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .ui-month-series__label { font-size: 12px; font-weight: 600; fill: #64748b; }
 .ui-month-series__label--pressed { font-weight: 800; fill: #2563eb; }
 .ui-month-series__sublabel { font-size: 9.5px; font-weight: 700; }
+.ui-month-series--bars .ui-month-series__scale { font-size: 9.5px; }
+.ui-month-series--bars .ui-month-series__label { font-size: 10px; }
+/* J-567 (CV-3): a linha de tendência 200×30 do detalhe (a `spark` da referência, 56 px de altura) */
+.ui-month-trend { display: block; width: 100%; height: 56px; margin-top: 8px; }
 .ui-month-series__sublabel--positive { fill: #15803d; }
 .ui-month-series__sublabel--negative { fill: #b91c1c; }
 .ui-month-series__sublabel--muted { fill: #94a3b8; }
@@ -8826,6 +8831,14 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .ui-proportion-bars { display: flex; flex-direction: column; gap: 2px; }
 .ui-proportion-bars__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 5px 8px; font: inherit; font-size: 12px; cursor: pointer; text-align: left; min-height: 32px; }
 .ui-proportion-bars__row:hover { background: #f8fafc; border-color: #e2e8f0; }
+.ui-proportion-bars__row--static { cursor: default; min-height: 0; padding: 2px 0; }
+.ui-proportion-bars__row--static:hover { background: transparent; border-color: transparent; }
+/* a lista só de leitura na grade da referência (`.serv`): o nome ocupa o espaço, a barra tem 60 px, sem o ponto de cor */
+.ui-proportion-bars--list .ui-proportion-bars__row { display: grid; grid-template-columns: minmax(0, 1fr) 60px auto; gap: 8px; font-size: 11.5px; }
+.ui-proportion-bars--list .ui-proportion-bars__label { width: auto; font-weight: 500; font-size: 11.5px; }
+.ui-proportion-bars--list .ui-proportion-bars__dot { display: none; }
+.ui-proportion-bars--list .ui-proportion-bars__track { min-width: 0; }
+.ui-proportion-bars--list .ui-proportion-bars__value { min-width: 0; }
 .ui-proportion-bars__row[aria-pressed="true"] { background: #eff6ff; border-color: #2563eb; }
 .ui-proportion-bars__row:focus-visible { outline: 2px solid #2563eb; background: #eff6ff; }
 .ui-proportion-bars__label { font-weight: 600; color: #334155; display: flex; align-items: center; gap: 6px; width: 46%; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
