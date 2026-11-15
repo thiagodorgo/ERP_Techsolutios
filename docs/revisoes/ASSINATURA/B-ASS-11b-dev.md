@@ -48,6 +48,16 @@ os critiquei. Exceção declarada: o §8 da Emenda 1.1 pede Codex para a Parte R
 
 Depois do rebase (22:06–22:09): a regressão do §8.3, o teste novo e os testes que leem o registro (`b-o6r-12-regime-census`, `kpi-dashboard-charts`, `b-san3-24-escopo`, `o6r07c-b-scope`, `ass-09a-rateio-automatico`, `impound-checklist-link`, `financial-ledger-helper`) → `tests 383 · pass 383 · fail 0`.
 
+## Depois do PR em rascunho: o #566 entrou na `main` (22:30–22:43)
+
+| hora (SP) | comando | saída resumida | veredito |
+|---|---|---|---|
+| 22:30 | `gh pr checks <PR>` no head `1d718d1a` | os 8 jobs verdes nas 2 rodadas (push e pull_request) | CI verde |
+| 22:30 | `git fetch origin main`; `gh pr view 566 --json state` | `origin/main` = `cd480ab6` (#566, `B-ASS-09`); `MERGED` | a ordem #566 → R vale: o head da junta tem de estar em dia com a `main` |
+| 22:31 | `git merge --no-ff origin/main` (merge, não rebase: o ramo já está no remoto e não se empurra com force) | auto-merge nas fixtures, na doc, em `pendencias.md` e `decisoes.md`; conflito em `pendencias-indice.md` (regenerado) e em `PLANO_SAN3.md`, só de vizinhança: o #566 mudou a l.145 (item 61), este bloco a l.146 (item 62); ficam as duas | resolvido sem escolher texto de ninguém |
+| 22:32–22:34 | os 2 geradores sobre a árvore do merge | o6r07c `523 chaves · VIOLAÇÕES: 0` (o gerador de novo sem a quebra final, `printf` aplicado); san3-18 `454 rotas · sem classe 0`; o gerador dá o mesmo arquivo do auto-merge; contra a `main`, `0 4` e `0 1` | fixtures pelo gerador |
+| 22:34–22:41 | regressão do §8.3 + teste novo + testes que leem o registro + os 11 arquivos de teste (não `-db`) do #566; `prisma generate` (o #566 mudou o schema; `DATABASE_URL` fictícia); `check`, `lint`, `build` | `tests 233 · pass 233 · fail 0`; o 1º `check` deu exit 2 só por cliente Prisma velho, e depois do `generate` os 3 deram exit 0 | verde |
+
 ## Fora do bloco, declarado
 
 - Os comandos do §1.3 (fechamento do item 62) não se aplicam a este PR: a tela (`B-ASS-11`, Parte T) não está na `main`. O
