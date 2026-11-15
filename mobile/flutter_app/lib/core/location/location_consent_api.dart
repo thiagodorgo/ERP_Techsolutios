@@ -36,7 +36,8 @@ class LocationConsentApiResult {
 /// A organização recusou com motivo (`error.reason` da resposta), lido ANTES de
 /// `mapDioError`, que o perderia. Fica fora da hierarquia selada de
 /// `ApiError`: 422 `operator_profile_required` e `tracking_consent_required`,
-/// 403 do aceite e 400 do aceite.
+/// 403 do aceite e 400 do aceite. Na decisão de consentimento, só as recusas
+/// de domínio de [locationConsentDomainRefusals] (Emenda 1.9, E18C-02).
 class LocationConsentRefusedError implements Exception {
   const LocationConsentRefusedError(this.reason, {this.statusCode = 422});
 
@@ -101,13 +102,60 @@ class DioLocationConsentApi implements LocationConsentApi {
         profileUpdatedAt: _parseDate(data['profile_updated_at']),
       );
     } on DioException catch (error) {
-      final refusal = locationConsentRefusalOf(error, statuses: _refusals);
+      final refusal = locationConsentDomainRefusalOf(error);
       if (refusal != null) throw refusal;
       throw mapDioError(error);
     }
   }
+}
 
-  static const _refusals = {400, 403, 422};
+/// Emenda 1.9 (E18C-02): as recusas de DOMÍNIO da decisão de consentimento,
+/// por status, com o código e os motivos que a organização manda. Só elas
+/// viram [LocationConsentRefusedError]. O resto não é recusa: o 400 genérico
+/// (`BAD_REQUEST` `invalid_request`, o do banco ocupado antes da 1.9), os 5xx
+/// (inclusive o 503 `field_location_busy`), o 403 que não é de permissão
+/// (`password_change_required`) e o tempo esgotado. Nesses, a decisão
+/// continua pendente e nada é apagado.
+const Map<int, ({String code, Set<String> reasons})>
+locationConsentDomainRefusals = {
+  400: (
+    code: 'FIELD_LOCATION_INVALID',
+    reasons: {
+      'invalid_date',
+      'invalid_client_action_id',
+      'invalid_text_version',
+    },
+  ),
+  403: (
+    code: 'FORBIDDEN',
+    reasons: {'permission_required', 'role_required', 'tenant_required'},
+  ),
+  422: (
+    code: 'FIELD_LOCATION_PROFILE_REQUIRED',
+    reasons: {'operator_profile_required'},
+  ),
+};
+
+/// `true` quando o par (status, motivo) é uma recusa de domínio da decisão.
+bool isLocationConsentDomainRefusal(int statusCode, String reason) =>
+    locationConsentDomainRefusals[statusCode]?.reasons.contains(reason) ??
+    false;
+
+/// A recusa de domínio da resposta, ou `null` (segue para `mapDioError`).
+LocationConsentRefusedError? locationConsentDomainRefusalOf(
+  DioException error,
+) {
+  final status = error.response?.statusCode;
+  if (status == null) return null;
+  final rule = locationConsentDomainRefusals[status];
+  if (rule == null) return null;
+  final body = error.response?.data;
+  final rawError = body is Map ? body['error'] : null;
+  final code = rawError is Map ? rawError['code'] : null;
+  final reason = rawError is Map ? rawError['reason'] : null;
+  if (code != rule.code || reason is! String) return null;
+  if (!rule.reasons.contains(reason)) return null;
+  return LocationConsentRefusedError(reason, statusCode: status);
 }
 
 /// O corpo da decisão: `{ decided_at, client_action_id, text_version }`. Nunca

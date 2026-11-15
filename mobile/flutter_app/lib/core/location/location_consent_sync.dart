@@ -166,13 +166,16 @@ class LocationConsentSync {
 
   /// O aceite recusado com 403 (sem `field_location:send`, ou o módulo
   /// desligado na organização) ou 400 (`decided_at` mais de 5 min no futuro):
-  /// "confirme de novo", sem laço e sem prender o portão.
+  /// "confirme de novo", sem laço e sem prender o portão. Emenda 1.9
+  /// (E18C-02): só a recusa de DOMÍNIO zera e apaga; outro 400 ou 403 deixa a
+  /// decisão pendente, e nada é apagado.
   bool _refusesTheGrant(
     LocationConsentDecision decision,
     LocationConsentRefusedError refusal,
   ) =>
       decision.granted &&
-      (refusal.statusCode == 403 || refusal.statusCode == 400);
+      (refusal.statusCode == 403 || refusal.statusCode == 400) &&
+      isLocationConsentDomainRefusal(refusal.statusCode, refusal.reason);
 
   void _forbidGrant(LocationConsentOwner owner) {
     _grantForbidden = owner;
