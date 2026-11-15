@@ -100,3 +100,23 @@ export class FieldLocationError extends Error {
     this.name = "FieldLocationError";
   }
 }
+
+// B-SAN3-17 (item 52): as duas recusas da posição do app. O serviço as usa como resposta rápida, e a escrita (Emenda
+// 1.5, CX3-568-01) como autoridade, no mesmo passo da gravação.
+export function operatorProfileRequiredError(): FieldLocationError {
+  return new FieldLocationError(
+    422,
+    "FIELD_LOCATION_PROFILE_REQUIRED",
+    "operator_profile_required",
+    "The authenticated user has no operator profile in this organization.",
+  );
+}
+
+export function trackingConsentRequiredError(): FieldLocationError {
+  return new FieldLocationError(
+    422,
+    "FIELD_LOCATION_CONSENT_REQUIRED",
+    "tracking_consent_required",
+    "The operator has not consented to location tracking.",
+  );
+}

@@ -88,6 +88,15 @@ export class InMemoryOperatorProfileRepository implements OperatorProfileReposit
     this.profiles.clear();
   }
 
+  // B-SAN3-17 (Emenda 1.5.1, CX3-568-01): leitura SÍNCRONA do consentimento, no instante da chamada, para a escrita
+  // da posição em memória conferir e gravar na mesma volta do laço de eventos. `undefined` = sem perfil. Não muda nada.
+  trackingConsentNow(tenantId: string, userId: string): boolean | undefined {
+    for (const profile of this.profiles.values()) {
+      if (profile.tenantId === tenantId && profile.userId === userId) return profile.trackingConsent === true;
+    }
+    return undefined;
+  }
+
   private hasUser(tenantId: string, userId: string): boolean {
     return [...this.profiles.values()].some((profile) => profile.tenantId === tenantId && profile.userId === userId);
   }

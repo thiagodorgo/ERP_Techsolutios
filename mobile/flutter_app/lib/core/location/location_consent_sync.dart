@@ -148,9 +148,13 @@ class LocationConsentSync {
           // superseded (P12), 403 do aceite (P14) e 400 do aceite (CR17R2-03).
           _supersededProfileAt = result?.profileUpdatedAt;
           // dart format off
-          await _resetAfterServerRefusal(owner, tenantId, needsReconfirm: true);
+          final reset = await _resetAfterServerRefusal(owner, tenantId, needsReconfirm: true, refused: decision);
           // dart format on
-          return true;
+          if (reset) return true;
+          // Emenda 1.5 (CX3-568-02): a decisão recusada já não é a pendente
+          // de agora (o titular decidiu de novo enquanto ela ia). Ela fica
+          // encerrada, e a mais nova sai neste mesmo passe.
+          continue;
         }
         await _store.markAcknowledged(owner, decision.clientActionId);
         // Repete: se nasceu outra decisão enquanto esta ia, ela sai agora.
@@ -175,19 +179,25 @@ class LocationConsentSync {
     _grantForbiddenSession = _currentSession();
   }
 
-  Future<void> _resetAfterServerRefusal(
+  /// Com [refused], só zera se ela ainda for a decisão pendente de agora, e
+  /// devolve `false` quando não é (Emenda 1.5, CX3-568-02). O não enviado
+  /// com coordenada é apagado nos dois casos (falha fechada).
+  Future<bool> _resetAfterServerRefusal(
     LocationConsentOwner owner,
     String tenantId, {
     bool needsReconfirm = false,
+    LocationConsentDecision? refused,
   }) async {
     final profileUpdatedAt = needsReconfirm ? _supersededProfileAt : null;
     _supersededProfileAt = null;
-    await _store.resetAfterServerRefusal(
+    final reset = await _store.resetAfterServerRefusal(
       owner,
       needsReconfirm: needsReconfirm,
       profileUpdatedAt: profileUpdatedAt,
+      onlyIfPending: refused?.clientActionId,
     );
     await _discardUnsentWithLocation(tenantId);
+    return reset;
   }
 
   /// O apagamento único (CR17R2-08): os pontos do envio manual não enviados e

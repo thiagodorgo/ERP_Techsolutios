@@ -305,10 +305,16 @@ abstract class LocationConsentStore {
 
   /// A organização recusou: o registro volta a "não decidiu" (P8), ou a
   /// "confirme de novo" (P12, P14 e o 400 do aceite).
-  Future<void> resetAfterServerRefusal(
+  ///
+  /// Com [onlyIfPending] (Emenda 1.5, CX3-568-02), só zera se a decisão
+  /// pendente de agora ainda for a de `clientActionId` [onlyIfPending]: a
+  /// recusa de um aceite antigo nunca apaga a decisão mais nova do titular.
+  /// Devolve se zerou.
+  Future<bool> resetAfterServerRefusal(
     LocationConsentOwner owner, {
     bool needsReconfirm = false,
     DateTime? profileUpdatedAt,
+    String? onlyIfPending,
   });
 }
 
@@ -447,11 +453,16 @@ abstract class _OwnerScopedConsentStore implements LocationConsentStore {
   }
 
   @override
-  Future<void> resetAfterServerRefusal(
+  Future<bool> resetAfterServerRefusal(
     LocationConsentOwner owner, {
     bool needsReconfirm = false,
     DateTime? profileUpdatedAt,
+    String? onlyIfPending,
   }) async {
+    if (onlyIfPending != null) {
+      final pending = (await _read(owner)).pendingDecision;
+      if (pending?.clientActionId != onlyIfPending) return false;
+    }
     if (needsReconfirm) {
       await _write(
         owner,
@@ -459,9 +470,10 @@ abstract class _OwnerScopedConsentStore implements LocationConsentStore {
           profileUpdatedAt: profileUpdatedAt,
         ),
       );
-      return;
+      return true;
     }
     await _write(owner, LocationConsentRecord.undecided());
+    return true;
   }
 }
 

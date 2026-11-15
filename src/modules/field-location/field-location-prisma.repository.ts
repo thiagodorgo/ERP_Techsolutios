@@ -8,14 +8,37 @@ import type {
   ListLatestFieldLocationsInput,
   RecordFieldLocationInput,
 } from "./field-location.types.js";
-import type { FieldLocationRepository } from "./field-location.repository.js";
+import {
+  assertTrackingConsentForWrite,
+  type FieldLocationRepository,
+  type FieldLocationWriteGuard,
+} from "./field-location.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
-export class PrismaFieldLocationRepository implements FieldLocationRepository {
-  constructor(private readonly client: PrismaExecutor) {}
+// Gancho de teste (como o `afterBindingLocked` da ingestão do Traccar): roda dentro da transação da escrita, depois do
+// `FOR SHARE` da linha do perfil e antes do INSERT. Em produção não há gancho.
+export type FieldLocationWriteHooks = { readonly afterConsentLocked?: () => Promise<void> };
 
-  async record(input: RecordFieldLocationInput): Promise<FieldOperatorLocation> {
+export class PrismaFieldLocationRepository implements FieldLocationRepository {
+  constructor(
+    private readonly client: PrismaExecutor,
+    private readonly hooks: FieldLocationWriteHooks = {},
+  ) {}
+
+  // B-SAN3-17 (Emenda 1.5, CX3-568-01): com a guarda, a linha do perfil do titular é lida com `FOR SHARE` na MESMA
+  // transação do INSERT (o executor TEM de ser a transação: o `RlsPrismaFieldLocationRepository` a abre). Sem linha, ou
+  // sem consentimento, nada é inserido. A revogação (UPDATE da mesma linha) fica serializada contra a escrita: ou espera
+  // ela terminar, e a posição gravada é anterior a ela, ou já confirmou, e a escrita a vê.
+  async record(input: RecordFieldLocationInput, guard?: FieldLocationWriteGuard): Promise<FieldOperatorLocation> {
+    if (guard?.requireTrackingConsent) {
+      const rows = await this.client.$queryRaw<Array<{ tracking_consent: boolean }>>`
+        SELECT tracking_consent FROM operator_profiles
+         WHERE tenant_id = ${input.tenantId}::uuid AND user_id = ${input.operatorUserId}::uuid
+           FOR SHARE`;
+      assertTrackingConsentForWrite(rows.length === 0 ? undefined : rows[0]!.tracking_consent === true);
+      await this.hooks.afterConsentLocked?.();
+    }
     const location = await this.client.fieldOperatorLocation.create({
       data: {
         tenant_id: input.tenantId,
@@ -95,11 +118,14 @@ export class PrismaFieldLocationRepository implements FieldLocationRepository {
 }
 
 export class RlsPrismaFieldLocationRepository implements FieldLocationRepository {
-  constructor(private readonly prismaClient: PrismaClient) {}
+  constructor(
+    private readonly prismaClient: PrismaClient,
+    private readonly hooks: FieldLocationWriteHooks = {},
+  ) {}
 
-  record(input: RecordFieldLocationInput): Promise<FieldOperatorLocation> {
+  record(input: RecordFieldLocationInput, guard?: FieldLocationWriteGuard): Promise<FieldOperatorLocation> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
-      new PrismaFieldLocationRepository(tx).record(input),
+      new PrismaFieldLocationRepository(tx, this.hooks).record(input, guard),
     );
   }
 

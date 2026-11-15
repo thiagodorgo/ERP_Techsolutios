@@ -2,6 +2,7 @@ import { env } from "../../config/env.js";
 import { publishDomainEvent } from "../../infra/events/domain-event.publisher.js";
 import {
   createDefaultOperatorProfileService,
+  getMemoryOperatorProfileRepositoryForTests,
   type OperatorProfileService,
 } from "../operator-profiles/operator-profile.service.js";
 import type { OperatorProfile } from "../operator-profiles/operator-profile.types.js";
@@ -19,6 +20,8 @@ import {
   type ListLatestFieldLocationsInput,
   type OwnTrackingConsentResult,
   type RecordFieldLocationInput,
+  operatorProfileRequiredError,
+  trackingConsentRequiredError,
 } from "./field-location.types.js";
 
 export type FieldLocationEventPublisher = typeof publishDomainEvent;
@@ -89,14 +92,11 @@ export class FieldLocationService {
     };
     const profile = await this.requireOwnOperatorProfile(actor);
     if (profile.trackingConsent !== true) {
-      throw new FieldLocationError(
-        422,
-        "FIELD_LOCATION_CONSENT_REQUIRED",
-        "tracking_consent_required",
-        "The operator has not consented to location tracking.",
-      );
+      throw trackingConsentRequiredError();
     }
-    const location = await this.repository.record(record);
+    // Emenda 1.5 (CX3-568-01): a checagem acima é a resposta rápida; a autoridade é a da escrita, que revalida o
+    // consentimento no mesmo passo atômico da gravação.
+    const location = await this.repository.record(record, { requireTrackingConsent: true });
 
     await publishFieldLocationUpdated(location, { actorId: actor.userId });
 
@@ -242,24 +242,15 @@ export class FieldLocationService {
 
   private async requireOwnOperatorProfile(actor: FieldLocationActorContext): Promise<OperatorProfile> {
     if (!UUID_PATTERN.test(actor.userId)) {
-      throw operatorProfileRequired();
+      throw operatorProfileRequiredError();
     }
     const profileService = await this.resolveOperatorProfileService();
     const profile = await profileService.findByUserId(actor.tenantId, actor.userId);
     if (profile === undefined) {
-      throw operatorProfileRequired();
+      throw operatorProfileRequiredError();
     }
     return profile;
   }
-}
-
-function operatorProfileRequired(): FieldLocationError {
-  return new FieldLocationError(
-    422,
-    "FIELD_LOCATION_PROFILE_REQUIRED",
-    "operator_profile_required",
-    "The authenticated user has no operator profile in this organization.",
-  );
 }
 
 // Corpo da decisão: `{ decided_at, client_action_id, text_version }` (contrato `mobile_location_consent@2026-11.b-san3-17`).
@@ -431,7 +422,11 @@ function compactRecord(input: JsonRecord): JsonRecord {
   return Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
 }
 
-const memoryRepository = new InMemoryFieldLocationRepository();
+// Em memória, o leitor do consentimento é o do repositório em memória dos perfis, o mesmo que o serviço de perfil usa
+// nesse modo (Emenda 1.5.1).
+const memoryRepository = new InMemoryFieldLocationRepository((tenantId, userId) =>
+  getMemoryOperatorProfileRepositoryForTests().trackingConsentNow(tenantId, userId),
+);
 let defaultServicePromise: Promise<FieldLocationService> | undefined;
 
 export function createMemoryFieldLocationService(): FieldLocationService {
