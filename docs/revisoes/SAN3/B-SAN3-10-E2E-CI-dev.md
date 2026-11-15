@@ -32,7 +32,8 @@ compilado (`npx tsx src/server.ts` e `vite preview`). Nenhuma das portas da máq
   injeção saiu (3 auxiliares) e a `P-E2E-CONTEXTO-INJETADO` não nasce.
 - **Fato novo:** a semente não tem técnico de campo, e o despacho exige um; num banco novo a lista real de despachos é vazia.
   O teste 5 vale nos dois ramos, sem `if`: as linhas e o indicador "Total" são o que a API devolveu, e a busca filtra até 0
-  e volta. Nasce a `P-E2E-DESPACHOS-SEM-TECNICO`, com dono no bloco das personas.
+  e volta. A cobertura do teste 5 é só a da lista vazia, ratificada pelo orquestrador; nasce a
+  `P-E2E-DESPACHOS-SEM-TECNICO`, com dono no próximo bloco que mexer na semente do e2e.
 - **M12a** ("Aparência" → "Aparencia" em `tenant-settings.presentation.ts:23`): o teste 12 não acha o grupo. **M12b** (o
   rótulo do Tech Dark → `tech_dark`): o teste 12 não acha a opção pelo rótulo. As duas âncoras com `grep -cF` = 1, as duas
   restauradas com `git diff` vazio.
@@ -77,3 +78,19 @@ Depois da M8, o `429dcacd` desfaz a última mutação: a árvore dele é idênti
 - `git diff --numstat origin/main...HEAD -- src/ prisma/`: vazio. O freio de login está intacto.
 - A `main` absorvida por merge (`b00f3161`), sem conflito; no head misturado, local: os testes dos guardas e do registro 41/41, a suíte 14 passed com a linha do guarda, o canário "falhou, como devido".
 - Registro: fecham (ao entrar na `main`) a `P-SAN-E2E`, a `P-SAN3-01-E2E-LOGIN-DEFASADO` e a `P-SAN3-06B-E2E-PLATAFORMA-DEFASADO`; nascem 7 (`P-SAN3-10-E2E-PERSONAS`, `P-WEB-PLATAFORMA-MENU-FIXO`, `P-E2E-OS-LISTA-VAZIA`, `P-E2E-DESPACHOS-SEM-TECNICO`, `P-E2E-RODA-COMO-SUPERUSUARIO`, `P-E2E-SEM-ARTEFATO-DE-FALHA`, `P-CI-SEM-PROTECAO-DE-BRANCH`); não nascem a `P-E2E-CONTEXTO-INJETADO` (a F3 mediu que as telas abrem sem a injeção) nem a `P-CI-DOCKER-SEM-E2E` (P2 = sim). O índice foi regenerado pela ferramenta. Em `decisoes.md`, a `D-CI-DOCKER-ESPERA-E2E` e as leituras do bloco (P1, o alargamento, o nome do ramo, a regra de nova tentativa).
+
+## O conserto da pré-revisão (`prerev-575-cl`: REPROVADO, 0 grave e 3 não graves)
+
+Quem achou não consertou (§C7.4-bis): a pré-revisão achou, o `dev-42-cl` consertou. Cada achado foi re-executado antes.
+
+- **A2:** um `exit 0` no corpo do passo da suíte ou do canário deixava o job `e2e` verde sem rodar nada, e o TD2 seguia verde,
+  porque só conferia que cada linha EXISTIA no job. Agora o Y3 compara o corpo de cada passo vigiado, por igualdade, com a
+  lista de linhas do §3.1, e exige que o passo tenha só `name` e `run: |`. Mutação: o `exit 0` em cada um dos 2 passos deixa
+  o TD2 vermelho ("o corpo do passo … difere do plano"); M5, M7, M13 e uma linha a menos também.
+- **A1:** a linha em branco a mais no fim de `tests/e2e/apoio/banco.ts` e de `tests/e2e/apoio/sessao.ts` saiu;
+  `git diff --check origin/main...HEAD` mede o diff do PR.
+- **A3:** cada caso do TD3 exige a linha VERMELHO da própria regra; nasceu o caso "G3 título trocado". Mutação: desligar
+  qualquer uma das 16 linhas de regra do guarda (G1, G2, as 3 do G3 que o relatório alimenta, G4, G5, G6, G7, as 2 do G8, G9,
+  G11 e as 3 do canário) deixa o TD3 vermelho no caso dela. Residual declarado: a linha "título repetido no disco" do G3 lê
+  o disco real, e a cobre o S3 (TD2 e G10).
+- **O teste 5:** a cobertura do teste 5 é só a da lista vazia, ratificada pelo orquestrador; a semente não muda neste bloco.

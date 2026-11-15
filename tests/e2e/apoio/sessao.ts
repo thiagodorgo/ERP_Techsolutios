@@ -30,4 +30,3 @@ export async function escolherOrganizacaoDemo(page: Page): Promise<void> {
   await page.getByRole("button", { name: new RegExp(DEMO_ORGANIZATION) }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
 }
-

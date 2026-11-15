@@ -15734,8 +15734,9 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-E2E-DESPACHOS-SEM-TECNICO (2026-11-15) — a semente não tem técnico de campo, então a lista real de despachos do e2e é sempre vazia — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a semente; `prisma/seed.ts` é PROIBIDO no bloco do item 42) · **dono:** `B-SAN3-10-E2E-PERSONAS` (é lá que nasce a persona do técnico) · **bloqueia:** não.
-- **origem:** fato novo do dev da F3 do item 42 (`dev-42-cl`), declarado no diário do bloco.
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a semente; `prisma/seed.ts` é PROIBIDO no bloco do item 42) · **dono:** o próximo bloco que mexer na semente do e2e (ratificação do orquestrador, 2026-11-15) · **bloqueia:** não.
+- **origem:** fato novo do dev da F3 do item 42 (`dev-42-cl`), declarado no diário do bloco; confirmado pela pré-revisão `prerev-575-cl` (observação O1: 2 usuários, nenhum técnico, `field_dispatches` = 0).
+- **ratificação (orquestrador, 2026-11-15):** a cobertura do teste 5 é só a da lista vazia, ratificada pelo orquestrador. A semente não muda no `B-SAN3-10-E2E-CI`.
 - **N e forma:** a semente tem 2 usuários (o administrador demo e o da plataforma). O despacho exige um técnico de campo como alvo (`FIELD_DISPATCH_TARGET_ROLES`, `src/modules/field-dispatch/field-dispatch.types.ts:39`; o 422 `target_not_field_technician`). O teste 5 afirma que as linhas e o indicador "Total" são o que a API devolveu e que a busca filtra até 0 e volta; com a lista vazia, "a busca filtra" só prova que não inventa linha.
 - **critério de encerramento:** com a persona do técnico, o teste 5 cria um despacho pela tela ("Novo despacho") e prova a busca com lista cheia (N → 1 → 0 → N).
 

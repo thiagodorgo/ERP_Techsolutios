@@ -7,4 +7,3 @@ export const e2eDatabaseUrl =
 export function createE2ePrisma() {
   return createPrismaClient(e2eDatabaseUrl);
 }
-

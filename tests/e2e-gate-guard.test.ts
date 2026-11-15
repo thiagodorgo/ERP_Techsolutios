@@ -49,6 +49,46 @@ function workflowJob(source: string, name: string): string {
   return match[0];
 }
 
+// Y3 por igualdade (plano v2 §3.1; conserto do A2 da pré-revisão do #575): o passo vigiado tem só `name` e `run: |`, e o
+// corpo do `run` é EXATAMENTE a lista de linhas do plano. Uma linha a mais (um `exit 0`, por exemplo) ou a menos é vermelho.
+const PASSO_SUITE = "E2E — a suíte inteira, sem filtro, sem pulo e sem flaky";
+const CORPO_SUITE = [
+  "set -o pipefail",
+  "PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report/suite.json npx playwright test -c playwright.config.ts --forbid-only --fail-on-flaky-tests",
+  "node scripts/e2e-report-guard.mjs playwright-report/suite.json --modo=suite",
+];
+const PASSO_CANARIO = "Vermelho-controle (o canário TEM de falhar)";
+const CORPO_CANARIO = [
+  "set +e",
+  "E2E_CANARIO=1 PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report/controle.json npx playwright test -c playwright.config.ts --project=controle",
+  "rc=$?",
+  "set -e",
+  'test "$rc" -ne 0 || { echo "e2e-guard: o canário PASSOU — a esteira não propaga falha"; exit 1; }',
+  "node scripts/e2e-report-guard.mjs playwright-report/controle.json --modo=controle",
+];
+
+function stepLines(job: string, name: string): string[] {
+  const lines = job.replace(/\r/g, "").split("\n");
+  const header = `      - name: ${name}`;
+  const starts = lines.flatMap((line, index) => (line === header ? [index] : []));
+  assert.equal(starts.length, 1, `o passo "${name}" tem de aparecer 1 vez no job e2e; aparece ${starts.length}`);
+  const step: string[] = [];
+  for (let index = starts[0]; index < lines.length; index += 1) {
+    if (index > starts[0] && /^ {0,6}\S/.test(lines[index])) break;
+    step.push(lines[index]);
+  }
+  while (step.length > 0 && step[step.length - 1].trim() === "") step.pop();
+  return step;
+}
+
+function assertStepBody(job: string, name: string, expected: readonly string[]): void {
+  const step = stepLines(job, name);
+  assert.equal(step[1], "        run: |", `o passo "${name}" tem só name e run: |`);
+  const body = step.slice(2);
+  for (const line of body) assert.match(line, /^ {10}/, `linha fora do corpo do run em "${name}": ${JSON.stringify(line)}`);
+  assert.deepEqual(body.map((line) => line.slice(10)), [...expected], `o corpo do passo "${name}" difere do plano (§3.1)`);
+}
+
 test("o módulo de regras tem os literais do teste-dono", () => {
   assert.deepEqual({ ...PISO_CONTAGEM }, PISO_LITERAL);
   assert.equal(REGRA_DECLARACAO.source, DECLARACAO_LITERAL);
@@ -109,11 +149,8 @@ test("Y1-Y4: job e2e é obrigatório, literal e sem filtros", () => {
   assert.doesNotMatch(job, /continue-on-error|\|\| true|--pass-with-no-tests/);
   assert.equal((job.match(/^\s*if:/gm) ?? []).length, 1);
   assert.match(job, /^ {8}if: failure\(\)\r?$/m);
-  assert.match(job, /^ {10}set -o pipefail\r?$/m);
-  assert.match(job, /^ {10}PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report\/suite\.json npx playwright test -c playwright\.config\.ts --forbid-only --fail-on-flaky-tests\r?$/m);
-  assert.match(job, /^ {10}node scripts\/e2e-report-guard\.mjs playwright-report\/suite\.json --modo=suite\r?$/m);
-  assert.match(job, /^ {10}E2E_CANARIO=1 PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report\/controle\.json npx playwright test -c playwright\.config\.ts --project=controle\r?$/m);
-  assert.match(job, /^ {10}node scripts\/e2e-report-guard\.mjs playwright-report\/controle\.json --modo=controle\r?$/m);
+  assertStepBody(job, PASSO_CANARIO, CORPO_CANARIO);
+  assertStepBody(job, PASSO_SUITE, CORPO_SUITE);
   // P2 = SIM (decisão do dono, 14/11): a imagem só sai com o e2e verde.
   assert.match(workflowJob(workflow, "docker"), /^ {4}needs: \[backend, backend-postgres, frontend, e2e\]\r?$/m);
 
