@@ -1088,6 +1088,60 @@ void main() {
       expect(server.requests, 3);
     });
 
+    // J-568 (C1-04): o 403 do portão de módulo (`module_not_enabled`, a
+    // organização sem `field_operations`) é recusa de domínio do aceite: a
+    // tela mostra "Acesso não permitido", o aceite não fica pendente para
+    // sempre e o não enviado com coordenada sai, como nos outros 403 de
+    // domínio. Pela API Dio real.
+    test('T-J568-C1-04. 403 module_not_enabled no aceite → recusa de domínio '
+        '(Acesso não permitido, sem pendência, 0 GPS guardado)', () async {
+      final server = _ScriptedConsentServer();
+      await server.start();
+      addTearDown(server.stop);
+      final dioSync = LocationConsentSync(
+        store: store,
+        currentOwner: () => owner,
+        api: () => _dioConsentApi(server),
+        fieldLocationStore: () => fieldStore,
+        telemetryStore: () => telemetryStore,
+      );
+      await store.acceptManualCapture();
+      await fieldStore.save(_point('p-1'));
+      await telemetryStore.enqueue(_heartbeat('hb-1'));
+      server.reply(403, 'FORBIDDEN', 'module_not_enabled');
+
+      final settled = await HttpOverrides.runWithHttpOverrides(
+        () => dioSync.settleDecision(_tenant),
+        _RealHttp(),
+      );
+
+      expect(settled, isTrue);
+      expect(dioSync.grantForbiddenFor(a), isTrue);
+      expect((await store.status()).needsReconfirm, isTrue);
+      expect(await store.hasAcceptedManualCapture(), isFalse);
+      expect(await store.pendingDecisionFor(a), isNull);
+      expect(await pendingPoints(), isEmpty);
+      expect(await gpsInBuffer(), 0);
+      expect(server.requests, 1);
+    });
+    // J-568 (C1-05): a revogação recusada com uma recusa de DOMÍNIO 4xx não é
+    // descartada pelo app: ela continua pendente e sai no próximo passe (a
+    // revogação nunca se perde, Emenda 1.5 §2).
+    test('T-J568-C1-05. revogação recusada com 403 role_required → continua '
+        'pendente (não é descartada)', () async {
+      await grantedAndRegistered();
+      consentApi.script.add(
+        const LocationConsentRefusedError('role_required', statusCode: 403),
+      );
+
+      final settled = await sync.revoke(_tenant);
+
+      expect(settled, isFalse);
+      final pending = await store.pendingDecisionFor(a);
+      expect(pending, isNotNull);
+      expect(pending!.granted, isFalse);
+      expect(consentApi.serverConsent, isTrue);
+    });
     // Emenda 1.9 (E18C-02), a camada do acerto: um 400 ou 403 que NÃO é
     // recusa de domínio deixa a decisão pendente e nada é apagado (a recusa
     // de domínio continua zerando e apagando: S12 e S15).

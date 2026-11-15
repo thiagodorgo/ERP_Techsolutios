@@ -1021,3 +1021,101 @@ test("[T-17-ACEITE-VELHO-mem] Emenda 1.7 (C16-01): o aceite velho, com a revoga�
   const final = (await profiles.findByUserId(tenantId, tech.userId))?.trackingConsent;
   assert.deepEqual({ revokedBetween, status: result.status, final }, { revokedBetween: true, status: "superseded", final: false });
 });
+
+// ------------------------------------------------------------------------------------------------------------
+// J-568, leva A (os testes-dono dos achados não graves da junta; o orquestrador triou, o dev `dev-17-cl` conserta).
+
+test("[T-J568-C1-01] o 422 do cadastro (quem liga o consentimento) não grava NADA do PATCH: nem o telefone, nem o carimbo de alteração", async () => {
+  await withHarness(async (h) => {
+    const tech = randomUUID();
+    const profileId = await createProfile(h, tech, false);
+    const before = await readProfile(h, profileId);
+    await pause(20);
+
+    const byManager = await h.req(`/api/v1/operator-profiles/${profileId}`, h.manager, "PATCH", { tracking_consent: true, phone: "11999990000" });
+    assert.equal(byManager.status, 422, JSON.stringify(byManager.body));
+    assert.equal(reasonOf(byManager), "tracking_consent_holder_only");
+    await assert.rejects(
+      h.profiles.update(
+        { tenantId: h.tenantA, userId: tech, roles: ["field_technician"], permissions: [] } as never,
+        profileId,
+        { tracking_consent: true, phone: "11988880000" },
+      ),
+      (error: { reason?: string }) => error.reason === "tracking_consent_app_only",
+    );
+
+    const after = await readProfile(h, profileId);
+    assert.deepEqual(
+      { phone: after.phone ?? null, trackingConsent: after.trackingConsent, updatedAt: after.updatedAt },
+      { phone: before.phone ?? null, trackingConsent: false, updatedAt: before.updatedAt },
+      "o 422 não grava nenhum campo do mesmo PATCH",
+    );
+  });
+});
+
+test("[T-J568-C1-02] em memória, o aceite e a revogação disparados JUNTOS terminam sem consentimento: o aceite lê, decide e grava sem `await` no meio", async () => {
+  const [fl, op, opRepo, flRepo] = await Promise.all([
+    import("../src/modules/field-location/field-location.service.js"),
+    import("../src/modules/operator-profiles/operator-profile.service.js"),
+    import("../src/modules/operator-profiles/operator-profile.repository.js"),
+    import("../src/modules/field-location/field-location.repository.js"),
+  ]);
+  for (let i = 0; i < 10; i++) {
+    const tenantId = randomUUID();
+    const tech = { tenantId, userId: randomUUID(), roles: ["field_technician"], permissions: ["field_location:send"] } as const;
+    const manager = { tenantId, userId: randomUUID(), roles: ["manager"], permissions: ["operator_profiles:create"] } as const;
+    const profiles = new op.OperatorProfileService(new opRepo.InMemoryOperatorProfileRepository());
+    await profiles.create(manager as never, { user_id: tech.userId, tracking_consent: false });
+    await pause(5);
+    const body = () => ({ decided_at: new Date().toISOString(), client_action_id: randomUUID(), text_version: TEXT_VERSION });
+    const service = new fl.FieldLocationService(new flRepo.InMemoryFieldLocationRepository(() => undefined), async () => profiles);
+    const [grant, revoke] = await Promise.all([
+      service.setOwnTrackingConsent(tech as never, true, body()),
+      service.setOwnTrackingConsent(tech as never, false, body()),
+    ]);
+    const final = (await profiles.findByUserId(tenantId, tech.userId))?.trackingConsent;
+    assert.deepEqual({ revoke: revoke.status, final }, { revoke: "applied", final: false }, `volta ${i}: aceite ${grant.status}`);
+  }
+});
+
+test("[T-17-ACEITE-VELHO-mem] (empate) J-568 C1-03: o aceite com decided_at IGUAL ao updated_at do perfil sem consentimento sai superseded (a borda é <=)", async () => {
+  const [op, opRepo] = await Promise.all([
+    import("../src/modules/operator-profiles/operator-profile.service.js"),
+    import("../src/modules/operator-profiles/operator-profile.repository.js"),
+  ]);
+  const tenantId = randomUUID();
+  const userId = randomUUID();
+  const repo = new opRepo.InMemoryOperatorProfileRepository();
+  const profiles = new op.OperatorProfileService(repo);
+  const created = await profiles.create({ tenantId, userId: randomUUID(), roles: ["manager"], permissions: [] } as never, {
+    user_id: userId,
+    tracking_consent: false,
+  });
+  const result = await repo.applyHolderConsentGrant({ tenantId, profileId: created.id, decidedAt: new Date(created.updatedAt.getTime()), updatedBy: userId });
+  assert.deepEqual(
+    { status: result?.status, final: (await repo.findById(tenantId, created.id))?.trackingConsent },
+    { status: "superseded", final: false },
+  );
+});
+
+test("[T-J568-C2-02] a fila do titular volta ao normal depois de um 503 por prazo: quem estourou sai da fila e a vaga volta", async () => {
+  const { HolderWriteGate } = await import("../src/modules/field-location/field-location.repository.js");
+  const queue = new HolderWriteGate(1);
+  let releaseA!: () => void;
+  const held = new Promise<void>((resolve) => (releaseA = resolve));
+  const a = queue.run("t:u", async () => {
+    await held;
+    return "a";
+  });
+  await pause(5);
+  await assert.rejects(
+    queue.run("t:u", async () => "b", { maxWaitMs: 20 }),
+    (error: { reason?: string; statusCode?: number }) => error.reason === "field_location_busy" && error.statusCode === 503,
+  );
+  releaseA();
+  assert.equal(await a, "a");
+  const t0 = Date.now();
+  assert.equal(await queue.run("t:u", async () => "c", { maxWaitMs: 200 }), "c", "a vaga voltou: o próximo não espera um morto");
+  assert.ok(Date.now() - t0 < 100, `o próximo entrou sem esperar (${Date.now() - t0} ms)`);
+  assert.equal(await queue.run("t:u", async () => "d", { maxWaitMs: 200 }), "d");
+});

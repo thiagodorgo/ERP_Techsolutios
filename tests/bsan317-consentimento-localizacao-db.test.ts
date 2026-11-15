@@ -51,7 +51,8 @@ import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 //       `source: { in: … }` do repositório Prisma.
 //
 // Semeadura em SQL cru pelo admin; teardown ESCOPADO por tenant_id (nunca curinga). Sem DATABASE_URL o arquivo
-// DECLARA o pulo. Vermelho-controle na base `d2737339`: diário `dev-17-cl.md` §4.
+// DECLARA o pulo. Vermelho-controle: D1–D7 na base `d2737339` (diário `dev-17-cl.md` §4); os T-17 das Emendas 1.5 a 1.9
+// no `342e5219`; os da J-568 (ACEITE-VELHO (f) e PRAZO-TRAVA-CONSENT) no `40dba2be`.
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;
@@ -1047,6 +1048,63 @@ if (!connectionString) {
     } finally {
       holdRelease.open();
       await X;
+    }
+  });
+
+  // J-568, leva A: os testes-dono dos achados C1-03 e C2-01 da junta.
+  test("[T-17-ACEITE-VELHO-db] (f) J-568 C1-03: o aceite com decided_at IGUAL ao updated_at do perfil sem consentimento sai superseded (a borda é <=)", async () => {
+    const h = await harness();
+    const s = await scenario(h, "j568-empate", "not-consented");
+    const opRepo = await import("../src/modules/operator-profiles/operator-profile-prisma.repository.js");
+    const repo = new opRepo.RlsPrismaOperatorProfileRepository(h.role.client);
+    const row = await profileRow(h, s.profileId!);
+    const result = await repo.applyHolderConsentGrant({
+      tenantId: s.tenantId,
+      profileId: s.profileId!,
+      decidedAt: new Date(new Date(row.updated_at).getTime()),
+      updatedBy: s.tech.userId,
+    });
+    assert.deepEqual({ status: result?.status, final: await consentOf(h, s.profileId!) }, { status: "superseded", final: false });
+  });
+
+  test("[T-17-PRAZO-TRAVA-CONSENT-db] J-568 C2-01: com a linha do perfil presa, o aceite e a revogação pelo app saem 503 field_location_busy em ~3 s, sem gravar", async () => {
+    const h = await harness();
+    const k = await realClasses(h);
+    const service = new k.FieldLocationService(new k.RlsPrismaFieldLocationRepository(h.role.client), async () => k.profiles);
+    for (const kind of ["aceite", "revoga"] as const) {
+      const s = await scenario(h, "j568-pt-" + kind, kind === "aceite" ? "not-consented" : "consented");
+      await pause(20);
+      const before = await consentOf(h, s.profileId!);
+      const holdLocked = gate();
+      const holdRelease = gate();
+      const X = captureSettled(
+        h.admin.$transaction(
+          async (tx) => {
+            await tx.$queryRawUnsafe("SELECT 1 FROM operator_profiles WHERE id = $1::uuid FOR NO KEY UPDATE", s.profileId);
+            holdLocked.open();
+            await holdRelease.opened;
+          },
+          { timeout: 30_000, maxWait: 5_000 },
+        ),
+      );
+      await holdLocked.opened;
+      const t0 = Date.now();
+      let ms = -1;
+      const P = captureSettled(service.setOwnTrackingConsent(technicianActor(s) as never, kind === "aceite", decision())).then((x) => {
+        ms = Date.now() - t0;
+        return x;
+      });
+      const whileHeld = await Promise.race([P.then(() => "liquidou com a linha presa"), pause(6_000).then(() => "pendente aos 6 s")]);
+      holdRelease.open();
+      await X;
+      const r = await P;
+      await pause(100);
+      assert.deepEqual(
+        { whileHeld, outcome: outcomeOf(r as never), final: await consentOf(h, s.profileId!) },
+        { whileHeld: "liquidou com a linha presa", outcome: "field_location_busy", final: before },
+        kind,
+      );
+      assert.ok(ms < 4_500, `${kind}: ${ms} ms (o prazo da trava é de 3 s)`);
     }
   });
 
