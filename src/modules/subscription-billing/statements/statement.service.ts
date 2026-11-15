@@ -60,6 +60,15 @@ export type StatementInputsProvider = {
 
 export type StatementAuditSink = { record(event: StatementAuditEvent): Promise<void> };
 
+/** B-ASS-08c1c (P5, plano §4.1): o provedor de PAGAMENTO ligado na hora do fechamento e o método do perfil — ou `null` (Q1 (a):
+ * sem provedor ligado, o fechamento não deixa linha esperando). Avaliado ANTES da transação (v2 §10 D3); nunca faz rede. */
+export type ClosingChargeResolver = {
+  resolve(tenantId: string): Promise<{ readonly provider: string; readonly method: PaymentMethod } | null>;
+};
+
+/** B-ASS-08c1c (plano §4.0 item 5): o 4º parâmetro do serviço, um OBJETO de opções. O 08c2 acrescenta `invoiceIntents` aqui. */
+export type StatementChannel = { readonly closingCharge?: ClosingChargeResolver };
+
 export type CloseOutcome =
   | { readonly kind: "closed"; readonly statement: SubscriptionStatement; readonly alreadyClosed: false }
   | { readonly kind: "already_closed"; readonly statement: SubscriptionStatement; readonly alreadyClosed: true }
@@ -113,6 +122,8 @@ export class StatementService {
       throw new StatementError(422, "period_not_ended", "The period has not ended yet (America/Sao_Paulo).");
     }
 
+    // B-ASS-08c1c (P5): o predicado "provedor ligado" e o método do perfil, ANTES da transação (nunca rede dentro dela).
+    const closing = (await this.channel.closingCharge?.resolve(input.tenantId)) ?? null;
     const result = await this.repository.transaction(input.tenantId, async (tx) => {
       const { statement: current } = await tx.insertIfAbsentAndLock({ tenantId: input.tenantId, period: input.period });
       if (current.status === "closed" || current.status === "paid" || current.status === "cancelled") {
@@ -170,6 +181,9 @@ export class StatementService {
           ...(resolved.gaps.length > 0 ? { gaps: [...resolved.gaps] } : {}),
         },
       });
+      // B-ASS-08c1c (P5): com o provedor ligado, a cobrança nasce DENTRO desta transação, sobre o `tx` do fechamento (a trava
+      // já é dele), com o total recém-gravado. Recusa do D1 ou falha ao gravar → a exceção sobe e o fechamento inteiro desfaz.
+      if (closing && saved.status === "closed") await enqueueChargeCreateInTx(tx.charging(), { tenantId: input.tenantId, statementId: saved.id, provider: closing.provider, operator: { method: closing.method }, now: input.now }); // [CLOSE-ENQ]
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,

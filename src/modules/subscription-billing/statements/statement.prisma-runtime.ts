@@ -568,10 +568,23 @@ export async function createPrismaStatementRuntime(): Promise<StatementRuntime> 
   const bindings = new PrismaBindingsSource(prisma);
   const audit = new PrismaStatementAuditSink(prisma);
   const inputs = new RepositoryStatementInputsProvider(new PrismaSubscriptionsRepository(prisma), plans, tenants, usage, bindings);
+  const billingProfiles = new PrismaBillingProfileRepository(prisma);
+  // B-ASS-08c1c (P5, plano §4.1): o fechamento enfileira só com o provedor de pagamento LIGADO agora (o MESMO predicado da rota
+  // `/charge`: env + cofre + `enabled`), com o método do perfil. Import dinâmico: `vault/` e `outbox/` sem ciclo com `statements/`.
+  const channel: StatementChannel = {
+    closingCharge: {
+      async resolve(tenantId) {
+        const [{ createDefaultVaultRuntime }, { paymentProviderOn }] = await Promise.all([import("../vault/vault.factory.js"), import("../outbox/channel-state.js")]);
+        const on = await paymentProviderOn(await createDefaultVaultRuntime());
+        if (!on) return null;
+        return { provider: on.provider, method: closingMethodOf((await billingProfiles.find(tenantId))?.paymentMethod) };
+      },
+    },
+  };
   return {
-    service: new StatementService(repository, inputs, audit),
+    service: new StatementService(repository, inputs, audit, channel),
     repository,
-    billingProfiles: new PrismaBillingProfileRepository(prisma),
+    billingProfiles,
     tenants,
     audit,
     inputs,
