@@ -89,18 +89,17 @@ class _ServidorDoLote implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    final lote = Map<String, dynamic>.from(
-      jsonDecode(jsonEncode(options.data)) as Map,
-    );
+    final bruto = jsonDecode(jsonEncode(options.data)) as Map;
+    final lote = Map<String, dynamic>.from(bruto);
     lotes.add(lote);
     final aceitas = <Map<String, Object?>>[];
     final recusadas = <Map<String, Object?>>[];
     for (final raw in (lote['actions'] as List).cast<Map>()) {
       final acao = Map<String, dynamic>.from(raw);
       final payload = Map<String, dynamic>.from(acao['payload'] as Map);
-      final workOrderId = acao['type'] == WorkOrderSyncActionTypes.create
-          ? idDaOsCriada
-          : payload['work_order_id'] as String?;
+      final daOs = payload['work_order_id'] as String?;
+      final criacao = acao['type'] == WorkOrderSyncActionTypes.create;
+      final workOrderId = criacao ? idDaOsCriada : daOs;
       if (recusar && acao['type'] != WorkOrderSyncActionTypes.create) {
         recusadas.add({
           'client_action_id': acao['client_action_id'],
@@ -171,6 +170,22 @@ const _arquivoDoContrato = 'test/core/sync/bsan316_lote_os_contrato.json';
 Map<String, dynamic> _contrato() {
   final texto = File(_arquivoDoContrato).readAsStringSync();
   return jsonDecode(texto) as Map<String, dynamic>;
+}
+
+SyncAction _daEntrada(Map<dynamic, dynamic> raw) {
+  final id = raw['client_action_id'] as String;
+  final type = raw['type'] as String;
+  final payload = raw['payload'] as Map;
+  final criadaEm = raw['created_at'] as String;
+  return SyncAction(
+    clientActionId: id,
+    tenantId: _tenant,
+    userId: _usuario,
+    type: type,
+    payload: Map<String, Object?>.from(payload),
+    status: SyncStatus.pending,
+    createdAt: DateTime.parse(criadaEm),
+  );
 }
 
 void main() {
@@ -380,21 +395,11 @@ void main() {
   test('A7. o lote que o codec produz para a entrada do fixture é igual a '
       'bsan316_lote_os_contrato.json', () {
     final contrato = _contrato();
-    final entrada = [
-      for (final raw in (contrato['entrada'] as List).cast<Map>())
-        SyncAction(
-          clientActionId: raw['client_action_id'] as String,
-          tenantId: _tenant,
-          userId: _usuario,
-          type: raw['type'] as String,
-          payload: Map<String, Object?>.from(raw['payload'] as Map),
-          status: SyncStatus.pending,
-          createdAt: DateTime.parse(raw['created_at'] as String),
-        ),
-    ];
-    final lote = WorkOrderSyncCodec(
-      batchIdFactory: () => contrato['client_batch_id'] as String,
-    ).encodeRequest(entrada);
+    final entradas = (contrato['entrada'] as List).cast<Map>();
+    final entrada = [for (final raw in entradas) _daEntrada(raw)];
+    final batchId = contrato['client_batch_id'] as String;
+    final codec = WorkOrderSyncCodec(batchIdFactory: () => batchId);
+    final lote = codec.encodeRequest(entrada);
 
     expect(jsonDecode(jsonEncode(lote)), contrato['lote']);
   });
@@ -453,12 +458,11 @@ void main() {
     );
     expect(enviadas, hasLength(1), reason: 'o pedido não saiu do aparelho');
     final enviada = enviadas.single;
-    expect((enviada['payload']['reason'] as String).length, 500);
-    expect(enviada['payload']['reason'], motivo.substring(0, 500));
-    expect(
-      (enviada['payload'] as Map).containsKey('impact'),
-      isFalse,
-      reason: 'impacto vazio não viaja',
-    );
+    final payloadEnviado = enviada['payload'] as Map;
+    final motivoEnviado = payloadEnviado['reason'] as String;
+    expect(motivoEnviado.length, 500);
+    expect(motivoEnviado, motivo.substring(0, 500));
+    final temImpacto = payloadEnviado.containsKey('impact');
+    expect(temImpacto, isFalse, reason: 'impacto vazio não viaja');
   });
 }
