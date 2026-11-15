@@ -6,7 +6,7 @@
   "release": {
     "block": "KPI-MARCO-2026-11-15 (consolidação de KPI por marco, loop diário `D-KPI-LOOP-GEMINI`: o proponente propõe as descrições, o orquestrador confere e o script grava; neste marco o proponente foi 'kpi-1511-prop-flash' (Gemini 3.8 Flash High, pelo Antigravity, pela 'D-KPI-LOOP-GEMINI'), e o redator foi 'kpi-1511-grava-cl' (Claude Opus 5.5, redator declarado), que conferiu a proposta e gravou; houve cruzamento de casa (proponente Gemini, redator Claude, §C7 item 11(1)); a revisão vem a seguir. O KPI segue CONGELADO para os PRs de bloco, 'D-GOV-PROPORCIONAL' (5)).",
     "title": "Marco de 15/11: 244 blocos e vendável em 80%",
-    "pr": null,
+    "pr": 578,
     "merge_commit": null,
     "approved_head": null,
     "status": "published_per_pr",
