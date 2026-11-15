@@ -202,7 +202,8 @@ void main() {
       WorkOrderSyncActionTypes.approvalRequest,
     );
     expect(enviadas, hasLength(1), reason: 'o pedido não saiu do aparelho');
-    expect(enviadas.single['payload'], {
+    final payloadEnviado = enviadas.single['payload'];
+    final payloadEsperado = {
       'work_order_id': _os,
       'reason': 'Troca de peça fora do orçamento',
       'impact': 'O serviço atrasa dois dias sem a peça.',
@@ -212,7 +213,8 @@ void main() {
         'local_id': _local,
         'requested_at': '2026-11-14T15:00:00.000Z',
       },
-    });
+    };
+    expect(payloadEnviado, payloadEsperado);
     final serializado = jsonEncode(h.servidor.lotes).toLowerCase();
     expect(serializado, isNot(contains('requested_by_user_id')));
     expect(serializado, isNot(contains(_usuario)));
@@ -233,7 +235,8 @@ void main() {
       WorkOrderSyncActionTypes.unableToStart,
     );
     expect(enviadas, hasLength(1), reason: 'o "não iniciou" não saiu');
-    expect(enviadas.single['payload'], {
+    final payloadEnviado = enviadas.single['payload'];
+    final payloadEsperado = {
       'work_order_id': _os,
       'reason': 'Cliente ausente no local',
       'note': 'Portão fechado; ninguém atendeu.',
@@ -242,7 +245,8 @@ void main() {
         'local_id': _local,
         'occurred_at': '2026-11-14T15:05:00.000Z',
       },
-    });
+    };
+    expect(payloadEnviado, payloadEsperado);
     final serializado = jsonEncode(h.servidor.lotes).toLowerCase();
     expect(serializado, isNot(contains('reported_by_user_id')));
     expect(serializado, isNot(contains(_usuario)));
@@ -251,11 +255,9 @@ void main() {
   test('A3. sem id de servidor espera; quando a OS criada offline sobe, os '
       'dois saem no mesmo passe', () async {
     final queue = InMemorySyncQueueRepository();
+    const criacao = {'local_id': _local, 'title': 'OS criada no aparelho'};
     await queue.enqueue(
-      _acao('a3-create', WorkOrderSyncActionTypes.create, const {
-        'local_id': _local,
-        'title': 'OS criada no aparelho',
-      }),
+      _acao('a3-create', WorkOrderSyncActionTypes.create, criacao),
     );
     await queue.enqueue(
       _acao(
@@ -348,10 +350,8 @@ void main() {
 
     final resultado = await h.replay.replayTenant(_tenant);
 
-    expect(resultado.synced.map((a) => a.clientActionId).toSet(), {
-      'a5-pedido',
-      'a5-nao-iniciou',
-    });
+    final enviadas = resultado.synced.map((a) => a.clientActionId).toSet();
+    expect(enviadas, {'a5-pedido', 'a5-nao-iniciou'});
     expect(await queue.pendingForTenant(_tenant), isEmpty);
     for (final acao in await queue.actionsForTenant(_tenant)) {
       expect(acao.status, SyncStatus.synced, reason: acao.clientActionId);
