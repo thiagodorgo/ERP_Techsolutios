@@ -31,9 +31,21 @@ import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 //       (leitura declarada no diário `dev-17-cl.md`); nada de organização, coordenada nem client_action_id
 //   D6  (CR17R2-07) concede → revoga → reenvio do 1º aceite → superseded; tracking_consent false e a contagem não
 //       muda depois de uma posição
-//   T-17-TOCTOU-db (Emenda 1.5, CX3-568-01) a escrita revalida o consentimento na MESMA transação, com `FOR SHARE`
+//   T-17-TOCTOU-db (Emenda 1.5, CX3-568-01) a escrita revalida o consentimento na MESMA transação, com `FOR NO KEY UPDATE`
 //       na linha do perfil: (a) a revogação confirma antes da gravação → 422 e 0 linha; (b) a gravação segura a
 //       linha → a revogação espera, a posição gravada é anterior a ela, e a próxima gravação → 422.
+//   T-17-FILA-db (Emenda 1.6, CX3-568-03) (a) duas posições que começam depois da revogação enfileirada esperam
+//       atrás dela → 422 e 0 linha; (b) terminada a posição anterior, a revogação não espera a posição nova;
+//       (c) a posição em voo não segura o INSERT com FK para o perfil (`telemetry_events`), porque `FOR NO KEY UPDATE`
+//       não conflita com o `FOR KEY SHARE` das FKs.
+//   T-17-ACEITE-VELHO-db (Emenda 1.7, C16-01) o aceite é decidido NA escrita: (a) o aceite velho e (b) o reenvio do
+//       1º aceite, com a revogação na fila, saem superseded; (c) o aceite que passou a guarda perde para um aceite e
+//       uma revogação mais novos; (d) o aceite novo com a revogação na fila vale; (e) a série.
+//   T-17-RAJADA-db (Emendas 1.7 e 1.8) e T-17-RAJADA-CONSENT-db (Emenda 1.8): a rajada de posições (3 vagas) ou de
+//       decisões (2 vagas) de UM titular espera na fila dele, fora do pool; a posição de outra organização passa.
+//   T-17-CADASTRO-db (Emenda 1.8, `D-ORQ-568-CONSENTIMENTO-SO-PELO-APP`) o cadastro desliga e nunca liga.
+//   T-17-PRAZO-db e T-17-PRAZO-TRAVA-db (Emenda 1.8, E17-07) a fila do titular tem prazo, e a escrita guardada tem
+//       orçamento (`lock_timeout`): quem estoura sai 503 `field_location_busy`, e nada é gravado.
 //   D7  (Emenda 1 da abertura, 2.2) o caso (a) do B22: traccar às 03:00 e app às 03:05; desligado o consentimento,
 //       o latest e o detalhe da OS trazem o traccar; com since 03:01, nada do operador. Única prova do ramo
 //       `source: { in: … }` do repositório Prisma.
@@ -458,7 +470,7 @@ if (!connectionString) {
     assert.equal(await locationRows(h, s.tenantId, s.tech.userId), 0, "0 linha gravada");
   });
 
-  test("[T-17-TOCTOU-db] (b) a gravação segura a linha do perfil (FOR SHARE): a revogação espera, a posição é anterior a ela, e a próxima → 422", async () => {
+  test("[T-17-TOCTOU-db] (b) a gravação segura a linha do perfil (FOR NO KEY UPDATE): a revogação espera, a posição é anterior a ela, e a próxima → 422", async () => {
     const h = await harness();
     const s = await scenario(h, "toctou-b", "consented");
     const [{ FieldLocationService }, { RlsPrismaFieldLocationRepository }] = await Promise.all([
@@ -469,7 +481,7 @@ if (!connectionString) {
     const locked = new Promise<void>((resolve) => (signalLocked = resolve));
     let release!: () => void;
     const released = new Promise<void>((resolve) => (release = resolve));
-    // O gancho roda dentro da transação da escrita, logo depois do `SELECT … FOR SHARE` e antes do INSERT.
+    // O gancho roda dentro da transação da escrita, logo depois do `SELECT … FOR NO KEY UPDATE` e antes do INSERT.
     const repository = new RlsPrismaFieldLocationRepository(h.role.client, {
       afterConsentLocked: async () => {
         signalLocked();
@@ -481,7 +493,7 @@ if (!connectionString) {
     const write = captureSettled(service.recordMobileLocation(technicianActor(s) as never, { latitude: -23.55, longitude: -46.63 }));
     try {
       const held = await Promise.race([locked.then(() => true), pause(10_000).then(() => false)]);
-      assert.equal(held, true, "a escrita segura a linha do perfil antes do INSERT (o gancho depois do FOR SHARE rodou)");
+      assert.equal(held, true, "a escrita segura a linha do perfil antes do INSERT (o gancho depois do FOR NO KEY UPDATE rodou)");
 
       const revoke = captureSettled(post(h, REVOKE_ROUTE, s.tech, decision()));
       let revokeSettled = false;
@@ -515,6 +527,526 @@ if (!connectionString) {
     } finally {
       release();
       await write;
+    }
+  });
+
+
+  // ------------------------------------------------------------------ Emendas 1.6 a 1.9: a fila da revogação, o aceite
+  // decidido na escrita, o cadastro que só desliga, a fila do titular com prazo e o orçamento da escrita guardada.
+  // A barreira é sempre causal: o grafo `pg_stat_activity` + `pg_blocking_pids`, escopado pelo `application_name` da
+  // suíte, e os avisos das filas do titular. O relógio só aparece como prazo de falha ou como o prazo do próprio produto.
+
+  function gate() {
+    let open!: () => void;
+    const opened = new Promise<void>((resolve) => (open = resolve));
+    return { open, opened };
+  }
+
+  type GraphRow = { pid: number; state: string; wait: string | null; query: string; blockers: number[] };
+  async function lockGraph(h: Harness): Promise<GraphRow[]> {
+    return h.admin.$queryRawUnsafe<GraphRow[]>(
+      "SELECT pid, state, wait_event_type AS wait, left(regexp_replace(query, '[[:space:]]+', ' ', 'g'), 80) AS query, pg_blocking_pids(pid) AS blockers " +
+        "FROM pg_stat_activity WHERE application_name = $1 AND pid <> pg_backend_pid() AND backend_type = 'client backend' AND state <> 'idle'",
+      APP,
+    );
+  }
+
+  async function waitBlockedCount(h: Harness, n: number, loser: Promise<unknown>, label: string): Promise<string> {
+    let settled = false;
+    void loser.then(() => (settled = true));
+    const deadline = Date.now() + 3_000;
+    for (;;) {
+      const rows = (await lockGraph(h)).filter((r) => r.state === "active" && r.wait === "Lock");
+      if (rows.length >= n) return `bloqueado(${rows.length})`;
+      if (settled) return "resolvido";
+      if (Date.now() > deadline) return `timeout(${label}; bloqueados=${rows.length}/${n})`;
+      await pause(10);
+    }
+  }
+
+  function outcomeOf(o: { status: "fulfilled"; value: any } | { status: "rejected"; reason: any }): string {
+    if (o.status === "fulfilled") {
+      const v = o.value;
+      if (v && typeof v === "object" && "body" in v && typeof v.status === "number") {
+        const st = (v.body?.data as any)?.status;
+        return `http${v.status}${st ? `:${st}` : ""}${v.body?.error?.reason ? `:${v.body.error.reason}` : ""}`;
+      }
+      if (v && typeof v === "object" && typeof v.status === "string") return `ok:${v.status}`;
+      return "fulfilled";
+    }
+    const r = o.reason;
+    return String(r?.reason ?? r?.code ?? r?.message ?? r).slice(0, 120);
+  }
+
+  const consentOf = async (h: Harness, profileId: string): Promise<boolean> => (await profileRow(h, profileId)).tracking_consent;
+
+  async function realClasses(h: Harness) {
+    const [fl, flRepo, op, opRepo] = await Promise.all([
+      import("../src/modules/field-location/field-location.service.js"),
+      import("../src/modules/field-location/field-location-prisma.repository.js"),
+      import("../src/modules/operator-profiles/operator-profile.service.js"),
+      import("../src/modules/operator-profiles/operator-profile-prisma.repository.js"),
+    ]);
+    return {
+      FieldLocationService: fl.FieldLocationService,
+      RlsPrismaFieldLocationRepository: flRepo.RlsPrismaFieldLocationRepository,
+      profiles: new op.OperatorProfileService(new opRepo.RlsPrismaOperatorProfileRepository(h.role.client)),
+    };
+  }
+
+  // A posição A (e, com holdCalls > 1, as seguintes) segura a linha do perfil no gancho, dentro da transação da escrita.
+  async function holdA(h: Harness, s: Scenario, holdCalls: number, extraHooks: Record<string, unknown> = {}) {
+    const k = await realClasses(h);
+    let calls = 0;
+    const locked: ReturnType<typeof gate>[] = [];
+    const release: ReturnType<typeof gate>[] = [];
+    for (let i = 0; i < holdCalls; i++) {
+      locked.push(gate());
+      release.push(gate());
+    }
+    const repository = new k.RlsPrismaFieldLocationRepository(h.role.client, {
+      ...extraHooks,
+      afterConsentLocked: async () => {
+        const i = calls++;
+        if (i < holdCalls) {
+          locked[i]!.open();
+          await release[i]!.opened;
+        }
+      },
+    } as never);
+    const service = new k.FieldLocationService(repository, async () => k.profiles);
+    const send = (lat: number) => captureSettled(service.recordMobileLocation(technicianActor(s) as never, { latitude: lat, longitude: -46.6 }));
+    const A = send(-23.5);
+    assert.equal(await Promise.race([locked[0]!.opened.then(() => true), pause(10_000).then(() => false)]), true, "A no gancho");
+    const aPid = (await lockGraph(h)).find((r) => r.state === "idle in transaction")?.pid;
+    const releaseAll = () => release.forEach((g) => g.open());
+    return { A, aPid, send, locked, release, releaseAll, service, k };
+  }
+
+  async function revokeBehind(h: Harness, s: Scenario, aPid: number | undefined) {
+    const R = captureSettled(post(h, REVOKE_ROUTE, s.tech, decision()));
+    const seenR = await waitForOwnBlockedOrSettled(h.admin, { applicationName: APP, loser: R, blockedBy: aPid, label: "R atrás de A", timeoutMs: 3_000 });
+    const rPid = (await lockGraph(h)).find((r) => r.wait === "Lock" && /UPDATE.*operator_profiles/i.test(r.query))?.pid;
+    return { R, seenR, rPid };
+  }
+
+  // O titular que TAMBÉM tem `operator_profiles:update` (o formulário web dele), com o perfil ligado.
+  async function holderManager(h: Harness, tag: string): Promise<Scenario> {
+    const tenantId = await newTenant(h, tag);
+    const userId = await newUser(h, tenantId, `${tag}-titular-gestor`);
+    await grantRole(h, tenantId, userId, "manager", ["field_location:send", "field_location:read", "operator_profiles:read", "operator_profiles:update"]);
+    const profileId = await newProfile(h, tenantId, userId, true);
+    const actor = await actorOf(h, tenantId, userId, "manager");
+    return { tenantId, tech: actor, manager: actor, profileId };
+  }
+
+  const patchProfile = (h: Harness, s: Scenario, actor: Actor, body: Record<string, unknown>) =>
+    requestJson(h.baseUrl, `/api/v1/operator-profiles/${s.profileId}`, { method: "PATCH", headers: actor.headers, body });
+
+  // Só os comandos que escrevem ou travam a linha do perfil (a trava da posição e a do aceite começam por
+  // `SELECT tracking_consent`; a revogação, por `UPDATE "public"."operator_profiles"`). A leitura do Prisma, `SELECT
+  // "public"…`, não casa. O texto chega com espaço na frente e cortado em 80 caracteres pelo `lockGraph`.
+  const GUARDED = /^\s*(SELECT tracking_consent(, updated_at)? FROM operator_profiles|UPDATE "public"\."operator_profiles")/;
+
+  // ---- Emenda 1.6 (CX3-568-03): a revogação enfileirada não é ultrapassada
+
+  test("[T-17-FILA-db] (a) CX3-568-03: duas posições que começam depois da revogação enfileirada esperam atrás dela → 422 e 0 linha", async () => {
+    const h = await harness();
+    const s = await scenario(h, "fila-a", "consented");
+    const { A, aPid, send, releaseAll } = await holdA(h, s, 1);
+    try {
+      const { R, seenR, rPid } = await revokeBehind(h, s, aPid);
+      assert.match(String(seenR), /^bloqueado/, `R espera A (${String(seenR)})`);
+      const B = send(-23.51);
+      const seenB = await waitForOwnBlockedOrSettled(h.admin, { applicationName: APP, loser: B, blockedBy: rPid, minBlocked: 1, label: "B", timeoutMs: 3_000 });
+      const C = send(-23.52);
+      const seenC = await waitForOwnBlockedOrSettled(h.admin, { applicationName: APP, loser: C, blockedBy: rPid, minBlocked: 2, label: "C", timeoutMs: 3_000 });
+      assert.match(String(seenB), /^bloqueado/, `B espera atrás de R (${String(seenB)})`);
+      assert.match(String(seenC), /^bloqueado/, `C espera atrás de R (${String(seenC)})`);
+      const waiting = (await lockGraph(h)).filter((r) => r.state === "active" && r.wait === "Lock" && /SELECT tracking_consent/.test(r.query));
+      assert.equal(waiting.length, 2, `B e C bloqueadas na trava guardada (${JSON.stringify(waiting)})`);
+      for (const w of waiting) assert.ok(rPid !== undefined && w.blockers.includes(rPid), `pg_blocking_pids contém o pid de R (${JSON.stringify(w)})`);
+      releaseAll();
+      const [a, r, b, c] = await Promise.all([A, R, B, C]);
+      assert.deepEqual(
+        { A: outcomeOf(a), R: outcomeOf(r), B: outcomeOf(b), C: outcomeOf(c), rows: await locationRows(h, s.tenantId, s.tech.userId), final: await consentOf(h, s.profileId!) },
+        { A: "fulfilled", R: "http200:applied", B: "tracking_consent_required", C: "tracking_consent_required", rows: 1, final: false },
+      );
+    } finally {
+      releaseAll();
+      await A;
+    }
+  });
+
+  test("[T-17-FILA-db] (b) CX3-568-03: terminada a posição anterior, a revogação não espera a posição nova", async () => {
+    const h = await harness();
+    const s = await scenario(h, "fila-b", "consented");
+    const { A, aPid, send, locked, release, releaseAll } = await holdA(h, s, 2);
+    try {
+      const { R, seenR, rPid } = await revokeBehind(h, s, aPid);
+      assert.match(String(seenR), /^bloqueado/, `R espera A (${String(seenR)})`);
+      const B = send(-23.51);
+      await Promise.race([
+        locked[1]!.opened,
+        waitForOwnBlockedOrSettled(h.admin, { applicationName: APP, loser: B, blockedBy: rPid, minBlocked: 1, label: "B", timeoutMs: 3_000 }),
+      ]);
+      release[0]!.open();
+      await A;
+      const seenR2 = await waitForOwnBlockedOrSettled(h.admin, { applicationName: APP, loser: R, label: "R depois de A", timeoutMs: 3_000 });
+      assert.equal(seenR2, "resolvido", `R não pode ficar presa pela posição nova (${seenR2})`);
+      release[1]!.open();
+      const [a, r, b] = await Promise.all([A, R, B]);
+      assert.deepEqual(
+        { A: outcomeOf(a), R: outcomeOf(r), B: outcomeOf(b), rows: await locationRows(h, s.tenantId, s.tech.userId), final: await consentOf(h, s.profileId!) },
+        { A: "fulfilled", R: "http200:applied", B: "tracking_consent_required", rows: 1, final: false },
+      );
+    } finally {
+      releaseAll();
+      await A;
+    }
+  });
+
+  test("[T-17-FILA-db] (c) a posição em voo não segura o INSERT com FK para o perfil (telemetry_events)", async () => {
+    const h = await harness();
+    const s = await scenario(h, "fila-c", "consented");
+    const { withTenantRls } = await import("../src/database/rls.js");
+    const { A, aPid, releaseAll } = await holdA(h, s, 1);
+    try {
+      const insert = captureSettled(
+        withTenantRls(h.role.client, s.tenantId, (tx) =>
+          tx.$executeRawUnsafe(
+            "INSERT INTO telemetry_events (tenant_id, operator_profile_id, event_type, captured_at, client_action_id) VALUES ($1::uuid, $2::uuid, 'heartbeat', now(), $3)",
+            s.tenantId,
+            s.profileId,
+            randomUUID(),
+          ),
+        ),
+      );
+      const seenFK = await waitForOwnBlockedOrSettled(h.admin, { applicationName: APP, loser: insert, blockedBy: aPid, label: "telemetria × posição em voo", timeoutMs: 3_000 });
+      assert.equal(seenFK, "resolvido", `o INSERT com FK para o perfil não espera a posição em voo (${seenFK})`);
+      releaseAll();
+      const [a, ins] = await Promise.all([A, insert]);
+      assert.deepEqual({ A: outcomeOf(a), FK: outcomeOf(ins) }, { A: "fulfilled", FK: "fulfilled" });
+    } finally {
+      releaseAll();
+      await A;
+    }
+  });
+
+  // ---- Emenda 1.7 (C16-01): o aceite do titular é decidido NA escrita, sob a linha travada
+
+  test("[T-17-ACEITE-VELHO-db] (a) o aceite VELHO que chega com a revogação na fila não a desfaz", async () => {
+    const h = await harness();
+    const s = await scenario(h, "aceite-a", "consented");
+    const { A, aPid, send, releaseAll } = await holdA(h, s, 1);
+    try {
+      const { R, seenR } = await revokeBehind(h, s, aPid);
+      assert.match(String(seenR), /^bloqueado/, `R espera A (${String(seenR)})`);
+      const G = captureSettled(post(h, ACCEPT_ROUTE, s.tech, decision({ decided_at: new Date(Date.now() - 60_000).toISOString() })));
+      const seenG = await waitBlockedCount(h, 2, G, "G");
+      assert.match(seenG, /^bloqueado/, `G espera na fila da linha (${seenG})`);
+      releaseAll();
+      const [, r, g] = await Promise.all([A, R, G]);
+      const next = await send(-23.6);
+      assert.deepEqual(
+        { R: outcomeOf(r), G: outcomeOf(g), final: await consentOf(h, s.profileId!), next: outcomeOf(next) },
+        { R: "http200:applied", G: "http200:superseded", final: false, next: "tracking_consent_required" },
+      );
+    } finally {
+      releaseAll();
+      await A;
+    }
+  });
+
+  test("[T-17-ACEITE-VELHO-db] (b) o REENVIO do 1º aceite com a revogação na fila sai superseded (o D6 concorrente)", async () => {
+    const h = await harness();
+    const s = await scenario(h, "aceite-b", "not-consented");
+    await pause(20);
+    const first = decision({ decided_at: new Date().toISOString() });
+    await pause(20);
+    const granted = await post(h, ACCEPT_ROUTE, s.tech, first);
+    assert.equal((granted.body?.data as any)?.status, "applied", JSON.stringify(granted.body));
+    const { A, aPid, releaseAll } = await holdA(h, s, 1);
+    try {
+      const { R, seenR } = await revokeBehind(h, s, aPid);
+      assert.match(String(seenR), /^bloqueado/, `R espera A (${String(seenR)})`);
+      const G = captureSettled(post(h, ACCEPT_ROUTE, s.tech, first));
+      const seenG = await waitBlockedCount(h, 2, G, "G");
+      assert.match(seenG, /^bloqueado/, `o reenvio espera na fila da linha (${seenG})`);
+      releaseAll();
+      const [, , g] = await Promise.all([A, R, G]);
+      const after = await post(h, POSITION, s.tech, { latitude: -23.56, longitude: -46.64 });
+      assert.deepEqual(
+        { replay: outcomeOf(g), final: await consentOf(h, s.profileId!), positionAfter: after.status },
+        { replay: "http200:superseded", final: false, positionAfter: 422 },
+      );
+    } finally {
+      releaseAll();
+      await A;
+    }
+  });
+
+  test("[T-17-ACEITE-VELHO-db] (c) o aceite lê false e passa a guarda; um aceite e uma revogação MAIS NOVOS confirmam antes da escrita dele", async () => {
+    const h = await harness();
+    const s = await scenario(h, "aceite-c", "not-consented");
+    await pause(20);
+    const k = await realClasses(h);
+    let triggered = false;
+    const wrapped = new Proxy(k.profiles as object, {
+      get(target, prop, recv) {
+        const v = Reflect.get(target, prop, recv);
+        if (typeof v !== "function") return v;
+        if (prop === "update" || prop === "applyOwnTrackingConsentGrant") {
+          return async (...args: unknown[]) => {
+            const isGrant = prop === "applyOwnTrackingConsentGrant" || (args[2] as { tracking_consent?: boolean })?.tracking_consent === true;
+            if (isGrant && !triggered) {
+              triggered = true;
+              const g2 = await post(h, ACCEPT_ROUTE, s.tech, decision({ decided_at: new Date(Date.now() + 1_000).toISOString() }));
+              assert.equal((g2.body?.data as any)?.status, "applied", JSON.stringify(g2.body));
+              await pause(5);
+              const r2 = await post(h, REVOKE_ROUTE, s.tech, decision());
+              assert.equal(r2.status, 200);
+            }
+            return (v as (...x: unknown[]) => unknown).apply(target, args);
+          };
+        }
+        return (v as (...x: unknown[]) => unknown).bind(target);
+      },
+    });
+    const service = new k.FieldLocationService(new k.RlsPrismaFieldLocationRepository(h.role.client), async () => wrapped as never);
+    const g = await captureSettled(service.setOwnTrackingConsent(technicianActor(s) as never, true, decision({ decided_at: new Date().toISOString() })));
+    assert.deepEqual(
+      { triggered, G: outcomeOf(g as never), final: await consentOf(h, s.profileId!) },
+      { triggered: true, G: "ok:superseded", final: false },
+    );
+  });
+
+  test("[T-17-ACEITE-VELHO-db] (d) (não regredir) o aceite NOVO com a revogação na fila continua valendo", async () => {
+    const h = await harness();
+    const s = await scenario(h, "aceite-d", "consented");
+    const { A, aPid, releaseAll } = await holdA(h, s, 1);
+    try {
+      const { R, seenR } = await revokeBehind(h, s, aPid);
+      assert.match(String(seenR), /^bloqueado/, `R espera A (${String(seenR)})`);
+      const G = captureSettled(post(h, ACCEPT_ROUTE, s.tech, decision({ decided_at: new Date(Date.now() + 2_000).toISOString() })));
+      const seenG = await waitBlockedCount(h, 2, G, "G");
+      assert.match(seenG, /^bloqueado/, `G espera na fila da linha (${seenG})`);
+      releaseAll();
+      const [, , g] = await Promise.all([A, R, G]);
+      assert.deepEqual({ G: outcomeOf(g), final: await consentOf(h, s.profileId!) }, { G: "http200:applied", final: true });
+    } finally {
+      releaseAll();
+      await A;
+    }
+  });
+
+  test("[T-17-ACEITE-VELHO-db] (e) (não regredir) em série: revoga; aceite velho → superseded; aceite novo → applied; reafirma → carimbo mantido", async () => {
+    const h = await harness();
+    const s = await scenario(h, "aceite-e", "consented");
+    const k = await realClasses(h);
+    const service = new k.FieldLocationService(new k.RlsPrismaFieldLocationRepository(h.role.client), async () => k.profiles);
+    await pause(20);
+    const r = await service.setOwnTrackingConsent(technicianActor(s) as never, false, decision());
+    const gOld = await service.setOwnTrackingConsent(technicianActor(s) as never, true, decision({ decided_at: new Date(Date.now() - 60_000).toISOString() }));
+    const f1 = await consentOf(h, s.profileId!);
+    const gNew = await service.setOwnTrackingConsent(technicianActor(s) as never, true, decision({ decided_at: new Date(Date.now() + 1_000).toISOString() }));
+    const again = await service.setOwnTrackingConsent(technicianActor(s) as never, true, decision({ decided_at: new Date(Date.now() + 1_500).toISOString() }));
+    assert.deepEqual(
+      { r: r.status, gOld: gOld.status, f1, gNew: gNew.status, again: again.status, final: await consentOf(h, s.profileId!), stampKept: String(again.grantedAt) === String(gNew.grantedAt) },
+      { r: "applied", gOld: "superseded", f1: false, gNew: "applied", again: "applied", final: true, stampKept: true },
+    );
+  });
+
+  // ---- Emenda 1.7 (C16-05) e 1.8 (E17-03): a rajada de UM titular não segura o pool de outra organização
+
+  test("[T-17-RAJADA-db] 11 posições do mesmo titular com A segurando: no máximo 3 escritas guardadas; a org2 passa", async () => {
+    const h = await harness();
+    const org1 = await scenario(h, "raj1", "consented");
+    const org2 = await scenario(h, "raj2", "consented");
+    let gateWaits = 0;
+    const { A, send, releaseAll, service } = await holdA(h, org1, 1, { onHolderGateWait: () => (gateWaits += 1) });
+    const rest: Promise<any>[] = [];
+    try {
+      let settled = 0;
+      for (let i = 0; i < 11; i++) {
+        const p = send(-23.5);
+        void p.then(() => (settled += 1));
+        rest.push(p);
+      }
+      // As 11: bloqueadas na trava guardada, na fila do titular ou liquidadas. Contadas as 11, nenhuma está na leitura.
+      const deadline = Date.now() + 8_000;
+      for (;;) {
+        const blocked = (await lockGraph(h)).filter((r) => r.state === "active" && r.wait === "Lock" && GUARDED.test(r.query)).length;
+        if (blocked + gateWaits + settled >= 11) break;
+        if (Date.now() > deadline) assert.fail(`timeout: bloqueados=${blocked} fila=${gateWaits} liquidadas=${settled}`);
+        await pause(10);
+      }
+      const escritasGuardadas = (await lockGraph(h)).filter((r) => GUARDED.test(r.query)).length;
+      const o2 = await captureSettled(service.recordMobileLocation(technicianActor(org2) as never, { latitude: -23.5, longitude: -46.6 }));
+      releaseAll();
+      await Promise.all([A, ...rest]);
+      assert.equal(outcomeOf(o2 as never), "fulfilled", "a posição da org2 não depende da rajada da org1");
+      assert.ok(escritasGuardadas <= 3, `o titular segura no máximo 3 escritas guardadas (${escritasGuardadas})`);
+    } finally {
+      releaseAll();
+      await Promise.all([A, ...rest]);
+    }
+  });
+
+  // ---- Emenda 1.8 (E17-01, `D-ORQ-568-CONSENTIMENTO-SO-PELO-APP`): o cadastro desliga e nunca liga
+
+  test("[T-17-CADASTRO-db] o cadastro desliga e nunca liga o consentimento, nem para o titular", async () => {
+    const h = await harness();
+    // (a) concorrente: A segura; R (app) na fila; o PATCH do titular-gestor com tracking_consent:true atrás dela.
+    const s = await holderManager(h, "cad-a");
+    await pause(20);
+    const { A, aPid, releaseAll } = await holdA(h, s, 1);
+    try {
+      const R = captureSettled(post(h, REVOKE_ROUTE, s.tech, decision()));
+      const seenR = await waitForOwnBlockedOrSettled(h.admin, { applicationName: APP, loser: R, blockedBy: aPid, label: "R", timeoutMs: 3_000 });
+      assert.match(String(seenR), /^bloqueado/, `R espera A (${String(seenR)})`);
+      const F = captureSettled(patchProfile(h, s, s.tech, { phone: "11988887777", tracking_consent: true }));
+      const seenF = await waitBlockedCount(h, 2, F, "F");
+      assert.match(seenF, /^bloqueado/, `o formulário espera na fila da linha (${seenF})`);
+      releaseAll();
+      const [, r, f] = await Promise.all([A, R, F]);
+      const phone = (await h.admin.$queryRawUnsafe<Array<{ phone: string | null }>>("SELECT phone FROM operator_profiles WHERE id = $1::uuid", s.profileId))[0]?.phone;
+      const next = (await post(h, POSITION, s.tech, { latitude: -23.56, longitude: -46.64 })).status;
+      assert.deepEqual(
+        { R: outcomeOf(r), F: outcomeOf(f), final: await consentOf(h, s.profileId!), phone, next },
+        { R: "http200:applied", F: "http200", final: false, phone: "11988887777", next: 422 },
+      );
+    } finally {
+      releaseAll();
+      await A;
+    }
+    // (b) em série: revoga pelo app; DEPOIS o formulário que ainda mostra "consentiu".
+    const s2 = await holderManager(h, "cad-b");
+    await pause(20);
+    await post(h, REVOKE_ROUTE, s2.tech, decision());
+    const f2 = await patchProfile(h, s2, s2.tech, { phone: "11988887777", tracking_consent: true });
+    assert.deepEqual(
+      { F: f2.status, reason: String(f2.body?.error?.reason ?? ""), final: await consentOf(h, s2.profileId!), next: (await post(h, POSITION, s2.tech, { latitude: -23.56, longitude: -46.64 })).status },
+      { F: 422, reason: "tracking_consent_app_only", final: false, next: 422 },
+    );
+    // (c) reafirmar com o perfil ligado: o campo não é escrito, o resto é gravado, o carimbo fica.
+    const s3 = await holderManager(h, "cad-c");
+    const before = await profileRow(h, s3.profileId!);
+    const f3 = await patchProfile(h, s3, s3.tech, { phone: "11977776666", tracking_consent: true });
+    const after3 = await profileRow(h, s3.profileId!);
+    assert.deepEqual(
+      { F: f3.status, final: after3.tracking_consent, stampKept: String(after3.tracking_consent_at) === String(before.tracking_consent_at) },
+      { F: 200, final: true, stampKept: true },
+    );
+    // (d) desligar pelo cadastro continua.
+    const f4 = await patchProfile(h, s3, s3.tech, { tracking_consent: false });
+    assert.deepEqual({ F: f4.status, final: await consentOf(h, s3.profileId!) }, { F: 200, final: false });
+  });
+
+  // ---- Emenda 1.8 (E17-02): a rajada de CONSENTIMENTO de um titular passa pela fila dele
+
+  test("[T-17-RAJADA-CONSENT-db] A segura a linha; 11 revogações do mesmo titular; no máximo 2 decisões no banco; a org2 passa", async () => {
+    const h = await harness();
+    const org1 = await scenario(h, "rajc1", "consented");
+    const org2 = await scenario(h, "rajc2", "consented");
+    const { A, releaseAll, k } = await holdA(h, org1, 1);
+    let gateWaits = 0;
+    const service = new (k.FieldLocationService as any)(new k.RlsPrismaFieldLocationRepository(h.role.client), async () => k.profiles, {
+      onConsentGateWait: () => (gateWaits += 1),
+    });
+    const rs: Promise<any>[] = [];
+    try {
+      let settled = 0;
+      for (let i = 0; i < 11; i++) {
+        const p = captureSettled(service.setOwnTrackingConsent(technicianActor(org1) as never, false, decision()));
+        void p.then(() => (settled += 1));
+        rs.push(p);
+      }
+      const deadline = Date.now() + 8_000;
+      for (;;) {
+        const blocked = (await lockGraph(h)).filter((r) => r.state === "active" && r.wait === "Lock").length;
+        if (blocked + gateWaits + settled >= 11) break;
+        if (Date.now() > deadline) assert.fail(`timeout: bloqueados=${blocked} fila=${gateWaits} liquidadas=${settled}`);
+        await pause(10);
+      }
+      const decisoesNoPg = (await lockGraph(h)).filter((r) => r.state === "active" && r.wait === "Lock" && GUARDED.test(r.query)).length;
+      const o2 = await captureSettled(service.recordMobileLocation(technicianActor(org2) as never, { latitude: -23.5, longitude: -46.6 }));
+      releaseAll();
+      await Promise.all([A, ...rs]);
+      assert.equal(outcomeOf(o2 as never), "fulfilled", "a posição da org2 não depende da rajada de consentimento da org1");
+      assert.ok(decisoesNoPg <= 2, `o titular segura no máximo 2 decisões no banco (${decisoesNoPg})`);
+    } finally {
+      releaseAll();
+      await Promise.all([A, ...rs]);
+    }
+  });
+
+  // ---- Emenda 1.8 (E17-07): a fila do titular tem prazo, e a escrita guardada tem orçamento
+
+  test("[T-17-PRAZO-db] a fila do titular tem prazo: quem passa dele sai 503 field_location_busy e nunca é gravado", async () => {
+    const h = await harness();
+    const s = await scenario(h, "prazo", "consented");
+    const { A, send, releaseAll } = await holdA(h, s, 1, { holderGateMaxWaitMs: 300 });
+    const rest: Promise<any>[] = [];
+    try {
+      // B e C ocupam as 2 vagas restantes (no Postgres, atrás de A); D é a 4ª e fica na fila do titular.
+      const B = send(-23.51);
+      const C = send(-23.52);
+      rest.push(B, C);
+      const seenBC = await waitBlockedCount(h, 2, Promise.all([B, C]), "B e C");
+      assert.match(seenBC, /^bloqueado/, `B e C esperam A no banco (${seenBC})`);
+      const D = send(-23.53);
+      rest.push(D);
+      // D tem de liquidar com A AINDA segurando a linha (prazo de falha: 3 s; o da fila, aqui, é 300 ms).
+      const dOut = await Promise.race([D.then((x: any) => outcomeOf(x)), pause(3_000).then(() => "pendente")]);
+      const rowsAntes = await locationRows(h, s.tenantId, s.tech.userId);
+      releaseAll();
+      await Promise.all([A, ...rest]);
+      assert.deepEqual({ D: dOut, rowsAntes, rows: await locationRows(h, s.tenantId, s.tech.userId) }, { D: "field_location_busy", rowsAntes: 0, rows: 3 });
+    } finally {
+      releaseAll();
+      await Promise.all([A, ...rest]);
+    }
+  });
+
+  test("[T-17-PRAZO-TRAVA-db] a posição que espera a trava além do orçamento sai 503 com a linha ainda presa, e não é gravada", async () => {
+    const h = await harness();
+    const s = await scenario(h, "prazot", "consented");
+    const k = await realClasses(h);
+    const holdLocked = gate();
+    const holdRelease = gate();
+    // Quem segura a linha é uma transação do ADMIN (fora do pool do app e sem o prazo do Prisma do app).
+    const X = captureSettled(
+      h.admin.$transaction(
+        async (tx) => {
+          await tx.$queryRawUnsafe("SELECT 1 FROM operator_profiles WHERE id = $1::uuid FOR NO KEY UPDATE", s.profileId);
+          holdLocked.open();
+          await holdRelease.opened;
+        },
+        { timeout: 30_000, maxWait: 5_000 },
+      ),
+    );
+    try {
+      await holdLocked.opened;
+      const service = new k.FieldLocationService(new k.RlsPrismaFieldLocationRepository(h.role.client), async () => k.profiles);
+      const t0 = Date.now();
+      let ms = -1;
+      const Bp = captureSettled(service.recordMobileLocation(technicianActor(s) as never, { latitude: -23.5, longitude: -46.6 })).then((x) => {
+        ms = Date.now() - t0;
+        return x;
+      });
+      // A linha fica presa por até 12 s: a resposta tem de sair ANTES de ela soltar (o `lock_timeout` da escrita guardada).
+      const antes = await Promise.race([Bp.then(() => "liquidou com a linha presa"), pause(12_000).then(() => "pendente aos 12 s")]);
+      holdRelease.open();
+      await X;
+      const B = await Bp;
+      await pause(50);
+      assert.equal(antes, "liquidou com a linha presa");
+      assert.deepEqual({ B: outcomeOf(B as never), rows: await locationRows(h, s.tenantId, s.tech.userId) }, { B: "field_location_busy", rows: 0 });
+      assert.ok(ms < 15_000, `a resposta sai antes dos 15 s do app (${ms} ms)`);
+    } finally {
+      holdRelease.open();
+      await X;
     }
   });
 

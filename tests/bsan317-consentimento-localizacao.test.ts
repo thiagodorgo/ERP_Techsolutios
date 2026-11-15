@@ -615,7 +615,7 @@ test("[B22] 2.2: a viatura continua no mapa do despacho — (a) traccar mais vel
   });
 });
 
-test("[B23] 2.6: o gestor não religa o consentimento que foi desligado (422 tracking_consent_holder_only); desliga e edita; só o titular liga", async () => {
+test("[B23] 2.6: o gestor não religa o consentimento que foi desligado (422 tracking_consent_holder_only); desliga e edita; só o app liga", async () => {
   await withHarness(async (h) => {
     const tech = randomUUID();
     const profileId = await createProfile(h, tech, false);
@@ -638,12 +638,16 @@ test("[B23] 2.6: o gestor não religa o consentimento que foi desligado (422 tra
     const otherField = await h.req(`/api/v1/operator-profiles/${profileId}`, h.manager, "PATCH", { phone: "11999990000", tracking_consent: false });
     assert.equal(otherField.status, 200, JSON.stringify(otherField.body));
 
-    const holder = await h.profiles.update(
-      { tenantId: h.tenantA, userId: tech, roles: ["field_technician"], permissions: [] } as never,
-      profileId,
-      { tracking_consent: true },
+    // Emenda 1.8 (E17-01; D-ORQ-568-CONSENTIMENTO-SO-PELO-APP): nem o titular liga pelo cadastro; ligar é só pelo app.
+    await assert.rejects(
+      h.profiles.update(
+        { tenantId: h.tenantA, userId: tech, roles: ["field_technician"], permissions: [] } as never,
+        profileId,
+        { tracking_consent: true },
+      ),
+      (error: { reason?: string }) => error.reason === "tracking_consent_app_only",
     );
-    assert.equal(holder.trackingConsent, true, "pelo serviço, com o titular como ator, liga");
+    assert.equal((await readProfile(h, profileId)).trackingConsent, false, "pelo cadastro, nem o titular liga");
   });
 });
 
@@ -686,6 +690,210 @@ test("[B23b] Emenda 1.1 (CR17R2E-01): o gestor salva o formulário com tracking_
   assert.equal(saved.phone, "11999990000", "o resto do formulário é gravado");
   assert.equal(final.trackingConsent, false, "o não-titular nunca grava true: o \"não\" do titular fica");
   assert.equal(final.trackingConsentAt, undefined);
+});
+
+test("[T-17-CADASTRO-mem] Emenda 1.8 (E17-01): o TITULAR salva o formulário com tracking_consent:true e revoga pelo app entre a leitura e a escrita → termina false", async () => {
+  const [{ OperatorProfileService }, { InMemoryOperatorProfileRepository }] = await Promise.all([
+    import("../src/modules/operator-profiles/operator-profile.service.js"),
+    import("../src/modules/operator-profiles/operator-profile.repository.js"),
+  ]);
+  const tenantId = randomUUID();
+  const holderId = randomUUID();
+  const holder = { tenantId, userId: holderId, roles: ["manager"], permissions: ["operator_profiles:update"] } as never;
+  let profileId = "";
+  let midRace: boolean | undefined;
+  let formWroteConsent: boolean | undefined;
+
+  // O repositório segura a ESCRITA do formulário (já depois da leitura da regra) e deixa o titular revogar antes.
+  class RaceRepository extends InMemoryOperatorProfileRepository {
+    private raced = false;
+    override async update(input: Parameters<InMemoryOperatorProfileRepository["update"]>[0]) {
+      if (input.phone === "11999990000" && !this.raced) {
+        this.raced = true;
+        formWroteConsent = input.trackingConsent;
+        await service.update(holder, profileId, { tracking_consent: false });
+        midRace = (await this.findById(tenantId, profileId))?.trackingConsent;
+      }
+      return super.update(input);
+    }
+  }
+  const service = new OperatorProfileService(new RaceRepository());
+  const created = await service.create(
+    { tenantId, userId: randomUUID(), roles: ["manager"], permissions: ["operator_profiles:create"] } as never,
+    { user_id: holderId, tracking_consent: true },
+  );
+  profileId = created.id;
+
+  const saved = await service.update(holder, profileId, { phone: "11999990000", tracking_consent: true });
+  const final = await service.get(holder, profileId);
+
+  assert.equal(midRace, false, "o titular revogou no meio");
+  assert.equal(formWroteConsent, undefined, "o formulário com o perfil ligado não escreve o campo (no-op)");
+  assert.equal(saved.phone, "11999990000", "o resto do formulário é gravado");
+  assert.equal(final.trackingConsent, false, "o formulário do titular não desfaz a revogação");
+});
+
+// Emenda 1.9 (E18C-02 e E18C-04): o erro com a forma do P2028 do Prisma, o do pool esgotado medido no E18X-READ400
+// (nome, código e a frase). Com ele, o `sendRouteError` de hoje responde 400 `invalid_request`, e o do #571 responde 500.
+function busyDatabaseError(): Error {
+  return Object.assign(new Error("Transaction API error: Unable to start a transaction in the given time."), {
+    name: "PrismaClientKnownRequestError",
+    code: "P2028",
+    clientVersion: "7.8.0",
+  });
+}
+
+const BUSY_BODY = {
+  code: "FIELD_LOCATION_BUSY",
+  reason: "field_location_busy",
+  message: "Too many concurrent writes for this operator; nothing was saved, try again.",
+};
+
+test("[T-17-LEITURA-OCUPADA] Emenda 1.9 (E18C-02): banco ocupado na leitura do perfil, antes das filas → 503 field_location_busy no aceite, na revogação e na posição; nada muda", async () => {
+  const op = await import("../src/modules/operator-profiles/operator-profile.service.js");
+  await withHarness(async (h) => {
+    const tech = randomUUID();
+    const profileId = await createProfile(h, tech, false);
+    const repo = op.getMemoryOperatorProfileRepositoryForTests();
+    const findByUserId = repo.findByUserId.bind(repo);
+    repo.findByUserId = async (tenantId: string, userId: string) => {
+      if (userId === tech) throw busyDatabaseError();
+      return findByUserId(tenantId, userId);
+    };
+    try {
+      const asTech = h.as(tech, "field_technician");
+      const responses = {
+        aceite: await h.req(ACCEPT_ROUTE, asTech, "POST", decision()),
+        revogação: await h.req(REVOKE_ROUTE, asTech, "POST", decision()),
+        posição: await h.req(POSITION, asTech, "POST", point()),
+      };
+      for (const [name, response] of Object.entries(responses)) {
+        assert.equal(response.status, 503, `${name}: ${JSON.stringify(response.body)}`);
+        assert.deepEqual(response.body?.error, BUSY_BODY, name);
+      }
+    } finally {
+      delete (repo as { findByUserId?: unknown }).findByUserId;
+    }
+    assert.equal((await readProfile(h, profileId)).trackingConsent, false, "o consentimento não mudou");
+    assert.equal(await storedOf(h, tech), 0, "nada gravado");
+  });
+});
+
+test("[T-17-DECISAO-OCUPADA] Emenda 1.9 (E18C-04): banco ocupado na ESCRITA da decisão → 503 field_location_busy na revogação e no aceite; nada muda", async () => {
+  const op = await import("../src/modules/operator-profiles/operator-profile.service.js");
+  await withHarness(async (h) => {
+    const tech = randomUUID();
+    const asTech = h.as(tech, "field_technician");
+    const profileId = await createProfile(h, tech, true);
+    const repo = op.getMemoryOperatorProfileRepositoryForTests() as unknown as Record<string, unknown>;
+    // O aceite escreve por `applyHolderConsentGrant` (1.7) e a revogação por `update`; no head o aceite também é `update`.
+    const busyWrites = () => {
+      for (const method of ["applyHolderConsentGrant", "update"]) {
+        repo[method] = async () => {
+          throw busyDatabaseError();
+        };
+      }
+    };
+    const freeWrites = () => {
+      delete repo.applyHolderConsentGrant;
+      delete repo.update;
+    };
+
+    busyWrites();
+    try {
+      const revoked = await h.req(REVOKE_ROUTE, asTech, "POST", decision());
+      assert.equal(revoked.status, 503, `revogação: ${JSON.stringify(revoked.body)}`);
+      assert.deepEqual(revoked.body?.error, BUSY_BODY, "revogação");
+    } finally {
+      freeWrites();
+    }
+    assert.equal((await readProfile(h, profileId)).trackingConsent, true, "a revogação não foi gravada");
+
+    const off = await h.req(REVOKE_ROUTE, asTech, "POST", decision());
+    assert.equal(off.status, 200, JSON.stringify(off.body));
+    busyWrites();
+    try {
+      const accepted = await h.req(ACCEPT_ROUTE, asTech, "POST", decision());
+      assert.equal(accepted.status, 503, `aceite: ${JSON.stringify(accepted.body)}`);
+      assert.deepEqual(accepted.body?.error, BUSY_BODY, "aceite");
+    } finally {
+      freeWrites();
+    }
+    assert.equal((await readProfile(h, profileId)).trackingConsent, false, "o aceite não foi gravado");
+  });
+});
+
+test("[T-17-PRAZO-PRODUCAO] Emenda 1.9 (E18C-04): sem prazo injetado, a fila da posição e a do consentimento estouram aos 3 s de PRODUÇÃO (503), e outro titular não espera", async (t) => {
+  const [{ RlsPrismaFieldLocationRepository, HOLDER_WRITE_SLOTS }, { InMemoryFieldLocationRepository }, { FieldLocationService, HOLDER_CONSENT_SLOTS }] =
+    await Promise.all([
+      import("../src/modules/field-location/field-location-prisma.repository.js"),
+      import("../src/modules/field-location/field-location.repository.js"),
+      import("../src/modules/field-location/field-location.service.js"),
+    ]);
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
+  const never = () => new Promise<never>(() => {});
+  const watch = (promise: Promise<unknown>) => {
+    const state: { value: "pending" | "fulfilled" | "rejected"; error?: any } = { value: "pending" };
+    promise.then(
+      () => {
+        state.value = "fulfilled";
+      },
+      (error: unknown) => {
+        state.value = "rejected";
+        state.error = error;
+      },
+    );
+    return state;
+  };
+  const tenantId = randomUUID();
+  const holder = randomUUID();
+  const other = randomUUID();
+
+  // (a) a fila da posição, pelo repositório de produção (sem ganchos), com um cliente cujo `$transaction` nunca termina.
+  let transactions = 0;
+  const client = {
+    $transaction: () => {
+      transactions += 1;
+      return never();
+    },
+  };
+  const repository = new RlsPrismaFieldLocationRepository(client as never);
+  const write = (operatorUserId: string) =>
+    repository.record(
+      { tenantId, operatorUserId, source: "mobile", latitude: -23.5, longitude: -46.6, recordedAt: new Date(), metadata: {} } as never,
+      { requireTrackingConsent: true },
+    );
+  for (let i = 0; i < HOLDER_WRITE_SLOTS; i++) void write(holder);
+  const queuedWrite = watch(write(holder));
+  await flush();
+  assert.equal(transactions, HOLDER_WRITE_SLOTS, "as vagas do titular estão ocupadas");
+  void write(other);
+  await flush();
+  assert.equal(transactions, HOLDER_WRITE_SLOTS + 1, "outro titular entra na hora");
+
+  // (b) a fila do consentimento, pelo serviço sem `consentGateMaxWaitMs`, com a escrita da decisão que nunca termina.
+  const profile = { id: randomUUID(), tenantId, userId: holder, trackingConsent: false, updatedAt: new Date(0) };
+  const profiles = { findByUserId: async () => profile, applyOwnTrackingConsentGrant: never, update: never };
+  const service = new FieldLocationService(new InMemoryFieldLocationRepository(), async () => profiles as never);
+  const actor = { tenantId, userId: holder, roles: ["field_technician"], permissions: ["field_location:send"] };
+  for (let i = 0; i < HOLDER_CONSENT_SLOTS; i++) void service.setOwnTrackingConsent(actor as never, true, decision());
+  const queuedDecision = watch(service.setOwnTrackingConsent(actor as never, true, decision()));
+  await flush();
+
+  t.mock.timers.tick(2_999);
+  await flush();
+  assert.equal(queuedWrite.value, "pending", "a posição na fila ainda espera aos 2999 ms");
+  assert.equal(queuedDecision.value, "pending", "a decisão na fila ainda espera aos 2999 ms");
+
+  t.mock.timers.tick(1);
+  await flush();
+  for (const [name, state] of [["posição", queuedWrite], ["decisão", queuedDecision]] as const) {
+    assert.equal(state.value, "rejected", `${name}: estoura aos 3000 ms`);
+    assert.equal(state.error?.statusCode, 503, name);
+    assert.equal(state.error?.reason, "field_location_busy", name);
+  }
+  assert.equal(transactions, HOLDER_WRITE_SLOTS + 1, "a posição que estourou nunca chegou ao banco");
 });
 
 test("[B24] 2.7: a evidência pelo sync não guarda gps de quem não consentiu — com consentimento o recibo traz o gps; sem, aceita sem gps e a nota fica", async () => {
@@ -769,4 +977,47 @@ test("[T-17-TOCTOU-mem] a revogação que chega dentro da escrita, antes de pers
     `a escrita recusa a posição de quem revogou no meio (${JSON.stringify(outcome)})`,
   );
   assert.equal((await written.listHistory({ tenantId, operatorUserId: tech.userId })).length, 0, "0 linha gravada");
+});
+
+// Emenda 1.7 (C16-01): o aceite do titular é decidido NA escrita. Em memória, a leitura, a regra de ordem e o `set` do
+// repositório acontecem sem `await`. A sonda: a revogação confirma ENTRE a guarda do serviço (que leu "ligado") e a
+// escrita do aceite velho; o gancho fica nos DOIS métodos (o `update` e o `applyOwnTrackingConsentGrant`).
+test("[T-17-ACEITE-VELHO-mem] Emenda 1.7 (C16-01): o aceite velho, com a revogação confirmada entre a guarda do serviço e a escrita, sai superseded e não religa", async () => {
+  const [fl, op, opRepo, flRepo] = await Promise.all([
+    import("../src/modules/field-location/field-location.service.js"),
+    import("../src/modules/operator-profiles/operator-profile.service.js"),
+    import("../src/modules/operator-profiles/operator-profile.repository.js"),
+    import("../src/modules/field-location/field-location.repository.js"),
+  ]);
+  const tenantId = randomUUID();
+  const tech = { tenantId, userId: randomUUID(), roles: ["field_technician"], permissions: ["field_location:send"] } as const;
+  const manager = { tenantId, userId: randomUUID(), roles: ["manager"], permissions: ["operator_profiles:create"] } as const;
+  const repo = new opRepo.InMemoryOperatorProfileRepository();
+  const profiles = new op.OperatorProfileService(repo);
+  await profiles.create(manager as never, { user_id: tech.userId, tracking_consent: true });
+  await pause(20);
+  const body = (d: Date) => ({ decided_at: d.toISOString(), client_action_id: randomUUID(), text_version: TEXT_VERSION });
+  const plain = new fl.FieldLocationService(new flRepo.InMemoryFieldLocationRepository(() => undefined), async () => profiles);
+  let revokedBetween = false;
+  const wrapped = new Proxy(profiles, {
+    get(target, prop, recv) {
+      const v = Reflect.get(target, prop, recv);
+      if (typeof v !== "function") return v;
+      if (prop === "update" || prop === "applyOwnTrackingConsentGrant") {
+        return async (...args: unknown[]) => {
+          const isGrant = prop === "applyOwnTrackingConsentGrant" || (args[2] as { tracking_consent?: boolean })?.tracking_consent === true;
+          if (isGrant && !revokedBetween) {
+            revokedBetween = true;
+            await plain.setOwnTrackingConsent(tech as never, false, body(new Date()));
+          }
+          return (v as (...x: unknown[]) => unknown).apply(target, args);
+        };
+      }
+      return (v as (...x: unknown[]) => unknown).bind(target);
+    },
+  });
+  const service = new fl.FieldLocationService(new flRepo.InMemoryFieldLocationRepository(() => undefined), async () => wrapped);
+  const result = await service.setOwnTrackingConsent(tech as never, true, body(new Date(Date.now() - 60_000)));
+  const final = (await profiles.findByUserId(tenantId, tech.userId))?.trackingConsent;
+  assert.deepEqual({ revokedBetween, status: result.status, final }, { revokedBetween: true, status: "superseded", final: false });
 });

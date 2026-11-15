@@ -335,6 +335,48 @@ class _LocalServer {
 /// trocado o `HttpClient` global.
 class _RealHttp extends HttpOverrides {}
 
+/// Emenda 1.9 (E18C-02): servidor HTTP local (127.0.0.1, porta efêmera) que
+/// responde as rotas de consentimento com o status e o erro do roteiro
+/// (`reply`), na forma do corpo de erro do servidor. As outras rotas dão 404.
+class _ScriptedConsentServer {
+  late HttpServer _server;
+  int _status = 503;
+  Map<String, Object?> _error = const {};
+  int requests = 0;
+
+  String get baseUrl => 'http://127.0.0.1:${_server.port}';
+
+  void reply(int status, String code, String reason) {
+    _status = status;
+    _error = {'code': code, 'reason': reason, 'message': 'roteiro'};
+  }
+
+  Future<void> start() async {
+    _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    _server.listen((request) async {
+      await utf8.decoder.bind(request).join();
+      if (request.uri.path.startsWith('/api/v1/mobile/location-consent')) {
+        requests++;
+        request.response.statusCode = _status;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({'error': _error}));
+      } else {
+        request.response.statusCode = 404;
+      }
+      await request.response.close();
+    });
+  }
+
+  Future<void> stop() => _server.close(force: true);
+}
+
+LocationConsentApi _dioConsentApi(_ScriptedConsentServer server) =>
+    DioLocationConsentApi(
+      createExpenseHttpClient(
+        ApiConfig(baseUrl: server.baseUrl, accessToken: 'tok-a1'),
+      ),
+    );
+
 ProviderContainer _coordinatorContainer({
   required List<String> calls,
   required _LocalServer server,
@@ -530,6 +572,63 @@ void main() {
       hasLength(1),
       reason: 'S10: depois que a organização registra, o lote sai',
     );
+  });
+
+  // Emenda 1.9 (E18C-02): pela API real (Dio) e um servidor HTTP local, só a
+  // recusa de DOMÍNIO (status, código e motivo) vira
+  // LocationConsentRefusedError. O 400 genérico (o do banco ocupado antes da
+  // 1.9), o 500 (o do #571), o 503 do bloco e o 403 de troca de senha saem
+  // como ApiError: não são recusa.
+  test('T-17-APP-API-RECUSA. a decisão só vira recusa com o código e o motivo '
+      'de domínio', () async {
+    final server = _ScriptedConsentServer();
+    await server.start();
+    addTearDown(server.stop);
+    final api = _dioConsentApi(server);
+    final decision = LocationConsentDecision(
+      granted: true,
+      decidedAt: DateTime.utc(2026, 11, 15, 12),
+      clientActionId: 'cad-19',
+      textVersion: '2026-11.b-san3-17.v1',
+    );
+    final seen = <String>[];
+    // (status, código, motivo, a recusa esperada; null = não é recusa)
+    for (final (status, code, reason, refusal) in const [
+      (400, 'BAD_REQUEST', 'invalid_request', null),
+      (500, 'INTERNAL_SERVER_ERROR', 'unknown_error', null),
+      (503, 'FIELD_LOCATION_BUSY', 'field_location_busy', null),
+      (403, 'FORBIDDEN', 'password_change_required', null),
+      (400, 'FIELD_LOCATION_INVALID', 'invalid_date', 'invalid_date'),
+      (403, 'FORBIDDEN', 'permission_required', 'permission_required'),
+      (
+        422,
+        'FIELD_LOCATION_PROFILE_REQUIRED',
+        'operator_profile_required',
+        'operator_profile_required',
+      ),
+    ]) {
+      server.reply(status, code, reason);
+      Object? thrown;
+      await HttpOverrides.runWithHttpOverrides(() async {
+        try {
+          await api.grant(decision);
+        } catch (error) {
+          thrown = error;
+        }
+      }, _RealHttp());
+      seen.add('$status/$reason=${thrown.runtimeType}');
+      if (refusal == null) {
+        expect(thrown, isA<ApiError>(), reason: '$status $reason');
+      } else {
+        expect(thrown, isA<LocationConsentRefusedError>(), reason: reason);
+        final error = thrown! as LocationConsentRefusedError;
+        expect(error.reason, refusal);
+        expect(error.statusCode, status);
+      }
+    }
+    // ignore: avoid_print
+    print('BSAN317-API-RECUSA ${seen.join(' ')}');
+    expect(server.requests, 7);
   });
 
   // ── Casos da API nova (derrubam a compilação na base) ──────────────────────
@@ -948,6 +1047,73 @@ void main() {
       await store.acceptManualCapture();
       expect((await store.pendingDecisionFor(a))!.decidedAt, now);
     });
+    // Emenda 1.9 (E18C-02): o que o crítico reproduziu. Pela API real, o 400
+    // genérico do banco ocupado (o que o servidor dava antes da 1.9), o 503 e
+    // o 500 no aceite NÃO zeram o consentimento e NÃO apagam o não enviado com
+    // GPS; a decisão fica pendente para o próximo passe.
+    test('T-17-APP-400-OCUPADO. pela API real, 400 genérico, 503 e 500 no '
+        'aceite → a decisão fica pendente, 0 apagado', () async {
+      final server = _ScriptedConsentServer();
+      await server.start();
+      addTearDown(server.stop);
+      final dioSync = LocationConsentSync(
+        store: store,
+        currentOwner: () => owner,
+        api: () => _dioConsentApi(server),
+        fieldLocationStore: () => fieldStore,
+        telemetryStore: () => telemetryStore,
+      );
+      await store.acceptManualCapture();
+      await fieldStore.save(_point('p-1'));
+      await telemetryStore.enqueue(_heartbeat('hb-1'));
+
+      for (final (status, code, reason) in const [
+        (400, 'BAD_REQUEST', 'invalid_request'),
+        (503, 'FIELD_LOCATION_BUSY', 'field_location_busy'),
+        (500, 'INTERNAL_SERVER_ERROR', 'unknown_error'),
+      ]) {
+        server.reply(status, code, reason);
+        final settled = await HttpOverrides.runWithHttpOverrides(
+          () => dioSync.settleDecision(_tenant),
+          _RealHttp(),
+        );
+        final why = '$status $reason';
+        expect(settled, isFalse, reason: why);
+        expect((await store.status()).needsReconfirm, isFalse, reason: why);
+        expect(await store.hasAcceptedManualCapture(), isTrue, reason: why);
+        expect(await store.pendingDecisionFor(a), isNotNull, reason: why);
+        expect(await pendingPoints(), hasLength(1), reason: why);
+        expect(await gpsInBuffer(), 1, reason: why);
+      }
+      expect(server.requests, 3);
+    });
+
+    // Emenda 1.9 (E18C-02), a camada do acerto: um 400 ou 403 que NÃO é
+    // recusa de domínio deixa a decisão pendente e nada é apagado (a recusa
+    // de domínio continua zerando e apagando: S12 e S15).
+    for (final refusal in const [
+      LocationConsentRefusedError('invalid_request', statusCode: 400),
+      LocationConsentRefusedError('password_change_required', statusCode: 403),
+    ]) {
+      test('T-17-APP-SYNC-RECUSA. ${refusal.statusCode} ${refusal.reason} no '
+          'aceite → a decisão fica pendente, 0 apagado', () async {
+        await store.acceptManualCapture();
+        await fieldStore.save(_point('p-1'));
+        await telemetryStore.enqueue(_heartbeat('hb-1'));
+        consentApi.script.add(refusal);
+
+        final settled = await sync.settleDecision(_tenant);
+
+        expect(settled, isFalse);
+        expect((await store.status()).needsReconfirm, isFalse);
+        expect(await store.hasAcceptedManualCapture(), isTrue);
+        expect(await store.pendingDecisionFor(a), isNotNull);
+        expect(await pendingPoints(), hasLength(1));
+        expect(await gpsInBuffer(), 1);
+        expect(consentApi.calls, hasLength(1));
+      });
+    }
+
     // Emenda 1.5 da abertura (CX3-568-02, a sonda CX3-PROBE da pré-revisão
     // `cx3-prerev-568`): a recusa de um aceite ANTIGO não apaga a revogação
     // mais nova. O reset só vale se a decisão recusada ainda for a pendente de

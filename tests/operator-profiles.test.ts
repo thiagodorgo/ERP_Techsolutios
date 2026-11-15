@@ -41,14 +41,15 @@ test("consent true na criação grava tracking_consent_at", async () => {
   assert.ok(profile.trackingConsentAt instanceof Date);
 });
 
-test("conceder consentimento no update (false→true) carimba consent_at", async () => {
+test("o cadastro não liga o consentimento, nem para o titular (false→true → 422 tracking_consent_app_only)", async () => {
   const svc = service();
   const ctx = actor();
   const created = await svc.create(ctx, { user_id: ctx.userId });
   assert.equal(created.trackingConsentAt, undefined);
-  const granted = await svc.update(ctx, created.id, { tracking_consent: true });
-  assert.equal(granted.trackingConsent, true);
-  assert.ok(granted.trackingConsentAt instanceof Date);
+  await assert.rejects(svc.update(ctx, created.id, { tracking_consent: true }), (error: { reason?: string }) => error.reason === "tracking_consent_app_only");
+  const after = await svc.get(ctx, created.id);
+  assert.equal(after.trackingConsent, false);
+  assert.equal(after.trackingConsentAt, undefined);
 });
 
 test("revogar consentimento (→false) limpa tracking_consent_at", async () => {
