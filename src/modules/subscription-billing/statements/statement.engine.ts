@@ -120,6 +120,43 @@ export type StatementMeasurements = {
   readonly trackedVehicles: number;
 };
 
+/** B-ASS-12 — a parte POR VEÍCULO do mês (P10: no mês, sem pro-rata): um preço só, o do último dia nesse regime. */
+export type TrackingPerVehicleInput = {
+  readonly addonPlanVersionId: string;
+  /** Veículos distintos com vínculo em algum dia do regime por veículo. */
+  readonly billedVehicles: number;
+  readonly perVehiclePriceCents: number;
+};
+
+/** B-ASS-12 — um trecho de MENSALIDADE FIXA (P17/R-B: o add-on `flat` segue a regra da base, por segmento de vigência). */
+export type TrackingFlatSegmentInput = {
+  readonly addonId: string;
+  readonly addonPlanVersionId: string;
+  /** Primeiro e último dia (1-based, inclusivos) do trecho dentro do mês. */
+  readonly fromDay: number;
+  readonly toDay: number;
+  readonly monthlyPriceCents: number;
+  /** Veículos distintos com vínculo em algum dia DO TRECHO; zero = o trecho não cobra (0 cobrança sem vínculo). */
+  readonly billedVehicles: number;
+};
+
+export type TrackingFlatSegment = TrackingFlatSegmentInput & { readonly days: number; readonly cents: number };
+
+/**
+ * B-ASS-12 — a cobrança de rastreamento do mês, já resolvida dia a dia pelo montador:
+ *  - `perVehicle`: `billedVehicles × perVehiclePriceCents`, sem pro-rata (P10);
+ *  - `flatSegments`: `round_half_up(mensalidade × dias do trecho / dias do mês)` POR TRECHO, somados (P17/R-B), e só o
+ *    trecho em que algum veículo teve vínculo;
+ *  - `billedVehicles`: veículos distintos com vínculo em algum dia COM add-on (o que explica a linha).
+ */
+export type TrackingCharge = {
+  readonly billedVehicles: number;
+  readonly perVehicle: TrackingPerVehicleInput | null;
+  readonly flatSegments: readonly TrackingFlatSegmentInput[];
+};
+
+export type TrackingUnit = "per_vehicle" | "flat" | "mixed";
+
 export type StatementComputationInput = {
   readonly daysInMonth: number;
   readonly segments: readonly StatementSegmentInput[];
@@ -127,6 +164,11 @@ export type StatementComputationInput = {
   readonly measurements: StatementMeasurements;
   /** Preço por veículo do add-on de rastreamento vigente; `null` = sem add-on (rastreamento 0). */
   readonly perVehiclePriceCents: number | null;
+  /**
+   * B-ASS-12 — presente (objeto ou `null`) em todo fechamento novo: é a fonte da linha de rastreamento. AUSENTE só em
+   * snapshot gravado antes do B-ASS-12, que recalcula pela regra antiga (`trackedVehicles × perVehiclePriceCents`).
+   */
+  readonly tracking?: TrackingCharge | null;
   /** Soma dos ajustes manuais (pode ser negativa); o piso `total >= 0` é do serviço (S9). */
   readonly adjustmentsCents: number;
   /** Créditos aplicados a este demonstrativo (abatem o total; G7). */
@@ -146,6 +188,12 @@ export type StatementComputation = {
   readonly storageExtraCents: number;
   readonly trackedVehicles: number;
   readonly trackingCents: number;
+  /** B-ASS-12 — o regime e a quantidade que explicam `trackingCents` (`null`/0 = sem add-on; `mixed` = os dois no mês). */
+  readonly trackingUnit: TrackingUnit | null;
+  readonly trackingBilledVehicles: number;
+  readonly trackingPerVehicleCents: number;
+  readonly trackingFlatCents: number;
+  readonly trackingSegments: readonly TrackingFlatSegment[];
   readonly adjustmentsCents: number;
   readonly creditsAppliedCents: number;
   readonly totalCents: number;
@@ -177,12 +225,8 @@ export function computeStatement(input: StatementComputationInput): StatementCom
   const storageExtraMilliGb = Math.max(0, measurements.storagePeakMilliGb - terms.includedStorageMilliGb);
   const storageExtraCents = halfUpDiv(storageExtraMilliGb * terms.extraGbPriceCents, 1000);
 
-  let trackingCents = 0;
-  if (input.perVehiclePriceCents !== null) {
-    assertNonNegativeInt(input.perVehiclePriceCents, "perVehiclePriceCents");
-    trackingCents = measurements.trackedVehicles * input.perVehiclePriceCents;
-    assertCents(trackingCents, "trackingCents");
-  }
+  const tracking = computeTracking(input);
+  const trackingCents = tracking.trackingCents;
 
   const totalCents =
     baseCents + usersExtraCents + storageExtraCents + trackingCents + input.adjustmentsCents - input.creditsAppliedCents;
@@ -200,10 +244,97 @@ export function computeStatement(input: StatementComputationInput): StatementCom
     storageExtraMilliGb,
     storageExtraCents,
     trackedVehicles: measurements.trackedVehicles,
-    trackingCents,
+    ...tracking,
     adjustmentsCents: input.adjustmentsCents,
     creditsAppliedCents: input.creditsAppliedCents,
     totalCents,
+  };
+}
+
+type TrackingComputation = {
+  readonly trackingCents: number;
+  readonly trackingUnit: TrackingUnit | null;
+  readonly trackingBilledVehicles: number;
+  readonly trackingPerVehicleCents: number;
+  readonly trackingFlatCents: number;
+  readonly trackingSegments: readonly TrackingFlatSegment[];
+};
+
+const NO_TRACKING: TrackingComputation = {
+  trackingCents: 0,
+  trackingUnit: null,
+  trackingBilledVehicles: 0,
+  trackingPerVehicleCents: 0,
+  trackingFlatCents: 0,
+  trackingSegments: [],
+};
+
+/** A linha de rastreamento (B-ASS-12). Snapshot sem `tracking` = regra antiga, para o recálculo reproduzir o total. */
+function computeTracking(input: StatementComputationInput): TrackingComputation {
+  if (input.tracking === undefined) {
+    if (input.perVehiclePriceCents === null) return NO_TRACKING;
+    assertNonNegativeInt(input.perVehiclePriceCents, "perVehiclePriceCents");
+    const legacyCents = input.measurements.trackedVehicles * input.perVehiclePriceCents;
+    assertCents(legacyCents, "trackingCents");
+    return {
+      ...NO_TRACKING,
+      trackingCents: legacyCents,
+      trackingUnit: "per_vehicle",
+      trackingBilledVehicles: input.measurements.trackedVehicles,
+      trackingPerVehicleCents: legacyCents,
+    };
+  }
+  const tracking = input.tracking;
+  if (tracking === null) return NO_TRACKING;
+  const tracked = input.measurements.trackedVehicles;
+  const assertBilled = (value: number, field: string): void => {
+    assertNonNegativeInt(value, field);
+    if (value > tracked) {
+      throw new StatementEngineError("invalid_quantity", `${field} cannot exceed trackedVehicles.`);
+    }
+  };
+  assertBilled(tracking.billedVehicles, "billedVehicles");
+
+  let perVehicleCents = 0;
+  if (tracking.perVehicle !== null) {
+    assertBilled(tracking.perVehicle.billedVehicles, "perVehicle.billedVehicles");
+    assertNonNegativeInt(tracking.perVehicle.perVehiclePriceCents, "perVehiclePriceCents");
+    perVehicleCents = tracking.perVehicle.billedVehicles * tracking.perVehicle.perVehiclePriceCents;
+    assertCents(perVehicleCents, "trackingPerVehicleCents");
+  }
+
+  let previousTo = 0;
+  const flatSegments: TrackingFlatSegment[] = [];
+  for (const segment of tracking.flatSegments) {
+    assertNonNegativeInt(segment.monthlyPriceCents, "tracking.monthlyPriceCents");
+    assertBilled(segment.billedVehicles, "flatSegment.billedVehicles");
+    if (segment.fromDay < 1 || segment.toDay > input.daysInMonth || segment.fromDay > segment.toDay) {
+      throw new StatementEngineError("invalid_segment", "tracking segment days must lie inside the month, from <= to.");
+    }
+    if (segment.fromDay <= previousTo) {
+      throw new StatementEngineError("overlapping_segments", "tracking segments must be ordered and must not overlap.");
+    }
+    previousTo = segment.toDay;
+    const days = segment.toDay - segment.fromDay + 1;
+    const cents = segment.billedVehicles === 0 ? 0 : halfUpDiv(segment.monthlyPriceCents * days, input.daysInMonth);
+    flatSegments.push({ ...segment, days, cents });
+  }
+  const flatCents = flatSegments.reduce((total, segment) => total + segment.cents, 0);
+  const cents = perVehicleCents + flatCents;
+  assertCents(cents, "trackingCents");
+
+  const hasFlat = flatSegments.length > 0;
+  const unit: TrackingUnit | null = tracking.perVehicle !== null ? (hasFlat ? "mixed" : "per_vehicle") : hasFlat ? "flat" : null;
+  if (unit === null) {
+    throw new StatementEngineError("invalid_tracking", "tracking needs a per-vehicle part or a flat segment; no add-on is null.");
+  }
+  return {
+    trackingCents: cents,
+    trackingUnit: unit,
+    trackingBilledVehicles: tracking.billedVehicles,
+    trackingPerVehicleCents: perVehicleCents,
+    trackingFlatCents: flatCents,
+    trackingSegments: flatSegments,
   };
 }
 
@@ -214,6 +345,7 @@ export type StatementSnapshot = {
   readonly terms: StatementTerms;
   readonly measurements: StatementMeasurements;
   readonly perVehiclePriceCents: number | null;
+  readonly tracking?: TrackingCharge | null;
   readonly adjustmentsCents: number;
   readonly creditsAppliedCents: number;
 };
@@ -225,8 +357,18 @@ export function snapshotOf(input: StatementComputationInput): StatementSnapshot 
     terms: { ...input.terms },
     measurements: { ...input.measurements },
     perVehiclePriceCents: input.perVehiclePriceCents,
+    ...(input.tracking === undefined ? {} : { tracking: cloneTracking(input.tracking) }),
     adjustmentsCents: input.adjustmentsCents,
     creditsAppliedCents: input.creditsAppliedCents,
+  };
+}
+
+function cloneTracking(tracking: TrackingCharge | null): TrackingCharge | null {
+  if (tracking === null) return null;
+  return {
+    billedVehicles: tracking.billedVehicles,
+    perVehicle: tracking.perVehicle === null ? null : { ...tracking.perVehicle },
+    flatSegments: tracking.flatSegments.map((segment) => ({ ...segment })),
   };
 }
 
@@ -291,6 +433,26 @@ export function countDistinctVehiclesInMonth(
     if (binding.validFrom > monthLast) continue;
     if (binding.validTo !== null && binding.validTo < monthFirst) continue;
     vehicles.add(binding.vehicleId);
+  }
+  return vehicles.size;
+}
+
+/**
+ * B-ASS-12 — veículos DISTINTOS com vínculo vigente em pelo menos um dos `days` (1-based) do mês: só o vínculo que
+ * convive com o add-on entra na cobrança ("0 cobrança sem vínculo vigente"). Janelas como em
+ * `countDistinctVehiclesInMonth`: datas de negócio, `validTo` inclusivo, nulo = aberto.
+ */
+export function countDistinctVehiclesInDays(
+  period: string,
+  bindings: readonly { readonly vehicleId: string; readonly validFrom: string; readonly validTo: string | null }[],
+  days: readonly number[],
+): number {
+  const dates = days.map((day) => `${period}-${String(day).padStart(2, "0")}`);
+  const vehicles = new Set<string>();
+  for (const binding of bindings) {
+    if (dates.some((date) => binding.validFrom <= date && (binding.validTo === null || binding.validTo >= date))) {
+      vehicles.add(binding.vehicleId);
+    }
   }
   return vehicles.size;
 }

@@ -1,4 +1,6 @@
 import { env } from "../../config/env.js";
+import { createLogger } from "../../infra/logging/logger.js";
+import { publicErrorMessage } from "../../infra/logging/public-error.js";
 import type { CloudCostImport } from "../cloud-costs/aws-cur.types.js";
 import { allocateCloudCosts, assertConservation } from "./cloud-cost-allocation.engine.js";
 import { importRunId, normalizeImportPeriodEnd, type ImportSweepMark } from "./cloud-cost-allocation.import-trigger.js";
@@ -20,6 +22,9 @@ import {
   InMemoryCloudCostAllocationRepository,
   type CloudCostAllocationRepository,
 } from "./cloud-cost-allocation.repository.js";
+
+const CLOUD_COST_ALLOCATION_FAILED_MESSAGE = "Cloud cost allocation failed.";
+const logger = createLogger();
 
 const strategySet = new Set<string>(CLOUD_COST_ALLOCATION_STRATEGIES);
 const statusSet = new Set<string>(CLOUD_COST_ALLOCATION_STATUSES);
@@ -261,6 +266,7 @@ export class CloudCostAllocationService {
         },
       });
     } catch (error) {
+      logger.error({ err: error, runId: run.id }, "cloud-cost-allocation: execução falhou");
       return this.repository.updateRun(run.id, {
         status: "failed",
         errorMessage: sanitizeCloudCostAllocationError(error),
@@ -417,8 +423,7 @@ export function sanitizeCloudCostAllocationMetadata(metadata: Record<string, unk
 }
 
 export function sanitizeCloudCostAllocationError(error: unknown): string {
-  const message = error instanceof Error ? error.message : "Unknown cloud cost allocation error.";
-  return String(sanitizeValue(message)).slice(0, 1_000);
+  return String(sanitizeValue(publicErrorMessage(error, CLOUD_COST_ALLOCATION_FAILED_MESSAGE))).slice(0, 1_000);
 }
 
 export function isCloudCostAllocationStrategy(value: string): value is CloudCostAllocationStrategy {

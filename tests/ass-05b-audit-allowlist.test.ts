@@ -62,13 +62,22 @@ test("T-05b-4 · as chaves da allowlist são as 9 antigas mais `codes` e `count`
     "codes",
     "count",
     "credential_ids",
+    // B-ASS-09 (plano v2 §4.3): a trilha do câmbio e dos grupos.
+    "currency_from",
+    "currency_to",
     "environment",
     "fingerprint",
+    "group_id",
     "kind",
+    "month",
     "provider",
+    "rate",
     "rotated_count",
     "unreadable_count",
     "unreadable_ids",
+    "valid_from",
+    "valid_to",
+    "version",
   ]);
   const old = {
     actor_user_id: ACTOR,

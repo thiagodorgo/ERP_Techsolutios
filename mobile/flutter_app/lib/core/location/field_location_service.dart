@@ -7,6 +7,8 @@ import 'device_location_provider.dart';
 import 'field_location_api.dart';
 import 'field_location_models.dart';
 import 'field_location_store.dart';
+import 'location_consent_api.dart';
+import 'location_consent_sync.dart';
 
 enum FieldLocationCaptureStatus { queued, unavailable }
 
@@ -60,11 +62,13 @@ class FieldLocationSyncService {
     FieldLocationIdFactory? idFactory,
     FieldLocationClock? clock,
     this.maxRetry = 5,
+    LocationConsentSync? consentSync,
   }) : _store = store,
        _api = api,
        _deviceLocationProvider = deviceLocationProvider,
        _idFactory = idFactory ?? const Uuid().v4,
-       _clock = clock ?? DateTime.now;
+       _clock = clock ?? DateTime.now,
+       _consentSync = consentSync;
 
   final FieldLocationStore _store;
   final FieldLocationApi _api;
@@ -72,6 +76,12 @@ class FieldLocationSyncService {
   final FieldLocationIdFactory _idFactory;
   final FieldLocationClock _clock;
   final int maxRetry;
+
+  /// B-SAN3-17 (P4): com ele, a decisão de consentimento sai antes de qualquer
+  /// posição. Sem ele (`null`), o envio é o de antes.
+  final LocationConsentSync? _consentSync;
+
+  LocationConsentSync? get consentSync => _consentSync;
 
   Future<FieldLocationCaptureResult> captureForWorkOrder({
     required String tenantId,
@@ -107,32 +117,55 @@ class FieldLocationSyncService {
   }
 
   Future<FieldLocationSyncResult> syncTenant(String tenantId) async {
+    final consent = _consentSync;
+    if (consent != null && !await consent.readyToSendPositions(tenantId)) {
+      // A organização ainda não conhece a decisão, ou ela não é "sim": nada
+      // sai, e nada gasta tentativa.
+      return FieldLocationSyncResult(
+        synced: const [],
+        failed: const [],
+        skipped: await _store.pendingForTenant(tenantId, maxRetry: maxRetry),
+      );
+    }
     final pending = await _store.pendingForTenant(tenantId, maxRetry: maxRetry);
     final synced = <FieldLocationEvent>[];
     final failed = <FieldLocationEvent>[];
 
     for (final event in pending) {
+      // CR17R2-01 (1): antes de CADA envio, de novo e sem rede (uma revogação
+      // pode ter chegado com o envio anterior em voo).
+      if (consent != null && !await consent.positionsStillAllowed(tenantId)) {
+        break;
+      }
+      FieldLocationEvent updated;
       try {
         final response = await _api.send(event);
-        final updated = event.copyWith(
+        updated = event.copyWith(
           serverId: response.serverId,
           syncStatus: SyncStatus.synced,
           syncedAt: response.receivedAt ?? _clock().toUtc(),
           clearLastError: true,
         );
-        await _store.save(updated);
         synced.add(updated);
       } catch (error) {
+        if (consent != null && _refusedForConsent(error)) {
+          // P8: a organização recusou por falta de consentimento. O local
+          // volta a "não decidiu", o não enviado com GPS é apagado e nada é
+          // reenviado.
+          await consent.resetAfterServerRefusal(tenantId);
+          break;
+        }
         final mapped = _mapError(error);
-        final updated = event.copyWith(
+        updated = event.copyWith(
           syncStatus: SyncStatus.failed,
           retryCount: event.retryCount + 1,
           lastErrorCode: mapped.code,
           lastSafeError: mapped.safeMessage,
         );
-        await _store.save(updated);
         failed.add(updated);
       }
+      // CR17R2-01 (2): o resultado não recria o ponto que a revogação apagou.
+      await _store.saveIfPresent(updated);
     }
 
     return FieldLocationSyncResult(
@@ -152,6 +185,10 @@ class FieldLocationSyncService {
     );
   }
 }
+
+bool _refusedForConsent(Object error) =>
+    error is LocationConsentRefusedError &&
+    error.reason == 'tracking_consent_required';
 
 ({String code, String safeMessage}) _mapError(Object error) {
   if (error is ApiNetworkError || error is ApiTimeoutError) {

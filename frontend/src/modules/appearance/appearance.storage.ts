@@ -31,6 +31,18 @@ export function appearanceStorageKey(tenantId?: string | null, userId?: string |
   return `${APPEARANCE_STORAGE_PREFIX}.${tenantId}.${userId}`;
 }
 
+/** B-ASS-10b (T5) — segmento fixo da chave das telas do console da plataforma, no lugar da organização. */
+export const PLATFORM_APPEARANCE_SEGMENT = "plataforma";
+
+/**
+ * B-ASS-10b (T5) — chave das telas do console da plataforma: `techsol.aparencia.plataforma.<userId>`. Pessoal, sem
+ * depender de organização ativa (o console não tem). Sem usuário não há chave.
+ */
+export function platformAppearanceStorageKey(userId?: string | null): string | null {
+  if (!userId) return null;
+  return `${APPEARANCE_STORAGE_PREFIX}.${PLATFORM_APPEARANCE_SEGMENT}.${userId}`;
+}
+
 /** Só pares válidos sobrevivem: tela com nome bem-formado e valor A/B/C. Todo o resto é descartado. */
 export function sanitizeAppearancePrefs(raw: unknown): AppearancePrefs {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};

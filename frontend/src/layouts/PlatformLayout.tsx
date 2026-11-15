@@ -18,6 +18,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { PlatformGuard } from "../guards/PlatformGuard";
+import { AppearanceMenu } from "../modules/appearance";
 import { useAuth } from "../providers/AuthProvider";
 import { useTenantContext } from "../providers/TenantProvider";
 
@@ -53,6 +54,8 @@ const NAVY = "#0D1B2A";
 const ACTIVE = "#2563EB";
 const NAV_IDLE = "#9FB4CC";
 const GROUP_LABEL = "#41607A";
+// B-ASS-10b (T5) — o mesmo gatilho do AppShell (`APPEARANCE_TRIGGER_STYLE`), para o menu de aparência das telas do console.
+const APPEARANCE_TRIGGER_STYLE = { width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,.06)", border: "none", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, color: NAV_IDLE, padding: 0 } as const;
 
 function currentTitle(pathname: string): string {
   for (const group of PLATFORM_NAV) {
@@ -238,6 +241,8 @@ export function PlatformLayout() {
                   </div>
                   <div style={{ fontSize: 10.5, color: "#5B7A96", whiteSpace: "nowrap" }}>Super-administrador</div>
                 </div>
+                {/* B-ASS-10b (T5) — a aparência pessoal das telas do console (escopo "plataforma"; D-APARENCIA-POR-USUARIO). */}
+                <AppearanceMenu scope="platform" triggerStyle={APPEARANCE_TRIGGER_STYLE} />
                 <button
                   type="button"
                   aria-label="Sair"

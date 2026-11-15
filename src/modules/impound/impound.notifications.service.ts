@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import { getMemoryImpoundRepositoryForTests } from "./impound.service.js";
@@ -26,7 +26,7 @@ type RawRecord = Record<string, unknown>;
 const CANDIDATE_PAGE = 500;
 // Observabilidade do fail-closed SEM PII (só tenantId/processId/kind/reason). Prazo ausente/<=0 ⇒ marco NÃO
 // agendado (o motor puro o omite); o warn torna o marco bloqueado RASTREÁVEL.
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 export class NotificationService {
   constructor(private readonly repository: NotificationRepository) {}

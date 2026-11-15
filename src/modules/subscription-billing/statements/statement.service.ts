@@ -25,7 +25,7 @@ import {
 
 /** O que o fechamento precisa saber sobre a organização no período (montado pelo repositório de assinaturas). */
 export type StatementInputs =
-  | { readonly kind: "skip"; readonly reason: "no_subscription" | "plan_without_price" | "platform_organization" }
+  | { readonly kind: "skip"; readonly reason: "no_subscription" | "plan_without_price" | "addon_without_price" | "platform_organization" }
   | {
       readonly kind: "ready";
       readonly subscriptionId: string;
@@ -41,7 +41,12 @@ export type StatementInputs =
 export function pinOf(statement: SubscriptionStatement): StatementVersionPin {
   const planVersionIds = new Set<string>(statement.snapshot.latest?.segments.map((segment) => segment.planVersionId) ?? []);
   if (statement.planVersionId) planVersionIds.add(statement.planVersionId);
-  return { planVersionIds: [...planVersionIds], addonPlanVersionId: statement.addonPlanVersionId };
+  const addonPlanVersionIds = new Set<string>();
+  const tracking = statement.snapshot.latest?.tracking;
+  if (tracking?.perVehicle) addonPlanVersionIds.add(tracking.perVehicle.addonPlanVersionId);
+  for (const segment of tracking?.flatSegments ?? []) addonPlanVersionIds.add(segment.addonPlanVersionId);
+  if (statement.addonPlanVersionId) addonPlanVersionIds.add(statement.addonPlanVersionId);
+  return { planVersionIds: [...planVersionIds], addonPlanVersionIds: [...addonPlanVersionIds] };
 }
 
 export type StatementInputsProvider = {
@@ -78,16 +83,11 @@ function balanceOf(statement: SubscriptionStatement): number {
   return Math.max(0, statement.totalCents - statement.paidCents);
 }
 
-/** D2 (iv) / R-OBX-5 — o que `reopen()` pergunta à outbox: há linha em `NEEDS_REVIEW` para o demonstrativo? (conserto J-522, E1) */
-export type OutboxStatementGuard = { hasNeedsReview(tenantId: string, statementId: string): Promise<boolean> };
-
 export class StatementService {
   constructor(
     private readonly repository: StatementRepository,
     private readonly inputs: StatementInputsProvider,
     private readonly audit: StatementAuditSink,
-    /** Opcional: sem o guard o serviço se comporta exatamente como antes (B-ASS-04); a 08b liga o repositório da outbox. */
-    private readonly outboxGuard?: OutboxStatementGuard,
   ) {}
 
   /**
@@ -205,10 +205,9 @@ export class StatementService {
       if (current.invoiceStatus === "pending" || current.invoiceStatus === "authorized" || current.invoiceStatus === "cancel_pending") {
         throw new StatementError(422, "invoice_outstanding", "The statement has a live invoice.");
       }
-      // D2 (iv), R-OBX-5: linha da outbox aguardando revisão → não reabrir; quem decide é a revisão (`/resolve`, 08b).
-      if (await this.outboxGuard?.hasNeedsReview(input.tenantId, input.statementId)) {
-        throw new StatementError(422, "outbox_needs_review", "The statement has an outbox line awaiting review.");
-      }
+      // D2 (iv), R-OBX-5 e B-ASS-08c1b (P8): linha da fila aguardando revisão → não reabrir; quem decide é a revisão
+      // (`/resolve`). A leitura é do MESMO `tx`, depois da trava (A7/A8): uma conexão só.
+      if (await tx.hasOutboxNeedsReview(input.statementId)) throw new StatementError(422, "outbox_needs_review", "The statement has an outbox line awaiting review."); // [GUARD-01]
       const reopened = await tx.saveStatement({
         ...current,
         status: "reopened",

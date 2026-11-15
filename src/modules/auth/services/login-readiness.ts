@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "../../../infra/logging/logger.js";
 
 import { env } from "../../../config/env.js";
 
@@ -59,7 +59,7 @@ const PROBE_SENTINEL_EMAIL = "sonda-login-sem-org@sentinela.invalid";
 
 const TRANSIENT_OUTCOMES: ReadonlySet<LoginReadinessOutcome> = new Set(["unreachable", "unknown"]);
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 type LoginReadinessState = {
   outcome: LoginReadinessOutcome;

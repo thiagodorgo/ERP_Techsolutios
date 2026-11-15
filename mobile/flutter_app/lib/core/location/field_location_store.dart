@@ -15,6 +15,15 @@ abstract class FieldLocationStore {
     required String tenantId,
     required String workOrderLocalId,
   });
+
+  /// Grava o resultado do envio SÓ se o ponto ainda existe: o apagamento da
+  /// revogação não é desfeito por um envio que estava em voo (B-SAN3-17,
+  /// CR17R2-01 (2)).
+  Future<void> saveIfPresent(FieldLocationEvent event);
+
+  /// Apaga os pontos não enviados (`pending`/`failed`) da organização
+  /// (B-SAN3-17, P7 e P8). Os enviados ficam.
+  Future<void> discardPendingForTenant(String tenantId);
 }
 
 class InMemoryFieldLocationStore implements FieldLocationStore {
@@ -60,6 +69,22 @@ class InMemoryFieldLocationStore implements FieldLocationStore {
             .toList()
           ..sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
     return matches.isEmpty ? null : matches.first;
+  }
+
+  @override
+  Future<void> saveIfPresent(FieldLocationEvent event) async {
+    if (!_events.containsKey(event.localId)) return;
+    _events[event.localId] = event;
+  }
+
+  @override
+  Future<void> discardPendingForTenant(String tenantId) async {
+    _events.removeWhere(
+      (_, event) =>
+          event.tenantId == tenantId &&
+          (event.syncStatus == SyncStatus.pending ||
+              event.syncStatus == SyncStatus.failed),
+    );
   }
 }
 
@@ -147,6 +172,35 @@ class DriftFieldLocationStore implements FieldLocationStore {
         .get();
     if (rows.isEmpty) return null;
     return _eventFromRow(rows.first);
+  }
+
+  @override
+  Future<void> saveIfPresent(FieldLocationEvent event) async {
+    await _db.customUpdate(
+      'UPDATE field_location_events SET server_id = ?, '
+      'work_order_server_id = ?, sync_status = ?, retry_count = ?, '
+      'last_error_code = ?, last_safe_error = ?, synced_at = ? '
+      'WHERE local_id = ?',
+      variables: [
+        Variable<String>(event.serverId),
+        Variable<String>(event.workOrderServerId),
+        Variable<String>(event.syncStatus.name),
+        Variable<int>(event.retryCount),
+        Variable<String>(event.lastErrorCode),
+        Variable<String>(event.lastSafeError),
+        Variable<int>(event.syncedAt?.millisecondsSinceEpoch),
+        Variable<String>(event.localId),
+      ],
+    );
+  }
+
+  @override
+  Future<void> discardPendingForTenant(String tenantId) async {
+    await _db.customStatement(
+      'DELETE FROM field_location_events WHERE tenant_id = ? '
+      "AND sync_status IN ('pending', 'failed')",
+      [tenantId],
+    );
   }
 
   FieldLocationEvent _eventFromRow(QueryRow row) {

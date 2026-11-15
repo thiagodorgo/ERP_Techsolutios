@@ -179,6 +179,14 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/integrations/traccar/traccar-resolution.ts", "new TraccarIngestionRepository(tx)", "PARAMETRO(tx de callback de findFirstTenantRls)", "×1"),
     "B-TRC-01: a sondagem da descoberta (l.238) roda no callback de `findFirstTenantRls`, que troca o GUC antes de cada volta (src/database/rls.ts l.156 e l.160), em transação somente leitura, e passa as linhas pelo canário `assertRowsBelongToTenant` antes de usá-las.",
   ],
+  [
+    k("L2", "src/modules/field-location/field-location-prisma.repository.ts", "new PrismaFieldLocationRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-SAN3-17 (Emenda 1.8, E17-07): a escrita guardada da posição do app (l.144) roda no callback de `withTenantRlsBudget` com o `input.tenantId` do ator, o mesmo da escrita sem orçamento da l.139; o helper põe o setter do GUC como 1ª instrução da transação (src/database/rls.ts l.128) e os prazos locais de trava e de instrução depois dele.",
+  ],
+  [
+    k("L2", "src/modules/operator-profiles/operator-profile-prisma.repository.ts", "new PrismaOperatorProfileRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "B-SAN3-17 (Emenda 1.11, J-568 C2-01): o aceite e a revogação do titular pelo app (update e applyHolderConsentGrant do RlsPrismaOperatorProfileRepository) rodam no callback de `withTenantRlsBudget` com o `input.tenantId` do ator, o mesmo das variantes sem prazo; o helper põe o setter do GUC como 1ª instrução da transação (src/database/rls.ts l.128) e o `lock_timeout` local depois dele.",
+  ],
   // B-TRC-02 (emenda v2.4 de escopo, docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.4-acessos.md §1.2): as 6 chaves L1 da telemetria
   // veicular, coladas da saída do gerador no head do bloco, com o motivo por chave. Gerador e WRAPPERS intocados.
   [
@@ -499,6 +507,16 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L1", "src/modules/auth/services/session-liveness.service.ts", "-.check", "tx.user", "user.findFirst", "users", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-USERS-SEG-DESATIVADO (P-SESSAO-VIVA): a via sem `sid` (token anterior ao deploy; P-SID-OBRIGATORIO), `user.findFirst({ where: { id, tenant_id, status: 'active' }, select: { id } })` no mesmo callback de `withTenantRlsBudget`, sob o GUC da organização do token; só leitura. Provado em tests/users-seg-desativado-portao-db.test.ts (T12) sob papel NOSUPERUSER NOBYPASSRLS.",
   ],
+  // B-ASS-09 (F7): as 2 chaves que o bloco acrescenta, coladas da saída do gerador no head do bloco (b9a5972f), com o motivo.
+  // Gerador e WRAPPERS intocados. O literal L0 vai de 123 a 124: exatamente a 1 tabela FORCE nova da M6 (economic_group_members).
+  [
+    k("L1", "src/modules/subscription-billing/fx-rates/fx-rates.prisma.ts", "PrismaFxRatesRepository.appendVersion", "tx", "RAW-SQL($executeRaw) OPACO", "?", "$TRANSACTION-SEM-SETTER-PROVADO", "×1"),
+    "B-ASS-09 (P10, Emenda 2 §3.3): a trava de tabela da versão nova do câmbio, `LOCK TABLE platform_fx_rates IN SHARE ROW EXCLUSIVE MODE`, 1ª sentença da transação de `appendVersion`; não lê nem grava linha, e `platform_fx_rates` é GLOBAL (sem RLS). Provado em tests/ass-09-fx-rates-db.test.ts (T-FX-db-1, barreira de linha; M-FX-8, M-FX-16 e M-FX-17 vermelhas).",
+  ],
+  [
+    k("L2", "src/modules/subscription-billing/economic-groups/economic-groups.prisma.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-ASS-09 (Emenda 2 §2.4): a trilha de entrar e sair de grupo, `new EnterpriseAuditLogService(new AuditLogRepository(tx)).record(…)`, gravada no `tx` da volta da organização do evento, dentro de `forEachTenantRls` (GUC na 1ª instrução da volta, rls.ts), no molde `writeAuditInTx` de statement.prisma-runtime.ts; evento de organização fora da troca recusa a troca (MembershipAuditTenantError). Provado em tests/ass-09-groups-db.test.ts (T-GRP-db-3 (b) e T-GRP-db-1: a trilha só da troca que valeu).",
+  ],
   [
     k("L1", "src/database/session-timezone.ts", "-.probeSessionTimezone", "client", "RAW-SQL($queryRawUnsafe) OPACO", "?", "PARAMETRO(client)", "×1"),
     "B-DB-FUSO-UTC, Emenda 2 E2.1: `probeSessionTimezone` executa somente `SELECT current_setting('TimeZone') AS tz`; é leitura da configuração da sessão, sem acesso a tabela (inclusive FORCE RLS). Chave colada da saída do gerador do T13.",
@@ -521,6 +539,57 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
   [
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
     "B-ASS-08c1a ([REG-TX], passo 3): `INSERT INTO subscription_statement_charges … ON CONFLICT (provider, external_charge_id) DO NOTHING`, com `tenant_id` e `statement_id` da linha do demonstrativo travada no passo 1 (nunca do payload); tabela FORCE da MESMA organização. Provado em tests/ass-08c-register-db.test.ts (RG1: falha injetada depois do INSERT desfaz cobrança, ref e SENT).",
+  ],
+  // B-ASS-08c1b: a fila operável (o guard do reopen no `tx`, o pedido e o cancelamento de cobrança, a revisão da fila). Cada
+  // chave é a que o gerador acusou no head, só acréscimo; todas sobre o `tx` de uma transação JÁ ABERTA sob o GUC da
+  // organização. Literal L0 intocado: nenhuma tabela FORCE nova.
+  [
+    k("L1", "src/modules/subscription-billing/statements/statement.prisma-runtime.ts", "-.hasOutboxNeedsReview", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08c1b (P8, [GUARD-01]): `SELECT 1 FROM billing_outbox WHERE statement_id = $1 AND status = 'NEEDS_REVIEW' LIMIT 1`, só leitura, no MESMO `tx` do `reopen` (o `withTenantRls(this.client, tenantId, …)` do `PrismaStatementRepository.transaction`), depois da trava do demonstrativo; billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-outbox-review-db.test.ts (RO1, pela rota, 1 conexão) sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/charges/charges.prisma.ts", "-.listByStatementInTx", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08c1b (P9a): `SELECT * FROM subscription_statement_charges WHERE statement_id = $1 ORDER BY created_at`, só leitura, sobre o `tx` de `prismaChargeIntentTx(tx, tenantId)` (o `withTenantRlsBudget` de `PrismaChargeIntentRepository.transaction`, setter do GUC na 1ª instrução, rls.ts l.128), DEPOIS da trava do demonstrativo; tabela FORCE da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC4) e no cenário `chargeIntent.cancel` do T-LOCK-2, sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "-.skipPendingChargeCreateInTx", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08c1b (P9a, regra 3): `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = NULL, last_error = $3 … WHERE id = $1 AND tenant_id = $2 AND kind = 'charge_create' AND status = 'PENDING' RETURNING *`, com a organização no predicado além do RLS, sobre o `tx` de `prismaChargeIntentTx` e DEPOIS da trava do demonstrativo (ORD-1 do T-LOCK-2); billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC5) e no cenário `chargeIntent.cancel (PENDING → SKIPPED)` do T-LOCK-2.",
+  ],
+  [
+    k("L2", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "new AuditLogRepository(tx)", "PARAMETRO(tx)", "×1"),
+    "B-ASS-08c1b: a trilha das ações do operador sobre a fila (`writeOutboxAuditInTx`), o MESMO molde de `writeAuditInTx` do statement.prisma-runtime.ts — `EnterpriseAuditLogService(new AuditLogRepository(tx))` sobre o `tx` da própria ação (o `withTenantRlsBudget` da organização): se a trilha falhar, a ação cai junto; `audit_logs` da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.retryByOperator", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×3"),
+    "B-ASS-08c1b (F5, Emenda 1 §3.3): o `/retry` do operador — as MESMAS 3 instruções do `retry` (as constantes REOPEN_OWNER_SQL, REOPEN_SIBLINGS_SQL e REOPEN_UPDATE_SQL: a junção com o demonstrativo, as irmãs vivas e o UPDATE … WHERE id AND tenant_id AND status = 'FAILED', que regrava a data nova no payload) no callback de `withTenantRlsBudget(this.client, tenantId, …)` (GUC na 1ª instrução, rls.ts l.128); billing_outbox (FORCE) da MESMA organização, com `tenant_id` no predicado. Provado em tests/ass-08c-outbox-review-db.test.ts (RS2, RS3, RS3c, RS6-RS9) e no cenário `outbox.retryByOperator` do T-LOCK-2, sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.retryByOperator", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F5): a trava do demonstrativo do `/retry` do operador (REOPEN_OWNER_SQL: `… JOIN billing_outbox o ON … AND o.tenant_id = s.tenant_id WHERE o.id = $1 AND o.tenant_id = $2 FOR UPDATE OF s`), a 1ª instrução depois do GUC; tabela FORCE da MESMA organização. Provado no T-LOCK-2 (`outbox.retryByOperator`: o demonstrativo primeiro) e em RS3c (o superusuário não acha a linha de outra organização).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.resolve", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "B-ASS-08c1b (F5, P10): o `/resolve` — a junção com o demonstrativo ([RESOLVE-LOCK]) e o UPDATE NEEDS_REVIEW → FAILED com `tenant_id` no predicado, sem tocar no `last_error`, no callback de `withTenantRlsBudget(this.client, tenantId, …)`; billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-outbox-review-db.test.ts (RS1, RS3, RS3c, RS4) e no cenário `outbox.resolve` do T-LOCK-2.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.resolve", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F5, [RESOLVE-LOCK]): `… FROM subscription_statements s JOIN billing_outbox o … WHERE o.id = $1 AND o.tenant_id = $2 FOR UPDATE OF s` — o demonstrativo travado PRIMEIRO (regra §2.1, ORD-1 do T-LOCK-2), no callback de `withTenantRlsBudget`; tabela FORCE da MESMA organização.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($queryRawUnsafe)", "subscription_statements", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F6, [CANCEL-TX], passo 1): `SELECT id FROM subscription_statements WHERE id = $1 AND tenant_id = $2 FOR NO KEY UPDATE` — o registro do cancelamento trava o demonstrativo PRIMEIRO, no callback de `withTenantRlsBudget(this.client, tenantId, …)` (GUC na 1ª instrução, rls.ts l.128); tabela FORCE da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC1, CC6-*) e no cenário `outbox.recordChargeCancelOutcome` do T-LOCK-2, sob papel NOSUPERUSER NOBYPASSRLS.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($queryRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F6, [CANCEL-TX], passo 2): `UPDATE billing_outbox SET status = 'SENT', external_id = $5 … WHERE id = $1 AND tenant_id = $2 AND status = 'PROCESSING' AND claimed_by = $3 AND attempt_started_at = $4 RETURNING id` — a linha do cancelamento, com a posse no predicado, depois da trava do demonstrativo (ORD-1); 0 linhas = nada escrito. billing_outbox (FORCE) da MESMA organização.",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F6, [CANCEL-TX], passo 3): `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4 WHERE tenant_id = $1 AND provider = $2 AND external_charge_id = $3 AND status = 'pending'` — a cobrança da tabela, só se `pending`, com a organização no predicado; tabela FORCE da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC1; CC6f: a injeção de falha depois deste passo desfaz tudo).",
+  ],
+  [
+    k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-ASS-08c1b (F6, [CANCEL-TX], passo 4): `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = NULL, last_error = 'charge_cancelled' … WHERE id = $1 AND tenant_id = $2 AND kind = 'charge_create' AND status = 'SENT'` — a `charge_create` alvo deixa o conjunto vivo MANTENDO o `external_id` (EK1); billing_outbox (FORCE) da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC1: `external_id` mantido, `skip_reason` NULL).",
   ],
 ]);
 
@@ -604,7 +673,9 @@ test("T13 · ratchet semântico: congelado com motivo por chave, 31 formas verme
     // B-ASS-08 (M5): 120 → 123 — exatamente as 3 tabelas FORCE novas (billing_outbox, subscription_statement_invoices,
     // subscription_statement_charges) e os 3 models delas; as 3 globais da M5 (webhook_events, statement_refs,
     // invoice_sequences) não têm RLS e não entram no L0.
-    assert.match(f2.stdout, /tabelas ENABLE=123 FORCE=123 · acessores Prisma em FORCE=123/);
+    // B-ASS-09 (M6): 123 → 124 — exatamente a 1 tabela FORCE nova (economic_group_members) e o model dela; as 2 globais da M6
+    // (economic_groups, platform_fx_rates) não têm RLS e não entram no L0.
+    assert.match(f2.stdout, /tabelas ENABLE=124 FORCE=124 · acessores Prisma em FORCE=124/);
     assert.match(f2.stdout, /"C2ForceDefault"/);
     for (const accessor of ["c2ForceQualified.findMany", "c2ForceDefault.findMany", "c2ForceControl.findMany"]) {
       assert.ok(f2.keys.some((key) => key.includes(`\t${accessor}\t`)), `${accessor} precisa entrar no inventário`);

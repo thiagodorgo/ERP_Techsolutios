@@ -1,5 +1,29 @@
 # Status Geral
 
+## Atualização 2026-11-15 (madrugada) — item 42: o e2e no portão obrigatório da CI (`B-SAN3-10-E2E-CI`, PR em rascunho)
+
+- **Autor:** `dev-42-cl` (Claude Opus 5.5, dev declarado da F3 em diante, cobrindo o Codex 1). As fatias F0 a F2 são do Codex. O registro do PR e as rodadas da CI estão em `docs/revisoes/SAN3/B-SAN3-10-E2E-CI-dev.md`.
+- **O que o PR entrega:** o job `e2e` no `ci.yml`, sem `if:` no job, com o canário que tem de falhar pelo sentinela e a suíte inteira (13 testes + o preparo) conferida pelo guarda do relatório contra o disco; o `docker` espera o `e2e` (P2, `D-CI-DOCKER-ESPERA-E2E`); o freio de login intocado (`src/` e `prisma/` sem diff).
+- **Pendências:** fecham, ao entrar na `main`, a `P-SAN-E2E`, a `P-SAN3-01-E2E-LOGIN-DEFASADO` e a `P-SAN3-06B-E2E-PLATAFORMA-DEFASADO`; nascem 7, entre elas a `P-SAN3-10-E2E-PERSONAS` (ALTA, bloqueia o portão: a parte (b) do `B-SAN3-10`) e a `P-E2E-DESPACHOS-SEM-TECNICO` (fato novo da F3).
+- **Para os blocos seguintes:** a partir do merge, bloco que muda texto, rótulo ou rota de tela olhada pelo e2e atualiza o e2e no mesmo PR; o check `e2e` vale na tentativa 1, e re-rodar exige registro (P7).
+
+## Atualização 2026-11-15 (madrugada) — `B-ASS-11`, a Parte T do item 62: a tela "Minha assinatura" com as 3 aparências (PR #576, em rascunho)
+
+- **Autor:** `dev-62t-cl` (Claude Opus 5.5, dev, identidade nova, declarada; tela no Claude, `D-DESIGN-SO-CLAUDE`). **Base medida:** `origin/main@b00f3161` (#574), atualizada por merge com a `4acd14ad` (#569); worktree próprio. Registro do próprio bloco; `Kpis/**` congelado.
+- **O que o bloco faz:** a tela `/administrator/subscription` (sob `billing:read`) mostra à organização o plano, o uso da franquia de usuários e de espaço em pizza cheia (`UsagePie`, novo na biblioteca), a situação e, só com fatura em aberto, o "Como pagar" com os meios que o servidor mandar (sem nenhum, a orientação de pagar com a equipe e "Copiar dados da fatura"). Uma chamada só, `GET /api/v1/billing/subscription`, lida por allowlist. As 3 aparências aprovadas (`D-ASS11-MAQUETE-APROVADA`) entram no menu de aparência por usuário (`minha-assinatura`); o item fica no fim de ADMINISTRAÇÃO de admin, gestor, financeiro e suporte.
+- **Nível de revisão:** revisão reforçada + conferência visual das 3 aparências (Emenda 1 §10); o comando do §4.1 da Emenda 1.1 não acusa caminho fora do PERMITIDO.
+- **Item 62 do portão:** **FECHADO** por este PR (vale no merge), pelos 3 comandos do §1.3 da Emenda 1.1 rodados no head (colados no corpo do PR); fecha a `P-ASS-VISAO-DO-CLIENTE`. A contagem do portão fica para o registro do orquestrador.
+- **Pendências:** a `P-PALETA-SEM-MAPA-DE-PERMISSAO` segue ABERTA, com dono num bloco próprio de paleta e permissão, a abrir (decisão do orquestrador na revisão reforçada); a Parte T não a fecha (o conserto é na paleta, fora do PERMITIDO); nasce a `P-PAGE-HEADING-ROW-GRADE` (BAIXA, a nomear); a `P-NAV-TENANT-BILLING-STATUS` segue com o `B-ASS-11c`.
+
+## Atualização 2026-11-14 (noite) — `B-ASS-11b`, a Parte R do item 62: o cliente sem a consulta de tendência (PR em rascunho)
+
+- **Autor:** `dev-62r-cl` (Claude Opus 5.5, dev, identidade nova, declarada). **Base medida:** `origin/main@adec93ce` (#565), worktree próprio `w-62r`. Registro do próprio bloco; `Kpis/**` congelado.
+- **O que o bloco faz:** retira `GET /api/v1/billing/subscription/usage-history`, que entregava ao cliente a tendência de 6 meses e os veículos rastreados, contra a P12 (decisão 8.2 do dono, "a tendência sai"; `D-ASS11-TENDENCIA-SAI`). O caminho antigo cai no 404 padrão de `/api/v1`; `GET /billing/subscription` não muda.
+- **Nível de revisão:** junta completa (a trava casa `tenant` no nome do arquivo de rotas).
+- **Item 62 do portão:** segue **PARCIAL**. A Parte R é condição dele; quem o fecha é o PR da Parte T (`B-ASS-11`, a tela), pelos comandos do §1.3 da Emenda 1.1 (`D-ASS11-TENDENCIA-SAI`). A PA-1 (a maquete das 3 aparências) foi respondida pelo dono em 14/11 à noite, pelo relato do orquestrador; a fala literal entra no PR da Parte T.
+- **Pendências:** abre e fecha a `P-ASS-USAGE-HISTORY-X-P12` (vale no merge); abre a `P-ASS-VISAO-CLIENTE-PAGAMENTO-FIXO`, a `P-ASS-NOTA-PDF-CLIENTE`, a `P-ASS-E2E-COMENTARIO-PAYURL` e a `P-NAV-TENANT-BILLING-STATUS` (dono `B-ASS-11c`), a `P-TRAVA-MODULO-COBRANCA-FORA` (orquestrador) e a `P-PALETA-SEM-MAPA-DE-PERMISSAO` (a nomear). A `P-ASS-SANDBOX-REAL` ganha o pré-requisito do `B-ASS-11c`.
+- **Ordem de merge:** #566 → Parte R → Parte T, cumprida: o #566 entrou na `main` (`cd480ab6`) com a Parte R já em PR, e o ramo da Parte R foi atualizado com essa `main` por merge, com o índice e as 2 fixtures de censo regenerados por cima dele.
+
 ## Atualização 2026-11-14 (tarde) — #561 e #564 na main; portão em 52/67; pausa tática e retomada; atas J-561 e J-564 completas
 
 - **Autor:** `reg-1411b-cl` (Claude Opus 5.5, redator de registro, identidade nova, nível menor declarado; revisão simples, §C7 10(1), que fica com outra identidade). **Base medida:** `origin/main@eeac48a3`, worktree próprio. Registro documental; `Kpis/**` congelado e intocado.

@@ -111,6 +111,7 @@ const InvoicesPage = lazy(() => import("./modules/finance/pages/InvoicesPage").t
 const RemuneracoesPage = lazy(() => import("./modules/finance/commissions/pages/RemuneracoesPage").then((m) => ({ default: m.RemuneracoesPage })));
 const ChequesPage = lazy(() => import("./modules/finance/cheques/ChequesPage").then((m) => ({ default: m.ChequesPage })));
 const FechamentoPage = lazy(() => import("./modules/finance/period-closes/FechamentoPage").then((m) => ({ default: m.FechamentoPage })));
+const MySubscriptionPage = lazy(() => import("./modules/settings/subscription/MySubscriptionPage").then((m) => ({ default: m.MySubscriptionPage })));
 
 const PlatformCloudBillingPage = lazy(() =>
   import("./modules/platform/cloud-billing/pages/PlatformCloudBillingPage").then((m) => ({
@@ -252,17 +253,14 @@ export function App() {
                 </PermissionGuard>
               }
             />
+            {/* B-ASS-10b (T5) — "as duas permissões": dois guards aninhados (o PermissionGuard é "qualquer uma"). */}
             <Route
               path="/platform/cloud-billing"
               element={
-                <PermissionGuard
-                  permissions={[
-                    "platform:cloud-usage:read",
-                    "platform:cloud-costs:read",
-                    "platform:cloud-cost-allocation:read",
-                  ]}
-                >
-                  <PlatformCloudBillingPage />
+                <PermissionGuard permissions={["platform:cloud-cost-allocation:read"]}>
+                  <PermissionGuard permissions={["platform:billing:read"]}>
+                    <PlatformCloudBillingPage />
+                  </PermissionGuard>
                 </PermissionGuard>
               }
             />
@@ -758,6 +756,17 @@ export function App() {
               element={
                 <PermissionGuard permissions={["tenant_settings:read", "tenant.manage", "tenant:manage"]}>
                   <TenantSettingsPage />
+                </PermissionGuard>
+              }
+            />
+            {/* B-ASS-11 — Minha assinatura (item 62): a organização vê o plano, o uso da franquia e a situação pela rota
+                isolada GET /billing/subscription. Gate billing:read; o servidor é a autoridade (403 para o papel sem a
+                permissão e para o ator de plataforma, que a tela mostra como "Acesso não permitido"). */}
+            <Route
+              path="/administrator/subscription"
+              element={
+                <PermissionGuard permissions={["billing:read"]}>
+                  <MySubscriptionPage />
                 </PermissionGuard>
               }
             />

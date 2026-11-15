@@ -109,6 +109,7 @@ Em linguagem de dono:
 - **Um mês dividido em vários arquivos** vira várias importações parciais, e o resumo mostra só a última parte (risco
   H13). Este bloco não piora o risco (o resumo já escolhia uma run); o conserto é `P-ASS09A-MES-EM-VARIOS-ARQUIVOS`, do
   `B-ASS-09`.
+- **Na visão de custo da plataforma (B-ASS-09)** o mês com mais de uma importação mostra o aviso `multiple_imports_in_month` e quantas são, converte pela taxa do mês e nunca soma as partes; separar parte de correção (pelo manifesto da AWS) fica com o `B-ASS-13`.
 - **Um arquivo com linha de período invertido é recusado inteiro.** Quando o início de um período vem depois do fim, a
   importação falha na origem, sem gravar linhas nem criar rateio, e o erro diz a linha. O número da linha é o da linha de
   **dados** da importação (linhas em branco não contam).

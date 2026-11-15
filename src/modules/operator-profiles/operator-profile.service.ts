@@ -3,6 +3,7 @@ import {
   InMemoryOperatorProfileRepository,
   type OperatorProfileRepository,
 } from "./operator-profile.repository.js";
+import type { HolderConsentGrantResult, HolderConsentLock } from "./operator-profile.repository.js";
 import type {
   OperatorProfile,
   OperatorProfileActorContext,
@@ -77,12 +78,37 @@ export class OperatorProfileService {
     return this.repository.findByUserId(tenantId, parseRequiredUuid(userId, "userId"));
   }
 
-  async update(actor: OperatorProfileActorContext, profileId: string, body: RawRecord): Promise<OperatorProfile> {
+  // `options.lockTimeoutMs` só vem de quem chama por código (a revogação do titular pelo app, J-568 C2-01), nunca do corpo.
+  async update(
+    actor: OperatorProfileActorContext,
+    profileId: string,
+    body: RawRecord,
+    options: HolderConsentLock = {},
+  ): Promise<OperatorProfile> {
     // Carrega o atual (isolamento cross-tenant → 404) para resolver a transição de consentimento LGPD.
     const current = await this.get(actor, profileId);
 
     const nextConsent = readOptionalBoolean(body.tracking_consent ?? body.trackingConsent, "tracking_consent");
-    const consent = resolveConsentTransition(current, nextConsent);
+    // B-SAN3-17 (Emenda 1.8, E17-01; D-ORQ-568-CONSENTIMENTO-SO-PELO-APP): o cadastro DESLIGA o consentimento e nunca o
+    // liga, nem quando quem edita é o próprio titular. Ligar é só pelo aceite do titular no app
+    // (`POST /mobile/location-consent`, com a regra de ordem decidida na escrita). Com o perfil já ligado, `true` não
+    // escreve o campo (no-op), para não desfazer uma revogação que chegue entre a leitura e a escrita (Emenda 1.1).
+    if (nextConsent === true && current.trackingConsent !== true) {
+      throw current.userId !== actor.userId
+        ? new OperatorProfileError(
+            422,
+            "OPERATOR_PROFILE_CONSENT_HOLDER_ONLY",
+            "tracking_consent_holder_only",
+            "Only the profile holder can grant tracking consent.",
+          )
+        : new OperatorProfileError(
+            422,
+            "OPERATOR_PROFILE_CONSENT_APP_ONLY",
+            "tracking_consent_app_only",
+            "Tracking consent is granted only by the holder, in the field app.",
+          );
+    }
+    const consent = resolveConsentTransition(current, nextConsent === true ? undefined : nextConsent);
 
     const input: UpdateOperatorProfileInput = {
       tenantId: actor.tenantId,
@@ -99,11 +125,41 @@ export class OperatorProfileService {
       isActive: readOptionalBoolean(body.is_active ?? body.isActive, "is_active"),
       updatedBy: actor.userId,
     };
-    const updated = await this.repository.update(input);
+    const updated = await this.repository.update(options.lockTimeoutMs === undefined ? input : { ...input, lockTimeoutMs: options.lockTimeoutMs });
     if (!updated) {
       throw new OperatorProfileError(404, "OPERATOR_PROFILE_NOT_FOUND", "not_found", "Operator profile was not found.");
     }
     return updated;
+  }
+
+  // B-SAN3-17 (Emenda 1.7, C16-01): o ACEITE do PRÓPRIO consentimento. A regra de ordem é decidida pelo repositório NA
+  // escrita, sobre a linha travada (Postgres) ou sem `await` (memória). Só o titular chega aqui.
+  async applyOwnTrackingConsentGrant(
+    actor: OperatorProfileActorContext,
+    profileId: string,
+    decidedAt: Date,
+    options: HolderConsentLock = {},
+  ): Promise<HolderConsentGrantResult> {
+    const current = await this.get(actor, profileId);
+    if (current.userId !== actor.userId) {
+      throw new OperatorProfileError(
+        422,
+        "OPERATOR_PROFILE_CONSENT_HOLDER_ONLY",
+        "tracking_consent_holder_only",
+        "Only the profile holder can grant tracking consent.",
+      );
+    }
+    const result = await this.repository.applyHolderConsentGrant({
+      tenantId: actor.tenantId,
+      profileId: parseRequiredUuid(profileId, "profileId"),
+      decidedAt,
+      updatedBy: actor.userId,
+      ...(options.lockTimeoutMs === undefined ? {} : { lockTimeoutMs: options.lockTimeoutMs }),
+    });
+    if (!result) {
+      throw new OperatorProfileError(404, "OPERATOR_PROFILE_NOT_FOUND", "not_found", "Operator profile was not found.");
+    }
+    return result;
   }
 }
 

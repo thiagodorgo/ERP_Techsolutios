@@ -39,6 +39,45 @@ export class FieldLocationController {
     };
   }
 
+  // B-SAN3-17 — aceite (`granted = true`) ou revogação do PRÓPRIO consentimento. A auditoria vai com allowlist: o vínculo
+  // (`userId`), o estado, a versão do texto, a hora da decisão e o desfecho. Nunca organização, coordenada nem
+  // `client_action_id`. É best-effort, como toda auditoria de requisição (R13 do plano v2).
+  async setOwnTrackingConsent(request: Request, granted: boolean) {
+    const [service, actor] = await this.resolveServiceWithActor(request);
+    const result = await service.setOwnTrackingConsent(actor, granted, request.body ?? {});
+    const action =
+      result.status === "superseded"
+        ? "field_location.consent_superseded"
+        : result.granted
+          ? "field_location.consent_granted"
+          : "field_location.consent_revoked";
+
+    await recordRequestAuditBestEffort(request, {
+      action,
+      resourceType: "operator_profile",
+      resourceId: result.profileId,
+      outcome: "success",
+      severity: "info",
+      metadata: {
+        userId: actor.userId,
+        hasConsent: result.granted,
+        textVersion: result.textVersion,
+        decidedAt: result.decidedAt.toISOString(),
+        status: result.status,
+      },
+    });
+
+    return {
+      data: {
+        granted: result.granted,
+        granted_at: result.grantedAt ? result.grantedAt.toISOString() : null,
+        client_action_id: result.clientActionId,
+        status: result.status,
+        profile_updated_at: result.profileUpdatedAt.toISOString(),
+      },
+    };
+  }
+
   async listLatest(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const locations = await service.listLatest(actor, {

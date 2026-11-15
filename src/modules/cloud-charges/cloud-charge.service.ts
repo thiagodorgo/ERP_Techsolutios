@@ -1,4 +1,6 @@
 import { env } from "../../config/env.js";
+import { createLogger } from "../../infra/logging/logger.js";
+import { publicErrorMessage } from "../../infra/logging/public-error.js";
 import { calculateTenantCloudCharges } from "./cloud-charge.engine.js";
 import {
   CloudChargeError,
@@ -24,6 +26,9 @@ import {
   InMemoryCloudChargeRepository,
   type CloudChargeRepository,
 } from "./cloud-charge.repository.js";
+
+const CLOUD_CHARGE_FAILED_MESSAGE = "Cloud charge calculation failed.";
+const logger = createLogger();
 
 const markupTypeSet = new Set<string>(CLOUD_CHARGE_MARKUP_TYPES);
 const roundingModeSet = new Set<string>(CLOUD_CHARGE_ROUNDING_MODES);
@@ -119,6 +124,7 @@ export class CloudChargeService {
         },
       });
     } catch (error) {
+      logger.error({ err: error, runId: run.id }, "cloud-charges: execução falhou");
       return this.repository.updateCalculationRun(run.id, {
         status: "failed",
         errorMessage: sanitizeCloudChargeError(error),
@@ -211,8 +217,7 @@ export function sanitizeCloudChargeMetadata(metadata: Record<string, unknown> | 
 }
 
 export function sanitizeCloudChargeError(error: unknown): string {
-  const message = error instanceof Error ? error.message : "Unknown cloud charge error.";
-  return String(sanitizeValue(message)).slice(0, 1_000);
+  return String(sanitizeValue(publicErrorMessage(error, CLOUD_CHARGE_FAILED_MESSAGE))).slice(0, 1_000);
 }
 
 export function isCloudChargeMarkupType(value: string): value is CloudChargeMarkupType {
