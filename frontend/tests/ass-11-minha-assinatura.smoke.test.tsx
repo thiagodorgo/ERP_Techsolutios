@@ -222,6 +222,32 @@ test("T-S4 só o meio que veio: só payUrl → Pagar; só pixCopyPaste → Copia
   }
 });
 
+test("T-S4b (REV576-01) só boletoLine → só \"Copiar linha digitável\"; só boletoUrl → só \"Abrir boleto\"; nada de meio que não veio", () => {
+  const only = (means: Partial<MySubscriptionPayment>): Fixture => ({
+    id: "boleto-parcial",
+    kind: "ready",
+    today: "2026-11-14",
+    data: subscription({ status: { inGoodStanding: false, overdueSince: VENC_SET, nextDueDate: VENC_SET }, payment: { dueDate: VENC_SET, ...NO_MEANS, ...means } }),
+  });
+  const [pay, pix, line, slip, invoice] = MEAN_BUTTON;
+  for (const letter of LETTERS) {
+    const lineOnly = html(letter, modelOf(only({ boletoLine: "linha-de-exemplo" }), "pagar"));
+    assert.match(lineOnly, line, `${letter}: "Copiar linha digitável" com boletoLine`);
+    for (const absent of [pay, pix, slip, invoice]) assert.doesNotMatch(lineOnly, absent, `${letter}: só boletoLine, sem ${absent}`);
+    assert.doesNotMatch(lineOnly, /<a\b[^>]*href="https:/, `${letter}: só boletoLine, nenhum link`);
+    assert.doesNotMatch(visible(lineOnly), /Copiar dados da fatura/, `${letter}: com meio, sem a orientação de pagar com a equipe`);
+
+    const urlOnly = html(letter, modelOf(only({ boletoUrl: "https://pagamento.exemplo/boleto" }), "pagar"));
+    assert.match(urlOnly, slip, `${letter}: "Abrir boleto" com boletoUrl`);
+    for (const absent of [pay, pix, line, invoice]) assert.doesNotMatch(urlOnly, absent, `${letter}: só boletoUrl, sem ${absent}`);
+    const anchors = [...urlOnly.matchAll(/<a\b[^>]*href="https:[^"]*"[^>]*>/g)].map((m) => m[0]);
+    assert.equal(anchors.length, 1, `${letter}: só o link do boleto`);
+    assert.match(anchors[0], /href="https:\/\/pagamento\.exemplo\/boleto"/);
+    assert.match(anchors[0], /target="_blank"/);
+    assert.match(anchors[0], /rel="noopener noreferrer"/);
+  }
+});
+
 const STATE_TEXT: Readonly<Record<string, { open?: MySubscriptionBlock; has: readonly (string | RegExp)[]; not?: readonly RegExp[] }>> = {
   "1": { has: ["Em dia", "Sem fatura em aberto"] },
   "2a": { has: ["Em dia", "Fatura em aberto", /vence em 11\/11\/2026/i] },
