@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
-import { withTenantRls } from "../../database/rls.js";
+import { withTenantRls, withTenantRlsBudget } from "../../database/rls.js";
 import type {
   OperatorProfile,
   CreateOperatorProfileInput,
@@ -62,7 +62,6 @@ export class PrismaOperatorProfileRepository implements OperatorProfileRepositor
   }
 
   async update(input: UpdateOperatorProfileInput & HolderConsentLock): Promise<OperatorProfile | undefined> {
-    await this.boundLockWait(input.lockTimeoutMs);
     try {
       // user_id NÃO é atualizado — vínculo imutável (referência estável 1-1).
       const updated = await this.client.operatorProfile.updateManyAndReturn({
@@ -91,7 +90,6 @@ export class PrismaOperatorProfileRepository implements OperatorProfileRepositor
   // ordem do aceite é reavaliada sobre a linha travada. Uma revogação que confirma depois da leitura do serviço é vista
   // aqui e o aceite velho sai `superseded`, sem escrever.
   async applyHolderConsentGrant(input: HolderConsentGrantInput): Promise<HolderConsentGrantResult | undefined> {
-    await this.boundLockWait(input.lockTimeoutMs);
     const rows = await this.client.$queryRaw<Array<{ tracking_consent: boolean; updated_at: Date }>>`
       SELECT tracking_consent, updated_at FROM operator_profiles
        WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.profileId}::uuid
@@ -110,17 +108,6 @@ export class PrismaOperatorProfileRepository implements OperatorProfileRepositor
       updatedBy: input.updatedBy,
     });
     return updated ? { status: "applied", profile: updated } : undefined;
-  }
-
-  // B-SAN3-17 (J-568, C2-01): o `lock_timeout` LOCAL da transação aberta pelo `RlsPrismaOperatorProfileRepository` (o
-  // mesmo `set_config(..., true)` do `withTenantRlsBudget`, no mesmo executor da escrita). Esperada a trava além do
-  // prazo, o Postgres responde 55P03, que o serviço de localização traduz em 503 `field_location_busy`, sem gravar.
-  private async boundLockWait(lockTimeoutMs: number | undefined): Promise<void> {
-    if (lockTimeoutMs === undefined) return;
-    if (!Number.isInteger(lockTimeoutMs) || lockTimeoutMs <= 0) {
-      throw new Error("lockTimeoutMs precisa ser inteiro positivo em ms.");
-    }
-    await this.client.$executeRaw`SELECT set_config('lock_timeout', ${`${lockTimeoutMs}ms`}, true)`;
   }
 }
 
@@ -144,12 +131,29 @@ export class RlsPrismaOperatorProfileRepository implements OperatorProfileReposi
   }
 
   update(input: UpdateOperatorProfileInput & HolderConsentLock): Promise<OperatorProfile | undefined> {
+    if (input.lockTimeoutMs !== undefined) {
+      return withTenantRlsBudget(this.prismaClient, input.tenantId, holderConsentBudget(input.lockTimeoutMs), (tx) =>
+        new PrismaOperatorProfileRepository(tx).update(input),
+      );
+    }
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaOperatorProfileRepository(tx).update(input));
   }
 
   applyHolderConsentGrant(input: HolderConsentGrantInput): Promise<HolderConsentGrantResult | undefined> {
+    if (input.lockTimeoutMs !== undefined) {
+      return withTenantRlsBudget(this.prismaClient, input.tenantId, holderConsentBudget(input.lockTimeoutMs), (tx) =>
+        new PrismaOperatorProfileRepository(tx).applyHolderConsentGrant(input),
+      );
+    }
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaOperatorProfileRepository(tx).applyHolderConsentGrant(input));
   }
+}
+
+// B-SAN3-17 (J-568, C2-01): a decisão do titular pelo app espera a trava da linha no máximo `lockTimeoutMs`. É o
+// `withTenantRlsBudget` (src/database/rls.ts), que põe o GUC da organização como 1ª instrução e depois os prazos locais de
+// trava e de instrução; a transação mantém o `maxWait`/`timeout` padrão do Prisma (2 s / 5 s).
+function holderConsentBudget(lockTimeoutMs: number) {
+  return { maxWait: 2_000, timeout: 5_000, lockTimeoutMs, statementTimeoutMs: 4_000 } as const;
 }
 
 export async function createPrismaOperatorProfileRepository(): Promise<RlsPrismaOperatorProfileRepository> {

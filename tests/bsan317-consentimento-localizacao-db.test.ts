@@ -1105,6 +1105,8 @@ if (!connectionString) {
         kind,
       );
       assert.ok(ms < 4_500, `${kind}: ${ms} ms (o prazo da trava é de 3 s)`);
+      // Emenda 1.11 (E111-02): o PISO prende o prazo de 3 s (um `statement_timeout` menor, ou o `lock_timeout` padrão, saem antes).
+      assert.ok(ms >= 2_500, `${kind}: ${ms} ms (o 503 não pode sair antes do prazo da trava)`);
     }
   });
 
