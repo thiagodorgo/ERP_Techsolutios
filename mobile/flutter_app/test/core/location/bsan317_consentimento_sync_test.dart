@@ -990,9 +990,10 @@ void main() {
           'granted=${status.granted} reconfirm=${status.needsReconfirm} '
           'estado=${status.serverState.name}',
         );
+        final kinds = consentApi.calls.map((c) => c.split(':').first);
         expect(
-          consentApi.calls.map((c) => c.split(':').first).toList(),
-          ['grant', 'revoke'],
+          kinds.toList(),
+          equals(['grant', 'revoke']),
           reason: 'a revogação posterior precisa chegar ao servidor',
         );
         expect(status.granted, isFalse);
