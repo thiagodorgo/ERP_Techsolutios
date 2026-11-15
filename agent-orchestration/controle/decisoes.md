@@ -5351,6 +5351,19 @@ lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`.
 - **Q10 — no mesmo mês, um adicional por veículo e outro de mensalidade fixa.** Soma os dois: os veículos por veículo, inteiros, mais a mensalidade fixa proporcional aos dias.
 - **Saiu:** Q1 (já decidida na P10) e Q8 (fora do bloco). Continua aberta, fora do bloco, a do conflito de quem assina a assinatura, dono `B-ASSINATURA`.
 
+## D-ASS12-MOTIVO-NA-VISAO (2026-11-15) — o motivo `addon_without_price` na visão de custo e na tela de custo e margem
+
+- **Origem:** Emendas 1.2, 1.2.1, 1.3 e 1.3.1 do `B-ASS-12` (planejador `plano-573-e12-op`, Claude Opus 5.5, declarado; regra `D-EMENDA-ANTES-DO-CODIGO`). A absorção da `main` com o #566 deu o TS2345 de `subscription-amount.ts:127`: o `SubscriptionSkipReason` do #566 era fechado em 3 motivos, e o fechamento deste bloco pula com um 4º. Tudo abaixo é **leitura do planejador, declarada (§A6)**, desfazível numa linha.
+- **O que vale:**
+  - **o motivo na visão, pela regra do `plan_without_price`:** o `SubscriptionSkipReason` sai da lista `SUBSCRIPTION_SKIP_REASONS` (`as const`) e ganha `addon_without_price`; a organização com o mês pulado por ele é linha `none` com o motivo, assinatura nula e nunca 0,00, fica fora das somas e conta em `membersWithoutSubscription`; o alerta não ganha valor novo;
+  - **o rótulo:** "Rastreamento sem preço"; o curto, "Sem preço";
+  - **o T-CTR-1 derivado:** os enums do contrato saem do servidor — as listas `as const` e todo símbolo que o módulo de tipos exporta, lido pelo VERIFICADOR (Emenda 1.3.1: `export type X`, `export type { X }`, re-exportação, `enum` e alias genérico; o não resolvido é vermelho; uma fixture com uma forma por linha prova a derivação dentro da suíte). O item 2(a) da Emenda 1.2.1 ("o #573 não reescreve a F6") está **revogado pela Emenda 1.3**, porque a premissa dele (o T-CTR-1 da `main` fica verde depois da F1–F5) foi medida falsa;
+  - **o texto do grupo e a nota:** o `addon_without_price` segue a regra que o J-567 (C3-05) deu ao `plan_without_price` — "rastreamento sem preço cadastrado" e "O rastreamento desta organização não tem preço cadastrado; sem assinatura, não há margem do mês."; nunca "filial" nem "a matriz assina".
+- **Fecha:** `P-ASS12-PULO-SEM-AVISO`, no merge do #573 (o "aviso" é o selo neutro com o detalhe, não um alerta novo).
+- **Abre:** `P-ASS12-MEMBRO-PLANO-SEM-PRECO` (o membro do grupo com `plan_without_price`, `pre-existente`, dono `B-ASS-10b`).
+- **Fora, declarado:** as listas tipadas, as `as const satisfies` e o literal de campo inline não entram no T-CTR-1 (CRIT-E13-2; `P-TCTR1-LISTAS-TIPADAS-E-CAMPO-INLINE`, dono `B-ASS-10b`, pela triagem do orquestrador).
+- **Gravado por:** `dev-573-cl` (Claude Opus 5.5, dev declarado do bloco, cobrindo o `dev-65-dp`), em 15/11/2026.
+
 ## D-SEED-10B-RESPOSTAS-1311 (2026-11-13 ~23:20 SP) — as cinco perguntas do plano v2 do `B-SAN3-10b-F4-SEED-ISOLADO`, pela recomendação
 
 - **Fato (decisão do dono):** *"minhas decisoes vao todas nas recomendacoes"* (ordem de 13/11, ~23:12 SP) e *"pode comecar"* (~23:20 SP). Transcrição do redator `reg-10bseed-cl` (Claude Opus 5.5, declarado, §A6), a partir do registro do orquestrador fora do repositório (`REGISTRO-PENDENTE.md`, 13/11 23:19 e 23:23), que lista para o seed: *"P1 versionar; P2 roteiro com errata; P3 datas não recuam; P4 organização pelo script; P5 OS em dobro como pendência média"*. O ID geral que o orquestrador propôs para a ordem inteira (`D-DONO-1311-RECOMENDACOES`) e o da ordem "só Claude" (`D-CLAUDE-SOLO-1311`) ainda não estão neste arquivo e entram no PR de registro do dia; esta entrada cobre só o seed.

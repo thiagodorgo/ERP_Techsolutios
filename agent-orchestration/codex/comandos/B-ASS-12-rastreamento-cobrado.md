@@ -52,6 +52,23 @@ dono `B-ASSINATURA`).
   `agent-orchestration/docs/status-geral.md`, `agent-orchestration/codex/log-execucao.md`,
   `docs/revisoes/SAN3/PLANO_SAN3.md` (só as linhas `:147` e `:330`)
 
+### Acréscimos das Emendas 1.2, 1.2.1, 1.3 e 1.3.1 (o motivo `addon_without_price` na visão de custo; caso (a))
+
+O que vale é a âncora de contagem 1 de cada script da emenda; o resto do PROIBIDO abaixo continua.
+- Servidor (E12-S): `src/modules/subscription-billing/overview/overview.types.ts` (só a linha do `SubscriptionSkipReason`,
+  que vira a lista `SUBSCRIPTION_SKIP_REASONS` e o tipo derivado; o resto de `overview/**` segue PROIBIDO);
+  `statement.inputs.ts` (1 comentário); `tests/ass-09-subscription-amount.test.ts` (imports, T-SUB-5 e T-SUB-12);
+  `tests/ass-04-statement-service.test.ts` (o laço do T-ST-13); `docs/subscription-billing.md` (1 frase);
+  `API_CONTRACTS.md` (1 frase em "Base da assinatura").
+- Tela (E12-T, só no caso (a), em `frontend/src/modules/platform/cloud-billing/`): `cloud-billing.types.ts` (o tipo),
+  `cloud-billing.adapter.ts` (só o `SKIP_REASONS`), `cloud-billing.labels.ts` (os 2 rótulos),
+  `views/cloudBilling.shared.tsx` (a dica, o predicado, o texto do grupo, a nota, o campo Assinatura e o membro do
+  grupo), `views/CloudBillingViewA.tsx` e `views/CloudBillingViewC.tsx` (as dicas); `frontend/tests/ass-10b-estados.smoke.test.tsx`
+  (1 import e o T-UI-3 no fim). O resto de `frontend/**` segue PROIBIDO.
+- T-CTR-1 (Emenda 1.3, que revoga o item 2(a) da 1.2.1, e Emenda 1.3.1): `tests/ass-10b-contrato-overview.test.ts`
+  (o comentário, os pisos, o `createProgram`, o `literalUnionsOf`/`typeMembersOf` pelo verificador e o teste da
+  fixture) e `tests/fixtures/ass-12-tctr1-formas/{formas,fora,nao-resolvido}.ts` (novos).
+
 ## Escopo PROIBIDO
 
 - `prisma/**` e qualquer migração; `src/integrations/traccar/**`, `src/modules/field-location/**`,

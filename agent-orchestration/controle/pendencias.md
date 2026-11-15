@@ -15380,7 +15380,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS12-PULO-SEM-AVISO (2026-11-14) — organização pulada por `addon_without_price` não aparece como aviso — MÉDIA
 
-- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** aviso na visão da plataforma · **dono:** `B-ASS-12b` (bloco menor depois do `B-ASS-09`) · **bloqueia:** não.
+- **status:** FECHADA pelo `B-ASS-12` (Emendas 1.2 e 1.3, PR #573, ramo `feat/ass-12-rastreamento-cobrado`; vale no merge) · antes: ABERTA, dono `B-ASS-12b` · **gravidade:** MÉDIA · **escopo:** aviso na visão da plataforma · **bloqueia:** não.
+- **fechamento (2026-11-15, `dev-573-cl`):** a visão de custo da plataforma recebe o motivo `addon_without_price` (linha `none`, assinatura nula e nunca 0,00; T-SUB-12), e a tela de custo e margem mostra, nas 3 aparências, o selo "Sem preço", a situação "Rastreamento sem preço", o campo, o texto do grupo, a nota e o membro do grupo (T-UI-3 de `frontend/tests/ass-10b-estados.smoke.test.tsx`). **Leitura do planejador, declarada (§A6; Emenda 1.2 §2(a)):** o "aviso" é o selo neutro com o detalhe, não um alerta novo; se o dono quiser um alerta próprio, a pendência reabre.
 - **origem:** regra nova do `B-ASS-12` — agora qualquer dia com adicional e sem versão pula o fechamento, e a única saída é a resposta do fechamento, não um aviso.
 - **encerramento:** a organização pulada por `addon_without_price` aparece como aviso na visão da plataforma, não só na resposta do fechamento.
 
@@ -15413,6 +15414,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** telas da plataforma · **dono:** `B-ASS-10` · **bloqueia:** não.
 - **origem:** a sobrescrita por veículo define o regime da organização (zero = cortesia) e sobrevive à publicação de versão fixa; o DTO mostra `trackingUnit`, mas não há aviso de quantas organizações continuam no preço combinado.
 - **encerramento:** ao publicar versão de mensalidade fixa num adicional, a tela mostra quantas organizações têm preço combinado por veículo e continuam nele.
+
+## P-ASS12-MEMBRO-PLANO-SEM-PRECO (2026-11-15) — no grupo aberto, o membro com plano sem preço aparece como "sem assinatura própria" — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a linha nasceu no `B-ASS-10b`, #567, e o J-567 C3-05 corrigiu o `plan_without_price` só no texto do grupo e na nota do detalhe) · **dono:** `B-ASS-10b` · **bloqueia:** não.
+- **origem:** Emenda 1.3 do `B-ASS-12` (§2, achado fora do bloco, medido e não consertado); aberta no PR #573 pelo `dev-573-cl`.
+- **fato:** na lista de membros do grupo aberto (`frontend/src/modules/platform/cloud-billing/views/cloudBilling.shared.tsx:771-775` no ramo do #573), o membro sem assinatura no mês mostra "sem assinatura própria" também quando o motivo é `plan_without_price`: ele tem assinatura própria, e o que falta é o preço do plano. O `B-ASS-12` só acrescentou o ramo do `addon_without_price` ("rastreamento sem preço") e não mudou o comportamento do motivo que já existia (Emenda 1.2 §4).
+- **critério de encerramento:** o membro com `plan_without_price` mostra o motivo ("plano sem preço"), nunca "sem assinatura própria", nas 3 aparências, com teste que fica vermelho sem o ramo.
 
 ## P-ASS08C-CANCELADA-FORA-DA-LISTA (2026-11-14) — um cancelamento que cai em `charge_not_listed` ou `charge_state_unknown` não tem saída dentro do sistema — MÉDIA (bloqueia ligar o canal)
 
