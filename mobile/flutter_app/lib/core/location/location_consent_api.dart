@@ -128,7 +128,14 @@ locationConsentDomainRefusals = {
   ),
   403: (
     code: 'FORBIDDEN',
-    reasons: {'permission_required', 'role_required', 'tenant_required'},
+    // J-568 (C1-04): `module_not_enabled` é o 403 do portão de módulo, quando
+    // a organização não tem `field_operations` (module-gate.middleware.ts).
+    reasons: {
+      'permission_required',
+      'role_required',
+      'tenant_required',
+      'module_not_enabled',
+    },
   ),
   422: (
     code: 'FIELD_LOCATION_PROFILE_REQUIRED',
