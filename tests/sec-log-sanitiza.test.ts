@@ -7,9 +7,12 @@
 // processo filho com o env só daquele caso, que importa os mesmos módulos.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import http from "node:http";
+import { createRequire } from "node:module";
 import net from "node:net";
+import path from "node:path";
 import { Writable } from "node:stream";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -27,7 +30,9 @@ process.env.REDIS_URL = REDIS_URL_SENTINELA;
 process.env.LOG_LEVEL = "info";
 
 const { createHttpLogger, createLogger, SANITIZER_FAILED_MESSAGE } = await import("../src/infra/logging/logger.js");
-const { classifyPublicError, PG_CONNECTION_LOST_MESSAGES } = await import("../src/infra/logging/public-error.js");
+const { classifyPublicError, PG_CONNECTION_LOST_MESSAGES, REDIS_DOWN_MESSAGES, TRANSACTION_START_TIMEOUT_PHRASE } = await import(
+  "../src/infra/logging/public-error.js"
+);
 const { RedisClient, RedisCommandError } = await import("../src/infra/redis/redis.client.js");
 const { installFinalErrorHandler } = await import("../src/infra/http/final-error-handler.js");
 const { default: express } = await import("express");
@@ -473,6 +478,27 @@ test("L18 cadeia de 5 cause com o host na última: 0 sentinela, e a saída tem [
   assert.ok(texto().includes("[profundidade]"), "a marca de profundidade sumiu");
 });
 
+// J-571 (C1-A1): os argumentos DEPOIS do 1º, que o pino interpola na mensagem (`%s`, `%o`), passam pelo saneador nas 3
+// formas de chamada: o erro primeiro, o texto primeiro e o objeto primeiro.
+test("L19 argumentos de formatação (%s, %o) com host e usuário configurados saem com 0 sentinela, nas 3 formas de chamada", () => {
+  const formas: ReadonlyArray<readonly [string, (logger: ReturnType<typeof createLogger>) => void, string]> = [
+    ["erro primeiro", (logger) => logger.error(new Error("falhou"), "erro primeiro, formato %s", "hstdb-sentinela"), "erro primeiro, formato "],
+    [
+      "texto primeiro",
+      (logger) => logger.info("texto primeiro, formato %s e %o", "hstrd-sentinela", { host: "hstdb-sentinela" }),
+      "texto primeiro, formato ",
+    ],
+    ["objeto primeiro", (logger) => logger.warn({ a: 1 }, "objeto primeiro, formato %s", "usrdb-sentinela"), "objeto primeiro, formato "],
+  ];
+  for (const [rotulo, escrever, comeco] of formas) {
+    const { logger, linhas, texto } = capturar();
+    escrever(logger);
+    assertSemSentinela(texto());
+    const mensagem = String(ultimaLinha(linhas).msg ?? "");
+    assert.ok(mensagem.startsWith(comeco) && !mensagem.includes("%s"), `${rotulo}: o argumento não foi interpolado (${mensagem})`);
+  }
+});
+
 // =====================================================================================================================
 // K — as três classes do erro público.
 // =====================================================================================================================
@@ -485,6 +511,26 @@ function conferirClasse(casos: readonly Caso[], esperada: string) {
     .filter(([, classe]) => classe !== esperada);
   assert.deepEqual(errados, [], `deveriam ser ${esperada}`);
 }
+
+/**
+ * J-571 (C2-A2): o timeout REAL do `RedisClient` do repo, contra um servidor que aceita e nunca responde. O prazo de 5 s
+ * do cliente é encurtado só durante a chamada, no protótipo do `net.Socket`; o texto do erro sai do próprio
+ * `redis.client.ts`, não de uma cópia no teste.
+ */
+async function timeoutRealDoRedis(): Promise<unknown> {
+  const original = net.Socket.prototype.setTimeout;
+  net.Socket.prototype.setTimeout = function (this: net.Socket, tempo: number, ...resto: unknown[]) {
+    return original.call(this, Math.min(tempo, 100), ...(resto as []));
+  } as typeof original;
+  try {
+    return await erroDoRedisFalso(() => undefined);
+  } finally {
+    net.Socket.prototype.setTimeout = original;
+  }
+}
+
+/** Escapa o texto para virar parte de uma expressão regular. */
+const emRegex = (texto: string) => texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 async function formasDoRedisFalso(linhas: readonly string[]): Promise<Caso[]> {
   const casos: Caso[] = [];
@@ -502,6 +548,7 @@ test("K1 matriz infra_down: as formas reais de queda", async () => {
   );
   const fetchFechado = await erroDe(() => fetch(`http://127.0.0.1:${portaFechada}/x`));
   const fin = await erroDoRedisFalso((socket) => socket.once("data", () => socket.end()));
+  const timeoutDoRedis = await timeoutRealDoRedis();
   const quedasRedis = await formasDoRedisFalso([
     "-LOADING Redis is loading the dataset in memory",
     "-OOM command not allowed when used memory > 'maxmemory'.",
@@ -548,12 +595,44 @@ test("K1 matriz infra_down: as formas reais de queda", async () => {
     ["P2028 de início (pool cheio)", erroPrisma("Transaction API error: Unable to start a transaction in the given time.", "P2028")],
     // Emenda 1 (R2-05): as 9 quedas do Redis.
     ["Redis FIN antes da resposta (real)", fin],
-    ["Redis command timed out.", new RedisCommandError("Redis command timed out.")],
+    ["Redis command timed out (real, J-571 C2-A2)", timeoutDoRedis],
     ...quedasRedis,
   ];
   assert.equal(casos.length, 44);
   assert.equal((fin as Error).message, "Redis connection ended before a complete response.");
+  assert.equal((timeoutDoRedis as Error).name, "RedisCommandError", "o timeout real do RedisClient");
+  assert.ok(
+    REDIS_DOWN_MESSAGES.has((timeoutDoRedis as Error).message),
+    `o texto real do timeout do Redis não está na lista de queda: ${(timeoutDoRedis as Error).message}`,
+  );
   conferirClasse(casos, "infra_down");
+});
+
+/**
+ * J-571 (C2-A1): as frases de queda do saneador vivem na FONTE do driver instalado. Cada frase de
+ * `PG_CONNECTION_LOST_MESSAGES` tem de aparecer como literal inteiro no `pg/lib/client.js` ou no `pg-pool/index.js` que
+ * o `npm ci` trouxe, e a de `TRANSACTION_START_TIMEOUT_PHRASE`, no runtime do `@prisma/client`. Se o driver mudar a
+ * frase, este teste fica vermelho antes de a queda virar 400 com o texto do driver.
+ */
+test("K4 as frases de queda do saneador existem na fonte do pg, do pg-pool e do Prisma instalados", () => {
+  const requerer = createRequire(import.meta.url);
+  // A entrada de cada pacote (o `package.json` não é exportado): `pg/lib/index.js`, `pg-pool/index.js`, `@prisma/client/default.js`.
+  const libDoPg = path.dirname(requerer.resolve("pg"));
+  const pastaDoPool = path.dirname(requerer.resolve("pg-pool"));
+  const pastaDoPrisma = path.dirname(requerer.resolve("@prisma/client"));
+  const fonteDoPg = [path.join(libDoPg, "client.js"), path.join(pastaDoPool, "index.js")]
+    .map((arquivo) => readFileSync(arquivo, "utf8"))
+    .join("\n");
+  const ausentes = [...PG_CONNECTION_LOST_MESSAGES].filter(
+    (frase) => !new RegExp(`(['"\`])${emRegex(frase)}\\1`).test(fonteDoPg),
+  );
+  assert.equal(PG_CONNECTION_LOST_MESSAGES.size, 8);
+  assert.deepEqual(ausentes, [], "frases do saneador que o pg/pg-pool instalado não tem mais");
+  const runtimeDoPrisma = readFileSync(path.join(pastaDoPrisma, "runtime", "client.js"), "utf8");
+  assert.ok(
+    new RegExp(`(['"\`])${emRegex(TRANSACTION_START_TIMEOUT_PHRASE)}`).test(runtimeDoPrisma),
+    "a frase do P2028 de início não está mais no runtime do @prisma/client",
+  );
 });
 
 test("K2 matriz opaque: driver, sistema e SDK que não são queda", async () => {

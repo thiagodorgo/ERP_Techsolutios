@@ -444,6 +444,104 @@ test("H4e sync de OS com o AggregateError real e com a forma d: rejected, mensag
   }
 });
 
+// J-571 (C2-A3): a linha `opaque` do v2 §4.4 nos 4 syncs. Erro de driver, sistema ou SDK que NÃO é queda e não tem marca
+// de texto: o caminho do arquivo, o bucket, o texto do Redis e o detalhe do pg com o e-mail não saem na ação rejeitada.
+const PROIBIDOS_OPACOS = ["arquivo-privado-j571", "bucket-privado-j571", "NOAUTH", "dono-j571@exemplo.com", "users_email_key"];
+
+async function errosOpacos(): Promise<ReadonlyArray<readonly [string, unknown]>> {
+  const enoent = await erroDe(() => readFile(`${RAIZ}nao-existe/arquivo-privado-j571.csv`));
+  return [
+    ["ENOENT real, com o caminho", enoent],
+    [
+      "S3 NoSuchKey, com o bucket",
+      Object.assign(new Error("The specified key does not exist. Bucket: bucket-privado-j571"), {
+        name: "NoSuchKey",
+        $fault: "client",
+        $metadata: { httpStatusCode: 404 },
+      }),
+    ],
+    ["Redis NOAUTH", new RedisCommandError("NOAUTH Authentication required.")],
+    [
+      "pg 23505 com o e-mail",
+      Object.assign(new Error('duplicate key value violates unique constraint "users_email_key" (email)=(dono-j571@exemplo.com)'), {
+        code: "23505",
+        severity: "ERROR",
+      }),
+    ],
+  ];
+}
+
+function conferirOpacoFixo(rotulo: string, saida: unknown) {
+  conferirRejeitadaFixa(rotulo, saida);
+  const texto = JSON.stringify(saida);
+  for (const proibido of PROIBIDOS_OPACOS) assert.equal(texto.includes(proibido), false, `${rotulo}: ${proibido} em ${texto.slice(0, 400)}`);
+}
+
+async function syncVistoria(erro: () => unknown) {
+  return syncMobileChecklistActions(
+    ator(["manager"], ["checklist_runs:complete", "checklist_runs:update", "checklist_runs:create"]),
+    {
+      client_batch_id: randomUUID(),
+      actions: [{ client_action_id: randomUUID(), type: "checklist.complete", payload: { run_id: randomUUID() }, local_created_at: AGORA }],
+    },
+    async () => servicoQueLanca(erro) as never,
+  );
+}
+
+async function syncEvidencia(erro: () => unknown) {
+  return syncMobileEvidenceActions(
+    ator(["manager"], ["work_orders:update"]),
+    {
+      client_batch_id: randomUUID(),
+      actions: [
+        {
+          client_evidence_id: randomUUID(),
+          type: "evidence.work_order_photo",
+          payload: { work_order_id: randomUUID() },
+          local_created_at: AGORA,
+        },
+      ],
+    },
+    async () => servicoQueLanca(erro) as never,
+  );
+}
+
+/** O ramo genérico do sync de estoque, como no H4d: o `quantity` lança na 2ª leitura. */
+async function syncEstoque(erro: () => unknown) {
+  const nunca = servicoQueLanca(() => new Error("o serviço não deveria ser chamado"));
+  const payload: Record<string, unknown> = { item_id: "itm-h4g", warehouse_id: "wh-h4g", sku: "ELE-0102" };
+  let leituras = 0;
+  Object.defineProperty(payload, "quantity", {
+    enumerable: true,
+    get() {
+      leituras += 1;
+      if (leituras <= 1) return 1;
+      throw erro();
+    },
+  });
+  const saida = await syncMobileInventoryActions(
+    ator(["inventory"], ["inventory.read", "inventory.manage"]),
+    { client_batch_id: randomUUID(), actions: [{ client_action_id: randomUUID(), type: "inventory.reserve", local_created_at: AGORA, payload }] },
+    { inventory: nunca as never, workOrders: nunca as never, workOrdersModuleEnabled: async () => true },
+  );
+  assert.ok(leituras >= 2, `o caminho não chegou à 2ª leitura do quantity (${leituras})`);
+  return saida;
+}
+
+test("H4g os 4 syncs com erro opaco (arquivo, bucket, Redis e o pg com e-mail): rejected com a mensagem fixa", async () => {
+  const syncs = [
+    ["sync de OS", syncOrdemDeServico],
+    ["sync de vistoria", syncVistoria],
+    ["sync de evidência", syncEvidencia],
+    ["sync de estoque", syncEstoque],
+  ] as const;
+  for (const [rotuloDoErro, erro] of await errosOpacos()) {
+    for (const [rotuloDoSync, sincronizar] of syncs) {
+      conferirOpacoFixo(`${rotuloDoSync}, ${rotuloDoErro}`, await sincronizar(() => erro));
+    }
+  }
+});
+
 test("H4f material do sync de estoque com serviço que lança P1001: o lote lança 500 fixo, e o log tem 0 sentinela", () => {
   const filho = spawnSync(process.execPath, ["--import", "tsx", "tests/fixtures/sec-log-h4f-material.mts"], {
     cwd: RAIZ,
@@ -527,6 +625,19 @@ test("H8b sanitizeCloudCostAllocationError: P1001 vira a mensagem fixa do módul
 
 test("H8c sanitizeErrorMessage (AWS CUR): P1001 vira a mensagem fixa do módulo; domínio passa; Bearer e AKIA redigidos", () => {
   conferirFuncaoDeCusto("AWS CUR", sanitizeErrorMessage, "AWS CUR import failed.");
+});
+
+test("H8h os 3 custos de nuvem com erro opaco (arquivo, bucket, Redis e o pg com e-mail): a mensagem fixa do módulo", async () => {
+  const funcoes = [
+    ["cobrança", sanitizeCloudChargeError, "Cloud charge calculation failed."],
+    ["rateio", sanitizeCloudCostAllocationError, "Cloud cost allocation failed."],
+    ["AWS CUR", sanitizeErrorMessage, "AWS CUR import failed."],
+  ] as const;
+  for (const [rotuloDoErro, erro] of await errosOpacos()) {
+    for (const [rotulo, sanear, mensagemFixa] of funcoes) {
+      assert.equal(sanear(erro), mensagemFixa, `${rotulo}, ${rotuloDoErro}`);
+    }
+  }
 });
 
 test("H8d publicStoredError: texto antigo de driver vira a mensagem fixa; undefined e null voltam como vieram; domínio passa", () => {
