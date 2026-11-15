@@ -6,7 +6,7 @@
 // O serviço de grupos recebe o diretório de organizações (`GroupTenantDirectory`, F5b) e o montador da trilha do vínculo
 // (`membershipAuditBuilder`, pela allowlist): a F6 monta os dois aqui.
 
-import pino from "pino";
+import { createLogger } from "../../../infra/logging/logger.js";
 
 import { env } from "../../../config/env.js";
 import { createDefaultCloudCostAllocationService } from "../../cloud-cost-allocation/index.js";
@@ -46,7 +46,7 @@ export type OverviewRuntime = {
   readonly logger: OverviewLogger;
 };
 
-const defaultLogger: OverviewLogger = pino({ level: env.LOG_LEVEL });
+const defaultLogger: OverviewLogger = createLogger();
 
 let memoryFxRates = new InMemoryFxRatesRepository();
 let memoryGroups = new InMemoryEconomicGroupsRepository();
