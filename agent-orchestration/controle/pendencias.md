@@ -519,7 +519,7 @@
   com Postgres+Redis service containers + `prisma migrate deploy`.
 - impacto: cobertura e2e não bloqueia merge até haver staging no ar.
 - acao: promover o Playwright e2e para job bloqueante rodando CONTRA o staging na trilha Ω-INFRA-2 (PR 5).
-- status: aberto (planejado p/ Ω-INFRA-2)
+- status: FECHADA ao entrar na `main` com o PR do `B-SAN3-10-E2E-CI` (item 42, ramo `feat/e2e-ci-42`): o job `e2e` do `.github/workflows/ci.yml` roda em todo PR e todo push, sem `if:` no job, e o `docker` o espera (P2, `D-CI-DOCKER-ESPERA-E2E`). Prova na CI: rodada `43676487975`, tentativa 1, `e2e-guard: suite preparo=1 chromium=13 expected=14 unexpected=0 flaky=0 skipped=0`; o vermelho-controle M1, M7 e M8 e as rodadas verdes estão listados no PR e em `docs/revisoes/SAN3/B-SAN3-10-E2E-CI-dev.md`. O e2e roda na própria CI, contra a API e a web compiladas com Postgres e Redis de serviço, e não contra um staging. Antes: aberto (planejado p/ Ω-INFRA-2).
 
 - ATUALIZACAO (Ω-INFRA-2, 2026-07-14): o CD de staging (deploy-staging.yml + smoke-staging.mjs) foi ENTREGUE
   como config-as-code (gated por STAGING_DEPLOY_ENABLED). O Playwright e2e bloqueante roda contra o staging APOS a
@@ -9661,7 +9661,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-SAN3-01-E2E-LOGIN-DEFASADO (2026-09-17) — os 13 casos do e2e rastreado morrem no login: o arnês procura o campo "Tenant ID", que saiu do formulário em 2026-07-02 — ALTA
 
-- status: ABERTA (achada pelo orquestrador ao rodar o e2e do `B-SAN3-01` contra back e front reais em 2026-09-17; forma da falha re-medida e registrada pela 3ª instância do dev do bloco em 2026-09-18; fora do §6.4 do plano do bloco, que mantém os auxiliares de login intactos — reportada, não consertada; cruzada no ciclo 2 com C2-N6 e A-C1-06 da junta do ciclo 1, que re-mediram 13 failed · 0 passed)
+- status: FECHADA ao entrar na `main` com o PR do `B-SAN3-10-E2E-CI` (item 42): os 13 testes passam no formulário de hoje, com o login por um auxiliar só (`tests/e2e/apoio/sessao.ts`, `entrarPelaTela`) e uma sessão salva por persona, e o `tsc` avulso da spec dá 0 erro (os 2 TS2322 saíram com a fábrica `createPrismaClient`). O teste de encerramento abaixo foi cumprido: 14 passed (13 + o preparo), na CI e local, com o E2 afirmando o digitado preservado; o job `e2e` do `.github/workflows/ci.yml` roda em todo PR e todo push, sem `if:` no job, e o `docker` o espera (P2, `D-CI-DOCKER-ESPERA-E2E`). Prova na CI: rodada `43676487975`, tentativa 1, `e2e-guard: suite preparo=1 chromium=13 expected=14 unexpected=0 flaky=0 skipped=0`; o vermelho-controle M1, M7 e M8 e as rodadas verdes estão listados no PR e em `docs/revisoes/SAN3/B-SAN3-10-E2E-CI-dev.md`. Antes: ABERTA (achada pelo orquestrador ao rodar o e2e do `B-SAN3-01` contra back e front reais em 2026-09-17; forma da falha re-medida e registrada pela 3ª instância do dev do bloco em 2026-09-18; fora do §6.4 do plano do bloco, que mantém os auxiliares de login intactos — reportada, não consertada; cruzada no ciclo 2 com C2-N6 e A-C1-06 da junta do ciclo 1, que re-mediram 13 failed · 0 passed)
 - **prova:** execução real, uma rodada, em cluster Postgres descartável (`bsan301-pg`, `npm run db:seed` aplicado, `CORE_SAAS_PERSISTENCE=prisma`, API na 3299 e web na 5199): `npx playwright test -c playwright.config.ts tests/e2e/critical-flows.spec.ts --reporter=list` → **13 failed · 0 passed** (N = 13), cada caso em 45 s (o timeout de teste): 12× `locator.fill: Test timeout of 45000ms exceeded … waiting for getByLabel('Tenant ID')` e 1× (o do admin da plataforma) `page.waitForResponse: Test timeout` com o mesmo `getByLabel('Tenant ID')` pendente em `loginAsPlatformAdmin`. Os três pontos do arquivo (numeração do head do PR do `B-SAN3-01`, já com o conserto do E2): l.96 (caso "login real…"), `loginAsTenantAdmin` l.437 e `loginAsPlatformAdmin` l.446 (l.434 e l.443 em `6ae71c0e`). Causa: `d5a4ed43` (#111, 2026-07-02, "feat(web): fidelidade visual — lote Plataforma + Login") removeu `<Input label="Tenant ID" …/>` de `frontend/src/pages/LoginPage.tsx`; hoje `grep -rn "Tenant ID" frontend/src` → 0. Os auxiliares têm mais defasagens, medidas por leitura e grep, que o dono do conserto precisa ver juntas: o rótulo "E-mail corporativo" (`LoginPage.tsx:98`) não está associado ao `<input>` (l.99 — sem `htmlFor` e fora do `<label>`), então `getByLabel("E-mail corporativo")` (l.97, l.438, l.447) não casaria; o título "Definir tenant, filial e papel ativo" e o botão "Ativar contexto" de `activateFirstContext` (l.454-455) não existem mais em `frontend/src` (grep → 0; a seleção de contexto hoje é o botão "Acessar →", `ContextSelectionPage.tsx:126`). A mensagem "Tenant, e-mail ou senha invalidos." esperada na l.100 ainda existe (`frontend/src/modules/auth/auth.adapter.ts:209`). Contraprova de que o produto está certo e o arnês não: a cópia avulsa do `B-SAN3-01` (E1-E3 idênticos ao rastreado, login pelos `placeholder` do formulário atual + "Acessar") passou **3/3** no mesmo terreno.
 - **nota (tipos):** um `tsc` ad hoc do arquivo (`npx tsc --noEmit --skipLibCheck --strict --module esnext --moduleResolution bundler --target es2022 --types node tests/e2e/critical-flows.spec.ts`) dá exatamente 2 erros, ambos TS2322 em `upsertChecklistComponent`: l.556 (`create`) e l.569 (`update.config`) — `config: Record<string, unknown>` × `InputJsonValue` do Prisma (l.553 e l.566 em `6ae71c0e`, anotados pela 2ª instância do dev do `B-SAN3-01`). Não impedem a execução (o Playwright transpila sem checar tipos) e o projeto não tipa `tests/e2e/**`; entram aqui porque o mesmo dono liga o e2e na CI.
 - **escopo:** `pre-existente` — o login defasado nasceu em `d5a4ed43` (2026-07-02), dois meses e meio antes do bloco, e o tipo de `config` em `69c6e182` (2026-06-08, "feat: harden checklist web runtime"); o e2e não roda na CI (`.github/workflows/ci.yml` sem job e2e — item 42 do plano SAN3), por isso ninguém viu; o `B-SAN3-01` trocou só o caso "com fallback seguro" por E1-E3, e o §6.4 do plano dele manda manter os auxiliares intactos.
@@ -10650,7 +10650,7 @@ Medido pelo revisor independente (`votos/B-SAN3-11/REVISAO-ciclo3.md`, A-2 e A-3
 
 ## P-SAN3-06B-E2E-PLATAFORMA-DEFASADO (2026-10-09) — cenário Playwright espera console antigo — BAIXA
 
-- status: ABERTA.
+- status: FECHADA ao entrar na `main` com o PR do `B-SAN3-10-E2E-CI` (item 42): o teste 9 foi reescrito pela tabela do §4.2 do plano v2 (o administrador da plataforma entra, a tela Organizações carrega com 200 da API de plataforma, o menu mostra os 4 itens da lista fixa e ele navega ao Cloud Billing); a propriedade "o menu do console vem do servidor" saiu do teste e ficou na `P-WEB-PLATAFORMA-MENU-FIXO`. Antes: ABERTA.
 - **prova:** `critical-flows.spec.ts` ainda espera menu remoto e rótulos técnicos antigos; `tests/e2e/**` estava fora do escopo desta entrega.
 - **dono:** `B-SAN3-10`.
 - **bloqueia:** não.
@@ -12671,6 +12671,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **acoplamento:** o e2e `tests/e2e/critical-flows.spec.ts` espera essa mensagem (l.100; a entrada do `B-SAN3-10` sobre os auxiliares de login defasados, nesta mesma `pendencias.md`, já a cita). Trocar o texto exige ajustar a expectativa no mesmo PR, ou deixar o acoplamento escrito para o `B-SAN3-10`.
 - **leitura do redator, declarada (§A6):** a severidade, o dono e o PR-alvo são do redator deste registro. Corrige-se numa linha.
 - **encerramento:** a mensagem usa "organização" (ou omite o termo), e um teste do front afirma a mensagem nova.
+- **acoplamento atualizado (2026-11-15, `B-SAN3-10-E2E-CI`):** o teste 1 do e2e afirma `/e-mail ou senha inválidos/i` e não depende mais da palavra "Tenant". Trocar o texto não quebra o e2e se ele mantiver "e-mail ou senha inválidos".
 
 ## P-FRONT-SMOKE-ACOES-DESPACHO-VACUO (2026-11-03) — a asserção `doesNotMatch(/Acoes do despacho/)` nunca falha — BAIXA
 
@@ -15731,6 +15732,52 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** o achado CROT-565-01 da cadeira C-ROT da J-565 (`crot-10bseed-cl`, APROVA com 1 não grave), mandado a registro pela junta, que fechou por unanimidade às 13:45 SP.
 - **N e forma (medido pela C-ROT no objeto `ba3e641f`):** a regra de e-mail do C11 (plano v2 §6.4: "E-mail fora de @exemplo.invalid: 0"), aplicada à letra às linhas acrescentadas, dá 1, e não 0. É o caso de URL de banco recusada do C2b, cujo usuário fica no subdomínio `db.exemplo.invalid` (`tests/demo-isolado-alvo.test.ts:86`), que o próprio plano exige (§6.2 C2b e §6.3 V6). Não é e-mail real nem conteúdo privado: é um subdomínio do TLD reservado `.invalid`, e o dev já o declarou no PR.
 - **critério de encerramento:** a letra do C11 e a do C2b deixam de se contradizer (uma emenda do bloco diz qual vale, por exemplo o C11 aceitando subdomínio de `exemplo.invalid`), e o comando do C11 dá 0 no diff do bloco.
+
+## P-SAN3-10-E2E-PERSONAS (2026-11-15) — os fluxos web por persona da parte (b) do `B-SAN3-10` não têm e2e — ALTA
+
+- **status:** ABERTA · **gravidade:** ALTA (o portão) · **escopo:** `pre-existente` (a parte (b) da linha do `B-SAN3-10` no `PLANO_SAN3.md`; o `B-SAN3-10-E2E-CI` fecha só a parte (a), pela P3 do plano v2) · **dono:** `B-SAN3-10-E2E-PERSONAS` (plano de topo próprio) · **bloqueia:** **o portão da versão vendável**.
+- **origem:** o §11 do plano v2 do item 42, P3 respondida pela recomendação (`D-DONO-1311-RECOMENDACOES`).
+- **N e forma:** os 13 testes do e2e usam 2 atores da semente (o administrador da organização demo e o administrador da plataforma). Não há e2e do técnico de campo, do financeiro, do estoque nem dos outros papéis da `RBAC_MATRIX.md`.
+- **critério de encerramento:** um e2e por persona do portão, no job `e2e`, com o número preso atualizado e o vermelho-controle de cada um.
+
+## P-WEB-PLATAFORMA-MENU-FIXO (2026-11-15) — o console da plataforma não pede o menu ao servidor; o e2e deixou de afirmar essa propriedade — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a permissão de cada rota segue decidida no servidor) · **escopo:** `pre-existente` (desde o #111, `d5a4ed43`, 2026-07-02) · **dono:** o orquestrador, que leva a P8 ao dono · **bloqueia:** não.
+- **origem:** a crítica r1 (C4) e a V8 do plano v2 do item 42; a P8 respondida pela recomendação ("fica como está neste bloco").
+- **N e forma:** só o `AppShell` (a organização) chama `useNavigationMenu`. O console mostra uma lista fixa de 4 itens, `PLATFORM_NAV` em `frontend/src/layouts/PlatformLayout.tsx:35-50` (Visão Geral, Organizações, Cloud Billing, Saúde do Sistema). Medido pelo dev do item 42: a lista que a V8 cita, `frontend/src/navigation/platformNavigation.ts`, só serve ao `navigation.mock.ts`. O teste 9 do e2e afirma o que é verdade hoje (os 4 itens, a tela Organizações com 200 da API de plataforma, a navegação ao Cloud Billing).
+- **critério de encerramento:** o dono diz se o menu fixo é de propósito; se não for, o console passa a pedir o menu ao servidor e o teste 9 volta a afirmar isso.
+
+## P-E2E-OS-LISTA-VAZIA (2026-11-15) — o estado "lista de OS vazia" saiu do e2e — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` (decisão do plano v2, §4 teste 6) · **dono:** `B-SAN3-10-E2E-PERSONAS` · **bloqueia:** não.
+- **N e forma:** o E1 garante uma OS antes de listar e afirma a lista cheia. Num banco novo, antes, ele caía no ramo vazio e nunca comparava a lista com a API.
+- **critério de encerramento:** conferir se o smoke do frontend cobre o estado vazio da lista de OS; se não cobrir, um teste o cobre.
+
+## P-E2E-DESPACHOS-SEM-TECNICO (2026-11-15) — a semente não tem técnico de campo, então a lista real de despachos do e2e é sempre vazia — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a semente; `prisma/seed.ts` é PROIBIDO no bloco do item 42) · **dono:** o próximo bloco que mexer na semente do e2e (ratificação do orquestrador, 2026-11-15) · **bloqueia:** não.
+- **origem:** fato novo do dev da F3 do item 42 (`dev-42-cl`), declarado no diário do bloco; confirmado pela pré-revisão `prerev-575-cl` (observação O1: 2 usuários, nenhum técnico, `field_dispatches` = 0).
+- **ratificação (orquestrador, 2026-11-15):** a cobertura do teste 5 é só a da lista vazia, ratificada pelo orquestrador. A semente não muda no `B-SAN3-10-E2E-CI`.
+- **N e forma:** a semente tem 2 usuários (o administrador demo e o da plataforma). O despacho exige um técnico de campo como alvo (`FIELD_DISPATCH_TARGET_ROLES`, `src/modules/field-dispatch/field-dispatch.types.ts:39`; o 422 `target_not_field_technician`). O teste 5 afirma que as linhas e o indicador "Total" são o que a API devolveu e que a busca filtra até 0 e volta; com a lista vazia, "a busca filtra" só prova que não inventa linha.
+- **critério de encerramento:** com a persona do técnico, o teste 5 cria um despacho pela tela ("Novo despacho") e prova a busca com lista cheia (N → 1 → 0 → N).
+
+## P-E2E-RODA-COMO-SUPERUSUARIO (2026-11-15) — o e2e usa o superusuário do banco — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a suíte de backend cobre o RLS) · **escopo:** `dentro-do-bloco` (declarado no §9 do plano v2) · **dono:** `B-SAN3-10-E2E-PERSONAS` · **bloqueia:** não.
+- **N e forma:** o job `e2e` sobe a API com o `postgres` do serviço da CI; o isolamento por organização no banco não é exercido pelo e2e.
+- **critério de encerramento:** o job `e2e` roda a API com o papel de runtime sem bypass (o do `B-SAN3-05`), ou a decisão de não fazê-lo fica escrita.
+
+## P-E2E-SEM-ARTEFATO-DE-FALHA (2026-11-15) — na falha, o job `e2e` imprime o retrato da página e não guarda o rastro — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `dentro-do-bloco` (§3.1 do plano v2: nenhum artefato, para a sessão salva não sair do runner) · **dono:** o orquestrador, depois do portão · **bloqueia:** não.
+- **N e forma:** o passo "Diagnóstico (só na falha)" imprime só os `test-results/artefatos/**/error-context.md`.
+- **critério de encerramento:** um artefato de falha que exclua `test-results/.auth/**`, com prova de que a sessão não sai, ou a decisão de não ter artefato fica escrita.
+
+## P-CI-SEM-PROTECAO-DE-BRANCH (2026-11-15) — a `main` não exige check nenhum — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** `pre-existente` · **dono:** o dono (configuração do GitHub) · **bloqueia:** não.
+- **origem:** a P6 do plano v2 do item 42, respondida pela recomendação: proteção de branch com os checks exigidos, **depois de 5 rodadas verdes seguidas do `e2e` na `main`**.
+- **critério de encerramento:** a `main` exige os checks (com o `e2e` entre eles), configurada pelo dono.
 
 ## P-ASS10B-TROCA-DE-GRUPO-ATOMICA (2026-11-14) — trocar uma organização de grupo pede duas escritas, e o conjunto de membros não tem versão — MÉDIA
 
