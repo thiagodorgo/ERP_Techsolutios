@@ -22,7 +22,7 @@ import {
 } from "./outbox.types.js";
 
 /** A política de elegibilidade do claim (R-OBX-5): pura, decidida pelo dispatcher (`chargeCreateClaimVerdict`). */
-export type ClaimVerdictFn = (row: BillingOutboxRow, statement: StatementClaimSnapshot | undefined) => ClaimVerdict;
+export type ClaimVerdictFn = (row: BillingOutboxRow, statement: StatementClaimSnapshot | undefined, now: Date) => ClaimVerdict;
 
 export type ClaimParams = {
   readonly enabledProviders: readonly string[];
@@ -307,7 +307,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
 
     // PENDING: relê o demonstrativo NA MESMA seção crítica do claim e aplica a política (R-OBX-5).
     const snapshot = target.kind === "charge_create" ? await this.#readSnapshot(target) : undefined;
-    const verdict = params.verdict(target, snapshot);
+    const verdict = params.verdict(target, snapshot, params.now);
     if (verdict.kind === "skip") {
       // Sem `attempts`, sem `claimed_*`: a linha não foi tentada — foi descartada pela política.
       const skipped: BillingOutboxRow = { ...target, status: "SKIPPED", skipReason: verdict.skipReason, nextAttemptAt: null, updatedAt: params.now };
@@ -351,7 +351,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
         row.kind === "charge_create" &&
         (row.status === "PENDING" || row.status === "PROCESSING" || row.status === "SENT" || row.status === "NEEDS_REVIEW"),
     );
-    return { status: read.status, reopenedAt: read.reopenedAt, hasLiveCharge: (read.hasLiveCharge ?? false) || liveInQueue };
+    return { status: read.status, reopenedAt: read.reopenedAt, hasLiveCharge: (read.hasLiveCharge ?? false) || liveInQueue, ...(read.paidCents !== undefined ? { paidCents: read.paidCents } : {}) };
   }
 
   async markSent(tenantId: string, id: string, externalId: string | null, now: Date, lease: OutboxLease): Promise<boolean> {

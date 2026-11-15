@@ -28,6 +28,7 @@ import {
   INVOICE_DEFER_MS,
   OUTBOX_MAX_ATTEMPTS,
   OUTBOX_ORPHAN_MS,
+  STALE_REENABLE_MS,
   type BillingOutboxRow,
   type ClaimVerdict,
   type OutboxKind,
@@ -111,7 +112,7 @@ function errorCode(error: unknown): string {
  * `dispatchOne`, como hoje). A órfã (PROCESSING) não passa por aqui: a recuperação só reconsulta por referência e nunca
  * cria cobrança — marcá-la SKIPPED esconderia uma cobrança que já existe no provedor (E3).
  */
-export function chargeCreateClaimVerdict(row: BillingOutboxRow, statement: StatementClaimSnapshot | undefined): ClaimVerdict {
+export function chargeCreateClaimVerdict(row: BillingOutboxRow, statement: StatementClaimSnapshot | undefined, now: Date): ClaimVerdict {
   if (row.kind !== "charge_create") return { kind: "eligible" };
   if (!statement) return { kind: "needs_review", code: "statement_not_found" };
   if (statement.status === "paid") return { kind: "skip", skipReason: "statement_paid" };
@@ -123,6 +124,15 @@ export function chargeCreateClaimVerdict(row: BillingOutboxRow, statement: State
     return { kind: "skip", skipReason: "statement_reopened" };
   }
   if (statement.hasLiveCharge) return { kind: "needs_review", code: "charge_already_exists" };
+  // B-ASS-08c1c (Q4 (a), §9 D-9): a linha que ainda NÃO virou cobrança e chega depois de um pagamento parcial não sai com o
+  // valor cheio — a mesma recusa do CHARGE-PARTIAL e do RETRY-PARTIAL do 08c1b. Leitor sem `paidCents` = sem pagamento.
+  if (statement.status === "closed" && (statement.paidCents ?? 0) > 0) return { kind: "needs_review", code: "statement_partially_paid" }; // [CLAIM-PARTIAL]
+  // B-ASS-08c1c (Q1b (a), Emenda 1 §3): parada há mais de 7 dias → conferência, sem rede, qualquer que seja o `skip_reason`.
+  // A linha reaberta pelo operador conta os 7 dias da decisão dele (o `next_attempt_at` do retry). DEPOIS das regras acima: o
+  // que não está mais em aberto é pulado antes ("conferindo se ainda está em aberto").
+  const operatorReopened = row.attempts === 0 && row.lastError !== null && row.nextAttemptAt !== null; // [STALE-OPERATOR]
+  const staleSince = operatorReopened && row.nextAttemptAt ? row.nextAttemptAt : row.occurredAt; // [STALE-SINCE]
+  if (now.getTime() - staleSince.getTime() > STALE_REENABLE_MS) return { kind: "needs_review", code: "stale_on_reenable" }; // [STALE-REENABLE]
   return { kind: "eligible" };
 }
 

@@ -362,7 +362,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
             //     cobrança viva, com a irmã viva = o conjunto do D1 (PENDING/PROCESSING/SENT/NEEDS_REVIEW), e aplica a
             //     política injetada (R-OBX-5).
             const statements = (await tx.$queryRawUnsafe(
-              `SELECT s.status, s.reopened_at,
+              `SELECT s.status, s.reopened_at, round(s.paid_amount * 100)::bigint AS paid_cents,
                       ( EXISTS (SELECT 1 FROM subscription_statement_charges c
                                  WHERE c.statement_id = s.id AND c.status IN ('pending', 'confirmed'))
                         OR EXISTS (SELECT 1 FROM billing_outbox o2
@@ -372,12 +372,12 @@ export class PrismaOutboxRepository implements OutboxRepository {
                  WHERE s.id = $1::uuid`,
               target.statementId,
               target.id,
-            )) as Array<{ status: string; reopened_at: Date | null; has_live_charge: boolean }>;
+            )) as Array<{ status: string; reopened_at: Date | null; paid_cents: bigint | number | string; has_live_charge: boolean }>;
             const statement = statements[0];
             const snapshot: StatementClaimSnapshot | undefined = statement
-              ? { status: statement.status as StatementClaimSnapshot["status"], reopenedAt: statement.reopened_at, hasLiveCharge: statement.has_live_charge }
+              ? { status: statement.status as StatementClaimSnapshot["status"], reopenedAt: statement.reopened_at, hasLiveCharge: statement.has_live_charge, paidCents: Number(statement.paid_cents) }
               : undefined;
-            verdict = params.verdict(target, snapshot);
+            verdict = params.verdict(target, snapshot, params.now);
           } else {
             // (4) PENDING dos outros tipos (`invoice_*` da 08b): pick próprio, sem trava do demonstrativo e sem releitura
             //     (a política os deixa `eligible`, como antes).
@@ -393,7 +393,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
             )) as Row[];
             if (others.length === 0) return null;
             target = toDomain(others[0]!);
-            verdict = params.verdict(target, undefined);
+            verdict = params.verdict(target, undefined, params.now);
           }
         }
 

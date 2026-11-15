@@ -30,11 +30,13 @@ export type StatementClaimSnapshot = {
   readonly status: StatementStatus;
   readonly reopenedAt: Date | null;
   readonly hasLiveCharge: boolean;
+  /** B-ASS-08c1c (o marcador CLAIM-PARTIAL): o já pago em centavos; ausente conta como "sem pagamento". */
+  readonly paidCents?: number;
 };
 
 /** Motivos de `NEEDS_REVIEW` decididos no claim (E3 do conserto J-522): vão em `last_error` — a lista de `skip_reason`
  * da M5 (`billing_outbox_skip_reason_check`) é fechada e `prisma/**` não muda. */
-export type ClaimNeedsReviewCode = "charge_already_exists" | "statement_not_found";
+export type ClaimNeedsReviewCode = "charge_already_exists" | "statement_not_found" | "stale_on_reenable" | "statement_partially_paid";
 
 /** Veredito da política de elegibilidade aplicada no claim (R-OBX-5). Puro, sem rede. */
 export type ClaimVerdict =
@@ -90,6 +92,9 @@ export const OUTBOX_BACKOFF_MINUTES = [1, 5, 15, 60] as const;
 export const OUTBOX_MAX_ATTEMPTS = 8;
 /** Uma linha PROCESSING parada por mais que isto é órfã de crash (G8): reconsulta antes de repetir. */
 export const OUTBOX_ORPHAN_MS = 10 * 60 * 1000;
+/** B-ASS-08c1c (Q1b (a), Emenda 1 §3): a `charge_create` PENDING parada há mais que isto vai à conferência no claim
+ * (`stale_on_reenable`), sem rede — nada é cobrado em massa ao religar o canal. */
+export const STALE_REENABLE_MS = 7 * 24 * 60 * 60 * 1000;
 /** Conserto da J-530 (C): o `invoice_cancel` de uma nota ainda pendente é ADIADO por isto, sem gastar tentativa, até a
  * reconsulta decidir a nota. */
 export const INVOICE_DEFER_MS = 15 * 60 * 1000;
