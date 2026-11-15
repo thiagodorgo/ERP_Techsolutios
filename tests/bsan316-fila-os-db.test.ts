@@ -16,7 +16,7 @@ import { buildApplicationName, withApplicationName } from "./helpers/pg-barrier.
 // D4 · o aviso a quem atribuiu a OS: reenvio com recibo zerado deixa 1 linha em `notifications` (chave durável).
 //
 // O serviço roda por papéis efêmeros NOSUPERUSER/NOBYPASSRLS, conectados pela fábrica `createPrismaClient` (o fuso
-// UTC do #554, sem `new PrismaPg(` neste arquivo, G3); o admin só semeia, observa e limpa. A fila de Aprovações fica em
+// UTC do #554: nenhum construtor do adaptador escrito neste arquivo, catraca G3); o admin só semeia, observa e limpa. A fila de Aprovações fica em
 // memória (é o item 67): aqui ela só precisa existir. Sem DATABASE_URL a suíte declara o pulo, e o guarda de zero pulos
 // do job `backend-postgres` a pune.
 
