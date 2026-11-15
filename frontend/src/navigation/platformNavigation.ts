@@ -38,11 +38,7 @@ export const platformNavigation: NavigationItem[] = [
     path: "/platform/cloud-billing",
     scope: "platform",
     mode: "platform",
-    requiredPermissions: [
-      "platform:cloud-usage:read",
-      "platform:cloud-costs:read",
-      "platform:cloud-cost-allocation:read",
-    ],
+    requiredPermissions: ["platform:cloud-cost-allocation:read", "platform:billing:read"],
     allowedRoles: ["Super Admin"],
     icon: "platform-cloud-billing",
   },

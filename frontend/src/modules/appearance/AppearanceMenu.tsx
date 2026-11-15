@@ -2,7 +2,7 @@ import { Check, Palette } from "lucide-react";
 import type { CSSProperties, KeyboardEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { APPEARANCE_SCREENS, type AppearanceScreen } from "./appearance.registry";
+import { appearanceScreensFor, type AppearanceScope, type AppearanceScreen } from "./appearance.registry";
 import { defaultAppearanceFor } from "./appearance.storage";
 import { useScreenAppearance } from "./useScreenAppearance";
 
@@ -53,7 +53,9 @@ const itemStyle: CSSProperties = {
 };
 const badgeStyle: CSSProperties = { marginLeft: "auto", fontSize: 10.5, fontWeight: 700, color: "#64748B" };
 
-export function AppearanceMenu({ triggerStyle }: { readonly triggerStyle?: CSSProperties }) {
+// B-ASS-10b (T5) — `scope` (padrão "tenant"): o shell da organização lista as telas da organização; o console da plataforma
+// (`PlatformLayout`) monta `scope="platform"` e lista só as telas dele. O usuário de organização não vê "Cloud Billing".
+export function AppearanceMenu({ triggerStyle, scope = "tenant" }: { readonly triggerStyle?: CSSProperties; readonly scope?: AppearanceScope }) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -103,7 +105,7 @@ export function AppearanceMenu({ triggerStyle }: { readonly triggerStyle?: CSSPr
         <>
           <button type="button" aria-hidden="true" tabIndex={-1} style={overlayStyle} onClick={() => setOpen(false)} />
           <div ref={panelRef} role="menu" aria-label="Aparência das telas" style={APPEARANCE_PANEL_STYLE} onKeyDown={onPanelKeyDown}>
-            <AppearanceChoices onChosen={closeAndReturnFocus} />
+            <AppearanceChoices onChosen={closeAndReturnFocus} scope={scope} />
           </div>
         </>
       ) : null}
@@ -111,13 +113,13 @@ export function AppearanceMenu({ triggerStyle }: { readonly triggerStyle?: CSSPr
   );
 }
 
-/** Conteúdo do menu: uma escolha por tela que já tem as 3 aparências. */
-export function AppearanceChoices({ onChosen }: { readonly onChosen: () => void }) {
+/** Conteúdo do menu: uma escolha por tela que já tem as 3 aparências, só as do escopo pedido. */
+export function AppearanceChoices({ onChosen, scope = "tenant" }: { readonly onChosen: () => void; readonly scope?: AppearanceScope }) {
   return (
     <>
       <div style={titleStyle}>Aparência</div>
-      <div style={noteStyle}>Escolha pessoal: vale só para você, nesta organização e neste navegador.</div>
-      {APPEARANCE_SCREENS.map((screen) => (
+      <div style={noteStyle}>{scope === "platform" ? "Escolha pessoal: vale só para você, no console da plataforma e neste navegador." : "Escolha pessoal: vale só para você, nesta organização e neste navegador."}</div>
+      {appearanceScreensFor(scope).map((screen) => (
         <AppearanceScreenGroup key={screen.key} screen={screen} onChosen={onChosen} />
       ))}
     </>

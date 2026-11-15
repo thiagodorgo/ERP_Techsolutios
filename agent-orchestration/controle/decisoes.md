@@ -5426,3 +5426,9 @@ lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`.
 - **Leitura do planejador, declarada (§A6):** a recomendação 4 da Emenda 1 ("o item 62 fecha com a tela, sem esperar a retirada") foi retirada pela Emenda 1.1 (§1.2), porque fecharia o item da P12 com a P12 violada no servidor. Ela nunca foi registrada no repositório, então não há registro a desfazer. O dono pode dizer o contrário a qualquer hora.
 - **Fica para o PR da Parte T:** a fala do dono na PA-1 (a maquete das 3 aparências, ID proposto `D-ASS11-MAQUETE-APROVADA`) e as respostas 5 e 6 da Emenda 1, com a marca de leitura.
 - **Comando do bloco:** `agent-orchestration/codex/comandos/B-ASS-11b-cliente-sem-tendencia.md`.
+
+## D-DONO-1411-T5-TRES-OPCOES · complemento do B-ASS-10b (2026-11-14) — o texto do §16 do plano v2 da T5
+
+Complementa a entrada de mesmo ID acima (gravada pelo registro de 14/11, `reg-1411b-cl`), que vale como o registro da decisão; este é o texto que o plano v2 do `B-ASS-10b` deixou pronto, gravado pela F12 do bloco, mantido na união com a `main` (Emenda 1.1).
+
+O dono aprovou as 3 opções da tela de custo e margem da plataforma: *"aprovo as telas de custos"*. As três (A · Fiel à referência, B · Analítica, C · Fechamento e grupos) entram como aparências que cada usuário escolhe (`D-APARENCIA-POR-USUARIO`, `D-TELAS-SAEM-COM-TRES`); a referência é `screen-refs/platform-cloud-billing-3opcoes.reference.html`. **Seguem a recomendação, pela `D-DONO-1311-RECOMENDACOES` (não são fala própria):** a tela abre no último mês com rateio concluído; o "Uso medido" passa para o detalhe da organização. **Leituras do planejador, declaradas (§A6):** L1 a L11 do plano `plano-B-ASS-10b-T5-v2.md`; entre elas, "Mudar de grupo" restrito a uma escrita (a troca direta entre grupos espera o servidor) e o bloco em junta completa. O bloco é só a T5; a T4 fica no `B-ASS-10c`. Registrada pela F12 do `B-ASS-10b` (`dev-10b-a-cl`), com o texto pronto do §16 do plano v2.
