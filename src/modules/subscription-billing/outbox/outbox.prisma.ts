@@ -262,6 +262,18 @@ export async function writeOutboxAuditInTx(
   });
 }
 
+/** B-ASS-08c1c (§9 D-4, o marcador REG-PAID): há pagamento do PROVEDOR desta cobrança no demonstrativo? Lido no `tx` do registro,
+ * com o demonstrativo já travado. */
+async function providerPaymentRecordedInTx(tx: Prisma.TransactionClient, statementId: string, provider: string, externalChargeId: string): Promise<boolean> {
+  const rows = (await tx.$queryRawUnsafe(
+    `SELECT 1 FROM subscription_statement_payments WHERE statement_id = $1::uuid AND source = $2 AND external_charge_id = $3 LIMIT 1`,
+    statementId,
+    provider,
+    externalChargeId,
+  )) as unknown[];
+  return rows.length > 0;
+}
+
 export const CLAIM_BUDGET = { maxWait: 5_000, timeout: 30_000, lockTimeoutMs: 5_000, statementTimeoutMs: 10_000 } as const;
 
 /** E5″ (2º conserto do #522, §14.2): a pick conjunta das PENDING `charge_create` — o demonstrativo e a linha numa instrução
@@ -494,12 +506,12 @@ export class PrismaOutboxRepository implements OutboxRepository {
     // [REG-TX] O demonstrativo vem PRIMEIRO; a rede já terminou antes de esta transação começar.
     return withTenantRlsBudget(this.client, tenantId, CLAIM_BUDGET, async (tx) => {
       const statements = (await tx.$queryRawUnsafe(
-        `SELECT id, tenant_id, status, total_amount, reopened_at
+        `SELECT id, tenant_id, status, total_amount, reopened_at, round(total_amount * 100)::bigint AS total_cents
            FROM subscription_statements
           WHERE id = $1::uuid
           FOR NO KEY UPDATE`,
         row.statementId,
-      )) as Array<{ id: string; tenant_id: string; status: string; total_amount: unknown; reopened_at: Date | null }>;
+      )) as Array<{ id: string; tenant_id: string; status: string; total_amount: unknown; reopened_at: Date | null; total_cents: bigint | number | string }>;
       const statement = statements[0];
       if (!statement) return false;
 
@@ -518,7 +530,10 @@ export class PrismaOutboxRepository implements OutboxRepository {
 
       const externalChargeId = outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId;
       const details = outcome.kind === "created" ? outcome.result : outcome.lookup;
-      const status = recordedChargeStatus(outcome.kind, details.status);
+      let recordedStatus = recordedChargeStatus(outcome.kind, details.status);
+      // B-ASS-08c1c (§9 D-4): o pagamento do provedor que chegou ANTES deste registro (o webhook pagou entre o `createCharge` e
+      // aqui) faz a cobrança nascer `confirmed`, não `pending` — dinheiro já recebido nunca fica sob cobrança aberta.
+      if (recordedStatus === "pending" && (await providerPaymentRecordedInTx(tx, statement.id, row.provider, externalChargeId))) recordedStatus = "confirmed"; // [REG-PAID]
       await tx.$executeRawUnsafe(
         `INSERT INTO subscription_statement_charges
            (tenant_id, statement_id, provider, external_charge_id, status, pay_url, pix_copy_paste, boleto_line, boleto_url, due_date, created_at)
@@ -528,7 +543,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
         statement.id,
         row.provider,
         externalChargeId,
-        status,
+        recordedStatus,
         details.payUrl ?? null,
         details.pixCopyPaste ?? null,
         details.boletoLine ?? null,
@@ -538,6 +553,17 @@ export class PrismaOutboxRepository implements OutboxRepository {
       );
       await this.scope.afterChargeInsert?.();
       await putRefInTx(tx, { statementId: statement.id, tenantId: statement.tenant_id, provider: row.provider, externalChargeId }, now);
+      // B-ASS-08c1c (A1, plano §4.4) — a RELEITURA no registro, com o demonstrativo travado no passo 1 (o registro espera a
+      // baixa, o cancelamento e o reopen): vigente = `closed`, o mesmo total e nenhuma reabertura depois da linha. Não vigente
+      // com a cobrança `pending` → o `charge_cancel` pelo MESMO núcleo do `charge/cancel` e da marcação imediata, no `tx`.
+      const vigente = statement.status === "closed" && Number(statement.total_cents) === Number(row.payload.amountCents) && !(statement.reopened_at !== null && statement.reopened_at.getTime() > row.occurredAt.getTime());
+      const cancelIt = !vigente && recordedStatus === "pending"; // [REG-REREAD]
+      if (cancelIt) {
+        const enqueued = await enqueueChargeCancelInTx({ listChargeLines: (id) => listByStatementInTx(tx, id), enqueue: (next, at) => enqueueInTx(tx, next, at) }, { tenantId: statement.tenant_id, statementId: statement.id, target: { id: row.id, provider: row.provider, externalId: externalChargeId }, now }); // [REREAD-ENQ]
+        if (enqueued?.kind === "enqueued") {
+          await writeOutboxAuditInTx(tx, statement.tenant_id, { actorId: null, action: "billing_outbox.charge_cancel_requested", entityId: enqueued.row.id, metadata: { statementId: statement.id, kind: enqueued.row.kind, code: "statement_changed_during_create" } });
+        }
+      }
       return true;
     });
   }

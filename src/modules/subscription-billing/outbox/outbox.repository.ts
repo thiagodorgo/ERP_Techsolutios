@@ -6,6 +6,7 @@
 
 import { randomUUID } from "node:crypto";
 
+import { enqueueChargeCancelInTx, type ChargeCancelCoreInput } from "../charges/charge-request.service.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import type { ChargeLookup, ChargeResult, ChargeStatus as ProviderChargeStatus } from "../providers/payment/payment-provider.port.js";
 import type { NewStatementCharge } from "../charges/charges.types.js";
@@ -400,7 +401,19 @@ export class InMemoryOutboxRepository implements OutboxRepository {
       boletoUrl: details.boletoUrl ?? null,
       dueDate: (outcome.kind === "adopted" ? outcome.lookup.dueDate : undefined) ?? (typeof row.payload.dueDate === "string" ? row.payload.dueDate : null),
     }, now);
-    return this.markSent(tenantId, row.id, chargeId, now, lease);
+    if (!(await this.markSent(tenantId, row.id, chargeId, now, lease))) return false;
+    // B-ASS-08c1c (A1, plano §4.4): a MESMA releitura do Prisma, pelo leitor do demonstrativo que o dublê já recebe.
+    const statement = await this.readStatement(tenantId, row.statementId);
+    // Leitor sem `totalCents` conta como "o mesmo total" (a convenção do dublê para campo ausente, como o `paidCents`); o
+    // Prisma sempre lê o total do demonstrativo travado.
+    const vigente = statement !== undefined && statement.status === "closed" && (statement.totalCents === undefined || statement.totalCents === Number(row.payload.amountCents)) && !(statement.reopenedAt !== null && statement.reopenedAt.getTime() > row.occurredAt.getTime());
+    const recordedStatus = recordedChargeStatus(outcome.kind, details.status);
+    const cancelIt = !vigente && recordedStatus === "pending"; // [REG-REREAD]
+    if (cancelIt) {
+      const sent = this.#rows.get(row.id) as unknown as ChargeCancelCoreInput["target"]; // a linha acabou de virar SENT com o id da cobrança
+      await enqueueChargeCancelInTx({ listChargeLines: (id) => this.listByStatement(tenantId, id), enqueue: (next, at) => this.enqueue(next, at) }, { tenantId, statementId: row.statementId, target: sent, now }); // [REREAD-ENQ]
+    }
+    return true;
   }
 
   configureChargeCancelSink(sink: ChargeCancelSink): void {
