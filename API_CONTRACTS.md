@@ -482,6 +482,31 @@ nunca o `payload`, o `tenantId`, segredo ou chave do cofre. Erro = `{ error: { r
 - **O `reopen` do demonstrativo** (`POST …/statements/:statementId/reopen`) recusa com `422` `outbox_needs_review`
   enquanto houver linha da fila em conferência para ele.
 
+**O fechamento que enfileira, o refechamento, a marcação imediata e a visão do cliente — `subscription_billing_channel@2026-11-15.b-ass-08c1c`.**
+Fontes: `statements/statement.service.ts`, `statements/statement-charge-lines.ts`, `outbox/outbox.prisma.ts`,
+`outbox/outbox.dispatcher.ts`, `outbox/channel.jobs.ts`, `statements/subscription-view.ts`. **Nenhuma rota nova nem caminho
+novo**; muda o efeito das rotas que já existem. **Tudo continua DESLIGADO por padrão** (`BILLING_PROVIDERS_ENABLED=false`).
+
+| Rota (já existente) | O que muda | Recusas novas (`reason`) |
+|---|---|---|
+| `POST /platform/billing/statements/close` (`platform:billing:manage`) e o job `subscription.close-statements` | **Com o canal LIGADO** (env + cofre + provedor `enabled`, o mesmo predicado do `/charge`), o fechamento põe a cobrança na fila na MESMA transação: uma `charge_create` `PENDING` com o total recém-gravado, o vencimento do demonstrativo e o método do perfil de cobrança (sem método → `pix`). Fechar com o canal ligado É cobrar, e o job fecha sem ator. Com o canal desligado, nada é enfileirado (Q1 (a)): a conta antiga sai pelo `/charge`. Refechar um `reopened` tira a `charge_create` do fechamento desfeito do conjunto vivo (`PENDING`, ou `SENT` com a cobrança terminal → `SKIPPED` `statement_reopened`, mantendo o `externalId`) e enfileira a nova com `seq + 1`. Total zero (`paid`), `already_closed` e `skipped` não enfileiram. | `409` `charge_in_flight` (a `charge_create` está em voo) · `422` `outbox_needs_review` (há linha em conferência) · `422` `charge_already_exists` (`SENT` com cobrança que não é terminal) · `409` `statement_busy` |
+| `POST /platform/billing/statements/:statementId/reopen` | A cobrança passa a ser lida pela TABELA de cobranças (e não só pelo espelho do demonstrativo): `pending`/`confirmed` na tabela, ou `charge_create` `SENT` cuja cobrança não é terminal → recusa. A `charge_create` `PENDING` vira `SKIPPED` `statement_reopened` na transação do reopen. | `409` `charge_in_flight` · `422` `statement_charge_pending` (agora também pela tabela) |
+| `POST /platform/billing/statements/:statementId/payments` (baixa manual) | A baixa que QUITA tira a conta do "a cobrar" na mesma transação: `charge_create` `PENDING` → `SKIPPED` `statement_paid`; `SENT` com cobrança `pending` → um `charge_cancel` (o despacho cancela no provedor). A baixa PARCIAL não mexe na cobrança (Q4 (a)). | — |
+| `POST /platform/billing/statements/:statementId/cancel` | O mesmo efeito, com `statement_cancelled`. | — |
+| `GET /billing/subscription` (cliente) | `payment` traz `payUrl`, `pixCopyPaste` e `boletoUrl`/`boletoLine` da cobrança `pending` do fechamento VIGENTE (a `charge_create` `SENT` dela nasceu depois da última reabertura, com o total atual) e sem `charge_cancel` vivo; senão, os nulos de antes. Com pagamento parcial e essa cobrança vigente, `payment.notice = "full_amount_charge_open"` (um código, sem valor). Nenhuma chave de dinheiro. | — |
+
+- **O despacho e o registro.** O claim manda à conferência (`NEEDS_REVIEW`, 0 rede) a `charge_create` `PENDING` parada há
+  mais de 7 dias (`lastError = stale_on_reenable`; a reaberta pelo operador conta da decisão dele) e a de conta `closed` com
+  pagamento parcial (`statement_partially_paid`); o que já não está em aberto é pulado antes. O registro da cobrança trava o
+  demonstrativo e o relê: se ele deixou de ser o fechamento vigente (pago, cancelado, reaberto ou com outro total) e a
+  cobrança está `pending`, nasce um `charge_cancel`; se o provedor já pagou antes do registro, a cobrança nasce `confirmed`.
+- **A tabela de cobranças acompanha o provedor** na mesma transação do efeito no demonstrativo: pago → `confirmed`;
+  estorno → `refunded`/`partially_refunded`; chargeback → `charged_back`; disputa → `chargeback_disputed`; disputa ganha →
+  `confirmed`. O `poll-pending` reconsulta a cobrança `pending` da TABELA (não do espelho), e o índice de ids
+  (`billing_statement_refs.created_at`) passa a datar a cobrança VIGENTE (a nova cobrança renova a data).
+- **Recobrança depois de estorno total:** a cobrança velha `refunded` cujo pagamento foi todo estornado deixa de bloquear a
+  criação da nova no despacho.
+
 ### 3.4 Navegação
 
 Fonte: `src/modules/navigation/navigation.routes.ts` (montado em `/api/v1/navigation`).
