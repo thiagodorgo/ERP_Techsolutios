@@ -1,5 +1,13 @@
 # Status Geral
 
+## Atualização 2026-11-15 (madrugada) — `B-ASS-11`, a Parte T do item 62: a tela "Minha assinatura" com as 3 aparências (PR #576, em rascunho)
+
+- **Autor:** `dev-62t-cl` (Claude Opus 5.5, dev, identidade nova, declarada; tela no Claude, `D-DESIGN-SO-CLAUDE`). **Base medida:** `origin/main@b00f3161` (#574), atualizada por merge com a `4acd14ad` (#569); worktree próprio. Registro do próprio bloco; `Kpis/**` congelado.
+- **O que o bloco faz:** a tela `/administrator/subscription` (sob `billing:read`) mostra à organização o plano, o uso da franquia de usuários e de espaço em pizza cheia (`UsagePie`, novo na biblioteca), a situação e, só com fatura em aberto, o "Como pagar" com os meios que o servidor mandar (sem nenhum, a orientação de pagar com a equipe e "Copiar dados da fatura"). Uma chamada só, `GET /api/v1/billing/subscription`, lida por allowlist. As 3 aparências aprovadas (`D-ASS11-MAQUETE-APROVADA`) entram no menu de aparência por usuário (`minha-assinatura`); o item fica no fim de ADMINISTRAÇÃO de admin, gestor, financeiro e suporte.
+- **Nível de revisão:** revisão reforçada + conferência visual das 3 aparências (Emenda 1 §10); o comando do §4.1 da Emenda 1.1 não acusa caminho fora do PERMITIDO.
+- **Item 62 do portão:** **FECHADO** por este PR (vale no merge), pelos 3 comandos do §1.3 da Emenda 1.1 rodados no head (colados no corpo do PR); fecha a `P-ASS-VISAO-DO-CLIENTE`. A contagem do portão fica para o registro do orquestrador.
+- **Pendências:** a `P-PALETA-SEM-MAPA-DE-PERMISSAO` segue ABERTA, com dono num bloco próprio de paleta e permissão, a abrir (decisão do orquestrador na revisão reforçada); a Parte T não a fecha (o conserto é na paleta, fora do PERMITIDO); nasce a `P-PAGE-HEADING-ROW-GRADE` (BAIXA, a nomear); a `P-NAV-TENANT-BILLING-STATUS` segue com o `B-ASS-11c`.
+
 ## Atualização 2026-11-14 (noite) — `B-ASS-11b`, a Parte R do item 62: o cliente sem a consulta de tendência (PR em rascunho)
 
 - **Autor:** `dev-62r-cl` (Claude Opus 5.5, dev, identidade nova, declarada). **Base medida:** `origin/main@adec93ce` (#565), worktree próprio `w-62r`. Registro do próprio bloco; `Kpis/**` congelado.

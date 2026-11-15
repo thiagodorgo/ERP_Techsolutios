@@ -119,6 +119,17 @@ export const APPEARANCE_SCREENS: readonly AppearanceScreen[] = [
       { value: "C", label: "Fechamento e grupos" },
     ],
   },
+  // B-ASS-11 — Minha assinatura, a tela do cliente (referência `screen-refs/minha-assinatura-3opcoes.reference.html`,
+  // aprovada pelo dono em 14/11 sem ajuste, D-ASS11-MAQUETE-APROVADA). Padrão A, sem entrada em SCREEN_DEFAULT_APPEARANCE.
+  {
+    key: "minha-assinatura",
+    label: "Minha assinatura",
+    options: [
+      { value: "A", label: "Padrão fiel" },
+      { value: "B", label: "Analítica" },
+      { value: "C", label: "Situação primeiro" },
+    ],
+  },
 ];
 
 /** O escopo da tela; tela fora do registro conta como da organização (o comportamento de antes do escopo). */
