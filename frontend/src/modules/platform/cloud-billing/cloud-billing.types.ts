@@ -26,7 +26,8 @@ export type OverviewWarning = (typeof OVERVIEW_WARNINGS)[number];
 
 export const SUBSCRIPTION_SOURCES = ["statement", "statement_reopened", "cancelled", "projection", "none"] as const;
 export type SubscriptionSource = (typeof SUBSCRIPTION_SOURCES)[number];
-export type SubscriptionSkipReason = "no_subscription" | "plan_without_price" | "platform_organization";
+export const SUBSCRIPTION_SKIP_REASONS = ["no_subscription", "plan_without_price", "addon_without_price", "platform_organization"] as const;
+export type SubscriptionSkipReason = (typeof SUBSCRIPTION_SKIP_REASONS)[number];
 
 // ---- os tipos JSON da visão (nomes iguais aos do servidor) ---------------------------------------------------------
 export type OverviewCostJson = {

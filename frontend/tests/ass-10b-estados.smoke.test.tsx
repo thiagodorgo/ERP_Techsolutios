@@ -8,6 +8,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 
 import { NO_WRITE_ACCESS } from "../src/modules/platform/cloud-billing/cloud-billing.access";
+import { alertLabelOf, shortAlertLabel } from "../src/modules/platform/cloud-billing/cloud-billing.labels";
 import { asMoney, formatBRL } from "../src/modules/platform/cloud-billing/cloud-billing.money";
 import { periodForMonth } from "../src/modules/platform/cloud-billing/cloud-billing.service";
 import { buildCloudBillingView, INITIAL_UI, type CloudBillingView } from "../src/modules/platform/cloud-billing/cloud-billing.state";
@@ -389,4 +390,33 @@ test("T-UI-4 nenhuma aparência tem andaime, termo técnico ou acento faltando",
 test("T-UI-4 a tela de acesso negado também não fala técnico", () => {
   const html = visible(renderToString(<PlatformCloudBillingScreen data={{ ...emptyCloudBilling(MONTH, periodForMonth(MONTH), "fallback"), forbidden: true }} loading={false} month={MONTH} model={model(fixtureData())} access={NO_WRITE_ACCESS} appearance="A" handlers={handlers} onRetry={noop} />));
   assert.doesNotMatch(html, /Tenant|permission|platform:|403/);
+});
+
+// B-ASS-12 (Emenda 1.3): o rastreamento sem preço (`addon_without_price`) segue a regra do plano sem preço do J-567 (C3-05):
+// a organização tem assinatura própria e só falta o preço do adicional no mês; o detalhe diz o motivo, nunca "filial".
+test("T-UI-3 (B-ASS-12, Emenda 1.3) rastreamento sem preço: 'Rastreamento sem preço', nunca 'Sem assinatura' nem 'filial', nas 3 aparências", () => {
+  const lines = (tenantPayload().lines as Record<string, unknown>[]).map((line) => (line.tenantId === "t3" ? { ...line, subscriptionSkipReason: "addon_without_price" } : line));
+  const data = fixtureData({ tenant: tenantPayload(MONTH, COST_OK, lines) });
+  const line = data.tenant?.lines.find((item) => item.tenantId === "t3");
+  assert.ok(line, "a linha chegou");
+  assert.equal(line.subscriptionSkipReason, "addon_without_price", "o adaptador não apaga o motivo");
+  assert.deepEqual([alertLabelOf(line), shortAlertLabel(line)], ["Rastreamento sem preço", "Sem preço"]);
+  // As dicas do bloco "Sem assinatura própria" dizem o que ele conta (medido: A tem as duas, B a comum, C a dela).
+  const HINTS: Record<string, readonly RegExp[]> = {
+    A: [/filiais de grupo e plano ou rastreamento sem preço/, /filiais em que a matriz assina, e plano ou rastreamento sem preço/],
+    B: [/filiais de grupo e plano ou rastreamento sem preço/],
+    C: [/filiais em que a matriz assina e plano ou rastreamento sem preço/],
+  };
+  for (const appearance of LETTERS) {
+    const detail = detailOf(screen(data, appearance, { ui: { ...INITIAL_UI, modo: "tenant" as const, aberta: "t:t3" } }), "t:t3");
+    assert.match(detail, /Rastreamento sem preço/, `${appearance}: a situação`);
+    assert.match(detail, /Assinatura rastreamento sem preço cadastrado/, `${appearance}: o campo Assinatura`);
+    assert.match(detail, /Grupo Vale · rastreamento sem preço cadastrado/, `${appearance}: o texto do grupo`);
+    assert.match(detail, /O rastreamento desta organização não tem preço cadastrado; sem assinatura, não há margem do mês\./, `${appearance}: a nota`);
+    assert.doesNotMatch(detail, /Sem assinatura|sem assinatura própria|filial|A matriz assina pelo grupo/, `${appearance}: nada de filial`);
+    const initial = visible(screen(data, appearance));
+    for (const hint of HINTS[appearance] ?? []) assert.match(initial, hint, appearance);
+    const group = visible(screen(data, appearance, { ui: { ...INITIAL_UI, modo: "group" as const, aberta: "g:g1" } }));
+    assert.match(group, /Vale Taubaté desde [^·]+ · rastreamento sem preço/, `${appearance}: o membro do grupo`);
+  }
 });

@@ -12,16 +12,26 @@ import ts from "typescript";
 // usa: (1) toda lista exportada `export const X = [...] as const` só de textos — o front tem a mesma lista, mesmos membros
 // na mesma ordem; (2) toda união exportada só de textos literais (`export type X = "a" | "b"`) — o front tem o tipo X com
 // o mesmo conjunto de membros. Um membro novo no servidor, num formato ou no outro, sem espelho na tela fica VERMELHO.
+// B-ASS-12 (Emenda 1.3.1): a (2) é a PROPRIEDADE, lida pelo VERIFICADOR sobre os exports do MÓDULO, não pela forma da
+// declaração: todo símbolo que o módulo do servidor exporta (`export type X = …`, `export type { X }`, re-exportação de
+// outro arquivo, `enum`; alias genérico incluído), seguido até a declaração, cujo tipo tem algum membro de texto literal,
+// tem na tela o símbolo de mesmo nome com os MESMOS membros; membro que não é texto entra pelo nome do tipo (`<null>`), e
+// tipo exportado que o verificador não resolve é VERMELHO. Fora dela, declarado: as listas tipadas (`readonly X[]`), as
+// listas `as const satisfies` e o literal de campo inline (pendência P-TCTR1-LISTAS-TIPADAS-E-CAMPO-INLINE, B-ASS-10b).
 
 const ROOT = process.cwd();
 const SERVER = path.join(ROOT, "src/modules/subscription-billing/overview/overview.types.ts");
 const FRONT = path.join(ROOT, "frontend/src/modules/platform/cloud-billing/cloud-billing.types.ts");
 const JSON_TYPES = ["TenantLineJson", "GroupLineJson", "TotalsJson", "GlobalJson", "OverviewCostJson"] as const;
 /** Piso de vacuidade da derivação (não é a fonte do teste): os enums que o servidor tem hoje. */
-const KNOWN_LISTS = ["COST_STATUSES", "OVERVIEW_ALERTS", "OVERVIEW_GROUP_BYS", "OVERVIEW_WARNINGS", "SUBSCRIPTION_SOURCES"] as const;
-const KNOWN_UNIONS = ["SubscriptionSkipReason"] as const;
+const KNOWN_LISTS = ["COST_STATUSES", "OVERVIEW_ALERTS", "OVERVIEW_GROUP_BYS", "OVERVIEW_WARNINGS", "SUBSCRIPTION_SOURCES", "SUBSCRIPTION_SKIP_REASONS"] as const;
+const KNOWN_UNIONS = ["CostStatus", "OverviewAlert", "OverviewGroupBy", "OverviewWarning", "SubscriptionSource", "SubscriptionSkipReason"] as const;
 
-const program = ts.createProgram([SERVER, FRONT], { strict: true, skipLibCheck: true, noEmit: true, types: [], jsx: ts.JsxEmit.ReactJSX });
+/** Emenda 1.3.1: a fixture das formas (uma por forma de exportar um conjunto de textos) e a do não resolvido. */
+const FORMS = path.join(ROOT, "tests/fixtures/ass-12-tctr1-formas/formas.ts");
+const UNRESOLVED_FIXTURE = path.join(ROOT, "tests/fixtures/ass-12-tctr1-formas/nao-resolvido.ts");
+
+const program = ts.createProgram([SERVER, FRONT, FORMS, UNRESOLVED_FIXTURE], { strict: true, skipLibCheck: true, noEmit: true, types: [], jsx: ts.JsxEmit.ReactJSX });
 const checker = program.getTypeChecker();
 
 function sourceOf(file: string): ts.SourceFile {
@@ -105,28 +115,45 @@ function constListsOf(file: string): Map<string, string[]> {
   return out;
 }
 
-/** (2) As uniões só de textos literais que o arquivo exporta (a forma SINTÁTICA do servidor). */
+/** Os símbolos que o MÓDULO exporta, pelo verificador (vale `export type X`, `export type { X }`, re-exportação, `enum`). */
+function exportsOf(file: string): ts.Symbol[] {
+  const moduleSymbol = checker.getSymbolAtLocation(sourceOf(file));
+  assert.ok(moduleSymbol, `módulo não resolvido: ${path.relative(ROOT, file)}`);
+  return checker.getExportsOfModule(moduleSymbol);
+}
+
+const UNRESOLVED = "<tipo não resolvido>";
+
+/** Os membros de um símbolo de tipo exportado (alias seguido até a declaração); `null` se ele não tem membro de texto. */
+function exportedMembersOf(symbol: ts.Symbol): string[] | null {
+  const target = symbol.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(symbol) : symbol;
+  if (!target.declarations?.length) return [UNRESOLVED];
+  if (!(target.flags & (ts.SymbolFlags.TypeAlias | ts.SymbolFlags.Enum))) return null;
+  const type = checker.getDeclaredTypeOfSymbol(target);
+  if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) return [UNRESOLVED];
+  const parts = type.isUnion() ? type.types : [type];
+  if (!parts.some((part) => part.isStringLiteral())) return null;
+  return parts.map((part) => (part.isStringLiteral() ? part.value : `<${checker.typeToString(part)}>`)).sort();
+}
+
+/** (2) A PROPRIEDADE: todo símbolo exportado cujo tipo tem membro de texto literal (ou não se resolve: fail-closed). */
 function literalUnionsOf(file: string): Map<string, string[]> {
   const out = new Map<string, string[]>();
-  for (const statement of sourceOf(file).statements) {
-    if (!ts.isTypeAliasDeclaration(statement) || !isExported(statement)) continue;
-    const members = ts.isUnionTypeNode(statement.type) ? statement.type.types : [statement.type];
-    if (!members.every((member) => ts.isLiteralTypeNode(member) && ts.isStringLiteral(member.literal))) continue;
-    out.set(statement.name.text, members.map((member) => ((member as ts.LiteralTypeNode).literal as ts.StringLiteral).text).sort());
+  for (const symbol of exportsOf(file)) {
+    const members = exportedMembersOf(symbol);
+    if (members) out.set(symbol.name, members);
   }
   return out;
 }
 
-/** O conjunto de textos de um tipo do FRONT, pelo verificador (vale a união escrita ou derivada de uma lista). */
+/** O espelho na TELA: o símbolo exportado de mesmo nome, resolvido do MESMO jeito; não resolvido é vermelho. */
 function typeMembersOf(file: string, name: string): string[] {
-  const alias = sourceOf(file).statements.find((statement): statement is ts.TypeAliasDeclaration => ts.isTypeAliasDeclaration(statement) && statement.name.text === name);
-  assert.ok(alias, `${name} não está em ${path.relative(ROOT, file)}`);
-  const type = checker.getTypeAtLocation(alias.name);
-  const parts = type.isUnion() ? type.types : [type];
-  return parts.map((part) => {
-    assert.ok(part.isStringLiteral(), `${name} do front tem membro que não é texto literal`);
-    return part.value;
-  }).sort();
+  const symbol = exportsOf(file).find((item) => item.name === name);
+  assert.ok(symbol, `${name} não está em ${path.relative(ROOT, file)}`);
+  const members = exportedMembersOf(symbol);
+  assert.ok(members, `${name} do front não tem membro de texto literal`);
+  assert.ok(!members.includes(UNRESOLVED), `${name} do front: tipo que o verificador não resolve`);
+  return members;
 }
 
 const SERVER_LISTS = constListsOf(SERVER);
@@ -135,6 +162,25 @@ const SERVER_UNIONS = literalUnionsOf(SERVER);
 test("T-CTR-1 (J-567) a derivação dos enums do servidor não é vazia e cobre o que o servidor tem hoje", () => {
   for (const name of KNOWN_LISTS) assert.ok(SERVER_LISTS.has(name), `lista não derivada: ${name}`);
   for (const name of KNOWN_UNIONS) assert.ok(SERVER_UNIONS.has(name), `união não derivada: ${name}`);
+});
+
+test("T-CTR-1 (Emenda 1.3.1) a derivação acha TODA forma de exportar um conjunto de textos, e o não resolvido é vermelho", () => {
+  assert.deepEqual(
+    Object.fromEntries([...literalUnionsOf(FORMS)].sort(([a], [b]) => a.localeCompare(b))),
+    {
+      ComNull: ["<null>", "c1"],
+      Derivada: ["d1", "d2"],
+      EnumTs: ["n1", "n2"],
+      Escrita: ["e1", "e2"],
+      Fora: ["f1", "f2"],
+      Generica: ["g1", "g2"],
+      Local: ["l1", "l2"],
+      Mista: ["d1", "d2", "m1"],
+    },
+    "escrita, derivada, mista, enum, export type { X }, re-exportação, genérica e com null; nunca o objeto nem o valor",
+  );
+  assert.deepEqual([...literalUnionsOf(UNRESOLVED_FIXTURE)], [["Nada", [UNRESOLVED]]], "o não resolvido entra marcado, nunca some");
+  assert.throws(() => typeMembersOf(UNRESOLVED_FIXTURE, "Nada"), /tipo que o verificador não resolve/, "e o espelho não resolvido é vermelho");
 });
 
 for (const [name, server] of SERVER_LISTS) {

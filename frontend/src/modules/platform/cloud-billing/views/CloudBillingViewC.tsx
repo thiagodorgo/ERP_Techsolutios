@@ -217,7 +217,7 @@ function closingItems(model: CloudBillingView, access: CloudBillingViewProps["ac
   } else {
     items.push({ key: "alerta", state: "neutro", title: "Organizações em alerta", detail: "sem custo no mês, não há o que comparar", alvo: { key: "alerta", value: "—" } });
   }
-  items.push({ key: "semass", state: "info", title: "Sem assinatura própria", detail: "filiais em que a matriz assina e plano sem preço", alvo: { key: "semass", value: formatCount(counts.withoutSubscriptionCount) } });
+  items.push({ key: "semass", state: "info", title: "Sem assinatura própria", detail: "filiais em que a matriz assina e plano ou rastreamento sem preço", alvo: { key: "semass", value: formatCount(counts.withoutSubscriptionCount) } });
   return items;
 }
 

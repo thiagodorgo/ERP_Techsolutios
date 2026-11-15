@@ -346,7 +346,7 @@ export function buildKpis(model: CloudBillingView): Readonly<Record<KpiKey, KpiM
       label: "Sem assinatura própria",
       value: formatCount(counts.withoutSubscriptionCount),
       tag: { label: "a matriz assina", bg: "#EFF6FF", fg: "#2563EB" },
-      hint: "filiais de grupo e plano sem preço",
+      hint: "filiais de grupo e plano ou rastreamento sem preço",
     },
   };
 }
@@ -605,13 +605,18 @@ export function TenantDetail({ model, line, access, onAction }: { readonly model
   // J-567 (C3-05): o texto segue o MOTIVO real de não haver assinatura. "Plano sem preço" não é filial de grupo: ninguém
   // assina por ela, e a margem do grupo não a cobre.
   const planWithoutPrice = line.subscriptionAmount === null && line.subscriptionSkipReason === "plan_without_price";
+  // B-ASS-12 (Emenda 1.3): o rastreamento sem preço segue a MESMA regra — a organização tem assinatura própria, só falta
+  // o preço do adicional no mês; não é filial e a matriz não assina por ela.
+  const trackingWithoutPrice = line.subscriptionAmount === null && line.subscriptionSkipReason === "addon_without_price";
   const groupText = line.groupId
     ? `${line.groupName ?? "Grupo sem nome"} · ${
         line.subscriptionAmount !== null
           ? "assina pelo grupo"
           : planWithoutPrice
             ? "plano sem preço cadastrado"
-            : `filial; quem assina: ${payers.length ? payers.map((item) => item.tenantName).join(", ") : "ninguém neste mês"}`
+            : trackingWithoutPrice
+              ? "rastreamento sem preço cadastrado"
+              : `filial; quem assina: ${payers.length ? payers.map((item) => item.tenantName).join(", ") : "ninguém neste mês"}`
       }`
     : "sem grupo";
   const note =
@@ -621,9 +626,11 @@ export function TenantDetail({ model, line, access, onAction }: { readonly model
         ? "O custo já passou de 80 % da assinatura."
         : planWithoutPrice
           ? "O plano desta organização não tem preço cadastrado; sem assinatura, não há margem do mês."
-          : line.alert === "no_subscription" && line.groupId
-            ? "A matriz assina pelo grupo; a margem do cliente está na linha do grupo."
-            : "A margem é a assinatura do mês menos o custo rateado.";
+          : trackingWithoutPrice
+            ? "O rastreamento desta organização não tem preço cadastrado; sem assinatura, não há margem do mês."
+            : line.alert === "no_subscription" && line.groupId
+              ? "A matriz assina pelo grupo; a margem do cliente está na linha do grupo."
+              : "A margem é a assinatura do mês menos o custo rateado.";
   return (
     <div className="pat-ab-detail-content" data-detalhe={`t:${line.tenantId}`}>
       <div className="pat-ab-detail-grid">
@@ -631,7 +638,11 @@ export function TenantDetail({ model, line, access, onAction }: { readonly model
           <h4>Assinatura do mês</h4>
           <Field label="Assinatura">
             {line.subscriptionAmount === null ? (
-              line.subscriptionSkipReason === "plan_without_price" ? "plano sem preço cadastrado" : "sem assinatura própria"
+              line.subscriptionSkipReason === "plan_without_price"
+                ? "plano sem preço cadastrado"
+                : line.subscriptionSkipReason === "addon_without_price"
+                  ? "rastreamento sem preço cadastrado"
+                  : "sem assinatura própria"
             ) : (
               <>
                 <b className="pat-mono">{formatBRL(line.subscriptionAmount)}</b> <span className="cb-muted">antes do crédito</span>
@@ -757,7 +768,11 @@ export function GroupDetail({ model, row, access, onAction, onMode }: { readonly
                   <b>{member.tenantName}</b>
                   <small>
                     {withoutGroup ? "sem grupo" : row.memberSince[member.tenantId] ? `desde ${formatDay(row.memberSince[member.tenantId])}` : "desde —"} ·{" "}
-                    {member.subscriptionAmount !== null ? `assina ${formatBRL(member.subscriptionAmount)}` : "sem assinatura própria"}
+                    {member.subscriptionAmount !== null
+                      ? `assina ${formatBRL(member.subscriptionAmount)}`
+                      : member.subscriptionSkipReason === "addon_without_price"
+                        ? "rastreamento sem preço"
+                        : "sem assinatura própria"}
                   </small>
                 </span>
                 <span className="cb-val">{formatBRL(member.allocatedCost)}</span>
