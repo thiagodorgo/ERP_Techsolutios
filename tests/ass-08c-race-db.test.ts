@@ -431,4 +431,19 @@ if (!connectionString) {
     await dispatch(f.tenantId);
     assert.equal(deletesOfPayments() - deletes, 0);
   });
+
+  // ------------------------------------------------------------------ conserto da J-579 (C2-01/C2-03): RR-U, o [REG-REREAD] Prisma
+  test("RR-U: o registro de uma cobrança ADOTADA em estado desconhecido (unknown → needs_review) sobre conta paid → 1 charge_cancel PENDING, trilha statement_changed_during_create", async () => {
+    const f = await orphanWithCharge("rru", "PENDING");
+    const repo = new H.m.outboxPrisma.PrismaOutboxRepository(H.role.client, { tenantIds: [f.tenantId] });
+    const row = (await lines(f.statementId)).find((line) => line.kind === "charge_create")!;
+    const domain = await repo.findById(f.tenantId, row.id);
+    const ok = await repo.recordChargeOutcome(f.tenantId, domain, { claimedBy: domain.claimedBy, attemptStartedAt: domain.attemptStartedAt }, { kind: "adopted", chargeId: f.chargeId, lookup: { status: "unknown" } }, new Date());
+    assert.equal(ok, true);
+    assert.deepEqual((await chargeRows(f.statementId)).map((charge) => charge.status), ["needs_review"]);
+    const cancels = (await lines(f.statementId)).filter((line) => line.kind === "charge_cancel");
+    assert.deepEqual(cancels.map((line) => [line.status, line.payload.chargeId]), [["PENDING", f.chargeId]]);
+    const trail = await q(`SELECT metadata FROM audit_logs WHERE tenant_id = $1::uuid AND action = 'billing_outbox.charge_cancel_requested'`, f.tenantId);
+    assert.deepEqual(trail.map((entry) => (entry.metadata as Json).code), ["statement_changed_during_create"]);
+  });
 }

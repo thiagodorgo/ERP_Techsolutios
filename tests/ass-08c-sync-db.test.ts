@@ -430,4 +430,22 @@ if (!connectionString) {
     await putRefInTx(H.role.client, { statementId: f.statementId, tenantId: f.tenantId, provider: "asaas", externalChargeId: "pay_pp4_a" }, new Date(Date.now() + 5_000));
     assert.equal(new Date((await age()).created_at).getTime(), renewed, "o mesmo id não renova");
   });
+
+  // ------------------------------------------------------------------ conserto da J-579 (C3-A2): TS-4 e TS-5, o [CHG-SYNC-REV]
+  test("TS-4: o canal cria; o provedor paga; estorno PARCIAL → a tabela e o espelho ficam partially_refunded", async () => {
+    const f = await charged("ts4");
+    const deps = await channelDeps();
+    await deps.settlement.settle({ tenantId: f.tenantId, statementId: f.statementId, source: "asaas", externalChargeId: f.chargeId, paidCents: 10_000, method: "pix", now: new Date() });
+    await deps.settlement.applyReversal({ tenantId: f.tenantId, statementId: f.statementId, externalChargeId: f.chargeId, reversedCents: 3_000, kind: "refund", now: new Date() });
+    assert.deepEqual((await chargeRows(f.statementId)).map((row) => row.status), ["partially_refunded"]);
+    assert.equal((await statementRow(f.statementId)).charge_status, "partially_refunded");
+  });
+
+  test("TS-5: o canal cria; o provedor paga; o chargeback é perdido → a tabela fica charged_back", async () => {
+    const f = await charged("ts5");
+    const deps = await channelDeps();
+    await deps.settlement.settle({ tenantId: f.tenantId, statementId: f.statementId, source: "asaas", externalChargeId: f.chargeId, paidCents: 10_000, method: "pix", now: new Date() });
+    await deps.settlement.resolveChargeback({ tenantId: f.tenantId, statementId: f.statementId, externalChargeId: f.chargeId, outcome: "lost", now: new Date() });
+    assert.deepEqual((await chargeRows(f.statementId)).map((row) => row.status), ["charged_back"]);
+  });
 }

@@ -258,6 +258,90 @@ async function channelDeps(now: Date = new Date()): Promise<any> {
   return { ...deps, ports: { asaas: adapterOverFake() }, resolveCustomer: async () => ({ ok: true as const, customerId: "cus_c1c" }), resolveExpectedCustomerId: async () => null, now: () => now };
 }
 
+// ------------------------------------------- conserto da J-579 (C3-A3): a metade do DUBLÊ do `findPayableCharge`, sem banco
+// Pela composição de memória de produção (`createDefaultStatementRuntime` + `createChannelRuntime`, o molde do CL1-mem): o
+// fechamento enfileira, o registro do dublê grava a cobrança `pending`, e a cobrança pagável é lida pelo dublê do repositório.
+async function memoryPayable(tag: string, mutate: (ctx: { runtime: any; deps: any; statementId: string; chargeId: string }) => Promise<void>) {
+  const [envModule, factory, channel, vault, keys, serviceModule] = await Promise.all([
+    import("../src/config/env.js"),
+    import("../src/modules/subscription-billing/statements/statement.factory.js"),
+    import("../src/modules/subscription-billing/outbox/channel.runtime.js"),
+    import("../src/modules/subscription-billing/vault/vault.factory.js"),
+    import("../src/modules/subscription-billing/vault/vault-keys.js"),
+    import("../src/modules/subscription-billing/statements/statement.service.js"),
+  ]);
+  const env = envModule.env as unknown as { BILLING_PROVIDERS_ENABLED: boolean; CORE_SAAS_PERSISTENCE: string };
+  const before = { persistence: env.CORE_SAAS_PERSISTENCE, enabled: env.BILLING_PROVIDERS_ENABLED };
+  env.CORE_SAAS_PERSISTENCE = "memory";
+  env.BILLING_PROVIDERS_ENABLED = true;
+  factory.resetStatementRuntimeForTests();
+  channel.resetChannelRuntimeForTests();
+  vault.resetVaultRuntimeForTests();
+  vault.setVaultKeysForTests(new keys.EnvVaultKeyProvider({ BILLING_VAULT_KEY: randomBytes(32).toString("base64"), BILLING_VAULT_KEY_VERSION: "1" }));
+  try {
+    const configs = vault.getMemoryVaultForTests().configs;
+    await configs.upsert({ provider: "asaas", kind: "payment", environment: "sandbox", settings: {} }, new Date());
+    configs.setEnabledForTests("asaas", true);
+    const runtime = await factory.createDefaultStatementRuntime();
+    const ready = {
+      kind: "ready" as const,
+      subscriptionId: `sub_${tag}`,
+      planVersionId: `pv_${tag}`,
+      addonPlanVersionId: null,
+      computation: {
+        daysInMonth: 31,
+        segments: [{ fromDay: 1, toDay: 31, monthlyPriceCents: 10_000 }],
+        terms: { includedUsers: 10, includedStorageMilliGb: 10_000, extraUserPriceCents: 500, extraGbPriceCents: 200 },
+        measurements: { usersPeak: 1, storagePeakMilliGb: 100, trackedVehicles: 0 },
+        perVehiclePriceCents: null,
+      } as never,
+      daysMeasured: 31,
+      gaps: [],
+      dueDays: 10,
+    };
+    const tenantId = `ten_${tag}`;
+    const service = new serviceModule.StatementService(runtime.repository, { resolve: async () => ready }, runtime.audit, (runtime.service as unknown as { channel: never }).channel);
+    const closedOut = (await service.close({ tenantId, period: "2026-10", now: new Date(), actorId: null, source: "manual" })) as { statement: { id: string } };
+    const statementId = closedOut.statement.id;
+    const deps = await channel.createChannelRuntime();
+    deps.outbox.configureChargeOutcomeSink?.(async (charge: any, at: Date) => {
+      await deps.charges.insert(charge, at);
+      await deps.refs.setExternalChargeId(charge.statementId, charge.externalChargeId, at);
+    });
+    const claimed = (await deps.outbox.claimNext({ enabledProviders: ["asaas"], now: new Date(), claimedBy: `w-${tag}`, orphanMs: 600_000, verdict: () => ({ kind: "eligible" }) })) as { kind: string; row: any };
+    assert.equal(claimed.kind, "claimed");
+    const chargeId = `pay_${tag}`;
+    await deps.outbox.recordChargeOutcome(tenantId, claimed.row, { claimedBy: claimed.row.claimedBy, attemptStartedAt: claimed.row.attemptStartedAt }, { kind: "created", result: { chargeId, status: "pending", payUrl: "https://pay.example/mem" } }, new Date());
+    const payable = await runtime.repository.findPayableCharge(tenantId, statementId);
+    assert.equal(payable?.externalChargeId, chargeId, "controle: antes, a cobrança vigente é pagável");
+    await mutate({ runtime, deps, statementId, chargeId });
+    return await runtime.repository.findPayableCharge(tenantId, statementId);
+  } finally {
+    env.CORE_SAAS_PERSISTENCE = before.persistence;
+    env.BILLING_PROVIDERS_ENABLED = before.enabled;
+    factory.resetStatementRuntimeForTests();
+    channel.resetChannelRuntimeForTests();
+    vault.resetVaultRuntimeForTests();
+  }
+}
+
+test("CV3-mem (C3-A3): no dublê, com charge_cancel vivo para a cobrança → nada pagável (payUrl nulo)", async () => {
+  const payable = await memoryPayable("cv3m", async ({ deps, statementId, chargeId }) => {
+    await deps.outbox.enqueue({ tenantId: "ten_cv3m", statementId, kind: "charge_cancel", provider: "asaas", seq: 1, payload: { chargeId, chargeCreateId: null } }, new Date());
+  });
+  assert.equal(payable, undefined);
+});
+
+test("CV4-mem (C3-A3): no dublê, a cobrança pending de um fechamento desfeito (reaberto depois, com outro total) → nada pagável", async () => {
+  const payable = await memoryPayable("cv4m", async ({ runtime, statementId }) => {
+    await runtime.repository.transaction("ten_cv4m", async (tx: any) => {
+      const current = await tx.lockById(statementId);
+      await tx.saveStatement({ ...current, reopenedAt: new Date(Date.now() + 60_000), totalCents: 9_000 });
+    });
+  });
+  assert.equal(payable, undefined);
+});
+
 if (!connectionString) {
   test("B-ASS-08c1c · a visão do cliente exige DATABASE_URL", { skip: "Defina DATABASE_URL para os testes -db." });
 } else {

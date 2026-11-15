@@ -357,4 +357,86 @@ if (!connectionString) {
     assert.equal(paid.status, 201, JSON.stringify(paid.body));
     assert.deepEqual((await cancels(f.statementId)).map((row) => row.status), ["PENDING"], "um só charge_cancel vivo");
   });
+
+  // ---------------------------------------------------------------- conserto da J-579 (C2-01/C2-03 e A-C1-01): EG8 a EG8d, EG9
+  // O estado DESCONHECIDO da cobrança (`needs_review`) e os 3 estados pagos são FORÇADOS por UPDATE (declarado): nenhum escritor
+  // de produto grava esses estados na tabela hoje (plano do conserto §1.3). O fixture é o `closedSentWithCharge` da PX1 da C2.
+  async function closedSentWithCharge(tag: string, chargeState: string): Promise<Fixture & { ext: string }> {
+    const f = await closed(tag, true);
+    const ext = (await lines(f.statementId)).find((row) => row.kind === "charge_create")!.external_id!;
+    await H.db.$executeRawUnsafe(`UPDATE subscription_statement_charges SET status = $2 WHERE statement_id = $1::uuid`, f.statementId, chargeState);
+    return { ...f, ext };
+  }
+
+  test("EG8: SENT + cobrança needs_review (forçada); a lista diz PENDING; baixa que quita → 1 charge_cancel na transação da baixa; despacho → 1 DELETE, tabela cancelled, a charge_create SKIPPED charge_cancelled, conta paid", async () => {
+    const f = await closedSentWithCharge("eg8", "needs_review");
+    const paid = await payRoute(f, "100.00");
+    assert.equal(paid.status, 201, JSON.stringify(paid.body));
+    assert.deepEqual((await cancels(f.statementId)).map((row) => row.status), ["PENDING"], "o cancelamento nasce na transação da baixa");
+    const deletes = deletesOfPayments();
+    await dispatch(f.tenantId);
+    assert.equal(deletesOfPayments() - deletes, 1, "1 DELETE");
+    assert.deepEqual((await chargeRows(f.statementId)).map((row) => row.status), ["cancelled"]);
+    const create = (await lines(f.statementId)).find((row) => row.kind === "charge_create")!;
+    assert.deepEqual([create.status, create.last_error], ["SKIPPED", "charge_cancelled"]);
+    assert.equal((await statementRow(f.statementId)).status, "paid");
+  });
+
+  test("EG8b: o mesmo pelo cancel() da conta", async () => {
+    const f = await closedSentWithCharge("eg8b", "needs_review");
+    const cancelled = await cancelRoute(f);
+    assert.equal(cancelled.status, 200, JSON.stringify(cancelled.body));
+    assert.deepEqual((await cancels(f.statementId)).map((row) => row.status), ["PENDING"]);
+    const deletes = deletesOfPayments();
+    await dispatch(f.tenantId);
+    assert.equal(deletesOfPayments() - deletes, 1, "1 DELETE");
+    assert.deepEqual((await chargeRows(f.statementId)).map((row) => row.status), ["cancelled"]);
+    assert.equal((await statementRow(f.statementId)).status, "cancelled");
+  });
+
+  test("EG8c: SENT + needs_review; a lista traz a cobrança num status que o mapa não conhece; baixa que quita → 1 charge_cancel; despacho → NEEDS_REVIEW charge_state_unknown, 0 DELETE, a tabela continua needs_review", async () => {
+    const f = await closedSentWithCharge("eg8c", "needs_review");
+    H.fake!.setPaymentStatus(f.ext, "FOO_UNMAPPED");
+    const paid = await payRoute(f, "100.00");
+    assert.equal(paid.status, 201, JSON.stringify(paid.body));
+    assert.equal((await cancels(f.statementId)).length, 1);
+    const deletes = deletesOfPayments();
+    await dispatch(f.tenantId);
+    assert.equal(deletesOfPayments() - deletes, 0, "0 DELETE às cegas");
+    assert.deepEqual((await cancels(f.statementId)).map((row) => [row.status, row.last_error]), [["NEEDS_REVIEW", "charge_state_unknown"]]);
+    assert.deepEqual((await chargeRows(f.statementId)).map((row) => row.status), ["needs_review"]);
+  });
+
+  test("EG8d: os 3 estados pagos (confirmed, partially_refunded, chargeback_disputed; forçados) → baixa que quita → 0 charge_cancel, 0 DELETE", async () => {
+    for (const state of ["confirmed", "partially_refunded", "chargeback_disputed"]) {
+      const f = await closedSentWithCharge(`eg8d-${state.slice(0, 6)}`, state);
+      const deletes = deletesOfPayments();
+      const paid = await payRoute(f, "100.00");
+      assert.equal(paid.status, 201, JSON.stringify(paid.body));
+      await dispatch(f.tenantId);
+      assert.deepEqual(await cancels(f.statementId), [], `${state}: 0 charge_cancel`);
+      assert.equal(deletesOfPayments() - deletes, 0, `${state}: 0 DELETE`);
+    }
+  });
+
+  test("EG9 (A-C1-01): um charge_cancel ANTIGO FAILED da MESMA cobrança não conta como vivo; a baixa que quita enfileira o 2º; despacho → 1 DELETE, 0 cobrança pending, conta paid", async () => {
+    const f = await closed("eg9", true);
+    const create = (await lines(f.statementId)).find((row) => row.kind === "charge_create")!;
+    await H.db.$executeRawUnsafe(
+      `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, attempts, last_error)
+       VALUES ($1::uuid, $2::uuid, 'charge_cancel', 'asaas', $3, gen_random_uuid(), $4::jsonb, now(), 'FAILED', 8, 'provider_timeout')`,
+      f.tenantId,
+      f.statementId,
+      `charge_cancel:${f.statementId}:1`,
+      JSON.stringify({ chargeId: create.external_id, chargeCreateId: create.id }),
+    );
+    const paid = await payRoute(f, "100.00");
+    assert.equal(paid.status, 201, JSON.stringify(paid.body));
+    assert.deepEqual((await cancels(f.statementId)).map((row) => `${row.idempotency_key.split(":")[2]}:${row.status}`), ["1:FAILED", "2:PENDING"]);
+    const deletes = deletesOfPayments();
+    await dispatch(f.tenantId);
+    assert.equal(deletesOfPayments() - deletes, 1, "1 DELETE");
+    assert.deepEqual((await chargeRows(f.statementId)).filter((row) => row.status === "pending"), []);
+    assert.equal((await statementRow(f.statementId)).status, "paid");
+  });
 }

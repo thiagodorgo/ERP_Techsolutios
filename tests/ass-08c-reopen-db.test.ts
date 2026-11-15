@@ -313,4 +313,18 @@ if (!connectionString) {
     assert.equal(live.body.error?.reason, "statement_charge_pending");
     assert.equal((await statementRow(f.statementId)).status, "closed");
   });
+
+  // ------------------------------------------------- conserto da J-579 (C2-02; Emenda 1 A1(b)): RO5, a cláusula SENT do reopen
+  test("RO5: SENT com a cobrança partially_refunded ou chargeback_disputed (forçada) → reopen → 422 statement_charge_pending, a conta segue closed", async () => {
+    for (const state of ["partially_refunded", "chargeback_disputed"]) {
+      const f = await closed(`ro5-${state.slice(0, 6)}`);
+      const run = await dispatch(f.tenantId);
+      assert.equal(run.outcomes.sent, 1, JSON.stringify(run.outcomes));
+      await H.db.$executeRawUnsafe(`UPDATE subscription_statement_charges SET status = $2 WHERE statement_id = $1::uuid`, f.statementId, state);
+      const response = await reopenRoute(f);
+      assert.equal(response.status, 422, `${state}: ${JSON.stringify(response.body)}`);
+      assert.equal(response.body.error?.reason, "statement_charge_pending");
+      assert.equal((await statementRow(f.statementId)).status, "closed");
+    }
+  });
 }

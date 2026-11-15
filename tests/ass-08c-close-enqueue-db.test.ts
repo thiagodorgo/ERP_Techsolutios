@@ -325,6 +325,96 @@ test("CL1-mem: provedor ligado (env + cofre + enabled) → o fechamento em memó
   }
 });
 
+// ------------------------------------------------------- conserto da J-579, a parte de MEMÓRIA (CL8-mem, RACE-7-mem e RR-U-mem)
+// O dublê da fila (`InMemoryOutboxRepository`), sem banco: o registro do dublê ganha o `[REG-PAID]` (A-C1-02) e o `[REG-REREAD]` lê
+// a tabela-verdade (C2-01); o claim do modo memória lê o `paidCents` do leitor de produção (C2-04).
+async function memoryOutboxWithClaimedLine(reader: Record<string, unknown>) {
+  const [{ InMemoryOutboxRepository }, { InMemoryStatementChargeRepository }] = await Promise.all([
+    import("../src/modules/subscription-billing/outbox/outbox.repository.js"),
+    import("../src/modules/subscription-billing/charges/charges.repository.js"),
+  ]);
+  const now = new Date();
+  const outbox = new InMemoryOutboxRepository({ readStatement: async () => reader as never, clock: () => now });
+  const charges = new InMemoryStatementChargeRepository();
+  outbox.configureChargeOutcomeSink(async (charge, at) => {
+    await charges.insert(charge, at);
+  });
+  await outbox.enqueue({ tenantId: "ten_mem", statementId: "st_mem", kind: "charge_create", provider: "asaas", seq: 1, payload: { amountCents: 10_000, dueDate: "2026-12-20", method: "pix" } }, now);
+  const claimed = await outbox.claimNext({ enabledProviders: ["asaas"], now, claimedBy: "w-mem", orphanMs: 600_000, verdict: () => ({ kind: "eligible" }) });
+  assert.equal(claimed?.kind, "claimed");
+  const row = (claimed as any).row;
+  return { outbox, charges, row, lease: { claimedBy: row.claimedBy as string, attemptStartedAt: row.attemptStartedAt as Date }, now };
+}
+
+test("RACE-7-mem (A-C1-02): no dublê, o pagamento do provedor que quitou a conta ANTES do registro → a cobrança nasce confirmed e 0 charge_cancel", async () => {
+  const m = await memoryOutboxWithClaimedLine({ status: "paid", reopenedAt: null, totalCents: 10_000, paidCents: 10_000, providerPayments: [{ source: "asaas", externalChargeId: "pay_r7m" }] });
+  assert.equal(await m.outbox.recordChargeOutcome("ten_mem", m.row, m.lease, { kind: "created", result: { chargeId: "pay_r7m", status: "pending" } }, m.now), true);
+  assert.deepEqual((await m.charges.listByStatement("ten_mem", "st_mem")).map((charge) => charge.status), ["confirmed"]);
+  assert.deepEqual((await m.outbox.listByStatement("ten_mem", "st_mem")).filter((line) => line.kind === "charge_cancel"), []);
+});
+
+test("RR-U-mem (C2-01): no dublê, a cobrança ADOTADA em estado desconhecido sobre conta paid → 1 charge_cancel PENDING", async () => {
+  const m = await memoryOutboxWithClaimedLine({ status: "paid", reopenedAt: null, totalCents: 10_000, paidCents: 10_000, providerPayments: [] });
+  assert.equal(await m.outbox.recordChargeOutcome("ten_mem", m.row, m.lease, { kind: "adopted", chargeId: "pay_rrm", lookup: { status: "unknown" } }, m.now), true);
+  assert.deepEqual((await m.charges.listByStatement("ten_mem", "st_mem")).map((charge) => charge.status), ["needs_review"]);
+  assert.deepEqual((await m.outbox.listByStatement("ten_mem", "st_mem")).filter((line) => line.kind === "charge_cancel").map((line) => [line.status, line.payload.chargeId]), [["PENDING", "pay_rrm"]]);
+});
+
+test("CL8-mem (C2-04): pela composição de memória, fecha, faz a baixa parcial de 3 000 e o claim → NEEDS_REVIEW statement_partially_paid, sem reclamar a linha", async () => {
+  const [envModule, factory, channel, vault, keys, serviceModule, dispatcher] = await Promise.all([
+    import("../src/config/env.js"),
+    import("../src/modules/subscription-billing/statements/statement.factory.js"),
+    import("../src/modules/subscription-billing/outbox/channel.runtime.js"),
+    import("../src/modules/subscription-billing/vault/vault.factory.js"),
+    import("../src/modules/subscription-billing/vault/vault-keys.js"),
+    import("../src/modules/subscription-billing/statements/statement.service.js"),
+    import("../src/modules/subscription-billing/outbox/outbox.dispatcher.js"),
+  ]);
+  const env = envModule.env as unknown as { BILLING_PROVIDERS_ENABLED: boolean; CORE_SAAS_PERSISTENCE: string };
+  const before = { persistence: env.CORE_SAAS_PERSISTENCE, enabled: env.BILLING_PROVIDERS_ENABLED };
+  env.CORE_SAAS_PERSISTENCE = "memory";
+  env.BILLING_PROVIDERS_ENABLED = true;
+  factory.resetStatementRuntimeForTests();
+  channel.resetChannelRuntimeForTests();
+  vault.resetVaultRuntimeForTests();
+  vault.setVaultKeysForTests(new keys.EnvVaultKeyProvider({ BILLING_VAULT_KEY: randomBytes(32).toString("base64"), BILLING_VAULT_KEY_VERSION: "1" }));
+  try {
+    const configs = vault.getMemoryVaultForTests().configs;
+    await configs.upsert({ provider: "asaas", kind: "payment", environment: "sandbox", settings: {} }, new Date());
+    configs.setEnabledForTests("asaas", true);
+    const runtime = await factory.createDefaultStatementRuntime();
+    const ready = {
+      kind: "ready" as const,
+      subscriptionId: "sub_mem8",
+      planVersionId: "pv_mem8",
+      addonPlanVersionId: null,
+      computation: {
+        daysInMonth: 31,
+        segments: [{ fromDay: 1, toDay: 31, monthlyPriceCents: 10_000 }],
+        terms: { includedUsers: 10, includedStorageMilliGb: 10_000, extraUserPriceCents: 500, extraGbPriceCents: 200 },
+        measurements: { usersPeak: 1, storagePeakMilliGb: 100, trackedVehicles: 0 },
+        perVehiclePriceCents: null,
+      } as never,
+      daysMeasured: 31,
+      gaps: [],
+      dueDays: 10,
+    };
+    const service = new serviceModule.StatementService(runtime.repository, { resolve: async () => ready }, runtime.audit, (runtime.service as unknown as { channel: never }).channel);
+    const closedOut = (await service.close({ tenantId: "ten_c1c_mem8", period: PERIOD, now: new Date(), actorId: null, source: "manual" })) as { statement: { id: string } };
+    await service.recordManualPayment({ tenantId: "ten_c1c_mem8", statementId: closedOut.statement.id, amountCents: 3_000, method: "pix", note: null, actorId: "op", now: new Date() });
+    const deps = await channel.createChannelRuntime();
+    const claimed = await deps.outbox.claimNext({ enabledProviders: ["asaas"], now: new Date(), claimedBy: "w-mem8", orphanMs: 600_000, verdict: dispatcher.chargeCreateClaimVerdict });
+    assert.equal(claimed?.kind, "needs_review", JSON.stringify(claimed));
+    assert.equal((claimed as { code: string }).code, "statement_partially_paid");
+  } finally {
+    env.CORE_SAAS_PERSISTENCE = before.persistence;
+    env.BILLING_PROVIDERS_ENABLED = before.enabled;
+    factory.resetStatementRuntimeForTests();
+    channel.resetChannelRuntimeForTests();
+    vault.resetVaultRuntimeForTests();
+  }
+});
+
 if (!connectionString) {
   test("B-ASS-08c1c · o fechamento que enfileira, o refechamento e o claim exigem DATABASE_URL", { skip: "Defina DATABASE_URL para os testes -db." });
 } else {
@@ -585,5 +675,23 @@ if (!connectionString) {
     assert.equal(response.status, 422, JSON.stringify(response.body));
     assert.equal(response.body.error?.reason, "charge_already_exists");
     assert.deepEqual(await lines(f.statementId), before);
+  });
+
+  // --------------------------------------------- conserto da J-579 (C2-02; Emenda 1 A1(b)): RO3c, o [REFECHA-LIVE] com o canal desligado
+  test("RO3c: refechar com o provedor DESLIGADO um reopened com SENT e a cobrança confirmed, partially_refunded ou chargeback_disputed → 422 charge_already_exists, 0 linha nova, a conta segue reopened", async () => {
+    for (const state of ["confirmed", "partially_refunded", "chargeback_disputed"]) {
+      const f = await reopenedWithLine(`ro3c-${state.slice(0, 6)}`, "SENT", state);
+      const before = await lines(f.statementId);
+      H.env.BILLING_PROVIDERS_ENABLED = false;
+      try {
+        const response = await closeRoute(f.tenantId);
+        assert.equal(response.status, 422, `${state}: ${JSON.stringify(response.body)}`);
+        assert.equal(response.body.error?.reason, "charge_already_exists");
+      } finally {
+        H.env.BILLING_PROVIDERS_ENABLED = true;
+      }
+      assert.deepEqual(await lines(f.statementId), before, `${state}: 0 linha nova`);
+      assert.equal((await statementRow(f.statementId)).status, "reopened");
+    }
   });
 }
