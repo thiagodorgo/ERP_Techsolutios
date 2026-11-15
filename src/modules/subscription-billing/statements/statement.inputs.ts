@@ -11,10 +11,12 @@
 //    add-on de rastreamento; só as medições e os ajustes mudam (§3.4);
 //  - nenhum dia com assinatura → `no_subscription`; dia com assinatura e sem versão vigente → `plan_without_price`;
 //    organização de sistema `platform` → `platform_organization` (S16);
-//  - dia com adicional de rastreamento sem preço utilizável (sem versão vigente, por veículo sem preço, ou a forma antiga
-//    `flat` com mensalidade 0 e preço por veículo: Emenda 1.1 G1) → `addon_without_price`.
+//  - dia com adicional de rastreamento sem preço utilizável → `addon_without_price`: sem versão vigente, ou a versão do dia
+//    sem preço pela autoridade única `resolveAddonPricing` (`plans/addon-pricing.ts`, Emenda 1.4): por veículo sem preço,
+//    `flat` com preço por veículo ou sem mensalidade positiva (a forma antiga e ambígua), unidade desconhecida.
 
 import { parseBusinessDate } from "../../../config/business-time.js";
+import { resolveAddonPricing } from "../plans/addon-pricing.js";
 import { resolveVersionAt } from "../plans/plan-versioning.js";
 import type { SubscriptionPlanVersion, TenantSubscription, TenantSubscriptionAddon } from "../plans/plan-types.js";
 import {
@@ -191,17 +193,22 @@ export function buildStatementInputs(
     }
     const dayVersion = versionForDay(data.versionsByPlan.get(dayAddon.planId) ?? [], at, pinnedAddonIds);
     if (!dayVersion) return { kind: "skip", reason: "addon_without_price" };
-    const override = dayAddon.perVehiclePriceOverrideCents;
-    if (override !== null) {
-      trackingDays.push({ addon: dayAddon, version: dayVersion, unit: "per_vehicle", priceCents: override });
-    } else if (dayVersion.pricingUnit === "flat") {
-      if (dayVersion.perVehiclePriceCents !== null && !(dayVersion.monthlyPriceCents > 0)) {
+    // Emenda 1.4: o regime e o preço do dia vêm SÓ da autoridade única, a mesma da trava de escrita.
+    const pricing = resolveAddonPricing(dayVersion, dayAddon.perVehiclePriceOverrideCents);
+    switch (pricing.kind) {
+      case "unpriced":
+        return { kind: "skip", reason: "addon_without_price" };
+      case "per_vehicle":
+        trackingDays.push({ addon: dayAddon, version: dayVersion, unit: "per_vehicle", priceCents: pricing.perVehiclePriceCents });
+        break;
+      case "flat":
+        trackingDays.push({ addon: dayAddon, version: dayVersion, unit: "flat", priceCents: pricing.monthlyPriceCents });
+        break;
+      default: {
+        const unclassified: never = pricing;
+        void unclassified;
         return { kind: "skip", reason: "addon_without_price" };
       }
-      trackingDays.push({ addon: dayAddon, version: dayVersion, unit: "flat", priceCents: dayVersion.monthlyPriceCents });
-    } else {
-      if (dayVersion.perVehiclePriceCents === null) return { kind: "skip", reason: "addon_without_price" };
-      trackingDays.push({ addon: dayAddon, version: dayVersion, unit: "per_vehicle", priceCents: dayVersion.perVehiclePriceCents });
     }
   }
 

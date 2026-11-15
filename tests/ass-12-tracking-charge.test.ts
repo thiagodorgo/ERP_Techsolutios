@@ -376,3 +376,60 @@ test("T-TRK-LEGADO · versão antiga (flat, mensalidade 0, preço por veículo) 
   }));
   assert.deepEqual([nova.computed.trackingCents, nova.computed.trackingUnit], [5_000, "flat"], "a versão flat nova com mensalidade positiva continua cobrando");
 });
+
+// Emenda 1.4 (J-573, C1-01, C1-02 e C2-01): a forma antiga e ambígua inteira, e a unidade fora da lista, falham fechado —
+// pulo `addon_without_price` (o selo "Sem preço" da tela), nunca um valor escolhido pelo montador. A autoridade é a
+// `resolveAddonPricing` (`plans/addon-pricing.ts`), a mesma da trava de escrita.
+test("T-TRK-LEGADO-B · versão antiga flat COM mensalidade positiva e preço por veículo: pulo addon_without_price, nunca 50,00 nem 59,70; com sobrescrita cobra o combinado", () => {
+  const LB = version("v-lb", "tracking_basic", "2026-01-01", null, { pricingUnit: "flat", monthlyPriceCents: 5_000, perVehiclePriceCents: 1_990 });
+  const catalogo = new Map([["starter", [STARTER]], ["tracking_basic", [LB]]]);
+  const sem = buildStatementInputs("2026-10", source({ versionsByPlan: catalogo, addons: [addon("a1", "s1", "tracking_basic", "2026-09-01", null)] }), { pin: null });
+  assert.deepEqual(sem, { kind: "skip", reason: "addon_without_price" }, "a forma LB não fecha: nem 50,00 (a leitura fixa) nem 59,70 (a leitura por veículo)");
+  const com = close(source({ versionsByPlan: catalogo, addons: [addon("a1", "s1", "tracking_basic", "2026-09-01", null, 990)] }));
+  assert.deepEqual([com.computed.trackingCents, com.computed.trackingUnit], [2_970, "per_vehicle"], "a sobrescrita define o regime (Emenda 1, E2.1)");
+});
+
+test("T-TRK-LEGADO-C · versão flat SEM mensalidade positiva e sem preço por veículo: pulo addon_without_price, nunca fecha com 0,00", () => {
+  const LC = version("v-lc", "tracking_basic", "2026-01-01", null, { pricingUnit: "flat", monthlyPriceCents: 0, perVehiclePriceCents: null });
+  const out = buildStatementInputs("2026-10", source({
+    versionsByPlan: new Map([["starter", [STARTER]], ["tracking_basic", [LC]]]),
+    addons: [addon("a1", "s1", "tracking_basic", "2026-09-01", null)],
+  }), { pin: null });
+  assert.deepEqual(out, { kind: "skip", reason: "addon_without_price" }, "zero calado não fecha");
+});
+
+test("T-TRK-UNIDADE · unidade de preço fora da lista: pulo addon_without_price, com e sem sobrescrita (falha fechado, nunca por veículo)", () => {
+  const FORA = version("v-fora", "tracking_basic", "2026-01-01", null, { pricingUnit: "per_km" as never, monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
+  const catalogo = new Map([["starter", [STARTER]], ["tracking_basic", [FORA]]]);
+  for (const override of [null, 0, 990]) {
+    const out = buildStatementInputs("2026-10", source({ versionsByPlan: catalogo, addons: [addon("a1", "s1", "tracking_basic", "2026-09-01", null, override)] }), { pin: null });
+    assert.deepEqual(out, { kind: "skip", reason: "addon_without_price" }, `sobrescrita ${String(override)}`);
+  }
+});
+
+// Emenda 1.4 (J-573, C3-01): o T-IN-4b da `main` provava isto e virou o teste da forma antiga (Emenda 1.1); a guarda volta.
+test("T-TRK-20 · refechar mantém a versão do add-on POR VEÍCULO gravada: a versão nova de 99,90 publicada depois não entra", () => {
+  const fechado = close(source({ addons: [addon("a1", "s1", "tracking_basic", "2026-09-01", null)] }));
+  assert.deepEqual([fechado.computed.trackingCents, fechado.ready.addonPlanVersionId], [5_970, "v-basic"]);
+  const statement = {
+    planVersionId: fechado.ready.planVersionId,
+    addonPlanVersionId: fechado.ready.addonPlanVersionId,
+    snapshot: { latest: JSON.parse(JSON.stringify(snapshotOf(fechado.input))) as StatementSnapshot },
+  } as unknown as SubscriptionStatement;
+  const pin = pinOf(statement);
+  assert.deepEqual([...pin.addonPlanVersionIds], ["v-basic"], "o pin leva a versão da parte por veículo");
+
+  // Depois do fechamento a plataforma publica a versão 2 (99,90 por veículo) vigente desde 01/10; a v1 se encerra.
+  const V2 = version("v-basic-2", "tracking_basic", "2026-10-01", null, { pricingUnit: "per_vehicle", monthlyPriceCents: 0, perVehiclePriceCents: 9_990 });
+  const depois = source({
+    addons: [addon("a1", "s1", "tracking_basic", "2026-09-01", null)],
+    versionsByPlan: new Map([["starter", [STARTER]], ["tracking_basic", [{ ...BASIC, validTo: sp("2026-10-01") }, V2]]]),
+  });
+  assert.equal(close(depois).computed.trackingCents, 29_970, "pré-condição: sem pin, a versão nova vale");
+  const refechado = close(depois, pin);
+  assert.deepEqual(
+    [refechado.computed.trackingCents, refechado.ready.addonPlanVersionId, refechado.ready.computation.perVehiclePriceCents],
+    [5_970, "v-basic", 1_990],
+    "o refechamento cobra 59,70 pela versão gravada, nunca 299,70",
+  );
+});

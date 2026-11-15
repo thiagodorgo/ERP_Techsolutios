@@ -152,3 +152,56 @@ test("T-ADD-7 · regressão do critério: Básico e Plus juntos → 422 addon_du
   );
   await rejects(stack.subscriptions.putSubscription("ten_1", { planCode: "tracking_basic", validFrom: spDate("2026-11-05") }), "addon_requires_base_plan");
 });
+
+// Emenda 1.4 (J-573, C1-02, C2-01 e C2-02): a trava de escrita decide pela MESMA autoridade do montador
+// (`resolveAddonPricing`): o que o fechamento pularia, a escrita recusa — antes da primeira escrita.
+test("T-ADD-8 · add-on flat sem mensalidade positiva → 422 addon_flat_requires_monthly_price, e nada nasce; flat com mensalidade nasce", async () => {
+  const stack = newStack();
+  const addon = await stack.plans.createPlan({ code: "tracking_basic", kind: "addon_tracking", name: "Rastreamento Basico", description: "" });
+  await rejects(stack.plans.addVersion(addon.id, versionInput({ pricingUnit: "flat", monthlyPriceCents: 0 })), "addon_flat_requires_monthly_price");
+  assert.equal((await stack.plans.listVersions(addon.id)).length, 0, "nenhuma versão nasceu");
+  assert.equal((await stack.plans.addVersion(addon.id, versionInput({ pricingUnit: "flat", monthlyPriceCents: 5_000 }))).pricingUnit, "flat");
+});
+
+const FORMAS_SEM_PRECO = [
+  ["G1 (flat, 0, por veículo)", { pricingUnit: "flat", monthlyPriceCents: 0, perVehiclePriceCents: 1_990 }],
+  ["LB (flat, 50,00, por veículo)", { pricingUnit: "flat", monthlyPriceCents: 5_000, perVehiclePriceCents: 1_990 }],
+  ["LC (flat, 0, sem preço por veículo)", { pricingUnit: "flat", monthlyPriceCents: 0, perVehiclePriceCents: null }],
+  ["unidade fora da lista", { pricingUnit: "per_km" as never, monthlyPriceCents: 0, perVehiclePriceCents: 1_990 }],
+] as const;
+
+test("T-ADD-9 · PUT com versão de add-on antiga e ambígua (G1, LB, LC) ou de unidade fora da lista → 422 addon_without_price pela lista e pela migração, sem nenhuma escrita; com sobrescrita, só a unidade fora da lista continua recusada", async () => {
+  for (const [nome, forma] of FORMAS_SEM_PRECO) {
+    const stack = newStack();
+    await seedBase(stack);
+    const plan = await stack.plans.createPlan({ code: "tracking_basic", kind: "addon_tracking", name: "Rastreamento Basico", description: "" });
+    const criada = await stack.plans.addVersion(plan.id, versionInput({ perVehiclePriceCents: 1_990 }));
+    const first = await stack.subscriptions.putSubscription("ten_1", { planCode: "starter", validFrom: spDate("2026-11-05"), addons: [{ planCode: "tracking_basic" }] });
+    // Dado legado: a versão passa a ter a forma antiga (o addVersion de hoje não a deixa nascer — T-ADD-2, T-ADD-8, T-ADD-10).
+    const stored = (stack.plansRepo as unknown as { versions: Map<string, Record<string, unknown>> }).versions;
+    stored.set(criada.id, { ...stored.get(criada.id)!, ...forma });
+    const calls = stack.writer.calls.length;
+    for (const input of [
+      { planCode: "starter", validFrom: spDate("2026-11-06"), addons: [{ planCode: "tracking_basic" }] },
+      { planCode: "starter", validFrom: spDate("2026-11-06") },
+    ]) {
+      await rejects(stack.subscriptions.putSubscription("ten_1", input), "addon_without_price");
+      const active = await stack.subsRepo.getActiveSubscription("ten_1");
+      assert.deepEqual([active?.id, active?.validTo], [first.subscription.id, null], `${nome}: a vigente continua aberta`);
+      assert.equal((await stack.subsRepo.listActiveAddons("ten_1", first.subscription.id)).length, 1, `${nome}: o add-on vigente continua aberto`);
+      assert.equal(stack.writer.calls.length, calls, `${nome}: os módulos não foram tocados`);
+    }
+    const comSobrescrita = stack.subscriptions.putSubscription("ten_1", {
+      planCode: "starter", validFrom: spDate("2026-11-06"), addons: [{ planCode: "tracking_basic", perVehiclePriceOverrideCents: 990 }],
+    });
+    if (nome === "unidade fora da lista") await rejects(comSobrescrita, "addon_without_price");
+    else assert.deepEqual((await comSobrescrita).addons.map((row) => row.perVehiclePriceOverrideCents), [990], `${nome}: a sobrescrita é preço utilizável`);
+  }
+});
+
+test("T-ADD-10 · versão de add-on com unidade fora da lista → 422 addon_version_unknown_pricing_unit, e nada nasce", async () => {
+  const stack = newStack();
+  const addon = await stack.plans.createPlan({ code: "tracking_basic", kind: "addon_tracking", name: "Rastreamento Basico", description: "" });
+  await rejects(stack.plans.addVersion(addon.id, versionInput({ pricingUnit: "per_km" as never, perVehiclePriceCents: 1_990 })), "addon_version_unknown_pricing_unit");
+  assert.equal((await stack.plans.listVersions(addon.id)).length, 0, "nenhuma versão nasceu");
+});

@@ -1,6 +1,7 @@
 // B-ASS-02 — serviço de planos/versões (regras de vigência + CRUD de catálogo). Persistence-aware:
 // o caminho Prisma chega na F4; em memória (dev/teste) usa o dublê.
 
+import { resolveAddonPricing, type AddonUnpricedCause } from "./addon-pricing.js";
 import { PLAN_MODULE_KEY_SET } from "./plan-catalog.js";
 import {
   latestVersion,
@@ -51,14 +52,22 @@ export type AddVersionInput = {
   readonly inaugural: boolean;
 };
 
+/** A recusa do `addVersion` para cada causa de "sem preço" da autoridade única (o `Record` obriga a cobrir todas). */
+const ADDON_VERSION_REJECTIONS: Readonly<Record<AddonUnpricedCause, readonly [reason: string, message: string]>> = {
+  per_vehicle_without_price: ["addon_version_requires_per_vehicle_price", "A per-vehicle add-on version requires perVehiclePrice."],
+  flat_with_per_vehicle_price: ["addon_flat_rejects_per_vehicle_price", "A flat add-on version cannot carry perVehiclePrice."],
+  flat_without_monthly_price: ["addon_flat_requires_monthly_price", "A flat add-on version requires a positive monthlyPrice."],
+  unknown_unit: ["addon_version_unknown_pricing_unit", "The add-on version pricing unit is not supported."],
+};
+
 /**
  * B-ASS-12 — a unidade de preço de uma versão, por tipo de plano. Plano base é sempre `flat`. Add-on de rastreamento:
- * `per_vehicle` (padrão) exige o preço por veículo; `flat` cobra a mensalidade e não aceita preço por veículo.
- * Uma versão de add-on sem preço utilizável nunca nasce — o fechamento não tem como cobrar zero calado.
+ * a unidade omitida vira `per_vehicle`, e a versão só nasce se a autoridade única (`resolveAddonPricing`, sem
+ * sobrescrita) lhe der preço utilizável — o fechamento não tem como cobrar zero calado (Emenda 1.4).
  */
 export function resolveVersionPricing(
   kind: PlanKind,
-  input: { readonly pricingUnit?: PricingUnit; readonly perVehiclePriceCents: number | null },
+  input: { readonly pricingUnit?: PricingUnit; readonly monthlyPriceCents: number; readonly perVehiclePriceCents: number | null },
 ): PricingUnit {
   const invalid = (reason: string, message: string) =>
     new SubscriptionBillingError(422, "SUBSCRIPTION_BILLING_INVALID", reason, message);
@@ -69,11 +78,10 @@ export function resolveVersionPricing(
     return "flat";
   }
   const unit = input.pricingUnit ?? "per_vehicle";
-  if (unit === "per_vehicle" && input.perVehiclePriceCents === null) {
-    throw invalid("addon_version_requires_per_vehicle_price", "A per-vehicle add-on version requires perVehiclePrice.");
-  }
-  if (unit === "flat" && input.perVehiclePriceCents !== null) {
-    throw invalid("addon_flat_rejects_per_vehicle_price", "A flat add-on version cannot carry perVehiclePrice.");
+  const pricing = resolveAddonPricing({ pricingUnit: unit, monthlyPriceCents: input.monthlyPriceCents, perVehiclePriceCents: input.perVehiclePriceCents }, null);
+  if (pricing.kind === "unpriced") {
+    const [reason, message] = ADDON_VERSION_REJECTIONS[pricing.cause];
+    throw invalid(reason, message);
   }
   return unit;
 }

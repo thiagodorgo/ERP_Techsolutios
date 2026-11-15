@@ -500,4 +500,39 @@ if (!connectionString) {
     );
     assert.equal(rows.filter((row) => row.status === "closed").length, 0, "nenhum demonstrativo closed com rastreamento 0,00");
   });
+
+  // Emenda 1.4 (J-573, C1-01 e C1-02): as outras duas formas antigas e ambíguas, gravadas como a API antiga gravava
+  // (`pricing_unit` = o DEFAULT `flat` da coluna), também pulam: nenhum demonstrativo `closed`, nem 50,00 nem 0,00.
+  for (const [nome, mensalidade, porVeiculo] of [["B (flat, 50,00, por veículo)", 5_000, 1_990], ["C (flat, 0, sem preço por veículo)", 0, null]] as const) {
+    test(`T-TRK-db-LEGADO-${nome.slice(0, 1)}: versão antiga ${nome} é ambígua: pulo addon_without_price, nenhum demonstrativo closed`, async () => {
+      const h = await harness();
+      await assertRuntimeRole(h.role);
+      const { tenantId, subscriptionId } = await seedBaseAndSubscription(h, `legado-${nome.slice(0, 1).toLowerCase()}`);
+      const addonPlanId = await insertPlan(h, "addon_tracking");
+      await h.admin.$queryRawUnsafe(
+        `INSERT INTO subscription_plan_versions
+           (plan_id, version, valid_from, monthly_price, included_users, included_storage_gb,
+            extra_user_price, extra_gb_price, per_vehicle_price, modules)
+         VALUES ($1::uuid, 1, $2::timestamptz, $3::numeric, 0, 0.000, 0.00, 0.00, $4::numeric, '{}'::text[])
+         RETURNING id`,
+        addonPlanId,
+        OCT_1,
+        (mensalidade / 100).toFixed(2),
+        porVeiculo === null ? null : (porVeiculo / 100).toFixed(2),
+      );
+      await insertAddon(h, tenantId, subscriptionId, addonPlanId, OCT_1, null);
+      for (let i = 0; i < 3; i += 1) {
+        const vehicleId = await insertVehicle(h, tenantId);
+        await insertBinding(h, tenantId, vehicleId, SEP_30, null);
+      }
+      const { service } = await runtimeFor(h.role.client);
+      const out = await service.close({ tenantId, period: PERIOD, now: NOW, actorId: null, source: "job" });
+      assert.deepEqual(out, { kind: "skipped", reason: "addon_without_price", alreadyClosed: false });
+      const rows = await h.admin.$queryRawUnsafe<Array<{ status: string }>>(
+        `SELECT status FROM subscription_statements WHERE tenant_id = $1::uuid`,
+        tenantId,
+      );
+      assert.equal(rows.filter((row) => row.status === "closed").length, 0, "nenhum demonstrativo closed: nem 50,00 nem 0,00");
+    });
+  }
 }

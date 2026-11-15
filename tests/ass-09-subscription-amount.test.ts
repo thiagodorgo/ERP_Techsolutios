@@ -252,7 +252,7 @@ test("T-SUB-5 · sem assinatura → null (none, com o motivo) e o alerta é no_s
   }
 });
 
-test("T-SUB-12 · add-on na forma antiga (flat, mensalidade 0, preço por veículo) → a projeção dá none com addon_without_price, nunca 0.00; no grupo e nos totais, a regra do plan_without_price", async () => {
+test("T-SUB-13 · add-on na forma antiga (flat, mensalidade 0, preço por veículo) → a projeção dá none com addon_without_price, nunca 0.00; no grupo e nos totais, a regra do plan_without_price", async () => {
   // O montador REAL do fechamento (`buildStatementInputs`, Emenda 1.1 G1), não um dublê: a forma da sonda L.
   const sp = (date: string) => parseBusinessDate(date);
   const version = (id: string, planId: string, patch: Partial<SubscriptionPlanVersion>): SubscriptionPlanVersion =>

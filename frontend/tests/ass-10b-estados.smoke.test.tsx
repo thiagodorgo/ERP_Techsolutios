@@ -420,3 +420,19 @@ test("T-UI-3 (B-ASS-12, Emenda 1.3) rastreamento sem preço: 'Rastreamento sem p
     assert.match(group, /Vale Taubaté desde [^·]+ · rastreamento sem preço/, `${appearance}: o membro do grupo`);
   }
 });
+
+// B-ASS-12 (Emenda 1.4, J-573 C2-05): a coluna "Situação" da LISTA, renderizada, diz "Sem preço" na linha do rastreamento
+// sem preço. O T-UI-3 acima prova o rótulo curto só pela função `shortAlertLabel`; este prova o que a lista mostra.
+test("T-UI-3 (B-ASS-12, Emenda 1.4) a coluna Situação da lista diz 'Sem preço' na linha do rastreamento sem preço, nas 3 aparências", () => {
+  const lines = (tenantPayload().lines as Record<string, unknown>[]).map((line) => (line.tenantId === "t3" ? { ...line, subscriptionSkipReason: "addon_without_price" } : line));
+  const data = fixtureData({ tenant: tenantPayload(MONTH, COST_OK, lines) });
+  assert.equal(LETTERS.length, 3, "as 3 aparências existem");
+  for (const appearance of LETTERS) {
+    const html = screen(data, appearance);
+    const at = html.indexOf("<b>Vale Taubaté</b>");
+    assert.ok(at >= 0, `${appearance}: a linha da organização está na lista`);
+    const row = plain(visible(html.slice(html.lastIndexOf("<tr", at), html.indexOf("</tr>", at))));
+    assert.match(row, /Sem preço/, `${appearance}: a coluna Situação`);
+    assert.doesNotMatch(row, /Sem assinatura|filial|(^|[^0-9.,])0,00/, `${appearance}: nem 'Sem assinatura', nem 'filial', nem 0,00`);
+  }
+});

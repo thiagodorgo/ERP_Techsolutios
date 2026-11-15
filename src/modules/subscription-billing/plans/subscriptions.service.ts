@@ -1,6 +1,7 @@
 // B-ASS-02 — serviço de assinatura por organização (PUT/DELETE + leitura). Regras de vigência e
 // vínculo plano → módulo vivem aqui. Persistence-aware via repositórios injetados.
 
+import { resolveAddonPricing } from "./addon-pricing.js";
 import { businessDateOf, resolveVersionAt, todayBusinessDate } from "./plan-versioning.js";
 import {
   SubscriptionBillingError,
@@ -362,8 +363,8 @@ export class SubscriptionsService {
   }
 
   /**
-   * B-ASS-12 — todo add-on que entra na assinatura tem preço utilizável em `at`: versão vigente e, no `per_vehicle`,
-   * preço (da versão ou da sobrescrita). A sobrescrita por veículo vale também sobre versão `flat`.
+   * B-ASS-12 — todo add-on que entra na assinatura tem preço utilizável em `at`: versão vigente e preço pela autoridade
+   * única (`resolveAddonPricing`, a mesma do montador), com a sobrescrita da contratação (Emenda 1.4).
    */
   private async assertAddonsPriced(assignments: readonly AddonAssignment[], at: Date): Promise<void> {
     const invalid = (reason: string, message: string) =>
@@ -376,9 +377,10 @@ export class SubscriptionsService {
       if (!version) {
         throw invalid("addon_without_price", `Add-on "${addonPlan.code}" has no version in effect at validFrom.`);
       }
-      // A sobrescrita por veículo é preço utilizável em qualquer unidade: ela define o regime da organização.
-      if (override === null && version.pricingUnit !== "flat" && version.perVehiclePriceCents === null) {
-        throw invalid("addon_without_price", `Add-on "${addonPlan.code}" has no per-vehicle price at validFrom.`);
+      // A sobrescrita por veículo é preço utilizável em qualquer unidade conhecida: ela define o regime da organização.
+      const pricing = resolveAddonPricing(version, override);
+      if (pricing.kind === "unpriced") {
+        throw invalid("addon_without_price", `Add-on "${addonPlan.code}" has no usable price at validFrom (${pricing.cause}).`);
       }
     }
   }
