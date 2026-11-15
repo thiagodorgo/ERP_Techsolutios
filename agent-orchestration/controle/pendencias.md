@@ -12825,6 +12825,8 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** fala literal registrada em `D-COBRANCA-ASSINATURA-FRANQUIA`: o cliente vê somente plano, uso da franquia e situação.
 - **encerramento:** rota derivada das claims e tela com as três aparências expõem somente a allowlist aprovada; custo interno, dados de outras organizações e números comerciais não aparecem. **(valores fora do repositório público)**.
 - **andamento (PR #507):** `GET /api/v1/billing/subscription` e `/billing/usage-history` tiram a organização da sessão (`?tenantId` → 400; ator de plataforma e organização de sistema → 403), com `billing:read`, e a resposta não tem nenhuma chave de dinheiro (varredura de chaves no T-ST-29). Os campos de pagamento saem `null` e `invoicePdfAvailable: false`, e a rota do PDF da nota não existe, até haver as tabelas de notas e de cobranças (`B-ASS-08` e `B-ASS-09`). O menu "Minha assinatura" já existe; a tela é do `B-ASS-11`.
+- **andamento (`B-ASS-11b`, ramo `fix/ass-cliente-sem-tendencia`; vale no merge):** a rota de tendência (`/billing/subscription/usage-history`) sai, pela P12 e pela decisão 8.2 do dono (`D-ASS11-TENDENCIA-SAI`; a `P-ASS-USAGE-HISTORY-X-P12` fecha com ela). **Correção do andamento acima (Emenda 1 do plano do `B-ASS-11`, §2):** o "menu 'Minha assinatura' já existe" vale só para o registro do servidor (`navigation.registry.ts`, item `tenant.billing`); no menu do portal o item não existe, e entra com a tela.
+- **regra de fechamento (Emenda 1.1 do plano do `B-ASS-11`, §1.3 e §9.1):** fecha com o item 62, e só pelos três comandos do §1.3 colados no corpo do PR que o marcar, rodados no próprio head com rebase na `origin/main`: nenhum `usage-history` em `src/` e `tests/fixtures/`, a rota `/administrator/subscription` no `App.tsx` e a referência `minha-assinatura-3opcoes.reference.html` em `screen-refs/`. Não fecha mais "no merge da Parte T".
 
 ## P-ASS-RASTREAMENTO-NAO-COBRADO (2026-11-04) — rastreamento aprovado como item próprio ainda não entra na cobrança — ALTA
 
@@ -12844,12 +12846,61 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** ato externo pós-implementação · **dono:** dono do produto, com roteiro técnico do `B-ASS-08` · **PR-alvo:** fora do PR documental; evidência anexada ao roteiro do `B-ASS-08` · **bloqueia:** ligar o canal, não bloqueia os blocos fail-closed.
 - **origem:** `D-P14-ASAAS-FOCUS`; as contas e credenciais não pertencem ao repositório.
 - **encerramento:** dono cadastra as credenciais no cofre, executa o roteiro de homologação e registra o resultado sem versionar segredo.
+- **pré-requisito de ligar a cobrança automática (Emenda 1 do plano do `B-ASS-11`, §3.2; registrado pelo `B-ASS-11b`):** o `B-ASS-11c`, que faz os meios de pagamento da visão do cliente virem da cobrança viva (`P-ASS-VISAO-CLIENTE-PAGAMENTO-FIXO`). Sem ele, com a cobrança ligada, a tela "Minha assinatura" diria "pague com a equipe" a um cliente que tem cobrança emitida.
 
 ## P-ASS-SECRETS-MANAGER (2026-11-03) — chave do cofre ainda sem integração ao gerenciador de segredos da AWS — MEDIA
 
 - **status:** ABERTA · **escopo:** infraestrutura futura · **dono:** `B-INFRA-AWS-01` · **PR-alvo:** PR do `B-INFRA-AWS-01` · **bloqueia:** produção AWS com o canal ligado; não bloqueia o cofre fail-closed local.
 - **origem:** plano B-ASS §9; a primeira implementação usa provedor de chave por ambiente e deixa a porta para o serviço gerenciado.
 - **encerramento:** integração ao gerenciador de segredos implementada sem segredo no banco, log ou repositório e aprovada pelo gate de serviço externo/dependência aplicável.
+
+## P-ASS-USAGE-HISTORY-X-P12 (2026-11-14) — a rota de tendência entregava ao cliente o que a P12 tira do payload — BAIXA
+
+- **status:** FECHADA pelo `B-ASS-11b` (ramo `fix/ass-cliente-sem-tendencia`; vale no merge) · antes: aberta e fechada no mesmo PR · **gravidade:** BAIXA (a fonte: "não grave"; são quantidades do próprio cliente, sem dinheiro e sem outra organização) · **escopo:** `pre-existente` (nasceu no `B-ASS-04`, PR #507, merge `e4e181f2`, 2026-11-06) · **dono:** `B-ASS-11b` (Parte R do item 62) · **bloqueia:** o item 62 (Emenda 1.1 do plano do `B-ASS-11`, §1: o item só fecha com a rota fora da `main`).
+- **origem:** conflito §A2 registrado pelo orquestrador em 10/11 ~00:22 SP (`REGISTRO-PENDENTE.md`, fora do repositório), "a pendência nova a abrir no PR de registro"; a P12 do dono (31/10, `B-ASSINATURA-plano.md:130`) tira "da tela e do payload do cliente" os veículos rastreados e a tendência de 6 meses; a decisão 8.2 do dono (13/11, `D-DONO-1311-RECOMENDACOES`) diz "a tendência sai".
+- **fato (medido na `main` `adec93ce`):** `GET /api/v1/billing/subscription/usage-history?months=1..12` respondia 200 a todo papel com `billing:read`, com `trackedVehicles` em cada mês; o T-ST-64 antigo afirmava isso.
+- **fato no fechamento:** a rota, `buildUsageHistory`, `UsageHistoryRow` e `shiftPeriod` saíram; o registro de navegação, as 2 fixtures de censo (pelos geradores, `--numstat` `0 4` e `0 1`) e `docs/subscription-billing.md` também. O caminho antigo cai no 404 padrão de `/api/v1` (`route_not_found`), e `GET /billing/subscription` não mudou. Quem mantém a rota fora: o T-R1 a T-R5 (`tests/ass-11b-cliente-so-p12.test.ts`) e o T-ST-64 novo.
+- **critério de encerramento:** a rota sai (cumprido no ramo; vale no merge).
+
+## P-ASS-VISAO-CLIENTE-PAGAMENTO-FIXO (2026-11-14) — os meios de pagamento da visão do cliente saem fixos em `null` — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): com a cobrança automática desligada (o padrão de hoje), `null` é a verdade; com ela ligada, a tela diria "pague com a equipe" a quem tem cobrança emitida · **escopo:** `pre-existente` (`src/modules/subscription-billing/statements/subscription-view.ts`, o bloco `payment`, do `B-ASS-04`) · **dono:** `B-ASS-11c` (plano próprio; junta completa) · **PR-alvo:** o PR do `B-ASS-11c` · **bloqueia:** ligar a cobrança automática (ver `P-ASS-SANDBOX-REAL`); não bloqueia o item 62.
+- **origem:** relatório do dev do `B-ASS-08b`, 10/11 00:43 SP (`REGISTRO-PENDENTE.md`, fora do repositório), "nome a abrir"; decisão de dono e de bloco na Emenda 1 do plano do `B-ASS-11` (§3.2), aberta pelo `B-ASS-11b`.
+- **fato:** `payUrl`, `pixCopyPaste`, `boletoLine` e `boletoUrl` saem `null` e `invoicePdfAvailable` sai `false`. Existe `toClientPaymentView` em `charges/charge-view.ts`, do `B-ASS-08`, mas nenhum arquivo de `src/` a chama. O runtime do demonstrativo não tem o repositório de cobranças (em memória, ele vive em outro runtime), e há uma escolha de forma: `toClientPaymentView` some com o `payment` sem cobrança viva, e a visão de hoje o mantém com `null`.
+- **critério de encerramento:** os meios vêm da cobrança viva, com teste de banco em 2 organizações, antes de o dono ligar a cobrança automática. A tela "Minha assinatura" já nasce mostrando só o meio que o servidor mandar.
+
+## P-ASS-NOTA-PDF-CLIENTE (2026-11-14) — não existe rota do PDF da nota fiscal para o cliente — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6) · **escopo:** `pre-existente` (`subscription-billing.tenant.routes.ts` não tem rota de PDF) · **dono:** `B-ASS-11c` · **PR-alvo:** o PR do `B-ASS-11c` · **bloqueia:** o botão "Baixar nota fiscal" da tela "Minha assinatura", que fica fora dela até a rota existir (pergunta 6 da Emenda 1 do plano do `B-ASS-11`, pela recomendação).
+- **origem:** Emenda 1 do plano do `B-ASS-11`, §3.2 e §12; aberta pelo `B-ASS-11b`.
+- **critério de encerramento:** a rota do PDF da nota para o cliente existe, derivada das claims e com teste; só então o botão entra na tela.
+
+## P-ASS-E2E-COMENTARIO-PAYURL (2026-11-14) — o comentário do e2e diz que a rota do cliente traz o `payUrl`, e ela não traz — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `pre-existente` (`tests/ass-08-flow-e2e.test.ts:2` e `:103`, do `B-ASS-08`) · **dono:** `B-ASS-11c` · **PR-alvo:** o PR do `B-ASS-11c` · **bloqueia:** não.
+- **origem:** Emenda 1 do plano do `B-ASS-11`, §2 e §12; aberta pelo `B-ASS-11b`.
+- **fato:** o teste chama `toClientPaymentView` direto, não a rota; pela rota, hoje, o `payUrl` sai `null`.
+- **critério de encerramento:** o comentário passa a ser verdade pela rota (com o `B-ASS-11c`) ou é corrigido.
+
+## P-TRAVA-MODULO-COBRANCA-FORA (2026-11-14) — a trava de risco não vê o módulo de cobrança da assinatura — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): é dinheiro, e a trava decide o nível de revisão · **escopo:** `pre-existente`, ferramenta fora do repositório (`ferramentas/trava-risco.sh`, na pasta do orquestrador) · **dono:** o orquestrador · **PR-alvo:** nenhum (a ferramenta não está no repositório) · **bloqueia:** não.
+- **origem:** Emenda 1 do plano do `B-ASS-11`, E7 e §12; medida de novo na Emenda 1.1 (§4: a trava dá 0 para `subscription-view.ts` e para `navigation.registry.ts`); aberta pelo `B-ASS-11b`.
+- **fato:** a expressão de JUNTA casa `^src/modules/(financial|finance|cheques|billing|…)`, e `src/modules/subscription-billing/**` não casa (o nome começa por `subscription-`). O módulo só sobe por `tenant`, `permission` ou `auth` no nome do arquivo.
+- **critério de encerramento:** a trava passa a casar `src/modules/subscription-billing/`, com o caso medido.
+
+## P-PALETA-SEM-MAPA-DE-PERMISSAO (2026-11-14) — a paleta de comandos não aplica os caminhos escondidos pelo servidor — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): o guard da rota recusa, e a tela mostra "Acesso não permitido" · **escopo:** `pre-existente` (`frontend/src/components/command-palette/logic.ts:1-36` usa `buildSidebarNav(roles)` sem os caminhos escondidos) · **dono:** a nomear pelo orquestrador (sem bloco) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem:** Emenda 1 do plano do `B-ASS-11`, E6, §11 e §12; aberta pelo `B-ASS-11b`.
+- **fato:** a paleta pode oferecer a um perfil de reserva uma tela que o guard da rota recusa; o menu lateral a esconde (`computeHiddenNavPaths`).
+- **critério de encerramento:** a paleta aplica os caminhos escondidos pelo servidor, com teste.
+
+## P-NAV-TENANT-BILLING-STATUS (2026-11-14) — o item "Minha assinatura" do registro de navegação segue `backend-ready` — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `src/modules/navigation/navigation.registry.ts`, item `tenant.billing` (`status: "backend-ready"`) · **dono:** `B-ASS-11c` (já mexe no servidor) · **PR-alvo:** o PR do `B-ASS-11c` · **bloqueia:** não.
+- **origem:** Emenda 1.1 do plano do `B-ASS-11`, §7 (A10): na ordem planejada, o `B-ASS-11b` entra antes da tela e não troca o `status`; a pendência nasce com ele.
+- **critério de encerramento:** o item `tenant.billing` diz `status: "implemented"`, com a tela na `main`.
 
 ## Apensos B-SAN3-10b — roteiro técnico de operação (2026-11-04)
 

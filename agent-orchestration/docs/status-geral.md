@@ -1,5 +1,14 @@
 # Status Geral
 
+## Atualização 2026-11-14 (noite) — `B-ASS-11b`, a Parte R do item 62: o cliente sem a consulta de tendência (PR em rascunho)
+
+- **Autor:** `dev-62r-cl` (Claude Opus 5.5, dev, identidade nova, declarada). **Base medida:** `origin/main@adec93ce` (#565), worktree próprio `w-62r`. Registro do próprio bloco; `Kpis/**` congelado.
+- **O que o bloco faz:** retira `GET /api/v1/billing/subscription/usage-history`, que entregava ao cliente a tendência de 6 meses e os veículos rastreados, contra a P12 (decisão 8.2 do dono, "a tendência sai"; `D-ASS11-TENDENCIA-SAI`). O caminho antigo cai no 404 padrão de `/api/v1`; `GET /billing/subscription` não muda.
+- **Nível de revisão:** junta completa (a trava casa `tenant` no nome do arquivo de rotas).
+- **Item 62 do portão:** segue **PARCIAL**. A Parte R é condição dele; quem o fecha é o PR da Parte T (`B-ASS-11`, a tela), pelos comandos do §1.3 da Emenda 1.1 (`D-ASS11-TENDENCIA-SAI`). A PA-1 (a maquete das 3 aparências) foi respondida pelo dono em 14/11 à noite, pelo relato do orquestrador; a fala literal entra no PR da Parte T.
+- **Pendências:** abre e fecha a `P-ASS-USAGE-HISTORY-X-P12` (vale no merge); abre a `P-ASS-VISAO-CLIENTE-PAGAMENTO-FIXO`, a `P-ASS-NOTA-PDF-CLIENTE`, a `P-ASS-E2E-COMENTARIO-PAYURL` e a `P-NAV-TENANT-BILLING-STATUS` (dono `B-ASS-11c`), a `P-TRAVA-MODULO-COBRANCA-FORA` (orquestrador) e a `P-PALETA-SEM-MAPA-DE-PERMISSAO` (a nomear). A `P-ASS-SANDBOX-REAL` ganha o pré-requisito do `B-ASS-11c`.
+- **Ordem de merge:** #566 → Parte R → Parte T, cumprida: o #566 entrou na `main` (`cd480ab6`) com a Parte R já em PR, e o ramo da Parte R foi atualizado com essa `main` por merge, com o índice e as 2 fixtures de censo regenerados por cima dele.
+
 ## Atualização 2026-11-14 (tarde) — #561 e #564 na main; portão em 52/67; pausa tática e retomada; atas J-561 e J-564 completas
 
 - **Autor:** `reg-1411b-cl` (Claude Opus 5.5, redator de registro, identidade nova, nível menor declarado; revisão simples, §C7 10(1), que fica com outra identidade). **Base medida:** `origin/main@eeac48a3`, worktree próprio. Registro documental; `Kpis/**` congelado e intocado.
