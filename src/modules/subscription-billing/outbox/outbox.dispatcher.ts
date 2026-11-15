@@ -177,7 +177,7 @@ export type CandidateVerdict =
 export function chargeCandidateDecision(
   row: BillingOutboxRow,
   listed: readonly ExternalChargeCandidate[],
-  facts: Pick<AdoptionFacts, "otherIntents">,
+  facts: Pick<AdoptionFacts, "otherIntents" | "fullyRefundedCharges">,
   orphan: boolean,
 ): CandidateVerdict {
   const prefix = orphan ? "orphan_found" : "charge_found";
@@ -187,7 +187,8 @@ export function chargeCandidateDecision(
   if (candidates.length > 1) return { kind: "review", code: `${prefix}_multiple_candidates` };
   if (candidates.length === 1) return { kind: "adopt", candidate: candidates[0]! };
   const blocking = listed.filter((candidate) => candidate.status !== "cancelled"); // [RECONS-02]
-  if (blocking.length > 0) return { kind: "review", code: facts.otherIntents > 0 ? (orphan ? "orphan_found_previous_intent" : "charge_found_for_previous_intent") : `${prefix}_no_candidate` };
+  const stillBlocking = blocking.filter((candidate) => !(candidate.status === "refunded" && (facts.fullyRefundedCharges ?? []).includes(candidate.chargeId))); // [RECONS-03]
+  if (stillBlocking.length > 0) return { kind: "review", code: facts.otherIntents > 0 ? (orphan ? "orphan_found_previous_intent" : "charge_found_for_previous_intent") : `${prefix}_no_candidate` };
   return orphan ? { kind: "review", code: "orphan_recovery_not_found" } : { kind: "create" };
 }
 

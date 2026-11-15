@@ -751,14 +751,27 @@ export class PrismaOutboxRepository implements OutboxRepository {
       const rows = (await tx.$queryRawUnsafe(
         `SELECT s.status, s.reopened_at, round(s.total_amount * 100)::bigint AS total_cents,
                 (SELECT count(*)::int FROM billing_outbox o
-                  WHERE o.statement_id = s.id AND o.kind = 'charge_create' AND o.id <> $2::uuid) AS other_intents
+                  WHERE o.statement_id = s.id AND o.kind = 'charge_create' AND o.id <> $2::uuid) AS other_intents,
+                (SELECT COALESCE(array_agg(c.external_charge_id ORDER BY c.external_charge_id), '{}'::text[])
+                   FROM subscription_statement_charges c
+                   JOIN subscription_statement_payments p ON p.statement_id = c.statement_id AND p.tenant_id = c.tenant_id
+                                                        AND p.source = c.provider AND p.external_charge_id = c.external_charge_id
+                  WHERE c.statement_id = s.id AND c.status = 'refunded' AND p.reversal_kind = 'refund' AND p.reversed_amount >= p.amount) AS fully_refunded
            FROM subscription_statements s WHERE s.id = $1::uuid`,
         statementId,
         rowId,
-      )) as Array<{ status: string; reopened_at: Date | null; total_cents: bigint | number | string; other_intents: number }>;
+      )) as Array<{ status: string; reopened_at: Date | null; total_cents: bigint | number | string; other_intents: number; fully_refunded: string[] | null }>;
       const row = rows[0];
       return row
-        ? { otherIntents: Number(row.other_intents), status: row.status as StatementStatus, reopenedAt: row.reopened_at, totalCents: Number(row.total_cents) }
+        ? {
+            otherIntents: Number(row.other_intents),
+            status: row.status as StatementStatus,
+            reopenedAt: row.reopened_at,
+            totalCents: Number(row.total_cents),
+            // B-ASS-08c1c (plano §4.8): as cobranças do demonstrativo `refunded` NA TABELA com o pagamento do provedor TODO
+            // estornado — o 2º ramo do critério da `P-ASS08C-RECOBRANCA-APOS-ESTORNO` (o valor estornado igual ao pago).
+            fullyRefundedCharges: row.fully_refunded ?? [],
+          }
         : undefined;
     });
   }

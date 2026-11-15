@@ -140,7 +140,7 @@ export async function runBillingPollPending(deps: ChannelDeps): Promise<PollResu
     if (ref.createdAt.getTime() > staleCutoff) continue;
     const statement = await deps.statements.findStatement(ref.tenantId, ref.statementId);
     if (!statement) continue;
-    if (ref.provider && ref.externalChargeId && deps.ports[ref.provider] && statement.status === "closed" && statement.chargeStatus === "pending") {
+    if (ref.provider && ref.externalChargeId && deps.ports[ref.provider] && statement.status === "closed" && (await deps.charges.listByStatement(ref.tenantId, ref.statementId)).some((charge) => charge.provider === ref.provider && charge.externalChargeId === ref.externalChargeId && charge.status === "pending")) { // [POLL-TABLE]
       count((await applyReconsultedChargeState(reconcileDepsOf(deps), { provider: ref.provider, tenantId: ref.tenantId, statementId: ref.statementId, chargeId: ref.externalChargeId })).outcome);
       charges += 1;
     }

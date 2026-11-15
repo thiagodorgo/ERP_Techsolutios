@@ -150,6 +150,9 @@ export type AdoptionFacts = {
   readonly reopenedAt: Date | null;
   /** O total atual, em centavos (V); `null` quando o leitor não o traz — então V é falso e a linha vai a revisão. */
   readonly totalCents: number | null;
+  /** B-ASS-08c1c (plano §4.8, o marcador RECONS-03): as cobranças do demonstrativo `refunded` na tabela com o pagamento do
+   * provedor TODO estornado. Ausente = lista vazia (conservador: a cobrança listada continua bloqueando). */
+  readonly fullyRefundedCharges?: readonly string[];
 };
 
 /** O que o dublê lê do demonstrativo no claim (R-OBX-5). `hasLiveCharge` opcional: o dublê OR-a com a própria fila.
@@ -554,7 +557,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     const otherIntents = [...this.#rows.values()].filter(
       (row) => row.tenantId === tenantId && row.statementId === statementId && row.kind === "charge_create" && row.id !== rowId,
     ).length;
-    return { otherIntents, status: read.status, reopenedAt: read.reopenedAt, totalCents: read.totalCents ?? null };
+    return { otherIntents, status: read.status, reopenedAt: read.reopenedAt, totalCents: read.totalCents ?? null, fullyRefundedCharges: [] };
   }
 
   // O dublê valida o tenant como o RLS faria: linha de outra organização = inexistente (fail-closed).
