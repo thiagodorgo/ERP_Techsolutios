@@ -168,8 +168,14 @@ export class InMemoryStatementRepository implements StatementRepository {
           },
         }
       : {};
+    const charging = this.#charging(tenantId);
     return {
       ...intent,
+      charging: () => charging,
+      async syncCharge(statementId, match, status) {
+        if (!channel?.charges) return;
+        await channel.charges.syncByStatement(tenantId, statementId, match, status, self.clock());
+      },
       async hasOutboxNeedsReview(statementId) {
         if (!channel) return false;
         return (await channel.outbox.listByStatement(tenantId, statementId)).some((row) => row.status === "NEEDS_REVIEW");

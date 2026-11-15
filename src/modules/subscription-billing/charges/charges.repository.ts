@@ -60,4 +60,20 @@ export class InMemoryStatementChargeRepository implements StatementChargeReposit
     const row = this.#rows.get(id);
     if (row && row.tenantId === tenantId) this.#rows.set(id, { ...row, status: "cancelled", cancelledAt: now });
   }
+
+  /** B-ASS-08c1c (R2-03): o espelho do `syncCharge` do Prisma — as cobranças do demonstrativo pelo id no provedor (ou, na
+   * disputa, num estado) passam ao `status` dado; `cancelled_at` só se `cancelled`. Zero linhas é normal. */
+  async syncByStatement(
+    tenantId: string,
+    statementId: string,
+    match: { readonly externalChargeId: string } | { readonly status: ChargeStatus },
+    status: ChargeStatus,
+    now: Date,
+  ): Promise<void> {
+    for (const row of this.#rows.values()) {
+      if (row.tenantId !== tenantId || row.statementId !== statementId) continue;
+      if ("externalChargeId" in match ? row.externalChargeId !== match.externalChargeId : row.status !== match.status) continue;
+      this.#rows.set(row.id, { ...row, status, cancelledAt: status === "cancelled" ? (row.cancelledAt ?? now) : row.cancelledAt });
+    }
+  }
 }

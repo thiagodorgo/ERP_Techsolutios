@@ -358,6 +358,23 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
       )) as unknown[];
       return rows.length > 0;
     },
+    // B-ASS-08c1c (plano §4.0 item 1): a cobrança sobre o MESMO `tx` (o `lockStatement` reentra o `FOR UPDATE` que este `tx` já
+    // tem, sem esperar). Só é chamada DEPOIS da trava do demonstrativo.
+    charging: () => prismaChargeIntentTx(tx, tenantId),
+    // B-ASS-08c1c (R2-03, plano §4.7): a tabela de cobranças acompanha o provedor no `tx` do efeito no demonstrativo.
+    async syncCharge(statementId, match, status) {
+      if (!isUuid(statementId)) return;
+      const byExternal = "externalChargeId" in match;
+      await tx.$executeRawUnsafe(
+        `UPDATE subscription_statement_charges SET status = $3, cancelled_at = CASE WHEN $3 = 'cancelled' THEN COALESCE(cancelled_at, now()) ELSE cancelled_at END
+          WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND (CASE WHEN $4::boolean THEN external_charge_id = $5 ELSE status = $5 END)`,
+        tenantId,
+        statementId,
+        status,
+        byExternal,
+        byExternal ? match.externalChargeId : match.status,
+      );
+    },
   };
 }
 
