@@ -25,6 +25,8 @@ import { startAsaasFake, type AsaasFake } from "./helpers/fake-providers/asaas.j
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// Emenda 2.2 do B-ASS-08c1b (P-4): o vencimento dos payloads despachados = a data de negócio de hoje em São Paulo + 30 dias.
+const DUE_FUTURA = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 const SP_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
 
 if (!connectionString) {
@@ -92,7 +94,7 @@ if (!connectionString) {
     adapter: AsaasPaymentAdapter,
     options: Parameters<typeof seedRecharge>[1],
   ): Promise<Recharge> {
-    const r0 = await adapter.createCharge({ customerId: "cus_0001", amountCents: options.r0Cents, dueDate: "2026-11-10", description: "Assinatura", externalReference: statementId, method: "pix" });
+    const r0 = await adapter.createCharge({ customerId: "cus_0001", amountCents: options.r0Cents, dueDate: DUE_FUTURA, description: "Assinatura", externalReference: statementId, method: "pix" });
     await options.shape(server, adapter, r0.chargeId, t0);
 
     await db.$executeRawUnsafe(
@@ -102,7 +104,7 @@ if (!connectionString) {
       statementId,
       provider,
       `charge_create:${statementId}:1`,
-      JSON.stringify({ amountCents: options.r0Cents, dueDate: "2026-11-10", method: "pix" }),
+      JSON.stringify({ amountCents: options.r0Cents, dueDate: DUE_FUTURA, method: "pix" }),
       t0,
       r0.chargeId,
     );
@@ -119,7 +121,7 @@ if (!connectionString) {
     await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'closed', reopened_at = $2, total_amount = 150 WHERE id = $1::uuid`, statementId, minutesAfter(t0, 1));
 
     const t1 = minutesAfter(t0, 3);
-    const r1 = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 15_000, dueDate: "2026-11-10", method: "pix" }, now: t1 });
+    const r1 = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 15_000, dueDate: DUE_FUTURA, method: "pix" }, now: t1 });
     assert.equal(r1.idempotencyKey, `charge_create:${statementId}:2`, "montagem: R1 é a 2ª intenção do demonstrativo");
     return { provider, statementId, r0Charge: r0.chargeId, r1, t1, server, adapter };
   }
@@ -268,7 +270,7 @@ if (!connectionString) {
           return typeof value === "function" ? value.bind(target) : value;
         },
       });
-      const r = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 9_999, dueDate: "2026-11-10", method: "pix" }, now: t0 });
+      const r = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 9_999, dueDate: DUE_FUTURA, method: "pix" }, now: t0 });
       const go = (now: Date) =>
         runDispatchOutbox({ repo: new PrismaOutboxRepository(role.client, { tenantIds: [tenantId] }), ports: { [provider]: port }, resolveCustomer: async () => ({ ok: true, customerId: "cus_0001" }), now: () => now });
       const firstRun = await go(t0);

@@ -348,6 +348,16 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
       const row = rows[0];
       return row ? { provider: row.provider, seq: Number(row.seq), status: row.status } : undefined;
     },
+    // B-ASS-08c1b (P8, A7/A8): a leitura da fila do `reopen`, no MESMO `tx` e depois da trava do demonstrativo (1 conexão).
+    async hasOutboxNeedsReview(statementId) {
+      if (!isUuid(statementId)) return false;
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT 1 FROM billing_outbox WHERE statement_id = $1::uuid AND status = $2 LIMIT 1`,
+        statementId,
+        "NEEDS_REVIEW",
+      )) as unknown[];
+      return rows.length > 0;
+    },
   };
 }
 
