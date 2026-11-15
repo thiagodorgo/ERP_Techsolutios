@@ -12819,12 +12819,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ASS-VISAO-DO-CLIENTE (2026-11-03) — cliente sem rota e tela honestas da assinatura — ALTA
 
-- **status:** ABERTA (PARCIAL — a rota foi entregue no PR #507, merge `e4e181f2`, 2026-11-06; falta a tela) · **escopo:** item 62 do portão vendável · **dono:** `B-ASS-11` (tela); a parte do `B-ASS-04` (rota) está entregue · **PR-alvo:** PR do `B-ASS-11` · **bloqueia:** item 62.
+- **status:** FECHADA pelo `B-ASS-11` (Parte T, ramo `feat/ass-minha-assinatura-62t`; vale no merge) — antes: PARCIAL, com a rota no PR #507 (merge `e4e181f2`, 2026-11-06) e a tendência fora pelo PR #574 (merge `b00f3161`) · **escopo:** item 62 do portão vendável · **dono:** `B-ASS-11` (tela); a parte do `B-ASS-04` (rota) e a do `B-ASS-11b` (tendência fora) estão entregues · **PR-alvo:** PR do `B-ASS-11` · **bloqueia:** item 62.
 - **origem:** fala literal registrada em `D-COBRANCA-ASSINATURA-FRANQUIA`: o cliente vê somente plano, uso da franquia e situação.
 - **encerramento:** rota derivada das claims e tela com as três aparências expõem somente a allowlist aprovada; custo interno, dados de outras organizações e números comerciais não aparecem. **(valores fora do repositório público)**.
 - **andamento (PR #507):** `GET /api/v1/billing/subscription` e `/billing/usage-history` tiram a organização da sessão (`?tenantId` → 400; ator de plataforma e organização de sistema → 403), com `billing:read`, e a resposta não tem nenhuma chave de dinheiro (varredura de chaves no T-ST-29). Os campos de pagamento saem `null` e `invoicePdfAvailable: false`, e a rota do PDF da nota não existe, até haver as tabelas de notas e de cobranças (`B-ASS-08` e `B-ASS-09`). O menu "Minha assinatura" já existe; a tela é do `B-ASS-11`.
 - **andamento (`B-ASS-11b`, ramo `fix/ass-cliente-sem-tendencia`; vale no merge):** a rota de tendência (`/billing/subscription/usage-history`) sai, pela P12 e pela decisão 8.2 do dono (`D-ASS11-TENDENCIA-SAI`; a `P-ASS-USAGE-HISTORY-X-P12` fecha com ela). **Correção do andamento acima (Emenda 1 do plano do `B-ASS-11`, §2):** o "menu 'Minha assinatura' já existe" vale só para o registro do servidor (`navigation.registry.ts`, item `tenant.billing`); no menu do portal o item não existe, e entra com a tela.
 - **regra de fechamento (Emenda 1.1 do plano do `B-ASS-11`, §1.3 e §9.1):** fecha com o item 62, e só pelos três comandos do §1.3 colados no corpo do PR que o marcar, rodados no próprio head com rebase na `origin/main`: nenhum `usage-history` em `src/` e `tests/fixtures/`, a rota `/administrator/subscription` no `App.tsx` e a referência `minha-assinatura-3opcoes.reference.html` em `screen-refs/`. Não fecha mais "no merge da Parte T".
+- **fato no fechamento (`B-ASS-11`, Parte T):** a tela `/administrator/subscription` (sob `billing:read`) chama só `GET /api/v1/billing/subscription`, lê a resposta por allowlist (21 caminhos de chave, nenhum de dinheiro, módulo, veículo, organização ou demonstrativo; T-A1 em 8 níveis) e sai com as 3 aparências aprovadas (`D-ASS11-MAQUETE-APROVADA`), com o item no fim de ADMINISTRAÇÃO de admin, gestor, financeiro e suporte. Os 15 estados × 3 aparências, com cada bloco aberto, têm 0 palavra de dinheiro (T-S2). Os três comandos do §1.3 da Emenda 1.1 passaram no head e estão colados no corpo do PR.
 
 ## P-ASS-RASTREAMENTO-NAO-COBRADO (2026-11-04) — rastreamento aprovado como item próprio ainda não entra na cobrança — ALTA
 
@@ -12889,16 +12890,25 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-PALETA-SEM-MAPA-DE-PERMISSAO (2026-11-14) — a paleta de comandos não aplica os caminhos escondidos pelo servidor — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): o guard da rota recusa, e a tela mostra "Acesso não permitido" · **escopo:** `pre-existente` (`frontend/src/components/command-palette/logic.ts:1-36` usa `buildSidebarNav(roles)` sem os caminhos escondidos) · **dono:** a nomear pelo orquestrador (sem bloco) · **PR-alvo:** a definir pelo orquestrador · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): o guard da rota recusa, e a tela mostra "Acesso não permitido" · **escopo:** `pre-existente` (`frontend/src/components/command-palette/logic.ts:1-36` usa `buildSidebarNav(roles)` sem os caminhos escondidos) · **dono:** `B-ASS-11` (nomeado pelo orquestrador em 15/11) · **PR-alvo:** a definir pelo orquestrador (o conserto fica fora do PERMITIDO da Parte T) · **bloqueia:** não.
 - **origem:** Emenda 1 do plano do `B-ASS-11`, E6, §11 e §12; aberta pelo `B-ASS-11b`.
 - **fato:** a paleta pode oferecer a um perfil de reserva uma tela que o guard da rota recusa; o menu lateral a esconde (`computeHiddenNavPaths`).
 - **critério de encerramento:** a paleta aplica os caminhos escondidos pelo servidor, com teste.
+- **andamento (`B-ASS-11`, Parte T): a Parte T NÃO fecha esta pendência.** Medido no ramo com a tela (`buildCommandDestinations` de `logic.ts`, para cada papel de `ROLE_PERMISSIONS`, com o rótulo que `resolveFrontendRoles` dá): a paleta oferece "Minha assinatura" ao papel `viewer` (rótulo "Auditor", menu do gestor), que não tem `billing:read`, e a quem não tem rótulo nenhum (menu do gestor). O menu lateral a esconde (o menu do servidor não traz o caminho). A paleta só filtra por permissão os caminhos que estão em `tenantNavigation.ts`, e `/administrator/subscription` não está lá (o plano proíbe esse arquivo nesta tela). Ao abrir, o guard da rota recusa com "Acesso não autorizado" (o `PermissionGuard`), e não com o "Acesso não permitido" da tela, que é o do 403 do servidor. **O que falta:** a paleta aplicar os caminhos escondidos pelo servidor (`computeHiddenNavPaths`) ou um mapa de permissão para os caminhos fora do `tenantNavigation.ts`, com teste por papel; isso toca `frontend/src/components/command-palette/**`, fora do §7.1 do plano da Parte T, e precisa de emenda ou de bloco próprio.
 
 ## P-NAV-TENANT-BILLING-STATUS (2026-11-14) — o item "Minha assinatura" do registro de navegação segue `backend-ready` — BAIXA
 
 - **status:** ABERTA · **gravidade:** BAIXA (a fonte) · **escopo:** `src/modules/navigation/navigation.registry.ts`, item `tenant.billing` (`status: "backend-ready"`) · **dono:** `B-ASS-11c` (já mexe no servidor) · **PR-alvo:** o PR do `B-ASS-11c` · **bloqueia:** não.
 - **origem:** Emenda 1.1 do plano do `B-ASS-11`, §7 (A10): na ordem planejada, o `B-ASS-11b` entra antes da tela e não troca o `status`; a pendência nasce com ele.
 - **critério de encerramento:** o item `tenant.billing` diz `status: "implemented"`, com a tela na `main`.
+- **andamento (`B-ASS-11`, Parte T):** a tela entra com este PR; o `status` do servidor não muda aqui (o plano proíbe `src/**` na Parte T), e segue com o `B-ASS-11c`.
+
+## P-PAGE-HEADING-ROW-GRADE (2026-11-15) — o cabeçalho `.page-heading--row` vira grade e as ações caem embaixo do subtítulo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): é só composição visual · **escopo:** `pre-existente` (`frontend/src/styles/app.css`: `.page-heading--row { display: flex }` na l.96 perde para `.page-heading { display: grid }` na l.351, que vem depois e tem a mesma especificidade) · **dono:** a nomear pelo orquestrador · **PR-alvo:** a definir · **bloqueia:** não.
+- **origem:** conferência visual do `B-ASS-11` (Parte T), 15/11: na tela-modelo `TenantSettingsPage` e em toda página com `page-heading page-heading--row`, o selo ou o botão das ações aparece embaixo do subtítulo, e não à direita do título, como desenham as referências aprovadas.
+- **fato:** a Parte T contornou só na própria tela, com a regra de escopo `.assin-a > .page-heading--row { display: flex }` (precedente: `.work-orders-page > .page-heading--row`); as outras páginas seguem como estão.
+- **critério de encerramento:** a ordem das duas regras do `app.css` corrigida (ou a regra de linha com especificidade própria), com a conferência das telas que usam o cabeçalho.
 
 ## Apensos B-SAN3-10b — roteiro técnico de operação (2026-11-04)
 

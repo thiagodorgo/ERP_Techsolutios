@@ -5426,3 +5426,13 @@ lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`.
 - **Leitura do planejador, declarada (§A6):** a recomendação 4 da Emenda 1 ("o item 62 fecha com a tela, sem esperar a retirada") foi retirada pela Emenda 1.1 (§1.2), porque fecharia o item da P12 com a P12 violada no servidor. Ela nunca foi registrada no repositório, então não há registro a desfazer. O dono pode dizer o contrário a qualquer hora.
 - **Fica para o PR da Parte T:** a fala do dono na PA-1 (a maquete das 3 aparências, ID proposto `D-ASS11-MAQUETE-APROVADA`) e as respostas 5 e 6 da Emenda 1, com a marca de leitura.
 - **Comando do bloco:** `agent-orchestration/codex/comandos/B-ASS-11b-cliente-sem-tendencia.md`.
+
+## D-ASS11-MAQUETE-APROVADA (2026-11-14 21:08 SP) — as 3 aparências da tela "Minha assinatura" (PA-1 do item 62), aprovadas sem ajuste
+
+- **Fato (decisão do dono):** às 14/11 21:08 SP, depois de ver a página "Decisões pendentes do dono" com as 4 recomendações e as capturas das 3 aparências, o dono respondeu: *"aprovo suas recomendacoes"* (transcrição do orquestrador no registro fora do repositório, `REGISTRO-PENDENTE.md`, 14/11 21:08). Para a PA-1 (Emenda 1.1 do plano do `B-ASS-11`, §2.6) a recomendação era aprovar as 3, e por isso a aprovação é a fala do dono sobre a tela que ele viu, não a regra geral das recomendações.
+- **O que vale:**
+  - as 3 aparências da maquete v3 (15 situações) estão **aprovadas, sem ajuste**: A · Padrão fiel, B · Analítica e C · Situação primeiro. A maquete entrou byte a byte como referência em `docs/claude-code-handoff/screen-refs/minha-assinatura-3opcoes.reference.html` (Fm-b, 1º commit do PR da Parte T);
+  - a PA-1 absorve as perguntas 1, 2 e 3 da Emenda 1: a maquete, nenhum contato nominal (o texto manda falar com a equipe que atende a organização) e a ação "Copiar dados da fatura" (nome da organização e vencimento, sem valor);
+  - a Parte T do `B-ASS-11` fica destravada, na ordem `#566` → Parte R (`B-ASS-11b`, #574) → Parte T.
+- **Respostas 5 e 6 da Emenda 1, pela recomendação — leitura declarada (§A6):** a `D-DONO-1311-RECOMENDACOES` cobre pergunta nascida depois (`decisoes.md`, entrada de 13/11). (5) Os meios de pagamento vindos da cobrança ficam para o `B-ASS-11c`, obrigatório antes de ligar a cobrança automática (`P-ASS-VISAO-CLIENTE-PAGAMENTO-FIXO`); (6) "Baixar nota fiscal" fica fora da tela até existir a rota do PDF (`P-ASS-NOTA-PDF-CLIENTE`); a ausência do botão estava no painel da maquete que o dono viu. O dono pode desfazer as duas numa linha.
+- **Comando do bloco:** `agent-orchestration/codex/comandos/B-ASS-11-minha-assinatura.md`.
