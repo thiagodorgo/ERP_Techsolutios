@@ -135,12 +135,12 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6 }}>E-mail corporativo</label>
-              <input className="lg-input" type="email" autoComplete="email" placeholder="usuario@empresa.com.br" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <label htmlFor="login-email" style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6 }}>E-mail corporativo</label>
+              <input id="login-email" className="lg-input" type="email" autoComplete="email" placeholder="usuario@empresa.com.br" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div style={{ marginBottom: 10 }}>
-              <label style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6 }}>Senha</label>
-              <input className="lg-input" type="password" autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <label htmlFor="login-password" style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "#374151", marginBottom: 6 }}>Senha</label>
+              <input id="login-password" className="lg-input" type="password" autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             <div style={{ textAlign: "right", marginBottom: 24 }}>
               <span style={{ fontSize: 12.5, fontWeight: 600, color: "#2563EB", cursor: "pointer" }}>Esqueci minha senha</span>
