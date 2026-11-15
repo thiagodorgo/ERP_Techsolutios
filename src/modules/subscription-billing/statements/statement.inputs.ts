@@ -10,7 +10,9 @@
 //  - refechar um reaberto usa as MESMAS versões do snapshot (`pin`, G5): a de cada trecho do plano base E a do
 //    add-on de rastreamento; só as medições e os ajustes mudam (§3.4);
 //  - nenhum dia com assinatura → `no_subscription`; dia com assinatura e sem versão vigente → `plan_without_price`;
-//    organização de sistema `platform` → `platform_organization` (S16).
+//    organização de sistema `platform` → `platform_organization` (S16);
+//  - dia com adicional de rastreamento sem preço utilizável (sem versão vigente, por veículo sem preço, ou a forma antiga
+//    `flat` com mensalidade 0 e preço por veículo: Emenda 1.1 G1) → `addon_without_price`.
 
 import { parseBusinessDate } from "../../../config/business-time.js";
 import { resolveVersionAt } from "../plans/plan-versioning.js";

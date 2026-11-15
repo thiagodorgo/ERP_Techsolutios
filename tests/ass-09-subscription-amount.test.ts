@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { parseBusinessDate } from "../src/config/business-time.js";
+import type { SubscriptionPlanVersion, TenantSubscription } from "../src/modules/subscription-billing/plans/plan-types.js";
+import { buildStatementInputs, type StatementSourceData } from "../src/modules/subscription-billing/statements/statement.inputs.js";
+
 import {
   daysInPeriod,
   recompute,
@@ -21,13 +25,13 @@ import type {
   SubscriptionStatement,
 } from "../src/modules/subscription-billing/statements/statement.types.js";
 import { formatCents } from "../src/modules/subscription-billing/overview/overview-money.js";
-import { alertFor } from "../src/modules/subscription-billing/overview/overview.engine.js";
+import { alertFor, groupLineOf, tenantLineOf, totalsOf } from "../src/modules/subscription-billing/overview/overview.engine.js";
 import {
   SubscriptionAmountError,
   subscriptionAmountOf,
   type SubscriptionAmountRuntime,
 } from "../src/modules/subscription-billing/overview/subscription-amount.js";
-import type { SubscriptionAmount } from "../src/modules/subscription-billing/overview/overview.types.js";
+import { SUBSCRIPTION_SKIP_REASONS, type SubscriptionAmount } from "../src/modules/subscription-billing/overview/overview.types.js";
 
 // B-ASS-09 · F3 e F3b — a assinatura do período de cada organização (plano v2 §3 P3; §6 C3: R-SUB-1..7; Emenda 2.1 §2).
 // Valores sintéticos.
@@ -233,7 +237,11 @@ test("T-SUB-4 · reaberto → o valor gravado, com estimativa e fonte statement_
 });
 
 test("T-SUB-5 · sem assinatura → null (none, com o motivo) e o alerta é no_subscription, nunca crítico", async () => {
-  for (const reason of ["no_subscription", "plan_without_price"] as const) {
+  // Os motivos vêm da lista do servidor (`SUBSCRIPTION_SKIP_REASONS`, Emenda 1.2.1): um motivo novo entra aqui sem editar
+  // o teste. Fica de fora, explícito, `platform_organization`: pela regra do #566 a organização da plataforma não é linha
+  // da visão (`isPlatformTenant` a tira antes da projeção, e o custo dela é `platformOwnCost`), então ela não cai no ramo
+  // `none` da projeção.
+  for (const reason of SUBSCRIPTION_SKIP_REASONS.filter((item) => item !== "platform_organization")) {
     const { runtime } = setup(async () => ({ kind: "skip", reason }));
     const amount = await subscriptionAmountOf(runtime, { tenantId: TENANT, period: "2026-10", now: NOW });
     assert.deepEqual(
@@ -242,6 +250,62 @@ test("T-SUB-5 · sem assinatura → null (none, com o motivo) e o alerta é no_s
     );
     assert.equal(alertFor(amount.subscriptionAmountCents, 1_000n), "no_subscription", reason);
   }
+});
+
+test("T-SUB-12 · add-on na forma antiga (flat, mensalidade 0, preço por veículo) → a projeção dá none com addon_without_price, nunca 0.00; no grupo e nos totais, a regra do plan_without_price", async () => {
+  // O montador REAL do fechamento (`buildStatementInputs`, Emenda 1.1 G1), não um dublê: a forma da sonda L.
+  const sp = (date: string) => parseBusinessDate(date);
+  const version = (id: string, planId: string, patch: Partial<SubscriptionPlanVersion>): SubscriptionPlanVersion =>
+    ({
+      id, planId, version: 1, validFrom: sp("2026-01-01"), validTo: null,
+      monthlyPriceCents: 19_990, includedUsers: 10, includedStorageGb: 10, extraUserPriceCents: 1_500, extraGbPriceCents: 250,
+      perVehiclePriceCents: null, pricingUnit: "flat", modules: [], notes: null, inaugural: false,
+      createdAt: sp("2026-01-01"), updatedAt: sp("2026-01-01"), ...patch,
+    }) as SubscriptionPlanVersion;
+  const sourceWith = (addonVersion: SubscriptionPlanVersion): StatementSourceData => ({
+    tenantSlug: "patio-legado",
+    subscriptions: [
+      {
+        id: "s1", tenantId: TENANT, planId: "starter", validFrom: sp("2026-09-01"), validTo: null,
+        monthlyPriceOverrideCents: null, includedUsersOverride: null, includedStorageGbOverride: null,
+        extraUserPriceOverrideCents: null, extraGbPriceOverrideCents: null, dueDays: 10, status: "active",
+        endedReason: null, endedBy: null, notes: null, createdAt: sp("2026-09-01"), updatedAt: sp("2026-09-01"),
+      } as TenantSubscription,
+    ],
+    addons: [
+      { id: "a1", tenantId: TENANT, subscriptionId: "s1", planId: "tracking_basic", validFrom: sp("2026-09-01"), validTo: null, perVehiclePriceOverrideCents: null, createdAt: sp("2026-09-01"), updatedAt: sp("2026-09-01") },
+    ],
+    versionsByPlan: new Map([["starter", [version("v-starter", "starter", {})]], ["tracking_basic", [addonVersion]]]),
+    usage: [],
+    bindings: ["x", "y", "z"].map((vehicleId) => ({ vehicleId, validFrom: "2026-09-01", validTo: null })),
+  });
+  const LEGADO = version("v-legado", "tracking_basic", { monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
+  const NOVA = version("v-flat-nova", "tracking_basic", { monthlyPriceCents: 5_000 });
+
+  const legacy = setup(async (_tenantId, period, options) => buildStatementInputs(period, sourceWith(LEGADO), options));
+  const amount = await subscriptionAmountOf(legacy.runtime, { tenantId: TENANT, period: "2026-10", now: NOW });
+  assert.equal(legacy.calls.length, 1, "o mês sem demonstrativo projeta");
+  assert.deepEqual(
+    [amount.subscriptionAmountCents, amount.statementTotalCents, amount.creditsAppliedCents, amount.source, amount.skipReason, amount.estimate],
+    [null, null, null, "none", "addon_without_price", false],
+  );
+  assert.deepEqual(await legacy.repository.listStatements(TENANT), [], "a projeção não grava nada");
+
+  // A linha, o grupo e os totais seguem a regra que o #566 já dá ao plan_without_price (`noneAmount` + `sumIgnoringNull`).
+  const tenant = (tenantId: string) => ({ tenantId, tenantName: tenantId, slug: null });
+  const group = { groupId: "g1", groupName: "Rede" };
+  const skipped = tenantLineOf(tenant(TENANT), group, amount, { costMicro: 10_000_000n, costCents: 1_000n });
+  assert.deepEqual([skipped.subscriptionCents, skipped.subscriptionSkipReason, skipped.marginCents, skipped.alert], [null, "addon_without_price", null, "no_subscription"]);
+  const paying = tenantLineOf(tenant(OTHER), group, { ...amount, subscriptionAmountCents: 10_000n, source: "projection", skipReason: null, estimate: true }, { costMicro: 20_000_000n, costCents: 2_000n });
+  const groupLine = groupLineOf(group, [skipped, paying]);
+  assert.deepEqual([groupLine.subscriptionAmount, groupLine.membersWithoutSubscription, groupLine.allocatedCost], [10_000n, 1, 3_000n]);
+  assert.equal(groupLineOf(group, [skipped]).subscriptionAmount, null, "o grupo sem pagante não soma 0.00: a assinatura dele é nula");
+  assert.equal(totalsOf([skipped]).subscriptionAmount, null, "sozinha, a organização com pulo não soma 0.00 como se fosse cobrança zero");
+
+  // Controle: a mesma organização com a versão flat NOVA (mensalidade positiva) projeta um número.
+  const current = setup(async (_tenantId, period, options) => buildStatementInputs(period, sourceWith(NOVA), options));
+  const projected = await subscriptionAmountOf(current.runtime, { tenantId: TENANT, period: "2026-10", now: NOW });
+  assert.deepEqual([shown(projected).subscriptionAmount, projected.source, projected.skipReason], ["249.90", "projection", null]);
 });
 
 test("T-SUB-6 · mês encerrado não projeta: todas com demonstrativo fechado → 0 chamadas a inputs.resolve", async () => {

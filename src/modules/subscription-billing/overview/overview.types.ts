@@ -45,7 +45,9 @@ export type OverviewWarning = (typeof OVERVIEW_WARNINGS)[number];
 /** De onde veio a assinatura do período (plano v2 §3 P3). */
 export const SUBSCRIPTION_SOURCES = ["statement", "statement_reopened", "cancelled", "projection", "none"] as const;
 export type SubscriptionSource = (typeof SUBSCRIPTION_SOURCES)[number];
-export type SubscriptionSkipReason = "no_subscription" | "plan_without_price" | "platform_organization";
+/** Por que a organização está sem assinatura no mês (`none`): os mesmos motivos de pulo do fechamento (`StatementInputs`). */
+export const SUBSCRIPTION_SKIP_REASONS = ["no_subscription", "plan_without_price", "addon_without_price", "platform_organization"] as const;
+export type SubscriptionSkipReason = (typeof SUBSCRIPTION_SKIP_REASONS)[number];
 
 /**
  * A base da assinatura (D-9; Q5 = RECOMENDAÇÃO, D-DONO-1311-RECOMENDACOES, 13/11): o valor do demonstrativo ANTES de abater o

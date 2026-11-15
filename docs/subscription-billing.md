@@ -158,6 +158,8 @@ organização vê como uso. A organização nunca vê preço — só a quantidad
 **Sem preço utilizável.** Adicional vigente sem versão em algum dia do mês, ou por veículo com preço nulo e
 sem sobrescrita, pula o fechamento daquela organização com o motivo `addon_without_price` (como o
 `plan_without_price` que já existe). O fechamento nunca sai com rastreamento zero calado.
+Na visão de custo da plataforma, a organização aparece sem assinatura (`none`) com o motivo
+`addon_without_price`, e nunca com 0,00.
 
 **No máximo um vigente.** Um segundo adicional vigente na mesma assinatura é recusado pelo índice único
 parcial e pela recusa `addon_duplicate_tracking` no serviço.
