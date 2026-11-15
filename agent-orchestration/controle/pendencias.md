@@ -8920,7 +8920,7 @@ genérico e o item está no `PLANO_SAN3.md` (§4.1/§5), o campo **dono** traz o
 
 ## P-MOBILE-FILA-OS-NAO-DRENADA (2026-09-11) — "Pedir aprovação" e "não consigo iniciar" entram na fila e nunca saem — ALTA
 
-- status: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
+- status: FECHADA (2026-11-15, PR do `B-SAN3-16`, ramo `feat/mobile-fila-os-16`): o app envia os 2 tipos (A1, A2, A5 em `mobile/flutter_app/test/core/sync/bsan316_fila_os_drenada_test.dart`), o servidor os aceita só do técnico da OS e os grava na linha do tempo (B1, B2, B8, B10 em `tests/bsan316-fila-os.test.ts`; D1–D4 no banco), e o que não tem como sair vira erro visível (R2 em `bsan316_rota_de_toda_acao_test.dart`). Antes: ABERTA (inventário SAN3, fatia AUSENTES, 2026-09-11)
 - **fonte (fatia AUSENTES, §2a):** sintese B39 (residual não-Ω6R)
 - **situação medida pela fatia:** ATIVO
 - **prova** (medida pela fatia em `15ef3fbe`; reconfirmada por presença no HEAD `c9ed9b91` pelo aplicador): enfileirados em `features/work_orders/data/work_order_repository.dart:474` (`approvalRequest`) e `:637` (`unableToStart`), sem chamada REST paralela; `core/sync/sync_replay_service.dart:625+` drena só `create`, `statusUpdate`, `assign`; backend `src/modules/mobile/mobile-work-order-sync.ts:213-260` aceita `create/assign/mileage/status_change`
@@ -11058,7 +11058,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA (2026-10-10) — ação que o servidor recusa de forma permanente fica presa no aparelho, sem saída — MÉDIA
 
-- **status:** ABERTA · **escopo:** `pre-existente` — o teto de reenvio e a falta de saída antecedem o 07c: a ação recusada fica `failed`, é reenviada no máximo 5 vezes (`sync_replay_service.dart:136,150,666,1367`; `evidence_sync.dart:297`) e depois fica presa no aparelho; só conflito zera o contador (`sync_conflict_resolver.dart:20-27`). Origem: plano do `B-O6R-07c` v3, §R.4 · **dono:** `B-SAN3-16`.
+- **status:** FECHADA (2026-11-15, PR do `B-SAN3-16`, ramo `feat/mobile-fila-os-16`): a saída do recusado existe desde o #483 (`bo6r11_sync_stalled_resolver_test.dart`), e nenhuma ação pendente fica invisível: a varredura das rotas marca o não enviável como erro visível (R2) e o cartão mostra a causa, com Tentar de novo e Descartar (R7). Antes: ABERTA · **escopo:** `pre-existente` — o teto de reenvio e a falta de saída antecedem o 07c: a ação recusada fica `failed`, é reenviada no máximo 5 vezes (`sync_replay_service.dart:136,150,666,1367`; `evidence_sync.dart:297`) e depois fica presa no aparelho; só conflito zera o contador (`sync_conflict_resolver.dart:20-27`). Origem: plano do `B-O6R-07c` v3, §R.4 · **dono:** `B-SAN3-16`.
 - Sobe um grau de severidade se a resposta do dono à D2-07c for "recusar".
 - **bloqueia:** não o 07c-a; pesa no 07c-b conforme a D2-07c.
 - **teste de encerramento:** ação recusada de forma permanente aparece ao usuário com uma saída (descartar com aviso ou encaminhar), e nenhuma ação fica invisível na fila.
@@ -11527,6 +11527,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** nota C2 da junta do ciclo 1 do `B-O6R-07c-b1`; §1.5 do plano do ciclo 2; ajuste C3c2-A2. O ID é do redator.
 - **bloqueia:** não.
 - **teste de encerramento** (redigido pelo redator): no app, "usar a do servidor" grava o estado do servidor na cópia local, com teste.
+- **apenso (2026-11-15, `B-SAN3-16`):** o `B-SAN3-16` (item 5) não a absorve: está fora da fronteira dele (plano de 11/11, §1.4). Dono a definir pelo orquestrador.
 
 ## P-07CB1-EVIDENCIA-FIELD-OS-ALHEIA-ECOADA (2026-10-18) — evidência `field_*` aceita `work_order_id` alheio e o ecoa — BAIXA
 
@@ -11535,6 +11536,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - O `work_order_id` na evidência `field_*` é rótulo livre, sem leitor por OS.
 - **bloqueia:** não.
 - **teste de encerramento** (redigido pelo redator): evidência `field_*` com `work_order_id` de OS alheia ou inexistente é recusada ou não ecoa o identificador, com teste.
+- **apenso (2026-11-15, `B-SAN3-16`):** o `B-SAN3-16` (item 5) não a absorve: está fora da fronteira dele (plano de 11/11, §1.4). Dono a definir pelo orquestrador.
 
 ## P-07CB1-IDEMP-VISTORIA-SEM-ATOR (2026-10-18) — a idempotência durável da vistoria por `client_action_id` não confere o ator — BAIXA
 
@@ -11549,6 +11551,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **Origem:** nota C2 da junta do ciclo 1 do `B-O6R-07c-b1`; §1.5 do plano do ciclo 2; ajuste C3c2-A2. O ID é do redator.
 - **bloqueia:** não.
 - **teste de encerramento** (redigido pelo redator): o app emite `work_order.mileage` pela fila offline e o replay chega ao servidor, com teste do app.
+- **apenso (2026-11-15, `B-SAN3-16`):** o `B-SAN3-16` (item 5) não a absorve: está fora da fronteira dele (plano de 11/11, §1.4). Dono a definir pelo orquestrador.
 
 ## P-TRC-DEMO-LOGIN-SEM-ORG-INERTE (2026-10-18) — na demo do Traccar, o login sem organização fica inerte — BAIXA
 
@@ -11966,7 +11969,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **encerramento:** como técnico, cada rota acima devolve só o que é dele (ou 403/404), com teste por rota.
 
 ## P-MOBILE-SYNC-FAILED-SEM-DESCARTE (2026-10-25) — ação failed e tipos não replayados não têm saída: a OS fica retida — MÉDIA
-- status: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA, sem o `work_order_material.add`, que saiu dela com o `B-MATERIAL-REENVIO` (PR #551).
+- status: FECHADA (2026-11-15, PR do `B-SAN3-16`, ramo `feat/mobile-fila-os-16`): os 2 tipos sem replay (`approval_request`, `unable_to_start`) passam a sair (A1, A2) e, sem forma de sair, viram erro visível com Descartar (R2, R7); o terceiro, `work_order_material.add`, fechou no #551. Antes: ABERTA — PARCIAL: a metade `failed` fechou no 1º PR do corte do `B-O6R-11` (ramo `fix/mobile-fila-duravel-b-o6r-11`), em 2026-11-02; a metade "tipos sem replay" segue ABERTA, sem o `work_order_material.add`, que saiu dela com o `B-MATERIAL-REENVIO` (PR #551).
 - **origem:** B-SAN3-13 (§2.5, §11-bis 1). A tela de sincronização resolve só `conflict`; `failed` e os tipos sem replay
   (`work_order.approval_request`, `work_order.unable_to_start`, `work_order_material.add`) ficam para sempre.
 - **efeito:** a OS que deixou de ser do técnico (ou concluiu) com uma dessas ações fica no aparelho com selo — nunca é
@@ -12026,6 +12029,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **dono:** `B-O6R-11c` (idempotência durável de OS, vistoria e evidência).
 - **encerramento:** com a idempotência durável, cada tipo que o servidor deduplica passa ao reenvio automático (refino
   por tipo), com teste de "interrompida → reenviada uma vez".
+- **apenso (2026-11-15, `B-SAN3-16`):** os 2 tipos novos têm repetição durável pelo evento da linha do tempo (organização + usuário + `client_action_id`, na OS e no tipo; B5, D2) e são candidatos ao reenvio automático no refino por tipo.
 
 ## P-MOBILE-SYNC-SCREEN-RETRATO-VELHO (2026-11-02) — "Minha versão"/"Versão do gestor" grava a ação do retrato que a tela leu, sem reler — BAIXA
 - status: ABERTA (sonda P4 do 1º PR do `B-O6R-11`: não reproduz)
@@ -12082,7 +12086,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - `P-CHECKLIST-DTO-EMITE-TENANT-ID` (MÉDIA; dono no ramo: `B-SAN3-22`) — a API de vistorias do app devolve o `tenant_id` da organização no corpo da resposta — l.9999 do ramo.
 - `P-MOBILE-STATUS-DESCONHECIDO-VIRA-AGENDADA` (MÉDIA; dono no ramo: `B-SAN3-13`) — status do backend fora do vocabulário do app vira "Agendada", e a tela oferece "Iniciar rota" em cima disso — l.10008 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo.
 - `P-MOBILE-PRIORIDADE-URGENT-MEDIUM-VIRA-NORMAL` (MÉDIA; dono no ramo: `B-SAN3-13`) — OS urgente aparece "Normal" na lista do técnico — l.10035 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo.
-- `P-MOBILE-CODEC-FILA-STATUS-CRU` (BAIXA; dono no ramo: `B-SAN3-16`) — a fila offline manda ao backend três status que ele recusa com 400 — l.10059 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo.
+- `P-MOBILE-CODEC-FILA-STATUS-CRU` (BAIXA; dono no ramo: `B-SAN3-16`) — a fila offline manda ao backend três status que ele recusa com 400 — l.10059 do ramo. **Portada pelo `B-O6R-11d` (2026-11-11, CR2-11D-05)**: o texto vale pelo cabeçalho próprio, no fim deste arquivo. **Fechada pelo `B-SAN3-16` (2026-11-15, E1 a E3).**
 - `P-CI-FLUTTER-SEM-PIN` (MÉDIA; dono no ramo: `B-SAN3-10`) — o job `flutter` do CI instala o canal `stable` sem versão, e a versão muda entre dois runs do mesmo PR — l.10078 do ramo.
 - `P-MOBILE-TELEMETRIA-STOP-NAO-AGUARDA-TICK` (MÉDIA; dono no ramo: fila pós-gate) — o `stop()` da telemetria não espera o tick em voo: um ponto é capturado DEPOIS do stop, e o teste que prova o "foreground-only" cai quando a máquina está carregada — l.10133 do ramo. **FECHADA pelo PR #532** (merge `d0da291e`, 2026-11-11; porteiro `porteiro-532`, R1): o `stop()` invalida o ciclo e o tick em voo não grava depois dele (ver `P-MOBILE-TELEMETRIA-TESTE-16-INSTAVEL`).
 - **Apenso 2026-11-02 (emenda 4):** `SyncEngine`/`expenseSyncApiProvider`/`syncEngineProvider` são caminho morto (0
@@ -12256,6 +12260,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **gravidade:** BAIXA — nada se perde; sobra registro sem OS na tela.
 - **dono:** `B-SAN3-16`.
 - **encerramento:** replay/descarte de ação e material sem OS, com teste que prova o destino de cada um.
+- **apenso (2026-11-15, `B-SAN3-16`):** os 2 tipos novos (pedido de aprovação e "não iniciou") sem OS enviada — sem criação na fila, ou com toda criação descartada — viram não enviáveis, com Descartar (R8). Os outros tipos dependentes (status, atribuição) e o material órfão continuam sem saída: a pendência fica ABERTA pelo resto, e o `B-SAN3-16` propõe a troca de dono para o orquestrador (fila do app depois do portão).
 
 ## P-AUDIT-CRITICA-NA-TRANSACAO (2026-10-26) — evento de auditoria `critical` gravado DEPOIS do ato, em best-effort — MÉDIA
 - **status:** ABERTA · **escopo:** `pre-existente` (`core-saas/audit/audit-request-context.ts` nasce em `a09f6a4a`, 2026-06-08; o padrão best-effort alcança todos os eventos `critical` da casa, 20+ controllers) · **dono:** bloco de auditoria do core-saas · **bloqueia:** não.
@@ -12699,6 +12704,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   `OfflineState` e `NetworkStatusBanner` em `erp_components.dart` (`Nao foi possivel carregar`, `disponiveis`,
   `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
 - **apenso (2026-11-14, `B-SAN3-17`, PR #568):** os rótulos próprios do cartão de localização da OS seguem sem acento (achado 5 de quem montou a maquete); o cartão é PROIBIDO no bloco.
+- **apenso (2026-11-15, `B-SAN3-16`):** os 5 motivos do "não consegui iniciar" e o rótulo "Solicitar aprovacao" do detalhe seguem sem acento no app; o servidor rotula os motivos em PT-BR correto no evento e no aviso (B2b). A tela de atendimento já diz "Solicitar aprovação".
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 
@@ -13020,6 +13026,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato medido:** o app envia `inventory_entry.create`, `inventory_exit.create` e `work_order_material.add`; o servidor só aceita `inventory.reserve`, `inventory.consume` e `inventory.shortage_report` (`src/modules/mobile/mobile-inventory-sync.ts:6`). Re-medido em `origin/main@0c3c7826`: `inventory_entry.create` em 3 arquivos de `mobile/flutter_app/lib` e em 0 de `src`.
 - **relação:** item 31 do portão (`Ω6R-QUA-002`, estoque no app não sincroniza).
 - **encerramento:** um conjunto único de tipos entre app e servidor, com teste de contrato que fica vermelho se um lado divergir.
+- **apenso (2026-11-15, `B-SAN3-16`):** é a dona da rota "aguarda" de `inventory_entry.create` e `inventory_exit.create` em `mobile/flutter_app/lib/core/sync/sync_action_routing.dart` (`syncActionAwaitingOwner`); quem fechar esta pendência dá a rota "envio" aos 2 tipos, e a guarda R1 obriga a trocar a tabela no mesmo PR.
 
 ## P-MOBILE-STATUS-NOMES (2026-11-04) — nomes de status da OS no app divergem dos do servidor — MÉDIA
 
@@ -14116,18 +14123,21 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` (o app re-casa o `serverId` a cada abertura e não conhece versões; a reabertura existe desde o PR-03; o `B-SAN3-14` só herda a fase na reabertura e, na pré-carga, não regrava `serverId` casado) · **dono:** `B-SAN3-16` (fila e sync do app) ou bloco próprio, a critério do orquestrador · **bloqueia:** não.
 - **origem:** emenda 1 do plano do `B-SAN3-14` §8.
 - **critério de encerramento:** a reabertura no servidor de uma vistoria já baixada aparece no app como run nova da mesma fase, sem regravar a concluída; uma run cancelada no servidor deixa de segurar a OS no app; testes com vermelho-controle nos dois casos.
+- **apenso (2026-11-15, `B-SAN3-16`):** o `B-SAN3-16` (item 5) não a absorve: está fora da fronteira dele (plano de 11/11, §1.4). Dono a definir pelo orquestrador.
 
 ## P-SAN3-14-COLETA-OFFLINE-SEM-EXECUCAO (2026-11-11) — a coleta aberta sem sinal numa OS sem execução fica "pronta" para sempre — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (`D-CHK-DISPATCH-CREATE`: a coleta aberta sem sinal numa OS cuja provisão falhou cria run local que, com sinal e sem par, volta `ready` sem `serverId`, `checklist_repository.dart`, `resolveRunForWorkOrder`); o `B-SAN3-14` fecha isso só para a entrega (R-R2-02) · **dono:** `B-SAN3-16` · **bloqueia:** não.
 - **origem:** emenda 1 do plano do `B-SAN3-14` §8.
 - **critério de encerramento:** a coleta sem execução no servidor aparece como "aguardando envio" e não é dada como pronta; as respostas ficam preservadas; teste com vermelho-controle.
+- **apenso (2026-11-15, `B-SAN3-16`):** o `B-SAN3-16` (item 5) não a absorve: está fora da fronteira dele (plano de 11/11, §1.4). Dono a definir pelo orquestrador.
 
 ## P-SAN3-14-CONCLUSAO-RECUSADA-SEM-CAMINHO-NO-APP (2026-11-11) — OS concluída sem a entrega baixada, recusada pelo servidor, não volta ao atendimento no app — MÉDIA
 
 - **status:** ABERTA · **escopo:** `dentro-do-bloco` (nasce da trava nova do `B-SAN3-14`); não grave pela triagem §C7 item 10(3): sem perda de dado · **dono:** `B-SAN3-16` · **bloqueia:** não.
 - **origem:** HIPÓTESE do R-R2-01 (emenda 1 do plano do `B-SAN3-14`), **negada** pela medição do dev na fatia 2 (`controle/decisoes.md`, `REGISTRO-B-SAN3-14`): "Descartar" a ação na tela de sincronização não mexe na OS, que fica `completed`/`pending`, e a carga da lista preserva OS `pending`; a tela de execução só abre em "Em atendimento"/"Pausada". A OS do servidor fica aberta e a entrega continua respondível pelo console ou por outro aparelho.
 - **critério de encerramento:** OS concluída sem sinal, recusada por `delivery_checklist_pending` e com a entrega baixada depois: o técnico chega à entrega pelo app e, concluída a entrega, a OS conclui sem "Descartar"; teste com vermelho-controle.
+- **apenso (2026-11-15, `B-SAN3-16`):** o `B-SAN3-16` (item 5) não a absorve: está fora da fronteira dele (plano de 11/11, §1.4). Dono a definir pelo orquestrador.
 
 ## P-SAN3-14-COMPARACAO-MODELOS-DIFERENTES (2026-11-11) — a comparação coleta × entrega não serve a modelos diferentes — BAIXA
 
@@ -14320,6 +14330,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   pela fila" continua sendo o item 5 do gate, no `B-SAN3-16` — quem apagar o método REST morto confere com ele.
   *(até 2026-09-18 o dono era `B-SAN3-16`, que não tem o arquivo.)*
 - **Apenso 2026-11-11 (`B-O6R-11d`):** segue como está (§4.3 do plano do `B-O6R-11d`); o 11d não toca `createApprovalRequest`.
+- **apenso (2026-11-15, `B-SAN3-16`):** o pedido de aprovação do técnico passa a existir pela fila (`work_order.approval_request`, com identidade própria na fila de Aprovações); o método REST do app é código morto. O `B-SAN3-16` propõe a troca de dono para o orquestrador (fila do app depois do portão): o `B-SAN3-13` já está na `main` (#460).
 
 ## P-MOBILE-STATUS-ACCEPTED-LOSSY (2026-09-18) — `accepted` (backend) vira `dispatched` no app: o app não distingue "atribuída" de "aceita" — MÉDIA
 
@@ -14401,7 +14412,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-MOBILE-CODEC-FILA-STATUS-CRU (2026-09-19) — a fila offline manda ao backend três status que ele recusa com 400 — BAIXA
 
 - **portada (2026-11-11, `B-O6R-11d`, CR2-11D-05):** texto literal de `origin/fix/mobile-work-order-contracts:agent-orchestration/controle/pendencias.md` (`a24f58b5`, ramo do PR #388, fechado sem merge). As linhas de código citadas abaixo são as daquele ramo.
-- status: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; achado C3-A7 / C2-N2 da junta do ciclo 1, escopo `pre-existente` — não consertada neste PR)
+- status: FECHADA (2026-11-15, PR do `B-SAN3-16`, ramo `feat/mobile-fila-os-16`): a tela de atendimento não oferece mais "Ag. aprovação" nem "Exceção" (E2), "Solicitar aprovação" abre o pedido (E1, E1b), e a mudança de status antiga para `pendingApproval`/`approved`/`exception` já na fila vira não enviável com Descartar (E3). Antes: ABERTA (`B-O6R-11` ciclo 2, §6 do plano; achado C3-A7 / C2-N2 da junta do ciclo 1, escopo `pre-existente` — não consertada neste PR)
 - **o quê:** `WorkOrderSyncCodec._backendStatus` traduz o vocabulário do app para o do backend com `_ => status` no
   fim: `pendingApproval`, `approved` e `exception` viajam CRUS no payload da fila. O REST do mesmo app recusa esses
   três antes de sair (`backendStatusFor` lança `ArgumentError`, caso 6 do T1); a fila não — ela envia, e o backend
@@ -14425,6 +14436,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** o app grava viatura/equipe pela ação `work_order.assign`. Só com a OS em `open` ou `assigned` ela grava; em `accepted`, `on_route`, `on_site`, `in_progress` ou `paused`, o servidor responde 409 `invalid_status_transition`, que o lote devolve em `conflicts[]`, e a viatura/equipe não grava.
 - **prova:** N8 de `tests/b-o6r-11d-lote-tecnico-esperado.test.ts` (caracterização, verde; a mutação M-N8 do diário o deixa vermelho).
 - **critério de encerramento:** a viatura/equipe pelo app grava em qualquer status não terminal sem mudar o status da OS (envio próprio, alternativa D da Q1 do plano do 11d), com teste que fica vermelho no código de hoje.
+- **apenso (2026-11-15, `B-SAN3-16`):** o `B-SAN3-16` (item 5) não a absorve: está fora da fronteira dele (plano de 11/11, §1.4). Dono a definir pelo orquestrador.
 
 ## P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO (2026-11-11) — `assign` sem `userId` apaga o usuário atribuído da OS, venha de onde vier — MÉDIA
 
@@ -14446,6 +14458,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA (plano do `B-O6R-11d`, §4.3, CL11D-09) · **escopo:** pre-existente — no backend `rejected` é terminal (`src/modules/work-orders/work-order.validators.ts`, `rejected: []`, e `assigned → rejected` permitido); no app não é final e tem saída para `inService` (`mobile/flutter_app/lib/features/work_orders/domain/work_order_models.dart`) · **dono:** `B-SAN3-16` (o fluxo de aprovação na fila) · **PR-alvo:** o PR do `B-SAN3-16` · **bloqueia:** não.
 - **fato:** leitura do planejador do 11d, declarada: na entrada, `rejected → rejected` (o rótulo "Rejeitada" serve para "o técnico recusou"); pelo REST o app **não** manda `rejected` (`ArgumentError`, T7b e T14). Pela lista ele não chega (`openOnly`). Restam: a tela de "Rejeitada" oferece retomar (`rejected → inService`), e a **fila** ainda manda `rejected` cru, que o backend aceita de `assigned` e encerra a OS (medido por leitura em `work-order.validators.ts`; o caminho de fila é o da `P-MOBILE-CODEC-FILA-STATUS-CRU`).
 - **critério de encerramento:** os dois sentidos separados (status próprio de aprovação negada, ou a fila recusando `rejected` antes de enfileirar), com teste que fica vermelho no código de hoje.
+- **apenso (2026-11-15, `B-SAN3-16`):** o `B-SAN3-16` (item 5) não a absorve: está fora da fronteira dele (plano de 11/11, §1.4). Dono a definir pelo orquestrador.
 
 ## P-11D-APP-VIATURA-EQUIPE-NAO-LIDAS (2026-11-11) — o app não lê viatura/equipe que o backend emite na OS — BAIXA
 
@@ -15501,6 +15514,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   (`work-order.types.ts:582`, `has_invoiced_items`), caminho não executado.
 - **critério de encerramento:** o mesmo lote, reenviado depois de reiniciar a API, devolve `already_applied`, sem OS nova e
   sem evento novo, com teste que fica vermelho sem o conserto.
+- **apenso (2026-11-15, `B-SAN3-16`):** a Emenda 2 do `B-SAN3-16` nunca foi escrita; pelo próprio texto desta pendência e pela decisão do orquestrador de 14/11 22:41, o dono passa a ser o **`B-SAN3-16b`** (a planejar). O `B-SAN3-16` não a implementa e mantém o escopo.
 
 ## P-OS-MESMA-SITUACAO-GRAVA-EVENTO (2026-11-14) — a mudança para a mesma situação grava evento no histórico da OS — BAIXA
 
@@ -15512,6 +15526,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   replay grava um evento `accepted→accepted` no histórico.
 - **critério de encerramento:** a mudança para a mesma situação não grava evento no histórico, ou grava um marcado como
   repetição, com teste.
+- **apenso (2026-11-15, `B-SAN3-16`):** a Emenda 2 do `B-SAN3-16` nunca foi escrita; pelo próprio texto desta pendência e pela decisão do orquestrador de 14/11 22:41, o dono passa a ser o **`B-SAN3-16b`** (a planejar). O `B-SAN3-16` não a implementa e mantém o escopo.
 
 ## P-MOBILE-RELEASE-ANTIGO-SEM-INTERNET (2026-11-14) — todo APK de release anterior ao #499 sai sem a permissão de rede — BAIXA
 
@@ -16082,3 +16097,59 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** Emenda 1 da abertura, 2.2 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
 - **fato:** o operador sem consentimento e sem viatura sai da página e não é reposto por outro. Não vaza nada.
 - **critério de encerramento:** a página completa o limite, ou o contrato declara que pode vir menor.
+
+## P-SAN3-16-PEDIDO-DUPLO-CONCORRENTE (2026-11-15) — duas requisições simultâneas com o mesmo `client_action_id` podem gravar 2 eventos do pedido do técnico — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-O6R-11c` (idempotência durável do lote) · **bloqueia:** não.
+- **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
+- **fato:** a repetição durável do `B-SAN3-16` lê a linha do tempo e grava sem trava nem índice único (`src/modules/work-orders/work-order.service.ts`, `recordFieldRequest`); a janela exige duas requisições concorrentes com o mesmo `client_action_id`, e o app não roda dois passes juntos (`auto_sync_coordinator.dart`, `_running`).
+- **critério de encerramento:** dois envios concorrentes do mesmo pedido gravam 1 evento, com teste de corrida.
+
+## P-SAN3-16-PEDIDO-DECIDIDO-ANTES-DO-EVENTO (2026-11-15) — a fila de Aprovações grava, o evento falha, e um gestor decide a pendência antes do reenvio: o reenvio cria uma 2ª pendência do mesmo pedido — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-O6R-11c`, com a `P-SAN3-16-PEDIDO-DUPLO-CONCORRENTE` · **bloqueia:** não.
+- **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
+- **fato:** a janela residual declarada no §2.4 da Emenda 1.1 do `B-SAN3-16` (fora do repositório): exige uma falha entre os dois passos e uma decisão em segundos. Não há perda.
+- **critério de encerramento:** o reenvio depois da decisão não abre 2ª pendência do mesmo pedido, com teste.
+
+## P-WEB-LINHA-DO-TEMPO-TIPO-CRU (2026-11-15) — a linha do tempo da OS na web mostra o tipo do evento cru, em inglês — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA, `pre-existente` · **dono:** `B-SAN3-21` (textos de `frontend/`) · **bloqueia:** não.
+- **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
+- **fato:** `frontend/src/modules/work-orders/components/WorkOrderTimeline.tsx` mostra `eventType` cru para todo evento; o `B-SAN3-16` acrescenta `work_order_approval_requested` e `work_order_unable_to_start` (a mensagem do evento já vem em PT-BR).
+- **critério de encerramento:** todo tipo de evento da linha do tempo tem rótulo PT-BR na web, com teste.
+
+## P-WEB-APROVACAO-REGISTRO-DO-PEDIDO-DO-APP (2026-11-15) — na web, o campo "Registro" do detalhe da aprovação mostra a chave opaca do pedido do técnico (`pedido-app:<hash>`) — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-SAN3-21`, com a `P-WEB-LINHA-DO-TEMPO-TIPO-CRU` · **bloqueia:** não.
+- **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
+- **fato:** o pedido do técnico tem `entity_id` próprio na fila (Emenda 1.1 §2.3 do `B-SAN3-16`); `frontend/**` é proibido no bloco.
+- **critério de encerramento:** o detalhe da aprovação mostra a OS e o motivo, não a chave.
+
+## P-SAN3-16-CARTAO-APROVACOES-DA-HOME (2026-11-15) — o cartão de Aprovações da tela inicial do app conta OS locais em `pendingApproval`, status que nenhuma tela produz mais — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** orquestrador (fila do app depois do portão) · **bloqueia:** não.
+- **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
+- **fato:** `mobile/flutter_app/lib/shared/ui/home_screen.dart` (o filtro por `WorkOrderStatus.pendingApproval`); depois do `B-SAN3-16`, a tela de atendimento não leva mais a OS a esse status. O 67 proíbe `mobile/flutter_app/**`.
+- **critério de encerramento:** o cartão conta o que existe (os pedidos do técnico) ou sai.
+
+## P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA (2026-11-15) — `docs/mobile-sync-contracts.md` ainda cita a versão `2026-07-07.d1` do contrato do lote de OS — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** orquestrador (próximo PR de documentação) · **bloqueia:** não.
+- **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
+- **fato:** o `B-SAN3-16` subiu o contrato para `2026-11-14.b-san3-16` (`src/modules/mobile/mobile-work-order-sync.ts`, `API_CONTRACTS.md`); `docs/mobile-sync-contracts.md:108` e `:770` estão fora da lista de permitidos do bloco.
+- **critério de encerramento:** a documentação cita a versão vigente.
+
+## P-A17BIS-CENSO-POR-SUBSTRING (2026-11-15) — o censo A17-bis do `B-SAN3-12a` confere `reason` por substring no `API_CONTRACTS.md` inteiro — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** a definir pelo orquestrador · **bloqueia:** não.
+- **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
+- **fato:** `tests/b-san3-12a-reasons-census.test.ts` usa `contract.includes(reason)`: documentar um dos `reason` comuns da dívida congelada (ex.: `required_field`, `field_too_long`) em outra seção do contrato derruba o teste ("já documentado — remova da lista congelada"). Medido no `B-SAN3-16`, que tirou os 2 literais da linha do lote para não editar o teste.
+- **critério de encerramento:** o censo confere o `reason` na seção dos módulos financeiros, com teste.
+
+## P-T17-FILA-B-CHECAGEM-SEM-PID (2026-11-15) — a checagem "R depois de A" do [T-17-FILA-db] (b) não identifica quem está bloqueado, e cai 1 vez em 43 no CI sem defeito do produto — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-SAN3-16` (herdada do #568, CONF568B-02), **à espera de emenda**: o conserto fica fora da lista de permitidos do bloco · **bloqueia:** não.
+- **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
+- **fato:** `tests/bsan317-consentimento-localizacao-db.test.ts:696` chama `waitForOwnBlockedOrSettled` sem `blockedBy` e sem filtrar o pid de R: B, que espera atrás de R (a ordem certa), conta como "R presa pela posição nova". O helper (`tests/helpers/pg-barrier.ts`) não tem filtro pelo pid do perdedor. Os dois arquivos são de fora do `B-SAN3-16` (teste existente e helper), e o bloco proíbe editar teste existente.
+- **critério de encerramento:** a checagem olha só a sessão de R (o pid dela), sem mudar nenhuma asserção do comportamento; 0 queda em N ≥ 50 execuções.
