@@ -25,6 +25,7 @@ import { PrismaPlansRepository } from "../plans/plans-prisma.repository.js";
 import { PrismaSubscriptionsRepository } from "../plans/subscriptions-prisma.repository.js";
 import { PrismaTenantLookup } from "../plans/tenant-lookup.prisma.js";
 import { prismaChargeIntentTx } from "../charges/charge-intent.prisma.js";
+import { sqlStatusList } from "../charges/charge-rules.js";
 import { listByStatementInTx as listChargesByStatementInTx } from "../charges/charges.prisma.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import { enqueueInTx } from "../outbox/outbox.prisma.js";
@@ -445,7 +446,7 @@ export class PrismaStatementRepository implements StatementRepository {
     return withTenantRls(this.client, tenantId, async (tx) => {
       const rows = (await tx.$queryRawUnsafe(
         `SELECT c.id FROM subscription_statements s
-           JOIN subscription_statement_charges c ON c.statement_id = s.id AND c.tenant_id = s.tenant_id AND c.status = 'pending'
+           JOIN subscription_statement_charges c ON c.statement_id = s.id AND c.tenant_id = s.tenant_id AND c.status IN (${sqlStatusList("payable")})
            JOIN billing_outbox o ON o.statement_id = s.id AND o.tenant_id = s.tenant_id AND o.kind = 'charge_create' AND o.status = 'SENT'
                                 AND c.provider = o.provider AND c.external_charge_id = o.external_id
           WHERE s.id = $1::uuid AND s.tenant_id = $2::uuid

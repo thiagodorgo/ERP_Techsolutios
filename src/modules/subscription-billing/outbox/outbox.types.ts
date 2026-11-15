@@ -30,8 +30,8 @@ export type StatementClaimSnapshot = {
   readonly status: StatementStatus;
   readonly reopenedAt: Date | null;
   readonly hasLiveCharge: boolean;
-  /** B-ASS-08c1c (o marcador CLAIM-PARTIAL): o já pago em centavos; ausente conta como "sem pagamento". */
-  readonly paidCents?: number;
+  /** B-ASS-08c1c (o marcador CLAIM-PARTIAL): o já pago em centavos. Conserto da J-579 (C2-04): OBRIGATÓRIO no tipo. */
+  readonly paidCents: number;
 };
 
 /** Motivos de `NEEDS_REVIEW` decididos no claim (E3 do conserto J-522): vão em `last_error` — a lista de `skip_reason`

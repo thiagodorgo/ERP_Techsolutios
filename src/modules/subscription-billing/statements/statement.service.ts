@@ -11,6 +11,7 @@ import {
   type StatementComputationInput,
 } from "./statement.engine.js";
 import { enqueueChargeCancelInTx, enqueueChargeCreateInTx } from "../charges/charge-request.service.js";
+import { CHARGE_RULES } from "../charges/charge-rules.js";
 import type { OutboxSkipReason } from "../outbox/outbox.types.js";
 import type { PaymentMethod } from "../providers/payment/payment-provider.port.js";
 import { eagerPlan, refechamentoPlan, reopenLiveCheck } from "./statement-charge-lines.js";
@@ -263,7 +264,7 @@ export class StatementService {
       if (current.paidCents > 0) {
         throw new StatementError(422, "statement_has_payments", "A statement with payments cannot be reopened.");
       }
-      if (current.chargeStatus === "pending" || current.chargeStatus === "confirmed") {
+      if (CHARGE_RULES[current.chargeStatus].occupiesSlot) {
         throw new StatementError(422, "statement_charge_pending", "The statement has a live charge.");
       }
       if (current.invoiceStatus === "pending" || current.invoiceStatus === "authorized" || current.invoiceStatus === "cancel_pending") {

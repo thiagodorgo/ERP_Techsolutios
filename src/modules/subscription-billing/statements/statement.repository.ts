@@ -5,6 +5,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { ChargeIntentAuditEvent, ChargeIntentTx } from "../charges/charge-intent.repository.js";
+import { CHARGE_RULES } from "../charges/charge-rules.js";
 import type { InMemoryStatementChargeRepository } from "../charges/charges.repository.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
@@ -316,7 +317,7 @@ export class InMemoryStatementRepository implements StatementRepository {
     const liveCancelFor = (all: readonly BillingOutboxRow[], charge: SubscriptionStatementCharge) =>
       all.some((line) => line.kind === "charge_cancel" && (line.status === "PENDING" || line.status === "PROCESSING" || line.status === "NEEDS_REVIEW") && line.payload.chargeId === charge.externalChargeId);
     for (const charge of await channel.charges.listByStatement(tenantId, statementId)) {
-      if (charge.status !== "pending") continue;
+      if (!CHARGE_RULES[charge.status].payable) continue;
       const line = lines.find((candidate) => candidate.kind === "charge_create" && candidate.status === "SENT" && candidate.provider === charge.provider && candidate.externalId === charge.externalChargeId);
       if (!currentClosing(statement, line)) continue; // [VIEW-VIGENTE]
       if (liveCancelFor(lines, charge)) continue; // [VIEW-LIVE]

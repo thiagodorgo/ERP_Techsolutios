@@ -125,8 +125,9 @@ export function chargeCreateClaimVerdict(row: BillingOutboxRow, statement: State
   }
   if (statement.hasLiveCharge) return { kind: "needs_review", code: "charge_already_exists" };
   // B-ASS-08c1c (Q4 (a), §9 D-9): a linha que ainda NÃO virou cobrança e chega depois de um pagamento parcial não sai com o
-  // valor cheio — a mesma recusa do CHARGE-PARTIAL e do RETRY-PARTIAL do 08c1b. Leitor sem `paidCents` = sem pagamento.
-  if (statement.status === "closed" && (statement.paidCents ?? 0) > 0) return { kind: "needs_review", code: "statement_partially_paid" }; // [CLAIM-PARTIAL]
+  // valor cheio — a mesma recusa do CHARGE-PARTIAL e do RETRY-PARTIAL do 08c1b. O `paidCents` é obrigatório no tipo: o leitor de
+  // produção que o esquecer não compila (só o dublê de teste, que o `check` não tipa, chega aqui sem ele e conta como "sem").
+  if (statement.status === "closed" && statement.paidCents > 0) return { kind: "needs_review", code: "statement_partially_paid" }; // [CLAIM-PARTIAL]
   // B-ASS-08c1c (Q1b (a), Emenda 1 §3): parada há mais de 7 dias → conferência, sem rede, qualquer que seja o `skip_reason`.
   // A linha reaberta pelo operador conta os 7 dias da decisão dele (o `next_attempt_at` do retry). DEPOIS das regras acima: o
   // que não está mais em aberto é pulado antes ("conferindo se ainda está em aberto").

@@ -4,6 +4,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { ChargeStatus } from "../statements/statement.types.js";
+import { CHARGE_RULES } from "./charge-rules.js";
 import type { NewStatementCharge, SubscriptionStatementCharge } from "./charges.types.js";
 
 export interface StatementChargeRepository {
@@ -47,7 +48,7 @@ export class InMemoryStatementChargeRepository implements StatementChargeReposit
 
   async findLive(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined> {
     return [...this.#rows.values()].find(
-      (row) => row.tenantId === tenantId && row.statementId === statementId && (row.status === "pending" || row.status === "confirmed"),
+      (row) => row.tenantId === tenantId && row.statementId === statementId && CHARGE_RULES[row.status].occupiesSlot,
     );
   }
 

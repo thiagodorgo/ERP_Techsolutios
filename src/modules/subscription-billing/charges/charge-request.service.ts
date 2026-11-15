@@ -24,7 +24,9 @@ import type { CustomerResolution } from "../outbox/outbox.dispatcher.js";
 import type { BillingOutboxRow } from "../outbox/outbox.types.js";
 import type { PaymentMethod } from "../providers/payment/payment-provider.port.js";
 import { StatementError } from "../statements/statement.types.js";
+import { chargeOf } from "../statements/statement-charge-lines.js";
 import { chargeCreateEligibility, chargeProfileGate } from "./charge-eligibility.js";
+import { chargeRule } from "./charge-rules.js";
 import type { ChargeIntentRepository, ChargeIntentTx } from "./charge-intent.repository.js";
 
 export type ChargeRequestDeps = {
@@ -177,7 +179,7 @@ export function requestChargeCancel(deps: ChargeRequestDeps, input: ChargeCancel
       (line) =>
         line.status === "SENT" &&
         line.externalId !== null &&
-        charges.some((charge) => charge.provider === line.provider && charge.externalChargeId === line.externalId && charge.status === "pending"),
+        chargeRule(chargeOf(line, charges)).cancelTarget, // [CANCEL-TARGET]
     );
     if (target && lines.some((line) => line.kind === "charge_cancel" && LIVE_CHARGE_CANCEL_STATUSES.has(line.status) && line.payload.chargeId === target.externalId)) throw new StatementError(409, "charge_cancel_in_progress", "A cancellation for this charge is already in progress."); // [CANCEL-ONE]
     const pending = creates.find((line) => line.status === "PENDING");

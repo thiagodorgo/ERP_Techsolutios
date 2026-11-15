@@ -6,6 +6,7 @@
 
 import { randomUUID } from "node:crypto";
 
+import { CHARGE_RULES } from "../charges/charge-rules.js";
 import { enqueueChargeCancelInTx, type ChargeCancelCoreInput } from "../charges/charge-request.service.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import type { ChargeLookup, ChargeResult, ChargeStatus as ProviderChargeStatus } from "../providers/payment/payment-provider.port.js";
@@ -163,7 +164,11 @@ export type StatementClaimReadResult = {
   readonly reopenedAt: Date | null;
   readonly hasLiveCharge?: boolean;
   readonly totalCents?: number;
-  readonly paidCents?: number;
+  /** Conserto da J-579 (C2-04): OBRIGATÓRIO — o leitor de produção que esquecer o já pago não compila (o `[CLAIM-PARTIAL]`). */
+  readonly paidCents: number;
+  /** Conserto da J-579 (A-C1-02): os pagamentos do demonstrativo (origem e id da cobrança no provedor), para o `[REG-PAID]` do
+   * dublê. OBRIGATÓRIO no tipo; os leitores de teste, que o `check` não tipa, contam como "nenhum". */
+  readonly providerPayments: readonly { readonly source: string; readonly externalChargeId: string | null }[];
 };
 
 /** B-ASS-08c1b (P10): a entrada e os desfechos das ações do operador sobre a fila. */
@@ -354,7 +359,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
         row.kind === "charge_create" &&
         (row.status === "PENDING" || row.status === "PROCESSING" || row.status === "SENT" || row.status === "NEEDS_REVIEW"),
     );
-    return { status: read.status, reopenedAt: read.reopenedAt, hasLiveCharge: (read.hasLiveCharge ?? false) || liveInQueue, ...(read.paidCents !== undefined ? { paidCents: read.paidCents } : {}) };
+    return { status: read.status, reopenedAt: read.reopenedAt, hasLiveCharge: (read.hasLiveCharge ?? false) || liveInQueue, paidCents: read.paidCents };
   }
 
   async markSent(tenantId: string, id: string, externalId: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
@@ -392,12 +397,17 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     if (!(await this.confirmLease(tenantId, row.id, lease))) return false;
     const chargeId = outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId;
     const details = outcome.kind === "created" ? outcome.result : outcome.lookup;
+    // Conserto da J-579 (A-C1-02): o leitor do demonstrativo ANTES do sink, e o MESMO `[REG-PAID]` do Prisma — o pagamento do
+    // provedor desta cobrança que chegou antes do registro faz a cobrança nascer `confirmed`.
+    const statement = await this.readStatement(tenantId, row.statementId);
+    let recordedStatus = recordedChargeStatus(outcome.kind, details.status);
+    if (recordedStatus === "pending" && (statement?.providerPayments ?? []).some((payment) => payment.source === row.provider && payment.externalChargeId === chargeId)) recordedStatus = "confirmed"; // [REG-PAID]
     await this.chargeOutcomeSink?.({
       tenantId,
       statementId: row.statementId,
       provider: row.provider,
       externalChargeId: chargeId,
-      status: recordedChargeStatus(outcome.kind, details.status),
+      status: recordedStatus,
       payUrl: details.payUrl ?? null,
       pixCopyPaste: details.pixCopyPaste ?? null,
       boletoLine: details.boletoLine ?? null,
@@ -405,13 +415,11 @@ export class InMemoryOutboxRepository implements OutboxRepository {
       dueDate: (outcome.kind === "adopted" ? outcome.lookup.dueDate : undefined) ?? (typeof row.payload.dueDate === "string" ? row.payload.dueDate : null),
     }, now);
     if (!(await this.markSent(tenantId, row.id, chargeId, now, lease))) return false;
-    // B-ASS-08c1c (A1, plano §4.4): a MESMA releitura do Prisma, pelo leitor do demonstrativo que o dublê já recebe.
-    const statement = await this.readStatement(tenantId, row.statementId);
+    // B-ASS-08c1c (A1, plano §4.4): a MESMA releitura do Prisma, pelo leitor do demonstrativo lido acima.
     // Leitor sem `totalCents` conta como "o mesmo total" (a convenção do dublê para campo ausente, como o `paidCents`); o
     // Prisma sempre lê o total do demonstrativo travado.
     const vigente = statement !== undefined && statement.status === "closed" && (statement.totalCents === undefined || statement.totalCents === Number(row.payload.amountCents)) && !(statement.reopenedAt !== null && statement.reopenedAt.getTime() > row.occurredAt.getTime());
-    const recordedStatus = recordedChargeStatus(outcome.kind, details.status);
-    const cancelIt = !vigente && recordedStatus === "pending"; // [REG-REREAD]
+    const cancelIt = !vigente && CHARGE_RULES[recordedStatus].cancelTarget; // [REG-REREAD]
     if (cancelIt) {
       const sent = this.#rows.get(row.id) as unknown as ChargeCancelCoreInput["target"]; // a linha acabou de virar SENT com o id da cobrança
       await enqueueChargeCancelInTx({ listChargeLines: (id) => this.listByStatement(tenantId, id), enqueue: (next, at) => this.enqueue(next, at) }, { tenantId, statementId: row.statementId, target: sent, now }); // [REREAD-ENQ]

@@ -2,16 +2,34 @@
 // própria trava: o refechamento (P6), a marcação imediata (P7, D2 (i)) e o reopen (A3). Sem I/O: o serviço lê as linhas e as
 // cobranças NO MESMO `tx` do movimento, depois da trava do demonstrativo, e só executa o que estas funções devolvem.
 //
-// "Cancelável" = a cobrança da tabela em `pending` (R2-05). "Terminal" = `cancelled`, `refunded` ou `charged_back`. Qualquer
-// outro estado (`confirmed`, `partially_refunded`, `chargeback_disputed`, `needs_review`, `failed`, `none`) não é cancelável
-// nem terminal: falha fechado. Cobrança que não está na tabela não é terminal.
+// Conserto da J-579 (desenho (b)): as 3 decisões leem DUAS tabelas exaustivas — a do estado da cobrança (`CHARGE_RULES`,
+// `charges/charge-rules.ts`) e a do estado da linha `charge_create` (`CHARGE_CREATE_LINE_RULES`, abaixo). Um membro novo em
+// `CHARGE_STATUSES` ou em `OUTBOX_STATUSES` deixa o `tsc` vermelho até alguém escrever a linha dele. A cobrança que a linha SENT
+// criou e que não está na tabela vale como estado desconhecido (falha fechado: alvo de cancelamento, não terminal).
 
+import { CHARGE_RULES, chargeRule, chargeStatesWhere } from "../charges/charge-rules.js";
 import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
-import type { BillingOutboxRow } from "../outbox/outbox.types.js";
+import type { BillingOutboxRow, OutboxStatus } from "../outbox/outbox.types.js";
 import type { PaymentMethod } from "../providers/payment/payment-provider.port.js";
 import type { ChargeStatus } from "./statement.types.js";
 
-export const TERMINAL_CHARGE_STATES: ReadonlySet<ChargeStatus> = new Set<ChargeStatus>(["cancelled", "refunded", "charged_back"]); // [TERMINAL-SET]
+export const TERMINAL_CHARGE_STATES: ReadonlySet<ChargeStatus> = new Set(chargeStatesWhere("terminal")); // [TERMINAL-SET]
+
+type LineRule = {
+  readonly refecha: "refuse_inflight" | "refuse_review" | "by_charge" | "skip" | "ignore";
+  readonly eager: "skip" | "by_charge" | "none";
+  readonly reopen: "in_flight" | "by_charge" | "none";
+};
+export const CHARGE_CREATE_LINE_RULES = {
+  PENDING:      { refecha: "skip",            eager: "skip",      reopen: "none" },      // [LINE-RULE-PENDING]
+  PROCESSING:   { refecha: "refuse_inflight", eager: "none",      reopen: "in_flight" }, // [LINE-RULE-PROCESSING]
+  SENT:         { refecha: "by_charge",       eager: "by_charge", reopen: "by_charge" }, // [LINE-RULE-SENT]
+  FAILED:       { refecha: "ignore",          eager: "none",      reopen: "none" },      // [LINE-RULE-FAILED]
+  NEEDS_REVIEW: { refecha: "refuse_review",   eager: "none",      reopen: "none" },      // [LINE-RULE-NEEDS-REVIEW]
+  SKIPPED:      { refecha: "ignore",          eager: "none",      reopen: "none" },      // [LINE-RULE-SKIPPED]
+} as const satisfies { readonly [S in OutboxStatus]: LineRule };
+
+const lineRule = (line: BillingOutboxRow): LineRule => CHARGE_CREATE_LINE_RULES[line.status];
 
 /** A cobrança da tabela que a linha `charge_create` criou (pelo provedor e pelo `external_id`), se houver. */
 export function chargeOf(line: BillingOutboxRow, charges: readonly SubscriptionStatementCharge[]): SubscriptionStatementCharge | undefined {
@@ -20,11 +38,11 @@ export function chargeOf(line: BillingOutboxRow, charges: readonly SubscriptionS
 }
 
 export function isTerminal(charge: SubscriptionStatementCharge | undefined): boolean {
-  return charge !== undefined && TERMINAL_CHARGE_STATES.has(charge.status);
+  return chargeRule(charge).terminal;
 }
 
 export function isCancelable(charge: SubscriptionStatementCharge | undefined): boolean {
-  return charge !== undefined && charge.status === "pending";
+  return chargeRule(charge).cancelTarget;
 }
 
 export type ChargeLineRefusal = { readonly kind: "refuse"; readonly httpStatus: 409 | 422; readonly reason: "charge_in_flight" | "outbox_needs_review" | "charge_already_exists" };
@@ -46,20 +64,21 @@ export type RefechamentoPlan =
  */
 export function refechamentoPlan(lines: readonly BillingOutboxRow[], charges: readonly SubscriptionStatementCharge[]): RefechamentoPlan {
   const creates = lines.filter((line) => line.kind === "charge_create");
-  if (creates.some((line) => line.status === "PROCESSING")) return { kind: "refuse", httpStatus: 409, reason: "charge_in_flight" }; // [REFECHA-INFLIGHT]
-  if (creates.some((line) => line.status === "NEEDS_REVIEW")) return { kind: "refuse", httpStatus: 422, reason: "outbox_needs_review" }; // [REFECHA-REVIEW]
-  if (creates.some((line) => line.status === "SENT" && !isTerminal(chargeOf(line, charges)))) return { kind: "refuse", httpStatus: 422, reason: "charge_already_exists" }; // [REFECHA-LIVE]
+  if (creates.some((line) => lineRule(line).refecha === "refuse_inflight")) return { kind: "refuse", httpStatus: 409, reason: "charge_in_flight" }; // [REFECHA-INFLIGHT]
+  if (creates.some((line) => lineRule(line).refecha === "refuse_review")) return { kind: "refuse", httpStatus: 422, reason: "outbox_needs_review" }; // [REFECHA-REVIEW]
+  if (creates.some((line) => lineRule(line).refecha === "by_charge" && !chargeRule(chargeOf(line, charges)).terminal)) return { kind: "refuse", httpStatus: 422, reason: "charge_already_exists" }; // [REFECHA-LIVE]
   return {
     kind: "proceed",
-    skipPending: creates.filter((line) => line.status === "PENDING"),
-    skipSentTerminal: creates.filter((line) => line.status === "SENT" && isTerminal(chargeOf(line, charges))),
+    skipPending: creates.filter((line) => lineRule(line).refecha === "skip"),
+    skipSentTerminal: creates.filter((line) => lineRule(line).refecha === "by_charge" && chargeRule(chargeOf(line, charges)).terminal),
   };
 }
 
 export type EagerPlan = {
   /** `charge_create` PENDING → SKIPPED com o motivo do movimento. */
   readonly skippable: readonly BillingOutboxRow[];
-  /** `charge_create` SENT com a cobrança CANCELÁVEL → `charge_cancel` pelo núcleo (o marcador CANCEL-CORE). */
+  /** `charge_create` SENT com a cobrança que é ALVO de cancelamento (a `pending` e o estado desconhecido) → `charge_cancel` pelo
+   * núcleo (o marcador CANCEL-CORE); o despacho lista primeiro e manda à conferência quando a lista não prova. */
   readonly cancelTargets: readonly BillingOutboxRow[];
 };
 
@@ -70,13 +89,14 @@ export type EagerPlan = {
  */
 export function eagerPlan(lines: readonly BillingOutboxRow[], charges: readonly SubscriptionStatementCharge[]): EagerPlan {
   const creates = lines.filter((line) => line.kind === "charge_create");
-  const skippable = creates.filter((line) => line.status === "PENDING"); // [EAGER-SKIPPABLE]
-  return { skippable, cancelTargets: creates.filter((line) => line.status === "SENT" && isCancelable(chargeOf(line, charges))) };
+  const skippable = creates.filter((line) => lineRule(line).eager === "skip"); // [EAGER-SKIPPABLE]
+  const cancelTargets = creates.filter((line) => lineRule(line).eager === "by_charge" && chargeRule(chargeOf(line, charges)).cancelTarget); // [EAGER-CANCEL]
+  return { skippable, cancelTargets };
 }
 
 /**
- * A3 (plano §4.6) — o que o reopen lê sob a trava, DEPOIS do marcador GUARD-01: a `charge_create` em voo, e a cobrança viva
- * pela TABELA (`pending`/`confirmed`), ou uma SENT cuja cobrança não é terminal (inclusive fora da tabela).
+ * A3 (plano §4.6) — o que o reopen lê sob a trava, DEPOIS do marcador GUARD-01: a `charge_create` em voo, e a cobrança que
+ * ocupa o lugar pela TABELA (`pending`/`confirmed`), ou uma SENT cuja cobrança não é terminal (inclusive fora da tabela).
  */
 export function reopenLiveCheck(
   lines: readonly BillingOutboxRow[],
@@ -84,10 +104,11 @@ export function reopenLiveCheck(
 ): { readonly inFlight: boolean; readonly liveCharge: boolean } {
   const creates = lines.filter((line) => line.kind === "charge_create");
   return {
-    inFlight: creates.some((line) => line.status === "PROCESSING"),
+    inFlight: creates.some((line) => lineRule(line).reopen === "in_flight"),
     liveCharge:
-      charges.some((charge) => charge.status === "pending" || charge.status === "confirmed") ||
-      creates.some((line) => line.status === "SENT" && !isTerminal(chargeOf(line, charges))),
+      charges.some((charge) => CHARGE_RULES[charge.status].occupiesSlot) || // [REOPEN-SLOT]
+      creates.some((line) => lineRule(line).reopen === "by_charge" && !chargeRule(chargeOf(line, charges)).terminal) || // [REOPEN-SENT-LIVE]
+      false,
   };
 }
 

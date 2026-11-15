@@ -27,6 +27,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { forEachTenantRls, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
+import { CHARGE_RULES, sqlStatusList } from "../charges/charge-rules.js";
 import { enqueueChargeCancelInTx } from "../charges/charge-request.service.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import { putRefInTx } from "../webhooks/statement-refs.prisma.js";
@@ -364,7 +365,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
             const statements = (await tx.$queryRawUnsafe(
               `SELECT s.status, s.reopened_at, round(s.paid_amount * 100)::bigint AS paid_cents,
                       ( EXISTS (SELECT 1 FROM subscription_statement_charges c
-                                 WHERE c.statement_id = s.id AND c.status IN ('pending', 'confirmed'))
+                                 WHERE c.statement_id = s.id AND c.status IN (${sqlStatusList("occupiesSlot")}))
                         OR EXISTS (SELECT 1 FROM billing_outbox o2
                                     WHERE o2.statement_id = s.id AND o2.kind = 'charge_create' AND o2.id <> $2::uuid
                                       AND o2.status IN ('PENDING', 'PROCESSING', 'SENT', 'NEEDS_REVIEW')) ) AS has_live_charge
@@ -557,7 +558,7 @@ export class PrismaOutboxRepository implements OutboxRepository {
       // baixa, o cancelamento e o reopen): vigente = `closed`, o mesmo total e nenhuma reabertura depois da linha. Não vigente
       // com a cobrança `pending` → o `charge_cancel` pelo MESMO núcleo do `charge/cancel` e da marcação imediata, no `tx`.
       const vigente = statement.status === "closed" && Number(statement.total_cents) === Number(row.payload.amountCents) && !(statement.reopened_at !== null && statement.reopened_at.getTime() > row.occurredAt.getTime());
-      const cancelIt = !vigente && recordedStatus === "pending"; // [REG-REREAD]
+      const cancelIt = !vigente && CHARGE_RULES[recordedStatus].cancelTarget; // [REG-REREAD]
       if (cancelIt) {
         const enqueued = await enqueueChargeCancelInTx({ listChargeLines: (id) => listByStatementInTx(tx, id), enqueue: (next, at) => enqueueInTx(tx, next, at) }, { tenantId: statement.tenant_id, statementId: statement.id, target: { id: row.id, provider: row.provider, externalId: externalChargeId }, now }); // [REREAD-ENQ]
         if (enqueued?.kind === "enqueued") {
@@ -591,9 +592,9 @@ export class PrismaOutboxRepository implements OutboxRepository {
         now,
       )) as Array<{ id: string }>;
       if (leased.length === 0) return false;
-      await tx.$executeRawUnsafe(
+      await tx.$executeRawUnsafe( // [CANCEL-TX-CHG]
         `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4
-          WHERE tenant_id = $1::uuid AND provider = $2 AND external_charge_id = $3 AND status = 'pending'`,
+          WHERE tenant_id = $1::uuid AND provider = $2 AND external_charge_id = $3 AND status IN (${sqlStatusList("cancelTarget")})`,
         tenantId,
         row.provider,
         chargeId,
