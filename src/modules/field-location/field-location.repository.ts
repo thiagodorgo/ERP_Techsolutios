@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import {
+  fieldLocationBusyError,
   operatorProfileRequiredError,
   trackingConsentRequiredError,
   type FieldOperatorLocation,
@@ -97,5 +98,58 @@ export class InMemoryFieldLocationRepository implements FieldLocationRepository 
       if (recordedDiff !== 0) return recordedDiff;
       return b.receivedAt.getTime() - a.receivedAt.getTime();
     });
+  }
+}
+
+// B-SAN3-17 (Emenda 1.7, C16-05; Emenda 1.8, E17-02 e E17-07): a fila do TITULAR, por processo. No máximo `limit`
+// escritas da mesma chave (organização:titular) seguram conexão ao mesmo tempo. As demais esperam aqui, FORA do pool
+// comum, na ordem de chegada, e a vaga passa direto ao próximo. Quem espera mais que `maxWaitMs` sai com 503
+// `field_location_busy` sem tocar no banco: nada é gravado depois que o app desiste (15 s), e ele repete.
+export const HOLDER_GATE_MAX_WAIT_MS = 3_000;
+
+export class HolderWriteGate {
+  private readonly slots = new Map<string, { active: number; waiting: Array<() => void> }>();
+
+  constructor(private readonly limit: number) {}
+
+  async run<T>(
+    key: string,
+    work: () => Promise<T>,
+    options: { readonly onWait?: () => void; readonly maxWaitMs?: number } = {},
+  ): Promise<T> {
+    let slot = this.slots.get(key);
+    if (!slot) {
+      slot = { active: 0, waiting: [] };
+      this.slots.set(key, slot);
+    }
+    const mine = slot;
+    if (mine.active < this.limit) {
+      mine.active += 1;
+    } else {
+      await new Promise<void>((resolve, reject) => {
+        const wake = () => {
+          clearTimeout(timer);
+          resolve();
+        };
+        const timer = setTimeout(() => {
+          const at = mine.waiting.indexOf(wake);
+          if (at >= 0) mine.waiting.splice(at, 1);
+          reject(fieldLocationBusyError());
+        }, options.maxWaitMs ?? HOLDER_GATE_MAX_WAIT_MS);
+        mine.waiting.push(wake);
+        options.onWait?.();
+      });
+    }
+    try {
+      return await work();
+    } finally {
+      const next = mine.waiting.shift();
+      if (next) {
+        next();
+      } else {
+        mine.active -= 1;
+        if (mine.active === 0) this.slots.delete(key);
+      }
+    }
   }
 }

@@ -120,3 +120,27 @@ export function trackingConsentRequiredError(): FieldLocationError {
     "The operator has not consented to location tracking.",
   );
 }
+
+// B-SAN3-17 (Emenda 1.8, E17-02 e E17-07): a escrita do titular não entrou a tempo (a fila dele no processo passou do
+// prazo, ou o banco não deu a conexão, a trava ou o comando dentro do orçamento). Nada foi gravado, e o app repete
+// depois. É 503, como o `reset_unavailable` da identidade.
+export function fieldLocationBusyError(): FieldLocationError {
+  return new FieldLocationError(
+    503,
+    "FIELD_LOCATION_BUSY",
+    "field_location_busy",
+    "Too many concurrent writes for this operator; nothing was saved, try again.",
+  );
+}
+
+// Falha que o TEMPO resolve, pelo CÓDIGO (o critério de `checklist-prisma.repository.ts`): pool esgotado (P2024),
+// transação interativa expirada (P2028), trava não obtida (55P03), `statement_timeout` (57014) e deadlock (40P01).
+const BUSY_DATABASE_CODES = new Set(["P2024", "P2028", "55P03", "57014", "40P01"]);
+
+export function isBusyDatabaseFailure(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const e = error as { code?: unknown; meta?: { code?: unknown; driverAdapterError?: { cause?: { originalCode?: unknown } } } };
+  return [e.code, e.meta?.code, e.meta?.driverAdapterError?.cause?.originalCode].some(
+    (code) => typeof code === "string" && BUSY_DATABASE_CODES.has(code),
+  );
+}

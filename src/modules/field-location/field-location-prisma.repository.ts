@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
-import { withTenantRls } from "../../database/rls.js";
+import { withTenantRls, withTenantRlsBudget } from "../../database/rls.js";
 import type {
   FieldLocationStoredSource,
   FieldOperatorLocation,
@@ -8,8 +8,10 @@ import type {
   ListLatestFieldLocationsInput,
   RecordFieldLocationInput,
 } from "./field-location.types.js";
+import { fieldLocationBusyError, isBusyDatabaseFailure } from "./field-location.types.js";
 import {
   assertTrackingConsentForWrite,
+  HolderWriteGate,
   type FieldLocationRepository,
   type FieldLocationWriteGuard,
 } from "./field-location.repository.js";
@@ -17,8 +19,14 @@ import {
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 // Gancho de teste (como o `afterBindingLocked` da ingestão do Traccar): roda dentro da transação da escrita, depois do
-// `FOR SHARE` da linha do perfil e antes do INSERT. Em produção não há gancho.
-export type FieldLocationWriteHooks = { readonly afterConsentLocked?: () => Promise<void> };
+// `FOR NO KEY UPDATE` da linha do perfil e antes do INSERT. Em produção não há gancho.
+export type FieldLocationWriteHooks = {
+  readonly afterConsentLocked?: () => Promise<void>;
+  // Emenda 1.7 (C16-05): avisa quando uma escrita guardada fica na fila do titular, fora do pool (só para teste).
+  readonly onHolderGateWait?: () => void;
+  // Emenda 1.8 (E17-07): o prazo da fila do titular, trocado só no teste (o padrão é HOLDER_GATE_MAX_WAIT_MS).
+  readonly holderGateMaxWaitMs?: number;
+};
 
 export class PrismaFieldLocationRepository implements FieldLocationRepository {
   constructor(
@@ -26,16 +34,17 @@ export class PrismaFieldLocationRepository implements FieldLocationRepository {
     private readonly hooks: FieldLocationWriteHooks = {},
   ) {}
 
-  // B-SAN3-17 (Emenda 1.5, CX3-568-01): com a guarda, a linha do perfil do titular é lida com `FOR SHARE` na MESMA
-  // transação do INSERT (o executor TEM de ser a transação: o `RlsPrismaFieldLocationRepository` a abre). Sem linha, ou
-  // sem consentimento, nada é inserido. A revogação (UPDATE da mesma linha) fica serializada contra a escrita: ou espera
-  // ela terminar, e a posição gravada é anterior a ela, ou já confirmou, e a escrita a vê.
+  // B-SAN3-17 (Emenda 1.5, CX3-568-01; Emenda 1.6, CX3-568-03): com a guarda, a linha do perfil do titular é lida com
+  // `FOR NO KEY UPDATE` na MESMA transação do INSERT (o executor TEM de ser a transação: o `RlsPrismaFieldLocationRepository`
+  // a abre). Sem linha, ou sem consentimento, nada é inserido. A trava conflita consigo mesma e com o UPDATE da revogação:
+  // a posição que chega com a revogação já na fila espera atrás dela e relê a linha nova (a trava compartilhada deixava
+  // furar a fila). Não conflita com o `FOR KEY SHARE` das FKs que apontam para o perfil.
   async record(input: RecordFieldLocationInput, guard?: FieldLocationWriteGuard): Promise<FieldOperatorLocation> {
     if (guard?.requireTrackingConsent) {
       const rows = await this.client.$queryRaw<Array<{ tracking_consent: boolean }>>`
         SELECT tracking_consent FROM operator_profiles
          WHERE tenant_id = ${input.tenantId}::uuid AND user_id = ${input.operatorUserId}::uuid
-           FOR SHARE`;
+           FOR NO KEY UPDATE`;
       assertTrackingConsentForWrite(rows.length === 0 ? undefined : rows[0]!.tracking_consent === true);
       await this.hooks.afterConsentLocked?.();
     }
@@ -123,10 +132,24 @@ export class RlsPrismaFieldLocationRepository implements FieldLocationRepository
     private readonly hooks: FieldLocationWriteHooks = {},
   ) {}
 
+  private readonly holderGate = new HolderWriteGate(HOLDER_WRITE_SLOTS);
+
   record(input: RecordFieldLocationInput, guard?: FieldLocationWriteGuard): Promise<FieldOperatorLocation> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) =>
-      new PrismaFieldLocationRepository(tx, this.hooks).record(input, guard),
-    );
+    if (!guard?.requireTrackingConsent) {
+      return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaFieldLocationRepository(tx, this.hooks).record(input, guard));
+    }
+    // Emenda 1.8 (E17-07): a escrita guardada tem orçamento (GUARDED_WRITE_BUDGET). Somado ao prazo da fila do titular,
+    // a resposta sai antes dos 15 s em que o app desiste; o que estoura vira 503 e nada é gravado.
+    const write = () =>
+      withTenantRlsBudget(this.prismaClient, input.tenantId, GUARDED_WRITE_BUDGET, (tx) =>
+        new PrismaFieldLocationRepository(tx, this.hooks).record(input, guard),
+      ).catch((error: unknown) => {
+        throw isBusyDatabaseFailure(error) ? fieldLocationBusyError() : error;
+      });
+    return this.holderGate.run(`${input.tenantId}:${input.operatorUserId}`, write, {
+      onWait: this.hooks.onHolderGateWait,
+      maxWaitMs: this.hooks.holderGateMaxWaitMs,
+    });
   }
 
   listLatest(input: ListLatestFieldLocationsInput): Promise<readonly FieldOperatorLocation[]> {
@@ -141,6 +164,14 @@ export class RlsPrismaFieldLocationRepository implements FieldLocationRepository
     );
   }
 }
+
+// B-SAN3-17 (Emenda 1.7, C16-05): no máximo HOLDER_WRITE_SLOTS escritas guardadas do MESMO titular seguram conexão ao
+// mesmo tempo, por processo (a fila é a `HolderWriteGate`, em `field-location.repository.ts`). Até HOLDER_WRITE_SLOTS
+// simultâneas (o app manda uma por vez), elas esperam na fila da linha no Postgres, atrás da revogação.
+export const HOLDER_WRITE_SLOTS = 3;
+
+// Emenda 1.8 (E17-07): o orçamento da escrita guardada. Pool em 2 s, transação em 5 s, trava em 3 s, cada comando em 4 s.
+const GUARDED_WRITE_BUDGET = { maxWait: 2_000, timeout: 5_000, lockTimeoutMs: 3_000, statementTimeoutMs: 4_000 } as const;
 
 export async function createPrismaFieldLocationRepository(): Promise<RlsPrismaFieldLocationRepository> {
   const { prisma } = await import("../../database/prisma.js");

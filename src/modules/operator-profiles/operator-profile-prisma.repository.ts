@@ -10,6 +10,7 @@ import type {
 } from "./operator-profile.types.js";
 import { OperatorProfileError } from "./operator-profile.types.js";
 import type { OperatorProfileRepository } from "./operator-profile.repository.js";
+import type { HolderConsentGrantInput, HolderConsentGrantResult } from "./operator-profile.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -83,6 +84,31 @@ export class PrismaOperatorProfileRepository implements OperatorProfileRepositor
       throw translatePersistenceError(error);
     }
   }
+
+  // B-SAN3-17 (Emenda 1.7, C16-01): a linha do perfil é travada com `FOR NO KEY UPDATE` (a força do UPDATE) na MESMA
+  // transação da escrita (o executor TEM de ser a transação: o `RlsPrismaOperatorProfileRepository` a abre), e a regra de
+  // ordem do aceite é reavaliada sobre a linha travada. Uma revogação que confirma depois da leitura do serviço é vista
+  // aqui e o aceite velho sai `superseded`, sem escrever.
+  async applyHolderConsentGrant(input: HolderConsentGrantInput): Promise<HolderConsentGrantResult | undefined> {
+    const rows = await this.client.$queryRaw<Array<{ tracking_consent: boolean; updated_at: Date }>>`
+      SELECT tracking_consent, updated_at FROM operator_profiles
+       WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.profileId}::uuid
+         FOR NO KEY UPDATE`;
+    const row = rows[0];
+    if (!row) return undefined;
+    if (row.tracking_consent !== true && input.decidedAt.getTime() <= new Date(row.updated_at).getTime()) {
+      const current = await this.findById(input.tenantId, input.profileId);
+      return current ? { status: "superseded", profile: current } : undefined;
+    }
+    const updated = await this.update({
+      tenantId: input.tenantId,
+      profileId: input.profileId,
+      trackingConsent: true,
+      trackingConsentAt: row.tracking_consent === true ? undefined : new Date(),
+      updatedBy: input.updatedBy,
+    });
+    return updated ? { status: "applied", profile: updated } : undefined;
+  }
 }
 
 export class RlsPrismaOperatorProfileRepository implements OperatorProfileRepository {
@@ -106,6 +132,10 @@ export class RlsPrismaOperatorProfileRepository implements OperatorProfileReposi
 
   update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined> {
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaOperatorProfileRepository(tx).update(input));
+  }
+
+  applyHolderConsentGrant(input: HolderConsentGrantInput): Promise<HolderConsentGrantResult | undefined> {
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaOperatorProfileRepository(tx).applyHolderConsentGrant(input));
   }
 }
 

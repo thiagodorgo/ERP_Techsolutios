@@ -7,6 +7,7 @@ import {
 } from "../operator-profiles/operator-profile.service.js";
 import type { OperatorProfile } from "../operator-profiles/operator-profile.types.js";
 import {
+  HolderWriteGate,
   InMemoryFieldLocationRepository,
   type FieldLocationRepository,
 } from "./field-location.repository.js";
@@ -20,6 +21,8 @@ import {
   type ListLatestFieldLocationsInput,
   type OwnTrackingConsentResult,
   type RecordFieldLocationInput,
+  fieldLocationBusyError,
+  isBusyDatabaseFailure,
   operatorProfileRequiredError,
   trackingConsentRequiredError,
 } from "./field-location.types.js";
@@ -62,10 +65,23 @@ type ConsentDecisionInput = {
   readonly textVersion: string;
 };
 
+// B-SAN3-17 (Emenda 1.8, E17-02): no máximo HOLDER_CONSENT_SLOTS decisões de consentimento do MESMO titular seguram
+// conexão ao mesmo tempo, por processo; as demais esperam na fila do titular, fora do pool (com o mesmo prazo).
+export const HOLDER_CONSENT_SLOTS = 2;
+
+export type FieldLocationServiceOptions = {
+  // Só para teste: o prazo da fila de consentimento e o aviso de quem ficou nela.
+  readonly consentGateMaxWaitMs?: number;
+  readonly onConsentGateWait?: () => void;
+};
+
 export class FieldLocationService {
+  private readonly consentGate = new HolderWriteGate(HOLDER_CONSENT_SLOTS);
+
   constructor(
     private readonly repository: FieldLocationRepository,
     private readonly resolveOperatorProfileService: () => Promise<OperatorProfileService> = createDefaultOperatorProfileService,
+    private readonly options: FieldLocationServiceOptions = {},
   ) {}
 
   // B-SAN3-17 (item 52, P5 do plano v2): primeiro a validação (400), depois o perfil do ATOR (422
@@ -129,13 +145,29 @@ export class FieldLocationService {
     }
 
     const profileService = await this.resolveOperatorProfileService();
-    const updated = await profileService.update(actor, ownProfile.id, { tracking_consent: granted });
+    // Emenda 1.7 (C16-01): a checagem acima é a resposta rápida; a autoridade do aceite é a da escrita, que reavalia a
+    // regra de ordem sobre a linha travada (um aceite velho que chega com a revogação na fila sai `superseded`). A
+    // revogação continua pelo `update`: ela sempre se aplica.
+    // Emenda 1.8 (E17-02): a decisão passa pela fila do titular; estourado o prazo, ou sem conexão/trava a tempo, 503.
+    const decide = async () =>
+      granted
+        ? profileService.applyOwnTrackingConsentGrant(actor, ownProfile.id, input.decidedAt)
+        : { status: "applied" as const, profile: await profileService.update(actor, ownProfile.id, { tracking_consent: false }) };
+    const decision = await this.consentGate
+      .run(`${actor.tenantId}:${actor.userId}`, decide, {
+        onWait: this.options.onConsentGateWait,
+        maxWaitMs: this.options.consentGateMaxWaitMs,
+      })
+      .catch((error: unknown) => {
+        throw isBusyDatabaseFailure(error) ? fieldLocationBusyError() : error;
+      });
+    const updated = decision.profile;
 
     return {
       granted: updated.trackingConsent,
       grantedAt: updated.trackingConsentAt ?? null,
       clientActionId: input.clientActionId,
-      status: "applied",
+      status: decision.status,
       profileId: updated.id,
       profileUpdatedAt: updated.updatedAt,
       textVersion: input.textVersion,
@@ -245,7 +277,12 @@ export class FieldLocationService {
       throw operatorProfileRequiredError();
     }
     const profileService = await this.resolveOperatorProfileService();
-    const profile = await profileService.findByUserId(actor.tenantId, actor.userId);
+    // Emenda 1.9 (E18C-02): esta leitura roda ANTES das filas do titular e pede o pool comum. Banco ocupado aqui (sem
+    // conexão a tempo, P2028/P2024, ou trava/prazo do banco) responde 503 `field_location_busy`, que o app reenvia; nunca
+    // o 400 genérico do `sendRouteError`, que o app tomaria como recusa.
+    const profile = await profileService
+      .findByUserId(actor.tenantId, actor.userId)
+      .catch((error: unknown) => Promise.reject(isBusyDatabaseFailure(error) ? fieldLocationBusyError() : error));
     if (profile === undefined) {
       throw operatorProfileRequiredError();
     }

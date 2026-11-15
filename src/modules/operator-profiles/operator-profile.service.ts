@@ -3,6 +3,7 @@ import {
   InMemoryOperatorProfileRepository,
   type OperatorProfileRepository,
 } from "./operator-profile.repository.js";
+import type { HolderConsentGrantResult } from "./operator-profile.repository.js";
 import type {
   OperatorProfile,
   OperatorProfileActorContext,
@@ -82,18 +83,26 @@ export class OperatorProfileService {
     const current = await this.get(actor, profileId);
 
     const nextConsent = readOptionalBoolean(body.tracking_consent ?? body.trackingConsent, "tracking_consent");
-    // B-SAN3-17 (Emenda 1 da abertura 2.6): ligar o consentimento (de desligado para ligado) é ato do titular; o gestor
-    // desliga, nunca religa. E (Emenda 1.1, CR17R2E-01) o não-titular nunca grava `true`: com o perfil já ligado, a
-    // reafirmação dele não escreve o campo, para não desfazer uma revogação que chegue entre a leitura e a escrita.
-    if (nextConsent === true && current.trackingConsent !== true && current.userId !== actor.userId) {
-      throw new OperatorProfileError(
-        422,
-        "OPERATOR_PROFILE_CONSENT_HOLDER_ONLY",
-        "tracking_consent_holder_only",
-        "Only the profile holder can grant tracking consent.",
-      );
+    // B-SAN3-17 (Emenda 1.8, E17-01; D-ORQ-568-CONSENTIMENTO-SO-PELO-APP): o cadastro DESLIGA o consentimento e nunca o
+    // liga, nem quando quem edita é o próprio titular. Ligar é só pelo aceite do titular no app
+    // (`POST /mobile/location-consent`, com a regra de ordem decidida na escrita). Com o perfil já ligado, `true` não
+    // escreve o campo (no-op), para não desfazer uma revogação que chegue entre a leitura e a escrita (Emenda 1.1).
+    if (nextConsent === true && current.trackingConsent !== true) {
+      throw current.userId !== actor.userId
+        ? new OperatorProfileError(
+            422,
+            "OPERATOR_PROFILE_CONSENT_HOLDER_ONLY",
+            "tracking_consent_holder_only",
+            "Only the profile holder can grant tracking consent.",
+          )
+        : new OperatorProfileError(
+            422,
+            "OPERATOR_PROFILE_CONSENT_APP_ONLY",
+            "tracking_consent_app_only",
+            "Tracking consent is granted only by the holder, in the field app.",
+          );
     }
-    const consent = resolveConsentTransition(current, nextConsent === true && current.userId !== actor.userId ? undefined : nextConsent);
+    const consent = resolveConsentTransition(current, nextConsent === true ? undefined : nextConsent);
 
     const input: UpdateOperatorProfileInput = {
       tenantId: actor.tenantId,
@@ -115,6 +124,34 @@ export class OperatorProfileService {
       throw new OperatorProfileError(404, "OPERATOR_PROFILE_NOT_FOUND", "not_found", "Operator profile was not found.");
     }
     return updated;
+  }
+
+  // B-SAN3-17 (Emenda 1.7, C16-01): o ACEITE do PRÓPRIO consentimento. A regra de ordem é decidida pelo repositório NA
+  // escrita, sobre a linha travada (Postgres) ou sem `await` (memória). Só o titular chega aqui.
+  async applyOwnTrackingConsentGrant(
+    actor: OperatorProfileActorContext,
+    profileId: string,
+    decidedAt: Date,
+  ): Promise<HolderConsentGrantResult> {
+    const current = await this.get(actor, profileId);
+    if (current.userId !== actor.userId) {
+      throw new OperatorProfileError(
+        422,
+        "OPERATOR_PROFILE_CONSENT_HOLDER_ONLY",
+        "tracking_consent_holder_only",
+        "Only the profile holder can grant tracking consent.",
+      );
+    }
+    const result = await this.repository.applyHolderConsentGrant({
+      tenantId: actor.tenantId,
+      profileId: parseRequiredUuid(profileId, "profileId"),
+      decidedAt,
+      updatedBy: actor.userId,
+    });
+    if (!result) {
+      throw new OperatorProfileError(404, "OPERATOR_PROFILE_NOT_FOUND", "not_found", "Operator profile was not found.");
+    }
+    return result;
   }
 }
 

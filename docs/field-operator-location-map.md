@@ -109,7 +109,9 @@ Consentimento de localização (B-SAN3-17, contrato `mobile_location_consent@202
 - o técnico registra e revoga o PRÓPRIO consentimento: `POST /mobile/location-consent` (`field_location:send`) e `POST /mobile/location-consent/revoke` (só o ator com papel; núcleo no gate de módulo). Corpo `{decided_at, client_action_id, text_version}`; `200 {granted, granted_at, client_action_id, status, profile_updated_at}`. A organização e o usuário vêm sempre do ator;
 - ordem: a revogação sempre se aplica e não é recusada por data; um aceite com `decided_at` não posterior ao `updated_at` de um perfil sem consentimento é `superseded` (nada gravado). A idempotência é de ESTADO;
 - leitores ao vivo (`/field-locations/latest` e o detalhe da OS): a posição enviada pelo app só aparece enquanto o dono dela consente; a viatura (`traccar`) segue a D6 e continua. O histórico (`/field-locations/history`) fica para quem tem `field_location:history`;
-- no cadastro, só o titular liga o consentimento; o gestor desliga.
+- o cadastro (o formulário de Profissionais) desliga o consentimento e nunca o liga, nem para o próprio titular: ligar é só pelo aceite do titular no app (`D-ORQ-568-CONSENTIMENTO-SO-PELO-APP`). `PATCH` com `true` num perfil desligado dá `422` (`tracking_consent_holder_only` a quem não é o titular, `tracking_consent_app_only` ao titular); num perfil ligado, não escreve o campo;
+- sob rajada do mesmo titular, a posição e a decisão de consentimento esperam na fila dele por até 3 s; passou disso, ou o banco não deu a trava a tempo, `503 field_location_busy`: nada é gravado, e o app repete. O banco ocupado na leitura do perfil, que vem antes da fila, também dá esse `503`;
+- o app só zera o consentimento e apaga o não enviado com GPS numa recusa de DOMÍNIO da decisão, com o código e o motivo próprios: `400 FIELD_LOCATION_INVALID` (`invalid_date`, `invalid_client_action_id`, `invalid_text_version`), `403 FORBIDDEN` (`permission_required`, `role_required`, `tenant_required`) e `422 FIELD_LOCATION_PROFILE_REQUIRED`. O `400` genérico, os `5xx` e o tempo esgotado deixam a decisão pendente, e nada é apagado.
 
 Endpoints de OS consumidos opcionalmente pela UI:
 
