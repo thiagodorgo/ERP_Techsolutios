@@ -5358,11 +5358,19 @@ lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`.
   - **o motivo na visão, pela regra do `plan_without_price`:** o `SubscriptionSkipReason` sai da lista `SUBSCRIPTION_SKIP_REASONS` (`as const`) e ganha `addon_without_price`; a organização com o mês pulado por ele é linha `none` com o motivo, assinatura nula e nunca 0,00, fica fora das somas e conta em `membersWithoutSubscription`; o alerta não ganha valor novo;
   - **o rótulo:** "Rastreamento sem preço"; o curto, "Sem preço";
   - **o T-CTR-1 derivado:** os enums do contrato saem do servidor — as listas `as const` e todo símbolo que o módulo de tipos exporta, lido pelo VERIFICADOR (Emenda 1.3.1: `export type X`, `export type { X }`, re-exportação, `enum` e alias genérico; o não resolvido é vermelho; uma fixture com uma forma por linha prova a derivação dentro da suíte). O item 2(a) da Emenda 1.2.1 ("o #573 não reescreve a F6") está **revogado pela Emenda 1.3**, porque a premissa dele (o T-CTR-1 da `main` fica verde depois da F1–F5) foi medida falsa;
-  - **o texto do grupo e a nota:** o `addon_without_price` segue a regra que o J-567 (C3-05) deu ao `plan_without_price` — "rastreamento sem preço cadastrado" e "O rastreamento desta organização não tem preço cadastrado; sem assinatura, não há margem do mês."; nunca "filial" nem "a matriz assina".
+  - **o texto do conjunto econômico e a nota:** o `addon_without_price` segue a regra que o J-567 (C3-05) deu ao `plan_without_price` — "rastreamento sem preço cadastrado" e "O rastreamento desta organização não tem preço cadastrado; sem assinatura, não há margem do mês."; a tela não diz que outra organização assina por esta.
 - **Fecha:** `P-ASS12-PULO-SEM-AVISO`, no merge do #573 (o "aviso" é o selo neutro com o detalhe, não um alerta novo).
-- **Abre:** `P-ASS12-MEMBRO-PLANO-SEM-PRECO` (o membro do grupo com `plan_without_price`, `pre-existente`, dono `B-ASS-10b`).
+- **Abre:** `P-ASS12-MEMBRO-PLANO-SEM-PRECO` (o membro com `plan_without_price` no detalhe do conjunto econômico, `pre-existente`, dono `B-ASS-10b`).
 - **Fora, declarado:** as listas tipadas, as `as const satisfies` e o literal de campo inline não entram no T-CTR-1 (CRIT-E13-2; `P-TCTR1-LISTAS-TIPADAS-E-CAMPO-INLINE`, dono `B-ASS-10b`, pela triagem do orquestrador).
 - **Gravado por:** `dev-573-cl` (Claude Opus 5.5, dev declarado do bloco, cobrindo o `dev-65-dp`), em 15/11/2026.
+
+## D-ASS12-AUTORIDADE-UNICA-PRECO-ADDON (2026-11-15) — o preço de um dia de add-on é decidido por uma função só
+
+- **Origem:** a J-573 (os achados C1-01, C1-02, C2-01 e C2-02) e a Emenda 1.4 do `B-ASS-12` (planejador de topo `plano-573-j573-topo`, Claude Opus 5.5, declarado; o Fable está suspenso). **Leitura do planejador de topo, declarada (§A6);** o dono a desfaz numa linha.
+- **O que vale:** o preço de um dia de add-on é decidido só pela `resolveAddonPricing` (`plans/addon-pricing.ts`, `switch` exaustivo com `never` sobre a unidade), e a trava do `addVersion`, a do `PUT` da assinatura e o montador do fechamento só perguntam a ela. A forma antiga e ambígua inteira (`flat` com preço por veículo, ou `flat` sem mensalidade positiva) e a unidade fora da lista falham fechado: pulo `addon_without_price` no fechamento e 422 na escrita, nunca um valor escolhido (Emenda 1.1 §1). O preço por veículo 0 explícito e a sobrescrita da contratação continuam preço utilizável; a sobrescrita não vale para a unidade fora da lista.
+- **Prova:** a grade T-FORMA-1 (54 formas × `addVersion`, `PUT` pela lista, `PUT` pela migração e montador) tinha 6 divergências e 23 formas fora do oráculo no `45f40f31`, e tem 0 e 0 depois do conserto; as 19 mutações da Emenda 1.4 morrem.
+- **Abre:** `P-ASS12-PLANKIND-POR-EXCLUSAO` (BAIXA, dono `B-ASS-10`).
+- **Gravado por:** `dev-573-cl` (Claude Opus 5.5, dev declarado do conserto), em 15/11/2026.
 
 ## D-SEED-10B-RESPOSTAS-1311 (2026-11-13 ~23:20 SP) — as cinco perguntas do plano v2 do `B-SAN3-10b-F4-SEED-ISOLADO`, pela recomendação
 

@@ -57,7 +57,7 @@ dono `B-ASSINATURA`).
 O que vale é a âncora de contagem 1 de cada script da emenda; o resto do PROIBIDO abaixo continua.
 - Servidor (E12-S): `src/modules/subscription-billing/overview/overview.types.ts` (só a linha do `SubscriptionSkipReason`,
   que vira a lista `SUBSCRIPTION_SKIP_REASONS` e o tipo derivado; o resto de `overview/**` segue PROIBIDO);
-  `statement.inputs.ts` (1 comentário); `tests/ass-09-subscription-amount.test.ts` (imports, T-SUB-5 e T-SUB-12);
+  `statement.inputs.ts` (1 comentário); `tests/ass-09-subscription-amount.test.ts` (imports, T-SUB-5 e T-SUB-13);
   `tests/ass-04-statement-service.test.ts` (o laço do T-ST-13); `docs/subscription-billing.md` (1 frase);
   `API_CONTRACTS.md` (1 frase em "Base da assinatura").
 - Tela (E12-T, só no caso (a), em `frontend/src/modules/platform/cloud-billing/`): `cloud-billing.types.ts` (o tipo),
@@ -68,6 +68,17 @@ O que vale é a âncora de contagem 1 de cada script da emenda; o resto do PROIB
 - T-CTR-1 (Emenda 1.3, que revoga o item 2(a) da 1.2.1, e Emenda 1.3.1): `tests/ass-10b-contrato-overview.test.ts`
   (o comentário, os pisos, o `createProgram`, o `literalUnionsOf`/`typeMembersOf` pelo verificador e o teste da
   fixture) e `tests/fixtures/ass-12-tctr1-formas/{formas,fora,nao-resolvido}.ts` (novos).
+
+### Acréscimos da Emenda 1.4 (o conserto da J-573: uma autoridade única para o preço do add-on)
+
+- `src/modules/subscription-billing/plans/addon-pricing.ts` (novo); em `plans.service.ts`, `subscriptions.service.ts` e
+  `statement.inputs.ts`, só os pontos que passam a perguntar à `resolveAddonPricing`.
+- Testes novos `tests/ass-12-addon-pricing.test.ts` e `tests/ass-12-tracking-formas.test.ts`; acréscimos no fim de
+  `tests/ass-12-tracking-charge.test.ts`, `tests/ass-12-tracking-addon-rules.test.ts`, `tests/ass-12-tracking-db.test.ts` e
+  `frontend/tests/ass-10b-estados.smoke.test.tsx`; o título do T-SUB-13 em `tests/ass-09-subscription-amount.test.ts`.
+- `docs/subscription-billing.md` ("Sem preço utilizável", a tabela das travas e a frase do `PUT`) e a nota do
+  `docs/revisoes/TRACCAR/PLANO_TRACCAR.md` movida para depois do parágrafo da recomendação.
+- Continuam PROIBIDOS: `plan-types.ts`, `statement.engine.ts`, `statement.service.ts`, `overview/**` e `frontend/src/**`.
 
 ## Escopo PROIBIDO
 

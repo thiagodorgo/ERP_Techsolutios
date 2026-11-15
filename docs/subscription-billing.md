@@ -155,9 +155,13 @@ encerrado exatamente à meia-noite conta no dia que começava naquela meia-noite
 A medição do mês (`tracked_vehicles`) não muda e continua sendo feita mesmo sem adicional: é o que a
 organização vê como uso. A organização nunca vê preço — só a quantidade.
 
-**Sem preço utilizável.** Adicional vigente sem versão em algum dia do mês, ou por veículo com preço nulo e
-sem sobrescrita, pula o fechamento daquela organização com o motivo `addon_without_price` (como o
-`plan_without_price` que já existe). O fechamento nunca sai com rastreamento zero calado.
+**Sem preço utilizável.** Adicional vigente sem versão em algum dia do mês, ou cuja versão do dia não tem preço
+utilizável, pula o fechamento daquela organização com o motivo `addon_without_price` (como o `plan_without_price`
+que já existe). Não tem preço utilizável: a versão por veículo sem preço por veículo; a versão de mensalidade fixa
+que traz preço por veículo ou não tem mensalidade positiva — a forma que a API antiga gravava, que é ambígua e por
+isso não é lida de jeito nenhum; e a unidade de preço que o sistema não conhece. A sobrescrita por veículo da
+organização é preço utilizável em toda unidade conhecida. O fechamento nunca sai com rastreamento zero calado nem
+com um valor escolhido para dado antigo.
 Na visão de custo da plataforma, a organização aparece sem assinatura (`none`) com o motivo
 `addon_without_price`, e nunca com 0,00.
 
@@ -171,9 +175,11 @@ parcial e pela recusa `addon_duplicate_tracking` no serviço.
 | base | `per_vehicle` | `base_plan_requires_flat` |
 | adicional | `per_vehicle` sem preço por veículo | `addon_version_requires_per_vehicle_price` |
 | adicional | `flat` com preço por veículo | `addon_flat_rejects_per_vehicle_price` |
+| adicional | `flat` sem mensalidade positiva | `addon_flat_requires_monthly_price` |
+| adicional | unidade fora da lista | `addon_version_unknown_pricing_unit` |
 
-E o `PUT` da assinatura, antes da primeira escrita, recusa o adicional sem versão vigente ou por veículo sem
-preço e sem sobrescrita (`addon_without_price`).
+E o `PUT` da assinatura, antes da primeira escrita, recusa (`addon_without_price`) o adicional sem versão vigente
+ou cuja versão, com a sobrescrita da contratação, não tem preço utilizável — pela mesma regra do fechamento.
 
 **Refechamento.** O refechamento fixa a versão de cada trecho e da parte por veículo (`addonPlanVersionIds`);
 publicar uma versão nova depois do fechamento não muda o total de um demonstrativo reaberto.
