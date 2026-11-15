@@ -317,7 +317,9 @@ com o `B-TRC-04`, por cadastro de módulos na versão do adicional.
   cobrança vigente (com o aviso `full_amount_charge_open` quando há pagamento parcial).
 - **Ainda não (pendências com dono):** ligar/desligar/testar/registrar webhook persistidos pela tela (F9 do B-ASS-08; hoje
   nenhum caminho grava `enabled = true`); `invoicePdfAvailable` das notas na visão do cliente; baixa manual → nota (T-FLX-13,
-  08c2); `refund` na outbox; a cobrança adotada em estado desconhecido (`P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA`, 08c3).
+  08c2); `refund` na outbox; a reconsulta da cobrança em estado desconhecido (`P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA`: hoje nenhum
+  escritor grava esse estado; desde o conserto da J-579, se ele aparecer, a baixa que quita, o `cancel()` e o `charge/cancel` pedem o
+  cancelamento, e o despacho lista primeiro).
 - **Rollback:** `BILLING_PROVIDERS_ENABLED=false` para o canal (a outbox fica visível); reverter o PR não apaga linhas. As
   migrações M5 e `20260901000000` são aditivas, com drill de rollback nos testes `-db`.
 

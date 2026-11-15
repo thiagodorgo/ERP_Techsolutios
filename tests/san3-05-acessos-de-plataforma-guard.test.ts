@@ -591,7 +591,7 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
   ],
   [
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "subscription_statement_charges", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
-    "B-ASS-08c1b (F6, [CANCEL-TX], passo 3): `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4 WHERE tenant_id = $1 AND provider = $2 AND external_charge_id = $3 AND status = 'pending'` — a cobrança da tabela, só se `pending`, com a organização no predicado; tabela FORCE da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC1; CC6f: a injeção de falha depois deste passo desfaz tudo).",
+    "B-ASS-08c1b (F6, [CANCEL-TX], passo 3): `UPDATE subscription_statement_charges SET status = 'cancelled', cancelled_at = $4 WHERE tenant_id = $1 AND provider = $2 AND external_charge_id = $3 AND status IN (<a lista gerada de CHARGE_RULES.cancelTarget>)` — a cobrança da tabela, só se a cobrança é alvo de cancelamento (`CHARGE_RULES`, `cancelTarget`: `pending` e o estado desconhecido; conserto da J-579), com a organização no predicado; tabela FORCE da MESMA organização. Provado em tests/ass-08c-charge-cancel-db.test.ts (CC1; CC6f: a injeção de falha depois deste passo desfaz tudo).",
   ],
   [
     k("L1", "src/modules/subscription-billing/outbox/outbox.prisma.ts", "PrismaOutboxRepository.recordChargeCancelOutcome", "tx", "RAW-SQL($executeRawUnsafe)", "billing_outbox", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),

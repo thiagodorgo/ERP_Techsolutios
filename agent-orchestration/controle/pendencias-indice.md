@@ -424,7 +424,7 @@
 | `P-ASS10B-TROCA-DE-GRUPO-ATOMICA` | 15853 | MÉDIA | sim | P-ASS10B-TROCA-DE-GRUPO-ATOMICA (2026-11-14) — trocar uma organização de grupo pede duas |
 | `P-ASS10B-COMPOSICAO-EM-REAIS` | 15867 | MÉDIA | sim | P-ASS10B-COMPOSICAO-EM-REAIS (2026-11-14) — a composição por serviço do custo da organiz |
 | `P-ASS10B-IMPORTACAO-1MB` | 15874 | MÉDIA | sim | P-ASS10B-IMPORTACAO-1MB (2026-11-14) — a importação manual aceita até 1 MB, e o arquivo  |
-| `P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA` | 15951 | MÉDIA | sim | P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA (2026-11-15) — a cobrança adotada em estado des |
+| `P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA` | 15951 | MÉDIA | sim | P-ASS08C-COBRANCA-DESCONHECIDA-SEM-SAIDA (2026-11-15) — a cobrança em estado desconhecid |
 
 ## ABERTAS · balde B — processo/registro — 455
 
@@ -883,8 +883,8 @@
 | `P-ASS10B-PONTE-UNICA` | 15930 | BAIXA | sim | P-ASS10B-PONTE-UNICA (2026-11-14) — duas pontes de degraus na biblioteca — BAIXA (opcion |
 | `P-567-VER-DEMONSTRATIVO` | 15937 | BAIXA | sim | P-567-VER-DEMONSTRATIVO (2026-11-15) — o detalhe da organização na tela de custos não ab |
 | `P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA` | 15944 | BAIXA | sim | P-ASS08C-ESTORNO-MANUAL-SEM-COBRANCA (2026-11-15) — depois de quitar à mão (a cobrança é |
-| `P-ASS11-AVISO-COBRANCA-CHEIA` | 15958 | BAIXA | sim | P-ASS11-AVISO-COBRANCA-CHEIA (2026-11-15) — a tela "Minha assinatura" não mostra o aviso |
-| `P-RBAC-MATRIX-SEM-COBRANCA-DA-PLATAFORMA` | 15965 | BAIXA | sim | P-RBAC-MATRIX-SEM-COBRANCA-DA-PLATAFORMA (2026-11-15) — o `RBAC_MATRIX.md` não lista as  |
+| `P-ASS11-AVISO-COBRANCA-CHEIA` | 15964 | BAIXA | sim | P-ASS11-AVISO-COBRANCA-CHEIA (2026-11-15) — a tela "Minha assinatura" não mostra o aviso |
+| `P-RBAC-MATRIX-SEM-COBRANCA-DA-PLATAFORMA` | 15971 | BAIXA | sim | P-RBAC-MATRIX-SEM-COBRANCA-DA-PLATAFORMA (2026-11-15) — o `RBAC_MATRIX.md` não lista as  |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 

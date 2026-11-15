@@ -489,7 +489,7 @@ novo**; muda o efeito das rotas que já existem. **Tudo continua DESLIGADO por p
 
 | Rota (já existente) | O que muda | Recusas novas (`reason`) |
 |---|---|---|
-| `POST /platform/billing/statements/close` (`platform:billing:manage`) e o job `subscription.close-statements` | **Com o canal LIGADO** (env + cofre + provedor `enabled`, o mesmo predicado do `/charge`), o fechamento põe a cobrança na fila na MESMA transação: uma `charge_create` `PENDING` com o total recém-gravado, o vencimento do demonstrativo e o método do perfil de cobrança (sem método → `pix`). Fechar com o canal ligado É cobrar, e o job fecha sem ator. Com o canal desligado, nada é enfileirado (Q1 (a)): a conta antiga sai pelo `/charge`. Refechar um `reopened` tira a `charge_create` do fechamento desfeito do conjunto vivo (`PENDING`, ou `SENT` com a cobrança terminal → `SKIPPED` `statement_reopened`, mantendo o `externalId`) e enfileira a nova com `seq + 1`. Total zero (`paid`), `already_closed` e `skipped` não enfileiram. | `409` `charge_in_flight` (a `charge_create` está em voo) · `422` `outbox_needs_review` (há linha em conferência) · `422` `charge_already_exists` (`SENT` com cobrança que não é terminal) · `409` `statement_busy` |
+| `POST /platform/billing/statements/close` (`platform:billing:manage`) e o job `subscription.close-statements` | **Com o canal LIGADO** (env + cofre + provedor `enabled`, o mesmo predicado do `/charge`), o fechamento põe a cobrança na fila na MESMA transação: uma `charge_create` `PENDING` com o total recém-gravado, o vencimento do demonstrativo e o método do perfil de cobrança (sem método → `pix`). Fechar com o canal ligado É cobrar, e o job fecha sem ator. Com o canal desligado, nada é enfileirado (Q1 (a)): a conta antiga sai pelo `/charge`. Refechar um `reopened` tira a `charge_create` do fechamento desfeito do conjunto vivo (`PENDING`, ou `SENT` com a cobrança terminal → `SKIPPED` `statement_reopened`, mantendo o `externalId`) e enfileira a nova com `seq + 1`. Total zero (`paid`), `already_closed` e `skipped` não enfileiram. | `409` `charge_in_flight` (a `charge_create` está em voo) · `422` `outbox_needs_review` (há linha em conferência) · `422` `charge_already_exists` (`SENT` com cobrança que não é terminal) |
 | `POST /platform/billing/statements/:statementId/reopen` | A cobrança passa a ser lida pela TABELA de cobranças (e não só pelo espelho do demonstrativo): `pending`/`confirmed` na tabela, ou `charge_create` `SENT` cuja cobrança não é terminal → recusa. A `charge_create` `PENDING` vira `SKIPPED` `statement_reopened` na transação do reopen. | `409` `charge_in_flight` · `422` `statement_charge_pending` (agora também pela tabela) |
 | `POST /platform/billing/statements/:statementId/payments` (baixa manual) | A baixa que QUITA tira a conta do "a cobrar" na mesma transação: `charge_create` `PENDING` → `SKIPPED` `statement_paid`; `SENT` com cobrança `pending` → um `charge_cancel` (o despacho cancela no provedor). A baixa PARCIAL não mexe na cobrança (Q4 (a)). | — |
 | `POST /platform/billing/statements/:statementId/cancel` | O mesmo efeito, com `statement_cancelled`. | — |
@@ -506,6 +506,10 @@ novo**; muda o efeito das rotas que já existem. **Tudo continua DESLIGADO por p
   (`billing_statement_refs.created_at`) passa a datar a cobrança VIGENTE (a nova cobrança renova a data).
 - **Recobrança depois de estorno total:** a cobrança velha `refunded` cujo pagamento foi todo estornado deixa de bloquear a
   criação da nova no despacho.
+- **Cobrança em estado desconhecido na tabela (`needs_review`):** a baixa que quita, o `cancel()` e o `charge/cancel` pedem o
+  cancelamento; o despacho lista primeiro e manda à conferência (`charge_state_unknown`, `charge_already_paid`) quando a lista
+  não prova que a cobrança está aberta; o reopen e o refechamento continuam recusando. (Conserto da J-579: a regra de cada estado
+  da cobrança vive numa tabela-verdade única, `charges/charge-rules.ts`.)
 
 ### 3.4 Navegação
 

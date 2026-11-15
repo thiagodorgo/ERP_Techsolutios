@@ -41,6 +41,18 @@ e as `-db` (cada uma 3×, R2-09) num cluster descartável com `timezone = 'UTC'`
 (`tests/sec-log-sanitiza.guard.test.ts`) · `CORE_SAAS_PERSISTENCE=memory npm test` com o resumo TAP · `git diff --check` · 0
 caminho local no diff.
 
+## Conserto da J-579
+
+- **Plano:** `plano-B-ASS-08c1c-conserto-J579.md` (`topo-579-op`, topo declarado) + `…-emenda1.md` (A1 a A4, da crítica
+  `crit-579-conserto-cl`), fora do repositório. Um conserto só, pelo `dev-08c1c-cl`.
+- **Desenho (b):** a tabela-verdade ÚNICA do estado da cobrança (`charges/charge-rules.ts`, `Record<ChargeStatus, …>` com
+  `satisfies`; o SQL interpola a lista gerada) e a das linhas `charge_create` (`statements/statement-charge-lines.ts`,
+  `Record<OutboxStatus, …>`). O estado desconhecido (`needs_review`, `failed`, `none`, a cobrança fora da tabela) passa a ser alvo
+  de cancelamento em 4 caminhos (a marcação imediata, a releitura no registro, o `charge/cancel` e o `[CANCEL-TX]`); os outros
+  sítios só passam a ler a tabela, com a mesma pertença.
+- **Leva:** C2-01 e C2-03, A-C1-01, A-C1-02, C2-02, C2-04, C3-A1 (o contrato deixa de prometer `409 statement_busy` no
+  fechamento), C3-A2 e C3-A3, mais o A1 a A4 da emenda.
+
 ## Registro
 
 Diário do dev (P1): `revisoes/b-ass-08c1c/dev-08c1c-cl.md`, fora do repositório. Pendências fechadas e abertas: ver
