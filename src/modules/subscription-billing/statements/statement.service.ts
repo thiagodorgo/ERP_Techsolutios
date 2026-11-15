@@ -25,7 +25,7 @@ import {
 
 /** O que o fechamento precisa saber sobre a organização no período (montado pelo repositório de assinaturas). */
 export type StatementInputs =
-  | { readonly kind: "skip"; readonly reason: "no_subscription" | "plan_without_price" | "platform_organization" }
+  | { readonly kind: "skip"; readonly reason: "no_subscription" | "plan_without_price" | "addon_without_price" | "platform_organization" }
   | {
       readonly kind: "ready";
       readonly subscriptionId: string;
@@ -41,7 +41,12 @@ export type StatementInputs =
 export function pinOf(statement: SubscriptionStatement): StatementVersionPin {
   const planVersionIds = new Set<string>(statement.snapshot.latest?.segments.map((segment) => segment.planVersionId) ?? []);
   if (statement.planVersionId) planVersionIds.add(statement.planVersionId);
-  return { planVersionIds: [...planVersionIds], addonPlanVersionId: statement.addonPlanVersionId };
+  const addonPlanVersionIds = new Set<string>();
+  const tracking = statement.snapshot.latest?.tracking;
+  if (tracking?.perVehicle) addonPlanVersionIds.add(tracking.perVehicle.addonPlanVersionId);
+  for (const segment of tracking?.flatSegments ?? []) addonPlanVersionIds.add(segment.addonPlanVersionId);
+  if (statement.addonPlanVersionId) addonPlanVersionIds.add(statement.addonPlanVersionId);
+  return { planVersionIds: [...planVersionIds], addonPlanVersionIds: [...addonPlanVersionIds] };
 }
 
 export type StatementInputsProvider = {

@@ -352,7 +352,9 @@ calculado em centavos inteiros (metade para longe do zero); o original do arquiv
 - **Base da assinatura:** `subscriptionBasis: "before_credits"` — o total gravado do demonstrativo mais o crédito do retrato
   do fechamento. `statementTotal` é o total gravado (líquido); `creditsApplied` é o crédito que entrou no total no
   fechamento. Nunca o valor pago. `subscriptionSource`: `statement`, `statement_reopened`, `cancelled`, `projection`,
-  `none`. `alert`: `cost_missing`, `no_subscription`, `critical`, `warning`, `none` (o enum fica aberto para o B-ASS-12).
+  `none`; `subscriptionSkipReason` (só com `none`): `no_subscription`, `plan_without_price`, `addon_without_price`,
+  `platform_organization`. `alert`: `cost_missing`, `no_subscription`, `critical`, `warning`, `none` (o enum fica
+  aberto para o B-ASS-12).
 - **Campos que podem ser `null`.** Com `cost.status` em `no_run`, `no_import`, `fx_missing` ou `currency_unknown`, TODO campo
   de custo e margem em reais é `null`: `lines[*].allocatedCost`, `lines[*].margin`, `lines[*].marginPct`,
   `totals.allocatedCost`, `totals.margin`, `totals.marginPct`, `global.tenantsCost`, `global.platformOwnCost`,

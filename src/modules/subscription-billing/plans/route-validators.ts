@@ -120,7 +120,7 @@ export function parseCreateVersionDto(body: unknown): AddVersionInput {
       parsed.perVehiclePrice === undefined || parsed.perVehiclePrice === null
         ? null
         : moneyToCents(parsed.perVehiclePrice, "perVehiclePrice"),
-    pricingUnit: parsed.pricingUnit ?? "flat",
+    ...(parsed.pricingUnit !== undefined ? { pricingUnit: parsed.pricingUnit } : {}),
     modules: parsed.modules,
     notes: parsed.notes ?? null,
     inaugural: parsed.inaugural ?? false,

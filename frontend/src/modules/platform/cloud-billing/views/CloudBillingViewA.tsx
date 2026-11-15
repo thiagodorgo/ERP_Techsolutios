@@ -46,7 +46,7 @@ export function attentionItems(model: CloudBillingView): AttentionItem[] {
     items.push({ key: "alert:warning", kind: "alvo", icon: AlertTriangle, bg: "#FFFBEB", fg: "#D97706", title: "Atenção", text: `${formatCount(counts.warningCount)} ${counts.warningCount === 1 ? "organização com custo" : "organizações com custo"} em 80 % da assinatura ou mais.` });
   }
   if (counts.withoutSubscriptionCount) {
-    items.push({ key: "semass", kind: "alvo", icon: Building2, bg: "#EFF6FF", fg: "#2563EB", title: "Grupos", text: `${formatCount(counts.withoutSubscriptionCount)} sem assinatura própria: filiais em que a matriz assina, e plano sem preço.` });
+    items.push({ key: "semass", kind: "alvo", icon: Building2, bg: "#EFF6FF", fg: "#2563EB", title: "Grupos", text: `${formatCount(counts.withoutSubscriptionCount)} sem assinatura própria: filiais em que a matriz assina, e plano ou rastreamento sem preço.` });
   }
   if (model.global && nonZero(model.global.unallocatedOther)) {
     const reasons = model.global.unallocatedByReason.map((item) => reasonLabel(item.reason).toLocaleLowerCase("pt-BR"));

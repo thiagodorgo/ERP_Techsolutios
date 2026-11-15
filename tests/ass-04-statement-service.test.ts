@@ -116,7 +116,7 @@ test("T-ST-12 · vencimento = fechamento + 10 dias; sem medição → warning no
 });
 
 test("T-ST-13 · organização sem assinatura, de sistema ou plano sem preço → skipped com o motivo, sem linha fechada", async () => {
-  for (const reason of ["no_subscription", "platform_organization", "plan_without_price"] as const) {
+  for (const reason of ["no_subscription", "platform_organization", "plan_without_price", "addon_without_price"] as const) {
     const { service } = setup({ async resolve() { return { kind: "skip", reason }; } });
     const outcome = await service.close({ tenantId: TENANT, period: "2026-10", now: NOV_1_0030_SP, actorId: null, source: "job" });
     assert.deepEqual([outcome.kind, (outcome as { reason?: string }).reason], ["skipped", reason]);
@@ -184,7 +184,7 @@ test("T-ST-45 · o job NUNCA fecha um reaberto (3 ciclos); só o fechamento manu
   assert.equal((await repository.listStatements(TENANT))[0]!.status, "reopened");
   const manual = await service.close({ tenantId: TENANT, period: "2026-10", now: NOV_1_0030_SP, actorId: "u", source: "manual" });
   assert.equal(manual.kind, "closed");
-  assert.deepEqual(calls.at(-1)!.pinned, { planVersionIds: ["ver-1"], addonPlanVersionId: null }, "refechar usa as versões gravadas no snapshot");
+  assert.deepEqual(calls.at(-1)!.pinned, { planVersionIds: ["ver-1"], addonPlanVersionIds: [] }, "refechar usa as versões gravadas no snapshot");
 });
 
 test("T-ST-46/47/48 · reabrir: com pagamento → 422; com cobrança pending → 422; com nota authorized → 422", async () => {
