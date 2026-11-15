@@ -82,6 +82,14 @@ Tela implementada:
 - RBAC frontend: usa `tenant:manage` enquanto a permissão dedicada `tenant_settings:read` não existir no catálogo backend.
 - Decisão oficial: Dashboard/Resumo Financeiro não usa W03.
 
+Tela implementada (B-ASS-11, item 62):
+
+- `Minha assinatura`, rota `/administrator/subscription`, item no fim de ADMINISTRAÇÃO (admin, gestor, financeiro e suporte), sob `billing:read`; o servidor é a autoridade e recusa com 403 o papel sem a permissão e o ator de plataforma.
+- Uma chamada: `GET /api/v1/billing/subscription` (a organização vem da sessão). Nunca a tendência nem rota de plataforma.
+- Conteúdo pela P12, ao pé da letra do "só": o plano, o uso da franquia de usuários e de espaço em pizza cheia (`UsagePie`), a situação e, só com fatura em aberto, o "Como pagar" com os meios que o servidor mandar (sem nenhum, a orientação de pagar com a equipe e "Copiar dados da fatura"). Nenhum valor em dinheiro, módulo, veículo ou tendência; nenhum "Baixar nota fiscal" (vem no `B-ASS-11c`).
+- 3 aparências por usuário (`minha-assinatura`): A Padrão fiel, B Analítica e C Situação primeiro, referência `screen-refs/minha-assinatura-3opcoes.reference.html`. Blocos clicáveis que abrem o detalhe logo abaixo, um por vez; a tela não tem lista.
+- Estados: carregando, erro com "Tentar de novo", acesso não permitido, sem assinatura, dados desatualizados e medição de espaço antiga (2 dias civis ou mais atrás de hoje, em São Paulo).
+
 ## Usuarios
 
 Area para listar, convidar, editar e gerenciar usuarios e permissoes do tenant atual.
