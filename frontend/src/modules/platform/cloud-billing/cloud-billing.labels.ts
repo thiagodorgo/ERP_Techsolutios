@@ -70,13 +70,16 @@ export function reasonAction(reason: string): string {
 export function alertLabelOf(line: Pick<TenantLineJson, "alert" | "subscriptionSkipReason" | "groupId">): string {
   if (line.alert === "no_subscription") {
     if (line.subscriptionSkipReason === "plan_without_price") return "Plano sem preço";
+    if (line.subscriptionSkipReason === "addon_without_price") return "Rastreamento sem preço";
     return line.groupId ? "Sem assinatura própria" : "Sem assinatura";
   }
   return ALERT_LABEL[line.alert];
 }
 /** A forma curta da lista (uma linha só). */
 export function shortAlertLabel(line: Pick<TenantLineJson, "alert" | "subscriptionSkipReason">): string {
-  if (line.alert === "no_subscription") return line.subscriptionSkipReason === "plan_without_price" ? "Sem preço" : "Sem assinatura";
+  if (line.alert === "no_subscription") {
+    return line.subscriptionSkipReason === "plan_without_price" || line.subscriptionSkipReason === "addon_without_price" ? "Sem preço" : "Sem assinatura";
+  }
   return ALERT_LABEL[line.alert];
 }
 

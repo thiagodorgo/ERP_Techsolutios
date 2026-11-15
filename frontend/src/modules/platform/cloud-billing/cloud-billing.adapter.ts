@@ -319,7 +319,7 @@ function readAlert(value: unknown): AlertKind {
   return readEnum(value, OVERVIEW_ALERTS, "unknown");
 }
 /** J-567 (C3-04): um registro por membro do tipo — um motivo novo no tipo sem entrada aqui não compila. */
-const SKIP_REASONS: Readonly<Record<SubscriptionSkipReason, true>> = { no_subscription: true, plan_without_price: true, platform_organization: true };
+const SKIP_REASONS: Readonly<Record<SubscriptionSkipReason, true>> = { no_subscription: true, plan_without_price: true, addon_without_price: true, platform_organization: true };
 function readSkipReason(value: unknown): SubscriptionSkipReason | null {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(SKIP_REASONS, value) ? (value as SubscriptionSkipReason) : null;
 }

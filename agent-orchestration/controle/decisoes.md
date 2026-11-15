@@ -5317,6 +5317,61 @@ lê o log por suíte (0 pulo) e fica a pendência `P-ASS09-SUITES-DB-NO-CURADO`.
 - **Cruzamento:** por ordem do dono, sem cruzamento entre casas (§C7 11(2)), declarado; todo verificador é identidade Claude nova.
 - **Gravado por:** `dev-66-cl` (Claude Opus 5.5, dev do bloco), por ordem do orquestrador, em 14/11/2026.
 
+## D-ASS12-ALERTA-EM-BLOCO-MENOR (2026-11-14) — o alerta "rastreamento sem adicional" sai do B-ASS-12
+
+- **Origem:** leitura do orquestrador, declarada (§A6), adotada na F0 do `B-ASS-12`. A decisão já existia fora do
+  repositório (`plano-CLAUDE-SOLO-1311.md:178`); este registro a traz para o repo.
+- **O que vale:** o alerta na visão da plataforma ("rastreia veículo sem o adicional") sai do `B-ASS-12` para um bloco
+  menor depois do `B-ASS-09` (`B-ASS-12b`), porque o lugar do alerta (`overview`) nasce no `B-ASS-09`. O `B-ASS-12` só
+  mede (`tracked_vehicles`), cobra 0 sem adicional e não bloqueia ingestão nem leitura; o dado de que o alerta precisa
+  já fica gravado no demonstrativo (`tracked_vehicles > 0` com `addon_plan_version_id` nulo).
+- **Pendências abertas por ela:** `P-ASS12-ALERTA-SEM-ADICIONAL` e `P-ASS12-PULO-SEM-AVISO` (dono `B-ASS-12b`).
+
+## D-ASS12-Q1-P10 (2026-11-14) — a diferença Básico × Plus é a da P10; hoje o adicional só cobra
+
+- **Conflito §A2 registrado (`CONFLITO-ASS12-P10-X-RECOMENDACAO-1311`, sem consolidação silenciosa):** o plano original listava a Q1 ("o que cada adicional
+  libera?") como pergunta em aberto. A Emenda 1 mediu que a P10 (`fidelidade-3110.md:155`, resposta do dono de 31/10)
+  já fixou a unidade e a diferença: Básico = posição ao vivo + histórico; Plus = Básico + eventos, alarmes e telemetria.
+- **Leitura do planejador, declarada (§A6), desfazível numa linha:** hoje não há função de rastreamento veicular para
+  ligar; o `B-ASS-12` não cria chave de módulo nem de permissão. A diferença entra com o `B-TRC-04`, por cadastro de
+  módulos na versão do adicional.
+- **O conflito da entidade de cobrança da assinatura × organização continua ABERTO**: o `B-ASS-12` não
+  infere a resolução; o demonstrativo continua por organização e período.
+
+## D-ASS12-PERGUNTAS-1311 (2026-11-14) — as perguntas do §E11 da Emenda 1, respondidas pela recomendação
+
+- **Fato:** "Respondida pela recomendação" segue a `D-DONO-1311-RECOMENDACOES` e vale também para pergunta nascida depois, enquanto a ordem vigorar; o dono desfaz qualquer uma numa linha. Nenhuma pergunta contraria decisão registrada.
+- **Q2 — adicional cancelado no meio do mês cobra?** Sim: por veículo, cobra os veículos com vínculo nos dias em que o adicional valeu; mensalidade fixa, cobra os dias em que valeu.
+- **Q3 — veículo que deixou de ser rastreado antes de o adicional ser contratado cobra?** Não.
+- **Q4 — trocou de adicional, ou o preço mudou, no meio do mês.** Por veículo: um preço só no mês, o do último dia nesse regime. Mensalidade fixa: já respondida pelo dono (P17, 31/10).
+- **Q5 — mensalidade fixa e nenhum veículo rastreado cobra?** Não; e cada trecho só cobra se teve veículo rastreado naquele trecho.
+- **Q6 — adicional contratado sem preço em algum dia do mês.** Não fecha o mês da organização e mostra o motivo (`addon_without_price`), para qualquer dia com adicional.
+- **Q7 — organização que rastreia veículo sem ter o adicional.** Mede, não cobra e não bloqueia; o aviso sai num bloco menor.
+- **Q9 — preço combinado ou cortesia e a plataforma muda o adicional para mensalidade fixa.** Continua pagando o que foi combinado (a cortesia continua zero) até a plataforma trocar a contratação daquela organização.
+- **Q10 — no mesmo mês, um adicional por veículo e outro de mensalidade fixa.** Soma os dois: os veículos por veículo, inteiros, mais a mensalidade fixa proporcional aos dias.
+- **Saiu:** Q1 (já decidida na P10) e Q8 (fora do bloco). Continua aberta, fora do bloco, a do conflito de quem assina a assinatura, dono `B-ASSINATURA`.
+
+## D-ASS12-MOTIVO-NA-VISAO (2026-11-15) — o motivo `addon_without_price` na visão de custo e na tela de custo e margem
+
+- **Origem:** Emendas 1.2, 1.2.1, 1.3 e 1.3.1 do `B-ASS-12` (planejador `plano-573-e12-op`, Claude Opus 5.5, declarado; regra `D-EMENDA-ANTES-DO-CODIGO`). A absorção da `main` com o #566 deu o TS2345 de `subscription-amount.ts:127`: o `SubscriptionSkipReason` do #566 era fechado em 3 motivos, e o fechamento deste bloco pula com um 4º. Tudo abaixo é **leitura do planejador, declarada (§A6)**, desfazível numa linha.
+- **O que vale:**
+  - **o motivo na visão, pela regra do `plan_without_price`:** o `SubscriptionSkipReason` sai da lista `SUBSCRIPTION_SKIP_REASONS` (`as const`) e ganha `addon_without_price`; a organização com o mês pulado por ele é linha `none` com o motivo, assinatura nula e nunca 0,00, fica fora das somas e conta em `membersWithoutSubscription`; o alerta não ganha valor novo;
+  - **o rótulo:** "Rastreamento sem preço"; o curto, "Sem preço";
+  - **o T-CTR-1 derivado:** os enums do contrato saem do servidor — as listas `as const` e todo símbolo que o módulo de tipos exporta, lido pelo VERIFICADOR (Emenda 1.3.1: `export type X`, `export type { X }`, re-exportação, `enum` e alias genérico; o não resolvido é vermelho; uma fixture com uma forma por linha prova a derivação dentro da suíte). O item 2(a) da Emenda 1.2.1 ("o #573 não reescreve a F6") está **revogado pela Emenda 1.3**, porque a premissa dele (o T-CTR-1 da `main` fica verde depois da F1–F5) foi medida falsa;
+  - **o texto do conjunto econômico e a nota:** o `addon_without_price` segue a regra que o J-567 (C3-05) deu ao `plan_without_price` — "rastreamento sem preço cadastrado" e "O rastreamento desta organização não tem preço cadastrado; sem assinatura, não há margem do mês."; a tela não diz que outra organização assina por esta.
+- **Fecha:** `P-ASS12-PULO-SEM-AVISO`, no merge do #573 (o "aviso" é o selo neutro com o detalhe, não um alerta novo).
+- **Abre:** `P-ASS12-MEMBRO-PLANO-SEM-PRECO` (o membro com `plan_without_price` no detalhe do conjunto econômico, `pre-existente`, dono `B-ASS-10b`).
+- **Fora, declarado:** as listas tipadas, as `as const satisfies` e o literal de campo inline não entram no T-CTR-1 (CRIT-E13-2; `P-TCTR1-LISTAS-TIPADAS-E-CAMPO-INLINE`, dono `B-ASS-10b`, pela triagem do orquestrador).
+- **Gravado por:** `dev-573-cl` (Claude Opus 5.5, dev declarado do bloco, cobrindo o `dev-65-dp`), em 15/11/2026.
+
+## D-ASS12-AUTORIDADE-UNICA-PRECO-ADDON (2026-11-15) — o preço de um dia de add-on é decidido por uma função só
+
+- **Origem:** a J-573 (os achados C1-01, C1-02, C2-01 e C2-02) e a Emenda 1.4 do `B-ASS-12` (planejador de topo `plano-573-j573-topo`, Claude Opus 5.5, declarado; o Fable está suspenso). **Leitura do planejador de topo, declarada (§A6);** o dono a desfaz numa linha.
+- **O que vale:** o preço de um dia de add-on é decidido só pela `resolveAddonPricing` (`plans/addon-pricing.ts`, `switch` exaustivo com `never` sobre a unidade), e a trava do `addVersion`, a do `PUT` da assinatura e o montador do fechamento só perguntam a ela. A forma antiga e ambígua inteira (`flat` com preço por veículo, ou `flat` sem mensalidade positiva) e a unidade fora da lista falham fechado: pulo `addon_without_price` no fechamento e 422 na escrita, nunca um valor escolhido (Emenda 1.1 §1). O preço por veículo 0 explícito e a sobrescrita da contratação continuam preço utilizável; a sobrescrita não vale para a unidade fora da lista.
+- **Prova:** a grade T-FORMA-1 (54 formas × `addVersion`, `PUT` pela lista, `PUT` pela migração e montador) tinha 6 divergências e 23 formas fora do oráculo no `45f40f31`, e tem 0 e 0 depois do conserto; as 19 mutações da Emenda 1.4 morrem.
+- **Abre:** `P-ASS12-PLANKIND-POR-EXCLUSAO` (BAIXA, dono `B-ASS-10`).
+- **Gravado por:** `dev-573-cl` (Claude Opus 5.5, dev declarado do conserto), em 15/11/2026.
+
 ## D-SEED-10B-RESPOSTAS-1311 (2026-11-13 ~23:20 SP) — as cinco perguntas do plano v2 do `B-SAN3-10b-F4-SEED-ISOLADO`, pela recomendação
 
 - **Fato (decisão do dono):** *"minhas decisoes vao todas nas recomendacoes"* (ordem de 13/11, ~23:12 SP) e *"pode comecar"* (~23:20 SP). Transcrição do redator `reg-10bseed-cl` (Claude Opus 5.5, declarado, §A6), a partir do registro do orquestrador fora do repositório (`REGISTRO-PENDENTE.md`, 13/11 23:19 e 23:23), que lista para o seed: *"P1 versionar; P2 roteiro com errata; P3 datas não recuam; P4 organização pelo script; P5 OS em dobro como pendência média"*. O ID geral que o orquestrador propôs para a ordem inteira (`D-DONO-1311-RECOMENDACOES`) e o da ordem "só Claude" (`D-CLAUDE-SOLO-1311`) ainda não estão neste arquivo e entram no PR de registro do dia; esta entrada cobre só o seed.
