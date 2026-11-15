@@ -48,7 +48,7 @@ export function LoginPage() {
         navigate("/change-password", { replace: true });
         return;
       }
-      navigate(isPlatformAdmin(session.user) ? "/platform/tenants" : "/login");
+      navigate(isPlatformAdmin(session.user) ? "/platform/tenants" : "/select-context");
     } catch (currentError) {
       setError(currentError instanceof Error ? currentError.message : "Falha de autenticação. Verifique os dados e tente novamente.");
     } finally {
