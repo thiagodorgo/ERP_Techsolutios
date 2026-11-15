@@ -119,7 +119,7 @@ async function repositories(statements: StatementRepository): Promise<Repositori
       };
     }
     // Conserto da J-530: o dublê do demonstrativo grava a intenção de nota "na transação" (buffer até o fim do trabalho).
-    if (statements instanceof InMemoryStatementRepository) statements.attachChannelStores({ outbox: memory.outbox, invoices: memory.invoices });
+    if (statements instanceof InMemoryStatementRepository) statements.attachChannelStores({ outbox: memory.outbox as InMemoryOutboxRepository, invoices: memory.invoices, charges: memory.charges as InMemoryStatementChargeRepository, refs: memory.refs as InMemoryStatementRefRepository });
     return { ...memory, events: memoryWebhookEvents() };
   }
   const [

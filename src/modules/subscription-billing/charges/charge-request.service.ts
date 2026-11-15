@@ -187,13 +187,11 @@ export function requestChargeCancel(deps: ChargeRequestDeps, input: ChargeCancel
       if (!skipped) throw new StatementError(409, "charge_in_flight", "A charge request is in flight; try again.");
       outcome = { result: "skipped", row: skipped };
     } else if (target) {
-      const seq = 1 + maxOutboxSeq(lines, "charge_cancel");
-      const { row, created } = await tx.enqueue(
-        { tenantId: input.tenantId, statementId: statement.id, kind: "charge_cancel", provider: target.provider, seq, payload: { chargeId: target.externalId, chargeCreateId: target.id } },
-        input.now,
-      );
-      if (!created) throw new StatementError(409, "charge_intent_conflict", "The charge intent key is already in use.");
-      outcome = { result: "cancel_enqueued", row };
+      // B-ASS-08c1c: o MESMO núcleo da marcação imediata e da releitura no registro (o marcador CANCEL-CORE); o CANCEL-ONE acima
+      // já recusou o caso "já há cancelamento vivo", então "already" aqui é invariante quebrado e recusa igual.
+      const enqueued = await enqueueChargeCancelInTx(tx, { tenantId: input.tenantId, statementId: statement.id, target: { id: target.id, provider: target.provider, externalId: target.externalId! }, now: input.now });
+      if (enqueued.kind === "already") throw new StatementError(409, "charge_cancel_in_progress", "A cancellation for this charge is already in progress.");
+      outcome = { result: "cancel_enqueued", row: enqueued.row };
     } else if (creates.some((line) => line.status === "NEEDS_REVIEW")) {
       throw new StatementError(422, "outbox_needs_review", "The charge intent is awaiting review; resolve it first.");
     } else {
@@ -207,6 +205,41 @@ export function requestChargeCancel(deps: ChargeRequestDeps, input: ChargeCancel
     });
     return outcome;
   });
+}
+
+export type ChargeCancelCoreInput = {
+  readonly tenantId: string;
+  readonly statementId: string;
+  /** A `charge_create` SENT que criou a cobrança: o id da linha, o provedor e o id da cobrança no provedor. */
+  readonly target: { readonly id: string; readonly provider: string; readonly externalId: string };
+  readonly now: Date;
+};
+
+export type ChargeCancelCoreOutcome = { readonly kind: "enqueued"; readonly row: BillingOutboxRow } | { readonly kind: "already" };
+
+/**
+ * B-ASS-08c1c (plano §4.0 item 4) — o núcleo ÚNICO que enfileira o `charge_cancel` (o marcador CANCEL-CORE): a rota
+ * `charge/cancel`, a marcação imediata (baixa que quita, `cancel`) e a releitura no registro passam por aqui, sobre o `tx` do
+ * chamador, DEPOIS da trava do demonstrativo. Relê as linhas no `tx`; já há `charge_cancel` vivo para a mesma cobrança →
+ * `already`, sem gravar (CANCEL-ONE); senão grava com `seq` = 1 + o maior `charge_cancel` do demonstrativo, payload
+ * `{ chargeId, chargeCreateId }` e o provedor da SENT. A chave já usada → 409 `charge_intent_conflict`.
+ */
+export async function enqueueChargeCancelInTx(tx: Pick<ChargeIntentTx, "listChargeLines" | "enqueue">, input: ChargeCancelCoreInput): Promise<ChargeCancelCoreOutcome> { // [CANCEL-CORE]
+  const lines = await tx.listChargeLines(input.statementId);
+  if (lines.some((line) => line.kind === "charge_cancel" && LIVE_CHARGE_CANCEL_STATUSES.has(line.status) && line.payload.chargeId === input.target.externalId)) return { kind: "already" }; // [CANCEL-CORE-ONE]
+  const { row, created } = await tx.enqueue(
+    {
+      tenantId: input.tenantId,
+      statementId: input.statementId,
+      kind: "charge_cancel",
+      provider: input.target.provider,
+      seq: 1 + maxOutboxSeq(lines, "charge_cancel"),
+      payload: { chargeId: input.target.externalId, chargeCreateId: input.target.id },
+    },
+    input.now,
+  );
+  if (!created) throw new StatementError(409, "charge_intent_conflict", "The charge intent key is already in use.");
+  return { kind: "enqueued", row };
 }
 
 export type UnknownChargeCancelInput = ChargeCancelInput & {

@@ -11,7 +11,7 @@
 // janela de duas conexões. A trava do dublê é a fila serializada de `InMemoryStatementRepository.transaction`.
 
 import type { InMemoryOutboxRepository } from "../outbox/outbox.repository.js";
-import type { BillingOutboxRow, NewOutboxRow } from "../outbox/outbox.types.js";
+import type { BillingOutboxRow, NewOutboxRow, OutboxSkipReason, OutboxStatus } from "../outbox/outbox.types.js";
 import type { InMemoryStatementRepository } from "../statements/statement.repository.js";
 import type { SubscriptionStatement } from "../statements/statement.types.js";
 import type { InMemoryStatementRefRepository } from "../webhooks/statement-refs.repository.js";
@@ -39,6 +39,9 @@ export type ChargeIntentTx = {
   /** B-ASS-08c1b (P9a): a `charge_create` PENDING vira SKIPPED (`skip_reason` NULL, `last_error` = o motivo) SÓ se ainda está
    * PENDING; `undefined` se não estava (o claim a pegou primeiro). */
   skipPendingChargeCreate(outboxId: string, lastError: string, now: Date): Promise<BillingOutboxRow | undefined>;
+  /** B-ASS-08c1c (plano §4.0 item 3): a `charge_create` vira SKIPPED com o `skip_reason` dado SÓ se o status ainda está em
+   * `from`; nunca toca `external_id`, `last_error` nem `occurred_at`. `undefined` = o claim ou o despacho pegaram a linha. */
+  skipChargeCreate(outboxId: string, skipReason: OutboxSkipReason, from: readonly OutboxStatus[], now: Date): Promise<BillingOutboxRow | undefined>;
   /** B-ASS-08c1b (P9a, F7): a trilha da ação do operador, NA MESMA transação; só ids, `kind`, código e o motivo. */
   recordAudit(event: ChargeIntentAuditEvent): Promise<void>;
 };
@@ -85,6 +88,7 @@ export class InMemoryChargeIntentRepository implements ChargeIntentRepository {
         enqueue: (input, now) => outbox.enqueue(input, now),
         listCharges: (statementId) => charges.listByStatement(tenantId, statementId),
         skipPendingChargeCreate: (outboxId, lastError, now) => outbox.skipPendingChargeCreate(tenantId, outboxId, lastError, now),
+        skipChargeCreate: (outboxId, skipReason, from, now) => outbox.skipChargeCreate(tenantId, outboxId, skipReason, from, now),
         async recordAudit(event) {
           audits.push({ ...event, tenantId });
         },

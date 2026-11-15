@@ -27,6 +27,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { forEachTenantRls, withTenantRls, withTenantRlsBudget } from "../../../database/rls.js";
+import { enqueueChargeCancelInTx } from "../charges/charge-request.service.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import { putRefInTx } from "../webhooks/statement-refs.prisma.js";
 import {
@@ -165,6 +166,30 @@ export async function skipPendingChargeCreateInTx(
     id,
     tenantId,
     lastError,
+    now,
+  )) as Row[];
+  return rows.length > 0 ? toDomain(rows[0]!) : undefined;
+}
+
+/** B-ASS-08c1c (plano §4.0 item 3): sobre um `tx` JÁ ABERTO e DEPOIS da trava do demonstrativo, a `charge_create` vira
+ * SKIPPED com o `skip_reason` dado (o CHECK da M5: `statement_paid`/`statement_cancelled`/`statement_reopened`) SÓ se o
+ * status ainda está em `from`. Nunca toca `external_id`, `last_error` nem `occurred_at`. 0 linhas = o claim ou o despacho
+ * pegaram a linha primeiro. */
+export async function skipChargeCreateInTx(
+  tx: Prisma.TransactionClient,
+  tenantId: string,
+  id: string,
+  skipReason: OutboxSkipReason,
+  from: readonly OutboxStatus[],
+  now: Date,
+): Promise<BillingOutboxRow | undefined> {
+  const rows = (await tx.$queryRawUnsafe(
+    `UPDATE billing_outbox SET status = 'SKIPPED', skip_reason = $3, next_attempt_at = NULL, updated_at = $5
+       WHERE id = $1::uuid AND tenant_id = $2::uuid AND kind = 'charge_create' AND status = ANY($4::text[]) RETURNING *`,
+    id,
+    tenantId,
+    skipReason,
+    [...from],
     now,
   )) as Row[];
   return rows.length > 0 ? toDomain(rows[0]!) : undefined;

@@ -10,6 +10,10 @@ import {
   snapshotOf,
   type StatementComputationInput,
 } from "./statement.engine.js";
+import { enqueueChargeCancelInTx, enqueueChargeCreateInTx } from "../charges/charge-request.service.js";
+import type { OutboxSkipReason } from "../outbox/outbox.types.js";
+import type { PaymentMethod } from "../providers/payment/payment-provider.port.js";
+import { eagerPlan, refechamentoPlan, reopenLiveCheck } from "./statement-charge-lines.js";
 import type { StatementResolveOptions, StatementVersionPin } from "./statement.inputs.js";
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
 import {

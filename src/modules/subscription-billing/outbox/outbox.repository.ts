@@ -508,6 +508,16 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     return skipped;
   }
 
+  /** B-ASS-08c1c (plano §4.0 item 3): o espelho de `skipChargeCreateInTx` — SKIPPED com o `skip_reason` dado SÓ se o status
+   * está em `from`; nunca toca `external_id`, `last_error` nem `occurred_at`. Sem `await` entre ler e gravar. */
+  async skipChargeCreate(tenantId: string, id: string, skipReason: OutboxSkipReason, from: readonly OutboxStatus[], now: Date): Promise<BillingOutboxRow | undefined> {
+    const row = this.#rows.get(id);
+    if (!row || row.tenantId !== tenantId || row.kind !== "charge_create" || !from.includes(row.status)) return undefined;
+    const skipped: BillingOutboxRow = { ...row, status: "SKIPPED", skipReason, nextAttemptAt: null, updatedAt: now };
+    this.#rows.set(id, skipped);
+    return skipped;
+  }
+
   async findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined> {
     const row = this.#rows.get(id);
     return row && row.tenantId === tenantId ? row : undefined;

@@ -45,13 +45,28 @@ export type StatementTx = {
    * depois da trava do demonstrativo (o `reopen` a chama no o marcador GUARD-01). O dublê sem as lojas do canal devolve `false`:
    * não há fila. */
   hasOutboxNeedsReview(statementId: string): Promise<boolean>;
+  /** B-ASS-08c1c (plano §4.0 item 1) — OBRIGATÓRIO: as operações da cobrança sobre o MESMO `tx`, depois da trava do
+   * demonstrativo (o fechamento enfileira, o refechamento e a marcação imediata leem e escrevem a fila e a tabela de
+   * cobranças por aqui). Prisma: `prismaChargeIntentTx(tx, tenantId)`. Dublê: as quatro lojas, ou um "sem canal". */
+  charging(): ChargeIntentTx;
+  /** B-ASS-08c1c (R2-03, plano §4.7) — OBRIGATÓRIO: a tabela de cobranças acompanha o provedor NA MESMA transação do efeito
+   * no demonstrativo. `match` é o id da cobrança no provedor, ou (só a disputa, §9 D-6) as cobranças do demonstrativo num
+   * estado. Zero linhas é normal (o registro ainda não gravou). O dublê sem a loja de cobranças não faz nada. */
+  syncCharge(statementId: string, match: ChargeSyncMatch, status: ChargeStatus): Promise<void>;
 };
+
+/** B-ASS-08c1c (R2-03): qual cobrança da tabela o `syncCharge` acompanha. */
+export type ChargeSyncMatch = { readonly externalChargeId: string } | { readonly status: ChargeStatus };
 
 /** As lojas do canal no modo memória, para o dublê sustentar a intenção de nota (conserto da J-530) e a leitura da fila do
  * `reopen` (B-ASS-08c1b, P8). */
 export type InMemoryChannelStores = {
-  readonly outbox: Pick<OutboxRepository, "enqueue" | "listByStatement">;
+  readonly outbox: Pick<OutboxRepository, "enqueue" | "listByStatement"> & Partial<Pick<InMemoryOutboxRepository, "skipPendingChargeCreate" | "skipChargeCreate">>;
   readonly invoices: Pick<StatementInvoiceRepository, "findLive">;
+  /** B-ASS-08c1c (plano §4.0 item 2): a tabela de cobranças e o índice. Com as QUATRO lojas o `tx` sustenta a cobrança
+   * (`charging()`); com menos, um "sem canal" (lista vazia; toda escrita lança `charge_channel_tx_unsupported`). */
+  readonly charges?: InMemoryStatementChargeRepository;
+  readonly refs?: InMemoryStatementRefRepository;
 };
 
 export type StatementRepository = {
@@ -107,6 +122,8 @@ export class InMemoryStatementRepository implements StatementRepository {
   private credits = new Map<string, SubscriptionCredit>();
   private queues = new Map<string, Promise<unknown>>();
   private channel: InMemoryChannelStores | undefined;
+  /** B-ASS-08c1c: a trilha das ações de cobrança do dublê (o Prisma grava em `audit_logs` no `tx`). */
+  readonly channelAudits: Array<ChargeIntentAuditEvent & { readonly tenantId: string }> = [];
 
   constructor(private readonly clock: () => Date = () => new Date()) {}
 
