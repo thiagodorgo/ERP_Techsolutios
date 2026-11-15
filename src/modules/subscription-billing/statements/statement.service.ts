@@ -96,11 +96,18 @@ function balanceOf(statement: SubscriptionStatement): number {
   return Math.max(0, statement.totalCents - statement.paidCents);
 }
 
+const REFECHA_MESSAGES = {
+  charge_in_flight: "A charge request is in flight; try again.",
+  outbox_needs_review: "The statement has an outbox line awaiting review.",
+  charge_already_exists: "The statement already has a live charge.",
+} as const;
+
 export class StatementService {
   constructor(
     private readonly repository: StatementRepository,
     private readonly inputs: StatementInputsProvider,
     private readonly audit: StatementAuditSink,
+    private readonly channel: StatementChannel = {},
   ) {}
 
   /**
@@ -159,6 +166,15 @@ export class StatementService {
         by: input.actorId,
         totalCents: computation.totalCents,
       };
+      // B-ASS-08c1c (P6, plano §4.2): o refechamento tira do conjunto vivo a `charge_create` do fechamento desfeito, sob a
+      // trava e ANTES de gravar; a linha em voo, em conferência ou com cobrança não terminal recusa, e nada é gravado.
+      if (current.status === "reopened") {
+        const charging = tx.charging();
+        const refecha = refechamentoPlan(await charging.listChargeLines(current.id), await charging.listCharges(current.id));
+        if (refecha.kind === "refuse") throw new StatementError(refecha.httpStatus, refecha.reason, REFECHA_MESSAGES[refecha.reason]);
+        for (const line of refecha.skipPending) await this.#skipLine(charging, line.id, "statement_reopened", [line.status], input.now); // [REFECHA-01]
+        for (const line of refecha.skipSentTerminal) await this.#skipLine(charging, line.id, "statement_reopened", [line.status], input.now); // [REFECHA-02]
+      }
       const saved = await tx.saveStatement({
         ...current,
         status: zeroTotal ? "paid" : "closed",
