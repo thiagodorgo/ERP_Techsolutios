@@ -125,7 +125,17 @@ function writeSurface(sourceRoot: string): WriteSurface {
 
   const declarations: { readonly symbol: ts.Symbol | undefined; readonly node: ts.Node; readonly label: string }[] = [];
   for (const source of own.filter((file) => inModule(relative(file.fileName)))) {
+    // J-567 (C2-1): o `export default` ANÔNIMO (função ou classe sem nome, e `export default <expressão>`, inclusive a
+    // arrow) também é declaração de topo; o símbolo dele é a exportação `default` do arquivo.
+    const moduleOfSource = checker.getSymbolAtLocation(source);
+    const defaultExport = moduleOfSource ? checker.getExportsOfModule(moduleOfSource).find((exported) => exported.escapedName === "default") : undefined;
     for (const statement of source.statements) {
+      if ((ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)) && !statement.name && defaultExport) {
+        declarations.push({ symbol: defaultExport, node: statement, label: `${relative(source.fileName)} export default` });
+      }
+      if (ts.isExportAssignment(statement) && !statement.isExportEquals && defaultExport) {
+        declarations.push({ symbol: defaultExport, node: statement.expression, label: `${relative(source.fileName)} export default` });
+      }
       if (ts.isFunctionDeclaration(statement) && statement.name) {
         declarations.push({ symbol: checker.getSymbolAtLocation(statement.name), node: statement, label: statement.name.text });
       }
@@ -142,11 +152,13 @@ function writeSurface(sourceRoot: string): WriteSurface {
     }
   }
   const writes = new Set(declarations.filter((item) => buildsWriteRequest(item.node)).map((item) => item.symbol));
+  // a referência vale pelo símbolo como está OU resolvido: a exportação `default` de uma expressão é um alias dela
+  const isWrite = (symbol: ts.Symbol | undefined) => !!symbol && (writes.has(symbol) || writes.has(resolve(symbol)));
   for (let grew = true; grew; ) {
     grew = false;
     for (const item of declarations) {
       if (writes.has(item.symbol)) continue;
-      if (containsNode(item.node, (node) => ts.isIdentifier(node) && writes.has(resolve(checker.getSymbolAtLocation(node))))) {
+      if (containsNode(item.node, (node) => ts.isIdentifier(node) && isWrite(checker.getSymbolAtLocation(node)))) {
         writes.add(item.symbol);
         grew = true;
       }
@@ -159,7 +171,7 @@ function writeSurface(sourceRoot: string): WriteSurface {
     return target ? checker.getSymbolAtLocation(target) : undefined;
   };
   const exportsWrite = (symbol: ts.Symbol | undefined) =>
-    !!symbol && checker.getExportsOfModule(symbol).some((exported) => writes.has(resolve(exported)));
+    !!symbol && checker.getExportsOfModule(symbol).some((exported) => isWrite(exported));
   // A3-r2 (b): a porta é só o componente de página montado na rota, declarado em `pages/PlatformCloudBillingPage.tsx`
   const isDoorComponent = (symbol: ts.Symbol | undefined) =>
     !!symbol && symbol.name === DOOR_EXPORT && !!symbol.declarations?.some((declaration) => relative(declaration.getSourceFile().fileName) === DOOR_TARGET);
@@ -176,7 +188,7 @@ function writeSurface(sourceRoot: string): WriteSurface {
       const literalKey = ts.isStringLiteralLike(node) && ts.isElementAccessExpression(node.parent) && node.parent.argumentExpression === node;
       if (ts.isIdentifier(node) || literalKey) {
         const symbol = resolve(checker.getSymbolAtLocation(node));
-        if (writes.has(symbol) && !(isDoorFile && isDoorComponent(symbol))) violations.push(`${at(node)} referencia escrita: ${node.text}`);
+        if (isWrite(checker.getSymbolAtLocation(node)) && !(isDoorFile && isDoorComponent(symbol))) violations.push(`${at(node)} referencia escrita: ${node.text}`);
       }
       if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier) && node.importClause?.namedBindings && ts.isNamespaceImport(node.importClause.namedBindings) && exportsWrite(moduleSymbol(node.moduleSpecifier.text, source))) {
         violations.push(`${at(node)} import * de módulo com escrita`);
@@ -363,6 +375,30 @@ test("T44 K5 (M-T44-d): escrita declarada em arquivo do módulo que não é adap
     appendFileSync(path.join(root, "layouts/PlatformLayout.tsx"), '\nimport { salvarDolar } from "../modules/platform/cloud-billing/janela-dolar";\nexport const atalho = salvarDolar;\n');
   });
   assert.deepEqual(violatingFiles(surface), ["layouts/PlatformLayout.tsx"]);
+});
+
+// J-567 (C2-1): a escrita declarada como `export default` ANÔNIMO (função sem nome, ou arrow) num arquivo do módulo, usada
+// de fora por import padrão ou por `import()`, é acusada como a nomeada (o controle).
+test("T44 K7 (J-567, C2-1): `export default` anônimo do módulo (função e arrow), usado de fora, é acusado", () => {
+  const cases: readonly { readonly name: string; readonly module: string; readonly use: string }[] = [
+    { name: "função sem nome + import padrão", module: `export default async function (url: string) {\n  return fetch(url, { method: "PUT", body: "{}" });\n}\n`, use: `\nimport salvarPadrao from "../cloud-billing/cloud-billing.anon";\nexport const usaPadrao = salvarPadrao;\n` },
+    { name: "arrow + import()", module: `export default (url: string) => fetch(url, { method: "PUT", body: "{}" });\n`, use: `\nexport const usaDepois = () => import("../cloud-billing/cloud-billing.anon").then((m) => m.default("/x"));\n` },
+    { name: "arrow + import padrão", module: `export default (url: string) => fetch(url, { method: "PUT", body: "{}" });\n`, use: `\nimport gravar from "../cloud-billing/cloud-billing.anon";\nexport const usaArrow = gravar;\n` },
+    { name: "controle: função NOMEADA + import padrão", module: `export default async function salvarNomeado(url: string) {\n  return fetch(url, { method: "PUT", body: "{}" });\n}\n`, use: `\nimport salvarPadrao from "../cloud-billing/cloud-billing.anon";\nexport const usaPadrao = salvarPadrao;\n` },
+  ];
+  for (const item of cases) {
+    const surface = scenario((platform) => {
+      writeFileSync(path.join(platform, "cloud-billing/cloud-billing.anon.ts"), item.module);
+      appendFileSync(path.join(platform, "pages/PlatformTenantsPage.tsx"), item.use);
+    });
+    assert.deepEqual(violatingFiles(surface), ["modules/platform/pages/PlatformTenantsPage.tsx"], item.name);
+  }
+  // a leitura anônima, usada de fora, não é acusada (o recolhimento do `default` não toma leitura por escrita)
+  const reading = scenario((platform) => {
+    writeFileSync(path.join(platform, "cloud-billing/cloud-billing.anon.ts"), `export default (url: string) => fetch(url, { method: "GET" });\n`);
+    appendFileSync(path.join(platform, "pages/PlatformTenantsPage.tsx"), `\nimport ler from "../cloud-billing/cloud-billing.anon";\nexport const usaLeitura = ler;\n`);
+  });
+  assert.deepEqual(reading.violations, [], "leitura anônima não é escrita");
 });
 
 test("T44 K6 controle negativo: leitura do módulo usada de fora não é acusada", () => {

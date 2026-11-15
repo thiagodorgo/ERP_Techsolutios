@@ -318,8 +318,10 @@ function mapTenantAllocation(data: Json): TenantAllocationLine {
 function readAlert(value: unknown): AlertKind {
   return readEnum(value, OVERVIEW_ALERTS, "unknown");
 }
+/** J-567 (C3-04): um registro por membro do tipo — um motivo novo no tipo sem entrada aqui não compila. */
+const SKIP_REASONS: Readonly<Record<SubscriptionSkipReason, true>> = { no_subscription: true, plan_without_price: true, platform_organization: true };
 function readSkipReason(value: unknown): SubscriptionSkipReason | null {
-  return value === "no_subscription" || value === "plan_without_price" || value === "platform_organization" ? value : null;
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(SKIP_REASONS, value) ? (value as SubscriptionSkipReason) : null;
 }
 function readArray(value: unknown): Json[] {
   return Array.isArray(value) ? value.filter(isRecord) : [];

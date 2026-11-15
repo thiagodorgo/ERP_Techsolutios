@@ -456,6 +456,48 @@ test("T-GRP-3 (F11) 'Mudar de grupo': depois de salvar e a tela reler, a janela 
   }
 });
 
+// J-567 (C2-3): a releitura do grupo imediatamente antes de gravar e a conferência de edição simultânea valem também no
+// "Mudar de grupo" (plano v2 §6.4.2 (2) e (3)), nos dois sentidos: quem entra (sem grupo → destino) e quem sai (com grupo).
+test("T-GRP-4 (J-567, C2-3) 'Mudar de grupo': relê o grupo antes de gravar e não grava se outra pessoa o mudou", async () => {
+  const groupReads = () => calls.filter((call) => call.method === "GET" && call.url.includes("/economic-groups/g1")).length;
+  const changed = [...G1_MEMBERS, member("t4", "Pátio Central Logística", fixture.TODAY)];
+  for (const tenantId of ["t1", "t2"]) {
+    // (a) o grupo mudou entre abrir e gravar: zero escrita, a mensagem, e a janela não fecha nem relê a tela
+    let reads = 0;
+    serve(on("GET", "/economic-groups/g1", () => ({ data: groupDetail(++reads === 1 ? G1_MEMBERS : changed) })), on("PUT", "/members", { data: groupDetail(changed) }));
+    let view = await openDialog({ kind: "move", tenantId });
+    try {
+      if (tenantId === "t1") {
+        await type(byData(view.container, "data-grupo-sel"), "g1");
+        await settle();
+      }
+      await click(button(view.container, /^Salvar$/));
+      assert.equal(groupReads(), 2, `${tenantId}: lê ao abrir e relê antes de gravar`);
+      assert.equal(writes().length, 0, `${tenantId}: edição simultânea, zero escrita`);
+      assert.match(notice(view.container), /Outra pessoa mudou este grupo agora/, tenantId);
+      assert.deepEqual(view.done, [], `${tenantId}: nada foi gravado, a tela não relê`);
+    } finally {
+      await view.unmount();
+    }
+    // (b) o grupo não mudou: a escrita sai do grupo RELIDO (a 2ª leitura), uma só
+    serve(on("GET", "/economic-groups/g1", { data: groupDetail(G1_MEMBERS) }), on("PUT", "/members", (call) => ({ data: groupDetail((call.body as { tenantIds: string[] }).tenantIds.map((id) => member(id, id, fixture.TODAY))) })));
+    view = await openDialog({ kind: "move", tenantId });
+    try {
+      if (tenantId === "t1") {
+        await type(byData(view.container, "data-grupo-sel"), "g1");
+        await settle();
+      }
+      await click(button(view.container, /^Salvar$/));
+      assert.equal(groupReads(), 2, `${tenantId}: relê mesmo quando nada mudou`);
+      assert.equal(writes().length, 1, `${tenantId}: uma escrita`);
+      const sent = (writes()[0]!.body as { tenantIds: string[] }).tenantIds;
+      assert.deepEqual(sent, tenantId === "t1" ? ["t1", "t2", "t9"] : ["t9"], `${tenantId}: o conjunto do grupo relido`);
+    } finally {
+      await view.unmount();
+    }
+  }
+});
+
 test("T-UI (F11) as janelas seguem a referência: o foco vai ao campo marcado, Escape fecha e o foco volta a quem abriu", async () => {
   serve();
   const opener = dom.doc.createElement("button");
