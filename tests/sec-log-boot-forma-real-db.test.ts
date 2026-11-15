@@ -30,7 +30,7 @@ test("B3 (RA) worker ligado, banco no ar, Redis em host que não resolve: Failed
   const url = DATABASE_URL ?? "";
   await conferirBoot({
     rotulo: "B3 (RA)",
-    env: { DATABASE_URL: url, REDIS_URL: REDIS_URL_SENTINELA, JOBS_WORKER_ENABLED: "true" },
+    env: { DATABASE_URL: url, REDIS_URL: "redis://usrrd-sentinela:pwdrd-sentinela@hstrd-sentinela.invalid:6391/0", JOBS_WORKER_ENABLED: "true" },
     mensagem: /Failed to start/,
     codigos: ["ENOTFOUND", "getaddrinfo"],
     modo: "escuta",
