@@ -242,6 +242,10 @@ export class StatementService {
       // D2 (iv), R-OBX-5 e B-ASS-08c1b (P8): linha da fila aguardando revisão → não reabrir; quem decide é a revisão
       // (`/resolve`). A leitura é do MESMO `tx`, depois da trava (A7/A8): uma conexão só.
       if (await tx.hasOutboxNeedsReview(input.statementId)) throw new StatementError(422, "outbox_needs_review", "The statement has an outbox line awaiting review."); // [GUARD-01]
+      // B-ASS-08c1c (A3, plano §4.6): a fila e a cobrança pela TABELA, no MESMO `tx` e depois da trava (uma conexão).
+      const live = reopenLiveCheck(await tx.charging().listChargeLines(current.id), await tx.charging().listCharges(current.id));
+      if (live.inFlight) throw new StatementError(409, "charge_in_flight", "A charge request is in flight; try again."); // [REOPEN-INFLIGHT]
+      if (live.liveCharge) throw new StatementError(422, "statement_charge_pending", "The statement has a live charge."); // [REOPEN-LIVE]
       const reopened = await tx.saveStatement({
         ...current,
         status: "reopened",
@@ -253,6 +257,7 @@ export class StatementService {
           history: [...current.snapshot.history, { at: input.now.toISOString(), event: "reopened", by: input.actorId, totalCents: current.totalCents, note: reason }],
         },
       });
+      await this.#eagerOnMove(tx, reopened, "statement_reopened", input.now, input.actorId); // [EAGER-03]
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
