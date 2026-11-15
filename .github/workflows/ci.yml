@@ -343,6 +343,10 @@ jobs:
           # e reenvio, custódia profissional e gerente sem e com cadastro (RC3(1)-(8), K = 8). Medida a lista inteira 3× nesta
           # forma antes de entrar (72 arquivos, banco migrado e semeado): 610/610, 0 falha, 0 pulo, denominador constante.
           SUITES="$SUITES tests/b-material-sync-db.test.ts"
+          SUITES="$SUITES tests/ass-09-groups-db.test.ts"
+          SUITES="$SUITES tests/ass-09-fx-rates-db.test.ts"
+          SUITES="$SUITES tests/ass-09-groups-fx-migration-drill-db.test.ts"
+          SUITES="$SUITES tests/ass-09-overview-e2e-db.test.ts"
           node --test --import tsx $SUITES 2>&1 | tee postgres-subset.tap
 
       # GUARD ANTI-VERDE-CEGO: todas essas suítes AUTO-PULAM sem DATABASE_URL/banco provisionado. Um pulo

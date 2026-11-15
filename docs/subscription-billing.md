@@ -97,7 +97,7 @@ O demonstrativo é a conta do mês de cada organização. Ele vive em `subscript
 | Espaço | pico diário de `(banco + arquivos) ÷ 1024³`, com teto a 0,001 GB; o excedente é cobrado por GB, arredondado no fim |
 | Veículos | distintos com vínculo de rastreamento em qualquer dia do mês, só com o add-on de rastreamento |
 
-O `snapshot` guarda as entradas do cálculo. Recalcular a partir dele reproduz o total, centavo a centavo. Dia sem medição entra em `gaps[]`; mês sem medição nenhuma fecha com `warning: no_usage_measured`.
+O `snapshot` guarda as entradas do cálculo. Recalcular a partir dele reproduz o total, centavo a centavo. **A visão de custo da plataforma (B-ASS-09) depende deste invariante** (risco K29): ela soma ao total gravado o crédito do retrato do fechamento e confere que o retrato reproduz o total; se uma mudança no `computeStatement` alterar o total de um retrato antigo, a visão responde 500 `statement_integrity_violation` em todo mês com demonstrativo gravado. Por isso o cálculo do demonstrativo só muda com versão. Dia sem medição entra em `gaps[]`; mês sem medição nenhuma fecha com `warning: no_usage_measured`.
 
 **Estados.** `open` → `closed` → `paid`; `closed` → `reopened` → `closed`; `closed` sem pagamento → `cancelled`. Total zero fecha direto em `paid`, com `zeroTotal`. O reaberto refecha com a MESMA versão de plano. O ajuste só vale em `open` ou `reopened`, exige nota e não pode levar o total abaixo de zero.
 
@@ -245,3 +245,87 @@ As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demons
   das cobranças e notas (view do B-ASS-04); baixa manual → nota (T-FLX-13); `charge_cancel`/`refund` na outbox.
 - **Rollback:** `BILLING_PROVIDERS_ENABLED=false` para o canal (a outbox fica visível); reverter o PR não apaga linhas. As
   migrações M5 e `20260901000000` são aditivas, com drill de rollback nos testes `-db`.
+
+## Visão da plataforma: custo × assinatura (B-ASS-09)
+
+A plataforma vê, para um mês `P`, quanto cada cliente paga e quanto custa, por organização, por grupo e no global, em reais,
+com margem e alerta. Só a plataforma vê (`platform:billing:read`); nenhuma rota nova nasce em `/billing/*`, e o cliente não
+recebe nenhum valor de custo. **Toda ausência de dado aparece como ausência, nunca como zero.**
+
+**Custo.** Vem do resumo do rateio (`B-ASS-09a`) da janela `[P-01, último dia de P]`, casada pelo dia UTC dos dois lados (pedir o
+fim no dia 1 do mês seguinte daria `no_run` em silêncio). Cada valor em moeda estrangeira é convertido pela taxa vigente do mês
+(abaixo), em centavos inteiros, metade para longe do zero, sem `float`. O estado do custo é um só por mês:
+
+| `cost.status` | quando | o que sai em reais |
+|---|---|---|
+| `ok` | rateio do mês com importação, moeda conhecida e (fora do real) taxa | os valores; organização fora do rateio sai `0.00` de verdade |
+| `legacy_unscoped` | run antiga, sem escopo de importação | os valores, com selo |
+| `no_run`, `no_import`, `fx_missing`, `currency_unknown` | sem rateio, rateio vazio, sem taxa, moeda desconhecida | **todo** campo de custo e margem é `null`: na linha, no grupo, nos totais e no global. Os originais ficam, quando a moeda é conhecida |
+
+Taxa ausente **nunca** vira 1. Mês com mais de um arquivo da AWS mostra o aviso `multiple_imports_in_month` e quantas
+importações há; o valor é o da importação publicada, e a visão nunca soma.
+
+**Global.** O custo da plataforma, o não rateado (com o motivo de cada parcela), o resíduo de arredondamento e o resíduo de
+conversão são **linhas próprias**. A soma das cinco parcelas é exatamente o total importado, em centavos.
+
+**Assinatura do mês** (Q5 = recomendação, `D-DONO-1311-RECOMENDACOES`): o valor do demonstrativo **antes** do crédito, ou seja,
+o total gravado mais o crédito do **retrato do fechamento** (`subscriptionBasis: "before_credits"`). A resposta traz também,
+separados, `statementTotal` (o total gravado, líquido) e `creditsApplied` (o crédito que entrou no total no fechamento, lido do
+mesmo retrato). Fontes: `closed`/`paid` → o demonstrativo; `reopened` → o mesmo, como estimativa; `cancelled` → 0; sem linha ou
+`open` → projeção, como estimativa, sem gravar nada; sem assinatura → `null` com o motivo. **Nunca** o valor pago (o caixa).
+Demonstrativo gravado sem retrato, ou com retrato que não reproduz o total, é linha inconsistente: a visão responde 500
+`statement_integrity_violation`, sem número parcial. Pelo mesmo desenho, organização em dois grupos no mesmo dia dá 500
+`membership_integrity_violation`, e entrada incoerente do motor dá 500 `overview_integrity_violation`; a organização e o mês só
+vão para o log do servidor, nunca para a resposta.
+
+**Margem e alerta.** `margem = assinatura − custo`. O alerta segue esta ordem: `cost_missing` (custo ausente) →
+`no_subscription` (sem assinatura: a filial, que não paga assinatura própria, nunca sai "crítica") → `critical` (custo acima da
+assinatura) → `warning` (custo a partir de 80 % da assinatura) → `none`. A margem que vale para o cliente com filiais é a do
+**grupo**.
+
+**Rotas** (base `/api/v1/platform/billing`; contrato `platform_billing_overview@2026-11.b-ass-09`):
+
+| Rota | Permissão |
+|---|---|
+| `GET /overview?period=AAAA-MM&groupBy=tenant\|group\|global` · `GET /fx-rates?from&to` · `GET /economic-groups` · `GET /economic-groups/:groupId` · `GET /economic-groups/:groupId/history` | `platform:billing:read` |
+| `PUT /fx-rates/:month` · `POST /economic-groups` · `PATCH /economic-groups/:groupId` · `DELETE /economic-groups/:groupId` · `PUT /economic-groups/:groupId/members` | `platform:billing:manage` |
+
+### Câmbio do mês
+
+A plataforma digita, na tela, uma taxa por mês e moeda (Q3, padrão): `PUT /fx-rates/:month` com origem (3 letras maiúsculas,
+diferente de `BRL`), destino `BRL` e a taxa (decimal maior que zero e menor que 1000, com até 6 casas). Mês depois do corrente
+em São Paulo é recusado. Cada correção é uma **versão nova**, nunca um `UPDATE`; a vigente é a de maior versão, e a resposta diz
+qual versão a visão usou. Dois `PUT` ao mesmo tempo dão versões consecutivas: a transação começa por `LOCK TABLE
+platform_fx_rates IN SHARE ROW EXCLUSIVE MODE` (a leitura não espera). Esse modo exige `UPDATE`, `DELETE` ou `TRUNCATE` na tabela
+para o papel que escreve. Não há câmbio automático (seria serviço externo).
+
+### Grupos
+
+Um grupo econômico junta as organizações de um mesmo cliente (Q1: um conceito só, "grupo"). O grupo é global; o vínculo é da
+organização, sob RLS FORCE, com vigência `[validFrom, validTo)` em data de negócio de São Paulo (`validTo` nulo = aberto).
+
+- **Uma organização tem no máximo um vínculo em qualquer dia.** O banco garante (`EXCLUDE USING gist (tenant_id WITH =,
+  daterange(valid_from, valid_to, '[)') WITH &&)`, com a extensão `btree_gist`); o serviço confere por intervalo antes de gravar
+  (422 `tenant_in_another_group`, com a lista), inclusive contra vínculo fechado no futuro; a corrida que passar pela conferência
+  bate no banco e volta 409 `membership_conflict`.
+- `PUT …/members` define o conjunto a partir de `validFrom` (padrão: hoje em SP): abre vínculo para quem entra e fecha quem sai.
+  Entrada e saída só valem de hoje em diante e depois do início do vínculo (422 `membership_retroactive`); um fim igual ao
+  início é recusado (422 `membership_range_invalid`). A organização da plataforma não entra (422 `platform_organization`); até
+  500 por grupo. Lista de organizações malformada → 400 `invalid_tenant_ids`; data fora de `AAAA-MM-DD` → 400
+  `invalid_valid_from`.
+- O nome é único sem diferenciar maiúsculas entre os grupos não excluídos; excluir é lógico, e só sem membro vigente ou agendado
+  (422 `group_has_members`).
+- Entrar e sair grava linha em `audit_logs` da organização **na mesma transação** da troca; nome de grupo e de organização nunca
+  entram na trilha.
+- O demonstrativo continua por organização: na rede com filiais, a matriz assina e a filial sai `no_subscription` (Q2, padrão).
+
+**Migração e rollback.** A M6 (`20260903000000_ass09_economic_groups_fx_rates`) é aditiva: 3 tabelas e a extensão. O rollback de
+produção é reverter o código; as tabelas e a extensão ficam, inertes. O down do rodapé da M6 é só para ambiente sem dado real.
+
+**Riscos declarados.**
+- **K29** — uma mudança no `computeStatement` que altere o total de um retrato antigo derruba a visão (500
+  `statement_integrity_violation`) em **todo** mês com demonstrativo gravado, mesmo com o número dela ainda certo. Mitigação:
+  mudar o cálculo do demonstrativo só com versão. Ver o invariante do retrato, na seção do demonstrativo.
+- O estorno do pagamento que gerou um crédito já aplicado baixa o crédito do alvo sem recalcular o total; a cobrança perde o
+  valor desfeito (`P-ASS08-REVERSAO-CREDITO-APLICADO`, ALTA, dono `B-ASS-08c`, bloqueia ligar o canal). Quem consertar mantém o
+  retrato reproduzindo o total, ou a visão responde 500 de propósito.
