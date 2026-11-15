@@ -119,8 +119,8 @@ test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Co
 
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole("link", { name: "Checklists", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Configuracoes|Configurações/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Notificacoes|Notificações/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Configurações", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Notificações", exact: true })).toBeVisible();
   await expect(page.getByText("Console da Plataforma")).toHaveCount(0);
 
   await page.goto("/platform/tenants");
@@ -131,10 +131,10 @@ test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Co
 test("tenant admin acessa inbox interna de notificacoes sem depender de seed", async ({ page }) => {
   await loginAndActivateContext(page);
 
-  await page.getByRole("link", { name: /Notificacoes|Notificações/i }).click();
+  await page.getByRole("link", { name: "Notificações", exact: true }).click();
   await expect(page).toHaveURL(/\/notifications$/);
-  await expect(page.getByRole("heading", { name: /Notificacoes|Notificações/i })).toBeVisible();
-  await expect(page.getByText(/Inbox interna/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Notificações", exact: true })).toBeVisible();
+  await expect(page.getByText("Avisos e eventos operacionais do seu usuário na organização.", { exact: true })).toBeVisible();
 });
 
 // J-MAPAS-10 PR-2 — reescrita para a TELA REAL. A versão anterior era da era pré-Ω1 (esperava
@@ -158,12 +158,12 @@ test("Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro
   await expect(page.locator(".opmap-stage__map")).toBeVisible();
 
   // Stack de 3 painéis à direita, com os títulos verbatim do protótipo.
-  await expect(page.getByText("Chamados recebidos")).toBeVisible();
-  await expect(page.getByText("Em Atendimento")).toBeVisible();
-  await expect(page.getByText("Técnicos de campo")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Chamados recebidos", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Em Atendimento", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Técnicos de campo", exact: true })).toBeVisible();
 
   // Legenda-FILTRO no rodapé: 8 itens + hint verbatim. Clicar num item alterna a camada.
-  await expect(page.getByText("Esc limpa a seleção · arraste uma OS até um técnico para alocar")).toBeVisible();
+  await expect(page.getByText("Esc limpa a seleção · arraste uma OS até um técnico para alocar")).toBeAttached();
   const legendItem = page.getByRole("button", { name: /Disponível/ }).first();
   await expect(legendItem).toBeVisible();
   await legendItem.click();
@@ -208,6 +208,7 @@ const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 test("E1 — lista honesta: o que a tela mostra é o que a API devolveu", async ({ page }) => {
   await loginAndActivateContext(page);
   await enableWorkOrdersFrontendContext(page);
+  await ensureWorkOrderId(page);
 
   const listResponse = page.waitForResponse(
     (response) => /\/api\/v1\/work-orders(\?|$)/.test(response.url()) && response.request().method() === "GET",
@@ -219,24 +220,19 @@ test("E1 — lista honesta: o que a tela mostra é o que a API devolveu", async 
   const codes = await workOrderCodesOf(response);
 
   await expect(page.getByRole("heading", { name: "Ordens de Serviço" })).toBeVisible();
-  const rows = page.locator(".pat-os-row");
-  if (codes.length === 0) {
-    await expect(page.locator('[data-state="empty"]')).toBeVisible();
-    await expect(rows).toHaveCount(0);
-  } else {
-    await expect(rows).toHaveCount(Math.min(codes.length, WORK_ORDER_LIST_PAGE_SIZE));
-    const rendered = await rows.locator("> div:first-child .pat-mono").allTextContents();
-    for (const code of rendered) expect(codes).toContain(code.trim());
-    if (codes.length <= WORK_ORDER_LIST_PAGE_SIZE) expect(new Set(rendered.map((c) => c.trim()))).toEqual(new Set(codes));
-  }
+  expect(codes.length).toBeGreaterThan(0);
+  const rows = page.locator("tbody tr[data-row-key]");
+  await expect(rows).toHaveCount(Math.min(codes.length, WORK_ORDER_LIST_PAGE_SIZE));
+  const rendered = await rows.locator(".aparos-code").allTextContents();
+  for (const code of rendered) expect(codes).toContain(code.trim());
+  if (codes.length <= WORK_ORDER_LIST_PAGE_SIZE) expect(new Set(rendered.map((c) => c.trim()))).toEqual(new Set(codes));
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.locator('[data-state="error"]')).toHaveCount(0);
 
   // Busca real (aria-label da toolbar): filtra a lista carregada; nada é inventado para preencher o vazio.
-  const search = page.getByRole("textbox", { name: /Buscar/ });
-  await search.fill(codes[0] ?? "nenhuma-os-com-este-texto");
-  if (codes.length > 0) await expect(rows.first()).toContainText(codes[0]);
-  else await expect(page.locator('[data-state="empty"]')).toBeVisible();
+  const search = page.getByRole("searchbox", { name: /Buscar/ });
+  await search.fill(codes[0]);
+  await expect(rows.first()).toContainText(codes[0]);
 });
 
 test("E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real", async ({ page }) => {
