@@ -599,29 +599,24 @@ test("T-ST-63: sem assinatura → 200 com data null", async () => {
   });
 });
 
-test("T-ST-64: usage-history devolve N meses só com quantidades, do mais antigo ao corrente; months fora de 1..12 → 400", async () => {
+test("T-ST-64: a tendência saiu — usage-history dá 404 ao cliente com billing:read; GET /billing/subscription segue 200 com as 5 chaves", async () => {
+  // B-ASS-11b (Parte R do item 62): a P12 tira do payload do cliente a tendência e os veículos rastreados, e a decisão
+  // 8.2 do dono diz "a tendência sai". O caminho antigo cai no 404 padrão de `/api/v1`; a rota principal não muda.
   await withApi(async (baseUrl) => {
     const tenantId = await seedTenant();
-    const current = currentPeriod();
-    const source = getMemoryUsageSourceForTests();
-    source.addDay(tenantId, { date: `${current}-01`, activeUsers: 7, dbBytesEstimated: 2n * GB, filesBytes: GB });
-    source.addDay(tenantId, { date: `${previousPeriod()}-15`, activeUsers: 5, dbBytesEstimated: GB, filesBytes: null });
-    source.addBinding(tenantId, { vehicleId: "v1", validFrom: `${previousPeriod()}-01`, validTo: null });
+    await close(baseUrl, tenantId);
+    getMemoryUsageSourceForTests().addDay(tenantId, { date: `${currentPeriod()}-01`, activeUsers: 7, dbBytesEstimated: 2n * GB, filesBytes: GB });
 
-    const response = await requestJson(baseUrl, "/api/v1/billing/subscription/usage-history?months=6", { headers: asCustomer(tenantId) });
-    assert.equal(response.status, 200);
-    const rows = response.body.data as Json[];
-    assert.equal(rows.length, 6);
-    assert.deepEqual(moneyKeys(response.body), []);
-    assert.deepEqual(Object.keys(rows[0]!).sort(), ["period", "storagePeakGb", "trackedVehicles", "usersPeak"]);
-    assert.deepEqual(rows[5], { period: current, usersPeak: 7, storagePeakGb: 3, trackedVehicles: 1 });
-    assert.deepEqual(rows[4], { period: previousPeriod(), usersPeak: 5, storagePeakGb: 1, trackedVehicles: 1 });
-    assert.equal(rows[0]!.usersPeak, 0);
-    assert.ok(rows.every((row, index) => index === 0 || row.period > rows[index - 1]!.period));
-
-    for (const months of ["0", "13", "abc"]) {
-      const bad = await requestJson(baseUrl, `/api/v1/billing/subscription/usage-history?months=${months}`, { headers: asCustomer(tenantId) });
-      assert.equal(bad.status, 400, months);
+    for (const path of ["/api/v1/billing/subscription/usage-history", "/api/v1/billing/subscription/usage-history?months=6"]) {
+      const gone = await requestJson(baseUrl, path, { headers: asCustomer(tenantId) });
+      assert.equal(gone.status, 404, path);
+      assert.equal(gone.body.error.reason, "route_not_found", path);
+      assert.equal("data" in gone.body, false, `${path}: nenhum dado`);
     }
+
+    const view = await requestJson(baseUrl, "/api/v1/billing/subscription", { headers: asCustomer(tenantId) });
+    assert.equal(view.status, 200);
+    assert.deepEqual(Object.keys(view.body.data as Json).sort(), ["payment", "period", "plan", "status", "usage"]);
+    assert.deepEqual(moneyKeys(view.body), []);
   });
 });

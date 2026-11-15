@@ -427,7 +427,10 @@ export function classificar(c3: any, s3: any, snap: Instantaneo | null): Classif
   // B-ASS-08b — o webhook de cobrança entra em N (infra, sem módulo — S7 do plano): router próprio montado sob /api/v1
   // antes do `express.json` e de qualquer `attachAuthenticatedActor`, que nunca toca OS/vistoria/despacho/evidência e, com o
   // canal desligado, deixa o 404 padrão do app responder a qualquer um (como `/auth/login`, não depende de papel de campo).
-  const N = new Set(["ROTA POST /api/v1/auth/login", "ROTA POST /api/v1/auth/refresh", "ROTA POST /api/v1/auth/logout", "ROTA POST /api/v1/auth/password", "ROTA POST /api/v1/notifications/fleet-alerts/run", "ROTA POST /api/v1/notifications/:notificationId/read", "ROTA POST /api/v1/notifications/read-all", "ROTA POST /api/v1/notifications/:notificationId/archive", "ROTA POST /api/v1/mobile/field-locations", "ROTA POST /api/v1/damages/:damageId/attachments", "ROTA POST /api/v1/attachments", "ROTA DELETE /api/v1/attachments/:attachmentId", "ROTA POST /api/v1/expense-reports/:reportId/submit", "ROTA POST /api/v1/webhooks/billing/:provider"]);
+  // B-SAN3-17 (plano v2 CR17-08, §1.8): o consentimento de localização do PRÓPRIO técnico entra em N — o aceite exige
+  // `field_location:send` (como a posição) e a revogação só o ator com papel (como `/auth/password`); as duas só alcançam o
+  // perfil do ator e não tocam OS, vistoria, despacho nem evidência.
+  const N = new Set(["ROTA POST /api/v1/auth/login", "ROTA POST /api/v1/auth/refresh", "ROTA POST /api/v1/auth/logout", "ROTA POST /api/v1/auth/password", "ROTA POST /api/v1/notifications/fleet-alerts/run", "ROTA POST /api/v1/notifications/:notificationId/read", "ROTA POST /api/v1/notifications/read-all", "ROTA POST /api/v1/notifications/:notificationId/archive", "ROTA POST /api/v1/mobile/field-locations", "ROTA POST /api/v1/mobile/location-consent", "ROTA POST /api/v1/mobile/location-consent/revoke", "ROTA POST /api/v1/damages/:damageId/attachments", "ROTA POST /api/v1/attachments", "ROTA DELETE /api/v1/attachments/:attachmentId", "ROTA POST /api/v1/expense-reports/:reportId/submit", "ROTA POST /api/v1/webhooks/billing/:provider"]);
   const lotes = new Set(s3.lotes);
   const vivas = new Map<string, any>();
   for (const [k, n] of Object.entries(c3.contagem)) vivas.set(k, { k, n, tipo: k.split(" ")[0] });

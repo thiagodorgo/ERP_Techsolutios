@@ -26,6 +26,8 @@ import { StatementError } from "../src/modules/subscription-billing/statements/s
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+// Emenda 2.2 do B-ASS-08c1b (P-4): o vencimento dos payloads despachados = a data de negócio de hoje em São Paulo + 30 dias.
+const DUE_FUTURA = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
 
 if (!connectionString) {
   test("B-ASS-08 · -db do canal exige DATABASE_URL", { skip: "Defina DATABASE_URL para os testes -db." });
@@ -378,7 +380,7 @@ if (!connectionString) {
     try {
       await holder.query(`SELECT id FROM subscription_statements WHERE id = $1::uuid FOR UPDATE`, [statementId]);
       const now = new Date();
-      const input = { tenantId, statementId, provider: "asaas", payload: { customerId: "cus_do_payload", amountCents: 10000, dueDate: "2026-11-10", method: "pix" }, now };
+      const input = { tenantId, statementId, provider: "asaas", payload: { customerId: "cus_do_payload", amountCents: 10000, dueDate: DUE_FUTURA, method: "pix" }, now };
       const deps = (client: any) => ({ intents: new PrismaChargeIntentRepository(client) });
       const p1 = settled(requestChargeCreate(deps(w1.client), input));
       const p2 = settled(requestChargeCreate(deps(w2.client), input));
@@ -420,7 +422,7 @@ if (!connectionString) {
     const role = await createEphemeralRole(db, targetUrl);
     try {
       const intents = new PrismaChargeIntentRepository(role.client);
-      const payload = { customerId: "cus_do_payload", amountCents: 10000, dueDate: "2026-11-10", method: "pix" };
+      const payload = { customerId: "cus_do_payload", amountCents: 10000, dueDate: DUE_FUTURA, method: "pix" };
       const started = Date.now();
       const row = await requestChargeCreate({ intents }, { tenantId, statementId, provider: "asaas", payload, now: new Date() });
       const elapsed = Date.now() - started;
@@ -466,7 +468,7 @@ if (!connectionString) {
       const recording = recordingClient(role.client);
       await requestChargeCreate(
         { intents: new PrismaChargeIntentRepository(recording.client) },
-        { tenantId, statementId, provider: "asaas", payload: { amountCents: 10000, dueDate: "2026-11-10", method: "pix" }, now: new Date() },
+        { tenantId, statementId, provider: "asaas", payload: { amountCents: 10000, dueDate: DUE_FUTURA, method: "pix" }, now: new Date() },
       );
       assert.equal(recording.transactions.length, 1, "uma transação só");
       assert.deepEqual(recording.outside, [], "nenhuma instrução fora da transação (outra conexão)");
@@ -474,7 +476,7 @@ if (!connectionString) {
       assert.ok(events.every((event) => event.kind === "raw"), "o pedido só emite SQL cru");
       const sql = events.map((event) => (event.kind === "raw" ? oneLine(event.sql) : ""));
       for (const index of [0, 1, 2]) assert.match(sql[index]!, /^SELECT set_config\(/, `instrução ${index + 1} = set_config`);
-      assert.match(sql[3]!, /^SELECT id, status FROM subscription_statements WHERE id = \$1::uuid AND tenant_id = \$2::uuid FOR UPDATE$/, "a 4ª instrução é a trava do demonstrativo");
+      assert.match(sql[3]!, /^SELECT id, status, round\(total_amount \* 100\)::bigint AS total_cents, round\(paid_amount \* 100\)::bigint AS paid_cents, to_char\(due_date, 'YYYY-MM-DD'\) AS due_date FROM subscription_statements WHERE id = \$1::uuid AND tenant_id = \$2::uuid FOR UPDATE$/, "a 4ª instrução é a trava do demonstrativo");
       assert.ok(sql.slice(4).every((text) => !/\bsubscription_statements\b/.test(text)), "depois da trava, ninguém mais lê o demonstrativo");
       assert.equal(sql.length, 8, `8 instruções (veio: ${sql.length})`);
     } finally {
@@ -703,7 +705,7 @@ if (!connectionString) {
     const t0 = new Date();
     await db.$executeRawUnsafe(
       `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, skip_reason, attempts, last_error)
-       VALUES ($1::uuid, $2::uuid, 'charge_create', $3, $4, gen_random_uuid(), '{"amountCents":10000,"dueDate":"2026-11-10","method":"pix"}'::jsonb, $5, 'SKIPPED', 'statement_reopened', 0, NULL)`,
+       VALUES ($1::uuid, $2::uuid, 'charge_create', $3, $4, gen_random_uuid(), '{"amountCents":10000,"dueDate":"${DUE_FUTURA}","method":"pix"}'::jsonb, $5, 'SKIPPED', 'statement_reopened', 0, NULL)`,
       tenantId,
       statementId,
       provider,
@@ -712,7 +714,7 @@ if (!connectionString) {
     );
     await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'closed', reopened_at = $2, total_amount = 150 WHERE id = $1::uuid`, statementId, minutesAfter(t0, 1));
     const t1 = minutesAfter(t0, 3);
-    const r1 = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(client) }, { tenantId, statementId, provider, payload: { amountCents: 15000, dueDate: "2026-11-10", method: "pix" }, now: t1 });
+    const r1 = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(client) }, { tenantId, statementId, provider, payload: { amountCents: 15000, dueDate: DUE_FUTURA, method: "pix" }, now: t1 });
     assert.equal(r1.idempotencyKey, `charge_create:${statementId}:2`);
     const port = scriptedPort(provider);
     port.stored.push({ chargeId: `pay_phantom_${slug}`, ref: statementId, amountCents: phantomCents, status: "pending", createdAt: SP_DAY.format(t0) });
@@ -754,7 +756,7 @@ if (!connectionString) {
         const provider = uniqueProvider(`db8${variant.toLowerCase()}`);
         const { tenantId, statementId } = await seedStatement(`ass08-db8${variant.toLowerCase()}-${randomUUID().slice(0, 8)}`);
         const t0 = new Date();
-        const row = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 10000, dueDate: "2026-11-10", method: "pix" }, now: t0 });
+        const row = await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId, statementId, provider, payload: { amountCents: 10000, dueDate: DUE_FUTURA, method: "pix" }, now: t0 });
         await claimAndDieDb(role.client, provider, t0);
         const port = scriptedPort(provider);
         port.stored.push({ chargeId: `pay_own_${variant}`, ref: statementId, amountCents: 10000, status: "pending", createdAt: SP_DAY.format(t0) }); // o POST do worker que morreu
@@ -776,7 +778,7 @@ if (!connectionString) {
   async function seedFailedRow(tenantId: string, statementId: string, seq: number, provider = "asaas"): Promise<string> {
     const rows = (await db.$queryRawUnsafe(
       `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, status, attempts, last_error)
-       VALUES ($1::uuid, $2::uuid, 'charge_create', $4, $3, gen_random_uuid(), '{"amountCents":10000,"dueDate":"2026-11-10","method":"pix"}'::jsonb, now(), 'FAILED', 8, 'provider_timeout') RETURNING id`,
+       VALUES ($1::uuid, $2::uuid, 'charge_create', $4, $3, gen_random_uuid(), '{"amountCents":10000,"dueDate":"${DUE_FUTURA}","method":"pix"}'::jsonb, now(), 'FAILED', 8, 'provider_timeout') RETURNING id`,
       tenantId,
       statementId,
       `charge_create:${statementId}:${seq}`,
@@ -796,7 +798,7 @@ if (!connectionString) {
   const isUnprocessable = (reason: string) => (error: unknown) => error instanceof StatementError && error.statusCode === 422 && error.reason === reason;
 
   test("T-CHG-db-3 (E8 × E9, critério 1): pedido × retry guardado nas duas ordens fixadas pelo arnês → sempre 1 charge_create viva", async (t) => {
-    const payload = { amountCents: 10000, dueDate: "2026-11-10", method: "pix" };
+    const payload = { amountCents: 10000, dueDate: DUE_FUTURA, method: "pix" };
     // As duas ordens são SUBTESTES: uma falha na (i) não impede a (ii) de rodar (cada mutação mostra o próprio vermelho).
 
     // (i) RETRY PRIMEIRO: o arnês segura o demonstrativo; o retry fica esperando; só então o pedido entra. COMMIT → o retry
@@ -883,7 +885,7 @@ if (!connectionString) {
         const port = scriptedPort(provider);
         const t0 = new Date();
         // R0 cria e PERDE a resposta: a fantasma de R$ 100 fica no provedor.
-        const r0 = await requestChargeCreate({ intents }, { tenantId, statementId, provider, payload: { amountCents: 10000, dueDate: "2026-11-10", method: "pix" }, now: t0 });
+        const r0 = await requestChargeCreate({ intents }, { tenantId, statementId, provider, payload: { amountCents: 10000, dueDate: DUE_FUTURA, method: "pix" }, now: t0 });
         port.createScript.push("lost");
         await dispatchDb(role.client, provider, port, t0);
         assert.equal(port.stored.length, 1);
@@ -900,7 +902,7 @@ if (!connectionString) {
         // refechado com R$ 150 → R1
         await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'closed', total_amount = 150 WHERE id = $1::uuid`, statementId);
         const t1 = minutesAfter(t0, 5);
-        const r1 = await requestChargeCreate({ intents }, { tenantId, statementId, provider, payload: { amountCents: 15000, dueDate: "2026-11-10", method: "pix" }, now: t1 });
+        const r1 = await requestChargeCreate({ intents }, { tenantId, statementId, provider, payload: { amountCents: 15000, dueDate: DUE_FUTURA, method: "pix" }, now: t1 });
         if (attack === "ATK-2d") {
           port.lookupScript.push("5xx"); // a 1ª reconsulta de R1 falha
           await dispatchDb(role.client, provider, port, t1);
@@ -964,7 +966,7 @@ if (!connectionString) {
       await db.$executeRawUnsafe(
         `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at, status, attempts)
          SELECT s.tenant_id, s.id, 'charge_create', $2, 'charge_create:' || s.id::text || ':1', gen_random_uuid(),
-                '{"amountCents":10000,"dueDate":"2026-11-10","method":"pix"}'::jsonb,
+                '{"amountCents":10000,"dueDate":"${DUE_FUTURA}","method":"pix"}'::jsonb,
                 timestamp '2026-01-01' + row_number() OVER (ORDER BY s.period) * interval '1 millisecond', now(), now(), 'PENDING', 0
            FROM subscription_statements s WHERE s.tenant_id = $1::uuid AND s.period <> '1700-01'`,
         tenantId,

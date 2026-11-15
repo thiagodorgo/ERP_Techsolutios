@@ -4,6 +4,7 @@ import '../network/api_contracts.dart';
 import '../network/api_error.dart';
 import '../network/http_client.dart';
 import 'field_location_models.dart';
+import 'location_consent_api.dart';
 
 abstract class FieldLocationApi {
   Future<FieldLocationApiResponse> send(FieldLocationEvent event);
@@ -47,6 +48,17 @@ class DioFieldLocationApi implements FieldLocationApi {
         receivedAt: _parseDate(data['receivedAt'] ?? data['received_at']),
       );
     } on DioException catch (error) {
+      // B-SAN3-17 (P8): a recusa por consentimento ou por cadastro chega com o
+      // motivo, que `mapDioError` perderia.
+      final refusal = locationConsentRefusalOf(
+        error,
+        statuses: const {422},
+        reasons: const {
+          'tracking_consent_required',
+          'operator_profile_required',
+        },
+      );
+      if (refusal != null) throw refusal;
       throw mapDioError(error);
     }
   }

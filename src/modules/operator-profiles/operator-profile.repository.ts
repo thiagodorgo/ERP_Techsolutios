@@ -16,9 +16,24 @@ export interface OperatorProfileRepository {
   // Ω4C PR-10 — ponte payee(User) → operator_profile (a folha). 1:1 pela unique (tenant_id, user_id). Leitura
   // tenant-scoped; undefined = usuário sem perfil profissional (usado pela liquidação de Remunerações).
   findByUserId(tenantId: string, userId: string): Promise<OperatorProfile | undefined>;
-  update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined>;
+  update(input: UpdateOperatorProfileInput & HolderConsentLock): Promise<OperatorProfile | undefined>;
+  // B-SAN3-17 (Emenda 1.7, C16-01): o ACEITE do titular, com a regra de ordem decidida e gravada no MESMO passo atômico.
+  applyHolderConsentGrant(input: HolderConsentGrantInput): Promise<HolderConsentGrantResult | undefined>;
   reset?(): void;
 }
+
+// B-SAN3-17 (Emenda 1.7, C16-01): o aceite do PRÓPRIO consentimento, decidido sobre a linha no instante da escrita.
+// `superseded` = o perfil está sem consentimento e a última alteração dele não é anterior à decisão (nada é escrito).
+export type HolderConsentGrantInput = {
+  readonly tenantId: string;
+  readonly profileId: string;
+  readonly decidedAt: Date;
+  readonly updatedBy: string;
+} & HolderConsentLock;
+// B-SAN3-17 (J-568, C2-01): a decisão do titular pelo app espera a trava da linha no máximo `lockTimeoutMs` (no
+// Postgres, `lock_timeout` local da transação). Ausente = sem prazo próprio (o cadastro web). A memória não tem trava.
+export type HolderConsentLock = { readonly lockTimeoutMs?: number };
+export type HolderConsentGrantResult = { readonly status: "applied" | "superseded"; readonly profile: OperatorProfile };
 
 export class InMemoryOperatorProfileRepository implements OperatorProfileRepository {
   private readonly profiles = new Map<string, OperatorProfile>();
@@ -68,13 +83,15 @@ export class InMemoryOperatorProfileRepository implements OperatorProfileReposit
     );
   }
 
-  async update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined> {
+  async update(input: UpdateOperatorProfileInput & HolderConsentLock): Promise<OperatorProfile | undefined> {
     const current = await this.findById(input.tenantId, input.profileId);
     if (!current) return undefined;
+    // A memória não tem trava de linha: o prazo de espera (J-568, C2-01) não se aplica e não entra no perfil.
+    const { lockTimeoutMs: _lockTimeoutMs, ...fields } = input;
 
     const updated: OperatorProfile = {
       ...current,
-      ...definedFields(input),
+      ...definedFields(fields),
       // Consentimento LGPD: null limpa o carimbo de data; undefined preserva o valor atual.
       trackingConsentAt:
         input.trackingConsentAt === undefined ? current.trackingConsentAt : (input.trackingConsentAt ?? undefined),
@@ -86,6 +103,33 @@ export class InMemoryOperatorProfileRepository implements OperatorProfileReposit
 
   reset(): void {
     this.profiles.clear();
+  }
+
+  // B-SAN3-17 (Emenda 1.5.1, CX3-568-01): leitura SÍNCRONA do consentimento, no instante da chamada, para a escrita
+  // da posição em memória conferir e gravar na mesma volta do laço de eventos. `undefined` = sem perfil. Não muda nada.
+  trackingConsentNow(tenantId: string, userId: string): boolean | undefined {
+    for (const profile of this.profiles.values()) {
+      if (profile.tenantId === tenantId && profile.userId === userId) return profile.trackingConsent === true;
+    }
+    return undefined;
+  }
+
+  // B-SAN3-17 (Emenda 1.7, C16-01): a leitura da linha, a regra de ordem e o `set`, SEM `await` entre eles.
+  async applyHolderConsentGrant(input: HolderConsentGrantInput): Promise<HolderConsentGrantResult | undefined> {
+    const current = this.profiles.get(input.profileId);
+    if (!current || current.tenantId !== input.tenantId) return undefined;
+    if (current.trackingConsent !== true && input.decidedAt.getTime() <= current.updatedAt.getTime()) {
+      return { status: "superseded", profile: current };
+    }
+    const updated: OperatorProfile = {
+      ...current,
+      trackingConsent: true,
+      trackingConsentAt: current.trackingConsent ? current.trackingConsentAt : new Date(),
+      updatedBy: input.updatedBy,
+      updatedAt: new Date(),
+    };
+    this.profiles.set(updated.id, updated);
+    return { status: "applied", profile: updated };
   }
 
   private hasUser(tenantId: string, userId: string): boolean {

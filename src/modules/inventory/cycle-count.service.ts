@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import type { ICoreSaasService } from "../core-saas/services/core-saas-service.interface.js";
@@ -40,7 +40,7 @@ type RawRecord = Record<string, unknown>;
 /** A cycle count never counts more items than this in one session (guard rail). */
 const SNAPSHOT_LIMIT = 10_000;
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 /**
  * B-O6R-04a — GANCHO DE TESTE do fechamento. `beforeUnitCommit` é chamado DENTRO da transação da unidade, depois

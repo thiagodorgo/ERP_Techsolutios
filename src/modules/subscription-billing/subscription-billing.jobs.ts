@@ -5,7 +5,7 @@
 // catch-up (G3). Para cada organização, UMA transação própria em `withTenantRlsBudget` (lock 5 s,
 // statement 30 s) — não `forEachTenantRls` (E14).
 
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { getDefaultJobQueue } from "../../infra/jobs/job.queue.js";
 import type { JobHandler } from "../../infra/jobs/job.registry.js";
@@ -161,7 +161,7 @@ function computeNextWindowDelayMs(
   return next.getTime() - now.getTime();
 }
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 export type MeasureDailyFailure = { readonly tenantId: string; readonly code: string };
 export type MeasureDailyResult = {

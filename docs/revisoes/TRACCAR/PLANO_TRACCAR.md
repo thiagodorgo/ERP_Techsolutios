@@ -104,6 +104,8 @@ para que o trajeto de um técnico nunca vá para outro (`decisoes.md:2290-2292`)
 **Recomendação: a agora.** A decidir antes do B-TRC-04: se o plano pago exige ver a viatura sem técnico (a **c**).
 Porquê: é a regra que o senhor já fixou, e privacidade vem antes de cobertura.
 
+> Nota (B-ASS-12): o plano pago de localização de veículos são os dois add-ons de rastreamento do B-ASS-12 (`tracking_basic` e `tracking_plus`); a diferença entre eles (P10) entra com o `B-TRC-04`.
+
 **O que trava:** não trava o B-TRC-01, que nasce com a **a**. Trava o B-TRC-04 e a oferta comercial do rastreamento
 de veículos.
 

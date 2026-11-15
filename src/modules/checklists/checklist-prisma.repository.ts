@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import { withTenantRls } from "../../database/rls.js";
@@ -65,7 +65,7 @@ import type {
 
 // Logger do projeto (mesmo padrão de charging/impound). `console.error` ignorava LOG_LEVEL — no CI, que roda
 // com LOG_LEVEL=silent, o erro cru do Prisma ia para o stdout do job assim mesmo.
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 type PrismaModelDelegate = {
   count(args?: unknown): Promise<number>;

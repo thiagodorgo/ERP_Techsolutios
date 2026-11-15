@@ -1,7 +1,8 @@
 import cors from "cors";
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import helmet from "helmet";
-import { pinoHttp } from "pino-http";
+import { createHttpLogger } from "./infra/logging/logger.js";
+import { installFinalErrorHandler } from "./infra/http/final-error-handler.js";
 
 import { env } from "./config/env.js";
 import {
@@ -130,8 +131,7 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
   // casa, sem `err.body`, em qualquer NODE_ENV. git add src/app.ts.
   app.use(rejectMalformedJson);
 
-  const logger = pinoHttp({
-    level: env.LOG_LEVEL,
+  const logger = createHttpLogger({
     // B-ASS-08b — o router do webhook tira os cabeçalhos de segredo antes de passar o pedido adiante (R-WH-7); a redação
     // aqui é a segunda linha de defesa, para qualquer caminho que chegue ao log com esses nomes.
     redact: ["req.headers.authorization", ...WEBHOOK_SECRET_HEADERS.map((name) => `req.headers["${name}"]`)],
@@ -292,6 +292,7 @@ export function createApp(service: ICoreSaasService, options: CreateAppOptions =
     });
   });
 
+  installFinalErrorHandler(app, logger.logger);
   return app;
 }
 

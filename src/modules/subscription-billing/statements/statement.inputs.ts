@@ -10,18 +10,26 @@
 //  - refechar um reaberto usa as MESMAS versões do snapshot (`pin`, G5): a de cada trecho do plano base E a do
 //    add-on de rastreamento; só as medições e os ajustes mudam (§3.4);
 //  - nenhum dia com assinatura → `no_subscription`; dia com assinatura e sem versão vigente → `plan_without_price`;
-//    organização de sistema `platform` → `platform_organization` (S16).
+//    organização de sistema `platform` → `platform_organization` (S16);
+//  - dia com adicional de rastreamento sem preço utilizável → `addon_without_price`: sem versão vigente, ou a versão do dia
+//    sem preço pela autoridade única `resolveAddonPricing` (`plans/addon-pricing.ts`, Emenda 1.4): por veículo sem preço,
+//    `flat` com preço por veículo ou sem mensalidade positiva (a forma antiga e ambígua), unidade desconhecida.
 
 import { parseBusinessDate } from "../../../config/business-time.js";
+import { resolveAddonPricing } from "../plans/addon-pricing.js";
 import { resolveVersionAt } from "../plans/plan-versioning.js";
 import type { SubscriptionPlanVersion, TenantSubscription, TenantSubscriptionAddon } from "../plans/plan-types.js";
 import {
   bytesToMilliGbCeil,
+  countDistinctVehiclesInDays,
   countDistinctVehiclesInMonth,
   daysInPeriod,
   gbToMilli,
   type StatementMeasurements,
   type StatementSegmentInput,
+  type TrackingCharge,
+  type TrackingFlatSegmentInput,
+  type TrackingPerVehicleInput,
 } from "./statement.engine.js";
 import type { StatementInputs } from "./statement.service.js";
 
@@ -48,7 +56,7 @@ export type StatementSourceData = {
 /** Refechar um reaberto (G5, §3.4): as versões gravadas no snapshot — a de cada trecho do plano base e a do add-on. */
 export type StatementVersionPin = {
   readonly planVersionIds: readonly string[];
-  readonly addonPlanVersionId: string | null;
+  readonly addonPlanVersionIds: readonly string[];
 };
 
 export type StatementResolveOptions = {
@@ -84,6 +92,10 @@ function versionForDay(
 
 function dayStart(period: string, day: number): Date {
   return parseBusinessDate(`${period}-${String(day).padStart(2, "0")}`);
+}
+
+function rangeDays(fromDay: number, toDay: number): number[] {
+  return Array.from({ length: toDay - fromDay + 1 }, (_, offset) => fromDay + offset);
 }
 
 function activeAt<T extends { validFrom: Date; validTo: Date | null }>(rows: readonly T[], at: Date): T | null {
@@ -155,18 +167,110 @@ export function buildStatementInputs(
     extraGbPriceCents: subscription.extraGbPriceOverrideCents ?? version.extraGbPriceCents,
   };
 
-  // Add-on de rastreamento vigente no último dia com assinatura (por veículo no mês, sem pro-rata — §3.3).
-  const lastAt = dayStart(period, lastDayIndex + 1);
-  const addon = activeAt(
-    data.addons.filter((row) => row.subscriptionId === subscription.id),
-    lastAt,
-  );
+  // B-ASS-12 — rastreamento, resolvido DIA A DIA: o add-on vigente no dia, na assinatura daquele dia, com a versão
+  // daquele dia. A sobrescrita por veículo da organização define o regime dela (por veículo, pelo preço combinado),
+  // qualquer que seja a unidade da versão: uma versão `flat` nova nunca apaga uma cortesia.
+  type DayTracking = {
+    readonly addon: TenantSubscriptionAddon;
+    readonly version: SubscriptionPlanVersion;
+    readonly unit: "per_vehicle" | "flat";
+    readonly priceCents: number;
+  };
+  const pinnedAddonIds = options.pin && options.pin.addonPlanVersionIds.length > 0 ? options.pin.addonPlanVersionIds : null;
+  const trackingDays: (DayTracking | null)[] = [];
+  for (let index = 0; index < days.length; index += 1) {
+    const current = days[index];
+    const at = dayStart(period, index + 1);
+    const dayAddon = current
+      ? activeAt(
+          data.addons.filter((row) => row.subscriptionId === current.subscription.id),
+          at,
+        )
+      : null;
+    if (!dayAddon) {
+      trackingDays.push(null);
+      continue;
+    }
+    const dayVersion = versionForDay(data.versionsByPlan.get(dayAddon.planId) ?? [], at, pinnedAddonIds);
+    if (!dayVersion) return { kind: "skip", reason: "addon_without_price" };
+    // Emenda 1.4: o regime e o preço do dia vêm SÓ da autoridade única, a mesma da trava de escrita.
+    const pricing = resolveAddonPricing(dayVersion, dayAddon.perVehiclePriceOverrideCents);
+    switch (pricing.kind) {
+      case "unpriced":
+        return { kind: "skip", reason: "addon_without_price" };
+      case "per_vehicle":
+        trackingDays.push({ addon: dayAddon, version: dayVersion, unit: "per_vehicle", priceCents: pricing.perVehiclePriceCents });
+        break;
+      case "flat":
+        trackingDays.push({ addon: dayAddon, version: dayVersion, unit: "flat", priceCents: pricing.monthlyPriceCents });
+        break;
+      default: {
+        const unclassified: never = pricing;
+        void unclassified;
+        return { kind: "skip", reason: "addon_without_price" };
+      }
+    }
+  }
+
+  const daysOf = (unit: "per_vehicle" | "flat" | null): number[] =>
+    trackingDays.flatMap((entry, index) => (entry && (unit === null || entry.unit === unit) ? [index + 1] : []));
+  const addonDays = daysOf(null);
   let perVehiclePriceCents: number | null = null;
   let addonVersion: SubscriptionPlanVersion | null = null;
-  if (addon) {
-    const pinnedAddon = options.pin?.addonPlanVersionId ?? null;
-    addonVersion = versionForDay(data.versionsByPlan.get(addon.planId) ?? [], lastAt, pinnedAddon ? [pinnedAddon] : null);
-    perVehiclePriceCents = addon.perVehiclePriceOverrideCents ?? addonVersion?.perVehiclePriceCents ?? null;
+  let tracking: TrackingCharge | null = null;
+  if (addonDays.length > 0) {
+    // A coluna `addon_plan_version_id` guarda a versão do ÚLTIMO dia com add-on; as demais vão no snapshot.
+    addonVersion = trackingDays[addonDays.at(-1)! - 1]!.version;
+
+    // Por veículo (P10): sem pro-rata e um preço só no mês — o do último dia nesse regime.
+    const perVehicleDays = daysOf("per_vehicle");
+    let perVehicle: TrackingPerVehicleInput | null = null;
+    if (perVehicleDays.length > 0) {
+      const reference = trackingDays[perVehicleDays.at(-1)! - 1]!;
+      perVehiclePriceCents = reference.priceCents;
+      perVehicle = {
+        addonPlanVersionId: reference.version.id,
+        billedVehicles: countDistinctVehiclesInDays(period, data.bindings, perVehicleDays),
+        perVehiclePriceCents: reference.priceCents,
+      };
+    }
+
+    // Mensalidade fixa (P17/R-B): um trecho por dias consecutivos com o mesmo add-on, a mesma versão e o mesmo preço.
+    const flatSegments: TrackingFlatSegmentInput[] = [];
+    for (let index = 0; index < trackingDays.length; index += 1) {
+      const current = trackingDays[index];
+      if (!current || current.unit !== "flat") continue;
+      const previous = index > 0 ? trackingDays[index - 1] : null;
+      const last = flatSegments.at(-1);
+      const continues =
+        last !== undefined &&
+        previous !== null &&
+        previous !== undefined &&
+        previous.unit === "flat" &&
+        previous.addon.id === current.addon.id &&
+        previous.version.id === current.version.id &&
+        previous.priceCents === current.priceCents;
+      if (continues) {
+        flatSegments[flatSegments.length - 1] = { ...last, toDay: index + 1 };
+      } else {
+        flatSegments.push({
+          addonId: current.addon.id,
+          addonPlanVersionId: current.version.id,
+          fromDay: index + 1,
+          toDay: index + 1,
+          monthlyPriceCents: current.priceCents,
+          billedVehicles: 0,
+        });
+      }
+    }
+    tracking = {
+      billedVehicles: countDistinctVehiclesInDays(period, data.bindings, addonDays),
+      perVehicle,
+      flatSegments: flatSegments.map((segment) => ({
+        ...segment,
+        billedVehicles: countDistinctVehiclesInDays(period, data.bindings, rangeDays(segment.fromDay, segment.toDay)),
+      })),
+    };
   }
 
   // Medições do mês: o MAIOR de cada uma (R-ST-4); dias sem linha são gaps declarados, nunca preenchidos.
@@ -190,6 +294,7 @@ export function buildStatementInputs(
       terms,
       measurements: monthMeasurements(period, rows, data.bindings),
       perVehiclePriceCents,
+      tracking,
     },
     daysMeasured: measuredDates.size,
     gaps,

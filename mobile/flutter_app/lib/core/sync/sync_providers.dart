@@ -13,6 +13,7 @@ import '../location/field_location_api.dart';
 import '../location/field_location_service.dart';
 import '../location/field_location_store.dart';
 import '../location/geolocator_device_location_provider.dart';
+import '../location/location_consent_providers.dart';
 import '../location/location_consent_store.dart';
 import '../network/api_contracts.dart';
 import '../network/http_client.dart';
@@ -91,9 +92,15 @@ final fieldLocationStoreProvider = Provider<FieldLocationStore>((ref) {
   }
 });
 
-final locationConsentStoreProvider = Provider<LocationConsentStore>(
-  (ref) => const SecureLocationConsentStore(FlutterSecureStorage()),
-);
+/// O consentimento de localização da PESSOA da sessão (B-SAN3-17, P2). O dono é
+/// resolvido na hora de cada leitura e escrita; o provider não vigia nada, para
+/// não reconstruir o serviço de captura (long-lived) a cada troca de sessão.
+final locationConsentStoreProvider = Provider<LocationConsentStore>((ref) {
+  return SecureLocationConsentStore(
+    const FlutterSecureStorage(),
+    ownerResolver: () => locationConsentOwnerOf(ref),
+  );
+});
 
 final geolocatorLocationPortProvider = Provider<GeolocatorLocationPort>(
   (ref) => const NativeGeolocatorLocationPort(),
@@ -134,6 +141,7 @@ final fieldLocationSyncServiceProvider = Provider<FieldLocationSyncService>(
     store: ref.watch(fieldLocationStoreProvider),
     api: ref.watch(fieldLocationApiProvider),
     deviceLocationProvider: ref.watch(deviceLocationProvider),
+    consentSync: ref.watch(locationConsentSyncProvider),
   ),
 );
 
