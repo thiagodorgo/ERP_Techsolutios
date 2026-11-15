@@ -1,6 +1,6 @@
 # Status Geral
 
-## Atualização 2026-11-15 (madrugada) — `B-ASS-11`, a Parte T do item 62: a tela "Minha assinatura" com as 3 aparências (PR em rascunho)
+## Atualização 2026-11-15 (madrugada) — `B-ASS-11`, a Parte T do item 62: a tela "Minha assinatura" com as 3 aparências (PR #576, em rascunho)
 
 - **Autor:** `dev-62t-cl` (Claude Opus 5.5, dev, identidade nova, declarada; tela no Claude, `D-DESIGN-SO-CLAUDE`). **Base medida:** `origin/main@b00f3161` (#574), atualizada por merge com a `4acd14ad` (#569); worktree próprio. Registro do próprio bloco; `Kpis/**` congelado.
 - **O que o bloco faz:** a tela `/administrator/subscription` (sob `billing:read`) mostra à organização o plano, o uso da franquia de usuários e de espaço em pizza cheia (`UsagePie`, novo na biblioteca), a situação e, só com fatura em aberto, o "Como pagar" com os meios que o servidor mandar (sem nenhum, a orientação de pagar com a equipe e "Copiar dados da fatura"). Uma chamada só, `GET /api/v1/billing/subscription`, lida por allowlist. As 3 aparências aprovadas (`D-ASS11-MAQUETE-APROVADA`) entram no menu de aparência por usuário (`minha-assinatura`); o item fica no fim de ADMINISTRAÇÃO de admin, gestor, financeiro e suporte.
