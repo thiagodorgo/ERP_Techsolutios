@@ -14,11 +14,11 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRlsBudget } from "../../../database/rls.js";
-import { enqueueInTx, listByStatementInTx, postgresErrorCode } from "../outbox/outbox.prisma.js";
+import { enqueueInTx, listByStatementInTx, postgresErrorCode, skipPendingChargeCreateInTx, writeOutboxAuditInTx } from "../outbox/outbox.prisma.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import { putRefInTx } from "../webhooks/statement-refs.prisma.js";
 import type { ChargeIntentRepository, ChargeIntentTx } from "./charge-intent.repository.js";
-import { findLiveInTx } from "./charges.prisma.js";
+import { findLiveInTx, listByStatementInTx as listChargesByStatementInTx } from "./charges.prisma.js";
 
 export const CHARGE_INTENT_BUDGET = { maxWait: 5_000, timeout: 15_000, lockTimeoutMs: 5_000, statementTimeoutMs: 10_000 } as const;
 
@@ -31,13 +31,17 @@ export function prismaChargeIntentTx(tx: Prisma.TransactionClient, tenantId: str
     async lockStatement(statementId) {
       // Id que não é UUID responde "não existe" sem ir ao banco (o cast falharia com 22P02), como o `lockById`.
       if (!UUID.test(statementId)) return undefined;
+      // B-ASS-08c1b (P4, o marcador CHARGE-PAYLOAD): a MESMA instrução devolve também o total e o já pago em centavos (por texto,
+      // sem float: `round(x * 100)::bigint`) e o vencimento como dia (`to_char`, sem fuso).
       const rows = (await tx.$queryRawUnsafe(
-        `SELECT id, status FROM subscription_statements WHERE id = $1::uuid AND tenant_id = $2::uuid FOR UPDATE`,
+        `SELECT id, status, round(total_amount * 100)::bigint AS total_cents, round(paid_amount * 100)::bigint AS paid_cents, to_char(due_date, 'YYYY-MM-DD') AS due_date FROM subscription_statements WHERE id = $1::uuid AND tenant_id = $2::uuid FOR UPDATE`,
         statementId,
         tenantId,
-      )) as Array<{ id: string; status: string }>;
+      )) as Array<{ id: string; status: string; total_cents: bigint | number | string; paid_cents: bigint | number | string; due_date: string | null }>;
       const row = rows[0];
-      return row ? { id: row.id, status: row.status as StatementStatus } : undefined;
+      return row
+        ? { id: row.id, status: row.status as StatementStatus, totalCents: Number(row.total_cents), paidCents: Number(row.paid_cents), dueDate: row.due_date }
+        : undefined;
     },
     findLiveCharge: (statementId) => findLiveInTx(tx, statementId),
     listChargeLines: (statementId) => listByStatementInTx(tx, statementId),
@@ -45,6 +49,9 @@ export function prismaChargeIntentTx(tx: Prisma.TransactionClient, tenantId: str
       await putRefInTx(tx, ref, now);
     },
     enqueue: (input, now) => enqueueInTx(tx, input, now),
+    listCharges: (statementId) => listChargesByStatementInTx(tx, statementId),
+    skipPendingChargeCreate: (outboxId, lastError, now) => skipPendingChargeCreateInTx(tx, tenantId, outboxId, lastError, now),
+    recordAudit: (event) => writeOutboxAuditInTx(tx, tenantId, event),
   };
 }
 

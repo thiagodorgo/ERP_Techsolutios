@@ -62,6 +62,25 @@ function listPage(shape: AsaasListShape, data: readonly Record<string, unknown>[
   }
 }
 
+/**
+ * B-ASS-08c1b (Emenda 1 §2.4 e Emenda 2 §1.3) — as 5 opções do cancelamento, só por acréscimo; ausentes = o comportamento de
+ * sempre (o DELETE grava `status: DELETED` e a lista mostra a removida):
+ *   `refuseDeleteWhenReceived` — o DELETE de cobrança recebida/confirmada responde 400;
+ *   `deleteDocumented` — a forma documentada: o DELETE mantém o `status` e grava `deleted: true`;
+ *   `deleteRemoved404` — o DELETE de cobrança já removida responde 404;
+ *   `omitRemoved` — a lista por referência omite a removida;
+ *   `deleteDocumentedWithEstimate` — a forma documentada com `estimatedCreditDate` preenchido.
+ */
+export type AsaasFakeCancelOptions = {
+  readonly refuseDeleteWhenReceived?: boolean;
+  readonly deleteDocumented?: boolean;
+  readonly deleteRemoved404?: boolean;
+  readonly omitRemoved?: boolean;
+  readonly deleteDocumentedWithEstimate?: boolean;
+};
+
+const RECEIVED_STATUSES: ReadonlySet<string> = new Set(["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]);
+
 export type AsaasWebhookEvent = {
   readonly id: string;
   readonly event: string;
@@ -105,6 +124,8 @@ export async function startAsaasFake(
   resetAsaasFakeState();
   const now = options.now ?? (() => new Date());
   const listShape = options.listShape ?? "complete";
+  // B-ASS-08c1b (Emenda 1 §2.4 e Emenda 2 §1.3): as opções do cancelamento, só por acréscimo; ausentes = o falso de sempre.
+  const cancelOptions = options as AsaasFakeCancelOptions;
   const server = await startFakeServer(async (req, res, body) => {
     const scenario = scenarioOfReq(req, defaultScenario);
     const path = req.url ?? "/";
@@ -169,6 +190,7 @@ export async function startAsaasFake(
     if (method === "GET" && pathname === "/v3/payments") {
       const externalReference = url.searchParams.get("externalReference");
       const data = options.ignoreExternalReferenceFilter ? [...payments] : payments.filter((p) => p.externalReference === externalReference);
+      if (cancelOptions.omitRemoved) return sendJson(res, 200, listPage(listShape, data.filter((p) => !(p.deleted === true || p.status === "DELETED")), url));
       return sendJson(res, 200, listPage(listShape, data, url));
     }
 
@@ -183,6 +205,13 @@ export async function startAsaasFake(
       const id = paymentMatch[1];
       const payment = payments.find((p) => p.id === id);
       if (!payment) return sendJson(res, 404, { errors: [{ code: "not_found", description: "payment not found" }] });
+      if (cancelOptions.deleteRemoved404 && (payment.deleted === true || payment.status === "DELETED")) return sendJson(res, 404, { errors: [{ code: "not_found", description: "payment removed" }] });
+      if (cancelOptions.refuseDeleteWhenReceived && RECEIVED_STATUSES.has(String(payment.status))) return sendJson(res, 400, { errors: [{ code: "invalid_action", description: "payment already received" }] });
+      if (cancelOptions.deleteDocumented || cancelOptions.deleteDocumentedWithEstimate) {
+        payment.deleted = true;
+        if (cancelOptions.deleteDocumentedWithEstimate) payment.estimatedCreditDate = SAO_PAULO_DAY.format(now());
+        return sendJson(res, 200, { ...payment });
+      }
       payment.status = "DELETED";
       return sendJson(res, 200, { ...payment, deleted: true });
     }
