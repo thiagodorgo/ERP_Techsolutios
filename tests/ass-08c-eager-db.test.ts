@@ -432,7 +432,9 @@ if (!connectionString) {
     );
     const paid = await payRoute(f, "100.00");
     assert.equal(paid.status, 201, JSON.stringify(paid.body));
-    assert.deepEqual((await cancels(f.statementId)).map((row) => `${row.idempotency_key.split(":")[2]}:${row.status}`), ["1:FAILED", "2:PENDING"]);
+    // Ordenado pelo `seq` da chave (o FAILED semeado tem o `created_at` do relógio do banco e o PENDING o do app: a ordem de criação
+    // não é o que se mede).
+    assert.deepEqual((await cancels(f.statementId)).map((row) => `${row.idempotency_key.split(":")[2]}:${row.status}`).sort(), ["1:FAILED", "2:PENDING"]);
     const deletes = deletesOfPayments();
     await dispatch(f.tenantId);
     assert.equal(deletesOfPayments() - deletes, 1, "1 DELETE");
