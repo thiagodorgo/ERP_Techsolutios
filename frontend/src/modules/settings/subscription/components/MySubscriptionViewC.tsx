@@ -1,7 +1,7 @@
 import { AlertTriangle, ChevronDown, Clock, CreditCard, MessageCircle, ShieldCheck } from "lucide-react";
 
 import { UsagePie } from "../../../../components/charts";
-import { PageHeader } from "../../../../components/patterns";
+import { PageHeader, StatusPill } from "../../../../components/patterns";
 import { dateShort, joinList, longDay, type MySubscriptionScreen } from "../my-subscription.state";
 import type { MySubscriptionBlock } from "../my-subscription.types";
 import {
@@ -11,7 +11,7 @@ import {
   LoadErrorBanner,
   LoadingAnnouncement,
   NoSubscription,
-  Pill,
+  SEAL_TONE,
   Skel,
   StaleBanner,
   TEAM,
@@ -221,9 +221,7 @@ export function MySubscriptionViewC(model: MySubscriptionViewModel) {
         subtitle={`Primeiro a situação de pagamento, depois o uso da franquia${organization}${today}`}
         actions={
           screen ? (
-            <Pill tone="info" icon={<Clock size={12} aria-hidden="true" />}>
-              Uso de {screen.periodText}
-            </Pill>
+            <StatusPill label={`Uso de ${screen.periodText}`} {...SEAL_TONE.info} icon={<Clock size={12} />} />
           ) : undefined
         }
       />

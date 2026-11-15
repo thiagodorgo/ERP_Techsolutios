@@ -3,6 +3,7 @@ import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from "react"
 import { Link } from "react-router-dom";
 
 import { OVER_LIMIT_NOTE, UsageBadge, formatUsageNumber } from "../../../../components/charts";
+import { StatusPill } from "../../../../components/patterns";
 import { Button, EmptyState } from "../../../../components/ui";
 import { GRACE_DAYS, dateBR, dateShort, joinList, type InvoiceModel, type MySubscriptionScreen, type UsageModel } from "../my-subscription.state";
 import type { MySubscriptionBlock } from "../my-subscription.types";
@@ -100,16 +101,13 @@ export function BlockMore({ open, closedText = "Ver detalhes", chevronOnly = fal
   );
 }
 
-const PILL_TONE = { success: "assin-pill--success", danger: "assin-pill--danger", warning: "assin-pill--warning", info: "assin-pill--info" } as const;
-
-export function Pill({ tone, icon, children }: { readonly tone: keyof typeof PILL_TONE; readonly icon?: ReactNode; readonly children: ReactNode }) {
-  return (
-    <span className={`pat-pill ${PILL_TONE[tone]}`}>
-      {icon}
-      {children}
-    </span>
-  );
-}
+/** As cores dos selos desta tela (as da referência aprovada), entregues ao `StatusPill` da biblioteca. */
+export const SEAL_TONE = {
+  success: { bg: "#dcfce7", fg: "#15803d" },
+  danger: { bg: "#fee2e2", fg: "#b91c1c" },
+  warning: { bg: "#fef3c7", fg: "#b45309" },
+  info: { bg: "#eff6ff", fg: "#2563eb" },
+} as const;
 
 /** Os selos do cartão de uso: "Passou do limite" / "Em estimativa" e, no espaço, "Medição antiga · <data>". */
 export function UsageSeals({ usage }: { readonly usage: UsageModel }) {
@@ -118,11 +116,7 @@ export function UsageSeals({ usage }: { readonly usage: UsageModel }) {
   return (
     <span className="assin-selos">
       <UsageBadge overLimit={usage.overLimit} pending={usage.pending} />
-      {old ? (
-        <Pill tone="warning" icon={<Clock size={12} aria-hidden="true" />}>
-          Medição antiga · {dateShort(usage.measuredAt!)}
-        </Pill>
-      ) : null}
+      {old ? <StatusPill label={`Medição antiga · ${dateShort(usage.measuredAt!)}`} {...SEAL_TONE.warning} icon={<Clock size={12} />} /> : null}
     </span>
   );
 }
@@ -256,13 +250,13 @@ function situationDetail(screen: MySubscriptionScreen, model: MySubscriptionView
   ) : undefined;
   if (!screen.overdue) {
     const left: (readonly [string, ReactNode])[] = [
-      ["Situação", <Pill tone="success" icon={<CheckCircle size={12} aria-hidden="true" />}>Em dia</Pill>],
+      ["Situação", <StatusPill label="Em dia" {...SEAL_TONE.success} icon={<CheckCircle size={12} />} />],
       invoice ? ["Fatura em aberto", invoice.dueDate ? invoice.dueText : "sem data de vencimento"] : ["Próximo vencimento", "sem fatura em aberto"],
     ];
     if (invoice?.onTimeUntil) left.push(["Continua em dia até", dateBR(invoice.onTimeUntil)]);
     return { title: "Situação", headline: "Em dia", tone: "success", caption: invoice ? invoice.title : "Sem fatura em aberto", left, right, actions };
   }
-  const left: (readonly [string, ReactNode])[] = [["Situação", <Pill tone="danger" icon={<AlertTriangle size={12} aria-hidden="true" />}>Em atraso</Pill>]];
+  const left: (readonly [string, ReactNode])[] = [["Situação", <StatusPill label="Em atraso" {...SEAL_TONE.danger} icon={<AlertTriangle size={12} />} />]];
   if (invoice) left.push(["Fatura em aberto", invoice.dueDate ? invoice.dueText : "sem data de vencimento"]);
   if (!invoice || !screen.overdueSince) left.push(["Para voltar a ficar em dia", `falar com ${TEAM}`]);
   else

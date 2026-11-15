@@ -8919,9 +8919,6 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .ui-usage-pie__meter { display: flex; height: 9px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
 .ui-usage-pie__meter b { display: block; height: 100%; border-radius: 99px; }
 .ui-usage-pie__count { font-size: 11.5px; font-weight: 800; color: #0f172a; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.ui-usage-pie__badge { line-height: 1.3; vertical-align: middle; }
-.ui-usage-pie__badge--over { background: #fee2e2; color: #b91c1c; }
-.ui-usage-pie__badge--pending { background: #f1f5f9; color: #475569; }
 /* A tela "Minha assinatura" (`modules/settings/subscription/`): blocos clicáveis (D-PADRAO-BLOCOS-CLICAVEIS: hover
    #93c5fd; aberto = borda #2563eb + anel #dbeafe; um aberto por vez) e o detalhe que abre logo abaixo, no desenho do
    painel do Dashboard aprovado (.apardash-panel). */
@@ -8945,10 +8942,6 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .assin-texto--critico { color: #b91c1c; }
 .assin-texto--aviso { color: #92400e; }
 .assin-selos { display: inline-flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 4px; }
-.assin-pill--success { background: #dcfce7; color: #15803d; }
-.assin-pill--danger { background: #fee2e2; color: #b91c1c; }
-.assin-pill--warning { background: #fef3c7; color: #b45309; }
-.assin-pill--info { background: #eff6ff; color: #2563eb; }
 .assin-skel { display: block; }
 .assin-retry { display: flex; justify-content: flex-start; }
 .assin-pl-nome { display: block; font-size: 27px; font-weight: 800; letter-spacing: -.8px; line-height: 1; color: #0f172a; }
@@ -9050,3 +9043,5 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 /* Na faixa âmbar de desatualizado, "Tentar de novo" no tom do texto da faixa (referência aprovada). */
 .assin-tela .pat-banner--warning .pat-link { color: #92400e; text-decoration: underline; }
 .assin-a > .page-heading--row .ui-badge { white-space: nowrap; }
+/* StatusPill com ícone (B-ASS-11, REV576-04): o ícone antes do rótulo, no lugar do ponto. */
+.pat-pill__icon { display: inline-flex; align-items: center; flex-shrink: 0; }

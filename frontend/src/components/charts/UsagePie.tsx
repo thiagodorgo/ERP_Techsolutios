@@ -1,6 +1,8 @@
 import { AlertTriangle, Clock } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { StatusPill } from "../patterns/StatusPill";
+
 // B-ASS-11 (F1, Emenda 1 §6.1) — a pizza CHEIA da franquia (raio interno 0), SVG inline (PD-004), a partir do
 // `ReconcileDonut.tsx`. O limite contratado é a pizza inteira: a fatia azul é o que está em uso e a clara o que está
 // disponível. Acima do limite, a pizza fica inteira na cor crítica, com o selo "Passou do limite" e a frase da franquia;
@@ -63,21 +65,9 @@ function available(used: number, included: number): number | null {
 
 /** O selo do cartão: "Passou do limite" acima da franquia, "Em estimativa" sem medição; nada no resto. */
 export function UsageBadge({ overLimit, pending = false }: { readonly overLimit: boolean; readonly pending?: boolean }) {
-  if (pending) {
-    return (
-      <span className="pat-pill ui-usage-pie__badge ui-usage-pie__badge--pending">
-        <Clock size={12} aria-hidden="true" />
-        Em estimativa
-      </span>
-    );
-  }
+  if (pending) return <StatusPill label="Em estimativa" bg="#f1f5f9" fg="#475569" icon={<Clock size={12} />} />;
   if (!overLimit) return null;
-  return (
-    <span className="pat-pill ui-usage-pie__badge ui-usage-pie__badge--over">
-      <AlertTriangle size={12} aria-hidden="true" />
-      Passou do limite
-    </span>
-  );
+  return <StatusPill label="Passou do limite" bg="#fee2e2" fg="#b91c1c" icon={<AlertTriangle size={12} />} />;
 }
 
 export function UsagePie({

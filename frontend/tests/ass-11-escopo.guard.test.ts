@@ -53,9 +53,13 @@ test("T-G2 my-subscription.types.ts não declara campo de dinheiro", () => {
   assert.deepEqual(fields.filter((field) => /(price|amount|cost|total|margin|value|cents)/i.test(field)), []);
 });
 
-/** O PERMITIDO do §7.1 (Emenda 1) com o acréscimo do §4.1 (Emenda 1.1), na letra do comando. */
+/**
+ * O PERMITIDO do §7.1 (Emenda 1) com o acréscimo do §4.1 (Emenda 1.1), na letra do comando, mais o `StatusPill` da
+ * biblioteca, que o conserto da revisão reforçada (REV576-04, emenda escrita do orquestrador em 15/11) manda ganhar a
+ * variante com ícone.
+ */
 export const PERMIT_T =
-  /^(frontend\/src\/modules\/settings\/subscription\/[^\s]+|frontend\/src\/components\/charts\/(UsagePie\.tsx|index\.ts)|frontend\/src\/App\.tsx|frontend\/src\/layouts\/appSidebarNav\.ts|frontend\/src\/modules\/appearance\/appearance\.registry\.ts|frontend\/src\/styles\/app\.css|frontend\/package\.json|frontend\/tests\/ass-11-[a-z0-9.-]+\.test\.tsx?|frontend\/tests\/aparencia-registro\.guard\.test\.ts|docs\/claude-code-handoff\/screen-refs\/(minha-assinatura-3opcoes\.reference\.html|README\.md)|docs\/(navigation-matrix|frontend-screens)\.md|COMPONENT_LIBRARY\.md|docs\/revisoes\/ASSINATURA\/B-ASS-11-dev\.md|agent-orchestration\/codex\/comandos\/B-ASS-11-minha-assinatura\.md|agent-orchestration\/controle\/(pendencias|pendencias-indice|decisoes)\.md|agent-orchestration\/docs\/status-geral\.md|docs\/revisoes\/SAN3\/PLANO_SAN3\.md)$/;
+  /^(frontend\/src\/modules\/settings\/subscription\/[^\s]+|frontend\/src\/components\/charts\/(UsagePie\.tsx|index\.ts)|frontend\/src\/components\/patterns\/StatusPill\.tsx|frontend\/src\/App\.tsx|frontend\/src\/layouts\/appSidebarNav\.ts|frontend\/src\/modules\/appearance\/appearance\.registry\.ts|frontend\/src\/styles\/app\.css|frontend\/package\.json|frontend\/tests\/ass-11-[a-z0-9.-]+\.test\.tsx?|frontend\/tests\/aparencia-registro\.guard\.test\.ts|docs\/claude-code-handoff\/screen-refs\/(minha-assinatura-3opcoes\.reference\.html|README\.md)|docs\/(navigation-matrix|frontend-screens)\.md|COMPONENT_LIBRARY\.md|docs\/revisoes\/ASSINATURA\/B-ASS-11-dev\.md|agent-orchestration\/codex\/comandos\/B-ASS-11-minha-assinatura\.md|agent-orchestration\/controle\/(pendencias|pendencias-indice|decisoes)\.md|agent-orchestration\/docs\/status-geral\.md|docs\/revisoes\/SAN3\/PLANO_SAN3\.md)$/;
 
 export function scopeViolations(paths: readonly string[]): string[] {
   return paths
@@ -71,6 +75,7 @@ test("T-G3 (1) a regra: o PERMITIDO passa; src/**, tenantNavigation.ts, lockfile
       "frontend/src/modules/settings/subscription/components/MySubscriptionViewC.tsx",
       "frontend/src/components/charts/UsagePie.tsx",
       "frontend/src/components/charts/index.ts",
+      "frontend/src/components/patterns/StatusPill.tsx",
       "frontend/src/App.tsx",
       "frontend/src/layouts/appSidebarNav.ts",
       "frontend/src/modules/appearance/appearance.registry.ts",
@@ -102,6 +107,7 @@ test("T-G3 (1) a regra: o PERMITIDO passa; src/**, tenantNavigation.ts, lockfile
     "prisma/schema.prisma",
     "frontend/tests/minha-assinatura.test.tsx",
     "frontend/src/components/charts/TrendChart.tsx",
+    "frontend/src/components/patterns/PageHeader.tsx",
     ".github/workflows/ci.yml",
     "Kpis/kpis-latest.json",
   ];
