@@ -193,6 +193,9 @@ export function buildStatementInputs(
     if (override !== null) {
       trackingDays.push({ addon: dayAddon, version: dayVersion, unit: "per_vehicle", priceCents: override });
     } else if (dayVersion.pricingUnit === "flat") {
+      if (dayVersion.perVehiclePriceCents !== null && !(dayVersion.monthlyPriceCents > 0)) {
+        return { kind: "skip", reason: "addon_without_price" };
+      }
       trackingDays.push({ addon: dayAddon, version: dayVersion, unit: "flat", priceCents: dayVersion.monthlyPriceCents });
     } else {
       if (dayVersion.perVehiclePriceCents === null) return { kind: "skip", reason: "addon_without_price" };

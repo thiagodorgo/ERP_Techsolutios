@@ -283,6 +283,18 @@ test("T-TRK-14 · mensalidade fixa cobra POR SEGMENTO de vigência (P17/R-B): o 
   // K5 da crítica: add-on o mês todo e a versão só existe a partir do dia 20 → dia com add-on e sem preço: pula.
   const k5 = buildStatementInputs("2026-10", source({ addons: mesTodo(), versionsByPlan: catalogo([{ ...F8_DE_15, validFrom: sp("2026-10-20") }]) }), { pin: null });
   assert.deepEqual(k5, { kind: "skip", reason: "addon_without_price" });
+
+  // N1 (Emenda 1.1): a metade exata no trecho de mensalidade fixa — 6015 × 29 ÷ 30 = 5814,5 → 5815 (half-up,
+  // metade para longe do zero). Um mês de 30 dias; o adicional vale 29 dias.
+  const F_6015 = version("v-f-6015", "tracking_basic", "2026-09-01", null, { pricingUnit: "flat", monthlyPriceCents: 6_015, perVehiclePriceCents: null });
+  const meio = buildStatementInputs("2026-11", source({
+    subscriptions: [subscription("s1", "2026-09-01", null)],
+    addons: [addon("a1", "s1", "tracking_basic", "2026-11-01", "2026-11-30")],
+    versionsByPlan: new Map([["starter", [STARTER]], ["tracking_basic", [F_6015]]]),
+  }), { pin: null });
+  assert.equal(meio.kind, "ready", JSON.stringify(meio));
+  const meioComputed = computeStatement({ ...(meio as Extract<typeof meio, { kind: "ready" }>).computation, adjustmentsCents: 0, creditsAppliedCents: 0 });
+  assert.equal(meioComputed.trackingCents, 5_815, "6015 × 29 ÷ 30 = 5814,5 → 5815 (half-up)");
 });
 
 test("T-TRK-15 · cada trecho de mensalidade fixa só cobra se algum veículo teve vínculo NAQUELE trecho", () => {
@@ -347,4 +359,20 @@ test("T-TRK-19 · o inverso: Plus de mensalidade fixa nos dias 1-15 e Básico po
   }));
   assert.deepEqual([computed.trackingCents, computed.trackingUnit, ready.addonPlanVersionId, ready.computation.perVehiclePriceCents], [10_325, "mixed", "v-basic", 1_990]);
   assert.deepEqual(trechos(computed), [["v-plusflat", 1, 15, 15, 3, 4_355]]);
+});
+
+test("T-TRK-LEGADO · versão antiga (flat, mensalidade 0, preço por veículo) é ambígua: pulo addon_without_price e nunca fecha com 0,00; a flat nova com mensalidade positiva cobra", () => {
+  const LEGADO = version("v-legado", "tracking_basic", "2026-01-01", null, { monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
+  const legado = buildStatementInputs("2026-10", source({
+    versionsByPlan: new Map([["starter", [STARTER]], ["tracking_basic", [LEGADO]]]),
+    addons: [addon("a1", "s1", "tracking_basic", "2026-09-01", null)],
+  }), { pin: null });
+  assert.deepEqual(legado, { kind: "skip", reason: "addon_without_price" }, "a forma antiga não fecha: nunca um demonstrativo closed com 0,00");
+
+  const NOVA = version("v-flat-nova", "tracking_basic", "2026-01-01", null, { monthlyPriceCents: 5_000 });
+  const nova = close(source({
+    versionsByPlan: new Map([["starter", [STARTER]], ["tracking_basic", [NOVA]]]),
+    addons: [addon("a1", "s1", "tracking_basic", "2026-09-01", null)],
+  }));
+  assert.deepEqual([nova.computed.trackingCents, nova.computed.trackingUnit], [5_000, "flat"], "a versão flat nova com mensalidade positiva continua cobrando");
 });

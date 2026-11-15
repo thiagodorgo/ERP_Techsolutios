@@ -477,4 +477,27 @@ if (!connectionString) {
     );
     assert.equal(reread?.computation?.trackingSegments.some((segment) => segment.addonPlanVersionId === thirdVersionId), false);
   });
+
+  test("T-TRK-db-LEGADO: versão antiga (flat, mensalidade 0, preço por veículo) é ambígua: pulo addon_without_price, nenhum demonstrativo closed", async () => {
+    const h = await harness();
+    await assertRuntimeRole(h.role);
+    const { tenantId, subscriptionId } = await seedBaseAndSubscription(h, "legado");
+    const addonPlanId = await insertPlan(h, "addon_tracking");
+    await insertAddonVersion(h, addonPlanId, 1, OCT_1, null, "flat", 0, 1_990);
+    await insertAddon(h, tenantId, subscriptionId, addonPlanId, OCT_1, null);
+
+    for (let i = 0; i < 3; i += 1) {
+      const vehicleId = await insertVehicle(h, tenantId);
+      await insertBinding(h, tenantId, vehicleId, SEP_30, null);
+    }
+
+    const { service } = await runtimeFor(h.role.client);
+    const out = await service.close({ tenantId, period: PERIOD, now: NOW, actorId: null, source: "job" });
+    assert.deepEqual(out, { kind: "skipped", reason: "addon_without_price", alreadyClosed: false });
+    const rows = await h.admin.$queryRawUnsafe<Array<{ status: string }>>(
+      `SELECT status FROM subscription_statements WHERE tenant_id = $1::uuid`,
+      tenantId,
+    );
+    assert.equal(rows.filter((row) => row.status === "closed").length, 0, "nenhum demonstrativo closed com rastreamento 0,00");
+  });
 }

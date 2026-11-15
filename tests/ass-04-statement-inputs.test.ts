@@ -83,9 +83,9 @@ test("T-IN-4 · refechar um reaberto usa a versão gravada (pinned), mesmo que e
   assert.deepEqual(pinned.computation.segments.map((s) => [s.planVersionId, s.fromDay, s.toDay]), [["v-starter", 1, 31]]);
 });
 
-test("T-IN-4b · refechar fixa TAMBÉM a versão do add-on de rastreamento: o preço por veículo não muda (G5, §3.4)", () => {
-  const trackOld = version("v-track-1", "tracking_basic", "2026-01-01", "2026-10-20", { pricingUnit: "per_vehicle", monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
-  const trackNew = version("v-track-2", "tracking_basic", "2026-10-20", null, { pricingUnit: "per_vehicle", monthlyPriceCents: 0, perVehiclePriceCents: 9_990 });
+test("T-IN-4b · versão antiga de add-on (flat, mensalidade 0, preço por veículo) é ambígua: o fechamento é pulado com addon_without_price", () => {
+  const trackOld = version("v-track-1", "tracking_basic", "2026-01-01", "2026-10-20", { monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
+  const trackNew = version("v-track-2", "tracking_basic", "2026-10-20", null, { monthlyPriceCents: 0, perVehiclePriceCents: 9_990 });
   const addon: TenantSubscriptionAddon = { id: "a1", tenantId: "t", subscriptionId: "s1", planId: "tracking_basic", validFrom: sp("2026-01-01"), validTo: null, perVehiclePriceOverrideCents: null, createdAt: sp("2026-01-01"), updatedAt: sp("2026-01-01") };
   const source = data({
     subscriptions: [subscription("s1", "starter", "2026-01-01", null)],
@@ -93,10 +93,8 @@ test("T-IN-4b · refechar fixa TAMBÉM a versão do add-on de rastreamento: o pr
     versionsByPlan: new Map([["starter", [STARTER]], ["tracking_basic", [trackOld, trackNew]]]),
     bindings: [{ vehicleId: "V1", validFrom: "2026-10-01", validTo: null }],
   });
-  const live = ready(buildStatementInputs("2026-10", source, { pin: null }));
-  assert.deepEqual([live.addonPlanVersionId, live.computation.perVehiclePriceCents], ["v-track-2", 9_990], "sem pin, vale a versão nova");
-  const pinned = ready(buildStatementInputs("2026-10", source, { pin: { planVersionIds: ["v-starter"], addonPlanVersionIds: ["v-track-1"] } }));
-  assert.deepEqual([pinned.addonPlanVersionId, pinned.computation.perVehiclePriceCents], ["v-track-1", 1_990], "refechar usa a versão gravada");
+  assert.deepEqual(buildStatementInputs("2026-10", source, { pin: null }), { kind: "skip", reason: "addon_without_price" }, "sem pin, a forma antiga não fecha");
+  assert.deepEqual(buildStatementInputs("2026-10", source, { pin: { planVersionIds: ["v-starter"], addonPlanVersionIds: ["v-track-1"] } }), { kind: "skip", reason: "addon_without_price" }, "refechar também não fecha a forma antiga");
 });
 
 test("T-IN-4c · refechar um mês com troca de plano e troca de versão mantém cada trecho na versão gravada", () => {
@@ -146,16 +144,14 @@ test("T-IN-6 · medições: o maior do mês, espaço com teto a 0,001 GB, gaps d
   assert.equal(out.gaps[0], "2026-10-04");
 });
 
-test("T-IN-7 · add-on de rastreamento vigente no último dia dá o preço por veículo; veículos distintos no mês", () => {
-  const tracking = version("v-track", "tracking_basic", "2026-01-01", null, { pricingUnit: "per_vehicle", monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
+test("T-IN-7 · versão antiga de add-on (flat, mensalidade 0, preço por veículo) exige o pulo addon_without_price", () => {
+  const tracking = version("v-track", "tracking_basic", "2026-01-01", null, { monthlyPriceCents: 0, perVehiclePriceCents: 1_990 });
   const addon: TenantSubscriptionAddon = { id: "a1", tenantId: "t", subscriptionId: "s1", planId: "tracking_basic", validFrom: sp("2026-01-01"), validTo: null, perVehiclePriceOverrideCents: null, createdAt: sp("2026-01-01"), updatedAt: sp("2026-01-01") };
-  const out = ready(buildStatementInputs("2026-10", data({
+  const out = buildStatementInputs("2026-10", data({
     subscriptions: [subscription("s1", "starter", "2026-01-01", null)],
     addons: [addon],
     versionsByPlan: new Map([["starter", [STARTER]], ["tracking_basic", [tracking]]]),
     bindings: [{ vehicleId: "X", validFrom: "2026-10-01", validTo: "2026-10-10" }, { vehicleId: "Y", validFrom: "2026-10-11", validTo: null }],
-  }), { pin: null }));
-  assert.equal(out.computation.perVehiclePriceCents, 1_990);
-  assert.equal(out.addonPlanVersionId, "v-track");
-  assert.equal(out.computation.measurements.trackedVehicles, 2);
+  }), { pin: null });
+  assert.deepEqual(out, { kind: "skip", reason: "addon_without_price" });
 });
