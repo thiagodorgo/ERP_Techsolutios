@@ -543,6 +543,103 @@ jobs:
         run: flutter test --reporter compact
         working-directory: mobile/flutter_app
 
+  # B-SAN3-10-E2E-CI (item 42) — os testes de navegador (Playwright) no portão obrigatório. Plano v2 §3.1 e Emendas 2.1
+  # e 2.2. Sem `if:` no job, sem `continue-on-error`, sem segredo, sem artefato. O canário TEM de falhar, e pelo
+  # sentinela; a suíte inteira roda sem filtro, sem pulo e sem flaky, e o guarda confere o relatório contra o disco
+  # (`scripts/e2e-report-guard.mjs`). O check vale na tentativa 1 (§3.7): re-rodar exige registro.
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public
+      REDIS_URL: redis://localhost:6379
+      CORE_SAAS_PERSISTENCE: prisma
+      JWT_SECRET: dev-only-change-me
+      JWT_EXPIRES_IN: 15m
+      LOG_LEVEL: warn
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: erp_techsolutions
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d erp_techsolutions"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install frontend dependencies
+        run: npm --prefix frontend ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Apply migrations (Prisma)
+        run: npx prisma migrate deploy
+
+      - name: Provision database (seed)
+        run: npm run db:seed
+
+      - name: Build web (compiled mode)
+        run: npm --prefix frontend run build
+        env:
+          VITE_API_BASE_URL: http://127.0.0.1:3442/api/v1
+          VITE_USE_MOCKS: "false"
+          VITE_DEFAULT_TENANT_ID: ""
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Vermelho-controle (o canário TEM de falhar)
+        run: |
+          set +e
+          E2E_CANARIO=1 PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report/controle.json npx playwright test -c playwright.config.ts --project=controle
+          rc=$?
+          set -e
+          test "$rc" -ne 0 || { echo "e2e-guard: o canário PASSOU — a esteira não propaga falha"; exit 1; }
+          node scripts/e2e-report-guard.mjs playwright-report/controle.json --modo=controle
+
+      - name: E2E — a suíte inteira, sem filtro, sem pulo e sem flaky
+        run: |
+          set -o pipefail
+          PLAYWRIGHT_JSON_OUTPUT_FILE=playwright-report/suite.json npx playwright test -c playwright.config.ts --forbid-only --fail-on-flaky-tests
+          node scripts/e2e-report-guard.mjs playwright-report/suite.json --modo=suite
+
+      # Só o retrato da página de cada teste que falhou. Nunca a sessão salva (test-results/.auth/), nunca artefato.
+      - name: Diagnóstico (só na falha)
+        if: failure()
+        run: |
+          if [ -d test-results/artefatos ]; then
+            find test-results/artefatos -name error-context.md -print -exec cat {} \;
+          fi
+
   # Ω-INFRA-1: builda a imagem do backend (valida o Dockerfile em todo PR) e publica no GHCR
   # com a tag do commit APENAS em push na main. Usa GITHUB_TOKEN (sem conta/segredo externo).
   #
@@ -553,7 +650,7 @@ jobs:
   # worker ao boot não tinha cobertura nenhuma; este passo é uma das duas provas dela.
   docker:
     runs-on: ubuntu-latest
-    needs: [backend, backend-postgres, frontend]
+    needs: [backend, backend-postgres, frontend, e2e]
     permissions:
       contents: read
       packages: write

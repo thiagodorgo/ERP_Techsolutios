@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Minha assinatura · 3 opções v3 (Claude) · Guincho Exemplo Ltda</title>
+<style>
+/* ─── TOKENS DO REPOSITÓRIO (frontend/src/styles/tokens/tokens.css) ─── */
+:root{
+  color-scheme:light;
+  --color-core-primary:#12385c;--color-core-accent:#0f8fbf;
+  --color-status-success:#1f8a5b;--color-status-warning:#a96b00;--color-status-danger:#DC2626;
+  --color-status-info:#206bc4;--color-status-pending:#7652b7;
+  --color-neutral-100:#dde6ee;
+  --surface-panel:#ffffff;--surface-panel-muted:#f8fafc;
+  --border-subtle:#d8e1ea;--border-strong:#9fb0bf;--border-critical:#dc6a60;
+  --text-primary:#17212c;--text-secondary:#526273;--text-inverse:#f8fafc;
+  --space-4:.25rem;--space-6:.375rem;--space-8:.5rem;--space-10:.625rem;--space-12:.75rem;--space-16:1rem;--space-24:1.5rem;
+  --radius-4:4px;--radius-6:6px;--radius-8:8px;
+  --shadow-surface:0 1px 2px rgb(18 26 34 / 8%);
+  --font-sans:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --font-mono:"JetBrains Mono","Roboto Mono","SFMono-Regular",Consolas,monospace;
+  --text-xs:.75rem;--text-sm:.875rem;--text-md:1rem;--text-lg:1.125rem;--text-title:1.5rem;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+html,body{background:#090e17;font-family:var(--font-sans);color:#0f172a;-webkit-font-smoothing:antialiased}
+body{padding:24px 0 110px}
+button{font-family:inherit}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+/* ─── MOLDURA DA MAQUETE (copiada de dashboard-3opcoes.reference.html) ─── */
+.viewport-canvas{max-width:1440px;width:100%;margin:0 auto;background:#fff;border-radius:14px;overflow:clip;box-shadow:0 25px 60px -15px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.browser-banner{background:#0f172a;padding:10px 20px;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.08)}
+.browser-banner__dots{display:flex;gap:6px}.browser-banner__dot{width:10px;height:10px;border-radius:50%}
+.browser-banner__pill{background:rgba(255,255,255,.06);padding:4px 14px;border-radius:99px;color:#cbd5e1;font-size:11.5px}
+.browser-banner__tag{font-size:11px;font-weight:700;color:#60a5fa;background:rgba(37,99,235,.18);padding:3px 9px;border-radius:6px}
+.app-shell{display:flex;background:#f1f5f9;min-height:860px}
+.app-sidebar{width:236px;flex-shrink:0;background:#0D1B2A;display:flex;flex-direction:column}
+.app-sidebar__brand{padding:16px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.06)}
+.app-sidebar__logo-box{width:34px;height:34px;border-radius:10px;border:1px solid #33475B;display:flex;align-items:center;justify-content:center}
+.app-sidebar__brand-name{font-size:14px;font-weight:800;color:#fff;line-height:1.15}
+.app-sidebar__brand-sub{font-size:10px;color:#5E8C86;font-weight:600;letter-spacing:.12em}
+.app-sidebar__nav{flex:1;padding:12px 10px}
+.app-sidebar__group{margin-bottom:8px}
+.app-sidebar__group-title{font-size:10px;font-weight:700;letter-spacing:.1em;color:#41607A;padding:12px 10px 6px}
+.app-sidebar__item{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:9px;margin-bottom:2px;color:#9FB4CC;font-size:13px;font-weight:600;text-decoration:none;cursor:pointer}
+.app-sidebar__item:hover:not(.app-sidebar__item--active){background:rgba(255,255,255,.04);color:#fff}
+.app-sidebar__item--active{background:#2563EB;color:#fff;font-weight:700}
+.app-sidebar__item:focus-visible{outline:2px solid #60a5fa;outline-offset:1px}
+.app-sidebar__footer{padding:12px 14px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:10px}
+.app-sidebar__avatar{width:34px;height:34px;border-radius:50%;background:#1E3A5F;display:flex;align-items:center;justify-content:center;color:#9DC3E6;font-size:12px;font-weight:800}
+.app-main{flex:1;min-width:0;display:flex;flex-direction:column;background:#f1f5f9}
+.app-topbar{height:60px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0}
+.app-topbar__title{font-size:17px;font-weight:800}
+.app-topbar__actions{display:flex;align-items:center;gap:12px}
+.app-topbar__search{display:flex;align-items:center;gap:9px;width:270px;padding:8px 12px;background:#f1f5f9;border-radius:10px;color:#94a3b8;font-size:12.5px}
+.app-topbar__search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.app-topbar__kbd{font-size:10.5px;background:#e2e8f0;color:#64748b;padding:2px 6px;border-radius:5px;font-weight:700;font-family:var(--font-mono)}
+.app-topbar__org{display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #e2e8f0;border-radius:10px;font-size:12.5px;font-weight:700;color:#334155}
+.app-topbar__bell{width:36px;height:36px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#475569}
+.app-content{flex:1;padding:24px;min-width:0}
+
+/* ─── CLASSES REAIS DO PADRÃO (.pat-*) — app.css:3017-3350 ─── */
+.pat-mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.pat-page-header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid #e2e8f0}
+.pat-page-header__lead{min-width:320px;flex:1 1 320px}
+.pat-page-header__kicker{font-size:11px;font-weight:800;letter-spacing:.09em;color:#2563eb;margin-bottom:6px;text-transform:uppercase}
+.pat-page-header__title{font-size:22px;font-weight:800;letter-spacing:-.4px;line-height:1.1;color:#0f172a}
+.pat-page-header__subtitle{margin:5px 0 0;font-size:13px;color:#64748b;font-weight:500}
+.pat-page-header__actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.pat-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;text-decoration:none}
+.pat-btn:hover{border-color:#2563eb;color:#2563eb}
+.pat-btn--primary{padding:9px 16px;background:#2563eb;border-color:#2563eb;color:#fff}
+.pat-btn--primary:hover{background:#1d4ed8;border-color:#1d4ed8;color:#fff}
+.pat-link{padding:0;border:0;background:none;font-size:12px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:none}
+.pat-link:hover{color:#1d4ed8;text-decoration:underline}
+.pat-pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;line-height:1.3;vertical-align:middle;flex-shrink:0}
+.pat-banner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:12.5px;font-weight:600}
+.pat-banner--error{background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c}
+/* v3: faixa de dado desatualizado (app.css:3331-3335; componente StaleDataBanner.tsx:16-27) */
+.pat-banner--warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.pat-banner--warning .pat-link{color:#92400e;text-decoration:underline}
+.pat-skel{background:#f1f5f9;border-radius:6px;display:block;animation:pat-skel-pulse 1.2s ease-in-out infinite}
+@keyframes pat-skel-pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.pat-skel{animation:none}}
+.pat-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;min-width:0}
+.pat-card__head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}
+.pat-card__title{margin:0;font-size:14.5px;font-weight:800;color:#0f172a}
+.pat-card__subtitle{display:block;font-size:12px;color:#94a3b8;margin-top:2px}
+.pat-btn:focus-visible,.pat-link:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.pat-chevron-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;color:#94a3b8;transition:transform .2s ease;vertical-align:middle}
+/* detalhe com propriedades e ações (app.css:8066-8076) */
+.pat-ab-detail-grid{display:grid;grid-template-columns:1.3fr 1fr 1.2fr;gap:16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px}
+.pat-ab-detail-grid--2{grid-template-columns:1fr 1fr}
+.pat-ab-detail-col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.pat-ab-detail-field{font-size:12px;color:#334155;display:flex;align-items:baseline;gap:6px;line-height:1.4;min-width:0}
+.pat-ab-detail-label{font-weight:700;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;flex-shrink:0}
+.pat-ab-detail-val{color:#0f172a;min-width:0;overflow-wrap:anywhere}
+.pat-ab-detail-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* ─── ui-* e tela-modelo (app.css: page-heading 24-44 e 351-354 · ui-badge 497-512 · tons 538-541 · ui-card 545-560 · ui-alert 563-602 · ui-skeleton/ui-state 784-805 · Configurações 919-936) ─── */
+.page-stack{display:grid;gap:var(--space-16)}
+.page-heading{display:grid;gap:var(--space-4)}
+.page-heading--row{display:flex;align-items:center;gap:var(--space-10);justify-content:space-between}
+.page-heading span{color:var(--color-core-accent);font-size:var(--text-xs);font-weight:800;text-transform:uppercase}
+.page-heading h1{margin:var(--space-8) 0;font-size:var(--text-title);letter-spacing:0}
+.page-heading p{margin:0;color:var(--text-secondary);line-height:1.5}
+.work-orders-actions{display:flex;align-items:center;gap:var(--space-8);flex-wrap:wrap;justify-content:flex-end}
+.ui-badge{display:inline-flex;align-items:center;gap:5px;width:fit-content;min-height:24px;border:1px solid var(--border-subtle);border-radius:var(--radius-4);padding:0 var(--space-8);font-size:var(--text-xs);font-weight:900;text-transform:uppercase;background:var(--surface-panel-muted);color:var(--text-secondary)}
+.ui-tone-success{background:#e8f7ef;color:var(--color-status-success);border-color:#b7e2ca}
+.ui-tone-warning{background:#fff3d8;color:var(--color-status-warning);border-color:#f4d38b}
+.ui-tone-danger{background:#fff0ef;color:var(--color-status-danger);border-color:#f0b6b0}
+.ui-tone-info{background:#e9f5fb;color:var(--color-status-info);border-color:#b6dcee}
+.ui-card{background:var(--surface-panel);border:1px solid var(--border-subtle);border-radius:var(--radius-8);box-shadow:var(--shadow-surface);padding:var(--space-16);min-width:0}
+.ui-alert{display:flex;gap:var(--space-10);padding:var(--space-12);border:1px solid var(--border-subtle);border-radius:var(--radius-6);background:var(--surface-panel-muted)}
+.ui-alert strong,.ui-alert p{margin:0}
+.ui-alert p{color:var(--text-secondary);font-size:var(--text-sm)}
+.ui-alert--danger{border-color:var(--border-critical);background:#fff0ef;color:var(--color-status-danger)}
+.ui-alert--warning{border-color:#f4d38b;background:#fff8e9;color:var(--color-status-warning)}
+.ui-alert--info{border-color:#b6dcee;background:#eef8fc;color:var(--color-status-info)}
+.ui-button{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-8);min-height:38px;border:1px solid transparent;border-radius:var(--radius-6);padding:0 .875rem;cursor:pointer;font-weight:800;white-space:nowrap;font-size:13px}
+.ui-button--secondary{background:var(--surface-panel);color:var(--color-core-primary);border-color:var(--border-strong)}
+.ui-button:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.ui-state{border:1px dashed var(--border-strong);border-radius:var(--radius-8);padding:var(--space-24);background:var(--surface-panel);color:var(--text-secondary)}
+.ui-state strong{display:block;color:var(--text-primary);margin-bottom:4px}
+.ui-state p{font-size:var(--text-sm);line-height:1.5}
+.tenant-settings-grid{display:grid;gap:var(--space-16);grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1024px){.tenant-settings-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ─── Acesso não permitido (copiado do Dashboard aprovado) ─── */
+.acesso{max-width:560px;margin:60px auto;text-align:center;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:36px 30px}
+.acesso__ic{width:52px;height:52px;border-radius:14px;background:#FEF2F2;color:#B91C1C;display:inline-flex;align-items:center;justify-content:center;margin-bottom:14px}
+.acesso h2{font-size:18px;font-weight:800;margin-bottom:6px}
+.acesso p{font-size:13.5px;color:#64748b;line-height:1.5}
+
+/* ─── Blocos clicáveis (D-PADRAO-BLOCOS-CLICAVEIS): hover #93c5fd; aberto = borda #2563eb + anel #dbeafe; um aberto por vez ─── */
+.bloco{display:block;width:100%;text-align:left;font-family:inherit;color:inherit;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease}
+.bloco:hover{border-color:#93c5fd}
+.bloco[aria-expanded="true"]{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.bloco:focus-visible{outline:2px solid #2563eb;outline-offset:2px}
+.bloco__mais{display:flex;align-items:center;justify-content:flex-end;gap:2px;margin-top:auto;padding-top:10px;font-size:11.5px;font-weight:700;color:#2563eb;white-space:nowrap}
+.bloco[aria-expanded="true"] .pat-chevron-icon{transform:rotate(180deg);color:#2563eb}
+@media (prefers-reduced-motion:reduce){.bloco,.pat-chevron-icon{transition:none}}
+/* Detalhe que abre logo abaixo (o painel do cartão do Dashboard aprovado: .kpi-painel / .apardash-panel, app.css:8458) */
+.det{display:flex;flex-direction:column;gap:12px;background:#fff;border:1px solid #bfdbfe;border-radius:12px;padding:14px 18px;margin:0 0 14px;box-shadow:0 0 0 3px #eff6ff;scroll-margin-bottom:96px}
+.det__topo{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.det__t{font-size:15px;font-weight:800;color:#0f172a}
+.det__v{font-size:22px;font-weight:800;color:#0f172a;margin-top:4px;font-variant-numeric:tabular-nums}
+.det__c{font-size:12px;color:#64748b;margin-top:2px}
+.det__nota{font-size:12.5px;color:#475569;line-height:1.5}
+/* Pizza da franquia (UsagePie a partir do ReconcileDonut.tsx, raio interno 0) e legenda (app.css:8182-8190) */
+.uso{display:flex;flex-direction:column;align-items:center;gap:12px;min-width:0}
+.uso--lado{flex-direction:row;align-items:center;gap:18px}
+.uso__pie{display:block;flex-shrink:0}
+.uso__leg{display:flex;flex-direction:column;gap:3px;min-width:0;width:100%}
+.uso__main{font-size:15px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums}
+.uso__sub{font-size:11.5px;color:#64748b;font-weight:600;line-height:1.35}
+.uso__acima{font-size:11.5px;font-weight:700;color:#b91c1c;line-height:1.35}
+.uso__antiga{font-size:11.5px;font-weight:700;color:#92400e;line-height:1.35}
+.uso__rows{display:flex;flex-direction:column;gap:1px;margin-top:6px;width:100%}
+.uso__item{display:grid;grid-template-columns:minmax(0,84px) minmax(0,1fr) auto;align-items:center;gap:8px;min-height:24px}
+.uso__name{display:flex;align-items:center;gap:7px;min-width:0;font-size:11.5px;font-weight:600;color:#334155;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.uso__sw{width:8px;height:8px;border-radius:3px;flex-shrink:0;display:inline-block}
+.uso__meter{display:flex;height:9px;background:#f1f5f9;border-radius:99px;overflow:hidden}
+.uso__meter b{display:block;height:100%;border-radius:99px}
+.uso__count{font-size:11.5px;font-weight:800;color:#0f172a;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pl-nome{display:block;font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1;color:#0f172a}
+.pl-rot{display:block;font-size:12.5px;font-weight:600;color:#334155;margin-top:6px}
+.pl-hint{display:block;font-size:12px;color:#64748b;margin-top:4px;line-height:1.45}
+.vazio-txt{display:block;font-size:12.5px;color:#64748b;padding:6px 0}
+/* v3: mais de um selo no mesmo cartão (passou do limite + medição antiga) */
+.selos{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+
+/* ─── Opção A: cabeçalho "Administrador" e cartões da área de Configurações ─── */
+.a-card{display:flex;flex-direction:column;text-align:left}
+.a-card__head{display:flex;align-items:center;gap:var(--space-8);margin-bottom:var(--space-12);color:var(--text-primary)}
+.a-card__t{font-size:var(--text-md);font-weight:700}
+.a-card__head .selos{margin-left:auto}
+.a-card .uso{margin-top:2px}
+.a-card .uso__leg{align-items:flex-start}
+.a-sit{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.a-sit__t{font-size:15px;font-weight:800;color:#0f172a}
+.a-sit__sep,.pl-lista{display:flex;flex-direction:column;gap:6px;width:100%;margin-top:6px;padding-top:12px;border-top:1px solid #f1f5f9}
+.pl-k{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#64748b}
+.pl-item{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#334155}
+.pl-item svg{color:#64748b;flex-shrink:0}
+.pl-item b{font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums}
+.pl-lista{margin-top:14px}
+.a-pagar{display:flex;width:100%;align-items:center;text-align:left}
+.a-pagar__txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.a-pagar__txt span{color:var(--text-secondary);font-size:var(--text-sm)}
+.a-pagar .bloco__mais{margin-top:0;padding-top:0}
+/* v3: no tom âmbar, o título usa o texto da faixa de aviso do sistema (#92400e, app.css:3334) para chegar a 4,5:1 */
+.a-pagar.ui-alert--warning strong{color:#92400e}
+.a-retry{display:flex;justify-content:flex-start}
+.tela-a .det{margin:0}
+.tela-a .pat-banner{margin-bottom:0}
+
+/* ─── Opção B: faixa de situação + pizzas grandes ─── */
+.b-faixa{display:grid;grid-template-columns:repeat(var(--n,2),minmax(0,1fr));gap:12px;margin-bottom:14px}
+.b-seg{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;min-height:74px}
+.b-seg__ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.b-seg__txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.b-seg__k{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#64748b}
+.b-seg__v{font-size:17px;font-weight:800;color:#0f172a;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-seg__d{font-size:12px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-seg .bloco__mais{margin-top:0;padding-top:0}
+.b-seg--pagar{background:#fef2f2;border-color:#fca5a5}
+.b-seg--pagar-aviso{background:#fffbeb;border-color:#fde68a}
+.b-seg--pagar-info{background:#eff6ff;border-color:#bfdbfe}
+.b-seg--pagar .b-seg__k,.b-seg--pagar .b-seg__d,.b-seg--pagar-aviso .b-seg__k,.b-seg--pagar-aviso .b-seg__d,.b-seg--pagar-info .b-seg__k,.b-seg--pagar-info .b-seg__d{color:#475569}
+.b-duo{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.b-pie{display:flex;flex-direction:column}
+.b-uso{margin-top:16px}
+.b-num{font-size:34px;font-weight:800;letter-spacing:-1px;line-height:1;font-variant-numeric:tabular-nums;color:#0f172a}
+.b-de{font-size:15px;font-weight:700;color:#334155}
+.b-forte{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.b-pie .uso__sub,.b-pie .uso__acima,.b-pie .uso__antiga{font-size:12.5px}
+.b-pie .uso__item{grid-template-columns:minmax(0,96px) minmax(0,1fr) auto}
+
+/* ─── Opção C: situação primeiro ─── */
+.c-faixa{display:flex;gap:14px;margin-bottom:14px;align-items:stretch}
+.c-sit{flex:1;min-width:0;display:flex;align-items:center;gap:18px;padding:22px 24px;border:1px solid #e2e8f0;border-radius:14px;background:#fff}
+.c-sit--success{background:#f0fdf4;border-color:#bbf7d0}
+.c-sit--danger{background:#fef2f2;border-color:#fca5a5}
+.c-sit__ic{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.c-sit--success .c-sit__ic{background:#dcfce7;color:#15803d}
+.c-sit--danger .c-sit__ic{background:#fee2e2;color:#b91c1c}
+.c-sit__txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.c-sit__k{font-size:10.5px;font-weight:800;letter-spacing:.09em;color:#475569}
+.c-sit__t{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1.1}
+.c-sit--success .c-sit__t{color:#15803d}
+.c-sit--danger .c-sit__t{color:#b91c1c}
+.c-sit__d{font-size:13.5px;color:#475569;line-height:1.45}
+.c-sit__aviso{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-size:12.5px;font-weight:700;color:#92400e}
+.c-sit .bloco__mais{margin-top:0;padding-top:0;align-self:center}
+.c-pagar{width:320px;flex-shrink:0;display:flex;align-items:center;gap:14px;padding:18px 20px;border:1px solid #2563eb;border-radius:14px;background:#2563eb;color:#fff;text-align:left}
+.c-pagar:hover{background:#1d4ed8;border-color:#1d4ed8}
+.c-pagar .pat-chevron-icon,.c-pagar[aria-expanded="true"] .pat-chevron-icon{color:#eff6ff}
+.c-pagar__ic{width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.c-pagar__txt{flex:1;min-width:0}
+.c-pagar__t{display:block;font-size:17px;font-weight:800}
+.c-pagar__d{display:block;font-size:12.5px;color:#eff6ff;margin-top:2px;line-height:1.4}
+/* v2 (8.1): sem pagamento pela tela, "Como pagar" não é chamada para pagar: vira bloco contornado (o .pat-btn do sistema), que abre a orientação */
+.c-pagar.c-pagar--manual{background:#fff;border-color:#2563eb;color:#0f172a}
+.c-pagar.c-pagar--manual:hover{background:#eff6ff;border-color:#1d4ed8}
+.c-pagar--manual .c-pagar__ic{background:#eff6ff;color:#2563eb}
+.c-pagar--manual .c-pagar__d{color:#475569}
+.c-pagar.c-pagar--manual .pat-chevron-icon,.c-pagar.c-pagar--manual[aria-expanded="true"] .pat-chevron-icon{color:#2563eb}
+.c-trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px}
+.c-mini{display:flex;flex-direction:column;padding:14px 16px}
+.c-uso{margin-top:10px}
+
+/* ─── Seletor A/B/C, alternador de estados e quadro de notas (fora da tela) ─── */
+.maquete-controles{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;align-items:flex-end;gap:8px}
+.seletor-estado{display:flex;align-items:center;gap:8px;height:48px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px 6px 6px 12px;box-shadow:0 12px 30px rgba(0,0,0,.45);font-size:11.5px;font-weight:800;color:#94a3b8;letter-spacing:.02em}
+.seletor-estado select{height:34px;background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:0 10px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;max-width:360px}
+.seletor-estado select:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.seletor-opcoes{position:fixed;right:20px;bottom:20px;z-index:80;display:flex;gap:6px;background:#0f172a;border:1px solid #334155;border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.maquete-controles .seletor-opcoes{position:static}
+.seletor-opcoes button{border:0;border-radius:8px;padding:9px 13px;font-size:12.5px;font-weight:800;cursor:pointer;background:transparent;color:#cbd5e1}
+.seletor-opcoes button[aria-pressed="true"]{background:#2563eb;color:#fff}
+.seletor-opcoes button:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-layer{max-width:1440px;margin:32px auto 0;background:#0f172a;border:1px solid #334155;border-radius:14px;padding:24px 30px;color:#e2e8f0}
+.review-layer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.review-layer__badge{display:inline-flex;padding:4px 10px;border-radius:99px;background:#1e293b;color:#38bdf8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;border:1px solid #38bdf840}
+.review-layer h2{font-size:19px;font-weight:800;color:#fff;margin-bottom:6px}
+.review-layer p.desc{font-size:13px;color:#94a3b8;line-height:1.55;margin-bottom:18px}
+.review-layer p.desc code{font-family:var(--font-mono);font-size:12px;color:#7dd3fc}
+.review-layer button.rv-btn{background:#1e293b;color:#e2e8f0;border:1px solid #334155;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.review-layer button.rv-btn[aria-pressed="true"]{background:#2563eb;border-color:#2563eb;color:#fff}
+.review-layer button.rv-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.review-grid--2{grid-template-columns:1fr 1fr}
+.review-box{background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;min-width:0}
+.review-box h3{font-size:13px;font-weight:800;color:#f8fafc;margin-bottom:10px}
+.review-list{list-style:none;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.review-list li{margin-bottom:8px;padding-left:14px;position:relative;overflow-wrap:anywhere}
+.review-list li::before{content:"•";position:absolute;left:0;color:#38bdf8;font-weight:bold}
+.review-list strong{color:#f1f5f9}
+.review-list code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.estados-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:#cbd5e1;margin-bottom:12px}
+.toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:90;background:#0f172a;color:#f8fafc;border:1px solid #334155;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.4);max-width:640px}
+.toast--falha{border-color:#f59e0b;background:#451a03;color:#fef3c7}
+/* v3: painel "O que mudou desde a maquete de 10/11" (fora da tela, no mesmo estilo do quadro) */
+.mudou-lista{list-style:none;counter-reset:mudou;display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;font-size:12.5px;line-height:1.55;color:#cbd5e1}
+.mudou-lista>li{counter-increment:mudou;position:relative;padding:12px 14px 12px 44px;background:#1e293b;border:1px solid rgba(255,255,255,.08);border-radius:10px;min-width:0;overflow-wrap:anywhere}
+.mudou-lista>li::before{content:counter(mudou);position:absolute;left:12px;top:12px;width:22px;height:22px;border-radius:7px;background:#2563eb;color:#fff;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.mudou-lista>li.mudou--largo{grid-column:1 / -1}
+.mudou-lista strong{color:#f1f5f9}
+.mudou-lista code{font-family:var(--font-mono);font-size:11.5px;color:#7dd3fc}
+.mudou-estados{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px}
+.mudou-estados li{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;justify-content:space-between}
+.mudou-estados b{color:#f8fafc}
+.ir-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.ir-btn{background:#0f172a;color:#bfdbfe;border:1px solid #3b82f6;border-radius:7px;padding:4px 9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit;align-self:flex-start}
+.ir-btn:hover{background:#1e3a8a;color:#fff}
+.ir-btn:focus-visible{outline:2px solid #60a5fa;outline-offset:2px}
+.pa1{margin-top:16px;background:#172554;border:1px solid #3b82f6;border-radius:10px;padding:16px 18px}
+.pa1 h3{font-size:14px;font-weight:800;color:#fff;margin-bottom:6px}
+.pa1 p{font-size:12.5px;color:#dbeafe;line-height:1.55;margin-bottom:8px}
+.pa1 .review-list li{color:#dbeafe}
+.tambem{margin-top:16px}
+/* amostras dos três textos menores (as classes da tela, em fundo claro) */
+.amostra{background:#f1f5f9;color:#0f172a;border-radius:10px;padding:12px;margin-top:10px}
+.amostra .ui-card{max-width:280px}
+.amostra .toast{position:static;transform:none;max-width:none;box-shadow:none}
+</style>
+</head>
+<body>
+
+<div class="viewport-canvas">
+  <div class="browser-banner">
+    <div class="browser-banner__dots"><span class="browser-banner__dot" style="background:#ef4444"></span><span class="browser-banner__dot" style="background:#f59e0b"></span><span class="browser-banner__dot" style="background:#10b981"></span></div>
+    <div class="browser-banner__pill">erp.techsolutions.com.br &nbsp;·&nbsp; Organização: <strong>Guincho Exemplo Ltda</strong></div>
+    <div class="browser-banner__tag" id="banner-tag">Minha assinatura · Opção A</div>
+  </div>
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div class="app-sidebar__brand">
+        <div class="app-sidebar__logo-box"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7BE084" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 11c-4 0-7-2.6-7.8-6.4C8 4 11 6 12 9.6"/><path d="M12 9.6C13 6 16 4 19.8 4.6 19 8.4 16 11 12 11"/></svg></div>
+        <div><div class="app-sidebar__brand-name">TechSolutions</div><div class="app-sidebar__brand-sub">PLATAFORMA ERP</div></div>
+      </div>
+      <nav class="app-sidebar__nav" id="sidebar-nav" aria-label="Menu principal"></nav>
+      <div class="app-sidebar__footer">
+        <div class="app-sidebar__avatar" id="sb-ini">AE</div>
+        <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#fff" id="sb-nome">Administrador Exemplo</div><div style="font-size:10.5px;color:#5B7A96" id="sb-papel">Administrador</div></div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <header class="app-topbar">
+        <div class="app-topbar__title" id="topbar-title">Minha assinatura</div>
+        <div class="app-topbar__actions">
+          <div class="app-topbar__search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span>Buscar ordens, clientes, placas…</span><span class="app-topbar__kbd">Ctrl K</span></div>
+          <div class="app-topbar__org"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>Guincho Exemplo Ltda</div>
+          <div class="app-topbar__bell" aria-label="Notificações"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        </div>
+      </header>
+      <div class="app-content">
+        <div data-view="a"></div>
+        <div data-view="b" style="display:none"></div>
+        <div data-view="c" style="display:none"></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ═════════ PAINEL "O QUE MUDOU DESDE A MAQUETE DE 10/11" (Emenda 1.1 do B-ASS-11, §2.5) — fora da tela ═════════ -->
+<section class="review-layer mudou" id="painel-mudou" aria-label="O que mudou desde a maquete de 10/11">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">v3 · 14/11 · o que o dono ainda não viu</div>
+      <h2>O que mudou desde a maquete de 10/11</h2>
+    </div>
+  </div>
+  <p class="desc">A maquete de 10/11 (v1) foi a que esteve na fila. Depois dela vieram a v2 (14/11, madrugada) e esta v3. Tudo o que está abaixo é novo para o dono. Os botões “Ver” trocam o estado (e, quando indicado, a opção) da tela acima.</p>
+  <ol class="mudou-lista">
+    <li class="mudou--largo"><strong>Seis estados novos</strong> (2, 3, 6, 7, 10 e 15). O alternador agora tem 15 estados; o 2 tem duas variantes.
+      <ul class="mudou-estados">
+        <li><span><b>2 · Em dia, com fatura em aberto, sem pagamento pela tela.</b> É o que o servidor responde em cerca de 15 dias de cada mês. Variantes: a vencer, e vencida há menos de 5 dias (ainda em dia).</span><span class="ir-btns"><button type="button" class="ir-btn" data-ir="e2a">Ver 2a · a vencer</button><button type="button" class="ir-btn" data-ir="e2b">Ver 2b · vencida</button></span></li>
+        <li><span><b>3 · Em dia, com fatura em aberto e pagamento pela tela.</b> O alvo, para quando a cobrança for ligada: os meios que vieram.</span><span class="ir-btns"><button type="button" class="ir-btn" data-ir="e3">Ver 3</button></span></li>
+        <li><span><b>6 · Em atraso sem data.</b> Só “Em atraso”: a tela nunca escreve “desde —” nem cai em erro.</span><span class="ir-btns"><button type="button" class="ir-btn" data-ir="e6">Ver 6</button></span></li>
+        <li><span><b>7 · Em atraso sem fatura em aberto.</b> Sem o bloco “Como pagar”; a orientação de falar com a equipe fica no detalhe da Situação.</span><span class="ir-btns"><button type="button" class="ir-btn" data-ir="e7" data-ir-abrir="situacao">Ver 7</button></span></li>
+        <li><span><b>10 · Medição do espaço antiga.</b> Quando a última medição está 2 dias ou mais atrás de hoje: selo com a data.</span><span class="ir-btns"><button type="button" class="ir-btn" data-ir="e10">Ver 10</button></span></li>
+        <li><span><b>15 · Dados desatualizados.</b> A atualização falhou: o dado anterior fica, com o aviso e “Tentar de novo”.</span><span class="ir-btns"><button type="button" class="ir-btn" data-ir="e15">Ver 15</button></span></li>
+      </ul>
+    </li>
+    <li><strong>“Copiar dados da fatura”.</strong> Copia o nome da organização e o vencimento, sem valor nenhum, para colar na mensagem à equipe. É a única ação do “Como pagar” quando não há pagamento pela tela.<span class="ir-btns"><button type="button" class="ir-btn" data-ir="e5" data-ir-abrir="pagar">Ver no estado 5</button></span></li>
+    <li><strong>Nenhum contato nominal.</strong> Sem nome, e-mail ou telefone: o texto manda falar com “a equipe TechSolutions que atende a sua organização”.</li>
+    <li><strong>A nota fiscal no pagamento direto:</strong> “tratada com a equipe, junto com o pagamento”. A tela não promete nota.<span class="ir-btns"><button type="button" class="ir-btn" data-ir="e5" data-ir-abrir="pagar">Ver no estado 5</button></span></li>
+    <li><strong>“Baixar nota fiscal” não existe na tela</strong>, em nenhum estado. A P12 lista o PDF da nota no “Como pagar”, mas não há rota de PDF para o cliente; ela vem no <code>B-ASS-11c</code>. A v1 tinha o botão no estado com pagamento pela tela.<span class="ir-btns"><button type="button" class="ir-btn" data-ir="e4" data-ir-abrir="pagar">Ver no estado 4</button></span></li>
+    <li><strong>O “Como pagar” contornado na opção C</strong> quando não há pagamento pela tela (branco com borda azul, em vez de azul cheio), porque ele leva a uma orientação, não a um pagamento.<span class="ir-btns"><button type="button" class="ir-btn" data-ir="e5" data-ir-opcao="c">Ver na C, estado 5</button><button type="button" class="ir-btn" data-ir="e4" data-ir-opcao="c">Comparar com o 4</button></span></li>
+    <li><strong>O que a v2 tirou da v1:</strong> os 2 botões “Meios de pagamento” do quadro de notas (o “Como sai hoje” virou o estado 5); e os 2 textos “os meios de pagamento aparecem aqui assim que a cobrança for emitida” e “meios de pagamento ainda não emitidos” (eram promessa, com a cobrança desligada).</li>
+    <li><strong>O item “Minha assinatura” no fim do grupo ADMINISTRAÇÃO</strong> do menu, depois de Auditoria. Na maquete o grupo aparece completo, na ordem real; os outros grupos estão resumidos.<span class="ir-btns"><button type="button" class="ir-btn" data-ir="e1" data-ir-foco="menu">Ver o menu</button></span></li>
+    <li><strong>O selo do estado 10 e o aviso do estado 15.</strong> Selo âmbar “Medição antiga · &lt;data&gt;” no cartão de Espaço; faixa âmbar “Dados desatualizados — última atualização às &lt;hora&gt;” com “Tentar de novo”, no topo da tela.<span class="ir-btns"><button type="button" class="ir-btn" data-ir="e10">Ver o selo</button><button type="button" class="ir-btn" data-ir="e15">Ver o aviso</button></span></li>
+  </ol>
+  <div class="review-box tambem">
+    <h3>Também mudou na v3 (fora da lista da emenda, declarado)</h3>
+    <ul class="review-list">
+      <li><strong>“Abrir boleto”</strong> quando o servidor manda o endereço do boleto (é um dos rótulos que a emenda já lista no T-S3a). Com a cobrança desligada, não aparece.</li>
+      <li><strong>A cor do aviso de fatura acompanha a situação:</strong> azul quando a fatura ainda vai vencer, âmbar quando venceu e a organização ainda está em dia (os 5 dias de tolerância), vermelho em atraso. A v2 só tinha o vermelho, porque só tinha fatura em atraso.</li>
+      <li><strong>“Continua em dia até &lt;data&gt;”</strong> na fatura vencida dentro da tolerância (estado 2b): é a conta vencimento + 5 dias. Se o dono preferir, sai e fica só “venceu em”.</li>
+      <li><strong>Em dia, a tela nunca escreve “em atraso”:</strong> “Quando fica em atraso” virou “Prazo de tolerância: até 5 dias depois do vencimento, sem mudar a situação”.</li>
+      <li><strong>Estado 1:</strong> “Sem fatura em aberto” (era “Nenhuma fatura em aberto”), como na emenda.</li>
+      <li><strong>Saiu do quadro de notas</strong> a proposta de um sinal novo do servidor para “cobrança automática ligada”: é mudança de servidor, fora desta tela; se for necessária, é assunto do <code>B-ASS-11c</code>.</li>
+      <li><strong>O dia de referência muda por estado</strong> (01/11, 06/11 ou 14/11), para cada situação ser a do dia em que ela acontece. Ele aparece no alternador e no cabeçalho da opção C.</li>
+    </ul>
+  </div>
+  <div class="pa1" role="note" aria-label="Pergunta aberta ao dono">
+    <h3>PA-1 — Você aprova as 3 formas da tela “Minha assinatura”?</h3>
+    <p>Você ainda não viu esta tela pronta. A maquete que estava na fila em 13/11 mudou depois, e faltavam situações nela. Troque entre A, B e C (canto de baixo, à direita) e passe pelas 15 situações no alternador ao lado.</p>
+    <ul class="review-list">
+      <li>nenhum valor em dinheiro em lugar nenhum;</li>
+      <li>a pizza cheia, de usuários e de espaço;</li>
+      <li><strong>cliente em dia, mas com fatura em aberto</strong> — é a situação mais comum do mês (estado 2);</li>
+      <li><strong>cliente em atraso, sem pagamento pela tela</strong> — ele é orientado a falar com a equipe, e pode copiar os dados da fatura (estado 5);</li>
+      <li>o aviso de <strong>medição antiga</strong> (estado 10) e o de <strong>dados desatualizados</strong> (estado 15);</li>
+      <li>não há botão de baixar nota fiscal, nem telefone ou e-mail de contato.</li>
+    </ul>
+    <p style="margin:8px 0 0"><strong>Respostas possíveis:</strong> aprovo as 3 · aprovo com estes ajustes · devolvo. Enquanto não houver resposta, a tela não começa a ser desenvolvida; a retirada da consulta de tendência segue, porque não depende desta tela.</p>
+  </div>
+</section>
+
+<section class="review-layer" aria-label="Quadro de notas da maquete">
+  <div class="review-layer__top">
+    <div>
+      <div class="review-layer__badge">Quadro de notas · v3 · Emenda 1.1 do B-ASS-11 (Fm-a) · PA-1 aberta</div>
+      <h2 id="rv-titulo">Opção A — Padrão fiel (tela-modelo)</h2>
+    </div>
+    <button type="button" class="rv-btn" id="rv-recolher" aria-expanded="true">Recolher notas</button>
+  </div>
+  <div id="rv-corpo">
+    <p class="desc">As três opções partem da tela-modelo <code>frontend/src/modules/settings/pages/TenantSettingsPage.tsx</code> (cabeçalho “Administrador”, página protegida por permissão, recarga sozinha), do esqueleto aprovado <code>dashboard-3opcoes.reference.html</code> (moldura, menu, barra de cima, seletor e este quadro, copiados) e do padrão de blocos clicáveis de <code>financeiro-ab.reference.html</code>: todo bloco é um botão, abre o detalhe logo abaixo com as propriedades e as ações, um aberto por vez; Enter e Espaço abrem e fecham, Esc fecha. O conteúdo é o mesmo nas três e segue a <strong>P12</strong> ao pé da letra do “só”: plano, uso da franquia de usuários e de espaço em <strong>pizza cheia</strong>, situação e “Como pagar” só com fatura em aberto. Fora da tela: módulos, veículos rastreados, tendência e qualquer valor em dinheiro. Os números são de exemplo; a forma de cada dado é a do contrato real (<code>src/modules/subscription-billing/statements/subscription-view.ts:22-45</code>, medido na <code>origin/main</code> <code>e6f3c425</code>, #561, 14/11 10:40, igual à remota por <code>git ls-remote</code>). Códigos de bloco e termos técnicos só aparecem neste quadro e no painel acima. O alternador de estados fica ao lado do seletor A/B/C e vale para as três opções.</p>
+    <p class="desc"><strong>O que mudou na v3 (14/11), pela Emenda 1.1 do <code>B-ASS-11</code> (§2):</strong> a aprovação da v2 pela recomendação foi retirada (§2.1): aprovação de tela é a pergunta aberta <strong>PA-1</strong>, no painel acima. O alternador passa de 9 para <strong>15 estados</strong> (§2.3), com a regra das 36 h traduzida para “2 dias civis” (§2.4, leitura declarada) e separada da falha de atualização. A lista completa, item a item, está no painel “O que mudou desde a maquete de 10/11”, e o diário é <code>telas-3opcoes/minha-assinatura-v3-diario.md</code>.</p>
+    <div class="review-grid review-grid--2">
+      <div class="review-box"><h3>O que cada estado simula (igual nas 3 opções)</h3><ul class="review-list" id="rv-estados"></ul></div>
+      <div class="review-box"><h3>Divergências conscientes (iguais nas 3 opções)</h3><ul class="review-list" id="rv-divergencias"></ul></div>
+    </div>
+    <div class="review-box" style="margin-bottom:16px">
+      <h3>Três textos menores, sem estado próprio no alternador (§2.3)</h3>
+      <div class="review-grid" style="margin-bottom:0">
+        <div>
+          <ul class="review-list"><li><strong>A cópia que falha</strong> (a área de transferência foi negada): aviso de que não copiou, com os dados para anotar, e sem a mensagem de sucesso.</li></ul>
+          <div class="amostra"><div class="toast toast--falha" role="presentation">Não foi possível copiar os dados da fatura: o navegador não liberou a área de transferência. Anote: Guincho Exemplo Ltda · vencimento 11/10/2026.</div></div>
+          <div class="ir-btns"><button type="button" class="ir-btn" data-simular-falha>Simular na tela (estado 5)</button></div>
+        </div>
+        <div>
+          <ul class="review-list"><li><strong>O plano sem nome</strong> (<code>plan.name</code> vazio, <code>subscription-view.ts:77</code>): “—” no bloco Plano, com legenda; o uso e a situação continuam.</li></ul>
+          <div class="amostra"><div class="ui-card a-card"><span class="a-card__head"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg><span class="a-card__t">Plano</span></span><span class="pl-nome">—</span><span class="pl-rot">Nome do plano indisponível no momento</span><span class="pl-hint">A franquia abaixo é a contratada e vale normalmente.</span></div></div>
+        </div>
+        <div>
+          <ul class="review-list"><li><strong>A fatura em aberto sem data de vencimento</strong> (<code>payment.dueDate: null</code>, <code>subscription-view.ts:38</code>): “Fatura em aberto”, sem data, e a cópia diz “sem data de vencimento”.</li></ul>
+          <div class="amostra"><div class="ui-alert ui-alert--info a-pagar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg><span class="a-pagar__txt"><strong>Fatura em aberto</strong><span>Esta fatura não tem pagamento pela tela: pague direto com a equipe TechSolutions que atende a sua organização.</span></span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="nota" data-nota="a"></div>
+    <div class="nota" data-nota="b" hidden></div>
+    <div class="nota" data-nota="c" hidden></div>
+    <div class="review-box">
+      <h3>Pendências para o dono</h3>
+      <ul class="review-list">
+        <li><strong>PA-1, aberta</strong> (painel acima): aprovar as 3 formas, aprovar com ajustes ou devolver. A resposta absorve as perguntas 1, 2 e 3 da Emenda 1: a maquete, o contato da equipe e o “Copiar dados da fatura”. Ela entra em <code>decisoes.md</code> com a fala literal, no PR da Parte T (ID proposto <code>D-ASS11-MAQUETE-APROVADA</code>). Com ajustes, só esta maquete volta.</li>
+        <li><strong>Respondidas pela recomendação, por leitura declarada</strong> (a <code>D-DONO-1311-RECOMENDACOES</code> cobre pergunta nascida depois, <code>decisoes.md:5188</code>): os meios de pagamento vindos da cobrança ficam para o <code>B-ASS-11c</code> (pergunta 5); “Baixar nota fiscal” fica fora até existir a rota do PDF (pergunta 6, item 5 do painel). O dono pode desfazer as duas.</li>
+        <li><strong>A regra de “medição antiga”:</strong> 2 dias civis ou mais atrás de hoje, em São Paulo (§2.4). Se o dono quiser a regra em horas, o servidor precisa mandar o instante da medição, e isso é mudança de servidor, fora desta tela.</li>
+        <li>Confirmar o percentual da franquia (“90% da franquia”, só até 100%) e a ausência de um aviso de “perto do limite”, que nenhuma regra define hoje.</li>
+        <li>Confirmar que, na opção C, o detalhe de “Como pagar” abre sozinho quando há fatura em aberto (estados 2, 3, 4, 5 e 6).</li>
+        <li>Plano, organização, nomes, datas e números são exemplos.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="maquete-controles">
+  <label class="seletor-estado">Estado da tela
+    <select id="sel-estado" aria-label="Estado da tela na maquete"></select>
+  </label>
+  <div class="seletor-opcoes" role="group" aria-label="Escolher a opção da maquete">
+    <button type="button" data-opcao="a" aria-pressed="true">A · Padrão fiel</button>
+    <button type="button" data-opcao="b" aria-pressed="false">B · Analítica</button>
+    <button type="button" data-opcao="c" aria-pressed="false">C · Situação primeiro</button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+'use strict';
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+/* ── Ícones (lucide, traço 2) ── */
+const I = {
+  layout:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  clipboard:'<rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  clipboardList:'<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  checkCircle:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  truck:'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  contact:'<path d="M16 2v2"/><path d="M7 22v-2a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><path d="M8 2v2"/><circle cx="12" cy="11" r="3"/><rect x="3" y="4" width="18" height="18" rx="2"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  logIn:'<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/>',
+  monitor:'<path d="M18 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h8"/><path d="M10 19v-3.96 3.15"/><path d="M7 19h5"/><rect width="6" height="10" x="16" y="12" rx="2"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  bellRing:'<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M22 8c0-2.3-.8-4.3-2-6"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/>',
+  warehouse:'<path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/>',
+  scroll:'<path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  chevron:'<polyline points="6 9 12 15 18 9"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  creditCard:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+  messageCircle:'<path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>',
+  layers:'<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+  hardDrive:'<line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/>',
+  shieldCheck:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  copy:'<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+  externalLink:'<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  fileText:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+  refresh:'<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>'
+};
+function ic(n, s, extra){ return '<svg width="'+(s||16)+'" height="'+(s||16)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" '+(extra||'')+'>'+I[n]+'</svg>'; }
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+const CHEV = '<span class="pat-chevron-icon">'+ic('chevron',15)+'</span>';
+
+/* ── Tempo e formatos. v3 (§2.4): "hoje" é a chave AAAA-MM-DD de São Paulo, de UM relógio; a diferença de dias usa
+   Date.UTC, nunca a leitura de texto como data. Na maquete, cada estado traz o seu dia de referência. ── */
+const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const SEMANA = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+const dataBR = iso => { const p = iso.split('-'); return p[2]+'/'+p[1]+'/'+p[0]; };
+const dataCurta = iso => { const p = iso.split('-'); return p[2]+'/'+p[1]; };
+const periodoBR = per => { const p = per.split('-'); return MESES[+p[1]-1]+' de '+p[0]; };
+const mesBR = per => MESES[+per.split('-')[1]-1];
+const gb = x => Number(x).toLocaleString('pt-BR', { maximumFractionDigits:1 });
+const pct = (u, i) => Math.round(u / i * 100);
+const juntar = (a, conj) => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ')+' '+(conj || 'e')+' '+a[a.length-1];
+const DIA = 86400000;
+const utc = iso => { const p = iso.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]); };
+const diasEntre = (de, ate) => Math.round((utc(ate) - utc(de)) / DIA);
+/* dias desde 1970-01-01 → AAAA-MM-DD (algoritmo civil de Hinnant), para somar dias sem ler texto como data */
+function isoDeDias(z){ z += 719468; const era = Math.floor(z / 146097), doe = z - era * 146097; const yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365); const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100)); const mp = Math.floor((5 * doy + 2) / 153); const d = doy - Math.floor((153 * mp + 2) / 5) + 1; const m = mp < 10 ? mp + 3 : mp - 9; const y = yoe + era * 400 + (m <= 2 ? 1 : 0); return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+const somaDias = (iso, n) => isoDeDias(Math.round(utc(iso) / DIA) + n);
+const diaSemana = iso => SEMANA[((Math.round(utc(iso) / DIA) + 4) % 7 + 7) % 7];
+const dataLonga = iso => { const p = iso.split('-'); return diaSemana(iso)+', '+(+p[2])+' de '+MESES[+p[1]-1]; };
+const TOLERANCIA = 5;   /* dias depois do vencimento antes de deixar de estar em dia (billing.constants.ts:8) */
+
+/* ── Dados de exemplo: Guincho Exemplo Ltda. A forma é a do contrato (subscription-view.ts:22-45), sem nenhuma chave de dinheiro ── */
+const ORG = 'Guincho Exemplo Ltda';   /* na tela real vem da sessão (AuthTenant.name), nunca do payload */
+const VENC_SET = '2026-10-11';        /* fatura de setembro: fechou em 01/10, venceu 10 dias depois */
+const VENC_OUT = '2026-11-11';        /* fatura de outubro: fechou em 01/11, vence em 11/11 */
+const USUARIOS_OK = { used:18, included:20, overLimit:false };
+const espaco = (measuredAt, extra) => Object.assign({ used:42, included:50, overLimit:false, measuredAt:measuredAt, estimate:true }, extra || {});
+function vista(extra){ return Object.assign({ period:'2026-11', plan:{ code:'plus', name:'Plus' }, usage:{ users:USUARIOS_OK, storageGb:espaco('2026-11-13') }, status:{ inGoodStanding:true, overdueSince:null, nextDueDate:null } }, extra || {}); }
+const COM_MEIO = { payUrl:'https://pagamento.exemplo/fatura', pixCopyPaste:'pix-de-exemplo', boletoLine:'linha-de-exemplo', boletoUrl:'https://pagamento.exemplo/boleto', invoicePdfAvailable:true };
+/* é exatamente o que o servidor manda hoje (subscription-view.ts:96-104), com a cobrança desligada */
+const SEM_MEIO = { payUrl:null, pixCopyPaste:null, boletoLine:null, boletoUrl:null, invoicePdfAvailable:false };
+const fatura = (dueDate, meios) => Object.assign({ statementId:'exemplo', dueDate:dueDate }, meios);
+const emDiaCom = (venc, meios, medido) => vista({ usage:{ users:USUARIOS_OK, storageGb:espaco(medido || '2026-11-13') }, status:{ inGoodStanding:true, overdueSince:null, nextDueDate:venc }, payment:fatura(venc, meios) });
+const ESTADOS = [
+  { id:'e1',  n:'1',  rot:'Em dia, sem fatura em aberto', hoje:'2026-11-14', d:() => vista() },
+  { id:'e2a', n:'2a', novo:true, rot:'Em dia, fatura a vencer, sem pagamento pela tela', hoje:'2026-11-06', d:() => emDiaCom(VENC_OUT, SEM_MEIO, '2026-11-05') },
+  { id:'e2b', n:'2b', novo:true, rot:'Em dia, fatura vencida há menos de 5 dias, sem pagamento pela tela', hoje:'2026-11-14', d:() => emDiaCom(VENC_OUT, SEM_MEIO) },
+  { id:'e3',  n:'3',  novo:true, rot:'Em dia, fatura em aberto, com pagamento pela tela (cobrança ligada)', hoje:'2026-11-06', d:() => emDiaCom(VENC_OUT, COM_MEIO, '2026-11-05') },
+  { id:'e4',  n:'4',  rot:'Em atraso, com pagamento pela tela (cobrança ligada)', hoje:'2026-11-14', d:() => vista({ status:{ inGoodStanding:false, overdueSince:VENC_SET, nextDueDate:VENC_SET }, payment:fatura(VENC_SET, COM_MEIO) }) },
+  { id:'e5',  n:'5',  rot:'Em atraso, sem pagamento pela tela (cobrança desligada)', hoje:'2026-11-14', d:() => vista({ status:{ inGoodStanding:false, overdueSince:VENC_SET, nextDueDate:VENC_SET }, payment:fatura(VENC_SET, SEM_MEIO) }) },
+  { id:'e6',  n:'6',  novo:true, rot:'Em atraso sem data (estorno)', hoje:'2026-11-14', d:() => vista({ status:{ inGoodStanding:false, overdueSince:null, nextDueDate:VENC_OUT }, payment:fatura(VENC_OUT, SEM_MEIO) }) },
+  { id:'e7',  n:'7',  novo:true, rot:'Em atraso sem fatura em aberto (estorno)', hoje:'2026-11-14', d:() => vista({ status:{ inGoodStanding:false, overdueSince:VENC_SET, nextDueDate:null } }) },
+  { id:'e8',  n:'8',  rot:'Acima da franquia (usuários e espaço)', hoje:'2026-11-14', d:() => vista({ usage:{ users:{ used:23, included:20, overLimit:true }, storageGb:espaco('2026-11-13', { used:57, overLimit:true }) } }) },
+  { id:'e9',  n:'9',  rot:'Espaço ainda sem medição', hoje:'2026-11-01', d:() => vista({ usage:{ users:USUARIOS_OK, storageGb:espaco(null, { used:0 }) } }) },
+  { id:'e10', n:'10', novo:true, rot:'Medição do espaço antiga (2 dias ou mais)', hoje:'2026-11-14', d:() => vista({ usage:{ users:USUARIOS_OK, storageGb:espaco('2026-11-11') } }) },
+  { id:'e11', n:'11', rot:'Carregando (esqueleto)', kind:'loading' },
+  { id:'e12', n:'12', rot:'Erro, sem dado anterior (com “Tentar de novo”)', kind:'error' },
+  { id:'e13', n:'13', rot:'Acesso não permitido', kind:'denied' },
+  { id:'e14', n:'14', rot:'Organização ainda sem assinatura', kind:'empty' },
+  { id:'e15', n:'15', novo:true, rot:'Dados desatualizados (a atualização falhou)', hoje:'2026-11-14', d:() => vista(), stale:'09:40' }
+];
+const HOJE_PADRAO = '2026-11-14';
+let estado = 'e1', opcao = 'a', atualizando = false;
+const S = { a:{ aberto:null }, b:{ aberto:null }, c:{ aberto:null } };
+const est = () => ESTADOS.find(e => e.id === estado);
+const hoje = () => est().hoje || HOJE_PADRAO;
+function ctx(){
+  const e = est();
+  if (e.kind === 'loading') return { kind:'loading' };
+  if (e.kind === 'error') return { kind:'error' };
+  if (e.kind === 'denied') return { kind:'denied' };
+  if (e.kind === 'empty') return { kind:'empty' };
+  return { kind:'data', d:e.d(), stale:e.stale || null };
+}
+
+/* ── Perfis e menu (appSidebarNav.ts: admin l.178 + G_ADMIN_FULL l.157-160; "Minha assinatura" no FIM de ADMINISTRAÇÃO,
+   depois de Auditoria; dispatcher "Operação de campo" l.184-192, sem o item) ── */
+const PERFIS = {
+  admin:{ rot:'Administrador', nome:'Administrador Exemplo', ini:'AE', nav:'admin', usuarios:true },
+  campo:{ rot:'Operação de campo', nome:'Operador Exemplo', ini:'OE', nav:'campo', usuarios:false }
+};
+const perfil = () => estado === 'e13' ? PERFIS.campo : PERFIS.admin;
+const NAVS = {
+  admin:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço']]],['FROTA',[['truck','Viaturas']]],['GESTÃO',[['receipt','Financeiro']]],['PÁTIOS',[['warehouse','Pátios']]],['ADMINISTRAÇÃO',[['users','Usuários'],['logIn','Acessos'],['monitor','Sessões'],['bell','Notificações'],['bellRing','Central de Notificações'],['clipboardList','Modelos de Checklist'],['settings','Configurações'],['scroll','Auditoria'],['creditCard','Minha assinatura']]]],
+  campo:[['VISÃO GERAL',[['layout','Dashboard']]],['OPERAÇÃO',[['clipboard','Ordens de Serviço']]],['FROTA',[['truck','Viaturas']]],['GESTÃO',[['contact','Clientes']]],['PÁTIOS',[['warehouse','Pátios']]],['ADMINISTRAÇÃO',[['bell','Notificações'],['bellRing','Central de Notificações']]]]
+};
+function renderNav(){
+  const p = perfil();
+  $('#sidebar-nav').innerHTML = NAVS[p.nav].map(g => '<div class="app-sidebar__group" data-grupo="'+g[0]+'"><div class="app-sidebar__group-title">'+g[0]+'</div>'+g[1].map(it => { const on = it[1] === 'Minha assinatura'; return '<a class="app-sidebar__item'+(on?' app-sidebar__item--active':'')+'" href="#" '+(on?'aria-current="page"':'')+' data-menu="'+it[1]+'">'+ic(it[0],17)+it[1]+'</a>'; }).join('')+'</div>').join('');
+  $('#sb-nome').textContent = p.nome; $('#sb-papel').textContent = p.rot; $('#sb-ini').textContent = p.ini;
+}
+
+/* ═════════ Peças comuns ═════════ */
+const COR = { usado:'#2563eb', livre:'#bfdbfe', acima:'#DC2626' };
+const UNI = { usuarios:{ rot:'Usuários', un:'usuários', f:n => String(n), sufixo:'' }, espaco:{ rot:'Espaço', un:'GB', f:gb, sufixo:' GB' } };
+const usoDe = (d, id) => id === 'usuarios' ? d.usage.users : d.usage.storageGb;
+const pendente = (d, id) => id === 'espaco' && d.usage.storageGb.measuredAt === null;
+/* v3 (§2.4, estado 10): a medição é antiga quando está 2 dias civis ou mais atrás de hoje */
+const diasDaMedicao = d => d.usage.storageGb.measuredAt === null ? null : diasEntre(d.usage.storageGb.measuredAt, hoje());
+const medicaoAntiga = d => { const n = diasDaMedicao(d); return n !== null && n >= 2; };
+const planoNome = d => d.plan.name ? esc(d.plan.name) : '—';
+function pill(txt, tom, icone){ const t = { success:['#DCFCE7','#15803D'], danger:['#FEE2E2','#B91C1C'], warning:['#FEF3C7','#B45309'], neutral:['#F1F5F9','#475569'], info:['#EFF6FF','#2563EB'] }[tom]; return '<span class="pat-pill" style="background:'+t[0]+';color:'+t[1]+'">'+(icone ? ic(icone,12) : '')+txt+'</span>'; }
+function campo(rot, val){ return '<div class="pat-ab-detail-field"><span class="pat-ab-detail-label">'+rot+':</span> <span class="pat-ab-detail-val">'+val+'</span></div>'; }
+function mais(aberto, txt){ return '<span class="bloco__mais" aria-hidden="true">'+(aberto ? 'Fechar detalhes' : (txt || 'Ver detalhes'))+CHEV+'</span>'; }
+function attrs(v, id, rotulo){ const ab = S[v].aberto === id; return ' data-alvo="'+id+'" aria-expanded="'+ab+'"'+(ab ? ' aria-controls="det-'+v+'-'+id+'"' : '')+' aria-label="'+esc(rotulo+' — ver detalhes')+'"'; }
+function acimaDe(d){ const a = []; if (d.usage.users.overLimit) a.push('de usuários'); if (d.usage.storageGb.overLimit) a.push('de espaço'); return a; }
+
+/* Pizza CHEIA (raio interno 0): fatia "em uso" e fatia "disponível" sobre o limite contratado = 100% */
+function pizza(d, id, size){
+  const u = usoDe(d, id), m = UNI[id], c = size / 2, r = c - 1;
+  const svg = (aria, corpo) => '<svg class="uso__pie" width="'+size+'" height="'+size+'" viewBox="0 0 '+size+' '+size+'" role="img" aria-label="'+esc(aria)+'">'+corpo+'</svg>';
+  if (pendente(d, id)) {
+    const s = Math.round(size * .32);
+    return svg(m.rot+': em estimativa, limite contratado de '+m.f(u.included)+' '+m.un,
+      '<circle cx="'+c+'" cy="'+c+'" r="'+(r - 1)+'" fill="#f8fafc" stroke="#9fb0bf" stroke-width="1.5" stroke-dasharray="5 4"><title>Em estimativa: limite contratado de '+m.f(u.included)+' '+m.un+'</title></circle>'+
+      '<g transform="translate('+(c - s / 2)+' '+(c - s / 2)+') scale('+(s / 24)+')" fill="none" stroke="#718196" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+I.clock+'</g>');
+  }
+  if (u.overLimit) return svg(m.rot+': '+m.f(u.used)+' de '+m.f(u.included)+' '+m.un+', passou do limite', '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="'+COR.acima+'"><title>Em uso: '+m.f(u.used)+' de '+m.f(u.included)+' '+m.un+' — acima da franquia</title></circle>');
+  const f = Math.max(0, Math.min(1, u.used / u.included));
+  const tUso = '<title>Em uso: '+m.f(u.used)+' '+m.un+'</title>', tLivre = '<title>Disponível: '+m.f(u.included - u.used)+' '+m.un+'</title>';
+  let corpo;
+  if (f >= 1) corpo = '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="'+COR.usado+'">'+tUso+'</circle>';
+  else {
+    corpo = '<circle cx="'+c+'" cy="'+c+'" r="'+r+'" fill="'+COR.livre+'">'+tLivre+'</circle>';
+    if (f > 0) { const a = f * 2 * Math.PI, x = c + r * Math.sin(a), y = c - r * Math.cos(a);
+      corpo += '<path d="M'+c+' '+c+' L'+c+' '+(c - r)+' A'+r+' '+r+' 0 '+(f > .5 ? 1 : 0)+' 1 '+x.toFixed(2)+' '+y.toFixed(2)+' Z" fill="'+COR.usado+'" stroke="#fff" stroke-width="1.5" stroke-linejoin="round">'+tUso+'</path>'; }
+  }
+  return svg(m.rot+': '+m.f(u.used)+' de '+m.f(u.included)+' '+m.un+' em uso, '+pct(u.used, u.included)+'% da franquia; '+m.f(u.included - u.used)+' disponíveis', corpo);
+}
+/* Legenda: sempre "<usado> de <limite> <unidade>" */
+function legenda(d, id, forte){
+  const u = usoDe(d, id), m = UNI[id], s = d.usage.storageGb;
+  if (pendente(d, id)) return (forte ? '<span class="b-forte"><span class="b-num">—</span> <span class="b-de">de '+m.f(u.included)+' '+m.un+'</span></span>' : '<span class="uso__main">— de '+m.f(u.included)+' '+m.un+'</span>')+'<span class="uso__sub">Em estimativa · a primeira medição de espaço do mês ainda não saiu</span>';
+  const main = forte ? '<span class="b-forte"><span class="b-num">'+m.f(u.used)+'</span> <span class="b-de">de '+m.f(u.included)+' '+m.un+'</span></span>' : '<span class="uso__main">'+m.f(u.used)+' de '+m.f(u.included)+' '+m.un+'</span>';
+  const quando = id === 'espaco' ? 'estimativa de '+dataCurta(s.measuredAt) : 'maior número de '+mesBR(d.period);
+  const antiga = id === 'espaco' && medicaoAntiga(d) ? '<span class="uso__antiga">sem medição nova há '+diasDaMedicao(d)+' dias</span>' : '';
+  const sub = u.overLimit ? '<span class="uso__acima">acima da franquia — o excedente será cobrado</span><span class="uso__sub">'+quando+'</span>' : '<span class="uso__sub">'+pct(u.used, u.included)+'% da franquia · '+quando+'</span>';
+  return main + sub + antiga;
+}
+function linhas(d, id){
+  const u = usoDe(d, id), m = UNI[id];
+  if (pendente(d, id)) return '';
+  const w = x => Math.max(0, Math.min(100, x / u.included * 100)).toFixed(1)+'%';
+  const cu = u.overLimit ? COR.acima : COR.usado;
+  let h = '<span class="uso__item"><span class="uso__name"><i class="uso__sw" style="background:'+cu+'"></i>Em uso</span><span class="uso__meter"><b style="width:'+w(u.used)+';background:'+cu+'"></b></span><span class="uso__count">'+m.f(u.used)+m.sufixo+'</span></span>';
+  if (!u.overLimit) h += '<span class="uso__item"><span class="uso__name"><i class="uso__sw" style="background:'+COR.livre+'"></i>Disponível</span><span class="uso__meter"><b style="width:'+w(u.included - u.used)+';background:'+COR.livre+'"></b></span><span class="uso__count">'+m.f(u.included - u.used)+m.sufixo+'</span></span>';
+  return '<span class="uso__rows">'+h+'</span>';
+}
+function selo(d, id){
+  if (pendente(d, id)) return '<span class="selos">'+pill('Em estimativa','neutral','clock')+'</span>';
+  const u = usoDe(d, id); let h = '';
+  if (u.overLimit) h += pill('Passou do limite','danger','alert');
+  if (id === 'espaco' && medicaoAntiga(d)) h += pill('Medição antiga · '+dataCurta(d.usage.storageGb.measuredAt),'warning','clock');
+  return h ? '<span class="selos">'+h+'</span>' : '';
+}
+
+/* ── Situação e fatura (v3: os estados 2, 3, 6 e 7) ── */
+const temMeios = pg => !!(pg.payUrl || pg.pixCopyPaste || pg.boletoLine || pg.boletoUrl);
+/* nenhum dos quatro meios = sem pagamento pela tela. Fail-closed: a tela nunca promete meio que o servidor não mandou */
+const semMeio = pg => !temMeios(pg);
+const vencida = pg => pg.dueDate !== null && pg.dueDate < hoje();
+const vencTxt = pg => pg.dueDate === null ? '' : (vencida(pg) ? 'venceu em ' : 'vence em ')+dataBR(pg.dueDate);
+const faturaTit = pg => 'Fatura em aberto'+(pg.dueDate ? ' · '+vencTxt(pg) : '');
+const maiusc = t => t.charAt(0).toUpperCase()+t.slice(1);
+const vencCap = pg => pg.dueDate ? maiusc(vencTxt(pg)) : 'Sem data de vencimento';
+/* "continua em dia até": o vencimento mais os 5 dias de tolerância (só com fatura vencida e organização em dia) */
+const emDiaAte = (d) => d.status.inGoodStanding && d.payment && vencida(d.payment) ? somaDias(d.payment.dueDate, TOLERANCIA) : null;
+/* tom do aviso de fatura: em atraso = vermelho; em dia e vencida = âmbar; em dia e a vencer (ou sem data) = azul */
+const tomFatura = d => !d.status.inGoodStanding ? 'danger' : (vencida(d.payment) ? 'warning' : 'info');
+const sitTitulo = d => d.status.inGoodStanding ? 'Em dia' : (d.status.overdueSince ? 'Em atraso desde '+dataBR(d.status.overdueSince) : 'Em atraso');
+const EQUIPE = 'a equipe TechSolutions que atende a sua organização';
+const formasDe = (pg, curtas) => [pg.payUrl && (curtas ? 'link' : 'link de pagamento'), pg.pixCopyPaste && (curtas ? 'Pix' : 'Pix copia e cola'), (pg.boletoLine || pg.boletoUrl) && 'boleto'].filter(Boolean);
+const dadosCopia = pg => ORG+' · fatura em aberto'+(pg.dueDate ? ' · vencimento '+dataBR(pg.dueDate) : ' · sem data de vencimento');
+
+function rotulo(d, id){
+  const u = usoDe(d, id), m = UNI[id];
+  if (id === 'plano') return d.plan.name ? 'Plano '+d.plan.name : 'Plano: nome indisponível';
+  if (id === 'situacao') return d.status.inGoodStanding ? 'Situação: em dia, '+(d.payment ? 'fatura em aberto' : 'sem fatura em aberto') : 'Situação: '+sitTitulo(d).toLowerCase()+(d.payment ? '' : ', sem fatura em aberto');
+  if (id === 'pagar') return 'Como pagar: '+faturaTit(d.payment).toLowerCase()+(semMeio(d.payment) ? ', pagamento direto com a equipe' : '');
+  if (pendente(d, id)) return m.rot+': em estimativa, limite de '+m.f(u.included)+' '+m.un;
+  return m.rot+': '+m.f(u.used)+' de '+m.f(u.included)+' '+m.un+(u.overLimit ? ', passou do limite' : ', '+pct(u.used, u.included)+'% da franquia')+(id === 'espaco' && medicaoAntiga(d) ? ', medição antiga de '+dataCurta(d.usage.storageGb.measuredAt) : '');
+}
+
+/* Detalhe logo abaixo do bloco: propriedades + ações */
+function detalhe(v, id, d, stale){
+  const p = perfil(), u = d.usage.users, s = d.usage.storageGb;
+  const btnP = (txt, icone, msg, extra) => '<button type="button" class="pat-btn pat-btn--primary" '+(extra || 'data-toast="'+esc(msg)+'"')+'>'+ic(icone,14)+' '+txt+'</button>';
+  const btn = (txt, icone, msg, extra) => '<button type="button" class="pat-btn" '+(extra || 'data-toast="'+esc(msg)+'"')+'>'+ic(icone,14)+' '+txt+'</button>';
+  /* link externo único (my-subscription.shared.tsx na tela real): sempre https, nova aba, noopener noreferrer */
+  const link = (txt, icone, href, prim, msg) => '<a class="pat-btn'+(prim ? ' pat-btn--primary' : '')+'" href="'+esc(href)+'" target="_blank" rel="noopener noreferrer" data-toast="'+esc(msg)+'">'+ic(icone,14)+' '+txt+'</a>';
+  const atualizado = stale ? 'às '+stale+' · a última atualização falhou' : 'agora · a tela atualiza sozinha';
+  let t, val, cap, c1 = [], c2 = [], nota = '', acoes = '', cor = '';
+  if (id === 'plano') {
+    t = 'Plano'; val = planoNome(d); cap = d.plan.name ? 'Plano contratado pela organização' : 'Nome do plano indisponível no momento';
+    c1 = [['Plano', planoNome(d)], ['Período em uso', periodoBR(d.period)]];
+    c2 = [['Franquia de usuários', u.included+' usuários ativos'], ['Franquia de espaço', gb(s.included)+' GB']];
+    nota = 'A franquia é o que o plano inclui por mês. O uso do mês é comparado com ela nas pizzas de usuários e de espaço.';
+  } else if (id === 'usuarios') {
+    t = 'Usuários'; val = u.used+' de '+u.included+' usuários';
+    cap = u.overLimit ? 'Passou do limite · acima da franquia — o excedente será cobrado' : pct(u.used, u.included)+'% da franquia · maior número de '+mesBR(d.period);
+    c1 = [['O que conta', 'usuários com acesso ativo na organização'], ['Como é medido', 'contagem diária; vale o maior número do mês'], ['Período', periodoBR(d.period)]];
+    c2 = [['Limite contratado', u.included+' usuários'], ['Em uso', String(u.used)], u.overLimit ? ['Situação', '<b style="color:#b91c1c">acima da franquia — o excedente será cobrado</b>'] : ['Disponível', String(u.included - u.used)]];
+    if (p.usuarios) acoes = btnP('Ver usuários', 'users', 'Abre a tela de Usuários.');
+  } else if (id === 'espaco') {
+    t = 'Espaço';
+    if (s.measuredAt === null) {
+      val = '— de '+gb(s.included)+' GB'; cap = 'Em estimativa · a primeira medição de espaço do mês ainda não saiu';
+      c1 = [['O que conta', 'dados da organização e arquivos enviados (fotos, documentos e anexos)'], ['Quando foi medido', 'ainda não houve medição neste mês']];
+      c2 = [['Limite contratado', gb(s.included)+' GB'], ['Como é medido', 'estimativa diária; vale o maior número do mês']];
+      nota = 'O uso aparece aqui assim que a primeira estimativa do mês sair. A tela atualiza sozinha.';
+    } else {
+      const antiga = medicaoAntiga(d), n = diasDaMedicao(d);
+      val = gb(s.used)+' de '+gb(s.included)+' GB';
+      cap = (s.overLimit ? 'Passou do limite · acima da franquia — o excedente será cobrado' : pct(s.used, s.included)+'% da franquia')+' · estimativa de '+dataCurta(s.measuredAt)+(antiga ? ' · medição antiga' : '');
+      c1 = [['O que conta', 'dados da organização e arquivos enviados (fotos, documentos e anexos)'], ['Quando foi medido', dataBR(s.measuredAt)+' · estimativa'+(antiga ? ' · <b style="color:#92400e">há '+n+' dias</b>' : '')], ['Como é medido', 'estimativa diária; vale o maior número do mês']];
+      c2 = [['Limite contratado', gb(s.included)+' GB'], ['Em uso', gb(s.used)+' GB'], s.overLimit ? ['Situação', '<b style="color:#b91c1c">acima da franquia — o excedente será cobrado</b>'] : ['Disponível', gb(s.included - s.used)+' GB']];
+      nota = antiga ? 'A medição de espaço é diária, e a mais recente é de '+dataBR(s.measuredAt)+'. Até sair uma medição nova, o uso real pode estar acima deste número. A tela atualiza sozinha.' : 'É uma estimativa diária. No fechamento do mês vale o maior número medido.';
+    }
+  } else if (id === 'situacao') {
+    t = 'Situação';
+    const pg = d.payment;
+    if (d.status.inGoodStanding) {
+      const ate = emDiaAte(d);
+      val = 'Em dia'; cor = '#15803D'; cap = pg ? faturaTit(pg) : 'Sem fatura em aberto';
+      c1 = [['Situação', pill('Em dia','success','checkCircle')], pg ? ['Fatura em aberto', pg.dueDate ? vencTxt(pg) : 'sem data de vencimento'] : ['Próximo vencimento', 'sem fatura em aberto']];
+      if (ate) c1.push(['Continua em dia até', dataBR(ate)]);
+    } else {
+      val = sitTitulo(d); cor = '#B91C1C';
+      cap = d.status.overdueSince ? (pg ? faturaTit(pg) : 'Sem fatura em aberto') : 'Fale com a equipe para saber o que falta regularizar';
+      c1 = [['Situação', pill('Em atraso','danger','alert')]];
+      if (pg) c1.push(['Fatura em aberto', pg.dueDate ? vencTxt(pg) : 'sem data de vencimento']);
+      if (!pg || !d.status.overdueSince) c1.push(['Para voltar a ficar em dia', 'falar com '+EQUIPE]);
+      else c1.push(['Para voltar a ficar em dia', semMeio(pg) ? 'pagar a fatura direto com a equipe TechSolutions; muda quando o pagamento for registrado' : 'pagar a fatura em aberto']);
+      if (!pg) nota = 'Não há fatura em aberto para pagar por aqui, mas a assinatura consta em atraso — por exemplo, quando um pagamento é devolvido pelo banco. Fale com '+EQUIPE+' para regularizar. A tela atualiza sozinha.';
+      else if (!d.status.overdueSince) nota = 'A assinatura consta em atraso, sem uma data de início — por exemplo, quando um pagamento é devolvido pelo banco. Fale com '+EQUIPE+': ela informa o que falta regularizar. A fatura em aberto segue em “Como pagar”.';
+    }
+    c2 = [['Prazo de tolerância', 'até '+TOLERANCIA+' dias depois do vencimento, sem mudar a situação'], ['Atualizado', atualizado]];
+    if (pg) acoes = btnP('Ver como pagar', 'creditCard', '', 'data-abrir="pagar"');
+  } else if (id === 'pagar' && semMeio(d.payment)) {
+    /* cobrança desligada — nada de link, Pix, boleto nem nota pela tela; orientação honesta e uma ação que não promete nada */
+    const pg = d.payment, ok = d.status.inGoodStanding;
+    t = 'Como pagar'; val = 'Fatura em aberto'; cor = !ok ? '#B91C1C' : (vencida(pg) ? '#B45309' : ''); cap = vencCap(pg)+' · sem pagamento pela tela';
+    c1 = [['Vencimento', pg.dueDate ? dataBR(pg.dueDate)+(vencida(pg) ? ' · vencida' : '') : 'não informado'], ['Forma de pagamento', 'direto com '+EQUIPE], ['O que é copiado', esc(dadosCopia(pg))]];
+    c2 = [['Nota fiscal', 'tratada com a equipe, junto com o pagamento'], ok ? ['Depois do pagamento', 'a fatura sai daqui quando a equipe registrar o pagamento'] : (d.status.overdueSince ? ['Volta a ficar em dia', 'quando a equipe registrar o pagamento'] : ['Situação', 'a equipe informa o que falta para voltar a ficar em dia'])];
+    if (emDiaAte(d)) c2.push(['Continua em dia até', dataBR(emDiaAte(d))]);
+    nota = 'Esta fatura não tem pagamento pela tela. Fale com '+EQUIPE+' e informe '+(pg.dueDate ? 'o vencimento da fatura' : 'que há uma fatura em aberto')+'. Assim que o pagamento for registrado, '+(ok || !d.status.overdueSince ? 'ela sai daqui' : 'a situação volta para “Em dia”')+'. A tela atualiza sozinha.';
+    acoes = btn('Copiar dados da fatura', 'copy', '', 'data-copiar="'+esc(dadosCopia(pg))+'"');
+  } else if (id === 'pagar') {
+    const pg = d.payment, ok = d.status.inGoodStanding;
+    t = 'Como pagar'; val = 'Fatura em aberto'; cor = !ok ? '#B91C1C' : (vencida(pg) ? '#B45309' : ''); cap = vencCap(pg);
+    c1 = [['Vencimento', pg.dueDate ? dataBR(pg.dueDate)+(vencida(pg) ? ' · vencida' : '') : 'não informado'], ['Formas de pagamento', juntar(formasDe(pg))]];
+    c2 = [['Nota fiscal', 'tratada com '+EQUIPE], ['Onde ver a cobrança', 'na página de pagamento e no aplicativo do seu banco']];
+    nota = 'Os dados da cobrança aparecem na página de pagamento e no aplicativo do seu banco. Os códigos são copiados, não mostrados por extenso.';
+    acoes = (pg.payUrl ? link('Pagar', 'externalLink', pg.payUrl, true, 'Abre a página de pagamento em outra aba.') : '')+
+      (pg.pixCopyPaste ? btn('Copiar código Pix', 'copy', 'Código Pix copiado. Cole no aplicativo do seu banco.') : '')+
+      (pg.boletoLine ? btn('Copiar linha digitável', 'copy', 'Linha digitável copiada. Cole no aplicativo do seu banco.') : '')+
+      (pg.boletoUrl ? link('Abrir boleto', 'fileText', pg.boletoUrl, false, 'Abre o boleto em outra aba.') : '');
+  }
+  return '<section class="det" id="det-'+v+'-'+id+'" role="region" aria-label="Detalhe: '+esc(t)+'">'+
+    '<div class="det__topo"><div><div class="det__t">'+t+'</div><div class="det__v"'+(cor ? ' style="color:'+cor+'"' : '')+'>'+val+'</div><div class="det__c">'+cap+'</div></div><button type="button" class="pat-link" data-fechar>Fechar</button></div>'+
+    '<div class="pat-ab-detail-grid pat-ab-detail-grid--2"><div class="pat-ab-detail-col">'+c1.map(x => campo(x[0], x[1])).join('')+'</div><div class="pat-ab-detail-col">'+c2.map(x => campo(x[0], x[1])).join('')+'</div></div>'+
+    (nota ? '<p class="det__nota">'+nota+'</p>' : '')+(acoes ? '<div class="pat-ab-detail-actions">'+acoes+'</div>' : '')+'</section>';
+}
+function detSe(v, ids, d, stale){ return ids.indexOf(S[v].aberto) >= 0 ? detalhe(v, S[v].aberto, d, stale) : ''; }
+
+function acessoNegado(){ return '<div class="acesso" role="alert"><span class="acesso__ic">'+ic('lock',24)+'</span><h2>Acesso não permitido</h2><p>Seu perfil não tem acesso à assinatura da organização. Se precisar ver o plano, o uso da franquia ou como pagar, fale com o administrador da organização.</p></div>'; }
+function semAssinatura(){ return '<section class="ui-state"><strong>Sua organização ainda não tem assinatura</strong><p>Quando a assinatura da organização for ativada pela equipe TechSolutions, o plano, o uso da franquia e a situação de pagamento aparecem aqui. A tela atualiza sozinha.</p></section>'; }
+/* v3 (estado 15): a faixa do sistema (StaleDataBanner.tsx:16-27) — o dado anterior fica, com o aviso e "Tentar de novo" */
+function faixaDesatualizado(stale){
+  if (!stale) return '';
+  return '<div role="status" data-state="stale" class="pat-banner pat-banner--warning">'+ic('alert',14)+'<span>'+(atualizando ? 'Atualizando…' : 'Dados desatualizados — última atualização às '+stale)+'</span>'+(atualizando ? '' : '<button type="button" class="pat-link" data-tentar-stale>Tentar de novo</button>')+'</div>';
+}
+const CARREGANDO = '<p class="sr" role="status">Carregando a assinatura…</p>';
+const sk = (w, h, extra) => '<span class="pat-skel" style="width:'+w+';height:'+h+'px;'+(extra || '')+'"></span>';
+function headerPat(kicker, sub, d){ return '<div class="pat-page-header"><div class="pat-page-header__lead"><div class="pat-page-header__kicker">'+kicker+'</div><h1 class="pat-page-header__title">Minha assinatura</h1><p class="pat-page-header__subtitle">'+sub+'</p></div><div class="pat-page-header__actions">'+(d ? pill('Uso de '+periodoBR(d.period),'info','clock') : '')+'</div></div>'; }
+
+/* ═════════ OPÇÃO A — PADRÃO FIEL (TenantSettingsPage: cabeçalho "Administrador" + cartões) ═════════ */
+function cardA(v, id, d){
+  const ab = S[v].aberto === id;
+  let icone, titulo, corpo;
+  if (id === 'plano') { icone = 'layers'; titulo = 'Plano'; corpo = '<span class="pl-nome">'+planoNome(d)+'</span><span class="pl-rot">'+(d.plan.name ? 'Plano contratado' : 'Nome do plano indisponível no momento')+'</span><span class="pl-lista"><span class="pl-k">FRANQUIA POR MÊS</span><span class="pl-item">'+ic('users',14)+'<span><b>'+d.usage.users.included+'</b> usuários ativos</span></span><span class="pl-item">'+ic('hardDrive',14)+'<span><b>'+gb(d.usage.storageGb.included)+' GB</b> de espaço</span></span></span>'; }
+  else if (id === 'situacao') {
+    const ok = d.status.inGoodStanding, pg = d.payment, ate = emDiaAte(d); icone = ok ? 'shieldCheck' : 'alert'; titulo = 'Situação';
+    let t2, k, txt;
+    if (ok) { t2 = pg ? 'Fatura em aberto' : 'Sem fatura em aberto';
+      if (pg) { k = 'VENCIMENTO'; txt = (pg.dueDate ? maiusc(vencTxt(pg)) : 'Sem data de vencimento')+(ate ? '; continua em dia até '+dataCurta(ate) : '')+'. Veja como pagar acima.'; }
+      else { k = 'PRAZO DE TOLERÂNCIA'; txt = 'Até '+TOLERANCIA+' dias depois do vencimento, a assinatura continua em dia.'; } }
+    else if (d.status.overdueSince && pg) { t2 = 'Desde '+dataBR(d.status.overdueSince); k = 'FATURA VENCIDA'; txt = 'Vencimento em '+dataBR(pg.dueDate)+'. Veja como pagar acima.'; }
+    else if (pg) { t2 = 'Fatura em aberto'; k = 'FALE COM A EQUIPE'; txt = 'A equipe TechSolutions informa o que falta para voltar a ficar em dia.'; }
+    else { t2 = d.status.overdueSince ? 'Desde '+dataBR(d.status.overdueSince) : 'Sem fatura em aberto'; k = 'SEM FATURA EM ABERTO'; txt = 'Fale com a equipe TechSolutions que atende a sua organização para regularizar.'; }
+    corpo = '<span class="a-sit"><span class="ui-badge '+(ok ? 'ui-tone-success' : 'ui-tone-danger')+'">'+ic(ok ? 'checkCircle' : 'alert',13)+(ok ? 'Em dia' : 'Em atraso')+'</span><span class="a-sit__t">'+t2+'</span>'+
+      '<span class="a-sit__sep"><span class="pl-k">'+k+'</span><span class="pl-hint" style="margin-top:0">'+txt+'</span></span></span>'; }
+  else { icone = id === 'usuarios' ? 'users' : 'hardDrive'; titulo = UNI[id].rot; corpo = '<span class="uso">'+pizza(d, id, 104)+'<span class="uso__leg">'+legenda(d, id)+linhas(d, id)+'</span></span>'; }
+  return '<button type="button" class="ui-card bloco a-card"'+attrs(v, id, rotulo(d, id))+'><span class="a-card__head">'+ic(icone,18)+'<span class="a-card__t">'+titulo+'</span>'+(id === 'usuarios' || id === 'espaco' ? selo(d, id) : '')+'</span>'+corpo+mais(ab)+'</button>';
+}
+function pagarA(v, d){
+  const ab = S[v].aberto === 'pagar', pg = d.payment, manual = semMeio(pg);
+  const PELO = { link:'pelo link de pagamento', Pix:'pelo Pix', boleto:'pelo boleto' };
+  const txt = manual ? 'Esta fatura não tem pagamento pela tela: pague direto com '+EQUIPE+'.' : 'Pague '+juntar(formasDe(pg, true).map(f => PELO[f]), 'ou')+'.';
+  return '<button type="button" class="ui-alert ui-alert--'+tomFatura(d)+' bloco a-pagar"'+attrs(v, 'pagar', rotulo(d, 'pagar'))+'>'+ic(manual ? 'messageCircle' : 'creditCard',18)+'<span class="a-pagar__txt"><strong>'+faturaTit(pg)+'</strong><span>'+txt+'</span></span>'+mais(ab, 'Como pagar')+'</button>';
+}
+function renderA(){
+  const v = 'a', c = ctx(), root = $('[data-view="a"]');
+  if (c.kind === 'denied') { root.innerHTML = acessoNegado(); return; }
+  const d = c.kind === 'data' ? c.d : null;
+  let h = '<header class="page-heading page-heading--row"><div><span>Administrador</span><h1>Minha assinatura</h1><p>Plano, uso da franquia e situação de pagamento da organização.</p></div>'+(d ? '<div class="work-orders-actions"><span class="ui-badge ui-tone-info">Uso de '+periodoBR(d.period)+'</span></div>' : '')+'</header>';
+  if (c.kind === 'loading') h += CARREGANDO+'<div class="tenant-settings-grid" aria-busy="true">'+[0,1,2,3].map(i => '<div class="ui-card a-card" aria-hidden="true">'+sk('46%',14)+(i === 1 || i === 2 ? sk('104px',104,'border-radius:50%;margin:16px auto 14px') : sk('58%',26,'margin-top:18px'))+sk('72%',13,'margin-top:10px')+sk('50%',11,'margin-top:8px')+'</div>').join('')+'</div>';
+  else if (c.kind === 'error') h += '<section class="ui-alert ui-alert--warning" role="alert">'+ic('alert',18)+'<div><strong>Não foi possível carregar a assinatura</strong><p>A conexão com o servidor falhou. A tela tenta de novo sozinha; se preferir, tente agora.</p></div></section><div class="a-retry"><button type="button" class="ui-button ui-button--secondary" data-tentar>'+ic('refresh',16)+' Tentar de novo</button></div>';
+  else if (c.kind === 'empty') h += semAssinatura();
+  else {
+    h += faixaDesatualizado(c.stale);
+    if (d.payment) h += pagarA(v, d)+detSe(v, ['pagar'], d, c.stale);
+    h += '<div class="tenant-settings-grid">'+['plano','usuarios','espaco','situacao'].map(id => cardA(v, id, d)).join('')+'</div>'+detSe(v, ['plano','usuarios','espaco','situacao'], d, c.stale);
+  }
+  root.innerHTML = '<section class="page-stack tela-a">'+h+'</section>';
+}
+
+/* ═════════ OPÇÃO B — ANALÍTICA (faixa de situação + as duas pizzas grandes) ═════════ */
+function segB(v, id, d){
+  let k, val, sub, tile, cls = '';
+  if (id === 'situacao') { const ok = d.status.inGoodStanding, pg = d.payment; k = 'SITUAÇÃO'; tile = ok ? ['#DCFCE7','#15803D','shieldCheck'] : ['#FEE2E2','#B91C1C','alert'];
+    val = '<span style="color:'+(ok ? '#15803D' : '#B91C1C')+'">'+(ok ? 'Em dia' : 'Em atraso')+'</span>';
+    const ate = emDiaAte(d);
+    sub = ok ? (ate ? 'Continua em dia até '+dataCurta(ate) : (pg ? faturaTit(pg) : 'Sem fatura em aberto')) :(d.status.overdueSince ? 'desde '+dataBR(d.status.overdueSince)+(pg ? '' : ' · sem fatura em aberto') : 'fale com a equipe para regularizar'); }
+  else if (id === 'pagar') { const manual = semMeio(d.payment), tom = tomFatura(d); k = 'COMO PAGAR';
+    tile = tom === 'danger' ? ['#FEE2E2','#B91C1C'] : tom === 'warning' ? ['#FEF3C7','#B45309'] : ['#DBEAFE','#2563EB']; tile.push(manual ? 'messageCircle' : 'creditCard');
+    cls = tom === 'danger' ? ' b-seg--pagar' : tom === 'warning' ? ' b-seg--pagar-aviso' : ' b-seg--pagar-info';
+    val = 'Fatura em aberto'; sub = vencCap(d.payment)+(manual ? ' · pague com a equipe' : ''); }
+  else { k = 'PLANO'; tile = ['#EFF6FF','#2563EB','layers']; val = planoNome(d); sub = d.plan.name ? d.usage.users.included+' usuários · '+gb(d.usage.storageGb.included)+' GB' : 'nome indisponível · '+d.usage.users.included+' usuários · '+gb(d.usage.storageGb.included)+' GB'; }
+  return '<button type="button" class="pat-card bloco b-seg'+cls+'"'+attrs(v, id, rotulo(d, id))+'><span class="b-seg__ic" style="background:'+tile[0]+';color:'+tile[1]+'">'+ic(tile[2],18)+'</span><span class="b-seg__txt"><span class="b-seg__k">'+k+'</span><span class="b-seg__v">'+val+'</span><span class="b-seg__d" title="'+esc(sub)+'">'+sub+'</span></span><span class="bloco__mais" aria-hidden="true">'+CHEV+'</span></button>';
+}
+function pieB(v, id, d){
+  const ab = S[v].aberto === id, s = d.usage.storageGb;
+  const sub = id === 'usuarios' ? 'Usuários com acesso ativo · maior número de '+mesBR(d.period) : 'Dados e arquivos da organização · '+(s.measuredAt ? 'estimativa de '+dataCurta(s.measuredAt) : 'em estimativa');
+  return '<button type="button" class="pat-card bloco b-pie"'+attrs(v, id, rotulo(d, id))+'><span class="pat-card__head"><span class="pat-card__title">'+UNI[id].rot+'</span>'+selo(d, id)+'</span><span class="pat-card__subtitle">'+sub+'</span><span class="uso uso--lado b-uso">'+pizza(d, id, 168)+'<span class="uso__leg">'+legenda(d, id, true)+linhas(d, id)+'</span></span>'+mais(ab)+'</button>';
+}
+function renderB(){
+  const v = 'b', c = ctx(), root = $('[data-view="b"]');
+  if (c.kind === 'denied') { root.innerHTML = acessoNegado(); return; }
+  const d = c.kind === 'data' ? c.d : null;
+  let h = headerPat('ADMINISTRADOR · ANALÍTICA', 'Quanto da franquia do plano já foi usado neste mês e se a assinatura está em dia · '+ORG, d);
+  if (c.kind === 'loading') h += CARREGANDO+'<div aria-busy="true"><div class="b-faixa" style="--n:2">'+[0,1].map(() => '<div class="pat-card b-seg" aria-hidden="true">'+sk('38px',38,'border-radius:10px;flex-shrink:0')+'<span style="flex:1">'+sk('30%',10)+sk('46%',16,'margin-top:6px')+sk('62%',11,'margin-top:6px')+'</span></div>').join('')+'</div><div class="b-duo">'+[0,1].map(() => '<div class="pat-card b-pie" aria-hidden="true">'+sk('22%',14)+sk('46%',11,'margin-top:6px')+'<span class="uso uso--lado b-uso">'+sk('168px',168,'border-radius:50%;flex-shrink:0')+'<span style="flex:1">'+sk('52%',30)+sk('40%',12,'margin-top:10px')+sk('100%',9,'margin-top:16px')+sk('100%',9,'margin-top:10px')+'</span></span></div>').join('')+'</div></div>';
+  else if (c.kind === 'error') h += '<div role="alert" class="pat-banner pat-banner--error"><span>Não foi possível carregar a assinatura agora.</span><button type="button" class="pat-link" data-tentar>Tentar de novo</button></div><div class="b-faixa" style="--n:2"><div class="pat-card b-seg"><span class="vazio-txt">Situação indisponível no momento.</span></div><div class="pat-card b-seg"><span class="vazio-txt">Plano indisponível no momento.</span></div></div><div class="b-duo"><div class="pat-card"><span class="pat-card__title">Usuários</span><span class="vazio-txt">Uso indisponível no momento.</span></div><div class="pat-card"><span class="pat-card__title">Espaço</span><span class="vazio-txt">Uso indisponível no momento.</span></div></div>';
+  else if (c.kind === 'empty') h += semAssinatura();
+  else {
+    const segs = ['situacao'].concat(d.payment ? ['pagar'] : [], ['plano']);
+    h += faixaDesatualizado(c.stale)+'<div class="b-faixa" style="--n:'+segs.length+'">'+segs.map(id => segB(v, id, d)).join('')+'</div>'+detSe(v, segs, d, c.stale)+
+      '<div class="b-duo">'+pieB(v, 'usuarios', d)+pieB(v, 'espaco', d)+'</div>'+detSe(v, ['usuarios','espaco'], d, c.stale);
+  }
+  root.innerHTML = h;
+}
+
+/* ═════════ OPÇÃO C — SITUAÇÃO PRIMEIRO (faixa grande + "Como pagar" em destaque; pizzas menores embaixo) ═════════ */
+function sitC(v, d){
+  const ab = S[v].aberto === 'situacao', ok = d.status.inGoodStanding, ac = acimaDe(d), pg = d.payment, ate = emDiaAte(d);
+  let desc;
+  if (ok) desc = !pg ? 'Sem fatura em aberto. A assinatura da organização está regular.' : (pg.dueDate ? 'A fatura em aberto '+vencTxt(pg)+'.' : 'Há uma fatura em aberto, sem data de vencimento.');
+  else if (!pg) desc = 'Não há fatura em aberto para pagar por aqui. Fale com '+EQUIPE+' para regularizar.';
+  else if (!d.status.overdueSince) desc = 'A assinatura consta em atraso. Fale com '+EQUIPE+' para saber o que falta regularizar.';
+  else desc = semMeio(pg) ? 'Há uma fatura vencida. Pague direto com a equipe TechSolutions; a situação volta para “Em dia” quando o pagamento for registrado.' : 'Há uma fatura vencida. Pague para a organização voltar a ficar em dia.';
+  const avisos = (ate ? '<span class="c-sit__aviso">'+ic('clock',14)+'Continua em dia até '+dataCurta(ate)+', o fim do prazo de tolerância.</span>' : '')+
+    (ac.length ? '<span class="c-sit__aviso">'+ic('alert',14)+'O uso passou da franquia '+juntar(ac)+' — o excedente será cobrado.</span>' : '');
+  return '<button type="button" class="bloco c-sit c-sit--'+(ok ? 'success' : 'danger')+'"'+attrs(v, 'situacao', rotulo(d, 'situacao'))+'><span class="c-sit__ic">'+ic(ok ? 'shieldCheck' : 'alert',28)+'</span><span class="c-sit__txt"><span class="c-sit__k">SITUAÇÃO DA ASSINATURA</span><span class="c-sit__t">'+sitTitulo(d)+'</span><span class="c-sit__d">'+desc+'</span>'+avisos+'</span>'+mais(ab)+'</button>';
+}
+function pagarC(v, d){
+  const pg = d.payment, manual = semMeio(pg);
+  return '<button type="button" class="bloco c-pagar'+(manual ? ' c-pagar--manual' : '')+'"'+attrs(v, 'pagar', rotulo(d, 'pagar'))+'><span class="c-pagar__ic">'+ic(manual ? 'messageCircle' : 'creditCard',22)+'</span><span class="c-pagar__txt"><span class="c-pagar__t">Como pagar</span><span class="c-pagar__d">'+vencCap(pg)+(manual ? ' · pagamento direto com a equipe TechSolutions' : ' · '+juntar(formasDe(pg, true), 'ou'))+'</span></span>'+CHEV+'</button>';
+}
+function miniC(v, id, d){
+  const ab = S[v].aberto === id;
+  if (id === 'plano') return '<button type="button" class="pat-card bloco c-mini"'+attrs(v, id, rotulo(d, id))+'><span class="pat-card__head"><span class="pat-card__title">Plano</span></span><span class="pl-nome" style="margin-top:10px">'+planoNome(d)+'</span><span class="pl-hint">'+(d.plan.name ? '' : 'Nome do plano indisponível no momento. ')+'Franquia de '+d.usage.users.included+' usuários e '+gb(d.usage.storageGb.included)+' GB por mês</span>'+mais(ab)+'</button>';
+  return '<button type="button" class="pat-card bloco c-mini"'+attrs(v, id, rotulo(d, id))+'><span class="pat-card__head"><span class="pat-card__title">'+UNI[id].rot+'</span>'+selo(d, id)+'</span><span class="uso uso--lado c-uso">'+pizza(d, id, 76)+'<span class="uso__leg">'+legenda(d, id)+'</span></span>'+mais(ab)+'</button>';
+}
+function renderC(){
+  const v = 'c', c = ctx(), root = $('[data-view="c"]');
+  if (c.kind === 'denied') { root.innerHTML = acessoNegado(); return; }
+  const d = c.kind === 'data' ? c.d : null;
+  let h = headerPat('ADMINISTRADOR · SITUAÇÃO PRIMEIRO', 'Primeiro a situação de pagamento, depois o uso da franquia · '+ORG+' · '+dataLonga(hoje()), d);
+  if (c.kind === 'loading') h += CARREGANDO+'<div aria-busy="true"><div class="c-faixa"><div class="c-sit" aria-hidden="true">'+sk('56px',56,'border-radius:16px;flex-shrink:0')+'<span style="flex:1">'+sk('22%',10)+sk('30%',24,'margin-top:8px')+sk('58%',13,'margin-top:8px')+'</span></div></div><div class="c-trio">'+[0,1,2].map(() => '<div class="pat-card c-mini" aria-hidden="true">'+sk('34%',14)+'<span class="uso uso--lado c-uso">'+sk('76px',76,'border-radius:50%;flex-shrink:0')+'<span style="flex:1">'+sk('70%',14)+sk('52%',11,'margin-top:8px')+'</span></span></div>').join('')+'</div></div>';
+  else if (c.kind === 'error') h += '<div role="alert" class="pat-banner pat-banner--error"><span>Não foi possível carregar a assinatura agora.</span><button type="button" class="pat-link" data-tentar>Tentar de novo</button></div><div class="c-faixa"><div class="c-sit"><span class="c-sit__txt"><span class="c-sit__k">SITUAÇÃO DA ASSINATURA</span><span class="vazio-txt">Situação indisponível no momento.</span></span></div></div><div class="c-trio"><div class="pat-card c-mini"><span class="pat-card__title">Usuários</span><span class="vazio-txt">Uso indisponível no momento.</span></div><div class="pat-card c-mini"><span class="pat-card__title">Espaço</span><span class="vazio-txt">Uso indisponível no momento.</span></div><div class="pat-card c-mini"><span class="pat-card__title">Plano</span><span class="vazio-txt">Plano indisponível no momento.</span></div></div>';
+  else if (c.kind === 'empty') h += semAssinatura();
+  else {
+    h += faixaDesatualizado(c.stale)+'<div class="c-faixa">'+sitC(v, d)+(d.payment ? pagarC(v, d) : '')+'</div>'+detSe(v, ['situacao','pagar'], d, c.stale)+
+      '<div class="c-trio">'+miniC(v, 'usuarios', d)+miniC(v, 'espaco', d)+miniC(v, 'plano', d)+'</div>'+detSe(v, ['usuarios','espaco','plano'], d, c.stale);
+  }
+  root.innerHTML = h;
+}
+
+/* ── Quadro de notas (fora da tela): estados, divergências e as 4 partes de cada opção ── */
+const NOTA_ESTADOS = [
+  '<strong>1 · Em dia, sem fatura em aberto</strong> (14/11) — <code>inGoodStanding: true</code>, sem <code>payment</code>, <code>nextDueDate: null</code>: a fatura de outubro já foi paga. Diz “Em dia” e “Sem fatura em aberto”. É o estado que abre primeiro.',
+  '<strong>2a · NOVO — Em dia, fatura a vencer, sem pagamento pela tela</strong> (06/11) — a fatura de outubro fechou em 01/11 e vence em 11/11: <code>inGoodStanding: true</code> e <code>payment</code> com os quatro meios <code>null</code>. É o que a <code>main</code> responde do dia 1 ao 11 de cada mês. “Em dia”; “Fatura em aberto · vence em 11/11/2026”; “Como pagar” com a orientação do estado 5. Aviso em azul.',
+  '<strong>2b · NOVO — Em dia, fatura vencida há menos de 5 dias</strong> (14/11) — a mesma fatura, vencida há 3 dias: ainda dentro da tolerância, então <code>inGoodStanding</code> segue <code>true</code>. “Em dia”; “venceu em 11/11/2026”; “continua em dia até 16/11” (vencimento + 5 dias). Aviso em âmbar. Com o 2a, cobre cerca de 15 dias de cada mês.',
+  '<strong>3 · NOVO — Em dia, com pagamento pela tela</strong> (06/11) — o alvo, para quando a cobrança for ligada: <code>payment</code> com <code>payUrl</code>, <code>pixCopyPaste</code>, <code>boletoLine</code> e <code>boletoUrl</code>. “Em dia”; “Fatura em aberto”; “Pagar”, “Copiar código Pix”, “Copiar linha digitável” e “Abrir boleto”. Hoje o servidor não responde assim.',
+  '<strong>4 · Em atraso, com pagamento pela tela</strong> (14/11) — a fatura de setembro venceu em 11/10 e passou dos 5 dias: <code>inGoodStanding: false</code>, <code>overdueSince: "2026-10-11"</code>, os quatro meios. “Em atraso desde 11/10/2026” e os meios que vieram. O <code>invoicePdfAvailable: true</code> vem, mas a tela não o usa: não há “Baixar nota fiscal”.',
+  '<strong>5 · Em atraso, sem pagamento pela tela</strong> (14/11) — a mesma fatura vencida, com os quatro meios nulos e <code>invoicePdfAvailable: false</code>: é o que o servidor manda hoje (<code>subscription-view.ts:96-104</code>) e seguirá mandando com a cobrança desligada (<code>BILLING_PROVIDERS_ENABLED</code> nasce <code>false</code>, <code>env.ts:350</code>). “Em atraso desde 11/10/2026”; “Esta fatura não tem pagamento pela tela”; “Copiar dados da fatura”. Na C, o “Como pagar” fica contornado.',
+  '<strong>6 · NOVO — Em atraso sem data</strong> (14/11) — um estorno com vencimento nulo deixa a organização em atraso sem data (<code>statement.service.ts:568-571</code>): <code>inGoodStanding: false</code>, <code>overdueSince: null</code>. Aqui com a fatura de outubro em aberto, sem meio. A tela diz só “Em atraso”: nunca “desde —”, nunca tela de erro; manda falar com a equipe.',
+  '<strong>7 · NOVO — Em atraso sem fatura em aberto</strong> (14/11) — o estorno de uma fatura que já não está em aberto: <code>inGoodStanding: false</code>, <code>overdueSince</code> com o vencimento dela e sem <code>payment</code>. “Em atraso desde 11/10/2026”; sem o bloco “Como pagar”; a orientação de falar com a equipe fica no detalhe da Situação (e na faixa da C).',
+  '<strong>8 · Acima da franquia</strong> — usuários 23 de 20 e espaço 57 de 50 GB, com <code>overLimit: true</code> nos dois: pizza inteira vermelha, “Passou do limite” e “acima da franquia — o excedente será cobrado”.',
+  '<strong>9 · Espaço ainda sem medição</strong> (01/11) — <code>storageGb.measuredAt: null</code>: a primeira medição do mês ainda não saiu. O servidor manda <code>used: 0</code> (<code>statement.inputs.ts:214-216</code>); a tela NÃO desenha “0 de 50 GB”, mostra “— de 50 GB” e “Em estimativa”. Para isolar o espaço, o estado não traz a fatura de outubro, que na prática estaria em aberto no dia 1 (é o estado 2a com este espaço).',
+  '<strong>10 · NOVO — Medição do espaço antiga</strong> (14/11) — <code>measuredAt: "2026-11-11"</code>, 3 dias atrás. Regra (§2.4, leitura declarada): o <code>measuredAt</code> é uma data, não um instante, então as 36 h do plano-mestre viram <strong>2 dias civis ou mais atrás de hoje, em São Paulo</strong>; “ontem” (13/11, como nos outros estados) é normal. Selo âmbar “Medição antiga · 11/11”, “sem medição nova há 3 dias” e a explicação no detalhe.',
+  '<strong>11 · Carregando</strong> — esqueleto no lugar dos blocos, na forma de cada opção.',
+  '<strong>12 · Erro, sem dado anterior</strong> — a primeira carga falhou; “Tentar de novo” recarrega (na maquete, passa pelo esqueleto e volta ao estado 1).',
+  '<strong>13 · Acesso não permitido</strong> — 403: perfil sem <code>billing:read</code> (o exemplo é Operação de campo); o menu não tem o item e a página cai no bloqueio, sem dado.',
+  '<strong>14 · Organização ainda sem assinatura</strong> — o servidor responde <code>data: null</code> (<code>subscription-view.ts:47</code>, <code>:56</code>): o estado vazio.',
+  '<strong>15 · NOVO — Dados desatualizados</strong> (14/11) — a atualização em segundo plano falhou e já havia dado: o dado anterior fica (o do estado 1), com a faixa do sistema “Dados desatualizados — última atualização às 09:40” e “Tentar de novo”, no molde de <code>useCheques.ts:9</code> e do <code>StaleDataBanner.tsx:16-27</code>. No detalhe da Situação, “Atualizado: às 09:40 · a última atualização falhou”. Não se confunde com o estado 10: lá o servidor respondeu, e a medição dele é que é antiga.'
+];
+const NOTA_DIVERGENCIAS = [
+  '<strong>Pix copia e cola e linha digitável não aparecem por extenso.</strong> Os dois códigos podem levar o valor da cobrança dentro deles: no boleto, os 10 últimos dígitos da linha digitável; no Pix, o campo 54 do código, quando o provedor o preenche. A tela só oferece “Copiar”, e o valor aparece no banco ou na página do provedor, como manda a P12 (“o valor fica na página do provedor”). O fechamento é no dia 1 às 02:00 e o vencimento, 10 dias depois (<code>billing.constants.ts:5</code>, <code>DEFAULT_DUE_DAYS</code>), daí os vencimentos de exemplo em 11/10 e 11/11.',
+  '<strong>Percentual só até 100%</strong> (“90% da franquia”). Acima do limite não sai número de excedente: a pizza fica inteira em vermelho, com o selo “Passou do limite” e a frase “acima da franquia — o excedente será cobrado”. A legenda “&lt;usado&gt; de &lt;limite&gt; &lt;unidade&gt;” fica sempre, porque é a fala do dono, e por isso “23 de 20” aparece.',
+  '<strong>Sem aviso de “perto do limite” e sem tendência.</strong> Nenhuma regra do servidor define o corte de “perto do limite” (o 80%/100% do plano é o alerta de custo da nuvem, visto pela plataforma — <code>B-ASSINATURA-plano.md:768</code>). A tendência a P12 tira. O BI desta tela é o que a P12 permite: as duas pizzas, a situação e o detalhe de cada número.',
+  '<strong>“Continua em dia até &lt;data&gt;” é conta da tela</strong> (vencimento + os 5 dias de <code>GRACE_DAYS</code>, <code>billing.constants.ts:8</code>; regra em <code>statement.service.ts:575</code>). Se a tolerância mudar no servidor, a tela muda junto. Se o dono preferir, sai, e fica só “venceu em”.',
+  '<strong>A cor do aviso de fatura</strong> segue a situação: azul a vencer (<code>ui-alert--info</code>, <code>app.css:598</code>), âmbar vencida e em dia (<code>ui-alert--warning</code>, <code>:592</code>), vermelho em atraso (<code>ui-alert--danger</code>, <code>:585</code>); na B, os fundos das faixas <code>pat-banner</code> do sistema. Na C, o “Como pagar” é azul cheio com meio e contornado sem meio, nas três cores de situação.',
+  '<strong>“Ver usuários” só para quem abre Usuários.</strong> A rota exige <code>users.read</code> ou <code>users:read</code> (<code>frontend/src/App.tsx:539</code>); o Financeiro tem <code>billing:read</code> (<code>catalog.ts:835</code>) mas não tem nenhuma das duas, então para ele a ação some.',
+  '<strong>Título do bloqueio:</strong> a maquete usa “Acesso não permitido”, como o §7 do contrato e o Dashboard aprovado; o <code>PermissionGuard</code> de hoje diz “Acesso não autorizado” (<code>frontend/src/guards/PermissionGuard.tsx:29</code>).',
+  '<strong>Botão de tentar:</strong> o mandato e a emenda pedem “Tentar de novo” (estados 12 e 15); a tela-modelo diz “Tentar novamente” (<code>TenantSettingsPage.tsx:47</code>), e a faixa do sistema também (<code>StaleDataBanner.tsx:23</code>). A maquete segue a emenda; na implementação vale o que o dono escolher.',
+  '<strong>Menu:</strong> “Minha assinatura” fica no fim de ADMINISTRAÇÃO, depois de Auditoria, em <code>G_ADMIN_FULL</code> (<code>appSidebarNav.ts:157-160</code>), no grupo do <code>finance</code> (<code>:204</code>) e no <code>support</code> (<code>:218</code>) — a ordem do registro do servidor (<code>navigation.registry.ts:142-153</code>, ordem 145). Na maquete o grupo ADMINISTRAÇÃO do administrador aparece completo e na ordem real; os outros grupos estão resumidos a 1 item. O item ainda não existe no menu do front nem em <code>MVP_NAV_PATHS</code>.',
+  '<strong>Pagamento direto com a equipe:</strong> a tela não mostra nome, e-mail, telefone nem outro contato, porque o sistema não guarda contato de atendimento e a maquete não inventa um. “Nota fiscal tratada com a equipe” também é texto honesto, não promessa de nota pela tela.',
+  '<strong>O dia de referência muda por estado</strong> (01/11, 06/11 ou 14/11, no alternador e no cabeçalho da C), para cada situação aparecer no dia em que ela acontece. Na tela real há um relógio só, no hook (<code>SAO_PAULO_DAY.format(new Date())</code>, formato <code>en-CA</code> em <code>America/Sao_Paulo</code>, como <code>cheques.shared.tsx:82</code>).',
+  '<strong>Contraste herdado do sistema (medido, sem mexer na paleta):</strong> o rótulo “Administrador” da tela-modelo usa a cor de acento (<code>--color-core-accent</code> #0f8fbf) e dá 3,4:1 sobre o fundo; o selo do período herda essa cor (3,3:1). O selo “Em dia” (<code>ui-tone-success</code>) dá 3,9:1 e o “Em atraso” 4,4:1. Os pares novos ficam em 4,5:1 ou mais: no aviso âmbar da A, o título usa o texto da faixa de aviso do sistema (#92400e, <code>app.css:3334</code>) em vez de <code>--color-status-warning</code> (#a96b00, 4,1:1); o selo “Medição antiga” (#B45309 sobre #FEF3C7) dá 4,5:1.'
+];
+const BACKEND_I = [
+  '<code>plan.name</code> — <code>subscription-view.ts:24</code> (tipo) e <code>:77</code> (valor). Vem vazio quando o plano não é achado (<code>plan?.name ?? ""</code>): a tela mostra “—” com legenda. <code>plan.code</code> também vem; a tela não mostra.',
+  '<code>usage.users.used / included / overLimit</code> — <code>:26</code> e <code>:79-83</code>. O <code>used</code> é o maior número diário de usuários ativos no mês (<code>statement.inputs.ts:209-213</code>; contagem em <code>metering-prisma.repository.ts:46-47</code>).',
+  '<code>usage.storageGb.used / included / overLimit</code> — <code>:27-30</code> e <code>:84-87</code>: banco estimado mais arquivos, o maior do mês (<code>statement.inputs.ts:214-216</code>).',
+  '<code>usage.storageGb.measuredAt</code> — <code>:31</code>, calculado em <code>:62-66</code> e entregue em <code>:88</code>. É uma DATA (<code>AAAA-MM-DD</code>), não um instante: por isso a regra de medição antiga é em dias civis (estado 10). <code>estimate: true</code> sempre (<code>:32</code>, <code>:89</code>).',
+  '<code>status.inGoodStanding / overdueSince</code> — <code>:35</code> e <code>:92</code>. Regra em <code>statement.service.ts:560-581</code> (<code>upToDateStatus</code>): fatura fechada com saldo e vencimento + 5 dias &lt; hoje (<code>GRACE_DAYS</code>, <code>billing.constants.ts:8</code>); o <code>overdueSince</code> é o vencimento da fatura mais antiga em atraso. Um estorno (<code>charged_back</code>) deixa em atraso e usa o vencimento dele, que pode ser nulo (<code>:568-571</code>): daí os estados 6 e 7.',
+  '<code>status.nextDueDate</code> — <code>:92</code>: o vencimento da fatura fechada e não paga mais antiga (<code>:70-73</code>); sem fatura em aberto, <code>null</code>.',
+  '<code>payment</code> — só existe com fatura fechada e não paga (<code>:94-106</code>); o <code>dueDate</code> já é real (<code>:98</code>) e pode ser <code>null</code> (<code>:38</code>). Com os quatro meios nulos (<code>:99-103</code>, hoje), a tela cai na orientação de pagar com a equipe. O <code>statementId</code> e o <code>invoicePdfAvailable</code> vêm, mas não entram no estado da tela.',
+  '<code>period</code> — <code>:23</code> e <code>:76</code>. Sem assinatura, <code>data: null</code> (<code>:47</code>, <code>:56</code>).',
+  'Rota <code>GET /api/v1/billing/subscription</code> (<code>B-ASS-04</code>, PR #507): a organização vem da sessão (<code>?tenantId</code> → 400, <code>subscription-billing.tenant.routes.ts:21-27</code>), exige <code>billing:read</code> e recusa ator de plataforma (<code>:55-59</code>); a rota em <code>:61-68</code>. Menu no registro do servidor (<code>navigation.registry.ts:142-153</code>).',
+  'Quem tem <code>billing:read</code>: <code>tenant_admin</code> por herança (<code>catalog.ts:430</code>), <code>manager</code> (<code>:433</code>), <code>finance</code> (<code>:835</code>), <code>auditor</code> (<code>:996</code>) e <code>support</code> (<code>:1067</code>). Operação de campo, operador, técnico de campo e estoque não têm, e caem em “Acesso não permitido”.'
+];
+const BACKEND_II = [
+  '<strong>Meios de pagamento e nota:</strong> <code>payUrl</code>, <code>pixCopyPaste</code>, <code>boletoLine</code> e <code>boletoUrl</code> saem <code>null</code>, e <code>invoicePdfAvailable: false</code> (<code>subscription-view.ts:93-103</code>). O canal entrou na <code>main</code> desligado (<code>BILLING_PROVIDERS_ENABLED</code> nasce <code>false</code>, <code>env.ts:350</code>; sem ele não há porta, <code>channel.runtime.ts:30</code> e <code>:45</code>), e o dono decidiu em 13/11 que fica desligado até ele ligar. A rota do PDF da nota não existe (<code>agent-orchestration/controle/pendencias.md:12822</code>). Os meios vindos da cobrança e o PDF ficam para o <code>B-ASS-11c</code> (perguntas 5 e 6 da Emenda 1, pela recomendação).',
+  '<strong>Retirar a consulta de tendência do cliente (Parte R, <code>B-ASS-11b</code>), antes da tela:</strong> medido na <code>e6f3c425</code>, ela ainda está lá — a rota em <code>subscription-billing.tenant.routes.ts:69-79</code> e o import em <code>:16</code>; <code>UsageHistoryRow</code> e <code>buildUsageHistory</code> em <code>subscription-view.ts:110-143</code>, o <code>shiftPeriod</code> (<code>:16-20</code>) e os imports <code>:7</code> e <code>:9</code>; o endpoint em <code>navigation.registry.ts:152</code>; o T-ST-64; as 2 fixtures (pelo gerador); e a linha de <code>docs/subscription-billing.md</code>. O item 62 só fecha com ela fora (§1 da Emenda 1.1). A maquete nunca a usou.',
+  '<strong>Data da medição de usuários:</strong> só o espaço traz <code>measuredAt</code>; a tela diz “maior número do mês”, sem data.',
+  '<strong>Medição antiga em horas:</strong> o servidor manda a data da medição, não o instante. A regra em horas (as 36 h do plano-mestre) exigiria esse instante, e isso é mudança de servidor, fora desta tela.',
+  '<strong>Mais de uma fatura em aberto:</strong> vem só a mais antiga (<code>:70-73</code>), sem contagem.',
+  '<strong>Só de front (não é backend):</strong> a rota <code>/administrator/subscription</code>, o item do menu nos 3 lugares e o <code>MVP_NAV_PATHS</code>; a <code>UsagePie</code> nasce na biblioteca (<code>frontend/src/components/charts/</code>), a partir do <code>ReconcileDonut.tsx</code> com raio interno 0; o relógio único no hook.'
+];
+const CONFLITOS_IV = [
+  '<strong>A aprovação de 13/11 foi retirada.</strong> A Emenda 1 respondia “a v2 vale como as 3 aprovadas” pela recomendação geral do dono; a Emenda 1.1 (§2.1) a retirou, porque aprovação de tela não se responde pela recomendação e <code>screen-refs/</code> não tem nenhuma “Minha assinatura”. Virou a PA-1, aberta. O dev da tela espera a fala do dono.',
+  '<strong>A tendência: decidida, ainda no servidor.</strong> 8.2 = sai. A rota (<code>GET /api/v1/billing/subscription/usage-history</code>, que devolve inclusive <code>trackedVehicles</code>) segue na <code>main</code> <code>e6f3c425</code>, contra a P12 (“fora da tela e do payload do cliente”). O item 62 não fecha enquanto ela existir (§1.2); a Parte R vem antes da tela e encerra a <code>P-ASS-USAGE-HISTORY-X-P12</code>.',
+  '<strong>A linha T6 do plano</strong> (<code>planos/B-ASSINATURA-plano.md:606</code>, fora do repositório) ainda cita “tendência de uso 6 meses” e “o anel passa de 100%”. Valem a P12 (<code>:130</code>, DONO 31/10 ~22:15), a fala da pizza (30/10, <em>“o cliente ver um grafico de pizza com o limite contratado e gasto”</em>) e a 8.2: pizza cheia e nada de tendência.',
+  '<strong>As 36 h do plano-mestre</strong> (l.597, “selo ‘estimativa de &lt;data&gt;’ quando <code>measuredAt</code> &gt; 36 h”) contra um <code>measuredAt</code> que é data: traduzidas para 2 dias civis (§2.4, leitura declarada) e separadas da falha de atualização (estado 15), sem consolidar uma na outra.',
+  '<strong>Textos do sistema:</strong> “Acesso não permitido” × “Acesso não autorizado” do <code>PermissionGuard</code>, e “Tentar de novo” × “Tentar novamente” da tela-modelo e do <code>StaleDataBanner</code> (detalhes nas divergências).'
+];
+const OPCAO_I = {
+  a:'<strong>Nesta opção:</strong> cartões Plano (<code>plan.name</code>), Usuários (pizza de <code>usage.users</code>), Espaço (pizza de <code>usage.storageGb</code>, “estimativa de &lt;data&gt;” e os selos) e Situação (<code>status</code>), na grade de 4 da área de Configurações (<code>app.css:930</code>); o aviso “Como pagar” só aparece com <code>payment</code>, na cor da situação, e a faixa de desatualizado fica acima de tudo. O selo do período usa <code>period</code>.',
+  b:'<strong>Nesta opção:</strong> a faixa de cima junta Situação (<code>status</code>), “Como pagar” (<code>payment</code>, só com fatura em aberto, na cor da situação) e Plano (<code>plan.name</code>); embaixo, as duas pizzas de 168 px com a legenda forte e as barras de “em uso” e “disponível” (<code>used</code> e <code>included − used</code>). A faixa de desatualizado fica abaixo do cabeçalho.',
+  c:'<strong>Nesta opção:</strong> a faixa grande mostra <code>status</code> (e os avisos de “continua em dia até” e de <code>overLimit</code>); com <code>payment</code>, o bloco “Como pagar” fica ao lado e o detalhe dele já abre — azul cheio com os meios que vieram, contornado sem meio, com a orientação e “Copiar dados da fatura”. Embaixo, as pizzas de 76 px e o plano. O cabeçalho traz o dia de hoje.'
+};
+const PROS = {
+  a:['<strong>Prós:</strong> é a tela-modelo, com o cabeçalho “Administrador”, o cartão <code>ui-card</code> e a grade da área de Configurações, então custa menos; os quatro números ficam numa linha só; quem já usa Configurações não reaprende.','<strong>Contras:</strong> pizzas pequenas (104 px) e legenda curta; com selo de medição antiga, o cartão de Espaço fica mais alto que os outros; o “Como pagar” é uma faixa de aviso, menos chamativa que na C.'],
+  b:['<strong>Prós:</strong> as pizzas ganham destaque (168 px), com a legenda forte e as barras de uso; a faixa resume situação, fatura e plano numa linha; é o BI que a P12 permite, sem indicador a mais.','<strong>Contras:</strong> a tela fica mais comprida; o texto da faixa é cortado com reticências quando é longo (o detalhe mostra inteiro); o plano aparece na faixa e de novo no detalhe.'],
+  c:['<strong>Prós:</strong> responde primeiro “estou em dia?” e “como eu pago?”; com fatura em aberto, o detalhe de “Como pagar” já abre; “continua em dia até” fica à vista no estado mais comum do mês; serve bem a quem entra na tela para pagar.','<strong>Contras:</strong> as pizzas ficam pequenas (76 px); em dia, a faixa grande ocupa espaço com pouca informação; é a opção que mais depende dos meios de pagamento, e com a cobrança desligada o destaque do “Como pagar” leva a uma orientação, não a um pagamento.']
+};
+function lis(a){ return a.map(x => '<li>'+x+'</li>').join(''); }
+function montarNotas(){
+  $('#rv-estados').innerHTML = lis(NOTA_ESTADOS);
+  $('#rv-divergencias').innerHTML = lis(NOTA_DIVERGENCIAS);
+  ['a','b','c'].forEach(o => {
+    $('[data-nota="'+o+'"]').innerHTML = '<div class="review-grid review-grid--2">'+
+      '<div class="review-box"><h3>(i) O que já tem dado no backend — campo a campo, na <code>origin/main</code> e6f3c425</h3><ul class="review-list">'+lis([OPCAO_I[o]].concat(BACKEND_I))+'</ul></div>'+
+      '<div class="review-box"><h3>(ii) O que falta no backend</h3><ul class="review-list">'+lis(BACKEND_II)+'</ul></div>'+
+      '<div class="review-box"><h3>(iii) Prós e contras desta opção</h3><ul class="review-list">'+lis(PROS[o])+'</ul></div>'+
+      '<div class="review-box"><h3>(iv) Conflitos registrados</h3><ul class="review-list">'+lis(CONFLITOS_IV)+'</ul></div></div>';
+  });
+}
+
+/* ── Toast ── */
+let toastT = null;
+function toast(msg, falha){ const t = $('#toast'); t.textContent = msg; t.classList.toggle('toast--falha', !!falha); t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 4200); }
+/* "Copiar dados da fatura": grava na área de transferência; se o navegador negar, avisa que não copiou (sem a mensagem de sucesso) */
+const MSG_COPIOU = txt => 'Dados da fatura copiados: '+txt+'. Cole na mensagem para a equipe.';
+const MSG_FALHOU = txt => 'Não foi possível copiar os dados da fatura: o navegador não liberou a área de transferência. Anote: '+txt.replace(' · fatura em aberto', '')+'.';
+let forcarFalha = false;
+function copiar(txt){
+  if (forcarFalha) { forcarFalha = false; toast(MSG_FALHOU(txt), true); return; }
+  try { navigator.clipboard.writeText(txt).then(() => toast(MSG_COPIOU(txt)), () => toast(MSG_FALHOU(txt), true)); }
+  catch (e) { toast(MSG_FALHOU(txt), true); }
+}
+
+/* ── Opções, estados e renderização ── */
+const ROT = { a:'Opção A — Padrão fiel (tela-modelo)', b:'Opção B — Analítica', c:'Opção C — Situação primeiro' };
+const RENDER = { a:renderA, b:renderB, c:renderC };
+function trocarOpcao(o){
+  opcao = o;
+  $$('[data-view]').forEach(v => { v.style.display = v.dataset.view === o ? '' : 'none'; });
+  $$('[data-opcao]').forEach(b => b.setAttribute('aria-pressed', b.dataset.opcao === o));
+  $$('[data-nota]').forEach(n => { n.hidden = n.dataset.nota !== o; });
+  $('#rv-titulo').textContent = ROT[o]; $('#banner-tag').textContent = 'Minha assinatura · Opção '+o.toUpperCase();
+}
+function rerender(v, foco){
+  RENDER[v]();
+  if (foco) { const b = $('[data-view="'+v+'"] [data-alvo="'+foco+'"]'); if (b) b.focus({ preventScroll:true }); }
+  const det = S[v].aberto && $('#det-'+v+'-'+S[v].aberto);
+  if (det && foco) det.scrollIntoView({ block:'nearest' });
+}
+function renderTudo(){ renderNav(); ['a','b','c'].forEach(v => RENDER[v]()); trocarOpcao(opcao); }
+function mudarEstado(e){
+  estado = e; atualizando = false; $('#sel-estado').value = e;
+  ['a','b','c'].forEach(v => { S[v].aberto = null; });
+  const c = ctx(); if (c.kind === 'data' && c.d.payment) S.c.aberto = 'pagar';   /* na C, "Como pagar" já abre quando há fatura em aberto */
+  renderTudo();
+}
+let tentarT = null;
+
+/* ── Eventos ── */
+document.addEventListener('click', e => {
+  const t = e.target; const el = s => t.closest(s); let x;
+  if ((x = el('[data-opcao]'))) { trocarOpcao(x.dataset.opcao); return; }
+  if ((x = el('[data-ir]'))) { clearTimeout(tentarT); mudarEstado(x.dataset.ir); if (x.dataset.irOpcao) trocarOpcao(x.dataset.irOpcao);
+    if (x.dataset.irAbrir) { S[opcao].aberto = x.dataset.irAbrir; RENDER[opcao](); }
+    window.scrollTo({ top:0, behavior:'smooth' });
+    if (x.dataset.irFoco === 'menu') { const m = $('[data-menu="Minha assinatura"]'); if (m) m.focus({ preventScroll:true }); }
+    return; }
+  if ((x = el('[data-simular-falha]'))) { clearTimeout(tentarT); mudarEstado('e5'); S[opcao].aberto = 'pagar'; RENDER[opcao](); forcarFalha = true; window.scrollTo({ top:0, behavior:'smooth' }); toast('Na próxima vez, “Copiar dados da fatura” vai simular a recusa do navegador.'); return; }
+  if ((x = el('[data-menu]'))) { e.preventDefault(); if (x.dataset.menu !== 'Minha assinatura') toast('Na maquete só a tela Minha assinatura está montada.'); return; }
+  if ((x = el('#rv-recolher'))) { const c = $('#rv-corpo'); c.hidden = !c.hidden; x.setAttribute('aria-expanded', !c.hidden); x.textContent = c.hidden ? 'Mostrar notas' : 'Recolher notas'; return; }
+  if ((x = el('[data-tentar]'))) { mudarEstado('e11'); clearTimeout(tentarT); tentarT = setTimeout(() => mudarEstado('e1'), 900); return; }
+  if ((x = el('[data-tentar-stale]'))) { atualizando = true; ['a','b','c'].forEach(v => RENDER[v]()); clearTimeout(tentarT); tentarT = setTimeout(() => mudarEstado('e1'), 900); return; }
+  if ((x = el('[data-fechar]'))) { const v = x.closest('[data-view]').dataset.view, id = S[v].aberto; S[v].aberto = null; rerender(v, id); return; }
+  if ((x = el('[data-abrir]'))) { const v = x.closest('[data-view]').dataset.view; S[v].aberto = x.dataset.abrir; rerender(v, x.dataset.abrir); return; }
+  if ((x = el('[data-copiar]'))) { copiar(x.dataset.copiar); return; }
+  if ((x = el('a[data-toast]'))) { e.preventDefault(); toast(x.dataset.toast); return; }   /* maquete: o link não sai daqui */
+  if ((x = el('[data-toast]'))) { toast(x.dataset.toast); return; }
+  if ((x = el('[data-alvo]'))) { const v = x.closest('[data-view]').dataset.view, id = x.dataset.alvo; S[v].aberto = S[v].aberto === id ? null : id; rerender(v, id); return; }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const v = opcao, id = S[v].aberto; if (!id) return;
+  S[v].aberto = null; rerender(v, id);
+});
+$('#sel-estado').addEventListener('change', e => { clearTimeout(tentarT); mudarEstado(e.target.value); });
+
+/* ── Inicialização ── */
+$('#sel-estado').innerHTML = ESTADOS.map(s => '<option value="'+s.id+'">'+s.n+' · '+s.rot+(s.hoje && s.hoje !== HOJE_PADRAO ? ' · dia '+dataCurta(s.hoje) : '')+(s.novo ? ' · NOVO' : '')+'</option>').join('');
+montarNotas(); mudarEstado('e1'); trocarOpcao('a');
+})();
+</script>
+</body>
+</html>

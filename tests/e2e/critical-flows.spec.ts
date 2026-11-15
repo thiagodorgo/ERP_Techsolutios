@@ -1,24 +1,31 @@
-import { expect, test, type Page } from "@playwright/test";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+import { Prisma, type PrismaClient } from "@prisma/client";
 
-const databaseUrl =
-  process.env.DATABASE_URL ??
-  "postgresql://postgres:postgres@localhost:5432/erp_techsolutions?schema=public";
-const demoEmail = process.env.E2E_DEMO_ADMIN_EMAIL ?? "admin.demo@example.com";
-const demoPassword = process.env.DEMO_ADMIN_PASSWORD ?? "ChangeMe123!";
-const platformEmail = process.env.E2E_PLATFORM_EMAIL ?? "platform.admin@erp.local";
-const platformPassword = process.env.E2E_PLATFORM_PASSWORD ?? "platform-admin-dev-password";
+import { createE2ePrisma } from "./apoio/banco.js";
+import {
+  DEMO_EMAIL,
+  DEMO_ORGANIZATION,
+  DEMO_PASSWORD,
+  PLATFORM_EMAIL,
+  PLATFORM_PASSWORD,
+  SESSAO_ADMIN,
+  entrarPelaTela,
+  escolherOrganizacaoDemo,
+} from "./apoio/sessao.js";
+
+const emptyStorageState = { cookies: [], origins: [] };
+const apiPort = process.env.E2E_API_PORT ?? "3442";
+const apiBaseUrl = process.env.E2E_API_BASE_URL ?? `http://127.0.0.1:${apiPort}/api/v1`;
 const e2eChecklistId = "11111111-2222-4333-8444-555555555555";
 const e2eVehicleComponentId = "11111111-2222-4333-8444-555555555556";
 const e2ePhotoComponentId = "11111111-2222-4333-8444-555555555557";
 
 let demoTenantId = "";
 
+test.use({ storageState: SESSAO_ADMIN });
+
 test.beforeAll(async () => {
-  const prisma = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: databaseUrl }),
-  });
+  const prisma = createE2ePrisma();
 
   try {
     const tenant = await prisma.tenant.findUnique({
@@ -83,42 +90,38 @@ test.beforeAll(async () => {
   }
 });
 
-test.beforeEach(async ({ page }) => {
-  await page.context().clearCookies();
-  await page.goto("/login");
-  await page.evaluate(() => window.localStorage.clear());
-});
+test.describe("entrada pela tela", () => {
+  test.use({ storageState: emptyStorageState });
 
-test("login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth", async ({ page }) => {
+  test("login real cria sessao, credenciais invalidas exibem erro e rota protegida exige auth", async ({ page }) => {
   await page.goto("/administrator/checklists");
   await expect(page).toHaveURL(/\/login$/);
 
-  await page.getByLabel("Tenant ID").fill(demoTenantId);
-  await page.getByLabel("E-mail corporativo").fill(demoEmail);
-  await page.getByRole("textbox", { name: /Senha/i }).fill("senha-invalida");
-  await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page.getByText("Tenant, e-mail ou senha invalidos.")).toBeVisible();
+  const invalid = await entrarPelaTela(page, DEMO_EMAIL, "senha-invalida");
+  expect(invalid.status()).toBe(401);
+  await expect(page.getByText(/e-mail ou senha inválidos/i)).toBeVisible();
 
   await resetDemoAuthState();
-  await loginAsTenantAdmin(page);
+  const valid = await entrarPelaTela(page, DEMO_EMAIL, DEMO_PASSWORD);
+  expect(valid.status()).toBe(200);
   await expect(page).toHaveURL(/\/select-context$/);
 
   const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
-  expect(session).toContain(demoEmail);
+  expect(session).toContain(DEMO_EMAIL);
   expect(session).toContain("accessToken");
   expect(session).toContain("refreshToken");
+  });
 });
 
-test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Console", async ({ page }) => {
-  await loginAsTenantAdmin(page);
+test("tenant admin ve Checklists, Configuracoes e Notificacoes no menu, ativa contexto e nao entra no console da plataforma", async ({ page }) => {
   const navigationResponse = page.waitForResponse((response) => response.url().includes("/api/v1/navigation/menu"));
-  await activateFirstContext(page);
+  await page.goto("/dashboard");
   await navigationResponse;
 
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole("link", { name: "Checklists", exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Configuracoes|Configurações/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Notificacoes|Notificações/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Configurações", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Notificações", exact: true })).toBeVisible();
   await expect(page.getByText("Console da Plataforma")).toHaveCount(0);
 
   await page.goto("/platform/tenants");
@@ -129,10 +132,10 @@ test("tenant admin ve W02A e W03 na sidebar, ativa contexto e nao ve Platform Co
 test("tenant admin acessa inbox interna de notificacoes sem depender de seed", async ({ page }) => {
   await loginAndActivateContext(page);
 
-  await page.getByRole("link", { name: /Notificacoes|Notificações/i }).click();
+  await page.getByRole("link", { name: "Notificações", exact: true }).click();
   await expect(page).toHaveURL(/\/notifications$/);
-  await expect(page.getByRole("heading", { name: /Notificacoes|Notificações/i })).toBeVisible();
-  await expect(page.getByText(/Inbox interna/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Notificações", exact: true })).toBeVisible();
+  await expect(page.getByText("Avisos e eventos operacionais do seu usuário na organização.", { exact: true })).toBeVisible();
 });
 
 // J-MAPAS-10 PR-2 — reescrita para a TELA REAL. A versão anterior era da era pré-Ω1 (esperava
@@ -143,9 +146,6 @@ test("tenant admin acessa inbox interna de notificacoes sem depender de seed", a
 // "Esc limpa a seleção…", e ZERO chip passivo no topo-esquerdo (diretiva do dono).
 test("Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro (sem chips passivos)", async ({ page }) => {
   await loginAndActivateContext(page);
-  await enableOperationsMapFrontendContext(page);
-  await enableWorkOrdersFrontendContext(page);
-  await enableDispatchesFrontendContext(page);
 
   await page.goto("/operations/map");
   await expect(page).toHaveURL(/\/operations\/map$/);
@@ -156,12 +156,12 @@ test("Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro
   await expect(page.locator(".opmap-stage__map")).toBeVisible();
 
   // Stack de 3 painéis à direita, com os títulos verbatim do protótipo.
-  await expect(page.getByText("Chamados recebidos")).toBeVisible();
-  await expect(page.getByText("Em Atendimento")).toBeVisible();
-  await expect(page.getByText("Técnicos de campo")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Chamados recebidos", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Em Atendimento", exact: true })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Técnicos de campo", exact: true })).toBeVisible();
 
   // Legenda-FILTRO no rodapé: 8 itens + hint verbatim. Clicar num item alterna a camada.
-  await expect(page.getByText("Esc limpa a seleção · arraste uma OS até um técnico para alocar")).toBeVisible();
+  await expect(page.getByText("Esc limpa a seleção · arraste uma OS até um técnico para alocar")).toBeAttached();
   const legendItem = page.getByRole("button", { name: /Disponível/ }).first();
   await expect(legendItem).toBeVisible();
   await legendItem.click();
@@ -177,20 +177,40 @@ test("Mapa Operacional renderiza o palco, o stack de painéis e a legenda-filtro
   ).toBeVisible();
 });
 
-test("Despachos Operacionais renderiza lista, KPIs e acoes por RBAC", async ({ page }) => {
+// B-SAN3-10-E2E-CI (F3, §4.2 linha 5) — a tela virou "Despachos AO VIVO". As quatro propriedades seguem: a lista é a
+// que a API devolveu, os indicadores batem com ela, "Novo despacho" aparece a quem tem a permissão e a busca filtra.
+// Limite declarado: a semente não tem técnico de campo e o despacho exige um; num banco novo a lista real é vazia.
+test("Despachos AO VIVO lista o que a API devolve, mostra indicadores, oferece Novo despacho e a busca filtra", async ({ page }) => {
   await loginAndActivateContext(page);
-  await enableDispatchesFrontendContext(page);
-  await enableWorkOrdersFrontendContext(page);
 
+  const listResponse = page.waitForResponse(
+    (response) => /\/api\/v1\/operations\/dispatches(\?|$)/.test(response.url()) && response.request().method() === "GET",
+  );
   await page.goto("/operations/dispatches");
   await expect(page).toHaveURL(/\/operations\/dispatches$/);
-  await expect(page.getByRole("heading", { name: "Despachos Operacionais" })).toBeVisible();
-  await expect(page.getByText("Atribuidos")).toBeVisible();
-  await expect(page.getByText(/OS-000101|Nenhum despacho encontrado/).first()).toBeVisible();
-  await expect(page.getByRole("button", { name: /Novo despacho/i })).toBeVisible();
+  const response = await listResponse;
+  expect(response.status()).toBe(200);
+  const total = await dispatchCountOf(response);
 
-  await page.getByPlaceholder("Buscar por OS, codigo ou operador").fill("OS-000103");
-  await expect(page.getByText(/OS-000103|Nenhum despacho encontrado/).first()).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: /^Despachos\s*AO VIVO$/ })).toBeVisible();
+  await expect(page.getByText("Dados demonstrativos", { exact: true })).toHaveCount(0);
+
+  for (const indicator of ["Total", "Atribuídos", "Em rota", "Em atendimento", "Concluídos", "Cancelados", "Urgentes"]) {
+    await expect(page.getByRole("button", { name: new RegExp(`^${indicator}: \\d+\\. Abrir detalhes\\.$`) })).toBeVisible();
+  }
+  await expect(page.getByRole("button", { name: `Total: ${total}. Abrir detalhes.`, exact: true })).toBeVisible();
+
+  const rows = page.getByRole("row").filter({ has: page.getByRole("button", { name: "Detalhe", exact: true }) });
+  await expect(rows).toHaveCount(total);
+  await expect(page.getByText("Nenhum despacho encontrado", { exact: true })).toHaveCount(total === 0 ? 1 : 0);
+  await expect(page.getByRole("button", { name: "Novo despacho", exact: true })).toBeVisible();
+
+  const search = page.getByPlaceholder("Buscar por OS, código ou operador");
+  await search.fill("e2e-busca-sem-correspondencia");
+  await expect(rows).toHaveCount(0);
+  await expect(page.getByText("Nenhum despacho encontrado", { exact: true })).toBeVisible();
+  await search.fill("");
+  await expect(rows).toHaveCount(total);
 });
 
 // B-SAN3-01 (P-008) — os três casos abaixo substituem o antigo "renderiza lista, criacao e detalhe com fallback
@@ -205,7 +225,7 @@ const UUID_RE = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 
 test("E1 — lista honesta: o que a tela mostra é o que a API devolveu", async ({ page }) => {
   await loginAndActivateContext(page);
-  await enableWorkOrdersFrontendContext(page);
+  await ensureWorkOrderId(page);
 
   const listResponse = page.waitForResponse(
     (response) => /\/api\/v1\/work-orders(\?|$)/.test(response.url()) && response.request().method() === "GET",
@@ -217,29 +237,23 @@ test("E1 — lista honesta: o que a tela mostra é o que a API devolveu", async 
   const codes = await workOrderCodesOf(response);
 
   await expect(page.getByRole("heading", { name: "Ordens de Serviço" })).toBeVisible();
-  const rows = page.locator(".pat-os-row");
-  if (codes.length === 0) {
-    await expect(page.locator('[data-state="empty"]')).toBeVisible();
-    await expect(rows).toHaveCount(0);
-  } else {
-    await expect(rows).toHaveCount(Math.min(codes.length, WORK_ORDER_LIST_PAGE_SIZE));
-    const rendered = await rows.locator("> div:first-child .pat-mono").allTextContents();
-    for (const code of rendered) expect(codes).toContain(code.trim());
-    if (codes.length <= WORK_ORDER_LIST_PAGE_SIZE) expect(new Set(rendered.map((c) => c.trim()))).toEqual(new Set(codes));
-  }
+  expect(codes.length).toBeGreaterThan(0);
+  const rows = page.locator("tbody tr[data-row-key]");
+  await expect(rows).toHaveCount(Math.min(codes.length, WORK_ORDER_LIST_PAGE_SIZE));
+  const rendered = await rows.locator(".aparos-code").allTextContents();
+  for (const code of rendered) expect(codes).toContain(code.trim());
+  if (codes.length <= WORK_ORDER_LIST_PAGE_SIZE) expect(new Set(rendered.map((c) => c.trim()))).toEqual(new Set(codes));
   await expect(page.getByRole("alert")).toHaveCount(0);
   await expect(page.locator('[data-state="error"]')).toHaveCount(0);
 
   // Busca real (aria-label da toolbar): filtra a lista carregada; nada é inventado para preencher o vazio.
-  const search = page.getByRole("textbox", { name: /Buscar/ });
-  await search.fill(codes[0] ?? "nenhuma-os-com-este-texto");
-  if (codes.length > 0) await expect(rows.first()).toContainText(codes[0]);
-  else await expect(page.locator('[data-state="empty"]')).toBeVisible();
+  const search = page.getByRole("searchbox", { name: /Buscar/ });
+  await search.fill(codes[0]);
+  await expect(rows.first()).toContainText(codes[0]);
 });
 
 test("E2 — create recusado preserva o digitado e não navega; aceito navega para a OS real", async ({ page }) => {
   await loginAndActivateContext(page);
-  await enableWorkOrdersFrontendContext(page);
 
   await page.goto("/work-orders/new");
   await expect(page.getByRole("heading", { name: /Nova OS/i })).toBeVisible();
@@ -291,7 +305,6 @@ test("E2 — create recusado preserva o digitado e não navega; aceito navega pa
 
 test("E3 — detalhe inexistente e detalhe com erro são estados, não dados", async ({ page }) => {
   await loginAndActivateContext(page);
-  await enableWorkOrdersFrontendContext(page);
 
   // 404 REAL do backend (uuid válido que não existe): estado "não encontrada", sem cabeçalho de OS nem abas.
   await page.goto("/work-orders/00000000-0000-4000-8000-000000000000");
@@ -316,6 +329,13 @@ test("E3 — detalhe inexistente e detalhe com erro são estados, não dados", a
   await expect(page.locator('[data-state="error"]')).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Seções da ordem de serviço" })).toBeVisible();
 });
+
+async function dispatchCountOf(response: { json(): Promise<unknown> }): Promise<number> {
+  const body = (await response.json()) as unknown[] | { items?: unknown[]; data?: unknown[] | { items?: unknown[] } };
+  if (Array.isArray(body)) return body.length;
+  const items = Array.isArray(body.items) ? body.items : Array.isArray(body.data) ? body.data : Array.isArray(body.data?.items) ? body.data.items : [];
+  return items.length;
+}
 
 async function workOrderCodesOf(response: { json(): Promise<unknown> }): Promise<string[]> {
   const body = (await response.json()) as { items?: Array<{ code?: unknown }>; data?: Array<{ code?: unknown }> | { items?: Array<{ code?: unknown }> } };
@@ -343,27 +363,45 @@ async function ensureWorkOrderId(page: Page): Promise<string> {
   return id;
 }
 
-test("platform admin acessa Platform Console", async ({ page }) => {
-  const navigationResponse = page.waitForResponse((response) => response.url().includes("/api/v1/navigation/menu?scope=platform"));
-  await loginAsPlatformAdmin(page);
-  await navigationResponse;
+test.describe("administrador da plataforma pela tela", () => {
+  test.use({ storageState: emptyStorageState });
+
+  // B-SAN3-10-E2E-CI (F3, §4.2 linha 9) — desde o #111 o menu do console é uma lista fixa no navegador
+  // (`PlatformLayout.tsx`, `PLATFORM_NAV`); "o menu vem do servidor" saiu do teste e ficou na pendência
+  // P-WEB-PLATAFORMA-MENU-FIXO. A permissão de cada rota segue no servidor: a tela Organizações só carrega com 200.
+  test("administrador da plataforma entra no console, a tela Organizacoes carrega da API e ele navega ao Cloud Billing", async ({ page }) => {
+  const overviewResponse = page.waitForResponse(
+    (response) => /\/api\/v1\/platform\/overview(\?|$)/.test(response.url()) && response.request().method() === "GET",
+  );
+  const login = await entrarPelaTela(page, PLATFORM_EMAIL, PLATFORM_PASSWORD);
+  expect(login.status()).toBe(200);
 
   await expect(page).toHaveURL(/\/platform\/tenants$/);
   const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
-  expect(session).toContain(platformEmail);
+  expect(session).toContain(PLATFORM_EMAIL);
   expect(session).toContain("accessToken");
   expect(session).toContain("refreshToken");
 
-  await expect(page.getByText("Console da Plataforma", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Tenants/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /Billing Cloud|Cloud Billing/i })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Tenants", exact: true })).toBeVisible();
-  await expect(page.getByText("Tenants cadastrados")).toBeVisible();
+  expect((await overviewResponse).status()).toBe(200);
+  await expect(page.getByText("cadastros e situação das organizações clientes", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button").filter({ hasText: DEMO_ORGANIZATION })).toBeVisible();
 
-  await page.getByRole("link", { name: /Billing Cloud|Cloud Billing/i }).click();
+  const menu = page.getByRole("navigation");
+  for (const item of ["Visão Geral", "Organizações", "Cloud Billing", "Saúde do Sistema"]) {
+    await expect(menu.getByRole("link", { name: item, exact: true })).toBeVisible();
+  }
+
+  await menu.getByRole("link", { name: "Cloud Billing", exact: true }).click();
   await expect(page).toHaveURL(/\/platform\/cloud-billing$/);
-  await expect(page.getByRole("heading", { name: "Cloud Billing", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Visao geral" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Mês de referência" })).toBeVisible();
+  await expect(page.getByText("Acesso não permitido", { exact: true })).toHaveCount(0);
+  // Emenda 2.3: o estado que a tela mostra no e2e presente, e os 2 erros de carga da tela nova (#567) ausentes. Num banco
+  // novo é o vazio do mês, medido no e2e local; o nome do mês muda com a data, por isso a regex. A positiva vem antes:
+  // uma ausência se satisfaz durante o esqueleto de carregamento (medido), e só depois dela as ausências provam algo.
+  await expect(page.getByRole("status").filter({ hasText: /^Nenhum custo nem assinatura em \S/ })).toBeVisible();
+  await expect(page.getByText("Não foi possível carregar o custo e a margem", { exact: true })).toHaveCount(0);
+  await expect(page.getByText(/^Não foi possível montar a visão de /)).toHaveCount(0);
+  });
 });
 
 // CHECKLIST P1 PR-02a — a tela virou "Modelos de Checklist" no desenho do protótipo do dono
@@ -377,151 +415,120 @@ test("PR-02a Modelos de Checklist renderiza a lista nova e o builder sem quebrar
   await expect(page.getByRole("button", { name: /Novo modelo/i })).toBeVisible();
 });
 
-test("runtime web de checklists renderiza lista operacional e bloqueia obrigatorios incompletos", async ({ page }) => {
+// B-SAN3-10-E2E-CI (F3, §4.2 linha 11) — o link do menu chama-se "Checklists". As três propriedades seguem: a lista dos
+// publicados abre, uma execução começa e concluir com obrigatório em branco é recusado.
+test("Checklists lista os publicados, inicia uma execucao e recusa concluir com obrigatorio em branco", async ({ page }) => {
   await loginAndActivateContext(page);
 
-  await page.getByRole("link", { name: /Checklists Operacionais/i }).click();
+  await page.getByRole("link", { name: "Checklists", exact: true }).click();
   await expect(page).toHaveURL(/\/operations\/checklists$/);
-  await expect(page.getByRole("heading", { name: "Checklists Operacionais" })).toBeVisible();
-  await expect(page.getByText("Execucao web de checklists publicados")).toBeVisible();
-  await page.getByRole("button", { name: /Iniciar execucao/i }).first().click();
-  await expect(page).toHaveURL(/\/operations\/checklists\/.+\/run$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Checklists Operacionais", exact: true })).toBeVisible();
+  await expect(page.getByText("Execução web de checklists publicados para a operação de campo.", { exact: true })).toBeVisible();
+
+  await page.getByPlaceholder("Buscar checklist operacional").fill("E2E Coleta obrigatoria");
+  await expect(page.getByRole("heading", { level: 2, name: "E2E Coleta obrigatoria", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Iniciar execução", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/operations/checklists/${e2eChecklistId}/run$`));
+  await expect(page.getByRole("heading", { level: 1, name: "E2E Coleta obrigatoria", exact: true })).toBeVisible();
   await expect(page.getByLabel("Progresso de preenchimento")).toBeVisible();
-  await expect(page.getByText(/Execucao orientada por schema/i)).toBeVisible();
-  await page.getByRole("button", { name: /Concluir checklist/i }).click();
-  await expect(page.getByText(/Preencha o campo obrigatorio|Envie ao menos|Registre ao menos/i).first()).toBeVisible();
+
+  await page.getByRole("button", { name: "Concluir checklist", exact: true }).click();
+  await expect(page.getByText("Preencha o campo obrigatório Tipo de veiculo.", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Checklist concluído com sucesso.", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Concluir checklist", exact: true })).toBeEnabled();
 });
 
-test("W03 Configuracoes renderiza categorias e temas planejados", async ({ page }) => {
+// B-SAN3-10-E2E-CI (F3, Emenda 2.2, nova linha 12 do §4.2) — desde o #169 a página mostra os parâmetros que o servidor
+// manda, agrupados por categoria. Localiza só por papel e texto visível. Não afirma a ausência de outras categorias.
+test("Configuracoes mostra os grupos que o servidor manda e oferece os 3 temas pelos rotulos", async ({ page }) => {
   await loginAndActivateContext(page);
 
-  await page.getByRole("link", { name: /Configuracoes|Configurações/i }).click();
+  const settingsResponse = page.waitForResponse(
+    (response) => /\/api\/v1\/tenant-settings(\?|$)/.test(response.url()) && response.request().method() === "GET",
+  );
+  await page.getByRole("link", { name: "Configurações", exact: true }).click();
   await expect(page).toHaveURL(/\/administrator\/settings$/);
-  await expect(page.getByRole("heading", { name: "Configurações" })).toBeVisible();
+  expect((await settingsResponse).status()).toBe(200);
+  await expect(page.getByRole("heading", { level: 1, name: "Configurações", exact: true })).toBeVisible();
 
-  for (const category of [
-    "Geral",
-    "Aparência",
-    "Usuários e Acesso",
-    "Módulos",
-    "Checklists",
-    "Notificações",
-    "Integrações",
-    "Segurança e Auditoria",
-  ]) {
-    await expect(page.locator(".tenant-settings-card").filter({ hasText: category })).toBeVisible();
+  const groups: ReadonlyArray<readonly [string, readonly string[]]> = [
+    ["Geral", ["Fuso horário", "Moeda", "Razão social"]],
+    ["Aparência", ["Tema visual"]],
+  ];
+  for (const [group, labels] of groups) {
+    await expect(page.getByRole("heading", { level: 2, name: group, exact: true })).toBeVisible();
+    for (const label of labels) {
+      const field = page.getByLabel(label);
+      await expect(field).toBeVisible();
+      expect(await groupOfField(page, field), `${label} fica no grupo ${group}`).toBe(group);
+    }
   }
 
-  for (const theme of ["enterprise_blue", "tech_dark", "green_operations"]) {
-    await expect(page.locator(".tenant-settings-theme-card").filter({ hasText: theme })).toBeVisible();
+  const theme = page.getByRole("combobox", { name: /Tema visual/ });
+  for (const label of [
+    "Enterprise Blue — corporativo e limpo",
+    "Tech Dark — técnico e de alto contraste",
+    "Green Operations — operacional e prático",
+  ]) {
+    await expect(theme.getByRole("option", { name: label, exact: true })).toHaveCount(1);
+  }
+  for (const technicalValue of ["enterprise_blue", "tech_dark", "green_operations"]) {
+    await expect(theme.getByRole("option", { name: technicalValue, exact: true })).toHaveCount(0);
   }
 });
 
-test("logout real revoga sessao local e volta ao login", async ({ page }) => {
-  await loginAndActivateContext(page);
+/** O título de nível 2 que vem logo antes do campo, na ordem do documento: é o grupo em que a tela o mostra. */
+async function groupOfField(page: Page, field: Locator): Promise<string> {
+  const headings = await page.getByRole("heading", { level: 2 }).elementHandles();
+  return field.evaluate((target, candidates) => {
+    let group = "";
+    for (const heading of candidates) {
+      if (heading.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING) group = heading.textContent?.trim() ?? "";
+    }
+    return group;
+  }, headings);
+}
 
+test.describe("logout com sessão própria", () => {
+  test.use({ storageState: emptyStorageState });
+
+  test("logout real revoga sessao local e volta ao login", async ({ page }) => {
+  const login = await entrarPelaTela(page, DEMO_EMAIL, DEMO_PASSWORD);
+  expect(login.status()).toBe(200);
+  await escolherOrganizacaoDemo(page);
+  const refreshToken = await page.evaluate(() => {
+    const raw = window.localStorage.getItem("erp-techsolutions.auth-session");
+    return raw ? (JSON.parse(raw) as { refreshToken?: string }).refreshToken ?? "" : "";
+  });
+  expect(refreshToken).not.toBe("");
+
+  const logoutResponse = page.waitForResponse(
+    (response) => response.url().endsWith("/api/v1/auth/logout") && response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "Sair" }).click();
+  expect((await logoutResponse).status()).toBe(200);
 
   await expect(page).toHaveURL(/\/login$/);
   const session = await page.evaluate(() => window.localStorage.getItem("erp-techsolutions.auth-session"));
   expect(session).toBeNull();
+  const refresh = await page.request.post(`${apiBaseUrl}/auth/refresh`, { data: { refreshToken } });
+  expect(refresh.status()).toBe(401);
+  });
 });
 
 async function loginAndActivateContext(page: Page): Promise<void> {
-  await loginAsTenantAdmin(page);
-  await activateFirstContext(page);
-}
-
-async function loginAsTenantAdmin(page: Page): Promise<void> {
-  await page.goto("/login");
-  await page.getByLabel("Tenant ID").fill(demoTenantId);
-  await page.getByLabel("E-mail corporativo").fill(demoEmail);
-  await page.getByRole("textbox", { name: /Senha/i }).fill(demoPassword);
-  await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page).toHaveURL(/\/select-context$/);
-}
-
-async function loginAsPlatformAdmin(page: Page): Promise<void> {
-  await page.goto("/login");
-  await page.getByLabel("Tenant ID").fill(demoTenantId);
-  await page.getByLabel("E-mail corporativo").fill(platformEmail);
-  await page.getByRole("textbox", { name: /Senha/i }).fill(platformPassword);
-  await page.getByRole("button", { name: "Entrar" }).click();
-  await expect(page).toHaveURL(/\/platform\/tenants$/);
-}
-
-async function activateFirstContext(page: Page): Promise<void> {
-  await expect(page.getByRole("heading", { name: "Definir tenant, filial e papel ativo" })).toBeVisible();
-  await page.getByRole("button", { name: "Ativar contexto" }).first().click();
-}
-
-async function enableOperationsMapFrontendContext(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const key = "erp-techsolutions.active-context";
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return;
-
-    const context = JSON.parse(raw) as { permissions?: string[]; enabledModules?: string[] };
-    context.permissions = Array.from(new Set([...(context.permissions ?? []), "field_location:read", "field_location:history"]));
-    context.enabledModules = Array.from(new Set([...(context.enabledModules ?? []), "field_operations"]));
-    window.localStorage.setItem(key, JSON.stringify(context));
-  });
-}
-
-async function enableDispatchesFrontendContext(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const key = "erp-techsolutions.active-context";
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return;
-
-    const context = JSON.parse(raw) as { permissions?: string[]; enabledModules?: string[] };
-    context.permissions = Array.from(
-      new Set([
-        ...(context.permissions ?? []),
-        "field_dispatch:read",
-        "field_dispatch:create",
-        "field_dispatch:update",
-        "field_dispatch:cancel",
-        "field_dispatch:reassign",
-      ]),
-    );
-    context.enabledModules = Array.from(new Set([...(context.enabledModules ?? []), "field_operations"]));
-    window.localStorage.setItem(key, JSON.stringify(context));
-  });
-}
-
-async function enableWorkOrdersFrontendContext(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const key = "erp-techsolutions.active-context";
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return;
-
-    const context = JSON.parse(raw) as { permissions?: string[]; enabledModules?: string[] };
-    context.permissions = Array.from(
-      new Set([
-        ...(context.permissions ?? []),
-        "work_orders:read",
-        "work_orders:create",
-        "work_orders:update",
-        "work_orders:assign",
-        "work_orders:status",
-      ]),
-    );
-    context.enabledModules = Array.from(new Set([...(context.enabledModules ?? []), "work-orders"]));
-    window.localStorage.setItem(key, JSON.stringify(context));
-  });
+  await page.goto("/dashboard");
+  await expect(page).toHaveURL(/\/dashboard$/);
 }
 
 async function resetDemoAuthState(): Promise<void> {
-  const prisma = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: databaseUrl }),
-  });
+  const prisma = createE2ePrisma();
 
   try {
     await prisma.localAuthCredential.updateMany({
       where: {
         tenant_id: demoTenantId,
-        email: demoEmail,
+        email: DEMO_EMAIL,
       },
       data: {
         failed_attempts: 0,
@@ -543,7 +550,7 @@ async function upsertChecklistComponent(
     label: string;
     required: boolean;
     order_index: number;
-    config: Record<string, unknown>;
+    config: Prisma.InputJsonValue;
   },
 ): Promise<void> {
   await prisma.checklistTemplateComponent.upsert({
