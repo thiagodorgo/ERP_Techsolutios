@@ -3,6 +3,7 @@
 // disponível e o canal ligado por env — defesa em profundidade além do handler (R-OBX-4). Nunca grava `enabled = true`.
 
 import { env } from "../../../config/env.js";
+import { InMemoryChargeIntentRepository, type ChargeIntentRepository } from "../charges/charge-intent.repository.js";
 import { profileCustomerResolver } from "../charges/charge-request.service.js";
 import { InMemoryStatementChargeRepository, type StatementChargeRepository } from "../charges/charges.repository.js";
 import { InMemoryProviderCustomerStore, persistingCustomerResolver, type ProviderCustomerStore } from "../charges/provider-customer.store.js";
@@ -22,22 +23,37 @@ import type { WebhookEventRepository } from "../webhooks/webhook-events.reposito
 import { InMemoryStatementRefRepository, type StatementRefRepository } from "../webhooks/statement-refs.repository.js";
 import { memoryWebhookEvents } from "../webhooks/webhook-runtime.js";
 import type { ChannelDeps } from "./channel.jobs.js";
+import { paymentProviderOn } from "./channel-state.js";
 import { taxProfileFromSettings, type InvoiceIssueContextResolver } from "./invoice.dispatch.js";
 import { InMemoryOutboxRepository, type OutboxRepository } from "./outbox.repository.js";
 
-/** As portas dos provedores de PAGAMENTO ligados. Canal desligado ou cofre indisponível → nenhuma. */
+/** As portas dos provedores de PAGAMENTO ligados. Canal desligado ou cofre indisponível → nenhuma. B-ASS-08c1b (P4): o
+ * predicado "ligado" é o de `paymentProviderOn` (`channel-state.ts`), o MESMO que a rota `/charge` usa. */
 export async function enabledPaymentPorts(vault: VaultRuntime): Promise<Record<string, PaymentProviderPort>> {
-  if (!env.BILLING_PROVIDERS_ENABLED) return {};
-  if (vault.vault.status() !== "available") return {};
-  const ports: Record<string, PaymentProviderPort> = {};
-  for (const config of await vault.configs.list()) {
-    const entry = getProviderCatalogEntry(config.provider);
-    if (!entry || entry.kind !== "payment" || !config.enabled) continue;
-    const client = billingHttpClientFromEnv(entry.id, config.environment);
-    // Portão 1 + 1: só o Asaas tem adaptador ligado neste pacote (Mercado Pago é do B-ASS-15).
-    if (entry.id === "asaas") ports.asaas = createAsaasAdapter(client, vault.vault);
+  const on = await paymentProviderOn(vault);
+  if (!on) return {};
+  // Portão 1 + 1: só o Asaas tem adaptador ligado neste pacote (Mercado Pago é do B-ASS-15).
+  return { asaas: createAsaasAdapter(billingHttpClientFromEnv(on.provider, on.environment), vault.vault) };
+}
+
+/** B-ASS-08c1b (P4): o repositório do PEDIDO de cobrança, nos dois modos — a rota `/charge` chama só `requestChargeCreate`
+ * sobre ele. No modo memória, compõe os MESMOS dublês dos jobs (o demonstrativo, as cobranças, a fila e o índice). */
+export async function createChargeIntentRepository(): Promise<ChargeIntentRepository> {
+  if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
+    const statements = (await createDefaultStatementRuntime()).repository;
+    const repos = await repositories(statements);
+    if (
+      !(statements instanceof InMemoryStatementRepository) ||
+      !(repos.charges instanceof InMemoryStatementChargeRepository) ||
+      !(repos.outbox instanceof InMemoryOutboxRepository) ||
+      !(repos.refs instanceof InMemoryStatementRefRepository)
+    ) {
+      throw new Error("charge_intent_memory_composition_mismatch");
+    }
+    return new InMemoryChargeIntentRepository({ statements, charges: repos.charges, outbox: repos.outbox, refs: repos.refs });
   }
-  return ports;
+  const [{ prisma }, { PrismaChargeIntentRepository }] = await Promise.all([import("../../../database/prisma.js"), import("../charges/charge-intent.prisma.js")]);
+  return new PrismaChargeIntentRepository(prisma);
 }
 
 /** As portas dos provedores de NOTA ligados. Canal desligado ou cofre indisponível → nenhuma. */
@@ -93,7 +109,7 @@ async function repositories(statements: StatementRepository): Promise<Repositori
             const statement = await statements.findStatement(tenantId, statementId);
             if (!statement) return undefined;
             const live = await charges.findLive(tenantId, statementId);
-            return { status: statement.status, reopenedAt: statement.reopenedAt, totalCents: statement.totalCents, hasLiveCharge: live !== undefined };
+            return { status: statement.status, reopenedAt: statement.reopenedAt, totalCents: statement.totalCents, paidCents: statement.paidCents, hasLiveCharge: live !== undefined };
           },
         }),
         refs: new InMemoryStatementRefRepository(),

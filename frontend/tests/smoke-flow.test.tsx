@@ -744,73 +744,52 @@ test("operations map reduz polling quando realtime esta conectado e reativa fall
 });
 
 test("cloud billing adapter consome endpoints Platform e normaliza DTOs", async () => {
+  // B-ASS-10b (T5): a tela lê a visão de custo × assinatura do B-ASS-09 (dinheiro como string marcada, nunca número) e
+  // grava com o período do mês da tela (o corpo fixo de custo zero e o `defaultPeriodBody` saíram).
   process.env.VITE_USE_MOCKS = "false";
   process.env.VITE_API_BASE_URL = "/api/v1";
   browser.clear();
   const calls = installFetchSequence([
-    { payload: { data: { periodStart: "2026-06-01", periodEnd: "2026-06-30", metrics: [{ metricKey: "api_requests_count", quantity: 4, unit: "count" }], generatedAt: "2026-06-08T00:00:00.000Z" } } },
     {
       payload: {
-        data: [
-          {
-            id: "import-1",
-            provider: "aws",
-            status: "completed",
-            periodStart: "2026-06-01T00:00:00.000Z",
-            importedAt: "2026-06-08T00:00:00.000Z",
-            sourceUri: "aws-cur.csv",
-            rowCount: 2,
-          },
-        ],
+        data: {
+          period: "2026-06",
+          groupBy: "tenant",
+          currency: "BRL",
+          generatedAt: "2026-07-08T00:00:00.000Z",
+          cost: { status: "ok", coverage: "imported", runId: "allocation-run-1", importId: "import-1", currencyOriginal: "USD", fxRate: "5.400000", fxRateVersion: 1, warnings: [], sources: { runs: 1, importIds: ["import-1"], usedImportId: "import-1" } },
+          lines: [{ tenantId: "tenant-a", tenantName: "Org A", groupId: null, groupName: null, subscriptionAmount: "100.00", allocatedCost: "12.00", allocatedCostOriginal: "2.222222", margin: "88.00", marginPct: "88.00", alert: "none", estimate: false, subscriptionSource: "statement" }],
+          totals: { subscriptionAmount: "100.00", allocatedCost: "12.00", margin: "88.00", marginPct: "88.00" },
+        },
       },
     },
-    { payload: { data: { provider: "aws", periodStart: "2026-06-01", periodEnd: "2026-06-30", totalUnblendedCost: 12.75, totalUnblendedCostExact: "12.750000", lineItemCount: 2, currencies: ["BRL"], services: [{ serviceCode: "AmazonEC2", unblendedCost: 12.75, currency: "BRL" }], generatedAt: "2026-06-08T00:00:00.000Z" } } },
-    {
-      payload: {
-        data: [
-          {
-            id: "allocation-run-1",
-            status: "completed",
-            periodStart: "2026-06-01T00:00:00.000Z",
-            totalAllocatedCost: 12,
-            totalUnallocatedCost: 0,
-            startedAt: "2026-06-08T00:00:00.000Z",
-          },
-        ],
-      },
-    },
-    { payload: { data: { periodStart: "2026-06-01", periodEnd: "2026-06-30", currency: "BRL", totalImportedCost: 12, totalAllocatedCost: 12, totalUnallocatedCost: 0, tenants: [{ tenantId: "tenant-a", tenantName: "Org A", allocatedCost: 12, allocationRatio: 1 }], services: [], generatedAt: "2026-06-08T00:00:00.000Z" } } },
-    { payload: { data: { id: "allocation-run-2", status: "completed", periodStart: "2026-06-01T00:00:00.000Z", totalAllocatedCost: 12 } } },
+    { payload: { data: [{ id: "import-1", provider: "aws", status: "completed", periodStart: "2026-06-01T00:00:00.000Z", importedAt: "2026-07-08T00:00:00.000Z", sourceUri: "aws-cur.csv", rowCount: 2 }] } },
+    { payload: { data: [{ month: "2026-06", currencyFrom: "USD", currencyTo: "BRL", rate: "5.400000", version: 1, createdAt: "2026-07-08T00:00:00.000Z", history: [] }] } },
+    { payload: { data: [{ id: "allocation-run-1", status: "completed", periodStart: "2026-06-01T00:00:00.000Z", totalAllocatedCost: 12, startedAt: "2026-07-08T00:00:00.000Z", metadata: { importResolution: "latest_completed" } }] } },
+    { payload: { data: { id: "allocation-run-2", status: "processing", periodStart: "2026-06-01T00:00:00.000Z", totalAllocatedCost: 12 } } },
   ]);
-  const {
-    getCloudAllocationSummaryFromApi,
-    getCloudCostSummaryFromApi,
-    getCloudUsageSummaryFromApi,
-    listCloudAllocationRunsFromApi,
-    listCloudCostImportsFromApi,
-    runCloudAllocationFromApi,
-  } = await import("../src/modules/platform/cloud-billing/cloud-billing.adapter");
+  const { getTenantOverviewFromApi, listCloudAllocationRunsFromApi, listCloudCostImportsFromApi, listFxRatesFromApi, runCloudAllocationFromApi } = await import("../src/modules/platform/cloud-billing/cloud-billing.adapter");
 
   const period = { start: "2026-06-01", end: "2026-06-30" };
-  const usage = await getCloudUsageSummaryFromApi(period);
+  const tenant = await getTenantOverviewFromApi("2026-06");
   const imports = await listCloudCostImportsFromApi(period);
-  const costs = await getCloudCostSummaryFromApi(period);
+  const fx = await listFxRatesFromApi("2026-01", "2026-06");
   const allocationRuns = await listCloudAllocationRunsFromApi();
-  const allocation = await getCloudAllocationSummaryFromApi(period);
-  const allocationRun = await runCloudAllocationFromApi();
+  const allocationRun = await runCloudAllocationFromApi(period);
 
-  assert.equal(calls[0].url, "/api/v1/platform/cloud-usage/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
+  assert.equal(calls[0].url, "/api/v1/platform/billing/overview?period=2026-06&groupBy=tenant");
   assert.equal(calls[1].url, "/api/v1/platform/cloud-costs/imports?periodStart=2026-06-01&periodEnd=2026-06-30");
-  assert.equal(calls[2].url, "/api/v1/platform/cloud-costs/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
+  assert.equal(calls[2].url, "/api/v1/platform/billing/fx-rates?from=2026-01&to=2026-06");
   assert.equal(calls[3].url, "/api/v1/platform/cloud-cost-allocations/runs");
-  assert.equal(calls[4].url, "/api/v1/platform/cloud-cost-allocations/summary?periodStart=2026-06-01&periodEnd=2026-06-30");
-  assert.equal(calls[5].url, "/api/v1/platform/cloud-cost-allocations/runs");
-  assert.equal(usage.metrics[0].quantity, 4);
+  assert.equal(calls[4].url, "/api/v1/platform/cloud-cost-allocations/runs");
+  assert.equal(calls[4].init?.method, "POST");
+  assert.deepEqual(JSON.parse(String(calls[4].init?.body)), { periodStart: "2026-06-01", periodEnd: "2026-06-30" });
+  assert.equal(tenant.lines[0].allocatedCost, "12.00");
+  assert.equal(tenant.totals.margin, "88.00");
   assert.equal(imports[0].rowCount, 2);
-  assert.equal(costs.totalUnblendedCost, 12.75);
-  assert.equal(allocationRuns[0].allocatedCost, 12);
-  assert.equal(allocation.tenants[0].allocatedCost, 12);
-  assert.equal(allocationRun.allocatedCost, 12);
+  assert.equal(fx[0].rate, "5.400000");
+  assert.equal(allocationRuns[0].status, "completed");
+  assert.equal(allocationRun.status, "processing");
 });
 
 test("notifications service cobre endpoints, mocks e actionUrl interno", async () => {

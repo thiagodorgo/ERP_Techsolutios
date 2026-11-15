@@ -4,19 +4,11 @@
 // cliente nunca ver um número que o demonstrativo depois desminta.
 
 import { todayBusinessDate } from "../plans/plan-versioning.js";
-import { daysInPeriod } from "./statement.engine.js";
 import type { StatementRuntime } from "./statement.factory.js";
-import { monthMeasurements } from "./statement.inputs.js";
 import { upToDateStatus } from "./statement.service.js";
 
 function milliToGb(milli: number): number {
   return Number((milli / 1000).toFixed(3));
-}
-
-function shiftPeriod(period: string, deltaMonths: number): string {
-  const [year, month] = period.split("-").map(Number) as [number, number];
-  const index = year * 12 + (month - 1) + deltaMonths;
-  return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
 }
 
 export type TenantSubscriptionView = {
@@ -105,39 +97,4 @@ export async function buildTenantSubscriptionView(
         }
       : {}),
   };
-}
-
-export type UsageHistoryRow = {
-  readonly period: string;
-  readonly usersPeak: number;
-  readonly storagePeakGb: number;
-  readonly trackedVehicles: number;
-};
-
-/** Os `months` meses até o corrente (inclusive), do mais antigo ao mais novo — só quantidades. */
-export async function buildUsageHistory(
-  runtime: StatementRuntime,
-  tenantId: string,
-  months: number,
-  now: Date,
-): Promise<UsageHistoryRow[]> {
-  const today = todayBusinessDate(now);
-  const current = today.slice(0, 7);
-  const first = shiftPeriod(current, -(months - 1));
-  const [usage, bindings] = await Promise.all([
-    runtime.usage.listUsageDays(tenantId, `${first}-01`, today),
-    runtime.bindings.listVehicleBindings(tenantId, `${first}-01`, `${current}-${String(daysInPeriod(current)).padStart(2, "0")}`),
-  ]);
-  const rows: UsageHistoryRow[] = [];
-  for (let offset = months - 1; offset >= 0; offset -= 1) {
-    const period = shiftPeriod(current, -offset);
-    const measured = monthMeasurements(period, usage, bindings);
-    rows.push({
-      period,
-      usersPeak: measured.usersPeak,
-      storagePeakGb: milliToGb(measured.storagePeakMilliGb),
-      trackedVehicles: measured.trackedVehicles,
-    });
-  }
-  return rows;
 }

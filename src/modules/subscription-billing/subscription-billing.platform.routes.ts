@@ -26,6 +26,9 @@ import { toUsageDto } from "./metering/metering.service.js";
 import { createDefaultTenantUsageDailyQueryService } from "./metering/usage-query.service.js";
 import { createStatementsPlatformRouter } from "./statements/statements.platform.routes.js";
 import { createVaultPlatformRouter } from "./vault/vault.platform.routes.js";
+import { createOverviewPlatformRouter } from "./overview/overview.routes.js";
+import { createFxRatesPlatformRouter } from "./fx-rates/fx-rates.routes.js";
+import { createEconomicGroupsPlatformRouter } from "./economic-groups/economic-groups.routes.js";
 
 export function createSubscriptionBillingPlatformRouter(): Router {
   const router = Router();
@@ -177,6 +180,10 @@ export function createSubscriptionBillingPlatformRouter(): Router {
   router.use(createStatementsPlatformRouter());
   // B-ASS-05 — cofre de credenciais e configuração dos provedores (sem rede).
   router.use(createVaultPlatformRouter());
+  // B-ASS-09 · F6 — visão de custo × assinatura, câmbio do mês e grupo econômico (as 10 rotas do plano v2 §4.1).
+  router.use(createOverviewPlatformRouter());
+  router.use(createFxRatesPlatformRouter());
+  router.use(createEconomicGroupsPlatformRouter());
 
   return router;
 }

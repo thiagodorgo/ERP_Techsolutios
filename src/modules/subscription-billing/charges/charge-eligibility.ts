@@ -16,7 +16,9 @@ export function chargeProfileGate(profile: BillingProfileInput | null): ChargePr
   return missing.length === 0 ? { ok: true } : { ok: false, reason: "billing_profile_missing", missing };
 }
 
-export type ChargeCreateEligibility = { readonly ok: true } | { readonly ok: false; readonly reason: "statement_not_closed" | "charge_already_exists" };
+export type ChargeCreateEligibility =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly reason: "statement_not_closed" | "charge_already_exists" | "statement_partially_paid" };
 
 /**
  * R-CHG-2 (D1, conserto J-522): um `/charge` por demonstrativo. PURA. `/charge` só em `closed` (`paid`/`cancelled`/
@@ -24,9 +26,12 @@ export type ChargeCreateEligibility = { readonly ok: true } | { readonly ok: fal
  * `charge_create` em `PENDING`/`PROCESSING`/`SENT`/`NEEDS_REVIEW` → `charge_already_exists` (cobrar de novo é só via
  * `charge/cancel`, que deixa a linha `cancelled`/`SKIPPED`). Aplicada por `requestChargeCreate` DENTRO da transação com
  * o demonstrativo travado, ANTES de enfileirar.
+ * B-ASS-08c1b (P4, Q4 = (a)): demonstrativo `closed` com pagamento parcial → `statement_partially_paid`. A régua de adoção
+ * só aceita cobrança do valor cheio, e cobrar o cheio de quem já pagou parte geraria crédito de propósito (cobrar só o saldo
+ * é a `P-ASS08C-COBRANCA-DO-SALDO`). Leitor sem `paidCents` conta como "sem pagamento".
  */
 export function chargeCreateEligibility(
-  statement: Pick<SubscriptionStatement, "status">,
+  statement: Pick<SubscriptionStatement, "status"> & { readonly paidCents?: number },
   liveCharge: SubscriptionStatementCharge | undefined,
   outboxLines: readonly BillingOutboxRow[],
 ): ChargeCreateEligibility {
@@ -38,5 +43,6 @@ export function chargeCreateEligibility(
       (line.status === "PENDING" || line.status === "PROCESSING" || line.status === "SENT" || line.status === "NEEDS_REVIEW"),
   );
   if (liveLine) return { ok: false, reason: "charge_already_exists" };
+  if ((statement.paidCents ?? 0) > 0) return { ok: false, reason: "statement_partially_paid" }; // [CHARGE-PARTIAL]
   return { ok: true };
 }
