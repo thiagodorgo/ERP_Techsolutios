@@ -10,6 +10,18 @@ abstract class SyncActionStore {
   Future<void> save(List<SyncAction> actions);
 }
 
+/// B-SAN3-15b (P11) — o store que grava a fila numa transação do banco junto de outra gravação: `saveWithin` roda
+/// `inTransaction` e depois a gravação da fila, tudo numa transação só (falha em qualquer ponto não deixa nada).
+/// [sharesDatabaseWith] diz se a outra gravação usa o MESMO banco (sem isso, não há transação comum).
+abstract class TransactionalSyncActionStore implements SyncActionStore {
+  bool sharesDatabaseWith(Object database);
+
+  Future<void> saveWithin(
+    List<SyncAction> actions,
+    Future<void> Function() inTransaction,
+  );
+}
+
 class InMemorySyncActionStore implements SyncActionStore {
   InMemorySyncActionStore([List<SyncAction> seed = const <SyncAction>[]])
     : _actions = List<SyncAction>.from(seed);

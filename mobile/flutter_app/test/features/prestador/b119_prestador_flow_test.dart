@@ -211,6 +211,8 @@ void main() {
       );
       expect(btnBefore.onPressed, isNull);
 
+      await t.tap(find.byKey(const Key('stock-item-ELE-0102')));
+      await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('stock-add-ELE-0102')));
       await t.pumpAndSettle();
 
@@ -228,6 +230,8 @@ void main() {
       );
       await t.pumpAndSettle();
 
+      await t.tap(find.byKey(const Key('stock-item-ELE-0102')));
+      await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('stock-add-ELE-0102')));
       await t.pumpAndSettle();
       await t.tap(find.byKey(const Key('stock-inc-ELE-0102')));

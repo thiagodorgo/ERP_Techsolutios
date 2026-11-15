@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/bootstrap/bootstrap_repository.dart';
-import '../../../core/permissions/permission_resolver.dart';
+import '../../../core/permissions/mobile_gates.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
 import '../data/inventory_repository.dart';
@@ -18,24 +18,20 @@ class InventoryListScreen extends ConsumerWidget {
         .watch(bootstrapSessionProvider)
         .maybeWhen(data: (v) => v, orElse: () => null);
 
-    if (session == null ||
-        !const PermissionResolver().has(
-          session.permissions,
-          'inventory:read',
-        )) {
+    // B-MOBILE-GATE-CHAVE — G2 é a régua da leitura de estoque no servidor; G3, a das ações de estoque (Entrada/Saída).
+    if (!MobileGates.estoque.permite(session)) {
       return const ErpScaffold(
         title: 'Estoque',
         body: PermissionBlockedState(
           title: 'Acesso não permitido',
-          message: 'Esta área ainda não está disponível no aplicativo.',
+          message:
+              'Seu perfil não tem permissão para ver o estoque. '
+              'Fale com o administrador da sua organização.',
         ),
       );
     }
 
-    final canWrite = const PermissionResolver().has(
-      session.permissions,
-      'inventory:write',
-    );
+    final canWrite = MobileGates.movimentarEstoque.permite(session);
     final repo = ref.watch(inventoryRepositoryProvider);
 
     return DefaultTabController(

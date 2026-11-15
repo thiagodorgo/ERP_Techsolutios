@@ -22,9 +22,11 @@ export class WorkOrderController {
     const result = await service.list(actor, request.query as Record<string, unknown>);
     // B-SAN3-26 (C26-03) — o modo do check-in de cada OS, calculado pelo servidor (o app não decide isenção).
     const checkin = await service.describeCheckinForList(actor, result.items);
+    // B-SAN3-15b (P7) — guincho ou prestador, decidido pelo servidor (o app não deduz o tipo).
+    const serviceKind = await service.describeServiceKindForList(actor, result.items);
 
     return {
-      body: toWorkOrderListDto(result, checkin),
+      body: toWorkOrderListDto(result, checkin, serviceKind),
     };
   }
 
@@ -54,9 +56,11 @@ export class WorkOrderController {
   async get(request: Request) {
     const [service, actor] = await this.resolveServiceWithActor(request);
     const { workOrder, links, checklists } = await service.getWithLinks(actor, readRouteParam(request.params.workOrderId));
+    // B-SAN3-15b (P7) — o detalhe leva o tipo pela mesma regra da lista; só este handler passa a chave.
+    const serviceKind = await service.describeServiceKind(actor, workOrder);
 
     return {
-      data: toWorkOrderDto(workOrder, links, checklists),
+      data: toWorkOrderDto(workOrder, links, checklists, serviceKind),
     };
   }
 

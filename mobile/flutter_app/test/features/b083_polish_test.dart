@@ -620,7 +620,10 @@ void main() {
     testWidgets('26. acoes rapidas visiveis com permissoes completas', (
       tester,
     ) async {
-      await tester.pumpWidget(_wrapExp(HomeScreen(session: _sessionFull)));
+      // B-MOBILE-GATE-CHAVE (resposta 2.2): o atalho de Diagnóstico só existe no modo de desenvolvimento.
+      await tester.pumpWidget(
+        _wrapExp(HomeScreen(session: _sessionFull, modoDev: true)),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Sincronizar'), findsOneWidget);

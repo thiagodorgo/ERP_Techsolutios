@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import type { PrismaClient } from "@prisma/client";
+
+import { PrismaEconomicGroupsRepository, sqlStateOf } from "../src/modules/subscription-billing/economic-groups/economic-groups.prisma.js";
 import {
   InMemoryEconomicGroupsRepository,
+  MembershipConflictError,
   MembershipRangeError,
   type EconomicGroupsRepository,
   type MembershipAuditEvent,
+  type MembershipChanges,
 } from "../src/modules/subscription-billing/economic-groups/economic-groups.repository.js";
 import {
   EconomicGroupsService,
@@ -27,6 +32,7 @@ import {
 //   M-GRP-11 (F2) `return row.validTo === null || row.validTo > from;` → `return row.validTo === null;`     → T-GRP-11: 409 membership_conflict
 //   M-GRP-12 (F2) `if (validFrom <= row.validFrom) throw retroactive();` → `<`                              → T-GRP-13: 422 membership_range_invalid
 //   M-GRP-13 (serviço) tirar `if (error instanceof MembershipRangeError) throw rangeInvalid();`             → T-GRP-14: statusCode indefinido
+//   M-C2-40P01 (Prisma) `new Set(["23P01", "40P01"])` → `new Set(["23P01"])` (J-566, C2-1)                  → T-GRP-15: o erro cru do driver sobe
 // -----------------------------------------------------------------------------------------------
 
 const A = "00000000-0000-4000-8000-00000000000a";
@@ -227,6 +233,123 @@ test("T-GRP-14 · o MembershipRangeError do repositório vira 422 membership_ran
     statusCode: 422,
     reason: "membership_range_invalid",
   });
+});
+
+// ---- J-566 · C2-1: o impasse (40P01) na checagem da EXCLUDE `economic_group_members_no_overlap`, no caminho de escrita.
+// Dois INSERT conflitantes da mesma organização gravam a tupla no índice GiST e cada um espera a transação do outro; o
+// detector aborta um com 40P01 (medido na C2 da J-566 e na rodada 43589206521 da CI). O perdedor tem de receber o mesmo
+// 409 `membership_conflict` da exclusão (23P01), nunca o erro cru do driver.
+
+/** Texto do driver ou do banco que não pode subir ao cliente. */
+const DRIVER_TEXT = /deadlock|40P01|DriverAdapterError|ShareLock|economic_group_members|exclusion/i;
+
+/**
+ * As 3 formas do 40P01 que chegam ao repositório: a do `@prisma/adapter-pg` numa query do ORM dentro do `$transaction` (a
+ * da CI e da C2), a do erro do Prisma de SQL cru (`P2010` com `meta.driverAdapterError`) e a do `pg` puro (`code` de topo).
+ */
+function deadlockErrors(): Array<[string, Error]> {
+  return [
+    [
+      "adapter-pg: DriverAdapterError com cause.originalCode",
+      Object.assign(new Error("deadlock detected"), {
+        name: "DriverAdapterError",
+        cause: { originalCode: "40P01", originalMessage: "deadlock detected", kind: "postgres" },
+      }),
+    ],
+    [
+      "Prisma P2010: meta.driverAdapterError.cause.originalCode",
+      Object.assign(new Error("Raw query failed. Code: `40P01`. Message: `deadlock detected`"), {
+        code: "P2010",
+        meta: { driverAdapterError: { cause: { originalCode: "40P01", originalMessage: "deadlock detected" } } },
+      }),
+    ],
+    ["pg: code de topo", Object.assign(new Error("deadlock detected"), { code: "40P01" })],
+  ];
+}
+
+/**
+ * Um `PrismaClient` de mentira para o `PrismaEconomicGroupsRepository`: a transação roda o trabalho num `tx` cujo INSERT do
+ * vínculo lança `insertError` (a volta da organização); com `transactionError`, é a própria transação que falha depois do
+ * trabalho (a volta de fora do `mapMembershipError`).
+ */
+function failingPrismaClient(insertError: Error | null, transactionError: Error | null = null): PrismaClient {
+  const tx = {
+    $executeRaw: async () => 1,
+    economicGroupMember: {
+      create: async (args: { readonly data: Record<string, unknown> }) => {
+        if (insertError) throw insertError;
+        const now = new Date("2026-10-01T15:00:00.000Z");
+        return { id: "00000000-0000-4000-8000-0000000000e1", ...args.data, valid_to: null, closed_by: null, created_at: now, updated_at: now };
+      },
+    },
+  };
+  return {
+    $transaction: async (work: (client: unknown) => Promise<unknown>) => {
+      const out = await work(tx);
+      if (transactionError) throw transactionError;
+      return out;
+    },
+  } as unknown as PrismaClient;
+}
+
+const OPEN_A: MembershipChanges = {
+  closes: [],
+  opens: [{ tenantId: A, groupId: "00000000-0000-4000-8000-000000000001", validFrom: "2026-11-01", createdBy: null }],
+};
+
+test("T-GRP-15 · 40P01 no caminho de escrita (impasse na checagem da EXCLUDE) → MembershipConflictError → 409 membership_conflict, sem texto do driver (J-566, C2-1)", async () => {
+  for (const [label, error] of deadlockErrors()) {
+    assert.equal(sqlStateOf(error), "40P01", `${label}: o SQLSTATE é lido`);
+
+    // (a) No INSERT, dentro da volta da organização: o erro de domínio leva a organização.
+    await assert.rejects(new PrismaEconomicGroupsRepository(failingPrismaClient(error)).applyMembershipChanges(OPEN_A), (caught: unknown) => {
+      assert.ok(caught instanceof MembershipConflictError, `${label}, no INSERT: veio ${String(caught)}`);
+      assert.equal(caught.tenantId, A, label);
+      return true;
+    });
+    // (b) Na transação, fora da volta.
+    await assert.rejects(new PrismaEconomicGroupsRepository(failingPrismaClient(null, error)).applyMembershipChanges(OPEN_A), (caught: unknown) => {
+      assert.ok(caught instanceof MembershipConflictError, `${label}, na transação: veio ${String(caught)}`);
+      assert.equal(caught.tenantId, null, label);
+      return true;
+    });
+
+    // (c) Pelo serviço: o perdedor recebe 409 membership_conflict, e nenhum texto do driver sobe no erro.
+    const inner = new InMemoryEconomicGroupsRepository();
+    const prisma = new PrismaEconomicGroupsRepository(failingPrismaClient(error));
+    const racing: EconomicGroupsRepository = {
+      createGroup: (input) => inner.createGroup(input),
+      getGroup: (id) => inner.getGroup(id),
+      listGroups: () => inner.listGroups(),
+      updateGroup: (id, patch) => inner.updateGroup(id, patch),
+      softDeleteGroup: (id, actor, at) => inner.softDeleteGroup(id, actor, at),
+      listMembershipsOfTenants: (ids) => inner.listMembershipsOfTenants(ids),
+      applyMembershipChanges: (changes) => prisma.applyMembershipChanges(changes),
+    };
+    const service = new EconomicGroupsService(racing, new TestDirectory(), spNoon("2026-10-01"));
+    const g1 = await service.createGroup({ name: "Grupo 1", actorId: null });
+    const caught = await expectError(label, () => service.putMembers(g1.id, { tenantIds: [A], validFrom: "2026-11-01", actorId: null }), {
+      statusCode: 409,
+      reason: "membership_conflict",
+    });
+    assert.equal(caught.code, "CONFLICT", label);
+    assert.doesNotMatch(`${caught.code} ${caught.reason} ${caught.message}`, DRIVER_TEXT, `${label}: nada do driver no erro`);
+    assert.deepEqual(await inner.listMembershipsOfTenants([A]), [], `${label}: a troca perdida não gravou vínculo`);
+  }
+
+  // A tradução é só da corrida: outro SQLSTATE (aqui, 57014, query cancelada) não vira 409 de conflito.
+  const cancelled = Object.assign(new Error("canceling statement due to statement timeout"), {
+    name: "DriverAdapterError",
+    cause: { originalCode: "57014", kind: "postgres" },
+  });
+  await assert.rejects(new PrismaEconomicGroupsRepository(failingPrismaClient(cancelled)).applyMembershipChanges(OPEN_A), (caught: unknown) => {
+    assert.equal(caught instanceof MembershipConflictError, false, "57014 não é corrida de vínculo");
+    return true;
+  });
+  // O código do Prisma (P1xxx a P6xxx) não passa por SQLSTATE; o P2002 continua 23505.
+  assert.equal(sqlStateOf(Object.assign(new Error("x"), { code: "P2010" })), null);
+  assert.equal(sqlStateOf(Object.assign(new Error("x"), { code: "P2034" })), null);
+  assert.equal(sqlStateOf(Object.assign(new Error("x"), { code: "P2002" })), "23505");
 });
 
 test("Os outros códigos do R9 e do R6: 404 do grupo e da organização, plataforma, limite de membros, data inválida", async () => {

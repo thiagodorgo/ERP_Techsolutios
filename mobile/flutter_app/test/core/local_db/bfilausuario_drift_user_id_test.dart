@@ -78,7 +78,7 @@ void main() {
       addTearDown(db.close);
 
       // B-SAN3-26 (só fixture): o schema atual do app é 16.
-      expect(await _userVersion(db), 17);
+      expect(await _userVersion(db), 18);
       expect(await _columns(db, 'sync_actions'), contains('user_id'));
 
       final rows = await db
@@ -106,7 +106,7 @@ void main() {
 
       expect(await _columns(db, 'sync_actions'), contains('user_id'));
       // B-SAN3-26 (só fixture): o schema atual do app é 16.
-      expect(await _userVersion(db), 17);
+      expect(await _userVersion(db), 18);
 
       final store = DriftSyncActionStore(db);
       final createdAt = DateTime.utc(2026, 11, 8, 10, 0);

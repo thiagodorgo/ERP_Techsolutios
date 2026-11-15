@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_error.dart';
 import '../../../shared/ui/erp_components.dart';
+import '../../../shared/theme/erp_mobile_theme.dart';
 import '../../../shared/ui/erp_scaffold.dart';
+import '../../../shared/ui/mobile_kit.dart';
 import '../data/prestador_repository.dart';
 import '../domain/prestador_models.dart';
 
@@ -34,9 +36,17 @@ class TechnicianStockScreen extends ConsumerStatefulWidget {
       _TechnicianStockScreenState();
 }
 
+// B-SAN3-15b (opção A aprovada, `prestador-atendimento-3opcoes.reference.html`) — os três filtros da lista.
+const _kFiltroTodas = 'todas';
+const _kFiltroSelecionadas = 'sel';
+const _kFiltroUltimaUnidade = 'ultima';
+
 class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
   final Map<String, int> _selection = {};
   String _query = '';
+  String _filter = _kFiltroTodas;
+  // Um detalhe aberto por vez (a peça não guarda estado; é a tela).
+  String? _openSku;
   bool _saving = false;
   Future<TechnicianStockLoad>? _future;
   PrestadorRepository? _repo;
@@ -75,13 +85,32 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
         context.pop(true);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$_selCount item(ns) adicionado(s) ao serviço.'),
+            content: Text(
+              _selCount == 1
+                  ? '1 item adicionado ao serviço.'
+                  : '$_selCount itens adicionados ao serviço.',
+            ),
           ),
         );
       }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  // Tocar num chip aplica o filtro; tocar no que já está aplicado (menos "Todas") volta para "Todas". Toda troca
+  // fecha o detalhe aberto (maquete, `:1133`).
+  void _selectFilter(String filter) {
+    setState(() {
+      _filter = _filter == filter && filter != _kFiltroTodas
+          ? _kFiltroTodas
+          : filter;
+      _openSku = null;
+    });
+  }
+
+  void _toggle(String sku) {
+    setState(() => _openSku = _openSku == sku ? null : sku);
   }
 
   void _retry(PrestadorRepository repo) {
@@ -150,9 +179,8 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
       return _buildList(
         repo,
         load.items,
-        custodyLabel: load.custody!.kind == 'base'
-            ? 'Peças da base da organização'
-            : 'Peças com ${load.custody!.label}',
+        custody: load.custody,
+        savedAt: null,
         banner: null,
       );
     }
@@ -166,7 +194,8 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
       return _buildList(
         repo,
         load.cached!.items,
-        custodyLabel: null,
+        custody: null,
+        savedAt: cachedAt,
         banner: banner,
         action: OutlinedButton(
           key: const Key('stock-retry'),
@@ -202,23 +231,58 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
     );
   }
 
+  Widget _filterChip(String filter, String label, int count) => FilterChip(
+    key: Key('stock-filter-$filter'),
+    // Rótulo e contagem num texto só ("Todas 4"), a contagem em negrito, como na maquete.
+    label: Text.rich(
+      TextSpan(
+        text: '$label ',
+        children: [
+          TextSpan(
+            text: '$count',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    ),
+    selected: _filter == filter,
+    onSelected: (_) => _selectFilter(filter),
+  );
+
   Widget _buildList(
     PrestadorRepository repo,
     List<TechnicianStockItem> all, {
-    required String? custodyLabel,
+    required TechnicianStockCustody? custody,
+    required DateTime? savedAt,
     required String? banner,
     Widget? action,
   }) {
+    final custodyLabel = custody == null
+        ? null
+        : custody.kind == 'base'
+        ? 'Peças da base da organização'
+        : 'Peças com ${custody.label}';
+    final selectedCount = all
+        .where((it) => (_selection[it.sku] ?? 0) > 0)
+        .length;
+    final lastUnitCount = all.where(isLastUnit).length;
+
     final q = _query.trim().toLowerCase();
-    final filtered = q.isEmpty
-        ? all
-        : all
-              .where(
-                (it) =>
-                    it.name.toLowerCase().contains(q) ||
-                    it.sku.toLowerCase().contains(q),
-              )
-              .toList();
+    var visible = all;
+    if (_filter == _kFiltroSelecionadas) {
+      visible = visible.where((it) => (_selection[it.sku] ?? 0) > 0).toList();
+    } else if (_filter == _kFiltroUltimaUnidade) {
+      visible = visible.where(isLastUnit).toList();
+    }
+    if (q.isNotEmpty) {
+      visible = visible
+          .where(
+            (it) =>
+                it.name.toLowerCase().contains(q) ||
+                it.sku.toLowerCase().contains(q),
+          )
+          .toList();
+    }
 
     return ErpScaffold(
       title: 'Estoque do técnico',
@@ -254,7 +318,7 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
               key: const Key('stock-search'),
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
-                hintText: 'Buscar peça ou SKU...',
+                hintText: 'Buscar peça ou código',
                 prefixIcon: const Icon(Icons.search_outlined),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -263,34 +327,57 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
               ),
             ),
           ),
+          // Os três filtros (decisão 1.B), numa fila que rola na horizontal, com 16 nos lados.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+            child: Row(
+              children: [
+                _filterChip(_kFiltroTodas, 'Todas', all.length),
+                const SizedBox(width: 8),
+                _filterChip(
+                  _kFiltroSelecionadas,
+                  'Selecionadas',
+                  selectedCount,
+                ),
+                const SizedBox(width: 8),
+                _filterChip(
+                  _kFiltroUltimaUnidade,
+                  'Última unidade',
+                  lastUnitCount,
+                ),
+              ],
+            ),
+          ),
           Expanded(
-            child: filtered.isEmpty
-                ? const EmptyState(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'Nenhuma peça encontrada',
-                    message: 'Ajuste a busca para localizar itens.',
-                  )
-                : ListView.builder(
+            child: visible.isEmpty
+                ? (_filter == _kFiltroSelecionadas && q.isEmpty
+                      ? const EmptyState(
+                          icon: Icons.inventory_2_outlined,
+                          title: 'Nenhuma peça selecionada',
+                          message:
+                              'Toque numa peça para escolher a quantidade.',
+                        )
+                      : const EmptyState(
+                          icon: Icons.inventory_2_outlined,
+                          title: 'Nenhuma peça encontrada',
+                          message: 'Ajuste a busca para localizar itens.',
+                        ))
+                : ListView(
                     padding: const EdgeInsets.all(12),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, i) {
-                      final it = filtered[i];
-                      return _StockRow(
-                        item: it,
-                        qty: _selection[it.sku] ?? 0,
-                        onAdd: () => _setQty(it.sku, 1, it.available.floor()),
-                        onInc: () => _setQty(
-                          it.sku,
-                          (_selection[it.sku] ?? 0) + 1,
-                          it.available.floor(),
+                    children: [
+                      Card(
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                          children: [
+                            for (var i = 0; i < visible.length; i++) ...[
+                              if (i > 0) const Divider(height: 1),
+                              _stockRow(visible[i], custody, savedAt),
+                            ],
+                          ],
                         ),
-                        onDec: () => _setQty(
-                          it.sku,
-                          (_selection[it.sku] ?? 0) - 1,
-                          it.available.floor(),
-                        ),
-                      );
-                    },
+                      ),
+                    ],
                   ),
           ),
           SafeArea(
@@ -316,12 +403,51 @@ class _TechnicianStockScreenState extends ConsumerState<TechnicianStockScreen> {
       ),
     );
   }
+
+  /// A linha da peça: a `MobileExpandableRow` da biblioteca, com o detalhe logo abaixo (um aberto por vez).
+  Widget _stockRow(
+    TechnicianStockItem item,
+    TechnicianStockCustody? custody,
+    DateTime? savedAt,
+  ) {
+    final qty = _selection[item.sku] ?? 0;
+    final max = item.available.floor();
+    return MobileExpandableRow(
+      key: Key('stock-item-${item.sku}'),
+      // J-564 C3-03 — a cor de ícone de lista do kit (#475569, `--m-icon` da opção A).
+      leading: Icon(
+        Icons.inventory_2_outlined,
+        size: 20,
+        color: MobilePill.colorsFor(PillTone.neutral).$2,
+      ),
+      title: item.name,
+      meta: ' · ${item.sku} · ${_formatQty(item.available)} ${item.unit}',
+      trailing: qty > 0
+          ? MobilePill(label: '+$qty', tone: PillTone.info)
+          : null,
+      expanded: _openSku == item.sku,
+      onToggle: () => _toggle(item.sku),
+      detail: _StockDetail(
+        item: item,
+        qty: qty,
+        custody: custody,
+        savedAt: savedAt,
+        onAdd: () => _setQty(item.sku, 1, max),
+        onInc: () => _setQty(item.sku, qty + 1, max),
+        onDec: () => _setQty(item.sku, qty - 1, max),
+      ),
+    );
+  }
 }
 
-class _StockRow extends StatelessWidget {
-  const _StockRow({
+/// O detalhe da peça (opção A): Código, Saldo, Responsável (ou Atualizado, na lista salva), a nota do intervalo e a
+/// Quantidade. "Adicionar" tem largura limitada (o tema dá largura mínima infinita aos botões).
+class _StockDetail extends StatelessWidget {
+  const _StockDetail({
     required this.item,
     required this.qty,
+    required this.custody,
+    required this.savedAt,
     required this.onAdd,
     required this.onInc,
     required this.onDec,
@@ -329,44 +455,156 @@ class _StockRow extends StatelessWidget {
 
   final TechnicianStockItem item;
   final int qty;
+  final TechnicianStockCustody? custody;
+  final DateTime? savedAt;
   final VoidCallback onAdd;
   final VoidCallback onInc;
   final VoidCallback onDec;
 
   @override
   Widget build(BuildContext context) {
-    final selected = qty > 0;
     final max = item.available.floor();
-    return Card(
-      key: Key('stock-item-${item.sku}'),
-      child: ListTile(
-        title: Text(item.name),
-        subtitle: Text(
-          '${item.sku} · ${_formatQty(item.available)} ${item.unit}',
-        ),
-        trailing: selected
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    key: Key('stock-dec-${item.sku}'),
-                    icon: const Icon(Icons.remove_circle_outline),
-                    onPressed: onDec,
-                  ),
-                  Text('$qty', style: Theme.of(context).textTheme.titleMedium),
-                  IconButton(
-                    key: Key('stock-inc-${item.sku}'),
-                    icon: const Icon(Icons.add_circle_outline),
-                    onPressed: qty >= max ? null : onInc,
-                  ),
-                ],
-              )
-            : OutlinedButton(
-                key: Key('stock-add-${item.sku}'),
-                onPressed: onAdd,
-                child: const Text('Adicionar'),
+    final custody = this.custody;
+    final responsavel = custody == null
+        ? null
+        : custody.kind == 'base'
+        ? 'Base da organização'
+        : custody.label;
+    final fracionado = item.available != max;
+    final nota = max < 1
+        ? 'O saldo é menor que 1 ${item.unit}. A seleção é em números inteiros.'
+        : fracionado
+        ? 'Você pode usar de 1 a $max ${item.unit} nesta OS. A seleção é em números inteiros.'
+        : 'Você pode usar de 1 a $max ${item.unit} nesta OS.';
+    final savedAt = this.savedAt;
+    return Padding(
+      // J-564 C3-03 — o recuo de topo da opção A (`.det`, 10).
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _DetailField(
+                  label: 'Código',
+                  value: item.sku,
+                  mono: true,
+                ),
               ),
+              Expanded(
+                child: _DetailField(
+                  label: 'Saldo',
+                  value: '${_formatQty(item.available)} ${item.unit}',
+                ),
+              ),
+              Expanded(
+                child: responsavel != null
+                    ? _DetailField(label: 'Responsável', value: responsavel)
+                    : _DetailField(
+                        label: 'Atualizado',
+                        value: savedAt == null ? '—' : _formatWhen(savedAt),
+                      ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(nota, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              // J-564 C3-03 — "Quantidade" como na opção A (`.det__qtd>span`, 13, 700).
+              Expanded(
+                child: Text(
+                  'Quantidade',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: ErpMobileTheme.ink,
+                  ),
+                ),
+              ),
+              if (qty > 0)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      key: Key('stock-dec-${item.sku}'),
+                      tooltip: 'Diminuir ${item.name}',
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: onDec,
+                    ),
+                    Text(
+                      '$qty',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    IconButton(
+                      key: Key('stock-inc-${item.sku}'),
+                      tooltip: 'Aumentar ${item.name}',
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: qty >= max ? null : onInc,
+                    ),
+                  ],
+                )
+              else
+                SizedBox(
+                  width: 140,
+                  child: OutlinedButton(
+                    key: Key('stock-add-${item.sku}'),
+                    onPressed: max < 1 ? null : onAdd,
+                    child: const Text('Adicionar'),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
+    );
+  }
+}
+
+/// J-564 C3-03 — o campo do detalhe como na opção A: o rótulo em 10, 700, caixa alta e na cor dos rótulos
+/// (`.det__g small`); o valor em 13, 700 (`.det__g span`); o código em fonte mono, 12,5, 500 (`.mono`).
+class _DetailField extends StatelessWidget {
+  const _DetailField({
+    required this.label,
+    required this.value,
+    this.mono = false,
+  });
+
+  final String label;
+  final String value;
+  final bool mono;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label.toUpperCase(),
+          style: textTheme.labelSmall?.copyWith(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+            color: ErpMobileTheme.inkFaint,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: textTheme.bodyMedium?.copyWith(
+            fontFamily: mono ? 'monospace' : null,
+            fontSize: mono ? 12.5 : 13,
+            fontWeight: mono ? FontWeight.w500 : FontWeight.w700,
+            color: ErpMobileTheme.ink,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -28,6 +28,13 @@ import 'work_order_conflict_resolution_service.dart';
 import 'work_order_local_store.dart';
 import 'work_order_remote_api.dart';
 
+/// J-564 C3-01 — a transição recusada vira mensagem em português: as telas mostram o `StateError` como veio, e o
+/// nome do estado interno nunca chega à tela.
+const workOrderCannotCompleteMessage =
+    'A situação desta OS não permite concluir agora.';
+const workOrderTransitionRefusedMessage =
+    'A situação desta OS não permite essa mudança agora.';
+
 class WorkOrderMutationResult {
   const WorkOrderMutationResult({
     required this.workOrder,
@@ -480,15 +487,19 @@ class WorkOrderRepository extends ChangeNotifier {
   /// [deliveryComplete] (B-SAN3-14, P5) — a trava da entrega do guincho
   /// está aberta: sem entrega confirmada pelo servidor, ou com ela concluída.
   /// OBRIGATÓRIO, sem padrão: todo chamador declara (o compilador confere).
+  /// [message] (B-SAN3-15b, P9) — o texto que vai para o histórico da OS (o
+  /// diagnóstico e o serviço executado do prestador); sem ele, a mensagem padrão.
   Future<WorkOrderMutationResult> completeWorkOrder(
     String localId, {
     required bool checklistComplete,
     required bool deliveryComplete,
+    String? message,
   }) => _serial(
     () => _completeWorkOrderLocked(
       localId,
       checklistComplete: checklistComplete,
       deliveryComplete: deliveryComplete,
+      message: message,
     ),
   );
 
@@ -566,7 +577,7 @@ class WorkOrderRepository extends ChangeNotifier {
 
     final wo = _orders[idx];
     if (!wo.status.canTransitionTo(newStatus)) {
-      throw StateError('Invalid transition: ${wo.status} → $newStatus');
+      throw StateError(workOrderTransitionRefusedMessage);
     }
 
     final now = DateTime.now().toUtc();
@@ -695,13 +706,14 @@ class WorkOrderRepository extends ChangeNotifier {
     String localId, {
     required bool checklistComplete,
     required bool deliveryComplete,
+    String? message,
   }) async {
     final idx = _orders.indexWhere((o) => o.localId == localId);
     if (idx == -1) throw StateError('WorkOrder $localId not found');
 
     final wo = _orders[idx];
     if (!wo.status.canTransitionTo(WorkOrderStatus.completed)) {
-      throw StateError('Invalid transition: ${wo.status} → completed');
+      throw StateError(workOrderCannotCompleteMessage);
     }
 
     if (wo.checklistId != null && !checklistComplete) {
@@ -734,7 +746,7 @@ class WorkOrderRepository extends ChangeNotifier {
         'new_status': WorkOrderStatus.completed.name,
         'previous_status': wo.status.name,
         'occurred_at': now.toIso8601String(),
-        'message': 'Mobile completed work order.',
+        'message': message ?? 'Mobile completed work order.',
       },
     );
 

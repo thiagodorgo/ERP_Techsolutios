@@ -35,8 +35,18 @@ const _tenant = 'tenant-b123';
 
 const _session = BootstrapSession(
   activeTenant: TenantContext(tenantId: _tenant, displayName: 'Tenant B123'),
-  enabledModules: [],
-  permissions: PermissionSet({'checklist_run:execute', 'work_orders:read'}),
+  enabledModules: [
+    EnabledModule(
+      id: 'tenant_checklist',
+      title: 'Checklists',
+      route: '/checklists',
+    ),
+  ],
+  permissions: PermissionSet({
+    'checklist_runs:read',
+    'checklist_runs:update',
+    'work_orders:read',
+  }),
 );
 
 const _schema = MobileChecklistSchema(

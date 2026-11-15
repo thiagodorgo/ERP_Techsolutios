@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/bootstrap/bootstrap_repository.dart';
-import '../../../core/permissions/permission_resolver.dart';
+import '../../../core/permissions/mobile_gates.dart';
 import '../../../shared/theme/erp_mobile_theme.dart';
 import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
@@ -52,14 +52,12 @@ class _ChecklistAvailableScreenState
         .watch(bootstrapSessionProvider)
         .maybeWhen(data: (v) => v, orElse: () => null);
 
-    final canExecute =
-        session != null &&
-        const PermissionResolver().has(
-          session.permissions,
-          'checklist_run:execute',
-        );
+    // B-MOBILE-GATE-CHAVE — G1 é a régua de `GET /mobile/checklists/available` (módulo e leitura); G1b, a da ação de
+    // responder (`checklist.item_answer`). Quem só consulta vê a lista e o estado, sem o botão (resposta 2.3 do dono).
+    final canRead = MobileGates.checklistsDaOs.permite(session);
+    final canAnswer = MobileGates.responderChecklist.permite(session);
 
-    if (!canExecute) {
+    if (!canRead) {
       return ErpScaffold(
         showAppBar: false,
         body: Column(
@@ -71,7 +69,9 @@ class _ChecklistAvailableScreenState
             const Expanded(
               child: PermissionBlockedState(
                 title: 'Acesso não permitido',
-                message: 'Esta área ainda não está disponível no aplicativo.',
+                message:
+                    'Seu perfil não tem permissão para ver os checklists da OS. '
+                    'Fale com o administrador da sua organização.',
               ),
             ),
           ],
@@ -140,6 +140,7 @@ class _ChecklistAvailableScreenState
                           sliver: _TemplateList(
                             repo: repo,
                             workOrderId: widget.workOrderId,
+                            canAnswer: canAnswer,
                           ),
                         ),
                     ],
@@ -159,10 +160,15 @@ class _ChecklistAvailableScreenState
 // ---------------------------------------------------------------------------
 
 class _TemplateList extends StatelessWidget {
-  const _TemplateList({required this.repo, required this.workOrderId});
+  const _TemplateList({
+    required this.repo,
+    required this.workOrderId,
+    required this.canAnswer,
+  });
 
   final ChecklistRepository repo;
   final String workOrderId;
+  final bool canAnswer;
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +188,7 @@ class _TemplateList extends StatelessWidget {
             return _TemplateCard(
               template: template,
               run: run,
+              canAnswer: canAnswer,
               // B-SAN3-14 (P4) — a coleta, explícita, pelo helper.
               onStart: () => context.push(
                 checklistRunLocation(
@@ -206,12 +213,16 @@ class _TemplateCard extends StatelessWidget {
   const _TemplateCard({
     required this.template,
     required this.onStart,
+    required this.canAnswer,
     this.run,
   });
 
   final MobileChecklistTemplate template;
   final MobileChecklistRun? run;
   final VoidCallback onStart;
+
+  /// G1b: sem a permissão de responder, o card mostra só o estado.
+  final bool canAnswer;
 
   @override
   Widget build(BuildContext context) {
@@ -262,21 +273,22 @@ class _TemplateCard extends StatelessWidget {
                   const Spacer(),
                 ] else
                   const Spacer(),
-                FilledButton(
-                  onPressed: isDone ? null : onStart,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ErpMobileTheme.primary,
-                    minimumSize: const Size(0, 40),
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                if (canAnswer)
+                  FilledButton(
+                    onPressed: isDone ? null : onStart,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ErpMobileTheme.primary,
+                      minimumSize: const Size(0, 40),
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                    ),
+                    child: Text(
+                      isDone
+                          ? 'Concluido'
+                          : isInProgress
+                          ? 'Continuar'
+                          : 'Iniciar',
+                    ),
                   ),
-                  child: Text(
-                    isDone
-                        ? 'Concluido'
-                        : isInProgress
-                        ? 'Continuar'
-                        : 'Iniciar',
-                  ),
-                ),
               ],
             ),
           ],

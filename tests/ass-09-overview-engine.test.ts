@@ -203,6 +203,8 @@ test("T-MG-16 · coberto por importação sem moeda → currency_unknown, custo 
 //   M-H13-2  `const totalImportedMicro = toMicro(…)` → `2n * toMicro(…)` (o valor dobrado de quem soma as runs)        → T-H13-1
 //   M-MG-7f  em `lastDayOfPeriod`, `Date.UTC(year, month, 0)` → `Date.UTC(year, month, 1)` (suplementar; a M-MG-7 do
 //            plano mora no `overview.service.ts`, da F6)                                                               → T-MG-17
+//   M-C1-P13a em `pricingOf`, `if (!COST_VALID_STATUSES.includes(status) || currency === null) return UNPRICED;` →
+//            `if (currency === null) return UNPRICED;` (J-566, achado C1-1)                                            → T-FX-8b
 // A M-FX-14 e a M-FX-15 são EQUIVALENTES pela entrada HTTP hoje (Emenda 1 §3): só o T-FX-9 as mata, por chamada direta.
 
 const GENERATED_AT = new Date("2026-11-02T12:00:00.000Z");
@@ -580,6 +582,62 @@ test("T-FX-8 · no_run e currency_unknown no global: os mesmos null, e os origin
   for (const groupBy of ["tenant", "group"] as const) {
     const view = buildOverview(threeOrgsInput({ groupBy, summary: summary({ coverage: "no_run", runId: null, importId: null, importResolution: null, currency: undefined }) }));
     for (const pathText of LINE_NULL_PATHS) assertNullAt(view, pathText);
+  }
+});
+
+test("T-FX-8b · no_import no global (run vazia ou coverage desconhecida), com moeda conhecida e totais no resumo: os mesmos null, nunca 0.00 (J-566, C1-1)", () => {
+  // A run sem importação traz a moeda e até totais no resumo; quem segura o `null` da P13 é o `pricingOf` (o porteiro
+  // único: status sem custo válido → `UNPRICED`), e não a moeda. Sem ele, o global sairia `totalCost "0.00"` e
+  // `margin "3000.00"`: a classe "0 no lugar de null".
+  const noImport = (overrides: Partial<CloudCostAllocationSummary>) =>
+    summary({ runId: "run-vazia", importId: null, importResolution: "none", ...overrides });
+  const cases: Array<[string, CloudCostAllocationSummary, FxRateRef | null]> = [
+    ["no_import · BRL · sem totais", noImport({ coverage: "no_import", currency: "BRL" }), null],
+    [
+      "no_import · BRL · com totais",
+      noImport({
+        coverage: "no_import",
+        currency: "BRL",
+        totalImportedCost: 7.5,
+        totalPlatformCost: 2.5,
+        totalUnallocatedCost: 5,
+        unallocatedByReason: [{ reason: "no_allocation_rule", unallocatedCost: 5 }],
+      }),
+      null,
+    ],
+    ["no_import · USD com taxa do mês", noImport({ coverage: "no_import", currency: "USD", totalImportedCost: 3, totalPlatformCost: 3 }), usdRate("5.000000")],
+    [
+      "coverage desconhecida · BRL · com totais",
+      noImport({
+        coverage: "partial" as unknown as CloudCostAllocationSummary["coverage"],
+        currency: "BRL",
+        totalImportedCost: 7.5,
+        totalPlatformCost: 2.5,
+        totalUnallocatedCost: 5,
+        unallocatedByReason: [{ reason: "no_allocation_rule", unallocatedCost: 5 }],
+      }),
+      null,
+    ],
+  ];
+  for (const [label, s, fxRate] of cases) {
+    const view = buildOverview(threeOrgsInput({ groupBy: "global", summary: s, fxRate }));
+    assert.equal(view.cost.status, "no_import", label);
+    for (const pathText of GLOBAL_NULL_PATHS.filter((p) => !p.includes("unallocatedByReason") || s.unallocatedByReason.length > 0)) {
+      assertNullAt(view, pathText);
+    }
+    if (view.groupBy !== "global") return assert.fail("visão global");
+    assert.deepEqual(
+      view.global.original,
+      { currency: null, tenantsCost: null, platformOwnCost: null, unallocatedOther: null, roundingResidualCost: null, totalImportedCost: null },
+      `${label}: em no_import os originais também são null (P13)`,
+    );
+    assert.equal(view.global.alert, "cost_missing", label);
+    assert.equal(view.global.subscriptionTotal, "3000.00", `${label}: a assinatura não depende de custo`);
+    assert.equal(view.cost.fxRate, null, `${label}: sem custo válido, nenhuma taxa entra na resposta`);
+    for (const groupBy of ["tenant", "group"] as const) {
+      const lines = buildOverview(threeOrgsInput({ groupBy, summary: s, fxRate }));
+      for (const pathText of LINE_NULL_PATHS) assertNullAt(lines, pathText);
+    }
   }
 });
 

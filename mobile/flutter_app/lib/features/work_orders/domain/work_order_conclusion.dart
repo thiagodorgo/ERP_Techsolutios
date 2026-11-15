@@ -1,4 +1,15 @@
+import '../../checklists/domain/checklist_models.dart';
 import 'work_order_models.dart';
+
+/// B-SAN3-15b (P10, decisão 1.C) — a vistoria obrigatória da OS está concluída: há uma execução de COLETA concluída.
+/// É a MESMA regra da tela Atendimento (`_ExecData.isCollectionComplete` chama esta função): uma regra só para as
+/// duas telas.
+bool isCollectionChecklistComplete(Iterable<MobileChecklistRun> runs) =>
+    runs.any(
+      (r) =>
+          r.kind == MobileChecklistRunKind.collection &&
+          r.status == MobileChecklistRunStatus.completed,
+    );
 
 /// Estados de sincronização de evidência (LGPD/offline) — CLAUDE.md §6.
 enum EvidenceSyncState {
@@ -49,6 +60,7 @@ enum EvidenceSyncState {
 
 /// Calcula a comissão em centavos a partir de um valor-base e um percentual.
 /// Função pura (arredonda para o centavo mais próximo, nunca negativa).
+/// B-SAN3-15b (P10) — sem uso na conclusão: o app não tem a comissão do atendimento (Pergunta 3 (a)).
 int computeCommissionCents({
   required int baseValueCents,
   required double ratePercent,
@@ -71,6 +83,8 @@ String formatBrlCents(int cents) {
 }
 
 /// Resumo do atendimento para a tela de conclusão.
+/// B-SAN3-15b (P10) — sem comissão (Pergunta 3 (a)); a linha do bem atendido só no guincho (decisão 1.D): na OS de
+/// prestador, [assetLabel] e [assetValue] são nulos e a tela não desenha a linha.
 class WorkOrderConclusionSummary {
   const WorkOrderConclusionSummary({
     required this.service,
@@ -78,19 +92,15 @@ class WorkOrderConclusionSummary {
     required this.assetLabel,
     required this.assetValue,
     required this.materialsCount,
-    required this.commissionCents,
     required this.elapsed,
   });
 
   final String service;
   final String customer;
-  final String assetLabel;
-  final String assetValue;
+  final String? assetLabel;
+  final String? assetValue;
   final int materialsCount;
-  final int commissionCents;
   final Duration? elapsed;
-
-  String get commissionLabel => formatBrlCents(commissionCents);
 
   String get elapsedLabel {
     final e = elapsed;
@@ -103,8 +113,6 @@ class WorkOrderConclusionSummary {
   static WorkOrderConclusionSummary fromWorkOrder(
     WorkOrder wo, {
     int materialsCount = 0,
-    int baseValueCents = 0,
-    double ratePercent = 0,
   }) {
     final isTow = wo.serviceType == WorkOrderServiceType.tow;
     final start = wo.startedAt ?? wo.arrivedAt;
@@ -115,13 +123,9 @@ class WorkOrderConclusionSummary {
     return WorkOrderConclusionSummary(
       service: wo.title,
       customer: wo.customerName,
-      assetLabel: isTow ? 'Veiculo' : 'Equipamento',
-      assetValue: wo.code,
+      assetLabel: isTow ? 'Veiculo' : null,
+      assetValue: isTow ? wo.code : null,
       materialsCount: materialsCount,
-      commissionCents: computeCommissionCents(
-        baseValueCents: baseValueCents,
-        ratePercent: ratePercent,
-      ),
       elapsed: elapsed,
     );
   }

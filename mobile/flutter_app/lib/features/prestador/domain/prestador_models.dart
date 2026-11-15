@@ -17,6 +17,10 @@ class TechnicianStockItem {
   final String unit;
 }
 
+/// B-SAN3-15b (decisão 1.B do dono, 13/11) — "Última unidade": saldo de 1 ou menos, contado no aparelho sobre a lista
+/// que veio (não usa o estoque mínimo do item).
+bool isLastUnit(TechnicianStockItem item) => item.available.floor() <= 1;
+
 /// Custódia de onde o estoque do técnico sai (`professional` ou `base`).
 class TechnicianStockCustody {
   const TechnicianStockCustody({required this.kind, required this.label});

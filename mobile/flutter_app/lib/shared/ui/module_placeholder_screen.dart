@@ -2,21 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/bootstrap/bootstrap_repository.dart';
-import '../../core/permissions/permission_resolver.dart';
+import '../../core/permissions/mobile_gates.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
 
 class ModulePlaceholderScreen extends ConsumerWidget {
   const ModulePlaceholderScreen({
     required this.title,
-    required this.requiredPermission,
+    required this.gate,
     required this.message,
-    required this.blockedMessage,
+    this.blockedMessage = '',
     super.key,
-  });
+  }) : assert(gate == null || blockedMessage != '');
 
   final String title;
-  final String requiredPermission;
+
+  /// A regra de `MobileGates` que decide quem abre a área (B-MOBILE-GATE-CHAVE). `null` = área sem rota de servidor a
+  /// espelhar: fica indisponível para TODO perfil, com o estado de indisponível ([message]), nunca o de acesso não
+  /// permitido (resposta 2.2 do dono para o Diagnóstico).
+  final MobileGate? gate;
   final String message;
 
   /// Texto do estado de acesso não permitido, em língua de negócio (B-SAN3-19b). Quem chama
@@ -28,9 +32,7 @@ class ModulePlaceholderScreen extends ConsumerWidget {
     final session = ref
         .watch(bootstrapSessionProvider)
         .maybeWhen(data: (value) => value, orElse: () => null);
-    final hasPermission =
-        session != null &&
-        const PermissionResolver().has(session.permissions, requiredPermission);
+    final regra = gate;
 
     return ErpScaffold(
       title: title,
@@ -39,7 +41,13 @@ class ModulePlaceholderScreen extends ConsumerWidget {
         children: [
           if (session != null) TenantContextBar(session: session),
           const SizedBox(height: 8),
-          if (!hasPermission)
+          if (regra == null)
+            EmptyState(
+              icon: Icons.info_outline,
+              title: 'Área indisponível',
+              message: message,
+            )
+          else if (!regra.permite(session))
             PermissionBlockedState(
               title: 'Acesso não permitido',
               message: blockedMessage,

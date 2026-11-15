@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/bootstrap/bootstrap_repository.dart';
+import '../../../core/permissions/mobile_gates.dart';
+import '../../../shared/ui/erp_components.dart';
 import '../../../shared/ui/erp_scaffold.dart';
 import '../data/inventory_repository.dart';
 import '../domain/inventory_models.dart';
@@ -106,6 +109,23 @@ class _StockEntryScreenState extends ConsumerState<StockEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // B-MOBILE-GATE-CHAVE (A5) — o mesmo G3 dos botões da tela Estoque: quem chega aqui por link sem poder movimentar
+    // vê o bloqueio, não o formulário.
+    final session = ref
+        .watch(bootstrapSessionProvider)
+        .maybeWhen(data: (v) => v, orElse: () => null);
+    if (!MobileGates.movimentarEstoque.permite(session)) {
+      return const ErpScaffold(
+        title: 'Nova Entrada',
+        body: PermissionBlockedState(
+          title: 'Ação não permitida',
+          message:
+              'Seu perfil não tem permissão para registrar entradas de estoque. '
+              'Fale com o administrador da sua organização.',
+        ),
+      );
+    }
+
     final repo = ref.watch(inventoryRepositoryProvider);
 
     // When the repo instance changes (e.g. session resolved), restart load.

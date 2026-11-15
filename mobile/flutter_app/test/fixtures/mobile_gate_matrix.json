@@ -1,0 +1,4323 @@
+{
+  "_gerado_por": "tests/mobile-gate-chave-matriz.test.ts com UPDATE_MOBILE_GATE_FIXTURE=1 (B-MOBILE-GATE-CHAVE). Gerada pelo servidor; nunca editar à mão.",
+  "papeis": {
+    "platform_admin": {
+      "bootstrap": {
+        "tenant": {
+          "id": "org-platform_admin",
+          "name": "Organização platform_admin"
+        },
+        "user": {
+          "id": "user-platform_admin",
+          "email": "platform_admin@exemplo.test"
+        },
+        "roles": [
+          "platform_admin"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "authority_credentials:manage",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "checklist_runs:update",
+          "cheques:create",
+          "cheques:read",
+          "cheques:unlink_title",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "commissions:read_own",
+          "commissions:settle",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:manage",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_finance",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:reject",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_location:send",
+          "field_operator:action",
+          "field_operator:read",
+          "finance.manage",
+          "finance.read",
+          "finance:read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:unreconcile",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_period:reopen",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "invoices:read",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "logistics:read",
+          "logistics_routes:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "payments:read",
+          "platform:audit:read",
+          "platform:billing-providers:manage",
+          "platform:billing:manage",
+          "platform:billing:read",
+          "platform:billing:settle",
+          "platform:cloud-charge-rules:read",
+          "platform:cloud-charge-rules:write",
+          "platform:cloud-charges:calculate",
+          "platform:cloud-charges:read",
+          "platform:cloud-cost-allocation:read",
+          "platform:cloud-cost-allocation:run",
+          "platform:cloud-costs:import",
+          "platform:cloud-costs:read",
+          "platform:cloud-usage:read",
+          "platform:dashboard:read",
+          "platform:tenants:read",
+          "platform:vehicle-identity-unmerge:manage",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "roles.manage",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "sessions:read",
+          "sessions:revoke",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant.manage",
+          "tenant_checklists:create",
+          "tenant_checklists:publish",
+          "tenant_checklists:read",
+          "tenant_checklists:update",
+          "tenant_settings:read",
+          "tenant_settings:update",
+          "users.manage",
+          "users.read",
+          "users:read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:delete",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": {
+        "G1": true,
+        "G1b": true,
+        "G2": true,
+        "G3": true,
+        "G4": true
+      }
+    },
+    "tenant_admin": {
+      "bootstrap": {
+        "tenant": {
+          "id": "org-tenant_admin",
+          "name": "Organização tenant_admin"
+        },
+        "user": {
+          "id": "user-tenant_admin",
+          "email": "tenant_admin@exemplo.test"
+        },
+        "roles": [
+          "tenant_admin"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "authority_credentials:manage",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "checklist_runs:update",
+          "cheques:create",
+          "cheques:read",
+          "cheques:unlink_title",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "commissions:read_own",
+          "commissions:settle",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:manage",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_finance",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:reject",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_location:send",
+          "field_operator:action",
+          "field_operator:read",
+          "finance.manage",
+          "finance.read",
+          "finance:read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:unreconcile",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_period:reopen",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "invoices:read",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "logistics:read",
+          "logistics_routes:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "payments:read",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "roles.manage",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "sessions:read",
+          "sessions:revoke",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant.manage",
+          "tenant_checklists:create",
+          "tenant_checklists:publish",
+          "tenant_checklists:read",
+          "tenant_checklists:update",
+          "tenant_settings:read",
+          "tenant_settings:update",
+          "users.manage",
+          "users.read",
+          "users:read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:delete",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": {
+        "G1": true,
+        "G1b": true,
+        "G2": true,
+        "G3": true,
+        "G4": true
+      }
+    },
+    "manager": {
+      "bootstrap": {
+        "tenant": {
+          "id": "org-manager",
+          "name": "Organização manager"
+        },
+        "user": {
+          "id": "user-manager",
+          "email": "manager@exemplo.test"
+        },
+        "roles": [
+          "manager"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:complete",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "cheques:read",
+          "commissions:approve",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_operator:read",
+          "finance.read",
+          "financial_accounts:read",
+          "financial_entries:read",
+          "financial_period:read",
+          "financial_titles:read",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:read",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant_checklists:read",
+          "tenant_settings:read",
+          "users.read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": {
+        "G1": true,
+        "G1b": false,
+        "G2": true,
+        "G3": false,
+        "G4": true
+      }
+    },
+    "operator": {
+      "bootstrap": {
+        "tenant": {
+          "id": "org-operator",
+          "name": "Organização operator"
+        },
+        "user": {
+          "id": "user-operator",
+          "email": "operator@exemplo.test"
+        },
+        "roles": [
+          "operator"
+        ],
+        "permissions": [
+          "branches:read",
+          "charging:read",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:update",
+          "commissions:read_own",
+          "customers:read",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "dashboard:read",
+          "expense_receipt:attach",
+          "expense_report:create",
+          "expense_report:read_own",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:read",
+          "field_dispatch:update",
+          "field_location:read",
+          "field_location:send",
+          "fines:read",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:read",
+          "insurance_policies:read",
+          "inventory.read",
+          "inventory_items:read",
+          "jurisdiction:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:read",
+          "os.manage",
+          "os.read",
+          "pois:read",
+          "price_tables:read",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "reports:read",
+          "service_catalog:read",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:read",
+          "tags:read",
+          "tariffs:read",
+          "teams:read",
+          "vehicles:read",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:read"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": {
+        "G1": true,
+        "G1b": true,
+        "G2": true,
+        "G3": false,
+        "G4": false
+      }
+    },
+    "finance": {
+      "bootstrap": {
+        "tenant": {
+          "id": "org-finance",
+          "name": "Organização finance"
+        },
+        "user": {
+          "id": "user-finance",
+          "email": "finance@exemplo.test"
+        },
+        "roles": [
+          "finance"
+        ],
+        "permissions": [
+          "billing:read",
+          "checklist_runs:read",
+          "cheques:create",
+          "cheques:read",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:read",
+          "commissions:settle",
+          "customers:read",
+          "cycle_counts:read",
+          "damages:read",
+          "expense_audit:read",
+          "expense_policy:read",
+          "expense_report:approve_finance",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:reject",
+          "expense_report:return",
+          "finance.manage",
+          "finance.read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:read",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory_items:read",
+          "maintenance_orders:read",
+          "notifications:read",
+          "notifications:update",
+          "os.read",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:read",
+          "reports:read",
+          "service_catalog:read",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "stock_movements:read",
+          "tenant_checklists:read",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:read"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": {
+        "G1": true,
+        "G1b": false,
+        "G2": false,
+        "G3": false,
+        "G4": false
+      }
+    },
+    "inventory": {
+      "bootstrap": {
+        "tenant": {
+          "id": "org-inventory",
+          "name": "Organização inventory"
+        },
+        "user": {
+          "id": "user-inventory",
+          "email": "inventory@exemplo.test"
+        },
+        "roles": [
+          "inventory"
+        ],
+        "permissions": [
+          "checklist_runs:read",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "notifications:read",
+          "notifications:update",
+          "os.read",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "reports:read",
+          "stock_movements:create",
+          "stock_movements:read",
+          "tenant_checklists:read"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": {
+        "G1": true,
+        "G1b": false,
+        "G2": true,
+        "G3": true,
+        "G4": false
+      }
+    },
+    "field_technician": {
+      "bootstrap": {
+        "tenant": {
+          "id": "org-field_technician",
+          "name": "Organização field_technician"
+        },
+        "user": {
+          "id": "user-field_technician",
+          "email": "field_technician@exemplo.test"
+        },
+        "roles": [
+          "field_technician"
+        ],
+        "permissions": [
+          "branches:read",
+          "charging:read",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:read",
+          "checklist_runs:update",
+          "commissions:read_own",
+          "customers:read",
+          "damages:create",
+          "damages:read",
+          "dashboard:read",
+          "expense_receipt:attach",
+          "expense_report:create",
+          "expense_report:read_own",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:read",
+          "field_dispatch:update",
+          "field_location:send",
+          "fines:read",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:read",
+          "inventory.read",
+          "jurisdiction:read",
+          "maintenance_orders:read",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:read",
+          "os.read",
+          "pois:read",
+          "price_tables:read",
+          "reports:read",
+          "service_catalog:read",
+          "service_quotes:read",
+          "suppliers:read",
+          "tags:read",
+          "tariffs:read",
+          "teams:read",
+          "tenant_checklists:read",
+          "vehicles:read",
+          "work_order_financials:read",
+          "work_orders:comment",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:read"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": {
+        "G1": true,
+        "G1b": true,
+        "G2": true,
+        "G3": false,
+        "G4": false
+      }
+    },
+    "auditor": {
+      "bootstrap": {
+        "tenant": {
+          "id": "org-auditor",
+          "name": "Organização auditor"
+        },
+        "user": {
+          "id": "user-auditor",
+          "email": "auditor@exemplo.test"
+        },
+        "roles": [
+          "auditor"
+        ],
+        "permissions": [
+          "audit.read",
+          "audit:read",
+          "billing:read",
+          "branches:read",
+          "charging:read",
+          "checklist_runs:read",
+          "cheques:read",
+          "commissions:audit",
+          "commissions:read",
+          "customers:read",
+          "cycle_counts:read",
+          "damages:read",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:read",
+          "expense_report:read",
+          "field_dispatch:read",
+          "field_location:history",
+          "field_location:read",
+          "field_operator:read",
+          "finance.read",
+          "financial_accounts:read",
+          "financial_entries:read",
+          "financial_period:read",
+          "financial_titles:read",
+          "fines:read",
+          "fuel_logs:read",
+          "impound:read",
+          "insurance_policies:read",
+          "inventory.read",
+          "inventory_items:read",
+          "jurisdiction:read",
+          "maintenance_orders:read",
+          "notifications:read",
+          "operator_profiles:read",
+          "os.read",
+          "pois:read",
+          "price_tables:read",
+          "professional_statements:read",
+          "purchase_orders:read",
+          "reports:read",
+          "service_catalog:read",
+          "service_quotes:read",
+          "sessions:read",
+          "stock_movements:read",
+          "suppliers:read",
+          "tags:read",
+          "tariffs:read",
+          "teams:read",
+          "telemetry:read",
+          "tenant_checklists:read",
+          "tenant_settings:read",
+          "users.read",
+          "vehicles:read",
+          "work_order_financials:read",
+          "work_orders:read",
+          "yard:read"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": {
+        "G1": true,
+        "G1b": false,
+        "G2": true,
+        "G3": false,
+        "G4": false
+      }
+    },
+    "support": {
+      "bootstrap": {
+        "tenant": {
+          "id": "org-support",
+          "name": "Organização support"
+        },
+        "user": {
+          "id": "user-support",
+          "email": "support@exemplo.test"
+        },
+        "roles": [
+          "support"
+        ],
+        "permissions": [
+          "audit.read",
+          "audit:read",
+          "billing:read",
+          "checklist_runs:read",
+          "dashboard:read",
+          "notifications:read",
+          "os.read",
+          "purchase_orders:read",
+          "reports:read",
+          "tenant_checklists:read",
+          "users.read"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": false,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": {
+        "G1": true,
+        "G1b": false,
+        "G2": false,
+        "G3": false,
+        "G4": false
+      }
+    }
+  },
+  "modulos": {
+    "G1_sem_modulo": {
+      "gate": "G1",
+      "papel": "tenant_admin",
+      "bootstrap": {
+        "tenant": {
+          "id": "org-G1_sem_modulo",
+          "name": "Organização G1_sem_modulo"
+        },
+        "user": {
+          "id": "user-G1_sem_modulo",
+          "email": "G1_sem_modulo@exemplo.test"
+        },
+        "roles": [
+          "tenant_admin"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "authority_credentials:manage",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "checklist_runs:update",
+          "cheques:create",
+          "cheques:read",
+          "cheques:unlink_title",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "commissions:read_own",
+          "commissions:settle",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:manage",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_finance",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:reject",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_location:send",
+          "field_operator:action",
+          "field_operator:read",
+          "finance.manage",
+          "finance.read",
+          "finance:read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:unreconcile",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_period:reopen",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "invoices:read",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "logistics:read",
+          "logistics_routes:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "payments:read",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "roles.manage",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "sessions:read",
+          "sessions:revoke",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant.manage",
+          "tenant_checklists:create",
+          "tenant_checklists:publish",
+          "tenant_checklists:read",
+          "tenant_checklists:update",
+          "tenant_settings:read",
+          "tenant_settings:update",
+          "users.manage",
+          "users.read",
+          "users:read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:delete",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": false
+    },
+    "G1b_sem_modulo": {
+      "gate": "G1b",
+      "papel": "tenant_admin",
+      "bootstrap": {
+        "tenant": {
+          "id": "org-G1b_sem_modulo",
+          "name": "Organização G1b_sem_modulo"
+        },
+        "user": {
+          "id": "user-G1b_sem_modulo",
+          "email": "G1b_sem_modulo@exemplo.test"
+        },
+        "roles": [
+          "tenant_admin"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "authority_credentials:manage",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "checklist_runs:update",
+          "cheques:create",
+          "cheques:read",
+          "cheques:unlink_title",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "commissions:read_own",
+          "commissions:settle",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:manage",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_finance",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:reject",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_location:send",
+          "field_operator:action",
+          "field_operator:read",
+          "finance.manage",
+          "finance.read",
+          "finance:read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:unreconcile",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_period:reopen",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "invoices:read",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "logistics:read",
+          "logistics_routes:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "payments:read",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "roles.manage",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "sessions:read",
+          "sessions:revoke",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant.manage",
+          "tenant_checklists:create",
+          "tenant_checklists:publish",
+          "tenant_checklists:read",
+          "tenant_checklists:update",
+          "tenant_settings:read",
+          "tenant_settings:update",
+          "users.manage",
+          "users.read",
+          "users:read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:delete",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": false
+    },
+    "G2_sem_modulo": {
+      "gate": "G2",
+      "papel": "tenant_admin",
+      "bootstrap": {
+        "tenant": {
+          "id": "org-G2_sem_modulo",
+          "name": "Organização G2_sem_modulo"
+        },
+        "user": {
+          "id": "user-G2_sem_modulo",
+          "email": "G2_sem_modulo@exemplo.test"
+        },
+        "roles": [
+          "tenant_admin"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "authority_credentials:manage",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "checklist_runs:update",
+          "cheques:create",
+          "cheques:read",
+          "cheques:unlink_title",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "commissions:read_own",
+          "commissions:settle",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:manage",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_finance",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:reject",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_location:send",
+          "field_operator:action",
+          "field_operator:read",
+          "finance.manage",
+          "finance.read",
+          "finance:read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:unreconcile",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_period:reopen",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "invoices:read",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "logistics:read",
+          "logistics_routes:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "payments:read",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "roles.manage",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "sessions:read",
+          "sessions:revoke",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant.manage",
+          "tenant_checklists:create",
+          "tenant_checklists:publish",
+          "tenant_checklists:read",
+          "tenant_checklists:update",
+          "tenant_settings:read",
+          "tenant_settings:update",
+          "users.manage",
+          "users.read",
+          "users:read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:delete",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "inventory_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": false
+    },
+    "G3_sem_modulo": {
+      "gate": "G3",
+      "papel": "tenant_admin",
+      "bootstrap": {
+        "tenant": {
+          "id": "org-G3_sem_modulo",
+          "name": "Organização G3_sem_modulo"
+        },
+        "user": {
+          "id": "user-G3_sem_modulo",
+          "email": "G3_sem_modulo@exemplo.test"
+        },
+        "roles": [
+          "tenant_admin"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "authority_credentials:manage",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "checklist_runs:update",
+          "cheques:create",
+          "cheques:read",
+          "cheques:unlink_title",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "commissions:read_own",
+          "commissions:settle",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:manage",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_finance",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:reject",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_location:send",
+          "field_operator:action",
+          "field_operator:read",
+          "finance.manage",
+          "finance.read",
+          "finance:read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:unreconcile",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_period:reopen",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "invoices:read",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "logistics:read",
+          "logistics_routes:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "payments:read",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "roles.manage",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "sessions:read",
+          "sessions:revoke",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant.manage",
+          "tenant_checklists:create",
+          "tenant_checklists:publish",
+          "tenant_checklists:read",
+          "tenant_checklists:update",
+          "tenant_settings:read",
+          "tenant_settings:update",
+          "users.manage",
+          "users.read",
+          "users:read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:delete",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          },
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          },
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "inventory_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": false
+    },
+    "G4_so_approvals": {
+      "gate": "G4",
+      "papel": "tenant_admin",
+      "bootstrap": {
+        "tenant": {
+          "id": "org-G4_so_approvals",
+          "name": "Organização G4_so_approvals"
+        },
+        "user": {
+          "id": "user-G4_so_approvals",
+          "email": "G4_so_approvals@exemplo.test"
+        },
+        "roles": [
+          "tenant_admin"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "authority_credentials:manage",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "checklist_runs:update",
+          "cheques:create",
+          "cheques:read",
+          "cheques:unlink_title",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "commissions:read_own",
+          "commissions:settle",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:manage",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_finance",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:reject",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_location:send",
+          "field_operator:action",
+          "field_operator:read",
+          "finance.manage",
+          "finance.read",
+          "finance:read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:unreconcile",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_period:reopen",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "invoices:read",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "logistics:read",
+          "logistics_routes:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "payments:read",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "roles.manage",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "sessions:read",
+          "sessions:revoke",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant.manage",
+          "tenant_checklists:create",
+          "tenant_checklists:publish",
+          "tenant_checklists:read",
+          "tenant_checklists:update",
+          "tenant_settings:read",
+          "tenant_settings:update",
+          "users.manage",
+          "users.read",
+          "users:read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:delete",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "approvals",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "work_orders": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "checklists": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "notifications": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "field_location": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "expense_sync": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "checklist_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "inventory_mobile": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "inventory_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "generic_evidence_upload": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          }
+        }
+      },
+      "libera": true
+    },
+    "G4_so_work_orders": {
+      "gate": "G4",
+      "papel": "tenant_admin",
+      "bootstrap": {
+        "tenant": {
+          "id": "org-G4_so_work_orders",
+          "name": "Organização G4_so_work_orders"
+        },
+        "user": {
+          "id": "user-G4_so_work_orders",
+          "email": "G4_so_work_orders@exemplo.test"
+        },
+        "roles": [
+          "tenant_admin"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "authority_credentials:manage",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "checklist_runs:update",
+          "cheques:create",
+          "cheques:read",
+          "cheques:unlink_title",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "commissions:read_own",
+          "commissions:settle",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:manage",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_finance",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:reject",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_location:send",
+          "field_operator:action",
+          "field_operator:read",
+          "finance.manage",
+          "finance.read",
+          "finance:read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:unreconcile",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_period:reopen",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "invoices:read",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "logistics:read",
+          "logistics_routes:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "payments:read",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "roles.manage",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "sessions:read",
+          "sessions:revoke",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant.manage",
+          "tenant_checklists:create",
+          "tenant_checklists:publish",
+          "tenant_checklists:read",
+          "tenant_checklists:update",
+          "tenant_settings:read",
+          "tenant_settings:update",
+          "users.manage",
+          "users.read",
+          "users:read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:delete",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "work_orders",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "work_orders": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklists": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "notifications": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "field_location": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "expense_sync": {
+            "enabled": false,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "checklist_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "inventory_mobile": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "inventory_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": true
+    },
+    "G4_nenhum": {
+      "gate": "G4",
+      "papel": "tenant_admin",
+      "bootstrap": {
+        "tenant": {
+          "id": "org-G4_nenhum",
+          "name": "Organização G4_nenhum"
+        },
+        "user": {
+          "id": "user-G4_nenhum",
+          "email": "G4_nenhum@exemplo.test"
+        },
+        "roles": [
+          "tenant_admin"
+        ],
+        "permissions": [
+          "auction:appraise",
+          "audit.read",
+          "audit:read",
+          "authority_credentials:manage",
+          "billing:read",
+          "branches:create",
+          "branches:read",
+          "branches:update",
+          "charging:create",
+          "charging:online_payment",
+          "charging:read",
+          "charging:settle",
+          "checklist_runs:acknowledge",
+          "checklist_runs:complete",
+          "checklist_runs:create",
+          "checklist_runs:read",
+          "checklist_runs:reopen",
+          "checklist_runs:update",
+          "cheques:create",
+          "cheques:read",
+          "cheques:unlink_title",
+          "cheques:update",
+          "commissions:adjust",
+          "commissions:approve",
+          "commissions:audit",
+          "commissions:calculate",
+          "commissions:manage_policy",
+          "commissions:read",
+          "commissions:read_own",
+          "commissions:settle",
+          "customers:create",
+          "customers:read",
+          "customers:update",
+          "cycle_counts:create",
+          "cycle_counts:read",
+          "damages:create",
+          "damages:read",
+          "damages:update",
+          "dashboard:read",
+          "expense_audit:read",
+          "expense_policy:manage",
+          "expense_policy:read",
+          "expense_receipt:attach",
+          "expense_report:approve_finance",
+          "expense_report:approve_manager",
+          "expense_report:create",
+          "expense_report:pay",
+          "expense_report:read",
+          "expense_report:read_own",
+          "expense_report:reject",
+          "expense_report:return",
+          "expense_report:submit",
+          "expense_report:update",
+          "expense_sync:write",
+          "field_dispatch:cancel",
+          "field_dispatch:create",
+          "field_dispatch:read",
+          "field_dispatch:reassign",
+          "field_dispatch:update",
+          "field_location:history",
+          "field_location:read",
+          "field_location:send",
+          "field_operator:action",
+          "field_operator:read",
+          "finance.manage",
+          "finance.read",
+          "finance:read",
+          "financial_accounts:create",
+          "financial_accounts:read",
+          "financial_accounts:update",
+          "financial_entries:create",
+          "financial_entries:read",
+          "financial_entries:unreconcile",
+          "financial_entries:update",
+          "financial_period:close",
+          "financial_period:read",
+          "financial_period:reopen",
+          "financial_titles:create",
+          "financial_titles:read",
+          "financial_titles:update",
+          "fines:create",
+          "fines:read",
+          "fines:update",
+          "fuel_logs:create",
+          "fuel_logs:read",
+          "fuel_logs:update",
+          "impound:allocate",
+          "impound:create",
+          "impound:inspect",
+          "impound:notify",
+          "impound:read",
+          "impound:transition",
+          "impound:update",
+          "insurance_policies:create",
+          "insurance_policies:read",
+          "insurance_policies:update",
+          "inventory.manage",
+          "inventory.read",
+          "inventory_items:create",
+          "inventory_items:read",
+          "inventory_items:update",
+          "invoices:read",
+          "jurisdiction:create",
+          "jurisdiction:read",
+          "jurisdiction:update",
+          "logistics:read",
+          "logistics_routes:read",
+          "maintenance_orders:create",
+          "maintenance_orders:read",
+          "maintenance_orders:update",
+          "notifications:create",
+          "notifications:read",
+          "notifications:update",
+          "operator_profiles:create",
+          "operator_profiles:read",
+          "operator_profiles:update",
+          "os.manage",
+          "os.read",
+          "payments:read",
+          "pois:create",
+          "pois:read",
+          "pois:update",
+          "price_tables:create",
+          "price_tables:read",
+          "price_tables:update",
+          "professional_statements:create",
+          "professional_statements:read",
+          "professional_statements:update",
+          "purchase_orders:create",
+          "purchase_orders:read",
+          "release:approve",
+          "release:process",
+          "reports:read",
+          "roles.manage",
+          "service_catalog:create",
+          "service_catalog:read",
+          "service_catalog:update",
+          "service_quotes:approve",
+          "service_quotes:create",
+          "service_quotes:read",
+          "service_quotes:update",
+          "sessions:read",
+          "sessions:revoke",
+          "stock_movements:create",
+          "stock_movements:read",
+          "suppliers:create",
+          "suppliers:read",
+          "suppliers:update",
+          "tags:create",
+          "tags:read",
+          "tags:update",
+          "tariffs:create",
+          "tariffs:read",
+          "tariffs:update",
+          "teams:create",
+          "teams:read",
+          "teams:update",
+          "telemetry:read",
+          "tenant.manage",
+          "tenant_checklists:create",
+          "tenant_checklists:publish",
+          "tenant_checklists:read",
+          "tenant_checklists:update",
+          "tenant_settings:read",
+          "tenant_settings:update",
+          "users.manage",
+          "users.read",
+          "users:read",
+          "vehicle_identity:merge",
+          "vehicles:create",
+          "vehicles:read",
+          "vehicles:update",
+          "work_order_financials:create",
+          "work_order_financials:read",
+          "work_order_financials:update",
+          "work_orders:approve",
+          "work_orders:assign",
+          "work_orders:cancel",
+          "work_orders:comment",
+          "work_orders:create",
+          "work_orders:delete",
+          "work_orders:mileage_correct",
+          "work_orders:read",
+          "work_orders:status",
+          "work_orders:update",
+          "yard:create",
+          "yard:read",
+          "yard:update"
+        ],
+        "modules": [
+          {
+            "key": "audit",
+            "enabled": true
+          },
+          {
+            "key": "customers",
+            "enabled": true
+          },
+          {
+            "key": "expense_management",
+            "enabled": true
+          },
+          {
+            "key": "field_operations",
+            "enabled": true
+          },
+          {
+            "key": "finance",
+            "enabled": true
+          },
+          {
+            "key": "inventory",
+            "enabled": true
+          },
+          {
+            "key": "logistics",
+            "enabled": true
+          },
+          {
+            "key": "master_data",
+            "enabled": true
+          },
+          {
+            "key": "notifications",
+            "enabled": true
+          },
+          {
+            "key": "patios",
+            "enabled": true
+          },
+          {
+            "key": "quotes",
+            "enabled": true
+          },
+          {
+            "key": "suppliers",
+            "enabled": true
+          },
+          {
+            "key": "telemetry",
+            "enabled": true
+          },
+          {
+            "key": "tenant_checklist",
+            "enabled": true
+          },
+          {
+            "key": "vehicles",
+            "enabled": true
+          }
+        ],
+        "feature_flags": {
+          "mobile_bootstrap_expanded": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_management": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_orders": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "checklists": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "notifications": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "field_location": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "expense_sync": {
+            "enabled": true,
+            "status": "implemented"
+          },
+          "work_order_sync": {
+            "enabled": false,
+            "status": "unavailable",
+            "reason": "module_disabled"
+          },
+          "checklist_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "minimal_replay_contract"
+          },
+          "inventory_mobile": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "availability_and_sync_partial"
+          },
+          "inventory_sync": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "in_memory_contract"
+          },
+          "generic_evidence_upload": {
+            "enabled": true,
+            "status": "partial",
+            "reason": "metadata_and_binary_upload_partial"
+          }
+        }
+      },
+      "libera": false
+    }
+  }
+}
