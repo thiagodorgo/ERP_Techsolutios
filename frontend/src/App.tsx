@@ -252,17 +252,14 @@ export function App() {
                 </PermissionGuard>
               }
             />
+            {/* B-ASS-10b (T5) — "as duas permissões": dois guards aninhados (o PermissionGuard é "qualquer uma"). */}
             <Route
               path="/platform/cloud-billing"
               element={
-                <PermissionGuard
-                  permissions={[
-                    "platform:cloud-usage:read",
-                    "platform:cloud-costs:read",
-                    "platform:cloud-cost-allocation:read",
-                  ]}
-                >
-                  <PlatformCloudBillingPage />
+                <PermissionGuard permissions={["platform:cloud-cost-allocation:read"]}>
+                  <PermissionGuard permissions={["platform:billing:read"]}>
+                    <PlatformCloudBillingPage />
+                  </PermissionGuard>
                 </PermissionGuard>
               }
             />

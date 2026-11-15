@@ -98,7 +98,11 @@ test("o conteúdo do menu: Pátios com A · Padrão, B · Analítica e C · Mesa
   assert.match(html, /B · Analítica/);
   assert.match(html, /C · Mesa de pátio/);
   // B-SAN3-22 (E3b-04): as contagens derivam do registro — 3 opções e 1 "padrão" por tela registrada.
-  const { APPEARANCE_SCREENS } = await import("../src/modules/appearance");
+  // B-ASS-10b (T5): o menu do shell da organização (sem escopo) conta só as telas de escopo "tenant"; a de plataforma
+  // (Cloud Billing) fica no menu do console da plataforma (T-APAR-1).
+  const { appearanceScreensFor } = await import("../src/modules/appearance");
+  const APPEARANCE_SCREENS = appearanceScreensFor("tenant");
+  assert.doesNotMatch(html, /Cloud Billing/, "a tela de plataforma não entra no menu da organização");
   assert.equal((html.match(/role="menuitemradio"/g) ?? []).length, 3 * APPEARANCE_SCREENS.length);
   assert.match(html, /aria-checked="true"[^>]*>(?:(?!<\/button>).)*B · Analítica/s, "a B vem marcada (padrão de Pátios)");
   assert.equal((html.match(/>padrão</g) ?? []).length, APPEARANCE_SCREENS.length, "uma etiqueta de padrão por tela");
