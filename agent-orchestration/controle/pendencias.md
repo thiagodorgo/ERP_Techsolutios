@@ -12892,7 +12892,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-PALETA-SEM-MAPA-DE-PERMISSAO (2026-11-14) — a paleta de comandos não aplica os caminhos escondidos pelo servidor — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): o guard da rota recusa, e a tela mostra "Acesso não permitido" · **escopo:** `pre-existente` (`frontend/src/components/command-palette/logic.ts:1-36` usa `buildSidebarNav(roles)` sem os caminhos escondidos) · **dono:** `B-ASS-11` (nomeado pelo orquestrador em 15/11) · **PR-alvo:** a definir pelo orquestrador (o conserto fica fora do PERMITIDO da Parte T) · **bloqueia:** não.
+- **status:** ABERTA · **gravidade:** BAIXA — leitura do redator, declarada (§A6): o guard da rota recusa, e a tela mostra "Acesso não permitido" · **escopo:** `pre-existente` (`frontend/src/components/command-palette/logic.ts:1-36` usa `buildSidebarNav(roles)` sem os caminhos escondidos) · **dono:** bloco próprio a abrir, de paleta e permissão (decisão do orquestrador, 15/11, na revisão reforçada do #576, REV576-02) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
 - **origem:** Emenda 1 do plano do `B-ASS-11`, E6, §11 e §12; aberta pelo `B-ASS-11b`.
 - **fato:** a paleta pode oferecer a um perfil de reserva uma tela que o guard da rota recusa; o menu lateral a esconde (`computeHiddenNavPaths`).
 - **critério de encerramento:** a paleta aplica os caminhos escondidos pelo servidor, com teste.
