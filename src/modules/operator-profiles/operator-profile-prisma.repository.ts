@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
-import { withTenantRls } from "../../database/rls.js";
+import { withTenantRls, withTenantRlsBudget } from "../../database/rls.js";
 import type {
   OperatorProfile,
   CreateOperatorProfileInput,
@@ -10,6 +10,7 @@ import type {
 } from "./operator-profile.types.js";
 import { OperatorProfileError } from "./operator-profile.types.js";
 import type { OperatorProfileRepository } from "./operator-profile.repository.js";
+import type { HolderConsentGrantInput, HolderConsentGrantResult, HolderConsentLock } from "./operator-profile.repository.js";
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
@@ -60,7 +61,7 @@ export class PrismaOperatorProfileRepository implements OperatorProfileRepositor
     return profile ? mapOperatorProfileRecord(profile) : undefined;
   }
 
-  async update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined> {
+  async update(input: UpdateOperatorProfileInput & HolderConsentLock): Promise<OperatorProfile | undefined> {
     try {
       // user_id NÃO é atualizado — vínculo imutável (referência estável 1-1).
       const updated = await this.client.operatorProfile.updateManyAndReturn({
@@ -83,6 +84,31 @@ export class PrismaOperatorProfileRepository implements OperatorProfileRepositor
       throw translatePersistenceError(error);
     }
   }
+
+  // B-SAN3-17 (Emenda 1.7, C16-01): a linha do perfil é travada com `FOR NO KEY UPDATE` (a força do UPDATE) na MESMA
+  // transação da escrita (o executor TEM de ser a transação: o `RlsPrismaOperatorProfileRepository` a abre), e a regra de
+  // ordem do aceite é reavaliada sobre a linha travada. Uma revogação que confirma depois da leitura do serviço é vista
+  // aqui e o aceite velho sai `superseded`, sem escrever.
+  async applyHolderConsentGrant(input: HolderConsentGrantInput): Promise<HolderConsentGrantResult | undefined> {
+    const rows = await this.client.$queryRaw<Array<{ tracking_consent: boolean; updated_at: Date }>>`
+      SELECT tracking_consent, updated_at FROM operator_profiles
+       WHERE tenant_id = ${input.tenantId}::uuid AND id = ${input.profileId}::uuid
+         FOR NO KEY UPDATE`;
+    const row = rows[0];
+    if (!row) return undefined;
+    if (row.tracking_consent !== true && input.decidedAt.getTime() <= new Date(row.updated_at).getTime()) {
+      const current = await this.findById(input.tenantId, input.profileId);
+      return current ? { status: "superseded", profile: current } : undefined;
+    }
+    const updated = await this.update({
+      tenantId: input.tenantId,
+      profileId: input.profileId,
+      trackingConsent: true,
+      trackingConsentAt: row.tracking_consent === true ? undefined : new Date(),
+      updatedBy: input.updatedBy,
+    });
+    return updated ? { status: "applied", profile: updated } : undefined;
+  }
 }
 
 export class RlsPrismaOperatorProfileRepository implements OperatorProfileRepository {
@@ -104,9 +130,30 @@ export class RlsPrismaOperatorProfileRepository implements OperatorProfileReposi
     return withTenantRls(this.prismaClient, tenantId, (tx) => new PrismaOperatorProfileRepository(tx).findByUserId(tenantId, userId));
   }
 
-  update(input: UpdateOperatorProfileInput): Promise<OperatorProfile | undefined> {
+  update(input: UpdateOperatorProfileInput & HolderConsentLock): Promise<OperatorProfile | undefined> {
+    if (input.lockTimeoutMs !== undefined) {
+      return withTenantRlsBudget(this.prismaClient, input.tenantId, holderConsentBudget(input.lockTimeoutMs), (tx) =>
+        new PrismaOperatorProfileRepository(tx).update(input),
+      );
+    }
     return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaOperatorProfileRepository(tx).update(input));
   }
+
+  applyHolderConsentGrant(input: HolderConsentGrantInput): Promise<HolderConsentGrantResult | undefined> {
+    if (input.lockTimeoutMs !== undefined) {
+      return withTenantRlsBudget(this.prismaClient, input.tenantId, holderConsentBudget(input.lockTimeoutMs), (tx) =>
+        new PrismaOperatorProfileRepository(tx).applyHolderConsentGrant(input),
+      );
+    }
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaOperatorProfileRepository(tx).applyHolderConsentGrant(input));
+  }
+}
+
+// B-SAN3-17 (J-568, C2-01): a decisão do titular pelo app espera a trava da linha no máximo `lockTimeoutMs`. É o
+// `withTenantRlsBudget` (src/database/rls.ts), que põe o GUC da organização como 1ª instrução e depois os prazos locais de
+// trava e de instrução; a transação mantém o `maxWait`/`timeout` padrão do Prisma (2 s / 5 s).
+function holderConsentBudget(lockTimeoutMs: number) {
+  return { maxWait: 2_000, timeout: 5_000, lockTimeoutMs, statementTimeoutMs: 4_000 } as const;
 }
 
 export async function createPrismaOperatorProfileRepository(): Promise<RlsPrismaOperatorProfileRepository> {

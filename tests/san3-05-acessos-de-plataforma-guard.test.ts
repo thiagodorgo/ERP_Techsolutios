@@ -179,6 +179,14 @@ const NOVAS: ReadonlyMap<string, string> = new Map([
     k("L2", "src/integrations/traccar/traccar-resolution.ts", "new TraccarIngestionRepository(tx)", "PARAMETRO(tx de callback de findFirstTenantRls)", "×1"),
     "B-TRC-01: a sondagem da descoberta (l.238) roda no callback de `findFirstTenantRls`, que troca o GUC antes de cada volta (src/database/rls.ts l.156 e l.160), em transação somente leitura, e passa as linhas pelo canário `assertRowsBelongToTenant` antes de usá-las.",
   ],
+  [
+    k("L2", "src/modules/field-location/field-location-prisma.repository.ts", "new PrismaFieldLocationRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×1"),
+    "B-SAN3-17 (Emenda 1.8, E17-07): a escrita guardada da posição do app (l.144) roda no callback de `withTenantRlsBudget` com o `input.tenantId` do ator, o mesmo da escrita sem orçamento da l.139; o helper põe o setter do GUC como 1ª instrução da transação (src/database/rls.ts l.128) e os prazos locais de trava e de instrução depois dele.",
+  ],
+  [
+    k("L2", "src/modules/operator-profiles/operator-profile-prisma.repository.ts", "new PrismaOperatorProfileRepository(tx)", "PARAMETRO(tx de callback de withTenantRlsBudget)", "×2"),
+    "B-SAN3-17 (Emenda 1.11, J-568 C2-01): o aceite e a revogação do titular pelo app (update e applyHolderConsentGrant do RlsPrismaOperatorProfileRepository) rodam no callback de `withTenantRlsBudget` com o `input.tenantId` do ator, o mesmo das variantes sem prazo; o helper põe o setter do GUC como 1ª instrução da transação (src/database/rls.ts l.128) e o `lock_timeout` local depois dele.",
+  ],
   // B-TRC-02 (emenda v2.4 de escopo, docs/revisoes/TRACCAR/B-TRC-02-emenda-v2.4-acessos.md §1.2): as 6 chaves L1 da telemetria
   // veicular, coladas da saída do gerador no head do bloco, com o motivo por chave. Gerador e WRAPPERS intocados.
   [
