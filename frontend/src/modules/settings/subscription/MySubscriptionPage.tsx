@@ -7,6 +7,8 @@ import { useTenantContext } from "../../../providers/TenantProvider";
 import { useScreenAppearance, type Appearance } from "../../appearance";
 import { copyFeedbackText, type CopyFeedback, type CopyTarget, type MySubscriptionLoadState, type MySubscriptionViewModel } from "./components/my-subscription.shared";
 import { MySubscriptionViewA } from "./components/MySubscriptionViewA";
+import { MySubscriptionViewB } from "./components/MySubscriptionViewB";
+import { MySubscriptionViewC } from "./components/MySubscriptionViewC";
 import { buildMySubscriptionScreen } from "./my-subscription.state";
 import type { MySubscriptionBlock } from "./my-subscription.types";
 import { useMySubscription } from "./useMySubscription";
@@ -86,7 +88,7 @@ export function MySubscriptionPage() {
     onCopy: (target) => void onCopy(target),
   };
 
-  return <MySubscriptionViewA {...model} />;
+  return <>{appearance === "B" ? <MySubscriptionViewB {...model} /> : appearance === "C" ? <MySubscriptionViewC {...model} /> : <MySubscriptionViewA {...model} />}</>;
 }
 
 export default MySubscriptionPage;

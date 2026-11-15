@@ -8670,3 +8670,64 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
 .assin-a-pagar__txt span { color: var(--text-secondary); font-size: var(--text-sm); }
 .assin-a-pagar .assin-bloco__mais { margin-top: 0; padding-top: 0; }
 .assin-a-pagar.ui-alert--warning strong { color: #92400e; }
+.assin-texto--sucesso { color: #15803d; }
+/* Aparência B — faixa de situação + as duas pizzas grandes. */
+.assin-b-faixa { display: grid; grid-template-columns: repeat(var(--assin-n, 2), minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+.assin-b-seg { display: flex; align-items: center; gap: 12px; min-height: 74px; padding: 14px 16px; border-radius: 12px; }
+.assin-b-seg__ic { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 38px; height: 38px; border-radius: 10px; }
+.assin-b-seg__txt { display: flex; flex: 1; flex-direction: column; gap: 2px; min-width: 0; }
+.assin-b-seg__k { font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: #64748b; }
+.assin-b-seg__v { font-size: 17px; font-weight: 800; line-height: 1.2; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assin-b-seg__d { font-size: 12px; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assin-b-seg .assin-bloco__mais { margin-top: 0; padding-top: 0; }
+.assin-b-seg--pagar { background: #fef2f2; border-color: #fca5a5; }
+.assin-b-seg--pagar-aviso { background: #fffbeb; border-color: #fde68a; }
+.assin-b-seg--pagar-info { background: #eff6ff; border-color: #bfdbfe; }
+.assin-b-seg--pagar .assin-b-seg__k, .assin-b-seg--pagar .assin-b-seg__d, .assin-b-seg--pagar-aviso .assin-b-seg__k, .assin-b-seg--pagar-aviso .assin-b-seg__d, .assin-b-seg--pagar-info .assin-b-seg__k, .assin-b-seg--pagar-info .assin-b-seg__d { color: #475569; }
+.assin-b-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.assin-b-pie { display: flex; flex-direction: column; }
+.assin-b-uso { display: block; margin-top: 16px; }
+.assin-b-pie .ui-usage-pie__sub, .assin-b-pie .ui-usage-pie__over-note, .assin-b-pie .ui-usage-pie__note { font-size: 12.5px; }
+.assin-b-pie .ui-usage-pie__item { grid-template-columns: minmax(0, 96px) minmax(0, 1fr) auto; }
+/* Aparência C — situação primeiro. */
+.assin-c-faixa { display: flex; align-items: stretch; gap: 14px; margin-bottom: 14px; }
+.assin-c-sit { display: flex; flex: 1; align-items: center; gap: 18px; min-width: 0; padding: 22px 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; }
+.assin-c-sit--success { background: #f0fdf4; border-color: #bbf7d0; }
+.assin-c-sit--danger { background: #fef2f2; border-color: #fca5a5; }
+.assin-c-sit__ic { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 56px; height: 56px; border-radius: 16px; }
+.assin-c-sit--success .assin-c-sit__ic { background: #dcfce7; color: #15803d; }
+.assin-c-sit--danger .assin-c-sit__ic { background: #fee2e2; color: #b91c1c; }
+.assin-c-sit__txt { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.assin-c-sit__k { font-size: 10.5px; font-weight: 800; letter-spacing: .09em; color: #475569; }
+.assin-c-sit__t { font-size: 26px; font-weight: 800; letter-spacing: -.5px; line-height: 1.1; }
+.assin-c-sit--success .assin-c-sit__t { color: #15803d; }
+.assin-c-sit--danger .assin-c-sit__t { color: #b91c1c; }
+.assin-c-sit__d { font-size: 13.5px; line-height: 1.45; color: #475569; }
+.assin-c-sit__aviso { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12.5px; font-weight: 700; color: #92400e; }
+.assin-c-sit .assin-bloco__mais { align-self: center; margin-top: 0; padding-top: 0; }
+.assin-c-pagar { display: flex; flex-shrink: 0; align-items: center; gap: 14px; width: 320px; padding: 18px 20px; background: #2563eb; border: 1px solid #2563eb; border-radius: 14px; color: #fff; text-align: left; }
+.assin-c-pagar:hover { background: #1d4ed8; border-color: #1d4ed8; }
+.assin-c-pagar .pat-chevron-icon, .assin-c-pagar[aria-expanded="true"] .pat-chevron-icon { color: #eff6ff; }
+.assin-c-pagar__ic { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; background: rgba(255, 255, 255, .16); }
+.assin-c-pagar__txt { flex: 1; min-width: 0; }
+.assin-c-pagar__t { display: block; font-size: 17px; font-weight: 800; }
+.assin-c-pagar__d { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.4; color: #eff6ff; }
+.assin-c-pagar.assin-c-pagar--manual { background: #fff; border-color: #2563eb; color: #0f172a; }
+.assin-c-pagar.assin-c-pagar--manual:hover { background: #eff6ff; border-color: #1d4ed8; }
+.assin-c-pagar--manual .assin-c-pagar__ic { background: #eff6ff; color: #2563eb; }
+.assin-c-pagar--manual .assin-c-pagar__d { color: #475569; }
+.assin-c-pagar.assin-c-pagar--manual .pat-chevron-icon, .assin-c-pagar.assin-c-pagar--manual[aria-expanded="true"] .pat-chevron-icon { color: #2563eb; }
+.assin-c-trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 14px; }
+.assin-c-mini { display: flex; flex-direction: column; padding: 14px 16px; }
+.assin-c-uso { display: block; margin-top: 10px; }
+.assin-c-plano { margin-top: 10px; }
+@media (max-width: 1100px) {
+  .assin-b-duo { grid-template-columns: minmax(0, 1fr); }
+  .assin-c-faixa { flex-direction: column; }
+  .assin-c-pagar { width: auto; }
+}
+@media (max-width: 760px) {
+  .assin-b-faixa, .assin-c-trio { grid-template-columns: minmax(0, 1fr); }
+  .assin-tela .pat-ab-detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .assin-b-pie .ui-usage-pie--side { flex-direction: column; }
+}
