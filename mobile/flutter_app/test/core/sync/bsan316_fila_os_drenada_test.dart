@@ -151,29 +151,27 @@ class _ServidorDoLote implements HttpClientAdapter {
   ];
 }
 
-({WorkOrderSyncReplayService replay, _ServidorDoLote servidor}) _replay(
-  SyncQueueRepository queue, {
-  bool recusar = false,
-}) {
-  final servidor = _ServidorDoLote(recusar: recusar);
-  final dio = Dio(BaseOptions(baseUrl: 'https://servidor.test'))
-    ..httpClientAdapter = servidor;
-  return (
-    replay: WorkOrderSyncReplayService(
-      queue: queue,
-      api: DioWorkOrderSyncBatchApi(dio),
-    ),
-    servidor: servidor,
-  );
+class _Passe {
+  _Passe(this.replay, this.servidor);
+
+  final WorkOrderSyncReplayService replay;
+  final _ServidorDoLote servidor;
 }
 
-Map<String, dynamic> _contrato() =>
-    jsonDecode(
-          File(
-            'test/core/sync/bsan316_lote_os_contrato.json',
-          ).readAsStringSync(),
-        )
-        as Map<String, dynamic>;
+_Passe _replay(SyncQueueRepository queue, {bool recusar = false}) {
+  final servidor = _ServidorDoLote(recusar: recusar);
+  final dio = Dio(BaseOptions(baseUrl: 'https://servidor.test'));
+  dio.httpClientAdapter = servidor;
+  final api = DioWorkOrderSyncBatchApi(dio);
+  return _Passe(WorkOrderSyncReplayService(queue: queue, api: api), servidor);
+}
+
+const _arquivoDoContrato = 'test/core/sync/bsan316_lote_os_contrato.json';
+
+Map<String, dynamic> _contrato() {
+  final texto = File(_arquivoDoContrato).readAsStringSync();
+  return jsonDecode(texto) as Map<String, dynamic>;
+}
 
 void main() {
   test('A1. aprovação com id de servidor e motivo sai no lote com motivo, '
@@ -285,73 +283,67 @@ void main() {
     expect(await queue.pendingForTenant(_tenant), isEmpty);
   });
 
-  test(
-    'A4. pedido sem motivo não sai (nem "não iniciou" sem motivo)',
-    () async {
-      final queue = InMemorySyncQueueRepository();
-      await queue.enqueue(
-        _acao(
-          'a4-pedido',
-          WorkOrderSyncActionTypes.approvalRequest,
-          _pedido(reason: null),
-        ),
-      );
-      await queue.enqueue(
-        _acao(
-          'a4-pedido-branco',
-          WorkOrderSyncActionTypes.approvalRequest,
-          _pedido(reason: '   '),
-        ),
-      );
-      await queue.enqueue(
-        _acao(
-          'a4-nao-iniciou',
-          WorkOrderSyncActionTypes.unableToStart,
-          _naoIniciou(reason: null),
-        ),
-      );
-      final h = _replay(queue);
+  test('A4. pedido ou "não iniciou" sem motivo não sai', () async {
+    final queue = InMemorySyncQueueRepository();
+    await queue.enqueue(
+      _acao(
+        'a4-pedido',
+        WorkOrderSyncActionTypes.approvalRequest,
+        _pedido(reason: null),
+      ),
+    );
+    await queue.enqueue(
+      _acao(
+        'a4-pedido-branco',
+        WorkOrderSyncActionTypes.approvalRequest,
+        _pedido(reason: '   '),
+      ),
+    );
+    await queue.enqueue(
+      _acao(
+        'a4-nao-iniciou',
+        WorkOrderSyncActionTypes.unableToStart,
+        _naoIniciou(reason: null),
+      ),
+    );
+    final h = _replay(queue);
 
-      await h.replay.replayTenant(_tenant);
+    await h.replay.replayTenant(_tenant);
 
-      expect(h.servidor.lotes, isEmpty, reason: 'o servidor recusaria sempre');
-      expect(
-        (await queue.pendingForTenant(_tenant)).map((a) => a.status).toSet(),
-        {SyncStatus.pending},
-      );
-    },
-  );
+    expect(h.servidor.lotes, isEmpty, reason: 'o servidor recusaria sempre');
+    expect(
+      (await queue.pendingForTenant(_tenant)).map((a) => a.status).toSet(),
+      {SyncStatus.pending},
+    );
+  });
 
-  test(
-    'A5. passe pelo DioWorkOrderSyncBatchApi real, com o servidor no '
-    'formato da resposta: as duas ficam synced e a fila fica vazia',
-    () async {
-      final queue = InMemorySyncQueueRepository();
-      await queue.enqueue(
-        _acao('a5-pedido', WorkOrderSyncActionTypes.approvalRequest, _pedido()),
-      );
-      await queue.enqueue(
-        _acao(
-          'a5-nao-iniciou',
-          WorkOrderSyncActionTypes.unableToStart,
-          _naoIniciou(),
-        ),
-      );
-      final h = _replay(queue);
-
-      final resultado = await h.replay.replayTenant(_tenant);
-
-      expect(resultado.synced.map((a) => a.clientActionId).toSet(), {
-        'a5-pedido',
+  test('A5. passe pelo Dio real com o servidor no formato da resposta: '
+      'as duas ficam synced e a fila vazia', () async {
+    final queue = InMemorySyncQueueRepository();
+    await queue.enqueue(
+      _acao('a5-pedido', WorkOrderSyncActionTypes.approvalRequest, _pedido()),
+    );
+    await queue.enqueue(
+      _acao(
         'a5-nao-iniciou',
-      });
-      expect(await queue.pendingForTenant(_tenant), isEmpty);
-      for (final acao in await queue.actionsForTenant(_tenant)) {
-        expect(acao.status, SyncStatus.synced, reason: acao.clientActionId);
-        expect(acao.payload['result_ref'], _os);
-      }
-    },
-  );
+        WorkOrderSyncActionTypes.unableToStart,
+        _naoIniciou(),
+      ),
+    );
+    final h = _replay(queue);
+
+    final resultado = await h.replay.replayTenant(_tenant);
+
+    expect(resultado.synced.map((a) => a.clientActionId).toSet(), {
+      'a5-pedido',
+      'a5-nao-iniciou',
+    });
+    expect(await queue.pendingForTenant(_tenant), isEmpty);
+    for (final acao in await queue.actionsForTenant(_tenant)) {
+      expect(acao.status, SyncStatus.synced, reason: acao.clientActionId);
+      expect(acao.payload['result_ref'], _os);
+    }
+  });
 
   test('A6. recusa do servidor vira failed reenviável; na 5ª, Envio não '
       'concluído com Descartar', () async {
