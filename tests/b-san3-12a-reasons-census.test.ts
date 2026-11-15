@@ -21,10 +21,10 @@ const MODULES = ["financial-entries", "financial-titles", "financial-accounts", 
 /**
  * Medido na base `8a7885f4` (comando no relatório do dev, E5): 37 `reason` lançados sem contrato escrito. Este bloco
  * escreveu 11 deles no contrato (a lista fechada do que a tela traduz, §4.1), e o B-SAN3-25 escreveu mais 2
- * (`invalid_currency` e `invalid_due_date`, na lista fechada do faturamento da OS) — ficam os 24 abaixo.
+ * (`invalid_currency` e `invalid_due_date`, na lista fechada do faturamento da OS); o B-ASS-08c1b documentou `due_date_required` no §3.11 — ficam os 23 abaixo.
  */
 const PRE_EXISTENTES_SEM_CONTRATO = new Set([
-  "account_not_found", "due_date_required", "field_too_long", "financial_write_forbidden", "invalid_boolean",
+  "account_not_found", "field_too_long", "financial_write_forbidden", "invalid_boolean",
   "invalid_client_action_id", "invalid_direction", "invalid_issue_date",
   "invalid_kind", "invalid_limit", "invalid_occurred_at", "invalid_offset", "invalid_opening_balance",
   "invalid_parent_title_reference", "invalid_party_name", "invalid_party_type", "invalid_source_type",
