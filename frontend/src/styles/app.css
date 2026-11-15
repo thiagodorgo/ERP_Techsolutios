@@ -8731,3 +8731,14 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
   .assin-tela .pat-ab-detail-grid { grid-template-columns: minmax(0, 1fr); }
   .assin-b-pie .ui-usage-pie--side { flex-direction: column; }
 }
+/* A referência aprovada põe o selo do período à direita do título (a regra genérica `.page-heading` é grade). */
+.assin-a > .page-heading--row { display: flex; }
+.assin-a-sit .ui-badge { gap: 5px; }
+.assin-b-seg__ic--success { background: #dcfce7; color: #15803d; }
+.assin-b-seg__ic--danger { background: #fee2e2; color: #b91c1c; }
+.assin-b-seg__ic--warning { background: #fef3c7; color: #b45309; }
+.assin-b-seg__ic--info { background: #eff6ff; color: #2563eb; }
+.assin-b-seg__ic--info.assin-b-seg__ic--pagar { background: #dbeafe; }
+/* Na faixa âmbar de desatualizado, "Tentar de novo" no tom do texto da faixa (referência aprovada). */
+.assin-tela .pat-banner--warning .pat-link { color: #92400e; text-decoration: underline; }
+.assin-a > .page-heading--row .ui-badge { white-space: nowrap; }

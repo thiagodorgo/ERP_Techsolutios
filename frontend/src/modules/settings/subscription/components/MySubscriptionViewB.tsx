@@ -28,7 +28,7 @@ import {
 // na cor da situação) e o plano; embaixo, as duas pizzas grandes lado a lado (168 px), com o número em uso em destaque e as
 // barras de em uso e disponível. É o BI que a P12 permite, sem indicador a mais. O mesmo conteúdo da A.
 
-type Tile = { readonly bg: string; readonly fg: string; readonly icon: ReactNode };
+type Tile = { readonly tone: "success" | "danger" | "warning" | "info"; readonly icon: ReactNode };
 
 function Segment({ model, block }: { readonly model: MySubscriptionViewModel; readonly block: MySubscriptionBlock }) {
   const screen = model.screen!;
@@ -40,7 +40,7 @@ function Segment({ model, block }: { readonly model: MySubscriptionViewModel; re
   if (block === "situacao") {
     const onTime = !screen.overdue;
     key = "SITUAÇÃO";
-    tile = onTime ? { bg: "#dcfce7", fg: "#15803d", icon: <ShieldCheck size={18} aria-hidden="true" /> } : { bg: "#fee2e2", fg: "#b91c1c", icon: <AlertTriangle size={18} aria-hidden="true" /> };
+    tile = onTime ? { tone: "success", icon: <ShieldCheck size={18} aria-hidden="true" /> } : { tone: "danger", icon: <AlertTriangle size={18} aria-hidden="true" /> };
     headline = <span className={onTime ? "assin-texto--sucesso" : "assin-texto--critico"}>{onTime ? "Em dia" : "Em atraso"}</span>;
     const invoice = screen.invoice;
     sub = onTime
@@ -58,20 +58,20 @@ function Segment({ model, block }: { readonly model: MySubscriptionViewModel; re
     const payTone = screen.overdue ? "danger" : invoice.tone;
     key = "COMO PAGAR";
     const icon = manual ? <MessageCircle size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />;
-    tile = payTone === "danger" ? { bg: "#fee2e2", fg: "#b91c1c", icon } : payTone === "warning" ? { bg: "#fef3c7", fg: "#b45309", icon } : { bg: "#dbeafe", fg: "#2563eb", icon };
+    tile = { tone: payTone, icon };
     tone = payTone === "danger" ? " assin-b-seg--pagar" : payTone === "warning" ? " assin-b-seg--pagar-aviso" : " assin-b-seg--pagar-info";
     headline = "Fatura em aberto";
     sub = `${invoice.dueCaption}${manual ? " · pague com a equipe" : ""}`;
   } else {
     key = "PLANO";
-    tile = { bg: "#eff6ff", fg: "#2563eb", icon: <Layers size={18} aria-hidden="true" /> };
+    tile = { tone: "info", icon: <Layers size={18} aria-hidden="true" /> };
     headline = planNameText(screen);
     const franchise = `${gb(screen.includedUsers)} usuários · ${gb(screen.includedStorage)} GB`;
     sub = screen.planName ? franchise : `nome indisponível · ${franchise}`;
   }
   return (
     <button className={`pat-card assin-bloco assin-b-seg${tone}`} {...blockProps(model, "B", block)}>
-      <span className="assin-b-seg__ic" style={{ background: tile.bg, color: tile.fg }}>
+      <span className={`assin-b-seg__ic assin-b-seg__ic--${tile.tone}${block === "pagar" ? " assin-b-seg__ic--pagar" : ""}`}>
         {tile.icon}
       </span>
       <span className="assin-b-seg__txt">
