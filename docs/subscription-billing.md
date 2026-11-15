@@ -114,7 +114,7 @@ O `snapshot` guarda as entradas do cálculo. Recalcular a partir dele reproduz o
 | `GET /platform/billing/statements?tenantId` · `GET …/statements/:id?tenantId` · `GET …/credits?tenantId` · `GET …/tenants/:tenantId/billing-profile` | `platform:billing:read` |
 | `POST …/statements/close` · `POST …/:id/reopen` · `PATCH …/:id/adjustment` · `PUT …/tenants/:tenantId/billing-profile` | `platform:billing:manage` |
 | `POST …/:id/payments` · `POST …/payments/:paymentId/reverse` · `POST …/:id/cancel` · `POST …/credits/:id/apply` · `POST …/credits/:id/write-off` | `platform:billing:settle` |
-| `GET /billing/subscription` · `GET /billing/subscription/usage-history?months=1..12` (a própria organização) | `billing:read` |
+| `GET /billing/subscription` (a própria organização) | `billing:read` |
 
 As rotas de plataforma recebem o `tenantId` explícito, porque a linha do demonstrativo só se lê sob o GUC da organização. A rota do cliente tira a organização da sessão e recusa `?tenantId` com 400. Ator de plataforma, ou a organização de sistema, recebe 403 `platform_actor_not_a_customer`. A resposta do cliente NÃO tem nenhum valor em dinheiro: só o plano, o uso contra a franquia, a situação e, com demonstrativo em aberto, o bloco "como pagar" (os meios de pagamento chegam com o canal do provedor, no B-ASS-08).
 
