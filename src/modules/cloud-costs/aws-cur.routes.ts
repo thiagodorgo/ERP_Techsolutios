@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { publicStoredError } from "../../infra/logging/public-error.js";
 import { handleAsyncRoute, readRouteParam } from "../core-saas/routes/http.js";
 import { requirePlatformPermission } from "../platform/platform-permissions.js";
 import { createDefaultCloudCostService, isCloudCostSourceType } from "./aws-cur.service.js";
@@ -136,7 +137,7 @@ function toImportDto(costImport: CloudCostImport) {
     totalUnblendedCost: costImport.totalUnblendedCost,
     currency: costImport.currency,
     metadata: costImport.metadata,
-    errorMessage: costImport.errorMessage,
+    errorMessage: publicStoredError(costImport.errorMessage),
     createdAt: costImport.createdAt.toISOString(),
     updatedAt: costImport.updatedAt.toISOString(),
   };

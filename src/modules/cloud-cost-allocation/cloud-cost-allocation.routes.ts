@@ -1,5 +1,6 @@
 import { Router } from "express";
 
+import { publicStoredError } from "../../infra/logging/public-error.js";
 import { handleAsyncRoute, readRouteParam } from "../core-saas/routes/http.js";
 import { requirePlatformPermission } from "../platform/platform-permissions.js";
 import {
@@ -134,7 +135,7 @@ function toRunDto(run: CloudCostAllocationRun) {
     startedAt: run.startedAt?.toISOString(),
     completedAt: run.completedAt?.toISOString(),
     createdBy: run.createdBy,
-    errorMessage: run.errorMessage,
+    errorMessage: publicStoredError(run.errorMessage),
     metadata: run.metadata,
     createdAt: run.createdAt.toISOString(),
     updatedAt: run.updatedAt.toISOString(),

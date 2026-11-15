@@ -1,4 +1,5 @@
 import { env } from "../../config/env.js";
+import { createLogger } from "../../infra/logging/logger.js";
 import {
   CLOUD_USAGE_METRIC_KEYS,
   CLOUD_USAGE_UNITS,
@@ -162,7 +163,7 @@ export function sanitizeCloudUsageMetadata(metadata: Record<string, unknown> | u
 // tentativas). Guardar a corrente de escritas em voo permite ESPERAR por elas de forma determinística.
 let gravacoesEmVoo: Promise<unknown> = Promise.resolve();
 
-export function recordCloudUsageBestEffort(input: RecordUsageEventInput, logger: Pick<Console, "warn"> = console): void {
+export function recordCloudUsageBestEffort(input: RecordUsageEventInput, logger: Pick<Console, "warn"> = createLogger()): void {
   const trabalho = createDefaultCloudUsageService()
     .then((service) => service.recordUsageEvent(input))
     .catch((error: unknown) => {

@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import { createDefaultNotificationService } from "./impound.notifications.service.js";
@@ -8,7 +8,7 @@ import { createDefaultNotificationService } from "./impound.notifications.servic
 // worker: quando now >= due_at o marco é materializado — latência ≠ correção). Intervalo 1h. Ator = SISTEMA.
 export const IMPOUND_NOTIFY_DUE_SCAN_INTERVAL_MS = 3_600_000;
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 // Varredura recorrente: por tenant ATIVO, marca as notificações DEVIDAS faltantes. Só roda em modo prisma (o
 // worker é gated por flag + persistence=prisma). O(tenants) v1. Cada tenant isolado por try/catch — um tenant que

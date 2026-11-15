@@ -1,6 +1,7 @@
 // Injeta 5 FORMAS NOVAS de via mutante sobre a OS no app REAL, antes do 404 de /api/v1 (crítico 07c, r1).
 // Cada handler "escreve" (responde 200) depois de passar o RBAC com work_orders:status — permissão que o técnico tem.
 import { pathToFileURL } from "node:url";
+import { moverParaAntesDo404 } from "./antes-do-404.mts";
 export async function inject(app: any) {
   const root = new URL(pathToFileURL(process.cwd()).href + "/src/");
   const imp = (p: string) => import(new URL(p, root).href);
@@ -27,8 +28,7 @@ export async function inject(app: any) {
   r.use("/mobile", m);
   const st = app.router.stack; const before = st.length;
   app.use("/api/v1", attachAuthenticatedActor(), r);
-  const added = st.splice(before, st.length - before);
-  st.splice(before - 1, 0, ...added); // antes do 404 route_not_found
+  const added = moverParaAntesDo404(st, before); // antes do 404 route_not_found, achado pela propriedade
   console.log("[inject] camadas adicionadas antes do 404:", added.length);
 }
 // Emula o literal "/mobile" que um dev escreveria em src/** ao montar o sub-router F5 (o census lê os literais

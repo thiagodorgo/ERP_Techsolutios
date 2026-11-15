@@ -3,6 +3,10 @@
   "classe": "MIDDLEWARE",
   "n": 1
  },
+ "MIDDLEWARE / · finalErrorHandler": {
+  "classe": "MIDDLEWARE",
+  "n": 1
+ },
  "MIDDLEWARE / · helmetMiddleware": {
   "classe": "MIDDLEWARE",
   "n": 1

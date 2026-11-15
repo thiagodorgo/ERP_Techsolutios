@@ -1,5 +1,5 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
-import pino from "pino";
+import { createLogger } from "../../../infra/logging/logger.js";
 
 import { env } from "../../../config/env.js";
 import { withTenantRls } from "../../../database/rls.js";
@@ -32,7 +32,7 @@ import {
 // PR-04c, junto com o consumidor). Ele existe agora para que a fatia seguinte não precise escolher entre
 // "publicar rápido" e "publicar com persistência real provada contra o Postgres".
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
