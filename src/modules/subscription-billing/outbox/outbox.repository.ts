@@ -166,7 +166,7 @@ export type StatementClaimReadResult = {
   readonly totalCents?: number;
   /** Conserto da J-579 (C2-04): OBRIGATÓRIO — o leitor de produção que esquecer o já pago não compila (o `[CLAIM-PARTIAL]`). */
   readonly paidCents: number;
-  /** Conserto da J-579 (A-C1-02): os pagamentos do demonstrativo (origem e id da cobrança no provedor), para o `[REG-PAID]` do
+  /** Conserto da J-579 (A-C1-02): os pagamentos do demonstrativo (origem e id da cobrança no provedor), para o marcador REG-PAID do
    * dublê. OBRIGATÓRIO no tipo; os leitores de teste, que o `check` não tipa, contam como "nenhum". */
   readonly providerPayments: readonly { readonly source: string; readonly externalChargeId: string | null }[];
 };
@@ -397,7 +397,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     if (!(await this.confirmLease(tenantId, row.id, lease))) return false;
     const chargeId = outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId;
     const details = outcome.kind === "created" ? outcome.result : outcome.lookup;
-    // Conserto da J-579 (A-C1-02): o leitor do demonstrativo ANTES do sink, e o MESMO `[REG-PAID]` do Prisma — o pagamento do
+    // Conserto da J-579 (A-C1-02): o leitor do demonstrativo ANTES do sink, e o MESMO marcador REG-PAID do Prisma — o pagamento do
     // provedor desta cobrança que chegou antes do registro faz a cobrança nascer `confirmed`.
     const statement = await this.readStatement(tenantId, row.statementId);
     let recordedStatus = recordedChargeStatus(outcome.kind, details.status);
