@@ -222,6 +222,36 @@ export class StatementService {
     else await this.audit.record(event);
   }
 
+  /** B-ASS-08c1c: a `charge_create` vira SKIPPED só se ainda está no status lido (o `from` é o da própria linha). 0 linhas = o
+   * claim ou o despacho a pegaram entre a leitura e a escrita: falha fechado, e o movimento desfaz. */
+  async #skipLine(charging: ReturnType<StatementTx["charging"]>, lineId: string, reason: OutboxSkipReason, from: Parameters<ReturnType<StatementTx["charging"]>["skipChargeCreate"]>[2], now: Date): Promise<void> {
+    const skipped = await charging.skipChargeCreate(lineId, reason, from, now);
+    if (!skipped) throw new StatementError(409, "charge_in_flight", "A charge request is in flight; try again.");
+  }
+
+  /**
+   * B-ASS-08c1c (P7, plano §4.3, D2 (i)) — a marcação imediata, no `tx` do movimento e depois do `saveStatement`: a
+   * `charge_create` PENDING vira SKIPPED com o motivo; a SENT com a cobrança CANCELÁVEL ganha o `charge_cancel` pelo núcleo
+   * (o marcador CANCEL-CORE), com a trilha no MESMO `tx`. PROCESSING e NEEDS_REVIEW ficam (§9 D-2).
+   */
+  async #eagerOnMove(tx: StatementTx, statement: SubscriptionStatement, reason: "statement_paid" | "statement_cancelled" | "statement_reopened", now: Date, actorId: string | null = null): Promise<void> {
+    const charging = tx.charging();
+    const plan = eagerPlan(await charging.listChargeLines(statement.id), await charging.listCharges(statement.id));
+    for (const line of plan.skippable) await this.#skipLine(charging, line.id, reason, [line.status], now);
+    for (const line of plan.cancelTargets) {
+      const enqueued = await enqueueChargeCancelInTx(charging, { tenantId: statement.tenantId, statementId: statement.id, target: { id: line.id, provider: line.provider, externalId: line.externalId! }, now });
+      if (enqueued.kind === "already") continue;
+      await charging.recordAudit({ actorId, action: "billing_outbox.charge_cancel_requested", entityId: enqueued.row.id, metadata: { statementId: statement.id, kind: enqueued.row.kind, code: reason } });
+    }
+  }
+
+  /** B-ASS-08c1c (plano §4.3 e §10 item 2): o que a baixa manual faz depois do `saveStatement`, na MESMA transação. A ordem é
+   * trava → pagamento → `saveStatement` → marcação imediata (aqui) → [08c2: a intenção de nota] → trilha. Baixa PARCIAL não
+   * mexe na cobrança aberta (Q4 (a)). */
+  async #afterManualSettle(tx: StatementTx, _before: SubscriptionStatement, statement: SubscriptionStatement, input: { readonly now: Date; readonly actorId: string | null }): Promise<void> {
+    if (statement.status === "paid") await this.#eagerOnMove(tx, statement, "statement_paid", input.now); // [EAGER-01]
+  }
+
   /** Reabrir (regra 5): só sem pagamento, sem cobrança viva e sem nota viva; vira `reopened`. */
   async reopen(input: { readonly tenantId: string; readonly statementId: string; readonly reason: string; readonly actorId: string; readonly now: Date }) {
     const reason = requireReason(input.reason, "reason");
@@ -310,6 +340,7 @@ export class StatementService {
         status: paidCents >= current.totalCents ? "paid" : "closed",
         paidAt: paidCents >= current.totalCents ? input.now : current.paidAt,
       });
+      await this.#afterManualSettle(tx, current, statement, input);
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
@@ -388,6 +419,7 @@ export class StatementService {
           history: [...current.snapshot.history, { at: input.now.toISOString(), event: "cancelled", by: input.actorId, totalCents: current.totalCents, note: reason }],
         },
       });
+      await this.#eagerOnMove(tx, cancelled, "statement_cancelled", input.now, input.actorId); // [EAGER-02]
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
