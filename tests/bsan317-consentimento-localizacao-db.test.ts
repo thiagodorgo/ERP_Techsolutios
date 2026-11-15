@@ -7,6 +7,13 @@ import test, { after } from "node:test";
 
 import { closeServer, createEphemeralRole, getBaseUrl, requestJson, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
 import { createBsan317AdminClient } from "./helpers/bsan317-db.js";
+import {
+  assertApplicationNamePropagated,
+  buildApplicationName,
+  captureSettled,
+  waitForOwnBlockedOrSettled,
+  withApplicationName,
+} from "./helpers/pg-barrier.js";
 import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 
 // -----------------------------------------------------------------------------------------------
@@ -24,6 +31,9 @@ import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 //       (leitura declarada no diário `dev-17-cl.md`); nada de organização, coordenada nem client_action_id
 //   D6  (CR17R2-07) concede → revoga → reenvio do 1º aceite → superseded; tracking_consent false e a contagem não
 //       muda depois de uma posição
+//   T-17-TOCTOU-db (Emenda 1.5, CX3-568-01) a escrita revalida o consentimento na MESMA transação, com `FOR SHARE`
+//       na linha do perfil: (a) a revogação confirma antes da gravação → 422 e 0 linha; (b) a gravação segura a
+//       linha → a revogação espera, a posição gravada é anterior a ela, e a próxima gravação → 422.
 //   D7  (Emenda 1 da abertura, 2.2) o caso (a) do B22: traccar às 03:00 e app às 03:05; desligado o consentimento,
 //       o latest e o detalhe da OS trazem o traccar; com since 03:01, nada do operador. Única prova do ramo
 //       `source: { in: … }` do repositório Prisma.
@@ -33,6 +43,8 @@ import { TODOS_OS_MODULOS } from "./helpers/san3-18-modulos.js";
 // -----------------------------------------------------------------------------------------------
 
 const connectionString = process.env.DATABASE_URL;
+// pg-barrier: as conexões da suíte levam um application_name próprio, para a barreira só ver a fila desta suíte.
+const APP = buildApplicationName("bsan317-db");
 const ACCEPT_ROUTE = "/api/v1/mobile/location-consent";
 const REVOKE_ROUTE = "/api/v1/mobile/location-consent/revoke";
 const POSITION = "/api/v1/mobile/field-locations";
@@ -65,8 +77,9 @@ if (!connectionString) {
   const harness = (): Promise<Harness> => (harnessPromise ??= bootstrap());
 
   async function bootstrap() {
-    const admin = await createBsan317AdminClient(connectionString!);
-    const role: EphemeralRole = await createEphemeralRole(admin, connectionString!);
+    const taggedUrl = withApplicationName(connectionString!, APP);
+    const admin = await createBsan317AdminClient(taggedUrl);
+    const role: EphemeralRole = await createEphemeralRole(admin, taggedUrl);
 
     // O cliente GLOBAL do app (`src/database/prisma.ts` lê `globalThis.prisma` antes de criar o seu) passa a ser o do
     // papel efêmero: a rota real roda sem bypass de RLS, como o papel de runtime de produção (B-SAN3-05).
@@ -76,6 +89,7 @@ if (!connectionString) {
       `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`,
     );
     assert.deepEqual(posture, [{ rolsuper: false, rolbypassrls: false }], "o app roda sob papel NOSUPERUSER e sem BYPASSRLS");
+    await assertApplicationNamePropagated(role.client, APP);
 
     const [{ createApp }, { PrismaCoreSaasService }, { PrismaCoreSaasStore }, repos, { signAccessToken }] = await Promise.all([
       import("../src/app.js"),
@@ -400,6 +414,108 @@ if (!connectionString) {
     assert.equal(map.status, 200, JSON.stringify(map.body));
     assert.equal((map.body.data as any)?.technician?.latitude, -22.9, "o detalhe da OS traz a viatura");
     assert.deepEqual(await latestOf("?since=2026-11-14T03:01:00.000Z"), [], "o since vale para o ponto reposto");
+  });
+
+  // ------------------------------------------------------------------ Emenda 1.5 (CX3-568-01): a escrita é a autoridade
+
+  function technicianActor(s: Scenario) {
+    return { tenantId: s.tenantId, userId: s.tech.userId, roles: ["field_technician"], permissions: ["field_location:send"] } as const;
+  }
+
+  test("[T-17-TOCTOU-db] (a) a revogação confirma antes da gravação (depois da checagem do serviço) → 422 tracking_consent_required e 0 linha", async () => {
+    const h = await harness();
+    const s = await scenario(h, "toctou-a", "consented");
+    const [{ FieldLocationService }, { RlsPrismaFieldLocationRepository }] = await Promise.all([
+      import("../src/modules/field-location/field-location.service.js"),
+      import("../src/modules/field-location/field-location-prisma.repository.js"),
+    ]);
+    const real = new RlsPrismaFieldLocationRepository(h.role.client);
+    let revokedInsideTheWrite = false;
+    const probe = {
+      async record(...args: Parameters<typeof real.record>) {
+        const revoked = await post(h, REVOKE_ROUTE, s.tech, decision());
+        assert.equal(revoked.status, 200, JSON.stringify(revoked.body));
+        revokedInsideTheWrite = true;
+        return real.record(...args);
+      },
+      listLatest: (input: Parameters<typeof real.listLatest>[0]) => real.listLatest(input),
+      listHistory: (input: Parameters<typeof real.listHistory>[0]) => real.listHistory(input),
+    };
+    const service = new FieldLocationService(probe);
+
+    const outcome = await service.recordMobileLocation(technicianActor(s) as never, { latitude: -23.55, longitude: -46.63 }).then(
+      (location) => ({ status: 201, reason: undefined as string | undefined, id: location.id }),
+      (error: { statusCode?: number; reason?: string }) => ({ status: error.statusCode, reason: error.reason, id: undefined }),
+    );
+
+    assert.equal(revokedInsideTheWrite, true, "a sonda revogou dentro da escrita");
+    assert.equal((await profileRow(h, s.profileId!)).tracking_consent, false, "o consentimento final é false");
+    assert.deepEqual(
+      { status: outcome.status, reason: outcome.reason },
+      { status: 422, reason: "tracking_consent_required" },
+      `a escrita, sob papel sem bypass, recusa a posição de quem revogou no meio (${JSON.stringify(outcome)})`,
+    );
+    assert.equal(await locationRows(h, s.tenantId, s.tech.userId), 0, "0 linha gravada");
+  });
+
+  test("[T-17-TOCTOU-db] (b) a gravação segura a linha do perfil (FOR SHARE): a revogação espera, a posição é anterior a ela, e a próxima → 422", async () => {
+    const h = await harness();
+    const s = await scenario(h, "toctou-b", "consented");
+    const [{ FieldLocationService }, { RlsPrismaFieldLocationRepository }] = await Promise.all([
+      import("../src/modules/field-location/field-location.service.js"),
+      import("../src/modules/field-location/field-location-prisma.repository.js"),
+    ]);
+    let signalLocked!: () => void;
+    const locked = new Promise<void>((resolve) => (signalLocked = resolve));
+    let release!: () => void;
+    const released = new Promise<void>((resolve) => (release = resolve));
+    // O gancho roda dentro da transação da escrita, logo depois do `SELECT … FOR SHARE` e antes do INSERT.
+    const repository = new RlsPrismaFieldLocationRepository(h.role.client, {
+      afterConsentLocked: async () => {
+        signalLocked();
+        await released;
+      },
+    });
+    const service = new FieldLocationService(repository);
+
+    const write = captureSettled(service.recordMobileLocation(technicianActor(s) as never, { latitude: -23.55, longitude: -46.63 }));
+    try {
+      const held = await Promise.race([locked.then(() => true), pause(10_000).then(() => false)]);
+      assert.equal(held, true, "a escrita segura a linha do perfil antes do INSERT (o gancho depois do FOR SHARE rodou)");
+
+      const revoke = captureSettled(post(h, REVOKE_ROUTE, s.tech, decision()));
+      let revokeSettled = false;
+      void revoke.then(() => (revokeSettled = true));
+      const seen = await waitForOwnBlockedOrSettled(h.admin, {
+        applicationName: APP,
+        loser: revoke,
+        label: "a revogação do titular espera a escrita que segura a linha",
+        timeoutMs: 3_000,
+      });
+      assert.match(seen, /^bloqueado: .*operator_profiles/i, `a revogação espera a escrita (${seen})`);
+      // A ordem: o UPDATE da revogação espera a trava da escrita, e só anda quando a transação da escrita termina. Logo a
+      // posição gravada é anterior à revogação. (Os carimbos não servem de prova: o Prisma os calcula fora do banco.)
+      assert.equal(revokeSettled, false, "a revogação ainda espera quando a escrita é liberada");
+      release();
+
+      const written = await write;
+      assert.equal(written.status, "fulfilled", JSON.stringify(written));
+      const revoked = await revoke;
+      assert.equal(revoked.status, "fulfilled", JSON.stringify(revoked));
+      assert.equal(revoked.status === "fulfilled" ? revoked.value.status : 0, 200);
+
+      assert.equal(await locationRows(h, s.tenantId, s.tech.userId), 1, "a posição da escrita que segurou a linha fica gravada");
+      const profile = await profileRow(h, s.profileId!);
+      assert.equal(profile.tracking_consent, false);
+
+      const next = await post(h, POSITION, s.tech, { latitude: -23.56, longitude: -46.64 });
+      assert.equal(next.status, 422, JSON.stringify(next.body));
+      assert.equal(next.body.error?.reason, "tracking_consent_required");
+      assert.equal(await locationRows(h, s.tenantId, s.tech.userId), 1, "a próxima gravação não grava");
+    } finally {
+      release();
+      await write;
+    }
   });
 
   // ------------------------------------------------------------------ teardown escopado

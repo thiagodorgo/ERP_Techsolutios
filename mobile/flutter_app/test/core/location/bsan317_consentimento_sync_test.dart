@@ -948,6 +948,59 @@ void main() {
       await store.acceptManualCapture();
       expect((await store.pendingDecisionFor(a))!.decidedAt, now);
     });
+    // Emenda 1.5 da abertura (CX3-568-02, a sonda CX3-PROBE da pré-revisão
+    // `cx3-prerev-568`): a recusa de um aceite ANTIGO não apaga a revogação
+    // mais nova. O reset só vale se a decisão recusada ainda for a pendente de
+    // agora (mesmo `clientActionId`); se nasceu outra, ela sai no mesmo passe.
+    for (final refusal in <(String, Object)>[
+      (
+        'T-17-APP-SUPERSEDED-REVOKE',
+        const LocationConsentApiResult(
+          status: LocationConsentApiStatus.superseded,
+          granted: false,
+        ),
+      ),
+      (
+        'T-17-APP-403-REVOKE',
+        const LocationConsentRefusedError(
+          'permission_required',
+          statusCode: 403,
+        ),
+      ),
+    ]) {
+      test('${refusal.$1}. o aceite sai; o titular revoga durante o envio; a '
+          'organização recusa o aceite → as chamadas são [grant, revoke] e o '
+          'fim é revogado e registrado', () async {
+        final gate = Completer<void>();
+        consentApi.holdFirstGrantBeforeApply = gate;
+        consentApi.script.add(refusal.$2); // a resposta do aceite em voo
+
+        final first = sync.accept(_tenant); // o aceite fica preso no portão
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        final second = sync.revoke(_tenant); // o titular revoga no aparelho
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        gate.complete();
+        await Future.wait<Object?>([first, second]);
+        await sync.settleDecision(_tenant);
+
+        final status = await store.status();
+        // ignore: avoid_print
+        print(
+          'BSAN317-${refusal.$1} chamadas=${consentApi.calls.map((c) => c.split(':').first).toList()} '
+          'granted=${status.granted} reconfirm=${status.needsReconfirm} '
+          'estado=${status.serverState.name}',
+        );
+        expect(
+          consentApi.calls.map((c) => c.split(':').first).toList(),
+          ['grant', 'revoke'],
+          reason: 'a revogação posterior precisa chegar ao servidor',
+        );
+        expect(status.granted, isFalse);
+        expect(status.needsReconfirm, isFalse);
+        expect(status.serverState, LocationConsentServerState.registered);
+        expect(await store.pendingDecisionFor(a), isNull);
+      });
+    }
   });
 
   group('fiação dos providers', () {

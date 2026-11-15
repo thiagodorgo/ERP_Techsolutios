@@ -721,3 +721,52 @@ test("[B24] 2.7: a evidência pelo sync não guarda gps de quem não consentiu �
     assert.equal(withoutConsent.note, "chegada no local", "a nota continua");
   });
 });
+
+// -----------------------------------------------------------------------------------------------
+// Emenda 1.5 da abertura (CX3-568-01, pré-revisão `cx3-prerev-568`) e Emenda 1.5.1: a escrita revalida o consentimento
+// no MESMO passo atômico da gravação. A sonda do revisor: o titular revoga DENTRO da escrita, depois da checagem do
+// serviço e antes de persistir. O repositório em memória lê o consentimento pelo leitor síncrono
+// (`InMemoryOperatorProfileRepository.trackingConsentNow`) imediatamente antes do `set`.
+// -----------------------------------------------------------------------------------------------
+test("[T-17-TOCTOU-mem] a revogação que chega dentro da escrita, antes de persistir, dá 422 tracking_consent_required e 0 linha", async () => {
+  const [{ FieldLocationService }, { InMemoryFieldLocationRepository }, { OperatorProfileService }, { InMemoryOperatorProfileRepository }] =
+    await Promise.all([
+      import("../src/modules/field-location/field-location.service.js"),
+      import("../src/modules/field-location/field-location.repository.js"),
+      import("../src/modules/operator-profiles/operator-profile.service.js"),
+      import("../src/modules/operator-profiles/operator-profile.repository.js"),
+    ]);
+  const tenantId = randomUUID();
+  const tech = { tenantId, userId: randomUUID(), roles: ["field_technician"], permissions: ["field_location:send"] } as const;
+  const manager = { tenantId, userId: randomUUID(), roles: ["manager"], permissions: ["operator_profiles:create"] } as const;
+  const profileRepository = new InMemoryOperatorProfileRepository();
+  const profiles = new OperatorProfileService(profileRepository);
+  const profile = await profiles.create(manager as never, { user_id: tech.userId, tracking_consent: true });
+  const written = new InMemoryFieldLocationRepository((t: string, u: string) => profileRepository.trackingConsentNow(t, u));
+
+  let revokedInsideTheWrite = false;
+  const probe = {
+    async record(...args: Parameters<typeof written.record>) {
+      await profiles.update(tech as never, profile.id, { tracking_consent: false });
+      revokedInsideTheWrite = true;
+      return written.record(...args);
+    },
+    listLatest: (input: Parameters<typeof written.listLatest>[0]) => written.listLatest(input),
+    listHistory: (input: Parameters<typeof written.listHistory>[0]) => written.listHistory(input),
+  };
+  const service = new FieldLocationService(probe, async () => profiles);
+
+  const outcome = await service.recordMobileLocation(tech as never, point()).then(
+    (location) => ({ status: 201, reason: undefined as string | undefined, id: location.id }),
+    (error: { statusCode?: number; reason?: string }) => ({ status: error.statusCode, reason: error.reason, id: undefined }),
+  );
+
+  assert.equal(revokedInsideTheWrite, true, "a sonda revogou dentro da escrita");
+  assert.equal((await profiles.findByUserId(tenantId, tech.userId))?.trackingConsent, false, "o consentimento final é false");
+  assert.deepEqual(
+    { status: outcome.status, reason: outcome.reason },
+    { status: 422, reason: "tracking_consent_required" },
+    `a escrita recusa a posição de quem revogou no meio (${JSON.stringify(outcome)})`,
+  );
+  assert.equal((await written.listHistory({ tenantId, operatorUserId: tech.userId })).length, 0, "0 linha gravada");
+});
