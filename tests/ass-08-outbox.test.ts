@@ -18,7 +18,7 @@ import { InMemoryChargeIntentRepository } from "../src/modules/subscription-bill
 import { profileCustomerResolver, requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
 import { InMemoryStatementChargeRepository } from "../src/modules/subscription-billing/charges/charges.repository.js";
 import { InMemoryStatementRepository } from "../src/modules/subscription-billing/statements/statement.repository.js";
-import { StatementService, type OutboxStatementGuard } from "../src/modules/subscription-billing/statements/statement.service.js";
+import { StatementService } from "../src/modules/subscription-billing/statements/statement.service.js";
 import { StatementError, type SubscriptionStatement } from "../src/modules/subscription-billing/statements/statement.types.js";
 import { InMemoryStatementRefRepository } from "../src/modules/subscription-billing/webhooks/statement-refs.repository.js";
 import { ProviderRateLimitedError } from "../src/modules/subscription-billing/providers/http/billing-errors.js";
@@ -380,11 +380,10 @@ async function obx5Harness(t0: Date): Promise<Obx5Harness> {
     },
     clock: () => t0,
   });
-  // D2 (iv): o guard que `reopen()` consulta — adaptador trivial sobre `listByStatement` (em produção, a 08b liga o Prisma).
-  const guard: OutboxStatementGuard = {
-    hasNeedsReview: async (tenantId, statementId) => (await outbox.listByStatement(tenantId, statementId)).some((row) => row.status === "NEEDS_REVIEW"),
-  };
-  const service = new StatementService(statements, inputsStub, { record: async () => {} }, guard);
+  // D2 (iv) e B-ASS-08c1b (P8): o guard que `reopen()` consulta vive no `tx` (`hasOutboxNeedsReview`); o dublê lê a fila
+  // ligada pelas lojas do canal (a nota não entra neste teste).
+  statements.attachChannelStores({ outbox, invoices: { findLive: async () => undefined } });
+  const service = new StatementService(statements, inputsStub, { record: async () => {} });
   const statement = await statements.transaction(TENANT, async (tx) => {
     const { statement: fresh } = await tx.insertIfAbsentAndLock({ tenantId: TENANT, period: "2026-11" });
     return tx.saveStatement({ ...fresh, status: "closed", chargeStatus: "none", totalCents: 10000, dueDate: "2026-12-10", closedAt: t0 });

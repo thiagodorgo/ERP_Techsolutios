@@ -139,6 +139,10 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA DELETE /api/v1/platform/billing/economic-groups/:groupId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA DELETE /api/v1/platform/billing/tenants/:tenantId/subscription": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -204,10 +208,6 @@
   "n": 1
  },
  "ROTA GET /api/v1/billing/subscription": {
-  "classe": "LEITURA",
-  "n": 1
- },
- "ROTA GET /api/v1/billing/subscription/usage-history": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -631,6 +631,30 @@
   "classe": "LEITURA",
   "n": 1
  },
+ "ROTA GET /api/v1/platform/billing/economic-groups": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/economic-groups/:groupId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/economic-groups/:groupId/history": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/fx-rates": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/outbox": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/overview": {
+  "classe": "LEITURA",
+  "n": 1
+ },
  "ROTA GET /api/v1/platform/billing/plans": {
   "classe": "LEITURA",
   "n": 1
@@ -660,6 +684,10 @@
   "n": 1
  },
  "ROTA GET /api/v1/platform/billing/statements/:statementId": {
+  "classe": "LEITURA",
+  "n": 1
+ },
+ "ROTA GET /api/v1/platform/billing/statements/:statementId/charges": {
   "classe": "LEITURA",
   "n": 1
  },
@@ -1072,6 +1100,10 @@
   "n": 1
  },
  "ROTA PATCH /api/v1/operator-profiles/:profileId": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PATCH /api/v1/platform/billing/economic-groups/:groupId": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -1635,6 +1667,18 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA POST /api/v1/platform/billing/economic-groups": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/outbox/:id/resolve": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/outbox/:id/retry": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA POST /api/v1/platform/billing/plans": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1644,6 +1688,18 @@
   "n": 1
  },
  "ROTA POST /api/v1/platform/billing/statements/:statementId/cancel": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/charge": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/charge/cancel": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA POST /api/v1/platform/billing/statements/:statementId/charge/cancel-unknown": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
@@ -1839,6 +1895,14 @@
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
  },
+ "ROTA PUT /api/v1/platform/billing/economic-groups/:groupId/members": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
+ "ROTA PUT /api/v1/platform/billing/fx-rates/:month": {
+  "classe": "SEM-ALCANCE-CAMPO",
+  "n": 1
+ },
  "ROTA PUT /api/v1/platform/billing/providers/:provider": {
   "classe": "SEM-ALCANCE-CAMPO",
   "n": 1
@@ -1897,7 +1961,7 @@
  },
  "ROTEADOR /api/v1/platform/billing": {
   "classe": "ROTEADOR",
-  "n": 3
+  "n": 6
  },
  "ROTEADOR /api/v1/platform/cloud-cost-allocations": {
   "classe": "ROTEADOR",

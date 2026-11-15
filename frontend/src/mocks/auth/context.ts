@@ -33,6 +33,8 @@ export const mockSession: AuthSession = {
       "platform:cloud-costs:import",
       "platform:cloud-cost-allocation:read",
       "platform:cloud-cost-allocation:run",
+      "platform:billing:read",
+      "platform:billing:manage",
     ],
     status: "active",
   },

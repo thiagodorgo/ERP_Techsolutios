@@ -62,6 +62,7 @@
 | Central de Notificações `/controle/notificacoes` (Ω4C PR-20) | `notifications:create` | F | F | E | E | — | — | — | — | — |
 | Modelos de Checklist `/administrator/checklists` (CHK P1) — inclui o **editor** `/administrator/checklists/:checklistId` (PR-02b), sub-rota sem item de menu, sob o MESMO gate | `tenant_checklists:read` (escreve: `:create`/`:update`/`:publish`) | F | F | R | — | — | — | — | R | R |
 | Configurações `/administrator/settings` (Ω2-e) | `tenant_settings:read` (edita: `tenant_settings:update`) | F | E | R | — | — | — | — | R | — |
+| Minha assinatura `/administrator/subscription` (B-ASS-11) — a organização vê o plano, o uso da franquia e a situação; o ator de plataforma recebe 403 do servidor | `billing:read` | — | R | R | — | R | — | — | R | R |
 | Auditoria `/audit` | `audit:read` | F | F | R | — | R | R | — | F | R |
 
 `*` Permissões `fuel_logs:*`, `maintenance_orders:*`, `fines:*`, `insurance_policies:*`, `damages:*`,
