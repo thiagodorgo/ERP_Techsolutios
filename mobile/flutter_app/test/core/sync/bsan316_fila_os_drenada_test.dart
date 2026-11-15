@@ -109,8 +109,7 @@ class _ServidorDoLote implements HttpClientAdapter {
           'error': {
             'code': 'SERVICE_UNAVAILABLE',
             'reason': 'approval_unavailable',
-            'message':
-                'Não foi possível registrar o pedido de aprovação agora.',
+            'message': 'Fila de aprovações indisponível.',
           },
         });
         continue;
