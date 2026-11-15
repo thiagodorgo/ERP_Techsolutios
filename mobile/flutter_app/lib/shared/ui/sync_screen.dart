@@ -6,6 +6,7 @@ import '../../core/network/connectivity_repository.dart';
 import '../../core/sync/auto_sync_coordinator.dart';
 import '../../core/sync/sync_action_labels.dart';
 import '../../core/sync/sync_action_presentation.dart';
+import '../../core/sync/sync_action_routing.dart';
 import '../../core/sync/sync_conflict_resolver.dart';
 import '../../core/sync/sync_models.dart';
 import '../../core/sync/sync_providers.dart';
@@ -297,11 +298,13 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
                             rightKeyName: 'retry',
                             title:
                                 'Envio não concluído · ${_domainLabel(s.type)}',
-                            body:
-                                '${_actionLabel(s.type)}: o envio não foi '
-                                'confirmado em ${s.retryCount} tentativas. '
-                                'Tentar de novo devolve este item à fila.'
-                                '${canDiscardSyncAction(s.type) ? ' Descartar encerra sem novo envio.' : ' Despesas não podem ser descartadas: o lançamento fica guardado até ser enviado.'}',
+                            // B-SAN3-16 (P5): o não enviável diz a causa, não "N tentativas".
+                            body: s.lastErrorCode == syncUnroutableErrorCode
+                                ? '${_actionLabel(s.type)}: ${s.lastSafeError ?? syncUnroutableVersionMessage}'
+                                : '${_actionLabel(s.type)}: o envio não foi '
+                                      'confirmado em ${s.retryCount} tentativas. '
+                                      'Tentar de novo devolve este item à fila.'
+                                      '${canDiscardSyncAction(s.type) ? ' Descartar encerra sem novo envio.' : ' Despesas não podem ser descartadas: o lançamento fica guardado até ser enviado.'}',
                             leftLabel: 'Descartar',
                             rightLabel: 'Tentar de novo',
                             showLeft: canDiscardSyncAction(s.type),
