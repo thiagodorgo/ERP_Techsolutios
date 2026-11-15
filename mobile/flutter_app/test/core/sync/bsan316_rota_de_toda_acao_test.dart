@@ -412,9 +412,17 @@ void main() {
       _acao('r3-alheio', 'work_order.tipo_inexistente', userId: _outro),
     );
 
-    await expectLater(
-      SyncActionRoutingSweep(queue: queue).sweepTenant(_tenant),
-      completes,
+    // A recusa da fila por usuário vira asserção (não exceção solta): a varredura que lesse a fila da organização
+    // tentaria gravar na ação alheia e cairia em `SyncOwnershipError`.
+    Object? erro;
+    try {
+      await SyncActionRoutingSweep(queue: queue).sweepTenant(_tenant);
+    } catch (e) {
+      erro = e;
+    }
+    expect(
+      erro,
+      isNull,
       reason: 'a varredura só lê a fila do usuário da sessão',
     );
 
