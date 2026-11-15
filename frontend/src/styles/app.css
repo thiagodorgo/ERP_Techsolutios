@@ -8580,3 +8580,37 @@ button.financeiro-bc__group-head:focus-visible { outline: 2px solid #2563eb; out
   .apardash-c-blocos { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .apardash .pat-ab-detail-grid { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ═══ B-ASS-11 — "Minha assinatura" (referência `screen-refs/minha-assinatura-3opcoes.reference.html`) ═══ */
+/* UsagePie (`components/charts/UsagePie.tsx`): pizza CHEIA da franquia (raio interno 0) e a legenda, a partir do
+   ReconcileDonut (legenda com trilho proporcional e contagem, app.css .ui-reconcile-donut__item). */
+.ui-usage-pie { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
+.ui-usage-pie--side { flex-direction: row; align-items: center; gap: 18px; }
+.ui-usage-pie__svg { display: block; flex-shrink: 0; }
+.ui-usage-pie__used { fill: #2563eb; }
+.ui-usage-pie__slice { stroke: #fff; }
+.ui-usage-pie__free { fill: #bfdbfe; }
+.ui-usage-pie__over { fill: #dc2626; }
+.ui-usage-pie__pending { fill: #f8fafc; stroke: #9fb0bf; }
+.ui-usage-pie__clock { stroke: #718196; }
+.ui-usage-pie__legend { display: flex; flex-direction: column; gap: 3px; min-width: 0; width: 100%; }
+.ui-usage-pie__main { font-size: 15px; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+.ui-usage-pie__strong { display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.ui-usage-pie__num { font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1; font-variant-numeric: tabular-nums; color: #0f172a; }
+.ui-usage-pie__of { font-size: 15px; font-weight: 700; color: #334155; }
+.ui-usage-pie__sub { font-size: 11.5px; color: #64748b; font-weight: 600; line-height: 1.35; }
+.ui-usage-pie__over-note { font-size: 11.5px; font-weight: 700; color: #b91c1c; line-height: 1.35; }
+.ui-usage-pie__note { font-size: 11.5px; font-weight: 700; color: #92400e; line-height: 1.35; }
+.ui-usage-pie__rows { display: flex; flex-direction: column; gap: 1px; margin-top: 6px; width: 100%; }
+.ui-usage-pie__item { display: grid; grid-template-columns: minmax(0, 84px) minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 24px; }
+.ui-usage-pie__name { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 11.5px; font-weight: 600; color: #334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ui-usage-pie__swatch { display: inline-block; flex-shrink: 0; width: 8px; height: 8px; border-radius: 3px; }
+.ui-usage-pie__swatch--used { background: #2563eb; }
+.ui-usage-pie__swatch--free { background: #bfdbfe; }
+.ui-usage-pie__swatch--over { background: #dc2626; }
+.ui-usage-pie__meter { display: flex; height: 9px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+.ui-usage-pie__meter b { display: block; height: 100%; border-radius: 99px; }
+.ui-usage-pie__count { font-size: 11.5px; font-weight: 800; color: #0f172a; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ui-usage-pie__badge { line-height: 1.3; vertical-align: middle; }
+.ui-usage-pie__badge--over { background: #fee2e2; color: #b91c1c; }
+.ui-usage-pie__badge--pending { background: #f1f5f9; color: #475569; }
