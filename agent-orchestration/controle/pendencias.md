@@ -12912,6 +12912,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **fato:** a Parte T contornou só na própria tela, com a regra de escopo `.assin-a > .page-heading--row { display: flex }` (precedente: `.work-orders-page > .page-heading--row`); as outras páginas seguem como estão.
 - **critério de encerramento:** a ordem das duas regras do `app.css` corrigida (ou a regra de linha com especificidade própria), com a conferência das telas que usam o cabeçalho.
 
+## P-SMOKE-LINHA-NO-LIMITE-DO-WINDOWS (2026-11-15) — a linha do `test:smoke` está a 51 caracteres do limite do `cmd.exe` — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA — leitura do redator, declarada (§A6): no Windows, o próximo teste acrescentado à lista faz o `npm run test:smoke` inteiro parar sem rodar nada; o CI (Linux) não sente · **escopo:** `pre-existente` (`frontend/package.json`, a lista explícita de arquivos do `test:smoke`) · **dono:** a nomear pelo orquestrador · **PR-alvo:** a definir · **bloqueia:** o próximo bloco que acrescentar teste ao `test:smoke` e rodar a bateria no Windows.
+- **origem:** conserto da revisão reforçada do #576 (`B-ASS-11`), 15/11 04:15: com um 7º arquivo novo, a linha passou a 8180 caracteres, e o `npm run test:smoke` respondeu "Linha de comando muito longa" (exit 1, 0 teste); o `cmd.exe` corta em 8191.
+- **fato:** a `main` `fa23e97a` tem 7905 caracteres (213 arquivos); com os 6 arquivos `ass-11-*`, 8140 (219 arquivos). O bloco tirou o 7º arquivo (os testes foram para um dos 6) para caber.
+- **critério de encerramento:** o `test:smoke` deixa de depender do tamanho da linha (por exemplo, um executor que lê a lista de um arquivo, mantendo a lista explícita que a `P-FRONT-TESTE-FORA-DO-SMOKE` exige), com a medida no Windows.
+
 ## Apensos B-SAN3-10b — roteiro técnico de operação (2026-11-04)
 
 - **`P-SAN3-ROTEIRO-DEMO-OPERACAO`:** o dono passa a ser `B-SAN3-10b`. A execução funcional é provada fora
