@@ -1,4 +1,4 @@
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
 
 import { env } from "../../config/env.js";
 import { createDefaultChargeService } from "./charge.service.js";
@@ -8,7 +8,7 @@ import { createDefaultChargeService } from "./charge.service.js";
 // PULA diária — latência ≠ correção. Intervalo 1h (a diária vence 1×/dia; 1h dá margem sem custo). Ator = SISTEMA.
 export const CHARGING_ACCRUAL_SCAN_INTERVAL_MS = 3_600_000;
 
-const logger = pino({ level: env.LOG_LEVEL });
+const logger = createLogger();
 
 // Varredura recorrente: por tenant ATIVO, acumula as diárias faltantes. Só roda em modo prisma (o worker é gated
 // por flag + persistence=prisma). O(tenants) v1. F-4: cada tenant isolado por try/catch — um tenant que lance NÃO

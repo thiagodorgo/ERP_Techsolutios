@@ -1,5 +1,6 @@
 import type { AuthenticatedActor } from "../core-saas/types/core-saas.types.js";
 import { createDefaultFieldLocationService } from "../field-location/field-location.service.js";
+import { publicErrorMessage } from "../../infra/logging/public-error.js";
 import { createDefaultWorkOrderService, type WorkOrderService } from "../work-orders/work-order.service.js";
 import {
   actorMutatesAssignedOnly,
@@ -443,7 +444,7 @@ function actionErrorResult(action: MobileEvidenceAction, error: unknown): Mobile
       400,
       "BAD_REQUEST",
       "invalid_action",
-      error instanceof Error ? error.message : "Invalid evidence action.",
+      publicErrorMessage(error, "Unexpected error."),
     );
 
   return {

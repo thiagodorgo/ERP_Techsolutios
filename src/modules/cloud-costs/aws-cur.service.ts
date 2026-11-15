@@ -1,4 +1,5 @@
-import pino from "pino";
+import { createLogger } from "../../infra/logging/logger.js";
+import { publicErrorMessage } from "../../infra/logging/public-error.js";
 
 import { env } from "../../config/env.js";
 import type { CloudCostAllocationEnqueue } from "../cloud-cost-allocation/cloud-cost-allocation.import-trigger.js";
@@ -18,6 +19,8 @@ import {
 import { InMemoryCloudCostRepository, type CloudCostRepository } from "./aws-cur.repository.js";
 import { parseAwsCurCsv } from "./aws-cur.parser.js";
 
+const AWS_CUR_IMPORT_FAILED_MESSAGE = "AWS CUR import failed.";
+
 const sourceTypes = new Set<string>(CLOUD_COST_SOURCE_TYPES);
 const statuses = new Set<string>(CLOUD_COST_IMPORT_STATUSES);
 
@@ -36,7 +39,7 @@ export type CloudCostServiceOptions = {
   readonly onImportCompleted?: CloudCostImportCompletedHook;
 };
 
-const hookLogger = pino({ level: env.LOG_LEVEL });
+const hookLogger = createLogger();
 
 /** B-ASS-09a — o log da falha do gancho. Objeto exportado para o teste espiar (T1-mem prova que a memória não tem gancho). */
 export const cloudCostImportLogger = {
@@ -98,6 +101,7 @@ export class CloudCostService {
         },
       });
     } catch (error) {
+      hookLogger.error({ err: error, runId: started.id }, "cloud-costs: execução falhou");
       return this.repository.updateImport(started.id, {
         status: "failed",
         errorMessage: sanitizeErrorMessage(error),
@@ -218,8 +222,7 @@ export function sanitizeCloudCostMetadata(metadata: CloudCostMetadata | undefine
 }
 
 export function sanitizeErrorMessage(error: unknown): string {
-  const message = error instanceof Error ? error.message : "Unknown AWS CUR import error.";
-  return String(sanitizeValue(message)).slice(0, 1_000);
+  return String(sanitizeValue(publicErrorMessage(error, AWS_CUR_IMPORT_FAILED_MESSAGE))).slice(0, 1_000);
 }
 
 export function isCloudCostSourceType(value: string): value is CloudCostSourceType {
