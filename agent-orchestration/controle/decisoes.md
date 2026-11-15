@@ -5264,14 +5264,28 @@ Diário: `erp-pausa-2026-10-03/revisoes/j547/fix-547-cl.md`.
 
 ## D-ASS12-Q1-P10 (2026-11-14) — a diferença Básico × Plus é a da P10; hoje o adicional só cobra
 
-- **Conflito §A2 registrado (sem consolidação silenciosa):** o plano original listava a Q1 ("o que cada adicional
+- **Conflito §A2 registrado (`CONFLITO-ASS12-P10-X-RECOMENDACAO-1311`, sem consolidação silenciosa):** o plano original listava a Q1 ("o que cada adicional
   libera?") como pergunta em aberto. A Emenda 1 mediu que a P10 (`fidelidade-3110.md:155`, resposta do dono de 31/10)
   já fixou a unidade e a diferença: Básico = posição ao vivo + histórico; Plus = Básico + eventos, alarmes e telemetria.
 - **Leitura do planejador, declarada (§A6), desfazível numa linha:** hoje não há função de rastreamento veicular para
   ligar; o `B-ASS-12` não cria chave de módulo nem de permissão. A diferença entra com o `B-TRC-04`, por cadastro de
   módulos na versão do adicional.
-- **O conflito filial × organização continua ABERTO** (`P-CONFLITO-ASSINATURA-FILIAL-X-ORGANIZACAO`): o `B-ASS-12` não
+- **O conflito da entidade de cobrança da assinatura × organização continua ABERTO**: o `B-ASS-12` não
   infere a resolução; o demonstrativo continua por organização e período.
+
+## D-ASS12-PERGUNTAS-1311 (2026-11-14) — as perguntas do §E11 da Emenda 1, respondidas pela recomendação
+
+- **Fato:** "Respondida pela recomendação" segue a `D-DONO-1311-RECOMENDACOES` e vale também para pergunta nascida depois, enquanto a ordem vigorar; o dono desfaz qualquer uma numa linha. Nenhuma pergunta contraria decisão registrada.
+- **Q2 — adicional cancelado no meio do mês cobra?** Sim: por veículo, cobra os veículos com vínculo nos dias em que o adicional valeu; mensalidade fixa, cobra os dias em que valeu.
+- **Q3 — veículo que deixou de ser rastreado antes de o adicional ser contratado cobra?** Não.
+- **Q4 — trocou de adicional, ou o preço mudou, no meio do mês.** Por veículo: um preço só no mês, o do último dia nesse regime. Mensalidade fixa: já respondida pelo dono (P17, 31/10).
+- **Q5 — mensalidade fixa e nenhum veículo rastreado cobra?** Não; e cada trecho só cobra se teve veículo rastreado naquele trecho.
+- **Q6 — adicional contratado sem preço em algum dia do mês.** Não fecha o mês da organização e mostra o motivo (`addon_without_price`), para qualquer dia com adicional.
+- **Q7 — organização que rastreia veículo sem ter o adicional.** Mede, não cobra e não bloqueia; o aviso sai num bloco menor.
+- **Q9 — preço combinado ou cortesia e a plataforma muda o adicional para mensalidade fixa.** Continua pagando o que foi combinado (a cortesia continua zero) até a plataforma trocar a contratação daquela organização.
+- **Q10 — no mesmo mês, um adicional por veículo e outro de mensalidade fixa.** Soma os dois: os veículos por veículo, inteiros, mais a mensalidade fixa proporcional aos dias.
+- **Saiu:** Q1 (já decidida na P10) e Q8 (fora do bloco). Continua aberta, fora do bloco, a do conflito de quem assina a assinatura, dono `B-ASSINATURA`.
+
 ## D-SEED-10B-RESPOSTAS-1311 (2026-11-13 ~23:20 SP) — as cinco perguntas do plano v2 do `B-SAN3-10b-F4-SEED-ISOLADO`, pela recomendação
 
 - **Fato (decisão do dono):** *"minhas decisoes vao todas nas recomendacoes"* (ordem de 13/11, ~23:12 SP) e *"pode comecar"* (~23:20 SP). Transcrição do redator `reg-10bseed-cl` (Claude Opus 5.5, declarado, §A6), a partir do registro do orquestrador fora do repositório (`REGISTRO-PENDENTE.md`, 13/11 23:19 e 23:23), que lista para o seed: *"P1 versionar; P2 roteiro com errata; P3 datas não recuam; P4 organização pelo script; P5 OS em dobro como pendência média"*. O ID geral que o orquestrador propôs para a ordem inteira (`D-DONO-1311-RECOMENDACOES`) e o da ordem "só Claude" (`D-CLAUDE-SOLO-1311`) ainda não estão neste arquivo e entram no PR de registro do dia; esta entrada cobre só o seed.

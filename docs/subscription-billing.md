@@ -136,6 +136,13 @@ O rastreamento é a parcela de veículos do demonstrativo, cobrada pelos dois ad
   veículo, pelo preço da versão.
 - **Por veículo (sem pro-rata):** um preço só no mês — o do último dia em regime por veículo — e os veículos
   distintos com vínculo em pelo menos um dia desse regime: `veículos × preço`.
+- **Troca, cortesia ou preço combinado no meio do mês (por veículo):** vale um preço só no mês, o do adicional
+  que valia no último dia. Subiu do Básico para o Plus em qualquer dia do mês: paga o mês inteiro pelo Plus.
+  Desceu do Plus para o Básico: paga o mês inteiro pelo Básico — mesmo que a troca seja no dia 31, depois de 30
+  dias de Plus. O mesmo vale quando o preço por veículo muda no meio do mês, ou quando uma cortesia ou um preço
+  combinado começa ou acaba: vale o preço do último dia no mês inteiro. Quem faz a troca é só a plataforma;
+  para não perder o mês, marque a troca para o dia 1º do mês seguinte.
+- **Na mensalidade fixa é diferente (P17):** cada adicional e cada preço cobram só os dias em que valeram.
 - **Mensalidade fixa:** um trecho = dias consecutivos no mesmo adicional, na mesma versão e no mesmo preço;
   cada trecho cobra `arredonda_meio_para_cima(mensalidade × dias do trecho ÷ dias do mês)` e só se algum
   veículo teve vínculo em algum dia do trecho. Soma dos trechos.
