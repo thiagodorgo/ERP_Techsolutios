@@ -936,7 +936,11 @@ class _ActionRow extends StatelessWidget {
                   color: discarded ? Colors.grey : Colors.red.shade700,
                 ),
               ),
-            if (action.retryCount > 0 && !awaiting && !discarded)
+            // B-SAN3-16 (C3-02): o não enviável nunca foi enviado; a linha mostra a causa acima, não "Tentativa N".
+            if (action.retryCount > 0 &&
+                !awaiting &&
+                !discarded &&
+                action.lastErrorCode != syncUnroutableErrorCode)
               Text(
                 'Tentativa ${action.retryCount}',
                 style: const TextStyle(fontSize: 11, color: Colors.grey),

@@ -582,6 +582,110 @@ test("B13b — com o pedido do técnico pendente, a OS é concluída: 2 pendênc
 });
 
 // ------------------------------------------------------------------------------------------------
+// Emendas 1.3 e 1.3.1 (DUP-580-CONCORRENTE) — a unidade do pedido de campo, no repositório em memória: a mesma
+// serialização da trava da OS (fila de promessas por OS). E o não grave C3-01 (cada "não iniciou" distinto avisa).
+// ------------------------------------------------------------------------------------------------
+
+for (const [rotulo, tipo, evento, payload] of [
+  ["não consegui iniciar", NAO_INICIOU, EVENTO_NAO_INICIOU, naoIniciou],
+  ["pedir aprovação", PEDIDO, EVENTO_PEDIDO, pedido],
+] as const) {
+  test(`B14 — ${rotulo}: 10 envios simultâneos do MESMO client_action_id e 1 de outro, em memória → 1 evento por ação, todos accepted`, async () => {
+    await withApi(async (ctx) => {
+      const os = await ctx.osDoTecnico(ctx.seed.tecnicoA);
+      const cid = randomUUID();
+      const outro = randomUUID();
+      const resultados = await Promise.all([
+        ...Array.from({ length: 10 }, () => ctx.direto(ctx.seed.tecnicoA, "field_technician", tipo, payload(os), cid)),
+        ctx.direto(ctx.seed.tecnicoA, "field_technician", tipo, payload(os), outro),
+      ]);
+      assert.deepEqual(
+        resultados.map((r) => r.acao),
+        Array.from({ length: 11 }, () => "accepted"),
+        JSON.stringify(resultados.filter((r) => r.acao !== "accepted")),
+      );
+      const eventos = await ctx.eventos(os, evento);
+      assert.equal(eventos.filter((e: any) => e.metadata.client_action_id === cid).length, 1, "o mesmo client_action_id duplicou o evento");
+      assert.equal(eventos.filter((e: any) => e.metadata.client_action_id === outro).length, 1, "a ação distinta não gravou o seu");
+      if (tipo === NAO_INICIOU) assert.equal((await ctx.avisos(ctx.seed.gestorA)).length, 2, "1 aviso por ação");
+      if (tipo === PEDIDO) assert.equal((await ctx.pendentes(os)).length, 2, "1 pendência por ação");
+    });
+  });
+}
+
+test("B15 — a fila grava e o INSERT do evento falha (E13-03): rejected, 0 evento, 1 pendência; o reenvio se corrige com a MESMA pendência e 1 evento", async () => {
+  await withApi(async (ctx) => {
+    const { getMemoryWorkOrderRepositoryForTests } = await import("../src/modules/work-orders/work-order.service.js");
+    const repositorio = getMemoryWorkOrderRepositoryForTests() as unknown as Record<string, unknown>;
+    const os = await ctx.osDoTecnico(ctx.seed.tecnicoA);
+    const cid = randomUUID();
+    repositorio.createEvent = async () => {
+      throw new Error("o INSERT do evento falhou (simulado)");
+    };
+    let r1: Resultado;
+    try {
+      r1 = await ctx.direto(ctx.seed.tecnicoA, "field_technician", PEDIDO, pedido(os), cid);
+    } finally {
+      delete repositorio.createEvent;
+    }
+    assert.equal(r1.acao, "rejected", JSON.stringify(r1));
+    assert.equal((await ctx.eventos(os, EVENTO_PEDIDO)).length, 0, "nenhum evento sem o INSERT");
+    const pendentes1 = await ctx.pendentes(os);
+    assert.equal(pendentes1.length, 1, "o limite aceito: a pendência fica na fila (em memória) sem evento");
+
+    const r2 = await ctx.direto(ctx.seed.tecnicoA, "field_technician", PEDIDO, pedido(os), cid);
+    assert.equal(r2.acao, "accepted", JSON.stringify(r2));
+    const pendentes2 = await ctx.pendentes(os);
+    assert.deepEqual(pendentes2.map((p: any) => p.id), [pendentes1[0].id], "a chave determinística devolveu a MESMA pendência");
+    const eventos = await ctx.eventos(os, EVENTO_PEDIDO);
+    assert.equal(eventos.length, 1);
+    assert.equal(eventos[0].metadata.approval_id, pendentes1[0].id, "o evento aponta a pendência que ficou na fila");
+  });
+});
+
+test("B16 — a OS some entre o escopo e a trava (E13-04): os dois saem rejected 404 not_found, nada gravado", async () => {
+  await withApi(async (ctx) => {
+    const { getMemoryWorkOrderRepositoryForTests } = await import("../src/modules/work-orders/work-order.service.js");
+    const repositorio = getMemoryWorkOrderRepositoryForTests() as unknown as Record<string, unknown>;
+    const os = await ctx.osDoTecnico(ctx.seed.tecnicoA);
+    repositorio.runFieldRequestUnit = async () => undefined;
+    let resultados: Resultado[];
+    try {
+      resultados = [
+        await ctx.direto(ctx.seed.tecnicoA, "field_technician", PEDIDO, pedido(os), randomUUID()),
+        await ctx.direto(ctx.seed.tecnicoA, "field_technician", NAO_INICIOU, naoIniciou(os), randomUUID()),
+      ];
+    } finally {
+      delete repositorio.runFieldRequestUnit;
+    }
+    for (const r of resultados) {
+      assert.equal(r.acao, "rejected", JSON.stringify(r));
+      assert.equal(r.code, "WORK_ORDER_NOT_FOUND", JSON.stringify(r));
+      assert.equal(r.reason, "not_found", JSON.stringify(r));
+    }
+    assert.equal((await ctx.eventos(os, EVENTO_PEDIDO)).length, 0);
+    assert.equal((await ctx.eventos(os, EVENTO_NAO_INICIOU)).length, 0);
+    assert.equal((await ctx.pendentes(os)).length, 0);
+    assert.equal((await ctx.avisos(ctx.seed.gestorA)).length, 0);
+  });
+});
+
+test("B17 — C3-01: dois \"não iniciou\" distintos (outro client_action_id) do mesmo técnico na mesma OS → 2 eventos e 2 avisos para quem despachou", async () => {
+  await withApi(async (ctx) => {
+    const os = await ctx.osDoTecnico(ctx.seed.tecnicoA);
+    assert.equal((await ctx.acao(ctx.hTecnicoA, NAO_INICIOU, naoIniciou(os, { reason: "Cliente ausente no local" }))).acao, "accepted");
+    assert.equal((await ctx.acao(ctx.hTecnicoA, NAO_INICIOU, naoIniciou(os, { reason: "Endereco nao localizado" }))).acao, "accepted");
+    assert.equal((await ctx.eventos(os, EVENTO_NAO_INICIOU)).length, 2);
+    const avisos = await ctx.avisos(ctx.seed.gestorA);
+    assert.equal(avisos.length, 2, "cada \"não iniciou\" distinto gera o seu aviso");
+    assert.deepEqual(
+      avisos.map((aviso: any) => aviso.metadata.reason).sort(),
+      ["Cliente ausente no local", "Endereço não localizado"],
+    );
+  });
+});
+
+// ------------------------------------------------------------------------------------------------
 // ARNÊS
 // ------------------------------------------------------------------------------------------------
 type User = { readonly id: string; readonly tenantId: string };

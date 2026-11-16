@@ -906,7 +906,7 @@ class WorkOrderSyncCodec {
   }
 
   // B-SAN3-16 (P1) — o pedido de aprovação sai com a LISTA FECHADA do contrato `2026-11-14.b-san3-16`: a OS, o
-  // motivo, o impacto e a urgência, mais os metadados de origem. Nunca `requested_by_user_id`, organização, token ou
+  // motivo, o impacto e a urgência, mais os metadados de origem. Nunca o id de quem pediu, organização, token ou
   // caminho (§2.8: o ator vem do token). O texto é cortado nos limites do contrato (CRIT16-02 (a)); a linha do tempo
   // local guarda o texto inteiro.
   Map<String, Object?> _approvalPayload(Map<String, Object?> source) {

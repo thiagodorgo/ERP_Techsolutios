@@ -1605,19 +1605,26 @@ export class WorkOrderService {
   /**
    * B-SAN3-16 (item 5, P2 e P3) — o pedido do técnico que chega pela fila do app: "pedir aprovação"
    * (`approval_request`) ou "não consegui iniciar" (`unable_to_start`). Espelho de `setMileage`. A ordem é a da
-   * Emenda 1 do plano (CRIT16-01) com a Emenda 1.1 (§2.4):
+   * Emenda 1 do plano (CRIT16-01) com a Emenda 1.1 (§2.4) e as Emendas 1.3 e 1.3.1 (DUP-580-CONCORRENTE):
    *  1. a permissão da ação vive no caller (o lote do app), como na km;
    *  2. escopo por objeto ANTES de ler o corpo (`getForMutation`): OS inexistente ou de outra organização → 404, sem
    *     diferença; quem nunca foi técnico dela → 403 `not_assigned_to_actor`; ex-técnico → a marca do 07c-b1 (conflito
-   *     no lote). Validar antes do escopo quebraria o laço G do 07c (F-S13);
-   *  3. repetição durável: a linha do tempo da OS (lida na organização do ator) já tem evento do MESMO tipo, do MESMO
+   *     no lote). Validar antes do escopo quebraria o laço G do 07c (F-S13). Esta leitura serve à permissão e ao
+   *     escopo, e NÃO decide a regra da OS terminal (E13-01);
+   *  3. a UNIDADE do pedido (`runFieldRequestUnit`): a trava exclusiva da OS e a situação relida sob ela. Os passos 4 a
+   *     8 rodam dentro dela, na mesma transação: dois envios simultâneos da mesma ação serializam, e o 2º relê a linha
+   *     do tempo depois do commit do 1º. OS que sumiu entre o passo 2 e a trava → 404 (E13-04);
+   *  4. repetição durável: a linha do tempo da OS (lida na organização do ator) já tem evento do MESMO tipo, do MESMO
    *     ator e com o MESMO `client_action_id` → `created: false`. Não valida, não confere a OS terminal, não grava e não
    *     chama a fila de Aprovações (o pedido já decidido não renasce, CRIT16-03). Vale o primeiro conteúdo gravado;
-   *  4. validação (400 `required_field`, `invalid_urgency`, `field_too_long`);
-   *  5. OS terminal → 422 `work_order_closed`;
-   *  6. só o pedido de aprovação: a fila de Aprovações PRIMEIRO, pelo efeito do caller (este serviço não importa a
-   *     fila). Se ela falhar, nada é gravado aqui, e o reenvio cai na mesma pendência (a chave é determinística);
-   *  7. o evento, com metadados por lista fechada (§2.8: o ator vem do token, nunca do corpo) e o `approval_id`.
+   *  5. validação (400 `required_field`, `invalid_urgency`, `field_too_long`);
+   *  6. OS terminal → 422 `work_order_closed`, sobre a situação RELIDA sob a trava (E13-01);
+   *  7. só o pedido de aprovação: a fila de Aprovações PRIMEIRO, pelo efeito do caller (este serviço não importa a
+   *     fila), com a trava tomada. Se ela falhar, a unidade volta sem evento, e o reenvio cai na mesma pendência (a
+   *     chave é determinística). Se ela grava e o evento ou o commit falham depois, a pendência fica na fila (em
+   *     memória, item 67) sem evento, e o reenvio se corrige: não acha o evento, recebe a MESMA pendência e grava o
+   *     evento (E13-03; a atomicidade completa entre os dois só vem com a fila durável);
+   *  8. o evento, com metadados por lista fechada (§2.8: o ator vem do token, nunca do corpo) e o `approval_id`.
    * O status da OS NÃO muda. Devolve também quem atribuiu a OS por último (o destinatário do aviso do "não iniciou",
    * P8) e o motivo como ficou gravado (rotulado).
    */
@@ -1631,57 +1638,66 @@ export class WorkOrderService {
   ): Promise<FieldRequestOutcome> {
     const target = await this.getForMutation(actor, workOrderId);
     const eventType = FIELD_REQUEST_EVENT_TYPES[kind];
-    const timeline = await this.repository.listTimeline(actor.tenantId, target.id);
-    const recorded = timeline.find(
-      (event) =>
-        event.eventType === eventType &&
-        event.actorUserId === actor.userId &&
-        event.metadata.client_action_id === clientActionId,
+    const outcome = await this.repository.runFieldRequestUnit(
+      actor.tenantId,
+      target.id,
+      async (unit): Promise<FieldRequestOutcome> => {
+        const timeline = await unit.listTimeline();
+        const recorded = timeline.find(
+          (event) =>
+            event.eventType === eventType &&
+            event.actorUserId === actor.userId &&
+            event.metadata.client_action_id === clientActionId,
+        );
+        const dispatcherUserId = kind === "unable_to_start" ? lastAssignerOtherThan(timeline, actor) : undefined;
+        if (recorded !== undefined) {
+          return { workOrder: target, created: false, dispatcherUserId, reason: recordedReason(recorded) };
+        }
+
+        const parsed = parseFieldRequestBody(kind, body);
+        if (WORK_ORDER_TERMINAL_STATUSES.includes(unit.status)) {
+          throw new WorkOrderError(
+            422,
+            "WORK_ORDER_UNPROCESSABLE",
+            "work_order_closed",
+            "Esta OS já foi encerrada; o pedido não pode ser registrado.",
+          );
+        }
+
+        const approvalId = await effects.openApproval?.(target, parsed.reason);
+        await unit.createEvent({
+          eventType,
+          actorUserId: actor.userId,
+          message: fieldRequestMessage(parsed),
+          // Lista fechada (§2.8). `source` é decidido pelo servidor, como o `source="app"` da km.
+          metadata:
+            parsed.kind === "approval_request"
+              ? {
+                  source: FIELD_REQUEST_SOURCE,
+                  client_action_id: clientActionId,
+                  urgency: parsed.urgency,
+                  ...(parsed.impact ? { impact: parsed.impact } : {}),
+                  ...(parsed.requestedAt ? { requested_at: parsed.requestedAt } : {}),
+                  ...(approvalId ? { approval_id: approvalId } : {}),
+                }
+              : {
+                  source: FIELD_REQUEST_SOURCE,
+                  client_action_id: clientActionId,
+                  reason: parsed.reason,
+                  ...(parsed.note ? { note: parsed.note } : {}),
+                  ...(parsed.occurredAt ? { occurred_at: parsed.occurredAt } : {}),
+                },
+        });
+
+        return { workOrder: target, created: true, dispatcherUserId, reason: parsed.reason };
+      },
     );
-    const alreadyRecorded = recorded !== undefined;
-    const dispatcherUserId = kind === "unable_to_start" ? lastAssignerOtherThan(timeline, actor) : undefined;
-    if (alreadyRecorded) {
-      return { workOrder: target, created: false, dispatcherUserId, reason: recordedReason(recorded) };
+    // E13-04 — a OS sumiu entre o `getForMutation` e a trava (ou não é desta organização, sob RLS): 404, como o
+    // cancelamento.
+    if (!outcome) {
+      throw new WorkOrderError(404, "WORK_ORDER_NOT_FOUND", "not_found", "Work order was not found.");
     }
-
-    const parsed = parseFieldRequestBody(kind, body);
-    if (WORK_ORDER_TERMINAL_STATUSES.includes(target.status)) {
-      throw new WorkOrderError(
-        422,
-        "WORK_ORDER_UNPROCESSABLE",
-        "work_order_closed",
-        "Esta OS já foi encerrada; o pedido não pode ser registrado.",
-      );
-    }
-
-    const approvalId = await effects.openApproval?.(target, parsed.reason);
-    await this.repository.createEvent({
-      tenantId: actor.tenantId,
-      workOrderId: target.id,
-      eventType,
-      actorUserId: actor.userId,
-      message: fieldRequestMessage(parsed),
-      // Lista fechada (§2.8). `source` é decidido pelo servidor, como o `source="app"` da km.
-      metadata:
-        parsed.kind === "approval_request"
-          ? {
-              source: FIELD_REQUEST_SOURCE,
-              client_action_id: clientActionId,
-              urgency: parsed.urgency,
-              ...(parsed.impact ? { impact: parsed.impact } : {}),
-              ...(parsed.requestedAt ? { requested_at: parsed.requestedAt } : {}),
-              ...(approvalId ? { approval_id: approvalId } : {}),
-            }
-          : {
-              source: FIELD_REQUEST_SOURCE,
-              client_action_id: clientActionId,
-              reason: parsed.reason,
-              ...(parsed.note ? { note: parsed.note } : {}),
-              ...(parsed.occurredAt ? { occurred_at: parsed.occurredAt } : {}),
-            },
-    });
-
-    return { workOrder: target, created: true, dispatcherUserId, reason: parsed.reason };
+    return outcome;
   }
 
   async changeStatus(

@@ -461,4 +461,106 @@ void main() {
     final temImpacto = payloadEnviado.containsKey('impact');
     expect(temImpacto, isFalse, reason: 'impacto vazio não viaja');
   });
+
+  // B-SAN3-16 (J580-C2-01) — o ramo do par substituto de `_cut`: o caractere fora do BMP que cai na borda do limite
+  // sai inteiro do corte (o texto encolhe 1), nunca partido ao meio.
+  test('A9. emoji na borda dos 500: o corte não parte o par '
+      'substituto', () async {
+    final motivo = '${'a' * 499}😀${'b' * 10}';
+    expect(motivo.codeUnitAt(499), inInclusiveRange(0xD800, 0xDBFF));
+    final queue = InMemorySyncQueueRepository();
+    await queue.enqueue(
+      _acao(
+        'a9',
+        WorkOrderSyncActionTypes.approvalRequest,
+        _pedido(reason: motivo),
+      ),
+    );
+    final h = _replay(queue);
+
+    await h.replay.replayTenant(_tenant);
+
+    final enviadas = h.servidor.acoesDoTipo(
+      WorkOrderSyncActionTypes.approvalRequest,
+    );
+    expect(enviadas, hasLength(1), reason: 'o pedido não saiu do aparelho');
+    final payloadEnviado = enviadas.single['payload'] as Map;
+    final motivoEnviado = payloadEnviado['reason'] as String;
+    expect(motivoEnviado, 'a' * 499, reason: 'o par substituto ficou fora');
+    expect(motivoEnviado.length, 499);
+  });
+
+  // B-SAN3-16 (C3-03) — ponta a ponta do "não consegui iniciar": o produtor REAL (`reportUnableToStart`) entra na
+  // fila, o replay o passa pelo codec real, e o pacote sai igual ao do fixture `bsan316_lote_os_contrato.json`, que o
+  // servidor recebe pela rota real no B8 (`tests/bsan316-fila-os.test.ts`). Uma troca de chave no produtor fica
+  // vermelha aqui.
+  test('A10. o produtor real do não iniciou, pelo codec, sai igual ao lote '
+      'do fixture que o servidor aceita', () async {
+    final contrato = _contrato();
+    final osDoContrato = contrato['id_modelo_da_os'] as String;
+    final acoesDoLote = ((contrato['lote'] as Map)['actions'] as List)
+        .cast<Map>();
+    final doLote = acoesDoLote.singleWhere(
+      (a) => a['client_action_id'] == 'bsan316-contrato-nao-iniciou',
+    );
+    final esperado = Map<String, dynamic>.from(doLote['payload'] as Map);
+    final metadadosEsperados = Map<String, dynamic>.from(
+      esperado['metadata'] as Map,
+    );
+    final localDoContrato = metadadosEsperados['local_id'] as String;
+    final queue = InMemorySyncQueueRepository();
+    final session = BootstrapSession(
+      activeTenant: const TenantContext(
+        tenantId: _tenant,
+        displayName: 'Tenant B-SAN3-16',
+      ),
+      enabledModules: const [],
+      permissions: const PermissionSet({'work_orders:status'}),
+    );
+    final repo = WorkOrderRepository(
+      session: session,
+      syncQueue: queue,
+      actionFactory: SyncActionFactory(currentUserId: () => _usuario),
+      localStore: InMemoryWorkOrderLocalStore([
+        WorkOrder(
+          localId: localDoContrato,
+          serverId: osDoContrato,
+          tenantId: _tenant,
+          code: 'OS-316',
+          title: 'OS do item 5',
+          customerName: 'Cliente',
+          serviceAddress: 'Rua 5, 16',
+          status: WorkOrderStatus.dispatched,
+          priority: WorkOrderPriority.normal,
+          syncStatus: SyncStatus.synced,
+          createdAt: DateTime.utc(2026, 11, 14),
+        ),
+      ]),
+    );
+    await repo.load(seedIfEmpty: false);
+    await repo.reportUnableToStart(
+      localId: localDoContrato,
+      reason: esperado['reason'] as String,
+      note: esperado['note'] as String,
+    );
+
+    final h = _replay(queue);
+    await h.replay.replayTenant(_tenant);
+    final enviadas = h.servidor.acoesDoTipo(
+      WorkOrderSyncActionTypes.unableToStart,
+    );
+    expect(enviadas, hasLength(1), reason: 'o "não iniciou" não saiu');
+    final enviado = Map<String, dynamic>.from(
+      enviadas.single['payload'] as Map,
+    );
+    final metadados = Map<String, dynamic>.from(enviado['metadata'] as Map);
+    // O instante é o do aparelho (`DateTime.now()` no produtor): confere-se a forma, e o resto é igual ao fixture.
+    final instante = metadados['occurred_at'];
+    expect(instante, isA<String>(), reason: 'o produtor manda occurred_at');
+    expect(DateTime.tryParse(instante as String), isNotNull);
+    metadados['occurred_at'] = metadadosEsperados['occurred_at'];
+    enviado['metadata'] = metadados;
+    expect(enviado, esperado);
+    expect(enviadas.single['type'], doLote['type']);
+  });
 }

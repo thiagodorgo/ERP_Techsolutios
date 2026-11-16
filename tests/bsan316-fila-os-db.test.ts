@@ -5,7 +5,13 @@ import { randomUUID } from "node:crypto";
 import test, { after } from "node:test";
 
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
-import { buildApplicationName, withApplicationName } from "./helpers/pg-barrier.js";
+import {
+  buildApplicationName,
+  captureSettled,
+  waitForOwnBlockedOrSettled,
+  withApplicationName,
+  type SettledOutcome,
+} from "./helpers/pg-barrier.js";
 
 // B-SAN3-16 (item 5 do portão) — o pedido de aprovação e o "não consegui iniciar" do app no PostgreSQL real.
 //
@@ -21,6 +27,8 @@ import { buildApplicationName, withApplicationName } from "./helpers/pg-barrier.
 // do job `backend-postgres` a pune.
 
 const connectionString = process.env.DATABASE_URL;
+// Emenda 1.3.1 (E13-02) — a barreira da rajada conta só as sessões deste papel (o `application_name` da suíte).
+const CONCURRENT_APPLICATION_NAME = buildApplicationName("bsan316-c");
 
 if (!connectionString) {
   test("B-SAN3-16 -db exige DATABASE_URL e um banco migrado", {
@@ -65,6 +73,13 @@ if (!connectionString) {
     const admin = pgConnection.createPrismaClient(withApplicationName(connectionString!, buildApplicationName("bsan316-admin")));
     const roleA: EphemeralRole = await createEphemeralRole(admin, withApplicationName(connectionString!, buildApplicationName("bsan316-a")));
     const roleB: EphemeralRole = await createEphemeralRole(admin, withApplicationName(connectionString!, buildApplicationName("bsan316-b")));
+    // Emenda 1.3.1 (E13-02) — o papel da rajada: os 11 envios simultâneos ficam, cada um, numa transação da unidade ao
+    // mesmo tempo; o pool padrão (10) seguraria o 11º fora do banco, e a barreira nunca contaria N.
+    const roleC: EphemeralRole = await createEphemeralRole(
+      admin,
+      withApplicationName(connectionString!, CONCURRENT_APPLICATION_NAME),
+      (url) => pgConnection.createPrismaClient(url, { max: 16 }),
+    );
     approvalModule.resetApprovalRuntimeForTests();
 
     // Um serviço NOVO a cada chamada: nada fica em memória entre um envio e o reenvio, além do que o banco guarda.
@@ -80,6 +95,7 @@ if (!connectionString) {
       admin,
       roleA,
       roleB,
+      roleC,
       servicesFor,
       sync: syncModule.syncMobileWorkOrderActions as unknown as (...args: unknown[]) => Promise<any>,
       resetSync: syncModule.resetMobileWorkOrderSyncRuntimeForTests,
@@ -97,6 +113,7 @@ if (!connectionString) {
     } finally {
       await h.roleA.drop();
       await h.roleB.drop();
+      await h.roleC.drop();
       await h.admin.$disconnect();
     }
   });
@@ -303,5 +320,195 @@ if (!connectionString) {
     assert.equal(avisos.length, 1, "o aviso duplicou no banco");
     assert.equal(avisos[0].recipient, s.managerId, "o aviso vai para quem atribuiu a OS");
     assert.match(avisos[0].message, /: Endereço não localizado\.$/);
+  });
+
+  // ------------------------------------------------------------------------------------------------------------------
+  // Emendas 1.3 e 1.3.1 (DUP-580-CONCORRENTE) — a unidade do pedido de campo: a leitura do dedupe e a gravação do evento
+  // na MESMA transação, sob a trava exclusiva da linha da OS (`SELECT … FOR UPDATE`, o idioma do B-SAN3-23).
+  //
+  // Arnês (o de `b-san3-23-cancel-race-db.test.ts`): um SEGURADOR, SQL próprio do admin numa transação aberta, toma a
+  // trava da OS e espera um portão. Os envios são o lote real do app, pelo papel `NOSUPERUSER NOBYPASSRLS` da rajada. A
+  // barreira é `waitForOwnBlockedOrSettled` com `minBlocked`: espera TODOS os envios bloqueados (≥ N−1, E13-02), contando
+  // só as sessões da própria suíte (`application_name`), ou todos resolvidos, o que vier primeiro; nunca relógio (o prazo
+  // só transforma espera sem fim em falha com diagnóstico). Sem filtro de texto de propósito: sem a trava na unidade, os
+  // envios esperam o segurador na chave estrangeira do INSERT do evento, e o vermelho sai da CONTAGEM de eventos, não de
+  // um timeout da barreira. Com a trava, a barreira também tem de ter visto o `FOR UPDATE` (conferido depois da contagem).
+  // ------------------------------------------------------------------------------------------------------------------
+
+  const RODADAS = 5;
+  const ENVIOS_IGUAIS = 10;
+
+  type Holder = { readonly pid: number; readonly release: () => void; readonly done: Promise<SettledOutcome<unknown>> };
+
+  async function holdWorkOrder(h: Harness, s: Scenario, held?: (tx: any) => Promise<unknown>): Promise<Holder> {
+    let release!: () => void;
+    const mayGo = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let ready!: () => void;
+    const isReady = new Promise<void>((resolve) => {
+      ready = resolve;
+    });
+    let pid = 0;
+    const done = captureSettled(
+      h.admin.$transaction(
+        async (tx: any) => {
+          const rows = (await tx.$queryRaw`SELECT pg_backend_pid() AS pid`) as Array<{ pid: number }>;
+          pid = Number(rows[0]!.pid);
+          await tx.$queryRawUnsafe(
+            `SELECT id FROM work_orders WHERE tenant_id = $1::uuid AND id = $2::uuid FOR UPDATE`,
+            s.tenantId,
+            s.workOrderId,
+          );
+          if (held) await held(tx);
+          ready();
+          await mayGo;
+        },
+        { maxWait: 10_000, timeout: 60_000 },
+      ),
+    );
+    await Promise.race([
+      isReady,
+      done.then((outcome) => {
+        throw new Error(`o segurador terminou antes da barreira: ${JSON.stringify(outcome)}`);
+      }),
+    ]);
+    return { pid, release, done };
+  }
+
+  /** Os envios atrás do segurador; a barreira conta `envios.length` sessões bloqueadas, e só então o solta. */
+  async function behindHolder(h: Harness, holder: Holder, envios: ReadonlyArray<Promise<SettledOutcome<any>>>, label: string) {
+    let barreira = "";
+    try {
+      barreira = await waitForOwnBlockedOrSettled(h.admin, {
+        applicationName: CONCURRENT_APPLICATION_NAME,
+        minBlocked: envios.length,
+        loser: Promise.all(envios),
+        label,
+        timeoutMs: 20_000,
+      });
+    } finally {
+      // Barreira em timeout também solta o segurador: o caso falha com o diagnóstico e não deixa transação pendurada.
+      holder.release();
+    }
+    const segurador = await holder.done;
+    assert.equal(segurador.status, "fulfilled", `o segurador falhou: ${JSON.stringify(segurador)}`);
+    return { barreira, resultados: await Promise.all(envios) };
+  }
+
+  function resumo(resultados: ReadonlyArray<SettledOutcome<any>>, clientActionId: string) {
+    const contagem: Record<string, number> = {};
+    for (const resultado of resultados) {
+      assert.equal(resultado.status, "fulfilled", `o lote lançou: ${JSON.stringify(resultado)}`);
+      const lote = (resultado as { value: any }).value;
+      const todas = [...(lote.accepted ?? []), ...(lote.rejected ?? []), ...(lote.conflicts ?? []), ...(lote.already_applied ?? [])];
+      const acao = todas.find((a: any) => a.client_action_id === clientActionId);
+      if (!acao) continue;
+      const chave = acao.status === "accepted" ? "accepted" : `${acao.status}:${acao.error?.reason ?? acao.conflict?.conflict_type ?? "?"}`;
+      contagem[chave] = (contagem[chave] ?? 0) + 1;
+    }
+    return contagem;
+  }
+
+  async function pendingApprovals(h: Harness, s: Scenario) {
+    return h.servicesFor(h.roleC).approvals.listPending({ tenantId: s.tenantId } as never, { work_order_id: s.workOrderId });
+  }
+
+  for (const [rotulo, type, eventType] of [
+    ["não consegui iniciar", "work_order.unable_to_start", "work_order_unable_to_start"],
+    ["pedir aprovação", "work_order.approval_request", "work_order_approval_requested"],
+  ] as const) {
+    test(`[D5] ${rotulo}: ${ENVIOS_IGUAIS} envios simultâneos do MESMO client_action_id (e 1 de outro) atrás da trava da OS → 1 evento por ação; ${RODADAS} rodadas`, async (t) => {
+      const h = await harness();
+      await assertRuntimeRole(h.roleC);
+      for (let rodada = 1; rodada <= RODADAS; rodada += 1) {
+        const s = await scenario(h, `d5-${type.slice(11, 14)}-${rodada}`);
+        h.resetSync();
+        const cid = randomUUID();
+        const outro = randomUUID();
+        const holder = await holdWorkOrder(h, s);
+        const envios = [
+          ...Array.from({ length: ENVIOS_IGUAIS }, () => captureSettled(run(h, h.roleC, s, type, cid))),
+          captureSettled(run(h, h.roleC, s, type, outro)),
+        ];
+        const { barreira, resultados } = await behindHolder(h, holder, envios, `[D5] ${rotulo}, rodada ${rodada}`);
+        const eventos = await eventRows(h, s, eventType);
+        const doMesmo = eventos.filter((evento) => evento.metadata.client_action_id === cid).length;
+        const doOutro = eventos.filter((evento) => evento.metadata.client_action_id === outro).length;
+        const iguais = resumo(resultados.slice(0, ENVIOS_IGUAIS), cid);
+        const avisos = type === "work_order.unable_to_start" ? (await noticeRows(h, s)).length : undefined;
+        const pendencias = type === "work_order.approval_request" ? (await pendingApprovals(h, s)).length : undefined;
+        t.diagnostic(
+          `[D5] ${rotulo} rodada ${rodada}: eventos do mesmo=${doMesmo} do outro=${doOutro} avisos=${avisos ?? "-"} ` +
+            `pendencias=${pendencias ?? "-"} iguais=${JSON.stringify(iguais)} barreira=${barreira.slice(0, 120)}`,
+        );
+
+        assert.equal(doMesmo, 1, `rodada ${rodada}: ${ENVIOS_IGUAIS} envios do mesmo client_action_id gravaram ${doMesmo} eventos`);
+        assert.equal(doOutro, 1, `rodada ${rodada}: a ação distinta não gravou o seu evento`);
+        if (avisos !== undefined) assert.equal(avisos, 2, `rodada ${rodada}: 1 aviso por ação (mesmo e outro), viu ${avisos}`);
+        if (pendencias !== undefined) assert.equal(pendencias, 2, `rodada ${rodada}: 1 pendência por ação, viu ${pendencias}`);
+        // Nenhum envio igual termina em erro do pedido: o que não for `accepted` é só o aviso reenviável da corrida dos
+        // avisos (a chave durável segura a linha; o app reenvia), nunca conflito nem 500.
+        for (const chave of Object.keys(iguais)) {
+          assert.ok(chave === "accepted" || chave === "rejected:notification_unavailable", `rodada ${rodada}: desfecho inesperado ${chave}`);
+        }
+        assert.ok((iguais.accepted ?? 0) >= 1, `rodada ${rodada}: nenhum envio igual foi aceito`);
+        assert.match(barreira, /^bloqueado: /, `rodada ${rodada}: a barreira não viu os envios bloqueados (${barreira})`);
+        assert.match(barreira, /FOR UPDATE/, `rodada ${rodada}: os envios não esperaram na trava da OS (${barreira.slice(0, 200)})`);
+      }
+    });
+
+    test(`[D6] ${rotulo}: um cancelamento commita entre o getForMutation e a trava → 422 work_order_closed, sem evento e sem aprovação (E13-01)`, async (t) => {
+      const h = await harness();
+      const s = await scenario(h, `d6-${type.slice(11, 14)}`);
+      h.resetSync();
+      const cid = randomUUID();
+      // O segurador cancela a OS sob a trava e segura o commit: o envio lê a OS ainda `assigned` (READ COMMITTED) no
+      // `getForMutation`, espera a trava e, solto, relê a situação já cancelada.
+      const holder = await holdWorkOrder(h, s, (tx) =>
+        tx.$executeRawUnsafe(
+          `UPDATE work_orders
+              SET status = 'cancelled', financial_cancellation_decision = 'keep',
+                  cancellation_reason = 'Cancelamento do segurador B-SAN3-16', cancelled_at = now()
+            WHERE tenant_id = $1::uuid AND id = $2::uuid`,
+          s.tenantId,
+          s.workOrderId,
+        ),
+      );
+      const envios = [captureSettled(run(h, h.roleC, s, type, cid))];
+      const { barreira, resultados } = await behindHolder(h, holder, envios, `[D6] ${rotulo}`);
+      const desfecho = resumo(resultados, cid);
+      const eventos = await eventRows(h, s, eventType);
+      const pendencias = (await pendingApprovals(h, s)).length;
+      t.diagnostic(`[D6] ${rotulo}: desfecho=${JSON.stringify(desfecho)} eventos=${eventos.length} pendencias=${pendencias} barreira=${barreira.slice(0, 120)}`);
+
+      assert.deepEqual(desfecho, { "rejected:work_order_closed": 1 }, "o pedido numa OS recém-cancelada tem de sair 422 work_order_closed");
+      assert.equal(eventos.length, 0, "nenhum evento numa OS cancelada");
+      assert.equal(pendencias, 0, "nenhuma aprovação aberta numa OS cancelada");
+      assert.match(barreira, /^bloqueado: /, `a barreira não viu o envio bloqueado (${barreira})`);
+    });
+  }
+
+  test("[D7] a unidade sob RLS (E13-04): na organização B, a OS da A é \"não encontrada\" e o trabalho não roda; na A, roda com a situação relida", async () => {
+    const h = await harness();
+    await assertRuntimeRole(h.roleB);
+    const a = await scenario(h, "d7a");
+    const b = await scenario(h, "d7b");
+    const repositorio = new h.WorkOrderRepository(h.roleB.client);
+    let rodou = 0;
+
+    const daB = await repositorio.runFieldRequestUnit(b.tenantId, a.workOrderId, async () => {
+      rodou += 1;
+      return "rodou";
+    });
+    assert.equal(daB, undefined, "a organização B achou a OS da A na unidade");
+    assert.equal(rodou, 0, "o trabalho da unidade rodou para uma OS de outra organização");
+
+    const daA = await repositorio.runFieldRequestUnit(a.tenantId, a.workOrderId, async (unit) => {
+      rodou += 1;
+      return { status: unit.status, eventos: (await unit.listTimeline()).length };
+    });
+    assert.deepEqual(daA, { status: "assigned", eventos: 1 }, "controle: a organização A roda a unidade sobre a OS dela");
+    assert.equal(rodou, 1);
   });
 }

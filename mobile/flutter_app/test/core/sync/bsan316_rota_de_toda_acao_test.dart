@@ -562,6 +562,50 @@ void main() {
     );
   });
 
+  // B-SAN3-16 (C3-02) — a linha da lista abaixo dos cartões: o não enviável nunca foi enviado, então não diz
+  // "Tentativa 5" (o 5 é o `kSyncMaxRetry` que a varredura grava); diz a causa. O controle é um envio que falhou de
+  // verdade 2 vezes: a linha dele continua com "Tentativa 2".
+  testWidgets('R9. a linha do não enviável mostra a causa, não "Tentativa '
+      'N"; a de um envio que falhou de verdade continua com a contagem', (
+    t,
+  ) async {
+    final tenantDaTela = devBootstrapSession.activeTenant.tenantId;
+    final store = InMemorySyncActionStore([
+      _acao(
+        'r9',
+        'work_order.tipo_inexistente',
+      ).copyWith(tenantId: tenantDaTela),
+      _acao(
+        'r9-falhou',
+        'work_order.status_update',
+        status: SyncStatus.failed,
+        retry: 2,
+        code: 'NETWORK_ERROR',
+      ).copyWith(tenantId: tenantDaTela, lastSafeError: 'Sem conexão.'),
+    ]);
+    final fila = UserScopedSyncQueueRepository(
+      queue: PersistentSyncQueueRepository(store),
+      currentUserId: () => _eu,
+    );
+    await SyncActionRoutingSweep(queue: fila).sweepTenant(tenantDaTela);
+    final marcada = (await store.load()).singleWhere(
+      (a) => a.clientActionId == 'r9',
+    );
+    _confereNaoEnviavel(marcada, _msgVersao);
+    await _abrirTela(t, store);
+
+    expect(
+      find.text('Tentativa $kSyncMaxRetry'),
+      findsNothing,
+      reason: 'o não enviável nunca foi enviado',
+    );
+    expect(
+      find.text('Tentativa 2'),
+      findsOneWidget,
+      reason: 'controle: a linha do envio que falhou mostra a contagem',
+    );
+  });
+
   test('R8. pedido sem OS enviada: sem criação na fila ou com a criação '
       'descartada → não enviável; criação failed ou enviada → continua '
       'pending', () async {
