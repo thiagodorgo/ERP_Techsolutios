@@ -196,6 +196,7 @@ class _LocationConsentScreenState extends ConsumerState<LocationConsentScreen> {
       onAccept: () => consentSync.accept(tenantId),
       onDecline: () => consentSync.decline(tenantId),
       onRevoke: () => consentSync.revoke(tenantId),
+      blockedState: _blockedState,
     );
   }
 
@@ -634,6 +635,14 @@ class _RowDetail extends StatelessWidget {
   }
 }
 
+/// O estado "Acesso não permitido" da tela, um só para as 3 aparências
+/// (B-APP-APARENCIA F1: o T1/T9 do `bsan319b` contam 1 chamada por arquivo).
+const _blockedState = PermissionBlockedState(
+  title: 'Acesso não permitido',
+  message:
+      'Seu perfil não tem permissão para enviar localização. Fale com o administrador da sua organização.',
+);
+
 /// "Acesso não permitido" (padrão do #540). Se havia consentimento, a
 /// revogação continua e funciona: a rota de revogar não exige a permissão de
 /// enviar (P6).
@@ -648,11 +657,7 @@ class _BlockedBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const PermissionBlockedState(
-            title: 'Acesso não permitido',
-            message:
-                'Seu perfil não tem permissão para enviar localização. Fale com o administrador da sua organização.',
-          ),
+          _blockedState,
           if (scope.status.granted) ...[
             const SizedBox(height: 14),
             const Text(

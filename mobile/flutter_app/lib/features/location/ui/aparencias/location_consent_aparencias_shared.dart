@@ -126,6 +126,7 @@ class LocationConsentViewProps {
     required this.onAccept,
     required this.onDecline,
     required this.onRevoke,
+    required this.blockedState,
   });
 
   /// O perfil não tem permissão de enviar localização ("acesso não
@@ -167,6 +168,11 @@ class LocationConsentViewProps {
   final VoidCallback onAccept;
   final VoidCallback onDecline;
   final VoidCallback onRevoke;
+
+  /// O "Acesso não permitido" da tela (o mesmo da A), montado pela tela: o
+  /// `PermissionBlockedState` mora só nos arquivos que a tabela do T1 do
+  /// `bsan319b` conhece, com a chave do gate ao lado (T9).
+  final Widget blockedState;
 
   bool get gpsOff => gpsAvailable == false;
 }
@@ -435,11 +441,7 @@ class LocationConsentBlockedView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const PermissionBlockedState(
-              title: 'Acesso não permitido',
-              message:
-                  'Seu perfil não tem permissão para enviar localização. Fale com o administrador da sua organização.',
-            ),
+            props.blockedState,
             if (props.granted) ...[
               const SizedBox(height: 14),
               const Text(
