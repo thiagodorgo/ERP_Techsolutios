@@ -372,7 +372,7 @@ if (!connectionString) {
     }
   });
 
-  // ============================================================== F5 · `[NOTA-SEQ]` no caminho do PROVEDOR e o `[NOTA-ONE]`
+  // ============================================================== F5 · o seq seguinte no caminho do PROVEDOR e a linha única em voo
   /** O settlement do PROVEDOR sobre os repositórios Prisma do papel, com as intenções de nota dadas (o molde do T-INTX). */
   function providerSettlement(enabled = true) {
     const statements = new H.m.runtime.PrismaStatementRepository(H.role.client);
@@ -456,7 +456,7 @@ if (!connectionString) {
     assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "cancelled"], [2, "pending"]], "a nota da 2ª época");
   });
 
-  test("RE2: com a invoice_issue seq 1 ainda PENDING (nota desligada), estorno e repagamento → continua 1 linha ([NOTA-ONE]); religar → 1 POST com ref = <id>:1", async () => {
+  test("RE2: com a invoice_issue seq 1 ainda PENDING (nota desligada), estorno e repagamento → continua 1 linha (a linha em voo de antes emite); religar → 1 POST com ref = <id>:1", async () => {
     const f = await seedProvider("re2");
     const off = providerSettlement(false);
     await providerPay(off, f, `pay_re2a_${f.statementId}`);
