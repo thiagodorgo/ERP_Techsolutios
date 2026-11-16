@@ -24,13 +24,18 @@ import {
 import { PrismaPlansRepository } from "../plans/plans-prisma.repository.js";
 import { PrismaSubscriptionsRepository } from "../plans/subscriptions-prisma.repository.js";
 import { PrismaTenantLookup } from "../plans/tenant-lookup.prisma.js";
+import { prismaChargeIntentTx } from "../charges/charge-intent.prisma.js";
+import { sqlStatusList } from "../charges/charge-rules.js";
+import { listByStatementInTx as listChargesByStatementInTx } from "../charges/charges.prisma.js";
+import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import { enqueueInTx } from "../outbox/outbox.prisma.js";
 import { computeStatement, type StatementSnapshot } from "./statement.engine.js";
 import type { StatementRuntime } from "./statement.factory.js";
 import { RepositoryStatementInputsProvider, type BindingsSource, type UsageSource } from "./statement.inputs-provider.js";
 import type { UsageDayRow, VehicleBindingWindow } from "./statement.inputs.js";
 import { emptyStatement, type LiveInvoiceRef, type StatementRepository, type StatementTx } from "./statement.repository.js";
-import { StatementService, type StatementAuditSink } from "./statement.service.js";
+import { closingMethodOf } from "./statement-charge-lines.js";
+import { StatementService, type StatementAuditSink, type StatementChannel } from "./statement.service.js";
 import type {
   ChargeStatus,
   CreditReason,
@@ -358,6 +363,23 @@ function prismaTx(tx: Tx, tenantId: string): StatementTx {
       )) as unknown[];
       return rows.length > 0;
     },
+    // B-ASS-08c1c (plano §4.0 item 1): a cobrança sobre o MESMO `tx` (o `lockStatement` reentra o `FOR UPDATE` que este `tx` já
+    // tem, sem esperar). Só é chamada DEPOIS da trava do demonstrativo.
+    charging: () => prismaChargeIntentTx(tx, tenantId),
+    // B-ASS-08c1c (R2-03, plano §4.7): a tabela de cobranças acompanha o provedor no `tx` do efeito no demonstrativo.
+    async syncCharge(statementId, match, status) {
+      if (!isUuid(statementId)) return;
+      const byExternal = "externalChargeId" in match;
+      await tx.$executeRawUnsafe(
+        `UPDATE subscription_statement_charges SET status = $3, cancelled_at = CASE WHEN $3 = 'cancelled' THEN COALESCE(cancelled_at, now()) ELSE cancelled_at END
+          WHERE tenant_id = $1::uuid AND statement_id = $2::uuid AND (CASE WHEN $4::boolean THEN external_charge_id = $5 ELSE status = $5 END)`,
+        tenantId,
+        statementId,
+        status,
+        byExternal,
+        byExternal ? match.externalChargeId : match.status,
+      );
+    },
   };
 }
 
@@ -415,6 +437,30 @@ export class PrismaStatementRepository implements StatementRepository {
     return withTenantRls(this.client, tenantId, async (tx) =>
       (await tx.subscriptionCredit.findMany({ where: { tenant_id: tenantId }, orderBy: { created_at: "asc" } })).map(mapCredit),
     );
+  }
+
+  /** B-ASS-08c1c (P11b, plano §4.9): a cobrança `pending` que o cliente pode pagar — a da `charge_create` SENT do fechamento
+   * VIGENTE (nasceu depois da última reabertura e com o total atual), sem `charge_cancel` vivo. Uma leitura, sem trava. */
+  findPayableCharge(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined> {
+    if (!isUuid(statementId)) return Promise.resolve(undefined);
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(
+        `SELECT c.id FROM subscription_statements s
+           JOIN subscription_statement_charges c ON c.statement_id = s.id AND c.tenant_id = s.tenant_id AND c.status IN (${sqlStatusList("payable")})
+           JOIN billing_outbox o ON o.statement_id = s.id AND o.tenant_id = s.tenant_id AND o.kind = 'charge_create' AND o.status = 'SENT'
+                                AND c.provider = o.provider AND c.external_charge_id = o.external_id
+          WHERE s.id = $1::uuid AND s.tenant_id = $2::uuid
+            AND (s.reopened_at IS NULL OR o.occurred_at > s.reopened_at) AND (o.payload->>'amountCents')::bigint = round(s.total_amount * 100)::bigint -- [VIEW-VIGENTE]
+            AND NOT EXISTS (SELECT 1 FROM billing_outbox k WHERE k.statement_id = s.id AND k.kind = 'charge_cancel' AND k.status IN ('PENDING', 'PROCESSING', 'NEEDS_REVIEW') AND k.payload->>'chargeId' = c.external_charge_id) -- [VIEW-LIVE]
+          ORDER BY c.created_at DESC
+          LIMIT 1`,
+        statementId,
+        tenantId,
+      )) as Array<{ id: string }>;
+      const id = rows[0]?.id;
+      if (!id) return undefined;
+      return (await listChargesByStatementInTx(tx, statementId)).find((charge) => charge.id === id);
+    });
   }
 }
 
@@ -551,10 +597,23 @@ export async function createPrismaStatementRuntime(): Promise<StatementRuntime> 
   const bindings = new PrismaBindingsSource(prisma);
   const audit = new PrismaStatementAuditSink(prisma);
   const inputs = new RepositoryStatementInputsProvider(new PrismaSubscriptionsRepository(prisma), plans, tenants, usage, bindings);
+  const billingProfiles = new PrismaBillingProfileRepository(prisma);
+  // B-ASS-08c1c (P5, plano §4.1): o fechamento enfileira só com o provedor de pagamento LIGADO agora (o MESMO predicado da rota
+  // `/charge`: env + cofre + `enabled`), com o método do perfil. Import dinâmico: `vault/` e `outbox/` sem ciclo com `statements/`.
+  const channel: StatementChannel = {
+    closingCharge: {
+      async resolve(tenantId) {
+        const [{ createDefaultVaultRuntime }, { paymentProviderOn }] = await Promise.all([import("../vault/vault.factory.js"), import("../outbox/channel-state.js")]);
+        const on = await paymentProviderOn(await createDefaultVaultRuntime());
+        if (!on) return null;
+        return { provider: on.provider, method: closingMethodOf((await billingProfiles.find(tenantId))?.paymentMethod) };
+      },
+    },
+  };
   return {
-    service: new StatementService(repository, inputs, audit),
+    service: new StatementService(repository, inputs, audit, channel),
     repository,
-    billingProfiles: new PrismaBillingProfileRepository(prisma),
+    billingProfiles,
     tenants,
     audit,
     inputs,

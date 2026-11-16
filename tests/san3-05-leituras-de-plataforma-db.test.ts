@@ -972,7 +972,8 @@ if (!connectionString) {
 
           // poll-pending: a cobrança de B, sem evento há > 30 min, é reconsultada (webhook perdido) → baixa.
           estado.set(cobrancaDe(cenario.tenantB), { status: "paid", paidCents: 10_000, raw: {} });
-          const pendente = await runBillingPollPending(deps);
+          // B-ASS-08c1c (Emenda 1.2 #5): o registro renova a ref (o marcador REF-FRESH); o poll roda 31 min depois, além do corte de 30 min.
+          const pendente = await runBillingPollPending({ ...deps, now: () => new Date(agoraCanal.getTime() + 31 * 60 * 1_000) });
           assert.deepEqual({ eventos: pendente.events, cobrancas: pendente.charges }, { eventos: 0, cobrancas: 1 });
           registrarJob("billing.poll-pending", {
             eventos: pendente.events,
