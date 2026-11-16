@@ -14,6 +14,9 @@ import "dotenv/config";
 // [SV14], [SV14b] a borda exata das janelas, em milissegundos, com relógio controlado (`Date.now`).
 // [SV11]…[SV11c], [SV16], [SV17] a rota passa a prova de posse ao serviço (S5).
 // [SV3], [SV3b], [SV4c], [SV4d], [SV6], [SV8], [SV12], [SV12c], [SV12p] o reuso derruba a família (S3).
+// [SV18]…[SV18c], [SV19] a ordem invertida da rede não derruba o técnico (S6, v3.3).
+// [SV20a]…[SV20e] o resíduo R-3c (v3.4 §1.3), escolhido pelo dono (D-DONO-1511-68-NAO-DESLOGAR), preso na letra:
+//   C = 1º envio do app (R0 + compromisso), P = reenvio (R0 + prova), X = cópia byte a byte de C por um terceiro.
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import type { Server } from "node:http";
@@ -37,6 +40,10 @@ process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? "dev-only-ref
 process.env.JWT_REFRESH_EXPIRES_IN = "7d";
 
 const connectionString = process.env.DATABASE_URL;
+
+// O portão de sessão viva (`attachAuthenticatedActor` → `sessionLiveness`) só confere a sessão no modo prisma.
+// O job `backend` da CI força `memory` no ambiente; este arquivo precisa do portão real nos casos SV20.
+if (connectionString) process.env.CORE_SAAS_PERSISTENCE = "prisma";
 
 // Relógio controlado (SV14, SV14b): `fake` nulo = relógio real.
 const realNow = Date.now.bind(Date);
@@ -87,9 +94,14 @@ if (!connectionString) {
         import("express"),
         import("../src/modules/auth/routes/auth.routes.js"),
       ]);
+      const { attachAuthenticatedActor, getAuthenticatedActor } = await import("../src/modules/auth/index.js");
       const app = express();
       app.use(express.json());
       app.use("/api/v1/auth", createAuthRouter({ getSessionService: async () => service }));
+      // O portão de sessão viva: o acesso devolvido pela renovação "passa" se a rota autenticada não o recusa.
+      app.get("/api/v1/portao", attachAuthenticatedActor(), (request, response) => {
+        response.status(getAuthenticatedActor(request) ? 200 : 401).json({});
+      });
       const srv = app.listen(0);
       await new Promise<void>((resolve) => srv.once("listening", resolve));
       return { url: `http://127.0.0.1:${(srv.address() as AddressInfo).port}`, srv };
@@ -115,6 +127,9 @@ if (!connectionString) {
       post(url, "/api/v1/auth/refresh", { refreshToken: token, ...extra });
     const logout = (token: string, url = baseUrl) => post(url, "/api/v1/auth/logout", { refreshToken: token });
     const tok = (r: Http) => r.body?.data?.refresh_token as string | undefined;
+    const acc = (r: Http) => r.body?.data?.access_token as string | undefined;
+    const passa = async (access: string | undefined) =>
+      (await fetch(`${baseUrl}/api/v1/portao`, { headers: { authorization: `Bearer ${access ?? "x"}` } })).status !== 401;
     // Duas conexões abertas no pool do papel antes de prender a linha: a 2ª renovação não espera conexão nova.
     const warmPool = () =>
       Promise.all([0, 1].map(() => role.client.$transaction(async (tx) => tx.$queryRaw`SELECT pg_sleep(0.2)::text AS x`)));
@@ -519,6 +534,171 @@ if (!connectionString) {
       const forged = await refresh(s.refreshToken, { renewalProof: par().proof });
       assert.equal(forged.status, 401);
       assert.equal(tok(forged), undefined);
+      assert.equal(await revoked(s.sessionId), true);
+    });
+
+    it("[SV18] a prova troca primeiro e o compromisso chega depois: 200 e 200, o mesmo R1, sessão viva, o R1 renova", async () => {
+      const s = await newSession();
+      const p = par();
+      const byProof = await refresh(s.refreshToken, { renewalProof: p.proof });
+      const lateCommit = await refresh(s.refreshToken, { renewalCommit: p.commit });
+      assert.deepEqual([byProof.status, lateCommit.status], [200, 200]);
+      assert.equal(tok(lateCommit), tok(byProof));
+      assert.equal(await revoked(s.sessionId), false);
+      assert.equal((await refresh(tok(byProof) as string, { renewalCommit: par().commit })).status, 200);
+    });
+
+    it("[SV18b] o compromisso atrasado chega depois dos 10 s e antes dos 60 s: o mesmo R1, sessão viva", async () => {
+      const s = await newSession();
+      const p = par();
+      const T0 = realNow();
+      try {
+        fake = T0;
+        const byProof = await refresh(s.refreshToken, { renewalProof: p.proof });
+        fake = T0 + 30_000;
+        const lateCommit = await refresh(s.refreshToken, { renewalCommit: p.commit });
+        assert.deepEqual([byProof.status, lateCommit.status], [200, 200]);
+        assert.equal(tok(lateCommit), tok(byProof));
+        assert.equal(await revoked(s.sessionId), false);
+      } finally {
+        fake = null;
+      }
+    });
+
+    it("[SV18c] depois do SV18, a prova repetida recebe o mesmo R1; usado o R1, o R0 com prova ou compromisso derruba a família", async () => {
+      for (const back of ["proof", "commit"] as const) {
+        const s = await newSession();
+        const p = par();
+        const byProof = await refresh(s.refreshToken, { renewalProof: p.proof });
+        assert.equal(tok(await refresh(s.refreshToken, { renewalCommit: p.commit })), tok(byProof));
+        const repeated = await refresh(s.refreshToken, { renewalProof: p.proof });
+        assert.equal(tok(repeated), tok(byProof), "a prova repetida antes do uso do R1");
+        assert.equal((await refresh(tok(byProof) as string, { renewalCommit: par().commit })).status, 200, "o R1 é usado");
+        const late = await refresh(s.refreshToken, back === "proof" ? { renewalProof: p.proof } : { renewalCommit: p.commit });
+        assert.equal(late.status, 401, back);
+        assert.equal(tok(late), undefined, back);
+        assert.equal(await revoked(s.sessionId), true, back);
+      }
+    });
+
+    it("[SV19] depois de uma troca sem vínculo, o compromisso sem prova recebe o mesmo R1 em até 10 s; depois, a família cai", async () => {
+      const T0 = realNow();
+      try {
+        const inside = await newSession();
+        fake = T0;
+        const web = await refresh(inside.refreshToken);
+        fake = T0 + 9_000;
+        const commitOnly = await refresh(inside.refreshToken, { renewalCommit: par().commit });
+        assert.equal(commitOnly.status, 200);
+        assert.equal(tok(commitOnly), tok(web));
+        assert.equal(await revoked(inside.sessionId), false);
+
+        const outside = await newSession();
+        fake = T0;
+        await refresh(outside.refreshToken);
+        fake = T0 + 10_001;
+        const tooLate = await refresh(outside.refreshToken, { renewalCommit: par().commit });
+        assert.equal(tooLate.status, 401);
+        assert.equal(await revoked(outside.sessionId), true);
+      } finally {
+        fake = null;
+      }
+    });
+
+    it("[SV20a] ordem invertida, o app renova primeiro: a cópia leva o R1; a renovação legítima tira dela o poder de renovar; a família cai no 1º token velho", async () => {
+      const s = await newSession();
+      const p = par();
+      const rP = await refresh(s.refreshToken, { renewalProof: p.proof });
+      const rX = await refresh(s.refreshToken, { renewalCommit: p.commit });
+      assert.equal(rP.status, 200);
+      assert.equal(rX.status, 200, "a cópia recebe o R1 (R-3c)");
+      assert.equal(tok(rX), tok(rP));
+      assert.equal(await revoked(s.sessionId), false);
+      assert.equal(await passa(acc(rX)), true, "o acesso da cópia passa o portão");
+      const rApp = await refresh(tok(rP) as string, { renewalCommit: par().commit });
+      assert.equal(rApp.status, 200);
+      assert.notEqual(tok(rApp), tok(rP));
+      assert.equal(await revoked(s.sessionId), false, "a renovação legítima não derruba a sessão");
+      assert.equal(await passa(acc(rX)), true, "o acesso já emitido à cópia segue até expirar");
+      const rX2 = await refresh(tok(rX) as string);
+      assert.equal(rX2.status, 401);
+      assert.equal(tok(rX2), undefined);
+      assert.equal(await revoked(s.sessionId), true, "o R1 da cópia, já antecessor, derruba a família");
+      assert.equal(await passa(acc(rX)), false);
+      assert.equal(await passa(acc(rApp)), false);
+      assert.equal((await refresh(tok(rApp) as string, { renewalCommit: par().commit })).status, 401);
+    });
+
+    it("[SV20b] como o SV20a, e a cópia tenta o R1 depois da janela curta com compromisso próprio: a família cai", async () => {
+      const s = await newSession();
+      const p = par();
+      const T0 = realNow();
+      try {
+        fake = T0;
+        const rP = await refresh(s.refreshToken, { renewalProof: p.proof });
+        const rX = await refresh(s.refreshToken, { renewalCommit: p.commit });
+        assert.equal(rX.status, 200);
+        assert.equal(tok(rX), tok(rP));
+        const rApp = await refresh(tok(rP) as string, { renewalCommit: par().commit });
+        assert.equal(rApp.status, 200);
+        fake = T0 + 10_000 + 1;
+        assert.equal(await passa(acc(rX)), true);
+        const rX2 = await refresh(tok(rX) as string, { renewalCommit: par().commit });
+        assert.equal(rX2.status, 401);
+        assert.equal(tok(rX2), undefined);
+        assert.equal(await revoked(s.sessionId), true);
+        assert.equal((await refresh(tok(rApp) as string, { renewalCommit: par().commit })).status, 401);
+      } finally {
+        fake = null;
+      }
+    });
+
+    it("[SV20c] ordem invertida, a cópia renova primeiro: ela segue até o app voltar; aí a família cai", async () => {
+      const s = await newSession();
+      const p = par();
+      const rP = await refresh(s.refreshToken, { renewalProof: p.proof });
+      const rX = await refresh(s.refreshToken, { renewalCommit: p.commit });
+      assert.equal(rX.status, 200);
+      assert.equal(tok(rX), tok(rP));
+      const rX2 = await refresh(tok(rX) as string, { renewalCommit: par().commit });
+      assert.equal(rX2.status, 200, "a cópia gira o R1 primeiro");
+      assert.equal(await passa(acc(rX2)), true);
+      assert.equal(await revoked(s.sessionId), false);
+      const rApp = await refresh(tok(rP) as string, { renewalCommit: par().commit });
+      assert.equal(rApp.status, 401, "o app volta com o R1, já antecessor");
+      assert.equal(tok(rApp), undefined);
+      assert.equal(await revoked(s.sessionId), true);
+      assert.equal((await refresh(tok(rX2) as string, { renewalCommit: par().commit })).status, 401);
+      assert.equal(await passa(acc(rX2)), false);
+    });
+
+    it("[SV20d] a cópia chega depois da janela longa contada da troca pela prova: não leva nada e a família cai", async () => {
+      const s = await newSession();
+      const p = par();
+      const T0 = realNow();
+      try {
+        fake = T0;
+        const rP = await refresh(s.refreshToken, { renewalProof: p.proof });
+        assert.equal(rP.status, 200);
+        fake = T0 + 60_000 + 1;
+        const rX = await refresh(s.refreshToken, { renewalCommit: p.commit });
+        assert.equal(rX.status, 401);
+        assert.equal(tok(rX), undefined);
+        assert.equal(await revoked(s.sessionId), true);
+        assert.equal((await refresh(tok(rP) as string, { renewalCommit: par().commit })).status, 401);
+      } finally {
+        fake = null;
+      }
+    });
+
+    it("[SV20e] ordem normal (o controle do SV12c): o 1º envio verdadeiro troca; a cópia não leva nada e a família cai", async () => {
+      const s = await newSession();
+      const p = par();
+      const rC = await refresh(s.refreshToken, { renewalCommit: p.commit });
+      const rX = await refresh(s.refreshToken, { renewalCommit: p.commit });
+      assert.equal(rC.status, 200);
+      assert.equal(rX.status, 401);
+      assert.equal(tok(rX), undefined);
       assert.equal(await revoked(s.sessionId), true);
     });
 
