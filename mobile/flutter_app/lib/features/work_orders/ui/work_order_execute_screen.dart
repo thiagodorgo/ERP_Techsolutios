@@ -1074,6 +1074,7 @@ ExecucaoGuinchoFaseView _unconfirmedTowDelivery(
     actionIcon: Icons.refresh_outlined,
     onAction: onRefresh,
     nodeAction: true,
+    nodeActionIcon: Icons.refresh_outlined,
   );
 }
 

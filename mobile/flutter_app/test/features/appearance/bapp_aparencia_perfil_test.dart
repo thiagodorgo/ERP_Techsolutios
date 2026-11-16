@@ -46,7 +46,10 @@ void main() {
       'escolha atual no meta', (t) async {
     await _profile(t);
     expect(find.text('Telas'), findsOneWidget);
-    expect(find.byType(MobileExpandableRow), findsNWidgets(1));
+    expect(
+      find.byType(MobileExpandableRow),
+      findsNWidgets(appAppearanceScreens.length),
+    );
     expect(find.text('Localização e consentimento'), findsOneWidget);
     expect(_meta(t), ' · A · Cartões de hoje');
   });
@@ -167,7 +170,9 @@ void main() {
       expect(t.getSize(option).height, greaterThanOrEqualTo(48));
       expect(
         t.getSemantics(option).label,
-        contains('${ap.letter} · ${appAppearanceScreens.single.labelOf(ap)}'),
+        contains(
+          '${ap.letter} · ${appAppearanceScreens.firstWhere((s) => s.key == _key).labelOf(ap)}',
+        ),
       );
     }
     handle.dispose();

@@ -953,4 +953,109 @@ void main() {
       handle.dispose();
     });
   });
+
+  // Conferência visual da F2 (orquestrador, `conf-visual-f2-orq.md`), CV2-1 a
+  // CV2-4. Por último no arquivo: a Roboto carregada aqui vale até o fim do
+  // isolate, e os casos de cima medem com a fonte de teste.
+  group('conferência visual F2', () {
+    setUpAll(loadRoboto);
+
+    testWidgets('CV2-1. os passos dizem "Início" e "Conclusão", com acento, '
+        'nas 3 aparências', (t) async {
+      for (final ap in AppAppearance.values) {
+        await _pump(t, 'rota', ap: ap);
+        final steps = find.byType(WorkOrderStepper);
+        expect(
+          find.descendant(of: steps, matching: find.text('Início')),
+          findsOneWidget,
+          reason: ap.letter,
+        );
+        expect(
+          find.descendant(of: steps, matching: find.text('Conclusão')),
+          findsOneWidget,
+          reason: ap.letter,
+        );
+        expect(find.text('Inicio'), findsNothing);
+        expect(find.text('Conclusao'), findsNothing);
+      }
+    });
+
+    for (final size in const [Size(390, 812), Size(360, 740)]) {
+      testWidgets('CV2-2-${size.width.toInt()}. na C, o nome da fase e o selo '
+          'ficam na mesma linha, sem quebrar o selo', (t) async {
+        await _pump(t, 'entrega', ap: AppAppearance.c, size: size);
+        for (final (card, label, pill) in [
+          (_cEntrega, 'ENTREGA', 'Em andamento'),
+          (_cColeta, 'COLETA', 'Concluída'),
+        ]) {
+          final l = t.getRect(_in(card, label));
+          final p = t.getRect(
+            find.descendant(
+              of: find.descendant(
+                of: find.byKey(card),
+                matching: find.byType(MobilePill),
+              ),
+              matching: find.text(pill),
+            ),
+          );
+          expect(
+            (l.center.dy - p.center.dy).abs(),
+            lessThan(3),
+            reason: '$label e $pill na mesma linha',
+          );
+          expect(p.height, lessThan(18), reason: '$pill numa linha só');
+          expect(p.right, lessThanOrEqualTo(t.getRect(find.byKey(card)).right));
+        }
+      });
+    }
+
+    testWidgets('CV2-3. na B, "Ver vistoria de …" é link de texto, sem ícone; '
+        '"Atualizar" mantém o ícone', (t) async {
+      Finder iconOf(String label) => find.descendant(
+        of: find.ancestor(
+          of: find.text(label),
+          matching: find.byWidgetPredicate((w) => w is TextButton),
+        ),
+        matching: find.byType(Icon),
+      );
+      await _pump(t, 'pronta', ap: AppAppearance.b);
+      expect(find.text('Ver vistoria de coleta'), findsOneWidget);
+      expect(iconOf('Ver vistoria de coleta'), findsNothing);
+      expect(iconOf('Ver vistoria de entrega'), findsNothing);
+      await _pump(t, 'aguardando', ap: AppAppearance.b);
+      expect(iconOf('Atualizar'), findsOneWidget);
+    });
+
+    testWidgets('CV2-4. na B, a borda do "Comparar coleta × entrega" é '
+        'tracejada, no azul claro da referência', (t) async {
+      await _pump(t, 'rota', ap: AppAppearance.b);
+      final border = find.ancestor(
+        of: find.byKey(const Key('guincho-b-comparar')),
+        matching: find.byType(MobileDashedBorder),
+      );
+      expect(border, findsOneWidget);
+      expect(
+        t.widget<MobileDashedBorder>(border).color,
+        const Color(0xFFBFDBFE),
+      );
+      // A borda contínua de antes saiu: só o tracejado desenha a borda.
+      final material = t.widget<Material>(
+        find.descendant(of: border, matching: find.byType(Material)).first,
+      );
+      expect((material.shape! as RoundedRectangleBorder).side, BorderSide.none);
+      // O traço é desenhado em pedaços (um contínuo seria 1 só).
+      await t.pumpWidget(
+        const Center(
+          child: MobileDashedBorder(child: SizedBox(width: 120, height: 48)),
+        ),
+      );
+      expect(
+        find.byType(MobileDashedBorder),
+        paints
+          ..path(color: const Color(0xFFBFDBFE))
+          ..path(color: const Color(0xFFBFDBFE))
+          ..path(color: const Color(0xFFBFDBFE)),
+      );
+    });
+  });
 }

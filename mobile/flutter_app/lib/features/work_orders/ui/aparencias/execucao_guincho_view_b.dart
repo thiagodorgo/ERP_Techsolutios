@@ -262,13 +262,17 @@ class _Timeline extends StatelessWidget {
     final action = f.nodeAction && f.actionLabel != null
         ? Align(
             alignment: Alignment.centerLeft,
+            // CV2-3: "Ver vistoria de …" é link de texto; só "Atualizar" leva
+            // o ícone, como na referência.
             child: TextButton.icon(
               onPressed: f.onAction,
               style: TextButton.styleFrom(
                 minimumSize: const Size(64, 44),
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
-              icon: Icon(f.actionIcon, size: 18),
+              icon: f.nodeActionIcon == null
+                  ? null
+                  : Icon(f.nodeActionIcon, size: 18),
               label: Text(f.actionLabel!),
             ),
           )
@@ -292,57 +296,57 @@ class _CompareRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFF8FAFF),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: const BorderSide(color: Color(0xFFBFDBFE)),
-      ),
-      child: InkWell(
-        key: const Key('guincho-b-comparar'),
-        onTap: props.onCompare,
-        borderRadius: BorderRadius.circular(10),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.compare_arrows_outlined,
-                  size: 20,
-                  color: ErpMobileTheme.primary,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Comparar coleta × entrega',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: ErpMobileTheme.primary,
-                        ),
-                      ),
-                      Text(
-                        props.timelineCompareText,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          height: 16 / 12,
-                          color: ErpMobileTheme.inkMuted,
-                        ),
-                      ),
-                    ],
+    // CV2-4: a borda tracejada da referência (`m-row`).
+    return MobileDashedBorder(
+      child: Material(
+        color: const Color(0xFFF8FAFF),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: InkWell(
+          key: const Key('guincho-b-comparar'),
+          onTap: props.onCompare,
+          borderRadius: BorderRadius.circular(10),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.compare_arrows_outlined,
+                    size: 20,
+                    color: ErpMobileTheme.primary,
                   ),
-                ),
-                const Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: ErpMobileTheme.inkMuted,
-                ),
-              ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Comparar coleta × entrega',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: ErpMobileTheme.primary,
+                          ),
+                        ),
+                        Text(
+                          props.timelineCompareText,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            height: 16 / 12,
+                            color: ErpMobileTheme.inkMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: ErpMobileTheme.inkMuted,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

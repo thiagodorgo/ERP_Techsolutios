@@ -1688,12 +1688,19 @@ class MobilePhaseCard extends StatelessWidget {
     this.actionSemanticLabel,
     this.actionIcon,
     this.onAction,
+    this.width,
     super.key,
   });
 
   final String label;
   final String statusLabel;
   final PillTone statusTone;
+
+  /// A largura do cartão, quando quem o põe na tela a conhece (a opção C a
+  /// mede por fora do `IntrinsicHeight`, que não aceita `LayoutBuilder`
+  /// dentro): com ela, a pílula que não cabe nem a 75 % desce para a linha de
+  /// baixo. Sem ela, a pílula só encolhe.
+  final double? width;
 
   /// A fase de agora: borda azul.
   final bool current;
@@ -1738,27 +1745,16 @@ class MobilePhaseCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // O nome e a pílula na mesma linha; sem espaço, a pílula desce
-          // inteira para a linha de baixo (nunca quebra no meio da palavra).
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              Text(
-                label.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.6,
-                  color: ErpMobileTheme.inkMuted,
-                ),
-              ),
-              MobilePill(label: statusLabel, tone: statusTone),
-            ],
+          // O nome e a pílula na mesma linha (CV2-2 da conferência da F2). No
+          // aperto, a pílula encolhe até 75 %; abaixo disso, desce inteira para
+          // a linha de baixo. Nunca quebra no meio da palavra.
+          _PhaseCardHeader(
+            label: label,
+            statusLabel: statusLabel,
+            statusTone: statusTone,
+            maxWidth: width == null
+                ? null
+                : width! - 2 * (current ? 11.5 : 12) - 2 * (current ? 1.5 : 1),
           ),
           const SizedBox(height: 6),
           if (message != null)
@@ -1964,6 +1960,175 @@ class _RequirementRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A borda tracejada de cantos redondos (a linha "Comparar coleta × entrega"
+/// da opção B do guincho, `m-row` da maquete): cada traço é desenhado à parte.
+class MobileDashedBorder extends StatelessWidget {
+  const MobileDashedBorder({
+    required this.child,
+    this.color = const Color(0xFFBFDBFE),
+    this.radius = 10,
+    this.dash = 4,
+    this.gap = 3,
+    this.strokeWidth = 1,
+    super.key,
+  });
+
+  final Widget child;
+  final Color color;
+  final double radius;
+  final double dash;
+  final double gap;
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      foregroundPainter: _DashedRRectPainter(
+        color: color,
+        radius: radius,
+        dash: dash,
+        gap: gap,
+        strokeWidth: strokeWidth,
+      ),
+      child: child,
+    );
+  }
+}
+
+class _DashedRRectPainter extends CustomPainter {
+  const _DashedRRectPainter({
+    required this.color,
+    required this.radius,
+    required this.dash,
+    required this.gap,
+    required this.strokeWidth,
+  });
+
+  final Color color;
+  final double radius;
+  final double dash;
+  final double gap;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+    final half = strokeWidth / 2;
+    final outline = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(
+            half,
+            half,
+            size.width - strokeWidth,
+            size.height - strokeWidth,
+          ),
+          Radius.circular(radius),
+        ),
+      );
+    for (final metric in outline.computeMetrics()) {
+      var start = 0.0;
+      while (start < metric.length) {
+        final end = start + dash;
+        canvas.drawPath(metric.extractPath(start, end), paint);
+        start = end + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedRRectPainter old) =>
+      old.color != color ||
+      old.radius != radius ||
+      old.dash != dash ||
+      old.gap != gap ||
+      old.strokeWidth != strokeWidth;
+}
+
+/// O cabeçalho do [MobilePhaseCard]: o nome em caixa alta e a pílula.
+class _PhaseCardHeader extends StatelessWidget {
+  const _PhaseCardHeader({
+    required this.label,
+    required this.statusLabel,
+    required this.statusTone,
+    this.maxWidth,
+  });
+
+  final String label;
+  final String statusLabel;
+  final PillTone statusTone;
+  final double? maxWidth;
+
+  static const _labelStyle = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w800,
+    letterSpacing: 0.6,
+    color: ErpMobileTheme.inkMuted,
+  );
+
+  /// O menor tamanho da pílula antes de ela descer para a linha de baixo.
+  static const minPillScale = 0.75;
+
+  @override
+  Widget build(BuildContext context) {
+    final upper = label.toUpperCase();
+    final pill = MobilePill(label: statusLabel, tone: statusTone);
+    final text = Text(
+      upper,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: _labelStyle,
+    );
+    final row = Row(
+      children: [
+        text,
+        const SizedBox(width: 6),
+        Expanded(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: FittedBox(fit: BoxFit.scaleDown, child: pill),
+          ),
+        ),
+      ],
+    );
+    final available = maxWidth;
+    if (available == null) return row;
+    final base = DefaultTextStyle.of(context).style;
+    final scaler = MediaQuery.textScalerOf(context);
+    double measure(String value, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: value, style: base.merge(style)),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      final w = painter.width;
+      painter.dispose();
+      return w;
+    }
+
+    const gap = 6.0;
+    // A pílula: o texto (11 px, w700) mais 9 + 9 de margem.
+    final pillWidth =
+        measure(
+          statusLabel,
+          const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+        ) +
+        18;
+    final room = available - measure(upper, _labelStyle) - gap;
+    if (pillWidth * minPillScale <= room) return row;
+    return Wrap(
+      spacing: gap,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [text, pill],
     );
   }
 }

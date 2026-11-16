@@ -12705,6 +12705,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
 - **apenso (2026-11-14, `B-SAN3-17`, PR #568):** os rótulos próprios do cartão de localização da OS seguem sem acento (achado 5 de quem montou a maquete); o cartão é PROIBIDO no bloco.
 - **apenso (2026-11-15, `B-APP-APARENCIA` F1):** também "Sessao expirada" no `_ExpiredSessionView` do Perfil (`profile_screen.dart`), fora do PERMITIDO da F1 (plano §4).
+- **apenso (2026-11-16, `B-APP-APARENCIA` F2, Emenda 5 `E-APARAPP-ACENTOS`):** os passos da OS passam a "Início" e "Conclusão" (`work_order_steps.dart`), nas 3 aparências da execução; o `b116_execution_stepper_test.dart` mudou só esses literais. O resto desta lista continua aqui.
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 

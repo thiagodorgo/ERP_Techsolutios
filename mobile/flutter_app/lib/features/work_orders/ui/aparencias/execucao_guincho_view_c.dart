@@ -96,25 +96,34 @@ class ExecucaoGuinchoViewC extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                   ],
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Expanded(
-                          child: _phaseCard(
-                            p.collection,
-                            const Key('guincho-c-fase-coleta'),
-                          ),
+                  // A largura de cada cartão, medida por fora do
+                  // `IntrinsicHeight` (CV2-2: o nome e o selo na mesma linha).
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final cardWidth = (constraints.maxWidth - 10) / 2;
+                      return IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _phaseCard(
+                                p.collection,
+                                const Key('guincho-c-fase-coleta'),
+                                cardWidth,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _phaseCard(
+                                p.delivery,
+                                const Key('guincho-c-fase-entrega'),
+                                cardWidth,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: _phaseCard(
-                            p.delivery,
-                            const Key('guincho-c-fase-entrega'),
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 8),
                   if (p.canCompare) ...[
@@ -180,23 +189,25 @@ class ExecucaoGuinchoViewC extends StatelessWidget {
     );
   }
 
-  Widget _phaseCard(ExecucaoGuinchoFaseView f, Key key) => MobilePhaseCard(
-    key: key,
-    label: f.label,
-    statusLabel: f.statusLabel,
-    statusTone: f.statusTone,
-    current: f.current,
-    value: f.cardValue,
-    valueSuffix: f.cardValue == null ? null : 'obrigatórios',
-    progress: f.progress,
-    meta: f.cardMeta,
-    metaEmphasis: f.cardMetaEmphasis,
-    message: f.message,
-    actionLabel: f.shortActionLabel,
-    actionSemanticLabel: f.actionLabel,
-    actionIcon: f.actionIcon,
-    onAction: f.onAction,
-  );
+  Widget _phaseCard(ExecucaoGuinchoFaseView f, Key key, double width) =>
+      MobilePhaseCard(
+        key: key,
+        width: width,
+        label: f.label,
+        statusLabel: f.statusLabel,
+        statusTone: f.statusTone,
+        current: f.current,
+        value: f.cardValue,
+        valueSuffix: f.cardValue == null ? null : 'obrigatórios',
+        progress: f.progress,
+        meta: f.cardMeta,
+        metaEmphasis: f.cardMetaEmphasis,
+        message: f.message,
+        actionLabel: f.shortActionLabel,
+        actionSemanticLabel: f.actionLabel,
+        actionIcon: f.actionIcon,
+        onAction: f.onAction,
+      );
 }
 
 /// "Comparar coleta × entrega", com a prévia do que mudou.

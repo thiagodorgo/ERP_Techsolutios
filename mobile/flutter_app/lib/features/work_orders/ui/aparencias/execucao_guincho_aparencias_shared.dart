@@ -50,6 +50,7 @@ class ExecucaoGuinchoFaseView {
     this.actionIcon = Icons.checklist_outlined,
     this.onAction,
     this.nodeAction = false,
+    this.nodeActionIcon,
   });
 
   /// "Coleta" ou "Entrega".
@@ -98,6 +99,10 @@ class ExecucaoGuinchoFaseView {
   /// entrega antes de concluir a coleta, atualizar). A ação da fase de agora
   /// fica na barra fixa.
   final bool nodeAction;
+
+  /// O ícone da ação embaixo do nó da B: só "Atualizar" leva ícone; "Ver" e
+  /// "Abrir" são links de texto (CV2-3).
+  final IconData? nodeActionIcon;
 }
 
 /// O que a barra fixa da opção B oferece agora.

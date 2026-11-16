@@ -75,6 +75,11 @@ Plano §2.2 e §3.2, com a Emenda 1 (A1: o despacho no `ErpScaffold` da tela car
 - testes novos: `test/features/work_orders/bapp_aparencia_guincho_test.dart`, `test/capturas/bapp_capturas_f2_test.dart`;
   `test/capturas/captura_helper.dart` só por acréscimo;
 - `COMPONENT_LIBRARY.md` e o registro, como na F1.
+- **Emenda 4 (`E-APARAPP-REGISTRO`):** em `bapp_aparencia_store_test.dart` (S12) e `bapp_aparencia_perfil_test.dart` (PF1, PF9),
+  só as linhas que prendem o registro a uma tela: S12 com a lista EXATA `[_key, kExecucaoGuinchoAppearanceKey]` (cada
+  fatia seguinte acrescenta a sua chave no fim) e `firstWhere`; PF1 com `findsNWidgets(appAppearanceScreens.length)`.
+- **Emenda 5 (`E-APARAPP-ACENTOS`):** `lib/features/work_orders/domain/work_order_steps.dart`, só "Início" e "Conclusão",
+  e os literais desses rótulos em `test/features/work_orders/b116_execution_stepper_test.dart`.
 
 ## Escopo PROIBIDO (todas as fatias)
 
@@ -123,7 +128,7 @@ As mutações do dev (MD1 a MD11), que cobrem testes-dono que as do plano não d
 | M2.6 | `work_order_execute_screen.dart` | `wo.checklistId == null \|\| (isCollectionComplete && deliveryGateOpen);` | `true;` |
 | M2.7 | `work_order_execute_screen.dart` | `final showComparePreview = data.canCompare && data.isCollectionComplete && data.isDeliveryComplete;` | `final showComparePreview = data.canCompare && data.isCollectionComplete;` |
 
-As mutações do dev da F2 (MD1 a MD35) ficam no diário do dev e no corpo do PR.
+As mutações do dev da F2 (MD1 a MD36) e as da conferência visual (MV1 a MV4) ficam no diário do dev e no corpo do PR.
 
 ## Bateria de validação (§9, Flutter)
 
