@@ -15713,6 +15713,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **N e forma (diário do ensaio):** às 11:21:43Z, 16 min depois do login, o app recebeu `GET /api/v1/work-orders 401` e mostrou "Sessao expirada. Faca login novamente.", sem nenhum `POST /auth/refresh` no log da API; o `JWT_EXPIRES_IN` da pilha é 15m.
 - **não medido:** por que a renovação do app não disparou (há um interceptador que renova o token uma vez no 401, `mobile/flutter_app/lib/core/network/auth_interceptor.dart`, lido pelo redator na `main`), e se o caso repete fora da pilha isolada.
 - **critério de encerramento:** com o token de acesso vencido e o de renovação válido, o app renova sozinho e a ação segue, sem "Sessão expirada"; teste no app e prova no emulador.
+- **estado (16/11, `dev-68-e2-cl`):** o `B-APP-SESSAO-RENOVA` (PR #588) entrega o teste no app (`[T1]`, `[T1c]` e as suítes `test/core/auth/bsessao_renova_*`, verdes no CI) e o servidor que revoga; falta a prova no emulador (§5.8 do plano), e a pendência segue ABERTA até ela e o merge.
 
 ## P-APP-TELEMETRIA-422 (2026-11-14) — `POST /mobile/telemetry` responde 422 a cada sincronização do app — MÉDIA
 
@@ -15724,10 +15725,11 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-APP-401-FICA-SINCRONIZANDO (2026-11-14) — depois do 401 da rotação de sessão, a ação da fila fica em "Sincronizando" até o "Sincronizar agora" manual — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o próximo bloco do app que tocar a fila de sincronização (a Emenda 1.8 deixou "bloco mobile, a nomear no registro"; leitura do redator, declarada (§A6)) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **status:** FECHADA pelo `B-APP-SESSAO-RENOVA` (F6, PR #588; vale no merge) · antes: ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** o próximo bloco do app que tocar a fila de sincronização (a Emenda 1.8 deixou "bloco mobile, a nomear no registro"; leitura do redator, declarada (§A6)) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
 - **origem:** a Emenda 1.8 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), a partir do Op-8 do ensaio 44-B3.
 - **N e forma (diário do ensaio):** offline, a despesa nova ficou `syncing` durante o 401 da rotação; depois do novo login, a tela mostrou "Falha na sincronização. Tente novamente." e o item seguiu "Sincronizando" até o toque manual. Nada se perdeu: a fila tinha 3 linhas antes e depois, e o contador de tentativas variou 0.
 - **critério de encerramento:** depois do novo login, a ação presa pelo 401 volta a pendente e sai sozinha na sincronização seguinte, com teste.
+- **fechamento (16/11, `dev-68-e2-cl`):** FECHADA pelo `B-APP-SESSAO-RENOVA` (fatia F6, D8, commit `d910e67c`, PR #588; vale no merge). O lote que leva 401 com a renovação recusada volta a `pending`, com o mesmo `retryCount` e `SESSION_EXPIRED`, nos 5 replays e no comprovante (`[T5]` × 5, vermelhos antes pelo `SyncOwnershipError`); a passada para quando a sessão muda (`[T5b]` × 3); depois do novo login do mesmo dono, uma passada roda sozinha e a ação fica `synced`, e a de outra pessoa não é tocada (`[T5c]` × 2). Mutações M8, M8b1–M8b5, M11 e M11b vermelhas e restauradas (`test/core/sync/bsessao_renova_fila_test.dart`).
 
 ## P-B10B-MIGRATE-P1001-NA-1A-SUBIDA (2026-11-14) — na 1ª subida da pilha isolada, o healthcheck do banco responde cedo e o `migrate` falha com P1001 — BAIXA (ferramenta)
 
@@ -16570,9 +16572,10 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 
 ## P-68-PERDEDOR-RELE-401 (2026-11-15) — no app, o perdedor de uma corrida de renovação relê e cai em 401 — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` · **dono:** `B-APP-SESSAO-RENOVA` · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **status:** FECHADA pelo `B-APP-SESSAO-RENOVA` (fatia FS3c, commit `da880652`, PR #588, ramo `feat/app-sessao-renova`; vale no merge) · **dono:** `B-APP-SESSAO-RENOVA` · **gravidade:** BAIXA · **escopo:** `pre-existente` · **bloqueia:** não.
 - **origem:** `ver-68-v33-cl`, VER68V33CL-03 (15/11 21:21).
 - **critério de encerramento:** o perdedor usa o token novo do vencedor, sem 401, com teste.
+- **fechamento (16/11, `dev-68-cl`; os 4 itens do §5 da Emenda 3.4, por comando):** (1) a linha S34M em `auth-session.service.ts` (o perdedor que relê e não casa candidato é reuso: revoga e audita), contagem 1; (2) `[SV21a]` e `[SV21b]` em `tests/app-sessao-revogacao-db.test.ts`, determinísticos, sem `Promise.all`: o `[SV21b]` (os perdedores legítimos) verde antes da linha e depois, o `[SV21a]` vermelho antes (401 sem revogar) e verde depois, com `reuse_detected` 1 e `auth.session.revoked` 1; (3) a M34B (`if (false)` na S34M) deixa o `[SV21a]` vermelho; (4) o caso O6 re-executado 5 vezes sob o papel `NOSUPERUSER NOBYPASSRLS`: nenhuma rodada com um perdedor em 401 sem revogar. No CI do PR: `ok` para `[SV21a]` e `[SV21b]` no job `backend-postgres` (rodadas `43951453105` e `43951465485`).
 
 ## P-SEC-LOG-SENTINELA-EM-UUID (2026-11-15) — o H4e do `sec-log-http` compara o sentinela por substring e casa com um UUID aleatório — BAIXA
 
@@ -16643,3 +16646,17 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `_NavRow` de `profile_screen.dart` na `origin/main` `80f5b4d9`: padding 13 + texto) · **dono:** o bloco de acessibilidade do app · **bloqueia:** não.
 - **origem:** `B-APP-APARENCIA` F1: o `androidTapTargetGuideline` no Perfil mede 356 × 46 em "Trocar de organização" e na "Localização" da aparência A. As linhas novas da F1 (a seção "Telas" e a "Localização" B e C) têm 48 px.
 - **critério de encerramento:** as linhas do Perfil com alvo de pelo menos 48 px, com o `androidTapTargetGuideline` verde no Perfil inteiro.
+
+## P-AUTH-REFRESH-VINCULO-APARELHO (2026-11-16) — o token de renovação não é amarrado ao aparelho — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (sessão) · **escopo:** `pre-existente` (fora do `B-APP-SESSAO-RENOVA`) · **dono:** o próximo bloco de autenticação (chave do aparelho, DPoP) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** plano do `B-APP-SESSAO-RENOVA`, Emenda 3.1 §2.7 (o resíduo R-3) e Emenda 3.3 (o limite técnico declarado).
+- **N e forma:** quem tem o token anterior e o reapresenta dentro da janela do reenvio recebe o mesmo sucessor; fora de sincronia, a família cai. Travado na letra pelo `[SV9]` de `tests/app-sessao-revogacao-db.test.ts`.
+- **critério de encerramento:** o token de renovação preso ao aparelho (prova de posse por chave do aparelho), com teste de que o token copiado para outro aparelho não renova.
+
+## P-WEB-SAIR-SEM-NOVA-TENTATIVA (2026-11-16) — o "Sair" da web ignora o 503 do servidor e não tenta de novo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA (sessão) · **escopo:** a web (fora do `B-APP-SESSAO-RENOVA`) · **dono:** o próximo bloco de autenticação da web · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** plano do `B-APP-SESSAO-RENOVA`, v3 §3.15: o `POST /auth/logout` passa a devolver 503 na falha interna (S1), e a web não reage.
+- **N e forma:** o análogo web da fila do "Sair" do app (`pending_revocations.dart`): o token do "Sair" que não teve resposta definitiva some da web sem nova tentativa.
+- **critério de encerramento:** o "Sair" da web guarda o token até a resposta definitiva do servidor e tenta de novo, com teste.

@@ -52,6 +52,11 @@ referencia e não os duplica (medido na F0: 0 ocorrência na `main` `60b4b122`, 
 
 F0 → F1 → FS1 → FS2a → FS2b → FS3 → FS2c → FS3b → FS3c → F2 → F2b → F3a → F3b → F3c → F4 → F5 → F6 → F7.
 
+**Execução (16/11):** as fatias F0 a F6 e a F7 sem a prova no emulador (§5.8) feitas no PR #588 por `dev-68-cl`, `dev-68-e1-cl` e `dev-68-e2-cl` (sucessores pelo
+diário, P3), mais a linha de `SUITES` do `ci.yml` (`D-DONO-1611-SUITES-REGRA-FIXA`) e dois merges da `main`. A Emenda 3.5
+ratifica as mudanças em `busers_seg_troca_senha_test.dart` e `b098_real_auth_bootstrap_test.dart` (nenhuma asserção
+removida). Os commits de cada fatia estão no `agent-orchestration/codex/log-execucao.md` (16/11).
+
 ## PERMITIDO (só o quê, por arquivo)
 
 - **Servidor:** `src/modules/auth/routes/auth.routes.ts` (o `POST /logout`; no `POST /refresh`, só a passagem do
