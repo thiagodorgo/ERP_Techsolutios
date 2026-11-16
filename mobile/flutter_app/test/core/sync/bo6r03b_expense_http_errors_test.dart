@@ -394,28 +394,35 @@ void main() {
       expect(stored.retryCount, 0);
     });
 
-    test('E9 · 401 sem reason vira SESSION_FORBIDDEN com acento', () async {
-      final queue = InMemorySyncQueueRepository();
-      await queue.enqueue(
-        _action(
-          id: 'r9',
-          type: ExpenseSyncActionTypes.reportCreate,
-          payload: {'local_id': 'pc-local-9'},
-        ),
-      );
-      final backend = _FakeAdapter(
-        (_, _) => _jsonBody(
-          _envelopeBody('401_invalid_token'),
-          _envelopeStatus('401_invalid_token'),
-        ),
-      );
-      await _service(queue, backend).replayTenant('t1');
+    // B-APP-SESSAO-RENOVA (D8, F6): o 401 do lote, com a renovação recusada, é
+    // sessão morta: a ação volta a pending sem gastar tentativa (antes: conflito
+    // SESSION_FORBIDDEN). O 403 segue SESSION_FORBIDDEN (E4).
+    test(
+      'E9 · 401 sem reason, com a renovação recusada, volta a pending SESSION_EXPIRED',
+      () async {
+        final queue = InMemorySyncQueueRepository();
+        await queue.enqueue(
+          _action(
+            id: 'r9',
+            type: ExpenseSyncActionTypes.reportCreate,
+            payload: {'local_id': 'pc-local-9'},
+          ),
+        );
+        final backend = _FakeAdapter(
+          (_, _) => _jsonBody(
+            _envelopeBody('401_invalid_token'),
+            _envelopeStatus('401_invalid_token'),
+          ),
+        );
+        await _service(queue, backend).replayTenant('t1');
 
-      final stored = (await queue.actionsForTenant('t1')).single;
-      expect(stored.status, SyncStatus.conflict);
-      expect(stored.lastErrorCode, 'SESSION_FORBIDDEN');
-      expect(stored.lastSafeError, contains('Minha versão'));
-    });
+        final stored = (await queue.actionsForTenant('t1')).single;
+        expect(stored.status, SyncStatus.pending);
+        expect(stored.lastErrorCode, 'SESSION_EXPIRED');
+        expect(stored.lastSafeError, contains('entrar de novo'));
+        expect(stored.retryCount, 0);
+      },
+    );
 
     test('E10 · 400 required_field continua conflito por código', () async {
       final queue = InMemorySyncQueueRepository();

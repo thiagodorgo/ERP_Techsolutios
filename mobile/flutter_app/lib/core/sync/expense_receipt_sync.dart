@@ -10,6 +10,7 @@ import '../network/api_error.dart';
 import '../network/http_client.dart';
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
+import 'sync_session_expired.dart';
 
 /// B-RDV-COMPROVANTE (§G.3) — replay MULTIPART do comprovante de despesa, 1 arquivo por
 /// requisição. Molde: `evidence_upload.dart` (`EvidenceBinaryUploadService`).
@@ -483,10 +484,9 @@ class ExpenseReceiptSyncService {
         } on ApiUnauthorizedError {
           // (e) 401 que chega aqui: o refresh falhou e o interceptor já limpou a sessão. Pendente
           // SEM gastar tentativa; sobe quando o técnico entrar de novo.
-          final next = syncing.copyWith(
-            status: SyncStatus.pending,
-            lastErrorCode: 'SESSION_EXPIRED',
-            lastSafeError:
+          final next = backToPendingSessionExpired(
+            syncing,
+            safeError:
                 'Sessão expirada; o comprovante sobe quando você entrar de novo.',
           );
           await record(next);

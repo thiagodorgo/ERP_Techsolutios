@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../auth/auth_notifier.dart';
+import '../../features/auth/auth_models.dart';
 import '../evidence/evidence_blob_store.dart';
 import '../evidence/evidence_sync.dart';
 import '../evidence/evidence_upload.dart';
@@ -64,10 +65,28 @@ final syncActionFactoryProvider = Provider<SyncActionFactory>(
   ),
 );
 
+/// B-APP-SESSAO-RENOVA (D8): o dono da fila na passada de replay. Com sessão
+/// autenticada, é a pessoa dela (o `currentSyncUserIdProvider`); com a sessão
+/// expirada, é a pessoa da sessão que morreu (`expiredOwnerSub`), para o lote
+/// que levou 401 conseguir voltar as ações dela a `pending`. Só o replay lê
+/// este dono: a fábrica de ações e o consentimento seguem com o
+/// `currentSyncUserIdProvider` (falha fechada).
+final syncQueueOwnerIdProvider = Provider<String?>((ref) {
+  final current = ref.watch(currentSyncUserIdProvider);
+  if (current != null) return current;
+  final auth = ref
+      .watch(authStateProvider)
+      .maybeWhen(data: (state) => state, orElse: () => null);
+  if (auth == null || auth.status != AuthStatus.expired) return null;
+  final sub = auth.expiredOwnerSub?.trim();
+  if (sub == null || sub.isEmpty) return null;
+  return sub;
+});
+
 final replaySyncQueueRepositoryProvider = Provider<SyncQueueRepository>(
   (ref) => UserScopedSyncQueueRepository(
     queue: ref.watch(syncQueueRepositoryProvider),
-    currentUserId: () => ref.read(currentSyncUserIdProvider),
+    currentUserId: () => ref.read(syncQueueOwnerIdProvider),
   ),
 );
 

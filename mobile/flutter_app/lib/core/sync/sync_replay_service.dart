@@ -6,6 +6,7 @@ import '../network/http_client.dart';
 import '../network/work_order_api_codec.dart';
 import 'sync_models.dart';
 import 'sync_queue_repository.dart';
+import 'sync_session_expired.dart';
 
 // ── Result model ──────────────────────────────────────────────────────────────
 
@@ -333,6 +334,17 @@ class SyncReplayService {
     List<SyncActionResult> results;
     try {
       results = await _api.sendBatch(syncing);
+      // dart format off
+    } on ApiSessionExpiredError { // sessão morta: lote de despesa
+      // dart format on
+      for (final action in syncing) {
+        await _queue.update(backToPendingSessionExpired(action));
+      }
+      return SyncReplayResult(
+        synced: synced,
+        failed: failed,
+        conflicts: conflicts,
+      );
     } on ApiServerError catch (error) {
       if (error.statusCode == 503) {
         for (final action in syncing) {
@@ -1112,6 +1124,13 @@ class WorkOrderSyncReplayService {
     List<SyncActionResult> results;
     try {
       results = await _api.sendBatch(syncing);
+      // dart format off
+    } on ApiSessionExpiredError { // sessão morta: lote de OS
+      // dart format on
+      for (final a in syncing) {
+        await _queue.update(backToPendingSessionExpired(a));
+      }
+      return const SyncReplayResult(synced: [], failed: [], conflicts: []);
     } catch (_) {
       final failed = <SyncAction>[];
       for (final a in syncing) {
@@ -1826,6 +1845,13 @@ class ChecklistSyncReplayService {
     List<SyncActionResult> results;
     try {
       results = await _api.sendBatch(syncing);
+      // dart format off
+    } on ApiSessionExpiredError { // sessão morta: lote de checklist
+      // dart format on
+      for (final a in syncing) {
+        await _queue.update(backToPendingSessionExpired(a));
+      }
+      return const SyncReplayResult(synced: [], failed: [], conflicts: []);
     } catch (_) {
       final failed = <SyncAction>[];
       for (final a in syncing) {
