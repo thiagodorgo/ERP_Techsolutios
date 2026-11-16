@@ -159,13 +159,14 @@ export class PrismaApprovalRepository implements ApprovalRepository {
           },
         }),
     };
+    const target = this.auditTarget(entry.approval);
     await new EnterpriseAuditLogService(writer).record({
       tenantId: entry.approval.tenantId,
       actorId: entry.actorId,
       actorEmail: entry.context?.actorEmail,
       action: entry.action,
-      resourceType: entry.approval.entityType,
-      resourceId: entry.approval.entityId,
+      resourceType: target.entity,
+      resourceId: target.entityId,
       outcome: entry.outcome,
       severity: entry.severity,
       correlationId: entry.context?.correlationId,
@@ -174,6 +175,18 @@ export class PrismaApprovalRepository implements ApprovalRepository {
       userAgent: entry.context?.userAgent,
       metadata: { approvalId: entry.approval.id, ...entry.metadata },
     });
+  }
+
+  // B-APROVACOES-DURAVEIS (emenda 1 §3.6, C67DP-02) — o par da linha de auditoria é o da aba "Logs da OS"
+  // (`AuditLogRepository.listByEntity`: organização, entidade, id): com OS, `entity = 'work_order'` e `entity_id` = a OS,
+  // para que o pedido do técnico (`entity_id` = a chave do pedido) e a decisão/recusa dele apareçam no histórico da OS.
+  // Sem OS (só os tipos sem produtor), o par é o da própria entidade. O id da aprovação vai nos metadados nos dois casos.
+  private auditTarget(input: { readonly entityType: ApprovalEntityType; readonly entityId: string; readonly workOrderId?: string }): {
+    readonly entity: string;
+    readonly entityId: string;
+  } {
+    const entityId = input.workOrderId ?? input.entityId; // B-APROV:auditoria-pela-os
+    return { entity: input.workOrderId ? "work_order" : input.entityType, entityId };
   }
 
   reset(): void {
