@@ -27,15 +27,15 @@
 
 | | qtde |
 |---|---:|
-| Cabecalhos `## P-` | **1232** |
-| IDs distintos | 1221 |
+| Cabecalhos `## P-` | **1233** |
+| IDs distintos | 1222 |
 | **ABERTAS** | **957** |
 | — das quais **diferidas** (balde C) | 61 |
 | — das quais **ativas nesta rodada** | **896** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 271 |
+| FECHADAS | 272 |
 
-> O placar conta **cabecalhos**, nao pendencias distintas: **1232 cabecalhos para 1221 IDs**, porque
+> O placar conta **cabecalhos**, nao pendencias distintas: **1233 cabecalhos para 1222 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
 > deve dizer qual das duas reguas esta usando.
 
@@ -70,7 +70,7 @@
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
 
-## ABERTAS · balde A — material — 373
+## ABERTAS · balde A — material — 372
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -410,7 +410,6 @@
 | `P-15B-CONCLUSAO-PAUSADA-SEM-ACAO` | 15655 | MÉDIA | sim | P-15B-CONCLUSAO-PAUSADA-SEM-ACAO (2026-11-14) — a Conclusão da OS pausada manda retomar  |
 | `P-SYNC-RECUSA-SEM-LOG-NO-SERVIDOR` | 15684 | MÉDIA | sim | P-SYNC-RECUSA-SEM-LOG-NO-SERVIDOR (2026-11-14) — o lote de sincronização responde 200, e |
 | `P-ROTEIRO-OP10-ASSUMIR-DESCARTAR` | 15691 | MÉDIA | sim | P-ROTEIRO-OP10-ASSUMIR-DESCARTAR (2026-11-14) — o Op-10 do roteiro não cita "Assumir" ne |
-| `P-APP-SEM-RENOVACAO-DE-TOKEN` | 15712 | ALTA | sim | P-APP-SEM-RENOVACAO-DE-TOKEN (2026-11-14) — o app mostra "Sessão expirada" 16 min depois |
 | `P-APP-TELEMETRIA-422` | 15721 | MÉDIA | sim | P-APP-TELEMETRIA-422 (2026-11-14) — `POST /mobile/telemetry` responde 422 a cada sincron |
 | `P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO` | 15760 | MÉDIA | sim | P-CENSO-07C-NAO-EXERCITA-TRATADOR-DE-ERRO (2026-11-14) — um tratador final falso, de mes |
 | `P-REPO-CAMINHOS-LOCAIS-COM-USUARIO` | 15819 | ALTA | sim | P-REPO-CAMINHOS-LOCAIS-COM-USUARIO (2026-11-14) — 155 arquivos rastreados na `main` têm  |
@@ -448,7 +447,7 @@
 | `P-579-MERGE-EDITOU-PENDENCIA` | 16621 | MÉDIA | sim | P-579-MERGE-EDITOU-PENDENCIA (2026-11-16) — o merge de absorção do #579 trouxe 9 linhas  |
 | `P-APP-TELAS-SEM-3-OPCOES` | 16641 | MÉDIA | sim | P-APP-TELAS-SEM-3-OPCOES (2026-11-15) — as telas do app sem maquete de 3 opções — MÉDIA |
 
-## ABERTAS · balde B — processo/registro — 523
+## ABERTAS · balde B — processo/registro — 524
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -975,6 +974,7 @@
 | `P-APP-GUINCHO-VEICULO-ATENDIDO` | 16653 | BAIXA | sim | P-APP-GUINCHO-VEICULO-ATENDIDO (2026-11-16) — o cartão da OS da opção B do guincho sai s |
 | `P-AUTH-REFRESH-VINCULO-APARELHO` | 16659 | BAIXA | sim | P-AUTH-REFRESH-VINCULO-APARELHO (2026-11-16) — o token de renovação não é amarrado ao ap |
 | `P-WEB-SAIR-SEM-NOVA-TENTATIVA` | 16666 | BAIXA | sim | P-WEB-SAIR-SEM-NOVA-TENTATIVA (2026-11-16) — o "Sair" da web ignora o 503 do servidor e  |
+| `P-APP-LISTA-OS-ERRO-COM-200` | 16673 | BAIXA | sim | P-APP-LISTA-OS-ERRO-COM-200 (2026-11-16) — a lista de OS do app mostra "Não foi possível |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -1042,7 +1042,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3753 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3797 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 271
+## FECHADAS — 272
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1311,6 +1311,7 @@
 | `P-ASS08C-POSSE-NAO-COBRE-O-POST` | 15276 | MÉDIA | sim | P-ASS08C-POSSE-NAO-COBRE-O-POST (2026-11-14) — a posse confirmada antes do POST não alca |
 | `P-DONO-LINHA-DO-APP-48-OU-44` | 15342 | — | sim | P-DONO-LINHA-DO-APP-48-OU-44 (2026-11-14) — no app, a linha que abre o detalhe fica com  |
 | `P-ASS12-PULO-SEM-AVISO` | 15410 | MÉDIA | **a atribuir** | P-ASS12-PULO-SEM-AVISO (2026-11-14) — organização pulada por `addon_without_price` não a |
+| `P-APP-SEM-RENOVACAO-DE-TOKEN` | 15712 | ALTA | sim | P-APP-SEM-RENOVACAO-DE-TOKEN (2026-11-14) — o app mostra "Sessão expirada" 16 min depois |
 | `P-APP-401-FICA-SINCRONIZANDO` | 15729 | BAIXA | sim | P-APP-401-FICA-SINCRONIZANDO (2026-11-14) — depois do 401 da rotação de sessão, a ação d |
 | `P-ASS08C1B-CC6-MAPEAR-UNKNOWN` | 15776 | BAIXA | sim | P-ASS08C1B-CC6-MAPEAR-UNKNOWN (2026-11-14) — a tabela do cancelamento do `B-ASS-08c1b` p |
 | `P-567-POR-GRUPO-SEM-NOME-924` | 16157 | BAIXA | sim | P-567-POR-GRUPO-SEM-NOME-924 (2026-11-14) — na aparência C a 924×540, a lista "Por grupo |

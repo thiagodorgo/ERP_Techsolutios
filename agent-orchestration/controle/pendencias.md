@@ -15711,12 +15711,12 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-APP-SEM-RENOVACAO-DE-TOKEN (2026-11-14) — o app mostra "Sessão expirada" 16 min depois do login, sem chamar `/auth/refresh` — ALTA (produto)
 
-- **status:** ABERTA · **gravidade:** ALTA (produto: o técnico em campo perde a sessão) · **escopo:** `pre-existente` (observado no app da `main` `521f0bcb`, o APK do ensaio) · **dono:** a próxima revisão do portão: o orquestrador decide se vira item do portão e abre o bloco do app (a Emenda 1.8 deixou "bloco mobile, a nomear no registro") · **PR-alvo:** o PR desse bloco · **bloqueia:** não o item 44. **Leitura do orquestrador, declarada (§A6) na Emenda 1.8:** é a observação mais séria do ensaio e é candidata ao portão da versão vendável.
+- **status:** FECHADA pelo `B-APP-SESSAO-RENOVA` (PR #588; vale no merge, e o porteiro confere a rodada do merge) · antes: ABERTA · **gravidade:** ALTA (produto: o técnico em campo perde a sessão) · **escopo:** `pre-existente` (observado no app da `main` `521f0bcb`, o APK do ensaio) · **dono:** a próxima revisão do portão: o orquestrador decide se vira item do portão e abre o bloco do app (a Emenda 1.8 deixou "bloco mobile, a nomear no registro") · **PR-alvo:** o PR desse bloco · **bloqueia:** não o item 44. **Leitura do orquestrador, declarada (§A6) na Emenda 1.8:** é a observação mais séria do ensaio e é candidata ao portão da versão vendável.
 - **origem:** a Emenda 1.8 do `B-SAN3-10b-F4-SEED-ISOLADO` (§3), a partir do ensaio 44-B3.
 - **N e forma (diário do ensaio):** às 11:21:43Z, 16 min depois do login, o app recebeu `GET /api/v1/work-orders 401` e mostrou "Sessao expirada. Faca login novamente.", sem nenhum `POST /auth/refresh` no log da API; o `JWT_EXPIRES_IN` da pilha é 15m.
 - **não medido:** por que a renovação do app não disparou (há um interceptador que renova o token uma vez no 401, `mobile/flutter_app/lib/core/network/auth_interceptor.dart`, lido pelo redator na `main`), e se o caso repete fora da pilha isolada.
 - **critério de encerramento:** com o token de acesso vencido e o de renovação válido, o app renova sozinho e a ação segue, sem "Sessão expirada"; teste no app e prova no emulador.
-- **estado (16/11, `dev-68-e2-cl`):** o `B-APP-SESSAO-RENOVA` (PR #588) entrega o teste no app (`[T1]`, `[T1c]` e as suítes `test/core/auth/bsessao_renova_*`, verdes no CI) e o servidor que revoga; falta a prova no emulador (§5.8 do plano), e a pendência segue ABERTA até ela e o merge.
+- **fechamento (16/11, `dev-68-e2-cl`):** o teste no app (`[T1]`, `[T1c]` e as suítes `test/core/auth/bsessao_renova_*`, verdes no CI) e a prova no emulador (§5.8 do plano, Emenda 3.6: a pilha `b10b-f4` do 44-B3 sobre o head do PR, `JWT_EXPIRES_IN=2m`, o APK do head com `ERP_AUTH_MODE=remote`, o AVD `erp_pixel`). Mais de 2 min depois do login, a lista de OS fez `GET /api/v1/work-orders 401 → POST /api/v1/auth/refresh 200 → GET /api/v1/work-orders 200`, sem "Sessão expirada"; o "Sincronizar agora" fez 1 renovação e a despesa saiu (`expense-actions 200`); com a sessão revogada, o app foi ao login com "Sua sessão expirou. Entre de novo para continuar." e a despesa feita sem rede saiu sozinha no novo login; aberto sem rede 2 min depois, o técnico entrou; o "Sair" e o login de outra pessoa trouxeram o bootstrap dela; o "Sair" sem rede chegou ao servidor (`POST /auth/logout 200`) na reabertura, com a sessão `revoked_at`. Nenhuma senha nem token no log da API nem no do aparelho (0). As capturas e o log ficam no diário do dev.
 
 ## P-APP-TELEMETRIA-422 (2026-11-14) — `POST /mobile/telemetry` responde 422 a cada sincronização do app — MÉDIA
 
@@ -16669,3 +16669,11 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **origem:** plano do `B-APP-SESSAO-RENOVA`, v3 §3.15: o `POST /auth/logout` passa a devolver 503 na falha interna (S1), e a web não reage.
 - **N e forma:** o análogo web da fila do "Sair" do app (`pending_revocations.dart`): o token do "Sair" que não teve resposta definitiva some da web sem nova tentativa.
 - **critério de encerramento:** o "Sair" da web guarda o token até a resposta definitiva do servidor e tenta de novo, com teste.
+
+## P-APP-LISTA-OS-ERRO-COM-200 (2026-11-16) — a lista de OS do app mostra "Não foi possível atualizar suas ordens agora." com o `GET /work-orders` em 200 — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (não é da sessão: o aviso aparece também no pedido sem 401) · **dono:** o próximo bloco do app que tocar a lista de OS (leitura do redator, declarada (§A6)) · **PR-alvo:** o PR desse bloco · **bloqueia:** não.
+- **origem:** a prova no emulador do `B-APP-SESSAO-RENOVA` (16/11, pilha `b10b-f4`, organização nova com 0 OS atribuídas ao técnico).
+- **N e forma:** 3 atualizações da lista, 3 avisos de falha, e o servidor respondeu 200 nas 3 (`{"items":[],"pagination":{...,"nextCursor":null}}`, uma delas sem 401 antes).
+- **não medido:** onde o app transforma o 200 em falha (a caminhada de "Minhas OS" lê `items` e `pagination.nextCursor`; o erro vem depois dela).
+- **critério de encerramento:** a lista vazia do servidor mostra o estado vazio, sem aviso de falha, com teste.

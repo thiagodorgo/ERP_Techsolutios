@@ -1,10 +1,10 @@
 # Status Geral
 
-## Atualização 2026-11-16 (noite) — B-APP-SESSAO-RENOVA (item 68): o dev chegou à F7 no PR #588
+## Atualização 2026-11-16 (noite) — B-APP-SESSAO-RENOVA (item 68): o dev terminou as fatias no PR #588
 
 - **O bloco:** a sessão do app se renova sozinha, e o servidor é quem revoga (`D-PORTAO-ITEM-68-SESSAO-APP`, `D-DONO-1511-68-NAO-DESLOGAR`). Plano v3 com as emendas 3.1 a 3.5, fora do repositório; comando em `agent-orchestration/codex/comandos/B-APP-SESSAO-RENOVA.md`.
-- **Feito:** as fatias F0 a F6 e a parte de documentos, registro e bateria da F7 no ramo `feat/app-sessao-renova` (PR #588, rascunho), cada uma com o vermelho antes, as mutações do plano e a contagem das linhas literais. A F6 fecha a `P-APP-401-FICA-SINCRONIZANDO` e a FS3c a `P-68-PERDEDOR-RELE-401` (as duas valem no merge).
-- **Falta:** a prova no emulador (§5.8 do plano: o terreno do ensaio 44-B3 vive em worktrees de outros blocos, e o orquestrador decide onde roda), a pré-revisão por outra casa, a junta completa (autenticação), o merge e o porteiro, que confere a `P-APP-SEM-RENOVACAO-DE-TOKEN` na rodada do merge.
+- **Feito:** as fatias F0 a F7 no ramo `feat/app-sessao-renova` (PR #588, rascunho), com a prova no emulador (Emenda 3.6), cada uma com o vermelho antes, as mutações do plano e a contagem das linhas literais. A F6 fecha a `P-APP-401-FICA-SINCRONIZANDO`, a FS3c a `P-68-PERDEDOR-RELE-401`, e a F7 a `P-APP-SEM-RENOVACAO-DE-TOKEN` (as três valem no merge).
+- **Falta:** a pré-revisão por outra casa, a junta completa (autenticação), o merge e o porteiro, que confere a `P-APP-SEM-RENOVACAO-DE-TOKEN` na rodada do merge.
 
 ## Atualização 2026-11-16 — registro de 14/11 14:24 a 16/11 11:39: itens 61, 62, 42, 65, 18 e 52 FECHADOS, item 68 no portão, 10 atas e as pendências da rodada
 
