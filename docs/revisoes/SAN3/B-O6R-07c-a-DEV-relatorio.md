@@ -3,7 +3,7 @@
 > **Papel:** desenvolvedor · **identidade:** `dev-b-o6r-07c-a` (nova). **Modelo:** Claude Opus 5.5 (bloco de
 > permissão, não de dinheiro — o Fable está reservado a bloco de dinheiro, decisão do dono de 08/10).
 > **Fonte:** `docs/revisoes/SAN3/B-O6R-07c-plano.md` v3, ramo `fix/o6r07c-subresource-scope`, head medido
-> `5b16932ea9105f069f2d6e6c94f146805b2a2f25` (`git rev-parse HEAD` no worktree `C:/Users/AMP/w-07ca`).
+> `5b16932ea9105f069f2d6e6c94f146805b2a2f25` (`git rev-parse HEAD` no worktree `~/w-07ca`).
 > **Código-base:** `src/` idêntico a `origin/main` `c1cfdabe` (o ramo só acrescentava o plano e as críticas).
 > **Ambiente (cabeçalho, nada exportado por conveniência no runner):** Windows 11, Git Bash (MINGW64), Node
 > v20.19.5, `npm ci` próprio no worktree (sem junction). Sem `DATABASE_URL`/`REDIS_URL` no ambiente, exceto nas
@@ -13,7 +13,7 @@ Formato de cada passo: **comando** · **saída resumida** · **estado**.
 
 ## Passo 0 — terreno
 
-- `git -C C:/Users/AMP/w-07ca rev-parse HEAD` → `5b16932e…` · `git status --short` vazio · ramo `fix/o6r07c-subresource-scope`.
+- `git -C ~/w-07ca rev-parse HEAD` → `5b16932e…` · `git status --short` vazio · ramo `fix/o6r07c-subresource-scope`.
 - `df -h /c` → 9,5 GB livres (limite de parada: 7 GB).
 - `docker ps` → só `erp-postgres`/`erp-redis` (do dono; não são alvo).
 - `npm ci --no-audit --no-fund` → `added 326 packages in 14s`, ec=0 (avisos EBADENGINE de dependência opcional, pré-existentes).
@@ -67,7 +67,7 @@ Formato de cada passo: **comando** · **saída resumida** · **estado**.
 
 > **Identidade:** `dev-b-o6r-07c-a-sucessor` (nova), Claude Opus 5.5. O `dev-b-o6r-07c-a` caiu pelo limite de sessão
 > no meio da implementação. Termino o 07c-a ao pé do plano v3; não replanejo, não julgo achado, não voto.
-> **Ambiente:** Windows 11, Git Bash (MINGW64_NT-10.0-22631), Node v20.19.5, worktree `C:/Users/AMP/w-07ca`, `npm ci`
+> **Ambiente:** Windows 11, Git Bash (MINGW64_NT-10.0-22631), Node v20.19.5, worktree `~/w-07ca`, `npm ci`
 > próprio do antecessor (sem junction). Nada exportado por conveniência; `DATABASE_URL`/`REDIS_URL` só inline.
 
 ### S0 — o que herdei, medido (P3)
@@ -240,7 +240,7 @@ temporária revertida em `mobile-work-order-sync.ts` (M11). Nenhuma deixou diff.
 
 ### S10 — `npm test` em container Linux próprio (a medida final)
 
-- Terreno (adaptação, no scratchpad, dos passos 1–4 da `C:/Users/AMP/erp-terreno/receita-pg16.sh`): rede `dev07ca-net`,
+- Terreno (adaptação, no scratchpad, dos passos 1–4 da `~/erp-terreno/receita-pg16.sh`): rede `dev07ca-net`,
   `dev07ca-npg` (`postgres:16`, 16.14), `dev07ca-nredis` (`redis:7`), `dev07ca-node` (`erp-junta-node20-pg16:local`: node
   v20.20.2, npm 10.8.2, psql 16.14) — **nenhuma porta publicada**. Árvore do head `a0dafa05` por
   `git -c core.autocrlf=false archive` direto no container; conferência de **todos** os blobs (sha1 de `blob <n>\0<bytes>` × `ls-tree`):

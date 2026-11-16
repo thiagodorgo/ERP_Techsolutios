@@ -4,7 +4,7 @@
 - **Fase:** Execution
 - **Trilha:** mobile (Flutter) + backend/raiz (só exports e testes)
 - **Data:** 2026-11-14
-- **Branch:** `fix/mobile-gate-chave` (worktree `C:/Users/thiag/w-gate66`, a partir da `origin/main` `d2737339`)
+- **Branch:** `fix/mobile-gate-chave` (worktree `~/w-gate66`, a partir da `origin/main` `d2737339`)
 - **Autor do comando:** `dev-66-cl` (Claude Opus 5.5, identidade de dev declarada, §C7 11(6)), por ordem do orquestrador.
 
 ## Papel desta execução e o motivo do só-Claude

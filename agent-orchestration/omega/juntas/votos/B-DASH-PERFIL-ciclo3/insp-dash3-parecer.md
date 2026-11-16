@@ -7,7 +7,7 @@
 ## Item 1 de 3 — objeto, CI, mandatos, corpos, S0 — VERDE
 - **Objeto** 33345c6ed5021bdd7c3a5162b14c2bc52a2ed39d por duas fontes: `git ls-remote origin refs/heads/fix/dash-perfil` e `gh pr view 446` (OPEN, não rascunho, MERGEABLE). Head não andou desde a redação (re-medido 03:57Z).
 - **CI:** `gh api repos/thiagodorgo/ERP_Techsolutios/commits/33345c6e…/check-runs` → **14/14** check-runs concluídos e `success` (0 fora de completed/success; nenhum queued/cancelled).
-- **PRE-VOO:** ferramentas copiadas para `C:/Users/AMP/erp-pausa-2026-10-03/insp-dash3/` (md5 iguais às do redator; diff contra `origin/chore/mandato-refs-e-preflight` só na l.211 `RAIZ`, a adaptação declarada). `cadeira-c1.md`, `cadeira-c2.md`, `cadeira-c3.md`, `inspetor-dash3.md`: **PRE-VOO OK, ec=0** nos 4 (AVISO informativo: approved_head não determinável — 2 atas casam #446).
+- **PRE-VOO:** ferramentas copiadas para `~/erp-pausa-2026-10-03/insp-dash3/` (md5 iguais às do redator; diff contra `origin/chore/mandato-refs-e-preflight` só na l.211 `RAIZ`, a adaptação declarada). `cadeira-c1.md`, `cadeira-c2.md`, `cadeira-c3.md`, `inspetor-dash3.md`: **PRE-VOO OK, ec=0** nos 4 (AVISO informativo: approved_head não determinável — 2 atas casam #446).
 - **seis corpos** das cadeiras nos dois espelhos: blob idêntico nos objetos dos ciclos 1 (849bf840), 2 (faad24ce) e 3 (33345c6e); EOL-neutro objeto = disco; o par .claude×.agents difere só no frontmatter `tools:` e no bloco "Papel para o Codex". Os corpos NÃO existem no diretório da sessão (main 684e9afd): os mandatos já mandam carregá-los por `git show 33345c6e:…` (corpo carregado = corpo julgado, item 3.3 coberto). Corpo do inspetor: objeto = sessão (EOL-neutro 89b45630).
 - **S0:** `sync-agent-agents.mjs --check` OK (73 agentes) e `sync-agent-skills.mjs --check` OK (12 skills, 39 arquivos), ec=0/0, no objeto.
 
@@ -26,11 +26,11 @@
 - **Nota:** a lista de inelegíveis dos mandatos tem 9 nomes a menos que a gerada. Nenhum candidato colide, então não há efeito neste ciclo.
 
 ## Item 3 de 3 — terreno — VERDE COM RESSALVAS DE RECURSO
-- **Árvore `C:/Users/AMP/w-dash`** (HEAD 33345c6e) **sem mutação viva:** 61 entradas de status = 55 ` M` fantasmas em `.agents/`/`.claude/` (EOL-neutro, 0 divergente real) + 6 untracked deste diretório (4 mandatos + os 2 outputs deste parecer). Nenhum outro arquivo tocado.
+- **Árvore `~/w-dash`** (HEAD 33345c6e) **sem mutação viva:** 61 entradas de status = 55 ` M` fantasmas em `.agents/`/`.claude/` (EOL-neutro, 0 divergente real) + 6 untracked deste diretório (4 mandatos + os 2 outputs deste parecer). Nenhum outro arquivo tocado.
 - **Isolamento por cadeira** (declarado nos 3 mandatos e nomeado aqui):
-  - C1 `jurado-dash3-c1-opus` · Claude Opus subagente · worktree `C:/Users/AMP/w-jdash3-c1-opus` · sem cluster (ciclo sem banco; se precisar de Docker: `jdash3-c1-*`, sem porta publicada);
-  - C2 `jurado-dash3-c2b-opus` · Claude Opus subagente · worktree `C:/Users/AMP/w-jdash3-c2b-opus` · sem cluster (Docker, se preciso: `jdash3-c2-*`) — é a cadeira que MUTA (M3b/M3c/M3e/M1a) e só no próprio worktree;
-  - C3 `jurado-dash3-c3-opus` · Claude Opus subagente · worktree `C:/Users/AMP/w-jdash3-c3-opus` · sem cluster (Docker, se preciso: `jdash3-c3-*`).
+  - C1 `jurado-dash3-c1-opus` · Claude Opus subagente · worktree `~/w-jdash3-c1-opus` · sem cluster (ciclo sem banco; se precisar de Docker: `jdash3-c1-*`, sem porta publicada);
+  - C2 `jurado-dash3-c2b-opus` · Claude Opus subagente · worktree `~/w-jdash3-c2b-opus` · sem cluster (Docker, se preciso: `jdash3-c2-*`) — é a cadeira que MUTA (M3b/M3c/M3e/M1a) e só no próprio worktree;
+  - C3 `jurado-dash3-c3-opus` · Claude Opus subagente · worktree `~/w-jdash3-c3-opus` · sem cluster (Docker, se preciso: `jdash3-c3-*`).
   Cada worktree com `npm ci` próprio, **zero junction** de `node_modules`, remoção só por `git worktree remove --force` (§C7.1-ter(c)). Hoje não existe nenhum `w-jdash*`: não há resíduo de ciclo anterior. Os `node_modules` de w-dash são diretórios comuns, não junctions.
 - **Docker:** `docker ps -a` → `erp-postgres`/`erp-redis` (base viva, **proibida**) e 1 trabalho alheio (`dtrc02-179246883338851-{run,redis,pg}`, sem porta publicada). Nenhum resíduo `jur-*`/`crit-*`/`jdash*`, nenhuma rede *dash*. Portas: só 5432/6379 escutando (erp); 3000, 5173, 5050 e 8899 livres e proibidas às cadeiras.
 - **baseline honesto** no objeto, árvore limpa: `npm run check` **ec=0**; `npm --prefix frontend run check` **ec=0**; CI 14/14 verde.
@@ -45,4 +45,4 @@ Itens 1, 2 e 3 verdes, por execução. Nada bloqueia: objeto 33345c6e com 14/14 
 Ressalvas para o briefing e a ata, em destaque: **R1** (o mandato da C2 ainda diz "Argon"; o disparo e a ata declaram `jurado-dash3-c2b-opus`/Claude Opus e o motivo, o teto mensal do Gemini), **R2** (monocultura 3×Opus sem 2º revisor; declarar na ata), **R3** (falta a linha P6 da C3 do ciclo 2 em `00-quedas.md`: pendência de registro), **R4** (memória e disco: P5 à risca) e **R5** (teto de 2 trabalhos Docker).
 A régua desta junta, que o inspetor só repassa: PERMISSÃO, unanimidade de 3 com veto, ciclo 3. Só defeito de produto grave reprova; o resto vira pendência com dono (§C7 item 8(2)).
 
-**Limpeza do inspetor:** criei só `C:/Users/AMP/erp-pausa-2026-10-03/insp-dash3/` (cópias das 2 ferramentas, `.orig`, saídas do pré-voo/baseline/status/docker, `R2.md` extraído) e os 2 outputs deste diretório. Nenhum contêiner, worktree ou rede. O `npm run check` do frontend atualizou `frontend/tsconfig.tsbuildinfo` em w-dash (gitignored, regenerável; deixado como estava, porque o mandato proíbe editar outros arquivos). Nada commitado.
+**Limpeza do inspetor:** criei só `~/erp-pausa-2026-10-03/insp-dash3/` (cópias das 2 ferramentas, `.orig`, saídas do pré-voo/baseline/status/docker, `R2.md` extraído) e os 2 outputs deste diretório. Nenhum contêiner, worktree ou rede. O `npm run check` do frontend atualizou `frontend/tsconfig.tsbuildinfo` em w-dash (gitignored, regenerável; deixado como estava, porque o mandato proíbe editar outros arquivos). Nada commitado.

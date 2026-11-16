@@ -16,7 +16,7 @@
 
 | Item | Valor conferido por execução |
 |---|---|
-| Worktree | `c:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\san2-r` |
+| Worktree | `~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\san2-r` |
 | Branch | `fix/san2-4b-corrigir-arnes` (`git rev-parse --abbrev-ref HEAD`) |
 | HEAD na abertura | `fca131adf84820503f57cd2383876222aa091cf7` |
 | `git status --short` na abertura | **1 untracked**: `agent-orchestration/omega/planos/SAN2-4b-plano.md` — árvore sem mutação viva |

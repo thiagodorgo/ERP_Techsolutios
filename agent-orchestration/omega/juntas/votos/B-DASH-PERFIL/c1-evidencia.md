@@ -5,7 +5,7 @@ Cadeira C1 — Cadeia de acesso, do backend para a sessão | executor: Codex | m
 ## Legalidade pré-mérito
 
 - Comando: validação EOL-neutra dos corpos e mandato; `git ls-remote`; `gh pr view 446`; `gh api .../check-runs`; leitura do parecer do inspetor.
-- Saída resumida: hashes conferem; remoto e PR apontam para `849bf840f2bdecae87b82a17b26adf505d8a2a8e`; 14/14 check-runs `completed/success`; inspetor `LIBERADO`, nomeando esta identidade e worktree exclusivo `C:/Users/AMP/w-jdash-c1-cdx`; plano, crítica, emenda e relatórios permanecem A RE-VERIFICAR.
+- Saída resumida: hashes conferem; remoto e PR apontam para `849bf840f2bdecae87b82a17b26adf505d8a2a8e`; 14/14 check-runs `completed/success`; inspetor `LIBERADO`, nomeando esta identidade e worktree exclusivo `~/w-jdash-c1-cdx`; plano, crítica, emenda e relatórios permanecem A RE-VERIFICAR.
 - Veredito parcial: legalidade satisfeita; mérito autorizado. Régua: PERMISSÃO, unanimidade de 3 com veto.
 
 ## Item 1 — Permissões do active-tenant e login
@@ -34,7 +34,7 @@ Cadeira C1 — Cadeia de acesso, do backend para a sessão | executor: Codex | m
 
 ## Teardown
 
-- Comando: `git status --short`, `git diff --check`, inspeção de `LinkType`, listagem `jdash-c1-*`, `git worktree remove --force C:/Users/AMP/w-jdash-c1-cdx` e verificação final.
+- Comando: `git status --short`, `git diff --check`, inspeção de `LinkType`, listagem `jdash-c1-*`, `git worktree remove --force ~/w-jdash-c1-cdx` e verificação final.
 - Saída resumida: worktree estava limpo e detached em `849bf840`; `git diff --check` `ec=0`; `node_modules` raiz e frontend eram diretórios reais, `LinkType` vazio; zero container `jdash-c1-*`; nenhuma porta ou base viva foi usada. O Git desregistrou o worktree, mas o Windows deixou a pasta física vazia; após confirmar caminho absoluto e diretório vazio, a pasta foi removida e `WORKTREE_EXISTS=False`.
 - Veredito parcial: teardown concluído; mutantes restaurados por hash; processos iniciados pela cadeira = 0; containers/redes/volumes `jdash-c1-*` = 0; worktree removido; base viva intocada.
 

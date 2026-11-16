@@ -3,7 +3,7 @@
 - **Dev:** `dev-trc01-integ440-opus` (Claude Opus, nível menor, declarado; identidade nova). Cobre a tarefa porque o
   Gemini caiu nela e o Codex/Argon estavam ocupados (`D-IAS-EXTERNAS-PRIMEIRO`). Não achou o defeito (quem achou foi o
   orquestrador) e não revisa.
-- **Worktree / ramo / head:** `C:/Users/AMP/w-trc01`, `feat/traccar-b-trc-01` (PR #426), head `770a74c1`.
+- **Worktree / ramo / head:** `~/w-trc01`, `feat/traccar-b-trc-01` (PR #426), head `770a74c1`.
 - **Defeito (achado pelo orquestrador):** depois do merge da `main` com o #440 (`40c3651f`), `AssignWorkOrderInput.event`
   passou a ser obrigatório; o auxiliar `assignVehicle` de `tests/traccar-position-ingestion-db.test.ts` não o passava, e
   `assignedEventData` lia `input.event.fromStatus` de `undefined` (4 casos vermelhos na CI).
@@ -37,7 +37,7 @@
 - Ferramenta lida antes: rede própria `tl<ts><pid>-net`, `postgres:16` e `redis:7` sem porta publicada, worktree
   montado `:ro` e copiado, `npm ci` + `prisma generate` + `migrate deploy` dentro do container, `trap` que remove os três
   containers e a rede pelo nome. Não toca `erp-postgres`/`erp-redis`.
-- Comando: `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-trc01
+- Comando: `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-trc01
   "CORE_SAAS_PERSISTENCE=prisma node --test --import tsx tests/traccar-position-ingestion-db.test.ts"`
 - Saída: `# tests 22 · # pass 22 · # fail 0 · # cancelled 0 · # skipped 0 · duration_ms 19457` · `teste-linux ec=0`.
   `grep TypeError|fromStatus` no log → 0.
@@ -49,7 +49,7 @@
 
 ## Passo 3 · as 6 suítes `-db` do Traccar
 
-- Comando (um só container): `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-trc01
+- Comando (um só container): `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-trc01
   "CORE_SAAS_PERSISTENCE=prisma node --test --import tsx tests/traccar-binding-uniqueness-db.test.ts
   tests/traccar-idempotency-db.test.ts tests/traccar-ingest-pool-db.test.ts tests/traccar-position-ingestion-db.test.ts
   tests/traccar-quarantine-db.test.ts tests/traccar-resolution-race-db.test.ts"`

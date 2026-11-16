@@ -2,7 +2,7 @@
 // sobre o registro simulado "depois do bloco" (/patios/* e /telemetria/* COM requiredModules).
 const fs = require("node:fs");
 const path = require("node:path");
-const ts = require("C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/node_modules/typescript");
+const ts = require("~/Documents/GitHub/ERP_Techsolutios/node_modules/typescript");
 const S = process.argv[2];
 const src = fs.readFileSync(path.join(S, "navigation.service.ts"), "utf8");
 const out = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText

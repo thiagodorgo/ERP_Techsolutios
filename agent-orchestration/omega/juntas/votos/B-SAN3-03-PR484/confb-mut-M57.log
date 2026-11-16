@@ -19,7 +19,7 @@ ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo amb
     not ok 1 - U+00AD
       ---
       duration_ms: 220.7561
-      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
+      location: '~/w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
       failureType: 'testCodeFailure'
       error: |-
         Expected values to be strictly equal:
@@ -32,10 +32,10 @@ ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo amb
       actual: true
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
+        TestContext.<anonymous> (~/w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
-        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
+        async TestContext.<anonymous> (~/w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
       ...
@@ -43,7 +43,7 @@ ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo amb
     not ok 2 - U+200B
       ---
       duration_ms: 219.329
-      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
+      location: '~/w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
       failureType: 'testCodeFailure'
       error: |-
         Expected values to be strictly equal:
@@ -56,10 +56,10 @@ ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo amb
       actual: true
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
+        TestContext.<anonymous> (~/w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
-        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
+        async TestContext.<anonymous> (~/w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
       ...
@@ -67,7 +67,7 @@ ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo amb
     not ok 3 - U+2060
       ---
       duration_ms: 243.28
-      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
+      location: '~/w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
       failureType: 'testCodeFailure'
       error: |-
         Expected values to be strictly equal:
@@ -80,10 +80,10 @@ ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo amb
       actual: true
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
+        TestContext.<anonymous> (~/w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
-        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
+        async TestContext.<anonymous> (~/w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
       ...
@@ -91,7 +91,7 @@ ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo amb
     not ok 4 - U+FEFF
       ---
       duration_ms: 221.7106
-      location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
+      location: '~/w-conf484\\tests\\san3-03-system-org-db.test.ts:1:5182'
       failureType: 'testCodeFailure'
       error: |-
         Expected values to be strictly equal:
@@ -104,10 +104,10 @@ ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo amb
       actual: true
       operator: 'strictEqual'
       stack: |-
-        TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
+        TestContext.<anonymous> (~/w-conf484\tests\san3-03-system-org-db.test.ts:167:18)
         process.processTicksAndRejections (node:internal/process/task_queues:95:5)
         async Test.run (node:internal/test_runner/test:797:9)
-        async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
+        async TestContext.<anonymous> (~/w-conf484\tests\san3-03-system-org-db.test.ts:144:7)
         async Test.run (node:internal/test_runner/test:797:9)
         async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
       ...
@@ -115,7 +115,7 @@ ok 3 - T-TAG-db · nomes duplicados não geram alocação e persistem motivo amb
 not ok 4 - T-TAG-db-2 · invisíveis no nome não geram alocação no Postgres
   ---
   duration_ms: 906.2324
-  location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-system-org-db.test.ts:1:4958'
+  location: '~/w-conf484\\tests\\san3-03-system-org-db.test.ts:1:4958'
   failureType: 'subtestsFailed'
   error: '4 subtests failed'
   code: 'ERR_TEST_FAILURE'
@@ -174,7 +174,7 @@ ok 14 - T-TAG-12 · tag só de espaço equivale a linha sem tag
 not ok 15 - T-TAG-14 · invisíveis no nome não escapam da ambiguidade
   ---
   duration_ms: 2.9366
-  location: 'C:\\Users\\thiag\\w-conf484\\tests\\san3-03-tenant-tag.test.ts:1:4102'
+  location: '~/w-conf484\\tests\\san3-03-tenant-tag.test.ts:1:4102'
   failureType: 'testCodeFailure'
   error: |-
     Got unwanted exception: U+00AD em direct_tag_then_usage_weighted_v1
@@ -191,11 +191,11 @@ not ok 15 - T-TAG-14 · invisíveis no nome não escapam da ambiguidade
     10 !== 0
 
   stack: |-
-    assertAmbiguous (C:\Users\thiag\w-conf484\tests\san3-03-tenant-tag.test.ts:180:10)
-    <anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-tenant-tag.test.ts:133:33)
+    assertAmbiguous (~/w-conf484\tests\san3-03-tenant-tag.test.ts:180:10)
+    <anonymous> (~/w-conf484\tests\san3-03-tenant-tag.test.ts:133:33)
     getActual (node:assert:498:5)
     Function.doesNotThrow (node:assert:664:32)
-    TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-tenant-tag.test.ts:133:14)
+    TestContext.<anonymous> (~/w-conf484\tests\san3-03-tenant-tag.test.ts:133:14)
     Test.runInAsyncScope (node:async_hooks:206:9)
     Test.run (node:internal/test_runner/test:796:25)
     Test.processPendingSubtests (node:internal/test_runner/test:526:18)
@@ -203,7 +203,7 @@ not ok 15 - T-TAG-14 · invisíveis no nome não escapam da ambiguidade
     Test.run (node:internal/test_runner/test:835:12)
   operator: 'doesNotThrow'
   stack: |-
-    TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\san3-03-tenant-tag.test.ts:133:14)
+    TestContext.<anonymous> (~/w-conf484\tests\san3-03-tenant-tag.test.ts:133:14)
     Test.runInAsyncScope (node:async_hooks:206:9)
     Test.run (node:internal/test_runner/test:796:25)
     Test.processPendingSubtests (node:internal/test_runner/test:526:18)

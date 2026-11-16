@@ -11360,7 +11360,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   A10-drain quebrado na mesma rodada) · **dono:** o orquestrador (triagem por execução: N ≥ 20 rodadas do arquivo concorrendo com a suíte; nomeia o bloco dono pela causa achada).
 - **medido:** `tests/inventory-cycle-count-close-units-db.test.ts`, B16 ("recontar Y enquanto a unidade de X segura a
   sessão…"): esperava `ok` e recebeu `422|entry_already_adjusted`. Falhou 1/3 no `npm test` da RETOMADA 4 do
-  `B-ARNES-2`, antes do ajuste A10 (log `C:/Users/AMP/erp-pausa-2026-10-03/arnes2-full-n3.tap.log`); passou 0/3 no
+  `B-ARNES-2`, antes do ajuste A10 (log `~/erp-pausa-2026-10-03/arnes2-full-n3.tap.log`); passou 0/3 no
   `npm test` depois do ajuste e 0/10 no subconjunto backend-postgres local (RETOMADA 3).
 - **bloqueia:** não.
 - **teste de encerramento:** a causa nomeada por execução, ou N ≥ 20 rodadas do arquivo concorrendo com a suíte sem
@@ -11574,7 +11574,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-DASH-PERFIL-SUPER-ADMIN-ATALHO-UI (2026-10-19) — o rótulo "Super Admin" (da sessão ou do contexto ativo) passa por cima das permissões na UI — BAIXA
 
 - **status:** ABERTA · **escopo:** `pre-existente` (`011632f1`, 2026-06-07; o diff do `B-DASH-PERFIL` não toca a linha) · **dono:** `B-SAN3-06a` (ou bloco próprio, se o dono preferir)
-- **Origem:** achado C1-01 da junta do ciclo 1 do `B-DASH-PERFIL` (PR #446), reclassificado na auditoria de topo (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-ciclo2-auditoria-e-plano.md`, §1.1, §1.2 S1/S4 e Parte 3 item 1).
+- **Origem:** achado C1-01 da junta do ciclo 1 do `B-DASH-PERFIL` (PR #446), reclassificado na auditoria de topo (`~/erp-pausa-2026-10-03/planos/B-DASH-PERFIL-ciclo2-auditoria-e-plano.md`, §1.1, §1.2 S1/S4 e Parte 3 item 1).
 - `PermissionProvider.can`/`hasAny` fazem `|| isPlatformAdmin({ roles, permissions })`, e `isPlatformAdmin` aceita o RÓTULO `"Super Admin"`; `roles` une `session.user.roles` com `activeContext.role`. Efeito medido: sessão sintética `roles=["Super Admin"], permissions=[]` responde `can(<qualquer>)=true` (2/2 permissões sintéticas, S1), e contexto obsoleto com `role:"Super Admin"` no `localStorage` libera a UI do Financeiro (1/1, S4). Só UI: o backend continua negando, e `platform_admin`/`super_admin` recebem o catálogo inteiro (`catalog.ts:412/729`), então o fluxo real não produz o estado.
 - **Decisão que é do dono:** derivar "admin de plataforma" só de `permissions` (`platform:tenants:read`) e derivar `roles` só da sessão.
 - **bloqueia:** não.
@@ -11607,10 +11607,10 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-JUNTA-MUTACAO-NEGADA-PELO-HARNESS (2026-10-20) — o classificador de permissões do Claude Code negou a mutação de controle de um jurado em worktree descartável — MÉDIA
 
 - **status:** ABERTA · **escopo:** processo (orquestração) · **dono:** o dono, porque são as configurações de permissão do Claude Code; o orquestrador não as altera
-- **Origem:** achado C3-dash3-03 da junta do ciclo 3 do `B-DASH-PERFIL`. A escrita da mutação M3b em `C:/Users/AMP/w-jdash3-c3-opus/frontend/src/pages/ContextSelectionPage.tsx` foi negada duas vezes (`sed -i` e Edit, motivo "Modify Shared Resources"). Nem o jurado nem o orquestrador contornaram a negação. A mesma mutação foi medida vermelha no mesmo ciclo pela C2 e pelo dev.
+- **Origem:** achado C3-dash3-03 da junta do ciclo 3 do `B-DASH-PERFIL`. A escrita da mutação M3b em `~/w-jdash3-c3-opus/frontend/src/pages/ContextSelectionPage.tsx` foi negada duas vezes (`sed -i` e Edit, motivo "Modify Shared Resources"). Nem o jurado nem o orquestrador contornaram a negação. A mesma mutação foi medida vermelha no mesmo ciclo pela C2 e pelo dev.
 - **Efeito:** o jurado que exige vermelho-controle próprio fica sem poder medir. Pelo corpo das cadeiras, "não consigo medir" vale REPROVADO; no ciclo 3 vale a régua do §C7 item 8(2).
 - **bloqueia:** não.
-- **teste de encerramento:** uma mutação de controle num worktree descartável `C:/Users/AMP/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.
+- **teste de encerramento:** uma mutação de controle num worktree descartável `~/w-*` é aplicada e restaurada por um jurado sem negação, ou o dono decide outra forma de vermelho-controle.
 
 ## P-SAN3-02-OS-NAO-TRAVADA (2026-10-19) — cancelar a OS durante um faturamento em voo continua uma corrida — BAIXA — FECHADA pelo `B-SAN3-23`
 
@@ -12286,7 +12286,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-ARNES-WINDOWS-DRILLS-EBUSY-SETSID (2026-10-26) — drills deixam EBUSY no `after` e o host não tem `setsid` — MÉDIA
 - **status:** ABERTA · **escopo:** `pre-existente`, ambiente/arnês, não produto (C3-04: frequência igual na base `8a7885f4`) · **dono:** arnês de testes · **bloqueia:** não. Gravidade MÉDIA é classificação do registrador (a C3 deu `nota`): o vermelho de ambiente impede medir no Windows o que só a CI Linux mede.
-- **origem:** `agent-orchestration/omega/juntas/votos/B-SAN3-12a-ciclo2/c3-voto.json`, C3-04 ("EBUSY no teardown (after → rmSync do temp) dos drills de migração no Windows"; pede pendência nova com dono); ata `J-B-SAN3-12a.md:36`; parecer do porteiro dos PRs #456/#454 (`C:/Users/AMP/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md`), linhas 16, 25, 41, 92 e 100; parecer do porteiro do #459, linha 144. No Windows, o `after` de `tests/traccar-event-migration-drill-db.test.ts:118` e de `tests/work-order-invoicing-migration-drill-db.test.ts:98` (o drill de faturamento) encontra `EBUSY` ao remover o diretório temporário depois de os subtestes passarem; T14 não chega à asserção de produto porque `setsid` não existe no host.
+- **origem:** `agent-orchestration/omega/juntas/votos/B-SAN3-12a-ciclo2/c3-voto.json`, C3-04 ("EBUSY no teardown (after → rmSync do temp) dos drills de migração no Windows"; pede pendência nova com dono); ata `J-B-SAN3-12a.md:36`; parecer do porteiro dos PRs #456/#454 (`~/erp-pausa-2026-10-03/revisoes/porteiro-456-454-parecer.md`), linhas 16, 25, 41, 92 e 100; parecer do porteiro do #459, linha 144. No Windows, o `after` de `tests/traccar-event-migration-drill-db.test.ts:118` e de `tests/work-order-invoicing-migration-drill-db.test.ts:98` (o drill de faturamento) encontra `EBUSY` ao remover o diretório temporário depois de os subtestes passarem; T14 não chega à asserção de produto porque `setsid` não existe no host.
 - **fora desta pendência:** a falha do shim do `prisma` no T2.1 (mesma lista do porteiro, linha 100) já tem dona própria, `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS` (C3-04).
 - **efeito:** vermelho ambiental e resíduo temporário podem mascarar o resultado do drill no host; a CI Linux cobre o produto, mas o arnês local não é portátil.
 - **reprodução na máquina nova (2026-11-01):** a RYZENCASA reproduziu `EBUSY` no gancho de limpeza de `tests/traccar-event-migration-drill-db.test.ts` e `tests/work-order-invoicing-migration-drill-db.test.ts`; a causa permanece **provável, processo não identificado**. Fonte: `erp-pausa-2026-10-03/ferramentas/baseline-maquina-nova.md:25-38`. Esta ocorrência é apensa aqui; não nasce pendência nova.
@@ -12294,7 +12294,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-GUARD-MIGRACAO-CONTROLES-SEM-CASO (2026-10-26) — controles transacionais sem caso de regressão — BAIXA
 - **status:** ABERTA · **escopo:** ferramenta de processo · **dono:** `B-DRILL-GENERICO-POR-PREFIXO` ou próximo PR do guard · **bloqueia:** não.
-- **origem:** revisão independente do PR #458 (merge `b08c7557`), `C:/Users/AMP/erp-pausa-2026-10-03/revisoes/PR-458-revisao.md:112-126` (N1–N3; a N1 propõe este ID, BAIXA, e o dono). O regex fica em `scripts/migration-transaction-guard.mjs:200`; os casos existentes, em `tests/migration-transaction-guard.test.ts:156-173`; a mutação MR6 sobreviveu 25/25. Remover `ROLLBACK` de `CONTROLE_DE_TRANSACAO` não deixa a suíte vermelha; faltam casos próprios para `ROLLBACK`, `SAVEPOINT` e `ABORT`.
+- **origem:** revisão independente do PR #458 (merge `b08c7557`), `~/erp-pausa-2026-10-03/revisoes/PR-458-revisao.md:112-126` (N1–N3; a N1 propõe este ID, BAIXA, e o dono). O regex fica em `scripts/migration-transaction-guard.mjs:200`; os casos existentes, em `tests/migration-transaction-guard.test.ts:156-173`; a mutação MR6 sobreviveu 25/25. Remover `ROLLBACK` de `CONTROLE_DE_TRANSACAO` não deixa a suíte vermelha; faltam casos próprios para `ROLLBACK`, `SAVEPOINT` e `ABORT`.
 - **notas N2/N3:** G5 lê linhas cruas, de modo que `NAO-ATOMICA` dentro de literal também satisfaz a declaração (caso artificial); `docs/revisoes/B-GUARD-MIGRACAO-{plano,dev}.md` ficaram fora da tabela de escopo do §3, mas são somente registro e não tocaram proibidos.
 - **encerramento:** casos permanentes tornam vermelha a retirada de cada controle (`ROLLBACK`, `SAVEPOINT`, `ABORT`) e prendem a leitura de declaração fora de literal; a tabela de escopo passa a listar os dois arquivos de registro ou registra expressamente a exceção documental.
 
@@ -12370,7 +12370,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 ## P-SAN3-12B-R4B-TRAVA-RODADA-SEM-TESTE (2026-10-28) — a trava de rodada do `/aggregate` (R4(b)) não tem teste que a prenda — BAIXA
 - **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
 - **origem:** C3R2-03 da junta do ciclo 2 do `B-SAN3-12b`, aberta pela Emenda E3 (E3.4) de `agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo2.md`. A C3 provou que tirar `if (round !== roundRef.current) return;` deixa `finance-page-live` 33/33 verde; só a sonda dela acusa. **Alias da E5:** `C3R3-N2` = `R-P3`; não é uma pendência nova.
-- **encerramento:** `finance-page-live` tem um caso em que a rodada velha de `/aggregate` responde **depois** da nova e que falha sem `if (round !== roundRef.current) return;` (roteiro: sonda `C3R2-2b` em `C:/Users/AMP/erp-pausa-2026-10-03/j12b2-c3r2/`).
+- **encerramento:** `finance-page-live` tem um caso em que a rodada velha de `/aggregate` responde **depois** da nova e que falha sem `if (round !== roundRef.current) return;` (roteiro: sonda `C3R2-2b` em `~/erp-pausa-2026-10-03/j12b2-c3r2/`).
 
 ## P-SAN3-12B-KPI-PRESSED-COM-CONTA (2026-10-28) — o indicador "A conciliar" publica `aria-pressed=true` com uma conta escolhida pela faixa — BAIXA
 - **status:** FECHADA em `B-SAN3-12c` · **escopo:** `dentro-do-bloco` · **dono:** `B-SAN3-12c` · **bloqueia:** não.
@@ -12705,6 +12705,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
 - **apenso (2026-11-14, `B-SAN3-17`, PR #568):** os rótulos próprios do cartão de localização da OS seguem sem acento (achado 5 de quem montou a maquete); o cartão é PROIBIDO no bloco.
 - **apenso (2026-11-15, `B-APP-APARENCIA` F1):** também "Sessao expirada" no `_ExpiredSessionView` do Perfil (`profile_screen.dart`), fora do PERMITIDO da F1 (plano §4).
+- **apenso (2026-11-16, `B-APP-APARENCIA` F2, Emenda 5 `E-APARAPP-ACENTOS`):** os passos da OS passam a "Início" e "Conclusão" (`work_order_steps.dart`), nas 3 aparências da execução; o `b116_execution_stepper_test.dart` mudou só esses literais. O resto desta lista continua aqui.
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 
@@ -13433,6 +13434,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **apenso (2026-11-14, `B-SAN3-17`, PR #568):** a tela de consentimento de localização saiu só com a aparência A (6.5 do dono); a B e a C entram com o seletor do app, e o aviso sobre o bloco "Captura" da C vai junto.
 - **dono:** `B-APP-APARENCIA` (plano de 15/11, 4 fatias em série: F1 o seletor no Perfil e a localização; F2 a entrega do guincho; F3 o atendimento do prestador; F4 a troca de senha, em junta completa) · **PR-alvo:** o PR de cada fatia — procedência: registro de 16/11 (`reg-1611-cl`), pelo diário de 15/11 20:14 e 20:39; a F4 segue a `D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA`.
 - **apenso (2026-11-15, `B-APP-APARENCIA` F1, ramo `feat/mobile-b-app-aparencia-1-seletor`):** o app ganhou o seletor (Perfil › Aparência › Telas, por tela e por pessoa, no aparelho) e a localização nas aparências B e C, com o Perfil e o Início acompanhando a escolha; o bloco "Captura" da C diz "Com o app aberto", "Só no aparelho" ou "Desligada", pela conferência de envio que já existe (`positionsStillAllowed`). Continua ABERTA: fecha no merge da F4 (as B e C da troca de senha, `D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA`).
+- **apenso (2026-11-16, `B-APP-APARENCIA` F2, ramo `feat/mobile-b-app-aparencia-2-guincho`):** a execução do guincho entra no seletor (`execucao-guincho`: "Fiel à tela de hoje", "Guiada por fases", "Coleta × Entrega lado a lado") e entrega a B e a C nos 13 estados da maquete, só para OS de guincho; a trava de conclusão é a mesma nas 3. Continua ABERTA: fecha no merge da F4.
 
 ## P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste mínimo — MÉDIA (gravidade: leitura do redator)
 
@@ -15061,6 +15063,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **N e forma:** N=2 cores, medidas por golden contra a maquete e por uma sonda de geometria: o passo concluído em `colorScheme.tertiary` (roxo) contra o verde #059669 da A; o título dos cartões em #1A1B21 (o do `ListTile` do tema, `size=16.0 color=0xFF1A1B21`) contra #0F172A da A.
 - **causa:** o stepper usa o `tertiary` do esquema gerado pelo Material 3, e o título herda a cor do `ListTile` do tema, em vez dos tokens da opção A.
 - **critério de encerramento:** o passo concluído no verde de sucesso e o título no tom da A, por token do tema do app; golden contra a A.
+- **resolução (2026-11-16, `B-APP-APARENCIA` F2, ramo `feat/mobile-b-app-aparencia-2-guincho`):** o passo concluído do `work_order_stepper.dart` usa `ErpMobileTheme.success` (#059669) no círculo e no rótulo, e o título dos cartões da seção "Vistorias" usa `ErpMobileTheme.ink` (#0F172A). Muda também a A, como a pendência pede. O "golden contra a A" virou teste de cor do widget, porque o app não usa golden (plano §2.2): GX3 em `test/features/work_orders/bapp_aparencia_guincho_test.dart`, que cai com a M2.5 (`circleBg = scheme.tertiary;`) e com as mutações do rótulo e do título. Fica RESOLVIDA no merge da F2.
 
 ## P-APP-KIT-CONTRASTE-AA (2026-11-13) — chips, pílula, barra inferior e o "Concluir OS" do app abaixo do contraste AA — MÉDIA
 
@@ -16643,3 +16646,9 @@ Origem de todas: o diário do orquestrador fora do repositório (`REGISTRO-PENDE
 - **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `_NavRow` de `profile_screen.dart` na `origin/main` `80f5b4d9`: padding 13 + texto) · **dono:** o bloco de acessibilidade do app · **bloqueia:** não.
 - **origem:** `B-APP-APARENCIA` F1: o `androidTapTargetGuideline` no Perfil mede 356 × 46 em "Trocar de organização" e na "Localização" da aparência A. As linhas novas da F1 (a seção "Telas" e a "Localização" B e C) têm 48 px.
 - **critério de encerramento:** as linhas do Perfil com alvo de pelo menos 48 px, com o `androidTapTargetGuideline` verde no Perfil inteiro.
+
+## P-APP-GUINCHO-VEICULO-ATENDIDO (2026-11-16) — o cartão da OS da opção B do guincho sai sem a placa e o modelo do veículo atendido — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (a OS do app não tem placa nem modelo do veículo atendido: `vehiclePlate` é a VIATURA, comentário de `work_order_models.dart` na `origin/main` `a2c44d1c`; do veículo atendido só vêm os 2 últimos caracteres da placa, `checkinPlateTail`, B-SAN3-26) · **dono:** o bloco que levar o veículo atendido (placa, modelo e cor) à lista de OS do app, com a regra de exposição da placa · **bloqueia:** não.
+- **origem:** `B-APP-APARENCIA` F2. A Emenda 1 (A2) pede, no cartão da OS da opção B, "código, pílula do tipo, cliente, placa, modelo, endereço" (maquete `execucao-guincho-3opcoes.reference.html`, `telaB`). O cartão sai com código, "Guincho", cliente, serviço, viatura e equipe quando houver, e endereço; a maquete leu `vehiclePlate` como o veículo atendido.
+- **critério de encerramento:** a OS do app recebe a placa e o modelo do veículo atendido (com a regra do servidor sobre a placa inteira), e o cartão da opção B os mostra, com teste.

@@ -33,7 +33,7 @@ servidor, o contrato REST, o CE-13, o CE-33 dos testes de backend nem `API_CONTR
 Este corpo foi escrito por `fab-red-san322-opus` (Claude Opus 5.5, nível menor — §C7.6), nos papéis de fábrica e de redator, a partir do
 plano do bloco no ramo (`docs/revisoes/SAN3/B-SAN3-22-plano.md`: §8.4, §10, E3.2 (E3-04…E3-19), E3.3, a resposta à Q5, **E3.5**, E3b-04…
 E3b-21, **E3b.5** e a ratificação do orquestrador de 2026-10-26 12:30Z) e do relatório do dev (`docs/revisoes/SAN3/B-SAN3-22-dev.md`,
-seções W3–W9 e as divergências **D-W1…D-W12**), lidos no worktree `C:/Users/AMP/w-san322` no head `72e5944a` em 2026-10-26. O objeto da
+seções W3–W9 e as divergências **D-W1…D-W12**), lidos no worktree `~/w-san322` no head `72e5944a` em 2026-10-26. O objeto da
 junta é o head **depois** do commit destes corpos. **Todo arquivo:linha, SHA e número abaixo é leitura [A RE-VERIFICAR]**; os nomes são as
 âncoras. Afirmação do plano, do dev, das críticas, do orquestrador, do inspetor e deste corpo é **roteiro, nunca fato**.
 
@@ -166,16 +166,16 @@ passar — é achado contra a régua, declarado antes do veredito.
 
 - **Onde roda.** Git Bash no Windows do dono. Cada comando com `timeout -k 15 <s>`, saída para arquivo, `ec` lido em variável. **Nunca
   `tail -f`, `watch`, `| tail` nem leitura sem fim.** O `vite` sobe em segundo plano com PID gravado em arquivo e é derrubado pelo PID.
-  Caminho absoluto sempre; estado em arquivo no seu `$SCRATCH` (padrão `C:/Users/AMP/erp-pausa-2026-10-03/j22-c3/`).
+  Caminho absoluto sempre; estado em arquivo no seu `$SCRATCH` (padrão `~/erp-pausa-2026-10-03/j22-c3/`).
 - **Primeira linha do arquivo de evidência**, numa linha só:
   `papel: cadeira C3 | identidade: <nome da sessão> | corpo: jurado-san322-c3-tela-contra-a-referencia | lente: cognicao-visual | modelo: <modelo> (nível menor, §C7.6; substituição: <nenhuma | qual e por quê>) | objeto: <40 hex> | mandato_md5: <tr -d '\r' < mandato | md5sum> | corpo carregado × blob do objeto: IDENTICO | DIVERGE`.
   Logo abaixo: `origin/main` no início, `$SCRATCH`, `node -v`, a versão do navegador headless, livre em `C:`, memória de commit livre, as
   variáveis definidas (nomes).
-- **Arquivos de saída:** padrão `C:/Users/AMP/w-san322/agent-orchestration/omega/juntas/votos/B-SAN3-22/c3-evidencia.md` e `…/c3-voto.json`;
-  as **capturas** em `C:/Users/AMP/w-san322/agent-orchestration/omega/juntas/votos/B-SAN3-22/c3-capturas/` (PNG), citadas por nome na
+- **Arquivos de saída:** padrão `~/w-san322/agent-orchestration/omega/juntas/votos/B-SAN3-22/c3-evidencia.md` e `…/c3-voto.json`;
+  as **capturas** em `~/w-san322/agent-orchestration/omega/juntas/votos/B-SAN3-22/c3-capturas/` (PNG), citadas por nome na
   evidência. Única escrita sua em `w-san322`. Não commita.
-- **Worktree PRÓPRIO, detached, caminho CURTO, prefixo `j22-c3-`:** `C:/Users/AMP/j22-c3-wt`, por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j22-c3-wt <objeto>`; prove `.git` presente e
+- **Worktree PRÓPRIO, detached, caminho CURTO, prefixo `j22-c3-`:** `~/j22-c3-wt`, por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j22-c3-wt <objeto>`; prove `.git` presente e
   `.env` ausente. `npm ci --no-audit --no-fund` **próprio** na raiz (o Playwright do roteiro do dev vem do `node_modules` da raiz — leia o
   roteiro) **e** `npm --prefix frontend ci --no-audit --no-fund`. **Junction ou symlink de `node_modules` é PROIBIDO** (§C7.1-ter(c)). Se o
   disco não comportar dois `npm ci` acima do piso de 7 GB, **pare e registre** antes de começar.
@@ -189,7 +189,7 @@ passar — é achado contra a régua, declarado antes do veredito.
 - **PROIBIDO:** `git stash`, `git clean`, `git reset`, `git checkout` fora do seu worktree, `git worktree prune`, `rm -rf` de worktree,
   `git commit`, `git push`, matar processo que você não criou. Resíduo alheio se **reporta, não se varre**.
 - **Remoção só do que você criou:** o `vite` pelo PID gravado (e conferido: nada ouvindo na sua porta), o navegador headless; worktree só com
-  0 processos no caminho (`Get-CimInstance Win32_Process`), por `git worktree remove --force C:/Users/AMP/j22-c3-wt`; `frontend/dist` e
+  0 processos no caminho (`Get-CimInstance Win32_Process`), por `git worktree remove --force ~/j22-c3-wt`; `frontend/dist` e
   `dist` do seu worktree somem com ele.
 - **Mutação restaurável, no SEU worktree:** âncora única e EOL-consciente (conte: 1) → `git diff --numstat` não-vazio → um caso **irmão**
   verde → medir (TAP para arquivo, ou a captura/medição no navegador com o `vite` reiniciado) → `git -C <wt> checkout <objeto> -- <f>` →

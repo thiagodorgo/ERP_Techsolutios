@@ -4,7 +4,7 @@
 - **Corpo aplicado:** `origin/main:.claude/agents/inspetor-de-terreno-da-junta.md`, lido depois de `git fetch`. É igual, EOL-neutro, ao do objeto e ao da árvore da sessão (md5 `cbbed450…`).
 - **Objeto:** `ea6d4aef54181a0dc4030ec56e174e378aec5e12`.
 - **Medido em:** 2026-11-03, por volta das 14:40 (SP).
-- **Evidência por comando (P1):** `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/inspetor-evidencia.md`.
+- **Evidência por comando (P1):** `~/erp-pausa-2026-10-03/revisoes/j488/inspetor-evidencia.md`.
 - Este parecer não julga o mérito da entrega.
 
 ## Ressalvas (pôr em destaque no briefing dos jurados)
@@ -23,12 +23,12 @@
 > - O mandato da C3 tem de:
 >   - usar a identidade `jurado-j488-c3-opus`;
 >   - ter no máximo 3 itens (P4);
->   - usar um worktree com nome próprio (proposta: `C:/Users/thiag/w-j488-c3`);
+>   - usar um worktree com nome próprio (proposta: `~/w-j488-c3`);
 >   - colar o modelo P1/P2/P3/P7.
 > - A C3 é Claude Opus, o mesmo modelo do dev `dev-rec01-opus`. O briefing declara essa escolha (item 11(1)); não é colisão de identidade.
 
 > **R3. A premissa do mandato do inspetor está errada: o worktree do dev ainda existe.**
-> - `C:/Users/thiag/w-rec01` existe, no ramo `feat/patio-rec-01-dominio`.
+> - `~/w-rec01` existe, no ramo `feat/patio-rec-01-dominio`.
 > - Ele **está limpo** e é **igual ao objeto**: HEAD = `ea6d4aef`, porcelain 0, stash vazio.
 > - Nenhum processo vivo usa esse worktree, e `agentes-vivos.tsv:360` dá o dev como `concluido`.
 > - Não há mutação viva. Os jurados **não** devem usar esse worktree: cada um cria o seu.
@@ -106,7 +106,7 @@
   - disco C livre: 274,95 GB.
 
 ### 6. Fatia S0 e baseline: VERDE
-Medido num worktree descartável `C:/Users/thiag/w-insp488`, destacado em `ea6d4aef`, com `npm ci` próprio.
+Medido num worktree descartável `~/w-insp488`, destacado em `ea6d4aef`, com `npm ci` próprio.
 - **Comando:** `node scripts/sync-agent-agents.mjs --check`
   - **Saída:** ec=0, `[agents-sync] OK — 95 agentes, espelho consistente.`
   - O diff do objeto não toca `.claude/` nem `.agents/`.
@@ -130,7 +130,7 @@ Medido num worktree descartável `C:/Users/thiag/w-insp488`, destacado em `ea6d4
 - Pelo corpo §5.1, essa ausência não bloqueia sozinha.
 
 ## Limpeza
-- **Criado por mim:** o worktree `C:/Users/thiag/w-insp488` e o `npm ci` dentro dele.
+- **Criado por mim:** o worktree `~/w-insp488` e o `npm ci` dentro dele.
 - **Removido:** o worktree, por `git worktree remove --force`. O `git worktree list` não o mostra mais.
 - **Docker:** não criei container.
 - **Árvore principal, demo e `w-rec01`:** não toquei.

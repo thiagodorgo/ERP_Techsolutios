@@ -56,6 +56,17 @@ const CONJUNTOS_DE_FOTO = ["FRONT", "REAR", "LEFT", "RIGHT", "ROOF", "DASH_PANEL
 // A foto da vistoria e so uma URL (o produto nao guarda o binario dela). Dominio reservado: nunca resolve.
 const BASE_DAS_FOTOS = "https://fotos.exemplo.invalid";
 const CHAVE_MARCADOR = "demo_isolado.fixture_sha256";
+// O consentimento de rastreio (B-SAN3-10b-SEED-CONSENT): a versao do texto e a do app
+// (`mobile/flutter_app/lib/core/location/location_consent_store.dart`), e ele so se liga pela rota do app, com a
+// sessao do proprio titular (D-ORQ-568-CONSENTIMENTO-SO-PELO-APP).
+const TEXTO_DO_CONSENTIMENTO = "2026-11.b-san3-17.v1";
+const ROTA_DO_ACEITE = "/mobile/location-consent";
+
+// UUID v4 deterministico a partir de uma semente (o aceite exige UUID): a repeticao e a mesma decisao na auditoria.
+export function uuidDeterministico(semente) {
+  const h = createHash("sha256").update(String(semente)).digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
 // Os dados minimos da vistoria que a fixture nao declarar: texto honesto, nunca um estado inventado.
 const VISTORIA_PADRAO = {
   lataria: "Nao informado",
@@ -748,14 +759,82 @@ async function et5(ctx) {
   return contagem;
 }
 
+// O consentimento de rastreio da tecnica, pela rota do app e com a sessao DELA (B-SAN3-10b-SEED-CONSENT, §1 e emenda 1).
+// Ja ligado: nada a fazer. Desligado: so liga quando a trilha do perfil nao tem decisao nem mudanca depois da criacao
+// (o caso da retomada e o aceite que caiu sem gravar nada). O motor nunca religa o que alguem desligou, nunca usa o
+// cadastro para ligar e nunca revoga: nao forca estado.
+async function garantirConsentimento(ctx, contagem, { admin, tecnica, tecnicaId, perfil }) {
+  if (perfil.trackingConsent === true) {
+    contagem.existentes += 1;
+    return;
+  }
+  // A trilha se le por `/audit-events`, que filtra so por acao e por ator (a visao nao traz a entidade). As decisoes
+  // de consentimento sao sempre do proprio titular, entao saem pelo ator; as mudancas de cadastro nao se atribuem ao
+  // perfil, entao qualquer uma na organizacao para o motor (fail-closed). Leitura que falha tambem para.
+  const naTrilha = [
+    ["operator_profile.updated", ""],
+    ["operator_profile.deactivated", ""],
+    ["field_location.consent_granted", tecnicaId],
+    ["field_location.consent_revoked", tecnicaId],
+    ["field_location.consent_superseded", tecnicaId],
+  ];
+  let decisoes = 0;
+  for (const [acao, autor] of naTrilha) {
+    const filtro = autor ? `&actorId=${autor}` : "";
+    const r = await chamar(ctx, "GET", `/audit-events?action=${acao}${filtro}&limit=1`, admin.token);
+    const eventos = r.status === 200 ? itensDe(r.json) : null;
+    if (!eventos) throw new ErroMotor(5, "ESTADO_INESPERADO ET6 a trilha do perfil não foi lida");
+    decisoes += eventos.length;
+  }
+  if (decisoes !== 0) {
+    throw new ErroMotor(5, "ESTADO_INESPERADO ET6 o perfil teve decisão ou mudança depois da criação");
+  }
+  // A lista nao traz updatedAt: le o perfil por id. O aceite com decided_at <= updatedAt sai `superseded` (S9), e o
+  // relogio do motor nao entra: vale o do servidor, mais 1 s.
+  const atual = dadoDe(
+    exigir(await chamar(ctx, "GET", `/operator-profiles/${perfil.id}`, admin.token), [200], admin.chave, "GET /operator-profiles/:id", "ET6").json,
+  );
+  const decidido = new Date(Date.parse(atual.updatedAt) + 1000).toISOString();
+  const r = exigir(
+    await chamar(ctx, "POST", ROTA_DO_ACEITE, tecnica.token, {
+      decided_at: decidido,
+      client_action_id: uuidDeterministico(`${ctx.fixtureSha256}:consentimento:${tecnica.chave}`),
+      text_version: TEXTO_DO_CONSENTIMENTO,
+    }),
+    [200],
+    tecnica.chave,
+    `POST ${ROTA_DO_ACEITE}`,
+    "ET6",
+  );
+  const aceite = dadoDe(r.json) ?? {};
+  if (aceite.status !== "applied" || aceite.granted !== true) {
+    const status = /^[a-z_]{1,30}$/.test(String(aceite.status)) ? aceite.status : "sem_status";
+    throw new ErroMotor(5, `ESTADO_INESPERADO ET6 consentimento status=${status}`);
+  }
+  contagem.criados += 1;
+}
+
 async function et6(ctx) {
   const contagem = contar("ET6");
   const f = ctx.fixture;
   if (f.localizacoes?.length) {
     const gestao = sessaoDoPapel(ctx, "manager");
+    const admin = ctx.sessoes.admin;
     for (const l of f.localizacoes) {
       const tecnica = sessaoDe(ctx, l.usuario);
       const emailTecnica = tecnica.email;
+      const tecnicaId = ctx.ids.usuarios[l.usuario];
+      if (!tecnicaId) throw new ErroMotor(1, `LOCALIZACAO_SEM_USUARIO ${l.usuario}`);
+      // Desde o #568 a posicao exige o perfil de operador e o consentimento do ator. (1) O perfil nasce pelo admin
+      // (o caminho do produto e o que nao entra na trilha do gestor), so com o vinculo: sem dado pessoal nem consentimento.
+      const corpoPerfil = { user_id: tecnicaId };
+      const { item: perfil } = await garantir(
+        contagem,
+        async () => (await lerLista(ctx, admin, "/operator-profiles", "ET6")).find((p) => p.userId === tecnicaId),
+        criador(ctx, admin, "/operator-profiles", corpoPerfil, "ET6"),
+      );
+      // (2) O consentimento, pela tecnica. (3) Depois, a posicao.
+      await garantirConsentimento(ctx, contagem, { admin, tecnica, tecnicaId, perfil });
       await garantir(
         contagem,
         // Pela gestao, que nao grava auditoria nessa leitura; nunca pelo historico, que grava (A2 da Emenda 1).

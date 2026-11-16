@@ -14,7 +14,7 @@
     "autocrlf": "true",
     "so": "Windows 11 Pro 10.0.22631",
     "shell": "Git Bash",
-    "worktree": "C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco",
+    "worktree": "~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco",
     "branch": "chore/gov-elenco-enxuto",
     "laboratorio": "scratchpad/C3-lab — caminho que Windows e Git Bash enxergam. SEM mktemp -d, que devolveria /tmp/... e faria a fixture nao ser aplicada",
     "leitura_por_commit": "git show <ref>:<path> via GIT_DIR exportado — nunca git archive mais tar sob autocrlf",

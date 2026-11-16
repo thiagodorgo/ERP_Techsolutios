@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const WT = "C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/bsan304a";
+const WT = "~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/bsan304a";
 const OUT = process.env.MAPA_OUT ?? "";
 const require = createRequire(WT + "/package.json");
 const { Client } = require("pg");

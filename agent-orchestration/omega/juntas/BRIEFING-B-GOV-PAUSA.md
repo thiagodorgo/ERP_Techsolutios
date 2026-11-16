@@ -1,7 +1,7 @@
 # BRIEFING — junta do bloco `B-GOV-PAUSA` (PR #397) — ciclo 1
 
 **Branch:** `docs/gov-pausa-grava-e-para` · **Base:** `origin/main` = `5b6e1036` (#396) · **Worktree do bloco:**
-`C:/Users/AMP/w-pausa` (somente-leitura para as cadeiras) · **Plano:** `docs/revisoes/SAN3/B-GOV-PAUSA-plano.md`
+`~/w-pausa` (somente-leitura para as cadeiras) · **Plano:** `docs/revisoes/SAN3/B-GOV-PAUSA-plano.md`
 (no ramo; **hipótese a reproduzir**, não fato) · **Mandato do planejador:** `votos/B-GOV-PAUSA/00-mandatos/planejador.md`
 (`mandato_md5 d8507e81…`, forma A, PRE-VOO OK em `3b00cae9`).
 
@@ -122,7 +122,7 @@ pelo #395 — confira com `node -e` na última entrada). A C3 mede com N e forma
 
 - O head, o diff (6 arquivos, +217/−2 em `c9eda7bb`; **5** normativos) e os hunks idênticos CLAUDE × AGENTS.
 - A lista de lugares vivos (§5) e a classificação entra/nota; as linhas citadas (podem ter andado após E2).
-- T-14: a existência e o estado de `C:/Users/AMP/w-devt4` (somente leitura; **não tocar**) — se já não existir, T-14 é `[não-verif]` integral e **não** é defeito.
+- T-14: a existência e o estado de `~/w-devt4` (somente leitura; **não tocar**) — se já não existir, T-14 é `[não-verif]` integral e **não** é defeito.
 - O precedente de KPI (#394 contou; #396 não) — ler `Kpis/kpis-history.json` e `git show --stat` dos dois na `main`.
 - Check-runs no head (14/14 às 13:49Z — re-medir no head atual) · `sync --check` (26 → 29 com os corpos).
 - Conflito com o #393: `merge-tree` **limpo** em `c9eda7bb`; após E3 (`Kpis/*`) provavelmente conflita — H6.1.
@@ -156,8 +156,8 @@ pelo #395 — confira com `node -e` na última entrada). A C3 mede com N e forma
 
 ## 11. ISOLAMENTO — por escrito (inspetor 1.2)
 
-- `C:/Users/AMP/w-pausa` é **somente-leitura** para as cadeiras. Cada cadeira escreve **apenas** os seus dois arquivos em `agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/`.
-- Leitura do head por `MSYS_NO_PATHCONV=1 git show <head>:<caminho>` (prefixo **por comando**; nunca `export`) ou por **worktree próprio e descartável** em caminho curto (`git worktree add --detach C:/Users/AMP/w-jur-<id> <head>`), removido **só** por `git worktree remove --force`. **Sem junction de `node_modules`**; `npm ci` próprio se precisar dos guards.
+- `~/w-pausa` é **somente-leitura** para as cadeiras. Cada cadeira escreve **apenas** os seus dois arquivos em `agent-orchestration/omega/juntas/votos/B-GOV-PAUSA/`.
+- Leitura do head por `MSYS_NO_PATHCONV=1 git show <head>:<caminho>` (prefixo **por comando**; nunca `export`) ou por **worktree próprio e descartável** em caminho curto (`git worktree add --detach ~/w-jur-<id> <head>`), removido **só** por `git worktree remove --force`. **Sem junction de `node_modules`**; `npm ci` próprio se precisar dos guards.
 - **Nenhuma cadeira precisa de banco.** **A base viva `erp-postgres` (5432) / `erp-redis` (6379) NUNCA é alvo.** Sem Docker.
 - `timeout` em tudo que executa; **nunca `tail -f`**; logs longos só no arquivo de evidência.
 - Resíduo alheio (`w-devs393`, `w-devt393`, `w-devt4`, `w-mandato`, `w-pv397`, `.claude/worktrees/*`, ` M` fantasma por CRLF) **se reporta, não se varre** — `w-devt4` é o traço físico de T-14 e **não se toca**.

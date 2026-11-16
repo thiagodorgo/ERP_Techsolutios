@@ -23,7 +23,7 @@ concorrência e o arnês**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica`, **sem `Bash`**: quem escreveu não executou nada do que está aqui. Tudo o que
-ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-nuv09` em 2026-10-08, com o ramo no head
+ele diz sobre o ramo foi **lido** no disco de `~/w-nuv09` em 2026-10-08, com o ramo no head
 `054f7a7ea350ba80837bcecf370475df6a1795b4` (lido nos arquivos de ref locais `refs/heads/` e `refs/remotes/origin/`, não por
 `git`). Logo, **todo** arquivo:linha, SHA, contagem e trecho abaixo é **[A RE-VERIFICAR]**. Nenhum deles é fato.
 
@@ -164,12 +164,12 @@ consigo medir".
   Logo abaixo: objeto, `origin/main` no início, `$SCRATCH`, `node -v` (host e container), `python --version`, espaço livre em
   `C:` (`df -h /c`), e o ambiente (shell, cwd, variáveis que você definiu).
 - **Arquivos de saída:** os que o seu mandato nomear, no diretório que ele nomear (padrão:
-  `C:/Users/AMP/w-nuv09/agent-orchestration/omega/juntas/votos/B-SAN3-09/`, arquivos `C2c2-evidencia.md` e `C2c2-voto.json`).
+  `~/w-nuv09/agent-orchestration/omega/juntas/votos/B-SAN3-09/`, arquivos `C2c2-evidencia.md` e `C2c2-voto.json`).
   **Nunca** grave em `C2-evidencia.md`/`C2-voto.json`: são do ciclo 1. Nunca grave no seu worktree de medição.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Use sempre `C:/…` com `git.exe`, `node.exe`,
   `python.exe`.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão deste corpo: `C:/Users/AMP/w-j9c2c2`), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão deste corpo: `~/w-j9c2c2`), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
   `test -e <caminho>/.git`. Se o caminho já existir, é resíduo alheio: reporte e use o sufixo `b`. Nele você roda o que é
   leitura de git e a extração por AST do item 3(d), com `npm ci --no-audit --no-fund` **próprio** (o `typescript` já é
   devDependency); `prisma generate` só se for executar algo que o importe, com `DATABASE_URL` fictícia **só naquele comando**.
@@ -184,7 +184,7 @@ consigo medir".
   (caminhos `/…` **só dentro** do `sh -c`, por causa do MSYS); md5 do script, dos dois testes e do lockfile dentro do container
   = md5 do blob; `npm ci`, `prisma generate`, e o teste com `-e DATABASE_URL -e REDIS_URL -e CORE_SAAS_PERSISTENCE=memory`. Para
   contar resíduo de catálogo use o `psql` **do container do Postgres** (`docker exec jurado-san3-09c2-c2-pg psql -U postgres -XAt -c …`).
-  Alternativa: `C:/Users/AMP/erp-terreno/receita-pg16.sh` (imagem `erp-junta-node20-pg16:local`, que traz `psql` 16) **adaptada**
+  Alternativa: `~/erp-terreno/receita-pg16.sh` (imagem `erp-junta-node20-pg16:local`, que traz `psql` 16) **adaptada**
   — lida pela fábrica, ela foi escrita para o `B-SAN3-05`: `TESTS`/`SAMPLE` nomeiam arquivos de outro bloco, não sobe Redis,
   nomeia tudo `pg16r-*` e derruba tudo no `trap EXIT` — **não** atende mutação (limite declarado no `TERRENO-PG16.md` §6). Se a
   usar, copie para `$SCRATCH`, adapte, publique o diff e o md5 da cópia. Se a imagem `node:20-bookworm-slim` não estiver local,
@@ -192,7 +192,7 @@ consigo medir".
 - **`erp-postgres` (5432) e `erp-redis` (6379) NUNCA são alvo, nem de leitura.** Comando seu que toque 5432/6379 é achado contra
   a sua própria medição.
 - **Disco:** meça o livre em `C:` antes de começar e depois do `npm ci`. Abaixo de ~2 GB, **pare** e registre.
-- **Somente leitura fora do seu terreno.** `C:/Users/AMP/w-nuv09` é a árvore do ramo: a sua **única** escrita lá são os seus
+- **Somente leitura fora do seu terreno.** `~/w-nuv09` é a árvore do ramo: a sua **única** escrita lá são os seus
   dois arquivos de saída. **PROIBIDO:** `git stash`, `git clean`, `git checkout`/`git reset` do que você não criou,
   `git worktree prune`, `rm -rf` de worktree, `git commit`, `git push`, `docker rm` de container que não tem o seu prefixo,
   `docker volume prune`, `docker system prune`, e `DROP DATABASE`/`DROP ROLE` por curinga fora do **seu** cluster. Resíduo

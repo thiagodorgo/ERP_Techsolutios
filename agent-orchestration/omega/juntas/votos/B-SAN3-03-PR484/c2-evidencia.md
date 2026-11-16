@@ -2,11 +2,11 @@
 
 - Objeto: `5b628b886520bcbece0228eec9d47c965a32b577` · base do conserto: `49ddd0f8b9efa8724923ec99fa546cce907288cc`
 - Competência: cálculo de dinheiro no resumo (período e contrato da rota `/summary`): A1, E2-A2, E2B-A2.
-- Terreno: worktree `C:/Users/thiag/w-j484-c2`, Postgres `j484-c2-pg` 127.0.0.1:55482.
+- Terreno: worktree `~/w-j484-c2`, Postgres `j484-c2-pg` 127.0.0.1:55482.
 - Identidade nova: não achou, não planejou, não criticou, não desenvolveu neste bloco.
 
 ## Item 0 — terreno
-- `git worktree add --detach C:/Users/thiag/w-j484-c2 5b628b88` → `HEAD is now at 5b628b88`; `git rev-parse HEAD` = `5b628b886520bcbece0228eec9d47c965a32b577`; `npm ci` próprio → ec 0 (`c2-npmci.log`); `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npx prisma generate`.
+- `git worktree add --detach ~/w-j484-c2 5b628b88` → `HEAD is now at 5b628b88`; `git rev-parse HEAD` = `5b628b886520bcbece0228eec9d47c965a32b577`; `npm ci` próprio → ec 0 (`c2-npmci.log`); `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npx prisma generate`.
 - Memória de commit livre antes do Docker: `Win32_OperatingSystem.FreeVirtualMemory` ≈ 46,5 GB (≥ 4 GB). Nenhum outro container j484 vivo (`docker ps` só `erp-postgres`, `erp-redis`, intocados).
 - `docker run -d --name j484-c2-pg … -p 127.0.0.1:55482:5432 postgres:16` → `accepting connections`; `npx prisma migrate deploy` → `All migrations have been successfully applied.`
 - Bateria do bloco no objeto: `node --test --import tsx tests/cloud-cost-allocation-routes.test.ts tests/san3-03-summary.test.ts` → **10/10**, 0 fail, 0 skip.
@@ -15,7 +15,7 @@
 **Sonda própria** (fora do worktree): `c2-probe-routes.test.mts` (app real `createApp` + `fetch` na porta efêmera, repositório em memória, run de junho total 15 criada pelo `POST /runs`) e `c2-probe-routes-db.test.mts` (mesma rota com `CORE_SAAS_PERSISTENCE=prisma` no `j484-c2-pg`, run de julho/2031 total 77; a sonda confere `repository.constructor.name === "PrismaCloudCostAllocationRepository"`).
 
 ### 1.a Contrato do mandato — memória
-- Comando: `cd C:/Users/thiag/w-j484-c2 && node --test --import tsx C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c2-probe-routes.test.mts` → ec 0, log `c2-probe-objeto.log`.
+- Comando: `cd ~/w-j484-c2 && node --test --import tsx ~/erp-pausa-2026-10-03/revisoes/j484/c2-probe-routes.test.mts` → ec 0, log `c2-probe-objeto.log`.
 - Saída resumida: sem query → 200, 15; `periodStart=2026-06-01&periodEnd=2026-06-30` → 200, 15; só `periodStart` e só `periodEnd` → 400 `CLOUD_COST_ALLOCATION_INVALID_PERIOD`/`summary_period_incomplete`; para CADA ponta (start e end): vazio, `nao-e-data`, `2026-02-31`, `2026-13-01`, `2026-00-10`, repetida (array) e a chave sozinha vazia → 400 `summary_period_invalid` (16 casos, todos asseridos); `2028-02-29` nas duas pontas → 200 (`no_run`).
 - Veredito parcial: contrato do mandato CUMPRIDO na rota real.
 
@@ -75,7 +75,7 @@ No Postgres (log `c2-probe-db-objeto.log`): `2031-07-02T00:00:00%2B23:59`/`2031-
 - Veredito parcial: o contrato diz o que o código faz nos 400 e nos dois motivos; omite a semântica de instante/dia UTC (não grave).
 ## Item 3 — mutações M47, M47-b, M47-c, M54, M54-b, M54-c, M56 + própria
 ### 3.a As sete da emenda, executadas por mim
-- Driver: `c2-mutations.mjs` = cópia de `revisoes/dev-san303-e2-c1-mutations.mjs` (os textos das mutações não foram mudados) com `root` = meu worktree e `git status --porcelain` publicado após cada restauração. Comando: `cd C:/Users/thiag/w-j484-c2 && node C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c2-mutations.mjs` → ec 0, log `c2-mutations.log`.
+- Driver: `c2-mutations.mjs` = cópia de `revisoes/dev-san303-e2-c1-mutations.mjs` (os textos das mutações não foram mudados) com `root` = meu worktree e `git status --porcelain` publicado após cada restauração. Comando: `cd ~/w-j484-c2 && node ~/erp-pausa-2026-10-03/revisoes/j484/c2-mutations.mjs` → ec 0, log `c2-mutations.log`.
 - Saída: âncora = 1 em todas; `exit=1` com AssertionError em todas; `restored=true` e `status=[]` depois de cada uma; `status-final:[]`.
   - M47 (apaga a recusa do serviço) → T-SUM-8 e T-SUM-7 not ok.
   - M47-b (recusa só quando falta o `periodEnd`) → T-SUM-7 not ok.
@@ -87,7 +87,7 @@ No Postgres (log `c2-probe-db-objeto.log`): `2031-07-02T00:00:00%2B23:59`/`2031-
 - Veredito parcial: as sete mordem.
 
 ### 3.b Qual asserção a M47-c derruba
-- Comando: `node C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c2-m47c-detalhe.mjs` (log `c2-m47c-detalhe.log`).
+- Comando: `node ~/erp-pausa-2026-10-03/revisoes/j484/c2-m47c-detalhe.mjs` (log `c2-m47c-detalhe.log`).
 - Saída: a M47-c literal do dev cai em `expected: 400 / actual: 200`, que é a asserção do resumo com uma ponta (o guard do serviço sumiu, e o `/summary` não passa mais por `parseRunFilters`), **não** no T-RUN-1. Com a variante própria **M47-c′** (a mesma recusa acrescentada em `parseRunFilters`, serviço intacto), o T-SUM-8 cai na mensagem `T-RUN-1 · listagem continua aceitando somente uma ponta`, `expected: 200 / actual: 400`. `status=[]` depois das duas.
 - Veredito parcial: o T-RUN-1 morde (provado pela M47-c′). A M47-c literal fica vermelha por outra asserção, então não prova o T-RUN-1 sozinha. É precisão de prova, sem efeito em dinheiro (nota em C2-N3).
 
@@ -105,6 +105,6 @@ No Postgres (log `c2-probe-db-objeto.log`): `2031-07-02T00:00:00%2B23:59`/`2031-
 - `c2-voto.json`: **APROVADO**, 0 grave, 3 não graves (C2-N1, C2-N2, C2-N3), com `arquivos_medidos`.
 
 ## Limpeza
-- Comando: `git status --porcelain` no worktree (vazio) → `docker rm -f j484-c2-pg` → `git worktree remove --force C:/Users/thiag/w-j484-c2`.
+- Comando: `git status --porcelain` no worktree (vazio) → `docker rm -f j484-c2-pg` → `git worktree remove --force ~/w-j484-c2`.
 - Saída: container ausente (`docker ps -a | grep -c j484-c2-pg` = 0); caminho ausente; `git worktree list | grep -c j484-c2` = 0. Continuam vivos só `erp-postgres` e `erp-redis`, que não foram tocados. Nada de `prune` nem `down -v`, e as portas 3000/5173 e a árvore principal ficaram de fora.
 - Sondas e drivers ficam em `revisoes/j484/` (`c2-probe-routes*.test.mts`, `c2-mutations.mjs`, `c2-m47c-detalhe.mjs`, `c2-mc2a-apply.cjs`, logs `c2-*.log`).

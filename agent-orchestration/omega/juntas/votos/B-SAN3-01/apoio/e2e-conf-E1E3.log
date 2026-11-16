@@ -70,7 +70,7 @@ Running 3 tests using 1 worker
       90 |   await expect(page.getByRole("button", { name: "Salvar OS" })).toBeEnabled();
       91 |   await expect(page.getByRole("alert")).not.toContainText(/destination_required|WORK_ORDER_UNPROCESSABLE|422/);
       92 |   await page.unroute("**/api/v1/work-orders");
-        at C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\_bsan301-adhoc.spec.ts:89:34
+        at ~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\bsan301\tests\e2e\_bsan301-adhoc.spec.ts:89:34
 
     attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
     test-results\_bsan301-adhoc-E2-—-create-817c8-ceito-navega-para-a-OS-real-chromium\test-failed-1.png

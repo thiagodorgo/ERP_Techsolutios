@@ -26,7 +26,7 @@ Tudo o que está no plano v3 (`docs/revisoes/SAN3/B-SAN3-20-plano.md`), nas crí
 
 ## Terreno próprio e protocolo P1–P8
 
-- **Worktree próprio:** `C:/Users/AMP/w-jsan320-c2`, em `--detach <objeto>`, com `npm ci` próprio, `npm run db:generate` (Emenda E1) e zero junction/symlink de `node_modules` (§C7.1-ter(c)). Remova ao fim com `git worktree remove --force`.
+- **Worktree próprio:** `~/w-jsan320-c2`, em `--detach <objeto>`, com `npm ci` próprio, `npm run db:generate` (Emenda E1) e zero junction/symlink de `node_modules` (§C7.1-ter(c)). Remova ao fim com `git worktree remove --force`.
 - **Banco descartável próprio:** container Postgres 16 `jsan320-c2-pg` publicado apenas em `127.0.0.1` numa porta livre alta (ex.: `55442`). As bases auxiliares de drill/regeneração (`jsan320_c2_*`) são criadas dentro do seu container e removidas ao final. **Proibido** tocar a base viva (`erp-postgres`/`erp-redis`, portas `5432`/`6379`). Respeite o orçamento P8 (commit livre ≥ 4 GB, no máximo 2 trabalhos Docker simultâneos excluídos `erp-*`).
 - **Mutações:** toda mutação é aplicada apenas no seu worktree exclusivo, uma por vez, com restauro provado por `git hash-object <arquivo>` igual a `git rev-parse <objeto>:<arquivo>`.
 - **P1/P2/P4:** apense cada comando, saída resumida e veredito parcial a `cadeira-c2-evidencia.md` após cada item; mantenha `cadeira-c2-voto.json` (com `arquivos_medidos`) atualizado e feche-o antes da mensagem final de 1 linha.

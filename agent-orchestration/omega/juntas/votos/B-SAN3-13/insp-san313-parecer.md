@@ -9,10 +9,10 @@
 - **Objeto** por duas fontes (`git ls-remote origin refs/heads/fix/mobile-minhas-os` e `gh pr view 460 --json headRefOid`): `ed4e229e951b4e5d4e425cbc57f1f4ac8059ce0d`; PR OPEN, não rascunho, MERGEABLE. O head não andou desde o disparo.
 - **check-runs** (`gh api …/commits/<O>/check-runs`): total 14, 0 fora de completed/success; `gh run list --commit <O>`: `ci pull_request completed success` e `ci push completed success` NESTE SHA (posterior ao commit dos corpos).
 - **delta** `<O>~1..<O>`: 1 commit ("docs(junta): corpos das 3 cadeiras…"), 6 arquivos, só os três `jurado-san313-*` nos dois espelhos.
-- **PRE-VOO**: os 4 mandatos (`cadeira-c1/c2/c3`, `inspetor-san313`) saem `PRE-VOO OK`, ec 0, na 1ª tentativa, com as ferramentas de `C:/Users/AMP/erp-pausa-2026-10-03/redator-san313/`.
+- **PRE-VOO**: os 4 mandatos (`cadeira-c1/c2/c3`, `inspetor-san313`) saem `PRE-VOO OK`, ec 0, na 1ª tentativa, com as ferramentas de `~/erp-pausa-2026-10-03/redator-san313/`.
 - **Unidades sem saída**: verificação própria por awk — c1 13/13, c2 14/14, c3 13/13, inspetor 18/18 unidades MEDIDO com saída colada; 0 sem saída; 0 cercas vazias. Dos 82 caminhos absolutos citados, os ausentes são só destinos a criar (worktrees `j13-c*-wt`, scratch, arquivos de voto) e o `RAIZ` já declarado.
 - **corpos/espelho**: os 3 corpos, md5 EOL-neutro blob = worktree em `.claude` e em `.agents`; corpo descontado o bloco "Papel para o Codex" IDENTICO nos 3. Corpo do inspetor: blob = worktree = sessão (cbbed450…).
-- **S0**: `node scripts/sync-agent-agents.mjs --check` num worktree descartável meu no objeto (`C:/Users/AMP/j13-insp-s0`): `OK — 85 agentes, espelho consistente`, ec 0; worktree removido.
+- **S0**: `node scripts/sync-agent-agents.mjs --check` num worktree descartável meu no objeto (`~/j13-insp-s0`): `OK — 85 agentes, espelho consistente`, ec 0; worktree removido.
 - **R1 (ressalva operacional)**: os três corpos `jurado-san313-*` NÃO existem no `.claude/agents/` do diretório da sessão (está na `main`, sem o commit dos corpos). As cadeiras Claude têm de carregar o corpo do blob (`git show <O>:.claude/agents/especialistas/jurado-san313-<c>.md`) como subagente genérico, e a C3 (Codex) do blob do espelho `.agents`. Os 3 mandatos já exigem a declaração IDENTICO/DIVERGE do corpo carregado contra o blob na 1ª linha da evidência (c1 l.133, c2 l.139, c3 l.176).
 
 ## Item 2 de 3 — identidades, inelegíveis, papéis (§C7.4-bis), composição, CA-1..CA-25 e §8 com dono, briefing
@@ -41,7 +41,7 @@
 
 ## Item 3 de 3 — terreno: árvore, worktrees, bancos descartáveis, resíduo, P8/P5/P3, ordem de disparo, disco
 **VERDE COM RESSALVAS** (R4, R5, R6). A ordem de disparo da R4 é **condição** da liberação.
-- **Árvore**: `C:/Users/AMP/w-san313` está em `ed4e229e…` e não tem modificação rastreada. Só há não rastreados neste diretório de votos (os 4 mandatos e os meus 2 arquivos). O `node_modules` é diretório real: o `fsutil reparsepoint query` responde que não é um ponto de nova análise, logo não há junction.
+- **Árvore**: `~/w-san313` está em `ed4e229e…` e não tem modificação rastreada. Só há não rastreados neste diretório de votos (os 4 mandatos e os meus 2 arquivos). O `node_modules` é diretório real: o `fsutil reparsepoint query` responde que não é um ponto de nova análise, logo não há junction.
 - **Isolamento declarado nos 3 mandatos**, verificável:
   - worktrees exclusivos `j13-c1-wt`, `j13-c2-wt` e `j13-c3-wt`, detached no objeto, com `npm ci` e `flutter pub get` próprios e zero junction, removidos só por `git worktree remove --force`;
   - `j13-c1-pg`/`j13-c1-redis` e `j13-c3-pg`/`j13-c3-redis` só em `127.0.0.1`, em porta alta testada antes;
@@ -75,4 +75,4 @@ Ressalvas que vão em destaque no briefing dos jurados:
 - **R5** — a memória de commit oscila em torno de 4 GB. Medir antes de cada lançamento.
 - **R6** — o disco tem 11 GB livres. Medir antes de cada `npm ci`; abaixo de 10 GB, `DEEP_CLEAN=1`.
 
-Limpeza do inspetor: criei e removi o worktree `C:/Users/AMP/j13-insp-s0` (removido e desregistrado, conferido). Não subi container. O log do `npm run check` ficou no scratchpad da sessão, fora do repo. Não editei arquivo rastreado e não commitei. Ficaram só `insp-san313-evidencia.md` e `insp-san313-parecer.md`.
+Limpeza do inspetor: criei e removi o worktree `~/j13-insp-s0` (removido e desregistrado, conferido). Não subi container. O log do `npm run check` ficou no scratchpad da sessão, fora do repo. Não editei arquivo rastreado e não commitei. Ficaram só `insp-san313-evidencia.md` e `insp-san313-parecer.md`.

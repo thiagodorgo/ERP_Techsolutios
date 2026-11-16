@@ -2,7 +2,7 @@
 
 > **Papel:** dev dos ajustes, identidade NOVA `dev-agente-api-ajustes`. Não escrevi o código original nem fiz a revisão (§C7.4-bis).
 > **Modelo que rodou:** Claude **Opus 5.5** (`claude-opus-5-5`), **nível menor** (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`).
-> **Objeto de partida:** worktree `C:/Users/AMP/w-agapi`, ramo `chore/agente-claude-api`, head `c876e6b08946e5d1b9854934e3c16fa2c0ae3311`. Durante o trabalho o orquestrador commitou `debae897` (só `docs/revisoes/GOV/B-AGENTE-API-revisao.md`, 352 linhas; `git diff --stat c876e6b0 debae897` não toca código): as mudanças abaixo valem sobre o mesmo código, e o head medido no fim é `debae897c0c5079cc87252fcb0a9d2365da2ffd0` com a árvore modificada, sem commit.
+> **Objeto de partida:** worktree `~/w-agapi`, ramo `chore/agente-claude-api`, head `c876e6b08946e5d1b9854934e3c16fa2c0ae3311`. Durante o trabalho o orquestrador commitou `debae897` (só `docs/revisoes/GOV/B-AGENTE-API-revisao.md`, 352 linhas; `git diff --stat c876e6b0 debae897` não toca código): as mudanças abaixo valem sobre o mesmo código, e o head medido no fim é `debae897c0c5079cc87252fcb0a9d2365da2ffd0` com a árvore modificada, sem commit.
 > **Insumos lidos inteiros:** `B-AGENTE-API-revisao.md` (A1–A11), `B-AGENTE-API-plano.md`, `B-AGENTE-API-brief.md`, `B-AGENTE-API-dev.md`.
 > **Remédios:** decisão do orquestrador (o revisor não propôs correção), guiada pelo brief do dono: "mais autonomia, não muita, sem probabilidades altas de dar merda".
 > **Proibições respeitadas:** nenhuma chamada à API da Anthropic; `ERP_AGENTE_ANTHROPIC_KEY` não lida nem impressa; sem commit nem push; nada instalado fora do venv; sem `git clean/stash/reset --hard/add -A`; base viva e portas intocadas.
@@ -169,7 +169,7 @@ Todas as mutações: controle sem mutação = OK; restaurado por `sha256` = sim.
 
 - Arquivos tocados (`git status --short`): 13 módulos em `scripts/agente-claude-api/agente_claude/`, o `README.md` da pasta, 7 arquivos de teste em `scripts/agente-claude-api/tests/` e este relatório (novo, não versionado). Nada em `src/`, `prisma/`, `migrations/`, `infra/`, `.github/`, `Kpis/`, `package*.json`, `.env*`, `.claude/`, `.agents/`, `CLAUDE.md`, `AGENTS.md`, nem em `agent-orchestration/` (o A9 é só declarado).
 - `git diff --check` (rastreados) → exit 0, sem saída. Relatório: 0 linhas com espaço no fim.
-- `git worktree list | grep -c w-ag-` → 0; diretórios `C:/Users/AMP/w-ag-*` → 0. A `saidas/` tem só a evidência do B8 do dev (`20261010-193012Z-revisar-pr-416`, ignorada). `__pycache__` ausente.
+- `git worktree list | grep -c w-ag-` → 0; diretórios `~/w-ag-*` → 0. A `saidas/` tem só a evidência do B8 do dev (`20261010-193012Z-revisar-pr-416`, ignorada). `__pycache__` ausente.
 - Scratchpad: removi o repositório temporário da medição do git (`repo-g`). Ficam os scripts de medição e de mutação, o `mutacoes.jsonl` e os `sha256`, todos fora do repositório.
 - Nenhum comando foi barrado pelo classificador ou pela permissão; nada foi contornado.
 - Nenhuma chamada à API da Anthropic. A chave não foi lida nem impressa: a suíte bloqueia o registro real e só usa chaves falsas montadas por concatenação. Sem commit, sem push.

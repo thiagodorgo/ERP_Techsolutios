@@ -29,7 +29,7 @@ segurança de execução**; **a quem** ela concede é cruzado com a C2 só pelo 
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito por `fab-red-san312a-opus` (Claude Opus 5.5, nível menor DECLARADO — §C7.6), nos papéis de fábrica e redator,
-cobrindo o Codex por ordem do dono. A fábrica leu o ramo no disco de `C:/Users/AMP/w-san312a` em 2026-10-25, no head `868156f4` (a
+cobrindo o Codex por ordem do dono. A fábrica leu o ramo no disco de `~/w-san312a` em 2026-10-25, no head `868156f4` (a
 **cerca**). **Todo arquivo:linha abaixo é leitura de disco [A RE-VERIFICAR]**. Afirmação do plano, das emendas, do relatório do dev, das
 críticas, do orquestrador, do inspetor e deste corpo é **roteiro, nunca fato**.
 
@@ -142,14 +142,14 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo** (verm
 
 - **Onde roda:** Git Bash no Windows do dono (e, se precisar, um container Node Linux seu, prefixo `j12a-c3-`); `timeout -k 15 <s>` em todo
   comando (o `npm test` inteiro: até `timeout -k 30 5400`), saída para arquivo, `ec` em variável; nunca `tail -f`/`watch`/leitura sem fim;
-  `$SCRATCH` = `C:/Users/AMP/erp-pausa-2026-10-03/j12a-c3/`.
+  `$SCRATCH` = `~/erp-pausa-2026-10-03/j12a-c3/`.
 - **Primeira linha da evidência**, numa linha só:
   `papel: cadeira C3 | identidade: <nome da sessão> | corpo: jurado-san312a-c3-regressao-escopo-contrato | executor: <Claude Opus (subagente genérico, corpo lido do blob do objeto) | outro> | modelo: <modelo> (nível menor, §C7.6; substituição: <…>) | objeto: <40 hex> | mandato_md5: <…> | corpo carregado × blob do objeto: IDENTICO | DIVERGE`;
   abaixo, `origin/main` no início, `$SCRATCH`, `node -v`, `docker version` (servidor), `SELECT version()`, `df -h /c`, memória de commit
   livre e os nomes das variáveis.
-- **Saída:** `C:/Users/AMP/w-san312a/agent-orchestration/omega/juntas/votos/B-SAN3-12a/c3-evidencia.md` e `…/c3-voto.json` (ou o que o
+- **Saída:** `~/w-san312a/agent-orchestration/omega/juntas/votos/B-SAN3-12a/c3-evidencia.md` e `…/c3-voto.json` (ou o que o
   mandato nomear); não commita.
-- **DOIS worktrees PRÓPRIOS**, detached: `C:/Users/AMP/j12a-c3-wt` no **objeto** e `C:/Users/AMP/j12a-c3-wtb` no **head-base do bloco**,
+- **DOIS worktrees PRÓPRIOS**, detached: `~/j12a-c3-wt` no **objeto** e `~/j12a-c3-wtb` no **head-base do bloco**,
   cada um com `npm ci` próprio e `npx prisma generate` com URL de build (nunca junction de `node_modules`, §C7.1-ter(c)); caminho existente
   = resíduo alheio, reporte e use outro sufixo.
 - **Postgres 16 e Redis 7 PRÓPRIOS** `j12a-c3-pg`/`j12a-c3-redis`, só em `127.0.0.1`, portas testadas antes (candidatas **47733** e

@@ -1,7 +1,7 @@
 # B-SAN3-02 — 2ª crítica adversarial do plano (critico-san3-02-opus)
 
 - **Papel:** crítico adversarial (2º crítico; o Gemini não é revisor único — decisão de 14/10). **Modelo:** Claude Opus 5.5 (`claude-opus-5-5`), nível menor, declarado. Identidade nova; não escrevi o plano, não implemento, não voto.
-- **Objeto:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-02-plano.md` + respostas do dono (Q1/Q2/Q3 = SIM) + 1ª crítica (Gemini) lida como DADO.
+- **Objeto:** `~/erp-pausa-2026-10-03/planos/B-SAN3-02-plano.md` + respostas do dono (Q1/Q2/Q3 = SIM) + 1ª crítica (Gemini) lida como DADO.
 - **Veredito:** VOLTA AO PLANO — 2 bloqueia · 7 ajuste (6 próprios + 1 do Gemini confirmado)
 
 ## Evidência incremental (P1)

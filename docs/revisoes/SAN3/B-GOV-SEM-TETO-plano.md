@@ -13,7 +13,7 @@
   `EXECUTION_MODEL.md`; as atas/registros do #393 (`J-B-GOV-MANDATO.md`, `R-B-GOV-MANDATO-1/2.md`,
   `BRIEFING-B-GOV-MANDATO.md`, `B-GOV-MANDATO-ciclo3-plano.md` §10) lidos do ramo `origin/chore/mandato-refs-e-preflight`;
   `Kpis/kpis-latest.json` e `kpis-history.json` da `main` e do #393; `J-B-SAN3-00.md`.
-- **Nada herdado como fato:** todo número abaixo foi medido por mim em `C:/Users/AMP/w-teto` (árvore do head,
+- **Nada herdado como fato:** todo número abaixo foi medido por mim em `~/w-teto` (árvore do head,
   `status --porcelain` vazio) ou por `git show`/`gh` contra o head. Não commitei nem empurrei nada.
 
 ---
@@ -24,8 +24,8 @@
 
 **Ressalva de terreno, declarada antes da saída:** `scripts/mandato-refs.sh` **não existe** na `origin/main`
 (`fc3363e3`) nem no head do #394 (`ls scripts/mandato-refs.sh` → *No such file*). Ele é artefato do **#393**
-(ramo `chore/mandato-refs-e-preflight`, worktree `C:/Users/AMP/w-mandato`, **sob julgamento**). Executei o
-script **daquele ramo** com o cwd em `w-teto` (`bash C:/Users/AMP/w-mandato/scripts/mandato-refs.sh 394`) e
+(ramo `chore/mandato-refs-e-preflight`, worktree `~/w-mandato`, **sob julgamento**). Executei o
+script **daquele ramo** com o cwd em `w-teto` (`bash ~/w-mandato/scripts/mandato-refs.sh 394`) e
 **cruzei cada campo** com `git rev-parse` local, `git rev-parse origin/docs/sem-teto-auditoria-no-3` e
 `gh pr view 394 --json headRefOid,baseRefName,state,mergeable,isDraft` — **os quatro concordam**. A saída vale
 como leitura de refs; não vale como aval do script.
@@ -401,7 +401,7 @@ sob a regra que tenta revogar.
 
 ## §9 — Bateria de validação (§9 do contrato), com a FORMA declarada
 
-Cwd `C:/Users/AMP/w-teto`; `export MSYS_NO_PATHCONV=1`; `git.exe`/`node.exe` com `C:/…`; **ec por variável**
+Cwd `~/w-teto`; `export MSYS_NO_PATHCONV=1`; `git.exe`/`node.exe` com `C:/…`; **ec por variável**
 (`cmd > "$TEMP/x.txt" 2>&1; ec=$?`), nunca por pipe. `HEAD` = o head que a ata nomear.
 
 1. `git.exe status --porcelain` → **vazio**. `git.exe rev-parse HEAD` = head da ata.
@@ -472,7 +472,7 @@ Cwd `C:/Users/AMP/w-teto`; `export MSYS_NO_PATHCONV=1`; `git.exe`/`node.exe` com
 - **Isolamento (inspetor 1.2), por escrito:** cadeiras **somente-leitura** — escrevem **apenas**
   `agent-orchestration/omega/juntas/votos/B-GOV-SEM-TETO/<cadeira>.md` e `<cadeira>-evidencia.md`. Leitura do
   head por `git show <head>:<caminho>` ou **worktree próprio e descartável** em caminho curto (`git worktree add
-  --detach C:/Users/AMP/w-jur-<id> <head>`; remoção **só** por `git worktree remove --force`; **sem junction**).
+  --detach ~/w-jur-<id> <head>`; remoção **só** por `git worktree remove --force`; **sem junction**).
   **Nenhuma cadeira precisa de banco**; **a base viva `erp-postgres` (5432) / `erp-redis` (6379) não é alvo de
   ninguém**; sem Docker. Guards de KPI (C3): `npm ci` **próprio**. Mutação para medir (C2 sobre o inspetor)
   **só em cópia fora do repo**, apagada ao fim.

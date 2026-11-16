@@ -17,7 +17,7 @@ Formato P1: cada item = comando · saida resumida · veredito parcial. Horas em 
 - parcial: LEGAL. OBJETO = ba65c03a4c3edc0723633b0f1330f34852a60e6f (head do PR 400, CI concluido e verde). Head colado no mandato (f87fabce) difere so por registro — nao reprova (R-4).
 
 ## T. Terreno (2026-10-04T18:00–18:05Z)
-- cmd: `git worktree add --detach C:/Users/AMP/w-j09c1 ba65c03a...` -> HEAD ba65c03a, `status --porcelain` = 0. Disco C: 6,2 GB livres.
+- cmd: `git worktree add --detach ~/w-j09c1 ba65c03a...` -> HEAD ba65c03a, `status --porcelain` = 0. Disco C: 6,2 GB livres.
 - cmd: `npm ci --no-audit --no-fund` (1a tentativa) -> ec!=0: `@prisma/engines` postinstall `ECONNRESET` (download do engine abortado por rede, TLSSocket). Artefato de rede, nao do objeto. Retentando.
 - cmd: `npm ci` (2a tentativa, 18:07Z) -> mesmo `ECONNRESET` no postinstall de `@prisma/engines`. Rede instavel ate o host de engines; 3a tentativa a seguir. (Leitura de codigo e testes segue em paralelo; nada medido depende do npm ci ate aqui.)
 - cmd: `npm ci` (3a tentativa, 18:10Z) -> `added 326 packages`, ec=0; `cmd /c "dir /AL /S /B node_modules" | wc -l` -> 0 (sem junction/symlink).
@@ -110,7 +110,7 @@ Formato P1: cada item = comando · saida resumida · veredito parcial. Horas em 
 
 ## Limpeza (2026-10-04T18:40–18:42Z)
 - `docker rm -f -v j09c1-node j09c1-pg j09c1-redis` (volumes anonimos junto) e `docker network rm j09c1-net` -> 0 container e 0 rede `j09c1*`. Imagem `node:20-bookworm-slim` mantida (receita 4.2-bis: compartilhavel, quem remove e o orquestrador depois da ultima cadeira).
-- processos com `w-j09c1` na linha de comando (Get-CimInstance Win32_Process, excluida a propria sonda) -> 0; `git worktree remove --force C:/Users/AMP/w-j09c1` ec=0; diretorio inexistente; `git worktree list | grep -ic w-j09c1` -> 0.
+- processos com `w-j09c1` na linha de comando (Get-CimInstance Win32_Process, excluida a propria sonda) -> 0; `git worktree remove --force ~/w-j09c1` ec=0; diretorio inexistente; `git worktree list | grep -ic w-j09c1` -> 0.
 - temporarios `scratchpad/j09c1-*` apagados (inclusive a senha do cluster). Senhas de teste viviam so no container, destruido.
 - base viva erp-postgres / erp-redis: Up 7 days, nunca alvo. Nada escrito no repositorio alem deste arquivo e do voto (nao commitados).
 - disco C: 6,2 GB livres no inicio -> 4,1 GB ao fim (worktree removido; o vhdx do docker nao encolhe com rm; ha outras frentes vivas na maquina). Acima do limite de parada de ~2 GB (R-7).

@@ -1,7 +1,7 @@
 # Parecer — porteiro-pos-merge-426 (PR #426, B-TRC-01)
 
 - **Papel:** porteiro-pos-merge · **modelo que rodou:** Opus (claude-opus-5-5), nível menor, declarado (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`). Sem fallback.
-- **Ref medida:** `c1485c94f3e99a33f5b8f6aec96a12bc922a237e` (origin/main), worktree detached próprio `C:/Users/AMP/w-porteiro426` com `npm ci` próprio, já removido.
+- **Ref medida:** `c1485c94f3e99a33f5b8f6aec96a12bc922a237e` (origin/main), worktree detached próprio `~/w-porteiro426` com `npm ci` próprio, já removido.
 - **Evidência item a item:** `porteiro-426-evidencia.md` (mesmo diretório).
 
 ## O que foi executado (resultado)
@@ -58,7 +58,7 @@
 - **Limpeza §C5,** só reportada:
   - a branch remota foi apagada;
   - a branch local `feat/traccar-b-trc-01` continua, no `w-trc01`;
-  - `fix/o6r07cb1-despacho-atribui` (#440 MERGED) e o worktree `C:/Users/AMP/w-07cb1` continuam;
+  - `fix/o6r07cb1-despacho-atribui` (#440 MERGED) e o worktree `~/w-07cb1` continuam;
   - `fix/dash-perfil` aparece como já mergeada (worktree `w-dash`);
   - há 3 arquivos soltos sem rastreio no `w-trc01`: `.npmtest-503.log`, `check_md5.cjs` e `check_md5.js`;
   - zero arquivo rastreado apagado (`^ D` = 0);

@@ -13,7 +13,7 @@ ok 2 - usuario tenant comum nao acessa endpoints platform de allocation
 not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repetido ou impossível
   ---
   duration_ms: 37.9013
-  location: 'C:\\Users\\thiag\\w-conf484\\tests\\cloud-cost-allocation-routes.test.ts:1:2156'
+  location: '~/w-conf484\\tests\\cloud-cost-allocation-routes.test.ts:1:2156'
   failureType: 'testCodeFailure'
   error: |-
     T-RUN-1 · listagem continua aceitando somente uma ponta
@@ -26,10 +26,10 @@ not ok 3 - T-SUM-8 · summary recusa período incompleto, vazio, inválido, repe
   actual: 400
   operator: 'strictEqual'
   stack: |-
-    <anonymous> (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:104:12)
+    <anonymous> (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:104:12)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    async withAllocationApi (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:234:5)
-    async TestContext.<anonymous> (C:\Users\thiag\w-conf484\tests\cloud-cost-allocation-routes.test.ts:69:3)
+    async withAllocationApi (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:234:5)
+    async TestContext.<anonymous> (~/w-conf484\tests\cloud-cost-allocation-routes.test.ts:69:3)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...

@@ -2,7 +2,7 @@
 
 - **Identidade:** `dev-dash-ciclo3-argon` (nova; não votou nem planejou este bloco). **Executor:** Gemini CLI, modelo Gemini 4 Argon (nível menor declarado, §C7.6).
 - **Mandato:** Parte 2 de `agent-orchestration/omega/reprovacoes/R-B-DASH-PERFIL-2.md` (planejador `planejador-dash-ciclo3-fable`).
-- **Terreno:** worktree `C:/Users/AMP/w-dash`, ramo `fix/dash-perfil`.
+- **Terreno:** worktree `~/w-dash`, ramo `fix/dash-perfil`.
 - **Gravado aos poucos (P1):** cada passo foi apensado ao ser medido. Todos os itens da bateria §2.7 e as 4 mutações de §2.5 B foram executados e medidos.
 
 ## 0. Terreno
@@ -75,5 +75,5 @@ Todas aplicadas **uma por vez**, com trava de unicidade (`split(anchor).length =
 ## 5. Limpeza e fechamento
 
 - **Limpeza (§C5):** removidos `frontend/dist` e `frontend/tsconfig.tsbuildinfo` gerados pelo `npm run build`, além dos scripts temporários de mutação fora do repositório. Nenhum arquivo rastreado, nenhum `node_modules` e nenhum `.env` foi removido ou tocado.
-- **Arquivos da sonda do planejador:** `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dash3-plan/{mini-dom.mts,sonda-ctx.mts,driver.mjs}` permanecem fora do repositório, intactos.
+- **Arquivos da sonda do planejador:** `~/erp-pausa-2026-10-03/prompts/dash3-plan/{mini-dom.mts,sonda-ctx.mts,driver.mjs}` permanecem fora do repositório, intactos.
 - **Push:** não executado (o orquestrador empurra após a conferência).

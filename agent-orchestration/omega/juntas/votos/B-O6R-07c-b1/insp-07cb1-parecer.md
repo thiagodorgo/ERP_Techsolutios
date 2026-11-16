@@ -21,7 +21,7 @@ O inspetor não vota, não julga o mérito e não conserta nada (§C7.4-bis).
 |---|---|
 | 1.1 árvore do dev × objeto | **VERDE c/ ressalva inerte.** HEAD = objeto. `git diff`, `--cached` e `--ignore-cr-at-eol` estão vazios. Os 28 arquivos do bloco são idênticos ao blob (EOL-neutro, 0/28 divergem). Há 55 ` M` fantasmas de autocrlf em `.agents/agents/**`, com conteúdo igual ao índice. Nenhum processo vivo referencia `w-07cb1`. |
 | 1.2 plano de isolamento | **VERDE.** Está escrito por cadeira nos mandatos: worktree próprio, `npm ci` sem junction, C1 e C2 em memória, C3 com cluster descartável, sem porta publicada. A base viva e as portas 5432, 6379, 3000, 5173, 5050 e 8899 ficam fora de alcance. |
-| 1.3 resíduos | **VERDE c/ ressalva inerte.** Não sobrou nenhum `j07cb1-*`, `jur-*`, `crit-*` nem `probe`. Os resíduos inertes são de outros blocos: 4 containers `jtrc01-*` parados (Exited 255) e o diretório vazio `C:/Users/AMP/w-reg6`, que não é worktree registrado. Ficam reportados e não foram varridos. |
+| 1.3 resíduos | **VERDE c/ ressalva inerte.** Não sobrou nenhum `j07cb1-*`, `jur-*`, `crit-*` nem `probe`. Os resíduos inertes são de outros blocos: 4 containers `jtrc01-*` parados (Exited 255) e o diretório vazio `~/w-reg6`, que não é worktree registrado. Ficam reportados e não foram varridos. |
 | 2.1/2.2 ata anterior / auditoria | **VERDE.** É o ciclo 1. Os mandatos tratam as afirmações como HIPÓTESE com "derruba com"; não chegam como fato herdado. |
 | 2.3 plano, escopo, bateria | **VERDE c/ ressalva.** O plano, a emenda (PERMITIDO/PROIBIDO nas l.49-61, CA1-CA11, governança nas l.84-87) e o relatório do dev estão no objeto. O 07c-b não tem seção "bateria exata" própria no plano (só o 07c-a, §07c-a.6). A forma de execução vem do relatório do dev e dos mandatos. |
 | 3.1-bis/3.1 inelegibilidade | **VERDE.** O OBITUÁRIO (objeto e origin/main, 301 linhas) tem 0 linhas com 07cb1. `git grep` sobre `agent-orchestration` e `docs` não acha nenhuma das 3 identidades como votante, achadora, planejadora ou dev. Os devs (`dev-b-o6r-07c-b1-argon` e `-opus`), a autora da emenda, o crítico do b1, o planejador e o redator são outros nomes. Cada cadeira ocupa um só papel. |
@@ -36,11 +36,11 @@ O inspetor não vota, não julga o mérito e não conserta nada (§C7.4-bis).
 
 | Cadeira | Identidade (corpo no objeto) | Executor (nível menor, declarado) | Worktree | Prefixo de container |
 |---|---|---|---|---|
-| C1 | `jurado-07cb1-c1-escopo-e-rbac` (.claude 1a5e17a5…, .agents 3d2fa99f…) | Codex, GPT-5.6 Sol, esforço médio, a partir de ~04:15Z, quando a cota renova | `C:/Users/AMP/w-j07cb1c1` (ou sufixo b), detached no objeto | `j07cb1-c1-` (só se subir; roda em memória) |
-| C2 | `jurado-07cb1-c2-mobile-e-conflito` (.claude fc06a7d5…, .agents 3d45cc3b…) | Gemini 3.1 Pro pelo Gemini CLI, teto de US$ 5 (`D-GEMINI-PRO-API-TETO`), achados re-executados pelo orquestrador antes de contar (`D-GEMINI-SEGUNDO-REVISOR`) | `C:/Users/AMP/w-j07cb1c2` (ou sufixo b), detached no objeto | `j07cb1-c2-` (só se subir; roda em memória) |
-| C3 | `jurado-07cb1-c3-despacho-censo-persistencia` (.claude 58eae266…, .agents 74c95ad4…) | Claude Code, Claude Opus 5.5, como subagente com identidade própria (nunca a sessão do orquestrador) | `C:/Users/AMP/w-j07cb1c3` (ou sufixo b), detached no objeto | `j07cb1-c3-` (Postgres 16 descartável, rede própria, sem porta publicada) |
+| C1 | `jurado-07cb1-c1-escopo-e-rbac` (.claude 1a5e17a5…, .agents 3d2fa99f…) | Codex, GPT-5.6 Sol, esforço médio, a partir de ~04:15Z, quando a cota renova | `~/w-j07cb1c1` (ou sufixo b), detached no objeto | `j07cb1-c1-` (só se subir; roda em memória) |
+| C2 | `jurado-07cb1-c2-mobile-e-conflito` (.claude fc06a7d5…, .agents 3d45cc3b…) | Gemini 3.1 Pro pelo Gemini CLI, teto de US$ 5 (`D-GEMINI-PRO-API-TETO`), achados re-executados pelo orquestrador antes de contar (`D-GEMINI-SEGUNDO-REVISOR`) | `~/w-j07cb1c2` (ou sufixo b), detached no objeto | `j07cb1-c2-` (só se subir; roda em memória) |
+| C3 | `jurado-07cb1-c3-despacho-censo-persistencia` (.claude 58eae266…, .agents 74c95ad4…) | Claude Code, Claude Opus 5.5, como subagente com identidade própria (nunca a sessão do orquestrador) | `~/w-j07cb1c3` (ou sufixo b), detached no objeto | `j07cb1-c3-` (Postgres 16 descartável, rede própria, sem porta publicada) |
 
-`C:/Users/AMP/w-arnes2` e qualquer `w-arnes2-mut` pertencem a outro bloco (o T15, com dev em uso). Não são tabuleiro desta junta: foram reportados, não varridos, e o inspetor não exige que sejam removidos. `C:/Users/AMP/w-07cb1` é a árvore do dev e só recebe os arquivos de saída da junta.
+`~/w-arnes2` e qualquer `w-arnes2-mut` pertencem a outro bloco (o T15, com dev em uso). Não são tabuleiro desta junta: foram reportados, não varridos, e o inspetor não exige que sejam removidos. `~/w-07cb1` é a árvore do dev e só recebe os arquivos de saída da junta.
 
 ## Ressalvas (o orquestrador põe estas em destaque no briefing)
 
@@ -88,6 +88,6 @@ O inspetor não vota, não julga o mérito e não conserta nada (§C7.4-bis).
 
 ## Limpeza
 
-Criei o worktree `C:/Users/AMP/w-insp-07cb1` (detached no objeto, `npm ci` próprio, sem junction, client Prisma gerado). Depois de conferir que nenhum processo o usava, removi com `git worktree remove --force C:/Users/AMP/w-insp-07cb1` (ec=0). Ele já não aparece no `worktree list` e o diretório não existe mais. Também removi a subpasta `scratchpad/insp-07cb1`, onde estavam os logs de `npm ci`, gen e check.
+Criei o worktree `~/w-insp-07cb1` (detached no objeto, `npm ci` próprio, sem junction, client Prisma gerado). Depois de conferir que nenhum processo o usava, removi com `git worktree remove --force ~/w-insp-07cb1` (ec=0). Ele já não aparece no `worktree list` e o diretório não existe mais. Também removi a subpasta `scratchpad/insp-07cb1`, onde estavam os logs de `npm ci`, gen e check.
 
 Não subi nenhum container. Fora isso, escrevi só os meus 2 arquivos (`insp-07cb1-evidencia.md` e este parecer). Não fiz commit nem push.

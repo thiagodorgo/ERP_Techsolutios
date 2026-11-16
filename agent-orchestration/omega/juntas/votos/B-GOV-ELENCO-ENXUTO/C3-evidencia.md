@@ -19,7 +19,7 @@ faço por mutação executada, não por releitura.
 
 | Item | Valor |
 |---|---|
-| Worktree | `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` |
+| Worktree | `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco` |
 | Branch | `chore/gov-elenco-enxuto` |
 | **Head medido** | `9c0e6ac9df237b5cfe1a6fe1d16d4128861d7d10` |
 | Head de código | `adc41a54` (após ele, só `agent-orchestration/` — confirmado abaixo) |

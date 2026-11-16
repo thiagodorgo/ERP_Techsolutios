@@ -131,10 +131,10 @@ vence o protocolo de emulação.**
 
 ```
 $ git worktree list
-C:/Users/AMP/Documents/GitHub/ERP_Techsolutios                             d1fab3b [demo/investidor]
-C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/agent-af6ea607f3ddf8efd  12c3825 [feat/o6r-b02-financial-uow]
-C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-descuido             497d360 [docs/governanca-porteiro-pre-merge-sol]
-C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r                   53e44d3 [docs/san2-6-contrato-p1p6-teto]
+~/Documents/GitHub/ERP_Techsolutios                             d1fab3b [demo/investidor]
+~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/agent-af6ea607f3ddf8efd  12c3825 [feat/o6r-b02-financial-uow]
+~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-descuido             497d360 [docs/governanca-porteiro-pre-merge-sol]
+~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r                   53e44d3 [docs/san2-6-contrato-p1p6-teto]
 ```
 
 | ref | head | vs `main` (`e6a6461`) |

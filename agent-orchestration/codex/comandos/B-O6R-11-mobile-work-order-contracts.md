@@ -1,7 +1,7 @@
 # B-O6R-11 — fila durável do app de campo (comando v2: 1º PR do corte)
 
 - **Tipo:** feature (fecha `Ω6R-QUA-005`, item 3 do gate) · **Fase:** Execution · **Trilha:** mobile (Flutter) · **Data:** 2026-11-02
-- **Branch:** `fix/mobile-fila-duravel-b-o6r-11` (ramo novo a partir de `origin/main` `e78e3968`) · worktree `C:/Users/thiag/w-o6r11c3`
+- **Branch:** `fix/mobile-fila-duravel-b-o6r-11` (ramo novo a partir de `origin/main` `e78e3968`) · worktree `~/w-o6r11c3`
 - **Comando v1:** `origin/fix/mobile-work-order-contracts:agent-orchestration/codex/comandos/B-O6R-11-mobile-work-order-contracts.md` (`a24f58b5`, PR #388). O #388 fecha **sem merge** depois do merge deste PR, com o ramo preservado.
 
 ## O que este comando incorpora (fontes, em ordem de precedência crescente)

@@ -1,6 +1,6 @@
 # APLICADOR — opção B do PR #386 (plano SAN3) — relatório incremental
 
-Worktree: `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san3` · branch `docs/san3-plano-saneamento` ·
+Worktree: `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san3` · branch `docs/san3-plano-saneamento` ·
 HEAD `ec4f34a8` (sem commit meu). Papel: aplicador (§C7.4-bis) — não achou, não planejou. Plano aplicado:
 `agent-orchestration/omega/planos/SAN3-plano-opcao-B-aplicacao.md`; decisão `D-SAN3-PLANO-OPCAO-B`
 (`agent-orchestration/controle/decisoes.md` l.2339+, edição não commitada do orquestrador — não tocada).

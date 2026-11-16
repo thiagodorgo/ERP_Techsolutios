@@ -53,5 +53,5 @@ foi repetida integralmente em banco novo com `--restrict-key` válida e determin
 
 Havia um único grupo Docker alheio `tl179228797429743-*`, portanto o cluster próprio foi o segundo trabalho. Não se
 usaram as bases `erp-postgres`/`erp-redis` nem portas proibidas. O container `dba-trc01c2-pg16` e o worktree
-`C:/Users/AMP/w-dba-trc01c2` foram removidos no fim; nenhum recurso alheio foi alterado. Evidência completa e
+`~/w-dba-trc01c2` foram removidos no fim; nenhum recurso alheio foi alterado. Evidência completa e
 incremental: `dba-guardiao-c2-evidencia.md` neste diretório.

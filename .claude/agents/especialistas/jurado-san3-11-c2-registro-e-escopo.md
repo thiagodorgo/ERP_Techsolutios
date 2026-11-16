@@ -22,7 +22,7 @@ A17′/A19–A21 (é a **C2′**). Você julga **a fronteira, o acesso, o regist
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica`, **sem `Bash`**: quem escreveu não executou nada do que está aqui. Tudo o que ele
-diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-nuv11` em 2026-10-03, com o mandato da fábrica versionado em
+diz sobre o ramo foi **lido** no disco de `~/w-nuv11` em 2026-10-03, com o mandato da fábrica versionado em
 `feb0d838` e o código e o KPI do ramo ainda no head `653532f7` — **antes** de o dev do ciclo 2 implementar e integrar a `main`.
 Logo, **todo** arquivo:linha, SHA, conjunto, contagem e número de KPI abaixo vem do plano (§16), da trilha do planejador
 (`votos/B-SAN3-11/PLANEJADOR-ciclo2-relatorio.md`) ou do ciclo 1 e é **[A RE-VERIFICAR]**. Nenhum deles é fato.
@@ -157,11 +157,11 @@ consigo medir".
   Logo abaixo: objeto, `origin/main` no início, `$SCRATCH`, `node -v`, `python --version`, e o ambiente (shell, cwd,
   variáveis que você definiu).
 - **Arquivos de saída:** os que o seu mandato de disparo nomear, no diretório que ele nomear (padrão:
-  `C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/`). Se o mandato não nomear, use
+  `~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/`). Se o mandato não nomear, use
   `C3c2-evidencia.md` e `C3c2-voto.json`. **Nunca** grave em `C3-evidencia.md`/`C3-voto.json`: são do ciclo 1.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Use sempre `C:/…`.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão deste corpo: `C:/Users/AMP/w-s11k2c`), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão deste corpo: `~/w-s11k2c`), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
   `test -e <caminho>/.git`. No scratchpad, `worktree add` falha com *Filename too long* e **não cria o diretório**. Se o
   caminho já existir, é resíduo alheio: reporte e use o sufixo `b`.
 - **`npm ci --no-audit --no-fund` PRÓPRIO** em `frontend/` (T10, T11′, P-o, `test:smoke`) e **`npm ci --ignore-scripts`** na
@@ -169,8 +169,8 @@ consigo medir".
   (§C7.1-ter(c)).
 - **Sem banco e sem Docker.** `erp-postgres` (5432) e `erp-redis` (6379) **nunca** são alvo. O P-o lê o catálogo, que não
   importa nada; as rotas se leem no blob. Comando seu que abra conexão é achado contra a sua própria medição.
-- **Somente leitura fora do seu worktree.** A árvore do ramo (`C:/Users/AMP/w-nuv11`) e os terrenos do dev
-  (`C:/Users/AMP/w-dev11c2`, `C:/Users/AMP/w-dev11c2lf`) **nunca** são mutados — **em especial**, o gerador de índice e o
+- **Somente leitura fora do seu worktree.** A árvore do ramo (`~/w-nuv11`) e os terrenos do dev
+  (`~/w-dev11c2`, `~/w-dev11c2lf`) **nunca** são mutados — **em especial**, o gerador de índice e o
   `kpi-freeze` **escrevem no lugar**: rode-os **só** no seu worktree. **PROIBIDO:** `git stash`, `git clean`,
   `git checkout`/`git reset` do que você não criou, `git worktree prune`, `rm -rf` de worktree, `git commit`, `git push`.
   Resíduo alheio se **reporta, não se varre**.

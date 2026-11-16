@@ -30,7 +30,7 @@ Sucessor de caído tem identidade NOVA e reexecuta toda evidência registrada an
 
 ## Terreno próprio
 
-- Worktree exclusivo com prefixo `C:/Users/AMP/w-j07cb1c2-c3-`, `npm ci` próprio, zero junction/symlink de `node_modules`.
+- Worktree exclusivo com prefixo `~/w-j07cb1c2-c3-`, `npm ci` próprio, zero junction/symlink de `node_modules`.
 - Memória por padrão. Para consultar logs/artefatos da CI, não altere o ramo. Se precisar reproduzir Docker, antes conte grupos de outros trabalhos excluindo `erp-*`; máximo **2 trabalhos Docker** na máquina incluindo o seu. Se já houver 2, espere.
 - Containers eventuais: prefixo `j07cb1c2-c3-`, rede própria, sem porta publicada. Base viva e portas `5432`, `6379`, `3000`, `5173`, `5050`, `8899` proibidas.
 - Comparação de conteúdo por `git show`/`git hash-object`, nunca `git archive|tar` sob autocrlf. Mutações e troca para base só em cópia descartável, com restauro provado.

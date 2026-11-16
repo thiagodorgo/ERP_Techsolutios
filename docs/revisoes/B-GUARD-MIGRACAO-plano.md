@@ -1,7 +1,7 @@
 # B-GUARD-MIGRACAO — Trava de CI: migração nova com várias sentenças leva `BEGIN;`/`COMMIT;` no próprio arquivo
 
 > **Papel:** `planejador-mestre` (TOPO). **Modelo efetivo:** Fable 5.1 (`claude-fable-5-1`), o do frontmatter — sem
-> fallback. **Data:** 2026-10-24. **Ref medida:** `origin/main` `c76ec481` (worktree só-leitura `C:/Users/AMP/w-plan21`,
+> fallback. **Data:** 2026-10-24. **Ref medida:** `origin/main` `c76ec481` (worktree só-leitura `~/w-plan21`,
 > detached); os PRs abertos por `git show origin/<ramo>:<caminho>` — #454 `origin/feat/traccar-b-trc-02` `42800d0d`,
 > #456 `origin/fix/cheque-x-baixa` `a0f5aabc`. Nada editado, nada commitado, sem `npm ci`, sem Docker.
 > **Decisão que rege:** `D-MIGRACAO-COM-TRANSACAO-EXPLICITA` (dono, 2026-10-21, *"3=aprovo"*) — vive HOJE só no ramo do

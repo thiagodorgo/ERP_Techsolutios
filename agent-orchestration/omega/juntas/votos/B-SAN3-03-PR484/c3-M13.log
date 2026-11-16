@@ -3,20 +3,20 @@ TAP version 13
 not ok 1 - T-STO-db-1 · soma real das quatro tabelas por organização
   ---
   duration_ms: 645.0335
-  location: 'C:\\Users\\thiag\\w-j484-c3\\tests\\san3-03-derived-basis-db.test.ts:1:404'
+  location: '~/w-j484-c3\\tests\\san3-03-derived-basis-db.test.ts:1:404'
   failureType: 'testCodeFailure'
   error: 'tenant_context_leak: attachments returned rows for another organization under the current context.'
   code: 'CLOUD_COST_ALLOCATION_CONTEXT_LEAK'
   name: 'CloudCostAllocationError'
   stack: |-
-    assertRowsBelongToTenant (C:\Users\thiag\w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:497:11)
-    <anonymous> (C:\Users\thiag\w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:373:9)
+    assertRowsBelongToTenant (~/w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:497:11)
+    <anonymous> (~/w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:373:9)
     process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    async client.$transaction.timeout (C:\Users\thiag\w-j484-c3\src\database\rls.ts:62:28)
-    async Proxy._transactionWithCallback (C:\Users\thiag\w-j484-c3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:810:18)
-    async PrismaCloudCostAllocationRepository.sumUsageBasis (C:\Users\thiag\w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:300:5)
-    async <anonymous> (C:\Users\thiag\w-j484-c3\tests\san3-03-derived-basis-db.test.ts:15:18)
-    async withFixture (C:\Users\thiag\w-j484-c3\tests\san3-03-derived-basis-db.test.ts:128:5)
+    async client.$transaction.timeout (~/w-j484-c3\src\database\rls.ts:62:28)
+    async Proxy._transactionWithCallback (~/w-j484-c3\node_modules\@prisma\client\src\runtime\getPrismaClient.ts:810:18)
+    async PrismaCloudCostAllocationRepository.sumUsageBasis (~/w-j484-c3\src\modules\cloud-cost-allocation\cloud-cost-allocation-prisma.repository.ts:300:5)
+    async <anonymous> (~/w-j484-c3\tests\san3-03-derived-basis-db.test.ts:15:18)
+    async withFixture (~/w-j484-c3\tests\san3-03-derived-basis-db.test.ts:128:5)
     async Test.run (node:internal/test_runner/test:797:9)
     async Test.processPendingSubtests (node:internal/test_runner/test:526:7)
   ...

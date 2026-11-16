@@ -2,7 +2,7 @@
 
 - **Head julgado:** `d90fbbb`
 - **Base:** `origin/main` = `e6a6461`
-- **Worktree de medição:** `C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r` (ressalva R1 do inspetor)
+- **Worktree de medição:** `~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r` (ressalva R1 do inspetor)
 - **Cadeira:** C3 — conferente do KPI e das dívidas. **TEM PODER DE VETO.**
 - **Regra:** §C7.4-bis — quem acha não conserta. Reporto defeito + evidência executada + motivo; não proponho correção.
 
@@ -119,7 +119,7 @@ auditada no C3-2). Ordem de chaves preservada; a entrada nova tem o mesmo esquem
 # PARTE II — RE-EXECUÇÃO PRÓPRIA DA SUPLENTE (o que vale para o voto)
 
 Toda medição abaixo foi rodada por mim, de dentro de
-`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r`, no head `d90fbbb`.
+`~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r`, no head `d90fbbb`.
 
 ## C3-1 (RE-EXECUTADO) — backfill §C3.5 do #367 na entrada 150
 

@@ -316,7 +316,7 @@ void main() {
             'token': 'secret',
             'accessToken': 'secret',
             'Authorization': 'Bearer secret',
-            'path': r'C:\Users\private\photo.jpg',
+            'path': r'~/photo.jpg',
             'local_path': '/private/photo.jpg',
             'base64': 'AAAA',
             'file_data': 'AAAA',

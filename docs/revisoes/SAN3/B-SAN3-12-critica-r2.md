@@ -10,11 +10,11 @@
 > Medi no ramo `origin/fix/cheque-x-baixa` **`bb3cbd6c`**, e não no `a0f5aabc` do mandato, que ficou velho. O ramo andou
 > `a0f5aabc → d3aa1875` (ata da junta do B-SAN3-20) e depois `→ bb3cbd6c` (merge da `main` `c76ec481`), e
 > `git diff --stat a0f5aabc bb3cbd6c -- src tests prisma` saiu vazio. Logo **o código é o mesmo que o plano mediu**.
-> **Terreno:** worktree próprio `C:/Users/AMP/w-crit312r2`, criado a partir de `origin/main` e posto em detached no
+> **Terreno:** worktree próprio `~/w-crit312r2`, criado a partir de `origin/main` e posto em detached no
 > `bb3cbd6c`, com `npm ci` próprio (326 pacotes, 47 s) e `prisma generate` com uma URL fictícia. Não usei Docker nem a base
 > viva. Duas sondas mexeram por instantes em `catalog.ts` e `cheque.repository.ts` **no meu worktree descartável**, e as duas
 > foram restauradas por `git checkout`. As sondas estão copiadas em
-> `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/crit312r2-sondas/`
+> `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/crit312r2-sondas/`
 > (`probe.ts`, `parity.ts`, `tz.ts`). O worktree foi removido ao fim (`git worktree remove --force`; `git worktree list` sem ele).
 
 ## Parte 1. A v2 fecha os dois achados da r1?

@@ -13,7 +13,7 @@ Este bloco entrega a porta comum, as regras fiscais, o adaptador Focus NFe e o f
 
 ## F0 — terreno, dependência e baseline
 
-- Worktree `C:/Users/thiag/w-ass07`, ramo `feat/b-ass-07-porta-fiscal`, fast-forward para `origin/main@4cd1889d`.
+- Worktree `~/w-ass07`, ramo `feat/b-ass-07-porta-fiscal`, fast-forward para `origin/main@4cd1889d`.
 - O B-ASS-06 está na base e `providers/http/billing-http.client.ts` existe. Não foi criado segundo cliente.
 - Cofre conferido: adaptadores recebem segredo por `VaultService.readSecretForProvider`.
 - `npm ci` próprio concluído; junction proibida e não usada.

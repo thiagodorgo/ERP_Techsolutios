@@ -9,7 +9,7 @@ Implementar contrato backend mobile parcial para registrar manifestos de evidenc
 - branch: `feature/mobile-evidence-contract`
 - base: `origin/main`
 - merge obrigatorio confirmado: `fc86ae1f70b21b7bdec02fa308b070cadca9b0a4`
-- worktree isolado: `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios-codex-b098e`
+- worktree isolado: `~/Documents\GitHub\ERP_Techsolutios-codex-b098e`
 
 ## Contrato
 

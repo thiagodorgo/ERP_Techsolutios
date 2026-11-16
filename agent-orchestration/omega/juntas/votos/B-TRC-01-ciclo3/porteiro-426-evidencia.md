@@ -1,7 +1,7 @@
 # Evidência — porteiro-pos-merge-426 (PR #426, B-TRC-01)
 
 Papel: porteiro-pos-merge · modelo: Opus (claude-opus-5-5), nível menor, declarado (D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO).
-Ref medida: c1485c94f3e99a33f5b8f6aec96a12bc922a237e (origin/main), worktree detached C:/Users/AMP/w-porteiro426.
+Ref medida: c1485c94f3e99a33f5b8f6aec96a12bc922a237e (origin/main), worktree detached ~/w-porteiro426.
 
 ## Item 1 — merge existe e íntegro
 - `git fetch origin --prune; git log origin/main -5 --oneline` → topo `c1485c94 feat(traccar)... (B-TRC-01) (#426)`, pai `40c3651f (#440)`.
@@ -40,7 +40,7 @@ Ref medida: c1485c94f3e99a33f5b8f6aec96a12bc922a237e (origin/main), worktree det
 - `git diff --name-only 40c3651f c1485c94 -- Kpis/ | wc -l` → 0; idem 7c220467..9b93df5f → 0. Veredito parcial: OK.
 
 ## Item 3c — as 6 suítes -db em container Linux próprio
-- `bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-porteiro426 "CORE_SAAS_PERSISTENCE=prisma RBAC_DB_PARITY=1 node --test --import tsx <6 suítes traccar -db>"` → `teste-linux ec=0`, **tests 50 · pass 50 · fail 0 · skipped 0 · cancelled 0**. Bate com o 50/50 do orquestrador. (A ata do ciclo 3 e o comentário do ci.yml falam em 48 casos/6 suítes; 50 = 48 + T-P1/T-P2 do ciclo 3.)
+- `bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-porteiro426 "CORE_SAAS_PERSISTENCE=prisma RBAC_DB_PARITY=1 node --test --import tsx <6 suítes traccar -db>"` → `teste-linux ec=0`, **tests 50 · pass 50 · fail 0 · skipped 0 · cancelled 0**. Bate com o 50/50 do orquestrador. (A ata do ciclo 3 e o comentário do ci.yml falam em 48 casos/6 suítes; 50 = 48 + T-P1/T-P2 do ciclo 3.)
 - Linhas-chave: `ok 20 - ingestão: tenantId no envelope dá 422 e zero escrita`; `ok 31 - ...a OS que tinha a viatura no instante do fix e a perdeu depois continua na janela — quarentena` (o P1); `ok 32` (T-P2); `ok 30 - gatilho: vehicle_assigned_at é do banco`. O auxiliar assignVehicle com `event` (9b93df5f) roda verde sob o #440.
 - Teardown: `docker ps -a | grep -v ^erp-` → vazio; `docker network ls | grep ^tl` → vazio. Base viva não tocada.
 - Veredito parcial: OK.
@@ -54,7 +54,7 @@ Ref medida: c1485c94f3e99a33f5b8f6aec96a12bc922a237e (origin/main), worktree det
 
 ## Item 7 — limpeza §C5 (só reporte)
 - `git ls-remote --heads origin feat/traccar-b-trc-01 | wc -l` → 0 (remota apagada).
-- Branch local `feat/traccar-b-trc-01` ainda existe (checada no w-trc01 do orquestrador; squash, então `--merged` não a pega). `fix/o6r07cb1-despacho-atribui` (#440 MERGED) ainda com worktree C:/Users/AMP/w-07cb1. `fix/dash-perfil` aparece em `git branch --merged origin/main` (worktree w-dash).
+- Branch local `feat/traccar-b-trc-01` ainda existe (checada no w-trc01 do orquestrador; squash, então `--merged` não a pega). `fix/o6r07cb1-despacho-atribui` (#440 MERGED) ainda com worktree ~/w-07cb1. `fix/dash-perfil` aparece em `git branch --merged origin/main` (worktree w-dash).
 - `git status --porcelain | grep '^ D'` → 0 no repo principal e no w-trc01.
 - Soltos alheios no w-trc01: .npmtest-503.log, check_md5.cjs, check_md5.js (untracked) — reportados, não apagados.
 - Repo principal está em 684e9afd (main local atrás de origin/main) — só registro.
@@ -62,4 +62,4 @@ Ref medida: c1485c94f3e99a33f5b8f6aec96a12bc922a237e (origin/main), worktree det
 - Veredito parcial: OK com reporte.
 
 ## Encerramento
-- `git worktree remove --force C:/Users/AMP/w-porteiro426 && git worktree prune` → worktree removido (0 na lista, 0 no disco). Scratchpad da sessão: só logs deste porteiro.
+- `git worktree remove --force ~/w-porteiro426 && git worktree prune` → worktree removido (0 na lista, 0 no disco). Scratchpad da sessão: só logs deste porteiro.

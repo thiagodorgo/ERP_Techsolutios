@@ -4,7 +4,7 @@
 
 # PARECER DE TERRENO — junta 5/5 · B-O6R-02 · ciclo 4
 
-**Head a julgar:** `12c3825` · `feat/o6r-b02-financial-uow` · worktree `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios\.claude\worktrees\agent-af6ea607f3ddf8efd`
+**Head a julgar:** `12c3825` · `feat/o6r-b02-financial-uow` · worktree `~/Documents\GitHub\ERP_Techsolutios\.claude\worktrees\agent-af6ea607f3ddf8efd`
 
 ## VEREDITO: **BLOQUEADO**
 

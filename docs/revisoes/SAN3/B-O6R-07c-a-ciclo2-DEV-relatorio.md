@@ -4,8 +4,8 @@
 > §C7.4-bis). **Modelo que de fato rodou:** Claude Opus 5.5 (`claude-opus-5-5`), nível menor, por
 > `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO` (topo só no plano e na auditoria de reprovação; dev no nível menor).
 > **Fonte:** `docs/revisoes/SAN3/B-O6R-07c-a-ciclo2-auditoria-e-plano.md` (§2), ramo `fix/o6r07c-subresource-scope`,
-> head `bd504cc4072ef26b022356abf4328c38dcb79a6e`, worktree `C:/Users/AMP/w-07ca` (o do orquestrador, por ordem do
-> disparo; o §2.9 do plano nomeia `C:/Users/AMP/w-dev07ca2` — divergência registrada, vale o disparo).
+> head `bd504cc4072ef26b022356abf4328c38dcb79a6e`, worktree `~/w-07ca` (o do orquestrador, por ordem do
+> disparo; o §2.9 do plano nomeia `~/w-dev07ca2` — divergência registrada, vale o disparo).
 > **Ambiente:** Windows 11, Git Bash `MINGW64_NT-10.0-22631 3.6.6`, Node v20.19.5, `node_modules` do worktree (222
 > entradas, sem junction). Nada exportado por conveniência. Disco C: 18 GB livres no início.
 
@@ -44,7 +44,7 @@ Formato de cada passo: **comando** · **saída resumida** · **estado**.
 
 Ordem de pausa do orquestrador (ordem do dono), recebida durante a leitura.
 
-- **Head:** `bd504cc4072ef26b022356abf4328c38dcb79a6e` (ramo `fix/o6r07c-subresource-scope`), worktree `C:/Users/AMP/w-07ca`.
+- **Head:** `bd504cc4072ef26b022356abf4328c38dcb79a6e` (ramo `fix/o6r07c-subresource-scope`), worktree `~/w-07ca`.
 - **Feito:** só o Passo 0 (terreno e leitura). Comandos e saídas acima. Nenhuma edição em helper, guard, fixtures ou
   registro.
 - **Mutações em `src/**`:** **nenhuma aplicada**. Hash conferido às 19:44Z (`git hash-object` × `git rev-parse 4ca2be43:<f>`):
@@ -69,5 +69,5 @@ Ordem de pausa do orquestrador (ordem do dono), recebida durante a leitura.
      `git diff --check`, hash do produto);
   7. registro do §2.7 (pendencias.md APPEND, índice pelo gerador, decisoes.md APPEND, log-execucao.md).
 - **Próximo comando exato (retomada):**
-  `cd C:/Users/AMP/w-07ca && git rev-parse HEAD && git status --short && grep -n "work_order_id\|workOrderId" src/modules/mobile/mobile-inventory-sync.ts src/modules/mobile/mobile-evidence-sync.ts src/modules/expense-management/expense-management.service.ts | head -40`
+  `cd ~/w-07ca && git rev-parse HEAD && git status --short && grep -n "work_order_id\|workOrderId" src/modules/mobile/mobile-inventory-sync.ts src/modules/mobile/mobile-evidence-sync.ts src/modules/expense-management/expense-management.service.ts | head -40`
   (primeira medida da premissa 1: quais lotes leem `work_order_id` do corpo, antes de implementar o `tocaCorpo`).

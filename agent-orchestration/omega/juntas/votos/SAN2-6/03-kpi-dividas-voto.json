@@ -67,7 +67,7 @@
     "números avulsos da description conferidos: pendencias.md 98 0 · PROTOCOLO-JUNTA-RESILIENTE.md 14 0 · status-geral.md 5 0 · Kpis/index.html ausente do numstat (não mudou)"
   ],
   "terreno": {
-    "worktree_de_medicao": "C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r (ressalva R1)",
+    "worktree_de_medicao": "~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san2-r (ressalva R1)",
     "worktree_descartavel_dos_drills": "criado do head d90fbbb sob o scratchpad, SEM node_modules e SEM junction/symlink; 1a tentativa falhou por MAX_PATH ('Filename too long') sem deixar registro pendurado; refeito com `git -c core.longpaths=true` (override por invocação, nenhuma config mutada); removido por `git worktree remove --force` + limpeza do resto em disco",
     "base_viva": "erp-postgres/erp-redis: ZERO comandos, nem de leitura",
     "arvore_julgada_intacta": "git rev-parse HEAD = d90fbbb; git status --porcelain traz só os arquivos de voto untracked de SAN2-6",

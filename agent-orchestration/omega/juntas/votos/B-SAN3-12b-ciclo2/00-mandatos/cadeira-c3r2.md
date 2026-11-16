@@ -2,7 +2,7 @@
 
 ## MEDIDO
 
-Estado atual do PR 469 pela ferramenta de refs copiada sem alteração para a pasta deste redator: ramo, base, estado, objeto, merge-base, check-runs e ausência de ata final, medido por: `cd C:/Users/AMP/w-san312b && bash C:/Users/AMP/erp-pausa-2026-10-03/redator-san312b-c2/mandato-refs.sh 469`
+Estado atual do PR 469 pela ferramenta de refs copiada sem alteração para a pasta deste redator: ramo, base, estado, objeto, merge-base, check-runs e ausência de ata final, medido por: `cd ~/w-san312b && bash ~/erp-pausa-2026-10-03/redator-san312b-c2/mandato-refs.sh 469`
 ```
 # refs do PR #469 — GERADO por scripts/mandato-refs.sh, para COLAR no mandato
 # gerado em: 2026-10-28T01:10Z · repo: thiagodorgo/ERP_Techsolutios
@@ -19,12 +19,12 @@ approved_head:   AUSENTE — nenhuma ata nomeia nem menciona #469
 
 ```
 
-O ramo remoto e o worktree apontam para o objeto declarado pelo PR, medido por: `cd C:/Users/AMP/w-san312b && test "$(git rev-parse HEAD)" = e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && test "$(git ls-remote origin refs/heads/feat/web-financeiro-baixa-e-contas | cut -f1)" = e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && echo 'HEAD local = ramo remoto = head do PR'`
+O ramo remoto e o worktree apontam para o objeto declarado pelo PR, medido por: `cd ~/w-san312b && test "$(git rev-parse HEAD)" = e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && test "$(git ls-remote origin refs/heads/feat/web-financeiro-baixa-e-contas | cut -f1)" = e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && echo 'HEAD local = ramo remoto = head do PR'`
 ```
 HEAD local = ramo remoto = head do PR
 ```
 
-Os check-runs obrigatórios do objeto concluíram: backend, backend-postgres e frontend, sem pendente nem conclusão diferente de success; a lista completa também está concluída, medido por: `cd C:/Users/AMP/w-san312b && s=$(printf '\057'); ep=repos${s}thiagodorgo${s}ERP_Techsolutios${s}commits${s}e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2${s}check-runs; gh api "$ep" --jq '.check_runs[] | [.name,.status,.conclusion] | @tsv' | sort -u; echo obrigatorios; gh api "$ep" --jq '[.check_runs[] | select((.name=="backend" or .name=="backend-postgres" or .name=="frontend") and (.status!="completed" or .conclusion!="success"))] | length'`
+Os check-runs obrigatórios do objeto concluíram: backend, backend-postgres e frontend, sem pendente nem conclusão diferente de success; a lista completa também está concluída, medido por: `cd ~/w-san312b && s=$(printf '\057'); ep=repos${s}thiagodorgo${s}ERP_Techsolutios${s}commits${s}e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2${s}check-runs; gh api "$ep" --jq '.check_runs[] | [.name,.status,.conclusion] | @tsv' | sort -u; echo obrigatorios; gh api "$ep" --jq '[.check_runs[] | select((.name=="backend" or .name=="backend-postgres" or .name=="frontend") and (.status!="completed" or .conclusion!="success"))] | length'`
 ```
 authority-portal	completed	success
 backend	completed	success
@@ -37,14 +37,14 @@ obrigatorios
 0
 ```
 
-O worktree nomeado está no objeto e não tem modificação rastreada; o diretório não rastreado permitido é o de mandatos do ciclo 2, medido por: `cd C:/Users/AMP/w-san312b && test "$(git rev-parse HEAD)" = e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && echo 'HEAD = objeto'; echo "rastreados modificados: $(git status --porcelain --untracked-files=no | wc -l)"; git status --short | sed -E 's#^(..) (.*)#\1 C:/Users/AMP/w-san312b/\2#'`
+O worktree nomeado está no objeto e não tem modificação rastreada; o diretório não rastreado permitido é o de mandatos do ciclo 2, medido por: `cd ~/w-san312b && test "$(git rev-parse HEAD)" = e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && echo 'HEAD = objeto'; echo "rastreados modificados: $(git status --porcelain --untracked-files=no | wc -l)"; git status --short | sed -E 's#^(..) (.*)#\1 ~/w-san312b/\2#'`
 ```
 HEAD = objeto
 rastreados modificados: 0
-?? C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/
+?? ~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/
 ```
 
-Topologia medida: a merge-base atual é ancestral do objeto; o objeto é merge da main; o objeto do ciclo 1 é o décimo terceiro primeiro-pai anterior; o diff ciclo 1 até objeto cruza produto e arquivos trazidos pela main, portanto a C2 não pode carregar o voto, medido por: `cd C:/Users/AMP/w-san312b && git merge-base --is-ancestor f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && echo 'merge-base ancestral'; echo "primeiro-pai merge-base..objeto: $(git rev-list --first-parent --count f076973921539165df8d406b8c061dbf4e4ee127..e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2)"; echo "merges: $(git rev-list --merges --count f076973921539165df8d406b8c061dbf4e4ee127..e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2)"; echo "objeto do ciclo 1: $(git log -1 --format=%s e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13)"; echo "arquivos ciclo1..objeto: $(git diff --name-only e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 | wc -l)"; echo "interseção com arquivos_medidos da C2: $(git diff --name-only e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- frontend/src/modules/finance frontend/src/modules/appearance agent-orchestration/controle/pendencias.md docs/revisoes/SAN3/B-SAN3-12-plano.md docs/revisoes/SAN3/B-SAN3-12b-dev.md frontend/tests/finance-page-live.test.tsx frontend/tests/finance-baixa.smoke.test.tsx | wc -l)"`
+Topologia medida: a merge-base atual é ancestral do objeto; o objeto é merge da main; o objeto do ciclo 1 é o décimo terceiro primeiro-pai anterior; o diff ciclo 1 até objeto cruza produto e arquivos trazidos pela main, portanto a C2 não pode carregar o voto, medido por: `cd ~/w-san312b && git merge-base --is-ancestor f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && echo 'merge-base ancestral'; echo "primeiro-pai merge-base..objeto: $(git rev-list --first-parent --count f076973921539165df8d406b8c061dbf4e4ee127..e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2)"; echo "merges: $(git rev-list --merges --count f076973921539165df8d406b8c061dbf4e4ee127..e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2)"; echo "objeto do ciclo 1: $(git log -1 --format=%s e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13)"; echo "arquivos ciclo1..objeto: $(git diff --name-only e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 | wc -l)"; echo "interseção com arquivos_medidos da C2: $(git diff --name-only e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- frontend/src/modules/finance frontend/src/modules/appearance agent-orchestration/controle/pendencias.md docs/revisoes/SAN3/B-SAN3-12-plano.md docs/revisoes/SAN3/B-SAN3-12b-dev.md frontend/tests/finance-page-live.test.tsx frontend/tests/finance-baixa.smoke.test.tsx | wc -l)"`
 ```
 merge-base ancestral
 primeiro-pai merge-base..objeto: 20
@@ -54,7 +54,7 @@ arquivos ciclo1..objeto: 143
 interseção com arquivos_medidos da C2: 15
 ```
 
-O diff efetivo do PR é merge-base atual até objeto; contagem por raiz e lista dos caminhos de produto financeiro, testes e registro, com zero mudança própria em prisma e migrations, medido por: `cd C:/Users/AMP/w-san312b && echo "PR caminhos: $(git diff --name-only f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 | wc -l)"; for d in frontend/src/modules/finance frontend/tests src prisma .github Kpis docs/revisoes/SAN3 agent-orchestration/controle agent-orchestration/omega/reprovacoes; do echo "sob $d: $(git diff --name-only f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- $d | wc -l)"; done; git diff --name-only f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- frontend/src/modules/finance frontend/tests/finance-page-live.test.tsx frontend/tests/finance-baixa.smoke.test.tsx frontend/tests/finance-contas-extrato.smoke.test.tsx frontend/tests/finance-no-money-reduce.guard.test.ts docs/revisoes/SAN3/B-SAN3-12-plano.md docs/revisoes/SAN3/B-SAN3-12b-dev.md agent-orchestration/controle/pendencias.md agent-orchestration/controle/pendencias-indice.md | sed -e 's#^#C:/Users/AMP/w-san312b/#'`
+O diff efetivo do PR é merge-base atual até objeto; contagem por raiz e lista dos caminhos de produto financeiro, testes e registro, com zero mudança própria em prisma e migrations, medido por: `cd ~/w-san312b && echo "PR caminhos: $(git diff --name-only f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 | wc -l)"; for d in frontend/src/modules/finance frontend/tests src prisma .github Kpis docs/revisoes/SAN3 agent-orchestration/controle agent-orchestration/omega/reprovacoes; do echo "sob $d: $(git diff --name-only f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- $d | wc -l)"; done; git diff --name-only f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- frontend/src/modules/finance frontend/tests/finance-page-live.test.tsx frontend/tests/finance-baixa.smoke.test.tsx frontend/tests/finance-contas-extrato.smoke.test.tsx frontend/tests/finance-no-money-reduce.guard.test.ts docs/revisoes/SAN3/B-SAN3-12-plano.md docs/revisoes/SAN3/B-SAN3-12b-dev.md agent-orchestration/controle/pendencias.md agent-orchestration/controle/pendencias-indice.md | sed -e 's#^#~/w-san312b/#'`
 ```
 PR caminhos: 70
 sob frontend/src/modules/finance: 28
@@ -66,59 +66,59 @@ sob Kpis: 0
 sob docs/revisoes/SAN3: 2
 sob agent-orchestration/controle: 2
 sob agent-orchestration/omega/reprovacoes: 1
-C:/Users/AMP/w-san312b/agent-orchestration/controle/pendencias-indice.md
-C:/Users/AMP/w-san312b/agent-orchestration/controle/pendencias.md
-C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md
-C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/accounts/components/AccountCard.tsx
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/accounts/components/NovaContaModal.tsx
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/accounts/financial-accounts.adapter.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/accounts/financial-accounts.service.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/accounts/financial-accounts.types.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/accounts/useFinancialAccounts.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/dashboard/financial-summary.adapter.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/dashboard/financial-summary.types.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/components/BaixaForm.tsx
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/components/ConciliarForm.tsx
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/components/DesvincularChequeModal.tsx
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/components/EntryDetail.tsx
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/components/TitleDetail.tsx
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/finance-errors.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/financial-entries.adapter.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/financial-entries.service.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/financial-entries.types.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/useEntriesAggregate.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/useFinanceActions.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/useFinancialEntries.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/useReconciliationPolicy.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/pages/FinanceiroPage.tsx
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/pages/financeiro.state.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/titles/financial-titles.adapter.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/titles/financial-titles.service.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/titles/financial-titles.types.ts
-C:/Users/AMP/w-san312b/frontend/src/modules/finance/titles/useFinancialTitles.ts
-C:/Users/AMP/w-san312b/frontend/tests/finance-baixa.smoke.test.tsx
-C:/Users/AMP/w-san312b/frontend/tests/finance-contas-extrato.smoke.test.tsx
-C:/Users/AMP/w-san312b/frontend/tests/finance-no-money-reduce.guard.test.ts
-C:/Users/AMP/w-san312b/frontend/tests/finance-page-live.test.tsx
+~/w-san312b/agent-orchestration/controle/pendencias-indice.md
+~/w-san312b/agent-orchestration/controle/pendencias.md
+~/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md
+~/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md
+~/w-san312b/frontend/src/modules/finance/accounts/components/AccountCard.tsx
+~/w-san312b/frontend/src/modules/finance/accounts/components/NovaContaModal.tsx
+~/w-san312b/frontend/src/modules/finance/accounts/financial-accounts.adapter.ts
+~/w-san312b/frontend/src/modules/finance/accounts/financial-accounts.service.ts
+~/w-san312b/frontend/src/modules/finance/accounts/financial-accounts.types.ts
+~/w-san312b/frontend/src/modules/finance/accounts/useFinancialAccounts.ts
+~/w-san312b/frontend/src/modules/finance/dashboard/financial-summary.adapter.ts
+~/w-san312b/frontend/src/modules/finance/dashboard/financial-summary.types.ts
+~/w-san312b/frontend/src/modules/finance/entries/components/BaixaForm.tsx
+~/w-san312b/frontend/src/modules/finance/entries/components/ConciliarForm.tsx
+~/w-san312b/frontend/src/modules/finance/entries/components/DesvincularChequeModal.tsx
+~/w-san312b/frontend/src/modules/finance/entries/components/EntryDetail.tsx
+~/w-san312b/frontend/src/modules/finance/entries/components/TitleDetail.tsx
+~/w-san312b/frontend/src/modules/finance/entries/finance-errors.ts
+~/w-san312b/frontend/src/modules/finance/entries/financial-entries.adapter.ts
+~/w-san312b/frontend/src/modules/finance/entries/financial-entries.service.ts
+~/w-san312b/frontend/src/modules/finance/entries/financial-entries.types.ts
+~/w-san312b/frontend/src/modules/finance/entries/useEntriesAggregate.ts
+~/w-san312b/frontend/src/modules/finance/entries/useFinanceActions.ts
+~/w-san312b/frontend/src/modules/finance/entries/useFinancialEntries.ts
+~/w-san312b/frontend/src/modules/finance/entries/useReconciliationPolicy.ts
+~/w-san312b/frontend/src/modules/finance/pages/FinanceiroPage.tsx
+~/w-san312b/frontend/src/modules/finance/pages/financeiro.state.ts
+~/w-san312b/frontend/src/modules/finance/pages/views/FinanceiroViewA.tsx
+~/w-san312b/frontend/src/modules/finance/titles/financial-titles.adapter.ts
+~/w-san312b/frontend/src/modules/finance/titles/financial-titles.service.ts
+~/w-san312b/frontend/src/modules/finance/titles/financial-titles.types.ts
+~/w-san312b/frontend/src/modules/finance/titles/useFinancialTitles.ts
+~/w-san312b/frontend/tests/finance-baixa.smoke.test.tsx
+~/w-san312b/frontend/tests/finance-contas-extrato.smoke.test.tsx
+~/w-san312b/frontend/tests/finance-no-money-reduce.guard.test.ts
+~/w-san312b/frontend/tests/finance-page-live.test.tsx
 ```
 
-O corpo canônico desta cadeira existe no objeto e é IDÊNTICO entre os dois espelhos depois de retirar frontmatter e orientação Codex, em comparação EOL-neutra, medido por: `cd C:/Users/AMP/w-san312b && diff <(tr -d '\r' < C:/Users/AMP/w-san312b/.claude/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md | awk 'f; $0=="---"{n++; if(n==2) f=1}' | sed '/^$/d') <(tr -d '\r' < C:/Users/AMP/w-san312b/.agents/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md | awk 'f; $0=="---"{n++; if(n==2) f=1}' | awk 'index($0,"Papel para o Codex"){s=1} s&&$0==""{s=0; next} !s' | sed '/^$/d') >/dev/null && echo 'IDENTICO corpo c3-dinheiro-e-contrato' || echo 'DIVERGE corpo c3-dinheiro-e-contrato'; wc -l C:/Users/AMP/w-san312b/.claude/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md C:/Users/AMP/w-san312b/.agents/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md`
+O corpo canônico desta cadeira existe no objeto e é IDÊNTICO entre os dois espelhos depois de retirar frontmatter e orientação Codex, em comparação EOL-neutra, medido por: `cd ~/w-san312b && diff <(tr -d '\r' < ~/w-san312b/.claude/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md | awk 'f; $0=="---"{n++; if(n==2) f=1}' | sed '/^$/d') <(tr -d '\r' < ~/w-san312b/.agents/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md | awk 'f; $0=="---"{n++; if(n==2) f=1}' | awk 'index($0,"Papel para o Codex"){s=1} s&&$0==""{s=0; next} !s' | sed '/^$/d') >/dev/null && echo 'IDENTICO corpo c3-dinheiro-e-contrato' || echo 'DIVERGE corpo c3-dinheiro-e-contrato'; wc -l ~/w-san312b/.claude/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md ~/w-san312b/.agents/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md`
 ```
 IDENTICO corpo c3-dinheiro-e-contrato
-  403 C:/Users/AMP/w-san312b/.claude/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md
-  409 C:/Users/AMP/w-san312b/.agents/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md
+  403 ~/w-san312b/.claude/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md
+  409 ~/w-san312b/.agents/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md
   812 total
 ```
 
-As duas ferramentas protegidas são byte a byte iguais às originais copiadas; só lib e geradores pertencem à adaptação do ciclo 2, medido por: `for f in mandato-preflight.sh mandato-refs.sh; do cmp -s C:/Users/AMP/erp-pausa-2026-10-03/redator-san312b/$f C:/Users/AMP/erp-pausa-2026-10-03/redator-san312b-c2/$f && echo "$f INTACTO" || echo "$f ALTERADO"; done`
+As duas ferramentas protegidas são byte a byte iguais às originais copiadas; só lib e geradores pertencem à adaptação do ciclo 2, medido por: `for f in mandato-preflight.sh mandato-refs.sh; do cmp -s ~/erp-pausa-2026-10-03/redator-san312b/$f ~/erp-pausa-2026-10-03/redator-san312b-c2/$f && echo "$f INTACTO" || echo "$f ALTERADO"; done`
 ```
 mandato-preflight.sh INTACTO
 mandato-refs.sh INTACTO
 ```
 
-A régua do objeto exige junta de dinheiro unânime, ciclo 2 ainda bloqueado por achado dentro do bloco, e no ciclo seguinte só a cadeira vermelha é refeita enquanto a verde cruzada pelo diff é revalidada por identidade nova, medido por: `tr -d '\r' < C:/Users/AMP/w-san312b/CLAUDE.md | grep -n -i -E 'Junta proporcional ao risco|Teto de 2 ciclos|JUNTA: SÓ A CADEIRA VERMELHA|Se o conserto tocar o escopo dela|A cadeira vermelha é refeita' | head -12`
+A régua do objeto exige junta de dinheiro unânime, ciclo 2 ainda bloqueado por achado dentro do bloco, e no ciclo seguinte só a cadeira vermelha é refeita enquanto a verde cruzada pelo diff é revalidada por identidade nova, medido por: `tr -d '\r' < ~/w-san312b/CLAUDE.md | grep -n -i -E 'Junta proporcional ao risco|Teto de 2 ciclos|JUNTA: SÓ A CADEIRA VERMELHA|Se o conserto tocar o escopo dela|A cadeira vermelha é refeita' | head -12`
 ```
 496:   > **Teto de 2 ciclos restabelecido (2026-10-04, `D-GOV-PROPORCIONAL`, §C7 item 8(2)):** a partir do ciclo 3, só defeito de produto grave bloqueia; o resto vira pendência e o bloco mergeia.
 750:8. **GOVERNANÇA PROPORCIONAL — junta só onde o risco pede, teto de 2 ciclos, menos burocracia, Traccar depois de sanar
@@ -130,7 +130,7 @@ A régua do objeto exige junta de dinheiro unânime, ciclo 2 ainda bloqueado por
 832:   - **(3) A cadeira vermelha é refeita**, com identidade nova e a régua do ciclo corrente, focada no achado mais a
 ```
 
-O parecer de reprovação define a composição do ciclo 2, a regra da C2 revalidada e a lista nominal de inelegíveis; os votos do ciclo 1 registram C1 e C3 reprovadas e C2 aprovada, medido por: `tr -d '\r' < C:/Users/AMP/w-san312b/agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md | grep -n -i -E '^## 4\.|C1.*refeita|C2.*revalidada|C3.*refeita|Inelegíveis para qualquer cadeira' | head -14; for f in c1 c2 c3; do printf "$f "; tr -d '\r' < C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b/$f-voto.json | grep -i -m1 -E '"voto"'; done`
+O parecer de reprovação define a composição do ciclo 2, a regra da C2 revalidada e a lista nominal de inelegíveis; os votos do ciclo 1 registram C1 e C3 reprovadas e C2 aprovada, medido por: `tr -d '\r' < ~/w-san312b/agent-orchestration/omega/reprovacoes/R-B-SAN3-12b-ciclo1.md | grep -n -i -E '^## 4\.|C1.*refeita|C2.*revalidada|C3.*refeita|Inelegíveis para qualquer cadeira' | head -14; for f in c1 c2 c3; do printf "$f "; tr -d '\r' < ~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b/$f-voto.json | grep -i -m1 -E '"voto"'; done`
 ```
 42:> **Objetivo:** fechar os 6 `bloqueia` e o ajuste do ciclo 1 sem reintroduzir defeito, com o ramo trazido à `main` (`sha-omitido`), e entregar um objeto que a junta do ciclo 2 (C1 e C3 refeitas; C2 revalidada) possa aprovar. O ciclo 2 é o último em que achado não grave reprova (§C7 item 8(2)): cada requisito abaixo tem critério, mutação e vermelho-controle no objeto do ciclo 1.
 189:## 4. Junta do ciclo 2 (`D-JUNTA-SO-CADEIRA-VERMELHA`, §C7 item 9)
@@ -144,14 +144,14 @@ c2  "voto": "APROVADO",
 c3  "voto": "REPROVADO",
 ```
 
-A Emenda E2 está versionada e nomeia escopo, requisitos R1 a R14, pendências, merge da main, fatias e riscos, medido por: `echo "Emenda E2: $(grep -c -i '^## Emenda E2' C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"; echo "seções E2.1 a E2.7: $(grep -c -i -E '^### E2\.[1-7]' C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"; echo "requisitos R1 a R14: $(grep -c -i -E '^\*\*R([1-9]|1[0-4]) ' C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"`
+A Emenda E2 está versionada e nomeia escopo, requisitos R1 a R14, pendências, merge da main, fatias e riscos, medido por: `echo "Emenda E2: $(grep -c -i '^## Emenda E2' ~/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"; echo "seções E2.1 a E2.7: $(grep -c -i -E '^### E2\.[1-7]' ~/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"; echo "requisitos R1 a R14: $(grep -c -i -E '^\*\*R([1-9]|1[0-4]) ' ~/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"`
 ```
 Emenda E2: 1
 seções E2.1 a E2.7: 7
 requisitos R1 a R14: 14
 ```
 
-O relatório do desenvolvimento contém RETOMADA 1 a RETOMADA 9, 84 casos do bloco e a rodada final de 44 mutações restauradas; nesse arquivo do objeto não existe marcador nominal D-C2, e os desvios estão registrados como R1 a R14 e D-1 a D-9, medido por: `echo "RETOMADAS: $(grep -c -i -E '^## RETOMADA [1-9]$' C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md)"; echo "marcadores D-C2: $(grep -c -i 'D-C2-' C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md || true)"; echo "registro de 84 casos: $(grep -c -i '= \*\*84\*\*' C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md)"; echo "registro de 44 mutações: $(grep -c -i 'Resultado: 44 mutações' C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md)"; echo 'desvios do ciclo 2: R1 a R14 e D-1 a D-9'`
+O relatório do desenvolvimento contém RETOMADA 1 a RETOMADA 9, 84 casos do bloco e a rodada final de 44 mutações restauradas; nesse arquivo do objeto não existe marcador nominal D-C2, e os desvios estão registrados como R1 a R14 e D-1 a D-9, medido por: `echo "RETOMADAS: $(grep -c -i -E '^## RETOMADA [1-9]$' ~/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md)"; echo "marcadores D-C2: $(grep -c -i 'D-C2-' ~/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md || true)"; echo "registro de 84 casos: $(grep -c -i '= \*\*84\*\*' ~/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md)"; echo "registro de 44 mutações: $(grep -c -i 'Resultado: 44 mutações' ~/w-san312b/docs/revisoes/SAN3/B-SAN3-12b-dev.md)"; echo 'desvios do ciclo 2: R1 a R14 e D-1 a D-9'`
 ```
 RETOMADAS: 9
 marcadores D-C2: 0
@@ -160,14 +160,14 @@ registro de 44 mutações: 1
 desvios do ciclo 2: R1 a R14 e D-1 a D-9
 ```
 
-Os testes e o produto do objeto nomeiam R4, R5, R6, R12, F1 a F5, F8 a F10, F14, F18 e F20 a F22; o cancelamento usa POST sem corpo e cheques:update, medido por: `echo "casos R4/R5/R6/F1/F2/F3/F9/F10/F14/F20/F21/F22: $(grep -c -i -E '^test\("(R4|R5|R6|F1|F2|F3|F9|F10|F14|F20|F21|F22)' C:/Users/AMP/w-san312b/frontend/tests/finance-page-live.test.tsx)"; echo "marcadores R12/F8: $(grep -c -i -E 'R12|F8' C:/Users/AMP/w-san312b/frontend/tests/finance-no-money-reduce.guard.test.ts)"; echo "marcadores cancelCheque/cancel: $(grep -c -i -E 'cancelCheque|/cancel' C:/Users/AMP/w-san312b/frontend/src/modules/finance/entries/financial-entries.service.ts)"`
+Os testes e o produto do objeto nomeiam R4, R5, R6, R12, F1 a F5, F8 a F10, F14, F18 e F20 a F22; o cancelamento usa POST sem corpo e cheques:update, medido por: `echo "casos R4/R5/R6/F1/F2/F3/F9/F10/F14/F20/F21/F22: $(grep -c -i -E '^test\("(R4|R5|R6|F1|F2|F3|F9|F10|F14|F20|F21|F22)' ~/w-san312b/frontend/tests/finance-page-live.test.tsx)"; echo "marcadores R12/F8: $(grep -c -i -E 'R12|F8' ~/w-san312b/frontend/tests/finance-no-money-reduce.guard.test.ts)"; echo "marcadores cancelCheque/cancel: $(grep -c -i -E 'cancelCheque|/cancel' ~/w-san312b/frontend/src/modules/finance/entries/financial-entries.service.ts)"`
 ```
 casos R4/R5/R6/F1/F2/F3/F9/F10/F14/F20/F21/F22: 19
 marcadores R12/F8: 10
 marcadores cancelCheque/cancel: 3
 ```
 
-O registro do objeto contém duas ratificações, a E2, as quatro pendências novas e um índice versionado cujo hash permanece igual depois do gerador, medido por: `echo "ratificações: $(grep -c -i '^## Ratificação do orquestrador' C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"; echo "Emenda E2: $(grep -c -i '^## Emenda E2' C:/Users/AMP/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"; for id in P-SAN3-12B-BUSCA-TABELA-TITULOS P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO P-SAN3-12-CE4-BRACO1-NA-CI; do printf "$id: "; grep -c -i "^## $id" C:/Users/AMP/w-san312b/agent-orchestration/controle/pendencias.md; done; before=$(git -C C:/Users/AMP/w-san312b hash-object agent-orchestration/controle/pendencias-indice.md); cd C:/Users/AMP/w-san312b && python -I C:/Users/AMP/w-san312b/agent-orchestration/controle/gerar-indice-pendencias.py >/dev/null; after=$(git hash-object agent-orchestration/controle/pendencias-indice.md); test "$before" = "$after" && echo 'índice = gerador'`
+O registro do objeto contém duas ratificações, a E2, as quatro pendências novas e um índice versionado cujo hash permanece igual depois do gerador, medido por: `echo "ratificações: $(grep -c -i '^## Ratificação do orquestrador' ~/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"; echo "Emenda E2: $(grep -c -i '^## Emenda E2' ~/w-san312b/docs/revisoes/SAN3/B-SAN3-12-plano.md)"; for id in P-SAN3-12B-BUSCA-TABELA-TITULOS P-WEB-GUARDA-ROTA-TEXTO-SEM-ACENTO P-FINANCE-SUMMARY-ADAPTER-NUM-ZERO P-SAN3-12-CE4-BRACO1-NA-CI; do printf "$id: "; grep -c -i "^## $id" ~/w-san312b/agent-orchestration/controle/pendencias.md; done; before=$(git -C ~/w-san312b hash-object agent-orchestration/controle/pendencias-indice.md); cd ~/w-san312b && python -I ~/w-san312b/agent-orchestration/controle/gerar-indice-pendencias.py >/dev/null; after=$(git hash-object agent-orchestration/controle/pendencias-indice.md); test "$before" = "$after" && echo 'índice = gerador'`
 ```
 ratificações: 2
 Emenda E2: 1
@@ -178,7 +178,7 @@ P-SAN3-12-CE4-BRACO1-NA-CI: 1
 índice = gerador
 ```
 
-O merge da main está no objeto, o PR está mergeável e o delta próprio do 12b não altera backend, prisma ou scripts; o test:smoke contém os testes do bloco sem duplicação nominal, medido por: `cd C:/Users/AMP/w-san312b && git merge-base --is-ancestor f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && echo 'main ancestral'; gh pr view 469 --json mergeable,mergeStateStatus --jq '.mergeable + " " + .mergeStateStatus'; all=$(git diff --name-only e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- src prisma scripts | wc -l); inherited=$(git diff --name-only e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- src prisma scripts | grep -c -i '^src/modules/checklists/' || true); echo "backend prisma scripts no delta principal do 12b: $((all-inherited))"; node -e 'const p=require("./frontend/package.json"); const s=p.scripts["test:smoke"]; const a=s.match(/tests\/[A-Za-z0-9._-]+/g)||[]; console.log("tokens",a.length,"únicos",new Set(a).size)'`
+O merge da main está no objeto, o PR está mergeável e o delta próprio do 12b não altera backend, prisma ou scripts; o test:smoke contém os testes do bloco sem duplicação nominal, medido por: `cd ~/w-san312b && git merge-base --is-ancestor f076973921539165df8d406b8c061dbf4e4ee127 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 && echo 'main ancestral'; gh pr view 469 --json mergeable,mergeStateStatus --jq '.mergeable + " " + .mergeStateStatus'; all=$(git diff --name-only e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- src prisma scripts | wc -l); inherited=$(git diff --name-only e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2~13 e77a5ac14e6ca8021ee5fb5ff4ba2f839675ead2 -- src prisma scripts | grep -c -i '^src/modules/checklists/' || true); echo "backend prisma scripts no delta principal do 12b: $((all-inherited))"; node -e 'const p=require("./frontend/package.json"); const s=p.scripts["test:smoke"]; const a=s.match(/tests\/[A-Za-z0-9._-]+/g)||[]; console.log("tokens",a.length,"únicos",new Set(a).size)'`
 ```
 main ancestral
 MERGEABLE CLEAN
@@ -192,7 +192,7 @@ Recursos no instante da redação, sem invocar Docker nem banco: memória de com
 livre em C: 225G
 ```
 
-O protocolo resiliente P1, P2, P3, P4 e P7 está no contrato do objeto, medido por: `tr -d '\r' < C:/Users/AMP/w-san312b/CLAUDE.md | grep -n -i -A7 'Após CADA item: apense a <cadeira>-evidencia.md'`
+O protocolo resiliente P1, P2, P3, P4 e P7 está no contrato do objeto, medido por: `tr -d '\r' < ~/w-san312b/CLAUDE.md | grep -n -i -A7 'Após CADA item: apense a <cadeira>-evidencia.md'`
 ```
 733:   Após CADA item: apense a <cadeira>-evidencia.md → comando · saída resumida · veredito parcial.  [P1]
 734-   Antes da mensagem final: escreva <cadeira>-voto.json. Mensagem final = 1 linha apontando o arquivo.  [P2]
@@ -206,17 +206,17 @@ O protocolo resiliente P1, P2, P3, P4 e P7 está no contrato do objeto, medido p
 
 ## HIPOTESE
 
-Você é `jurado-san312b-c3-r2-<executor>`, identidade nova e C3 REFEITA; executor Claude Opus ou Codex GPT-5.6 Sol com capacidade para a medição requerida, nível menor declarado. Corpo canônico: `C:/Users/AMP/w-san312b/.claude/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md`, carregado do blob do objeto. Onde corpo e mandato divergirem sobre objeto, itens, régua, diretório ou inelegíveis, vale este mandato. Primeira linha de `c3r2-evidencia.md`: executor, modelo, nível, objeto, mandato_md5 sem CR e corpo IDENTICO/DIVERGE EOL-neutro. Inelegíveis: todos os nomes do R- §4, os executores das RETOMADAS 1 a 9, `red-san312b-c2-sol`, o inspetor, os três jurados do ciclo 1 e o orquestrador; coincidiu, PARE, derruba com: `head -1 C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md | grep -i -E 'executor|modelo|objeto|mandato|IDENTICO|DIVERGE'`
+Você é `jurado-san312b-c3-r2-<executor>`, identidade nova e C3 REFEITA; executor Claude Opus ou Codex GPT-5.6 Sol com capacidade para a medição requerida, nível menor declarado. Corpo canônico: `~/w-san312b/.claude/agents/especialistas/jurado-san312b-c3-dinheiro-e-contrato.md`, carregado do blob do objeto. Onde corpo e mandato divergirem sobre objeto, itens, régua, diretório ou inelegíveis, vale este mandato. Primeira linha de `c3r2-evidencia.md`: executor, modelo, nível, objeto, mandato_md5 sem CR e corpo IDENTICO/DIVERGE EOL-neutro. Inelegíveis: todos os nomes do R- §4, os executores das RETOMADAS 1 a 9, `red-san312b-c2-sol`, o inspetor, os três jurados do ciclo 1 e o orquestrador; coincidiu, PARE, derruba com: `head -1 ~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md | grep -i -E 'executor|modelo|objeto|mandato|IDENTICO|DIVERGE'`
 
-Legalidade: exija parecer do inspetor do ciclo 2 LIBERADO ou LIBERADO COM RESSALVA; confirme head do PR e backend, backend-postgres e frontend completed/success. Régua: DINHEIRO, unanimidade de 3; ciclo 2, todo bloqueia dentro-do-bloco reprova. Esta C3 é refeita pela regra (3), com foco C3-05, C3-02, C3-07 e ajuste C3-01, mais regressão dos itens dela. Não leia votos do ciclo 2 das outras cadeiras, não proponha correção e não reabra decisão do plano. Todo achado declara gravidade, classe, escopo, N e forma; `arquivos_medidos` é `**` se rodar check, build ou suíte total, derruba com: `grep -i -E 'legalidade|unanimidade|ciclo 2|C3-05|C3-02|C3-07|C3-01|arquivos_medidos' C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-voto.json`
+Legalidade: exija parecer do inspetor do ciclo 2 LIBERADO ou LIBERADO COM RESSALVA; confirme head do PR e backend, backend-postgres e frontend completed/success. Régua: DINHEIRO, unanimidade de 3; ciclo 2, todo bloqueia dentro-do-bloco reprova. Esta C3 é refeita pela regra (3), com foco C3-05, C3-02, C3-07 e ajuste C3-01, mais regressão dos itens dela. Não leia votos do ciclo 2 das outras cadeiras, não proponha correção e não reabra decisão do plano. Todo achado declara gravidade, classe, escopo, N e forma; `arquivos_medidos` é `**` se rodar check, build ou suíte total, derruba com: `grep -i -E 'legalidade|unanimidade|ciclo 2|C3-05|C3-02|C3-07|C3-01|arquivos_medidos' ~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-voto.json`
 
-Terreno: worktree exclusivo `C:/Users/AMP/j12b-c2-c3r2-wt`, detached no objeto, dependências próprias, zero junction e nunca a base viva. O CI backend-postgres concluído é insumo do F18; Postgres descartável local só se o inspetor autorizar e houver recurso, com nome e porta próprios, nunca erp-postgres. Antes: memória de commit livre ≥4 GB e disco ≥7,5 GB; abaixo, PARE. Mutação uma por vez, âncora única, restauro por hash contra o blob. Vermelho-controle usa `<objeto>~13` ou mutação nominal, sempre restaurado. Teardown remove processos, artefatos, worktree e qualquer recurso descartável, derruba com: `grep -i -E 'j12b-c2-c3r2-wt|base viva|backend-postgres|4 GB|7,5 GB|objeto.~13|restauro|teardown' C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md`
+Terreno: worktree exclusivo `~/j12b-c2-c3r2-wt`, detached no objeto, dependências próprias, zero junction e nunca a base viva. O CI backend-postgres concluído é insumo do F18; Postgres descartável local só se o inspetor autorizar e houver recurso, com nome e porta próprios, nunca erp-postgres. Antes: memória de commit livre ≥4 GB e disco ≥7,5 GB; abaixo, PARE. Mutação uma por vez, âncora única, restauro por hash contra o blob. Vermelho-controle usa `<objeto>~13` ou mutação nominal, sempre restaurado. Teardown remove processos, artefatos, worktree e qualquer recurso descartável, derruba com: `grep -i -E 'j12b-c2-c3r2-wt|base viva|backend-postgres|4 GB|7,5 GB|objeto.~13|restauro|teardown' ~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md`
 
-Item 1 de 3 — a baixa, foco C3-05 e C3-01: reexecute F1 a F5, F21, R5 e R6. Prove as cinco chaves do pay, mesmo client_action_id após falha, releitura antes de mensagem, 32 razões como conjunto e meios sem cheque. Depois de desvincular cheque registered, prove aviso, gate exato `cheques:update`, confirmação em dois passos, POST `/cancel` sem corpo, 422 mantém botão, 200 remove e deposited não oferece; sem permissão, pedido honesto. Para R6, 422 overpayment com paidAmount maior mostra a razão e a mudança do título, nunca já registrada; rede ou 5xx com pagamento relido e 409 duplicate_payment seguem a régua. Reexecute R5-M1 a M3, R6-M1 e regressões F1 a F5 e F21; controle no ciclo 1 vermelho, derruba com: `grep -i -E 'Item 1|C3-05|C3-01|F1|F5|F21|R5|R6|cheques:update|sem corpo|overpayment|32|mutação|vermelho' C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md`
+Item 1 de 3 — a baixa, foco C3-05 e C3-01: reexecute F1 a F5, F21, R5 e R6. Prove as cinco chaves do pay, mesmo client_action_id após falha, releitura antes de mensagem, 32 razões como conjunto e meios sem cheque. Depois de desvincular cheque registered, prove aviso, gate exato `cheques:update`, confirmação em dois passos, POST `/cancel` sem corpo, 422 mantém botão, 200 remove e deposited não oferece; sem permissão, pedido honesto. Para R6, 422 overpayment com paidAmount maior mostra a razão e a mudança do título, nunca já registrada; rede ou 5xx com pagamento relido e 409 duplicate_payment seguem a régua. Reexecute R5-M1 a M3, R6-M1 e regressões F1 a F5 e F21; controle no ciclo 1 vermelho, derruba com: `grep -i -E 'Item 1|C3-05|C3-01|F1|F5|F21|R5|R6|cheques:update|sem corpo|overpayment|32|mutação|vermelho' ~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md`
 
-Item 2 de 3 — conciliação e números, foco C3-02: reexecute F8, F9, F10, F14, F18, F20, F22, R4 e R12. No F14 conte cada URL completa de aggregate: quatro situações e uma por conta, cada URL uma vez por carga; contas chegando depois não refazem situação e resposta antiga não apaga contagens. Prove números de dinheiro só do servidor, trava F8 ampliada para x=x+amount, expected_reconciled e carimbo lido, releitura em 409, frase e botões do F20, F22 e CE-4 conforme a forma autorizada. Reexecute R4-M1/M2, R12-M1, F8/F9/F10/F14/F20/F22 e use o CI backend-postgres do objeto como insumo; controle do ciclo 1 mostra quatro URLs duplicadas, derruba com: `grep -i -E 'Item 2|C3-02|R4|R12|F8|F9|F10|F14|F18|F20|F22|URL|aggregate|uma vez|mutação|vermelho' C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md`
+Item 2 de 3 — conciliação e números, foco C3-02: reexecute F8, F9, F10, F14, F18, F20, F22, R4 e R12. No F14 conte cada URL completa de aggregate: quatro situações e uma por conta, cada URL uma vez por carga; contas chegando depois não refazem situação e resposta antiga não apaga contagens. Prove números de dinheiro só do servidor, trava F8 ampliada para x=x+amount, expected_reconciled e carimbo lido, releitura em 409, frase e botões do F20, F22 e CE-4 conforme a forma autorizada. Reexecute R4-M1/M2, R12-M1, F8/F9/F10/F14/F20/F22 e use o CI backend-postgres do objeto como insumo; controle do ciclo 1 mostra quatro URLs duplicadas, derruba com: `grep -i -E 'Item 2|C3-02|R4|R12|F8|F9|F10|F14|F18|F20|F22|URL|aggregate|uma vez|mutação|vermelho' ~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md`
 
-Item 3 de 3 — escopo, contrato, registro e bateria, foco C3-07: gere diff do bloco e separe produto do que veio pelos merges da main; confronte E2.1, D-1 a D-9, E2 e proibidos, com zero edição própria em src, prisma, .github e Kpis. Reexecute o gerador do índice numa cópia e prove igualdade byte a byte EOL-neutra; confira duas ratificações, E2, quatro pendências com dono e a união sem repetição do test:smoke. Prove main ancestral e PR mergeável. Rode bateria do comando no cwd correto, test:smoke Node 20 e 22, check/build e diff --check; publique N. Reexecute R7-M1 e R13-M1, e as 44 mutações podem ser reexecutadas por amostra dirigida apenas se cada regressão dos itens 1 e 2 já tiver seu dono; qualquer redução deve ser declarada. Controle do ciclo 1 deixa índice divergente, derruba com: `grep -i -E 'Item 3|C3-07|E2.1|D-1|D-9|proibido|índice|gerador|ratificações|pendências|main ancestral|mergeável|Node 20|Node 22|R7-M1|R13-M1|vermelho' C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md`
+Item 3 de 3 — escopo, contrato, registro e bateria, foco C3-07: gere diff do bloco e separe produto do que veio pelos merges da main; confronte E2.1, D-1 a D-9, E2 e proibidos, com zero edição própria em src, prisma, .github e Kpis. Reexecute o gerador do índice numa cópia e prove igualdade byte a byte EOL-neutra; confira duas ratificações, E2, quatro pendências com dono e a união sem repetição do test:smoke. Prove main ancestral e PR mergeável. Rode bateria do comando no cwd correto, test:smoke Node 20 e 22, check/build e diff --check; publique N. Reexecute R7-M1 e R13-M1, e as 44 mutações podem ser reexecutadas por amostra dirigida apenas se cada regressão dos itens 1 e 2 já tiver seu dono; qualquer redução deve ser declarada. Controle do ciclo 1 deixa índice divergente, derruba com: `grep -i -E 'Item 3|C3-07|E2.1|D-1|D-9|proibido|índice|gerador|ratificações|pendências|main ancestral|mergeável|Node 20|Node 22|R7-M1|R13-M1|vermelho' ~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-evidencia.md`
 
-P1/P2/P3/P4/P7: após CADA item, apense comando, saída resumida e veredito parcial em `c3r2-evidencia.md`; `c3r2-voto.json` nasce esqueleto com três itens EM APURAÇÃO e `arquivos_medidos`, e fecha antes da mensagem final de uma linha; sucessor reexecuta tudo registrado; máximo três itens; PAUSA grava head, feito, falta, próximo comando e arquivos parciais. Outputs somente no diretório do ciclo 2; nunca commit, derruba com: `test -f C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-voto.json`
+P1/P2/P3/P4/P7: após CADA item, apense comando, saída resumida e veredito parcial em `c3r2-evidencia.md`; `c3r2-voto.json` nasce esqueleto com três itens EM APURAÇÃO e `arquivos_medidos`, e fecha antes da mensagem final de uma linha; sucessor reexecuta tudo registrado; máximo três itens; PAUSA grava head, feito, falta, próximo comando e arquivos parciais. Outputs somente no diretório do ciclo 2; nunca commit, derruba com: `test -f ~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b-ciclo2/c3r2-voto.json`
 

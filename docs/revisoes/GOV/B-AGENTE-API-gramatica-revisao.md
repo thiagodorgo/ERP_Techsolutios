@@ -2,7 +2,7 @@
 
 > **Modelo que rodou:** Claude **Opus 5.5** (`claude-opus-5-5`), nível menor (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`). Mesma identidade revisora do PR #417, olhar `agente-secops`. Não escrevi, não planejei e não desenvolvi este conserto.
 > **Objeto:** PR #418, ramo `fix/agente-api-gramatica`, head `b261ae042f09b5a5df39c78801600435fd437fa2`, base `origin/main` = `3a0d1990` (#417 mergeado).
-> **Terreno:** worktree próprio e detached `C:/Users/AMP/w-rev418`, venv próprio (15 pacotes, `anthropic==1.13.0`). Sem chamada à API; o valor de `ERP_AGENTE_ANTHROPIC_KEY` não foi lido; sem commit.
+> **Terreno:** worktree próprio e detached `~/w-rev418`, venv próprio (15 pacotes, `anthropic==1.13.0`). Sem chamada à API; o valor de `ERP_AGENTE_ANTHROPIC_KEY` não foi lido; sem commit.
 
 ## Veredito
 
@@ -114,7 +114,7 @@ Todas as entradas foram dadas a `Ferramentas.executar` com espiões, de modo que
 - **Confirmado, sem achado:** a afirmação do dev de que a validação local é mais estrita que a cerca em 4 pontos (`null` em booleano e em lista, `numero` inteiro, campo ignorado com tipo errado) foi reproduzida no grupo B (`null em bool`, `null em lista`, `int como string`). Antes, essas formas eram barradas só pelo `strict` do servidor.
 
 ## 5. Limpeza
-- **Worktree:** antes de remover, 0 processos vivos em `C:/Users/AMP/w-rev418`. `git worktree remove --force C:/Users/AMP/w-rev418` → exit 0, seguido de `git worktree prune`. O `worktree list` tem 0 entradas `w-rev418`, e o diretório não existe. `C:/Users/AMP/w-ag-*`: 0.
+- **Worktree:** antes de remover, 0 processos vivos em `~/w-rev418`. `git worktree remove --force ~/w-rev418` → exit 0, seguido de `git worktree prune`. O `worktree list` tem 0 entradas `w-rev418`, e o diretório não existe. `~/w-ag-*`: 0.
 - **Temporários:** `%TEMP%/agente-suite-*`: 0. As raízes temporárias dos ataques foram apagadas pelos próprios scripts. No scratchpad ficam só os scripts (`scripts_418/`), fora do repositório.
 - **Repositório principal:** `git status` igual ao do início.
 - **No `w-agfix`:** escrevi só este arquivo (novo), sem commit e sem push.

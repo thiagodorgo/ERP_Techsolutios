@@ -1,6 +1,6 @@
 # Comando — B-ASS-08 · fluxo ponta a ponta, webhooks, fila (outbox) e habilitação (canal DESLIGADO)
 
-- **Bloco:** B-ASS-08 (Feature). **Ramo:** `feat/b-ass-08-outbox-webhooks`. **Plano (autoridade):** `C:/Users/thiag/erp-pausa-2026-10-03/planos/B-ASSINATURA-plano.md` §4.8 (+ §3.5/§3.6/§3.8, §12.2 D1-D6).
+- **Bloco:** B-ASS-08 (Feature). **Ramo:** `feat/b-ass-08-outbox-webhooks`. **Plano (autoridade):** `~/erp-pausa-2026-10-03/planos/B-ASSINATURA-plano.md` §4.8 (+ §3.5/§3.6/§3.8, §12.2 D1-D6).
 - **Objetivo:** demonstrativo fechado → cobrança no provedor → webhook → reconsulta → baixa automática → nota → "em dia"; outbox durável e idempotente, reprocesso, cancelamento, estorno/chargeback; `test-connection`/`enable`/`disable`. **Tudo desligado** até o dono ligar na tela.
 - **Identidade do dev:** Claude Opus (DECLARADA). Cruzamento: verificação por modelo diferente (D-UM-FAZ-OUTRO-VERIFICA).
 

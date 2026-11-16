@@ -110,4 +110,4 @@ $ git -C bsan301 rev-parse --short HEAD
 
 - **Estado deste arquivo:** FINAL (2026-09-18).
 
-- **Adendo à R5 (medido ao fechar, 2026-09-18):** durante a inspeção surgiu um 9º diretório em `.claude/worktrees/`, `vc-b-o6r-11` (não existia no lote anterior). `git worktree list`: C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/vc-b-o6r-11 9dea0ef6 (detached HEAD). É de outra sessão (bloco `B-O6R-11`): **nem resíduo desta junta, nem alvo** — reportado, não tocado. Confirma que há sessões concorrentes escrevendo em `.claude/worktrees/`; as cadeiras removem **só pelo próprio nome** (`j-bsan301-<cadeira>`).
+- **Adendo à R5 (medido ao fechar, 2026-09-18):** durante a inspeção surgiu um 9º diretório em `.claude/worktrees/`, `vc-b-o6r-11` (não existia no lote anterior). `git worktree list`: ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/vc-b-o6r-11 9dea0ef6 (detached HEAD). É de outra sessão (bloco `B-O6R-11`): **nem resíduo desta junta, nem alvo** — reportado, não tocado. Confirma que há sessões concorrentes escrevendo em `.claude/worktrees/`; as cadeiras removem **só pelo próprio nome** (`j-bsan301-<cadeira>`).

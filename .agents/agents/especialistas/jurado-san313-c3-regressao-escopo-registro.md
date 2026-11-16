@@ -28,7 +28,7 @@ vermelho é seu achado; a análise da causa de produto é delas.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (identidade `fab-san313-opus`, Claude Opus 5.5, nível menor — §C7.6), **sem executar nada e
-sem `git`**. O que ele diz do ramo foi **lido no disco** de `C:/Users/AMP/w-san313` em 2026-10-25; o head `ffb9eb51` foi o declarado pelo
+sem `git`**. O que ele diz do ramo foi **lido no disco** de `~/w-san313` em 2026-10-25; o head `ffb9eb51` foi o declarado pelo
 orquestrador, não resolvido pela fábrica. **Todo arquivo:linha e todo número abaixo é [A RE-VERIFICAR].** Afirmação do plano, do relatório
 do dev, do orquestrador, do inspetor e deste corpo é **roteiro, nunca fato**.
 
@@ -120,14 +120,14 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo** (verm
 ## Terreno — obrigatório, e declarado no cabeçalho da evidência
 
 - **Onde roda.** Git Bash no Windows do dono; `timeout -k 15 <s>` em todo comando; saída para arquivo e `ec` por variável; **nunca
-  `tail -f`, `watch`, `| tail`**; caminho absoluto; estado entre chamadas só no seu `$SCRATCH` (padrão `C:/Users/AMP/erp-pausa-2026-10-03/j13-c3/`).
+  `tail -f`, `watch`, `| tail`**; caminho absoluto; estado entre chamadas só no seu `$SCRATCH` (padrão `~/erp-pausa-2026-10-03/j13-c3/`).
 - **Primeira linha da evidência:**
   `papel: cadeira C3 | identidade: <nome da sessão> | corpo: jurado-san313-c3-regressao-escopo-registro | modelo: <modelo> (nível menor; substituição: <…>) | objeto: <40 hex> | mandato_md5: <…> (declarado: <…>) | corpo_md5: <EOL-neutro do blob> (recebido: <…>) | corpo carregado × blob: IDENTICO | DIVERGE`.
   Abaixo: `node -v`, `flutter --version`, `dart --version`, `docker version` (servidor), `SELECT version()`, livre em `C:`, memória de commit
   livre, `$SCRATCH`.
-- **Saídas:** `C:/Users/AMP/w-san313/agent-orchestration/omega/juntas/votos/B-SAN3-13/c3-evidencia.md` e `…/c3-voto.json` (ou os do mandato) —
+- **Saídas:** `~/w-san313/agent-orchestration/omega/juntas/votos/B-SAN3-13/c3-evidencia.md` e `…/c3-voto.json` (ou os do mandato) —
   a única escrita sua em `w-san313`. Você não commita.
-- **Worktree PRÓPRIO, detached, prefixo `j13-c3-`:** `C:/Users/AMP/j13-c3-wt` (`git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j13-c3-wt <objeto>`);
+- **Worktree PRÓPRIO, detached, prefixo `j13-c3-`:** `~/j13-c3-wt` (`git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j13-c3-wt <objeto>`);
   prove `.git` e ausência de `.env`; `npm ci` **próprio** (`timeout -k 15 900 npm ci --no-audit --no-fund`), `npx prisma generate` com URL
   falsa, `flutter pub get` no app. **Junction de `node_modules` PROIBIDA.**
 - **Postgres 16 e Redis 7 PRÓPRIOS, prefixo `j13-c3-`:** `j13-c3-pg` e `j13-c3-redis`, só em `127.0.0.1`, porta alta testada antes

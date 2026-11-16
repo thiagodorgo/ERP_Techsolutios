@@ -33,27 +33,27 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed), instancia nova para a junta do bloco B-O6R-07c-a
   (PR 414, escopo por objeto nos subrecursos da OS), rodando no Claude Code em Opus 5.5, no nivel menor por decisao do dono de
   2026-10-10 (topo so no plano e em toda reprovacao de junta), declarado no parecer; usa o corpo de origin/main e declara na 1a linha
-  do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md | grep -ic 'mandato_md5'` (novo)
+  do parecer o papel, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md | grep -ic 'mandato_md5'` (novo)
 
 O objeto e o head do PR 414 resolvido pelo proprio inspetor por git e por gh, so com os check-runs CONCLUIDOS (ausencia, pendente ou
   cancelado bloqueia; vermelho e insumo, e a falha conhecida do T15 do PR 405 e pre-existente); a main de 2026-10-10 com o merge do
   PR 389 esta dentro do objeto por merge-base; os insumos estao na ref: o plano v3 em docs/revisoes/SAN3/B-O6R-07c-plano.md (secoes
   Comum e 07c-a, e a 07c-a.7 da junta), as criticas B-O6R-07c-CRITICA-r1.md e B-O6R-07c-CRITICA-r2.md, o relatorio do dev em
-  docs/revisoes/SAN3/B-O6R-07c-a-DEV-relatorio.md e o relatorio da fabrica em docs/revisoes/SAN3/B-O6R-07c-a-FABRICA-relatorio.md derruba com: `grep -ic 'check-run' C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md` (novo)
+  docs/revisoes/SAN3/B-O6R-07c-a-DEV-relatorio.md e o relatorio da fabrica em docs/revisoes/SAN3/B-O6R-07c-a-FABRICA-relatorio.md derruba com: `grep -ic 'check-run' ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md` (novo)
 
 O tabuleiro e o da secao 07c-a.7: as tres cadeiras novas (jurado-07ca-c1-escopo-por-objeto, jurado-07ca-c2-censo-e-guard,
   jurado-07ca-c3-regressao-escopo) rastreadas no head nos dois espelhos e S0 verde (node scripts/sync-agent-agents.mjs --check), corpo
   carregado e corpo julgado conferidos de forma EOL-neutra; a inelegibilidade por nome da 07c-a.7 conferida, inclusive o
   coordenador-de-acessos e o guardiao-fail-closed (achadores em juntas anteriores) e a tensao do PLANO_SAN3 registrada; o 07c-b fora
   deste PR; um worktree e um container Linux descartavel por cadeira com prefixo unico (j07ca-c1, j07ca-c2, j07ca-c3), nunca a base
-  viva; disco de pelo menos 10 GB antes de cada cadeira derruba com: `grep -ic 'inelegib' C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md` (novo)
+  viva; disco de pelo menos 10 GB antes de cada cadeira derruba com: `grep -ic 'inelegib' ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md` (novo)
 
 O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; a evidencia e incremental com hora em
-  C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-evidencia.md (novo) e o parecer em
-  C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md (novo), que o orquestrador versiona;
-  worktree proprio detached C:/Users/AMP/w-insp-07ca (novo), removido pelo nome; nunca tail -f; timeout no que executa; a base viva e
+  ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-evidencia.md (novo) e o parecer em
+  ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md (novo), que o orquestrador versiona;
+  worktree proprio detached ~/w-insp-07ca (novo), removido pelo nome; nunca tail -f; timeout no que executa; a base viva e
   as portas do servidor do dono nunca sao alvo; nada escrito no repositorio fora da evidencia e do parecer; PAUSA grava a secao PAUSA
-  e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md` (novo)
+  e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/insp-07ca-parecer.md` (novo)
 
 ## MEDIDO
 
@@ -61,7 +61,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-19: refs do PR #414 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/00-mandatos/inspetor-07ca.md
+PRE-VOO OK — ~/w-07ca/agent-orchestration/omega/juntas/votos/B-O6R-07c/00-mandatos/inspetor-07ca.md
 ec=0
 head=98803254ac53dbcedefe0d2d1aa3146525d6fd95
 utc=2026-10-10T16:24:59Z

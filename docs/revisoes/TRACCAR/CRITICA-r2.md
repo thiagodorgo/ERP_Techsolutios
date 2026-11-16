@@ -476,7 +476,7 @@ sem o consentimento do app; retenção de recibos e da quarentena (IMEI).
 - Contêineres e redes criados: `crtrc2-pg`, `crtrc2-api`, `crtrc2-other`, `crtrc2-other2`, `crtrc2-trc`,
   `crtrc2-hostns`, redes `crtrc2-def` e `crtrc2-priv`, projeto `crtrc2-wait`. Nenhum publicou porta; todos removidos
   pelo nome (conferido ao fim). O projeto `crtrc2-topo` só passou por `docker compose config` (nada subiu).
-- Não tocados: portas 5432/6379/3000/5173/5050, contêineres `erp-*`, `C:/Users/AMP/w-389i`, contêineres `dev389i-*`.
+- Não tocados: portas 5432/6379/3000/5173/5050, contêineres `erp-*`, `~/w-389i`, contêineres `dev389i-*`.
 - Nenhum `git stash`/`clean`/`reset --hard`; nenhum `tail -f`. Todo comando de rede, Docker e banco rodou com `timeout`;
   leituras locais (`git show`, `grep`, `sed`) e as edições deste arquivo por `node` rodaram sem `timeout` (desvio declarado,
   todos terminaram).

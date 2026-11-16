@@ -54,6 +54,6 @@
   "notas_nao_bloqueantes": [
     "Sem DATABASE_URL, T-A declara skip; o guard do backend-postgres e o Guard required env recusam esse estado, e com URL fechada a suíte falha 24/24."
   ],
-  "teardown": "CONCLUÍDO — worktree C:/Users/AMP/w-j03a-c3 removido limpo; nenhum container tl* ativo; head remoto selado sem mudança",
-  "evidencia": "C:/Users/AMP/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/03a-C3-evidencia.md"
+  "teardown": "CONCLUÍDO — worktree ~/w-j03a-c3 removido limpo; nenhum container tl* ativo; head remoto selado sem mudança",
+  "evidencia": "~/w-03a/agent-orchestration/omega/juntas/votos/B-O6R-03a/03a-C3-evidencia.md"
 }

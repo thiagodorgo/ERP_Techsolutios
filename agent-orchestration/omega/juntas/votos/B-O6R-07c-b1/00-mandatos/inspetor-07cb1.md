@@ -2,7 +2,7 @@
 
 ## MEDIDO
 
-Estado do PR 440 pela ferramenta do B-GOV-MANDATO, extraida sem edicao de origin/chore/mandato-refs-e-preflight para a pasta mandatos-07cb1 do scratchpad do redator e executada a partir de C:/Users/AMP/w-07cb1, medido por: `bash <scratch-do-redator>/mandato-refs.sh 440`
+Estado do PR 440 pela ferramenta do B-GOV-MANDATO, extraida sem edicao de origin/chore/mandato-refs-e-preflight para a pasta mandatos-07cb1 do scratchpad do redator e executada a partir de ~/w-07cb1, medido por: `bash <scratch-do-redator>/mandato-refs.sh 440`
 ```
 # refs do PR #440 — GERADO por scripts/mandato-refs.sh, para COLAR no mandato
 # gerado em: 2026-10-17T03:25Z · repo: thiagodorgo/ERP_Techsolutios
@@ -93,13 +93,13 @@ O modelo de mandato do CLAUDE.md secao C7.7, verbatim no objeto, medido por: `MS
    o arquivo. Não inicie item novo.  [P7]
 ```
 
-Os worktrees que existem agora com os nomes deste tabuleiro ou do bloco vizinho (w-j07cb1c<N> e w-insp-07cb1 aparecem aqui se ja tiverem sido criados; o numero da cadeira sai entre sinais de menor e maior porque a checagem 4 do pre-voo leria o nome como SHA), medido por: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree list | grep -i -E "w-07cb1|w-j07cb1|w-insp-07cb1|w-arnes2" | awk "{print \$1, \$3, \$4}" | sed -E "s,[[:space:]]+\$,,; s,(w-j07cb1c)([0-9]),\1<\2>,"`
+Os worktrees que existem agora com os nomes deste tabuleiro ou do bloco vizinho (w-j07cb1c<N> e w-insp-07cb1 aparecem aqui se ja tiverem sido criados; o numero da cadeira sai entre sinais de menor e maior porque a checagem 4 do pre-voo leria o nome como SHA), medido por: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree list | grep -i -E "w-07cb1|w-j07cb1|w-insp-07cb1|w-arnes2" | awk "{print \$1, \$3, \$4}" | sed -E "s,[[:space:]]+\$,,; s,(w-j07cb1c)([0-9]),\1<\2>,"`
 ```
-C:/Users/AMP/w-07cb1 [fix/o6r07cb1-despacho-atribui]
-C:/Users/AMP/w-arnes2 [fix/arnes-2-testes-instaveis]
+~/w-07cb1 [fix/o6r07cb1-despacho-atribui]
+~/w-arnes2 [fix/arnes-2-testes-instaveis]
 ```
 
-A arvore do dev (C:/Users/AMP/w-07cb1) esta no objeto e as linhas que o git status lista, fora os 5 arquivos nao rastreados desta junta (mandatos e quedas), sao so de fim de linha, medido por: `echo "porcelain=$(git status --porcelain | wc -l) conteudo_sem_CR=$(git diff --ignore-cr-at-eol --name-only | wc -l) nao_rastreados=$(git status --porcelain --untracked-files=all | grep -i -c "^??")"; git rev-parse HEAD`
+A arvore do dev (~/w-07cb1) esta no objeto e as linhas que o git status lista, fora os 5 arquivos nao rastreados desta junta (mandatos e quedas), sao so de fim de linha, medido por: `echo "porcelain=$(git status --porcelain | wc -l) conteudo_sem_CR=$(git diff --ignore-cr-at-eol --name-only | wc -l) nao_rastreados=$(git status --porcelain --untracked-files=all | grep -i -c "^??")"; git rev-parse HEAD`
 ```
 porcelain=56 conteudo_sem_CR=0 nao_rastreados=5
 b198fe358b41186b2598ab258ccb735da8c04cbc
@@ -136,13 +136,13 @@ O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed),
   B-O6R-07c-b1 (PR 440, ciclo 1, o ultimo P0 do Omega6R), rodando no Claude Code em Claude Opus, no nivel menor (o corpo fixa
   model: opus, medido acima), declarado no parecer; usa o corpo .claude/agents/inspetor-de-terreno-da-junta.md do objeto e declara na
   1a linha do parecer o papel, o nome da instancia, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; nao julga
-  merito e nao vota derruba com: `head -1 C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md | grep -ic 'mandato_md5'` (novo)
+  merito e nao vota derruba com: `head -1 ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md | grep -ic 'mandato_md5'` (novo)
 
 O objeto e o head do PR 440 resolvido pelo proprio inspetor por git ls-remote e por gh pr view, so com os check-runs CONCLUIDOS
   (gh api da lista de check-runs do commit; ausencia, queued, in_progress ou cancelled bloqueia o start; vermelho e insumo do voto);
   os insumos estao na ref: o plano docs/revisoes/SAN3/B-O6R-07c-plano.md, a emenda
   docs/revisoes/SAN3/B-O6R-07c-b-emenda-2026-10-15.md (governanca nas linhas 84-87), o relatorio do dev
-  docs/revisoes/SAN3/B-O6R-07c-b1-dev.md e os tres corpos nos dois espelhos derruba com: `grep -ic 'check-run' C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
+  docs/revisoes/SAN3/B-O6R-07c-b1-dev.md e os tres corpos nos dois espelhos derruba com: `grep -ic 'check-run' ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
 
 As decisoes do dono de 17/10 que a junta aplica (D-DESP-INICIO-ATENDIMENTO, D-INICIO-ATENDIMENTO-CONFIRMADO, D-07CB1-TRAVA-ATE-B2,
   D-07CB1-DESPACHO-OS-ENCERRADA, D-07CB1-TECNICO-SEM-ATIVAR-RASCUNHO, D-GEMINI-PRO-API-TETO, D-BRACOS-E-DOCKER-17-10) estao escritas
@@ -150,7 +150,7 @@ As decisoes do dono de 17/10 que a junta aplica (D-DESP-INICIO-ATENDIMENTO, D-IN
   conta propria e registra no parecer duas tensoes (secao A2), sem resolve-las: a P3 da D-07CB-EMENDA-RECOMENDACOES (on_route) foi
   SUBSTITUIDA pela D-INICIO-ATENDIMENTO-CONFIRMADO ("No local", linha 3719 do registro, medida acima); e a D-GEMINI-PRO-API-TETO
   (API com teto de US$ 5) diverge do texto do CLAUDE.md na origin/main, linhas 558-562 ("so entra pela assinatura, sem
-  faturamento novo"), medido acima derruba com: `grep -ic 'registro-17-10' C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
+  faturamento novo"), medido acima derruba com: `grep -ic 'registro-17-10' ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
 
 O tabuleiro tem tres cadeiras de identidade nova, cada uma com o seu executor, todos no nivel menor e declarados: C1
   jurado-07cb1-c1-escopo-e-rbac no Codex em GPT-5.6 Sol esforco medio, a partir de cerca de 04:15Z (quando o limite do Codex
@@ -158,7 +158,7 @@ O tabuleiro tem tres cadeiras de identidade nova, cada uma com o seu executor, t
   (D-GEMINI-PRO-API-TETO) e sob a D-GEMINI-SEGUNDO-REVISOR (o achado do Gemini e conferido antes de valer); C3
   jurado-07cb1-c3-despacho-censo-persistencia no Claude Code em Claude Opus 5.5; os corpos estao rastreados no objeto nos dois
   espelhos e o S0 fica verde (node scripts/sync-agent-agents.mjs --check, rodado no worktree do inspetor); corpo carregado e corpo
-  julgado conferidos de forma EOL-neutra contra o md5 que o orquestrador publica no disparo derruba com: `grep -ic 'sync-agent-agents' C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
+  julgado conferidos de forma EOL-neutra contra o md5 que o orquestrador publica no disparo derruba com: `grep -ic 'sync-agent-agents' ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
 
 A inelegibilidade e conferida POR NOME contra a lista dos tres corpos e contra
   agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md: inelegiveis o planejador-b-o6r-07c e o autor da emenda de 15/10; os
@@ -166,39 +166,39 @@ A inelegibilidade e conferida POR NOME contra a lista dos tres corpos e contra
   o critico-b-o6r-07c-r2; os achadores coordenador-de-acessos, guardiao-fail-closed, jurado-b07a-autorizacao-e-alcada,
   jurado-b07a-c2-autorizacao-s e quem achou o Omega6R-SEC-002; as cadeiras da junta do 07c-a (jurado-07ca-c1-escopo-por-objeto,
   jurado-07ca-c2-censo-e-guard, jurado-07ca-c3-regressao-escopo) e quem as substituiu; o porteiro-pos-merge, a agente-fabrica, o
-  orquestrador e este redator (redator-mandatos-07cb1-opus); nenhuma cadeira ocupa mais de um papel derruba com: `grep -ic 'inelegib' C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
+  orquestrador e este redator (redator-mandatos-07cb1-opus); nenhuma cadeira ocupa mais de um papel derruba com: `grep -ic 'inelegib' ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
 
-O terreno: a arvore C:/Users/AMP/w-07cb1 e a do dev e so recebe os arquivos de saida da junta (o inspetor confere que nenhum
-  processo vivo do dev escreve nela e que o conteudo segue igual ao objeto); C:/Users/AMP/w-arnes2 e qualquer w-arnes2-mut sao de
+O terreno: a arvore ~/w-07cb1 e a do dev e so recebe os arquivos de saida da junta (o inspetor confere que nenhum
+  processo vivo do dev escreve nela e que o conteudo segue igual ao objeto); ~/w-arnes2 e qualquer w-arnes2-mut sao de
   OUTRO bloco (o T15, com dev em uso) e nao sao tabuleiro desta junta: o inspetor reporta, nao varre e nao exige remocao;
-  worktrees proprios detached no objeto C:/Users/AMP/w-j07cb1c<N>, com N o numero da cadeira (ou sufixo b), cada
+  worktrees proprios detached no objeto ~/w-j07cb1c<N>, com N o numero da cadeira (ou sufixo b), cada
   um com npm ci proprio e sem junction (secao C7.1-ter(c)); C1 e C2 rodam em memoria, sem banco; so a C3 tem cluster descartavel
   (prefixo j07cb1-c3-, rede propria, nenhuma porta publicada); a casa roda no maximo 3 trabalhos com container ao mesmo tempo
   (D-BRACOS-E-DOCKER-17-10) e cada cadeira conta os grupos tl e j vivos antes de subir container; a base viva e as portas 5432,
-  6379, 3000, 5173, 5050 e 8899 nunca sao alvo derruba com: `grep -ic 'arnes2' C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
+  6379, 3000, 5173, 5050 e 8899 nunca sao alvo derruba com: `grep -ic 'arnes2' ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
 
 O baseline e o plano de perda de jurado ficam declarados no parecer: baseline honesto medido pelo inspetor no proprio worktree e o
   livre em C: (o corpo das cadeiras manda parar abaixo de cerca de 2 GB); queda vira linha no 00-quedas.md desta junta pelo
   orquestrador (P6), o sucessor re-executa o que a evidencia registrou (P3), voto perdido nunca conta e a junta nao fecha com menos
   de 3 votos; executor sem cota (Codex no limite, teto do Gemini atingido, Opus esgotado) para e registra onde esta, sem descer
   degrau (secao C7.6-bis); o inspetor declara, sem resolver, que o CLAUDE.md diz "o sucessor tem identidade nova" (P3) e os corpos
-  dizem "Queda relanca a MESMA identidade" derruba com: `grep -ic 'perda de jurado' C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
+  dizem "Queda relanca a MESMA identidade" derruba com: `grep -ic 'perda de jurado' ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
 
 O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO, e o parecer NOMEIA cada cadeira com o seu executor, o seu worktree e o
   seu prefixo de container, porque e isso que cada cadeira confere na legalidade; a evidencia e incremental com hora em
-  C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-evidencia.md e o parecer em
-  C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md, escrito antes da mensagem final
-  (P1, P2), que o orquestrador versiona; worktree proprio detached C:/Users/AMP/w-insp-07cb1, removido pelo nome; nunca tail -f;
-  timeout no que executa; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
+  ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-evidencia.md e o parecer em
+  ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md, escrito antes da mensagem final
+  (P1, P2), que o orquestrador versiona; worktree proprio detached ~/w-insp-07cb1, removido pelo nome; nunca tail -f;
+  timeout no que executa; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` (novo)
 
 ## MEDIDO
 
-Pre-voo deste mandato no head do PR, com o pre-voo de origin/chore/mandato-refs-e-preflight copiado para um arnes local no scratchpad do redator (unica alteracao, na linha 211: RAIZ fixada em C:/Users/AMP/w-07cb1; o mandato-refs.sh entra pela costura MANDATO_REFS; o carimbo de 14 digitos da migracao, citado entre aspas no AVISO, sai trocado por um marcador porque a checagem 4 o cobraria fora do caminho) medido por: `MANDATO_REFS=<scratch-do-redator>/mandato-refs.sh bash <arnes>/mandato-preflight.sh <este-mandato> 440 2>&1 | sed -E "s,'[0-9]{14}','<14 digitos da migracao>',"; echo ec=$?`
+Pre-voo deste mandato no head do PR, com o pre-voo de origin/chore/mandato-refs-e-preflight copiado para um arnes local no scratchpad do redator (unica alteracao, na linha 211: RAIZ fixada em ~/w-07cb1; o mandato-refs.sh entra pela costura MANDATO_REFS; o carimbo de 14 digitos da migracao, citado entre aspas no AVISO, sai trocado por um marcador porque a checagem 4 o cobraria fora do caminho) medido por: `MANDATO_REFS=<scratch-do-redator>/mandato-refs.sh bash <arnes>/mandato-preflight.sh <este-mandato> 440 2>&1 | sed -E "s,'[0-9]{14}','<14 digitos da migracao>',"; echo ec=$?`
 ```
 COLAGEM    l.6-20: refs do PR #440 confere com a saida atual
 AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '<14 digitos da migracao>' em prisma/migrations/20260877000000_backfill_work_order_assignment_from_active_dispatches/migration.sql — l.24
 
-PRE-VOO OK — C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/00-mandatos/inspetor-07cb1.md
+PRE-VOO OK — ~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/00-mandatos/inspetor-07cb1.md
 ec=0
 head=b198fe358b41186b2598ab258ccb735da8c04cbc
 utc=2026-10-17T03:27:00Z

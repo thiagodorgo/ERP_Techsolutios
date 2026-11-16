@@ -90,10 +90,10 @@ vai no parecer, nomeado, **antes** de qualquer veredito.
   corpos dos jurados) tem de voltar **não-vazio**.
 - **Merge-base:** `git fetch origin` e `git merge-base origin/main <objeto>`.
 - **Worktree PRÓPRIO, detached, em caminho CURTO:**
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-stc2 <objeto>`,
-  e **prove** que o diretório existe (`test -e C:/Users/AMP/w-stc2/.git`). No scratchpad o `worktree add`
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-stc2 <objeto>`,
+  e **prove** que o diretório existe (`test -e ~/w-stc2/.git`). No scratchpad o `worktree add`
   falha com *Filename too long* e **não cria o diretório** — e a falha silenciosa já fez comando rodar na
-  árvore principal. Se `C:/Users/AMP/w-stc2` **já existir**, é resíduo alheio: reporte e use `w-stc2b`.
+  árvore principal. Se `~/w-stc2` **já existir**, é resíduo alheio: reporte e use `w-stc2b`.
   Você **não** precisa de `npm ci` para os itens 1–3, **exceto** `node scripts/sync-agent-agents.mjs
   --check` se decidir rodá-lo (é `node` puro); se precisar de dependência, `npm ci` **próprio** —
   **junction/symlink de `node_modules` entre worktrees é PROIBIDA**.
@@ -111,7 +111,7 @@ vai no parecer, nomeado, **antes** de qualquer veredito.
   tocam banco. Se, por motivo declarado, precisar: contêiner **descartável seu**, porta fora de 5432/6379 e
   da faixa 58284–58483, **provada ligada** (`docker port <nome>`), derrubado no fim pelo nome.
 - **PROIBIDO:** `git stash`, `git clean`, `git checkout`/`git reset` de coisa que você não criou,
-  `git worktree prune`, `rm -rf` de worktree, e **qualquer escrita no `C:/Users/AMP/w-teto`** (worktree do
+  `git worktree prune`, `rm -rf` de worktree, e **qualquer escrita no `~/w-teto`** (worktree do
   orquestrador). Outros worktrees (`w-teto`, `w-mandato`, `b04a`, `b11`, `gov-*`…) são de outros
   blocos/sessões: **resíduo alheio se reporta, não se varre**. Você remove só o que criou, pelo nome.
 - **Saída para arquivo, exit por variável:** `cmd > "$LOG" 2>&1; ec=$?`. **Nunca `| tail`.**
@@ -346,7 +346,7 @@ cauda para o histórico". Nomeie a **propriedade ausente**:
  ],
  "criterios_que_nao_puderam_falhar": [ "item cujo vermelho-controle NÃO ficou vermelho, ou controle de recall não encontrado — achado contra este corpo, declarado antes do veredito" ],
  "pendencias_que_aceito": [ "o que é da C1/C3 (nomeie a cadeira) · o que o plano já nomeou com bloco dono · achados pre-existentes com bloco dono" ],
- "teardown": "worktree C:/Users/AMP/w-stc2 removido por `git worktree remove --force` (só o meu) · cópias de $SCRATCH descartadas · nenhum arquivo rastreado tocado · base viva nunca tocada · resíduo ALHEIO apenas reportado"
+ "teardown": "worktree ~/w-stc2 removido por `git worktree remove --force` (só o meu) · cópias de $SCRATCH descartadas · nenhum arquivo rastreado tocado · base viva nunca tocada · resíduo ALHEIO apenas reportado"
 }
 ```
 

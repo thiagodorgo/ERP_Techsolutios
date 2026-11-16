@@ -4,7 +4,7 @@
 > não planejou, não criticou, não vota. O dono decidiu em 24/10 *"vc cobre o codex nessa rodada"*.
 > **Fonte única:** `docs/revisoes/SAN3/B-SAN3-12-plano.md` (PLANO v3 final do `planejador-mestre`, Fable) + as críticas
 > `B-SAN3-12-critica-r1.md` e `-r2.md` (cópias verbatim, LF).
-> **Terreno:** worktree próprio `C:/Users/AMP/w-san312a`, ramo `feat/web-financeiro-baixa-e-contas-12a`, criado de
+> **Terreno:** worktree próprio `~/w-san312a`, ramo `feat/web-financeiro-baixa-e-contas-12a`, criado de
 > `origin/main` `8a7885f4` (a `main` andou de `37a3f360` → `8a7885f4` só com o #454 Traccar; `git diff --stat 37a3f360 HEAD --
 > src/modules/{financial-entries,cheques,financial-titles,financial-uow,tenant-settings,core-saas}` vazio). `npm ci` próprio
 > (sem junction), `npm run db:generate`. Postgres 16 descartável próprio `dev-san312a-pg` em `127.0.0.1:55412` (1 trabalho
@@ -16,7 +16,7 @@
 - `npm test` (runner, `CORE_SAAS_PERSISTENCE=memory`, **sem** `DATABASE_URL`) em `8a7885f4`, antes de qualquer edição →
   `340 arquivo(s) · 3322 teste(s) · pass 3225 · fail 1 · skipped 96`; o `fail 1` é `tests/core-saas-role-authority.test.ts`,
   que exige `DATABASE_URL` no carregamento (`Error: DATABASE_URL is required to initialize Prisma Client.`) — ambiente, não
-  defeito (na CI o job `backend` exporta `DATABASE_URL`). Log: `C:/Users/AMP/w-san312a-baseline-npmtest.log`.
+  defeito (na CI o job `backend` exporta `DATABASE_URL`). Log: `~/w-san312a-baseline-npmtest.log`.
 - Segunda medição com `DATABASE_URL` do cluster descartável: **DESCARTADA** — rodou 17 min em paralelo com as primeiras
   edições do código (contaminada). A comparação base × objeto sai de um worktree limpo da base (E9).
 
@@ -94,8 +94,8 @@ Precedência mudou num ponto, declarada: no `PATCH /financial-titles/:id` o `amo
 
 ## E4 — mutações (uma a uma, restauro por `git checkout --` com hash do blob conferido contra o HEAD)
 
-Roteiro: `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/san312a/mutations.py`
-(saída `C:/Users/AMP/w-san312a-mutations.json`). Resultado: **35 de 35 mutações deixaram vermelho o caso do critério**; ao fim,
+Roteiro: `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/san312a/mutations.py`
+(saída `~/w-san312a-mutations.json`). Resultado: **35 de 35 mutações deixaram vermelho o caso do critério**; ao fim,
 `git status --porcelain -- src prisma` vazio (`ARVORE-SRC-LIMPA`).
 
 | id | mutação | teste | resultado | 1º caso vermelho |
@@ -147,8 +147,8 @@ traduz) e todos os seus novos; ficam **26** congelados em `tests/b-san3-12a-reas
 
 ## E6 — bateria do §9.2, no head (Windows, Node 20.19.5; Postgres 16 descartável `dev-san312a-pg`, `127.0.0.1:55412`)
 
-Roteiro: `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/san312a/battery.sh`
-(logs por passo em `C:/Users/AMP/w-san312a-bat/`).
+Roteiro: `~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/san312a/battery.sh`
+(logs por passo em `~/w-san312a-bat/`).
 
 | Passo | Resultado |
 |---|---|
@@ -166,7 +166,7 @@ Roteiro: `C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-E
 
 **`npm test` base × head, cada um num banco FRESCO migrado (forma do job `backend`: memória + `DATABASE_URL` migrado sem seed; `REDIS_URL`
 inalcançável nos dois):**
-- base `8a7885f4` (worktree limpo `C:/Users/AMP/w-s312b`, banco `erp_san312a_base`): `340 arquivos · 3924 testes · pass 3906 · fail 16 · skipped 2`;
+- base `8a7885f4` (worktree limpo `~/w-s312b`, banco `erp_san312a_base`): `340 arquivos · 3924 testes · pass 3906 · fail 16 · skipped 2`;
 - head (banco `erp_san312a_head`): `351 arquivos · 3995 testes · pass 3966 · fail 27 · skipped 2` (+71 testes: os 69 dos 11 arquivos novos + 2 em `financial-summary`).
 - **Vermelhos SÓ no head = 13, e são exatamente F1–F5:** `cheque-title-link.test.ts` ×5 e `cheque-title-link-atomic-db.test.ts` ×2 (F1),
   P7 ×2 (F2), censo T1/T14 (F3), A16 em memória (F4), snapshot (F5). Os demais vermelhos são os MESMOS da base (Redis inalcançável,
@@ -193,9 +193,9 @@ inalcançável nos dois):**
 
 ## E8 — limpeza (§C5)
 
-Worktree da base `C:/Users/AMP/w-s312b` removido por `git worktree remove --force`; container `dev-san312a-pg` removido (com os bancos
-`erp_san312a`, `_base`, `_head` e os de drill, que já tinham sido derrubados pelos testes). O worktree do bloco `C:/Users/AMP/w-san312a`
-FICA (o ramo continua depois da emenda). Logs fora do repositório em `C:/Users/AMP/w-san312a-*`.
+Worktree da base `~/w-s312b` removido por `git worktree remove --force`; container `dev-san312a-pg` removido (com os bancos
+`erp_san312a`, `_base`, `_head` e os de drill, que já tinham sido derrubados pelos testes). O worktree do bloco `~/w-san312a`
+FICA (o ramo continua depois da emenda). Logs fora do repositório em `~/w-san312a-*`.
 
 ---
 
@@ -223,7 +223,7 @@ das medições) — os tempos de execução abaixo não são comparáveis aos do
 | **Contrato/matriz** | `API_CONTRACTS.md` (D1 + os 409 do A27), `RBAC_MATRIX.md` (l. dos cheques) | — |
 | **Registro** | `pendencias.md` (emenda e critério B1 em `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO`; novas `P-SAN3-12-STATUS-CANCELLED-COM-CHEQUE-PENDENTE` e `P-SAN3-12-DRILL-PRISMA-SHIM-WINDOWS`, `pre-existente`), `decisoes.md` (D1, A26, A27, F5 como leitura do planejador), índice regenerado (635 cabeçalhos · 479 abertas), `status-geral.md` | — |
 
-## E11 — mutações da E1/E1-bis (uma a uma, restauro por hash; roteiro `…/scratchpad/san312a/mutations2.py`, saída `C:/Users/AMP/w-san312a-mutations2.json`)
+## E11 — mutações da E1/E1-bis (uma a uma, restauro por hash; roteiro `…/scratchpad/san312a/mutations2.py`, saída `~/w-san312a-mutations2.json`)
 
 **17 de 17 conformes** (16 vermelhas no caso do critério + a variante "só o fast-fail" da M2, que fica VERDE como a E1-bis previu: a trava
 sob o lock segura). `git status --porcelain -- src prisma` vazio ao fim. Mais a do A5-bis reescrito (tirar `title_id = <lido>` do `WHERE`
@@ -249,7 +249,7 @@ do `unlinkTitle` no Prisma) → `not ok 6 A5-bis (db, CAS)` · 6 · pass 5 · fa
 | A17bis | criar reason novo sem contrato | b-san3-12a-reasons-census.test.ts | vermelho | **vermelho** · 4 · pass 2 · fail 2 · skipped 0 | conforme |
 | Rres2 | não exigir motivo no bounce de cheque vinculado | b-san3-12a-unlink-title.test.ts | vermelho | **vermelho** · 15 · pass 14 · fail 1 · skipped 0 | conforme |
 
-## E12 — bateria (B2: todo passo com `tests · pass · fail · skipped`, lido do TAP; roteiro `…/scratchpad/san312a/battery2.sh`, logs `C:/Users/AMP/w-san312a-bat2/`)
+## E12 — bateria (B2: todo passo com `tests · pass · fail · skipped`, lido do TAP; roteiro `…/scratchpad/san312a/battery2.sh`, logs `~/w-san312a-bat2/`)
 
 | Passo | ec | tests · pass · fail · skipped |
 |---|---|---|
@@ -274,7 +274,7 @@ do censo" do `o6r07c-census-guard` por `semente incompleta` (o `POST /operations
 sob carga); no `a0b8f4be` o mesmo job passou inteiro, e isolado o censo dá 32/32 — flutuação de tempo, registrada.
 
 **(2) base × head normalizado por script** (`…/scratchpad/san312a/normaliza.py`: chave = `tests/<arquivo>` lido do `location` do TAP + nome do
-caso, sem o prefixo do worktree; saída `C:/Users/AMP/w-san312a-b1-listas.txt`). Base `8a7885f4` (worktree limpo, banco fresco, E6):
+caso, sem o prefixo do worktree; saída `~/w-san312a-b1-listas.txt`). Base `8a7885f4` (worktree limpo, banco fresco, E6):
 `340 arquivos · 3924 · pass 3906 · fail 16 · skipped 2`. Head (`a0b8f4be`, banco fresco `erp_san312a_fresh2`): `352 · 4005 · pass 3987 · fail 16 · skipped 2`.
 - **só no head — N=1:** `tests/traccar-position-ingestion-db.test.ts :: ingestão: tempo esgotado → 503 e, depois do fim do trabalho, 0 posição, 0 recibo e 0 evento`.
   Causa: teste de TEMPO do Traccar (módulo que o bloco não toca); o caso irmão do mesmo arquivo ("…quarentena interna e conflito…") está
@@ -296,17 +296,17 @@ caso, sem o prefixo do worktree; saída `C:/Users/AMP/w-san312a-b1-listas.txt`).
 
 Head `a0b8f4be` + este registro. PR #459 sai de rascunho (`gh pr ready 459`) por ordem do orquestrador; a pendência
 `P-SAN3-12A-PLANO-FALSIFICADO-ESCOPO` fica ABERTA para o porteiro/orquestrador fechar pelo B1 (o item (2) tem 1 só-head de tempo, declarado acima).
-Limpeza: container `dev-san312a-pg2` removido (com os bancos `erp_san312a`, `_t21`, `_fresh2`); worktree `C:/Users/AMP/w-san312a` mantido.
+Limpeza: container `dev-san312a-pg2` removido (com os bancos `erp_san312a`, `_t21`, `_fresh2`); worktree `~/w-san312a` mantido.
 
 ## Ciclo 2 (dev-san312a-c2-opus)
 
 **Papel:** dev do conserto do ciclo 2 · `dev-san312a-c2-opus` · Claude Opus 5.5 (`claude-opus-5-5`), nível menor **declarado**, identidade nova
 (≠ `dev-san312a-opus`, ≠ `planejador-san312a-c2-fable`, ≠ `jurado-san312a-c2-opus`/`-c4-opus`); cobre o Codex por ordem do dono. Não achou, não
 planejou, não vota. **Fonte única:** `B-SAN3-12-plano.md` → "Ciclo 2 (12a) — plano de resolução". **Objeto do ciclo 1:** `04b8a667`. **Terreno:**
-worktree `C:/Users/AMP/w-san312a`; Postgres 16 descartável `dev-san312a-c2-pg` em `127.0.0.1:47791` (bancos `erp_c2`, `erp_c2_fresh_head`,
-`erp_c2_fresh_base`); worktree da base `C:/Users/AMP/w-c2b` (detached em `b2f8e6cf`, merge-base com a `main`, `npm ci` próprio, sem junction).
+worktree `~/w-san312a`; Postgres 16 descartável `dev-san312a-c2-pg` em `127.0.0.1:47791` (bancos `erp_c2`, `erp_c2_fresh_head`,
+`erp_c2_fresh_base`); worktree da base `~/w-c2b` (detached em `b2f8e6cf`, merge-base com a `main`, `npm ci` próprio, sem junction).
 Base viva (5432/6379, `erp-*`) nunca foi alvo. Roteiros e TAPs: `<scratchpad>/dev-san312a-c2/` (`mut.mjs`, `battery-c2.sh`, `vc-*.tap`, `mut-*.tap`,
-`mut-summary.json`); logs da bateria `C:/Users/AMP/w-san312a-c2bat/`; listas B1-2 `C:/Users/AMP/w-san312a-c2-b1-listas.txt`.
+`mut-summary.json`); logs da bateria `~/w-san312a-c2bat/`; listas B1-2 `~/w-san312a-c2-b1-listas.txt`.
 
 ### C2-D1 — commits
 - `922456c4` docs(plano): o plano do ciclo 2 e o `R-B-SAN3-12a-ciclo1.md` (até então não rastreado), como vieram.

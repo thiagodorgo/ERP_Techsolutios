@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/theme/erp_mobile_theme.dart';
 import '../domain/work_order_models.dart';
 import '../domain/work_order_steps.dart';
 
@@ -65,9 +66,9 @@ class _StepCell extends StatelessWidget {
     final Color labelColor;
     switch (step.state) {
       case WorkOrderStepState.done:
-        circleBg = scheme.tertiary;
+        circleBg = ErpMobileTheme.success;
         circleFg = scheme.onTertiary;
-        labelColor = scheme.tertiary;
+        labelColor = ErpMobileTheme.success;
       case WorkOrderStepState.active:
         circleBg = scheme.primary;
         circleFg = scheme.onPrimary;

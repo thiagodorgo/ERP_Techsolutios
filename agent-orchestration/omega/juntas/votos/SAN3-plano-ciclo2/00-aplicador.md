@@ -34,7 +34,7 @@ Papel: aplicador (§C7.4-bis) — não achou, não planejou. Plano aplicado: `ag
 
 ## 2. Agenda (§6) por script
 
-Comando: `node <scratchpad>/agenda-ciclo2.mjs C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san3`
+Comando: `node <scratchpad>/agenda-ciclo2.mjs ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san3`
 (saída JSON em `<scratchpad>/agenda-ciclo2.out.json`). Semântica da C1 (ordem estrita por frente; Dep. ∪ travas
 ordenadas; início = max(frente livre, fins dos antecessores)); ordem de entrada = a PROPOSTA do §D, reparada por
 ordenação topológica estável quando contraria Dep./trava da mesma frente.

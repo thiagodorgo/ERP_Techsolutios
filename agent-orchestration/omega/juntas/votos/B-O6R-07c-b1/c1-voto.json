@@ -20,7 +20,7 @@
    "resultado": "md5 iguais ao disparo; objeto = b198fe35 nas duas fontes; 14/0/0; B = 4fe7524e; decisões e âncoras na evidência §0"
   },
   {
-   "comando": "npm ci --no-audit --no-fund; DATABASE_URL=<fictícia> npm run db:generate; env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory npm run check (worktree C:/Users/AMP/w-j07cb1c1o)",
+   "comando": "npm ci --no-audit --no-fund; DATABASE_URL=<fictícia> npm run db:generate; env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory npm run check (worktree ~/w-j07cb1c1o)",
    "forma": "Windows, Node 20.19.5, N=1",
    "resultado": "ec 0/0/0; 0 symlink em node_modules"
   },
@@ -97,7 +97,7 @@
   "C3: o que o despacho grava (linha de histórico, evento, compensação, OS encerrada, rascunho, Traccar), backfill P6, censo/T11, suíte, escopo do diff.",
   "b2: fila durável, decisão do superior, CA6/CA7, approval.* — não cobrado.",
   "N1 (technician sem field_dispatch:update) e N2 (upload entre organizações = 403) — pré-existentes; bloco dono a registrar pelo orquestrador.",
-  "Resíduo ALHEIO reportado, não varrido: worktree C:/Users/AMP/w-j07cb1c1 do caído; 3 diretórios C:/Users/AMP/AppData/Local/Temp/c1-sonda-anexos-* do caído (anteriores ao meu início)."
+  "Resíduo ALHEIO reportado, não varrido: worktree ~/w-j07cb1c1 do caído; 3 diretórios ~/AppData/Local/Temp/c1-sonda-anexos-* do caído (anteriores ao meu início)."
  ],
- "teardown": "src trocados e mutações restaurados (RESTORE_OK count=13 all_match_O=true status_clean=true em todas as trocas) · servidores das sondas fechados no finally, 0 processo com w-j07cb1c1o · worktree C:/Users/AMP/w-j07cb1c1o removido por git worktree remove --force (ec 0, ausente do worktree list) · nenhum container criado · diretórios temporários c1o-* das sondas: 0 restantes · subpasta do scratch c1o-07cb1 apagada ao fim · base viva nunca tocada · w-07cb1 só com c1-opus-evidencia.md e c1-voto.json · espaço no fim de linha nos dois arquivos = 0 (conferido) · disco C: 8.1G livres no fim"
+ "teardown": "src trocados e mutações restaurados (RESTORE_OK count=13 all_match_O=true status_clean=true em todas as trocas) · servidores das sondas fechados no finally, 0 processo com w-j07cb1c1o · worktree ~/w-j07cb1c1o removido por git worktree remove --force (ec 0, ausente do worktree list) · nenhum container criado · diretórios temporários c1o-* das sondas: 0 restantes · subpasta do scratch c1o-07cb1 apagada ao fim · base viva nunca tocada · w-07cb1 só com c1-opus-evidencia.md e c1-voto.json · espaço no fim de linha nos dois arquivos = 0 (conferido) · disco C: 8.1G livres no fim"
 }

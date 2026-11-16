@@ -10,7 +10,7 @@ Re-inspeção concluída — `LIBERADO COM RESSALVA`. Nenhuma conclusão da prim
 
 ## Pré-voo — corpo, mandato e criação do worktree
 
-- Comando executado: MD5 EOL-neutro do blob do corpo no objeto e dos quatro mandatos locais; `git worktree add --detach C:/Users/AMP/w-jc2-insp 2043c584...`; `git -C C:/Users/AMP/w-jc2-insp rev-parse HEAD`; `git status --porcelain`.
+- Comando executado: MD5 EOL-neutro do blob do corpo no objeto e dos quatro mandatos locais; `git worktree add --detach ~/w-jc2-insp 2043c584...`; `git -C ~/w-jc2-insp rev-parse HEAD`; `git status --porcelain`.
 - Saída resumida: corpo `89b4563001df748a4016ae57b05fbd20`; inspetor `96916a924e0b2286f326e27389d36ba4`; novos mandatos A `91dc62018ce3b621e233061f46c37795`, B `71ee13440a9d7af9ad92e1e8cbd2271c`, C `41ad811105b46808fe2eea92353f5b57`; todos coincidem com os hashes publicados. Worktree detached criado no objeto, status vazio.
 - Veredito parcial: VERDE. Segundo o item 3.3 do corpo, o texto local não rastreado pode ser fixado na fronteira por MD5 EOL-neutro publicado e reexecutado; logo, basta o hash publicado aqui para os mandatos ainda não commitados. O conteúdo não é herdado sem medição.
 
@@ -94,6 +94,6 @@ Re-inspeção concluída — `LIBERADO COM RESSALVA`. Nenhuma conclusão da prim
 
 ## Fechamento e limpeza
 
-- Comando executado: validação do caminho literal e da entrada de worktree; `git status --porcelain`; `git worktree remove --force C:/Users/AMP/w-jc2-insp`; nova listagem; `docker ps -a` filtrado por `jtrc01c2-*`/`jur-*`/`crit-*`.
+- Comando executado: validação do caminho literal e da entrada de worktree; `git status --porcelain`; `git worktree remove --force ~/w-jc2-insp`; nova listagem; `docker ps -a` filtrado por `jtrc01c2-*`/`jur-*`/`crit-*`.
 - Saída resumida: status do worktree vazio; remoção exit 0; caminho ausente e worktree não listado depois; zero container do tabuleiro.
 - Veredito parcial: VERDE. Removidos somente o worktree próprio e seu `node_modules`; nenhum container, base, porta, worktree ou arquivo alheio foi alterado.

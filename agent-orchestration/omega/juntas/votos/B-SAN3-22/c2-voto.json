@@ -96,5 +96,5 @@
   "C2-03 empate de order_index desempatado pelo banco no Prisma — a C1 confirma no Postgres se quiser",
   "P-CHK-EDITOR-LEITURAS-B, P-B-SAN3-22-CI-DB-SUITE, schema.components divergente entre memória e Prisma (§2.4), assinatura interna de publish/archive com omissão (H-06): fora do bloco, não cobrados"
  ],
- "teardown": "container j22-c2-redis removido (contagem j22-c2- = 0) · processos com o caminho = 0 (só a própria consulta) · worktree removido por git worktree remove --force (worktree list j22-c2 = 0) · mutações e checkouts de base restaurados (status vazio, hash-object = blob, 0 arquivos ≠ blob) · sondas apagadas do worktree (cópias e saídas ficam em C:/Users/AMP/erp-pausa-2026-10-03/j22-c2/) · base viva nunca tocada · w-san322 só com c2-evidencia.md e c2-voto.json escritos por mim"
+ "teardown": "container j22-c2-redis removido (contagem j22-c2- = 0) · processos com o caminho = 0 (só a própria consulta) · worktree removido por git worktree remove --force (worktree list j22-c2 = 0) · mutações e checkouts de base restaurados (status vazio, hash-object = blob, 0 arquivos ≠ blob) · sondas apagadas do worktree (cópias e saídas ficam em ~/erp-pausa-2026-10-03/j22-c2/) · base viva nunca tocada · w-san322 só com c2-evidencia.md e c2-voto.json escritos por mim"
 }

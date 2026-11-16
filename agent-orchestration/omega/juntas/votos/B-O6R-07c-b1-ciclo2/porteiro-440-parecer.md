@@ -1,7 +1,7 @@
 # Parecer do porteiro pós-merge — PR #440 (B-O6R-07c-b1, `Ω6R-SEC-002`)
 
 - **Papel · modelo:** `porteiro-pos-merge-440` (identidade nova) · **Claude Opus** (nível menor, declarado; `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`).
-- **Ref medida:** `40c3651f066278654e2c71df4c3b38e1d90994c8` (topo de `origin/main`), por `git show`/`git ls-tree`; testes num worktree detached próprio (`C:/Users/AMP/w-porteiro440`, `npm ci` próprio, já removido).
+- **Ref medida:** `40c3651f066278654e2c71df4c3b38e1d90994c8` (topo de `origin/main`), por `git show`/`git ls-tree`; testes num worktree detached próprio (`~/w-porteiro440`, `npm ci` próprio, já removido).
 - **Evidência comando a comando:** `porteiro-440-evidencia.md` (mesmo diretório).
 
 ## O que executei e o resultado
@@ -44,7 +44,7 @@
 8. **Limpeza §C5:**
    - **A branch remota `fix/o6r07cb1-despacho-atribui` NÃO foi apagada** (`git ls-remote` = 1).
    - A branch local está presa ao `w-07cb1`, do orquestrador.
-   - O worktree `C:/Users/AMP/w-j07cb1c2-c2` (detached `7ff1e003`, limpo) sobrou do jurado C2, embora a ata diga "worktrees removidos".
+   - O worktree `~/w-j07cb1c2-c2` (detached `7ff1e003`, limpo) sobrou do jurado C2, embora a ata diga "worktrees removidos".
    - Nenhum arquivo rastreado foi apagado. Há 27 GB livres.
 
 ## Não executado

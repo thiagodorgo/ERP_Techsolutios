@@ -13,7 +13,7 @@
   alternativa B: sem tela nova; o guincheiro de OS sem placa vê "peça à base para cadastrar a placa ou registrar a
   chegada"; a base registra pelo console; a criação ganha o campo de placa para reboque e outro; a edição da placa vai
   para outro bloco).
-- **Terreno:** worktree `C:/Users/thiag/w-san326`, ramo `fix/checkin-confere-placa` a partir de `origin/main`
+- **Terreno:** worktree `~/w-san326`, ramo `fix/checkin-confere-placa` a partir de `origin/main`
   `d0da291e`; `npm ci` próprio (sem junction, ec=0), `prisma generate`, `flutter pub get` (ec=0). Sem banco: nenhum teste
   `-db` é deste bloco, e não subi Postgres.
 - **Objeto medido × objeto do plano (§A7):** o plano mediu em `d5ec1696`. `git diff --stat d5ec1696 d0da291e -- src tests
@@ -258,7 +258,7 @@ compartilhado com a sessão do orquestrador; não fui eu que os apaguei). Perdid
 1ª rodada de mutações e da 1ª rodada do `npm test`. Preservado: o resumo de cada um, já neste diário, e a tabela das
 mutações (gerada do log antes de ele sumir). O `npm test` cuja saída ia para o arquivo apagado foi parado (só a árvore
 de processos dele, PID 28284) e o cluster Postgres descartável foi recriado (a rodada parada deixou 6 bancos de drill
-nele). Os logs desta fase em diante ficam em `C:/Users/thiag/w-san326-logs/`, apagada no fim.
+nele). Os logs desta fase em diante ficam em `~/w-san326-logs/`, apagada no fim.
 
 ## Bateria final (§9), no head integrado com a main (`b426918b`, depois do merge da `origin/main` `07898adf`)
 
@@ -300,7 +300,7 @@ uma chamada); o cartão antigo de conflito é o mesmo que a regressão da M6 afi
 saídas"). Fica para a pré-revisão ou para o porteiro, se um aparelho estiver disponível.
 
 **Limpeza (§C5):** no fechamento, os containers `san326-pg` e `san326-redis` são removidos, `dist/` e
-`frontend/dist/` (gitignored) apagados, e a pasta `C:/Users/thiag/w-san326-logs` apagada; o worktree fica para a
+`frontend/dist/` (gitignored) apagados, e a pasta `~/w-san326-logs` apagada; o worktree fica para a
 pré-revisão e a junta.
 
 ## Conserto da pré-revisão (fluxo rápido, §C7 item 10(3), passo 1)
@@ -309,7 +309,7 @@ pré-revisão e a junta.
   a pré-revisão. **Verificador:** a conferência do item 10(3)5, por outra identidade. Sem cruzamento, pelo mesmo motivo
   declarado na pré-revisão (§C7 item 11(2)).
 - **Insumo:** `prerev-534.json` e `prerev-534-evidencia.md` (`prerev-534-cl`, APROVADO com 5 não graves e 1 grave
-  pré-existente), em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/`.
+  pré-existente), em `~/erp-pausa-2026-10-03/revisoes/`.
 - **Objeto de partida:** `e5287e8e`, árvore limpa (`git status --porcelain` vazio), medido às 05:14 SP por `date`.
 - Um commit por item, na ordem abaixo.
 
@@ -403,7 +403,7 @@ As 4/4 restauradas. As linhas 3 e 4 provam que cada metade do A7b mata a sua var
 
 Executado em 11/11, das 05:18 às 06:00 SP (por `date`). As capturas e os registros ficam fora do repositório (o
 repositório é público, e o PR534-06 pede para não abrir arquivo novo fora do PERMITIDO), em
-`C:/Users/thiag/erp-pausa-2026-10-03/revisoes/dev-534-fix-emulador/`:
+`~/erp-pausa-2026-10-03/revisoes/dev-534-fix-emulador/`:
 - 26 capturas (`NN-*.png`);
 - `estados.log`: a fila e a OS lidas do banco local do app, e o status e a linha do tempo no servidor, a cada passo;
 - `emu-server-http.log`: cada chamada HTTP que o app fez;
@@ -415,7 +415,7 @@ repositório é público, e o PR534-06 pede para não abrir arquivo novo fora do
   31,5 s.
 - **JDK:** o JBR 21 do Android Studio, que é o JDK 17+ do roteiro e o mesmo que o Flutter usa. Não há JDK 17 nesta
   máquina.
-- **App antigo:** o APK da `origin/main` `b6caf568`, montado num worktree próprio (`C:/Users/thiag/w-san326old`, já
+- **App antigo:** o APK da `origin/main` `b6caf568`, montado num worktree próprio (`~/w-san326old`, já
   removido). Foi gerado com `--dart-define=ERP_AUTH_MODE=remote --dart-define=API_BASE_URL=http://10.0.2.2:3626`.
 - **Backend:** `createApp` mais `createCoreSaasService`, a mesma composição do `src/server.ts`, com o `src/` do head
   (`git diff --quiet e5287e8e HEAD -- src` = igual). Rodou com `CORE_SAAS_PERSISTENCE=memory` em `127.0.0.1:3626`.
@@ -493,7 +493,7 @@ registrado como `e0` e nas cap. 05 a 11, e não conta como resultado.
 ## Conserto único da junta (fluxo rápido, §C7 item 10(3), passo 4)
 
 - **Autor:** `dev-san3-26-fix-cl`, Claude Opus 5.5 (subagente da sessão), dev. Não achei nenhum dos achados: os da
-  junta são das cadeiras C1, C2 e C3 (`C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j534/c*-voto.json`, 3 de 3
+  junta são das cadeiras C1, C2 e C3 (`~/erp-pausa-2026-10-03/revisoes/j534/c*-voto.json`, 3 de 3
   APROVADO, sem grave). A triagem é do orquestrador (11/11, ~08:00 SP). Sem cruzamento, pelo mesmo motivo da
   pré-revisão (§C7 item 11(2)).
 - **Objeto de partida:** `1a1328ef`, árvore limpa, medido às 07:57 SP por `date`.

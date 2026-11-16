@@ -2,13 +2,13 @@ revisor-b-san3-06b (revisor independente, D-GOV-PROPORCIONAL §C7 item 8(1)) · 
 
 # Revisão independente — PR #411 (B-SAN3-06b, "o console da plataforma sem ficção")
 
-Data: 2026-10-09. Terreno: worktree próprio detached C:/Users/AMP/w-rev411 (npm ci próprio raiz + frontend, sem junction; sem banco, sem backend).
+Data: 2026-10-09. Terreno: worktree próprio detached ~/w-rev411 (npm ci próprio raiz + frontend, sem junction; sem banco, sem backend).
 
 ## 0. Terreno e objeto
 - `git ls-remote origin refs/heads/feat/b-san3-06b-plataforma` → af6f345ab6e9410e51b0037077f05e32728f8b66
 - `gh pr view 411 --json headRefOid,state` → af6f345a…, OPEN, base main
 - `df -h /c` → 12G livres (limite de parada: 8 GB)
-- worktree `git worktree add --detach C:/Users/AMP/w-rev411 af6f345a` → HEAD af6f345a; `git merge-base origin/main af6f345a` = a9bbde38 = origin/main (ramo em dia com a main).
+- worktree `git worktree add --detach ~/w-rev411 af6f345a` → HEAD af6f345a; `git merge-base origin/main af6f345a` = a9bbde38 = origin/main (ramo em dia com a main).
 - `npm ci` próprio na raiz (326 pacotes, exit 0) e em frontend/ (103 pacotes, exit 0) — diretórios reais, sem junction.
 - 15 commits (9301a86a..af6f345a); 53 arquivos no diff (`git diff --name-status origin/main...af6f345a`).
 
@@ -120,14 +120,14 @@ O bloco cumpre a tese "console sem ficção" e a fronteira da rota: **nenhuma es
 | D1–D4 | — | — | as 4 divergências declaradas: **aceitáveis como estão** (3.3) | 3.3 |
 
 ## Encerramento do terreno
-- 0 processos `node` com `w-rev411` na linha de comando antes da remoção; `git worktree remove --force C:/Users/AMP/w-rev411` → exit 0; diretório ausente; `git worktree list` sem `w-rev411`. Worktrees `w-06b` e `w-o05` não tocados (presentes). Disco: 12 GB livres. Nada commitado no ramo; nenhum banco/backend subido.
+- 0 processos `node` com `w-rev411` na linha de comando antes da remoção; `git worktree remove --force ~/w-rev411` → exit 0; diretório ausente; `git worktree list` sem `w-rev411`. Worktrees `w-06b` e `w-o05` não tocados (presentes). Disco: 12 GB livres. Nada commitado no ramo; nenhum banco/backend subido.
 
 ## Re-revisão (head 5cf7e2d5)
 revisor-b-san3-06b (mesma identidade da revisão; não escreveu os ajustes) · Claude Opus 5.5 · head julgado 5cf7e2d5df9daf254e12b6069de9c1af948c6f3f
 
 ### R0. Terreno
 - `git ls-remote origin refs/heads/feat/b-san3-06b-plataforma` → 5cf7e2d5df9daf254e12b6069de9c1af948c6f3f · `gh pr view 411 --json headRefOid` → 5cf7e2d5…, OPEN, mergeStateStatus CLEAN · origin/main = a9fbe283 · `df -h /c` → 14 GB livres (2026-10-10 03:16Z).
-- worktree próprio `git worktree add --detach C:/Users/AMP/w-rev411b 5cf7e2d5` → HEAD 5cf7e2d5; `npm ci` próprio na raiz e em frontend/ (exit 0, sem junction).
+- worktree próprio `git worktree add --detach ~/w-rev411b 5cf7e2d5` → HEAD 5cf7e2d5; `npm ci` próprio na raiz e em frontend/ (exit 0, sem junction).
 - commits novos `af6f345a..5cf7e2d5`: 7e0341aa fix A1 · 4dba043a test A1 · 95dd3f11 fix A2 · 2219c92d test A3 · 18d967b3 merge da main (pais 2219c92d + a9fbe283 = #405) · 5cf7e2d5 relatório. Arquivos dos ajustes (`git diff --name-only af6f345a 2219c92d`): `cloud-billing.state.ts` (novo), `PlatformCloudBillingPage.tsx`, `useCloudBilling.ts`, `san3-06b-cloud-billing.smoke.test.tsx`, `san3-06b-console-sem-ficcao.guard.test.ts` — todos em `frontend/src/modules/platform/**` ou `frontend/tests/san3-06b-*` (PERMITIDO). 5cf7e2d5 só toca o relatório do dev.
 
 ### R4. O merge da main (18d967b3)
@@ -190,5 +190,5 @@ A-CI, A1, A2 e A3 da revisão estão fechados por execução: CI 14/14 verde; a 
 | N1–N7 | notas da revisão | — | seguem como registradas (moeda ≠ BRL sem teste; selo do Detalhe sem teste; worker `starting`; relatório fora da lista; lint da raiz sem `.mjs`; organização de sistema no Cloud Billing; rótulo do registro) | revisão acima |
 
 #### Encerramento do terreno da re-revisão
-- arquivos temporários (`rev411b-race.tmp.tsx`) apagados; `git status --short` do worktree limpo; 0 processos `node` com `w-rev411b`; `git worktree remove --force C:/Users/AMP/w-rev411b` → exit 0, diretório ausente, fora do `git worktree list`. `w-06b`/`w-o05` não tocados. Nada commitado no ramo; nenhum banco/backend subido.
-- Anomalia de terreno (só registro, sem efeito no mérito): ao fim, `C:/Users/AMP/w-o05` **não existe mais** (presente na revisão de 09/10; esta sessão nunca o usou nem removeu — só removi `w-rev411` e `w-rev411b`, por caminho exato). `w-06b` presente. Disco: 14 GB livres.
+- arquivos temporários (`rev411b-race.tmp.tsx`) apagados; `git status --short` do worktree limpo; 0 processos `node` com `w-rev411b`; `git worktree remove --force ~/w-rev411b` → exit 0, diretório ausente, fora do `git worktree list`. `w-06b`/`w-o05` não tocados. Nada commitado no ramo; nenhum banco/backend subido.
+- Anomalia de terreno (só registro, sem efeito no mérito): ao fim, `~/w-o05` **não existe mais** (presente na revisão de 09/10; esta sessão nunca o usou nem removeu — só removi `w-rev411` e `w-rev411b`, por caminho exato). `w-06b` presente. Disco: 14 GB livres.
