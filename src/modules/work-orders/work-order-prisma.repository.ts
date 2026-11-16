@@ -28,6 +28,8 @@ import type {
 import { assertCheckinVerdictForStatus } from "./work-order.checkin.js";
 import { assignedToActorOperatorIds, hasInvoicedItemsError } from "./work-order.types.js";
 import { isWorkOrderUuid, WORK_ORDER_TERMINAL_STATUSES } from "./work-order.validators.js";
+import { PrismaApprovalRepository } from "./approval-prisma.repository.js";
+import { assertApprovalRequestOnlyOnCompletion, completionApprovalRequestInput, type ApprovalRepository } from "./approval.repository.js";
 import {
   duplicateWorkOrderError,
   formatWorkOrderCode,
@@ -56,7 +58,13 @@ import {
 type PrismaExecutor = PrismaClient | Prisma.TransactionClient;
 
 export class PrismaWorkOrderRepository implements WorkOrderRepository {
-  constructor(private readonly client: PrismaExecutor) {}
+  constructor(
+    private readonly client: PrismaExecutor,
+    // B-APROVACOES-DURAVEIS (plano §3.6, forma A de N1) — o repositório de aprovações construído com O MESMO cliente da
+    // transação, dentro do invólucro `withTenantRls` (`RlsPrismaWorkOrderRepository.changeStatus`). Sem ele, a conclusão
+    // que pede aprovação falha fechada: nunca conclui sem o pedido.
+    private readonly approvals?: Pick<ApprovalRepository, "request">,
+  ) {}
 
   async nextCode(tenantId: string): Promise<string> {
     let sequence = await this.client.workOrder.count({
@@ -527,6 +535,7 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
   async changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
     // B-SAN3-26 (C26-08) — `on_site` só com um veredito emitido por `verifyCheckin`, ANTES de tocar o banco.
     assertCheckinVerdictForStatus(input);
+    assertApprovalRequestOnlyOnCompletion(input);
     const now = new Date();
     // B-SAN3-23 (P-23.4) — CAS: grava só se a OS ainda estiver na situação que o serviço validou. Quem espera o
     // cancelamento re-avalia o predicado contra a linha cancelada (READ COMMITTED) e casa 0 linhas: o cancelamento
@@ -550,6 +559,15 @@ export class PrismaWorkOrderRepository implements WorkOrderRepository {
         updated_by: input.actorUserId,
       }),
     });
+
+    // B-APROVACOES-DURAVEIS (item 67; plano §3.6) — o pedido de validação da conclusão nasce NA MESMA TRANSAÇÃO do status:
+    // `this.client` é a transação do invólucro (`RlsPrismaWorkOrderRepository` → `withTenantRls`), e o repositório de
+    // aprovações é construído com ela no próprio invólucro (a forma A de N1). Status, pedido e a linha `approval.requested` commitam juntos, ou
+    // nenhum: se o pedido falha, a OS não conclui. Só depois de o CAS casar 1 linha (0 linha = nada a pedir).
+    if (updated[0] && input.approvalRequest) {
+      if (!this.approvals) throw new Error("The approval repository is required to complete a work order.");
+      await this.approvals.request(completionApprovalRequestInput(input, input.approvalRequest)); // B-APROV:pedido-na-unidade
+    }
 
     return updated[0] ? mapWorkOrderRecord(updated[0]) : undefined;
   }
@@ -849,7 +867,7 @@ export class RlsPrismaWorkOrderRepository implements WorkOrderRepository {
   }
 
   changeStatus(input: ChangeWorkOrderStatusInput): Promise<WorkOrder | undefined> {
-    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx).changeStatus(input));
+    return withTenantRls(this.prismaClient, input.tenantId, (tx) => new PrismaWorkOrderRepository(tx, new PrismaApprovalRepository(tx)).changeStatus(input));
   }
 
   // B-SAN3-23 — a unidade do cancelamento sob RLS, como todo o resto. O prazo é o padrão do `$transaction` (5 s):

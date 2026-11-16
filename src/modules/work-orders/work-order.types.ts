@@ -403,6 +403,13 @@ type ChangeWorkOrderStatusCommon = {
   // (undefined → coluna intocada), então cancelar por lá NÃO forja uma decisão financeira.
   readonly financialCancellationDecision?: WorkOrderFinancialCancellationDecision;
   readonly actorUserId?: string;
+  // B-APROVACOES-DURAVEIS (item 67) — o pedido de validação da CONCLUSÃO, gravado pelo repositório na mesma unidade do
+  // status (no banco, a mesma transação; em memória, o mesmo tique). Aceito só com `status: "completed"`: os dois
+  // repositórios recusam o campo com qualquer outro destino.
+  readonly approvalRequest?: {
+    readonly requestedByUserId: string;
+    readonly pendingReason: string;
+  };
 };
 
 // B-SAN3-26 (C26-08, P-CHECKIN-1) — escrever `on_site` no repositório EXIGE um veredito de check-in, e o veredito tem

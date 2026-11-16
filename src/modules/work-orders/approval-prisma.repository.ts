@@ -1,6 +1,8 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../database/rls.js";
+import { EnterpriseAuditLogService } from "../core-saas/audit/audit-log.service.js";
+import type { AuditOutcome, AuditSeverity } from "../core-saas/audit/audit-log.types.js";
 import type { ApprovalRepository } from "./approval.repository.js";
 import type {
   ApprovalAuditContext,
@@ -64,7 +66,11 @@ export class PrismaApprovalRepository implements ApprovalRepository {
         skipDuplicates: true,
       });
       if (inserted[0]) {
-        return mapApprovalRecord(inserted[0]);
+        const approval = mapApprovalRecord(inserted[0]);
+        // A linha `approval.requested` nasce só com a linha da aprovação, na MESMA transação; a repetição que devolve a
+        // pendente existente não grava auditoria nova (emenda 1 §3.6, E1-C).
+        await this.writeAudit({ action: "approval.requested", actorId: input.requestedByUserId, approval, outcome: "success", severity: "info", metadata: { status: approval.status, work_order_id: approval.workOrderId } }); // B-APROV:auditoria-do-pedido
+        return approval;
       }
 
       const pending = await this.client.operationalApproval.findFirst({
@@ -124,6 +130,50 @@ export class PrismaApprovalRepository implements ApprovalRepository {
       },
     });
     return updated[0] ? mapApprovalRecord(updated[0]) : null;
+  }
+
+  // A trilha durável: 1 linha em `audit_logs` pela MESMA transação (`this.client`), com o serviço de auditoria da casa
+  // (mesmos campos de contexto da linha que o controller gravava por fora). Na auditoria entram só chaves da lista segura
+  // (§2.8): ids, o estado e "informado: sim/não" — o texto da nota e o do motivo nunca entram.
+  private async writeAudit(entry: {
+    readonly action: "approval.requested" | "approval.approved" | "approval.rejected" | "approval.self_decision_denied";
+    readonly actorId: string;
+    readonly approval: OperationalApproval;
+    readonly outcome: AuditOutcome;
+    readonly severity: AuditSeverity;
+    readonly metadata: Readonly<Record<string, unknown>>;
+    readonly context?: ApprovalAuditContext;
+  }): Promise<void> {
+    // O escritor é o delegate da própria transação (não o `AuditLogRepository`, que importa o cliente global no topo do
+    // módulo e tiraria o modo memória do ar sem DATABASE_URL).
+    const writer = {
+      create: (data: { readonly tenant_id: string; readonly actor_user_id?: string | null; readonly action: string; readonly entity: string; readonly entity_id?: string | null; readonly metadata?: Prisma.InputJsonValue }) =>
+        this.client.auditLog.create({
+          data: {
+            tenant_id: data.tenant_id,
+            actor_user_id: data.actor_user_id ?? null,
+            action: data.action,
+            entity: data.entity,
+            entity_id: data.entity_id ?? null,
+            metadata: data.metadata,
+          },
+        }),
+    };
+    await new EnterpriseAuditLogService(writer).record({
+      tenantId: entry.approval.tenantId,
+      actorId: entry.actorId,
+      actorEmail: entry.context?.actorEmail,
+      action: entry.action,
+      resourceType: entry.approval.entityType,
+      resourceId: entry.approval.entityId,
+      outcome: entry.outcome,
+      severity: entry.severity,
+      correlationId: entry.context?.correlationId,
+      requestId: entry.context?.requestId,
+      ipAddress: entry.context?.ipAddress,
+      userAgent: entry.context?.userAgent,
+      metadata: { approvalId: entry.approval.id, ...entry.metadata },
+    });
   }
 
   reset(): void {

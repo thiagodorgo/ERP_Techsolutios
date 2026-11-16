@@ -24,6 +24,29 @@ export interface ApprovalRepository {
   reset(): void;
 }
 
+// B-APROVACOES-DURAVEIS (plano §3.6) — o pedido de validação da CONCLUSÃO, montado num lugar só para os dois repositórios
+// de OS: `entity_type = 'work_order'` e `entity_id` = `work_order_id` = a OS (o pedido do técnico, do B-SAN3-16, tem
+// chave própria e convive com este). O campo só vale com destino `completed`; com qualquer outro, falha fechada.
+export function assertApprovalRequestOnlyOnCompletion(input: { readonly status: string; readonly approvalRequest?: unknown }): void {
+  if (input.approvalRequest !== undefined && input.status !== "completed") {
+    throw new Error("approvalRequest is accepted only with status completed.");
+  }
+}
+
+export function completionApprovalRequestInput(
+  input: { readonly tenantId: string; readonly workOrderId: string },
+  request: { readonly requestedByUserId: string; readonly pendingReason: string },
+): RequestOperationalApprovalInput {
+  return {
+    tenantId: input.tenantId,
+    entityType: "work_order",
+    entityId: input.workOrderId,
+    workOrderId: input.workOrderId,
+    requestedByUserId: request.requestedByUserId,
+    pendingReason: request.pendingReason,
+  };
+}
+
 // A trilha da memória: o mesmo vetor de módulo que os testes de regressão leem por `getApprovalAuditEventsForTests`.
 // Em banco, a trilha é a tabela `audit_logs` (approval-prisma.repository.ts).
 const memoryAuditEvents: ApprovalAuditEvent[] = [];

@@ -15,6 +15,7 @@ import {
 } from "./work-order.repository.js";
 import { buildGeocodeQueryString, GeocoderUnavailableError, type Geocoder } from "./geocoding/geocoder.js";
 import { NoopGeocoder } from "./geocoding/noop-geocoder.js";
+import { getMemoryApprovalRepository } from "./approval.repository.js";
 import { createDefaultGeocoder } from "./geocoding/geocoder.factory.js";
 import {
   assertCheckinReferenceUnchanged,
@@ -1663,6 +1664,10 @@ export class WorkOrderService {
       workOrderId: current.id,
       cancellationReason,
       actorUserId: actor.userId,
+      // B-APROVACOES-DURAVEIS (item 67; plano §3.6) — toda conclusão, por qualquer porta (rota de status e fila do app
+      // chamam este método), leva o pedido de validação para dentro da escrita; a 1ª gravação e a regravação depois da
+      // releitura saem desta mesma montagem.
+      ...(nextStatus === "completed" ? { approvalRequest: { requestedByUserId: actor.userId, pendingReason: "Ordem de servico concluida e pronta para validacao operacional." } } : {}), // B-APROV:pedido-do-servico
     };
     const statusWrite = (verdict: CheckinVerdict | undefined, expectedStatus: WorkOrderStatus) => {
       const message = verdict
@@ -2417,7 +2422,8 @@ function checklistPhaseSubject(label: string | null, role: WorkOrderChecklistRol
   return phase ? `${named} ${phase}` : named;
 }
 
-const memoryRepository = new InMemoryWorkOrderRepository();
+// B-APROVACOES-DURAVEIS — a memória da OS grava o pedido da conclusão no MESMO armazém que o serviço de aprovações lê.
+const memoryRepository = new InMemoryWorkOrderRepository(getMemoryApprovalRepository());
 
 // B-O6R-09 · fatia 6 (emenda 1.1 EM1-07) — o escopo de escrita da memória sobre o MESMO armazém deste módulo, para a OS
 // criada dentro da aprovação do orçamento (que o recebe pelo import dinâmico que já usa).
