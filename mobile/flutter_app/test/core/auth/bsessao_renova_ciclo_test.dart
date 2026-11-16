@@ -237,27 +237,23 @@ void main() {
     timeout: const Timeout(Duration(seconds: 20)),
   );
 
-  test(
-    '[T9e] a recusa de A chega depois do login de B: B fica',
-    () async {
-      terreno.portaoRenovacao = Completer<void>();
-      terreno.roteiro.add('401');
-      await app.storage.saveSession(sessaoGuardada());
-      await app.abrir();
+  test('[T9e] a recusa de A chega depois do login de B: B fica', () async {
+    terreno.portaoRenovacao = Completer<void>();
+    terreno.roteiro.add('401');
+    await app.storage.saveSession(sessaoGuardada());
+    await app.abrir();
 
-      final renovacao = renovarComoUmPedidoDeA();
-      await ate(() => terreno.renovacoes == 1, razao: 'a renovação chegou');
-      await app.notifier.login(email: 'b@t1.test', password: 'senha-b');
-      terreno.portaoRenovacao!.complete();
-      terreno.portaoRenovacao = null;
+    final renovacao = renovarComoUmPedidoDeA();
+    await ate(() => terreno.renovacoes == 1, razao: 'a renovação chegou');
+    await app.notifier.login(email: 'b@t1.test', password: 'senha-b');
+    terreno.portaoRenovacao!.complete();
+    terreno.portaoRenovacao = null;
 
-      expect(await renovacao, isA<SessionSuperseded>());
-      expect(app.estado?.status, AuthStatus.authenticated);
-      expect(app.estado?.session?.user.sub, 'b');
-      expect((await app.storage.loadSession())?.user.sub, 'b');
-    },
-    timeout: const Timeout(Duration(seconds: 20)),
-  );
+    expect(await renovacao, isA<SessionSuperseded>());
+    expect(app.estado?.status, AuthStatus.authenticated);
+    expect(app.estado?.session?.user.sub, 'b');
+    expect((await app.storage.loadSession())?.user.sub, 'b');
+  }, timeout: const Timeout(Duration(seconds: 20)));
 
   test(
     '[T9f] um pedido de A volta 401 depois do "Sair" e do login de B: 0 renovação, 1 GET só',
@@ -457,34 +453,30 @@ void main() {
     timeout: const Timeout(Duration(seconds: 20)),
   );
 
-  test(
-    '[T3h] os 4 fetch gravam ownerKey == sessionKeyOf(session)',
-    () async {
-      final s = sessaoGuardada(acesso: 'A0', sessionNonce: 'n-t3h');
-      final key = sessionKeyOf(s);
-      expect(key, 'u1|t1|n-t3h');
+  test('[T3h] os 4 fetch gravam ownerKey == sessionKeyOf(session)', () async {
+    final s = sessaoGuardada(acesso: 'A0', sessionNonce: 'n-t3h');
+    final key = sessionKeyOf(s);
+    expect(key, 'u1|t1|n-t3h');
 
-      final local = LocalDevBootstrapRepository(InMemoryAuthTokenStorage());
-      final fl = await local.fetch(s);
-      expect(fl.ownerKey, key, reason: 'fetch local');
-      await local.cache(fl);
-      expect((await local.restoreCached())?.ownerKey, key);
-      final tl = await local.fetchForTenant(s, 'tenant-field');
-      expect(tl.ownerKey, key, reason: 'troca local');
-      await local.cache(tl);
-      expect((await local.restoreCached())?.ownerKey, key);
+    final local = LocalDevBootstrapRepository(InMemoryAuthTokenStorage());
+    final fl = await local.fetch(s);
+    expect(fl.ownerKey, key, reason: 'fetch local');
+    await local.cache(fl);
+    expect((await local.restoreCached())?.ownerKey, key);
+    final tl = await local.fetchForTenant(s, 'tenant-field');
+    expect(tl.ownerKey, key, reason: 'troca local');
+    await local.cache(tl);
+    expect((await local.restoreCached())?.ownerKey, key);
 
-      final remoto = bootstrapRemoto(terreno, InMemoryAuthTokenStorage());
-      final fr = await remoto.fetch(s);
-      expect(fr.ownerKey, key, reason: 'fetch remoto');
-      expect((await remoto.restoreCached())?.ownerKey, key);
-      final tr = await remoto.fetchForTenant(s, 't2');
-      expect(tr.ownerKey, key, reason: 'troca remota');
-      expect(tr.activeTenant.tenantId, 't2');
-      expect((await remoto.restoreCached())?.ownerKey, key);
-    },
-    timeout: const Timeout(Duration(seconds: 20)),
-  );
+    final remoto = bootstrapRemoto(terreno, InMemoryAuthTokenStorage());
+    final fr = await remoto.fetch(s);
+    expect(fr.ownerKey, key, reason: 'fetch remoto');
+    expect((await remoto.restoreCached())?.ownerKey, key);
+    final tr = await remoto.fetchForTenant(s, 't2');
+    expect(tr.ownerKey, key, reason: 'troca remota');
+    expect(tr.activeTenant.tenantId, 't2');
+    expect((await remoto.restoreCached())?.ownerKey, key);
+  }, timeout: const Timeout(Duration(seconds: 20)));
 
   test(
     '[T3i] remoto e local: a mesma pessoa entra duas vezes na mesma organização; identificadores diferentes, o cache da 1ª recusado, as permissões novas aparecem',

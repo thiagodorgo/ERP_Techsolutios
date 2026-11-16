@@ -851,20 +851,16 @@ void main() {
     timeout: const Timeout(Duration(seconds: 30)),
   );
 
-  test(
-    '[T4b] abrir sem rede com o token vencido: offlineCached',
-    () async {
-      final fechada = await portaFechada();
-      await app.storage.saveSession(sessaoGuardada(vencida: true));
+  test('[T4b] abrir sem rede com o token vencido: offlineCached', () async {
+    final fechada = await portaFechada();
+    await app.storage.saveSession(sessaoGuardada(vencida: true));
 
-      final s = await app.abrir(authBase: 'http://127.0.0.1:$fechada');
+    final s = await app.abrir(authBase: 'http://127.0.0.1:$fechada');
 
-      expect(s.status, AuthStatus.offlineCached);
-      expect(s.session?.user.sub, 'u1');
-      expect(await app.storage.loadSession(), isNotNull);
-    },
-    timeout: const Timeout(Duration(seconds: 20)),
-  );
+    expect(s.status, AuthStatus.offlineCached);
+    expect(s.session?.user.sub, 'u1');
+    expect(await app.storage.loadSession(), isNotNull);
+  }, timeout: const Timeout(Duration(seconds: 20)));
 
   test(
     '[T10a] o armazenamento lança na renovação: a sessão fica, kSessionCheckFailedMessage, relato StateError',
@@ -1051,24 +1047,20 @@ void main() {
     timeout: const Timeout(Duration(seconds: 20)),
   );
 
-  test(
-    '[T11c] três 503: 3 pedidos e para; a sessão fica (D7)',
-    () async {
-      terreno.roteiro.addAll(['503', '503', '503', '503']);
-      final (repo, _) = await repoSobre(terreno);
-      await expectLater(repo.refresh(), throwsA(isA<ApiServerError>()));
-      expect(terreno.renovacoes, 3);
+  test('[T11c] três 503: 3 pedidos e para; a sessão fica (D7)', () async {
+    terreno.roteiro.addAll(['503', '503', '503', '503']);
+    final (repo, _) = await repoSobre(terreno);
+    await expectLater(repo.refresh(), throwsA(isA<ApiServerError>()));
+    expect(terreno.renovacoes, 3);
 
-      await app.storage.saveSession(sessaoGuardada());
-      terreno.roteiro
-        ..clear()
-        ..addAll(['503', '503', '503']);
-      await app.abrir();
-      expect(await pedir(app.cliente()), isA<ApiNetworkError>());
-      expect(app.estado?.status, AuthStatus.authenticated);
-    },
-    timeout: const Timeout(Duration(seconds: 20)),
-  );
+    await app.storage.saveSession(sessaoGuardada());
+    terreno.roteiro
+      ..clear()
+      ..addAll(['503', '503', '503']);
+    await app.abrir();
+    expect(await pedir(app.cliente()), isA<ApiNetworkError>());
+    expect(app.estado?.status, AuthStatus.authenticated);
+  }, timeout: const Timeout(Duration(seconds: 20)));
 
   test(
     '[T11d] com esperas de 50 ms e 150 ms e prazo de 120 ms: 2 pedidos',
