@@ -161,7 +161,7 @@ if (!connectionString) {
     process.env.LOG_LEVEL = "silent";
     process.env.JWT_SECRET = "dev-only-change-me";
     process.env.JWT_EXPIRES_IN = "15m";
-    const [envModule, { createApp }, { MemoryCoreSaasAdapter }, { CoreSaasRegistry }, { InMemoryCoreSaasStore }, statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, channelRuntime, reconcile, webhookEvents, statementRefs, settlement, statementService] =
+    const [envModule, { createApp }, { MemoryCoreSaasAdapter }, { CoreSaasRegistry }, { InMemoryCoreSaasStore }, statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, channelRuntime, reconcile, webhookEvents, statementRefs, settlement, statementService, channelJobs, chargesPrisma] =
       await Promise.all([
         import("../src/config/env.js"),
         import("../src/app.js"),
@@ -184,8 +184,10 @@ if (!connectionString) {
         import("../src/modules/subscription-billing/webhooks/statement-refs.prisma.js"),
         import("../src/modules/subscription-billing/statements/statement-settlement.service.js"),
         import("../src/modules/subscription-billing/statements/statement.service.js"),
+        import("../src/modules/subscription-billing/outbox/channel.jobs.js"),
+        import("../src/modules/subscription-billing/charges/charges.prisma.js"),
       ]);
-    H.m = { statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, channelRuntime, reconcile, webhookEvents, statementRefs, settlement, statementService };
+    H.m = { statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, channelRuntime, reconcile, webhookEvents, statementRefs, settlement, statementService, channelJobs, chargesPrisma };
     H.env = envModule.env;
     H.env.CORE_SAAS_PERSISTENCE = "prisma";
     H.env.BILLING_PROVIDERS_ENABLED = true;
@@ -472,5 +474,88 @@ if (!connectionString) {
     assert.equal(postsWithRef(`${f.statementId}:1`) - before, 1, "1 POST com ref = <id>:1");
     assert.equal(postsFor(f.statementId), 1, "e nenhum outro POST para o demonstrativo");
     assert.deepEqual((await issueLines(f.statementId)).map((row) => row.status), ["SENT"]);
+  });
+
+  // ============================================================== F8 · o poll da nota POR ORGANIZAÇÃO
+  /** As dependências dos polls sobre os repositórios Prisma do papel, recortadas às organizações do caso. */
+  function pollDeps(tenantIds: readonly string[], now: Date) {
+    const c = H.role.client;
+    const statements = new H.m.runtime.PrismaStatementRepository(c);
+    return {
+      outbox: new H.m.outboxPrisma.PrismaOutboxRepository(c, { tenantIds }),
+      events: new H.m.webhookEvents.PrismaWebhookEventRepository(c),
+      refs: new H.m.statementRefs.PrismaStatementRefRepository(c),
+      charges: new H.m.chargesPrisma.PrismaStatementChargeRepository(c),
+      ports: {},
+      resolveCustomer: async () => ({ ok: true as const, customerId: "cus_nm" }),
+      settlement: new H.m.settlement.StatementSettlementService(statements, undefined as never),
+      statements,
+      invoicePorts: { focusnfe: focusPort() },
+      invoices: new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(c),
+      resolveIssueContext: issueContext,
+      listTenantIds: async () => tenantIds,
+      invoiceRecovery: { recoverInvoiceIntents: async () => ({ inserted: 0 }) },
+      now: () => now,
+    };
+  }
+  /** Baixa manual que quita + 1 despacho: a nota da organização sem cobrança fica `pending` (sem webhook). */
+  async function pendingInvoice(tag: string): Promise<Fixture> {
+    const f = await seedClosed(tag);
+    assert.equal((await pay(f)).status, 201);
+    await dispatch(f.tenantId);
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => row.status), ["pending"]);
+    return f;
+  }
+  const later = () => new Date(Date.now() + 31 * 60 * 1000); // além dos 30 min de "parada" (POLL_PENDING_STALE_MS)
+
+  test("NM-POLL: a nota pending da organização SEM cobrança, sem webhook, há mais de 30 min → o poll-pending a reconsulta e autoriza; invoices = 1", async () => {
+    const f = await pendingInvoice("nmpoll");
+    assert.deepEqual((await refsOf(f.statementId)).map((row) => row.external_charge_id), [null], "pré-condição: o índice não tem cobrança");
+    const result = await H.m.channelJobs.runBillingPollPending(pollDeps([f.tenantId], later()));
+    assert.equal(result.invoices, 1, JSON.stringify(result));
+    assert.deepEqual(result.failures, []);
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => row.status), ["authorized"]);
+  });
+
+  test("NM-POLL-b: a nota cancel_pending da organização SEM cobrança → o poll-settled conclui o cancelamento; invoices = 1", async () => {
+    const f = await pendingInvoice("nmpollb");
+    assert.equal((await invoiceWebhook(f.statementId, 1)).event.status, "processed");
+    const [nota] = await q(`SELECT id, external_ref, status FROM subscription_statement_invoices WHERE statement_id = $1::uuid`, f.statementId);
+    assert.equal(nota.status, "authorized");
+    // O cancelamento já pedido ao provedor (o DELETE e o `markCancelPending` que o despacho faria), sem webhook de volta.
+    await fetch(`${H.focus.baseUrl}/v2/nfsen/${encodeURIComponent(nota.external_ref)}`, { method: "DELETE" });
+    await new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(H.role.client).markCancelPending(f.tenantId, nota.id, { reason: "payment_reversed", code: H.m.invoiceDispatch.INVOICE_CANCEL_CODE_OTHERS }, new Date());
+    const result = await H.m.channelJobs.runBillingPollSettled(pollDeps([f.tenantId], new Date()));
+    assert.equal(result.invoices, 1, JSON.stringify(result));
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => row.status), ["cancelled"]);
+  });
+
+  test("NM-POLL-c: a nota emitida 50 dias depois do índice (fora da janela de 45 d) → o poll a reconsulta", async () => {
+    const f = await seedClosed("nmpollc");
+    await q(`INSERT INTO billing_statement_refs (statement_id, tenant_id, provider, external_charge_id, created_at) VALUES ($1::uuid, $2::uuid, 'asaas', $3, now() - interval '50 days')`, f.statementId, f.tenantId, `pay_old_${f.statementId}`);
+    assert.equal((await pay(f)).status, 201);
+    await dispatch(f.tenantId);
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => row.status), ["pending"]);
+    const [ref] = await q(`SELECT created_at FROM billing_statement_refs WHERE statement_id = $1::uuid`, f.statementId);
+    assert.ok(Date.now() - new Date(ref.created_at).getTime() > 45 * 24 * HOUR, "o índice continua com 50 dias");
+    const result = await H.m.channelJobs.runBillingPollPending(pollDeps([f.tenantId], later()));
+    assert.equal(result.invoices, 1, JSON.stringify(result));
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => row.status), ["authorized"]);
+  });
+
+  test("NM-X: duas organizações — a leitura da nota de cada uma roda sob a RLS dela: a da B não aparece na da A (controle positivo e negativo, papel NOBYPASSRLS, GUC trocado); o poll reconsulta as duas", async () => {
+    const a = await pendingInvoice("nmxa");
+    const b = await pendingInvoice("nmxb");
+    const repo = new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(H.role.client);
+    assert.deepEqual((await repo.listLiveForTenant(a.tenantId, "pending")).map((row: { statementId: string }) => row.statementId), [a.statementId], "a A só vê a sua");
+    assert.deepEqual((await repo.listLiveForTenant(b.tenantId, "pending")).map((row: { statementId: string }) => row.statementId), [b.statementId], "a B só vê a sua");
+    const { withTenantRls } = await import("../src/database/rls.js");
+    const seen = (guc: string, statementId: string) =>
+      withTenantRls(H.role.client, guc, async (tx: any) => Number(((await tx.$queryRawUnsafe(`SELECT count(*)::int AS n FROM subscription_statement_invoices WHERE statement_id = $1::uuid`, statementId)) as any[])[0].n));
+    assert.equal(await seen(b.tenantId, b.statementId), 1, "controle positivo: com o GUC da B, a nota da B aparece");
+    assert.equal(await seen(a.tenantId, b.statementId), 0, "controle negativo: com o GUC da A, a nota da B NÃO aparece (RLS)");
+    const result = await H.m.channelJobs.runBillingPollPending(pollDeps([a.tenantId, b.tenantId], later()));
+    assert.equal(result.invoices, 2, JSON.stringify(result));
+    assert.deepEqual([...(await invoicesOf(a.statementId)), ...(await invoicesOf(b.statementId))].map((row) => row.status), ["authorized", "authorized"]);
   });
 }

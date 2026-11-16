@@ -48,6 +48,9 @@ export interface StatementInvoiceRepository {
   /** A nota VIVA (`pending`/`authorized`/`cancel_pending`) do demonstrativo, se houver. */
   findLive(tenantId: string, statementId: string): Promise<SubscriptionStatementInvoice | undefined>;
   listByStatement(tenantId: string, statementId: string): Promise<readonly SubscriptionStatementInvoice[]>;
+  /** B-ASS-08c2 (plano §4.6): as notas VIVAS da organização no estado pedido (o poll da nota por organização, sem depender do
+   * índice de cobrança), em ordem de criação. */
+  listLiveForTenant(tenantId: string, status: "pending" | "cancel_pending"): Promise<readonly SubscriptionStatementInvoice[]>;
   /** A emissão chegou ao provedor (2xx = `processing`, NUNCA autorizada — R-NF-2): guarda o id dele; segue `pending`. */
   markIssued(tenantId: string, id: string, providerInvoiceId: string | null, now: Date): Promise<void>;
   markAuthorized(tenantId: string, id: string, patch: AuthorizedPatch, now: Date): Promise<void>;
@@ -113,6 +116,12 @@ export class InMemoryStatementInvoiceRepository implements StatementInvoiceRepos
 
   async findLive(tenantId: string, statementId: string): Promise<SubscriptionStatementInvoice | undefined> {
     return [...this.#rows.values()].find((row) => row.tenantId === tenantId && row.statementId === statementId && LIVE_INVOICE_STATUSES.includes(row.status));
+  }
+
+  async listLiveForTenant(tenantId: string, status: "pending" | "cancel_pending"): Promise<readonly SubscriptionStatementInvoice[]> {
+    return [...this.#rows.values()]
+      .filter((row) => row.tenantId === tenantId && LIVE_INVOICE_STATUSES.includes(row.status) && row.status === status)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 
   async listByStatement(tenantId: string, statementId: string): Promise<readonly SubscriptionStatementInvoice[]> {

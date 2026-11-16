@@ -95,6 +95,8 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.findByRef#withTenantRls": "cenario:invoices.findByRef",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.findLive#withTenantRls": "cenario:invoices.findLive",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.listByStatement#withTenantRls": "cenario:invoices.listByStatement",
+  // B-ASS-08c2 (plano §4.6, §4.17): as notas vivas da organização (o poll da nota por organização), só leitura sob a RLS dela.
+  "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.listLiveForTenant#withTenantRls": "cenario:invoices.listLiveForTenant",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.markAuthorized#withTenantRls": "cenario:invoices.markAuthorized",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.markCancelFailed#withTenantRls": "cenario:invoices.markCancelFailed",
   "src/modules/subscription-billing/invoices/invoices.prisma.ts#PrismaStatementInvoiceRepository.markCancelPending#withTenantRls": "cenario:invoices.markCancelPending",
@@ -139,6 +141,8 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.findStatement#withTenantRls": "cenario:runtime.findStatement",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.findPayableCharge#withTenantRls": "cenario:runtime.findPayableCharge",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listCredits#withTenantRls": "cenario:runtime.listCredits",
+  // B-ASS-08c2 (plano §4.5, §4.17): os candidatos da varredura da nota, uma leitura sob a RLS da organização, sem trava.
+  "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listInvoiceIntentCandidates#withTenantRls": "cenario:runtime.listInvoiceIntentCandidates",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listPayments#withTenantRls": "cenario:runtime.listPayments",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.listStatements#withTenantRls": "cenario:runtime.listStatements",
   "src/modules/subscription-billing/statements/statement.prisma-runtime.ts#PrismaStatementRepository.transaction#withTenantRls": "cenario:runtime.transaction",
@@ -149,6 +153,8 @@ const FROZEN: Readonly<Record<string, string>> = {
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.close#.transaction": "cenario:service.close",
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.recordManualPayment#.transaction": "cenario:service.recordManualPayment",
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.recordProviderPayment#.transaction": "cenario:service.recordProviderPayment",
+  // B-ASS-08c2 (plano §4.5, §4.17): a varredura da nota, uma transação por candidato, com o demonstrativo travado PRIMEIRO.
+  "src/modules/subscription-billing/statements/statement.service.ts#StatementService.recoverInvoiceIntents#.transaction": "cenario:service.recoverInvoiceIntents",
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.reopen#.transaction": "cenario:service.reopen",
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.reverseManualPayment#.transaction": "cenario:service.reverseManualPayment",
   "src/modules/subscription-billing/statements/statement.service.ts#StatementService.writeOffCredit#.transaction": "cenario:service.writeOffCredit",
@@ -624,6 +630,29 @@ if (!connectionString) {
     assert.equal(by.get(s11)!.charges, "confirmed");
   });
 
+  test("T-LOCK-2 (B-ASS-08c2): a varredura da nota — os candidatos e a transação por candidato, executados, com o demonstrativo primeiro", async () => {
+    const rt = await statementRuntime(recording.client);
+    const intents = { issueTarget: { provider: "focusnfe", enabled: true }, enabledInvoiceProviders: ["focusnfe"] };
+    const { StatementService } = await import("../src/modules/subscription-billing/statements/statement.service.js");
+    const withIntents = new StatementService(rt.repository, { resolve: async () => ({ kind: "skip" as const, reason: "no_subscription" as const }) }, rt.audit, { invoiceIntents: { resolve: async () => intents } });
+    const v = await seedStatement("c2-sweep", { refs: false });
+    await db.$executeRawUnsafe(`UPDATE subscription_statements SET status = 'paid', paid_amount = total_amount, paid_at = now() WHERE id = $1::uuid`, v.statementId);
+    const before = runs.length;
+    await scenario("runtime.listInvoiceIntentCandidates", () => rt.repository.listInvoiceIntentCandidates(v.tenantId, new Date("2026-11-11T09:43:45.000Z")));
+    let swept: unknown;
+    await scenario("service.recoverInvoiceIntents", async () => {
+      swept = await withIntents.recoverInvoiceIntents(v.tenantId, NOW);
+    });
+    const mine = runs.slice(before);
+    assert.deepEqual(mine.filter((run) => run.error !== null).map((run) => `${run.name}: ${run.error}`), [], "os cenários do 08c2 rodam os caminhos de sucesso");
+    assert.deepEqual(swept, { inserted: 1 }, "a varredura executou o INSERT da intenção");
+    // a 1ª trava da transação por candidato é o demonstrativo (forte), antes da fila e do índice: o [SWEEP-LOCK]
+    for (const transaction of mine.find((run) => run.name === "service.recoverInvoiceIntents")!.transactions.filter((t) => t.events.some((event) => effectsOf(event, context) !== "unknown" && (effectsOf(event, context) as unknown[]).length > 0))) {
+      const first = transaction.events.map((event) => effectsOf(event, context)).find((effects) => effects !== "unknown" && effects.length > 0);
+      assert.ok(first !== undefined && first !== "unknown" && first[0]!.table === "subscription_statements" && first[0]!.strong, "service.recoverInvoiceIntents: a 1ª trava não é a do demonstrativo");
+    }
+  });
+
   test("T-LOCK-2 (08b): invoices/ — as 10 transações da nota, executadas, com o demonstrativo primeiro", async () => {
     const now = new Date();
     const invoices = new PrismaStatementInvoiceRepository(recording.client);
@@ -642,6 +671,7 @@ if (!connectionString) {
     await scenario("invoices.findByRef", () => invoices.findByRef(a.tenantId, provider, refA));
     await scenario("invoices.findLive", () => invoices.findLive(a.tenantId, a.statementId));
     await scenario("invoices.listByStatement", () => invoices.listByStatement(a.tenantId, a.statementId));
+    await scenario("invoices.listLiveForTenant", () => invoices.listLiveForTenant(a.tenantId, "pending")); // B-ASS-08c2 (§4.6)
     await scenario("invoices.markIssued", () => invoices.markIssued(a.tenantId, invoiceA, "nfse_lk2_1", now));
     await scenario("invoices.markAuthorized", () => invoices.markAuthorized(a.tenantId, invoiceA, { number: "NFSE-LK2", verificationCode: "V", pdfUrl: "https://documentos.invalid/lk2.pdf", pdfSource: "public_url" }, now));
     await scenario("invoices.markCancelPending", () => invoices.markCancelPending(a.tenantId, invoiceA, { reason: "Pagamento estornado", code: "9" }, now));

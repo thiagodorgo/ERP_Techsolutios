@@ -11,7 +11,6 @@ import type { PaymentProviderPort } from "../providers/payment/payment-provider.
 import { CHARGE_RULES } from "../charges/charge-rules.js";
 import type { StatementChargeRepository } from "../charges/charges.repository.js";
 import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
-import type { SubscriptionStatementInvoice } from "../invoices/invoices.types.js";
 import type { StatementRepository } from "../statements/statement.repository.js";
 import type { StatementSettlementService } from "../statements/statement-settlement.service.js";
 import type { WebhookEventRepository } from "../webhooks/webhook-events.repository.js";
@@ -119,21 +118,61 @@ export type PollResult = {
   /** Notas reconsultadas (`pending` sem retorno no poll-pending; `cancel_pending` no poll-settled). */
   readonly invoices: number;
   readonly outcomes: Readonly<Partial<Record<ReconcileOutcome, number>>>;
+  /** B-ASS-08c2 (plano §4.6): as organizações cuja perna de NOTA falhou nesta rodada (só o código); o laço seguiu. */
+  readonly failures: readonly { readonly tenantId: string | null; readonly code: string }[];
 };
 
-/** A nota viva do demonstrativo no estado pedido, de provedor LIGADO, e (se houver corte) parada há tempo suficiente. */
-async function liveInvoiceToReconsult(
+function pollFailureCode(error: unknown): string {
+  if (error && typeof error === "object") {
+    const candidate = error as { code?: unknown; name?: unknown };
+    if (typeof candidate.code === "string" && candidate.code) return candidate.code;
+    if (typeof candidate.name === "string" && candidate.name) return candidate.name;
+  }
+  return "unknown_error";
+}
+
+/**
+ * B-ASS-08c2 (plano §4.6) — a perna de NOTA dos dois polls, POR ORGANIZAÇÃO (não pelo índice de cobrança): a nota da
+ * organização sem cobrança pelo provedor também é reconsultada, e a emitida depois da janela do índice também. Cada leitura roda
+ * sob a RLS da própria organização; a falha de uma é isolada (vai a `failures`) e o laço segue. Só com provedor de nota ligado;
+ * só notas de provedor LIGADO; `staleCutoffMs` = parada há tempo suficiente (`issuedAt ?? createdAt`, a régua de sempre).
+ */
+async function pollInvoicesByTenant(
   deps: ChannelDeps,
-  tenantId: string,
-  statementId: string,
+  tenantIds: readonly string[],
   status: "pending" | "cancel_pending",
-  staleCutoffMs?: number,
-): Promise<SubscriptionStatementInvoice | undefined> {
-  if (!deps.invoices || !deps.invoicePorts) return undefined;
-  const live = await deps.invoices.findLive(tenantId, statementId);
-  if (!live || live.status !== status || !deps.invoicePorts[live.provider]) return undefined;
-  if (staleCutoffMs !== undefined && (live.issuedAt ?? live.createdAt).getTime() > staleCutoffMs) return undefined;
-  return live;
+  staleCutoffMs: number | undefined,
+  count: (outcome: ReconcileOutcome) => void,
+  failures: Array<{ readonly tenantId: string | null; readonly code: string }>,
+): Promise<number> {
+  const invoicePorts = deps.invoicePorts;
+  const store = deps.invoices;
+  if (!store || !invoicePorts || Object.keys(invoicePorts).length === 0) return 0;
+  let reconsulted = 0;
+  for (const tenantId of tenantIds) {
+    try {
+      for (const invoice of await store.listLiveForTenant(tenantId, status)) {
+        if (!invoicePorts[invoice.provider]) continue;
+        if (staleCutoffMs !== undefined && (invoice.issuedAt ?? invoice.createdAt).getTime() > staleCutoffMs) continue;
+        count((await applyReconsultedInvoiceState(reconcileDepsOf(deps), { provider: invoice.provider, tenantId, statementId: invoice.statementId, externalRef: invoice.externalRef })).outcome);
+        reconsulted += 1;
+      }
+    } catch (error) {
+      failures.push({ tenantId, code: pollFailureCode(error) });
+    }
+  }
+  return reconsulted;
+}
+
+/** A lista de organizações da perna de nota, só com provedor de nota ligado; a falha da enumeração vai a `failures`. */
+async function invoicePollTenants(deps: ChannelDeps, failures: Array<{ readonly tenantId: string | null; readonly code: string }>): Promise<readonly string[]> {
+  if (!deps.invoices || !deps.invoicePorts || Object.keys(deps.invoicePorts).length === 0) return [];
+  try {
+    return await deps.listTenantIds();
+  } catch (error) {
+    failures.push({ tenantId: null, code: pollFailureCode(error) });
+    return [];
+  }
 }
 
 /** `billing.poll-pending`: (a) evento `received` órfão há > 30 min (o job dele se perdeu — R-WH-8) é reconciliado; (b)
@@ -152,7 +191,6 @@ export async function runBillingPollPending(deps: ChannelDeps): Promise<PollResu
   }
 
   let charges = 0;
-  let invoices = 0;
   const staleCutoff = now.getTime() - POLL_PENDING_STALE_MS;
   for (const ref of await deps.refs.listWithCharge(new Date(now.getTime() - POLL_PENDING_LOOKBACK_MS))) {
     if (ref.createdAt.getTime() > staleCutoff) continue;
@@ -162,13 +200,10 @@ export async function runBillingPollPending(deps: ChannelDeps): Promise<PollResu
       count((await applyReconsultedChargeState(reconcileDepsOf(deps), { provider: ref.provider, tenantId: ref.tenantId, statementId: ref.statementId, chargeId: ref.externalChargeId })).outcome);
       charges += 1;
     }
-    const invoice = await liveInvoiceToReconsult(deps, ref.tenantId, ref.statementId, "pending", staleCutoff);
-    if (invoice) {
-      count((await applyReconsultedInvoiceState(reconcileDepsOf(deps), { provider: invoice.provider, tenantId: ref.tenantId, statementId: ref.statementId, externalRef: invoice.externalRef })).outcome);
-      invoices += 1;
-    }
   }
-  return { events, charges, invoices, outcomes };
+  const failures: Array<{ readonly tenantId: string | null; readonly code: string }> = [];
+  const invoices = await pollInvoicesByTenant(deps, await invoicePollTenants(deps, failures), "pending", staleCutoff, count, failures); // [POLL-NOTA-ORGS]
+  return { events, charges, invoices, outcomes, failures };
 }
 
 /** Estados de cobrança que ainda podem virar chargeback/estorno tardio (G9). */
@@ -182,7 +217,6 @@ export async function runBillingPollSettled(deps: ChannelDeps): Promise<PollResu
   const outcomes: Partial<Record<ReconcileOutcome, number>> = {};
   const count = (outcome: ReconcileOutcome) => (outcomes[outcome] = (outcomes[outcome] ?? 0) + 1);
   let charges = 0;
-  let invoices = 0;
   for (const ref of await deps.refs.listWithCharge(new Date(now.getTime() - POLL_SETTLED_WINDOW_MS))) {
     const statement = await deps.statements.findStatement(ref.tenantId, ref.statementId);
     if (!statement) continue;
@@ -190,11 +224,8 @@ export async function runBillingPollSettled(deps: ChannelDeps): Promise<PollResu
       count((await applyReconsultedChargeState(reconcileDepsOf(deps), { provider: ref.provider, tenantId: ref.tenantId, statementId: ref.statementId, chargeId: ref.externalChargeId })).outcome);
       charges += 1;
     }
-    const invoice = await liveInvoiceToReconsult(deps, ref.tenantId, ref.statementId, "cancel_pending");
-    if (invoice) {
-      count((await applyReconsultedInvoiceState(reconcileDepsOf(deps), { provider: invoice.provider, tenantId: ref.tenantId, statementId: ref.statementId, externalRef: invoice.externalRef })).outcome);
-      invoices += 1;
-    }
   }
-  return { events: 0, charges, invoices, outcomes };
+  const failures: Array<{ readonly tenantId: string | null; readonly code: string }> = [];
+  const invoices = await pollInvoicesByTenant(deps, await invoicePollTenants(deps, failures), "cancel_pending", undefined, count, failures); // [POLL-NOTA-CANCEL]
+  return { events: 0, charges, invoices, outcomes, failures };
 }

@@ -151,6 +151,14 @@ export class PrismaStatementInvoiceRepository implements StatementInvoiceReposit
     });
   }
 
+  /** B-ASS-08c2 (plano §4.6): as notas vivas da organização no estado pedido, numa leitura sob a RLS dela (a vida pelo `LIVE_SQL`). */
+  async listLiveForTenant(tenantId: string, status: "pending" | "cancel_pending"): Promise<readonly SubscriptionStatementInvoice[]> {
+    return withTenantRls(this.client, tenantId, async (tx) => {
+      const rows = (await tx.$queryRawUnsafe(`SELECT * FROM subscription_statement_invoices WHERE tenant_id = $1::uuid AND ${LIVE_SQL} AND status = $2 ORDER BY created_at, seq`, tenantId, status)) as Row[];
+      return rows.map(toDomain);
+    });
+  }
+
   async listByStatement(tenantId: string, statementId: string): Promise<readonly SubscriptionStatementInvoice[]> {
     return withTenantRls(this.client, tenantId, async (tx) => {
       const rows = (await tx.$queryRawUnsafe(`SELECT * FROM subscription_statement_invoices WHERE statement_id = $1::uuid ORDER BY seq ASC`, statementId)) as Row[];

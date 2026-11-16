@@ -566,4 +566,17 @@ if (!connectionString) {
     assert.equal(result.invoiceSweep?.inserted, 0, "0 intenção nova");
     assert.equal(enumerated, 1000, "as 1 000 organizações enumeradas");
   });
+
+  test("VR-X: a varredura da organização A não grava linha nem índice para um demonstrativo da B (RLS; papel NOBYPASSRLS), com controle positivo na própria B", async () => {
+    const a = await paidLegacy("vrxa");
+    const b = await paidLegacy("vrxb");
+    const statements = new PrismaStatementRepository(role.client);
+    assert.deepEqual(await statements.listInvoiceIntentCandidates(a.tenantId, INVOICE_BACKFILL_CUTOFF), [a.statementId], "a consulta da A só acha o da A");
+    assert.deepEqual(await statements.listInvoiceIntentCandidates(b.tenantId, INVOICE_BACKFILL_CUTOFF), [b.statementId], "controle positivo: a da B acha o da B");
+    const w = world([a.tenantId]);
+    assert.deepEqual(await w.service.recoverInvoiceIntents(a.tenantId, new Date()), { inserted: 1 });
+    assert.equal((await issueLines(a.statementId)).length, 1, "a A ganhou a sua");
+    assert.deepEqual(await issueLines(b.statementId), [], "0 linha para o demonstrativo da B");
+    assert.deepEqual(await refsOf(b.statementId), [], "0 índice para o demonstrativo da B");
+  });
 }
