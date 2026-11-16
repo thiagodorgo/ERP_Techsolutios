@@ -19,9 +19,19 @@ import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
+import { startAsaasFake } from "./helpers/fake-providers/asaas.js";
 import { startFocusNfeFake } from "./helpers/fake-providers/focusnfe.js";
 import { BillingHttpClient } from "../src/modules/subscription-billing/providers/http/billing-http.client.js";
 import { FocusNfeInvoiceAdapter } from "../src/modules/subscription-billing/providers/invoice/focusnfe/focusnfe.adapter.js";
+import { AsaasPaymentAdapter } from "../src/modules/subscription-billing/providers/payment/asaas/asaas.adapter.js";
+import type { PaymentProviderPort } from "../src/modules/subscription-billing/providers/payment/payment-provider.port.js";
+import { PrismaChargeIntentRepository } from "../src/modules/subscription-billing/charges/charge-intent.prisma.js";
+import { requestChargeCreate } from "../src/modules/subscription-billing/charges/charge-request.service.js";
+import { InvoiceOutboxHandler } from "../src/modules/subscription-billing/outbox/invoice.dispatch.js";
+import { runDispatchOutbox, type DispatchAuditEvent } from "../src/modules/subscription-billing/outbox/outbox.dispatcher.js";
+import { runInvoiceRecoverySweep } from "../src/modules/subscription-billing/outbox/invoice-sweep.js";
+import { INVOICE_DEFER_MS, OUTBOX_ORPHAN_MS } from "../src/modules/subscription-billing/outbox/outbox.types.js";
+import { reconcileWebhookEvent } from "../src/modules/subscription-billing/webhooks/reconcile.service.js";
 import { PrismaStatementRepository } from "../src/modules/subscription-billing/statements/statement.prisma-runtime.js";
 import { StatementService } from "../src/modules/subscription-billing/statements/statement.service.js";
 import { StatementSettlementService, type InvoiceIntents } from "../src/modules/subscription-billing/statements/statement-settlement.service.js";
@@ -53,9 +63,13 @@ if (!connectionString) {
   let role: EphemeralRole;
   let dbName = "";
   let focus: any;
+  let focusRejected: any;
+  let asaasFake: any;
 
   after(async () => {
     await focus?.close();
+    await focusRejected?.close();
+    await asaasFake?.close();
     await role?.drop();
     await db?.$disconnect();
     if (admin && dbName) await admin.$executeRawUnsafe(`DROP DATABASE IF EXISTS "${dbName}" WITH (FORCE)`);
@@ -97,8 +111,15 @@ if (!connectionString) {
   const locksOf = async (pid: number, relname: string) =>
     Number((await q(`SELECT count(*)::int AS n FROM pg_locks l JOIN pg_class c ON c.oid = l.relation WHERE l.pid = $1 AND c.relname = $2`, pid, relname))[0].n);
 
+  function asaasPort(): PaymentProviderPort {
+    return new AsaasPaymentAdapter(
+      new BillingHttpClient({ provider: "asaas", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${asaasFake.baseUrl}/v3` }),
+      async (k) => (k === "api_token" ? "TOK" : "WHK"),
+    );
+  }
+
   type World = { deps: ChannelDeps; service: StatementService; statements: PrismaStatementRepository; intents: InvoiceIntents };
-  type WorldOptions = { invoiceOn?: boolean; now?: () => Date; repository?: (real: PrismaStatementRepository) => StatementRepository };
+  type WorldOptions = { invoiceOn?: boolean; now?: () => Date; repository?: (real: PrismaStatementRepository) => StatementRepository; focusServer?: any; payments?: boolean };
 
   /** O mundo de UM caso: só as organizações dele no claim e na varredura (GS-ISO). A varredura usa o serviço do demonstrativo
    * com a intenção de nota no canal (o `[NOTA-INTENTS]` da composição é provado no NM1); o despacho é o de produção. */
@@ -110,7 +131,7 @@ if (!connectionString) {
     const repository = options.repository ? options.repository(statements) : statements;
     const service = new StatementService(repository, INPUTS, AUDIT, { invoiceIntents: { resolve: async () => intents } });
     const focusPort = new FocusNfeInvoiceAdapter(
-      new BillingHttpClient({ provider: "focusnfe", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${focus.baseUrl}/v2` }),
+      new BillingHttpClient({ provider: "focusnfe", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${(options.focusServer ?? focus).baseUrl}/v2` }),
       async (k) => (k === "api_token" ? "TOK-f" : "WHK-f"),
     );
     const deps: ChannelDeps = {
@@ -118,7 +139,7 @@ if (!connectionString) {
       events: new PrismaWebhookEventRepository(c),
       refs: new PrismaStatementRefRepository(c),
       charges: new PrismaStatementChargeRepository(c),
-      ports: {},
+      ports: options.payments ? { asaas: asaasPort() } : {},
       resolveCustomer: async () => ({ ok: true, customerId: "cus_vr" }),
       settlement: new StatementSettlementService(statements, service, intents),
       statements,
@@ -155,6 +176,8 @@ if (!connectionString) {
     const posture = (await role.client.$queryRawUnsafe(`SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user`)) as any[];
     assert.deepEqual(posture, [{ rolsuper: false, rolbypassrls: false }], "o papel de runtime é NOSUPERUSER NOBYPASSRLS");
     focus = await startFocusNfeFake("ok");
+    focusRejected = await startFocusNfeFake("rejected");
+    asaasFake = await startAsaasFake();
   });
 
   test("VR1: a baixa manual que quitou ANTES do 08c2 (sem intenção, paga depois do corte), numa organização sem índice; ligada a nota, 1 rodada de despacho → 1 intenção, 1 índice e 1 POST /nfsen", async () => {
@@ -275,5 +298,272 @@ if (!connectionString) {
     const result = await running;
     assert.equal(result.invoiceSweep?.ok, true, `sem 40P01 nem outra falha: ${JSON.stringify(result.invoiceSweep)}`);
     assert.equal((await issueLines(f.statementId)).length, 1, "1 intenção, gravada depois da trava");
+  });
+
+  // ============================================================== F7b · a falha, a época, a consulta, o desligado e o custo
+  const SPDAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" });
+  const dueIn = (days: number) => SPDAY.format(new Date(Date.now() + days * 24 * HOUR));
+  const allLines = (statementId: string) =>
+    q(`SELECT kind, status, skip_reason, attempts, last_error, next_attempt_at, idempotency_key FROM billing_outbox WHERE statement_id = $1::uuid ORDER BY created_at, idempotency_key`, statementId);
+  const invoicesOf = (statementId: string) => q(`SELECT id, seq, status, external_ref FROM subscription_statement_invoices WHERE statement_id = $1::uuid ORDER BY seq`, statementId);
+  const nfsePosts = (server: any) => server.recorded.filter((r: { method: string; path: string }) => r.method === "POST" && r.path.startsWith("/v2/nfsen")).length;
+  const callsOn = (server: any, method: string, statementId: string) =>
+    server.recorded.filter((r: { method: string; path: string }) => r.method === method && decodeURIComponent(r.path).includes(statementId)).length;
+  const paymentPosts = () => asaasFake.recorded.filter((r: { method: string; path: string }) => r.method === "POST" && r.path.startsWith("/v3/payments")).length;
+
+  /** A falha injetada na varredura de UMA organização: o INSERT dela na fila levanta (o molde do EG6/NM2b). */
+  async function failOutboxInsertFor(tenantId: string, tag: string): Promise<() => Promise<void>> {
+    const fn = `c2_vr_fail_${tag}`;
+    await db.$executeRawUnsafe(`CREATE OR REPLACE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $f$ BEGIN IF NEW.tenant_id = '${tenantId}'::uuid THEN RAISE EXCEPTION 'c2_injected_sweep_failure'; END IF; RETURN NEW; END $f$`);
+    await db.$executeRawUnsafe(`CREATE TRIGGER ${fn} BEFORE INSERT ON billing_outbox FOR EACH ROW EXECUTE FUNCTION ${fn}()`);
+    return async () => {
+      await db.$executeRawUnsafe(`DROP TRIGGER IF EXISTS ${fn} ON billing_outbox`);
+      await db.$executeRawUnsafe(`DROP FUNCTION IF EXISTS ${fn}()`);
+    };
+  }
+
+  /** O webhook da nota (`ref = <id>:<seq>`) pelo reconcile real; o roteiro do falso decide o estado. */
+  async function invoiceWebhook(w: World, statementId: string, seq: number, server: any): Promise<string> {
+    const c = role.client;
+    const events = new PrismaWebhookEventRepository(c);
+    const externalEventId = `vr-wh-${randomUUID()}`;
+    await events.insertIfAbsent({ provider: "focusnfe", externalEventId, bodyDigest: "0".repeat(64), signatureOk: true, externalResourceId: null, externalReference: `${statementId}:${seq}` }, new Date());
+    const port = new FocusNfeInvoiceAdapter(
+      new BillingHttpClient({ provider: "focusnfe", environment: "sandbox", channelEnabled: true, allowLocalHosts: true, nodeEnv: "test", baseUrl: `${server.baseUrl}/v2` }),
+      async (k) => (k === "api_token" ? "TOK-f" : "WHK-f"),
+    );
+    await reconcileWebhookEvent(
+      { events, refs: new PrismaStatementRefRepository(c), ports: {}, settlement: w.deps.settlement, invoicePorts: { focusnfe: port }, invoices: new PrismaStatementInvoiceRepository(c) },
+      { provider: "focusnfe", externalEventId },
+    );
+    return (await q(`SELECT status FROM billing_webhook_events WHERE external_event_id = $1`, externalEventId))[0].status as string;
+  }
+
+  test("VR6: a varredura de UMA organização (A) falha → nesta rodada 0 POST /nfsen para TODAS; a cobrança da B sai (1 POST /payments); a invoice_issue da B fica PENDING com o mesmo attempts, sem provider_disabled, last_error = invoice_sweep_failed e +15 min; invoiceSweep.ok = false; a trilha com a A e o código", async () => {
+    const a = await paidLegacy("vr6a");
+    const tenantB = await seedTenant("vr6b");
+    const chargeSt = await seedStatement(tenantB, "closed", null, "2026-09");
+    const issueSt = await seedStatement(tenantB, "closed", null, "2026-10");
+    await requestChargeCreate({ intents: new PrismaChargeIntentRepository(role.client) }, { tenantId: tenantB, statementId: chargeSt, provider: "asaas", payload: { amountCents: 10_000, dueDate: dueIn(20), method: "pix" }, now: new Date() });
+    const w0 = world([tenantB]);
+    assert.equal((await w0.service.recordManualPayment({ tenantId: tenantB, statementId: issueSt, amountCents: 10_000, method: "pix", note: null, actorId: "usr_platform", now: new Date() })).statement.status, "paid");
+    const [before] = await issueLines(issueSt);
+    assert.equal(before.status, "PENDING");
+    const attemptsBefore = Number((await allLines(issueSt)).find((row) => row.kind === "invoice_issue")!.attempts);
+    const clockAt = new Date(Date.now() + 60_000);
+    const drop = await failOutboxInsertFor(a.tenantId, "vr6");
+    try {
+      const nfse0 = nfsePosts(focus);
+      const pay0 = paymentPosts();
+      const w = world([a.tenantId, tenantB], { payments: true, now: () => clockAt });
+      const result = await runBillingDispatch(w.deps);
+      assert.equal(result.invoiceSweep?.ok, false, JSON.stringify(result.invoiceSweep));
+      assert.deepEqual(result.invoiceSweep?.failures.map((f) => f.tenantId), [a.tenantId], "a falha é só da A");
+      const code = result.invoiceSweep!.failures[0]!.code;
+      assert.ok(code && !code.includes("c2_injected"), `só o código, nunca a mensagem (${code})`);
+      assert.equal(nfsePosts(focus) - nfse0, 0, "0 POST /nfsen nesta rodada, para TODAS");
+      assert.equal(paymentPosts() - pay0, 1, "a cobrança da B foi despachada");
+      const issue = (await allLines(issueSt)).find((row) => row.kind === "invoice_issue")!;
+      assert.equal(issue.status, "PENDING");
+      assert.equal(issue.skip_reason, null, "sem provider_disabled falso");
+      assert.equal(Number(issue.attempts), attemptsBefore, "a tentativa foi devolvida");
+      assert.equal(issue.last_error, "invoice_sweep_failed");
+      assert.equal(new Date(issue.next_attempt_at).getTime(), clockAt.getTime() + INVOICE_DEFER_MS, "+15 min do relógio injetado");
+      assert.deepEqual(await issueLines(a.statementId), [], "nada nasceu para a A");
+      // A trilha (o `onAudit` do despacho; em produção ela vai ao log pelo `runBillingDispatch`): a A e o código.
+      const audits: DispatchAuditEvent[] = [];
+      await runDispatchOutbox({
+        repo: w.deps.outbox,
+        ports: {},
+        resolveCustomer: w.deps.resolveCustomer,
+        invoices: new InvoiceOutboxHandler({ ports: w.deps.invoicePorts!, invoices: w.deps.invoices!, statements: w.deps.statements, resolveIssueContext: w.deps.resolveIssueContext! }),
+        invoiceSweep: (now) => runInvoiceRecoverySweep({ listTenantIds: w.deps.listTenantIds, sweepTenant: (t, at) => w.deps.invoiceRecovery.recoverInvoiceIntents(t, at), now }),
+        onAudit: async (event) => void audits.push(event),
+        now: () => clockAt,
+      });
+      assert.deepEqual(audits.filter((e) => e.action === "billing_outbox.invoice_sweep_failed").map((e) => [e.tenantId, e.code]), [[a.tenantId, code]]);
+    } finally {
+      await drop();
+    }
+  });
+
+  test("VR6b: com a varredura da A vermelha, o invoice_cancel PENDING da B (nota autorizada, estorno TOTAL do provedor) SAI nesta rodada: 1 DELETE, a linha SENT, a nota cancel_pending; e 0 POST /nfsen", async () => {
+    const a = await paidLegacy("vr6ba");
+    const tenantB = await seedTenant("vr6bb");
+    const st = await seedStatement(tenantB, "closed", null);
+    const wb = world([tenantB]);
+    await wb.deps.settlement.settle({ tenantId: tenantB, statementId: st, source: "asaas", externalChargeId: `pay_vr6b_${st}`, paidCents: 10_000, method: null, now: new Date() });
+    await runBillingDispatch(wb.deps);
+    const [nota] = await invoicesOf(st);
+    assert.equal(nota.status, "pending");
+    await new PrismaStatementInvoiceRepository(role.client).markAuthorized(tenantB, nota.id, { pdfSource: "public_url" }, new Date());
+    await wb.deps.settlement.applyReversal({ tenantId: tenantB, statementId: st, externalChargeId: `pay_vr6b_${st}`, reversedCents: 10_000, kind: "refund", now: new Date() });
+    assert.deepEqual((await allLines(st)).filter((row) => row.kind === "invoice_cancel").map((row) => row.status), ["PENDING"], "o [INTX-03] gravou o cancelamento");
+    const drop = await failOutboxInsertFor(a.tenantId, "vr6b");
+    try {
+      const nfse0 = nfsePosts(focus);
+      const result = await runBillingDispatch(world([a.tenantId, tenantB]).deps);
+      assert.equal(result.invoiceSweep?.ok, false);
+      assert.equal(callsOn(focus, "DELETE", st), 1, "1 DELETE da nota da B");
+      assert.deepEqual((await allLines(st)).filter((row) => row.kind === "invoice_cancel").map((row) => row.status), ["SENT"]);
+      assert.ok(["cancel_pending", "cancelled"].includes((await invoicesOf(st))[0].status));
+      assert.equal(nfsePosts(focus) - nfse0, 0, "0 POST /nfsen");
+    } finally {
+      await drop();
+    }
+  });
+
+  test("VR6c: com a varredura vermelha, a invoice_issue ÓRFÃ (PROCESSING com a posse vencida, a nota pending do beginIssue e existente no falso) RECONSULTA: 1 GET /nfsen/<ref>, 0 POST, a linha SENT (recovered)", async () => {
+    const a = await paidLegacy("vr6ca");
+    const tenantB = await seedTenant("vr6cb");
+    const st = await seedStatement(tenantB, "closed", null);
+    const wb = world([tenantB]);
+    await wb.service.recordManualPayment({ tenantId: tenantB, statementId: st, amountCents: 10_000, method: "pix", note: null, actorId: "usr_platform", now: new Date() });
+    await new PrismaStatementInvoiceRepository(role.client).beginIssue({ tenantId: tenantB, statementId: st, seq: 1, provider: "focusnfe", environment: "sandbox", serie: 7 }, new Date());
+    // A nota que o POST perdido criou no provedor (o falso a guarda pela ref).
+    await fetch(`${focus.baseUrl}/v2/nfsen?ref=${encodeURIComponent(`${st}:1`)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ serie_dps: 7, numero_dps: 990_000 + Math.floor(Math.random() * 9_000) }) });
+    await db.$executeRawUnsafe(`UPDATE billing_outbox SET status = 'PROCESSING', attempts = 1, claimed_at = now(), claimed_by = 'zumbi', attempt_started_at = now() WHERE statement_id = $1::uuid AND kind = 'invoice_issue'`, st);
+    const drop = await failOutboxInsertFor(a.tenantId, "vr6c");
+    try {
+      const posts0 = callsOn(focus, "POST", st);
+      const gets0 = callsOn(focus, "GET", st);
+      const clockAt = new Date(Date.now() + OUTBOX_ORPHAN_MS + 60_000); // a órfã nasce pelo relógio INJETADO, não por espera
+      const result = await runBillingDispatch(world([a.tenantId, tenantB], { now: () => clockAt }).deps);
+      assert.equal(result.invoiceSweep?.ok, false);
+      assert.equal(callsOn(focus, "GET", st) - gets0, 1, "1 GET de reconsulta");
+      assert.equal(callsOn(focus, "POST", st) - posts0, 0, "0 POST");
+      assert.deepEqual((await issueLines(st)).map((row) => row.status), ["SENT"], "recovered");
+    } finally {
+      await drop();
+    }
+  });
+
+  test("VR-P12: (a) baixa manual com o relógio 1 dia À FRENTE; o despacho emite e a prefeitura REJEITA (nota rejected, nada em voo, nada vivo); nova rodada → continua 1 intenção. (b) a época decidida SOB A TRAVA: a intenção da época nova nasce e termina entre a consulta e a trava → a varredura não cria a 2ª", async () => {
+    // (a) o A9b: a linha da baixa nasce no MESMO instante injetado do paid_at.
+    const tenantId = await seedTenant("vrp12");
+    const st = await seedStatement(tenantId, "closed", null);
+    const ahead = new Date(Date.now() + 24 * HOUR);
+    const w = world([tenantId], { focusServer: focusRejected, now: () => new Date(ahead.getTime() + 60_000) });
+    assert.equal((await w.service.recordManualPayment({ tenantId, statementId: st, amountCents: 10_000, method: "pix", note: null, actorId: "usr_platform", now: ahead })).statement.status, "paid");
+    await runBillingDispatch(w.deps);
+    assert.equal(await invoiceWebhook(w, st, 1, focusRejected), "processed");
+    assert.deepEqual((await invoicesOf(st)).map((row) => row.status), ["rejected"], "a prefeitura rejeitou");
+    assert.deepEqual((await issueLines(st)).map((row) => row.status), ["SENT"], "nenhuma linha em voo");
+    const again = await runBillingDispatch(w.deps);
+    assert.equal(again.invoiceSweep?.inserted, 0, JSON.stringify(again.invoiceSweep));
+    assert.equal((await issueLines(st)).length, 1, "continua 1 intenção (a reemissão da época é do operador)");
+
+    // (b) a época sob a trava: o pago de antes do 08c2 é candidato; entre a consulta e a trava, o operador estorna e baixa de novo,
+    // a intenção da época nova é emitida e a prefeitura a rejeita (terminal, nada vivo, nada em voo). Só a regra da época, sob a
+    // trava, impede a 2ª intenção (a consulta já tinha listado o candidato).
+    const tenant2 = await seedTenant("vrp12b");
+    const st2 = await seedStatement(tenant2, "closed", null);
+    const legacy = new StatementService(new PrismaStatementRepository(role.client), INPUTS, AUDIT);
+    const first = await legacy.recordManualPayment({ tenantId: tenant2, statementId: st2, amountCents: 10_000, method: "pix", note: null, actorId: "usr_platform", now: new Date(Date.now() - HOUR) });
+    let fired = false;
+    const w2: World = world([tenant2], {
+      focusServer: focusRejected,
+      repository: (real) =>
+        Object.assign(Object.create(real), {
+          listInvoiceIntentCandidates: async (t: string, cutoff: Date) => {
+            const found = await real.listInvoiceIntentCandidates(t, cutoff);
+            if (!fired && found.includes(st2)) {
+              fired = true;
+              await w2.service.reverseManualPayment({ tenantId: tenant2, paymentId: first.payment.id, reason: "estorno de teste", actorId: "usr_platform", now: new Date() });
+              await w2.service.recordManualPayment({ tenantId: tenant2, statementId: st2, amountCents: 10_000, method: "pix", note: null, actorId: "usr_platform", now: new Date() });
+              await runDispatchOutbox({
+                repo: w2.deps.outbox,
+                ports: {},
+                resolveCustomer: w2.deps.resolveCustomer,
+                invoices: new InvoiceOutboxHandler({ ports: w2.deps.invoicePorts!, invoices: w2.deps.invoices!, statements: w2.deps.statements, resolveIssueContext: w2.deps.resolveIssueContext! }),
+              });
+              assert.equal(await invoiceWebhook(w2, st2, 1, focusRejected), "processed");
+              assert.deepEqual((await invoicesOf(st2)).map((row) => row.status), ["rejected"], "a nota da época nova foi rejeitada antes da trava");
+            }
+            return found;
+          },
+        }),
+    });
+    const result = await runBillingDispatch(w2.deps);
+    assert.ok(fired, "a barreira disparou entre a consulta e a trava");
+    assert.equal(result.invoiceSweep?.inserted, 0, JSON.stringify(result.invoiceSweep));
+    assert.equal((await issueLines(st2)).length, 1, "a época já tinha a sua intenção: nenhuma 2ª");
+  });
+
+  test("VR-SQL: listInvoiceIntentCandidates devolve EXATAMENTE os pagos desde o corte sem nota viva, sem linha em voo e sem linha da época, numa fixture com um de cada", async () => {
+    const tenantId = await seedTenant("vrsql");
+    const t0 = new Date(Date.now() - 10 * HOUR);
+    const mk = (period: string, status: "paid" | "closed", paidAt: Date | null) => seedStatement(tenantId, status, paidAt, period);
+    const ok1 = await mk("2026-01", "paid", t0);
+    const beforeCut = await mk("2026-02", "paid", new Date(INVOICE_BACKFILL_CUTOFF.getTime() - SECOND));
+    const live = await mk("2026-03", "paid", new Date(t0.getTime() + 1 * HOUR));
+    const inFlight = await mk("2026-04", "paid", new Date(t0.getTime() + 2 * HOUR));
+    const epoch = await mk("2026-05", "paid", new Date(t0.getTime() + 3 * HOUR));
+    const notPaid = await mk("2026-06", "closed", null);
+    const zero = await mk("2026-07", "paid", new Date(t0.getTime() + 4 * HOUR));
+    const oldEpoch = await mk("2026-08", "paid", new Date(t0.getTime() + 5 * HOUR));
+    await db.$executeRawUnsafe(`UPDATE subscription_statements SET total_amount = 0, paid_amount = 0 WHERE id = $1::uuid`, zero);
+    await db.$executeRawUnsafe(`INSERT INTO subscription_statement_invoices (tenant_id, statement_id, seq, provider, external_ref, status) VALUES ($1::uuid, $2::uuid, 1, 'focusnfe', $2 || ':1', 'authorized')`, tenantId, live);
+    const line = (statementId: string, status: string, occurredAt: Date) =>
+      db.$executeRawUnsafe(
+        `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, status, occurred_at)
+         VALUES ($1::uuid, $2::uuid, 'invoice_issue', 'focusnfe', 'invoice_issue:' || $2 || ':1', gen_random_uuid(), '{"seq":1}'::jsonb, $3, $4)`,
+        tenantId,
+        statementId,
+        status,
+        occurredAt,
+      );
+    await line(inFlight, "PENDING", new Date(t0.getTime() - 24 * HOUR)); // em voo, de OUTRA época: barra
+    await line(epoch, "SENT", new Date(t0.getTime() + 3 * HOUR)); // da época (occurred_at = paid_at), terminal: barra
+    await line(oldEpoch, "SENT", new Date(t0.getTime() - 24 * HOUR)); // de época ANTERIOR, terminal: não barra
+    const found = await new PrismaStatementRepository(role.client).listInvoiceIntentCandidates(tenantId, INVOICE_BACKFILL_CUTOFF);
+    const name = new Map([[ok1, "ok"], [beforeCut, "antes-do-corte"], [live, "nota-viva"], [inFlight, "em-voo"], [epoch, "da-epoca"], [notPaid, "nao-pago"], [zero, "total-zero"], [oldEpoch, "epoca-anterior"]]);
+    assert.deepEqual(found.map((id) => name.get(id)), ["ok", "epoca-anterior"], "exatamente os dois, em ordem de paid_at");
+  });
+
+  test("VR-OFF: sem provedor de nota ligado, a varredura não roda (0 consulta de candidatos, pelo espião na porta)", async () => {
+    const f = await paidLegacy("vroff");
+    let calls = 0;
+    const spy = (real: PrismaStatementRepository) =>
+      Object.assign(Object.create(real), {
+        listInvoiceIntentCandidates: async (t: string, cutoff: Date) => {
+          calls += 1;
+          return real.listInvoiceIntentCandidates(t, cutoff);
+        },
+      });
+    const off = world([f.tenantId], { invoiceOn: false, repository: spy });
+    const result = await runBillingDispatch(off.deps);
+    assert.equal(result.invoiceSweep, undefined, "nenhuma varredura nesta rodada");
+    const { invoicePorts: _ports, ...withoutLeg } = off.deps;
+    await runBillingDispatch(withoutLeg as ChannelDeps);
+    assert.equal(calls, 0, "0 consulta de candidatos");
+    assert.deepEqual(await issueLines(f.statementId), []);
+  });
+
+  test("VR-PERF (diário): 1 000 organizações × 1 demonstrativo pago COM intenção → 0 intenção nova e as 1 000 enumeradas; o tempo vai ao diário, sem asserção de teto", async (t) => {
+    const tag = randomUUID().slice(0, 8);
+    const tenants = (await q(`INSERT INTO tenants (name, slug) SELECT 'c2-vrperf-' || g || '-${tag}', 'c2-vrperf-' || g || '-${tag}' FROM generate_series(1, 1000) g RETURNING id`)).map((row) => row.id as string);
+    await db.$executeRawUnsafe(
+      `WITH s AS (
+         INSERT INTO subscription_statements (tenant_id, period, status, charge_status, segments, users_included, users_peak, users_extra, storage_included_gb, storage_peak_gb,
+           storage_extra_gb, tracked_vehicles, days_in_month, days_measured, extra_user_price, extra_gb_price, base_amount, users_extra_amount, storage_extra_amount,
+           tracking_amount, adjustments_amount, credits_applied_amount, total_amount, paid_amount, snapshot, due_date, closed_at, paid_at)
+         SELECT id, '2026-10', 'paid', 'none', '[]'::jsonb,0,0,0,0,0,0,0,31,31,0,0,100,0,0,0,0,0,100,100,'{"latest":null,"history":[]}'::jsonb,'2026-11-10',now(),now() - interval '1 hour'
+           FROM unnest($1::uuid[]) AS id
+         RETURNING id, tenant_id, paid_at)
+       INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, status, occurred_at)
+       SELECT tenant_id, id, 'invoice_issue', 'focusnfe', 'invoice_issue:' || id || ':1', gen_random_uuid(), '{"seq":1}'::jsonb, 'SENT', paid_at FROM s`,
+      tenants,
+    );
+    let enumerated = 0;
+    const w = world(tenants);
+    const counting: ChannelDeps = { ...w.deps, invoiceRecovery: { recoverInvoiceIntents: async (tenantId, now) => { enumerated += 1; return w.service.recoverInvoiceIntents(tenantId, now); } } };
+    const started = Date.now();
+    const result = await runBillingDispatch(counting);
+    const elapsed = Date.now() - started;
+    t.diagnostic(`VR-PERF: ${tenants.length} organizações, rodada de despacho com a varredura em ${elapsed} ms (inserted ${result.invoiceSweep?.inserted})`);
+    assert.equal(result.invoiceSweep?.ok, true);
+    assert.equal(result.invoiceSweep?.inserted, 0, "0 intenção nova");
+    assert.equal(enumerated, 1000, "as 1 000 organizações enumeradas");
   });
 }
