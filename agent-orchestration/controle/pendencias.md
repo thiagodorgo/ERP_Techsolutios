@@ -11869,6 +11869,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-SAN3-12-PREFERENCIA-APARENCIA-NO-SERVIDOR (2026-10-25) — a preferência de aparência vive no navegador — BAIXA
 - **status:** ABERTA · **dono:** bloco da AWS (`D-APARENCIA-RESPOSTAS` (a)) · **bloqueia:** não.
+- **apenso (2026-11-15, `B-APP-APARENCIA` F1):** o app também guarda no aparelho (`erp.aparencia.v1.<organização>.<pessoa>`, armazenamento seguro). A escolha feita no web não vale no app, nem a do app no web, e trocar de celular volta para a A.
 
 ## P-SAN3-12-STATEPANEL-NA-BIBLIOTECA (2026-10-25) — `StatePanel`/`StaleDataBanner` moram em `work-orders/components` — BAIXA
 - **status:** ABERTA · **dono:** bloco de biblioteca (fila pós-gate) · **bloqueia:** não.
@@ -12699,6 +12700,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
   `OfflineState` e `NetworkStatusBanner` em `erp_components.dart` (`Nao foi possivel carregar`, `disponiveis`,
   `alteracoes serao`, `conexao`). A guarda de fonte do 19b (T6) é a base natural do guard deste bloco.
 - **apenso (2026-11-14, `B-SAN3-17`, PR #568):** os rótulos próprios do cartão de localização da OS seguem sem acento (achado 5 de quem montou a maquete); o cartão é PROIBIDO no bloco.
+- **apenso (2026-11-15, `B-APP-APARENCIA` F1):** também "Sessao expirada" no `_ExpiredSessionView` do Perfil (`profile_screen.dart`), fora do PERMITIDO da F1 (plano §4).
 
 ## P-MOBILE-ROTULO-PAPEIS-FORA-DO-MAPA (2026-11-03) — `super_admin`, `technician` e `viewer` aparecem como "Usuário" — BAIXA
 
@@ -13420,6 +13422,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** `D-TROCA-SENHA-APP-A-AGORA`.
 - **critério de encerramento:** o app oferece o seletor de aparência por usuário e entrega as opções B e C aprovadas para a troca de senha.
 - **apenso (2026-11-14, `B-SAN3-17`, PR #568):** a tela de consentimento de localização saiu só com a aparência A (6.5 do dono); a B e a C entram com o seletor do app, e o aviso sobre o bloco "Captura" da C vai junto.
+- **apenso (2026-11-15, `B-APP-APARENCIA` F1, ramo `feat/mobile-b-app-aparencia-1-seletor`):** o app ganhou o seletor (Perfil › Aparência › Telas, por tela e por pessoa, no aparelho) e a localização nas aparências B e C, com o Perfil e o Início acompanhando a escolha; o bloco "Captura" da C diz "Com o app aberto", "Só no aparelho" ou "Desligada", pela conferência de envio que já existe (`positionsStillAllowed`). Continua ABERTA: fecha no merge da F4 (as B e C da troca de senha, `D-DONO-1511-TROCA-SENHA-SEGUE-ESCOLHA`).
 
 ## P-LOGIN-CONTRASTE-ERRO (2026-11-10) — faixa de erro do login web não alcança o contraste mínimo — MÉDIA (gravidade: leitura do redator)
 
@@ -15073,6 +15076,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **escopo:** `pre-existente` · **dono:** junto do seletor de aparência do app (`P-APARENCIA-APP-SELETOR`).
 - **fato:** o `_FilterChip` privado da lista de OS (`work_order_list_screen.dart:440`), o `ChoiceChip` das despesas (`expense_list_screen.dart:133`) e, desde o `B-SAN3-15b`, o `FilterChip` do Material no estoque do técnico (Emenda 5.2 §1.5, que substitui a `P-MOBILE-LISTA-OS-USAR-MOBILEFILTERCHIP` da Emenda 5.1, nunca aberta).
 - **encerramento:** uma forma só de chip de filtro no app, na biblioteca, usada pelas três telas.
+- **apenso (2026-11-15, `B-APP-APARENCIA`, plano §4) — troca de dono, declarada:** a unificação mexe na lista de OS e nas despesas, telas fora do bloco do seletor; nas B e C do prestador o chip dá lugar a blocos e segmentos. Dono novo: o bloco de design system do app (`B-FERR-AGENTES` até existir um próprio).
 
 ## P-SAN3-15-ACHADOS-DA-MAQUETE-FORA-DO-BLOCO (2026-11-14) — achados da maquete do prestador que o 15b não conserta — BAIXA
 
@@ -16045,6 +16049,7 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **status:** ABERTA · **gravidade:** BAIXA · **dono:** o dono, antes da venda.
 - **origem:** abertura E2.4 e E2.8; Emenda 1 da abertura, 2.3 e §10 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
 - **critério de encerramento:** o texto aprovado pelo advogado e a versão do texto trocada.
+- **apenso (2026-11-15, `B-APP-APARENCIA` F1):** entram no texto que vai ao advogado os da opção C: os valores do bloco "Captura" ("Com o app aberto", "Só no aparelho", "Desligada") e a frase "A posição fica guardada no celular e só vai para a sua organização depois que a sua decisão for registrada." (uma constante, `locationCaptureDeviceOnlyDetail`).
 
 ## P-LOCALIZACAO-TITULO-PENDENTE-APOS-NAO (2026-11-14) — "Consentimento pendente" aparece para quem já disse "não" — BAIXA
 
@@ -16082,3 +16087,15 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 - **origem:** Emenda 1 da abertura, 2.2 (registro da F7 do `B-SAN3-17`, `dev-17-cl`, PR #568).
 - **fato:** o operador sem consentimento e sem viatura sai da página e não é reposto por outro. Não vaza nada.
 - **critério de encerramento:** a página completa o limite, ou o contrato declara que pode vir menor.
+
+## P-APP-TELAS-SEM-3-OPCOES (2026-11-15) — as telas do app sem maquete de 3 opções — MÉDIA
+
+- **status:** ABERTA · **gravidade:** MÉDIA · **escopo:** app de campo · **dono:** o orquestrador, como fila de maquetes do Claude (`D-DESIGN-SO-CLAUDE`) · **bloqueia:** não.
+- **origem:** plano do `B-APP-APARENCIA`, §4: `D-TELAS-SAEM-COM-TRES` vale para todas as telas, mas só 4 do app têm maquete aprovada (localização, execução do guincho, atendimento do prestador, troca de senha). Ficam: Início, lista de OS, nova OS, o detalhe da OS fora da porta do prestador, aprovações, mapa operacional, checklists, despesas e RDV, inventário, sincronização, Perfil, login e seleção de organização.
+- **critério de encerramento:** cada tela do app com maquete A, B e C aprovada pelo dono e registrada no seletor (`appAppearanceScreens`) no bloco que a entrega.
+
+## P-APP-PERFIL-LINHAS-46PX (2026-11-15) — as linhas de navegação do Perfil têm 46 px de alvo — BAIXA
+
+- **status:** ABERTA · **gravidade:** BAIXA · **escopo:** `pre-existente` (o `_NavRow` de `profile_screen.dart` na `origin/main` `80f5b4d9`: padding 13 + texto) · **dono:** o bloco de acessibilidade do app · **bloqueia:** não.
+- **origem:** `B-APP-APARENCIA` F1: o `androidTapTargetGuideline` no Perfil mede 356 × 46 em "Trocar de organização" e na "Localização" da aparência A. As linhas novas da F1 (a seção "Telas" e a "Localização" B e C) têm 48 px.
+- **critério de encerramento:** as linhas do Perfil com alvo de pelo menos 48 px, com o `androidTapTargetGuideline` verde no Perfil inteiro.

@@ -115,6 +115,11 @@ Initial shared component library for React and Flutter, aligned with the ERP Tec
 
 ### Registro — componentes Flutter na biblioteca (por bloco)
 - `MobileExpandableRow` (`mobile/flutter_app/lib/shared/ui/mobile_kit.dart`, B-SAN3-15b; compartilhada entre o B-SAN3-15b e o B-SAN3-17) — a linha de uma altura (`rowHeight` = 48, o alvo de toque do app) que abre o detalhe logo abaixo, no padrão `D-PADRAO-BLOCOS-CLICAVEIS`: sem botão na linha; toque, Enter e Espaço chamam `onToggle`; `Semantics` de botão com o estado aberto; título num `Text` só dele e meta em outro, cortando pelo fim, sem vão e sem estouro; a seta gira e fica azul e o fundo aberto é o azul claro da pílula de informação; `title`, `expanded`, `onToggle` e `detail` obrigatórios, `meta`, `leading` e `trailing` (nunca botão) opcionais. "Um aberto por vez" é da tela. Testes: `test/shared/ui/mobile_expandable_row_test.dart` (K1, K2, K2b, K3 e K4).
+- `MobileStatTile` como botão (`mobile_kit.dart`, B-APP-APARENCIA F1) — parâmetros opcionais `onTap`, `selected` e `icon`: com `onTap`, `Semantics` de botão com o estado selecionado, foco visível e Enter/Espaço; com `icon`, o bloco compacto (ícone num círculo no tom, valor curto, rótulo; o `c-tile` da maquete). Sem os três, desenha como antes. Testes: `test/shared/ui/bapp_kit_aparencias_test.dart` (K1, K2).
+- `MobileIntroHeader` (`mobile_kit.dart`, B-APP-APARENCIA F1) — a apresentação centrada da opção B da localização: ícone num quadrado azul-claro, título e frase (`#475569`). Teste: K6 (contraste).
+- `MobileStatusBlock` (`mobile_kit.dart`, B-APP-APARENCIA F1) — o bloco curto de situação da opção B: rótulo em caixa alta e valor com a bolinha do tom (`PillTone`), botão opcional com `onTap`/`selected`. Testes: K3, K6.
+- `MobileStatusCard` (`mobile_kit.dart`, B-APP-APARENCIA F1) — o cartão de situação da opção B: verde (fundo `#ECFDF5`, borda `#A7F3D0`, círculo `success`) só com `success`; senão, o neutro. Testes: K4, K6.
+- `MobileDangerOutlineButton` (`mobile_kit.dart`, B-APP-APARENCIA F1) — o botão de contorno no vermelho do tema (`dangerInk`, borda `#FECACA`), alvo de 48 px; o "Revogar consentimento" das opções B e C. Testes: K5, K6.
 
 ## Cross-platform rules
 - token names should map cleanly across React, Flutter, and Figma
