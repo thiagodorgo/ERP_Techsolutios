@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/appearance/app_appearance.dart';
+import '../../core/appearance/app_appearance_providers.dart';
 import '../../core/auth/auth_notifier.dart';
 import '../../core/auth/role_labels.dart';
 import '../../core/bootstrap/bootstrap_repository.dart';
+import '../../core/location/location_consent_providers.dart';
+import '../../core/location/location_consent_store.dart';
 import '../../core/network/connectivity_repository.dart';
 import '../../core/sync/auto_sync_coordinator.dart';
 import '../../core/theme/theme_mode_notifier.dart';
@@ -12,6 +16,7 @@ import '../../features/auth/auth_models.dart';
 import '../theme/erp_mobile_theme.dart';
 import 'erp_components.dart';
 import 'erp_scaffold.dart';
+import 'mobile_kit.dart';
 
 /// Perfil do operador — fiel ao protótipo aprovado (screen-refs/mobile/perfil.png).
 ///
@@ -162,19 +167,16 @@ class ProfileScreen extends ConsumerWidget {
 
                       // ── Privacidade (B-SAN3-17) ──
                       const _SectionLabel('Privacidade'),
-                      _SectionCard(
-                        children: [
-                          _NavRow(
-                            label: 'Localização',
-                            onTap: () => context.push('/location'),
-                          ),
-                        ],
-                      ),
+                      _SectionCard(children: [const _PrivacyLocationRow()]),
                       const SizedBox(height: 16),
 
                       // ── Aparência ──
                       const _SectionLabel('Aparência'),
                       _AppearanceCard(ref: ref),
+                      const SizedBox(height: 12),
+                      // B-APP-APARENCIA (F1): a aparência de cada tela.
+                      const _SectionLabel('Telas'),
+                      const _ScreenAppearanceSection(),
                       const SizedBox(height: 16),
 
                       // ── Segurança e sessão ──
@@ -477,6 +479,278 @@ class _ExpiredSessionView extends StatelessWidget {
                 label: const Text('Fazer login novamente'),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── B-APP-APARENCIA (F1) ──────────────────────────────────────────────────────
+
+/// Perfil › Privacidade › "Localização" na aparência que a pessoa escolheu para
+/// a tela de localização (a mesma chave: uma escolha muda as três peças
+/// juntas; Emenda 1, A1). A: igual à "Trocar de organização"; B: com o selo da
+/// situação; C: com ícone e a situação embaixo do título.
+class _PrivacyLocationRow extends ConsumerWidget {
+  const _PrivacyLocationRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final appearance =
+        ref
+            .watch(screenAppearanceProvider(kLocationConsentAppearanceKey))
+            .asData
+            ?.value ??
+        AppAppearance.a;
+    void open() => context.push('/location');
+    if (appearance == AppAppearance.a) {
+      return _NavRow(label: 'Localização', onTap: open);
+    }
+    final situation = _LocationSituation.of(
+      ref.watch(locationConsentStatusProvider).asData?.value,
+    );
+    final isC = appearance == AppAppearance.c;
+    return Semantics(
+      button: true,
+      label: 'Localização. ${isC ? situation.line : situation.short}',
+      excludeSemantics: true,
+      child: InkWell(
+        key: Key('profile-location-row-${appearance.letter}'),
+        onTap: open,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 48),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: isC ? 10 : 13,
+            ),
+            child: Row(
+              children: [
+                if (isC) ...[
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: MobilePill.colorsFor(PillTone.info).$1,
+                    ),
+                    child: const Icon(
+                      Icons.location_on_outlined,
+                      size: 18,
+                      color: ErpMobileTheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Localização',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w700,
+                          color: ErpMobileTheme.ink,
+                        ),
+                      ),
+                      if (isC)
+                        Text(
+                          situation.line,
+                          key: const Key('profile-location-line'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: ErpMobileTheme.inkMuted,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (!isC) ...[
+                  MobilePill(
+                    key: const Key('profile-location-pill'),
+                    label: situation.short,
+                    tone: situation.tone,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                const Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: ErpMobileTheme.inkFaint,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A situação da decisão de localização na linha do Perfil (B e C): as 4 da
+/// maquete (Pendente, Permitido, Revogado, Não permitido), com os textos da
+/// tela de localização.
+class _LocationSituation {
+  const _LocationSituation(this.short, this.line, this.tone);
+
+  factory _LocationSituation.of(LocationConsentStatus? status) {
+    final kind = status?.kind;
+    if (status == null || status.needsDecision || kind == null) {
+      return const _LocationSituation(
+        'Pendente',
+        'Autorize para poder enviar sua localização.',
+        PillTone.warning,
+      );
+    }
+    return switch (kind) {
+      LocationConsentDecisionKind.granted => const _LocationSituation(
+        'Permitido',
+        'Permitido durante o uso do app.',
+        PillTone.done,
+      ),
+      LocationConsentDecisionKind.revoked => _LocationSituation(
+        'Revogado',
+        locationConsentDeclineLine(kind),
+        PillTone.neutral,
+      ),
+      LocationConsentDecisionKind.declined => _LocationSituation(
+        'Não permitido',
+        locationConsentDeclineLine(kind),
+        PillTone.neutral,
+      ),
+    };
+  }
+
+  final String short;
+  final String line;
+  final PillTone tone;
+}
+
+/// Perfil › Aparência › Telas: uma linha por tela do registro, que abre logo
+/// abaixo as 3 opções (`RadioGroup`), com o selo "padrão" e a nota do web. Um
+/// detalhe aberto por vez (`D-PADRAO-BLOCOS-CLICAVEIS`).
+class _ScreenAppearanceSection extends ConsumerStatefulWidget {
+  const _ScreenAppearanceSection();
+
+  @override
+  ConsumerState<_ScreenAppearanceSection> createState() =>
+      _ScreenAppearanceSectionState();
+}
+
+class _ScreenAppearanceSectionState
+    extends ConsumerState<_ScreenAppearanceSection> {
+  String? _openScreen;
+
+  void _toggle(AppAppearanceScreen screen) => setState(() {
+    _openScreen = _openScreen == screen.key ? null : screen.key;
+  });
+
+  Future<void> _choose(AppAppearanceScreen screen, AppAppearance value) async {
+    final saved = await ref
+        .read(appAppearancePrefsProvider.notifier)
+        .setScreen(screen.key, value);
+    if (!mounted) return;
+    if (!saved) _showNotSavedSnackBar(context);
+  }
+
+  void _showNotSavedSnackBar(BuildContext context) {
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(
+        key: Key('aparencia-nao-guardada'),
+        content: Text(
+          'Não foi possível guardar a escolha neste aparelho. Ela vale até fechar o app.',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final prefs =
+        ref.watch(appAppearancePrefsProvider).asData?.value ??
+        const <String, AppAppearance>{};
+    return _SectionCard(
+      children: [
+        for (final screen in appAppearanceScreens)
+          MobileExpandableRow(
+            key: Key('aparencia-tela-${screen.key}'),
+            title: screen.label,
+            meta:
+                ' · ${screen.metaOf(resolveAppAppearance(prefs, screen.key))}',
+            expanded: _openScreen == screen.key,
+            onToggle: () => _toggle(screen),
+            detail: _ScreenAppearanceOptions(
+              screen: screen,
+              chosen: resolveAppAppearance(prefs, screen.key),
+              onChanged: (value) => _choose(screen, value),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ScreenAppearanceOptions extends StatelessWidget {
+  const _ScreenAppearanceOptions({
+    required this.screen,
+    required this.chosen,
+    required this.onChanged,
+  });
+
+  final AppAppearanceScreen screen;
+  final AppAppearance chosen;
+  final ValueChanged<AppAppearance> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = defaultAppAppearanceFor(screen.key);
+    return Semantics(
+      container: true,
+      label: screen.label,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 4, 4, 10),
+        // O detalhe da `MobileExpandableRow` tem fundo próprio: o `Material`
+        // transparente deixa a tinta e o fundo dos `RadioListTile` visíveis
+        // por cima dele (assert do `ListTile` no Flutter 3.47).
+        child: Material(
+          type: MaterialType.transparency,
+          child: RadioGroup<AppAppearance>(
+            groupValue: chosen,
+            onChanged: (value) {
+              if (value != null) onChanged(value);
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final option in screen.options)
+                  RadioListTile<AppAppearance>(
+                    key: Key(
+                      'aparencia-opcao-${screen.key}-${option.value.letter}',
+                    ),
+                    value: option.value,
+                    title: Text(
+                      '${option.value.letter} · ${option.label}',
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        color: ErpMobileTheme.ink,
+                      ),
+                    ),
+                    secondary: option.value == fallback
+                        ? const MobilePill(label: 'padrão')
+                        : null,
+                  ),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(12, 6, 12, 0),
+                  child: Text(
+                    'Escolha pessoal: vale só para você, nesta organização e neste aparelho.',
+                    key: Key('aparencia-nota-pessoal'),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
