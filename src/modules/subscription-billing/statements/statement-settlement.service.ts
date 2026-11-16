@@ -134,11 +134,8 @@ export class StatementSettlementService {
   async #issueIntent(tx: StatementTx, change: { readonly before: SubscriptionStatement; readonly after: SubscriptionStatement }, now: Date): Promise<void> {
     const intents = this.invoiceIntents;
     if (!intents || change.before.status === "paid" || change.after.status !== "paid") return;
-    const intent = intentTx(tx);
-    if (!intent) return;
     // [INTX-06a]
-    const skipReason = intents.issueTarget.enabled ? null : "provider_disabled";
-    await intent.enqueueOutbox({ tenantId: change.after.tenantId, statementId: change.after.id, kind: "invoice_issue", provider: intents.issueTarget.provider, seq: 1, payload: { seq: 1 }, skipReason }, now);
+    await writeInvoiceIssueIntentInTx(tx, intents, { statement: change.after, now, mode: "auto" });
   }
 
   /** B-ASS-08c1c (R2-03, plano §4.7): o 1º pagamento do provedor, no `tx` da baixa — a tabela de cobranças passa a `confirmed`

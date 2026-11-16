@@ -161,7 +161,7 @@ if (!connectionString) {
     process.env.LOG_LEVEL = "silent";
     process.env.JWT_SECRET = "dev-only-change-me";
     process.env.JWT_EXPIRES_IN = "15m";
-    const [envModule, { createApp }, { MemoryCoreSaasAdapter }, { CoreSaasRegistry }, { InMemoryCoreSaasStore }, statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, channelRuntime, reconcile, webhookEvents, statementRefs, settlement] =
+    const [envModule, { createApp }, { MemoryCoreSaasAdapter }, { CoreSaasRegistry }, { InMemoryCoreSaasStore }, statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, channelRuntime, reconcile, webhookEvents, statementRefs, settlement, statementService] =
       await Promise.all([
         import("../src/config/env.js"),
         import("../src/app.js"),
@@ -183,8 +183,9 @@ if (!connectionString) {
         import("../src/modules/subscription-billing/webhooks/webhook-events.prisma.js"),
         import("../src/modules/subscription-billing/webhooks/statement-refs.prisma.js"),
         import("../src/modules/subscription-billing/statements/statement-settlement.service.js"),
+        import("../src/modules/subscription-billing/statements/statement.service.js"),
       ]);
-    H.m = { statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, channelRuntime, reconcile, webhookEvents, statementRefs, settlement };
+    H.m = { statementFactory, vaultFactory, vaultKeys, dispatcher, outboxPrisma, invoicesPrisma, runtime, http, focusAdapter, invoiceDispatch, channelRuntime, reconcile, webhookEvents, statementRefs, settlement, statementService };
     H.env = envModule.env;
     H.env.CORE_SAAS_PERSISTENCE = "prisma";
     H.env.BILLING_PROVIDERS_ENABLED = true;
@@ -369,5 +370,107 @@ if (!connectionString) {
       assert.deepEqual((await lines(f.statementId)).filter((row) => row.kind === "invoice_issue").map((row) => row.status), ["SENT"], `rodada ${round}`);
       assert.equal((await q(`SELECT count(*)::int AS n FROM subscription_statement_invoices WHERE statement_id = $1::uuid AND status = 'pending'`, f.statementId))[0].n, 0);
     }
+  });
+
+  // ============================================================== F5 · `[NOTA-SEQ]` no caminho do PROVEDOR e o `[NOTA-ONE]`
+  /** O settlement do PROVEDOR sobre os repositórios Prisma do papel, com as intenções de nota dadas (o molde do T-INTX). */
+  function providerSettlement(enabled = true) {
+    const statements = new H.m.runtime.PrismaStatementRepository(H.role.client);
+    const service = new H.m.statementService.StatementService(statements, { resolve: async () => ({ kind: "skip" as const, reason: "no_subscription" as const }) }, { record: async () => {} });
+    return new H.m.settlement.StatementSettlementService(statements, service, { issueTarget: { provider: "focusnfe", enabled }, enabledInvoiceProviders: enabled ? ["focusnfe"] : [] });
+  }
+  const providerPay = (settlement: any, f: Fixture, charge: string) =>
+    settlement.settle({ tenantId: f.tenantId, statementId: f.statementId, source: "asaas", externalChargeId: charge, paidCents: 10_000, method: null, now: new Date() });
+  const providerRefund = (settlement: any, f: Fixture, charge: string) =>
+    settlement.applyReversal({ tenantId: f.tenantId, statementId: f.statementId, externalChargeId: charge, reversedCents: 10_000, kind: "refund", now: new Date() });
+  /** O demonstrativo do caminho do PROVEDOR: o índice já nasceu com a cobrança do Asaas (o fechamento com o canal ligado). */
+  async function seedProvider(tag: string): Promise<Fixture> {
+    const f = await seedClosed(tag);
+    await q(`INSERT INTO billing_statement_refs (statement_id, tenant_id, provider, external_charge_id, created_at) VALUES ($1::uuid, $2::uuid, 'asaas', $3, now())`, f.statementId, f.tenantId, `pay_${tag}a_${f.statementId}`);
+    return f;
+  }
+  const issueLines = async (statementId: string) => (await lines(statementId)).filter((row) => row.kind === "invoice_issue");
+  const postsWithRef = (ref: string) =>
+    H.focus.recorded.filter((r: { method: string; path: string }) => r.method === "POST" && r.path.startsWith("/v2/nfsen") && decodeURIComponent(r.path).includes(`ref=${ref}`)).length;
+  const locksOf = async (pid: number, relname: string) =>
+    Number((await q(`SELECT count(*)::int AS n FROM pg_locks l JOIN pg_class c ON c.oid = l.relation WHERE l.pid = $1 AND c.relname = $2`, pid, relname))[0].n);
+
+  test("RE1: o provedor paga (seq 1, nota autorizada), estorno total (nota cancelada), repagamento por OUTRA cobrança → 1 invoice_issue seq 2 VIVA, gravada depois da trava (barreira) → despacho → 1 POST com ref = <id>:2", async () => {
+    const f = await seedProvider("re1");
+    const settlement = providerSettlement();
+    await providerPay(settlement, f, `pay_re1a_${f.statementId}`);
+    assert.deepEqual((await issueLines(f.statementId)).map((row) => row.idempotency_key), [`invoice_issue:${f.statementId}:1`], "a 1ª época: seq 1");
+    await dispatch(f.tenantId);
+    assert.equal((await invoiceWebhook(f.statementId, 1)).event.status, "processed");
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "authorized"]], "nota 1 autorizada");
+    // Estorno TOTAL pelo provedor: o `[INTX-03]` grava o `invoice_cancel`; o despacho cancela e o webhook conclui.
+    await providerRefund(settlement, f, `pay_re1a_${f.statementId}`);
+    assert.equal((await statementRow(f.statementId)).status, "closed");
+    await dispatch(f.tenantId);
+    await invoiceWebhook(f.statementId, 1);
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "cancelled"]], "nota 1 cancelada");
+
+    // O repagamento por OUTRA cobrança, com o demonstrativo travado por H (o molde do T-INTX-9b): quem espera a trava não segura
+    // nada em billing_outbox (a linha nasce DEPOIS da trava).
+    let go!: () => void;
+    const gate = new Promise<void>((resolve) => (go = resolve));
+    let lockedH!: (pid: number) => void;
+    const hLocked = new Promise<number>((resolve) => (lockedH = resolve));
+    const hold = H.db.$transaction(
+      async (tx: any) => {
+        await tx.$queryRawUnsafe(`SELECT id FROM subscription_statements WHERE id = $1::uuid FOR UPDATE`, f.statementId);
+        lockedH(Number(((await tx.$queryRawUnsafe(`SELECT pg_backend_pid() AS pid`)) as Array<{ pid: number }>)[0]!.pid));
+        await gate;
+      },
+      { timeout: 60_000, maxWait: 5_000 },
+    );
+    const hPid = await hLocked;
+    const errs: string[] = [];
+    const repaying = providerPay(settlement, f, `pay_re1b_${f.statementId}`).catch((error: any) => errs.push(`${error?.code ?? ""}:${String(error?.message).slice(-160)}`));
+    let payPid = 0;
+    for (let i = 0; i < 500 && !payPid; i += 1) {
+      const waiting = await H.admin.$queryRawUnsafe(`SELECT pid FROM pg_stat_activity WHERE datname = $1 AND wait_event_type = 'Lock' AND pid <> $2`, H.databaseName, hPid);
+      if (waiting[0]) payPid = Number(waiting[0].pid);
+      else await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    assert.ok(payPid > 0, "barreira: o repagamento chegou a esperar a trava do demonstrativo");
+    assert.ok((await locksOf(hPid, "subscription_statements")) >= 1, "controle positivo: a consulta vê a trava de H");
+    assert.equal(await locksOf(payPid, "billing_outbox"), 0, "quem espera o demonstrativo não segura nada em billing_outbox");
+    go();
+    await hold;
+    await repaying;
+    assert.deepEqual(errs, [], "sem 40P01, P2028 ou 57014");
+    assert.equal((await statementRow(f.statementId)).status, "paid");
+    const issue = await issueLines(f.statementId);
+    assert.deepEqual(
+      issue.map((row) => [row.idempotency_key, row.status, row.skip_reason]),
+      [
+        [`invoice_issue:${f.statementId}:1`, "SENT", null],
+        [`invoice_issue:${f.statementId}:2`, "PENDING", null],
+      ],
+      "1 invoice_issue seq 2 VIVA, ao lado da seq 1 terminal",
+    );
+    const before = postsWithRef(`${f.statementId}:2`);
+    await dispatch(f.tenantId);
+    assert.equal(postsWithRef(`${f.statementId}:2`) - before, 1, "1 POST com ref = <id>:2");
+    assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "cancelled"], [2, "pending"]], "a nota da 2ª época");
+  });
+
+  test("RE2: com a invoice_issue seq 1 ainda PENDING (nota desligada), estorno e repagamento → continua 1 linha ([NOTA-ONE]); religar → 1 POST com ref = <id>:1", async () => {
+    const f = await seedProvider("re2");
+    const off = providerSettlement(false);
+    await providerPay(off, f, `pay_re2a_${f.statementId}`);
+    assert.deepEqual((await issueLines(f.statementId)).map((row) => [row.idempotency_key, row.status, row.skip_reason]), [[`invoice_issue:${f.statementId}:1`, "PENDING", "provider_disabled"]]);
+    await providerRefund(off, f, `pay_re2a_${f.statementId}`);
+    assert.equal((await statementRow(f.statementId)).status, "closed");
+    await providerPay(off, f, `pay_re2b_${f.statementId}`);
+    assert.equal((await statementRow(f.statementId)).status, "paid");
+    assert.deepEqual((await issueLines(f.statementId)).map((row) => row.idempotency_key), [`invoice_issue:${f.statementId}:1`], "continua 1 linha: a PENDING de antes emite para o pago de agora");
+    // Religar: o despacho com a porta de nota ligada limpa o provider_disabled e emite a linha de sempre.
+    const before = postsWithRef(`${f.statementId}:1`);
+    await dispatch(f.tenantId);
+    assert.equal(postsWithRef(`${f.statementId}:1`) - before, 1, "1 POST com ref = <id>:1");
+    assert.equal(postsFor(f.statementId), 1, "e nenhum outro POST para o demonstrativo");
+    assert.deepEqual((await issueLines(f.statementId)).map((row) => row.status), ["SENT"]);
   });
 }
