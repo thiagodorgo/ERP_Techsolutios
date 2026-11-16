@@ -47,6 +47,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     if (restored.isExpired) {
       try {
         final refreshed = await repo.refresh();
+        await repo.commitRefreshed(refreshed);
         return AuthState(status: AuthStatus.authenticated, session: refreshed);
       } catch (_) {
         await repo.clearSession();
@@ -141,11 +142,30 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
         (service) => service.recordAppDisconnect(tenantId: tenantId),
       );
     }
+    // B-APP-SESSAO-RENOVA (D2): o "Sair" entrega ao servidor o token de
+    // renovação VIGENTE guardado, e só depois limpa o aparelho. O servidor
+    // revoga a sessão inteira com esse token (S2).
+    final storedRefreshToken = await _readStoredRefreshToken();
+    if (storedRefreshToken != null) {
+      // dart format off
+      await ref.read(authRepositoryProvider).revokeRefreshToken(storedRefreshToken);
+      // dart format on
+    }
     final repo = ref.read(authRepositoryProvider);
     await repo.logout();
     state = const AsyncValue.data(
       AuthState(status: AuthStatus.unauthenticated),
     );
+  }
+
+  Future<String?> _readStoredRefreshToken() async {
+    try {
+      final stored = await ref.read(authTokenStorageProvider).loadSession();
+      return stored?.tokens.refreshToken;
+    } catch (_) {
+      // O armazenamento falhou: o "Sair" segue e limpa o aparelho mesmo assim.
+      return null;
+    }
   }
 
   void _recordTelemetry(
@@ -164,6 +184,7 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     final repo = ref.read(authRepositoryProvider);
     try {
       final session = await repo.refresh();
+      await repo.commitRefreshed(session);
       state = AsyncValue.data(
         AuthState(status: AuthStatus.authenticated, session: session),
       );

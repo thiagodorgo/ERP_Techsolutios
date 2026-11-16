@@ -225,6 +225,13 @@ void main() {
       final refreshed = await repo.refresh();
 
       expect(refreshed.tokens.accessToken, 'new-acc');
+      // B-APP-SESSAO-RENOVA (D1): o refresh devolve e não grava; quem grava é
+      // o notifier, pelo commitRefreshed.
+      expect(
+        (await storage.loadSession())?.tokens.accessToken,
+        isNot('new-acc'),
+      );
+      await repo.commitRefreshed(refreshed);
       final stored = await storage.loadSession();
       expect(stored?.tokens.accessToken, 'new-acc');
     });

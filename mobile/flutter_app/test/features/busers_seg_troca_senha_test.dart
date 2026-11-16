@@ -360,6 +360,9 @@ void main() {
         final renovada = await h.repo.refresh();
         expect(renovada.mustChangePassword, isFalse);
         expect(renovada.tokens.accessToken, 'acc-renovado');
+        // B-APP-SESSAO-RENOVA (D1): o refresh devolve e não grava; quem grava
+        // é o notifier, pelo commitRefreshed.
+        await h.repo.commitRefreshed(renovada);
         final guardadaDepois = await h.storage.loadSession();
         expect(guardadaDepois?.tokens.accessToken, 'acc-renovado');
         expect(guardadaDepois?.mustChangePassword, isFalse);

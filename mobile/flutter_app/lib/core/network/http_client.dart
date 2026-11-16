@@ -76,7 +76,8 @@ ApiError mapDioError(DioException e) {
     DioExceptionType.sendTimeout => const ApiTimeoutError(),
     DioExceptionType.connectionError => const ApiNetworkError(),
     DioExceptionType.badResponse => switch (status) {
-      401 || 403 => const ApiUnauthorizedError(),
+      401 => const ApiSessionExpiredError(),
+      403 => const ApiForbiddenError(),
       409 => const ApiConflictError(),
       _ when status != null && status >= 500 => ApiServerError(
         statusCode: status,

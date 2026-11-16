@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../network/api_error.dart';
 import '../network/http_client.dart';
 import 'auth_token_storage.dart';
+import 'session_renewal.dart';
 import '../../features/auth/auth_models.dart';
 
 abstract class AuthRepository {
@@ -11,7 +12,22 @@ abstract class AuthRepository {
     required String password,
     String? tenantId,
   });
+
+  /// B-APP-SESSAO-RENOVA (D1): pede ao servidor a sessão renovada e a
+  /// DEVOLVE, sem gravar nada. Só o notifier grava, dentro da trava
+  /// ([commitRefreshed]). A recusa do servidor (400, 401, 403) e a falta de
+  /// token guardado viram [ApiSessionExpiredError]; um 200 ilegível vira
+  /// [SessionRenewalLocalError]; o resto passa por `mapDioError`.
   Future<AuthSession> refresh();
+
+  /// Guarda a sessão renovada. Só o notifier chama, dentro da trava.
+  Future<void> commitRefreshed(AuthSession session);
+
+  /// O único `POST /auth/logout` do app: entrega ao servidor o token de
+  /// renovação que deve morrer (o servidor revoga a sessão inteira).
+  Future<void> revokeRefreshToken(String refreshToken);
+
+  /// Limpa só o aparelho (sessão e bootstrap). Quem revoga é o notifier.
   Future<void> logout();
   Future<AuthSession?> restoreSession();
   AuthSession? currentSession();
@@ -170,16 +186,28 @@ class LocalDevAuthRepository implements AuthRepository {
   @override
   Future<AuthSession> refresh() async {
     final stored = await _storage.loadSession();
-    if (stored == null) throw const ApiUnauthorizedError();
+    if (stored == null) throw const ApiSessionExpiredError();
 
     final refreshed = _buildDevSession(
       email: stored.user.email,
       tenantId: stored.user.tenantId,
     );
-    _current = refreshed;
-    await _storage.saveSession(refreshed);
-    return refreshed;
+    return AuthSession(
+      tokens: refreshed.tokens,
+      user: refreshed.user,
+      sessionNonce: stored.sessionNonce,
+    );
   }
+
+  @override
+  Future<void> commitRefreshed(AuthSession session) async {
+    _current = session;
+    await _storage.saveSession(session);
+  }
+
+  /// Sem servidor no modo de desenvolvimento: não há token a revogar.
+  @override
+  Future<void> revokeRefreshToken(String refreshToken) async {}
 
   @override
   Future<void> logout() async {
@@ -291,6 +319,10 @@ ApiError mapLoginError(DioException e) {
     );
   }
 
+  // dart format off
+  if (status == 401) return const ApiUnauthorizedError(kLoginRefusedMessage); // senha errada não é sessão expirada
+  // dart format on
+
   return mapDioError(e);
 }
 
@@ -380,33 +412,85 @@ class DioAuthRepository implements AuthRepository {
 
   @override
   Future<AuthSession> refresh() async {
-    final stored = await _storage.loadSession();
-    final refreshToken = stored?.tokens.refreshToken;
-    if (refreshToken == null) throw const ApiUnauthorizedError();
+    final loaded = await _storage.loadSession();
+    final refreshToken = loaded?.tokens.refreshToken;
+    // dart format off
+    if (refreshToken == null) throw const ApiSessionExpiredError(); // sem credencial: o 401 do servidor fica
+    // dart format on
+    final stored = loaded!;
+    final Response<dynamic> response;
     try {
-      final response = await _client.post(
+      response = await _client.post(
         '/api/v1/auth/refresh',
         data: {'refreshToken': refreshToken},
       );
-      final session = _sessionFromJson(response.data as Map<String, dynamic>);
-      _current = session;
-      await _storage.saveSession(session);
-      return session;
     } on DioException catch (e) {
-      throw mapDioError(e);
+      throw _refreshFailure(e);
+    }
+    try {
+      final tokens = _refreshedTokens(response.data);
+      // dart format off
+      final session = AuthSession(tokens: tokens, user: stored.user, sessionNonce: stored.sessionNonce); // o refresh mantém a sessão que renova
+      // dart format on
+      return session;
+    } catch (_) {
+      // dart format off
+      throw const SessionRenewalLocalError(); // 200 ilegível: falha local
+      // dart format on
+    }
+  }
+
+  @override
+  Future<void> commitRefreshed(AuthSession session) async {
+    _current = session;
+    await _storage.saveSession(session);
+  }
+
+  @override
+  Future<void> revokeRefreshToken(String refreshToken) async {
+    try {
+      // dart format off
+      await _client.post('/api/v1/auth/logout', data: {'refreshToken': refreshToken}); // Sair revoga
+      // dart format on
+    } catch (_) {
+      // Melhor esforço: a fila do "Sair" sem servidor é a da F3c.
     }
   }
 
   @override
   Future<void> logout() async {
-    try {
-      await _client.post('/api/v1/auth/logout');
-    } catch (_) {
-      // Best-effort server logout; always clear locally regardless
-    }
     _current = null;
     await _storage.clearSession();
     await _storage.clearBootstrap();
+  }
+
+  /// A recusa do servidor (400, 401, 403) é sessão morta; o resto não é.
+  ApiError _refreshFailure(DioException e) {
+    final status = e.response?.statusCode;
+    if (status == 400 || status == 401 || status == 403) {
+      return const ApiSessionExpiredError();
+    }
+    return mapDioError(e);
+  }
+
+  /// Só os tokens do corpo da renovação (`auth.routes.ts`, o fixture do C1):
+  /// o servidor não manda o usuário, e o app não o exige.
+  AuthTokens _refreshedTokens(Object? data) {
+    final json = data as Map<String, dynamic>;
+    final envelopeData = json['data'];
+    final body = envelopeData is Map<String, dynamic> ? envelopeData : json;
+    final tokenJson = body['tokens'] as Map<String, dynamic>? ?? body;
+    final expiresIn =
+        tokenJson['expiresIn'] as int? ??
+        tokenJson['expires_in'] as int? ??
+        900;
+    return AuthTokens(
+      accessToken:
+          (tokenJson['accessToken'] ?? tokenJson['access_token']) as String,
+      refreshToken:
+          (tokenJson['refreshToken'] ?? tokenJson['refresh_token']) as String,
+      expiresAt: DateTime.now().toUtc().add(Duration(seconds: expiresIn)),
+    );
   }
 
   @override
