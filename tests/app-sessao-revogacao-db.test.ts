@@ -17,6 +17,7 @@ import "dotenv/config";
 // [SV18]…[SV18c], [SV19] a ordem invertida da rede não derruba o técnico (S6, v3.3).
 // [SV20a]…[SV20e] o resíduo R-3c (v3.4 §1.3), escolhido pelo dono (D-DONO-1511-68-NAO-DESLOGAR), preso na letra:
 //   C = 1º envio do app (R0 + compromisso), P = reenvio (R0 + prova), X = cópia byte a byte de C por um terceiro.
+// [SV9], [SV13], [SV15] os resíduos R-3 e R-3w na letra; [SV10] nada de segredo na auditoria.
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import type { Server } from "node:http";
@@ -50,10 +51,14 @@ const realNow = Date.now.bind(Date);
 let fake: number | null = null;
 Date.now = () => (fake === null ? realNow() : fake);
 
-// O par do aparelho: o compromisso do 1º envio e a prova dos reenvios (D1c).
+// O par do aparelho: o compromisso do 1º envio e a prova dos reenvios (D1c). Todo par sorteado fica guardado para o
+// [SV10] procurar na auditoria.
+const usedBindings: string[] = [];
 function par(): { commit: string; proof: string } {
   const nonce = randomBytes(32);
-  return { commit: createHash("sha256").update(nonce).digest("base64url"), proof: nonce.toString("base64url") };
+  const pair = { commit: createHash("sha256").update(nonce).digest("base64url"), proof: nonce.toString("base64url") };
+  usedBindings.push(pair.commit, pair.proof);
+  return pair;
 }
 
 type ServiceModule = typeof import("../src/modules/auth/services/auth-session.service.js");
@@ -702,6 +707,74 @@ if (!connectionString) {
       assert.equal(await revoked(s.sessionId), true);
     });
 
+    it("[SV9] o terceiro atrás do app, numa troca sem vínculo (janelas de 1 s): leva o R1; 2,5 s depois da troca do app, o R1 derruba a família", async () => {
+      const short = await buildService({ replayWindowSeconds: 1, raceWindowSeconds: 1 });
+      const s = await newSession(short);
+      const T0 = realNow();
+      try {
+        fake = T0;
+        const app1 = await short.refreshSession(s.refreshToken);
+        fake = T0 + 500;
+        const thief = await short.refreshSession(s.refreshToken);
+        assert.equal(thief.ok && app1.ok && thief.refreshToken === app1.refreshToken, true, "o terceiro recebe o mesmo R1 dentro da janela");
+        fake = T0 + 600;
+        const app2 = await short.refreshSession((app1 as { refreshToken: string }).refreshToken);
+        assert.equal(app2.ok, true, "o app troca o R1 pelo R2");
+        fake = T0 + 600 + 2500;
+        const late = await short.refreshSession((thief as { refreshToken: string }).refreshToken);
+        assert.equal(late.ok, false);
+        assert.equal(await revoked(s.sessionId), true);
+        assert.equal((await short.refreshSession((app2 as { refreshToken: string }).refreshToken)).ok, false, "o R2 do app dá 401");
+      } finally {
+        fake = null;
+      }
+    });
+
+    it("[SV13] a resposta se perde e o R0 sem prova chega antes do reenvio: 401, a família cai; o reenvio com prova, depois, 401", async () => {
+      const s = await newSession();
+      const p = par();
+      const lost = await refresh(s.refreshToken, { renewalCommit: p.commit });
+      assert.equal(lost.status, 200);
+      const thief = await refresh(s.refreshToken);
+      assert.equal(thief.status, 401);
+      assert.equal(tok(thief), undefined);
+      assert.equal(await revoked(s.sessionId), true);
+      const retry = await refresh(s.refreshToken, { renewalProof: p.proof });
+      assert.equal(retry.status, 401);
+      assert.equal(tok(retry), undefined);
+    });
+
+    it("[SV15] o R-3w na letra (corrida de 1 s, janela de 2 s): o terceiro sem vínculo leva o R1 e gira; o aparelho volta e a família cai; a 1,3 s cai na hora", async () => {
+      const svc = await buildService({ replayWindowSeconds: 2, raceWindowSeconds: 1 });
+      const T0 = realNow();
+      try {
+        const s = await newSession(svc);
+        fake = T0;
+        const device = await svc.refreshSession(s.refreshToken);
+        fake = T0 + 500;
+        const thief = await svc.refreshSession(s.refreshToken);
+        assert.equal(thief.ok && device.ok && thief.refreshToken === device.refreshToken, true, "o R0 a 0,5 s recebe o R1");
+        const thiefNext = await svc.refreshSession((thief as { refreshToken: string }).refreshToken);
+        assert.equal(thiefNext.ok, true, "o terceiro gira e segue");
+        assert.equal(await revoked(s.sessionId), false);
+        fake = T0 + 500 + 1100; // o aparelho volta depois da corrida contada da troca do terceiro
+        const back = await svc.refreshSession((device as { refreshToken: string }).refreshToken);
+        assert.equal(back.ok, false, "o R1 do aparelho, quando volta, dá 401");
+        assert.equal(await revoked(s.sessionId), true, "e derruba a família");
+        assert.equal((await svc.refreshSession((thiefNext as { refreshToken: string }).refreshToken)).ok, false);
+
+        const s2 = await newSession(svc);
+        fake = T0;
+        assert.equal((await svc.refreshSession(s2.refreshToken)).ok, true);
+        fake = T0 + 1300;
+        const late = await svc.refreshSession(s2.refreshToken);
+        assert.equal(late.ok, false);
+        assert.equal(await revoked(s2.sessionId), true, "a 1,3 s, fora da corrida, a família cai na hora");
+      } finally {
+        fake = null;
+      }
+    });
+
     // A borda exata (v3.3 §4.2): troca em T0; reenvio em T0 + W·1000 + d, d ∈ {−1, 0, +1} ms. T0 cai no meio de um
     // segundo, para que o arredondamento antigo em segundos (MP5x) aceite o +1 ms e morra aqui.
     const borda = async (
@@ -755,6 +828,19 @@ if (!connectionString) {
           [[-1, true, true, false], [0, true, true, false], [1, false, false, true]],
           mode,
         );
+      }
+    });
+
+    // Por último: varre a auditoria de TODAS as organizações do arquivo, depois de todos os casos.
+    it("[SV10] nenhuma linha de auditoria tem token, jti, compromisso, prova ou o prefixo do domínio", async () => {
+      const rows = await admin.auditLog.findMany({ where: { tenant_id: { in: [...tenantIds] } } });
+      assert.ok(rows.length > 50, "a auditoria do arquivo tem linhas para varrer");
+      assert.ok(usedBindings.length > 20, "os casos sortearam pares");
+      for (const row of rows) {
+        const text = JSON.stringify(row.metadata ?? {});
+        for (const needle of ["eyJ", "refresh_token", "jti", "commit:", "proof:", ...usedBindings]) {
+          assert.equal(text.includes(needle), false, `${row.action} contém ${needle.slice(0, 12)}`);
+        }
       }
     });
   });
