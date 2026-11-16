@@ -6,6 +6,8 @@
 
 import { randomUUID } from "node:crypto";
 
+import { CHARGE_RULES } from "../charges/charge-rules.js";
+import { enqueueChargeCancelInTx, type ChargeCancelCoreInput } from "../charges/charge-request.service.js";
 import { StatementError, type StatementStatus } from "../statements/statement.types.js";
 import type { ChargeLookup, ChargeResult, ChargeStatus as ProviderChargeStatus } from "../providers/payment/payment-provider.port.js";
 import type { NewStatementCharge } from "../charges/charges.types.js";
@@ -21,7 +23,7 @@ import {
 } from "./outbox.types.js";
 
 /** A política de elegibilidade do claim (R-OBX-5): pura, decidida pelo dispatcher (`chargeCreateClaimVerdict`). */
-export type ClaimVerdictFn = (row: BillingOutboxRow, statement: StatementClaimSnapshot | undefined) => ClaimVerdict;
+export type ClaimVerdictFn = (row: BillingOutboxRow, statement: StatementClaimSnapshot | undefined, now: Date) => ClaimVerdict;
 
 export type ClaimParams = {
   readonly enabledProviders: readonly string[];
@@ -149,6 +151,9 @@ export type AdoptionFacts = {
   readonly reopenedAt: Date | null;
   /** O total atual, em centavos (V); `null` quando o leitor não o traz — então V é falso e a linha vai a revisão. */
   readonly totalCents: number | null;
+  /** B-ASS-08c1c (plano §4.8, o marcador RECONS-03): as cobranças do demonstrativo `refunded` na tabela com o pagamento do
+   * provedor TODO estornado. Ausente = lista vazia (conservador: a cobrança listada continua bloqueando). */
+  readonly fullyRefundedCharges?: readonly string[];
 };
 
 /** O que o dublê lê do demonstrativo no claim (R-OBX-5). `hasLiveCharge` opcional: o dublê OR-a com a própria fila.
@@ -159,7 +164,11 @@ export type StatementClaimReadResult = {
   readonly reopenedAt: Date | null;
   readonly hasLiveCharge?: boolean;
   readonly totalCents?: number;
-  readonly paidCents?: number;
+  /** Conserto da J-579 (C2-04): OBRIGATÓRIO — o leitor de produção que esquecer o já pago não compila (o `[CLAIM-PARTIAL]`). */
+  readonly paidCents: number;
+  /** Conserto da J-579 (A-C1-02): os pagamentos do demonstrativo (origem e id da cobrança no provedor), para o marcador REG-PAID do
+   * dublê. OBRIGATÓRIO no tipo; os leitores de teste, que o `check` não tipa, contam como "nenhum". */
+  readonly providerPayments: readonly { readonly source: string; readonly externalChargeId: string | null }[];
 };
 
 /** B-ASS-08c1b (P10): a entrada e os desfechos das ações do operador sobre a fila. */
@@ -306,7 +315,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
 
     // PENDING: relê o demonstrativo NA MESMA seção crítica do claim e aplica a política (R-OBX-5).
     const snapshot = target.kind === "charge_create" ? await this.#readSnapshot(target) : undefined;
-    const verdict = params.verdict(target, snapshot);
+    const verdict = params.verdict(target, snapshot, params.now);
     if (verdict.kind === "skip") {
       // Sem `attempts`, sem `claimed_*`: a linha não foi tentada — foi descartada pela política.
       const skipped: BillingOutboxRow = { ...target, status: "SKIPPED", skipReason: verdict.skipReason, nextAttemptAt: null, updatedAt: params.now };
@@ -350,7 +359,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
         row.kind === "charge_create" &&
         (row.status === "PENDING" || row.status === "PROCESSING" || row.status === "SENT" || row.status === "NEEDS_REVIEW"),
     );
-    return { status: read.status, reopenedAt: read.reopenedAt, hasLiveCharge: (read.hasLiveCharge ?? false) || liveInQueue };
+    return { status: read.status, reopenedAt: read.reopenedAt, hasLiveCharge: (read.hasLiveCharge ?? false) || liveInQueue, paidCents: read.paidCents };
   }
 
   async markSent(tenantId: string, id: string, externalId: string | null, now: Date, lease: OutboxLease): Promise<boolean> {
@@ -388,19 +397,34 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     if (!(await this.confirmLease(tenantId, row.id, lease))) return false;
     const chargeId = outcome.kind === "created" ? outcome.result.chargeId : outcome.chargeId;
     const details = outcome.kind === "created" ? outcome.result : outcome.lookup;
+    // Conserto da J-579 (A-C1-02): o leitor do demonstrativo ANTES do sink, e o MESMO marcador REG-PAID do Prisma — o pagamento do
+    // provedor desta cobrança que chegou antes do registro faz a cobrança nascer `confirmed`.
+    const statement = await this.readStatement(tenantId, row.statementId);
+    let recordedStatus = recordedChargeStatus(outcome.kind, details.status);
+    if (recordedStatus === "pending" && (statement?.providerPayments ?? []).some((payment) => payment.source === row.provider && payment.externalChargeId === chargeId)) recordedStatus = "confirmed"; // [REG-PAID]
     await this.chargeOutcomeSink?.({
       tenantId,
       statementId: row.statementId,
       provider: row.provider,
       externalChargeId: chargeId,
-      status: recordedChargeStatus(outcome.kind, details.status),
+      status: recordedStatus,
       payUrl: details.payUrl ?? null,
       pixCopyPaste: details.pixCopyPaste ?? null,
       boletoLine: details.boletoLine ?? null,
       boletoUrl: details.boletoUrl ?? null,
       dueDate: (outcome.kind === "adopted" ? outcome.lookup.dueDate : undefined) ?? (typeof row.payload.dueDate === "string" ? row.payload.dueDate : null),
     }, now);
-    return this.markSent(tenantId, row.id, chargeId, now, lease);
+    if (!(await this.markSent(tenantId, row.id, chargeId, now, lease))) return false;
+    // B-ASS-08c1c (A1, plano §4.4): a MESMA releitura do Prisma, pelo leitor do demonstrativo lido acima.
+    // Leitor sem `totalCents` conta como "o mesmo total" (a convenção do dublê para campo ausente, como o `paidCents`); o
+    // Prisma sempre lê o total do demonstrativo travado.
+    const vigente = statement !== undefined && statement.status === "closed" && (statement.totalCents === undefined || statement.totalCents === Number(row.payload.amountCents)) && !(statement.reopenedAt !== null && statement.reopenedAt.getTime() > row.occurredAt.getTime());
+    const cancelIt = !vigente && CHARGE_RULES[recordedStatus].cancelTarget; // [REG-REREAD]
+    if (cancelIt) {
+      const sent = this.#rows.get(row.id) as unknown as ChargeCancelCoreInput["target"]; // a linha acabou de virar SENT com o id da cobrança
+      await enqueueChargeCancelInTx({ listChargeLines: (id) => this.listByStatement(tenantId, id), enqueue: (next, at) => this.enqueue(next, at) }, { tenantId, statementId: row.statementId, target: sent, now }); // [REREAD-ENQ]
+    }
+    return true;
   }
 
   configureChargeCancelSink(sink: ChargeCancelSink): void {
@@ -508,6 +532,16 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     return skipped;
   }
 
+  /** B-ASS-08c1c (plano §4.0 item 3): o espelho de `skipChargeCreateInTx` — SKIPPED com o `skip_reason` dado SÓ se o status
+   * está em `from`; nunca toca `external_id`, `last_error` nem `occurred_at`. Sem `await` entre ler e gravar. */
+  async skipChargeCreate(tenantId: string, id: string, skipReason: OutboxSkipReason, from: readonly OutboxStatus[], now: Date): Promise<BillingOutboxRow | undefined> {
+    const row = this.#rows.get(id);
+    if (!row || row.tenantId !== tenantId || row.kind !== "charge_create" || !from.includes(row.status)) return undefined;
+    const skipped: BillingOutboxRow = { ...row, status: "SKIPPED", skipReason, nextAttemptAt: null, updatedAt: now };
+    this.#rows.set(id, skipped);
+    return skipped;
+  }
+
   async findById(tenantId: string, id: string): Promise<BillingOutboxRow | undefined> {
     const row = this.#rows.get(id);
     return row && row.tenantId === tenantId ? row : undefined;
@@ -531,7 +565,7 @@ export class InMemoryOutboxRepository implements OutboxRepository {
     const otherIntents = [...this.#rows.values()].filter(
       (row) => row.tenantId === tenantId && row.statementId === statementId && row.kind === "charge_create" && row.id !== rowId,
     ).length;
-    return { otherIntents, status: read.status, reopenedAt: read.reopenedAt, totalCents: read.totalCents ?? null };
+    return { otherIntents, status: read.status, reopenedAt: read.reopenedAt, totalCents: read.totalCents ?? null, fullyRefundedCharges: [] };
   }
 
   // O dublê valida o tenant como o RLS faria: linha de outra organização = inexistente (fail-closed).
