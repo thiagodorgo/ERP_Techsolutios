@@ -72,6 +72,12 @@ class Terreno {
   /// F3a: segura o "Sair" antes de o servidor o processar.
   Completer<void>? portaoSair;
 
+  /// F3c: o "Sair" por token (o modo e o portão de cada um) e os tokens que o
+  /// servidor revogou com 200.
+  final sairPorToken = <String, String>{};
+  final portaoSairPorToken = <String, Completer<void>>{};
+  final revogadosSair = <String>[];
+
   /// F3a: o login abre uma família nova (outra pessoa ou a mesma).
   int logins = 0;
   int trocasSenha = 0;
@@ -233,13 +239,16 @@ class Terreno {
     final corpo = _corpo(raw);
     corposSair.add(corpo);
     if (portaoSair != null) await portaoSair!.future;
-    if (sairModo == '503') {
+    final token = corpo['refreshToken'] as String?;
+    final portaoDoToken = portaoSairPorToken[token];
+    if (portaoDoToken != null) await portaoDoToken.future;
+    final modo = sairPorToken[token] ?? sairModo;
+    if (modo == '503') {
       return _json(r, 503, {
         'error': {'reason': 'logout_failed'},
       });
     }
-    final token = corpo['refreshToken'] as String?;
-    if (sairModo == '400' || token == null) {
+    if (modo == '400' || token == null) {
       return _json(r, 400, {
         'error': {'reason': 'refresh_token_required'},
       });
@@ -247,6 +256,7 @@ class Terreno {
     if (token == vigente || token == anterior || usados.contains(token)) {
       revogada = true;
     }
+    revogadosSair.add(token);
     return _json(r, 200, {
       'data': {'revoked': true},
     });
@@ -333,6 +343,12 @@ class ArmazenamentoInstavel extends InMemoryAuthTokenStorage {
   final gravados = <String?>[];
   Completer<void>? portaoGravacao;
 
+  /// F3c: a fila do "Sair": a gravação que lança, e um portão de uma vez só
+  /// (a 1ª gravação depois de armado espera; `filaNoPortao` diz que chegou).
+  bool lancaAoGravarFila = false;
+  Completer<void>? portaoFila;
+  bool filaNoPortao = false;
+
   @override
   Future<AuthSession?> loadSession() async {
     if (lancaAoLer) throw StateError('armazenamento indisponível');
@@ -352,6 +368,18 @@ class ArmazenamentoInstavel extends InMemoryAuthTokenStorage {
   Future<void> clearBootstrap() async {
     if (lancaAoLimparBootstrap) throw StateError('armazenamento indisponível');
     return super.clearBootstrap();
+  }
+
+  @override
+  Future<void> savePendingRevocations(List<PendingRevocation> entries) async {
+    if (lancaAoGravarFila) throw StateError('armazenamento indisponível');
+    final portao = portaoFila;
+    portaoFila = null;
+    if (portao != null) {
+      filaNoPortao = true;
+      await portao.future;
+    }
+    return super.savePendingRevocations(entries);
   }
 }
 

@@ -11,6 +11,12 @@ import 'auth_token_storage.dart';
 import 'session_renewal.dart';
 import '../../features/auth/auth_models.dart';
 
+/// B-APP-SESSAO-RENOVA (D11): o desfecho de um "Sair" no servidor.
+/// - `revoked`: 2xx; o servidor garante que o token não renova mais (S1);
+/// - `discard`: 400; tentar de novo não resolve;
+/// - `retry`: 5xx, rede, tempo esgotado ou qualquer outra resposta.
+enum RevocationOutcome { revoked, discard, retry }
+
 abstract class AuthRepository {
   Future<AuthSession> login({
     required String email,
@@ -29,8 +35,9 @@ abstract class AuthRepository {
   Future<void> commitRefreshed(AuthSession session);
 
   /// O único `POST /auth/logout` do app: entrega ao servidor o token de
-  /// renovação que deve morrer (o servidor revoga a sessão inteira).
-  Future<void> revokeRefreshToken(String refreshToken);
+  /// renovação que deve morrer (o servidor revoga a sessão inteira). Nunca
+  /// lança: devolve [RevocationOutcome] (D11).
+  Future<RevocationOutcome> revokeRefreshToken(String refreshToken);
 
   /// Limpa só o aparelho (sessão e bootstrap). Quem revoga é o notifier.
   Future<void> logout();
@@ -212,7 +219,8 @@ class LocalDevAuthRepository implements AuthRepository {
 
   /// Sem servidor no modo de desenvolvimento: não há token a revogar.
   @override
-  Future<void> revokeRefreshToken(String refreshToken) async {}
+  Future<RevocationOutcome> revokeRefreshToken(String refreshToken) async =>
+      RevocationOutcome.revoked;
 
   @override
   Future<void> logout() async {
@@ -521,13 +529,19 @@ class DioAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> revokeRefreshToken(String refreshToken) async {
+  Future<RevocationOutcome> revokeRefreshToken(String refreshToken) async {
     try {
       // dart format off
       await _client.post('/api/v1/auth/logout', data: {'refreshToken': refreshToken}); // Sair revoga
+      return RevocationOutcome.revoked; // 2xx: o servidor garante que o token não renova mais
       // dart format on
+    } on DioException catch (e) {
+      // dart format off
+      if (e.response?.statusCode == 400) return RevocationOutcome.discard; // pedido sem token: tentar de novo não resolve
+      // dart format on
+      return RevocationOutcome.retry;
     } catch (_) {
-      // Melhor esforço: a fila do "Sair" sem servidor é a da F3c.
+      return RevocationOutcome.retry;
     }
   }
 

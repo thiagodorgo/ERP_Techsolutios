@@ -13,6 +13,7 @@ import '../telemetry/telemetry_event.dart';
 import '../telemetry/telemetry_providers.dart';
 import 'auth_repository.dart';
 import 'auth_token_storage.dart';
+import 'pending_revocations.dart';
 import 'session_renewal.dart';
 
 // ── Providers ─────────────────────────────────────────────────────────────────
@@ -90,6 +91,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
 
   @override
   Future<AuthState> build() async {
+    // dart format off
+    unawaited(ref.read(pendingRevocationsProvider).drain()); // na abertura: esvazia a fila de revogação
+    // dart format on
     final repo = ref.watch(authRepositoryProvider);
     final restored = await repo.restoreSession();
 
@@ -152,6 +156,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = AsyncValue.data(
         AuthState(status: AuthStatus.authenticated, session: session),
       );
+      // dart format off
+      unawaited(ref.read(pendingRevocationsProvider).drain()); // entrou: o servidor responde, esvazia a fila
+      // dart format on
       // Ω4C PR-13 — hook de ciclo: login → APP_CONNECT (de-dup por estado no
       // serviço). Best-effort: telemetria nunca derruba o login.
       _recordTelemetry((service) {
@@ -218,22 +225,29 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
     // renovação VIGENTE guardado, e só depois limpa o aparelho. O servidor
     // revoga a sessão inteira com esse token (S2). Dentro da trava (D3b): uma
     // renovação que gravou antes lê aqui o token que acabou de gravar.
+    // D11: o token vai pela fila: revoga agora, ou espera nela até a resposta
+    // definitiva do servidor.
     final release = await _enterSessionLock();
     try {
       final storedRefreshToken = await _readStoredRefreshToken();
-      if (storedRefreshToken != null) {
-        // dart format off
-        await ref.read(authRepositoryProvider).revokeRefreshToken(storedRefreshToken);
-        // dart format on
-      }
-      final repo = ref.read(authRepositoryProvider);
-      await repo.logout();
-      state = const AsyncValue.data(
-        AuthState(status: AuthStatus.unauthenticated),
-      );
+      if (storedRefreshToken == null) return await _clearDeviceAfterLogout();
+      // dart format off
+      await _revocations.revokeOrQueue(storedRefreshToken); // Sair: revoga ou fica na fila
+      // dart format on
+      await _clearDeviceAfterLogout();
     } finally {
       release();
     }
+  }
+
+  PendingRevocations get _revocations => ref.read(pendingRevocationsProvider);
+
+  Future<void> _clearDeviceAfterLogout() async {
+    final repo = ref.read(authRepositoryProvider);
+    await repo.logout();
+    state = const AsyncValue.data(
+      AuthState(status: AuthStatus.unauthenticated),
+    );
   }
 
   Future<String?> _readStoredRefreshToken() async {
@@ -327,6 +341,9 @@ class AuthNotifier extends AsyncNotifier<AuthState> {
       state = AsyncData(
         AuthState(status: AuthStatus.authenticated, session: fresh),
       );
+      // dart format off
+      unawaited(ref.read(pendingRevocationsProvider).drain()); // renovou: o servidor responde, esvazia a fila
+      // dart format on
       return SessionRenewed(fresh.tokens.accessToken);
     } finally {
       release();
