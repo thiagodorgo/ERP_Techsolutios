@@ -18,6 +18,9 @@ import "dotenv/config";
 // [SV20a]…[SV20e] o resíduo R-3c (v3.4 §1.3), escolhido pelo dono (D-DONO-1511-68-NAO-DESLOGAR), preso na letra:
 //   C = 1º envio do app (R0 + compromisso), P = reenvio (R0 + prova), X = cópia byte a byte de C por um terceiro.
 // [SV9], [SV13], [SV15] os resíduos R-3 e R-3w na letra; [SV10] nada de segredo na auditoria.
+// [SV21a], [SV21b] P-68-PERDEDOR-RELE-401 (v3.4 §5): quem PERDE a troca condicional e relê. Determinístico, sem
+//   `Promise.all`: o teste embrulha `AuthSessionRepository.prototype.rotateRefreshToken` para executar ANTES a
+//   renovação concorrente (que usa o método original) e só então a troca; o embrulho age uma vez e sai no `finally`.
 import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import type { Server } from "node:http";
@@ -773,6 +776,63 @@ if (!connectionString) {
       } finally {
         fake = null;
       }
+    });
+
+    // O perdedor determinístico: `winner` roda dentro da troca de `loser`, antes dela; `loser` perde e relê.
+    const loseTheRotation = async (
+      token: string,
+      winner: Record<string, string>,
+      loser: Record<string, string>,
+    ): Promise<{ win: Http; lose: Http }> => {
+      const { AuthSessionRepository } = await import("../src/modules/auth/repositories/auth-session.repository.js");
+      const proto = AuthSessionRepository.prototype as unknown as Record<string, (...args: unknown[]) => Promise<unknown>>;
+      const original = proto.rotateRefreshToken;
+      let armed = true;
+      let win: Http | undefined;
+      proto.rotateRefreshToken = async function (this: unknown, ...args: unknown[]) {
+        if (armed) {
+          armed = false;
+          win = await direct(token, winner);
+        }
+        return original.apply(this, args);
+      };
+      try {
+        await warmPool();
+        const lose = await direct(token, loser);
+        assert.equal(armed, false, "o embrulho agiu");
+        return { win: win as Http, lose };
+      } finally {
+        proto.rotateRefreshToken = original;
+      }
+    };
+
+    it("[SV21b] os perdedores legítimos (P perde para C; C para P; P para P; aba para aba): 200, o mesmo R1, sessão viva", async () => {
+      const cases: [string, (p: { commit: string; proof: string }) => [Record<string, string>, Record<string, string>]][] = [
+        ["P perde para C", (p) => [{ commit: p.commit }, { proof: p.proof }]],
+        ["C perde para P", (p) => [{ proof: p.proof }, { commit: p.commit }]],
+        ["P perde para P", (p) => [{ proof: p.proof }, { proof: p.proof }]],
+        ["aba perde para aba", () => [{}, {}]],
+      ];
+      for (const [name, make] of cases) {
+        const s = await newSession();
+        const [winner, loser] = make(par());
+        const { win, lose } = await loseTheRotation(s.refreshToken, winner, loser);
+        assert.equal(win.status, 200, name);
+        assert.equal(lose.status, 200, name);
+        assert.equal(tok(lose), tok(win), name);
+        assert.equal(await revoked(s.sessionId), false, name);
+      }
+    });
+
+    it("[SV21a] C troca e a cópia X perde a troca: 401, sem token, e a família cai (S34M)", async () => {
+      const s = await newSession();
+      const p = par();
+      const { win, lose } = await loseTheRotation(s.refreshToken, { commit: p.commit }, { commit: p.commit });
+      assert.equal(win.status, 200);
+      assert.equal(lose.status, 401);
+      assert.equal(tok(lose), undefined);
+      assert.equal(await revoked(s.sessionId), true, "o perdedor que relê e não casa candidato cai no S3");
+      assert.deepEqual(await reuseAudit(s.sessionId), { reuse: 1, revokedRows: 1 });
     });
 
     // A borda exata (v3.3 §4.2): troca em T0; reenvio em T0 + W·1000 + d, d ∈ {−1, 0, +1} ms. T0 cai no meio de um

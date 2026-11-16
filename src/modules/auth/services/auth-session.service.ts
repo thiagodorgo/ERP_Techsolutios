@@ -323,6 +323,14 @@ export class AuthSessionService {
             refreshTokenExpiresAt = replay.expiresAt;
             updated = { count: 1 };
           }
+          // P-68-PERDEDOR-RELE-401 — quem perde a troca e relê sem casar candidato não é do aparelho (todo perdedor
+          // legítimo casa um: SV21b); cai no S3 como no caminho sequencial, com as mesmas duas linhas de auditoria.
+          if (!replay && current && current.user_id === payload.user_id && !current.revoked_at) { // S34M: o perdedor que relê e não casa candidato é reuso
+            await repository.revokeByIdForTenant(current.id, payload.tenant_id);
+            await this.recordAudit(tx, { tenantId: payload.tenant_id, actorId: payload.user_id, action: "auth.refresh.failed", resourceType: "auth_session", resourceId: payload.session_id, outcome: "failure", severity: "warning", metadata: { reason: "reuse_detected" } });
+            await this.recordAudit(tx, { tenantId: payload.tenant_id, actorId: payload.user_id, action: "auth.session.revoked", resourceType: "auth_session", resourceId: payload.session_id, outcome: "success", severity: "warning" });
+            return { ok: false, reason: "revoked" };
+          }
         }
       }
 
