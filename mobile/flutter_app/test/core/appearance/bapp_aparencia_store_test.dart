@@ -107,6 +107,10 @@ void main() {
       final store = InMemoryAppAppearanceStore();
       await store.write(_t1u1, _key, AppAppearance.b);
       expect(await store.read(null), isEmpty);
+      expect(
+        resolveAppAppearance(await store.read(null), _key),
+        AppAppearance.a,
+      );
     });
 
     test('S8. sem dono não grava', () async {

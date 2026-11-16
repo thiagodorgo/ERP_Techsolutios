@@ -109,7 +109,7 @@ void main() {
       await t.pump(const Duration(milliseconds: 2900));
       expect(find.byKey(_rootA), findsNothing);
       await t.pump(const Duration(milliseconds: 150));
-      await t.pumpAndSettle();
+      await t.pump();
       _expectOnly(_rootA);
     });
 
@@ -272,6 +272,9 @@ void main() {
       await t.pump(const Duration(milliseconds: 100));
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byKey(_rootB), findsNothing);
+      // O título da B é um só, também carregando (a A diria "Localização em
+      // campo" enquanto não há decisão).
+      expect(find.text('Privacidade · Localização'), findsOneWidget);
     });
 
     testWidgets('B-ação. Permitir vai à organização e a tela vira concedido', (
