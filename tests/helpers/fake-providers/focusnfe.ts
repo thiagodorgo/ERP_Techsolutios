@@ -23,6 +23,19 @@ export function resetFocusNfeFakeState(): void {
 
 export type FocusNfeWebhookEvent = { readonly ref: string; readonly status: string; readonly id?: string };
 
+/** B-ASS-08c2 (Emenda 1 §5.1, o modo `hold`): o PRÓXIMO POST de emissão grava a nota e SEGURA a resposta num portão — `reached`
+ * resolve quando a nota já está gravada no falso, e `release()` deixa a resposta sair. Sem relógio: a ordem é a do portão. */
+type IssueHold = { readonly arrive: () => void; readonly released: Promise<void> };
+let issueHold: IssueHold | undefined;
+export function holdNextIssue(): { readonly reached: Promise<void>; release(): void } {
+  let arrive!: () => void;
+  let release!: () => void;
+  const reached = new Promise<void>((resolve) => (arrive = resolve));
+  const released = new Promise<void>((resolve) => (release = resolve));
+  issueHold = { arrive, released };
+  return { reached, release };
+}
+
 /**
  * B-ASS-08 · F4 — o falso Focus NFe EMITE um webhook para a nossa URL, com a autenticidade do Focus: header
  * nomeado por nós (`X-Webhook-Token`) = o segredo registrado (`webhook_secret`). `badSecret` reproduz o ataque.
@@ -81,6 +94,12 @@ export async function startFocusNfeFake(defaultScenario = "ok"): Promise<FakeSer
       const id = `nfse_${sequence++}`;
       dpsNumbers.add(dpsKey);
       invoices.set(ref, { id, ref, serie: Number(parsed.serie_dps), numero: Number(parsed.numero_dps), queryCount: 0, status: selected === "rejected" ? "erro_autorizacao" : "processando_autorizacao" });
+      const hold = issueHold;
+      if (hold) {
+        issueHold = undefined;
+        hold.arrive();
+        await hold.released;
+      }
       return sendJson(res, 202, { id, ref, status: "processando_autorizacao" });
     }
 

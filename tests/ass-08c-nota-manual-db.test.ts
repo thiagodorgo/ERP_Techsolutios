@@ -20,7 +20,7 @@ import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { createEphemeralRole, type EphemeralRole } from "./helpers/auth-identity-fixture.js";
-import { startFocusNfeFake } from "./helpers/fake-providers/focusnfe.js";
+import { holdNextIssue, startFocusNfeFake } from "./helpers/fake-providers/focusnfe.js";
 
 const connectionString = process.env.DATABASE_URL;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -115,6 +115,27 @@ if (!connectionString) {
       invoices: new H.m.invoiceDispatch.InvoiceOutboxHandler({ ports: { focusnfe: focusPort() }, invoices: new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(c), statements: new H.m.runtime.PrismaStatementRepository(c), resolveIssueContext: issueContext }),
       now,
     });
+  }
+
+  /** O webhook da nota (`ref = <id>:<seq>`) pelo reconcile real; devolve o desfecho e a linha do evento. */
+  async function invoiceWebhook(statementId: string, seq: number): Promise<{ outcome: string; event: { status: string; error: string | null } }> {
+    const c = H.role.client;
+    const events = new H.m.webhookEvents.PrismaWebhookEventRepository(c);
+    const externalEventId = `nm-wh-${randomUUID()}`;
+    await events.insertIfAbsent({ provider: "focusnfe", externalEventId, bodyDigest: "0".repeat(64), signatureOk: true, externalResourceId: null, externalReference: `${statementId}:${seq}` }, new Date());
+    const outcome = await H.m.reconcile.reconcileWebhookEvent(
+      {
+        events,
+        refs: new H.m.statementRefs.PrismaStatementRefRepository(c),
+        ports: {},
+        settlement: new H.m.settlement.StatementSettlementService(new H.m.runtime.PrismaStatementRepository(c), undefined as never),
+        invoicePorts: { focusnfe: focusPort() },
+        invoices: new H.m.invoicesPrisma.PrismaStatementInvoiceRepository(c),
+      },
+      { provider: "focusnfe", externalEventId },
+    );
+    const [event] = await q(`SELECT status, error FROM billing_webhook_events WHERE external_event_id = $1`, externalEventId);
+    return { outcome, event };
   }
 
   test("setup: base própria migrada, papel NOSUPERUSER NOBYPASSRLS, o app real no modo prisma, o canal e a nota ligados, o falso Focus", async () => {
@@ -330,5 +351,23 @@ if (!connectionString) {
     const f = await seedClosed("gi1");
     assert.equal((await pay(f)).status, 201);
     assert.equal((await lines(f.statementId)).filter((row) => row.kind === "invoice_issue").length, 1);
+  });
+
+  test("NM-WH-ORDER (N = 10): o webhook da nota chega ENTRE o POST gravado no provedor e a resposta síncrona → nota authorized, o espelho invoice_status authorized, a linha SENT, 0 nota pending", async () => {
+    for (let round = 0; round < 10; round += 1) {
+      const f = await seedClosed(`nmwho${round}`);
+      assert.equal((await pay(f)).status, 201);
+      const gate = holdNextIssue();
+      const running = dispatch(f.tenantId);
+      await gate.reached; // a nota já está gravada no falso, e a resposta do POST está presa
+      const { event } = await invoiceWebhook(f.statementId, 1);
+      assert.equal(event.status, "processed", `rodada ${round}: ${JSON.stringify(event)}`);
+      gate.release();
+      await running;
+      assert.deepEqual((await invoicesOf(f.statementId)).map((row) => [row.seq, row.status]), [[1, "authorized"]], `rodada ${round}: a resposta atrasada não regride a nota`);
+      assert.equal((await statementRow(f.statementId)).invoice_status, "authorized", `rodada ${round}: o espelho continua authorized`);
+      assert.deepEqual((await lines(f.statementId)).filter((row) => row.kind === "invoice_issue").map((row) => row.status), ["SENT"], `rodada ${round}`);
+      assert.equal((await q(`SELECT count(*)::int AS n FROM subscription_statement_invoices WHERE statement_id = $1::uuid AND status = 'pending'`, f.statementId))[0].n, 0);
+    }
   });
 }
