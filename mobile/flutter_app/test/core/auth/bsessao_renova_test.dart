@@ -405,12 +405,31 @@ DioAuthRepository repositorioRemoto(
     Duration(milliseconds: 150),
   ],
   Duration deadline = const Duration(seconds: 2),
+  Stopwatch Function() clock = Stopwatch.new,
 }) => DioAuthRepository(
   client: dio,
   storage: storage,
   renewalRetryDelays: delays,
   renewalRetryDeadline: deadline,
+  renewalClock: clock,
 );
+
+/// Emenda 3.6: o relógio controlado do prazo do reenvio. O tempo só anda pelas
+/// esperas entre os envios (a ida e volta de cada pedido conta zero), então o
+/// prazo decide pela soma das esperas, sem depender da máquina.
+class RelogioDasEsperas extends Stopwatch {
+  RelogioDasEsperas(this.envios, this.esperas);
+
+  /// Quantos envios o servidor já recebeu.
+  final int Function() envios;
+  final List<Duration> esperas;
+
+  @override
+  Duration get elapsed {
+    final feitas = (envios() - 1).clamp(0, esperas.length);
+    return esperas.take(feitas).fold(Duration.zero, (a, b) => a + b);
+  }
+}
 
 class Aparelho {
   Aparelho(this.terreno, {ArmazenamentoInstavel? storage})
@@ -996,6 +1015,7 @@ void main() {
       Duration(milliseconds: 150),
     ],
     Duration deadline = const Duration(seconds: 2),
+    Stopwatch Function() clock = Stopwatch.new,
   }) async {
     final storage = InMemoryAuthTokenStorage();
     await storage.saveSession(sessaoGuardada());
@@ -1003,7 +1023,13 @@ void main() {
       ApiConfig(baseUrl: t.base, connectTimeoutMs: 1000, receiveTimeoutMs: 500),
     );
     return (
-      repositorioRemoto(dio, storage, delays: delays, deadline: deadline),
+      repositorioRemoto(
+        dio,
+        storage,
+        delays: delays,
+        deadline: deadline,
+        clock: clock,
+      ),
       dio,
     );
   }
@@ -1066,9 +1092,13 @@ void main() {
     '[T11d] com esperas de 50 ms e 150 ms e prazo de 120 ms: 2 pedidos',
     () async {
       terreno.roteiro.addAll(['503', '503', '503']);
+      // Emenda 3.6: o prazo conta pelo relógio controlado, não pelo de parede.
+      const esperas = [Duration(milliseconds: 50), Duration(milliseconds: 150)];
       final (repo, _) = await repoSobre(
         terreno,
+        delays: esperas,
         deadline: const Duration(milliseconds: 120),
+        clock: () => RelogioDasEsperas(() => terreno.renovacoes, esperas),
       );
       await expectLater(repo.refresh(), throwsA(isA<ApiServerError>()));
       expect(terreno.renovacoes, 2);

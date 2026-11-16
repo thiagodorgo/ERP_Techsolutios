@@ -379,10 +379,12 @@ class DioAuthRepository implements AuthRepository {
     required AuthTokenStorage storage,
     List<Duration> renewalRetryDelays = kRenewalRetryDelays,
     Duration renewalRetryDeadline = kRenewalRetryDeadline,
+    Stopwatch Function() renewalClock = Stopwatch.new,
   }) : _client = client,
        _storage = storage,
        _renewalRetryDelays = renewalRetryDelays,
-       _renewalRetryDeadline = renewalRetryDeadline;
+       _renewalRetryDeadline = renewalRetryDeadline,
+       _renewalClock = renewalClock;
 
   // dart format off
   static const kRenewalRetryDelays = <Duration>[Duration(seconds: 1), Duration(seconds: 3)]; // reenvio do mesmo token
@@ -393,6 +395,10 @@ class DioAuthRepository implements AuthRepository {
   final AuthTokenStorage _storage;
   final List<Duration> _renewalRetryDelays;
   final Duration _renewalRetryDeadline;
+
+  /// O relógio do prazo do reenvio (Emenda 3.6: os testes passam um relógio
+  /// controlado; no app é o `Stopwatch`).
+  final Stopwatch Function() _renewalClock;
   AuthSession? _current;
   // dart format off
   ({String token, List<int> nonce, bool sent})? _renewalBinding; // a prova do reenvio: só em memória, nunca gravada
@@ -487,7 +493,7 @@ class DioAuthRepository implements AuthRepository {
     // dart format off
     final binding = _renewalBinding?.token == refreshToken ? _renewalBinding! : (token: refreshToken, nonce: renewalNonce(), sent: false); // um nonce por token
     // dart format on
-    final clock = Stopwatch()..start();
+    final clock = _renewalClock()..start();
     Response<dynamic>? received;
     for (var attempt = 0; received == null; attempt++) {
       // dart format off
