@@ -5,6 +5,7 @@ import type { PrismaClient } from "@prisma/client";
 
 import { withTenantRls } from "../../../database/rls.js";
 import type { ChargeStatus } from "../statements/statement.types.js";
+import { sqlStatusList } from "./charge-rules.js";
 import type { StatementChargeRepository } from "./charges.repository.js";
 import type { NewStatementCharge, SubscriptionStatementCharge } from "./charges.types.js";
 
@@ -46,7 +47,7 @@ function toDomain(row: Row): SubscriptionStatementCharge {
  * comportamento idêntico). O pedido de cobrança a lê no MESMO `tx` da trava do demonstrativo (E8). */
 export async function findLiveInTx(tx: Pick<PrismaClient, "$queryRawUnsafe">, statementId: string): Promise<SubscriptionStatementCharge | undefined> {
   const rows = (await tx.$queryRawUnsafe(
-    `SELECT * FROM subscription_statement_charges WHERE statement_id = $1::uuid AND status IN ('pending', 'confirmed') LIMIT 1`,
+    `SELECT * FROM subscription_statement_charges WHERE statement_id = $1::uuid AND status IN (${sqlStatusList("occupiesSlot")}) LIMIT 1`,
     statementId,
   )) as Row[];
   return rows.length > 0 ? toDomain(rows[0]!) : undefined;

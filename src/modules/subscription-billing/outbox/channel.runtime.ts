@@ -109,7 +109,7 @@ async function repositories(statements: StatementRepository): Promise<Repositori
             const statement = await statements.findStatement(tenantId, statementId);
             if (!statement) return undefined;
             const live = await charges.findLive(tenantId, statementId);
-            return { status: statement.status, reopenedAt: statement.reopenedAt, totalCents: statement.totalCents, paidCents: statement.paidCents, hasLiveCharge: live !== undefined };
+            return { status: statement.status, reopenedAt: statement.reopenedAt, totalCents: statement.totalCents, paidCents: statement.paidCents, hasLiveCharge: live !== undefined, providerPayments: (await statements.listPayments(tenantId, statementId)).map((payment) => ({ source: payment.source, externalChargeId: payment.externalChargeId })) };
           },
         }),
         refs: new InMemoryStatementRefRepository(),
@@ -119,7 +119,7 @@ async function repositories(statements: StatementRepository): Promise<Repositori
       };
     }
     // Conserto da J-530: o dublê do demonstrativo grava a intenção de nota "na transação" (buffer até o fim do trabalho).
-    if (statements instanceof InMemoryStatementRepository) statements.attachChannelStores({ outbox: memory.outbox, invoices: memory.invoices });
+    if (statements instanceof InMemoryStatementRepository) statements.attachChannelStores({ outbox: memory.outbox as InMemoryOutboxRepository, invoices: memory.invoices, charges: memory.charges as InMemoryStatementChargeRepository, refs: memory.refs as InMemoryStatementRefRepository });
     return { ...memory, events: memoryWebhookEvents() };
   }
   const [

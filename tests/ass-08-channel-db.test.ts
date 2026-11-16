@@ -967,7 +967,7 @@ if (!connectionString) {
         `INSERT INTO billing_outbox (tenant_id, statement_id, kind, provider, idempotency_key, provider_idempotency_key, payload, occurred_at, created_at, updated_at, status, attempts)
          SELECT s.tenant_id, s.id, 'charge_create', $2, 'charge_create:' || s.id::text || ':1', gen_random_uuid(),
                 '{"amountCents":10000,"dueDate":"${DUE_FUTURA}","method":"pix"}'::jsonb,
-                timestamp '2026-01-01' + row_number() OVER (ORDER BY s.period) * interval '1 millisecond', now(), now(), 'PENDING', 0
+                now() - interval '1 hour' + row_number() OVER (ORDER BY s.period) * interval '1 millisecond', now(), now(), 'PENDING', 0
            FROM subscription_statements s WHERE s.tenant_id = $1::uuid AND s.period <> '1700-01'`,
         tenantId,
         provider,

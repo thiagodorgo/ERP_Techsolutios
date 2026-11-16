@@ -4,10 +4,16 @@
 
 import { randomUUID } from "node:crypto";
 
+import type { ChargeIntentAuditEvent, ChargeIntentTx } from "../charges/charge-intent.repository.js";
+import { CHARGE_RULES } from "../charges/charge-rules.js";
+import type { InMemoryStatementChargeRepository } from "../charges/charges.repository.js";
+import type { SubscriptionStatementCharge } from "../charges/charges.types.js";
 import type { StatementInvoiceRepository } from "../invoices/invoices.repository.js";
-import type { OutboxRepository } from "../outbox/outbox.repository.js";
-import type { NewOutboxRow } from "../outbox/outbox.types.js";
+import type { InMemoryOutboxRepository, OutboxRepository } from "../outbox/outbox.repository.js";
+import type { BillingOutboxRow, NewOutboxRow } from "../outbox/outbox.types.js";
+import type { InMemoryStatementRefRepository } from "../webhooks/statement-refs.repository.js";
 import type {
+  ChargeStatus,
   StatementAuditEvent,
   StatementPayment,
   SubscriptionCredit,
@@ -45,13 +51,28 @@ export type StatementTx = {
    * depois da trava do demonstrativo (o `reopen` a chama no o marcador GUARD-01). O dublê sem as lojas do canal devolve `false`:
    * não há fila. */
   hasOutboxNeedsReview(statementId: string): Promise<boolean>;
+  /** B-ASS-08c1c (plano §4.0 item 1) — OBRIGATÓRIO: as operações da cobrança sobre o MESMO `tx`, depois da trava do
+   * demonstrativo (o fechamento enfileira, o refechamento e a marcação imediata leem e escrevem a fila e a tabela de
+   * cobranças por aqui). Prisma: `prismaChargeIntentTx(tx, tenantId)`. Dublê: as quatro lojas, ou um "sem canal". */
+  charging(): ChargeIntentTx;
+  /** B-ASS-08c1c (R2-03, plano §4.7) — OBRIGATÓRIO: a tabela de cobranças acompanha o provedor NA MESMA transação do efeito
+   * no demonstrativo. `match` é o id da cobrança no provedor, ou (só a disputa, §9 D-6) as cobranças do demonstrativo num
+   * estado. Zero linhas é normal (o registro ainda não gravou). O dublê sem a loja de cobranças não faz nada. */
+  syncCharge(statementId: string, match: ChargeSyncMatch, status: ChargeStatus): Promise<void>;
 };
+
+/** B-ASS-08c1c (R2-03): qual cobrança da tabela o `syncCharge` acompanha. */
+export type ChargeSyncMatch = { readonly externalChargeId: string } | { readonly status: ChargeStatus };
 
 /** As lojas do canal no modo memória, para o dublê sustentar a intenção de nota (conserto da J-530) e a leitura da fila do
  * `reopen` (B-ASS-08c1b, P8). */
 export type InMemoryChannelStores = {
-  readonly outbox: Pick<OutboxRepository, "enqueue" | "listByStatement">;
+  readonly outbox: Pick<OutboxRepository, "enqueue" | "listByStatement"> & Partial<Pick<InMemoryOutboxRepository, "skipPendingChargeCreate" | "skipChargeCreate">>;
   readonly invoices: Pick<StatementInvoiceRepository, "findLive">;
+  /** B-ASS-08c1c (plano §4.0 item 2): a tabela de cobranças e o índice. Com as QUATRO lojas o `tx` sustenta a cobrança
+   * (`charging()`); com menos, um "sem canal" (lista vazia; toda escrita lança `charge_channel_tx_unsupported`). */
+  readonly charges?: InMemoryStatementChargeRepository;
+  readonly refs?: InMemoryStatementRefRepository;
 };
 
 export type StatementRepository = {
@@ -60,6 +81,9 @@ export type StatementRepository = {
   findStatement(tenantId: string, statementId: string): Promise<SubscriptionStatement | undefined>;
   listPayments(tenantId: string, statementId: string): Promise<readonly StatementPayment[]>;
   listCredits(tenantId: string): Promise<readonly SubscriptionCredit[]>;
+  /** B-ASS-08c1c (P11b, plano §4.9): a cobrança `pending` da tabela que o cliente pode pagar — a do fechamento VIGENTE (a
+   * `charge_create` SENT dela nasceu depois da última reabertura, com o total atual) e sem `charge_cancel` vivo. */
+  findPayableCharge(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined>;
 };
 
 export function emptyStatement(input: NewStatement, now: Date): SubscriptionStatement {
@@ -107,6 +131,8 @@ export class InMemoryStatementRepository implements StatementRepository {
   private credits = new Map<string, SubscriptionCredit>();
   private queues = new Map<string, Promise<unknown>>();
   private channel: InMemoryChannelStores | undefined;
+  /** B-ASS-08c1c: a trilha das ações de cobrança do dublê (o Prisma grava em `audit_logs` no `tx`). */
+  readonly channelAudits: Array<ChargeIntentAuditEvent & { readonly tenantId: string }> = [];
 
   constructor(private readonly clock: () => Date = () => new Date()) {}
 
@@ -151,8 +177,14 @@ export class InMemoryStatementRepository implements StatementRepository {
           },
         }
       : {};
+    const charging = this.#charging(tenantId);
     return {
       ...intent,
+      charging: () => charging,
+      async syncCharge(statementId, match, status) {
+        if (!channel?.charges) return;
+        await channel.charges.syncByStatement(tenantId, statementId, match, status, self.clock());
+      },
       async hasOutboxNeedsReview(statementId) {
         if (!channel) return false;
         return (await channel.outbox.listByStatement(tenantId, statementId)).some((row) => row.status === "NEEDS_REVIEW");
@@ -218,6 +250,80 @@ export class InMemoryStatementRepository implements StatementRepository {
         return saved;
       },
     };
+  }
+
+  /** B-ASS-08c1c (plano §4.0 itens 1 e 2): a cobrança sobre o `tx` serializado. SÓ com as QUATRO lojas (fila, nota, cobranças,
+   * índice); com menos, o "sem canal": as leituras da fila e das cobranças voltam vazias e toda escrita lança. O dublê não
+   * reproduz o rollback destas escritas (escreve direto): a atomicidade é provada nos `-db`. */
+  #charging(tenantId: string): ChargeIntentTx {
+    const self = this;
+    const channel = this.channel;
+    const full = channel !== undefined && channel.charges !== undefined && channel.refs !== undefined; // [FOUR-STORES]
+    const lockStatement: ChargeIntentTx["lockStatement"] = async (statementId) => {
+      const statement = self.statements.get(statementId);
+      return statement && statement.tenantId === tenantId
+        ? { id: statement.id, status: statement.status, totalCents: statement.totalCents, paidCents: statement.paidCents, dueDate: statement.dueDate }
+        : undefined;
+    };
+    if (!full) {
+      const unsupported = async (): Promise<never> => {
+        throw new Error("charge_channel_tx_unsupported");
+      };
+      return {
+        lockStatement,
+        findLiveCharge: async () => undefined,
+        listChargeLines: async () => [],
+        listCharges: async () => [],
+        putRef: unsupported,
+        enqueue: unsupported,
+        skipPendingChargeCreate: unsupported,
+        skipChargeCreate: unsupported,
+        recordAudit: unsupported,
+      };
+    }
+    const { outbox, charges, refs } = channel as Required<InMemoryChannelStores>;
+    return {
+      lockStatement,
+      findLiveCharge: (statementId) => charges.findLive(tenantId, statementId),
+      listChargeLines: (statementId) => outbox.listByStatement(tenantId, statementId),
+      listCharges: (statementId) => charges.listByStatement(tenantId, statementId),
+      async putRef(ref, now) {
+        await refs.put(ref, now);
+      },
+      enqueue: (input, now) => outbox.enqueue(input, now),
+      async skipPendingChargeCreate(outboxId, lastError, now) {
+        if (!outbox.skipPendingChargeCreate) throw new Error("charge_channel_tx_unsupported");
+        return outbox.skipPendingChargeCreate(tenantId, outboxId, lastError, now);
+      },
+      async skipChargeCreate(outboxId, skipReason, from, now) {
+        if (!outbox.skipChargeCreate) throw new Error("charge_channel_tx_unsupported");
+        return outbox.skipChargeCreate(tenantId, outboxId, skipReason, from, now);
+      },
+      async recordAudit(event) {
+        self.channelAudits.push({ ...event, tenantId });
+      },
+    };
+  }
+
+  async findPayableCharge(tenantId: string, statementId: string): Promise<SubscriptionStatementCharge | undefined> {
+    const channel = this.channel;
+    const statement = this.statements.get(statementId);
+    if (!channel?.charges || !statement || statement.tenantId !== tenantId) return undefined;
+    const lines = await channel.outbox.listByStatement(tenantId, statementId);
+    const currentClosing = (current: SubscriptionStatement, line: BillingOutboxRow | undefined) =>
+      line !== undefined &&
+      (current.reopenedAt === null || line.occurredAt.getTime() > current.reopenedAt.getTime()) &&
+      Number(line.payload.amountCents) === current.totalCents;
+    const liveCancelFor = (all: readonly BillingOutboxRow[], charge: SubscriptionStatementCharge) =>
+      all.some((line) => line.kind === "charge_cancel" && (line.status === "PENDING" || line.status === "PROCESSING" || line.status === "NEEDS_REVIEW") && line.payload.chargeId === charge.externalChargeId);
+    for (const charge of await channel.charges.listByStatement(tenantId, statementId)) {
+      if (!CHARGE_RULES[charge.status].payable) continue;
+      const line = lines.find((candidate) => candidate.kind === "charge_create" && candidate.status === "SENT" && candidate.provider === charge.provider && candidate.externalId === charge.externalChargeId);
+      if (!currentClosing(statement, line)) continue; // [VIEW-VIGENTE]
+      if (liveCancelFor(lines, charge)) continue; // [VIEW-LIVE]
+      return charge;
+    }
+    return undefined;
   }
 
   async listStatements(tenantId: string) {

@@ -10,6 +10,11 @@ import {
   snapshotOf,
   type StatementComputationInput,
 } from "./statement.engine.js";
+import { enqueueChargeCancelInTx, enqueueChargeCreateInTx } from "../charges/charge-request.service.js";
+import { CHARGE_RULES } from "../charges/charge-rules.js";
+import type { OutboxSkipReason } from "../outbox/outbox.types.js";
+import type { PaymentMethod } from "../providers/payment/payment-provider.port.js";
+import { eagerPlan, refechamentoPlan, reopenLiveCheck } from "./statement-charge-lines.js";
 import type { StatementResolveOptions, StatementVersionPin } from "./statement.inputs.js";
 import type { StatementRepository, StatementTx } from "./statement.repository.js";
 import {
@@ -56,6 +61,15 @@ export type StatementInputsProvider = {
 
 export type StatementAuditSink = { record(event: StatementAuditEvent): Promise<void> };
 
+/** B-ASS-08c1c (P5, plano §4.1): o provedor de PAGAMENTO ligado na hora do fechamento e o método do perfil — ou `null` (Q1 (a):
+ * sem provedor ligado, o fechamento não deixa linha esperando). Avaliado ANTES da transação (v2 §10 D3); nunca faz rede. */
+export type ClosingChargeResolver = {
+  resolve(tenantId: string): Promise<{ readonly provider: string; readonly method: PaymentMethod } | null>;
+};
+
+/** B-ASS-08c1c (plano §4.0 item 5): o 4º parâmetro do serviço, um OBJETO de opções. O 08c2 acrescenta `invoiceIntents` aqui. */
+export type StatementChannel = { readonly closingCharge?: ClosingChargeResolver };
+
 export type CloseOutcome =
   | { readonly kind: "closed"; readonly statement: SubscriptionStatement; readonly alreadyClosed: false }
   | { readonly kind: "already_closed"; readonly statement: SubscriptionStatement; readonly alreadyClosed: true }
@@ -83,11 +97,18 @@ function balanceOf(statement: SubscriptionStatement): number {
   return Math.max(0, statement.totalCents - statement.paidCents);
 }
 
+const REFECHA_MESSAGES = {
+  charge_in_flight: "A charge request is in flight; try again.",
+  outbox_needs_review: "The statement has an outbox line awaiting review.",
+  charge_already_exists: "The statement already has a live charge.",
+} as const;
+
 export class StatementService {
   constructor(
     private readonly repository: StatementRepository,
     private readonly inputs: StatementInputsProvider,
     private readonly audit: StatementAuditSink,
+    private readonly channel: StatementChannel = {},
   ) {}
 
   /**
@@ -109,6 +130,8 @@ export class StatementService {
       throw new StatementError(422, "period_not_ended", "The period has not ended yet (America/Sao_Paulo).");
     }
 
+    // B-ASS-08c1c (P5): o predicado "provedor ligado" e o método do perfil, ANTES da transação (nunca rede dentro dela).
+    const closing = (await this.channel.closingCharge?.resolve(input.tenantId)) ?? null;
     const result = await this.repository.transaction(input.tenantId, async (tx) => {
       const { statement: current } = await tx.insertIfAbsentAndLock({ tenantId: input.tenantId, period: input.period });
       if (current.status === "closed" || current.status === "paid" || current.status === "cancelled") {
@@ -144,6 +167,15 @@ export class StatementService {
         by: input.actorId,
         totalCents: computation.totalCents,
       };
+      // B-ASS-08c1c (P6, plano §4.2): o refechamento tira do conjunto vivo a `charge_create` do fechamento desfeito, sob a
+      // trava e ANTES de gravar; a linha em voo, em conferência ou com cobrança não terminal recusa, e nada é gravado.
+      if (current.status === "reopened") {
+        const charging = tx.charging();
+        const refecha = refechamentoPlan(await charging.listChargeLines(current.id), await charging.listCharges(current.id));
+        if (refecha.kind === "refuse") throw new StatementError(refecha.httpStatus, refecha.reason, REFECHA_MESSAGES[refecha.reason]);
+        for (const line of refecha.skipPending) await this.#skipLine(charging, line.id, "statement_reopened", [line.status], input.now); // [REFECHA-01]
+        for (const line of refecha.skipSentTerminal) await this.#skipLine(charging, line.id, "statement_reopened", [line.status], input.now); // [REFECHA-02]
+      }
       const saved = await tx.saveStatement({
         ...current,
         status: zeroTotal ? "paid" : "closed",
@@ -166,6 +198,9 @@ export class StatementService {
           ...(resolved.gaps.length > 0 ? { gaps: [...resolved.gaps] } : {}),
         },
       });
+      // B-ASS-08c1c (P5): com o provedor ligado, a cobrança nasce DENTRO desta transação, sobre o `tx` do fechamento (a trava
+      // já é dele), com o total recém-gravado. Recusa do D1 ou falha ao gravar → a exceção sobe e o fechamento inteiro desfaz.
+      if (closing && saved.status === "closed") await enqueueChargeCreateInTx(tx.charging(), { tenantId: input.tenantId, statementId: saved.id, provider: closing.provider, operator: { method: closing.method }, now: input.now }); // [CLOSE-ENQ]
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
@@ -188,6 +223,36 @@ export class StatementService {
     else await this.audit.record(event);
   }
 
+  /** B-ASS-08c1c: a `charge_create` vira SKIPPED só se ainda está no status lido (o `from` é o da própria linha). 0 linhas = o
+   * claim ou o despacho a pegaram entre a leitura e a escrita: falha fechado, e o movimento desfaz. */
+  async #skipLine(charging: ReturnType<StatementTx["charging"]>, lineId: string, reason: OutboxSkipReason, from: Parameters<ReturnType<StatementTx["charging"]>["skipChargeCreate"]>[2], now: Date): Promise<void> {
+    const skipped = await charging.skipChargeCreate(lineId, reason, from, now);
+    if (!skipped) throw new StatementError(409, "charge_in_flight", "A charge request is in flight; try again.");
+  }
+
+  /**
+   * B-ASS-08c1c (P7, plano §4.3, D2 (i)) — a marcação imediata, no `tx` do movimento e depois do `saveStatement`: a
+   * `charge_create` PENDING vira SKIPPED com o motivo; a SENT com a cobrança CANCELÁVEL ganha o `charge_cancel` pelo núcleo
+   * (o marcador CANCEL-CORE), com a trilha no MESMO `tx`. PROCESSING e NEEDS_REVIEW ficam (§9 D-2).
+   */
+  async #eagerOnMove(tx: StatementTx, statement: SubscriptionStatement, reason: "statement_paid" | "statement_cancelled" | "statement_reopened", now: Date, actorId: string | null = null): Promise<void> {
+    const charging = tx.charging();
+    const plan = eagerPlan(await charging.listChargeLines(statement.id), await charging.listCharges(statement.id));
+    for (const line of plan.skippable) await this.#skipLine(charging, line.id, reason, [line.status], now);
+    for (const line of plan.cancelTargets) {
+      const enqueued = await enqueueChargeCancelInTx(charging, { tenantId: statement.tenantId, statementId: statement.id, target: { id: line.id, provider: line.provider, externalId: line.externalId! }, now });
+      if (enqueued.kind === "already") continue;
+      await charging.recordAudit({ actorId, action: "billing_outbox.charge_cancel_requested", entityId: enqueued.row.id, metadata: { statementId: statement.id, kind: enqueued.row.kind, code: reason } });
+    }
+  }
+
+  /** B-ASS-08c1c (plano §4.3 e §10 item 2): o que a baixa manual faz depois do `saveStatement`, na MESMA transação. A ordem é
+   * trava → pagamento → `saveStatement` → marcação imediata (aqui) → [08c2: a intenção de nota] → trilha. Baixa PARCIAL não
+   * mexe na cobrança aberta (Q4 (a)). */
+  async #afterManualSettle(tx: StatementTx, _before: SubscriptionStatement, statement: SubscriptionStatement, input: { readonly now: Date; readonly actorId: string | null }): Promise<void> {
+    if (statement.status === "paid") await this.#eagerOnMove(tx, statement, "statement_paid", input.now); // [EAGER-01]
+  }
+
   /** Reabrir (regra 5): só sem pagamento, sem cobrança viva e sem nota viva; vira `reopened`. */
   async reopen(input: { readonly tenantId: string; readonly statementId: string; readonly reason: string; readonly actorId: string; readonly now: Date }) {
     const reason = requireReason(input.reason, "reason");
@@ -199,7 +264,7 @@ export class StatementService {
       if (current.paidCents > 0) {
         throw new StatementError(422, "statement_has_payments", "A statement with payments cannot be reopened.");
       }
-      if (current.chargeStatus === "pending" || current.chargeStatus === "confirmed") {
+      if (CHARGE_RULES[current.chargeStatus].occupiesSlot) {
         throw new StatementError(422, "statement_charge_pending", "The statement has a live charge.");
       }
       if (current.invoiceStatus === "pending" || current.invoiceStatus === "authorized" || current.invoiceStatus === "cancel_pending") {
@@ -208,6 +273,10 @@ export class StatementService {
       // D2 (iv), R-OBX-5 e B-ASS-08c1b (P8): linha da fila aguardando revisão → não reabrir; quem decide é a revisão
       // (`/resolve`). A leitura é do MESMO `tx`, depois da trava (A7/A8): uma conexão só.
       if (await tx.hasOutboxNeedsReview(input.statementId)) throw new StatementError(422, "outbox_needs_review", "The statement has an outbox line awaiting review."); // [GUARD-01]
+      // B-ASS-08c1c (A3, plano §4.6): a fila e a cobrança pela TABELA, no MESMO `tx` e depois da trava (uma conexão).
+      const live = reopenLiveCheck(await tx.charging().listChargeLines(current.id), await tx.charging().listCharges(current.id));
+      if (live.inFlight) throw new StatementError(409, "charge_in_flight", "A charge request is in flight; try again."); // [REOPEN-INFLIGHT]
+      if (live.liveCharge) throw new StatementError(422, "statement_charge_pending", "The statement has a live charge."); // [REOPEN-LIVE]
       const reopened = await tx.saveStatement({
         ...current,
         status: "reopened",
@@ -219,6 +288,7 @@ export class StatementService {
           history: [...current.snapshot.history, { at: input.now.toISOString(), event: "reopened", by: input.actorId, totalCents: current.totalCents, note: reason }],
         },
       });
+      await this.#eagerOnMove(tx, reopened, "statement_reopened", input.now, input.actorId); // [EAGER-03]
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
@@ -271,6 +341,7 @@ export class StatementService {
         status: paidCents >= current.totalCents ? "paid" : "closed",
         paidAt: paidCents >= current.totalCents ? input.now : current.paidAt,
       });
+      await this.#afterManualSettle(tx, current, statement, input);
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,
@@ -349,6 +420,7 @@ export class StatementService {
           history: [...current.snapshot.history, { at: input.now.toISOString(), event: "cancelled", by: input.actorId, totalCents: current.totalCents, note: reason }],
         },
       });
+      await this.#eagerOnMove(tx, cancelled, "statement_cancelled", input.now, input.actorId); // [EAGER-02]
       await this.trail(tx, {
         tenantId: input.tenantId,
         actorId: input.actorId,

@@ -15,7 +15,8 @@ import {
 import type { UsageDayRow, VehicleBindingWindow } from "./statement.inputs.js";
 import type { PlansRepository } from "../plans/plans.repository.js";
 import { InMemoryStatementRepository, type StatementRepository } from "./statement.repository.js";
-import { StatementService, type StatementAuditSink, type StatementInputsProvider } from "./statement.service.js";
+import { closingMethodOf } from "./statement-charge-lines.js";
+import { StatementService, type StatementAuditSink, type StatementChannel, type StatementInputsProvider } from "./statement.service.js";
 import type { StatementAuditEvent } from "./statement.types.js";
 import {
   InMemoryBillingProfileRepository,
@@ -100,11 +101,31 @@ function memoryInputs(): StatementInputsProvider {
   );
 }
 
+/** B-ASS-08c1c (P5, plano §4.1): o fechamento do modo memória — liga as QUATRO lojas do canal no dublê (`createChargeIntentRepository`
+ * compõe e liga) e enfileira só com o provedor de pagamento ligado agora (o MESMO predicado da rota `/charge`). */
+function memoryChannel(): StatementChannel {
+  return {
+    closingCharge: {
+      async resolve(tenantId) {
+        const [{ createChargeIntentRepository }, { createDefaultVaultRuntime }, { paymentProviderOn }] = await Promise.all([
+          import("../outbox/channel.runtime.js"),
+          import("../vault/vault.factory.js"),
+          import("../outbox/channel-state.js"),
+        ]);
+        await createChargeIntentRepository();
+        const on = await paymentProviderOn(await createDefaultVaultRuntime());
+        if (!on) return null;
+        return { provider: on.provider, method: closingMethodOf((await memoryProfiles.find(tenantId))?.paymentMethod) };
+      },
+    },
+  };
+}
+
 export async function createDefaultStatementRuntime(): Promise<StatementRuntime> {
   if (env.CORE_SAAS_PERSISTENCE !== "prisma") {
     const inputs = memoryInputs();
     return {
-      service: new StatementService(memoryRepository, inputs, memoryAudit),
+      service: new StatementService(memoryRepository, inputs, memoryAudit, memoryChannel()),
       repository: memoryRepository,
       billingProfiles: memoryProfiles,
       tenants: getMemoryTenantLookupForTests(),
