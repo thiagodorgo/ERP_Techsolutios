@@ -29,11 +29,11 @@
 |---|---:|
 | Cabecalhos `## P-` | **1156** |
 | IDs distintos | 1145 |
-| **ABERTAS** | **889** |
+| **ABERTAS** | **888** |
 | — das quais **diferidas** (balde C) | 61 |
-| — das quais **ativas nesta rodada** | **828** |
+| — das quais **ativas nesta rodada** | **827** |
 | **CONTRADITORIAS** (exigem decisao) | **0** |
-| FECHADAS | 263 |
+| FECHADAS | 264 |
 
 > O placar conta **cabecalhos**, nao pendencias distintas: **1156 cabecalhos para 1145 IDs**, porque
 > **6 IDs aparecem mais de uma vez** (emendas apensadas, §A2). Quem citar "N pendencias abertas"
@@ -431,7 +431,7 @@
 | `P-LOCALIZACAO-HISTORICO-GUARDA-E-APAGAMENTO` | 16046 | MÉDIA | sim | P-LOCALIZACAO-HISTORICO-GUARDA-E-APAGAMENTO (2026-11-14) — prazo de guarda do histórico  |
 | `P-LOCALIZACAO-COLETA-SO-COM-OS-ATIVA` | 16052 | MÉDIA | sim | P-LOCALIZACAO-COLETA-SO-COM-OS-ATIVA (2026-11-14) — coletar a localização só com OS ativ |
 
-## ABERTAS · balde B — processo/registro — 472
+## ABERTAS · balde B — processo/registro — 471
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -906,7 +906,6 @@
 | `P-SAN3-16-CARTAO-APROVACOES-DA-HOME` | 16129 | BAIXA | sim | P-SAN3-16-CARTAO-APROVACOES-DA-HOME (2026-11-15) — o cartão de Aprovações da tela inicia |
 | `P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA` | 16136 | BAIXA | sim | P-SAN3-16-DOC-SYNC-VERSAO-ANTIGA (2026-11-15) — `docs/mobile-sync-contracts.md` ainda ci |
 | `P-A17BIS-CENSO-POR-SUBSTRING` | 16143 | BAIXA | sim | P-A17BIS-CENSO-POR-SUBSTRING (2026-11-15) — o censo A17-bis do `B-SAN3-12a` confere `rea |
-| `P-T17-FILA-B-CHECAGEM-SEM-PID` | 16150 | BAIXA | sim | P-T17-FILA-B-CHECAGEM-SEM-PID (2026-11-15) — a checagem "R depois de A" do [T-17-FILA-db |
 
 ## ABERTAS · balde C — DIFERIDO-LEVE (lista nominal, vetavel) — 61
 
@@ -974,7 +973,7 @@
 | `P-O6R-B05-REDIS-HOST-DNS-DIFERIDO` | 3752 | — | **a atribuir** | P-O6R-B05-REDIS-HOST-DNS-DIFERIDO (2026-08-15 — bloco B-O6R-05) |
 | `P-REDIS-DEV-LIXO-DE-FILA` | 3796 | — | **a atribuir** | P-REDIS-DEV-LIXO-DE-FILA (2026-08-15 — achado lateral da junta do PR #353) |
 
-## FECHADAS — 263
+## FECHADAS — 264
 
 | ID | linha | severidade | dono | titulo |
 |---|--:|---|---|---|
@@ -1241,3 +1240,4 @@
 | `P-ASS08C-POSSE-NAO-COBRE-O-POST` | 15266 | MÉDIA | sim | P-ASS08C-POSSE-NAO-COBRE-O-POST (2026-11-14) — a posse confirmada antes do POST não alca |
 | `P-DONO-LINHA-DO-APP-48-OU-44` | 15332 | — | sim | P-DONO-LINHA-DO-APP-48-OU-44 (2026-11-14) — no app, a linha que abre o detalhe fica com  |
 | `P-ASS12-PULO-SEM-AVISO` | 15400 | MÉDIA | **a atribuir** | P-ASS12-PULO-SEM-AVISO (2026-11-14) — organização pulada por `addon_without_price` não a |
+| `P-T17-FILA-B-CHECAGEM-SEM-PID` | 16150 | BAIXA | sim | P-T17-FILA-B-CHECAGEM-SEM-PID (2026-11-15) — a checagem "R depois de A" do [T-17-FILA-db |

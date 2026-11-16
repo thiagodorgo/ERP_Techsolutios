@@ -16149,7 +16149,13 @@ sessões sobrepostas (fechada como propriedade no bloco; o legado vai no anexo d
 
 ## P-T17-FILA-B-CHECAGEM-SEM-PID (2026-11-15) — a checagem "R depois de A" do [T-17-FILA-db] (b) não identifica quem está bloqueado, e cai 1 vez em 43 no CI sem defeito do produto — BAIXA
 
-- **status:** ABERTA · **gravidade:** BAIXA · **dono:** `B-SAN3-16` (herdada do #568, CONF568B-02), **à espera de emenda**: o conserto fica fora da lista de permitidos do bloco · **bloqueia:** não.
+- **status:** FECHADA (2026-11-15, PR #580 do `B-SAN3-16`, Emenda 1.2 da abertura) · **gravidade:** BAIXA · **dono:** `B-SAN3-16` (herdada do #568, CONF568B-02) · **bloqueia:** não.
+- **fechamento:**
+  - `waitForOwnBlockedOrSettled` (`tests/helpers/pg-barrier.ts`) ganhou o parâmetro opcional `loserPid`. Quando ele vem, só a sessão com esse pid conta como bloqueada. Sem ele, a consulta é a de antes, byte a byte. A chamada "R depois de A" (`tests/bsan317-consentimento-localizacao-db.test.ts:696`) passa `loserPid: rPid`. Nenhuma asserção mudou, e as outras 13 chamadas também não.
+  - A sonda, em banco descartável, com uma sessão alheia do app bloqueada e o loser já resolvido: com `loserPid`, a chamada devolve `resolvido`; sem ele, `bloqueado`. Com o helper anterior, as duas devolvem `bloqueado`.
+  - `[T-17-FILA-db] (b)` rodou 20 vezes, 10 delas com outro `-db` em paralelo no mesmo cluster: 20/20 verdes.
+  - `bsan317-…-db` 3×: 24/24. `b-san3-23-cancel-race-db` 3×: 21/21.
+  - O critério antigo pedia N ≥ 50 execuções. A Emenda 1.2 o trocou por 20 locais, e as rodadas de CI seguintes somam ao N.
 - **origem:** F7 do `B-SAN3-16` (item 5 do portão), registro do dev `dev-16-cl`.
 - **fato:** `tests/bsan317-consentimento-localizacao-db.test.ts:696` chama `waitForOwnBlockedOrSettled` sem `blockedBy` e sem filtrar o pid de R: B, que espera atrás de R (a ordem certa), conta como "R presa pela posição nova". O helper (`tests/helpers/pg-barrier.ts`) não tem filtro pelo pid do perdedor. Os dois arquivos são de fora do `B-SAN3-16` (teste existente e helper), e o bloco proíbe editar teste existente.
 - **critério de encerramento:** a checagem olha só a sessão de R (o pid dela), sem mudar nenhuma asserção do comportamento; 0 queda em N ≥ 50 execuções.

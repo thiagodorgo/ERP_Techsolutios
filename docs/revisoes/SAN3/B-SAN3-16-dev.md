@@ -38,7 +38,8 @@
 | F5 | `3626ce05` | tela de atendimento |
 | F6a/F6b | — | 22/22 mutações do servidor e 21/21 do app, vermelhas por asserção e revertidas |
 | F6c/F6d | `597a21f0`, `e8b1fdc0` | integração com a `main`, trava T1–T4 vazia, bateria, CI |
-| F7 | este commit | registro e limpeza |
+| F7 | `6503f4c1` | registro e limpeza |
+| E1.2 | este commit | `loserPid` na barreira e no "R depois de A" do 17; `[T-17-FILA-db] (b)` 20/20 |
 
 ## Correções no caminho
 
@@ -52,5 +53,5 @@
 O registro da F7 está em `agent-orchestration/controle/pendencias.md`: fecha `P-MOBILE-FILA-OS-NAO-DRENADA`,
 `P-O6R-07C-APP-RECUSA-PERMANENTE-SEM-SAIDA`, `P-MOBILE-SYNC-FAILED-SEM-DESCARTE` e `P-MOBILE-CODEC-FILA-STATUS-CRU`;
 apensa as vizinhas; passa ao `B-SAN3-16b` a `P-SYNC-OS-RECIBO-EM-MEMORIA` e a `P-OS-MESMA-SITUACAO-GRAVA-EVENTO`; abre as 8
-novas, entre elas a `P-T17-FILA-B-CHECAGEM-SEM-PID`, herdada do #568, que espera emenda (o conserto fica fora da lista de
-permitidos do bloco).
+novas. Uma delas, a `P-T17-FILA-B-CHECAGEM-SEM-PID`, herdada do #568, fecha neste PR pela Emenda 1.2: a
+chamada "R depois de A" passa a filtrar o pid de R, sem mudar nenhuma asserção.
