@@ -5,13 +5,13 @@
 - **papel:** desenvolvimento; não achou, não planejou e não revisa
 - **ramo de destino:** `fix/dossie-versao-da-vistoria`
 - **head inicial medido:** `31e7ebc4b1f1785b31a21234dd4974856d0882b0`
-- **worktree CRLF:** `C:/Users/AMP/w-d11c3` (`core.autocrlf=true`, configuração por worktree)
-- **worktree LF:** `C:/Users/AMP/w-d11c3-lf` (`core.autocrlf=false`, configuração por worktree)
+- **worktree CRLF:** `~/w-d11c3` (`core.autocrlf=true`, configuração por worktree)
+- **worktree LF:** `~/w-d11c3-lf` (`core.autocrlf=false`, configuração por worktree)
 
 ## 2026-10-04T19:34:39Z — preparação e contrato
 
 - Comando: `git fetch origin --prune`; resolução das refs local/remota e `git worktree list --porcelain`.
-- Saída resumida: ramo local e remoto em `31e7ebc4`; ramo ocupado por `C:/Users/AMP/w-nuv11`, por isso ambos os terrenos próprios nasceram detached; árvore inicial limpa nos dois.
+- Saída resumida: ramo local e remoto em `31e7ebc4`; ramo ocupado por `~/w-nuv11`, por isso ambos os terrenos próprios nasceram detached; árvore inicial limpa nos dois.
 - Veredito parcial: terreno compatível com o mandato; publicação será somente `git push origin HEAD:fix/dossie-versao-da-vistoria`, sem force.
 - Comando: leitura integral de `CLAUDE.md`, `AGENTS.md`, `PROJECT_MEMORY.md`, skill de auditoria e referências; leitura da seção 17, comando do bloco, ata e reprovação do ciclo 2.
 - Saída resumida: C2c2-F1 e C2c2-F2 são os dois remédios prescritos; a decisão `D-GOV-PROPORCIONAL` já mergeada em `main` congela `Kpis/*` e substitui a junta completa deste PR por um revisor independente + CI verde.
@@ -85,7 +85,7 @@
 
 - Comando: `git status --short`; `git log --oneline -5`; `git rev-parse HEAD`; `git fetch origin fix/dossie-versao-da-vistoria main`; `git worktree list`.
 - Saída: `w-d11c3` detached em `eec4a24a` (sobre `f1329cda`, sobre `31e7ebc4` + `357a98e9`); remoto do ramo `31e7ebc4`, `origin/main` `357a98e9`; `w-d11c3-lf` detached em `f1329cda`; único arquivo modificado não commitado: `frontend/tests/patios-dossie-versao.smoke.test.tsx`.
-- Comando: `git diff | cmp - /c/Users/AMP/erp-pausa-2026-10-03/w-d11c3-nao-commitado-2347.diff`. Saída: **IDENTICAL** (204 linhas) — o não commitado é exatamente a cópia de segurança.
+- Comando: `git diff | cmp - ~/erp-pausa-2026-10-03/w-d11c3-nao-commitado-2347.diff`. Saída: **IDENTICAL** (204 linhas) — o não commitado é exatamente a cópia de segurança.
 - Comando: `git diff --stat 357a98e9 f1329cda` e `git diff 31e7ebc4 f1329cda -- agent-orchestration/codex/log-execucao.md`. Saída: o merge integra a main sem tocar produto do bloco; as duas histórias preservadas em `status-geral.md`/`log-execucao.md`, **com um defeito cosmético**: a resolução apagou a linha em branco antes de `---` em `log-execucao.md` (l.~4785), o que em Markdown transforma o parágrafo anterior num título setext. Corrijo no commit de registro.
 - Comando: `git diff --stat 357a98e9 eec4a24a -- Kpis`. Saída: o ramo carrega `Kpis/app.js` (1 linha), `kpis-history.json` (+15), `kpis-history.md` (+30), `kpis-latest.json` (36) dos ciclos 1–2. Pela ordem (KPI congelado), devolvo `Kpis/*` ao conteúdo da `origin/main` num commit próprio.
 - **Achado sobre o T25/T26 não commitado (rascunho do Codex, nunca executado — não há entrada de execução dele no relatório):** os dois casos importam `@playwright/test` e lançam Chromium dentro de um smoke do frontend. `@playwright/test` existe **só** no `package.json` da raiz (l.52), não no `frontend/package.json`; o job `frontend` do CI (`.github/workflows/ci.yml` l.280–303) roda **apenas** `npm --prefix frontend ci` e `test:smoke` (que inclui este arquivo) — logo, no CI o import falharia e o job ficaria vermelho; localmente "passaria" por resolução ao `node_modules` da raiz. É também dependência nova de fato para o frontend (decisão crítica, §C7.1) e contraria o precedente do repo (`frontend/tests/work-orders-page-live.test.tsx`, contrato (a): "ZERO dependência nova — o DOM mínimo é escrito aqui mesmo"). **Não é falsificação da §17** (que pede "fluxo real service/hook/painel", sem prescrever navegador): reescrevo T25/T26 com DOM mínimo + `react-dom/client` + `React.act`, sem dependência nova.
@@ -117,7 +117,7 @@
 
 - Mudança (só `frontend/src/modules/patios/processes/useProcessChecklistRuns.ts`): importa `ChecklistRunContractError` do adapter e, **só** nesse ramo do `catch`, `setRuns([])` + o erro seguro; 401/403 (negado), 404 (lista vazia honesta) e o genérico (falha operacional → aviso de 2º plano sobre a última lista válida) intocados. Adapter, service, painel e consumidores intocados (§17.4.5).
 - Comando: `timeout 600 npm --prefix frontend run check` → `ec=0`. Comando: `--test-name-pattern="^T(16|2[56]):"` → `tests 28 · pass 3 · fail 0 · cancelled 0`, `ec=0` (T16, T25, T26).
-- Controles (runner `dev11c3-mut.cjs`: âncora única no EOL do arquivo, prova de aplicação, comando, restauração por cópia, prova byte a byte), terreno CRLF `C:/Users/AMP/w-d11c3`:
+- Controles (runner `dev11c3-mut.cjs`: âncora única no EOL do arquivo, prova de aplicação, comando, restauração por cópia, prova byte a byte), terreno CRLF `~/w-d11c3`:
   - `M-F2a` (tira o `setRuns([])` do ramo contratual) → T25 `ec=1`, `pass 0 fail 1` — **VERMELHO**; restaurado byte a byte.
   - `M-F2b` (limpa em todo erro, no ramo genérico) → T26 `ec=1`, `pass 0 fail 1` — **VERMELHO**; restaurado.
   - `M-F1a` (insere `{run["status"]}` sem decisão de versão em `DossiePrintDocument`) → censo `ec=1`, `pontos sem consulta=1` — **VERMELHO**; restaurado.
@@ -126,7 +126,7 @@
 ## 2026-10-05T00:27Z — KPI devolvido à main; terreno LF (parcial)
 
 - Comando: `git fetch origin main fix/dossie-versao-da-vistoria` → `origin/main=357a98e9`, ramo remoto `31e7ebc4` (ninguém empurrou no meio). `git diff --stat origin/main HEAD -- Kpis` → 4 arquivos (`app.js` 1 linha, `kpis-history.json` +15, `kpis-history.md` +30, `kpis-latest.json` 36). `git checkout origin/main -- Kpis/` → commit próprio `4e377923` `chore(kpi): devolve Kpis/* ao conteudo da main`; depois dele `git diff origin/main HEAD -- Kpis` é **vazio**.
-- Terreno LF `C:/Users/AMP/w-d11c3-lf` (`core.autocrlf=false` por worktree; arquivo do bloco com `CRLF 0 · LF 927`), movido detached para `4e377923`, `node_modules` próprios (raiz e frontend) já instalados pela instância anterior, sem junction:
+- Terreno LF `~/w-d11c3-lf` (`core.autocrlf=false` por worktree; arquivo do bloco com `CRLF 0 · LF 927`), movido detached para `4e377923`, `node_modules` próprios (raiz e frontend) já instalados pela instância anterior, sem junction:
   - `timeout 600 npm --prefix frontend run check` → `ec=0`.
   - `timeout 1200 node --test --import tsx tests/patios-dossie-versao.smoke.test.tsx` → `tests 28 · pass 28 · fail 0 · cancelled 0 · skipped 0`, `duration_ms 140582`, `ec=0`, nenhum morto por sinal.
   - Adjacentes (`patios-dossie-checklist`, `-print`, `-modal`, `patios-dossie`, `-deeplink`, `-history`, `checklists-run-lock`) → `tests 53 · pass 53 · fail 0`, `ec=0`.

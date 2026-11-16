@@ -2,7 +2,7 @@
 
 > **Papel:** dev da correção, identidade NOVA `dev-agente-api-gramatica`. Não escrevi o código original, não revisei nem ajustei o PR #417 (§C7.4-bis).
 > **Modelo que rodou:** Claude **Opus 5.5** (`claude-opus-5-5`), **nível menor** (`D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`).
-> **Objeto de partida:** worktree `C:/Users/AMP/w-agfix`, ramo `fix/agente-api-gramatica`, head `3a0d199009218b9b60109d0e483a41a8bbf5578e` (= `origin/main`, PR #417 mergeado).
+> **Objeto de partida:** worktree `~/w-agfix`, ramo `fix/agente-api-gramatica`, head `3a0d199009218b9b60109d0e483a41a8bbf5578e` (= `origin/main`, PR #417 mergeado).
 > **Defeito (medido pelo orquestrador, 2026-10-10 21:34Z):** `revisar-pr 416` parou na 1ª chamada com HTTP 400 (`req_011CfuGt9EbSiLQU7aYYbAec`): "The compiled grammar is too large, which would cause performance issues. Simplify your tool schemas or reduce the number of strict tools." Causa medida: `agente_claude/esquemas.py:218-219` marcava `strict=True` nas 12 ferramentas.
 > **Proibições respeitadas:** nenhuma chamada à API; `ERP_AGENTE_ANTHROPIC_KEY` não lida; sem commit nem push; sem `git clean/stash/reset --hard/add -A`; sem `tail -f`; `timeout` em toda execução.
 > **Gravação:** incremental (P1).
@@ -22,14 +22,14 @@
 ## 1. Log incremental (comando → saída → veredito parcial)
 
 ### P0 — terreno de partida (21:37Z)
-- `git worktree list` → `C:/Users/AMP/w-agfix 3a0d1990 [fix/agente-api-gramatica]`; `git rev-parse origin/main` → `3a0d199009218b9b60109d0e483a41a8bbf5578e`; `git status --short` → vazio.
+- `git worktree list` → `~/w-agfix 3a0d1990 [fix/agente-api-gramatica]`; `git rev-parse origin/main` → `3a0d199009218b9b60109d0e483a41a8bbf5578e`; `git status --short` → vazio.
 - Arquivos: índice LF, disco CRLF (`git ls-files --eol`: `i/lf w/crlf`).
 - Linha de base: `timeout 300 .venv/Scripts/python.exe -B -m unittest discover -s tests -t .` → `Ran 170 tests ... OK`.
-- Python global: `C:\Users\AMP\AppData\Local\Microsoft\WindowsApps\...\python.exe` 3.13.14, `find_spec('anthropic')` → `None` (sem SDK).
+- Python global: `~/AppData\Local\Microsoft\WindowsApps\...\python.exe` 3.13.14, `find_spec('anthropic')` → `None` (sem SDK).
 - Veredito: terreno limpo; partida = 3a0d1990, 170/170.
 
 ### P1 — leitura do skill `claude-api` (21:38Z)
-- O diretório indicado existe: `C:/Users/AMP/AppData/Local/Temp/claude/bundled-skills/2.1.296/ce59948a71c1387402a3496c3d3f4a10/claude-api/` (`ls` → `shared/tool-use-concepts.md` 44 936 B, `python/claude-api/tool-use.md` 22 054 B).
+- O diretório indicado existe: `~/AppData/Local/Temp/claude/bundled-skills/2.1.296/ce59948a71c1387402a3496c3d3f4a10/claude-api/` (`ls` → `shared/tool-use-concepts.md` 44 936 B, `python/claude-api/tool-use.md` 22 054 B).
 - `grep -n -i -E "strict|grammar|validat"` nos dois arquivos, e leitura dos trechos:
   - `shared/tool-use-concepts.md` l.526-563 (Structured Outputs): `strict: true` "garante esquema válido"; objetos com `additionalProperties: false`; sem `minimum`/`maxLength`/restrição de array; "**First request latency**: New schemas incur a one-time compilation cost" — a gramática é compilada no servidor a partir dos esquemas estritos. O skill **não** dá um teto numérico para a gramática (a palavra "grammar" não aparece nele); o teto só se conhece pelo 400 medido.
   - `shared/tool-use-concepts.md` l.71 e l.74: "Validate the parsed input against the tool's schema before running the tool … In a manual loop, validate yourself … and treat a failure exactly like invalid JSON"; "When validation fails … do not run the tool; return … as an error result so it can retry" (`is_error: true`). l.570: "Validate inputs: Always validate tool inputs before execution".
@@ -111,7 +111,7 @@ Sem rede e sem SDK (a guarda de `tests/__init__.py` vale para eles); modelo e ex
 ### P7 — mutações (21:47Z)
 - Arnês `scratchpad/agfix/mutar.py`: âncora no EOL do arquivo (os `.py` estão CRLF no disco; a âncora é convertida e tem de casar **exatamente 1 vez**); aplica e confere que mudou e que a âncora sumiu; `__pycache__` apagado antes e depois; suíte inteira com `python -B`; restaura os bytes e confere sha256; no fim, sha256 dos 33 `.py` antes × depois.
 - 1ª execução abortou antes da 1ª suíte (`FileNotFoundError` — caminho relativo do intérprete no `subprocess`); o `finally` restaurou o arquivo (`grep` confirmou `if _f["name"] in FERRAMENTAS_ESTRITAS:` de volta, 349 CRLF / 349 LF). 2ª execução, com o caminho absoluto:
-  `timeout 1500 .venv/Scripts/python.exe -B mutar.py . C:/Users/AMP/w-agfix/scripts/agente-claude-api/.venv/Scripts/python.exe` →
+  `timeout 1500 .venv/Scripts/python.exe -B mutar.py . ~/w-agfix/scripts/agente-claude-api/.venv/Scripts/python.exe` →
   ```
   [a]  strict de volta nas 12 | esquemas.py | aplicada=True | Ran 180 tests | FAILED (failures=3) | VERMELHA | restaurada=True
        - test_parecer.TestEsquema.test_additional_properties_false_em_todo_objeto_e_strict_so_no_parecer

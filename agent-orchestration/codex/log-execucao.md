@@ -2918,7 +2918,7 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
   - `git pull --ff-only origin main`: fast-forward ate PR #74
   - PR #74 confirmada em `main` por merge commit, `docs/commissions.md` e entrada de `commission_engine_foundation`
   - `git status --short` inicial: apenas `experiments/` nao rastreado
-- documento base lido de `C:\Users\AMP\Downloads\plano_gestao_despesas_flutter_erp_techsolutions.docx`
+- documento base lido de `~/Downloads\plano_gestao_despesas_flutter_erp_techsolutions.docx`
 - toolchain verificada: Node v20.19.5, npm 11.7.0, Flutter 3.41.6 e Dart 3.11.4
 - documentacao criada:
   - `docs/expense-management.md`
@@ -3518,7 +3518,7 @@ Sem alteracoes a: backend, Prisma, migrations, endpoints, OperationsMapCanvas, G
 
 ### Implementado
 
-- worktree isolado: `C:\Users\AMP\Documents\GitHub\ERP_Techsolutios-codex-b098e`
+- worktree isolado: `~/Documents\GitHub\ERP_Techsolutios-codex-b098e`
 - branch: `feature/mobile-evidence-contract`
 - base: `origin/main` com merge commit `fc86ae1f70b21b7bdec02fa308b070cadca9b0a4` confirmado
 - criado `POST /api/v1/mobile/sync/evidence-actions`
@@ -4859,7 +4859,7 @@ bloco mergear.
 
 ## B-SAN3-05 — execução local do dev sucessor-2 (2026-10-04)
 
-- Branch `fix/runtime-role-sem-bypass`, worktree próprio `C:/Users/AMP/w-s05d`, `npm ci` próprio; nenhuma junction.
+- Branch `fix/runtime-role-sem-bypass`, worktree próprio `~/w-s05d`, `npm ci` próprio; nenhuma junction.
 - Cluster próprio `san3-05-s2-pg`, PostgreSQL 16.14 em `127.0.0.1:55405`; `erp-postgres:5432` e `erp-redis:6379` não foram tocados.
 - Implementação e testes: papel runtime sem bypass, guarda de boot, procedimento, plataforma cross-tenant explícita, gerador/fixtures e duas suítes DB. A1–A24 executados; relatório incremental contém quedas, retomadas, cargas e falsificações.
 - Bateria: check/lint/build verdes; dirigidos 134/134 + 42/42 + 19/19 + 88/88; `npm test` 3124 total, 2 skips, timeout único de `pg_basebackup` sob concorrência contado como filho+pai, re-medido serialmente 8/8. KPI 3122/3124, com a ocorrência declarada.
@@ -4931,7 +4931,7 @@ bloco mergear.
 
 ## 2026-10-09 — B-SAN3-06b — dev-b-san3-06b
 
-- Worktree exclusivo `C:/Users/AMP/w-06b`; head inicial `4489a996`; `fetch` + rebase em `origin/main` sem conflito.
+- Worktree exclusivo `~/w-06b`; head inicial `4489a996`; `fetch` + rebase em `origin/main` sem conflito.
 - Dependências instaladas separadamente na raiz e em `frontend/`; baseline verde antes da primeira edição: plataforma 15/15, `smoke-flow` 22/22 e smoke 1268/1268.
 - E1–E7 publicados incrementalmente até `c29a1f8b`; E8 entrega seis arquivos de teste, documentação, comando e registro.
 - Resultado funcional: 10 rotas classificadas (6 ligadas, 4 paradas honestas), menu real com 4 itens, 0 tela sem fonte, 0 sítio de dado fabricado e 32 endpoints preservados.
@@ -5060,7 +5060,7 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 - CI `antivirus` ~~verde em 57 s (`41207885759`, head `023b565a`), 8/8 e zero pulo~~: run `41207885759` (head `023b565a`) teve **7/8** (`not ok 8 - HTTP real mobile…`, sem cliente Prisma) e ficou `success` por `tee` sem `pipefail`; `bf24bb2b` tornou o job vermelho, `b407692a` e `9bad1f7e` seguiram vermelhos, verde em `2746eb60` (runs `41242348719` e `41242344243`, `conclusion=success`); nenhum PR aberto pelo DEV.
 ## 2026-10-28 — B-SAN3-12c · FATIA 1 (`dev-san312c-sol`)
 
-- Base `3c27f1bf`; ramo/worktree `feat/web-financeiro-aparencias-b-c` / `C:/Users/AMP/w-san312c`; branch residual do 12b ausente antes do primeiro push.
+- Base `3c27f1bf`; ramo/worktree `feat/web-financeiro-aparencias-b-c` / `~/w-san312c`; branch residual do 12b ausente antes do primeiro push.
 - E5 apensa verbatim ao plano versionado; comando, relatório, aliases e divergências §A2 registrados. Node 22.14.0 absoluto; dependências próprias sem junction.
 - Baseline: financeiro dirigido 122/122; smoke frontend 1482/1482; controle não ancestral recusado. Próxima: FATIA 2. `Kpis/**` intocado.
 
@@ -5093,7 +5093,7 @@ quiser: é um commit só, e nada mais do bloco depende dele.**
 
 - Executor/modelo: `fix-avreal-argon` (Gemini 4 Argon pelo Antigravity, nível menor declarado; não achou os defeitos, não planejou nem revisou).
 - D1 (clamd morria em 1800 s por socket não declarado) achado pela revisão da emenda, fora da triagem; E13 (clamd não-root) medido e incluído.
-- Fatias E1, E13, E2, E10, E3, E7, E4, E5, E6, E8, E9, E11 e E12 executadas sequencialmente no ramo `feat/evidence-clamav-scanner` (`C:/Users/AMP/w-avreal`), com `src/` intocado contra `2746eb60`, F11 (`M-R7`) provada em worktree descartável, 7 pendências residuais registradas em `pendencias.md` (+ índice regenerado) e relatório atualizado em `docs/revisoes/SAN3/B-AV-REAL-dev.md`.
+- Fatias E1, E13, E2, E10, E3, E7, E4, E5, E6, E8, E9, E11 e E12 executadas sequencialmente no ramo `feat/evidence-clamav-scanner` (`~/w-avreal`), com `src/` intocado contra `2746eb60`, F11 (`M-R7`) provada em worktree descartável, 7 pendências residuais registradas em `pendencias.md` (+ índice regenerado) e relatório atualizado em `docs/revisoes/SAN3/B-AV-REAL-dev.md`.
 
 ## 2026-11-02 — B-AV-REAL · conferência aprovada no head integrado
 
@@ -5175,8 +5175,8 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 ## 2026-11-03 — cauda do registro e ata do #488 (`reg-0311-sol`)
 
 - Autor: `reg-0311-sol`, Codex Sol, nível menor declarado, esforço medium; verificador obrigatório: Claude, por `D-UM-FAZ-OUTRO-VERIFICA` e `D-CRUZAMENTO-POR-LIMITE-0311`.
-- Worktree `C:/Users/thiag/w-reg0311`, ramo `docs/registro-0311`, base `origin/main@c6195c12`.
-- Fonte inteira `C:/Users/thiag/erp-pausa-2026-10-03/REGISTRO-PENDENTE.md` confrontada com `git show origin/main:agent-orchestration/controle/{decisoes,pendencias}.md` e `git log origin/main`; as seções já levadas pelos PRs #482/#489 foram preservadas sem duplicação.
+- Worktree `~/w-reg0311`, ramo `docs/registro-0311`, base `origin/main@c6195c12`.
+- Fonte inteira `~/erp-pausa-2026-10-03/REGISTRO-PENDENTE.md` confrontada com `git show origin/main:agent-orchestration/controle/{decisoes,pendencias}.md` e `git log origin/main`; as seções já levadas pelos PRs #482/#489 foram preservadas sem duplicação.
 - Ata `omega/juntas/J-B-PATIO-REC-01-PR488.md` e conjunto textual em `omega/juntas/votos/B-PATIO-REC-01-PR488/`: head aprovado `f472aab1`, merge `36ad6aa7`, junta 2× verde/1× vermelha, conserto K1–K3, conferência com ressalva e porteiro `LIBERADO COM RESSALVA`.
 - Registradas as decisões posteriores ao #489: três aparências; respostas de Usuários/Auditoria/Pátios; cruzamento condicionado a limite; conta 3; Codex Sol `medium`; pergunta do Cloud Billing; limpeza dos PRs parados. Falas do dono ficaram literais; leituras ficaram marcadas.
 - Ressalvas do porteiro da demo, do #487 e do #488, revisão do #487, observações do #489 e triagens dos PRs #493/#494 viraram registro e pendências com dono/status/PR-alvo.
@@ -5197,7 +5197,7 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 ## 2026-11-04 — registro de 04/11 (`reg-0411-opus`)
 
 - Autor: `reg-0411-opus`, Claude Opus, nível menor declarado, identidade nova; o Codex está sem limite. Sem cruzamento de modelo na autoria; o verificador é um revisor de outra identidade (§C7 item 11(2), `D-CRUZAMENTO-POR-LIMITE-0311`).
-- Worktree `C:/Users/thiag/w-reg0411`, ramo `docs/registro-0411`, base `origin/main@0c3c7826`. Fonte: `erp-pausa-2026-10-03/REGISTRO-PENDENTE.md`, seções de 03/11 à noite e de 04/11; cada item conferido em `git show origin/main:agent-orchestration/controle/{decisoes,pendencias}.md` antes de entrar.
+- Worktree `~/w-reg0411`, ramo `docs/registro-0411`, base `origin/main@0c3c7826`. Fonte: `erp-pausa-2026-10-03/REGISTRO-PENDENTE.md`, seções de 03/11 à noite e de 04/11; cada item conferido em `git show origin/main:agent-orchestration/controle/{decisoes,pendencias}.md` antes de entrar.
 - Item 54 FECHADO: `P-KPI-ROADMAP-CONGELADO` e `P-KPI-RECENT-CONGELADO` com o #494 (merge `4f260796`, 25 testes, R0 `ok` no CI do merge `41739911616`) e o marco #501 (merge `0c3c7826`; 25 `ok`, 0 `not ok` no CI do head `f1b9ef3c`, run `41849732792`); linha do item 54 no `PLANO_SAN3.md`.
 - Resíduos do #497: N4 (duas notas restauradas de `c6195c12`, condição na linha `dono`), N3 e N2 (errata em `decisoes.md`; as linhas 139 e 142 do `PLANO_SAN3.md` ficam fora do escopo, com dono), N5 (`B-ASS-02` na linha `dono`). N1 segue aberto. Tudo em `P-ASS00-RESIDUOS-CONFERENCIA`.
 - Achados BAIXA do #496 (F-1, F-2, C-1, C-2, H-1): marcas anexadas às entradas e `ERRATA-0411-REV496`; seção "Quedas (P6)" e contagem da redação corrigidas na ata do #488.
@@ -5225,7 +5225,7 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 ## 2026-11-09 — registro de 09/11 noite (`reg-0911n-opus`)
 
 - Autor: `reg-0911n-opus`, Claude Opus 5.5, identidade de registro declarada (nível menor, §C7.6). Governança leve (`D-GOV-PROPORCIONAL`): um revisor independente e CI.
-- Worktree limpo `C:/Users/thiag/w-reg0911n`, ramo `docs/registro-0911-noite`, base `origin/main@e7e8d678`. Da árvore da sessão (`fix/seed-org-demo-pt-br`, com mudanças antigas de outras sessões) só se copiaram, por nome, as 2 entradas de `decisoes.md` e os 5 arquivos abaixo.
+- Worktree limpo `~/w-reg0911n`, ramo `docs/registro-0911-noite`, base `origin/main@e7e8d678`. Da árvore da sessão (`fix/seed-org-demo-pt-br`, com mudanças antigas de outras sessões) só se copiaram, por nome, as 2 entradas de `decisoes.md` e os 5 arquivos abaixo.
 - Na `main` desde o último registro: #519 (`B-ASS-07`, merge `7d8b2b98`), #521 (registro de 09/11 tarde, merge `89f1d38e`; o job `docker` do CI do merge falhou no envio da imagem ao GHCR, falha de ambiente) e #520 (`B-O6R-03b`, merge `e7e8d678`). Em voo: #522 (`B-ASS-08` parte 1) na junta; 08b em dev.
 - Versionados: `omega/juntas/J-519-b-ass-07.md`, `J-520-b-o6r-03b.md` (sem o custo de API), `porteiro-519-parecer.md`, `porteiro-520-parecer.md` e `docs/revisoes/TELAS/B-APARENCIA-SELETOR-achado.md`.
 - Decisões do dono copiadas literalmente: `D-ASS08-MIGRACAO-M5` e `D-USERS-ACESSO-REPLANO-RESPOSTAS`.
@@ -5236,7 +5236,7 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 ## 2026-11-11 — B-SAN3-08: aprovar orçamento com destino e o Financeiro cria orçamento (itens 40 e 41)
 
 - Dev: `dev-san3-08-cl`, Claude Opus 5.5 (subagente da sessão), identidade nova; telas no Claude (`D-CODEX-PRIMEIRO-TELAS-E-PLANOS-NO-CLAUDE`). Plano: `plano-B-SAN3-08-api` + emenda 1 (Claude pela API); crítica `crit-08-cl` (Claude da sessão). Verificador: a definir pelo orquestrador (outra casa, §C7.11(1)).
-- Worktree próprio `C:/Users/thiag/w-san308`, ramo `feat/web-orcamento-aprovar-destino`, base `origin/main@6f727afc`; `npm ci` e `npm --prefix frontend ci` próprios, sem junction. Cluster descartável `san308-pg` para a F2.
+- Worktree próprio `~/w-san308`, ramo `feat/web-orcamento-aprovar-destino`, base `origin/main@6f727afc`; `npm ci` e `npm --prefix frontend ci` próprios, sem junction. Cluster descartável `san308-pg` para a F2.
 - Fatias: F0 `1b9b674c` (corpo do approve em camelCase pelo builder puro), F1 `54e3f0eb` (diálogo único `ServiceQuoteApproveDialog` nas duas telas, regras no modelo puro, guards), F2 `dfa5b688` (teste `-db` do Financeiro com as permissões do banco, dois braços), F3 (este registro).
 - Comando: `agent-orchestration/codex/comandos/B-SAN3-08-orcamento-destino-e-papel-financeiro.md`. Diário com vermelho-controle e as mutações M1 a M14: `docs/revisoes/SAN3/B-SAN3-08-dev.md`.
 - Registro: `P-Ω3F4C-ACTIVATION-PROMPT` e a parte do item 41 da `P-Ω3a` com a linha de encerramento (fecham no merge); 6 pendências novas `P-SAN3-08-*`; decisões `D-SAN3-08-DIALOGO-SEM-TRES-OPCOES`, `D-SAN3-08-PORTAO-Q1-Q2`, `D-SAN3-08-P1-CORPO-CAMELCASE` e `D-SAN3-08-NIVEL-DE-REVISAO`. Índice regenerado: 816 cabeçalhos, 805 IDs, 193 FECHADAS, 619 ABERTAS, 4 SEM-STATUS na base `6f727afc`; depois de trazer a `main` `07898adf` (#532 e #527) ao ramo, 818 cabeçalhos, 807 IDs, 193 FECHADAS, 621 ABERTAS, 4 SEM-STATUS.
@@ -5247,7 +5247,7 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 - Executor: Codex 2, GPT-5.6 Sol, identidade nova; plano v2 do Claude Opus pela API e crítica
   da sessão Claude incorporada como Emenda E1 antes do código.
 - Base `origin/main@6f727afc`, ramo `fix/jurisdiction-profile-versioning`, worktree próprio
-  `C:/Users/thiag/w-o6r12`; PostgreSQL 16 descartável `o6r12-pg` em `127.0.0.1:55492`.
+  `~/w-o6r12`; PostgreSQL 16 descartável `o6r12-pg` em `127.0.0.1:55492`.
 - O processo grava 9 campos `regime_*` na abertura; migração aditiva transacional carimba,
   preenche o legado pelo valor atual e torna o retrato imutável. Cobrança, notificações, leilão,
   liberação, painel e portal leem o retrato. Auditoria da edição é campo a campo com allowlist.
@@ -5275,7 +5275,7 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 ## 2026-11-11 — B-SAN3-23 (`dev-san3-23-cl`)
 
 - Executor: `dev-san3-23-cl`, Claude Opus 5.5 (subagente da sessão; nível menor declarado), cobrindo o Codex (Codex 1 sem cota semanal até 16/11, Codex 2 ocupado; exceção declarada). Plano v2 de `replano-B-SAN3-23-api` (Claude Opus 5.5 pela API, topo substituto declarado); crítica r2 `crit-23-r2-cl` (APROVADO COM AJUSTES, 8 ajustes como requisito); decisão do dono `D-PORTAO-5-RECOMENDACOES-1111`, Q1 = A (a F2b entra no bloco).
-- Base `origin/main@07898adf`, worktree `C:/Users/thiag/w-san323`, ramo `fix/os-cancelada-sem-item-financeiro`, `npm ci` próprio, Postgres 16 descartável `san323-pg`.
+- Base `origin/main@07898adf`, worktree `~/w-san323`, ramo `fix/os-cancelada-sem-item-financeiro`, `npm ci` próprio, Postgres 16 descartável `san323-pg`.
 - Fatias F0 (19 casos vermelhos pela asserção no código de hoje, BAR-1 0 timeout; MB morta), F1 (trava compartilhada da OS na escrita de item; 503 transitório), F2 (o cancelamento como unidade sob a trava exclusiva), F3 (o faturamento trava a OS antes dos itens), F2b (CAS de situação nos 3 escritores; no despacho, sobre a situação validada, C23R2-01), F4 (20 mutações literais, todas vermelhas e restauradas; emenda E-M5 pelo C23R2-02; M15b nova pelo C23R2-01; registro) e F5 (bateria; o ratchet T13 do B-SAN3-05 pediu a unidade na transação do invólucro, sem `$transaction` interno).
 - Registro: `P-Ω3F6-CANCEL-RACE` e `P-SAN3-02-OS-NAO-TRAVADA` fechadas pelo bloco; `P-COMISSAO-GATE-SEM-TRAVA` aberta (dono: o motor de comissão); `PLANO_SAN3.md` item 23. `pendencias-indice.md` não regenerado (fora do PERMITIDO do plano): fica para o próximo registro.
 - Sem `prisma/**`, `.github/**`, `Kpis/**`, lockfiles ou `.env`. Diário completo: `docs/revisoes/SAN3/B-SAN3-23-dev.md`.
@@ -5285,7 +5285,7 @@ A auditoria do último upgrade (pacote de 30/10, com o item 10 do PR #475) sobre
 ## 2026-11-11 — B-O6R-11d (`dev-11d-cl`)
 
 - Executor: `dev-11d-cl`, Claude Opus 5.5 (subagente da sessão; nível menor declarado), cobrindo o Codex (as duas contas sem cota semanal até 16/11; exceção declarada). Plano v2 de `replano-B-O6R-11d-api` (Claude Opus 5.5 pela API, topo por fallback declarado) com a Emenda 1 (crítica r2 `crit-11d-r2-cl`, APROVADO COM AJUSTES); decisão do dono `D-DONO-TODAS-RECOMENDACOES-1111`, Q1 = A.
-- Base `origin/main@da12fec6`, worktree `C:/Users/thiag/w-11d`, ramo `fix/mobile-os-contrato-b-o6r-11d`, `npm ci` próprio, `flutter pub get`; Postgres 16 e Redis 7 descartáveis `dev11d-pg` (55524) e `dev11d-redis` (56524). Merge de `c95ad4fd` (#536) às 11:20, pelo aviso do orquestrador.
+- Base `origin/main@da12fec6`, worktree `~/w-11d`, ramo `fix/mobile-os-contrato-b-o6r-11d`, `npm ci` próprio, `flutter pub get`; Postgres 16 e Redis 7 descartáveis `dev11d-pg` (55524) e `dev11d-redis` (56524). Merge de `c95ad4fd` (#536) às 11:20, pelo aviso do orquestrador.
 - Fatias: F0 `32814b32` (fixture do `toWorkOrderDto` real, testes, codec esqueleto; Flutter +2 -16, Node 8/10), F1 `9a54ece7` (codec e parser único), F2 `67f09b6f` (o lote manda `user_id` e declara o técnico; `assertExpectedTechnician` no servidor), F3 `4fbc72e3` (34 mutações literais, todas vermelhas e restauradas) e F4 (registro).
 - Comando: `agent-orchestration/codex/comandos/B-O6R-11d-contrato-os.md`. Plano versionado: `docs/revisoes/SAN3/B-O6R-11d-plano.md`. Diário: `docs/revisoes/SAN3/B-O6R-11d-dev.md`.
 - Registro: `Ω6R-QUA-004` e `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` fecham no merge; 6 pendências portadas de `a24f58b5`; 4 novas (`P-O6R-11D-REGISTRY-ASSIGN-REABRE-STATUS`, `P-WO-ASSIGN-SEM-USERID-APAGA-USUARIO`, `P-MOBILE-OS-UNICA-SEM-ORGANIZACAO` com a divergência §A2 do tenant vazio, `P-MOBILE-REJECTED-DOIS-SENTIDOS`); `PLANO_SAN3.md` itens 3 e a cadeia do `mobile-work-order-sync.ts`. Índice regenerado pelo gerador.

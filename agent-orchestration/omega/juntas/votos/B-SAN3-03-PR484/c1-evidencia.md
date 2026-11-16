@@ -5,11 +5,11 @@
 - Modelo: Claude Opus, nível menor, DECLARADO
 - Objeto: `5b628b886520bcbece0228eec9d47c965a32b577`
 - Base (vermelho-controle): `49ddd0f8b9efa8724923ec99fa546cce907288cc`
-- Worktree: `C:/Users/thiag/w-j484-c1` · Postgres: `j484-c1-pg` em `127.0.0.1:55481`
+- Worktree: `~/w-j484-c1` · Postgres: `j484-c1-pg` em `127.0.0.1:55481`
 
 ## Terreno
 
-- **Comando:** `git worktree add --detach C:/Users/thiag/w-j484-c1 5b628b88…`; `git rev-parse HEAD`; `git diff --name-only 49ddd0f8..HEAD`; `npm ci --include=dev` (log `j484/c1-npmci.log`); `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npx prisma generate`.
+- **Comando:** `git worktree add --detach ~/w-j484-c1 5b628b88…`; `git rev-parse HEAD`; `git diff --name-only 49ddd0f8..HEAD`; `npm ci --include=dev` (log `j484/c1-npmci.log`); `DATABASE_URL=postgresql://x:x@127.0.0.1:1/x npx prisma generate`.
 - **Saída:** HEAD = `5b628b886520bcbece0228eec9d47c965a32b577`; 12 arquivos no diff do conserto (engine, routes, service, 4 testes, API_CONTRACTS, comando, pendências ×2, relatório); `npmci exit 0`, `node_modules` próprio, sem junction.
 - **Veredito parcial:** terreno próprio apto; árvore principal e serviços da demo não tocados.
 
@@ -19,7 +19,7 @@
 - **Saída:** objeto 11/11 ok. BASE: 8 falhas (T-TAG-1, -2, -5, -7, -8, -9, -10, T-TAG-6/13); passam no BASE só T-TAG-3/4, T-TAG-11 e T-TAG-12 (controles de "não muda", protegidos pelas mutações M55-b/M55-c). Status depois da restauração: vazio.
 - **Veredito parcial:** T-TAG-1..9 verdes no objeto e os exigidos vermelhos no BASE (T-TAG-db medido no item 2, caminho Postgres).
 
-- **Comando:** `node --import tsx C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j484/c1-grafias.mts` (29 grafias novas × 2 estratégias), no objeto (`c1-grafias-objeto.log`) e com o engine do BASE (`c1-grafias-base.log`), restauração por `git checkout HEAD --` e status vazio.
+- **Comando:** `node --import tsx ~/erp-pausa-2026-10-03/revisoes/j484/c1-grafias.mts` (29 grafias novas × 2 estratégias), no objeto (`c1-grafias-objeto.log`) e com o engine do BASE (`c1-grafias-base.log`), restauração por `git checkout HEAD --` e status vazio.
 - **Saída (estratégia direta, objeto):** lado da TAG fecha: ZWSP, ZWJ, soft hyphen, NEL (U+0085), en-dash, non-breaking hyphen, `_` vs `-`, ZWSP sozinho → `unknown_tenant_tag` 10; BOM, U+2028, NFD×NFC, ligadura ﬁ, largura total, caixa, id em maiúsculas que colide com nome de outra → `ambiguous_tenant_tag` 10; id em maiúsculas sem colisão → direto para o dono; plataforma: `PLATFORM-ID` → platformCost 10, `ＰＬＡＴＦＯＲＭ` como nome de A → ambígua, `platform\u200b` → desconhecida. **Lado do NOME da organização escapa:** A=`"Duplicada\u200b"` (ou `"Dupli\u00adcada"`, soft hyphen) e B=`"Duplicada"` — dois nomes que se leem iguais — com tag `"Duplicada"` → `alloc [["b",10]]`, sem `ambiguous_tenant_tag`; o mesmo com homoglifo cirílico (`"Dupli\u0441ada"`). BASE dá o mesmo resultado nesses três casos (comportamento anterior ao bloco, de `6f27faae`). O validador de nome (`platform-tenants.validator.ts:85-87`) só faz `trim()`, que não remove U+200B nem U+00AD: o nome é gravável pela API.
 - **Veredito parcial:** ACHADO C1-A1 (GRAVE): a recusa de ambiguidade não alcança nomes de organização que diferem só por caractere invisível (Default_Ignorable: U+200B, U+00AD); a tag cai inteira numa das duas. ACHADO C1-A2 (não grave): homoglifo cirílico no nome, mesma consequência, exige tabela de confusáveis (UTS #39), fora do que a emenda prometeu.
 

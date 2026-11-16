@@ -4,7 +4,7 @@
   "executor": "Claude Opus, reserva declarada, sucessor P3 do Codex",
   "modelo": "Claude Opus (claude-opus-5-5), nível menor (§C7.6); reserva nomeada no mandato e no parecer do inspetor",
   "objeto": "849bf840f2bdecae87b82a17b26adf505d8a2a8e; B = git merge-base origin/main <objeto> = 3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d; origin/main no fim = bf83cda8 (andou; B inalterada); delta B..objeto = a6b91ce9 (produto) + a594b09a (corpos da junta) + 849bf840 (merge de main sem conteúdo próprio: merge-tree == árvore do objeto 5f58493d)",
-  "legalidade": "Inspetor LIBERADO (insp-dash-parecer.md, Claude Opus como reserva declarada); md5 EOL-neutro do corpo (f707a03b…) e do mandato (f373ad80…) conferidos; check-runs 14/14 completed/success no objeto; worktree próprio C:/Users/AMP/w-jdash-c3-opus detached no objeto, npm ci próprio, sem junction; Docker só via teste-linux.sh (contêineres tl*), 1 trabalho por vez, memória medida antes de cada subida (8,7 GB e 8,8 GB); base viva e portas proibidas intocadas. Plano, crítica, emenda e relatórios tratados como A RE-VERIFICAR. P3: o Codex gravou a evidência em caminho errado (C:/Users/AMP/Documents/GitHub/w-dash/...); re-executei e comparei cada comando dele antes de medir a cauda.",
+  "legalidade": "Inspetor LIBERADO (insp-dash-parecer.md, Claude Opus como reserva declarada); md5 EOL-neutro do corpo (f707a03b…) e do mandato (f373ad80…) conferidos; check-runs 14/14 completed/success no objeto; worktree próprio ~/w-jdash-c3-opus detached no objeto, npm ci próprio, sem junction; Docker só via teste-linux.sh (contêineres tl*), 1 trabalho por vez, memória medida antes de cada subida (8,7 GB e 8,8 GB); base viva e portas proibidas intocadas. Plano, crítica, emenda e relatórios tratados como A RE-VERIFICAR. P3: o Codex gravou a evidência em caminho errado (~/Documents/GitHub/w-dash/...); re-executei e comparei cada comando dele antes de medir a cauda.",
   "quorum": "unanimidade de 3 com veto",
   "voto": "REPROVADO",
   "itens": [
@@ -26,11 +26,11 @@
   ],
   "o_que_executei": [
     "git show 849bf840:.claude/agents/especialistas/jurado-dash-c3-regressao-e-escopo.md | tr -d CR | md5sum ; tr -d CR < 00-mandatos/cadeira-c3.md | md5sum",
-    "git -C C:/Users/AMP/w-dash worktree add --detach C:/Users/AMP/w-jdash-c3-opus 849bf840 ; npm ci ; npm --prefix frontend ci ; Get-Item node_modules LinkType (vazio)",
+    "git -C ~/w-dash worktree add --detach ~/w-jdash-c3-opus 849bf840 ; npm ci ; npm --prefix frontend ci ; Get-Item node_modules LinkType (vazio)",
     "git merge-base origin/main 849bf840 ; git diff --name-status B...HEAD ; git merge-tree --write-tree 849bf840^1 849bf840^2 vs 849bf840^{tree} ; avaliador-escopo.sh com e sem path proibido injetado ; git diff --check B...HEAD ; grep de asserções removidas",
     "M1 e M1b no PermissionProvider + npm --prefix frontend run test:smoke (2 rodadas) ; restauro git checkout + git hash-object",
     "M2 e M3 em auth.routes.ts + node --test --import tsx (5 arquivos) ; M3 + teste-linux.sh com os 14 arquivos de auth (inclui -db)",
-    "teste-linux.sh C:/Users/AMP/w-jdash-c3-opus 'npm test' (forma do job backend) ; node --test --import tsx tests/traccar-dev-topology.test.ts no Windows com Docker",
+    "teste-linux.sh ~/w-jdash-c3-opus 'npm test' (forma do job backend) ; node --test --import tsx tests/traccar-dev-topology.test.ts no Windows com Docker",
     "npm run check / lint / build (raiz; prisma generate com DATABASE_URL inválido, sem conexão) ; npm --prefix frontend run test:smoke / check / build",
     "DashboardPage com throw → node --test tests/smoke-flow.test.tsx (21/22) → restauro → 22/22",
     "gh api repos/thiagodorgo/ERP_Techsolutios/commits/849bf840/check-runs ; grep -c dashboard-profile-behavior frontend/package.json .github/workflows/ci.yml"
@@ -91,8 +91,8 @@
   "pendencias_que_aceito": [
     "C3-02: incluir dashboard-profile-behavior numa bateria que a CI execute (dono: o bloco, ou quem responde por frontend/package.json)",
     "C3-05: a imagem erp-teste-linux:1 não tem docker compose e produz 9 fails de ambiente no traccar-dev-topology (dono: a ferramenta do terreno)",
-    "Resíduo alheio, reportado e não removido: C:/Users/AMP/Documents/GitHub/w-dash/ (c3-evidencia.md e c3-voto.json do Codex, gravados em caminho errado)"
+    "Resíduo alheio, reportado e não removido: ~/Documents/GitHub/w-dash/ (c3-evidencia.md e c3-voto.json do Codex, gravados em caminho errado)"
   ],
-  "teardown": "Hashes restaurados e provados (PermissionProvider 8ab79873, auth.routes 0da96d08, DashboardPage 5d5b8e08; git status vazio). Worktree C:/Users/AMP/w-jdash-c3-opus removido com git worktree remove --force (ec=0, ausente). Os dois trabalhos Docker meus foram removidos pelo trap do helper. tl179239039814374-* (criado às 06:13Z) não é meu e não foi tocado.",
+  "teardown": "Hashes restaurados e provados (PermissionProvider 8ab79873, auth.routes 0da96d08, DashboardPage 5d5b8e08; git status vazio). Worktree ~/w-jdash-c3-opus removido com git worktree remove --force (ec=0, ausente). Os dois trabalhos Docker meus foram removidos pelo trap do helper. tl179239039814374-* (criado às 06:13Z) não é meu e não foi tocado.",
   "justificativa": "Os itens 2 e 3 passam. A suíte inteira está verde, exceto por um artefato de terreno pre-existente; a CI está 14/14; e o diff não toca área proibida. O item 1 reprova. Nenhum teste prende a mudança central do bloco (o provider passa a ler só a sessão) nem a garantia de backend (o active-tenant não fabrica capacidade). Devolver o provider da base, ou forçar dashboard:view para todo perfil, mantém 1327/1327. Forçar dashboard:view no resolvedor do login mantém 92/92. O helper da emenda semeia a mesma lista na sessão e no contexto, e por isso a diferença que o bloco cria fica invisível ao arnês. VOTO: REPROVADO — o arnês não detecta a regressão de permissão que o bloco corrige (provider M1/M1b e backend M3 sobrevivem) | escopo: dentro-do-bloco"
 }

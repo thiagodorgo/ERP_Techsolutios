@@ -4,7 +4,7 @@
 (`git merge-base main 5256b49` = `df496d2` — a branch **não** está atrás; os 2 commits à frente são `44a30e4` + `5256b49`).
 
 **Worktree próprio (ressalva R1 do inspetor / porteiro #366):**
-`git worktree add C:/Users/AMP/AppData/Local/Temp/c2wt 5256b49` a partir de `.claude/worktrees/san2-r`.
+`git worktree add ~/AppData/Local/Temp/c2wt 5256b49` a partir de `.claude/worktrees/san2-r`.
 Detached HEAD. **Nenhuma junction/symlink de `node_modules`** foi criada (proibida — `feedback-no-junction-node-modules-worktrees`).
 Primeira tentativa no scratchpad longo abortou com `Filename too long` **sem registrar worktree**; `git worktree prune`
 executado antes da segunda. O worktree `san2-r` **não foi mutado** por mim (só recebe estes dois arquivos de voto,
@@ -114,7 +114,7 @@ $ git diff --exit-code --quiet main -- <os 6 caminhos>  -> ec=0   (forma "vs ár
 
 Mutação: append de uma linha de comentário em **um alvo por caminho julgado** —
 `src/app.ts` · `tests/audit-security.test.ts` · `prisma/schema.prisma` · `.github/workflows/ci.yml` ·
-`CLAUDE.md` · `AGENTS.md`. **No MEU worktree** (`C:/Users/AMP/AppData/Local/Temp/c2wt`), nunca no `san2-r`
+`CLAUDE.md` · `AGENTS.md`. **No MEU worktree** (`~/AppData/Local/Temp/c2wt`), nunca no `san2-r`
 nem na árvore principal. Sem commit.
 
 ```
@@ -291,6 +291,6 @@ de citação de intervalo (`ACH-C2-01`, `ACH-C2-02`), BAIXA, que não deslocam a
 ## LIMPEZA
 
 ```
-$ git worktree remove --force C:/Users/AMP/AppData/Local/Temp/c2wt
+$ git worktree remove --force ~/AppData/Local/Temp/c2wt
 $ git worktree list   -> volta às 4 entradas anteriores (raiz · agent-af6ea607f3ddf8efd · gov-descuido · san2-r)
 ```

@@ -24,7 +24,7 @@ Você **não** julga o conjunto fechado de flags pelo T1.2b/MF3, o eco, a trava,
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica`, **sem `Bash`**: quem escreveu não executou nada do que está aqui. Tudo o que
-ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-nuv09` em 2026-10-08, com o ramo no head
+ele diz sobre o ramo foi **lido** no disco de `~/w-nuv09` em 2026-10-08, com o ramo no head
 `054f7a7ea350ba80837bcecf370475df6a1795b4` (lido nos arquivos de ref locais `refs/heads/` e `refs/remotes/origin/`, não por
 `git`). Logo, **todo** arquivo:linha, SHA, contagem e trecho abaixo é **[A RE-VERIFICAR]**. Nenhum deles é fato.
 
@@ -167,12 +167,12 @@ consigo medir".
   Logo abaixo: objeto, `origin/main` no início, `$SCRATCH`, `node -v`, `python --version`, a versão do `typescript` do seu
   `node_modules`, espaço livre em `C:` (`df -h /c`), e o ambiente (shell, cwd, variáveis que você definiu).
 - **Arquivos de saída:** os que o seu mandato nomear, no diretório que ele nomear (padrão:
-  `C:/Users/AMP/w-nuv09/agent-orchestration/omega/juntas/votos/B-SAN3-09/`, arquivos `C3c2-evidencia.md` e `C3c2-voto.json`).
+  `~/w-nuv09/agent-orchestration/omega/juntas/votos/B-SAN3-09/`, arquivos `C3c2-evidencia.md` e `C3c2-voto.json`).
   **Nunca** grave em `C3-evidencia.md`/`C3-voto.json`: são do ciclo 1. Nunca grave no seu worktree de medição.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Use sempre `C:/…` com `git.exe`, `node.exe`,
   `python.exe`.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão deste corpo: `C:/Users/AMP/w-j9c2c3`), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão deste corpo: `~/w-j9c2c3`), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove**
   `test -e <caminho>/.git`. No scratchpad, `worktree add` falha com *Filename too long* e **não cria o diretório**. Se o caminho
   já existir, é resíduo alheio: reporte e use o sufixo `b`.
 - **`npm ci --no-audit --no-fund` PRÓPRIO** na raiz do seu worktree e `npx prisma generate` com `DATABASE_URL` fictícia **só
@@ -183,7 +183,7 @@ consigo medir".
   `jurado-san3-09c2-c3` (receita do §15.3 item 6 do plano), declarado. `erp-postgres` (5432) e `erp-redis` (6379) **nunca** são
   alvo, nem de leitura.
 - **Disco:** meça o livre em `C:` antes de começar e depois do `npm ci`. Abaixo de ~2 GB, **pare** e registre.
-- **Somente leitura fora do seu worktree.** `C:/Users/AMP/w-nuv09` é a árvore do ramo: a sua **única** escrita lá são os seus
+- **Somente leitura fora do seu worktree.** `~/w-nuv09` é a árvore do ramo: a sua **única** escrita lá são os seus
   dois arquivos de saída. **PROIBIDO:** `git stash`, `git clean`, `git checkout`/`git reset` do que você não criou,
   `git worktree prune`, `rm -rf` de worktree, `git commit`, `git push`. Resíduo alheio se **reporta, não se varre**.
 - **Remoção só do que você criou, pelo caminho:** antes, conte os processos vivos com o caminho na linha de comando por

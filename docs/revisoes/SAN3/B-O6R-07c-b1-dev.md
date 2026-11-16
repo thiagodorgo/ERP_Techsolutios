@@ -2,7 +2,7 @@
 
 - **Identidade:** `dev-b-o6r-07c-b1-argon`
 - **Modelo / Ambiente:** Antigravity com **Gemini 4 Argon (esforço médio)** — nível menor do contrato, o mesmo do Codex e do Opus (decisão do dono de 16/10: *"sim, use o argon"*).
-- **Worktree:** `C:/Users/AMP/w-07cb1` · **Ramo:** `fix/o6r07cb1-despacho-atribui` · **Base (`origin/main`):** `4fe7524e`
+- **Worktree:** `~/w-07cb1` · **Ramo:** `fix/o6r07cb1-despacho-atribui` · **Base (`origin/main`):** `4fe7524e`
 - **Insumos lidos inteiros:**
   - `docs/revisoes/SAN3/B-O6R-07c-b-emenda-2026-10-15.md`
   - `docs/revisoes/SAN3/B-O6R-07c-plano.md` (seções 07c-b e comum)
@@ -13,8 +13,8 @@
 
 ## Passo 1 — Preparação do worktree e leitura das fontes
 
-- **Comando:** `Get-PSDrive C; git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios fetch origin; git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add -b fix/o6r07cb1-despacho-atribui C:/Users/AMP/w-07cb1 origin/main`
-- **Saída resumida:** Disco C com `17,95 GB` livres (> 8 GB exigidos). Worktree criado em `C:/Users/AMP/w-07cb1` apontando para `4fe7524e` (`origin/main`).
+- **Comando:** `Get-PSDrive C; git -C ~/Documents/GitHub/ERP_Techsolutios fetch origin; git -C ~/Documents/GitHub/ERP_Techsolutios worktree add -b fix/o6r07cb1-despacho-atribui ~/w-07cb1 origin/main`
+- **Saída resumida:** Disco C com `17,95 GB` livres (> 8 GB exigidos). Worktree criado em `~/w-07cb1` apontando para `4fe7524e` (`origin/main`).
 - **Veredito parcial:** PASSO 1 OK.
 
 ---
@@ -23,10 +23,10 @@
 
 - **Identidade:** `dev-b-o6r-07c-b1-opus` (nova). **Modelo:** Claude Opus (5.5), **nível menor do contrato (§C7.6), declarado**. Implementa o plano; não o reescreve, não julga o mérito, não vota.
 - **Herança (P3):** o dev anterior (`dev-b-o6r-07c-b1-argon`, Gemini 4 Argon) deixou 10 arquivos modificados, NÃO commitados (+673/−31), sem nenhum teste executado (o próprio log diz "a execução de testes não foi permitida; tudo vem de leitura"). Tratado como rascunho de terceiro: medido antes de confiado.
-- **Mandato:** `C:/Users/AMP/erp-pausa-2026-10-03/prompts/dev-07cb1.txt` ("Codex" lido como "eu").
+- **Mandato:** `~/erp-pausa-2026-10-03/prompts/dev-07cb1.txt` ("Codex" lido como "eu").
 
 ### R0 — terreno e leitura
-- `git -C C:/Users/AMP/w-07cb1 branch --show-current; git log -1` → `fix/o6r07cb1-despacho-atribui`, HEAD `4fe7524e` (= base). `git diff --stat` → 10 arquivos, +673/−31 (o herdado).
+- `git -C ~/w-07cb1 branch --show-current; git log -1` → `fix/o6r07cb1-despacho-atribui`, HEAD `4fe7524e` (= base). `git diff --stat` → 10 arquivos, +673/−31 (o herdado).
 - `Get-PSDrive C` → 16,7 GB livres (> 8 GB).
 - Lidos inteiros: emenda `B-O6R-07c-b-emenda-2026-10-15.md`, plano-base §Resumo, §C.1, §C.2, §07c-a (contexto do guard) e §07c-b.1–b.7; crítica `B-O6R-07c-b1-critica.md` (o ramo `origin/docs/criticas-planos-16-10` não existe mais; li em `origin/main`, onde entrou pelo #437); `decisoes.md:3654-3667` (`D1-07c`, `D2-07c`, `D3-07c`, `D-07CB-EMENDA-RECOMENDACOES` P1–P8).
 - **Veredito parcial:** terreno OK; insumos presentes.
@@ -51,7 +51,7 @@
 - **Veredito parcial:** produto compilando; nada executado ainda.
 
 ### R3 — `npm test` no container (forma da CI), primeira medida depois de R2 (antes dos testes novos)
-- `bash teste-linux.sh C:/Users/AMP/w-07cb1 "npm test"` → `# tests 3335 · pass 3260 · fail 73 · skipped 2` (ec=1). Falhas agrupadas: despacho (field-dispatch*, checklist-snapshot-dispatch, multi-checklist, ~40), evidência (sync e upload, ~11), censo 07c-a (T0–T12 — o instantâneo/tabela recém-mudados), `S-KM-RESTART` do 07c-a (esperado: D2(d) muda o balde do ex-técnico), `san3-05`/`T13 ratchet` (inventário de acessos — métodos novos de repositório).
+- `bash teste-linux.sh ~/w-07cb1 "npm test"` → `# tests 3335 · pass 3260 · fail 73 · skipped 2` (ec=1). Falhas agrupadas: despacho (field-dispatch*, checklist-snapshot-dispatch, multi-checklist, ~40), evidência (sync e upload, ~11), censo 07c-a (T0–T12 — o instantâneo/tabela recém-mudados), `S-KM-RESTART` do 07c-a (esperado: D2(d) muda o balde do ex-técnico), `san3-05`/`T13 ratchet` (inventário de acessos — métodos novos de repositório).
 - (Execução interrompida por queda de rede depois disto; retomada: `git status` igual ao de antes, sem cópia `w-07cb1-mut` de pé.)
 - **Veredito parcial:** triagem necessária, arquivo a arquivo.
 
@@ -81,7 +81,7 @@
 - 2ª tentativa (`run2`): **`# tests 3397 · pass 3393 · fail 2 · skipped 2`** (ec 1). As 2 falhas são UM teste com subteste: `B-SAN3-05 · o papel de runtime não contorna FORCE RLS` (`tests/san3-05-runtime-role-guard-db.test.ts`). Todas as outras 71 falhas de R3 sumiram; os 62 testes novos entram no N (3335 → 3397).
 - Esse teste já falhava em R3 (antes de existir o meu `-db`) e passa ISOLADO no container: `node --test --import tsx tests/san3-05-runtime-role-guard-db.test.ts` → **12/12**. Ele confere o catálogo global de papéis do cluster; sob a suíte inteira, suítes irmãs criam papéis efêmeros em paralelo. Na CI da base (`4fe7524e`, run 38776053535) o job passou. **Classificação: provável concorrência de catálogo sob a suíte inteira deste container, não produto deste bloco (o diff não toca papel, grant nem trava de runtime) — NÃO confirmado**: as três tentativas seguintes de rodar a suíte inteira para capturar a mensagem (21:41, 22:03, 22:16 −03) derrubaram o daemon do Docker (`unexpected EOF`, ec 125) e uma rodada só dos `-db` em paralelo foi morta (ec 137, OOM provável; VM do Docker com 12 GB). Parei de rodar a suíte inteira para não derrubar o Docker de novo; fica para a CI do PR responder.
 
-### R9 — vermelho-controle na BASE (`4fe7524e`), cópia descartável `C:/Users/AMP/w-07cb1-mut` (worktree detached, `npm ci` próprio, `prisma generate` com URL fictícia de porta 1)
+### R9 — vermelho-controle na BASE (`4fe7524e`), cópia descartável `~/w-07cb1-mut` (worktree detached, `npm ci` próprio, `prisma generate` com URL fictícia de porta 1)
 - Na cópia: `src/` da base + os testes novos, o instantâneo e a tabela de classes do bloco. `node --test --import tsx tests/o6r07c-b-scope.test.ts` → **3 verdes / 36 vermelhos**. Verdes: a contagem do instantâneo (independe do produto) e os CONTROLES POSITIVOS CA9 (união) e CA10 (404 cross-tenant), que têm de passar na base. Vermelhos, todos pelo defeito, não pelo arnês (motivo lido em cada um): G-NEG `accepted`/200 (vistoria, evidência, despacho: o nunca-técnico escrevia); G-EX upload 201; CA1 "o despacho não gravou assigned_user_id"; S-ORFA 200 do técnico; S-ORDEM 400 (parse antes do escopo); S-IDEMP "por estado, o não atribuído recebeu already_applied"; E-UP 201; rascunho 200 do técnico; cancelar/compensação sem atribuição.
 
 ### R10 — vermelho-controle por MUTAÇÃO, uma a uma, na cópia `w-07cb1-mut` (espelho do head conferido EOL-neutro, 39/39 antes; cada mutação aplicada por âncora única, medida, e restaurada byte-idêntica — conferido pelo script)
@@ -191,7 +191,7 @@ Roteiro: `python scratchpad/07cb1/mut.py` (memória, `tests/o6r07c-b-scope.test.
   | MT4 trava já em "A caminho" (`on_route`) | vermelho: o teste "antes de No local" (`409 … technician_change_requires_authorization`) |
 
 ### D3 — retomada depois da reinicialização das extensões, e a bateria
-- Medido antes de confiar: `git status` = só os 3 arquivos desta etapa (`field-dispatch.service.ts` +41, `tests/o6r07c-b-scope.test.ts` +65, este relatório); D0–D2 inteiros no arquivo (nenhuma linha meio-escrita); `git worktree list` e `C:/Users/AMP` sem `w-07cb1-mut`.
+- Medido antes de confiar: `git status` = só os 3 arquivos desta etapa (`field-dispatch.service.ts` +41, `tests/o6r07c-b-scope.test.ts` +65, este relatório); D0–D2 inteiros no arquivo (nenhuma linha meio-escrita); `git worktree list` e `~` sem `w-07cb1-mut`.
 - `npm run check` → ec 0 · `npm run lint` → ec 0 · `git diff --check` → ec 0.
 - Testes do bloco sem banco (Windows, `--test-concurrency=4`, 12 arquivos: 07c-b1, censo, 07c-a, 07a, despacho ×6, snapshot de vistoria, contratos mobile, ratchet SAN3-05) → `201 · pass 198 · fail 3`; as 3 são do censo (`T0`, `T12`, tempo), com `Fatal process out of memory: Zone` no processo filho do censo — falta de memória do Windows com 4 arquivos em paralelo, não teste. `tests/o6r07c-census-guard.test.ts` sozinho → **31/31**. Logo: 201/201 verdes, medido em duas rodadas.
 - `-db` do bloco no container (0 grupos `tl*` de outros trabalhos no `docker ps`): `tests/o6r07c-b-scope-db.test.ts` → **7/7**, ec 0.
@@ -207,9 +207,9 @@ Roteiro: `python scratchpad/07cb1/mut.py` (memória, `tests/o6r07c-b-scope.test.
 ## CICLO 2 — dev-07cb1-ciclo2-opus
 
 - **Papel:** dev do ciclo 2 (identidade NOVA `dev-07cb1-ciclo2-opus`), **Claude Opus 5.5 (`claude-opus-5-5`), nível menor, declarado** (§C7.6). Não achou (C1/C3 do ciclo 1 acharam), não planejou (`planejador-07cb1-ciclo2`, Fable), não vota (§C7.4-bis).
-- **Lei do ciclo:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-O6R-07c-b1-ciclo2-auditoria-e-plano.md`, Parte 2 (§2.1–§2.10). Implementado, não reescrito.
+- **Lei do ciclo:** `~/erp-pausa-2026-10-03/planos/B-O6R-07c-b1-ciclo2-auditoria-e-plano.md`, Parte 2 (§2.1–§2.10). Implementado, não reescrito.
 - **Divergência declarada (§A2):** o plano (§2.3) nomeia o relatório `docs/revisoes/SAN3/B-O6R-07c-b1-ciclo2-dev.md`; o orquestrador mandou gravar NESTA seção deste arquivo. Vale a ordem do orquestrador; a lista fechada de 13 arquivos do §2.3 fica com este arquivo no lugar daquele.
-- **Terreno:** worktree `C:/Users/AMP/w-07cb1`, ramo `fix/o6r07cb1-despacho-atribui`, head de partida `5939a30d`; `node_modules` próprio (0 symlink). Disco livre no início: 8,6 GB (abaixo dos ~10 GB da §C5 — registrado).
+- **Terreno:** worktree `~/w-07cb1`, ramo `fix/o6r07cb1-despacho-atribui`, head de partida `5939a30d`; `node_modules` próprio (0 symlink). Disco livre no início: 8,6 GB (abaixo dos ~10 GB da §C5 — registrado).
 
 ### P0 — terreno (10:56 UTC)
 - `git log --oneline -1` → `5939a30d`; `git status --short` fora dos ` M` de fim de linha em `.agents/` → vazio; `find node_modules -maxdepth 1 -type l | wc -l` → 0; `docker ps` → só `erp-postgres`/`erp-redis` (base viva, não é alvo). Veredito: terreno limpo.
@@ -262,7 +262,7 @@ Roteiro: `python scratchpad/07cb1/mut.py` (memória, `tests/o6r07c-b-scope.test.
 - Docker: limite novo do dono, no máximo 2 trabalhos com container na máquina — só subo se houver no máximo 1 grupo de OUTROS trabalhos (`tl*-`, `j*-`).
 
 ### P7 — vermelho-controle SEM mutação contra o objeto do ciclo 1 (`b198fe35`) (§2.4 (i), §2.6 passo 6) (23:51 UTC)
-- Cópia descartável: `git -C C:/Users/AMP/w-07cb1 worktree add --detach C:/Users/AMP/w-07cb1-mut2 HEAD` → `git diff -- src tests > ciclo2.patch` (1568 linhas) aplicado (`git apply` ec 0); `hash-object` de cada um dos 14 arquivos de `src`/`tests` = o do `w-07cb1`; `npm ci` próprio ec 0, 0 symlink em `node_modules`; `db:generate` com URL fictícia ec 0.
+- Cópia descartável: `git -C ~/w-07cb1 worktree add --detach ~/w-07cb1-mut2 HEAD` → `git diff -- src tests > ciclo2.patch` (1568 linhas) aplicado (`git apply` ec 0); `hash-object` de cada um dos 14 arquivos de `src`/`tests` = o do `w-07cb1`; `npm ci` próprio ec 0, 0 symlink em `node_modules`; `db:generate` com URL fictícia ec 0.
 - `git -c core.autocrlf=false checkout b198fe35 -- src` → `hash-object` = blob do objeto em TODO arquivo de `src/modules/{work-orders,field-dispatch,mobile}` (0 diferentes). Testes do ciclo 2 mantidos.
 - `tests/o6r07c-b-scope.test.ts` contra o `src` do objeto → **`187 · pass 105 · fail 82`**, decompostos: T-TRAVA **69** = estados do despacho (`d1 arrived`, `d1 in_service`) × 7 vias (X1, V2, V3, V4, V5, web, lote — o "reassign direto" já era recusado no objeto, K2 do ciclo 1) × 3 papéis = 42, + estados da OS (`on_site`, `in_progress`, `paused`) × 3 vias (X1 — o 1º passo ia a `reassigned` —, web e lote — davam `invalid_status_transition`, não a trava) × 3 papéis = 27; controle positivo X1 **1** (o 1º passo tirava o despacho de `on_route`); T-COMPOSICAO **2**; T-EVID-EXISTE **4** (inexistente e alheia × `tenant_admin`/`manager`; o `real` e o técnico não atribuído passavam, como devem); T-ATOMICA-MEM **4**; T-ALOCA **1** (`operator` ativava: 200 = C1-A3); o teste ajustado `D-07CB1-TRAVA-ATE-B2 — a partir de No local…` **1** (o despacho saía de `arrived`). Soma 82 ✓. Os 41 do ciclo 1 seguem verdes contra o objeto.
 - Bate com o §2.6 passo 6: T-TRAVA ≥ 7 vias vermelhas (são 7 nos estados do despacho = os achados A1/A2), T-ALOCA, T-ATOMICA-MEM, T-EVID-EXISTE vermelhos.
@@ -293,7 +293,7 @@ Roteiro: `python scratchpad/07cb1/mut.py` (memória, `tests/o6r07c-b-scope.test.
 
 ### P9 — container: a imagem da ferramenta sumiu (~00:05 UTC)
 - `docker ps`: 0 grupos de OUTROS trabalhos (só `erp-postgres`/`erp-redis`, "Up 3 minutes" — o Docker da máquina reiniciou durante a queda) → dentro do limite de 2.
-- `bash …/ferramentas/teste-linux.sh C:/Users/AMP/w-07cb1 "<-db com set +e>"` → **ec 125**: `Unable to find image 'erp-teste-linux:1' locally` (`docker images` = só `postgres:16` e `redis:7`; a imagem local da ferramenta não existe mais — não fui eu: não rodei `prune` nem `rmi`).
+- `bash …/ferramentas/teste-linux.sh ~/w-07cb1 "<-db com set +e>"` → **ec 125**: `Unable to find image 'erp-teste-linux:1' locally` (`docker images` = só `postgres:16` e `redis:7`; a imagem local da ferramenta não existe mais — não fui eu: não rodei `prune` nem `rmi`).
 - Reconstrução pela receita da própria ferramenta (`ferramentas/teste-linux/Dockerfile`: postgres:16 + node 20 + git; nada pago, nada novo): 2 tentativas falharam por REDE (`short read: expected 48488628 bytes but got 16907641`; `TLS handshake timeout` em `registry-1.docker.io`) — a mesma instabilidade de internet da queda. Disparei 4 tentativas com espera de 90 s em segundo plano.
 - As 4 tentativas em segundo plano também falharam por rede (a 4ª: `failed to fetch anonymous token` em `auth.docker.io`).
 
@@ -302,7 +302,7 @@ Roteiro: `python scratchpad/07cb1/mut.py` (memória, `tests/o6r07c-b-scope.test.
 
 ### P10 — `-db` do ciclo 2 no container (01:00 UTC, em curso)
 - 1ª tentativa (00:57): `teste-linux.sh` → **ec 3**, `npm ci` dentro do container caiu por rede (`ECONNRESET`, "network aborted") — mesma instabilidade. Disparadas até 3 novas tentativas em segundo plano, com espera de 120 s e recontagem dos grupos Docker de outros trabalhos antes de cada uma (só sobe com ≤ 1).
-- 2ª tentativa (00:59, 0 grupos de outros trabalhos): `teste-linux.sh C:/Users/AMP/w-07cb1 "<cmd>"` → **ec 0**. `prisma migrate deploy` com **109** migrações, a última `20260877000000_backfill_work_order_assignment_from_active_dispatches`. `node --test --import tsx tests/o6r07c-b-scope-db.test.ts` → **`13 · pass 13 · fail 0 · skipped 0`** (os 4 do ciclo 1 que ficam + 6 `[atômica …]` + `[composição]` + os 2 `[backfill P6]`). Depois da suíte: **`PG_TRIGGER=0 PG_PROC=0`** para `o6r07cb1_inj_%`. Containers removidos pelo nome no fim (trap da ferramenta).
+- 2ª tentativa (00:59, 0 grupos de outros trabalhos): `teste-linux.sh ~/w-07cb1 "<cmd>"` → **ec 0**. `prisma migrate deploy` com **109** migrações, a última `20260877000000_backfill_work_order_assignment_from_active_dispatches`. `node --test --import tsx tests/o6r07c-b-scope-db.test.ts` → **`13 · pass 13 · fail 0 · skipped 0`** (os 4 do ciclo 1 que ficam + 6 `[atômica …]` + `[composição]` + os 2 `[backfill P6]`). Depois da suíte: **`PG_TRIGGER=0 PG_PROC=0`** para `o6r07cb1_inj_%`. Containers removidos pelo nome no fim (trap da ferramenta).
 - Veredito parcial: P-ATOMICA provada no Postgres nos 4 caminhos, com os 2 controles.
 
 ### P11 — vermelho-controle do `-db` contra o objeto `b198fe35` (01:0x UTC, em curso)
@@ -318,17 +318,17 @@ Roteiro: `python scratchpad/07cb1/mut.py` (memória, `tests/o6r07c-b-scope.test.
 - Veredito parcial: o T-ATOMICA-DB acusa a propriedade (evento dentro da MESMA transação), não a forma: a mutação que mantém a interface nova e só tira o INSERT da transação também fica vermelha.
 
 ### P13 — `npm test` inteiro na forma do job `backend` (container, 01:1x UTC, em curso)
-- (Escrita na retomada) Tentativa 1 (01:09): **4 grupos** Docker de outros trabalhos → não subi, esperei 120 s (registro do `tl-retry.sh`). Tentativa 2 (01:11, 0 grupos): `teste-linux.sh C:/Users/AMP/w-07cb1` com `npm test` (forma do job `backend`: `CORE_SAAS_PERSISTENCE=memory`, Postgres 16 + Redis 7 próprios, 109 migrações) → `[run-backend-tests] 306 arquivo(s) · 3552 teste(s) · pass 3548 · fail 2 · skipped 2`, `duration_ms 512194`. As 2 falhas = 1 teste e o seu subteste: `not ok 2614 - B-SAN3-05 · o papel de runtime não contorna FORCE RLS` (`tests/san3-05-runtime-role-guard-db.test.ts`). O resumo não trouxe o detalhe (o meu comando só guardava o fim do log) — investigação em P14.
+- (Escrita na retomada) Tentativa 1 (01:09): **4 grupos** Docker de outros trabalhos → não subi, esperei 120 s (registro do `tl-retry.sh`). Tentativa 2 (01:11, 0 grupos): `teste-linux.sh ~/w-07cb1` com `npm test` (forma do job `backend`: `CORE_SAAS_PERSISTENCE=memory`, Postgres 16 + Redis 7 próprios, 109 migrações) → `[run-backend-tests] 306 arquivo(s) · 3552 teste(s) · pass 3548 · fail 2 · skipped 2`, `duration_ms 512194`. As 2 falhas = 1 teste e o seu subteste: `not ok 2614 - B-SAN3-05 · o papel de runtime não contorna FORCE RLS` (`tests/san3-05-runtime-role-guard-db.test.ts`). O resumo não trouxe o detalhe (o meu comando só guardava o fim do log) — investigação em P14.
 
 ### INTERRUPÇÃO 3 — o VS Code reiniciou (retomada 01:41 UTC)
-- Medido: seções P9–P12 completas no relatório (P10, P11 e P12 TÊM resultado registrado; os "em curso" dos títulos são o estado de quando a seção foi aberta); P13 completou durante a queda (log `tl-npmtest-r2.log`, transcrito acima). Cópia `w-07cb1-mut2`: SEM mutação (restaurada depois do MT9b em P12, `hash-object` conferido). Containers: o único grupo `tl*` vivo (`tl179228767029487-*`, montando `C:/Users/AMP/w-trc01`) NÃO é meu (é do trabalho do orquestrador) — não toquei; nenhum container meu parado sobrou (`docker ps -a` sem outro `tl*`). Disco 17 GB.
+- Medido: seções P9–P12 completas no relatório (P10, P11 e P12 TÊM resultado registrado; os "em curso" dos títulos são o estado de quando a seção foi aberta); P13 completou durante a queda (log `tl-npmtest-r2.log`, transcrito acima). Cópia `w-07cb1-mut2`: SEM mutação (restaurada depois do MT9b em P12, `hash-object` conferido). Containers: o único grupo `tl*` vivo (`tl179228767029487-*`, montando `~/w-trc01`) NÃO é meu (é do trabalho do orquestrador) — não toquei; nenhum container meu parado sobrou (`docker ps -a` sem outro `tl*`). Disco 17 GB.
 
 ### P14 — a falha do `npm test`: `B-SAN3-05 · o papel de runtime não contorna FORCE RLS` (01:42 UTC, em curso)
 - Hipótese a medir (não fato): interferência de catálogo entre suítes `-db` em paralelo — o meu `-db` faz `CREATE FUNCTION`/`CREATE TRIGGER`/`DROP` fora do `withRoleCatalogLock`, e o `san3-05-runtime-role-guard-db` mexe em papéis e objetos de catálogo. Medição: o arquivo SOZINHO (N=2) e JUNTO com o meu `-db` (N=3), no container, com o detalhe da falha.
 - Resultado (01:42, 1 grupo de outros — o do orquestrador — → dentro do limite de 2): `san3-05-runtime-role-guard-db` SOZINHO → **12/12** e **12/12** (N=2); JUNTO com `o6r07c-b-scope-db` no mesmo `node --test` → **25/25**, **25/25**, **25/25** (N=3). **Não reproduz** isolado nem em par com o meu `-db`. Próximo: o `npm test` inteiro de novo, guardando o bloco da falha (P15).
 
 ### P15 — `npm test` inteiro de novo, com o bloco da falha guardado (01:46 UTC)
-- 0 grupos de outros trabalhos → `teste-linux.sh C:/Users/AMP/w-07cb1 "npm test"` (forma do job `backend`) → `NPMTEST_EC=0`, **`[run-backend-tests] 306 arquivo(s) · 3552 teste(s) · pass 3550 · fail 0 · skipped 2`**. `B-SAN3-05 · o papel de runtime não contorna FORCE RLS` → `ok 2614`, os 11 subtestes verdes (T15 24,3 s; o teste inteiro 65,8 s).
+- 0 grupos de outros trabalhos → `teste-linux.sh ~/w-07cb1 "npm test"` (forma do job `backend`) → `NPMTEST_EC=0`, **`[run-backend-tests] 306 arquivo(s) · 3552 teste(s) · pass 3550 · fail 0 · skipped 2`**. `B-SAN3-05 · o papel de runtime não contorna FORCE RLS` → `ok 2614`, os 11 subtestes verdes (T15 24,3 s; o teste inteiro 65,8 s).
 - Leitura (fato × hipótese): FATO — a falha do P13 apareceu em **1 de 2** execuções da suíte inteira e em **0 de 5** execuções focadas (2 sozinho + 3 junto com o meu `-db`); o detalhe da 1ª não foi guardado (erro do meu comando, não da suíte). HIPÓTESE — intermitência de carga: a 1ª rodada coincidiu com a máquina instável (queda de rede, reinício do VS Code, containers de outro trabalho subindo — 4 grupos às 01:09); o teste tem `timeout: 180_000` e subtestes de 24 s+. Não atribuo a causa ao bloco sem medição; fica para a C3 do ciclo 2 e para a CI do PR (fonte primária, R8 do §2.7). Os 2 skips são os `RBAC_DB_PARITY` pré-existentes.
 
 ### Fechamento do ciclo 2 (02:00 UTC)

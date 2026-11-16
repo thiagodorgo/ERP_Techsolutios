@@ -2,7 +2,7 @@
 
 > **Papel:** crítico adversarial (§C7.1-ter(b): bloco de invariante — segurança/isolamento). **Modelo:** Claude Opus (`claude-opus-5-5`),
 > nível menor, DECLARADO. Identidade nova; não escreveu o plano, não vai implementá-lo, não vota.
-> **Objeto:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md` (890 l., de `planejador-trc02-fable`).
+> **Objeto:** `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md` (890 l., de `planejador-trc02-fable`).
 > **Ref medida (§A7):** `origin/main` = `3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d` (após `git fetch`). Nada editado no repo; sem Docker; sem base viva.
 > **Regra:** quem acha não conserta (§C7.4-bis) — cada achado traz defeito + evidência + motivo; NENHUMA correção proposta.
 > **Estado:** COMPLETO — 17 evidências (E1-E17), 16 achados (4 bloqueia, 12 ajuste); veredito VOLTA AO PLANO.

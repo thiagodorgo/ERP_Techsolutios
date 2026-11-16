@@ -4,7 +4,7 @@
 - **Executor/modelo:** Codex CLI · GPT-5.6 Sol · esforço medium · nível menor declarado
 - **Papel:** DEV; não planejou e não vota (§C7.4-bis)
 - **Fatia atual:** 1 — abertura e baseline
-- **Branch/worktree:** `feat/web-financeiro-aparencias-b-c` · `C:/Users/AMP/w-san312c`
+- **Branch/worktree:** `feat/web-financeiro-aparencias-b-c` · `~/w-san312c`
 - **Head-base:** `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`
 - **Plano:** `docs/revisoes/SAN3/B-SAN3-12-plano.md`, Emenda E5
 
@@ -12,10 +12,10 @@
 
 1. `df -B1 /c` → 13.285.302.272 bytes livres antes do worktree; 12.513.681.408 bytes após instalações e baseline; ambos acima do piso de 7.500.000.000.
 2. `git fetch origin main` + `git rev-parse origin/main` → `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`; a base não avançou além da ref planejada.
-3. `git worktree list --porcelain` + medição de `C:/Users/AMP/w-san312c` → worktree/ramo não existiam; foram criados isolados em `origin/main`.
+3. `git worktree list --porcelain` + medição de `~/w-san312c` → worktree/ramo não existiam; foram criados isolados em `origin/main`.
 4. `git ls-remote --heads origin feat/web-financeiro-baixa-e-contas` → 0 linhas; a ressalva do porteiro sobre a branch residual do 12b já estava satisfeita antes do primeiro push.
-5. Node absoluto `C:/Users/AMP/AppData/Local/nvm/v22.14.0/node.exe --version` → `v22.14.0`; npm 10.9.2. `npm ci` raiz → 326 pacotes; `npm --prefix frontend ci` → 103 pacotes. Lockfiles não foram editados.
-6. `realpath node_modules` e `realpath frontend/node_modules`, com `test ! -L` → ambos ficam sob `C:/Users/AMP/w-san312c`; nenhuma junction/symlink.
+5. Node absoluto `~/AppData/Local/nvm/v22.14.0/node.exe --version` → `v22.14.0`; npm 10.9.2. `npm ci` raiz → 326 pacotes; `npm --prefix frontend ci` → 103 pacotes. Lockfiles não foram editados.
+6. `realpath node_modules` e `realpath frontend/node_modules`, com `test ! -L` → ambos ficam sob `~/w-san312c`; nenhuma junction/symlink.
 7. `git merge-base --is-ancestor 3c27f1bf HEAD` → verde. Controle negativo com `f2ece5daff9cb57eff04c4df543604b5307f819f` → recusado como não ancestral, sem mutar refs reais.
 8. Baseline dirigido: Node 22 absoluto, `node --test --import tsx tests/finance-*.test.ts* tests/financial-*.adapter.test.ts tests/dense-expandable-row.test.tsx tests/pattern-css-guard.test.ts` → **122 testes · 122 pass · 0 fail · 0 skipped**.
 9. Baseline smoke completo: `npm --prefix frontend run test:smoke` com Node 22 absoluto → **1482 testes · 1482 pass · 0 fail · 0 skipped**, duração TAP 284.036 s.
@@ -36,7 +36,7 @@
 - **Feito:** worktree/ramo isolados; dependências próprias; E5 versionada verbatim; comando e relatório criados; baseline 122/122 e smoke 1482/1482; aliases e divergências §A2 registrados; `Kpis/**` intocado.
 - **Mutações:** controle não ancestral recusado; nenhuma mutação de produto na abertura.
 - **Falta:** FATIAS 2–14. A próxima é a FATIA 2, R-P2 — resumo incompleto não vira zero.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD && git rev-parse origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD && git rev-parse origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhum artefato temporário removido; `node_modules` próprios permanecem para as fatias seguintes.
 
@@ -127,9 +127,9 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Mutações:** base anterior vermelha 9/14; mutação `fallback→api/zero` vermelha 11/49; restauro por hash e
   verde final 49/49.
 - **Falta:** FATIAS 3–14, com a 13 dividida em 13A/13B. A próxima é a FATIA 3, R-P1/P4/P5/P6 em A.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
-- **Limpeza:** worktree descartável `C:/Users/AMP/w-san312c-f2base` e dois arquivos scratch `fatia2-adapter-*`
+- **Limpeza:** worktree descartável `~/w-san312c-f2base` e dois arquivos scratch `fatia2-adapter-*`
   removidos após conferir caminhos; nenhum rastreado, `.env` ou `node_modules` do dev foi removido.
 
 ## Evidência incremental — FATIA 3
@@ -175,7 +175,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
   restauro por hash; `ts-frontend-full` orientou a camada existente e `ui-ux-pro-max` a clareza do estado/pager.
 - **Falta:** FATIAS 4–14, com 13 dividida em 13A/13B. A próxima é a FATIA 4, R-P3/C3R3-N2, somente teste
   determinístico da rodada superada.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch temporária criada; `node_modules` próprio preservado.
 
@@ -208,7 +208,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
   `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`.
 - **Feito:** R-P3/C3R3-N2 preso por teste determinístico; o hook permaneceu byte a byte igual.
 - **Falta:** FATIAS 5–14, com 13A/13B. A próxima é a FATIA 5, `BalanceBridge` + `ReconcileDonut` na biblioteca.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore ou scratch criada; só a mutação in-place restaurada por hash.
 
@@ -244,7 +244,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
   `3c27f1bf3177d2778bdcfb0dfafd57186780efbc`.
 - **Feito:** R-B/R-D da biblioteca, exports, registro e 10 casos com quatro classes de mutação.
 - **Falta:** FATIAS 6–14 (13A/13B). A próxima é a FATIA 6, consultas/estado B por conta e mês.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhum artefato temporário; SVGs/testes são rastreáveis da entrega.
 
@@ -275,7 +275,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Head medido antes do commit:** `0d28b8ad36d239f8028e07ca6ccb433b02ad0d8d`; base `3c27f1bf`.
 - **Feito:** R-D da conta/situação/mês, round-trip e refresh comum.
 - **Falta:** FATIAS 7–14 (13A/13B); próxima: FATIA 7, estrutura e estados da aparência B.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; somente mutações restauradas.
 
@@ -305,7 +305,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Head medido antes do commit:** `0d8ae041b01b5a568f754f016dd6b98f01e11649`; base `3c27f1bf`.
 - **Feito:** estrutura, estados honestos e controles da aparência B, ainda sem ativação no registro.
 - **Falta:** FATIAS 8–14 (13A/13B); próxima: FATIA 8, listas/detalhes e baixa da aparência B.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; somente mutações in-place restauradas por hash.
 
@@ -337,7 +337,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Head medido antes do commit:** `07eba33a`; base `3c27f1bf`.
 - **Feito:** listas/detalhes B, baixa inline com conta ativa sugerida e invariantes de reenvio preservados.
 - **Falta:** FATIAS 9–14 (13A/13B); próxima: FATIA 9, séries e filtros da aparência C.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; somente mutações in-place restauradas por hash.
 
@@ -374,7 +374,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Feito:** R-C/R-D de séries diárias, idade das pendências, filtros navegáveis e `DayBars`, com controles
   reproduzíveis e estados honestos segundo `ts-frontend-full` e `ui-ux-pro-max`.
 - **Falta:** FATIAS 10–14 (13A/13B); próxima: FATIA 10, estrutura da aparência C.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; somente mutações in-place restauradas por hash.
 
@@ -400,7 +400,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Head medido antes do commit:** `070be295`; base `3c27f1bf`.
 - **Feito:** estrutura e estados honestos da aparência C, ainda inativa.
 - **Falta:** FATIAS 11–14 (13A/13B); próxima: FATIA 11, sequência individual da conferência.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhuma árvore/scratch; mutações restauradas.
 
@@ -425,7 +425,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Head medido antes do commit:** `55779deb`; base `3c27f1bf`.
 - **Feito:** sequência individual e avanço somente após sucesso.
 - **Falta:** FATIAS 12–14 (13A/13B); próxima: FATIA 12, ativação A/B/C e invariantes.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** temporários TAP em `/tmp`; mutações restauradas.
 
@@ -446,7 +446,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Head medido antes do commit:** `b7c0cc6c`; base `3c27f1bf`.
 - **Feito:** ativação A/B/C, registry e invariantes transversais.
 - **Falta:** FATIAS 13A, 13B e 14; próxima: 13A, matriz visual/geométrica.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** temporários TAP em `/tmp`; árvore do produto limpa.
 
@@ -466,7 +466,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Head medido antes do commit:** `338c26f1`; base `3c27f1bf`.
 - **Feito:** geometria estática e responsividade B/C; indisponibilidade do navegador registrada honestamente.
 - **Falta:** FATIAS 13B e 14; próxima: 13B, interação/teclado/formulários e handoff visual.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** nenhum servidor/artefato de navegador criado.
 
@@ -487,7 +487,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Head medido antes do commit:** `5c44f66a`; base `3c27f1bf`.
 - **Feito:** interação/teclado/forms e inclusão do guard geométrico no smoke.
 - **Falta:** FATIA 14, bateria, registro, PR e entrega.
-- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd /c/Users/AMP/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
+- **Próximo comando exato:** `"C:/Program Files/Git/bin/bash.exe" -lc 'cd ~/w-san312c && df -B1 /c && git status --short --branch && git rev-parse HEAD origin/main'`.
 - **Arquivos meio-escritos:** nenhum.
 - **Limpeza:** `/tmp/f13b.tap` é temporário regenerável; nenhum build/browser criado.
 
@@ -532,7 +532,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
   `FinanceiroPage.tsx` `b189b10f...` e `FinanceiroViewB.tsx` `476a9c78...`.
 - **Validação:** `npm --prefix frontend run check` verde; `git diff --check` limpo.
 - **Falta:** RETOMADA 16 — recorte `sem7`, escopo do teste geométrico, pendências/registro, relatório final e bateria.
-- **Próximo comando exato:** `cd /c/Users/AMP/w-san312c && npm --prefix frontend run check`.
+- **Próximo comando exato:** `cd ~/w-san312c && npm --prefix frontend run check`.
 - **Arquivos meio-escritos:** nenhum. **Limpeza:** nenhuma saída de build criada.
 
 ## RETOMADA 16
@@ -550,7 +550,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Validação:** `npm --prefix frontend run check` verde; ausência do caminho fora de escopo e da entrada no script
   comprovada por `test ! -e` + `grep`; `git diff --check` limpo.
 - **Falta:** registro/pendências, bateria smoke com N real e seção final “Correção não visual (29/10)”.
-- **Próximo comando exato:** `cd /c/Users/AMP/w-san312c && npm --prefix frontend run test:smoke`.
+- **Próximo comando exato:** `cd ~/w-san312c && npm --prefix frontend run test:smoke`.
 - **Arquivos meio-escritos:** nenhum. **Limpeza:** nenhuma saída de build criada.
 
 ## RETOMADA 17
@@ -560,7 +560,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 - **Head anterior:** `5ccce4c7`; árvore limpa conferida antes de começar.
 - **Feito (agrupa três fatias, empurradas juntas):** `62c9b6e3` gráficos com hover, foco e `ColumnBars`; `ffb367d4` aparência B; `db4569e1` aparência C.
 - **Falta:** mutações, sonda final, registro, bateria.
-- **Próximo comando exato:** `node C:/Users/AMP/erp-pausa-2026-10-03/san312c/visual/mutate.mjs`.
+- **Próximo comando exato:** `node ~/erp-pausa-2026-10-03/san312c/visual/mutate.mjs`.
 - **Arquivos meio-escritos:** nenhum.
 
 ## RETOMADA 18
@@ -575,7 +575,7 @@ Cada subfatia fecha separadamente com teste-dono, mutações, restauro por hash,
 
 **Referência medida:** `docs/claude-code-handoff/screen-refs/financeiro-baixa-conta-conciliacao-3opcoes.reference.html`, a vigente para B e C (E5.0). A `financeiro-3opcoes.reference.html` não tem as telas "Conta em foco" nem "Conferência do caixa" (`grep` sem ocorrência): é a do painel de 16/10. **Tela-modelo:** `FinanceiroViewA.tsx` e `WorkOrdersPage.tsx`. **Skills:** `ts-frontend-full` e `ui-ux-pro-max`.
 
-**Como foi medido:** as views reais montadas no shell de 236 px + 24 px de respiro, com os dados da própria referência e o relógio em 23/10/2026, em Chromium headless (Playwright da raiz), Vite em 127.0.0.1:15180. Sondas e capturas fora do repositório, em `C:/Users/AMP/erp-pausa-2026-10-03/san312c/visual/` (`out/ref-*.png`, `out/app-*.png`, `out/estado-*.png`, `out/capture-final.txt`, `out/probe-final.txt`, `out/mutacoes-rodada1.log`).
+**Como foi medido:** as views reais montadas no shell de 236 px + 24 px de respiro, com os dados da própria referência e o relógio em 23/10/2026, em Chromium headless (Playwright da raiz), Vite em 127.0.0.1:15180. Sondas e capturas fora do repositório, em `~/erp-pausa-2026-10-03/san312c/visual/` (`out/ref-*.png`, `out/app-*.png`, `out/estado-*.png`, `out/capture-final.txt`, `out/probe-final.txt`, `out/mutacoes-rodada1.log`).
 
 ### Achado → commit → prova
 

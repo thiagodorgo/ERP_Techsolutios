@@ -87,13 +87,13 @@ Medicao na ref, via git show / worktree detached proprio j-san3c2-c3.
 - Item 1 APROVADO · Item 2 APROVADO (C3c2-01 ajuste; C3c2-02 nota; C3c2-05 nota pre-existente) · Item 3 APROVADO (C3c2-03 nota) · C3c2-04 nota pre-existente → **APROVADO** (0 bloqueia). C3-01, C3-02 e C3-03 do ciclo 1 resolvidos no que prometem, conferidos por execucao.
 
 ## Limpeza
-- `git worktree remove --force C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3c2-c3`:
+- `git worktree remove --force ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-san3c2-c3`:
   exit=0
 - `git worktree list` depois:
-  C:/Users/AMP/Documents/GitHub/ERP_Techsolutios                                d1fab3bc [demo/investidor]
-  C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-descuido 497d360d [docs/governanca-porteiro-pre-merge-sol]
-  C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco   15ef3fbe [main]
-  C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san3         03e4977a [docs/san3-plano-saneamento]
+  ~/Documents/GitHub/ERP_Techsolutios                                d1fab3bc [demo/investidor]
+  ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-descuido 497d360d [docs/governanca-porteiro-pre-merge-sol]
+  ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/gov-elenco   15ef3fbe [main]
+  ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/san3         03e4977a [docs/san3-plano-saneamento]
 - diretorio existe? nao
 
 ## Voto gravado

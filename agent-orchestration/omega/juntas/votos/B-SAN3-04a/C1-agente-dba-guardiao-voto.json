@@ -62,7 +62,7 @@
   },
   "limpeza": {
     "contêineres": "docker rm -f j-bsan304a-c1-pg j-bsan304a-c1-redis → removidos; restantes com o nome: 0 (bancos c1_old/c1_new/c1_mig/c1_stg/c1_restore e o dump /tmp/c1_old_preD3.dump foram junto, eram do contêiner)",
-    "worktree": "git worktree remove --force C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-bsan304a-c1 → ec=0; diretório e .git/worktrees/j-bsan304a-c1 ausentes; status do meu worktree era 0 antes de remover (arquivo temporário do vermelho-controle já apagado)",
+    "worktree": "git worktree remove --force ~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/j-bsan304a-c1 → ec=0; diretório e .git/worktrees/j-bsan304a-c1 ausentes; status do meu worktree era 0 antes de remover (arquivo temporário do vermelho-controle já apagado)",
     "scratchpad": "40 arquivos _c1-* (logs, TAPs, sondas) apagados; ficaram só este voto e a evidência",
     "intactos": "bsan304a em fbda96b0 com status 0; worktrees e contêineres de outras cadeiras/juntas (j-bsan304a-c2*, j-b04a-*, j-b11-c3, bsan301-*, dev-bsan301-c2-*, erp-postgres-alt, pastrack-*) não tocados"
   }

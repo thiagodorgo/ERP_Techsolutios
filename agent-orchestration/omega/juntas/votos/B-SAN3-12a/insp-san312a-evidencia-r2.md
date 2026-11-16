@@ -17,8 +17,8 @@ Início: 2026-10-26T01:08:40Z. Formato P1: comando → saída resumida → vered
 - `node scripts/migration-transaction-guard.mjs` (wt no objeto) → `migrações: 117 · anteriores: 112 · novas: 5 · violações: 0`, ec=0; `_grant_finance_unreconcile_and_cheque_unlink_permissions` nova, 0 violação; guard ausente no O^1 (0) → fato do terreno para a C3.
 - Pré-voo (`MANDATO_REFS=<redator>/mandato-refs.sh bash <redator>/mandato-preflight.sh <m> 459`) → cadeira-c1/c2/c3 e inspetor: PRE-VOO OK, ec=0 os 4; md5 sem CR beb7375c…/41d13fd7…/3bef515e…/8ad2e686… = os da tabela do redator r2 → CONFORME.
 - awk "medido por:" seguido de bloco ``` → c1 19/0 sem saída, c2 21/0, c3 21/0, inspetor 23/0 → CONFORME.
-- Corpos: corpo `.claude` × `.agents` (blob O, EOL-neutro, sem bloco Codex) IDENTICO nas 3; disco do wt = blob (EOL-neutro) nas 3; no diretório da SESSÃO (`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/`) os 3 corpos estão AUSENTES → cadeira só pode carregar como subagente genérico lendo o blob do objeto (o que o preparo declara); nunca por subagent_type da sessão. Nota para o orquestrador.
-- S0: `git worktree add --detach C:/Users/AMP/j12a-insp2-s0 O` → `node …/scripts/sync-agent-agents.mjs --check` → `OK — 88 agentes, espelho consistente.` ec=0 → `git worktree remove --force` → removido → CONFORME.
+- Corpos: corpo `.claude` × `.agents` (blob O, EOL-neutro, sem bloco Codex) IDENTICO nas 3; disco do wt = blob (EOL-neutro) nas 3; no diretório da SESSÃO (`~/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/`) os 3 corpos estão AUSENTES → cadeira só pode carregar como subagente genérico lendo o blob do objeto (o que o preparo declara); nunca por subagent_type da sessão. Nota para o orquestrador.
+- S0: `git worktree add --detach ~/j12a-insp2-s0 O` → `node …/scripts/sync-agent-agents.mjs --check` → `OK — 88 agentes, espelho consistente.` ec=0 → `git worktree remove --force` → removido → CONFORME.
 - Veredito parcial Item 1: CONFORME.
 
 ## Item 2 — identidades, papéis, composição, cobertura, briefing (medido ~01:15Z)
@@ -36,9 +36,9 @@ Início: 2026-10-26T01:08:40Z. Formato P1: comando → saída resumida → vered
 - Veredito parcial Item 2: **VERMELHO** — R-res-5, R-res-4/A13, A21 e A16 sem cadeira dona (o mandato manda bloquear o start).
 
 ## Item 3 — terreno (medido ~01:18Z)
-- wt `C:/Users/AMP/w-san312a`: HEAD = O, 0 modificação rastreada, único não rastreado = o diretório desta junta → CONFORME. `node_modules` do wt é diretório comum (`fsutil reparsepoint query` → "não é um ponto de nova análise") → sem junction.
+- wt `~/w-san312a`: HEAD = O, 0 modificação rastreada, único não rastreado = o diretório desta junta → CONFORME. `node_modules` do wt é diretório comum (`fsutil reparsepoint query` → "não é um ponto de nova análise") → sem junction.
 - `docker ps -a` → `dev-san322-pg` (127.0.0.1:55432) e `dev-san322-redis` (127.0.0.1:56379) Up (1 trabalho fora de erp-*), `agv3-proxy` Exited (resíduo inerte, alheio), `erp-postgres`/`erp-redis` (base viva). Nenhum `j12a*`/`jur-*`/`crit-*`. Com uma cadeira: 2 = no teto.
-- `git worktree list` → main, w-agapi2, w-med03, w-san312a, w-san322 (alheios, não são desta junta); `ls -d C:/Users/AMP/j12a*` → nenhum.
+- `git worktree list` → main, w-agapi2, w-med03, w-san312a, w-san322 (alheios, não são desta junta); `ls -d ~/j12a*` → nenhum.
 - Probes soltos no wt: 0 não rastreados fora dos votos; 0 `*-probe.ts`/`jur-probe*`.
 - Disco C: 12 GB livres (≥ 7); `du -sh node_modules` não concluiu em 120 s → tamanho do `npm ci` NÃO medido.
 - Memória de commit livre: 14,15 GB (≥ 4).
@@ -49,4 +49,4 @@ Início: 2026-10-26T01:08:40Z. Formato P1: comando → saída resumida → vered
 - Veredito parcial Item 3: CONFORME, com ressalvas (Docker no teto com dev-san322 vivo; tamanho do `npm ci` não medido).
 
 ## Limpeza
-- Criei e removi o worktree `C:/Users/AMP/j12a-insp2-s0` (S0). O log temporário do `npm run check` (no scratchpad, fora do repo) foi apagado. Nenhum container, nenhuma porta, nenhum arquivo rastreado tocado.
+- Criei e removi o worktree `~/j12a-insp2-s0` (S0). O log temporário do `npm run check` (no scratchpad, fora do repo) foi apagado. Nenhum container, nenhuma porta, nenhum arquivo rastreado tocado.

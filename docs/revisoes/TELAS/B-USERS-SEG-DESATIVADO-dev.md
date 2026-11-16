@@ -6,7 +6,7 @@
 > plano nem o critiquei.
 > **Plano:** `erp-pausa-2026-10-03/planos/B-USERS-SEG-DESATIVADO-plano.md`, com a Emenda 1 (A1 a A13), que prevalece.
 > **Respostas do dono seguidas (ainda abertas):** P1 = (a), P2 = (a). O PR nasce em rascunho.
-> **Terreno:** worktree `C:/Users/thiag/w-desat`, ramo `fix/users-seg-desativado`, base `origin/main` =
+> **Terreno:** worktree `~/w-desat`, ramo `fix/users-seg-desativado`, base `origin/main` =
 > `a0979f513b1554f776b1eab1cbeae43ecffd9dd2` (#530). `npm ci` próprio (sem junction) e `prisma generate`.
 > Postgres 16 `devdesat-pg` em 127.0.0.1:55497 (bancos `devdesat`, migrado sem seed, para E-mem; `devdesat_seed`,
 > migrado com seed, para E-pg). Redis 7 `devdesat-redis` em 127.0.0.1:56497. Portas conferidas livres antes de subir.
@@ -191,7 +191,7 @@ Comando por arquivo: `node --test --test-reporter=tap --import tsx <arquivo>`; o
 - **Bancos recriados do zero (08:19 SP):** `DROP DATABASE`/`CREATE DATABASE` de `devdesat` e `devdesat_seed` no MEU
   container, `prisma migrate deploy` nos dois e `npm run db:seed` só no `devdesat_seed`; os 4 papéis efêmeros
   deixados pelas execuções mortas da F0 removidos pelo nome (`o6r_b01_*`, 0 restantes).
-- **Worktree da base para o E-pg:** `C:/Users/thiag/w-desat-base`, destacado na merge-base `2f8a9a5e` (o #538;
+- **Worktree da base para o E-pg:** `~/w-desat-base`, destacado na merge-base `2f8a9a5e` (o #538;
   `git diff --quiet a0979f51 2f8a9a5e -- src tests` → iguais), com `npm ci` e `prisma generate` próprios. Apago no fim.
 - `node scripts/migration-transaction-guard.mjs`: `migrações: 131 · violações: 0`, ec 0.
 - Escopo: `git diff --name-only $(git merge-base origin/main HEAD)..HEAD` = 27 arquivos, todos no PERMITIDO (com a
@@ -329,8 +329,8 @@ maior que a diferença medida.
 
 > **Identidade:** `dp-543`, DeepSeek Pro (DP), identidade de dev DECLARADA. Não escrevi o plano nem a crítica:
 > o dev original foi `dev-users-desat-cl` (Claude) e a pré-revisão foi `prerev-543-api` (Claude pela API).
-> **Terreno:** worktree `C:/Users/thiag/w-desat`, ramo `fix/users-seg-desativado`, head de partida `5d6521c7`
-> (limpo). Banco local SEM Docker: cluster próprio `C:/Users/thiag/pg-dp543` (Postgres 16, 127.0.0.1:55531,
+> **Terreno:** worktree `~/w-desat`, ramo `fix/users-seg-desativado`, head de partida `5d6521c7`
+> (limpo). Banco local SEM Docker: cluster próprio `~/pg-dp543` (Postgres 16, 127.0.0.1:55531,
 > `-A trust`). Toda hora vem de `date`.
 
 ### E2.7 — merge da main

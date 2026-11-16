@@ -6,7 +6,7 @@ papel: C2′ | identidade: jurado-san3-11-c2-enumeracao-tipada | modelo: Codex G
 
 - Fase atingida: pre-voo, antes da criacao de worktrees, instalacao de dependencias ou inicio do merito.
 - Erro: limite de uso da conta OpenAI; continuacao da mesma instancia, com contexto preservado.
-- Estado re-medido em 2026-10-04: carga CPU 8%; `C:/Users/AMP/w-s11k2b` ausente; `C:/Users/AMP/w-s11k2blf` ausente; `C2c2-evidencia.md` e `C2c2-voto.json` ainda ausentes antes desta gravacao. Nao havia `npm ci` parcial a confiar ou refazer.
+- Estado re-medido em 2026-10-04: carga CPU 8%; `~/w-s11k2b` ausente; `~/w-s11k2blf` ausente; `C2c2-evidencia.md` e `C2c2-voto.json` ainda ausentes antes desta gravacao. Nao havia `npm ci` parcial a confiar ou refazer.
 - Medicoes preservadas e reprodutiveis: objeto inicial do PR 401 `d24f7283bfba55d298e8118e7b590465c5a4d4d6`; corpo EOL-neutro `494547b988020c449fd5e26c9df2b302` = esperado; mandato EOL-neutro `54e634ba1251e7dc0473180e0fe4e661` = esperado; carga CPU na medicao dos hashes 83%.
 
 ### Comando/saida/veredito parcial — retomada
@@ -17,7 +17,7 @@ papel: C2′ | identidade: jurado-san3-11-c2-enumeracao-tipada | modelo: Codex G
 
 ## Pre-voo legal — objeto, inspetor e CI — 2026-10-04
 
-- Comando: `git ls-remote origin refs/heads/fix/dossie-versao-da-vistoria refs/heads/main`; `gh pr view 401 --json headRefOid,baseRefOid,headRefName,baseRefName,state,isDraft,mergeable,url`; `git diff --name-status 3ec6f52b... <head>`; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<head>/check-runs?per_page=100`; `git -C C:/Users/AMP/w-nuv11 rev-parse HEAD`; `git config --show-origin --get core.autocrlf`. Timeout externo da chamada: 30 s. Carga na medicao: CPU 6%, livre 8.343.064.576 bytes.
+- Comando: `git ls-remote origin refs/heads/fix/dossie-versao-da-vistoria refs/heads/main`; `gh pr view 401 --json headRefOid,baseRefOid,headRefName,baseRefName,state,isDraft,mergeable,url`; `git diff --name-status 3ec6f52b... <head>`; `gh api repos/thiagodorgo/ERP_Techsolutios/commits/<head>/check-runs?per_page=100`; `git -C ~/w-nuv11 rev-parse HEAD`; `git config --show-origin --get core.autocrlf`. Timeout externo da chamada: 30 s. Carga na medicao: CPU 6%, livre 8.343.064.576 bytes.
 - Saida resumida: `git ls-remote` e `gh` resolveram o mesmo head `d24f7283bfba55d298e8118e7b590465c5a4d4d6`; base `origin/main`/`baseRefOid` = `b404815ce3d1f1b8e5121bd1526978f7222e7479`; PR OPEN, draft, MERGEABLE. Delta `3ec6f52b..d24f7283` = somente adicao de `agent-orchestration/omega/juntas/votos/B-SAN3-11/00-inspetor-terreno-c2.md` (registro; nenhum codigo/teste/KPI). Check-runs: total 14, pendentes 0, nao-verdes 0; `frontend` = 2 ocorrencias `completed/success`. `w-nuv11` tambem esta em `d24f7283`; `core.autocrlf=true` vem da configuracao de sistema.
 - Parecer lido integralmente: 3a instancia, `LIBERADO COM RESSALVA`; confere nominalmente `jurado-san3-11-c2-enumeracao-tipada`, corpo Codex EOL-neutro `494547b988020c449fd5e26c9df2b302`, mandato `54e634ba1251e7dc0473180e0fe4e661`, baseline 24/24 em CRLF e LF, S0 verde. R-CORPOS cumprida por carregamento do blob do objeto e hash coincidente; R-PERDA reconhecida como vinculante (queda futura exige sucessora nova e reexecucao P3). Quorum: unanimidade de 3 com veto. Modelo efetivo: Codex GPT-5.6 Sol, substituicao declarada por decisao do dono; B-SAN3-11 nao toca dinheiro.
 - Briefing lido integralmente na secao `Ciclo 2 — junta 2`, inclusive atualizacao ~16:45Z; todas as alegacoes permanecem insumo a re-verificar. Protocolo de emulacao de `.agents/agents/README.md` lido em `origin/main`.
@@ -25,7 +25,7 @@ papel: C2′ | identidade: jurado-san3-11-c2-enumeracao-tipada | modelo: Codex G
 
 ## Terrenos proprios — criacao e EOL — 2026-10-04
 
-- Comando: apos provar ausencia dos tres caminhos, `git -C <repo> worktree add --detach C:/Users/AMP/w-s11k2b d24f7283...`; `git -C <repo> -c core.autocrlf=false worktree add --detach C:/Users/AMP/w-s11k2blf d24f7283...`; `git -C <LF> config --worktree core.autocrlf false`; criacao de `$SCRATCH=C:/Users/AMP/AppData/Local/Temp/c2c2-d24f7283`; `Test-Path .git`; `rev-parse HEAD`; `status --porcelain`; contagem binaria de CR no adapter. Timeout externo: 30 s. Carga: CPU 13%.
+- Comando: apos provar ausencia dos tres caminhos, `git -C <repo> worktree add --detach ~/w-s11k2b d24f7283...`; `git -C <repo> -c core.autocrlf=false worktree add --detach ~/w-s11k2blf d24f7283...`; `git -C <LF> config --worktree core.autocrlf false`; criacao de `$SCRATCH=~/AppData/Local/Temp/c2c2-d24f7283`; `Test-Path .git`; `rev-parse HEAD`; `status --porcelain`; contagem binaria de CR no adapter. Timeout externo: 30 s. Carga: CPU 13%.
 - Saida resumida: caminhos e scratch eram ausentes antes; ambos os worktrees detached existem em `d24f7283bfba55d298e8118e7b590465c5a4d4d6`, status vazio e sem `node_modules`; CRLF com `core.autocrlf=true` e 602 bytes CR; LF com `core.autocrlf=false` de `config.worktree` e 0 bytes CR. Nenhuma junction/symlink foi criada.
 - Veredito parcial: TERRENOS CONFIRMADOS e isolados; `$SCRATCH` proprio criado.
 
@@ -99,7 +99,7 @@ VOTO: **REPROVADO** — dois achados `bloqueia`, ambos dentro do bloco: (F1) o g
 ## Limpeza final
 
 - Processo residual medido antes da limpeza: somente o Vite desta cadeira, PID 78648, `node .../w-s11k2b/frontend/node_modules/vite/bin/vite.js --config vite.config.ts`; encerrado apos conferir nome/comando, CPU 3%, e confirmado morto. Nenhum processo de outra frente foi tocado.
-- Comando: com 0 processos proprios, `git -C <repo> worktree remove --force C:/Users/AMP/w-s11k2b` e idem `w-s11k2blf` (CPU 4%, ambos ec0); arquivos do scratch removidos por patch e diretorios vazios, ja validados sob `C:/Users/AMP/AppData/Local/Temp/c2c2-d24f7283`, removidos pela API nativa de diretorio do PowerShell/.NET.
+- Comando: com 0 processos proprios, `git -C <repo> worktree remove --force ~/w-s11k2b` e idem `w-s11k2blf` (CPU 4%, ambos ec0); arquivos do scratch removidos por patch e diretorios vazios, ja validados sob `~/AppData/Local/Temp/c2c2-d24f7283`, removidos pela API nativa de diretorio do PowerShell/.NET.
 - Medicao final: CPU 4%; livre 11.362.439.168 bytes; processos proprios=0; correspondencias em `git worktree list`=0; CRLF worktree ausente, LF worktree ausente, scratch ausente. Base viva Postgres/Redis e Docker nunca foram consultados nem tocados.
 
 ## Fecho legal — objeto imovel e artefatos completos

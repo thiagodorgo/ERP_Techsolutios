@@ -34,23 +34,23 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 
 O papel e o planejador-mestre do ciclo 2 do B-SAN3-11 (PR 401), a MESMA identidade planejador-ciclo2-b-san3-11, para uma emenda curta
   (secao 16-bis); o Fable e obrigatorio (retorno ao planejador, secao C7 item 6 do contrato); esgotado o Fable, Opus com a substituicao
-  declarada; esgotado o Opus, para; declara na 1a linha do arquivo de saida o papel, a identidade, o modelo e o mandato_md5 deste arquivo derruba com: `head -1 C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md | grep -ic 'mandato_md5'`
+  declarada; esgotado o Opus, para; declara na 1a linha do arquivo de saida o papel, a identidade, o modelo e o mandato_md5 deste arquivo derruba com: `head -1 ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md | grep -ic 'mandato_md5'`
 
-O insumo e o relatorio da agente-fabrica em C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md (secao 5, observacoes a, b e c), lido como relato e nunca como fato: tres criterios que a
+O insumo e o relatorio da agente-fabrica em ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/FABRICA-401-c2.md (secao 5, observacoes a, b e c), lido como relato e nunca como fato: tres criterios que a
   secao 16.5 manteve da errata — A17 linha nova (o numero de falhas sob a mutacao do teto, agora que T20 a T22 tambem chamam o arnes), A18
   linha nova (o total e as linhas exatas da varredura, agora que o gerador e o v2 do Apendice E) e A25 com a linha da secao 15-bis.8 (o
   arquivo de teste igual ao da errata, que o E13 muda por construcao) — re-medidos pelo planejador por execucao propria no head do PR,
-  com comando e saida derruba com: `grep -ic 'A25' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md`
+  com comando e saida derruba com: `grep -ic 'A25' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md`
 
 A emenda reescreve cada um dos tres como propriedade valida para o ciclo 2, com a mutacao que o deixa vermelho, sem afrouxar o que eles
   protegiam (a morte por tempo vira excecao nomeada; nenhum status coalescido; o diff da correcao dentro do escopo), e diz em que
   intervalo de commits cada um se mede; o texto sai pronto para o orquestrador apensar ao plano docs/revisoes/SAN3/B-SAN3-11-plano.md
-  como secao 16-bis, e diz se os corpos das cadeiras do ciclo 2 precisam de emenda derruba com: `grep -ic 'A17' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md`
+  como secao 16-bis, e diz se os corpos das cadeiras do ciclo 2 precisam de emenda derruba com: `grep -ic 'A17' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md`
 
-O terreno e as regras: o planejador nao desenvolve, nao commita e nao vota; escreve so C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md, incremental com hora UTC (P1), mensagem final
-  de 1 linha (P2); worktree proprio detached C:/Users/AMP/w-plc2b, removido pelo nome ao fim com 0 processo vivo; o worktree do dev
-  C:/Users/AMP/w-dc2 e so leitura; nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout em tudo; base viva nunca alvo; sob PAUSA grava a
-  secao PAUSA e para (P7) derruba com: `grep -ic 'medido por' C:/Users/AMP/AppData/Local/Temp/claude/c--Users-AMP-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md`
+O terreno e as regras: o planejador nao desenvolve, nao commita e nao vota; escreve so ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md, incremental com hora UTC (P1), mensagem final
+  de 1 linha (P2); worktree proprio detached ~/w-plc2b, removido pelo nome ao fim com 0 processo vivo; o worktree do dev
+  ~/w-dc2 e so leitura; nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout em tudo; base viva nunca alvo; sob PAUSA grava a
+  secao PAUSA e para (P7) derruba com: `grep -ic 'medido por' ~/AppData/Local/Temp/claude/c--Users-~-Documents-GitHub-ERP-Techsolutios/3ad1b87d-fdbf-41f2-b085-1068e01c5d64/scratchpad/PLANO-C2bis-B-SAN3-11.md`
 
 ## MEDIDO
 
@@ -58,7 +58,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-21: refs do PR #401 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/planejador-ciclo2-bis.md
+PRE-VOO OK — ~/w-nuv11/agent-orchestration/omega/juntas/votos/B-SAN3-11/00-mandatos/planejador-ciclo2-bis.md
 ec=0
 head=feb0d838e1b940f4fb4771cdf447c2ea02c82a49
 utc=2026-10-03T05:46:35Z

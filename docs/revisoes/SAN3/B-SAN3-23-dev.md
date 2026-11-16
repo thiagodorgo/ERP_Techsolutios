@@ -4,7 +4,7 @@
 - **Por que Claude no papel do dev (exceção declarada):** o Codex 1 está sem cota semanal até 16/11 15:41 SP e o Codex 2 está ocupado. Regra do dono `D-IAS-EXTERNAS-PRIMEIRO` ("se todas ias estao ocupada e falta uma tarefa fazer num bloco, vc faz").
 - **Plano:** `plano-B-SAN3-23-v2.md` (Claude Opus 5.5 pela API, topo substituto declarado). **Crítica r2:** `crit-23-r2-plano.json` (Claude Opus 5.5, subagente; APROVADO COM AJUSTES, 8 achados que viram requisito). **Decisão do dono:** `D-PORTAO-5-RECOMENDACOES-1111`, Q1 = A (a F2b entra no bloco).
 - **Prevalência:** decisão do dono > ajustes C23R2-01..08 > plano v2.
-- **Worktree:** `C:/Users/thiag/w-san323`, ramo `fix/os-cancelada-sem-item-financeiro`, base `origin/main@07898adf` (medida: `git diff --stat d5ec1696 07898adf -- src/modules/work-orders src/modules/work-order-financials` vazio; os 3 arquivos de `tests/helpers` que mudaram não são o `pg-barrier.ts` nem o `auth-identity-fixture.ts`).
+- **Worktree:** `~/w-san323`, ramo `fix/os-cancelada-sem-item-financeiro`, base `origin/main@07898adf` (medida: `git diff --stat d5ec1696 07898adf -- src/modules/work-orders src/modules/work-order-financials` vazio; os 3 arquivos de `tests/helpers` que mudaram não são o `pg-barrier.ts` nem o `auth-identity-fixture.ts`).
 - **Banco:** `san323-pg` (postgres:16, `127.0.0.1:55496`), `prisma migrate deploy` limpo. `npm ci` próprio, sem junction.
 - **Toda hora vem de `date`** (relógio local SP, Git Bash).
 

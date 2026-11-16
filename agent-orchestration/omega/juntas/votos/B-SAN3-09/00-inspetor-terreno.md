@@ -55,12 +55,12 @@ inspetor-de-terreno-da-junta | modelo: Opus 5.5 (substituicao declarada — Fabl
 - veredito parcial: VERDE para residuo (nenhum residuo de jurado com privilegio ou mutacao; inertes nomeados). RESSALVA DE CARGA/DISCO: ~6 GB livres; cada cadeira custa ~0,5 GB (npm ci) + cluster (~0,2-0,4 GB com migrations) — cabem as 3 cadeiras so se cada worktree/cluster for removido ao fim e com <=2 em paralelo (P5). Se o livre cair abaixo de ~2 GB, PARAR e avisar (nao improvisar limpeza: §C5 nivel profundo e do orquestrador).
 
 ### Item 1.1 — head e arvore limpa (17:24Z)
-- comando: `git worktree add --detach C:/Users/AMP/w-insp400 6330bce262e7b3efa4fde1f9775480321f7a2de1` · `git -C w-insp400 rev-parse HEAD` · `git -C w-insp400 status --porcelain | wc -l`
+- comando: `git worktree add --detach ~/w-insp400 6330bce262e7b3efa4fde1f9775480321f7a2de1` · `git -C w-insp400 rev-parse HEAD` · `git -C w-insp400 status --porcelain | wc -l`
 - saida: HEAD = 6330bce262e7b3efa4fde1f9775480321f7a2de1; status porcelain = 0 linhas. Arvore do dev/orquestrador (w-nuv09, ramo feat/bootstrap-platform-admin) em 6330bce2 = origin/feat/bootstrap-platform-admin, com 1 untracked: este parecer (nenhuma mutacao viva de produto).
 - veredito parcial: VERDE.
 
 ### Item 3.3 — corpo carregado x corpo julgado, EOL-neutro (17:26Z)
-- comando: para cada identidade, `git show 6330bce2:.claude/agents/<x>.md | tr -d '\r' | md5sum` x `git show 8ee10bd2:...` x `tr -d '\r' < <checkout-da-sessao>/.claude/agents/<x>.md | md5sum` (checkout da sessao = C:/Users/AMP/Documents/GitHub/ERP_Techsolutios, em main 8ee10bd2) x scratchpad/corpos quando existe.
+- comando: para cada identidade, `git show 6330bce2:.claude/agents/<x>.md | tr -d '\r' | md5sum` x `git show 8ee10bd2:...` x `tr -d '\r' < <checkout-da-sessao>/.claude/agents/<x>.md | md5sum` (checkout da sessao = ~/Documents/GitHub/ERP_Techsolutios, em main 8ee10bd2) x scratchpad/corpos quando existe.
 - saida:
   - agente-secops: head = main = disco-sessao = dc1a2974877dc56f04a5e3cb43668c75 (sem copia no scratchpad)
   - agente-dba-guardiao: head = main = disco-sessao = de789c12f149cd9c36dc79e861adc043 (sem copia no scratchpad)
@@ -128,7 +128,7 @@ inspetor-de-terreno-da-junta | modelo: Opus 5.5 (substituicao declarada — Fabl
 
 ### Item 1.2 — plano de isolamento declarado (17:41Z)
 - comando: leitura de `00-mandatos/C1.md`, `C2.md`, `C3.md` (paragrafo "O terreno") e §10 do plano (l.625-628).
-- saida: C1 -> worktree proprio detached `C:/Users/AMP/w-j09c1`, npm ci proprio sem junction, prisma generate com DATABASE_URL so no comando, cluster Postgres+Redis proprio "se precisar de banco para o run real"; C2 e C3 -> worktree proprio (`w-j09c2`, `w-j09c3`) + cluster Postgres e Redis descartaveis proprios em portas livres provadas (pg_isready e netstat), criados e removidos pela cadeira; os tres: base viva erp-postgres 5432 / erp-redis 6379 nunca alvo, arvore do orquestrador e do dev nunca mutadas, worktree e cluster removidos pelo nome ao fim. `ls -d /c/Users/AMP/w-j09c{1,2,3}` (17:24Z) -> nao existem (nascerao limpos).
+- saida: C1 -> worktree proprio detached `~/w-j09c1`, npm ci proprio sem junction, prisma generate com DATABASE_URL so no comando, cluster Postgres+Redis proprio "se precisar de banco para o run real"; C2 e C3 -> worktree proprio (`w-j09c2`, `w-j09c3`) + cluster Postgres e Redis descartaveis proprios em portas livres provadas (pg_isready e netstat), criados e removidos pela cadeira; os tres: base viva erp-postgres 5432 / erp-redis 6379 nunca alvo, arvore do orquestrador e do dev nunca mutadas, worktree e cluster removidos pelo nome ao fim. `ls -d ~/w-j09c{1,2,3}` (17:24Z) -> nao existem (nascerao limpos).
 - lacuna: os mandatos nao preveem o container LINUX que o T2 exige (item 4.2-bis) — coberto pela receita do 4.2-bis, que a cadeira aplica com nomes proprios.
 - veredito parcial: VERDE.
 
@@ -180,4 +180,4 @@ Objeto da junta 1: **6330bce262e7b3efa4fde1f9775480321f7a2de1** (head do PR 400)
 
 Notas (nao condicionam): (n1) o "conferente factual" do plano (§0.8) nao tem identidade nomeada em ref nenhuma que medi — se foi uma das 3 cadeiras, o orquestrador declara; (n2) o diretorio de agentes da sessao (checkout principal) tem 31 corpos nao versionados em `.claude/agents/especialistas/` (entre eles os `jurado-06-*`, SEPULTADOS no obituario §3.4/3.5) — nao afetam as 3 cadeiras nomeadas, mas nenhum deles pode ser disparado; (n3) as 3 cadeiras nao tem `model:` no frontmatter nem `Write` nas tools: declaram o modelo que rodou e gravam evidencia/voto por Bash.
 
-**Limpeza (17:44–17:46Z):** criei e removi — containers `insp400-pg`, `insp400-redis`, `insp400-node` (`docker rm -f -v`, 0 restantes), rede `insp400-net` (0 restantes), imagem `node:20-bookworm-slim` (removida), worktree `C:/Users/AMP/w-insp400` (0 processo com o caminho na linha de comando antes; `git worktree remove --force` ec=0; `Test-Path` = False; `worktree list` sem ele), temporarios `scratchpad/insp400-*` (apagados, inclusive a senha descartavel do cluster). Base viva erp-postgres/erp-redis: Up 7 days, nunca alvo. Nada escrito no repositorio alem deste parecer (untracked em w-nuv09, para o orquestrador versionar). Volumes orfaos: 10 antes, 10 depois (nenhum meu).
+**Limpeza (17:44–17:46Z):** criei e removi — containers `insp400-pg`, `insp400-redis`, `insp400-node` (`docker rm -f -v`, 0 restantes), rede `insp400-net` (0 restantes), imagem `node:20-bookworm-slim` (removida), worktree `~/w-insp400` (0 processo com o caminho na linha de comando antes; `git worktree remove --force` ec=0; `Test-Path` = False; `worktree list` sem ele), temporarios `scratchpad/insp400-*` (apagados, inclusive a senha descartavel do cluster). Base viva erp-postgres/erp-redis: Up 7 days, nunca alvo. Nada escrito no repositorio alem deste parecer (untracked em w-nuv09, para o orquestrador versionar). Volumes orfaos: 10 antes, 10 depois (nenhum meu).

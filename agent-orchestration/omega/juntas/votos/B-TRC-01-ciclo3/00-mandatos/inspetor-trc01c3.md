@@ -2,7 +2,7 @@
 
 ## MEDIDO
 
-Estado do PR 426 pela ferramenta do B-GOV-MANDATO, extraida sem edicao de origin/chore/mandato-refs-e-preflight para a pasta mandatos-07cb1 do scratchpad do redator e executada a partir de C:/Users/AMP/w-trc01, medido por: `bash <scratch-do-redator>/mandato-refs.sh 426`
+Estado do PR 426 pela ferramenta do B-GOV-MANDATO, extraida sem edicao de origin/chore/mandato-refs-e-preflight para a pasta mandatos-07cb1 do scratchpad do redator e executada a partir de ~/w-trc01, medido por: `bash <scratch-do-redator>/mandato-refs.sh 426`
 ```
 # refs do PR #426 — GERADO por scripts/mandato-refs.sh, para COLAR no mandato
 # gerado em: 2026-10-18T19:05Z · repo: thiagodorgo/ERP_Techsolutios
@@ -112,16 +112,16 @@ O modelo de mandato do CLAUDE.md secao C7.7, verbatim no objeto, medido por: `MS
    o arquivo. Não inicie item novo.  [P7]
 ```
 
-Os worktrees que existem agora com os nomes deste tabuleiro e o residuo da (b′) do ciclo 2 (w-jc2-b e w-jc2-b3), medido por: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree list | grep -i -E "w-trc01|w-jc2|w-jc3" | awk "{print \$1, \$3, \$4}" | sed -E "s,[[:space:]]+\$,,"; for w in w-jc2-b w-jc2-b3; do test -e C:/Users/AMP/$w && echo "$w existe no disco" || echo "$w ausente do disco"; done`
+Os worktrees que existem agora com os nomes deste tabuleiro e o residuo da (b′) do ciclo 2 (w-jc2-b e w-jc2-b3), medido por: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree list | grep -i -E "w-trc01|w-jc2|w-jc3" | awk "{print \$1, \$3, \$4}" | sed -E "s,[[:space:]]+\$,,"; for w in w-jc2-b w-jc2-b3; do test -e ~/$w && echo "$w existe no disco" || echo "$w ausente do disco"; done`
 ```
-C:/Users/AMP/w-jc2-b (detached HEAD)
-C:/Users/AMP/w-jc2-b3 (detached HEAD)
-C:/Users/AMP/w-trc01 [feat/traccar-b-trc-01]
+~/w-jc2-b (detached HEAD)
+~/w-jc2-b3 (detached HEAD)
+~/w-trc01 [feat/traccar-b-trc-01]
 w-jc2-b existe no disco
 w-jc2-b3 existe no disco
 ```
 
-A arvore C:/Users/AMP/w-trc01 esta no objeto, as linhas modificadas que o git status lista sao so de fim de linha, e estes sao os nao rastreados (soltos alheios e, depois deles, os arquivos desta junta), medido por: `echo "porcelain_M=$(git status --porcelain | grep -i -c "^ M") conteudo_sem_CR=$(git diff --ignore-cr-at-eol --name-only | wc -l)"; git status --porcelain --untracked-files=all | grep -i "^??"; git rev-parse HEAD`
+A arvore ~/w-trc01 esta no objeto, as linhas modificadas que o git status lista sao so de fim de linha, e estes sao os nao rastreados (soltos alheios e, depois deles, os arquivos desta junta), medido por: `echo "porcelain_M=$(git status --porcelain | grep -i -c "^ M") conteudo_sem_CR=$(git diff --ignore-cr-at-eol --name-only | wc -l)"; git status --porcelain --untracked-files=all | grep -i "^??"; git rev-parse HEAD`
 ```
 porcelain_M=55 conteudo_sem_CR=0
 ?? .npmtest-503.log
@@ -173,19 +173,19 @@ O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed),
   medio; o corpo fixa model: opus (medido acima), e esta e uma troca de EXECUTOR no MESMO nivel menor (contrato secao C7.6: Opus no
   Claude Code e GPT-5.6 Sol no Codex), pela D-IAS-EXTERNAS-PRIMEIRO (escrita na origin/main, medida acima); usa o corpo
   .claude/agents/inspetor-de-terreno-da-junta.md do objeto, entregue no prompt, e declara na 1a linha do parecer o papel, a instancia,
-  o executor, o modelo, a troca e o motivo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; nao julga merito e nao vota derruba com: `head -1 C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md | grep -ic 'mandato_md5'` (novo)
+  o executor, o modelo, a troca e o motivo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo; nao julga merito e nao vota derruba com: `head -1 ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md | grep -ic 'mandato_md5'` (novo)
 
 O objeto e o head do PR 426 resolvido pelo proprio inspetor por git ls-remote e por gh pr view, so com os check-runs CONCLUIDOS
   (ausencia, queued, in_progress ou cancelled bloqueia o start; vermelho e insumo do voto); e, pelo plano do ciclo 3 secao 3.10, o
   inspetor confere ainda (i) que o diff do ciclo 3 nao toca prisma nem migrations (sem autorizacao de migracao neste ciclo; medido
-  acima por h2 ao objeto) e que nao ha guardiao de banco a exigir; (ii) que os worktrees C:/Users/AMP/w-jc2-b e C:/Users/AMP/w-jc2-b3,
+  acima por h2 ao objeto) e que nao ha guardiao de banco a exigir; (ii) que os worktrees ~/w-jc2-b e ~/w-jc2-b3,
   residuo da (b′) do ciclo 2, foram removidos ou estao declarados; (iii) que os mandatos das cadeiras marcam A RE-VERIFICAR o que as
-  atas anteriores aprovaram, sem a formula de nao reabrir derruba com: `grep -ic 'A RE-VERIFICAR' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
+  atas anteriores aprovaram, sem a formula de nao reabrir derruba com: `grep -ic 'A RE-VERIFICAR' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
 
 Os insumos estao na ref (medido acima): o plano e o relatorio do dev do ciclo 3, as atas dos ciclos 1 e 2 e o plano do Traccar; a
   ordem do dono "ataque so a c" esta escrita so no cabecalho do plano do ciclo 3, nao em decisoes.md, e o registro da reprovacao do
   ciclo 2 (R-B-TRC-01-ciclo2.md) nao esta no objeto: o inspetor registra os dois fatos no parecer, sem resolve-los (secao A2), e diz
-  se algum deles impede o start derruba com: `grep -ic 'R-B-TRC-01-ciclo2' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
+  se algum deles impede o start derruba com: `grep -ic 'R-B-TRC-01-ciclo2' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
 
 O tabuleiro tem tres cadeiras de identidade nova, cada uma com o seu executor, todos no nivel menor e declarados pela
   D-IAS-EXTERNAS-PRIMEIRO: (a″) jurado-trc01c3-a-rls-e-regressao no Codex em GPT-5.6 Sol esforco medio; (b″)
@@ -193,40 +193,40 @@ O tabuleiro tem tres cadeiras de identidade nova, cada uma com o seu executor, t
   cota (segundo o orquestrador); (c″) jurado-trc01c3-c-tabela-de-motivos no Claude Code em Claude Opus 5.5; se uma IA externa ficar
   livre antes, ela pode assumir a (b″) ou a (c″), com identidade nova e o executor efetivo na 1a linha da evidencia; os corpos estao
   rastreados no objeto nos dois espelhos, o S0 fica verde (medido acima; o inspetor roda de novo no worktree dele) e corpo carregado x
-  julgado e conferido de forma EOL-neutra contra o md5 que o orquestrador publica no disparo derruba com: `grep -ic 'sync-agent-agents' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
+  julgado e conferido de forma EOL-neutra contra o md5 que o orquestrador publica no disparo derruba com: `grep -ic 'sync-agent-agents' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
 
 A inelegibilidade e conferida POR NOME contra a lista dos tres corpos e contra
   agent-orchestration/omega/juntas/OBITUARIO-IDENTIDADES.md: as cadeiras dos ciclos 1 e 2 e todo ocupante delas (inclusive os quatro
   da (b′) e o jurado-trc01c2-c-opus, que achou o P1); os planejadores, ate o planejador-trc01-ciclo3; os criticos e o pesquisador da
   PD; os devs, ate o dev-trc01-c3-opus e sucessores; os guardioes de banco e a pre-checagem do ciclo 2; os inspetores dos ciclos 1 e 2;
   os porteiros nomeados nos corpos; o orquestrador, a agente-fabrica e este redator (redator-mandatos-07cb1-opus); e nenhuma cadeira
-  ocupa mais de um papel derruba com: `grep -ic 'inelegib' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
+  ocupa mais de um papel derruba com: `grep -ic 'inelegib' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
 
-O terreno: C:/Users/AMP/w-trc01 e a arvore do dev e so recebe os arquivos de saida desta junta (o inspetor confere que nenhum
+O terreno: ~/w-trc01 e a arvore do dev e so recebe os arquivos de saida desta junta (o inspetor confere que nenhum
   processo vivo escreve nela e que o conteudo segue igual ao objeto; os arquivos soltos alheios se reportam, nao se varrem);
-  worktrees proprios detached C:/Users/AMP/w-jc3-a, C:/Users/AMP/w-jc3-b e C:/Users/AMP/w-jc3-c no objeto (e os de comparacao em h2
+  worktrees proprios detached ~/w-jc3-a, ~/w-jc3-b e ~/w-jc3-c no objeto (e os de comparacao em h2
   que os corpos nomeiam), cada um com npm ci proprio e sem junction (secao C7.1-ter(c)); Postgres 16 e Redis 7 descartaveis por
   cadeira com prefixo jtrc01c3-a-, jtrc01c3-b- e jtrc01c3-c-, so em 127.0.0.1 numa porta alta testada (candidatas 47761/47771,
   47762/47772 e 47763/47773); no maximo 2 trabalhos com container ao mesmo tempo na maquina, a base viva fora da conta (escrito na
   origin/main, medido acima), contados por prefixo antes de cada subida; a base viva, as portas do dono e os servidores publicos de
-  demonstracao do Traccar nunca sao alvo; o worktree C:/Users/AMP/w-07cb1 nao e alvo derruba com: `grep -ic 'jtrc01c3-' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
+  demonstracao do Traccar nunca sao alvo; o worktree ~/w-07cb1 nao e alvo derruba com: `grep -ic 'jtrc01c3-' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
 
 O baseline e o plano de perda de jurado ficam declarados no parecer: baseline honesto medido pelo inspetor no proprio worktree e o
   livre em C:; queda vira linha no 00-quedas.md desta junta pelo orquestrador (P6), o sucessor tem identidade NOVA com sufixo e
   re-executa o que a evidencia registrou (P3), voto perdido nunca conta e a junta nao fecha com menos de 3 votos; executor sem cota
   (Codex no limite, Opus esgotado) para e registra onde esta, sem descer degrau (secao C7.6-bis), inclusive o proprio inspetor no
-  Codex derruba com: `grep -ic 'perda de jurado' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
+  Codex derruba com: `grep -ic 'perda de jurado' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
 
 O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO, e o parecer NOMEIA cada cadeira com o seu executor, o seu worktree, o
   seu prefixo de container e as portas, porque e isso que cada cadeira confere na legalidade; a evidencia e incremental com hora em
-  C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-evidencia.md e o parecer em
-  C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md, escrito antes da mensagem
-  final (P1, P2), que o orquestrador versiona; worktree proprio detached C:/Users/AMP/w-jc3-insp, removido pelo nome; nunca tail -f;
-  timeout no que executa; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
+  ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-evidencia.md e o parecer em
+  ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md, escrito antes da mensagem
+  final (P1, P2), que o orquestrador versiona; worktree proprio detached ~/w-jc3-insp, removido pelo nome; nunca tail -f;
+  timeout no que executa; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/insp-trc01c3-parecer.md` (novo)
 
 ## MEDIDO
 
-Pre-voo deste mandato no head do PR, com o pre-voo de origin/chore/mandato-refs-e-preflight copiado para um arnes local no scratchpad do redator (unica alteracao, na linha 211: RAIZ fixada em C:/Users/AMP/w-trc01; o mandato-refs.sh entra pela costura MANDATO_REFS; na saida colada, o carimbo de 14 digitos entre aspas, o nome do campo reservado citado no AVISO e o caminho do scratchpad saem trocados por marcadores, porque as checagens 4 e 7 os cobrariam fora da colagem) medido por: `MANDATO_REFS=<scratch-do-redator>/mandato-refs.sh bash <arnes>/mandato-preflight.sh <este-mandato> 426 2>&1 | sed -E "$FILTRO"; echo ec=$?` com FILTRO = `s,'[0-9]{14}','<14 digitos da migracao>',; s,appro.ed.head,<campo reservado>,g; s,C:/Users/AMP/AppData/Local/Temp/[^ ']*/mandato-refs.sh,<scratch-do-redator>/mandato-refs.sh,g`
+Pre-voo deste mandato no head do PR, com o pre-voo de origin/chore/mandato-refs-e-preflight copiado para um arnes local no scratchpad do redator (unica alteracao, na linha 211: RAIZ fixada em ~/w-trc01; o mandato-refs.sh entra pela costura MANDATO_REFS; na saida colada, o carimbo de 14 digitos entre aspas, o nome do campo reservado citado no AVISO e o caminho do scratchpad saem trocados por marcadores, porque as checagens 4 e 7 os cobrariam fora da colagem) medido por: `MANDATO_REFS=<scratch-do-redator>/mandato-refs.sh bash <arnes>/mandato-preflight.sh <este-mandato> 426 2>&1 | sed -E "$FILTRO"; echo ec=$?` com FILTRO = `s,'[0-9]{14}','<14 digitos da migracao>',; s,appro.ed.head,<campo reservado>,g; s,~/AppData/Local/Temp/[^ ']*/mandato-refs.sh,<scratch-do-redator>/mandato-refs.sh,g`
 ```
 COLAGEM    l.6-23: refs do PR #426 confere com a saida atual
 AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '<14 digitos da migracao>' em prisma/migrations/20260874000000_traccar_ingestion_foundation/migration.sql — l.27
@@ -234,7 +234,7 @@ AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '<14 d
 AVISO      corrida hex em caminho versionado nao cobrada pela checagem 4: '<14 digitos da migracao>' em prisma/migrations/20260876000000_work_orders_vehicle_assigned_at/migration.sql — l.27
 AVISO      <campo reservado> NAO DETERMINAVEL (mandato-refs.sh ec=3) — a proveniencia dos SHAs vale; rode 'bash <scratch-do-redator>/mandato-refs.sh 426' para ver o que a ferramenta viu.
 
-PRE-VOO OK — C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/00-mandatos/inspetor-trc01c3.md
+PRE-VOO OK — ~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/00-mandatos/inspetor-trc01c3.md
 ec=0
 head=7c220467f754341a699c18c241fa9965c1a35638
 utc=2026-10-18T19:06:41Z

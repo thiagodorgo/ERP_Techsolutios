@@ -31,7 +31,7 @@ Os MD5 de 734bc61… e 0d8203… da inspeção anterior são dos corpos Claude; 
 
 ## R1–R7 re-conferidas e encaminhamentos
 
-- **R1 — recursos:** C3.3 já fixa os prefixos únicos e caminhos C:/Users/AMP/w-j389c3-c*. Os corpos ainda trazem nomes de C2; o orquestrador deve transportar a instrução C3 aos mandatos.
+- **R1 — recursos:** C3.3 já fixa os prefixos únicos e caminhos ~/w-j389c3-c*. Os corpos ainda trazem nomes de C2; o orquestrador deve transportar a instrução C3 aos mandatos.
 - **R2 — carregamento:** suplentes ausentes da sessão, presentes no head; usar blob + hash da tabela, modelo explicitamente fixado e declaração de fallback se ocorrer. Carregamento das futuras cadeiras não foi atestado como já ocorrido.
 - **R3 — FORTE, mandatos ausentes:** git ls-tree e grep da pasta 00-mandatos mostram só C1c2/C2c2/C3c2, inspetor-c2 e inspetor-c3. Não existem ali mandatos das três cadeiras C3; tampouco foram entregues por outro meio. A nota literal C3 está no PLANO, não em mandatos lidos e conferidos. **Dono: orquestrador do B-O6R-04a** — entregar mandatos/pre-voos com nota literal, reexecução própria, isolamento, hashes e P1–P7 antes dos respectivos disparos. Não alegar pré-voo ou briefing aprovado por esta inspeção.
 - **R4 — disco:** medido acima de 10 GiB no início e após limpeza (**15.82 GiB finais**). Repetir antes de cada cadeira; preservar P5 e não rodar limpeza profunda sobre o servidor vivo.
@@ -45,6 +45,6 @@ Os MD5 de 734bc61… e 0d8203… da inspeção anterior são dos corpos Claude; 
 
 ## Limpeza
 
-Worktree C:/Users/AMP/w-insp389c3 removido por git worktree remove --force (ec 0), após conferir caminho absoluto, node_modules próprio sem symlink e processos; diretório ausente confirmado. Nenhum container/volume criado. Apenas insp-c3-evidencia.md e insp-c3-parecer.md foram gravados em w-389. Base viva e worktrees dos outros agentes preservados.
+Worktree ~/w-insp389c3 removido por git worktree remove --force (ec 0), após conferir caminho absoluto, node_modules próprio sem symlink e processos; diretório ausente confirmado. Nenhum container/volume criado. Apenas insp-c3-evidencia.md e insp-c3-parecer.md foram gravados em w-389. Base viva e worktrees dos outros agentes preservados.
 
 Evidência executada e timestamps: insp-c3-evidencia.md. Orquestrador: versionar exclusivamente as duas saídas; incorporar R1–R9 aos mandatos/registro; se o SHA mudar, reconciliar o delta e conferir check-runs no novo objeto.

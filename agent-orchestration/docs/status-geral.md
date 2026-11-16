@@ -142,7 +142,7 @@ Registro documental de 13/11 noite e 14/11 madrugada, pelo `reg-1411-cl` (Claude
 
 ## Atualização 2026-11-11 — B-O6R-11d (o contrato da OS no app; item 3 do portão, resto do `Ω6R-QUA-004`)
 
-- **Autor:** `dev-11d-cl` (Claude Opus 5.5, subagente da sessão, dev, nível menor; exceção declarada: Codex sem cota semanal até 16/11, API reservada para verificação, Antigravity no limite). Ramo `fix/mobile-os-contrato-b-o6r-11d`, worktree `C:/Users/thiag/w-11d`, base `origin/main@da12fec6` com o merge de `c95ad4fd` (#536).
+- **Autor:** `dev-11d-cl` (Claude Opus 5.5, subagente da sessão, dev, nível menor; exceção declarada: Codex sem cota semanal até 16/11, API reservada para verificação, Antigravity no limite). Ramo `fix/mobile-os-contrato-b-o6r-11d`, worktree `~/w-11d`, base `origin/main@da12fec6` com o merge de `c95ad4fd` (#536).
 - **O que entrega (fato, testes no diário `docs/revisoes/SAN3/B-O6R-11d-dev.md`):** codec único de status e prioridade de OS no app (lista, detalhe, status, atribuição e linha do tempo); os 3 métodos REST de OS única leem `{data}`; o PATCH só manda status do backend; o POST manda `userId`/`message`; a organização nunca vem do corpo; a ação de viatura/equipe da fila manda `user_id` e declara `expected_technician_id`, e o servidor responde conflito `technician_changed_since_action` se o técnico mudou (Q1 = A, `D-DONO-TODAS-RECOMENDACOES-1111`). Fecha o `Ω6R-QUA-004` e a `P-APP-ANTIGO-INICIAR-ROTA-DE-AGENDADA` no merge.
 - **Trava de arquivo com o `B-SAN3-26` (#534), CR2-11D-02:** a ordem não estava gravada antes da F0 (medido às 10:52 SP na `origin/main`). Vale "quem mergear primeiro manda". Se o #534 entrar antes, o ramo do 11d faz merge da `main` e leva `checkinMode`/`checkinPlateTail` para o `_workOrderFromRemoteJson` (o `_workOrderFromJson`, que o #534 também edita, é apagado pelo 11d). Se o 11d entrar antes, o #534 faz o merge e re-mede por emenda as mutações dele ancoradas em `_workOrderFromRemoteJson`, `_workOrderFromJson` e `_statusPayload`.
 - **Cadeia de `src/modules/mobile/mobile-work-order-sync.ts`:** `07c` → `11d` → `SAN3-16` (`PLANO_SAN3.md`).
@@ -329,7 +329,7 @@ Régua seguinte: revisor independente + `cognicao-visual` + CI. A validação vi
 
 ## Atualização 2026-10-28 — B-SAN3-12c FATIA 1 aberta
 
-`dev-san312c-sol` (Codex CLI, GPT-5.6 Sol, esforço medium, nível menor declarado) criou o ramo `feat/web-financeiro-aparencias-b-c` no head-base `3c27f1bf`, worktree isolado `C:/Users/AMP/w-san312c`, e versionou a Emenda E5. Dependências próprias instaladas sem junction; baseline financeiro **122/122** e smoke frontend **1482/1482** no Node 22 absoluto. Próxima: FATIA 2, resumo incompleto não vira zero. `Kpis/**` continua congelado; marco acompanha o PR #473 após merge + porteiro do 12c.
+`dev-san312c-sol` (Codex CLI, GPT-5.6 Sol, esforço medium, nível menor declarado) criou o ramo `feat/web-financeiro-aparencias-b-c` no head-base `3c27f1bf`, worktree isolado `~/w-san312c`, e versionou a Emenda E5. Dependências próprias instaladas sem junction; baseline financeiro **122/122** e smoke frontend **1482/1482** no Node 22 absoluto. Próxima: FATIA 2, resumo incompleto não vira zero. `Kpis/**` continua congelado; marco acompanha o PR #473 após merge + porteiro do 12c.
 
 ## Atualização 2026-10-25 — B-SAN3-12a (dev `dev-san312a-opus`, Claude Opus): backend de dinheiro do web financeiro — PARADO por premissa falsificada
 
@@ -5328,7 +5328,7 @@ Decisões do dono no dia, a registrar em `decisoes.md` no próximo PR de registr
 depois **Fable suspenso até o reinício do limite semanal**; **Codex habilitado** neste projeto, rodado pelo orquestrador
 por `codex exec` em janela visível; **padrão do Codex = GPT-5.6 Sol**, GPT-6 Astra só em demanda com dinheiro; a nuvem
 foi **encerrada** (B-SAN3-05 saiu dela no commit `6edf21ee`). Cópia dos artefatos da sessão (fora do `%TEMP%`):
-`C:/Users/AMP/erp-pausa-2026-10-03/`.
+`~/erp-pausa-2026-10-03/`.
 
 | frente | onde parou | retomada |
 |---|---|---|
@@ -5348,7 +5348,7 @@ do Codex por limite de uso.
   emitido; feitos os itens 0–6 com comando e saída; achados em apuração: C2d-01, C2d-02). Os jobs locais dela (fila de
   guards das viáveis, drills de controle, H4, C3-OLD — ~40 processos) foram **parados pelo orquestrador**, filtrados pelo
   caminho `j4c2`/`w-j4c2`, porque o reinício do PC os mataria no meio de qualquer forma; a retomada re-executa os itens
-  que estavam em voo (P3). Cópia de `scratchpad/j4c2` e do voto em `C:/Users/AMP/erp-pausa-2026-10-03/`. Nenhum agente
+  que estavam em voo (P3). Cópia de `scratchpad/j4c2` e do voto em `~/erp-pausa-2026-10-03/`. Nenhum agente
   vivo; nenhuma sessão do Codex viva; o relançamento agendado do Codex foi cancelado.
 
 ## RETOMADA 2026-10-03 22:25Z → 2026-10-04 — depois da PAUSA
@@ -5374,7 +5374,7 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 
 - **Medido na retomada (13:54Z):** `main` 749a5cf8 = `origin/main`; PRs #405, #400, #393 com head = remoto e check-runs
   verdes; nenhum `index.lock`; o único trabalho não commitado era o rascunho de 31 linhas do plano do ciclo 2 do #405
-  (cópia em `C:/Users/AMP/erp-pausa-2026-10-03/`). Docker religado; `erp-postgres`/`erp-redis` (base viva) seguem
+  (cópia em `~/erp-pausa-2026-10-03/`). Docker religado; `erp-postgres`/`erp-redis` (base viva) seguem
   desligados desde a queda — não são alvo de nada.
 - **Decisões do dono** (em `controle/decisoes.md`): `D-OS-CABECALHO-PADRONIZADO` (opção C), `D-393-ESTACIONADO`,
   `D-FABLE-ASTRA-SO-DINHEIRO`, `D-CODEX-DISPONIVEL`.
@@ -5454,7 +5454,7 @@ de sanar o que está em andamento; KPI congelado. #400 e #405 seguem com junta c
 
 ## Estado em 2026-10-13 (07:00, Brasília) — relatório da noite de 12 → 13/10
 
-Relatório visual para o dono: `C:/Users/AMP/erp-pausa-2026-10-03/relatorio-2026-10-13/index.html` (fora do repositório, com as imagens das maquetes).
+Relatório visual para o dono: `~/erp-pausa-2026-10-03/relatorio-2026-10-13/index.html` (fora do repositório, com as imagens das maquetes).
 
 **Feito:**
 - **#428 mergeado** (`bdd7c3b5`): `D-PADRAO-BLOCOS-CLICAVEIS`, `D-TELAS-TRES-OPCOES` e `D-INFRA-PROVIDER-AWS`.

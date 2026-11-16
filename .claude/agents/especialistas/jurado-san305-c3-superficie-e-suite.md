@@ -23,7 +23,7 @@ superfície, o boot e a suíte**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus, substituição declarada — §C7.6-bis), **sem executar nada** do que está
-aqui. Tudo o que ele diz sobre o ramo foi **lido** no disco de `C:/Users/AMP/w-o05` em 2026-10-09, à tarde (UTC), com a ref local
+aqui. Tudo o que ele diz sobre o ramo foi **lido** no disco de `~/w-o05` em 2026-10-09, à tarde (UTC), com a ref local
 e a de rastreio do ramo em `91d794956309f6e63511bdfd76cbfddd8bf45c40` (lidas nos arquivos de ref, não por `git`; o reflog local dá
 a esse commit a mensagem "docs(plano): ciclo 3 do B-SAN3-05 — A2 (grave) e A3, …") — e **com o desenvolvedor do ciclo 3 (Codex,
 `dev-ciclo3-b-san3-05`) editando essa mesma árvore naquele momento**: entre duas leituras da fábrica, os subtestes de
@@ -185,21 +185,21 @@ achado contra este corpo ou contra a régua**, declarado antes do veredito. Item
   `psql --version` (container), `docker version` (servidor), espaço livre em `C:` (`df -h /c`), e o ambiente (shell, cwd, variáveis que
   você definiu — nunca valores de segredo; nenhum `export` de conveniência no condutor).
 - **Arquivos de saída:** os que o seu mandato nomear (padrão deste corpo:
-  `C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/C3-evidencia.md` e `…/ciclo3/C3-voto.json`).
+  `~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/C3-evidencia.md` e `…/ciclo3/C3-voto.json`).
   **Nunca** grave em `votos/B-SAN3-05/C3-*` (ciclo 1) nem em `votos/B-SAN3-05/ciclo2/C3-*` (ciclo 2). Nunca grave no seu worktree de
   medição. Quedas vão para `votos/B-SAN3-05/ciclo3/00-quedas.md` pelo **orquestrador** (P6), não por você.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** Use sempre `C:/…` com `git.exe`, `node.exe`, `python.exe`;
   caminhos `/…` **só dentro** do `sh -c` do container.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `C:/Users/AMP/w-j05c3c3`), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove** `test -e <caminho>/.git`.
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `~/w-j05c3c3`), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <objeto>`; **prove** `test -e <caminho>/.git`.
   Se o caminho já existir, é resíduo alheio: reporte e use o sufixo `b`. Ele serve para o git; se precisar de `node_modules` nele,
   `npm ci --no-audit --no-fund` **próprio**. **Junction ou symlink de `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)).
-  `C:/Users/AMP/w-o05` é a árvore do **desenvolvedor**, viva: a sua **única** escrita lá são os seus dois arquivos de saída.
+  `~/w-o05` é a árvore do **desenvolvedor**, viva: a sua **única** escrita lá são os seus dois arquivos de saída.
 - **Containers PRÓPRIOS, prefixo `j05c3-c3-`** (C3.5, l.2033-2034), numa rede Docker própria **sem porta publicada no host**:
-  - **a receita** `C:/Users/AMP/erp-terreno/receita-pg16.sh` (imagem `erp-junta-node20-pg16:local`, Node 20, `psql` 16; `postgres:16`
+  - **a receita** `~/erp-terreno/receita-pg16.sh` (imagem `erp-junta-node20-pg16:local`, Node 20, `psql` 16; `postgres:16`
     descartável; `npm ci` + `prisma generate` + `prisma migrate deploy` dentro) — **copie para `$SCRATCH` e adapte**, publicando o
     `diff` e o md5 da cópia. Pontos de leitura da fábrica a conferir: o `RUN_ID` nasce com o prefixo fixo `pg16r-` (l.45) e a remoção
-    da árvore temporária só casa `/c/Users/AMP/t-pg16r-*` (l.63) — trocar um sem o outro **deixa a árvore temporária para trás**;
+    da árvore temporária só casa `~/t-pg16r-*` (l.63) — trocar um sem o outro **deixa a árvore temporária para trás**;
     `REPO` por padrão é o checkout principal; `TESTS` (l.32) lista só os dois `-db` — os seus arquivos são outros (abaixo); a receita
     **não sobe Redis** e **derruba tudo no `trap EXIT`**: escreva um condutor seu que mantém os containers de pé entre o gerador nos
     dois heads, os testes, o boot e a suíte — texto verbatim e md5 na evidência;
@@ -229,7 +229,7 @@ achado contra este corpo ou contra a régua**, declarado antes do veredito. Item
 - **Gerador que escreve no lugar.** `agent-orchestration/controle/gerar-indice-pendencias.py` grava a saída num caminho **relativo**
   (lido: `O = 'agent-orchestration/controle/pendencias-indice.md'`, aberto para escrita). Rode-o **só** numa cópia própria (dentro do
   container, ou em `$SCRATCH/idx/` com os dois blobs do objeto e o próprio gerador) — **nunca** com o diretório corrente em
-  `C:/Users/AMP/w-o05` (sobrescreveria o arquivo do dev) nem no seu worktree.
+  `~/w-o05` (sobrescreveria o arquivo do dev) nem no seu worktree.
 - **Mutação restaurável, dentro do container** (só nos vermelho-controles; nenhuma toca a árvore do ramo): `cp` para `.pristino`;
   mutação por script com âncora de ocorrência **única** (conte antes; falhe fechado); `diff` não-vazio com o número de linhas; prova
   de carga e irmão verde; medição com `timeout`; restauro por `cp`; **md5 do restauro = blob** (LF dos dois lados). Sondas suas em

@@ -36,7 +36,7 @@ banco, o isolamento entre organizações e a CI**.
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, nível menor — §C7.6, `D-TOPO-NO-PLANO-E-EM-TODA-REPROVACAO`), **sem
-executar nada e sem `git`** (a fábrica não tem `Bash`), em 2026-10-18, lendo no disco de `C:/Users/AMP/w-trc01`: o plano do ciclo 3 (§0 a
+executar nada e sem `git`** (a fábrica não tem `Bash`), em 2026-10-18, lendo no disco de `~/w-trc01`: o plano do ciclo 3 (§0 a
 §7), a ata do ciclo 2, os corpos das três cadeiras do ciclo 2 e `votos/B-TRC-01-ciclo2/00-quedas.md`. **A fábrica não viu o código do
 ciclo 3** (o dev pode estar editando o ramo enquanto este corpo nasce). Logo, **todo nome de teste, arquivo, linha, número e SHA abaixo vem do
 plano ou da ata e é hipótese [A RE-VERIFICAR] no objeto**; os nomes são âncoras. Afirmação do plano, do relatório do dev, do parecer do
@@ -103,7 +103,7 @@ ignore global cobre `.claude/` e `.agents/`, e corpo não commitado no ramo julg
 1. **O inspetor liberou esta junta, com você nela?** Leia, no objeto, o parecer do inspetor do ciclo 3 no arquivo que o mandato nomear. Só
    vale `LIBERADO` ou `LIBERADO COM RESSALVA` que confira o **seu** nome, o **seu** corpo commitado nos dois espelhos, worktree e containers
    próprios, e — pelo plano §3.10 — **(i)** o diff do ciclo 3 **sem** `prisma/**` (não há autorização de migração neste ciclo, plano §2);
-   **(ii)** os worktrees `C:/Users/AMP/w-jc2-b` e `C:/Users/AMP/w-jc2-b3` (resíduo da (b′) do ciclo 2) removidos ou declarados; **(iii)** os
+   **(ii)** os worktrees `~/w-jc2-b` e `~/w-jc2-b3` (resíduo da (b′) do ciclo 2) removidos ou declarados; **(iii)** os
    mandatos marcando A RE-VERIFICAR; e o objeto com check-runs **concluídos**. **Não há guardião de banco neste ciclo** (sem migração) — se
    o objeto trouxer migração, isso é o item 1 da (b″) e você mede o efeito no banco mesmo assim. Sem o parecer do inspetor, **pare**
    (§C7.1-bis).
@@ -216,17 +216,17 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
   (e o mesmo para `.agents/`). Logo abaixo: objeto, `origin/main` no início, `$SCRATCH`, `uname -a`, `node -v`, `docker version`
   (servidor), `SELECT version()` do seu Postgres, `df -h /c`, e as variáveis que você definiu (**nunca** valor de segredo; nenhum `export`).
 - **Arquivos de saída:** os que o mandato nomear (padrão deste corpo:
-  `C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/cadeira-a-evidencia.md` e `…/cadeira-a-voto.json`). A sua
+  `~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo3/cadeira-a-evidencia.md` e `…/cadeira-a-voto.json`). A sua
   **única** escrita em `w-trc01` são esses dois arquivos. Quedas vão para `00-quedas.md` pelo **orquestrador** (P6). Você não commita.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** `C:/…` com `git`, `node`, `npm`; caminhos `/…` só dentro de
   `docker exec … sh -c`.
-- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `C:/Users/AMP/w-jc3-a`), por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-jc3-a <objeto>`; **prove**
-  `test -e C:/Users/AMP/w-jc3-a/.git`. Se o caminho já existir, é resíduo alheio: reporte e use `C:/Users/AMP/w-jc3-a2`. Prove
+- **Worktree PRÓPRIO, detached, em caminho CURTO:** o que o mandato nomear (padrão: `~/w-jc3-a`), por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-jc3-a <objeto>`; **prove**
+  `test -e ~/w-jc3-a/.git`. Se o caminho já existir, é resíduo alheio: reporte e use `~/w-jc3-a2`. Prove
   `test ! -e <seu-wt>/.env`. Depois, `timeout -k 15 900 npm ci --no-audit --no-fund` **próprio** e
   `DATABASE_URL='postgresql://build:build@127.0.0.1:1/build?schema=public' timeout -k 15 300 npx prisma generate`. **Junction ou symlink de
   `node_modules` entre worktrees é PROIBIDO** (§C7.1-ter(c)). Para o controle das 21 transições em `h2` e a comparação de L0, um segundo
-  worktree seu detached em `2043c584` (`C:/Users/AMP/w-jc3-a-h2`), com o mesmo protocolo e `npm ci` próprio — ou, com disco curto (< ~6 GB
+  worktree seu detached em `2043c584` (`~/w-jc3-a-h2`), com o mesmo protocolo e `npm ci` próprio — ou, com disco curto (< ~6 GB
   livres antes do 2º `npm ci`), o mesmo worktree trocando de commit **dentro dele**, restaurado e provado depois; declare.
 - **Docker — no máximo 2 TRABALHOS com container na máquina (decisão do dono de 2026-10-17).** Antes de subir qualquer container, grave
   `docker ps --format '{{.Names}}'` em arquivo e **conte os grupos de outros** por prefixo (o dev do ciclo 3, pelo prefixo que o mandato
@@ -241,7 +241,7 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
   remova o container **pelo nome exato** e escolha outra; `docker port <nome>` tem de mostrar `127.0.0.1:<porta>`. **Bancos** no mesmo
   cluster: `jtrc01c3_a_obj` (migrado até o objeto), `jtrc01c3_a_h2` (até `2043c584`) e os que a forma do job criar — cada um removido pelo
   nome no fim.
-- **A forma Linux do job.** O `C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh` é **roteiro**: ele cria containers
+- **A forma Linux do job.** O `~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh` é **roteiro**: ele cria containers
   `tl<epoch><pid>-*` (não o seu prefixo), usa `CORE_SAAS_PERSISTENCE=memory` (forma do job `backend`, não do `backend-postgres`) e a imagem
   local `erp-teste-linux:1`. Se usá-lo, copie para o `$SCRATCH`, troque o `ID` para `jtrc01c3-a-tl<n>`, ajuste o ambiente **ao job que você
   reproduz** (lido no `ci.yml` do objeto), publique o `diff` e o md5 da cópia. Toda rede e container dele caem pelo nome no fim.
@@ -249,8 +249,8 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
   (`POSTGRES_PASSWORD="$(cat …)" docker run … -e POSTGRES_PASSWORD …`); `DATABASE_URL`/`REDIS_URL` **só como prefixo**, nunca em argv nem
   na evidência (publique com `***`). No fim, `grep -c -F "$(cat …)"` na evidência e nos logs = 0, e o arquivo apagado.
 - **Base viva NUNCA é alvo, nem de leitura:** `erp-postgres` (5432), `erp-redis` (6379), `erp-postgres-alt` (55432), qualquer `erp-*`.
-  Nunca o projeto de outra cadeira, nunca resíduo do dev, nunca os worktrees `C:/Users/AMP/w-07cb1`, `C:/Users/AMP/w-jc2-b`,
-  `C:/Users/AMP/w-jc2-b3`. **Nunca** os servidores públicos de demonstração do Traccar; nada desta cadeira sai da máquina.
+  Nunca o projeto de outra cadeira, nunca resíduo do dev, nunca os worktrees `~/w-07cb1`, `~/w-jc2-b`,
+  `~/w-jc2-b3`. **Nunca** os servidores públicos de demonstração do Traccar; nada desta cadeira sai da máquina.
 - **Disco:** meça o livre em `C:` antes, depois de cada `npm ci` e no fim. Abaixo de ~3 GB, **pare** e registre.
 - **Somente leitura fora do seu terreno. PROIBIDO:** `git stash`, `git clean`, `git reset`, `git checkout` fora dos seus worktrees,
   `git worktree prune`, `rm -rf` de worktree, `git commit`, `git push`, `docker rm` de container sem o **seu** prefixo, `docker * prune`,
@@ -259,7 +259,7 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
 - **Remoção só do que você criou, pelo nome exato:** `docker rm -f -v jtrc01c3-a-pg jtrc01c3-a-redis` (+ os `jtrc01c3-a-tl*` e a rede), e
   `docker ps -a --filter name=jtrc01c3-a- -q | wc -l` = 0. Worktree: antes, conte os processos vivos com o caminho por
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-jc3-a*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`;
-  só com 0, `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force <seu-caminho>` para cada um.
+  só com 0, `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force <seu-caminho>` para cada um.
 - **Alteração restaurável, no SEU worktree** (para os controles; nenhuma toca `w-trc01`): por script (`node -e` ou `.mjs` seu no
   `$SCRATCH`), âncora **única** e EOL-consciente (conte antes: 1); prove a substituição (`git diff --numstat` não-vazio); prove que carrega
   (`npm run check` ec=0); meça; restaure por `git -C <seu-wt> checkout -- <f>` (só no **seu** worktree, só no arquivo que **você** alterou);

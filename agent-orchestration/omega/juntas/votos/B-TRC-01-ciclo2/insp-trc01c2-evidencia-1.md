@@ -50,7 +50,7 @@ Papel `inspetor-de-terreno-da-junta` · instância `inspetor-trc01c2-cdx` · exe
 ## 2.3 — plano, escopo e bateria
 
 - Comando executado: MD5 EOL-neutro e contagem de linhas do plano externo; leitura das seções 2.6 e 2.7; `git cat-file -e` dos insumos versionados; leitura do parecer R-DBA local e `git ls-files --error-unmatch`.
-- Saída resumida: plano local não versionado `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`, 612 linhas, `md5_eol_neutro=dd6e9074fbc56395e877a396dec16d2a`; ele nomeia o PR/ramo e o head do ciclo 1, manda resolver o head novo do PR para a junta, declara escopo/arquivos e bateria com forma e N. O R-DBA local declara objeto `2043c584...` e `APROVA`, mas não está rastreado.
+- Saída resumida: plano local não versionado `~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`, 612 linhas, `md5_eol_neutro=dd6e9074fbc56395e877a396dec16d2a`; ele nomeia o PR/ramo e o head do ciclo 1, manda resolver o head novo do PR para a junta, declara escopo/arquivos e bateria com forma e N. O R-DBA local declara objeto `2043c584...` e `APROVA`, mas não está rastreado.
 - Veredito parcial: VERDE COM RESSALVA. O plano existe e tem forma auditável, fixada pelo hash publicado acima; plano e R-DBA são insumos locais não versionados e devem ser entregues às três cadeiras exatamente nesses bytes.
 
 ## 3.1/3.1-bis — inelegibilidade por nome
@@ -109,6 +109,6 @@ Papel `inspetor-de-terreno-da-junta` · instância `inspetor-trc01c2-cdx` · exe
 
 ## Fechamento e limpeza
 
-- Comando executado: verificação dos marcadores obrigatórios no parecer; confirmação exata de `worktree C:/Users/AMP/w-jc2-insp`; `git worktree remove --force C:/Users/AMP/w-jc2-insp`; nova listagem e busca de containers `jtrc01c2-*`/`jur-*`/`crit-*`.
+- Comando executado: verificação dos marcadores obrigatórios no parecer; confirmação exata de `worktree ~/w-jc2-insp`; `git worktree remove --force ~/w-jc2-insp`; nova listagem e busca de containers `jtrc01c2-*`/`jur-*`/`crit-*`.
 - Saída resumida: parecer sem item final `EM APURAÇÃO`, com `BLOQUEADO` e todos os marcadores do mandato; remoção exit 0; caminho inexistente e worktree não listado depois; zero container do tabuleiro.
 - Veredito parcial: VERDE. Foram removidos somente o worktree próprio e seu `node_modules`; nenhum container, base, porta, worktree ou arquivo alheio foi alterado.

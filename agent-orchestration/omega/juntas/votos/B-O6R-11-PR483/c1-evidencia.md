@@ -2,7 +2,7 @@
 
 - Cadeira: C1 · Identidade: `jurado-o6r11-c1-opus` · Modelo: Claude Opus (claude-opus-5-5), nível menor, DECLARADO.
 - Objeto: PR #483, head `d3e80027979af647725f61eeb07606e2d000cd16`.
-- Worktree próprio: `C:/Users/thiag/w-j483-c1` (detached em d3e80027; `git worktree add --detach`). core.autocrlf=true.
+- Worktree próprio: `~/w-j483-c1` (detached em d3e80027; `git worktree add --detach`). core.autocrlf=true.
 - Flutter local: 3.41.6 (CI: 3.47.5). Sem Docker, sem base viva, sem `flutter run`/`-d`.
 
 ## Esqueleto
@@ -12,7 +12,7 @@
 - Mutações novas: N1 sobreviveu (A-C1-01), N2 e N3 morderam; sonda nova A-C1-02
 
 ## Terreno
-- `git worktree add --detach C:/Users/thiag/w-j483-c1 d3e80027...` → `HEAD is now at d3e80027 docs(registro): remove espaço final no diário do dev (A-01 ...)`.
+- `git worktree add --detach ~/w-j483-c1 d3e80027...` → `HEAD is now at d3e80027 docs(registro): remove espaço final no diário do dev (A-01 ...)`.
 - `df -h /c` → 291G livres.
 
 ## Item 1 — P1 e P2 (R1/R2)

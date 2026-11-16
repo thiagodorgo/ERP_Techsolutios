@@ -94,5 +94,5 @@
     "segredo_ou_pii_em_resposta_log_ou_auditoria": "NAO — nenhuma rota, resposta ou log de aplicacao e alterado; o unico segredo do ci.yml (GITHUB_TOKEN) esta dentro do passo gated, que nao executou nos runs de ramo",
     "publicacao_de_artefato_por_push_de_ramo": "FECHADA — provado por execucao (Log in to GHCR = skipped nos dois eventos) e por leitura (push: false; unico if: do arquivo; nenhum outro publicador no repositorio)"
   },
-  "limpeza": "Worktree proprio C:/Users/AMP/w-j-sanb1-c1 criado e removido por identificador MEU ao fim. Nenhum conteiner subido; base viva nunca foi alvo; nenhum prune/clean/stash/checkout/reset em arvore alguma. Residuo alheio (mutacao viva da raiz, worktree w-s1) reportado pelo inspetor e NAO varrido por mim."
+  "limpeza": "Worktree proprio ~/w-j-sanb1-c1 criado e removido por identificador MEU ao fim. Nenhum conteiner subido; base viva nunca foi alvo; nenhum prune/clean/stash/checkout/reset em arvore alguma. Residuo alheio (mutacao viva da raiz, worktree w-s1) reportado pelo inspetor e NAO varrido por mim."
 }

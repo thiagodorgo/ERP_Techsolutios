@@ -11,7 +11,7 @@
 PROIBIDO: nenhum (`grep` por prisma/migration/.env/Kpis/src/app.ts/outbox/webhook/lock → NENHUM). `git status --porcelain | grep '^ D'` → nenhum rastreado apagado na árvore.
 
 ## 3. Números reais (reexecução) — OK, 27/27
-Criei worktree próprio `C:/Users/thiag/w-port519` em `7d8b2b98` (detached), `npm ci` próprio (junction proibida §C7.1-ter(c)), sem tocar nos worktrees vivos w-o6r03b/w-demoint, sem Docker.
+Criei worktree próprio `~/w-port519` em `7d8b2b98` (detached), `npm ci` próprio (junction proibida §C7.1-ter(c)), sem tocar nos worktrees vivos w-o6r03b/w-demoint, sem Docker.
 `node --test --import tsx tests/ass-07-{focusnfe-adapter,focusnfe-final,focusnfe-security,sequence-memory,tax-rules}.test.ts` → **# tests 27 · # pass 27 · # fail 0 · skipped 0**. Reproduz exatamente o declarado no PR.
 (Tentativa anterior com tsx via NODE_PATH deu 7/4 por falha de resolução `dotenv` nos subprocessos — artefato do atalho, não defeito; confirmado ao instalar deps.)
 

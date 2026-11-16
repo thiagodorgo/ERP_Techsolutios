@@ -73,7 +73,7 @@ A C1 julga o A16 sobre o diff do desenvolvimento e pode julgar esta declaração
   re-executa o que está gravado (P3).
 - **R6:** há resíduo inerte de outras rodadas na árvore principal e worktrees antigos. Nada disso é alvo da cadeira:
   resíduo alheio se reporta, não se varre.
-- **R7:** os worktrees `C:/Users/AMP/w-j01bc1`, `w-j01bc2` e `w-j01bc3` não existem. Cada cadeira cria o seu, detached
+- **R7:** os worktrees `~/w-j01bc1`, `w-j01bc2` e `w-j01bc3` não existem. Cada cadeira cria o seu, detached
   no objeto, com `npm ci` próprio na raiz e no frontend. O `prisma generate` do check da raiz exige `DATABASE_URL` no
   ambiente do comando; use uma URL fictícia, nunca a 5432.
 - **R8:** no head anterior o CI deu 14/14 verdes. O objeto novo precisa de check-runs concluídos; vermelho é insumo do

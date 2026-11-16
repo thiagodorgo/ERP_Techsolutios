@@ -3,14 +3,14 @@
 - **Verificador:** `conf483-opus`, Claude Opus (claude-opus-5-5), nível menor DECLARADO, identidade nova. Não achou, não votou, não planejou e não consertou nada no bloco.
 - **Autor do conserto:** `dev-o6r11-conserto-opus`, Claude Opus.
 - **Sem cruzamento de modelos, declarado (CLAUDE.md §C7 item 11(2)):** autor e verificador são do mesmo lado (Claude Opus). O Codex está sem conta até 14:27 de 02/11 e o dono mandou o Claude cobrir a conferência. Por isso o rigor sobe: cada achado abaixo é provado por comando executado por este verificador, nunca pela leitura do diário do dev.
-- **Mandato:** `C:/Users/thiag/erp-pausa-2026-10-03/prompts/conf483-sol.md`, com as trocas do disparo (identidade, modelo, Bash direto).
+- **Mandato:** `~/erp-pausa-2026-10-03/prompts/conf483-sol.md`, com as trocas do disparo (identidade, modelo, Bash direto).
 - **Objeto:** PR #483, head esperado `df84cd811dbcf20757410da62ce96e3b821d00f3`; objeto da junta `d3e80027`.
-- **Terreno:** worktree `C:/Users/thiag/w-conf483`, detached no head. Sem Docker, sem `flutter run`, sem `-d`.
+- **Terreno:** worktree `~/w-conf483`, detached no head. Sem Docker, sem `flutter run`, sem `-d`.
 
 ## 0. Terreno
 - `gh pr view 483 --json headRefOid,state` → `df84cd811dbcf20757410da62ce96e3b821d00f3`, OPEN. Igual ao head esperado.
 - Memória de commit livre 9,29 GB (≥ 4 GB, P8); disco 290 GB livres.
-- `git worktree add --detach C:/Users/thiag/w-conf483 df84cd81…` → `HEAD = df84cd81`; `git status --porcelain` = 0 linhas; `flutter pub get` → `Got dependencies!`, status segue 0.
+- `git worktree add --detach ~/w-conf483 df84cd81…` → `HEAD = df84cd81`; `git status --porcelain` = 0 linhas; `flutter pub get` → `Got dependencies!`, status segue 0.
 - `git log --oneline d3e80027..HEAD` → 1 commit só (`df84cd81 fix(mobile): conserto pós-junta…`).
 - **Veredito parcial:** terreno limpo, objeto confere.
 

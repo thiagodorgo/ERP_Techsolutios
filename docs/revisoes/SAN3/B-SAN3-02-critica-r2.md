@@ -1,7 +1,7 @@
 # B-SAN3-02 — 2ª rodada de crítica do plano v2 (critico-san3-02-opus, rodada 2 de 2)
 
 - **Papel:** crítico adversarial; Claude Opus 5.5 (`claude-opus-5-5`), nível menor, declarado. Não escrevi o plano, não implemento, não voto.
-- **Objeto:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-SAN3-02-plano.md` v2.
+- **Objeto:** `~/erp-pausa-2026-10-03/planos/B-SAN3-02-plano.md` v2.
 - **Veredito:** APROVA COM AJUSTES — 0 bloqueia · 5 ajuste
 
 ## Evidência incremental (P1)

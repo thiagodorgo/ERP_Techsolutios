@@ -55,4 +55,4 @@
 O item 28 do portão, na parte de regras do servidor. As telas vêm nos blocos 12b e 12c. O item 55 fica parcial (backend da conciliação).
 
 ## Nota de registro (orquestrador)
-O `git diff --check` acusou espaço no fim de linha em saídas coladas de mandatos e evidências. Os originais estão arquivados com md5 em `C:/Users/AMP/erp-pausa-2026-10-03/arquivo-mandatos-san312a/`; só se tirou o espaço do fim das linhas (mesmo procedimento do #454 e do #460).
+O `git diff --check` acusou espaço no fim de linha em saídas coladas de mandatos e evidências. Os originais estão arquivados com md5 em `~/erp-pausa-2026-10-03/arquivo-mandatos-san312a/`; só se tirou o espaço do fim das linhas (mesmo procedimento do #454 e do #460).

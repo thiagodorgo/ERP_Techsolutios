@@ -28,7 +28,7 @@ contrato e escopo — é a **C3**, `jurado-san312b-c3-dinheiro-e-contrato`). Voc
 ## Quem escreveu este corpo, e por que você existe
 
 Este corpo foi escrito pela identidade `fab-red-san312b-opus` (Claude Opus, nível menor — §C7.6), no papel de fábrica, lendo o disco de
-`C:/Users/AMP/w-san312b` em 2026-10-26 com o head `bfbba006` (a **cerca**). Todo `arquivo:linha` abaixo é **leitura de disco
+`~/w-san312b` em 2026-10-26 com o head `bfbba006` (a **cerca**). Todo `arquivo:linha` abaixo é **leitura de disco
 [A RE-VERIFICAR]**; os nomes são as âncoras. Afirmação do plano, do relatório do dev, das críticas, do orquestrador, do inspetor e deste
 corpo é **roteiro, nunca fato**.
 
@@ -144,14 +144,14 @@ Corolário: **toda comparação sua precisa ter sido vista acusando algo** (verm
 
 - **Onde roda.** Git Bash no Windows do dono (ou o terminal do Codex, declarado). `timeout -k 15 <s>` em todo comando, saída para arquivo,
   `ec` em variável. **Nunca `tail -f`, `watch` nem leitura sem fim.** Caminho absoluto; o que precisa sobreviver vai para o seu `$SCRATCH`
-  (padrão `C:/Users/AMP/erp-pausa-2026-10-03/j12b-c2/`).
+  (padrão `~/erp-pausa-2026-10-03/j12b-c2/`).
 - **Primeira linha do arquivo de evidência**, numa linha só:
   `papel: cadeira C2 | identidade: <nome da sessão> | corpo: jurado-san312b-c2-cadeia-de-acesso | modelo: <modelo> (nível menor, §C7.6; substituição: <nenhuma | qual e por quê>) | objeto: <40 hex> | mandato_md5: <tr -d '\r' < mandato | md5sum> (declarado: <md5 | não declarado>) | corpo_md5: <md5 EOL-neutro do blob no objeto> (recebido: <md5 | n/a>) | corpo carregado × blob do objeto: IDENTICO | DIVERGE`.
   Logo abaixo: `origin/main` no início, `$SCRATCH`, `node -v`, livre em `C:`, memória de commit livre e as variáveis que definiu (nomes).
-- **Arquivos de saída:** os que o mandato nomear (padrão `C:/Users/AMP/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b/c2-evidencia.md`
+- **Arquivos de saída:** os que o mandato nomear (padrão `~/w-san312b/agent-orchestration/omega/juntas/votos/B-SAN3-12b/c2-evidencia.md`
   e `…/c2-voto.json`). Única escrita sua em `w-san312b`. Você não commita.
-- **Worktree PRÓPRIO, detached, prefixo `j12b-c2-`:** `C:/Users/AMP/j12b-c2-wt`, por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/j12b-c2-wt <objeto>`; prove `.git` presente e
+- **Worktree PRÓPRIO, detached, prefixo `j12b-c2-`:** `~/j12b-c2-wt`, por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/j12b-c2-wt <objeto>`; prove `.git` presente e
   `.env` ausente; caminho existente é resíduo alheio (reporte, use `…-wt2`). `npm ci` **próprio** na raiz e em `frontend/`;
   `DATABASE_URL='postgresql://build:build@127.0.0.1:1/build?schema=public' timeout -k 15 300 npx prisma generate`. **Junction de
   `node_modules` é PROIBIDA** (§C7.1-ter(c)).

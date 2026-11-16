@@ -4,7 +4,7 @@
   "modelo": "Claude Opus 5.5 (claude-opus-5-5), nível menor declarado; não cruza modelo (dev também Claude)",
   "objeto": "ea6d4aef54181a0dc4030ec56e174e378aec5e12",
   "voto": "APROVADO",
-  "evidencia": "C:/Users/thiag/erp-pausa-2026-10-03/revisoes/j488/c3-evidencia.md",
+  "evidencia": "~/erp-pausa-2026-10-03/revisoes/j488/c3-evidencia.md",
   "resumo": "Cadeira C3 (regressão, escopo, registro), sem cruzamento de modelo (dev também Claude). Suíte: CI base 4264/493 → objeto 4301/502, nenhum teste sumiu, virou skip ou caiu; as 37 do REC-01 (9 -db) verdes no meu Postgres e vermelhas na base. Escopo: 34 arquivos dentro do PERMITIDO, PROIBIDO vazio, diff --check vazio; censo regenerado igual ao rastreado byte a byte com o diff esperado; 112→113 e 119→121 só a constante; nenhum mutante vivo. Registro: contagens do diário reproduzidas; §11.3, RBAC_MATRIX e migrações conferidos. Nenhum achado.",
   "itens": {
     "1_suite": "VERDE: CI base 4264/493 → objeto 4301/502, 0 sumiu/0 novo skip/0 fail; REC-01 37/37 local (9 -db), vermelho na base",

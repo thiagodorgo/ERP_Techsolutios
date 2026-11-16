@@ -37,25 +37,25 @@ O plano do bloco existe no ramo, com este numero de linhas medido por: `wc -l < 
 O papel e o inspetor-de-terreno-da-junta (contrato secao C7.1-bis, fail-closed), instancia nova para a junta 3 do B-SAN3-05 (PR 405),
   rodando no Claude Code em Opus 5.5 por substituicao declarada (decisao do dono de 2026-10-08: Fable so em bloco que toca dinheiro, e
   este bloco nao toca), com o corpo de origin/main, e declara na 1a linha do parecer o papel, o modelo, o mandato_md5 deste arquivo e o
-  md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md | grep -ic 'mandato_md5'` (novo)
+  md5 EOL-neutro do corpo; ele nao julga merito derruba com: `head -1 ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md | grep -ic 'mandato_md5'` (novo)
 
 O objeto e o head do PR 405 resolvido pelo proprio inspetor, e so e objeto com os check-runs CONCLUIDOS, inclusive o job docker
   (ausencia, pendente ou cancelado bloqueia; vermelho e insumo do voto); o tabuleiro e o da secao C3.5 de docs/revisoes/SAN3/B-SAN3-05-plano.md:
   as tres cadeiras novas (jurado-san305-c3-trava-de-views, jurado-san305-c3-regressao-e-escopo, jurado-san305-c3-superficie-e-suite)
   estao rastreadas no head do PR nos dois espelhos e S0 da verde (node scripts/sync-agent-agents.mjs --check); a inelegibilidade por nome
   da C3.5 e conferida, inclusive contra especialistas nao rastreados de nome parecido na arvore principal; um worktree por cadeira e um
-  container Linux descartavel por cadeira, com os prefixos dos corpos, nunca a base viva derruba com: `grep -ic 'check-run' C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md` (novo)
+  container Linux descartavel por cadeira, com os prefixos dos corpos, nunca a base viva derruba com: `grep -ic 'check-run' ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md` (novo)
 
-Os insumos: o relatorio do dev do ciclo 3 (C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/DEV-relatorio.md)
-  e o relatorio da fabrica (C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/FABRICA-relatorio.md, com nove
+Os insumos: o relatorio do dev do ciclo 3 (~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/DEV-relatorio.md)
+  e o relatorio da fabrica (~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/FABRICA-relatorio.md, com nove
   divergencias anotadas) sao lidos como roteiro e nao como fato; o ciclo 3 cobre so o A2 (grave) e o A3 por decisao do dono, e os
   demais achados do ciclo 2 viraram pendencia ou PR so de testes; no ciclo 3 so defeito grave de produto reprova (CLAUDE.md secao C7
   item 8); o commit de registro do orquestrador que versionou os corpos esta fora do escopo do dev por desenho; plano de perda
-  (queda relanca a mesma identidade) e de PAUSA (P7); nenhum segredo real no tabuleiro derruba com: `grep -ic 'FABRICA-relatorio' C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md` (novo)
+  (queda relanca a mesma identidade) e de PAUSA (P7); nenhum segredo real no tabuleiro derruba com: `grep -ic 'FABRICA-relatorio' ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md` (novo)
 
-O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; o parecer e incremental com hora em C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md (novo) e o orquestrador o versiona; worktree
-  proprio detached C:/Users/AMP/w-insp405c3 (novo), removido pelo nome; nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout no que
-  executa; base viva nunca alvo; nada escrito no repositorio fora do parecer; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md` (novo)
+O veredito e LIBERADO, LIBERADO COM RESSALVA ou BLOQUEADO; o parecer e incremental com hora em ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md (novo) e o orquestrador o versiona; worktree
+  proprio detached ~/w-insp405c3 (novo), removido pelo nome; nunca tail -f nem MSYS_NO_PATHCONV exportada; timeout no que
+  executa; base viva nunca alvo; nada escrito no repositorio fora do parecer; PAUSA grava a secao PAUSA e para (P7) derruba com: `grep -icE 'LIBERADO|BLOQUEADO' ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/ciclo3/00-inspetor-terreno.md` (novo)
 
 ## MEDIDO
 
@@ -63,7 +63,7 @@ Pre-voo deste mandato no head do PR, com o pre-voo do ramo do B-GOV-MANDATO copi
 ```
 COLAGEM    l.6-23: refs do PR #405 confere com a saida atual
 
-PRE-VOO OK — C:/Users/AMP/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/inspetor-c3.md
+PRE-VOO OK — ~/w-o05/agent-orchestration/omega/juntas/votos/B-SAN3-05/00-mandatos/inspetor-c3.md
 ec=0
 head=9a66b4e4cb239306969a4aa2f766b15915d0910c
 utc=2026-10-09T16:06:21Z

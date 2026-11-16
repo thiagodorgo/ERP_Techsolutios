@@ -2,7 +2,7 @@
 
 - **Quem mediu:** `dev-66-perfil-cl`, segunda identidade de dev do bloco. **Claude Opus 5.5, nível menor, declarado.** Não é o `dev-66-cl` (que faz o código) nem autor ou revisor do plano. Sem cruzamento entre casas (só-Claude por ordem do orquestrador, §C7 11(2)).
 - **Quando:** 14/11/2026 02:12 SP (`date`; `medido_em_utc` 05:12:19Z).
-- **Objeto (§A7):** `origin/fix/mobile-gate-chave` = `3ece9ff6bfcb77cd3601001de70ec21a24e74a2a`, o head empurrado pelo `dev-66-cl` depois da F2 (`21d094ad`, ancestral do head). Medido em worktree próprio e destacado (`git checkout --detach origin/fix/mobile-gate-chave` em `C:/Users/thiag/w-gate66p`). O ramo não mexe em `package-lock.json`, `pubspec.*`, `prisma/` nem `catalog.ts` (`git diff --stat d2737339 3ece9ff6` nesses caminhos: vazio), então o `npm ci` e o `flutter pub get` do "antes" continuam válidos. O catálogo despejado no head é idêntico, byte a byte, ao de `d2737339` (`cmp`).
+- **Objeto (§A7):** `origin/fix/mobile-gate-chave` = `3ece9ff6bfcb77cd3601001de70ec21a24e74a2a`, o head empurrado pelo `dev-66-cl` depois da F2 (`21d094ad`, ancestral do head). Medido em worktree próprio e destacado (`git checkout --detach origin/fix/mobile-gate-chave` em `~/w-gate66p`). O ramo não mexe em `package-lock.json`, `pubspec.*`, `prisma/` nem `catalog.ts` (`git diff --stat d2737339 3ece9ff6` nesses caminhos: vazio), então o `npm ci` e o `flutter pub get` do "antes" continuam válidos. O catálogo despejado no head é idêntico, byte a byte, ao de `d2737339` (`cmp`).
 - **Par:** `perfil-real-antes.md`, medido em `d2737339`.
 
 ## Resultado
@@ -20,7 +20,7 @@ Ninguém passa além da rota, e a rota não libera nada que o app esconda.
 
 ## Terreno
 
-- Cluster PostgreSQL 16 em `C:/Users/thiag/pg-gate66p` (fora do scratchpad da sessão, por ordem do orquestrador depois do incidente de 01:19), `timezone='UTC'` gravado antes do start, porta 55581, só em `127.0.0.1`. Banco `erp_gate66p` **recriado do zero no head** (`drop` e `create database`), depois `npm run db:generate`, `npx prisma migrate deploy`, `npm run db:seed`, `npm run db:seed:users` (9 usuários) e o arnês do `platform_admin` (205 de 205). Exit 0 em todos.
+- Cluster PostgreSQL 16 em `~/pg-gate66p` (fora do scratchpad da sessão, por ordem do orquestrador depois do incidente de 01:19), `timezone='UTC'` gravado antes do start, porta 55581, só em `127.0.0.1`. Banco `erp_gate66p` **recriado do zero no head** (`drop` e `create database`), depois `npm run db:generate`, `npx prisma migrate deploy`, `npm run db:seed`, `npm run db:seed:users` (9 usuários) e o arnês do `platform_admin` (205 de 205). Exit 0 em todos.
 - API do head: `npx tsx src/server.ts`, o mesmo ambiente do "antes" (`PORT=3581`, `PORTAL_PORT=3681`, `CORE_SAAS_PERSISTENCE=prisma`, `NODE_ENV=development`, `JWT_SECRET=dev-only-change-me`, `REDIS_URL=redis://127.0.0.1:55582`, `JOBS_WORKER_ENABLED=false`). Base viva, 5432 e 6379 não foram tocadas.
 - Mesmo roteiro do "antes" (`prova-perfil-real.mjs`, fase `depois`): login real com organização, JWT decodificado em memória (nenhum token gravado), bootstrap, `/me`, e as 5 rotas. A run do G1b nasce ligada a uma OS real atribuída ao técnico de campo. O G3 é uma ação `inventory.reserve` com payload literal, sem `tenant_id` (REV66-05).
 
@@ -83,7 +83,7 @@ O arquivo foi restaurado com `git checkout -- lib/core/permissions/mobile_gates.
 
 ## 5. Arquivos
 
-Brutos, fora do repositório, em `C:/Users/thiag/erp-pausa-2026-10-03/revisoes/b-mobile-gate-chave/perfil-real/`:
+Brutos, fora do repositório, em `~/erp-pausa-2026-10-03/revisoes/b-mobile-gate-chave/perfil-real/`:
 - `prova-depois.json`, com o bootstrap bruto de cada ator;
 - `catalogo-3ece9ff6.json`, idêntico a `catalogo-d2737339.json`;
 - a sonda `zz_gate66p_probe_depois_test.dart`, com as saídas `sonda-dart-depois.txt` e `sonda-dart-depois-controle-M18.txt`;

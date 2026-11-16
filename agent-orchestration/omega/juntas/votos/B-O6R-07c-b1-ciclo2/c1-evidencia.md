@@ -93,7 +93,7 @@
 
 ## Teardown
 
-- Comando: validar alvo absoluto `C:\Users\AMP\w-j07cb1c2-c1-cdx`; `git -C C:/Users/AMP/w-07cb1 worktree remove --force <alvo>`; conferir caminho, registro de worktree, containers próprios e espaço livre.
+- Comando: validar alvo absoluto `~/w-j07cb1c2-c1-cdx`; `git -C ~/w-07cb1 worktree remove --force <alvo>`; conferir caminho, registro de worktree, containers próprios e espaço livre.
 - Saída resumida: `EXISTS_AFTER=False`; registro do worktree `count=0`; `OWN_CONTAINERS_AFTER=0`; espaço livre `10,04 GB`. O removido foi somente o worktree descartável e seu `node_modules` regenerável; base viva permaneceu intocada.
 - Veredito parcial: teardown completo; hashes das mutações haviam sido restaurados e a árvore estava limpa antes da remoção.
 

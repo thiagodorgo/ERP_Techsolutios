@@ -4,7 +4,7 @@
 > **Data:** 2026-10-30 (São Paulo). **Ref medida:** `origin/main` `f065818590ad1782e4bfabdd8959413695bfacb8`
 > (`chore(gitignore): reincluir nomes globais de agentes (B-SAN3-00b) (#476)`, 2026-10-30 10:01 -0300), por `git show`/`git grep`/`git ls-tree`;
 > nunca pelo disco da sessão (§A7). Disco: 24 GB livres (acima do piso de 7,5 GB).
-> **Plano original:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-O6R-11-plano.md` (medido na `264c3760`; a `f0658185` só acrescentou `.gitignore`, conferido em §E0). **Esta emenda não altera o plano original; ela SUBSTITUI os trechos nomeados em §E6.**
+> **Plano original:** `~/erp-pausa-2026-10-03/planos/B-O6R-11-plano.md` (medido na `264c3760`; a `f0658185` só acrescentou `.gitignore`, conferido em §E0). **Esta emenda não altera o plano original; ela SUBSTITUI os trechos nomeados em §E6.**
 > **Esta emenda não desenvolve, não vota, não commita.**
 
 ## Fala literal do dono (30/10) e o que ela muda

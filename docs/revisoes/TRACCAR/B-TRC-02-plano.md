@@ -5,7 +5,7 @@
 > roda em Fable por padrão, e foi assim que o orquestrador o invocou.
 > **Data:** 2026-10-19. **Ref medida (§A7):** `origin/main` = `3fbcaea2ba3cd1d39a42ff8943a2cc0086ef010d` (`git fetch -q origin` feito
 > antes; a **mesma** ref da v1 e das duas críticas; head = #445; o B-TRC-01 = #426, `c1485c94`).
-> **A v1 foi preservada ANTES de qualquer escrita:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano-v1.md`
+> **A v1 foi preservada ANTES de qualquer escrita:** `~/erp-pausa-2026-10-03/planos/B-TRC-02-plano-v1.md`
 > (`cp -n`; md5 dos dois arquivos no momento da cópia = `25af2552592735c59ce54396f215db0f`, 104 678 bytes, 890 linhas por `wc -l`).
 > **Entradas:** a v1; a crítica Opus (`revisoes/B-TRC-02-critica-r1-opus.md`, **VOLTA AO PLANO**, 4 `bloqueia` + 12 `ajuste`); a
 > crítica Gemini Flash (`revisoes/B-TRC-02-critica-r1-flash.md`, **APROVA COM AJUSTES**, 7 `ajuste` — tratada como 2ª opinião: não
@@ -668,7 +668,7 @@ mergeado (pré-requisito de produção, não de dev).
 | 3 | Carimbo `20260878000000` livre (H-8) | `git ls-tree -r --name-only origin/main prisma/migrations ¦ grep -c 20260878` → 0 (senão renumerar e anotar) |
 | 4 | Fixture real de evento capturada **antes** do contrato (H-1, H-3..H-7, H-12) | `node scripts/traccar-capture-fixture.mjs --kind event` → 4 arquivos; `B-TRC-02-evento-captura.md` com header names, `event.id`, datas, coordenadas presentes/ausentes, "2ª entrega: não" |
 | 5 | Baseline N executado (H-9) | 15 suítes do 01 + `tests/telemetry.test.ts` no container, `fail 0`, `skipped 0`, `# tests` publicado |
-| 6 | Disco ≥ 10 GB; ≤ 2 trabalhos com Docker; worktree próprio em caminho curto, `npm ci` próprio, sem junction | `df -h /c`; `docker ps`; `git worktree add C:/Users/AMP/w-trc02 -b feat/traccar-b-trc-02 origin/main` |
+| 6 | Disco ≥ 10 GB; ≤ 2 trabalhos com Docker; worktree próprio em caminho curto, `npm ci` próprio, sem junction | `df -h /c`; `docker ps`; `git worktree add ~/w-trc02 -b feat/traccar-b-trc-02 origin/main` |
 | 7 | **Estado da Q1 no dia:** `decisoes.md` tem `D-TRC02-RESPOSTAS` (Q1 = SIM, l.3783) **e** o dev procura uma entrada posterior `D-TRC02-Q1-*` (a devolução ao dono com o contexto de A-14). SIM (ou silêncio) → implementa §Q1; **NÃO → aplica a lista de remoção de §Q1.7 antes de escrever a migração** | `git show origin/main:agent-orchestration/controle/decisoes.md ¦ grep -n 'D-TRC02-'` |
 | 8 | **Q2:** `D-TRC02-RESPOSTAS` Q2 = SIM (l.3785) sem reversão posterior → o passo do `GRANT` entra no demo (§5.5); NÃO → sai o passo, sai H7 (fica só o guard 8), e `P-TRC-DEMO-LOGIN-SEM-ORG-INERTE` continua aberta | idem |
 
@@ -843,7 +843,7 @@ MUT-17, 18, 19, 38** (`tests` ganha a suíte C — A-09) **+ MUT-09** (`tests` g
 
 ### 9.6 Ordem de execução — testes primeiro (o dev registra comando → saída → veredito por passo em `B-TRC-02-dev.md`)
 
-0. **Gate e baseline** (§8): 8 linhas; N executado; worktree `C:/Users/AMP/w-trc02`; `npm ci` próprio; `npm run db:generate` com URL fictícia.
+0. **Gate e baseline** (§8): 8 linhas; N executado; worktree `~/w-trc02`; `npm ci` próprio; `npm run db:generate` com URL fictícia.
    **Decidir Q1 e Q2 pelo `decisoes.md` do dia** (gate 7 e 8) e anotar no relatório qual variante do plano vale.
 1. **Comando do bloco** (`agent-orchestration/codex/comandos/B-TRC-02-traccar-eventos-e-telemetria.md`) e as cópias (v2, v1, críticas) em
    `docs/revisoes/TRACCAR/`.
@@ -870,7 +870,7 @@ MUT-17, 18, 19, 38** (`tests` ganha a suíte C — A-09) **+ MUT-09** (`tests` g
 13. **Limpeza e PR** (§9.7 passos 9-11).
 
 ### 9.7 Bateria de validação exata (§9 do CLAUDE.md, padrão backend/raiz; o que é `-db` roda em container Linux próprio —
-`bash C:/Users/AMP/erp-pausa-2026-10-03/ferramentas/teste-linux.sh C:/Users/AMP/w-trc02 "<comando>"`; **nunca** a base viva nem as portas
+`bash ~/erp-pausa-2026-10-03/ferramentas/teste-linux.sh ~/w-trc02 "<comando>"`; **nunca** a base viva nem as portas
 5432/6379/3000/5173/5050/8899)
 
 1. `timeout -k 15 600 npm run check` · `timeout -k 15 600 npm run lint`.
@@ -1163,7 +1163,7 @@ porta, nenhuma edição no repositório, nenhum commit, nenhum `tail -f`. Onde a
 
 **Limpeza:** nada a remover no repositório (nada foi criado lá). No scratchpad da sessão fica `traccar-src/Config.java` (4,8 KB, insumo
 de medição, apagável) e os dois arquivos de teste de heredoc `t1.md`/`t2.md` (0,1 KB). Esta v2 é a entrega, em
-`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`; a v1 está em `B-TRC-02-plano-v1.md`; o dev copia as duas para
+`~/erp-pausa-2026-10-03/planos/B-TRC-02-plano.md`; a v1 está em `B-TRC-02-plano-v1.md`; o dev copia as duas para
 `docs/revisoes/TRACCAR/` no PR (§9.6 passo 1).
 
 **Estado: COMPLETO** (§0-§13 e §Q1 gravados; nenhuma seção `EM APURAÇÃO`). **Achados: 23 respondidos** (15 aceitos + 1 contestado em parte

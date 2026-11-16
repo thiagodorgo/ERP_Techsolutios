@@ -94,12 +94,12 @@ $ git worktree list | wc -l
 21:03:34Z
 $ 3.3 corpo NOVO: md5 EOL-neutro — head(.claude) / sessao(.claude, arvore principal) / head(.agents) / sessao(.agents)
 14a07abc81f8e0f37db1b584129c588c
-/usr/bin/bash: line 1: /c/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md: No such file or directory
+/usr/bin/bash: line 1: ~/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md: No such file or directory
 91743b04cd853aa199538267fbad0582
-/usr/bin/bash: line 1: /c/Users/AMP/Documents/GitHub/ERP_Techsolutios/.agents/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md: No such file or directory
+/usr/bin/bash: line 1: ~/Documents/GitHub/ERP_Techsolutios/.agents/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md: No such file or directory
 $ ls do disco da sessao
-ls: cannot access '/c/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md': No such file or director
-ls: cannot access '/c/Users/AMP/Documents/GitHub/ERP_Techsolutios/.agents/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md': No such file or director
+ls: cannot access '~/Documents/GitHub/ERP_Techsolutios/.claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md': No such file or director
+ls: cannot access '~/Documents/GitHub/ERP_Techsolutios/.agents/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md': No such file or director
 $ git ls-tree -r f1b1190a --name-only | grep -c <N>.md
 2
 $ frontmatter (head)
@@ -241,7 +241,7 @@ nao como fato|não como fato -> 1
 $ C2.md: linhas que nomeiam a identidade e a fonte do corpo
 33:O papel e a cadeira C2 da junta 1 do B-SAN3-01b (PR 402), identidade NOVA jurado-san3-01b-c2-cadeia-de-acesso, escrita pela
 35:  corpo versionado no head do PR em .claude/agents/especialistas/jurado-san3-01b-c2-cadeia-de-acesso.md (nos dois espelhos), e a
-36:  cadeira declara na 1a linha da evidencia o papel, a identidade, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo derruba com: `head -1 C:/Users/AMP/w-nuv01b/agent-orchestration/omega/juntas/votos/B-SAN3-01b/C
+36:  cadeira declara na 1a linha da evidencia o papel, a identidade, o modelo, o mandato_md5 deste arquivo e o md5 EOL-neutro do corpo derruba com: `head -1 ~/w-nuv01b/agent-orchestration/omega/juntas/votos/B-SAN3-01b/C
 48:  queda relanca a mesma identidade, que nao herda nada como conclusao; voto perdido nunca aprova; os numeros da secao 0.6 do plano sao
 61:O briefing agent-orchestration/omega/juntas/BRIEFING-B-SAN3-01b.md e lido inteiro antes do merito, inclusive as duas declaracoes da fabrica sobre este corpo (o modelo fixado e o
 $ C2.md: trecho com agente-fabrica (contexto)
@@ -322,17 +322,17 @@ O remedio nomeado na 1a passada foi aplicado e medido: a cadeira C2 e agora uma 
 - **Herdadas da 1a passada, ainda validas:** R2 (nome do diretorio da junta), R6 (residuo inerte — agora 17 worktrees), R8 (CI 14/14 no objeto novo), R9 (forma do meu baseline).
 
 ## Limpeza (§C5, 1 linha) — 21:08Z
-Criei para medir: o worktree `C:/Users/AMP/w-insp402` (recriado detached em f1b1190a, sem node_modules — nenhum baseline rodado nesta passada, herdado pelo 0-bis) e os logs `scratchpad/p2-*.log` + `insp402p2-s0.log` (evidencia citada; ficam no scratchpad). Derrubado: processos vivos com `w-insp402` -> 0 (tasklist //V) e 0 (wmic CommandLine) ANTES de remover; `git worktree remove --force C:/Users/AMP/w-insp402` -> ec=0; `git worktree prune`; `git worktree list | grep -c w-insp402` -> 0; `ls -d` -> inexistente. Nenhum container criado (`docker ps -a | grep -ci insp` -> 0). Arvore principal intacta (`4ab9d232`, 55 untracked — os mesmos de antes); `w-nuv01b` intacto (`f1b1190a`, so o `00-quedas.md` modificado pelo orquestrador — P2-R2). Nada escrito no repositorio; nada commitado. Log: `scratchpad/p2-Z-limpeza.log`.
+Criei para medir: o worktree `~/w-insp402` (recriado detached em f1b1190a, sem node_modules — nenhum baseline rodado nesta passada, herdado pelo 0-bis) e os logs `scratchpad/p2-*.log` + `insp402p2-s0.log` (evidencia citada; ficam no scratchpad). Derrubado: processos vivos com `w-insp402` -> 0 (tasklist //V) e 0 (wmic CommandLine) ANTES de remover; `git worktree remove --force ~/w-insp402` -> ec=0; `git worktree prune`; `git worktree list | grep -c w-insp402` -> 0; `ls -d` -> inexistente. Nenhum container criado (`docker ps -a | grep -ci insp` -> 0). Arvore principal intacta (`4ab9d232`, 55 untracked — os mesmos de antes); `w-nuv01b` intacto (`f1b1190a`, so o `00-quedas.md` modificado pelo orquestrador — P2-R2). Nada escrito no repositorio; nada commitado. Log: `scratchpad/p2-Z-limpeza.log`.
 ```
 21:07:28Z
 $ processos vivos com w-insp402 (tasklist //V | grep -c ; wmic process get CommandLine | grep -c)
 0
 0
-$ git worktree remove --force C:/Users/AMP/w-insp402 ; git worktree prune
+$ git worktree remove --force ~/w-insp402 ; git worktree prune
 remove ec=0
-$ git worktree list | grep -c w-insp402 ; ls -d C:/Users/AMP/w-insp402
+$ git worktree list | grep -c w-insp402 ; ls -d ~/w-insp402
 0
-ls: cannot access '/c/Users/AMP/w-insp402': No such file or directory
+ls: cannot access '~/w-insp402': No such file or directory
 $ arvore principal e w-nuv01b intactos
 4ab9d232
 55

@@ -3,7 +3,7 @@
 > **Identidade:** `dev-trc01-c2-codex`
 > **Executor:** Codex, **GPT-5.6 Sol**, esforço médio, nível menor do contrato (§C7.6)
 > **Papel:** DEV do ciclo 2; não planeja, não julga achados e não vota. Não foi cadeira nem DEV do ciclo 1.
-> **Worktree:** `C:/Users/AMP/w-trc01`
+> **Worktree:** `~/w-trc01`
 > **Ramo:** `feat/traccar-b-trc-01`
 > **PR:** #426
 > **KPI:** congelado; `Kpis/*` fora do escopo.
@@ -59,7 +59,7 @@
 
 ### 0. Pré-voo da retomada (`dev-trc01-c2-argon`)
 
-- **Comando:** `git -C C:/Users/AMP/w-trc01 fetch origin; git -C C:/Users/AMP/w-trc01 rev-parse HEAD origin/feat/traccar-b-trc-01; Get-PSDrive C | Select-Object Free; git -C C:/Users/AMP/w-trc01 diff --ignore-cr-at-eol --stat`
+- **Comando:** `git -C ~/w-trc01 fetch origin; git -C ~/w-trc01 rev-parse HEAD origin/feat/traccar-b-trc-01; Get-PSDrive C | Select-Object Free; git -C ~/w-trc01 diff --ignore-cr-at-eol --stat`
 - **Saída resumida:** `HEAD` e `origin/feat/traccar-b-trc-01` = `10d042a9382166278ee9df05677743114f881be8`; disco `C:` com `14.468.685.824` bytes livres (~13,48 GiB > 8 GB); diff EOL-neutro restrito exclusivamente a arquivos permitidos no §2.1 (0 toque em `Kpis/*`, `decisoes.md` ou nos 53 arquivos com CRLF local).
 - **Veredito parcial:** PRÉ-VOO OK.
 
@@ -162,7 +162,7 @@
 
 ### 9. Passo 8 da bateria §2.7 — Mutações (`M-C1..M-C4`, `M-B1`, `M-B2a`, `M-B2b`, `MUT-10c`, `MUT-23c`, `OWN-13b`)
 
-- **Comando:** `git -C C:/Users/AMP/w-trc01 worktree add --detach C:/Users/AMP/w-trc01-mut HEAD` + cópia do diff do ciclo 2 para `w-trc01-mut` + execução no container Linux descartável (`teste-linux.sh C:/Users/AMP/w-trc01-mut`) aplicando cada mutação de `docs/revisoes/TRACCAR/B-TRC-01-evidencias/mutations.mjs` com verificação de âncora única, `tsc -p tsconfig.json --noEmit`, suíte alvo em TAP, restauro dos bytes originais e conferência de SHA-256; ao final, `git -C C:/Users/AMP/w-trc01 worktree remove --force C:/Users/AMP/w-trc01-mut`.
+- **Comando:** `git -C ~/w-trc01 worktree add --detach ~/w-trc01-mut HEAD` + cópia do diff do ciclo 2 para `w-trc01-mut` + execução no container Linux descartável (`teste-linux.sh ~/w-trc01-mut`) aplicando cada mutação de `docs/revisoes/TRACCAR/B-TRC-01-evidencias/mutations.mjs` com verificação de âncora única, `tsc -p tsconfig.json --noEmit`, suíte alvo em TAP, restauro dos bytes originais e conferência de SHA-256; ao final, `git -C ~/w-trc01 worktree remove --force ~/w-trc01-mut`.
 - **Saída resumida (10/10 vermelhas pela asserção certa, `tsc` ec=0, SHA-256 restaurado idêntico):**
   - **`M-C1`** (*viatura da OS já era a atual no instante do fix*): âncora única = `true` · `tsc` ec = `0` · TAP = `not ok 11 - ingestão: a viatura da OS é a do instante do fix — fix atrasado da viatura nova vai à quarentena` (`# tests 20 · # pass 19 · # fail 1 · # skipped 0`) · restauro SHA-256 `field-dispatch-prisma.repository.ts`: `3cf2869384c3 == 3cf2869384c3 (true)`.
   - **`M-C2`** (*OS sem data da viatura falha fechada*): âncora única = `true` · `tsc` ec = `0` · TAP = `not ok 1 - operador no instante: viatura sem data torna o histórico ambíguo` + `not ok 16 - ingestão: OS anterior à migração fica ambígua até a próxima atribuição` (`# tests 24 · # pass 22 · # fail 2 · # skipped 0`) · restauro SHA-256 `field-dispatch.repository.ts`: `f1005d14b1ac == f1005d14b1ac (true)`.
@@ -178,7 +178,7 @@
 
 ### 10. Passo 6 da bateria §2.7 — `npm test` (forma do job `backend` da CI, Linux, `DATABASE_URL` presente)
 
-- **Comando:** execução de `npm test` no container Linux descartável (`teste-linux.sh C:/Users/AMP/w-trc01`), mais reexecução isolada de `tests/san3-05-runtime-role-guard-db.test.ts` (T15, no container Linux) e `tests/traccar-dev-topology.test.ts` (no host onde `docker compose` está disponível, conforme nota explícita do §2.7 passo 6 do plano).
+- **Comando:** execução de `npm test` no container Linux descartável (`teste-linux.sh ~/w-trc01`), mais reexecução isolada de `tests/san3-05-runtime-role-guard-db.test.ts` (T15, no container Linux) e `tests/traccar-dev-topology.test.ts` (no host onde `docker compose` está disponível, conforme nota explícita do §2.7 passo 6 do plano).
 - **Saída resumida:**
   - `npm test` completo: `[run-backend-tests] 316 arquivo(s) · 3427 teste(s) · pass 3414 · fail 11 · skipped 2` (`3418` da base + `9` novos = `3427`).
   - Os `2` pulos são exatamente os `2` nomeados de `permission-catalog-db-parity` (`RBAC_DB_PARITY` desligado no job `backend`).
@@ -195,7 +195,7 @@
 
 ### Pré-voo da retomada (`dev-trc01-c2-gemini`)
 
-- **Comando:** `git -C C:/Users/AMP/w-trc01 fetch origin`, `git -C C:/Users/AMP/w-trc01 rev-parse HEAD`, `Get-PSDrive C`, `node scripts/traccar-dev-demo.mjs`.
+- **Comando:** `git -C ~/w-trc01 fetch origin`, `git -C ~/w-trc01 rev-parse HEAD`, `Get-PSDrive C`, `node scripts/traccar-dev-demo.mjs`.
 - **Saída resumida:** `HEAD` em `10d042a9382166278ee9df05677743114f881be8`. Espaço livre no disco `C:` é de 7,30 GB. O smoke vertical abortou por "7.3 GB livres (< 10 GB): rode DEEP_CLEAN=1 bash scripts/post-merge-cleanup.sh antes".
 - **Veredito parcial:** PARADA OBRIGATÓRIA. Seguindo a instrução literal do mandato ("abaixo de 8 GB livres, PARE e relate"), a execução é interrompida.
 

@@ -9,7 +9,7 @@ Objeto: `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`. `origin/main`: `e78e3968`. T
 **1.1 Objeto e árvore: VERDE.**
 - `git cat-file -t <objeto>` → `commit`. `git ls-remote origin feat/evidence-clamav-scanner` → o objeto, medido no início e no fim. `gh pr view 477` → aberto, `headRefOid` = objeto, `MERGEABLE`.
 - `git rev-list --left-right --count origin/main...<objeto>` → `0 24`; a base está 0 à frente, como o mandato diz.
-- `git -C C:/Users/AMP/w-avreal status --porcelain` → vazio, HEAD = objeto. Comparação EOL-neutra de `clamav-scanner.ts`, `upload-gate.ts` e `ci.yml` contra o blob → iguais.
+- `git -C ~/w-avreal status --porcelain` → vazio, HEAD = objeto. Comparação EOL-neutra de `clamav-scanner.ts`, `upload-gate.ts` e `ci.yml` contra o blob → iguais.
 - Árvore principal: `git status --porcelain` só mostra 3 caminhos não rastreados (`.history-memo/`, `TEMPLATE-J-ata.md`, `votos/B-SAN3-06a/`). Nenhum rastreado modificado; ela não é terreno de cadeira.
 
 **1.2 Plano de isolamento: VERDE.** `mandatos.md` l.20: worktree próprio detached com `npm ci` próprio, sem junction, remoção por `git worktree remove --force`; `clamd` em projeto `-p j-avreal-c<n>`, por nome de serviço, `--no-deps`; nunca `erp-postgres`/`erp-redis` nem as portas vivas; banco próprio em porta alta. `Test-Path` de `w-jav1`, `w-jav2`, `w-jav3` → `False`; os caminhos estão livres. Portas 3310 e 3311 sem ouvinte.
@@ -55,7 +55,7 @@ Objeto: `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`. `origin/main`: `e78e3968`. T
 
 ## 4. Fatias e objeto
 
-**4.1 Fatia S0: VERDE.** Worktree limpo e descartável `C:/Users/AMP/w-javinsp`, detached no objeto: `node scripts/sync-agent-agents.mjs --check` → `[agents-sync] OK — 95 agentes, espelho consistente.`, exit 0. Status vazio antes e depois. Removido.
+**4.1 Fatia S0: VERDE.** Worktree limpo e descartável `~/w-javinsp`, detached no objeto: `node scripts/sync-agent-agents.mjs --check` → `[agents-sync] OK — 95 agentes, espelho consistente.`, exit 0. Status vazio antes e depois. Removido.
 
 **4.2 Baseline: VERDE, com pré-requisito (ressalva 2).** Mesmo worktree, exit por variável, log em `00-inspetor-baseline.log`:
 - `npm ci` → exit 0.
@@ -88,6 +88,6 @@ Objeto: `2746eb6055abcdab863a2d1ce3c7cb2a8a5f6c77`. `origin/main`: `e78e3968`. T
 5. **Resíduo inerte vivo em `w-avreal`** (item 1.3). Cadeira nenhuma usa esse worktree. Insumo a re-verificar, sem conclusão daqui: um vermelho-controle de `avreal-scanner-failures.test.ts` ficou 32 h sem terminar. Antes de remover `w-avreal` no fechamento, esses processos precisam sair.
 6. **Forma A sem verificador** (item 4.4).
 
-**Limpeza:** criei `C:/Users/AMP/w-javinsp`, removido por `git worktree remove --force` (exit 0, `Test-Path` falso, ausente de `git worktree list`). Nenhum container, volume ou rede criado. Busca em segundo plano encerrada. Fica nesta pasta `00-inspetor-baseline.log`, evidência.
+**Limpeza:** criei `~/w-javinsp`, removido por `git worktree remove --force` (exit 0, `Test-Path` falso, ausente de `git worktree list`). Nenhum container, volume ou rede criado. Busca em segundo plano encerrada. Fica nesta pasta `00-inspetor-baseline.log`, evidência.
 
 LIBERADO COM RESSALVA: tabuleiro limpo e objeto com 16 check-runs verdes, mas o mandato de C3 cita um arquivo que não existe, as cadeiras precisam de `db:generate` com URL falsa, os nomes delas não foram declarados (identidade a conferir em cada voto) e há um teste travado inerte em `w-avreal`

@@ -9,9 +9,9 @@ Executor: Claude Opus 5.5 (subagente genérico, identidade `inspetor-san322`), n
 - **Mapa das bases (re-medido):** a merge-base dos pais de `<objeto>~9` é `<objeto>~13`, o head-base do backend. `<objeto>~6` = `d7483c28`, o mesmo "Objeto de partida" do relatório do dev, e é o head-base da fatia web.
 - **check-runs:** `gh api …/commits/<objeto>/check-runs` dá total=14, todos `completed/success`. São 7 jobs em 2 suítes: `backend`, `backend-postgres`, `frontend`, `docker`, `flutter`, `authority-portal` e `owner-portal`. `gh run list --commit` mostra `ci push completed success` e `ci pull_request completed success`, com os três jobs da E3-17 presentes nos dois gatilhos.
 - **PRE-VOO:** os 4 mandatos (cadeira-c1, c2, c3 e inspetor-san322) dão `PRE-VOO OK` com `ec=0`, rodando as ferramentas da pasta `redator-san322/`.
-- **sem saída:** pelo awk "linha `medido por:` → bloco ``` não vazio", as unidades sem saída são 0 em 19, 20, 21 e 21. Os caminhos absolutos citados que não existem são só as saídas a criar, os worktrees e as pastas de sonda a criar, e o `RAIZ` `C:/Users/AMP/w-trc02`, que já era declarado ausente. Nenhum insumo falta.
+- **sem saída:** pelo awk "linha `medido por:` → bloco ``` não vazio", as unidades sem saída são 0 em 19, 20, 21 e 21. Os caminhos absolutos citados que não existem são só as saídas a criar, os worktrees e as pastas de sonda a criar, e o `RAIZ` `~/w-trc02`, que já era declarado ausente. Nenhum insumo falta.
 - **corpos:** comparação EOL-neutra, sem o frontmatter e sem o bloco Codex. Os espelhos são IDENTICOS nos 3 (c1 `440ea193`, c2 `7930ff1c`, c3 `e2c9e7ed`). O disco do `w-san322` é igual ao blob nos 3. O `.claude/agents` da sessão (HEAD `539b078e`) não tem os 3 corpos. Por isso as cadeiras têm de nascer como **subagente genérico com o corpo lido do blob do objeto**, que é o que os 3 mandatos mandam ("vale este mandato" onde o corpo divergir). Isso vira a ressalva 1.
-- **S0:** `node scripts/sync-agent-agents.mjs --check` rodou no worktree próprio `C:/Users/AMP/j22-insp-wt` (HEAD = objeto, status 0) e deu `OK — 92 agentes, espelho consistente.` com `ec=0`. O conjunto recursivo de `.md` dos dois espelhos é igual (`especialistas/` incluído; o único extra é o README Codex).
+- **S0:** `node scripts/sync-agent-agents.mjs --check` rodou no worktree próprio `~/j22-insp-wt` (HEAD = objeto, status 0) e deu `OK — 92 agentes, espelho consistente.` com `ec=0`. O conjunto recursivo de `.md` dos dois espelhos é igual (`especialistas/` incluído; o único extra é o README Codex).
 - **baseline:** `npm run check` no `w-san322` dá `ec=0`, e `git status` antes e depois fica igual.
 
 ## Item 2 de 3 — identidades, papéis, composição, cobertura, briefing — VERDE COM RESSALVAS
@@ -30,7 +30,7 @@ Executor: Claude Opus 5.5 (subagente genérico, identidade `inspetor-san322`), n
 
 ## Item 3 de 3 — terreno — VERDE
 
-- **Árvore** `C:/Users/AMP/w-san322`: HEAD = objeto, 0 rastreado modificado. O único não rastreado é o diretório de votos `B-SAN3-22/`. Não há mutação viva.
+- **Árvore** `~/w-san322`: HEAD = objeto, 0 rastreado modificado. O único não rastreado é o diretório de votos `B-SAN3-22/`. Não há mutação viva.
 - **Resíduo:** 0 container `j22`, 0 pasta `j22` no diretório de pausa e 0 trabalho Docker vivo fora de `erp-*`. O único worktree `j22` é o meu, `j22-insp-wt`, removido no fim (ver a linha de limpeza). Há também `agv3-proxy`, `Exited (0) 22 hours ago`: é resíduo **inerte e alheio**, foi reportado e não foi varrido. A base viva (`erp-postgres`, `erp-redis`) está de pé e é proibida às cadeiras.
 - **Isolamento (corpo 1.2), escrito nos 3 mandatos:**
   - worktree próprio por cadeira (`j22-c1-wt`, `j22-c2-wt`, `j22-c3-wt`, cada um só no mandato da própria cadeira), removido por `worktree remove`;
@@ -56,7 +56,7 @@ Vale para as duas famílias de executor, Claude Opus (`jurado-san322-cN-opus`) e
 
 Ressalvas (o orquestrador as põe em destaque no disparo):
 
-1. **Corpo carregado.** Os 3 corpos `jurado-san322-*` não existem no `.claude/agents` da sessão (HEAD `539b078e`). Cada cadeira nasce como **subagente genérico** e lê o corpo do blob do objeto (`git -C C:/Users/AMP/w-san322 show 44d9cbb3…:.claude/agents/especialistas/jurado-san322-<cN>.md`), declarando IDENTICO pela comparação EOL-neutra. Nunca se dispara pelo tipo da sessão. No Codex vale o espelho `.agents/agents/especialistas/`, idêntico ao blob, descontado o bloco Codex.
+1. **Corpo carregado.** Os 3 corpos `jurado-san322-*` não existem no `.claude/agents` da sessão (HEAD `539b078e`). Cada cadeira nasce como **subagente genérico** e lê o corpo do blob do objeto (`git -C ~/w-san322 show 44d9cbb3…:.claude/agents/especialistas/jurado-san322-<cN>.md`), declarando IDENTICO pela comparação EOL-neutra. Nunca se dispara pelo tipo da sessão. No Codex vale o espelho `.agents/agents/especialistas/`, idêntico ao blob, descontado o bloco Codex.
 2. **Inelegíveis pelo nome exato.** O disparo de cada cadeira acrescenta **`med-bsan322-pro`** (a medição inicial, Gemini 3.1 Pro) e **`rev2-maquete22-argon`** (2º revisor da maquete). Os mandatos só os descrevem. Nenhum dos dois colide com as identidades propostas.
 3. **C3 na família Codex.** O mandato da C3 diz "nunca Gemini: julgamento de tela é só Claude, `D-DESIGN-SO-CLAUDE`" e, na mesma frase, admite Codex Sol. Para não contrariar o próprio mandato, a **C3 roda em Claude Opus** (`jurado-san322-c3-opus`) mesmo que C1 e C2 vão para o Codex Sol. Se o orquestrador puser a C3 em Sol, tem de declarar por escrito, no disparo, a leitura de que `D-DESIGN-SO-CLAUDE` só exclui o Gemini (o precedente é `rev-maq22-sol`, que revisou a maquete).
 4. **Itens sem rótulo de dono.** A **E3-18** (fechar `P-B-SAN3-22-FRONT-TOKEN-E-3-APARENCIAS` e a linha em `P-APARENCIA-POR-USUARIO`, que é registro) não está em cadeira nenhuma. O disparo da C3 (item 3, registro e escopo) a nomeia, ou o orquestrador a declara conferência própria; pela §C7 item 8(1)(3), registro não é defeito de produto. As divergências **D-W9** (mutação de `userId` do CE-30 não executada) e **D-W11** (o E3b-08 é teste de forma) têm o tema dentro da C3, mas não o nome: o disparo da C3 as nomeia como roteiro de método. A D-W6 está fechada pela ratificação de 12:30Z.
@@ -66,4 +66,4 @@ Ressalvas (o orquestrador as põe em destaque no disparo):
 
 ## Limpeza
 
-O que criei para medir foi o worktree `C:/Users/AMP/j22-insp-wt`, removido com `git worktree remove --force` (0 worktree `j22` depois), e os temporários do meu scratchpad, apagados. Não subi container nem rodei `npm ci`, e não toquei na base viva. Os únicos arquivos que gravei são `insp-san322-evidencia.md` e este parecer, sem commit. Às 13:36Z o head remoto continuava `44d9cbb3…`.
+O que criei para medir foi o worktree `~/j22-insp-wt`, removido com `git worktree remove --force` (0 worktree `j22` depois), e os temporários do meu scratchpad, apagados. Não subi container nem rodei `npm ci`, e não toquei na base viva. Os únicos arquivos que gravei são `insp-san322-evidencia.md` e este parecer, sem commit. Às 13:36Z o head remoto continuava `44d9cbb3…`.

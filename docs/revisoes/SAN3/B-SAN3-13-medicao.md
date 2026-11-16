@@ -3,11 +3,11 @@
 - **Agente:** `med-san313-argon` (Antigravity · Gemini 4 Argon)
 - **Data:** 2026-10-24
 - **Ref medida (`origin/main` / `HEAD`):** `7ab2fe71d0d40c2be51a790f0d20893651cdf972`
-- **Worktree de leitura:** `C:/Users/AMP/w-plan21` (somente leitura)
-- **Diretório externo de sondas/testes:** `C:/Users/AMP/erp-pausa-2026-10-03/planos/san313-medicao/`
+- **Worktree de leitura:** `~/w-plan21` (somente leitura)
+- **Diretório externo de sondas/testes:** `~/erp-pausa-2026-10-03/planos/san313-medicao/`
 
 ```powershell
-PS C:\Users\AMP\w-plan21> git -C C:/Users/AMP/w-plan21 rev-parse HEAD ; git -C C:/Users/AMP/w-plan21 status --short
+PS ~/w-plan21> git -C ~/w-plan21 rev-parse HEAD ; git -C ~/w-plan21 status --short
 7ab2fe71d0d40c2be51a790f0d20893651cdf972
 ```
 
@@ -69,7 +69,7 @@ PS C:\Users\AMP\w-plan21> git -C C:/Users/AMP/w-plan21 rev-parse HEAD ; git -C C
      ```
    - Medição de chamadores no código Flutter:
      ```powershell
-     PS C:\Users\AMP\w-plan21> git -C C:/Users/AMP/w-plan21 grep -n "workOrdersForUser" mobile/flutter_app/
+     PS ~/w-plan21> git -C ~/w-plan21 grep -n "workOrdersForUser" mobile/flutter_app/
      mobile/flutter_app/lib/features/work_orders/data/work_order_repository.dart:88:  List<WorkOrder> workOrdersForUser(String userId) =>
      ```
      O método tem **zero** chamadores em `lib/` e em `test/`.
@@ -227,7 +227,7 @@ PS C:\Users\AMP\w-plan21> git -C C:/Users/AMP/w-plan21 rev-parse HEAD ; git -C C
 
 - **Busca por testes de `assignedUserId` na listagem em `tests/`:**
   ```powershell
-  PS C:\Users\AMP\w-plan21> git -C C:/Users/AMP/w-plan21 grep -n "/api/v1/work-orders?" tests/ ; git -C C:/Users/AMP/w-plan21 grep -n "\.list(" tests/work-orders*
+  PS ~/w-plan21> git -C ~/w-plan21 grep -n "/api/v1/work-orders?" tests/ ; git -C ~/w-plan21 grep -n "\.list(" tests/work-orders*
   tests/work-orders-routes.test.ts:32:    const listed = await requestJson(baseUrl, "/api/v1/work-orders?status=open", {
   tests/work-orders-list-coordinates.test.ts:33:  const result = await service.list(ctx, {});
   tests/work-orders-list-coordinates.test.ts:51:  const result = await service.list(ctx, {});
@@ -237,9 +237,9 @@ PS C:\Users\AMP\w-plan21> git -C C:/Users/AMP/w-plan21 rev-parse HEAD ; git -C C
   ```
   Não há nenhum teste no repositório que passe `?assignedUserId=` para `GET /api/v1/work-orders` ou `service.list(..., { assignedUserId })`. Os testes de rotas/serviço e de escopo por objeto de OS são `tests/work-orders.test.ts`, `tests/work-orders-routes.test.ts` e `tests/o6r07a-wo-object-scope.test.ts`.
 
-- **Execução dos testes existentes e da sonda de reprodução em `C:/Users/AMP/erp-pausa-2026-10-03/planos/san313-medicao/`:**
+- **Execução dos testes existentes e da sonda de reprodução em `~/erp-pausa-2026-10-03/planos/san313-medicao/`:**
   ```powershell
-  PS C:\Users\AMP\erp-pausa-2026-10-03\planos\san313-medicao> npx tsx --test tests/work-orders.test.ts tests/work-orders-routes.test.ts tests/o6r07a-wo-object-scope.test.ts
+  PS ~/erp-pausa-2026-10-03\planos\san313-medicao> npx tsx --test tests/work-orders.test.ts tests/work-orders-routes.test.ts tests/o6r07a-wo-object-scope.test.ts
   TAP version 13
   # Subtest: D3 — técnico só muta a ordem atribuída a ele (update e status)
   ok 1 - D3 — técnico só muta a ordem atribuída a ele (update e status)
@@ -273,9 +273,9 @@ PS C:\Users\AMP\w-plan21> git -C C:/Users/AMP/w-plan21 rev-parse HEAD ; git -C C
   # fail 0
   ```
 
-- **Sonda executada em `C:/Users/AMP/erp-pausa-2026-10-03/planos/san313-medicao/tests/sonda-list-assigned.test.ts` comprovando que `field_technician` lista todas as OS da organização sem filtro e até filtra pelas do colega:**
+- **Sonda executada em `~/erp-pausa-2026-10-03/planos/san313-medicao/tests/sonda-list-assigned.test.ts` comprovando que `field_technician` lista todas as OS da organização sem filtro e até filtra pelas do colega:**
   ```powershell
-  PS C:\Users\AMP\erp-pausa-2026-10-03\planos\san313-medicao> npx tsx --test tests/sonda-list-assigned.test.ts
+  PS ~/erp-pausa-2026-10-03\planos\san313-medicao> npx tsx --test tests/sonda-list-assigned.test.ts
   TAP version 13
   # Subtest: sonda B-SAN3-13: GET /api/v1/work-orders aceita assignedUserId opcional mas NAO impoe escopo para field_technician
   ok 1 - sonda B-SAN3-13: GET /api/v1/work-orders aceita assignedUserId opcional mas NAO impoe escopo para field_technician
@@ -330,7 +330,7 @@ PS C:\Users\AMP\w-plan21> git -C C:/Users/AMP/w-plan21 rev-parse HEAD ; git -C C
   2. Na próxima abertura do app (mesmo já autenticado com `_remoteApi != null`), `load()` lê `stored = await _localStore.loadWorkOrders()`, encontra `wo-local-1`, `wo-local-2`, `wo-local-3` no SQLite, e após `_upsertRemoteOrders(remote)` recarrega `final all = await _localStore.loadWorkOrders()` (`work_order_repository.dart:201-204`), misturando as seeds com as OS reais para sempre.
   3. O método `clearAll()` existe em `WorkOrderLocalStore` (`mobile/flutter_app/lib/features/work_orders/data/work_order_local_store.dart:13, 83-87`) e em `DriftWorkOrderLocalStore` (`mobile/flutter_app/lib/core/local_db/drift_work_order_local_store.dart:187-191`, `DELETE FROM work_orders`), mas **não tem nenhum chamador em `mobile/flutter_app/lib/`**:
      ```powershell
-     PS C:\Users\AMP\w-plan21> git -C C:/Users/AMP/w-plan21 grep -n "clearAll" mobile/flutter_app/
+     PS ~/w-plan21> git -C ~/w-plan21 grep -n "clearAll" mobile/flutter_app/
      mobile/flutter_app/lib/core/local_db/drift_checklist_local_store.dart:332:  Future<void> clearAll() async {
      mobile/flutter_app/lib/core/local_db/drift_work_order_local_store.dart:188:  Future<void> clearAll() async {
      mobile/flutter_app/lib/features/checklists/data/checklist_local_store.dart:33:  Future<void> clearAll();

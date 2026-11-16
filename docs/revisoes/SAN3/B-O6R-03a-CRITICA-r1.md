@@ -93,7 +93,7 @@ A premissa sobre o uso exclusivo de `MobileActionReceipt` foi confirmada e a ato
 
 - **Head medido:** `7ed1a7ca7ea09e29748767bc795535148a47d67e`.
 - **Feito:** quatro itens medidos e gravados; duas sondas concorrentes, duas mutações próprias de estado e baseline 6/6; parecer fechado com `VOLTA AO PLANO`.
-- **Limpeza:** container `crit03a-pg-r1` removido pelo nome; worktree `C:/Users/AMP/w-crit03a-r1` removido com `git worktree remove --force`; base viva não foi acessada.
+- **Limpeza:** container `crit03a-pg-r1` removido pelo nome; worktree `~/w-crit03a-r1` removido com `git worktree remove --force`; base viva não foi acessada.
 - **Falta nesta identidade:** nada; replanejamento pertence a outro agente (§C7.4-bis).
-- **Próximo comando exato do planejador:** `Get-Content -Raw 'C:/Users/AMP/w-03a/docs/revisoes/SAN3/B-O6R-03a-CRITICA-r1.md'`.
+- **Próximo comando exato do planejador:** `Get-Content -Raw '~/w-03a/docs/revisoes/SAN3/B-O6R-03a-CRITICA-r1.md'`.
 - **Arquivos meio-escritos:** nenhum.

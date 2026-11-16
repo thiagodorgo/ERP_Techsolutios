@@ -6,11 +6,11 @@ papel: cadeira C1 REVALIDADA (c1rev) | identidade: jurado-san322-c1-r2-opus | ex
 
 - objeto por duas fontes às 02:04:08Z: `git ls-remote origin refs/heads/fix/checklist-trava-versao` = `gh pr view 464 --json headRefOid` = 6b03e44d8136792398f521ccaf85d8dd45168a6d; OPEN, isDraft=false. Head não andou.
 - origin/main no início (git fetch + rev-parse) = c9a2d036c1aaff21df92817525d7f9c92cbbe272 = merge-base(objeto, origin/main).
-- $SCRATCH = C:/Users/AMP/erp-pausa-2026-10-03/j22r2-c1o/ (pasta nova; NÃO reaproveitei a `j22r2-c1/` do caído nem a `j22-c1o/` do ciclo 1).
+- $SCRATCH = ~/erp-pausa-2026-10-03/j22r2-c1o/ (pasta nova; NÃO reaproveitei a `j22r2-c1/` do caído nem a `j22-c1o/` do ciclo 1).
 - node v20.19.5 · docker server 29.6.1.
 - recursos antes de subir (02:04Z): disco C: livre 8.7G (`df -h /c`; piso C1 = 7,5 + 0,65 = 8,15 GB; PARE abaixo de 7 GB) · memória de commit livre 8,43 GB (≥ 4 GB, P8 (c)).
 - Docker antes de subir (`docker ps -a` → $SCRATCH/docker-ps-antes.txt): fora de `erp-*`: `j22r2-c2o-redis` (C2 sucessora), `j22r2-c1-pg` + `j22r2-c1-redis` (ÓRFÃOS do caído jurado-san322-c1-r2-sol, de pé em 48021/48022; 0 processos com 48021/j22r2-c1-wt/j22r2-c1/ na linha de comando — medido por Get-CimInstance Win32_Process), `agv3-proxy` (parado, alheio). **Leitura declarada:** o teto é 2 trabalhos; conto o assento C1 como UM trabalho (o órfão é o mesmo assento, ocioso, sem processo cliente); os containers órfãos são resíduo alheio — NÃO os removo (prefixo não é meu), reporto ao orquestrador. Por isso uso portas 48023/48024 (as 48021/48022 do mandato estão ocupadas pelo órfão).
-- worktree próprio `C:/Users/AMP/j22r2-c1o-wt` (`git worktree add --detach … 6b03e44d…`, ec=0; caminho não existia; `.git` presente; sem `.env`); `npm ci` próprio e `prisma generate` com URL fictícia (resultado abaixo); junction proibida (LinkType conferido abaixo).
+- worktree próprio `~/j22r2-c1o-wt` (`git worktree add --detach … 6b03e44d…`, ec=0; caminho não existia; `.git` presente; sem `.env`); `npm ci` próprio e `prisma generate` com URL fictícia (resultado abaixo); junction proibida (LinkType conferido abaixo).
 - containers próprios: `j22r2-c1o-pg` (postgres:16-alpine 721873c34ceb, superusuário `postgres`) → `docker port` = 127.0.0.1:48023; `j22r2-c1o-redis` (redis:7-alpine) → 127.0.0.1:48024. Portas: nenhuma faixa excluída do Windows cobre 48023–48024 (netsh → $SCRATCH/excluded.txt); netstat sem escuta antes.
 - banco `j22r2_c1o` (o `j22r2_c1` do mandato trocado pelo prefixo `c1o` do disparo); senha aleatória (node crypto → $SCRATCH/j22r2-c1o.pw), só por ambiente; nas URLs aparece como ***.
 - variáveis definidas só como prefixo de comando (nenhum export): DATABASE_URL, REDIS_URL, CORE_SAAS_PERSISTENCE. Base viva (erp-postgres, erp-redis, 5432, 6379) nunca tocada.
@@ -21,19 +21,19 @@ Comando: `cp j22-c1o/{run-test.sh,probe.sh,mutrun.sh,restore.sh,mut.mjs,mutn.mjs
 
 ```
 === run-test.sh
-< S=C:/Users/AMP/erp-pausa-2026-10-03/j22-c1o            > S=C:/Users/AMP/erp-pausa-2026-10-03/j22r2-c1o
+< S=~/erp-pausa-2026-10-03/j22-c1o            > S=~/erp-pausa-2026-10-03/j22r2-c1o
 < PW=$(cat $S/j22-c1.pw)                                 > PW=$(cat $S/j22r2-c1o.pw)
-< cd C:/Users/AMP/j22-c1-wt                              > cd C:/Users/AMP/j22r2-c1o-wt
+< cd ~/j22-c1-wt                              > cd ~/j22r2-c1o-wt
 < …127.0.0.1:47921/j22_c1?… REDIS_URL=…127.0.0.1:47922   > …127.0.0.1:48023/j22r2_c1o?… REDIS_URL=…127.0.0.1:48024
 === probe.sh
-< S=…/j22-c1o; W=C:/Users/AMP/j22-c1-wt                  > S=…/j22r2-c1o; W=C:/Users/AMP/j22r2-c1o-wt
+< S=…/j22-c1o; W=~/j22-c1-wt                  > S=…/j22r2-c1o; W=~/j22r2-c1o-wt
 < PW=$(cat $S/j22-c1.pw); DB=${4:-j22_c1}                > PW=$(cat $S/j22r2-c1o.pw); DB=${4:-j22r2_c1o}
 < …127.0.0.1:47921/$DB… REDIS_URL=…127.0.0.1:47922       > …127.0.0.1:48023/$DB… REDIS_URL=…127.0.0.1:48024
 === mutrun.sh
-< S=…/j22-c1o; W=C:/Users/AMP/j22-c1-wt                  > S=…/j22r2-c1o; W=C:/Users/AMP/j22r2-c1o-wt
+< S=…/j22-c1o; W=~/j22-c1-wt                  > S=…/j22r2-c1o; W=~/j22r2-c1o-wt
 === restore.sh
 < O=44d9cbb3874e45340ca43c934364c3d0103c53b8             > O=6b03e44d8136792398f521ccaf85d8dd45168a6d
-< W=C:/Users/AMP/j22-c1-wt                               > W=C:/Users/AMP/j22r2-c1o-wt
+< W=~/j22-c1-wt                               > W=~/j22r2-c1o-wt
 === mut.mjs / mutn.mjs / rawsql.mjs / zz-j22c1-probe.ts: sem diferença (md5 da sonda 29959b460a2caf24128fd70e5a3cc106)
 ```
 `grep -E '4792|j22_c1\b|j22-c1-wt|j22-c1o|44d9cbb3' j22r2-c1o/*.sh` → nenhum valor antigo. O original nunca foi executado.
@@ -130,5 +130,5 @@ Fonte: `c1rev-sol-caido-evidencia.md` (itens 1–3 EM APURAÇÃO; só legalidade
 - comparação com o ciclo 1 (regra (2)): item 1 **IGUAL**; item 2 é a cauda nova, **verde**; item 3 **IGUAL**. As diferenças medidas são todas vermelhos novos sob mutante, explicados pelo conserto (E4-04/05/06) — nenhuma diferença não explicada.
 - achados: C1R-01 nota (dentro-do-bloco, não grave — o CE-12-forma aceita `tenant_id =` em comentário SQL); C1R-02 nota (persistentes do ciclo 1: mutante equivalente do CE-6, camada do update mascarada pelo lock, contagem sem tenant só sem FK); C1R-03 nota (pre-existente, A-01: o fuso só desloca a exibição). Nenhum `bloqueia`. Nenhum item sem medir.
 - `arquivos_medidos`: src/modules/checklists/**, src/database/rls.ts, tests/checklist-template-lock-db.test.ts, as 4 suítes vizinhas -db, prisma/**, src/database/**, .github/**, scripts/migration-transaction-guard.mjs, agent-orchestration/controle/pendencias.md (não rodei npm test/check/build).
-- teardown: `docker rm -f -v j22r2-c1o-pg j22r2-c1o-redis` → `docker ps -a --filter name=j22r2-c1o- -q | wc -l` = 0 (os bancos j22r2_c1o e j22r2_c1o_tz foram com o container) · 0 processos com `j22r2-c1o-wt` na linha de comando → `git worktree remove --force C:/Users/AMP/j22r2-c1o-wt` ec=0 (status 0 antes; nenhuma sonda zz-* na árvore) · senha apagada; `grep -F <senha>` na evidência, no voto e nos logs do $SCRATCH = 0 · base viva nunca tocada · **órfãos `j22r2-c1-pg` e `j22r2-c1-redis` do caído seguem de pé (prefixo alheio, não removidos) — para o orquestrador** · disco livre no fim 9,4 GB.
+- teardown: `docker rm -f -v j22r2-c1o-pg j22r2-c1o-redis` → `docker ps -a --filter name=j22r2-c1o- -q | wc -l` = 0 (os bancos j22r2_c1o e j22r2_c1o_tz foram com o container) · 0 processos com `j22r2-c1o-wt` na linha de comando → `git worktree remove --force ~/j22r2-c1o-wt` ec=0 (status 0 antes; nenhuma sonda zz-* na árvore) · senha apagada; `grep -F <senha>` na evidência, no voto e nos logs do $SCRATCH = 0 · base viva nunca tocada · **órfãos `j22r2-c1-pg` e `j22r2-c1-redis` do caído seguem de pé (prefixo alheio, não removidos) — para o orquestrador** · disco livre no fim 9,4 GB.
 - voto: `c1rev-voto.json` — **APROVADO**.

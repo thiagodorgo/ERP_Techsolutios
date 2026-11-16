@@ -98,7 +98,7 @@
 - Sessão × ref (EOL-neutro): `planejador-mestre` DIVERGE (ref 4c912f69 × sessão c03f5139; +7 linhas na ref) · `porteiro-pos-merge` DIVERGE (374b1b0d × fc151bf6; +7 linhas na ref) · `critico-adversarial` IGUAL · `agente-fabrica` IGUAL. Os dois divergentes são inelegíveis (não votam); o porteiro do merge deste PR deve receber o corpo da ref no prompt (como eu recebi).
 
 ## [medição] 4.1 Fatia S0 — VERDE
-- Worktree PRÓPRIO detached em `f84bc634` (`C:/Users/AMP/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/insp-san3c2`, criado com `-c core.longpaths=true`, porcelain 0, `npm ci` próprio ec=0, 326 pacotes, sem junction).
+- Worktree PRÓPRIO detached em `f84bc634` (`~/Documents/GitHub/ERP_Techsolutios/.claude/worktrees/insp-san3c2`, criado com `-c core.longpaths=true`, porcelain 0, `npm ci` próprio ec=0, 326 pacotes, sem junction).
 - `node scripts/sync-agent-agents.mjs --check` → ec=0 `[agents-sync] OK — 25 agentes, espelho consistente.` Recursivo conferido: `.claude/agents` 25 `.md` (2 em `especialistas/`) · `.agents/agents` 26 (25 + README; 2 em `especialistas/`). O `--check` só lê (escrita gated fora do CHECK).
 
 ## [medição] 4.2 Baseline honesto — VERDE (exit por variável)

@@ -16,7 +16,7 @@ Você é a **cadeira (c′)** da **junta de segurança do ciclo 2** do bloco **`
 primeira posição de um rastreador simulado chega ao mapa operacional pelo Traccar 6.16.0, por um listener de ingestão próprio, em dev, com
 quarentena. O ciclo 1 foi **REPROVADO 1×2** (ata `agent-orchestration/omega/juntas/J-B-TRC-01-ciclo1.md`), e o **único defeito real de
 produto** que a auditoria de topo confirmou é o **(c)-1**: a atribuição usava a viatura que a OS tem **quando a posição chega**, não a que ela
-tinha **no instante do fix**. O plano do ciclo 2 (`C:/Users/AMP/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`,
+tinha **no instante do fix**. O plano do ciclo 2 (`~/erp-pausa-2026-10-03/planos/B-TRC-01-ciclo2-auditoria-e-plano.md`,
 identidade `planejador-trc01-ciclo2`, Fable, §2.4) conserta com a coluna `work_orders.vehicle_assigned_at`, gravada só pelo gatilho, e um
 predicado novo. A sua pergunta é uma só:
 
@@ -38,7 +38,7 @@ Este corpo foi escrito pela `agente-fabrica` (Claude Opus 5.5, nível menor — 
 executar nada e sem `git`** (a fábrica não tem `Bash`), em 2026-10-17, lendo no disco: o plano do ciclo 2 (§0 a §2.8), a ata do ciclo 1, os
 corpos das três cadeiras do ciclo 1, `votos/B-TRC-01/00-quedas.md` e a evidência da cadeira (c) do ciclo 1 (item 2: a reprodução do achado,
 as sondas `zz-jtrc01c-*`). **Enquanto este corpo era escrito, o dev do ciclo 2 editava `src/`, `tests/`, `prisma/` e o relatório em
-`C:/Users/AMP/w-trc01`**: a fábrica não viu o código do ciclo 2. Logo, **todo nome de teste, mutação, migração, coluna, motivo e número abaixo
+`~/w-trc01`**: a fábrica não viu o código do ciclo 2. Logo, **todo nome de teste, mutação, migração, coluna, motivo e número abaixo
 vem do plano e é hipótese [A RE-VERIFICAR] no objeto**. Afirmação do plano, do relatório do dev, dos pareceres, da ata do ciclo 1 e deste
 corpo é **roteiro, nunca fato**.
 
@@ -204,13 +204,13 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
   (e o mesmo para `.agents/`). Logo abaixo: objeto, `origin/main` no início, `$SCRATCH`, `uname -a`, `node -v`, `docker version`
   (servidor), `SELECT version()` do seu Postgres, `df -h /c`, e as variáveis que você definiu (**nunca** valor de segredo; nenhum `export`).
 - **Arquivos de saída:** os que o mandato nomear (padrão deste corpo:
-  `C:/Users/AMP/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` e `…/cadeira-c-voto.json`). A sua
+  `~/w-trc01/agent-orchestration/omega/juntas/votos/B-TRC-01-ciclo2/cadeira-c-evidencia.md` e `…/cadeira-c-voto.json`). A sua
   **única** escrita em `w-trc01` são esses dois arquivos. Quedas vão para `00-quedas.md` pelo **orquestrador** (P6). Você não commita.
 - **`MSYS_NO_PATHCONV=1` só como prefixo de um comando, nunca com `export`.** `C:/…` com `git`, `node`, `npm`; caminhos `/…` só dentro de
   `docker exec … sh -c`.
-- **Worktrees PRÓPRIOS, detached, em caminho CURTO:** o do objeto (padrão `C:/Users/AMP/w-jc2-c`) e o do **head do ciclo 1** para o
-  vermelho-controle (padrão `C:/Users/AMP/w-jc2-c-h1`), cada um por
-  `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <ref>`; **prove** `test -e <caminho>/.git`. Se o
+- **Worktrees PRÓPRIOS, detached, em caminho CURTO:** o do objeto (padrão `~/w-jc2-c`) e o do **head do ciclo 1** para o
+  vermelho-controle (padrão `~/w-jc2-c-h1`), cada um por
+  `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach <caminho> <ref>`; **prove** `test -e <caminho>/.git`. Se o
   caminho já existir, é resíduo alheio: reporte e use o sufixo `2`. Prove `test ! -e <wt>/.env` nos dois. Em cada um,
   `timeout -k 15 900 npm ci --no-audit --no-fund` **próprio** e
   `DATABASE_URL='postgresql://build:build@127.0.0.1:1/build?schema=public' timeout -k 15 300 npx prisma generate`. **Junction ou symlink de
@@ -233,7 +233,7 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
   `DATABASE_URL`/`REDIS_URL` **só como prefixo**, nunca em argv nem na evidência (publique com `***`). No fim, `grep -c -F "$(cat …)"` na
   evidência e nos logs = 0, e o arquivo apagado.
 - **Base viva NUNCA é alvo, nem de leitura:** `erp-postgres` (5432), `erp-redis` (6379), `erp-postgres-alt` (55432), qualquer `erp-*`.
-  Nunca o projeto de outra cadeira, nunca resíduo do dev (`trc01-*`), nunca o worktree `C:/Users/AMP/w-07cb1`. **Nunca** os servidores
+  Nunca o projeto de outra cadeira, nunca resíduo do dev (`trc01-*`), nunca o worktree `~/w-07cb1`. **Nunca** os servidores
   públicos de demonstração do Traccar; nada desta cadeira sai da máquina. Imagem do Traccar, se usada (nenhum item exige): só por
   `traccar/traccar:6.16.0@sha256:03ebb7ed2b219d4f25c326873bd022f5062f80bcae622a9d9422846b51951eda`, e `docker compose` cai **com os perfis**
   (`--profile capture --profile tools down -v --remove-orphans`).
@@ -246,7 +246,7 @@ pode passar — é achado contra este corpo ou contra a régua**, declarado ante
 - **Remoção só do que você criou, pelo nome exato:** `docker rm -f -v jtrc01c2-c-pg jtrc01c2-c-redis` e
   `docker ps -a --filter name=jtrc01c2-c- -q | wc -l` = 0. Worktrees: antes, conte os processos vivos com o caminho por
   `C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -Command '(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*w-jc2-c*" -and $_.CommandLine -notlike "*Get-CimInstance*" }).Count'`;
-  só com 0, `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree remove --force <caminho>` para cada um.
+  só com 0, `git -C ~/Documents/GitHub/ERP_Techsolutios worktree remove --force <caminho>` para cada um.
 - **Mutação restaurável, no SEU worktree** (nenhuma toca `w-trc01`):
   1. mute **por script** (`node -e` ou `.mjs` seu no `$SCRATCH`), âncora **única** e EOL-consciente — **conte antes: tem de ser 1**;
   2. **prove a substituição**: `git -C <seu-wt> diff --numstat -- <f>` não-vazio;

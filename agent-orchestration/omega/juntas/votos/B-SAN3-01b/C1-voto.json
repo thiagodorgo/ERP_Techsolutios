@@ -48,7 +48,7 @@
   ],
   "voto": "A FAVOR",
   "mutacoes_aplicadas": {
-    "onde": "worktree descartavel C:/Users/AMP/w-j01bc1 (detached em cdf370dc), nunca a arvore do dono nem a do dev",
+    "onde": "worktree descartavel ~/w-j01bc1 (detached em cdf370dc), nunca a arvore do dono nem a do dev",
     "lista": "N-PG-PAINEL, N-PG-KPI, N-W1TXT, N-W2TXT, N-S1ERR, N-BARREL1, N-BARREL2, N-LITERAL, N-FORA-RAIZ; oraculo A3 (41 sitios) e controle (0/41); 12 controles do Apendice A em disco; A10 x3 (resolveModule cego, GUARDED_FILES=[], pula catch); R4 (demo fora da convencao); G1b .catch( e ||",
     "restauro": "git hash-object = blob do HEAD ou existe=false em todas; porcelain vazio depois de cada uma"
   },

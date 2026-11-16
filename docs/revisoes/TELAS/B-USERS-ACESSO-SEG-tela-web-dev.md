@@ -2,7 +2,7 @@
 
 > **Identidade:** `dev-527-tela-cl`, nova (não achou, não planejou e não criticou nada no #527).
 > **Modelo:** Claude Opus 5.5 da sessão, DECLARADO (telas no Claude, `D-DESIGN-SO-CLAUDE`; topo não se aplica a dev).
-> **Ramo:** `feat/users-seg-tela-web`, worktree `C:/Users/thiag/w-tela527`, criado de `e09e9667` (F1 do conserto).
+> **Ramo:** `feat/users-seg-tela-web`, worktree `~/w-tela527`, criado de `e09e9667` (F1 do conserto).
 > **Plano:** `erp-pausa-2026-10-03/planos/B-USERS-ACESSO-SEG-conserto-c1.md`, seção A-04 (T.1, T.2, T.4) e as Emendas 3, 4 e 5,
 > que prevalecem nessa ordem. Toda hora deste diário vem de `date` (São Paulo).
 > **Escopo:** só os caminhos de `frontend/` de T.2 (PERMITIDO), a referência aprovada em `screen-refs/` e uma linha no
@@ -207,8 +207,8 @@ esperava o semáforo, VERMELHO de 22:15 a 22:26); o vigia `t1-gate.sh` e o monit
      (esperado 1676 + 31 novos = 1707), `git diff --check`, conferência de escopo
      (`git diff --name-only e09e9667..HEAD` ⊆ PERMITIDO de T.2 + `screen-refs/` + este diário);
   3. registrar as saídas aqui, commitar o diário e dar push; limpar `frontend/dist` (§C5).
-- **Próximo comando exato** (de `C:/Users/thiag/w-tela527`, com o semáforo VERDE e o commit livre ≥ 2.048 MB):
-  `S=/c/Users/thiag/AppData/Local/Temp/claude/d939c34b716351f1/c5f407dd-e6e4-4333-9bfe-6ed36babdb03/scratchpad; for m in W5 W6 RQ6 E45 E43; do node $S/t1-mutate.mjs $m; done`
+- **Próximo comando exato** (de `~/w-tela527`, com o semáforo VERDE e o commit livre ≥ 2.048 MB):
+  `S=~/AppData/Local/Temp/claude/d939c34b716351f1/c5f407dd-e6e4-4333-9bfe-6ed36babdb03/scratchpad; for m in W5 W6 RQ6 E45 E43; do node $S/t1-mutate.mjs $m; done`
   e depois `node $S/t1-mutate.mjs RQ1a` (roda o `test:smoke` com a mutação). O `t1-mutate.mjs` reverte cada mutação por
   `git checkout -- <arquivo>`. Se ele sumir com o reinício, as mutações literais são: W5 apaga `clearStoredAuthSession();`
   de `changeOwnPassword` (`auth.service.ts`); W6 apaga o bloco `lg-campo … c-conf` (o campo de confirmação) de

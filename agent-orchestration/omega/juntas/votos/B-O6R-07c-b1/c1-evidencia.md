@@ -14,7 +14,7 @@ papel: C1 | identidade: jurado-07cb1-c1-argon | modelo: Gemini 4 Argon (esforço
   - Cerca do mandato = `b198fe358b41186b2598ab258ccb735da8c04cbc` (`git diff --name-only <cerca> <objeto>` vazio, delta = 0)
   - Arquivos de `src/` no bloco (`git diff --name-only B objeto -- src/`, N = 13):
     `src/modules/checklists/checklist.controller.ts`, `src/modules/checklists/checklist.service.ts`, `src/modules/field-dispatch/field-dispatch-prisma.repository.ts`, `src/modules/field-dispatch/field-dispatch.repository.ts`, `src/modules/field-dispatch/field-dispatch.service.ts`, `src/modules/mobile/mobile-checklist-sync.ts`, `src/modules/mobile/mobile-evidence-sync.ts`, `src/modules/mobile/mobile-evidence-upload.ts`, `src/modules/mobile/mobile-work-order-sync.ts`, `src/modules/work-orders/work-order-prisma.repository.ts`, `src/modules/work-orders/work-order.repository.ts`, `src/modules/work-orders/work-order.service.ts`, `src/modules/work-orders/work-order.types.ts`
-- **Parecer do inspetor de terreno:** `C:/Users/AMP/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` · instância `inspetor-07cb1-opus` · `LIBERADO COM RESSALVA` (2026-10-17 03:30Z–03:40Z). Confere a cadeira C1 (`jurado-07cb1-c1-escopo-e-rbac`, corpo commitado nos dois espelhos `.claude` `1a5e17a5…` e `.agents` `3d2fa99f…`) e o worktree `C:/Users/AMP/w-j07cb1c1`. Nota de sucessão: o Codex inicialmente previsto na tabela do inspetor foi parado pelo dono antes de medir (`00-quedas.md`, 0 bytes gravados), e o dono ordenou o disparo em Gemini 4 Argon com identidade nova `jurado-07cb1-c1-argon` (ressalva R4 do inspetor / §C7.7 P3).
+- **Parecer do inspetor de terreno:** `~/w-07cb1/agent-orchestration/omega/juntas/votos/B-O6R-07c-b1/insp-07cb1-parecer.md` · instância `inspetor-07cb1-opus` · `LIBERADO COM RESSALVA` (2026-10-17 03:30Z–03:40Z). Confere a cadeira C1 (`jurado-07cb1-c1-escopo-e-rbac`, corpo commitado nos dois espelhos `.claude` `1a5e17a5…` e `.agents` `3d2fa99f…`) e o worktree `~/w-j07cb1c1`. Nota de sucessão: o Codex inicialmente previsto na tabela do inspetor foi parado pelo dono antes de medir (`00-quedas.md`, 0 bytes gravados), e o dono ordenou o disparo em Gemini 4 Argon com identidade nova `jurado-07cb1-c1-argon` (ressalva R4 do inspetor / §C7.7 P3).
 - **Check-runs no objeto:** `gh api repos/thiagodorgo/ERP_Techsolutios/commits/b198fe358b41186b2598ab258ccb735da8c04cbc/check-runs?per_page=100` → `total=14 | nao-verdes=0 | pendentes=0`.
 - **Inelegibilidade e Obituário:** `OBITUARIO-IDENTIDADES.md` tem 301 linhas no objeto e em `origin/main`; `grep -ic 07cb1` = `0` nos dois. `jurado-07cb1-c1-argon` e `jurado-07cb1-c1-escopo-e-rbac` não constam como dev, planejador, crítico, achador ou votante anterior. Competência herdada declarada: `coordenador-de-acessos` (inelegível como identidade por ter achado o item 51 / `C2-09`).
 - **Decisões do dono medidas por script (`git show <ref>:agent-orchestration/controle/decisoes.md | grep -n <ID>`):**
@@ -24,11 +24,11 @@ papel: C1 | identidade: jurado-07cb1-c1-argon | modelo: Gemini 4 Argon (esforço
 - **Âncoras do `CLAUDE.md` medidas no objeto e em `origin/main`:**
   - `A1.`: 1 / 1 · `A2.`: 1 / 1 · `A6.`: 1 / 1 · `A7.`: 1 / 1 · `C5.`: 1 / 1 · `C7.1-bis`: 2 / 2 · `C7.1-ter`: 3 / 3 · `C7.4-bis`: 6 / 6 · `C7.6`: 9 / 9 · `C7.6-bis`: 2 / 2 · `D-GOV-PROPORCIONAL`: 3 / 3 · `C7.7` (cabeçalho `## C7.7` l.638 com `[P1]`..`[P7]` e `D-PAUSA-GRAVA-E-PARA` l.675): presente nos dois.
 - **Ambiente e Worktree próprio:**
-  - `$SCRATCH`: `C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1`
+  - `$SCRATCH`: `~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1`
   - `uname -a`: `MINGW64_NT-10.0-22631 N3SOH82 3.6.6-1cdd4371.x86_64 2026-01-15 22:20 UTC x86_64 Msys`
   - `node -v`: `v20.19.5`
   - Disco `C:` antes do `npm ci`: `11G` livres (96%); após `npm ci`: `9.5G` livres (97%), acima do piso de 2 GB.
-  - Worktree criado: `git -C C:/Users/AMP/Documents/GitHub/ERP_Techsolutios worktree add --detach C:/Users/AMP/w-j07cb1c1 b198fe358b41186b2598ab258ccb735da8c04cbc` (`test -e C:/Users/AMP/w-j07cb1c1/.git` → `WORKTREE_GIT_OK=1`).
+  - Worktree criado: `git -C ~/Documents/GitHub/ERP_Techsolutios worktree add --detach ~/w-j07cb1c1 b198fe358b41186b2598ab258ccb735da8c04cbc` (`test -e ~/w-j07cb1c1/.git` → `WORKTREE_GIT_OK=1`).
   - Baseline no worktree próprio: `npm ci --no-audit --no-fund` → `ec=0` (sem junction/symlink); `env DATABASE_URL="postgresql://x:x@127.0.0.1:1/x" npm run db:generate` → `ec=0`; `env -u DATABASE_URL -u REDIS_URL CORE_SAAS_PERSISTENCE=memory npm run check` → `ec=0`.
   - Nenhum container criado (`CORE_SAAS_PERSISTENCE=memory` no Node do worktree Windows); base viva (`erp-postgres`, `erp-redis`) e portas 5432, 6379, 3000, 5173, 5050, 8899 intocadas.
 
@@ -40,7 +40,7 @@ papel: C1 | identidade: jurado-07cb1-c1-argon | modelo: Gemini 4 Argon (esforço
 
 **Comando executado:**
 ```bash
-npx tsx C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/04-item1a.mts
+npx tsx ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/04-item1a.mts
 ```
 
 **Saída:**
@@ -79,7 +79,7 @@ COUNT_O=23 COUNT_B=23 ONLY_O=0 ONLY_B=0
 
 ### 1(b) Sonda própria de escopo por objeto nas 23 vias (com código-fonte integral + `md5sum`)
 
-- **Arquivo da sonda:** `C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts`
+- **Arquivo da sonda:** `~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts`
 - **md5sum:** `701b542899b761da19d697753369dd9f`
 
 **Código-fonte integral de `05-sonda-item1.mts`:**
@@ -98,7 +98,7 @@ const DIR_ANEXOS = fs.mkdtempSync(path.join(os.tmpdir(), "c1-sonda-anexos-"));
 const DIR_EVID = fs.mkdtempSync(path.join(os.tmpdir(), "c1-sonda-evid-"));
 process.env.CHECKLIST_STORAGE_LOCAL_DIR = DIR_ANEXOS;
 
-const WT_URL = "file:///C:/Users/AMP/w-j07cb1c1";
+const WT_URL = "file:///~/w-j07cb1c1";
 const [
   { JPEG_BYTES },
   { createApp },
@@ -131,7 +131,7 @@ const [
   import(`${WT_URL}/src/modules/operator-profiles/operator-profile.service.js`),
 ]);
 
-const SNAPSHOT_PATH = "C:/Users/AMP/w-j07cb1c1/tests/fixtures/o6r07c-classificacao-vias.json";
+const SNAPSHOT_PATH = "~/w-j07cb1c1/tests/fixtures/o6r07c-classificacao-vias.json";
 const SNAPSHOT = JSON.parse(fs.readFileSync(SNAPSHOT_PATH, "utf8")) as Record<string, { classe: string; n: number }>;
 const CLASSES_23 = new Set(["VISTORIA·ESCOPO", "EVIDENCIA-OS·ESCOPO", "DESPACHO·ALVO", "VISTORIA·07c-b", "EVIDENCIA-OS·07c-b", "DESPACHO·07c-b"]);
 const VIAS_23 = Object.entries(SNAPSHOT)
@@ -669,7 +669,7 @@ await main();
 
 **Comando executado em `O` (`b198fe358b41186b2598ab258ccb735da8c04cbc`):**
 ```bash
-CORE_SAAS_PERSISTENCE=memory npx tsx C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts object
+CORE_SAAS_PERSISTENCE=memory npx tsx ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts object
 ```
 
 **Saída integral em `O` (`05-sonda-object.log`):**
@@ -742,9 +742,9 @@ CA10_XT_UPLOAD: alheio=403:evidence_tenant_mismatch | inexist=403:evidence_tenan
 
 **Comandos executados (Controle 3 — `git hash-object` dos 13 arquivos igual a `B:<arquivo>` antes da sonda, e igual a `O:<arquivo>` após restauração):**
 ```bash
-bash C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh to-base
-CORE_SAAS_PERSISTENCE=memory npx tsx C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts base
-bash C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh restore
+bash ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh to-base
+CORE_SAAS_PERSISTENCE=memory npx tsx ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts base
+bash ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh restore
 ```
 
 **Prova de identidade dos blobs com `B` (`06-to-base.log`):**
@@ -823,16 +823,16 @@ CA10_XT_UPLOAD: alheio=403:evidence_tenant_mismatch | inexist=403:evidence_tenan
 
 **Comandos executados:**
 ```bash
-bash C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh mut-m22
-CORE_SAAS_PERSISTENCE=memory npx tsx C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts m22
+bash ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh mut-m22
+CORE_SAAS_PERSISTENCE=memory npx tsx ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts m22
 CORE_SAAS_PERSISTENCE=memory npx tsx --test tests/o6r07c-b-scope.test.ts
-bash C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh restore
+bash ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh restore
 
-bash C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh mut-m24
-CORE_SAAS_PERSISTENCE=memory npx tsx C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts m24
+bash ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh mut-m24
+CORE_SAAS_PERSISTENCE=memory npx tsx ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/05-sonda-item1.mts m24
 CORE_SAAS_PERSISTENCE=memory npx tsx --test tests/o6r07c-b-scope.test.ts
 CORE_SAAS_PERSISTENCE=memory npx tsx --test tests/o6r07c-subresource-scope.test.ts
-bash C:/Users/AMP/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh restore
+bash ~/.gemini/antigravity-cli/brain/d9d16a23-c79a-4bff-b05d-f43d2c2585f9/scratch/c1/06-item1cd.sh restore
 ```
 
 **Diff e resultado de M22 (`checklist.service.ts` — `assertRunMutationScope` sem o retorno antecipado `if (!actorMutatesAssignedOnly(woActor))`):**
